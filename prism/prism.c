@@ -12302,34 +12302,43 @@ parser_lex(pm_parser_t *parser) {
                         }
                     }
 
-                    const uint8_t *terminator_start = ident_end - ident_length;
-                    const uint8_t *cursor = start;
+                    /*
+                     * The line on which we are looking for the terminator runs
+                     * from `start` to `ident_end`. If that line is shorter than
+                     * the identifier, the terminator cannot fit and we skip the
+                     * match. This also keeps `terminator_start` from pointing
+                     * before `start`.
+                     */
+                    if ((size_t) (ident_end - start) >= ident_length) {
+                        const uint8_t *terminator_start = ident_end - ident_length;
+                        const uint8_t *cursor = start;
 
-                    if (heredoc_lex_mode->indent == PM_HEREDOC_INDENT_DASH || heredoc_lex_mode->indent == PM_HEREDOC_INDENT_TILDE) {
-                        while (cursor < terminator_start && pm_char_is_inline_whitespace(*cursor)) {
-                            cursor++;
-                        }
-                    }
-
-                    if (
-                        (cursor == terminator_start) &&
-                        (memcmp(terminator_start, ident_start, ident_length) == 0)
-                    ) {
-                        if (newline != NULL) {
-                            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(newline - parser->start + 1));
-                        }
-
-                        parser->current.end = terminator_end;
-                        if (*lex_mode->as.heredoc.next_start == '\\') {
-                            parser->next_start = NULL;
-                        } else {
-                            parser->next_start = lex_mode->as.heredoc.next_start;
-                            parser->heredoc_end = parser->current.end;
+                        if (heredoc_lex_mode->indent == PM_HEREDOC_INDENT_DASH || heredoc_lex_mode->indent == PM_HEREDOC_INDENT_TILDE) {
+                            while (cursor < terminator_start && pm_char_is_inline_whitespace(*cursor)) {
+                                cursor++;
+                            }
                         }
 
-                        lex_state_set(parser, PM_LEX_STATE_END);
-                        lex_mode_pop(parser);
-                        LEX(PM_TOKEN_HEREDOC_END);
+                        if (
+                            (cursor == terminator_start) &&
+                            (memcmp(terminator_start, ident_start, ident_length) == 0)
+                        ) {
+                            if (newline != NULL) {
+                                pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(newline - parser->start + 1));
+                            }
+
+                            parser->current.end = terminator_end;
+                            if (*lex_mode->as.heredoc.next_start == '\\') {
+                                parser->next_start = NULL;
+                            } else {
+                                parser->next_start = lex_mode->as.heredoc.next_start;
+                                parser->heredoc_end = parser->current.end;
+                            }
+
+                            lex_state_set(parser, PM_LEX_STATE_END);
+                            lex_mode_pop(parser);
+                            LEX(PM_TOKEN_HEREDOC_END);
+                        }
                     }
                 }
 
@@ -12405,26 +12414,36 @@ parser_lex(pm_parser_t *parser) {
                                 newline--; // Remove \r
                             }
 
-                            // Start of a possible terminator.
-                            const uint8_t *terminator_start = newline - ident_length;
+                            /*
+                             * The line on which we are looking for the
+                             * terminator runs from `start` to `newline`. If
+                             * that line is shorter than the identifier the
+                             * terminator cannot fit and we skip the match.
+                             * This also keeps `terminator_start` from pointing
+                             * before `start`.
+                             */
+                            if ((size_t) (newline - start) >= ident_length) {
+                                // Start of a possible terminator.
+                                const uint8_t *terminator_start = newline - ident_length;
 
-                            // Cursor to check for the leading whitespace. We skip the
-                            // leading whitespace if we have a - or ~ heredoc.
-                            const uint8_t *cursor = start;
+                                // Cursor to check for the leading whitespace. We skip the
+                                // leading whitespace if we have a - or ~ heredoc.
+                                const uint8_t *cursor = start;
 
-                            if (heredoc_lex_mode->indent == PM_HEREDOC_INDENT_DASH || heredoc_lex_mode->indent == PM_HEREDOC_INDENT_TILDE) {
-                                while (cursor < terminator_start && pm_char_is_inline_whitespace(*cursor)) {
-                                    cursor++;
+                                if (heredoc_lex_mode->indent == PM_HEREDOC_INDENT_DASH || heredoc_lex_mode->indent == PM_HEREDOC_INDENT_TILDE) {
+                                    while (cursor < terminator_start && pm_char_is_inline_whitespace(*cursor)) {
+                                        cursor++;
+                                    }
                                 }
-                            }
 
-                            if (
-                                cursor == terminator_start &&
-                                (memcmp(terminator_start, ident_start, ident_length) == 0)
-                            ) {
-                                parser->current.end = breakpoint + 1;
-                                pm_token_buffer_flush(parser, &token_buffer);
-                                LEX(PM_TOKEN_STRING_CONTENT);
+                                if (
+                                    cursor == terminator_start &&
+                                    (memcmp(terminator_start, ident_start, ident_length) == 0)
+                                ) {
+                                    parser->current.end = breakpoint + 1;
+                                    pm_token_buffer_flush(parser, &token_buffer);
+                                    LEX(PM_TOKEN_STRING_CONTENT);
+                                }
                             }
                         }
 
