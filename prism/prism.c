@@ -22365,6 +22365,53 @@ parse_call(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_bin
     }
 }
 
+static pm_node_t *
+parse_aref(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_binding_power, uint8_t flags, uint16_t depth) {
+    parser_lex(parser);
+
+    pm_arguments_t arguments = { 0 };
+    arguments.opening_loc = TOK2LOC(parser, &parser->previous);
+
+    if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
+        parse_arguments(parser, &arguments, false, PM_TOKEN_BRACKET_RIGHT, (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK), (uint16_t) (depth + 1));
+        expect1(parser, PM_TOKEN_BRACKET_RIGHT, PM_ERR_EXPECT_RBRACKET);
+    }
+
+    arguments.closing_loc = TOK2LOC(parser, &parser->previous);
+
+    // If we have a comma after the closing bracket then this is a multiple
+    // assignment and we should parse the targets.
+    if (previous_binding_power == PM_BINDING_POWER_STATEMENT && match1(parser, PM_TOKEN_COMMA)) {
+        pm_call_node_t *aref = pm_call_node_aref_create(parser, node, &arguments);
+        return parse_targets_validate(parser, UP(aref), PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
+    }
+
+    // If we're at the end of the arguments, we can now check if there is a
+    // block node that starts with a {. If there is, then we can parse it and
+    // add it to the arguments.
+    pm_block_node_t *block = NULL;
+    if (accept1(parser, PM_TOKEN_BRACE_LEFT)) {
+        block = parse_block(parser, (uint16_t) (depth + 1));
+        pm_arguments_validate_block(parser, &arguments, block);
+    } else if (pm_accepts_block_stack_p(parser) && accept1(parser, PM_TOKEN_KEYWORD_DO)) {
+        block = parse_block(parser, (uint16_t) (depth + 1));
+    }
+
+    if (block != NULL) {
+        if (arguments.block != NULL) {
+            pm_parser_err_node(parser, UP(block), PM_ERR_ARGUMENT_AFTER_BLOCK);
+            if (arguments.arguments == NULL) {
+                arguments.arguments = pm_arguments_node_create(parser);
+            }
+            pm_arguments_node_arguments_append(parser->arena, arguments.arguments, arguments.block);
+        }
+
+        arguments.block = UP(block);
+    }
+
+    return UP(pm_call_node_aref_create(parser, node, &arguments));
+}
+
 static PRISM_INLINE pm_node_t *
 parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t token = parser->current;
@@ -22526,51 +22573,8 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
 
             return UP(pm_rescue_modifier_node_create(parser, node, &token, value));
         }
-        case PM_TOKEN_BRACKET_LEFT: {
-            parser_lex(parser);
-
-            pm_arguments_t arguments = { 0 };
-            arguments.opening_loc = TOK2LOC(parser, &parser->previous);
-
-            if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
-                parse_arguments(parser, &arguments, false, PM_TOKEN_BRACKET_RIGHT, (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK), (uint16_t) (depth + 1));
-                expect1(parser, PM_TOKEN_BRACKET_RIGHT, PM_ERR_EXPECT_RBRACKET);
-            }
-
-            arguments.closing_loc = TOK2LOC(parser, &parser->previous);
-
-            // If we have a comma after the closing bracket then this is a multiple
-            // assignment and we should parse the targets.
-            if (previous_binding_power == PM_BINDING_POWER_STATEMENT && match1(parser, PM_TOKEN_COMMA)) {
-                pm_call_node_t *aref = pm_call_node_aref_create(parser, node, &arguments);
-                return parse_targets_validate(parser, UP(aref), PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-            }
-
-            // If we're at the end of the arguments, we can now check if there is a
-            // block node that starts with a {. If there is, then we can parse it and
-            // add it to the arguments.
-            pm_block_node_t *block = NULL;
-            if (accept1(parser, PM_TOKEN_BRACE_LEFT)) {
-                block = parse_block(parser, (uint16_t) (depth + 1));
-                pm_arguments_validate_block(parser, &arguments, block);
-            } else if (pm_accepts_block_stack_p(parser) && accept1(parser, PM_TOKEN_KEYWORD_DO)) {
-                block = parse_block(parser, (uint16_t) (depth + 1));
-            }
-
-            if (block != NULL) {
-                if (arguments.block != NULL) {
-                    pm_parser_err_node(parser, UP(block), PM_ERR_ARGUMENT_AFTER_BLOCK);
-                    if (arguments.arguments == NULL) {
-                        arguments.arguments = pm_arguments_node_create(parser);
-                    }
-                    pm_arguments_node_arguments_append(parser->arena, arguments.arguments, arguments.block);
-                }
-
-                arguments.block = UP(block);
-            }
-
-            return UP(pm_call_node_aref_create(parser, node, &arguments));
-        }
+        case PM_TOKEN_BRACKET_LEFT:
+            return parse_aref(parser, node, previous_binding_power, flags, depth);
         case PM_TOKEN_KEYWORD_IN: {
             bool previous_pattern_matching_newlines = parser->pattern_matching_newlines;
             parser->pattern_matching_newlines = true;
