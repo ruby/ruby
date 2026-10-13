@@ -20743,6 +20743,35 @@ parse_unary_minus(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
 }
 
 static pm_node_t *
+parse_unary_minus_number(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+    pm_token_t operator = parser->current;
+    parser_lex(parser);
+
+    pm_node_t *node = parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
+
+    if (accept1(parser, PM_TOKEN_STAR_STAR)) {
+        pm_token_t exponent_operator = parser->previous;
+        pm_node_t *exponent = parse_expression(parser, pm_binding_powers[exponent_operator.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
+        node = UP(pm_call_node_binary_create(parser, node, &exponent_operator, exponent, 0));
+        node = UP(pm_call_node_unary_create(parser, &operator, node, "-@"));
+    } else {
+        switch (PM_NODE_TYPE(node)) {
+            case PM_INTEGER_NODE:
+            case PM_FLOAT_NODE:
+            case PM_RATIONAL_NODE:
+            case PM_IMAGINARY_NODE:
+                parse_negative_numeric(node);
+                break;
+            default:
+                node = UP(pm_call_node_unary_create(parser, &operator, node, "-@"));
+                break;
+        }
+    }
+
+    return node;
+}
+
+static pm_node_t *
 parse_super(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_token_t keyword = parser->current;
     parser_lex(parser);
@@ -21044,33 +21073,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         }
         case PM_TOKEN_UMINUS:
             return UP(parse_unary_minus(parser, binding_power, flags, depth));
-        case PM_TOKEN_UMINUS_NUM: {
-            parser_lex(parser);
-
-            pm_token_t operator = parser->previous;
-            pm_node_t *node = parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
-
-            if (accept1(parser, PM_TOKEN_STAR_STAR)) {
-                pm_token_t exponent_operator = parser->previous;
-                pm_node_t *exponent = parse_expression(parser, pm_binding_powers[exponent_operator.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
-                node = UP(pm_call_node_binary_create(parser, node, &exponent_operator, exponent, 0));
-                node = UP(pm_call_node_unary_create(parser, &operator, node, "-@"));
-            } else {
-                switch (PM_NODE_TYPE(node)) {
-                    case PM_INTEGER_NODE:
-                    case PM_FLOAT_NODE:
-                    case PM_RATIONAL_NODE:
-                    case PM_IMAGINARY_NODE:
-                        parse_negative_numeric(node);
-                        break;
-                    default:
-                        node = UP(pm_call_node_unary_create(parser, &operator, node, "-@"));
-                        break;
-                }
-            }
-
-            return node;
-        }
+        case PM_TOKEN_UMINUS_NUM:
+            return UP(parse_unary_minus_number(parser, flags, depth));
         case PM_TOKEN_MINUS_GREATER:
             return UP(parse_lambda(parser, depth));
         case PM_TOKEN_UPLUS:
