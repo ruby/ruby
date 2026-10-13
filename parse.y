@@ -7603,11 +7603,11 @@ parser_add_delayed_token(struct parser_params *p, const char *tok, const char *e
             p->delayed.token = rb_parser_string_new(p, 0, 0);
             rb_parser_enc_associate(p, p->delayed.token, p->enc);
             p->delayed.beg_line = p->ruby_sourceline;
-            p->delayed.beg_col = rb_long2int(tok - p->lex.pbeg);
+            p->delayed.beg_col = rb_len2int(tok - p->lex.pbeg);
         }
         parser_str_cat(p->delayed.token, tok, end - tok);
         p->delayed.end_line = p->ruby_sourceline;
-        p->delayed.end_col = rb_long2int(end - p->lex.pbeg);
+        p->delayed.end_col = rb_len2int(end - p->lex.pbeg);
         p->lex.ptok = end;
     }
 }
@@ -8500,7 +8500,7 @@ flush_string_content(struct parser_params *p, rb_encoding *enc, size_t back)
         if (len > 0) {
             rb_parser_enc_str_buf_cat(p, p->delayed.token, p->lex.ptok, len, enc);
             p->delayed.end_line = p->ruby_sourceline;
-            p->delayed.end_col = rb_long2int(p->lex.pcur - p->lex.pbeg);
+            p->delayed.end_col = rb_len2int(p->lex.pcur - p->lex.pbeg);
         }
         dispatch_delayed_token(p, tSTRING_CONTENT);
         p->lex.ptok = p->lex.pcur;
@@ -15982,7 +15982,7 @@ parser_compile_error(struct parser_params *p, const rb_code_location_t *loc, con
     }
     else {
         lineno = p->ruby_sourceline;
-        column = rb_long2int(p->lex.pcur - p->lex.pbeg);
+        column = rb_len2int(p->lex.pcur - p->lex.pbeg);
     }
 
     rb_io_flush(p->debug_output);
