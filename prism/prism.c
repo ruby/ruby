@@ -20802,6 +20802,33 @@ parse_range(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     return pm_range_node_create(parser, NULL, &operator, right);
 }
 
+static pm_call_node_t *
+parse_bang(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
+    if (binding_power > PM_BINDING_POWER_UNARY) {
+        pm_parser_err_prefix(parser, PM_ERR_UNARY_DISALLOWED);
+    }
+
+    parser_lex(parser);
+
+    pm_token_t operator = parser->previous;
+    pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (binding_power < PM_BINDING_POWER_MATCH ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0)), PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
+    pm_conditional_predicate(parser, receiver, PM_CONDITIONAL_PREDICATE_TYPE_NOT);
+    return pm_call_node_unary_create(parser, &operator, receiver, "!");
+}
+
+static pm_call_node_t *
+parse_tilde(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
+    if (binding_power > PM_BINDING_POWER_UNARY) {
+        pm_parser_err_prefix(parser, PM_ERR_UNARY_DISALLOWED);
+    }
+
+    parser_lex(parser);
+
+    pm_token_t operator = parser->previous;
+    pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
+    return pm_call_node_unary_create(parser, &operator, receiver, "~");
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -21043,32 +21070,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                 return parse_target_validate(parser, splat, true);
             }
         }
-        case PM_TOKEN_BANG: {
-            if (binding_power > PM_BINDING_POWER_UNARY) {
-                pm_parser_err_prefix(parser, PM_ERR_UNARY_DISALLOWED);
-            }
-
-            parser_lex(parser);
-
-            pm_token_t operator = parser->previous;
-            pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (binding_power < PM_BINDING_POWER_MATCH ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0)), PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
-            pm_call_node_t *node = pm_call_node_unary_create(parser, &operator, receiver, "!");
-
-            pm_conditional_predicate(parser, receiver, PM_CONDITIONAL_PREDICATE_TYPE_NOT);
-            return UP(node);
-        }
-        case PM_TOKEN_TILDE: {
-            if (binding_power > PM_BINDING_POWER_UNARY) {
-                pm_parser_err_prefix(parser, PM_ERR_UNARY_DISALLOWED);
-            }
-            parser_lex(parser);
-
-            pm_token_t operator = parser->previous;
-            pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
-            pm_call_node_t *node = pm_call_node_unary_create(parser, &operator, receiver, "~");
-
-            return UP(node);
-        }
+        case PM_TOKEN_BANG:
+            return UP(parse_bang(parser, binding_power, flags, depth));
+        case PM_TOKEN_TILDE:
+            return UP(parse_tilde(parser, binding_power, flags, depth));
         case PM_TOKEN_UMINUS:
             return UP(parse_unary_minus(parser, binding_power, flags, depth));
         case PM_TOKEN_UMINUS_NUM:
