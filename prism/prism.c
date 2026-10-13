@@ -19514,123 +19514,125 @@ parse_splat(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     return UP(pm_splat_node_create(parser, &operator, name));
 }
 
+static pm_array_node_t *
+parse_array(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+    pm_array_node_t *array = pm_array_node_create(parser, &parser->current);
+    parser_lex(parser);
+
+    bool parsed_bare_hash = false;
+    while (!match2(parser, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_EOF)) {
+        bool accepted_newline = accept1(parser, PM_TOKEN_NEWLINE);
+
+        // Handle the case where we don't have a comma and we have a
+        // newline followed by a right bracket.
+        if (accepted_newline && match1(parser, PM_TOKEN_BRACKET_RIGHT)) {
+            break;
+        }
+
+        // Ensure that we have a comma between elements in the array.
+        if (array->elements.size > 0) {
+            if (accept1(parser, PM_TOKEN_COMMA)) {
+                // If there was a comma but we also accepts a newline,
+                // then this is a syntax error.
+                if (accepted_newline) {
+                    pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
+                }
+            } else {
+                // If there was no comma, then we need to add a syntax
+                // error.
+                PM_PARSER_ERR_FORMAT(parser, PM_TOKEN_END(parser, &parser->previous), 0, PM_ERR_ARRAY_SEPARATOR, pm_token_str(parser->current.type));
+                parser->previous.start = parser->previous.end;
+                parser->previous.type = 0;
+            }
+        }
+
+        // If we have a right bracket immediately following a comma,
+        // this is allowed since it's a trailing comma. In this case we
+        // can break out of the loop.
+        if (match1(parser, PM_TOKEN_BRACKET_RIGHT)) break;
+
+        pm_node_t *element;
+
+        if (accept1(parser, PM_TOKEN_USTAR)) {
+            pm_token_t operator = parser->previous;
+            pm_node_t *expression = NULL;
+
+            if (match3(parser, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_COMMA, PM_TOKEN_EOF)) {
+                pm_parser_scope_forwarding_positionals_check(parser, &operator);
+            } else {
+                expression = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_ARRAY_EXPRESSION_AFTER_STAR, (uint16_t) (depth + 1));
+            }
+
+            element = UP(pm_splat_node_create(parser, &operator, expression));
+        } else if (match2(parser, PM_TOKEN_LABEL, PM_TOKEN_USTAR_STAR)) {
+            if (parsed_bare_hash) {
+                pm_parser_err_current(parser, PM_ERR_EXPRESSION_BARE_HASH);
+            }
+
+            element = UP(pm_keyword_hash_node_create(parser));
+            pm_static_literals_t hash_keys = { 0 };
+
+            if (!match8(parser, PM_TOKEN_EOF, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_KEYWORD_DO_BLOCK, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_KEYWORD_DO, PM_TOKEN_PARENTHESIS_RIGHT)) {
+                parse_assocs(parser, &hash_keys, element, (uint16_t) (depth + 1));
+            }
+
+            pm_static_literals_free(&hash_keys);
+            parsed_bare_hash = true;
+        } else {
+            element = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_LABEL), PM_ERR_ARRAY_EXPRESSION, (uint16_t) (depth + 1));
+
+            if (pm_symbol_node_label_p(parser, element) || accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
+                if (parsed_bare_hash) {
+                    pm_parser_err_previous(parser, PM_ERR_EXPRESSION_BARE_HASH);
+                }
+
+                pm_keyword_hash_node_t *hash = pm_keyword_hash_node_create(parser);
+                pm_static_literals_t hash_keys = { 0 };
+                pm_hash_key_static_literals_add(parser, &hash_keys, element);
+
+                pm_token_t operator = { 0 };
+                if (parser->previous.type == PM_TOKEN_EQUAL_GREATER) {
+                    operator = parser->previous;
+                }
+
+                pm_node_t *value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_HASH_VALUE, (uint16_t) (depth + 1));
+                pm_node_t *assoc = UP(pm_assoc_node_create(parser, element, NTOK2PTR(operator), value));
+                pm_keyword_hash_node_elements_append(parser->arena, hash, assoc);
+
+                element = UP(hash);
+                if (accept1(parser, PM_TOKEN_COMMA) && !match1(parser, PM_TOKEN_BRACKET_RIGHT)) {
+                    parse_assocs(parser, &hash_keys, element, (uint16_t) (depth + 1));
+                }
+
+                pm_static_literals_free(&hash_keys);
+                parsed_bare_hash = true;
+            }
+        }
+
+        pm_array_node_elements_append(parser->arena, array, element);
+        if (PM_NODE_TYPE_P(element, PM_ERROR_RECOVERY_NODE)) break;
+    }
+
+    accept1(parser, PM_TOKEN_NEWLINE);
+
+    if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
+        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_ARRAY_TERM, pm_token_str(parser->current.type));
+        parser->previous.start = parser->previous.end;
+        parser->previous.type = 0;
+    }
+
+    pm_array_node_close_set(parser, array, &parser->previous);
+    return array;
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
 static PRISM_INLINE pm_node_t *
 parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
     switch (parser->current.type) {
-        case PM_TOKEN_BRACKET_LEFT_ARRAY: {
-            parser_lex(parser);
-
-            pm_array_node_t *array = pm_array_node_create(parser, &parser->previous);
-            bool parsed_bare_hash = false;
-
-            while (!match2(parser, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_EOF)) {
-                bool accepted_newline = accept1(parser, PM_TOKEN_NEWLINE);
-
-                // Handle the case where we don't have a comma and we have a
-                // newline followed by a right bracket.
-                if (accepted_newline && match1(parser, PM_TOKEN_BRACKET_RIGHT)) {
-                    break;
-                }
-
-                // Ensure that we have a comma between elements in the array.
-                if (array->elements.size > 0) {
-                    if (accept1(parser, PM_TOKEN_COMMA)) {
-                        // If there was a comma but we also accepts a newline,
-                        // then this is a syntax error.
-                        if (accepted_newline) {
-                            pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
-                        }
-                    } else {
-                        // If there was no comma, then we need to add a syntax
-                        // error.
-                        PM_PARSER_ERR_FORMAT(parser, PM_TOKEN_END(parser, &parser->previous), 0, PM_ERR_ARRAY_SEPARATOR, pm_token_str(parser->current.type));
-                        parser->previous.start = parser->previous.end;
-                        parser->previous.type = 0;
-                    }
-                }
-
-                // If we have a right bracket immediately following a comma,
-                // this is allowed since it's a trailing comma. In this case we
-                // can break out of the loop.
-                if (match1(parser, PM_TOKEN_BRACKET_RIGHT)) break;
-
-                pm_node_t *element;
-
-                if (accept1(parser, PM_TOKEN_USTAR)) {
-                    pm_token_t operator = parser->previous;
-                    pm_node_t *expression = NULL;
-
-                    if (match3(parser, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_COMMA, PM_TOKEN_EOF)) {
-                        pm_parser_scope_forwarding_positionals_check(parser, &operator);
-                    } else {
-                        expression = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_ARRAY_EXPRESSION_AFTER_STAR, (uint16_t) (depth + 1));
-                    }
-
-                    element = UP(pm_splat_node_create(parser, &operator, expression));
-                } else if (match2(parser, PM_TOKEN_LABEL, PM_TOKEN_USTAR_STAR)) {
-                    if (parsed_bare_hash) {
-                        pm_parser_err_current(parser, PM_ERR_EXPRESSION_BARE_HASH);
-                    }
-
-                    element = UP(pm_keyword_hash_node_create(parser));
-                    pm_static_literals_t hash_keys = { 0 };
-
-                    if (!match8(parser, PM_TOKEN_EOF, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_KEYWORD_DO_BLOCK, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_KEYWORD_DO, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                        parse_assocs(parser, &hash_keys, element, (uint16_t) (depth + 1));
-                    }
-
-                    pm_static_literals_free(&hash_keys);
-                    parsed_bare_hash = true;
-                } else {
-                    element = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_LABEL), PM_ERR_ARRAY_EXPRESSION, (uint16_t) (depth + 1));
-
-                    if (pm_symbol_node_label_p(parser, element) || accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
-                        if (parsed_bare_hash) {
-                            pm_parser_err_previous(parser, PM_ERR_EXPRESSION_BARE_HASH);
-                        }
-
-                        pm_keyword_hash_node_t *hash = pm_keyword_hash_node_create(parser);
-                        pm_static_literals_t hash_keys = { 0 };
-                        pm_hash_key_static_literals_add(parser, &hash_keys, element);
-
-                        pm_token_t operator = { 0 };
-                        if (parser->previous.type == PM_TOKEN_EQUAL_GREATER) {
-                            operator = parser->previous;
-                        }
-
-                        pm_node_t *value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_HASH_VALUE, (uint16_t) (depth + 1));
-                        pm_node_t *assoc = UP(pm_assoc_node_create(parser, element, NTOK2PTR(operator), value));
-                        pm_keyword_hash_node_elements_append(parser->arena, hash, assoc);
-
-                        element = UP(hash);
-                        if (accept1(parser, PM_TOKEN_COMMA) && !match1(parser, PM_TOKEN_BRACKET_RIGHT)) {
-                            parse_assocs(parser, &hash_keys, element, (uint16_t) (depth + 1));
-                        }
-
-                        pm_static_literals_free(&hash_keys);
-                        parsed_bare_hash = true;
-                    }
-                }
-
-                pm_array_node_elements_append(parser->arena, array, element);
-                if (PM_NODE_TYPE_P(element, PM_ERROR_RECOVERY_NODE)) break;
-            }
-
-            accept1(parser, PM_TOKEN_NEWLINE);
-
-            if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
-                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_ARRAY_TERM, pm_token_str(parser->current.type));
-                parser->previous.start = parser->previous.end;
-                parser->previous.type = 0;
-            }
-
-            pm_array_node_close_set(parser, array, &parser->previous);
-
-            return UP(array);
-        }
+        case PM_TOKEN_BRACKET_LEFT_ARRAY:
+            return UP(parse_array(parser, flags, depth));
         case PM_TOKEN_PARENTHESIS_LEFT_GROUPING:
         case PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES:
             return parse_parentheses(parser, binding_power, flags, depth);
