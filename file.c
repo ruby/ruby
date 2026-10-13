@@ -1219,23 +1219,22 @@ rb_stat_atime(VALUE self)
  *  call-seq:
  *    mtime -> time
  *
- *  Returns a new Time object containing the modification time
- *  of the object represented by `self`
- *  at the time `self` was created;
- *  see [Snapshot](rdoc-ref:File::Stat@Snapshot):
+ *  Returns a new Time object containing
+ *  the [modification time](rdoc-ref:file/timestamps.md@Modification+Time)
+ *  of the object in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
  *  ```ruby
- *  path = 't.tmp'
- *  file = File.new(path, 'w+')
- *  stat = File.stat(path)
- *  stat.mtime        # => 2026-09-19 08:49:08.846933858 -0500
- *  file.write('foo')
- *  file.flush
- *  File.mtime(path)  # => 2026-09-19 08:50:14.381365572 -0500
- *  stat.mtime        # => 2026-09-19 08:49:08.846933858 -0500
- *  stat = File.stat(path)
- *  stat.mtime        # => 2026-09-19 08:50:14.381365572 -0500
- *  File.unlink(path) # Clean up.
+ *  filepath = '/tmp/t.tmp'
+ *  File.write(filepath, 'foo')                                    # Create file.
+ *  File.mtime(filepath) # => 2026-10-13 10:48:10.477675435 -0500  # File mtime.
+ *  stat0 = File.stat(filepath)                                    # Take snapshot.
+ *  stat0.mtime          # => 2026-10-13 10:48:10.477675435 -0500  # Snapshot mtime.
+ *  File.write(filepath, 'bar')                                    # Modify file.
+ *  File.mtime(filepath) # => 2026-10-13 10:48:37.584264035 -0500  # File mtime updated.
+ *  stat0.mtime          # => 2026-10-13 10:48:10.477675435 -0500  # Snapshot mtime not updated.
+ *  stat1 = File.stat(filepath)                                    # Take new snapshot.
+ *  stat1.mtime          # => 2026-10-13 10:48:37.584264035 -0500  # New snapshot mtime.
+ *  File.delete(filepath)                                          # Clean up.
  *  ```
  *
  */
@@ -3083,28 +3082,28 @@ rb_file_atime(VALUE obj)
  *  call-seq:
  *    File.mtime(object) -> time
  *
- *  Returns a new Time object containing the modification time for the given object,
- *  which may be a string path or an IO object;
- *  see [Modification Time](rdoc-ref:file/timestamps.md@Modification+Time):
+ *  Returns a new Time object containing
+ *  the [modification time](rdoc-ref:file/timestamps.md@Modification+Time)
+ *  of the given `object`, which may be a string path or an IO object;
  *
  *  ```ruby
- *  # Create directory; directory mtime established.
- *  dirpath = 'doc/foo'                    # => "doc/foo"
+ *  # Create directory; establishes directory mtime.
+ *  dirpath = '/tmp/dir'
  *  Dir.mkdir(dirpath)
- *  File.mtime(dirpath)                    # => 2026-09-19 09:01:30.045928322 -0500
- *  # Create file therein; file mtime established, directory mtime updated.
- *  filepath = File.join(dirpath, 't.tmp') # => "doc/foo/t.tmp"
+ *  File.mtime(dirpath)                    # => 2026-10-12 12:24:08.542476612 -0500
+ *  # Create file therein; establishes file mtime, updates directory mtime.
+ *  filepath = File.join(dirpath, 't.tmp') # => "/tmp/dir/t.tmp"
  *  File.write(filepath, 'foo')
- *  File.mtime(filepath)                   # => 2026-09-19 09:02:32.860803131 -0500
- *  File.mtime(dirpath)                    # => 2026-09-19 09:02:32.860803131 -0500
- *  # Modify file; file mtime updated, directory mtime unchanged.
+ *  File.mtime(filepath)                   # => 2026-10-12 12:28:41.261675035 -0500
+ *  File.mtime(dirpath)                    # => 2026-10-12 12:28:41.261675035 -0500
+ *  # Modify file; updates file mtime, does not update directory mtime.
  *  File.write(filepath, 'bar')
- *  File.mtime(filepath)                   # => 2026-09-19 09:03:29.875611413 -0500
- *  File.mtime(dirpath)                    # => 2026-09-19 09:02:32.860803131 -0500
- *  FileUtils.rm_rf(dirpath)               # Clean up.
- *  File.mtime($stdout)                    # => 2026-09-19 09:27:52 -0500
+ *  File.mtime(filepath)                   # => 2026-10-12 12:30:09.113910789 -0500
+ *  File.mtime(dirpath)                    # => 2026-10-12 12:28:41.261675035 -0500
+ *  FileUtils.rm_rf(dirpath) # Clean up.
+ *  File.mtime($stdout)                    # => 2026-10-12 12:31:28 -0500
  *  $stdout.flush
- *  File.mtime($stdout)                    # => 2026-09-19 09:28:08 -0500
+ *  File.mtime($stdout)                    # => 2026-10-12 12:31:36 -0500
  *  ```
  *
  */
@@ -3128,17 +3127,20 @@ rb_file_s_mtime(VALUE klass, VALUE fname)
  *  call-seq:
  *    mtime -> time
  *
- *  Returns a new Time object containing the modification time for `self`;
- *  see [Modification Time](rdoc-ref:file/timestamps.md@Modification+Time):
+ *  Returns a new Time object containing
+ *  the [modification time](rdoc-ref:file/timestamps.md@Modification+Time)
+ *  for `self`:
  *
  *  ```ruby
- *  path = 't.tmp'
- *  file = File.new(path, 'w+')
- *  file.mtime # => 2026-09-19 08:41:29.357110007 -0500
+ *  filepath = '/tmp/t.tmp'
+ *  file = File.new(filepath, 'w+')
+ *  file.mtime # => 2026-10-13 10:27:02.446070725 -0500
  *  file.write('foo')
  *  file.flush
- *  file.mtime # => 2026-09-19 08:41:46.321965574 -0500
- *  File.unlink(path)
+ *  file.mtime # => 2026-10-13 10:27:49.252424006 -0500
+ *  # Clean up.
+ *  file.close
+ *  File.delete(filepath)
  *  ```
  *
  */

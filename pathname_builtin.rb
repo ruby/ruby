@@ -1466,28 +1466,28 @@ class Pathname    # * File *
   # call-seq:
   #   mtime -> time
   #
-  # Returns a Time object containing the time of the most recent
-  # modification to the entry represented by `self`;
-  # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
+  # Returns a Time object containing
+  # the [modification time](rdoc-ref:file/timestamps.md@Modification+Time):
+  # of the entry represented by `self`;
   #
   # ```ruby
   # # A directory and its Pathname.
-  # dir_path = 'doc/foo'
-  # dir_pn = Pathname(dir_path)
-  # # Create directory; directory mtime established.
+  # dirpath = '/tmp/dir'
+  # dir_pn = Pathname(dirpath)
+  # # Create directory; establishes directory mtime.
   # dir_pn.mkdir
-  # dir_pn.mtime  # => 2026-06-28 16:38:02.675780521 -0500
+  # dir_pn.mtime                    # => 2026-10-13 10:33:38.577013286 -0500
   # # A file therein and its Pathname.
-  # file_path = dir_pn.join('t.tmp')
-  # file_pn = Pathname(file_path)
-  # # Create file; file mtime established; directory mtime updated.
-  # file_pn.write('foo')
-  # dir_pn.mtime  # => 2026-06-28 16:41:23.107750483 -0500
-  # file_pn.mtime # => 2026-06-28 16:41:23.107750483 -0500
-  # # Modify file; file mtime updated; directory mtime unchanged.
+  # filepath = dir_pn.join('t.tmp') # => #<Pathname:/tmp/dir/t.tmp>
+  # file_pn = Pathname(filepath)
+  # # Create file; establishes file mtime; updates directory mtime.
+  # ffile_pn.write('foo')
+  # dir_pn.mtime                    # => 2026-10-13 10:36:36.187307549 -0500
+  # file_pn.mtime                   # => 2026-10-13 10:36:36.187307549 -0500
+  # # Modify file; updates file mtime; does not update directory mtime.
   # file_pn.write('bar')
-  # dir_pn.mtime  # => 2026-06-28 16:41:23.107750483 -0500
-  # file_pn.mtime # => 2026-06-28 16:42:48.869163049 -0500
+  # dir_pn.mtime                    # => 2026-10-13 10:36:36.187307549 -0500
+  # file_pn.mtime                   # => 2026-10-13 10:37:53.71175227 -0500
   # # Clean up.
   # dir_pn.rmtree
   # ```
