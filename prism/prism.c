@@ -20120,6 +20120,76 @@ parse_alias(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags
     }
 }
 
+static pm_until_node_t *
+parse_until(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+    pm_token_t keyword = parser->current;
+    size_t opening_newline_index = token_newline_index(parser);
+
+    context_push(parser, PM_CONTEXT_LOOP_PREDICATE);
+    pm_do_loop_stack_push(parser, true);
+
+    parser_lex(parser);
+    pm_node_t *predicate = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_CONDITIONAL_UNTIL_PREDICATE, (uint16_t) (depth + 1));
+
+    pm_do_loop_stack_pop(parser);
+    context_pop(parser);
+
+    pm_token_t do_keyword = { 0 };
+    if (accept1(parser, PM_TOKEN_KEYWORD_DO_LOOP)) {
+        do_keyword = parser->previous;
+    } else {
+        expect2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CONDITIONAL_UNTIL_PREDICATE);
+    }
+
+    pm_statements_node_t *statements = NULL;
+    if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
+        pm_accepts_block_stack_push(parser, true);
+        statements = parse_statements(parser, PM_CONTEXT_UNTIL, (uint16_t) (depth + 1));
+        pm_accepts_block_stack_pop(parser);
+        accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
+    }
+
+    parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false, false);
+    expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_UNTIL_TERM, &keyword);
+
+    return pm_until_node_create(parser, &keyword, NTOK2PTR(do_keyword), &parser->previous, predicate, statements, 0);
+}
+
+static pm_while_node_t *
+parse_while(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+    pm_token_t keyword = parser->current;
+    size_t opening_newline_index = token_newline_index(parser);
+
+    context_push(parser, PM_CONTEXT_LOOP_PREDICATE);
+    pm_do_loop_stack_push(parser, true);
+
+    parser_lex(parser);
+    pm_node_t *predicate = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_CONDITIONAL_WHILE_PREDICATE, (uint16_t) (depth + 1));
+
+    pm_do_loop_stack_pop(parser);
+    context_pop(parser);
+
+    pm_token_t do_keyword = { 0 };
+    if (accept1(parser, PM_TOKEN_KEYWORD_DO_LOOP)) {
+        do_keyword = parser->previous;
+    } else {
+        expect2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CONDITIONAL_WHILE_PREDICATE);
+    }
+
+    pm_statements_node_t *statements = NULL;
+    if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
+        pm_accepts_block_stack_push(parser, true);
+        statements = parse_statements(parser, PM_CONTEXT_WHILE, (uint16_t) (depth + 1));
+        pm_accepts_block_stack_pop(parser);
+        accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
+    }
+
+    parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false, false);
+    expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_WHILE_TERM, &keyword);
+
+    return pm_while_node_create(parser, &keyword, NTOK2PTR(do_keyword), &parser->previous, predicate, statements, 0);
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20670,72 +20740,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD_TRUE:
             parser_lex(parser);
             return UP(pm_true_node_create(parser, &parser->previous));
-        case PM_TOKEN_KEYWORD_UNTIL: {
-            size_t opening_newline_index = token_newline_index(parser);
-
-            context_push(parser, PM_CONTEXT_LOOP_PREDICATE);
-            pm_do_loop_stack_push(parser, true);
-
-            parser_lex(parser);
-            pm_token_t keyword = parser->previous;
-            pm_node_t *predicate = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_CONDITIONAL_UNTIL_PREDICATE, (uint16_t) (depth + 1));
-
-            pm_do_loop_stack_pop(parser);
-            context_pop(parser);
-
-            pm_token_t do_keyword = { 0 };
-            if (accept1(parser, PM_TOKEN_KEYWORD_DO_LOOP)) {
-                do_keyword = parser->previous;
-            } else {
-                expect2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CONDITIONAL_UNTIL_PREDICATE);
-            }
-
-            pm_statements_node_t *statements = NULL;
-            if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
-                pm_accepts_block_stack_push(parser, true);
-                statements = parse_statements(parser, PM_CONTEXT_UNTIL, (uint16_t) (depth + 1));
-                pm_accepts_block_stack_pop(parser);
-                accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
-            }
-
-            parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false, false);
-            expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_UNTIL_TERM, &keyword);
-
-            return UP(pm_until_node_create(parser, &keyword, NTOK2PTR(do_keyword), &parser->previous, predicate, statements, 0));
-        }
-        case PM_TOKEN_KEYWORD_WHILE: {
-            size_t opening_newline_index = token_newline_index(parser);
-
-            context_push(parser, PM_CONTEXT_LOOP_PREDICATE);
-            pm_do_loop_stack_push(parser, true);
-
-            parser_lex(parser);
-            pm_token_t keyword = parser->previous;
-            pm_node_t *predicate = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_CONDITIONAL_WHILE_PREDICATE, (uint16_t) (depth + 1));
-
-            pm_do_loop_stack_pop(parser);
-            context_pop(parser);
-
-            pm_token_t do_keyword = { 0 };
-            if (accept1(parser, PM_TOKEN_KEYWORD_DO_LOOP)) {
-                do_keyword = parser->previous;
-            } else {
-                expect2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CONDITIONAL_WHILE_PREDICATE);
-            }
-
-            pm_statements_node_t *statements = NULL;
-            if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
-                pm_accepts_block_stack_push(parser, true);
-                statements = parse_statements(parser, PM_CONTEXT_WHILE, (uint16_t) (depth + 1));
-                pm_accepts_block_stack_pop(parser);
-                accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
-            }
-
-            parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false, false);
-            expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_WHILE_TERM, &keyword);
-
-            return UP(pm_while_node_create(parser, &keyword, NTOK2PTR(do_keyword), &parser->previous, predicate, statements, 0));
-        }
+        case PM_TOKEN_KEYWORD_UNTIL:
+            return UP(parse_until(parser, flags, depth));
+        case PM_TOKEN_KEYWORD_WHILE:
+            return UP(parse_while(parser, flags, depth));
         case PM_TOKEN_PERCENT_LOWER_I: {
             parser_lex(parser);
             pm_token_t opening = parser->previous;
