@@ -19888,6 +19888,107 @@ parse_for(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     return pm_for_node_create(parser, index, collection, statements, &for_keyword, &in_keyword, NTOK2PTR(do_keyword), &parser->previous);
 }
 
+static pm_lambda_node_t *
+parse_lambda(pm_parser_t *parser, uint16_t depth) {
+    int previous_lambda_enclosure_nesting = parser->lambda_enclosure_nesting;
+    parser->lambda_enclosure_nesting = parser->enclosure_nesting;
+
+    pm_token_t operator = parser->current;
+    size_t opening_newline_index = token_newline_index(parser);
+    parser_lex(parser);
+
+    pm_parser_scope_push(parser, false);
+    pm_block_parameters_node_t *block_parameters;
+
+    switch (parser->current.type) {
+        case PM_TOKEN_PARENTHESIS_LEFT: {
+            pm_token_t opening = parser->current;
+            parser_lex(parser);
+
+            if (match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
+                block_parameters = pm_block_parameters_node_create(parser, NULL, &opening);
+            } else {
+                block_parameters = parse_block_parameters(parser, false, &opening, true, true, (uint16_t) (depth + 1));
+            }
+
+            accept1(parser, PM_TOKEN_NEWLINE);
+            expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
+
+            pm_block_parameters_node_closing_set(parser, block_parameters, &parser->previous);
+            break;
+        }
+        case PM_CASE_PARAMETER: {
+            block_parameters = parse_block_parameters(parser, false, NULL, true, false, (uint16_t) (depth + 1));
+            break;
+        }
+        default: {
+            block_parameters = NULL;
+            break;
+        }
+    }
+
+    pm_token_t opening;
+    pm_node_t *body = NULL;
+
+    if (accept1(parser, PM_TOKEN_LAMBDA_BEGIN)) {
+        opening = parser->previous;
+
+        if (!match1(parser, PM_TOKEN_BRACE_RIGHT)) {
+            body = UP(parse_statements(parser, PM_CONTEXT_LAMBDA_BRACES, (uint16_t) (depth + 1)));
+        }
+
+        parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false, false);
+
+        /* Restore the enclosing lambda's nesting now that the body has been
+         * parsed, so that the token following the closing `}` is lexed in the
+         * enclosing context. During the body the nesting held this lambda's own
+         * level, which every token inside the braces sits above. This mirrors
+         * parse.y restoring `p->lex.lpar_beg` after `lambda_body`. */
+        parser->lambda_enclosure_nesting = previous_lambda_enclosure_nesting;
+        expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_LAMBDA_TERM_BRACE, &opening);
+    } else {
+        /* A `-> { }` body is delimited by `{`/`}`, whose block-accepting frame
+         * the lexer manages. A `-> do end` body is delimited by keywords, so
+         * push the frame here and pop it before `end`. The push must precede
+         * consuming the `do`, which lexes the first token of the body; this
+         * matches parse.y's CMDARG_PUSH(0) before `lambda_body`. */
+        pm_accepts_block_stack_push(parser, true);
+        expect1(parser, PM_TOKEN_KEYWORD_DO_LAMBDA, PM_ERR_LAMBDA_OPEN);
+        opening = parser->previous;
+
+        /* The lexer cleared the nesting when it produced the `do`. If it was
+         * missing entirely, clear it here so that the body is recovered the
+         * same way it would have been parsed: no token within it sits at the
+         * beginning of a lambda. */
+        parser->lambda_enclosure_nesting = -1;
+
+        if (!match3(parser, PM_TOKEN_KEYWORD_END, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
+            body = UP(parse_statements(parser, PM_CONTEXT_LAMBDA_DO_END, (uint16_t) (depth + 1)));
+        }
+
+        if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
+            assert(body == NULL || PM_NODE_TYPE_P(body, PM_STATEMENTS_NODE));
+            body = UP(parse_rescues_implicit_begin(parser, opening_newline_index, &operator, opening.start, (pm_statements_node_t *) body, PM_RESCUES_LAMBDA, (uint16_t) (depth + 1)));
+        } else {
+            parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false, false);
+        }
+
+        pm_accepts_block_stack_pop(parser);
+
+        /* As with the brace branch above, restore the nesting before consuming
+         * the closing `end`, which lexes the token that follows it. */
+        parser->lambda_enclosure_nesting = previous_lambda_enclosure_nesting;
+        expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_LAMBDA_TERM_END, &operator);
+    }
+
+    pm_constant_id_list_t locals;
+    pm_locals_order(parser, &parser->current_scope->locals, &locals, pm_parser_scope_toplevel_p(parser));
+    pm_node_t *parameters = parse_blocklike_parameters(parser, UP(block_parameters), &operator, &parser->previous);
+
+    pm_parser_scope_pop(parser);
+    return pm_lambda_node_create(parser, &locals, &operator, &opening, &parser->previous, parameters, body);
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20899,110 +21000,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
             return node;
         }
-        case PM_TOKEN_MINUS_GREATER: {
-            int previous_lambda_enclosure_nesting = parser->lambda_enclosure_nesting;
-            parser->lambda_enclosure_nesting = parser->enclosure_nesting;
-
-            size_t opening_newline_index = token_newline_index(parser);
-            parser_lex(parser);
-
-            pm_token_t operator = parser->previous;
-            pm_parser_scope_push(parser, false);
-
-            pm_block_parameters_node_t *block_parameters;
-
-            switch (parser->current.type) {
-                case PM_TOKEN_PARENTHESIS_LEFT: {
-                    pm_token_t opening = parser->current;
-                    parser_lex(parser);
-
-                    if (match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                        block_parameters = pm_block_parameters_node_create(parser, NULL, &opening);
-                    } else {
-                        block_parameters = parse_block_parameters(parser, false, &opening, true, true, (uint16_t) (depth + 1));
-                    }
-
-                    accept1(parser, PM_TOKEN_NEWLINE);
-                    expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
-
-                    pm_block_parameters_node_closing_set(parser, block_parameters, &parser->previous);
-                    break;
-                }
-                case PM_CASE_PARAMETER: {
-                    block_parameters = parse_block_parameters(parser, false, NULL, true, false, (uint16_t) (depth + 1));
-                    break;
-                }
-                default: {
-                    block_parameters = NULL;
-                    break;
-                }
-            }
-
-            pm_token_t opening;
-            pm_node_t *body = NULL;
-
-            if (accept1(parser, PM_TOKEN_LAMBDA_BEGIN)) {
-                opening = parser->previous;
-
-                if (!match1(parser, PM_TOKEN_BRACE_RIGHT)) {
-                    body = UP(parse_statements(parser, PM_CONTEXT_LAMBDA_BRACES, (uint16_t) (depth + 1)));
-                }
-
-                parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false, false);
-
-                /* Restore the enclosing lambda's nesting now that the body has
-                 * been parsed, so that the token following the closing `}` is
-                 * lexed in the enclosing context. During the body the nesting
-                 * held this lambda's own level, which every token inside the
-                 * braces sits above. This mirrors parse.y restoring
-                 * `p->lex.lpar_beg` after `lambda_body`. */
-                parser->lambda_enclosure_nesting = previous_lambda_enclosure_nesting;
-                expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_LAMBDA_TERM_BRACE, &opening);
-            } else {
-                /* A `-> { }` body is delimited by `{`/`}`, whose block-accepting
-                 * frame the lexer manages. A `-> do end` body is delimited by
-                 * keywords, so push the frame here and pop it before `end`. The
-                 * push must precede consuming the `do`, which lexes the first
-                 * token of the body; this matches parse.y's CMDARG_PUSH(0)
-                 * before `lambda_body`. */
-                pm_accepts_block_stack_push(parser, true);
-                expect1(parser, PM_TOKEN_KEYWORD_DO_LAMBDA, PM_ERR_LAMBDA_OPEN);
-                opening = parser->previous;
-
-                /* The lexer cleared the nesting when it produced the `do`. If
-                 * it was missing entirely, clear it here so that the body is
-                 * recovered the same way it would have been parsed: no token
-                 * within it sits at the beginning of a lambda. */
-                parser->lambda_enclosure_nesting = -1;
-
-                if (!match3(parser, PM_TOKEN_KEYWORD_END, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
-                    body = UP(parse_statements(parser, PM_CONTEXT_LAMBDA_DO_END, (uint16_t) (depth + 1)));
-                }
-
-                if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
-                    assert(body == NULL || PM_NODE_TYPE_P(body, PM_STATEMENTS_NODE));
-                    body = UP(parse_rescues_implicit_begin(parser, opening_newline_index, &operator, opening.start, (pm_statements_node_t *) body, PM_RESCUES_LAMBDA, (uint16_t) (depth + 1)));
-                } else {
-                    parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false, false);
-                }
-
-                pm_accepts_block_stack_pop(parser);
-
-                /* As with the brace branch above, restore the nesting before
-                 * consuming the closing `end`, which lexes the token that
-                 * follows it. */
-                parser->lambda_enclosure_nesting = previous_lambda_enclosure_nesting;
-                expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_LAMBDA_TERM_END, &operator);
-            }
-
-            pm_constant_id_list_t locals;
-            pm_locals_order(parser, &parser->current_scope->locals, &locals, pm_parser_scope_toplevel_p(parser));
-            pm_node_t *parameters = parse_blocklike_parameters(parser, UP(block_parameters), &operator, &parser->previous);
-
-            pm_parser_scope_pop(parser);
-
-            return UP(pm_lambda_node_create(parser, &locals, &operator, &opening, &parser->previous, parameters, body));
-        }
+        case PM_TOKEN_MINUS_GREATER: 
+            return UP(parse_lambda(parser, depth));
         case PM_TOKEN_UPLUS: {
             if (binding_power > PM_BINDING_POWER_UNARY) {
                 pm_parser_err_prefix(parser, PM_ERR_UNARY_DISALLOWED);
