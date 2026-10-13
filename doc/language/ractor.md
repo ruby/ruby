@@ -89,15 +89,15 @@ r.name #=> 'my-first-ractor'
 ### Block isolation
 
 The Ractor executes `expr` in the given block.
-The given block will be isolated from its outer scope. To prevent sharing objects between ractors, outer variables, `self` and other information is isolated from the block.
+The given block will be isolated from its outer scope. To prevent sharing unshareable objects between ractors, `self` and other information is isolated from the block, and the block may only read outer variables which are never reassigned and refer to shareable objects.
 
 This isolation occurs at Ractor creation time (when `Ractor.new` is called). If the given block is not able to be isolated because of outer variables or `self`, an error will be raised.
 
 ```ruby
 begin
-  a = true
+  a = []
   r = Ractor.new do
-    a #=> Ractor::IsolationError because this block accesses outer variable `a`.
+    a #=> Ractor::IsolationError because this block accesses outer variable `a`, which refers to an unshareable object.
   end
   r.join # wait for ractor to finish
 rescue Ractor::IsolationError

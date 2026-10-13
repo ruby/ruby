@@ -152,6 +152,11 @@ Note: We're only listing outstanding class updates.
 
 * Ractor
 
+    * `Ractor.new` now isolates its block the way `Ractor.shareable_proc`
+      does: the block may read outer local variables that are never reassigned
+      and refer to shareable objects, instead of raising
+      `Ractor::IsolationError` for any outer variable.  [[Feature #22444]]
+
     * `Ractor::Port#receive`, `Ractor.receive` and `Ractor.select` accept a
       `timeout:` keyword argument (in seconds) and return `nil` once it passes.
       `timeout: 0` never blocks: it takes a message if one is already queued
@@ -742,6 +747,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22309]: https://bugs.ruby-lang.org/issues/22309
 [Feature #22400]: https://bugs.ruby-lang.org/issues/22400
 [Feature #22441]: https://bugs.ruby-lang.org/issues/22441
+[Feature #22444]: https://bugs.ruby-lang.org/issues/22444
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
