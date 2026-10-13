@@ -443,11 +443,14 @@ uncommon.mk: $(srcdir)/common.mk $(common_mk_includes) $(srcdir)/win32/GNUmakefi
 	$(file >$@)$(foreach mk,$(srcdir)/common.mk $(common_mk_includes),$(file >>$@,$(subst $(newline)!,$(newline)$(sharp)!,$(subst {$$(VPATH)},,$(subst {$$(srcdir)},,$(newline)$(file <$(mk)))))))
 
 VCPKG_DEFAULT_TRIPLET ?= $(MACHINE)-windows
+VCPKG_INSTALLED ?= $(srcdir)/vcpkg_installed/$(VCPKG_DEFAULT_TRIPLET)
+
+# mklink is a cmd builtin that GNU make does not know to pass to cmd.
+mklink = cmd /c mklink "$(call win,$(1))" "$(call win,$(2))"$(newline)
 
 prepare-vcpkg::
-	for %%I in ($(call win,$(srcdir))\vcpkg_installed\$(VCPKG_DEFAULT_TRIPLET)\bin\*.dll) do @( \
-		if not %%~nI == readline mklink %%~nxI %%I \
-	)
+	@del /a:l *.dll 2> nul
+	$(foreach dll,$(filter-out %/readline.dll,$(wildcard $(VCPKG_INSTALLED)/bin/*.dll)),$(Q) $(call mklink,$(notdir $(dll)),$(dll)))
 
 RUBY_CONFIG_H = $(arch_hdrdir)/ruby/config.h
 CONFIG_H = ./.config.h.time
