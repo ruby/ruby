@@ -1960,7 +1960,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_close_after_socket_close
-    # The client closes the TCP socket without SSLSocket#stop
+    # The client closes the TCP socket without calling SSLSocket#close
     sctx = make_server_context
     if defined?(OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF)
       sctx.options |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
@@ -1976,6 +1976,29 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.close
       end
     }
+  end
+
+  def test_ssl_shutdown
+    server_can_close = Thread::Queue.new
+    server_proc = proc do |sock|
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, make_server_context).accept
+      str = ssl.gets
+      ssl.puts(str)
+      assert_predicate(ssl, :eof?)
+      server_can_close.pop
+      assert_equal(1, ssl.ssl_shutdown)
+    end
+    start_server_proc(server_proc) do |port|
+      server_connect(port) do |ssl|
+        ssl.puts("abc")
+        assert_equal(0, ssl.ssl_shutdown)
+        assert_equal("abc\n", ssl.gets)
+        assert_equal(:wait_readable, ssl.ssl_shutdown)
+        server_can_close.close
+        ssl.wait_readable
+        assert_equal(1, ssl.ssl_shutdown)
+      end
+    end
   end
 
   def test_sync_close_without_connect

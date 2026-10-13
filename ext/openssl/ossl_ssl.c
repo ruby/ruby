@@ -2147,34 +2147,59 @@ ossl_ssl_write(VALUE self, VALUE str)
 
 /*
  * call-seq:
- *    ssl.stop => nil
+ *    ssl.ssl_shutdown -> 0, 1, :wait_readable, or :wait_writable
  *
- * Sends "close notify" to the peer and tries to shut down the SSL connection
- * gracefully.
+ * Calls SSL_shutdown() once. This is a low-level method used by #close and
+ * #close_write.
+ *
+ * This method works in two steps. First, it sends a close_notify alert to the
+ * peer and returns 0 or 1 on success. A return value of 0 indicates that the
+ * alert has been sent, but not received, and a return value of 1 indicates
+ * that the alert has been sent and received.
+ *
+ * When called again, it attempts to receive a close_notify alert from the peer
+ * and returns 1 on success.
+ *
+ * This method does not block. If the underlying socket is not ready,
+ * +:wait_readable+ or +:wait_writable+ is returned. If an unrecoverable error
+ * occurs, SSLError or SystemCallError is raised.
+ *
+ * Most users should use this method only to send the alert. The peer's alert
+ * can be received by reading from the socket until it reaches EOF.
+ *
+ * See also the man page SSL_shutdown(3).
  */
 static VALUE
-ossl_ssl_stop(VALUE self)
+ossl_ssl_shutdown(VALUE self)
 {
     SSL *ssl;
-    int ret;
+    int ret, saved_errno;
 
     GetSSL(self, ssl);
     if (!ssl_started(ssl))
-        return Qnil;
-    ret = SSL_shutdown(ssl);
-    if (ret == 1) /* Have already received close_notify */
-        return Qnil;
-    if (ret == 0) /* Sent close_notify, but we don't wait for reply */
-        return Qnil;
+        rb_raise(eSSLError, "SSL session is not started yet");
 
-    /*
-     * XXX: Something happened. Possibly it failed because the underlying socket
-     * is not writable/readable, since it is in non-blocking mode. We should do
-     * some proper error handling using SSL_get_error() and maybe retry, but we
-     * can't block here. Give up for now.
-     */
-    ossl_clear_error();
-    return Qnil;
+    ssl_call_begin(self);
+    ret = SSL_shutdown(ssl);
+    saved_errno = ssl_call_end(self);
+
+    if (ret >= 0)
+        return INT2FIX(ret);
+
+    switch (SSL_get_error(ssl, ret)) {
+      case SSL_ERROR_WANT_WRITE:
+        return sym_wait_writable;
+      case SSL_ERROR_WANT_READ:
+        return sym_wait_readable;
+      case SSL_ERROR_SYSCALL:
+        if (saved_errno) {
+            ossl_clear_error();
+            rb_exc_raise(rb_syserr_new(saved_errno, "SSL_shutdown"));
+        }
+        /* fallthrough */
+      default:
+        ossl_raise(eSSLError, "SSL_shutdown");
+    }
 }
 
 /*
@@ -3075,7 +3100,7 @@ Init_ossl_ssl(void)
     rb_define_private_method(cSSLSocket, "string_new_capacity", ossl_ssl_string_new_capacity, 1);
     rb_define_private_method(cSSLSocket, "ssl_read", ossl_ssl_read, 2);
     rb_define_private_method(cSSLSocket, "ssl_write", ossl_ssl_write, 1);
-    rb_define_private_method(cSSLSocket, "stop",   ossl_ssl_stop, 0);
+    rb_define_method(cSSLSocket, "ssl_shutdown", ossl_ssl_shutdown, 0);
     rb_define_method(cSSLSocket, "cert",       ossl_ssl_get_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert",  ossl_ssl_get_peer_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert_chain", ossl_ssl_get_peer_cert_chain, 0);
