@@ -74,8 +74,6 @@ module OpenSSL::Buffering
   def fill_rbuff
     begin
       @rbuffer.append_as_bytes(self.sysread(BLOCK_SIZE))
-    rescue Errno::EAGAIN
-      retry
     rescue EOFError
       @eof = true
     end
@@ -152,11 +150,7 @@ module OpenSSL::Buffering
       end
     end
     if @rbuffer.empty?
-      begin
-        return sysread(maxlen, buf)
-      rescue Errno::EAGAIN
-        retry
-      end
+      return sysread(maxlen, buf)
     end
     ret = consume_rbuff(maxlen)
     if buf
@@ -356,17 +350,13 @@ module OpenSSL::Buffering
       nwrote = 0
       begin
         while nwrote < buffer_size do
-          begin
-            chunk = if nwrote > 0
-              @wbuffer.byteslice(nwrote, @wbuffer.bytesize)
-            else
-              @wbuffer
-            end
-
-            nwrote += syswrite(chunk)
-          rescue Errno::EAGAIN
-            retry
+          chunk = if nwrote > 0
+            @wbuffer.byteslice(nwrote, @wbuffer.bytesize)
+          else
+            @wbuffer
           end
+
+          nwrote += syswrite(chunk)
         end
       ensure
         if nwrote < @wbuffer.bytesize
