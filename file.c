@@ -884,15 +884,29 @@ rb_stat_gid(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.rdev   ->  integer or nil
+ *    rdev -> integer or nil
  *
- *  Returns an integer representing the device type on which
- *  <i>stat</i> resides. Returns +nil+ if the operating system doesn't
- *  support this feature.
+ *  Returns the integer device type of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`;
+ *  #rdev_major and #rdev_minor return the major and minor parts of the device type:
  *
- *     File.stat("/dev/fd1").rdev   #=> 513
- *     File.stat("/dev/tty").rdev   #=> 1280
+ *  ```ruby
+ *  stat = File.stat('/dev/null')   # Character-special device.
+ *  '%04x' % stat.rdev              # => "0103"
+ *  '%02x' % stat.rdev_major        # => "01"
+ *  '%02x' % stat.rdev_minor        # => "03"
+ *  stat = File.stat('/dev/loop0')  # Block-special device.
+ *  '%04x' % stat.rdev              # => "0700"
+ *  '%02x' % stat.rdev_major        # => "07"
+ *  '%02x' % stat.rdev_minor        # => "00"
+ *  ```
+ *
+ *  The device type is non-zero only a character-special or block-special device.
+ *
+ *  Returns `nil` on Windows.
  */
 
 static VALUE
@@ -914,13 +928,12 @@ rb_stat_rdev(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.rdev_major   -> integer
+ *    rdev_major -> integer
  *
- *  Returns the major part of File::Stat#rdev or +nil+.
- *
- *     File.stat("/dev/fd1").rdev_major   #=> 2
- *     File.stat("/dev/tty").rdev_major   #=> 5
+ *  See #rdev.
  */
 
 static VALUE
@@ -936,13 +949,12 @@ rb_stat_rdev_major(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.rdev_minor   -> integer
+ *    rdev_minor -> integer
  *
- *  Returns the minor part of File::Stat#rdev or +nil+.
- *
- *     File.stat("/dev/fd1").rdev_minor   #=> 1
- *     File.stat("/dev/tty").rdev_minor   #=> 0
+ *  See #rdev.
  */
 
 static VALUE
