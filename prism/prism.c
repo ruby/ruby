@@ -20447,6 +20447,68 @@ parse_interpolated_string_array(pm_parser_t *parser, uint16_t depth) {
     return array;
 }
 
+static pm_node_t *
+parse_jump(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+    parser_lex(parser);
+
+    pm_token_t keyword = parser->previous;
+    pm_arguments_t arguments = { 0 };
+
+    if (token_begins_expression_p(parser->current.type) || match2(parser, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR)) {
+        pm_binding_power_t binding_power = pm_binding_powers[parser->current.type].left;
+
+        if (binding_power == PM_BINDING_POWER_UNSET || binding_power >= PM_BINDING_POWER_RANGE) {
+            pm_token_t next = parser->current;
+            parse_arguments(parser, &arguments, false, PM_TOKEN_EOF, flags, (uint16_t) (depth + 1));
+
+            // Reject `foo && return bar`.
+            if (!(flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && arguments.arguments != NULL) {
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &next, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(next.type));
+            }
+
+            // Reject a trailing comma, e.g. `return a,`. The arguments
+            // parser silently accepts a trailing comma only when it is
+            // immediately followed by the EOF terminator; in every other
+            // case (e.g. `return a,;`) it reports the dangling comma
+            // itself. We reject the accepted case here to stay in line
+            // with the command call argument parsing above.
+            if (parser->previous.type == PM_TOKEN_COMMA && match1(parser, PM_TOKEN_EOF)) {
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, PM_ERR_EXPECT_ARGUMENT, pm_token_str(parser->current.type));
+            }
+        }
+
+        // It's possible that we've parsed a block argument through our
+        // call to parse_arguments. If we found one, we should mark it
+        // as invalid and destroy it, as we don't have a place for it.
+        if (arguments.block != NULL) {
+            pm_parser_err_node(parser, arguments.block, PM_ERR_UNEXPECTED_BLOCK_ARGUMENT);
+            pm_node_unreference(parser, arguments.block);
+            arguments.block = NULL;
+        }
+    }
+
+    switch (keyword.type) {
+        case PM_TOKEN_KEYWORD_BREAK: {
+            pm_node_t *node = UP(pm_break_node_create(parser, &keyword, arguments.arguments));
+            if (!parser->partial_script) parse_block_exit(parser, node);
+            return node;
+        }
+        case PM_TOKEN_KEYWORD_NEXT: {
+            pm_node_t *node = UP(pm_next_node_create(parser, &keyword, arguments.arguments));
+            if (!parser->partial_script) parse_block_exit(parser, node);
+            return node;
+        }
+        case PM_TOKEN_KEYWORD_RETURN: {
+            pm_node_t *node = UP(pm_return_node_create(parser, &keyword, arguments.arguments));
+            parse_return(parser, node);
+            return node;
+        }
+        default:
+            assert(false && "unreachable");
+            return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous)));
+    }
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20675,69 +20737,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         }
         case PM_TOKEN_KEYWORD_BREAK:
         case PM_TOKEN_KEYWORD_NEXT:
-        case PM_TOKEN_KEYWORD_RETURN: {
-            parser_lex(parser);
-
-            pm_token_t keyword = parser->previous;
-            pm_arguments_t arguments = { 0 };
-
-            if (
-                token_begins_expression_p(parser->current.type) ||
-                match2(parser, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR)
-            ) {
-                pm_binding_power_t binding_power = pm_binding_powers[parser->current.type].left;
-
-                if (binding_power == PM_BINDING_POWER_UNSET || binding_power >= PM_BINDING_POWER_RANGE) {
-                    pm_token_t next = parser->current;
-                    parse_arguments(parser, &arguments, false, PM_TOKEN_EOF, flags, (uint16_t) (depth + 1));
-
-                    // Reject `foo && return bar`.
-                    if (!(flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && arguments.arguments != NULL) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &next, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(next.type));
-                    }
-
-                    // Reject a trailing comma, e.g. `return a,`. The arguments
-                    // parser silently accepts a trailing comma only when it is
-                    // immediately followed by the EOF terminator; in every other
-                    // case (e.g. `return a,;`) it reports the dangling comma
-                    // itself. We reject the accepted case here to stay in line
-                    // with the command call argument parsing above.
-                    if (parser->previous.type == PM_TOKEN_COMMA && match1(parser, PM_TOKEN_EOF)) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, PM_ERR_EXPECT_ARGUMENT, pm_token_str(parser->current.type));
-                    }
-                }
-
-                // It's possible that we've parsed a block argument through our
-                // call to parse_arguments. If we found one, we should mark it
-                // as invalid and destroy it, as we don't have a place for it.
-                if (arguments.block != NULL) {
-                    pm_parser_err_node(parser, arguments.block, PM_ERR_UNEXPECTED_BLOCK_ARGUMENT);
-                    pm_node_unreference(parser, arguments.block);
-                    arguments.block = NULL;
-                }
-            }
-
-            switch (keyword.type) {
-                case PM_TOKEN_KEYWORD_BREAK: {
-                    pm_node_t *node = UP(pm_break_node_create(parser, &keyword, arguments.arguments));
-                    if (!parser->partial_script) parse_block_exit(parser, node);
-                    return node;
-                }
-                case PM_TOKEN_KEYWORD_NEXT: {
-                    pm_node_t *node = UP(pm_next_node_create(parser, &keyword, arguments.arguments));
-                    if (!parser->partial_script) parse_block_exit(parser, node);
-                    return node;
-                }
-                case PM_TOKEN_KEYWORD_RETURN: {
-                    pm_node_t *node = UP(pm_return_node_create(parser, &keyword, arguments.arguments));
-                    parse_return(parser, node);
-                    return node;
-                }
-                default:
-                    assert(false && "unreachable");
-                    return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous)));
-            }
-        }
+        case PM_TOKEN_KEYWORD_RETURN:
+            return parse_jump(parser, flags, depth);
         case PM_TOKEN_KEYWORD_SUPER: {
             parser_lex(parser);
 
