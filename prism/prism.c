@@ -20730,6 +20730,18 @@ parse_unary_plus(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
     return pm_call_node_unary_create(parser, &operator, receiver, "+@");
 }
 
+static pm_call_node_t *
+parse_unary_minus(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth)  {
+    if (binding_power > PM_BINDING_POWER_UNARY) {
+        pm_parser_err_prefix(parser, PM_ERR_UNARY_DISALLOWED);
+    }
+    parser_lex(parser);
+
+    pm_token_t operator = parser->previous;
+    pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
+    return pm_call_node_unary_create(parser, &operator, receiver, "-@");
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -21026,18 +21038,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
             return UP(node);
         }
-        case PM_TOKEN_UMINUS: {
-            if (binding_power > PM_BINDING_POWER_UNARY) {
-                pm_parser_err_prefix(parser, PM_ERR_UNARY_DISALLOWED);
-            }
-            parser_lex(parser);
-
-            pm_token_t operator = parser->previous;
-            pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
-            pm_call_node_t *node = pm_call_node_unary_create(parser, &operator, receiver, "-@");
-
-            return UP(node);
-        }
+        case PM_TOKEN_UMINUS:
+            return UP(parse_unary_minus(parser, binding_power, flags, depth));
         case PM_TOKEN_UMINUS_NUM: {
             parser_lex(parser);
 
