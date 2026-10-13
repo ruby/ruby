@@ -4145,12 +4145,16 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
         }
     }
 
-    // Next, handle underscores by removing them from the buffer.
-    for (size_t index = 0; index < length; index++) {
-        if (buffer[index] == '_') {
-            memmove((void *) (buffer + index), (void *) (buffer + index + 1), length - index);
-            length--;
+    /*
+     * Next, handle underscores by removing them from the buffer in a single
+     * pass to avoid quadratic-time copies.
+     */
+    {
+        size_t write = 0;
+        for (size_t read = 0; read < length; read++) {
+            if (buffer[read] != '_') buffer[write++] = buffer[read];
         }
+        length = write;
     }
 
     // Null-terminate the buffer so that strtod cannot read off the end.
