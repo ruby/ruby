@@ -34,7 +34,7 @@
 # include <sys/types.h>         /* ssize_t */
 #endif
 
-#if RBIMPL_COMPILER_IS(MSVC)
+#if defined(_MSC_VER)
 # pragma intrinsic(_InterlockedOr)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
 # include <atomic.h>
@@ -790,7 +790,7 @@ rbimpl_atomic_or(volatile rb_atomic_t *ptr, rb_atomic_t val, int memory_order)
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     __sync_or_and_fetch(ptr, val);
 
-#elif RBIMPL_COMPILER_IS(MSVC)
+#elif defined(_MSC_VER)
     _InterlockedOr(ptr, val);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
@@ -1012,7 +1012,7 @@ rbimpl_atomic_cas(volatile rb_atomic_t *ptr, rb_atomic_t oldval, rb_atomic_t new
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     return __sync_val_compare_and_swap(ptr, oldval, newval);
 
-#elif RBIMPL_COMPILER_IS(MSVC)
+#elif defined(_MSC_VER)
     return InterlockedCompareExchange(ptr, newval, oldval);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
