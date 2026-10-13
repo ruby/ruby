@@ -20509,6 +20509,55 @@ parse_jump(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     }
 }
 
+static pm_node_t *
+parse_not(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
+    pm_token_t message = parser->current;
+    parser_lex(parser);
+
+    pm_arguments_t arguments = { 0 };
+    pm_node_t *receiver = NULL;
+
+    /* The `not` keyword without parentheses is only valid in contexts where it
+     * would be parsed as an expression (i.e., at or below the `not` binding
+     * power level). In other contexts (e.g., method arguments, array elements,
+     * assignment right-hand sides), parentheses are required: `not(x)`. An
+     * exception is made for endless def bodies, where `not` is valid as both
+     * `arg` and `command` (e.g., `def f = not 1`, `def f = not foo bar`). */
+    if (binding_power > PM_BINDING_POWER_NOT && !(flags & PM_PARSE_IN_ENDLESS_DEF) && !match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
+        if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES)) {
+            pm_parser_err(parser, PM_TOKEN_END(parser, &parser->previous), 1, PM_ERR_EXPECT_LPAREN_AFTER_NOT_LPAREN);
+        } else {
+            accept1(parser, PM_TOKEN_NEWLINE);
+            pm_parser_err_current(parser, PM_ERR_EXPECT_LPAREN_AFTER_NOT_OTHER);
+        }
+
+        return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
+    }
+
+    accept1(parser, PM_TOKEN_NEWLINE);
+
+    if (accept2(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
+        pm_token_t lparen = parser->previous;
+
+        if (accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
+            receiver = UP(pm_parentheses_node_create(parser, &lparen, NULL, &parser->previous, 0));
+        } else {
+            arguments.opening_loc = TOK2LOC(parser, &lparen);
+            receiver = parse_expression(parser, PM_BINDING_POWER_COMPOSITION, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
+
+            if (!parser->recovering) {
+                accept1(parser, PM_TOKEN_NEWLINE);
+                expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
+                arguments.closing_loc = TOK2LOC(parser, &parser->previous);
+            }
+        }
+    } else {
+        receiver = parse_expression(parser, PM_BINDING_POWER_NOT, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
+    }
+
+    return UP(pm_call_node_not_create(parser, receiver, &message, &arguments));
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20846,54 +20895,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
             return UP(undef);
         }
-        case PM_TOKEN_KEYWORD_NOT: {
-            parser_lex(parser);
-
-            pm_token_t message = parser->previous;
-            pm_arguments_t arguments = { 0 };
-            pm_node_t *receiver = NULL;
-
-            // The `not` keyword without parentheses is only valid in contexts
-            // where it would be parsed as an expression (i.e., at or below
-            // the `not` binding power level). In other contexts (e.g., method
-            // arguments, array elements, assignment right-hand sides),
-            // parentheses are required: `not(x)`. An exception is made for
-            // endless def bodies, where `not` is valid as both `arg` and
-            // `command` (e.g., `def f = not 1`, `def f = not foo bar`).
-            if (binding_power > PM_BINDING_POWER_NOT && !(flags & PM_PARSE_IN_ENDLESS_DEF) && !match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
-                if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES)) {
-                    pm_parser_err(parser, PM_TOKEN_END(parser, &parser->previous), 1, PM_ERR_EXPECT_LPAREN_AFTER_NOT_LPAREN);
-                } else {
-                    accept1(parser, PM_TOKEN_NEWLINE);
-                    pm_parser_err_current(parser, PM_ERR_EXPECT_LPAREN_AFTER_NOT_OTHER);
-                }
-
-                return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
-            }
-
-            accept1(parser, PM_TOKEN_NEWLINE);
-
-            if (accept2(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
-                pm_token_t lparen = parser->previous;
-
-                if (accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                    receiver = UP(pm_parentheses_node_create(parser, &lparen, NULL, &parser->previous, 0));
-                } else {
-                    arguments.opening_loc = TOK2LOC(parser, &lparen);
-                    receiver = parse_expression(parser, PM_BINDING_POWER_COMPOSITION, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
-
-                    if (!parser->recovering) {
-                        accept1(parser, PM_TOKEN_NEWLINE);
-                        expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
-                        arguments.closing_loc = TOK2LOC(parser, &parser->previous);
-                    }
-                }
-            } else {
-                receiver = parse_expression(parser, PM_BINDING_POWER_NOT, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
-            }
-
-            return UP(pm_call_node_not_create(parser, receiver, &message, &arguments));
-        }
+        case PM_TOKEN_KEYWORD_NOT:
+            return parse_not(parser, binding_power, flags, depth);
         case PM_TOKEN_KEYWORD_UNLESS: {
             size_t opening_newline_index = token_newline_index(parser);
             parser_lex(parser);
