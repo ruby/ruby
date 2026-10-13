@@ -35,7 +35,7 @@ end
 
 # :nodoc:
 def setup(options = "", *long_options)
-  caller = caller_locations(1, 1)[0].label
+  caller = caller_locations(1, 1)[0].base_label
   opt_hash = {}
   argv = []
   OptionParser.new do |o|
