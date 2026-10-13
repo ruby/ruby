@@ -15687,7 +15687,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
  * error to the parser.
  */
 static void
-parse_return(pm_parser_t *parser, pm_node_t *node) {
+ensure_valid_return(pm_parser_t *parser, pm_node_t *node) {
     bool in_sclass = false;
     for (pm_context_node_t *context_node = parser->current_context; context_node != NULL; context_node = context_node->prev) {
         switch (context_node->context) {
@@ -15773,7 +15773,7 @@ parse_return(pm_parser_t *parser, pm_node_t *node) {
  * context. If it isn't, add an error to the parser.
  */
 static void
-parse_block_exit(pm_parser_t *parser, pm_node_t *node) {
+ensure_valid_jump(pm_parser_t *parser, pm_node_t *node) {
     for (pm_context_node_t *context_node = parser->current_context; context_node != NULL; context_node = context_node->prev) {
         switch (context_node->context) {
             case PM_CONTEXT_BLOCK_BRACES:
@@ -18001,7 +18001,7 @@ pm_parser_err_prefix(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
  * Ensures that the current retry token is valid in the current context.
  */
 static void
-parse_retry(pm_parser_t *parser, const pm_node_t *node) {
+ensure_valid_retry(pm_parser_t *parser, const pm_node_t *node) {
 #define CONTEXT_NONE 0
 #define CONTEXT_THROUGH_ENSURE 1
 #define CONTEXT_THROUGH_ELSE 2
@@ -20491,17 +20491,17 @@ parse_jump(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     switch (keyword.type) {
         case PM_TOKEN_KEYWORD_BREAK: {
             pm_node_t *node = UP(pm_break_node_create(parser, &keyword, arguments.arguments));
-            if (!parser->partial_script) parse_block_exit(parser, node);
+            if (!parser->partial_script) ensure_valid_jump(parser, node);
             return node;
         }
         case PM_TOKEN_KEYWORD_NEXT: {
             pm_node_t *node = UP(pm_next_node_create(parser, &keyword, arguments.arguments));
-            if (!parser->partial_script) parse_block_exit(parser, node);
+            if (!parser->partial_script) ensure_valid_jump(parser, node);
             return node;
         }
         case PM_TOKEN_KEYWORD_RETURN: {
             pm_node_t *node = UP(pm_return_node_create(parser, &keyword, arguments.arguments));
-            parse_return(parser, node);
+            ensure_valid_return(parser, node);
             return node;
         }
         default:
@@ -20998,7 +20998,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             parser_lex(parser);
 
             pm_node_t *node = UP(pm_redo_node_create(parser, &parser->previous));
-            if (!parser->partial_script) parse_block_exit(parser, node);
+            if (!parser->partial_script) ensure_valid_jump(parser, node);
 
             return node;
         }
@@ -21006,7 +21006,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             parser_lex(parser);
 
             pm_node_t *node = UP(pm_retry_node_create(parser, &parser->previous));
-            parse_retry(parser, node);
+            ensure_valid_retry(parser, node);
 
             return node;
         }
