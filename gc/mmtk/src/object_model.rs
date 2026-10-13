@@ -53,7 +53,7 @@ impl ObjectModel<Ruby> for VMObjectModel {
         let from_start = from_acc.obj_start();
         let object_size = from_acc.object_size();
 
-        let optimal_payload = (crate::binding().upcalls().obj_optimal_size)(from);
+        let optimal_payload = crate::upcalls::obj_optimal_size(from);
         let new_size = if optimal_payload != 0 {
             let size = (RubyObjectAccess::prefix_size()
                 + optimal_payload
@@ -93,7 +93,7 @@ impl ObjectModel<Ruby> for VMObjectModel {
             }
         }
 
-        (crate::binding().upcalls().move_obj_during_marking)(from, to_obj);
+        crate::upcalls::move_obj_during_marking(from, to_obj);
 
         copy_context.post_copy(to_obj, new_size, semantics);
         trace!("Copied object from {} to {}", from, to_obj);

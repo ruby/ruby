@@ -114,21 +114,31 @@ RB_THREAD_LOCAL_SPECIFIER VALUE marking_parent_object;
 #define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
 #define MMTK_ALLOCATION_SEMANTICS_LOS 2
 
+/* Functions called from the Rust binding (upcalls).  They are not static so
+ * that the linker can resolve them from libmmtk_ruby.a, but they are hidden
+ * so that calls do not go through the PLT and so that LTO can inline them
+ * into their Rust callers. */
+#ifdef __GNUC__
+# define RB_MMTK_UPCALL __attribute__((visibility("hidden")))
+#else
+# define RB_MMTK_UPCALL
+#endif
+
 static inline VALUE rb_mmtk_call_object_closure(VALUE obj, bool pin);
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_init_gc_worker_thread(MMTk_VMWorkerThread gc_thread_tls)
 {
     rb_mmtk_gc_thread_tls = gc_thread_tls;
 }
 
-static bool
+RB_MMTK_UPCALL bool
 rb_mmtk_is_mutator(void)
 {
     return ruby_native_thread_p();
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_stop_the_world(void)
 {
     struct objspace *objspace = rb_gc_get_objspace();
@@ -147,7 +157,7 @@ rb_mmtk_stop_the_world(void)
     }
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_resume_mutators(bool current_gc_may_move)
 {
     struct objspace *objspace = rb_gc_get_objspace();
@@ -169,7 +179,7 @@ rb_mmtk_resume_mutators(bool current_gc_may_move)
 
 static void mmtk_flush_obj_free_buffer(struct MMTk_ractor_cache *cache);
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
 {
     struct objspace *objspace = rb_gc_get_objspace();
@@ -233,26 +243,26 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
     RB_GC_VM_UNLOCK(lock_lev);
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_before_updating_jit_code(void)
 {
     rb_gc_before_updating_jit_code();
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_after_updating_jit_code(void)
 {
     rb_gc_after_updating_jit_code();
 }
 
-static size_t
+RB_MMTK_UPCALL size_t
 rb_mmtk_number_of_mutators(void)
 {
     struct objspace *objspace = rb_gc_get_objspace();
     return objspace->live_ractor_cache_count;
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_get_mutators(void (*visit_mutator)(MMTk_Mutator *mutator, void *data), void *data)
 {
     struct objspace *objspace = rb_gc_get_objspace();
@@ -263,7 +273,7 @@ rb_mmtk_get_mutators(void (*visit_mutator)(MMTk_Mutator *mutator, void *data), v
     }
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_scan_gc_roots(void)
 {
     struct objspace *objspace = rb_gc_get_objspace();
@@ -279,7 +289,7 @@ pin_value(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_scan_objspace(void)
 {
     struct objspace *objspace = rb_gc_get_objspace();
@@ -304,7 +314,7 @@ rb_mmtk_scan_objspace(void)
     }
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_move_obj_during_marking(MMTk_ObjectReference from, MMTk_ObjectReference to)
 {
     rb_gc_move_obj_during_marking((VALUE)from, (VALUE)to);
@@ -320,13 +330,13 @@ rb_mmtk_move_obj_during_marking(MMTk_ObjectReference from, MMTk_ObjectReference 
     }
 }
 
-static size_t
+RB_MMTK_UPCALL size_t
 rb_mmtk_obj_optimal_size(MMTk_ObjectReference obj)
 {
     return rb_gc_obj_optimal_size((VALUE)obj);
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_update_object_references(MMTk_ObjectReference mmtk_object)
 {
     VALUE object = (VALUE)mmtk_object;
@@ -338,7 +348,7 @@ rb_mmtk_update_object_references(MMTk_ObjectReference mmtk_object)
     }
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_call_gc_mark_children(MMTk_ObjectReference object)
 {
     marking_parent_object = (VALUE)object;
@@ -346,7 +356,7 @@ rb_mmtk_call_gc_mark_children(MMTk_ObjectReference object)
     marking_parent_object = 0;
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_handle_weak_references(MMTk_ObjectReference mmtk_object, bool moving)
 {
     VALUE object = (VALUE)mmtk_object;
@@ -362,7 +372,7 @@ rb_mmtk_handle_weak_references(MMTk_ObjectReference mmtk_object, bool moving)
     marking_parent_object = 0;
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_call_obj_free(MMTk_ObjectReference object)
 {
     VALUE obj = (VALUE)object;
@@ -383,7 +393,7 @@ rb_mmtk_call_obj_free(MMTk_ObjectReference object)
 #endif
 }
 
-static size_t
+RB_MMTK_UPCALL size_t
 rb_mmtk_vm_live_bytes(void)
 {
     return 0;
@@ -438,7 +448,7 @@ rb_mmtk_update_finalizer_table_replace_i(st_data_t *key, st_data_t *value, st_da
     return ST_CONTINUE;
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_update_finalizer_table(void)
 {
     struct objspace *objspace = rb_gc_get_objspace();
@@ -451,7 +461,7 @@ rb_mmtk_update_finalizer_table(void)
     );
 }
 
-static int
+RB_MMTK_UPCALL int
 rb_mmtk_global_tables_count(void)
 {
     return RB_GC_VM_WEAK_TABLE_COUNT;
@@ -483,7 +493,7 @@ rb_mmtk_update_global_tables_replace_i(VALUE *ptr, void *data)
     return ST_CONTINUE;
 }
 
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_update_global_tables(int table, bool moving)
 {
     MMTK_ASSERT(table < RB_GC_VM_WEAK_TABLE_COUNT);
@@ -495,14 +505,6 @@ rb_mmtk_update_global_tables(int table, bool moving)
         !moving,
         (enum rb_gc_vm_weak_tables)table
     );
-}
-
-static bool
-rb_mmtk_special_const_p(MMTk_ObjectReference object)
-{
-    VALUE obj = (VALUE)object;
-
-    return RB_SPECIAL_CONST_P(obj);
 }
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
@@ -532,46 +534,20 @@ rb_mmtk_gc_thread_bug(const char *msg, ...)
 }
 
 RBIMPL_ATTR_NORETURN()
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_gc_thread_panic_handler(void)
 {
     rb_mmtk_gc_thread_bug("MMTk GC thread panicked");
 }
 
 RBIMPL_ATTR_NORETURN()
-static void
+RB_MMTK_UPCALL void
 rb_mmtk_mutator_thread_panic_handler(void)
 {
     rb_bug("Ruby mutator thread panicked");
 }
 
 // Bootup
-MMTk_RubyUpcalls ruby_upcalls = {
-    rb_mmtk_init_gc_worker_thread,
-    rb_mmtk_is_mutator,
-    rb_mmtk_stop_the_world,
-    rb_mmtk_resume_mutators,
-    rb_mmtk_block_for_gc,
-    rb_mmtk_before_updating_jit_code,
-    rb_mmtk_after_updating_jit_code,
-    rb_mmtk_number_of_mutators,
-    rb_mmtk_get_mutators,
-    rb_mmtk_scan_gc_roots,
-    rb_mmtk_scan_objspace,
-    rb_mmtk_move_obj_during_marking,
-    rb_mmtk_obj_optimal_size,
-    rb_mmtk_update_object_references,
-    rb_mmtk_call_gc_mark_children,
-    rb_mmtk_handle_weak_references,
-    rb_mmtk_call_obj_free,
-    rb_mmtk_vm_live_bytes,
-    rb_mmtk_update_global_tables,
-    rb_mmtk_global_tables_count,
-    rb_mmtk_update_finalizer_table,
-    rb_mmtk_special_const_p,
-    rb_mmtk_mutator_thread_panic_handler,
-    rb_mmtk_gc_thread_panic_handler,
-};
 
 // Use max 80% of the available memory by default for MMTk
 #define RB_MMTK_HEAP_LIMIT_PERC 80
@@ -603,7 +579,7 @@ rb_gc_impl_objspace_alloc(void)
         MMTk_RubyBindingOptions binding_options = {
             .suffix_size = 0,
         };
-        mmtk_init_binding(builder, &binding_options, &ruby_upcalls);
+        mmtk_init_binding(builder, &binding_options);
         the_objspace = calloc(1, sizeof(struct objspace));
     }
 
