@@ -4151,6 +4151,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
 
     unsigned long val;
     int ov;
+    ssize_t scan_len;
 
     const char *digits_start, *digits_end;
     size_t num_digits = 0;
@@ -4272,7 +4273,11 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     }
 
     if (ndigits) *ndigits = num_digits;
-    val = ruby_scan_digits(str, len, base, &num_digits, &ov);
+    /* more digits than the bits of val always overflow */
+    scan_len = len;
+    if (len < 0 || len > (ssize_t)(sizeof(val) * CHAR_BIT))
+        scan_len = (ssize_t)(sizeof(val) * CHAR_BIT) + 1;
+    val = ruby_scan_digits(str, scan_len, base, &num_digits, &ov);
     if (!ov) {
         const char *end = &str[num_digits];
         if (num_digits > 0 && *end == '_' && (flags & RB_INT_PARSE_UNDERSCORE))
