@@ -20718,7 +20718,7 @@ parse_constant(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t fl
 }
 
 static pm_node_t *
-parse_constant_path(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t depth) {
+parse_constant_path_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t depth) {
     pm_token_t delimiter = parser->current;
     parser_lex(parser);
 
@@ -20881,7 +20881,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_CONSTANT:
             return parse_constant(parser, binding_power, flags, depth);
         case PM_TOKEN_UCOLON_COLON:
-            return parse_constant_path(parser, binding_power, depth);
+            return parse_constant_path_prefix(parser, binding_power, depth);
         case PM_TOKEN_UDOT_DOT:
         case PM_TOKEN_UDOT_DOT_DOT:
             return UP(parse_range(parser, flags, depth));
@@ -21692,6 +21692,68 @@ parse_ternary(pm_parser_t *parser, pm_node_t *node, uint8_t flags, uint16_t dept
     return pm_if_node_ternary_create(parser, node, &qmark, true_expression, &colon, false_expression);
 }
 
+static pm_node_t *
+parse_constant_path_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_binding_power, uint8_t flags, uint16_t depth) {
+    pm_token_t delimiter = parser->current;
+    parser_lex(parser);
+
+    switch (parser->current.type) {
+        case PM_TOKEN_CONSTANT: {
+            parser_lex(parser);
+            pm_node_t *path;
+
+            if (
+                (parser->current.type == PM_TOKEN_PARENTHESIS_LEFT) ||
+                ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR)))
+            ) {
+                /* If we have a constant immediately following a '::' operator,
+                 * then this can either be a constant path or a method call,
+                 * depending on what follows the constant.
+                 *
+                 * If we have parentheses, then this is a method call. That
+                 * would look like Foo::Bar(). */
+                pm_token_t message = parser->previous;
+                pm_arguments_t arguments = { 0 };
+
+                parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
+                path = UP(pm_call_node_call_create(parser, node, &delimiter, &message, &arguments));
+            } else {
+                /* Otherwise, this is a constant path. That would look like
+                 * Foo::Bar. */
+                path = UP(pm_constant_path_node_create(parser, node, &delimiter, &parser->previous));
+            }
+
+            return parse_multi_target(parser, path, previous_binding_power, depth);
+        }
+        case PM_CASE_OPERATOR:
+        case PM_CASE_KEYWORD:
+        case PM_TOKEN_IDENTIFIER:
+        case PM_TOKEN_METHOD_NAME: {
+            parser_lex(parser);
+            pm_token_t message = parser->previous;
+
+            /* If we have an identifier following a '::' operator, then it is
+             * for sure a method call. */
+            pm_arguments_t arguments = { 0 };
+            parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
+
+            pm_call_node_t *call = pm_call_node_call_create(parser, node, &delimiter, &message, &arguments);
+            return parse_multi_target(parser, UP(call), previous_binding_power, depth);
+        }
+        case PM_TOKEN_PARENTHESIS_LEFT: {
+            /* If we have a parenthesis following a '::' operator, then it is the
+             * method call shorthand. That would look like Foo::(bar). */
+            pm_arguments_t arguments = { 0 };
+            parse_arguments_list(parser, &arguments, true, false, (uint16_t) (depth + 1));
+
+            return UP(pm_call_node_shorthand_create(parser, node, &delimiter, &arguments));
+        }
+        default:
+            expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
+            return UP(pm_constant_path_node_create(parser, node, &delimiter, &parser->previous));
+    }
+}
+
 static PRISM_INLINE pm_node_t *
 parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t token = parser->current;
@@ -22418,76 +22480,8 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
         }
         case PM_TOKEN_QUESTION_MARK:
             return UP(parse_ternary(parser, node, flags, depth));
-        case PM_TOKEN_COLON_COLON: {
-            parser_lex(parser);
-            pm_token_t delimiter = parser->previous;
-
-            switch (parser->current.type) {
-                case PM_TOKEN_CONSTANT: {
-                    parser_lex(parser);
-                    pm_node_t *path;
-
-                    if (
-                        (parser->current.type == PM_TOKEN_PARENTHESIS_LEFT) ||
-                        ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR)))
-                    ) {
-                        // If we have a constant immediately following a '::' operator, then
-                        // this can either be a constant path or a method call, depending on
-                        // what follows the constant.
-                        //
-                        // If we have parentheses, then this is a method call. That would
-                        // look like Foo::Bar().
-                        pm_token_t message = parser->previous;
-                        pm_arguments_t arguments = { 0 };
-
-                        parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
-                        path = UP(pm_call_node_call_create(parser, node, &delimiter, &message, &arguments));
-                    } else {
-                        // Otherwise, this is a constant path. That would look like Foo::Bar.
-                        path = UP(pm_constant_path_node_create(parser, node, &delimiter, &parser->previous));
-                    }
-
-                    // If this is followed by a comma then it is a multiple assignment.
-                    if (previous_binding_power == PM_BINDING_POWER_STATEMENT && match1(parser, PM_TOKEN_COMMA)) {
-                        return parse_targets_validate(parser, path, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-                    }
-
-                    return path;
-                }
-                case PM_CASE_OPERATOR:
-                case PM_CASE_KEYWORD:
-                case PM_TOKEN_IDENTIFIER:
-                case PM_TOKEN_METHOD_NAME: {
-                    parser_lex(parser);
-                    pm_token_t message = parser->previous;
-
-                    // If we have an identifier following a '::' operator, then it is for
-                    // sure a method call.
-                    pm_arguments_t arguments = { 0 };
-                    parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
-                    pm_call_node_t *call = pm_call_node_call_create(parser, node, &delimiter, &message, &arguments);
-
-                    // If this is followed by a comma then it is a multiple assignment.
-                    if (previous_binding_power == PM_BINDING_POWER_STATEMENT && match1(parser, PM_TOKEN_COMMA)) {
-                        return parse_targets_validate(parser, UP(call), PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-                    }
-
-                    return UP(call);
-                }
-                case PM_TOKEN_PARENTHESIS_LEFT: {
-                    // If we have a parenthesis following a '::' operator, then it is the
-                    // method call shorthand. That would look like Foo::(bar).
-                    pm_arguments_t arguments = { 0 };
-                    parse_arguments_list(parser, &arguments, true, false, (uint16_t) (depth + 1));
-
-                    return UP(pm_call_node_shorthand_create(parser, node, &delimiter, &arguments));
-                }
-                default: {
-                    expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
-                    return UP(pm_constant_path_node_create(parser, node, &delimiter, &parser->previous));
-                }
-            }
-        }
+        case PM_TOKEN_COLON_COLON:
+            return parse_constant_path_infix(parser, node, previous_binding_power, flags, depth);
         case PM_TOKEN_KEYWORD_RESCUE_MODIFIER: {
             context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
             parser_lex(parser);
