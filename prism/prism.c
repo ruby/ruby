@@ -19957,6 +19957,16 @@ parse_xstring(pm_parser_t *parser, uint16_t depth) {
 }
 
 static pm_node_t *
+parse_multi_target(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_power, uint16_t depth) {
+    if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
+        /* If we get here, then we have a comma immediately following something
+         * that could have been a target in a multiple assignment. */
+        node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
+    }
+    return node;
+}
+
+static pm_node_t *
 parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t identifier = parser->current;
     parser_lex(parser);
@@ -20025,11 +20035,7 @@ parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
         }
     }
 
-    if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
-        node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-    }
-
-    return node;
+    return parse_multi_target(parser, node, binding_power, depth);
 }
 
 static pm_array_node_t *
@@ -20702,15 +20708,7 @@ parse_constant(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t fl
         return UP(pm_call_node_fcall_create(parser, &constant, &arguments));
     }
 
-    pm_node_t *node = UP(pm_constant_read_node_create(parser, &parser->previous));
-
-    if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
-        /* If we get here, then we have a comma immediately following a
-         * constant, so we're going to parse this as a multiple assignment. */
-        node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-    }
-
-    return node;
+    return parse_multi_target(parser, UP(pm_constant_read_node_create(parser, &parser->previous)), binding_power, depth);
 }
 
 static pm_node_t *
@@ -20719,13 +20717,7 @@ parse_constant_path(pm_parser_t *parser, pm_binding_power_t binding_power, uint1
     parser_lex(parser);
 
     expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
-    pm_node_t *node = UP(pm_constant_path_node_create(parser, NULL, &delimiter, &parser->previous));
-
-    if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
-        node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-    }
-
-    return node;
+    return parse_multi_target(parser, UP(pm_constant_path_node_create(parser, NULL, &delimiter, &parser->previous)), binding_power, depth);
 }
 
 static pm_call_node_t *
@@ -20880,16 +20872,6 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             return UP(parse_hash(parser, depth));
         case PM_TOKEN_CHARACTER_LITERAL:
             return parse_char(parser, depth);
-        case PM_TOKEN_CLASS_VARIABLE: {
-            parser_lex(parser);
-            pm_node_t *node = UP(pm_class_variable_read_node_create(parser, &parser->previous));
-
-            if (binding_power == PM_BINDING_POWER_STATEMENT && match1(parser, PM_TOKEN_COMMA)) {
-                node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-            }
-
-            return node;
-        }
         case PM_TOKEN_CONSTANT:
             return parse_constant(parser, binding_power, flags, depth);
         case PM_TOKEN_UCOLON_COLON:
@@ -20909,51 +20891,26 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_FLOAT_RATIONAL_IMAGINARY:
             parser_lex(parser);
             return UP(pm_float_node_rational_imaginary_create(parser, &parser->previous));
-        case PM_TOKEN_NUMBERED_REFERENCE: {
-            parser_lex(parser);
-            pm_node_t *node = UP(pm_numbered_reference_read_node_create(parser, &parser->previous));
-
-            if (binding_power == PM_BINDING_POWER_STATEMENT && match1(parser, PM_TOKEN_COMMA)) {
-                node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-            }
-
-            return node;
-        }
-        case PM_TOKEN_GLOBAL_VARIABLE: {
-            parser_lex(parser);
-            pm_node_t *node = UP(pm_global_variable_read_node_create(parser, &parser->previous));
-
-            if (binding_power == PM_BINDING_POWER_STATEMENT && match1(parser, PM_TOKEN_COMMA)) {
-                node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-            }
-
-            return node;
-        }
-        case PM_TOKEN_BACK_REFERENCE: {
-            parser_lex(parser);
-            pm_node_t *node = UP(pm_back_reference_read_node_create(parser, &parser->previous));
-
-            if (binding_power == PM_BINDING_POWER_STATEMENT && match1(parser, PM_TOKEN_COMMA)) {
-                node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-            }
-
-            return node;
-        }
         case PM_TOKEN_IDENTIFIER:
         case PM_TOKEN_METHOD_NAME:
             return parse_identifier(parser, binding_power, flags, depth);
         case PM_TOKEN_HEREDOC_START:
             return parse_heredoc(parser, depth);
-        case PM_TOKEN_INSTANCE_VARIABLE: {
+        case PM_TOKEN_CLASS_VARIABLE:
             parser_lex(parser);
-            pm_node_t *node = UP(pm_instance_variable_read_node_create(parser, &parser->previous));
-
-            if (binding_power == PM_BINDING_POWER_STATEMENT && match1(parser, PM_TOKEN_COMMA)) {
-                node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-            }
-
-            return node;
-        }
+            return parse_multi_target(parser, UP(pm_class_variable_read_node_create(parser, &parser->previous)), binding_power, depth);
+        case PM_TOKEN_NUMBERED_REFERENCE:
+            parser_lex(parser);
+            return parse_multi_target(parser, UP(pm_numbered_reference_read_node_create(parser, &parser->previous)), binding_power, depth);
+        case PM_TOKEN_GLOBAL_VARIABLE:
+            parser_lex(parser);
+            return parse_multi_target(parser, UP(pm_global_variable_read_node_create(parser, &parser->previous)), binding_power, depth);
+        case PM_TOKEN_BACK_REFERENCE:
+            parser_lex(parser);
+            return parse_multi_target(parser, UP(pm_back_reference_read_node_create(parser, &parser->previous)), binding_power, depth);
+        case PM_TOKEN_INSTANCE_VARIABLE:
+            parser_lex(parser);
+            return parse_multi_target(parser, UP(pm_instance_variable_read_node_create(parser, &parser->previous)), binding_power, depth);
         case PM_TOKEN_INTEGER: {
             pm_node_flags_t base = parser->integer.base;
             parser_lex(parser);
