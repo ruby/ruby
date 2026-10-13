@@ -820,6 +820,22 @@ ractor_monitor(rb_execution_context_t *ec, VALUE self, VALUE port)
 }
 
 static VALUE
+ractor_alive_p(rb_execution_context_t *ec, VALUE self)
+{
+    rb_ractor_t *r = RACTOR_PTR(self);
+    bool alive;
+
+    RACTOR_LOCK(r);
+    {
+        alive = UNDEF_P(r->sync.legacy);
+    }
+    RACTOR_UNLOCK(r);
+
+    // rb_ractor_terminate_atfork terminates ractors without setting legacy
+    return RBOOL(alive && !rb_ractor_status_p(r, ractor_terminated));
+}
+
+static VALUE
 ractor_unmonitor(rb_execution_context_t *ec, VALUE self, VALUE port)
 {
     rb_ractor_t *r = RACTOR_PTR(self);

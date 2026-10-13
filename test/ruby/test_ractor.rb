@@ -13,6 +13,35 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_alive_p
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive }
+      assert_predicate r, :alive?
+      r << :done
+      r.join
+      assert_not_predicate r, :alive?
+
+      r = Ractor.new do
+        Thread.current.report_on_exception = false
+        raise "boom"
+      end
+      assert_raise(Ractor::RemoteError) { r.join }
+      assert_not_predicate r, :alive?
+    RUBY
+  end
+
+  def test_alive_p_after_fork
+    omit "fork not supported" unless Process.respond_to?(:fork)
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive }
+      assert_predicate r, :alive?
+      pid = fork { exit!(r.alive? ? 1 : 0) }
+      _, st = Process.wait2(pid)
+      assert_predicate st, :success?
+      assert_predicate r, :alive?
+    RUBY
+  end
+
   def test_shareability_of_iseq_proc
     assert_raise Ractor::IsolationError do
       foo = []

@@ -157,6 +157,9 @@ Note: We're only listing outstanding class updates.
       `timeout: 0` never blocks: it takes a message if one is already queued
       and returns `nil` otherwise.  [[Feature #22255]]
 
+    * `Ractor#alive?` is added. It returns `false` once the ractor has
+      terminated. [[Feature #22441]]
+
 * Range
 
     * `Range#clamp` is added. It returns a new `Range` instance whose
@@ -738,6 +741,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
 [Feature #22309]: https://bugs.ruby-lang.org/issues/22309
 [Feature #22400]: https://bugs.ruby-lang.org/issues/22400
+[Feature #22441]: https://bugs.ruby-lang.org/issues/22441
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
