@@ -39,6 +39,8 @@ def setup(options = "", *long_options)
   opt_hash = {}
   argv = []
   OptionParser.new do |o|
+    # defined first so that a command's own -v, such as mkmf's, overrides it
+    o.on("-v") do opt_hash[:verbose] = true end
     options.scan(/.:?/) do |s|
       opt_name = s.delete(":").intern
       o.on("-" + s.tr(":", " ")) do |val|
@@ -55,7 +57,6 @@ def setup(options = "", *long_options)
         opt_hash[opt_name] = val
       end
     end
-    o.on("-v") do opt_hash[:verbose] = true end
     o.on("--help") do
       UN.help([caller])
       exit
@@ -249,7 +250,7 @@ end
 #
 
 def wait_writable
-  setup("n:w:v") do |argv, options|
+  setup("n:w:") do |argv, options|
     verbose = options[:verbose]
     n = options[:n] and n = Integer(n)
     wait = (wait = options[:w]) ? Float(wait) : 0.2
