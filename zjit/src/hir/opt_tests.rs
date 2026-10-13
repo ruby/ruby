@@ -4949,8 +4949,17 @@ mod hir_opt_tests {
         bb10():
           Jump bb6()
         bb6():
-          v34:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
-          Jump bb4(v34)
+          v34:CInt64[3] = Const CInt64(3)
+          v35:CBool = IsBitEqual v15, v34
+          CondBranch v35, bb12(), bb13()
+        bb12():
+          v38:BasicObject = InvokeBlockIfunc v13, v10
+          Jump bb11(v38)
+        bb13():
+          v40:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
+          Jump bb11(v40)
+        bb11(v36:BasicObject):
+          Jump bb4(v36)
         bb4(v16:BasicObject):
           CheckInterrupts
           Return v16
@@ -5014,8 +5023,17 @@ mod hir_opt_tests {
         bb10():
           Jump bb6()
         bb6():
-          v34:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
-          Jump bb4(v34)
+          v34:CInt64[3] = Const CInt64(3)
+          v35:CBool = IsBitEqual v15, v34
+          CondBranch v35, bb12(), bb13()
+        bb12():
+          v38:BasicObject = InvokeBlockIfunc v13, v10
+          Jump bb11(v38)
+        bb13():
+          v40:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
+          Jump bb11(v40)
+        bb11(v36:BasicObject):
+          Jump bb4(v36)
         bb4(v16:BasicObject):
           CheckInterrupts
           Return v16
@@ -5026,7 +5044,7 @@ mod hir_opt_tests {
     fn test_yield_mixed_iseq_ifunc_profile_dispatches_on_iseqs() {
         // Like the above, but the non-ISEQ handler in the profile is an ifunc block
         // (Enumerator#each yields to the enumerator's C block). The ifunc handler fails
-        // the ISEQ tag check and takes the generic fallback in-line.
+        // the ISEQ tag check and takes the in-line ifunc arm before the generic fallback.
         let result = eval("
             def invoke = yield(10)
             def add_one = invoke { |x| x + 1 }
@@ -5078,11 +5096,120 @@ mod hir_opt_tests {
         bb10():
           Jump bb6()
         bb6():
-          v34:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
-          Jump bb4(v34)
+          v34:CInt64[3] = Const CInt64(3)
+          v35:CBool = IsBitEqual v15, v34
+          CondBranch v35, bb12(), bb13()
+        bb12():
+          v38:BasicObject = InvokeBlockIfunc v13, v10
+          Jump bb11(v38)
+        bb13():
+          v40:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
+          Jump bb11(v40)
+        bb11(v36:BasicObject):
+          Jump bb4(v36)
         bb4(v16:BasicObject):
           CheckInterrupts
           Return v16
+        ");
+    }
+
+    #[test]
+    fn test_yield_single_iseq_with_ifunc_profile_dispatches_without_guard() {
+        let result = eval("
+            def invoke = yield(10)
+            def add_one = invoke { |x| x + 1 }
+            def via_enum = to_enum(:invoke).to_a
+            add_one; via_enum
+            add_one; via_enum
+            add_one
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(11), result);
+        assert_snapshot!(hir_string("invoke"), @"
+        fn invoke@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[10] = Const Value(10)
+          v12:CPtr = GetEP 0
+          v13:CInt64 = LoadField v12, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
+          v14:CInt64[3] = Const CInt64(3)
+          v15:CInt64 = IntAnd v13, v14
+          v17:CInt64[1] = Const CInt64(1)
+          v18:CBool = IsBitEqual v15, v17
+          CondBranch v18, bb5(), bb6()
+        bb5():
+          v20:CInt64[-4] = Const CInt64(-4)
+          v21:CInt64 = IntAnd v13, v20
+          v22:Iseq = LoadField v21, :code_iseq@0x1001
+          v23:Iseq[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v24:CBool = IsBitEqual v22, v23
+          CondBranch v24, bb7(), bb8()
+        bb7():
+          v26:BasicObject = InvokeBlockIseqDirect (0x1008), v21, v10
+          Jump bb4(v26)
+        bb8():
+          Jump bb6()
+        bb6():
+          v29:CInt64[3] = Const CInt64(3)
+          v30:CBool = IsBitEqual v15, v29
+          CondBranch v30, bb10(), bb11()
+        bb10():
+          v33:BasicObject = InvokeBlockIfunc v13, v10
+          Jump bb9(v33)
+        bb11():
+          v35:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
+          Jump bb9(v35)
+        bb9(v31:BasicObject):
+          Jump bb4(v31)
+        bb4(v16:BasicObject):
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn test_yield_non_direct_iseq_profile_keeps_ifunc_arm() {
+        let result = eval("
+            def invoke = yield(10)
+            def two = invoke { |a, b| a }
+            two; two; two
+            two
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(10), result);
+        assert_snapshot!(hir_string("invoke"), @"
+        fn invoke@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[10] = Const Value(10)
+          v12:CPtr = GetEP 0
+          v13:CInt64 = LoadField v12, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
+          v14:CInt64[3] = Const CInt64(3)
+          v15:CInt64 = IntAnd v13, v14
+          v16:CInt64[3] = Const CInt64(3)
+          v17:CBool = IsBitEqual v15, v16
+          CondBranch v17, bb5(), bb6()
+        bb5():
+          v20:BasicObject = InvokeBlockIfunc v13, v10
+          Jump bb4(v20)
+        bb6():
+          v22:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: not yet specialized
+          Jump bb4(v22)
+        bb4(v18:BasicObject):
+          CheckInterrupts
+          Return v18
         ");
     }
 
@@ -5136,8 +5263,17 @@ mod hir_opt_tests {
         bb8():
           Jump bb6()
         bb6():
-          v29:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
-          Jump bb4(v29)
+          v29:CInt64[3] = Const CInt64(3)
+          v30:CBool = IsBitEqual v15, v29
+          CondBranch v30, bb10(), bb11()
+        bb10():
+          v33:BasicObject = InvokeBlockIfunc v13, v10
+          Jump bb9(v33)
+        bb11():
+          v35:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
+          Jump bb9(v35)
+        bb9(v31:BasicObject):
+          Jump bb4(v31)
         bb4(v16:BasicObject):
           CheckInterrupts
           Return v16
