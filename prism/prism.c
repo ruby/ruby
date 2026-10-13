@@ -20742,6 +20742,25 @@ parse_unary_minus(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
     return pm_call_node_unary_create(parser, &operator, receiver, "-@");
 }
 
+static pm_node_t *
+parse_super(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+    pm_token_t keyword = parser->current;
+    parser_lex(parser);
+
+    pm_arguments_t arguments = { 0 };
+    parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
+
+    if (
+        arguments.opening_loc.length == 0 &&
+        arguments.arguments == NULL &&
+        ((arguments.block == NULL) || PM_NODE_TYPE_P(arguments.block, PM_BLOCK_NODE))
+    ) {
+        return UP(pm_forwarding_super_node_create(parser, &keyword, &arguments));
+    }
+
+    return UP(pm_super_node_create(parser, &keyword, &arguments));
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20897,23 +20916,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD_NEXT:
         case PM_TOKEN_KEYWORD_RETURN:
             return parse_jump(parser, flags, depth);
-        case PM_TOKEN_KEYWORD_SUPER: {
-            parser_lex(parser);
-
-            pm_token_t keyword = parser->previous;
-            pm_arguments_t arguments = { 0 };
-            parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
-
-            if (
-                arguments.opening_loc.length == 0 &&
-                arguments.arguments == NULL &&
-                ((arguments.block == NULL) || PM_NODE_TYPE_P(arguments.block, PM_BLOCK_NODE))
-            ) {
-                return UP(pm_forwarding_super_node_create(parser, &keyword, &arguments));
-            }
-
-            return UP(pm_super_node_create(parser, &keyword, &arguments));
-        }
+        case PM_TOKEN_KEYWORD_SUPER:
+            return parse_super(parser, flags, depth);
         case PM_TOKEN_KEYWORD_YIELD:
             return UP(parse_yield(parser, flags, depth));
         case PM_TOKEN_KEYWORD_CLASS:
