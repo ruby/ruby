@@ -19625,6 +19625,25 @@ parse_array(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     return array;
 }
 
+static pm_hash_node_t *
+parse_hash(pm_parser_t *parser, uint16_t depth) {
+    pm_token_t opening = parser->current;
+    pm_hash_node_t *node = pm_hash_node_create(parser, &opening);
+    parser_lex(parser);
+
+    if (!match2(parser, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_EOF)) {
+        pm_static_literals_t hash_keys = { 0 };
+        parse_assocs(parser, &hash_keys, UP(node), (uint16_t) (depth + 1));
+        pm_static_literals_free(&hash_keys);
+
+        accept1(parser, PM_TOKEN_NEWLINE);
+    }
+
+    expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_HASH_TERM, &opening);
+    pm_hash_node_closing_loc_set(parser, node, &parser->previous);
+    return node;
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -19636,25 +19655,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_PARENTHESIS_LEFT_GROUPING:
         case PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES:
             return parse_parentheses(parser, binding_power, flags, depth);
-        case PM_TOKEN_BRACE_LEFT_HASH: {
-            parser_lex(parser);
-
-            pm_token_t opening = parser->previous;
-            pm_hash_node_t *node = pm_hash_node_create(parser, &opening);
-
-            if (!match2(parser, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_EOF)) {
-                pm_static_literals_t hash_keys = { 0 };
-                parse_assocs(parser, &hash_keys, UP(node), (uint16_t) (depth + 1));
-                pm_static_literals_free(&hash_keys);
-
-                accept1(parser, PM_TOKEN_NEWLINE);
-            }
-
-            expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_HASH_TERM, &opening);
-            pm_hash_node_closing_loc_set(parser, node, &parser->previous);
-
-            return UP(node);
-        }
+        case PM_TOKEN_BRACE_LEFT_HASH:
+            return UP(parse_hash(parser, depth));
         case PM_TOKEN_CHARACTER_LITERAL: {
             pm_node_t *node = UP(pm_string_node_create_current_string(
                 parser,
