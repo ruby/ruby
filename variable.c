@@ -2687,7 +2687,7 @@ struct autoload_const {
     // The module we are loading a constant into.
     VALUE module;
 
-    // The file that called autoload, which the constant entry no longer holds.
+    // The file that called autoload
     VALUE autoload_call_file;
 
     // The name of the constant we are loading.
