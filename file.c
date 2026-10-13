@@ -2631,19 +2631,20 @@ rb_file_size_p(VALUE obj, VALUE fname)
  *   File.owned?(object) -> true or false
  *
  * Returns whether the given `object` represents a filesystem entry or IO object
- * that exists and is owned by the user of the current process:
+ * that exists and is owned by the owner of the current process:
  *
  * ```ruby
- * filepath = 'doc/t.tmp'
- * File.write(filepath, 'foo')
- * File.owned?(filepath) # => true
- * File.delete(filepath) # Clean up.
- * dirpath = 'doc/tmp'
+ * dirpath = '/tmp/dir'
  * Dir.mkdir(dirpath)
- * File.owned?(dirpath)  # => true
- * Dir.rmdir(dirpath)    # Clean up.
- * File.owned?($stdin)   # => true
- * File.owned?('/etc')   # => false
+ * File.owned?(dirpath)     # => true
+ * filepath = File.join(dirpath, 't.tmp')
+ * File.write(filepath, 'foo')
+ * File.owned?(filepath)    # => true
+ * File.owned?($stdin)      # => true
+ * File.owned?('/tmp')      # => false
+ * File.owned?('nosuch')    # => false
+ * FileUtils.rm_rf(dirpath) # Clean up.
+ *
  * ```
  *
  */
@@ -7276,25 +7277,21 @@ rb_stat_c(VALUE obj)
  *  call-seq:
  *    owned? -> true or false
  *
- * Returns whether `self` represents a filesystem entry that,
- * at the time `self` was created,
- * existed and was owned by the user of the current process;
- * see [Snapshot](rdoc-ref:File::Stat@Snapshot):
+ * Returns whether the owner in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`
+ * is the owner of the current process:
  *
  * ```ruby
- * filepath = 'doc/t.tmp'
- * File.write(filepath, 'foo')
- * filestat = File.stat(filepath)
- * filestat.owned?          # => true
- * File.delete(filepath)
- * filestat.owned?          # => true  # Snapshot unchanged.
- * dirpath = 'doc/tmp'
+ * dirpath = '/tmp/dir'
  * Dir.mkdir(dirpath)
- * dirstat = File.stat(dirpath)
- * dirstat.owned?           # => true
- * Dir.rmdir(dirpath)
- * dirstat.owned?           # => true  # Snapshot unchanged.
- * File.stat('/etc').owned? # => false
+ * filepath = File.join(dirpath, 't.tmp') # => "/tmp/dir/t.tmp"
+ * File.write(filepath, 'foo')
+ * dirstat = File.stat(dirpath)           # Snapshot of directory.
+ * filestat = File.stat(filepath)         # Snapshot of file.
+ * dirstat.owned?                         # => true
+ * filestat.owned?                        # => true
+ * FileUtils.rm_rf(dirpath)               # Clean up.
+ * dirstat.owned?                         # => true  # Snapshot not updated.
+ * filestat.owned?                        # => true  # Snapshot not updated.
  * ```
  *
  */

@@ -2486,18 +2486,18 @@ class Pathname    # * FileTest *
   #   owned? -> true or false
   #
   # Returns whether the entry at the path represented by `self`
-  # exists and is owned by the user of the current process:
+  # exists and is owned by the owner of the current process:
   #
   # ```ruby
-  # pn = Pathname('doc/t.tmp')
-  # pn.write('foo')
-  # pn.owned?               # => true
-  # pn.delete               # Clean up.
-  # pn = Pathname('doc/tmp')
-  # pn.mkdir
-  # pn.owned?               # => true
-  # pn.rmdir                # Clean up.
-  # Pathname('/etc').owned? # => false
+  # dir_pn = Pathname('/tmp/dir')
+  # dir_pn.mkdir
+  # dir_pn.owned?             # => true
+  # file_pn = dir_pn.join('t.tmp')
+  # file_pn.write('foo')
+  # file_pn.owned?            # => true
+  # Pathname('/tmp').owned?   # => false
+  # Pathname('nosuch').owned? # => false
+  # dir_pn.rmtree             # Clean up.
   # ```
   #
   def owned?() FileTest.owned?(@path) end
