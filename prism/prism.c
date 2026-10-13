@@ -205,28 +205,29 @@ lex_mode_terminator(const uint8_t start) {
  * space of the lex state stack, then we'll just use a new slot. Otherwise we'll
  * allocate a new pointer and use that.
  */
-static bool
+static void
 lex_mode_push(pm_parser_t *parser, pm_lex_mode_t lex_mode) {
     lex_mode.prev = parser->lex_modes.current;
     parser->lex_modes.index++;
 
     if (parser->lex_modes.index > PM_LEX_STACK_SIZE - 1) {
         parser->lex_modes.current = (pm_lex_mode_t *) xmalloc(sizeof(pm_lex_mode_t));
-        if (parser->lex_modes.current == NULL) return false;
+        if (PRISM_UNLIKELY(parser->lex_modes.current == NULL)) {
+            fprintf(stderr, "prism: out of memory; aborting\n");
+            abort();
+        }
 
         *parser->lex_modes.current = lex_mode;
     } else {
         parser->lex_modes.stack[parser->lex_modes.index] = lex_mode;
         parser->lex_modes.current = &parser->lex_modes.stack[parser->lex_modes.index];
     }
-
-    return true;
 }
 
 /**
  * Push on a new list lex mode.
  */
-static PRISM_INLINE bool
+static PRISM_INLINE void
 lex_mode_push_list(pm_parser_t *parser, bool interpolation, uint8_t delimiter) {
     uint8_t incrementor = lex_mode_incrementor(delimiter);
     uint8_t terminator = lex_mode_terminator(delimiter);
@@ -268,7 +269,7 @@ lex_mode_push_list(pm_parser_t *parser, bool interpolation, uint8_t delimiter) {
     }
 
     parser->explicit_encoding = NULL;
-    return lex_mode_push(parser, lex_mode);
+    lex_mode_push(parser, lex_mode);
 }
 
 /**
@@ -276,15 +277,15 @@ lex_mode_push_list(pm_parser_t *parser, bool interpolation, uint8_t delimiter) {
  * called when we're at the end of the file. We want the parser to be able to
  * perform its normal error tolerance.
  */
-static PRISM_INLINE bool
+static PRISM_INLINE void
 lex_mode_push_list_eof(pm_parser_t *parser) {
-    return lex_mode_push_list(parser, false, '\0');
+    lex_mode_push_list(parser, false, '\0');
 }
 
 /**
  * Push on a new regexp lex mode.
  */
-static PRISM_INLINE bool
+static PRISM_INLINE void
 lex_mode_push_regexp(pm_parser_t *parser, uint8_t incrementor, uint8_t terminator) {
     pm_lex_mode_t lex_mode = {
         .mode = PM_LEX_REGEXP,
@@ -314,13 +315,13 @@ lex_mode_push_regexp(pm_parser_t *parser, uint8_t incrementor, uint8_t terminato
     }
 
     parser->explicit_encoding = NULL;
-    return lex_mode_push(parser, lex_mode);
+    lex_mode_push(parser, lex_mode);
 }
 
 /**
  * Push on a new string lex mode.
  */
-static PRISM_INLINE bool
+static PRISM_INLINE void
 lex_mode_push_string(pm_parser_t *parser, bool interpolation, bool label_allowed, uint8_t incrementor, uint8_t terminator) {
     pm_lex_mode_t lex_mode = {
         .mode = PM_LEX_STRING,
@@ -359,7 +360,7 @@ lex_mode_push_string(pm_parser_t *parser, bool interpolation, bool label_allowed
     }
 
     parser->explicit_encoding = NULL;
-    return lex_mode_push(parser, lex_mode);
+    lex_mode_push(parser, lex_mode);
 }
 
 /**
@@ -367,9 +368,9 @@ lex_mode_push_string(pm_parser_t *parser, bool interpolation, bool label_allowed
  * called when we're at the end of the file. We want the parser to be able to
  * perform its normal error tolerance.
  */
-static PRISM_INLINE bool
+static PRISM_INLINE void
 lex_mode_push_string_eof(pm_parser_t *parser) {
-    return lex_mode_push_string(parser, false, false, '\0', '\0');
+    lex_mode_push_string(parser, false, false, '\0', '\0');
 }
 
 /**
