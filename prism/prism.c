@@ -20080,6 +20080,46 @@ parse_regexp(pm_parser_t *parser, uint16_t depth) {
     return UP(interpolated);
 }
 
+static pm_node_t *
+parse_alias(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
+    if (binding_power != PM_BINDING_POWER_STATEMENT && !(flags & PM_PARSE_ACCEPTS_STATEMENT)) {
+        pm_parser_err_current(parser, PM_ERR_STATEMENT_ALIAS);
+    }
+
+    pm_token_t keyword = parser->current;
+    parser_lex(parser);
+
+    pm_node_t *new_name = parse_alias_argument(parser, true, (uint16_t) (depth + 1));
+    pm_node_t *old_name = parse_alias_argument(parser, false, (uint16_t) (depth + 1));
+
+    switch (PM_NODE_TYPE(new_name)) {
+        case PM_BACK_REFERENCE_READ_NODE:
+        case PM_NUMBERED_REFERENCE_READ_NODE:
+        case PM_GLOBAL_VARIABLE_READ_NODE: {
+            if (PM_NODE_TYPE_P(old_name, PM_BACK_REFERENCE_READ_NODE) || PM_NODE_TYPE_P(old_name, PM_NUMBERED_REFERENCE_READ_NODE) || PM_NODE_TYPE_P(old_name, PM_GLOBAL_VARIABLE_READ_NODE)) {
+                if (PM_NODE_TYPE_P(old_name, PM_NUMBERED_REFERENCE_READ_NODE)) {
+                    pm_parser_err_node(parser, old_name, PM_ERR_ALIAS_ARGUMENT_NUMBERED_REFERENCE);
+                }
+            } else if (!PM_NODE_TYPE_P(old_name, PM_ERROR_RECOVERY_NODE)) {
+                pm_parser_err_node(parser, old_name, PM_ERR_ALIAS_ARGUMENT);
+                old_name = UP(pm_error_recovery_node_create_unexpected(parser, old_name));
+            }
+
+            return UP(pm_alias_global_variable_node_create(parser, &keyword, new_name, old_name));
+        }
+        case PM_SYMBOL_NODE:
+        case PM_INTERPOLATED_SYMBOL_NODE: {
+            if (!PM_NODE_TYPE_P(old_name, PM_SYMBOL_NODE) && !PM_NODE_TYPE_P(old_name, PM_INTERPOLATED_SYMBOL_NODE) && !PM_NODE_TYPE_P(old_name, PM_ERROR_RECOVERY_NODE)) {
+                pm_parser_err_node(parser, old_name, PM_ERR_ALIAS_ARGUMENT);
+                old_name = UP(pm_error_recovery_node_create_unexpected(parser, old_name));
+            }
+        }
+        PRISM_FALLTHROUGH
+        default:
+            return UP(pm_alias_method_node_create(parser, &keyword, new_name, old_name));
+    }
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20347,44 +20387,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD___LINE__:
             parser_lex(parser);
             return UP(pm_source_line_node_create(parser, &parser->previous));
-        case PM_TOKEN_KEYWORD_ALIAS: {
-            if (binding_power != PM_BINDING_POWER_STATEMENT && !(flags & PM_PARSE_ACCEPTS_STATEMENT)) {
-                pm_parser_err_current(parser, PM_ERR_STATEMENT_ALIAS);
-            }
-
-            parser_lex(parser);
-            pm_token_t keyword = parser->previous;
-
-            pm_node_t *new_name = parse_alias_argument(parser, true, (uint16_t) (depth + 1));
-            pm_node_t *old_name = parse_alias_argument(parser, false, (uint16_t) (depth + 1));
-
-            switch (PM_NODE_TYPE(new_name)) {
-                case PM_BACK_REFERENCE_READ_NODE:
-                case PM_NUMBERED_REFERENCE_READ_NODE:
-                case PM_GLOBAL_VARIABLE_READ_NODE: {
-                    if (PM_NODE_TYPE_P(old_name, PM_BACK_REFERENCE_READ_NODE) || PM_NODE_TYPE_P(old_name, PM_NUMBERED_REFERENCE_READ_NODE) || PM_NODE_TYPE_P(old_name, PM_GLOBAL_VARIABLE_READ_NODE)) {
-                        if (PM_NODE_TYPE_P(old_name, PM_NUMBERED_REFERENCE_READ_NODE)) {
-                            pm_parser_err_node(parser, old_name, PM_ERR_ALIAS_ARGUMENT_NUMBERED_REFERENCE);
-                        }
-                    } else if (!PM_NODE_TYPE_P(old_name, PM_ERROR_RECOVERY_NODE)) {
-                        pm_parser_err_node(parser, old_name, PM_ERR_ALIAS_ARGUMENT);
-                        old_name = UP(pm_error_recovery_node_create_unexpected(parser, old_name));
-                    }
-
-                    return UP(pm_alias_global_variable_node_create(parser, &keyword, new_name, old_name));
-                }
-                case PM_SYMBOL_NODE:
-                case PM_INTERPOLATED_SYMBOL_NODE: {
-                    if (!PM_NODE_TYPE_P(old_name, PM_SYMBOL_NODE) && !PM_NODE_TYPE_P(old_name, PM_INTERPOLATED_SYMBOL_NODE) && !PM_NODE_TYPE_P(old_name, PM_ERROR_RECOVERY_NODE)) {
-                        pm_parser_err_node(parser, old_name, PM_ERR_ALIAS_ARGUMENT);
-                        old_name = UP(pm_error_recovery_node_create_unexpected(parser, old_name));
-                    }
-                }
-                PRISM_FALLTHROUGH
-                default:
-                    return UP(pm_alias_method_node_create(parser, &keyword, new_name, old_name));
-            }
-        }
+        case PM_TOKEN_KEYWORD_ALIAS:
+            return parse_alias(parser, binding_power, flags, depth);
         case PM_TOKEN_KEYWORD_CASE:
             return parse_case(parser, flags, depth);
         case PM_TOKEN_KEYWORD_BEGIN:
