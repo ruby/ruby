@@ -20713,6 +20713,21 @@ parse_constant(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t fl
     return node;
 }
 
+static pm_node_t *
+parse_constant_path(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t depth) {
+    pm_token_t delimiter = parser->current;
+    parser_lex(parser);
+
+    expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
+    pm_node_t *node = UP(pm_constant_path_node_create(parser, NULL, &delimiter, &parser->previous));
+
+    if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
+        node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
+    }
+
+    return node;
+}
+
 static pm_call_node_t *
 parse_unary_plus(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     if (binding_power > PM_BINDING_POWER_UNARY) {
@@ -20877,19 +20892,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         }
         case PM_TOKEN_CONSTANT:
             return parse_constant(parser, binding_power, flags, depth);
-        case PM_TOKEN_UCOLON_COLON: {
-            parser_lex(parser);
-            pm_token_t delimiter = parser->previous;
-
-            expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
-            pm_node_t *node = UP(pm_constant_path_node_create(parser, NULL, &delimiter, &parser->previous));
-
-            if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
-                node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-            }
-
-            return node;
-        }
+        case PM_TOKEN_UCOLON_COLON:
+            return parse_constant_path(parser, binding_power, depth);
         case PM_TOKEN_UDOT_DOT:
         case PM_TOKEN_UDOT_DOT_DOT:
             return UP(parse_range(parser, flags, depth));
