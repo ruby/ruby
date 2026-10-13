@@ -187,12 +187,8 @@ ALWAYS_INLINE(static) TARGET_SSE2 int string_scan_simd_sse2(const char **ptr, co
 
 static inline SIMD_Implementation find_simd_implementation(void)
 {
-    // TODO Revisit. I think the SSE version now only uses SSE2 instructions.
-    if (__builtin_cpu_supports("sse2")) {
-        return SIMD_SSE2;
-    }
-
-    return SIMD_NONE;
+    // SSE2 is part of the x86-64 baseline.
+    return SIMD_SSE2;
 }
 
 #endif /* HAVE_X86INTRIN_H */
