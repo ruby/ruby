@@ -20785,6 +20785,23 @@ parse_super(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     return UP(pm_super_node_create(parser, &keyword, &arguments));
 }
 
+static pm_range_node_t *
+parse_range(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+    pm_token_t operator = parser->current;
+    parser_lex(parser);
+
+    pm_node_t *right = parse_expression(parser, pm_binding_powers[operator.type].left, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
+
+    /* Unary .. and ... are special because these are non-associative operators
+     * that can also be unary operators. In this case we need to explicitly
+     * reject code that has a .. or ... that follows this expression. */
+    if (match2(parser, PM_TOKEN_DOT_DOT, PM_TOKEN_DOT_DOT_DOT)) {
+        pm_parser_err_current(parser, PM_ERR_UNEXPECTED_RANGE_OPERATOR);
+    }
+
+    return pm_range_node_create(parser, NULL, &operator, right);
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20826,22 +20843,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             return node;
         }
         case PM_TOKEN_UDOT_DOT:
-        case PM_TOKEN_UDOT_DOT_DOT: {
-            pm_token_t operator = parser->current;
-            parser_lex(parser);
-
-            pm_node_t *right = parse_expression(parser, pm_binding_powers[operator.type].left, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
-
-            // Unary .. and ... are special because these are non-associative
-            // operators that can also be unary operators. In this case we need
-            // to explicitly reject code that has a .. or ... that follows this
-            // expression.
-            if (match2(parser, PM_TOKEN_DOT_DOT, PM_TOKEN_DOT_DOT_DOT)) {
-                pm_parser_err_current(parser, PM_ERR_UNEXPECTED_RANGE_OPERATOR);
-            }
-
-            return UP(pm_range_node_create(parser, NULL, &operator, right));
-        }
+        case PM_TOKEN_UDOT_DOT_DOT:
+            return UP(parse_range(parser, flags, depth));
         case PM_TOKEN_FLOAT:
             parser_lex(parser);
             return UP(pm_float_node_create(parser, &parser->previous));
