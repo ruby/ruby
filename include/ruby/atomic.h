@@ -459,7 +459,7 @@ rbimpl_atomic_size_fetch_add(volatile size_t *ptr, size_t val, int memory_order)
     return __sync_fetch_and_add(ptr, val);
 
 #elif defined(_WIN64)
-    return InterlockedExchangeAdd64(ptr, val);
+    return InterlockedExchangeAdd64(RBIMPL_CAST((LONG64 *)ptr), val);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     /* Ditto for `atomic_add_int_nv`. */
@@ -538,7 +538,7 @@ rbimpl_atomic_size_add(volatile size_t *ptr, size_t val, int memory_order)
 
 #elif defined(_WIN64)
     /* Ditto for `InterlockeExchangedAdd`. */
-    InterlockedExchangeAdd64(ptr, val);
+    InterlockedExchangeAdd64(RBIMPL_CAST((LONG64 *)ptr), val);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     /* Ditto for `atomic_add_int_nv`. */
@@ -598,7 +598,7 @@ rbimpl_atomic_size_inc(volatile size_t *ptr, int memory_order)
     rbimpl_atomic_size_add(ptr, 1, memory_order);
 
 #elif defined(_WIN64)
-    InterlockedIncrement64(ptr);
+    InterlockedIncrement64(RBIMPL_CAST((LONG64 *)ptr));
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     atomic_inc_ulong(ptr);
@@ -697,7 +697,7 @@ rbimpl_atomic_size_sub(volatile size_t *ptr, size_t val, int memory_order)
 
 #elif defined(_WIN64)
     const ssize_t neg = -1;
-    InterlockedExchangeAdd64(ptr, neg * val);
+    InterlockedExchangeAdd64(RBIMPL_CAST((LONG64 *)ptr), neg * val);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     const signed neg = -1;
@@ -757,7 +757,7 @@ rbimpl_atomic_size_dec(volatile size_t *ptr, int memory_order)
     rbimpl_atomic_size_sub(ptr, 1, memory_order);
 
 #elif defined(_WIN64)
-    InterlockedDecrement64(ptr);
+    InterlockedDecrement64(RBIMPL_CAST((LONG64 *)ptr));
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     atomic_dec_ulong(ptr);
@@ -849,7 +849,7 @@ rbimpl_atomic_size_exchange(volatile size_t *ptr, size_t val, int memory_order)
     return __sync_lock_test_and_set(ptr, val);
 
 #elif defined(_WIN64)
-    return InterlockedExchange64(ptr, val);
+    return InterlockedExchange64(RBIMPL_CAST((LONG64 *)ptr), val);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     return atomic_swap_ulong(ptr, val);
@@ -1047,7 +1047,7 @@ rbimpl_atomic_size_cas(volatile size_t *ptr, size_t oldval, size_t newval, int s
     return __sync_val_compare_and_swap(ptr, oldval, newval);
 
 #elif defined(_WIN64)
-    return InterlockedCompareExchange64(ptr, newval, oldval);
+    return InterlockedCompareExchange64(RBIMPL_CAST((LONG64 *)ptr), newval, oldval);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     return atomic_cas_ulong(ptr, oldval, newval);
