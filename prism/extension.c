@@ -201,6 +201,23 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
 }
 
 /**
+ * Set the version option to the syntax version of the currently running Ruby,
+ * or to the closest version prism supports if it does not know that one.
+ */
+static void
+options_version_set_nearest(pm_options_t *options) {
+    if (!pm_options_version_set(options, ruby_version, 3)) {
+        // Prism doesn't know this specific version. Is it lower?
+        if (ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3')) {
+            pm_options_version_set_lowest(options);
+        } else {
+            // Must be higher.
+            pm_options_version_set_highest(options);
+        }
+    }
+}
+
+/**
  * An iterator function that is called for each key-value in the keywords hash.
  */
 static int
@@ -231,15 +248,7 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
                     rb_exc_raise(rb_exc_new_cstr(rb_cPrismCurrentVersionError, ruby_version));
                 }
             } else if (RSTRING_LEN(value) == 7 && strncmp(version, "nearest", 7) == 0) {
-                if (!pm_options_version_set(options, ruby_version, 3)) {
-                    // Prism doesn't know this specific version. Is it lower?
-                    if (ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3')) {
-                        pm_options_version_set_lowest(options);
-                    } else {
-                        // Must be higher.
-                        pm_options_version_set_highest(options);
-                    }
-                }
+                options_version_set_nearest(options);
             } else if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
                 rb_raise(rb_eArgError, "invalid version: %" PRIsVALUE, value);
             }
@@ -345,6 +354,7 @@ build_options(VALUE argument) {
 static void
 extract_options(pm_options_t *options, VALUE filepath, VALUE keywords) {
     pm_options_line_set(options, 1); /* default */
+    options_version_set_nearest(options); /* default */
 
     if (!NIL_P(keywords)) {
         struct build_options_data data = { .options = options, .keywords = keywords };
@@ -1151,14 +1161,16 @@ parse_input(const uint8_t *input, size_t input_length, const pm_options_t *optio
  *       parsed. This should be an array of arrays of symbols or nil. Scopes are
  *       ordered from the outermost scope to the innermost one.
  * * `version` - the version of Ruby syntax that prism should used to parse Ruby
- *       code. By default prism assumes you want to parse with the latest
- *       version of Ruby syntax (which you can trigger with `nil` or
- *       `"latest"`). You may also restrict the syntax to a specific version of
- *       Ruby, e.g., with `"3.3.0"`. To parse with the same syntax version that
- *       the current Ruby is running use `version: "current"`. To parse with the
- *       nearest version to the current Ruby that is running, use
- *       `version: "nearest"`. Raises ArgumentError if the version is not
- *       currently supported by Prism.
+ *       code. By default prism parses with the syntax version nearest to the
+ *       current Ruby that is running (which you can trigger with `nil` or
+ *       `"nearest"`): the running version if prism supports it, otherwise the
+ *       closest version that it does support. You may also restrict the syntax
+ *       to a specific version of Ruby, e.g., with `"3.3.0"`. To parse with
+ *       exactly the same syntax version that the current Ruby is running use
+ *       `version: "current"`, which raises Prism::CurrentVersionError if prism
+ *       does not support it. To parse with the latest version of Ruby syntax
+ *       that prism supports, use `version: "latest"`. Raises ArgumentError if
+ *       the version is not currently supported by Prism.
  */
 static VALUE
 parse(int argc, VALUE *argv, VALUE self) {

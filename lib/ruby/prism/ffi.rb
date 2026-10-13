@@ -565,9 +565,9 @@ module Ruby::Prism # :nodoc:
       case version
       when "current"
         version_string_to_number(RUBY_VERSION) || raise(CurrentVersionError, RUBY_VERSION)
-      when "latest", nil
+      when "latest"
         0 # Handled in pm_parser_init
-      when "nearest"
+      when "nearest", nil
         dump = version_string_to_number(RUBY_VERSION)
         return dump if dump
         if RUBY_VERSION < "3.3"
