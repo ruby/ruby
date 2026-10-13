@@ -8686,7 +8686,7 @@ heredoc_identifier(struct parser_params *p)
      * term_len is length of `<<"END"` except `END`,
      * in this case term_len is 4 (<, <, " and ").
      */
-    long len, offset = p->lex.pcur - p->lex.pbeg;
+    rb_len_t len, offset = p->lex.pcur - p->lex.pbeg;
     int c = nextc(p), term, func = 0, quote = 0;
     enum yytokentype token = tSTRING_BEG;
     int indent = 0;
@@ -8743,7 +8743,7 @@ heredoc_identifier(struct parser_params *p)
     }
 
     len = p->lex.pcur - (p->lex.pbeg + offset) - quote;
-    if ((unsigned long)len >= HERETERM_LENGTH_MAX)
+    if ((rb_ulen_t)len >= HERETERM_LENGTH_MAX)
         yyerror0("too long here document identifier");
     dispatch_scan_event(p, tHEREDOC_BEG);
     lex_goto_eol(p);
