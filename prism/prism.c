@@ -21655,6 +21655,43 @@ parse_interpolated_regular_expression_named_captures(pm_parser_t *parser, const 
     }
 }
 
+static pm_if_node_t *
+parse_ternary(pm_parser_t *parser, pm_node_t *node, uint8_t flags, uint16_t depth) {
+    context_push(parser, PM_CONTEXT_TERNARY);
+    pm_node_list_t current_block_exits = { 0 };
+    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+
+    pm_token_t qmark = parser->current;
+    parser_lex(parser);
+
+    pm_node_t *true_expression = parse_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_TERNARY_EXPRESSION_TRUE, (uint16_t) (depth + 1));
+
+    if (parser->recovering) {
+        // If parsing the true expression of this ternary resulted in a syntax
+        // error that we can recover from, then we're going to put missing nodes
+        // and tokens into the remaining places. We want to be sure to do this
+        // before the `expect` function call to make sure it doesn't
+        // accidentally move past a ':' token that occurs after the syntax
+        // error.
+        pm_token_t colon = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
+        pm_node_t *false_expression = UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &colon), PM_TOKEN_LENGTH(&colon)));
+
+        context_pop(parser);
+        pop_block_exits(parser, previous_block_exits);
+        return pm_if_node_ternary_create(parser, node, &qmark, true_expression, &colon, false_expression);
+    }
+
+    accept1(parser, PM_TOKEN_NEWLINE);
+    expect1(parser, PM_TOKEN_COLON, PM_ERR_TERNARY_COLON);
+
+    pm_token_t colon = parser->previous;
+    pm_node_t *false_expression = parse_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_TERNARY_EXPRESSION_FALSE, (uint16_t) (depth + 1));
+
+    context_pop(parser);
+    pop_block_exits(parser, previous_block_exits);
+    return pm_if_node_ternary_create(parser, node, &qmark, true_expression, &colon, false_expression);
+}
+
 static PRISM_INLINE pm_node_t *
 parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t token = parser->current;
@@ -22379,41 +22416,8 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             pm_node_t *predicate = parse_value_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_CONDITIONAL_WHILE_PREDICATE, (uint16_t) (depth + 1));
             return UP(pm_while_node_modifier_create(parser, &token, predicate, statements, PM_NODE_TYPE_P(node, PM_BEGIN_NODE) ? PM_LOOP_FLAGS_BEGIN_MODIFIER : 0));
         }
-        case PM_TOKEN_QUESTION_MARK: {
-            context_push(parser, PM_CONTEXT_TERNARY);
-            pm_node_list_t current_block_exits = { 0 };
-            pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
-
-            pm_token_t qmark = parser->current;
-            parser_lex(parser);
-
-            pm_node_t *true_expression = parse_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_TERNARY_EXPRESSION_TRUE, (uint16_t) (depth + 1));
-
-            if (parser->recovering) {
-                // If parsing the true expression of this ternary resulted in a syntax
-                // error that we can recover from, then we're going to put missing nodes
-                // and tokens into the remaining places. We want to be sure to do this
-                // before the `expect` function call to make sure it doesn't
-                // accidentally move past a ':' token that occurs after the syntax
-                // error.
-                pm_token_t colon = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
-                pm_node_t *false_expression = UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &colon), PM_TOKEN_LENGTH(&colon)));
-
-                context_pop(parser);
-                pop_block_exits(parser, previous_block_exits);
-                return UP(pm_if_node_ternary_create(parser, node, &qmark, true_expression, &colon, false_expression));
-            }
-
-            accept1(parser, PM_TOKEN_NEWLINE);
-            expect1(parser, PM_TOKEN_COLON, PM_ERR_TERNARY_COLON);
-
-            pm_token_t colon = parser->previous;
-            pm_node_t *false_expression = parse_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_TERNARY_EXPRESSION_FALSE, (uint16_t) (depth + 1));
-
-            context_pop(parser);
-            pop_block_exits(parser, previous_block_exits);
-            return UP(pm_if_node_ternary_create(parser, node, &qmark, true_expression, &colon, false_expression));
-        }
+        case PM_TOKEN_QUESTION_MARK:
+            return UP(parse_ternary(parser, node, flags, depth));
         case PM_TOKEN_COLON_COLON: {
             parser_lex(parser);
             pm_token_t delimiter = parser->previous;
