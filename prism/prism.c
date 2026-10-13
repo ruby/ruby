@@ -21754,6 +21754,86 @@ parse_constant_path_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power
     }
 }
 
+static pm_node_t *
+parse_match(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
+    /* Note that we _must_ parse the value before adding the local variables in
+     * order to properly mirror the behavior of Ruby. For example,
+     *
+     *     /(?<foo>bar)/ =~ foo
+     *
+     * In this case, `foo` should be a method call and not a local yet.
+     */
+    pm_token_t operator = parser->current;
+    parser_lex(parser);
+
+    pm_node_t *argument = parse_expression(parser, binding_power, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
+
+    // By default, we're going to create a call node and then return it.
+    pm_call_node_t *call = pm_call_node_binary_create(parser, node, &operator, argument, 0);
+    pm_node_t *result = UP(call);
+
+    /* If the receiver of this =~ is a regular expression node, then we need to
+     * introduce local variables for it based on its named capture groups. */
+    if (PM_NODE_TYPE_P(node, PM_INTERPOLATED_REGULAR_EXPRESSION_NODE)) {
+        /* It's possible to have an interpolated regular expression node that
+         * only contains strings. This is because it can be split up by a
+         * heredoc. In this case we need to concat the unescaped strings
+         * together and then parse them as a regular expression. */
+        pm_node_list_t *parts = &((pm_interpolated_regular_expression_node_t *) node)->parts;
+
+        bool interpolated = false;
+        size_t total_length = 0;
+
+        pm_node_t *part;
+        PM_NODE_LIST_FOREACH(parts, index, part) {
+            if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
+                total_length += pm_string_length(&((pm_string_node_t *) part)->unescaped);
+            } else {
+                interpolated = true;
+                break;
+            }
+        }
+
+        if (!interpolated && total_length > 0) {
+            void *memory = xmalloc(total_length);
+            if (!memory) abort();
+
+            uint8_t *cursor = memory;
+            PM_NODE_LIST_FOREACH(parts, index, part) {
+                pm_string_t *unescaped = &((pm_string_node_t *) part)->unescaped;
+                size_t length = pm_string_length(unescaped);
+
+                memcpy(cursor, pm_string_source(unescaped), length);
+                cursor += length;
+            }
+
+            pm_string_t owned;
+            pm_string_owned_init(&owned, (uint8_t *) memory, total_length);
+
+            result = parse_interpolated_regular_expression_named_captures(parser, &owned, call, PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED));
+            pm_string_cleanup(&owned);
+        }
+    } else if (PM_NODE_TYPE_P(node, PM_REGULAR_EXPRESSION_NODE)) {
+        /* If we have a regular expression node, then we can parse the named
+         * captures and validate encoding in one pass. */
+        pm_regular_expression_node_t *regexp = (pm_regular_expression_node_t *) node;
+        pm_regexp_name_data_t name_data = {
+            .call = call,
+            .match = NULL,
+            .names = { 0 },
+            .shared = regexp->unescaped.type == PM_STRING_SHARED,
+        };
+
+        pm_node_flag_set(UP(regexp), pm_regexp_parse(parser, regexp, parse_regular_expression_named_capture, &name_data));
+
+        if (name_data.match != NULL) {
+            result = UP(name_data.match);
+        }
+    }
+
+    return result;
+}
+
 static PRISM_INLINE pm_node_t *
 parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t token = parser->current;
@@ -22225,84 +22305,8 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             pm_node_t *right = parse_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (parser->previous.type == PM_TOKEN_KEYWORD_OR ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0)), PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
             return UP(pm_or_node_create(parser, node, &token, right));
         }
-        case PM_TOKEN_EQUAL_TILDE: {
-            // Note that we _must_ parse the value before adding the local
-            // variables in order to properly mirror the behavior of Ruby. For
-            // example,
-            //
-            //     /(?<foo>bar)/ =~ foo
-            //
-            // In this case, `foo` should be a method call and not a local yet.
-            parser_lex(parser);
-            pm_node_t *argument = parse_expression(parser, binding_power, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
-
-            // By default, we're going to create a call node and then return it.
-            pm_call_node_t *call = pm_call_node_binary_create(parser, node, &token, argument, 0);
-            pm_node_t *result = UP(call);
-
-            // If the receiver of this =~ is a regular expression node, then we
-            // need to introduce local variables for it based on its named
-            // capture groups.
-            if (PM_NODE_TYPE_P(node, PM_INTERPOLATED_REGULAR_EXPRESSION_NODE)) {
-                // It's possible to have an interpolated regular expression node
-                // that only contains strings. This is because it can be split
-                // up by a heredoc. In this case we need to concat the unescaped
-                // strings together and then parse them as a regular expression.
-                pm_node_list_t *parts = &((pm_interpolated_regular_expression_node_t *) node)->parts;
-
-                bool interpolated = false;
-                size_t total_length = 0;
-
-                pm_node_t *part;
-                PM_NODE_LIST_FOREACH(parts, index, part) {
-                    if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
-                        total_length += pm_string_length(&((pm_string_node_t *) part)->unescaped);
-                    } else {
-                        interpolated = true;
-                        break;
-                    }
-                }
-
-                if (!interpolated && total_length > 0) {
-                    void *memory = xmalloc(total_length);
-                    if (!memory) abort();
-
-                    uint8_t *cursor = memory;
-                    PM_NODE_LIST_FOREACH(parts, index, part) {
-                        pm_string_t *unescaped = &((pm_string_node_t *) part)->unescaped;
-                        size_t length = pm_string_length(unescaped);
-
-                        memcpy(cursor, pm_string_source(unescaped), length);
-                        cursor += length;
-                    }
-
-                    pm_string_t owned;
-                    pm_string_owned_init(&owned, (uint8_t *) memory, total_length);
-
-                    result = parse_interpolated_regular_expression_named_captures(parser, &owned, call, PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED));
-                    pm_string_cleanup(&owned);
-                }
-            } else if (PM_NODE_TYPE_P(node, PM_REGULAR_EXPRESSION_NODE)) {
-                // If we have a regular expression node, then we can parse
-                // the named captures and validate encoding in one pass.
-                pm_regular_expression_node_t *regexp = (pm_regular_expression_node_t *) node;
-
-                pm_regexp_name_data_t name_data = {
-                    .call = call,
-                    .match = NULL,
-                    .names = { 0 },
-                    .shared = regexp->unescaped.type == PM_STRING_SHARED,
-                };
-
-                pm_node_flag_set(UP(regexp), pm_regexp_parse(parser, regexp, parse_regular_expression_named_capture, &name_data));
-
-                if (name_data.match != NULL) {
-                    result = UP(name_data.match);
-                }
-            }
-
-            return result;
-        }
+        case PM_TOKEN_EQUAL_TILDE:
+            return parse_match(parser, node, binding_power, flags, depth);
         case PM_TOKEN_UAMPERSAND:
         case PM_TOKEN_USTAR:
         case PM_TOKEN_USTAR_STAR:
