@@ -1157,5 +1157,5 @@ $(RUBYSPEC_CAPIEXT)/%.so: $(RUBYSPEC_CAPIEXT_SRCDIR)/%.c
 	$(ECHO) building $(@F)
 	$(Q)$(MAKEDIRS) $(@D)
 	$(Q)(echo EXPORTS&&echo Init_$(*F))> $(basename $@).def
-	$(Q)$(LDSHARED) -Fe$(@) -Fo$(basename $@).obj $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(XLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$(basename $@).lib -pdb:$(basename $@).pdb -def:$(basename $@).def
+	$(Q)$(LDSHARED) -Fe$(@) -Fo$(basename $@).obj $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< -link $(DLDFLAGS) $(XLDFLAGS) $(LIBRUBYARG) $(LIBS) $(LOCAL_LIBS) -implib:$(basename $@).lib -pdb:$(basename $@).pdb -def:$(basename $@).def
 	$(Q)$(RM) $(basename $@).def $(basename $@).exp $(basename $@).lib $(basename $@).obj $(basename $@).pdb
