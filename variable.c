@@ -2811,7 +2811,8 @@ static VALUE
 autoload_entry(VALUE mod, ID id)
 {
     rb_const_entry_t *ce = rb_const_lookup(mod, id);
-    if (!ce || !UNDEF_P(ce->value) || !rb_typeddata_is_kind_of(ce->u.autoload_const, &autoload_const_type)) return 0;
+    if (!ce || !UNDEF_P(ce->value)) return 0;
+    VM_ASSERT(rb_typeddata_is_kind_of(ce->u.autoload_const, &autoload_const_type));
     return ce->u.autoload_const;
 }
 
@@ -2926,22 +2927,22 @@ autoload_delete(VALUE autoload_const_value)
 {
     RUBY_ASSERT_CRITICAL_SECTION_ENTER();
 
-    if (rb_typeddata_is_kind_of(autoload_const_value, &autoload_const_type)) {
-        struct autoload_const *autoload_const;
-        struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, &autoload_const);
+    VM_ASSERT(rb_typeddata_is_kind_of(autoload_const_value, &autoload_const_type));
 
-        VM_ASSERT(autoload_data);
+    struct autoload_const *autoload_const;
+    struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, &autoload_const);
 
-        /*
-         * we must delete here to avoid "already initialized" warnings
-         * with parallel autoload.  Using list_del_init here so list_del
-         * works in autoload_const_free
-         */
-        ccan_list_del_init(&autoload_const->cnode);
+    VM_ASSERT(autoload_data);
 
-        if (ccan_list_empty(&autoload_data->constants)) {
-            rb_hash_delete(autoload_features, autoload_data->feature);
-        }
+    /*
+     * we must delete here to avoid "already initialized" warnings
+     * with parallel autoload.  Using list_del_init here so list_del
+     * works in autoload_const_free
+     */
+    ccan_list_del_init(&autoload_const->cnode);
+
+    if (ccan_list_empty(&autoload_data->constants)) {
+        rb_hash_delete(autoload_features, autoload_data->feature);
     }
 
     RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
