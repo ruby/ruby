@@ -19989,6 +19989,97 @@ parse_lambda(pm_parser_t *parser, uint16_t depth) {
     return pm_lambda_node_create(parser, &locals, &operator, &opening, &parser->previous, parameters, body);
 }
 
+static pm_node_t *
+parse_regexp(pm_parser_t *parser, uint16_t depth) {
+    pm_token_t opening = parser->current;
+    parser_lex(parser);
+
+    if (match1(parser, PM_TOKEN_REGEXP_END)) {
+        // If we get here, then we have an end immediately after a start. In
+        // that case we'll create an empty content token and return an
+        // uninterpolated regular expression.
+        pm_token_t content = (pm_token_t) {
+            .type = PM_TOKEN_STRING_CONTENT,
+            .start = parser->previous.end,
+            .end = parser->previous.end
+        };
+
+        parser_lex(parser);
+
+        pm_regular_expression_node_t *node = pm_regular_expression_node_create(parser, &opening, &content, &parser->previous);
+        pm_node_flag_set(UP(node), pm_regexp_parse(parser, node, NULL, NULL));
+        return UP(node);
+    }
+
+    pm_interpolated_regular_expression_node_t *interpolated;
+
+    if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+        // In this case we've hit string content so we know the regular
+        // expression at least has something in it. We'll need to check if the
+        // following token is the end (in which case we can return a plain
+        // regular expression) or if it's not then it has interpolation.
+        pm_string_t unescaped = parser->current_string;
+        pm_token_t content = parser->current;
+        parser_lex(parser);
+
+        // If we hit an end, then we can create a regular expression
+        // node without interpolation, which can be represented more
+        // succinctly and more easily compiled.
+        if (accept1(parser, PM_TOKEN_REGEXP_END)) {
+            pm_regular_expression_node_t *node = (pm_regular_expression_node_t *) pm_regular_expression_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
+
+            // If we're not immediately followed by a =~, then we
+            // parse and validate now. If it is followed by a =~,
+            // then it will get parsed in the =~ handler where
+            // named captures can also be extracted.
+            if (!match1(parser, PM_TOKEN_EQUAL_TILDE)) {
+                pm_node_flag_set(UP(node), pm_regexp_parse(parser, node, NULL, NULL));
+            }
+
+            return UP(node);
+        }
+
+        // If we get here, then we have interpolation so we'll need to create
+        // a regular expression node with interpolation.
+        interpolated = pm_interpolated_regular_expression_node_create(parser, &opening);
+
+        pm_node_t *part = UP(pm_string_node_create_unescaped(parser, NULL, &parser->previous, NULL, &unescaped));
+        if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) {
+            // This is extremely strange, but the first string part of a
+            // regular expression will always be tagged as binary if we
+            // are in a US-ASCII file, no matter its contents.
+            pm_node_flag_set(part, PM_STRING_FLAGS_FORCED_BINARY_ENCODING);
+        }
+
+        pm_interpolated_regular_expression_node_append(parser->arena, interpolated, part);
+    } else {
+        // If the first part of the body of the regular expression is not a
+        // string content, then we have interpolation and we need to create an
+        // interpolated regular expression node.
+        interpolated = pm_interpolated_regular_expression_node_create(parser, &opening);
+    }
+
+    // Now that we're here and we have interpolation, we'll parse all of the
+    // parts into the list.
+    pm_node_t *part;
+    while (!match2(parser, PM_TOKEN_REGEXP_END, PM_TOKEN_EOF)) {
+        if ((part = parse_string_part(parser, (uint16_t) (depth + 1))) != NULL) {
+            pm_interpolated_regular_expression_node_append(parser->arena, interpolated, part);
+        }
+    }
+
+    pm_token_t closing = parser->current;
+    if (match1(parser, PM_TOKEN_EOF)) {
+        pm_parser_err_token(parser, &opening, PM_ERR_REGEXP_TERM);
+        closing = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
+    } else {
+        expect1(parser, PM_TOKEN_REGEXP_END, PM_ERR_REGEXP_TERM);
+    }
+
+    pm_interpolated_regular_expression_node_closing_set(parser, interpolated, &closing);
+    return UP(interpolated);
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20753,95 +20844,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         }
         case PM_TOKEN_PERCENT_UPPER_W:
             return parse_string_array(parser, depth);
-        case PM_TOKEN_REGEXP_BEGIN: {
-            pm_token_t opening = parser->current;
-            parser_lex(parser);
-
-            if (match1(parser, PM_TOKEN_REGEXP_END)) {
-                // If we get here, then we have an end immediately after a start. In
-                // that case we'll create an empty content token and return an
-                // uninterpolated regular expression.
-                pm_token_t content = (pm_token_t) {
-                    .type = PM_TOKEN_STRING_CONTENT,
-                    .start = parser->previous.end,
-                    .end = parser->previous.end
-                };
-
-                parser_lex(parser);
-
-                pm_regular_expression_node_t *node = pm_regular_expression_node_create(parser, &opening, &content, &parser->previous);
-                pm_node_flag_set(UP(node), pm_regexp_parse(parser, node, NULL, NULL));
-                return UP(node);
-            }
-
-            pm_interpolated_regular_expression_node_t *interpolated;
-
-            if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
-                // In this case we've hit string content so we know the regular
-                // expression at least has something in it. We'll need to check if the
-                // following token is the end (in which case we can return a plain
-                // regular expression) or if it's not then it has interpolation.
-                pm_string_t unescaped = parser->current_string;
-                pm_token_t content = parser->current;
-                parser_lex(parser);
-
-                // If we hit an end, then we can create a regular expression
-                // node without interpolation, which can be represented more
-                // succinctly and more easily compiled.
-                if (accept1(parser, PM_TOKEN_REGEXP_END)) {
-                    pm_regular_expression_node_t *node = (pm_regular_expression_node_t *) pm_regular_expression_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
-
-                    // If we're not immediately followed by a =~, then we
-                    // parse and validate now. If it is followed by a =~,
-                    // then it will get parsed in the =~ handler where
-                    // named captures can also be extracted.
-                    if (!match1(parser, PM_TOKEN_EQUAL_TILDE)) {
-                        pm_node_flag_set(UP(node), pm_regexp_parse(parser, node, NULL, NULL));
-                    }
-
-                    return UP(node);
-                }
-
-                // If we get here, then we have interpolation so we'll need to create
-                // a regular expression node with interpolation.
-                interpolated = pm_interpolated_regular_expression_node_create(parser, &opening);
-
-                pm_node_t *part = UP(pm_string_node_create_unescaped(parser, NULL, &parser->previous, NULL, &unescaped));
-                if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) {
-                    // This is extremely strange, but the first string part of a
-                    // regular expression will always be tagged as binary if we
-                    // are in a US-ASCII file, no matter its contents.
-                    pm_node_flag_set(part, PM_STRING_FLAGS_FORCED_BINARY_ENCODING);
-                }
-
-                pm_interpolated_regular_expression_node_append(parser->arena, interpolated, part);
-            } else {
-                // If the first part of the body of the regular expression is not a
-                // string content, then we have interpolation and we need to create an
-                // interpolated regular expression node.
-                interpolated = pm_interpolated_regular_expression_node_create(parser, &opening);
-            }
-
-            // Now that we're here and we have interpolation, we'll parse all of the
-            // parts into the list.
-            pm_node_t *part;
-            while (!match2(parser, PM_TOKEN_REGEXP_END, PM_TOKEN_EOF)) {
-                if ((part = parse_string_part(parser, (uint16_t) (depth + 1))) != NULL) {
-                    pm_interpolated_regular_expression_node_append(parser->arena, interpolated, part);
-                }
-            }
-
-            pm_token_t closing = parser->current;
-            if (match1(parser, PM_TOKEN_EOF)) {
-                pm_parser_err_token(parser, &opening, PM_ERR_REGEXP_TERM);
-                closing = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
-            } else {
-                expect1(parser, PM_TOKEN_REGEXP_END, PM_ERR_REGEXP_TERM);
-            }
-
-            pm_interpolated_regular_expression_node_closing_set(parser, interpolated, &closing);
-            return UP(interpolated);
-        }
+        case PM_TOKEN_REGEXP_BEGIN:
+            return parse_regexp(parser, depth);
         case PM_TOKEN_XSTRING_BEGIN:
         case PM_TOKEN_PERCENT_LOWER_X: {
             parser_lex(parser);
