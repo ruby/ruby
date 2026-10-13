@@ -20558,6 +20558,53 @@ parse_not(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
     return UP(pm_call_node_not_create(parser, receiver, &message, &arguments));
 }
 
+static pm_pre_execution_node_t *
+parse_preexe(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t depth) {
+    pm_node_list_t current_block_exits = { 0 };
+    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+
+    if (binding_power != PM_BINDING_POWER_STATEMENT) {
+        pm_parser_err_current(parser, PM_ERR_STATEMENT_PREEXE_BEGIN);
+    }
+
+    pm_token_t keyword = parser->current;
+    parser_lex(parser);
+
+    expect1(parser, PM_TOKEN_BRACE_LEFT, PM_ERR_BEGIN_UPCASE_BRACE);
+    pm_token_t opening = parser->previous;
+    pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_PREEXE, (uint16_t) (depth + 1));
+
+    expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_BEGIN_UPCASE_TERM, &opening);
+    pm_context_t context = parser->current_context->context;
+    if ((context != PM_CONTEXT_MAIN) && (context != PM_CONTEXT_PREEXE)) {
+        pm_parser_err_token(parser, &keyword, PM_ERR_BEGIN_UPCASE_TOPLEVEL);
+    }
+
+    flush_block_exits(parser, previous_block_exits);
+    return pm_pre_execution_node_create(parser, &keyword, &opening, statements, &parser->previous);
+}
+
+static pm_post_execution_node_t *
+parse_postexe(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
+    if (binding_power != PM_BINDING_POWER_STATEMENT && !(flags & PM_PARSE_ACCEPTS_STATEMENT)) {
+        pm_parser_err_current(parser, PM_ERR_STATEMENT_POSTEXE_END);
+    }
+
+    pm_token_t keyword = parser->current;
+    parser_lex(parser);
+
+    if (context_def_p(parser)) {
+        pm_parser_warn_token(parser, &keyword, PM_WARN_END_IN_METHOD);
+    }
+
+    expect1(parser, PM_TOKEN_BRACE_LEFT, PM_ERR_END_UPCASE_BRACE);
+    pm_token_t opening = parser->previous;
+    pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_POSTEXE, (uint16_t) (depth + 1));
+
+    expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_END_UPCASE_TERM, &opening);
+    return pm_post_execution_node_create(parser, &keyword, &opening, statements, &parser->previous);
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20760,30 +20807,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             return parse_case(parser, flags, depth);
         case PM_TOKEN_KEYWORD_BEGIN:
             return UP(parse_begin(parser, depth));
-        case PM_TOKEN_KEYWORD_BEGIN_UPCASE: {
-            pm_node_list_t current_block_exits = { 0 };
-            pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
-
-            if (binding_power != PM_BINDING_POWER_STATEMENT) {
-                pm_parser_err_current(parser, PM_ERR_STATEMENT_PREEXE_BEGIN);
-            }
-
-            parser_lex(parser);
-            pm_token_t keyword = parser->previous;
-
-            expect1(parser, PM_TOKEN_BRACE_LEFT, PM_ERR_BEGIN_UPCASE_BRACE);
-            pm_token_t opening = parser->previous;
-            pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_PREEXE, (uint16_t) (depth + 1));
-
-            expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_BEGIN_UPCASE_TERM, &opening);
-            pm_context_t context = parser->current_context->context;
-            if ((context != PM_CONTEXT_MAIN) && (context != PM_CONTEXT_PREEXE)) {
-                pm_parser_err_token(parser, &keyword, PM_ERR_BEGIN_UPCASE_TOPLEVEL);
-            }
-
-            flush_block_exits(parser, previous_block_exits);
-            return UP(pm_pre_execution_node_create(parser, &keyword, &opening, statements, &parser->previous));
-        }
+        case PM_TOKEN_KEYWORD_BEGIN_UPCASE:
+            return UP(parse_preexe(parser, binding_power, depth));
         case PM_TOKEN_KEYWORD_BREAK:
         case PM_TOKEN_KEYWORD_NEXT:
         case PM_TOKEN_KEYWORD_RETURN:
@@ -20833,25 +20858,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             return parse_def(parser, binding_power, flags, depth);
         case PM_TOKEN_KEYWORD_DEFINED:
             return UP(parse_defined(parser, flags, depth));
-        case PM_TOKEN_KEYWORD_END_UPCASE: {
-            if (binding_power != PM_BINDING_POWER_STATEMENT && !(flags & PM_PARSE_ACCEPTS_STATEMENT)) {
-                pm_parser_err_current(parser, PM_ERR_STATEMENT_POSTEXE_END);
-            }
-
-            parser_lex(parser);
-            pm_token_t keyword = parser->previous;
-
-            if (context_def_p(parser)) {
-                pm_parser_warn_token(parser, &keyword, PM_WARN_END_IN_METHOD);
-            }
-
-            expect1(parser, PM_TOKEN_BRACE_LEFT, PM_ERR_END_UPCASE_BRACE);
-            pm_token_t opening = parser->previous;
-            pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_POSTEXE, (uint16_t) (depth + 1));
-
-            expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_END_UPCASE_TERM, &opening);
-            return UP(pm_post_execution_node_create(parser, &keyword, &opening, statements, &parser->previous));
-        }
+        case PM_TOKEN_KEYWORD_END_UPCASE:
+            return UP(parse_postexe(parser, binding_power, flags, depth));
         case PM_TOKEN_KEYWORD_FALSE:
             parser_lex(parser);
             return UP(pm_false_node_create(parser, &parser->previous));
