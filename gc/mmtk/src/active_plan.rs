@@ -12,11 +12,11 @@ pub struct VMActivePlan {}
 
 impl ActivePlan<Ruby> for VMActivePlan {
     fn number_of_mutators() -> usize {
-        (upcalls().number_of_mutators)()
+        upcalls::number_of_mutators()
     }
 
     fn is_mutator(_tls: VMThread) -> bool {
-        (upcalls().is_mutator)()
+        upcalls::is_mutator()
     }
 
     fn mutator(_tls: VMMutatorThread) -> &'static mut Mutator<Ruby> {
@@ -25,7 +25,7 @@ impl ActivePlan<Ruby> for VMActivePlan {
 
     fn mutators<'a>() -> Box<dyn Iterator<Item = &'a mut Mutator<Ruby>> + 'a> {
         let mut mutators = VecDeque::new();
-        (upcalls().get_mutators)(
+        upcalls::get_mutators(
             add_mutator_to_vec,
             &mut mutators as *mut VecDeque<&mut Mutator<Ruby>> as _,
         );

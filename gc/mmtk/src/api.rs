@@ -12,7 +12,6 @@ use crate::Ruby;
 use crate::RubySlot;
 use crate::abi::RawVecOfObjRef;
 use crate::abi::RubyBindingOptions;
-use crate::abi::RubyUpcalls;
 use crate::binding;
 use crate::binding::RubyBinding;
 use crate::heap::CPU_HEAP_TRIGGER_CONFIG;
@@ -220,12 +219,7 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
 pub unsafe extern "C" fn mmtk_init_binding(
     builder: *mut MMTKBuilder,
     binding_options: *const RubyBindingOptions,
-    upcalls: *const RubyUpcalls,
 ) {
-    crate::MUTATOR_THREAD_PANIC_HANDLER
-        .set((unsafe { (*upcalls).clone() }).mutator_thread_panic_handler)
-        .unwrap_or_else(|_| panic!("MUTATOR_THREAD_PANIC_HANDLER is already initialized"));
-
     crate::set_panic_hook();
 
     let builder: Box<MMTKBuilder> = unsafe { Box::from_raw(builder) };
@@ -233,7 +227,7 @@ pub unsafe extern "C" fn mmtk_init_binding(
     let mmtk_boxed = mmtk_init(&builder);
     let mmtk_static = Box::leak(Box::new(mmtk_boxed));
 
-    let mut binding = RubyBinding::new(mmtk_static, &binding_options, upcalls);
+    let mut binding = RubyBinding::new(mmtk_static, &binding_options);
     binding
         .weak_proc
         .init_parallel_obj_free_candidates(memory_manager::num_of_workers(binding.mmtk));
