@@ -902,6 +902,12 @@ module RbInstall
   end
 end
 
+# Gemspecs are evaluated in this binding, so that they cannot overwrite the
+# local variables of `load_gemspec`.
+def gemspec_binding
+  binding
+end
+
 def load_gemspec(file, base = nil, files: nil)
   file = File.realpath(file)
   code = File.read(file, encoding: "utf-8:-")
@@ -916,15 +922,13 @@ def load_gemspec(file, base = nil, files: nil)
     "[" + spec_files + "] || itself"
   end
 
-  # The gemspec is evaluated in this binding and may overwrite `files`.
-  collected_files = files || []
-
-  spec = eval(code, binding, file)
+  spec = eval(code, gemspec_binding, file)
   # Files collected for a default gem are relative to its lib directory,
   # while the files listed by the gemspec itself are relative to the gem
   # root.
-  spec.files = (spec.files + collected_files).map do |f|
-    if base ? f.end_with?(".rb") && !File.exist?(File.join(base, f)) : collected_files.include?(f)
+  files ||= []
+  spec.files = (spec.files + files).map do |f|
+    if base ? f.end_with?(".rb") && !File.exist?(File.join(base, f)) : files.include?(f)
       "lib/#{f}"
     else
       f
