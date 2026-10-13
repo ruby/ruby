@@ -19798,6 +19798,41 @@ parse_begin(pm_parser_t *parser, uint16_t depth) {
     return node;
 }
 
+static pm_defined_node_t *
+parse_defined(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+    pm_token_t keyword = parser->current;
+    parser_lex(parser);
+
+    pm_token_t lparen = { 0 };
+    pm_token_t rparen = { 0 };
+    pm_node_t *expression;
+
+    context_push(parser, PM_CONTEXT_DEFINED);
+    bool newline = accept1(parser, PM_TOKEN_NEWLINE);
+
+    if (accept2(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
+        lparen = parser->previous;
+
+        if (newline && accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
+            expression = UP(pm_parentheses_node_create(parser, &lparen, NULL, &parser->previous, 0));
+            lparen = (pm_token_t) { 0 };
+        } else {
+            expression = parse_expression(parser, PM_BINDING_POWER_COMPOSITION, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_DEFINED_EXPRESSION, (uint16_t) (depth + 1));
+
+            if (!parser->recovering) {
+                accept1(parser, PM_TOKEN_NEWLINE);
+                expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
+                rparen = parser->previous;
+            }
+        }
+    } else {
+        expression = parse_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_DEFINED_EXPRESSION, (uint16_t) (depth + 1));
+    }
+
+    context_pop(parser);
+    return pm_defined_node_create(parser, NTOK2PTR(lparen), expression, NTOK2PTR(rparen), &keyword);
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20239,45 +20274,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             return parse_class(parser, flags, depth);
         case PM_TOKEN_KEYWORD_DEF:
             return parse_def(parser, binding_power, flags, depth);
-        case PM_TOKEN_KEYWORD_DEFINED: {
-            parser_lex(parser);
-
-            pm_token_t keyword = parser->previous;
-            pm_token_t lparen = { 0 };
-            pm_token_t rparen = { 0 };
-            pm_node_t *expression;
-
-            context_push(parser, PM_CONTEXT_DEFINED);
-            bool newline = accept1(parser, PM_TOKEN_NEWLINE);
-
-            if (accept2(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
-                lparen = parser->previous;
-
-                if (newline && accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                    expression = UP(pm_parentheses_node_create(parser, &lparen, NULL, &parser->previous, 0));
-                    lparen = (pm_token_t) { 0 };
-                } else {
-                    expression = parse_expression(parser, PM_BINDING_POWER_COMPOSITION, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_DEFINED_EXPRESSION, (uint16_t) (depth + 1));
-
-                    if (!parser->recovering) {
-                        accept1(parser, PM_TOKEN_NEWLINE);
-                        expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
-                        rparen = parser->previous;
-                    }
-                }
-            } else {
-                expression = parse_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_DEFINED_EXPRESSION, (uint16_t) (depth + 1));
-            }
-
-            context_pop(parser);
-            return UP(pm_defined_node_create(
-                parser,
-                NTOK2PTR(lparen),
-                expression,
-                NTOK2PTR(rparen),
-                &keyword
-            ));
-        }
+        case PM_TOKEN_KEYWORD_DEFINED:
+            return UP(parse_defined(parser, flags, depth));
         case PM_TOKEN_KEYWORD_END_UPCASE: {
             if (binding_power != PM_BINDING_POWER_STATEMENT && !(flags & PM_PARSE_ACCEPTS_STATEMENT)) {
                 pm_parser_err_current(parser, PM_ERR_STATEMENT_POSTEXE_END);
