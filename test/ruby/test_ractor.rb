@@ -865,6 +865,15 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_ractor_new_with_method_proc_is_not_supported
+    assert_ractor(<<~'RUBY')
+      def ractor_body = :ok
+      assert_raise_with_message(RuntimeError, /not supported yet/) do
+        Ractor.new(&method(:ractor_body))
+      end
+    RUBY
+  end
+
   def test_ractor_does_not_inherit_fiber_storage
     assert_ractor(<<~'RUBY')
       Fiber[:key] = "creator"
