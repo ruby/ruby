@@ -509,10 +509,12 @@ w32_resume_thread(HANDLE handle)
 #ifdef HAVE__BEGINTHREADEX
 #define start_thread (HANDLE)_beginthreadex
 #define thread_errno errno
-typedef unsigned long (__stdcall *w32_thread_start_func)(void*);
+typedef unsigned w32_thread_start_ret;
+typedef w32_thread_start_ret (__stdcall *w32_thread_start_func)(void*);
 #else
 #define start_thread CreateThread
 #define thread_errno rb_w32_map_errno(GetLastError())
+typedef DWORD w32_thread_start_ret;
 typedef LPTHREAD_START_ROUTINE w32_thread_start_func;
 #endif
 
@@ -626,7 +628,7 @@ native_thread_destroy_self(struct rb_native_thread *nt)
     native_thread_destroy(nt);
 }
 
-static unsigned long __stdcall
+static w32_thread_start_ret __stdcall
 nt_start_trampoline(void *nt_ptr)
 {
     struct rb_native_thread *nt = (struct rb_native_thread *)nt_ptr;
@@ -839,7 +841,7 @@ timer_thread_polling(rb_vm_t *vm)
     }
 }
 
-static unsigned long __stdcall
+static w32_thread_start_ret __stdcall
 timer_thread_trampoline(void *vm_ptr)
 {
     rb_w32_set_thread_description(GetCurrentThread(), L"ruby-timer-thread");
