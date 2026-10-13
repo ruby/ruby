@@ -2,6 +2,18 @@
 require 'test/unit'
 
 class TestRactor < Test::Unit::TestCase
+  # Spawning from a Ractor must not block on the main Ractor's $stdout
+  def test_spawn_does_not_contend_on_main_ractors_stdout
+    assert_separately([], <<~'RUBY', timeout: 60)
+      Warning[:experimental] = false
+      $stdout = File.open(File::NULL, "w")
+      writer = Thread.new { loop { $stdout.write("x" * 100 + "\n"); $stdout.flush } }
+      r = Ractor.new { 20.times { system(EnvUtil.rubybin, "-e", "") }; :done }
+      assert_equal :done, r.value
+      writer.kill.join
+    RUBY
+  end
+
   def test_shareability_of_iseq_proc
     assert_raise Ractor::IsolationError do
       foo = []
