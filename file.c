@@ -2593,23 +2593,23 @@ rb_file_zero_p(VALUE obj, VALUE fname)
  *
  * Returns the size in bytes of the given `object`
  * if the entry exists and has non-zero size, `nil` otherwise;
- * the `object` may be a path or an IO object:
+ * the `object` may be a string path or an IO object:
  *
  * ```ruby
  * # Regular file.
- * path = '/tmp/t.tmp'
- * File.write(path, 'foo')
- * File.size?(path)   # => 3    # Non-zero size.
- * File.write(path, '')
- * File.size?(path)   # => nil  # Zero size.
- * File.delete(path)            # Clean up.
- * File.size?(path)   # => nil  # Non-existent.
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.size?(filepath)   # => 3    # Non-zero size.
+ * File.write(filepath, '')
+ * File.size?(filepath)   # => nil  # Zero size.
+ * File.delete(filepath)            # Clean up.
+ * File.size?(filepath)   # => nil  # Non-existent.
  * # Directory.
- * path = '/tmp/foo/'
- * Dir.mkdir(path)
- * File.size?(path)   # => 4096 # Non-zero size.
- * Dir.rmdir(path)              # Clean up.
- * File.size?(path)   # => nil  # Non-existent.
+ * dirpath = '/tmp/dir'
+ * Dir.mkdir(dirpath)
+ * File.size?(dirpath)   # => 4096 # Non-zero size.
+ * Dir.rmdir(dirpath)              # Clean up.
+ * File.size?(dirpath)   # => nil  # Non-existent.
  * ```
  *
  */
@@ -7724,17 +7724,17 @@ rb_stat_z(VALUE obj)
  * if the entry exists and has non-zero size, `nil` otherwise:
  *
  * ```ruby
- * path = '/tmp/t.tmp'
- * File.write(path, 'foo')
- * File.size(path)        # => 3
- * stat = File.stat(path)           # Take snapshot.
- * stat.size?             # => 3    # Non-zero size.
- * File.write(path, '')
- * File.size(path)        # => 0
- * stat.size?             # => 3    # Snapshot unchanged.
- * stat = File.stat(path)           # Take new snapshot.
- * stat.size?             # => nil  # Zero size
- * File.delete(path)                # Clean up.
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.size(filepath) # => 3
+ * stat = File.stat(filepath)    # Take snapshot.
+ * stat.size?          # => 3    # Non-zero size.
+ * File.write(filepath, '')
+ * File.size(filepath) # => 0
+ * stat.size?          # => 3    # Snapshot unchanged.
+ * stat = File.stat(filepath)    # Take new snapshot.
+ * stat.size?          # => nil  # Zero size
+ * File.delete(filepath)         # Clean up.
  * ```
  *
  */
