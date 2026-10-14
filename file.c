@@ -1057,25 +1057,25 @@ rb_stat_rdev_minor(VALUE self)
  *  call-seq:
  *    size -> integer
  *
- *  Returns the size of `self` in bytes:
+ *  Returns the size (in bytes) of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
  *  ```ruby
- *  File.stat('doc/maintainers.md').size # => 14900  # Regular file.
- *  File.stat('doc/syntax/').size        # => 4096   # Directory.
+ *  File.stat('/etc/passwd').size # => 3092   # Regular file.
+ *  File.stat('/etc').size        # => 12288  # Directory.
  *  # When the file size changes.
- *  path = '/tmp/t.tmp'
- *  file = File.new(path, 'w+')
+ *  filepath = '/tmp/t.tmp'
+ *  file = File.new(filepath, 'w+')
  *  file.write('foo')
- *  stat = File.stat(path) # Take snapshot.
- *  stat.size              # => 3
- *  file.write('bar')      # Change file size.
- *  file.size              # => 6
- *  stat.size              # => 3  # Snapshot unchanged.
- *  stat = File.stat(path) # Fresh snapshot.
- *  stat.size              # => 6  # Shapshot different.
- *  # Clean up.
- *  file.close
- *  File.delete(path)
+ *  file.size                     # => 3
+ *  stat0 = File.stat(filepath)               # Take snapshot.
+ *  stat0.size                    # => 3
+ *  file.write('bar')                         # Change file size.
+ *  file.size                     # => 6
+ *  stat0.size                    # => 3      # Snapshot not updated.
+ *  stat1 = File.stat(filepath)               # Take new snapshot.
+ *  stat1.size                    # => 6      # Snapshot has updated size.
+ *  File.delete(filepath)                     # Clean up.
  *  ```
  *
  */
@@ -2951,12 +2951,12 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
  *   File.size(object) -> integer
  *
  * Returns the size in bytes of the given `object`,
- * which may be a path or an IO object:
+ * which may be a string path or an IO object:
  *
  * ```ruby
- * File.size('doc/maintainers.md') # => 14900  # Regular file.
- * File.size('doc/syntax/')        # => 4096   # Directory.
- * File.size($stdin)               # => 0      # IO object.
+ * File.size('/etc/passwd') # => 3092   # Regular file.
+ * File.size('/etc')        # => 12288  # Directory.
+ * File.size($stdin)        # => 0      # IO object.
  * ```
  *
  */
@@ -3453,8 +3453,8 @@ rb_file_size(VALUE file)
  *  Returns the size of `self` in bytes:
  *
  *  ```ruby
- *  File.new('doc/maintainers.md').size # => 14900  # Regular file.
- *  File.new('doc/syntax/').size        # => 4096   # Directory.
+ *  File.new('/etc/passwd').size # => 3092   # Regular file.
+ *  File.new('/etc').size        # => 12288  # Directory.
  *  ```
  *
  */
