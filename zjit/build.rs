@@ -1,8 +1,6 @@
 // This build script is only used for `make zjit-test` for building
 // the test binary; ruby builds don't use this.
 fn main() {
-    use std::env;
-
     // option_env! automatically registers a rerun-if-env-changed
     if let Some(ruby_build_dir) = option_env!("RUBY_BUILD_DIR") {
         // Link against libminiruby.a
@@ -13,8 +11,7 @@ fn main() {
 
         // System libraries that libminiruby needs. Has to be
         // ordered after -lminiruby above.
-        println!("cargo:rerun-if-env-changed=RUBY_LD_FLAGS");
-        let link_flags = env::var("RUBY_LD_FLAGS").unwrap();
+        let link_flags = option_env!("RUBY_BUILD_DIR").unwrap();
 
         let mut split_iter = link_flags.split(" ");
         while let Some(token) = split_iter.next() {
