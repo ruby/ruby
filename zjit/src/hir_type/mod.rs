@@ -501,6 +501,13 @@ impl Type {
         }
     }
 
+    pub fn cbool_value(&self) -> Option<bool> {
+        match (self.is_subtype(types::CBool), self.spec()) {
+            (true, Specialization::Int(val)) => Some(val != 0),
+            _ => None,
+        }
+    }
+
     fn int_spec_signed(&self) -> Option<i64> {
         assert!(self.is_subtype(types::CSigned), "int_spec_signed() only makes sense for signed integer types");
         match self.spec() {
