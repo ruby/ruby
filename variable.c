@@ -2967,6 +2967,17 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
 
     VALUE feature = autoload_data->feature;
 
+    loading = RSTRING_PTR(feature);
+
+    /*
+     * If the feature is not provided yet, autoload it.  Note that
+     * rb_feature_provided may switch threads, so whether somebody else is
+     * autoloading must be checked after this.
+     */
+    if (!rb_feature_provided(loading, &loading)) {
+        return autoload_const_value;
+    }
+
     /*
      * if somebody else is autoloading, we MUST wait for them, since
      * rb_provide_feature can provide a feature before autoload_const_set
@@ -2974,12 +2985,6 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
      * the other thread.
      */
     if (autoload_by_someone_else(autoload_data)) {
-        return autoload_const_value;
-    }
-
-    loading = RSTRING_PTR(feature);
-
-    if (!rb_feature_provided(loading, &loading)) {
         return autoload_const_value;
     }
 
