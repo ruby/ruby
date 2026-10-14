@@ -7434,11 +7434,11 @@ rb_stat_R(VALUE obj)
  * filepath = '/tmp/t.tmp'
  * File.write(filepath, 'foo')               # Create file.
  * stat0 = File.stat(filepath)               # Take snapshot.
- * stat0.world_readable?.to_s(8) # => "664"  # Snapshot shows world-writable.
- * File.chmod(0o000, filepath)               # Make unwritable.
+ * stat0.world_readable?.to_s(8) # => "664"  # Snapshot shows world-readable.
+ * File.chmod(0o000, filepath)               # Make unreadable.
  * stat0.world_readable?.to_s(8) # => "664"  # Snapshot not updated.
  * stat1 = File.stat(filepath)               # Take new snapshot.
- * stat1.world_readable?         # => nil    # Snapshot shows not world-writable.
+ * stat1.world_readable?         # => nil    # Snapshot shows not world-readable.
  * File.delete(filepath)                     # Clean up.
  * ```
  */
