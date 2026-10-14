@@ -857,12 +857,26 @@ rb_stat_nlink(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.uid    -> integer
+ *    uid -> integer
  *
- *  Returns the numeric user id of the owner of <i>stat</i>.
+ *  Returns the integer id of the owner of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").uid   #=> 501
+ *  ```ruby
+ *  Process.uid # => 0                # Superuser; can change owner.
+ *  filepath = '/tmp/t.tmp'
+ *  File.write(filepath, 'foo')       # Create file.
+ *  stat0 = File.stat(filepath)       # Take snapshot.
+ *  stat0.uid   # => 0                # Snapshot has uid.
+ *  File.chown(1000, 1000, filepath)  # Change owner.
+ *  stat0.uid   # => 0                # Snapshot not updated.
+ *  stat1 = File.stat(filepath)       # Take new snapshot.
+ *  stat1.uid   # => 1000             # Snapshot has new uid.
+ *  File.delete(filepath)             # Clean up.
+ *  ```
  *
  */
 
