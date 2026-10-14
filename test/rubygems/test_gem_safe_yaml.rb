@@ -171,6 +171,14 @@ class TestGemSafeYAML < Gem::TestCase
     assert_match(/maximum alias expansion/, error.message)
   end
 
+  def test_alias_expansion_limit_with_mappings
+    yaml = +"seq:\n- &a0\n  k: x\n"
+    1.upto(20) {|i| yaml << "- &a#{i}\n  a: *a#{i - 1}\n  b: *a#{i - 1}\n" }
+
+    error = assert_raise(Psych::BadAlias) { Gem::SafeYAML.safe_load(yaml) }
+    assert_match(/maximum alias expansion/, error.message)
+  end
+
   def test_alias_expansion_limit_with_long_scalar
     yaml = +"s: &s #{"x" * 1_000}\nrefs:\n"
     200.times { yaml << "- *s\n" }
