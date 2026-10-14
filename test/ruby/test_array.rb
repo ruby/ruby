@@ -3199,6 +3199,22 @@ class TestArray < Test::Unit::TestCase
     assert_equal([], a)
   end
 
+  def test_zip_method_missing_block
+    # [Bug #22436]
+    obj = Object.new
+    def obj.method_missing(*) = nil
+    out = Object.new
+    def out.write(*) = nil
+    def out.puts(*) = yield # called without a block; must raise, not crash
+    begin
+      original_stdout, $stdout = $stdout, out
+      [1].zip(obj)
+      assert_raise(LocalJumpError) { puts 1 }
+    ensure
+      $stdout = original_stdout
+    end
+  end
+
   def test_transpose
     assert_equal([[1, :a], [2, :b], [3, :c]],
       [[1, 2, 3], [:a, :b, :c]].transpose)
