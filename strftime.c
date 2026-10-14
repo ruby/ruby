@@ -972,9 +972,18 @@ strftime_size_limit(size_t format_len)
 }
 
 static VALUE
-create_buffer(rb_encoding *enc)
+create_buffer(size_t format_len, rb_encoding *enc)
 {
-	VALUE result = rb_obj_hide(rb_enc_str_new(0, 0, enc));
+	/*
+	 * most results fit in twice the length of the format, or in 32
+	 * bytes for short formats like "%FT%T"
+	 */
+	size_t capa = format_len < RB_LEN_MAX / 2 ? format_len * 2 : format_len;
+	VALUE result;
+
+	if (capa < 32) capa = 32;
+	result = rb_obj_hide(rb_str_buf_new((rb_len_t)capa));
+	rb_enc_associate(result, enc);
 	ENC_CODERANGE_CLEAR(result);
 	return result;
 }
@@ -983,7 +992,7 @@ VALUE
 rb_strftime(const char *format, size_t format_len, rb_encoding *enc,
 	    VALUE time, const struct vtm *vtm, VALUE timev, int gmt)
 {
-	VALUE buff = create_buffer(enc);
+	VALUE buff = create_buffer(format_len, enc);
 	buff = rb_strftime_with_timespec(buff, format, format_len, enc,
 					 time, vtm, timev, NULL, gmt,
 					 strftime_size_limit(format_len));
@@ -994,7 +1003,7 @@ VALUE
 rb_strftime_timespec(const char *format, size_t format_len, rb_encoding *enc,
 		     VALUE time, const struct vtm *vtm, struct timespec *ts, int gmt)
 {
-	VALUE buff = create_buffer(enc);
+	VALUE buff = create_buffer(format_len, enc);
 	buff = rb_strftime_with_timespec(buff, format, format_len, enc,
 					 time, vtm, Qnil, ts, gmt,
 					 strftime_size_limit(format_len));
@@ -1007,7 +1016,7 @@ rb_strftime_limit(const char *format, size_t format_len, rb_encoding *enc,
 		  VALUE time, const struct vtm *vtm, struct timespec *ts,
 		  int gmt, size_t maxsize)
 {
-	VALUE buff = create_buffer(enc);
+	VALUE buff = create_buffer(format_len, enc);
 	buff = rb_strftime_with_timespec(buff, format, format_len, enc,
 					 time, vtm, Qnil, ts, gmt, maxsize);
 	return rb_obj_reveal(buff, rb_cString);
