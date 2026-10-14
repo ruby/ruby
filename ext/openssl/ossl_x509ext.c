@@ -263,7 +263,7 @@ ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
         oid = ossl_to_der_if_possible(oid);
         StringValue(oid);
         p = (unsigned char *)RSTRING_PTR(oid);
-        ext = d2i_X509_EXTENSION(NULL, &p, RSTRING_LEN(oid));
+        ext = d2i_X509_EXTENSION(NULL, &p, rb_len2long(RSTRING_LEN(oid)));
         if (!ext)
             ossl_raise(eX509ExtError, "d2i_X509_EXTENSION");
         RTYPEDDATA_DATA(self) = ext;

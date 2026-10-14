@@ -98,6 +98,7 @@ LIBPRISM_OBJS = \
 		prism/arena.$(OBJEXT) \
 		prism/buffer.$(OBJEXT) \
 		prism/char.$(OBJEXT) \
+		prism/comments.$(OBJEXT) \
 		prism/constant_pool.$(OBJEXT) \
 		prism/diagnostic.$(OBJEXT) \
 		prism/encoding.$(OBJEXT) \
@@ -1186,6 +1187,7 @@ $(srcs_vpath)vm.inc: $(tooldir)/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
 
 BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
+		$(srcdir)/basic_object.rb \
 		$(srcdir)/dir.rb \
 		$(srcdir)/gc.rb \
 		$(srcdir)/numeric.rb \

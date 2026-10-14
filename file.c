@@ -820,14 +820,30 @@ rb_stat_mode(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.nlink   -> integer
+ *    nlink -> integer
  *
- *  Returns the number of hard links to <i>stat</i>.
+ *  Returns the number of [hard links](rdoc-ref:file/hard_links.md) to the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").nlink             #=> 1
- *     File.link("testfile", "testfile.bak")   #=> 0
- *     File.stat("testfile").nlink             #=> 2
+ *  ```ruby
+ *  filepath = '/tmp/t.txt'
+ *  File.write(filepath, 'foo')    # Creates hard link.
+ *  stat0 = File.stat(filepath)    # Take snapshot.
+ *  stat0.nlink # => 1             # One hard link.
+ *  linkpath = '/tmp/t.bak'
+ *  File.link(filepath, linkpath)  # Creates another hard link.
+ *  stat0.nlink # => 1             # Snapshot not updated.
+ *  stat1 = File.stat(filepath)    # Take new snapshot.
+ *  stat1.nlink # => 2             # Updated nlink count.
+ *  File.unlink(linkpath)          # Remove one hard link.
+ *  stat1.nlink # => 2             # Snapshot not updated.
+ *  stat2 = File.stat(filepath)    # Take new shapshot.
+ *  stat2.nlink # => 1             # Updated nlink count.
+ *  File.unlink(filepath)          # Clean up.
+ *  ```
  *
  */
 
@@ -1219,23 +1235,22 @@ rb_stat_atime(VALUE self)
  *  call-seq:
  *    mtime -> time
  *
- *  Returns a new Time object containing the modification time
- *  of the object represented by `self`
- *  at the time `self` was created;
- *  see [Snapshot](rdoc-ref:File::Stat@Snapshot):
+ *  Returns a new Time object containing
+ *  the [modification time](rdoc-ref:file/timestamps.md@Modification+Time)
+ *  of the object in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
  *  ```ruby
- *  path = 't.tmp'
- *  file = File.new(path, 'w+')
- *  stat = File.stat(path)
- *  stat.mtime        # => 2026-09-19 08:49:08.846933858 -0500
- *  file.write('foo')
- *  file.flush
- *  File.mtime(path)  # => 2026-09-19 08:50:14.381365572 -0500
- *  stat.mtime        # => 2026-09-19 08:49:08.846933858 -0500
- *  stat = File.stat(path)
- *  stat.mtime        # => 2026-09-19 08:50:14.381365572 -0500
- *  File.unlink(path) # Clean up.
+ *  filepath = '/tmp/t.tmp'
+ *  File.write(filepath, 'foo')                                    # Create file.
+ *  File.mtime(filepath) # => 2026-10-13 10:48:10.477675435 -0500  # File mtime.
+ *  stat0 = File.stat(filepath)                                    # Take snapshot.
+ *  stat0.mtime          # => 2026-10-13 10:48:10.477675435 -0500  # Snapshot mtime.
+ *  File.write(filepath, 'bar')                                    # Modify file.
+ *  File.mtime(filepath) # => 2026-10-13 10:48:37.584264035 -0500  # File mtime updated.
+ *  stat0.mtime          # => 2026-10-13 10:48:10.477675435 -0500  # Snapshot mtime not updated.
+ *  stat1 = File.stat(filepath)                                    # Take new snapshot.
+ *  stat1.mtime          # => 2026-10-13 10:48:37.584264035 -0500  # New snapshot mtime.
+ *  File.delete(filepath)                                          # Clean up.
  *  ```
  *
  */
@@ -2012,13 +2027,13 @@ rb_file_directory_p(VALUE obj, VALUE fname)
  * Returns whether the entry at the given `path` is a pipe:
  *
  * ```ruby
- * File.pipe?('doc/syntax/')        # => false  # Directory.
- * File.pipe?('doc/maintainers.md') # => false  # Regular file.
- * File.pipe?('nosuch')             # => false  # Non-existent.
- * path = '/tmp/foo'
- * File.mkfifo(path)
- * File.pipe?(path)                 # => true
- * File.delete(path)                # Clean up.
+ * pipepath = '/tmp/pipe'
+ * File.pipe?(pipepath)      # => false
+ * File.mkfifo(pipepath)
+ * File.pipe?(pipepath)      # => true
+ * File.pipe?('/etc')        # => false
+ * File.pipe?('/etc/passwd') # => false
+ * File.delete(pipepath)     # Clean up.
  * ```
  *
  */
@@ -2289,7 +2304,7 @@ rb_file_readable_p(VALUE obj, VALUE fname)
  * call-seq:
  *    File.readable_real?(path) -> true or false
  *
- * Like File.readable?, but checks against the real user and group ids
+ * Like File.readable?, but checks against the real owner and group ids
  * instead of the effective ids.
  */
 
@@ -2616,19 +2631,20 @@ rb_file_size_p(VALUE obj, VALUE fname)
  *   File.owned?(object) -> true or false
  *
  * Returns whether the given `object` represents a filesystem entry or IO object
- * that exists and is owned by the user of the current process:
+ * that exists and is owned by the owner of the current process:
  *
  * ```ruby
- * filepath = 'doc/t.tmp'
- * File.write(filepath, 'foo')
- * File.owned?(filepath) # => true
- * File.delete(filepath) # Clean up.
- * dirpath = 'doc/tmp'
+ * dirpath = '/tmp/dir'
  * Dir.mkdir(dirpath)
- * File.owned?(dirpath)  # => true
- * Dir.rmdir(dirpath)    # Clean up.
- * File.owned?($stdin)   # => true
- * File.owned?('/etc')   # => false
+ * File.owned?(dirpath)     # => true
+ * filepath = File.join(dirpath, 't.tmp')
+ * File.write(filepath, 'foo')
+ * File.owned?(filepath)    # => true
+ * File.owned?($stdin)      # => true
+ * File.owned?('/tmp')      # => false
+ * File.owned?('nosuch')    # => false
+ * FileUtils.rm_rf(dirpath) # Clean up.
+ *
  * ```
  *
  */
@@ -3083,28 +3099,28 @@ rb_file_atime(VALUE obj)
  *  call-seq:
  *    File.mtime(object) -> time
  *
- *  Returns a new Time object containing the modification time for the given object,
- *  which may be a string path or an IO object;
- *  see [Modification Time](rdoc-ref:file/timestamps.md@Modification+Time):
+ *  Returns a new Time object containing
+ *  the [modification time](rdoc-ref:file/timestamps.md@Modification+Time)
+ *  of the given `object`, which may be a string path or an IO object;
  *
  *  ```ruby
- *  # Create directory; directory mtime established.
- *  dirpath = 'doc/foo'                    # => "doc/foo"
+ *  # Create directory; establishes directory mtime.
+ *  dirpath = '/tmp/dir'
  *  Dir.mkdir(dirpath)
- *  File.mtime(dirpath)                    # => 2026-09-19 09:01:30.045928322 -0500
- *  # Create file therein; file mtime established, directory mtime updated.
- *  filepath = File.join(dirpath, 't.tmp') # => "doc/foo/t.tmp"
+ *  File.mtime(dirpath)                    # => 2026-10-12 12:24:08.542476612 -0500
+ *  # Create file therein; establishes file mtime, updates directory mtime.
+ *  filepath = File.join(dirpath, 't.tmp') # => "/tmp/dir/t.tmp"
  *  File.write(filepath, 'foo')
- *  File.mtime(filepath)                   # => 2026-09-19 09:02:32.860803131 -0500
- *  File.mtime(dirpath)                    # => 2026-09-19 09:02:32.860803131 -0500
- *  # Modify file; file mtime updated, directory mtime unchanged.
+ *  File.mtime(filepath)                   # => 2026-10-12 12:28:41.261675035 -0500
+ *  File.mtime(dirpath)                    # => 2026-10-12 12:28:41.261675035 -0500
+ *  # Modify file; updates file mtime, does not update directory mtime.
  *  File.write(filepath, 'bar')
- *  File.mtime(filepath)                   # => 2026-09-19 09:03:29.875611413 -0500
- *  File.mtime(dirpath)                    # => 2026-09-19 09:02:32.860803131 -0500
- *  FileUtils.rm_rf(dirpath)               # Clean up.
- *  File.mtime($stdout)                    # => 2026-09-19 09:27:52 -0500
+ *  File.mtime(filepath)                   # => 2026-10-12 12:30:09.113910789 -0500
+ *  File.mtime(dirpath)                    # => 2026-10-12 12:28:41.261675035 -0500
+ *  FileUtils.rm_rf(dirpath) # Clean up.
+ *  File.mtime($stdout)                    # => 2026-10-12 12:31:28 -0500
  *  $stdout.flush
- *  File.mtime($stdout)                    # => 2026-09-19 09:28:08 -0500
+ *  File.mtime($stdout)                    # => 2026-10-12 12:31:36 -0500
  *  ```
  *
  */
@@ -3128,17 +3144,20 @@ rb_file_s_mtime(VALUE klass, VALUE fname)
  *  call-seq:
  *    mtime -> time
  *
- *  Returns a new Time object containing the modification time for `self`;
- *  see [Modification Time](rdoc-ref:file/timestamps.md@Modification+Time):
+ *  Returns a new Time object containing
+ *  the [modification time](rdoc-ref:file/timestamps.md@Modification+Time)
+ *  for `self`:
  *
  *  ```ruby
- *  path = 't.tmp'
- *  file = File.new(path, 'w+')
- *  file.mtime # => 2026-09-19 08:41:29.357110007 -0500
+ *  filepath = '/tmp/t.tmp'
+ *  file = File.new(filepath, 'w+')
+ *  file.mtime # => 2026-10-13 10:27:02.446070725 -0500
  *  file.write('foo')
  *  file.flush
- *  file.mtime # => 2026-09-19 08:41:46.321965574 -0500
- *  File.unlink(path)
+ *  file.mtime # => 2026-10-13 10:27:49.252424006 -0500
+ *  # Clean up.
+ *  file.close
+ *  File.delete(filepath)
  *  ```
  *
  */
@@ -7101,17 +7120,19 @@ rb_stat_d(VALUE obj)
  * :markup: markdown
  *
  *  call-seq:
- *    stat.pipe? -> true or false
+ *    pipe? -> true or false
  *
  * Returns whether the entry at the path in `self` is a pipe:
  *
  * ```ruby
- * File.stat('doc/syntax/').pipe?        # => false  # Directory .
- * File.stat('doc/maintainers.md').pipe? # => false  # Regular file.
- * path = '/tmp/foo'
- * File.mkfifo(path)
- * File.stat(path).pipe?                 # => true
- * File.delete(path)                     # Clean up.
+ * pipepath = '/tmp/pipe'
+ * File.mkfifo(pipepath)                       # Make pipe.
+ * stat = File.stat(pipepath)                  # Take snapshot.
+ * stat.pipe?                       # => true  # In snapshot.
+ * File.delete(pipepath)                       # Clean up.
+ * stat.pipe?                       # => true  # Snapshot not updated.
+ * File.stat('/etc').pipe?          # => false
+ * File.stat('/etc/passwd').pipe?   # => false
  * ```
  *
  */
@@ -7258,25 +7279,21 @@ rb_stat_c(VALUE obj)
  *  call-seq:
  *    owned? -> true or false
  *
- * Returns whether `self` represents a filesystem entry that,
- * at the time `self` was created,
- * existed and was owned by the user of the current process;
- * see [Snapshot](rdoc-ref:File::Stat@Snapshot):
+ * Returns whether the owner in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`
+ * is the owner of the current process:
  *
  * ```ruby
- * filepath = 'doc/t.tmp'
- * File.write(filepath, 'foo')
- * filestat = File.stat(filepath)
- * filestat.owned?          # => true
- * File.delete(filepath)
- * filestat.owned?          # => true  # Snapshot unchanged.
- * dirpath = 'doc/tmp'
+ * dirpath = '/tmp/dir'
  * Dir.mkdir(dirpath)
- * dirstat = File.stat(dirpath)
- * dirstat.owned?           # => true
- * Dir.rmdir(dirpath)
- * dirstat.owned?           # => true  # Snapshot unchanged.
- * File.stat('/etc').owned? # => false
+ * filepath = File.join(dirpath, 't.tmp') # => "/tmp/dir/t.tmp"
+ * File.write(filepath, 'foo')
+ * dirstat = File.stat(dirpath)           # Snapshot of directory.
+ * filestat = File.stat(filepath)         # Snapshot of file.
+ * dirstat.owned?                         # => true
+ * filestat.owned?                        # => true
+ * FileUtils.rm_rf(dirpath)               # Clean up.
+ * dirstat.owned?                         # => true  # Snapshot not updated.
+ * filestat.owned?                        # => true  # Snapshot not updated.
  * ```
  *
  */
@@ -7375,7 +7392,7 @@ rb_stat_r(VALUE obj)
  *  call-seq:
  *     stat.readable_real?  ->  true or false
  *
- *  Like #readable?, but checks against the real user and group ids
+ *  Like #readable?, but checks against the real owner and group ids
  *  instead of the effective ids.
  */
 

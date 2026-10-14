@@ -7822,7 +7822,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     volatile VALUE t0 = rb_ary_hidden_new(n);
     volatile VALUE t1 = Qundef;
     VALUE *arrays = RARRAY_PTR(t0); /* The arrays we're computing the product of */
-    int *counters = ALLOCV_N(int, t1, n); /* The current position in each one */
+    rb_len_t *counters = ALLOCV_N(rb_len_t, t1, n); /* The current position in each one */
     VALUE result = Qnil;      /* The array we'll be returning, when no block given */
     rb_len_t i,j;
     rb_len_t resultlen = 1;
@@ -7852,7 +7852,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
                 result = rb_ary_new2(0);
                 goto done;
             }
-            if (MUL_OVERFLOW_LONG_P(resultlen, k))
+            if (MUL_OVERFLOW_SIGNED_INTEGER_P(resultlen, k, RB_LEN_MIN, RB_LEN_MAX))
                 rb_raise(rb_eRangeError, "too big to product");
             resultlen *= k;
         }

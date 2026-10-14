@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
       # Set fetch-depth: 10 so that Launchable can receive commits information.
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: 'up HAVE_GIT=yes extract-gems', fetch-depth: 10 } }
       - name: Archive sources
         working-directory: ${{ github.workspace }}
         # `.downloaded-cache` will be restored from the common cache
@@ -58,7 +58,7 @@ jobs:
           tar -cf "${RUNNER_TEMP}/compilation-source.tar"
           --exclude='src/.downloaded-cache'
           src
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: compilation-source
           path: ${{ runner.temp }}/compilation-source.tar
@@ -244,7 +244,7 @@ jobs:
         working-directory: ${{ runner.temp }}
         if: ${{ needs.compile.result == 'success' }}
       - name: Shrink source artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: compilation-source
           path: ${{ runner.temp }}/compilation-source.empty

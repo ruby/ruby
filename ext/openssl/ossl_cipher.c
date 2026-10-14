@@ -317,8 +317,9 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
 }
 
 static int
-ossl_cipher_update_long(EVP_CIPHER_CTX *ctx, unsigned char *out, rb_len_t *out_len_ptr,
-                        const unsigned char *in, rb_len_t in_len)
+ossl_cipher_update_long(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                        rb_len_t *out_len_ptr, const unsigned char *in,
+                        rb_len_t in_len)
 {
     int out_part_len;
     int limit = INT_MAX / 2 + 1;
@@ -385,9 +386,10 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
      * Using EVP_MAX_BLOCK_LENGTH (32) as a safe upper bound for ciphers
      * currently implemented in OpenSSL, but this can change in the future.
      */
-    if (in_len > LONG_MAX - EVP_MAX_BLOCK_LENGTH) {
+    if (in_len > RB_LEN_MAX - EVP_MAX_BLOCK_LENGTH) {
         ossl_raise(rb_eRangeError,
-                   "data too big to make output buffer: %"PRIdLEN" bytes", in_len);
+                   "data too big to make output buffer: %"PRIdLEN" bytes",
+                   in_len);
     }
     out_len = in_len + EVP_MAX_BLOCK_LENGTH;
 

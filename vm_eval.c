@@ -12,6 +12,8 @@
 **********************************************************************/
 
 #include "internal/thread.h"
+#include "prism_compile.h"
+
 struct local_var_list {
     VALUE tbl;
 };

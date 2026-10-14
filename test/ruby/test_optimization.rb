@@ -242,13 +242,32 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_equal(expected, methods, bug14870)
     end
 
-    methods = []
-    tp = TracePoint.new(:c_call, :c_return) { |tp| methods << tp.method_id if tp.path == __FILE__ }
+    # ZJIT replaces != with a Ruby definition that has a source location;
+    # the C definition has none.
+    method_path = BasicObject.instance_method(:!=).source_location&.first
+    events = []
+    tp = TracePoint.new(:call, :return, :c_call, :c_return) do |tp|
+      if [:!=, :==].include?(tp.method_id) && [__FILE__, method_path].include?(tp.path)
+        events << [tp.event, tp.method_id, tp.path]
+      end
+    end
     tp.enable do
       x = 1
       x != 42
     end
-    assert_equal([:!=, :==, :==, :!=], methods, bug14870)
+
+    if method_path
+      # With ZJIT enabled, != is defined in Ruby. Its call/return events and
+      # the C events from == use the built-in Ruby source location.
+      expected = [[:call, :!=, method_path], [:c_call, :==, method_path],
+                  [:c_return, :==, method_path], [:return, :!=, method_path]]
+    else
+      # The C definition of != calls the C == method, so all events use the
+      # Ruby caller's source location.
+      expected = [[:c_call, :!=, __FILE__], [:c_call, :==, __FILE__],
+                  [:c_return, :==, __FILE__], [:c_return, :!=, __FILE__]]
+    end
+    assert_equal(expected, events, bug14870)
   end
 
   def test_string_freeze_saves_memory

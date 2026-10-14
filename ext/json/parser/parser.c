@@ -323,14 +323,17 @@ static const rb_data_type_t JSON_Parser_rvalue_stack_type = {
 static rvalue_stack *rvalue_stack_spill(rvalue_stack *old_stack, VALUE *handle, rvalue_stack **stack_ref)
 {
     rvalue_stack *stack;
-    *handle = TypedData_Make_Struct(0, rvalue_stack, &JSON_Parser_rvalue_stack_type, stack);
-    *stack_ref = stack;
+    VALUE stack_handle = TypedData_Make_Struct(0, rvalue_stack, &JSON_Parser_rvalue_stack_type, stack);
     MEMCPY(stack, old_stack, rvalue_stack, 1);
 
     stack->capa = old_stack->capa << 1;
     stack->ptr = ALLOC_N(VALUE, stack->capa);
     stack->type = RVALUE_STACK_HEAP_ALLOCATED;
     MEMCPY(stack->ptr, old_stack->ptr, VALUE, old_stack->head);
+
+    *handle = stack_handle;
+    *stack_ref = stack;
+
     return stack;
 }
 
@@ -753,7 +756,7 @@ static const signed char digit_values[256] = {
 static uint32_t unescape_unicode(JSON_ParserState *state, const char *sp, const char *spe)
 {
     if (RB_UNLIKELY(sp > spe - 4)) {
-        raise_eos_error_at("incomplete unicode character escape sequence at %s", state, sp - 2);
+        raise_syntax_error_at("incomplete unicode character escape sequence at %s", state, sp - 2);
     }
 
     const unsigned char *p = (const unsigned char *)sp;
@@ -1046,13 +1049,13 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
                 p = ++pe;
                 break;
             }
-            case 0:
-              return Qundef;
             default:
                 if ((unsigned char)*pe < 0x20) {
                     if (!config->allow_control_characters) {
                         if (*pe == '\n') {
                             raise_syntax_error_at("Invalid unescaped newline character (\\n) in string: %s", state, pe - 1);
+                        } else if (*pe == '\0') {
+                            raise_syntax_error_at("Invalid unescaped NULL character (\\0) in string: %s", state, pe - 1);
                         }
                         raise_syntax_error_at("invalid ASCII control character in string: %s", state, pe - 1);
                     }
@@ -1169,11 +1172,11 @@ static inline VALUE json_decode_float(JSON_ParserConfig *config, uint64_t mantis
         return rb_funcallv(config->decimal_class, config->decimal_method_id, 1, &text);
     }
 
-    if (RB_UNLIKELY(exponent > INT32_MAX)) {
+    if (RB_UNLIKELY(exponent >= (int64_t)INT32_MAX)) {
         return negative ? CMinusInfinity : CInfinity;
     }
 
-    if (RB_UNLIKELY(exponent < INT32_MIN)) {
+    if (RB_UNLIKELY(exponent <= INT32_MIN)) {
         return rb_float_new(negative ? -0.0 : 0.0);
     }
 
@@ -1514,7 +1517,7 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
         }
 
         if (RB_UNLIKELY(exponent_digits >= 20 || abs_exponent > (uint64_t)INT64_MAX)) {
-            exponent = negative_exponent ? INT64_MIN : INT64_MAX;
+            exponent = negative_exponent ? INT32_MIN : INT32_MAX;
         } else {
             exponent = negative_exponent ? -(int64_t)abs_exponent : (int64_t)abs_exponent;
         }
@@ -2113,9 +2116,7 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE src)
     // Ensure the string isn't mutated under us.
     // The classic API to use is `rb_str_locktmp`, but then we'd
     // need to use `rb_protect` to make sure we always unlock.
-    if (Vsource == src) {
-        Vsource = rb_str_new_frozen(Vsource);
-    }
+    Vsource = rb_str_new_frozen(Vsource);
 
     VALUE rvalue_stack_buffer[RVALUE_STACK_INITIAL_CAPA];
     rvalue_stack value_stack = {

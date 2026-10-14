@@ -171,7 +171,10 @@ module JSON
         when Integer
           "[#{segment}]"
         when String, Symbol
-          if segment.match?(/\A[a-zA-Z\$\_][a-zA-Z\$\_0-9]*\z/)
+          if !segment.valid_encoding?
+            segment = segment.b.gsub(/["\\]/n, { '"' => '\\"', '\\' => '\\\\' }).force_encoding(Encoding::UTF_8)
+            %{["#{segment}"]}
+          elsif segment.match?(/\A[a-zA-Z\$\_][a-zA-Z\$\_0-9]*\z/)
             ".#{segment}"
           else
             segment = segment.to_s.gsub(/["\\]/, { '"' => '\\"', '\\' => '\\\\' })

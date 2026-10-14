@@ -3689,6 +3689,12 @@ AS_CASE("$enable_shared", [yes], [
   AC_ARG_ENABLE(pie,
           AS_HELP_STRING([--disable-pie], [disable PIE feature]),
           [pie=$enableval], [pie=])
+  AS_CASE(["$target_os:$pie"], [haiku*:], [
+    # Haiku links every executable as a shared object, which rejects
+    # the local-exec TLS relocations in -fPIE objects.  The compiler
+    # generates PIC there by default.
+    pie=no
+  ])
   AS_IF([test "$GCC" = yes -a -z "$EXTSTATIC" -a "x$pie" != xno], [
     RUBY_TRY_CFLAGS(-fPIE, [pie=yes], [pie=no])
     AS_IF([test "$pie" = yes], [

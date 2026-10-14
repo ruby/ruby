@@ -1466,28 +1466,28 @@ class Pathname    # * File *
   # call-seq:
   #   mtime -> time
   #
-  # Returns a Time object containing the time of the most recent
-  # modification to the entry represented by `self`;
-  # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
+  # Returns a Time object containing
+  # the [modification time](rdoc-ref:file/timestamps.md@Modification+Time):
+  # of the entry represented by `self`;
   #
   # ```ruby
   # # A directory and its Pathname.
-  # dir_path = 'doc/foo'
-  # dir_pn = Pathname(dir_path)
-  # # Create directory; directory mtime established.
+  # dirpath = '/tmp/dir'
+  # dir_pn = Pathname(dirpath)
+  # # Create directory; establishes directory mtime.
   # dir_pn.mkdir
-  # dir_pn.mtime  # => 2026-06-28 16:38:02.675780521 -0500
+  # dir_pn.mtime                    # => 2026-10-13 10:33:38.577013286 -0500
   # # A file therein and its Pathname.
-  # file_path = dir_pn.join('t.tmp')
-  # file_pn = Pathname(file_path)
-  # # Create file; file mtime established; directory mtime updated.
-  # file_pn.write('foo')
-  # dir_pn.mtime  # => 2026-06-28 16:41:23.107750483 -0500
-  # file_pn.mtime # => 2026-06-28 16:41:23.107750483 -0500
-  # # Modify file; file mtime updated; directory mtime unchanged.
+  # filepath = dir_pn.join('t.tmp') # => #<Pathname:/tmp/dir/t.tmp>
+  # file_pn = Pathname(filepath)
+  # # Create file; establishes file mtime; updates directory mtime.
+  # ffile_pn.write('foo')
+  # dir_pn.mtime                    # => 2026-10-13 10:36:36.187307549 -0500
+  # file_pn.mtime                   # => 2026-10-13 10:36:36.187307549 -0500
+  # # Modify file; updates file mtime; does not update directory mtime.
   # file_pn.write('bar')
-  # dir_pn.mtime  # => 2026-06-28 16:41:23.107750483 -0500
-  # file_pn.mtime # => 2026-06-28 16:42:48.869163049 -0500
+  # dir_pn.mtime                    # => 2026-10-13 10:36:36.187307549 -0500
+  # file_pn.mtime                   # => 2026-10-13 10:37:53.71175227 -0500
   # # Clean up.
   # dir_pn.rmtree
   # ```
@@ -2441,12 +2441,14 @@ class Pathname    # * FileTest *
   # Returns whether the entry at the path in `self` is a pipe:
   #
   # ```ruby
-  # Pathname('.').pipe? # => false
-  # path = '/tmp/foo'
-  # File.mkfifo(path)
-  # pn = Pathname(path) # => #<Pathname:/tmp/foo>
-  # pn.pipe?            # => true
-  # pn.delete           # Clean up.
+  # pipepath = '/tmp/pipe'
+  # pn = Pathname(pipepath)
+  # pn.pipe?                      # => false  # Non-existent.
+  # File.mkfifo(pipepath)
+  # pn.pipe?                      # => true
+  # Pathname('/etc').pipe?        # => false  # Directory.
+  # Pathname('/etc/passwd').pipe? # => false  # Regular file.
+  # pn.delete                     # Clean up.
   # ```
   #
   def pipe?() FileTest.pipe?(@path) end
@@ -2486,18 +2488,18 @@ class Pathname    # * FileTest *
   #   owned? -> true or false
   #
   # Returns whether the entry at the path represented by `self`
-  # exists and is owned by the user of the current process:
+  # exists and is owned by the owner of the current process:
   #
   # ```ruby
-  # pn = Pathname('doc/t.tmp')
-  # pn.write('foo')
-  # pn.owned?               # => true
-  # pn.delete               # Clean up.
-  # pn = Pathname('doc/tmp')
-  # pn.mkdir
-  # pn.owned?               # => true
-  # pn.rmdir                # Clean up.
-  # Pathname('/etc').owned? # => false
+  # dir_pn = Pathname('/tmp/dir')
+  # dir_pn.mkdir
+  # dir_pn.owned?             # => true
+  # file_pn = dir_pn.join('t.tmp')
+  # file_pn.write('foo')
+  # file_pn.owned?            # => true
+  # Pathname('/tmp').owned?   # => false
+  # Pathname('nosuch').owned? # => false
+  # dir_pn.rmtree             # Clean up.
   # ```
   #
   def owned?() FileTest.owned?(@path) end
@@ -2551,7 +2553,7 @@ class Pathname    # * FileTest *
   # call-seq:
   #   readable_real? -> true or false
   #
-  # Like #readable?, but checks against the real user and group ids
+  # Like #readable?, but checks against the real owners and group ids
   # instead of the effective ids.
   def readable_real?() FileTest.readable_real?(@path) end
 
@@ -2565,7 +2567,7 @@ class Pathname    # * FileTest *
   # for the entry at the path in `self`:
   #
   # ```ruby
-  # pn = Pathname('doc/t.tmp')
+  # pn = Pathname('/tmp/t.tmp')
   # pn.write('foo')
   # mode = pn.stat.mode.to_s(8) # => "100664"
   # pn.setuid?                  # => false
@@ -2588,7 +2590,7 @@ class Pathname    # * FileTest *
   # for the entry at the path in `self`:
   #
   # ```ruby
-  # pn = Pathname('doc/t.tmp')
+  # pn = Pathname('/tmp/t.tmp')
   # pn.write('foo')
   # mode = pn.stat.mode.to_s(8) # => "100664"
   # pn.setgid?                  # => false

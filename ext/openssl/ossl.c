@@ -20,7 +20,7 @@ ossl_##name##_ary2sk0(VALUE ary)                                \
     STACK_OF(type) *sk;                                         \
     VALUE val;                                                  \
     type *x;                                                    \
-    int i;                                                      \
+    rb_len_t i;                                                 \
                                                                 \
     Check_Type(ary, T_ARRAY);                                   \
     sk = sk_##type##_new_null();                                \
@@ -94,7 +94,7 @@ ossl_str_new_i(VALUE size)
 }
 
 VALUE
-ossl_str_new(const char *ptr, long len, int *pstate)
+ossl_str_new(const char *ptr, rb_len_t len, int *pstate)
 {
     VALUE str;
     int state;
@@ -113,12 +113,17 @@ ossl_str_new(const char *ptr, long len, int *pstate)
 }
 
 VALUE
-ossl_buf2str(char *buf, int len)
+ossl_buf2str(char *buf)
 {
+    size_t len = strlen(buf);
     VALUE str;
     int state;
 
-    str = ossl_str_new(buf, len, &state);
+    if (len > RB_LEN_MAX) {
+        OPENSSL_free(buf);
+        rb_raise(rb_eRangeError, "string too large: %zu bytes", len);
+    }
+    str = ossl_str_new(buf, (rb_len_t)len, &state);
     OPENSSL_free(buf);
     if (state)
         rb_jump_tag(state);
@@ -131,7 +136,7 @@ ossl_bin2hex(const unsigned char *in, char *out, size_t inlen)
     const char *hex = "0123456789abcdef";
     size_t i;
 
-    assert(inlen <= LONG_MAX / 2);
+    RUBY_ASSERT(inlen <= RB_LEN_MAX / 2);
     for (i = 0; i < inlen; i++) {
         unsigned char p = in[i];
 

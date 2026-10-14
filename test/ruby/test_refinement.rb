@@ -1372,7 +1372,7 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_super_in_refined_prepended_module_method_in_thread
-    assert_separately([], <<-"end;", timeout: 1)
+    assert_separately([], <<-"end;")
       module M
         def m
           raise 'defined?(super) false, should be true' unless Thread.new{defined?(super)}.value

@@ -1755,7 +1755,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         {
             rb_ary_cancel_sharing(obj);
 
-            for (int i = 0; i < RARRAY_LENINT(obj); i++) {
+            for (rb_len_t i = 0; i < RARRAY_LEN(obj); i++) {
                 VALUE e = RARRAY_AREF(obj, i);
                 if (obj_traverse_i(e, data)) return 1;
             }
@@ -2326,7 +2326,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         {
             rb_ary_cancel_sharing(obj);
 
-            for (int i = 0; i < RARRAY_LENINT(obj); i++) {
+            for (rb_len_t i = 0; i < RARRAY_LEN(obj); i++) {
                 VALUE e = RARRAY_AREF(obj, i);
 
                 if (obj_traverse_replace_i(e, data)) {

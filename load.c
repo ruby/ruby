@@ -16,6 +16,7 @@
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
+#include "prism_compile.h"
 #include "probes.h"
 #include "darray.h"
 #include "ruby/encoding.h"
