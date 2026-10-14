@@ -161,6 +161,18 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     `--enable-yjit` accepts only `yes` or `no`.  A YJIT
     build does not install the static library.
 
+9.  If you want to build with clang-cl instead of `cl`, clang-cl 15 or
+    later is required.  It is the "C++ Clang Compiler for Windows"
+    component (`Microsoft.VisualStudio.Component.VC.Llvm.Clang`) of
+    Visual Studio 2022 version 17.4 or later.  `win32\vssetup.cmd`
+    adds `clang-cl` to `PATH` when the component is installed.  You can
+    add it to the installed Build Tools with Visual Studio Installer, or
+    from the command line like:
+
+    ```batch
+    "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\setup.exe" modify --installPath "%ProgramFiles(x86)%\Microsoft Visual Studio\18\BuildTools" --add Microsoft.VisualStudio.Component.VC.Llvm.Clang --passive
+    ```
+
 ### How to compile and install
 
 1.  Execute `win32\configure.bat` on your build directory.
@@ -186,16 +198,21 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
 3.  You need specify vcpkg directory to use `--with-opt-dir`
     option like `win32\configure.bat --with-opt-dir=C:/vcpkg_installed/x64-windows`
 
-4.  Run `nmake up` if you are building from GIT source.
+4.  If you want to build with clang-cl, specify `CC=clang-cl` like
+    `win32\configure.bat CC=clang-cl`.  The installed ruby also uses
+    clang-cl to build extension libraries, so installing gems with C
+    extensions requires clang-cl too.
 
-5.  Run `nmake`
+5.  Run `nmake up` if you are building from GIT source.
 
-6.  Run `nmake prepare-vcpkg` with administrator privilege if you need to
+6.  Run `nmake`
+
+7.  Run `nmake prepare-vcpkg` with administrator privilege if you need to
     copy vcpkg installed libraries like `libssl-3-x64.dll` to the build directory.
 
-7.  Run `nmake check`
+8.  Run `nmake check`
 
-8.  Run `nmake install`
+9.  Run `nmake install`
 
 ### Build examples
 
@@ -264,6 +281,23 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     C:
     cd \ruby
     win32\configure --prefix=/usr/local --target=x64-mswin64
+    nmake
+    nmake check
+    nmake install
+    ```
+
+* Build x64 version with clang-cl
+
+    ```
+    ruby source directory:  C:\ruby
+    build directory:        C:\ruby
+    install directory:      C:\usr\local
+    ```
+
+    ```batch
+    C:
+    cd \ruby
+    win32\configure --prefix=/usr/local CC=clang-cl
     nmake
     nmake check
     nmake install
