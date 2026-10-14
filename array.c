@@ -5538,12 +5538,24 @@ rb_ary_equal(VALUE ary1, VALUE ary2)
 static VALUE
 recursive_eql(VALUE ary1, VALUE ary2, int recur)
 {
-    rb_len_t i;
+    rb_len_t i, len1;
+    const VALUE *p1, *p2;
 
     if (recur) return Qtrue; /* Subtle! */
-    for (i=0; i<RARRAY_LEN(ary1); i++) {
-        if (!rb_eql(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
-            return Qfalse;
+
+    /* rb_eql() can resize either array and evacuate ptrs */
+    p1 = RARRAY_CONST_PTR(ary1);
+    p2 = RARRAY_CONST_PTR(ary2);
+    len1 = RARRAY_LEN(ary1);
+
+    for (i = 0; i < len1; i++) {
+        if (p1[i] != p2[i]) {
+            if (!rb_eql(p1[i], p2[i])) return Qfalse;
+            len1 = RARRAY_LEN(ary1);
+            if (len1 != RARRAY_LEN(ary2)) return Qfalse;
+            p1 = RARRAY_CONST_PTR(ary1);
+            p2 = RARRAY_CONST_PTR(ary2);
+        }
     }
     return Qtrue;
 }
