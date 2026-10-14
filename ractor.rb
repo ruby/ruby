@@ -693,11 +693,12 @@ class Ractor
   # in the Proc will be replaced with the value passed via the `self:` keyword,
   # or +nil+ if not given.
   #
-  # In a shareable Proc, access to any outer variables is prohibited.
+  # A shareable Proc may only read outer variables which are never reassigned
+  # and refer to shareable objects.
   #
-  #     a = 42
+  #     a = []
   #     Ractor.shareable_proc{ p a }
-  #     #=> can not isolate a Proc because it accesses outer variables (a). (Ractor::IsolationError)
+  #     #=> cannot make a shareable Proc because it can refer unshareable object [] from variable 'a' (Ractor::IsolationError)
   #
   # The value of `self` in the Proc must be a shareable object.
   #
