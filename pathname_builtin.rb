@@ -2627,19 +2627,19 @@ class Pathname    # * FileTest *
   #
   # ```ruby
   # # Regular file.
-  # pn = Pathname('/tmp/t.tmp')
-  # pn.write('foo')
-  # pn.size? # => 3     # Non-zero size.
-  # pn.write('')
-  # pn.size? # => nil   # Zero size.
-  # pn.delete           # Clean up.
-  # pn.size? # => nil   # Non-existent.
+  # file_pn = Pathname('/tmp/t.tmp')
+  # file_pn.write('foo')
+  # file_pn.size? # => 3     # Non-zero size.
+  # file_pn.write('')
+  # file_pn.size? # => nil   # Zero size.
+  # file_pn.delete           # Clean up.
+  # file_pn.size? # => nil   # Non-existent.
   # # Directory.
-  # pn = Pathname('/tmp/foo/')
-  # pn.mkdir
-  # pn.size? # => 4096  # Non-zero size.
-  # pn.delete           # Clean up.
-  # pn.size? # => nil   # Non-existent.
+  # dir_pn = Pathname('/tmp/dir')
+  # dir_pn.mkdir
+  # dir_pn.size? # => 4096  # Non-zero size.
+  # dir_pn.delete           # Clean up.
+  # dir_pn.size? # => nil   # Non-existent.
   # ```
   #
   def size?() FileTest.size?(@path) end
