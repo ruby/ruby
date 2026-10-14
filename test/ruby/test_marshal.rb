@@ -169,6 +169,19 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(Enumerable, Marshal.load(Marshal.dump(Enumerable)))
   end
 
+  class ModuleSubclass < Module
+  end
+
+  def test_uclass_module_not_relabeled
+    # TYPE_UCLASS ('C') wrapping a module must be rejected, not relabel it.
+    uclass = Marshal.dump(ModuleSubclass.name.to_sym)[2..-1]  # ":<name>"
+    wrapped = Marshal.dump(TestModule)[2..-1]                 # "m<name>"
+    payload = "\x04\x08C#{uclass}#{wrapped}"
+    assert_raise_with_message(ArgumentError, "dump format error (user class)") do
+      Marshal.load(payload)
+    end
+  end
+
   class C2
     def initialize(ary)
       @ary = ary

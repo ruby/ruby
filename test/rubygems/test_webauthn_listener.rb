@@ -7,7 +7,7 @@ require "rubygems/gemcutter_utilities"
 class WebauthnListenerTest < Gem::TestCase
   def setup
     super
-    @server = TCPServer.new 0
+    @server = TCPServer.new "localhost", 0
     @port = @server.addr[1].to_s
   end
 

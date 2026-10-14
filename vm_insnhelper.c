@@ -265,7 +265,8 @@ rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
         /* This is at the very beginning of a thread. cfp does not exist. */
         return;
     }
-    else if (! (iseq = GET_ISEQ())) {
+    else if (! VM_FRAME_RUBYFRAME_P(reg_cfp) || ! (iseq = GET_ISEQ())) {
+        /* The iseq field of an IFUNC frame holds the ifunc. */
         return;
     }
     else if (LIKELY(sp[0] != vm_stack_canary)) {
@@ -2774,7 +2775,7 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calli
 
     if (!NIL_P(ary)) {
         const VALUE *ptr = RARRAY_CONST_PTR(ary);
-        long len = RARRAY_LEN(ary);
+        rb_len_t len = RARRAY_LEN(ary);
         int argc = calling->argc;
 
         if (UNLIKELY(max_args <= ALLOW_HEAP_ARGV && len + argc > VM_ARGC_STACK_MAX)) {
@@ -4602,7 +4603,7 @@ current_method_entry(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
     rb_control_frame_t *top_cfp = cfp;
 
-    if (CFP_ISEQ(cfp) && ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_BLOCK) {
+    if (CFP_ISEQ(cfp) && !VM_FRAME_BMETHOD_P(cfp) && ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_BLOCK) {
         const rb_iseq_t *local_iseq = ISEQ_BODY(CFP_ISEQ(cfp))->local_iseq;
 
         do {
@@ -4611,7 +4612,7 @@ current_method_entry(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
                 /* TODO: orphan block */
                 return top_cfp;
             }
-        } while (CFP_ISEQ(cfp) != local_iseq);
+        } while (CFP_ISEQ(cfp) != local_iseq && !VM_FRAME_BMETHOD_P(cfp));
     }
     return cfp;
 }
@@ -4639,6 +4640,69 @@ refined_method_callable_without_refinement(const rb_callable_method_entry_t *me)
     return cme;
 }
 
+// Construct correct super chain for module refinements.
+// Each class including/prepending a module has a weak map mapping refinement
+// iclasses to refinement module iclasses with the correct super. Like
+// singleton classes, these are lazily initialized (both the map and
+// the refinement module iclasses).
+static VALUE
+module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class)
+{
+    VALUE module_ref_iclass = Qundef;
+
+    RB_VM_LOCKING() {
+        VALUE cache = RCLASS_MODULE_REFINEMENT_ICLASSES(defined_class);
+
+        if (LIKELY(cache)) {
+            module_ref_iclass = rb_wmap_lookup(cache, refinement_iclass);
+        }
+        else {
+            cache = rb_wmap_new_hidden();
+            RCLASS_SET_MODULE_REFINEMENT_ICLASSES(defined_class, cache);
+        }
+
+        if (UNDEF_P(module_ref_iclass)) {
+            VALUE super;
+            VALUE refinement_iclass_super = RCLASS_SUPER(refinement_iclass);
+
+            if (RICLASS_FOR_REFINEMENT_P(refinement_iclass_super)) {
+                super = module_refinement_iclass(refinement_iclass_super, defined_class);
+            }
+            else {
+                super = defined_class;
+            }
+
+            module_ref_iclass = rb_include_class_new(RBASIC(refinement_iclass)->klass, super);
+            RCLASS_SET_REFINED_CLASS(module_ref_iclass, RCLASS_REFINED_CLASS(refinement_iclass));
+            rb_class_subclass_add(RCLASS_REFINED_CLASS(refinement_iclass), module_ref_iclass);
+            rb_wmap_aset(cache, refinement_iclass, module_ref_iclass);
+        }
+    }
+
+    return module_ref_iclass;
+}
+
+VALUE
+rb_vm_module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class)
+{
+    return module_refinement_iclass(refinement_iclass, defined_class);
+}
+
+static VALUE
+refinement_iclass_for_cme(VALUE refinement_iclass, const rb_callable_method_entry_t *cme)
+{
+    if (RB_TYPE_P(cme->owner, T_MODULE) && RB_TYPE_P(cme->defined_class, T_ICLASS)) {
+        refinement_iclass = module_refinement_iclass(refinement_iclass, cme->defined_class);
+    }
+    return refinement_iclass;
+}
+
+VALUE
+rb_vm_refinement_iclass_for_cme(VALUE refinement_iclass, const rb_callable_method_entry_t *cme)
+{
+    return refinement_iclass_for_cme(refinement_iclass, cme);
+}
+
 static const rb_callable_method_entry_t *
 search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
@@ -4648,8 +4712,10 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
 
     for (; cref; cref = CREF_NEXT(cref)) {
-        const VALUE refinement = find_refinement(CREF_REFINEMENTS(cref), vm_cc_cme(cc)->owner);
+        VALUE refinement = find_refinement(CREF_REFINEMENTS(cref), vm_cc_cme(cc)->owner);
         if (NIL_P(refinement)) continue;
+
+        refinement = refinement_iclass_for_cme(refinement, vm_cc_cme(cc));
 
         const rb_callable_method_entry_t *const ref_me =
             rb_callable_method_entry(refinement, mid);
@@ -5097,6 +5163,14 @@ static inline VALUE
 vm_search_normal_superclass(VALUE klass)
 {
     if (RICLASS_FOR_REFINEMENT_P(klass)) {
+        if (RB_TYPE_P(RCLASS_REFINED_CLASS(klass), T_MODULE)) {
+            do {
+                klass = RCLASS_SUPER(klass);
+            } while (RICLASS_FOR_REFINEMENT_P(klass));
+
+            return klass;
+        }
+
         klass = RBASIC(klass)->klass;
     }
     klass = RCLASS_ORIGIN(klass);
@@ -5174,13 +5248,6 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         /* bound instance method of module */
         cc = vm_cc_new(Qundef, NULL, vm_call_method_missing, cc_type_super);
         RB_OBJ_WRITE(iseq, &cd->cc, cc);
-    }
-    else if (klass == rb_cBasicObject &&
-             RB_TYPE_P(me->defined_class, T_ICLASS) &&
-             RCLASS_INCLUDER(me->defined_class) == 0) {
-        rb_raise(rb_eNoMethodError,
-                 "super in a method in a module that has been refined and that is called via super"
-                 " from a refinement method is not supported.");
     }
     else {
         cc = vm_search_method_fastpath(reg_cfp, cd, klass);
@@ -5358,7 +5425,7 @@ static inline int
 vm_callee_setup_block_arg_arg0_splat(rb_control_frame_t *cfp, const rb_iseq_t *iseq, VALUE *argv, VALUE ary)
 {
     int i;
-    long len = RARRAY_LEN(ary);
+    rb_len_t len = RARRAY_LEN(ary);
 
     CHECK_VM_STACK_OVERFLOW(cfp, ISEQ_BODY(iseq)->param.lead_num);
 
@@ -5919,8 +5986,8 @@ vm_check_match(rb_execution_context_t *ec, VALUE target, VALUE pattern, rb_num_t
     enum vm_check_match_type type = ((int)flag) & VM_CHECKMATCH_TYPE_MASK;
 
     if (flag & VM_CHECKMATCH_ARRAY) {
-        long i;
-        const long n = RARRAY_LEN(pattern);
+        rb_len_t i;
+        const rb_len_t n = RARRAY_LEN(pattern);
 
         for (i = 0; i < n; i++) {
             VALUE v = RARRAY_AREF(pattern, i);
@@ -6601,7 +6668,7 @@ rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t array_len, const VA
     return vm_opt_newarray_hash(ec, array_len, ptr);
 }
 
-VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len);
+VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, rb_len_t len);
 VALUE rb_ec_pack_ary(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer);
 
 static VALUE
@@ -7265,7 +7332,7 @@ vm_opt_length(VALUE recv, int bop)
     else if (RBASIC_CLASS(recv) == rb_cString &&
              BASIC_OP_UNREDEFINED_P(bop, STRING_REDEFINED_OP_FLAG)) {
         if (bop == BOP_EMPTY_P) {
-            return LONG2NUM(RSTRING_LEN(recv));
+            return LEN2NUM(RSTRING_LEN(recv));
         }
         else {
             return rb_str_length(recv);
@@ -7273,7 +7340,7 @@ vm_opt_length(VALUE recv, int bop)
     }
     else if (RBASIC_CLASS(recv) == rb_cArray &&
              BASIC_OP_UNREDEFINED_P(bop, ARRAY_REDEFINED_OP_FLAG)) {
-        return LONG2NUM(RARRAY_LEN(recv));
+        return LEN2NUM(RARRAY_LEN(recv));
     }
     else if (RBASIC_CLASS(recv) == rb_cHash &&
              BASIC_OP_UNREDEFINED_P(bop, HASH_REDEFINED_OP_FLAG)) {
@@ -7563,6 +7630,10 @@ Init_vm_stack_canary(void)
 {
     /* This has to be called _after_ our PRNG is properly set up. */
     int n = ruby_fill_random_bytes(&vm_stack_canary, sizeof vm_stack_canary, false);
+    /* Make it a large positive Fixnum.  Arguments a block does not take
+     * stay at the stack top, where vm_push_frame checks the canary. */
+    vm_stack_canary >>= 2;
+    vm_stack_canary |= (VALUE)1 << (SIZEOF_VALUE * CHAR_BIT - 2);
     vm_stack_canary |= 0x01; // valid VALUE (Fixnum)
 
     vm_stack_canary_was_born = true;

@@ -392,7 +392,7 @@ ancillary_int(VALUE self)
     int i;
     data = ancillary_data(self);
     if (RSTRING_LEN(data) != sizeof(int))
-        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %ld", (int)sizeof(int), (long)RSTRING_LEN(data));
+        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %"PRIdLEN, (int)sizeof(int), RSTRING_LEN(data));
     memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
     return INT2NUM(i);
 }
@@ -674,7 +674,7 @@ anc_inspect_socket_rights(int level, int type, VALUE data, VALUE ret)
 {
     if (level == SOL_SOCKET && type == SCM_RIGHTS &&
         0 < RSTRING_LEN(data) && (RSTRING_LEN(data) % sizeof(int) == 0)) {
-        long off;
+        rb_len_t off;
         for (off = 0; off < RSTRING_LEN(data); off += sizeof(int)) {
             int fd;
             memcpy((char*)&fd, RSTRING_PTR(data)+off, sizeof(int));
@@ -717,7 +717,7 @@ anc_inspect_passcred_credentials(int level, int type, VALUE data, VALUE ret)
 static int
 anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
 {
-    long len;
+    rb_len_t len;
     const char *ptr;
 
     if (level != SOL_SOCKET && type != SCM_CREDS)
@@ -1200,7 +1200,7 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
             VALUE vlevel, vtype;
             int level, type;
             VALUE cdata;
-            long oldlen;
+            rb_len_t oldlen;
             struct cmsghdr cmh;
             char *cmsg;
             size_t cspace;

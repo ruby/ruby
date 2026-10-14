@@ -212,7 +212,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
     const struct signals *sigs;
     VALUE vsig = *sig_ptr;
     const char *nm;
-    long len, nmlen;
+    rb_len_t len, nmlen;
     int prefix = 0;
 
     if (RB_SYMBOL_P(vsig)) {
@@ -245,7 +245,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
         if (memcmp(nm + prefix, signame_prefix, signame_prefix_len) == 0)
             prefix += signame_prefix_len;
     }
-    if (len <= (long)prefix) {
+    if (len <= (rb_len_t)prefix) {
         goto unsupported;
     }
 
@@ -815,12 +815,7 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     const greg_t bp = mctx->gregs[REG_EBP];
 #   endif
 # elif defined __APPLE__
-#   include <AvailabilityMacros.h>
-#   if defined(MAC_OS_X_VERSION_10_5) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5
-#     define MCTX_SS_REG(reg) __ss.__##reg
-#   else
-#     define MCTX_SS_REG(reg) ss.reg
-#   endif
+#   define MCTX_SS_REG(reg) __ss.__##reg
 #   if defined(__LP64__)
     const uintptr_t sp = mctx->MCTX_SS_REG(rsp);
     const uintptr_t bp = mctx->MCTX_SS_REG(rbp);
@@ -1253,7 +1248,7 @@ trap_handler(VALUE *cmd, int sig)
         }
         if (!NIL_P(command)) {
             const char *cptr;
-            long len;
+            rb_len_t len;
             StringValue(command);
             *cmd = command;
             RSTRING_GETMEM(command, cptr, len);

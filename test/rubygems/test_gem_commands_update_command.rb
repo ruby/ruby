@@ -1016,7 +1016,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     end
 
     gem_make_out = File.read(File.join(gemspec.build_info_dir, "#{gemspec.full_name}.gem_make.out"))
-    if vc_windows? && nmake_found?
+    if nmake?
       refute_includes(gem_make_out, " -j2")
     else
       assert_includes(gem_make_out, "make -j2")

@@ -146,8 +146,6 @@ If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTE
 #elif defined(_SIG_MAXSIG)      /* FreeBSD */
 # undef NSIG
 # define NSIG _SIG_MAXSIG
-#elif defined(_SIGMAX)          /* QNX */
-# define NSIG (_SIGMAX + 1)
 #elif defined(NSIG)             /* 99% of everything else */
 # /* take it */
 #else                           /* Last resort */
@@ -339,7 +337,7 @@ struct rb_execution_context_struct;
 #endif
 
 typedef struct rb_iseq_location_struct {
-    VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. */
+    VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. See pathobj_realpath(). */
     VALUE label;        /* String */
     int first_lineno;
     int node_id;
@@ -362,9 +360,13 @@ pathobj_path(VALUE pathobj)
 }
 
 static inline VALUE
-pathobj_realpath(VALUE pathobj)
+pathobj_realpath(VALUE pathobj, bool no_realpath)
 {
-    if (RB_TYPE_P(pathobj, T_STRING)) {
+    if (no_realpath) {
+        VM_ASSERT(RB_TYPE_P(pathobj, T_STRING));
+        return Qnil;
+    }
+    else if (RB_TYPE_P(pathobj, T_STRING)) {
         return pathobj;
     }
     else {
@@ -556,6 +558,7 @@ struct rb_iseq_constant_body {
     unsigned int builtin_attrs; // Union of rb_builtin_attr
 
     bool prism; // ISEQ was generated from prism compiler
+    bool no_realpath; // location.pathobj names no real file (ex: during eval)
 
     // Set once an EP escape of this iseq has been reported to the enabled JIT.
     rb_atomic_t jit_ep_escape_recorded;
@@ -888,7 +891,7 @@ extern bool ruby_vm_during_cleanup;
 #define RUBY_VM_FIBER_VM_STACK_SIZE           (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
 #define RUBY_VM_FIBER_VM_STACK_SIZE_MIN       (   2 * 1024 * sizeof(VALUE)) /*    8 KB or   16 KB */
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE      (  64 * 1024 * sizeof(VALUE)) /*  256 KB or  512 KB */
-#if defined(__powerpc64__) || defined(__ppc64__) // macOS has __ppc64__
+#if defined(__powerpc64__)
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  32 * 1024 * sizeof(VALUE)) /*  128 KB or  256 KB */
 #else
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
@@ -1416,6 +1419,7 @@ typedef struct {
     const struct rb_block block;
     const VALUE pathobj;
     int first_lineno;
+    bool no_realpath;
 } rb_binding_t;
 
 /* used by compile time and send insn */
@@ -2057,7 +2061,7 @@ VALUE rb_iseq_path(const rb_iseq_t *iseq);
 VALUE rb_iseq_realpath(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
-VALUE rb_iseq_pathobj_new(VALUE path, VALUE realpath);
+VALUE rb_iseq_pathobj_new(VALUE path, VALUE realpath, bool *no_realpath);
 void rb_iseq_pathobj_set(const rb_iseq_t *iseq, VALUE path, VALUE realpath);
 
 int rb_ec_frame_method_id_and_class(const rb_execution_context_t *ec, ID *idp, ID *called_idp, VALUE *klassp);
@@ -2119,7 +2123,7 @@ VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
 void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE exception_class, VALUE mesg);
 
 #define rb_vm_register_special_exception(sp, e, m) \
-    rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (long)rb_strlen_lit(m)))
+    rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (rb_len_t)rb_strlen_lit(m)))
 
 void rb_gc_mark_machine_context(const rb_execution_context_t *ec);
 
@@ -2400,6 +2404,7 @@ struct rb_trace_arg_struct {
 void rb_hook_list_mark(rb_hook_list_t *hooks);
 void rb_hook_list_mark_and_move(rb_hook_list_t *hooks);
 void rb_hook_list_free(rb_hook_list_t *hooks);
+size_t rb_hook_list_memsize(const rb_hook_list_t *hooks);
 void rb_hook_list_connect_local_tracepoint(rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
 bool rb_hook_list_remove_local_tracepoint(rb_hook_list_t *list, VALUE tpval);
 unsigned int rb_hook_list_count(rb_hook_list_t *list);

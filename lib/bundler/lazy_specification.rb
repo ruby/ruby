@@ -286,7 +286,7 @@ module Bundler
     # which would affect `bundler/setup` performance.
     def validate_dependencies(spec)
       if !@materialization_options[:strict] && spec.is_a?(StubSpecification)
-        spec.dependencies = dependencies
+        spec.dependencies = Override.rewrite_dependencies(overrides, name, dependencies)
       else
         if !source.is_a?(Source::Path) && spec.runtime_dependencies.sort != dependencies.sort
           raise IncorrectLockfileDependencies.new(self, spec.runtime_dependencies, dependencies)

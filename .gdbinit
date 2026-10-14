@@ -972,10 +972,31 @@ document rb_ps_vm
 Dump all threads in a (rb_vm_t*) and their callstacks
 end
 
+# CFP_ISEQ() and CFP_PC() in zjit.h, written without calling a function so
+# that they work on a core file too. Sets $iseq and $cfp_pc.
+define cfp_iseq_pc
+  set $iseq = $arg0->_iseq
+  set $cfp_pc = $arg0->pc
+  python gdb.set_convenience_variable('zjit_built', gdb.lookup_global_symbol('rb_zjit_entry') is not None)
+  if $zjit_built
+    if rb_zjit_entry && $arg0->jit_return
+      if (VALUE)$arg0->jit_return == 1
+        # ZJIT_JIT_RETURN_C_FRAME
+        set $iseq = 0
+        set $cfp_pc = 0
+      else
+        set $jit_frame = ((zjit_jit_frame_t **)$arg0->jit_return)[-1]
+        set $iseq = $jit_frame->iseq
+        set $cfp_pc = $jit_frame->pc
+      end
+    end
+  end
+end
+
 define print_lineno
   set $cfp = $arg0
-  set $iseq = rb_get_cfp_iseq($cfp)
-  set $pos = $cfp->pc - $iseq->body->iseq_encoded
+  cfp_iseq_pc $cfp
+  set $pos = $cfp_pc - $iseq->body->iseq_encoded
   if $pos != 0
     set $pos = $pos - 1
   end
@@ -1043,29 +1064,14 @@ define print_id
   end
   if $serial && $serial < ruby_global_symbols.next_id
     set $idx = $serial / ID_ENTRY_UNIT
-    set $ids = (struct RArray *)ruby_global_symbols.ids
-    set $flags = $ids->basic.flags
-    if ($flags & RUBY_FL_USER1)
-      set $idsptr = $ids->as.ary
-      set $idslen = (($flags & (RUBY_FL_USER3|RUBY_FL_USER4)) >> (RUBY_FL_USHIFT+3))
-    else
-      set $idsptr = $ids->as.heap.ptr
-      set $idslen = $ids->as.heap.len
-    end
-    if $idx < $idslen
-      set $t = 0
-      set $ary = (struct RArray *)$idsptr[$idx]
-      if $ary != RUBY_Qnil
-        set $flags = $ary->basic.flags
-        if ($flags & RUBY_FL_USER1)
-          set $aryptr = $ary->as.ary
-          set $arylen = (($flags & (RUBY_FL_USER3|RUBY_FL_USER4)) >> (RUBY_FL_USHIFT+3))
-        else
-          set $aryptr = $ary->as.heap.ptr
-          set $arylen = $ary->as.heap.len
-        end
-        set $result = $aryptr[($serial % ID_ENTRY_UNIT) + $t]
-        if $result != RUBY_Qnil
+    set $dir = (struct id_entry_dir *)((struct RTypedData *)ruby_global_symbols.ids)->data
+    if $idx < $dir->capa
+      set $bucket = $dir->entries[$idx]
+      if $bucket
+        # rb_darray(struct sym_id_entry)
+        set $entries = (struct sym_id_entry *)((rb_darray_meta_t *)((struct RTypedData *)$bucket)->data + 1)
+        set $result = $entries[$serial % ID_ENTRY_UNIT].str
+        if $result
           print_string $result
         else
           echo undef
@@ -1098,8 +1104,8 @@ define rb_ps_thread
   set $cfp = $ps_thread_th->ec->cfp
   set $cfpend = (rb_control_frame_t *)($ps_thread_th->ec->vm_stack + $ps_thread_th->ec->vm_stack_size)-1
   while $cfp < $cfpend
-    if $cfp->_iseq
-      set $iseq = rb_get_cfp_iseq($cfp)
+    cfp_iseq_pc $cfp
+    if $iseq
       if !((VALUE)$iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$iseq->flags & (RUBY_IMEMO_MASK | RUBY_T_MASK))
         printf "%d:ifunc ", $cfpend-$cfp
         set print symbol-filename on
@@ -1107,7 +1113,7 @@ define rb_ps_thread
         set print symbol-filename off
         printf "\n"
       else
-      if $cfp->pc
+      if $cfp_pc
         set $location = $iseq->body->location
         printf "%d:", $cfpend-$cfp
         print_pathobj $location.pathobj

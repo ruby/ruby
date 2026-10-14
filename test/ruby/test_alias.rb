@@ -355,6 +355,22 @@ class TestAlias < Test::Unit::TestCase
     end;
   end
 
+  def test_alias_bmethod_in_multi_ractor_mode
+    # rb_method_definition_eq() used to dispatch Proc#== for bmethods, but
+    # rb_method_entry_make() calls it under the VM lock, where rb_vm_check_ints()
+    # must not run.
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $-w = nil
+      Ractor.new {}.join # leave single-ractor mode so the VM lock is taken
+      obj = Object.new
+      obj.define_singleton_method(:a) { 1 }
+      obj.define_singleton_method(:b) { 2 }
+      obj.singleton_class.alias_method :a, :b
+      assert_equal 2, obj.a
+    end;
+  end
+
   def test_undef_method_error_message_with_zsuper_method
     modules = [
       Module.new { private :class },

@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class IntegerParseTest < TestCase
     def test_integer_parse
       assert_integer_parse(1)
@@ -35,7 +35,7 @@ module Prism
     private
 
     def assert_integer_parse(expected, source = expected.to_s)
-      assert_equal expected, Prism.parse_statement(source).value
+      assert_equal expected, Ruby::Prism.parse_statement(source).value
     end
   end
 end

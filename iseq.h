@@ -14,7 +14,6 @@
 #include "internal/gc.h"
 #include "shape.h"
 #include "vm_core.h"
-#include "prism_compile.h"
 
 RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])
@@ -172,6 +171,7 @@ ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
 
 #define ISEQ_NOT_LOADED_YET   IMEMO_FL_USER1
 #define ISEQ_USE_COMPILE_DATA IMEMO_FL_USER2
+/* set once iseq_encoded is in its executable form, with or without threaded code */
 #define ISEQ_TRANSLATED       IMEMO_FL_USER3
 /* set on every iseq of a subtree copied for Proc#refined */
 #define ISEQ_REFINED_COPY     IMEMO_FL_USER4

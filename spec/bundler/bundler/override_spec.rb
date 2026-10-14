@@ -172,5 +172,52 @@ RSpec.describe Bundler::Override do
         expect { override.apply_to(Gem::Requirement.default) }.to raise_error(ArgumentError, /unsupported override operation/)
       end
     end
+
+    context "when the override rewrites a dependency" do
+      it "raises ArgumentError instead of reading the replacement as a requirement" do
+        override = described_class.new("grpc", :to, "grpc-lite", from: "a")
+        expect { override.apply_to(Gem::Requirement.default) }.to raise_error(ArgumentError, /rewrites a dependency/)
+      end
+    end
+  end
+
+  describe "#to_s" do
+    it "renders a field override" do
+      expect(described_class.new(:all, :required_ruby_version, :ignore_upper).to_s).to eq("override :all, required_ruby_version: :ignore_upper")
+    end
+
+    it "renders a from:/to: override with its version:" do
+      override = described_class.new("grpc", :to, "grpc-lite", from: "a", requirement: ">= 2")
+      expect(override.to_s).to eq(%(override "grpc", from: "a", to: "grpc-lite", version: ">= 2"))
+    end
+  end
+
+  describe ".rewrite_dependencies" do
+    let(:deps) { [Gem::Dependency.new("grpc", "~> 1.0"), Gem::Dependency.new("json", ">= 2")] }
+
+    it "drops a dependency when to: is nil" do
+      override = described_class.new("grpc", :to, nil, from: "a")
+      expect(described_class.rewrite_dependencies([override], "a", deps)).to eq([deps.last])
+    end
+
+    it "replaces a dependency and discards the parent's requirement" do
+      override = described_class.new("grpc", :to, "grpc-lite", from: "a")
+      expect(described_class.rewrite_dependencies([override], "a", deps)).to eq([Gem::Dependency.new("grpc-lite"), deps.last])
+    end
+
+    it "gives the replacement the override's version requirement" do
+      override = described_class.new("grpc", :to, "grpc-lite", from: "a", requirement: ">= 2")
+      expect(described_class.rewrite_dependencies([override], "a", deps).first).to eq(Gem::Dependency.new("grpc-lite", ">= 2"))
+    end
+
+    it "leaves the dependencies of other gems untouched" do
+      override = described_class.new("grpc", :to, nil, from: "a")
+      expect(described_class.rewrite_dependencies([override], "b", deps)).to eq(deps)
+    end
+
+    it "ignores overrides without from:" do
+      override = described_class.new("grpc", :version, nil)
+      expect(described_class.rewrite_dependencies([override], "a", deps)).to eq(deps)
+    end
   end
 end

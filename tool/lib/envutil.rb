@@ -81,6 +81,11 @@ module EnvUtil
     self.timeout_scale = 10
   end
 
+  # Read here so that runners other than tool/lib/test/unit.rb, such as
+  # the test-unit gem in test-bundled-gems, also scale timeouts.
+  scale = (ENV["RUBY_TEST_TIMEOUT_SCALE"] || ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"]).to_f
+  self.timeout_scale = scale if scale > 0
+
   def apply_timeout_scale(t)
     if scale = EnvUtil.timeout_scale
       t * scale

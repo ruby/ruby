@@ -1,4 +1,5 @@
 #include "prism.h"
+#include "prism_compile.h"
 #include "ruby/version.h"
 
 #include <fcntl.h>
@@ -801,21 +802,6 @@ pm_compile_regexp_dynamic(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_
 
     int length = pm_interpolated_node_compile(iseq, parts, node_location, ret, popped, scope_node, implicit_regexp_encoding, explicit_regexp_encoding, false, false);
     PUSH_INSN2(ret, *node_location, toregexp, INT2FIX(parse_regexp_flags(node) & 0xFF), INT2FIX(length));
-}
-
-static VALUE
-pm_source_file_value(const pm_source_file_node_t *node, const pm_scope_node_t *scope_node)
-{
-    const pm_string_t *filepath = &node->filepath;
-    size_t length = pm_string_length(filepath);
-
-    if (length > 0) {
-        rb_encoding *filepath_encoding = scope_node->filepath_encoding != NULL ? scope_node->filepath_encoding : rb_utf8_encoding();
-        return rb_enc_interned_str((const char *) pm_string_source(filepath), length, filepath_encoding);
-    }
-    else {
-        return rb_fstring_lit("<compiled>");
-    }
 }
 
 /**
@@ -1775,7 +1761,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             // then mark the array at that index as false and
                             // decrement the keyword size.
                             if (!NIL_P(stored_index)) {
-                                rb_ary_store(keyword_indices, NUM2LONG(stored_index), Qfalse);
+                                rb_ary_store(keyword_indices, NUM2LEN(stored_index), Qfalse);
                                 size--;
                             }
 
@@ -1783,7 +1769,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             // keyword in the hash, mark the array at that index
                             // as true, and increment the keyword size.
                             rb_hash_aset(stored_indices, keyword, ULONG2NUM(element_index));
-                            rb_ary_store(keyword_indices, (long) element_index, Qtrue);
+                            rb_ary_store(keyword_indices, (rb_len_t) element_index, Qtrue);
                             size++;
                         }
 
@@ -1804,7 +1790,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[element_index];
                             bool popped = true;
 
-                            if (rb_ary_entry(keyword_indices, (long) element_index) == Qtrue) {
+                            if (rb_ary_entry(keyword_indices, (rb_len_t) element_index) == Qtrue) {
                                 keywords[keyword_index++] = pm_static_literal_value(iseq, assoc->key, scope_node);
                                 popped = false;
                             }
@@ -5764,8 +5750,6 @@ pm_compile_shareable_constant_literal(rb_iseq_t *iseq, const pm_node_t *node, pm
         return pm_static_literal_value(iseq, node, scope_node);
       case PM_STRING_NODE:
         return parse_static_literal_string(iseq, scope_node, node, &((const pm_string_node_t *) node)->unescaped);
-      case PM_SOURCE_FILE_NODE:
-        return pm_source_file_value((const pm_source_file_node_t *) node, scope_node);
       case PM_ARRAY_NODE: {
         const pm_array_node_t *cast = (const pm_array_node_t *) node;
         VALUE result = rb_ary_new_capa(cast->elements.size);
@@ -6940,6 +6924,9 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         size_t keyword_start_index = keyword->bits_start - keyword->num;
         keyword->table = (ID *)&ISEQ_BODY(iseq)->local_table[keyword_start_index];
     }
+
+    local_table_for_iseq = NULL;
+    if (idtmp) ALLOCV_END(idtmp);
 
     //********STEP 5************
     // Goal: compile anything that needed to be compiled
@@ -10494,17 +10481,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // ^^^^^^^^
         if (!popped) {
             const pm_source_file_node_t *cast = (const pm_source_file_node_t *) node;
-            VALUE string = pm_source_file_value(cast, scope_node);
 
+            int string_type;
             if (PM_NODE_FLAG_P(cast, PM_STRING_FLAGS_FROZEN)) {
-                PUSH_INSN1(ret, location, putobject, string);
+                string_type = ISEQ_FROZEN_STRING_LITERAL_ENABLED;
             }
             else if (PM_NODE_FLAG_P(cast, PM_STRING_FLAGS_MUTABLE)) {
-                PUSH_INSN1(ret, location, dupstring, string);
+                string_type = ISEQ_FROZEN_STRING_LITERAL_DISABLED;
             }
             else {
-                PUSH_INSN1(ret, location, dupchilledstring, string);
+                string_type = ISEQ_FROZEN_STRING_LITERAL_UNSET;
             }
+
+            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            PUSH_INSN1(ret, location, putobject, INT2FIX(string_type));
+            PUSH_SEND(ret, location, id_core_iseq_path, INT2FIX(1));
         }
         return;
       }
@@ -10783,7 +10774,7 @@ pm_parse_process_error(const pm_parse_result_t *result)
     pm_error_level_t error_level = pm_errors_format(parser, buffer, format_type);
 
     rb_encoding *message_encoding = (error_level == PM_ERROR_LEVEL_LOAD) ? rb_locale_encoding() : rb_enc_find(pm_parser_encoding_name(parser));
-    VALUE message = rb_enc_str_new(pm_buffer_value(buffer), (long) pm_buffer_length(buffer), message_encoding);
+    VALUE message = rb_enc_str_new(pm_buffer_value(buffer), (rb_len_t) pm_buffer_length(buffer), message_encoding);
     pm_buffer_free(buffer);
 
     VALUE error = Qnil;
@@ -11068,7 +11059,7 @@ pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error)
 
         if (!RB_TYPE_P(contents, T_STRING)) goto error_generic;
 
-        long len = RSTRING_LEN(contents);
+        rb_len_t len = RSTRING_LEN(contents);
         if (len < 0) goto error_generic;
 
         size_t length = (size_t) len;
@@ -11241,7 +11232,7 @@ pm_node_source_location(VALUE source, VALUE filepath, int start_line,
     return found;
 }
 
-VALUE rb_io_gets_limit_internal(VALUE io, long limit);
+VALUE rb_io_gets_limit_internal(VALUE io, rb_len_t limit);
 
 /**
  * Report whether the stream has reached EOF. The stream reader uses this to
@@ -11288,7 +11279,7 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
     }
 
     const char *cstr = RSTRING_PTR(line);
-    long length = RSTRING_LEN(line);
+    rb_len_t length = RSTRING_LEN(line);
 
     /*
      * Defensively clamp the copy. The line reader relaxes the limit to avoid
@@ -11296,8 +11287,8 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
      * than requested; we must never write past the caller's buffer. One byte
      * is reserved for the NUL terminator.
      */
-    if (length > (long) (size - 1)) {
-        length = (long) (size - 1);
+    if (length > (rb_len_t) (size - 1)) {
+        length = (rb_len_t) (size - 1);
     }
 
     memcpy(string, cstr, (size_t) length);

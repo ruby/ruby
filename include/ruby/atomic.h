@@ -967,6 +967,9 @@ rbimpl_atomic_load(volatile rb_atomic_t *ptr, int memory_order)
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
     return __atomic_load_n(ptr, memory_order);
+#elif defined(_M_X64) && !defined(_M_ARM64EC)
+    /* A plain load is seq_cst on x64 because the stores here use xchg. */
+    return *ptr;
 #else
     return rbimpl_atomic_fetch_add(ptr, 0, memory_order);
 #endif
@@ -1112,6 +1115,8 @@ rbimpl_atomic_ptr_load(void **ptr, int memory_order)
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
     return __atomic_load_n(ptr, memory_order);
+#elif defined(_M_X64) && !defined(_M_ARM64EC)
+    return *RBIMPL_CAST((void *volatile *)ptr);
 #else
     void *val = *ptr;
     return rbimpl_atomic_ptr_cas(ptr, val, val, memory_order, memory_order);

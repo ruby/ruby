@@ -63,6 +63,13 @@ rubylib = [gem_dir+'/lib', ENV["RUBYLIB"]].compact.join(File::PATH_SEPARATOR)
 run_opts = ENV["RUN_OPTS"]&.shellsplit
 exit_code = 0
 ruby = ENV['RUBY'] || RbConfig.ruby
+
+# prism is a bundled gem, not a default gem loadable without RubyGems.
+# Several bundled gems (irb, rdoc, rbs, typeprof, ...) require it, and
+# their tests spawn ruby with --disable=gems (assert_in_out_err etc.), so
+# preset the load paths of the prism gem in RUBYLIB for every gem.
+prism_libs = IO.popen([ruby, "-e", "old = $:.dup; require 'prism'; puts $:-old"], &:read)
+rubylib = [*prism_libs.split("\n"), rubylib].join(File::PATH_SEPARATOR) if $?.success?
 failed = []
 
 max = ENV['TEST_BUNDLED_GEMS_NPROCS']&.to_i || [Etc.nprocessors, 8].min

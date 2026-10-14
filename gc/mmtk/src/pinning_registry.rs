@@ -125,7 +125,7 @@ impl GCWork<Ruby> for PinPinningChildren {
             .set_temporarily_and_run_code(visit_object, || {
                 for obj in self.pinning_objs.iter().cloned() {
                     log::trace!("  Pinning: {}", obj);
-                    (upcalls().call_gc_mark_children)(obj);
+                    upcalls::call_gc_mark_children(obj);
                 }
             });
 
@@ -158,7 +158,7 @@ impl GCWork<Ruby> for RemoveDeadPinnings {
                 .expect("PinningRegistry should not have races during GC.");
 
             pinning_objs.retain_mut(|obj| {
-                if crate::binding::object_survives_current_gc(*obj) {
+                if obj.is_reachable() {
                     let new_obj = obj.get_forwarded_object().unwrap_or(*obj);
                     *obj = new_obj;
                     true

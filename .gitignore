@@ -59,7 +59,6 @@ lcov*.info
 /*-fake.rb
 /*.dll
 /*.exe
-/coroutine-test
 /*.ilk
 /*.res
 /*.pc
@@ -72,7 +71,6 @@ lcov*.info
 /ChangeLog
 /Doxyfile
 /GNUmakefile
-/README.atheos
 /README.fat-patch
 /README.v6
 /TAGS
@@ -80,7 +78,6 @@ lcov*.info
 /autom4te*.cache
 /automake
 /benchmark/benchmark-driver
-/beos
 /bmlog-*
 /breakpoints.gdb
 /config.cache
@@ -128,7 +125,6 @@ lcov*.info
 /revision.h
 /revision.tmp
 /ripper.tmp.y
-/riscos
 /rubicon
 /ruby
 /ruby-runner
@@ -170,6 +166,10 @@ lcov*.info
 # /coroutine/
 !/coroutine/**/*.s
 !/coroutine/**/*.S
+
+# /coroutine/test/
+/coroutine/test/run
+/coroutine/test/run.exe
 
 # /enc/trans/
 /enc/trans/*.c
@@ -256,16 +256,16 @@ lcov*.info
 /wasm/tests/*.wasm
 
 # prism
-/lib/prism/compiler.rb
-/lib/prism/dispatcher.rb
-/lib/prism/dot_visitor.rb
-/lib/prism/dsl.rb
-/lib/prism/inspect_visitor.rb
-/lib/prism/mutation_compiler.rb
-/lib/prism/node.rb
-/lib/prism/reflection.rb
-/lib/prism/serialize.rb
-/lib/prism/visitor.rb
+/lib/ruby/prism/compiler.rb
+/lib/ruby/prism/dispatcher.rb
+/lib/ruby/prism/dot_visitor.rb
+/lib/ruby/prism/dsl.rb
+/lib/ruby/prism/inspect_visitor.rb
+/lib/ruby/prism/mutation_compiler.rb
+/lib/ruby/prism/node.rb
+/lib/ruby/prism/reflection.rb
+/lib/ruby/prism/serialize.rb
+/lib/ruby/prism/visitor.rb
 /prism/internal/diagnostic.h
 /prism/api_node.c
 /prism/ast.h

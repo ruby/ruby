@@ -37,43 +37,6 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_includes Gem.platforms, Gem::Platform.local
   end
 
-  def test_options_ruby_abi
-    gem = util_spec "platformed_gem" do |s|
-      s.license = "AGPL-3.0-only"
-      s.files = ["README.md"]
-      s.platform = "arm64-darwin"
-      s.required_ruby_version = "~> 3.4.0"
-    end
-
-    gemspec_file = File.join(@tempdir, gem.spec_name)
-
-    File.open gemspec_file, "w" do |gs|
-      gs.write gem.to_ruby
-    end
-
-    @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4"]
-    assert_equal "3.4", @cmd.options[:ruby_abi]
-
-    use_ui @ui do
-      Dir.chdir @tempdir do
-        @cmd.execute
-      end
-    end
-
-    files = Dir[File.join(@tempdir, "platformed_gem-2-*.gem")]
-    assert_equal 1, files.size
-    assert_match(/\Aplatformed_gem-2-[0-9a-f]{8}\.gem\z/, File.basename(files.first))
-
-    output = @ui.output.split "\n"
-    assert_equal "  Successfully built RubyGem", output.shift
-    assert_equal "  Name: platformed_gem", output.shift
-    assert_equal "  Version: 2", output.shift
-    assert_match(/\A  File: platformed_gem-2-[0-9a-f]{8}\.gem\z/, output.shift)
-    assert_equal "  Platform: arm64-darwin", output.shift
-    assert_equal "  Ruby ABI: 3.4", output.shift
-    assert_equal [], output
-  end
-
   def test_options_filename
     gemspec_file = File.join(@tempdir, @gem.spec_name)
 
@@ -108,6 +71,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     refute @cmd.options[:strict]
     assert_nil @cmd.options[:output]
     assert_nil @cmd.options[:ruby_abi]
+    refute @cmd.options[:content_addressable]
   end
 
   def test_execute
@@ -122,10 +86,11 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     util_test_build_gem @gem
   end
 
-  def test_ruby_abi_rejects_ruby_platform
+  def test_content_addressable_rejects_ruby_platform
     gem = util_spec "some_gem" do |s|
       s.license = "AGPL-3.0-only"
       s.files = ["README.md"]
+      s.platform = Gem::Platform::RUBY
     end
 
     gemspec_file = File.join(@tempdir, gem.spec_name)
@@ -133,7 +98,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
       gs.write gem.to_ruby
     end
 
-    @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4"]
+    @cmd.handle_options [gemspec_file, "--content-addressable"]
     error = assert_raise(ArgumentError) do
       use_ui @ui do
         Dir.chdir @tempdir do
@@ -144,12 +109,12 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_match(/no platform or a Ruby platform has been set/, error.message)
   end
 
-  def test_ruby_abi_rejects_mismatched_required_ruby_version
+  def test_content_addressable_rejects_ineligible_required_ruby_version
     gem = util_spec "platformed_gem" do |s|
       s.license = "AGPL-3.0-only"
       s.files = ["README.md"]
       s.platform = "arm64-darwin"
-      s.required_ruby_version = "~> 3.3.0"
+      s.required_ruby_version = ">= 3.3"
     end
 
     gemspec_file = File.join(@tempdir, gem.spec_name)
@@ -157,7 +122,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
       gs.write gem.to_ruby
     end
 
-    @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4"]
+    @cmd.handle_options [gemspec_file, "--content-addressable"]
     error = assert_raise(ArgumentError) do
       use_ui @ui do
         Dir.chdir @tempdir do
@@ -165,10 +130,10 @@ class TestGemCommandsBuildCommand < Gem::TestCase
         end
       end
     end
-    assert_match(/Cannot build gem for Ruby ABI 3\.4 because required_ruby_version/, error.message)
+    assert_match(/required_ruby_version/, error.message)
   end
 
-  def test_ruby_abi_rejects_conflicting_required_rubygems_version
+  def test_content_addressable_rejects_conflicting_required_rubygems_version
     gem = util_spec "platformed_gem" do |s|
       s.license = "AGPL-3.0-only"
       s.files = ["README.md"]
@@ -182,7 +147,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
       gs.write gem.to_ruby
     end
 
-    @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4"]
+    @cmd.handle_options [gemspec_file, "--content-addressable"]
     error = assert_raise(ArgumentError) do
       use_ui @ui do
         Dir.chdir @tempdir do
@@ -193,11 +158,41 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_match(/Cannot build gem for Ruby ABI 3\.4 because required_rubygems_version/, error.message)
   end
 
-  def test_ruby_abi_defaults_required_ruby_version_when_unset
+  def test_ruby_abi_sets_required_ruby_version
     gem = util_spec "platformed_gem" do |s|
       s.license = "AGPL-3.0-only"
       s.files = ["README.md"]
       s.platform = "arm64-darwin"
+    end
+
+    gemspec_file = File.join(@tempdir, gem.spec_name)
+    File.open gemspec_file, "w" do |gs|
+      gs.write gem.to_ruby
+    end
+
+    @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4"]
+    assert_equal "3.4", @cmd.options[:ruby_abi]
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    files = Dir[File.join(@tempdir, "platformed_gem-2-*.gem")]
+    assert_equal ["platformed_gem-2-arm64-darwin.gem"], files.map {|f| File.basename(f) }
+    spec = Gem::Package.new(files.first).spec
+    assert_equal Gem::Requirement.new("~> 3.4.0"), spec.required_ruby_version
+
+    refute_match(/required_ruby_version was changed/, @ui.error)
+  end
+
+  def test_ruby_abi_overrides_existing_required_ruby_version
+    gem = util_spec "platformed_gem" do |s|
+      s.license = "AGPL-3.0-only"
+      s.files = ["README.md"]
+      s.platform = "arm64-darwin"
+      s.required_ruby_version = "~> 3.3.0"
     end
 
     gemspec_file = File.join(@tempdir, gem.spec_name)
@@ -212,13 +207,53 @@ class TestGemCommandsBuildCommand < Gem::TestCase
       end
     end
 
-    files = Dir[File.join(@tempdir, "platformed_gem-2-*.gem")]
+    assert_match(
+      /WARNING:  required_ruby_version was changed from "~> 3\.3\.0" to "~> 3\.4\.0" for this build because --ruby-abi 3\.4 was given\./,
+      @ui.error
+    )
+
+    files = Dir[File.join(@tempdir, "platformed_gem-2-arm64-darwin.gem")]
     assert_equal 1, files.size
     spec = Gem::Package.new(files.first).spec
     assert_equal Gem::Requirement.new("~> 3.4.0"), spec.required_ruby_version
   end
 
-  def test_ruby_abi_produces_deterministic_content_address
+  def test_ruby_abi_and_content_addressable_build_content_addressed_gem
+    gem = util_spec "platformed_gem" do |s|
+      s.license = "AGPL-3.0-only"
+      s.files = ["README.md"]
+      s.platform = "arm64-darwin"
+    end
+
+    gemspec_file = File.join(@tempdir, gem.spec_name)
+    File.open gemspec_file, "w" do |gs|
+      gs.write gem.to_ruby
+    end
+
+    @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4", "--content-addressable"]
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    files = Dir[File.join(@tempdir, "platformed_gem-2-*.gem")]
+    assert_equal 1, files.size
+    assert_match(/\Aplatformed_gem-2-[0-9a-f]{8}\.gem\z/, File.basename(files.first))
+
+    spec = Gem::Package.new(files.first).spec
+    assert_equal Gem::Requirement.new("~> 3.4.0"), spec.required_ruby_version
+
+    output = @ui.output.split "\n"
+    assert_equal "  Successfully built RubyGem", output.shift
+    assert_equal "  Name: platformed_gem", output.shift
+    assert_equal "  Version: 2", output.shift
+    assert_match(/\A  File: platformed_gem-2-[0-9a-f]{8}\.gem\z/, output.shift)
+    assert_equal "  Platform: arm64-darwin", output.shift
+    assert_equal "  Ruby ABI: 3.4", output.shift
+  end
+
+  def test_content_addressable_produces_deterministic_content_address
     gemspec = lambda do
       gem = util_spec "platformed_gem" do |s|
         s.license = "AGPL-3.0-only"
@@ -232,14 +267,12 @@ class TestGemCommandsBuildCommand < Gem::TestCase
         gs.write gem.to_ruby
       end
 
-      @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4"]
+      @cmd.handle_options [gemspec_file, "--content-addressable"]
       use_ui @ui do
         Dir.chdir @tempdir do
           @cmd.execute
         end
       end
-
-      Dir[File.join(@tempdir, "platformed_gem-2-*.gem")].first
     end
 
     first_build = gemspec.call
@@ -248,7 +281,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_equal File.basename(first_build), File.basename(second_build)
   end
 
-  def test_ruby_abi_with_output_raises
+  def test_content_addressable_with_output_raises
     gem = util_spec "platformed_gem" do |s|
       s.license = "AGPL-3.0-only"
       s.files = ["README.md"]
@@ -261,7 +294,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
       gs.write gem.to_ruby
     end
 
-    @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4", "--output", "test.gem"]
+    @cmd.handle_options [gemspec_file, "--content-addressable", "--output", "test.gem"]
     error = assert_raise(ArgumentError) do
       use_ui @ui do
         Dir.chdir @tempdir do
@@ -269,7 +302,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
         end
       end
     end
-    assert_match(/Cannot specify both a Ruby ABI and an output file name/, error.message)
+    assert_match(/Cannot specify an output file name for a content-addressable gem as these gems must use the generated file name./, error.message)
   end
 
   def test_execute_platform

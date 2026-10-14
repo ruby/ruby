@@ -989,7 +989,10 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_crash_report_sender_pid
     omit "needs siginfo" unless (macos? || linux?)
 
-    report = abrt_crash_report("sleep") {|child| Process.kill(:ABRT, child.pid)}
+    # Signal only once the main thread sleeps.  The crash report is not
+    # async-signal-safe and deadlocks if the signal lands inside malloc.
+    code = "Thread.new {Thread.pass until Thread.main.stop?; puts}; sleep"
+    report = abrt_crash_report(code) {|child| child.gets; Process.kill(:ABRT, child.pid)}
     assert_include(report, "[BUG] Aborted")
     assert_include(report, "(sent by pid #{Process.pid})")
   end
@@ -1288,10 +1291,11 @@ class TestRubyOptions < Test::Unit::TestCase
     code = <<~RUBY
       "foo" << "bar"
     RUBY
-    assert_in_out_err(["-W:deprecated"], code, [], ["-:1: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)"])
-    assert_in_out_err(["-W:deprecated", "--debug-frozen-string-literal"], code, [], ["-:1: warning: literal string will be frozen in the future", "-:1: info: the string was created here"])
-    assert_in_out_err(["-W:deprecated", "--disable-frozen-string-literal", "--debug-frozen-string-literal"], code, [], [])
-    assert_in_out_err(["-W:deprecated", "--enable-frozen-string-literal", "--debug-frozen-string-literal"], code, [], ["-:1:in '<main>': can't modify frozen String: \"foo\", created at -:1 (FrozenError)"])
+    env = {"RUBYOPT" => ""}
+    assert_in_out_err([env, "-W:deprecated"], code, [], ["-:1: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)"]) unless ENV["RUBYOPT"] =~ /frozen-string/
+    assert_in_out_err([env, "-W:deprecated", "--debug-frozen-string-literal"], code, [], ["-:1: warning: literal string will be frozen in the future", "-:1: info: the string was created here"])
+    assert_in_out_err([env, "-W:deprecated", "--disable-frozen-string-literal", "--debug-frozen-string-literal"], code, [], [])
+    assert_in_out_err([env, "-W:deprecated", "--enable-frozen-string-literal", "--debug-frozen-string-literal"], code, [], ["-:1:in '<main>': can't modify frozen String: \"foo\", created at -:1 (FrozenError)"])
   end
 
   def test___dir__encoding

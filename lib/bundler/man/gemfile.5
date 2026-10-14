@@ -295,6 +295,13 @@ gem "rails", git: "https://github\.com/rails/rails\.git", ref: "4aded"
 .TP
 \fBsubmodules\fR
 For reference, a git submodule \fIhttps://git\-scm\.com/book/en/v2/Git\-Tools\-Submodules\fR lets you have another git repository within a subfolder of your repository\. Specify \fBsubmodules: true\fR to cause bundler to expand any submodules included in the git repository
+.TP
+\fBsparse_checkout\fR
+Specify a directory, or an array of directories, to include when checking out a git repository\. Uses git's sparse\-checkout feature (requires git 2\.25+) to only check out the specified directories, reducing disk usage for large repos\. Unless \fBglob\fR is given, the \fB\.gemspec\fR is looked up within those directories\.
+.IP
+gem "foo", git: "https://github\.com/org/monorepo\.git", sparse_checkout: "packages/foo"
+.IP
+Files at the top level of the repository are always checked out\. On git versions below 2\.25, the entire repository will be checked out with a warning\.
 .P
 If a git repository contains multiple \fB\.gemspecs\fR, each \fB\.gemspec\fR represents a gem located at the same place in the file system as the \fB\.gemspec\fR\.
 .IP "" 4
@@ -490,7 +497,7 @@ a version requirement string (e\.g\. \fB">= 8\.0"\fR), which \fBreplaces\fR the 
 .P
 \fB:all\fR only applies to \fBrequired_ruby_version:\fR and \fBrequired_rubygems_version:\fR\. A per\-gem override on the same field takes precedence over an \fB:all\fR override\. \fB:all + version:\fR is rejected: version requirements only make sense per gem\.
 .P
-Multiple \fBoverride\fR calls for distinct targets are allowed; declaring the same \fBtarget\fR and \fBfield\fR twice is an error\.
+Declaring the same \fBtarget\fR and \fBfield\fR twice is an error\.
 .IP "" 4
 .nf
 source "https://rubygems\.org"
@@ -515,6 +522,31 @@ gem "rails", "~> 7\.0"
 .IP "" 0
 .P
 The override only affects resolution and the install\-time Ruby/RubyGems compatibility checks; \fBGemfile\.lock\fR continues to reflect the resolved versions, not the rewritten requirements\. When resolution still fails, Bundler appends the active overrides (with their Gemfile location) to the error message so it is clear which override shaped the constraint set\.
+.SS "DROPPING OR REPLACING A DEPENDENCY"
+\fBfrom:\fR and \fBto:\fR rewrite a single dependency of a single gem:
+.IP "" 4
+.nf
+override <target>, from: <gem>, to: nil
+override <target>, from: <gem>, to: <replacement>, version: <requirement>
+.fi
+.IP "" 0
+.P
+\fBto: nil\fR removes the dependency of \fB<gem>\fR on \fB<target>\fR, so \fB<target>\fR is not installed unless something else still requires it\. \fBto: <replacement>\fR makes \fB<gem>\fR depend on \fB<replacement>\fR instead of \fB<target>\fR\. The requirement \fB<gem>\fR put on \fB<target>\fR is discarded, and the optional \fBversion:\fR gives the replacement its own\. Both forms apply whether \fB<gem>\fR is a direct or a transitive dependency\.
+.P
+\fBfrom:\fR is required, and so is \fBto:\fR once \fBfrom:\fR is given\. To rewrite the same dependency of several gems, write one \fBoverride\fR per gem\. It is an error to declare the same \fB<target>\fR and \fBfrom:\fR twice, to drop a gem that the Gemfile requires directly, or to replace a gem that another gem still requires, since both would then be in the bundle\.
+.IP "" 4
+.nf
+# jekyll only loads em\-websocket for `jekyll serve \-\-livereload`\.
+override "em\-websocket", from: "jekyll", to: nil
+
+# Use an API\-compatible gem that provides the same files\.
+override "foo", from: "bar", to: "foo\-lite"
+.fi
+.IP "" 0
+.P
+Bundler does not check what a gem loads at runtime\. If \fB<gem>\fR requires \fB<target>\fR unconditionally, dropping it makes that require raise \fBLoadError\fR, as with jekyll's dependency on jekyll\-sass\-converter or the adapters that faraday 1\.x requires on load\. A replacement only works when it provides the files \fB<gem>\fR requires, and it does not take over the name of \fB<target>\fR: \fBGem\.loaded_specs\fR has no entry for \fB<target>\fR, and \fBgem "<target>"\fR fails\.
+.P
+\fBGemfile\.lock\fR keeps listing \fB<target>\fR under \fB<gem>\fR as the gem publishes it, while the locked gems leave \fB<target>\fR out or include \fB<replacement>\fR\. A frozen install accepts that lockfile as long as the Gemfile still has the override\. Removing the override makes Bundler resolve \fB<target>\fR again\.
 .SH "SOURCE PRIORITY"
 When attempting to locate a gem to satisfy a gem requirement, bundler uses the following priority order:
 .IP "1." 4

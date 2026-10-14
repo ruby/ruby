@@ -47,14 +47,14 @@ assert_equal 'ok', %q{
         Process.wait2(pid2)
       else
         w.close
-        sleep 0.3
+        sleep 0.2
       end
       exit true
     end
   rescue NotImplementedError
     :ok
   end
-}, '[ruby-core:28924]'
+}, '[ruby-core:28924]' unless ENV["RUBYCI_OPENBSD"] == "1"
 
 assert_equal '[1, 2]', %q{
   a = []

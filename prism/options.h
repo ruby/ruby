@@ -250,6 +250,25 @@ PRISM_EXPORTED_FUNCTION bool pm_options_freeze(const pm_options_t *options) PRIS
 PRISM_EXPORTED_FUNCTION void pm_options_freeze_set(pm_options_t *options, bool freeze) PRISM_NONNULL(1);
 
 /**
+ * Get the attach_comments option on the given options struct.
+ *
+ * @param options The options struct to get the attach_comments value from.
+ * @returns The attach_comments value.
+ */
+PRISM_EXPORTED_FUNCTION bool pm_options_attach_comments(const pm_options_t *options) PRISM_NONNULL(1);
+
+/**
+ * Set the attach_comments option on the given options struct. When this is
+ * set, the parser's comment list is sorted by start offset after parsing and
+ * every comment is assigned an owning node. Without it, comments are left in
+ * the order they were lexed and no nodes own any comments.
+ *
+ * @param options The options struct to set the attach_comments value on.
+ * @param attach_comments The attach_comments value to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_attach_comments_set(pm_options_t *options, bool attach_comments) PRISM_NONNULL(1);
+
+/**
  * Get the raise_error option on the given options struct.
  *
  * @param options The options struct to get the raise_error value from.

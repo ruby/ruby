@@ -145,7 +145,7 @@ class Thread
     #
     # Returns the length of the queue.
     def length
-      Primitive.cexpr!('LONG2NUM(queue_ptr(self)->len)')
+      Primitive.cexpr!('LEN2NUM(queue_ptr(self)->len)')
     end
     alias_method :size, :length
 
@@ -284,7 +284,7 @@ class Thread
 
     # Returns the maximum size of the queue.
     def max
-      Primitive.cexpr!('LONG2NUM(szqueue_ptr(self)->max)')
+      Primitive.cexpr!('LEN2NUM(szqueue_ptr(self)->max)')
     end
 
     # call-seq: max=(number)
@@ -292,12 +292,12 @@ class Thread
     # Sets the maximum size of the queue to the given +number+.
     def max=(vmax)
       Primitive.cstmt! %{
-        long max = NUM2LONG(vmax);
+        rb_len_t max = NUM2LEN(vmax);
         if (max <= 0) {
             rb_raise(rb_eArgError, "queue size must be positive");
         }
 
-        long diff = 0;
+        rb_len_t diff = 0;
         struct rb_szqueue *sq = szqueue_ptr(self);
 
         if (max > sq->max) {

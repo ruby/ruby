@@ -1,8 +1,9 @@
 @echo off
 @setlocal EnableExtensions DisableDelayedExpansion || exit /b -1
 
-if "%1" == "" (set gitdir=.) else (set gitdir=%1)
+if "%1" == "" (set gitdir=.) else (set "gitdir=%1")
 set TZ=UTC
+::- shorten %H for the stabilities, the length of %h may vary
 for /f "usebackq tokens=1-3" %%I in (
     `git -C "%gitdir%" log -1 --no-show-signature "--date=format-local:%%F %%T" "--format=%%H %%cd" HEAD`
 ) do (

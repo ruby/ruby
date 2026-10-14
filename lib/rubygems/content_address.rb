@@ -91,6 +91,23 @@ module Gem::ContentAddress
   end
 
   ##
+  # Raises ArgumentError unless +spec+ is eligible for content addressing
+
+  def self.eligible!(spec)
+    unless platform_eligible?(spec.platform)
+      raise ArgumentError,
+        "Cannot build a content-addressable gem as no platform or a Ruby platform has been set"
+    end
+
+    return unless ruby_abi_for(spec.required_ruby_version).nil?
+
+    raise ArgumentError,
+      "Cannot build a content-addressable gem because required_ruby_version is set to " \
+      "#{spec.required_ruby_version}. Please set required_ruby_version to \"~> X.Y.0\" " \
+      "so that it identifies a single Ruby ABI."
+  end
+
+  ##
   # Whether +spec+ is content-addressed: it is eligible for content
   # addressing and has a valid content address set. See eligible? for
   # when to pass <tt>validate_ruby_abi: false</tt>.
@@ -112,20 +129,6 @@ module Gem::ContentAddress
     return true unless validate_ruby_abi
 
     !ruby_abi_for(required_ruby_version).nil?
-  end
-
-  ##
-  # Whether +spec+'s required_ruby_version permits building for +ruby_abi+:
-  # an unset or default requirement can still be pinned to the ABI, and
-  # anything else must already pin exactly that ABI. Used at build time,
-  # before the requirement is injected, where eligible? would be
-  # premature.
-
-  def self.ruby_abi_compatible?(spec, ruby_abi)
-    required_ruby_version = spec.required_ruby_version
-    return true if required_ruby_version.nil? || required_ruby_version.none?
-
-    ruby_abi_for(required_ruby_version) == ruby_abi
   end
 
   ##

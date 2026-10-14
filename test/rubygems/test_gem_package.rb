@@ -236,7 +236,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal [{ "lib/code_sym.rb" => "code.rb" }, { "lib/code_sym2.rb" => "../lib/code.rb" }], symlinks
   end
 
-  def test_ruby_abi_creates_content_addressed_file
+  def test_content_addressable_build_creates_content_addressed_file
     spec = Gem::Specification.new "platformed", "1"
     spec.summary = "platformed"
     spec.authors = "platformed"
@@ -250,14 +250,14 @@ class TestGemPackage < Gem::Package::TarTestCase
       io.write "# lib/code.rb"
     end
 
-    built_file = Gem::Package.build(spec, false, false, nil, "3.4")
+    built_file = Gem::Package.build(spec, content_addressable: true)
 
     assert_path_not_exist spec.file_name
     assert_path_exist built_file
     assert_match(/\Aplatformed-1-[0-9a-f]{8}\.gem\z/, built_file)
   end
 
-  def test_ruby_abi_built_gem_preserves_derived_metadata
+  def test_content_addressable_build_preserves_derived_metadata
     spec = Gem::Specification.new "platformed", "1"
     spec.summary = "platformed"
     spec.authors = "platformed"
@@ -271,7 +271,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       io.write "# lib/code.rb"
     end
 
-    built_file = Gem::Package.build(spec, false, false, nil, "3.4")
+    built_file = Gem::Package.build(spec, content_addressable: true)
 
     loaded_spec = Gem::Package.new(built_file).spec
     assert_equal "platformed", loaded_spec.name
@@ -282,7 +282,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal "3.4", loaded_spec.ruby_abi
   end
 
-  def test_required_rubygems_version_is_set_by_ruby_abi_if_default
+  def test_required_rubygems_version_is_set_for_content_addressable_build_if_default
     spec = Gem::Specification.new "platformed", "1"
     spec.summary = "platformed"
     spec.authors = "platformed"
@@ -298,7 +298,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal Gem::Requirement.default, spec.required_rubygems_version
 
-    Gem::Package.build(spec, false, false, nil, "3.4")
+    Gem::Package.build(spec, content_addressable: true)
 
     assert_equal Gem::Requirement.new(">= 4.1.0.a"), spec.required_rubygems_version
   end
@@ -320,7 +320,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     ui = Gem::MockGemUi.new
     built_file = use_ui ui do
-      Gem::Package.build(spec, false, false, nil, "3.4")
+      Gem::Package.build(spec, content_addressable: true)
     end
 
     assert_equal Gem::Requirement.new(">= 4.2"), spec.required_rubygems_version
@@ -345,7 +345,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     ui = Gem::MockGemUi.new
     built_file = use_ui ui do
-      Gem::Package.build(spec, false, false, nil, "3.4")
+      Gem::Package.build(spec, content_addressable: true)
     end
 
     assert_equal Gem::Requirement.new(">= 4.1.0.a"), spec.required_rubygems_version
@@ -371,7 +371,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     ui = Gem::MockGemUi.new
     use_ui ui do
-      Gem::Package.build(spec, false, false, nil, "3.4")
+      Gem::Package.build(spec, content_addressable: true)
     end
 
     assert_equal Gem::Requirement.new(["< 5.0", ">= 4.1.0.a"]), spec.required_rubygems_version
@@ -404,7 +404,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       spec.required_rubygems_version = Gem::Requirement.new(conflicting)
 
       e = assert_raise ArgumentError do
-        Gem::Package.build(spec, false, false, nil, "3.4")
+        Gem::Package.build(spec, content_addressable: true)
       end
 
       assert_match "Cannot build gem for Ruby ABI 3.4 because required_rubygems_version is set to #{Gem::Requirement.new(conflicting)}", e.message
@@ -429,7 +429,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       io.write "# lib/code.rb"
     end
 
-    Gem::Package.build(spec, false, false, nil, "3.4")
+    Gem::Package.build(spec, content_addressable: true)
 
     assert_equal [">= 4.1.0.a"], spec.required_rubygems_version.as_list
   end
@@ -448,7 +448,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
 
     assert_raise Gem::InvalidSpecificationException do
-      Gem::Package.build(spec, false, false, nil, "3.4")
+      Gem::Package.build(spec, content_addressable: true)
     end
 
     assert_equal Gem::Requirement.default, spec.required_rubygems_version
@@ -470,13 +470,13 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     original_rrv = spec.required_ruby_version
 
-    Gem::Package.build(spec, false, false, nil, "3.4")
+    Gem::Package.build(spec, content_addressable: true)
 
     assert_equal original_rrv, spec.required_ruby_version
     assert_equal Gem::Requirement.new("~> 3.4.0"), spec.required_ruby_version
   end
 
-  def test_ruby_abi_not_passed_does_not_create_content_addressed_file
+  def test_default_build_does_not_create_content_addressed_file
     spec = Gem::Specification.new "platformed", "1"
     spec.summary = "platformed"
     spec.authors = "platformed"
@@ -498,75 +498,9 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal Gem::Requirement.default, Gem::Package.new(built_file).spec.required_rubygems_version
   end
 
-  def test_required_ruby_version_is_set_by_ruby_abi_if_default
-    spec = Gem::Specification.new "platformed", "1"
-    spec.summary = "platformed"
-    spec.authors = "platformed"
-    spec.files = ["lib/code.rb"]
-    spec.platform = "arm64-darwin"
-    spec.required_ruby_version = Gem::Requirement.default
-
-    FileUtils.mkdir "lib"
-
-    File.open "lib/code.rb", "w" do |io|
-      io.write "# lib/code.rb"
-    end
-
-    built_file = Gem::Package.build(spec, false, false, nil, "3.4")
-
-    assert_path_exist built_file
-    assert_match(/\Aplatformed-1-[0-9a-f]{8}\.gem\z/, built_file)
-    assert_equal Gem::Requirement.new("~> 3.4.0"), spec.required_ruby_version
-  end
-
   def test_required_ruby_version_is_not_modified_if_build_fails
     spec = Gem::Specification.new "platformed", "1"
     spec.summary = "platformed"
-    spec.files = ["lib/code.rb"]
-    spec.platform = "arm64-darwin"
-    spec.required_ruby_version = Gem::Requirement.default
-
-    FileUtils.mkdir "lib"
-
-    File.open "lib/code.rb", "w" do |io|
-      io.write "# lib/code.rb"
-    end
-
-    # missing authors makes validation during the build raise
-    assert_raise Gem::InvalidSpecificationException do
-      Gem::Package.build(spec, false, false, nil, "3.4")
-    end
-
-    assert_equal Gem::Requirement.default, spec.required_ruby_version
-  end
-
-  def test_raise_if_required_ruby_version_conflicts_with_ruby_abi
-    spec = Gem::Specification.new "platformed", "1"
-    spec.summary = "platformed"
-    spec.authors = "platformed"
-    spec.files = ["lib/code.rb"]
-    spec.platform = "arm64-darwin"
-    spec.required_ruby_version = Gem::Requirement.new("~> 3.5.0")
-
-    FileUtils.mkdir "lib"
-
-    File.open "lib/code.rb", "w" do |io|
-      io.write "# lib/code.rb"
-    end
-
-    e = assert_raise ArgumentError do
-      Gem::Package.build(spec, false, false, nil, "3.4")
-    end
-
-    assert_match "Cannot build gem for Ruby ABI 3.4 because required_ruby_version is set to ~> 3.5.0", e.message
-    assert_match "Please set required_ruby_version to \"~> 3.4.0\"", e.message
-    assert_equal Gem::Requirement.new("~> 3.5.0"), spec.required_ruby_version
-  end
-
-  def test_raise_if_ruby_abi_is_not_in_x_y_format
-    spec = Gem::Specification.new "platformed", "1"
-    spec.summary = "platformed"
-    spec.authors = "platformed"
     spec.files = ["lib/code.rb"]
     spec.platform = "arm64-darwin"
     spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
@@ -577,19 +511,21 @@ class TestGemPackage < Gem::Package::TarTestCase
       io.write "# lib/code.rb"
     end
 
-    e = assert_raise ArgumentError do
-      Gem::Package.build(spec, false, false, nil, "3.4.5")
+    # missing authors makes validation during the build raise
+    assert_raise Gem::InvalidSpecificationException do
+      Gem::Package.build(spec, content_addressable: true)
     end
 
-    assert_match "Ruby ABI must be in X.Y format", e.message
+    assert_equal Gem::Requirement.new("~> 3.4.0"), spec.required_ruby_version
   end
 
-  def test_raise_if_spec_is_non_platformed_but_ruby_abi_is_passed
-    spec = Gem::Specification.new "non-platformed", "1"
-    spec.summary = "non-platformed"
-    spec.authors = "non-platformed"
+  def test_raise_if_required_ruby_version_is_ineligible_for_content_addressing
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.authors = "platformed"
     spec.files = ["lib/code.rb"]
-    spec.required_ruby_version = Gem::Requirement.new("~> 3.4")
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new(">= 3.4")
 
     FileUtils.mkdir "lib"
 
@@ -598,7 +534,29 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
 
     e = assert_raise ArgumentError do
-      Gem::Package.build(spec, false, false, nil, "3.4")
+      Gem::Package.build(spec, content_addressable: true)
+    end
+
+    assert_match "Cannot build a content-addressable gem because required_ruby_version is set to >= 3.4", e.message
+    assert_match "Please set required_ruby_version to \"~> X.Y.0\"", e.message
+    assert_equal Gem::Requirement.new(">= 3.4"), spec.required_ruby_version
+  end
+
+  def test_raise_if_spec_is_non_platformed_but_content_addressable_is_requested
+    spec = Gem::Specification.new "non-platformed", "1"
+    spec.summary = "non-platformed"
+    spec.authors = "non-platformed"
+    spec.files = ["lib/code.rb"]
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    e = assert_raise ArgumentError do
+      Gem::Package.build(spec, content_addressable: true)
     end
 
     assert_match "no platform or a Ruby platform has been set", e.message
@@ -624,7 +582,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal("explicit-output.gem", built_file)
   end
 
-  def test_explicit_output_and_ruby_abi_raises
+  def test_explicit_output_and_content_addressable_raises
     spec = Gem::Specification.new "explicit", "1"
     spec.summary = "explicit"
     spec.authors = "explicit"
@@ -639,10 +597,10 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
 
     e = assert_raise ArgumentError do
-      Gem::Package.build(spec, false, false, "explicit-output.gem", "3.4")
+      Gem::Package.build(spec, false, false, "explicit-output.gem", content_addressable: true)
     end
 
-    assert_match "Cannot specify both a Ruby ABI and an output file name", e.message
+    assert_match "Cannot specify an output file name for a content-addressable gem", e.message
     assert_equal Gem::Requirement.default, spec.required_ruby_version
     assert_path_not_exist "explicit-output.gem"
   end
@@ -975,7 +933,36 @@ class TestGemPackage < Gem::Package::TarTestCase
     filepath = File.join @destination, "README.rdoc"
     assert_path_exist filepath
 
-    assert_equal 0o104444, File.stat(filepath).mode
+    assert_equal 0o100444, File.stat(filepath).mode
+  end
+
+  def test_extract_tar_gz_special_mode_bits
+    pend "chmod not supported" if Gem.win_platform?
+
+    package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.mkdir    "lib", 0o7755
+      tar.add_file "lib/foo.rb", 0o7644 do |io|
+        io.write "hi"
+      end
+      tar.add_file "bin/foo", 0o7755 do |io|
+        io.write "hi"
+      end
+    end
+
+    package.extract_tar_gz tgz_io, @destination
+
+    dirpath = File.join @destination, "lib"
+    assert_equal 0o40755.to_s(8), File.stat(dirpath).mode.to_s(8)
+
+    filepath = File.join @destination, "lib/foo.rb"
+    mode = 0o100644 & ~File.umask
+    assert_equal mode.to_s(8), File.stat(filepath).mode.to_s(8)
+
+    filepath = File.join @destination, "bin/foo"
+    mode = 0o100755 & ~File.umask
+    assert_equal mode.to_s(8), File.stat(filepath).mode.to_s(8)
   end
 
   def test_extract_tar_gz_absolute
@@ -1844,5 +1831,77 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new io
 
     assert_equal %w[lib/code.rb], package.contents
+  end
+
+  def test_invalid_windows_filename
+    package = Gem::Package.new @gem
+
+    if Gem.win_platform?
+      assert package.invalid_windows_filename?("spec/internal/:memory")
+      assert package.invalid_windows_filename?("file:name.rb")
+      assert package.invalid_windows_filename?("file<name.rb")
+      assert package.invalid_windows_filename?('file"name.rb')
+    end
+  end
+
+  def test_invalid_file_name_error_message
+    error = Gem::Package::InvalidWindowsFileNameError.new("spec/internal/:memory", "crono-2.0.1")
+    assert_kind_of Gem::InstallError, error
+    assert_match(%r{The gem contains a file 'spec/internal/:memory'}, error.message)
+    assert_match(/characters in its name that are not allowed on Windows/, error.message)
+    assert_match(/This is a problem with the 'crono-2.0.1' gem, not Rubygems/, error.message)
+    assert_match(/Please report this issue to the gem author/, error.message)
+  end
+
+  def test_extract_tar_gz_invalid_filename
+    pend "Windows filename validation only applies on Windows" unless Gem.win_platform?
+
+    package = Gem::Package.new @gem
+    package.verify
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "spec/internal/:memory", 0o644 do |io|
+        io.write "test content"
+      end
+    end
+
+    e = assert_raise Gem::Package::InvalidWindowsFileNameError do
+      package.extract_tar_gz tgz_io, @destination
+    end
+
+    assert_match(%r{The gem contains a file 'spec/internal/:memory'}, e.message)
+    assert_match(/characters in its name that are not allowed on Windows/, e.message)
+    assert_match(/This is a problem with the 'a-2' gem, not Rubygems/, e.message)
+  end
+
+  def test_build_warns_on_invalid_windows_filename
+    pend "Windows filename validation only applies on non-Windows" if Gem.win_platform?
+
+    spec = Gem::Specification.new "test_gem", "1.0"
+    spec.summary = "test"
+    spec.authors = "test"
+    spec.files = ["lib/code.rb", "lib/file:name.rb"]
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    File.open "lib/file:name.rb", "w" do |io|
+      io.write "# lib/file:name.rb"
+    end
+
+    package = Gem::Package.new spec.file_name
+    package.spec = spec
+
+    ui = Gem::MockGemUi.new
+    use_ui ui do
+      package.build
+    end
+
+    assert_match(%r{filename 'lib/file:name\.rb' contains characters that are invalid on Windows}, ui.error)
+    assert_match(/This gem may fail to install on Windows/, ui.error)
+    assert_path_exist spec.file_name
   end
 end

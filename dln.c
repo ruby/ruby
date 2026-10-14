@@ -90,17 +90,12 @@ dln_loaderror(const char *format, ...)
 }
 #endif
 
-#if defined(HAVE_DLOPEN) && !defined(_AIX) && !defined(_UNICOSMP)
+#if defined(HAVE_DLOPEN) && !defined(_AIX)
 /* dynamic load with dlopen() */
 # define USE_DLN_DLOPEN
 #endif
 
-#if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(NeXT)
-# define EXTERNAL_PREFIX "_"
-#else
-# define EXTERNAL_PREFIX ""
-#endif
-#define FUNCNAME_PREFIX EXTERNAL_PREFIX"Init_"
+#define FUNCNAME_PREFIX "Init_"
 
 #if defined __CYGWIN__ || defined DOSISH
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
@@ -158,17 +153,6 @@ concat_funcname(char *buf, const char *prefix, size_t plen, const struct string_
 #include <ctype.h>	/* for isdigit()	*/
 #include <errno.h>	/* for global errno	*/
 #include <sys/ldr.h>
-#endif
-
-#ifdef NeXT
-#if NS_TARGET_MAJOR < 4
-#include <mach-o/rld.h>
-#else
-#include <mach-o/dyld.h>
-#ifndef NSLINKMODULE_OPTION_BINDNOW
-#define NSLINKMODULE_OPTION_BINDNOW 1
-#endif
-#endif
 #endif
 
 #ifdef _WIN32
@@ -303,7 +287,7 @@ static bool
 dln_incompatible_library_p(void *handle, const char **libname)
 {
 #define check_func(func) \
-    if (dln_incompatible_func(handle, EXTERNAL_PREFIX #func, (void *)&func, libname)) \
+    if (dln_incompatible_func(handle, #func, (void *)&func, libname)) \
         return true
     check_func(ruby_xmalloc);
     return false;
@@ -469,14 +453,6 @@ void *
 dln_symbol(void *handle, const char *symbol)
 {
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
-    if (EXTERNAL_PREFIX[0]) {
-        const size_t symlen = strlen(symbol);
-        char *const tmp = ALLOCA_N(char, symlen + sizeof(EXTERNAL_PREFIX));
-        if (!tmp) dln_memerror();
-        memcpy(tmp, EXTERNAL_PREFIX, sizeof(EXTERNAL_PREFIX) - 1);
-        memcpy(tmp + sizeof(EXTERNAL_PREFIX) - 1, symbol, symlen + 1);
-        symbol = tmp;
-    }
     if (handle == NULL) {
 # if defined(USE_DLN_DLOPEN)
         handle = dlopen(NULL, RTLD_LAZY | RTLD_GLOBAL);
@@ -511,7 +487,7 @@ dln_load_and_init(const char *file, const char *init_fct_name)
 #ifdef RUBY_DLN_CHECK_ABI
     typedef unsigned long long abi_version_number;
     abi_version_number binary_abi_version =
-        dln_sym_callable(abi_version_number, (void), handle, EXTERNAL_PREFIX "ruby_abi_version")();
+        dln_sym_callable(abi_version_number, (void), handle, "ruby_abi_version")();
     if (binary_abi_version != RUBY_ABI_VERSION && abi_check_enabled_p()) {
         dln_loaderror("incompatible ABI version of binary - %s", file);
     }

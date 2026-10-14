@@ -1,11 +1,12 @@
 $(TARGET_SO): $(MMTK_BUILD)/$(LIBMMTK_RUBY)
 
-# Add the `libmmtk_ruby.a` target to run `cargo build`
+$(OBJS): Makefile
 
-release/$(LIBMMTK_RUBY) debug/$(LIBMMTK_RUBY): $(RUSTSRCS) $(srcdir)/Cargo.toml $(srcdir)/Cargo.toml
+release/$(LIBMMTK_RUBY) debug/$(LIBMMTK_RUBY): $(RUSTSRCS) $(srcdir)/Cargo.toml $(srcdir)/Cargo.lock Makefile
 
 release/$(LIBMMTK_RUBY):
-	CARGO_TARGET_DIR="." cargo build --manifest-path=$(srcdir)/Cargo.toml --release
+	CARGO_TARGET_DIR="." $(MMTK_CARGO_ENV) cargo build --manifest-path=$(srcdir)/Cargo.toml --release $(MMTK_CARGO_FLAGS)
+	$(MMTK_CARGO_FIXUP)
 
 debug/$(LIBMMTK_RUBY):
 	CARGO_TARGET_DIR="." cargo build --manifest-path=$(srcdir)/Cargo.toml
@@ -14,5 +15,5 @@ clean: clean-mmtk
 
 .PHONY: clean-mmtk
 clean-mmtk:
-	-$(Q)$(RM_RF) debug release
+	-$(Q)$(RM_RF) debug release $(MMTK_CLEAN_DIRS)
 	-$(Q)$(RM) .rustc_info.json

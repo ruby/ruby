@@ -2,6 +2,7 @@
 #include "internal/array.h"
 #include "internal/eval.h"
 #include "iseq.h"
+#include "prism_compile.h"
 #include "vm_core.h"
 #include "builtin.h"
 

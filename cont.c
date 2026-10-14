@@ -420,7 +420,7 @@ rb_fiber_pool_lock_atfork(void)
  * if MAP_STACK is passed.
  * https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=158755
  */
-#if defined(MAP_STACK) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+#if defined(MAP_STACK) && !defined(__FreeBSD__)
 #define FIBER_STACK_FLAGS (MAP_PRIVATE | MAP_ANON | MAP_STACK)
 #define FIBER_PROT_FLAGS (PROT_READ | PROT_WRITE)
 #else

@@ -423,8 +423,8 @@ collect_per_box_origins_i(rb_classext_t *ext, bool is_prime, VALUE box_value, vo
     if (origin == arg->owner || origin == arg->klass_housing_cme) {
         return;
     }
-    long len = RARRAY_LEN(arg->origins);
-    for (long i = 0; i < len; i++) {
+    rb_len_t len = RARRAY_LEN(arg->origins);
+    for (rb_len_t i = 0; i < len; i++) {
         if (RARRAY_AREF(arg->origins, i) == origin) {
             return;
         }
@@ -533,7 +533,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                                 .origins = origins,
                             };
                             rb_class_classext_foreach(owner, collect_per_box_origins_i, &origins_arg);
-                            for (long i = 0; i < RARRAY_LEN(origins); i++) {
+                            for (rb_len_t i = 0; i < RARRAY_LEN(origins); i++) {
                                 invalidate_callable_method_entry_in_every_m_table(RARRAY_AREF(origins, i), mid, cme);
                             }
                             RB_GC_GUARD(origins);
@@ -826,7 +826,8 @@ rb_vm_insert_cc_refinement(const struct rb_callcache *cc)
     rb_vm_t *vm = GET_VM();
     RB_VM_LOCK_ENTER();
     {
-        struct cc_refinement_entries *e = RTYPEDDATA_GET_DATA(vm->cc_refinement_set);
+        VALUE set = vm->cc_refinement_set;
+        struct cc_refinement_entries *e = RTYPEDDATA_GET_DATA(set);
         if (e->len == e->capa) {
             size_t new_capa = e->capa == 0 ? 16 : e->capa * 2;
             SIZED_REALLOC_N(e->entries, VALUE, new_capa, e->capa);
@@ -836,7 +837,9 @@ rb_vm_insert_cc_refinement(const struct rb_callcache *cc)
 
         // We never mark the cc, but we need to issue a writebarrier so that
         // the refinement set can be added to the remembered set
-        RB_OBJ_WRITTEN(vm->cc_refinement_set, Qundef, (VALUE)cc);
+        RB_OBJ_WRITTEN(set, Qundef, (VALUE)cc);
+        /* The entries are embedded in set, so keep it pinned while e is in use. */
+        RB_GC_GUARD(set);
     }
     RB_VM_LOCK_LEAVE();
 }
@@ -2256,6 +2259,9 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
 
         refinement = find_refinement(refinements, me->owner);
         if (!NIL_P(refinement)) {
+            if (RB_TYPE_P(me->owner, T_MODULE) && defined_class_ptr && RB_TYPE_P(*defined_class_ptr, T_ICLASS)) {
+                refinement = module_refinement_iclass(refinement, *defined_class_ptr);
+            }
             tmp_me = search_method_protect(refinement, me->called_id, defined_class_ptr);
 
             if (tmp_me && tmp_me->def->type != VM_METHOD_TYPE_REFINED) {
@@ -2874,7 +2880,7 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
       case VM_METHOD_TYPE_IVAR:
         return d1->body.attr.id == d2->body.attr.id;
       case VM_METHOD_TYPE_BMETHOD:
-        return RTEST(rb_equal(d1->body.bmethod.proc, d2->body.bmethod.proc));
+        return RTEST(rb_proc_eq(d1->body.bmethod.proc, d2->body.bmethod.proc));
       case VM_METHOD_TYPE_MISSING:
         return d1->original_id == d2->original_id;
       case VM_METHOD_TYPE_ZSUPER:
@@ -2933,7 +2939,7 @@ rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me)
 }
 
 void
-rb_alias(VALUE klass, ID alias_name, ID original_name)
+rb_add_alias(VALUE klass, ID alias_name, ID original_name, rb_method_visibility_t visi_alias)
 {
     const VALUE target_klass = klass;
     VALUE defined_class;
@@ -2980,6 +2986,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
     }
 
     if (visi == METHOD_VISI_UNDEF) visi = METHOD_ENTRY_VISI(orig_me);
+    if (visi_alias != METHOD_VISI_UNDEF) visi = visi_alias;
 
     if (!NIL_P(ruby_verbose) && rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
         VALUE owner_class = orig_me->defined_class ? orig_me->defined_class : defined_class;
@@ -3027,6 +3034,12 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
             RB_OBJ_WRITE(alias_me, &alias_me->defined_class, orig_me->defined_class);
         }
     }
+}
+
+void
+rb_alias(VALUE klass, ID alias_name, ID original_name)
+{
+    rb_add_alias(klass, alias_name, original_name, METHOD_VISI_UNDEF);
 }
 
 /*
@@ -3093,7 +3106,7 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
     VALUE v;
 
     if (argc == 1 && (v = rb_check_array_type(argv[0])) != Qnil) {
-        long j;
+        rb_len_t j;
 
         for (j = 0; j < RARRAY_LEN(v); j++) {
             check_and_export_method(self, RARRAY_AREF(v, j), visi);

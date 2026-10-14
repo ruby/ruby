@@ -415,6 +415,21 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     end
   end
 
+  def test_initialize_v4_hostname_resolution_failure_after_v6_address_family_error
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit "EAI_ADDRFAMILY is not defined" unless defined?(Socket::EAI_ADDRFAMILY)
+
+    e = assert_raise(Socket::ResolutionError) do
+      TCPSocket.new(
+        "localhost",
+        12345,
+        fast_fallback: true,
+        test_mode_settings: { delay: { ipv4: 100 }, error: { ipv6: Socket::EAI_ADDRFAMILY, ipv4: Socket::EAI_FAIL } }
+      )
+    end
+    assert_equal(Socket::EAI_FAIL, e.error_code)
+  end
+
   def test_initialize_v6_connected_socket_with_v6_address
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 

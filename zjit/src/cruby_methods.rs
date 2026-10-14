@@ -18,6 +18,7 @@ use crate::hir::{self, FieldName};
 unsafe extern "C" {
     fn rb_builtin_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_builtin_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
+    fn rb_builtin_ary_first(ec: EcPtr, self_: VALUE) -> VALUE;
     fn rb_builtin_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
     fn rb_str_equal(str1: VALUE, str2: VALUE) -> VALUE;
 }
@@ -250,6 +251,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cBasicObject, "!", inline_basic_object_not, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!=", inline_basic_object_neq, types::BoolExact);
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
+    annotate!(rb_cStruct, "initialize", inline_struct_initialize);
     annotate!(rb_cClass, "allocate", inline_class_allocate);
     annotate!(rb_cClass, "superclass", inline_class_superclass, types::Class.union(types::NilClass));
     annotate!(rb_cInteger, "succ", inline_integer_succ);
@@ -278,6 +280,10 @@ pub fn init() -> Annotations {
     annotate!(rb_cFloat, "to_int", inline_float_to_i);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
     annotate!(rb_cString, "to_sym", inline_string_to_sym, types::Symbol);
+    annotate!(rb_cString, "freeze", inline_freeze);
+    annotate!(rb_cString, "-@", inline_string_uminus);
+    annotate!(rb_cArray, "freeze", inline_freeze);
+    annotate!(rb_cHash, "freeze", inline_freeze);
     annotate!(rb_cFloat, "nan?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cFloat, "finite?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cFloat, "infinite?", types::Fixnum.union(types::NilClass), no_gc, leaf, elidable);
@@ -306,6 +312,7 @@ pub fn init() -> Annotations {
     builtin_funcs.insert(rb_builtin_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
     builtin_funcs.insert(rb_builtin_ary_at as *mut c_void, FnProperties { inline: inline_ary_at, ..Default::default() });
     builtin_funcs.insert(rb_builtin_ary_at_end as *mut c_void, FnProperties { inline: inline_ary_at_end, return_type: types::BoolExact, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_ary_first as *mut c_void, FnProperties { inline: inline_ary_first, ..Default::default() });
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
@@ -330,6 +337,38 @@ fn inline_string_to_sym(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
     if fun.likely_a(recv, types::String, state) {
         let recv = fun.coerce_to(block, recv, types::String, state);
         return Some(fun.push_insn(block, hir::Insn::StringIntern { val: recv, state }));
+    }
+    None
+}
+
+/// Inline `String#freeze`, `Array#freeze`, and `Hash#freeze` on an object that is already frozen,
+/// in which case they return the receiver. See `rb_str_freeze` (string.c), `rb_ary_freeze`
+/// (array.c), and `rb_hash_freeze` (hash.c).
+fn inline_freeze(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    let obj = fun.type_of(recv).ruby_object()?;
+    if obj.is_frozen() {
+        return Some(recv);
+    }
+    None
+}
+
+/// Inline `String#-@` on a string that is already deduplicated (an fstring).
+///
+/// This mirrors `str_uminus` and `rb_fstring` in string.c. `str_uminus` calls `rb_fstring`, which
+/// returns the receiver right away if it has `RSTRING_FSTR` set. Otherwise, for a bare `String`
+/// (no ivars, class exactly `String`), it looks up or registers the string in the fstring table
+/// and returns the interned copy, which is a different object even when the receiver is already
+/// frozen. So "frozen" is not enough to fold `-str` to `str`; we need `RSTRING_FSTR`.
+///
+/// `rb_fstring` also returns the receiver in some cases that are not handled here, such as a
+/// frozen non-bare embedded string. Those are rare, and fall back to calling the method.
+fn inline_string_uminus(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    let obj = fun.type_of(recv).ruby_object()?;
+    debug_assert!(obj.string_p());
+    if obj.builtin_flags() & RSTRING_FSTR as usize != 0 {
+        return Some(recv);
     }
     None
 }
@@ -396,12 +435,8 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let index = fun.coerce_to(block, index, types::Fixnum, state);
             let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
             let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
-            let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: length, reason: Box::new(SideExitReason::GuardLess), state });
             let index = fun.push_insn(block, hir::Insn::AdjustBounds { index, length });
-            let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
-            use crate::hir::SideExitReason;
-            let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state });
-            let result = fun.push_insn(block, hir::Insn::ArrayAref { array: recv, index });
+            let result = fun.push_insn(block, hir::Insn::ArrayArefChecked { array: recv, index, length });
             return Some(result);
         }
     }
@@ -943,9 +978,6 @@ fn inline_class_superclass(fun: &mut hir::Function, block: hir::BlockId, recv: h
     // compile-time constant.
     let recv_class = fun.type_of(recv).ruby_object()?;
     if !unsafe { RB_TYPE_P(recv_class, RUBY_T_CLASS) } { return None; }
-    // rb_class_superclass raises TypeError on an uninitialized class (e.g. from Class.allocate);
-    // don't fold.
-    if !unsafe { rb_zjit_can_load_superclass_p(recv_class) } { return None; }
     let superclass = unsafe { rb_class_superclass(recv_class) };
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(superclass) }))
 }
@@ -954,6 +986,68 @@ fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, 
     if !args.is_empty() { return None; }
     let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qnil) });
     Some(result)
+}
+
+/// Inline the positional (non-`keyword_init`) case of `Struct#initialize`
+/// (`rb_struct_initialize_m`): store each argument into its member slot and nil out the members
+/// the caller left off the end.
+fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    // Check our pre-conditions. We need to know that:
+
+    // (1) the receiver class is a known class
+    let class = fun.type_of(recv).exact_ruby_class()?;
+
+    // (2) with a known number of members
+    let num_members = unsafe { rb_zjit_struct_num_members(class) };
+    debug_assert!(num_members >= 0, "rb_zjit_struct_num_members returned a negative value");
+
+    // (3) which also matches the number of arguments passed (more values than the struct has
+    //     members raises ArgumentError; leave that to the interpreter)
+    if args.len() as i64 > num_members { return None; }
+
+    // (4) the constructor isn't expecting keyword parameters (or it's ok to nil-fill the whole
+    //     instance)
+    if !args.is_empty() && unsafe { rb_struct_s_keyword_init(class) }.test() { return None; }
+
+    // (5) and the number of members is small enough to inline without bloating the generated code
+    const MEMBER_LIMIT: i64 = 1 << 8;
+    if num_members > MEMBER_LIMIT { return None; }
+
+    // (6) the object is embedded, which simplifies the implementation (if we see some extended
+    //     structs, we can support that reasonably easily later)
+    //     Embeddedness depends only on the member count. See struct_embedded_p and struct_alloc.
+    if !unsafe { rb_zjit_struct_embedded_p(num_members) } { return None; }
+
+    // We know it's going to fit into an i32 since we checked that the total number of fields was
+    // in [0, MEMBER_LIMIT).
+    let base_offset: i32 = RUBY_OFFSET_RSTRUCT_AS_ARY.try_into().ok()?;
+
+    // #initialize calls rb_struct_modify
+    fun.guard_not_frozen(block, recv, state);
+
+    // Initialize all the members, either to the argument passed in or nil if it wasn't supplied.
+    let nil = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qnil) });
+    if num_members > 0 {
+        let num_bits = types::BasicObject.num_bits();
+        for index in 0..num_members {
+            // Name the slots after their members so these stores line up with the LoadFields that
+            // the struct reader methods compile to.
+            let id = unsafe { rb_zjit_struct_member_id(class, index) }.into();
+            let offset = base_offset + SIZEOF_VALUE_I32 * index as i32;
+            match args.get(index as usize) {
+                Some(&val) => {
+                    fun.push_insn(block, hir::Insn::StoreField { recv, id, offset, val, num_bits });
+                    fun.push_insn(block, hir::Insn::WriteBarrier { recv, val });
+                }
+                // nil is an immediate, so the tail needs no write barrier.
+                None => {
+                    fun.push_insn(block, hir::Insn::StoreField { recv, id, offset, val: nil, num_bits });
+                }
+            }
+        }
+    }
+
+    Some(nil)
 }
 
 fn inline_nilclass_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
@@ -1157,5 +1251,14 @@ fn inline_ary_at_end(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::I
     let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
     let length = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state });
     let result = fun.push_insn(block, hir::Insn::FixnumGe { left: index, right: length });
+    Some(result)
+}
+
+fn inline_ary_first(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[recv] = args else { return None; };
+    let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
+    let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
+    let index = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
+    let result = fun.push_insn(block, hir::Insn::ArrayArefChecked { array: recv, index, length });
     Some(result)
 }

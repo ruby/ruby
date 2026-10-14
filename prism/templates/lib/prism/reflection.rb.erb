@@ -1,7 +1,7 @@
 #--
 # rbs_inline: enabled
 
-module Prism
+module Ruby::Prism
   # The Reflection module provides the ability to reflect on the structure of
   # the syntax tree itself, as opposed to looking at a single syntax tree. This
   # is useful in metaprogramming contexts.
@@ -21,18 +21,18 @@ module Prism
     end
 
     # A node field represents a single child node in the syntax tree. It
-    # resolves to a Prism::Node in Ruby.
+    # resolves to a Ruby::Prism::Node in Ruby.
     class NodeField < Field
     end
 
     # An optional node field represents a single child node in the syntax tree
-    # that may or may not be present. It resolves to either a Prism::Node or nil
+    # that may or may not be present. It resolves to either a Ruby::Prism::Node or nil
     # in Ruby.
     class OptionalNodeField < Field
     end
 
     # A node list field represents a list of child nodes in the syntax tree. It
-    # resolves to an array of Prism::Node instances in Ruby.
+    # resolves to an array of Ruby::Prism::Node instances in Ruby.
     class NodeListField < Field
     end
 
@@ -60,13 +60,13 @@ module Prism
 
     # A location field represents the location of some part of the node in the
     # source code. For example, the location of a keyword or an operator. It
-    # resolves to a Prism::Location in Ruby.
+    # resolves to a Ruby::Prism::Location in Ruby.
     class LocationField < Field
     end
 
     # An optional location field represents the location of some part of the
     # node in the source code that may or may not be present. It resolves to
-    # either a Prism::Location or nil in Ruby.
+    # either a Ruby::Prism::Location or nil in Ruby.
     class OptionalLocationField < Field
     end
 
@@ -108,29 +108,29 @@ module Prism
       when :<%= node.human %>
         [<%= [*node.flags, *node.fields].map { |field|
           case field
-          when Prism::Template::NodeField
+          when Ruby::Prism::Template::NodeField
             "NodeField.new(:#{field.name})"
-          when Prism::Template::OptionalNodeField
+          when Ruby::Prism::Template::OptionalNodeField
             "OptionalNodeField.new(:#{field.name})"
-          when Prism::Template::NodeListField
+          when Ruby::Prism::Template::NodeListField
             "NodeListField.new(:#{field.name})"
-          when Prism::Template::ConstantField
+          when Ruby::Prism::Template::ConstantField
             "ConstantField.new(:#{field.name})"
-          when Prism::Template::OptionalConstantField
+          when Ruby::Prism::Template::OptionalConstantField
             "OptionalConstantField.new(:#{field.name})"
-          when Prism::Template::ConstantListField
+          when Ruby::Prism::Template::ConstantListField
             "ConstantListField.new(:#{field.name})"
-          when Prism::Template::StringField
+          when Ruby::Prism::Template::StringField
             "StringField.new(:#{field.name})"
-          when Prism::Template::LocationField
+          when Ruby::Prism::Template::LocationField
             "LocationField.new(:#{field.name})"
-          when Prism::Template::OptionalLocationField
+          when Ruby::Prism::Template::OptionalLocationField
             "OptionalLocationField.new(:#{field.name})"
-          when Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::IntegerField
+          when Ruby::Prism::Template::UInt8Field, Ruby::Prism::Template::UInt32Field, Ruby::Prism::Template::IntegerField
             "IntegerField.new(:#{field.name})"
-          when Prism::Template::DoubleField
+          when Ruby::Prism::Template::DoubleField
             "FloatField.new(:#{field.name})"
-          when Prism::Template::Flags
+          when Ruby::Prism::Template::Flags
             "FlagsField.new(:flags, [#{field.values.map { |value| ":#{value.name.downcase}?" }.join(", ")}])"
           else
             raise field.class.name

@@ -84,10 +84,8 @@ module Bundler
       platforms.delete(Bundler.local_platform) if less_specific_platform
     end
 
-    def validate_deps(s)
-      overrides = s.is_a?(LazySpecification) ? Array(s.overrides) : []
-
-      s.runtime_dependencies.each do |dep|
+    def validate_deps(s, overrides = s.is_a?(LazySpecification) ? Array(s.overrides) : [])
+      Override.rewrite_dependencies(overrides, s.name, s.runtime_dependencies).each do |dep|
         next if dep.name == "bundler"
 
         return :missing unless names.include?(dep.name)
@@ -286,7 +284,7 @@ module Bundler
         overrides = spec.is_a?(LazySpecification) ? Array(spec.overrides) : []
         matching_specs = spec.source.specs.search([spec.name, spec.version])
         platform_spec = MatchPlatform.select_best_platform_match(matching_specs, platform).find do |s|
-          s.matches_current_metadata_with_overrides?(overrides) && valid_dependencies?(s)
+          s.matches_current_metadata_with_overrides?(overrides) && validate_deps(s, overrides) == :valid
         end
 
         if platform_spec
@@ -359,7 +357,8 @@ module Bundler
     end
 
     def tsort_each_child(s)
-      s.dependencies.sort_by(&:name).each do |d|
+      dependencies = s.is_a?(LazySpecification) ? Override.rewrite_dependencies(s.overrides, s.name, s.dependencies) : s.dependencies
+      dependencies.sort_by(&:name).each do |d|
         next if d.type == :development
 
         specs_for_name = lookup[d.name]

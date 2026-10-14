@@ -2,8 +2,11 @@
 
 require "test/unit"
 require "envutil"
+require "core_assertions"
 
 class TestEnvUtil < Test::Unit::TestCase
+  include Test::Unit::CoreAssertions
+
   def test_rubybin_points_to_a_ruby_executable
     assert(File.executable?(EnvUtil.rubybin))
   end
@@ -15,6 +18,10 @@ class TestEnvUtil < Test::Unit::TestCase
     assert_equal(5.0, EnvUtil.apply_timeout_scale(2))
   ensure
     EnvUtil.timeout_scale = original_scale
+  end
+
+  def test_timeout_scale_from_env
+    assert_separately([{"RUBY_TEST_TIMEOUT_SCALE" => "2.5"}], "assert_equal(2.5, EnvUtil.timeout_scale)")
   end
 
   def test_invoke_ruby_captures_output_and_status

@@ -701,6 +701,18 @@ end.join
     assert_equal(level, e.backtrace.size, feature6216)
   end
 
+  def test_stackoverflow_during_optional_arg_setup
+    # Filling in missing optional arguments of a block call must not
+    # clobber the caller's control frame when the VM stack is exhausted.
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
+    begin;
+      pr = proc {|a=1,b=1,c=1,d=1,e=1,f=1,g=1,h=1,i=1,j=1| pr.call }
+      40.times do |k|
+        eval((0...k).map { "v#{_1}=0;" }.join + "begin; pr.call; rescue SystemStackError => e; e.backtrace; end")
+      end
+    end;
+  end
+
   def test_machine_stackoverflow
     bug9109 = '[ruby-dev:47804] [Bug #9109]'
     assert_separately([], <<-SRC)

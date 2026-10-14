@@ -453,6 +453,8 @@ make_counters! {
     guard_send_not_string,
     guard_send_respond_to_mid_mismatch,
     guard_send_str_aref_not_fixnum,
+    guard_send_str_bytesize_overflow,
+    guard_send_ary_length_overflow,
 
     guard_send_cfunc_bad_splat_vargs,
     guard_send_cfunc_block_not_nil,
@@ -734,9 +736,14 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         }
     }
 
+    extern "C" {
+        fn rb_uint2inum(n: usize) -> VALUE;
+    }
+
+    // Stats can be out of the Fixnum range, which is 31 bits on LLP64 (Windows)
     macro_rules! set_stat_usize {
         ($hash:ident, $name:expr, $value:expr) => {
-            set_stat!($hash, $name, VALUE::fixnum_from_usize($value));
+            set_stat!($hash, $name, rb_uint2inum($value));
         }
     }
 
@@ -802,7 +809,7 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
 
             // Put counter into hash
             let key = &counter.get_name();
-            let value = VALUE::fixnum_from_usize(counter_val as usize);
+            let value = unsafe { rb_uint2inum(counter_val as usize) };
             unsafe { set_stat!(hash, key, value); }
         }
 
@@ -884,7 +891,7 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
                 // Add the pairs to the dict
                 for (name, call_count) in pairs {
                     let key = rust_str_to_sym(name);
-                    let value = VALUE::fixnum_from_usize(call_count as usize);
+                    let value = unsafe { rb_uint2inum(call_count as usize) };
                     unsafe { rb_hash_aset(calls_hash, key, value); }
                 }
             }
@@ -1051,10 +1058,12 @@ pub extern "C" fn rb_yjit_update_max_compile_time_ns(max_compile_time_ns: u64) {
     unsafe {
         rb_yjit_max_compile_time_ns = max_compile_time_ns;
 
-        if rb_yjit_max_compile_time_ns == 0 || rb_yjit_max_compile_time_ns > rb_yjit_total_compile_time_ns {
-            rb_yjit_compiling_p = !out_of_memory_p();
-        } else {
-            rb_yjit_compiling_p = false;
+        if yjit_enabled_p() {
+            if rb_yjit_max_compile_time_ns == 0 || rb_yjit_max_compile_time_ns > rb_yjit_total_compile_time_ns {
+                rb_yjit_compiling_p = !out_of_memory_p();
+            } else {
+                rb_yjit_compiling_p = false;
+            }
         }
     }
 }

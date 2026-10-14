@@ -4,7 +4,7 @@
 
 struct sort_data {
     rb_encoding *enc;
-    long elsize;
+    rb_len_t elsize;
 };
 
 static int
@@ -29,7 +29,7 @@ static VALUE
 bug_str_qsort_bang(int argc, VALUE *argv, VALUE str)
 {
     VALUE beg, len, size;
-    long l, b = 0, n, s = 1;
+    rb_len_t l, b = 0, n, s = 1;
     struct sort_data d;
 
     rb_scan_args(argc, argv, "03", &beg, &len, &size);

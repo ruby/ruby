@@ -2,6 +2,7 @@
 
 require 'test/unit'
 require 'resolv'
+require 'tempfile'
 
 # JRuby loads its bundled win32/resolv, which lacks the registry access of the extension.
 if defined?(Win32::Resolv) && Win32::Resolv.respond_to?(:tcpip_params, true)
@@ -22,6 +23,19 @@ if defined?(Win32::Resolv) && Win32::Resolv.respond_to?(:tcpip_params, true)
     # Test reading a non-existent registry value
     def test_nonexistent_value
       assert_nil(Win32::Resolv.send(:tcpip_params) {|reg| reg.value('NonExistentKeyThatShouldNotExist')})
+    end
+
+    def test_default_config_hash_with_resolv_conf
+      Tempfile.create("resolv.conf") do |f|
+        f.puts "nameserver 192.0.2.1"
+        f.close
+        nameserver = Resolv::DNS::Config.default_config_hash(f.path)[:nameserver]
+        if /cygwin/ =~ RUBY_PLATFORM
+          assert_equal(["192.0.2.1"], nameserver)
+        else
+          assert_not_include(Array(nameserver), "192.0.2.1")
+        end
+      end
     end
   end
 end

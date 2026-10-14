@@ -425,6 +425,64 @@ module Test_SyncDefaultGems
     end
   end if /darwin|linux/ =~ RUBY_PLATFORM
 
+class TestPrismFixup < Test::Unit::TestCase
+  def test_rewrite_ruby_namespace
+    src = <<~RUBY
+      module Prism
+        class Compiler < ::Prism::Compiler; end
+        autoload :Visitor, "prism/visitor"
+        require "prism/serialize"
+        require_relative "prism/node"
+        Prism.parse(source) #: Prism::node
+        NotPrism::Prism
+      end
+    RUBY
+    expected = <<~RUBY
+      module Ruby::Prism
+        class Compiler < ::Ruby::Prism::Compiler; end
+        autoload :Visitor, "ruby/prism/visitor"
+        require "ruby/prism/serialize"
+        require_relative "prism/node"
+        Ruby::Prism.parse(source) #: Ruby::Prism::node
+        NotPrism::Prism
+      end
+    RUBY
+    assert_equal(expected, SyncDefaultGems.prism_rewrite_ruby(src))
+    assert_equal(%[require "ruby/prism"\n], SyncDefaultGems.prism_rewrite_ruby(%[require "prism"\n]))
+  end
+
+  def test_rewrite_ruby_is_idempotent
+    src = %[module Ruby::Prism\n  Ruby::Prism.parse(x)\nend\n]
+    assert_equal(src, SyncDefaultGems.prism_rewrite_ruby(src))
+  end
+
+  def test_rewrite_c_namespace
+    src = %[rb_cPrism = rb_define_module("Prism"); /* Prism::Scope */ rb_cPrismNode\n]
+    expected = %[rb_cPrism = rb_define_module_under(rb_define_module("Ruby"), "Prism"); /* Prism::Scope */ rb_cPrismNode\n]
+    assert_equal(expected, SyncDefaultGems.prism_rewrite_c(src))
+  end
+
+  def test_rewrite_erb_template
+    src = <<~ERB
+      module Prism
+        <%- nodes.each do |node| -%>
+        <%- if node.is_a?(Prism::Template::NodeField) -%>
+        class <%= node.name %> < Node; end #: Prism::node
+        <%- end -%>
+      end
+    ERB
+    expected = <<~ERB
+      module Ruby::Prism
+        <%- nodes.each do |node| -%>
+        <%- if node.is_a?(Ruby::Prism::Template::NodeField) -%>
+        class <%= node.name %> < Node; end #: Ruby::Prism::node
+        <%- end -%>
+      end
+    ERB
+    assert_equal(expected, SyncDefaultGems.prism_rewrite_ruby(src))
+  end
+end
+
   class TestUpdateDefaultGems < Test::Unit::TestCase
     include CaptureProcessOutput
 
@@ -502,6 +560,36 @@ module Test_SyncDefaultGems
       sha = read_git(*%W"rev-parse master", chdir: @rubydir)
       out = assert_update
       assert_equal(sha, read_git(*%W"rev-parse ruby-core/master"), out)
+    end
+
+    def update_release(version)
+      latest_release = SyncDefaultGems.method(:latest_release)
+      EnvUtil.suppress_warning {SyncDefaultGems.define_singleton_method(:latest_release) {|_| version}}
+      result = nil
+      out = capture_process_output_to([STDOUT, STDERR]) do
+        result = SyncDefaultGems.update_default_gems(@target, release: true)
+      end
+      [result, out]
+    ensure
+      EnvUtil.suppress_warning {SyncDefaultGems.define_singleton_method(:latest_release, latest_release)}
+    end
+
+    def test_release_checks_out_the_published_version
+      upstream = "#{@testdir}/upstream/#{@target}"
+      git(*%W"tag v1.0.0", chdir: upstream)
+      released = read_git(*%W"rev-parse HEAD", chdir: upstream)
+      git(*%W"commit -q --allow-empty -m Unreleased", chdir: upstream)
+      # Sorts after the release, like a tag fetched from ruby/ruby.
+      git(*%W"tag v4.0.2", chdir: upstream)
+      result, out = update_release("1.0.0")
+      assert_true(result, out)
+      assert_equal(released, read_git(*%W"rev-parse HEAD"), out)
+    end
+
+    def test_release_without_tag
+      result, out = update_release("1.0.0")
+      assert_false(result, out)
+      assert_match(/No tag for #{@target}-1\.0\.0/, out)
     end
   end if /darwin|linux/ =~ RUBY_PLATFORM
 end

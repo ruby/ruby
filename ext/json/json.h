@@ -5,6 +5,12 @@
 #include "ruby/encoding.h"
 #include <stdint.h>
 
+#ifndef HAVE_RB_LEN_T
+typedef long rb_len_t;
+# define LEN2NUM LONG2NUM
+# define PRIdLEN "ld"
+#endif
+
 #ifndef RBIMPL_ASSERT_OR_ASSUME
 # define RBIMPL_ASSERT_OR_ASSUME(x)
 #endif

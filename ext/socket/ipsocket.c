@@ -727,7 +727,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
 
             if (raddrinfo_pthread_create(&threads[i], fork_safe_do_fast_fallback_getaddrinfo, arg->getaddrinfo_entries[i]) != 0) {
-                rsock_raise_resolution_error("getaddrinfo(3)", EAI_AGAIN);
+                rsock_raise_resolution_error_for_host("getaddrinfo(3)", EAI_AGAIN, arg->remote.host);
             }
         }
 
@@ -762,7 +762,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         serv = arg->remote.serv;
                     }
                     if (last_error.type == RESOLUTION_ERROR) {
-                        rsock_raise_resolution_error(syscall, last_error.ecode);
+                        rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                     } else {
                         rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                     }
@@ -805,7 +805,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         serv = arg->remote.serv;
                     }
                     if (last_error.type == RESOLUTION_ERROR) {
-                        rsock_raise_resolution_error(syscall, last_error.ecode);
+                        rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                     } else {
                         rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                     }
@@ -841,7 +841,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             serv = arg->remote.serv;
                         }
                         if (last_error.type == RESOLUTION_ERROR) {
-                            rsock_raise_resolution_error(syscall, last_error.ecode);
+                            rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                         } else {
                             rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                         }
@@ -934,7 +934,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     serv = arg->remote.serv;
                 }
                 if (last_error.type == RESOLUTION_ERROR) {
-                    rsock_raise_resolution_error(syscall, last_error.ecode);
+                    rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                 } else {
                     rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                 }
@@ -976,10 +976,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
             for (int i = 0; i < arg->connection_attempt_fds_size; i++) {
                 int cfd = arg->connection_attempt_fds[i];
                 if (cfd < 0) continue;
-                if (cfd > n) n = cfd;
+                if (cfd + 1 > n) n = cfd + 1;
                 rb_fd_set(cfd, &arg->writefds);
             }
-            if (n > 0) n++;
             nfds = n;
         }
 
@@ -1020,6 +1019,12 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         last_error.type = SYSCALL_ERROR;
                         last_error.ecode = errno;
                         close(fd);
+                        remove_connection_attempt_fd(
+                            arg->connection_attempt_fds,
+                            &arg->connection_attempt_fds_size,
+                            fd
+                        );
+                        i--;
 
                         if (any_addrinfos(&resolution_store)) continue;
                         if (in_progress_fds(arg->connection_attempt_fds_size)) break;
@@ -1033,7 +1038,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             serv = arg->remote.serv;
                         }
                         if (last_error.type == RESOLUTION_ERROR) {
-                            rsock_raise_resolution_error(syscall, last_error.ecode);
+                            rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                         } else {
                             rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                         }
@@ -1054,6 +1059,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             &arg->connection_attempt_fds_size,
                             fd
                         );
+                        i--;
                         last_error.type = SYSCALL_ERROR;
                         last_error.ecode = err;
                     }
@@ -1071,7 +1077,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             serv = arg->remote.serv;
                         }
                         if (last_error.type == RESOLUTION_ERROR) {
-                            rsock_raise_resolution_error(syscall, last_error.ecode);
+                            rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                         } else {
                             rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                         }
@@ -1096,9 +1102,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         if (resolved_type[0] == IPV6_HOSTNAME_RESOLVED) {
                             resolution_store.v6.finished = true;
 
-                            if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err &&
-                                arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err != EAI_ADDRFAMILY) {
-                                if (!resolution_store.v4.finished || resolution_store.v4.has_error) {
+                            if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) {
+                                if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err != EAI_ADDRFAMILY &&
+                                    (!resolution_store.v4.finished || resolution_store.v4.has_error)) {
                                     last_error.type = RESOLUTION_ERROR;
                                     last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
                                     syscall = "getaddrinfo(3)";
@@ -1136,11 +1142,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         } else {
                             /* Retry to read from hostname_resolution_waiter */
                         }
-                    } else if (resolved_type_size < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+                    } else if (resolved_type_size == 0 || errno == EAGAIN || errno == EWOULDBLOCK) {
                         errno = 0;
                         break;
-                    } else {
-                        /* Retry to read from hostname_resolution_waiter */
+                    } else if (errno != EINTR) {
+                        rb_syserr_fail(errno, "read(2)");
                     }
 
                     if (!resolution_store.v6.finished &&
@@ -1157,11 +1163,21 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
         /* For cases where write(2) fails in child threads */
         if (!resolution_store.is_all_finished) {
-            if (!resolution_store.v6.finished && arg->getaddrinfo_entries[IPV6_ENTRY_POS]->has_syserr) {
+            int v6_has_syserr, v4_has_syserr;
+
+            rb_nativethread_lock_lock(&arg->getaddrinfo_shared->lock);
+            {
+                v6_has_syserr = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->has_syserr;
+                v4_has_syserr = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->has_syserr;
+            }
+            rb_nativethread_lock_unlock(&arg->getaddrinfo_shared->lock);
+
+            if (!resolution_store.v6.finished && v6_has_syserr) {
                 resolution_store.v6.finished = true;
 
                 if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) {
-                    if (!resolution_store.v4.finished || resolution_store.v4.has_error) {
+                    if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err != EAI_ADDRFAMILY &&
+                        (!resolution_store.v4.finished || resolution_store.v4.has_error)) {
                         last_error.type = RESOLUTION_ERROR;
                         last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
                         syscall = "getaddrinfo(3)";
@@ -1177,7 +1193,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     user_specified_resolv_timeout_at = NULL;
                 }
             }
-            if (!resolution_store.v4.finished && arg->getaddrinfo_entries[IPV4_ENTRY_POS]->has_syserr) {
+            if (!resolution_store.v4.finished && v4_has_syserr) {
                 resolution_store.v4.finished = true;
 
                 if (arg->getaddrinfo_entries[IPV4_ENTRY_POS]->err) {
@@ -1217,7 +1233,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     serv = arg->remote.serv;
                 }
                 if (last_error.type == RESOLUTION_ERROR) {
-                    rsock_raise_resolution_error(syscall, last_error.ecode);
+                    rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                 } else {
                     rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                 }
@@ -1258,15 +1274,15 @@ fast_fallback_inetsock_cleanup(VALUE v)
     if (arg->wait != -1) close(arg->wait);
 
     if (getaddrinfo_shared) {
-        if (getaddrinfo_shared->notify != -1) close(getaddrinfo_shared->notify);
-        getaddrinfo_shared->notify = -1;
-
         int shared_need_free = 0;
         struct addrinfo *ais[arg->family_size];
         for (int i = 0; i < arg->family_size; i++) ais[i] = NULL;
 
         rb_nativethread_lock_lock(&getaddrinfo_shared->lock);
         {
+            if (getaddrinfo_shared->notify != -1) close(getaddrinfo_shared->notify);
+            getaddrinfo_shared->notify = -1;
+
             for (int i = 0; i < arg->family_size; i++) {
                 struct fast_fallback_getaddrinfo_entry *getaddrinfo_entry = arg->getaddrinfo_entries[i];
 
@@ -1473,7 +1489,7 @@ ip_inspect(VALUE sock)
         (id = rsock_intern_family(addr.addr.sa_family)) != 0) {
         VALUE family = rb_id2str(id);
         char hbuf[1024], pbuf[1024];
-        long slen = RSTRING_LEN(str);
+        rb_len_t slen = RSTRING_LEN(str);
         const char last = (slen > 1 && RSTRING_PTR(str)[slen - 1] == '>') ?
             (--slen, '>') : 0;
         str = rb_str_subseq(str, 0, slen);

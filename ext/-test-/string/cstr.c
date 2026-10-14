@@ -5,7 +5,7 @@
 static VALUE
 bug_str_cstr_term(VALUE str)
 {
-    long len;
+    rb_len_t len;
     char *s;
     int c;
     rb_encoding *enc;
@@ -21,7 +21,7 @@ bug_str_cstr_term(VALUE str)
 static VALUE
 bug_str_cstr_unterm(VALUE str, VALUE c)
 {
-    long len;
+    rb_len_t len;
 
     rb_str_modify(str);
     len = RSTRING_LEN(str);
@@ -32,7 +32,7 @@ bug_str_cstr_unterm(VALUE str, VALUE c)
 static VALUE
 bug_str_cstr_term_char(VALUE str)
 {
-    long len;
+    rb_len_t len;
     char *s;
     int c;
     rb_encoding *enc = rb_enc_get(str);
@@ -54,12 +54,12 @@ bug_str_cstr_term_char(VALUE str)
 static VALUE
 bug_str_unterminated_substring(VALUE str, VALUE vbeg, VALUE vlen)
 {
-    long beg = NUM2LONG(vbeg);
-    long len = NUM2LONG(vlen);
+    rb_len_t beg = NUM2LEN(vbeg);
+    rb_len_t len = NUM2LEN(vlen);
     rb_str_modify(str);
-    if (len < 0) rb_raise(rb_eArgError, "negative length: %ld", len);
-    if (RSTRING_LEN(str) < beg) rb_raise(rb_eIndexError, "beg: %ld", beg);
-    if (RSTRING_LEN(str) < beg + len) rb_raise(rb_eIndexError, "end: %ld", beg + len);
+    if (len < 0) rb_raise(rb_eArgError, "negative length: %"PRIdLEN, len);
+    if (RSTRING_LEN(str) < beg) rb_raise(rb_eIndexError, "beg: %"PRIdLEN, beg);
+    if (RSTRING_LEN(str) < beg + len) rb_raise(rb_eIndexError, "end: %"PRIdLEN, beg + len);
     str = rb_str_new_shared(str);
     RSTRING(str)->len = len;
     if (STR_EMBED_P(str)) {
@@ -105,7 +105,7 @@ static VALUE
 bug_str_s_cstr_noembed(VALUE self, VALUE str)
 {
     VALUE str2 = rb_str_new(NULL, 0);
-    long capacity = RSTRING_LEN(str) + TERM_LEN(str);
+    rb_len_t capacity = RSTRING_LEN(str) + TERM_LEN(str);
     char *buf = ALLOC_N(char, capacity);
     Check_Type(str, T_STRING);
     rb_enc_copy(str2, str);

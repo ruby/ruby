@@ -256,7 +256,7 @@ static VALUE token_to_str(struct fy_token *tok, int encoding, rb_encoding *inter
     if (!text) {
         return Qnil;
     }
-    VALUE str = rb_str_new(text, (long)len);
+    VALUE str = rb_str_new(text, (rb_len_t)len);
     PSYCH_TRANSCODE(str, encoding, internal_enc);
     return str;
 }

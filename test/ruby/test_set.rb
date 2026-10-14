@@ -687,6 +687,18 @@ class TC_Set < Test::Unit::TestCase
     ret = set & [2,4,6]
     assert_not_same(set, ret)
     assert_equal(Set[2,4], ret)
+
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    {#
+      class << (obj = Object.new)
+        include Enumerable
+        attr_reader :block
+        def each(&block) = (@block = block)
+      end
+      assert_equal(Set[], Set[1, 2, 3] & obj)
+      GC.start
+      assert_nil(obj.block.call(1))
+    };
   end
 
   def test_xor

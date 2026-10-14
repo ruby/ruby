@@ -3012,4 +3012,33 @@ EOT
       end
     end
   end
+
+  def test_set_encoding_newline
+    with_tmpdir do
+      generate_file("newline.txt", "line1\r\nline2\rline3\n")
+
+      [["UTF-8"], [Encoding::UTF_8],
+      [Encoding::UTF_8, Encoding::UTF_8]].each do |args|
+        File.open("newline.txt", "r") do |f|
+          f.set_encoding(*args, newline: :universal)
+          assert_equal("line1\nline2\nline3\n", f.read, args.inspect)
+        end
+      end
+    end
+  end
+
+  def test_set_encoding_invalid_newline
+    with_tmpdir do
+      generate_file("newline.txt", "")
+
+      [["UTF-8"], [Encoding::UTF_8],
+      [Encoding::UTF_8, Encoding::UTF_8]].each do |args|
+        File.open("newline.txt", "r") do |f|
+          assert_raise(ArgumentError, args.inspect) do
+            f.set_encoding(*args, newline: :invalid)
+          end
+        end
+      end
+    end
+  end
 end

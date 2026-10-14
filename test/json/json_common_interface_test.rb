@@ -122,15 +122,26 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
 
   def test_load
     assert_equal @hash, JSON.load(@json)
+    assert_equal nil, JSON.load(nil)
+    assert_equal nil, JSON.load('')
+
     tempfile = Tempfile.open('@json')
     tempfile.write @json
     tempfile.rewind
     assert_equal @hash, JSON.load(tempfile)
+    tempfile.close!
+
     stringio = StringIO.new(@json)
     stringio.rewind
     assert_equal @hash, JSON.load(stringio)
-    assert_equal nil, JSON.load(nil)
-    assert_equal nil, JSON.load('')
+
+    tempfile = Tempfile.open('@json.gzip', mode: File::BINARY)
+    gzw = Zlib::GzipWriter.new(tempfile)
+    gzw.write(@json)
+    gzw.close
+    tempfile.open
+    gzr = Zlib::GzipReader.new(tempfile)
+    assert_equal @hash, JSON.load(gzr)
   ensure
     tempfile.close!
   end

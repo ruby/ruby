@@ -139,7 +139,7 @@ RBIMPL_ATTR_ARTIFICIAL()
  *
  * It seems nobody uses this function in the wild.  Subject to hide?
  */
-static inline long
+static inline rb_len_t
 RREGEXP_SRC_LEN(VALUE rexp)
 {
     return RSTRING_LEN(RREGEXP_SRC(rexp));

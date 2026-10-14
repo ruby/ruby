@@ -17,6 +17,7 @@ pub const _EC: Opnd = Opnd::Reg(R12_REG);
 pub const _SP: Opnd = Opnd::Reg(RBX_REG);
 
 // C argument registers on this platform
+#[cfg(not(windows))]
 pub const _C_ARG_OPNDS: [Opnd; 6] = [
     Opnd::Reg(RDI_REG),
     Opnd::Reg(RSI_REG),
@@ -24,6 +25,18 @@ pub const _C_ARG_OPNDS: [Opnd; 6] = [
     Opnd::Reg(RCX_REG),
     Opnd::Reg(R8_REG),
     Opnd::Reg(R9_REG)
+];
+
+// Win64 passes the first four arguments in registers and the rest on the stack.
+// The last two are staged in R10 and RAX, which the CCall emission stores to the stack.
+#[cfg(windows)]
+pub const _C_ARG_OPNDS: [Opnd; 6] = [
+    Opnd::Reg(RCX_REG),
+    Opnd::Reg(RDX_REG),
+    Opnd::Reg(R8_REG),
+    Opnd::Reg(R9_REG),
+    Opnd::Reg(R10_REG),
+    Opnd::Reg(RAX_REG)
 ];
 
 // C return value register on this platform
@@ -80,7 +93,11 @@ impl From<&Opnd> for X86Opnd {
 }
 
 /// List of registers that can be used for stack temps and locals.
+#[cfg(not(windows))]
 pub static TEMP_REGS: [Reg; 5] = [RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG];
+// RSI and RDI are callee-saved on Win64, and the entry prologue doesn't save them.
+#[cfg(windows)]
+pub static TEMP_REGS: [Reg; 3] = [R8_REG, R9_REG, R10_REG];
 
 impl Assembler
 {
@@ -375,7 +392,11 @@ impl Assembler
 
                     // Now we push the CCall without any arguments so that it
                     // just performs the call.
+                    #[cfg(not(windows))]
                     asm.ccall(*fptr, vec![]);
+                    // See C_ARG_OPNDS
+                    #[cfg(windows)]
+                    asm.ccall(*fptr, C_ARG_OPNDS[4..opnds.len().max(4)].to_vec());
                 },
                 Insn::Lea { .. } => {
                     // Merge `lea` and `mov` into a single `lea` when possible
@@ -522,15 +543,16 @@ impl Assembler
 
                 // Set up RBP to work with frame pointer unwinding
                 // (e.g. with Linux `perf record --call-graph fp`)
+                // Always on Windows, see gen_entry_prologue()
                 Insn::FrameSetup => {
-                    if get_option!(frame_pointer) {
+                    if cfg!(windows) || get_option!(frame_pointer) {
                         push(cb, RBP);
                         mov(cb, RBP, RSP);
                         push(cb, RBP);
                     }
                 },
                 Insn::FrameTeardown => {
-                    if get_option!(frame_pointer) {
+                    if cfg!(windows) || get_option!(frame_pointer) {
                         pop(cb, RBP);
                         pop(cb, RBP);
                     }
@@ -602,7 +624,7 @@ impl Assembler
                 },
 
                 Insn::LoadSExt { opnd, out } => {
-                    movsx(cb, out.into(), opnd.into());
+                    movsx(cb, out.with_num_bits(64).unwrap().into(), opnd.into());
                 },
 
                 Insn::Mov { dest, src } => {
@@ -664,8 +686,20 @@ impl Assembler
                 },
 
                 // C function call
+                #[cfg(not(windows))]
                 Insn::CCall { fptr, .. } => {
                     call_ptr(cb, RAX, *fptr);
+                },
+                // Reserve the 32-byte shadow space and the two stack argument
+                // slots above it, keeping RSP 16-byte aligned.
+                #[cfg(windows)]
+                Insn::CCall { opnds, fptr, .. } => {
+                    sub(cb, RSP, uimm_opnd(48));
+                    for (idx, opnd) in opnds.iter().enumerate() {
+                        mov(cb, mem_opnd(64, RSP, 32 + 8 * idx as i32), opnd.into());
+                    }
+                    call_ptr(cb, RAX, *fptr);
+                    add(cb, RSP, uimm_opnd(48));
                 },
 
                 Insn::CRet(opnd) => {
@@ -1170,6 +1204,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn test_reorder_c_args_no_cycle() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -1186,6 +1221,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn test_reorder_c_args_single_cycle() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -1207,6 +1243,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn test_reorder_c_args_two_cycles() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -1232,6 +1269,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn test_reorder_c_args_large_cycle() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -1254,6 +1292,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn test_reorder_c_args_with_insn_out() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -1280,6 +1319,124 @@ mod tests {
             0x1b: mov rdx, r11
             0x1e: mov eax, 0
             0x23: call rax
+        "});
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn test_ccall_win64_stack_args() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.ccall(0 as _, (1..=6).map(Opnd::UImm).collect());
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm!(cb, "b901000000ba0200000041b80300000041b90400000041ba05000000b8060000004883ec304c895424204889442428b800000000ffd04883c430", {"
+            0x0: mov ecx, 1
+            0x5: mov edx, 2
+            0xa: mov r8d, 3
+            0x10: mov r9d, 4
+            0x16: mov r10d, 5
+            0x1c: mov eax, 6
+            0x21: sub rsp, 0x30
+            0x25: mov qword ptr [rsp + 0x20], r10
+            0x2a: mov qword ptr [rsp + 0x28], rax
+            0x2f: mov eax, 0
+            0x34: call rax
+            0x36: add rsp, 0x30
+        "});
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn test_ccall_win64_register_args() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.ccall(0 as _, (1..=4).map(Opnd::UImm).collect());
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm!(cb, "b901000000ba0200000041b80300000041b9040000004883ec30b800000000ffd04883c430", {"
+            0x0: mov ecx, 1
+            0x5: mov edx, 2
+            0xa: mov r8d, 3
+            0x10: mov r9d, 4
+            0x16: sub rsp, 0x30
+            0x1a: mov eax, 0
+            0x1f: call rax
+            0x21: add rsp, 0x30
+        "});
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn test_reorder_c_args_with_insn_out_win64() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let rax = asm.load(Opnd::UImm(1));
+        let rcx = asm.load(Opnd::UImm(2));
+        let rdx = asm.load(Opnd::UImm(3));
+        // rcx and rdx form a cycle
+        asm.ccall(0 as _, vec![
+            rdx, // mov rcx, rdx
+            rcx, // mov rdx, rcx
+            rax, // mov r8, rax
+            rcx, // mov r9, rcx
+        ]);
+        asm.compile_with_num_regs(&mut cb, 3);
+
+        assert_disasm!(cb, "b801000000b902000000ba030000004989c04989c94989d34889ca4c89d94883ec30b800000000ffd04883c430", {"
+            0x0: mov eax, 1
+            0x5: mov ecx, 2
+            0xa: mov edx, 3
+            0xf: mov r8, rax
+            0x12: mov r9, rcx
+            0x15: mov r11, rdx
+            0x18: mov rdx, rcx
+            0x1b: mov rcx, r11
+            0x1e: sub rsp, 0x30
+            0x22: mov eax, 0
+            0x27: call rax
+            0x29: add rsp, 0x30
+        "});
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn test_reorder_c_args_win64_rax_cycle() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let rax = asm.load(Opnd::UImm(1));
+        let rcx = asm.load(Opnd::UImm(2));
+        let rdx = asm.load(Opnd::UImm(3));
+        // rcx, rdx, and rax (the 6th argument's staging register) form a cycle
+        let ret = asm.ccall(0 as _, vec![
+            rax, // mov rcx, rax
+            rcx, // mov rdx, rcx
+            rdx, // mov r8, rdx
+            rax, // mov r9, rax
+            rcx, // mov r10, rcx
+            rdx, // mov rax, rdx
+        ]);
+        asm.mov(Opnd::mem(64, SP, 0), ret);
+        asm.compile_with_num_regs(&mut cb, 3);
+
+        assert_disasm!(cb, "b801000000b902000000ba030000004989d04989c14989ca4989c34889d04889ca4c89d94883ec304c895424204889442428b800000000ffd04883c430488903", {"
+            0x0: mov eax, 1
+            0x5: mov ecx, 2
+            0xa: mov edx, 3
+            0xf: mov r8, rdx
+            0x12: mov r9, rax
+            0x15: mov r10, rcx
+            0x18: mov r11, rax
+            0x1b: mov rax, rdx
+            0x1e: mov rdx, rcx
+            0x21: mov rcx, r11
+            0x24: sub rsp, 0x30
+            0x28: mov qword ptr [rsp + 0x20], r10
+            0x2d: mov qword ptr [rsp + 0x28], rax
+            0x32: mov eax, 0
+            0x37: call rax
+            0x39: add rsp, 0x30
+            0x3d: mov qword ptr [rbx], rax
         "});
     }
 

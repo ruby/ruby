@@ -169,7 +169,7 @@ runs:
       working-directory: ${{ inputs.srcdir }}
       run: |
         ruby tool/missing-baseruby.bat --verbose
-        bash tool/gen-sources.bash up
+        bash tool/gen-sources.bash ${{ case(inputs.makeup == 'true', 'up', inputs.makeup) }}
         echo RUBY_DUMP_AST=./dump_ast-required-unexpectedly >> "$GITHUB_ENV"
 
     - if: steps.which.outputs.sudo

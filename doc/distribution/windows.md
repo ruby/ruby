@@ -154,6 +154,13 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     (Settings > System > For developers) so that they do not fail with
     `Permission denied @ rb_file_s_symlink`.
 
+8.  If you want to build YJIT, `rustc` with the `x86_64-pc-windows-msvc`
+    target is required.  YJIT is enabled with `--enable-yjit` of
+    `win32\configure.bat`, and is supported only on x64 and only in
+    YJIT's release mode, without the dev and stats builds.
+    `--enable-yjit` accepts only `yes` or `no`.  A YJIT
+    build does not install the static library.
+
 ### How to compile and install
 
 1.  Execute `win32\configure.bat` on your build directory.
