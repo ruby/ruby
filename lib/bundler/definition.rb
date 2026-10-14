@@ -1293,7 +1293,7 @@ module Bundler
     def preload_git_source_worker
       workers = Bundler.settings.installation_parallelization
 
-      @preload_git_source_worker ||= Bundler::Worker.new(workers, "Git source preloading", ->(source, _) { source.specs })
+      @preload_git_source_worker ||= Bundler::Worker.new(workers, "Git source preloading", ->(sources, _) { sources.each(&:specs) })
     end
 
     def preload_git_sources
@@ -1304,7 +1304,13 @@ module Bundler
       end
 
       begin
-        needed_git_sources.each {|source| preload_git_source_worker.enq(source) }
+        # Sources from the same repository share one cache directory, and
+        # running git in that directory from two workers at once makes the
+        # fetches collide. Preload sources that share a cache in one job, one
+        # after the other, and run the separate caches in parallel.
+        needed_git_sources.group_by(&:cache_path).each_value do |sources|
+          preload_git_source_worker.enq(sources)
+        end
       ensure
         preload_git_source_worker.stop
       end
