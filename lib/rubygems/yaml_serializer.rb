@@ -531,7 +531,7 @@ module Gem
     class Builder
       VALID_OPS = %w[= != > < >= <= ~>].freeze
       ARRAY_FIELDS = %w[files test_files executables extra_rdoc_files].freeze
-      MAX_ALIAS_EXPANSION = 10_000
+      MAX_ALIAS_EXPANSION = 100_000
 
       def initialize(permitted_classes: [], permitted_symbols: [], aliases: true)
         @permitted_classes = permitted_classes.map {|c| "!ruby/object:#{c}" }
@@ -539,7 +539,7 @@ module Gem
         @aliases = aliases
         @anchor_values = {}
         @anchor_sizes = {}
-        @node_count = 0
+        @expanded_size = 0
         @alias_expansion = 0
       end
 
@@ -558,7 +558,7 @@ module Gem
       private
 
       def build_node(node)
-        start = @node_count
+        start = @expanded_size
         case node
         when nil then nil
         when AliasRef then resolve_alias(node)
@@ -575,22 +575,22 @@ module Gem
           klass = defined?(Psych::AnchorNotDefined) ? Psych::AnchorNotDefined : Psych::BadAlias
           raise klass, "An alias referenced an unknown anchor: #{node.name}"
         end
-        # Charge the expanded size of the anchor rather than one per reference,
-        # since anchors that alias earlier anchors grow exponentially.
+        # Charge the expanded size of the anchor, weighing scalars by length,
+        # so neither nested aliases nor aliases to a long string blow up.
         size = @anchor_sizes.fetch(node.name)
-        @node_count += size
+        @expanded_size += size
         @alias_expansion += size
         if @alias_expansion > MAX_ALIAS_EXPANSION
-          raise Psych::BadAlias, "exceeded maximum alias expansion (#{MAX_ALIAS_EXPANSION} nodes)"
+          raise Psych::BadAlias, "exceeded maximum alias expansion (#{MAX_ALIAS_EXPANSION})"
         end
         @anchor_values.fetch(node.name)
       end
 
       def store_anchor(name, value, start)
-        @node_count += 1
+        @expanded_size += value.is_a?(String) ? 1 + value.bytesize : 1
         if name
           @anchor_values[name] = value
-          @anchor_sizes[name] = @node_count - start
+          @anchor_sizes[name] = @expanded_size - start
         end
         value
       end

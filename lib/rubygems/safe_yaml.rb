@@ -25,7 +25,7 @@ module Gem
       runtime
     ].freeze
 
-    MAX_ALIAS_EXPANSION = 10_000
+    MAX_ALIAS_EXPANSION = 100_000
     private_constant :MAX_ALIAS_EXPANSION
 
     @aliases_enabled = true
@@ -76,12 +76,12 @@ module Gem
           size = sizes.fetch(node.anchor, 0)
           expansion += size
           if expansion > MAX_ALIAS_EXPANSION
-            raise ::Psych::BadAlias, "exceeded maximum alias expansion (#{MAX_ALIAS_EXPANSION} nodes)"
+            raise ::Psych::BadAlias, "exceeded maximum alias expansion (#{MAX_ALIAS_EXPANSION})"
           end
           next size
         end
 
-        size = 1 + node.children.to_a.sum(&count)
+        size = node.is_a?(::Psych::Nodes::Scalar) ? 1 + node.value.bytesize : 1 + node.children.sum(&count)
         sizes[node.anchor] = size if node.respond_to?(:anchor) && node.anchor
         size
       end
