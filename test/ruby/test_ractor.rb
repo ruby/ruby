@@ -2,6 +2,23 @@
 require 'test/unit'
 
 class TestRactor < Test::Unit::TestCase
+  def test_alive_p
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive }
+      assert_predicate r, :alive?
+      r << :done
+      r.join
+      assert_not_predicate r, :alive?
+
+      r = Ractor.new do
+        Thread.current.report_on_exception = false
+        raise "boom"
+      end
+      assert_raise(Ractor::RemoteError) { r.join }
+      assert_not_predicate r, :alive?
+    RUBY
+  end
+
   def test_shareability_of_iseq_proc
     assert_raise Ractor::IsolationError do
       foo = []
