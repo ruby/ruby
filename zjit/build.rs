@@ -11,6 +11,7 @@ fn main() {
 
         // System libraries that libminiruby needs. Has to be
         // ordered after -lminiruby above.
+        #[allow(clippy::option_env_unwrap)] // We *do* want this at runtime so cargo-check passes
         let link_flags = option_env!("RUBY_LD_FLAGS").unwrap();
 
         let mut split_iter = link_flags.split(" ");
