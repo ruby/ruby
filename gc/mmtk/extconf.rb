@@ -134,7 +134,7 @@ create_gc_makefile("mmtk") do |makefile|
       CFLAGS += #{cflags}
       DLDFLAGS += #{ldflags}
       warnflags = #{warnflags}
-      MMTK_CARGO_ENV = #{env}="-Clinker-plugin-lto -C target-cpu=native"
+      MMTK_CARGO_ENV = #{env}="-Clinker-plugin-lto -C target-cpu=native -Cllvm-args=-inline-threshold=$(MMTK_INLINE_THRESHOLD)"
       MMTK_CARGO_FLAGS = --target #{lto[:host]}
       MMTK_CARGO_FIXUP = mkdir -p release && cp -f #{lto[:host]}/release/$(LIBMMTK_RUBY) release/$(LIBMMTK_RUBY)
       endif
