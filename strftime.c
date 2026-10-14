@@ -542,7 +542,9 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 		case 's':
                         if (ts) {
                                 time_t sec = ts->tv_sec;
-                                if (~(time_t)0 <= 0)
+                                if (~(time_t)0 <= 0 && sizeof(time_t) <= sizeof(long))
+                                    FMT_LONG('0', 1, (long)sec);
+                                else if (~(time_t)0 <= 0)
                                     FMT('0', 1, PRI_TIMET_PREFIX"d", sec);
                                 else
                                     FMT('0', 1, PRI_TIMET_PREFIX"u", sec);
