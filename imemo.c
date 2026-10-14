@@ -362,7 +362,7 @@ mark_and_move_method_entry(const struct rb_gc_mark_ctx *ctx, rb_method_entry_t *
                 if (def->iseq_overload && ment->defined_class) {
                     // it can be a key of "overloaded_cme" table
                     // so it should be pinned.
-                    rb_gc_mark_and_pin_ctx(ctx, (VALUE)ment);
+                    rb_gc_mark_ctx(ctx, (VALUE)ment);
                 }
             }
             break;
