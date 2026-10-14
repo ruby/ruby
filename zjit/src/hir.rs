@@ -1093,6 +1093,8 @@ pub enum Insn {
     IsBitNotEqual { left: InsnId, right: InsnId },
     /// Convert a C `bool` to a Ruby `Qtrue`/`Qfalse`. Same as `RBOOL` macro.
     BoxBool { val: InsnId },
+    /// Negate Ruby truthiness without dispatching #!.
+    BoolNegate { val: InsnId },
     /// Convert a C `long` to a Ruby `Fixnum`. Side exit on overflow.
     BoxFixnum { val: InsnId, state: InsnId },
     UnboxFixnum { val: InsnId },
@@ -1296,14 +1298,13 @@ pub enum Insn {
     /// TODO: Consider turning this into Insn::Jump when inlined.
     Throw { throw_state: u32, val: InsnId, state: InsnId },
 
-    /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=, &, |, ^, <<
+    /// Fixnum +, -, *, /, %, ==, <, <=, >, >=, &, |, ^, <<
     FixnumAdd  { left: InsnId, right: InsnId, state: InsnId },
     FixnumSub  { left: InsnId, right: InsnId, state: InsnId },
     FixnumMult { left: InsnId, right: InsnId, state: InsnId },
     FixnumDiv  { left: InsnId, right: InsnId, state: InsnId },
     FixnumMod  { left: InsnId, right: InsnId, state: InsnId },
     FixnumEq   { left: InsnId, right: InsnId },
-    FixnumNeq  { left: InsnId, right: InsnId },
     FixnumLt   { left: InsnId, right: InsnId },
     FixnumLe   { left: InsnId, right: InsnId },
     FixnumGt   { left: InsnId, right: InsnId },
@@ -1486,6 +1487,7 @@ macro_rules! for_each_operand_impl {
             Insn::RefineType { val, .. }
             | Insn::Return { val }
             | Insn::Test { val }
+            | Insn::BoolNegate { val }
             | Insn::BoxBool { val } => {
                 $visit_one!(*val);
             }
@@ -1546,7 +1548,6 @@ macro_rules! for_each_operand_impl {
             | Insn::FixnumGt { left, right }
             | Insn::FixnumGe { left, right }
             | Insn::FixnumEq { left, right }
-            | Insn::FixnumNeq { left, right }
             | Insn::FixnumAnd { left, right }
             | Insn::FixnumOr { left, right }
             | Insn::FixnumXor { left, right }
@@ -1849,6 +1850,7 @@ impl Insn {
             Insn::IsBitEqual { .. } => effects::Empty,
             Insn::IsBitNotEqual { .. } => effects::Empty,
             Insn::BoxBool { .. } => effects::Empty,
+            Insn::BoolNegate { .. } => effects::Empty,
             Insn::BoxFixnum { .. } => effects::Empty,
             Insn::UnboxFixnum { .. } => effects::Empty,
             Insn::FixnumAref { .. } => effects::Empty,
@@ -1955,7 +1957,6 @@ impl Insn {
             Insn::FloatDiv { .. } => effects::Any,
             Insn::FloatToInt { .. } => effects::Any,
             Insn::FixnumEq { .. } => effects::Empty,
-            Insn::FixnumNeq { .. } => effects::Empty,
             Insn::FixnumLt { .. } => effects::Empty,
             Insn::FixnumLe { .. } => effects::Empty,
             Insn::FixnumGt { .. } => effects::Empty,
@@ -2248,6 +2249,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IsBitEqual { left, right } => write!(f, "IsBitEqual {left}, {right}"),
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
+            Insn::BoolNegate { val } => write!(f, "BoolNegate {val}"),
             Insn::BoxFixnum { val, .. } => write!(f, "BoxFixnum {val}"),
             Insn::UnboxFixnum { val } => write!(f, "UnboxFixnum {val}"),
             Insn::FixnumAref { recv, index } => write!(f, "FixnumAref {recv}, {index}"),
@@ -2365,7 +2367,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FloatDiv   { recv, other, .. } => { write!(f, "FloatDiv {recv}, {other}") },
             Insn::FloatToInt { recv, .. } => { write!(f, "FloatToInt {recv}") },
             Insn::FixnumEq   { left, right, .. } => { write!(f, "FixnumEq {left}, {right}") },
-            Insn::FixnumNeq  { left, right, .. } => { write!(f, "FixnumNeq {left}, {right}") },
             Insn::FixnumLt   { left, right, .. } => { write!(f, "FixnumLt {left}, {right}") },
             Insn::FixnumLe   { left, right, .. } => { write!(f, "FixnumLe {left}, {right}") },
             Insn::FixnumGt   { left, right, .. } => { write!(f, "FixnumGt {left}, {right}") },
@@ -3741,6 +3742,9 @@ impl Function {
             Insn::IsBitEqual { .. } => types::CBool,
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
+            Insn::BoolNegate { val } if self.type_of(*val).is_known_falsy() => types::TrueClass,
+            Insn::BoolNegate { val } if self.type_of(*val).is_known_truthy() => types::FalseClass,
+            Insn::BoolNegate { .. } => types::BoolExact,
             Insn::BoxFixnum { .. } => types::Fixnum,
             Insn::UnboxFixnum { val } => self
                 .type_of(*val)
@@ -3806,7 +3810,6 @@ impl Function {
             Insn::FloatDiv   { .. } => types::Float,
             Insn::FloatToInt { .. } => types::Integer,
             Insn::FixnumEq   { .. } => types::BoolExact,
-            Insn::FixnumNeq  { .. } => types::BoolExact,
             Insn::FixnumLt   { .. } => types::BoolExact,
             Insn::FixnumLe   { .. } => types::BoolExact,
             Insn::FixnumGt   { .. } => types::BoolExact,
@@ -4513,7 +4516,9 @@ impl Function {
     /// - Result of [`Self::resolve_receiver_type_from_profile`] if we need to check profile data
     fn resolve_receiver_type(&self, recv: InsnId, recv_type: Type, state: InsnId) -> ReceiverTypeResolution {
         match self.resolve_receiver_type_from_profile(recv, state) {
-            resolution@(ReceiverTypeResolution::NoProfile|ReceiverTypeResolution::Megamorphic) => {
+            resolution@(ReceiverTypeResolution::NoProfile
+                | ReceiverTypeResolution::Polymorphic
+                | ReceiverTypeResolution::Megamorphic) => {
                 // Use known type information as a fallback because it doesn't have shape
                 // information (and we can generally eliminate duplicate guards).
                 if let Some(class) = recv_type.runtime_exact_ruby_class() {
@@ -7060,12 +7065,6 @@ impl Function {
                             _ => None,
                         })
                     }
-                    &Insn::FixnumNeq { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
-                            (Some(l), Some(r)) => Some(l != r),
-                            _ => None,
-                        })
-                    }
                     &Insn::FixnumLt { left, right, .. } => {
                         self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l < r),
@@ -7126,6 +7125,12 @@ impl Function {
                     }
                     &Insn::Test { val } if self.type_of(val).is_known_falsy() => {
                         self.new_insn(Insn::Const { val: Const::CBool(false) })
+                    }
+                    &Insn::BoolNegate { val } if self.type_of(val).is_known_falsy() => {
+                        self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
+                    }
+                    &Insn::BoolNegate { val } if self.type_of(val).is_known_truthy() => {
+                        self.new_insn(Insn::Const { val: Const::Value(Qfalse) })
                     }
                     &Insn::Test { val } if self.type_of(val).is_known_truthy() => {
                         self.new_insn(Insn::Const { val: Const::CBool(true) })
@@ -7999,6 +8004,7 @@ impl Function {
             }
             // Instructions with 1 Ruby object operand
             Insn::Test { val }
+            | Insn::BoolNegate { val }
             | Insn::IsMethodCfunc { val, .. }
             | Insn::SetGlobal { val, .. }
             | Insn::SetLocal { val, .. }
@@ -8211,7 +8217,6 @@ impl Function {
             | Insn::FixnumDiv { left, right, .. }
             | Insn::FixnumMod { left, right, .. }
             | Insn::FixnumEq { left, right }
-            | Insn::FixnumNeq { left, right }
             | Insn::FixnumLt { left, right }
             | Insn::FixnumLe { left, right }
             | Insn::FixnumGt { left, right }

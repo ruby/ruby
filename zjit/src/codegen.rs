@@ -735,7 +735,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FloatDiv { recv, other, state } => gen_float_div(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::FloatToInt { recv, state } => gen_float_to_int(asm, opnd!(recv), &function.frame_state(*state)),
         Insn::FixnumEq { left, right } => gen_fixnum_eq(asm, opnd!(left), opnd!(right)),
-        Insn::FixnumNeq { left, right } => gen_fixnum_neq(asm, opnd!(left), opnd!(right)),
         Insn::FixnumLt { left, right } => gen_fixnum_lt(asm, opnd!(left), opnd!(right)),
         Insn::FixnumLe { left, right } => gen_fixnum_le(asm, opnd!(left), opnd!(right)),
         Insn::FixnumGt { left, right } => gen_fixnum_gt(asm, opnd!(left), opnd!(right)),
@@ -766,6 +765,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::BoxFixnum { val, state } => gen_box_fixnum(jit, asm, function, opnd!(val), &function.frame_state(state)),
         &Insn::UnboxFixnum { val } => gen_unbox_fixnum(asm, opnd!(val)),
         Insn::Test { val } => gen_test(asm, opnd!(val)),
+        Insn::BoolNegate { val } => gen_bool_negate(asm, opnd!(val), function.type_of(*val)),
         Insn::RefineType { val, .. } => opnd!(val),
         &Insn::GuardType { val, guard_type, state, recompile } => {
             let val_type = function.type_of(val);
@@ -3003,12 +3003,6 @@ fn gen_fixnum_eq(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir:
     asm.csel_e(Qtrue.into(), Qfalse.into())
 }
 
-/// Compile Fixnum != Fixnum
-fn gen_fixnum_neq(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
-    asm.cmp(left, right);
-    asm.csel_ne(Qtrue.into(), Qfalse.into())
-}
-
 /// Compile Fixnum < Fixnum
 fn gen_fixnum_lt(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
     asm.cmp(left, right);
@@ -3134,6 +3128,15 @@ fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
     // See RB_TEST(), include/ruby/internal/special_consts.h
     asm.test(val, Opnd::Imm(!Qnil.as_i64()));
     asm.csel_e(0.into(), 1.into())
+}
+
+fn gen_bool_negate(asm: &mut Assembler, val: lir::Opnd, val_type: Type) -> lir::Opnd {
+    if val_type.is_subtype(types::BoolExact) {
+        asm.xor(val, Qtrue.into())
+    } else {
+        asm.test(val, Opnd::Imm(!Qnil.as_i64()));
+        asm.csel_e(Qtrue.into(), Qfalse.into())
+    }
 }
 
 /// Branch to `if_true` if `val` has type `ty` and to `if_false` otherwise, using only the

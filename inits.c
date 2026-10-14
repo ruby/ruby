@@ -91,6 +91,7 @@ rb_call_builtin_inits(void)
     BUILTIN(jit_hook);
     BUILTIN(yjit);
     BUILTIN(zjit);
+    BUILTIN(basic_object);
     BUILTIN(kernel);
     BUILTIN(gc);
     BUILTIN(ractor);
