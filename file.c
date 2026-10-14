@@ -900,15 +900,49 @@ rb_stat_gid(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.rdev   ->  integer or nil
+ *    rdev -> integer or nil
  *
- *  Returns an integer representing the device type on which
- *  <i>stat</i> resides. Returns +nil+ if the operating system doesn't
- *  support this feature.
+ *  Returns the integer device type of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`.
  *
- *     File.stat("/dev/fd1").rdev   #=> 513
- *     File.stat("/dev/tty").rdev   #=> 1280
+ *  On a non-Windows system, returns a filesystem-dependent device type;
+ *  the returned value is non-zero only for character-special
+ *  and block-special devices.
+ *
+ *  In these hexadecimal-formatted examples:
+ *
+ *  - The two-low order digits contain the device-type minor value,
+ *    which identifies a specific instance, port, or partition managed by a device driver;
+ *    see #rdev_minor.
+ *  - The higher-order digits contain the device-type major value,
+ *    which identifies the device driver;
+ *    see #rdev_major.
+ *
+ *  ```ruby
+ *  # Character-special devices.
+ *  '%08x' % File.stat('/dev/null').rdev      # => "00000103"
+ *  '%08x' % File.stat('/dev/zero').rdev      # => "00000105"
+ *  '%08x' % File.stat('/dev/random').rdev    # => "00000108"
+ *  '%08x' % File.stat('/dev/tty').rdev       # => "00000500"
+ *  '%08x' % File.stat('/dev/tty0').rdev      # => "00000400"
+ *  '%08x' % File.stat('/dev/tty1').rdev      # => "00000401"
+ *  # Block-special devices.
+ *  '%08x' % File.stat('/dev/nvme0n1').rdev   # => "00010300"
+ *  '%08x' % File.stat('/dev/nvme0n1p1').rdev # => "00010301"
+ *  '%08x' % File.stat('/dev/nvme0n1p2').rdev # => "00010302"
+ *  ```
+ *
+ *  On Windows, returns a number corresponding to the given device:
+ *
+ *  ```ruby
+ *  File.stat('C:/').rdev      # => 2
+ *  File.stat('C:/Users').rdev # => 2
+ *  File.stat('D:/').rdev      # => 3
+ *  ```
+ *
  */
 
 static VALUE
@@ -930,13 +964,35 @@ rb_stat_rdev(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.rdev_major   -> integer
+ *    rdev_major -> integer
  *
- *  Returns the major part of File::Stat#rdev or +nil+.
+ *  Returns the integer major portion of the device type of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`;
+ *  see also #rdev, which returns the entire device type (major and minor).
  *
- *     File.stat("/dev/fd1").rdev_major   #=> 2
- *     File.stat("/dev/tty").rdev_major   #=> 5
+ *  On a non-Windows system, returns a filesystem-dependent major device type,
+ *  which identifies the device driver;
+ *  the returned value is non-zero only for character-special
+ *  and block-special devices:
+ *
+ *  ```ruby
+ *  # Character-special devices.
+ *  '%04x' % File.stat('/dev/null').rdev_major      # => "0001"
+ *  '%04x' % File.stat('/dev/zero').rdev_major      # => "0001"
+ *  '%04x' % File.stat('/dev/random').rdev_major    # => "0001"
+ *  '%04x' % File.stat('/dev/tty').rdev_major       # => "0005"
+ *  '%04x' % File.stat('/dev/tty0').rdev_major      # => "0004"
+ *  '%04x' % File.stat('/dev/tty1').rdev_major      # => "0004"
+ *  # Block-special devices.
+ *  '%04x' % File.stat('/dev/nvme0n1').rdev_major   # => "0103"
+ *  '%04x' % File.stat('/dev/nvme0n1p1').rdev_major # => "0103"
+ *  '%04x' % File.stat('/dev/nvme0n1p2').rdev_major # => "0103"
+ *  ```
+ *
+ *  On Windows, returns `nil`.
  */
 
 static VALUE
@@ -952,13 +1008,35 @@ rb_stat_rdev_major(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.rdev_minor   -> integer
+ *    rdev_minor -> integer
  *
- *  Returns the minor part of File::Stat#rdev or +nil+.
+ *  Returns the integer minor portion of the device type of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`;
+ *  see also #rdev, which returns the entire device type (major and minor).
  *
- *     File.stat("/dev/fd1").rdev_minor   #=> 1
- *     File.stat("/dev/tty").rdev_minor   #=> 0
+ *  On a non-Windows system, returns a filesystem-dependent minor device type,
+ *  which identifies a specific instance, port, or partition on its device;
+ *  the returned value is non-zero only for character-special
+ *  and block-special devices:
+ *
+ *  ```ruby
+ *  # Character-special devices.
+ *  '%02x' % File.stat('/dev/null').rdev_minor      # => "03"
+ *  '%02x' % File.stat('/dev/zero').rdev_minor      # => "05"
+ *  '%02x' % File.stat('/dev/random').rdev_minor    # => "08"
+ *  '%02x' % File.stat('/dev/tty').rdev_minor       # => "00"
+ *  '%02x' % File.stat('/dev/tty0').rdev_minor      # => "00"
+ *  '%02x' % File.stat('/dev/tty1').rdev_minor      # => "01"
+ *  # Block-special devices.
+ *  '%02x' % File.stat('/dev/nvme0n1').rdev_minor   # => "00"
+ *  '%02x' % File.stat('/dev/nvme0n1p1').rdev_minor # => "01"
+ *  '%02x' % File.stat('/dev/nvme0n1p2').rdev_minor # => "02"
+ *  ```
+ *
+ *  On Windows, returns `nil`.
  */
 
 static VALUE
