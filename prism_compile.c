@@ -4744,7 +4744,17 @@ pm_add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return, pm_sc
             LABEL *lstart = NEW_LABEL(0);
             LABEL *lend = NEW_LABEL(0);
 
-            add_ensure_range(iseq, enlp->erange, lstart, lend);
+            // Exclude the range from the ensure bodies already copied above, not only
+            // from the innermost one: the copy below runs while a jump unwinds, so one
+            // of those ensures catching a jump inside it would run its body a second
+            // time.  Ensures further out still need to catch it and run their bodies.
+            // [Bug #20917]
+            for (struct iseq_compile_data_ensure_node_stack *e = prev_enlp;; e = e->prev) {
+                if (e->erange != NULL) {
+                    add_ensure_range(iseq, e->erange, lstart, lend);
+                }
+                if (e == enlp) break;
+            }
 
             ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enlp->prev;
             PUSH_LABEL(ensure_part, lstart);
