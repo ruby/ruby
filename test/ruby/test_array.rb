@@ -3254,6 +3254,87 @@ class TestArray < Test::Unit::TestCase
     assert_equal($test_equal_resize_a, $test_equal_resize_b)
   end
 
+  def test_eql_resize
+    a = Array.new(3, &:to_s)
+    b = a.dup
+    o = Object.new
+    o.define_singleton_method(:eql?) do |_|
+      a.clear
+      b.clear
+      true
+    end
+    a[1] = o
+    assert_send([a, :eql?, b])
+
+    a = [0, nil, nil]
+    b = [0, 1, nil]
+    o = Object.new
+    o.define_singleton_method(:eql?) do |_|
+      b.pop
+      true
+    end
+    a[1] = o
+    assert_not_send([a, :eql?, b])
+  end
+
+  def test_eql_grow
+    a = Array.new(3, &:to_s)
+    b = a.dup
+    extra = Array.new(100, &:to_s)
+    o = Object.new
+    o.define_singleton_method(:eql?) do |_|
+      a.concat(extra)
+      b.concat(extra)
+      true
+    end
+    a[1] = o
+    assert_send([a, :eql?, b])
+
+    a = Array.new(3, &:to_s)
+    b = a.dup
+    o = Object.new
+    o.define_singleton_method(:eql?) do |_|
+      a.concat(extra)
+      b.concat(extra.map(&:dup).tap { |e| e[-1] = :different })
+      true
+    end
+    a[1] = o
+    assert_not_send([a, :eql?, b])
+  end
+
+  def test_eql_replace
+    # Unlike resizing small arrays, whose elements are embedded in the
+    # array objects, replacing arrays too long to embed frees the
+    # buffers being compared, so reading them after eql? returns would
+    # read freed memory.
+    ints = ->(n) { Array.new(n) { |i| i } }
+    compare = ->(new_a, new_b) do
+      a = ints[200]
+      b = ints[200]
+      o = Object.new
+      o.define_singleton_method(:eql?) do |_|
+        a.replace(new_a)
+        b.replace(new_b) if new_b
+        true
+      end
+      a[100] = o
+      b[100] = Object.new
+      a.eql?(b)
+    end
+
+    # shorter than the index being compared
+    assert_equal(true, compare[ints[50], ints[50]])
+    # shorter, and equal or different after the index being compared
+    assert_equal(true, compare[ints[150], ints[150]])
+    assert_equal(false, compare[ints[150], ints[150].tap { |e| e[125] = -1 }])
+    # longer, and equal or different beyond the original length
+    assert_equal(true, compare[ints[400], ints[400]])
+    assert_equal(false, compare[ints[400], ints[400].tap { |e| e[300] = -1 }])
+    # only one of them replaced
+    assert_equal(false, compare[ints[150], nil])
+    assert_equal(false, compare[ints[400], nil])
+  end
+
   def test_flatten_error
     a = []
     f = [].freeze
