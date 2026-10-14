@@ -1234,6 +1234,11 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::ASCII_8BIT, "".force_encoding("US-ASCII").concat(0xA2).encoding)
     assert_equal("A\x84\x31\xA4\x39".force_encoding("GB18030"),
                  "A".force_encoding("GB18030") << 0x8431A439)
+
+    s = "\x81\x30".force_encoding("GB18030")
+    assert_not_predicate(s, :valid_encoding?)
+    s << s
+    assert_predicate(s, :valid_encoding?)
   end
 
   def test_regexp_match
