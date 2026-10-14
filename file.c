@@ -2116,15 +2116,16 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
  *
  * ```ruby
  * require 'socket'
- * sock_path = '/tmp/socket'
- * server = UNIXServer.new(sock_path)
- * File.socket?(sock_path) # => true
- * File.delete(sock_path)  # Clean up.
+ * socket_path = '/tmp/socket'
+ * server = UNIXServer.new(socket_path)
+ * File.socket?(socket_path) # => true
+ * server.close              # Clean up.
+ * File.delete(socket_path)  # Clean up.
  * file_path = '/etc/passwd'
- * File.file?(file_path)   # => true
- * File.socket?(file_path) # => false
- * File.socket?($stdin)    # => false
- * File.socket?('nosuch')  # => false
+ * File.file?(file_path)     # => true
+ * File.socket?(file_path)   # => false
+ * File.socket?($stdin)      # => false
+ * File.socket?('nosuch')    # => false
  * ```
  *
  */
@@ -7189,19 +7190,19 @@ rb_stat_l(VALUE obj)
  *  call-seq:
  *    socket? -> true or false
  *
- *  Returns whether entry in `self` is a socket:
+ *  Returns whether entry in the [snapshot](rdoc-ref:File::Stat@Snapshot)
+ *  in `self` is a socket:
  *
  *  ```ruby
- *  sock_path = '/tmp/socket'
- *  server = UNIXServer.new(sock_path)
- *  stat = File.stat(sock_path)
- *  stat.socket?           # => true
- *  File.delete(sock_path) # Clean up.
- *  stat.socket?           # => true
- *  file_path = '/etc/passwd'
- *  File.exist?(file_path) # => true  # Snapshot not updated.
- *  stat = File.stat(file_path)
- *  stat.socket?           # => false
+ *  require 'socket'
+ *  socket_path = '/tmp/socket'
+ *  server = UNIXServer.new(socket_path)
+ *  stat = File.stat(socket_path)         # Take snapshot.
+ *  stat.socket?              # => true
+ *  server.close                          # Clean up.
+ *  File.delete(socket_path)              # Clean up.
+ *  stat.socket?              # => true   # Snapshot not updated.
+ *  File.stat('/tmp').socket? # => false  # Not a socket.
  *  ```
  *
  */

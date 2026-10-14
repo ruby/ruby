@@ -2462,20 +2462,20 @@ class Pathname    # * FileTest *
   #
   # ```ruby
   # require 'socket'
-  # sock_path = '/tmp/socket'
-  # sock_pn = Pathname(sock_path)
-  # sock_pn.exist?  # => false
-  # sock_pn.socket? # => false
-  # server = UNIXServer.new(sock_path)
-  # sock_pn.exist?  # => true
-  # sock_pn.socket? # => true
+  # socket_path = '/tmp/socket'
+  # socket_pn = Pathname(socket_path)
+  # socket_pn.exist?  # => false
+  # socket_pn.socket? # => false
+  # server = UNIXServer.new(socket_path)
+  # socket_pn.exist?  # => true
+  # socket_pn.socket? # => true
   # # Clean up.
   # server.close
-  # sock_pn.delete
+  # socket_pn.delete
   # file_path = '/etc/passwd'
   # file_pn = Pathname(file_path)
-  # file_pn.file?   # => true
-  # file_pn.socket? # => false
+  # file_pn.file?     # => true
+  # file_pn.socket?   # => false
   # ```
   #
   # Returns `false` on Windows.
