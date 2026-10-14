@@ -3079,13 +3079,19 @@ autoload_load_needed(VALUE _arguments)
         return Qfalse;
     }
 
+    // Another thread must not create the mutex between the check and the creation:
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+
     if (NIL_P(autoload_data->mutex)) {
         RB_OBJ_WRITE(autoload_const->autoload_data_value, &autoload_data->mutex, rb_mutex_new());
         autoload_data->fork_gen = GET_VM()->fork_gen;
     }
     else if (rb_mutex_owned_p(autoload_data->mutex)) {
+        RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
         return Qfalse;
     }
+
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     arguments->mutex = autoload_data->mutex;
     arguments->autoload_const = autoload_const;
