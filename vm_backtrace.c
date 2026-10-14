@@ -18,6 +18,7 @@
 #include "internal/ruby_parser.h"
 #include "internal/vm.h"
 #include "iseq.h"
+#include "prism_compile.h"
 #include "ruby/debug.h"
 #include "ruby/encoding.h"
 #include "ruby/internal/intern/io.h"

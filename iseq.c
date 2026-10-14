@@ -38,6 +38,7 @@
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
+#include "prism_compile.h"
 #include "ruby/util.h"
 #include "vm_core.h"
 #include "vm_sync.h"
