@@ -6915,6 +6915,9 @@ impl Function {
                             insn_id
                         }
                     }
+                    &Insn::IsBitEqual { left, right } if left == right => {
+                        self.new_insn(Insn::Const { val: Const::CBool(true) })
+                    }
                     &Insn::IsA { val, class } => 'is_a: {
                         let class_type = self.type_of(class);
                         if !class_type.is_subtype(types::Class) {
@@ -7154,7 +7157,11 @@ impl Function {
                             }
                             insn_id
                         } else {
-                            insn_id
+                            if let Some(v) = self.type_of(bool_val).cbool_value() {
+                                self.new_insn(Insn::Const { val: Const::Value(if v { Qtrue } else { Qfalse }) })
+                            } else {
+                                insn_id
+                            }
                         }
                     }
                     &Insn::CondBranch { val, ref if_true, .. } if self.is_a(val, Type::from_cbool(true)) => {

@@ -1699,10 +1699,8 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(==)
           PatchPoint NoSingletonClass(CustomEq@0x1008)
           PatchPoint MethodRedefined(CustomEq@0x1008, equal?@0x1170, cme:0x1178)
-          v141:CBool = IsBitEqual v29, v29
-          v142:BoolExact = BoxBool v141
           PopInlineFrame
-          v42:BoolExact = BoolNegate v142
+          v158:FalseClass = Const Value(false)
           PatchPoint NoEPEscape(!=)
           PopInlineFrame
           v21:NilClass = Const Value(nil)
