@@ -650,7 +650,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
     /* start of hostname resolution */
     if (arg->family_size == 1) {
-        arg->wait = -1;
         arg->getaddrinfo_shared = NULL;
 
         int family = arg->families[0];
@@ -1414,6 +1413,7 @@ rsock_init_inetsock(
             fast_fallback_arg.hostp = hostp;
             fast_fallback_arg.portp = portp;
             fast_fallback_arg.additional_flags = additional_flags;
+            fast_fallback_arg.wait = -1;
 
             int resolving_families[resolving_family_size];
             int resolving_family_index = 0;
