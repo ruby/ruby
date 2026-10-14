@@ -11,8 +11,10 @@ typedef int pm_serialize_unused_t;
 
 #else
 
+#include "prism/compiler/branch.h"
 #include "prism/compiler/inline.h"
 
+#include "prism/internal/allocator.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/comments.h"
 #include "prism/internal/diagnostic.h"
@@ -27,7 +29,9 @@ typedef int pm_serialize_unused_t;
 #include "prism/line_offset_list.h"
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static PRISM_INLINE uint32_t
@@ -69,91 +73,240 @@ pm_serialize_integer(const pm_integer_t *integer, pm_buffer_t *buffer) {
     }
 }
 
+/**
+ * The kinds of entries on the serialization stack.
+ */
+typedef enum {
+    /** A node to serialize, or NULL for an absent optional node. */
+    PM_SERIALIZE_ENTRY_NODE,
+
+    /** Write the lazy marker and placeholders for its skip and length. */
+    PM_SERIALIZE_ENTRY_LAZY_HEADER,
+
+    /** Patch the skip, now that the lazy subtree is about to be written. */
+    PM_SERIALIZE_ENTRY_LAZY_START,
+
+    /** Patch the length, now that the lazy subtree has been written. */
+    PM_SERIALIZE_ENTRY_LAZY_END
+} pm_serialize_entry_kind_t;
+
+/**
+ * An entry on the serialization stack.
+ */
+typedef struct {
+    /** The node to serialize, for NODE entries. */
+    const pm_node_t *node;
+
+    /**
+     * For NODE entries, the offset of the placeholders that follow the node's
+     * lazy marker. For LAZY_* entries, the index of the NODE entry that owns
+     * them, which stays valid because that entry is beneath them.
+     */
+    size_t offset;
+
+    /** The kind of this entry. */
+    pm_serialize_entry_kind_t kind;
+
+    /** Whether the children of this node have already been pushed. */
+    bool visited;
+} pm_serialize_entry_t;
+
+/**
+ * The explicit stack used to walk the tree, so that serializing deeply nested
+ * trees does not depend on the size of the C stack.
+ */
+typedef struct {
+    /** The entries on the stack. */
+    pm_serialize_entry_t *entries;
+
+    /** The number of entries on the stack. */
+    size_t size;
+
+    /** The number of entries that fit in the allocated memory. */
+    size_t capacity;
+} pm_serialize_stack_t;
+
+/**
+ * Push an entry onto the serialization stack. This may reallocate the stack,
+ * which invalidates any pointers into it.
+ */
 static void
-pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
-    pm_buffer_append_byte(buffer, (uint8_t) PM_NODE_TYPE(node));
+pm_serialize_stack_push(pm_serialize_stack_t *stack, pm_serialize_entry_kind_t kind, const pm_node_t *node, size_t offset) {
+    if (PRISM_UNLIKELY(stack->size == stack->capacity)) {
+        size_t capacity = stack->capacity == 0 ? 64 : stack->capacity * 2;
+        pm_serialize_entry_t *entries = (pm_serialize_entry_t *) xrealloc_sized(stack->entries, capacity * sizeof(pm_serialize_entry_t), stack->capacity * sizeof(pm_serialize_entry_t));
 
-    <%- if Ruby::Prism::Template::INCLUDE_NODE_ID -%>
-    pm_buffer_append_varuint(buffer, node->node_id);
-    <%- end -%>
-    pm_serialize_location(&node->location, buffer);
-
-    switch (PM_NODE_TYPE(node)) {
-        // We do not need to serialize a ScopeNode ever as
-        // it is not part of the AST
-        case PM_SCOPE_NODE:
-            return;
-        <%- nodes.each do |node| -%>
-        case <%= node.type %>: {
-            <%- if node.needs_serialized_length? -%>
-            // serialize length
-            // encoding of location u32s make us need to save this offset.
-            size_t length_offset = buffer->length;
-            pm_buffer_append_string(buffer, "\0\0\0\0", 4); /* consume 4 bytes, updated below */
-            <%- end -%>
-            <%- unless Ruby::Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS && !node.flags -%>
-            pm_buffer_append_varuint(buffer, (uint32_t) node->flags);
-            <%- end -%>
-            <%- node.fields.each do |field| -%>
-            <%- case field -%>
-            <%- when Ruby::Prism::Template::NodeField -%>
-            pm_serialize_node(parser, (pm_node_t *)((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
-            <%- when Ruby::Prism::Template::OptionalNodeField -%>
-            if (((pm_<%= node.human %>_t *)node)-><%= field.name %> == NULL) {
-                pm_buffer_append_byte(buffer, 0);
-            } else {
-                pm_serialize_node(parser, (pm_node_t *)((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
-            }
-            <%- when Ruby::Prism::Template::StringField -%>
-            pm_serialize_string(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
-            <%- when Ruby::Prism::Template::NodeListField -%>
-            uint32_t <%= field.name %>_size = pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.size);
-            pm_buffer_append_varuint(buffer, <%= field.name %>_size);
-            for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
-                pm_serialize_node(parser, (pm_node_t *) ((pm_<%= node.human %>_t *)node)-><%= field.name %>.nodes[index], buffer);
-            }
-            <%- when Ruby::Prism::Template::ConstantField, Ruby::Prism::Template::OptionalConstantField -%>
-            pm_buffer_append_varuint(buffer, pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>));
-            <%- when Ruby::Prism::Template::ConstantListField -%>
-            uint32_t <%= field.name %>_size = pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.size);
-            pm_buffer_append_varuint(buffer, <%= field.name %>_size);
-            for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
-                pm_buffer_append_varuint(buffer, pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.ids[index]));
-            }
-            <%- when Ruby::Prism::Template::LocationField -%>
-            <%- if field.should_be_serialized? -%>
-            pm_serialize_location(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
-            <%- end -%>
-            <%- when Ruby::Prism::Template::OptionalLocationField -%>
-            <%- if field.should_be_serialized? -%>
-            if (((pm_<%= node.human %>_t *)node)-><%= field.name %>.length == 0) {
-                pm_buffer_append_byte(buffer, 0);
-            } else {
-                pm_buffer_append_byte(buffer, 1);
-                pm_serialize_location(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
-            }
-            <%- end -%>
-            <%- when Ruby::Prism::Template::UInt8Field -%>
-            pm_buffer_append_byte(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
-            <%- when Ruby::Prism::Template::UInt32Field -%>
-            pm_buffer_append_varuint(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
-            <%- when Ruby::Prism::Template::IntegerField -%>
-            pm_serialize_integer(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
-            <%- when Ruby::Prism::Template::DoubleField -%>
-            pm_buffer_append_double(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
-            <%- else -%>
-            <%- raise -%>
-            <%- end -%>
-            <%- end -%>
-            <%- if node.needs_serialized_length? -%>
-            // serialize length
-            uint32_t length = pm_sizet_to_u32(buffer->length - length_offset);
-            memcpy(buffer->value + length_offset, &length, sizeof(uint32_t));
-            <%- end -%>
-            break;
+        if (PRISM_UNLIKELY(entries == NULL)) {
+            fprintf(stderr, "prism: out of memory; aborting\n");
+            abort();
         }
-        <%- end -%>
+
+        stack->entries = entries;
+        stack->capacity = capacity;
     }
+
+    stack->entries[stack->size++] = (pm_serialize_entry_t) { .node = node, .offset = offset, .kind = kind, .visited = false };
+}
+
+/**
+ * Serialize the tree rooted at the given node in post-order: the subtrees of a
+ * node's child fields are written in field order, followed by the node's own
+ * record. A loader can therefore build every node from a stack of already
+ * built children without recursing.
+ *
+ * The child subtrees of a node with a lazy field are preceded by the lazy
+ * marker, the byte length of the subtrees before the lazy field's subtree, and
+ * the byte length of the lazy field's subtree, so that a loader can skip it.
+ */
+static void
+pm_serialize_node(pm_node_t *root, pm_buffer_t *buffer) {
+    pm_serialize_stack_t stack = { 0 };
+    pm_serialize_stack_push(&stack, PM_SERIALIZE_ENTRY_NODE, root, 0);
+
+    while (stack.size > 0) {
+        pm_serialize_entry_t *entry = &stack.entries[--stack.size];
+
+        switch (entry->kind) {
+            case PM_SERIALIZE_ENTRY_LAZY_HEADER: {
+                pm_buffer_append_byte(buffer, <%= Ruby::Prism::Template::LAZY_MARKER %>);
+                stack.entries[entry->offset].offset = buffer->length;
+                pm_buffer_append_zeroes(buffer, 8);
+                continue;
+            }
+            case PM_SERIALIZE_ENTRY_LAZY_START: {
+                size_t offset = stack.entries[entry->offset].offset;
+                uint32_t skip = pm_sizet_to_u32(buffer->length - offset - 8);
+                memcpy(buffer->value + offset, &skip, sizeof(uint32_t));
+                continue;
+            }
+            case PM_SERIALIZE_ENTRY_LAZY_END: {
+                size_t offset = stack.entries[entry->offset].offset;
+                uint32_t skip;
+                memcpy(&skip, buffer->value + offset, sizeof(uint32_t));
+
+                uint32_t length = pm_sizet_to_u32(buffer->length - offset - 8 - skip);
+                memcpy(buffer->value + offset + 4, &length, sizeof(uint32_t));
+                continue;
+            }
+            case PM_SERIALIZE_ENTRY_NODE:
+                break;
+        }
+
+        const pm_node_t *node = entry->node;
+
+        if (node == NULL) {
+            pm_buffer_append_byte(buffer, 0);
+            continue;
+        }
+
+        if (!entry->visited) {
+            /* Leave the node on the stack beneath its children, which are
+             * pushed in reverse field order so that they are popped, and
+             * therefore written, in field order. A node without children is
+             * written straight away instead. */
+            entry->visited = true;
+            size_t index = stack.size++;
+
+            switch (PM_NODE_TYPE(node)) {
+                <%- nodes.each do |node| -%>
+                <%- next if node.child_fields.empty? -%>
+                case <%= node.type %>: {
+                    const pm_<%= node.human %>_t *cast = (const pm_<%= node.human %>_t *) node;
+                    <%- node.child_fields.reverse_each do |field| -%>
+                    <%- case field -%>
+                    <%- when Ruby::Prism::Template::NodeListField -%>
+                    for (size_t list_index = cast-><%= field.name %>.size; list_index > 0; list_index--) {
+                        pm_serialize_stack_push(&stack, PM_SERIALIZE_ENTRY_NODE, cast-><%= field.name %>.nodes[list_index - 1], 0);
+                    }
+                    <%- else -%>
+                    <%- if field == node.lazy_field -%>
+                    pm_serialize_stack_push(&stack, PM_SERIALIZE_ENTRY_LAZY_END, NULL, index);
+                    pm_serialize_stack_push(&stack, PM_SERIALIZE_ENTRY_NODE, (const pm_node_t *) cast-><%= field.name %>, 0);
+                    pm_serialize_stack_push(&stack, PM_SERIALIZE_ENTRY_LAZY_START, NULL, index);
+                    <%- else -%>
+                    pm_serialize_stack_push(&stack, PM_SERIALIZE_ENTRY_NODE, (const pm_node_t *) cast-><%= field.name %>, 0);
+                    <%- end -%>
+                    <%- end -%>
+                    <%- end -%>
+                    <%- if node.lazy_field -%>
+                    pm_serialize_stack_push(&stack, PM_SERIALIZE_ENTRY_LAZY_HEADER, NULL, index);
+                    <%- end -%>
+                    break;
+                }
+                <%- end -%>
+                default:
+                    break;
+            }
+
+            if (stack.size != index + 1) continue;
+            stack.size--;
+        }
+
+        pm_buffer_append_byte(buffer, (uint8_t) PM_NODE_TYPE(node));
+        <%- if Ruby::Prism::Template::INCLUDE_NODE_ID -%>
+        pm_buffer_append_varuint(buffer, node->node_id);
+        <%- end -%>
+        pm_serialize_location(&node->location, buffer);
+
+        switch (PM_NODE_TYPE(node)) {
+            /* A ScopeNode is never part of the tree, so it has no fields to
+             * serialize. */
+            case PM_SCOPE_NODE:
+                break;
+            <%- nodes.each do |node| -%>
+            case <%= node.type %>: {
+                <%- if node.fields.any? { |field| !field.is_a?(Ruby::Prism::Template::NodeField) && !field.is_a?(Ruby::Prism::Template::OptionalNodeField) && field.should_be_serialized? } -%>
+                const pm_<%= node.human %>_t *cast = (const pm_<%= node.human %>_t *) node;
+                <%- end -%>
+                <%- unless Ruby::Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS && !node.flags -%>
+                pm_buffer_append_varuint(buffer, (uint32_t) node->flags);
+                <%- end -%>
+                <%- node.fields.each do |field| -%>
+                <%- case field -%>
+                <%- when Ruby::Prism::Template::NodeField, Ruby::Prism::Template::OptionalNodeField -%>
+                <%- when Ruby::Prism::Template::NodeListField -%>
+                pm_buffer_append_varuint(buffer, pm_sizet_to_u32(cast-><%= field.name %>.size));
+                <%- when Ruby::Prism::Template::StringField -%>
+                pm_serialize_string(&cast-><%= field.name %>, buffer);
+                <%- when Ruby::Prism::Template::ConstantField, Ruby::Prism::Template::OptionalConstantField -%>
+                pm_buffer_append_varuint(buffer, pm_sizet_to_u32(cast-><%= field.name %>));
+                <%- when Ruby::Prism::Template::ConstantListField -%>
+                pm_buffer_append_varuint(buffer, pm_sizet_to_u32(cast-><%= field.name %>.size));
+                for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
+                    pm_buffer_append_varuint(buffer, pm_sizet_to_u32(cast-><%= field.name %>.ids[index]));
+                }
+                <%- when Ruby::Prism::Template::LocationField -%>
+                <%- if field.should_be_serialized? -%>
+                pm_serialize_location(&cast-><%= field.name %>, buffer);
+                <%- end -%>
+                <%- when Ruby::Prism::Template::OptionalLocationField -%>
+                <%- if field.should_be_serialized? -%>
+                if (cast-><%= field.name %>.length == 0) {
+                    pm_buffer_append_byte(buffer, 0);
+                } else {
+                    pm_buffer_append_byte(buffer, 1);
+                    pm_serialize_location(&cast-><%= field.name %>, buffer);
+                }
+                <%- end -%>
+                <%- when Ruby::Prism::Template::UInt8Field -%>
+                pm_buffer_append_byte(buffer, cast-><%= field.name %>);
+                <%- when Ruby::Prism::Template::UInt32Field -%>
+                pm_buffer_append_varuint(buffer, cast-><%= field.name %>);
+                <%- when Ruby::Prism::Template::IntegerField -%>
+                pm_serialize_integer(&cast-><%= field.name %>, buffer);
+                <%- when Ruby::Prism::Template::DoubleField -%>
+                pm_buffer_append_double(buffer, cast-><%= field.name %>);
+                <%- else -%>
+                <%- raise -%>
+                <%- end -%>
+                <%- end -%>
+                break;
+            }
+            <%- end -%>
+        }
+    }
+
+    xfree_sized(stack.entries, stack.capacity * sizeof(pm_serialize_entry_t));
 }
 
 /*
@@ -323,7 +476,7 @@ pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) 
     pm_buffer_append_varuint(buffer, parser->constant_pool.size);
 
     // Now we're going to serialize the content of the node.
-    pm_serialize_node(parser, node, buffer);
+    pm_serialize_node(node, buffer);
 
     // Now we're going to serialize the offset of the constant pool back where
     // we left space for it.

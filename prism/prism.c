@@ -1,4 +1,5 @@
 #include "prism/compiler/accel.h"
+#include "prism/compiler/branch.h"
 #include "prism/compiler/fallthrough.h"
 #include "prism/compiler/unused.h"
 
@@ -66,24 +67,6 @@
 #   define PM_STATIC_ASSERT(line, condition, message) _Static_assert(condition, message)
 #else
 #   define PM_STATIC_ASSERT(line, condition, message) typedef char PM_CONCATENATE(static_assert_, line)[(condition) ? 1 : -1]
-#endif
-
-/**
- * Support PRISM_LIKELY and PRISM_UNLIKELY to help the compiler optimize its
- * branch predication.
- */
-#if defined(__GNUC__) || defined(__clang__)
-    /** The compiler should predicate that this branch will be taken. */
-    #define PRISM_LIKELY(x) __builtin_expect(!!(x), 1)
-
-    /** The compiler should predicate that this branch will not be taken. */
-    #define PRISM_UNLIKELY(x) __builtin_expect(!!(x), 0)
-#else
-    /** Void because this platform does not support branch prediction hints. */
-    #define PRISM_LIKELY(x)   (x)
-
-    /** Void because this platform does not support branch prediction hints. */
-    #define PRISM_UNLIKELY(x) (x)
 #endif
 
 /**
