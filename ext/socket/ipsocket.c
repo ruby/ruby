@@ -544,7 +544,7 @@ pick_addrinfo(struct hostname_resolution_store *resolution_store, int last_famil
 #define read(fd, buf, size) rb_w32_read(fd, buf, size)
 #endif
 
-static void
+static int
 nonblock_set(int fd, int nonblock)
 {
 #ifdef _WIN32
@@ -553,14 +553,13 @@ nonblock_set(int fd, int nonblock)
 #else
     int flags = fcntl(fd, F_GETFL);
 
-    if (flags < 0) rb_syserr_fail(errno, "fcntl(2)");
+    if (flags < 0) return -1;
 
     int newflags = nonblock ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK);
-    if (newflags == flags) return;
+    if (newflags == flags) return 0;
 #endif
 
-    if (fcntl(fd, F_SETFL, newflags) < 0) rb_syserr_fail(errno, "fcntl(2)");
-    return;
+    return fcntl(fd, F_SETFL, newflags);
 }
 
 static int
@@ -711,7 +710,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
         hostname_resolution_notifier = pipefd[1];
         arg->getaddrinfo_shared->notify = hostname_resolution_notifier;
 
-        nonblock_set(hostname_resolution_waiter, true);
+        if (nonblock_set(hostname_resolution_waiter, true) < 0) rb_syserr_fail(errno, "fcntl(2)");
 
         for (int i = 0; i < arg->family_size; i++) {
             arg->getaddrinfo_entries[i] = &arg->getaddrinfo_shared->getaddrinfo_entries[i];
@@ -822,6 +821,14 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     }
                 }
 
+                if (current_capacity == arg->connection_attempt_fds_size) {
+                    current_capacity = reallocate_connection_attempt_fds(
+                        &arg->connection_attempt_fds,
+                        current_capacity,
+                        additional_capacity
+                    );
+                }
+
                 status = rsock_socket(remote_ai->ai_family, remote_ai->ai_socktype, remote_ai->ai_protocol);
                 syscall = "socket(2)";
 
@@ -853,7 +860,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     #if !defined(_WIN32) && !defined(__CYGWIN__)
                     status = 1;
                     if ((setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*)&status, (socklen_t)sizeof(status))) < 0) {
-                        rb_syserr_fail(errno, "setsockopt(2)");
+                        int e = errno;
+                        close(fd);
+                        rb_syserr_fail(e, "setsockopt(2)");
                     }
                     #endif
                     status = bind(fd, local_ai->ai_addr, local_ai->ai_addrlen);
@@ -889,11 +898,17 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 if (any_addrinfos(&resolution_store) ||
                     in_progress_fds(arg->connection_attempt_fds_size) ||
                     !resolution_store.is_all_finished) {
-                    nonblock_set(fd, true);
+                    if (nonblock_set(fd, true) < 0) {
+                        int e = errno;
+                        close(fd);
+                        rb_syserr_fail(e, "fcntl(2)");
+                    }
                     status = connect(fd, remote_ai->ai_addr, remote_ai->ai_addrlen);
                     last_family = remote_ai->ai_family;
                 } else {
                     VALUE timeout = Qnil;
+
+                    io = arg->io = rsock_init_sock(arg->self, fd);
 
                     if (!NIL_P(open_timeout)) {
                         VALUE elapsed = rb_funcall(current_clocktime(), '-', 1, starts_at);
@@ -913,7 +928,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
                           Qnil : tv_to_seconds(user_specified_connect_timeout_at);
                     }
 
-                    io = arg->io = rsock_init_sock(arg->self, fd);
                     status = rsock_connect(io, remote_ai->ai_addr, remote_ai->ai_addrlen, 0, timeout);
                 }
 
@@ -923,13 +937,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 }
 
                 if (errno == EINPROGRESS) {
-                    if (current_capacity == arg->connection_attempt_fds_size) {
-                        current_capacity = reallocate_connection_attempt_fds(
-                            &arg->connection_attempt_fds,
-                            current_capacity,
-                            additional_capacity
-                        );
-                    }
                     arg->connection_attempt_fds[arg->connection_attempt_fds_size] = fd;
                     (arg->connection_attempt_fds_size)++;
 
@@ -1296,7 +1303,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
 #ifdef _WIN32
         /* Any other socket is blocking on Windows, so undo the non-blocking
          * mode the attempts raced in. */
-        nonblock_set(connected_fd, false);
+        if (nonblock_set(connected_fd, false) < 0) rb_syserr_fail(errno, "fcntl(2)");
 #endif
 
         /* create new instance */
