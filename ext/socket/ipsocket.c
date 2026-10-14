@@ -698,18 +698,20 @@ init_fast_fallback_inetsock_internal(VALUE v)
         }
         resolution_store.is_all_finished = true;
     } else {
-        if (pipe(pipefd) != 0) rb_syserr_fail(errno, "pipe(2)");
-        hostname_resolution_waiter = pipefd[0];
-        nonblock_set(hostname_resolution_waiter, true);
-        arg->wait = hostname_resolution_waiter;
-        hostname_resolution_notifier = pipefd[1];
-
         arg->getaddrinfo_shared = allocate_fast_fallback_getaddrinfo_shared(arg->family_size, arg->hostp, arg->portp);
         if (!arg->getaddrinfo_shared) rb_syserr_fail(errno, "calloc(3)");
 
         rb_nativethread_lock_initialize(&arg->getaddrinfo_shared->lock);
-        arg->getaddrinfo_shared->notify = hostname_resolution_notifier;
+        arg->getaddrinfo_shared->notify = -1;
         arg->getaddrinfo_shared->refcount = 1;
+
+        if (pipe(pipefd) != 0) rb_syserr_fail(errno, "pipe(2)");
+        hostname_resolution_waiter = pipefd[0];
+        arg->wait = hostname_resolution_waiter;
+        hostname_resolution_notifier = pipefd[1];
+        arg->getaddrinfo_shared->notify = hostname_resolution_notifier;
+
+        nonblock_set(hostname_resolution_waiter, true);
 
         for (int i = 0; i < arg->family_size; i++) {
             arg->getaddrinfo_entries[i] = &arg->getaddrinfo_shared->getaddrinfo_entries[i];
