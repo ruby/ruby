@@ -10456,6 +10456,8 @@ fn add_iseq_to_hir(
                     };
                     let lengths = fun.caller_splat_lengths(call_info, recv, exit_id, &profiles);
                     let caller_splat_length = if lengths.len() == 1 { Some(lengths[0]) } else { None };
+                    // Spill once for all arms in the polymorphic dispatch tree
+                    let send_state = spill_locals_for_block(fun, &mut profiles, block, blockiseq, &exit_state, exit_id, ep_escaped);
                     if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_id) {
                         let join_block = fun.new_block(insn_idx);
                         let join_param = fun.push_insn(join_block, Insn::Param);
@@ -10478,20 +10480,12 @@ fn add_iseq_to_hir(
                                 if_false: BranchEdge { target: fall_through, args: vec![] }
                             })));
                             block = fall_through;
-                            let mut snapshot = spill_locals_for_block(fun, &mut profiles, iftrue_block, blockiseq, &exit_state, exit_id, ep_escaped);
-                            // Take a fresh Snapshot rather than
-                            // reusing exit_id so type specialization resolves the receiver from
-                            // its refined, exact type instead of the polymorphic profile that is
-                            // keyed at exit_id.
-                            if snapshot == exit_id {
-                                snapshot = fun.push_insn(iftrue_block, Insn::Snapshot { state: Box::new(exit_state.clone()) });
-                            }
-
-                            // Keep the other operands' profile entries visible at the fresh
-                            // Snapshot so the specialized send can still see argument profiles
-                            // (e.g. Array#[] needs a Fixnum-profiled index to be inlined). Only
-                            // the receiver's entry is dropped: it must resolve from its refined,
-                            // exact type, and resolve_receiver_type prefers profiles over types.
+                            // Take a fresh Snapshot so the receiver's type info could be
+                            // specialized for this polymorphic send match arm. Keep the other
+                            // operands' profile entries visible at the fresh Snapshot so the
+                            // specialized send can still see argument profiles (e.g. Array#[] needs
+                            // a Fixnum-profiled index to be inlined).
+                            let snapshot = fun.push_insn(iftrue_block, Insn::Snapshot { state: Box::new(fun.frame_state(send_state)) });
                             profiles.copy_entries_except(exit_id, snapshot, recv, fun);
                             let refined_recv = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: expected });
                             let send = fun.push_insn(iftrue_block, Insn::Send { recv: refined_recv, cd, block: block_handler, args: args.clone(), caller_splat_length, state: snapshot, reason: Uncategorized(opcode.into()) });
@@ -10499,7 +10493,6 @@ fn add_iseq_to_hir(
                         }
                         // In the fallthrough case, do a generic interpreter send and then join.
                         let reason = SendPolymorphicFallback;
-                        let send_state = spill_locals_for_block(fun, &mut profiles, block, blockiseq, &exit_state, exit_id, ep_escaped);
                         let send = fun.push_insn(block, Insn::Send { recv, cd, block: block_handler, args, caller_splat_length, state: send_state, reason });
                         fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
                         state.stack_push(join_param);
@@ -10507,7 +10500,6 @@ fn add_iseq_to_hir(
                         block = join_block;
                     } else {
                         // Maybe monomorphic; handled in type_specialize
-                        let send_state = spill_locals_for_block(fun, &mut profiles, block, blockiseq, &exit_state, exit_id, ep_escaped);
                         let send = fun.push_insn(block, Insn::Send { recv, cd, block: block_handler, args, caller_splat_length, state: send_state, reason: Uncategorized(opcode.into()) });
                         state.stack_push(send);
                     }
