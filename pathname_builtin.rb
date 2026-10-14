@@ -2611,11 +2611,9 @@ class Pathname    # * FileTest *
   # Returns the size in bytes of the entry at the path in `self`:
   #
   # ```ruby
-  # Pathname('doc/maintainers.md').size # => 14900  # Regular file.
-  # Pathname('doc/syntax/').size        # => 4096   # Directory.
+  # Pathname('/etc/passwd').size # => 3092   # Regular file.
+  # Pathname('/etc').size        # => 12288  # Directory.
   # ```
-  #
-  # Raises an exception if the entry does not exist.
   #
   def size() FileTest.size(@path) end
 
