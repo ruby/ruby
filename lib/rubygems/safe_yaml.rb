@@ -85,7 +85,8 @@ module Gem
         sizes[node.anchor] = size if node.respond_to?(:anchor) && node.anchor
         size
       end
-      count.call(::Psych.parse_stream(input))
+      document = ::Psych.parse(input)
+      count.call(document) if document
     end
   end
 end

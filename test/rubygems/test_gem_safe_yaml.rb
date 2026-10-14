@@ -179,6 +179,10 @@ class TestGemSafeYAML < Gem::TestCase
     assert_match(/maximum alias expansion/, error.message)
   end
 
+  def test_later_documents_are_ignored
+    assert_equal "a", Gem::SafeYAML.safe_load("--- a\n--- [unclosed\n")
+  end
+
   def test_unused_anchor_with_aliases_disabled_is_allowed
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = false
