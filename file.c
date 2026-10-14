@@ -7424,19 +7424,22 @@ rb_stat_R(VALUE obj)
  * call-seq:
  *   world_readable? -> integer or nil
  *
- * If the entry in `self` exists and is readable by others,
+ * If the entry in the [snapshot](rdoc-ref:File::Stat@Snapshot)
+ * in `self` exists and is readable by others,
  * returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
  * for the entry;
  * otherwise, returns `nil`:
  *
  * ```ruby
  * filepath = '/tmp/t.tmp'
- * File.write(filepath, 'foo')
- * File.stat(filepath).world_readable?.to_s(8) # => "664"  # World-readable.
- * File.chmod(0o000, filepath)                             # Make unreadable.
- * File.stat(filepath).world_readable?         # => nil    # Not world-readable.
- * File.delete(filepath)                                   # Clean up.
- * File.stat('.').world_readable?.to_s(8)      # => "775"  # Directory.
+ * File.write(filepath, 'foo')               # Create file.
+ * stat0 = File.stat(filepath)               # Take snapshot.
+ * stat0.world_readable?.to_s(8) # => "664"  # Snapshot shows world-writable.
+ * File.chmod(0o000, filepath)               # Make unwritable.
+ * stat0.world_readable?.to_s(8) # => "664"  # Snapshot not updated.
+ * stat1 = File.stat(filepath)               # Take new snapshot.
+ * stat1.world_readable?         # => nil    # Snapshot shows not world-writable.
+ * File.delete(filepath)                     # Clean up.
  * ```
  */
 
