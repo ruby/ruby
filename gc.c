@@ -293,14 +293,14 @@ rb_gc_get_objspace(void)
 }
 
 void
-rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void *data), void *data)
+rb_gc_run_obj_finalizer(VALUE objid, rb_len_t count, VALUE (*callback)(rb_len_t i, void *data), void *data)
 {
     volatile struct {
         VALUE errinfo;
         VALUE final;
         rb_control_frame_t *cfp;
         VALUE *sp;
-        long finished;
+        rb_len_t finished;
     } saved;
 
     rb_execution_context_t * volatile ec = GET_EC();
@@ -330,7 +330,7 @@ rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void 
         }
     }
 
-    for (long i = saved.finished; RESTORE_FINALIZER(), i < count; saved.finished = ++i) {
+    for (rb_len_t i = saved.finished; RESTORE_FINALIZER(), i < count; saved.finished = ++i) {
         saved.final = callback(i, data);
         rb_check_funcall(saved.final, idCall, 1, &objid);
     }
@@ -2096,8 +2096,8 @@ os_obj_of(VALUE of)
         }
         rb_gc_critical_enable();
 
-        long len = RARRAY_LEN(ocs.buffer);
-        for (long i = 0; i < len; i++) {
+        rb_len_t len = RARRAY_LEN(ocs.buffer);
+        for (rb_len_t i = 0; i < len; i++) {
             rb_yield(RARRAY_AREF(ocs.buffer, i));
             oes.num++;
         }
@@ -3243,7 +3243,7 @@ mark_const_entry_i(VALUE value, void *data)
     const struct rb_gc_mark_ctx *ctx = (const struct rb_gc_mark_ctx *)data;
 
     gc_mark_internal(ctx, ce->value);
-    gc_mark_internal(ctx, ce->file); // TODO: ce->file should be shareable?
+    gc_mark_internal(ctx, ce->u.file); // TODO: ce->u.file should be shareable?
 
     return ID_TABLE_CONTINUE;
 }
@@ -3756,6 +3756,9 @@ gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE box_value, void *a
     if (RCLASSEXT_INCLUDER(ext)) {
         gc_mark_internal(ctx, RCLASSEXT_INCLUDER(ext));
     }
+    if (RCLASSEXT_MODULE_REFINEMENT_ICLASSES(ext)) {
+        gc_mark_internal(ctx, RCLASSEXT_MODULE_REFINEMENT_ICLASSES(ext));
+    }
     mark_m_tbl(ctx, RCLASSEXT_CALLABLE_M_TBL(ext));
     gc_mark_internal(ctx, RCLASSEXT_CC_TBL(ext));
     if (RCLASSEXT_SUBCLASSES(ext)) {
@@ -3859,9 +3862,9 @@ gc_mark_children_ctx(const struct rb_gc_mark_ctx *ctx, VALUE obj)
             }
         }
         else {
-            long len = RARRAY_LEN(obj);
+            rb_len_t len = RARRAY_LEN(obj);
             const VALUE *ptr = RARRAY_CONST_PTR(obj);
-            for (long i = 0; i < len; i++) {
+            for (rb_len_t i = 0; i < len; i++) {
                 gc_mark_internal(ctx, ptr[i]);
             }
         }
@@ -3966,10 +3969,10 @@ gc_mark_children_ctx(const struct rb_gc_mark_ctx *ctx, VALUE obj)
         break;
 
       case T_STRUCT: {
-        const long len = RSTRUCT_LEN(obj);
+        const rb_len_t len = RSTRUCT_LEN(obj);
         const VALUE * const ptr = RSTRUCT_CONST_PTR(obj);
 
-        for (long i = 0; i < len; i++) {
+        for (rb_len_t i = 0; i < len; i++) {
             gc_mark_internal(ctx, ptr[i]);
         }
 
@@ -4812,11 +4815,11 @@ gc_ref_update_array(void *objspace, VALUE v)
         }
     }
     else {
-        long len = RARRAY_LEN(v);
+        rb_len_t len = RARRAY_LEN(v);
 
         if (len > 0) {
             VALUE *ptr = (VALUE *)RARRAY_CONST_PTR(v);
-            for (long i = 0; i < len; i++) {
+            for (rb_len_t i = 0; i < len; i++) {
                 UPDATE_IF_MOVED(objspace, ptr[i]);
             }
         }
@@ -5001,8 +5004,8 @@ update_const_tbl_i(VALUE value, void *objspace)
         ce->value = gc_location_internal(objspace, ce->value);
     }
 
-    if (gc_object_moved_p_internal(objspace, ce->file)) {
-        ce->file = gc_location_internal(objspace, ce->file);
+    if (gc_object_moved_p_internal(objspace, ce->u.file)) {
+        ce->u.file = gc_location_internal(objspace, ce->u.file);
     }
 
     return ID_TABLE_CONTINUE;
@@ -5575,7 +5578,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
 
       case T_STRUCT:
         {
-            long i, len = RSTRUCT_LEN(obj);
+            rb_len_t i, len = RSTRUCT_LEN(obj);
             VALUE *ptr = (VALUE *)RSTRUCT_CONST_PTR(obj);
 
             for (i = 0; i < len; i++) {
@@ -6098,7 +6101,7 @@ rb_raw_iseq_info(char *const buff, const size_t buff_size, const rb_iseq_t *iseq
 static int
 str_len_no_raise(VALUE str)
 {
-    long len = RSTRING_LEN(str);
+    rb_len_t len = RSTRING_LEN(str);
     if (len < 0) return 0;
     if (len > INT_MAX) return INT_MAX;
     return (int)len;
@@ -6196,11 +6199,11 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                          C(ARY_SHARED_ROOT_P(obj), "R"));
 
                 if (ARY_EMBED_P(obj)) {
-                    APPEND_F("len: %ld (embed)",
+                    APPEND_F("len: %"PRIdLEN" (embed)",
                              RARRAY_LEN(obj));
                 }
                 else {
-                    APPEND_F("len: %ld, capa:%ld ptr:%p",
+                    APPEND_F("len: %"PRIdLEN", capa:%"PRIdLEN" ptr:%p",
                              RARRAY_LEN(obj),
                              RARRAY(obj)->as.heap.aux.capa,
                              (void *)RARRAY_CONST_PTR(obj));
@@ -6213,12 +6216,12 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                      C(RB_OBJ_FROZEN(obj), "R"));
 
             if (STR_SHARED_P(obj)) {
-                APPEND_F(" [shared] len: %ld", RSTRING_LEN(obj));
+                APPEND_F(" [shared] len: %"PRIdLEN, RSTRING_LEN(obj));
             }
             else {
                 if (STR_EMBED_P(obj)) APPEND_S(" [embed]");
 
-                APPEND_F(" len: %ld, capa: %" PRIdSIZE, RSTRING_LEN(obj), rb_str_capacity(obj));
+                APPEND_F(" len: %"PRIdLEN", capa: %" PRIdSIZE, RSTRING_LEN(obj), rb_str_capacity(obj));
             }
             APPEND_F(" \"%.*s\"", str_len_no_raise(obj), RSTRING_PTR(obj));
             break;

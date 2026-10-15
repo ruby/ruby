@@ -66,6 +66,8 @@ module Bundler
           end
           fetch(new_uri, headers, counter + 1)
         when Gem::Net::HTTPRequestedRangeNotSatisfiable
+          raise bad_response(response) unless headers.key?("Range")
+
           new_headers = headers.dup
           new_headers.delete("Range")
           fetch(uri, new_headers)
@@ -81,9 +83,7 @@ module Bundler
         when Gem::Net::HTTPNotFound
           raise FallbackError, "Gem::Net::HTTPNotFound: #{filtered_uri}"
         else
-          message = "Gem::#{response.class.name.gsub(/\AGem::/, "")}"
-          message += ": #{response.body}" unless response.body.empty?
-          raise HTTPError, message
+          raise bad_response(response)
         end
       end
 
@@ -120,6 +120,12 @@ module Bundler
       end
 
       private
+
+      def bad_response(response)
+        message = "Gem::#{response.class.name.gsub(/\AGem::/, "")}"
+        message += ": #{response.body}" unless response.body.empty?
+        HTTPError.new(message)
+      end
 
       def network_down_error(uri, filtered_uri)
         host = uri.host

@@ -196,6 +196,19 @@ RSpec.describe Bundler::Fetcher::Downloader do
         result = subject.fetch(uri, options, counter)
         expect(result).to eq(success_response)
       end
+
+      context "when the retry without the Range header gets a 416 too" do
+        before do
+          allow(subject).to receive(:request).with(uri, { "If-None-Match" => "some-etag" }).and_return(http_response)
+        end
+
+        it "should raise a Bundler::HTTPError instead of retrying again" do
+          expect(subject).to receive(:request).with(uri, options).ordered
+          expect(subject).to receive(:request).with(uri, { "If-None-Match" => "some-etag" }).ordered
+          expect { subject.fetch(uri, options, counter) }.
+            to raise_error(Bundler::HTTPError, "Gem::Net::HTTPRangeNotSatisfiable: Body with info")
+        end
+      end
     end
 
     context "when the request response is some other type" do

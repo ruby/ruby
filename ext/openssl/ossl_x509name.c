@@ -147,7 +147,7 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
     VALUE str = ossl_to_der_if_possible(arg);
     StringValue(str);
     const unsigned char *p = (unsigned char *)RSTRING_PTR(str);
-    X509_NAME *name = d2i_X509_NAME(NULL, &p, RSTRING_LEN(str));
+    X509_NAME *name = d2i_X509_NAME(NULL, &p, rb_len2long(RSTRING_LEN(str)));
     if (!name)
         ossl_raise(eX509NameError, "d2i_X509_NAME");
     RTYPEDDATA_DATA(self) = name;
@@ -231,7 +231,7 @@ ossl_x509name_to_s_old(VALUE self)
     buf = X509_NAME_oneline(name, NULL, 0);
     if (!buf)
         ossl_raise(eX509NameError, "X509_NAME_oneline");
-    return ossl_buf2str(buf, rb_long2int(strlen(buf)));
+    return ossl_buf2str(buf);
 }
 
 static VALUE

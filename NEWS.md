@@ -7,6 +7,10 @@ Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
+* `super` in a module method that was called via `super` from a refinement
+  method now works correctly.
+  [[Feature #22309]]
+
 * `Module#clone` and `Module#dup` no longer rewrite the lexical scope of
   copied methods. Constants and class variables resolve through the
   original class, consistent with inheritance and mixins.
@@ -146,6 +150,13 @@ Note: We're only listing outstanding class updates.
     * `Proc#ruby2_keywords` is deprecated and will be removed in Ruby 4.4.
       [[Feature #22205]]
 
+* Ractor
+
+    * `Ractor::Port#receive`, `Ractor.receive` and `Ractor.select` accept a
+      `timeout:` keyword argument (in seconds) and return `nil` once it passes.
+      `timeout: 0` never blocks: it takes a message if one is already queued
+      and returns `nil` otherwise.  [[Feature #22255]]
+
 * Range
 
     * `Range#clamp` is added. It returns a new `Range` instance whose
@@ -203,6 +214,15 @@ Note: We're only listing outstanding class updates.
       default libyaml backend remains unchanged otherwise.  It is not
       supported on Windows.  [[GH-psych #805]]
 
+* Ruby::Prism
+
+    * `Ruby::Prism` is added.  It is the prism parser built into the
+      interpreter, i.e., the very parser that parsed the running program,
+      independent of the prism gem.  It is autoloaded.
+      `Method#syntax_tree` and others return its nodes.  Its API may change
+      between Ruby minor versions; use the `prism` gem unless you need the
+      parser of the running interpreter.  [[Bug #22379]]
+
 ### The following bundled gems are added.
 
 
@@ -214,6 +234,7 @@ releases.
 
 ### The following bundled gems are promoted from default gems.
 
+* prism 1.9.0
 * tsort 0.2.0
 * win32-registry 0.1.2
 
@@ -230,7 +251,7 @@ They are still available on rubygems.org and can be installed with
 ### The following default gems are updated.
 
 * RubyGems 4.1.0.beta2
-  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18], [v4.0.19][RubyGems-v4.0.19], [v4.0.20][RubyGems-v4.0.20], [v4.0.21][RubyGems-v4.0.21], [v4.0.22][RubyGems-v4.0.22], [v4.1.0.beta1][RubyGems-v4.1.0.beta1], [v4.1.0.beta2][RubyGems-v4.1.0.beta2]
+  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18], [v4.0.19][RubyGems-v4.0.19], [v4.0.20][RubyGems-v4.0.20], [v4.0.21][RubyGems-v4.0.21], [v4.0.22][RubyGems-v4.0.22], [v4.0.23][RubyGems-v4.0.23], [v4.1.0.beta1][RubyGems-v4.1.0.beta1], [v4.1.0.beta2][RubyGems-v4.1.0.beta2]
 * bundler 4.1.0.beta2
   * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10], [v4.0.11][bundler-v4.0.11], [v4.0.12][bundler-v4.0.12], [v4.0.13][bundler-v4.0.13], [v4.0.14][bundler-v4.0.14], [v4.0.15][bundler-v4.0.15], [v4.0.16][bundler-v4.0.16], [v4.0.17][bundler-v4.0.17]
 * date 3.6.0
@@ -251,7 +272,7 @@ They are still available on rubygems.org and can be installed with
 * io-wait 999.999.999
 * ipaddr 1.2.9
   * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
-* json 3.0.2
+* json 3.1.0
   * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0], [v2.21.0][json-v2.21.0], [v2.21.2][json-v2.21.2], [v3.0.0.rc1][json-v3.0.0.rc1], [v3.0.0][json-v3.0.0]
 * net-http 0.10.0
   * 0.9.1 to [v0.10.0][net-http-v0.10.0]
@@ -265,8 +286,6 @@ They are still available on rubygems.org and can be installed with
   * 0.6.3 to [v0.6.4][pp-v0.6.4]
 * prettyprint 0.2.1
   * 0.2.0 to [v0.2.1][prettyprint-v0.2.1]
-* prism 1.9.0
-  * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
 * psych 5.5.0
   * 5.3.1 to [v5.4.0][psych-v5.4.0], [v5.5.0][psych-v5.5.0]
 * resolv 0.8.1
@@ -282,7 +301,9 @@ They are still available on rubygems.org and can be installed with
 * timeout 0.6.1
   * 0.6.0 to [v0.6.1][timeout-v0.6.1]
 * tmpdir 0.3.2
+  * 0.3.1 to [v0.3.2][tmpdir-v0.3.2]
 * uri 1.1.2
+  * 1.1.1 to [v1.1.2][uri-v1.1.2]
 * zlib 3.2.4
   * 3.2.2 to [v3.2.3][zlib-v3.2.3], [v3.2.4][zlib-v3.2.4]
 
@@ -297,7 +318,7 @@ They are still available on rubygems.org and can be installed with
   * 3.7.5 to [3.7.6][test-unit-3.7.6], [3.7.7][test-unit-3.7.7], [3.7.8][test-unit-3.7.8]
 * rss 0.3.3
   * 0.3.2 to [0.3.3][rss-0.3.3]
-* net-imap 0.6.7
+* net-imap 0.6.8
   * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4], [v0.6.4.1][net-imap-v0.6.4.1], [v0.6.5][net-imap-v0.6.5], [v0.6.6][net-imap-v0.6.6], [v0.6.7][net-imap-v0.6.7]
 * net-smtp 0.5.2
   * 0.5.1 to [v0.5.2][net-smtp-v0.5.2]
@@ -407,7 +428,19 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   shareable, but almost all of its methods raise `FrozenError` and it can
   still refer to unshareable objects through the members of `rb_io_t`.
 
+* `Random.urandom` now raises `RangeError` for every size too large for a
+  `long`, as `Random#bytes` does.  A size that still fit in an `unsigned long`
+  used to raise `ArgumentError`. [[Feature #22400]]
+
+* `Struct#[]` and `Struct#[]=` now raise `IndexError` for every out-of-range
+  Integer index that fits in a `long`.  An index past the `int` range used to
+  raise `RangeError`. [[Feature #22400]]
+
 ## Stdlib compatibility issues
+
+* prism is now a bundled gem.  Under Bundler, `require "prism"` needs prism
+  in the Gemfile.  Use `Ruby::Prism` for the parser of the running
+  interpreter.  [[Bug #22379]]
 
 * `Etc.getlogin` on Windows now returns the login name determined when the
   process starts, from the `USER` or `USERNAME` environment variable or
@@ -467,6 +500,21 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   Ractor once the dead Ractor is collected.
 
   [[Feature #22277]]
+
+### Type for lengths and indices
+
+* `rb_len_t` and `rb_ulen_t` are added as the types of the lengths and indices
+  of String, Array and MatchData, with `LEN2NUM`, `NUM2LEN`, `ULEN2NUM`,
+  `rb_len2int`, `PRIdLEN` and its siblings, `RB_LEN_MAX`, `RB_LEN_MIN`,
+  `RB_ULEN_MAX`, `SIZEOF_RB_LEN_T` and `HAVE_RB_LEN_T`.  `RbConfig::SIZEOF["rb_len_t"]`
+  gives its size to an extconf.rb.  They are `long` on every platform for now, and
+  the C API that carries such lengths, such as `RSTRING_LEN` and
+  `rb_range_beg_len`, uses them.  A later change will makes them 64 bits on mswin,
+  so extensions should keep these lengths in `rb_len_t`. [[Feature #22400]]
+
+* `rb_len2long` is added to convert an `rb_len_t` to `long`, raising
+  `RangeError` via the new `rb_out_of_long` when it does not fit, for
+  extensions that keep a length in `long`. [[Feature #22400]]
 
 ### Removed APIs
 
@@ -600,6 +648,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
 [Bug #22273]: https://bugs.ruby-lang.org/issues/22273
 [Bug #22276]: https://bugs.ruby-lang.org/issues/22276
+[Bug #22379]: https://bugs.ruby-lang.org/issues/22379
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
@@ -628,7 +677,10 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22226]: https://bugs.ruby-lang.org/issues/22226
 [Feature #22232]: https://bugs.ruby-lang.org/issues/22232
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
+[Feature #22255]: https://bugs.ruby-lang.org/issues/22255
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
+[Feature #22309]: https://bugs.ruby-lang.org/issues/22309
+[Feature #22400]: https://bugs.ruby-lang.org/issues/22400
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
@@ -650,6 +702,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [RubyGems-v4.0.20]: https://github.com/rubygems/rubygems/releases/tag/v4.0.20
 [RubyGems-v4.0.21]: https://github.com/rubygems/rubygems/releases/tag/v4.0.21
 [RubyGems-v4.0.22]: https://github.com/rubygems/rubygems/releases/tag/v4.0.22
+[RubyGems-v4.0.23]: https://github.com/rubygems/rubygems/releases/tag/v4.0.23
 [RubyGems-v4.1.0.beta1]: https://github.com/rubygems/rubygems/releases/tag/v4.1.0.beta1
 [RubyGems-v4.1.0.beta2]: https://github.com/rubygems/rubygems/releases/tag/v4.1.0.beta2
 [bundler-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.4
@@ -708,9 +761,6 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [openssl-v4.0.2]: https://github.com/ruby/openssl/releases/tag/v4.0.2
 [pp-v0.6.4]: https://github.com/ruby/pp/releases/tag/v0.6.4
 [prettyprint-v0.2.1]: https://github.com/ruby/prettyprint/releases/tag/v0.2.1
-[prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
-[prism-v1.8.1]: https://github.com/ruby/prism/releases/tag/v1.8.1
-[prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
 [psych-v5.4.0]: https://github.com/ruby/psych/releases/tag/v5.4.0
 [psych-v5.5.0]: https://github.com/ruby/psych/releases/tag/v5.5.0
 [resolv-v0.7.1]: https://github.com/ruby/resolv/releases/tag/v0.7.1
@@ -722,6 +772,8 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [tempfile-v0.3.2]: https://github.com/ruby/tempfile/releases/tag/v0.3.2
 [time-v0.5.0]: https://github.com/ruby/time/releases/tag/v0.5.0
 [timeout-v0.6.1]: https://github.com/ruby/timeout/releases/tag/v0.6.1
+[tmpdir-v0.3.2]: https://github.com/ruby/tmpdir/releases/tag/v0.3.2
+[uri-v1.1.2]: https://github.com/ruby/uri/releases/tag/v1.1.2
 [zlib-v3.2.3]: https://github.com/ruby/zlib/releases/tag/v3.2.3
 [zlib-v3.2.4]: https://github.com/ruby/zlib/releases/tag/v3.2.4
 [power_assert-v3.1.0]: https://github.com/ruby/power_assert/releases/tag/v3.1.0

@@ -124,6 +124,7 @@ LRAMA = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
 AR = lib -nologo
 PURIFY =
 AUTOCONF = autoconf
+LASTREV = $(COMSPEC) /C $(srcdir:/=\)\win32\lastrev.bat
 IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 RM1 = del
@@ -145,6 +146,11 @@ CAT_DEPEND = type
 ! error MSC_VER not defined.  Retry from configure pass.
 !else if $(MSC_VER) < 1915
 ! error MSVC $(MSC_VER) is not supported.  1915 (Visual Studio 2017 version 15.8) or later is required for the conforming preprocessor.
+!endif
+!if defined(CLANG_VER)
+!if $(CLANG_VER) < 15
+! error clang-cl $(CLANG_VER) is not supported.  15 or later is required for pragma optimize, which RB_GC_GUARD relies on.
+!endif
 !endif
 !if !defined(MACHINE)
 MACHINE = x86
@@ -172,7 +178,12 @@ XCFLAGS = $(XCFLAGS) -DRUBY_DEVEL=1
 XCFLAGS = $(XCFLAGS) -Dmodular_gc_dir="$(modular_gc_dir)"
 !endif
 !if !defined(OPTFLAGS)
+!if defined(CLANG_VER)
+# clang-cl takes -O2sy- as -Os
+OPTFLAGS = -O2 -Oy-
+!else
 OPTFLAGS = -O2sy-
+!endif
 !endif
 OPTFLAGS = $(OPTFLAGS) -Zc:inline
 !if !defined(incflags)
@@ -391,7 +402,9 @@ CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
 !endif
 
 # https://learn.microsoft.com/en-us/cpp/build/reference/zc-preprocessor?view=msvc-170
-!if $(MSC_VER) >= 1925
+!if defined(CLANG_VER)
+# clang-cl conforms already and warns that -Zc:preprocessor is unused
+!elseif $(MSC_VER) >= 1925
 # maybe >= 1926?
 # https://devblogs.microsoft.com/cppblog/announcing-full-support-for-a-c-c-conformant-preprocessor-in-msvc/
 CPPFLAGS = -Zc:preprocessor $(CPPFLAGS)
@@ -669,6 +682,7 @@ install-vcpkg::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg install $(TRIPLET_OPTION)
 
 prepare-vcpkg::
+	@del /a:l *.dll 2> nul
 	for %%I in ($(srcdir:/=\)\vcpkg_installed\$(VCPKG_DEFAULT_TRIPLET)\bin\*.dll) do @( \
 		if not %%~nI == readline mklink %%~nxI %%I \
 	)
@@ -1543,7 +1557,7 @@ rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
 	$(ECHO) building $(@F)
 	$(Q)$(MAKEDIRS) $(@D)
 	$(Q)(echo EXPORTS&&echo Init_$(*F))> $*.def
-	$(Q)$(LDSHARED) -Fe$(@) -Fo$(*).obj $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(XLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
+	$(Q)$(LDSHARED) -Fe$(@) -Fo$(*).obj $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< -link $(DLDFLAGS) $(XLDFLAGS) $(LIBRUBYARG) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
 	$(Q)$(RM) $*.def $*.exp $*.lib $*.obj $*.pdb
 
 yesterday:

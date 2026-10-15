@@ -25,9 +25,9 @@ class IO
   #
   # read_nonblock causes EOFError on EOF.
   #
-  # On some platforms, such as Windows, non-blocking mode is not supported
-  # on IO objects other than sockets. In such cases, Errno::EBADF will
-  # be raised.
+  # If the underlying file descriptor cannot be set to non-blocking mode,
+  # read_nonblock will still attempt to read from the file descriptor.
+  # For example, this can occur with regular files on Windows.
   #
   # If the read byte buffer is not empty,
   # read_nonblock reads from the buffer like readpartial.

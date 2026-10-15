@@ -3689,6 +3689,12 @@ AS_CASE("$enable_shared", [yes], [
   AC_ARG_ENABLE(pie,
           AS_HELP_STRING([--disable-pie], [disable PIE feature]),
           [pie=$enableval], [pie=])
+  AS_CASE(["$target_os:$pie"], [haiku*:], [
+    # Haiku links every executable as a shared object, which rejects
+    # the local-exec TLS relocations in -fPIE objects.  The compiler
+    # generates PIC there by default.
+    pie=no
+  ])
   AS_IF([test "$GCC" = yes -a -z "$EXTSTATIC" -a "x$pie" != xno], [
     RUBY_TRY_CFLAGS(-fPIE, [pie=yes], [pie=no])
     AS_IF([test "$pie" = yes], [
@@ -4419,6 +4425,7 @@ AS_IF([test -n "${LIBS}"], [
     MAINFLAGS=`echo " $MAINLIBS " | sed "s|$libspat"'||;s/^ *//;s/ *$//'`
 ])
 LIBRUBYARG_STATIC="${LIBRUBYARG_STATIC} \$(MAINLIBS)"
+AS_CASE(["$LIBRUBYARG"], ['$(LIBRUBYARG_STATIC)'], [PROGRAM_LIBS=], [PROGRAM_LIBS='$(MAINLIBS)'])
 CPPFLAGS="$CPPFLAGS "'$(DEFS) ${cppflags}'
 AS_IF([test -n "${cflags+set}"], [
     cflagspat=`eval echo '"'"${cflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^  */ /;s/^  *$/ /'`
@@ -4485,6 +4492,7 @@ AC_SUBST(DLDLIBS)
 AC_SUBST(DLDSHARED)
 AC_SUBST(ENABLE_SHARED)
 AC_SUBST(MAINLIBS)
+AC_SUBST(PROGRAM_LIBS)
 AC_SUBST(COMMON_LIBS)
 AC_SUBST(COMMON_MACROS)
 AC_SUBST(COMMON_HEADERS)

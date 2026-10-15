@@ -3,31 +3,31 @@
 require_relative "../test_helper"
 require "timeout"
 
-module Prism
+module Ruby::Prism
   class ParseStreamTest < TestCase
     def test_single_line
       io = StringIO.new("1 + 2")
-      result = Prism.parse_stream(io)
+      result = Ruby::Prism.parse_stream(io)
 
       assert result.success?
-      assert_kind_of Prism::CallNode, result.statement
+      assert_kind_of Ruby::Prism::CallNode, result.statement
     end
 
     def test_multi_line
       io = StringIO.new("1 + 2\n3 + 4")
-      result = Prism.parse_stream(io)
+      result = Ruby::Prism.parse_stream(io)
 
       assert result.success?
-      assert_kind_of Prism::CallNode, result.statement
-      assert_kind_of Prism::CallNode, result.statement
+      assert_kind_of Ruby::Prism::CallNode, result.statement
+      assert_kind_of Ruby::Prism::CallNode, result.statement
     end
 
     def test_multi_read
       io = StringIO.new("a" * 4096 * 4)
-      result = Prism.parse_stream(io)
+      result = Ruby::Prism.parse_stream(io)
 
       assert result.success?
-      assert_kind_of Prism::CallNode, result.statement
+      assert_kind_of Ruby::Prism::CallNode, result.statement
     end
 
     def test___END__
@@ -37,7 +37,7 @@ module Prism
         __END__
         5 + 6
       RUBY
-      result = Prism.parse_stream(io)
+      result = Ruby::Prism.parse_stream(io)
 
       assert result.success?
       assert_equal 2, result.value.statements.body.length
@@ -50,7 +50,7 @@ module Prism
     # buffer (which also has no trailing newline but is not the end of input).
     def test___END___without_trailing_newline
       io = StringIO.new("1 + 2\n__END__")
-      result = Prism.parse_stream(io)
+      result = Ruby::Prism.parse_stream(io)
 
       assert result.success?
       assert_equal 1, result.value.statements.body.length
@@ -65,7 +65,7 @@ module Prism
         "
         5 + 6
       RUBY
-      result = Prism.parse_stream(io)
+      result = Ruby::Prism.parse_stream(io)
 
       assert result.success?
       assert_equal 4, result.value.statements.body.length
@@ -80,7 +80,7 @@ module Prism
         /
         5 + 6
       RUBY
-      result = Prism.parse_stream(io)
+      result = Ruby::Prism.parse_stream(io)
 
       assert result.success?
       assert_equal 4, result.value.statements.body.length
@@ -95,7 +95,7 @@ module Prism
         ]
         5 + 6
       RUBY
-      result = Prism.parse_stream(io)
+      result = Ruby::Prism.parse_stream(io)
 
       assert result.success?
       assert_equal 4, result.value.statements.body.length
@@ -110,7 +110,7 @@ module Prism
         EOF
         5 + 6
       RUBY
-      result = Prism.parse_stream(io)
+      result = Ruby::Prism.parse_stream(io)
 
       assert result.success?
       assert_equal 4, result.value.statements.body.length
@@ -122,7 +122,7 @@ module Prism
         2 # \0\0\0
         3
       RUBY
-      result = Prism.parse_stream(io)
+      result = Ruby::Prism.parse_stream(io)
 
       assert result.success?
       assert_equal 3, result.value.statements.body.length
@@ -139,7 +139,7 @@ module Prism
       ["あ", "\u{1F600}"].each do |char|
         (4080..4100).each do |prefix|
           body = ("a" * prefix) + char
-          result = Prism.parse_stream(StringIO.new("\"#{body}\""))
+          result = Ruby::Prism.parse_stream(StringIO.new("\"#{body}\""))
 
           assert result.success?, "parse failed at prefix=#{prefix} char=#{char.dump}"
           assert_equal body, result.value.statements.body[0].content, "content mismatch at prefix=#{prefix} char=#{char.dump}"
@@ -159,7 +159,7 @@ module Prism
       end
       def stream.eof?; defined?(@done) && @done; end
 
-      result = Prism.parse_stream(stream)
+      result = Ruby::Prism.parse_stream(stream)
       assert result.success?
     end
 
@@ -175,7 +175,7 @@ module Prism
       def stream.eof?; defined?(@done) && @done; end
 
       assert_nothing_raised do
-        Prism.parse_stream(stream)
+        Ruby::Prism.parse_stream(stream)
       end
     end
 
@@ -187,10 +187,10 @@ module Prism
       def stream.gets(limit = nil); ""; end
       def stream.eof?; false; end
 
-      result = Timeout.timeout(10) { Prism.parse_stream(stream) }
+      result = Timeout.timeout(10) { Ruby::Prism.parse_stream(stream) }
       assert result.success?
     rescue Timeout::Error
-      flunk "Prism.parse_stream looped forever on a stream returning empty strings"
+      flunk "Ruby::Prism.parse_stream looped forever on a stream returning empty strings"
     end
   end
 end

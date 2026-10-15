@@ -1223,6 +1223,38 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  def test_adversary_encode
+    fake_string = Class.new(String) do
+      def to_s
+        self
+      end
+
+      def encode(*)
+        42
+      end
+    end
+
+    assert_raise TypeError, JSON::GeneratorError do
+      JSON.generate({fake_string.new("\xff".b) => 1})
+    end
+
+    no_to_json = Class.new do
+      undef_method :to_json
+
+      def initialize(str)
+        @str = str
+      end
+
+      def to_s
+        @str
+      end
+    end
+
+    assert_raise TypeError, JSON::GeneratorError do
+      JSON.generate([no_to_json.new(fake_string.new("\xff".b))])
+    end
+  end
+
   # The case when the State is frozen is tested in JSONCoderTest#test_nesting_recovery
   def test_nesting_recovery
     state = JSON::State.new
@@ -1263,6 +1295,25 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_rfc8785_mixed_key_order
     assert_rfc8785 '{"10":2,"9":1}', { '9' => 1, 10 => 2 }
     assert_rfc8785 '{"a":1,"b":2}', { a: 1, 'b' => 2 }
+  end
+
+  def test_rfc8785_key_order_with_as_json
+    key = Object.new
+    def key.to_s
+      raise 'must not sort the original key'
+    end
+    as_json = ->(object, is_key) { is_key ? 'a' : object }
+    options = { rfc8785: true, strict: true, as_json: as_json }
+    object = [{ 'b' => 2, key => 1 }]
+    expected = '[{"a":1,"b":2}]'
+    assert_equal expected, JSON.generate(object, options)
+    assert_equal expected, object.to_json(options)
+    state = JSON::State.new(options)
+    io = StringIO.new
+    state.generate(object, io)
+    assert_equal expected, io.string
+
+    assert_equal '{"1":1,"b":2}', JSON.generate({ 'b' => 2, 1 => 1 }, options.merge(strict: false))
   end
 
   def test_rfc8785_key_order_with_default_external_encoding

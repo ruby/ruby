@@ -38,6 +38,7 @@
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
+#include "prism_compile.h"
 #include "ruby/util.h"
 #include "vm_core.h"
 #include "vm_sync.h"
@@ -659,20 +660,19 @@ iseq_alloc(void)
 }
 
 VALUE
-rb_iseq_pathobj_new(VALUE path, VALUE realpath)
+rb_iseq_pathobj_new(VALUE path, VALUE realpath, bool *no_realpath)
 {
     VALUE pathobj;
     VM_ASSERT(RB_TYPE_P(path, T_STRING));
     VM_ASSERT(NIL_P(realpath) || RB_TYPE_P(realpath, T_STRING));
 
-    if (path == realpath ||
-        (!NIL_P(realpath) && rb_str_cmp(path, realpath) == 0)) {
+    *no_realpath = NIL_P(realpath);
+
+    if (*no_realpath || path == realpath || rb_str_cmp(path, realpath) == 0) {
         pathobj = rb_fstring(path);
     }
     else {
-        if (!NIL_P(realpath)) {
-            realpath = rb_fstring(realpath);
-        }
+        realpath = rb_fstring(realpath);
         VALUE fpath = rb_fstring(path);
 
         pathobj = rb_ary_new_from_args(2, fpath, realpath);
@@ -685,8 +685,10 @@ rb_iseq_pathobj_new(VALUE path, VALUE realpath)
 void
 rb_iseq_pathobj_set(const rb_iseq_t *iseq, VALUE path, VALUE realpath)
 {
-    RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->location.pathobj,
-                 rb_iseq_pathobj_new(path, realpath));
+    bool no_realpath;
+    VALUE pathobj = rb_iseq_pathobj_new(path, realpath, &no_realpath);
+    RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->location.pathobj, pathobj);
+    ISEQ_BODY(iseq)->no_realpath = no_realpath;
 }
 
 // Make a dummy iseq for a dummy frame that exposes a path for profilers to inspect
@@ -1594,7 +1596,7 @@ rb_iseq_path(const rb_iseq_t *iseq)
 VALUE
 rb_iseq_realpath(const rb_iseq_t *iseq)
 {
-    return pathobj_realpath(ISEQ_BODY(iseq)->location.pathobj);
+    return pathobj_realpath(ISEQ_BODY(iseq)->location.pathobj, ISEQ_BODY(iseq)->no_realpath);
 }
 
 VALUE
@@ -2883,7 +2885,7 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *code, size_t pos,
         unsigned int line_no = rb_iseq_line_no(iseq, pos);
         unsigned int prev = pos == 0 ? 0 : rb_iseq_line_no(iseq, pos - 1);
         if (line_no && line_no != prev) {
-            long slen = RSTRING_LEN(str);
+            rb_len_t slen = RSTRING_LEN(str);
             slen = (slen > 70) ? 0 : (70 - slen);
             str = rb_str_catf(str, "%*s(%4d)", (int)slen, "", line_no);
         }
@@ -2975,13 +2977,13 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
     VALUE child = rb_ary_hidden_new(3);
     unsigned int size;
     unsigned int i;
-    long l;
+    rb_len_t l;
     size_t n;
     enum {header_minlen = 72};
     st_table *done_iseq = 0;
     VALUE done_iseq_wrapper = Qnil;
     const char *indent_str;
-    long indent_len;
+    rb_len_t indent_len;
 
     size = body->iseq_size;
 
@@ -3062,7 +3064,7 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
 
         for (i = body->local_table_size; i > 0;) {
             int li = body->local_table_size - --i - 1;
-            long width;
+            rb_len_t width;
             VALUE name = local_var_name(iseq, 0, i);
             char argi[0x100];
             char opti[0x100];
@@ -3505,7 +3507,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 {
     VALUE iseq_value = (VALUE)iseq;
     unsigned int i;
-    long l;
+    rb_len_t l;
     const struct rb_iseq_constant_body *const iseq_body = ISEQ_BODY(iseq);
     const struct iseq_insn_info_entry *prev_insn_info;
     unsigned int pos;
@@ -3666,7 +3668,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
                     if (vm_ci_flag(ci) & VM_CALL_KWARG) {
                         const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(ci);
                         int i;
-                        VALUE kw = rb_ary_new2((long)kwarg->keyword_len);
+                        VALUE kw = rb_ary_new2((rb_len_t)kwarg->keyword_len);
 
                         argc -= kwarg->keyword_len;
                         for (i = 0; i < kwarg->keyword_len; i++) {

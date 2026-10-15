@@ -33,7 +33,7 @@ static int emitter_output(struct fy_emitter *emit, enum fy_emitter_write_type ty
 {
     VALUE self = (VALUE)userdata;
     VALUE io = rb_attr_get(self, id_io);
-    VALUE s = rb_enc_str_new(str, (long)len, rb_utf8_encoding());
+    VALUE s = rb_enc_str_new(str, (rb_len_t)len, rb_utf8_encoding());
     rb_funcall(io, id_write, 1, s);
     return len;
 }
@@ -186,7 +186,7 @@ static VALUE start_document_try(VALUE d)
 
     if (RTEST(tags)) {
         rb_encoding *encoding = rb_utf8_encoding();
-        long i, len;
+        rb_len_t i, len;
         Check_Type(tags, T_ARRAY);
         len = RARRAY_LEN(tags);
         if (len > 0) {

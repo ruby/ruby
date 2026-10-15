@@ -423,8 +423,8 @@ collect_per_box_origins_i(rb_classext_t *ext, bool is_prime, VALUE box_value, vo
     if (origin == arg->owner || origin == arg->klass_housing_cme) {
         return;
     }
-    long len = RARRAY_LEN(arg->origins);
-    for (long i = 0; i < len; i++) {
+    rb_len_t len = RARRAY_LEN(arg->origins);
+    for (rb_len_t i = 0; i < len; i++) {
         if (RARRAY_AREF(arg->origins, i) == origin) {
             return;
         }
@@ -533,7 +533,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                                 .origins = origins,
                             };
                             rb_class_classext_foreach(owner, collect_per_box_origins_i, &origins_arg);
-                            for (long i = 0; i < RARRAY_LEN(origins); i++) {
+                            for (rb_len_t i = 0; i < RARRAY_LEN(origins); i++) {
                                 invalidate_callable_method_entry_in_every_m_table(RARRAY_AREF(origins, i), mid, cme);
                             }
                             RB_GC_GUARD(origins);
@@ -2259,6 +2259,9 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
 
         refinement = find_refinement(refinements, me->owner);
         if (!NIL_P(refinement)) {
+            if (RB_TYPE_P(me->owner, T_MODULE) && defined_class_ptr && RB_TYPE_P(*defined_class_ptr, T_ICLASS)) {
+                refinement = module_refinement_iclass(refinement, *defined_class_ptr);
+            }
             tmp_me = search_method_protect(refinement, me->called_id, defined_class_ptr);
 
             if (tmp_me && tmp_me->def->type != VM_METHOD_TYPE_REFINED) {
@@ -3103,7 +3106,7 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
     VALUE v;
 
     if (argc == 1 && (v = rb_check_array_type(argv[0])) != Qnil) {
-        long j;
+        rb_len_t j;
 
         for (j = 0; j < RARRAY_LEN(v); j++) {
             check_and_export_method(self, RARRAY_AREF(v, j), visi);

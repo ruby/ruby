@@ -2660,9 +2660,9 @@ static ID *
 array_to_idlist(VALUE arr)
 {
     RUBY_ASSERT(RB_TYPE_P(arr, T_ARRAY));
-    long size = RARRAY_LEN(arr);
+    rb_len_t size = RARRAY_LEN(arr);
     ID *ids = (ID *)ALLOC_N(ID, size + 1);
-    for (long i = 0; i < size; i++) {
+    for (rb_len_t i = 0; i < size; i++) {
         VALUE sym = RARRAY_AREF(arr, i);
         ids[i] = SYM2ID(sym);
     }
@@ -12274,7 +12274,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                          VALUE body, VALUE node_ids, VALUE labels_wrapper)
 {
     /* TODO: body should be frozen */
-    long i, len = RARRAY_LEN(body);
+    rb_len_t i, len = RARRAY_LEN(body);
     struct st_table *labels_table = RTYPEDDATA_DATA(labels_wrapper);
     int j;
     int line_no = 0, node_id = -1, insn_idx = 0;
@@ -12770,7 +12770,7 @@ typedef uint32_t ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #ifdef RUBY_DEVEL
-#define IBF_DEVEL_VERSION 8
+#define IBF_DEVEL_VERSION 9
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -12897,8 +12897,8 @@ pinned_list_new(long size)
 static ibf_offset_t
 ibf_dump_pos(struct ibf_dump *dump)
 {
-    long pos = RSTRING_LEN(dump->current_buffer->str);
-#if SIZEOF_LONG > SIZEOF_INT
+    rb_len_t pos = RSTRING_LEN(dump->current_buffer->str);
+#if SIZEOF_RB_LEN_T > SIZEOF_INT
     if (pos >= UINT_MAX) {
         rb_raise(rb_eRuntimeError, "dump size exceeds");
     }
@@ -12913,7 +12913,7 @@ ibf_dump_align(struct ibf_dump *dump, size_t align)
     if (pos % align) {
         static const char padding[sizeof(VALUE)];
         size_t size = align - ((size_t)pos % align);
-#if SIZEOF_LONG > SIZEOF_INT
+#if SIZEOF_RB_LEN_T > SIZEOF_INT
         if (pos + size >= UINT_MAX) {
             rb_raise(rb_eRuntimeError, "dump size exceeds");
         }
@@ -12926,10 +12926,10 @@ ibf_dump_align(struct ibf_dump *dump, size_t align)
 }
 
 static ibf_offset_t
-ibf_dump_write(struct ibf_dump *dump, const void *buff, unsigned long size)
+ibf_dump_write(struct ibf_dump *dump, const void *buff, size_t size)
 {
     ibf_offset_t pos = ibf_dump_pos(dump);
-#if SIZEOF_LONG > SIZEOF_INT
+#if SIZEOF_RB_LEN_T > SIZEOF_INT
     /* ensure the resulting dump does not exceed UINT_MAX */
     if (size >= UINT_MAX || pos + size >= UINT_MAX) {
         rb_raise(rb_eRuntimeError, "dump size exceeds");
@@ -12946,11 +12946,11 @@ ibf_dump_write_byte(struct ibf_dump *dump, unsigned char byte)
 }
 
 static void
-ibf_dump_overwrite(struct ibf_dump *dump, void *buff, unsigned int size, long offset)
+ibf_dump_overwrite(struct ibf_dump *dump, void *buff, unsigned int size, rb_len_t offset)
 {
     VALUE str = dump->current_buffer->str;
     char *ptr = RSTRING_PTR(str);
-    if ((unsigned long)(size + offset) > (unsigned long)RSTRING_LEN(str))
+    if ((rb_ulen_t)(size + offset) > (rb_ulen_t)RSTRING_LEN(str))
         rb_bug("ibf_dump_overwrite: overflow");
     memcpy(ptr + offset, buff, size);
 }
@@ -13955,6 +13955,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(param_opt_table_offset));
     ibf_dump_write_small_value(dump, param_keyword_offset);
     ibf_dump_write_small_value(dump, location_pathobj_index);
+    ibf_dump_write_small_value(dump, body->no_realpath);
     ibf_dump_write_small_value(dump, location_label_index);
     ibf_dump_write_small_value(dump, body->location.first_lineno);
     ibf_dump_write_small_value(dump, body->location.node_id);
@@ -14070,6 +14071,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const ibf_offset_t param_opt_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const ibf_offset_t param_keyword_offset = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
     const VALUE location_pathobj_index = ibf_load_small_value(load, &reading_pos);
+    const bool no_realpath = (bool)ibf_load_small_value(load, &reading_pos);
     const VALUE location_label_index = ibf_load_small_value(load, &reading_pos);
     const int location_first_lineno = (int)ibf_load_small_value(load, &reading_pos);
     const int location_node_id = (int)ibf_load_small_value(load, &reading_pos);
@@ -14111,7 +14113,8 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
         VALUE realpath = Qnil;
 
         if (RB_TYPE_P(path, T_STRING)) {
-            realpath = path = rb_fstring(path);
+            path = rb_fstring(path);
+            realpath = no_realpath ? Qnil : path;
         }
         else if (RB_TYPE_P(path, T_ARRAY)) {
             VALUE pathobj = path;
@@ -14457,7 +14460,7 @@ static void
 ibf_dump_object_string(struct ibf_dump *dump, VALUE obj)
 {
     long encindex = (long)rb_enc_get_index(obj);
-    long len = RSTRING_LEN(obj);
+    rb_len_t len = RSTRING_LEN(obj);
     const char *ptr = RSTRING_PTR(obj);
 
     if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
@@ -14477,7 +14480,7 @@ ibf_load_object_string(const struct ibf_load *load, const struct ibf_object_head
     ibf_offset_t reading_pos = offset;
 
     int encindex = (int)ibf_load_small_value(load, &reading_pos);
-    const long len = (long)ibf_load_small_value(load, &reading_pos);
+    const rb_len_t len = (rb_len_t)ibf_load_small_value(load, &reading_pos);
     const char *ptr = load->current_buffer->buff + reading_pos;
 
     if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
@@ -14529,7 +14532,7 @@ ibf_load_object_regexp(const struct ibf_load *load, const struct ibf_object_head
 static void
 ibf_dump_object_array(struct ibf_dump *dump, VALUE obj)
 {
-    long i, len = RARRAY_LEN(obj);
+    rb_len_t i, len = RARRAY_LEN(obj);
     ibf_dump_write_small_value(dump, len);
     for (i=0; i<len; i++) {
         long index = (long)ibf_dump_object(dump, RARRAY_AREF(obj, i));
@@ -14542,7 +14545,7 @@ ibf_load_object_array(const struct ibf_load *load, const struct ibf_object_heade
 {
     ibf_offset_t reading_pos = offset;
 
-    const long len = (long)ibf_load_small_value(load, &reading_pos);
+    const rb_len_t len = (rb_len_t)ibf_load_small_value(load, &reading_pos);
 
     VALUE ary = header->internal ? rb_ary_hidden_new(len) : rb_ary_new_capa(len);
     int i;
@@ -14790,7 +14793,7 @@ ibf_load_object_symbol(const struct ibf_load *load, const struct ibf_object_head
     ibf_offset_t reading_pos = offset;
 
     int encindex = (int)ibf_load_small_value(load, &reading_pos);
-    const long len = (long)ibf_load_small_value(load, &reading_pos);
+    const rb_len_t len = (rb_len_t)ibf_load_small_value(load, &reading_pos);
     const char *ptr = load->current_buffer->buff + reading_pos;
 
     if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
@@ -15398,6 +15401,7 @@ rb_iseq_dup_with_independent_caches(const rb_iseq_t *src_root)
         struct rb_iseq_constant_body *cb = ISEQ_BODY(copy);
         if (!cb->local_iseq) RB_OBJ_WRITE(copy, &cb->local_iseq, sb->local_iseq);
         RB_OBJ_WRITE(copy, &cb->location.pathobj, sb->location.pathobj);
+        cb->no_realpath = sb->no_realpath;
         VALUE sl = ISEQ_SCRIPT_LINES(src_root);
         VALUE cov = ISEQ_COVERAGE(src_root);
         if (!NIL_P(sl) || !NIL_P(cov)) {

@@ -4,6 +4,7 @@
 #include "prism/compiler/accel.h"
 
 #include "prism/internal/arena.h"
+#include "prism/internal/comments.h"
 #include "prism/internal/constant_pool.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/list.h"
@@ -689,6 +690,12 @@ struct pm_parser_t {
     /* The list of comments that have been found while parsing. */
     pm_list_t comment_list;
 
+    /*
+     * The attachments of comments to the nodes that own them, populated after
+     * parsing when the attach_comments option is set.
+     */
+    pm_comment_attachments_t comment_attachments;
+
     /* The list of magic comments that have been found while parsing. */
     pm_list_t magic_comment_list;
 
@@ -876,6 +883,12 @@ struct pm_parser_t {
      */
     bool partial_script;
 
+    /*
+     * Whether or not comments should be attached to their owning nodes once
+     * parsing has finished.
+     */
+    bool attach_comments;
+
     /* Whether or not we're at the beginning of a command. */
     bool command_start;
 
@@ -933,7 +946,7 @@ struct pm_parser_t {
      */
     bool warn_mismatched_indentation;
 
-#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSSE3) || defined(PRISM_HAS_SWAR)
+#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSE2) || defined(PRISM_HAS_SWAR)
     /*
      * Cached lookup tables for pm_strpbrk's SIMD fast path. Avoids rebuilding
      * the nibble-based tables on every call when the charset hasn't changed

@@ -4140,8 +4140,8 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
         RB_GC_VM_UNLOCK(lev);
         /* avoid duplicate block, table is usually small */
         {
-            long len = RARRAY_LEN(table);
-            long i;
+            rb_len_t len = RARRAY_LEN(table);
+            rb_len_t i;
 
             for (i = 0; i < len; i++) {
                 VALUE recv = RARRAY_AREF(dup_table, i);
@@ -4215,7 +4215,7 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 }
 
 static VALUE
-get_final(long i, void *data)
+get_final(rb_len_t i, void *data)
 {
     VALUE table = (VALUE)data;
 
@@ -13292,7 +13292,7 @@ rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
     }
 }
 
-VALUE rb_ident_hash_new_capa(long size);
+VALUE rb_ident_hash_new_capa(rb_len_t size);
 
 #if GC_DEBUG_STRESS_TO_CLASS
 /*

@@ -142,6 +142,7 @@ DLDFLAGS = @LIBRUBY_DLDFLAGS@ $(XLDFLAGS) $(ARCH_FLAG)
 SOLIBS = @SOLIBS@
 ENABLE_DEBUG_ENV = @ENABLE_DEBUG_ENV@
 MAINLIBS = @MAINLIBS@
+PROGRAM_LIBS = @PROGRAM_LIBS@
 ARCHMINIOBJS = @MINIOBJS@
 DLNOBJS = @DLNOBJS@
 ENCOBJS = @ENCOBJS@
@@ -254,6 +255,7 @@ AR            = @AR@
 ARFLAGS       = @ARFLAGS@$(empty)
 RANLIB        = @RANLIB@
 AS            = @AS@
+LASTREV       = $(SHELL) $(tooldir)/lastrev
 IFCHANGE      = $(SHELL) $(tooldir)/ifchange
 OBJDUMP       = @OBJDUMP@
 OBJCOPY       = @OBJCOPY@
@@ -332,7 +334,7 @@ miniruby$(EXEEXT):
 $(PROGRAM):
 		$(Q) if test -z "$(PROGRAM_EXTS)"; then \
 		  $(RM) $@ && $(ECHO0) linking $@ && \
-		  $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(EXTLIBS) $(OUTFLAG)$@ && \
+		  $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(PROGRAM_LIBS) $(EXTLIBS) $(OUTFLAG)$@ && \
 		  { $(POSTLINK); }; \
 		fi
 

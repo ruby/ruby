@@ -89,7 +89,7 @@ int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg);
 bool rb_hash_default_unredefined(VALUE hash);
 VALUE rb_hash_alloc_fixed_size(VALUE klass, st_index_t size);
-VALUE rb_ident_hash_new_capa(long size);
+VALUE rb_ident_hash_new_capa(rb_len_t size);
 void rb_hash_free(VALUE hash);
 VALUE rb_hash_alloc_copy(VALUE klass, VALUE src);
 RUBY_EXTERN VALUE rb_cHash_empty_frozen;
@@ -113,9 +113,9 @@ int rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t
 int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 RUBY_SYMBOL_EXPORT_END
 
-VALUE rb_hash_new_with_bulk_insert(long argc, const VALUE *argv);
+VALUE rb_hash_new_with_bulk_insert(rb_len_t argc, const VALUE *argv);
 VALUE rb_hash_merge2(VALUE h1, VALUE h2, bool dup);
-VALUE rb_hash_merge2_bulk(VALUE hash, long argc, const VALUE *argv, bool dup);
+VALUE rb_hash_merge2_bulk(VALUE hash, rb_len_t argc, const VALUE *argv, bool dup);
 VALUE rb_hash_resurrect(VALUE hash);
 int rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval);
 VALUE rb_hash_keys(VALUE hash);

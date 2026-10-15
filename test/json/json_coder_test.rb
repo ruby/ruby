@@ -64,6 +64,54 @@ class JSONCoderTest < Test::Unit::TestCase
     assert_equal "Integer not allowed as object key in JSON", error.message
   end
 
+  def test_json_coder_rfc8785_converted_keys
+    time = Time.utc(1999)
+    calls = []
+    coder = JSON::Coder.new(rfc8785: true) do |object, is_key|
+      calls << [object, is_key]
+      object.year.to_s
+    end
+    input = { time => 1, '1999!' => 2, Time.utc(2000) => 3 }
+    assert_equal '{"1999":1,"1999!":2,"2000":3}', coder.dump(input)
+    assert_equal [[time, true], [Time.utc(2000), true]], calls
+    assert_equal [time, '1999!', Time.utc(2000)], input.keys
+  end
+
+  def test_json_coder_rfc8785_converted_key_validation
+    object = Object.new
+    coder = JSON::Coder.new(rfc8785: true) { 42 }
+    error = assert_raise(JSON::GeneratorError) { coder.dump(object => 1) }
+    assert_equal 'Integer not allowed as object key in JSON', error.message
+    assert_equal 42, error.invalid_object
+
+    coder = JSON::Coder.new(rfc8785: true) { :a }
+    assert_equal '{"a":1,"b":2}', coder.dump('b' => 2, object => 1)
+
+    invalid = "\xFF"
+    calls = 0
+    coder = JSON::Coder.new(rfc8785: true) { calls += 1; invalid }
+    error = assert_raise(JSON::GeneratorError) { coder.dump(object => 1) }
+    assert_same invalid, error.invalid_object
+    assert_equal 1, calls
+  end
+
+  def test_json_coder_rfc8785_converted_key_collision
+    coder = JSON::Coder.new(rfc8785: true) { 'a' }
+    assert_raise(JSON::GeneratorError) { coder.dump(Object.new => 1, 'a' => 2) }
+    assert_raise(JSON::GeneratorError) { coder.dump(Object.new => 1, Object.new => 2) }
+    assert_raise(JSON::GeneratorError) { coder.dump(Object.new => 1, :a => 2) }
+  end
+
+  def test_json_coder_rfc8785_invalid_encoding_key
+    calls = []
+    coder = JSON::Coder.new(rfc8785: true) do |object, is_key|
+      calls << [object, is_key]
+      'a'
+    end
+    assert_equal '{"a":1,"b":2}', coder.dump('b' => 2, "\xFF" => 1)
+    assert_equal [["\xFF", true]], calls
+  end
+
   def test_json_coder_options
     coder = JSON::Coder.new(array_nl: "\n") do |object|
       42

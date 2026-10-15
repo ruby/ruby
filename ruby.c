@@ -459,7 +459,7 @@ ruby_push_include(const char *path, VALUE (*filter)(VALUE))
     if (path == 0) return;
     p = path;
     while (*p) {
-        long len;
+        rb_len_t len;
         while (is_path_sep(*p))
             p++;
         if (!*p) break;
@@ -829,7 +829,7 @@ static int
 process_sflag(int sflag)
 {
     if (sflag > 0) {
-        long n;
+        rb_len_t n;
         const VALUE *args;
         VALUE argv = rb_argv;
 
@@ -895,7 +895,8 @@ static long proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, in
 static void
 moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
 {
-    long argc, i, len;
+    long argc, i;
+    rb_len_t len;
     char **argv, *p;
     const char *ap = 0;
     VALUE argstr, argary;
@@ -1176,7 +1177,7 @@ dump_option(const char *str, int len, void *arg)
 }
 
 static void
-set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen)
+set_option_encoding_once(const char *type, VALUE *name, const char *e, rb_len_t elen)
 {
     VALUE ename;
 
@@ -1792,6 +1793,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 }
 
 VALUE rb_define_gem_modules(VALUE, VALUE);
+void rb_prism_init_autoload(void);
 void Init_builtin_features(void);
 
 static void
@@ -1836,6 +1838,12 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     extern void rb_zjit_init_builtin_cmes(void);
     rb_zjit_init_builtin_cmes();
 #endif
+
+    // Ruby::Prism is the parser that parsed the program; it is not
+    // exposed when parse.y is selected by --parser.
+    if (rb_ruby_prism_p()) {
+        rb_prism_init_autoload();
+    }
 
     /**
      * Initialize the root/main boxes before loading libraries to run them
@@ -2384,7 +2392,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     int i = (int)proc_options(argc, argv, opt, 0);
     unsigned int dump = opt->dump & dump_exit_bits;
     const rb_box_t *box = rb_root_box();
-    const long loaded_before_enc = RARRAY_LEN(box->loaded_features);
+    const rb_len_t loaded_before_enc = RARRAY_LEN(box->loaded_features);
 
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
         const char *const progname =
@@ -2417,12 +2425,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #if USE_ZJIT
         if (!FEATURE_USED_P(opt->features, zjit) && env_var_truthy("RUBY_ZJIT_ENABLE")) {
             FEATURE_SET(opt->features, FEATURE_BIT(zjit));
-
-            // When the --zjit flag is specified, we would have call setup_zjit_options(""),
-            // which would have called rb_zjit_prepare_options() internally. This ensures we
-            // go through the same set up but with less overhead than setup_zjit_options("").
-            extern void rb_zjit_prepare_options();
-            rb_zjit_prepare_options();
         }
 #endif
     }
@@ -2439,6 +2441,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
 #if USE_ZJIT
     if (FEATURE_SET_P(opt->features, zjit)) {
+        // --enable=zjit, RUBY_ZJIT_ENABLE and --jit in ZJIT-only builds set the bit without parsing a --zjit* option.
+        extern void rb_zjit_prepare_options(void);
+        rb_zjit_prepare_options();
         bool rb_zjit_option_enable(void);
         opt->zjit = rb_zjit_option_enable(); // set opt->zjit for Init_ruby_description() and calling rb_zjit_init()
     }
@@ -2536,7 +2541,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
     rb_obj_freeze(opt->script_name);
     if (IF_UTF8_PATH(uenc != lenc, 1)) {
-        long i;
+        rb_len_t i;
         VALUE load_path = box->load_path;
         const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
         int modifiable = FALSE;
@@ -2566,7 +2571,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     {
         VALUE loaded_features = box->loaded_features;
         bool modified = false;
-        for (long i = loaded_before_enc; i < RARRAY_LEN(loaded_features); ++i) {
+        for (rb_len_t i = loaded_before_enc; i < RARRAY_LEN(loaded_features); ++i) {
             VALUE path = RARRAY_AREF(loaded_features, i);
             if (!(path = copy_str(path, IF_UTF8_PATH(uenc, lenc), true))) continue;
             if (!modified) {
@@ -2728,7 +2733,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
 #ifndef DOSISH
 static void
-warn_cr_in_shebang(const char *str, long len)
+warn_cr_in_shebang(const char *str, rb_len_t len)
 {
     if (len > 1 && str[len-1] == '\n' && str[len-2] == '\r') {
         rb_warn("shebang line ending with \\r may cause problems");
@@ -2769,7 +2774,7 @@ load_file_internal(VALUE argp_v)
         VALUE c = 1;		/* something not nil */
         VALUE line;
         char *p, *str;
-        long len;
+        rb_len_t len;
         int no_src_enc = !opt->src.enc.name;
         int no_ext_enc = !opt->ext.enc.name;
         int no_int_enc = !opt->intern.enc.name;
@@ -2907,7 +2912,7 @@ open_load_file(VALUE fname_v, int *xflag)
 {
     const char *fname = (fname_v = rb_str_encode_ospath(fname_v),
                          StringValueCStr(fname_v));
-    long flen = RSTRING_LEN(fname_v);
+    rb_len_t flen = RSTRING_LEN(fname_v);
     VALUE f;
     int e;
 

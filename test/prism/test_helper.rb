@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require "prism"
+require "ruby/prism"
 require "pp"
 require "stringio"
 require "test/unit"
 require "tempfile"
 
-puts "Using prism backend: #{Prism::BACKEND}" if ENV["PRISM_FFI_BACKEND"]
+puts "Using prism backend: #{Ruby::Prism::BACKEND}" if ENV["PRISM_FFI_BACKEND"]
 
 # It is useful to have a diff even if the strings to compare are big
 # However, ruby/ruby does not have a version of Test::Unit with access to
@@ -15,9 +15,9 @@ if defined?(Test::Unit::Assertions::AssertionMessage)
   Test::Unit::Assertions::AssertionMessage.max_diff_target_string_size = 5000
 end
 
-module Prism
+module Ruby::Prism
   # A convenience method for retrieving the first statement in the source string
-  # parsed by Prism.
+  # parsed by Ruby::Prism.
   def self.parse_statement(source, **options)
     parse(source, **options).value.statements.body.first
   end

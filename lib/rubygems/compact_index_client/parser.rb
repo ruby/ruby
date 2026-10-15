@@ -24,6 +24,7 @@ class Gem::CompactIndexClient
 
       lines(@compact_index.versions).each do |line|
         name, versions_string, checksum = line.split(" ", 3)
+        next unless versions_string # see #parse_version_checksum
         @info_checksums[name] = checksum || ""
         versions_string.split(",") do |version|
           delete = version.delete_prefix!("-")

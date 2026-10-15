@@ -582,6 +582,23 @@ zjit_compile(rb_execution_context_t *ec)
 # define zjit_compile(ec) ((rb_jit_func_t)0)
 #endif
 
+// Return the call threshold of the enabled JIT, or 0 when no JIT is enabled.
+unsigned int
+rb_jit_call_threshold(void)
+{
+#if USE_YJIT
+    if (rb_yjit_enabled_p) {
+        return rb_yjit_call_threshold;
+    }
+#endif
+#if USE_ZJIT
+    if (rb_zjit_enabled_p) {
+        return rb_zjit_call_threshold;
+    }
+#endif
+    return 0;
+}
+
 #if USE_YJIT || USE_ZJIT
 // Execute JIT code compiled by yjit_compile() or zjit_compile()
 static inline VALUE
@@ -1599,7 +1616,7 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, c
         VALUE str = rb_sprintf("can not %s because it accesses outer variables", message);
         VALUE ary = data.ary;
         const char *sep = " (";
-        for (long i = 0; i < RARRAY_LEN(ary); i++) {
+        for (rb_len_t i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE name = rb_id2str(NUM2ID(RARRAY_AREF(ary, i)));
             if (!name) continue;
             rb_str_cat_cstr(str, sep);
@@ -1776,6 +1793,7 @@ rb_vm_make_binding(const rb_execution_context_t *ec, const rb_control_frame_t *s
     RB_OBJ_WRITE(bindval, &bind->block.as.captured.self, cfp->self);
     RB_OBJ_WRITE(bindval, &bind->block.as.captured.code.iseq, CFP_ISEQ(cfp));
     RB_OBJ_WRITE(bindval, &bind->pathobj, ISEQ_BODY(CFP_ISEQ(ruby_level_cfp))->location.pathobj);
+    bind->no_realpath = ISEQ_BODY(CFP_ISEQ(ruby_level_cfp))->no_realpath;
     bind->first_lineno = rb_vm_get_sourceline(ruby_level_cfp);
 
     return bindval;
@@ -1786,7 +1804,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
 {
     VALUE envval, pathobj = bind->pathobj;
     VALUE path = pathobj_path(pathobj);
-    VALUE realpath = pathobj_realpath(pathobj);
+    VALUE realpath = pathobj_realpath(pathobj, bind->no_realpath);
     const struct rb_block *base_block;
     const rb_env_t *env;
     rb_execution_context_t *ec = GET_EC();

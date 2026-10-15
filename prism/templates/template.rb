@@ -5,7 +5,7 @@ require "erb"
 require "fileutils"
 require "yaml"
 
-module Prism
+module Ruby::Prism
   module Template # :nodoc: all
     SERIALIZE_ONLY_SEMANTICS_FIELDS = ENV.fetch("PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS", false)
     CHECK_FIELD_KIND = ENV.fetch("CHECK_FIELD_KIND", false)
@@ -68,6 +68,26 @@ module Prism
         value.each_line { |line| yield line.prepend(" ").rstrip }
       end
 
+      def each_rdoc_line(&block)
+        code_block = false
+        value.each_line do |line|
+          # Wrap code in explicit language fences so there is syntax highlighting
+          if line.start_with?("    ") && !code_block
+            code_block = true
+            yield " ```rb"
+          elsif !line.strip.empty? && !line.start_with?("    ") && code_block
+            code_block = false
+            yield " ```"
+          end
+
+          line = line.delete_prefix("    ") if code_block
+          yield line.prepend(" ").rstrip
+        end
+
+        # Close trailing blocks
+        yield " ```" if code_block
+      end
+
       def each_java_line(&block)
         ConfigComment.new(JavaDoc.escape(value)).each_line(&block)
       end
@@ -86,6 +106,10 @@ module Prism
 
       def each_comment_line(&block)
         ConfigComment.new(comment).each_line(&block) if comment
+      end
+
+      def each_comment_rdoc_line(&block)
+        ConfigComment.new(comment).each_rdoc_line(&block) if comment
       end
 
       def each_comment_java_line(&block)
@@ -156,7 +180,7 @@ module Prism
         elsif union_kind
           "(#{union_kind.join(" | ")})"
         else
-          "Prism::node"
+          "Ruby::Prism::node"
         end
       end
 
@@ -188,7 +212,7 @@ module Prism
         elsif union_kind
           "(#{union_kind.join(" | ")})?"
         else
-          "Prism::node?"
+          "Ruby::Prism::node?"
         end
       end
 
@@ -224,7 +248,7 @@ module Prism
         elsif union_kind
           "#{union_kind.join(" | ")}"
         else
-          "Prism::node"
+          "Ruby::Prism::node"
         end
       end
 
@@ -519,6 +543,10 @@ module Prism
         ConfigComment.new(comment).each_line(&block)
       end
 
+      def each_comment_rdoc_line(&block)
+        ConfigComment.new(comment).each_rdoc_line(&block)
+      end
+
       def each_comment_java_line(&block)
         ConfigComment.new(comment).each_java_line(&block)
       end
@@ -715,9 +743,9 @@ end
 
 if __FILE__ == $0
   if ARGV.empty?
-    Prism::Template::TEMPLATES.each { |filepath| Prism::Template.render(filepath) }
+    Ruby::Prism::Template::TEMPLATES.each { |filepath| Ruby::Prism::Template.render(filepath) }
   else # ruby/ruby
     name, write_to = ARGV
-    Prism::Template.render(name, write_to: write_to)
+    Ruby::Prism::Template.render(name, write_to: write_to)
   end
 end

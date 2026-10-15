@@ -50,6 +50,10 @@ STATIC_ASSERT(size_t_no_padding_bits, sizeof(size_t) == sizeof(uint64_t));
 // support one scheme for simplicity.
 STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 
+// The bindings declare rb_len_t as c_long, and codegen reads String and Array
+// lengths at that width. Widening rb_len_t needs TYPE_REPLACEMENTS updated too.
+STATIC_ASSERT(rb_len_t_matches_bindings, sizeof(rb_len_t) == sizeof(long));
+
 enum yjit_bindgen_constants {
     // ISEQ_TRANSLATED expands to an enum value through a chain of macros,
     // which bindgen cannot evaluate, so it needs to be re-exposed here.
@@ -243,9 +247,9 @@ rb_str_neq_internal(VALUE str1, VALUE str2)
 extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 
 VALUE
-rb_yjit_rb_ary_subseq_length(VALUE ary, long beg)
+rb_yjit_rb_ary_subseq_length(VALUE ary, rb_len_t beg)
 {
-    long len = RARRAY_LEN(ary);
+    rb_len_t len = RARRAY_LEN(ary);
     return rb_ary_subseq(ary, beg, len);
 }
 
@@ -254,7 +258,7 @@ VALUE
 rb_yjit_splat_varg_checks(VALUE *sp, VALUE splat_array, rb_control_frame_t *cfp)
 {
     // We inserted a T_ARRAY guard before this call
-    long len = RARRAY_LEN(splat_array);
+    rb_len_t len = RARRAY_LEN(splat_array);
 
     // Large splat arrays need a separate allocation
     if (len < 0 || len > VM_ARGC_STACK_MAX) return Qfalse;
@@ -297,7 +301,7 @@ void
 rb_yjit_dump_iseq_loc(const rb_iseq_t *iseq, uint32_t insn_idx)
 {
     char *ptr;
-    long len;
+    rb_len_t len;
     VALUE path = rb_iseq_path(iseq);
     RSTRING_GETMEM(path, ptr, len);
     fprintf(stderr, "%s %.*s:%u\n", __func__, (int)len, ptr, rb_iseq_line_no(iseq, insn_idx));

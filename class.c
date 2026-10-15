@@ -239,7 +239,7 @@ duplicate_classext_const_entry(rb_const_entry_t *src, VALUE klass)
     dst->flag = src->flag;
     dst->line = src->line;
     RB_OBJ_WRITE(klass, &dst->value, src->value);
-    RB_OBJ_WRITE(klass, &dst->file, src->file);
+    RB_OBJ_WRITE(klass, &dst->u.file, src->u.file);
 
     return dst;
 }
@@ -897,7 +897,7 @@ clone_const(ID key, const rb_const_entry_t *ce, struct clone_const_arg *arg)
     rb_const_entry_t *nce = ALLOC(rb_const_entry_t);
     MEMCPY(nce, ce, rb_const_entry_t, 1);
     RB_OBJ_WRITTEN(arg->klass, Qundef, ce->value);
-    RB_OBJ_WRITTEN(arg->klass, Qundef, ce->file);
+    RB_OBJ_WRITTEN(arg->klass, Qundef, ce->u.file);
 
     rb_id_table_insert(arg->tbl, key, (VALUE)nce);
     return ID_TABLE_CONTINUE;
@@ -915,9 +915,7 @@ class_init_copy_check(VALUE clone, VALUE orig)
     if (orig == rb_cBasicObject) {
         rb_raise(rb_eTypeError, "can't copy the root class");
     }
-    if (RCLASS_INITIALIZED_P(clone)) {
-        rb_raise(rb_eTypeError, "already initialized class");
-    }
+    RUBY_ASSERT(!RCLASS_INITIALIZED_P(clone));
     if (RCLASS_SINGLETON_P(orig)) {
         rb_raise(rb_eTypeError, "can't copy singleton class");
     }
@@ -1112,7 +1110,9 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 
     init_copy_owner_check(orig);
 
-    rb_class_set_initialized(clone);
+    if (RCLASS_INITIALIZED_P(orig)) {
+        rb_class_set_initialized(clone);
+    }
 
     if (!RCLASS_SINGLETON_P(CLASS_OF(clone))) {
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
@@ -1139,7 +1139,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         VALUE origin_stack = rb_ary_hidden_new(2);
         VALUE origin[2];
         VALUE clone_p = 0;
-        long origin_len;
+        rb_len_t origin_len;
         int add_subclass;
         VALUE clone_origin;
 
@@ -1354,6 +1354,7 @@ make_metaclass(VALUE klass)
     super = RCLASS_SUPER(klass);
     while (RB_TYPE_P(super, T_ICLASS)) super = RCLASS_SUPER(super);
     class_associate_super(metaclass, super ? ENSURE_EIGENCLASS(super) : rb_cClass, true);
+    rb_class_set_initialized(metaclass);
 
     // Full class ancestry may not have been filled until we reach here.
     rb_class_update_superclasses(METACLASS_OF(metaclass));
@@ -1854,7 +1855,7 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
 {
     VALUE p, iclass, origin_stack = 0;
     int method_changed = 0;
-    long origin_len;
+    rb_len_t origin_len;
     VALUE klass_origin = RCLASS_ORIGIN(klass);
     VALUE original_klass = klass;
 
@@ -2075,7 +2076,7 @@ rb_prepend_module(VALUE klass, VALUE module)
             /* Register after the loop. Registering during it would visit the
              * new iclass and prepend module into it a second time. */
             if (new_origins) {
-                for (long i = 0; i < RARRAY_LEN(new_origins); i++) {
+                for (rb_len_t i = 0; i < RARRAY_LEN(new_origins); i++) {
                     rb_module_add_to_subclasses_list(klass, RARRAY_AREF(new_origins, i));
                 }
             }
@@ -3107,7 +3108,7 @@ rb_define_attr(VALUE klass, const char *name, int read, int write)
 VALUE
 rb_keyword_error_new(const char *error, VALUE keys)
 {
-    long i = 0, len = RARRAY_LEN(keys);
+    rb_len_t i = 0, len = RARRAY_LEN(keys);
     VALUE error_message = rb_sprintf("%s keyword%.*s", error, len > 1, "s");
 
     if (len > 0) {

@@ -248,20 +248,23 @@ enum ractor_basket_type {
 };
 
 struct ractor_basket {
-    enum ractor_basket_type type;
     VALUE sender;
     st_data_t port_id;
 
-    struct {
+    /* The payload: either a VALUE, or the off-heap (xmalloc) courier its graph was
+     * serialized into (copy and move both use one). */
+    union {
         VALUE v;
-        bool exception;
-        /* The off-heap (xmalloc) courier the payload graph was serialized into.
-         * Copy and move both use it; when set, v is unused. */
         struct rb_ractor_courier *courier;
-    } p; // payload
+    } p;
 
-    struct ccan_list_node node;           /* the port queue it waits on */
-    struct ccan_list_node off_queue_node; /* or sync.off_queue_baskets, when on none */
+    /* The one list it is on: a port queue while it waits there, or its holder's
+     * sync.off_queue_baskets while it is being built or materialized. */
+    struct ccan_list_node node;
+
+    enum ractor_basket_type type : 8;
+    bool has_courier;
+    bool exception;
 };
 
 #if 0
@@ -281,7 +284,7 @@ ractor_basket_none_p(const struct ractor_basket *b)
 static void
 ractor_basket_mark(const struct ractor_basket *b)
 {
-    if (b->p.courier != NULL) {
+    if (b->has_courier) {
         /* The payload became this Ractor's to root the moment the message was enqueued
          * here: the sender's own roots stop at the send.  Before and after the queue the
          * basket is on its holder's off_queue_baskets instead, so a courier is rooted
@@ -300,7 +303,7 @@ static void
 ractor_basket_free(struct ractor_basket *b)
 {
     ractor_off_queue_remove(b);
-    if (b->p.courier) {
+    if (b->has_courier && b->p.courier) {
         /* A courier that was never consumed (a queue being torn down, say). */
         rb_ractor_courier_free(b->p.courier);
         b->p.courier = NULL;
@@ -319,9 +322,9 @@ ractor_basket_alloc(void)
     b->sender = Qnil;
     b->port_id = 0;
     b->p.v = Qnil;
-    b->p.exception = false;
-    b->p.courier = NULL;
-    ccan_list_node_init(&b->off_queue_node);
+    b->has_courier = false;
+    b->exception = false;
+    ccan_list_node_init(&b->node);
 
     return b;
 }
@@ -332,20 +335,20 @@ static void
 ractor_off_queue_add(rb_ractor_t *cr, struct ractor_basket *b)
 {
     VM_ASSERT(cr == rb_current_ractor_raw(false));
-    ccan_list_add_tail(&cr->sync.off_queue_baskets, &b->off_queue_node);
+    ccan_list_add_tail(&cr->sync.off_queue_baskets, &b->node);
 }
 
 static void
 ractor_off_queue_remove(struct ractor_basket *b)
 {
-    ccan_list_del_init(&b->off_queue_node);
+    ccan_list_del_init(&b->node);
 }
 
 static void
 ractor_mark_off_queue_baskets(rb_ractor_t *r)
 {
     struct ractor_basket *b;
-    ccan_list_for_each(&r->sync.off_queue_baskets, b, off_queue_node) {
+    ccan_list_for_each(&r->sync.off_queue_baskets, b, node) {
         ractor_basket_mark(b);
     }
 }
@@ -466,7 +469,9 @@ ractor_queue_deq(rb_ractor_t *r, struct ractor_queue *rq)
 {
     VM_ASSERT(GET_RACTOR() == r);
 
-    return ccan_list_pop(&rq->set, struct ractor_basket, node);
+    struct ractor_basket *b = ccan_list_pop(&rq->set, struct ractor_basket, node);
+    if (b) ccan_list_node_init(&b->node);
+    return b;
 }
 
 static void
@@ -1140,7 +1145,11 @@ static void
 ractor_basket_build_payload(rb_execution_context_t *ec, struct ractor_basket *b, VALUE obj,
                             enum ractor_basket_type type, bool exc)
 {
-    b->p.exception = exc;
+    b->exception = exc;
+
+    b->p.courier = NULL;
+    b->has_courier = true;
+
     if (type == basket_type_move) {
         /* Serialize the graph into an off-heap courier; the sources become
          * RactorMovedObject.  While in flight there is no GC object left for the
@@ -1148,12 +1157,14 @@ ractor_basket_build_payload(rb_execution_context_t *ec, struct ractor_basket *b,
          * the basket as soon as it exists. */
         rb_ractor_courier_build_move(obj, &b->p.courier);
         b->type = type;
-        b->p.v = Qfalse;
     }
     else {
         VALUE v = ractor_prepare_payload(ec, obj, &type, &b->p.courier);
+        if (b->p.courier == NULL) {
+            b->has_courier = false;
+            b->p.v = v;
+        }
         b->type = type;
-        b->p.v = v;
     }
 }
 
@@ -1224,6 +1235,7 @@ ractor_basket_value(struct ractor_basket *b)
         }
         rb_ractor_courier_free(courier);
         b->p.courier = NULL;
+        b->has_courier = false;
         b->p.v = result;
         RB_GC_GUARD(result);
         break;
@@ -1232,6 +1244,7 @@ ractor_basket_value(struct ractor_basket *b)
         VM_ASSERT(0); // unreachable
     }
 
+    VM_ASSERT(!b->has_courier);
     VM_ASSERT(!RB_TYPE_P(b->p.v, T_NONE));
     return b->p.v;
 }
@@ -1241,7 +1254,7 @@ ractor_basket_accept(struct ractor_basket *b)
 {
     VALUE v = ractor_basket_value(b);
 
-    if (b->p.exception) {
+    if (b->exception) {
         VALUE err = ractor_make_remote_exception(v, b->sender);
         ractor_basket_free(b);
         rb_exc_raise(err);

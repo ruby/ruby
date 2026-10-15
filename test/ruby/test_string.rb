@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require '-test-/string'
 
 class TestString < Test::Unit::TestCase
   WIDE_ENCODINGS = [
@@ -4648,5 +4649,39 @@ class TestString2 < TestString
   def initialize(*args)
     super
     @cls = S2
+  end
+
+  def assert_capacity(capa, str, msg)
+    assert_equal capa, Bug::String.capacity(str), msg
+  end
+
+  def test_capacity_inflation
+    orig = ("\u{30AF}" * 5)
+    all_assertions_foreach(nil, Encoding::UTF_8, *WIDE_ENCODINGS) do |enc|
+      assert_capacity(200, S2.new(orig.encode(enc), encoding: "UTF-8", capacity: 200), enc.name)
+    end
+  end
+
+  def test_capacity_no_inflation
+    orig = "hello"
+    all_assertions_foreach(nil, Encoding::UTF_8, *WIDE_ENCODINGS) do |enc|
+      assert_capacity(100, S2.new(orig, encoding: enc, capacity: 100), enc.name)
+    end
+  end
+
+  def test_capacity_no_overflow_on_append
+    orig = ("\u{30AF}" * 5)
+    all_assertions_foreach(nil, *WIDE_ENCODINGS) do |enc|
+      encoded = orig.encode(enc)
+      size = encoded.bytesize
+
+      s = S2.new(encoded, encoding: "UTF-8", capacity: 200)
+      s << "x" * 191
+      assert_equal(size + 191, s.bytesize, enc.name)
+
+      s = S2.new(encoded, encoding: "UTF-8", capacity: 207)
+      s << "y" * 207
+      assert_equal(size + 207, s.bytesize, enc.name)
+    end
   end
 end

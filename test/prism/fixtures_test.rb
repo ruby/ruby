@@ -4,7 +4,7 @@ return if RUBY_VERSION < "3.2.0"
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   class FixturesTest < TestCase
     except = []
 

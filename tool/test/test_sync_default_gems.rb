@@ -425,6 +425,64 @@ module Test_SyncDefaultGems
     end
   end if /darwin|linux/ =~ RUBY_PLATFORM
 
+class TestPrismFixup < Test::Unit::TestCase
+  def test_rewrite_ruby_namespace
+    src = <<~RUBY
+      module Prism
+        class Compiler < ::Prism::Compiler; end
+        autoload :Visitor, "prism/visitor"
+        require "prism/serialize"
+        require_relative "prism/node"
+        Prism.parse(source) #: Prism::node
+        NotPrism::Prism
+      end
+    RUBY
+    expected = <<~RUBY
+      module Ruby::Prism
+        class Compiler < ::Ruby::Prism::Compiler; end
+        autoload :Visitor, "ruby/prism/visitor"
+        require "ruby/prism/serialize"
+        require_relative "prism/node"
+        Ruby::Prism.parse(source) #: Ruby::Prism::node
+        NotPrism::Prism
+      end
+    RUBY
+    assert_equal(expected, SyncDefaultGems.prism_rewrite_ruby(src))
+    assert_equal(%[require "ruby/prism"\n], SyncDefaultGems.prism_rewrite_ruby(%[require "prism"\n]))
+  end
+
+  def test_rewrite_ruby_is_idempotent
+    src = %[module Ruby::Prism\n  Ruby::Prism.parse(x)\nend\n]
+    assert_equal(src, SyncDefaultGems.prism_rewrite_ruby(src))
+  end
+
+  def test_rewrite_c_namespace
+    src = %[rb_cPrism = rb_define_module("Prism"); /* Prism::Scope */ rb_cPrismNode\n]
+    expected = %[rb_cPrism = rb_define_module_under(rb_define_module("Ruby"), "Prism"); /* Prism::Scope */ rb_cPrismNode\n]
+    assert_equal(expected, SyncDefaultGems.prism_rewrite_c(src))
+  end
+
+  def test_rewrite_erb_template
+    src = <<~ERB
+      module Prism
+        <%- nodes.each do |node| -%>
+        <%- if node.is_a?(Prism::Template::NodeField) -%>
+        class <%= node.name %> < Node; end #: Prism::node
+        <%- end -%>
+      end
+    ERB
+    expected = <<~ERB
+      module Ruby::Prism
+        <%- nodes.each do |node| -%>
+        <%- if node.is_a?(Ruby::Prism::Template::NodeField) -%>
+        class <%= node.name %> < Node; end #: Ruby::Prism::node
+        <%- end -%>
+      end
+    ERB
+    assert_equal(expected, SyncDefaultGems.prism_rewrite_ruby(src))
+  end
+end
+
   class TestUpdateDefaultGems < Test::Unit::TestCase
     include CaptureProcessOutput
 
