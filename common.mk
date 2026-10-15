@@ -20,8 +20,8 @@ mflags = $(MFLAGS)
 gnumake_recursive =
 sequential = $(gnumake:yes=-sequential)
 enable_shared = $(ENABLE_SHARED:no=)
-yes_git = $(WITH_GIT:no=)
-no_git = $(WITH_GIT:yes=)
+yes_git = $(HAVE_GIT:no=)
+no_git = $(HAVE_GIT:yes=)
 
 UNICODE_VERSION = 17.0.0
 UNICODE_EMOJI_VERSION_0 = $(UNICODE_VERSION)///
@@ -1360,7 +1360,7 @@ clean-build-tool:
 
 $(srcdir)/revision.h$(no_git:no=~disabled~): $(REVISION_H)
 
-REVISION_H_CMD = $(LASTREV) | $(IFCHANGE) --timestamp=.revision.time revision.h -
+REVISION_H_CMD = $(LASTREV) $(srcdir) | $(IFCHANGE) --empty --timestamp=.revision.time revision.h -
 
 $(REVISION_H)$(no_git:no=~disabled~):
 	$(Q) $(REVISION_H_CMD)

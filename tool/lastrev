@@ -60,8 +60,11 @@ shift $((OPTIND-1))
 gitdir="${1-.}" head="${2-HEAD}"
 
 branch=`${git} -C "${gitdir}" symbolic-ref --short "${head}" 2>/dev/null` || branch="$head"
-set `${git} -C "${gitdir}" log -1 --no-show-signature "--abbrev=${width}" \
-     "--date=format-local:%FT%TZ %Y %m %d" "--format=%h %H %${date_type}" "${head}" --`
+set _ `${git} -C "${gitdir}" log -1 --no-show-signature "--abbrev=${width}" \
+     "--date=format-local:%FT%TZ %Y %m %d" "--format=%h %H %${date_type}" "${head}" -- 2>/dev/null`
+shift
+
+[ -z ${1+set} ] && exit
 
 echo "#define RUBY_REVISION \"$1\""
 echo "#define RUBY_FULL_REVISION \"${2}\""
