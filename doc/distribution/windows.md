@@ -303,6 +303,27 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     nmake install
     ```
 
+### Building with GNU make
+
+`nmake` cannot run jobs in parallel. `win32\configure.bat --with-gnu-make` writes `GNUmakefile` instead of `Makefile`, so that you can build with `make -j`. This is experimental, and `nmake` stays the default.
+
+GNU make 4.4 or later built for native Windows is required. `win32\install-gnumake.cmd` downloads the GNU make release, verifies its SHA256, builds it with `cl`, and puts `make.exe` in `.gnumake` under the ruby source directory, or in the directory given as its argument.
+
+```batch
+C:
+cd \ruby
+win32\install-gnumake.cmd
+set PATH=C:\ruby\.gnumake;%PATH%
+win32\configure --prefix=/usr/local --with-opt-dir=C:/ruby/vcpkg_installed/x64-windows --with-gnu-make
+make -j16
+make check
+make install
+```
+
+Use `make` in place of `nmake` for the other targets in this document too, such as `make up`, `make prepare-vcpkg` and `make update-vcpkg`.
+
+The installed ruby also builds extension libraries with `make` found in `PATH`, not with `nmake`. Before installing gems with C extensions, copy `make.exe` from `.gnumake` to a directory in `PATH`, such as the `bin` directory of the install directory, since `make install` does not install it.
+
 ### Bugs
 
 You can **NOT** use a path name that contains any white space characters
