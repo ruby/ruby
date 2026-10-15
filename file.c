@@ -7524,14 +7524,15 @@ rb_stat_R(VALUE obj)
  *
  * ```ruby
  * filepath = '/tmp/t.tmp'
- * file = File.new(filepath, 'w+', 0o640)    # Create file with no world permissions.
+ * File.write(filepath, 'foo')               # Create file.
+ * File.chmod(0o000, filepath)               # Make file unreadable.
  * stat0 = File.stat(filepath)               # Take snapshot.
- * stat0.world_readable?         # => nil    # Snapshot has permissions.
- * File.chmod(0o644, filepath)               # Make world-readable.
+ * stat0.world_readable?         # => nil    # Snapshot shows not world-readable.
+ * File.chmod(0o644, filepath)               # Make file world-readable.
  * stat0.world_readable?         # => nil    # Snapshot not updated.
  * stat1 = File.stat(filepath)               # Take new snapshot.
- * stat1.world_readable?.to_s(8) # => "644"  # Snapshot has new permissions.
- * file.close; File.delete(filepath)         # Clean up.
+ * stat1.world_readable?.to_s(8) # => "644"  # Snapshot shows world-readable.
+ * File.delete(filepath)                     # Clean up.
  * stat1.world_readable?.to_s(8) # => "644"  # Snapshot not updated.
  * ```
  */
