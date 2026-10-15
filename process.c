@@ -1701,15 +1701,11 @@ after_fork_ruby(rb_pid_t pid)
 static void
 release_fork_lock_after_fork(rb_pid_t pid)
 {
-    if (
-#if defined(__FreeBSD__)
-        pid != 0 &&
-#endif
-        true) {
-        rb_thread_release_fork_lock();
-    }
     if (pid == 0) {
         rb_thread_reset_fork_lock();
+    }
+    else {
+        rb_thread_release_fork_lock();
     }
 }
 #endif
