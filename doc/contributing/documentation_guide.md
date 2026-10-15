@@ -563,6 +563,15 @@ method does and why you would want to use it.  Ideally, this
 is a single sentence, but for more complex methods it may require
 an entire paragraph.
 
+Consider mentioning the return value first,
+especially if there are associated conditionals:
+
+> "Returns <something> if <blah blah blah>; otherwise returns <something else>".
+
+Not:
+
+> "If <blah blah blah>, returns <something>; otherwise returns <something else>."
+
 For `Array#count`, the synopsis is:
 
 > Returns a count of specified elements.
