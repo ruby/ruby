@@ -477,6 +477,11 @@ endif
 uncommon.mk: $(srcdir)/common.mk $(common_mk_includes) $(srcdir)/win32/GNUmakefile.sub
 	$(file >$@)$(foreach mk,$(srcdir)/common.mk $(common_mk_includes),$(file >>$@,$(subst $(newline)!,$(newline)$(sharp)!,$(subst {$$(VPATH)},,$(subst {$$(srcdir)},,$(newline)$(file <$(mk)))))))
 
+# `up$(DOT_WAIT)::` in common.mk is not `up` here, so run after-update
+# in this make as defs/gmake.mk does.
+up:: $(DOT_WAIT) after-update
+after-update:: MINIRUBY = $(BASERUBY)
+
 VCPKG_DEFAULT_TRIPLET ?= $(MACHINE)-windows
 VCPKG_INSTALLED ?= $(srcdir)/vcpkg_installed/$(VCPKG_DEFAULT_TRIPLET)
 TRIPLET_OPTION = --triplet $(VCPKG_DEFAULT_TRIPLET)
