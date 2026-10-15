@@ -6845,6 +6845,8 @@ impl Function {
 
             // Compare static Symbols by identity instead of using CRuby's generic
             // lookup, which can call Ruby `hash` and `eql?` methods for other keys.
+            // TODO: Rewrite Hash#[] in Ruby using hashing and lookup primitives that ZJIT can specialize,
+            // including precomputing a known key's hash when the lookup cannot be folded.
             let mut lookup = StaticSymbolLookup { key, value: None, all_static_symbols: true };
             unsafe {
                 rb_hash_stlike_foreach(
