@@ -340,6 +340,25 @@ It restarts itself as administrator when not elevated. It also takes the build d
 C:\src\ruby\win32\firewall.cmd -delete D:\build\ruby
 ```
 
+If you build in a new worktree for each task, as coding agents often do, every worktree meets the dialog. A `post-checkout` hook in `.git/hooks` registers each worktree when `git worktree add` creates it, before its first build, and skips worktrees that already have the rules. The script elevates itself, so the hook runs without stopping when User Account Control is set to never notify.
+
+```sh
+#!/bin/sh
+top=$(git rev-parse --show-toplevel) || exit 0
+fw="$top/win32/firewall.cmd"
+[ -f "$fw" ] || exit 0
+dir=$(cygpath -w "$top")
+netsh advfirewall firewall show rule name="Ruby build directory $dir" >/dev/null 2>&1 && exit 0
+cmd //c "$(cygpath -w "$fw")" "$dir" >/dev/null 2>&1
+exit 0
+```
+
+Otherwise each new worktree asks for administrator privilege. To avoid that, register once from an elevated prompt a task that runs the script for every worktree with the highest privileges, and replace the `cmd` line of the hook with `schtasks //run //tn ruby-firewall >/dev/null 2>&1`. The task runs without asking.
+
+```batch
+schtasks /create /tn ruby-firewall /sc once /st 00:00 /rl highest /tr "cmd /c for /d %D in (C:\src\worktrees\*) do C:\src\ruby\win32\firewall.cmd %D"
+```
+
 
 ## Icons
 
