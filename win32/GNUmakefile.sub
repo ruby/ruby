@@ -463,6 +463,13 @@ uncommon.mk: $(srcdir)/common.mk $(common_mk_includes) $(srcdir)/win32/GNUmakefi
 
 VCPKG_DEFAULT_TRIPLET ?= $(MACHINE)-windows
 VCPKG_INSTALLED ?= $(srcdir)/vcpkg_installed/$(VCPKG_DEFAULT_TRIPLET)
+TRIPLET_OPTION = --triplet $(VCPKG_DEFAULT_TRIPLET)
+
+update-vcpkg::
+	@cd "$(call win,$(srcdir))" && set LC_TIME=C && vcpkg x-update-baseline $(TRIPLET_OPTION)
+
+install-vcpkg::
+	@cd "$(call win,$(srcdir))" && set LC_TIME=C && vcpkg install $(TRIPLET_OPTION)
 
 # mklink is a cmd builtin that GNU make does not know to pass to cmd.
 mklink = cmd /c mklink "$(call win,$(1))" "$(call win,$(2))"$(newline)
