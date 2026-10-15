@@ -10,8 +10,8 @@ workers = 4.times.map do |worker_id|
     GC.start(full_mark: false)
     {
       ractor: "worker-#{id}",
-      marking_time_ms: GC.stat(:marking_time, scope: :ractor),
-      sweeping_time_ms: GC.stat(:sweeping_time, scope: :ractor)
+      marking_time_ms: GC.stat(:marking_time),
+      sweeping_time_ms: GC.stat(:sweeping_time)
     }
   end
 end
@@ -20,11 +20,11 @@ workers.each { |worker| worker.send(:start) }
 workers.each { |worker| p worker.value }
 p({
   ractor: "main",
-  marking_time_ms: GC.stat(:marking_time, scope: :ractor),
-  sweeping_time_ms: GC.stat(:sweeping_time, scope: :ractor)
+  marking_time_ms: GC.stat(:marking_time),
+  sweeping_time_ms: GC.stat(:sweeping_time)
 })
 
 puts "process-wide GC statistics:"
-p GC.stat(scope: :global)
-puts "process marking time (ms): #{GC.stat(:marking_time, scope: :global)}"
-puts "process sweeping time (ms): #{GC.stat(:sweeping_time, scope: :global)}"
+p GC.stat(process: true)
+puts "process marking time (ms): #{GC.stat(:marking_time, process: true)}"
+puts "process sweeping time (ms): #{GC.stat(:sweeping_time, process: true)}"

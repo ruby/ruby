@@ -69,24 +69,29 @@ Note: We're only listing outstanding class updates.
 
 * GC
 
-    * `GC.stat` accepts `scope: :ractor` (the default), `scope: :local`
-      (a synonym for `:ractor`), and `scope: :global`.
-      With the default collector, the global scope reports cumulative collection
-      counts and measured marking/sweeping CPU time across Ractors, including
-      history from destroyed object spaces, without requesting a stop-the-world
-      snapshot. Unscoped `GC.stat`, `GC.count`, and `GC.total_time` retain their
-      current-Ractor behavior.
+    * `GC.stat` accepts a `process:` keyword. `GC.stat` and
+      `GC.stat(process: false)` report the current Ractor's object space.
+      With the default collector, `GC.stat(process: true)` reports cumulative
+      collection counts and measured marking/sweeping CPU time across Ractors,
+      including history from destroyed object spaces, without requesting a
+      stop-the-world snapshot. It also reports the `:page_pool_arenas`,
+      `:page_pool_arenas_freed`, `:page_pool_total_pages` and
+      `:page_pool_discarded_pages` keys, which the Ractor data does not
+      include. `GC.count` and `GC.total_time` retain their current-Ractor
+      behavior.
     * `GC.stat` reports a new key, `:global_gc_count`: the number of
-      stop-the-world global garbage collection cycles the current Ractor
-      initiated. Each global collection is attributed to exactly one Ractor,
-      so the values sum across Ractors. `GC.stat(:global_gc_count,
-      scope: :global)` reports the process total, including the counts of
-      terminated Ractors.
+      stop-the-world global garbage collection cycles that collected the
+      current Ractor's heap, whichever Ractor started them. The new key
+      `:global_gc_invocation_count` reports the global collections that the
+      current Ractor started. `GC.stat(:global_gc_count, process: true)`
+      reports the number of global collections in the process, including
+      those started by terminated Ractors.
     * A global garbage collection is not counted in `:major_gc_count`.
       `:count` equals `:minor_gc_count` plus `:major_gc_count` plus
-      `:global_gc_count` in both scopes. When another Ractor's object space
-      exists, including one left by a terminated Ractor that is not yet
-      absorbed, or one was absorbed since the last global collection,
+      `:global_gc_count` in both the Ractor and the process data. In the
+      process data each global collection counts once. When another Ractor's
+      object space exists, including one left by a terminated Ractor that is
+      not yet absorbed, or one was absorbed since the last global collection,
       `GC.start` runs a global collection by default, so it increments
       `:global_gc_count` rather than `:major_gc_count`; pass `global: false`
       for a local major collection.
