@@ -41,7 +41,7 @@ require 'socket'
 
 class IPAddr
   # The version string
-  VERSION = "1.2.9"
+  VERSION = "1.3.0"
 
   # 32 bit mask for IPv4
   IN4MASK = 0xffffffff
