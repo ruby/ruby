@@ -2531,8 +2531,7 @@ class Pathname    # * FileTest *
   #   world_readable? -> integer or nil
   #
   # Returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
-  # for the entry at the path in `self` if the entry exists and is readable by others,
-  # for the entry;
+  # for the entry at the path in `self` if the entry exists and is readable by others;
   # otherwise, returns `nil`:
   #
   # ```ruby
