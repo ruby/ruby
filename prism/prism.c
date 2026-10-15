@@ -20616,7 +20616,16 @@ parse_not(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
             }
         }
     } else {
-        receiver = parse_expression(parser, PM_BINDING_POWER_NOT, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
+        /* The operand of `not` may be a command call, except at the start of
+         * an endless method body, where it may be one only if the body may
+         * be: `def f = not foo 1` has a command body, so it is rejected where
+         * that is not accepted (`if def f = not foo 1; end`). A nested `not`
+         * is still at the start of the body, so the operand carries the
+         * endless method context on (`def f = not not foo 1`). */
+        uint8_t operand_flags = (flags & PM_PARSE_IN_ENDLESS_DEF)
+            ? (uint8_t) (flags & (PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_IN_ENDLESS_DEF))
+            : PM_PARSE_ACCEPTS_COMMAND_CALL;
+        receiver = parse_expression(parser, PM_BINDING_POWER_NOT, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | operand_flags), PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
     }
 
     return UP(pm_call_node_not_create(parser, receiver, &message, &arguments));
