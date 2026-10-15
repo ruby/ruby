@@ -11,3 +11,7 @@ foo(def f = x rescue y rescue y do end)
 baz def f = a rescue b rescue c { }
 
 a rescue def f = foo 1
+
+x = def f = 1 rescue z, y
+
+x = y = def f = foo(1) rescue z, w

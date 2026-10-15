@@ -12952,6 +12952,19 @@ expect1_opening(pm_parser_t *parser, pm_token_type_t type, pm_diagnostic_id_t di
  */
 #define PM_PARSE_ACCEPTS_STATEMENT ((uint8_t) 0x10)
 
+/**
+ * Indicates that an endless method definition may have a command call as its
+ * body, as in `def f = foo 1`. Such a definition is a command write, accepted
+ * as a statement (including the value of a statement-level rescue modifier)
+ * and as the value of a single-target write. Since Ruby 4.0 it is also
+ * accepted as the sole argument of a call, where other command writes such as
+ * `x = foo 1` are not. Expression positions such as conditional predicates and
+ * the operands of `not`, `!`, `and`, and `or` accept a command call but not a
+ * command write, so this is set alongside PM_PARSE_ACCEPTS_COMMAND_CALL only
+ * where both are accepted.
+ */
+#define PM_PARSE_ACCEPTS_COMMAND_DEF ((uint8_t) 0x20)
+
 static pm_node_t *
 parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth);
 
@@ -13708,7 +13721,7 @@ parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
     context_push(parser, context);
 
     while (true) {
-        pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, (uint16_t) (depth + 1));
+        pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, (uint16_t) (depth + 1));
         pm_statements_node_body_append(parser, statements, node, true);
 
         // If we're recovering from a syntax error, then we need to stop parsing
@@ -14321,7 +14334,17 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
             PRISM_FALLTHROUGH
             default: {
                 if (argument == NULL) {
-                    argument = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (!parsed_first_argument ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0u) | PM_PARSE_ACCEPTS_LABEL), PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
+                    /* The first argument may be a command call, and since Ruby
+                     * 4.0 also an endless method with a command body
+                     * (`private def f = foo 1`), either of which must then be
+                     * the sole argument. */
+                    uint8_t command_flags = 0;
+                    if (!parsed_first_argument) {
+                        command_flags = PM_PARSE_ACCEPTS_COMMAND_CALL;
+                        if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0) command_flags |= PM_PARSE_ACCEPTS_COMMAND_DEF;
+                    }
+
+                    argument = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | command_flags | PM_PARSE_ACCEPTS_LABEL), PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
                 }
 
                 bool contains_keywords = false;
@@ -18564,7 +18587,7 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
  * Parse a method definition expression (the `def` keyword).
  */
 static pm_node_t *
-parse_def(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
+parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_node_list_t current_block_exits = { 0 };
     pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
@@ -18814,22 +18837,9 @@ parse_def(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
         pm_do_loop_stack_push(parser, false);
         statements = UP(pm_statements_node_create(parser));
 
-        /* A command body (`def f = foo 1`) makes the definition a command
-         * assignment rather than an argument. The grammar accepts a command
-         * assignment as a statement (including the value of a statement-level
-         * rescue modifier) and as the right-hand side of an assignment, and
-         * since Ruby 4.0 also as the sole argument of a call, which is parsed
-         * at the defined? binding power. Expression positions such as
-         * conditional predicates, `case` subjects, and the operands of `not`,
-         * `!`, `and`, and `or` accept a command call but not a command
-         * assignment, so `if def f = foo 1; end` is rejected. */
-        bool accepts_command_assignment = (flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && (
-            binding_power == PM_BINDING_POWER_STATEMENT ||
-            (flags & PM_PARSE_ACCEPTS_STATEMENT) ||
-            binding_power == PM_BINDING_POWER_ASSIGNMENT ||
-            (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0 && binding_power == PM_BINDING_POWER_DEFINED)
-        );
-        uint8_t allow_flags = accepts_command_assignment ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0;
+        /* The body accepts a command call (`def f = foo 1`) only where the
+         * caller accepts an endless method with a command body. */
+        uint8_t allow_flags = (flags & PM_PARSE_ACCEPTS_COMMAND_DEF) ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0;
 
         /* Inside a def body, we push true onto the accepts_block_stack so that
          * `do` is lexed as PM_TOKEN_KEYWORD_DO (which can only start a block
@@ -18874,7 +18884,7 @@ parse_def(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
         pm_accepts_block_stack_pop(parser);
 
         /* A nested endless def whose body is a command call (e.g.,
-         * `def f = def g = foo bar`) is a command assignment and cannot appear
+         * `def f = def g = foo bar`) is a command write and cannot appear
          * as a def body. */
         if (PM_NODE_TYPE_P(statement, PM_DEF_NODE) && pm_command_call_value_p(parser, statement)) {
             PM_PARSER_ERR_NODE_FORMAT(parser, statement, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(parser->current.type));
@@ -19057,7 +19067,7 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
     /* Otherwise, we're going to parse the first statement in the list of
      * statements within the parentheses. */
     context_push(parser, PM_CONTEXT_PARENS);
-    pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, (uint16_t) (depth + 1));
+    pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, (uint16_t) (depth + 1));
     context_pop(parser);
 
     /* Determine if this statement is followed by a terminator. In the case of a
@@ -19170,7 +19180,7 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
 
     /* Parse each statement within the parentheses. */
     while (true) {
-        pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, (uint16_t) (depth + 1));
+        pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, (uint16_t) (depth + 1));
         pm_statements_node_body_append(parser, statements, node, true);
 
         /* If we're recovering from a syntax error, then we need to stop parsing
@@ -21012,7 +21022,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD_CLASS:
             return parse_class(parser, flags, depth);
         case PM_TOKEN_KEYWORD_DEF:
-            return parse_def(parser, binding_power, flags, depth);
+            return parse_def(parser, flags, depth);
         case PM_TOKEN_KEYWORD_DEFINED:
             return UP(parse_defined(parser, flags, depth));
         case PM_TOKEN_KEYWORD_END_UPCASE:
@@ -21155,6 +21165,20 @@ parse_rescue_modifier_terminator(pm_parser_t *parser, uint8_t flags, uint16_t de
 }
 
 /**
+ * An endless method whose body is a command call is a command write, which
+ * is a complete right-hand side: it cannot begin a multi-value right-hand side,
+ * nor stand as the first element of one when nested in another write
+ * (`x = y = def f = foo 1 rescue z, w`). A comma inside the body belongs to the
+ * body's command, so a comma after the value follows a rescue modifier value.
+ */
+static void
+parse_write_value_comma_check(pm_parser_t *parser, const pm_node_t *value) {
+    if (match1(parser, PM_TOKEN_COMMA) && PM_NODE_TYPE_P(value, PM_DEF_NODE) && pm_command_call_value_p(parser, value)) {
+        pm_parser_err_current(parser, PM_ERR_INVALID_COMMA);
+    }
+}
+
+/**
  * Parse a value that is going to be written to some kind of variable or method
  * call. We need to handle this separately because the rescue modifier is
  * permitted on the end of the these expressions, which is a deviation from its
@@ -21165,7 +21189,21 @@ parse_rescue_modifier_terminator(pm_parser_t *parser, uint8_t flags, uint16_t de
  */
 static pm_node_t *
 parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
-    pm_node_t *value = parse_value_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (previous_binding_power == PM_BINDING_POWER_ASSIGNMENT ? (flags & PM_PARSE_ACCEPTS_COMMAND_CALL) : (previous_binding_power < PM_BINDING_POWER_MATCH ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0))), diag_id, (uint16_t) (depth + 1));
+    /* Where an operator write accepts a command call it also accepts an
+     * endless method with a command body (`x += def f = foo 1`). */
+    uint8_t command_flags = (previous_binding_power == PM_BINDING_POWER_ASSIGNMENT)
+        ? (uint8_t) (flags & PM_PARSE_ACCEPTS_COMMAND_CALL)
+        : (previous_binding_power < PM_BINDING_POWER_MATCH ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0);
+    if (command_flags) command_flags |= PM_PARSE_ACCEPTS_COMMAND_DEF;
+
+    pm_node_t *value = parse_value_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | command_flags), diag_id, (uint16_t) (depth + 1));
+
+    /* An operator write never takes a multi-value right-hand side, so a comma
+     * after a statement-level one is already reported by the statement that
+     * contains it. */
+    if (previous_binding_power != PM_BINDING_POWER_STATEMENT && !(flags & PM_PARSE_ACCEPTS_STATEMENT)) {
+        parse_write_value_comma_check(parser, value);
+    }
 
     // Assignments whose value is a command call (e.g., a = b c) can only
     // be followed by modifiers (if/unless/while/until/rescue) and not by
@@ -21269,11 +21307,20 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
         ? (uint8_t) (flags & PM_PARSE_ACCEPTS_COMMAND_CALL)
         : ((previous_binding_power < PM_BINDING_POWER_MODIFIER || statement_level) ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0);
 
+    /* Where a single-target write accepts a command call it also accepts an
+     * endless method with a command body (`x = def f = foo 1`), but a
+     * multi-write accepts only the command call. */
+    if (command_call_flag && binding_power != PM_BINDING_POWER_MULTI_ASSIGNMENT + 1) {
+        command_call_flag |= PM_PARSE_ACCEPTS_COMMAND_DEF;
+    }
+
     pm_node_t *value = parse_starred_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | command_call_flag), diag_id, (uint16_t) (depth + 1));
     if (!permitted) pm_parser_err_node(parser, value, PM_ERR_UNEXPECTED_MULTI_WRITE);
 
     parse_assignment_value_local(parser, value);
     bool single_value = true;
+
+    parse_write_value_comma_check(parser, value);
 
     // Block calls (command call + do block, e.g., `foo bar do end`) cannot
     // be followed by a comma to form a multi-value RHS because each element
@@ -21376,7 +21423,7 @@ parse_rescue_modifier_value(pm_parser_t *parser, uint8_t flags, bool statement, 
             // splat right-hand side (`b = c, d` / `b = *c`); a comma _before_ an
             // `=`, or a parenthesized target list (`(b, c), d = 1`), instead
             // promotes to a multiple assignment target list below.
-            value = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, flags | PM_PARSE_ACCEPTS_STATEMENT, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+            value = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, flags | PM_PARSE_ACCEPTS_STATEMENT | PM_PARSE_ACCEPTS_COMMAND_DEF, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
             multiple = match1(parser, PM_TOKEN_COMMA) || PM_NODE_TYPE_P(value, PM_MULTI_TARGET_NODE);
         }
 
@@ -22725,7 +22772,7 @@ parse_expression_terminator(pm_parser_t *parser, pm_node_t *node) {
             return left > PM_BINDING_POWER_COMPOSITION && left < PM_BINDING_POWER_CALL && pm_block_call_p(node);
         case PM_DEF_NODE:
             // An endless method whose body is a command-style call (e.g.,
-            // `def f = foo bar`) is a command assignment and can only be
+            // `def f = foo bar`) is a command write and can only be
             // followed by modifiers.
             return left > PM_BINDING_POWER_MODIFIER && pm_command_call_value_p(parser, node);
         case PM_RESCUE_MODIFIER_NODE:
@@ -22880,7 +22927,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
                             cast->block != NULL && PM_NODE_TYPE_P(cast->block, PM_BLOCK_NODE)
                         )
                      ) {
-                        flags &= (uint8_t) ~PM_PARSE_ACCEPTS_COMMAND_CALL;
+                        flags &= (uint8_t) ~(PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF);
                     }
                     break;
                 }
@@ -22888,7 +22935,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
                 case PM_CONSTANT_PATH_NODE:
                     break;
                 default:
-                    flags &= (uint8_t) ~PM_PARSE_ACCEPTS_COMMAND_CALL;
+                    flags &= (uint8_t) ~(PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF);
                     break;
             }
         }
