@@ -1645,6 +1645,10 @@ ar_add_direct_i(st_data_t key, st_data_t value, st_data_t hash_value, st_data_t 
 {
     VALUE ret = (VALUE)arg;
     ar_insert_direct(ret, key, value, hash_value);
+    // ar_insert_direct can call #eql? and trigger a GC part way through the copy, which
+    // leaves ret old (or snapshotted) with the entries added so far.
+    RB_OBJ_WRITTEN(ret, Qundef, key);
+    RB_OBJ_WRITTEN(ret, Qundef, value);
     return ST_CONTINUE;
 }
 
