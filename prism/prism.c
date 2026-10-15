@@ -14418,6 +14418,14 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     break;
                 }
             }
+
+            /* An endless method whose body is a command call is a command
+             * assignment, which can only be the sole argument. A comma inside
+             * the body belongs to the body's command, so a comma here follows
+             * a rescue modifier value, as in `foo def f = bar 1 rescue z, y`. */
+            if (PM_NODE_TYPE_P(argument, PM_DEF_NODE) && pm_command_call_value_p(parser, argument)) {
+                pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
+            }
         } else {
             // If there is no comma at the end of the argument list then we're
             // done parsing arguments and can break out of this loop.
@@ -18806,14 +18814,22 @@ parse_def(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
         pm_do_loop_stack_push(parser, false);
         statements = UP(pm_statements_node_create(parser));
 
-        uint8_t allow_flags;
-        if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0) {
-            allow_flags = flags & PM_PARSE_ACCEPTS_COMMAND_CALL;
-        } else {
-            /* Allow `def foo = puts "Hello"` but not
-             * `private def foo = puts "Hello"` */
-            allow_flags = (binding_power == PM_BINDING_POWER_ASSIGNMENT || binding_power < PM_BINDING_POWER_COMPOSITION) ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0;
-        }
+        /* A command body (`def f = foo 1`) makes the definition a command
+         * assignment rather than an argument. The grammar accepts a command
+         * assignment as a statement (including the value of a statement-level
+         * rescue modifier) and as the right-hand side of an assignment, and
+         * since Ruby 4.0 also as the sole argument of a call, which is parsed
+         * at the defined? binding power. Expression positions such as
+         * conditional predicates, `case` subjects, and the operands of `not`,
+         * `!`, `and`, and `or` accept a command call but not a command
+         * assignment, so `if def f = foo 1; end` is rejected. */
+        bool accepts_command_assignment = (flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && (
+            binding_power == PM_BINDING_POWER_STATEMENT ||
+            (flags & PM_PARSE_ACCEPTS_STATEMENT) ||
+            binding_power == PM_BINDING_POWER_ASSIGNMENT ||
+            (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0 && binding_power == PM_BINDING_POWER_DEFINED)
+        );
+        uint8_t allow_flags = accepts_command_assignment ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0;
 
         /* Inside a def body, we push true onto the accepts_block_stack so that
          * `do` is lexed as PM_TOKEN_KEYWORD_DO (which can only start a block

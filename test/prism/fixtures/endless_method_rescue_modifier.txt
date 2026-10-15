@@ -9,3 +9,5 @@ bar(baz def f = a rescue z do end)
 foo(def f = x rescue y rescue y do end)
 
 baz def f = a rescue b rescue c { }
+
+a rescue def f = foo 1
