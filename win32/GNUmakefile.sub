@@ -458,6 +458,10 @@ DUMP_AST = dump_ast$(BUILD_EXEEXT)
 DUMP_AST_TARGET = $(DUMP_AST)
 endif
 
+# Pull before update-src in common.mk regenerates revision.h.
+update-src::
+	@cd "$(call win,$(srcdir))" && set LC_TIME=C && $(VCSUP)
+
 # common.mk is written in the dialect common to nmake and BSD make.
 # Drop `{$(VPATH)}` and `{$(srcdir)}`, and turn `!include` into comments,
 # with make functions so that BASERUBY is not needed.
