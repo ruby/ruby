@@ -1033,6 +1033,32 @@ class TestSocket < Test::Unit::TestCase
     RUBY
   end
 
+  def test_tcp_socket_resolves_only_local_host_family
+    opts = %w[-rsocket -W1]
+    assert_separately opts, <<~RUBY
+    begin
+      server = TCPServer.new("127.0.0.1", 0)
+      port = server.connect_address.ip_port
+      families = []
+
+      Addrinfo.define_singleton_method(:getaddrinfo) do |host, _, family, *_|
+        if host == "127.0.0.1"
+          [Addrinfo.tcp("127.0.0.1", 0)]
+        else
+          families << family
+          [Addrinfo.tcp("127.0.0.1", port)]
+        end
+      end
+
+      socket = Socket.tcp("localhost", port, "127.0.0.1")
+      assert_equal([Socket::AF_INET], families)
+    ensure
+      server&.close
+      socket&.close
+    end
+    RUBY
+  end
+
   def test_tcp_socket_v6_address_passed
     opts = %w[-rsocket -W1]
     assert_separately opts, <<~RUBY
