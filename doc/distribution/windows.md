@@ -325,6 +325,22 @@ nmake install-vcpkg # Install vcpkg from build directory
 ```
 
 
+## Windows Defender Firewall
+
+Some tests listen on all interfaces, and Windows Defender Firewall shows a security alert dialog when an executable at a path it has no rule for does so. If you keep the same build directory, run `win32\firewall.cmd` there once, and the dialog no longer interrupts the tests. It adds rules that block inbound connections to `ruby.exe` and `rubyw.exe` in that directory, so the tests are not exposed to other machines, while connections from the same machine still work.
+
+```batch
+cd /d D:\build\ruby
+C:\src\ruby\win32\firewall.cmd
+```
+
+It restarts itself as administrator when not elevated. It also takes the build directory as an argument. When you no longer need the rules, delete them with `-delete`.
+
+```batch
+C:\src\ruby\win32\firewall.cmd -delete D:\build\ruby
+```
+
+
 ## Icons
 
 Any icon files(`*.ico`) in the build directory, directories specified with
