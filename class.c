@@ -211,23 +211,23 @@ duplicate_classext_m_tbl_i(ID key, VALUE value, void *data)
     return ID_TABLE_CONTINUE;
 }
 
-static struct rb_id_table *
-duplicate_classext_m_tbl(struct rb_id_table *orig, VALUE klass, bool init_missing)
+/* Fills ext's m_tbl with a copy of orig.  The table is stored on ext before it is filled
+ * so the GC, which can run at any allocation here, always sees the entries through klass.
+ * For an ICLASS it only marks the m_tbl when ICLASS_IS_ORIGIN is set, so set that first. */
+static void
+duplicate_classext_m_tbl(rb_classext_t *ext, struct rb_id_table *orig, VALUE klass, bool init_missing)
 {
-    struct rb_id_table *tbl;
     if (!orig) {
-        if (init_missing)
-            return rb_id_table_create(0);
-        else
-            return NULL;
+        RCLASSEXT_M_TBL(ext) = init_missing ? rb_id_table_create(0) : NULL;
+        return;
     }
-    tbl = rb_id_table_create(rb_id_table_size(orig));
+    struct rb_id_table *tbl = rb_id_table_create(rb_id_table_size(orig));
+    RCLASSEXT_M_TBL(ext) = tbl;
     struct duplicate_id_tbl_data data = {
         .tbl = tbl,
         .klass = klass,
     };
     rb_id_table_foreach(orig, duplicate_classext_m_tbl_i, &data);
-    return tbl;
 }
 
 static rb_const_entry_t *
@@ -297,9 +297,12 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_b
 
     RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(src);
 
+    RCLASSEXT_ICLASS_IS_ORIGIN(ext) = RCLASSEXT_ICLASS_IS_ORIGIN(src);
+    RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) = RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(src);
+
     // See also: rb_include_class_new()
     if (RCLASSEXT_ICLASS_IS_ORIGIN(src) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(src)) {
-        RCLASSEXT_M_TBL(ext) = duplicate_classext_m_tbl(RCLASSEXT_M_TBL(src), iclass, true);
+        duplicate_classext_m_tbl(ext, RCLASSEXT_M_TBL(src), iclass, true);
     }
     else {
         RCLASSEXT_M_TBL(ext) = RCLASSEXT_M_TBL(mod_ext);
@@ -315,9 +318,6 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_b
     // Subclasses/back-pointers are only in the prime classext.
 
     RCLASSEXT_SET_ORIGIN(ext, iclass, RCLASSEXT_ORIGIN(src));
-    RCLASSEXT_ICLASS_IS_ORIGIN(ext) = RCLASSEXT_ICLASS_IS_ORIGIN(src);
-    RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) = RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(src);
-
     RCLASSEXT_SET_INCLUDER(ext, iclass, RCLASSEXT_INCLUDER(src));
 
     if (first_set) {
@@ -341,8 +341,8 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *bo
 
     RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(orig);
 
-    RCLASSEXT_M_TBL(ext) = duplicate_classext_m_tbl(RCLASSEXT_M_TBL(orig), klass, dup_iclass);
     RCLASSEXT_ICLASS_IS_ORIGIN(ext) = true;
+    duplicate_classext_m_tbl(ext, RCLASSEXT_M_TBL(orig), klass, dup_iclass);
     RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) = false;
 
     if (orig->fields_obj) {
