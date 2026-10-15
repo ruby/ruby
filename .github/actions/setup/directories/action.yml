@@ -167,6 +167,9 @@ runs:
     - if: inputs.makeup
       shell: bash
       working-directory: ${{ inputs.srcdir }}
+      env:
+        HAVE_GIT: yes
+        GIT: git
       run: |
         ruby tool/missing-baseruby.bat --verbose
         bash tool/gen-sources.bash ${{ case(inputs.makeup == 'true', 'up', inputs.makeup) }}
