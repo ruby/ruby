@@ -14149,6 +14149,27 @@ pm_command_call_value_p(const pm_parser_t *parser, const pm_node_t *node) {
 }
 
 /**
+ * Returns true if the given node is a command that can end before a comma
+ * without consuming it: a constant-path command with a brace block
+ * (`Foo::Bar { }`), or an endless method whose command body ends in a rescue
+ * modifier value (`def f = foo 1 rescue z`). Other commands take a following
+ * comma into their own arguments. A command can be neither one of several
+ * arguments nor one of several values of a write, so a comma after one of
+ * these is an error.
+ */
+static bool
+pm_command_before_comma_p(const pm_parser_t *parser, const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_CALL_NODE:
+            return pm_constant_path_command_call_p(parser, (const pm_call_node_t *) node);
+        case PM_DEF_NODE:
+            return pm_command_call_value_p(parser, node);
+        default:
+            return false;
+    }
+}
+
+/**
  * Returns true if the given node is a block call: a command
  * with a do-block, or any call chained (via `.`, `::`, `&.`) from such a node.
  * Block calls can only be followed by call chaining, composition (and/or), and
@@ -14442,11 +14463,9 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 }
             }
 
-            /* An endless method whose body is a command call is a command
-             * assignment, which can only be the sole argument. A comma inside
-             * the body belongs to the body's command, so a comma here follows
-             * a rescue modifier value, as in `foo def f = bar 1 rescue z, y`. */
-            if (PM_NODE_TYPE_P(argument, PM_DEF_NODE) && pm_command_call_value_p(parser, argument)) {
+            /* A command can only be the sole argument, as in
+             * `foo Foo::Bar { }, y` or `foo def f = bar 1 rescue z, y`. */
+            if (pm_command_before_comma_p(parser, argument)) {
                 pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
             }
         } else {
@@ -21174,15 +21193,13 @@ parse_rescue_modifier_terminator(pm_parser_t *parser, uint8_t flags, uint16_t de
 }
 
 /**
- * An endless method whose body is a command call is a command write, which
- * is a complete right-hand side: it cannot begin a multi-value right-hand side,
- * nor stand as the first element of one when nested in another write
- * (`x = y = def f = foo 1 rescue z, w`). A comma inside the body belongs to the
- * body's command, so a comma after the value follows a rescue modifier value.
+ * A command is a complete value of a write: it cannot begin a multi-value
+ * right-hand side (`x = Foo::Bar { }, y`), nor stand as the first element of
+ * one when nested in another write (`x = y = def f = foo 1 rescue z, w`).
  */
 static void
 parse_write_value_comma_check(pm_parser_t *parser, const pm_node_t *value) {
-    if (match1(parser, PM_TOKEN_COMMA) && PM_NODE_TYPE_P(value, PM_DEF_NODE) && pm_command_call_value_p(parser, value)) {
+    if (match1(parser, PM_TOKEN_COMMA) && pm_command_before_comma_p(parser, value)) {
         pm_parser_err_current(parser, PM_ERR_INVALID_COMMA);
     }
 }
