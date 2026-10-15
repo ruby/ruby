@@ -150,6 +150,13 @@ Note: We're only listing outstanding class updates.
     * `Proc#ruby2_keywords` is deprecated and will be removed in Ruby 4.4.
       [[Feature #22205]]
 
+* Ractor
+
+    * `Ractor::Port#receive`, `Ractor.receive` and `Ractor.select` accept a
+      `timeout:` keyword argument (in seconds) and return `nil` once it passes.
+      `timeout: 0` never blocks: it takes a message if one is already queued
+      and returns `nil` otherwise.  [[Feature #22255]]
+
 * Range
 
     * `Range#clamp` is added. It returns a new `Range` instance whose
@@ -670,6 +677,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22226]: https://bugs.ruby-lang.org/issues/22226
 [Feature #22232]: https://bugs.ruby-lang.org/issues/22232
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
+[Feature #22255]: https://bugs.ruby-lang.org/issues/22255
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
 [Feature #22309]: https://bugs.ruby-lang.org/issues/22309
 [Feature #22400]: https://bugs.ruby-lang.org/issues/22400
