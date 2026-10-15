@@ -1458,14 +1458,10 @@ rb_thread_release_fork_lock(void)
 void
 rb_thread_reset_fork_lock(void)
 {
-    int r;
-    if ((r = pthread_rwlock_destroy(&rb_thread_fork_rw_lock))) {
-        rb_bug_errno("pthread_rwlock_destroy", r);
-    }
-
-    if ((r = pthread_rwlock_init(&rb_thread_fork_rw_lock, NULL))) {
-        rb_bug_errno("pthread_rwlock_init", r);
-    }
+    // On macOS the child's copy still counts a thread waiting for this lock
+    // at fork: unlocking it leaves kernel state that later waiters hang on,
+    // and destroying or initializing it fails with EBUSY.
+    rb_thread_fork_rw_lock = (pthread_rwlock_t)PTHREAD_RWLOCK_INITIALIZER;
 }
 
 void *
