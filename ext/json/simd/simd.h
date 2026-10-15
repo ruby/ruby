@@ -143,7 +143,6 @@ ALWAYS_INLINE(static) int string_scan_simd_neon(const char **ptr, const char *en
 #define HAVE_SIMD 1
 #define HAVE_SIMD_SSE2 1
 
-#ifdef HAVE_CPUID_H
 #define FIND_SIMD_IMPLEMENTATION_DEFINED 1
 
 #if defined(__clang__) || defined(__GNUC__)
@@ -181,9 +180,6 @@ ALWAYS_INLINE(static) TARGET_SSE2 int string_scan_simd_sse2(const char **ptr, co
 
     return 0;
 }
-
-#include <cpuid.h>
-#endif /* HAVE_CPUID_H */
 
 static inline SIMD_Implementation find_simd_implementation(void)
 {
