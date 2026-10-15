@@ -13081,6 +13081,23 @@ token_begins_pattern_p(pm_token_type_t type) {
 }
 
 /**
+ * Returns true if the given token can begin an argument in an unparenthesized
+ * argument list. This is the set of tokens that can begin an expression plus
+ * the prefix operators that only appear in argument position — `&` (block
+ * arguments), `*` (splats), and `**` (keyword splats) — which are excluded
+ * from token_begins_expression_p.
+ */
+static PRISM_INLINE bool
+token_begins_argument_p(pm_token_type_t type) {
+    return (
+        token_begins_expression_p(type) ||
+        type == PM_TOKEN_UAMPERSAND ||
+        type == PM_TOKEN_USTAR ||
+        type == PM_TOKEN_USTAR_STAR
+    );
+}
+
+/**
  * Parse an expression with the given binding power that may be optionally
  * prefixed by the * operator.
  */
@@ -15678,7 +15695,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
 
             arguments->closing_loc = TOK2LOC(parser, &parser->previous);
         }
-    } else if ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR, PM_TOKEN_UAMPERSAND)) && !match1(parser, PM_TOKEN_BRACE_LEFT)) {
+    } else if ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && token_begins_argument_p(parser->current.type) && !match1(parser, PM_TOKEN_BRACE_LEFT)) {
         found |= true;
         parsed_command_args = true;
 
@@ -20085,7 +20102,7 @@ parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
         // can still be a method call if it is followed by arguments or
         // a block, so we need to check for that here.
         if (
-            ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR))) ||
+            ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && token_begins_argument_p(parser->current.type)) ||
             (pm_accepts_block_stack_p(parser) && match1(parser, PM_TOKEN_KEYWORD_DO)) ||
             match1(parser, PM_TOKEN_BRACE_LEFT)
         ) {
@@ -20790,7 +20807,7 @@ parse_constant(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t fl
      * fact a method call, not a constant read. */
     if (
         match1(parser, PM_TOKEN_PARENTHESIS_LEFT) ||
-        ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR))) ||
+        ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && token_begins_argument_p(parser->current.type)) ||
         (pm_accepts_block_stack_p(parser) && match1(parser, PM_TOKEN_KEYWORD_DO)) ||
         match1(parser, PM_TOKEN_BRACE_LEFT)
     ) {
@@ -21824,7 +21841,7 @@ parse_constant_path_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power
 
             if (
                 (parser->current.type == PM_TOKEN_PARENTHESIS_LEFT) ||
-                ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR)))
+                ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && token_begins_argument_p(parser->current.type))
             ) {
                 /* If we have a constant immediately following a '::' operator,
                  * then this can either be a constant path or a method call,
