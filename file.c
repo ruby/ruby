@@ -2421,9 +2421,9 @@ rb_file_readable_real_p(VALUE obj, VALUE fname)
  * call-seq:
  *   File.world_readable?(object) -> integer or nil
  *
- * If the the given `object` exists and is readable by others,
- * returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
- * for the entry;
+ * Returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+ * for the given `object`
+ * if it exists and is readable by others;
  * otherwise, returns `nil`:
  *
  * ```ruby
@@ -7517,22 +7517,22 @@ rb_stat_R(VALUE obj)
  * call-seq:
  *   world_readable? -> integer or nil
  *
- * If the entry in the [snapshot](rdoc-ref:File::Stat@Snapshot)
- * in `self` exists and is readable by others,
- * returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
- * for the entry;
+ * Returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+ * for the entry in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`
+ * if those permissions allow reading by others;
  * otherwise, returns `nil`:
  *
  * ```ruby
  * filepath = '/tmp/t.tmp'
- * File.write(filepath, 'foo')               # Create file.
+ * file = File.new(filepath, 'w+', 0o640)    # Create file with no world permissions.
  * stat0 = File.stat(filepath)               # Take snapshot.
- * stat0.world_readable?.to_s(8) # => "664"  # Snapshot shows world-readable.
- * File.chmod(0o000, filepath)               # Make unreadable.
- * stat0.world_readable?.to_s(8) # => "664"  # Snapshot not updated.
+ * stat0.world_readable?         # => nil    # Snapshot has permissions.
+ * File.chmod(0o644, filepath)               # Make world-readable.
+ * stat0.world_readable?         # => nil    # Snapshot not updated.
  * stat1 = File.stat(filepath)               # Take new snapshot.
- * stat1.world_readable?         # => nil    # Snapshot shows not world-readable.
- * File.delete(filepath)                     # Clean up.
+ * stat1.world_readable?.to_s(8) # => "644"  # Snapshot has new permissions.
+ * file.close; File.delete(filepath)         # Clean up.
+ * stat1.world_readable?.to_s(8) # => "644"  # Snapshot not updated.
  * ```
  */
 

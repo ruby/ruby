@@ -2530,8 +2530,8 @@ class Pathname    # * FileTest *
   # call-seq:
   #   world_readable? -> integer or nil
   #
-  # If the entry at the path in `self` exists and is readable by others,
-  # returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+  # Returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+  # for the entry at the path in `self` if the entry exists and is readable by others,
   # for the entry;
   # otherwise, returns `nil`:
   #
