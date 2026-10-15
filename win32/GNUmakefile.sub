@@ -462,6 +462,10 @@ endif
 update-src::
 	@cd "$(call win,$(srcdir))" && set LC_TIME=C && $(VCSUP)
 
+# update-gems in common.mk reads gems/bundled_gems when it runs, so
+# download after pulling.
+.NOTPARALLEL: update-remote
+
 # common.mk is written in the dialect common to nmake and BSD make.
 # Drop `{$(VPATH)}` and `{$(srcdir)}`, and turn `!include` into comments,
 # with make functions so that BASERUBY is not needed.
