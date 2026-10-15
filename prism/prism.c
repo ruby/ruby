@@ -7420,8 +7420,7 @@ pm_do_loop_stack_p(pm_parser_t *parser) {
  * lexed: the do-loop stack (so a `do` inside is not read as a `while`/`until`
  * loop body) and the accepts-block stack (so a `do` inside is accepted as a
  * block rather than binding to an enclosing command). The matching close pops
- * both. This mirrors parse.y's paired `COND_PUSH(0); CMDARG_PUSH(0)`. Keep the
- * following in mind before touching either stack:
+ * both. Keep the following in mind before touching either stack:
  *
  * - The LEXER owns the frame for delimiter-bound stuff. Every token that opens
  *   a matched pair calls this on the open and `pm_enclosure_frame_pop` on the
@@ -7429,14 +7428,20 @@ pm_do_loop_stack_p(pm_parser_t *parser) {
  *   `parser_lex` and the `#{` case in `lex_interpolation`; the pop sites are
  *   the matching `)`, `]`, `}` (including `}` as `EMBEXPR_END`).
  * - The PARSER owns the frame for keyword-bounded blocks, where there is no
- *   delimiter token to hang it on: the `do`/`end` forms in `parse_block` and
- *   the lambda push `accepts_block` directly (and pop before consuming `end`).
+ *   delimiter token to hang it on. The `-> do end` lambda body pushes the full
+ *   frame through this helper: the lexer produces the lambda's `do` before
+ *   consulting the do-loop stack, so the body can open inside a loop condition
+ *   and must reset it. The `do`/`end` forms in `parse_block` push only
+ *   `accepts_block`: the lexer produces a block's `do` only when the do-loop
+ *   stack is already false, so another false frame would change nothing. Both
+ *   pop before consuming `end`.
  * - The `parse_arguments_list` command-args branch juggles ONLY `accepts_block`
  *   (never through this helper), because the lexer has pushed a delimiter frame
  *   one token early and the command-args frame must be threaded beneath it. Its
  *   match lookahead sets must stay in sync with the lexer push sites above.
- *   This matches parse.y, whose `command_args` rule juggles CMDARG but not
- *   COND.
+ *   Command arguments change which call a `do` block binds to, not whether a
+ *   `do` closes a loop condition (`while foo bar do ... end` still loops), so
+ *   the do-loop stack is left alone.
  */
 static PRISM_INLINE void
 pm_enclosure_frame_push(pm_parser_t *parser) {
@@ -8637,10 +8642,8 @@ lex_identifier(pm_parser_t *parser, bool previous_command_start) {
                     /* In FNAME position (a symbol like `:do` or a method name
                      * like `def do`), `do` is a plain name rather than a
                      * block, loop, or lambda opener, so none of the
-                     * discrimination below applies. This mirrors parse.y,
-                     * whose EXPR_FNAME early-return precedes all of the
-                     * keyword_do special-casing (and never touches
-                     * lpar_beg). */
+                     * discrimination below applies and the lambda nesting is
+                     * left untouched. */
                     if (previous_lex_state & PM_LEX_STATE_FNAME) {
                         return PM_TOKEN_KEYWORD_DO;
                     }
@@ -8649,15 +8652,12 @@ lex_identifier(pm_parser_t *parser, bool previous_command_start) {
                         // delimiter opened since `->`), a `do` opens the lambda
                         // body. This is a distinct token so that a command in a
                         // parameter default cannot consume it as its own block
-                        // (`-> a = foo do end` is `->(a = foo) do end`). It
-                        // mirrors CRuby's keyword_do_LAMBDA.
+                        // (`-> a = foo do end` is `->(a = foo) do end`).
                         //
                         // Clear the nesting so that no token within the
                         // `do`/`end` body is considered to be at the beginning
                         // of a lambda; the parser restores the enclosing value
-                        // once the lambda has been fully parsed. This mirrors
-                        // parse.y setting `p->lex.lpar_beg = -1` when lexing
-                        // keyword_do_LAMBDA.
+                        // once the lambda has been fully parsed.
                         parser->lambda_enclosure_nesting = -1;
                         return PM_TOKEN_KEYWORD_DO_LAMBDA;
                     }
@@ -19670,17 +19670,17 @@ parse_lambda(pm_parser_t *parser, uint16_t depth) {
         /* Restore the enclosing lambda's nesting now that the body has been
          * parsed, so that the token following the closing `}` is lexed in the
          * enclosing context. During the body the nesting held this lambda's own
-         * level, which every token inside the braces sits above. This mirrors
-         * parse.y restoring `p->lex.lpar_beg` after `lambda_body`. */
+         * level, which every token inside the braces sits above. */
         parser->lambda_enclosure_nesting = previous_lambda_enclosure_nesting;
         expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_LAMBDA_TERM_BRACE, &opening);
     } else {
-        /* A `-> { }` body is delimited by `{`/`}`, whose block-accepting frame
-         * the lexer manages. A `-> do end` body is delimited by keywords, so
-         * push the frame here and pop it before `end`. The push must precede
-         * consuming the `do`, which lexes the first token of the body; this
-         * matches parse.y's CMDARG_PUSH(0) before `lambda_body`. */
-        pm_accepts_block_stack_push(parser, true);
+        /* A `-> { }` body is delimited by `{`/`}`, whose enclosure frame the
+         * lexer manages. A `-> do end` body is delimited by keywords, so push
+         * the frame here and pop it before `end`. The frame isolates the body
+         * from an enclosing `while`/`until`/`for` condition, so a `do` inside
+         * it opens a block rather than the loop body. The push must precede
+         * consuming the `do`, which lexes the first token of the body. */
+        pm_enclosure_frame_push(parser);
         expect1(parser, PM_TOKEN_KEYWORD_DO_LAMBDA, PM_ERR_LAMBDA_OPEN);
         opening = parser->previous;
 
@@ -19701,7 +19701,7 @@ parse_lambda(pm_parser_t *parser, uint16_t depth) {
             parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false, false);
         }
 
-        pm_accepts_block_stack_pop(parser);
+        pm_enclosure_frame_pop(parser);
 
         /* As with the brace branch above, restore the nesting before consuming
          * the closing `end`, which lexes the token that follows it. */
