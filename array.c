@@ -2190,46 +2190,42 @@ rb_ary_rfind(int argc, VALUE *argv, VALUE ary)
  * Two Fixnums, two flonums or two static Symbols are equal only if they
  * are the identical VALUE, unless #== of the class is redefined, and
  * rb_equal() compares them so without calling the method.  When one of
- * these is searched for, the elements of the same kind are compared as
- * VALUEs by the functions below, instead of calling rb_equal() for each.
+ * these is searched for, the search starts on a fast path that compares
+ * the elements as VALUEs, on the assumption that they are all of the
+ * same kind.  The fast path ends at the first element that is not, and
+ * the search goes on from there with rb_equal() as before.
  */
 struct ary_scan {
     VALUE mask, tag; /* (e & mask) == tag if e is of the kind */
-    int redefined_flag; /* of the class of the kind */
 };
 
 /* The elements are examined this many at a time, without a branch each. */
 #define ARY_SCAN_BLOCK 8
 
-/* Whether +e+ is of the kind, and is equal only to the identical VALUE. */
-#define ARY_SCAN_TARGET_P(scan, e) \
-    ((((e) & (scan)->mask) == (scan)->tag) && \
-     BASIC_OP_UNREDEFINED_P(BOP_EQ, (scan)->redefined_flag))
-
-static void
+/*
+ * Returns whether the fast path can be taken to search for +item+, and
+ * if so, sets up +scan+ for it.  No Ruby code runs on the fast path, so
+ * #== cannot be redefined while it is taken.
+ */
+static bool
 ary_scan_init(struct ary_scan *scan, VALUE item)
 {
     if (FIXNUM_P(item)) {
         scan->mask = RUBY_FIXNUM_FLAG;
         scan->tag = RUBY_FIXNUM_FLAG;
-        scan->redefined_flag = INTEGER_REDEFINED_OP_FLAG;
+        return BASIC_OP_UNREDEFINED_P(BOP_EQ, INTEGER_REDEFINED_OP_FLAG);
     }
-    else if (FLONUM_P(item)) {
+    if (FLONUM_P(item)) {
         scan->mask = RUBY_FLONUM_MASK;
         scan->tag = RUBY_FLONUM_FLAG;
-        scan->redefined_flag = FLOAT_REDEFINED_OP_FLAG;
+        return BASIC_OP_UNREDEFINED_P(BOP_EQ, FLOAT_REDEFINED_OP_FLAG);
     }
-    else if (STATIC_SYM_P(item)) {
+    if (STATIC_SYM_P(item)) {
         scan->mask = ~(~(VALUE)0 << RUBY_SPECIAL_SHIFT);
         scan->tag = RUBY_SYMBOL_FLAG;
-        scan->redefined_flag = SYMBOL_REDEFINED_OP_FLAG;
+        return BASIC_OP_UNREDEFINED_P(BOP_EQ, SYMBOL_REDEFINED_OP_FLAG);
     }
-    else {
-        /* no element is of the kind */
-        scan->mask = 0;
-        scan->tag = 1;
-        scan->redefined_flag = 0;
-    }
+    return false;
 }
 
 /*
@@ -2322,19 +2318,15 @@ static rb_len_t
 ary_index_of(VALUE ary, VALUE item)
 {
     struct ary_scan scan;
-    rb_len_t i;
+    rb_len_t i = 0;
 
-    ary_scan_init(&scan, item);
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-        VALUE e = RARRAY_AREF(ary, i);
-        if (ARY_SCAN_TARGET_P(&scan, e)) {
-            if (e == item) return i;
-            i = ary_scan_forward(&scan, RARRAY_CONST_PTR(ary), i + 1,
-                                 RARRAY_LEN(ary), item);
-            if (i >= RARRAY_LEN(ary)) break;
-            e = RARRAY_AREF(ary, i);
-        }
-        if (rb_equal(e, item)) {
+    if (ary_scan_init(&scan, item)) {
+        i = ary_scan_forward(&scan, RARRAY_CONST_PTR(ary), 0,
+                             RARRAY_LEN(ary), item);
+        if (i < RARRAY_LEN(ary) && RARRAY_AREF(ary, i) == item) return i;
+    }
+    for (; i<RARRAY_LEN(ary); i++) {
+        if (rb_equal(RARRAY_AREF(ary, i), item)) {
             return i;
         }
     }
@@ -2448,15 +2440,13 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
     val = argv[0];
     if (rb_block_given_p())
         rb_warn("given block not used");
-    ary_scan_init(&scan, val);
+    if (ary_scan_init(&scan, val)) {
+        i = ary_scan_backward(&scan, RARRAY_CONST_PTR(ary), i - 1, val);
+        if (i >= 0 && RARRAY_AREF(ary, i) == val) return LEN2NUM(i);
+        i++; /* resume from the element the scan stopped at */
+    }
     while (i--) {
         VALUE e = RARRAY_AREF(ary, i);
-        if (ARY_SCAN_TARGET_P(&scan, e)) {
-            if (e == val) return LEN2NUM(i);
-            i = ary_scan_backward(&scan, RARRAY_CONST_PTR(ary), i - 1, val);
-            if (i < 0) break;
-            e = RARRAY_AREF(ary, i);
-        }
         if (rb_equal(e, val)) {
             return LEN2NUM(i);
         }
@@ -6867,16 +6857,13 @@ rb_ary_count(int argc, VALUE *argv, VALUE ary)
         if (rb_block_given_p()) {
             rb_warn("given block not used");
         }
-        ary_scan_init(&scan, obj);
-        for (i = 0; i < RARRAY_LEN(ary); i++) {
-            VALUE e = RARRAY_AREF(ary, i);
-            if (ARY_SCAN_TARGET_P(&scan, e)) {
-                i = ary_scan_count(&scan, RARRAY_CONST_PTR(ary), i,
-                                   RARRAY_LEN(ary), obj, &n);
-                if (i >= RARRAY_LEN(ary)) break;
-                e = RARRAY_AREF(ary, i);
-            }
-            if (rb_equal(e, obj)) n++;
+        i = 0;
+        if (ary_scan_init(&scan, obj)) {
+            i = ary_scan_count(&scan, RARRAY_CONST_PTR(ary), 0,
+                               RARRAY_LEN(ary), obj, &n);
+        }
+        for (; i < RARRAY_LEN(ary); i++) {
+            if (rb_equal(RARRAY_AREF(ary, i), obj)) n++;
         }
     }
 
