@@ -889,7 +889,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::BreakPoint => no_output!(asm.breakpoint()),
         Insn::Unreachable => no_output!(asm.abort()),
         &Insn::HashDup { val, state } => { gen_hash_dup(jit, asm, function, val, opnd!(val), &function.frame_state(state)) },
-        &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, function, opnd!(hash), opnd!(key), &function.frame_state(state)) },
+        &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
         &Insn::HashAset { hash, key, val, state } => { no_output!(gen_hash_aset(jit, asm, function, opnd!(hash), opnd!(key), opnd!(val), &function.frame_state(state))) },
         &Insn::ArrayPush { array, val, state } => { no_output!(gen_array_push(asm, opnd!(array), opnd!(val), &function.frame_state(state))) },
         &Insn::ToNewArray { val, state } => { gen_to_new_array(jit, asm, function, opnd!(val), &function.frame_state(state)) },
@@ -1489,9 +1489,84 @@ fn gen_hash_dup(
     asm_ccall!(asm, rb_hash_resurrect, val)
 }
 
-fn gen_hash_aref(jit: &mut JITState, asm: &mut Assembler, function: &Function, hash: Opnd, key: Opnd, state: &FrameState) -> lir::Opnd {
+fn gen_hash_aref(jit: &mut JITState, asm: &mut Assembler, function: &Function, hash: Opnd, key: Opnd, key_type: Type, state: &FrameState) -> lir::Opnd {
+    // Inline the embedded ar_table probe when the key is a static symbol or a
+    // fixnum: their ar_equal is identity, so a plain VALUE compare matches. Misses,
+    // st_table hashes, and other key types fall through to rb_hash_aref (which also
+    // applies the default value / default proc), so the probe never side-exits.
+    if key_type.is_subtype(types::StaticSymbol) || key_type.is_subtype(types::Fixnum) {
+        return gen_hash_aref_ar_probe(jit, asm, function, hash, key, state);
+    }
     gen_prepare_non_leaf_call(jit, asm, function, state);
     asm_ccall!(asm, rb_hash_aref, hash, key)
+}
+
+/// Inline `hash[key]` for a small ar-table hash and a symbol/fixnum key: guard
+/// out st_table hashes, then scan the embedded ar_table pairs up to the runtime
+/// bound comparing keys by identity. A hit returns the value; st_table, an empty
+/// span, and misses fall back to rb_hash_aref. The pairs beyond the bound may be
+/// uninitialized, so the scan must stop at the bound rather than the max size.
+fn gen_hash_aref_ar_probe(jit: &mut JITState, asm: &mut Assembler, function: &Function, hash: Opnd, key: Opnd, state: &FrameState) -> lir::Opnd {
+    // An ar_table pair is a key VALUE followed by a value VALUE. The table's
+    // capacity is per object (it can be smaller than RUBY_RHASH_AR_TABLE_MAX_SIZE),
+    // but the bound never exceeds it, so stopping at the bound keeps every load
+    // inside the object.
+    let (pairs_off, pair_size, max_size) =
+        (RUBY_OFFSET_RHASH_AR_PAIRS as i32, 2 * SIZEOF_VALUE_I32, RUBY_RHASH_AR_TABLE_MAX_SIZE as i32);
+    let st_flag = RHASH_ST_TABLE_FLAG as u64;
+    let bound_shift = RHASH_AR_TABLE_BOUND_SHIFT as u64;
+    let bound_mask = (RHASH_AR_TABLE_BOUND_MASK as u64) >> bound_shift;
+
+    // The slow path calls rb_hash_aref, which may run a default proc (Ruby code),
+    // so sync PC/SP once up front; both paths then agree on the frame.
+    gen_prepare_non_leaf_call(jit, asm, function, state);
+
+    // Materialize into registers: `hash` is used as a memory base, which must be a
+    // register -- a constant receiver (e.g. `CONST_HASH[:sym]`) arrives as an
+    // Opnd::Value and would panic in Opnd::mem. `key` is likewise materialized so a
+    // wide Value immediate isn't used directly as a cmp operand.
+    let hash = asm.load(hash);
+    let key = asm.load(key);
+
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let slow_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let result_edge = |v: Opnd| Target::Block(Box::new(lir::BranchEdge { target: result_block, args: vec![v] }));
+    let slow_edge = || Target::Block(Box::new(lir::BranchEdge { target: slow_block, args: vec![] }));
+
+    asm_comment!(asm, "inline Hash#[] ar_table probe");
+    let flags = asm.load(Opnd::mem(64, hash, RUBY_OFFSET_RBASIC_FLAGS));
+    asm.test(flags, Opnd::UImm(st_flag));
+    asm.jnz(jit, slow_edge());
+    let shifted = asm.rshift(flags, Opnd::UImm(bound_shift));
+    let bound = asm.and(shifted, Opnd::UImm(bound_mask));
+    let pairs_base = asm.add(hash, Opnd::UImm(pairs_off as u64));
+    for i in 0..max_size {
+        // Stop once slot i is past the occupied+tombstone span (bound <= i): a miss.
+        asm.cmp(bound, Opnd::UImm((i + 1) as u64));
+        asm.jb(jit, slow_edge());
+        let key_i = asm.load(Opnd::mem(64, pairs_base, i * pair_size));
+        let val_i = asm.load(Opnd::mem(64, pairs_base, i * pair_size + SIZEOF_VALUE_I32));
+        asm.cmp(key_i, key);
+        asm.je(jit, result_edge(val_i));
+    }
+    asm.jmp(slow_edge());
+
+    // Slow path: rb_hash_aref handles st_table, misses, and the default value/proc.
+    asm.set_current_block(slow_block);
+    let slow_label = jit.get_label(asm, slow_block, hir_block_id);
+    asm.write_label(slow_label);
+    let slow_val = asm_ccall!(asm, rb_hash_aref, hash, key);
+    asm.jmp(result_edge(slow_val));
+
+    // Result block: the looked-up (or fallback) value arrives as a block param.
+    asm.set_current_block(result_block);
+    let label = jit.get_label(asm, result_block, hir_block_id);
+    asm.write_label(label);
+    let param = asm.new_block_param(VALUE_BITS);
+    asm.current_block().add_parameter(param);
+    param
 }
 
 fn gen_hash_aset(jit: &mut JITState, asm: &mut Assembler, function: &Function, hash: Opnd, key: Opnd, val: Opnd, state: &FrameState) {
