@@ -5668,16 +5668,15 @@ rb_ary_includes(VALUE ary, VALUE item)
 }
 
 /*
- * Returns whether +item+ is eql? only to itself.  A Fixnum, a static
- * Symbol, nil, true and false are, unless #eql? of the class is
- * redefined.  A flonum is not, as 0.0.eql?(-0.0) and -0.0 is not a
- * flonum.
+ * Returns whether +item+ is eql? only to itself.  A Fixnum, a Symbol,
+ * nil, true and false are, unless #eql? of the class is redefined.  A
+ * flonum is not, as 0.0.eql?(-0.0) and -0.0 is not a flonum.
  */
 static bool
 eql_identical_only_p(VALUE item)
 {
     if (FIXNUM_P(item)) return BASIC_OP_UNREDEFINED_P(BOP_EQL, INTEGER_REDEFINED_OP_FLAG);
-    if (STATIC_SYM_P(item)) return BASIC_OP_UNREDEFINED_P(BOP_EQL, SYMBOL_REDEFINED_OP_FLAG);
+    if (SYMBOL_P(item)) return BASIC_OP_UNREDEFINED_P(BOP_EQL, SYMBOL_REDEFINED_OP_FLAG);
     if (NIL_P(item)) return BASIC_OP_UNREDEFINED_P(BOP_EQL, NIL_REDEFINED_OP_FLAG);
     if (item == Qtrue) return BASIC_OP_UNREDEFINED_P(BOP_EQL, TRUE_REDEFINED_OP_FLAG);
     if (item == Qfalse) return BASIC_OP_UNREDEFINED_P(BOP_EQL, FALSE_REDEFINED_OP_FLAG);
@@ -5710,7 +5709,7 @@ rb_ary_includes_by_eql(VALUE ary, VALUE item)
     rb_len_t i;
     VALUE e;
 
-    if (SPECIAL_CONST_P(item)) {
+    if (SPECIAL_CONST_P(item) || UNLIKELY(DYNAMIC_SYM_P(item))) {
         VALUE found = ary_includes_identical(ary, item);
         if (!UNDEF_P(found)) return found;
     }
