@@ -1250,6 +1250,31 @@ impl Assembler {
                         _ => unreachable!("unsupported ccall fptr: {fptr:?}")
                     }
                 },
+                Insn::Call(target) => {
+                    match *target {
+                        Target::CodePtr(dst_ptr) => {
+                            call_ptr(cb, RAX, dst_ptr.raw_ptr(cb));
+                        }
+                        Target::Label(label) => {
+                            call_label(cb, label);
+                        }
+                        Target::Block(_) | Target::SideExit(_) => {
+                            unreachable!("Call target should be resolved before emission")
+                        }
+                    }
+                },
+                Insn::EmbedU64(value) => {
+                    cb.write_bytes(&value.to_le_bytes());
+                },
+                Insn::InstallJITFrameFromCallData => {
+                    pop(cb, SCRATCH0_OPND.into());
+                    mov(cb, SCRATCH0_OPND.into(), mem_opnd(64, SCRATCH0_OPND.into(), 0));
+                    mov(cb, SCRATCH1_OPND.into(), Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN).into());
+                    mov(cb, RAX, mem_opnd(64, SCRATCH1_OPND.into(), -SIZEOF_VALUE_I32));
+                    mov(cb, RAX, mem_opnd(64, RAX, std::mem::offset_of!(zjit_jit_frame, iseq) as i32));
+                    mov(cb, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ).into(), RAX);
+                    mov(cb, mem_opnd(64, SCRATCH1_OPND.into(), -SIZEOF_VALUE_I32), SCRATCH0_OPND.into());
+                },
 
                 Insn::CRet(opnd) => {
                     // TODO: bias allocation towards return register
@@ -1776,6 +1801,7 @@ mod tests {
                 stack_needs_fixnum_box: vec![],
                 locals_needs_fixnum_box: vec![],
                 iseq: std::ptr::null(),
+                frame_depth: 0,
                 stack_map: None,
                 recompile: None,
                 materialize: None,
@@ -2111,6 +2137,20 @@ mod tests {
 
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: add r13, 0x40");
         assert_snapshot!(cb.hexdump(), @"4983c540");
+    }
+
+    #[test]
+    fn test_call_with_inline_jit_frame_data() {
+        let (mut asm, mut cb) = setup_asm();
+        let label = asm.new_label("descriptor");
+        asm.call(label.clone());
+        asm.embed_u64(0x0123_4567_89ab_cdef);
+        asm.write_label(label);
+        asm.install_jit_frame_from_call_data();
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        let hex = cb.hexdump();
+        assert_eq!(&hex[10..26], "efcdab8967452301", "inline data must immediately follow CALL rel32");
     }
 
     #[test]

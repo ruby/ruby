@@ -18,7 +18,8 @@ typedef struct zjit_jit_frame {
     // NULL for C frames (they don't have a Ruby PC).
     const VALUE *pc;
     // The ISEQ this frame belongs to. Marked via rb_execution_context_mark_ctx.
-    // NULL for C frames.
+    // NULL for C frames and side-exit descriptors whose shared epilogue
+    // publishes cfp->_iseq before materialization.
     const rb_iseq_t *iseq;
     // Whether to materialize block_code when this frame is materialized.
     // True when the ISEQ doesn't contain send/invokesuper/invokeblock
@@ -217,7 +218,13 @@ static inline const rb_iseq_t*
 CFP_ISEQ(const rb_control_frame_t *cfp)
 {
     if (CFP_ZJIT_FRAME_P(cfp)) {
-        return CFP_ZJIT_FRAME(cfp)->iseq;
+        const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
+        // A side-exit descriptor has a PC but no ISEQ: the exit published
+        // cfp->_iseq before installing it, so fall through to that slot.
+        // C frames have neither.
+        if (jit_frame->iseq || !jit_frame->pc) {
+            return jit_frame->iseq;
+        }
     }
     return cfp->_iseq;
 }

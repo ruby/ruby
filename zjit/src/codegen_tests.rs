@@ -248,9 +248,8 @@ fn test_recompile_exit_waits_for_exit_budget() {
 }
 
 #[test]
-fn test_shares_side_exit_epilogues() {
-    // Several fixnum guards of one method exit with distinct saved state but the same
-    // frame ISEQ store and recompile callback, so they share one epilogue.
+fn test_uses_descriptor_side_exits() {
+    // Guards whose exits need no boxing restore the frame from a descriptor.
     set_call_threshold(2);
     eval("
         def shared_exit_epilogue_sample(a, b, c, d)
@@ -264,15 +263,13 @@ fn test_shares_side_exit_epilogues() {
     ");
 
     let counters = crate::state::ZJITState::get_counters();
-    let epilogues_before = counters.compiled_side_exit_epilogue_count;
-    let shared_exits_before = counters.shared_side_exit_count;
+    let descriptors_before = counters.compiled_descriptor_side_exit_count;
     eval("
         shared_exit_epilogue_sample(7, 3, 5, 2)
         shared_exit_epilogue_sample(7, 3, 5, 2)
     ");
 
-    assert!(counters.compiled_side_exit_epilogue_count > epilogues_before);
-    assert!(counters.shared_side_exit_count >= shared_exits_before + 2);
+    assert!(counters.compiled_descriptor_side_exit_count >= descriptors_before + 2);
 }
 
 #[test]
@@ -318,6 +315,38 @@ fn test_function_stub_reprofiles_after_invalidation() {
     // The following hit observes a completed profiling window and recompiles.
     assert_eq!(Qtrue, eval("stub_reprofile_entry(1.5) == 2.5"));
     assert_eq!(2, get_or_create_iseq_payload(target_iseq).versions.len());
+}
+
+#[test]
+fn test_descriptor_side_exit_materializes_locals_and_stack() {
+    set_call_threshold(2);
+    eval("
+        def descriptor_exit_sample(a, b)
+          left = a
+          right = b
+          sum = left + right
+          [left, right, sum]
+        end
+
+        def descriptor_exit_stack_arg(a, b, c, d, e, f, g, h)
+          [a, h, a + h]
+        end
+    ");
+
+    let counters = crate::state::ZJITState::get_counters();
+    let descriptors_before = counters.compiled_descriptor_side_exit_count;
+    eval("
+        descriptor_exit_sample(1, 2)
+        descriptor_exit_sample(1, 2)
+        raise unless descriptor_exit_sample('a', 'b') == ['a', 'b', 'ab']
+
+        descriptor_exit_stack_arg(1, 2, 3, 4, 5, 6, 7, 8)
+        descriptor_exit_stack_arg(1, 2, 3, 4, 5, 6, 7, 8)
+        result = descriptor_exit_stack_arg('a', 2, 3, 4, 5, 6, 7, 'h')
+        raise unless result == ['a', 'h', 'ah']
+    ");
+
+    assert!(counters.compiled_descriptor_side_exit_count > descriptors_before);
 }
 
 #[test]
@@ -7554,6 +7583,37 @@ fn test_profile_frames_during_direct_jit_to_jit_entry() {
         assert_snapshot!(assert_compiles("profiled_direct_loop(1_000_000)"), @"1000000");
         assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
     });
+}
+
+// A descriptor side exit installs a JITFrame without an ISEQ just before materializing the
+// frame from it. rb_profile_frames sampling that window must still find the frame's ISEQ.
+#[cfg(all(
+    any(target_os = "linux", target_os = "macos"),
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+))]
+#[test]
+fn test_profile_frames_during_descriptor_side_exit() {
+    set_call_threshold(2);
+    // Never invalidate, so every call takes the same descriptor exit.
+    set_num_exits_until_invalidate(crate::options::NumExits::MAX);
+    eval(r#"
+        def descriptor_profile_exit(x) = x + 1
+        descriptor_profile_exit(1)
+        descriptor_profile_exit(1)
+
+        def descriptor_profile_loop(n)
+          i = 0
+          while i < n
+            descriptor_profile_exit(1.5)
+            i += 1
+          end
+          i
+        end
+    "#);
+
+    let profiler = signal_profiler::Profiler::start(10);
+    assert_snapshot!(assert_compiles_allowing_exits("descriptor_profile_loop(300_000)"), @"300000");
+    assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
 }
 
 // Same as test_profile_frames_during_direct_jit_to_jit_entry, but for a direct `yield` to an ISEQ block.

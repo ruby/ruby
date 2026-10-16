@@ -6,7 +6,7 @@ use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
 use crate::perf;
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_BLOCK_CODE, RUBY_OFFSET_CFP_EP, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SELF, RUBY_OFFSET_CFP_SP, RUBY_OFFSET_EC_CFP, RUBY_SIZEOF_CONTROL_FRAME, SIZEOF_VALUE_I32, VALUE, VM_FRAME_MAGIC_BLOCK, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
+use crate::cruby::{CfpPtr, EcPtr, IseqPtr, RUBY_OFFSET_CFP_BLOCK_CODE, RUBY_OFFSET_CFP_EP, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SELF, RUBY_OFFSET_CFP_SP, RUBY_OFFSET_EC_CFP, RUBY_SIZEOF_CONTROL_FRAME, SIZEOF_VALUE_I32, VALUE, VM_ENV_DATA_SIZE, VM_FRAME_MAGIC_BLOCK, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
 use crate::asm::LabelName;
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
@@ -648,6 +648,9 @@ pub struct SideExit {
     pub stack_needs_fixnum_box: Vec<bool>,
     pub locals_needs_fixnum_box: Vec<bool>,
     pub iseq: IseqPtr,
+    /// Inlining depth of the current frame. Descriptor exits use this to
+    /// encode native spill locations relative to cfp->jit_return.
+    pub frame_depth: usize,
     /// Stack map for older inlined frames that are not written directly by this
     /// side exit. The current frame's stack and locals are still handled by
     /// `stack` and `locals` above.
@@ -914,6 +917,11 @@ pub enum Insn {
         data: Box<CCallData>,
     },
 
+    /// Call a nearby generated-code label. Unlike CCall, this does not perform
+    /// ABI argument setup; descriptor side exits use the return address to
+    /// locate the inline data immediately following the call.
+    Call(Target),
+
     // C function return
     CRet(Opnd),
 
@@ -1045,6 +1053,14 @@ pub enum Insn {
     /// case.
     PatchPointPad,
 
+    /// Eight bytes of non-executable data embedded after a non-returning Call.
+    EmbedU64(u64),
+
+    /// Preserve the current frame's ISEQ from the active JITFrame, then load a
+    /// descriptor JITFrame pointer from the data at the preceding Call's
+    /// return address and replace the active slot addressed by cfp->jit_return.
+    InstallJITFrameFromCallData,
+
     /// Space reserved at a boundary that a preceding PatchPoint's invalidation
     /// jump must not cross: the start of a non-entry block, the start of a side
     /// exit, or the end of the last block. Nothing is ever patched at a
@@ -1145,6 +1161,7 @@ macro_rules! for_each_operand_impl {
             Insn::Jg(target) |
             Insn::Jge(target) |
             Insn::Jmp(target) |
+            Insn::Call(target) |
             Insn::Jne(target) |
             Insn::Jnz(target) |
             Insn::Jo(target) |
@@ -1171,6 +1188,8 @@ macro_rules! for_each_operand_impl {
             Insn::Comment(_) |
             Insn::CPop { .. } |
             Insn::PatchPointPad |
+            Insn::EmbedU64(_) |
+            Insn::InstallJITFrameFromCallData |
             Insn::PosMarker(_) |
             Insn::PosMarkerAtBlockEnd(_) => {},
 
@@ -1294,6 +1313,7 @@ impl Insn {
             Insn::Jg(target) |
             Insn::Jge(target) |
             Insn::Jmp(target) |
+            Insn::Call(target) |
             Insn::Jne(target) |
             Insn::Jnz(target) |
             Insn::Jo(target) |
@@ -1330,6 +1350,7 @@ impl Insn {
             Insn::CPush(_) => "CPush",
             Insn::CPushPair(_, _) => "CPushPair",
             Insn::CCall { .. } => "CCall",
+            Insn::Call(_) => "Call",
             Insn::CRet(_) => "CRet",
             Insn::CSelE { .. } => "CSelE",
             Insn::CSelG { .. } => "CSelG",
@@ -1370,6 +1391,8 @@ impl Insn {
             Insn::Or { .. } => "Or",
             Insn::PatchPoint(..) => "PatchPoint",
             Insn::PatchPointPad => "PatchPointPad",
+            Insn::EmbedU64(_) => "EmbedU64",
+            Insn::InstallJITFrameFromCallData => "InstallJITFrameFromCallData",
             Insn::PosMarker(_) => "PosMarker",
             Insn::PosMarkerAtBlockEnd(_) => "PosMarkerAtBlockEnd",
             Insn::RShift { .. } => "RShift",
@@ -1471,6 +1494,7 @@ impl Insn {
             Insn::Jg(target) |
             Insn::Jge(target) |
             Insn::Jmp(target) |
+            Insn::Call(target) |
             Insn::Jne(target) |
             Insn::Jnz(target) |
             Insn::Jo(target) |
@@ -3066,26 +3090,59 @@ impl Assembler
         })
     }
 
+    /// Exits that need no raw-value boxing or physical block-frame
+    /// materialization can be restored entirely by the JITFrame materializer
+    /// from a descriptor.
+    fn descriptor_side_exit_p(exit: &SideExit) -> bool {
+        exit.materialize.is_none()
+            && !exit.stack_needs_flonum_box.iter().any(|&needs_box| needs_box)
+            && !exit.locals_needs_flonum_box.iter().any(|&needs_box| needs_box)
+            && !exit.stack_needs_bool_box.iter().any(|&needs_box| needs_box)
+            && !exit.locals_needs_bool_box.iter().any(|&needs_box| needs_box)
+            && !exit.stack_needs_fixnum_box.iter().any(|&needs_box| needs_box)
+            && !exit.locals_needs_fixnum_box.iter().any(|&needs_box| needs_box)
+    }
+
     fn side_exit_target_stack_map_slots(target: &Target, intervals: &[Interval]) -> usize {
         let Target::SideExit(data) = target else {
             return 0;
         };
-        let Some(StackMap { stack, .. }) = &data.exit.stack_map else {
-            return 0;
-        };
-
-        stack.iter().filter(|entry| match entry {
-            StackMapEntry::Opnd(Opnd::Value(value)) => !value.special_const_p(),
-            StackMapEntry::Opnd(Opnd::UImm(value)) => !VALUE(*value as usize).special_const_p(),
-            StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => {
+        let captured_opnd = |opnd: Opnd| match opnd {
+            Opnd::Value(value) => !value.special_const_p(),
+            Opnd::UImm(value) => !VALUE(value as usize).special_const_p(),
+            Opnd::Imm(value) => !VALUE(value as usize).special_const_p(),
+            Opnd::VReg { idx, .. } => {
                 matches!(
-                    intervals[*idx].assigned.get().expect("StackMap VReg should have an allocation"),
+                    intervals[idx].assigned.get().expect("StackMap VReg should have an allocation"),
                     Allocation::Reg(_)
                 )
             }
-            StackMapEntry::Opnd(Opnd::Reg(_)) => true,
+            Opnd::Reg(_) => true,
+            Opnd::Mem(Mem { base: MemBase::Stack { .. }, .. }) => false,
+            Opnd::Mem(_) => true,
             _ => false,
-        }).count()
+        };
+
+        // Each distinct operand is captured once, shared by the caller stack
+        // map and (for descriptor exits) the current frame's descriptor.
+        let mut captured = HashSet::new();
+        if let Some(stack_map) = &data.exit.stack_map {
+            for entry in &stack_map.stack {
+                if let StackMapEntry::Opnd(opnd) = entry {
+                    if captured_opnd(*opnd) {
+                        captured.insert(*opnd);
+                    }
+                }
+            }
+        }
+        if Self::descriptor_side_exit_p(&data.exit) {
+            captured.extend(
+                data.exit.stack.iter().chain(&data.exit.locals)
+                    .copied()
+                    .filter(|&opnd| captured_opnd(opnd)),
+            );
+        }
+        captured.len()
     }
 
     /// Walk every instruction and replace VReg operands with the physical
@@ -3192,6 +3249,7 @@ impl Assembler
             let value = match opnd {
                 Opnd::Value(value) => value,
                 Opnd::UImm(value) => VALUE(value as usize),
+                Opnd::Imm(value) => VALUE(value as usize),
                 _ => unreachable!("unexpected immediate StackMap operand: {opnd:?}"),
             };
             value.special_const_p().then_some(value)
@@ -3204,7 +3262,18 @@ impl Assembler
             VALUE(encoded)
         }
 
-        fn capture_stack_map_opnd(asm: &mut Assembler, opnd: Opnd, capture_idx: &mut usize, frame_depth: usize) -> VALUE {
+        fn capture_stack_map_opnd(
+            asm: &mut Assembler,
+            opnd: Opnd,
+            captured: &mut HashMap<Opnd, usize>,
+            capture_idx: &mut usize,
+            frame_depth: usize,
+        ) -> VALUE {
+            let opnd = if matches!(opnd, Opnd::Reg(_)) { opnd.with_num_bits(64) } else { opnd };
+            if let Some(&stack_idx) = captured.get(&opnd) {
+                return encode_stack_map_index(asm, stack_idx, frame_depth);
+            }
+
             let stack_idx = asm.stack_state.stack_idx_for_side_exit_stack_map(*capture_idx);
             *capture_idx += 1;
             let capture_slot = Opnd::Mem(Mem {
@@ -3212,23 +3281,28 @@ impl Assembler
                 disp: 0,
                 num_bits: 64,
             });
-            let opnd = if matches!(opnd, Opnd::Reg(_)) { opnd.with_num_bits(64) } else { opnd };
             asm.store(capture_slot, opnd);
+            captured.insert(opnd, stack_idx);
             encode_stack_map_index(asm, stack_idx, frame_depth)
         }
 
-        fn compile_exit_stack_map(asm: &mut Assembler, stack_map: &StackMap) {
+        fn compile_exit_stack_map(
+            asm: &mut Assembler,
+            stack_map: &StackMap,
+            captured: &mut HashMap<Opnd, usize>,
+            capture_idx: &mut usize,
+            install: bool,
+        ) {
             let StackMap { stack, jit_frame, frame_depth } = stack_map;
             let jit_frame = *jit_frame;
             assert_eq!(unsafe { (*jit_frame).stack_size } as usize, stack.len());
 
-            let mut capture_idx = 0;
             for (idx, stack_entry) in stack.iter().enumerate() {
                 let entry = match *stack_entry {
-                    StackMapEntry::Opnd(Opnd::Value(_) | Opnd::UImm(_)) => {
+                    StackMapEntry::Opnd(Opnd::Value(_) | Opnd::UImm(_) | Opnd::Imm(_)) => {
                         let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
                         immediate_stack_map_value(opnd)
-                            .unwrap_or_else(|| capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth))
+                            .unwrap_or_else(|| capture_stack_map_opnd(asm, opnd, captured, capture_idx, *frame_depth))
                     }
                     StackMapEntry::Skip(size) => {
                         let encoded = (size << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_SKIP_TAG as usize;
@@ -3239,22 +3313,34 @@ impl Assembler
                         assert_eq!(disp, 0, "StackMap stack slot should not have a displacement");
                         encode_stack_map_index(asm, stack_idx.to_usize(), *frame_depth)
                     }
-                    StackMapEntry::Opnd(Opnd::Reg(_)) => {
+                    StackMapEntry::Opnd(Opnd::Reg(_) | Opnd::Mem(_)) => {
                         let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
-                        capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth)
+                        capture_stack_map_opnd(asm, opnd, captured, capture_idx, *frame_depth)
                     }
                     _ => unreachable!("unexpected entry in SideExit StackMap: {stack_entry:?}"),
                 };
                 unsafe { (*jit_frame.cast_mut()).stack.as_mut_ptr().add(idx).write(entry); }
             }
 
-            assert!(capture_idx <= asm.stack_state.num_side_exit_stack_map_slots);
-            asm_comment!(asm, "install side-exit JITFrame for caller depth {}", frame_depth);
-            let jit_frame_slot = Opnd::mem(64, NATIVE_BASE_PTR, -((*frame_depth as i32 + 1) * SIZEOF_VALUE_I32));
-            asm.store(jit_frame_slot, Opnd::const_ptr(jit_frame));
+            assert!(*capture_idx <= asm.stack_state.num_side_exit_stack_map_slots);
+            if install {
+                asm_comment!(asm, "install side-exit JITFrame for caller depth {}", frame_depth);
+                let jit_frame_slot = Opnd::mem(64, NATIVE_BASE_PTR, -((*frame_depth as i32 + 1) * SIZEOF_VALUE_I32));
+                asm.store(jit_frame_slot, Opnd::const_ptr(jit_frame));
+            }
         }
 
-        /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
+        fn compile_exit_save_pc(asm: &mut Assembler, exit: &SideExit) {
+            let cfp_bias = if exit.materialize.is_some() {
+                -(RUBY_SIZEOF_CONTROL_FRAME as i32)
+            } else {
+                0
+            };
+            asm_comment!(asm, "save cfp->pc");
+            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC + cfp_bias), exit.pc);
+        }
+
+        /// Restore VM state (cfp->sp, stack, locals) for the side exit; compile_exit saves cfp->pc first.
         ///
         /// When `exit.materialize` is set, the exiting instruction sits inside
         /// an inlined block body whose frame push was elided from the hot path
@@ -3270,12 +3356,7 @@ impl Assembler
         /// frame's jit_return and materializes the older frames behind it --
         /// sees exactly the same world as a non-elided exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit, defer_iseq: bool) {
-            let SideExit { pc, stack, locals, stack_needs_flonum_box, locals_needs_flonum_box, stack_needs_bool_box, locals_needs_bool_box, stack_needs_fixnum_box, locals_needs_fixnum_box, iseq, stack_map, materialize, .. } = exit;
-
-            // Side exit blocks are not part of the CFG at the moment,
-            // so we need to manually ensure that patchpoints get padded
-            // so that nobody stomps on us
-            asm.boundary_pad();
+            let SideExit { stack, locals, stack_needs_flonum_box, locals_needs_flonum_box, stack_needs_bool_box, locals_needs_bool_box, stack_needs_fixnum_box, locals_needs_fixnum_box, iseq, stack_map, materialize, .. } = exit;
 
             // Biases routing the exiting frame's writes one frame below the
             // caller the CFP/SP registers still point at (see doc above).
@@ -3320,9 +3401,6 @@ impl Assembler
                 asm.lea_into(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), Opnd::mem(64, CFP, cfp_bias));
             }
 
-            asm_comment!(asm, "save cfp->pc");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC + cfp_bias), *pc);
-
             asm_comment!(asm, "save cfp->sp");
             asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP + cfp_bias), Opnd::mem(64, SP, (stack.len() as i32 + sp_bias) * SIZEOF_VALUE_I32));
 
@@ -3361,7 +3439,9 @@ impl Assembler
             }
 
             if let Some(stack_map) = stack_map {
-                compile_exit_stack_map(asm, stack_map);
+                let mut captured = HashMap::new();
+                let mut capture_idx = 0;
+                compile_exit_stack_map(asm, stack_map, &mut captured, &mut capture_idx, true);
             }
 
             // All flonum re-encodes run last: every register-held operand above
@@ -3499,6 +3579,10 @@ impl Assembler
             epilogue_labels: &mut HashMap<SideExitEpilogue, Label>,
             epilogues: &mut Vec<(Label, SideExitEpilogue)>,
         ) {
+            // Side exit blocks are not part of the CFG at the moment, so
+            // manually ensure that patchpoints cannot stomp on an exit.
+            asm.boundary_pad();
+            compile_exit_save_pc(asm, exit);
             // Save VM state before the ccall so that
             // rb_profile_frames sees valid cfp->pc and the
             // ccall doesn't clobber caller-saved registers
@@ -3548,6 +3632,87 @@ impl Assembler
             asm.jmp(Target::Label(label));
         }
 
+        /// Compile an exit whose VM state the JITFrame materializer can rebuild:
+        /// publish cfp->sp, describe the current frame in a pointer-free
+        /// descriptor, and call a shared epilogue that installs it from the
+        /// data embedded after the call.
+        fn compile_descriptor_exit(
+            asm: &mut Assembler,
+            exit: &SideExit,
+            descriptor_labels: &mut HashMap<Option<SideExitRecompileEpilogue>, Label>,
+            descriptor_epilogues: &mut Vec<(Label, Option<SideExitRecompileEpilogue>)>,
+        ) {
+            asm.boundary_pad();
+
+            asm_comment!(asm, "publish descriptor side-exit SP");
+            asm.lea_into(
+                Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP),
+                Opnd::mem(64, SP, exit.stack.len() as i32 * SIZEOF_VALUE_I32),
+            );
+
+            // rb_zjit_materialize_frames walks downward from cfp->sp. Describe
+            // the operand stack from top to bottom, skip the environment
+            // metadata, then describe locals from the highest index downward.
+            let mut entries = exit.stack.iter().rev()
+                .copied()
+                .map(StackMapEntry::Opnd)
+                .collect::<Vec<_>>();
+            if !exit.locals.is_empty() {
+                entries.push(StackMapEntry::Skip(VM_ENV_DATA_SIZE as usize));
+                entries.extend(exit.locals.iter().rev().copied().map(StackMapEntry::Opnd));
+            }
+
+            let pc = match exit.pc {
+                Opnd::UImm(pc) => pc as *const VALUE,
+                _ => unreachable!("side-exit PC should be a constant pointer: {:?}", exit.pc),
+            };
+            let jit_frame = crate::jit_frame::JITFrame::new_side_exit_descriptor(
+                pc,
+                exit.iseq,
+                entries.len(),
+            );
+            let current_map = StackMap::new(entries, jit_frame, exit.frame_depth);
+            let mut captured = HashMap::new();
+            let mut capture_idx = 0;
+            compile_exit_stack_map(asm, &current_map, &mut captured, &mut capture_idx, false);
+            if let Some(caller_map) = &exit.stack_map {
+                compile_exit_stack_map(asm, caller_map, &mut captured, &mut capture_idx, true);
+            }
+
+            let recompile = recompile_epilogue(exit);
+            let label = if let Some(&label) = descriptor_labels.get(&recompile) {
+                label
+            } else {
+                let label = asm.new_label("descriptor_side_exit_epilogue").unwrap_label();
+                descriptor_labels.insert(recompile.clone(), label);
+                descriptor_epilogues.push((label, recompile));
+                label
+            };
+
+            // The call return address points at the embedded JITFrame pointer.
+            // The epilogue consumes it and never returns to these data bytes.
+            asm.call(Target::Label(label));
+            asm.embed_u64(jit_frame as u64);
+        }
+
+        fn compile_descriptor_epilogue(
+            asm: &mut Assembler,
+            recompile: &Option<SideExitRecompileEpilogue>,
+        ) {
+            unsafe extern "C" {
+                fn rb_zjit_materialize_frames(ec: EcPtr, cfp: CfpPtr);
+            }
+
+            asm.install_jit_frame_from_call_data();
+            asm_comment!(asm, "materialize descriptor side exit");
+            asm_ccall!(asm, rb_zjit_materialize_frames, EC, CFP);
+            if let Some(recompile) = recompile {
+                compile_exit_recompile(asm, recompile);
+            }
+            asm_comment!(asm, "exit to the interpreter");
+            asm.jmp(Target::CodePtr(ZJITState::get_exit_trampoline()));
+        }
+
         fn join_opnds(opnds: &Vec<Opnd>, delimiter: &str) -> String {
             opnds.iter().map(|opnd| format!("{opnd}")).collect::<Vec<_>>().join(delimiter)
         }
@@ -3591,6 +3756,9 @@ impl Assembler
         // Shared suffixes are emitted after every exit-specific state-save stub.
         let mut epilogue_labels: HashMap<SideExitEpilogue, Label> = HashMap::new();
         let mut epilogues: Vec<(Label, SideExitEpilogue)> = vec![];
+        let mut descriptor_labels: HashMap<Option<SideExitRecompileEpilogue>, Label> = HashMap::new();
+        let mut descriptor_epilogues: Vec<(Label, Option<SideExitRecompileEpilogue>)> = vec![];
+        let mut descriptor_exit_count = 0;
 
         // Start a new perf range for side exits.
         let symbol_range = perf::symbol_range_start(self, "side exit");
@@ -3658,7 +3826,12 @@ impl Assembler
                         let new_exit = self.new_label("side_exit");
                         self.write_label(new_exit.clone());
                         asm_comment!(self, "Exit: {}", entry.key().pc);
-                        compile_exit(self, entry.key(), None, &epilogue_counts, &mut epilogue_labels, &mut epilogues);
+                        if Self::descriptor_side_exit_p(entry.key()) {
+                            compile_descriptor_exit(self, entry.key(), &mut descriptor_labels, &mut descriptor_epilogues);
+                            descriptor_exit_count += 1;
+                        } else {
+                            compile_exit(self, entry.key(), None, &epilogue_counts, &mut epilogue_labels, &mut epilogues);
+                        }
                         entry.insert(new_exit.unwrap_label());
                         new_exit
                     }
@@ -3666,6 +3839,12 @@ impl Assembler
 
                 *self.basic_blocks[block_id].insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
             }
+        }
+
+        for (label, recompile) in &descriptor_epilogues {
+            self.write_label(Target::Label(*label));
+            asm_comment!(self, "shared descriptor side-exit epilogue");
+            compile_descriptor_epilogue(self, recompile);
         }
 
         for (label, epilogue) in &epilogues {
@@ -3693,6 +3872,7 @@ impl Assembler
                 .map(|(_, epilogue)| epilogue_counts.get(epilogue).copied().unwrap_or(0))
                 .sum::<usize>();
             crate::stats::incr_counter_by(crate::stats::Counter::shared_side_exit_count, shared_exit_count as u64);
+            crate::stats::incr_counter_by(crate::stats::Counter::compiled_descriptor_side_exit_count, descriptor_exit_count);
         }
 
         // Close the current perf range for side exits
@@ -4578,6 +4758,18 @@ impl Assembler {
     #[allow(dead_code)]
     pub fn jg(&mut self, target: Target) {
         self.push_insn(Insn::Jg(target));
+    }
+
+    pub fn call(&mut self, target: Target) {
+        self.push_insn(Insn::Call(target));
+    }
+
+    pub fn embed_u64(&mut self, value: u64) {
+        self.push_insn(Insn::EmbedU64(value));
+    }
+
+    pub fn install_jit_frame_from_call_data(&mut self) {
+        self.push_insn(Insn::InstallJITFrameFromCallData);
     }
 
     pub fn jmp(&mut self, target: Target) {

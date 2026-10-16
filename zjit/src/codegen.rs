@@ -5121,6 +5121,7 @@ fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> S
         stack_needs_fixnum_box,
         locals_needs_fixnum_box,
         iseq: state.iseq,
+        frame_depth: state.depth as usize,
         stack_map,
         recompile: None,
         materialize,

@@ -2997,7 +2997,9 @@ zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cf
         if (CFP_ZJIT_FRAME_P(cfp)) {
             const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
             cfp->pc = jit_frame->pc;
-            cfp->_iseq = (rb_iseq_t *)jit_frame->iseq;
+            if (jit_frame->iseq) {
+                cfp->_iseq = (rb_iseq_t *)jit_frame->iseq;
+            }
             if (jit_frame->materialize_block_code) {
                 cfp->block_code = NULL;
             }

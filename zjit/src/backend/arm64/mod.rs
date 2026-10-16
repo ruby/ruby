@@ -1517,6 +1517,9 @@ impl Assembler {
                     let bytes_with_nul = text.len() + 1;
                     bytes_with_nul + (4 - bytes_with_nul % 4)
                 }
+                // Keep a descriptor Call adjacent to its return-address data.
+                // Flush before the pair rather than between the two insns.
+                Insn::Call(_) if matches!(insns.get(insn_idx + 1), Some(Insn::EmbedU64(_))) => 12,
                 _ => 0,
             };
             literal_pool.flush_if_needed(cb, &mut gc_offsets, next_bytes);
@@ -1941,6 +1944,53 @@ impl Assembler {
                         _ => unreachable!("unsupported ccall fptr: {fptr:?}")
                     }
                 },
+                Insn::Call(target) => {
+                    match *target {
+                        Target::CodePtr(dst_ptr) => {
+                            let src_addr = cb.get_write_ptr().as_offset();
+                            let dst_addr = dst_ptr.as_offset();
+                            if b_offset_fits_bits((dst_addr - src_addr) / 4) {
+                                bl(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
+                            } else {
+                                emit_load_value(cb, Self::EMIT_OPND, dst_addr as u64);
+                                blr(cb, Self::EMIT_OPND);
+                            }
+                        }
+                        Target::Label(label) => {
+                            cb.label_ref(label, 4, |cb, end_addr, dst_addr| {
+                                let offset = (dst_addr - end_addr) / 4 + 1;
+                                if b_offset_fits_bits(offset) {
+                                    bl(cb, InstructionOffset::from_insns(offset as i32));
+                                    Ok(())
+                                } else {
+                                    Err(())
+                                }
+                            });
+                        }
+                        Target::Block(_) | Target::SideExit(_) => {
+                            unreachable!("Call target should be resolved before emission")
+                        }
+                    }
+                },
+                Insn::EmbedU64(value) => {
+                    cb.write_bytes(&value.to_le_bytes());
+                },
+                Insn::InstallJITFrameFromCallData => {
+                    ldur(cb, SCRATCH1_OPND.into(), Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN).into());
+                    ldur(cb, SCRATCH0_OPND.into(), A64Opnd::new_mem(64, SCRATCH1_OPND.into(), -SIZEOF_VALUE_I32));
+                    ldur(
+                        cb,
+                        SCRATCH0_OPND.into(),
+                        A64Opnd::new_mem(
+                            64,
+                            SCRATCH0_OPND.into(),
+                            std::mem::offset_of!(zjit_jit_frame, iseq) as i32,
+                        ),
+                    );
+                    stur(cb, SCRATCH0_OPND.into(), Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ).into());
+                    ldur(cb, SCRATCH0_OPND.into(), A64Opnd::new_mem(64, A64Opnd::Reg(X30_REG), 0));
+                    stur(cb, SCRATCH0_OPND.into(), A64Opnd::new_mem(64, SCRATCH1_OPND.into(), -SIZEOF_VALUE_I32));
+                },
                 Insn::CRet { .. } => {
                     ret(cb, A64Opnd::None);
                 },
@@ -2342,6 +2392,7 @@ mod tests {
                 stack_needs_fixnum_box: vec![],
                 locals_needs_fixnum_box: vec![],
                 iseq: std::ptr::null(),
+                frame_depth: 0,
                 stack_map: None,
                 recompile: None,
                 materialize: None,
@@ -2856,6 +2907,21 @@ mod tests {
         0x18: stur x0, [x21]
         ");
         assert_snapshot!(cb.hexdump(), @"50000010e00310aa48656c6c6f2c20776f726c6421000000a00200f8");
+    }
+
+    #[test]
+    fn test_call_with_inline_jit_frame_data() {
+        let (mut asm, mut cb) = setup_asm();
+        let label = asm.new_label("descriptor");
+        asm.call(label.clone());
+        asm.embed_u64(0x0123_4567_89ab_cdef);
+        asm.write_label(label);
+        asm.install_jit_frame_from_call_data();
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        let hex = cb.hexdump();
+        assert_eq!(&hex[8..24], "efcdab8967452301", "inline data must immediately follow BL");
+        assert_eq!(36, cb.get_write_pos());
     }
 
     #[test]
