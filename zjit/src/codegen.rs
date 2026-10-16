@@ -930,6 +930,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             gen_guard_type(jit, asm, function, opnd!(val), val_type, guard_type, recompile, &function.frame_state(state))
         }
         &Insn::GuardBitEquals { val, expected, ref reason, state, recompile } => gen_guard_bit_equals(jit, asm, function, opnd!(val), expected, **reason, recompile, &function.frame_state(state)),
+        &Insn::GuardNotBitEquals { val, expected, ref reason, state, recompile } => gen_guard_not_bit_equals(jit, asm, function, opnd!(val), expected, **reason, recompile, &function.frame_state(state)),
         &Insn::GuardAnyBitSet { val, mask, ref reason, state, recompile, .. } => gen_guard_any_bit_set(jit, asm, function, opnd!(val), mask, **reason, recompile, &function.frame_state(state)),
         &Insn::GuardNoBitsSet { val, mask, ref reason, state, .. } => gen_guard_no_bits_set(jit, asm, function, opnd!(val), mask, **reason, &function.frame_state(state)),
         &Insn::GuardLess { left, right, ref reason, state } => gen_guard_less(jit, asm, function, opnd!(left), opnd!(right), **reason, &function.frame_state(state)),
@@ -971,6 +972,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::BreakPoint => no_output!(asm.breakpoint()),
         Insn::Unreachable => no_output!(asm.abort()),
         &Insn::HashDup { val, state } => { gen_hash_dup(jit, asm, function, val, opnd!(val), &function.frame_state(state)) },
+        Insn::HashSize { hash } => asm_ccall!(asm, rb_hash_size, opnd!(hash)),
+        Insn::HashLookupOrUndef { hash, key } => asm_ccall!(asm, rb_hash_lookup2, opnd!(hash), Opnd::Value(*key), Opnd::Value(Qundef)),
         &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
         &Insn::HashKeyP { hash, key, state } => { gen_hash_key_p(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
         &Insn::HashFetch { hash, key, state } => { gen_hash_fetch(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
@@ -4209,6 +4212,19 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, function: &Func
     };
     asm.cmp(val, expected_opnd);
     asm.jnz(jit, side_exit_with_recompile(jit, function, state, reason, recompile));
+    val
+}
+
+/// Compile an inverted identity check: side-exit when val's bits DO match expected.
+fn gen_guard_not_bit_equals(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, expected: hir::Const, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
+    let expected_opnd: Opnd = match expected {
+        hir::Const::Value(v) => { Opnd::Value(v) }
+        hir::Const::CInt64(v) => { v.into() }
+        hir::Const::CPtr(v) => { Opnd::const_ptr(v) }
+        _ => panic!("gen_guard_not_bit_equals: unexpected hir::Const {expected:?}"),
+    };
+    asm.cmp(val, expected_opnd);
+    asm.jz(jit, side_exit_with_recompile(jit, function, state, reason, recompile));
     val
 }
 

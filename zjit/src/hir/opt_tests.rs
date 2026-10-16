@@ -6508,11 +6508,19 @@ mod hir_opt_tests {
           v15:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v16:HashExact = HashDup v15
           IncrCounter zjit_insn_count
-          IncrCounter complex_arg_pass_caller_kw_splat
-          v19:BasicObject = Send v8, :foo, v16 # SendFallbackReason: Complex argument passing
+          v26:Fixnum = HashSize v16
+          v27:Fixnum[1] = GuardBitEquals v26, Value(1) recompile
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018)
+          v29:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v8, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v30:BasicObject = HashLookupOrUndef v16, VALUE(0x1040)
+          v31:BasicObject = GuardNotBitEquals v30, Value(VALUE(0x1048)) recompile
+          IncrCounter empty_inline_frame_count
+          IncrCounter inline_iseq_optimized_send_count
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v19
+          Return v31
         ");
     }
 

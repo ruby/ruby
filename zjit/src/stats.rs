@@ -245,6 +245,7 @@ make_counters! {
         exit_splatkw_polymorphic,
         exit_splatkw_not_profiled,
         exit_caller_splat_length_mismatch,
+        exit_caller_kw_splat_mismatch,
         exit_caller_splat_ruby2_keywords,
         exit_directive_induced,
         exit_send_while_tracing,
@@ -637,6 +638,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         SplatKwPolymorphic            => exit_splatkw_polymorphic,
         SplatKwNotProfiled            => exit_splatkw_not_profiled,
         CallerSplatLengthMismatch     => exit_caller_splat_length_mismatch,
+        CallerKwSplatMismatch         => exit_caller_kw_splat_mismatch,
         CallerSplatRuby2Keywords      => exit_caller_splat_ruby2_keywords,
         DirectiveInduced              => exit_directive_induced,
         PatchPoint(Invariant::BOPRedefined { .. })

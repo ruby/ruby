@@ -667,6 +667,7 @@ pub enum SideExitReason {
     SplatKwPolymorphic,
     SplatKwNotProfiled,
     CallerSplatLengthMismatch,
+    CallerKwSplatMismatch,
     CallerSplatRuby2Keywords,
     DirectiveInduced,
     SendWhileTracing,
@@ -1095,6 +1096,13 @@ pub enum Insn {
     AdjustBounds { index: InsnId, length: InsnId },
 
     HashAref { hash: InsnId, key: InsnId, state: InsnId },
+    /// Entry count of an exact Hash. Returns a Fixnum VALUE; cannot raise or allocate.
+    HashSize { hash: InsnId },
+    /// `rb_hash_lookup2(hash, key, Qundef)` with a compile-time static Symbol key:
+    /// the entry's value, or Qundef when the key is absent. Never consults the
+    /// default proc, cannot raise or allocate. Used by caller kw-splat expansion;
+    /// the result must be guarded against Qundef before escaping.
+    HashLookupOrUndef { hash: InsnId, key: VALUE },
     /// `hash.key?(key)` (and has_key?/include?/member?) for an exact Hash.
     HashKeyP { hash: InsnId, key: InsnId, state: InsnId },
     /// `hash.fetch(key)` (single arg, no block) for an exact Hash.
@@ -1461,6 +1469,8 @@ pub enum Insn {
     GuardType { val: InsnId, guard_type: Type, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if val is not the expected Const.
     GuardBitEquals { val: InsnId, expected: Const, reason: Box<SideExitReason>, state: InsnId, recompile: Option<Recompile> },
+    /// Side-exit if val's bits DO equal the expected constant.
+    GuardNotBitEquals { val: InsnId, expected: Const, reason: Box<SideExitReason>, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if (val & mask) == 0
     GuardAnyBitSet { val: InsnId, mask: Const, mask_name: Option<ID>, reason: Box<SideExitReason>, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if (val & mask) != 0
@@ -1625,6 +1635,7 @@ macro_rules! for_each_operand_impl {
             | Insn::ObjectAlloc { val, state }
             | Insn::GuardType { val, state, .. }
             | Insn::GuardBitEquals { val, state, .. }
+            | Insn::GuardNotBitEquals { val, state, .. }
             | Insn::GuardAnyBitSet { val, state, .. }
             | Insn::GuardNoBitsSet { val, state, .. }
             | Insn::ToArray { val, state }
@@ -1742,6 +1753,10 @@ macro_rules! for_each_operand_impl {
             Insn::AdjustBounds { index, length } => {
                 $visit_one!(*index);
                 $visit_one!(*length);
+            }
+            Insn::HashSize { hash }
+            | Insn::HashLookupOrUndef { hash, .. } => {
+                $visit_one!(*hash);
             }
             Insn::HashAref { hash, key, state }
             | Insn::HashKeyP { hash, key, state }
@@ -1999,6 +2014,8 @@ impl Insn {
             Insn::ArrayLength { .. } => Effect::write(abstract_heaps::Empty),
             Insn::AdjustBounds { .. } => effects::Empty,
             Insn::HashAref { .. } => effects::Any,
+            Insn::HashSize { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
+            Insn::HashLookupOrUndef { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::HashKeyP { .. } => effects::Any,
             Insn::HashFetch { .. } => effects::Any,
             Insn::HashDelete { .. } => effects::Any,
@@ -2162,6 +2179,7 @@ impl Insn {
                     abstract_heaps::Control
                 ),
             Insn::GuardBitEquals { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
+            Insn::GuardNotBitEquals { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
             Insn::GuardAnyBitSet { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
             Insn::GuardNoBitsSet { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
             Insn::GuardGreaterEq { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
@@ -2383,6 +2401,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
             Insn::HashAref { hash, key, .. } => { write!(f, "HashAref {hash}, {key}")}
+            Insn::HashSize { hash } => { write!(f, "HashSize {hash}") }
+            Insn::HashLookupOrUndef { hash, key } => { write!(f, "HashLookupOrUndef {hash}, {}", key.print(self.ptr_map)) }
             Insn::HashKeyP { hash, key, .. } => { write!(f, "HashKeyP {hash}, {key}")}
             Insn::HashFetch { hash, key, .. } => { write!(f, "HashFetch {hash}, {key}")}
             Insn::HashDelete { hash, key, .. } => { write!(f, "HashDelete {hash}, {key}")}
@@ -2615,6 +2635,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::RefineType { val, new_type, .. } => { write!(f, "RefineType {val}, {}", new_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, recompile, .. } => {
                 write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map))?;
+                if recompile.is_some() {
+                    write!(f, " recompile")?;
+                }
+                return Ok(())
+            },
+            Insn::GuardNotBitEquals { val, expected, recompile, .. } => {
+                write!(f, "GuardNotBitEquals {val}, {}", expected.print(self.ptr_map))?;
                 if recompile.is_some() {
                     write!(f, " recompile")?;
                 }
@@ -3306,6 +3333,26 @@ enum SendDirectArg {
     KeywordHash(Vec<SendDirectArg>),
     /// Values to materialize as the Array passed to a callee rest parameter.
     RestArray(Vec<SendDirectArg>),
+    /// The value a caller kw-splat Hash holds for one callee keyword, loaded on
+    /// the selected path and guarded to be present.
+    KwSplatValue {
+        /// HIR value of the guarded HashExact passed as `**hash`.
+        hash: InsnId,
+        /// The callee keyword's static Symbol.
+        key: VALUE,
+    },
+}
+
+/// Caller kw-splat expansion selected for one SendDirect path: `f(**hash)` to an
+/// ISEQ callee with only lead and keyword parameters, speculating that `hash`
+/// supplies exactly the callee's keyword set.
+struct CallerKwSplat {
+    /// HIR value that produces the kw-splat Hash at runtime (the final Send argument).
+    hash: InsnId,
+    /// Number of leading positional arguments before the Hash.
+    lead_num: usize,
+    /// The callee's keywords as static Symbols, in keyword-table order.
+    keys: Vec<VALUE>,
 }
 
 /// Side-effect-free SendDirect argument setup before HIR emission.
@@ -4063,6 +4110,9 @@ impl Function {
             Insn::ArrayLength { .. } => types::CInt64,
             Insn::AdjustBounds { .. } => types::CInt64,
             Insn::HashAref { .. } => types::BasicObject,
+            Insn::HashSize { .. } => types::Fixnum,
+            // May also be Qundef until guarded; BasicObject is the closest lattice fit.
+            Insn::HashLookupOrUndef { .. } => types::BasicObject,
             Insn::HashKeyP { .. } => types::BoolExact,
             Insn::HashFetch { .. } => types::BasicObject,
             Insn::HashDelete { .. } => types::BasicObject,
@@ -4079,6 +4129,7 @@ impl Function {
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::RefineType { val, new_type, .. } => self.type_of(*val).intersection(*new_type),
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
+            Insn::GuardNotBitEquals { val, .. } => self.type_of(*val),
             Insn::GuardAnyBitSet { val, .. } => self.type_of(*val),
             Insn::GuardNoBitsSet { val, .. } => self.type_of(*val),
             Insn::GuardLess { left, .. } => self.type_of(*left),
@@ -4382,6 +4433,7 @@ impl Function {
         match self.insns[id] {
             Insn::GuardType { val, .. }
             | Insn::GuardBitEquals { val, .. }
+            | Insn::GuardNotBitEquals { val, .. }
             | Insn::GuardAnyBitSet { val, .. }
             | Insn::GuardNoBitsSet { val, .. } => self.chase_insn(val),
             | Insn::RefineType { val, .. } => self.chase_insn(val),
@@ -4476,7 +4528,93 @@ impl Function {
                     .collect();
                 self.push_insn(block, Insn::NewArray { elements, state })
             }
+            SendDirectArg::KwSplatValue { hash, key } => {
+                // A Qundef-defaulted lookup never consults the default proc,
+                // matching kw-splat semantics. An absent key exits and recompiles
+                // to dynamic dispatch, where the interpreter raises ArgumentError.
+                let value = self.push_insn(block, Insn::HashLookupOrUndef { hash, key });
+                self.push_insn(block, Insn::GuardNotBitEquals {
+                    val: value,
+                    expected: Const::Value(Qundef),
+                    reason: Box::new(SideExitReason::CallerKwSplatMismatch),
+                    state,
+                    recompile: Some(Recompile),
+                })
+            }
         }
+    }
+
+    /// Plan caller kw-splat expansion for `f(**hash)`, or None when the call site or
+    /// callee shape isn't supported. Only plain lead + keyword callees qualify: the
+    /// hash must then supply exactly the callee's keywords, so the expansion is a
+    /// fixed set of lookups with no reordering or defaults (kw_bits = 0).
+    fn plan_caller_kw_splat(&self, flags: u32, iseq: IseqPtr, args: &[InsnId]) -> Option<CallerKwSplat> {
+        if self.policy.no_side_exits
+            || flags & VM_CALL_KW_SPLAT == 0
+            || flags & (VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_FORWARDING | VM_CALL_KWARG) != 0
+            || args.is_empty()
+        {
+            return None;
+        }
+        let params = unsafe { iseq.params() };
+        let keyword = params.keyword;
+        let plain_lead_and_kw = params.flags.has_kw() != 0
+            && params.flags.has_kwrest() == 0
+            && params.flags.has_rest() == 0
+            && params.flags.has_post() == 0
+            && params.flags.has_block() == 0
+            && params.flags.forwardable() == 0
+            && params.opt_num == 0;
+        if !plain_lead_and_kw || keyword.is_null() {
+            return None;
+        }
+        let kw_num = unsafe { (*keyword).num } as usize;
+        let lead_num = params.lead_num as usize;
+        if kw_num == 0 || kw_num >= VM_KW_SPECIFIED_BITS_MAX as usize || args.len() - 1 != lead_num {
+            return None;
+        }
+        let table = unsafe { (*keyword).table };
+        let keys = (0..kw_num).map(|i| unsafe { rb_id2sym(*table.add(i)) }).collect();
+        Some(CallerKwSplat { hash: *args.last().unwrap(), lead_num, keys })
+    }
+
+    /// Validate a caller kw-splat expansion like a fully specified literal-keyword
+    /// call to `iseq`, and plan its SendDirect arguments.
+    fn build_send_direct_kw_splat_args(&self, kw_splat: &CallerKwSplat, args: &[InsnId], flags: u32, iseq: IseqPtr, has_block: bool) -> Result<SendDirectCall, SendDirectFailure> {
+        // can_direct_send only inspects the argument count, so stand the hash in for
+        // each callee keyword slot.
+        let mut placeholder = args[..kw_splat.lead_num].to_vec();
+        placeholder.extend(std::iter::repeat(kw_splat.hash).take(kw_splat.keys.len()));
+        let caller_args = CallerArguments {
+            original: &placeholder,
+            flags: flags & !VM_CALL_KW_SPLAT,
+            kwarg: std::ptr::null(),
+            kwarg_count: kw_splat.keys.len(),
+            splat_arg_idx: None,
+        };
+        can_direct_send(iseq, &caller_args, has_block, None)?;
+        let mut send_args: Vec<SendDirectArg> = args[..kw_splat.lead_num].iter().copied().map(SendDirectArg::Existing).collect();
+        send_args.extend(kw_splat.keys.iter().map(|&key| SendDirectArg::KwSplatValue { hash: kw_splat.hash, key }));
+        Ok(SendDirectCall { args: send_args, kw_bits: 0, jit_entry_idx: 0 })
+    }
+
+    /// Guard the shape a caller kw-splat expansion speculated on: an exact Hash with
+    /// as many entries as the callee has keywords. Returns the guarded Hash.
+    fn emit_caller_kw_splat(&mut self, block: BlockId, kw_splat: &CallerKwSplat, state: InsnId) -> InsnId {
+        let hash = if self.is_a(kw_splat.hash, types::HashExact) {
+            kw_splat.hash
+        } else {
+            self.guard_type_recompile(block, kw_splat.hash, types::HashExact, state, Recompile)
+        };
+        let size = self.push_insn(block, Insn::HashSize { hash });
+        self.push_insn(block, Insn::GuardBitEquals {
+            val: size,
+            expected: Const::Value(VALUE::fixnum_from_usize(kw_splat.keys.len())),
+            reason: Box::new(SideExitReason::CallerKwSplatMismatch),
+            state,
+            recompile: Some(Recompile),
+        });
+        hash
     }
 
     /// Expand the caller splat for the selected length without emitting ArrayAref.
@@ -5299,10 +5437,19 @@ impl Function {
                         // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) and C methods handle their own argument constraints (e.g., kw_splat for Proc call).
                         // Mask out ARGS_BLOCKARG only if we've already handled the nil/Proc block arg case above.
                         let mut flags_for_check = if stripped_block_arg { flags & !VM_CALL_ARGS_BLOCKARG } else { flags };
+                        // f(**h) to a lead+keywords ISEQ: expand the hash into the callee's keywords.
+                        let caller_kw_splat = if def_type == VM_METHOD_TYPE_ISEQ {
+                            self.plan_caller_kw_splat(flags, unsafe { get_def_iseq_ptr((*cme).def) }, &args)
+                        } else {
+                            None
+                        };
                         if def_type == VM_METHOD_TYPE_ISEQ {
                             // Caller splat specialization currently only supports ISEQ callees, so
                             // skip the generic splat rejection here and validate its profile below.
                             flags_for_check &= !VM_CALL_ARGS_SPLAT;
+                        }
+                        if caller_kw_splat.is_some() {
+                            flags_for_check &= !VM_CALL_KW_SPLAT;
                         }
                         if def_type != VM_METHOD_TYPE_OPTIMIZED && def_type != VM_METHOD_TYPE_CFUNC && unspecializable_call_type(flags_for_check) {
                             self.count_complex_call_features(block, flags, state);
@@ -5335,7 +5482,11 @@ impl Function {
                             } else {
                                 None
                             };
-                            let Ok(call) = self.build_send_direct_args(&caller_args, caller_splat, iseq, has_block)
+                            let planned = match &caller_kw_splat {
+                                Some(kw_splat) => self.build_send_direct_kw_splat_args(kw_splat, &args, flags, iseq, has_block),
+                                None => self.build_send_direct_args(&caller_args, caller_splat, iseq, has_block),
+                            };
+                            let Ok(mut call) = planned
                                 .inspect_err(|failure| failure.record(self, block, insn_id, SendDirectFallbackContext::Send)) else {
                                 self.push_insn_id(block, insn_id); continue;
                             };
@@ -5346,6 +5497,13 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
+                            if let Some(kw_splat) = &caller_kw_splat {
+                                // Load the keyword values from the guarded Hash.
+                                let hash = self.emit_caller_kw_splat(block, kw_splat, state);
+                                for arg in &mut call.args {
+                                    if let SendDirectArg::KwSplatValue { hash: h, .. } = arg { *h = hash; }
+                                }
+                            }
                             if let Some(caller_splat) = caller_splat {
                                 self.emit_caller_splat(block, caller_splat, state);
                                 // Count caller-splat executions that take this optimized path.
@@ -8256,7 +8414,7 @@ impl Function {
                     continue;
                 }
                 let pure_deopt_consumer = matches!(insn,
-                    Insn::GuardType { .. } | Insn::GuardBitEquals { .. }
+                    Insn::GuardType { .. } | Insn::GuardBitEquals { .. } | Insn::GuardNotBitEquals { .. }
                     | Insn::GuardAnyBitSet { .. } | Insn::GuardNoBitsSet { .. }
                     | Insn::GuardGreaterEq { .. } | Insn::GuardLess { .. }
                     | Insn::GuardFlonumRepresentable { .. }
@@ -10834,7 +10992,7 @@ impl Function {
             matches!(insn,
                 Insn::Comment { .. } | Insn::Const { .. } | Insn::Snapshot { .. }
                 | Insn::PatchPoint { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-                | Insn::GuardType { .. } | Insn::GuardBitEquals { .. }
+                | Insn::GuardType { .. } | Insn::GuardBitEquals { .. } | Insn::GuardNotBitEquals { .. }
                 | Insn::GuardAnyBitSet { .. } | Insn::GuardNoBitsSet { .. }
                 | Insn::GuardGreaterEq { .. } | Insn::GuardLess { .. }
                 | Insn::GuardFlonumRepresentable { .. } | Insn::RefineType { .. }
@@ -12113,6 +12271,10 @@ impl Function {
                 self.assert_subtype(insn_id, index, types::CInt64)?;
                 self.assert_subtype(insn_id, length, types::CInt64)
             }
+            Insn::HashSize { hash }
+            | Insn::HashLookupOrUndef { hash, .. } => {
+                self.assert_subtype(insn_id, hash, types::Hash)
+            }
             // Instructions with Hash operands
             Insn::HashAref { hash, .. }
             | Insn::HashKeyP { hash, .. }
@@ -12271,7 +12433,8 @@ impl Function {
                 }
                 Ok(())
             }
-            Insn::GuardBitEquals { val, expected, .. } => {
+            Insn::GuardBitEquals { val, expected, .. }
+            | Insn::GuardNotBitEquals { val, expected, .. } => {
                 match expected {
                     Const::Value(_) => self.assert_subtype(insn_id, val, types::RubyValue),
                     Const::CInt8(_) => self.assert_subtype(insn_id, val, types::CInt8),
