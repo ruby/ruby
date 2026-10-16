@@ -310,6 +310,7 @@ make_counters! {
         non_variadic_cfunc_optimized_send_count,
         variadic_cfunc_optimized_send_count,
         block_iseq_direct_optimized_send_count,
+        block_iseq_dynamic_optimized_send_count,
     }
 
     // Ivar fallback counters that are summed as dynamic_setivar_count

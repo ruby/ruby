@@ -1209,6 +1209,7 @@ macro_rules! for_each_operand_impl {
             }
             Insn::CCall { data } => {
                 visit_many!(data.opnds);
+                visit_one!($reborrow!(data.fptr));
                 // `data` is behind a Box. `$reborrow` turns the box field into a `&`/`&mut
                 // Option<StackMap>` matching the iterator, so the same operand-walk works for
                 // both.
@@ -2767,7 +2768,7 @@ impl Assembler
         c_arg_regs: &[Reg],
     ) {
         use crate::backend::parcopy;
-        use crate::backend::current::{C_RET_OPND, SCRATCH_REG, NATIVE_STACK_PTR};
+        use crate::backend::current::{CALL_TARGET_REG, C_RET_OPND, SCRATCH_REG, NATIVE_STACK_PTR};
 
         for block_id in self.block_order() {
             let block = &mut self.basic_blocks[block_id.0];
@@ -2908,6 +2909,24 @@ impl Assembler
                         }
                         new_ids.push(None);
                     }
+
+                    // A runtime call target can share an allocator register with
+                    // one of the register arguments. Preserve it in a dedicated
+                    // register before the parallel argument moves below overwrite
+                    // those registers. This must come after the stack-argument
+                    // pushes: CALL_TARGET_REG doubles as the scratch register their
+                    // split uses for spilled or immediate operands. Constant calls
+                    // and the argument-free entry trampoline need no staging.
+                    let fptr = if matches!(fptr, Opnd::UImm(_)) || opnds.is_empty() {
+                        Self::rewritten_opnd(fptr, intervals, alloc_regs)
+                    } else {
+                        new_insns.push(Insn::LoadInto {
+                            dest: Opnd::Reg(CALL_TARGET_REG),
+                            opnd: Self::rewritten_opnd(fptr, intervals, alloc_regs),
+                        });
+                        new_ids.push(None);
+                        Opnd::Reg(CALL_TARGET_REG)
+                    };
 
                     // Extract arguments from CCall, clear opnds
 
@@ -4243,6 +4262,26 @@ impl Assembler {
         let out = self.new_vreg(num_bits);
         let stack_map = self.stack_map.take();
         self.push_insn(Insn::CCall { data: Box::new(CCallData { opnds: vec![], stack_map, fptr, start_marker: None, end_marker: None, out }) });
+        out
+    }
+
+    /// Call a runtime function pointer with ZJIT's JIT-to-JIT argument
+    /// convention. Unlike [`Self::ccall_reg`], this accepts arguments and lets
+    /// register allocation choose where the target lives; lowering stages the
+    /// target before shuffling arguments.
+    pub fn ccall_zjit(&mut self, fptr: Opnd, opnds: Vec<Opnd>) -> Opnd {
+        let out = self.new_vreg(Opnd::match_num_bits(&opnds));
+        let stack_map = self.stack_map.take();
+        self.push_insn(Insn::CCall {
+            data: Box::new(CCallData {
+                opnds,
+                stack_map,
+                fptr,
+                start_marker: None,
+                end_marker: None,
+                out,
+            }),
+        });
         out
     }
 
@@ -5682,5 +5721,80 @@ mod tests {
             }
         });
         assert!(has_stack_opnd, "v0 should be rewritten to a Stack memory operand");
+    }
+
+    /// Lower one indirect ZJIT call through register allocation and
+    /// handle_caller_saved_regs with `num_regs` allocatable and argument registers.
+    fn lower_indirect_zjit_call(args: &[Opnd], num_regs: usize) -> (Vec<Insn>, Option<Reg>) {
+        use crate::backend::current::ALLOC_REGS;
+        let mut asm = Assembler::new();
+        let block = asm.new_block(hir::BlockId(0), true, 0);
+        asm.set_current_block(block);
+        let label = asm.new_label("bb0");
+        asm.write_label(label);
+
+        let target = asm.load(Opnd::UImm(0xF00));
+        let mut opnds = vec![];
+        for &arg in args {
+            opnds.push(if matches!(arg, Opnd::UImm(_)) && opnds.len() < num_regs { asm.load(arg) } else { arg });
+        }
+        let result = asm.ccall_zjit(target, opnds);
+        asm.cret(result);
+
+        let live_in = asm.analyze_liveness();
+        asm.number_instructions(0);
+        let mut intervals = asm.build_intervals(live_in);
+        let mut regs = alloc_reg_pool(num_regs);
+        asm.preferred_register_assignments(&mut intervals, &mut regs);
+        let num_stack_slots = asm.linear_scan(&intervals, &regs);
+        asm.stack_state.num_spill_slots = num_stack_slots;
+        let target_reg = intervals[target.vreg_idx()].assigned.get().and_then(|alloc| alloc.assigned_reg(&regs));
+
+        asm.handle_caller_saved_regs(&intervals, &regs, &ALLOC_REGS[..num_regs]);
+        (asm.basic_blocks[block.0].insns.clone(), target_reg)
+    }
+
+    fn position(insns: &[Insn], pred: impl Fn(&Insn) -> bool) -> Option<usize> {
+        insns.iter().position(pred)
+    }
+
+    #[test]
+    fn test_indirect_zjit_call_stages_target_before_arguments() {
+        use crate::backend::current::{ALLOC_REGS, CALL_TARGET_REG};
+
+        // With two registers the call target and the argument both live in
+        // allocatable registers that double as argument registers, so an
+        // argument move could overwrite the target without dedicated staging.
+        let (insns, target_reg) = lower_indirect_zjit_call(&[Opnd::UImm(42)], 2);
+        let target_reg = Opnd::Reg(target_reg.expect("expected the target in a register"));
+
+        let stage_index = position(&insns, |insn| matches!(insn,
+            Insn::LoadInto { dest: Opnd::Reg(reg), opnd } if *reg == CALL_TARGET_REG && *opnd == target_reg))
+            .expect("expected the indirect target to be staged");
+        let call_index = position(&insns, |insn| matches!(insn,
+            Insn::CCall { data } if data.fptr == Opnd::Reg(CALL_TARGET_REG) && data.opnds.is_empty()))
+            .expect("expected an indirect call through the staged target");
+        assert!(stage_index < call_index);
+        if let Some(argument_index) = position(&insns, |insn| matches!(insn,
+            Insn::Mov { dest: Opnd::Reg(reg), .. } | Insn::LoadInto { dest: Opnd::Reg(reg), .. }
+                if *reg != CALL_TARGET_REG && ALLOC_REGS[..2].contains(reg))) {
+            assert!(stage_index < argument_index, "the target must be staged before argument moves");
+        }
+    }
+
+    #[test]
+    fn test_indirect_zjit_call_stages_target_after_stack_arguments() {
+        use crate::backend::current::CALL_TARGET_REG;
+
+        // Arguments beyond the argument registers are pushed, and pushing an
+        // immediate splits through the scratch register that is also
+        // CALL_TARGET_REG. Staging the target first would let the push clobber it.
+        let (insns, _) = lower_indirect_zjit_call(&[Opnd::UImm(1), Opnd::UImm(2), Opnd::UImm(3)], 2);
+        let push_index = position(&insns, |insn| matches!(insn, Insn::CPushPair(None, Opnd::UImm(3))))
+            .expect("expected the third argument to be pushed");
+        let stage_index = position(&insns, |insn| matches!(insn,
+            Insn::LoadInto { dest: Opnd::Reg(reg), .. } if *reg == CALL_TARGET_REG))
+            .expect("expected the indirect target to be staged");
+        assert!(push_index < stage_index, "stack-argument pushes must precede target staging");
     }
 }

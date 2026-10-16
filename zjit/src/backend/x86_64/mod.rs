@@ -111,6 +111,11 @@ const SCRATCH1_OPND: Opnd = Opnd::Reg(R10_REG);
 /// Must not overlap with ALLOC_REGS or other preserved registers.
 pub const SCRATCH_REG: Reg = R11_REG;
 
+/// Dedicated target register for indirect calls with arguments. It must not
+/// overlap the allocator, argument registers, or [`SCRATCH_REG`], since call
+/// argument parallel moves use the latter to break cycles.
+pub const CALL_TARGET_REG: Reg = R10_REG;
+
 impl Assembler {
     // This keeps frame growth below the +/-4096-byte displacement range we rely
     // on for common stack-slot accesses on x86_64.

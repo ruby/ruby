@@ -5274,8 +5274,16 @@ mod hir_opt_tests {
         bb8():
           Jump bb6()
         bb6():
-          v29:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
-          Jump bb4(v29)
+          v29:CPtr = ResolveBlockIseq v13, argc=1
+          v30:CPtr[CPtr(0x1020)] = Const CPtr(0x1020)
+          v31:CBool = IsBitEqual v29, v30
+          CondBranch v31, bb9(), bb10()
+        bb9():
+          v35:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
+          Jump bb4(v35)
+        bb10():
+          v33:BasicObject = InvokeBlockIseqDynamic v29, v10
+          Jump bb4(v33)
         bb4(v16:BasicObject):
           CheckInterrupts
           Return v16

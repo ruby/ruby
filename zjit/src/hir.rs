@@ -1108,6 +1108,10 @@ pub enum Insn {
     ArrayPop { array: InsnId, state: InsnId },
     /// Return the length of the array as a C `long` ([`types::CInt64`])
     ArrayLength { array: InsnId },
+    /// Resolve a runtime block handler to a compiled, simple ISEQ block call.
+    /// Returns a pointer to immutable-for-the-call metadata, or null when the
+    /// handler shape is unsupported or the ISEQ has no current compiled entry.
+    ResolveBlockIseq { handler: InsnId, argc: usize },
     /// Adjust potentially-negative index by the given length, returning the adjusted index. If
     /// still negative, return a negative number, which indicates the index is still out-of-bounds.
     AdjustBounds { index: InsnId, length: InsnId },
@@ -1374,6 +1378,13 @@ pub enum Insn {
         iseq: IseqPtr,
         /// Guarded `struct rb_captured_block *` (block handler with the ISEQ tag masked off).
         captured: InsnId,
+        args: Vec<InsnId>,
+        state: InsnId,
+    },
+    /// Call a runtime-resolved simple ISEQ block. `call` is the non-null
+    /// descriptor produced by [`Insn::ResolveBlockIseq`].
+    InvokeBlockIseqDynamic {
+        call: InsnId,
         args: Vec<InsnId>,
         state: InsnId,
     },
@@ -1781,6 +1792,9 @@ macro_rules! for_each_operand_impl {
             Insn::ProcIseqCaptured { handler } => {
                 $visit_one!(*handler);
             }
+            Insn::ResolveBlockIseq { handler, .. } => {
+                $visit_one!(*handler);
+            }
             Insn::InvokeSymbolYield { recv, state, .. } => {
                 $visit_one!(*recv);
                 $visit_one!(*state);
@@ -1840,6 +1854,11 @@ macro_rules! for_each_operand_impl {
             }
             Insn::InvokeBlockIseqDirect { captured, args, state, .. } => {
                 $visit_one!(*captured);
+                $visit_many!(args);
+                $visit_one!(*state);
+            }
+            Insn::InvokeBlockIseqDynamic { call, args, state } => {
+                $visit_one!(*call);
                 $visit_many!(args);
                 $visit_one!(*state);
             }
@@ -2002,6 +2021,7 @@ impl Insn {
             Insn::StringCopy { .. } => allocates,
             Insn::StringCoderangeScan { .. } => effects::Any,
             Insn::ProcIseqCaptured { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
+            Insn::ResolveBlockIseq { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Other),
             Insn::InvokeSymbolYield { .. } => effects::Any,
             Insn::StringIntern { .. } => effects::Any,
             Insn::StringConcat { .. } => effects::Any,
@@ -2223,6 +2243,7 @@ impl Insn {
             Insn::CheckInterrupts { .. } => Effect::read_write(abstract_heaps::InterruptFlag, abstract_heaps::Control),
             Insn::InvokeProc { .. } => effects::Any,
             Insn::InvokeBlockIseqDirect { .. } => effects::Any,
+            Insn::InvokeBlockIseqDynamic { .. } => effects::Any,
             Insn::RefineType { .. } => effects::Empty,
             Insn::Entries { .. } => effects::Any,
             Insn::BreakPoint | Insn::Unreachable => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
@@ -2375,6 +2396,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayLength { array } => {
                 write!(f, "ArrayLength {array}")
+            }
+            Insn::ResolveBlockIseq { handler, argc } => {
+                write!(f, "ResolveBlockIseq {handler}, argc={argc}")
             }
             Insn::AdjustBounds { index, length } => {
                 write!(f, "AdjustBounds {index}, {length}")
@@ -2621,6 +2645,11 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::InvokeBlockIseqDirect { iseq, captured, args, .. } => {
                 write!(f, "InvokeBlockIseqDirect ({:?}), {captured}", self.ptr_map.map_ptr(*iseq))?;
+                write_separated!(f, ", ", ", ", args);
+                Ok(())
+            }
+            Insn::InvokeBlockIseqDynamic { call, args, .. } => {
+                write!(f, "InvokeBlockIseqDynamic {call}")?;
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
@@ -3885,14 +3914,75 @@ impl Function {
         }
 
         if self.avoids_side_exits() {
-            let fallback_result = self.push_insn(block, Insn::InvokeBlock { cd, args, state, reason });
-            self.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
+            // The final version cannot reprofile: resolve the handler to its compiled block
+            // entry at runtime before resorting to the generic helper.
+            let flags = unsafe { rb_vm_ci_flag((*cd).ci) };
+            if can_direct_invoke_block(flags) {
+                self.push_runtime_block_iseq_dispatch(block, join_block, block_handler, cd, &args, state, insn_idx, reason);
+            } else {
+                let fallback_result = self.push_insn(block, Insn::InvokeBlock { cd, args, state, reason });
+                self.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
+            }
         } else {
             // A handler the profile never saw: exit to gather a bounded fresh profile and
             // recompile. The final version keeps the generic call, so a genuinely mixed site
             // cannot enter an unbounded deoptimization loop.
             self.push_insn(block, Insn::SideExit { state, reason: Box::new(SideExitReason::InvokeBlockProfileMiss), recompile: Some(Recompile) });
         }
+    }
+
+    /// Resolve the current simple ISEQ/Proc handler at runtime and call its
+    /// compiled entry, retaining the generic invokeblock helper for misses.
+    fn push_runtime_block_iseq_dispatch(
+        &mut self,
+        block: BlockId,
+        join_block: BlockId,
+        block_handler: InsnId,
+        cd: *const rb_call_data,
+        args: &[InsnId],
+        state: InsnId,
+        insn_idx: u32,
+        reason: SendFallbackReason,
+    ) {
+        let runtime_call = self.push_insn(block, Insn::ResolveBlockIseq {
+            handler: block_handler,
+            argc: args.len(),
+        });
+        let null = self.push_insn(block, Insn::Const {
+            val: Const::CPtr(std::ptr::null()),
+        });
+        let unresolved = self.push_insn(block, Insn::IsBitEqual {
+            left: runtime_call,
+            right: null,
+        });
+        let fallback_block = self.new_block(insn_idx);
+        let dynamic_block = self.new_block(insn_idx);
+        self.push_insn(block, Insn::CondBranch {
+            val: unresolved,
+            if_true: BranchEdge { target: fallback_block, args: vec![] },
+            if_false: BranchEdge { target: dynamic_block, args: vec![] },
+        });
+
+        let dynamic_result = self.push_insn(dynamic_block, Insn::InvokeBlockIseqDynamic {
+            call: runtime_call,
+            args: args.to_vec(),
+            state,
+        });
+        self.push_insn(dynamic_block, Insn::Jump(BranchEdge {
+            target: join_block,
+            args: vec![dynamic_result],
+        }));
+
+        let fallback_result = self.push_insn(fallback_block, Insn::InvokeBlock {
+            cd,
+            args: args.to_vec(),
+            state,
+            reason,
+        });
+        self.push_insn(fallback_block, Insn::Jump(BranchEdge {
+            target: join_block,
+            args: vec![fallback_result],
+        }));
     }
 
     // Add an instruction to an SSA block
@@ -4293,6 +4383,7 @@ impl Function {
             Insn::HashSize { .. } => types::Fixnum,
             Insn::StringCoderangeScan { .. } => types::CInt64,
             Insn::ProcIseqCaptured { .. } => types::CInt64,
+            Insn::ResolveBlockIseq { .. } => types::CPtr,
             Insn::InvokeSymbolYield { .. } => types::BasicObject,
             // May also be Qundef until guarded; BasicObject is the closest lattice fit.
             Insn::HashLookupOrUndef { .. } => types::BasicObject,
@@ -4360,6 +4451,7 @@ impl Function {
             Insn::InvokeBlockIfunc { .. } => types::BasicObject,
             Insn::InvokeProc { .. } => types::BasicObject,
             Insn::InvokeBlockIseqDirect { .. } => types::BasicObject,
+            Insn::InvokeBlockIseqDynamic { .. } => types::BasicObject,
             Insn::InvokeBuiltin { return_type, .. } => *return_type,
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::DefinedIvar { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
@@ -11057,6 +11149,7 @@ impl Function {
                 | Insn::InvokeSymbolYield { .. }
                 | Insn::InvokeProc { .. }
                 | Insn::InvokeBlockIseqDirect { .. }
+                | Insn::InvokeBlockIseqDynamic { .. }
                 | Insn::SendDirect(_)
                 | Insn::InvokeBuiltin { leaf: false, .. }
                 | Insn::AnyToString { .. }
@@ -12954,6 +13047,16 @@ impl Function {
             }
             Insn::ProcIseqCaptured { handler } => {
                 self.assert_subtype(insn_id, handler, types::CInt64)
+            }
+            Insn::ResolveBlockIseq { handler, .. } => {
+                self.assert_subtype(insn_id, handler, types::CInt64)
+            }
+            Insn::InvokeBlockIseqDynamic { call, ref args, .. } => {
+                self.assert_subtype(insn_id, call, types::CPtr)?;
+                for &arg in args {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
             }
             Insn::InvokeSymbolYield { recv, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)
@@ -15792,6 +15895,32 @@ fn add_iseq_to_hir(
                         let join_block = fun.new_block(insn_idx);
                         let join_param = fun.push_insn(join_block, Insn::Param);
                         fun.emit_block_handler_arms(block, insn_idx, block_handler, &handler_arms, cd, args, exit_id, fallback_reason, join_block);
+                        block = join_block;
+                        join_param
+                    } else if can_direct_invoke_block(flags) {
+                        // No profiled arm to dispatch on (megamorphic or unprofiled): resolve the
+                        // handler to its compiled block entry at runtime.
+                        let level = get_lvar_level(exit_state.iseq);
+                        let lep = fun.get_ep(block, level);
+                        let block_handler = fun.load_field(
+                            block,
+                            lep,
+                            FieldName::VM_ENV_DATA_INDEX_SPECVAL,
+                            SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
+                            types::CInt64,
+                        );
+                        let join_block = fun.new_block(insn_idx);
+                        let join_param = fun.push_insn(join_block, Insn::Param);
+                        fun.push_runtime_block_iseq_dispatch(
+                            block,
+                            join_block,
+                            block_handler,
+                            cd,
+                            &args,
+                            exit_id,
+                            insn_idx,
+                            fallback_reason,
+                        );
                         block = join_block;
                         join_param
                     } else {

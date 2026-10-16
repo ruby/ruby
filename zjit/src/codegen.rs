@@ -936,6 +936,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         }
         Insn::ArrayPop { array, state } => gen_array_pop(asm, opnd!(array), &function.frame_state(*state)),
         Insn::ArrayLength { array } => gen_array_length(asm, opnd!(array)),
+        Insn::ResolveBlockIseq { handler, argc } => {
+            asm_ccall!(asm, resolve_block_iseq, opnd!(handler), (*argc as u64).into())
+        }
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, function, opnd!(val), &function.frame_state(*state)),
         &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(jit, asm, function, class, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(jit, asm, function, *val, opnd!(val), *chilled, &function.frame_state(*state)),
@@ -1005,6 +1008,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, function, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
         Insn::InvokeBuiltin { bf, leaf, args, state, .. } => gen_invokebuiltin(jit, asm, function, &function.frame_state(*state), unsafe { &**bf }, *leaf, opnds!(args)),
         Insn::InvokeBlockIseqDirect { iseq, captured, args, state } => gen_invoke_block_iseq_direct(cb, jit, asm, function, *iseq, opnd!(captured), opnds!(args), &function.frame_state(*state)),
+        Insn::InvokeBlockIseqDynamic { call, args, state } => gen_invoke_block_iseq_dynamic(jit, asm, function, opnd!(call), opnds!(args), &function.frame_state(*state)),
         &Insn::EntryPoint { jit_entry_idx } => no_output!(gen_entry_point(jit, asm, jit_entry_idx)),
         Insn::Return { val } => no_output!(gen_return(asm, opnd!(val))),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
@@ -2868,6 +2872,111 @@ fn gen_invoke_block_iseq_direct(
 
     asm_comment!(asm, "restore SP register for the caller");
     let new_sp = asm.sub(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
+
+    ret
+}
+
+/// Call a simple block ISEQ selected entirely at runtime. The resolver has
+/// already checked the handler family, parameter shape, and availability of a
+/// current compiled entry. Normal iterations therefore pay one resolver call,
+/// a few descriptor loads, the frame push, and one indirect JIT-to-JIT call;
+/// they do not spill the whole VM stack or enter rb_vm_invokeblock.
+fn gen_invoke_block_iseq_dynamic(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    function: &Function,
+    runtime_call: Opnd,
+    args: Vec<Opnd>,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_incr_counter(asm, Counter::block_iseq_dynamic_optimized_send_count);
+
+    let captured = asm.load(Opnd::mem(
+        64,
+        runtime_call,
+        std::mem::offset_of!(RuntimeBlockCall, captured) as i32,
+    ));
+    let entry = asm.load(Opnd::mem(
+        64,
+        runtime_call,
+        std::mem::offset_of!(RuntimeBlockCall, entry) as i32,
+    ));
+    let local_size_bytes = asm.load(Opnd::mem(
+        64,
+        runtime_call,
+        std::mem::offset_of!(RuntimeBlockCall, local_size_bytes) as i32,
+    ));
+    let stack_growth_bytes = asm.load(Opnd::mem(
+        64,
+        runtime_call,
+        std::mem::offset_of!(RuntimeBlockCall, stack_growth_bytes) as i32,
+    ));
+
+    let captured_self = asm.load(Opnd::mem(64, captured, 0));
+    let captured_ep = asm.load(Opnd::mem(64, captured, SIZEOF_VALUE_I32));
+    let specval = asm.or(captured_ep, Opnd::Imm(0x1));
+
+    asm_comment!(asm, "dynamic block stack overflow check");
+    const { assert!(RUBY_SIZEOF_CONTROL_FRAME % SIZEOF_VALUE == 0); }
+    let cfp_growth = 2 * (RUBY_SIZEOF_CONTROL_FRAME / SIZEOF_VALUE);
+    let fixed_peak_bytes = (cfp_growth + state.stack_size()) * SIZEOF_VALUE;
+    let stack_limit = asm.add(SP, fixed_peak_bytes.into());
+    let stack_limit = asm.add(stack_limit, stack_growth_bytes);
+    asm.cmp(CFP, stack_limit);
+    asm.jbe(jit, side_exit(jit, function, state, StackOverflow));
+
+    let stack_size = state.stack().len() - args.len();
+    let stack_map = build_stack_map(jit, function, &state.with_stack_size(stack_size));
+    let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
+    gen_save_sp(asm, stack_size);
+    gen_spill_locals(jit, asm, state);
+    asm.stack_map(stack_map, jit_frame, state.depth);
+
+    // Build the block environment at a runtime local-table offset.
+    let fixed_ep_bytes =
+        (stack_size + VM_ENV_DATA_SIZE.to_usize() - 1) * SIZEOF_VALUE;
+    let ep = asm.add(SP, fixed_ep_bytes.into());
+    let ep = asm.add(ep, local_size_bytes);
+    asm_comment!(asm, "push dynamic block environment");
+    asm.store(
+        Opnd::mem(64, ep, -2 * SIZEOF_VALUE_I32),
+        VALUE::from(std::ptr::null::<rb_callable_method_entry_t>()).into(),
+    );
+    asm.store(Opnd::mem(64, ep, -SIZEOF_VALUE_I32), specval);
+    asm.store(Opnd::mem(64, ep, 0), VM_FRAME_MAGIC_BLOCK.into());
+
+    fn cfp_opnd(offset: i32) -> Opnd {
+        Opnd::mem(64, CFP, offset - RUBY_SIZEOF_CONTROL_FRAME as i32)
+    }
+    asm_comment!(asm, "push dynamic block control frame");
+    // Initializing block_code unconditionally is cheaper than carrying another
+    // runtime flag and is valid for every ISEQ block frame.
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), captured_self);
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
+
+    let fixed_sp_bytes = (stack_size + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
+    let sp_offset = asm.add(local_size_bytes, fixed_sp_bytes.into());
+    asm_comment!(asm, "switch to dynamic block SP and CFP");
+    let new_sp = asm.add(SP, sp_offset);
+    asm.mov(SP, new_sp);
+    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    // Published at `ec->cfp` by the callee's JIT entry, like the direct block call: an
+    // early publish would expose the half-built frame to rb_profile_frames from SIGPROF.
+    asm.mov(CFP, new_cfp);
+
+    let mut c_args = Vec::with_capacity(1 + args.len());
+    c_args.push(captured_self);
+    c_args.extend(&args);
+    let ret = asm.ccall_zjit(entry, c_args);
+
+    asm_comment!(asm, "side-exit if dynamic block callee side-exits");
+    asm.cmp(ret, Qundef.into());
+    asm.je(jit, ZJITState::get_exit_trampoline().into());
+
+    asm_comment!(asm, "restore SP register after dynamic block call");
+    let new_sp = asm.sub(SP, sp_offset);
     asm.mov(SP, new_sp);
 
     ret
@@ -5048,6 +5157,105 @@ macro_rules! c_callable {
 }
 #[cfg(test)]
 pub(crate) use c_callable;
+
+/// Runtime data consumed by [`gen_invoke_block_iseq_dynamic`]. A thread-local
+/// slot avoids allocation and keeps the resolver ABI to one returned pointer.
+/// Generated code loads every field before entering the callee, so nested
+/// yields may safely reuse the slot.
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct RuntimeBlockCall {
+    captured: *const rb_captured_block,
+    entry: *const u8,
+    local_size_bytes: usize,
+    stack_growth_bytes: usize,
+}
+
+const EMPTY_RUNTIME_BLOCK_CALL: RuntimeBlockCall = RuntimeBlockCall {
+    captured: std::ptr::null(),
+    entry: std::ptr::null(),
+    local_size_bytes: 0,
+    stack_growth_bytes: 0,
+};
+
+thread_local! {
+    static RUNTIME_BLOCK_CALL: Cell<RuntimeBlockCall> =
+        const { Cell::new(EMPTY_RUNTIME_BLOCK_CALL) };
+}
+
+c_callable! {
+    /// Decode an ISEQ or plain non-lambda ISEQ-Proc block handler and resolve
+    /// its current compiled entry. Unsupported parameter shapes and
+    /// uncompiled/invalidated ISEQs return null for the generic fallback.
+    fn resolve_block_iseq(handler: VALUE, argc: usize) -> *const RuntimeBlockCall {
+        let captured = match handler.0 & 0x3 {
+            // VM_BH_ISEQ_BLOCK_P
+            0x1 => (handler.0 & !0x3) as *const rb_captured_block,
+            // Plain VALUE handler: accept only the Proc subset implemented by
+            // rb_zjit_proc_iseq_captured (non-lambda, ISEQ-backed).
+            0x0 => unsafe { rb_zjit_proc_iseq_captured(handler) },
+            _ => std::ptr::null(),
+        };
+        if captured.is_null() {
+            return std::ptr::null();
+        }
+
+        let iseq = unsafe { (*captured).code.bindgen_union_field as IseqPtr };
+        if iseq.is_null() {
+            return std::ptr::null();
+        }
+
+        // Mirror block_call_shape_ok without several FFI accessor calls.
+        let params = unsafe { iseq.params() };
+        let flags = &params.flags;
+        let simple =
+            flags.has_opt() == 0
+            && flags.has_rest() == 0
+            && flags.has_post() == 0
+            && flags.has_kw() == 0
+            && flags.has_kwrest() == 0
+            && flags.accepts_no_kwarg() == 0
+            && flags.forwardable() == 0
+            && flags.has_block() == 0
+            && flags.accepts_no_block() == 0;
+        if !simple
+            || params.lead_num < 0
+            || params.lead_num as usize != argc
+            || (argc == 1 && flags.ambiguous_param0() == 0)
+        {
+            return std::ptr::null();
+        }
+
+        let payload_ptr = unsafe { rb_iseq_get_jit_payload(iseq) };
+        let Some(payload) = (unsafe {
+            (payload_ptr as *const crate::payload::IseqPayload).as_ref()
+        }) else {
+            return std::ptr::null();
+        };
+        let Some(version) = payload.versions.last() else {
+            return std::ptr::null();
+        };
+        let IseqStatus::Compiled(code_ptrs) = &unsafe { version.as_ref() }.status else {
+            return std::ptr::null();
+        };
+        let Some(entry) = code_ptrs.jit_entry_ptrs.first() else {
+            return std::ptr::null();
+        };
+
+        let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
+        let stack_max = unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
+        let resolved = RuntimeBlockCall {
+            captured,
+            entry: entry.raw_ptr(ZJITState::get_code_block()),
+            local_size_bytes: local_size * SIZEOF_VALUE,
+            stack_growth_bytes: (local_size + stack_max) * SIZEOF_VALUE,
+        };
+        RUNTIME_BLOCK_CALL.with(|slot| {
+            slot.set(resolved);
+            slot.as_ptr() as *const RuntimeBlockCall
+        })
+    }
+}
 
 c_callable! {
     /// Complete a jit_exec_exception() entry after the compiled body returns.

@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::{gen_insn, JITState};
+use super::{gen_insn, resolve_block_iseq, JITState};
 use crate::asm::CodeBlock;
 use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
@@ -1690,6 +1690,252 @@ fn test_throw_break_inner_loop_repeatedly() {
         test([1, 2, 3])
     ");
     assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3])"), @"18");
+}
+
+#[test]
+fn test_yield_megamorphic_runtime_iseq_dispatch() {
+    rb_zjit_prepare_options();
+    let old_call_threshold = unsafe { crate::options::rb_zjit_call_threshold };
+    let old_inline_threshold = get_option!(inline_threshold);
+    set_call_threshold(2);
+    set_inline_threshold(0);
+
+    // Compile the Proc bodies before they reach the shared yield site.
+    eval("
+        RUNTIME_ISEQ_PROCS = [
+          proc { |x| x + 1 },
+          proc { |x| x + 2 },
+          proc { |x| x + 3 },
+          proc { |x| x + 4 },
+          proc { |x| x + 5 },
+          proc { |x| x + 6 },
+          proc { |x| x + 7 },
+          proc { |x| x + 8 },
+          proc { |x| x + 9 },
+          proc { |x| x + 10 },
+        ]
+
+        def make_runtime_captured_proc(offset)
+          proc { |x| x + offset }
+        end
+        RUNTIME_CAPTURED_PROCS = [10, 20, 30].map do |offset|
+          make_runtime_captured_proc(offset)
+        end
+
+        class RuntimeCapturedSelf
+          def initialize(offset)
+            @offset = offset
+          end
+
+          def handler
+            proc { |x| x + @offset }
+          end
+        end
+        RUNTIME_SELF_PROCS = [100, 200].map do |offset|
+          RuntimeCapturedSelf.new(offset).handler
+        end
+        RUNTIME_NESTED_INNER = proc { |x| x + 1 }
+        RUNTIME_NESTED_OUTER = proc do |x|
+          runtime_iseq_yielder(x, &RUNTIME_NESTED_INNER) + 10
+        end
+        # self plus 9 arguments overflows the argument registers on both arm64 (8) and x86-64 (6).
+        RUNTIME_WIDE_PROC = proc { |a, b, c, d, e, f, g, h, i| a + b + c + d + e + f + g + h + i }
+
+        3.times { RUNTIME_ISEQ_PROCS.each { |handler| handler.call(1) } }
+        3.times { RUNTIME_CAPTURED_PROCS.each { |handler| handler.call(1) } }
+        3.times { RUNTIME_SELF_PROCS.each { |handler| handler.call(1) } }
+        3.times { RUNTIME_NESTED_INNER.call(1) }
+        3.times { RUNTIME_WIDE_PROC.call(1, 2, 3, 4, 5, 6, 7, 8, 9) }
+    ");
+
+    // A shared yield site without a useful static profile should still call
+    // any already-compiled simple ISEQ body without rb_vm_invokeblock.
+    set_call_threshold(1);
+    eval("
+        def runtime_iseq_yielder(value)
+          yield value
+        end
+        def runtime_wide_yielder
+          yield 1, 2, 3, 4, 5, 6, 7, 8, 9
+        end
+        runtime_iseq_yielder(0, &RUNTIME_ISEQ_PROCS[0])
+        runtime_wide_yielder(&RUNTIME_WIDE_PROC)
+        3.times { RUNTIME_NESTED_OUTER.call(1) }
+    ");
+    let iseq = get_method_iseq("self", "runtime_iseq_yielder");
+
+    for index in 0..10 {
+        let block_iseq = get_proc_iseq(&format!("RUNTIME_ISEQ_PROCS[{index}]"));
+        let payload = get_or_create_iseq_payload(block_iseq);
+        assert!(
+            matches!(
+                payload.versions.last().map(|version| &unsafe { version.as_ref() }.status),
+                Some(IseqStatus::Compiled(_))
+            ),
+            "expected Proc body {index} to have a compiled JIT entry"
+        );
+        let handler = eval(&format!("RUNTIME_ISEQ_PROCS[{index}]"));
+        assert!(
+            !resolve_block_iseq(handler, 1).is_null(),
+            "expected Proc body {index} to resolve for dynamic dispatch"
+        );
+    }
+    let payload = get_or_create_iseq_payload(iseq);
+    assert!(matches!(
+        payload.versions.last().map(|version| &unsafe { version.as_ref() }.status),
+        Some(IseqStatus::Compiled(_))
+    ));
+    assert!(!resolve_block_iseq(eval("RUNTIME_WIDE_PROC"), 9).is_null());
+    let function = iseq_to_hir(iseq).unwrap();
+    assert!(
+        (0..function.num_insns()).any(|index| matches!(
+            function.find(InsnId::from(index)),
+            Insn::InvokeBlockIseqDynamic { .. }
+        )),
+        "expected a runtime-resolved ISEQ path"
+    );
+
+    assert_snapshot!(
+        assert_compiles_allowing_exits("
+            [
+              RUNTIME_ISEQ_PROCS.each_with_index.map do |handler, index|
+                runtime_iseq_yielder(index, &handler)
+              end,
+              RUNTIME_CAPTURED_PROCS.each_with_index.map do |handler, index|
+                runtime_iseq_yielder(index, &handler)
+              end,
+              RUNTIME_SELF_PROCS.each_with_index.map do |handler, index|
+                runtime_iseq_yielder(index, &handler)
+              end,
+              runtime_iseq_yielder(5, &RUNTIME_NESTED_OUTER),
+              runtime_wide_yielder(&RUNTIME_WIDE_PROC),
+            ]
+        "),
+        @"[[1, 3, 5, 7, 9, 11, 13, 15, 17, 19], [10, 21, 32], [100, 201], 16, 45]"
+    );
+
+    set_inline_threshold(old_inline_threshold);
+    set_call_threshold(old_call_threshold);
+}
+
+#[test]
+fn test_yield_runtime_iseq_dispatch_falls_back_for_unsupported_handlers() {
+    rb_zjit_prepare_options();
+    let old_call_threshold = unsafe { crate::options::rb_zjit_call_threshold };
+    let old_inline_threshold = get_option!(inline_threshold);
+    set_call_threshold(1);
+    set_inline_threshold(0);
+
+    eval("
+        RUNTIME_UNSUPPORTED_LAMBDA = ->(x) { [:lambda, x] }
+        RUNTIME_UNSUPPORTED_OPTIONAL = proc { |x = :default| [:optional, x] }
+
+        def runtime_unsupported_yielder(value, &block)
+          yield value
+        end
+
+        def runtime_many_args_yielder
+          yield 0, 1, 2, 3, 4, 5, 6, 7,
+                8, 9, 10, 11, 12, 13, 14, 15,
+                16, 17, 18, 19, 20, 21, 22, 23,
+                24, 25, 26, 27, 28, 29, 30, 31
+        end
+
+        runtime_unsupported_yielder(1, &RUNTIME_UNSUPPORTED_LAMBDA)
+        runtime_many_args_yielder { |*args| args.length }
+    ");
+
+    assert!(resolve_block_iseq(eval("RUNTIME_UNSUPPORTED_LAMBDA"), 1).is_null());
+    assert!(resolve_block_iseq(eval("RUNTIME_UNSUPPORTED_OPTIONAL"), 1).is_null());
+    assert!(resolve_block_iseq(eval(":itself"), 1).is_null());
+
+    let iseq = get_method_iseq("self", "runtime_unsupported_yielder");
+    let function = iseq_to_hir(iseq).unwrap();
+    assert!((0..function.num_insns()).any(|index| matches!(
+        function.find(InsnId::from(index)),
+        Insn::InvokeBlockIseqDynamic { .. }
+    )));
+    assert!((0..function.num_insns()).any(|index| matches!(
+        function.find(InsnId::from(index)),
+        Insn::InvokeBlock { .. }
+    )));
+    // Wide yields have no argument cap: the dynamic call passes the excess on the native
+    // stack. The rest-param block itself is unsupported, so resolution fails at runtime and
+    // that call takes the generic helper.
+    let many_args_iseq = get_method_iseq("self", "runtime_many_args_yielder");
+    let many_args_function = iseq_to_hir(many_args_iseq).unwrap();
+    assert!((0..many_args_function.num_insns()).any(|index| matches!(
+        many_args_function.find(InsnId::from(index)),
+        Insn::InvokeBlockIseqDynamic { .. }
+    )));
+
+    assert_snapshot!(
+        assert_compiles_allowing_exits("
+            [
+              runtime_unsupported_yielder(2, &RUNTIME_UNSUPPORTED_LAMBDA),
+              runtime_unsupported_yielder(nil, &RUNTIME_UNSUPPORTED_OPTIONAL),
+              runtime_unsupported_yielder(:symbol, &:itself),
+              runtime_many_args_yielder { |*args| args.length },
+            ]
+        "),
+        @"[[:lambda, 2], [:optional, nil], :symbol, 32]"
+    );
+
+    set_inline_threshold(old_inline_threshold);
+    set_call_threshold(old_call_threshold);
+}
+
+#[test]
+fn test_yield_runtime_iseq_dispatch_preserves_throw_frame() {
+    rb_zjit_prepare_options();
+    let old_call_threshold = unsafe { crate::options::rb_zjit_call_threshold };
+    let old_inline_threshold = get_option!(inline_threshold);
+    set_call_threshold(1);
+    set_inline_threshold(0);
+
+    eval("
+        $runtime_throw_log = []
+
+        def runtime_throw_yielder(value)
+          begin
+            result = yield(value)
+            [:yielded, result]
+          ensure
+            $runtime_throw_log << :ensured
+          end
+        end
+
+        def runtime_throw_driver(value)
+          result = runtime_throw_yielder(value) do |should_break|
+            break :dynamic_break if should_break
+            :dynamic_body
+          end
+          [result, :driver_after]
+        end
+
+        # The first invocation compiles the block body through the generic
+        # fallback. Later invocations can resolve its entry dynamically.
+        runtime_throw_driver(false)
+        runtime_throw_driver(false)
+    ");
+
+    let iseq = get_method_iseq("self", "runtime_throw_yielder");
+    let function = iseq_to_hir(iseq).unwrap();
+    assert!((0..function.num_insns()).any(|index| matches!(
+        function.find(InsnId::from(index)),
+        Insn::InvokeBlockIseqDynamic { .. }
+    )));
+
+    assert_snapshot!(
+        assert_compiles_allowing_exits("
+            $runtime_throw_log.clear
+            [runtime_throw_driver(true), $runtime_throw_log]
+        "),
+        @"[[:dynamic_break, :driver_after], [:ensured]]"
+    );
+
+    set_inline_threshold(old_inline_threshold);
+    set_call_threshold(old_call_threshold);
 }
 
 #[test]
