@@ -2159,26 +2159,34 @@ rb_mod_include_p(VALUE mod, VALUE mod2)
 
 /*
  *  call-seq:
- *     mod.ancestors -> array
+ *    ancestors -> array
  *
- *  Returns a list of modules included/prepended in <i>mod</i>
- *  (including <i>mod</i> itself).
+ *  Returns an array of the modules that are ancestors of +self+
+ *  and that +self+ includes or prepends, including +self+;
+ *  the order of the array elements is undefined:
  *
- *     module Mod
- *       include Math
- *       include Comparable
- *       prepend Enumerable
- *     end
+ *    module MyModule
+ *      include Math
+ *      include Comparable
+ *      prepend Enumerable
+ *    end
+ *    MyModule.ancestors    # => [Enumerable, MyModule, Comparable, Math]
  *
- *     Mod.ancestors        #=> [Enumerable, Mod, Comparable, Math]
- *     Math.ancestors       #=> [Math]
- *     Enumerable.ancestors #=> [Enumerable]
+ *    class MyClass; end
+ *    MyClass.ancestors     # => [MyClass, Object, JSON::GeneratorMethods, PP::ObjectMixin, Kernel, BasicObject]
+ *
+ *    Object.ancestors      # => [Object, JSON::GeneratorMethods, PP::ObjectMixin, Kernel, BasicObject]
+ *    BasicObject.ancestors # => [BasicObject]
+ *
+ *  Note that +self+ does not hold references to its ancestors;
+ *  Thus even though all references to a module are dropped,
+ *  the module may be reported as an ancestor, depending on garbage collection.
  */
 
 VALUE
 rb_mod_ancestors(VALUE mod)
 {
-    VALUE p, ary = rb_ary_new();
+ *  VALUE p, ary = rb_ary_new();
     VALUE refined_class = Qnil;
     if (BUILTIN_TYPE(mod) == T_MODULE && FL_TEST(mod, RMODULE_IS_REFINEMENT)) {
         refined_class = rb_refinement_module_get_refined_class(mod);
@@ -2360,11 +2368,8 @@ module_descendants_recursive(VALUE entry, VALUE v)
  *  call-seq:
  *     descendants -> array
  *
- *  Returns an array of classes and modules that have the receiver in
- *  their ancestors. This is the inverse of Module#ancestors:
- *  +x.descendants.include?(y)+ holds if and only if
- *  +y.ancestors.include?(x)+ holds, except that the receiver itself,
- *  singleton classes, and refinements are never included.
+ *  Returns an array of classes and modules that have +self+ as an ancestor.
+ *  Singleton classes and refinements are not included.
  *  The order of the returned array is not defined.
  *
  *     module A; end
@@ -2376,11 +2381,9 @@ module_descendants_recursive(VALUE entry, VALUE v)
  *     B.descendants    #=> [C, D]
  *     C.descendants    #=> [D]
  *
- *  Note that the receiver does not hold references to its descendants
- *  and doesn't prevent them from being garbage collected. This means
- *  that a descendant might disappear from the result when all
- *  references to it are dropped, depending on whether garbage
- *  collector was run.
+ *  Note that +self+ does not hold references to its descendants;
+ *  Thus even though all references to a module are dropped,
+ *  the module may be reported as a descendant, depending on garbage collection.
  */
 
 VALUE
