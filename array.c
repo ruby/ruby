@@ -2239,7 +2239,11 @@ struct ary_scan {
     VALUE mask, tag; /* (e & mask) == tag if e is of the kind */
 };
 
-/* The elements are examined this many at a time, without a branch each. */
+/*
+ * The elements are examined this many at a time, without a branch each,
+ * which compilers can vectorize.  It is a little faster than a branch
+ * per element even when they do not.
+ */
 #define ARY_SCAN_BLOCK 8
 
 /*
@@ -2276,7 +2280,7 @@ static rb_len_t
 ary_scan_forward(const struct ary_scan scan, const VALUE *ptr,
                  rb_len_t i, rb_len_t len, VALUE item)
 {
-    const VALUE mask = scan->mask, tag = scan->tag;
+    const VALUE mask = scan.mask, tag = scan.tag;
 
     for (; len - i >= ARY_SCAN_BLOCK; i += ARY_SCAN_BLOCK) {
         VALUE stop = 0;
@@ -2298,10 +2302,10 @@ ary_scan_forward(const struct ary_scan scan, const VALUE *ptr,
  * not of the kind of +item+, or -1 if there is no such element.
  */
 static rb_len_t
-ary_scan_backward(const struct ary_scan *scan, const VALUE *ptr,
+ary_scan_backward(const struct ary_scan scan, const VALUE *ptr,
                   rb_len_t i, VALUE item)
 {
-    const VALUE mask = scan->mask, tag = scan->tag;
+    const VALUE mask = scan.mask, tag = scan.tag;
 
     for (; i + 1 >= ARY_SCAN_BLOCK; i -= ARY_SCAN_BLOCK) {
         VALUE stop = 0;
@@ -2324,10 +2328,10 @@ ary_scan_backward(const struct ary_scan *scan, const VALUE *ptr,
  * the elements before it that are +item+ is added to +*count+.
  */
 static rb_len_t
-ary_scan_count(const struct ary_scan *scan, const VALUE *ptr,
+ary_scan_count(const struct ary_scan scan, const VALUE *ptr,
                rb_len_t i, rb_len_t len, VALUE item, rb_len_t *count)
 {
-    const VALUE mask = scan->mask, tag = scan->tag;
+    const VALUE mask = scan.mask, tag = scan.tag;
     rb_len_t n = *count;
 
     for (; len - i >= ARY_SCAN_BLOCK; i += ARY_SCAN_BLOCK) {
@@ -2361,7 +2365,7 @@ ary_index_of(VALUE ary, VALUE item)
     rb_len_t i = 0;
 
     if (ary_scan_init(&scan, item)) {
-        i = ary_scan_forward(&scan, RARRAY_CONST_PTR(ary), 0,
+        i = ary_scan_forward(scan, RARRAY_CONST_PTR(ary), 0,
                              RARRAY_LEN(ary), item);
         if (i < RARRAY_LEN(ary) && RARRAY_AREF(ary, i) == item) return i;
     }
@@ -2481,7 +2485,7 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
     if (rb_block_given_p())
         rb_warn("given block not used");
     if (ary_scan_init(&scan, val)) {
-        i = ary_scan_backward(&scan, RARRAY_CONST_PTR(ary), i - 1, val);
+        i = ary_scan_backward(scan, RARRAY_CONST_PTR(ary), i - 1, val);
         if (i >= 0 && RARRAY_AREF(ary, i) == val) return LEN2NUM(i);
         i++; /* resume from the element the scan stopped at */
     }
@@ -6839,7 +6843,7 @@ rb_ary_count(int argc, VALUE *argv, VALUE ary)
         }
         i = 0;
         if (ary_scan_init(&scan, obj)) {
-            i = ary_scan_count(&scan, RARRAY_CONST_PTR(ary), 0,
+            i = ary_scan_count(scan, RARRAY_CONST_PTR(ary), 0,
                                RARRAY_LEN(ary), obj, &n);
         }
         for (; i < RARRAY_LEN(ary); i++) {
