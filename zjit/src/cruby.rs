@@ -1307,7 +1307,7 @@ pub mod test_utils {
             rb_zjit_prepare_options(); // enable `#with_jit` on builtins
             ruby_init();
 
-            // The default rb_zjit_profile_threshold is too high, so lower it for HIR tests.
+            // The default call threshold is too high, so lower it for HIR tests.
             if rb_zjit_call_threshold == DEFAULT_CALL_THRESHOLD {
                 set_call_threshold(2);
             }

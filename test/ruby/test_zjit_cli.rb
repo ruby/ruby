@@ -388,6 +388,115 @@ class TestZJITCLI < Test::Unit::TestCase
     RUBY
   end
 
+  def test_size_aware_call_threshold
+    large_body = 40.times.map { |index| "value += #{index + 1}" }.join("\n")
+    assert_runs '[1, 1, 2]', <<~RUBY, call_threshold: nil, num_profiles: 5, stats: :quiet
+      def small(value)
+        value + 1
+      end
+
+      def large(value)
+        #{large_body}
+        value
+      end
+
+      before = RubyVM::ZJIT.stats(:compiled_iseq_count)
+      calls = 0
+      while calls < 30
+        small(calls)
+        large(calls)
+        calls += 1
+      end
+      after_default = RubyVM::ZJIT.stats(:compiled_iseq_count)
+
+      while calls < 120
+        large(calls)
+        calls += 1
+      end
+      after_large_is_hot = RubyVM::ZJIT.stats(:compiled_iseq_count)
+
+      [after_default - before, after_large_is_hot - after_default, after_large_is_hot - before]
+    RUBY
+  end
+
+  def test_call_threshold_endpoints
+    large_body = 40.times.map { |index| "value += #{index + 1}" }.join("\n")
+    opts = {
+      call_threshold: nil,
+      call_threshold_small: 11,
+      call_threshold_large: 37,
+      num_profiles: 5,
+      stats: :quiet,
+    }
+    assert_runs '[1, 1, 2]', <<~RUBY, **opts
+      def small(value)
+        value + 1
+      end
+
+      def large(value)
+        #{large_body}
+        value
+      end
+
+      before = RubyVM::ZJIT.stats(:compiled_iseq_count)
+      calls = 0
+      while calls < 11
+        small(calls)
+        large(calls)
+        calls += 1
+      end
+      after_small = RubyVM::ZJIT.stats(:compiled_iseq_count)
+
+      while calls < 37
+        large(calls)
+        calls += 1
+      end
+      after_large = RubyVM::ZJIT.stats(:compiled_iseq_count)
+
+      [after_small - before, after_large - after_small, after_large - before]
+    RUBY
+  end
+
+  def test_call_threshold_endpoints_must_be_ordered
+    args = [
+      "--zjit-call-threshold-large=20",
+      "--zjit-call-threshold-small=40",
+      "-e",
+      "exit",
+    ]
+    _out, err, status = EnvUtil.invoke_ruby(
+      args,
+      "",
+      true,
+      true,
+      rubybin: RbConfig.ruby,
+    )
+    refute_predicate status, :success?
+    assert_include(
+      err,
+      "--zjit-call-threshold-small must be less than or equal to " \
+        "--zjit-call-threshold-large",
+    )
+  end
+
+  def test_custom_call_threshold_ignores_iseq_size
+    large_body = 40.times.map { |index| "value += #{index + 1}" }.join("\n")
+    assert_runs '1', <<~RUBY, call_threshold: 29, num_profiles: 5, stats: :quiet
+      def large(value)
+        #{large_body}
+        value
+      end
+
+      before = RubyVM::ZJIT.stats(:compiled_iseq_count)
+      calls = 0
+      while calls < 29
+        large(calls)
+        calls += 1
+      end
+      RubyVM::ZJIT.stats(:compiled_iseq_count) - before
+    RUBY
+  end
+
   def test_exit_tracing
     # Smoke test: --zjit-trace-exits writes a Fuchsia trace (.fxt) file to /tmp
     assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-exits'])
@@ -769,6 +878,8 @@ class TestZJITCLI < Test::Unit::TestCase
   def eval_with_jit(
     script,
     call_threshold: 1,
+    call_threshold_small: nil,
+    call_threshold_large: nil,
     num_profiles: 1,
     zjit: true,
     stats: false,
@@ -780,7 +891,9 @@ class TestZJITCLI < Test::Unit::TestCase
   )
     args = ["--disable-gems", *extra_args]
     if zjit
-      args << "--zjit-call-threshold=#{call_threshold}"
+      args << "--zjit-call-threshold=#{call_threshold}" if call_threshold
+      args << "--zjit-call-threshold-small=#{call_threshold_small}" if call_threshold_small
+      args << "--zjit-call-threshold-large=#{call_threshold_large}" if call_threshold_large
       args << "--zjit-num-profiles=#{num_profiles}"
       case stats
       when true

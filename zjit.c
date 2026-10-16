@@ -203,18 +203,20 @@ bool
 rb_zjit_iseq_has_profiled_enough(const rb_iseq_t *iseq)
 {
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    uint64_t profile_threshold = rb_zjit_iseq_profile_threshold(iseq);
 
-    if (body->jit_entry_calls < rb_zjit_profile_threshold) {
+    if (body->jit_entry_calls < profile_threshold) {
         // Skip the unprofiled warmup. The compiled caller already establishes
         // that the callee is hot, so go straight to the profiling window.
-        body->jit_entry_calls = rb_zjit_profile_threshold;
+        // Thresholds derive from the unsigned int options, so this is exact.
+        body->jit_entry_calls = (unsigned int)profile_threshold;
         rb_zjit_profile_enable(iseq);
     }
     else {
         body->jit_entry_calls++;
     }
 
-    return body->jit_entry_calls >= rb_zjit_call_threshold;
+    return body->jit_entry_calls >= rb_zjit_iseq_compile_threshold(iseq);
 }
 
 // Convert a given ISEQ's ZJIT instructions to bare instructions

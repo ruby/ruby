@@ -556,6 +556,56 @@ yjit_compile(rb_execution_context_t *ec)
 #endif
 
 #if USE_ZJIT
+// Interpolate between the thresholds for small and large ISEQs according to
+// the amount of bytecode that would become generated code.
+static inline uint64_t
+zjit_compile_threshold(const struct rb_iseq_constant_body *body)
+{
+    const uint64_t size_unit = 64;
+    uint64_t scale = ((uint64_t)body->iseq_size + size_unit - 1) / size_unit;
+    if (scale < 1) scale = 1;
+    if (scale > 4) scale = 4;
+
+    uint64_t small = rb_zjit_call_threshold;
+    uint64_t large = rb_zjit_call_threshold_large;
+    uint64_t numerator = scale - 1;
+    if (large >= small) {
+        uint64_t delta = large - small;
+        return small + (delta / 3) * numerator + ((delta % 3) * numerator) / 3;
+    }
+    else {
+        uint64_t delta = small - large;
+        return small - (delta / 3) * numerator - ((delta % 3) * numerator) / 3;
+    }
+}
+
+static inline uint64_t
+zjit_profile_threshold(uint64_t compile_threshold)
+{
+    if (compile_threshold == 1) {
+        return 0;
+    }
+    if (compile_threshold <= rb_zjit_num_profiles) {
+        return 1;
+    }
+    return compile_threshold - rb_zjit_num_profiles;
+}
+
+// Per-ISEQ thresholds for function stubs (rb_zjit_iseq_has_profiled_enough),
+// so a JIT-to-JIT call into an uncompiled ISEQ waits exactly as long as an
+// interpreter entry would.
+uint64_t
+rb_zjit_iseq_compile_threshold(const rb_iseq_t *iseq)
+{
+    return zjit_compile_threshold(ISEQ_BODY(iseq));
+}
+
+uint64_t
+rb_zjit_iseq_profile_threshold(const rb_iseq_t *iseq)
+{
+    return zjit_profile_threshold(zjit_compile_threshold(ISEQ_BODY(iseq)));
+}
+
 static inline rb_jit_func_t
 zjit_compile(rb_execution_context_t *ec)
 {
@@ -564,10 +614,11 @@ zjit_compile(rb_execution_context_t *ec)
 
     if (body->jit_entry == NULL && rb_zjit_compiling_p) {
         body->jit_entry_calls++;
+        uint64_t compile_threshold = zjit_compile_threshold(body);
 
         // At profile-threshold, rewrite some of the YARV instructions
         // to zjit_* instructions to profile these instructions.
-        if (body->jit_entry_calls == rb_zjit_profile_threshold) {
+        if (body->jit_entry_calls == zjit_profile_threshold(compile_threshold)) {
             rb_zjit_profile_enable(iseq);
         }
 
@@ -575,7 +626,7 @@ zjit_compile(rb_execution_context_t *ec)
         // eval body wait for a much higher threshold: they are usually
         // throwaway (re-eval'd templates), and compiling them costs far more
         // than interpreting their few remaining calls.
-        if (body->jit_entry_calls == rb_zjit_call_threshold) {
+        if (body->jit_entry_calls == compile_threshold) {
             if (!rb_zjit_iseq_eval_rooted(iseq)) {
                 rb_zjit_compile_iseq(iseq, ec, false);
             }
@@ -653,15 +704,16 @@ jit_compile_exception(rb_execution_context_t *ec)
     // rb_zjit_enabled_p check is needed here.
     if (body->jit_exception == NULL && rb_zjit_compiling_p) {
         body->jit_exception_calls++;
+        uint64_t compile_threshold = zjit_compile_threshold(body);
 
         // At profile-threshold, rewrite some of the YARV instructions
         // to zjit_* instructions to profile these instructions.
-        if (body->jit_exception_calls == rb_zjit_profile_threshold) {
+        if (body->jit_exception_calls == zjit_profile_threshold(compile_threshold)) {
             rb_zjit_profile_enable(iseq);
         }
 
         // At call-threshold, compile the ISEQ with ZJIT.
-        if (body->jit_exception_calls == rb_zjit_call_threshold) {
+        if (body->jit_exception_calls == compile_threshold) {
             rb_zjit_compile_iseq(iseq, ec, true);
         }
     }

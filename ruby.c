@@ -2444,6 +2444,14 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         // --enable=zjit, RUBY_ZJIT_ENABLE and --jit in ZJIT-only builds set the bit without parsing a --zjit* option.
         extern void rb_zjit_prepare_options(void);
         rb_zjit_prepare_options();
+        bool rb_zjit_options_valid_p(void);
+        if (!rb_zjit_options_valid_p()) {
+            rb_raise(
+                rb_eRuntimeError,
+                "--zjit-call-threshold-small must be less than or equal to "
+                "--zjit-call-threshold-large"
+            );
+        }
         bool rb_zjit_option_enable(void);
         opt->zjit = rb_zjit_option_enable(); // set opt->zjit for Init_ruby_description() and calling rb_zjit_init()
     }
