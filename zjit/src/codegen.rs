@@ -26,7 +26,7 @@ use crate::stats::{counter_ptr, with_compile_time_stat, trace_compile_phase, Cou
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
 use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, CondBranchHasTypeData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
+use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, CondBranchFixnumCmpData, CondBranchHasTypeData, Const, FieldName, FixnumCmpOp, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, InlineDepth, DEFAULT_MAX_VERSIONS};
 use crate::cast::IntoUsize;
@@ -538,6 +538,43 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                         assert!(asm.current_block().insns.last().unwrap().is_terminator());
                         Ok(())
                     }
+                    Insn::CondBranchFixnumCmp(insn) => {
+                        let CondBranchFixnumCmpData { op, left, right, ref if_true, ref if_false } = **insn;
+                        let true_target = hir_to_lir[if_true.target].unwrap();
+                        let false_target = hir_to_lir[if_false.target].unwrap();
+                        let true_branch = lir::BranchEdge {
+                            target: true_target,
+                            args: if_true.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                        };
+                        let false_branch = lir::BranchEdge {
+                            target: false_target,
+                            args: if_false.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                        };
+                        let l = jit.get_opnd(left);
+                        let r = jit.get_opnd(right);
+                        // Compare and branch on the flags directly, no boolean. Every
+                        // comparison is mapped to jl/jge/je/jne (swapping operands for
+                        // Gt/Le) so no jle/jg lowering is needed. Branch to if_true when
+                        // the comparison holds, else fall through to if_false.
+                        let (a, b): (Opnd, Opnd) = match op {
+                            FixnumCmpOp::Gt | FixnumCmpOp::Le => (r, l),
+                            _ => (l, r),
+                        };
+                        asm.cmp(a, b);
+                        let true_edge = Target::Block(Box::new(true_branch));
+                        let jcc = match op {
+                            FixnumCmpOp::Lt => lir::Insn::Jl(true_edge),   // l < r
+                            FixnumCmpOp::Gt => lir::Insn::Jl(true_edge),   // l > r  <=>  r < l
+                            FixnumCmpOp::Ge => lir::Insn::Jge(true_edge),  // l >= r
+                            FixnumCmpOp::Le => lir::Insn::Jge(true_edge),  // l <= r <=>  r >= l
+                            FixnumCmpOp::Eq => lir::Insn::Je(true_edge),
+                            FixnumCmpOp::Neq => lir::Insn::Jne(true_edge),
+                        };
+                        asm.push_insn(jcc);
+                        asm.jmp(Target::Block(Box::new(false_branch)));
+                        assert!(asm.current_block().insns.last().unwrap().is_terminator());
+                        Ok(())
+                    }
                     Insn::Jump(target) => {
                         let lir_target = hir_to_lir[target.target].unwrap();
                         let branch_edge = lir::BranchEdge {
@@ -739,6 +776,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumLe { left, right } => gen_fixnum_le(asm, opnd!(left), opnd!(right)),
         Insn::FixnumGt { left, right } => gen_fixnum_gt(asm, opnd!(left), opnd!(right)),
         Insn::FixnumGe { left, right } => gen_fixnum_ge(asm, opnd!(left), opnd!(right)),
+        &Insn::FixnumCmpBool { op, left, right } => gen_fixnum_cmp_bool(asm, op, opnd!(left), opnd!(right)),
         Insn::FixnumAnd { left, right } => gen_fixnum_and(asm, opnd!(left), opnd!(right)),
         Insn::FixnumOr { left, right } => gen_fixnum_or(asm, opnd!(left), opnd!(right)),
         Insn::FixnumXor { left, right } => gen_fixnum_xor(asm, opnd!(left), opnd!(right)),
@@ -836,7 +874,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ArrayMax { ref elements, state } => gen_array_max(jit, asm, function, opnds!(elements), &function.frame_state(state)),
         &Insn::ArrayMin { ref elements, state } => gen_array_min(jit, asm, function, opnds!(elements), &function.frame_state(state)),
         &Insn::Throw { throw_state, val, state } => no_output!(gen_throw(jit, asm, function, throw_state, opnd!(val), &function.frame_state(state))),
-        &Insn::CondBranch { .. } | &Insn::CondBranchHasType { .. }
+        &Insn::CondBranch { .. } | &Insn::CondBranchHasType { .. } | &Insn::CondBranchFixnumCmp { .. }
         | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
     };
 
@@ -3025,6 +3063,22 @@ fn gen_fixnum_gt(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir:
 fn gen_fixnum_ge(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
     asm.cmp(left, right);
     asm.csel_ge(Qtrue.into(), Qfalse.into())
+}
+
+/// Compile a Fixnum comparison that yields a CBool (0 or 1) directly, without
+/// materializing a Ruby `true`/`false`. The consuming CondBranch tests the 0/1
+/// result, which the backend fuses into a compare-and-branch.
+fn gen_fixnum_cmp_bool(asm: &mut Assembler, op: FixnumCmpOp, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
+    asm.cmp(left, right);
+    let (t, f) = (Opnd::Imm(1), Opnd::Imm(0));
+    match op {
+        FixnumCmpOp::Lt  => asm.csel_l(t, f),
+        FixnumCmpOp::Le  => asm.csel_le(t, f),
+        FixnumCmpOp::Gt  => asm.csel_g(t, f),
+        FixnumCmpOp::Ge  => asm.csel_ge(t, f),
+        FixnumCmpOp::Eq  => asm.csel_e(t, f),
+        FixnumCmpOp::Neq => asm.csel_ne(t, f),
+    }
 }
 
 /// Compile Fixnum & Fixnum

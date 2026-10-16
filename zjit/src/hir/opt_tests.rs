@@ -23212,8 +23212,7 @@ mod hir_opt_tests {
           v56:Fixnum = BoxFixnum v55
           v57:BoolExact = FixnumGe v51, v56
           PatchPoint NoEPEscape(each)
-          v61:CBool = Test v57
-          CondBranch v61, bb11(), bb7()
+          CondBranchFixnumCmp Ge v51, v56, bb11(), bb7()
         bb11():
           CheckInterrupts
           Return v8
@@ -23326,8 +23325,7 @@ mod hir_opt_tests {
           v71:Fixnum = BoxFixnum v70
           v72:BoolExact = FixnumGe v66, v71
           PatchPoint NoEPEscape(each)
-          v76:CBool = Test v72
-          CondBranch v76, bb13(), bb9()
+          CondBranchFixnumCmp Ge v66, v71, bb13(), bb9()
         bb13():
           PopInlineFrame
           CheckInterrupts
@@ -23965,8 +23963,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
           v92:BoolExact = FixnumLt v19, v23
           CheckInterrupts
-          v29:CBool = Test v92
-          CondBranch v29, bb4(), bb7()
+          CondBranchFixnumCmp Lt v19, v23, bb4(), bb7()
         bb4():
           v45:CShape = LoadField v18, :shape_id@0x1038
           v47:CShape[0x1039] = Const CShape(0x1039)
@@ -24988,9 +24985,7 @@ mod hir_opt_tests {
           v34:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1060, <@0x1068, cme:0x1070)
           v62:Fixnum = GuardType v10, Fixnum recompile
-          v63:BoolExact = FixnumLt v62, v34
-          v39:CBool = Test v63
-          CondBranch v39, bb7(), bb6()
+          CondBranchFixnumCmp Lt v62, v34, bb7(), bb6()
         bb7():
           v44:Fixnum[0] = Const Value(0)
           Jump bb4(v44)
@@ -25038,21 +25033,15 @@ mod hir_opt_tests {
           v15:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
           v85:Fixnum = GuardType v10, Fixnum recompile
-          v86:BoolExact = FixnumLt v85, v15
-          v20:CBool = Test v86
-          CondBranch v20, bb7(), bb6()
+          CondBranchFixnumCmp Lt v85, v15, bb7(), bb6()
         bb7():
           v27:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
-          v90:BoolExact = FixnumLt v85, v27
-          v32:CBool = Test v90
-          CondBranch v32, bb8(), bb5()
+          CondBranchFixnumCmp Lt v85, v27, bb8(), bb5()
         bb8():
           v39:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
-          v94:BoolExact = FixnumLt v85, v39
-          v44:CBool = Test v94
-          CondBranch v44, bb9(), bb4()
+          CondBranchFixnumCmp Lt v85, v39, bb9(), bb4()
         bb9():
           v50:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -26419,9 +26408,8 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1118, ==@0x1098, cme:0x1120)
           v252:Fixnum = GuardType v194, Fixnum recompile
           v254:BoolExact = FixnumEq v252, v47
-          v207:CBool = Test v254
           v208:FalseClass = RefineType v254, Falsy
-          CondBranch v207, bb19(), bb18(v208)
+          CondBranchFixnumCmp Eq v252, v47, bb19(), bb18(v208)
         bb19():
           v214:CShape = LoadField v85, :shape_id@0x1088
           v215:CShape[0x108d] = GuardBitEquals v214, CShape(0x108d) recompile
@@ -26575,9 +26563,7 @@ mod hir_opt_tests {
           v34:BasicObject = LoadField v13, :@hclk_target@0x1040
           PatchPoint MethodRedefined(Integer@0x1008, <=@0x1041, cme:0x1048)
           v71:Fixnum = GuardType v34, Fixnum recompile
-          v73:BoolExact = FixnumLe v71, v68
-          v45:CBool = Test v73
-          CondBranch v45, bb5(), bb4()
+          CondBranchFixnumCmp Le v71, v68, bb5(), bb4()
         bb5():
           PatchPoint NoSingletonClass(C@0x1070)
           PatchPoint MethodRedefined(C@0x1070, foo@0x1078, cme:0x1080)
@@ -26624,8 +26610,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
           v58:BoolExact = FixnumLt v19, v23
           CheckInterrupts
-          v29:CBool = Test v58
-          CondBranch v29, bb4(), bb6()
+          CondBranchFixnumCmp Lt v19, v23, bb4(), bb6()
         bb4():
           v48:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, +@0x1038, cme:0x1040)
@@ -27004,8 +26989,7 @@ mod hir_opt_tests {
           v85:Fixnum = GuardType v10, Fixnum
           v86:BoolExact = FixnumEq v17, v85
           PatchPoint NoEPEscape(test)
-          v24:CBool = Test v86
-          CondBranch v24, bb4(), bb6()
+          CondBranchFixnumCmp Eq v17, v85, bb4(), bb6()
         bb4():
           PatchPoint MethodRedefined(Object@0x1040, foo@0x1048, cme:0x1050)
           v88:ObjectSubclass[class_exact*:Object@VALUE(0x1040)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1040)] recompile
@@ -27018,8 +27002,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1008, ===@0x1010, cme:0x1018)
           v94:BoolExact = FixnumEq v29, v85
           PatchPoint NoEPEscape(test)
-          v36:CBool = Test v94
-          CondBranch v36, bb5(), bb7()
+          CondBranchFixnumCmp Eq v29, v85, bb5(), bb7()
         bb5():
           PatchPoint MethodRedefined(Object@0x1040, bar@0x1078, cme:0x1080)
           v96:ObjectSubclass[class_exact*:Object@VALUE(0x1040)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1040)] recompile

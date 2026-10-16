@@ -969,6 +969,16 @@ pub struct SendDirectData {
     pub state: InsnId,
 }
 
+/// Payload of [`Insn::CondBranchFixnumCmp`]. Boxed in the enum to keep `Insn` small.
+#[derive(Debug, Clone)]
+pub struct CondBranchFixnumCmpData {
+    pub op: FixnumCmpOp,
+    pub left: InsnId,
+    pub right: InsnId,
+    pub if_true: BranchEdge,
+    pub if_false: BranchEdge,
+}
+
 /// Payload of [`Insn::CondBranchHasType`]. Boxed in the enum to keep `Insn` small.
 #[derive(Debug, Clone)]
 pub struct CondBranchHasTypeData {
@@ -991,6 +1001,11 @@ pub struct CCallVariadicData {
     pub elidable: bool,
     pub block: Option<BlockHandler>,
 }
+
+/// The comparison performed by a [`Insn::FixnumCmpBool`]. Mirrors the ordered/equality
+/// fixnum comparison instructions (`FixnumLt` etc.) but yields a `CBool` directly.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FixnumCmpOp { Lt, Le, Gt, Ge, Eq, Neq }
 
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
 /// the instruction ([`InsnId`]). SSA form enables this, and [`UnionFind`] ([`Function::find`])
@@ -1174,6 +1189,11 @@ pub enum Insn {
 
     /// Conditional branch
     CondBranch { val: InsnId, if_true: BranchEdge, if_false: BranchEdge },
+    /// Fused fixnum comparison and conditional branch: evaluate `left <op> right`
+    /// and branch to `if_true` when it holds, `if_false` otherwise, without
+    /// materializing a boolean. Produced by `fold_constants` from a
+    /// `CondBranch(FixnumCmpBool(..))`, and lowered to `cmp` + a conditional jump.
+    CondBranchFixnumCmp(Box<CondBranchFixnumCmpData>),
 
     /// Conditional branch on a type test: branch to if_true if val has type expected and to
     /// if_false otherwise.
@@ -1309,6 +1329,11 @@ pub enum Insn {
     FixnumLe   { left: InsnId, right: InsnId },
     FixnumGt   { left: InsnId, right: InsnId },
     FixnumGe   { left: InsnId, right: InsnId },
+    /// Fixnum comparison that produces a `CBool` (0/1) directly instead of a Ruby
+    /// `true`/`false`. Introduced by `fold_constants` when a comparison feeds a
+    /// `Test`, so `CondBranch` can consume it without a redundant boolean
+    /// materialization. `op` selects the comparison.
+    FixnumCmpBool { op: FixnumCmpOp, left: InsnId, right: InsnId },
     FixnumAnd  { left: InsnId, right: InsnId },
     FixnumOr   { left: InsnId, right: InsnId },
     FixnumXor  { left: InsnId, right: InsnId },
@@ -1554,6 +1579,7 @@ macro_rules! for_each_operand_impl {
             | Insn::IntAnd { left, right }
             | Insn::IntOr { left, right }
             | Insn::FixnumRShift { left, right }
+            | Insn::FixnumCmpBool { left, right, .. }
             | Insn::IsBitEqual { left, right }
             | Insn::IsBitNotEqual { left, right } => {
                 $visit_one!(*left);
@@ -1561,6 +1587,12 @@ macro_rules! for_each_operand_impl {
             }
             Insn::Jump(BranchEdge { args, .. }) => {
                 $visit_many!(args);
+            }
+            Insn::CondBranchFixnumCmp(insn) => {
+                $visit_one!(insn.left);
+                $visit_one!(insn.right);
+                $visit_many!(insn.if_true.args);
+                $visit_many!(insn.if_false.args);
             }
             Insn::CondBranch { val, if_true: BranchEdge { args: true_args, .. }, if_false: BranchEdge { args: false_args, .. } } => {
                 $visit_one!(*val);
@@ -1736,7 +1768,7 @@ impl Insn {
             Insn::Comment { .. }
             | Insn::Jump(_)
             | Insn::Entries { .. }
-            | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
+            | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::CondBranchFixnumCmp { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
@@ -1751,7 +1783,7 @@ impl Insn {
     /// Return true if the instruction ends a basic block and false otherwise.
     pub fn is_terminator(&self) -> bool {
         match self {
-            Insn::Unreachable | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => true,
+            Insn::Unreachable | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::CondBranchFixnumCmp { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => true,
             _ => false,
         }
     }
@@ -1759,7 +1791,7 @@ impl Insn {
     /// Return true if the instruction is a jump (has successor blocks in the CFG).
     pub fn is_jump(&self) -> bool {
         match self {
-            Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::Jump(_) | Insn::Entries { .. } => true,
+            Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::CondBranchFixnumCmp { .. } | Insn::Jump(_) | Insn::Entries { .. } => true,
             _ => false,
         }
     }
@@ -1895,6 +1927,7 @@ impl Insn {
                     if insn.expected.is_subtype(types::Immediate) { abstract_heaps::Empty } else { abstract_heaps::Memory },
                     abstract_heaps::Control
                 ),
+            Insn::CondBranchFixnumCmp { .. } => effects::Any,
             Insn::CCall { elidable, .. } => {
                 if *elidable {
                     Effect::write(abstract_heaps::Allocator)
@@ -1961,6 +1994,7 @@ impl Insn {
             Insn::FixnumLe { .. } => effects::Empty,
             Insn::FixnumGt { .. } => effects::Empty,
             Insn::FixnumGe { .. } => effects::Empty,
+            Insn::FixnumCmpBool { .. } => effects::Empty,
             Insn::FixnumAnd { .. } => effects::Empty,
             Insn::FixnumOr { .. } => effects::Empty,
             Insn::FixnumXor { .. } => effects::Empty,
@@ -2259,6 +2293,10 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 let CondBranchHasTypeData { val, expected, if_true, if_false } = &**insn;
                 write!(f, "CondBranchHasType {val}, {}, {if_true}, {if_false}", expected.print(self.ptr_map))
             },
+            Insn::CondBranchFixnumCmp(insn) => {
+                let CondBranchFixnumCmpData { op, left, right, if_true, if_false } = &**insn;
+                write!(f, "CondBranchFixnumCmp {op:?} {left}, {right}, {if_true}, {if_false}")
+            },
             Insn::SendDirect(insn) => {
                 let SendDirectData { recv, cme, iseq, args, block, jit_entry_idx, .. } = &**insn;
                 let block = match block {
@@ -2371,6 +2409,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumLe   { left, right, .. } => { write!(f, "FixnumLe {left}, {right}") },
             Insn::FixnumGt   { left, right, .. } => { write!(f, "FixnumGt {left}, {right}") },
             Insn::FixnumGe   { left, right, .. } => { write!(f, "FixnumGe {left}, {right}") },
+            Insn::FixnumCmpBool { op, left, right } => { write!(f, "FixnumCmpBool {op:?} {left}, {right}") },
             Insn::FixnumAnd  { left, right, .. } => { write!(f, "FixnumAnd {left}, {right}") },
             Insn::FixnumOr   { left, right, .. } => { write!(f, "FixnumOr {left}, {right}") },
             Insn::FixnumXor  { left, right, .. } => { write!(f, "FixnumXor {left}, {right}") },
@@ -3499,6 +3538,7 @@ impl Function {
 
         let (first, second, rest): (Option<BlockId>, Option<BlockId>, &[BlockId]) = match terminator {
             Insn::CondBranch { if_true, if_false, .. } => (Some(if_true.target), Some(if_false.target), &[]),
+            Insn::CondBranchFixnumCmp(insn) => (Some(insn.if_true.target), Some(insn.if_false.target), &[]),
             Insn::CondBranchHasType(insn) => (Some(insn.if_true.target), Some(insn.if_false.target), &[]),
             Insn::Jump(edge) => (Some(edge.target), None, &[]),
             Insn::Entries { targets } => (None, None, targets.as_slice()),
@@ -3713,7 +3753,7 @@ impl Function {
             Insn::LoadArg { val_type, .. } => *val_type,
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::EntryPoint { .. }
             | Insn::Comment { .. }
-            | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::Return { .. } | Insn::Throw { .. }
+            | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::CondBranchFixnumCmp { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
@@ -3814,6 +3854,7 @@ impl Function {
             Insn::FixnumLe   { .. } => types::BoolExact,
             Insn::FixnumGt   { .. } => types::BoolExact,
             Insn::FixnumGe   { .. } => types::BoolExact,
+            Insn::FixnumCmpBool { .. } => types::CBool,
             Insn::FixnumAnd  { .. } => types::Fixnum,
             Insn::FixnumOr   { .. } => types::Fixnum,
             Insn::FixnumXor  { .. } => types::Fixnum,
@@ -3967,6 +4008,20 @@ impl Function {
                     // Instructions without output, including branch instructions, can't be targets
                     // of make_equal_to, so we don't need find() here.
                     let insn_type = match &self.insns[insn_id] {
+                        Insn::CondBranchFixnumCmp(insn) => {
+                            // Both successors are always reachable: the comparison is
+                            // evaluated at runtime and neither side is pruned.
+                            for edge in [&insn.if_true, &insn.if_false] {
+                                reachable.insert(edge.target);
+                                let arg_types: Vec<Type> = edge.args.iter().map(|a| self.type_of(*a)).collect();
+                                for (idx, arg_type) in arg_types.into_iter().enumerate() {
+                                    let param = self.blocks[edge.target].params[idx];
+                                    changed |= set_type!(param, self.type_of(param).union(arg_type));
+                                }
+                                traversed_back_edge |= rpo_order[edge.target] <= rpo_index;
+                            }
+                            continue;
+                        }
                         Insn::CondBranch { val, if_true, if_false } => {
                             assert!(!self.type_of(*val).bit_equal(types::Empty));
                             if self.type_of(*val).could_be(Type::from_cbool(true)) {
@@ -6561,6 +6616,7 @@ impl Function {
                 match $insn {
                     Insn::Jump(edge) => [Some(edge), None],
                     Insn::CondBranch { if_true, if_false, .. } => [Some(if_true), Some(if_false)],
+                    Insn::CondBranchFixnumCmp(insn) => [Some($($borrow)+ insn.if_true), Some($($borrow)+ insn.if_false)],
                     Insn::CondBranchHasType(insn) => [Some($($borrow)+ insn.if_true), Some($($borrow)+ insn.if_false)],
                     _ => [None, None],
                 }.into_iter().flatten()
@@ -6821,6 +6877,24 @@ impl Function {
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
+    /// If `val` computes a Ruby boolean from a fixnum comparison, return the comparison as
+    /// (op, left, right) so a `Test` of it can branch on the flags directly. `!=` reaches
+    /// HIR as `BoolNegate(FixnumEq)`.
+    fn fixnum_cmp_operands(&mut self, val: InsnId) -> Option<(FixnumCmpOp, InsnId, InsnId)> {
+        match *self.resolve(val).insn(self) {
+            Insn::FixnumLt { left, right } => Some((FixnumCmpOp::Lt, left, right)),
+            Insn::FixnumLe { left, right } => Some((FixnumCmpOp::Le, left, right)),
+            Insn::FixnumGt { left, right } => Some((FixnumCmpOp::Gt, left, right)),
+            Insn::FixnumGe { left, right } => Some((FixnumCmpOp::Ge, left, right)),
+            Insn::FixnumEq { left, right } => Some((FixnumCmpOp::Eq, left, right)),
+            Insn::BoolNegate { val: negated } => match *self.resolve(negated).insn(self) {
+                Insn::FixnumEq { left, right } => Some((FixnumCmpOp::Neq, left, right)),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
     ///
     /// It can fold fixnum math, truthiness tests, and branches with constant conditionals.
@@ -6834,6 +6908,10 @@ impl Function {
         //
         // This would require 1) fixpointing, 2) worklist, or 3) (slightly less powerful) calling a
         // function-level infer_types after each pruned branch.
+        //
+        // FixnumCmpBool -> the BoolExact comparison it was derived from, so a BoxBool of the
+        // CBool can reuse that comparison instead of recomputing it.
+        let mut cmp_bool_origin: HashMap<InsnId, InsnId> = HashMap::new();
         for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block].insns);
             let mut new_insns = Vec::with_capacity(old_insns.len());
@@ -7139,22 +7217,50 @@ impl Function {
                         if let &Insn::BoxBool { val: bool_val } = self.resolve(test_val).insn(self) {
                             self.make_equal_to(insn_id, bool_val);
                             continue;
+                        } else if let Some((op, left, right)) = self.fixnum_cmp_operands(test_val) {
+                            // A fixnum comparison materializes a Ruby true/false that this
+                            // Test then converts to a CBool. Compute the CBool directly, so the
+                            // Ruby-boolean materialization becomes dead (removed by DCE) and the
+                            // consuming CondBranch tests the comparison result with no extra
+                            // csel. This is cheaper than the interpreter/YJIT sequence, which
+                            // always materializes the Ruby boolean before the branch.
+                            let cmp_bool = self.new_insn(Insn::FixnumCmpBool { op, left, right });
+                            cmp_bool_origin.insert(cmp_bool, test_val);
+                            cmp_bool
                         } else {
                             insn_id
                         }
                     }
                     &Insn::BoxBool { val: bool_val } => {
-                        if let &Insn::Test { val: test_val } = self.resolve(bool_val).insn(self) {
-                            // If the thing being Test'd is already a BoolExact
-                            // (TrueClass|FalseClass), then we don't need to Test+BoxBool and can
-                            // just return the test_val.
-                            if self.is_a(test_val, types::BoolExact) {
-                                self.make_equal_to(insn_id, test_val);
+                        match *self.resolve(bool_val).insn(self) {
+                            Insn::Test { val: test_val } => {
+                                // If the thing being Test'd is already a BoolExact
+                                // (TrueClass|FalseClass), then we don't need to Test+BoxBool and can
+                                // just return the test_val.
+                                if self.is_a(test_val, types::BoolExact) {
+                                    self.make_equal_to(insn_id, test_val);
+                                    continue;
+                                }
+                                insn_id
+                            }
+                            // The Test arm above turned Test(Fixnum<op>) into FixnumCmpBool,
+                            // which hides the BoolExact comparison from the Test case here.
+                            // Reuse that comparison when this pass created the FixnumCmpBool;
+                            // otherwise rebuild the Ruby boolean from the operands. (Neq needs
+                            // two instructions to rebuild, so it keeps the BoxBool.)
+                            Insn::FixnumCmpBool { .. } if cmp_bool_origin.contains_key(&bool_val) => {
+                                self.make_equal_to(insn_id, cmp_bool_origin[&bool_val]);
                                 continue;
                             }
-                            insn_id
-                        } else {
-                            insn_id
+                            Insn::FixnumCmpBool { op, left, right } => match op {
+                                FixnumCmpOp::Lt => self.new_insn(Insn::FixnumLt { left, right }),
+                                FixnumCmpOp::Le => self.new_insn(Insn::FixnumLe { left, right }),
+                                FixnumCmpOp::Gt => self.new_insn(Insn::FixnumGt { left, right }),
+                                FixnumCmpOp::Ge => self.new_insn(Insn::FixnumGe { left, right }),
+                                FixnumCmpOp::Eq => self.new_insn(Insn::FixnumEq { left, right }),
+                                FixnumCmpOp::Neq => insn_id,
+                            },
+                            _ => insn_id,
                         }
                     }
                     &Insn::CondBranch { val, ref if_true, .. } if self.is_a(val, Type::from_cbool(true)) => {
@@ -7172,6 +7278,17 @@ impl Function {
                     }
                     Insn::CondBranchHasType(insn) if !self.type_of(insn.val).could_be(insn.expected) => {
                         self.new_insn(Insn::Jump(insn.if_false.clone()))
+                    }
+                    // Fuse a fixnum comparison feeding a branch into a single
+                    // compare-and-branch, avoiding the boolean materialization
+                    // entirely. The FixnumCmpBool becomes dead and DCE removes it.
+                    &Insn::CondBranch { val, ref if_true, ref if_false } => {
+                        let (if_true, if_false) = (if_true.clone(), if_false.clone());
+                        if let &Insn::FixnumCmpBool { op, left, right } = self.resolve(val).insn(self) {
+                            self.new_insn(Insn::CondBranchFixnumCmp(Box::new(CondBranchFixnumCmpData { op, left, right, if_true, if_false })))
+                        } else {
+                            insn_id
+                        }
                     }
                     _ => insn_id,
                 };
@@ -7808,6 +7925,10 @@ impl Function {
                         check_edge(block_id, if_true)?;
                         check_edge(block_id, if_false)?;
                     }
+                    Insn::CondBranchFixnumCmp(insn) => {
+                        check_edge(block_id, &insn.if_true)?;
+                        check_edge(block_id, &insn.if_false)?;
+                    }
                     Insn::CondBranchHasType(insn) => {
                         check_edge(block_id, &insn.if_true)?;
                         check_edge(block_id, &insn.if_false)?;
@@ -7903,6 +8024,10 @@ impl Function {
                     Insn::CondBranch { if_true, if_false, .. } => {
                         propagate(if_true.target)?;
                         propagate(if_false.target)?;
+                    }
+                    Insn::CondBranchFixnumCmp(insn) => {
+                        propagate(insn.if_true.target)?;
+                        propagate(insn.if_false.target)?;
                     }
                     Insn::CondBranchHasType(insn) => {
                         propagate(insn.if_true.target)?;
@@ -8203,6 +8328,10 @@ impl Function {
             | Insn::CondBranch { val, .. } => {
                 self.assert_subtype(insn_id, val, types::CBool)
             }
+            Insn::CondBranchFixnumCmp(ref insn) => {
+                self.assert_subtype(insn_id, insn.left, types::Fixnum)?;
+                self.assert_subtype(insn_id, insn.right, types::Fixnum)
+            }
             Insn::BoxFixnum { val, .. } => self.assert_subtype(insn_id, val, types::CInt64),
             Insn::UnboxFixnum { val } => {
                 self.assert_subtype(insn_id, val, types::Fixnum)
@@ -8221,6 +8350,7 @@ impl Function {
             | Insn::FixnumLe { left, right }
             | Insn::FixnumGt { left, right }
             | Insn::FixnumGe { left, right }
+            | Insn::FixnumCmpBool { left, right, .. }
             | Insn::FixnumAnd { left, right }
             | Insn::FixnumOr { left, right }
             | Insn::FixnumXor { left, right }
