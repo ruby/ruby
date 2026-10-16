@@ -1095,6 +1095,8 @@ pub enum Insn {
     HashKeyP { hash: InsnId, key: InsnId, state: InsnId },
     /// `hash.fetch(key)` (single arg, no block) for an exact Hash.
     HashFetch { hash: InsnId, key: InsnId, state: InsnId },
+    /// `hash.delete(key)` (single arg, no block) for an exact Hash.
+    HashDelete { hash: InsnId, key: InsnId, state: InsnId },
     HashAset { hash: InsnId, key: InsnId, val: InsnId, state: InsnId },
     HashDup { val: InsnId, state: InsnId },
 
@@ -1669,7 +1671,8 @@ macro_rules! for_each_operand_impl {
             }
             Insn::HashAref { hash, key, state }
             | Insn::HashKeyP { hash, key, state }
-            | Insn::HashFetch { hash, key, state } => {
+            | Insn::HashFetch { hash, key, state }
+            | Insn::HashDelete { hash, key, state } => {
                 $visit_one!(*hash);
                 $visit_one!(*key);
                 $visit_one!(*state);
@@ -1911,6 +1914,7 @@ impl Insn {
             Insn::HashAref { .. } => effects::Any,
             Insn::HashKeyP { .. } => effects::Any,
             Insn::HashFetch { .. } => effects::Any,
+            Insn::HashDelete { .. } => effects::Any,
             Insn::HashAset { .. } => effects::Any,
             Insn::HashDup { .. } => allocates,
             Insn::ObjectAlloc { .. } => effects::Any,
@@ -2280,6 +2284,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::HashAref { hash, key, .. } => { write!(f, "HashAref {hash}, {key}")}
             Insn::HashKeyP { hash, key, .. } => { write!(f, "HashKeyP {hash}, {key}")}
             Insn::HashFetch { hash, key, .. } => { write!(f, "HashFetch {hash}, {key}")}
+            Insn::HashDelete { hash, key, .. } => { write!(f, "HashDelete {hash}, {key}")}
             Insn::HashAset { hash, key, val, .. } => { write!(f, "HashAset {hash}, {key}, {val}")}
             Insn::ObjectAlloc { val, .. } => { write!(f, "ObjectAlloc {val}") }
             &Insn::ObjectAllocClass { class, .. } => {
@@ -3879,6 +3884,7 @@ impl Function {
             Insn::HashAref { .. } => types::BasicObject,
             Insn::HashKeyP { .. } => types::BoolExact,
             Insn::HashFetch { .. } => types::BasicObject,
+            Insn::HashDelete { .. } => types::BasicObject,
             Insn::NewHash { .. } => types::HashExact,
             Insn::HashDup { .. } => types::HashExact,
             Insn::NewRange { .. } => types::RangeExact,
@@ -8733,6 +8739,7 @@ impl Function {
             Insn::HashAref { hash, .. }
             | Insn::HashKeyP { hash, .. }
             | Insn::HashFetch { hash, .. }
+            | Insn::HashDelete { hash, .. }
             | Insn::HashAset { hash, .. } => self.assert_subtype(insn_id, hash, types::HashExact),
             Insn::HashDup { val, .. } => self.assert_subtype(insn_id, val, types::HashExact),
             // Other

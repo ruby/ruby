@@ -893,6 +893,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::HashKeyP { hash, key, state } => { gen_hash_key_p(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
         &Insn::HashFetch { hash, key, state } => { gen_hash_fetch(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
         &Insn::HashAset { hash, key, val, state } => { no_output!(gen_hash_aset(jit, asm, function, opnd!(hash), opnd!(key), opnd!(val), function.type_of(key), function.type_of(val), &function.frame_state(state))) },
+        &Insn::HashDelete { hash, key, state } => { gen_hash_delete(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
         &Insn::ArrayPush { array, val, state } => { no_output!(gen_array_push(asm, opnd!(array), opnd!(val), &function.frame_state(state))) },
         &Insn::ToNewArray { val, state } => { gen_to_new_array(jit, asm, function, opnd!(val), &function.frame_state(state)) },
         &Insn::ToArray { val, state } => { gen_to_array(jit, asm, function, opnd!(val), &function.frame_state(state)) },
@@ -1699,6 +1700,110 @@ fn gen_hash_aset_ar_update(jit: &mut JITState, asm: &mut Assembler, function: &F
     asm.set_current_block(done_block);
     let done_label = jit.get_label(asm, done_block, hir_block_id);
     asm.write_label(done_label);
+}
+
+/// Inline `hash.delete(key)` for a symbol/fixnum key on a small ar-table hash:
+/// scan the pairs and, on a hit, tombstone the entry (key/value -> Qundef, hint
+/// byte -> RHASH_AR_CLEARED_HINT) and decrement the ar_table size, clearing the bound when the table
+/// empties (mirroring RHASH_AR_TABLE_SIZE_DEC). Returns the old value; a miss
+/// returns nil. st_table and frozen hashes (which must raise) go to the
+/// frozen-checking slow path.
+fn gen_hash_delete(jit: &mut JITState, asm: &mut Assembler, function: &Function, hash: Opnd, key: Opnd, key_type: Type, state: &FrameState) -> lir::Opnd {
+    unsafe extern "C" {
+        fn rb_zjit_hash_delete_checked(hash: VALUE, key: VALUE) -> VALUE;
+    }
+    if !hash_ar_key_ok(key_type) {
+        gen_prepare_non_leaf_call(jit, asm, function, state);
+        return asm_ccall!(asm, rb_zjit_hash_delete_checked, hash, key);
+    }
+    // Pair layout and capacity: see gen_hash_ar_probe.
+    let (pairs_off, pair_size, max_size) =
+        (RUBY_OFFSET_RHASH_AR_PAIRS as i32, 2 * SIZEOF_VALUE_I32, RUBY_RHASH_AR_TABLE_MAX_SIZE as i32);
+    let hint_off = RUBY_OFFSET_RHASH_AR_HINT as i32;
+    let st_or_frozen = (RHASH_ST_TABLE_FLAG as u64) | (RUBY_FL_FREEZE as u64);
+    let bound_shift = RHASH_AR_TABLE_BOUND_SHIFT as u64;
+    let bound_mask = (RHASH_AR_TABLE_BOUND_MASK as u64) >> bound_shift;
+    let size_dec = 1u64 << (RHASH_AR_TABLE_SIZE_SHIFT as u64);
+    let size_mask = RHASH_AR_TABLE_SIZE_MASK as u64;
+    let bound_mask_full = RHASH_AR_TABLE_BOUND_MASK as u64;
+
+    // The slow path (frozen-checking delete) may run C that touches the GC.
+    gen_prepare_non_leaf_call(jit, asm, function, state);
+    let hash = asm.load(hash);
+    let key = asm.load(key);
+
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let slow_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let found_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let result_edge = |v: Opnd| Target::Block(Box::new(lir::BranchEdge { target: result_block, args: vec![v] }));
+    let slow_edge = || Target::Block(Box::new(lir::BranchEdge { target: slow_block, args: vec![] }));
+    let found_edge = |key_addr: Opnd, hint_keep: Opnd| Target::Block(Box::new(lir::BranchEdge { target: found_block, args: vec![key_addr, hint_keep] }));
+
+    asm_comment!(asm, "inline Hash#delete ar_table tombstone");
+    let flags = asm.load(Opnd::mem(64, hash, RUBY_OFFSET_RBASIC_FLAGS));
+    asm.test(flags, Opnd::UImm(st_or_frozen));
+    asm.jnz(jit, slow_edge());
+    let shifted = asm.rshift(flags, Opnd::UImm(bound_shift));
+    let bound = asm.and(shifted, Opnd::UImm(bound_mask));
+    let pairs_base = asm.add(hash, Opnd::UImm(pairs_off as u64));
+    for i in 0..max_size {
+        // bound <= i: past the occupied span -> the key is absent (delete -> nil).
+        asm.cmp(bound, Opnd::UImm((i + 1) as u64));
+        asm.jb(jit, result_edge(Qnil.into()));
+        let key_addr = asm.add(pairs_base, Opnd::UImm((i * pair_size) as u64));
+        // Every hint byte except entry i's: AND-ing it in clears that entry's hint.
+        let hint_keep = asm.load(Opnd::UImm(!(0xffu64 << (i as u64 * 8))));
+        let key_i = asm.load(Opnd::mem(64, key_addr, 0));
+        asm.cmp(key_i, key);
+        asm.je(jit, found_edge(key_addr, hint_keep));
+    }
+    asm.jmp(result_edge(Qnil.into()));
+
+    // Found: tombstone the pair and decrement the ar_table size.
+    asm.set_current_block(found_block);
+    let found_label = jit.get_label(asm, found_block, hir_block_id);
+    asm.write_label(found_label);
+    let key_addr = asm.new_block_param(VALUE_BITS);
+    asm.current_block().add_parameter(key_addr);
+    let hint_keep = asm.new_block_param(VALUE_BITS);
+    asm.current_block().add_parameter(hint_keep);
+    let old_val = asm.load(Opnd::mem(64, key_addr, SIZEOF_VALUE_I32));
+    let undef = asm.load(Opnd::UImm(Qundef.0 as u64));
+    asm.store(Opnd::mem(64, key_addr, 0), undef);
+    asm.store(Opnd::mem(64, key_addr, SIZEOF_VALUE_I32), undef);
+    // ar iteration and lookup trust the hint alone to tell a cleared entry from a
+    // live one, so set this entry's hint byte to RHASH_AR_CLEARED_HINT (0x00) like
+    // ar_clear_entry. Live entries never carry a 0x00 hint (ar_do_hash_hint
+    // substitutes 0x01), so the cleared byte is unambiguous.
+    let hint_word = asm.load(Opnd::mem(64, hash, hint_off));
+    let hint_word = asm.and(hint_word, hint_keep);
+    asm.store(Opnd::mem(64, hash, hint_off), hint_word);
+    let flags2 = asm.load(Opnd::mem(64, hash, RUBY_OFFSET_RBASIC_FLAGS));
+    let new_flags = asm.sub(flags2, Opnd::UImm(size_dec));
+    asm.store(Opnd::mem(64, hash, RUBY_OFFSET_RBASIC_FLAGS), new_flags);
+    asm.test(new_flags, Opnd::UImm(size_mask));
+    asm.jnz(jit, result_edge(old_val)); // size != 0: keep the bound
+    // size == 0: reset the bound (RHASH_AR_TABLE_SIZE_DEC).
+    let cleared = asm.and(new_flags, Opnd::Imm(!(bound_mask_full as i64)));
+    asm.store(Opnd::mem(64, hash, RUBY_OFFSET_RBASIC_FLAGS), cleared);
+    asm.jmp(result_edge(old_val));
+
+    // st_table / frozen: rb_zjit_hash_delete_checked (raises FrozenError first).
+    asm.set_current_block(slow_block);
+    let slow_label = jit.get_label(asm, slow_block, hir_block_id);
+    asm.write_label(slow_label);
+    let slow_val = asm_ccall!(asm, rb_zjit_hash_delete_checked, hash, key);
+    asm.jmp(result_edge(slow_val));
+
+    // Converge; the deleted value (or nil) arrives as a block param.
+    asm.set_current_block(result_block);
+    let label = jit.get_label(asm, result_block, hir_block_id);
+    asm.write_label(label);
+    let param = asm.new_block_param(VALUE_BITS);
+    asm.current_block().add_parameter(param);
+    param
 }
 
 fn gen_array_push(asm: &mut Assembler, array: Opnd, val: Opnd, state: &FrameState) {

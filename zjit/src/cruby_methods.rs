@@ -257,6 +257,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cHash, "member?", inline_hash_key_p);
     annotate!(rb_cHash, "fetch", inline_hash_fetch);
     annotate!(rb_cHash, "dig", inline_hash_dig);
+    annotate!(rb_cHash, "delete", inline_hash_delete);
     annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
@@ -545,6 +546,18 @@ fn inline_hash_dig(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Insn
     if fun.likely_a(recv, types::HashExact, state) {
         let recv = fun.coerce_to(block, recv, types::HashExact, state);
         Some(fun.push_insn(block, hir::Insn::HashAref { hash: recv, key, state }))
+    } else {
+        None
+    }
+}
+
+fn inline_hash_delete(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    // Only `delete(key)`: `delete(key) { ... }` (a block, which the caller only
+    // inlines when absent) falls back to the method for its miss-block semantics.
+    let &[key] = args else { return None; };
+    if fun.likely_a(recv, types::HashExact, state) {
+        let recv = fun.coerce_to(block, recv, types::HashExact, state);
+        Some(fun.push_insn(block, hir::Insn::HashDelete { hash: recv, key, state }))
     } else {
         None
     }
