@@ -313,17 +313,46 @@ fn gen_iseq_entry_stub(cb: &mut CodeBlock, iseq: IseqPtr, body: CodePtr) -> Resu
     Ok(code_ptr)
 }
 
+/// Compile the C entry stub used by jit_exec_exception(). Rescue and ensure
+/// ISEQs are pushed as non-FINISH frames by vm_exec_handle_exception(). When
+/// the compiled body returns, it has already popped that frame, so pass the
+/// return value through the caller's VM stack and return Qundef to keep
+/// vm_exec_loop executing the remaining Ruby frames.
+fn gen_iseq_exception_entry_stub(cb: &mut CodeBlock, iseq: IseqPtr, body: CodePtr) -> Result<CodePtr, CompileError> {
+    let mut asm = Assembler::new();
+    asm.new_block_without_id("iseq_exception_entry_stub");
+    gen_entry_prologue(&mut asm);
+
+    let out = asm.ccall(body.raw_ptr(cb), vec![]);
+
+    asm_comment!(asm, "complete exception handler return or preserve side exit");
+    let out = asm.ccall(exception_entry_return as *const u8, vec![CFP, out]);
+
+    asm_comment!(asm, "continue in the interpreter after exception handler");
+    asm.frame_teardown(lir::JIT_PRESERVED_REGS);
+    asm.cret(out);
+
+    let (code_ptr, gc_offsets) = asm.compile(cb)?;
+    assert!(gc_offsets.is_empty());
+    perf::register_current_code_range(cb, &format!("exception entry stub: {}", iseq_get_location(iseq, 0)), code_ptr);
+    Ok(code_ptr)
+}
+
 /// Compile an entry point for a given ISEQ
 fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) -> Result<CodePtr, CompileError> {
-    // We don't support exception handlers yet
-    if jit_exception {
+    // vm_exec_handle_exception pushes rescue and ensure ISEQs at their normal
+    // first instruction. Other exceptional entries (break, retry, redo, next)
+    // resume an existing frame at an arbitrary PC, which whole-function ZJIT
+    // cannot enter yet.
+    let iseq_type = unsafe { get_iseq_body_type(iseq) };
+    if jit_exception && !matches!(iseq_type, ISEQ_TYPE_RESCUE | ISEQ_TYPE_ENSURE) {
         return gen_exception_handler_counter(cb);
     }
 
     let iseq_name = iseq_get_location(iseq, 0);
     trace_compile_phase(&iseq_name, || {
         // Compile ISEQ into High-level IR
-        let function = crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq).inspect_err(|_| {
+        let function = crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq, jit_exception).inspect_err(|_| {
             incr_counter!(failed_iseq_count);
         }))?;
 
@@ -333,7 +362,11 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
         })?;
 
         // Wrap the body in a per-ISEQ entry stub so jit_exec can call it directly.
-        gen_iseq_entry_stub(cb, iseq, start_ptr)
+        if jit_exception {
+            gen_iseq_exception_entry_stub(cb, iseq, start_ptr)
+        } else {
+            gen_iseq_entry_stub(cb, iseq, start_ptr)
+        }
     })
 }
 
@@ -469,7 +502,7 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
     // Convert ISEQ into optimized High-level IR if not given
     let function = match function {
         Some(function) => function,
-        None => &crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq))?,
+        None => &crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq, false))?,
     };
 
     // Compile the High-level IR
@@ -4697,7 +4730,7 @@ fn gen_stack_overflow_check(jit: &mut JITState, asm: &mut Assembler, function: &
 }
 
 /// Convert ISEQ into High-level IR
-fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
+fn compile_iseq(iseq: IseqPtr, jit_exception: bool) -> Result<Function, CompileError> {
     // Convert ZJIT instructions back to bare instructions
     unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
 
@@ -4709,10 +4742,16 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
         return Err(CompileError::IseqStackTooLarge);
     }
 
-    let function = trace_compile_phase("build_hir", ||
-        crate::stats::with_time_stat(Counter::compile_hir_build_time_ns, || iseq_to_hir(iseq))
-    );
-    let mut function = match function {
+    let hir = trace_compile_phase("build_hir", || {
+        crate::stats::with_time_stat(Counter::compile_hir_build_time_ns, || {
+            if jit_exception {
+                crate::hir::iseq_to_hir_exception(iseq)
+            } else {
+                iseq_to_hir(iseq)
+            }
+        })
+    });
+    let mut function = match hir {
         Ok(function) => function,
         Err(err) => {
             debug!("ZJIT: iseq_to_hir: {err:?}: {}", iseq_get_location(iseq, 0));
@@ -4856,6 +4895,24 @@ macro_rules! c_callable {
 }
 #[cfg(test)]
 pub(crate) use c_callable;
+
+c_callable! {
+    /// Complete a jit_exec_exception() entry after the compiled body returns.
+    /// A normal Return has popped the rescue/ensure frame, so push its value to
+    /// the caller. A side exit returns Qundef with the handler frame still
+    /// current and already materialized; leave its VM stack untouched so the
+    /// interpreter can resume at the side-exit PC.
+    fn exception_entry_return(cfp: CfpPtr, out: VALUE) -> VALUE {
+        if out != Qundef {
+            unsafe {
+                let sp = (*cfp).sp;
+                sp.write(out);
+                (*cfp).sp = sp.add(1);
+            }
+        }
+        Qundef
+    }
+}
 
 c_callable! {
     /// Called from JIT side-exit code to invalidate the compiled unit for recompilation.

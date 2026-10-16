@@ -446,6 +446,63 @@ class TestZJITCLI < Test::Unit::TestCase
     RUBY
   end
 
+  def test_exception_handler_entry
+    expected = [
+      [["boom", 1], ["boom", 2], ["boom", 3], ["boom", 4], ["boom", 5]],
+      [:caught, :caught, :caught, :caught, :caught],
+      ["bad 0", "bad 1", "bad 2", "bad 3", "bad 4"],
+      [0, 1, 2, 3, 4],
+      true,
+    ].inspect
+    assert_runs expected, <<~'RUBY', call_threshold: 2, stats: :quiet
+      $ensured = []
+
+      def rescued(value)
+        raise "boom"
+      rescue RuntimeError
+        [$!.message, value + 1]
+      end
+
+      def ensured(value)
+        begin
+          raise "boom"
+        ensure
+          $ensured << value
+        end
+      end
+
+      def caught_ensure(value)
+        ensured(value)
+      rescue RuntimeError
+        :caught
+      end
+
+      def mismatched(value)
+        raise ArgumentError, "bad #{value}"
+      rescue RuntimeError
+        :wrong_handler
+      end
+
+      def caught_mismatch(value)
+        mismatched(value)
+      rescue ArgumentError => error
+        error.message
+      end
+
+      exception_handler_exits = RubyVM::ZJIT.stats(:exit_exception_handler)
+      rescue_values = 5.times.map { |value| rescued(value) }
+      ensure_values = 5.times.map { |value| caught_ensure(value) }
+      mismatch_values = 5.times.map { |value| caught_mismatch(value) }
+      [
+        rescue_values,
+        ensure_values,
+        mismatch_values,
+        $ensured,
+        RubyVM::ZJIT.stats(:exit_exception_handler) == exception_handler_exits,
+      ]
+    RUBY
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT

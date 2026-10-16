@@ -3234,6 +3234,10 @@ pub struct Function {
     self_is_heap_object: bool,
     /// Controls code generation strategy for optimization passes.
     policy: CompilePolicy,
+    /// Whether the interpreter entry is a rescue/ensure frame pushed by
+    /// vm_exec_handle_exception. These frames have VM-initialized locals (for
+    /// example rescue's `$!`) that are not ordinary formal parameters.
+    exceptional_entry: bool,
     /// The types for the parameters of this function. They are copied to the type
     /// of entry block params after infer_types() fills Empty to all insn_types.
     param_types: Vec<Type>,
@@ -3572,6 +3576,7 @@ impl Function {
             was_invalidated_for_singleton_class_creation: false,
             self_is_heap_object: false,
             policy: CompilePolicy::new(iseq),
+            exceptional_entry: false,
             insns: vec![],
             insn_types: vec![],
             union_find: UnionFind::new().into(),
@@ -13786,6 +13791,15 @@ struct AddIseqResult {
 
 /// Compile ISEQ into High-level IR
 pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
+    iseq_to_hir_with_exception_entry(iseq, false)
+}
+
+/// Compile a rescue/ensure ISEQ entered through jit_exec_exception().
+pub fn iseq_to_hir_exception(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
+    iseq_to_hir_with_exception_entry(iseq, true)
+}
+
+fn iseq_to_hir_with_exception_entry(iseq: *const rb_iseq_t, exceptional_entry: bool) -> Result<Function, ParseError> {
     if !ZJITState::can_compile_iseq(iseq) {
         return Err(ParseError::NotAllowed);
     }
@@ -13793,6 +13807,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut fun = Function::new(iseq);
     fun.was_invalidated_for_singleton_class_creation = payload.was_invalidated_for_singleton_class_creation;
     fun.self_is_heap_object = payload.self_is_heap_object;
+    fun.exceptional_entry = exceptional_entry;
 
     let result = add_iseq_to_hir(&mut fun, iseq, AddIseqMode::Standalone)?;
     fun.profiles = Some(result.profiles);
@@ -15964,11 +15979,11 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
     let use_sp = !iseq_ep_starts_escaped(iseq);
     let mut base: Option<InsnId> = None;
     for local_idx in 0..num_locals(iseq) {
-        if local_idx < param_size {
+        if local_idx < param_size || fun.exceptional_entry {
             let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
             let ep_offset_u32 = u32::try_from(ep_offset)
                 .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
-            let return_type = if Some(local_idx as i32) == rest_param_idx {
+            let return_type = if !fun.exceptional_entry && Some(local_idx as i32) == rest_param_idx {
                 types::ArrayExact
             } else {
                 types::BasicObject
