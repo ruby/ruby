@@ -2757,6 +2757,31 @@ rb_builtin_ary_first(rb_execution_context_t *ec, VALUE self)
     return ary_first(self);
 }
 
+// Start index for reverse iteration: length - 1.
+VALUE
+rb_builtin_ary_rev_start(rb_execution_context_t *ec, VALUE self)
+{
+    return LONG2FIX(RARRAY_LEN(self) - 1);
+}
+
+// Return true if the reverse-iteration index has run out.
+VALUE
+rb_builtin_fixnum_neg(rb_execution_context_t *ec, VALUE self, VALUE num)
+{
+    return FIX2LONG(num) < 0 ? Qtrue : Qfalse;
+}
+
+// Next reverse-iteration index, replicating rb_ary_reverse_each's shrink
+// clamp: min(i, current length) - 1, so a block that removes elements
+// resumes from the new end.
+VALUE
+rb_builtin_ary_rev_next(rb_execution_context_t *ec, VALUE self, VALUE num)
+{
+    long i = FIX2LONG(num);
+    long len = RARRAY_LEN(self);
+    return LONG2FIX((i > len ? len : i) - 1);
+}
+
 // Push a value onto an array and return the value.
 static VALUE
 rb_jit_ary_push(rb_execution_context_t *ec, VALUE self, VALUE ary, VALUE val)

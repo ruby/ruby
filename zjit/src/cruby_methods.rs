@@ -21,6 +21,9 @@ unsafe extern "C" {
     fn rb_builtin_ary_first(ec: EcPtr, self_: VALUE) -> VALUE;
     fn rb_builtin_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
     fn rb_builtin_bool_negate(ec: EcPtr, self_: VALUE, value: VALUE) -> VALUE;
+    fn rb_builtin_ary_rev_start(ec: EcPtr, self_: VALUE) -> VALUE;
+    fn rb_builtin_fixnum_neg(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
+    fn rb_builtin_ary_rev_next(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
 }
 
 pub struct Annotations {
@@ -341,6 +344,12 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_builtin_ary_at, inline_ary_at);
     annotate_builtin!(rb_builtin_ary_at_end, inline_ary_at_end, types::BoolExact);
     annotate_builtin!(rb_builtin_ary_first, inline_ary_first);
+    // Array#reverse_each iteration builtins
+    annotate_builtin!(rb_builtin_ary_rev_start, inline_ary_rev_start, types::Fixnum);
+    annotate_builtin!(rb_builtin_fixnum_neg, inline_fixnum_neg, types::BoolExact);
+    builtin_funcs.insert(rb_builtin_ary_rev_next as *mut c_void, FnProperties {
+        no_gc: true, leaf: true, elidable: true, return_type: types::Fixnum, ..Default::default()
+    });
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
@@ -1371,6 +1380,25 @@ fn inline_ary_at(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnI
 
 /// Inline `ary_at_end(ec, self, index)` implies index >= ArrayLength(self).
 /// Called from Array#each etc. where self is Array and index is Fixnum.
+/// Inline `ary_rev_start(ec, self)`: boxed length - 1.
+fn inline_ary_rev_start(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[recv] = args else { return None; };
+    let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
+    let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
+    let length = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state });
+    let one = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
+    let result = fun.push_insn(block, hir::Insn::FixnumSub { left: length, right: one, state });
+    Some(result)
+}
+
+/// Inline `fixnum_neg(ec, self, num)`: num < 0.
+fn inline_fixnum_neg(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[_self, num] = args else { return None; };
+    let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(0)) });
+    let result = fun.push_insn(block, hir::Insn::FixnumLt { left: num, right: zero });
+    Some(result)
+}
+
 fn inline_ary_at_end(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[recv, index] = args else { return None; };
     let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
