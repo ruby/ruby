@@ -102,6 +102,28 @@ class TestZJITCLI < Test::Unit::TestCase
     }
   end
 
+  def test_side_exit_count_without_stats
+    script = <<~RUBY
+      def test(a, b) = a + b
+      test(1, 2) # profile opt_plus
+      test(1, 2) # compile
+      test(4611686018427387903, 1) # overflow
+      stats = RubyVM::ZJIT.stats
+      exits = stats.select { |key, _| key.start_with?("exit_") }.values.sum
+      p [RubyVM::ZJIT.stats_enabled?, stats[:side_exit_count] > 0, RubyVM::ZJIT.stats(:side_exit_count) == stats[:side_exit_count], exits == 0 || exits == stats[:side_exit_count]]
+    RUBY
+
+    # Without --zjit-stats, side_exit_count is still counted
+    out, err, status = eval_with_jit(script, call_threshold: 2, stats: false)
+    assert_success(out, err, status)
+    assert_equal "[false, true, true, true]\n", out
+
+    # With --zjit-stats, side_exit_count matches the sum of per-reason exit counters
+    out, err, status = eval_with_jit(script, call_threshold: 2, stats: :quiet)
+    assert_success(out, err, status)
+    assert_equal "[true, true, true, true]\n", out
+  end
+
   def test_enable_through_env
     child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
     assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
