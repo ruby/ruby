@@ -14,6 +14,11 @@ pub struct IseqPayload {
     pub profile: IseqProfile,
     /// JIT code versions. Different versions should have different assumptions.
     pub versions: Vec<IseqVersionRef>,
+    /// Whole-function versions rooted at a runtime jit_exec_exception() PC.
+    /// These are separate from ordinary call versions because the two entry
+    /// shapes can be compiled independently and are installed in different
+    /// rb_iseq_constant_body function pointers.
+    pub exception_versions: Vec<IseqVersionRef>,
     /// Whether a previous compilation of this ISEQ was invalidated due to
     /// singleton class creation (violation of [`crate::hir::Invariant::NoSingletonClass`]).
     pub was_invalidated_for_singleton_class_creation: bool,
@@ -34,11 +39,29 @@ impl IseqPayload {
         Self {
             profile: IseqProfile::new(),
             versions: vec![],
+            exception_versions: vec![],
             was_invalidated_for_singleton_class_creation: false,
             self_is_heap_object: false,
             num_exits_until_invalidate: get_option!(num_exits_until_invalidate),
         }
     }
+
+    pub fn versions_for_entry(&self, exception: bool) -> &[IseqVersionRef] {
+        if exception {
+            &self.exception_versions
+        } else {
+            &self.versions
+        }
+    }
+
+    pub fn versions_for_entry_mut(&mut self, exception: bool) -> &mut [IseqVersionRef] {
+        if exception {
+            &mut self.exception_versions
+        } else {
+            &mut self.versions
+        }
+    }
+
 }
 
 /// JIT code version. When the same ISEQ is compiled with a different assumption, a new version is created.
@@ -58,6 +81,10 @@ pub struct IseqVersion {
 
     /// JIT-to-JIT calls to the ISEQ. The IseqPayload's ISEQ is the callee of it.
     pub incoming: Vec<IseqCallRef>,
+
+    /// Interpreter PCs accepted by this whole-function exception version.
+    /// Ordinary call versions leave this empty.
+    pub exception_entry_insns: Vec<u32>,
 }
 
 /// We use a raw pointer instead of Rc to save space for refcount
@@ -77,6 +104,7 @@ impl IseqVersion {
             gc_offsets: vec![],
             outgoing: vec![],
             incoming: vec![],
+            exception_entry_insns: vec![],
         };
         let version_ptr = Box::into_raw(Box::new(version));
         NonNull::new(version_ptr).expect("no null from Box")

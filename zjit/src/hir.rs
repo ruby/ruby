@@ -927,6 +927,7 @@ pub enum FieldName {
     fields_obj,
     thread_ptr,
     len,
+    stack,
     SelfParam,
     Id(ID),
 }
@@ -3185,16 +3186,17 @@ struct SetIvarSpec {
 }
 
 impl CompilePolicy {
-    fn new(iseq: *const rb_iseq_t) -> Self {
+    fn new(iseq: *const rb_iseq_t, exception_entry: bool) -> Self {
         // When a previous version was invalidated and we've reached the version
         // limit, avoid speculative optimizations that may side-exit.
         let no_side_exits = if iseq.is_null() {
             false
         } else {
             let payload = get_or_create_iseq_payload(iseq);
-            payload.versions.iter().any(
+            let versions = payload.versions_for_entry(exception_entry);
+            versions.iter().any(
                 |v| unsafe { v.as_ref() }.is_invalidated()
-            ) && payload.versions.len() + 1 >= max_iseq_versions()
+            ) && versions.len() + 1 >= max_iseq_versions()
         };
         Self { no_side_exits }
     }
@@ -3236,10 +3238,14 @@ pub struct Function {
     self_is_heap_object: bool,
     /// Controls code generation strategy for optimization passes.
     policy: CompilePolicy,
-    /// Whether the interpreter entry is a rescue/ensure frame pushed by
-    /// vm_exec_handle_exception. These frames have VM-initialized locals (for
-    /// example rescue's `$!`) that are not ordinary formal parameters.
-    exceptional_entry: bool,
+    /// Runtime PC/stack shape that triggered jit_exec_exception() compilation.
+    /// Catch-table entries are added independently; this covers continuation
+    /// PCs such as a break returning from `yield`, which have no catch-table
+    /// entry in the yielding ISEQ.
+    exception_entry: Option<InterpreterEntry>,
+    /// PCs accepted by the interpreter entry dispatcher. The exception wrapper
+    /// guards this set before calling the compiled body.
+    interpreter_entry_insns: Vec<u32>,
     /// The types for the parameters of this function. They are copied to the type
     /// of entry block params after infer_types() fills Empty to all insn_types.
     param_types: Vec<Type>,
@@ -3586,8 +3592,9 @@ impl Function {
             iseq,
             was_invalidated_for_singleton_class_creation: false,
             self_is_heap_object: false,
-            policy: CompilePolicy::new(iseq),
-            exceptional_entry: false,
+            policy: CompilePolicy::new(iseq, false),
+            exception_entry: None,
+            interpreter_entry_insns: vec![],
             insns: vec![],
             insn_types: vec![],
             union_find: UnionFind::new().into(),
@@ -3605,6 +3612,14 @@ impl Function {
 
     pub fn iseq(&self) -> *const rb_iseq_t {
         self.iseq
+    }
+
+    pub fn interpreter_entry_insns(&self) -> &[u32] {
+        &self.interpreter_entry_insns
+    }
+
+    pub fn is_exception_entry(&self) -> bool {
+        self.exception_entry.is_some()
     }
 
     /// Look up the elided-frame site whose body states chain to the given
@@ -7182,7 +7197,9 @@ impl Function {
         // SideExits would just add overhead (the exit fires every time without benefit).
         // Keep them as Send fallbacks so the interpreter handles them directly.
         let payload = get_or_create_iseq_payload(self.iseq);
-        if payload.versions.len() + 1 >= crate::codegen::max_iseq_versions() {
+        if payload.versions_for_entry(self.is_exception_entry()).len() + 1
+            >= crate::codegen::max_iseq_versions()
+        {
             return;
         }
         for block in self.reverse_post_order() {
@@ -13520,6 +13537,106 @@ struct BytecodeInfo {
     jump_targets: Vec<u32>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ExceptionalEntry {
+    catch_type: rb_catch_type,
+    insn_idx: u32,
+    stack_size: usize,
+}
+
+/// Continuations that vm_exec_handle_exception() can select in an existing
+/// frame. Unlike rescue and ensure ISEQs, these resume the current ISEQ at a
+/// catch-table PC with a pre-existing temporary stack.
+fn exceptional_entries(iseq: IseqPtr) -> Vec<ExceptionalEntry> {
+    let count = unsafe { rb_zjit_iseq_exception_entry_count(iseq) };
+    (0..count).filter_map(|index| {
+        let mut catch_type = 0;
+        let mut insn_idx = 0;
+        let mut stack_size = 0;
+        let supported = unsafe {
+            rb_zjit_iseq_exception_entry(
+                iseq,
+                index,
+                &mut catch_type,
+                &mut insn_idx,
+                &mut stack_size,
+            )
+        };
+        supported.then_some(ExceptionalEntry {
+            catch_type,
+            insn_idx,
+            stack_size: stack_size.try_into().unwrap(),
+        })
+    }).collect()
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct InterpreterEntry {
+    insn_idx: u32,
+    stack_size: usize,
+    load_all_locals: bool,
+}
+
+/// Build every PC/state shape accepted by the C-to-JIT entry. Normal compiled
+/// bodies initialize only formal parameters. Every entry into an exception
+/// body has an existing VM frame, so it loads all locals; catch-table
+/// continuations additionally restore their pre-existing temporary stack.
+fn interpreter_entries(
+    iseq: IseqPtr,
+    normal_entry_insns: &[u32],
+    runtime_exception_entry: Option<InterpreterEntry>,
+) -> Result<Vec<InterpreterEntry>, ParseError> {
+    let handler_iseq = matches!(
+        unsafe { get_iseq_body_type(iseq) },
+        ISEQ_TYPE_RESCUE | ISEQ_TYPE_ENSURE
+    );
+    let load_all_locals = handler_iseq || runtime_exception_entry.is_some();
+    let mut entries = normal_entry_insns
+        .iter()
+        .copied()
+        .map(|insn_idx| InterpreterEntry {
+            insn_idx,
+            stack_size: 0,
+            load_all_locals,
+        })
+        .collect::<Vec<_>>();
+    entries.dedup();
+
+    if runtime_exception_entry.is_some() {
+        for exceptional in exceptional_entries(iseq) {
+            debug_assert!(matches!(
+                exceptional.catch_type,
+                CATCH_TYPE_RETRY | CATCH_TYPE_BREAK | CATCH_TYPE_REDO | CATCH_TYPE_NEXT
+            ));
+            if let Some(entry) = entries.iter_mut().find(|entry| entry.insn_idx == exceptional.insn_idx) {
+                if entry.stack_size != exceptional.stack_size {
+                    return Err(ParseError::MalformedIseq(exceptional.insn_idx));
+                }
+                entry.load_all_locals = true;
+            } else {
+                entries.push(InterpreterEntry {
+                    insn_idx: exceptional.insn_idx,
+                    stack_size: exceptional.stack_size,
+                    load_all_locals: true,
+                });
+            }
+        }
+    }
+
+    if let Some(exceptional) = runtime_exception_entry {
+        if let Some(entry) = entries.iter_mut().find(|entry| entry.insn_idx == exceptional.insn_idx) {
+            if entry.stack_size != exceptional.stack_size {
+                return Err(ParseError::MalformedIseq(exceptional.insn_idx));
+            }
+            entry.load_all_locals = true;
+        } else {
+            entries.push(exceptional);
+        }
+    }
+
+    Ok(entries)
+}
+
 fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeInfo {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
@@ -13804,15 +13921,28 @@ struct AddIseqResult {
 
 /// Compile ISEQ into High-level IR
 pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
-    iseq_to_hir_with_exception_entry(iseq, false)
+    iseq_to_hir_impl(iseq, None)
 }
 
-/// Compile a rescue/ensure ISEQ entered through jit_exec_exception().
-pub fn iseq_to_hir_exception(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
-    iseq_to_hir_with_exception_entry(iseq, true)
+/// Compile an ISEQ entered through jit_exec_exception(). The resulting body is
+/// rooted at both its static catch-table continuations and the runtime PC that
+/// triggered compilation.
+pub fn iseq_to_hir_exception(
+    iseq: *const rb_iseq_t,
+    insn_idx: u32,
+    stack_size: usize,
+) -> Result<Function, ParseError> {
+    iseq_to_hir_impl(iseq, Some(InterpreterEntry {
+        insn_idx,
+        stack_size,
+        load_all_locals: true,
+    }))
 }
 
-fn iseq_to_hir_with_exception_entry(iseq: *const rb_iseq_t, exceptional_entry: bool) -> Result<Function, ParseError> {
+fn iseq_to_hir_impl(
+    iseq: *const rb_iseq_t,
+    exception_entry: Option<InterpreterEntry>,
+) -> Result<Function, ParseError> {
     if !ZJITState::can_compile_iseq(iseq) {
         return Err(ParseError::NotAllowed);
     }
@@ -13820,7 +13950,8 @@ fn iseq_to_hir_with_exception_entry(iseq: *const rb_iseq_t, exceptional_entry: b
     let mut fun = Function::new(iseq);
     fun.was_invalidated_for_singleton_class_creation = payload.was_invalidated_for_singleton_class_creation;
     fun.self_is_heap_object = payload.self_is_heap_object;
-    fun.exceptional_entry = exceptional_entry;
+    fun.policy = CompilePolicy::new(iseq, exception_entry.is_some());
+    fun.exception_entry = exception_entry;
 
     let result = add_iseq_to_hir(&mut fun, iseq, AddIseqMode::Standalone)?;
     fun.profiles = Some(result.profiles);
@@ -13898,7 +14029,16 @@ fn add_iseq_to_hir(
     let seen_ep_escape = iseq_seen_ep_escape(iseq);
     let ep_escaped = ep_starts_escaped || seen_ep_escape;
 
-    let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
+    let interpreter_entries = if matches!(mode, AddIseqMode::Standalone) {
+        interpreter_entries(iseq, &jit_entry_insns, fun.exception_entry)?
+    } else {
+        vec![]
+    };
+    let mut root_insns = jit_entry_insns.clone();
+    root_insns.extend(interpreter_entries.iter().map(|entry| entry.insn_idx));
+    root_insns.sort_unstable();
+    root_insns.dedup();
+    let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &root_insns);
 
     let compile_jit_entries = matches!(mode, AddIseqMode::Standalone) && iseq_supports_jit_entry(iseq);
 
@@ -13936,9 +14076,10 @@ fn add_iseq_to_hir(
         AddIseqMode::Inlined { .. } => Some(insn_idx_to_block[&jit_entry_insns[0]]),
     };
 
-    if matches!(mode, AddIseqMode::Standalone) {
+    let interpreter_entry_states = if matches!(mode, AddIseqMode::Standalone) {
+        fun.interpreter_entry_insns = interpreter_entries.iter().map(|entry| entry.insn_idx).collect();
         // Compile an entry_block for the interpreter
-        compile_entry_block(fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
+        let entry_states = compile_entry_block(fun, &interpreter_entries, &insn_idx_to_block);
 
         if compile_jit_entries {
             // Compile all JIT-to-JIT entry blocks
@@ -13950,18 +14091,30 @@ fn add_iseq_to_hir(
                 compile_jit_entry_block(fun, jit_entry_idx, target_block);
             }
         }
-    }
+        entry_states
+    } else {
+        vec![]
+    };
 
     // Iteratively fill out basic blocks using a queue.
     // TODO(max): Basic block arguments at edges
     let mut queue = VecDeque::new();
-    for &insn_idx in jit_entry_insns.iter() {
-        queue.push_back((new_frame_state(mode, iseq), insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx));
-    }
 
     // Keep compiling blocks until the queue becomes empty
     let mut visited = HashSet::new();
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+    match mode {
+        AddIseqMode::Standalone => {
+            for (insn_idx, state) in interpreter_entry_states {
+                queue.push_back((state, insn_idx_to_block[&insn_idx], insn_idx));
+            }
+        }
+        AddIseqMode::Inlined { .. } => {
+            for &insn_idx in &jit_entry_insns {
+                queue.push_back((new_frame_state(mode, iseq), insn_idx_to_block[&insn_idx], insn_idx));
+            }
+        }
+    }
     while let Some((incoming_state, mut block, mut insn_idx)) = queue.pop_front() {
         // Compile each block only once
         if visited.contains(&block) { continue; }
@@ -15928,75 +16081,105 @@ fn add_iseq_to_hir(
 }
 
 /// Compile an entry_block for the interpreter
-fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_block: &HashMap<u32, BlockId>) {
+fn compile_entry_block(
+    fun: &mut Function,
+    entries: &[InterpreterEntry],
+    insn_idx_to_block: &HashMap<u32, BlockId>,
+) -> Vec<(u32, FrameState)> {
+    assert!(!entries.is_empty());
     let mut entry_block = fun.entry_block;
-    let (self_param, entry_state) = compile_entry_state(fun);
-    let mut pc: Option<InsnId> = None;
-    let &all_opts_passed_insn_idx = jit_entry_insns.last().unwrap();
+    fun.push_insn(entry_block, Insn::EntryPoint { jit_entry_idx: None });
+    let self_param = fun.load_self(entry_block);
+
+    // Entry state depends only on whether the VM already initialized all
+    // locals and on the temporary-stack depth. Share loads between PCs with
+    // the same shape.
+    let mut states_by_shape = HashMap::new();
+    let entry_states = entries.iter().map(|entry| {
+        let state = states_by_shape
+            .entry((entry.load_all_locals, entry.stack_size))
+            .or_insert_with(|| {
+                compile_entry_state(
+                    fun,
+                    entry_block,
+                    entry.load_all_locals,
+                    entry.stack_size,
+                )
+            })
+            .clone();
+        (entry.insn_idx, state)
+    }).collect::<Vec<_>>();
 
     if get_option!(stats) {
         fun.count_iseq_calls(entry_block);
     }
 
-    // Check-and-jump for each missing optional PC
-    let mut iter = jit_entry_insns.iter().peekable();
-    while let Some(&jit_entry_insn) = iter.next() {
-        if jit_entry_insn == all_opts_passed_insn_idx {
-            continue;
-        }
-        let target_block = insn_idx_to_block.get(&jit_entry_insn)
+    let mut pc: Option<InsnId> = None;
+    let &(default_insn_idx, ref default_state) = entry_states.last().unwrap();
+
+    // Dispatch every non-default PC. The VM only calls this entry with one of
+    // the ISEQ's normal parameter PCs or catch-table continuation PCs, so the
+    // final entry is the fall-through default.
+    for (idx, &(insn_idx, ref state)) in entry_states[..entry_states.len() - 1].iter().enumerate() {
+        let target_block = insn_idx_to_block.get(&insn_idx)
             .copied()
-            .expect("we make a block for each jump target and \
-                     each entry in the ISEQ opt_table is a jump target");
+            .expect("we make a block for every interpreter entry PC");
         // Load PC once at the start of the block, shared among all cases
         let pc = *pc.get_or_insert_with(|| fun.load_pc(entry_block));
         let expected_pc = fun.push_insn(entry_block, Insn::Const {
-            val: Const::CPtr(unsafe { rb_iseq_pc_at_idx(fun.iseq, jit_entry_insn) } as *const u8),
+            val: Const::CPtr(unsafe { rb_iseq_pc_at_idx(fun.iseq, insn_idx) } as *const u8),
         });
         let test_id = fun.push_insn(entry_block, Insn::IsBitEqual { left: pc, right: expected_pc });
 
-        let next_insn_idx = **iter.peek().expect("last entry is skipped so there is always a next");
+        let next_insn_idx = entry_states[idx + 1].0;
         let fall_through = fun.new_block(next_insn_idx);
 
         fun.push_insn(entry_block, Insn::CondBranch {
             val: test_id,
-            if_true: BranchEdge { target: target_block, args: entry_state.as_args(self_param) },
+            if_true: BranchEdge { target: target_block, args: state.as_args(self_param) },
             if_false: BranchEdge { target: fall_through, args: vec![] }
         });
         entry_block = fall_through;
     }
 
-    // Terminate the block with a jump to the block with all optionals passed
-    let target_block = insn_idx_to_block.get(&all_opts_passed_insn_idx)
+    let target_block = insn_idx_to_block.get(&default_insn_idx)
         .copied()
-        .expect("we make a block for each jump target and \
-                 each entry in the ISEQ opt_table is a jump target");
-    fun.push_insn(entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
+        .expect("we make a block for every interpreter entry PC");
+    fun.push_insn(entry_block, Insn::Jump(BranchEdge {
+        target: target_block,
+        args: default_state.as_args(self_param),
+    }));
+
+    entry_states
 }
 
-/// Compile initial locals for an entry_block for the interpreter
-fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
-    let entry_block = fun.entry_block;
-    fun.push_insn(entry_block, Insn::EntryPoint { jit_entry_idx: None });
-
+/// Load the locals and temporary stack prepared by the VM for one interpreter
+/// entry shape.
+fn compile_entry_state(
+    fun: &mut Function,
+    entry_block: BlockId,
+    load_all_locals: bool,
+    stack_size: usize,
+) -> FrameState {
     let iseq = fun.iseq;
     let params = unsafe { iseq.params() };
     let param_size = params.size.to_usize();
     let rest_param_idx = iseq_rest_param_idx(params);
 
-    let self_param = fun.load_self(entry_block);
     let mut entry_state = FrameState::new(iseq);
-    // If the ISEQ does not escape EP, we can assume EP + 1 == SP
+    // The exception entry wrapper normalizes ZJIT's SP register to the VM
+    // stack base. Catch continuations still use EP for locals because their
+    // VM cfp->sp arrived above the temporary values restored below.
     // TODO: This should maybe also consider if the EP has historically been escaped in this iseq.
     // (see: https://github.com/Shopify/ruby/issues/774)
-    let use_sp = !iseq_ep_starts_escaped(iseq);
+    let use_sp = !load_all_locals && stack_size == 0 && !iseq_ep_starts_escaped(iseq);
     let mut base: Option<InsnId> = None;
     for local_idx in 0..num_locals(iseq) {
-        if local_idx < param_size || fun.exceptional_entry {
+        if local_idx < param_size || load_all_locals {
             let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
             let ep_offset_u32 = u32::try_from(ep_offset)
                 .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
-            let return_type = if !fun.exceptional_entry && Some(local_idx as i32) == rest_param_idx {
+            let return_type = if !load_all_locals && Some(local_idx as i32) == rest_param_idx {
                 types::ArrayExact
             } else {
                 types::BasicObject
@@ -16014,7 +16197,23 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
             entry_state.locals.push(fun.push_insn(entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
     }
-    (self_param, entry_state)
+
+    if stack_size > 0 {
+        let sp = fun.load_sp(entry_block);
+        for stack_idx in 0..stack_size {
+            let stack_idx = i32::try_from(stack_idx)
+                .expect("ISEQ temporary stack fits in i32");
+            entry_state.stack.push(fun.load_field(
+                entry_block,
+                sp,
+                FieldName::stack,
+                stack_idx * SIZEOF_VALUE_I32,
+                types::BasicObject,
+            ));
+        }
+    }
+
+    entry_state
 }
 
 /// Compile a jit_entry_block

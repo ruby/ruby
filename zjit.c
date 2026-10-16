@@ -291,6 +291,43 @@ rb_zjit_box_enabled(void)
     return rb_box_available();
 }
 
+unsigned int
+rb_zjit_iseq_exception_entry_count(const rb_iseq_t *iseq)
+{
+    const struct iseq_catch_table *table = ISEQ_BODY(iseq)->catch_table;
+    return table ? table->size : 0;
+}
+
+bool
+rb_zjit_iseq_exception_entry(const rb_iseq_t *iseq, unsigned int index,
+                             enum rb_catch_type *type, unsigned int *cont,
+                             unsigned int *stack_size)
+{
+    const struct iseq_catch_table *table = ISEQ_BODY(iseq)->catch_table;
+    if (!table || index >= table->size) return false;
+
+    const struct iseq_catch_table_entry *entry =
+        UNALIGNED_MEMBER_PTR(table, entries[index]);
+    switch (entry->type) {
+      case CATCH_TYPE_RETRY:
+      case CATCH_TYPE_REDO:
+        *stack_size = entry->sp;
+        break;
+      case CATCH_TYPE_BREAK:
+      case CATCH_TYPE_NEXT:
+        // compile.c removes the value pushed by vm_exec_handle_exception()
+        // when it records these catch-table stack depths.
+        *stack_size = entry->sp + 1;
+        break;
+      default:
+        return false;
+    }
+
+    *type = entry->type;
+    *cont = entry->cont;
+    return true;
+}
+
 // Symbol block handler yield for the single-argument shape: `yield x` to a
 // &:sym block calls x.sym, exactly vm_yield_with_symbol -> rb_sym_proc_call
 // with no kw-splat and no sub-block. Only used while Ruby::Box is disabled.

@@ -25,7 +25,7 @@ use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_fo
 use crate::stats::{counter_ptr, with_compile_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND, CFP, EC, FloatArithOp, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
-use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
+use crate::hir::{self, iseq_to_hir, iseq_to_hir_exception, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, CondBranchFixnumCmpData, CondBranchHasTypeData, Const, FieldName, FixnumCmpOp, FloatCmpOp, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, InlineDepth, DEFAULT_MAX_VERSIONS};
@@ -257,7 +257,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
         update_self_is_heap_object(iseq, unsafe { get_ec_cfp(ec) });
 
         let cb = ZJITState::get_code_block();
-        let mut code_ptr = with_compile_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, jit_exception));
+        let mut code_ptr = with_compile_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, ec, jit_exception));
 
         // If this compile ran out of executable memory, stop compiling so
         // that the interpreter stops incrementing ISEQ call counters. It is
@@ -313,16 +313,48 @@ fn gen_iseq_entry_stub(cb: &mut CodeBlock, iseq: IseqPtr, body: CodePtr) -> Resu
     Ok(code_ptr)
 }
 
-/// Compile the C entry stub used by jit_exec_exception(). Rescue and ensure
-/// ISEQs are pushed as non-FINISH frames by vm_exec_handle_exception(). When
-/// the compiled body returns, it has already popped that frame, so pass the
-/// return value through the caller's VM stack and return Qundef to keep
-/// vm_exec_loop executing the remaining Ruby frames.
-fn gen_iseq_exception_entry_stub(cb: &mut CodeBlock, iseq: IseqPtr, body: CodePtr) -> Result<CodePtr, CompileError> {
+/// Compile the C entry stub used by jit_exec_exception(). When the compiled
+/// body returns, it has already popped its entry frame. Non-FINISH entries pass
+/// the value through the caller's VM stack so vm_exec_loop can continue;
+/// FINISH entries return the value directly.
+fn gen_iseq_exception_entry_stub(
+    cb: &mut CodeBlock,
+    iseq: IseqPtr,
+    body: CodePtr,
+    entry_insns: &[u32],
+) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
-    asm.new_block_without_id("iseq_exception_entry_stub");
+    let entry_block = asm.new_block_without_id("iseq_exception_entry_stub");
     gen_entry_prologue(&mut asm);
 
+    let body_block = asm.new_block_without_id("iseq_exception_entry_body");
+    let fallback_block = asm.new_block_without_id("iseq_exception_entry_fallback");
+
+    // The exception function pointer is shared by every exceptional return to
+    // this ISEQ. Only enter the whole-function body at PCs it was rooted for;
+    // a different continuation safely falls back to vm_exec_core().
+    asm.set_current_block(entry_block);
+    let pc = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC));
+    for &insn_idx in entry_insns {
+        let expected_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+        asm.cmp(pc, Opnd::const_ptr(expected_pc));
+        asm.push_insn(lir::Insn::Je(Target::Block(Box::new(lir::BranchEdge {
+            target: body_block,
+            args: vec![],
+        }))));
+    }
+    asm.jmp(Target::Block(Box::new(lir::BranchEdge {
+        target: fallback_block,
+        args: vec![],
+    })));
+
+    asm.set_current_block(body_block);
+    // Exceptional continuations enter with cfp->sp above their existing
+    // temporary stack. ZJIT's SP register is the fixed stack base and adds the
+    // HIR stack depth when publishing cfp->sp, so normalize it before entering
+    // the compiled body instead of counting those slots twice.
+    let base_ptr = asm.ccall(rb_vm_base_ptr as *const u8, vec![CFP]);
+    asm.mov(SP, base_ptr);
     let out = asm.ccall(body.raw_ptr(cb), vec![]);
 
     asm_comment!(asm, "complete exception handler return or preserve side exit");
@@ -332,6 +364,12 @@ fn gen_iseq_exception_entry_stub(cb: &mut CodeBlock, iseq: IseqPtr, body: CodePt
     asm.frame_teardown(lir::JIT_PRESERVED_REGS);
     asm.cret(out);
 
+    asm.set_current_block(fallback_block);
+    asm_comment!(asm, "continue unknown exception entry in the interpreter");
+    gen_incr_counter(&mut asm, Counter::exit_exception_handler);
+    asm.frame_teardown(lir::JIT_PRESERVED_REGS);
+    asm.cret(Qundef.into());
+
     let (code_ptr, gc_offsets) = asm.compile(cb)?;
     assert!(gc_offsets.is_empty());
     perf::register_current_code_range(cb, &format!("exception entry stub: {}", iseq_get_location(iseq, 0)), code_ptr);
@@ -339,31 +377,54 @@ fn gen_iseq_exception_entry_stub(cb: &mut CodeBlock, iseq: IseqPtr, body: CodePt
 }
 
 /// Compile an entry point for a given ISEQ
-fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) -> Result<CodePtr, CompileError> {
-    // vm_exec_handle_exception pushes rescue and ensure ISEQs at their normal
-    // first instruction. Other exceptional entries (break, retry, redo, next)
-    // resume an existing frame at an arbitrary PC, which whole-function ZJIT
-    // cannot enter yet.
-    let iseq_type = unsafe { get_iseq_body_type(iseq) };
-    if jit_exception && !matches!(iseq_type, ISEQ_TYPE_RESCUE | ISEQ_TYPE_ENSURE) {
-        return gen_exception_handler_counter(cb);
-    }
+fn gen_iseq_entry_point(
+    cb: &mut CodeBlock,
+    iseq: IseqPtr,
+    ec: EcPtr,
+    jit_exception: bool,
+) -> Result<CodePtr, CompileError> {
+    let exception_entry = if jit_exception {
+        let cfp = unsafe { get_ec_cfp(ec) };
+        let pc = unsafe { get_cfp_pc(cfp) };
+        let insn_idx: u32 = iseq_pc_to_insn_idx(iseq, pc)
+            .ok_or(CompileError::ParseError(crate::hir::ParseError::MalformedIseq(0)))?
+            .into();
+        let sp = unsafe { get_cfp_sp(cfp) };
+        let bp = unsafe { rb_vm_base_ptr(cfp) };
+        let stack_size = usize::try_from(unsafe { sp.offset_from(bp) })
+            .map_err(|_| CompileError::ParseError(crate::hir::ParseError::MalformedIseq(insn_idx)))?;
+        Some((insn_idx, stack_size))
+    } else {
+        None
+    };
 
     let iseq_name = iseq_get_location(iseq, 0);
     trace_compile_phase(&iseq_name, || {
         // Compile ISEQ into High-level IR
-        let function = crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq, jit_exception).inspect_err(|_| {
+        let function = crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq, exception_entry).inspect_err(|_| {
             incr_counter!(failed_iseq_count);
         }))?;
 
         // Compile the High-level IR
-        let IseqCodePtrs { start_ptr, .. } = gen_iseq(cb, iseq, Some(&function)).inspect_err(|err| {
+        let codegen_result = if jit_exception {
+            gen_iseq_exception(cb, iseq, &function)
+                .map(|(code_ptrs, entry_insns)| (code_ptrs, Some(entry_insns)))
+        } else {
+            gen_iseq(cb, iseq, Some(&function))
+                .map(|code_ptrs| (code_ptrs, None))
+        };
+        let (IseqCodePtrs { start_ptr, .. }, exception_entry_insns) = codegen_result.inspect_err(|err| {
             debug!("{err:?}: gen_iseq failed: {}", iseq_get_location(iseq, 0));
         })?;
 
         // Wrap the body in a per-ISEQ entry stub so jit_exec can call it directly.
         if jit_exception {
-            gen_iseq_exception_entry_stub(cb, iseq, start_ptr)
+            gen_iseq_exception_entry_stub(
+                cb,
+                iseq,
+                start_ptr,
+                exception_entry_insns.as_deref().unwrap(),
+            )
         } else {
             gen_iseq_entry_stub(cb, iseq, start_ptr)
         }
@@ -379,8 +440,10 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
 /// GC) so that all compile/recompile tuning decisions live in one place.
 pub fn invalidate_iseq_version(cb: &mut CodeBlock, iseq: IseqPtr, version: &mut IseqVersionRef) {
     let payload = get_or_create_iseq_payload(iseq);
+    let exception_entry = payload.exception_versions.contains(version);
+    let version_count = payload.versions_for_entry(exception_entry).len();
     if !unsafe { version.as_ref() }.is_invalidated()
-        && payload.versions.len() < max_iseq_versions()
+        && version_count < max_iseq_versions()
     {
         unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
         unsafe { rb_iseq_reset_jit_func(iseq) };
@@ -492,6 +555,50 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
     code_ptrs
 }
 
+/// Compile the whole-function version used by jit_exec_exception(). It is
+/// cached separately from the ordinary call version because it is rooted at
+/// the runtime continuation PC and installed in body->jit_exception.
+fn gen_iseq_exception(
+    cb: &mut CodeBlock,
+    iseq: IseqPtr,
+    function: &Function,
+) -> Result<(IseqCodePtrs, Vec<u32>), CompileError> {
+    let payload = get_or_create_iseq_payload(iseq);
+    let entry_insns = function.interpreter_entry_insns();
+    let last_version = payload.exception_versions.last()
+        .map(|version| unsafe { version.as_ref() });
+    if let Some(version) = last_version {
+        match &version.status {
+            IseqStatus::Compiled(code_ptrs)
+                if entry_insns.iter().all(|insn| version.exception_entry_insns.contains(insn)) =>
+            {
+                return Ok((code_ptrs.clone(), version.exception_entry_insns.clone()));
+            }
+            IseqStatus::CantCompile(err) => return Err(err.clone()),
+            _ => {}
+        }
+    }
+    if payload.exception_versions.len() >= max_iseq_versions() {
+        return Err(CompileError::IseqVersionLimitReached);
+    }
+
+    let mut version = IseqVersion::new(iseq);
+    unsafe { version.as_mut() }.exception_entry_insns = entry_insns.to_vec();
+    let code_ptrs = gen_iseq_body(cb, iseq, version, Some(function));
+    match &code_ptrs {
+        Ok(code_ptrs) => {
+            unsafe { version.as_mut() }.status = IseqStatus::Compiled(code_ptrs.clone());
+            incr_counter!(compiled_iseq_count);
+        }
+        Err(err) => {
+            unsafe { version.as_mut() }.status = IseqStatus::CantCompile(err.clone());
+            incr_counter!(failed_iseq_count);
+        }
+    }
+    payload.exception_versions.push(version);
+    code_ptrs.map(|code_ptrs| (code_ptrs, entry_insns.to_vec()))
+}
+
 /// Compile an ISEQ into machine code
 fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef, function: Option<&Function>) -> Result<IseqCodePtrs, CompileError> {
     // If we ran out of code region, we shouldn't attempt to generate new code.
@@ -502,7 +609,7 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
     // Convert ISEQ into optimized High-level IR if not given
     let function = match function {
         Some(function) => function,
-        None => &crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq, false))?,
+        None => &crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq, None))?,
     };
 
     // Compile the High-level IR
@@ -4770,7 +4877,10 @@ fn gen_stack_overflow_check(jit: &mut JITState, asm: &mut Assembler, function: &
 }
 
 /// Convert ISEQ into High-level IR
-fn compile_iseq(iseq: IseqPtr, jit_exception: bool) -> Result<Function, CompileError> {
+fn compile_iseq(
+    iseq: IseqPtr,
+    exception_entry: Option<(u32, usize)>,
+) -> Result<Function, CompileError> {
     // Convert ZJIT instructions back to bare instructions
     unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
 
@@ -4784,8 +4894,8 @@ fn compile_iseq(iseq: IseqPtr, jit_exception: bool) -> Result<Function, CompileE
 
     let hir = trace_compile_phase("build_hir", || {
         crate::stats::with_time_stat(Counter::compile_hir_build_time_ns, || {
-            if jit_exception {
-                crate::hir::iseq_to_hir_exception(iseq)
+            if let Some((insn_idx, stack_size)) = exception_entry {
+                iseq_to_hir_exception(iseq, insn_idx, stack_size)
             } else {
                 iseq_to_hir(iseq)
             }
@@ -4802,7 +4912,10 @@ fn compile_iseq(iseq: IseqPtr, jit_exception: bool) -> Result<Function, CompileE
         trace_compile_phase("optimize", || function.optimize());
     }
     function.dump_hir();
-    let non_final_version = get_or_create_iseq_payload(iseq).versions.len() + 1 < max_iseq_versions();
+    let version_count = get_or_create_iseq_payload(iseq)
+        .versions_for_entry(exception_entry.is_some())
+        .len();
+    let non_final_version = version_count + 1 < max_iseq_versions();
     if non_final_version {
         reset_profiles_remaining(iseq);
     }
@@ -4820,6 +4933,7 @@ fn side_exit_with_recompile(jit: &JITState, function: &Function, state: &FrameSt
     let mut exit = build_side_exit(jit, function, state);
     exit.recompile = recompile.map(|_| SideExitRecompile {
         compiled_iseq: Opnd::Value(VALUE::from(jit.iseq())),
+        exception_entry: function.is_exception_entry(),
     });
     Target::SideExit(Box::new(SideExitTarget { exit, reason }))
 }
@@ -4938,13 +5052,22 @@ pub(crate) use c_callable;
 
 c_callable! {
     /// Complete a jit_exec_exception() entry after the compiled body returns.
-    /// A normal Return has popped the rescue/ensure frame, so push its value to
-    /// the caller. A side exit returns Qundef with the handler frame still
-    /// current and already materialized; leave its VM stack untouched so the
-    /// interpreter can resume at the side-exit PC.
+    /// A normal Return has popped the entry frame. Return its value directly if
+    /// that was a FINISH frame; otherwise push it to the caller and return
+    /// Qundef so vm_exec_loop continues there. A side exit returns Qundef with
+    /// the entry frame still current and already materialized; leave its VM
+    /// stack untouched so the interpreter can resume at the side-exit PC.
     fn exception_entry_return(cfp: CfpPtr, out: VALUE) -> VALUE {
         if out != Qundef {
             unsafe {
+                // gen_return() advanced CFP by one control frame before
+                // returning to the exception wrapper.
+                let entry_cfp = cfp.sub(1);
+                let flags = (*(*entry_cfp).ep).0;
+                if flags & (VM_FRAME_FLAG_FINISH as usize) != 0 {
+                    return out;
+                }
+
                 let sp = (*cfp).sp;
                 sp.write(out);
                 (*cfp).sp = sp.add(1);
@@ -4965,7 +5088,8 @@ c_callable! {
     /// The version gets invalidated after `--zjit-num-exits-until-invalidate` recompile exits.
     /// Invalidation resets the ISEQ's call counter and re-stubs incoming JIT-to-JIT calls,
     /// so every entry runs the profiling window in the interpreter before the next compile.
-    pub(crate) fn exit_recompile(compiled_iseq_raw: VALUE) {
+    /// `exception_entry` selects the jit_exception versions over the jit_entry ones.
+    pub(crate) fn exit_recompile(compiled_iseq_raw: VALUE, exception_entry: bool) {
         // Fast check before taking the VM lock: skip if the compiled unit is already
         // invalidated or at the version limit. This avoids expensive lock acquisition
         // on every shape guard exit taken by frames still running the invalidated code.
@@ -4973,9 +5097,10 @@ c_callable! {
         {
             let compiled_iseq: IseqPtr = compiled_iseq_raw.as_iseq();
             let payload = get_or_create_iseq_payload(compiled_iseq);
-            let already_done = payload.versions.last()
+            let versions = payload.versions_for_entry(exception_entry);
+            let already_done = versions.last()
                 .map_or(false, |v| unsafe { v.as_ref() }.is_invalidated())
-                || payload.versions.len() >= max_iseq_versions();
+                || versions.len() >= max_iseq_versions();
             if already_done {
                 return;
             }
@@ -4990,7 +5115,7 @@ c_callable! {
         with_vm_lock(src_loc!(), || {
             let compiled_iseq: IseqPtr = compiled_iseq_raw.as_iseq();
             let payload = get_or_create_iseq_payload(compiled_iseq);
-            if let Some(version) = payload.versions.last_mut() {
+            if let Some(version) = payload.versions_for_entry_mut(exception_entry).last_mut() {
                 let cb = ZJITState::get_code_block();
                 invalidate_iseq_version(cb, compiled_iseq, version);
                 cb.mark_all_executable();
@@ -5508,19 +5633,6 @@ fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -
     asm.new_block_without_id("compile_error_counter");
     gen_incr_counter(&mut asm, exit_compile_error);
     gen_incr_counter(&mut asm, exit_counter_for_compile_error(compile_error));
-    asm.cret(Qundef.into());
-
-    asm.compile(cb).map(|(code_ptr, gc_offsets)| {
-        assert_eq!(0, gc_offsets.len());
-        code_ptr
-    })
-}
-
-/// Generate a JIT entry that just increments exit_exception_handler and exits
-fn gen_exception_handler_counter(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
-    let mut asm = Assembler::new();
-    asm.new_block_without_id("exception_handler_counter");
-    gen_incr_counter(&mut asm, Counter::exit_exception_handler);
     asm.cret(Qundef.into());
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {

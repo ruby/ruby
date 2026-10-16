@@ -6331,6 +6331,63 @@ pub(crate) mod hir_build_tests {
     }
 
     #[test]
+    fn exception_continuation_entries() {
+        eval("
+            def exception_break
+              1.times { break 1 }
+            end
+
+            def exception_retry
+              begin
+                raise
+              rescue
+                retry
+              end
+            end
+        ");
+
+        let wrapped_block_iseq = eval(
+            "children = []; RubyVM::InstructionSequence.of(method(:exception_break)).each_child { |child| children << child }; children.first",
+        );
+        let block_iseq = unsafe { rb_iseqw_to_iseq(wrapped_block_iseq) };
+        let iseqs = [
+            get_method_iseq("self", "exception_break"),
+            get_method_iseq("self", "exception_retry"),
+            block_iseq,
+        ];
+        let mut catch_types = vec![];
+        for iseq in iseqs {
+            let entries = exceptional_entries(iseq);
+            assert!(!entries.is_empty());
+
+            let dynamic = entries[0];
+            let function = iseq_to_hir_exception(
+                iseq,
+                dynamic.insn_idx,
+                dynamic.stack_size,
+            ).unwrap();
+            for entry in &entries {
+                assert!(function.interpreter_entry_insns().contains(&entry.insn_idx));
+            }
+
+            catch_types.extend(entries.iter().map(|entry| {
+                assert_eq!(
+                    usize::from(matches!(entry.catch_type, CATCH_TYPE_BREAK | CATCH_TYPE_NEXT)),
+                    entry.stack_size,
+                );
+                entry.catch_type
+            }));
+        }
+
+        catch_types.sort_unstable();
+        catch_types.dedup();
+        assert_eq!(
+            vec![CATCH_TYPE_RETRY, CATCH_TYPE_BREAK, CATCH_TYPE_REDO, CATCH_TYPE_NEXT],
+            catch_types,
+        );
+    }
+
+    #[test]
     fn test_invokeblock() {
         eval(r#"
             def test

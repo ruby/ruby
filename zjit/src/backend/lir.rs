@@ -694,6 +694,8 @@ pub struct SideExitRecompile {
     /// The compiled unit whose version must be invalidated to force a recompile. For inlined
     /// methods, this will be the outer function it was inlined into.
     pub compiled_iseq: Opnd,
+    /// Whether the compiled unit is installed in jit_exception rather than jit_entry.
+    pub exception_entry: bool,
 }
 
 /// Payload of `Target::SideExit`, boxed to keep `Target` (and every `Insn`
@@ -3397,7 +3399,10 @@ impl Assembler
             if let Some(recompile) = &exit.recompile {
                 use crate::codegen::exit_recompile;
                 asm_comment!(asm, "invalidate for recompilation");
-                asm_ccall!(asm, exit_recompile, recompile.compiled_iseq);
+                asm_ccall!(asm, exit_recompile,
+                    recompile.compiled_iseq,
+                    Opnd::UImm(u64::from(recompile.exception_entry))
+                );
             }
         }
 

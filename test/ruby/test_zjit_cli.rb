@@ -26,6 +26,17 @@ class TestZJITCLI < Test::Unit::TestCase
     RUBY
   end
 
+  def test_exception_entry_stack_base
+    assert_runs '[:break_value, :continued]', <<~'RUBY', call_threshold: 1
+      def exception_entry_yielder
+        yield
+      end
+
+      result = exception_entry_yielder { break :break_value }
+      [result, :continued]
+    RUBY
+  end
+
   def test_stats_enabled
     assert_runs 'false', <<~RUBY, stats: false
       RubyVM::ZJIT.stats_enabled?
@@ -498,6 +509,50 @@ class TestZJITCLI < Test::Unit::TestCase
         ensure_values,
         mismatch_values,
         $ensured,
+        RubyVM::ZJIT.stats(:exit_exception_handler) == exception_handler_exits,
+      ]
+    RUBY
+  end
+
+  def test_exceptional_continuation_entries
+    expected = [
+      [:returned, :returned, :returned, :returned, :returned],
+      [:broken, :broken, :broken, :broken, :broken],
+      [2, 2, 2, 2, 2],
+      true,
+    ].inspect
+    assert_runs expected, <<~'RUBY', call_threshold: 2, stats: :quiet
+      def nonlocal_return
+        proc { return :returned }.call
+        :unreachable
+      end
+
+      def break_from_yield
+        yield
+        :unreachable
+      end
+
+      def retrying
+        attempts = 0
+        begin
+          attempts += 1
+          raise "retry" if attempts == 1
+        rescue RuntimeError
+          retry
+        end
+        attempts
+      end
+
+      # Each throw resumes its frame at a catch-table continuation through
+      # jit_exec_exception(); none of them should take the counting stub.
+      exception_handler_exits = RubyVM::ZJIT.stats(:exit_exception_handler)
+      returns = 5.times.map { nonlocal_return }
+      breaks = 5.times.map { break_from_yield { break :broken } }
+      retries = 5.times.map { retrying }
+      [
+        returns,
+        breaks,
+        retries,
         RubyVM::ZJIT.stats(:exit_exception_handler) == exception_handler_exits,
       ]
     RUBY
