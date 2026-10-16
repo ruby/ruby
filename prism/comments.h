@@ -24,6 +24,18 @@ typedef enum {
 typedef struct pm_comment_t pm_comment_t;
 
 /**
+ * The comments owned by a node, as a slice of the comment attachments of the
+ * parser that produced it.
+ */
+typedef struct {
+    /** The index of the first attachment owned by the node. */
+    uint32_t index;
+
+    /** The number of attachments owned by the node. */
+    uint32_t length;
+} pm_comment_range_t;
+
+/**
  * Returns the location associated with the given comment.
  *
  * @param comment the comment whose location we want to get

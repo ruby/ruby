@@ -1687,7 +1687,13 @@ pub struct rb_const_entry_struct {
     pub flag: rb_const_flag_t,
     pub line: ::std::os::raw::c_int,
     pub value: VALUE,
-    pub file: VALUE,
+    pub u: rb_const_entry_struct__bindgen_ty_1,
+}
+#[repr(C)]
+pub struct rb_const_entry_struct__bindgen_ty_1 {
+    pub file: __BindgenUnionField<VALUE>,
+    pub autoload_const: __BindgenUnionField<VALUE>,
+    pub bindgen_union_field: u64,
 }
 pub type rb_const_entry_t = rb_const_entry_struct;
 #[repr(C)]
@@ -2482,8 +2488,6 @@ unsafe extern "C" {
         cd: *mut rb_call_data,
         recv: VALUE,
     ) -> *const rb_callable_method_entry_struct;
-    pub fn rb_zjit_class_initialized_p(klass: VALUE) -> bool;
-    pub fn rb_zjit_can_load_superclass_p(klass: VALUE) -> bool;
     pub fn rb_zjit_class_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
     pub fn rb_zjit_class_has_struct_allocator(klass: VALUE) -> bool;
     pub fn rb_zjit_struct_num_members(klass: VALUE) -> rb_len_t;

@@ -20,6 +20,8 @@ mflags = $(MFLAGS)
 gnumake_recursive =
 sequential = $(gnumake:yes=-sequential)
 enable_shared = $(ENABLE_SHARED:no=)
+yes_git = $(HAVE_GIT:no=)
+no_git = $(HAVE_GIT:yes=)
 
 UNICODE_VERSION = 17.0.0
 UNICODE_EMOJI_VERSION_0 = $(UNICODE_VERSION)///
@@ -98,6 +100,7 @@ LIBPRISM_OBJS = \
 		prism/arena.$(OBJEXT) \
 		prism/buffer.$(OBJEXT) \
 		prism/char.$(OBJEXT) \
+		prism/comments.$(OBJEXT) \
 		prism/constant_pool.$(OBJEXT) \
 		prism/diagnostic.$(OBJEXT) \
 		prism/encoding.$(OBJEXT) \
@@ -1186,6 +1189,7 @@ $(srcs_vpath)vm.inc: $(tooldir)/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
 
 BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
+		$(srcdir)/basic_object.rb \
 		$(srcdir)/dir.rb \
 		$(srcdir)/gc.rb \
 		$(srcdir)/numeric.rb \
@@ -1354,14 +1358,14 @@ clean-build-tool:
 	- cd build-tool 2> $(NULL) && $(MAKE) clean 2> $(NULL) || $(NULLCMD)
 	- $(RMDIR) build-tool 2> $(NULL) || $(NULLCMD)
 
-$(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
+$(srcdir)/revision.h$(no_git:no=~disabled~): $(REVISION_H)
 
-REVISION_H_CMD = $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h \
-	--srcdir="$(srcdir)" --output=revision.h --timestamp=$(REVISION_H)
+REVISION_H_CMD = $(LASTREV) $(srcdir) | $(IFCHANGE) --empty --timestamp=.revision.time revision.h -
 
-$(REVISION_H)$(no_baseruby:no=~disabled~):
+$(REVISION_H)$(no_git:no=~disabled~):
 	$(Q) $(REVISION_H_CMD)
-$(REVISION_H)$(yes_baseruby:yes=~disabled~):
+$(REVISION_H)$(yes_git:yes=~disabled~):
+	$(Q) exit >> revision.h
 	$(Q) exit > $@
 
 # uncommon.mk: $(REVISION_H)

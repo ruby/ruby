@@ -30,6 +30,10 @@ Init_Prism(void)
      *
      * In most cases, use the prism gem instead.  Use \Ruby::Prism only when you
      * need the very parser of the running interpreter.
+     *
+     * \Ruby::Prism is autoloaded when it is first referenced.  Do not
+     * <code>require "ruby/prism"</code> explicitly, as it does not work well
+     * with Ruby::Box for a technical reason.
      */
     VALUE rb_mPrism = rb_define_module_under(rb_mRuby, "Prism");
 #endif

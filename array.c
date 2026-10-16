@@ -5538,12 +5538,24 @@ rb_ary_equal(VALUE ary1, VALUE ary2)
 static VALUE
 recursive_eql(VALUE ary1, VALUE ary2, int recur)
 {
-    rb_len_t i;
+    rb_len_t i, len1;
+    const VALUE *p1, *p2;
 
     if (recur) return Qtrue; /* Subtle! */
-    for (i=0; i<RARRAY_LEN(ary1); i++) {
-        if (!rb_eql(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
-            return Qfalse;
+
+    /* rb_eql() can resize either array and evacuate ptrs */
+    p1 = RARRAY_CONST_PTR(ary1);
+    p2 = RARRAY_CONST_PTR(ary2);
+    len1 = RARRAY_LEN(ary1);
+
+    for (i = 0; i < len1; i++) {
+        if (p1[i] != p2[i]) {
+            if (!rb_eql(p1[i], p2[i])) return Qfalse;
+            len1 = RARRAY_LEN(ary1);
+            if (len1 != RARRAY_LEN(ary2)) return Qfalse;
+            p1 = RARRAY_CONST_PTR(ary1);
+            p2 = RARRAY_CONST_PTR(ary2);
+        }
     }
     return Qtrue;
 }
@@ -7020,24 +7032,30 @@ static const rb_data_type_t ary_sample_memo_type = {
 };
 
 static VALUE
-ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE to_array)
+ary_sample1(rb_execution_context_t *ec, VALUE ary, const VALUE randgen)
+{
+    rb_len_t len = RARRAY_LEN(ary);
+    rb_len_t i = (len < 2) ?  0 : RAND_UPTO(len);
+    return rb_ary_elt(ary, i);
+}
+
+static VALUE
+ary_sample0(rb_execution_context_t *ec, VALUE ary)
+{
+    return ary_sample1(ec, ary, rb_cRandom);
+}
+
+static VALUE
+ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv)
 {
     VALUE result;
     rb_len_t n, len, i, j, k, idx[10];
     rb_len_t rnds[numberof(idx)];
     rb_len_t memo_threshold;
 
-    len = RARRAY_LEN(ary);
-    if (!to_array) {
-        if (len < 2)
-            i = 0;
-        else
-            i = RAND_UPTO(len);
-
-        return rb_ary_elt(ary, i);
-    }
     n = NUM2LEN(nv);
     if (n < 0) rb_raise(rb_eArgError, "negative sample number");
+    len = RARRAY_LEN(ary);
     if (n > len) n = len;
     if (n <= numberof(idx)) {
         for (i = 0; i < n; ++i) {
@@ -7152,12 +7170,6 @@ static VALUE
 ary_sized_alloc(rb_execution_context_t *ec, VALUE self)
 {
     return rb_ary_new2(RARRAY_LEN(self));
-}
-
-static VALUE
-ary_sample0(rb_execution_context_t *ec, VALUE ary)
-{
-    return ary_sample(ec, ary, rb_cRandom, Qfalse, Qfalse);
 }
 
 static VALUE
@@ -7822,7 +7834,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     volatile VALUE t0 = rb_ary_hidden_new(n);
     volatile VALUE t1 = Qundef;
     VALUE *arrays = RARRAY_PTR(t0); /* The arrays we're computing the product of */
-    int *counters = ALLOCV_N(int, t1, n); /* The current position in each one */
+    rb_len_t *counters = ALLOCV_N(rb_len_t, t1, n); /* The current position in each one */
     VALUE result = Qnil;      /* The array we'll be returning, when no block given */
     rb_len_t i,j;
     rb_len_t resultlen = 1;
@@ -7852,7 +7864,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
                 result = rb_ary_new2(0);
                 goto done;
             }
-            if (MUL_OVERFLOW_LONG_P(resultlen, k))
+            if (MUL_OVERFLOW_SIGNED_INTEGER_P(resultlen, k, RB_LEN_MIN, RB_LEN_MAX))
                 rb_raise(rb_eRangeError, "too big to product");
             resultlen *= k;
         }

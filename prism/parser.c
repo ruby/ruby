@@ -190,6 +190,53 @@ pm_parser_comments_each(const pm_parser_t *parser, pm_comment_callback_t callbac
 }
 
 /**
+ * Returns the number of comments owned by the given node.
+ */
+uint32_t
+pm_node_comments_size(const pm_parser_t *parser, const pm_node_t *node) {
+    return pm_parser_comment_range(parser, node->node_id).length;
+}
+
+/**
+ * Returns the comment at the given index among the comments owned by the given
+ * node.
+ */
+const pm_comment_t *
+pm_node_comment(const pm_parser_t *parser, const pm_node_t *node, uint32_t index) {
+    pm_comment_range_t range = pm_parser_comment_range(parser, node->node_id);
+    if (index >= range.length) return NULL;
+
+    return parser->comment_attachments.comments[parser->comment_attachments.attachments[range.index + index]];
+}
+
+/**
+ * Returns the index, among the comments associated with the given parser, of
+ * the comment at the given index among the comment attachments.
+ */
+uint32_t
+pm_parser_comment_attachment(const pm_parser_t *parser, uint32_t index) {
+    if (parser->comment_attachments.attachments == NULL || index >= parser->comment_list.size) return UINT32_MAX;
+    return parser->comment_attachments.attachments[index];
+}
+
+/**
+ * Returns the number of node ids that have a comment range.
+ */
+uint32_t
+pm_parser_comment_ranges_size(const pm_parser_t *parser) {
+    return parser->comment_attachments.ranges_size;
+}
+
+/**
+ * Returns the range of comment attachments owned by the node with the given id.
+ */
+pm_comment_range_t
+pm_parser_comment_range(const pm_parser_t *parser, uint32_t node_id) {
+    if (node_id >= parser->comment_attachments.ranges_size) return (pm_comment_range_t) { .index = 0, .length = 0 };
+    return parser->comment_attachments.ranges[node_id];
+}
+
+/**
  * Returns the location associated with the given magic comment key.
  */
 pm_location_t

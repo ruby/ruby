@@ -3199,6 +3199,22 @@ class TestArray < Test::Unit::TestCase
     assert_equal([], a)
   end
 
+  def test_zip_method_missing_block
+    # [Bug #22436]
+    obj = Object.new
+    def obj.method_missing(*) = nil
+    out = Object.new
+    def out.write(*) = nil
+    def out.puts(*) = yield # called without a block; must raise, not crash
+    begin
+      original_stdout, $stdout = $stdout, out
+      [1].zip(obj)
+      assert_raise(LocalJumpError) { puts 1 }
+    ensure
+      $stdout = original_stdout
+    end
+  end
+
   def test_transpose
     assert_equal([[1, :a], [2, :b], [3, :c]],
       [[1, 2, 3], [:a, :b, :c]].transpose)
@@ -3236,6 +3252,87 @@ class TestArray < Test::Unit::TestCase
     end
     $test_equal_resize_a[1] = o
     assert_equal($test_equal_resize_a, $test_equal_resize_b)
+  end
+
+  def test_eql_resize
+    a = Array.new(3, &:to_s)
+    b = a.dup
+    o = Object.new
+    o.define_singleton_method(:eql?) do |_|
+      a.clear
+      b.clear
+      true
+    end
+    a[1] = o
+    assert_send([a, :eql?, b])
+
+    a = [0, nil, nil]
+    b = [0, 1, nil]
+    o = Object.new
+    o.define_singleton_method(:eql?) do |_|
+      b.pop
+      true
+    end
+    a[1] = o
+    assert_not_send([a, :eql?, b])
+  end
+
+  def test_eql_grow
+    a = Array.new(3, &:to_s)
+    b = a.dup
+    extra = Array.new(100, &:to_s)
+    o = Object.new
+    o.define_singleton_method(:eql?) do |_|
+      a.concat(extra)
+      b.concat(extra)
+      true
+    end
+    a[1] = o
+    assert_send([a, :eql?, b])
+
+    a = Array.new(3, &:to_s)
+    b = a.dup
+    o = Object.new
+    o.define_singleton_method(:eql?) do |_|
+      a.concat(extra)
+      b.concat(extra.map(&:dup).tap { |e| e[-1] = :different })
+      true
+    end
+    a[1] = o
+    assert_not_send([a, :eql?, b])
+  end
+
+  def test_eql_replace
+    # Unlike resizing small arrays, whose elements are embedded in the
+    # array objects, replacing arrays too long to embed frees the
+    # buffers being compared, so reading them after eql? returns would
+    # read freed memory.
+    ints = ->(n) { Array.new(n) { |i| i } }
+    compare = ->(new_a, new_b) do
+      a = ints[200]
+      b = ints[200]
+      o = Object.new
+      o.define_singleton_method(:eql?) do |_|
+        a.replace(new_a)
+        b.replace(new_b) if new_b
+        true
+      end
+      a[100] = o
+      b[100] = Object.new
+      a.eql?(b)
+    end
+
+    # shorter than the index being compared
+    assert_equal(true, compare[ints[50], ints[50]])
+    # shorter, and equal or different after the index being compared
+    assert_equal(true, compare[ints[150], ints[150]])
+    assert_equal(false, compare[ints[150], ints[150].tap { |e| e[125] = -1 }])
+    # longer, and equal or different beyond the original length
+    assert_equal(true, compare[ints[400], ints[400]])
+    assert_equal(false, compare[ints[400], ints[400].tap { |e| e[300] = -1 }])
+    # only one of them replaced
+    assert_equal(false, compare[ints[150], nil])
+    assert_equal(false, compare[ints[400], nil])
   end
 
   def test_flatten_error
@@ -3427,17 +3524,22 @@ class TestArray < Test::Unit::TestCase
     gen = Object.new
     # 49 will be out-of-bounds when ary.replace is called
     def gen.rand(lim) = 49
-    assert_equal([], ary.sample(obj, random: gen))
+    assert_raise(RangeError) {ary.sample(obj, random: gen)}
 
     ary = (1..100).to_a
-    obj = Object.new
-    obj.define_singleton_method(:to_int) do
-      ary.replace(Array.new(10) { :x })
-      10
-    end
     gen = Object.new
-    gen.define_singleton_method(:rand) { |lim| 8 }
-    assert_equal([], ary.sample(obj, random: gen))
+    def gen.rand(lim) = lim-1
+    assert_equal((41..50).to_a.reverse, ary.sample(obj, random: gen))
+
+    ary = (1..100).to_a
+    gen = Object.new
+    gen.define_singleton_method(:rand) do |lim|
+      if (lim -= 1) <= 90
+        ary.replace((1..50).to_a)
+      end
+      lim
+    end
+    assert_equal([], ary.sample(10, random: gen))
   end
 
   def test_cycle

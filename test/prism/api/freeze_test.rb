@@ -38,17 +38,22 @@ module Ruby::Prism
 
     private
 
-    def assert_frozen_each(value)
+    # Sources and the locations within them refer to each other, so each object
+    # is only checked the first time it is reached.
+    def assert_frozen_each(value, seen = {}.compare_by_identity)
+      return if seen.key?(value)
+      seen[value] = true
+
       assert_predicate value, :frozen?
 
       value.instance_variables.each do |name|
         case (child = value.instance_variable_get(name))
         when Array
-          child.each { |item| assert_frozen_each(item) }
+          child.each { |item| assert_frozen_each(item, seen) }
         when Hash
-          child.each { |key, item| assert_frozen_each(key); assert_frozen_each(item) }
+          child.each { |key, item| assert_frozen_each(key, seen); assert_frozen_each(item, seen) }
         else
-          assert_frozen_each(child)
+          assert_frozen_each(child, seen)
         end
       end
     end

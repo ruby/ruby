@@ -1,4 +1,5 @@
 #include "prism.h"
+#include "prism_compile.h"
 #include "ruby/version.h"
 
 #include <fcntl.h>

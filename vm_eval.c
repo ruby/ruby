@@ -12,6 +12,8 @@
 **********************************************************************/
 
 #include "internal/thread.h"
+#include "prism_compile.h"
+
 struct local_var_list {
     VALUE tbl;
 };
@@ -594,9 +596,8 @@ static VALUE
 check_funcall_exec(VALUE v)
 {
     struct rescue_funcall_args *args = (void *)v;
-    return call_method_entry(args->ec, args->defined_class,
-                             args->recv, idMethodMissing,
-                             args->cme, args->argc, args->argv, args->kw_splat);
+    return rb_vm_call_kw(args->ec, args->recv, idMethodMissing,
+                         args->argc, args->argv, args->cme, args->kw_splat);
 }
 
 static VALUE

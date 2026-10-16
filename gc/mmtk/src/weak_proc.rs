@@ -120,7 +120,7 @@ impl WeakProcessor {
 
         worker.add_work(WorkBucketStage::Prepare, UpdateFinalizerTable);
 
-        let global_tables_count = (crate::upcalls().global_tables_count)();
+        let global_tables_count = crate::upcalls::global_tables_count();
         let work_packets = (0..global_tables_count)
             .map(|i| Box::new(UpdateGlobalTables { idx: i }) as _)
             .collect();
@@ -143,7 +143,7 @@ fn process_obj_free_candidates(obj_free_candidates: &mut Vec<ObjectReference>) {
             trace!("Forwarding obj_free candidate: {object} -> {new_object}");
             new_candidates.push(new_object);
         } else {
-            (upcalls().call_obj_free)(object);
+            upcalls::call_obj_free(object);
         }
     }
 
@@ -224,7 +224,7 @@ impl ProcessWeakReferences {
             }
 
             if object.is_reachable() {
-                (upcalls().handle_weak_references)(object, moving_gc);
+                upcalls::handle_weak_references(object, moving_gc);
 
                 true
             } else {
@@ -263,7 +263,7 @@ trait GlobalTableProcessingWork {
 struct UpdateFinalizerTable;
 impl GlobalTableProcessingWork for UpdateFinalizerTable {
     fn process_table(&mut self) {
-        (crate::upcalls().update_finalizer_table)();
+        crate::upcalls::update_finalizer_table();
     }
 }
 impl GCWork<Ruby> for UpdateFinalizerTable {
@@ -277,7 +277,7 @@ struct UpdateGlobalTables {
 }
 impl GlobalTableProcessingWork for UpdateGlobalTables {
     fn process_table(&mut self) {
-        (crate::upcalls().update_global_tables)(
+        crate::upcalls::update_global_tables(
             self.idx,
             crate::mmtk().get_plan().current_gc_may_move_object(),
         )

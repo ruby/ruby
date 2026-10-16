@@ -127,6 +127,7 @@ class Exports::Mswin < Exports
           next unless /External/ =~ l
           next if /(?:_local_stdio_printf_options|v(f|sn?)printf(_s)?_l)\Z/ =~ l
           next unless l.sub!(/.*?\s(\(\)\s+)?External\s+\|\s+/, '')
+          next if l.start_with?(".weak.") # clang's definition of a weak symbol
           is_data = !$1
           if noprefix or /^[@_]/ =~ l
             next if /(?!^)@.*@/ =~ l || /@[[:xdigit:]]{8,32}$/ =~ l ||

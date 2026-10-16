@@ -536,25 +536,21 @@ module Ruby::Prism
     end
 
     def test_ItLocalVariableReadNode
-      assert_location(ItLocalVariableReadNode, "-> { it }", 5...7) do |node|
+      assert_location(ItLocalVariableReadNode, "-> { it }", 5...7, version: "3.4.0") do |node|
         node.body.body.first
       end
 
-      assert_location(ItLocalVariableReadNode, "foo { it }", 6...8) do |node|
+      assert_location(ItLocalVariableReadNode, "foo { it }", 6...8, version: "3.4.0") do |node|
         node.block.body.body.first
       end
 
       assert_location(CallNode, "-> { it }", 5...7, version: "3.3.0") do |node|
         node.body.body.first
       end
-
-      assert_location(ItLocalVariableReadNode, "-> { it }", 5...7, version: "3.4.0") do |node|
-        node.body.body.first
-      end
     end
 
     def test_ItParametersNode
-      assert_location(ItParametersNode, "-> { it }", &:parameters)
+      assert_location(ItParametersNode, "-> { it }", version: "3.4.0", &:parameters)
     end
 
     def test_KeywordHashNode
@@ -651,7 +647,7 @@ module Ruby::Prism
     end
 
     def test_NoBlockParameterNode
-      assert_location(NoBlockParameterNode, "def foo(&nil); end", 8...12) { |node| node.parameters.block }
+      assert_location(NoBlockParameterNode, "def foo(&nil); end", 8...12, version: "4.1") { |node| node.parameters.block }
     end
 
     def test_NoKeywordsParameterNode
@@ -701,7 +697,7 @@ module Ruby::Prism
 
     def test_PinnedVariableNode
       assert_location(PinnedVariableNode, "bar = 1; foo in ^bar", 16...20, &:pattern)
-      assert_location(PinnedVariableNode, "proc { 1 in ^it }.call(1)", 12...15) do |node|
+      assert_location(PinnedVariableNode, "proc { 1 in ^it }.call(1)", 12...15, version: "3.4.0") do |node|
         node.receiver.block.body.body.first.pattern
       end
     end

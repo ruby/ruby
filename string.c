@@ -2155,10 +2155,10 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
         rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
         venc = kwargs[0];
         vcapa = kwargs[1];
-        if (!UNDEF_P(venc) && !NIL_P(venc)) {
+        if (!NIL_OR_UNDEF_P(venc)) {
             enc = rb_to_encoding(venc);
         }
-        if (!UNDEF_P(vcapa) && !NIL_P(vcapa)) {
+        if (!NIL_OR_UNDEF_P(vcapa)) {
             rb_len_t capa = NUM2LEN(vcapa);
             rb_len_t len = 0;
             int termlen = enc ? rb_enc_mbminlen(enc) : 1;
@@ -2194,7 +2194,10 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
             TERM_FILL(&RSTRING(str)->as.heap.ptr[len], termlen);
             if (n == 1) {
                 memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), len);
-                rb_enc_cr_str_exact_copy(str, orig);
+                if (!enc || rb_enc_get(orig) == enc) {
+                    rb_enc_cr_str_exact_copy(str, orig);
+                    enc = 0;
+                }
             }
             FL_SET(str, STR_NOEMBED);
             RSTRING(str)->as.heap.aux.capa = capa;
@@ -2203,7 +2206,8 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
             rb_str_replace(str, orig);
         }
         if (enc) {
-            rb_enc_associate(str, enc);
+            str_modifiable(str);
+            rb_enc_raw_set(str, enc);
             ENC_CODERANGE_CLEAR(str);
         }
     }
@@ -3280,7 +3284,7 @@ rb_str_subpos(VALUE str, rb_len_t beg, rb_len_t *lenp)
     const char *p, *s = RSTRING_PTR(str), *e = s + blen;
 
     if (len < 0) return 0;
-    if (beg < 0 && -beg < 0) return 0;
+    if (beg == RB_LEN_MIN) return 0;
     if (!blen) {
         len = 0;
     }
@@ -5764,7 +5768,7 @@ rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive)
 
                 if (ISASCII(b) && ISASCII(e) && ISASCII(v)) {
                     if (b <= v && v < e) return Qtrue;
-                    return RBOOL(!RTEST(exclusive) && v == e);
+                    return RBOOL(!RTEST(exclusive) && b <= v && v == e);
                 }
             }
         }

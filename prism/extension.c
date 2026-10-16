@@ -31,6 +31,7 @@ VALUE rb_cPrismCurrentVersionError;
 
 VALUE rb_cPrismDebugEncoding;
 
+ID rb_id_option_attach_comments;
 ID rb_id_option_command_line;
 ID rb_id_option_encoding;
 ID rb_id_option_filepath;
@@ -200,6 +201,23 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
 }
 
 /**
+ * Set the version option to the syntax version of the currently running Ruby,
+ * or to the closest version prism supports if it does not know that one.
+ */
+static void
+options_version_set_nearest(pm_options_t *options) {
+    if (!pm_options_version_set(options, ruby_version, 3)) {
+        // Prism doesn't know this specific version. Is it lower?
+        if (ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3')) {
+            pm_options_version_set_lowest(options);
+        } else {
+            // Must be higher.
+            pm_options_version_set_highest(options);
+        }
+    }
+}
+
+/**
  * An iterator function that is called for each key-value in the keywords hash.
  */
 static int
@@ -230,15 +248,7 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
                     rb_exc_raise(rb_exc_new_cstr(rb_cPrismCurrentVersionError, ruby_version));
                 }
             } else if (RSTRING_LEN(value) == 7 && strncmp(version, "nearest", 7) == 0) {
-                if (!pm_options_version_set(options, ruby_version, 3)) {
-                    // Prism doesn't know this specific version. Is it lower?
-                    if (ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3')) {
-                        pm_options_version_set_lowest(options);
-                    } else {
-                        // Must be higher.
-                        pm_options_version_set_highest(options);
-                    }
-                }
+                options_version_set_nearest(options);
             } else if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
                 rb_raise(rb_eArgError, "invalid version: %" PRIsVALUE, value);
             }
@@ -270,6 +280,8 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         if (!NIL_P(value)) pm_options_partial_script_set(options, RTEST(value));
     } else if (key_id == rb_id_option_freeze) {
         if (!NIL_P(value)) pm_options_freeze_set(options, RTEST(value));
+    } else if (key_id == rb_id_option_attach_comments) {
+        if (!NIL_P(value)) pm_options_attach_comments_set(options, RTEST(value));
     } else if (key_id == rb_id_option_raise_error) {
         if (!NIL_P(value)) {
             if (value == Qtrue) {
@@ -342,6 +354,7 @@ build_options(VALUE argument) {
 static void
 extract_options(pm_options_t *options, VALUE filepath, VALUE keywords) {
     pm_options_line_set(options, 1); /* default */
+    options_version_set_nearest(options); /* default */
 
     if (!NIL_P(keywords)) {
         struct build_options_data data = { .options = options, .keywords = keywords };
@@ -624,27 +637,25 @@ typedef struct {
     VALUE comments;
     VALUE source;
     bool freeze;
+    long index;
 } parser_comments_each_data_t;
 
 static void
 parser_comments_each(const pm_comment_t *comment, void *data) {
     parser_comments_each_data_t *each_data = (parser_comments_each_data_t *) data;
     VALUE value = parser_comment(each_data->source, each_data->freeze, comment);
-    rb_ary_push(each_data->comments, value);
+    rb_ary_store(each_data->comments, each_data->index++, value);
 }
 
 /**
- * Extract the comments out of the parser into an array.
+ * Extract the comments out of the parser into the given array, which was
+ * created before the source so that the source could hold it.
  */
-static VALUE
-parser_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
-    VALUE comments = rb_ary_new_capa(pm_parser_comments_size(parser));
-
-    parser_comments_each_data_t each_data = { comments, source, freeze };
+static void
+parser_comments(const pm_parser_t *parser, VALUE comments, VALUE source, bool freeze) {
+    parser_comments_each_data_t each_data = { .comments = comments, .source = source, .freeze = freeze };
     pm_parser_comments_each(parser, parser_comments_each, &each_data);
-
     if (freeze) rb_obj_freeze(comments);
-    return comments;
 }
 
 /**
@@ -804,13 +815,58 @@ parser_warnings(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, 
 }
 
 /**
+ * Create the arrays that hold the comments attached to each node, sized for the
+ * parser's comment attachments. They stay empty unless the attach_comments
+ * option was set.
+ */
+static void
+parser_attachments_new(const pm_parser_t *parser, VALUE *attachments, VALUE *ranges) {
+    uint32_t ranges_size = pm_parser_comment_ranges_size(parser);
+    *attachments = rb_ary_new_capa(ranges_size == 0 ? 0 : (long) pm_parser_comments_size(parser));
+    *ranges = rb_ary_new_capa(ranges_size == 0 ? 0 : (long) ranges_size + 1);
+}
+
+/**
+ * Fill in the comments attached to each node. The attachments are the Comment
+ * objects in the order of the parser's comment attachments, which groups them
+ * by node in order of node id. The ranges are indexed by node id: for each node
+ * that owns comments, the index at which its comments begin is stored at its
+ * node id and the index at which they end is stored at the following node id.
+ */
+static void
+parser_attachments(const pm_parser_t *parser, VALUE comments, VALUE attachments, VALUE ranges, bool freeze) {
+    uint32_t ranges_size = pm_parser_comment_ranges_size(parser);
+
+    if (ranges_size > 0) {
+        long size = RARRAY_LEN(comments);
+
+        for (long index = 0; index < size; index++) {
+            rb_ary_store(attachments, index, RARRAY_AREF(comments, pm_parser_comment_attachment(parser, (uint32_t) index)));
+        }
+
+        for (uint32_t node_id = 0; node_id < ranges_size; node_id++) {
+            pm_comment_range_t range = pm_parser_comment_range(parser, node_id);
+
+            if (range.length > 0) {
+                rb_ary_store(ranges, (long) node_id, LONG2FIX(range.index));
+                rb_ary_store(ranges, (long) node_id + 1, LONG2FIX(range.index + range.length));
+            }
+        }
+    }
+
+    if (freeze) {
+        rb_obj_freeze(attachments);
+        rb_obj_freeze(ranges);
+    }
+}
+
+/**
  * Create a new parse result from the given parser, value, encoding, and source.
  */
 static VALUE
 parse_result_create(VALUE class, const pm_parser_t *parser, VALUE value, rb_encoding *encoding, VALUE source, bool freeze) {
     VALUE result_argv[] = {
         value,
-        parser_comments(parser, source, freeze),
         parser_magic_comments(parser, source, freeze),
         parser_data_loc(parser, source, freeze),
         parser_errors(parser, encoding, source, freeze),
@@ -819,7 +875,7 @@ parse_result_create(VALUE class, const pm_parser_t *parser, VALUE value, rb_enco
         source
     };
 
-    return rb_class_new_instance_freeze(8, result_argv, class, freeze);
+    return rb_class_new_instance_freeze(7, result_argv, class, freeze);
 }
 
 /******************************************************************************/
@@ -908,7 +964,10 @@ parse_lex_input(const uint8_t *input, size_t input_length, const pm_options_t *o
 
     VALUE source_string = rb_str_new((const char *) input, input_length);
     VALUE offsets = rb_ary_new_capa(pm_parser_line_offsets(parser)->size);
-    VALUE source = rb_funcall(rb_cPrismSource, rb_id_source_for, 3, source_string, LONG2NUM(pm_parser_start_line(parser)), offsets);
+    VALUE comments = rb_ary_new();
+    VALUE attachments = rb_ary_new();
+    VALUE ranges = rb_ary_new();
+    VALUE source = rb_funcall(rb_cPrismSource, rb_id_source_for, 6, source_string, LONG2NUM(pm_parser_start_line(parser)), offsets, comments, attachments, ranges);
 
     parse_lex_data_t parse_lex_data = {
         .source = source,
@@ -940,6 +999,19 @@ parse_lex_input(const uint8_t *input, size_t input_length, const pm_options_t *o
             rb_obj_freeze(source);
             rb_obj_freeze(parse_lex_data.tokens);
         }
+
+        /* The comment lists were created along with the source before parsing,
+         * so they are grown to their final sizes now that those are known. */
+        uint32_t ranges_size = pm_parser_comment_ranges_size(parser);
+        rb_ary_resize(comments, (long) pm_parser_comments_size(parser));
+
+        if (ranges_size > 0) {
+            rb_ary_resize(attachments, (long) pm_parser_comments_size(parser));
+            rb_ary_resize(ranges, (long) ranges_size + 1);
+        }
+
+        parser_comments(parser, comments, source, pm_options_freeze(options));
+        parser_attachments(parser, comments, attachments, ranges, pm_options_freeze(options));
 
         if (return_nodes) {
             VALUE value = rb_ary_new_capa(2);
@@ -1018,13 +1090,16 @@ parse_input(const uint8_t *input, size_t input_length, const pm_options_t *optio
         rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
         bool freeze = pm_options_freeze(options);
-        VALUE source = pm_source_new(parser, encoding, freeze);
+        VALUE comments = rb_ary_new_capa(pm_parser_comments_size(parser));
+        VALUE attachments, ranges;
+        parser_attachments_new(parser, &attachments, &ranges);
+
+        VALUE source = pm_source_new(parser, encoding, comments, attachments, ranges, freeze);
+        parser_comments(parser, comments, source, freeze);
+        parser_attachments(parser, comments, attachments, ranges, freeze);
+
         VALUE value = pm_ast_new(parser, node, encoding, source, freeze);
         result = result_ok(parse_result_create(rb_cPrismParseResult, parser, value, encoding, source, freeze));
-
-        if (freeze) {
-            rb_obj_freeze(source);
-        }
     }
 
     pm_parser_free(parser);
@@ -1041,6 +1116,9 @@ parse_input(const uint8_t *input, size_t input_length, const pm_options_t *optio
  * Parse the given string and return a ParseResult instance. The options that
  * are supported are:
  *
+ * * `attach_comments` - whether or not to attach each comment to the node that
+ *       owns it. When set, the comments on the result are sorted by start
+ *       offset. This should be a boolean or nil.
  * * `command_line` - either nil or a string of the various options that were
  *       set on the command line. Valid values are combinations of "a", "l",
  *       "n", "p", and "x".
@@ -1083,14 +1161,16 @@ parse_input(const uint8_t *input, size_t input_length, const pm_options_t *optio
  *       parsed. This should be an array of arrays of symbols or nil. Scopes are
  *       ordered from the outermost scope to the innermost one.
  * * `version` - the version of Ruby syntax that prism should used to parse Ruby
- *       code. By default prism assumes you want to parse with the latest
- *       version of Ruby syntax (which you can trigger with `nil` or
- *       `"latest"`). You may also restrict the syntax to a specific version of
- *       Ruby, e.g., with `"3.3.0"`. To parse with the same syntax version that
- *       the current Ruby is running use `version: "current"`. To parse with the
- *       nearest version to the current Ruby that is running, use
- *       `version: "nearest"`. Raises ArgumentError if the version is not
- *       currently supported by Prism.
+ *       code. By default prism parses with the syntax version nearest to the
+ *       current Ruby that is running (which you can trigger with `nil` or
+ *       `"nearest"`): the running version if prism supports it, otherwise the
+ *       closest version that it does support. You may also restrict the syntax
+ *       to a specific version of Ruby, e.g., with `"3.3.0"`. To parse with
+ *       exactly the same syntax version that the current Ruby is running use
+ *       `version: "current"`, which raises Prism::CurrentVersionError if prism
+ *       does not support it. To parse with the latest version of Ruby syntax
+ *       that prism supports, use `version: "latest"`. Raises ArgumentError if
+ *       the version is not currently supported by Prism.
  */
 static VALUE
 parse(int argc, VALUE *argv, VALUE self) {
@@ -1298,8 +1378,16 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
     if (result.type == RESULT_OK) {
         rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-        VALUE source = pm_source_new(parser, encoding, pm_options_freeze(options));
+        VALUE comments = rb_ary_new_capa(pm_parser_comments_size(parser));
+        VALUE attachments, ranges;
+        parser_attachments_new(parser, &attachments, &ranges);
+
+        VALUE source = pm_source_new(parser, encoding, comments, attachments, ranges, pm_options_freeze(options));
+        parser_comments(parser, comments, source, pm_options_freeze(options));
+        parser_attachments(parser, comments, attachments, ranges, pm_options_freeze(options));
+
         VALUE value = pm_ast_new(parser, node, encoding, source, pm_options_freeze(options));
+
         result = result_ok(parse_result_create(rb_cPrismParseResult, parser, value, encoding, source, pm_options_freeze(options)));
     }
 
@@ -1325,8 +1413,15 @@ parse_input_comments(const uint8_t *input, size_t input_length, const pm_options
     if (result.type == RESULT_OK) {
         rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-        VALUE source = pm_source_new(parser, encoding, pm_options_freeze(options));
-        result = result_ok(parser_comments(parser, source, pm_options_freeze(options)));
+        VALUE comments = rb_ary_new_capa(pm_parser_comments_size(parser));
+        VALUE attachments, ranges;
+        parser_attachments_new(parser, &attachments, &ranges);
+
+        VALUE source = pm_source_new(parser, encoding, comments, attachments, ranges, pm_options_freeze(options));
+        parser_comments(parser, comments, source, pm_options_freeze(options));
+        parser_attachments(parser, comments, attachments, ranges, pm_options_freeze(options));
+
+        result = result_ok(comments);
     }
 
     pm_parser_free(parser);
@@ -1630,6 +1725,7 @@ Init_prism(void) {
 
     /* Intern all of the IDs eagerly that we support so that we do not have to
      * do it every time we parse. */
+    rb_id_option_attach_comments = rb_intern_const("attach_comments");
     rb_id_option_command_line = rb_intern_const("command_line");
     rb_id_option_encoding = rb_intern_const("encoding");
     rb_id_option_filepath = rb_intern_const("filepath");

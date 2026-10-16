@@ -2425,12 +2425,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #if USE_ZJIT
         if (!FEATURE_USED_P(opt->features, zjit) && env_var_truthy("RUBY_ZJIT_ENABLE")) {
             FEATURE_SET(opt->features, FEATURE_BIT(zjit));
-
-            // When the --zjit flag is specified, we would have call setup_zjit_options(""),
-            // which would have called rb_zjit_prepare_options() internally. This ensures we
-            // go through the same set up but with less overhead than setup_zjit_options("").
-            extern void rb_zjit_prepare_options();
-            rb_zjit_prepare_options();
         }
 #endif
     }
@@ -2447,6 +2441,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
 #if USE_ZJIT
     if (FEATURE_SET_P(opt->features, zjit)) {
+        // --enable=zjit, RUBY_ZJIT_ENABLE and --jit in ZJIT-only builds set the bit without parsing a --zjit* option.
+        extern void rb_zjit_prepare_options(void);
+        rb_zjit_prepare_options();
         bool rb_zjit_option_enable(void);
         opt->zjit = rb_zjit_option_enable(); // set opt->zjit for Init_ruby_description() and calling rb_zjit_init()
     }

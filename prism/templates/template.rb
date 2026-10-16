@@ -68,6 +68,26 @@ module Ruby::Prism
         value.each_line { |line| yield line.prepend(" ").rstrip }
       end
 
+      def each_rdoc_line(&block)
+        code_block = false
+        value.each_line do |line|
+          # Wrap code in explicit language fences so there is syntax highlighting
+          if line.start_with?("    ") && !code_block
+            code_block = true
+            yield " ```rb"
+          elsif !line.strip.empty? && !line.start_with?("    ") && code_block
+            code_block = false
+            yield " ```"
+          end
+
+          line = line.delete_prefix("    ") if code_block
+          yield line.prepend(" ").rstrip
+        end
+
+        # Close trailing blocks
+        yield " ```" if code_block
+      end
+
       def each_java_line(&block)
         ConfigComment.new(JavaDoc.escape(value)).each_line(&block)
       end
@@ -86,6 +106,10 @@ module Ruby::Prism
 
       def each_comment_line(&block)
         ConfigComment.new(comment).each_line(&block) if comment
+      end
+
+      def each_comment_rdoc_line(&block)
+        ConfigComment.new(comment).each_rdoc_line(&block) if comment
       end
 
       def each_comment_java_line(&block)
@@ -517,6 +541,10 @@ module Ruby::Prism
 
       def each_comment_line(&block)
         ConfigComment.new(comment).each_line(&block)
+      end
+
+      def each_comment_rdoc_line(&block)
+        ConfigComment.new(comment).each_rdoc_line(&block)
       end
 
       def each_comment_java_line(&block)

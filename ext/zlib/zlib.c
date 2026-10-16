@@ -16,6 +16,7 @@
 typedef long rb_len_t;
 typedef unsigned long rb_ulen_t;
 # define SIZEOF_RB_LEN_T SIZEOF_LONG
+# define LEN2NUM LONG2NUM
 # define NUM2LEN NUM2LONG
 # define PRIdLEN "ld"
 #endif
@@ -1536,7 +1537,7 @@ rb_zstream_avail_in(VALUE obj)
 {
     struct zstream *z;
     TypedData_Get_Struct(obj, struct zstream, &zstream_data_type, z);
-    return INT2FIX(NIL_P(z->input) ? 0 : (int)(RSTRING_LEN(z->input)));
+    return NIL_P(z->input) ? INT2FIX(0) : LEN2NUM(RSTRING_LEN(z->input));
 }
 
 /*
