@@ -2186,7 +2186,7 @@ rb_mod_include_p(VALUE mod, VALUE mod2)
 VALUE
 rb_mod_ancestors(VALUE mod)
 {
- *  VALUE p, ary = rb_ary_new();
+    VALUE p, ary = rb_ary_new();
     VALUE refined_class = Qnil;
     if (BUILTIN_TYPE(mod) == T_MODULE && FL_TEST(mod, RMODULE_IS_REFINEMENT)) {
         refined_class = rb_refinement_module_get_refined_class(mod);
