@@ -2169,9 +2169,9 @@ mod hir_opt_tests {
           v64:Fixnum[0] = Const Value(0)
           v68:BasicObject = InvokeBuiltin ary_sized_alloc, v25
           PatchPoint NoEPEscape(map)
+          v91:CInt64 = ArrayLength v25
           Jump bb10(v64, v156)
         bb10(v85:Fixnum, v87:BasicObject):
-          v91:CInt64 = ArrayLength v25
           v92:Fixnum = BoxFixnum v91
           v93:CBool = FixnumCmpBool Ge v85, v92
           PatchPoint NoEPEscape(map)
@@ -4990,6 +4990,74 @@ mod hir_opt_tests {
         bb4(v16:BasicObject):
           CheckInterrupts
           Return v16
+        ");
+    }
+
+    #[test]
+    fn test_loop_keeps_heap_constant_param() {
+        // A heap object constant carried around a loop stays a loop header param, held in a
+        // register, instead of collapsing into a Const re-materialized at every use.
+        eval("
+            class C
+              attr_reader :x
+              def initialize = (@x = 1)
+            end
+            OBJ = C.new
+            def test
+              o = OBJ
+              i = 0
+              s = 0
+              while i < 10
+                s += o.x
+                i += 1
+              end
+              s
+            end
+            test; test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:8:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          Jump bb3(v7)
+        bb3(v12:BasicObject):
+          v110:NilClass = Const Value(nil)
+          v109:NilClass = Const Value(nil)
+          v108:NilClass = Const Value(nil)
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, OBJ)
+          v21:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoEPEscape(test)
+          v27:Fixnum[0] = Const Value(0)
+          v31:Fixnum[0] = Const Value(0)
+          Jump bb5(v21, v27, v31)
+        bb5(v37:ObjectSubclass[VALUE(0x1008)], v38:Fixnum, v39:Fixnum):
+          v43:Fixnum[10] = Const Value(10)
+          PatchPoint MethodRedefined(Integer@0x1010, <@0x1018, cme:0x1020)
+          v91:CBool = FixnumCmpBool Lt v38, v43
+          CheckInterrupts
+          CondBranchFixnumCmp Lt v38, v43, bb4(), bb6()
+        bb4():
+          PatchPoint NoSingletonClass(C@0x1048)
+          PatchPoint MethodRedefined(C@0x1048, x@0x1050, cme:0x1058)
+          v96:CShape = LoadField v37, :shape_id@0x1080
+          v97:CShape[0x1081] = GuardBitEquals v96, CShape(0x1081) recompile
+          v98:BasicObject = LoadField v37, :@x@0x1082
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(Integer@0x1010, +@0x1083, cme:0x1088)
+          v102:Fixnum = GuardType v98, Fixnum
+          v103:Fixnum = FixnumAdd v39, v102
+          v81:Fixnum[1] = Const Value(1)
+          v107:Fixnum = FixnumAdd v38, v81
+          Jump bb5(v37, v107, v103)
+        bb6():
+          CheckInterrupts
+          Return v39
         ");
     }
 
@@ -12217,9 +12285,9 @@ mod hir_opt_tests {
           v60:Fixnum[0] = Const Value(0)
           v64:BasicObject = InvokeBuiltin ary_sized_alloc, v11
           PatchPoint NoEPEscape(map)
+          v87:CInt64 = ArrayLength v11
           Jump bb10(v60, v157)
         bb10(v81:Fixnum, v83:NilClass|Fixnum):
-          v87:CInt64 = ArrayLength v11
           v88:Fixnum = BoxFixnum v87
           v89:CBool = FixnumCmpBool Ge v81, v88
           PatchPoint NoEPEscape(map)
@@ -23452,9 +23520,9 @@ mod hir_opt_tests {
           v24:BasicObject = LoadSelf
           PushInlineFrame :each, v11 (0x1040), num_args=0
           v54:Fixnum[0] = Const Value(0)
+          v71:CInt64 = ArrayLength v11
           Jump bb10(v54)
         bb10(v67:Fixnum):
-          v71:CInt64 = ArrayLength v11
           v72:Fixnum = BoxFixnum v71
           v73:CBool = FixnumCmpBool Ge v67, v72
           PatchPoint NoEPEscape(each)

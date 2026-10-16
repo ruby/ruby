@@ -7270,6 +7270,21 @@ impl Function {
                 self.blocks[block_id].params().len() != 0)
             .collect();
 
+        // A heap object constant re-materializes as a 64-bit immediate at every use, while a
+        // loop header param keeps it in a register across iterations (collapsing attr_accessor's
+        // receiver constant made that loop 2.2x slower). Retreating edges in RPO are the back
+        // edges of ZJIT's reducible CFGs.
+        let rpo_index: HashMap<BlockId, usize> = blocks.iter().enumerate().map(|(i, &b)| (b, i)).collect();
+        let loop_headers: HashSet<BlockId> = blocks.iter().copied()
+            .flat_map(|b| outgoing_edges(self, b).map(move |edge| (b, edge.target)).collect::<Vec<_>>())
+            .filter(|&(b, target)| rpo_index[&target] <= rpo_index[&b])
+            .map(|(_, target)| target)
+            .collect();
+        let keeps_heap_const = |fun: &Function, block: BlockId, value: InsnId| {
+            loop_headers.contains(&block)
+                && fun.type_of(value).ruby_object().is_some_and(|obj| !obj.special_const_p())
+        };
+
         // Create a vec to represent trivial indices
         let max_params = blocks.iter().copied().map(|id| self.blocks[id].params.len()).max().unwrap_or(0);
         let mut trivial_indices: Vec<usize> = Vec::with_capacity(max_params);
@@ -7314,12 +7329,15 @@ impl Function {
                 let block_preds = &param_values[*block_id];
                 trivial_indices.clear();
                 for (idx, state) in block_preds.iter().enumerate() {
-                    if let ParamValue::One(_) = state {
-                        trivial_indices.push(idx);
+                    if let ParamValue::One(value) = *state {
+                        if !keeps_heap_const(self, *block_id, value) {
+                            trivial_indices.push(idx);
+                        }
                     } else {
                         // If the param has a constant Ruby object associated with it, even if it
                         // is passed muliple InsnId, we can still optimize it away.
                         let param_id = self.blocks[*block_id].params[idx];
+                        if keeps_heap_const(self, *block_id, param_id) { continue; }
                         if let Some(obj) = self.type_of(param_id).ruby_object() {
                             let const_insn = self.prepend_insn(*block_id, Insn::Const { val: Const::Value(obj) });
                             self.insn_types[const_insn] = self.infer_type(const_insn);
@@ -7593,6 +7611,15 @@ impl Function {
                     &Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
                         self.make_equal_to(insn_id, val);
                         // Don't bother re-inferring the type of val; we already know it.
+                        continue;
+                    }
+                    // canonicalize forwards a dominating guard's result into later uses, so a
+                    // repeated identity guard sees an input already typed as the constant.
+                    // Only bit-pattern constants: a CDouble type compares by value, and
+                    // 0.0 == -0.0 differ in bits.
+                    &Insn::GuardBitEquals { val, expected: expected @ (Const::Value(_) | Const::CInt64(_) | Const::CPtr(_)), .. }
+                        if self.is_a(val, Type::from_const(expected)) => {
+                        self.make_equal_to(insn_id, val);
                         continue;
                     }
                     &Insn::RefineType { val, new_type, .. } if self.is_a(val, new_type) => {
@@ -8025,6 +8052,288 @@ impl Function {
                 }
             }
             self.blocks[block].insns = new_insns;
+        }
+    }
+
+    /// Dominator-scoped common subexpression elimination over pure
+    /// register-only computations: an insn whose (opcode, canonical operands,
+    /// immediates) key matches an earlier definition in a dominating block is
+    /// replaced by that definition. Redundant guards are canonicalize's and
+    /// fold_constants' job. Memory reads are deliberately excluded -- dominance
+    /// alone cannot prove no intervening store (that is LICM's job, which
+    /// proves it per-loop).
+    fn eliminate_common_subexpressions(&mut self) {
+        #[derive(PartialEq, Eq, Hash)]
+        enum CseKey {
+            UnboxFixnum(InsnId),
+            BoxFixnum(InsnId, bool, InsnId),
+            IntAnd(InsnId, InsnId),
+            IntOr(InsnId, InsnId),
+            IsBitEqual(InsnId, InsnId),
+        }
+
+        let dominators = Dominators::new(self);
+        let mut table: HashMap<CseKey, (InsnId, BlockId)> = HashMap::new();
+
+        for &block in dominators.cfi.reverse_post_order() {
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
+            let mut new_insns = Vec::with_capacity(old_insns.len());
+            for insn_id in old_insns {
+                let insn = self.find(insn_id);
+                let canon = |id: InsnId| self.union_find.borrow().find_const(id);
+                let key = match insn {
+                    Insn::UnboxFixnum { val } => Some(CseKey::UnboxFixnum(canon(val))),
+                    // A checked box can deopt, so it keys on its state too: deduping
+                    // it to one with an EARLIER snapshot would replay every side
+                    // effect between the two sites when it fires.
+                    Insn::BoxFixnum { val, checked, state } => Some(CseKey::BoxFixnum(canon(val), checked, state)),
+                    Insn::IntAnd { left, right } => Some(CseKey::IntAnd(canon(left), canon(right))),
+                    Insn::IntOr { left, right } => Some(CseKey::IntOr(canon(left), canon(right))),
+                    Insn::IsBitEqual { left, right } => Some(CseKey::IsBitEqual(canon(left), canon(right))),
+                    // GetEP and LoadSelf are deliberately absent: they read the
+                    // CURRENT frame, so inline frame pushes between two
+                    // occurrences change the answer.
+                    _ => None,
+                };
+                let Some(key) = key else {
+                    new_insns.push(insn_id);
+                    continue;
+                };
+                match table.get(&key) {
+                    Some(&(prev_id, prev_block))
+                        if prev_block == block || dominators.is_dominated_by(block, prev_block) =>
+                    {
+                        self.make_equal_to(insn_id, prev_id);
+                    }
+                    _ => {
+                        table.insert(key, (insn_id, block));
+                        new_insns.push(insn_id);
+                    }
+                }
+            }
+            self.blocks[block].insns = new_insns;
+        }
+    }
+
+    /// Loop-invariant code motion. For each natural loop with a dedicated
+    /// preheader (unique out-of-loop predecessor ending in an unconditional
+    /// jump to the header), hoist pure register computations whose operands
+    /// are loop-invariant, and -- when the loop body provably mutates no
+    /// pre-existing heap object -- loop-invariant memory reads like
+    /// ArrayLength.
+    ///
+    /// The mutation proof is a whitelist with a freshness analysis: writes
+    /// whose base object is a fresh allocation (NewArray, ary_sized_alloc,
+    /// ObjectAllocClass, ...) cannot alias anything that existed before the
+    /// loop, so a fused map loop pushing into its own pre-sized result array
+    /// still counts as clean. Frame pushes/pops only touch interpreter frame
+    /// slots, not heap objects. Anything unrecognized marks the loop dirty.
+    /// CheckInterrupts also marks it dirty so a signal handler mutating an
+    /// object mid-loop keeps interpreter-equivalent reads.
+    fn hoist_loop_invariant_code(&mut self) {
+        let rpo = self.reverse_post_order();
+
+        // Defining block for every insn and block param.
+        let mut def_block: HashMap<InsnId, BlockId> = HashMap::new();
+        for &b in &rpo {
+            for &p in &self.blocks[b].params {
+                def_block.insert(p, b);
+            }
+            for &i in &self.blocks[b].insns {
+                def_block.insert(i, b);
+            }
+        }
+
+        fn builtin_name(bf: *const rb_builtin_function) -> &'static str {
+            unsafe {
+                let name = (*bf).name;
+                if name.is_null() { return ""; }
+                std::ffi::CStr::from_ptr(name).to_str().unwrap_or("")
+            }
+        }
+
+        // Collect natural loops (header, member set, unique out-of-loop
+        // predecessor) while the CFG borrow lives, then drop it for mutation.
+        let loops: Vec<(BlockId, HashSet<BlockId>, BlockId)> = {
+            let dominators = Dominators::new(self);
+            let cfi = &dominators.cfi;
+            let mut loops = Vec::new();
+            for &header in &rpo {
+                for &pred in cfi.predecessors(header) {
+                    if !dominators.is_dominated_by(pred, header) { continue; }
+                    let members = LoopInfo::find_natural_loop(cfi, header, pred);
+                    let outside: Vec<BlockId> = cfi.predecessors(header).iter().copied().filter(|p| !members.contains(p)).collect();
+                    if let &[pre] = outside.as_slice() {
+                        loops.push((header, members, pre));
+                    }
+                }
+            }
+            loops
+        };
+
+        for (header, members, pre) in loops {
+            let Some(&pre_last) = self.blocks[pre].insns.last() else { continue };
+            if !matches!(self.find(pre_last), Insn::Jump(ref edge) if edge.target == header) { continue; }
+
+            // Freshness: values that are new allocations alias nothing older.
+            let is_fresh = |fun: &Function, v: InsnId| -> bool {
+                matches!(fun.find(v),
+                    Insn::NewArray { .. } | Insn::NewHash { .. } | Insn::ArrayDup { .. }
+                    | Insn::HashDup { .. } | Insn::StringCopy { .. }
+                    | Insn::ObjectAlloc { .. } | Insn::ObjectAllocClass { .. })
+                    || matches!(fun.find(v), Insn::InvokeBuiltin { bf, .. } if builtin_name(bf) == "ary_sized_alloc")
+            };
+
+            // Object-memory cleanliness scan.
+            let mut clean = true;
+            'scan: for &b in &members {
+                for &insn_id in &self.blocks[b].insns {
+                    let benign = match self.find(insn_id) {
+                        // Register-only or frame-only operations.
+                        Insn::Comment { .. } | Insn::Const { .. } | Insn::Snapshot { .. }
+                        | Insn::Param | Insn::PatchPoint { .. } | Insn::IncrCounter(_)
+                        | Insn::IncrCounterPtr { .. } | Insn::Jump(_) | Insn::CondBranch { .. }
+                        | Insn::CondBranchHasType(_) | Insn::CondBranchFixnumCmp(_)
+                        | Insn::SideExit { .. } | Insn::Return { .. }
+                        | Insn::GuardType { .. } | Insn::GuardBitEquals { .. } | Insn::GuardNotBitEquals { .. }
+                        | Insn::GuardAnyBitSet { .. } | Insn::GuardNoBitsSet { .. }
+                        | Insn::GuardGreaterEq { .. } | Insn::GuardLess { .. }
+                        | Insn::GuardFlonumRepresentable { .. } | Insn::RefineType { .. }
+                        | Insn::Test { .. } | Insn::IsBitEqual { .. } | Insn::IsBitNotEqual { .. }
+                        | Insn::IsBitGe { .. } | Insn::IsFlonum { .. }
+                        | Insn::BoxBool { .. } | Insn::BoxFixnum { .. } | Insn::UnboxFixnum { .. }
+                        | Insn::UnboxFlonum { .. } | Insn::BoxFlonum { .. } | Insn::F64FromFixnum { .. }
+                        | Insn::FixnumBitCheck { .. } | Insn::FixnumAdd { .. } | Insn::FixnumSub { .. }
+                        | Insn::FixnumMult { .. } | Insn::FixnumDiv { .. } | Insn::FixnumMod { .. }
+                        | Insn::FixnumEq { .. } | Insn::FixnumLt { .. }
+                        | Insn::FixnumLe { .. } | Insn::FixnumGt { .. } | Insn::FixnumGe { .. }
+                        | Insn::FixnumCmpBool { .. } | Insn::FixnumAnd { .. } | Insn::FixnumOr { .. }
+                        | Insn::FixnumXor { .. } | Insn::FixnumLShift { .. } | Insn::FixnumRShift { .. }
+                        | Insn::FixnumAref { .. } | Insn::IntAnd { .. } | Insn::IntOr { .. }
+                        | Insn::IntMagicDiv { .. } | Insn::IntMagicMod { .. }
+                        | Insn::FloatAdd { .. } | Insn::FloatSub { .. } | Insn::FloatMul { .. }
+                        | Insn::FloatDiv { .. } | Insn::FloatCmp { .. } | Insn::FloatMin { .. }
+                        | Insn::FloatMax { .. } | Insn::FloatSqrt { .. } | Insn::FloatAbs { .. }
+                        | Insn::ArrayLength { .. } | Insn::ArrayAref { .. } | Insn::ArrayArefChecked { .. }
+                        | Insn::HashSize { .. } | Insn::HashLookupOrUndef { .. }
+                        | Insn::LoadField { .. } | Insn::LoadSelf | Insn::GetEP { .. } | Insn::GetCFP { .. }
+                        | Insn::SetLocalEP { .. } | Insn::ProcIseqCaptured { .. }
+                        | Insn::PushInlineFrame { .. } | Insn::PushInlineBlockFrame { .. }
+                        | Insn::PopInlineFrame { .. } => true,
+                        // Writes to provably fresh objects cannot touch anything
+                        // that existed before the loop.
+                        Insn::ArrayPush { array: base, .. } | Insn::ArrayPop { array: base, .. }
+                        | Insn::ArrayAset { array: base, .. } | Insn::HashAset { hash: base, .. }
+                        | Insn::StoreField { recv: base, .. } | Insn::WriteBarrier { recv: base, .. } =>
+                            is_fresh(self, base),
+                        Insn::InvokeBuiltin { bf, args, .. } => match builtin_name(bf) {
+                            // rb_jit_ary_push(result, value) writes only `result`;
+                            // the lowered args are [self, result, value].
+                            "rb_jit_ary_push" => args.len() == 3 && is_fresh(self, args[1]),
+                            "ary_sized_alloc" | "rb_builtin_ary_at" | "rb_builtin_ary_at_end" | "rb_builtin_fixnum_inc" => true,
+                            _ => false,
+                        },
+                        _ => false,
+                    };
+                    if !benign { clean = false; break 'scan; }
+                }
+            }
+
+            // Hoist to a fixpoint. Sort member blocks in RPO for dependency order.
+            let ordered: Vec<BlockId> = rpo.iter().copied().filter(|b| members.contains(b)).collect();
+            loop {
+                let mut moved_any = false;
+                for &b in &ordered {
+                    let mut kept = Vec::with_capacity(self.blocks[b].insns.len());
+                    let mut moved = Vec::new();
+                    let insns = std::mem::take(&mut self.blocks[b].insns);
+                    for insn_id in insns {
+                        // (candidate, operands-to-check): unchecked boxes ignore
+                        // their dead state operand.
+                        // Const is deliberately NOT hoistable: in place it
+                        // codegens as a free immediate at each use, hoisted it
+                        // becomes a cross-loop live range that costs a register
+                        // (attr_accessor regressed 3.4x this way). Constant
+                        // OPERANDS instead count as invariant below.
+                        let operands: Option<Vec<InsnId>> = match self.find(insn_id) {
+                            Insn::UnboxFixnum { val } => Some(vec![val]),
+                            Insn::BoxFixnum { val, checked: false, .. } => Some(vec![val]),
+                            Insn::IntAnd { left, right } | Insn::IntOr { left, right }
+                            | Insn::IsBitEqual { left, right } => Some(vec![left, right]),
+                            Insn::ArrayLength { array } if clean => Some(vec![array]),
+                            Insn::HashSize { hash } if clean => Some(vec![hash]),
+                            // LoadField stays put: EP-relative loads read mutable
+                            // definer locals that inlined blocks write through
+                            // SetLocalEP (frame-benign in the scan above), so the
+                            // cleanliness proof does not cover them.
+                            _ => None,
+                        };
+                        let invariant = operands.as_ref().is_some_and(|ops| ops.iter().all(|&op| {
+                            let op = self.union_find.borrow().find_const(op);
+                            matches!(self.find(op), Insn::Const { .. })
+                                || def_block.get(&op).is_none_or(|db| !members.contains(db))
+                        }));
+                        // An unchecked box never deopts, but it still carries a
+                        // state operand; retarget it to a preheader snapshot so
+                        // the moved insn only references dominating defs.
+                        let mut hoist_ok = invariant;
+                        if invariant && matches!(self.find(insn_id), Insn::BoxFixnum { checked: false, .. }) {
+                            let pre_snapshot = self.blocks[pre].insns.iter().rev()
+                                .find(|&&i| matches!(self.find(i), Insn::Snapshot { .. }))
+                                .copied();
+                            match pre_snapshot {
+                                Some(snap) => {
+                                    let base = self.union_find.borrow().find_const(insn_id);
+                                    if let Insn::BoxFixnum { state, .. } = &mut self.insns[base] {
+                                        *state = snap;
+                                    }
+                                }
+                                None => hoist_ok = false,
+                            }
+                        }
+                        if hoist_ok {
+                            // Constant operands count as invariant without moving, but one
+                            // defined inside the loop does not dominate the preheader: give the
+                            // hoisted insn its own copy there, leaving the in-loop Const to its
+                            // other uses.
+                            let base = self.union_find.borrow().find_const(insn_id);
+                            let mut in_loop_consts = vec![];
+                            self.insns[base].for_each_operand(|op| {
+                                let op = self.union_find.borrow().find_const(op);
+                                if matches!(self.insns[op], Insn::Const { .. })
+                                    && def_block.get(&op).is_some_and(|db| members.contains(db))
+                                    && !in_loop_consts.contains(&op) {
+                                    in_loop_consts.push(op);
+                                }
+                            });
+                            for op in in_loop_consts {
+                                let Insn::Const { val } = self.insns[op] else { unreachable!() };
+                                let copy = self.new_insn(Insn::Const { val });
+                                self.insn_types[copy] = self.infer_type(copy);
+                                moved.push(copy);
+                                def_block.insert(copy, pre);
+                                let union_find = &self.union_find;
+                                self.insns[base].for_each_operand_mut(|operand| {
+                                    if union_find.borrow().find_const(*operand) == op { *operand = copy; }
+                                });
+                            }
+                            moved.push(insn_id);
+                            def_block.insert(insn_id, pre);
+                            moved_any = true;
+                        } else {
+                            kept.push(insn_id);
+                        }
+                    }
+                    self.blocks[b].insns = kept;
+                    if !moved.is_empty() {
+                        // Insert before the preheader's terminator.
+                        let term = self.blocks[pre].insns.pop().expect("preheader has a terminator");
+                        self.blocks[pre].insns.extend(moved);
+                        self.blocks[pre].insns.push(term);
+                    }
+                }
+                if !moved_any { break; }
+            }
         }
     }
 
@@ -12008,6 +12317,18 @@ impl Function {
                 break;
             }
         }
+
+        // Dominator-scoped CSE: dedupe pure computations before the unbox passes
+        // so value webs see one canonical unbox per value instead of per-use
+        // copies. remove_trivial_block_params has already dissolved loop-carried
+        // pass-through phis, so invariance and CSE see through them.
+        crate::stats::trace_compile_phase("eliminate_common_subexpressions", || self.eliminate_common_subexpressions());
+        #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
+
+        // Hoist loop-invariant computations and (for provably non-mutating
+        // loop bodies) memory reads into loop preheaders.
+        crate::stats::trace_compile_phase("hoist_loop_invariant_code", || self.hoist_loop_invariant_code());
+        #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
 
         // Keep loop-carried float accumulators unboxed across the back-edge, then
         // clean up: canonicalize resolves the identity rewrites and reinfers types

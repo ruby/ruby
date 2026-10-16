@@ -1333,6 +1333,20 @@ fn test_yield_symbol_handler_private_method_raises() {
 }
 
 #[test]
+fn test_licm_hoists_length_of_constant_array_in_fused_map() {
+    // The constant-folded receiver of a fused map is defined inside the loop, so the
+    // ArrayLength hoisted into the preheader needs its own copy of the Const there.
+    set_call_threshold(2);
+    eval("
+        ARR = (1..10).to_a
+        def test = ARR.map { |x| x * 2 }
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test.sum"), @"110");
+}
+
+#[test]
 fn test_yield_break() {
     set_call_threshold(2);
     eval("
