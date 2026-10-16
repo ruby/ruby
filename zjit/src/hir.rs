@@ -3559,8 +3559,8 @@ fn can_direct_invoke_block(flags: u32) -> bool {
 /// block call. The block must take the simple callee-setup path (`rb_simple_iseq_p`)
 /// with an exact arity match and avoid arg0 auto-splat. Anything else falls back to the
 /// generic `invokeblock` dispatch, with the returned reason attached to the fallback
-/// instruction. InvokeBlockIseqDirect pushes a real VM block frame, so a body that throws
-/// (break, non-local return) unwinds it like the interpreter's frame.
+/// instruction. Both the direct call and an inlined block body push a real VM block frame,
+/// so a body that throws (break, non-local return) unwinds it like the interpreter's frame.
 fn can_direct_invoke_block_iseq(iseq: IseqPtr, argc: usize) -> Result<(), SendFallbackReason> {
     if !unsafe { rb_simple_iseq_p(iseq) } {
         return Err(InvokeBlockNotSpecialized);
@@ -3570,17 +3570,6 @@ fn can_direct_invoke_block_iseq(iseq: IseqPtr, argc: usize) -> Result<(), SendFa
         return Err(InvokeBlockNotSpecialized);
     }
     if argc == 1 && !unsafe { rb_get_iseq_flags_ambiguous_param0(iseq) } {
-        return Err(InvokeBlockNotSpecialized);
-    }
-    Ok(())
-}
-
-/// Ok if `yield` can also inline the block ISEQ's frame or body into the yielding method.
-/// Keep these paths conservative around non-local exits until unwinding through their
-/// inlined frame shapes is covered independently.
-fn can_inline_block_iseq(iseq: IseqPtr, argc: usize) -> Result<(), SendFallbackReason> {
-    can_direct_invoke_block_iseq(iseq, argc)?;
-    if crate::codegen::block_iseq_may_throw(iseq) {
         return Err(InvokeBlockNotSpecialized);
     }
     Ok(())
@@ -15559,7 +15548,7 @@ fn add_iseq_to_hir(
                             // and *this* frame's block (bi) -- sound only when the yield resolves to this exact frame.
                             // The body-inlining path below relies on the same fact via inline_block_ctx.
                             && get_lvar_level(exit_state.iseq) == 0 {
-                            match can_inline_block_iseq(bi, args.len()) {
+                            match can_direct_invoke_block_iseq(bi, args.len()) {
                                 Ok(()) => Some(bi),
                                 Err(reason) => {
                                     fallback_reason = reason;

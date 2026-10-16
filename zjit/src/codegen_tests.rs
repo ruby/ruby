@@ -1691,6 +1691,113 @@ fn test_throw_break_inner_loop_repeatedly() {
 }
 
 #[test]
+fn test_yield_throwing_handler_monomorphic() {
+    // A monomorphic throwing ISEQ should use the guarded direct call rather
+    // than falling through to the polymorphic cascade and its generic arm.
+    set_call_threshold(3);
+    eval("
+        def monomorphic_throw_yielder(value)
+          result = yield(value)
+          [:yielded, result]
+        end
+
+        def monomorphic_throw_driver(value)
+          result = monomorphic_throw_yielder(value) do |should_break|
+            break :monomorphic_break if should_break
+            :monomorphic_body
+          end
+          [result, :driver_after]
+        end
+
+        monomorphic_throw_driver(false)
+        monomorphic_throw_driver(false)
+    ");
+
+    let iseq = get_method_iseq("self", "monomorphic_throw_yielder");
+    let function = iseq_to_hir(iseq).unwrap();
+    let direct_calls = (0..function.num_insns())
+        .filter(|&index| matches!(function.find(InsnId::from(index)), Insn::InvokeBlockIseqDirect { .. }))
+        .count();
+    let generic_calls = (0..function.num_insns())
+        .filter(|&index| matches!(function.find(InsnId::from(index)), Insn::InvokeBlock { .. }))
+        .count();
+    assert_eq!(1, direct_calls, "expected the monomorphic direct ISEQ call");
+    assert_eq!(0, generic_calls, "monomorphic dispatch should not retain a generic cascade arm");
+
+    assert_snapshot!(
+        assert_compiles_allowing_exits("monomorphic_throw_driver(true)"),
+        @"[:monomorphic_break, :driver_after]"
+    );
+}
+
+#[test]
+fn test_yield_throwing_inlined_block_body() {
+    with_inlining(|| {
+        assert_snapshot!(
+            assert_inlines_allowing_exits("
+                $body_throw_log = []
+
+                def body_throw_yielder(value)
+                  begin
+                    result = yield(value)
+                    [:yielded, result]
+                  ensure
+                    $body_throw_log << :ensured
+                  end
+                end
+
+                def body_break_driver(value)
+                  result = body_throw_yielder(value) do |should_break|
+                    break :body_break if should_break
+                    :body_value
+                  end
+                  [result, :driver_after]
+                end
+
+                def body_return_driver(value)
+                  body_throw_yielder(value) do |should_return|
+                    return :body_return if should_return
+                    :body_value
+                  end
+                  :unreachable
+                end
+
+                body_break_driver(false)
+                body_return_driver(false)
+                body_break_driver(false)
+                body_return_driver(false)
+                $body_throw_log.clear
+                [body_break_driver(true), body_return_driver(true), $body_throw_log]
+            "),
+            @"[[:body_break, :driver_after], :body_return, [:ensured, :ensured]]"
+        );
+
+        // Rebuild optimized HIR to prove this exercised body inlining, not the
+        // direct-call fallback. Throw is not frame-transparent, so the real
+        // block frame must remain on the hot path for unwinding.
+        let iseq = get_method_iseq("self", "body_break_driver");
+        let mut function = iseq_to_hir(iseq).unwrap();
+        function.optimize();
+        function.optimize();
+        let block_frames = (0..function.num_insns())
+            .filter_map(|index| match function.find(InsnId::from(index)) {
+                Insn::PushInlineBlockFrame { elided, .. } => Some(elided),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        let direct_calls = (0..function.num_insns())
+            .filter(|&index| matches!(function.find(InsnId::from(index)), Insn::InvokeBlockIseqDirect { .. }))
+            .count();
+        let throws = (0..function.num_insns())
+            .filter(|&index| matches!(function.find(InsnId::from(index)), Insn::Throw { .. }))
+            .count();
+        assert_eq!(vec![false], block_frames, "throwing body must keep its real inline block frame");
+        assert_eq!(0, direct_calls, "expected the block body itself to be inlined");
+        assert!(throws > 0, "expected the throwing block body in optimized HIR");
+    });
+}
+
+#[test]
 fn test_yield_autosplat() {
     // {|a, b|} auto-splats a single Array arg for yield (falls back).
     set_call_threshold(2);

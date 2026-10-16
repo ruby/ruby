@@ -4505,10 +4505,10 @@ pub(crate) fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
 }
 
 /// True if the block ISEQ contains a `throw` opcode (break, non-local return).
-/// Frame/body-inlining paths use this to stay conservative until unwinding through their
-/// inlined frame shapes is covered independently. Direct ISEQ block calls push a real VM
-/// block frame and do not need this restriction. (`next`/`redo` lower to `leave`/`jump`,
-/// not `throw`.)
+/// The builtin-block method-inlining heuristic and enumerator fusion still use
+/// this as a conservative eligibility check. Invokeblock specializations push
+/// a real VM block frame and do not need this restriction. (`next`/`redo`
+/// lower to `leave`/`jump`, not `throw`.)
 pub(crate) fn block_iseq_may_throw(iseq: IseqPtr) -> bool {
     let encoded_size = unsafe { rb_iseq_encoded_size(iseq) };
     let mut insn_idx: u32 = 0;
