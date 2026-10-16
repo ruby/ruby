@@ -7032,22 +7032,27 @@ static const rb_data_type_t ary_sample_memo_type = {
 };
 
 static VALUE
-ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE to_array)
+ary_sample1(rb_execution_context_t *ec, VALUE ary, const VALUE randgen)
+{
+    rb_len_t len = RARRAY_LEN(ary);
+    rb_len_t i = (len < 2) ?  0 : RAND_UPTO(len);
+    return rb_ary_elt(ary, i);
+}
+
+static VALUE
+ary_sample0(rb_execution_context_t *ec, VALUE ary)
+{
+    return ary_sample1(ec, ary, rb_cRandom);
+}
+
+static VALUE
+ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv)
 {
     VALUE result;
     rb_len_t n, len, i, j, k, idx[10];
     rb_len_t rnds[numberof(idx)];
     rb_len_t memo_threshold;
 
-    if (!to_array) {
-        len = RARRAY_LEN(ary);
-        if (len < 2)
-            i = 0;
-        else
-            i = RAND_UPTO(len);
-
-        return rb_ary_elt(ary, i);
-    }
     n = NUM2LEN(nv);
     if (n < 0) rb_raise(rb_eArgError, "negative sample number");
     len = RARRAY_LEN(ary);
@@ -7165,12 +7170,6 @@ static VALUE
 ary_sized_alloc(rb_execution_context_t *ec, VALUE self)
 {
     return rb_ary_new2(RARRAY_LEN(self));
-}
-
-static VALUE
-ary_sample0(rb_execution_context_t *ec, VALUE ary)
-{
-    return ary_sample(ec, ary, rb_cRandom, Qfalse, Qfalse);
 }
 
 static VALUE
