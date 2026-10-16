@@ -4684,4 +4684,47 @@ class TestString2 < TestString
       assert_equal(size + 207, s.bytesize, enc.name)
     end
   end
+
+  def test_wide_encoding_terminator_without_capacity
+    all_assertions_foreach(nil, *WIDE_ENCODINGS) do |enc|
+      [*1..32, 1000].each do |n|
+        orig = "a" * n
+        s = S2.new(orig, encoding: enc)
+        assert_operator(Bug::String.capacity(s), :>=, n, "#{enc.name} #{n}")
+        assert_nil(Bug::String.cstr_term_char(s), "#{enc.name} #{n}")
+        s[0, 0] = ""
+        assert_equal(n, s.bytesize, "#{enc.name} #{n}")
+        assert_equal("a" * n, orig, "#{enc.name} #{n}")
+
+        s = S2.new("a" * n)
+        s.__send__(:initialize, encoding: enc)
+        assert_operator(Bug::String.capacity(s), :>=, n, "#{enc.name} #{n}")
+        assert_nil(Bug::String.cstr_term_char(s), "#{enc.name} #{n}")
+        s[0, 0] = ""
+        assert_equal(n, s.bytesize, "#{enc.name} #{n}")
+      end
+    end
+  end
+
+  def test_wide_encoding_terminator_with_capacity
+    all_assertions_foreach(nil, *WIDE_ENCODINGS) do |enc|
+      orig = ("b" * 400).force_encoding(enc)
+
+      s = S2.new(orig, capacity: 1)
+      assert_equal(enc, s.encoding)
+      assert_nil(Bug::String.cstr_term_char(s))
+
+      s = S2.new(orig)
+      s.__send__(:initialize, capacity: 100)
+      assert_equal(enc, s.encoding)
+      assert_empty(s)
+      assert_nil(Bug::String.cstr_term_char(s))
+
+      s = S2.new(orig)
+      s.__send__(:initialize, s, capacity: 100)
+      assert_equal(enc, s.encoding)
+      assert_equal(orig, s)
+      assert_nil(Bug::String.cstr_term_char(s))
+    end
+  end
 end
