@@ -169,6 +169,8 @@ class << RubyVM::ZJIT
 
       :compiled_iseq_count,
       :compiled_side_exit_count,
+      :compiled_side_exit_epilogue_count,
+      :shared_side_exit_count,
       :failed_iseq_count,
 
       :compile_time_ns,

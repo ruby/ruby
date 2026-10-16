@@ -688,6 +688,22 @@ pub struct MaterializeFrame {
     pub ep_offset: i32,
 }
 
+/// Runtime arguments shared by recompile side exits from the same compiled unit.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct SideExitRecompileEpilogue {
+    compiled_iseq: Opnd,
+    exception_entry: bool,
+}
+
+/// Common suffix of otherwise-distinct side exits.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct SideExitEpilogue {
+    /// Store the current frame's ISEQ here when it was safe to defer the store
+    /// until after the exit-specific register spills.
+    iseq: Option<IseqPtr>,
+    recompile: Option<SideExitRecompileEpilogue>,
+}
+
 /// Metadata for the recompile callback on side exit.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExitRecompile {
@@ -3253,7 +3269,7 @@ impl Assembler
         /// the shared materialize_exit trampoline -- which clears the *current*
         /// frame's jit_return and materializes the older frames behind it --
         /// sees exactly the same world as a non-elided exit.
-        fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
+        fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit, defer_iseq: bool) {
             let SideExit { pc, stack, locals, stack_needs_flonum_box, locals_needs_flonum_box, stack_needs_bool_box, locals_needs_bool_box, stack_needs_fixnum_box, locals_needs_fixnum_box, iseq, stack_map, materialize, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
@@ -3310,8 +3326,10 @@ impl Assembler
             asm_comment!(asm, "save cfp->sp");
             asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP + cfp_bias), Opnd::mem(64, SP, (stack.len() as i32 + sp_bias) * SIZEOF_VALUE_I32));
 
-            asm_comment!(asm, "save cfp->iseq");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ + cfp_bias), VALUE::from(*iseq).into());
+            if !defer_iseq {
+                asm_comment!(asm, "save cfp->iseq");
+                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ + cfp_bias), VALUE::from(*iseq).into());
+            }
 
             // cfp->block_code and cfp->jit_return are cleared by the materialize_exit trampoline
 
@@ -3414,29 +3432,80 @@ impl Assembler
             asm.jmp(Target::CodePtr(ZJITState::get_materialize_exit_trampoline()));
         }
 
-        fn compile_exit_recompile(asm: &mut Assembler, exit: &SideExit) {
-            if let Some(recompile) = &exit.recompile {
-                use crate::codegen::exit_recompile;
-                asm_comment!(asm, "invalidate for recompilation");
-                asm_ccall!(asm, exit_recompile,
-                    recompile.compiled_iseq,
-                    Opnd::UImm(u64::from(recompile.exception_entry))
-                );
+        fn recompile_epilogue(exit: &SideExit) -> Option<SideExitRecompileEpilogue> {
+            exit.recompile.as_ref().map(|recompile| SideExitRecompileEpilogue {
+                compiled_iseq: recompile.compiled_iseq,
+                exception_entry: recompile.exception_entry,
+            })
+        }
+
+        fn compile_exit_recompile(asm: &mut Assembler, recompile: &SideExitRecompileEpilogue) {
+            use crate::codegen::exit_recompile;
+            asm_comment!(asm, "invalidate for recompilation");
+            asm_ccall!(asm, exit_recompile,
+                recompile.compiled_iseq,
+                Opnd::UImm(u64::from(recompile.exception_entry))
+            );
+        }
+
+        /// The current frame's ISEQ can move into a shared suffix only when
+        /// exit-specific code cannot call C or publish a newly materialized
+        /// frame before reaching that suffix.
+        fn can_defer_iseq(exit: &SideExit) -> bool {
+            exit.materialize.is_none()
+                && !exit.stack_needs_flonum_box.iter().any(|&needs_box| needs_box)
+                && !exit.locals_needs_flonum_box.iter().any(|&needs_box| needs_box)
+                && !exit.stack_needs_bool_box.iter().any(|&needs_box| needs_box)
+                && !exit.locals_needs_bool_box.iter().any(|&needs_box| needs_box)
+                && !exit.stack_needs_fixnum_box.iter().any(|&needs_box| needs_box)
+                && !exit.locals_needs_fixnum_box.iter().any(|&needs_box| needs_box)
+        }
+
+        fn exit_epilogue(exit: &SideExit) -> Option<SideExitEpilogue> {
+            let defer_iseq = can_defer_iseq(exit);
+            let recompile = recompile_epilogue(exit);
+            (defer_iseq || recompile.is_some()).then_some(SideExitEpilogue {
+                iseq: defer_iseq.then_some(exit.iseq),
+                recompile,
+            })
+        }
+
+        fn compile_exit_epilogue(asm: &mut Assembler, epilogue: &SideExitEpilogue) {
+            if let Some(iseq) = epilogue.iseq {
+                asm_comment!(asm, "save cfp->iseq");
+                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
             }
+            if let Some(recompile) = &epilogue.recompile {
+                // C calls need a materialized current frame rather than the
+                // stale JITFrame that the trampoline normally clears.
+                asm_comment!(asm, "clear cfp->jit_return");
+                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+                compile_exit_recompile(asm, recompile);
+            }
+            compile_exit_return(asm);
         }
 
         /// Compile the main side-exit code.  The side exit will optionally record a traced exit
         /// stack, optionally trigger recompilation, and then return to the interpreter. Shared
         /// exits pass no trace reason so they can still be deduplicated by SideExit.
         /// IOW, we should never pass a trace reason if we expect the exit to be
-        /// deduplicated.
-        fn compile_exit(asm: &mut Assembler, exit: &SideExit, trace_reason: Option<SideExitReason>) {
+        /// deduplicated. Normal exits can branch to a suffix shared with other exits; traced
+        /// exits stay self-contained because their C call needs a fully saved frame first.
+        fn compile_exit(
+            asm: &mut Assembler,
+            exit: &SideExit,
+            trace_reason: Option<SideExitReason>,
+            epilogue_counts: &HashMap<SideExitEpilogue, usize>,
+            epilogue_labels: &mut HashMap<SideExitEpilogue, Label>,
+            epilogues: &mut Vec<(Label, SideExitEpilogue)>,
+        ) {
             // Save VM state before the ccall so that
             // rb_profile_frames sees valid cfp->pc and the
             // ccall doesn't clobber caller-saved registers
             // holding stack/local operands.
-            compile_exit_save_state(asm, exit);
-            if trace_reason.is_some() || exit.recompile.is_some() {
+            let defer_iseq = trace_reason.is_none() && can_defer_iseq(exit);
+            compile_exit_save_state(asm, exit, defer_iseq);
+            if trace_reason.is_some() {
                 // Clear cfp->jit_return to prepare for a C call. Normally, cfp->jit_return
                 // is cleared by the materialize_exit trampoline, but if we're about to
                 // make a C call, we need to clear any stale JITFrame.
@@ -3449,9 +3518,34 @@ impl Assembler
                     .unwrap_or_else(|_| std::ffi::CString::new("unknown").unwrap());
                 let reason_ptr = reason_cstr.into_raw() as *const u8;
                 asm_ccall!(asm, rb_zjit_record_exit_stack, Opnd::const_ptr(reason_ptr));
+                if let Some(recompile) = recompile_epilogue(exit) {
+                    compile_exit_recompile(asm, &recompile);
+                }
+                compile_exit_return(asm);
+                return;
             }
-            compile_exit_recompile(asm, exit);
-            compile_exit_return(asm);
+
+            let Some(epilogue) = exit_epilogue(exit) else {
+                compile_exit_return(asm);
+                return;
+            };
+
+            // A singleton suffix would add an extra branch. Keep it inline and
+            // share only groups with at least two distinct exit states.
+            if epilogue_counts.get(&epilogue).copied().unwrap_or(0) < 2 {
+                compile_exit_epilogue(asm, &epilogue);
+                return;
+            }
+
+            let label = if let Some(&label) = epilogue_labels.get(&epilogue) {
+                label
+            } else {
+                let label = asm.new_label("side_exit_epilogue").unwrap_label();
+                epilogue_labels.insert(epilogue.clone(), label);
+                epilogues.push((label, epilogue));
+                label
+            };
+            asm.jmp(Target::Label(label));
         }
 
         fn join_opnds(opnds: &Vec<Opnd>, delimiter: &str) -> String {
@@ -3479,6 +3573,24 @@ impl Assembler
 
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::with_capacity(targets.len());
+
+        // Count distinct exits per shareable suffix up front. Whole-exit
+        // deduplication happens separately below, so duplicate guard targets
+        // must not make a singleton suffix look profitable.
+        let unique_exits: HashSet<SideExit> = targets.values().filter_map(|target| {
+            let Target::SideExit(data) = target else { return None };
+            Some(data.exit.clone())
+        }).collect();
+        let mut epilogue_counts: HashMap<SideExitEpilogue, usize> = HashMap::new();
+        for exit in &unique_exits {
+            if let Some(epilogue) = exit_epilogue(exit) {
+                *epilogue_counts.entry(epilogue).or_default() += 1;
+            }
+        }
+
+        // Shared suffixes are emitted after every exit-specific state-save stub.
+        let mut epilogue_labels: HashMap<SideExitEpilogue, Label> = HashMap::new();
+        let mut epilogues: Vec<(Label, SideExitEpilogue)> = vec![];
 
         // Start a new perf range for side exits.
         let symbol_range = perf::symbol_range_start(self, "side exit");
@@ -3526,7 +3638,7 @@ impl Assembler
                     }
 
                     if should_record_exit {
-                        compile_exit(self, &exit, Some(reason));
+                        compile_exit(self, &exit, Some(reason), &epilogue_counts, &mut epilogue_labels, &mut epilogues);
                     } else {
                         // If the side exit has already been compiled, jump to it.
                         // Otherwise, let it fall through and compile the exit next.
@@ -3546,7 +3658,7 @@ impl Assembler
                         let new_exit = self.new_label("side_exit");
                         self.write_label(new_exit.clone());
                         asm_comment!(self, "Exit: {}", entry.key().pc);
-                        compile_exit(self, entry.key(), None);
+                        compile_exit(self, entry.key(), None, &epilogue_counts, &mut epilogue_labels, &mut epilogues);
                         entry.insert(new_exit.unwrap_label());
                         new_exit
                     }
@@ -3554,6 +3666,12 @@ impl Assembler
 
                 *self.basic_blocks[block_id].insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
             }
+        }
+
+        for (label, epilogue) in &epilogues {
+            self.write_label(Target::Label(*label));
+            asm_comment!(self, "shared side-exit epilogue");
+            compile_exit_epilogue(self, epilogue);
         }
 
         if has_targets {
@@ -3570,6 +3688,11 @@ impl Assembler
             let nanos = side_exit_start.elapsed().as_nanos();
             crate::stats::incr_counter_by(crate::stats::Counter::compile_side_exit_time_ns, nanos as u64);
             crate::stats::incr_counter_by(crate::stats::Counter::compiled_side_exit_count, compiled_exits.len() as u64);
+            crate::stats::incr_counter_by(crate::stats::Counter::compiled_side_exit_epilogue_count, epilogues.len() as u64);
+            let shared_exit_count = epilogues.iter()
+                .map(|(_, epilogue)| epilogue_counts.get(epilogue).copied().unwrap_or(0))
+                .sum::<usize>();
+            crate::stats::incr_counter_by(crate::stats::Counter::shared_side_exit_count, shared_exit_count as u64);
         }
 
         // Close the current perf range for side exits

@@ -165,6 +165,8 @@ make_counters! {
         invalidation_time_ns,
 
         compiled_side_exit_count,
+        compiled_side_exit_epilogue_count,
+        shared_side_exit_count,
         side_exit_size_bytes,
         compile_side_exit_time_ns,
 

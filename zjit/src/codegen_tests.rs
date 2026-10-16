@@ -248,6 +248,34 @@ fn test_recompile_exit_waits_for_exit_budget() {
 }
 
 #[test]
+fn test_shares_side_exit_epilogues() {
+    // Several fixnum guards of one method exit with distinct saved state but the same
+    // frame ISEQ store and recompile callback, so they share one epilogue.
+    set_call_threshold(2);
+    eval("
+        def shared_exit_epilogue_sample(a, b, c, d)
+          x = a + b
+          y = x * c
+          z = y - d
+          q = z / b
+          r = q % c
+          r + a
+        end
+    ");
+
+    let counters = crate::state::ZJITState::get_counters();
+    let epilogues_before = counters.compiled_side_exit_epilogue_count;
+    let shared_exits_before = counters.shared_side_exit_count;
+    eval("
+        shared_exit_epilogue_sample(7, 3, 5, 2)
+        shared_exit_epilogue_sample(7, 3, 5, 2)
+    ");
+
+    assert!(counters.compiled_side_exit_epilogue_count > epilogues_before);
+    assert!(counters.shared_side_exit_count >= shared_exits_before + 2);
+}
+
+#[test]
 fn test_function_stub_reprofiles_after_invalidation() {
     rb_zjit_prepare_options();
     set_inline_threshold(0);
