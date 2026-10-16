@@ -732,6 +732,7 @@ class IPAddr
     if prefix =~ /\A\[(.*)\]\z/i
       prefix = $1
       family = Socket::AF_INET6
+      bracketed = true
     end
     if prefix =~ /\A(.*)(%\w+)\z/
       prefix = $1
@@ -758,6 +759,12 @@ class IPAddr
     end
     if prefixlen
       mask!(prefixlen)
+
+      if bracketed
+        warn "bracketed IPv6 address with a prefix length is an invalid address " \
+             "and will raise IPAddr::InvalidAddressError in a future version: #{addr}",
+             uplevel: 1
+      end
     else
       @mask_addr = (@family == Socket::AF_INET) ? IN4MASK : IN6MASK
     end

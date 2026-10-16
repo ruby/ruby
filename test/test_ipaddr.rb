@@ -100,7 +100,9 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("0:0:0:1::", IPAddr.new("0:0:0:1::").to_s)
     assert_equal("2001:200:300::", IPAddr.new("2001:200:300::/48").to_s)
 
-    assert_equal("2001:200:300::", IPAddr.new("[2001:200:300::]/48").to_s)
+    assert_warning(/will raise IPAddr::InvalidAddressError/) {
+      assert_equal("2001:200:300::", IPAddr.new("[2001:200:300::]/48").to_s)
+    }
     assert_equal("1:2:3:4:5:6:7:0", IPAddr.new("1:2:3:4:5:6:7::").to_s)
     assert_equal("0:2:3:4:5:6:7:8", IPAddr.new("::2:3:4:5:6:7:8").to_s)
 
@@ -781,5 +783,17 @@ class TC_Operator < Test::Unit::TestCase
       IPAddr.new('INVALID')
     end
     assert_equal('invalid address: INVALID', e.message)
+  end
+
+  def test_s_new_bracketed_with_prefix_is_deprecated
+    assert_warning(/will raise IPAddr::InvalidAddressError/) {
+      assert_equal("2001:db8::", IPAddr.new("[2001:db8::]/32").to_s)
+    }
+    assert_warning(/will raise IPAddr::InvalidAddressError/) {
+      assert_equal("2001:db8::", IPAddr.new("[2001:db8::]/ffff:ffff::").to_s)
+    }
+
+    assert_warning("") { assert_equal("2001:db8::", IPAddr.new("[2001:db8::]").to_s) }
+    assert_warning("") { assert_equal("2001:db8::", IPAddr.new("2001:db8::/32").to_s) }
   end
 end
