@@ -82,6 +82,25 @@ install:
     assert_match(/DESTDIR\\=#{ENV["DESTDIR"]} install$/, results)
   end
 
+  def test_class_make_without_destdir
+    ENV["DESTDIR"] = nil
+    ENV["MAKE"] = "make"
+    FileUtils.touch File.join(@ext, "Makefile")
+
+    others, mswin = [false, true].map do |is_mswin|
+      commands = []
+      Gem::Ext::Builder.stub(:mswin?, is_mswin) do
+        Gem::Ext::Builder.stub(:run, ->(command, *) { commands << command }) do
+          Gem::Ext::Builder.make @dest_path, [], @ext
+        end
+      end
+      commands
+    end
+
+    assert_equal [%w[make DESTDIR= clean], %w[make DESTDIR=], %w[make DESTDIR= install]], others
+    assert_equal [%w[make clean], %w[make], %w[make install]], mswin
+  end
+
   def test_custom_make_with_options
     pend "native windows platform only provides nmake" if vc_windows?
 

@@ -37,6 +37,7 @@ module Ruby::Prism
       "alias.txt",
       "dsym_str.txt",
       "dos_endings.txt",
+      "endless_method_not.txt",
       "endless_method_rescue_modifier.txt",
       "heredoc_dedent_line_continuation.txt",
       "heredoc_percent_q_newline_delimiter.txt",

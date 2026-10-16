@@ -150,6 +150,13 @@ Note: We're only listing outstanding class updates.
     * `Proc#ruby2_keywords` is deprecated and will be removed in Ruby 4.4.
       [[Feature #22205]]
 
+* Ractor
+
+    * `Ractor::Port#receive`, `Ractor.receive` and `Ractor.select` accept a
+      `timeout:` keyword argument (in seconds) and return `nil` once it passes.
+      `timeout: 0` never blocks: it takes a message if one is already queued
+      and returns `nil` otherwise.  [[Feature #22255]]
+
 * Range
 
     * `Range#clamp` is added. It returns a new `Range` instance whose
@@ -263,8 +270,8 @@ They are still available on rubygems.org and can be installed with
 * io-console 0.9.4
   * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2], [v0.9.3][io-console-v0.9.3], [v0.9.4][io-console-v0.9.4]
 * io-wait 999.999.999
-* ipaddr 1.2.9
-  * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
+* ipaddr 1.3.0
+  * 1.2.8 to [v1.2.9][ipaddr-v1.2.9], [v1.3.0][ipaddr-v1.3.0]
 * json 3.1.0
   * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0], [v2.21.0][json-v2.21.0], [v2.21.2][json-v2.21.2], [v3.0.0.rc1][json-v3.0.0.rc1], [v3.0.0][json-v3.0.0]
 * net-http 0.10.0
@@ -670,6 +677,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22226]: https://bugs.ruby-lang.org/issues/22226
 [Feature #22232]: https://bugs.ruby-lang.org/issues/22232
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
+[Feature #22255]: https://bugs.ruby-lang.org/issues/22255
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
 [Feature #22309]: https://bugs.ruby-lang.org/issues/22309
 [Feature #22400]: https://bugs.ruby-lang.org/issues/22400
@@ -729,6 +737,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [io-console-v0.9.3]: https://github.com/ruby/io-console/releases/tag/v0.9.3
 [io-console-v0.9.4]: https://github.com/ruby/io-console/releases/tag/v0.9.4
 [ipaddr-v1.2.9]: https://github.com/ruby/ipaddr/releases/tag/v1.2.9
+[ipaddr-v1.3.0]: https://github.com/ruby/ipaddr/releases/tag/v1.3.0
 [json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
 [json-v2.19.0]: https://github.com/ruby/json/releases/tag/v2.19.0
 [json-v2.19.1]: https://github.com/ruby/json/releases/tag/v2.19.1

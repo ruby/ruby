@@ -29,9 +29,45 @@ pub static mut rb_zjit_entry: *const u8 = null();
 #[unsafe(no_mangle)]
 pub static mut rb_zjit_compiling_p: bool = false;
 
+/// Monotonically increasing total of time spent compiling.
+#[unsafe(no_mangle)]
+pub static mut rb_zjit_total_compile_time_ns: u64 = 0;
+
+// Time allocated for compilation. When going over, compilation is paused.
+#[unsafe(no_mangle)]
+pub static mut rb_zjit_max_compile_time_ns: u64 = 0;
+
 /// Like rb_zjit_enabled_p, but for Rust code.
 pub fn zjit_enabled_p() -> bool {
     unsafe { rb_zjit_entry != null() }
+}
+
+pub fn increment_compile_time_ns(nanos: u64) {
+    unsafe {
+        rb_zjit_total_compile_time_ns += nanos;
+        if rb_zjit_max_compile_time_ns != 0 && rb_zjit_max_compile_time_ns <= rb_zjit_total_compile_time_ns {
+            rb_zjit_compiling_p = false;
+        }
+    }
+}
+
+/// Stop compiling new ZJIT entries if the code region or max compile time is exhausted.
+pub fn update_zjit_compiling() {
+    if zjit_enabled_p() {
+        unsafe {
+            if rb_zjit_max_compile_time_ns == 0 || rb_zjit_max_compile_time_ns > rb_zjit_total_compile_time_ns {
+                let cb = ZJITState::get_code_block();
+                rb_zjit_compiling_p = !cb.has_dropped_bytes()
+            } else {
+                rb_zjit_compiling_p = false;
+            }
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_update_max_compile_time_ns(max_compile_time_ns: u64) {
+    unsafe { rb_zjit_max_compile_time_ns = max_compile_time_ns; }
 }
 
 /// Global state needed for code generation

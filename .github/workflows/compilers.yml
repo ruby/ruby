@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github, persist-credentials: false }
       # Set fetch-depth: 10 so that Launchable can receive commits information.
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: 'up HAVE_GIT=yes extract-gems', fetch-depth: 10 } }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - name: Archive sources
         working-directory: ${{ github.workspace }}
         # `.downloaded-cache` will be restored from the common cache

@@ -3284,7 +3284,7 @@ rb_str_subpos(VALUE str, rb_len_t beg, rb_len_t *lenp)
     const char *p, *s = RSTRING_PTR(str), *e = s + blen;
 
     if (len < 0) return 0;
-    if (beg < 0 && -beg < 0) return 0;
+    if (beg == RB_LEN_MIN) return 0;
     if (!blen) {
         len = 0;
     }

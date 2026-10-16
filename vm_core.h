@@ -181,7 +181,7 @@ void *rb_register_sigaltstack(void *);
 /*****************/
 
 /* gcc ver. check */
-#if defined(__GNUC__) && __GNUC__ >= 2
+#if (defined(__GNUC__) && __GNUC__ >= 2) || defined(__clang__)
 
 #if OPT_TOKEN_THREADED_CODE
 #if OPT_DIRECT_THREADED_CODE
@@ -189,7 +189,7 @@ void *rb_register_sigaltstack(void *);
 #endif
 #endif
 
-#else /* defined(__GNUC__) && __GNUC__ >= 2 */
+#else /* (defined(__GNUC__) && __GNUC__ >= 2) || defined(__clang__) */
 
 /* disable threaded code options */
 #if OPT_DIRECT_THREADED_CODE
