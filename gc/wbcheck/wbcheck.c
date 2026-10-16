@@ -1573,11 +1573,11 @@ rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
 {
 }
 
-const uintptr_t *
-rb_gc_impl_zjit_writebarrier_required_p_ptr(void *objspace_ptr)
+int32_t
+rb_gc_impl_zjit_writebarrier_required_offset(void)
 {
     /* ZJIT must always call rb_gc_writebarrier() so wbcheck sees every barrier. */
-    return NULL;
+    return -1;
 }
 
 void
