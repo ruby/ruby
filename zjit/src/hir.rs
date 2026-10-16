@@ -1152,7 +1152,17 @@ pub enum Insn {
     /// Negate Ruby truthiness without dispatching #!.
     BoolNegate { val: InsnId },
     /// Convert a C `long` to a Ruby `Fixnum`. Side exit on overflow.
-    BoxFixnum { val: InsnId, state: InsnId },
+    /// Tag an untagged CInt64 as a Fixnum. `checked: false` skips the
+    /// overflow deopt for values that are fixnum-ranged by construction
+    /// (e.g. magic-division results).
+    BoxFixnum { val: InsnId, state: InsnId, checked: bool },
+
+    /// Floored magic-number division/modulo of an untagged fixnum-ranged
+    /// value by a positive constant divisor >= 2. Pure: a constant nonzero
+    /// divisor cannot raise, and the results stay fixnum-ranged, so these are
+    /// DCE-eligible and deopt-free.
+    IntMagicDiv { val: InsnId, divisor: i64 },
+    IntMagicMod { val: InsnId, divisor: i64 },
     UnboxFixnum { val: InsnId },
     /// Decode a flonum VALUE to its raw IEEE-754 double ([`types::CDouble`]).
     UnboxFlonum { val: InsnId },
@@ -1621,7 +1631,7 @@ macro_rules! for_each_operand_impl {
             | Insn::IsMethodCfunc { val, state, .. }
             | Insn::ToNewArray { val, state }
             | Insn::SetLocal { val, state, .. }
-            | Insn::BoxFixnum { val, state }
+            | Insn::BoxFixnum { val, state, .. }
             | Insn::BoxFlonum { val, state }
             | Insn::GuardFlonumRepresentable { val, state } => {
                 $visit_one!(*val);
@@ -1859,6 +1869,8 @@ macro_rules! for_each_operand_impl {
             | Insn::FloatAbs { val }
             | Insn::FloatSqrt { val }
             | Insn::IsFlonum { val }
+            | Insn::IntMagicDiv { val, .. }
+            | Insn::IntMagicMod { val, .. }
             | Insn::F64FromFixnum { val } => {
                 $visit_one!(*val);
             }
@@ -2007,6 +2019,8 @@ impl Insn {
             Insn::BoxBool { .. } => effects::Empty,
             Insn::BoolNegate { .. } => effects::Empty,
             Insn::BoxFixnum { .. } => effects::Empty,
+            Insn::IntMagicDiv { .. } => effects::Empty,
+            Insn::IntMagicMod { .. } => effects::Empty,
             Insn::UnboxFixnum { .. } => effects::Empty,
             // Pure conversions; the box's representability side exit is emitted
             // only when the boxed result survives DCE, so dead boxes/unboxes in a
@@ -2432,7 +2446,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
             Insn::BoolNegate { val } => write!(f, "BoolNegate {val}"),
-            Insn::BoxFixnum { val, .. } => write!(f, "BoxFixnum {val}"),
+            Insn::BoxFixnum { val, checked, .. } => {
+                write!(f, "BoxFixnum {val}")?;
+                if !checked { write!(f, " unchecked")?; }
+                Ok(())
+            }
+            Insn::IntMagicDiv { val, divisor } => write!(f, "IntMagicDiv {val}, {divisor}"),
+            Insn::IntMagicMod { val, divisor } => write!(f, "IntMagicMod {val}, {divisor}"),
             Insn::UnboxFixnum { val } => write!(f, "UnboxFixnum {val}"),
             Insn::UnboxFlonum { val } => write!(f, "UnboxFlonum {val}"),
             Insn::BoxFlonum { val, .. } => write!(f, "BoxFlonum {val}"),
@@ -4018,6 +4038,8 @@ impl Function {
             Insn::BoolNegate { val } if self.type_of(*val).is_known_truthy() => types::FalseClass,
             Insn::BoolNegate { .. } => types::BoolExact,
             Insn::BoxFixnum { .. } => types::Fixnum,
+            Insn::IntMagicDiv { .. } => types::CInt64,
+            Insn::IntMagicMod { .. } => types::CInt64,
             Insn::UnboxFixnum { val } => self
                 .type_of(*val)
                 .fixnum_value()
@@ -7370,6 +7392,25 @@ impl Function {
                                 new_insns.push(replacement);
                                 continue;
                             }
+                            // Non-power-of-two constants go to the magic
+                            // multiply, exposed at HIR level as
+                            // unbox/IntMagicDiv/box so tag round-trips can
+                            // cancel across loop-carried webs. The box is
+                            // unchecked: |quotient| <= 2^61.
+                            (None, Some(d)) if d >= 2 => {
+                                let Insn::FixnumDiv { state, .. } = self.insns[insn_id] else { unreachable!() };
+                                let unbox = self.new_insn(Insn::UnboxFixnum { val: left });
+                                self.insn_types[unbox] = self.infer_type(unbox);
+                                new_insns.push(unbox);
+                                let q = self.new_insn(Insn::IntMagicDiv { val: unbox, divisor: d });
+                                self.insn_types[q] = self.infer_type(q);
+                                new_insns.push(q);
+                                let replacement = self.new_insn(Insn::BoxFixnum { val: q, state, checked: false });
+                                self.make_equal_to(insn_id, replacement);
+                                self.insn_types[replacement] = self.infer_type(replacement);
+                                new_insns.push(replacement);
+                                continue;
+                            }
                             _ => {}
                         }
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
@@ -7393,6 +7434,22 @@ impl Function {
                                 self.insn_types[mask] = self.infer_type(mask);
                                 new_insns.push(mask);
                                 let replacement = self.new_insn(Insn::FixnumAnd { left, right: mask });
+                                self.make_equal_to(insn_id, replacement);
+                                self.insn_types[replacement] = self.infer_type(replacement);
+                                new_insns.push(replacement);
+                                continue;
+                            }
+                            // Magic modulo, HIR-exposed like the div arm; the
+                            // box is unchecked: |remainder| < divisor.
+                            (None, Some(d)) if d >= 2 => {
+                                let Insn::FixnumMod { state, .. } = self.insns[insn_id] else { unreachable!() };
+                                let unbox = self.new_insn(Insn::UnboxFixnum { val: left });
+                                self.insn_types[unbox] = self.infer_type(unbox);
+                                new_insns.push(unbox);
+                                let r = self.new_insn(Insn::IntMagicMod { val: unbox, divisor: d });
+                                self.insn_types[r] = self.infer_type(r);
+                                new_insns.push(r);
+                                let replacement = self.new_insn(Insn::BoxFixnum { val: r, state, checked: false });
                                 self.make_equal_to(insn_id, replacement);
                                 self.insn_types[replacement] = self.infer_type(replacement);
                                 new_insns.push(replacement);
@@ -8086,40 +8143,10 @@ impl Function {
     /// interpreter then reads the raw bits as a `VALUE`: +0.0 as `false`, anything
     /// else as a wild pointer. Locals are exempt: `gen_spill_locals` and the
     /// elided-frame materializer re-encode raw local slots before publishing them.
+    /// The published states are the ones [`Self::compute_unsafe_snapshots`] flags.
     fn values_on_published_stacks(&self) -> Vec<bool> {
         let rpo = self.reverse_post_order();
-        let mut published = vec![false; self.insns.len()];
-        for block_id in &rpo {
-            for &insn_id in &self.blocks[*block_id].insns {
-                let insn = &self.insns[insn_id];
-                // Only a side exit reads these instructions' states.
-                let deopt_only = matches!(insn,
-                    Insn::GuardType { .. } | Insn::GuardBitEquals { .. }
-                    | Insn::GuardAnyBitSet { .. } | Insn::GuardNoBitsSet { .. }
-                    | Insn::GuardGreaterEq { .. } | Insn::GuardLess { .. }
-                    | Insn::GuardFlonumRepresentable { .. }
-                    | Insn::PatchPoint { .. } | Insn::CheckInterrupts { .. }
-                    | Insn::FixnumAdd { .. } | Insn::FixnumSub { .. }
-                    | Insn::FixnumMult { .. } | Insn::FixnumLShift { .. }
-                    | Insn::BoxFixnum { .. } | Insn::BoxFlonum { .. }
-                    // Open-coded on raw doubles, these ignore their state; FloatCmp's
-                    // leaf call publishes no stack (gen_prepare_leaf_call_with_gc).
-                    | Insn::FloatAdd { .. } | Insn::FloatSub { .. }
-                    | Insn::FloatMul { .. } | Insn::FloatDiv { .. }
-                    | Insn::FloatCmp { .. });
-                if deopt_only {
-                    continue;
-                }
-                // Any other reference publishes the state, including a Snapshot
-                // naming it as the caller of an inlined frame.
-                insn.for_each_operand(|operand| {
-                    let operand = self.union_find.borrow().find_const(operand);
-                    if matches!(self.insns[operand], Insn::Snapshot { .. }) {
-                        published[operand] = true;
-                    }
-                });
-            }
-        }
+        let published = self.compute_unsafe_snapshots();
         let mut on_published_stack = vec![false; self.insns.len()];
         for block_id in &rpo {
             for &insn_id in &self.blocks[*block_id].insns {
@@ -8206,18 +8233,20 @@ impl Function {
     /// whitelist of pure deopt consumers (guards, patchpoints, interrupt
     /// checks, overflow-checking arithmetic) and no state referencing it is
     /// itself used as another state's caller.
-    fn sink_compare_bools_to_deopt(&mut self) {
+    /// States that may flow into eager spill paths or caller-frame stack
+    /// maps, i.e. anywhere a raw (untagged CInt64 / CBool / CDouble) slot
+    /// would be written verbatim into an interpreter frame instead of going
+    /// through compile_exit_save_state's re-encoding. A state is unsafe when
+    /// any non-pure-deopt consumer references it (frame pushes and calls
+    /// spill state slots raw) or when another state uses it as its caller
+    /// (caller stacks are materialized raw from JITFrame stack maps).
+    fn compute_unsafe_snapshots(&self) -> Vec<bool> {
         let rpo = self.reverse_post_order();
-        let mut used_outside_snapshot = vec![false; self.insns.len()];
-        // States that may flow into eager spills or caller-frame stack maps.
         let mut unsafe_snapshot = vec![false; self.insns.len()];
         for block_id in &rpo {
             for &insn_id in &self.blocks[*block_id].insns {
                 let insn = &self.insns[insn_id];
                 if matches!(insn, Insn::Snapshot { .. }) {
-                    // A snapshot referencing another snapshot is a caller
-                    // chain: the inner state's stack can be materialized raw
-                    // from a deeper exit's stack map.
                     insn.for_each_operand(|operand| {
                         let operand = self.union_find.borrow().find_const(operand);
                         if matches!(self.insns[operand], Insn::Snapshot { .. }) {
@@ -8233,13 +8262,41 @@ impl Function {
                     | Insn::GuardFlonumRepresentable { .. }
                     | Insn::PatchPoint { .. } | Insn::CheckInterrupts { .. }
                     | Insn::FixnumAdd { .. } | Insn::FixnumSub { .. }
-                    | Insn::FixnumMult { .. } | Insn::FixnumLShift { .. });
+                    | Insn::FixnumMult { .. } | Insn::FixnumLShift { .. }
+                    | Insn::BoxFixnum { .. } | Insn::BoxFlonum { .. }
+                    // Open-coded on raw doubles, these ignore their state; FloatCmp's
+                    // leaf call publishes no stack (gen_prepare_leaf_call_with_gc).
+                    | Insn::FloatAdd { .. } | Insn::FloatSub { .. }
+                    | Insn::FloatMul { .. } | Insn::FloatDiv { .. }
+                    | Insn::FloatCmp { .. });
+                if pure_deopt_consumer {
+                    continue;
+                }
+                insn.for_each_operand(|operand| {
+                    let operand = self.union_find.borrow().find_const(operand);
+                    if matches!(self.insns[operand], Insn::Snapshot { .. }) {
+                        unsafe_snapshot[operand] = true;
+                    }
+                });
+            }
+        }
+        unsafe_snapshot
+    }
+
+    fn sink_compare_bools_to_deopt(&mut self) {
+        let rpo = self.reverse_post_order();
+        let mut used_outside_snapshot = vec![false; self.insns.len()];
+        // States that may flow into eager spills or caller-frame stack maps.
+        let unsafe_snapshot = self.compute_unsafe_snapshots();
+        for block_id in &rpo {
+            for &insn_id in &self.blocks[*block_id].insns {
+                let insn = &self.insns[insn_id];
+                if matches!(insn, Insn::Snapshot { .. }) {
+                    continue;
+                }
                 self.insns[insn_id].for_each_operand(|operand| {
                     let operand = self.union_find.borrow().find_const(operand);
                     if matches!(self.insns[operand], Insn::Snapshot { .. }) {
-                        if !pure_deopt_consumer {
-                            unsafe_snapshot[operand] = true;
-                        }
                         // A state reference is not a value use of the boolean.
                         return;
                     }
@@ -9456,7 +9513,7 @@ impl Function {
                 Producer::IntTimes | Producer::RangeLit => None,
                 _ => {
                     let len_raw = self.push_insn(bb, Insn::ArrayLength { array: c.recv });
-                    Some(self.push_insn(bb, Insn::BoxFixnum { val: len_raw, state: c.a_state }))
+                    Some(self.push_insn(bb, Insn::BoxFixnum { val: len_raw, state: c.a_state, checked: true }))
                 }
             };
             let bound = match c.producer {
@@ -9531,7 +9588,7 @@ impl Function {
                 debug_assert!(translated.is_none());
                 self.blocks.truncate(pre_blocks_len);
                 let len_raw = self.push_insn(bb, Insn::ArrayLength { array: c.recv });
-                let len_boxed = self.push_insn(bb, Insn::BoxFixnum { val: len_raw, state: c.a_state });
+                let len_boxed = self.push_insn(bb, Insn::BoxFixnum { val: len_raw, state: c.a_state, checked: true });
                 let zero = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) });
                 let one = self.push_insn(bb, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) });
                 let nil = self.push_insn(bb, Insn::Const { val: Const::Value(Qnil) });
@@ -11067,7 +11124,9 @@ impl Function {
                             let mut reads = false;
                             self.insns[insn_id].for_each_operand(|op| if web_set.contains(&self.union_find.borrow().find_const(op)) { reads = true; });
                             if reads {
-                                if self.snapshot_state_in(block, i).is_none() { bail = true; break 'scan; }
+                                if self.snapshot_state_in(block, i).is_none() {
+                                    bail = true; break 'scan;
+                                }
                                 box_uses.push(insn_id);
                             }
                         }
@@ -11117,6 +11176,373 @@ impl Function {
                 });
                 for webval in ops {
                     let boxed = self.new_insn(Insn::BoxFlonum { val: webval, state });
+                    let pos = self.blocks[block].insns.iter().position(|&i| i == use_id).unwrap();
+                    self.blocks[block].insns.insert(pos, boxed);
+                    let uf_ref = &self.union_find;
+                    self.insns[use_id].for_each_operand_mut(|op| {
+                        if uf_ref.borrow().find_const(*op) == webval { *op = boxed; }
+                    });
+                }
+            }
+        }
+    }
+
+    /// Keep loop-carried fixnums untagged across back edges: the fixnum
+    /// analogue of [`Self::unbox_loop_carried_floats`]. After the magic
+    /// div/mod rewrite exposes its tag round-trip at HIR level
+    /// (UnboxFixnum / IntMagic* / unchecked BoxFixnum), a value like the `x`
+    /// of a digit-extraction loop is boxed at every iteration end only to be
+    /// unboxed again at the next head -- with the box and unbox on the
+    /// loop-carried critical path. This pass converts qualifying phi webs to
+    /// CInt64: entering values unbox once outside the loop, in-web
+    /// UnboxFixnum uses become the param itself, in-web compares against
+    /// fixnum constants compare untagged (tagging is monotonic, so the
+    /// predicate is unchanged), and escaping uses re-box (unchecked: web
+    /// values are fixnum-ranged by construction). Deopt states keep
+    /// referencing the CInt64 param; side exits re-encode such slots.
+    fn unbox_loop_carried_fixnums(&mut self) {
+        let mut loop_header_params: HashSet<InsnId> = HashSet::new();
+        let mut all_params: HashSet<InsnId> = HashSet::new();
+        {
+            let dominators = Dominators::new(self);
+            let loop_info = LoopInfo::new(&dominators);
+            for block in (0..self.num_blocks()).map(BlockId::from) {
+                let is_header = loop_info.loop_headers.get(block);
+                for &p in &self.blocks[block].params {
+                    all_params.insert(p);
+                    if is_header { loop_header_params.insert(p); }
+                }
+            }
+        }
+        if loop_header_params.is_empty() { return; }
+
+        let mut uf: HashMap<InsnId, InsnId> = HashMap::new();
+        fn ufind(uf: &mut HashMap<InsnId, InsnId>, x: InsnId) -> InsnId {
+            let mut r = x;
+            while let Some(&p) = uf.get(&r) { if p == r { break; } r = p; }
+            r
+        }
+        fn uunion(uf: &mut HashMap<InsnId, InsnId>, a: InsnId, b: InsnId) {
+            let (ra, rb) = (ufind(uf, a), ufind(uf, b));
+            if ra != rb { uf.insert(ra, rb); }
+        }
+        for &p in &all_params { uf.entry(p).or_insert(p); }
+
+        // A back edge often carries the in-loop GuardType's *result* rather
+        // than the param itself, which would split one loop-carried value
+        // into two webs. Peel Fixnum guards when tracing edge connectivity.
+        let peel_guards = |fun: &Self, mut id: InsnId| -> InsnId {
+            loop {
+                match fun.insns[id] {
+                    Insn::GuardType { val, guard_type, .. } if types::Fixnum.is_subtype(guard_type) => {
+                        id = fun.union_find.borrow().find_const(val);
+                    }
+                    _ => return id,
+                }
+            }
+        };
+
+        let mut incoming: HashMap<(BlockId, usize), Vec<(BlockId, InsnId)>> = HashMap::new();
+        for pred in (0..self.num_blocks()).map(BlockId::from) {
+            for (target, args) in self.out_edges_of(pred) {
+                if args.len() != self.blocks[target].params.len() { return; }
+                for (idx, &arg) in args.iter().enumerate() {
+                    let arg = self.union_find.borrow().find_const(arg);
+                    let param = self.blocks[target].params[idx];
+                    incoming.entry((target, idx)).or_default().push((pred, arg));
+                    let peeled = peel_guards(self, arg);
+                    if all_params.contains(&peeled) { uunion(&mut uf, param, peeled); }
+                }
+            }
+        }
+
+        let mut webs: HashMap<InsnId, Vec<InsnId>> = HashMap::new();
+        for &p in &all_params { let r = ufind(&mut uf, p); webs.entry(r).or_default().push(p); }
+
+        // A raw CInt64 must never reach an eager spill (frame pushes and
+        // calls write state slots verbatim) or a caller-position state (its
+        // stack materializes raw from JITFrame stack maps). Webs referenced
+        // by such states cannot convert.
+        let unsafe_snapshot = self.compute_unsafe_snapshots();
+
+        for (_root, web) in webs {
+            let mut web_set: HashSet<InsnId> = web.iter().copied().collect();
+            // A web entered by a value that can never be a Fixnum -- typically
+            // a local's nil before its first assignment, which the loop
+            // reassigns before reading -- cannot run untagged: its entry guard
+            // would fail every time the loop is entered. Demoting just that
+            // param is not enough, since the rest of the web still feeds it
+            // raw values along the back edge.
+            let enters_non_fixnum = (0..self.num_blocks()).map(BlockId::from).any(|block| {
+                self.blocks[block].params.iter().enumerate().any(|(idx, p)| {
+                    web_set.contains(p) && incoming.get(&(block, idx)).is_some_and(|ins| ins.iter().any(|&(_, arg)| {
+                        !web_set.contains(&peel_guards(self, arg)) && !self.type_of(arg).could_be(types::Fixnum)
+                    }))
+                })
+            });
+            if enters_non_fixnum { continue; }
+            // Demote params whose external entries cannot be guarded (their
+            // predecessor has no state to hang a GuardType on -- entry blocks,
+            // typically): the web then breaks at that param, and its outgoing
+            // feed becomes a guardable external entry at the next block down.
+            loop {
+                let mut demoted = false;
+                for &p in &web_set.clone() {
+                    let mut loc = None;
+                    'find: for block in (0..self.num_blocks()).map(BlockId::from) {
+                        for (idx, &q) in self.blocks[block].params.iter().enumerate() {
+                            if q == p { loc = Some((block, idx)); break 'find; }
+                        }
+                    }
+                    let Some((pblock, pidx)) = loc else { continue };
+                    for (pred, arg) in incoming.get(&(pblock, pidx)).cloned().unwrap_or_default() {
+                        if web_set.contains(&peel_guards(self, arg)) { continue; }
+                        if self.type_of(arg).is_subtype(types::Fixnum) { continue; }
+                        let term_pos = self.blocks[pred].insns.len().saturating_sub(1);
+                        if self.snapshot_state_in(pred, term_pos).is_none() {
+                            web_set.remove(&p);
+                            demoted = true;
+                            break;
+                        }
+                    }
+                }
+                if !demoted { break; }
+            }
+            let web: Vec<InsnId> = web_set.iter().copied().collect();
+            if !web.iter().any(|p| loop_header_params.contains(p)) { continue; }
+            // Params need not all be Fixnum-typed: a wide (argument-fed)
+            // param converts too, as long as each external entering value is
+            // either Fixnum-typed or guarded at its entry edge below.
+
+            // A loop-carried argument enters wide (BasicObject) and gets
+            // GuardType'd to Fixnum inside the loop, which would break the
+            // web at the guard: alias such guards into the web. Their checks
+            // move to the entry edges (web values are Fixnum by construction
+            // once every entering value is guarded), and their results resolve
+            // to the untagged param.
+            let mut web_alias: HashSet<InsnId> = web_set.clone();
+            let mut guard_uses: Vec<InsnId> = Vec::new();
+            loop {
+                let mut grew = false;
+                for block in (0..self.num_blocks()).map(BlockId::from) {
+                    for i in 0..self.blocks[block].insns.len() {
+                        let insn_id = self.blocks[block].insns[i];
+                        if let Insn::GuardType { val, guard_type, .. } = self.insns[insn_id] {
+                            let val = self.union_find.borrow().find_const(val);
+                            if web_alias.contains(&val) && types::Fixnum.is_subtype(guard_type)
+                                && !web_alias.contains(&insn_id) {
+                                web_alias.insert(insn_id);
+                                guard_uses.push(insn_id);
+                                grew = true;
+                            }
+                        }
+                    }
+                }
+                if !grew { break; }
+            }
+
+            // Classify uses. cmp_uses: compares whose web operands can stay
+            // untagged (other side web or fixnum constant). box_uses: escaping
+            // reads needing an unchecked re-box.
+            let mut unbox_uses: Vec<InsnId> = Vec::new();
+            let mut cmp_uses: Vec<InsnId> = Vec::new();
+            let mut box_uses: Vec<InsnId> = Vec::new();
+            let mut bail = false;
+            let cmp_side_ok = |fun: &Self, web_set: &HashSet<InsnId>, op: InsnId| -> bool {
+                // NB: end the union-find borrow before type_of borrows again.
+                let resolved = { fun.union_find.borrow().find_const(op) };
+                fun.insn_in_web(web_set, resolved) || fun.type_of(resolved).fixnum_value().is_some()
+            };
+            'scan: for block in (0..self.num_blocks()).map(BlockId::from) {
+                for i in 0..self.blocks[block].insns.len() {
+                    let insn_id = self.blocks[block].insns[i];
+                    if web_alias.contains(&insn_id) && !web_set.contains(&insn_id) {
+                        continue; // an aliased in-loop guard, handled below
+                    }
+                    match &self.insns[insn_id] {
+                        Insn::UnboxFixnum { val } if self.insn_in_web(&web_alias, *val) => unbox_uses.push(insn_id),
+                        Insn::Snapshot { .. } => {
+                            // Safe states re-encode CInt64 slots at side
+                            // exits; unsafe ones would spill them raw.
+                            let resolved = self.union_find.borrow().find_const(insn_id);
+                            if unsafe_snapshot[resolved] || unsafe_snapshot[insn_id] {
+                                let mut refs_web = false;
+                                self.insns[insn_id].for_each_operand(|op| {
+                                    if web_alias.contains(&self.union_find.borrow().find_const(op)) { refs_web = true; }
+                                });
+                                if refs_web { bail = true; break 'scan; }
+                            }
+                        }
+                        Insn::Jump(_) => {} // intra-web wiring
+                        Insn::FixnumCmpBool { left, right, .. }
+                            if self.insn_in_web(&web_alias, *left) || self.insn_in_web(&web_alias, *right) => {
+                            if cmp_side_ok(self, &web_alias, *left) && cmp_side_ok(self, &web_alias, *right) {
+                                cmp_uses.push(insn_id);
+                            } else {
+                                bail = true; break 'scan;
+                            }
+                        }
+                        Insn::CondBranchFixnumCmp(insn)
+                            if self.insn_in_web(&web_alias, insn.left) || self.insn_in_web(&web_alias, insn.right) => {
+                            if cmp_side_ok(self, &web_alias, insn.left) && cmp_side_ok(self, &web_alias, insn.right) {
+                                cmp_uses.push(insn_id);
+                            } else {
+                                bail = true; break 'scan;
+                            }
+                        }
+                        Insn::CondBranch { val, .. } if self.insn_in_web(&web_alias, *val) => {
+                            bail = true; break 'scan;
+                        }
+                        Insn::CondBranchHasType(insn) if self.insn_in_web(&web_alias, insn.val) => {
+                            bail = true; break 'scan;
+                        }
+                        Insn::CondBranch { .. } | Insn::CondBranchFixnumCmp(_) | Insn::CondBranchHasType(_) => {}
+                        _ => {
+                            let mut reads = false;
+                            self.insns[insn_id].for_each_operand(|op| if web_alias.contains(&self.union_find.borrow().find_const(op)) { reads = true; });
+                            if reads {
+                                if self.snapshot_state_in(block, i).is_none() {
+                                    bail = true; break 'scan;
+                                }
+                                box_uses.push(insn_id);
+                            }
+                        }
+                    }
+                }
+            }
+            if bail { continue; }
+            // Not worth converting a web nothing unboxes.
+            if unbox_uses.is_empty() { continue; }
+
+            // Every external entering value must be Fixnum-typed or
+            // guardable at its entry edge (needs a state there for the
+            // GuardType we insert).
+            let mut param_loc_pre: HashMap<InsnId, (BlockId, usize)> = HashMap::new();
+            for block in (0..self.num_blocks()).map(BlockId::from) {
+                for (idx, &p) in self.blocks[block].params.iter().enumerate() {
+                    if web_set.contains(&p) { param_loc_pre.insert(p, (block, idx)); }
+                }
+            }
+            let mut entry_ok = true;
+            'entries: for &(pblock, pidx) in param_loc_pre.values() {
+                for (pred, arg) in incoming.get(&(pblock, pidx)).cloned().unwrap_or_default() {
+                    if web_alias.contains(&peel_guards(self, arg)) || self.type_of(arg).is_subtype(types::Fixnum) { continue; }
+                    let term_pos = self.blocks[pred].insns.len().saturating_sub(1);
+                    if self.snapshot_state_in(pred, term_pos).is_none() {
+                        entry_ok = false;
+                        break 'entries;
+                    }
+                }
+            }
+            if !entry_ok { continue; }
+
+            let mut param_loc: HashMap<InsnId, (BlockId, usize)> = HashMap::new();
+            for block in (0..self.num_blocks()).map(BlockId::from) {
+                for (idx, &p) in self.blocks[block].params.iter().enumerate() {
+                    if web_set.contains(&p) { param_loc.insert(p, (block, idx)); }
+                }
+            }
+
+            // --- Commit: rewrite this web to CInt64. ---
+
+            // 1. Unbox each external incoming value at its predecessor,
+            // guarding wide values first: this is where an in-loop guard we
+            // aliased away re-materializes, once, on the entry edge. Deopting
+            // here resumes the interpreter before the loop, which re-executes
+            // the original guard's semantics.
+            for (_p, &(pblock, pidx)) in &param_loc.clone() {
+                let sources = incoming.get(&(pblock, pidx)).cloned().unwrap_or_default();
+                for (pred, arg) in sources {
+                    // Args that peel to web members (including dissolving
+                    // guards) are intra-web wiring: they resolve to the
+                    // untagged param through the union-find.
+                    if web_alias.contains(&peel_guards(self, arg)) { continue; }
+                    let mut fixnum_arg = arg;
+                    if !self.type_of(arg).is_subtype(types::Fixnum) {
+                        let term_pos = self.blocks[pred].insns.len().saturating_sub(1);
+                        let state = self.snapshot_state_in(pred, term_pos).expect("checked in entry precheck");
+                        fixnum_arg = self.insert_before_terminator(pred, Insn::GuardType {
+                            val: arg, guard_type: types::Fixnum, state, recompile: None,
+                        });
+                        self.insn_types[fixnum_arg] = types::Fixnum;
+                    }
+                    let unbox = self.insert_before_terminator(pred, Insn::UnboxFixnum { val: fixnum_arg });
+                    self.set_edge_arg(pred, pblock, pidx, unbox);
+                }
+            }
+
+            // 2. UnboxFixnum(p) uses become identity. The aliased insns must
+            // also leave their blocks' insn lists: they now resolve to Params,
+            // which codegen refuses to see in an insns list, and stale aliased
+            // entries can wedge infer_types (the elision-era lesson).
+            let mut removed: HashSet<InsnId> = HashSet::new();
+            // Aliased in-loop guards dissolve into the web: their check moved
+            // to the entry edges, and web values are Fixnum by construction.
+            for &g in &guard_uses {
+                if let Insn::GuardType { val, .. } = self.insns[g] {
+                    let target = self.union_find.borrow().find_const(val);
+                    self.make_equal_to(g, target);
+                    removed.insert(g);
+                }
+            }
+            for &u in &unbox_uses {
+                if let Insn::UnboxFixnum { val } = self.insns[u] {
+                    let param = self.union_find.borrow().find_const(val);
+                    self.make_equal_to(u, param);
+                    removed.insert(u);
+                }
+            }
+            if !removed.is_empty() {
+                for b in (0..self.num_blocks()).map(BlockId::from) {
+                    self.blocks[b].insns.retain(|id| !removed.contains(id));
+                }
+            }
+
+            // 3. In-web compares go untagged: rewrite constant operands to
+            // their untagged CInt64 twins (fresh Const insns; the tagged
+            // originals may have other users). Web-vs-web compares need no
+            // change beyond the params' new type.
+            for &c in &cmp_uses {
+                let (left, right) = match self.insns[c] {
+                    Insn::FixnumCmpBool { left, right, .. } => (left, right),
+                    Insn::CondBranchFixnumCmp(ref insn) => (insn.left, insn.right),
+                    _ => unreachable!(),
+                };
+                let (block, pos) = (0..self.num_blocks()).map(BlockId::from).find_map(|b| {
+                    self.blocks[b].insns.iter().position(|&i| i == c).map(|p| (b, p))
+                }).expect("cmp use still present");
+                for side in [left, right] {
+                    let resolved = self.union_find.borrow().find_const(side);
+                    if self.insn_in_web(&web_set, resolved) { continue; }
+                    let Some(cv) = self.type_of(resolved).fixnum_value() else { unreachable!("checked in scan") };
+                    let untagged = self.new_insn(Insn::Const { val: Const::CInt64(cv) });
+                    self.insn_types[untagged] = self.infer_type(untagged);
+                    self.blocks[block].insns.insert(pos, untagged);
+                    let uf_ref = &self.union_find;
+                    let (left, right) = match &mut self.insns[c] {
+                        Insn::FixnumCmpBool { left, right, .. } => (left, right),
+                        Insn::CondBranchFixnumCmp(insn) => (&mut insn.left, &mut insn.right),
+                        _ => unreachable!(),
+                    };
+                    if uf_ref.borrow().find_const(*left) == resolved { *left = untagged; }
+                    if uf_ref.borrow().find_const(*right) == resolved { *right = untagged; }
+                }
+            }
+
+            // 4. Re-box escaping uses (unchecked: web values are
+            // fixnum-ranged) from a local snapshot.
+            for &use_id in &box_uses {
+                let (block, pos) = (0..self.num_blocks()).map(BlockId::from).find_map(|b| {
+                    self.blocks[b].insns.iter().position(|&i| i == use_id).map(|p| (b, p))
+                }).expect("box use still present");
+                let state = self.snapshot_state_in(block, pos).expect("snapshot checked above");
+                let mut ops: Vec<InsnId> = Vec::new();
+                self.insns[use_id].for_each_operand(|op| {
+                    let c = self.union_find.borrow().find_const(op);
+                    if web_set.contains(&c) && !ops.contains(&c) { ops.push(c); }
+                });
+                for webval in ops {
+                    let boxed = self.new_insn(Insn::BoxFixnum { val: webval, state, checked: false });
                     let pos = self.blocks[block].insns.iter().position(|&i| i == use_id).unwrap();
                     self.blocks[block].insns.insert(pos, boxed);
                     let uf_ref = &self.union_find;
@@ -11216,6 +11642,7 @@ impl Function {
         // UnboxFlonum(BoxFlonum) pairs at the entry/back-edge, and a second
         // canonicalize + DCE removes the now-dead boxes and unboxes.
         crate::stats::trace_compile_phase("unbox_loop_carried_floats", || self.unbox_loop_carried_floats());
+        crate::stats::trace_compile_phase("unbox_loop_carried_fixnums", || self.unbox_loop_carried_fixnums());
         self.canonicalize();
         self.fold_constants();
         self.canonicalize();
@@ -11765,10 +12192,18 @@ impl Function {
                 self.assert_subtype(insn_id, val, types::CBool)
             }
             Insn::CondBranchFixnumCmp(ref insn) => {
-                self.assert_subtype(insn_id, insn.left, types::Fixnum)?;
-                self.assert_subtype(insn_id, insn.right, types::Fixnum)
+                // Tagged Fixnum pairs, or untagged CInt64 pairs from
+                // unbox_loop_carried_fixnums; tagging is monotonic so the
+                // predicate is the same in either domain (never mixed).
+                if self.is_a(insn.left, types::CInt64) && self.is_a(insn.right, types::CInt64) {
+                    Ok(())
+                } else {
+                    self.assert_subtype(insn_id, insn.left, types::Fixnum)?;
+                    self.assert_subtype(insn_id, insn.right, types::Fixnum)
+                }
             }
             Insn::BoxFixnum { val, .. } => self.assert_subtype(insn_id, val, types::CInt64),
+            Insn::IntMagicDiv { val, .. } | Insn::IntMagicMod { val, .. } => self.assert_subtype(insn_id, val, types::CInt64),
             Insn::UnboxFixnum { val } => {
                 self.assert_subtype(insn_id, val, types::Fixnum)
             }
@@ -11780,6 +12215,11 @@ impl Function {
                 self.assert_subtype(insn_id, recv, types::Fixnum)?;
                 self.assert_subtype(insn_id, index, types::Fixnum)
             }
+            // FixnumCmpBool also accepts untagged CInt64 pairs (from
+            // unbox_loop_carried_fixnums); tagging is monotonic so the
+            // predicate is unchanged, and the domains are never mixed.
+            Insn::FixnumCmpBool { left, right, .. }
+                if self.is_a(left, types::CInt64) && self.is_a(right, types::CInt64) => Ok(()),
             Insn::FixnumAdd { left, right, .. }
             | Insn::FixnumSub { left, right, .. }
             | Insn::FixnumMult { left, right, .. }

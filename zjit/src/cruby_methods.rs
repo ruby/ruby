@@ -635,6 +635,7 @@ fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hi
         let result = fun.push_insn(block, hir::Insn::BoxFixnum {
             val: len,
             state,
+            checked: true,
         });
 
         return Some(result);
@@ -788,7 +789,7 @@ fn inline_array_length(fun: &mut hir::Function, block: hir::BlockId, recv: hir::
     if fun.likely_a(recv, types::Array, state) {
         let recv = fun.coerce_to(block, recv, types::Array, state);
         let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
-        let result = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state });
+        let result = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state, checked: true });
         return Some(result);
     }
     None
@@ -1408,7 +1409,7 @@ fn inline_ary_rev_start(fun: &mut hir::Function, block: hir::BlockId, _recv: hir
     let &[recv] = args else { return None; };
     let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
     let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
-    let length = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state });
+    let length = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state, checked: true });
     let one = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
     let result = fun.push_insn(block, hir::Insn::FixnumSub { left: length, right: one, state });
     Some(result)
@@ -1469,7 +1470,7 @@ fn inline_ary_at_end(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::I
     let &[recv, index] = args else { return None; };
     let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
     let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
-    let length = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state });
+    let length = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state, checked: true });
     let result = fun.push_insn(block, hir::Insn::FixnumGe { left: index, right: length });
     Some(result)
 }

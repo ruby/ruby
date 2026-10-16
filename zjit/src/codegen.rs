@@ -218,6 +218,15 @@ pub extern "C" fn rb_zjit_bool_encode(b: u64) -> VALUE {
     if b == 0 { Qfalse } else { Qtrue }
 }
 
+/// Re-encode a raw untagged fixnum side-exit slot into a tagged Fixnum VALUE.
+/// The value is fixnum-ranged by construction (unbox_loop_carried_fixnums only
+/// untags values that were Fixnums), so the tag cannot overflow. Pure and
+/// allocation-free.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_fixnum_encode(v: i64) -> VALUE {
+    VALUE(((v << 1) | 1) as usize)
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_flonum_encode(bits: u64) -> VALUE {
     // +0.0 (all-zero bits) is the flonum sentinel; it is not rotate-encodable.
@@ -862,6 +871,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
         Insn::FixnumMult { left, right, state } => gen_fixnum_mult(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
         Insn::FixnumDiv { left, right, state } => gen_fixnum_div(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
+        &Insn::IntMagicDiv { val, divisor } => gen_int_magic_div(jit, asm, opnd!(val), divisor),
+        &Insn::IntMagicMod { val, divisor } => gen_int_magic_mod(jit, asm, opnd!(val), divisor),
         // FloatAdd/Sub/Mul/Div now operate on raw doubles (CDouble); the flonum
         // unbox/rebox live in UnboxFlonum/BoxFlonum so chains stay unboxed.
         Insn::FloatAdd { recv, other, .. } => asm.float_arith(FloatArithOp::Add, opnd!(recv), opnd!(other)),
@@ -909,7 +920,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::FloatAbs { val } => gen_float_abs(asm, opnd!(val)),
         &Insn::IsBitNotEqual { left, right } => gen_is_bit_not_equal(asm, opnd!(left), opnd!(right)),
         &Insn::BoxBool { val } => gen_box_bool(asm, opnd!(val)),
-        &Insn::BoxFixnum { val, state } => gen_box_fixnum(jit, asm, function, opnd!(val), &function.frame_state(state)),
+        &Insn::BoxFixnum { val, state, checked } => gen_box_fixnum(jit, asm, function, opnd!(val), &function.frame_state(state), checked),
         &Insn::UnboxFixnum { val } => gen_unbox_fixnum(asm, opnd!(val)),
         Insn::Test { val } => gen_test(asm, opnd!(val)),
         Insn::BoolNegate { val } => gen_bool_negate(asm, opnd!(val), function.type_of(*val)),
@@ -3570,12 +3581,11 @@ fn signed_magic(d: i64) -> (i64, u32) {
 /// Memoized per (dividend, divisor) within a basic block: `x % 10` and
 /// `x / 10` are usually siblings (digit extraction, divmod patterns), and the
 /// second then costs only its floored fixup instead of a second multiply head.
-fn gen_magic_div_head(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, d: i64) -> (lir::Opnd, lir::Opnd) {
-    if let Some(&(_, _, qt, rt)) = jit.divmod_cache.iter().find(|&&(l, cd, _, _)| l == left && cd == d) {
+fn gen_magic_div_head(jit: &mut JITState, asm: &mut Assembler, a: lir::Opnd, d: i64) -> (lir::Opnd, lir::Opnd) {
+    if let Some(&(_, _, qt, rt)) = jit.divmod_cache.iter().find(|&&(l, cd, _, _)| l == a && cd == d) {
         return (qt, rt);
     }
     let (magic, shift) = signed_magic(d);
-    let a = asm.rshift(left, Opnd::UImm(1));
     let m = asm.load(Opnd::Imm(magic));
     let h = asm.smulhi(m, a);
     // Negative magic constants need the dividend added back to the high half.
@@ -3588,8 +3598,24 @@ fn gen_magic_div_head(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, 
     let qt_kept = asm.load(qt);
     let p = asm.mul(qt, Opnd::Imm(d));
     let rt = asm.sub(a, p);
-    jit.divmod_cache.push((left, d, qt_kept, rt));
+    jit.divmod_cache.push((a, d, qt_kept, rt));
     (qt_kept, rt)
+}
+
+/// Floored magic quotient of an untagged fixnum-ranged value (CInt64 in/out).
+fn gen_int_magic_div(jit: &mut JITState, asm: &mut Assembler, a: lir::Opnd, d: i64) -> lir::Opnd {
+    let (qt_kept, rt) = gen_magic_div_head(jit, asm, a, d);
+    let qm = asm.sub(qt_kept, Opnd::UImm(1));
+    asm.cmp(rt, Opnd::UImm(0));
+    asm.csel_l(qm, qt_kept)
+}
+
+/// Floored magic remainder of an untagged fixnum-ranged value (CInt64 in/out).
+fn gen_int_magic_mod(jit: &mut JITState, asm: &mut Assembler, a: lir::Opnd, d: i64) -> lir::Opnd {
+    let (_, rt) = gen_magic_div_head(jit, asm, a, d);
+    let rc = asm.add(rt, Opnd::Imm(d));
+    asm.cmp(rt, Opnd::UImm(0));
+    asm.csel_l(rc, rt)
 }
 
 /// Compile Fixnum / Fixnum with Ruby's floored-division semantics, open-coded.
@@ -3608,10 +3634,8 @@ fn gen_fixnum_div(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
         if v.fixnum_p() {
             let d = v.as_fixnum();
             if d >= 2 {
-                let (qt_kept, rt) = gen_magic_div_head(jit, asm, left, d);
-                let qm = asm.sub(qt_kept, Opnd::UImm(1));
-                asm.cmp(rt, Opnd::UImm(0));
-                let qf = asm.csel_l(qm, qt_kept);
+                let a = asm.rshift(left, Opnd::UImm(1));
+                let qf = gen_int_magic_div(jit, asm, a, d);
                 let shifted = asm.lshift(qf, Opnd::UImm(1));
                 return asm.or(shifted, Opnd::UImm(1));
             }
@@ -3868,10 +3892,8 @@ fn gen_fixnum_mod(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
         if v.fixnum_p() {
             let d = v.as_fixnum();
             if d >= 2 {
-                let (_, rt) = gen_magic_div_head(jit, asm, left, d);
-                let rc = asm.add(rt, Opnd::Imm(d));
-                asm.cmp(rt, Opnd::UImm(0));
-                let rf = asm.csel_l(rc, rt);
+                let a = asm.rshift(left, Opnd::UImm(1));
+                let rf = gen_int_magic_mod(jit, asm, a, d);
                 let shifted = asm.lshift(rf, Opnd::UImm(1));
                 return asm.or(shifted, Opnd::UImm(1));
             }
@@ -3945,11 +3967,14 @@ fn gen_box_bool(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
     asm.csel_nz(Opnd::Value(Qtrue), Opnd::Value(Qfalse))
 }
 
-fn gen_box_fixnum(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    // Load the value, then test for overflow and tag it
+fn gen_box_fixnum(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, state: &FrameState, checked: bool) -> lir::Opnd {
+    // Load the value, then tag it -- testing for overflow unless the value is
+    // fixnum-ranged by construction (checked: false).
     let val = asm.load_mem(val);
     let shifted = asm.lshift(val, Opnd::UImm(1));
-    asm.jo(jit, side_exit(jit, function, state, BoxFixnumOverflow));
+    if checked {
+        asm.jo(jit, side_exit(jit, function, state, BoxFixnumOverflow));
+    }
     asm.or(shifted, Opnd::UImm(RUBY_FIXNUM_FLAG as u64))
 }
 
@@ -4707,19 +4732,23 @@ fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> S
     let mut stack = Vec::new();
     let mut stack_needs_flonum_box = Vec::new();
     let mut stack_needs_bool_box = Vec::new();
+    let mut stack_needs_fixnum_box = Vec::new();
     for &insn_id in state.stack() {
         stack.push(jit.get_opnd(insn_id));
         stack_needs_flonum_box.push(jit.type_of(insn_id).is_subtype(types::CDouble));
         stack_needs_bool_box.push(jit.type_of(insn_id).is_subtype(types::CBool));
+        stack_needs_fixnum_box.push(jit.type_of(insn_id).is_subtype(types::CInt64));
     }
 
     let mut locals = Vec::new();
     let mut locals_needs_flonum_box = Vec::new();
     let mut locals_needs_bool_box = Vec::new();
+    let mut locals_needs_fixnum_box = Vec::new();
     for &insn_id in state.locals() {
         locals.push(jit.get_opnd(insn_id));
         locals_needs_flonum_box.push(jit.type_of(insn_id).is_subtype(types::CDouble));
         locals_needs_bool_box.push(jit.type_of(insn_id).is_subtype(types::CBool));
+        locals_needs_fixnum_box.push(jit.type_of(insn_id).is_subtype(types::CInt64));
     }
 
     let stack_map = build_caller_stack_map(jit, function, state);
@@ -4766,6 +4795,8 @@ fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> S
         locals_needs_flonum_box,
         stack_needs_bool_box,
         locals_needs_bool_box,
+        stack_needs_fixnum_box,
+        locals_needs_fixnum_box,
         iseq: state.iseq,
         stack_map,
         recompile: None,

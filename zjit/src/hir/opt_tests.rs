@@ -625,10 +625,12 @@ mod hir_opt_tests {
           v15:Fixnum[6] = Const Value(6)
           PatchPoint MethodRedefined(Integer@0x1008, %@0x1010, cme:0x1018)
           v28:Fixnum = GuardType v10, Fixnum recompile
-          v29:Fixnum = FixnumMod v28, v15
+          v30:CInt64 = UnboxFixnum v28
+          v31:CInt64 = IntMagicMod v30, 6
+          v32:Fixnum = BoxFixnum v31 unchecked
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v29
+          Return v32
         ");
     }
 
@@ -722,10 +724,12 @@ mod hir_opt_tests {
           v15:Fixnum[6] = Const Value(6)
           PatchPoint MethodRedefined(Integer@0x1008, /@0x1010, cme:0x1018)
           v28:Fixnum = GuardType v10, Fixnum recompile
-          v29:Fixnum = FixnumDiv v28, v15
+          v30:CInt64 = UnboxFixnum v28
+          v31:CInt64 = IntMagicDiv v30, 6
+          v32:Fixnum = BoxFixnum v31 unchecked
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v29
+          Return v32
         ");
     }
 

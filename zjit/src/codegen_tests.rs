@@ -1376,6 +1376,38 @@ fn test_throw_break_into_loop_with_float_accumulator() {
 }
 
 #[test]
+fn test_loop_counter_entering_as_nil_stays_compiled() {
+    // `r` is still nil when the second outer loop is entered and is reset to 0 before
+    // each inner loop. Untagging its loop-carried web would guard that nil to Fixnum on
+    // loop entry -- a guard that can never pass -- so every call would side-exit there.
+    // (The first loop gives that entry a state to hang the guard on.)
+    set_call_threshold(2);
+    eval("
+        def test(a)
+          s = 0
+          i = 0
+          while i < 3
+            s += a[i]
+            i += 1
+          end
+          c = 0
+          while c < 4
+            r = 0
+            while r < 3
+              s += a[r]
+              r += 1
+            end
+            c += 1
+          end
+          s
+        end
+        test([1, 2, 3])
+        test([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles("test([1, 2, 3])"), @"30");
+}
+
+#[test]
 fn test_throw_break_search_loop() {
     set_call_threshold(2);
     eval("
