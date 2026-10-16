@@ -566,11 +566,15 @@ an entire paragraph.
 Consider mentioning the return value first,
 especially if there are associated conditionals:
 
-> "Returns <something> if <blah blah blah>; otherwise returns <something else>".
+> Returns the integer permissions for the entry at the path in `self`
+> if the entry exists and is readable by others;
+> otherwise, returns `nil`:
 
 Not:
 
-> "If <blah blah blah>, returns <something>; otherwise returns <something else>."
+> If the entry at the path in `self` exists and is readable by others,
+> returns the integer permissions for the entry;
+> otherwise, returns `nil`:
 
 For `Array#count`, the synopsis is:
 
