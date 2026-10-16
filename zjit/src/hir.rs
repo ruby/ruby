@@ -8281,7 +8281,7 @@ impl Function {
             .filter(|_| is_cfunc(ary_to_enum_cme) && is_cfunc(enum_each_cme) && is_cfunc(with_index_cme));
 
         let range_each_cme = cme_of(unsafe { rb_cRange }, each_id);
-        let range_ok = is_cfunc(range_each_cme);
+        let range_ok = stock_cme(range_each_cme);
 
         let ary_reverse_cme = cme_of(unsafe { rb_cArray }, reverse_id);
         let ary_reverse_ok = is_cfunc(ary_reverse_cme);

@@ -29,6 +29,8 @@ unsafe extern "C" {
     fn rb_builtin_range_rev_start(ec: EcPtr, self_: VALUE) -> VALUE;
     fn rb_builtin_fixnum_below(ec: EcPtr, self_: VALUE, num: VALUE, lo: VALUE) -> VALUE;
     fn rb_builtin_fixnum_dec(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
+    fn rb_builtin_fixnum_above(ec: EcPtr, self_: VALUE, num: VALUE, hi: VALUE) -> VALUE;
+    fn rb_builtin_fixnum_inc_checked(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
 }
 
 pub struct Annotations {
@@ -369,6 +371,8 @@ pub fn init() -> Annotations {
     });
     builtin_funcs.insert(rb_builtin_fixnum_below as *mut c_void, FnProperties { inline: inline_fixnum_below, return_type: types::BoolExact, ..Default::default() });
     builtin_funcs.insert(rb_builtin_fixnum_dec as *mut c_void, FnProperties { inline: inline_fixnum_dec, return_type: types::Fixnum, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_fixnum_above as *mut c_void, FnProperties { inline: inline_fixnum_above, return_type: types::BoolExact, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_fixnum_inc_checked as *mut c_void, FnProperties { inline: inline_fixnum_inc_checked, return_type: types::Fixnum, ..Default::default() });
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
@@ -1437,6 +1441,27 @@ fn inline_fixnum_dec(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::I
     let num = fun.push_insn(block, hir::Insn::GuardType { val: num, guard_type: types::Fixnum, state, recompile: None });
     let one = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
     let result = fun.push_insn(block, hir::Insn::FixnumSub { left: num, right: one, state });
+    Some(result)
+}
+
+/// Inline `fixnum_above(ec, self, num, hi)` as a guarded fixnum compare;
+/// the non-fixnum sentinels fail the guard and resume in the interpreter.
+fn inline_fixnum_above(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[_self, num, hi] = args else { return None; };
+    let num = fun.push_insn(block, hir::Insn::GuardType { val: num, guard_type: types::Fixnum, state, recompile: None });
+    let hi = fun.push_insn(block, hir::Insn::GuardType { val: hi, guard_type: types::Fixnum, state, recompile: None });
+    let result = fun.push_insn(block, hir::Insn::FixnumGt { left: num, right: hi });
+    Some(result)
+}
+
+/// Inline `fixnum_inc_checked(ec, self, num)` as an overflow-checked add: the
+/// FIXNUM_MAX edge overflows, deopts, and the interpreter's C primitive
+/// produces the nil sentinel.
+fn inline_fixnum_inc_checked(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[_self, num] = args else { return None; };
+    let num = fun.push_insn(block, hir::Insn::GuardType { val: num, guard_type: types::Fixnum, state, recompile: None });
+    let one = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
+    let result = fun.push_insn(block, hir::Insn::FixnumAdd { left: num, right: one, state });
     Some(result)
 }
 

@@ -1121,6 +1121,35 @@ range_each_fixnum_loop(VALUE beg, VALUE end, VALUE range)
     return range;
 }
 
+// Loop condition for the with_jit Ruby Range#each: true when the index has
+// passed the (inclusive) limit or stopped being a fixnum (the empty-range
+// nil limit sentinel, or the FIXNUM_MAX increment sentinel).
+VALUE
+rb_builtin_fixnum_above(rb_execution_context_t *ec, VALUE self, VALUE num, VALUE hi)
+{
+    if (!FIXNUM_P(num) || !FIXNUM_P(hi)) return Qtrue;
+    return FIX2LONG(num) > FIX2LONG(hi) ? Qtrue : Qfalse;
+}
+
+// Increment a fixnum by 1; FIXNUM_MAX increments to the nil sentinel.
+VALUE
+rb_builtin_fixnum_inc_checked(rb_execution_context_t *ec, VALUE self, VALUE num)
+{
+    if (num == LONG2FIX(FIXNUM_MAX)) return Qnil;
+    return LONG2FIX(FIX2LONG(num) + 1);
+}
+
+static VALUE range_each(VALUE range);
+
+// Everything the fixnum fast path declines (endless, bignum, string/succ
+// iteration, the beginless TypeError): the original C implementation handles
+// it all, and its rb_yield resolves the Ruby caller's block.
+VALUE
+rb_builtin_range_each_fallback(rb_execution_context_t *ec, VALUE self)
+{
+    return range_each(self);
+}
+
 /*
  *  call-seq:
  *    each {|element| ... } -> self
