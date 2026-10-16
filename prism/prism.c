@@ -701,16 +701,37 @@ pm_parser_err_heredoc_term(pm_parser_t *parser, const uint8_t *ident_start, size
 /******************************************************************************/
 
 /**
+ * The largest locals table that a popped scope hands to the next pushed scope.
+ */
+#define PM_LOCALS_REUSE_CAPACITY 16
+
+/**
  * Allocate and initialize a new scope. Push it onto the scope stack.
  */
-static bool
+static void
 pm_parser_scope_push(pm_parser_t *parser, bool closed) {
-    pm_scope_t *scope = (pm_scope_t *) xmalloc(sizeof(pm_scope_t));
-    if (scope == NULL) return false;
+    pm_scope_t *scope = parser->free_scopes;
+    pm_locals_t locals = { 0 };
+
+    if (scope != NULL) {
+        parser->free_scopes = scope->previous;
+
+        /* Reuse the locals table of the popped scope when it is small, so that
+         * most scopes allocate no locals storage at all. Large tables are
+         * dropped instead, because every scope that reuses a table pays to
+         * clear it and to scan its full capacity when the locals are ordered. */
+        if (scope->locals.capacity > 0 && scope->locals.capacity <= PM_LOCALS_REUSE_CAPACITY) {
+            locals.capacity = scope->locals.capacity;
+            locals.locals = scope->locals.locals;
+            memset(locals.locals, 0, locals.capacity * sizeof(pm_local_t));
+        }
+    } else {
+        scope = (pm_scope_t *) pm_arena_alloc(&parser->metadata_arena, sizeof(pm_scope_t), PRISM_ALIGNOF(pm_scope_t));
+    }
 
     *scope = (pm_scope_t) {
         .previous = parser->current_scope,
-        .locals = { 0 },
+        .locals = locals,
         .parameters = PM_SCOPE_PARAMETERS_NONE,
         .implicit_parameters = { 0 },
         .shareable_constant = parser->current_scope == NULL ? PM_SCOPE_SHAREABLE_CONSTANT_NONE : parser->current_scope->shareable_constant,
@@ -718,7 +739,6 @@ pm_parser_scope_push(pm_parser_t *parser, bool closed) {
     };
 
     parser->current_scope = scope;
-    return true;
 }
 
 /**
@@ -876,24 +896,16 @@ pm_parser_scope_shareable_constant_set(pm_parser_t *parser, pm_shareable_constan
  */
 #define PM_LOCALS_HASH_THRESHOLD 5
 
-static void
-pm_locals_free(pm_locals_t *locals) {
-    if (locals->capacity > 0) {
-        xfree_sized(locals->locals, locals->capacity * sizeof(pm_local_t));
-    }
-}
-
 /**
  * Resize the locals list to be twice its current size. If the next capacity is
  * above the threshold for switching to a hash, then we'll switch to a hash.
  */
 static void
-pm_locals_resize(pm_locals_t *locals) {
+pm_locals_resize(pm_arena_t *arena, pm_locals_t *locals) {
     uint32_t next_capacity = locals->capacity == 0 ? 4 : (locals->capacity * 2);
     assert(next_capacity > locals->capacity);
 
-    pm_local_t *next_locals = xcalloc(next_capacity, sizeof(pm_local_t));
-    if (next_locals == NULL) abort();
+    pm_local_t *next_locals = (pm_local_t *) pm_arena_zalloc(arena, next_capacity * sizeof(pm_local_t), PRISM_ALIGNOF(pm_local_t));
 
     if (next_capacity < PM_LOCALS_HASH_THRESHOLD) {
         if (locals->size > 0) {
@@ -918,7 +930,6 @@ pm_locals_resize(pm_locals_t *locals) {
         }
     }
 
-    pm_locals_free(locals);
     locals->locals = next_locals;
     locals->capacity = next_capacity;
 }
@@ -939,9 +950,9 @@ pm_locals_resize(pm_locals_t *locals) {
  * @return True if the local was added, and false if the local already exists.
  */
 static bool
-pm_locals_write(pm_locals_t *locals, pm_constant_id_t name, uint32_t start, uint32_t length, uint32_t reads) {
+pm_locals_write(pm_arena_t *arena, pm_locals_t *locals, pm_constant_id_t name, uint32_t start, uint32_t length, uint32_t reads) {
     if (locals->size >= (locals->capacity / 4 * 3)) {
-        pm_locals_resize(locals);
+        pm_locals_resize(arena, locals);
     }
 
     locals->bloom |= (1u << (name & 31));
@@ -7268,7 +7279,7 @@ pm_parser_local_depth(pm_parser_t *parser, pm_token_t *token) {
  */
 static PRISM_INLINE void
 pm_parser_local_add(pm_parser_t *parser, pm_constant_id_t constant_id, const uint8_t *start, const uint8_t *end, uint32_t reads) {
-    pm_locals_write(&parser->current_scope->locals, constant_id, U32(start - parser->start), U32(end - start), reads);
+    pm_locals_write(&parser->metadata_arena, &parser->current_scope->locals, constant_id, U32(start - parser->start), U32(end - start), reads);
 }
 
 /**
@@ -7351,8 +7362,8 @@ static void
 pm_parser_scope_pop(pm_parser_t *parser) {
     pm_scope_t *scope = parser->current_scope;
     parser->current_scope = scope->previous;
-    pm_locals_free(&scope->locals);
-    xfree_sized(scope, sizeof(pm_scope_t));
+    scope->previous = parser->free_scopes;
+    parser->free_scopes = scope;
 }
 
 /******************************************************************************/
@@ -7991,8 +8002,12 @@ PM_STATIC_ASSERT(__LINE__, PM_CONTEXT_MAXIMUM <= 64, "Expected every context to 
 
 static bool
 context_push(pm_parser_t *parser, pm_context_t context) {
-    pm_context_node_t *context_node = (pm_context_node_t *) xmalloc(sizeof(pm_context_node_t));
-    if (context_node == NULL) return false;
+    pm_context_node_t *context_node = parser->free_contexts;
+    if (context_node != NULL) {
+        parser->free_contexts = context_node->prev;
+    } else {
+        context_node = (pm_context_node_t *) pm_arena_alloc(&parser->metadata_arena, sizeof(pm_context_node_t), PRISM_ALIGNOF(pm_context_node_t));
+    }
 
     pm_context_node_t *previous = parser->current_context;
     *context_node = (pm_context_node_t) {
@@ -8007,9 +8022,10 @@ context_push(pm_parser_t *parser, pm_context_t context) {
 
 static void
 context_pop(pm_parser_t *parser) {
-    pm_context_node_t *prev = parser->current_context->prev;
-    xfree_sized(parser->current_context, sizeof(pm_context_node_t));
-    parser->current_context = prev;
+    pm_context_node_t *context_node = parser->current_context;
+    parser->current_context = context_node->prev;
+    context_node->prev = parser->free_contexts;
+    parser->free_contexts = context_node;
 }
 
 static bool
@@ -23486,14 +23502,6 @@ void
 pm_parser_cleanup(pm_parser_t *parser) {
     pm_string_cleanup(&parser->filepath);
     pm_arena_cleanup(&parser->metadata_arena);
-
-    while (parser->current_scope != NULL) {
-        // Normally, popping the scope doesn't free the locals since it is
-        // assumed that ownership has transferred to the AST. However if we have
-        // scopes while we're freeing the parser, it's likely they came from
-        // eval scopes and we need to free them explicitly here.
-        pm_parser_scope_pop(parser);
-    }
 
     while (parser->lex_modes.index >= PM_LEX_STACK_SIZE) {
         lex_mode_pop(parser);

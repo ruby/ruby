@@ -715,8 +715,22 @@ struct pm_parser_t {
     /* The current local scope. */
     pm_scope_t *current_scope;
 
+    /*
+     * Scopes that have been popped, kept for reuse by the next push. Scopes
+     * are allocated from the metadata arena, so they are never freed
+     * individually.
+     */
+    pm_scope_t *free_scopes;
+
     /* The current parsing context. */
     pm_context_node_t *current_context;
+
+    /*
+     * Context nodes that have been popped, kept for reuse by the next push.
+     * Context nodes are allocated from the metadata arena, so they are never
+     * freed individually.
+     */
+    pm_context_node_t *free_contexts;
 
     /*
      * The encoding functions for the current file is attached to the parser as
