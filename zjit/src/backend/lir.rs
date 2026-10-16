@@ -6,7 +6,7 @@ use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
 use crate::perf;
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_LOCAL_MOD_TAG, ZJIT_STACK_MAP_PREV_FRAME_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame};
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_SKIP_VM_ENV_DATA_TAG, ZJIT_STACK_MAP_PREV_FRAME_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, get_option};
@@ -1791,6 +1791,7 @@ impl StackMap {
 
 /// Entry in a JITFrame stack map. These are opcodes for zjit_materialize_frames(),
 /// which walks them in order moving a write cursor down the VM stack.
+/// See Markdown file under `doc/` for diagram of stack layout.
 // TODO(alan): In documentation pass, centralize the mapping for these with corresponding C tag macros.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum StackMapEntry {
@@ -1802,14 +1803,12 @@ pub enum StackMapEntry {
     /// at `cfp->jit_return[-slot_index]`, plus `stack_size` VM slots. Emitted as
     /// the first entry by gen_prepare_non_leaf_call(); see zjit.h.
     BasePtr { slot_index: u32, stack_size: u32 },
-    /// Marks the next value operand as one for a local variable. This allows for filtering
-    /// writes during decoding in some situations such as EP escape.
-    LocalModifier,
+    /// Move the write cursor past the frame's env data (me/cref, specval, flags),
+    /// which already lives in VM stack memory, and start the frame's locals area.
+    SkipVmEnvData,
     /// Boundary between two control frames that one stack map describes, emitted
-    /// by `build_stack_map()` between an inlined callee and its caller. Moves the
-    /// write cursor past the callee's receiver slot and switches the frame whose
-    /// env decides whether the following [`StackMapEntry::LocalModifier`] entries
-    /// are written.
+    /// by `build_stack_map()` between an inlined callee and its caller. Resets
+    /// the cursor to be not in the locals area.
     PrevFrame,
 }
 
@@ -2740,8 +2739,8 @@ impl Assembler
                                     debug_assert_eq!(idx, 0, "base_ptr must be the first StackMap entry so later entries decode from it");
                                     StackMapEntry::encode_base_ptr(slot_index, stack_size)
                                 }
-                                StackMapEntry::LocalModifier => {
-                                    VALUE(ZJIT_STACK_MAP_LOCAL_MOD_TAG.to_usize())
+                                StackMapEntry::SkipVmEnvData => {
+                                    VALUE(ZJIT_STACK_MAP_SKIP_VM_ENV_DATA_TAG.to_usize())
                                 }
                                 StackMapEntry::PrevFrame => {
                                     VALUE(ZJIT_STACK_MAP_PREV_FRAME_TAG.to_usize())
@@ -3088,8 +3087,8 @@ impl Assembler
                     StackMapEntry::BasePtr { .. } => {
                         unreachable!("no BasePtr stackmap code in side-exit for now");
                     }
-                    StackMapEntry::LocalModifier => {
-                        VALUE(ZJIT_STACK_MAP_LOCAL_MOD_TAG.to_usize())
+                    StackMapEntry::SkipVmEnvData => {
+                        VALUE(ZJIT_STACK_MAP_SKIP_VM_ENV_DATA_TAG.to_usize())
                     }
                     StackMapEntry::PrevFrame => {
                         VALUE(ZJIT_STACK_MAP_PREV_FRAME_TAG.to_usize())

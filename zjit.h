@@ -39,11 +39,11 @@ typedef struct zjit_jit_frame {
 // `RB_SPECIAL_CONST_P()` entries write the immediate value at the current
 // cursor. That leaves non-zero pointer-aligned (8) values for encoding other
 // codes, which we use with value tagging.
-#define ZJIT_STACK_MAP_VREG_TAG       0x08
-#define ZJIT_STACK_MAP_SKIP_TAG       0x10
-#define ZJIT_STACK_MAP_BASE_PTR_TAG   0x18
-#define ZJIT_STACK_MAP_LOCAL_MOD_TAG  0x20
-#define ZJIT_STACK_MAP_PREV_FRAME_TAG 0x28
+#define ZJIT_STACK_MAP_VREG_TAG             0x08
+#define ZJIT_STACK_MAP_SKIP_TAG             0x10
+#define ZJIT_STACK_MAP_BASE_PTR_TAG         0x18
+#define ZJIT_STACK_MAP_SKIP_VM_ENV_DATA_TAG 0x20
+#define ZJIT_STACK_MAP_PREV_FRAME_TAG       0x28
 #define ZJIT_STACK_MAP_TAG_MASK 0xff
 #define ZJIT_STACK_MAP_SHIFT 8
 
@@ -77,9 +77,9 @@ ZJIT_STACK_MAP_SKIP_SIZE(VALUE entry)
 }
 
 static inline bool
-ZJIT_STACK_MAP_LOCAL_MOD_P(VALUE entry)
+ZJIT_STACK_MAP_SKIP_VM_ENV_DATA_P(VALUE entry)
 {
-    return (entry & ZJIT_STACK_MAP_TAG_MASK) == ZJIT_STACK_MAP_LOCAL_MOD_TAG;
+    return (entry & ZJIT_STACK_MAP_TAG_MASK) == ZJIT_STACK_MAP_SKIP_VM_ENV_DATA_TAG;
 }
 
 static inline bool

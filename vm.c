@@ -3008,6 +3008,14 @@ zjit_write_frame_stack(const rb_execution_context_t *ec, rb_control_frame_t *cfp
         // decides whether its locals still live in VM stack memory.
         const rb_control_frame_t *env_cfp = cfp;
         bool env_escaped = VM_ENV_ESCAPED_P(env_cfp->ep);
+        // Whether the cursor is in a frame's locals area, i.e. past the frame's
+        // SKIP_VM_ENV_DATA entry and before the next PREV_FRAME entry. Locals are
+        // not written when that frame's env escaped:
+        //   - locals in escaped envs are not in cfp->sp memory
+        //   - the stack map describes pre-escape frame state, so is stale here
+        // The slots still exist on the VM stack, so the write cursor moves past
+        // them either way to stay aligned for the frames below.
+        bool locals_area = false;
         VALUE *stack = cfp->sp;
         for (int32_t i = 0; i < stack_size; i++) {
             VALUE entry = jit_frame->stack[i];
@@ -3016,27 +3024,25 @@ zjit_write_frame_stack(const rb_execution_context_t *ec, rb_control_frame_t *cfp
                 // It's an offset from NATIVE_BASE_PTR, which is copied into
                 // cfp->jit_return, to the encoded stack slot.
                 stack--;
-                zjit_check_owned_slot(cfp, jit_frame, stack, i);
-                *stack = ((VALUE *)cfp->jit_return)[-(ssize_t)ZJIT_STACK_MAP_VREG_INDEX(entry)];
-            }
-            else if (ZJIT_STACK_MAP_LOCAL_MOD_P(entry)) {
-                // Skip writing local when env escaped:
-                //   - locals in escaped envs are not in cfp->sp memory
-                //   - the stack map describes pre-escape frame state, so is stale here
-                // The slot still exists on the VM stack, so the write cursor has to
-                // move past it either way to stay aligned for the frames below.
-                if (env_escaped) {
-                    i++;
-                    stack--;
+                if (!(locals_area && env_escaped)) {
+                    zjit_check_owned_slot(cfp, jit_frame, stack, i);
+                    *stack = ((VALUE *)cfp->jit_return)[-(ssize_t)ZJIT_STACK_MAP_VREG_INDEX(entry)];
                 }
             }
             else if (ZJIT_STACK_MAP_SKIP_P(entry)) {
                 stack -= ZJIT_STACK_MAP_SKIP_SIZE(entry);
             }
+            else if (ZJIT_STACK_MAP_SKIP_VM_ENV_DATA_P(entry)) {
+                // The env data (me/cref, specval, flags) already lives in VM stack
+                // memory. The entries that follow are this frame's locals.
+                stack -= VM_ENV_DATA_SIZE;
+                locals_area = true;
+            }
             else if (ZJIT_STACK_MAP_PREV_FRAME_P(entry)) {
                 // Move past the inlined callee's receiver slot, which sits below
                 // its local table, and continue decoding in the caller's frame.
                 stack--;
+                locals_area = false;
                 env_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(env_cfp);
                 env_escaped = VM_ENV_ESCAPED_P(env_cfp->ep);
             }
@@ -3049,8 +3055,10 @@ zjit_write_frame_stack(const rb_execution_context_t *ec, rb_control_frame_t *cfp
             else {
                 RUBY_ASSERT(RB_SPECIAL_CONST_P(entry)); // We don't GC mark stackmap entries.
                 stack--;
-                zjit_check_owned_slot(cfp, jit_frame, stack, i);
-                *stack = entry;
+                if (!(locals_area && env_escaped)) {
+                    zjit_check_owned_slot(cfp, jit_frame, stack, i);
+                    *stack = entry;
+                }
             }
             // The cursor only ever moves down, and an entry that moves it off the
             // bottom of the VM stack means the map or the anchor is malformed.

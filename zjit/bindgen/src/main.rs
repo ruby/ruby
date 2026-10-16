@@ -356,7 +356,7 @@ fn main() {
         .allowlist_var("ZJIT_STACK_MAP_VREG_TAG")
         .allowlist_var("ZJIT_STACK_MAP_SKIP_TAG")
         .allowlist_var("ZJIT_STACK_MAP_BASE_PTR_TAG")
-        .allowlist_var("ZJIT_STACK_MAP_LOCAL_MOD_TAG")
+        .allowlist_var("ZJIT_STACK_MAP_SKIP_VM_ENV_DATA_TAG")
         .allowlist_var("ZJIT_STACK_MAP_PREV_FRAME_TAG")
         .allowlist_var("ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT")
         .allowlist_var("ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK")

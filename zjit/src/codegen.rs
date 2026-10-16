@@ -3545,9 +3545,14 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
     asm_comment!(asm, "spill stack");
 
     let mut offset = state.stack_size() as i32;
-    let mut stack_map_iter = build_stack_map(jit, function, state).into_iter();
-    while let Some(entry) = stack_map_iter.next() {
+    // Whether the cursor is in a frame's locals area; see StackMapEntry::SkipVmEnvData.
+    let mut locals_area = false;
+    for entry in build_stack_map(jit, function, state) {
         match entry {
+            // Skip over locals in stack memory
+            StackMapEntry::Opnd(_) if locals_area => {
+                offset -= 1;
+            }
             StackMapEntry::Opnd(opnd) => {
                 offset -= 1;
                 asm.mov(Opnd::mem(64, SP, offset * SIZEOF_VALUE_I32), opnd);
@@ -3555,15 +3560,15 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
             StackMapEntry::Skip(skip) => {
                 offset -= skip as i32;
             }
-            StackMapEntry::LocalModifier => {
-                // Skip over locals in stack memory
-                offset -= 1;
-                _ = stack_map_iter.next();
+            StackMapEntry::SkipVmEnvData => {
+                offset -= VM_ENV_DATA_SIZE as i32;
+                locals_area = true;
             }
             StackMapEntry::PrevFrame => {
                 // The inlined callee's receiver slot. Like Skip(1), but it also
                 // switches frames on the decoder side.
                 offset -= 1;
+                locals_area = false;
             }
             // Only gen_prepare_non_leaf_call() prepends this, and it doesn't spill.
             StackMapEntry::BasePtr { .. } => unreachable!("build_stack_map() does not emit BasePtr"),
@@ -3605,7 +3610,9 @@ fn build_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> V
         // Operand stack, top-down.
         stack.extend(current_state.stack().rev().copied().map(to_entry));
         // Frame environment data (me/cref, specval, flags) already lives in memory.
-        stack.push(StackMapEntry::Skip(VM_ENV_DATA_SIZE.to_usize()));
+        // This entry also starts the locals area, so the decoder can drop the local
+        // writes below it when the frame's env has escaped.
+        stack.push(StackMapEntry::SkipVmEnvData);
         // Locals, top-down (local[L-1] .. local[0]).
         let spilled_locals = current_state.spilled_locals();
         let mut run_of_spilled_locals = 0;
@@ -3618,7 +3625,6 @@ fn build_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> V
                     stack.push(StackMapEntry::Skip(run_of_spilled_locals));
                     run_of_spilled_locals = 0;
                 }
-                stack.push(StackMapEntry::LocalModifier);
                 stack.push(to_entry(insn_id));
             }
         }
