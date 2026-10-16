@@ -8529,82 +8529,186 @@ lex_global_variable(pm_parser_t *parser) {
 }
 
 /**
- * This function checks if the current token matches a keyword. If it does, it
- * returns the token type. Otherwise, it returns PM_TOKEN_EOF. The arguments are as follows:
- *
- * * `parser` - the parser object
- * * `current_start` - pointer to the start of the current token
- * * `value` - the literal string that we're checking for
- * * `vlen` - the length of the token
- * * `state` - the state that we should transition to if the token matches
- * * `type` - the expected token type
- * * `modifier_type` - the expected modifier token type
+ * A Ruby keyword, along with the lex state that it transitions to and the
+ * token types that it produces.
  */
-static PRISM_INLINE pm_token_type_t
-lex_keyword(pm_parser_t *parser, const uint8_t *current_start, const char *value, size_t vlen, pm_lex_state_t state, pm_token_type_t type, pm_token_type_t modifier_type) {
-    if (memcmp(current_start, value, vlen) == 0) {
-        pm_lex_state_t last_state = parser->lex_state;
+typedef struct {
+    /* The keyword itself. */
+    const char *name;
 
-        if (parser->lex_state & PM_LEX_STATE_FNAME) {
-            lex_state_set(parser, PM_LEX_STATE_ENDFN);
-        } else {
-            lex_state_set(parser, state);
-            if (state == PM_LEX_STATE_BEG) {
-                parser->command_start = true;
-            }
+    /* The keyword's first, middle, and last bytes and its length, packed by
+     * PM_KEYWORD_PACK. */
+    uint32_t packed;
 
-            if ((modifier_type != PM_TOKEN_EOF) && !(last_state & (PM_LEX_STATE_BEG | PM_LEX_STATE_LABELED | PM_LEX_STATE_CLASS))) {
-                lex_state_set(parser, PM_LEX_STATE_BEG | PM_LEX_STATE_LABEL);
-                return modifier_type;
-            }
-        }
+    /* The state to transition to when the keyword is lexed. */
+    pm_lex_state_t state;
 
-        return type;
-    }
+    /* The token type of the keyword. */
+    pm_token_type_t type;
 
-    return PM_TOKEN_EOF;
+    /* The token type of the keyword in modifier position, or PM_TOKEN_EOF if
+     * the keyword has no modifier form. */
+    pm_token_type_t modifier_type;
+} pm_keyword_t;
+
+/**
+ * The length of the longest keyword, __ENCODING__.
+ */
+#define PM_KEYWORD_LENGTH_MAXIMUM 12
+
+/**
+ * Pack the first, middle (at index length / 2), and last bytes of an identifier
+ * together with its length. No two keywords pack to the same value.
+ */
+#define PM_KEYWORD_PACK(first, middle, last, length) \
+    ((uint32_t) (first) | ((uint32_t) (middle) << 8) | ((uint32_t) (last) << 16) | ((uint32_t) (length) << 24))
+
+/**
+ * The number of bits in a slot index of pm_keywords, which has
+ * 1 << PM_KEYWORD_SLOT_BITS slots.
+ */
+#define PM_KEYWORD_SLOT_BITS 6
+
+/**
+ * Return the slot in pm_keywords for a packed identifier. This is
+ * multiplicative hashing: the product is taken modulo 2^32, and the slot is its
+ * top PM_KEYWORD_SLOT_BITS bits. The top bits are used because the low bits of
+ * a product depend only on the low bits of its operands (here, the low bits of
+ * the first byte), while the top bits depend on all of them.
+ *
+ * The multiplier comes from `bin/prism keywords`, which searches for one that
+ * gives every keyword its own slot, making this a perfect hash over the
+ * keywords. Rerun it whenever the set of keywords changes. The table below is
+ * indexed with this same macro, so if two keywords ever shared a slot, the
+ * compiler would reject the duplicate initializer.
+ */
+#define PM_KEYWORD_SLOT(packed) ((uint32_t) ((uint32_t) (packed) * 0x75f796ddU) >> (32 - PM_KEYWORD_SLOT_BITS))
+
+/**
+ * Define the entry in pm_keywords for a keyword, given its first, middle, and
+ * last characters.
+ */
+#define PM_KEYWORD(name, first, middle, last, state, type, modifier_type) \
+    [PM_KEYWORD_SLOT(PM_KEYWORD_PACK(first, middle, last, sizeof(name) - 1))] = { name, PM_KEYWORD_PACK(first, middle, last, sizeof(name) - 1), state, type, modifier_type }
+
+/**
+ * The keywords, indexed by PM_KEYWORD_SLOT. Unused slots are zeroed, and a
+ * packed value of zero never matches an identifier because its length is at
+ * least one.
+ */
+static const pm_keyword_t pm_keywords[1 << PM_KEYWORD_SLOT_BITS] = {
+    PM_KEYWORD("do", 'd', 'o', 'o', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_DO, PM_TOKEN_EOF),
+    PM_KEYWORD("if", 'i', 'f', 'f', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_IF, PM_TOKEN_KEYWORD_IF_MODIFIER),
+    PM_KEYWORD("in", 'i', 'n', 'n', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_IN, PM_TOKEN_EOF),
+    PM_KEYWORD("or", 'o', 'r', 'r', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_OR, PM_TOKEN_EOF),
+    PM_KEYWORD("and", 'a', 'n', 'd', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_AND, PM_TOKEN_EOF),
+    PM_KEYWORD("def", 'd', 'e', 'f', PM_LEX_STATE_FNAME, PM_TOKEN_KEYWORD_DEF, PM_TOKEN_EOF),
+    PM_KEYWORD("end", 'e', 'n', 'd', PM_LEX_STATE_END, PM_TOKEN_KEYWORD_END, PM_TOKEN_EOF),
+    PM_KEYWORD("END", 'E', 'N', 'D', PM_LEX_STATE_END, PM_TOKEN_KEYWORD_END_UPCASE, PM_TOKEN_EOF),
+    PM_KEYWORD("for", 'f', 'o', 'r', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_FOR, PM_TOKEN_EOF),
+    PM_KEYWORD("nil", 'n', 'i', 'l', PM_LEX_STATE_END, PM_TOKEN_KEYWORD_NIL, PM_TOKEN_EOF),
+    PM_KEYWORD("not", 'n', 'o', 't', PM_LEX_STATE_ARG, PM_TOKEN_KEYWORD_NOT, PM_TOKEN_EOF),
+    PM_KEYWORD("case", 'c', 's', 'e', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_CASE, PM_TOKEN_EOF),
+    PM_KEYWORD("else", 'e', 's', 'e', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_EOF),
+    PM_KEYWORD("next", 'n', 'x', 't', PM_LEX_STATE_MID, PM_TOKEN_KEYWORD_NEXT, PM_TOKEN_EOF),
+    PM_KEYWORD("redo", 'r', 'd', 'o', PM_LEX_STATE_END, PM_TOKEN_KEYWORD_REDO, PM_TOKEN_EOF),
+    PM_KEYWORD("self", 's', 'l', 'f', PM_LEX_STATE_END, PM_TOKEN_KEYWORD_SELF, PM_TOKEN_EOF),
+    PM_KEYWORD("then", 't', 'e', 'n', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_EOF),
+    PM_KEYWORD("true", 't', 'u', 'e', PM_LEX_STATE_END, PM_TOKEN_KEYWORD_TRUE, PM_TOKEN_EOF),
+    PM_KEYWORD("when", 'w', 'e', 'n', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_WHEN, PM_TOKEN_EOF),
+    PM_KEYWORD("alias", 'a', 'i', 's', PM_LEX_STATE_FNAME | PM_LEX_STATE_FITEM, PM_TOKEN_KEYWORD_ALIAS, PM_TOKEN_EOF),
+    PM_KEYWORD("begin", 'b', 'g', 'n', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_BEGIN, PM_TOKEN_EOF),
+    PM_KEYWORD("BEGIN", 'B', 'G', 'N', PM_LEX_STATE_END, PM_TOKEN_KEYWORD_BEGIN_UPCASE, PM_TOKEN_EOF),
+    PM_KEYWORD("break", 'b', 'e', 'k', PM_LEX_STATE_MID, PM_TOKEN_KEYWORD_BREAK, PM_TOKEN_EOF),
+    PM_KEYWORD("class", 'c', 'a', 's', PM_LEX_STATE_CLASS, PM_TOKEN_KEYWORD_CLASS, PM_TOKEN_EOF),
+    PM_KEYWORD("elsif", 'e', 's', 'f', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_ELSIF, PM_TOKEN_EOF),
+    PM_KEYWORD("false", 'f', 'l', 'e', PM_LEX_STATE_END, PM_TOKEN_KEYWORD_FALSE, PM_TOKEN_EOF),
+    PM_KEYWORD("retry", 'r', 't', 'y', PM_LEX_STATE_END, PM_TOKEN_KEYWORD_RETRY, PM_TOKEN_EOF),
+    PM_KEYWORD("super", 's', 'p', 'r', PM_LEX_STATE_ARG, PM_TOKEN_KEYWORD_SUPER, PM_TOKEN_EOF),
+    PM_KEYWORD("undef", 'u', 'd', 'f', PM_LEX_STATE_FNAME | PM_LEX_STATE_FITEM, PM_TOKEN_KEYWORD_UNDEF, PM_TOKEN_EOF),
+    PM_KEYWORD("until", 'u', 't', 'l', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_UNTIL, PM_TOKEN_KEYWORD_UNTIL_MODIFIER),
+    PM_KEYWORD("while", 'w', 'i', 'e', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_WHILE, PM_TOKEN_KEYWORD_WHILE_MODIFIER),
+    PM_KEYWORD("yield", 'y', 'e', 'd', PM_LEX_STATE_ARG, PM_TOKEN_KEYWORD_YIELD, PM_TOKEN_EOF),
+    PM_KEYWORD("ensure", 'e', 'u', 'e', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_EOF),
+    PM_KEYWORD("module", 'm', 'u', 'e', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_MODULE, PM_TOKEN_EOF),
+    PM_KEYWORD("rescue", 'r', 'c', 'e', PM_LEX_STATE_MID, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_RESCUE_MODIFIER),
+    PM_KEYWORD("return", 'r', 'u', 'n', PM_LEX_STATE_MID, PM_TOKEN_KEYWORD_RETURN, PM_TOKEN_EOF),
+    PM_KEYWORD("unless", 'u', 'e', 's', PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_UNLESS, PM_TOKEN_KEYWORD_UNLESS_MODIFIER),
+    PM_KEYWORD("defined?", 'd', 'n', '?', PM_LEX_STATE_ARG, PM_TOKEN_KEYWORD_DEFINED, PM_TOKEN_EOF),
+    PM_KEYWORD("__LINE__", '_', 'N', '_', PM_LEX_STATE_END, PM_TOKEN_KEYWORD___LINE__, PM_TOKEN_EOF),
+    PM_KEYWORD("__FILE__", '_', 'L', '_', PM_LEX_STATE_END, PM_TOKEN_KEYWORD___FILE__, PM_TOKEN_EOF),
+    PM_KEYWORD("__ENCODING__", '_', 'D', '_', PM_LEX_STATE_END, PM_TOKEN_KEYWORD___ENCODING__, PM_TOKEN_EOF)
+};
+
+#undef PM_KEYWORD
+
+/**
+ * Return the keyword that the identifier corresponds to or NULL if it is not in
+ * the table.
+ */
+static PRISM_INLINE const pm_keyword_t *
+pm_keyword_find(const uint8_t *start, const uint8_t *end) {
+    ptrdiff_t width = end - start;
+    if (width < 2 || width > PM_KEYWORD_LENGTH_MAXIMUM) return NULL;
+
+    size_t uwidth = (size_t) width;
+    uint32_t packed = PM_KEYWORD_PACK(start[0], start[uwidth >> 1], start[uwidth - 1], uwidth);
+
+    const pm_keyword_t *keyword = &pm_keywords[PM_KEYWORD_SLOT(packed)];
+    return (keyword->packed == packed && memcmp(start + 1, keyword->name + 1, uwidth - 2) == 0) ? keyword : NULL;
+}
+
+/**
+ * Returns true if the bytes between start and end spell a keyword, using the
+ * same lookup that the lexer does.
+ */
+bool
+pm_keyword_p(const uint8_t *start, const uint8_t *end) {
+    return pm_keyword_find(start, end) != NULL;
 }
 
 static pm_token_type_t
 lex_identifier(pm_parser_t *parser, bool previous_command_start) {
-    // Lex as far as we can into the current identifier.
-    size_t width;
+    /* Lex as far as we can into the current identifier. */
     const uint8_t *end = parser->end;
     const uint8_t *current_start = parser->current.start;
     const uint8_t *current_end = parser->current.end;
     bool encoding_changed = parser->encoding_changed;
 
     if (encoding_changed) {
+        size_t width;
         while ((width = char_is_identifier(parser, current_end, end - current_end)) > 0) {
             current_end += width;
         }
     } else {
-        // Fast path: scan ASCII identifier bytes using wide operations.
+        /* Fast path: scan ASCII identifier bytes using wide operations. */
         current_end += scan_identifier_ascii(current_end, end);
 
-        // Byte-at-a-time fallback for the tail and any UTF-8 sequences.
+        /* Byte-at-a-time fallback for the tail and any UTF-8 sequences. */
+        size_t width;
         while ((width = char_is_identifier_utf8(current_end, end - current_end)) > 0) {
             current_end += width;
         }
     }
+
     parser->current.end = current_end;
 
-    // Now cache the length of the identifier so that we can quickly compare it
-    // against known keywords.
-    width = (size_t) (current_end - current_start);
+    /* Whether the identifier ends in ! or ?, which makes it a method name
+     * unless it spells a keyword (defined?). */
+    bool method_name = false;
 
     if (current_end < end) {
         if (((current_end + 1 >= end) || (current_end[1] != '=')) && (match(parser, '!') || match(parser, '?'))) {
-            // First we'll attempt to extend the identifier by a ! or ?. Then we'll
-            // check if we're returning the defined? keyword or just an identifier.
-            width++;
+            /* Extend the identifier by the ! or ?, so that the keyword lookup
+             * below sees the whole name. */
+            current_end++;
 
             if (
                 ((lex_state_p(parser, PM_LEX_STATE_LABEL | PM_LEX_STATE_ENDFN) && !previous_command_start) || lex_state_arg_p(parser)) &&
                 (peek(parser) == ':') && (peek_offset(parser, 1) != ':')
             ) {
-                // If we're in a position where we can accept a : at the end of an
-                // identifier, then we'll optionally accept it.
+                /* If we are in a position where we can accept a : at the end of
+                 * an identifier, then we will optionally accept it. */
                 lex_state_set(parser, PM_LEX_STATE_ARG | PM_LEX_STATE_LABELED);
                 (void) match(parser, ':');
 
@@ -8614,27 +8718,17 @@ lex_identifier(pm_parser_t *parser, bool previous_command_start) {
                 return PM_TOKEN_LABEL;
             }
 
-            if (parser->lex_state != PM_LEX_STATE_DOT) {
-                if (width == 8 && (lex_keyword(parser, current_start, "defined?", width, PM_LEX_STATE_ARG, PM_TOKEN_KEYWORD_DEFINED, PM_TOKEN_EOF) != PM_TOKEN_EOF)) {
-                    return PM_TOKEN_KEYWORD_DEFINED;
-                }
-            }
-
-            return PM_TOKEN_METHOD_NAME;
-        }
-
-        if (lex_state_p(parser, PM_LEX_STATE_FNAME) && peek_offset(parser, 1) != '~' && peek_offset(parser, 1) != '>' && (peek_offset(parser, 1) != '=' || peek_offset(parser, 2) == '>') && match(parser, '=')) {
-            // If we're in a position where we can accept a = at the end of an
-            // identifier, then we'll optionally accept it.
+            method_name = true;
+        } else if (lex_state_p(parser, PM_LEX_STATE_FNAME) && peek_offset(parser, 1) != '~' && peek_offset(parser, 1) != '>' && (peek_offset(parser, 1) != '=' || peek_offset(parser, 2) == '>') && match(parser, '=')) {
+            /* If we are in a position where we can accept a = at the end of an
+             * identifier, then we will optionally accept it. */
             return PM_TOKEN_IDENTIFIER;
-        }
-
-        if (
+        } else if (
             ((lex_state_p(parser, PM_LEX_STATE_LABEL | PM_LEX_STATE_ENDFN) && !previous_command_start) || lex_state_arg_p(parser)) &&
             peek(parser) == ':' && peek_offset(parser, 1) != ':'
         ) {
-            // If we're in a position where we can accept a : at the end of an
-            // identifier, then we'll optionally accept it.
+            /* If we are in a position where we can accept a : at the end of an
+             * identifier, then we will optionally accept it. */
             lex_state_set(parser, PM_LEX_STATE_ARG | PM_LEX_STATE_LABELED);
             (void) match(parser, ':');
 
@@ -8646,99 +8740,64 @@ lex_identifier(pm_parser_t *parser, bool previous_command_start) {
     }
 
     if (parser->lex_state != PM_LEX_STATE_DOT) {
-        pm_token_type_t type;
-
-        /* The lex state from before lex_keyword transitions it, mirroring the
-         * `state = p->lex.state` capture in parse.y's keyword handling. */
+        /* The lex state from before the keyword changes it, which decides
+         * whether the keyword is in its modifier form and whether `do` is a
+         * plain name below. */
         pm_lex_state_t previous_lex_state = parser->lex_state;
+        const pm_keyword_t *keyword = pm_keyword_find(current_start, current_end);
 
-        switch (width) {
-            case 2:
-                if (lex_keyword(parser, current_start, "do", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_DO, PM_TOKEN_EOF) != PM_TOKEN_EOF) {
-                    /* In FNAME position (a symbol like `:do` or a method name
-                     * like `def do`), `do` is a plain name rather than a
-                     * block, loop, or lambda opener, so none of the
-                     * discrimination below applies and the lambda nesting is
-                     * left untouched. */
-                    if (previous_lex_state & PM_LEX_STATE_FNAME) {
-                        return PM_TOKEN_KEYWORD_DO;
-                    }
-                    if (parser->enclosure_nesting == parser->lambda_enclosure_nesting) {
-                        // At the bare nesting level of a lambda literal (no
-                        // delimiter opened since `->`), a `do` opens the lambda
-                        // body. This is a distinct token so that a command in a
-                        // parameter default cannot consume it as its own block
-                        // (`-> a = foo do end` is `->(a = foo) do end`).
-                        //
-                        // Clear the nesting so that no token within the
-                        // `do`/`end` body is considered to be at the beginning
-                        // of a lambda; the parser restores the enclosing value
-                        // once the lambda has been fully parsed.
-                        parser->lambda_enclosure_nesting = -1;
-                        return PM_TOKEN_KEYWORD_DO_LAMBDA;
-                    }
-                    if (pm_do_loop_stack_p(parser)) {
-                        return PM_TOKEN_KEYWORD_DO_LOOP;
-                    }
-                    if (!pm_accepts_block_stack_p(parser)) {
-                        return PM_TOKEN_KEYWORD_DO_BLOCK;
-                    }
-                    return PM_TOKEN_KEYWORD_DO;
+        if (keyword != NULL) {
+            if (previous_lex_state & PM_LEX_STATE_FNAME) {
+                lex_state_set(parser, PM_LEX_STATE_ENDFN);
+            } else {
+                lex_state_set(parser, keyword->state);
+                if (keyword->state == PM_LEX_STATE_BEG) {
+                    parser->command_start = true;
                 }
 
-                if ((type = lex_keyword(parser, current_start, "if", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_IF, PM_TOKEN_KEYWORD_IF_MODIFIER)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "in", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_IN, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "or", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_OR, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                break;
-            case 3:
-                if ((type = lex_keyword(parser, current_start, "and", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_AND, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "def", width, PM_LEX_STATE_FNAME, PM_TOKEN_KEYWORD_DEF, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "end", width, PM_LEX_STATE_END, PM_TOKEN_KEYWORD_END, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "END", width, PM_LEX_STATE_END, PM_TOKEN_KEYWORD_END_UPCASE, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "for", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_FOR, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "nil", width, PM_LEX_STATE_END, PM_TOKEN_KEYWORD_NIL, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "not", width, PM_LEX_STATE_ARG, PM_TOKEN_KEYWORD_NOT, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                break;
-            case 4:
-                if ((type = lex_keyword(parser, current_start, "case", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_CASE, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "else", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "next", width, PM_LEX_STATE_MID, PM_TOKEN_KEYWORD_NEXT, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "redo", width, PM_LEX_STATE_END, PM_TOKEN_KEYWORD_REDO, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "self", width, PM_LEX_STATE_END, PM_TOKEN_KEYWORD_SELF, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "then", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "true", width, PM_LEX_STATE_END, PM_TOKEN_KEYWORD_TRUE, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "when", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_WHEN, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                break;
-            case 5:
-                if ((type = lex_keyword(parser, current_start, "alias", width, PM_LEX_STATE_FNAME | PM_LEX_STATE_FITEM, PM_TOKEN_KEYWORD_ALIAS, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "begin", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_BEGIN, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "BEGIN", width, PM_LEX_STATE_END, PM_TOKEN_KEYWORD_BEGIN_UPCASE, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "break", width, PM_LEX_STATE_MID, PM_TOKEN_KEYWORD_BREAK, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "class", width, PM_LEX_STATE_CLASS, PM_TOKEN_KEYWORD_CLASS, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "elsif", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_ELSIF, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "false", width, PM_LEX_STATE_END, PM_TOKEN_KEYWORD_FALSE, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "retry", width, PM_LEX_STATE_END, PM_TOKEN_KEYWORD_RETRY, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "super", width, PM_LEX_STATE_ARG, PM_TOKEN_KEYWORD_SUPER, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "undef", width, PM_LEX_STATE_FNAME | PM_LEX_STATE_FITEM, PM_TOKEN_KEYWORD_UNDEF, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "until", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_UNTIL, PM_TOKEN_KEYWORD_UNTIL_MODIFIER)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "while", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_WHILE, PM_TOKEN_KEYWORD_WHILE_MODIFIER)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "yield", width, PM_LEX_STATE_ARG, PM_TOKEN_KEYWORD_YIELD, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                break;
-            case 6:
-                if ((type = lex_keyword(parser, current_start, "ensure", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "module", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_MODULE, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "rescue", width, PM_LEX_STATE_MID, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "return", width, PM_LEX_STATE_MID, PM_TOKEN_KEYWORD_RETURN, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "unless", width, PM_LEX_STATE_BEG, PM_TOKEN_KEYWORD_UNLESS, PM_TOKEN_KEYWORD_UNLESS_MODIFIER)) != PM_TOKEN_EOF) return type;
-                break;
-            case 8:
-                if ((type = lex_keyword(parser, current_start, "__LINE__", width, PM_LEX_STATE_END, PM_TOKEN_KEYWORD___LINE__, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                if ((type = lex_keyword(parser, current_start, "__FILE__", width, PM_LEX_STATE_END, PM_TOKEN_KEYWORD___FILE__, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                break;
-            case 12:
-                if ((type = lex_keyword(parser, current_start, "__ENCODING__", width, PM_LEX_STATE_END, PM_TOKEN_KEYWORD___ENCODING__, PM_TOKEN_EOF)) != PM_TOKEN_EOF) return type;
-                break;
+                if ((keyword->modifier_type != PM_TOKEN_EOF) && !(previous_lex_state & (PM_LEX_STATE_BEG | PM_LEX_STATE_LABELED | PM_LEX_STATE_CLASS))) {
+                    lex_state_set(parser, PM_LEX_STATE_BEG | PM_LEX_STATE_LABEL);
+                    return keyword->modifier_type;
+                }
+            }
+
+            if (keyword->type == PM_TOKEN_KEYWORD_DO) {
+                /* In FNAME position (a symbol like `:do` or a method name like
+                 * `def do`), `do` is a plain name rather than a block, loop, or
+                 * lambda opener, so none of the discrimination below applies
+                 * and the lambda nesting is left untouched. */
+                if (previous_lex_state & PM_LEX_STATE_FNAME) {
+                    return PM_TOKEN_KEYWORD_DO;
+                }
+                if (parser->enclosure_nesting == parser->lambda_enclosure_nesting) {
+                    /* At the bare nesting level of a lambda literal (no
+                     * delimiter opened since `->`), a `do` opens the lambda
+                     * body. This is a distinct token so that a command in a
+                     * parameter default cannot consume it as its own block
+                     * (`-> a = foo do end` is `->(a = foo) do end`).
+                     *
+                     * Clear the nesting so that no token within the `do`/`end`
+                     * body is considered to be at the beginning of a lambda;
+                     * the parser restores the enclosing value once the lambda
+                     * has been fully parsed. */
+                    parser->lambda_enclosure_nesting = -1;
+                    return PM_TOKEN_KEYWORD_DO_LAMBDA;
+                }
+                if (pm_do_loop_stack_p(parser)) {
+                    return PM_TOKEN_KEYWORD_DO_LOOP;
+                }
+                if (!pm_accepts_block_stack_p(parser)) {
+                    return PM_TOKEN_KEYWORD_DO_BLOCK;
+                }
+                return PM_TOKEN_KEYWORD_DO;
+            }
+
+            return keyword->type;
         }
+    }
+
+    if (method_name) {
+        return PM_TOKEN_METHOD_NAME;
     }
 
     if (encoding_changed) {

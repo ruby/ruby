@@ -124,6 +124,7 @@ module Ruby::Prism # :nodoc:
       "pm_string_query_local",
       "pm_string_query_constant",
       "pm_string_query_method_name",
+      "pm_string_query_keyword",
       []
     )
 
@@ -720,6 +721,11 @@ module Ruby::Prism # :nodoc:
       # Mirrors the C extension's StringQuery::method_name? method.
       def method_name?(string)
         query(LibRubyParser.pm_string_query_method_name(string, string.bytesize, string.encoding.name))
+      end
+
+      # Mirrors the C extension's StringQuery::keyword? method.
+      def keyword?(string)
+        query(LibRubyParser.pm_string_query_keyword(string, string.bytesize, string.encoding.name))
       end
 
       private

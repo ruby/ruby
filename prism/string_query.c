@@ -2,6 +2,7 @@
 
 #include "prism/internal/char.h"
 #include "prism/internal/encoding.h"
+#include "prism/internal/parser.h"
 
 #include <assert.h>
 #include <string.h>
@@ -163,4 +164,17 @@ pm_string_query_method_name(const uint8_t *source, size_t length, const char *en
 #undef C1
 #undef C2
 #undef C3
+}
+
+/**
+ * Check that the slice is a keyword. Keywords are spelled in ASCII, so any
+ * ASCII-compatible encoding spells them with the same bytes.
+ */
+pm_string_query_t
+pm_string_query_keyword(const uint8_t *source, size_t length, const char *encoding_name) {
+    if (pm_encoding_find((const uint8_t *) encoding_name, (const uint8_t *) (encoding_name + strlen(encoding_name))) == NULL) {
+        return PM_STRING_QUERY_ERROR;
+    }
+
+    return pm_keyword_p(source, source + length) ? PM_STRING_QUERY_TRUE : PM_STRING_QUERY_FALSE;
 }

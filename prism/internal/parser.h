@@ -995,4 +995,10 @@ void pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *sourc
  */
 void pm_parser_cleanup(pm_parser_t *parser);
 
+/*
+ * Returns true if the bytes between start and end spell a keyword, using the
+ * same lookup that the lexer does.
+ */
+bool pm_keyword_p(const uint8_t *start, const uint8_t *end);
+
 #endif

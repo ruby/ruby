@@ -46,6 +46,10 @@ module Ruby::Prism
       assert_equal("true", with_ractor("foo?") { |source| StringQuery.method_name?(source) })
     end
 
+    def test_string_query_keyword
+      assert_equal("true", with_ractor("defined?") { |source| StringQuery.keyword?(source) })
+    end
+
     if !ENV["PRISM_BUILD_MINIMAL"]
       def test_dump_file
         result = with_ractor(__FILE__) { |filepath| Ruby::Prism.dump_file(filepath) }

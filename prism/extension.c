@@ -1678,6 +1678,20 @@ string_query_method_name_p(VALUE self, VALUE string) {
     return string_query(pm_string_query_method_name(source, RSTRING_LEN(string), rb_enc_get(string)->name));
 }
 
+/**
+ * :markup: markdown
+ * call-seq:
+ *   keyword?(string) -> bool
+ *
+ * Returns true if the string is a valid keyword, such as `if`, `defined?`, or
+ * `__FILE__`.
+ */
+static VALUE
+string_query_keyword_p(VALUE self, VALUE string) {
+    const uint8_t *source = (const uint8_t *) check_string(string);
+    return string_query(pm_string_query_keyword(source, RSTRING_LEN(string), rb_enc_get(string)->name));
+}
+
 /******************************************************************************/
 /* Initialization of the extension                                            */
 /******************************************************************************/
@@ -1778,6 +1792,7 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrismStringQuery, "local?", string_query_local_p, 1);
     rb_define_singleton_method(rb_cPrismStringQuery, "constant?", string_query_constant_p, 1);
     rb_define_singleton_method(rb_cPrismStringQuery, "method_name?", string_query_method_name_p, 1);
+    rb_define_singleton_method(rb_cPrismStringQuery, "keyword?", string_query_keyword_p, 1);
 
     Init_prism_api_node();
 }
