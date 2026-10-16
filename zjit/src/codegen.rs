@@ -356,6 +356,7 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
     // Compile the ISEQ. When function is None, this is a lazy compile
     // from a stub hit -- wrap in a trace event covering the full compile.
     let mut version = IseqVersion::new(iseq);
+    let start_pos = cb.get_write_pos();
     let code_ptrs = if function.is_none() {
         trace_compile_phase(&iseq_get_location(iseq, 0), || gen_iseq_body(cb, iseq, version, function))
     } else {
@@ -367,6 +368,13 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
             incr_counter!(compiled_iseq_count);
             // Give the new version a fresh budget of recompile exits. See exit_recompile().
             payload.num_exits_until_invalidate = get_option!(num_exits_until_invalidate);
+            if get_option!(trace_compiles, false) {
+                if let Some(tracer) = ZJITState::get_tracer() {
+                    let size = cb.get_write_pos().saturating_sub(start_pos) as u64;
+                    let total = cb.get_write_pos() as u64;
+                    tracer.write_compile_size(&iseq_get_location(iseq, 0), size, total);
+                }
+            }
         }
         Err(err) => {
             unsafe { version.as_mut() }.status = IseqStatus::CantCompile(err.clone());

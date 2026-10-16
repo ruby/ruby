@@ -1223,6 +1223,53 @@ impl PerfettoTracer {
         let _ = self.writer.flush();
     }
 
+    // Record compilation event with code-size metadata in the FXT trace.
+    pub fn write_compile_size(&mut self, iseq_name: &str, size_bytes: u64, total_bytes: u64) {
+        let ts_nanos = self.start_time.elapsed().as_nanos() as u64;
+
+        let category_ref = self.intern_string("compile");
+        let name_ref = self.intern_string(iseq_name);
+        let size_name_ref = self.intern_string("size");
+        let total_name_ref = self.intern_string("total");
+
+        let size_words = if size_bytes <= u32::MAX as u64 { 1 } else { 2 };
+        let total_words = if total_bytes <= u32::MAX as u64 { 1 } else { 2 };
+        let event_words: u64 = 2 + size_words + total_words;
+        let header: u64 = 4u64
+            | (event_words << 4)
+            | (2u64 << 20)
+            | (1u64 << 24)
+            | ((category_ref as u64) << 32)
+            | ((name_ref as u64) << 48);
+
+        self.write_word(header);
+        self.write_word(ts_nanos);
+        self.write_uint_arg(size_name_ref, size_bytes);
+        self.write_uint_arg(total_name_ref, total_bytes);
+
+        self.event_count += 1;
+
+        use std::io::Write;
+        let _ = self.writer.flush();
+    }
+
+    // Encode numeric argument using the appropriate FXT representation for compile size.
+    fn write_uint_arg(&mut self, name_ref: u16, value: u64) {
+        if value <= u32::MAX as u64 {
+            let arg_header: u64 = 2u64
+                | (1u64 << 4)
+                | ((name_ref as u64) << 16)
+                | (value << 32);
+            self.write_word(arg_header);
+        } else {
+            let arg_header: u64 = 4u64
+                | (2u64 << 4)
+                | ((name_ref as u64) << 16);
+            self.write_word(arg_header);
+            self.write_word(value);
+        }
+    }
+
     pub fn write_event(&mut self, category: &str, reason: &str, frames: &[String]) {
         let ts_nanos = self.start_time.elapsed().as_nanos() as u64;
 
