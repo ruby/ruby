@@ -5,7 +5,7 @@ use crate::asm::CodeBlock;
 use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
-use crate::hir::{Insn, iseq_to_hir};
+use crate::hir::{Insn, InsnId, iseq_to_hir};
 use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_exits_until_invalidate};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
@@ -1344,6 +1344,52 @@ fn test_licm_hoists_length_of_constant_array_in_fused_map() {
         test
     ");
     assert_snapshot!(assert_compiles("test.sum"), @"110");
+}
+
+#[test]
+fn test_yield_throwing_handler_cascade() {
+    // Profile one literal block and one Proc at the same yield before compiling
+    // the yielder. Both ISEQs contain throw, and both should take a direct
+    // dispatch arm backed by a real VM block frame.
+    set_call_threshold(3);
+    eval("
+        def throwing_handler_cascade(value)
+          result = yield(value)
+          [:yielded, result]
+        end
+
+        def literal_throw_driver(value)
+          result = throwing_handler_cascade(value) do |should_break|
+            break :literal_break if should_break
+            :literal_body
+          end
+          [result, :literal_after]
+        end
+
+        def proc_throw_driver(value)
+          handler = proc do |should_return|
+            return :proc_return if should_return
+            :proc_body
+          end
+          result = throwing_handler_cascade(value, &handler)
+          [result, :proc_after]
+        end
+
+        literal_throw_driver(false)
+        proc_throw_driver(false)
+    ");
+
+    let iseq = get_method_iseq("self", "throwing_handler_cascade");
+    let function = iseq_to_hir(iseq).unwrap();
+    let direct_arms = (0..function.num_insns())
+        .filter(|&index| matches!(function.find(InsnId::from(index)), Insn::InvokeBlockIseqDirect { .. }))
+        .count();
+    assert_eq!(2, direct_arms, "expected direct dispatch arms for the throwing ISEQ and Proc handlers");
+
+    assert_snapshot!(
+        assert_compiles_allowing_exits("[literal_throw_driver(true), proc_throw_driver(true)]"),
+        @"[[:literal_break, :literal_after], :proc_return]"
+    );
 }
 
 #[test]

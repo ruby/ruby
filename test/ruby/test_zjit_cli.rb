@@ -503,6 +503,162 @@ class TestZJITCLI < Test::Unit::TestCase
     RUBY
   end
 
+  def test_throwing_block_semantics
+    expected = [
+      [[:break, :payload], :break_caller_continued],
+      [:nonlocal_return, :payload],
+      ["LocalJumpError", :break, :orphan_break],
+      [:proc_break, :proc_caller_continued],
+      [[:yielded, :lambda_return], :lambda_caller_continued],
+      [:nested_break, :nested_caller_continued],
+      [:ensure_break, [:ensured]],
+      [:throwing_body, :plain_body, :throwing_body, :plain_body,
+       :mixed_break, :plain_body, :mixed_break, :plain_body],
+    ].inspect
+    script = <<~'RUBY'
+      def yielding(value = nil)
+        result = yield(value)
+        [:yielded, result]
+      end
+
+      def break_case
+        result = yielding(:payload) { |value| break [:break, value] }
+        [result, :break_caller_continued]
+      end
+
+      def nonlocal_return_case
+        yielding(:payload) { |value| return [:nonlocal_return, value] }
+        :unreachable
+      end
+
+      def make_orphan_break_proc
+        proc { break :orphan_break }
+      end
+
+      def orphan_break_case
+        yielding(&make_orphan_break_proc)
+      rescue LocalJumpError => error
+        [error.class.name, error.reason, error.exit_value]
+      end
+
+      def forward_as_proc(&block)
+        yielding(&block)
+        :unreachable
+      end
+
+      def proc_break_case
+        result = forward_as_proc { break :proc_break }
+        [result, :proc_caller_continued]
+      end
+
+      def lambda_return_case
+        handler = ->(_value) { return :lambda_return }
+        result = yielding(&handler)
+        [result, :lambda_caller_continued]
+      end
+
+      def nested_inner
+        yield
+      end
+
+      def nested_outer
+        nested_inner { yield }
+        :unreachable
+      end
+
+      def nested_break_case
+        result = nested_outer { break :nested_break }
+        [result, :nested_caller_continued]
+      end
+
+      def ensured_yielder
+        begin
+          yield
+        ensure
+          $throw_ensure_log << :ensured
+        end
+      end
+
+      def ensure_break_case
+        $throw_ensure_log = []
+        result = ensured_yielder { break :ensure_break }
+        [result, $throw_ensure_log]
+      end
+
+      def mixed_yielder(value)
+        yield(value)
+      end
+
+      def mixed_throwing(value)
+        mixed_yielder(value) do |should_break|
+          break :mixed_break if should_break
+          :throwing_body
+        end
+      end
+
+      def mixed_plain
+        mixed_yielder(false) { :plain_body }
+      end
+
+      mixed = 8.times.map do |index|
+        index.even? ? mixed_throwing(index >= 4) : mixed_plain
+      end
+
+      [
+        break_case,
+        nonlocal_return_case,
+        orphan_break_case,
+        proc_break_case,
+        lambda_return_case,
+        nested_break_case,
+        ensure_break_case,
+        mixed,
+      ]
+    RUBY
+
+    assert_runs expected, script, zjit: false
+    assert_runs expected, script, call_threshold: 1
+    assert_runs expected, script, call_threshold: 2
+  end
+
+  def test_throwing_block_handler_cascade
+    expected = [[[:literal_break, :literal_after], :proc_return], true, true].inspect
+    assert_runs expected, <<~'RUBY', call_threshold: 3, num_profiles: 2, stats: :quiet
+      def throwing_handler_cascade(value)
+        result = yield(value)
+        [:yielded, result]
+      end
+
+      def literal_throw_driver(value)
+        result = throwing_handler_cascade(value) do |should_break|
+          break :literal_break if should_break
+          :literal_body
+        end
+        [result, :literal_after]
+      end
+
+      def proc_throw_driver(value)
+        handler = proc do |should_return|
+          return :proc_return if should_return
+          :proc_body
+        end
+        result = throwing_handler_cascade(value, &handler)
+        [result, :proc_after]
+      end
+
+      literal_throw_driver(false)
+      proc_throw_driver(false)
+      direct_before = RubyVM::ZJIT.stats(:block_iseq_direct_optimized_send_count)
+      fallback_before = RubyVM::ZJIT.stats(:send_fallback_invokeblock_not_specialized)
+      values = [literal_throw_driver(true), proc_throw_driver(true)]
+      [
+        values,
+        RubyVM::ZJIT.stats(:block_iseq_direct_optimized_send_count) >= direct_before + 2,
+        RubyVM::ZJIT.stats(:send_fallback_invokeblock_not_specialized) == fallback_before,
+      ]
+    RUBY
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT

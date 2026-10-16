@@ -2687,11 +2687,10 @@ fn gen_invokeproc(
     )
 }
 
-/// Compile `yield`. Inlines the block ISEQ frame like `invokeblock` instead of calling vm_yield.
-/// The block handler is read from the enclosing frame's LEP (`level` hops up), guarded to be the
-/// comptime-known ISEQ block, and its frame is pushed here before jumping to the block's JIT entry.
-/// On a guard miss, side-exit and recompile. The HIR gate ensures the block is simple + lead-only
-/// + non-throwing.
+/// Compile a direct ISEQ block call instead of calling vm_yield. The block handler has already
+/// been guarded as the expected ISEQ (monomorphically or by a dispatch arm), and its real VM
+/// block frame is pushed here before jumping to the block's JIT entry. The HIR gate ensures the
+/// block has a simple, exact-arity parameter shape; the frame supports compiled non-local exits.
 fn gen_invoke_block_iseq_direct(
     cb: &mut CodeBlock,
     jit: &mut JITState,
@@ -4358,10 +4357,11 @@ pub(crate) fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
     false
 }
 
-/// True if the block ISEQ contains a `throw` opcode (break, non-local return). ZJIT can't
-/// compile `throw`, so inlining such a block's frame would side-exit + deopt on every call.
-/// These blocks fall back to `vm_yield`, which handles the non-local exit in C.
-/// (`next`/`redo` lower to `leave`/`jump`, not `throw`, so they stay inlinable.)
+/// True if the block ISEQ contains a `throw` opcode (break, non-local return).
+/// Frame/body-inlining paths use this to stay conservative until unwinding through their
+/// inlined frame shapes is covered independently. Direct ISEQ block calls push a real VM
+/// block frame and do not need this restriction. (`next`/`redo` lower to `leave`/`jump`,
+/// not `throw`.)
 pub(crate) fn block_iseq_may_throw(iseq: IseqPtr) -> bool {
     let encoded_size = unsafe { rb_iseq_encoded_size(iseq) };
     let mut insn_idx: u32 = 0;
