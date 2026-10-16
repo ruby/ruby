@@ -323,6 +323,39 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1] * 1000, a)
   end
 
+  def test_set_operations_with_immediates
+    assert_equal(@cls[1, 2], @cls[1, nil, 2, false] - @cls[nil, false])
+    assert_equal(@cls[], @cls[0.0] - @cls[-0.0])
+    assert_equal(@cls[], @cls[-0.0] - @cls[0.0])
+    assert_equal(@cls[:a, true], @cls[1, :a, "a", true] & @cls[true, :a, nil])
+    assert_equal(@cls[1, nil, :a, "a"], @cls[1, nil] | @cls[nil, :a, "a", 1])
+    assert_send([@cls[1, nil], :intersect?, @cls[:a, nil]])
+    assert_not_send([@cls[1, nil], :intersect?, @cls[:a, false]])
+  end
+
+  def test_set_operations_with_redefined_eql
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class Integer
+        def eql?(other) = other.nil? || super
+      end
+      assert_equal([], [1, 2] - [nil])
+      assert_equal([1], [1] & [nil])
+      assert_equal([nil], [nil] | [1])
+      assert_send([[1], :intersect?, [nil]])
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      o = Object.new
+      def o.eql?(other)
+        Integer.class_eval { def eql?(other) = other.nil? || super }
+        false
+      end
+      assert_equal([o], [o, 1, 2] - [nil])
+    end;
+  end
+
   def test_LSHIFT # '<<'
     a = @cls[]
     a << 1
