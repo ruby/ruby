@@ -18,6 +18,17 @@ class TestShellwords < Test::Unit::TestCase
                  shellwords(cmd2))
   end
 
+  def test_backslash_newline
+    assert_equal(["foobar"], shellwords("foo\\\nbar"))
+    assert_equal(["foo", "bar"], shellwords("foo \\\n bar"))
+    assert_equal(["foo", "bar"], shellwords("foo\\\n bar"))
+    assert_equal(["foo"], shellwords("foo \\\n"))
+    assert_equal([], shellwords("\\\n"))
+    assert_equal(["foobar"], shellwords("\"foo\\\nbar\""))
+    assert_equal(["foo\\\nbar"], shellwords("'foo\\\nbar'"))
+    assert_equal(["foo\nbar"], shellwords("foo'\n'bar"))
+  end
+
   def test_unmatched_double_quote
     bad_cmd = 'one two "three'
     assert_raise ArgumentError do

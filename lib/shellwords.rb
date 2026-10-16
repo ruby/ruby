@@ -89,6 +89,7 @@ module Shellwords
   def shellsplit(line)
     words = []
     field = String.new
+    field_started = false
     line.scan(/\G\s*(?>([^\0\s\\\'\"]+)|'([^\0\']*)'|"((?:[^\0\"\\]|\\[^\0])*)"|(\\[^\0]?)|(\S))(\s|\z)?/m) do
       |word, sq, dq, esc, garbage, sep|
       if garbage
@@ -104,10 +105,16 @@ module Shellwords
       #   characters when considered special:
       #
       #   $ ` " \ <newline>
-      field << (word || sq || (dq && dq.gsub(/\\([$`"\\\n])/, '\\1')) || esc.gsub(/\\(.)/, '\\1'))
-      if sep
+      # A backslash-newline outside quotes is a line continuation and is
+      # removed entirely.
+      unless esc == "\\\n"
+        field << (word || sq || (dq && dq.gsub(/\\([$`"\\\n])/) { $1 == "\n" ? "" : $1 }) || esc.gsub(/\\(.)/, '\\1'))
+        field_started = true
+      end
+      if sep && field_started
         words << field
         field = String.new
+        field_started = false
       end
     end
     words
