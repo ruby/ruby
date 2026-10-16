@@ -2233,7 +2233,7 @@ ary_scan_init(struct ary_scan *scan, VALUE item)
  * is not of the kind of +item+, or +len+ if there is no such element.
  */
 static rb_len_t
-ary_scan_forward(const struct ary_scan *scan, const VALUE *ptr,
+ary_scan_forward(const struct ary_scan scan, const VALUE *ptr,
                  rb_len_t i, rb_len_t len, VALUE item)
 {
     const VALUE mask = scan->mask, tag = scan->tag;
