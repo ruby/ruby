@@ -2087,7 +2087,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
         if (!UNDEF_P(vcapa) && !NIL_P(vcapa)) {
             long capa = NUM2LONG(vcapa);
             long len = 0;
-            int termlen = enc ? rb_enc_mbminlen(enc) : 1;
+            int termlen;
 
             if (capa < STR_BUF_MIN_SIZE) {
                 capa = STR_BUF_MIN_SIZE;
@@ -2100,6 +2100,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
                 }
                 if (orig == str) n = 0;
             }
+            termlen = enc ? rb_enc_mbminlen(enc) : TERM_LEN(n == 1 ? orig : str);
             str_modifiable(str);
             if (STR_EMBED_P(str) || FL_TEST(str, STR_SHARED|STR_NOFREE)) {
                 /* make noembed always */
@@ -2133,7 +2134,13 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
         }
         if (enc) {
             str_modifiable(str);
-            rb_enc_raw_set(str, enc);
+            if (UNDEF_P(vcapa) || NIL_P(vcapa)) {
+                rb_enc_associate(str, enc);
+            }
+            else {
+                /* the buffer is already sized for enc's terminator */
+                rb_enc_raw_set(str, enc);
+            }
             ENC_CODERANGE_CLEAR(str);
         }
     }
