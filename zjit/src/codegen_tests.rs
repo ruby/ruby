@@ -1282,6 +1282,57 @@ fn test_yield_refined_proc_copy_keeps_refinements() {
 }
 
 #[test]
+fn test_yield_symbol_handler_specialized_and_invalidated() {
+    // `yield 5` to &:succ compiles like `5.succ`; redefining Integer#succ afterwards
+    // must invalidate the inlined body.
+    set_call_threshold(2);
+    eval("
+        def foo = yield(5)
+        def test = foo(&:succ)
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"6");
+    assert_snapshot!(inspect("
+        class Integer
+          def succ = self + 100
+        end
+        test
+    "), @"105");
+}
+
+#[test]
+fn test_yield_symbol_handler_with_kwargs_stays_generic() {
+    // `yield(k: 1)` to &:itself makes the keyword hash the receiver ({k: 1}.itself), so the
+    // Symbol arm, which takes the single positional argument as the receiver, must not apply.
+    set_call_threshold(2);
+    eval("
+        def foo = yield(k: 1)
+        def test = foo(&:itself)
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"{k: 1}");
+}
+
+#[test]
+fn test_yield_symbol_handler_private_method_raises() {
+    // Symbol procs call with public visibility: a private target (block_given? is a
+    // private, inlinable Kernel method) or a protected one must raise NoMethodError.
+    set_call_threshold(2);
+    eval("
+        class Integer
+          protected def zjit_prot = 1
+        end
+        def foo = yield(5)
+        def priv = (foo(&:block_given?) rescue $!.class)
+        def prot = (foo(&:zjit_prot) rescue $!.class)
+        priv; priv; prot; prot
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("[priv, prot]"), @"[NoMethodError, NoMethodError]");
+}
+
+#[test]
 fn test_yield_break() {
     set_call_threshold(2);
     eval("

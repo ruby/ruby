@@ -1047,6 +1047,11 @@ pub enum Insn {
     /// block handler, or 0 for anything else. Cannot raise or allocate; used by
     /// the invokeblock Proc handler arm.
     ProcIseqCaptured { handler: InsnId },
+    /// `yield recv` to a Symbol block handler: calls `recv.sym` like the
+    /// interpreter's vm_yield_with_symbol. The symbol is compile-time known,
+    /// so fold_constants can resolve and inline the target method exactly as
+    /// it would for an explicit `{ |x| x.sym }` block body.
+    InvokeSymbolYield { sym: VALUE, recv: InsnId, state: InsnId },
     StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
     /// Call rb_str_getbyte with known-Fixnum index
@@ -1772,6 +1777,10 @@ macro_rules! for_each_operand_impl {
             Insn::ProcIseqCaptured { handler } => {
                 $visit_one!(*handler);
             }
+            Insn::InvokeSymbolYield { recv, state, .. } => {
+                $visit_one!(*recv);
+                $visit_one!(*state);
+            }
             Insn::HashAref { hash, key, state }
             | Insn::HashKeyP { hash, key, state }
             | Insn::HashFetch { hash, key, state }
@@ -1989,6 +1998,7 @@ impl Insn {
             Insn::StringCopy { .. } => allocates,
             Insn::StringCoderangeScan { .. } => effects::Any,
             Insn::ProcIseqCaptured { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
+            Insn::InvokeSymbolYield { .. } => effects::Any,
             Insn::StringIntern { .. } => effects::Any,
             Insn::StringConcat { .. } => effects::Any,
             Insn::StringGetbyte { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
@@ -2420,6 +2430,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::HashSize { hash } => { write!(f, "HashSize {hash}") }
             Insn::StringCoderangeScan { string } => { write!(f, "StringCoderangeScan {string}") }
             Insn::ProcIseqCaptured { handler } => { write!(f, "ProcIseqCaptured {handler}") }
+            Insn::InvokeSymbolYield { sym, recv, .. } => { write!(f, "InvokeSymbolYield {}, {recv}", sym.print(self.ptr_map)) }
             Insn::HashLookupOrUndef { hash, key } => { write!(f, "HashLookupOrUndef {hash}, {}", key.print(self.ptr_map)) }
             Insn::HashKeyP { hash, key, .. } => { write!(f, "HashKeyP {hash}, {key}")}
             Insn::HashFetch { hash, key, .. } => { write!(f, "HashFetch {hash}, {key}")}
@@ -3335,11 +3346,14 @@ struct BlockHandlerArms {
     /// or a stored proc passed as a block). A Proc handler wrapping one of them takes
     /// the same direct block call as an ISEQ handler. Monomorphic sites get this arm too.
     proc_iseqs: Vec<IseqPtr>,
+    /// The profiled static Symbol handler (`&:sym`) of a single-argument yield, which
+    /// becomes InvokeSymbolYield: `yield x` is `x.sym`.
+    symbol: Option<VALUE>,
 }
 
 impl BlockHandlerArms {
     fn is_empty(&self) -> bool {
-        !self.ifunc && self.proc_iseqs.is_empty()
+        !self.ifunc && self.proc_iseqs.is_empty() && self.symbol.is_none()
     }
 }
 
@@ -3782,6 +3796,23 @@ impl Function {
             });
             let ifunc_result = self.push_insn(ifunc_block, Insn::InvokeBlockIfunc { cd, block_handler, args: args.clone(), state });
             self.push_insn(ifunc_block, Insn::Jump(BranchEdge { target: join_block, args: vec![ifunc_result] }));
+            block = next_block;
+        }
+
+        if let Some(sym) = arms.symbol {
+            // Static symbols are interned, so an identity compare against the profiled
+            // symbol suffices. The handler is a raw CInt64 specval load; compare raw bits.
+            let expected_sym = self.push_insn(block, Insn::Const { val: Const::CInt64(sym.as_i64()) });
+            let sym_matches = self.push_insn(block, Insn::IsBitEqual { left: block_handler, right: expected_sym });
+            let sym_block = self.new_block(insn_idx);
+            let next_block = self.new_block(insn_idx);
+            self.push_insn(block, Insn::CondBranch {
+                val: sym_matches,
+                if_true: BranchEdge { target: sym_block, args: vec![] },
+                if_false: BranchEdge { target: next_block, args: vec![] },
+            });
+            let sym_result = self.push_insn(sym_block, Insn::InvokeSymbolYield { sym, recv: args[0], state });
+            self.push_insn(sym_block, Insn::Jump(BranchEdge { target: join_block, args: vec![sym_result] }));
             block = next_block;
         }
 
@@ -4233,6 +4264,7 @@ impl Function {
             Insn::HashSize { .. } => types::Fixnum,
             Insn::StringCoderangeScan { .. } => types::CInt64,
             Insn::ProcIseqCaptured { .. } => types::CInt64,
+            Insn::InvokeSymbolYield { .. } => types::BasicObject,
             // May also be Qundef until guarded; BasicObject is the closest lattice fit.
             Insn::HashLookupOrUndef { .. } => types::BasicObject,
             Insn::HashKeyP { .. } => types::BoolExact,
@@ -7504,6 +7536,60 @@ impl Function {
             let mut new_insns = Vec::with_capacity(old_insns.len());
             for insn_id in old_insns {
                 let replacement_id = match self.resolve(insn_id).insn(self) {
+                    &Insn::InvokeSymbolYield { sym, recv, state } => {
+                        // `yield x` to &:sym is x.sym: when x's exact class is known
+                        // (mature types at this point in the pipeline), resolve the
+                        // target like an explicit block body would and inline or
+                        // CCall it under the usual redefinition patchpoint. The
+                        // generic helper call stands otherwise.
+                        let specialized: Option<InsnId> = 'spec: {
+                            let Some(klass) = self.type_of(recv).runtime_exact_ruby_class() else { break 'spec None };
+                            let mid = unsafe { rb_sym2id(sym) };
+                            let cme = unsafe { rb_callable_method_entry(klass, mid) };
+                            if cme.is_null() { break 'spec None; }
+                            // Symbol procs call with CALL_PUBLIC: private and protected
+                            // targets raise NoMethodError through the helper.
+                            if unsafe { METHOD_ENTRY_VISI(cme) } != METHOD_VISI_PUBLIC { break 'spec None; }
+                            if unsafe { get_cme_def_type(cme) } != VM_METHOD_TYPE_CFUNC { break 'spec None; }
+                            let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
+                            if unsafe { get_mct_argc(cfunc) } != 0 { break 'spec None; }
+                            let props = ZJITState::get_method_annotations().get_cfunc_properties(cme).unwrap_or_default();
+                            let tmp_block = self.new_block(u32::MAX);
+                            if !self.assume_no_singleton_classes(tmp_block, klass, state) {
+                                self.remove_block(tmp_block);
+                                break 'spec None;
+                            }
+                            self.push_insn(tmp_block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            let result = if let Some(replacement) = (props.inline)(self, tmp_block, recv, &[], state) {
+                                replacement
+                            } else if props.leaf && props.no_gc {
+                                let name = unsafe { (*cme).called_id };
+                                let owner = unsafe { (*cme).owner };
+                                let cfunc_ptr = unsafe { get_mct_func(cfunc) }.cast();
+                                self.push_insn(tmp_block, Insn::CCall { cfunc: cfunc_ptr, recv, args: vec![], name, owner, return_type: props.return_type, elidable: props.elidable })
+                            } else {
+                                self.remove_block(tmp_block);
+                                break 'spec None;
+                            };
+                            self.count(tmp_block, Counter::inline_cfunc_optimized_send_count);
+                            let spliced = std::mem::take(&mut self.blocks[tmp_block].insns);
+                            for &id in &spliced {
+                                if self.insns[id].has_output() {
+                                    self.insn_types[id] = self.infer_type(id);
+                                }
+                            }
+                            new_insns.extend(spliced);
+                            self.remove_block(tmp_block);
+                            Some(result)
+                        };
+                        match specialized {
+                            Some(result) => {
+                                self.make_equal_to(insn_id, result);
+                                continue;
+                            }
+                            None => insn_id,
+                        }
+                    }
                     &Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
                         self.make_equal_to(insn_id, val);
                         // Don't bother re-inferring the type of val; we already know it.
@@ -10521,6 +10607,7 @@ impl Function {
                 | Insn::InvokeSuperForward { .. }
                 | Insn::InvokeBlock { .. }
                 | Insn::InvokeBlockIfunc { .. }
+                | Insn::InvokeSymbolYield { .. }
                 | Insn::InvokeProc { .. }
                 | Insn::InvokeBlockIseqDirect { .. }
                 | Insn::SendDirect(_)
@@ -12408,6 +12495,9 @@ impl Function {
             }
             Insn::ProcIseqCaptured { handler } => {
                 self.assert_subtype(insn_id, handler, types::CInt64)
+            }
+            Insn::InvokeSymbolYield { recv, .. } => {
+                self.assert_subtype(insn_id, recv, types::BasicObject)
             }
             // Instructions with Hash operands
             Insn::HashAref { hash, .. }
@@ -14918,6 +15008,19 @@ fn add_iseq_to_hir(
                                     && summary.buckets().iter().any(|ty| !ty.is_empty() && ty.flags().is_ifunc_block_handler())
                             }),
                         proc_iseqs,
+                        // `yield x` to &:sym is x.sym. With Ruby::Box enabled the method resolves
+                        // in the caller's box, which InvokeSymbolYield does not implement.
+                        symbol: block_handler_summary.as_ref().and_then(|summary| {
+                            if args.len() != 1 || (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG)) != 0
+                                || unsafe { rb_zjit_box_enabled() }
+                                || !(summary.is_monomorphic() || summary.is_polymorphic() || summary.is_skewed_polymorphic()) {
+                                return None;
+                            }
+                            summary.buckets().iter()
+                                .take_while(|ty| !ty.is_empty())
+                                .map(|ty| ty.class())
+                                .find(|obj| obj.static_sym_p())
+                        }),
                     };
 
                     // Collect the profiled ISEQ blocks that can be invoked directly with a JIT-to-JIT call.

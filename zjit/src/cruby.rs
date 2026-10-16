@@ -134,6 +134,8 @@ unsafe extern "C" {
     pub fn rb_hash_size(hash: VALUE) -> VALUE;
     pub fn rb_zjit_str_coderange(str: VALUE) -> u64;
     pub fn rb_zjit_proc_iseq_captured(procv: VALUE) -> *const rb_captured_block;
+    pub fn rb_zjit_yield_symbol1(symbol: VALUE, recv: VALUE) -> VALUE;
+    pub fn rb_zjit_box_enabled() -> bool;
     pub fn rb_hash_lookup2(hash: VALUE, key: VALUE, def: VALUE) -> VALUE;
     pub fn rb_ary_new_from_args(n: c_long, ...) -> VALUE;
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;

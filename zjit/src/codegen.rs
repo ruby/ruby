@@ -975,6 +975,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::HashSize { hash } => asm_ccall!(asm, rb_hash_size, opnd!(hash)),
         Insn::StringCoderangeScan { string } => asm_ccall!(asm, rb_zjit_str_coderange, opnd!(string)),
         Insn::ProcIseqCaptured { handler } => asm_ccall!(asm, rb_zjit_proc_iseq_captured, opnd!(handler)),
+        Insn::InvokeSymbolYield { sym, recv, state } => {
+            gen_prepare_fallback_call(jit, asm, function, &function.frame_state(*state));
+            asm_ccall!(asm, rb_zjit_yield_symbol1, Opnd::Value(*sym), opnd!(recv))
+        }
         Insn::HashLookupOrUndef { hash, key } => asm_ccall!(asm, rb_hash_lookup2, opnd!(hash), Opnd::Value(*key), Opnd::Value(Qundef)),
         &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
         &Insn::HashKeyP { hash, key, state } => { gen_hash_key_p(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },

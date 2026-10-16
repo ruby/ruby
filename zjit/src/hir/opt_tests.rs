@@ -4996,8 +4996,9 @@ mod hir_opt_tests {
     #[test]
     fn test_yield_mixed_iseq_proc_symbol_profile_dispatches_on_iseqs() {
         // A yield site whose profile mixes ISEQ blocks with proc and symbol handlers still
-        // dispatches directly on the ISEQ candidates. The plain proc gets its own arm that
-        // compares its wrapped block ISEQ; the symbol handler takes the generic fallback in-line.
+        // dispatches directly on the ISEQ candidates. The static symbol handler is matched by
+        // identity and compiled like `10.itself`, and the plain proc gets its own arm that
+        // compares its wrapped block ISEQ; everything else takes the generic fallback in-line.
         let result = eval("
             def invoke = yield(10)
             def add_one = invoke { |x| x + 1 }
@@ -5050,29 +5051,36 @@ mod hir_opt_tests {
         bb10():
           Jump bb6()
         bb6():
-          v34:CInt64[3] = Const CInt64(3)
-          v35:CInt64 = IntAnd v13, v34
-          v36:CInt64[0] = Const CInt64(0)
-          v37:CBool = IsBitEqual v35, v36
-          CondBranch v37, bb11(), bb12()
+          v34:CInt64[1122572] = Const CInt64(1122572)
+          v35:CBool = IsBitEqual v13, v34
+          CondBranch v35, bb11(), bb12()
         bb11():
-          v39:CInt64 = ProcIseqCaptured v13
-          v40:CInt64[0] = Const CInt64(0)
-          v41:CBool = IsBitEqual v39, v40
-          CondBranch v41, bb12(), bb13()
-        bb13():
-          v43:Iseq = LoadField v39, :code_iseq@0x1001
-          v44:Iseq[VALUE(0x1018)] = Const Value(VALUE(0x1018))
-          v45:CBool = IsBitEqual v43, v44
-          CondBranch v45, bb14(), bb15()
-        bb14():
-          v47:BasicObject = InvokeBlockIseqDirect (0x1018), v39, v10
-          Jump bb4(v47)
-        bb15():
-          Jump bb12()
+          PatchPoint MethodRedefined(Integer@0x1018, itself@0x1020, cme:0x1028)
+          Jump bb4(v10)
         bb12():
-          v50:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
-          Jump bb4(v50)
+          v39:CInt64[3] = Const CInt64(3)
+          v40:CInt64 = IntAnd v13, v39
+          v41:CInt64[0] = Const CInt64(0)
+          v42:CBool = IsBitEqual v40, v41
+          CondBranch v42, bb13(), bb14()
+        bb13():
+          v44:CInt64 = ProcIseqCaptured v13
+          v45:CInt64[0] = Const CInt64(0)
+          v46:CBool = IsBitEqual v44, v45
+          CondBranch v46, bb14(), bb15()
+        bb15():
+          v48:Iseq = LoadField v44, :code_iseq@0x1001
+          v49:Iseq[VALUE(0x1050)] = Const Value(VALUE(0x1050))
+          v50:CBool = IsBitEqual v48, v49
+          CondBranch v50, bb16(), bb17()
+        bb16():
+          v52:BasicObject = InvokeBlockIseqDirect (0x1050), v44, v10
+          Jump bb4(v52)
+        bb17():
+          Jump bb14()
+        bb14():
+          v55:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
+          Jump bb4(v55)
         bb4(v16:BasicObject):
           CheckInterrupts
           Return v16

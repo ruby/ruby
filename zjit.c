@@ -282,6 +282,25 @@ rb_zjit_iseq_eval_rooted(const rb_iseq_t *iseq)
     return false;
 }
 
+// Whether Ruby::Box is enabled (RUBY_BOX=1, fixed at boot). Symbol block
+// handler yields then resolve the method in the caller's box, which JIT code's
+// direct symbol yield does not implement, so the JIT leaves them generic.
+bool
+rb_zjit_box_enabled(void)
+{
+    return rb_box_available();
+}
+
+// Symbol block handler yield for the single-argument shape: `yield x` to a
+// &:sym block calls x.sym, exactly vm_yield_with_symbol -> rb_sym_proc_call
+// with no kw-splat and no sub-block. Only used while Ruby::Box is disabled.
+VALUE
+rb_zjit_yield_symbol1(VALUE symbol, VALUE recv)
+{
+    RUBY_ASSERT(!rb_box_available());
+    return rb_sym_proc_call(SYM2ID(symbol), 1, &recv, 0, Qnil);
+}
+
 // The captured block of a plain (non-lambda, non-refined) iseq-proc, or NULL
 // when the value is anything else (not a Proc, a lambda, a refined proc, a
 // symbol/method proc, or the no-block sentinel). Lets JIT code dispatch a Proc
