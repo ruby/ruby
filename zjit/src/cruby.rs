@@ -1407,7 +1407,17 @@ pub mod test_utils {
         ZJITState::enable_assert_compiles();
         let result = inspect(program);
         ZJITState::disable_assert_compiles();
+        assert_side_exit_count_matches_exit_counters();
         result
+    }
+
+    /// Assert that side_exit_count, which is counted by materialize_exit_trampoline, increased
+    /// by the same amount as the per-reason exit counters.
+    #[track_caller]
+    pub fn assert_side_exit_count_matches_exit_counters() {
+        let exits = crate::stats::total_exit_count();
+        let side_exit_count = crate::state::ZJITState::get_counters().side_exit_count;
+        assert_eq!(exits, side_exit_count, "side_exit_count should match the sum of exit counters");
     }
 
     /// Like inspect, but also asserts that all compilations triggered by this program succeed and
@@ -1415,12 +1425,16 @@ pub mod test_utils {
     #[track_caller]
     pub fn assert_compiles(program: &str) -> String {
         use crate::state::ZJITState;
+        fn non_entry_point_side_exit_count() -> u64 {
+            let counters = ZJITState::get_counters();
+            counters.side_exit_count
+        }
         ensure_rubyvm(); // ZJITState is not available until the VM is booted
-        let exits_before = crate::stats::total_exit_count();
+        let side_exit_count_before = ZJITState::get_counters().side_exit_count;
         ZJITState::enable_assert_compiles();
         let result = inspect(program);
         ZJITState::disable_assert_compiles();
-        assert_eq!(exits_before, crate::stats::total_exit_count(), "Program side-exited");
+        assert_eq!(side_exit_count_before, ZJITState::get_counters().side_exit_count, "Program side-exited");
         result
     }
 
