@@ -1248,6 +1248,40 @@ fn test_yield_with_lambda_arg() {
 }
 
 #[test]
+fn test_yield_with_proc_arg_direct_arm() {
+    // A plain iseq-proc passed via &pr takes the direct block call; a lambda reaching
+    // the warmed site keeps its strict arity through the generic fallback.
+    set_call_threshold(2);
+    eval("
+        def foo(a, b) = yield(a, b)
+        def test(pr) = foo(1, 2, &pr)
+        PR = proc { |a| a * 10 }
+        test(PR)
+        test(PR)
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("[test(PR), test(proc { |a| a * 10 }), (test(->(a) { a }) rescue $!.class)]"), @"[10, 10, ArgumentError]");
+}
+
+#[test]
+fn test_yield_refined_proc_copy_keeps_refinements() {
+    // Proc#refined shares the original's block ISEQ, so a site warmed with the plain proc
+    // matches the refined copy's ISEQ too. It must still take the generic call, which
+    // pushes the refinement cref.
+    set_call_threshold(2);
+    eval(r#"
+        class String; def zjit_tag = "plain"; end
+        module ZJITTagRefine; refine(String) { def zjit_tag = "refined" }; end
+        def foo(s) = yield(s)
+        def test(pr) = foo("x", &pr)
+        TAGP = proc { |s| s.zjit_tag }
+        TAGR = TAGP.refined(ZJITTagRefine)
+        test(TAGP)
+        test(TAGP)
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits("[test(TAGP), test(TAGR)]"), @r#"["plain", "refined"]"#);
+}
+
+#[test]
 fn test_yield_break() {
     set_call_threshold(2);
     eval("

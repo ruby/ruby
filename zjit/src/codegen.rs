@@ -974,6 +974,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::HashDup { val, state } => { gen_hash_dup(jit, asm, function, val, opnd!(val), &function.frame_state(state)) },
         Insn::HashSize { hash } => asm_ccall!(asm, rb_hash_size, opnd!(hash)),
         Insn::StringCoderangeScan { string } => asm_ccall!(asm, rb_zjit_str_coderange, opnd!(string)),
+        Insn::ProcIseqCaptured { handler } => asm_ccall!(asm, rb_zjit_proc_iseq_captured, opnd!(handler)),
         Insn::HashLookupOrUndef { hash, key } => asm_ccall!(asm, rb_hash_lookup2, opnd!(hash), Opnd::Value(*key), Opnd::Value(Qundef)),
         &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
         &Insn::HashKeyP { hash, key, state } => { gen_hash_key_p(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },

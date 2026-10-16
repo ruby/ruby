@@ -1043,6 +1043,10 @@ pub enum Insn {
     /// Coderange of a string as the RUBY_ENC_CODERANGE_* flag value, scanning
     /// and caching when still unknown. Never returns UNKNOWN; cannot raise.
     StringCoderangeScan { string: InsnId },
+    /// The captured block pointer of a plain (non-lambda, non-refined) iseq-proc
+    /// block handler, or 0 for anything else. Cannot raise or allocate; used by
+    /// the invokeblock Proc handler arm.
+    ProcIseqCaptured { handler: InsnId },
     StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
     /// Call rb_str_getbyte with known-Fixnum index
@@ -1765,6 +1769,9 @@ macro_rules! for_each_operand_impl {
             Insn::StringCoderangeScan { string } => {
                 $visit_one!(*string);
             }
+            Insn::ProcIseqCaptured { handler } => {
+                $visit_one!(*handler);
+            }
             Insn::HashAref { hash, key, state }
             | Insn::HashKeyP { hash, key, state }
             | Insn::HashFetch { hash, key, state }
@@ -1981,6 +1988,7 @@ impl Insn {
             Insn::LoadArg { .. } => effects::Empty,
             Insn::StringCopy { .. } => allocates,
             Insn::StringCoderangeScan { .. } => effects::Any,
+            Insn::ProcIseqCaptured { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::StringIntern { .. } => effects::Any,
             Insn::StringConcat { .. } => effects::Any,
             Insn::StringGetbyte { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
@@ -2411,6 +2419,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::HashAref { hash, key, .. } => { write!(f, "HashAref {hash}, {key}")}
             Insn::HashSize { hash } => { write!(f, "HashSize {hash}") }
             Insn::StringCoderangeScan { string } => { write!(f, "StringCoderangeScan {string}") }
+            Insn::ProcIseqCaptured { handler } => { write!(f, "ProcIseqCaptured {handler}") }
             Insn::HashLookupOrUndef { hash, key } => { write!(f, "HashLookupOrUndef {hash}, {}", key.print(self.ptr_map)) }
             Insn::HashKeyP { hash, key, .. } => { write!(f, "HashKeyP {hash}, {key}")}
             Insn::HashFetch { hash, key, .. } => { write!(f, "HashFetch {hash}, {key}")}
@@ -3322,11 +3331,15 @@ impl<'a> CallerArguments<'a> {
 struct BlockHandlerArms {
     /// IFUNC handlers (C blocks, e.g. enumerator yielders) call rb_vm_yield_with_cfunc directly.
     ifunc: bool,
+    /// Block ISEQs of the profiled plain iseq-procs (a method taking &blk and re-yielding,
+    /// or a stored proc passed as a block). A Proc handler wrapping one of them takes
+    /// the same direct block call as an ISEQ handler. Monomorphic sites get this arm too.
+    proc_iseqs: Vec<IseqPtr>,
 }
 
 impl BlockHandlerArms {
     fn is_empty(&self) -> bool {
-        !self.ifunc
+        !self.ifunc && self.proc_iseqs.is_empty()
     }
 }
 
@@ -3772,6 +3785,52 @@ impl Function {
             block = next_block;
         }
 
+        if !arms.proc_iseqs.is_empty() {
+            // A Proc handler is a plain VALUE: (handler & 0x3) == 0x0. Symbols and the
+            // no-block sentinel share the tag; rb_zjit_proc_iseq_captured returns NULL
+            // for them, for lambdas, and for refined procs.
+            let tag_mask = self.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
+            let tag_bits = self.push_insn(block, Insn::IntAnd { left: block_handler, right: tag_mask });
+            let value_tag = self.push_insn(block, Insn::Const { val: Const::CInt64(0x0) });
+            let is_value = self.push_insn(block, Insn::IsBitEqual { left: tag_bits, right: value_tag });
+            let proc_check_block = self.new_block(insn_idx);
+            let generic_block = self.new_block(insn_idx);
+            self.push_insn(block, Insn::CondBranch {
+                val: is_value,
+                if_true: BranchEdge { target: proc_check_block, args: vec![] },
+                if_false: BranchEdge { target: generic_block, args: vec![] },
+            });
+
+            let captured = self.push_insn(proc_check_block, Insn::ProcIseqCaptured { handler: block_handler });
+            let null_ptr = self.push_insn(proc_check_block, Insn::Const { val: Const::CInt64(0) });
+            let is_null = self.push_insn(proc_check_block, Insn::IsBitEqual { left: captured, right: null_ptr });
+            let mut compare_block = self.new_block(insn_idx);
+            self.push_insn(proc_check_block, Insn::CondBranch {
+                val: is_null,
+                if_true: BranchEdge { target: generic_block, args: vec![] },
+                if_false: BranchEdge { target: compare_block, args: vec![] },
+            });
+
+            let captured_iseq = self.load_captured_code_iseq(compare_block, captured);
+            for &proc_iseq in &arms.proc_iseqs {
+                // `Const::Value` so that the GC updates the ISEQ pointer on compaction.
+                let expected = self.push_insn(compare_block, Insn::Const { val: Const::Value(VALUE::from(proc_iseq)) });
+                let iseq_matches = self.push_insn(compare_block, Insn::IsBitEqual { left: captured_iseq, right: expected });
+                let direct_block = self.new_block(insn_idx);
+                let miss_block = self.new_block(insn_idx);
+                self.push_insn(compare_block, Insn::CondBranch {
+                    val: iseq_matches,
+                    if_true: BranchEdge { target: direct_block, args: vec![] },
+                    if_false: BranchEdge { target: miss_block, args: vec![] },
+                });
+                let direct_result = self.push_insn(direct_block, Insn::InvokeBlockIseqDirect { iseq: proc_iseq, captured, args: args.clone(), state });
+                self.push_insn(direct_block, Insn::Jump(BranchEdge { target: join_block, args: vec![direct_result] }));
+                compare_block = miss_block;
+            }
+            self.push_insn(compare_block, Insn::Jump(BranchEdge { target: generic_block, args: vec![] }));
+            block = generic_block;
+        }
+
         let fallback_result = self.push_insn(block, Insn::InvokeBlock { cd, args, state, reason });
         self.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
     }
@@ -4173,6 +4232,7 @@ impl Function {
             Insn::HashAref { .. } => types::BasicObject,
             Insn::HashSize { .. } => types::Fixnum,
             Insn::StringCoderangeScan { .. } => types::CInt64,
+            Insn::ProcIseqCaptured { .. } => types::CInt64,
             // May also be Qundef until guarded; BasicObject is the closest lattice fit.
             Insn::HashLookupOrUndef { .. } => types::BasicObject,
             Insn::HashKeyP { .. } => types::BoolExact,
@@ -12346,6 +12406,9 @@ impl Function {
             Insn::StringCoderangeScan { string } => {
                 self.assert_subtype(insn_id, string, types::String)
             }
+            Insn::ProcIseqCaptured { handler } => {
+                self.assert_subtype(insn_id, handler, types::CInt64)
+            }
             // Instructions with Hash operands
             Insn::HashAref { hash, .. }
             | Insn::HashKeyP { hash, .. }
@@ -13527,7 +13590,7 @@ fn add_iseq_to_hir(
                             let summary = TypeDistributionSummary::new(&self_type_distribution);
                             if summary.is_monomorphic() {
                                 let profiled_type = summary.bucket(0);
-                                if unsafe { rb_IMEMO_TYPE_P(profiled_type.class(), imemo_iseq) == 1 } {
+                                if !profiled_type.flags().is_proc_block_handler() && unsafe { rb_IMEMO_TYPE_P(profiled_type.class(), imemo_iseq) == 1 } {
                                     fun.count(block, Counter::invokeblock_handler_monomorphic_iseq);
                                 } else if profiled_type.flags().is_ifunc_block_handler() {
                                     fun.count(block, Counter::invokeblock_handler_monomorphic_ifunc);
@@ -14830,12 +14893,31 @@ fn add_iseq_to_hir(
                     // Non-ISEQ handler kinds seen at a non-monomorphic site (a stdlib yield like
                     // Integer#times sees direct blocks AND enumerator yielders at one insn) get
                     // their own direct arms; the monomorphic IFUNC case is handled below.
+                    let mut proc_iseqs: Vec<IseqPtr> = vec![];
+                    if let Some(summary) = block_handler_summary.as_ref() {
+                        if can_direct_invoke_block(flags)
+                            && (summary.is_monomorphic() || summary.is_polymorphic() || summary.is_skewed_polymorphic()) {
+                            for &profiled_type in summary.buckets() {
+                                if profiled_type.is_empty() {
+                                    break;
+                                }
+                                let obj = profiled_type.class();
+                                if profiled_type.flags().is_proc_block_handler() && unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 } {
+                                    let iseq = obj.as_iseq();
+                                    if can_direct_invoke_block_iseq(iseq, args.len()).is_ok() && !proc_iseqs.contains(&iseq) {
+                                        proc_iseqs.push(iseq);
+                                    }
+                                }
+                            }
+                        }
+                    }
                     let handler_arms = BlockHandlerArms {
                         ifunc: (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG)) == 0
                             && block_handler_summary.as_ref().is_some_and(|summary| {
                                 !summary.is_monomorphic()
                                     && summary.buckets().iter().any(|ty| !ty.is_empty() && ty.flags().is_ifunc_block_handler())
                             }),
+                        proc_iseqs,
                     };
 
                     // Collect the profiled ISEQ blocks that can be invoked directly with a JIT-to-JIT call.
@@ -14850,7 +14932,8 @@ fn add_iseq_to_hir(
                                     break;
                                 }
                                 let obj = profiled_type.class();
-                                if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 } {
+                                // Proc buckets record their block's ISEQ; those dispatch through handler_arms.
+                                if !profiled_type.flags().is_proc_block_handler() && unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 } {
                                     let iseq = obj.as_iseq();
                                     match can_direct_invoke_block_iseq(iseq, args.len()) {
                                         // Push an ISEQ that can be dispatched directly, deduplicating direct_iseqs.

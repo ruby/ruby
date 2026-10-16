@@ -282,6 +282,26 @@ rb_zjit_iseq_eval_rooted(const rb_iseq_t *iseq)
     return false;
 }
 
+// The captured block of a plain (non-lambda, non-refined) iseq-proc, or NULL
+// when the value is anything else (not a Proc, a lambda, a refined proc, a
+// symbol/method proc, or the no-block sentinel). Lets JIT code dispatch a Proc
+// block handler to the same direct block call a plain ISEQ handler takes; NULL
+// routes to the generic path. Lambda procs use strict arity and a lambda frame
+// flag, and refined procs (Proc#refined) push a refinement cref, neither of
+// which the direct block call implements.
+const struct rb_captured_block *
+rb_zjit_proc_iseq_captured(VALUE procv)
+{
+    if (!RB_SPECIAL_CONST_P(procv) && RTEST(rb_obj_is_proc(procv))) {
+        const rb_proc_t *proc;
+        GetProcPtr(procv, proc);
+        if (!proc->header.is_lambda && !proc->header.is_refined && vm_block_type(&proc->block) == block_type_iseq) {
+            return &proc->block.as.captured;
+        }
+    }
+    return NULL;
+}
+
 // Coderange of a string, scanning and caching it when still unknown. Returns
 // the RUBY_ENC_CODERANGE_* flag value widened to a full register.
 unsigned long
