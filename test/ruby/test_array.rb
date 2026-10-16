@@ -331,6 +331,11 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, nil, :a, "a"], @cls[1, nil] | @cls[nil, :a, "a", 1])
     assert_send([@cls[1, nil], :intersect?, @cls[:a, nil]])
     assert_not_send([@cls[1, nil], :intersect?, @cls[:a, false]])
+
+    dynamic = "set_operations_#{__method__}".to_sym
+    assert_equal(@cls[1], @cls[dynamic, 1] - @cls[dynamic.to_s.to_sym])
+    assert_equal(@cls[dynamic], @cls[1, dynamic] & @cls[nil, "x", dynamic])
+    assert_equal(@cls[dynamic, :a], @cls[dynamic] | @cls[:a, dynamic])
   end
 
   def test_set_operations_with_redefined_eql
@@ -344,6 +349,15 @@ class TestArray < Test::Unit::TestCase
       assert_equal([1], [1] & [nil])
       assert_equal([nil], [nil] | [1])
       assert_send([[1], :intersect?, [nil]])
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class Symbol
+        undef eql?
+        def eql?(other) = other.nil? || super
+      end
+      assert_equal([], [:a, "b#{1}".to_sym] - [nil])
     end;
 
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
