@@ -3443,17 +3443,22 @@ class TestArray < Test::Unit::TestCase
     gen = Object.new
     # 49 will be out-of-bounds when ary.replace is called
     def gen.rand(lim) = 49
-    assert_equal([], ary.sample(obj, random: gen))
+    assert_raise(RangeError) {ary.sample(obj, random: gen)}
 
     ary = (1..100).to_a
-    obj = Object.new
-    obj.define_singleton_method(:to_int) do
-      ary.replace(Array.new(10) { :x })
-      10
-    end
     gen = Object.new
-    gen.define_singleton_method(:rand) { |lim| 8 }
-    assert_equal([], ary.sample(obj, random: gen))
+    def gen.rand(lim) = lim-1
+    assert_equal((41..50).to_a.reverse, ary.sample(obj, random: gen))
+
+    ary = (1..100).to_a
+    gen = Object.new
+    gen.define_singleton_method(:rand) do |lim|
+      if (lim -= 1) <= 90
+        ary.replace((1..50).to_a)
+      end
+      lim
+    end
+    assert_equal([], ary.sample(10, random: gen))
   end
 
   def test_cycle

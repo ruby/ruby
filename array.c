@@ -7027,8 +7027,8 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
     rb_len_t rnds[numberof(idx)];
     rb_len_t memo_threshold;
 
-    len = RARRAY_LEN(ary);
     if (!to_array) {
+        len = RARRAY_LEN(ary);
         if (len < 2)
             i = 0;
         else
@@ -7038,6 +7038,7 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
     }
     n = NUM2LEN(nv);
     if (n < 0) rb_raise(rb_eArgError, "negative sample number");
+    len = RARRAY_LEN(ary);
     if (n > len) n = len;
     if (n <= numberof(idx)) {
         for (i = 0; i < n; ++i) {
