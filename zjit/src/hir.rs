@@ -676,6 +676,9 @@ pub enum SideExitReason {
     NoProfileGetIvar,
     NoProfileSetIvar,
     InvokeBlockNotIfunc,
+    /// A yield site's handler matched none of its dispatch arms: exit to gather a fresh
+    /// handler profile and recompile.
+    InvokeBlockProfileMiss,
     OnceNotDone,
 }
 
@@ -3346,10 +3349,9 @@ impl<'a> CallerArguments<'a> {
     }
 }
 
-/// Block handler kinds other than ISEQ blocks that a yield site's profile saw. At
-/// non-monomorphic sites each gets its own direct arm (tested per execution), so a
-/// site mixing kinds keeps a fast path for every kind instead of sending all but the
-/// ISEQ blocks through rb_vm_invokeblock.
+/// Block handler kinds other than ISEQ blocks that a yield site's profile saw. Each gets
+/// its own direct arm (tested per execution), so a site mixing kinds keeps a fast path
+/// for every kind instead of sending all but the ISEQ blocks through rb_vm_invokeblock.
 #[derive(Default)]
 struct BlockHandlerArms {
     /// IFUNC handlers (C blocks, e.g. enumerator yielders) call rb_vm_yield_with_cfunc directly.
@@ -3882,8 +3884,15 @@ impl Function {
             block = generic_block;
         }
 
-        let fallback_result = self.push_insn(block, Insn::InvokeBlock { cd, args, state, reason });
-        self.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
+        if self.avoids_side_exits() {
+            let fallback_result = self.push_insn(block, Insn::InvokeBlock { cd, args, state, reason });
+            self.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
+        } else {
+            // A handler the profile never saw: exit to gather a bounded fresh profile and
+            // recompile. The final version keeps the generic call, so a genuinely mixed site
+            // cannot enter an unbounded deoptimization loop.
+            self.push_insn(block, Insn::SideExit { state, reason: Box::new(SideExitReason::InvokeBlockProfileMiss), recompile: Some(Recompile) });
+        }
     }
 
     // Add an instruction to an SSA block
@@ -15462,18 +15471,11 @@ fn add_iseq_to_hir(
                             None
                         }
                     });
-                    // The monomorphic block handler type the profile recorded, if any.
-                    let block_handler_type = block_handler_summary.as_ref().and_then(|summary| {
-                        if !summary.is_monomorphic() { return None; }
-                        Some(summary.bucket(0))
-                    });
-
-                    let is_ifunc = (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG)) == 0
-                        && block_handler_type.is_some_and(|ty| ty.flags().is_ifunc_block_handler());
-
-                    // Non-ISEQ handler kinds seen at a non-monomorphic site (a stdlib yield like
-                    // Integer#times sees direct blocks AND enumerator yielders at one insn) get
-                    // their own direct arms; the monomorphic IFUNC case is handled below.
+                    // Non-ISEQ handler kinds the profile saw (a stdlib yield like Integer#times
+                    // sees direct blocks AND enumerator yielders at one insn) get their own
+                    // direct arms. That includes monomorphic IFUNC profiles: keeping them in the
+                    // arms lets a miss reprofile instead of being trapped in an IFUNC-or-generic
+                    // dispatch forever.
                     let mut proc_iseqs: Vec<IseqPtr> = vec![];
                     if let Some(summary) = block_handler_summary.as_ref() {
                         if can_direct_invoke_block(flags)
@@ -15495,8 +15497,7 @@ fn add_iseq_to_hir(
                     let handler_arms = BlockHandlerArms {
                         ifunc: (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG)) == 0
                             && block_handler_summary.as_ref().is_some_and(|summary| {
-                                !summary.is_monomorphic()
-                                    && summary.buckets().iter().any(|ty| !ty.is_empty() && ty.flags().is_ifunc_block_handler())
+                                summary.buckets().iter().any(|ty| !ty.is_empty() && ty.flags().is_ifunc_block_handler())
                             }),
                         proc_iseqs,
                         // `yield x` to &:sym is x.sym. With Ruby::Box enabled the method resolves
@@ -15674,51 +15675,6 @@ fn add_iseq_to_hir(
                         // Continue compilation from the block the dispatch ended in
                         block = continue_block;
                         result
-                    } else if is_ifunc {
-                        // Load the block handler from the current frame's LEP. In inlined
-                        // code, the function ISEQ is the caller while `exit_state.iseq` is the
-                        // callee containing this `invokeblock`.
-                        let level = get_lvar_level(exit_state.iseq);
-                        let lep = fun.get_ep(block, level);
-                        let block_handler = fun.load_field(block, lep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
-
-                        // Check IFUNC tag: (block_handler & 0x3) == 0x3
-                        let tag_mask = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
-                        let tag_bits = fun.push_insn(block, Insn::IntAnd { left: block_handler, right: tag_mask });
-                        let ifunc_tag = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
-                        let is_ifunc_match = fun.push_insn(block, Insn::IsBitEqual { left: tag_bits, right: ifunc_tag });
-
-                        // Branch: on match, call InvokeBlockIfunc directly
-                        let join_block = fun.new_block(insn_idx);
-                        let join_param = fun.push_insn(join_block, Insn::Param);
-                        let ifunc_block = fun.new_block(insn_idx);
-                        let fall_through = fun.new_block(insn_idx);
-
-                        fun.push_insn(block, Insn::CondBranch {
-                            val: is_ifunc_match,
-                            if_true: BranchEdge { target: ifunc_block, args: vec![] },
-                            if_false: BranchEdge { target: fall_through, args: vec![] },
-                        });
-
-                        block = fall_through;
-
-                        let ifunc_result = fun.push_insn(ifunc_block, Insn::InvokeBlockIfunc {
-                            cd,
-                            block_handler,
-                            args: args.clone(),
-                            state: exit_id,
-                        });
-                        fun.push_insn(ifunc_block, Insn::Jump(BranchEdge { target: join_block, args: vec![ifunc_result] }));
-
-                        // In the fallthrough case, use generic rb_vm_invokeblock and join
-                        let fallback_result = fun.push_insn(block, Insn::InvokeBlock {
-                            cd, args, state: exit_id, reason: InvokeBlockNotSpecialized,
-                        });
-                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
-
-                        // Continue compilation from the join block
-                        block = join_block;
-                        join_param
                     } else if !handler_arms.is_empty() {
                         // No ISEQ arms, but other handler kinds to dispatch directly.
                         let level = get_lvar_level(exit_state.iseq);

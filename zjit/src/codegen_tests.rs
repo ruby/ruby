@@ -5,7 +5,7 @@ use crate::asm::CodeBlock;
 use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
-use crate::hir::{Insn, InsnId, iseq_to_hir};
+use crate::hir::{Insn, InsnId, SideExitReason, iseq_to_hir};
 use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_exits_until_invalidate};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
@@ -1049,8 +1049,9 @@ fn test_yield_polymorphic_blocks_dispatch_directly() {
 
 #[test]
 fn test_yield_polymorphic_non_iseq_handler_falls_back() {
-    // A proc handler at a polymorphic yield site fails the ISEQ tag check and takes the
-    // generic InvokeBlock fallback in-line, without a side exit or another recompile.
+    // A proc handler the profile never saw at a polymorphic yield site fails every dispatch
+    // arm and takes a profiling side exit (InvokeBlockProfileMiss) toward a recompile that
+    // adds its arm; the results stay right throughout.
     set_call_threshold(2);
     eval("
         def invoke = yield(10)
@@ -1064,7 +1065,7 @@ fn test_yield_polymorphic_non_iseq_handler_falls_back() {
     for _ in 0..num_profiles + 2 {
         eval("add_one; double; via_proc(proc { |x| x * 3 })");
     }
-    assert_snapshot!(assert_compiles("[add_one, double, via_proc(proc { |x| x * 3 })]"), @"[11, 20, 30]");
+    assert_snapshot!(assert_compiles_allowing_exits("[add_one, double, via_proc(proc { |x| x * 3 })]"), @"[11, 20, 30]");
 }
 
 #[test]
@@ -1089,8 +1090,9 @@ fn test_yield_polymorphic_symbol_handler_falls_back() {
 
 #[test]
 fn test_yield_polymorphic_ifunc_handler_falls_back() {
-    // An ifunc handler (Enumerator#each yields to the enumerator's C block) at a polymorphic
-    // yield site fails the ISEQ tag check and takes the generic InvokeBlock fallback in-line.
+    // An ifunc handler (Enumerator#each yields to the enumerator's C block) the profile never
+    // saw at a polymorphic yield site fails every dispatch arm and takes a profiling side exit
+    // (InvokeBlockProfileMiss) toward a recompile that adds its arm.
     // Threshold 4 keeps calls 1-3 in the profile window (num_profiles defaults to 5), so
     // invoke's first compile already sees both blocks and installs the polymorphic dispatch;
     // the standalone version matters here because the Enumerator calls invoke from C.
@@ -1103,7 +1105,7 @@ fn test_yield_polymorphic_ifunc_handler_falls_back() {
         add_one; double
         add_one; double
     ");
-    assert_snapshot!(assert_compiles("[add_one, double, via_enum]"), @"[11, 20, [10]]");
+    assert_snapshot!(assert_compiles_allowing_exits("[add_one, double, via_enum]"), @"[11, 20, [10]]");
 }
 
 #[test]
@@ -8080,6 +8082,75 @@ fn test_invokeblock_ifunc_kwarg() {
         test
     ");
     assert_snapshot!(assert_compiles("test"), @"[[1, {a: 2}]]");
+}
+
+#[test]
+fn test_invokeblock_ifunc_profile_miss_recompiles() {
+    set_call_threshold(2);
+    set_inline_threshold(0);
+    set_max_versions(2);
+    set_num_exits_until_invalidate(3);
+    eval("
+        class IfuncProfileRecoveryList
+          include Enumerable
+
+          def each
+            yield 1
+          end
+        end
+
+        IFUNC_PROFILE_RECOVERY_LIST = IfuncProfileRecoveryList.new
+
+        def ifunc_profile_recovery_warmup
+          IFUNC_PROFILE_RECOVERY_LIST.map { |x| x }
+        end
+
+        def ifunc_profile_recovery_literal
+          IFUNC_PROFILE_RECOVERY_LIST.each { |x| x + 1 }
+        end
+
+        ifunc_profile_recovery_warmup
+        ifunc_profile_recovery_warmup
+    ");
+
+    let count = |function: &crate::hir::Function, pred: &dyn Fn(&Insn) -> bool| {
+        (0..function.num_insns()).filter(|&index| pred(&function.find(InsnId::from(index)))).count()
+    };
+    let is_profile_miss = |insn: &Insn| matches!(insn,
+        Insn::SideExit { reason, recompile: Some(_), .. }
+            if matches!(reason.as_ref(), SideExitReason::InvokeBlockProfileMiss));
+
+    let iseq = get_method_iseq("IFUNC_PROFILE_RECOVERY_LIST", "each");
+    let function = iseq_to_hir(iseq).unwrap();
+    assert_eq!(1, count(&function, &|insn| matches!(insn, Insn::InvokeBlockIfunc { .. })), "expected the monomorphic IFUNC arm");
+    assert_eq!(0, count(&function, &|insn| matches!(insn, Insn::InvokeBlock { .. })), "a recoverable profile miss should not silently call the generic helper");
+    assert_eq!(1, count(&function, &is_profile_miss), "expected the arm miss to collect a fresh profile");
+
+    // The first two profile-miss exits only decrement the exit budget.
+    for _ in 0..2 {
+        assert_eq!("2", inspect("ifunc_profile_recovery_literal"));
+        let payload = get_or_create_iseq_payload(iseq);
+        assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+    }
+
+    // The third exhausts it and invalidates the version.
+    assert_eq!("2", inspect("ifunc_profile_recovery_literal"));
+    let payload = get_or_create_iseq_payload(iseq);
+    assert!(unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+
+    // The following calls re-profile in the interpreter, now seeing the literal block, and
+    // recompile.
+    for _ in 0..4 {
+        assert_eq!("2", inspect("ifunc_profile_recovery_literal"));
+    }
+    let payload = get_or_create_iseq_payload(iseq);
+    assert_eq!(2, payload.versions.len());
+    assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+
+    let function = iseq_to_hir(iseq).unwrap();
+    assert_eq!(1, count(&function, &|insn| matches!(insn, Insn::InvokeBlockIseqDirect { .. })), "expected recompilation to use the literal block profile");
+    assert_eq!(1, count(&function, &|insn| matches!(insn, Insn::InvokeBlock { .. })), "the final version should retain a non-exiting fallback");
+    assert_eq!(0, count(&function, &is_profile_miss), "the final version must not enter a recompile loop");
 }
 
 #[test]

@@ -4934,8 +4934,8 @@ mod hir_opt_tests {
     fn test_yield_polymorphic_blocks_dispatch_directly() {
         // A yield site shared by multiple call sites (like Integer#times) profiles as
         // polymorphic. Instead of falling back to the generic InvokeBlock, dispatch on
-        // the runtime block ISEQ over the profiled candidates, with the generic call
-        // only as the in-line miss path (no side exit).
+        // the runtime block ISEQ over the profiled candidates. A miss takes a profiling
+        // side exit toward a recompile; only the final version calls the generic helper.
         let result = eval("
             def invoke = yield(10)
             def add_one = invoke { |x| x + 1 }
@@ -4982,14 +4982,13 @@ mod hir_opt_tests {
         bb9():
           v31:BasicObject = InvokeBlockIseqDirect (0x1010), v21, v10
           Jump bb4(v31)
-        bb10():
-          Jump bb6()
-        bb6():
-          v34:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
-          Jump bb4(v34)
         bb4(v16:BasicObject):
           CheckInterrupts
           Return v16
+        bb10():
+          Jump bb6()
+        bb6():
+          SideExit InvokeBlockProfileMiss recompile
         ");
     }
 
@@ -5066,7 +5065,7 @@ mod hir_opt_tests {
         // A yield site whose profile mixes ISEQ blocks with proc and symbol handlers still
         // dispatches directly on the ISEQ candidates. The static symbol handler is matched by
         // identity and compiled like `10.itself`, and the plain proc gets its own arm that
-        // compares its wrapped block ISEQ; everything else takes the generic fallback in-line.
+        // compares its wrapped block ISEQ; everything else takes a profiling side exit.
         let result = eval("
             def invoke = yield(10)
             def add_one = invoke { |x| x + 1 }
@@ -5144,14 +5143,13 @@ mod hir_opt_tests {
         bb16():
           v52:BasicObject = InvokeBlockIseqDirect (0x1050), v44, v10
           Jump bb4(v52)
-        bb17():
-          Jump bb14()
-        bb14():
-          v55:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
-          Jump bb4(v55)
         bb4(v16:BasicObject):
           CheckInterrupts
           Return v16
+        bb17():
+          Jump bb14()
+        bb14():
+          SideExit InvokeBlockProfileMiss recompile
         ");
     }
 
@@ -5159,7 +5157,7 @@ mod hir_opt_tests {
     fn test_yield_mixed_iseq_ifunc_profile_dispatches_on_iseqs() {
         // Like the above, but the non-ISEQ handler in the profile is an ifunc block
         // (Enumerator#each yields to the enumerator's C block). The ifunc handler fails
-        // the ISEQ tag check and takes the generic fallback in-line.
+        // the ISEQ tag check and takes its own InvokeBlockIfunc arm.
         let result = eval("
             def invoke = yield(10)
             def add_one = invoke { |x| x + 1 }
@@ -5218,12 +5216,11 @@ mod hir_opt_tests {
         bb11():
           v38:BasicObject = InvokeBlockIfunc v13, v10
           Jump bb4(v38)
-        bb12():
-          v40:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
-          Jump bb4(v40)
         bb4(v16:BasicObject):
           CheckInterrupts
           Return v16
+        bb12():
+          SideExit InvokeBlockProfileMiss recompile
         ");
     }
 
@@ -23965,35 +23962,27 @@ mod hir_opt_tests {
           v10:Fixnum[1] = Const Value(1)
           v12:CPtr = GetEP 0
           v13:CInt64 = LoadField v12, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
-          v14:CInt64[3] = Const CInt64(3)
-          v15:CInt64 = IntAnd v13, v14
-          v16:CInt64[3] = Const CInt64(3)
-          v17:CBool = IsBitEqual v15, v16
+          v15:CInt64[3] = Const CInt64(3)
+          v16:CInt64 = IntAnd v13, v15
+          v17:CBool = IsBitEqual v16, v15
           CondBranch v17, bb5(), bb6()
         bb5():
-          v20:BasicObject = InvokeBlockIfunc v13, v10
-          Jump bb4(v20)
-        bb6():
-          v22:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: not yet specialized
-          Jump bb4(v22)
-        bb4(v18:BasicObject):
-          v27:Fixnum[2] = Const Value(2)
-          v29:CPtr = GetEP 0
-          v30:CInt64 = LoadField v29, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
-          v31:CInt64[3] = Const CInt64(3)
-          v32:CInt64 = IntAnd v30, v31
-          v33:CInt64[3] = Const CInt64(3)
-          v34:CBool = IsBitEqual v32, v33
-          CondBranch v34, bb8(), bb9()
+          v19:BasicObject = InvokeBlockIfunc v13, v10
+          v25:Fixnum[2] = Const Value(2)
+          v27:CPtr = GetEP 0
+          v28:CInt64 = LoadField v27, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
+          v30:CInt64[3] = Const CInt64(3)
+          v31:CInt64 = IntAnd v28, v30
+          v32:CBool = IsBitEqual v31, v30
+          CondBranch v32, bb8(), bb9()
         bb8():
-          v37:BasicObject = InvokeBlockIfunc v30, v27
-          Jump bb7(v37)
-        bb9():
-          v39:BasicObject = InvokeBlock v27 # SendFallbackReason: InvokeBlock: not yet specialized
-          Jump bb7(v39)
-        bb7(v35:BasicObject):
+          v34:BasicObject = InvokeBlockIfunc v28, v25
           CheckInterrupts
-          Return v35
+          Return v34
+        bb9():
+          SideExit InvokeBlockProfileMiss recompile
+        bb6():
+          SideExit InvokeBlockProfileMiss recompile
         ");
     }
 
