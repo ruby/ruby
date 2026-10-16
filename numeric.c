@@ -6644,6 +6644,7 @@ Init_Numeric(void)
 
     rb_define_method(rb_cInteger, "===", rb_int_equal, 1);
     rb_define_method(rb_cInteger, "==", rb_int_equal, 1);
+    rb_define_method(rb_cInteger, "eql?", num_eql, 1);
     rb_define_method(rb_cInteger, ">", rb_int_gt, 1);
     rb_define_method(rb_cInteger, ">=", rb_int_ge, 1);
     rb_define_method(rb_cInteger, "<", int_lt, 1);

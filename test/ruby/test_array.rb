@@ -337,6 +337,7 @@ class TestArray < Test::Unit::TestCase
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       class Integer
+        undef eql?
         def eql?(other) = other.nil? || super
       end
       assert_equal([], [1, 2] - [nil])
@@ -349,7 +350,10 @@ class TestArray < Test::Unit::TestCase
     begin;
       o = Object.new
       def o.eql?(other)
-        Integer.class_eval { def eql?(other) = other.nil? || super }
+        Integer.class_eval do
+          undef eql?
+          def eql?(other) = other.nil? || super
+        end
         false
       end
       assert_equal([o], [o, 1, 2] - [nil])

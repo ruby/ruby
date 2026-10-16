@@ -5668,34 +5668,33 @@ rb_ary_includes(VALUE ary, VALUE item)
 }
 
 /*
- * Returns whether #eql? of Integer, Symbol, nil, true and false is not
- * redefined, so that a Fixnum, a static Symbol, nil, true or false is
- * eql? only to itself.  A flonum is not, as 0.0.eql?(-0.0) and -0.0 is
- * not a flonum.
+ * Returns whether +item+ is eql? only to itself.  A Fixnum, a static
+ * Symbol, nil, true and false are, unless #eql? of the class is
+ * redefined.  A flonum is not, as 0.0.eql?(-0.0) and -0.0 is not a
+ * flonum.
  */
 static bool
-eql_identical_only_p(void)
+eql_identical_only_p(VALUE item)
 {
-    return rb_method_basic_definition_p(rb_cInteger, idEqlP) &&
-        rb_method_basic_definition_p(rb_cSymbol, idEqlP) &&
-        rb_method_basic_definition_p(rb_cNilClass, idEqlP) &&
-        rb_method_basic_definition_p(rb_cTrueClass, idEqlP) &&
-        rb_method_basic_definition_p(rb_cFalseClass, idEqlP);
+    if (FIXNUM_P(item)) return BASIC_OP_UNREDEFINED_P(BOP_EQL, INTEGER_REDEFINED_OP_FLAG);
+    if (STATIC_SYM_P(item)) return BASIC_OP_UNREDEFINED_P(BOP_EQL, SYMBOL_REDEFINED_OP_FLAG);
+    if (NIL_P(item)) return BASIC_OP_UNREDEFINED_P(BOP_EQL, NIL_REDEFINED_OP_FLAG);
+    if (item == Qtrue) return BASIC_OP_UNREDEFINED_P(BOP_EQL, TRUE_REDEFINED_OP_FLAG);
+    if (item == Qfalse) return BASIC_OP_UNREDEFINED_P(BOP_EQL, FALSE_REDEFINED_OP_FLAG);
+    return false;
 }
 
 /*
- * Returns whether +item+ is in +ary+, or Qundef if it cannot tell
- * without calling #eql?.  +*identical+ caches eql_identical_only_p()
- * across calls; it is -1 until the first call that needs it.
+ * Returns whether +item+ is in +ary+, comparing VALUEs only, or Qundef
+ * if #eql? needs to be called.  It is kept out of line so that
+ * rb_ary_includes_by_eql() is inlined.
  */
-NOINLINE(static VALUE ary_includes_identical(VALUE ary, VALUE item, int *identical));
+NOINLINE(static VALUE ary_includes_identical(VALUE ary, VALUE item));
 static VALUE
-ary_includes_identical(VALUE ary, VALUE item, int *identical)
+ary_includes_identical(VALUE ary, VALUE item)
 {
-    if (*identical < 0) *identical = eql_identical_only_p();
-    if (!*identical) return Qundef;
+    if (!eql_identical_only_p(item)) return Qundef;
 
-    /* No Ruby code runs while comparing VALUEs */
     const VALUE *ptr = RARRAY_CONST_PTR(ary);
     rb_len_t i, len = RARRAY_LEN(ary);
 
@@ -5706,16 +5705,15 @@ ary_includes_identical(VALUE ary, VALUE item, int *identical)
 }
 
 static VALUE
-rb_ary_includes_by_eql(VALUE ary, VALUE item, int *identical)
+rb_ary_includes_by_eql(VALUE ary, VALUE item)
 {
     rb_len_t i;
     VALUE e;
 
-    if (SPECIAL_CONST_P(item) && !FLONUM_P(item)) {
-        VALUE found = ary_includes_identical(ary, item, identical);
+    if (SPECIAL_CONST_P(item)) {
+        VALUE found = ary_includes_identical(ary, item);
         if (!UNDEF_P(found)) return found;
     }
-    *identical = -1; /* rb_eql() can redefine #eql? */
     for (i=0; i<RARRAY_LEN(ary); i++) {
         e = RARRAY_AREF(ary, i);
         if (rb_eql(item, e)) {
@@ -5842,10 +5840,9 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
     VALUE ary3 = rb_ary_new();
 
     if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN || RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
-        int identical = -1;
         for (rb_len_t i = 0; i < RARRAY_LEN(ary1); i++) {
             VALUE elt = rb_ary_elt(ary1, i);
-            if (rb_ary_includes_by_eql(ary2, elt, &identical)) continue;
+            if (rb_ary_includes_by_eql(ary2, elt)) continue;
             rb_ary_push(ary3, elt);
         }
         return ary3;
@@ -5886,7 +5883,6 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
     bool *is_set = ALLOCV_N(bool, t0, argc);
     VALUE ary_diff = rb_ary_new();
     rb_len_t length = RARRAY_LEN(ary);
-    int identical = -1;
 
     for (rb_len_t i = 0; i < argc; i++) {
         argv[i] = to_ary(argv[i]);
@@ -5905,7 +5901,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
                     break;
             }
             else {
-                if (rb_ary_includes_by_eql(argv[j], elt, &identical)) break;
+                if (rb_ary_includes_by_eql(argv[j], elt)) break;
             }
         }
         if (j == argc) rb_ary_push(ary_diff, elt);
@@ -5949,11 +5945,10 @@ rb_ary_and(VALUE ary1, VALUE ary2)
     if (RARRAY_LEN(ary1) == 0 || RARRAY_LEN(ary2) == 0) return ary3;
 
     if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN && RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
-        int identical = -1;
         for (rb_len_t i = 0; i < RARRAY_LEN(ary1); i++) {
             VALUE v = RARRAY_AREF(ary1, i);
-            if (!rb_ary_includes_by_eql(ary2, v, &identical)) continue;
-            if (rb_ary_includes_by_eql(ary3, v, &identical)) continue;
+            if (!rb_ary_includes_by_eql(ary2, v)) continue;
+            if (rb_ary_includes_by_eql(ary3, v)) continue;
             rb_ary_push(ary3, v);
         }
         return ary3;
@@ -6009,10 +6004,9 @@ static void
 rb_ary_union(VALUE ary_union, VALUE ary)
 {
     rb_len_t i;
-    int identical = -1;
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         VALUE elt = rb_ary_elt(ary, i);
-        if (rb_ary_includes_by_eql(ary_union, elt, &identical)) continue;
+        if (rb_ary_includes_by_eql(ary_union, elt)) continue;
         rb_ary_push(ary_union, elt);
     }
 }
@@ -6119,10 +6113,9 @@ rb_ary_intersect_p(VALUE ary1, VALUE ary2)
     if (RARRAY_LEN(ary1) == 0 || RARRAY_LEN(ary2) == 0) return Qfalse;
 
     if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN && RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
-        int identical = -1;
         for (rb_len_t i = 0; i < RARRAY_LEN(ary1); i++) {
             VALUE v = RARRAY_AREF(ary1, i);
-            if (rb_ary_includes_by_eql(ary2, v, &identical)) return Qtrue;
+            if (rb_ary_includes_by_eql(ary2, v)) return Qtrue;
         }
         return Qfalse;
     }
