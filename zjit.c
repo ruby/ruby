@@ -269,6 +269,19 @@ rb_zjit_singleton_class_p(VALUE klass)
     return RCLASS_SINGLETON_P(klass);
 }
 
+// Whether this ISEQ is lexically rooted in an eval body. Such ISEQs are
+// usually short-lived (templating engines re-eval per render, so every render
+// creates fresh ISEQs); vm.c holds them to a much higher call threshold.
+bool
+rb_zjit_iseq_eval_rooted(const rb_iseq_t *iseq)
+{
+    while (iseq) {
+        if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_EVAL) return true;
+        iseq = ISEQ_BODY(iseq)->parent_iseq;
+    }
+    return false;
+}
+
 // Coderange of a string, scanning and caching it when still unknown. Returns
 // the RUBY_ENC_CODERANGE_* flag value widened to a full register.
 unsigned long

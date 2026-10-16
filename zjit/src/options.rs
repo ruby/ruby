@@ -67,6 +67,19 @@ pub static mut rb_zjit_profile_threshold: CallThreshold = DEFAULT_CALL_THRESHOLD
 #[allow(non_upper_case_globals)]
 pub static mut rb_zjit_call_threshold: CallThreshold = DEFAULT_CALL_THRESHOLD;
 
+/// How much more often an ISEQ rooted in an eval body must be called before
+/// it compiles. Eval'd code is usually short-lived (templating engines
+/// re-eval per render, creating fresh ISEQs every time), so compiling at the
+/// normal threshold burns compile time on throwaway code; genuinely hot
+/// eval'd code still crosses the raised bar.
+pub const EVAL_CALL_THRESHOLD_MULT: CallThreshold = 64;
+
+/// Number of calls to compile an ISEQ rooted in an eval body (see
+/// rb_zjit_iseq_eval_rooted). Kept in sync with rb_zjit_call_threshold.
+#[unsafe(no_mangle)]
+#[allow(non_upper_case_globals)]
+pub static mut rb_zjit_eval_call_threshold: CallThreshold = DEFAULT_CALL_THRESHOLD * EVAL_CALL_THRESHOLD_MULT;
+
 /// ZJIT command-line options. This is set before rb_zjit_init() sets
 /// ZJITState so that we can query some options while loading builtins.
 pub static mut OPTIONS: Option<Options> = None;
@@ -441,6 +454,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("call-threshold", _) => match opt_val.parse() {
             Ok(n) => {
                 unsafe { rb_zjit_call_threshold = n; }
+                update_eval_call_threshold();
                 update_profile_threshold();
             },
             Err(_) => return None,
@@ -676,6 +690,11 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
     Some(())
 }
 
+/// Keep rb_zjit_eval_call_threshold at its multiple of rb_zjit_call_threshold.
+fn update_eval_call_threshold() {
+    unsafe { rb_zjit_eval_call_threshold = rb_zjit_call_threshold.saturating_mul(EVAL_CALL_THRESHOLD_MULT) };
+}
+
 /// Update rb_zjit_profile_threshold based on rb_zjit_call_threshold and options.num_profiles
 fn update_profile_threshold() {
     if unsafe { rb_zjit_call_threshold == 1 } {
@@ -693,6 +712,7 @@ fn update_profile_threshold() {
 pub fn set_call_threshold(call_threshold: CallThreshold) {
     unsafe { rb_zjit_call_threshold = call_threshold; }
     rb_zjit_prepare_options();
+    update_eval_call_threshold();
     update_profile_threshold();
 }
 

@@ -169,16 +169,20 @@ class TestZJITCLI < Test::Unit::TestCase
         RubyVM::ZJIT.stats(:compiled_iseq_count) > count
       end
 
+      # Each call compiles a fresh top-level ISEQ. Code rooted in an eval body
+      # waits for a much higher call threshold, so it would not compile here.
+      def fresh_compile = RubyVM::InstructionSequence.compile("compiled_iseq? { nil.to_i }").eval
+
       def compile_for(ns)
         total = RubyVM::ZJIT.total_compile_time_ns
         target = total + ns
         while true
-          return unless eval("compiled_iseq? { nil.to_i }")
+          return unless fresh_compile
           return if RubyVM::ZJIT.total_compile_time_ns > target
         end
       end
 
-      return :not_compiled1 unless eval('compiled_iseq? { nil.to_i }')
+      return :not_compiled1 unless fresh_compile
 
       RubyVM::ZJIT.max_compile_time_ns = RubyVM::ZJIT.total_compile_time_ns + 1_000_000
       compile_for(50_000_000)
@@ -187,7 +191,7 @@ class TestZJITCLI < Test::Unit::TestCase
         return :not_over
       end
 
-      return :did_compile1 if eval('compiled_iseq? { nil.to_i }')
+      return :did_compile1 if fresh_compile
 
       :ok
     RUBY

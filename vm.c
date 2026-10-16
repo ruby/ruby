@@ -571,8 +571,16 @@ zjit_compile(rb_execution_context_t *ec)
             rb_zjit_profile_enable(iseq);
         }
 
-        // At call-threshold, compile the ISEQ with ZJIT.
+        // At call-threshold, compile the ISEQ with ZJIT. ISEQs rooted in an
+        // eval body wait for a much higher threshold: they are usually
+        // throwaway (re-eval'd templates), and compiling them costs far more
+        // than interpreting their few remaining calls.
         if (body->jit_entry_calls == rb_zjit_call_threshold) {
+            if (!rb_zjit_iseq_eval_rooted(iseq)) {
+                rb_zjit_compile_iseq(iseq, ec, false);
+            }
+        }
+        else if (body->jit_entry_calls == rb_zjit_eval_call_threshold) {
             rb_zjit_compile_iseq(iseq, ec, false);
         }
     }

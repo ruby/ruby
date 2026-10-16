@@ -110,6 +110,8 @@ extern void *rb_zjit_entry;
 extern bool rb_zjit_compiling_p;
 extern const zjit_jit_frame_t rb_zjit_c_frame;
 extern unsigned int rb_zjit_call_threshold;
+extern unsigned int rb_zjit_eval_call_threshold;
+bool rb_zjit_iseq_eval_rooted(const rb_iseq_t *iseq);
 extern unsigned int rb_zjit_profile_threshold;
 extern uint64_t rb_zjit_max_compile_time_ns;
 extern uint64_t rb_zjit_total_compile_time_ns;
