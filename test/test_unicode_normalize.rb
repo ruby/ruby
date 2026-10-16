@@ -213,6 +213,12 @@ class TestUnicodeNormalize
   def test_bug_21559
     str = "s\u{1611e}\u{323}\u{1611e}\u{307}\u{1611f}"
     assert_equal str.unicode_normalize(:nfd), str.unicode_normalize(:nfc).unicode_normalize(:nfd)
+
+    str = "\u0FB2\u0591\u0F81\u0061"
+    assert_equal "\u0FB2\u0F71\u0F80\u0591\u0061", str.unicode_normalize(:nfd)
+
+    str = "\u00C0\u0591\u0F81"
+    assert_equal "\u0041\u0F71\u0F80\u0591\u0300", str.unicode_normalize(:nfd)
   end
 
   def test_gurung_khema
