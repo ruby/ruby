@@ -106,6 +106,7 @@ rb_call_builtin_inits(void)
     BUILTIN(array);
     BUILTIN(hash);
     BUILTIN(string);
+    BUILTIN(range);
     BUILTIN(symbol);
     BUILTIN(timev);
     BUILTIN(thread_sync);

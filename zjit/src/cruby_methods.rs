@@ -24,6 +24,11 @@ unsafe extern "C" {
     fn rb_builtin_ary_rev_start(ec: EcPtr, self_: VALUE) -> VALUE;
     fn rb_builtin_fixnum_neg(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
     fn rb_builtin_ary_rev_next(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
+    fn rb_builtin_range_fixnum_p(ec: EcPtr, self_: VALUE) -> VALUE;
+    fn rb_builtin_range_begin(ec: EcPtr, self_: VALUE) -> VALUE;
+    fn rb_builtin_range_rev_start(ec: EcPtr, self_: VALUE) -> VALUE;
+    fn rb_builtin_fixnum_below(ec: EcPtr, self_: VALUE, num: VALUE, lo: VALUE) -> VALUE;
+    fn rb_builtin_fixnum_dec(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
 }
 
 pub struct Annotations {
@@ -350,6 +355,20 @@ pub fn init() -> Annotations {
     builtin_funcs.insert(rb_builtin_ary_rev_next as *mut c_void, FnProperties {
         no_gc: true, leaf: true, elidable: true, return_type: types::Fixnum, ..Default::default()
     });
+    // Range#reverse_each iteration builtins. The generic fallback yields and
+    // stays unannotated; dec/below inline with deopts covering the
+    // FIXNUM_MIN and empty-range sentinels.
+    builtin_funcs.insert(rb_builtin_range_fixnum_p as *mut c_void, FnProperties {
+        no_gc: true, leaf: true, elidable: true, return_type: types::BoolExact, ..Default::default()
+    });
+    builtin_funcs.insert(rb_builtin_range_begin as *mut c_void, FnProperties {
+        no_gc: true, leaf: true, elidable: true, ..Default::default()
+    });
+    builtin_funcs.insert(rb_builtin_range_rev_start as *mut c_void, FnProperties {
+        no_gc: true, leaf: true, elidable: true, ..Default::default()
+    });
+    builtin_funcs.insert(rb_builtin_fixnum_below as *mut c_void, FnProperties { inline: inline_fixnum_below, return_type: types::BoolExact, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_fixnum_dec as *mut c_void, FnProperties { inline: inline_fixnum_dec, return_type: types::Fixnum, ..Default::default() });
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
@@ -1396,6 +1415,28 @@ fn inline_fixnum_neg(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::I
     let &[_self, num] = args else { return None; };
     let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(0)) });
     let result = fun.push_insn(block, hir::Insn::FixnumLt { left: num, right: zero });
+    Some(result)
+}
+
+/// Inline `fixnum_below(ec, self, num, lo)` as a guarded fixnum compare: the
+/// non-fixnum sentinels (empty-range nil, FIXNUM_MIN decrement) fail the
+/// guard and resume in the interpreter, whose C primitive returns true.
+fn inline_fixnum_below(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[_self, num, lo] = args else { return None; };
+    let num = fun.push_insn(block, hir::Insn::GuardType { val: num, guard_type: types::Fixnum, state, recompile: None });
+    let lo = fun.push_insn(block, hir::Insn::GuardType { val: lo, guard_type: types::Fixnum, state, recompile: None });
+    let result = fun.push_insn(block, hir::Insn::FixnumLt { left: num, right: lo });
+    Some(result)
+}
+
+/// Inline `fixnum_dec(ec, self, num)` as an overflow-checked subtract: the
+/// FIXNUM_MIN edge overflows, deopts, and the interpreter's C primitive
+/// produces the nil sentinel.
+fn inline_fixnum_dec(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[_self, num] = args else { return None; };
+    let num = fun.push_insn(block, hir::Insn::GuardType { val: num, guard_type: types::Fixnum, state, recompile: None });
+    let one = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
+    let result = fun.push_insn(block, hir::Insn::FixnumSub { left: num, right: one, state });
     Some(result)
 }
 
