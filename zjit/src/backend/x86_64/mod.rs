@@ -679,10 +679,15 @@ impl Assembler {
                     *out = lower_stack_membase(asm, *out);
                     asm.push_insn(insn);
                 }
-                &mut Insn::Not { opnd, out } |
-                &mut Insn::LShift { opnd, out, .. } |
-                &mut Insn::RShift { opnd, out, .. } |
-                &mut Insn::URShift { opnd, out, .. } => {
+                Insn::Not { opnd, out } |
+                Insn::LShift { opnd, out, .. } |
+                Insn::RShift { opnd, out, .. } |
+                Insn::URShift { opnd, out, .. } => {
+                    // The emit works on `opnd` in place (x86_split gave it its own
+                    // vreg), then the result is copied to `out`. Either may be a
+                    // spilled stack slot, which the emit cannot address until lowered.
+                    *opnd = lower_stack_membase(asm, *opnd);
+                    let (opnd, out) = (*opnd, lower_stack_membase(asm, *out));
                     asm.push_insn(insn);
                     asm_mov(asm, out, opnd, SCRATCH0_OPND);
                 }
@@ -2742,6 +2747,20 @@ mod tests {
         0x9: mov qword ptr [rbp - 8], r11
         ");
         assert_snapshot!(cb.hexdump(), @"4c8b5df24c0f445df84c895df8");
+    }
+
+    #[test]
+    fn test_shift_split_spilled_operands() {
+        // With no allocatable registers, a shift's in-place operand and its output both
+        // live in stack slots, which the emit cannot address until the split lowers them.
+        for shift in [Assembler::lshift, Assembler::rshift, Assembler::urshift] {
+            let (mut asm, mut cb) = setup_asm();
+            let opnd = Opnd::Mem(Mem { base: MemBase::Stack { stack_idx: 0, num_bits: 64 }, disp: 0, num_bits: 64 });
+            let out = shift(&mut asm, opnd, Opnd::UImm(1));
+            asm.mov(C_RET_OPND, out);
+            asm.compile_with_num_regs(&mut cb, 0);
+            assert!(cb.get_write_pos() > 0);
+        }
     }
 
     #[test]
