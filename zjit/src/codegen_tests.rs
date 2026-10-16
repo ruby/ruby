@@ -341,7 +341,7 @@ fn test_getglobal_with_warning() {
         test
     "#);
     assert_contains_opcode("test", YARVINSN_getglobal);
-    assert_snapshot!(assert_compiles(r#"test"#), @r#""rescued""#);
+    assert_snapshot!(assert_compiles_allowing_exits(r#"test"#), @r#""rescued""#);
 }
 
 #[test]
@@ -506,7 +506,7 @@ fn test_setglobal_with_trace_var_exception() {
         test
     "#);
     assert_contains_opcode("test", YARVINSN_setglobal);
-    assert_snapshot!(assert_compiles(r#"test"#), @r#""rescued""#);
+    assert_snapshot!(assert_compiles_allowing_exits(r#"test"#), @r#""rescued""#);
 }
 
 #[test]
@@ -1090,7 +1090,8 @@ fn test_yield_polymorphic_ifunc_handler_falls_back() {
         add_one; double
         add_one; double
     ");
-    assert_snapshot!(assert_compiles("[add_one, double, via_enum]"), @"[11, 20, [10]]");
+    // Function stubs side-exit until callees are profiled enough (exit_function_stub_not_profiled)
+    assert_snapshot!(assert_compiles_allowing_exits("[add_one, double, via_enum]"), @"[11, 20, [10]]");
 }
 
 #[test]
@@ -2012,7 +2013,7 @@ fn test_send_no_kwarg_to_positional_hash_fallback() {
         end
         entry
     ");
-    assert_snapshot!(assert_compiles("entry"), @":argument_error");
+    assert_snapshot!(assert_compiles_allowing_exits("entry"), @":argument_error");
 }
 
 #[test]
@@ -3613,6 +3614,24 @@ fn test_opt_plus_overflow() {
 
         [r1, r2, r3]
     "), @"[5, 4611686018427387904, -4611686018427387905]");
+}
+
+#[test]
+fn test_side_exit_count_without_stats() {
+    // side_exit_count is incremented by materialize_exit_trampoline, not by --zjit-stats code.
+    ensure_rubyvm(); // ZJITState and options are not available until the VM is booted
+    assert!(!get_option!(stats));
+    let exits_before = crate::stats::total_exit_count();
+    let side_exit_count_before = crate::state::ZJITState::get_counters().side_exit_count;
+    assert_snapshot!(assert_compiles_allowing_exits("
+        def test(a, b) = a + b
+        test(1, 2) # profile opt_plus
+        test(1, 2) # compile
+        [test(4611686018427387903, 1), test(-4611686018427387904, -1)] # overflow twice
+    "), @"[4611686018427387904, -4611686018427387905]");
+    let side_exit_count = crate::state::ZJITState::get_counters().side_exit_count - side_exit_count_before;
+    assert_eq!(2, crate::stats::total_exit_count() - exits_before);
+    assert_eq!(2, side_exit_count);
 }
 
 #[test]
@@ -6434,7 +6453,7 @@ fn test_defined_with_method_call() {
         test
     "#);
     assert_contains_opcode("test", YARVINSN_defined);
-    assert_snapshot!(assert_compiles(r#"test"#), @r#"["method", nil]"#);
+    assert_snapshot!(assert_compiles_allowing_exits(r#"test"#), @r#"["method", nil]"#);
 }
 
 #[test]
@@ -6954,7 +6973,7 @@ fn test_profile_frames_during_direct_block_entry() {
         "#);
 
         let profiler = signal_profiler::Profiler::start(10);
-        assert_snapshot!(assert_compiles("profiled_yield_loop(1_000_000)"), @"1000000");
+        assert_snapshot!(assert_compiles_allowing_exits("profiled_yield_loop(1_000_000)"), @"1000000");
         assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
     });
 }
@@ -7585,7 +7604,7 @@ fn test_checkmatch_rescue() {
           end
         end
     "#);
-    assert_snapshot!(assert_compiles("[test, test]"), @"[1, 1]");
+    assert_snapshot!(assert_compiles_allowing_exits("[test, test]"), @"[1, 1]");
 }
 
 #[test]
@@ -7599,7 +7618,7 @@ fn test_checkmatch_rescue_splat_array() {
           end
         end
     "#);
-    assert_snapshot!(assert_compiles("[test, test]"), @"[1, 1]");
+    assert_snapshot!(assert_compiles_allowing_exits("[test, test]"), @"[1, 1]");
 }
 
 #[test]
@@ -7749,7 +7768,7 @@ fn test_ccall_variadic_with_no_args_causing_argument_error() {
         test
     ");
     assert_contains_opcode("test", YARVINSN_opt_send_without_block);
-    assert_snapshot!(assert_compiles("test"), @":error");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @":error");
 }
 
 #[test]
@@ -8862,7 +8881,7 @@ fn test_inlined_method_with_rescue_caught_in_callee() {
     // callee. The runtime exception walker must find the rescue clause via the
     // inlined callee's CFP.
     with_inlining(|| {
-        assert_snapshot!(assert_inlines(r#"
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
             def callee(x)
               begin
                 raise "boom" if x.negative?
@@ -8884,7 +8903,7 @@ fn test_inlined_method_with_rescue_caught_in_caller() {
     // The callee re-raises and the caller catches the exception after unwinding
     // the inlined callee frame.
     with_inlining(|| {
-        assert_snapshot!(assert_inlines(r#"
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
             def callee(x)
               raise "boom" if x.negative?
               0
@@ -8906,7 +8925,7 @@ fn test_inlined_method_with_rescue_caught_in_caller() {
 #[test]
 fn test_inlined_method_with_ensure_runs_on_propagation() {
     with_inlining(|| {
-        assert_snapshot!(assert_inlines(r##"
+        assert_snapshot!(assert_inlines_allowing_exits(r##"
             $log = []
             def callee(x)
               begin
@@ -8937,7 +8956,7 @@ fn test_inlined_method_with_retry_resumes_begin_block() {
     // The begin/rescue/retry callee is larger than the default test inline budget,
     // so raise the threshold enough for it to be inlined.
     with_inlining_threshold(100, || {
-        assert_snapshot!(assert_inlines(r#"
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
             def callee(counter)
               begin
                 counter[0] += 1

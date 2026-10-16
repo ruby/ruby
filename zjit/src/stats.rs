@@ -165,6 +165,7 @@ make_counters! {
         invalidation_time_ns,
 
         compiled_side_exit_count,
+        side_exit_count,
         side_exit_size_bytes,
         compile_side_exit_time_ns,
 
@@ -184,10 +185,11 @@ make_counters! {
         compile_lir_time_ns,
     }
 
-    // Exit counters that are summed as side_exit_count
+    // Exit counters that break down side_exit_count by reason (--zjit-stats only)
     exit {
         // exit_: Side exits reasons
         exit_compile_error,
+        exit_function_stub_not_profiled,
         exit_exception_handler,
         exit_unhandled_newarray_send_min,
         exit_unhandled_newarray_send_hash,
@@ -866,13 +868,9 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     }
 
     // Set side-exit counters for each SideExitReason
-    let mut side_exit_count = 0;
     for &counter in EXIT_COUNTERS {
-        let count = unsafe { *counter_ptr(counter) };
-        side_exit_count += count;
-        set_stat_usize!(hash, &counter.name(), count);
+        set_stat_usize!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
     }
-    set_stat_usize!(hash, "side_exit_count", side_exit_count);
 
     // Set side-exit counters for UnhandledYARVInsn
     let exit_counters = ZJITState::get_exit_counters();
