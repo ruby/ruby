@@ -668,6 +668,7 @@ pub enum SideExitReason {
     SplatKwNotProfiled,
     CallerSplatLengthMismatch,
     CallerKwSplatMismatch,
+    StringCoderangeUnknown,
     CallerSplatRuby2Keywords,
     DirectiveInduced,
     SendWhileTracing,
@@ -1039,6 +1040,9 @@ pub enum Insn {
     Entries { targets: Vec<BlockId> },
 
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
+    /// Coderange of a string as the RUBY_ENC_CODERANGE_* flag value, scanning
+    /// and caching when still unknown. Never returns UNKNOWN; cannot raise.
+    StringCoderangeScan { string: InsnId },
     StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
     /// Call rb_str_getbyte with known-Fixnum index
@@ -1476,7 +1480,7 @@ pub enum Insn {
     /// Side-exit if (val & mask) != 0
     GuardNoBitsSet { val: InsnId, mask: Const, mask_name: Option<ID>, reason: Box<SideExitReason>, state: InsnId },
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
-    GuardGreaterEq { left: InsnId, right: InsnId, reason: Box<SideExitReason>, state: InsnId },
+    GuardGreaterEq { left: InsnId, right: InsnId, reason: Box<SideExitReason>, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if left is not less than right (both operands are C long).
     GuardLess { left: InsnId, right: InsnId, reason: Box<SideExitReason>, state: InsnId },
 
@@ -1758,6 +1762,9 @@ macro_rules! for_each_operand_impl {
             | Insn::HashLookupOrUndef { hash, .. } => {
                 $visit_one!(*hash);
             }
+            Insn::StringCoderangeScan { string } => {
+                $visit_one!(*string);
+            }
             Insn::HashAref { hash, key, state }
             | Insn::HashKeyP { hash, key, state }
             | Insn::HashFetch { hash, key, state }
@@ -1973,6 +1980,7 @@ impl Insn {
             Insn::Param { .. } => effects::Empty,
             Insn::LoadArg { .. } => effects::Empty,
             Insn::StringCopy { .. } => allocates,
+            Insn::StringCoderangeScan { .. } => effects::Any,
             Insn::StringIntern { .. } => effects::Any,
             Insn::StringConcat { .. } => effects::Any,
             Insn::StringGetbyte { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
@@ -2402,6 +2410,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
             Insn::HashAref { hash, key, .. } => { write!(f, "HashAref {hash}, {key}")}
             Insn::HashSize { hash } => { write!(f, "HashSize {hash}") }
+            Insn::StringCoderangeScan { string } => { write!(f, "StringCoderangeScan {string}") }
             Insn::HashLookupOrUndef { hash, key } => { write!(f, "HashLookupOrUndef {hash}, {}", key.print(self.ptr_map)) }
             Insn::HashKeyP { hash, key, .. } => { write!(f, "HashKeyP {hash}, {key}")}
             Insn::HashFetch { hash, key, .. } => { write!(f, "HashFetch {hash}, {key}")}
@@ -4111,6 +4120,7 @@ impl Function {
             Insn::AdjustBounds { .. } => types::CInt64,
             Insn::HashAref { .. } => types::BasicObject,
             Insn::HashSize { .. } => types::Fixnum,
+            Insn::StringCoderangeScan { .. } => types::CInt64,
             // May also be Qundef until guarded; BasicObject is the closest lattice fit.
             Insn::HashLookupOrUndef { .. } => types::BasicObject,
             Insn::HashKeyP { .. } => types::BoolExact,
@@ -5089,6 +5099,12 @@ impl Function {
             return false;
         };
         Type::from_profiled_type(profiled_type).is_subtype(ty)
+    }
+
+    /// Whether this compilation must avoid guards that side-exit (final
+    /// recompiled version); inline helpers use non-speculative fallbacks then.
+    pub fn avoids_side_exits(&self) -> bool {
+        self.policy.no_side_exits
     }
 
     pub fn coerce_to(&mut self, block: BlockId, val: InsnId, guard_type: Type, state: InsnId) -> InsnId {
@@ -7430,7 +7446,7 @@ impl Function {
                         }
                         insn_id
                     },
-                    &Insn::GuardGreaterEq { left, right, state, ref reason } => {
+                    &Insn::GuardGreaterEq { left, right, state, ref reason, recompile } => {
                         let left_num = self.type_of(left).cint64_value();
                         let right_num = self.type_of(right).cint64_value();
                         match (left_num, right_num) {
@@ -7438,7 +7454,7 @@ impl Function {
                                 self.make_equal_to(insn_id, left);
                                 continue
                             },
-                            (Some(_), Some(_)) => self.new_insn(Insn::SideExit { state, reason: reason.clone(), recompile: None }),
+                            (Some(_), Some(_)) => self.new_insn(Insn::SideExit { state, reason: reason.clone(), recompile }),
                             _ => insn_id,
                         }
                     },
@@ -12274,6 +12290,9 @@ impl Function {
             Insn::HashSize { hash }
             | Insn::HashLookupOrUndef { hash, .. } => {
                 self.assert_subtype(insn_id, hash, types::Hash)
+            }
+            Insn::StringCoderangeScan { string } => {
+                self.assert_subtype(insn_id, string, types::String)
             }
             // Instructions with Hash operands
             Insn::HashAref { hash, .. }

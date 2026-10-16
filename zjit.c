@@ -269,6 +269,14 @@ rb_zjit_singleton_class_p(VALUE klass)
     return RCLASS_SINGLETON_P(klass);
 }
 
+// Coderange of a string, scanning and caching it when still unknown. Returns
+// the RUBY_ENC_CODERANGE_* flag value widened to a full register.
+unsigned long
+rb_zjit_str_coderange(VALUE str)
+{
+    return (unsigned long)rb_enc_str_coderange(str);
+}
+
 /* Sets all of the required shape flags for the object including the layout type,
  * the frozen status, and the slot size. Mimics `rb_newobj`.
  */

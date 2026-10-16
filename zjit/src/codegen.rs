@@ -934,7 +934,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardAnyBitSet { val, mask, ref reason, state, recompile, .. } => gen_guard_any_bit_set(jit, asm, function, opnd!(val), mask, **reason, recompile, &function.frame_state(state)),
         &Insn::GuardNoBitsSet { val, mask, ref reason, state, .. } => gen_guard_no_bits_set(jit, asm, function, opnd!(val), mask, **reason, &function.frame_state(state)),
         &Insn::GuardLess { left, right, ref reason, state } => gen_guard_less(jit, asm, function, opnd!(left), opnd!(right), **reason, &function.frame_state(state)),
-        &Insn::GuardGreaterEq { left, right, state, .. } => gen_guard_greater_eq(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(state)),
+        &Insn::GuardGreaterEq { left, right, ref reason, state, recompile } => gen_guard_greater_eq(jit, asm, function, opnd!(left), opnd!(right), **reason, recompile, &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, function, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, owner, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, *owner, opnd!(recv), opnds!(args)),
         Insn::CCallWithFrame(insn) => {
@@ -973,6 +973,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Unreachable => no_output!(asm.abort()),
         &Insn::HashDup { val, state } => { gen_hash_dup(jit, asm, function, val, opnd!(val), &function.frame_state(state)) },
         Insn::HashSize { hash } => asm_ccall!(asm, rb_hash_size, opnd!(hash)),
+        Insn::StringCoderangeScan { string } => asm_ccall!(asm, rb_zjit_str_coderange, opnd!(string)),
         Insn::HashLookupOrUndef { hash, key } => asm_ccall!(asm, rb_hash_lookup2, opnd!(hash), Opnd::Value(*key), Opnd::Value(Qundef)),
         &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
         &Insn::HashKeyP { hash, key, state } => { gen_hash_key_p(jit, asm, function, opnd!(hash), opnd!(key), function.type_of(key), &function.frame_state(state)) },
@@ -1154,9 +1155,9 @@ fn gen_guard_less(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
     left
 }
 
-fn gen_guard_greater_eq(jit: &mut JITState, asm: &mut Assembler, function: &Function, left: Opnd, right: Opnd, state: &FrameState) -> Opnd {
+fn gen_guard_greater_eq(jit: &mut JITState, asm: &mut Assembler, function: &Function, left: Opnd, right: Opnd, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> Opnd {
     asm.cmp(left, right);
-    asm.jl(jit, side_exit(jit, function, state, SideExitReason::GuardGreaterEq));
+    asm.jl(jit, side_exit_with_recompile(jit, function, state, reason, recompile));
     left
 }
 
