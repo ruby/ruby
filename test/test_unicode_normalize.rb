@@ -237,4 +237,18 @@ class TestUnicodeNormalize
     assert_equal(s[1..] + a + a, UnicodeNormalize.canonical_ordering_one(s_unordered[1..] + a_unordered1 + a_unordered2))
     assert_equal(o + s + u1 + a + o + a + u2 + o, UnicodeNormalize.canonical_ordering_one(o + s_unordered + u1 + a_unordered1 + o + a_unordered2 + u2 + o))
   end
+
+  def test_tibetan_canonical_ordering
+    # The following example comes from the Unicode collation tests. In this example,
+    # the 0F81 decomposes into 0F71 0F80, which have combining classes of 129 and 130
+    # respectively. The 0591 that comes logically earlier in the codepoint sequence
+    # has a combining class of 220. Because Ruby's NFD normalization algorithm decomposes
+    # subsections of the string rather than the entire string at once, earlier
+    # implementations processed 0FB2 and 0591 in isolation, which generated a string
+    # with combining classes 0 220 129 130 0, which is not the correct canonical order;
+    # 0591 (combining class of 220) should be ordered after 0F80 (combining class of
+    # 130). This test ensures correct ordering is observed for such cases.
+    a = "\u0FB2\u0591\u0F81\u0061"
+    assert_equal("\u0fb2\u0f71\u0f80\u0591\u0061", UnicodeNormalize.normalize(a, :nfd))
+  end
 end

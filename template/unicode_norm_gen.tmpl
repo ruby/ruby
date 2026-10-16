@@ -138,6 +138,10 @@ decomposition_table.each do |key, value|
   kompatible_table[key] = value if expanded
 end
 
+decomp_all_accents = decomposition_table.filter_map do |key, value|
+  next key if value.all? { |c| combining_class[c] != 0 }
+end
+
 while kompatible_table.any? {|key, value|
         expanded = value.map {|v| kompatible_table[v] || v}.flatten
         kompatible_table[key] = expanded unless value == expanded
@@ -158,15 +162,18 @@ module UnicodeNormalize  # :nodoc:
   accents = "" \
     "[<% accent_array.each_regexp_chars do |rx|%><%=rx%>" \
     "<% end%>]"
+  decomp_all_accents = "" \
+    "[<% decomp_all_accents.each_regexp_chars do |rx|%><%=rx%>" \
+    "<% end%>]"
   ACCENTS = accents
   REGEXP_D_STRING = "#{''  # composition starters and composition exclusions
     }" \
     "[<% (composition_table.values+composition_exclusions).each_regexp_chars do |rx|%><%=rx%>" \
-    "<% end%>]#{accents}*" \
+    "<% end%>]#{decomp_all_accents}*#{accents}*" \
     "|#{''  # characters that can be the result of a composition, except composition starters
     }" \
     "[<% (composition_starters-composition_table.values).each_regexp_chars do |rx|%><%=rx%>" \
-    "<% end%>]?#{accents}+" \
+    "<% end%>]?#{accents}+#{decomp_all_accents}*#{accents}*" \
     "|#{''  # precomposed Hangul syllables
     }" \
     "[\u{AC00}-\u{D7A4}]"
