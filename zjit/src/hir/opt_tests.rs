@@ -25053,7 +25053,7 @@ mod hir_opt_tests {
           v8:BasicObject = LoadArg :x@1
           Jump bb3(v7, v8)
         bb3(v11:HeapBasicObject, v12:BasicObject):
-          v95:NilClass = Const Value(nil)
+          v92:NilClass = Const Value(nil)
           v17:Fixnum[1] = Const Value(1)
           v20:CShape = LoadField v11, :shape_id@0x1001
           v21:CShape[0x1002] = Const CShape(0x1002)
@@ -25088,23 +25088,21 @@ mod hir_opt_tests {
         bb13():
           v54:Flonum = RefineType v12, Flonum
           PatchPoint MethodRedefined(Float@0x1040, +@0x1010, cme:0x1048)
-          v87:CDouble = UnboxFlonum v54
-          v88:CDouble = F64FromFixnum v43
-          v89:CDouble = FloatAdd v87, v88
-          v90:Flonum = BoxFlonum v89
-          Jump bb9(v90)
+          v87:BasicObject = CCallWithFrame v54, :Float#+@0x1070, v43
+          Jump bb9(v87)
         bb10():
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v93:Fixnum = GuardType v12, Fixnum recompile
-          v94:Fixnum = FixnumAdd v93, v43
-          Jump bb9(v94)
-        bb9(v46:Flonum|Fixnum):
+          v90:Fixnum = GuardType v12, Fixnum recompile
+          v91:Fixnum = FixnumAdd v90, v43
+          Jump bb9(v91)
+        bb9(v46:BasicObject):
           v65:CShape = LoadField v11, :shape_id@0x1001
           v66:CShape[0x1002] = Const CShape(0x1002)
           v67:CBool = IsBitEqual v65, v66
           CondBranch v67, bb15(), bb16()
         bb15():
           StoreField v11, :@a@0x1003, v46
+          WriteBarrier v11, v46
           Jump bb14()
         bb16():
           SetIvar v11, :@a, v46

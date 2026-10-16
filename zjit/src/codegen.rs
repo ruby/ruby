@@ -3977,11 +3977,14 @@ fn gen_flonum_representable_guard(jit: &mut JITState, asm: &mut Assembler, funct
     asm.cmp(t, Opnd::UImm(0));
     let guard = asm.csel_e(Opnd::UImm(0), d_masked);
     asm.cmp(guard, Opnd::UImm(0));
-    asm.jne(jit, side_exit(jit, function, state, FlonumArithResultNotFlonum));
+    // A non-flonum result (-0.0 from `0.0 * -x`, or a tiny or huge magnitude) is
+    // legal output, so recompile out of the guard rather than exit forever: the
+    // final version takes the generic, allocating path instead (try_inline_float_op).
+    asm.jne(jit, side_exit_with_recompile(jit, function, state, FlonumArithResultNotFlonum, Some(Recompile)));
     // Exclude 0x3000000000000000, which would rotate-encode to the +0.0 sentinel.
     let edge = asm.load(Opnd::UImm(0x3000000000000000));
     asm.cmp(t, edge);
-    asm.je(jit, side_exit(jit, function, state, FlonumArithResultNotFlonum));
+    asm.je(jit, side_exit_with_recompile(jit, function, state, FlonumArithResultNotFlonum, Some(Recompile)));
 }
 
 fn double_bits_to_flonum(jit: &mut JITState, asm: &mut Assembler, function: &Function, t: Opnd, state: &FrameState) -> Opnd {

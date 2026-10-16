@@ -248,6 +248,27 @@ fn test_recompile_exit_waits_for_exit_budget() {
 }
 
 #[test]
+fn test_float_result_not_flonum_recompiles() {
+    // -0.0 has no flonum encoding, so the open-coded multiply's result box exits on it.
+    // That is legal output, so the exit spends the exit budget and invalidates the
+    // version rather than side-exiting on every call forever.
+    set_call_threshold(2);
+    set_num_exits_until_invalidate(2);
+    eval("
+        def float_mul_result(a, b) = a * b
+        float_mul_result(1.5, 2.0)
+        float_mul_result(1.5, 2.0)
+    ");
+
+    let iseq = get_method_iseq("self", "float_mul_result");
+    assert!(!unsafe { get_or_create_iseq_payload(iseq).versions.last().unwrap().as_ref() }.is_invalidated());
+    for _ in 0..2 {
+        assert_eq!(inspect("float_mul_result(0.0, -1.0)"), "-0.0");
+    }
+    assert!(unsafe { get_or_create_iseq_payload(iseq).versions.last().unwrap().as_ref() }.is_invalidated());
+}
+
+#[test]
 fn test_uses_descriptor_side_exits() {
     // Guards whose exits need no boxing restore the frame from a descriptor.
     set_call_threshold(2);

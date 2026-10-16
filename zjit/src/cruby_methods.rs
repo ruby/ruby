@@ -855,6 +855,11 @@ fn try_inline_float_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(
     if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, FLOAT_REDEFINED_OP_FLAG) } {
         return None;
     }
+    // The result box side-exits on a non-flonum double. The final version
+    // cannot recompile out of that, so it calls the generic method instead.
+    if fun.avoids_side_exits() {
+        return None;
+    }
     // Receiver must be Flonum (cheap tag check: (val & 3) == 2); the other operand
     // may be Flonum or Fixnum. The op runs on raw doubles: unbox/convert each
     // operand (f builds the FloatX on the doubles), then box the result. A
@@ -977,6 +982,10 @@ fn inline_integer_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
 /// falls back to a Send.
 fn try_inline_fixnum_float_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
     if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
+        return None;
+    }
+    // See try_inline_float_op: the final version takes the generic path.
+    if fun.avoids_side_exits() {
         return None;
     }
     if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(other, types::Flonum, state) {
