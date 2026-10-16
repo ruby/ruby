@@ -5650,7 +5650,7 @@ rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive)
 
                 if (ISASCII(b) && ISASCII(e) && ISASCII(v)) {
                     if (b <= v && v < e) return Qtrue;
-                    return RBOOL(!RTEST(exclusive) && v == e);
+                    return RBOOL(!RTEST(exclusive) && b <= v && v == e);
                 }
             }
         }
