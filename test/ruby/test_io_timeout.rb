@@ -36,6 +36,8 @@ class TestIOTimeout < Test::Unit::TestCase
       i.timeout = 0.0001
 
       assert_raise(IO::TimeoutError) {i.read}
+      assert_raise(IO::TimeoutError) {i.sysread(10)}
+      assert_raise(IO::TimeoutError) {i.readpartial(10)}
     end
   end
 
