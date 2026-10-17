@@ -22,6 +22,15 @@ describe "Fiber#kill" do
     fiber.alive?.should == false
   end
 
+  it "kills a suspended fiber from another Thread" do
+    fiber = Fiber.new { Fiber.yield }
+    fiber.resume
+
+    Thread.new { fiber.kill }.value
+
+    fiber.alive?.should == false
+  end
+
   it "can kill itself" do
     fiber = Fiber.new do
       Fiber.current.kill
