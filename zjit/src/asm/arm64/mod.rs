@@ -631,11 +631,44 @@ pub fn ldurb(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// LDURSB - load a byte from memory, sign-extend it, and write it to a register
+pub fn ldursb(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert_eq!(rn.num_bits, 8, "Expected the memory operand to be 8 bits");
+            assert_eq!(rt.num_bits, 64, "Expected the destination register to be 64 bits");
+            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
+
+            LoadStore::ldursb(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operand combination to ldursb instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// LDURSH - load a halfword from memory, sign-extend it, and write it to a register
+pub fn ldursh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert_eq!(rn.num_bits, 16, "Expected the memory operand to be 16 bits");
+            assert_eq!(rt.num_bits, 64, "Expected the destination register to be 64 bits");
+            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
+
+            LoadStore::ldursh(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operand combination to ldursh instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// LDURSW - load a 32-bit memory address into a register and sign-extend it
 pub fn ldursw(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
-            assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
+            assert_eq!(rn.num_bits, 32, "Expected the memory operand to be 32 bits");
+            assert_eq!(rt.num_bits, 64, "Expected the destination register to be 64 bits");
             assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
 
             LoadStore::ldursw(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
@@ -1118,6 +1151,36 @@ pub fn subs(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
             }
         },
         _ => panic!("Invalid operand combination to subs instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// SXTB - sign extend the lowest byte of a register into a register
+pub fn sxtb(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn)) => {
+            assert_eq!(rd.num_bits, 64, "rd must be 64-bits wide.");
+            assert_eq!(rn.num_bits, 32, "rn must be 32-bits wide.");
+
+            SBFM::sxtb(rd.reg_no, rn.reg_no).into()
+        },
+        _ => panic!("Invalid operand combination to sxtb instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// SXTH - sign extend the lowest halfword of a register into a register
+pub fn sxth(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn)) => {
+            assert_eq!(rd.num_bits, 64, "rd must be 64-bits wide.");
+            assert_eq!(rn.num_bits, 32, "rn must be 32-bits wide.");
+
+            SBFM::sxth(rd.reg_no, rn.reg_no).into()
+        },
+        _ => panic!("Invalid operand combination to sxth instruction."),
     };
 
     cb.write_bytes(&bytes);
@@ -1651,8 +1714,22 @@ mod tests {
     }
 
     #[test]
+    fn test_ldursb() {
+        let cb = compile(|cb| ldursb(cb, X10, A64Opnd::new_mem(8, X11, 123)));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldursb x10, [x11, #0x7b]");
+        assert_snapshot!(cb.hexdump(), @"6ab18738");
+    }
+
+    #[test]
+    fn test_ldursh() {
+        let cb = compile(|cb| ldursh(cb, X10, A64Opnd::new_mem(16, X11, 123)));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldursh x10, [x11, #0x7b]");
+        assert_snapshot!(cb.hexdump(), @"6ab18778");
+    }
+
+    #[test]
     fn test_ldursw() {
-        let cb = compile(|cb| ldursw(cb, X10, A64Opnd::new_mem(64, X11, 123)));
+        let cb = compile(|cb| ldursw(cb, X10, A64Opnd::new_mem(32, X11, 123)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldursw x10, [x11, #0x7b]");
         assert_snapshot!(cb.hexdump(), @"6ab187b8");
     }
@@ -1954,6 +2031,20 @@ mod tests {
         let cb = compile(|cb| subs(cb, X0, X1, A64Opnd::new_uimm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: subs x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c00f1");
+    }
+
+    #[test]
+    fn test_sxtb() {
+        let cb = compile(|cb| sxtb(cb, X10, W11));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: sxtb x10, w11");
+        assert_snapshot!(cb.hexdump(), @"6a1d4093");
+    }
+
+    #[test]
+    fn test_sxth() {
+        let cb = compile(|cb| sxth(cb, X10, W11));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: sxth x10, w11");
+        assert_snapshot!(cb.hexdump(), @"6a3d4093");
     }
 
     #[test]
