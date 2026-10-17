@@ -35,6 +35,7 @@
 #include "internal/vm.h"
 #include "internal/sanitizers.h"
 #include "internal/variable.h"
+#include "internal/hash.h"
 #include "iseq.h"
 #include "symbol.h" // This includes a macro for a more performant rb_id2sym.
 #include "yjit.h"
@@ -239,15 +240,11 @@ rb_vm_frame_block_handler(const rb_control_frame_t *cfp)
 // to_h pair-literal block optimization.  If the block given to the
 // current (cfunc) method is a `to_h { |*| [key, value] }` pair-literal
 // block (its iseq contains the to_h_aset instruction), install
-// `hash` into the hidden outer local slot that the block reads, so
-// that the block stores each key/value pair directly into `hash`
-// without building an intermediate two-element array.  Returns true
-// if the fast path was taken, in which case the caller just has to
-// invoke the block per element with the same arguments as the original
-// implementation (and, to preserve `next`/`break`, convert the return
-// value with rb_hash_set_pair unless it is `hash`).
+// `hash` into the hidden outer slot that the block reads, and fill
+// `slots` with the frame and the hidden key/value slots the core to_h
+// reads after each yield.  Returns true if the fast path was taken.
 int
-rb_vm_to_h_pair_prepare(VALUE hash)
+rb_vm_to_h_pair_prepare(VALUE hash, struct rb_to_h_pair_slots *slots)
 {
     VALUE bh = VM_CF_BLOCK_HANDLER(GET_EC()->cfp);
 
@@ -259,11 +256,40 @@ rb_vm_to_h_pair_prepare(VALUE hash)
 
     if (ISEQ_BODY(block_iseq)->type != ISEQ_TYPE_BLOCK) return 0;
 
-    int lidx = rb_iseq_to_h_pair_lidx(block_iseq);
-    if (lidx <= 0) return 0;
+    int hash_idx, key_idx, val_idx;
+    if (!rb_iseq_to_h_pair_slots(block_iseq, &hash_idx, &key_idx, &val_idx)) return 0;
 
-    rb_vm_env_write(capt->ep, -lidx, hash);
+    slots->ep = capt->ep;
+    slots->hash_idx = hash_idx;
+    slots->key_idx = key_idx;
+    slots->val_idx = val_idx;
+    rb_vm_env_write(capt->ep, -hash_idx, hash);
     return 1;
+}
+
+// Counterpart of rb_vm_to_h_pair_prepare().  The hidden slot only carries the
+// result hash for the duration of the cooperating to_h call, so clear it once
+// the call is over (including on exception, via rb_ensure).  Otherwise a block
+// captured as a Proc by a user-defined to_h could later read a stale hash.
+VALUE
+rb_vm_to_h_pair_finish(VALUE _)
+{
+    VALUE bh = VM_CF_BLOCK_HANDLER(GET_EC()->cfp);
+
+    if (bh == VM_BLOCK_HANDLER_NONE) return Qnil;
+    if (!VM_BH_ISEQ_BLOCK_P(bh)) return Qnil;
+
+    const struct rb_captured_block *capt = VM_BH_TO_ISEQ_BLOCK(bh);
+    const rb_iseq_t *block_iseq = capt->code.iseq;
+
+    if (ISEQ_BODY(block_iseq)->type != ISEQ_TYPE_BLOCK) return Qnil;
+
+    int hash_idx, key_idx, val_idx;
+    if (rb_iseq_to_h_pair_slots(block_iseq, &hash_idx, &key_idx, &val_idx)) {
+        rb_vm_env_write(capt->ep, -hash_idx, Qnil);
+    }
+
+    return Qnil;
 }
 
 #if VM_CHECK_MODE > 0

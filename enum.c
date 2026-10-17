@@ -768,21 +768,45 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
     return rb_hash_set_pair(hash, rb_yield_values2(argc, argv));
 }
 
-// Block body of the to_h pair-literal fast path.  The block stores each
-// pair directly into `hash`; we only need to yield so the block runs, and
-// to handle the rare case of the block leaving by `next` (which skips the
-// store and returns some other value) by falling back to the ordinary
-// pair conversion.  The return value must be `hash`, like enum_to_h_ii:
-// a custom `each` may use the value yielded back to it.
+struct enum_to_h_pair_data {
+    VALUE hash;
+    struct rb_to_h_pair_slots slots;
+};
+
+// Block body of the to_h pair-literal fast path.  The block stashes each
+// pair in the hidden key/value slots; the store is done here, after the
+// block returned, so that `key.hash` runs at the same point relative to
+// the :b_return event as in the unoptimized block.  The return value must
+// be `hash`, like enum_to_h_ii: a custom `each` may use the value yielded
+// back to it.
 static VALUE
-enum_to_h_pair_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
+enum_to_h_pair_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, data))
 {
+    struct enum_to_h_pair_data *d = (struct enum_to_h_pair_data *)data;
     VALUE result = rb_yield_values2(argc, argv);
 
-    if (result != hash) {
-        rb_hash_set_pair(hash, result);
+    if (result == d->hash) {
+        rb_hash_aset(d->hash, d->slots.ep[-d->slots.key_idx], d->slots.ep[-d->slots.val_idx]);
     }
-    return hash;
+    else {
+        rb_hash_set_pair(d->hash, result);
+    }
+    return d->hash;
+}
+
+struct enum_to_h_pair_args {
+    VALUE obj;
+    int argc;
+    VALUE *argv;
+    struct enum_to_h_pair_data data;
+};
+
+static VALUE
+enum_to_h_pair(VALUE arg)
+{
+    struct enum_to_h_pair_args *a = (struct enum_to_h_pair_args *)arg;
+    rb_block_call(a->obj, id_each, a->argc, a->argv, enum_to_h_pair_i, (VALUE)&a->data);
+    return Qnil;
 }
 
 /*
@@ -811,9 +835,15 @@ enum_to_h(int argc, VALUE *argv, VALUE obj)
 {
     if (rb_block_given_p()) {
         VALUE hash = rb_hash_new();
+        struct enum_to_h_pair_args args;
 
-        if (rb_vm_to_h_pair_prepare(hash)) {
-            rb_block_call(obj, id_each, argc, argv, enum_to_h_pair_i, hash);
+        args.obj = obj;
+        args.argc = argc;
+        args.argv = argv;
+        args.data.hash = hash;
+
+        if (rb_vm_to_h_pair_prepare(hash, &args.data.slots)) {
+            rb_ensure(enum_to_h_pair, (VALUE)&args, rb_vm_to_h_pair_finish, Qnil);
             return hash;
         }
         return enum_hashify_into(obj, argc, argv, enum_to_h_ii, hash);

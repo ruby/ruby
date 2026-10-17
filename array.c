@@ -3320,6 +3320,32 @@ rb_ary_to_a(VALUE ary)
  *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
+struct rb_ary_to_h_pair_args {
+    VALUE ary;
+    VALUE hash;
+    struct rb_to_h_pair_slots slots;
+};
+
+static VALUE
+rb_ary_to_h_pair(VALUE arg)
+{
+    struct rb_ary_to_h_pair_args *a = (struct rb_ary_to_h_pair_args *)arg;
+    const VALUE ary = a->ary, hash = a->hash;
+    const struct rb_to_h_pair_slots *slots = &a->slots;
+
+    for (rb_len_t i = 0; i < RARRAY_LEN(ary); i++) {
+        const VALUE e = rb_ary_elt(ary, i);
+        const VALUE result = rb_yield_force_blockarg(e);
+        if (result == hash) {
+            rb_hash_aset(hash, slots->ep[-slots->key_idx], slots->ep[-slots->val_idx]);
+        }
+        else {
+            rb_hash_set_pair(hash, result);
+        }
+    }
+    return Qnil;
+}
+
 static VALUE
 rb_ary_to_h(VALUE ary)
 {
@@ -3327,15 +3353,16 @@ rb_ary_to_h(VALUE ary)
     VALUE hash = rb_hash_new_capa(RARRAY_LEN(ary));
     int block_given = rb_block_given_p();
 
-    // to_h pair-literal fast path: the block stores each pair directly
-    // into `hash`, so yield only for its side effect.
-    if (block_given && rb_vm_to_h_pair_prepare(hash)) {
-        for (i=0; i<RARRAY_LEN(ary); i++) {
-            const VALUE e = rb_ary_elt(ary, i);
-            const VALUE result = rb_yield_force_blockarg(e);
-            if (result != hash) rb_hash_set_pair(hash, result);
+    // to_h pair-literal fast path: the block stashes each pair in the
+    // hidden key/value slots and the store is done here, after the block
+    // returned.  rb_ensure() clears the hidden hash slot when the call
+    // ends, so an escaped block cannot read a stale result hash later.
+    if (block_given) {
+        struct rb_ary_to_h_pair_args args = { ary, hash, { NULL, 0, 0, 0 } };
+        if (rb_vm_to_h_pair_prepare(hash, &args.slots)) {
+            rb_ensure(rb_ary_to_h_pair, (VALUE)&args, rb_vm_to_h_pair_finish, Qnil);
+            return hash;
         }
-        return hash;
     }
 
     for (i=0; i<RARRAY_LEN(ary); i++) {

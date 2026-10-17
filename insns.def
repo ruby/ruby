@@ -1764,38 +1764,45 @@ opt_invokebuiltin_delegate_leave
     }
 }
 
-/* Store a key/value pair computed by a `to_h { |*| [key, value] }`
- * pair-literal block directly into the result hash that the core
- * `to_h` implementation has installed in the hidden outer local at
- * `idx` (see prism_compile.c and rb_vm_to_h_pair_prepare).
- * This replaces the `newarray 2` that such a block would otherwise
- * end with, so that no intermediate two-element array is allocated
- * per element.
+/* Stores the key/value pair produced by a `to_h { |*| [key, value] }`
+ * pair-literal block.  The core to_h implementation has installed its
+ * result hash in the hidden outer local `hash_idx` (see
+ * rb_vm_to_h_pair_prepare).
  *
- * When the local is not a Hash -- i.e. the block was invoked by
- * something other than the cooperating core `to_h` (a user-defined
- * or refined `to_h`, `method_missing`, a stored Proc, ...) --
- * degrade to the original semantics and return a fresh
- * two-element array instead.
+ * When the hash slot holds a Hash and no `:b_return` trace observes this
+ * block, the pair is stashed in the hidden outer locals `key_idx` and
+ * `val_idx` and the hash is returned.  The core to_h then inserts the
+ * pair itself, *after* the block has returned, so that the order in
+ * which `key.hash` runs relative to the `:b_return` event matches the
+ * unoptimized block.  This avoids building the intermediate two-element
+ * array per element.
  *
- * The same degradation is done when a `:b_return` TracePoint is
- * enabled: such a trace observes the block's return value, which must
- * stay the pair array rather than the result hash, and the core to_h
- * fast path then stores the pair itself.
+ * Otherwise -- the block was invoked by something other than the
+ * cooperating core to_h (a user-defined or refined `to_h`,
+ * `method_missing`, a stored Proc, ...) or a `:b_return` trace (global
+ * or target-specific) observes this block -- degrade to the original
+ * semantics and return a fresh two-element array; the core fast path
+ * then stores it with rb_hash_set_pair.
  */
 DEFINE_INSN
 to_h_aset
-(lindex_t idx)
+(lindex_t hash_idx, lindex_t key_idx, lindex_t val_idx)
 (VALUE key, VALUE val)
 (VALUE result)
-/* rb_hash_aset() may call #hash */
+/* rb_hash_aset() may call #hash; the core runs it after this returns */
 // attr bool leaf = false;
 {
-    VALUE hash = *(vm_get_ep(GET_EP(), 1) - idx);
+    const VALUE *ep = vm_get_ep(GET_EP(), 1);
+    VALUE hash = *(ep - hash_idx);
+    rb_event_flag_t trace_events = ruby_vm_event_flags;
 
-    if (RB_TYPE_P(hash, T_HASH) &&
-            !(ruby_vm_event_flags & RUBY_EVENT_B_RETURN)) {
-        rb_hash_aset(hash, key, val);
+    if (!(trace_events & RUBY_EVENT_B_RETURN)) {
+        trace_events |= rb_iseq_local_event_flags(GET_ISEQ());
+    }
+
+    if (RB_TYPE_P(hash, T_HASH) && !(trace_events & RUBY_EVENT_B_RETURN)) {
+        rb_vm_env_write(ep, -key_idx, key);
+        rb_vm_env_write(ep, -val_idx, val);
         result = hash;
     }
     else {
