@@ -1210,6 +1210,160 @@ class TestArray < Test::Unit::TestCase
     assert_not_include(a, [1,2])
   end
 
+  def test_search_for_immediate
+    index = ->(a, x) { a.each_index.find {|i| a[i].equal?(x) || a[i] == x} }
+    rindex = ->(a, x) { a.each_index.reverse_each.find {|i| a[i].equal?(x) || a[i] == x} }
+    count = ->(a, x) { a.count {|e| e.equal?(x) || e == x} }
+    rng = Random.new(42)
+    # [object to search for, others of the same kind, others equal to it]
+    kinds = [
+      [5, [1, 2, 3, -5, 6], [5.0, 5r]],
+      [2.5, [1.0, 1.5, -2.5, 3.5], [5/2r]],
+      [:c, %i[a b d e], []],
+    ]
+    kinds.each do |x, others, equals|
+      [0, 1, 2, 7, 8, 9, 15, 16, 17, 31, 32, 33, 100].each do |n|
+        20.times do |t|
+          a = @cls.new(n) { others.sample(random: rng) }
+          # none, one, or some of the object, the equal ones and the
+          # ones of other kinds
+          [[x], equals, ["5", nil, 2**64, 1e300, "c".to_sym]].each_with_index do |extras, k|
+            next if n == 0 || extras.empty?
+            (t >> (2 * k) & 3).times { a[rng.rand(n)] = extras.sample(random: rng) }
+          end
+          msg = "#{a.inspect} #{x.inspect}"
+          assert_equal(index[a, x], a.index(x), msg)
+          assert_equal(rindex[a, x], a.rindex(x), msg)
+          assert_equal(count[a, x], a.count(x), msg)
+          assert_equal(!index[a, x].nil?, a.include?(x), msg)
+        end
+      end
+    end
+  end
+
+  def test_search_for_immediate_float_edge_cases
+    nan = 0.0 / 0.0
+    a = @cls[1.5, 2.5, -0.0, 3.5, Float::INFINITY, nan, 4.5, 5.5, 6.5, 7.5, 8.5]
+
+    # 0.0 is a flonum, -0.0 is not, and they are equal
+    assert_equal(true, a.include?(0.0))
+    assert_equal([2, 2, 1], [a.index(0.0), a.rindex(0.0), a.count(0.0)])
+    a2 = @cls.new(20, 1.0) + [0.0]
+    assert_equal([true, 20, 20, 1], [a2.include?(-0.0), a2.index(-0.0), a2.rindex(-0.0), a2.count(-0.0)])
+
+    assert_equal([true, 4, 4, 1], [a.include?(Float::INFINITY), a.index(Float::INFINITY), a.rindex(Float::INFINITY), a.count(Float::INFINITY)])
+
+    # a NaN is not equal to another NaN
+    other_nan = 0.0 / 0.0
+    assert_equal([false, nil, nil, 0], [a.include?(other_nan), a.index(other_nan), a.rindex(other_nan), a.count(other_nan)])
+    assert_equal([false, nil, nil, 0], [a2.include?(nan), a2.index(nan), a2.rindex(nan), a2.count(nan)])
+  end
+
+  def test_search_for_immediate_calls_equal
+    called = []
+    o = Object.new
+    o.define_singleton_method(:==) {|other| called << other; other == 3}
+    a = @cls[1, 2, o, 3, 4, o, 5, 6, 7, 8, 9, 10]
+
+    assert_equal(2, a.index(3))
+    assert_equal([3], called)
+    called.clear
+    assert_equal(5, a.rindex(3))
+    assert_equal([3], called)
+    called.clear
+    assert_equal(3, a.count(3))
+    assert_equal([3, 3], called)
+    called.clear
+    assert_equal(1, a.index(2))
+    assert_equal([], called)
+    assert_equal(false, a.include?(11))
+    assert_equal([11, 11], called)
+  end
+
+  def test_search_for_immediate_redefined_equal
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $-w = false
+      class Integer
+        def ==(other)
+          other.is_a?(Integer) && (self - other).abs <= 1
+        end
+      end
+      a = Array.new(40) {|i| i * 10}
+      assert_equal([true, 1, 1, 1], [a.include?(11), a.index(11), a.rindex(11), a.count(11)])
+      assert_equal([false, nil, nil, 0], [a.include?(15), a.index(15), a.rindex(15), a.count(15)])
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $-w = false
+      class Symbol
+        def ==(other)
+          other.is_a?(Symbol) && to_s[0] == other.to_s[0]
+        end
+      end
+      a = %i[a1 b1 c1 d1 e1 f1 g1 h1 i1 j1 b2]
+      assert_equal([true, 1, 10, 2], [a.include?(:b), a.index(:b), a.rindex(:b), a.count(:b)])
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $-w = false
+      class Float
+        def ==(other)
+          other.is_a?(Float) && (self - other).abs < 0.3
+        end
+      end
+      a = Array.new(40) {|i| i * 1.0}
+      assert_equal([true, 3, 3, 1], [a.include?(3.25), a.index(3.25), a.rindex(3.25), a.count(3.25)])
+    end;
+
+    # redefined by an element while the array is searched
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $-w = false
+      o = Object.new
+      def o.==(other)
+        Integer.class_eval {def ==(other) true; end}
+        false
+      end
+      results = %i[include? index rindex count].map do |m|
+        a = Array.new(40) {|i| i * 10}
+        a[20] = o
+        result = a.public_send(m, 7)
+        Integer.class_eval {remove_method :==}
+        result
+      end
+      assert_equal([true, 21, 19, 19], results)
+    end;
+  end
+
+  def test_search_for_immediate_with_modification
+    shrink = Class.new do
+      def initialize(ary, size)
+        @ary = ary
+        @size = size
+      end
+
+      def ==(other)
+        @ary.slice!(@size..)
+        false
+      end
+    end
+    [3, 8, 16, 40].each do |at|
+      size = at / 2 + 1
+      make = -> { a = @cls.new(64) {|i| i}; a[at] = shrink.new(a, size); a }
+
+      a = make[]
+      assert_equal(false, a.include?(60))
+      assert_equal(size, a.size)
+      assert_nil(make[].index(60))
+      assert_nil(make[].rindex(at / 2 + 2))
+      assert_equal(0, make[].count(60))
+      assert_equal(1, make[].count(1))
+    end
+  end
+
   def test_monkey_patch_include?
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
     begin;
