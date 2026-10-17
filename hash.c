@@ -5707,25 +5707,28 @@ env_fetch(int argc, VALUE *argv, VALUE _)
 
 /*
  * call-seq:
- *   ENV.fetch_values(*names) -> array of values
- *   ENV.fetch_values(*names) {|name| ... } -> array of values
+ *   ENV.fetch_values(*names) -> array
+ *   ENV.fetch_values(*names) {|name| ... } -> array
  *
- * Returns an Array containing the environment variable values associated with
- * the given names:
+ * With no block given,
+ * returns an array containing the values associated with the given +names+:
+ *
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
- *   ENV.fetch_values('foo', 'baz') # => ["0", "2"]
+ *   ENV.fetch_values('baz', 'foo')    # => ["2", "0"]
+ *   ENV.fetch_values                  # => []
+ *   ENV.fetch_values('foo', 'nosuch') # Raises KeyError: key not found: "nosuch"
  *
- * Otherwise if a block is given yields +name+ to
- * the block and returns the block's return value:
- *   ENV.fetch_values('foo', 'bam') {|key| key.to_s} # => ["0", "bam"]
+ * With a block given, calls the block each given name:
  *
- * Raises KeyError if +name+ is valid, but not found and block is not given:
- *   ENV.fetch_values('foo', 'bam') # Raises KeyError (key not found: "bam")
+ * - If the name is found, passes its value to the block.
+ * - If not found, passes the name to the block.
  *
- * Returns an empty Array if no names given.
+ * Returns an array of the block's return values:
  *
- * Raises an exception if any name is invalid.
- * See {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values].
+ *   ENV.fetch_values('baz', 'foo') {|name| name }     # => ["2", "0"]
+ *   ENV.fetch_values('nosuch', 'foo') {|name| name }  # => ["nosuch", "0"]
+ *   ENV.fetch_values() {|name| fail 'Cannot happen' } # => []  # Block not called.
+ *
  */
 
 static VALUE
