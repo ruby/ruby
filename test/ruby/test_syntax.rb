@@ -626,13 +626,17 @@ class TestSyntax < Test::Unit::TestCase
     assert_not_label(:foo, 'class Foo < not_label:foo; end', bug6347)
   end
 
-  def test_no_label_with_percent
-    assert_syntax_error('{%"a": 1}', /unexpected ':'/)
-    assert_syntax_error("{%'a': 1}", /unexpected ':'/)
-    assert_syntax_error('{%Q"a": 1}', /unexpected ':'/)
-    assert_syntax_error("{%Q'a': 1}", /unexpected ':'/)
-    assert_syntax_error('{%q"a": 1}', /unexpected ':'/)
-    assert_syntax_error("{%q'a': 1}", /unexpected ':'/)
+  def test_percent_string_hash_key
+    [
+      '%"a"',
+      "%'a'",
+      '%Q"a"',
+      "%Q'a'",
+      '%q"a"',
+      "%q'a'",
+    ].each do |key|
+      assert_equal({"a" => 1}, eval("{#{key}: 1}"), key)
+    end
   end
 
   def test_block_after_cond
@@ -651,6 +655,36 @@ class TestSyntax < Test::Unit::TestCase
     bug11812 = '[ruby-core:72084]'
     assert_valid_syntax('{label:%w(*)}', bug11812)
     assert_valid_syntax('{label: %w(*)}', bug11812)
+  end
+
+  def test_expr_colon_hash_keys
+    expr = 3
+    h = eval(<<~'RUBY')
+      {
+        key1: 1,
+        "key-2": :two,
+        expr : "3-expr",
+        "key4" : "4-String",
+        (5+0): "5-parentheses",
+        6: "6-Integer",
+        7.001: "7-Float",
+        "key" + "8": "8-String expr",
+        9+0: "9-Integer expr",
+        [10,0]: "10-Array",
+        true ? 11 : 0 : "11-ternary"
+      }
+    RUBY
+    assert_equal(1, h[:key1])
+    assert_equal(:two, h[:"key-2"])
+    assert_equal("3-expr", h[3])
+    assert_equal("4-String", h["key4"])
+    assert_equal("5-parentheses", h[5])
+    assert_equal("6-Integer", h[6])
+    assert_equal("7-Float", h[7.001])
+    assert_equal("8-String expr", h["key8"])
+    assert_equal("9-Integer expr", h[9])
+    assert_equal("10-Array", h[[10,0]])
+    assert_equal("11-ternary", h[11])
   end
 
   def test_heredoc_after_label
