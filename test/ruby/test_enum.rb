@@ -227,6 +227,54 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal "element has wrong array length (expected 2, was 1)", e.message
   end
 
+  # Regression tests for the to_h pair-literal block optimization
+  # (to_h { |*| [key, value] } stores pairs without a per-element array).
+  def test_to_h_block_pair_literal_semantics
+    # A block captured as a Proc by a user-defined to_h must keep returning
+    # the pair array and must not write into some other to_h result hash.
+    capture = Class.new do
+      def to_h(&b); b; end
+    end.new
+    escaped = capture.to_h { |x| [x, x] }
+    assert_equal({1 => 1}, [1].to_h { |x| [x, x] })
+    assert_equal([2, 2], escaped.call(2))
+
+    # A frozen result hash must not be written to later through an escaped
+    # block (the block never stored into it in the first place).
+    frozen = [1].to_h { |x| [x, x] }.freeze
+    assert_equal([3, 3], escaped.call(3))
+    assert_equal({1 => 1}, frozen)
+
+    # A custom each can observe the value yielded back to it; the optimized
+    # path must keep yielding the result hash, as the unoptimized one did.
+    enum = Class.new do
+      include Enumerable
+      def each
+        yielded = yield 1
+        yield yielded.class
+      end
+    end.new
+    assert_equal({1 => 1, Hash => Hash}, enum.to_h { |x| [x, x] })
+
+    # :b_return tracing observes the block return value, so it must see the
+    # pair arrays rather than the result hash.
+    values = []
+    trace = TracePoint.new(:b_return) { |tp| values << tp.return_value }
+    trace.enable
+    assert_equal({1 => 1, 2 => 2}, [1, 2].to_h { |x| [x, x] })
+    trace.disable
+    assert_equal([[1, 1], [2, 2]], values)
+
+    # Enabling tracing mid-run must have the same effect.
+    values = []
+    trace = TracePoint.new(:b_return) { |tp| values << tp.return_value }
+    assert_equal({1 => 1}, [1].to_h { |x| [x, x] })
+    trace.enable
+    assert_equal({2 => 2}, [2].to_h { |x| [x, x] })
+    trace.disable
+    assert_equal([[2, 2]], values)
+  end
+
   def test_inject
     assert_equal(12, @obj.inject {|z, x| z * x })
     assert_equal(48, @obj.inject {|z, x| z * 2 + x })

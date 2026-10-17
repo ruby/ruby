@@ -168,28 +168,33 @@ typedef struct pm_scope_node {
      * implementations install into a hidden local of the scope containing
      * the call site (see also insns.def: to_h_aset and rb_vm_to_h_pair_prepare).
      *
-     * The hidden local is shared by every to_h call site in a scope, so a
-     * block first copies it into a block-local at entry: deeply nested to_h
-     * calls would otherwise overwrite the slot before an outer block reads
-     * it.  The copy is per block invocation, so nesting is safe.
+     * Every such call site gets its *own* hidden local.  Sharing one slot
+     * per scope would let a later to_h overwrite the slot that an earlier
+     * escaped block (e.g. a block captured as a Proc by a user-defined
+     * to_h) still reads.  Distinct per-call-site slots also make nested
+     * to_h calls safe, because an inner call writes to a different slot
+     * than the outer block reads.
      */
 
-    /* This scope reserved the hidden result-hash local in its local table
+    /* This scope reserved hidden result-hash locals in its local table
      * (set while building the local table, before compiling the body). */
     bool to_h_pair_slot_p;
-    /* Positioned local index (as passed to getlocal/setlocal) of the
-     * hidden slot.  Only valid when to_h_pair_slot_p. */
-    int to_h_pair_slot_index;
+    /* Number of hidden slots reserved, the local_index of the first one,
+     * and how many have been handed out while compiling the body.  A
+     * call site is optimized only while slots_used < site_count, so a
+     * call site the pre-scan missed is simply left unoptimized. */
+    int to_h_pair_site_count;
+    int to_h_pair_slot_base;
+    int to_h_pair_slots_used;
 
     /* This block's body is a two-element array literal and is compiled
      * with a to_h_aset tail (set by pm_compile_call on the block's scope
      * node, read while compiling the block body). */
     bool to_h_pair_result_p;
-    /* Operand that reads the parent scope's hidden slot (already includes
-     * the VM_ENV_DATA_SIZE adjustment); used at block entry. */
-    int to_h_pair_parent_lidx;
-    /* Positioned local index of this block's per-invocation copy slot. */
-    int to_h_pair_copy_index;
+    /* Operand (already including the VM_ENV_DATA_SIZE adjustment) of the
+     * hidden slot belonging to this block's call site.  The block reads
+     * it one frame up; see insns.def: to_h_aset. */
+    int to_h_pair_slot_lidx;
 } pm_scope_node_t;
 
 void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous);

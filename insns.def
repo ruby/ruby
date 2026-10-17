@@ -1776,6 +1776,11 @@ opt_invokebuiltin_delegate_leave
  * or refined `to_h`, `method_missing`, a stored Proc, ...) --
  * degrade to the original semantics and return a fresh
  * two-element array instead.
+ *
+ * The same degradation is done when a `:b_return` TracePoint is
+ * enabled: such a trace observes the block's return value, which must
+ * stay the pair array rather than the result hash, and the core to_h
+ * fast path then stores the pair itself.
  */
 DEFINE_INSN
 to_h_aset
@@ -1787,7 +1792,8 @@ to_h_aset
 {
     VALUE hash = *(vm_get_ep(GET_EP(), 1) - idx);
 
-    if (RB_TYPE_P(hash, T_HASH)) {
+    if (RB_TYPE_P(hash, T_HASH) &&
+            !(ruby_vm_event_flags & RUBY_EVENT_B_RETURN)) {
         rb_hash_aset(hash, key, val);
         result = hash;
     }
