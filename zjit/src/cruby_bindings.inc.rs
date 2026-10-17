@@ -213,9 +213,6 @@ impl<T> ::std::cmp::Eq for __BindgenUnionField<T> {}
 pub const ONIG_OPTION_IGNORECASE: u32 = 1;
 pub const ONIG_OPTION_EXTEND: u32 = 2;
 pub const ONIG_OPTION_MULTILINE: u32 = 4;
-pub const ARG_ENCODING_FIXED: u32 = 16;
-pub const ARG_ENCODING_NONE: u32 = 32;
-pub const SHAPE_ID_NUM_BITS: u32 = 32;
 pub const INTEGER_REDEFINED_OP_FLAG: u32 = 1;
 pub const FLOAT_REDEFINED_OP_FLAG: u32 = 2;
 pub const STRING_REDEFINED_OP_FLAG: u32 = 4;
@@ -229,6 +226,9 @@ pub const TRUE_REDEFINED_OP_FLAG: u32 = 1024;
 pub const FALSE_REDEFINED_OP_FLAG: u32 = 2048;
 pub const PROC_REDEFINED_OP_FLAG: u32 = 4096;
 pub const ANY_REDEFINED_OP_FLAG: u32 = 8192;
+pub const ARG_ENCODING_FIXED: u32 = 16;
+pub const ARG_ENCODING_NONE: u32 = 32;
+pub const SHAPE_ID_NUM_BITS: u32 = 32;
 pub const VM_KW_SPECIFIED_BITS_MAX: u32 = 31;
 pub const VM_ENV_DATA_SIZE: u32 = 3;
 pub const VM_ENV_DATA_INDEX_ME_CREF: i32 = -2;
@@ -407,6 +407,48 @@ pub const RUBY_ENCINDEX_EUC_JP: ruby_preserved_encindex = 10;
 pub const RUBY_ENCINDEX_Windows_31J: ruby_preserved_encindex = 11;
 pub const RUBY_ENCINDEX_BUILTIN_MAX: ruby_preserved_encindex = 12;
 pub type ruby_preserved_encindex = u32;
+pub const BOP_PLUS: ruby_basic_operators = 0;
+pub const BOP_MINUS: ruby_basic_operators = 1;
+pub const BOP_MULT: ruby_basic_operators = 2;
+pub const BOP_DIV: ruby_basic_operators = 3;
+pub const BOP_MOD: ruby_basic_operators = 4;
+pub const BOP_EQ: ruby_basic_operators = 5;
+pub const BOP_EQQ: ruby_basic_operators = 6;
+pub const BOP_LT: ruby_basic_operators = 7;
+pub const BOP_LE: ruby_basic_operators = 8;
+pub const BOP_LTLT: ruby_basic_operators = 9;
+pub const BOP_AREF: ruby_basic_operators = 10;
+pub const BOP_ASET: ruby_basic_operators = 11;
+pub const BOP_LENGTH: ruby_basic_operators = 12;
+pub const BOP_SIZE: ruby_basic_operators = 13;
+pub const BOP_EMPTY_P: ruby_basic_operators = 14;
+pub const BOP_NIL_P: ruby_basic_operators = 15;
+pub const BOP_SUCC: ruby_basic_operators = 16;
+pub const BOP_GT: ruby_basic_operators = 17;
+pub const BOP_GE: ruby_basic_operators = 18;
+pub const BOP_GTGT: ruby_basic_operators = 19;
+pub const BOP_NOT: ruby_basic_operators = 20;
+pub const BOP_NEQ: ruby_basic_operators = 21;
+pub const BOP_NEW: ruby_basic_operators = 22;
+pub const BOP_MATCH: ruby_basic_operators = 23;
+pub const BOP_FREEZE: ruby_basic_operators = 24;
+pub const BOP_UMINUS: ruby_basic_operators = 25;
+pub const BOP_MAX: ruby_basic_operators = 26;
+pub const BOP_MIN: ruby_basic_operators = 27;
+pub const BOP_HASH: ruby_basic_operators = 28;
+pub const BOP_CALL: ruby_basic_operators = 29;
+pub const BOP_AND: ruby_basic_operators = 30;
+pub const BOP_OR: ruby_basic_operators = 31;
+pub const BOP_CMP: ruby_basic_operators = 32;
+pub const BOP_DEFAULT: ruby_basic_operators = 33;
+pub const BOP_PACK: ruby_basic_operators = 34;
+pub const BOP_INCLUDE_P: ruby_basic_operators = 35;
+pub const BOP_YIELD: ruby_basic_operators = 36;
+pub const BOP_LAST_: ruby_basic_operators = 37;
+pub type ruby_basic_operators = u32;
+pub const RSTRING_CHILLED: ruby_rstring_private_flags = 16384;
+pub type ruby_rstring_private_flags = u32;
+pub type rb_serial_t = ::std::os::raw::c_ulonglong;
 pub type rb_atomic_t = ::std::os::raw::c_uint;
 #[repr(C)]
 #[repr(align(8))]
@@ -461,46 +503,6 @@ pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 402653184;
 pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 2146959360;
 pub const SHAPE_ID_FL_PRIVATE_MASK: shape_id_fl_type = 1677197312;
 pub type shape_id_fl_type = u32;
-pub const BOP_PLUS: ruby_basic_operators = 0;
-pub const BOP_MINUS: ruby_basic_operators = 1;
-pub const BOP_MULT: ruby_basic_operators = 2;
-pub const BOP_DIV: ruby_basic_operators = 3;
-pub const BOP_MOD: ruby_basic_operators = 4;
-pub const BOP_EQ: ruby_basic_operators = 5;
-pub const BOP_EQQ: ruby_basic_operators = 6;
-pub const BOP_LT: ruby_basic_operators = 7;
-pub const BOP_LE: ruby_basic_operators = 8;
-pub const BOP_LTLT: ruby_basic_operators = 9;
-pub const BOP_AREF: ruby_basic_operators = 10;
-pub const BOP_ASET: ruby_basic_operators = 11;
-pub const BOP_LENGTH: ruby_basic_operators = 12;
-pub const BOP_SIZE: ruby_basic_operators = 13;
-pub const BOP_EMPTY_P: ruby_basic_operators = 14;
-pub const BOP_NIL_P: ruby_basic_operators = 15;
-pub const BOP_SUCC: ruby_basic_operators = 16;
-pub const BOP_GT: ruby_basic_operators = 17;
-pub const BOP_GE: ruby_basic_operators = 18;
-pub const BOP_GTGT: ruby_basic_operators = 19;
-pub const BOP_NOT: ruby_basic_operators = 20;
-pub const BOP_NEQ: ruby_basic_operators = 21;
-pub const BOP_NEW: ruby_basic_operators = 22;
-pub const BOP_MATCH: ruby_basic_operators = 23;
-pub const BOP_FREEZE: ruby_basic_operators = 24;
-pub const BOP_UMINUS: ruby_basic_operators = 25;
-pub const BOP_MAX: ruby_basic_operators = 26;
-pub const BOP_MIN: ruby_basic_operators = 27;
-pub const BOP_HASH: ruby_basic_operators = 28;
-pub const BOP_CALL: ruby_basic_operators = 29;
-pub const BOP_AND: ruby_basic_operators = 30;
-pub const BOP_OR: ruby_basic_operators = 31;
-pub const BOP_CMP: ruby_basic_operators = 32;
-pub const BOP_DEFAULT: ruby_basic_operators = 33;
-pub const BOP_PACK: ruby_basic_operators = 34;
-pub const BOP_INCLUDE_P: ruby_basic_operators = 35;
-pub const BOP_YIELD: ruby_basic_operators = 36;
-pub const BOP_LAST_: ruby_basic_operators = 37;
-pub type ruby_basic_operators = u32;
-pub type rb_serial_t = ::std::os::raw::c_ulonglong;
 pub const METHOD_VISI_UNDEF: rb_method_visibility_t = 0;
 pub const METHOD_VISI_PUBLIC: rb_method_visibility_t = 1;
 pub const METHOD_VISI_PRIVATE: rb_method_visibility_t = 2;
@@ -1745,8 +1747,6 @@ pub struct rb_call_data {
     pub ci: *const rb_callinfo,
     pub cc: *const rb_callcache,
 }
-pub const RSTRING_CHILLED: ruby_rstring_private_flags = 16384;
-pub type ruby_rstring_private_flags = u32;
 pub const RHASH_PASS_AS_KEYWORDS: ruby_rhash_flags = 8192;
 pub const RHASH_PROC_DEFAULT: ruby_rhash_flags = 16384;
 pub const RHASH_ST_TABLE_FLAG: ruby_rhash_flags = 32768;
@@ -2313,6 +2313,21 @@ unsafe extern "C" {
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_const_get(space: VALUE, name: ID) -> VALUE;
     pub fn rbimpl_enc_str_coderange_scan(str_: VALUE) -> ::std::os::raw::c_int;
+    pub fn rb_str_byte_substr(str_: VALUE, beg: VALUE, len: VALUE) -> VALUE;
+    pub fn rb_str_substr_two_fixnums(
+        str_: VALUE,
+        beg: VALUE,
+        len: VALUE,
+        empty: ::std::os::raw::c_int,
+    ) -> VALUE;
+    pub fn rb_str_concat_literals(num: usize, strary: *const VALUE) -> VALUE;
+    pub fn rb_ec_str_resurrect(
+        ec: *mut rb_execution_context_struct,
+        str_: VALUE,
+        chilled: bool,
+    ) -> VALUE;
+    pub fn rb_vm_top_self() -> VALUE;
+    pub static mut rb_vm_insn_count: u64;
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_obj_equal(obj1: VALUE, obj2: VALUE) -> VALUE;
     pub fn rb_reg_new_from_values(
@@ -2347,8 +2362,6 @@ unsafe extern "C" {
         id: ID,
         klass: VALUE,
     ) -> shape_id_t;
-    pub fn rb_vm_top_self() -> VALUE;
-    pub static mut rb_vm_insn_count: u64;
     pub fn rb_method_entry_at(obj: VALUE, id: ID) -> *const rb_method_entry_t;
     pub fn rb_callable_method_entry(klass: VALUE, id: ID) -> *const rb_callable_method_entry_t;
     pub fn rb_callable_method_entry_or_negative(
@@ -2371,19 +2384,6 @@ unsafe extern "C" {
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
     pub fn rb_vm_barrier();
-    pub fn rb_str_byte_substr(str_: VALUE, beg: VALUE, len: VALUE) -> VALUE;
-    pub fn rb_str_substr_two_fixnums(
-        str_: VALUE,
-        beg: VALUE,
-        len: VALUE,
-        empty: ::std::os::raw::c_int,
-    ) -> VALUE;
-    pub fn rb_str_concat_literals(num: usize, strary: *const VALUE) -> VALUE;
-    pub fn rb_ec_str_resurrect(
-        ec: *mut rb_execution_context_struct,
-        str_: VALUE,
-        chilled: bool,
-    ) -> VALUE;
     pub fn rb_to_hash_type(obj: VALUE) -> VALUE;
     pub fn rb_hash_stlike_foreach(
         hash: VALUE,
