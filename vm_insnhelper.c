@@ -2552,36 +2552,6 @@ FLONUM_2_P(VALUE a, VALUE b)
 }
 
 static inline VALUE
-opt_equality_specialized_miss(VALUE recv, VALUE obj)
-{
-    if (OP_UNREDEFINED_P(EQ, ANY)) {
-        if (recv == Qfalse) return Qfalse;
-        if (IMMEDIATE_P(recv)) {
-            // Numeric immediates can be equal to different VALUE via coercion.
-            if (FIXNUM_P(recv)) {
-                if (!SPECIAL_CONST_P(obj) || FLONUM_P(obj)) return Qundef;
-            }
-            else if (FLONUM_P(recv)) {
-                if (!SPECIAL_CONST_P(obj) || FIXNUM_P(obj)) return Qundef;
-
-            }
-            return Qfalse;
-        }
-
-        VALUE klass = RBASIC_CLASS(recv);
-        if (klass == rb_cString) {
-            if (RB_TYPE_P(obj, T_STRING)) {
-                return rb_str_eql_internal(recv, obj);
-            }
-        }
-        else if (klass == rb_cSymbol) {
-            return Qfalse;
-        }
-    }
-    return Qundef;
-}
-
-static inline VALUE
 opt_equality_specialized(VALUE recv, VALUE obj)
 {
     if (recv == obj) {
@@ -2615,10 +2585,9 @@ opt_equality(struct rb_control_frame_struct *reg_cfp, VALUE recv, VALUE obj, CAL
 }
 
 static inline const struct rb_callcache *gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct rb_callinfo *ci); // vm_eval.c
-NOINLINE(static VALUE opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid));
 
-static VALUE
-opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid)
+static inline VALUE
+opt_equality_by_mid(VALUE recv, VALUE obj, ID mid)
 {
     const struct rb_callcache *cc = gccct_method_search(GET_EC(), recv, mid, &VM_CI_ON_STACK(mid, 0, 1, NULL));
 
@@ -2626,20 +2595,8 @@ opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid)
         return RBOOL(recv == obj);
     }
     else {
-        return Qundef;
+        return RBOOL(RTEST(rb_funcall(recv, mid, 1, obj)));
     }
-}
-
-static inline VALUE
-opt_equality_by_mid(VALUE recv, VALUE obj, ID mid)
-{
-    RBIMPL_ASSERT_OR_ASSUME(recv != obj);
-    VALUE val = opt_equality_specialized_miss(recv, obj);
-    if (!UNDEF_P(val)) {
-        return val;
-    }
-
-    return opt_equality_by_mid_slowpath(recv, obj, mid);
 }
 
 VALUE

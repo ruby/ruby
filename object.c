@@ -136,31 +136,21 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
     /* The default implementation of #=== is
      * to call #== with the rb_equal() optimization. */
 
+#undef rb_equal
 VALUE
 rb_equal(VALUE obj1, VALUE obj2)
 {
-    VALUE result;
-
-    if (obj1 == obj2) return Qtrue;
-    result = rb_equal_opt(obj1, obj2);
-    if (UNDEF_P(result)) {
-        result = rb_funcall(obj1, id_eq, 1, obj2);
-    }
-    return RBOOL(RTEST(result));
+    return rb_equal_inline(obj1, obj2);
 }
+#define rb_equal rb_equal_inline
 
+#undef rb_eql
 int
 rb_eql(VALUE obj1, VALUE obj2)
 {
-    VALUE result;
-
-    if (obj1 == obj2) return TRUE;
-    result = rb_eql_opt(obj1, obj2);
-    if (UNDEF_P(result)) {
-        result = rb_funcall(obj1, id_eql, 1, obj2);
-    }
-    return RTEST(result);
+    return rb_eql_inline(obj1, obj2);
 }
+#define rb_eql rb_eql_inline
 
 /**
  *  call-seq:
