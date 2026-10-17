@@ -184,6 +184,18 @@ rb_iseq_local_hooks(const rb_iseq_t *iseq, rb_ractor_t *r, bool create)
     return hook_list;
 }
 
+// Event flags enabled for `iseq` through a target-specific TracePoint.
+// Unlike ruby_vm_event_flags (the ractor-wide / global set), these live in
+// the per-iseq local hook list, so tracing set up with
+// `TracePoint#enable(target: ...)` is only visible here.
+rb_event_flag_t
+rb_iseq_local_event_flags(const rb_iseq_t *iseq)
+{
+    if (iseq->aux.exec.local_hooks_cnt == 0) return 0;
+    rb_hook_list_t *hooks = rb_iseq_local_hooks(iseq, GET_RACTOR(), false);
+    return hooks ? hooks->events : 0;
+}
+
 void
 rb_iseq_free(const rb_iseq_t *iseq)
 {
@@ -4144,13 +4156,12 @@ rb_vm_insn_decode(const VALUE encoded)
     return rb_vm_insn_addr2insn((void *)encoded);
 }
 
-// Return the local index operand of the trailing `to_h_aset`
-// instruction of a `to_h { |*| [key, value] }` pair-literal block
-// iseq, or 0 if the iseq is not such a block.  The operand uses the
-// same encoding as getlocal/setlocal operands (logical index +
-// VM_ENV_DATA_SIZE - 1).
+// Return the three hidden-local operands (result hash, key, value) of the
+// to_h_aset instruction of a `to_h { |*| [key, value] }` pair-literal block
+// iseq, or 0 if the iseq is not such a block.  The operands use the same
+// encoding as getlocal/setlocal operands.
 int
-rb_iseq_to_h_pair_lidx(const rb_iseq_t *iseq)
+rb_iseq_to_h_pair_slots(const rb_iseq_t *iseq, int *hash_idx, int *key_idx, int *val_idx)
 {
     // Use the original (decoded) instruction sequence: insn_len() and
     // the BIN() opcode comparison operate on decoded instructions, not
@@ -4163,7 +4174,10 @@ rb_iseq_to_h_pair_lidx(const rb_iseq_t *iseq)
 
         if (insn == BIN(to_h_aset)) {
             // lindex_t operands are stored as raw integers, not Fixnums.
-            return (int)code[pos + 1];
+            *hash_idx = (int)code[pos + 1];
+            *key_idx = (int)code[pos + 2];
+            *val_idx = (int)code[pos + 3];
+            return 1;
         }
         pos += insn_len(insn);
     }

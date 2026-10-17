@@ -3964,25 +3964,54 @@ to_h_i(VALUE key, VALUE value, VALUE hash)
     return ST_CONTINUE;
 }
 
-// to_h pair-literal fast path: the block stores each pair directly into
-// `hash`; yield only for its side effect, falling back to the ordinary
-// pair conversion when the block leaves by `next`/`break`.
+struct rb_hash_to_h_pair_data {
+    VALUE hash;
+    struct rb_to_h_pair_slots slots;
+};
+
+// to_h pair-literal fast path: the block stashes each pair in the hidden
+// key/value slots; the store is done here, after the block returned, so
+// that `key.hash` runs at the same point relative to the :b_return event
+// as in the unoptimized block.
 static int
-to_h_pair_i(VALUE key, VALUE value, VALUE hash)
+to_h_pair_i(VALUE key, VALUE value, VALUE arg)
 {
+    struct rb_hash_to_h_pair_data *d = (struct rb_hash_to_h_pair_data *)arg;
     VALUE result = rb_yield_values(2, key, value);
 
-    if (result != hash) rb_hash_set_pair(hash, result);
+    if (result == d->hash) {
+        rb_hash_aset(d->hash, d->slots.ep[-d->slots.key_idx], d->slots.ep[-d->slots.val_idx]);
+    }
+    else {
+        rb_hash_set_pair(d->hash, result);
+    }
     return ST_CONTINUE;
+}
+
+struct rb_hash_to_h_pair_args {
+    VALUE hash;
+    struct rb_hash_to_h_pair_data data;
+};
+
+static VALUE
+rb_hash_to_h_pair(VALUE arg)
+{
+    struct rb_hash_to_h_pair_args *a = (struct rb_hash_to_h_pair_args *)arg;
+    rb_hash_foreach(a->hash, to_h_pair_i, (VALUE)&a->data);
+    return Qnil;
 }
 
 static VALUE
 rb_hash_to_h_block(VALUE hash)
 {
     VALUE h = rb_hash_new_capa(RHASH_SIZE(hash));
+    struct rb_hash_to_h_pair_args args;
 
-    if (rb_vm_to_h_pair_prepare(h)) {
-        rb_hash_foreach(hash, to_h_pair_i, h);
+    args.hash = hash;
+    args.data.hash = h;
+
+    if (rb_vm_to_h_pair_prepare(h, &args.data.slots)) {
+        rb_ensure(rb_hash_to_h_pair, (VALUE)&args, rb_vm_to_h_pair_finish, Qnil);
     }
     else {
         rb_hash_foreach(hash, to_h_i, h);

@@ -124,9 +124,16 @@ VALUE rb_hash_compare_by_id_p(VALUE hash);
 
 /* to_h pair-literal block optimization (see vm.c, insns.def: to_h_aset
  * and the core to_h implementations).  Declared here so that the
- * enumerable/array/hash/struct to_h methods can see it without pulling
+ * enumerable/array/hash/struct to_h methods can see them without pulling
  * in vm_core.h. */
-int rb_vm_to_h_pair_prepare(VALUE hash);
+struct rb_to_h_pair_slots {
+    const VALUE *ep;   /* enclosing frame of the to_h call */
+    int hash_idx;
+    int key_idx;
+    int val_idx;
+};
+int rb_vm_to_h_pair_prepare(VALUE hash, struct rb_to_h_pair_slots *slots);
+VALUE rb_vm_to_h_pair_finish(VALUE _);
 
 st_table *rb_hash_tbl_raw(VALUE hash);
 

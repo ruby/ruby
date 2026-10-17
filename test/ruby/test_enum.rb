@@ -260,19 +260,89 @@ class TestEnumerable < Test::Unit::TestCase
     # pair arrays rather than the result hash.
     values = []
     trace = TracePoint.new(:b_return) { |tp| values << tp.return_value }
-    trace.enable
-    assert_equal({1 => 1, 2 => 2}, [1, 2].to_h { |x| [x, x] })
-    trace.disable
+    begin
+      trace.enable
+      assert_equal({1 => 1, 2 => 2}, [1, 2].to_h { |x| [x, x] })
+    ensure
+      trace.disable
+    end
     assert_equal([[1, 1], [2, 2]], values)
 
     # Enabling tracing mid-run must have the same effect.
     values = []
     trace = TracePoint.new(:b_return) { |tp| values << tp.return_value }
     assert_equal({1 => 1}, [1].to_h { |x| [x, x] })
-    trace.enable
-    assert_equal({2 => 2}, [2].to_h { |x| [x, x] })
-    trace.disable
+    begin
+      trace.enable
+      assert_equal({2 => 2}, [2].to_h { |x| [x, x] })
+    ensure
+      trace.disable
+    end
     assert_equal([[2, 2]], values)
+
+    # Tracing set up with TracePoint#enable(target: ...) only lives in the
+    # iseq-local hook list, not the global event flags; it must still be
+    # seen.
+    target = Object.new
+    def target.run
+      [1, 2].to_h { |x| [x, x] }
+    end
+    values = []
+    trace = TracePoint.new(:b_return) { |tp| values << tp.return_value }
+    begin
+      trace.enable(target: target.method(:run))
+      assert_equal({1 => 1, 2 => 2}, target.run)
+    ensure
+      trace.disable
+    end
+    assert_equal([[1, 1], [2, 2]], values)
+
+    # Reusing the same call site: the first receiver captures the block, the
+    # second is the core to_h on the same syntactic call.
+    receivers = [Class.new { def to_h(&b); b; end }.new, [1]]
+    results = []
+    i = 0
+    while i < 2
+      results << receivers[i].to_h { |x| [x, x] }
+      i += 1
+    end
+    assert_equal([2, 2], results[0].call(2))
+    assert_equal({1 => 1}, results[1])
+
+    # A wrapper that forwards the block to the core to_h and then reuses it.
+    wrapper_class = Class.new do
+      attr_reader :forwarded
+      def to_h(&b)
+        h = [1].to_h(&b)
+        @forwarded = b.call(2)
+        h
+      end
+    end
+    wrapper = wrapper_class.new
+    assert_equal({1 => 1}, wrapper.to_h { |x| [x, x] })
+    assert_equal([2, 2], wrapper.forwarded)
+
+    # Exception termination must not leave a stale hash behind.
+    escaped = Class.new { def to_h(&b); b; end }.new.to_h { |x| [x, x] }
+    begin
+      [1].to_h { |x| raise "boom" }
+    rescue RuntimeError
+    end
+    assert_equal([3, 3], escaped.call(3))
+
+    # Enabling tracing from inside key.hash happens after the block has
+    # returned, so it must not add an extra :b_return observation.
+    values = []
+    trace = TracePoint.new(:b_return) { |tp| values << tp.return_value }
+    key = Object.new
+    key.define_singleton_method(:hash) { trace.enable; 123 }
+    begin
+      key_hash = [key].to_h { |x| [x, 1] }
+    ensure
+      trace.disable
+    end
+    assert_equal([Integer], values.map(&:class))
+    assert_equal(1, key_hash.size)
   end
 
   def test_inject

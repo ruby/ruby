@@ -3346,7 +3346,9 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         scope->to_h_pair_slot_base = 0;
         scope->to_h_pair_slots_used = 0;
         scope->to_h_pair_result_p = false;
-        scope->to_h_pair_slot_lidx = 0;
+        scope->to_h_pair_hash_lidx = 0;
+        scope->to_h_pair_key_lidx = 0;
+        scope->to_h_pair_val_lidx = 0;
     }
     else {
         memset(scope, 0, sizeof(pm_scope_node_t));
@@ -4119,23 +4121,30 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
                 method_id == rb_intern("to_h") &&
                 ISEQ_COMPILE_DATA(iseq)->isolated_depth == 0 &&
                 pm_call_node_to_h_pair_shape_p(call_node)) {
-            // Hand this call site its own hidden local.  Distinct slots
-            // per site keep an escaped block from writing into some other
-            // to_h's result hash, and make nested to_h calls independent.
-            int site_local_index = scope_node->to_h_pair_slot_base + scope_node->to_h_pair_slots_used++;
-            int slot_index = (int)scope_node->local_table_for_iseq_size - site_local_index;
+            // Hand this call site its own three hidden locals (result
+            // hash, key, value).  Distinct slots per site keep an escaped
+            // block from writing into some other to_h's result hash, and
+            // make nested to_h calls independent.
+            int site = scope_node->to_h_pair_slots_used++;
+            int tsize = (int)scope_node->local_table_for_iseq_size;
+            int hash_local = scope_node->to_h_pair_slot_base + site * 3;
+            int hash_index = tsize - hash_local;
+            int key_index = tsize - (hash_local + 1);
+            int val_index = tsize - (hash_local + 2);
 
-            // Reset the hidden slot to nil before the call.  The core
+            // Reset the hidden hash slot to nil before the call.  The core
             // to_h implementations install the result hash into it; if
             // the call is dispatched to a user-defined/refined `to_h`
             // (or anything else), the block finds nil there and
             // degrades to returning a fresh two-element array, exactly
             // like the unoptimized block.
             PUSH_INSN(ret, location, putnil);
-            PUSH_SETLOCAL(ret, location, slot_index, 0);
+            PUSH_SETLOCAL(ret, location, hash_index, 0);
 
             next_scope_node.to_h_pair_result_p = true;
-            next_scope_node.to_h_pair_slot_lidx = slot_index + VM_ENV_DATA_SIZE - 1;
+            next_scope_node.to_h_pair_hash_lidx = hash_index + VM_ENV_DATA_SIZE - 1;
+            next_scope_node.to_h_pair_key_lidx = key_index + VM_ENV_DATA_SIZE - 1;
+            next_scope_node.to_h_pair_val_lidx = val_index + VM_ENV_DATA_SIZE - 1;
         }
 
         block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, pm_node_line_number_cached(call_node->block, scope_node));
@@ -6616,9 +6625,8 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
 
     int table_size = (int) locals_size;
 
-    // to_h pair-literal block optimization: reserve one hidden local per
-    // `to_h { |*| [k, v] }` call site in this scope, to pass the result
-    // hash to each block (which stores pairs into it directly).  Only
+    // to_h pair-literal block optimization: reserve three hidden locals per
+    // `to_h { |*| [k, v] }` call site (result hash, key, value).  Only
     // scopes whose local table survives intact can host them: ENSURE/RESCUE
     // iseqs replace their local table with the shared exception table
     // after this point.
@@ -6627,7 +6635,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
             scope_node->body != NULL) {
         to_h_pair_sites = pm_count_to_h_pair_calls(scope_node, scope_node->body);
     }
-    table_size += to_h_pair_sites;
+    table_size += to_h_pair_sites * 3;
 
     // For nodes have a hidden iteration variable. We add that to the local
     // table size here.
@@ -7232,15 +7240,15 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     }
 
     // to_h pair-literal block optimization: append the hidden locals
-    // reserved in STEP 1, one per call site.  rb_make_temporary_id()
-    // produces an internal, anonymous ID (hidden from local_variables).
-    // pm_compile_call hands them out in order as it compiles the body.
+    // reserved in STEP 1, three per call site (result hash, key, value).
+    // rb_make_temporary_id() produces an internal, anonymous ID (hidden
+    // from local_variables).
     if (to_h_pair_sites > 0) {
         scope_node->to_h_pair_slot_p = true;
         scope_node->to_h_pair_site_count = to_h_pair_sites;
         scope_node->to_h_pair_slot_base = local_index;
         scope_node->to_h_pair_slots_used = 0;
-        for (int i = 0; i < to_h_pair_sites; i++, local_index++) {
+        for (int i = 0; i < to_h_pair_sites * 3; i++, local_index++) {
             local_table_for_iseq->ids[local_index] = rb_make_temporary_id(local_index);
         }
     }
@@ -7406,7 +7414,10 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
 
             pm_compile_node(iseq, array->elements.nodes[0], ret, false, scope_node);
             pm_compile_node(iseq, array->elements.nodes[1], ret, false, scope_node);
-            PUSH_INSN1(ret, block_location, to_h_aset, INT2FIX(scope_node->to_h_pair_slot_lidx));
+            PUSH_INSN3(ret, block_location, to_h_aset,
+                       INT2FIX(scope_node->to_h_pair_hash_lidx),
+                       INT2FIX(scope_node->to_h_pair_key_lidx),
+                       INT2FIX(scope_node->to_h_pair_val_lidx));
         }
         else if (scope_node->body != NULL) {
             switch (PM_NODE_TYPE(scope_node->ast_node)) {
