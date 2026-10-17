@@ -2555,37 +2555,42 @@ static VALUE
 opt_equality_specialized(VALUE recv, VALUE obj)
 {
     if (OP_UNREDEFINED_P(EQ, ANY)) {
-        if (FIXNUM_2_P(recv, obj)) {
-            goto compare_by_identity;
-        }
-        else if (FLONUM_2_P(recv, obj)) {
-            goto compare_by_identity;
-        }
-        else if (STATIC_SYM_P(recv)) {
-            goto compare_by_identity;
-        }
-        else if (SPECIAL_CONST_P(recv)) {
-            //
-        }
-        else if (RBASIC_CLASS(recv) == rb_cFloat && RB_FLOAT_TYPE_P(obj)) {
-            double a = RFLOAT_VALUE(recv);
-            double b = RFLOAT_VALUE(obj);
-
-            return RBOOL(a == b);
-        }
-        else if (RBASIC_CLASS(recv) == rb_cString) {
-            if (recv == obj) {
+        if (recv == obj) {
+            // Two identical immediate VALUE are always equal
+            if (SPECIAL_CONST_P(recv)) {
                 return Qtrue;
             }
-            else if (RB_TYPE_P(obj, T_STRING)) {
-                return rb_str_eql_internal(obj, recv);
+            return Qundef;
+        }
+        else {
+            if (recv == Qfalse) return Qfalse;
+            if (IMMEDIATE_P(recv)) {
+                // Numeric immediates can be equal to different VALUE via coercion.
+                if (FIXNUM_P(recv)) {
+                    if (SPECIAL_CONST_P(obj) && !FLONUM_P(obj)) return Qfalse;
+                    return Qundef;
+                }
+                else if (FLONUM_P(recv)) {
+                    if (SPECIAL_CONST_P(obj) && !FIXNUM_P(obj)) return Qfalse;
+                    return Qundef;
+                }
+
+                return Qfalse;
+            }
+
+            VALUE klass = RBASIC_CLASS(recv);
+            if (klass == rb_cString) {
+                if (RB_TYPE_P(obj, T_STRING)) {
+                    return rb_str_eql_internal(recv, obj);
+                }
+            }
+            else if (klass == rb_cSymbol) {
+                return Qfalse;
             }
         }
     }
-    return Qundef;
 
-  compare_by_identity:
-    return RBOOL(recv == obj);
+    return Qundef;
 }
 
 static VALUE
