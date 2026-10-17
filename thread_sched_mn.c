@@ -560,8 +560,6 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
 
             RB_VM_SAVE_MACHINE_CONTEXT(th);
 
-            RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
-
             if (th->sched.waiting_reason.flags == thread_sched_waiting_none) {
                 th->sched.event_serial++;
                 // timer thread has dequeued us already, but it won't try to wake us because we bumped our serial

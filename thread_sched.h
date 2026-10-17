@@ -182,6 +182,7 @@ struct rb_thread_sched {
 #if VM_CHECK_MODE
     struct rb_thread_struct *lock_owner;
 #endif
+    // Written atomically for the lock-free reader in ruby_thread_has_gvl_p().
     struct rb_thread_struct *running; // running thread or NULL
     // Most recently running thread or NULL. If this thread wakes up before the newly running
     // thread completes the transfer of control, it can interrupt and resume running.

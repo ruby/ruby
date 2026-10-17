@@ -170,6 +170,30 @@ static VALUE thread_spec_ruby_native_thread_p_new_thread(VALUE self) {
 static VALUE thread_spec_ruby_thread_has_gvl_p(VALUE self) {
   return ruby_thread_has_gvl_p() ? Qtrue : Qfalse;
 }
+
+static void *thread_spec_check_gvl(void *data) {
+  int *result = (int *)data;
+  *result = ruby_thread_has_gvl_p();
+  return NULL;
+}
+
+static VALUE thread_spec_ruby_thread_has_gvl_p_without_gvl(VALUE self) {
+  int result = -1;
+  rb_thread_call_without_gvl(thread_spec_check_gvl, &result, RUBY_UBF_IO, NULL);
+  return result ? Qtrue : Qfalse;
+}
+
+#ifndef _WIN32
+static VALUE thread_spec_ruby_thread_has_gvl_p_new_thread(VALUE self) {
+  pthread_t thread;
+  int result = -1;
+  int error = pthread_create(&thread, NULL, thread_spec_check_gvl, &result);
+  if (error) rb_syserr_fail(error, "pthread_create");
+  error = pthread_join(thread, NULL);
+  if (error) rb_syserr_fail(error, "pthread_join");
+  return result ? Qtrue : Qfalse;
+}
+#endif
 #endif
 
 #ifdef RUBY_VERSION_IS_4_1
@@ -214,6 +238,10 @@ void Init_thread_spec(void) {
   rb_define_method(cls,  "ruby_native_thread_p_new_thread", thread_spec_ruby_native_thread_p_new_thread, 0);
 #ifdef RUBY_VERSION_IS_4_0
   rb_define_method(cls,  "ruby_thread_has_gvl_p", thread_spec_ruby_thread_has_gvl_p, 0);
+  rb_define_method(cls,  "ruby_thread_has_gvl_p_without_gvl", thread_spec_ruby_thread_has_gvl_p_without_gvl, 0);
+#ifndef _WIN32
+  rb_define_method(cls,  "ruby_thread_has_gvl_p_new_thread", thread_spec_ruby_thread_has_gvl_p_new_thread, 0);
+#endif
 #endif
 #ifdef RUBY_VERSION_IS_4_1
   rb_define_method(cls,  "rb_nogvl_pending_intr_fail", thread_spec_rb_nogvl_pending_intr_fail, 0);
