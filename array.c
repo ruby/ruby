@@ -2194,6 +2194,11 @@ rb_ary_rfind(int argc, VALUE *argv, VALUE ary)
  * the elements as VALUEs, on the assumption that they are all of the
  * same kind.  The fast path ends at the first element that is not, and
  * the search goes on from there with rb_equal() as before.
+ *
+ * NaN, -0.0 and the infinities are never flonums: they are heap Floats.
+ * So no flonum is NaN, and two flonums are #== exactly when they are the
+ * identical VALUE.  Searching for NaN never takes the fast path, and
+ * whatever rb_equal() does with NaN (see [Bug #22452]) is unchanged.
  */
 struct ary_scan {
     VALUE mask, tag; /* (e & mask) == tag if e is of the kind */
@@ -2222,6 +2227,7 @@ ary_scan_init(struct ary_scan *scan, VALUE item)
     if (FLONUM_P(item)) {
         scan->mask = RUBY_FLONUM_MASK;
         scan->tag = RUBY_FLONUM_FLAG;
+        RUBY_ASSERT(!isnan(RFLOAT_VALUE(item)));
         return BASIC_OP_UNREDEFINED_P(BOP_EQ, FLOAT_REDEFINED_OP_FLAG);
     }
     if (STATIC_SYM_P(item)) {
