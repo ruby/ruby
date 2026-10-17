@@ -1,0 +1,108 @@
+# Generated from lib/prism/parse_result/comments.rb with RBS::Inline
+
+module Prism
+  class ParseResult < Result
+    # When we've parsed the source, we have both the syntax tree and the list of
+    # comments that we found in the source. This class is responsible for
+    # walking the tree and finding the nearest location to attach each comment.
+    #
+    # It does this by first finding the nearest locations to each comment.
+    # Locations can either come from nodes directly or from location fields on
+    # nodes. For example, a `ClassNode` has an overall location encompassing the
+    # entire class, but it also has a location for the `class` keyword.
+    #
+    # Once the nearest locations are found, it determines which one to attach
+    # to. If it's a trailing comment (a comment on the same line as other source
+    # code), it will favor attaching to the nearest location that occurs before
+    # the comment. Otherwise it will favor attaching to the nearest location
+    # that is after the comment.
+    class Comments
+      # An internal interface for a target that comments can be attached
+      # to. This is either going to be a NodeTarget or a CommentTarget.
+      interface _CommentTarget
+        def start_offset: () -> Integer
+
+        def end_offset: () -> Integer
+
+        def encloses?: (Comment) -> bool
+
+        def leading_comment: (Comment) -> void
+
+        def trailing_comment: (Comment) -> void
+      end
+
+      # A target for attaching comments that is based on a specific node's
+      # location.
+      class NodeTarget
+        # :nodoc:
+        attr_reader node: node
+
+        # : (node node) -> void
+        def initialize: (node node) -> void
+
+        # : () -> Integer
+        def start_offset: () -> Integer
+
+        # : () -> Integer
+        def end_offset: () -> Integer
+
+        # : (Comment comment) -> bool
+        def encloses?: (Comment comment) -> bool
+
+        # : (Comment comment) -> void
+        def leading_comment: (Comment comment) -> void
+
+        # : (Comment comment) -> void
+        def trailing_comment: (Comment comment) -> void
+      end
+
+      # A target for attaching comments that is based on a location field on a
+      # node. For example, the `end` token of a ClassNode.
+      class LocationTarget
+        # :nodoc:
+        attr_reader location: Location
+
+        # : (Location location) -> void
+        def initialize: (Location location) -> void
+
+        # : () -> Integer
+        def start_offset: () -> Integer
+
+        # : () -> Integer
+        def end_offset: () -> Integer
+
+        # : (Comment comment) -> bool
+        def encloses?: (Comment comment) -> bool
+
+        # : (Comment comment) -> void
+        def leading_comment: (Comment comment) -> void
+
+        # : (Comment comment) -> void
+        def trailing_comment: (Comment comment) -> void
+      end
+
+      # The parse result that we are attaching comments to.
+      attr_reader parse_result: ParseResult
+
+      # Create a new Comments object that will attach comments to the given
+      # parse result.
+      #
+      # : (ParseResult parse_result) -> void
+      def initialize: (ParseResult parse_result) -> void
+
+      # Attach the comments to their respective locations in the tree by
+      # mutating the parse result.
+      #
+      # : () -> void
+      def attach!: () -> void
+
+      private
+
+      # Responsible for finding the nearest targets to the given comment within
+      # the context of the given encapsulating node.
+      #
+      # : (node node, Comment comment) -> [_CommentTarget?, _CommentTarget?, _CommentTarget?]
+      def nearest_targets: (node node, Comment comment) -> [ _CommentTarget?, _CommentTarget?, _CommentTarget? ]
+    end
+  end
+end

@@ -1,0 +1,928 @@
+# Generated from lib/prism/dsl.rb with RBS::Inline
+
+module Prism
+  # The DSL module provides a set of methods that can be used to create prism
+  # nodes in a more concise manner. For example, instead of writing:
+  #
+  #     source = Prism::Source.for("[1]", 1, [0])
+  #
+  #     Prism::ArrayNode.new(
+  #       source,
+  #       0,
+  #       Prism::Location.new(source, 0, 3),
+  #       0,
+  #       [
+  #         Prism::IntegerNode.new(
+  #           source,
+  #           0,
+  #           Prism::Location.new(source, 1, 1),
+  #           Prism::IntegerBaseFlags::DECIMAL,
+  #           1
+  #         )
+  #       ],
+  #       Prism::Location.new(source, 0, 1),
+  #       Prism::Location.new(source, 2, 1)
+  #     )
+  #
+  # you could instead write:
+  #
+  #     class Builder
+  #       include Prism::DSL
+  #
+  #       attr_reader :default_source
+  #
+  #       def initialize
+  #         @default_source = source("[1]")
+  #       end
+  #
+  #       def build
+  #         array_node(
+  #           location: location(start_offset: 0, length: 3),
+  #           elements: [
+  #             integer_node(
+  #               location: location(start_offset: 1, length: 1),
+  #               flags: integer_base_flag(:decimal),
+  #               value: 1
+  #             )
+  #           ],
+  #           opening_loc: location(start_offset: 0, length: 1),
+  #           closing_loc: location(start_offset: 2, length: 1)
+  #         )
+  #       end
+  #     end
+  #
+  # This is mostly helpful in the context of generating trees programmatically.
+  module DSL
+    # Create a new Source object.
+    #
+    # : (String string) -> Source
+    def source: (String string) -> Source
+
+    # Create a new Location object.
+    #
+    # : (?source: Source, ?start_offset: Integer, ?length: Integer) -> Location
+    def location: (?source: Source, ?start_offset: Integer, ?length: Integer) -> Location
+
+    # Create a new AliasGlobalVariableNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?new_name: (GlobalVariableReadNode | BackReferenceReadNode | NumberedReferenceReadNode), ?old_name: (GlobalVariableReadNode | BackReferenceReadNode | NumberedReferenceReadNode), ?keyword_loc: Location) -> AliasGlobalVariableNode
+    def alias_global_variable_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?new_name: GlobalVariableReadNode | BackReferenceReadNode | NumberedReferenceReadNode, ?old_name: GlobalVariableReadNode | BackReferenceReadNode | NumberedReferenceReadNode, ?keyword_loc: Location) -> AliasGlobalVariableNode
+
+    # Create a new AliasMethodNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?new_name: (SymbolNode | InterpolatedSymbolNode), ?old_name: (SymbolNode | InterpolatedSymbolNode), ?keyword_loc: Location) -> AliasMethodNode
+    def alias_method_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?new_name: SymbolNode | InterpolatedSymbolNode, ?old_name: SymbolNode | InterpolatedSymbolNode, ?keyword_loc: Location) -> AliasMethodNode
+
+    # Create a new AlternationPatternNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?left: Prism::node, ?right: Prism::node, ?operator_loc: Location) -> AlternationPatternNode
+    def alternation_pattern_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?left: Prism::node, ?right: Prism::node, ?operator_loc: Location) -> AlternationPatternNode
+
+    # Create a new AndNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?left: Prism::node, ?right: Prism::node, ?operator_loc: Location) -> AndNode
+    def and_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?left: Prism::node, ?right: Prism::node, ?operator_loc: Location) -> AndNode
+
+    # Create a new ArgumentsNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?arguments: Array[Prism::node]) -> ArgumentsNode
+    def arguments_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?arguments: Array[Prism::node]) -> ArgumentsNode
+
+    # Create a new ArrayNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?elements: Array[Prism::node], ?opening_loc: Location?, ?closing_loc: Location?) -> ArrayNode
+    def array_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?elements: Array[Prism::node], ?opening_loc: Location?, ?closing_loc: Location?) -> ArrayNode
+
+    # Create a new ArrayPatternNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?constant: (ConstantPathNode | ConstantReadNode)?, ?requireds: Array[Prism::node], ?rest: (ImplicitRestNode | SplatNode)?, ?posts: Array[Prism::node], ?opening_loc: Location?, ?closing_loc: Location?) -> ArrayPatternNode
+    def array_pattern_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?constant: (ConstantPathNode | ConstantReadNode)?, ?requireds: Array[Prism::node], ?rest: (ImplicitRestNode | SplatNode)?, ?posts: Array[Prism::node], ?opening_loc: Location?, ?closing_loc: Location?) -> ArrayPatternNode
+
+    # Create a new AssocNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?key: Prism::node, ?value: Prism::node, ?operator_loc: Location?) -> AssocNode
+    def assoc_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?key: Prism::node, ?value: Prism::node, ?operator_loc: Location?) -> AssocNode
+
+    # Create a new AssocSplatNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: Prism::node?, ?operator_loc: Location) -> AssocSplatNode
+    def assoc_splat_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: Prism::node?, ?operator_loc: Location) -> AssocSplatNode
+
+    # Create a new BackReferenceReadNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> BackReferenceReadNode
+    def back_reference_read_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> BackReferenceReadNode
+
+    # Create a new BeginNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?begin_keyword_loc: Location?, ?statements: StatementsNode?, ?rescue_clause: RescueNode?, ?else_clause: ElseNode?, ?ensure_clause: EnsureNode?, ?end_keyword_loc: Location?) -> BeginNode
+    def begin_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?begin_keyword_loc: Location?, ?statements: StatementsNode?, ?rescue_clause: RescueNode?, ?else_clause: ElseNode?, ?ensure_clause: EnsureNode?, ?end_keyword_loc: Location?) -> BeginNode
+
+    # Create a new BlockArgumentNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?expression: Prism::node?, ?operator_loc: Location) -> BlockArgumentNode
+    def block_argument_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?expression: Prism::node?, ?operator_loc: Location) -> BlockArgumentNode
+
+    # Create a new BlockLocalVariableNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> BlockLocalVariableNode
+    def block_local_variable_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> BlockLocalVariableNode
+
+    # Create a new BlockNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?locals: Array[Symbol], ?parameters: (BlockParametersNode | NumberedParametersNode | ItParametersNode)?, ?body: (StatementsNode | BeginNode)?, ?opening_loc: Location, ?closing_loc: Location) -> BlockNode
+    def block_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?locals: Array[Symbol], ?parameters: (BlockParametersNode | NumberedParametersNode | ItParametersNode)?, ?body: (StatementsNode | BeginNode)?, ?opening_loc: Location, ?closing_loc: Location) -> BlockNode
+
+    # Create a new BlockParameterNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol?, ?name_loc: Location?, ?operator_loc: Location) -> BlockParameterNode
+    def block_parameter_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol?, ?name_loc: Location?, ?operator_loc: Location) -> BlockParameterNode
+
+    # Create a new BlockParametersNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?parameters: ParametersNode?, ?locals: Array[BlockLocalVariableNode], ?opening_loc: Location?, ?closing_loc: Location?) -> BlockParametersNode
+    def block_parameters_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?parameters: ParametersNode?, ?locals: Array[BlockLocalVariableNode], ?opening_loc: Location?, ?closing_loc: Location?) -> BlockParametersNode
+
+    # Create a new BreakNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?arguments: ArgumentsNode?, ?keyword_loc: Location) -> BreakNode
+    def break_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?arguments: ArgumentsNode?, ?keyword_loc: Location) -> BreakNode
+
+    # Create a new CallAndWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?message_loc: Location?, ?read_name: Symbol, ?write_name: Symbol, ?operator_loc: Location, ?value: Prism::node) -> CallAndWriteNode
+    def call_and_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?message_loc: Location?, ?read_name: Symbol, ?write_name: Symbol, ?operator_loc: Location, ?value: Prism::node) -> CallAndWriteNode
+
+    # Create a new CallNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?name: Symbol, ?message_loc: Location?, ?opening_loc: Location?, ?arguments: ArgumentsNode?, ?closing_loc: Location?, ?equal_loc: Location?, ?block: (BlockNode | BlockArgumentNode)?) -> CallNode
+    def call_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?name: Symbol, ?message_loc: Location?, ?opening_loc: Location?, ?arguments: ArgumentsNode?, ?closing_loc: Location?, ?equal_loc: Location?, ?block: (BlockNode | BlockArgumentNode)?) -> CallNode
+
+    # Create a new CallOperatorWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?message_loc: Location?, ?read_name: Symbol, ?write_name: Symbol, ?binary_operator: Symbol, ?binary_operator_loc: Location, ?value: Prism::node) -> CallOperatorWriteNode
+    def call_operator_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?message_loc: Location?, ?read_name: Symbol, ?write_name: Symbol, ?binary_operator: Symbol, ?binary_operator_loc: Location, ?value: Prism::node) -> CallOperatorWriteNode
+
+    # Create a new CallOrWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?message_loc: Location?, ?read_name: Symbol, ?write_name: Symbol, ?operator_loc: Location, ?value: Prism::node) -> CallOrWriteNode
+    def call_or_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?message_loc: Location?, ?read_name: Symbol, ?write_name: Symbol, ?operator_loc: Location, ?value: Prism::node) -> CallOrWriteNode
+
+    # Create a new CallTargetNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node, ?call_operator_loc: Location, ?name: Symbol, ?message_loc: Location) -> CallTargetNode
+    def call_target_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node, ?call_operator_loc: Location, ?name: Symbol, ?message_loc: Location) -> CallTargetNode
+
+    # Create a new CapturePatternNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: Prism::node, ?target: LocalVariableTargetNode, ?operator_loc: Location) -> CapturePatternNode
+    def capture_pattern_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: Prism::node, ?target: LocalVariableTargetNode, ?operator_loc: Location) -> CapturePatternNode
+
+    # Create a new CaseMatchNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?predicate: Prism::node?, ?conditions: Array[InNode], ?else_clause: ElseNode?, ?case_keyword_loc: Location, ?end_keyword_loc: Location) -> CaseMatchNode
+    def case_match_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?predicate: Prism::node?, ?conditions: Array[InNode], ?else_clause: ElseNode?, ?case_keyword_loc: Location, ?end_keyword_loc: Location) -> CaseMatchNode
+
+    # Create a new CaseNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?predicate: Prism::node?, ?conditions: Array[WhenNode], ?else_clause: ElseNode?, ?case_keyword_loc: Location, ?end_keyword_loc: Location) -> CaseNode
+    def case_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?predicate: Prism::node?, ?conditions: Array[WhenNode], ?else_clause: ElseNode?, ?case_keyword_loc: Location, ?end_keyword_loc: Location) -> CaseNode
+
+    # Create a new ClassNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?locals: Array[Symbol], ?class_keyword_loc: Location, ?constant_path: (ConstantReadNode | ConstantPathNode), ?inheritance_operator_loc: Location?, ?superclass: Prism::node?, ?body: (StatementsNode | BeginNode)?, ?end_keyword_loc: Location, ?name: Symbol) -> ClassNode
+    def class_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?locals: Array[Symbol], ?class_keyword_loc: Location, ?constant_path: ConstantReadNode | ConstantPathNode, ?inheritance_operator_loc: Location?, ?superclass: Prism::node?, ?body: (StatementsNode | BeginNode)?, ?end_keyword_loc: Location, ?name: Symbol) -> ClassNode
+
+    # Create a new ClassVariableAndWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> ClassVariableAndWriteNode
+    def class_variable_and_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> ClassVariableAndWriteNode
+
+    # Create a new ClassVariableOperatorWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?binary_operator_loc: Location, ?value: Prism::node, ?binary_operator: Symbol) -> ClassVariableOperatorWriteNode
+    def class_variable_operator_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?binary_operator_loc: Location, ?value: Prism::node, ?binary_operator: Symbol) -> ClassVariableOperatorWriteNode
+
+    # Create a new ClassVariableOrWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> ClassVariableOrWriteNode
+    def class_variable_or_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> ClassVariableOrWriteNode
+
+    # Create a new ClassVariableReadNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> ClassVariableReadNode
+    def class_variable_read_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> ClassVariableReadNode
+
+    # Create a new ClassVariableTargetNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> ClassVariableTargetNode
+    def class_variable_target_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> ClassVariableTargetNode
+
+    # Create a new ClassVariableWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?value: Prism::node, ?operator_loc: Location) -> ClassVariableWriteNode
+    def class_variable_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?value: Prism::node, ?operator_loc: Location) -> ClassVariableWriteNode
+
+    # Create a new ConstantAndWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> ConstantAndWriteNode
+    def constant_and_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> ConstantAndWriteNode
+
+    # Create a new ConstantOperatorWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?binary_operator_loc: Location, ?value: Prism::node, ?binary_operator: Symbol) -> ConstantOperatorWriteNode
+    def constant_operator_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?binary_operator_loc: Location, ?value: Prism::node, ?binary_operator: Symbol) -> ConstantOperatorWriteNode
+
+    # Create a new ConstantOrWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> ConstantOrWriteNode
+    def constant_or_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> ConstantOrWriteNode
+
+    # Create a new ConstantPathAndWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?target: ConstantPathNode, ?operator_loc: Location, ?value: Prism::node) -> ConstantPathAndWriteNode
+    def constant_path_and_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?target: ConstantPathNode, ?operator_loc: Location, ?value: Prism::node) -> ConstantPathAndWriteNode
+
+    # Create a new ConstantPathNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?parent: Prism::node?, ?name: Symbol?, ?delimiter_loc: Location, ?name_loc: Location) -> ConstantPathNode
+    def constant_path_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?parent: Prism::node?, ?name: Symbol?, ?delimiter_loc: Location, ?name_loc: Location) -> ConstantPathNode
+
+    # Create a new ConstantPathOperatorWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?target: ConstantPathNode, ?binary_operator_loc: Location, ?value: Prism::node, ?binary_operator: Symbol) -> ConstantPathOperatorWriteNode
+    def constant_path_operator_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?target: ConstantPathNode, ?binary_operator_loc: Location, ?value: Prism::node, ?binary_operator: Symbol) -> ConstantPathOperatorWriteNode
+
+    # Create a new ConstantPathOrWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?target: ConstantPathNode, ?operator_loc: Location, ?value: Prism::node) -> ConstantPathOrWriteNode
+    def constant_path_or_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?target: ConstantPathNode, ?operator_loc: Location, ?value: Prism::node) -> ConstantPathOrWriteNode
+
+    # Create a new ConstantPathTargetNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?parent: Prism::node?, ?name: Symbol?, ?delimiter_loc: Location, ?name_loc: Location) -> ConstantPathTargetNode
+    def constant_path_target_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?parent: Prism::node?, ?name: Symbol?, ?delimiter_loc: Location, ?name_loc: Location) -> ConstantPathTargetNode
+
+    # Create a new ConstantPathWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?target: ConstantPathNode, ?operator_loc: Location, ?value: Prism::node) -> ConstantPathWriteNode
+    def constant_path_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?target: ConstantPathNode, ?operator_loc: Location, ?value: Prism::node) -> ConstantPathWriteNode
+
+    # Create a new ConstantReadNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> ConstantReadNode
+    def constant_read_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> ConstantReadNode
+
+    # Create a new ConstantTargetNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> ConstantTargetNode
+    def constant_target_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> ConstantTargetNode
+
+    # Create a new ConstantWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?value: Prism::node, ?operator_loc: Location) -> ConstantWriteNode
+    def constant_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?value: Prism::node, ?operator_loc: Location) -> ConstantWriteNode
+
+    # Create a new DefNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?receiver: Prism::node?, ?parameters: ParametersNode?, ?body: (StatementsNode | BeginNode)?, ?locals: Array[Symbol], ?def_keyword_loc: Location, ?operator_loc: Location?, ?lparen_loc: Location?, ?rparen_loc: Location?, ?equal_loc: Location?, ?end_keyword_loc: Location?) -> DefNode
+    def def_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?receiver: Prism::node?, ?parameters: ParametersNode?, ?body: (StatementsNode | BeginNode)?, ?locals: Array[Symbol], ?def_keyword_loc: Location, ?operator_loc: Location?, ?lparen_loc: Location?, ?rparen_loc: Location?, ?equal_loc: Location?, ?end_keyword_loc: Location?) -> DefNode
+
+    # Create a new DefinedNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?lparen_loc: Location?, ?value: Prism::node, ?rparen_loc: Location?, ?keyword_loc: Location) -> DefinedNode
+    def defined_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?lparen_loc: Location?, ?value: Prism::node, ?rparen_loc: Location?, ?keyword_loc: Location) -> DefinedNode
+
+    # Create a new ElseNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?else_keyword_loc: Location, ?statements: StatementsNode?, ?end_keyword_loc: Location?) -> ElseNode
+    def else_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?else_keyword_loc: Location, ?statements: StatementsNode?, ?end_keyword_loc: Location?) -> ElseNode
+
+    # Create a new EmbeddedStatementsNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?statements: StatementsNode?, ?closing_loc: Location) -> EmbeddedStatementsNode
+    def embedded_statements_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?statements: StatementsNode?, ?closing_loc: Location) -> EmbeddedStatementsNode
+
+    # Create a new EmbeddedVariableNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?operator_loc: Location, ?variable: (InstanceVariableReadNode | ClassVariableReadNode | GlobalVariableReadNode | BackReferenceReadNode | NumberedReferenceReadNode)) -> EmbeddedVariableNode
+    def embedded_variable_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?operator_loc: Location, ?variable: InstanceVariableReadNode | ClassVariableReadNode | GlobalVariableReadNode | BackReferenceReadNode | NumberedReferenceReadNode) -> EmbeddedVariableNode
+
+    # Create a new EnsureNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?ensure_keyword_loc: Location, ?statements: StatementsNode?, ?end_keyword_loc: Location) -> EnsureNode
+    def ensure_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?ensure_keyword_loc: Location, ?statements: StatementsNode?, ?end_keyword_loc: Location) -> EnsureNode
+
+    # Create a new ErrorRecoveryNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?unexpected: Prism::node?) -> ErrorRecoveryNode
+    def error_recovery_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?unexpected: Prism::node?) -> ErrorRecoveryNode
+
+    # Create a new FalseNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> FalseNode
+    def false_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> FalseNode
+
+    # Create a new FindPatternNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?constant: (ConstantPathNode | ConstantReadNode)?, ?left: SplatNode, ?requireds: Array[Prism::node], ?right: SplatNode, ?opening_loc: Location?, ?closing_loc: Location?) -> FindPatternNode
+    def find_pattern_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?constant: (ConstantPathNode | ConstantReadNode)?, ?left: SplatNode, ?requireds: Array[Prism::node], ?right: SplatNode, ?opening_loc: Location?, ?closing_loc: Location?) -> FindPatternNode
+
+    # Create a new FlipFlopNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?left: Prism::node?, ?right: Prism::node?, ?operator_loc: Location) -> FlipFlopNode
+    def flip_flop_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?left: Prism::node?, ?right: Prism::node?, ?operator_loc: Location) -> FlipFlopNode
+
+    # Create a new FloatNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: Float) -> FloatNode
+    def float_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: Float) -> FloatNode
+
+    # Create a new ForNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?index: (LocalVariableTargetNode | InstanceVariableTargetNode | ClassVariableTargetNode | GlobalVariableTargetNode | ConstantTargetNode | ConstantPathTargetNode | CallTargetNode | IndexTargetNode | MultiTargetNode), ?collection: Prism::node, ?statements: StatementsNode?, ?for_keyword_loc: Location, ?in_keyword_loc: Location, ?do_keyword_loc: Location?, ?end_keyword_loc: Location) -> ForNode
+    def for_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?index: LocalVariableTargetNode | InstanceVariableTargetNode | ClassVariableTargetNode | GlobalVariableTargetNode | ConstantTargetNode | ConstantPathTargetNode | CallTargetNode | IndexTargetNode | MultiTargetNode, ?collection: Prism::node, ?statements: StatementsNode?, ?for_keyword_loc: Location, ?in_keyword_loc: Location, ?do_keyword_loc: Location?, ?end_keyword_loc: Location) -> ForNode
+
+    # Create a new ForwardingArgumentsNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> ForwardingArgumentsNode
+    def forwarding_arguments_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> ForwardingArgumentsNode
+
+    # Create a new ForwardingParameterNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> ForwardingParameterNode
+    def forwarding_parameter_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> ForwardingParameterNode
+
+    # Create a new ForwardingSuperNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?keyword_loc: Location, ?block: BlockNode?) -> ForwardingSuperNode
+    def forwarding_super_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?keyword_loc: Location, ?block: BlockNode?) -> ForwardingSuperNode
+
+    # Create a new GlobalVariableAndWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> GlobalVariableAndWriteNode
+    def global_variable_and_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> GlobalVariableAndWriteNode
+
+    # Create a new GlobalVariableOperatorWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?binary_operator_loc: Location, ?value: Prism::node, ?binary_operator: Symbol) -> GlobalVariableOperatorWriteNode
+    def global_variable_operator_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?binary_operator_loc: Location, ?value: Prism::node, ?binary_operator: Symbol) -> GlobalVariableOperatorWriteNode
+
+    # Create a new GlobalVariableOrWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> GlobalVariableOrWriteNode
+    def global_variable_or_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> GlobalVariableOrWriteNode
+
+    # Create a new GlobalVariableReadNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> GlobalVariableReadNode
+    def global_variable_read_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> GlobalVariableReadNode
+
+    # Create a new GlobalVariableTargetNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> GlobalVariableTargetNode
+    def global_variable_target_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> GlobalVariableTargetNode
+
+    # Create a new GlobalVariableWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?value: Prism::node, ?operator_loc: Location) -> GlobalVariableWriteNode
+    def global_variable_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?value: Prism::node, ?operator_loc: Location) -> GlobalVariableWriteNode
+
+    # Create a new HashNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?elements: Array[AssocNode | AssocSplatNode], ?closing_loc: Location) -> HashNode
+    def hash_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?elements: Array[AssocNode | AssocSplatNode], ?closing_loc: Location) -> HashNode
+
+    # Create a new HashPatternNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?constant: (ConstantPathNode | ConstantReadNode)?, ?elements: Array[AssocNode], ?rest: (AssocSplatNode | NoKeywordsParameterNode)?, ?opening_loc: Location?, ?closing_loc: Location?) -> HashPatternNode
+    def hash_pattern_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?constant: (ConstantPathNode | ConstantReadNode)?, ?elements: Array[AssocNode], ?rest: (AssocSplatNode | NoKeywordsParameterNode)?, ?opening_loc: Location?, ?closing_loc: Location?) -> HashPatternNode
+
+    # Create a new IfNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?if_keyword_loc: Location?, ?predicate: Prism::node, ?then_keyword_loc: Location?, ?statements: StatementsNode?, ?subsequent: (ElseNode | IfNode)?, ?end_keyword_loc: Location?) -> IfNode
+    def if_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?if_keyword_loc: Location?, ?predicate: Prism::node, ?then_keyword_loc: Location?, ?statements: StatementsNode?, ?subsequent: (ElseNode | IfNode)?, ?end_keyword_loc: Location?) -> IfNode
+
+    # Create a new ImaginaryNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?numeric: (FloatNode | IntegerNode | RationalNode)) -> ImaginaryNode
+    def imaginary_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?numeric: FloatNode | IntegerNode | RationalNode) -> ImaginaryNode
+
+    # Create a new ImplicitNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: (LocalVariableReadNode | CallNode | ConstantReadNode | LocalVariableTargetNode)) -> ImplicitNode
+    def implicit_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: LocalVariableReadNode | CallNode | ConstantReadNode | LocalVariableTargetNode) -> ImplicitNode
+
+    # Create a new ImplicitRestNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> ImplicitRestNode
+    def implicit_rest_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> ImplicitRestNode
+
+    # Create a new InNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?pattern: Prism::node, ?statements: StatementsNode?, ?in_keyword_loc: Location, ?then_keyword_loc: Location?) -> InNode
+    def in_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?pattern: Prism::node, ?statements: StatementsNode?, ?in_keyword_loc: Location, ?then_keyword_loc: Location?) -> InNode
+
+    # Create a new IndexAndWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?opening_loc: Location, ?arguments: ArgumentsNode?, ?closing_loc: Location, ?block: BlockArgumentNode?, ?operator_loc: Location, ?value: Prism::node) -> IndexAndWriteNode
+    def index_and_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?opening_loc: Location, ?arguments: ArgumentsNode?, ?closing_loc: Location, ?block: BlockArgumentNode?, ?operator_loc: Location, ?value: Prism::node) -> IndexAndWriteNode
+
+    # Create a new IndexOperatorWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?opening_loc: Location, ?arguments: ArgumentsNode?, ?closing_loc: Location, ?block: BlockArgumentNode?, ?binary_operator: Symbol, ?binary_operator_loc: Location, ?value: Prism::node) -> IndexOperatorWriteNode
+    def index_operator_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?opening_loc: Location, ?arguments: ArgumentsNode?, ?closing_loc: Location, ?block: BlockArgumentNode?, ?binary_operator: Symbol, ?binary_operator_loc: Location, ?value: Prism::node) -> IndexOperatorWriteNode
+
+    # Create a new IndexOrWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?opening_loc: Location, ?arguments: ArgumentsNode?, ?closing_loc: Location, ?block: BlockArgumentNode?, ?operator_loc: Location, ?value: Prism::node) -> IndexOrWriteNode
+    def index_or_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node?, ?call_operator_loc: Location?, ?opening_loc: Location, ?arguments: ArgumentsNode?, ?closing_loc: Location, ?block: BlockArgumentNode?, ?operator_loc: Location, ?value: Prism::node) -> IndexOrWriteNode
+
+    # Create a new IndexTargetNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node, ?opening_loc: Location, ?arguments: ArgumentsNode?, ?closing_loc: Location, ?block: BlockArgumentNode?) -> IndexTargetNode
+    def index_target_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?receiver: Prism::node, ?opening_loc: Location, ?arguments: ArgumentsNode?, ?closing_loc: Location, ?block: BlockArgumentNode?) -> IndexTargetNode
+
+    # Create a new InstanceVariableAndWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> InstanceVariableAndWriteNode
+    def instance_variable_and_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> InstanceVariableAndWriteNode
+
+    # Create a new InstanceVariableOperatorWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?binary_operator_loc: Location, ?value: Prism::node, ?binary_operator: Symbol) -> InstanceVariableOperatorWriteNode
+    def instance_variable_operator_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?binary_operator_loc: Location, ?value: Prism::node, ?binary_operator: Symbol) -> InstanceVariableOperatorWriteNode
+
+    # Create a new InstanceVariableOrWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> InstanceVariableOrWriteNode
+    def instance_variable_or_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> InstanceVariableOrWriteNode
+
+    # Create a new InstanceVariableReadNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> InstanceVariableReadNode
+    def instance_variable_read_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> InstanceVariableReadNode
+
+    # Create a new InstanceVariableTargetNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> InstanceVariableTargetNode
+    def instance_variable_target_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> InstanceVariableTargetNode
+
+    # Create a new InstanceVariableWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?value: Prism::node, ?operator_loc: Location) -> InstanceVariableWriteNode
+    def instance_variable_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?value: Prism::node, ?operator_loc: Location) -> InstanceVariableWriteNode
+
+    # Create a new IntegerNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: Integer) -> IntegerNode
+    def integer_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: Integer) -> IntegerNode
+
+    # Create a new InterpolatedMatchLastLineNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode], ?closing_loc: Location) -> InterpolatedMatchLastLineNode
+    def interpolated_match_last_line_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode], ?closing_loc: Location) -> InterpolatedMatchLastLineNode
+
+    # Create a new InterpolatedRegularExpressionNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode], ?closing_loc: Location) -> InterpolatedRegularExpressionNode
+    def interpolated_regular_expression_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode], ?closing_loc: Location) -> InterpolatedRegularExpressionNode
+
+    # Create a new InterpolatedStringNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location?, ?parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode | InterpolatedStringNode], ?closing_loc: Location?) -> InterpolatedStringNode
+    def interpolated_string_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location?, ?parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode | InterpolatedStringNode], ?closing_loc: Location?) -> InterpolatedStringNode
+
+    # Create a new InterpolatedSymbolNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location?, ?parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode], ?closing_loc: Location?) -> InterpolatedSymbolNode
+    def interpolated_symbol_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location?, ?parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode], ?closing_loc: Location?) -> InterpolatedSymbolNode
+
+    # Create a new InterpolatedXStringNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode], ?closing_loc: Location) -> InterpolatedXStringNode
+    def interpolated_x_string_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?parts: Array[StringNode | EmbeddedStatementsNode | EmbeddedVariableNode], ?closing_loc: Location) -> InterpolatedXStringNode
+
+    # Create a new ItLocalVariableReadNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> ItLocalVariableReadNode
+    def it_local_variable_read_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> ItLocalVariableReadNode
+
+    # Create a new ItParametersNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> ItParametersNode
+    def it_parameters_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> ItParametersNode
+
+    # Create a new KeywordHashNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?elements: Array[AssocNode | AssocSplatNode]) -> KeywordHashNode
+    def keyword_hash_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?elements: Array[AssocNode | AssocSplatNode]) -> KeywordHashNode
+
+    # Create a new KeywordRestParameterNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol?, ?name_loc: Location?, ?operator_loc: Location) -> KeywordRestParameterNode
+    def keyword_rest_parameter_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol?, ?name_loc: Location?, ?operator_loc: Location) -> KeywordRestParameterNode
+
+    # Create a new LambdaNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?locals: Array[Symbol], ?operator_loc: Location, ?opening_loc: Location, ?closing_loc: Location, ?parameters: (BlockParametersNode | NumberedParametersNode | ItParametersNode)?, ?body: (StatementsNode | BeginNode)?) -> LambdaNode
+    def lambda_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?locals: Array[Symbol], ?operator_loc: Location, ?opening_loc: Location, ?closing_loc: Location, ?parameters: (BlockParametersNode | NumberedParametersNode | ItParametersNode)?, ?body: (StatementsNode | BeginNode)?) -> LambdaNode
+
+    # Create a new LocalVariableAndWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node, ?name: Symbol, ?depth: Integer) -> LocalVariableAndWriteNode
+    def local_variable_and_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node, ?name: Symbol, ?depth: Integer) -> LocalVariableAndWriteNode
+
+    # Create a new LocalVariableOperatorWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name_loc: Location, ?binary_operator_loc: Location, ?value: Prism::node, ?name: Symbol, ?binary_operator: Symbol, ?depth: Integer) -> LocalVariableOperatorWriteNode
+    def local_variable_operator_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name_loc: Location, ?binary_operator_loc: Location, ?value: Prism::node, ?name: Symbol, ?binary_operator: Symbol, ?depth: Integer) -> LocalVariableOperatorWriteNode
+
+    # Create a new LocalVariableOrWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node, ?name: Symbol, ?depth: Integer) -> LocalVariableOrWriteNode
+    def local_variable_or_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node, ?name: Symbol, ?depth: Integer) -> LocalVariableOrWriteNode
+
+    # Create a new LocalVariableReadNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?depth: Integer) -> LocalVariableReadNode
+    def local_variable_read_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?depth: Integer) -> LocalVariableReadNode
+
+    # Create a new LocalVariableTargetNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?depth: Integer) -> LocalVariableTargetNode
+    def local_variable_target_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?depth: Integer) -> LocalVariableTargetNode
+
+    # Create a new LocalVariableWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?depth: Integer, ?name_loc: Location, ?value: Prism::node, ?operator_loc: Location) -> LocalVariableWriteNode
+    def local_variable_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?depth: Integer, ?name_loc: Location, ?value: Prism::node, ?operator_loc: Location) -> LocalVariableWriteNode
+
+    # Create a new MatchLastLineNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?content_loc: Location, ?closing_loc: Location, ?unescaped: String) -> MatchLastLineNode
+    def match_last_line_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?content_loc: Location, ?closing_loc: Location, ?unescaped: String) -> MatchLastLineNode
+
+    # Create a new MatchPredicateNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: Prism::node, ?pattern: Prism::node, ?keyword_loc: Location) -> MatchPredicateNode
+    def match_predicate_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: Prism::node, ?pattern: Prism::node, ?keyword_loc: Location) -> MatchPredicateNode
+
+    # Create a new MatchRequiredNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: Prism::node, ?pattern: Prism::node, ?operator_loc: Location) -> MatchRequiredNode
+    def match_required_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?value: Prism::node, ?pattern: Prism::node, ?operator_loc: Location) -> MatchRequiredNode
+
+    # Create a new MatchWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?call: CallNode, ?targets: Array[LocalVariableTargetNode]) -> MatchWriteNode
+    def match_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?call: CallNode, ?targets: Array[LocalVariableTargetNode]) -> MatchWriteNode
+
+    # Create a new ModuleNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?locals: Array[Symbol], ?module_keyword_loc: Location, ?constant_path: (ConstantReadNode | ConstantPathNode), ?body: (StatementsNode | BeginNode)?, ?end_keyword_loc: Location, ?name: Symbol) -> ModuleNode
+    def module_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?locals: Array[Symbol], ?module_keyword_loc: Location, ?constant_path: ConstantReadNode | ConstantPathNode, ?body: (StatementsNode | BeginNode)?, ?end_keyword_loc: Location, ?name: Symbol) -> ModuleNode
+
+    # Create a new MultiTargetNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?lefts: Array[LocalVariableTargetNode | InstanceVariableTargetNode | ClassVariableTargetNode | GlobalVariableTargetNode | ConstantTargetNode | ConstantPathTargetNode | CallTargetNode | IndexTargetNode | MultiTargetNode | RequiredParameterNode], ?rest: (ImplicitRestNode | SplatNode)?, ?rights: Array[LocalVariableTargetNode | InstanceVariableTargetNode | ClassVariableTargetNode | GlobalVariableTargetNode | ConstantTargetNode | ConstantPathTargetNode | CallTargetNode | IndexTargetNode | MultiTargetNode | RequiredParameterNode], ?lparen_loc: Location?, ?rparen_loc: Location?) -> MultiTargetNode
+    def multi_target_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?lefts: Array[LocalVariableTargetNode | InstanceVariableTargetNode | ClassVariableTargetNode | GlobalVariableTargetNode | ConstantTargetNode | ConstantPathTargetNode | CallTargetNode | IndexTargetNode | MultiTargetNode | RequiredParameterNode], ?rest: (ImplicitRestNode | SplatNode)?, ?rights: Array[LocalVariableTargetNode | InstanceVariableTargetNode | ClassVariableTargetNode | GlobalVariableTargetNode | ConstantTargetNode | ConstantPathTargetNode | CallTargetNode | IndexTargetNode | MultiTargetNode | RequiredParameterNode], ?lparen_loc: Location?, ?rparen_loc: Location?) -> MultiTargetNode
+
+    # Create a new MultiWriteNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?lefts: Array[LocalVariableTargetNode | InstanceVariableTargetNode | ClassVariableTargetNode | GlobalVariableTargetNode | ConstantTargetNode | ConstantPathTargetNode | CallTargetNode | IndexTargetNode | MultiTargetNode], ?rest: (ImplicitRestNode | SplatNode)?, ?rights: Array[LocalVariableTargetNode | InstanceVariableTargetNode | ClassVariableTargetNode | GlobalVariableTargetNode | ConstantTargetNode | ConstantPathTargetNode | CallTargetNode | IndexTargetNode | MultiTargetNode], ?lparen_loc: Location?, ?rparen_loc: Location?, ?operator_loc: Location, ?value: Prism::node) -> MultiWriteNode
+    def multi_write_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?lefts: Array[LocalVariableTargetNode | InstanceVariableTargetNode | ClassVariableTargetNode | GlobalVariableTargetNode | ConstantTargetNode | ConstantPathTargetNode | CallTargetNode | IndexTargetNode | MultiTargetNode], ?rest: (ImplicitRestNode | SplatNode)?, ?rights: Array[LocalVariableTargetNode | InstanceVariableTargetNode | ClassVariableTargetNode | GlobalVariableTargetNode | ConstantTargetNode | ConstantPathTargetNode | CallTargetNode | IndexTargetNode | MultiTargetNode], ?lparen_loc: Location?, ?rparen_loc: Location?, ?operator_loc: Location, ?value: Prism::node) -> MultiWriteNode
+
+    # Create a new NextNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?arguments: ArgumentsNode?, ?keyword_loc: Location) -> NextNode
+    def next_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?arguments: ArgumentsNode?, ?keyword_loc: Location) -> NextNode
+
+    # Create a new NilNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> NilNode
+    def nil_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> NilNode
+
+    # Create a new NoBlockParameterNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?operator_loc: Location, ?keyword_loc: Location) -> NoBlockParameterNode
+    def no_block_parameter_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?operator_loc: Location, ?keyword_loc: Location) -> NoBlockParameterNode
+
+    # Create a new NoKeywordsParameterNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?operator_loc: Location, ?keyword_loc: Location) -> NoKeywordsParameterNode
+    def no_keywords_parameter_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?operator_loc: Location, ?keyword_loc: Location) -> NoKeywordsParameterNode
+
+    # Create a new NumberedParametersNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?maximum: Integer) -> NumberedParametersNode
+    def numbered_parameters_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?maximum: Integer) -> NumberedParametersNode
+
+    # Create a new NumberedReferenceReadNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?number: Integer) -> NumberedReferenceReadNode
+    def numbered_reference_read_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?number: Integer) -> NumberedReferenceReadNode
+
+    # Create a new OptionalKeywordParameterNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?value: Prism::node) -> OptionalKeywordParameterNode
+    def optional_keyword_parameter_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?value: Prism::node) -> OptionalKeywordParameterNode
+
+    # Create a new OptionalParameterNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> OptionalParameterNode
+    def optional_parameter_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location, ?operator_loc: Location, ?value: Prism::node) -> OptionalParameterNode
+
+    # Create a new OrNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?left: Prism::node, ?right: Prism::node, ?operator_loc: Location) -> OrNode
+    def or_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?left: Prism::node, ?right: Prism::node, ?operator_loc: Location) -> OrNode
+
+    # Create a new ParametersNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?requireds: Array[RequiredParameterNode | MultiTargetNode], ?optionals: Array[OptionalParameterNode], ?rest: (RestParameterNode | ImplicitRestNode)?, ?posts: Array[RequiredParameterNode | MultiTargetNode], ?keywords: Array[RequiredKeywordParameterNode | OptionalKeywordParameterNode], ?keyword_rest: (KeywordRestParameterNode | ForwardingParameterNode | NoKeywordsParameterNode)?, ?block: (BlockParameterNode | NoBlockParameterNode)?) -> ParametersNode
+    def parameters_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?requireds: Array[RequiredParameterNode | MultiTargetNode], ?optionals: Array[OptionalParameterNode], ?rest: (RestParameterNode | ImplicitRestNode)?, ?posts: Array[RequiredParameterNode | MultiTargetNode], ?keywords: Array[RequiredKeywordParameterNode | OptionalKeywordParameterNode], ?keyword_rest: (KeywordRestParameterNode | ForwardingParameterNode | NoKeywordsParameterNode)?, ?block: (BlockParameterNode | NoBlockParameterNode)?) -> ParametersNode
+
+    # Create a new ParenthesesNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?body: Prism::node?, ?opening_loc: Location, ?closing_loc: Location) -> ParenthesesNode
+    def parentheses_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?body: Prism::node?, ?opening_loc: Location, ?closing_loc: Location) -> ParenthesesNode
+
+    # Create a new PinnedExpressionNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?expression: Prism::node, ?operator_loc: Location, ?lparen_loc: Location, ?rparen_loc: Location) -> PinnedExpressionNode
+    def pinned_expression_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?expression: Prism::node, ?operator_loc: Location, ?lparen_loc: Location, ?rparen_loc: Location) -> PinnedExpressionNode
+
+    # Create a new PinnedVariableNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?variable: (LocalVariableReadNode | InstanceVariableReadNode | ClassVariableReadNode | GlobalVariableReadNode | BackReferenceReadNode | NumberedReferenceReadNode | ItLocalVariableReadNode), ?operator_loc: Location) -> PinnedVariableNode
+    def pinned_variable_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?variable: LocalVariableReadNode | InstanceVariableReadNode | ClassVariableReadNode | GlobalVariableReadNode | BackReferenceReadNode | NumberedReferenceReadNode | ItLocalVariableReadNode, ?operator_loc: Location) -> PinnedVariableNode
+
+    # Create a new PostExecutionNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?statements: StatementsNode?, ?keyword_loc: Location, ?opening_loc: Location, ?closing_loc: Location) -> PostExecutionNode
+    def post_execution_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?statements: StatementsNode?, ?keyword_loc: Location, ?opening_loc: Location, ?closing_loc: Location) -> PostExecutionNode
+
+    # Create a new PreExecutionNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?statements: StatementsNode?, ?keyword_loc: Location, ?opening_loc: Location, ?closing_loc: Location) -> PreExecutionNode
+    def pre_execution_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?statements: StatementsNode?, ?keyword_loc: Location, ?opening_loc: Location, ?closing_loc: Location) -> PreExecutionNode
+
+    # Create a new ProgramNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?locals: Array[Symbol], ?statements: StatementsNode) -> ProgramNode
+    def program_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?locals: Array[Symbol], ?statements: StatementsNode) -> ProgramNode
+
+    # Create a new RangeNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?left: Prism::node?, ?right: Prism::node?, ?operator_loc: Location) -> RangeNode
+    def range_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?left: Prism::node?, ?right: Prism::node?, ?operator_loc: Location) -> RangeNode
+
+    # Create a new RationalNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?numerator: Integer, ?denominator: Integer) -> RationalNode
+    def rational_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?numerator: Integer, ?denominator: Integer) -> RationalNode
+
+    # Create a new RedoNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> RedoNode
+    def redo_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> RedoNode
+
+    # Create a new RegularExpressionNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?content_loc: Location, ?closing_loc: Location, ?unescaped: String) -> RegularExpressionNode
+    def regular_expression_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?content_loc: Location, ?closing_loc: Location, ?unescaped: String) -> RegularExpressionNode
+
+    # Create a new RequiredKeywordParameterNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location) -> RequiredKeywordParameterNode
+    def required_keyword_parameter_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol, ?name_loc: Location) -> RequiredKeywordParameterNode
+
+    # Create a new RequiredParameterNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> RequiredParameterNode
+    def required_parameter_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol) -> RequiredParameterNode
+
+    # Create a new RescueModifierNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?expression: Prism::node, ?keyword_loc: Location, ?rescue_expression: Prism::node) -> RescueModifierNode
+    def rescue_modifier_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?expression: Prism::node, ?keyword_loc: Location, ?rescue_expression: Prism::node) -> RescueModifierNode
+
+    # Create a new RescueNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?keyword_loc: Location, ?exceptions: Array[Prism::node], ?operator_loc: Location?, ?reference: (LocalVariableTargetNode | InstanceVariableTargetNode | ClassVariableTargetNode | GlobalVariableTargetNode | ConstantTargetNode | ConstantPathTargetNode | CallTargetNode | IndexTargetNode)?, ?then_keyword_loc: Location?, ?statements: StatementsNode?, ?subsequent: RescueNode?) -> RescueNode
+    def rescue_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?keyword_loc: Location, ?exceptions: Array[Prism::node], ?operator_loc: Location?, ?reference: (LocalVariableTargetNode | InstanceVariableTargetNode | ClassVariableTargetNode | GlobalVariableTargetNode | ConstantTargetNode | ConstantPathTargetNode | CallTargetNode | IndexTargetNode)?, ?then_keyword_loc: Location?, ?statements: StatementsNode?, ?subsequent: RescueNode?) -> RescueNode
+
+    # Create a new RestParameterNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol?, ?name_loc: Location?, ?operator_loc: Location) -> RestParameterNode
+    def rest_parameter_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?name: Symbol?, ?name_loc: Location?, ?operator_loc: Location) -> RestParameterNode
+
+    # Create a new RetryNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> RetryNode
+    def retry_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> RetryNode
+
+    # Create a new ReturnNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?keyword_loc: Location, ?arguments: ArgumentsNode?) -> ReturnNode
+    def return_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?keyword_loc: Location, ?arguments: ArgumentsNode?) -> ReturnNode
+
+    # Create a new SelfNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> SelfNode
+    def self_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> SelfNode
+
+    # Create a new ShareableConstantNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?write: (ConstantWriteNode | ConstantAndWriteNode | ConstantOrWriteNode | ConstantOperatorWriteNode | ConstantPathWriteNode | ConstantPathAndWriteNode | ConstantPathOrWriteNode | ConstantPathOperatorWriteNode)) -> ShareableConstantNode
+    def shareable_constant_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?write: ConstantWriteNode | ConstantAndWriteNode | ConstantOrWriteNode | ConstantOperatorWriteNode | ConstantPathWriteNode | ConstantPathAndWriteNode | ConstantPathOrWriteNode | ConstantPathOperatorWriteNode) -> ShareableConstantNode
+
+    # Create a new SingletonClassNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?locals: Array[Symbol], ?class_keyword_loc: Location, ?operator_loc: Location, ?expression: Prism::node, ?body: (StatementsNode | BeginNode)?, ?end_keyword_loc: Location) -> SingletonClassNode
+    def singleton_class_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?locals: Array[Symbol], ?class_keyword_loc: Location, ?operator_loc: Location, ?expression: Prism::node, ?body: (StatementsNode | BeginNode)?, ?end_keyword_loc: Location) -> SingletonClassNode
+
+    # Create a new SourceEncodingNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> SourceEncodingNode
+    def source_encoding_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> SourceEncodingNode
+
+    # Create a new SourceFileNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?filepath: String) -> SourceFileNode
+    def source_file_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?filepath: String) -> SourceFileNode
+
+    # Create a new SourceLineNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> SourceLineNode
+    def source_line_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> SourceLineNode
+
+    # Create a new SplatNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?operator_loc: Location, ?expression: Prism::node?) -> SplatNode
+    def splat_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?operator_loc: Location, ?expression: Prism::node?) -> SplatNode
+
+    # Create a new StatementsNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?body: Array[Prism::node]) -> StatementsNode
+    def statements_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?body: Array[Prism::node]) -> StatementsNode
+
+    # Create a new StringNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location?, ?content_loc: Location, ?closing_loc: Location?, ?unescaped: String) -> StringNode
+    def string_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location?, ?content_loc: Location, ?closing_loc: Location?, ?unescaped: String) -> StringNode
+
+    # Create a new SuperNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?keyword_loc: Location, ?lparen_loc: Location?, ?arguments: ArgumentsNode?, ?rparen_loc: Location?, ?block: (BlockNode | BlockArgumentNode)?) -> SuperNode
+    def super_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?keyword_loc: Location, ?lparen_loc: Location?, ?arguments: ArgumentsNode?, ?rparen_loc: Location?, ?block: (BlockNode | BlockArgumentNode)?) -> SuperNode
+
+    # Create a new SymbolNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location?, ?content_loc: Location, ?closing_loc: Location?, ?unescaped: String) -> SymbolNode
+    def symbol_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location?, ?content_loc: Location, ?closing_loc: Location?, ?unescaped: String) -> SymbolNode
+
+    # Create a new TrueNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> TrueNode
+    def true_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer) -> TrueNode
+
+    # Create a new UndefNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?names: Array[SymbolNode | InterpolatedSymbolNode], ?keyword_loc: Location) -> UndefNode
+    def undef_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?names: Array[SymbolNode | InterpolatedSymbolNode], ?keyword_loc: Location) -> UndefNode
+
+    # Create a new UnlessNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?unless_keyword_loc: Location, ?predicate: Prism::node, ?then_keyword_loc: Location?, ?statements: StatementsNode?, ?else_clause: ElseNode?, ?end_keyword_loc: Location?) -> UnlessNode
+    def unless_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?unless_keyword_loc: Location, ?predicate: Prism::node, ?then_keyword_loc: Location?, ?statements: StatementsNode?, ?else_clause: ElseNode?, ?end_keyword_loc: Location?) -> UnlessNode
+
+    # Create a new UntilNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?until_keyword_loc: Location, ?do_keyword_loc: Location?, ?end_keyword_loc: Location?, ?predicate: Prism::node, ?statements: StatementsNode?) -> UntilNode
+    def until_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?until_keyword_loc: Location, ?do_keyword_loc: Location?, ?end_keyword_loc: Location?, ?predicate: Prism::node, ?statements: StatementsNode?) -> UntilNode
+
+    # Create a new WhenNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?when_keyword_loc: Location, ?conditions: Array[Prism::node], ?then_keyword_loc: Location?, ?statements: StatementsNode?) -> WhenNode
+    def when_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?when_keyword_loc: Location, ?conditions: Array[Prism::node], ?then_keyword_loc: Location?, ?statements: StatementsNode?) -> WhenNode
+
+    # Create a new WhileNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?while_keyword_loc: Location, ?do_keyword_loc: Location?, ?end_keyword_loc: Location?, ?predicate: Prism::node, ?statements: StatementsNode?) -> WhileNode
+    def while_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?while_keyword_loc: Location, ?do_keyword_loc: Location?, ?end_keyword_loc: Location?, ?predicate: Prism::node, ?statements: StatementsNode?) -> WhileNode
+
+    # Create a new XStringNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?content_loc: Location, ?closing_loc: Location, ?unescaped: String) -> XStringNode
+    def x_string_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?opening_loc: Location, ?content_loc: Location, ?closing_loc: Location, ?unescaped: String) -> XStringNode
+
+    # Create a new YieldNode node.
+    #
+    # : (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?keyword_loc: Location, ?lparen_loc: Location?, ?arguments: ArgumentsNode?, ?rparen_loc: Location?) -> YieldNode
+    def yield_node: (?source: Source, ?node_id: Integer, ?location: Location, ?flags: Integer, ?keyword_loc: Location, ?lparen_loc: Location?, ?arguments: ArgumentsNode?, ?rparen_loc: Location?) -> YieldNode
+
+    # Retrieve the value of one of the ArgumentsNodeFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def arguments_node_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the ArrayNodeFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def array_node_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the CallNodeFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def call_node_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the EncodingFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def encoding_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the IntegerBaseFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def integer_base_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the InterpolatedStringNodeFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def interpolated_string_node_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the KeywordHashNodeFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def keyword_hash_node_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the LoopFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def loop_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the ParameterFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def parameter_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the ParenthesesNodeFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def parentheses_node_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the RangeFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def range_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the RegularExpressionFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def regular_expression_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the ShareableConstantNodeFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def shareable_constant_node_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the StringFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def string_flag: (Symbol name) -> Integer
+
+    # Retrieve the value of one of the SymbolFlags flags.
+    #
+    # : (Symbol name) -> Integer
+    def symbol_flag: (Symbol name) -> Integer
+
+    private
+
+    # The default source object that gets attached to nodes and locations if no
+    # source is specified.
+    #
+    # : () -> Source
+    def default_source: () -> Source
+
+    # The default location object that gets attached to nodes if no location is
+    # specified, which uses the given source.
+    #
+    # : () -> Location
+    def default_location: () -> Location
+
+    # The default node that gets attached to nodes if no node is specified for a
+    # required node field.
+    #
+    # : (Source source, Location location) -> node
+    def default_node: (Source source, Location location) -> node
+
+    private
+
+    # Build the newline byte offset array for the given source string.
+    #
+    # : (String source) -> Array[Integer]
+    def build_offsets: (String source) -> Array[Integer]
+  end
+end

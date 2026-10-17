@@ -1,0 +1,1292 @@
+# Generated from lib/prism/dispatcher.rb with RBS::Inline
+
+module Prism
+  # The dispatcher class fires events for nodes that are found while walking an
+  # AST to all registered listeners. It's useful for performing different types
+  # of analysis on the AST while only having to walk the tree once.
+  #
+  # To use the dispatcher, you would first instantiate it and register listeners
+  # for the events you're interested in:
+  #
+  #     class OctalListener
+  #       def on_integer_node_enter(node)
+  #         if node.octal? && !node.slice.start_with?("0o")
+  #           warn("Octal integers should be written with the 0o prefix")
+  #         end
+  #       end
+  #     end
+  #
+  #     listener = OctalListener.new
+  #     dispatcher = Prism::Dispatcher.new
+  #     dispatcher.register(listener, :on_integer_node_enter)
+  #
+  # Then, you can walk any number of trees and dispatch events to the listeners:
+  #
+  #     result = Prism.parse("001 + 002 + 003")
+  #     dispatcher.dispatch(result.value)
+  #
+  # Optionally, you can also use `#dispatch_once` to dispatch enter and leave
+  # events for a single node without recursing further down the tree. This can
+  # be useful in circumstances where you want to reuse the listeners you already
+  # have registers but want to stop walking the tree at a certain point.
+  #
+  #     integer = result.value.statements.body.first.receiver.receiver
+  #     dispatcher.dispatch_once(integer)
+  class Dispatcher < Visitor
+    # A hash mapping event names to arrays of listeners that should be notified
+    # when that event is fired.
+    attr_reader listeners: Hash[Symbol, Array[untyped]]
+
+    # Initialize a new dispatcher.
+    #
+    # : () -> void
+    def initialize: () -> void
+
+    # Register a listener for one or more events.
+    #
+    # : (untyped, *Symbol) -> void
+    def register: (untyped, *Symbol) -> void
+
+    # Register all public methods of a listener that match the pattern
+    # `on_<node_name>_(enter|leave)`.
+    #
+    # : (untyped) -> void
+    def register_public_methods: (untyped) -> void
+
+    # Register a listener for the given events.
+    #
+    # : (untyped, Array[Symbol]) -> void
+    private def register_events: (untyped, Array[Symbol]) -> void
+
+    # Walks `root` dispatching events to all registered listeners.
+    alias dispatch visit
+
+    # Dispatches a single event for `node` to all registered listeners.
+    #
+    # : (node node) -> void
+    def dispatch_once: (node node) -> void
+
+    # : (AliasGlobalVariableNode node) -> void
+    def visit_alias_global_variable_node: (AliasGlobalVariableNode node) -> void
+
+    # : (AliasMethodNode node) -> void
+    def visit_alias_method_node: (AliasMethodNode node) -> void
+
+    # : (AlternationPatternNode node) -> void
+    def visit_alternation_pattern_node: (AlternationPatternNode node) -> void
+
+    # : (AndNode node) -> void
+    def visit_and_node: (AndNode node) -> void
+
+    # : (ArgumentsNode node) -> void
+    def visit_arguments_node: (ArgumentsNode node) -> void
+
+    # : (ArrayNode node) -> void
+    def visit_array_node: (ArrayNode node) -> void
+
+    # : (ArrayPatternNode node) -> void
+    def visit_array_pattern_node: (ArrayPatternNode node) -> void
+
+    # : (AssocNode node) -> void
+    def visit_assoc_node: (AssocNode node) -> void
+
+    # : (AssocSplatNode node) -> void
+    def visit_assoc_splat_node: (AssocSplatNode node) -> void
+
+    # : (BackReferenceReadNode node) -> void
+    def visit_back_reference_read_node: (BackReferenceReadNode node) -> void
+
+    # : (BeginNode node) -> void
+    def visit_begin_node: (BeginNode node) -> void
+
+    # : (BlockArgumentNode node) -> void
+    def visit_block_argument_node: (BlockArgumentNode node) -> void
+
+    # : (BlockLocalVariableNode node) -> void
+    def visit_block_local_variable_node: (BlockLocalVariableNode node) -> void
+
+    # : (BlockNode node) -> void
+    def visit_block_node: (BlockNode node) -> void
+
+    # : (BlockParameterNode node) -> void
+    def visit_block_parameter_node: (BlockParameterNode node) -> void
+
+    # : (BlockParametersNode node) -> void
+    def visit_block_parameters_node: (BlockParametersNode node) -> void
+
+    # : (BreakNode node) -> void
+    def visit_break_node: (BreakNode node) -> void
+
+    # : (CallAndWriteNode node) -> void
+    def visit_call_and_write_node: (CallAndWriteNode node) -> void
+
+    # : (CallNode node) -> void
+    def visit_call_node: (CallNode node) -> void
+
+    # : (CallOperatorWriteNode node) -> void
+    def visit_call_operator_write_node: (CallOperatorWriteNode node) -> void
+
+    # : (CallOrWriteNode node) -> void
+    def visit_call_or_write_node: (CallOrWriteNode node) -> void
+
+    # : (CallTargetNode node) -> void
+    def visit_call_target_node: (CallTargetNode node) -> void
+
+    # : (CapturePatternNode node) -> void
+    def visit_capture_pattern_node: (CapturePatternNode node) -> void
+
+    # : (CaseMatchNode node) -> void
+    def visit_case_match_node: (CaseMatchNode node) -> void
+
+    # : (CaseNode node) -> void
+    def visit_case_node: (CaseNode node) -> void
+
+    # : (ClassNode node) -> void
+    def visit_class_node: (ClassNode node) -> void
+
+    # : (ClassVariableAndWriteNode node) -> void
+    def visit_class_variable_and_write_node: (ClassVariableAndWriteNode node) -> void
+
+    # : (ClassVariableOperatorWriteNode node) -> void
+    def visit_class_variable_operator_write_node: (ClassVariableOperatorWriteNode node) -> void
+
+    # : (ClassVariableOrWriteNode node) -> void
+    def visit_class_variable_or_write_node: (ClassVariableOrWriteNode node) -> void
+
+    # : (ClassVariableReadNode node) -> void
+    def visit_class_variable_read_node: (ClassVariableReadNode node) -> void
+
+    # : (ClassVariableTargetNode node) -> void
+    def visit_class_variable_target_node: (ClassVariableTargetNode node) -> void
+
+    # : (ClassVariableWriteNode node) -> void
+    def visit_class_variable_write_node: (ClassVariableWriteNode node) -> void
+
+    # : (ConstantAndWriteNode node) -> void
+    def visit_constant_and_write_node: (ConstantAndWriteNode node) -> void
+
+    # : (ConstantOperatorWriteNode node) -> void
+    def visit_constant_operator_write_node: (ConstantOperatorWriteNode node) -> void
+
+    # : (ConstantOrWriteNode node) -> void
+    def visit_constant_or_write_node: (ConstantOrWriteNode node) -> void
+
+    # : (ConstantPathAndWriteNode node) -> void
+    def visit_constant_path_and_write_node: (ConstantPathAndWriteNode node) -> void
+
+    # : (ConstantPathNode node) -> void
+    def visit_constant_path_node: (ConstantPathNode node) -> void
+
+    # : (ConstantPathOperatorWriteNode node) -> void
+    def visit_constant_path_operator_write_node: (ConstantPathOperatorWriteNode node) -> void
+
+    # : (ConstantPathOrWriteNode node) -> void
+    def visit_constant_path_or_write_node: (ConstantPathOrWriteNode node) -> void
+
+    # : (ConstantPathTargetNode node) -> void
+    def visit_constant_path_target_node: (ConstantPathTargetNode node) -> void
+
+    # : (ConstantPathWriteNode node) -> void
+    def visit_constant_path_write_node: (ConstantPathWriteNode node) -> void
+
+    # : (ConstantReadNode node) -> void
+    def visit_constant_read_node: (ConstantReadNode node) -> void
+
+    # : (ConstantTargetNode node) -> void
+    def visit_constant_target_node: (ConstantTargetNode node) -> void
+
+    # : (ConstantWriteNode node) -> void
+    def visit_constant_write_node: (ConstantWriteNode node) -> void
+
+    # : (DefNode node) -> void
+    def visit_def_node: (DefNode node) -> void
+
+    # : (DefinedNode node) -> void
+    def visit_defined_node: (DefinedNode node) -> void
+
+    # : (ElseNode node) -> void
+    def visit_else_node: (ElseNode node) -> void
+
+    # : (EmbeddedStatementsNode node) -> void
+    def visit_embedded_statements_node: (EmbeddedStatementsNode node) -> void
+
+    # : (EmbeddedVariableNode node) -> void
+    def visit_embedded_variable_node: (EmbeddedVariableNode node) -> void
+
+    # : (EnsureNode node) -> void
+    def visit_ensure_node: (EnsureNode node) -> void
+
+    # : (ErrorRecoveryNode node) -> void
+    def visit_error_recovery_node: (ErrorRecoveryNode node) -> void
+
+    # : (FalseNode node) -> void
+    def visit_false_node: (FalseNode node) -> void
+
+    # : (FindPatternNode node) -> void
+    def visit_find_pattern_node: (FindPatternNode node) -> void
+
+    # : (FlipFlopNode node) -> void
+    def visit_flip_flop_node: (FlipFlopNode node) -> void
+
+    # : (FloatNode node) -> void
+    def visit_float_node: (FloatNode node) -> void
+
+    # : (ForNode node) -> void
+    def visit_for_node: (ForNode node) -> void
+
+    # : (ForwardingArgumentsNode node) -> void
+    def visit_forwarding_arguments_node: (ForwardingArgumentsNode node) -> void
+
+    # : (ForwardingParameterNode node) -> void
+    def visit_forwarding_parameter_node: (ForwardingParameterNode node) -> void
+
+    # : (ForwardingSuperNode node) -> void
+    def visit_forwarding_super_node: (ForwardingSuperNode node) -> void
+
+    # : (GlobalVariableAndWriteNode node) -> void
+    def visit_global_variable_and_write_node: (GlobalVariableAndWriteNode node) -> void
+
+    # : (GlobalVariableOperatorWriteNode node) -> void
+    def visit_global_variable_operator_write_node: (GlobalVariableOperatorWriteNode node) -> void
+
+    # : (GlobalVariableOrWriteNode node) -> void
+    def visit_global_variable_or_write_node: (GlobalVariableOrWriteNode node) -> void
+
+    # : (GlobalVariableReadNode node) -> void
+    def visit_global_variable_read_node: (GlobalVariableReadNode node) -> void
+
+    # : (GlobalVariableTargetNode node) -> void
+    def visit_global_variable_target_node: (GlobalVariableTargetNode node) -> void
+
+    # : (GlobalVariableWriteNode node) -> void
+    def visit_global_variable_write_node: (GlobalVariableWriteNode node) -> void
+
+    # : (HashNode node) -> void
+    def visit_hash_node: (HashNode node) -> void
+
+    # : (HashPatternNode node) -> void
+    def visit_hash_pattern_node: (HashPatternNode node) -> void
+
+    # : (IfNode node) -> void
+    def visit_if_node: (IfNode node) -> void
+
+    # : (ImaginaryNode node) -> void
+    def visit_imaginary_node: (ImaginaryNode node) -> void
+
+    # : (ImplicitNode node) -> void
+    def visit_implicit_node: (ImplicitNode node) -> void
+
+    # : (ImplicitRestNode node) -> void
+    def visit_implicit_rest_node: (ImplicitRestNode node) -> void
+
+    # : (InNode node) -> void
+    def visit_in_node: (InNode node) -> void
+
+    # : (IndexAndWriteNode node) -> void
+    def visit_index_and_write_node: (IndexAndWriteNode node) -> void
+
+    # : (IndexOperatorWriteNode node) -> void
+    def visit_index_operator_write_node: (IndexOperatorWriteNode node) -> void
+
+    # : (IndexOrWriteNode node) -> void
+    def visit_index_or_write_node: (IndexOrWriteNode node) -> void
+
+    # : (IndexTargetNode node) -> void
+    def visit_index_target_node: (IndexTargetNode node) -> void
+
+    # : (InstanceVariableAndWriteNode node) -> void
+    def visit_instance_variable_and_write_node: (InstanceVariableAndWriteNode node) -> void
+
+    # : (InstanceVariableOperatorWriteNode node) -> void
+    def visit_instance_variable_operator_write_node: (InstanceVariableOperatorWriteNode node) -> void
+
+    # : (InstanceVariableOrWriteNode node) -> void
+    def visit_instance_variable_or_write_node: (InstanceVariableOrWriteNode node) -> void
+
+    # : (InstanceVariableReadNode node) -> void
+    def visit_instance_variable_read_node: (InstanceVariableReadNode node) -> void
+
+    # : (InstanceVariableTargetNode node) -> void
+    def visit_instance_variable_target_node: (InstanceVariableTargetNode node) -> void
+
+    # : (InstanceVariableWriteNode node) -> void
+    def visit_instance_variable_write_node: (InstanceVariableWriteNode node) -> void
+
+    # : (IntegerNode node) -> void
+    def visit_integer_node: (IntegerNode node) -> void
+
+    # : (InterpolatedMatchLastLineNode node) -> void
+    def visit_interpolated_match_last_line_node: (InterpolatedMatchLastLineNode node) -> void
+
+    # : (InterpolatedRegularExpressionNode node) -> void
+    def visit_interpolated_regular_expression_node: (InterpolatedRegularExpressionNode node) -> void
+
+    # : (InterpolatedStringNode node) -> void
+    def visit_interpolated_string_node: (InterpolatedStringNode node) -> void
+
+    # : (InterpolatedSymbolNode node) -> void
+    def visit_interpolated_symbol_node: (InterpolatedSymbolNode node) -> void
+
+    # : (InterpolatedXStringNode node) -> void
+    def visit_interpolated_x_string_node: (InterpolatedXStringNode node) -> void
+
+    # : (ItLocalVariableReadNode node) -> void
+    def visit_it_local_variable_read_node: (ItLocalVariableReadNode node) -> void
+
+    # : (ItParametersNode node) -> void
+    def visit_it_parameters_node: (ItParametersNode node) -> void
+
+    # : (KeywordHashNode node) -> void
+    def visit_keyword_hash_node: (KeywordHashNode node) -> void
+
+    # : (KeywordRestParameterNode node) -> void
+    def visit_keyword_rest_parameter_node: (KeywordRestParameterNode node) -> void
+
+    # : (LambdaNode node) -> void
+    def visit_lambda_node: (LambdaNode node) -> void
+
+    # : (LocalVariableAndWriteNode node) -> void
+    def visit_local_variable_and_write_node: (LocalVariableAndWriteNode node) -> void
+
+    # : (LocalVariableOperatorWriteNode node) -> void
+    def visit_local_variable_operator_write_node: (LocalVariableOperatorWriteNode node) -> void
+
+    # : (LocalVariableOrWriteNode node) -> void
+    def visit_local_variable_or_write_node: (LocalVariableOrWriteNode node) -> void
+
+    # : (LocalVariableReadNode node) -> void
+    def visit_local_variable_read_node: (LocalVariableReadNode node) -> void
+
+    # : (LocalVariableTargetNode node) -> void
+    def visit_local_variable_target_node: (LocalVariableTargetNode node) -> void
+
+    # : (LocalVariableWriteNode node) -> void
+    def visit_local_variable_write_node: (LocalVariableWriteNode node) -> void
+
+    # : (MatchLastLineNode node) -> void
+    def visit_match_last_line_node: (MatchLastLineNode node) -> void
+
+    # : (MatchPredicateNode node) -> void
+    def visit_match_predicate_node: (MatchPredicateNode node) -> void
+
+    # : (MatchRequiredNode node) -> void
+    def visit_match_required_node: (MatchRequiredNode node) -> void
+
+    # : (MatchWriteNode node) -> void
+    def visit_match_write_node: (MatchWriteNode node) -> void
+
+    # : (ModuleNode node) -> void
+    def visit_module_node: (ModuleNode node) -> void
+
+    # : (MultiTargetNode node) -> void
+    def visit_multi_target_node: (MultiTargetNode node) -> void
+
+    # : (MultiWriteNode node) -> void
+    def visit_multi_write_node: (MultiWriteNode node) -> void
+
+    # : (NextNode node) -> void
+    def visit_next_node: (NextNode node) -> void
+
+    # : (NilNode node) -> void
+    def visit_nil_node: (NilNode node) -> void
+
+    # : (NoBlockParameterNode node) -> void
+    def visit_no_block_parameter_node: (NoBlockParameterNode node) -> void
+
+    # : (NoKeywordsParameterNode node) -> void
+    def visit_no_keywords_parameter_node: (NoKeywordsParameterNode node) -> void
+
+    # : (NumberedParametersNode node) -> void
+    def visit_numbered_parameters_node: (NumberedParametersNode node) -> void
+
+    # : (NumberedReferenceReadNode node) -> void
+    def visit_numbered_reference_read_node: (NumberedReferenceReadNode node) -> void
+
+    # : (OptionalKeywordParameterNode node) -> void
+    def visit_optional_keyword_parameter_node: (OptionalKeywordParameterNode node) -> void
+
+    # : (OptionalParameterNode node) -> void
+    def visit_optional_parameter_node: (OptionalParameterNode node) -> void
+
+    # : (OrNode node) -> void
+    def visit_or_node: (OrNode node) -> void
+
+    # : (ParametersNode node) -> void
+    def visit_parameters_node: (ParametersNode node) -> void
+
+    # : (ParenthesesNode node) -> void
+    def visit_parentheses_node: (ParenthesesNode node) -> void
+
+    # : (PinnedExpressionNode node) -> void
+    def visit_pinned_expression_node: (PinnedExpressionNode node) -> void
+
+    # : (PinnedVariableNode node) -> void
+    def visit_pinned_variable_node: (PinnedVariableNode node) -> void
+
+    # : (PostExecutionNode node) -> void
+    def visit_post_execution_node: (PostExecutionNode node) -> void
+
+    # : (PreExecutionNode node) -> void
+    def visit_pre_execution_node: (PreExecutionNode node) -> void
+
+    # : (ProgramNode node) -> void
+    def visit_program_node: (ProgramNode node) -> void
+
+    # : (RangeNode node) -> void
+    def visit_range_node: (RangeNode node) -> void
+
+    # : (RationalNode node) -> void
+    def visit_rational_node: (RationalNode node) -> void
+
+    # : (RedoNode node) -> void
+    def visit_redo_node: (RedoNode node) -> void
+
+    # : (RegularExpressionNode node) -> void
+    def visit_regular_expression_node: (RegularExpressionNode node) -> void
+
+    # : (RequiredKeywordParameterNode node) -> void
+    def visit_required_keyword_parameter_node: (RequiredKeywordParameterNode node) -> void
+
+    # : (RequiredParameterNode node) -> void
+    def visit_required_parameter_node: (RequiredParameterNode node) -> void
+
+    # : (RescueModifierNode node) -> void
+    def visit_rescue_modifier_node: (RescueModifierNode node) -> void
+
+    # : (RescueNode node) -> void
+    def visit_rescue_node: (RescueNode node) -> void
+
+    # : (RestParameterNode node) -> void
+    def visit_rest_parameter_node: (RestParameterNode node) -> void
+
+    # : (RetryNode node) -> void
+    def visit_retry_node: (RetryNode node) -> void
+
+    # : (ReturnNode node) -> void
+    def visit_return_node: (ReturnNode node) -> void
+
+    # : (SelfNode node) -> void
+    def visit_self_node: (SelfNode node) -> void
+
+    # : (ShareableConstantNode node) -> void
+    def visit_shareable_constant_node: (ShareableConstantNode node) -> void
+
+    # : (SingletonClassNode node) -> void
+    def visit_singleton_class_node: (SingletonClassNode node) -> void
+
+    # : (SourceEncodingNode node) -> void
+    def visit_source_encoding_node: (SourceEncodingNode node) -> void
+
+    # : (SourceFileNode node) -> void
+    def visit_source_file_node: (SourceFileNode node) -> void
+
+    # : (SourceLineNode node) -> void
+    def visit_source_line_node: (SourceLineNode node) -> void
+
+    # : (SplatNode node) -> void
+    def visit_splat_node: (SplatNode node) -> void
+
+    # : (StatementsNode node) -> void
+    def visit_statements_node: (StatementsNode node) -> void
+
+    # : (StringNode node) -> void
+    def visit_string_node: (StringNode node) -> void
+
+    # : (SuperNode node) -> void
+    def visit_super_node: (SuperNode node) -> void
+
+    # : (SymbolNode node) -> void
+    def visit_symbol_node: (SymbolNode node) -> void
+
+    # : (TrueNode node) -> void
+    def visit_true_node: (TrueNode node) -> void
+
+    # : (UndefNode node) -> void
+    def visit_undef_node: (UndefNode node) -> void
+
+    # : (UnlessNode node) -> void
+    def visit_unless_node: (UnlessNode node) -> void
+
+    # : (UntilNode node) -> void
+    def visit_until_node: (UntilNode node) -> void
+
+    # : (WhenNode node) -> void
+    def visit_when_node: (WhenNode node) -> void
+
+    # : (WhileNode node) -> void
+    def visit_while_node: (WhileNode node) -> void
+
+    # : (XStringNode node) -> void
+    def visit_x_string_node: (XStringNode node) -> void
+
+    # : (YieldNode node) -> void
+    def visit_yield_node: (YieldNode node) -> void
+
+    class DispatchOnce < Visitor
+      attr_reader listeners: Hash[Symbol, Array[untyped]]
+
+      # : (Hash[Symbol, Array[untyped]] listeners) -> void
+      def initialize: (Hash[Symbol, Array[untyped]] listeners) -> void
+
+      # Dispatch enter and leave events for AliasGlobalVariableNode nodes.
+      #
+      # : (AliasGlobalVariableNode node) -> void
+      def visit_alias_global_variable_node: (AliasGlobalVariableNode node) -> void
+
+      # Dispatch enter and leave events for AliasMethodNode nodes.
+      #
+      # : (AliasMethodNode node) -> void
+      def visit_alias_method_node: (AliasMethodNode node) -> void
+
+      # Dispatch enter and leave events for AlternationPatternNode nodes.
+      #
+      # : (AlternationPatternNode node) -> void
+      def visit_alternation_pattern_node: (AlternationPatternNode node) -> void
+
+      # Dispatch enter and leave events for AndNode nodes.
+      #
+      # : (AndNode node) -> void
+      def visit_and_node: (AndNode node) -> void
+
+      # Dispatch enter and leave events for ArgumentsNode nodes.
+      #
+      # : (ArgumentsNode node) -> void
+      def visit_arguments_node: (ArgumentsNode node) -> void
+
+      # Dispatch enter and leave events for ArrayNode nodes.
+      #
+      # : (ArrayNode node) -> void
+      def visit_array_node: (ArrayNode node) -> void
+
+      # Dispatch enter and leave events for ArrayPatternNode nodes.
+      #
+      # : (ArrayPatternNode node) -> void
+      def visit_array_pattern_node: (ArrayPatternNode node) -> void
+
+      # Dispatch enter and leave events for AssocNode nodes.
+      #
+      # : (AssocNode node) -> void
+      def visit_assoc_node: (AssocNode node) -> void
+
+      # Dispatch enter and leave events for AssocSplatNode nodes.
+      #
+      # : (AssocSplatNode node) -> void
+      def visit_assoc_splat_node: (AssocSplatNode node) -> void
+
+      # Dispatch enter and leave events for BackReferenceReadNode nodes.
+      #
+      # : (BackReferenceReadNode node) -> void
+      def visit_back_reference_read_node: (BackReferenceReadNode node) -> void
+
+      # Dispatch enter and leave events for BeginNode nodes.
+      #
+      # : (BeginNode node) -> void
+      def visit_begin_node: (BeginNode node) -> void
+
+      # Dispatch enter and leave events for BlockArgumentNode nodes.
+      #
+      # : (BlockArgumentNode node) -> void
+      def visit_block_argument_node: (BlockArgumentNode node) -> void
+
+      # Dispatch enter and leave events for BlockLocalVariableNode nodes.
+      #
+      # : (BlockLocalVariableNode node) -> void
+      def visit_block_local_variable_node: (BlockLocalVariableNode node) -> void
+
+      # Dispatch enter and leave events for BlockNode nodes.
+      #
+      # : (BlockNode node) -> void
+      def visit_block_node: (BlockNode node) -> void
+
+      # Dispatch enter and leave events for BlockParameterNode nodes.
+      #
+      # : (BlockParameterNode node) -> void
+      def visit_block_parameter_node: (BlockParameterNode node) -> void
+
+      # Dispatch enter and leave events for BlockParametersNode nodes.
+      #
+      # : (BlockParametersNode node) -> void
+      def visit_block_parameters_node: (BlockParametersNode node) -> void
+
+      # Dispatch enter and leave events for BreakNode nodes.
+      #
+      # : (BreakNode node) -> void
+      def visit_break_node: (BreakNode node) -> void
+
+      # Dispatch enter and leave events for CallAndWriteNode nodes.
+      #
+      # : (CallAndWriteNode node) -> void
+      def visit_call_and_write_node: (CallAndWriteNode node) -> void
+
+      # Dispatch enter and leave events for CallNode nodes.
+      #
+      # : (CallNode node) -> void
+      def visit_call_node: (CallNode node) -> void
+
+      # Dispatch enter and leave events for CallOperatorWriteNode nodes.
+      #
+      # : (CallOperatorWriteNode node) -> void
+      def visit_call_operator_write_node: (CallOperatorWriteNode node) -> void
+
+      # Dispatch enter and leave events for CallOrWriteNode nodes.
+      #
+      # : (CallOrWriteNode node) -> void
+      def visit_call_or_write_node: (CallOrWriteNode node) -> void
+
+      # Dispatch enter and leave events for CallTargetNode nodes.
+      #
+      # : (CallTargetNode node) -> void
+      def visit_call_target_node: (CallTargetNode node) -> void
+
+      # Dispatch enter and leave events for CapturePatternNode nodes.
+      #
+      # : (CapturePatternNode node) -> void
+      def visit_capture_pattern_node: (CapturePatternNode node) -> void
+
+      # Dispatch enter and leave events for CaseMatchNode nodes.
+      #
+      # : (CaseMatchNode node) -> void
+      def visit_case_match_node: (CaseMatchNode node) -> void
+
+      # Dispatch enter and leave events for CaseNode nodes.
+      #
+      # : (CaseNode node) -> void
+      def visit_case_node: (CaseNode node) -> void
+
+      # Dispatch enter and leave events for ClassNode nodes.
+      #
+      # : (ClassNode node) -> void
+      def visit_class_node: (ClassNode node) -> void
+
+      # Dispatch enter and leave events for ClassVariableAndWriteNode nodes.
+      #
+      # : (ClassVariableAndWriteNode node) -> void
+      def visit_class_variable_and_write_node: (ClassVariableAndWriteNode node) -> void
+
+      # Dispatch enter and leave events for ClassVariableOperatorWriteNode nodes.
+      #
+      # : (ClassVariableOperatorWriteNode node) -> void
+      def visit_class_variable_operator_write_node: (ClassVariableOperatorWriteNode node) -> void
+
+      # Dispatch enter and leave events for ClassVariableOrWriteNode nodes.
+      #
+      # : (ClassVariableOrWriteNode node) -> void
+      def visit_class_variable_or_write_node: (ClassVariableOrWriteNode node) -> void
+
+      # Dispatch enter and leave events for ClassVariableReadNode nodes.
+      #
+      # : (ClassVariableReadNode node) -> void
+      def visit_class_variable_read_node: (ClassVariableReadNode node) -> void
+
+      # Dispatch enter and leave events for ClassVariableTargetNode nodes.
+      #
+      # : (ClassVariableTargetNode node) -> void
+      def visit_class_variable_target_node: (ClassVariableTargetNode node) -> void
+
+      # Dispatch enter and leave events for ClassVariableWriteNode nodes.
+      #
+      # : (ClassVariableWriteNode node) -> void
+      def visit_class_variable_write_node: (ClassVariableWriteNode node) -> void
+
+      # Dispatch enter and leave events for ConstantAndWriteNode nodes.
+      #
+      # : (ConstantAndWriteNode node) -> void
+      def visit_constant_and_write_node: (ConstantAndWriteNode node) -> void
+
+      # Dispatch enter and leave events for ConstantOperatorWriteNode nodes.
+      #
+      # : (ConstantOperatorWriteNode node) -> void
+      def visit_constant_operator_write_node: (ConstantOperatorWriteNode node) -> void
+
+      # Dispatch enter and leave events for ConstantOrWriteNode nodes.
+      #
+      # : (ConstantOrWriteNode node) -> void
+      def visit_constant_or_write_node: (ConstantOrWriteNode node) -> void
+
+      # Dispatch enter and leave events for ConstantPathAndWriteNode nodes.
+      #
+      # : (ConstantPathAndWriteNode node) -> void
+      def visit_constant_path_and_write_node: (ConstantPathAndWriteNode node) -> void
+
+      # Dispatch enter and leave events for ConstantPathNode nodes.
+      #
+      # : (ConstantPathNode node) -> void
+      def visit_constant_path_node: (ConstantPathNode node) -> void
+
+      # Dispatch enter and leave events for ConstantPathOperatorWriteNode nodes.
+      #
+      # : (ConstantPathOperatorWriteNode node) -> void
+      def visit_constant_path_operator_write_node: (ConstantPathOperatorWriteNode node) -> void
+
+      # Dispatch enter and leave events for ConstantPathOrWriteNode nodes.
+      #
+      # : (ConstantPathOrWriteNode node) -> void
+      def visit_constant_path_or_write_node: (ConstantPathOrWriteNode node) -> void
+
+      # Dispatch enter and leave events for ConstantPathTargetNode nodes.
+      #
+      # : (ConstantPathTargetNode node) -> void
+      def visit_constant_path_target_node: (ConstantPathTargetNode node) -> void
+
+      # Dispatch enter and leave events for ConstantPathWriteNode nodes.
+      #
+      # : (ConstantPathWriteNode node) -> void
+      def visit_constant_path_write_node: (ConstantPathWriteNode node) -> void
+
+      # Dispatch enter and leave events for ConstantReadNode nodes.
+      #
+      # : (ConstantReadNode node) -> void
+      def visit_constant_read_node: (ConstantReadNode node) -> void
+
+      # Dispatch enter and leave events for ConstantTargetNode nodes.
+      #
+      # : (ConstantTargetNode node) -> void
+      def visit_constant_target_node: (ConstantTargetNode node) -> void
+
+      # Dispatch enter and leave events for ConstantWriteNode nodes.
+      #
+      # : (ConstantWriteNode node) -> void
+      def visit_constant_write_node: (ConstantWriteNode node) -> void
+
+      # Dispatch enter and leave events for DefNode nodes.
+      #
+      # : (DefNode node) -> void
+      def visit_def_node: (DefNode node) -> void
+
+      # Dispatch enter and leave events for DefinedNode nodes.
+      #
+      # : (DefinedNode node) -> void
+      def visit_defined_node: (DefinedNode node) -> void
+
+      # Dispatch enter and leave events for ElseNode nodes.
+      #
+      # : (ElseNode node) -> void
+      def visit_else_node: (ElseNode node) -> void
+
+      # Dispatch enter and leave events for EmbeddedStatementsNode nodes.
+      #
+      # : (EmbeddedStatementsNode node) -> void
+      def visit_embedded_statements_node: (EmbeddedStatementsNode node) -> void
+
+      # Dispatch enter and leave events for EmbeddedVariableNode nodes.
+      #
+      # : (EmbeddedVariableNode node) -> void
+      def visit_embedded_variable_node: (EmbeddedVariableNode node) -> void
+
+      # Dispatch enter and leave events for EnsureNode nodes.
+      #
+      # : (EnsureNode node) -> void
+      def visit_ensure_node: (EnsureNode node) -> void
+
+      # Dispatch enter and leave events for ErrorRecoveryNode nodes.
+      #
+      # : (ErrorRecoveryNode node) -> void
+      def visit_error_recovery_node: (ErrorRecoveryNode node) -> void
+
+      # Dispatch enter and leave events for FalseNode nodes.
+      #
+      # : (FalseNode node) -> void
+      def visit_false_node: (FalseNode node) -> void
+
+      # Dispatch enter and leave events for FindPatternNode nodes.
+      #
+      # : (FindPatternNode node) -> void
+      def visit_find_pattern_node: (FindPatternNode node) -> void
+
+      # Dispatch enter and leave events for FlipFlopNode nodes.
+      #
+      # : (FlipFlopNode node) -> void
+      def visit_flip_flop_node: (FlipFlopNode node) -> void
+
+      # Dispatch enter and leave events for FloatNode nodes.
+      #
+      # : (FloatNode node) -> void
+      def visit_float_node: (FloatNode node) -> void
+
+      # Dispatch enter and leave events for ForNode nodes.
+      #
+      # : (ForNode node) -> void
+      def visit_for_node: (ForNode node) -> void
+
+      # Dispatch enter and leave events for ForwardingArgumentsNode nodes.
+      #
+      # : (ForwardingArgumentsNode node) -> void
+      def visit_forwarding_arguments_node: (ForwardingArgumentsNode node) -> void
+
+      # Dispatch enter and leave events for ForwardingParameterNode nodes.
+      #
+      # : (ForwardingParameterNode node) -> void
+      def visit_forwarding_parameter_node: (ForwardingParameterNode node) -> void
+
+      # Dispatch enter and leave events for ForwardingSuperNode nodes.
+      #
+      # : (ForwardingSuperNode node) -> void
+      def visit_forwarding_super_node: (ForwardingSuperNode node) -> void
+
+      # Dispatch enter and leave events for GlobalVariableAndWriteNode nodes.
+      #
+      # : (GlobalVariableAndWriteNode node) -> void
+      def visit_global_variable_and_write_node: (GlobalVariableAndWriteNode node) -> void
+
+      # Dispatch enter and leave events for GlobalVariableOperatorWriteNode nodes.
+      #
+      # : (GlobalVariableOperatorWriteNode node) -> void
+      def visit_global_variable_operator_write_node: (GlobalVariableOperatorWriteNode node) -> void
+
+      # Dispatch enter and leave events for GlobalVariableOrWriteNode nodes.
+      #
+      # : (GlobalVariableOrWriteNode node) -> void
+      def visit_global_variable_or_write_node: (GlobalVariableOrWriteNode node) -> void
+
+      # Dispatch enter and leave events for GlobalVariableReadNode nodes.
+      #
+      # : (GlobalVariableReadNode node) -> void
+      def visit_global_variable_read_node: (GlobalVariableReadNode node) -> void
+
+      # Dispatch enter and leave events for GlobalVariableTargetNode nodes.
+      #
+      # : (GlobalVariableTargetNode node) -> void
+      def visit_global_variable_target_node: (GlobalVariableTargetNode node) -> void
+
+      # Dispatch enter and leave events for GlobalVariableWriteNode nodes.
+      #
+      # : (GlobalVariableWriteNode node) -> void
+      def visit_global_variable_write_node: (GlobalVariableWriteNode node) -> void
+
+      # Dispatch enter and leave events for HashNode nodes.
+      #
+      # : (HashNode node) -> void
+      def visit_hash_node: (HashNode node) -> void
+
+      # Dispatch enter and leave events for HashPatternNode nodes.
+      #
+      # : (HashPatternNode node) -> void
+      def visit_hash_pattern_node: (HashPatternNode node) -> void
+
+      # Dispatch enter and leave events for IfNode nodes.
+      #
+      # : (IfNode node) -> void
+      def visit_if_node: (IfNode node) -> void
+
+      # Dispatch enter and leave events for ImaginaryNode nodes.
+      #
+      # : (ImaginaryNode node) -> void
+      def visit_imaginary_node: (ImaginaryNode node) -> void
+
+      # Dispatch enter and leave events for ImplicitNode nodes.
+      #
+      # : (ImplicitNode node) -> void
+      def visit_implicit_node: (ImplicitNode node) -> void
+
+      # Dispatch enter and leave events for ImplicitRestNode nodes.
+      #
+      # : (ImplicitRestNode node) -> void
+      def visit_implicit_rest_node: (ImplicitRestNode node) -> void
+
+      # Dispatch enter and leave events for InNode nodes.
+      #
+      # : (InNode node) -> void
+      def visit_in_node: (InNode node) -> void
+
+      # Dispatch enter and leave events for IndexAndWriteNode nodes.
+      #
+      # : (IndexAndWriteNode node) -> void
+      def visit_index_and_write_node: (IndexAndWriteNode node) -> void
+
+      # Dispatch enter and leave events for IndexOperatorWriteNode nodes.
+      #
+      # : (IndexOperatorWriteNode node) -> void
+      def visit_index_operator_write_node: (IndexOperatorWriteNode node) -> void
+
+      # Dispatch enter and leave events for IndexOrWriteNode nodes.
+      #
+      # : (IndexOrWriteNode node) -> void
+      def visit_index_or_write_node: (IndexOrWriteNode node) -> void
+
+      # Dispatch enter and leave events for IndexTargetNode nodes.
+      #
+      # : (IndexTargetNode node) -> void
+      def visit_index_target_node: (IndexTargetNode node) -> void
+
+      # Dispatch enter and leave events for InstanceVariableAndWriteNode nodes.
+      #
+      # : (InstanceVariableAndWriteNode node) -> void
+      def visit_instance_variable_and_write_node: (InstanceVariableAndWriteNode node) -> void
+
+      # Dispatch enter and leave events for InstanceVariableOperatorWriteNode nodes.
+      #
+      # : (InstanceVariableOperatorWriteNode node) -> void
+      def visit_instance_variable_operator_write_node: (InstanceVariableOperatorWriteNode node) -> void
+
+      # Dispatch enter and leave events for InstanceVariableOrWriteNode nodes.
+      #
+      # : (InstanceVariableOrWriteNode node) -> void
+      def visit_instance_variable_or_write_node: (InstanceVariableOrWriteNode node) -> void
+
+      # Dispatch enter and leave events for InstanceVariableReadNode nodes.
+      #
+      # : (InstanceVariableReadNode node) -> void
+      def visit_instance_variable_read_node: (InstanceVariableReadNode node) -> void
+
+      # Dispatch enter and leave events for InstanceVariableTargetNode nodes.
+      #
+      # : (InstanceVariableTargetNode node) -> void
+      def visit_instance_variable_target_node: (InstanceVariableTargetNode node) -> void
+
+      # Dispatch enter and leave events for InstanceVariableWriteNode nodes.
+      #
+      # : (InstanceVariableWriteNode node) -> void
+      def visit_instance_variable_write_node: (InstanceVariableWriteNode node) -> void
+
+      # Dispatch enter and leave events for IntegerNode nodes.
+      #
+      # : (IntegerNode node) -> void
+      def visit_integer_node: (IntegerNode node) -> void
+
+      # Dispatch enter and leave events for InterpolatedMatchLastLineNode nodes.
+      #
+      # : (InterpolatedMatchLastLineNode node) -> void
+      def visit_interpolated_match_last_line_node: (InterpolatedMatchLastLineNode node) -> void
+
+      # Dispatch enter and leave events for InterpolatedRegularExpressionNode nodes.
+      #
+      # : (InterpolatedRegularExpressionNode node) -> void
+      def visit_interpolated_regular_expression_node: (InterpolatedRegularExpressionNode node) -> void
+
+      # Dispatch enter and leave events for InterpolatedStringNode nodes.
+      #
+      # : (InterpolatedStringNode node) -> void
+      def visit_interpolated_string_node: (InterpolatedStringNode node) -> void
+
+      # Dispatch enter and leave events for InterpolatedSymbolNode nodes.
+      #
+      # : (InterpolatedSymbolNode node) -> void
+      def visit_interpolated_symbol_node: (InterpolatedSymbolNode node) -> void
+
+      # Dispatch enter and leave events for InterpolatedXStringNode nodes.
+      #
+      # : (InterpolatedXStringNode node) -> void
+      def visit_interpolated_x_string_node: (InterpolatedXStringNode node) -> void
+
+      # Dispatch enter and leave events for ItLocalVariableReadNode nodes.
+      #
+      # : (ItLocalVariableReadNode node) -> void
+      def visit_it_local_variable_read_node: (ItLocalVariableReadNode node) -> void
+
+      # Dispatch enter and leave events for ItParametersNode nodes.
+      #
+      # : (ItParametersNode node) -> void
+      def visit_it_parameters_node: (ItParametersNode node) -> void
+
+      # Dispatch enter and leave events for KeywordHashNode nodes.
+      #
+      # : (KeywordHashNode node) -> void
+      def visit_keyword_hash_node: (KeywordHashNode node) -> void
+
+      # Dispatch enter and leave events for KeywordRestParameterNode nodes.
+      #
+      # : (KeywordRestParameterNode node) -> void
+      def visit_keyword_rest_parameter_node: (KeywordRestParameterNode node) -> void
+
+      # Dispatch enter and leave events for LambdaNode nodes.
+      #
+      # : (LambdaNode node) -> void
+      def visit_lambda_node: (LambdaNode node) -> void
+
+      # Dispatch enter and leave events for LocalVariableAndWriteNode nodes.
+      #
+      # : (LocalVariableAndWriteNode node) -> void
+      def visit_local_variable_and_write_node: (LocalVariableAndWriteNode node) -> void
+
+      # Dispatch enter and leave events for LocalVariableOperatorWriteNode nodes.
+      #
+      # : (LocalVariableOperatorWriteNode node) -> void
+      def visit_local_variable_operator_write_node: (LocalVariableOperatorWriteNode node) -> void
+
+      # Dispatch enter and leave events for LocalVariableOrWriteNode nodes.
+      #
+      # : (LocalVariableOrWriteNode node) -> void
+      def visit_local_variable_or_write_node: (LocalVariableOrWriteNode node) -> void
+
+      # Dispatch enter and leave events for LocalVariableReadNode nodes.
+      #
+      # : (LocalVariableReadNode node) -> void
+      def visit_local_variable_read_node: (LocalVariableReadNode node) -> void
+
+      # Dispatch enter and leave events for LocalVariableTargetNode nodes.
+      #
+      # : (LocalVariableTargetNode node) -> void
+      def visit_local_variable_target_node: (LocalVariableTargetNode node) -> void
+
+      # Dispatch enter and leave events for LocalVariableWriteNode nodes.
+      #
+      # : (LocalVariableWriteNode node) -> void
+      def visit_local_variable_write_node: (LocalVariableWriteNode node) -> void
+
+      # Dispatch enter and leave events for MatchLastLineNode nodes.
+      #
+      # : (MatchLastLineNode node) -> void
+      def visit_match_last_line_node: (MatchLastLineNode node) -> void
+
+      # Dispatch enter and leave events for MatchPredicateNode nodes.
+      #
+      # : (MatchPredicateNode node) -> void
+      def visit_match_predicate_node: (MatchPredicateNode node) -> void
+
+      # Dispatch enter and leave events for MatchRequiredNode nodes.
+      #
+      # : (MatchRequiredNode node) -> void
+      def visit_match_required_node: (MatchRequiredNode node) -> void
+
+      # Dispatch enter and leave events for MatchWriteNode nodes.
+      #
+      # : (MatchWriteNode node) -> void
+      def visit_match_write_node: (MatchWriteNode node) -> void
+
+      # Dispatch enter and leave events for ModuleNode nodes.
+      #
+      # : (ModuleNode node) -> void
+      def visit_module_node: (ModuleNode node) -> void
+
+      # Dispatch enter and leave events for MultiTargetNode nodes.
+      #
+      # : (MultiTargetNode node) -> void
+      def visit_multi_target_node: (MultiTargetNode node) -> void
+
+      # Dispatch enter and leave events for MultiWriteNode nodes.
+      #
+      # : (MultiWriteNode node) -> void
+      def visit_multi_write_node: (MultiWriteNode node) -> void
+
+      # Dispatch enter and leave events for NextNode nodes.
+      #
+      # : (NextNode node) -> void
+      def visit_next_node: (NextNode node) -> void
+
+      # Dispatch enter and leave events for NilNode nodes.
+      #
+      # : (NilNode node) -> void
+      def visit_nil_node: (NilNode node) -> void
+
+      # Dispatch enter and leave events for NoBlockParameterNode nodes.
+      #
+      # : (NoBlockParameterNode node) -> void
+      def visit_no_block_parameter_node: (NoBlockParameterNode node) -> void
+
+      # Dispatch enter and leave events for NoKeywordsParameterNode nodes.
+      #
+      # : (NoKeywordsParameterNode node) -> void
+      def visit_no_keywords_parameter_node: (NoKeywordsParameterNode node) -> void
+
+      # Dispatch enter and leave events for NumberedParametersNode nodes.
+      #
+      # : (NumberedParametersNode node) -> void
+      def visit_numbered_parameters_node: (NumberedParametersNode node) -> void
+
+      # Dispatch enter and leave events for NumberedReferenceReadNode nodes.
+      #
+      # : (NumberedReferenceReadNode node) -> void
+      def visit_numbered_reference_read_node: (NumberedReferenceReadNode node) -> void
+
+      # Dispatch enter and leave events for OptionalKeywordParameterNode nodes.
+      #
+      # : (OptionalKeywordParameterNode node) -> void
+      def visit_optional_keyword_parameter_node: (OptionalKeywordParameterNode node) -> void
+
+      # Dispatch enter and leave events for OptionalParameterNode nodes.
+      #
+      # : (OptionalParameterNode node) -> void
+      def visit_optional_parameter_node: (OptionalParameterNode node) -> void
+
+      # Dispatch enter and leave events for OrNode nodes.
+      #
+      # : (OrNode node) -> void
+      def visit_or_node: (OrNode node) -> void
+
+      # Dispatch enter and leave events for ParametersNode nodes.
+      #
+      # : (ParametersNode node) -> void
+      def visit_parameters_node: (ParametersNode node) -> void
+
+      # Dispatch enter and leave events for ParenthesesNode nodes.
+      #
+      # : (ParenthesesNode node) -> void
+      def visit_parentheses_node: (ParenthesesNode node) -> void
+
+      # Dispatch enter and leave events for PinnedExpressionNode nodes.
+      #
+      # : (PinnedExpressionNode node) -> void
+      def visit_pinned_expression_node: (PinnedExpressionNode node) -> void
+
+      # Dispatch enter and leave events for PinnedVariableNode nodes.
+      #
+      # : (PinnedVariableNode node) -> void
+      def visit_pinned_variable_node: (PinnedVariableNode node) -> void
+
+      # Dispatch enter and leave events for PostExecutionNode nodes.
+      #
+      # : (PostExecutionNode node) -> void
+      def visit_post_execution_node: (PostExecutionNode node) -> void
+
+      # Dispatch enter and leave events for PreExecutionNode nodes.
+      #
+      # : (PreExecutionNode node) -> void
+      def visit_pre_execution_node: (PreExecutionNode node) -> void
+
+      # Dispatch enter and leave events for ProgramNode nodes.
+      #
+      # : (ProgramNode node) -> void
+      def visit_program_node: (ProgramNode node) -> void
+
+      # Dispatch enter and leave events for RangeNode nodes.
+      #
+      # : (RangeNode node) -> void
+      def visit_range_node: (RangeNode node) -> void
+
+      # Dispatch enter and leave events for RationalNode nodes.
+      #
+      # : (RationalNode node) -> void
+      def visit_rational_node: (RationalNode node) -> void
+
+      # Dispatch enter and leave events for RedoNode nodes.
+      #
+      # : (RedoNode node) -> void
+      def visit_redo_node: (RedoNode node) -> void
+
+      # Dispatch enter and leave events for RegularExpressionNode nodes.
+      #
+      # : (RegularExpressionNode node) -> void
+      def visit_regular_expression_node: (RegularExpressionNode node) -> void
+
+      # Dispatch enter and leave events for RequiredKeywordParameterNode nodes.
+      #
+      # : (RequiredKeywordParameterNode node) -> void
+      def visit_required_keyword_parameter_node: (RequiredKeywordParameterNode node) -> void
+
+      # Dispatch enter and leave events for RequiredParameterNode nodes.
+      #
+      # : (RequiredParameterNode node) -> void
+      def visit_required_parameter_node: (RequiredParameterNode node) -> void
+
+      # Dispatch enter and leave events for RescueModifierNode nodes.
+      #
+      # : (RescueModifierNode node) -> void
+      def visit_rescue_modifier_node: (RescueModifierNode node) -> void
+
+      # Dispatch enter and leave events for RescueNode nodes.
+      #
+      # : (RescueNode node) -> void
+      def visit_rescue_node: (RescueNode node) -> void
+
+      # Dispatch enter and leave events for RestParameterNode nodes.
+      #
+      # : (RestParameterNode node) -> void
+      def visit_rest_parameter_node: (RestParameterNode node) -> void
+
+      # Dispatch enter and leave events for RetryNode nodes.
+      #
+      # : (RetryNode node) -> void
+      def visit_retry_node: (RetryNode node) -> void
+
+      # Dispatch enter and leave events for ReturnNode nodes.
+      #
+      # : (ReturnNode node) -> void
+      def visit_return_node: (ReturnNode node) -> void
+
+      # Dispatch enter and leave events for SelfNode nodes.
+      #
+      # : (SelfNode node) -> void
+      def visit_self_node: (SelfNode node) -> void
+
+      # Dispatch enter and leave events for ShareableConstantNode nodes.
+      #
+      # : (ShareableConstantNode node) -> void
+      def visit_shareable_constant_node: (ShareableConstantNode node) -> void
+
+      # Dispatch enter and leave events for SingletonClassNode nodes.
+      #
+      # : (SingletonClassNode node) -> void
+      def visit_singleton_class_node: (SingletonClassNode node) -> void
+
+      # Dispatch enter and leave events for SourceEncodingNode nodes.
+      #
+      # : (SourceEncodingNode node) -> void
+      def visit_source_encoding_node: (SourceEncodingNode node) -> void
+
+      # Dispatch enter and leave events for SourceFileNode nodes.
+      #
+      # : (SourceFileNode node) -> void
+      def visit_source_file_node: (SourceFileNode node) -> void
+
+      # Dispatch enter and leave events for SourceLineNode nodes.
+      #
+      # : (SourceLineNode node) -> void
+      def visit_source_line_node: (SourceLineNode node) -> void
+
+      # Dispatch enter and leave events for SplatNode nodes.
+      #
+      # : (SplatNode node) -> void
+      def visit_splat_node: (SplatNode node) -> void
+
+      # Dispatch enter and leave events for StatementsNode nodes.
+      #
+      # : (StatementsNode node) -> void
+      def visit_statements_node: (StatementsNode node) -> void
+
+      # Dispatch enter and leave events for StringNode nodes.
+      #
+      # : (StringNode node) -> void
+      def visit_string_node: (StringNode node) -> void
+
+      # Dispatch enter and leave events for SuperNode nodes.
+      #
+      # : (SuperNode node) -> void
+      def visit_super_node: (SuperNode node) -> void
+
+      # Dispatch enter and leave events for SymbolNode nodes.
+      #
+      # : (SymbolNode node) -> void
+      def visit_symbol_node: (SymbolNode node) -> void
+
+      # Dispatch enter and leave events for TrueNode nodes.
+      #
+      # : (TrueNode node) -> void
+      def visit_true_node: (TrueNode node) -> void
+
+      # Dispatch enter and leave events for UndefNode nodes.
+      #
+      # : (UndefNode node) -> void
+      def visit_undef_node: (UndefNode node) -> void
+
+      # Dispatch enter and leave events for UnlessNode nodes.
+      #
+      # : (UnlessNode node) -> void
+      def visit_unless_node: (UnlessNode node) -> void
+
+      # Dispatch enter and leave events for UntilNode nodes.
+      #
+      # : (UntilNode node) -> void
+      def visit_until_node: (UntilNode node) -> void
+
+      # Dispatch enter and leave events for WhenNode nodes.
+      #
+      # : (WhenNode node) -> void
+      def visit_when_node: (WhenNode node) -> void
+
+      # Dispatch enter and leave events for WhileNode nodes.
+      #
+      # : (WhileNode node) -> void
+      def visit_while_node: (WhileNode node) -> void
+
+      # Dispatch enter and leave events for XStringNode nodes.
+      #
+      # : (XStringNode node) -> void
+      def visit_x_string_node: (XStringNode node) -> void
+
+      # Dispatch enter and leave events for YieldNode nodes.
+      #
+      # : (YieldNode node) -> void
+      def visit_yield_node: (YieldNode node) -> void
+    end
+  end
+end

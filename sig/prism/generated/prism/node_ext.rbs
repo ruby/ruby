@@ -1,0 +1,290 @@
+# Generated from lib/prism/node_ext.rb with RBS::Inline
+
+# --
+#  Here we are reopening the prism module to provide methods on nodes that aren't
+#  templated and are meant as convenience methods.
+# ++
+module Prism
+  class Node
+    # : (*String replacements) -> void
+    def deprecated: (*String replacements) -> void
+  end
+
+  module RegularExpressionOptions
+    # Returns a numeric value that represents the flags that were used to create
+    # the regular expression.
+    #
+    # : (Integer flags) -> Integer
+    def self.options: (Integer flags) -> Integer
+  end
+
+  class InterpolatedMatchLastLineNode < Node
+    # Returns a numeric value that represents the flags that were used to create
+    # the regular expression.
+    #
+    # : () -> Integer
+    def options: () -> Integer
+  end
+
+  class InterpolatedRegularExpressionNode < Node
+    # Returns a numeric value that represents the flags that were used to create
+    # the regular expression.
+    #
+    # : () -> Integer
+    def options: () -> Integer
+  end
+
+  class MatchLastLineNode < Node
+    # Returns a numeric value that represents the flags that were used to create
+    # the regular expression.
+    #
+    # : () -> Integer
+    def options: () -> Integer
+  end
+
+  class RegularExpressionNode < Node
+    # Returns a numeric value that represents the flags that were used to create
+    # the regular expression.
+    #
+    # : () -> Integer
+    def options: () -> Integer
+  end
+
+  module HeredocQuery
+    # Returns true if this node was represented as a heredoc in the source code.
+    #
+    # : (String? opening) -> bool?
+    def self.heredoc?: (String? opening) -> bool?
+  end
+
+  class InterpolatedStringNode < Node
+    # Returns true if this node was represented as a heredoc in the source code.
+    #
+    # : () -> bool?
+    def heredoc?: () -> bool?
+  end
+
+  class InterpolatedXStringNode < Node
+    # Returns true if this node was represented as a heredoc in the source code.
+    #
+    # : () -> bool?
+    def heredoc?: () -> bool?
+  end
+
+  class StringNode < Node
+    # Returns true if this node was represented as a heredoc in the source code.
+    #
+    # : () -> bool?
+    def heredoc?: () -> bool?
+
+    # Occasionally it's helpful to treat a string as if it were interpolated so
+    # that there's a consistent interface for working with strings.
+    #
+    # : () -> InterpolatedStringNode
+    def to_interpolated: () -> InterpolatedStringNode
+  end
+
+  class XStringNode < Node
+    # Returns true if this node was represented as a heredoc in the source code.
+    #
+    # : () -> bool?
+    def heredoc?: () -> bool?
+
+    # Occasionally it's helpful to treat a string as if it were interpolated so
+    # that there's a consistent interface for working with strings.
+    #
+    # : () -> InterpolatedXStringNode
+    def to_interpolated: () -> InterpolatedXStringNode
+  end
+
+  class ImaginaryNode < Node
+    # Returns the value of the node as a Ruby Complex.
+    #
+    # : () -> Complex
+    def value: () -> Complex
+  end
+
+  class RationalNode < Node
+    # Returns the value of the node as a Ruby Rational.
+    #
+    # : () -> Rational
+    def value: () -> Rational
+  end
+
+  class ConstantReadNode < Node
+    # Returns the list of parts for the full name of this constant.
+    # For example: [:Foo]
+    #
+    # : () -> Array[Symbol]
+    def full_name_parts: () -> Array[Symbol]
+
+    # Returns the full name of this constant. For example: "Foo"
+    #
+    # : () -> String
+    def full_name: () -> String
+  end
+
+  class ConstantWriteNode < Node
+    # Returns the list of parts for the full name of this constant.
+    # For example: [:Foo]
+    #
+    # : () -> Array[Symbol]
+    def full_name_parts: () -> Array[Symbol]
+
+    # Returns the full name of this constant. For example: "Foo"
+    #
+    # : () -> String
+    def full_name: () -> String
+  end
+
+  class ConstantPathNode < Node
+    # An error class raised when dynamic parts are found while computing a
+    # constant path's full name. For example:
+    # Foo::Bar::Baz -> does not raise because all parts of the constant path are
+    # simple constants
+    # var::Bar::Baz -> raises because the first part of the constant path is a
+    # local variable
+    class DynamicPartsInConstantPathError < StandardError
+    end
+
+    # An error class raised when error recovery nodes are found while computing a
+    # constant path's full name. For example:
+    # Foo:: -> raises because the constant path is missing the last part
+    class ErrorRecoveryNodesInConstantPathError < StandardError
+    end
+
+    # Returns the list of parts for the full name of this constant path.
+    # For example: [:Foo, :Bar]
+    #
+    # : () -> Array[Symbol]
+    def full_name_parts: () -> Array[Symbol]
+
+    # Returns the full name of this constant path. For example: "Foo::Bar"
+    #
+    # : () -> String
+    def full_name: () -> String
+  end
+
+  class ConstantPathTargetNode < Node
+    # Returns the list of parts for the full name of this constant path.
+    # For example: [:Foo, :Bar]
+    #
+    # : () -> Array[Symbol]
+    def full_name_parts: () -> Array[Symbol]
+
+    # Returns the full name of this constant path. For example: "Foo::Bar"
+    #
+    # : () -> String
+    def full_name: () -> String
+  end
+
+  class ConstantTargetNode < Node
+    # Returns the list of parts for the full name of this constant.
+    # For example: [:Foo]
+    #
+    # : () -> Array[Symbol]
+    def full_name_parts: () -> Array[Symbol]
+
+    # Returns the full name of this constant. For example: "Foo"
+    #
+    # : () -> String
+    def full_name: () -> String
+  end
+
+  class ParametersNode < Node
+    # Mirrors the Method#parameters method.
+    #
+    # : () -> Array[[Symbol, Symbol] | [Symbol]]
+    def signature: () -> Array[[ Symbol, Symbol ] | [ Symbol ]]
+  end
+
+  class CallNode < Node
+    # When a call node has the attribute_write flag set, it means that the call
+    # is using the attribute write syntax. This is either a method call to []=
+    # or a method call to a method that ends with =. Either way, the = sign is
+    # present in the source.
+    #
+    # Prism returns the message_loc _without_ the = sign attached, because there
+    # can be any amount of space between the message and the = sign. However,
+    # sometimes you want the location of the full message including the inner
+    # space and the = sign. This method provides that.
+    #
+    # : () -> Location?
+    def full_message_loc: () -> Location?
+  end
+
+  # :stopdoc:
+  class InNode < Node
+    # : () -> String
+    def in: () -> String
+
+    # : () -> Location
+    def in_loc: () -> Location
+
+    # : () -> String?
+    def then: () -> String?
+
+    # : () -> Location?
+    def then_loc: () -> Location?
+  end
+
+  class MatchPredicateNode < Node
+    # : () -> String
+    def operator: () -> String
+
+    # : () -> Location
+    def operator_loc: () -> Location
+  end
+
+  class UnlessNode < Node
+    # : () -> String
+    def keyword: () -> String
+
+    # : () -> Location
+    def keyword_loc: () -> Location
+  end
+
+  class UntilNode < Node
+    # : () -> String
+    def keyword: () -> String
+
+    # : () -> Location
+    def keyword_loc: () -> Location
+
+    # : () -> String?
+    def closing: () -> String?
+
+    # : () -> Location?
+    def closing_loc: () -> Location?
+  end
+
+  class WhenNode < Node
+    # : () -> String
+    def keyword: () -> String
+
+    # : () -> Location
+    def keyword_loc: () -> Location
+  end
+
+  class WhileNode < Node
+    # : () -> String
+    def keyword: () -> String
+
+    # : () -> Location
+    def keyword_loc: () -> Location
+
+    # : () -> String?
+    def closing: () -> String?
+
+    # : () -> Location?
+    def closing_loc: () -> Location?
+  end
+
+  class SymbolNode < Node
+    # : () -> String
+    def value: () -> String
+
+    # : () -> Location
+    def value_loc: () -> Location
+  end
+end
