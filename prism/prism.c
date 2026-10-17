@@ -20634,7 +20634,14 @@ parse_jump(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 
         if (binding_power == PM_BINDING_POWER_UNSET || binding_power >= PM_BINDING_POWER_RANGE) {
             pm_token_t next = parser->current;
+
+            /* The arguments of a jump start a fresh command context, so a
+             * `do` inside them binds to the nearest call within the
+             * arguments rather than to an enclosing command call, as in
+             * `check 1, case x when 1 then return bar do end end`. */
+            pm_accepts_block_stack_push(parser, true);
             parse_arguments(parser, &arguments, false, PM_TOKEN_EOF, flags, (uint16_t) (depth + 1));
+            pm_accepts_block_stack_pop(parser);
 
             // Reject `foo && return bar`.
             if (!(flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && arguments.arguments != NULL) {
