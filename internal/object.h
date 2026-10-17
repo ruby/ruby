@@ -10,6 +10,7 @@
  */
 #include "internal/basic_operators.h"
 #include "internal/string.h"
+#include "internal/vm.h"
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* object.c */
@@ -118,5 +119,20 @@ opt_equality_specialized_miss(VALUE recv, VALUE obj)
     }
     return Qundef;
 }
+
+static inline VALUE
+rb_equal_inline(VALUE obj1, VALUE obj2)
+{
+    VALUE result;
+
+    if (obj1 == obj2) return Qtrue;
+
+    result = opt_equality_specialized_miss(obj1, obj2);
+    if (!UNDEF_P(result)) return result;
+
+    return rb_equal_opt(obj1, obj2);
+}
+
+#define rb_equal rb_equal_inline
 
 #endif /* INTERNAL_OBJECT_H */
