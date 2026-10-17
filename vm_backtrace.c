@@ -2181,6 +2181,7 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
     return i;
 }
 
+/* async-signal-safe */
 int
 rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
 {
@@ -2195,6 +2196,7 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     return thread_profile_frames(ec, start, limit, buff, lines);
 }
 
+/* async-signal-safe */
 int
 rb_profile_thread_frames(VALUE thread, int start, int limit, VALUE *buff, int *lines)
 {
