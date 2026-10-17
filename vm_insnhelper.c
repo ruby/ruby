@@ -2561,7 +2561,7 @@ opt_equality_specialized(VALUE recv, VALUE obj)
         else if (FLONUM_2_P(recv, obj)) {
             goto compare_by_identity;
         }
-        else if (STATIC_SYM_P(recv) && STATIC_SYM_P(obj)) {
+        else if (STATIC_SYM_P(recv)) {
             goto compare_by_identity;
         }
         else if (SPECIAL_CONST_P(recv)) {
