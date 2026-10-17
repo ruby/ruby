@@ -1241,6 +1241,24 @@ class TestArray < Test::Unit::TestCase
     end
   end
 
+  def test_search_for_immediate_float_edge_cases
+    nan = 0.0 / 0.0
+    a = @cls[1.5, 2.5, -0.0, 3.5, Float::INFINITY, nan, 4.5, 5.5, 6.5, 7.5, 8.5]
+
+    # 0.0 is a flonum, -0.0 is not, and they are equal
+    assert_equal(true, a.include?(0.0))
+    assert_equal([2, 2, 1], [a.index(0.0), a.rindex(0.0), a.count(0.0)])
+    a2 = @cls.new(20, 1.0) + [0.0]
+    assert_equal([true, 20, 20, 1], [a2.include?(-0.0), a2.index(-0.0), a2.rindex(-0.0), a2.count(-0.0)])
+
+    assert_equal([true, 4, 4, 1], [a.include?(Float::INFINITY), a.index(Float::INFINITY), a.rindex(Float::INFINITY), a.count(Float::INFINITY)])
+
+    # a NaN is not equal to another NaN
+    other_nan = 0.0 / 0.0
+    assert_equal([false, nil, nil, 0], [a.include?(other_nan), a.index(other_nan), a.rindex(other_nan), a.count(other_nan)])
+    assert_equal([false, nil, nil, 0], [a2.include?(nan), a2.index(nan), a2.rindex(nan), a2.count(nan)])
+  end
+
   def test_search_for_immediate_calls_equal
     called = []
     o = Object.new
