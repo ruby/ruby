@@ -91,10 +91,12 @@ describe "IO#sysread on a file" do
     @file.sysread(0).should == ""
   end
 
-  it "immediately returns the given buffer if the length argument is 0" do
-    buffer = +"existing content"
-    @file.sysread(0, buffer).should == buffer
-    buffer.should == "existing content"
+  ruby_version_is "4.1" do
+    it "immediately returns the given buffer if the length argument is 0" do
+      buffer = +"existing content"
+      @file.sysread(0, buffer).should.equal?(buffer)
+      buffer.should == ""
+    end
   end
 
   it "discards the existing buffer content upon successful read" do

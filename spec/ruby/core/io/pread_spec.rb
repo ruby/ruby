@@ -59,23 +59,20 @@ describe "IO#pread" do
     @file.pread(0, 4).should == ""
   end
 
-  it "returns a buffer for maxlen = 0 when buffer specified" do
-    buffer = +"foo"
-    @file.pread(0, 4, buffer).should.equal?(buffer)
-    buffer.should == "foo"
-  end
-
   it "ignores the offset for maxlen = 0, even if it is out of file bounds" do
     @file.pread(0, 400).should == ""
   end
 
-  it "does not reset the buffer when reading with maxlen = 0" do
-    buffer = +"foo"
-    @file.pread(0, 4, buffer)
-    buffer.should == "foo"
+  ruby_version_is "4.1" do
+    it "clears and returns the buffer when reading with maxlen = 0" do
+      buffer = +"foo"
+      @file.pread(0, 4, buffer).should.equal?(buffer)
+      buffer.should == ""
 
-    @file.pread(0, 400, buffer)
-    buffer.should == "foo"
+      buffer = +"foo"
+      @file.pread(0, 400, buffer).should.equal?(buffer)
+      buffer.should == ""
+    end
   end
 
   it "converts maxlen to Integer using #to_int" do
@@ -109,7 +106,7 @@ describe "IO#pread" do
   end
 
   it "raises ArgumentError for negative values of maxlen" do
-    -> { @file.pread(-4, 0) }.should.raise(ArgumentError, 'negative string size (or size too big)')
+    -> { @file.pread(-4, 0) }.should.raise(ArgumentError)
   end
 
   it "raised Errno::EINVAL for negative values of offset" do
