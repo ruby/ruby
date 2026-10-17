@@ -770,9 +770,10 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 // Block body of the to_h pair-literal fast path.  The block stores each
 // pair directly into `hash`; we only need to yield so the block runs, and
-// to handle the rare case of the block leaving by `next`/`break` (which
-// skips the store and returns some other value) by falling back to the
-// ordinary pair conversion.
+// to handle the rare case of the block leaving by `next` (which skips the
+// store and returns some other value) by falling back to the ordinary
+// pair conversion.  The return value must be `hash`, like enum_to_h_ii:
+// a custom `each` may use the value yielded back to it.
 static VALUE
 enum_to_h_pair_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
@@ -781,7 +782,7 @@ enum_to_h_pair_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
     if (result != hash) {
         rb_hash_set_pair(hash, result);
     }
-    return Qnil;
+    return hash;
 }
 
 /*

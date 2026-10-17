@@ -3342,10 +3342,11 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         scope->index_lookup_table = (pm_index_lookup_table_t) PM_INDEX_LOOKUP_TABLE_INIT;
         scope->pre_execution_anchor = NULL;
         scope->to_h_pair_slot_p = false;
-        scope->to_h_pair_slot_index = 0;
+        scope->to_h_pair_site_count = 0;
+        scope->to_h_pair_slot_base = 0;
+        scope->to_h_pair_slots_used = 0;
         scope->to_h_pair_result_p = false;
-        scope->to_h_pair_parent_lidx = 0;
-        scope->to_h_pair_copy_index = 0;
+        scope->to_h_pair_slot_lidx = 0;
     }
     else {
         memset(scope, 0, sizeof(pm_scope_node_t));
@@ -3793,36 +3794,36 @@ pm_call_node_to_h_pair_shape_p(const pm_call_node_t *call_node)
     return pm_to_h_pair_literal(block_cast->body) != NULL;
 }
 
-/* Recursively look for a to_h pair-literal call site within `node`,
- * without crossing into nested scopes (blocks, methods, classes, for,
- * rescue/ensure bodies): those compile into their own iseqs whose
- * local tables are built by their own pm_compile_scope_node call.
+/* Count the to_h pair-literal call sites within `node`, without crossing
+ * into nested scopes (blocks, methods, classes, for, rescue/ensure
+ * bodies): those compile into their own iseqs whose local tables are
+ * built by their own pm_compile_scope_node call.
  *
- * This is a conservative pre-pass used to decide whether the current
- * scope needs to reserve a hidden local for the to_h result hash (the
- * local table must be sized before the body is compiled).  Missing a
- * call site here is safe -- it only disables the optimization for that
- * site (the block is then compiled with the ordinary `newarray 2`
- * tail), while a false positive would merely reserve an unused slot.
+ * This is a conservative pre-pass used to size the local table (one
+ * hidden slot per call site, so the table must be sized before the body
+ * is compiled).  pm_compile_call hands out at most this many slots, so a
+ * site missed here is simply left unoptimized (its block keeps the
+ * ordinary `newarray 2` tail); counting an extra site only wastes a slot.
  */
-static bool
-pm_node_has_to_h_pair_call(pm_scope_node_t *scope_node, const pm_node_t *node);
+static int
+pm_count_to_h_pair_calls(pm_scope_node_t *scope_node, const pm_node_t *node);
 
-static bool
-pm_node_list_has_to_h_pair_call(pm_scope_node_t *scope_node, const pm_node_list_t *list)
+static int
+pm_node_list_count_to_h_pair_calls(pm_scope_node_t *scope_node, const pm_node_list_t *list)
 {
+    int count = 0;
     for (size_t i = 0; i < list->size; i++) {
-        if (pm_node_has_to_h_pair_call(scope_node, list->nodes[i])) return true;
+        count += pm_count_to_h_pair_calls(scope_node, list->nodes[i]);
     }
-    return false;
+    return count;
 }
 
-static bool
-pm_node_has_to_h_pair_call(pm_scope_node_t *scope_node, const pm_node_t *node)
+static int
+pm_count_to_h_pair_calls(pm_scope_node_t *scope_node, const pm_node_t *node)
 {
-    if (node == NULL) return false;
+    if (node == NULL) return 0;
 
-    switch (PM_NODE_TYPE(node)) {
+switch (PM_NODE_TYPE(node)) {
       case PM_BLOCK_NODE:
       case PM_LAMBDA_NODE:
       case PM_DEF_NODE:
@@ -3833,198 +3834,200 @@ pm_node_has_to_h_pair_call(pm_scope_node_t *scope_node, const pm_node_t *node)
       case PM_ENSURE_NODE:
       case PM_POST_EXECUTION_NODE:
         /* new scope: handled by its own pm_compile_scope_node */
-        return false;
+        return 0;
 
       case PM_RESCUE_NODE:
         /* rescue clause bodies are separate iseqs with a replaced
          * (exception local) table; they cannot hold the hidden slot */
-        return false;
+        return 0;
 
       case PM_RESCUE_MODIFIER_NODE: {
         /* `expr rescue handler`: `expr` is compiled inline, the handler
          * becomes a separate rescue iseq. */
         const pm_rescue_modifier_node_t *cast = (const pm_rescue_modifier_node_t *) node;
-        return pm_node_has_to_h_pair_call(scope_node, cast->expression);
+        return pm_count_to_h_pair_calls(scope_node, cast->expression);
       }
 
       case PM_CALL_NODE: {
         const pm_call_node_t *cast = (const pm_call_node_t *) node;
 
+        int count = 0;
         if (pm_call_node_to_h_pair_shape_p(cast) &&
                 pm_constant_id_lookup(scope_node, cast->name) == rb_intern("to_h")) {
-            return true;
+            count++;
         }
 
         /* Do not descend into the block (new scope). */
-        return pm_node_has_to_h_pair_call(scope_node, cast->receiver) ||
-               pm_node_has_to_h_pair_call(scope_node, (const pm_node_t *) cast->arguments);
+        count += pm_count_to_h_pair_calls(scope_node, cast->receiver);
+        count += pm_count_to_h_pair_calls(scope_node, (const pm_node_t *) cast->arguments);
+        return count;
       }
 
       case PM_STATEMENTS_NODE:
-        return pm_node_list_has_to_h_pair_call(scope_node, &((const pm_statements_node_t *) node)->body);
+        return pm_node_list_count_to_h_pair_calls(scope_node, &((const pm_statements_node_t *) node)->body);
 
       case PM_BEGIN_NODE: {
         const pm_begin_node_t *cast = (const pm_begin_node_t *) node;
-        return pm_node_has_to_h_pair_call(scope_node, (const pm_node_t *) cast->statements) ||
-               pm_node_has_to_h_pair_call(scope_node, (const pm_node_t *) cast->else_clause);
+        return pm_count_to_h_pair_calls(scope_node, (const pm_node_t *) cast->statements) +
+               pm_count_to_h_pair_calls(scope_node, (const pm_node_t *) cast->else_clause);
       }
 
       case PM_ELSE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, (const pm_node_t *) ((const pm_else_node_t *) node)->statements);
+        return pm_count_to_h_pair_calls(scope_node, (const pm_node_t *) ((const pm_else_node_t *) node)->statements);
 
       case PM_IF_NODE: {
         const pm_if_node_t *cast = (const pm_if_node_t *) node;
-        return pm_node_has_to_h_pair_call(scope_node, cast->predicate) ||
-               pm_node_has_to_h_pair_call(scope_node, (const pm_node_t *) cast->statements) ||
-               pm_node_has_to_h_pair_call(scope_node, cast->subsequent);
+        return pm_count_to_h_pair_calls(scope_node, cast->predicate) +
+               pm_count_to_h_pair_calls(scope_node, (const pm_node_t *) cast->statements) +
+               pm_count_to_h_pair_calls(scope_node, cast->subsequent);
       }
 
       case PM_WHILE_NODE:
       case PM_UNTIL_NODE: {
         const pm_while_node_t *cast = (const pm_while_node_t *) node;
-        return pm_node_has_to_h_pair_call(scope_node, cast->predicate) ||
-               pm_node_has_to_h_pair_call(scope_node, (const pm_node_t *) cast->statements);
+        return pm_count_to_h_pair_calls(scope_node, cast->predicate) +
+               pm_count_to_h_pair_calls(scope_node, (const pm_node_t *) cast->statements);
       }
 
       case PM_CASE_NODE:
       case PM_CASE_MATCH_NODE: {
         const pm_case_node_t *cast = (const pm_case_node_t *) node;
-        return pm_node_has_to_h_pair_call(scope_node, cast->predicate) ||
-               pm_node_has_to_h_pair_call(scope_node, (const pm_node_t *) cast->else_clause);
+        return pm_count_to_h_pair_calls(scope_node, cast->predicate) +
+               pm_count_to_h_pair_calls(scope_node, (const pm_node_t *) cast->else_clause);
       }
 
       case PM_WHEN_NODE: {
         const pm_when_node_t *cast = (const pm_when_node_t *) node;
-        return pm_node_has_to_h_pair_call(scope_node, (const pm_node_t *) cast->statements);
+        return pm_count_to_h_pair_calls(scope_node, (const pm_node_t *) cast->statements);
       }
 
       case PM_AND_NODE:
       case PM_OR_NODE: {
         const pm_and_node_t *cast = (const pm_and_node_t *) node;
-        return pm_node_has_to_h_pair_call(scope_node, cast->left) ||
-               pm_node_has_to_h_pair_call(scope_node, cast->right);
+        return pm_count_to_h_pair_calls(scope_node, cast->left) +
+               pm_count_to_h_pair_calls(scope_node, cast->right);
       }
 
       case PM_ARRAY_NODE:
-        return pm_node_list_has_to_h_pair_call(scope_node, &((const pm_array_node_t *) node)->elements);
+        return pm_node_list_count_to_h_pair_calls(scope_node, &((const pm_array_node_t *) node)->elements);
 
       case PM_HASH_NODE:
-        return pm_node_list_has_to_h_pair_call(scope_node, &((const pm_hash_node_t *) node)->elements);
+        return pm_node_list_count_to_h_pair_calls(scope_node, &((const pm_hash_node_t *) node)->elements);
 
       case PM_KEYWORD_HASH_NODE:
-        return pm_node_list_has_to_h_pair_call(scope_node, &((const pm_keyword_hash_node_t *) node)->elements);
+        return pm_node_list_count_to_h_pair_calls(scope_node, &((const pm_keyword_hash_node_t *) node)->elements);
 
       case PM_ASSOC_NODE: {
         const pm_assoc_node_t *cast = (const pm_assoc_node_t *) node;
-        return pm_node_has_to_h_pair_call(scope_node, cast->key) ||
-               pm_node_has_to_h_pair_call(scope_node, cast->value);
+        return pm_count_to_h_pair_calls(scope_node, cast->key) +
+               pm_count_to_h_pair_calls(scope_node, cast->value);
       }
 
       case PM_RETURN_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, (const pm_node_t *) ((const pm_return_node_t *) node)->arguments);
+        return pm_count_to_h_pair_calls(scope_node, (const pm_node_t *) ((const pm_return_node_t *) node)->arguments);
       case PM_BREAK_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, (const pm_node_t *) ((const pm_break_node_t *) node)->arguments);
+        return pm_count_to_h_pair_calls(scope_node, (const pm_node_t *) ((const pm_break_node_t *) node)->arguments);
       case PM_NEXT_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, (const pm_node_t *) ((const pm_next_node_t *) node)->arguments);
+        return pm_count_to_h_pair_calls(scope_node, (const pm_node_t *) ((const pm_next_node_t *) node)->arguments);
       case PM_YIELD_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, (const pm_node_t *) ((const pm_yield_node_t *) node)->arguments);
+        return pm_count_to_h_pair_calls(scope_node, (const pm_node_t *) ((const pm_yield_node_t *) node)->arguments);
 
       case PM_ARGUMENTS_NODE:
-        return pm_node_list_has_to_h_pair_call(scope_node, &((const pm_arguments_node_t *) node)->arguments);
+        return pm_node_list_count_to_h_pair_calls(scope_node, &((const pm_arguments_node_t *) node)->arguments);
 
       case PM_SPLAT_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_splat_node_t *) node)->expression);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_splat_node_t *) node)->expression);
 
       case PM_RANGE_NODE: {
         const pm_range_node_t *cast = (const pm_range_node_t *) node;
-        return pm_node_has_to_h_pair_call(scope_node, cast->left) ||
-               pm_node_has_to_h_pair_call(scope_node, cast->right);
+        return pm_count_to_h_pair_calls(scope_node, cast->left) +
+               pm_count_to_h_pair_calls(scope_node, cast->right);
       }
 
       case PM_FLIP_FLOP_NODE: {
         const pm_flip_flop_node_t *cast = (const pm_flip_flop_node_t *) node;
-        return pm_node_has_to_h_pair_call(scope_node, cast->left) ||
-               pm_node_has_to_h_pair_call(scope_node, cast->right);
+        return pm_count_to_h_pair_calls(scope_node, cast->left) +
+               pm_count_to_h_pair_calls(scope_node, cast->right);
       }
 
       case PM_PARENTHESES_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_parentheses_node_t *) node)->body);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_parentheses_node_t *) node)->body);
 
       case PM_EMBEDDED_STATEMENTS_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, (const pm_node_t *) ((const pm_embedded_statements_node_t *) node)->statements);
+        return pm_count_to_h_pair_calls(scope_node, (const pm_node_t *) ((const pm_embedded_statements_node_t *) node)->statements);
 
       case PM_INTERPOLATED_STRING_NODE:
       case PM_INTERPOLATED_SYMBOL_NODE:
       case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE:
       case PM_INTERPOLATED_X_STRING_NODE:
       case PM_INTERPOLATED_MATCH_LAST_LINE_NODE:
-        return pm_node_list_has_to_h_pair_call(scope_node, &((const pm_interpolated_string_node_t *) node)->parts);
+        return pm_node_list_count_to_h_pair_calls(scope_node, &((const pm_interpolated_string_node_t *) node)->parts);
 
       /* Assignment nodes: descend into the assigned value (and, for
        * attribute writes, the receiver).  Each node type has its own
        * layout, so cast to the exact type. */
       case PM_LOCAL_VARIABLE_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_local_variable_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_local_variable_write_node_t *) node)->value);
       case PM_LOCAL_VARIABLE_OPERATOR_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_local_variable_operator_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_local_variable_operator_write_node_t *) node)->value);
       case PM_LOCAL_VARIABLE_AND_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_local_variable_and_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_local_variable_and_write_node_t *) node)->value);
       case PM_LOCAL_VARIABLE_OR_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_local_variable_or_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_local_variable_or_write_node_t *) node)->value);
       case PM_INSTANCE_VARIABLE_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_instance_variable_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_instance_variable_write_node_t *) node)->value);
       case PM_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_instance_variable_operator_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_instance_variable_operator_write_node_t *) node)->value);
       case PM_INSTANCE_VARIABLE_AND_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_instance_variable_and_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_instance_variable_and_write_node_t *) node)->value);
       case PM_INSTANCE_VARIABLE_OR_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_instance_variable_or_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_instance_variable_or_write_node_t *) node)->value);
       case PM_GLOBAL_VARIABLE_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_global_variable_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_global_variable_write_node_t *) node)->value);
       case PM_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_global_variable_operator_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_global_variable_operator_write_node_t *) node)->value);
       case PM_GLOBAL_VARIABLE_AND_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_global_variable_and_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_global_variable_and_write_node_t *) node)->value);
       case PM_GLOBAL_VARIABLE_OR_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_global_variable_or_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_global_variable_or_write_node_t *) node)->value);
       case PM_CLASS_VARIABLE_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_class_variable_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_class_variable_write_node_t *) node)->value);
       case PM_CLASS_VARIABLE_OPERATOR_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_class_variable_operator_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_class_variable_operator_write_node_t *) node)->value);
       case PM_CLASS_VARIABLE_AND_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_class_variable_and_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_class_variable_and_write_node_t *) node)->value);
       case PM_CLASS_VARIABLE_OR_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_class_variable_or_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_class_variable_or_write_node_t *) node)->value);
       case PM_CONSTANT_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_constant_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_constant_write_node_t *) node)->value);
       case PM_CONSTANT_OPERATOR_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_constant_operator_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_constant_operator_write_node_t *) node)->value);
       case PM_CONSTANT_AND_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_constant_and_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_constant_and_write_node_t *) node)->value);
       case PM_CONSTANT_OR_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_constant_or_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_constant_or_write_node_t *) node)->value);
       case PM_MULTI_WRITE_NODE:
-        return pm_node_has_to_h_pair_call(scope_node, ((const pm_multi_write_node_t *) node)->value);
+        return pm_count_to_h_pair_calls(scope_node, ((const pm_multi_write_node_t *) node)->value);
       case PM_CALL_AND_WRITE_NODE: {
         const pm_call_and_write_node_t *cast = (const pm_call_and_write_node_t *) node;
-        return pm_node_has_to_h_pair_call(scope_node, cast->receiver) ||
-               pm_node_has_to_h_pair_call(scope_node, cast->value);
+        return pm_count_to_h_pair_calls(scope_node, cast->receiver) +
+               pm_count_to_h_pair_calls(scope_node, cast->value);
       }
       case PM_CALL_OPERATOR_WRITE_NODE: {
         const pm_call_operator_write_node_t *cast = (const pm_call_operator_write_node_t *) node;
-        return pm_node_has_to_h_pair_call(scope_node, cast->receiver) ||
-               pm_node_has_to_h_pair_call(scope_node, cast->value);
+        return pm_count_to_h_pair_calls(scope_node, cast->receiver) +
+               pm_count_to_h_pair_calls(scope_node, cast->value);
       }
       case PM_CALL_OR_WRITE_NODE: {
         const pm_call_or_write_node_t *cast = (const pm_call_or_write_node_t *) node;
-        return pm_node_has_to_h_pair_call(scope_node, cast->receiver) ||
-               pm_node_has_to_h_pair_call(scope_node, cast->value);
+        return pm_count_to_h_pair_calls(scope_node, cast->receiver) +
+               pm_count_to_h_pair_calls(scope_node, cast->value);
       }
 
       default:
         /* Conservative: unknown nodes may not contain (detectable) call
          * sites; that only disables the optimization for them. */
-        return false;
+        return 0;
     }
 }
 
@@ -4110,11 +4113,18 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         // `recv.to_h { |*| [key, value] }` compile the block with a
         // to_h_aset tail that stores each pair directly into the result
         // hash, instead of building a two-element array per element.
-        // See pm_node_has_to_h_pair_call above and insns.def: to_h_aset.
+        // See pm_count_to_h_pair_calls above and insns.def: to_h_aset.
         if (scope_node->to_h_pair_slot_p &&
+                scope_node->to_h_pair_slots_used < scope_node->to_h_pair_site_count &&
                 method_id == rb_intern("to_h") &&
                 ISEQ_COMPILE_DATA(iseq)->isolated_depth == 0 &&
                 pm_call_node_to_h_pair_shape_p(call_node)) {
+            // Hand this call site its own hidden local.  Distinct slots
+            // per site keep an escaped block from writing into some other
+            // to_h's result hash, and make nested to_h calls independent.
+            int site_local_index = scope_node->to_h_pair_slot_base + scope_node->to_h_pair_slots_used++;
+            int slot_index = (int)scope_node->local_table_for_iseq_size - site_local_index;
+
             // Reset the hidden slot to nil before the call.  The core
             // to_h implementations install the result hash into it; if
             // the call is dispatched to a user-defined/refined `to_h`
@@ -4122,10 +4132,10 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             // degrades to returning a fresh two-element array, exactly
             // like the unoptimized block.
             PUSH_INSN(ret, location, putnil);
-            PUSH_SETLOCAL(ret, location, scope_node->to_h_pair_slot_index, 0);
+            PUSH_SETLOCAL(ret, location, slot_index, 0);
 
             next_scope_node.to_h_pair_result_p = true;
-            next_scope_node.to_h_pair_parent_lidx = scope_node->to_h_pair_slot_index + VM_ENV_DATA_SIZE - 1;
+            next_scope_node.to_h_pair_slot_lidx = slot_index + VM_ENV_DATA_SIZE - 1;
         }
 
         block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, pm_node_line_number_cached(call_node->block, scope_node));
@@ -6606,22 +6616,18 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
 
     int table_size = (int) locals_size;
 
-    // to_h pair-literal block optimization: reserve a hidden local in this
-    // scope to pass the result hash to `to_h { |*| [k, v] }` blocks (which
-    // store pairs into it directly).  Only scopes whose local table survives
-    // intact can host it: ENSURE/RESCUE iseqs replace their local table with
-    // the shared exception table after this point.
-    bool to_h_pair_slot = false;
+    // to_h pair-literal block optimization: reserve one hidden local per
+    // `to_h { |*| [k, v] }` call site in this scope, to pass the result
+    // hash to each block (which stores pairs into it directly).  Only
+    // scopes whose local table survives intact can host them: ENSURE/RESCUE
+    // iseqs replace their local table with the shared exception table
+    // after this point.
+    int to_h_pair_sites = 0;
     if (body->type != ISEQ_TYPE_ENSURE && body->type != ISEQ_TYPE_RESCUE &&
-            scope_node->body != NULL &&
-            pm_node_has_to_h_pair_call(scope_node, scope_node->body)) {
-        to_h_pair_slot = true;
-        table_size++;
+            scope_node->body != NULL) {
+        to_h_pair_sites = pm_count_to_h_pair_calls(scope_node, scope_node->body);
     }
-
-    // A to_h pair-literal block additionally reserves a hidden local for
-    // its per-invocation copy of the result hash.
-    if (scope_node->to_h_pair_result_p) table_size++;
+    table_size += to_h_pair_sites;
 
     // For nodes have a hidden iteration variable. We add that to the local
     // table size here.
@@ -7226,18 +7232,17 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     }
 
     // to_h pair-literal block optimization: append the hidden locals
-    // reserved in STEP 1.  rb_make_temporary_id() produces an internal,
-    // anonymous ID (hidden from local_variables).
-    if (to_h_pair_slot) {
-        local_table_for_iseq->ids[local_index] = rb_make_temporary_id(local_index);
+    // reserved in STEP 1, one per call site.  rb_make_temporary_id()
+    // produces an internal, anonymous ID (hidden from local_variables).
+    // pm_compile_call hands them out in order as it compiles the body.
+    if (to_h_pair_sites > 0) {
         scope_node->to_h_pair_slot_p = true;
-        scope_node->to_h_pair_slot_index = (int)local_table_for_iseq->size - local_index;
-        local_index++;
-    }
-    if (scope_node->to_h_pair_result_p) {
-        local_table_for_iseq->ids[local_index] = rb_make_temporary_id(local_index);
-        scope_node->to_h_pair_copy_index = (int)local_table_for_iseq->size - local_index;
-        local_index++;
+        scope_node->to_h_pair_site_count = to_h_pair_sites;
+        scope_node->to_h_pair_slot_base = local_index;
+        scope_node->to_h_pair_slots_used = 0;
+        for (int i = 0; i < to_h_pair_sites; i++, local_index++) {
+            local_table_for_iseq->ids[local_index] = rb_make_temporary_id(local_index);
+        }
     }
 
     //********END OF STEP 4**********
@@ -7390,22 +7395,18 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         PUSH_LABEL(ret, start);
 
         if (scope_node->to_h_pair_result_p) {
-            // to_h pair-literal block: copy the result hash (installed by
-            // the core to_h into the enclosing scope's hidden slot) into
-            // this invocation's own local, then compile the pair literal
-            // as a direct hash store.  The copy makes nested to_h calls
-            // safe: an inner call may overwrite the enclosing slot while
-            // this block is still running.
+            // to_h pair-literal block: compile the pair literal as a
+            // direct store into the result hash this call site's slot
+            // holds (installed by the core to_h).  The slot belongs to
+            // this one call site, so an inner to_h or an escaped block
+            // writes to a different slot and cannot corrupt it.
             const pm_array_node_t *array = pm_to_h_pair_literal(scope_node->body);
             RUBY_ASSERT(array != NULL);
             RUBY_ASSERT(array->elements.size == 2);
 
-            PUSH_INSN2(ret, block_location, getlocal, INT2FIX(scope_node->to_h_pair_parent_lidx), INT2FIX(1));
-            PUSH_SETLOCAL(ret, block_location, scope_node->to_h_pair_copy_index, 0);
-
             pm_compile_node(iseq, array->elements.nodes[0], ret, false, scope_node);
             pm_compile_node(iseq, array->elements.nodes[1], ret, false, scope_node);
-            PUSH_INSN1(ret, block_location, to_h_aset, INT2FIX(scope_node->to_h_pair_copy_index + VM_ENV_DATA_SIZE - 1));
+            PUSH_INSN1(ret, block_location, to_h_aset, INT2FIX(scope_node->to_h_pair_slot_lidx));
         }
         else if (scope_node->body != NULL) {
             switch (PM_NODE_TYPE(scope_node->ast_node)) {
