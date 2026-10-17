@@ -4498,6 +4498,55 @@ rb_str_casecmp(VALUE str1, VALUE str2)
     return str_casecmp(str1, s);
 }
 
+/*
+ * Compares +len+ bytes at +p1+ and +p2+ ignoring the case of ASCII
+ * letters, and returns -1, 0 or 1.
+ */
+static inline int
+str_casecmp_bytes(const char *p1, const char *p2, rb_len_t len)
+{
+    for (rb_len_t i = 0; i < len; i++) {
+        if (p1[i] != p2[i]) {
+            unsigned int c1 = TOLOWER(p1[i] & 0xff);
+            unsigned int c2 = TOLOWER(p2[i] & 0xff);
+            if (c1 != c2) return c1 < c2 ? -1 : 1;
+        }
+    }
+    return 0;
+}
+
+/*
+ * The same as str_casecmp_bytes(), but skips identical bytes by chunks.
+ * Strings compared ignoring the case are usually identical in most of
+ * their bytes.
+ */
+static int
+str_casecmp_chunks(const char *p1, const char *p2, rb_len_t len)
+{
+    /* small enough for memcmp() to be inlined */
+    enum {chunk_size = 16, half_size = chunk_size / 2};
+    int r;
+
+    /* a difference is found at the first byte most often, if any */
+    if (len >= half_size && (r = str_casecmp_bytes(p1, p2, 1)) != 0) return r;
+
+    for (; len >= chunk_size;
+         p1 += chunk_size, p2 += chunk_size, len -= chunk_size) {
+        if (memcmp(p1, p2, chunk_size) == 0) continue;
+        if ((r = str_casecmp_bytes(p1, p2, chunk_size)) != 0) return r;
+    }
+    if (len >= half_size) {
+        if (memcmp(p1, p2, half_size) != 0 &&
+            (r = str_casecmp_bytes(p1, p2, half_size)) != 0) {
+            return r;
+        }
+        p1 += half_size;
+        p2 += half_size;
+        len -= half_size;
+    }
+    return str_casecmp_bytes(p1, p2, len);
+}
+
 static VALUE
 str_casecmp(VALUE str1, VALUE str2)
 {
@@ -4513,16 +4562,13 @@ str_casecmp(VALUE str1, VALUE str2)
     p1 = RSTRING_PTR(str1); p1end = RSTRING_END(str1);
     p2 = RSTRING_PTR(str2); p2end = RSTRING_END(str2);
     if (single_byte_optimizable(str1) && single_byte_optimizable(str2)) {
-        while (p1 < p1end && p2 < p2end) {
-            if (*p1 != *p2) {
-                unsigned int c1 = TOLOWER(*p1 & 0xff);
-                unsigned int c2 = TOLOWER(*p2 & 0xff);
-                if (c1 != c2)
-                    return INT2FIX(c1 < c2 ? -1 : 1);
-            }
-            p1++;
-            p2++;
-        }
+        int r;
+        len = p1end - p1 < p2end - p2 ? p1end - p1 : p2end - p2;
+        r = str_casecmp_chunks(p1, p2, len);
+        if (r != 0)
+            return INT2FIX(r);
+        p1 += len;
+        p2 += len;
     }
     else {
         while (p1 < p1end && p2 < p2end) {
@@ -4600,17 +4646,10 @@ str_casecmp_p(VALUE str1, VALUE str2)
     }
 
     if (is_ascii_string(str1) && is_ascii_string(str2)) {
-        if (RSTRING_LEN(str1) != RSTRING_LEN(str2)) return Qfalse;
-        const char *p1 = RSTRING_PTR(str1), *p1end = RSTRING_END(str1);
-        const char *p2 = RSTRING_PTR(str2);
-        while (p1 < p1end) {
-            if (*p1 != *p2 && TOLOWER((unsigned char)*p1) != TOLOWER((unsigned char)*p2)) {
-                return Qfalse;
-            }
-            p1++;
-            p2++;
-        }
-        return Qtrue;
+        const char *p1 = RSTRING_PTR(str1), *p2 = RSTRING_PTR(str2);
+        rb_len_t len = RSTRING_LEN(str1);
+        if (len != RSTRING_LEN(str2)) return Qfalse;
+        return RBOOL(str_casecmp_chunks(p1, p2, len) == 0);
     }
 
     folded_str1 = rb_str_downcase(1, &fold_opt, str1);
