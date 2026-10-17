@@ -15911,7 +15911,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_string_append_reuses_flags_load() {
+    fn test_optimize_string_append_after_coderange_scan() {
         eval(r#"
             def test(s, t)
               s.ascii_only?
@@ -15941,16 +15941,16 @@ mod hir_opt_tests {
           v38:CUInt64 = LoadField v37, :RBASIC_FLAGS@0x1040
           v39:CUInt64[3145728] = Const CUInt64(3145728)
           v40:CInt64 = IntAnd v38, v39
-          v41:CInt64[1048576] = Const CInt64(1048576)
-          v42:CInt64 = GuardGreaterEq v40, v41
-          v43:CInt64[1048576] = Const CInt64(1048576)
-          v44:CBool = IsBitEqual v42, v43
-          v45:BoolExact = BoxBool v44
+          v41:CInt64 = StringCoderange v37, v40
+          v42:CInt64[1048576] = Const CInt64(1048576)
+          v43:CBool = IsBitEqual v41, v42
+          v44:BoolExact = BoxBool v43
           PatchPoint NoEPEscape(test)
           PatchPoint MethodRedefined(String@0x1008, <<@0x1041, cme:0x1048)
-          v50:String = GuardType v13, String
-          v52:CUInt64 = LoadField v50, :RBASIC_FLAGS@0x1040
-          v53:StringExact = StringAppend v37, v50, recv_flags: v38, other_flags: v52
+          v49:String = GuardType v13, String
+          v50:CUInt64 = LoadField v37, :RBASIC_FLAGS@0x1040
+          v51:CUInt64 = LoadField v49, :RBASIC_FLAGS@0x1040
+          v52:StringExact = StringAppend v37, v49, recv_flags: v50, other_flags: v51
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v37
@@ -16141,14 +16141,13 @@ mod hir_opt_tests {
           v26:CUInt64 = LoadField v25, :RBASIC_FLAGS@0x1040
           v27:CUInt64[3145728] = Const CUInt64(3145728)
           v28:CInt64 = IntAnd v26, v27
-          v29:CInt64[1048576] = Const CInt64(1048576)
-          v30:CInt64 = GuardGreaterEq v28, v29
-          v31:CInt64[1048576] = Const CInt64(1048576)
-          v32:CBool = IsBitEqual v30, v31
-          v33:BoolExact = BoxBool v32
+          v29:CInt64 = StringCoderange v25, v28
+          v30:CInt64[1048576] = Const CInt64(1048576)
+          v31:CBool = IsBitEqual v29, v30
+          v32:BoolExact = BoxBool v31
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v33
+          Return v32
         ");
     }
 

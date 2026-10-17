@@ -645,6 +645,11 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
   `x86_64-pc-windows-msvc` target.  Only the release build is supported,
   and MinGW is not.  [[Feature #18439]]
 
+### ZJIT
+
+* `String#ascii_only?` and `String#valid_encoding?` now scan unknown string
+  coderanges without exiting compiled code.
+
 [Bug #18661]: https://bugs.ruby-lang.org/issues/18661
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
 [Bug #22273]: https://bugs.ruby-lang.org/issues/22273

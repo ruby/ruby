@@ -4778,6 +4778,61 @@ fn test_string_copy_chilled_gc_stress() {
 }
 
 #[test]
+fn test_string_valid_encoding_unknown_coderange() {
+    eval(r#"
+        def test(s) = s.valid_encoding?
+        test("iron")
+    "#);
+    assert_snapshot!(assert_compiles(r#"
+        [
+          test("ascii".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xC3\xA9".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.force_encoding(Encoding::UTF_8).freeze),
+          test("".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xE2\x82".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.freeze)
+        ]
+    "#), @"[true, true, false, true, false, true]");
+}
+
+#[test]
+fn test_string_ascii_only_unknown_coderange() {
+    eval(r#"
+        def test(s) = s.ascii_only?
+        test("iron")
+    "#);
+    assert_snapshot!(assert_compiles(r#"
+        [
+          test("ascii".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xC3\xA9".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.force_encoding(Encoding::UTF_8).freeze),
+          test("".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xE2\x82".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.freeze)
+        ]
+    "#), @"[true, false, false, true, false, false]");
+}
+
+#[test]
+fn test_string_coderange_after_mutation() {
+    eval(r#"
+        def test(s)
+          original = [s.valid_encoding?, s.ascii_only?]
+          s.setbyte(0, 0xFF)
+          broken = [s.valid_encoding?, s.ascii_only?]
+          s.force_encoding(Encoding::BINARY)
+          binary = [s.valid_encoding?, s.ascii_only?]
+          s.force_encoding(Encoding::UTF_8)
+          utf8 = [s.valid_encoding?, s.ascii_only?]
+          [original, broken, binary, utf8]
+        end
+        test(+"abc")
+    "#);
+    assert_snapshot!(assert_compiles(r#"test(+"abc")"#),
+        @"[[true, true], [false, false], [true, false], [false, false]]");
+}
+
+#[test]
 fn test_string_append_same_encoding() {
     eval(r#"
         def test(s, x) = s << x

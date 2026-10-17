@@ -674,6 +674,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(jit, asm, function, class, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(jit, asm, function, *val, opnd!(val), *chilled, &function.frame_state(*state)),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, function, opnds!(strings), &function.frame_state(*state)),
+        Insn::StringCoderange { string, cached } => gen_string_coderange(jit, asm, opnd!(string), opnd!(cached)),
         &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
         Insn::StringByteslice { string, beg, len, state } => gen_string_byteslice(asm, opnd!(string), opnd!(beg), opnd!(len), &function.frame_state(*state)),
         Insn::StringSetbyteFixnum { string, index, value } => gen_string_setbyte_fixnum(asm, opnd!(string), opnd!(index), opnd!(value)),
@@ -4305,6 +4306,32 @@ fn get_string_ptr(asm: &mut Assembler, string: Opnd) -> Opnd {
     // (struct RString *)(obj)->as.ary
     let ary = asm.lea(Opnd::mem(VALUE_BITS, string, RUBY_OFFSET_RSTRING_AS_ARY));
     asm.csel_nz(heap_ptr, ary)
+}
+
+fn gen_string_coderange(jit: &mut JITState, asm: &mut Assembler, string: Opnd, cached: Opnd) -> Opnd {
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let result_edge = |coderange| Target::Block(Box::new(lir::BranchEdge {
+        target: result_block,
+        args: vec![coderange],
+    }));
+
+    asm.test(cached, cached);
+    asm.jnz(jit, result_edge(cached));
+
+    // The scanner caches the coderange without allocating or calling Ruby.
+    let scanned = asm_ccall!(asm, rb_enc_str_coderange, string);
+    // The C function returns an int; discard unspecified upper return-register bits.
+    let scanned = asm.and(scanned, Opnd::UImm(RUBY_ENC_CODERANGE_MASK as u64));
+    asm.jmp(result_edge(scanned));
+
+    asm.set_current_block(result_block);
+    let label = jit.get_label(asm, result_block, hir_block_id);
+    asm.write_label(label);
+    let param = asm.new_block_param(VALUE_BITS);
+    asm.current_block().add_parameter(param);
+    param
 }
 
 fn gen_string_getbyte(asm: &mut Assembler, string: Opnd, index: Opnd) -> Opnd {
