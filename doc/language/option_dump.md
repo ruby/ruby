@@ -16,7 +16,7 @@ The supported dump items:
 
     ```sh
     $ ruby --dump=insns t.rb
-    == disasm: #<ISeq:<main>@t.rb:1 (1,0)-(1,10)> (catch: FALSE)
+    == disasm: #<ISeq:<main>@t.rb:1 (1,0)-(1,10)>
     0000 putself                                                          (   1)[Li]
     0001 dupstring                              "Foo"
     0003 opt_send_without_block                 <calldata!mid:puts, argc:1, FCALL|ARGS_SIMPLE>
