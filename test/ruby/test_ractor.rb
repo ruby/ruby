@@ -357,6 +357,25 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_regexp_match_encodings
+    assert_ractor(<<~'RUBY')
+      re = Regexp.new('(?<letter>.)a', Regexp::IGNORECASE)
+      ractors = Array.new(4) do
+        Ractor.new(re) do |re|
+          strings = ["\u3042A", "\u3042A".encode("EUC-JP")]
+          Ractor.receive
+          20.times do
+            strings.each do |str|
+              raise "incorrect capture" unless re.match(str)[:letter] == str[0]
+            end
+          end
+        end
+      end
+      ractors.each {|r| r.send(true)}
+      ractors.each(&:value)
+    RUBY
+  end
+
   def test_sending_hash_with_shared_key
     # A key that was already reached elsewhere in the graph must be complete before the
     # hash inserts it, or it is inserted under the wrong #hash.
