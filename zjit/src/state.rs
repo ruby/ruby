@@ -96,10 +96,12 @@ pub struct ZJITState {
     /// Trampoline to side-exit without restoring PC or the stack
     exit_trampoline: CodePtr,
 
-    /// Trampoline to materialize JIT frames before side-exiting
+    /// Trampoline to increment side_exit_count and materialize JIT frames before side-exiting.
+    /// Side exits from JIT code and function stubs jump here.
     materialize_exit_trampoline: CodePtr,
 
-    /// Trampoline to materialize JIT frames and increment exit_compilation_failure
+    /// Trampoline for function stub exits on compile errors. It increments
+    /// exit_compile_error with --zjit-stats and jumps to materialize_exit_trampoline.
     materialize_exit_trampoline_with_counter: CodePtr,
 
     /// Trampoline to call function_stub_hit
@@ -179,7 +181,6 @@ impl ZJITState {
 
         let entry_trampoline = gen_entry_trampoline(&mut cb).unwrap().raw_ptr(&cb);
         let exit_trampoline = gen_exit_trampoline(&mut cb).unwrap();
-        let materialize_exit_trampoline = gen_materialize_exit_trampoline(&mut cb, exit_trampoline).unwrap();
         let function_stub_hit_trampoline = gen_function_stub_hit_trampoline(&mut cb).unwrap();
 
         let perfetto_tracer = if get_option!(trace_side_exits).is_some() || get_option!(trace_compiles) || get_option!(trace_invalidation) || get_option!(trace_fallbacks) {
@@ -198,8 +199,9 @@ impl ZJITState {
             assert_compiles: false,
             method_annotations,
             exit_trampoline,
-            materialize_exit_trampoline,
-            materialize_exit_trampoline_with_counter: materialize_exit_trampoline,
+            // Set after ZJIT_STATE is initialized since they reference counters in it
+            materialize_exit_trampoline: exit_trampoline,
+            materialize_exit_trampoline_with_counter: exit_trampoline,
             function_stub_hit_trampoline,
             full_frame_cfunc_counter_pointers: HashMap::new(),
             not_annotated_frame_cfunc_counter_pointers: HashMap::new(),
@@ -211,11 +213,13 @@ impl ZJITState {
         };
         unsafe { ZJIT_STATE = Enabled(zjit_state); }
 
-        // With --zjit-stats, use a different trampoline on function stub exits
-        // to count exit_compilation_failure. Note that the trampoline code depends
-        // on the counter, so ZJIT_STATE needs to be initialized first.
-        if get_option!(stats) {
+        // Generate trampolines that increment counters. Note that the trampoline code
+        // depends on the counters, so ZJIT_STATE needs to be initialized first.
+        {
             let cb = ZJITState::get_code_block();
+            let materialize_exit_trampoline = gen_materialize_exit_trampoline(cb, exit_trampoline).unwrap();
+            ZJITState::get_instance().materialize_exit_trampoline = materialize_exit_trampoline;
+
             let code_ptr = gen_materialize_exit_trampoline_with_counter(cb, materialize_exit_trampoline).unwrap();
             ZJITState::get_instance().materialize_exit_trampoline_with_counter = code_ptr;
         }

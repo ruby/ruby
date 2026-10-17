@@ -4021,6 +4021,11 @@ c_callable! {
                 // Preserve the reference owned by the stub when iseq_call is dropped.
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
                 prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, None);
+                // materialize_exit_trampoline counts side_exit_count, so count the reason as well.
+                // Count it in tests as well, like compile_exits() does.
+                if get_option!(stats) || cfg!(test) {
+                    incr_counter!(exit_function_stub_not_profiled);
+                }
                 return ZJITState::get_materialize_exit_trampoline().raw_ptr(cb);
             }
 
@@ -4210,7 +4215,17 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> 
     })
 }
 
+/// Generate code that increments side_exit_count, which is available without --zjit-stats.
+/// Use this only on paths that also increment an exit_* counter with --zjit-stats, so that
+/// side_exit_count stays equal to the sum of exit_* counters.
+fn gen_incr_side_exit_count(asm: &mut Assembler) {
+    asm_comment!(asm, "increment side_exit_count");
+    asm.incr_counter(Opnd::const_ptr(counter_ptr(Counter::side_exit_count)), Opnd::UImm(1));
+}
+
 /// Generate a trampoline that materializes ZJIT frames before unwinding native frames.
+/// All side exits from JIT code and function stubs go through this trampoline, so it
+/// increments side_exit_count, which makes it available without --zjit-stats.
 pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Result<CodePtr, CompileError> {
     unsafe extern "C" {
         fn rb_zjit_materialize_frames(ec: EcPtr, cfp: CfpPtr);
@@ -4218,6 +4233,8 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
 
     let mut asm = Assembler::new();
     asm.new_block_without_id("materialize_exit_trampoline");
+
+    gen_incr_side_exit_count(&mut asm);
 
     asm_comment!(asm, "clear JITFrame materialized by exit code");
     asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
@@ -4237,13 +4254,17 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
     })
 }
 
-/// Generate a trampoline that increments exit_compilation_failure and jumps to materialize_exit_trampoline.
+/// Generate a trampoline for function stub exits on compile errors. It increments
+/// exit_compile_error with --zjit-stats and jumps to materialize_exit_trampoline.
 pub fn gen_materialize_exit_trampoline_with_counter(cb: &mut CodeBlock, materialize_exit_trampoline: CodePtr) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
     asm.new_block_without_id("materialize_exit_trampoline_with_counter");
 
     asm_comment!(asm, "function stub exit trampoline");
-    gen_incr_counter(&mut asm, exit_compile_error);
+    // Count it in tests as well, so that exit counters add up to side_exit_count like compile_exits() does.
+    if get_option!(stats) || cfg!(test) {
+        asm.incr_counter(Opnd::const_ptr(counter_ptr(exit_compile_error)), Opnd::UImm(1));
+    }
     asm.jmp(Target::CodePtr(materialize_exit_trampoline));
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
@@ -4380,6 +4401,8 @@ fn gen_string_append_codepoint(jit: &mut JITState, asm: &mut Assembler, function
 fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
     asm.new_block_without_id("compile_error_counter");
+    // This entry returns to the interpreter without materialize_exit_trampoline
+    gen_incr_side_exit_count(&mut asm);
     gen_incr_counter(&mut asm, exit_compile_error);
     gen_incr_counter(&mut asm, exit_counter_for_compile_error(compile_error));
     asm.cret(Qundef.into());
@@ -4390,10 +4413,15 @@ fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -
     })
 }
 
-/// Generate a JIT entry that just increments exit_exception_handler and exits
+/// Generate a JIT entry that just increments side_exit_count and exit_exception_handler and exits
 fn gen_exception_handler_counter(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
     asm.new_block_without_id("exception_handler_counter");
+    // This entry returns to the interpreter without materialize_exit_trampoline.
+    // Tests allow exception handlers in assert_compiles(), so they don't count this as a side exit.
+    if !cfg!(test) {
+        gen_incr_side_exit_count(&mut asm);
+    }
     gen_incr_counter(&mut asm, Counter::exit_exception_handler);
     asm.cret(Qundef.into());
 
