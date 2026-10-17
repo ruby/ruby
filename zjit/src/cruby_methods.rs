@@ -21,6 +21,16 @@ unsafe extern "C" {
     fn rb_builtin_ary_first(ec: EcPtr, self_: VALUE) -> VALUE;
     fn rb_builtin_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
     fn rb_builtin_bool_negate(ec: EcPtr, self_: VALUE, value: VALUE) -> VALUE;
+    fn rb_builtin_ary_rev_start(ec: EcPtr, self_: VALUE) -> VALUE;
+    fn rb_builtin_fixnum_neg(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
+    fn rb_builtin_ary_rev_next(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
+    fn rb_builtin_range_fixnum_p(ec: EcPtr, self_: VALUE) -> VALUE;
+    fn rb_builtin_range_begin(ec: EcPtr, self_: VALUE) -> VALUE;
+    fn rb_builtin_range_rev_start(ec: EcPtr, self_: VALUE) -> VALUE;
+    fn rb_builtin_fixnum_below(ec: EcPtr, self_: VALUE, num: VALUE, lo: VALUE) -> VALUE;
+    fn rb_builtin_fixnum_dec(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
+    fn rb_builtin_fixnum_above(ec: EcPtr, self_: VALUE, num: VALUE, hi: VALUE) -> VALUE;
+    fn rb_builtin_fixnum_inc_checked(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
 }
 
 pub struct Annotations {
@@ -235,6 +245,11 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "byteslice", inline_string_byteslice);
     annotate!(rb_cString, "setbyte", inline_string_setbyte);
     annotate!(rb_cString, "empty?", inline_string_empty_p, types::BoolExact, no_gc, leaf, elidable);
+    // String#+@ returns self or (when frozen) a mutable dup, both exactly String
+    // under this annotation's exact-receiver guard. Typing it keeps a `+""`
+    // mutable-string accumulator StringExact across loop back-edges, so the
+    // String#<< fast path below needs no per-iteration receiver re-guard.
+    annotate!(rb_cString, "+@", types::StringExact);
     annotate!(rb_cString, "<<", inline_string_append);
     annotate!(rb_cString, "==", inline_string_eq);
     // Not elidable; has a side effect of setting the encoding if ENC_CODERANGE_UNKNOWN.
@@ -251,6 +266,13 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "pop", inline_array_pop);
     annotate!(rb_cHash, "[]", inline_hash_aref);
     annotate!(rb_cHash, "[]=", inline_hash_aset);
+    annotate!(rb_cHash, "key?", inline_hash_key_p);
+    annotate!(rb_cHash, "has_key?", inline_hash_key_p);
+    annotate!(rb_cHash, "include?", inline_hash_key_p);
+    annotate!(rb_cHash, "member?", inline_hash_key_p);
+    annotate!(rb_cHash, "fetch", inline_hash_fetch);
+    annotate!(rb_cHash, "dig", inline_hash_dig);
+    annotate!(rb_cHash, "delete", inline_hash_delete);
     annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
@@ -285,6 +307,11 @@ pub fn init() -> Annotations {
     annotate!(rb_cFloat, "-", inline_float_minus);
     annotate!(rb_cFloat, "*", inline_float_mul);
     annotate!(rb_cFloat, "/", inline_float_div);
+    annotate!(rb_cFloat, "<", inline_float_lt);
+    annotate!(rb_cFloat, "<=", inline_float_le);
+    annotate!(rb_cFloat, ">", inline_float_gt);
+    annotate!(rb_cFloat, ">=", inline_float_ge);
+    annotate!(rb_cFloat, "==", inline_float_eq);
     annotate!(rb_cFloat, "to_i", inline_float_to_i);
     annotate!(rb_cFloat, "to_int", inline_float_to_i);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
@@ -324,6 +351,28 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_builtin_ary_at, inline_ary_at);
     annotate_builtin!(rb_builtin_ary_at_end, inline_ary_at_end, types::BoolExact);
     annotate_builtin!(rb_builtin_ary_first, inline_ary_first);
+    // Array#reverse_each iteration builtins
+    annotate_builtin!(rb_builtin_ary_rev_start, inline_ary_rev_start, types::Fixnum);
+    annotate_builtin!(rb_builtin_fixnum_neg, inline_fixnum_neg, types::BoolExact);
+    builtin_funcs.insert(rb_builtin_ary_rev_next as *mut c_void, FnProperties {
+        no_gc: true, leaf: true, elidable: true, return_type: types::Fixnum, ..Default::default()
+    });
+    // Range#reverse_each iteration builtins. The generic fallback yields and
+    // stays unannotated; dec/below inline with deopts covering the
+    // FIXNUM_MIN and empty-range sentinels.
+    builtin_funcs.insert(rb_builtin_range_fixnum_p as *mut c_void, FnProperties {
+        no_gc: true, leaf: true, elidable: true, return_type: types::BoolExact, ..Default::default()
+    });
+    builtin_funcs.insert(rb_builtin_range_begin as *mut c_void, FnProperties {
+        no_gc: true, leaf: true, elidable: true, ..Default::default()
+    });
+    builtin_funcs.insert(rb_builtin_range_rev_start as *mut c_void, FnProperties {
+        no_gc: true, leaf: true, elidable: true, ..Default::default()
+    });
+    builtin_funcs.insert(rb_builtin_fixnum_below as *mut c_void, FnProperties { inline: inline_fixnum_below, return_type: types::BoolExact, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_fixnum_dec as *mut c_void, FnProperties { inline: inline_fixnum_dec, return_type: types::Fixnum, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_fixnum_above as *mut c_void, FnProperties { inline: inline_fixnum_above, return_type: types::BoolExact, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_fixnum_inc_checked as *mut c_void, FnProperties { inline: inline_fixnum_inc_checked, return_type: types::Fixnum, ..Default::default() });
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
@@ -471,7 +520,7 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let index = fun.push_insn(block, hir::Insn::AdjustBounds { index, length });
             let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
             use crate::hir::SideExitReason;
-            let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state });
+            let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state, recompile: None });
 
             let _ = fun.push_insn(block, hir::Insn::ArrayAset { array: recv, index, val });
             fun.push_insn(block, hir::Insn::WriteBarrier { recv, val });
@@ -516,6 +565,54 @@ fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     }
 }
 
+fn inline_hash_key_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[key] = args else { return None; };
+    // Only optimize exact Hash, not subclasses
+    if fun.likely_a(recv, types::HashExact, state) {
+        let recv = fun.coerce_to(block, recv, types::HashExact, state);
+        Some(fun.push_insn(block, hir::Insn::HashKeyP { hash: recv, key, state }))
+    } else {
+        None
+    }
+}
+
+fn inline_hash_dig(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    // Single-argument `dig(key)` is exactly `hash[key]` (it applies the default),
+    // so reuse HashAref. Nested `dig(a, b, ...)` falls back to the method.
+    let &[key] = args else { return None; };
+    if fun.likely_a(recv, types::HashExact, state) {
+        let recv = fun.coerce_to(block, recv, types::HashExact, state);
+        Some(fun.push_insn(block, hir::Insn::HashAref { hash: recv, key, state }))
+    } else {
+        None
+    }
+}
+
+fn inline_hash_delete(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    // Only `delete(key)`: `delete(key) { ... }` (a block, which the caller only
+    // inlines when absent) falls back to the method for its miss-block semantics.
+    let &[key] = args else { return None; };
+    if fun.likely_a(recv, types::HashExact, state) {
+        let recv = fun.coerce_to(block, recv, types::HashExact, state);
+        Some(fun.push_insn(block, hir::Insn::HashDelete { hash: recv, key, state }))
+    } else {
+        None
+    }
+}
+
+fn inline_hash_fetch(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    // Only `fetch(key)`: `fetch(key, default)` (2 args) and `fetch(key) { ... }`
+    // (a block, which the caller only inlines when absent) fall back to the method.
+    let &[key] = args else { return None; };
+    // Only optimize exact Hash, not subclasses
+    if fun.likely_a(recv, types::HashExact, state) {
+        let recv = fun.coerce_to(block, recv, types::HashExact, state);
+        Some(fun.push_insn(block, hir::Insn::HashFetch { hash: recv, key, state }))
+    } else {
+        None
+    }
+}
+
 fn inline_hash_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[key, val] = args else { return None; };
 
@@ -538,6 +635,7 @@ fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hi
         let result = fun.push_insn(block, hir::Insn::BoxFixnum {
             val: len,
             state,
+            checked: true,
         });
 
         return Some(result);
@@ -561,7 +659,7 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let unboxed_index = fun.push_insn(block, hir::Insn::AdjustBounds { index: unboxed_index, length: len });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
         use crate::hir::SideExitReason;
-        let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state });
+        let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state, recompile: None });
         let result = fun.push_insn(block, hir::Insn::StringGetbyte { string: recv, index: unboxed_index });
         return Some(result);
     }
@@ -591,7 +689,7 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let unboxed_index = fun.push_insn(block, hir::Insn::AdjustBounds { index: unboxed_index, length: len });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
         use crate::hir::SideExitReason;
-        let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state });
+        let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state, recompile: None });
         // We know that all String are HeapObject, so no need to insert a GuardType(HeapObject).
         fun.guard_not_frozen(block, recv, state);
         let _ = fun.push_insn(block, hir::Insn::StringSetbyteFixnum { string: recv, index, value });
@@ -622,7 +720,14 @@ fn guard_string_coderange(fun: &mut hir::Function, block: hir::BlockId, args: &[
     let mask = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CUInt64(RUBY_ENC_CODERANGE_MASK.into()) });
     let cr = fun.push_insn(block, hir::Insn::IntAnd { left: flags, right: mask });
     let min_known = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(RUBY_ENC_CODERANGE_7BIT.into()) });
-    Some(fun.push_insn(block, hir::Insn::GuardGreaterEq { left: cr, right: min_known, reason: Box::new(SideExitReason::GuardGreaterEq), state }))
+    if fun.avoids_side_exits() {
+        // Final version: scan-and-cache instead of exiting on strings whose
+        // coderange hasn't been computed yet (fresh regexp captures etc.).
+        return Some(fun.push_insn(block, hir::Insn::StringCoderangeScan { string: recv }));
+    }
+    // A string whose coderange isn't computed yet is legal input (fresh regexp
+    // captures, for one), so recompile out of the guard rather than exit forever.
+    Some(fun.push_insn(block, hir::Insn::GuardGreaterEq { left: cr, right: min_known, reason: Box::new(SideExitReason::StringCoderangeUnknown), state, recompile: Some(hir::Recompile) }))
 }
 
 // Inlines String#ascii_only? (rb_str_is_ascii_only_p): coderange == 7BIT.
@@ -691,7 +796,7 @@ fn inline_array_length(fun: &mut hir::Function, block: hir::BlockId, recv: hir::
     if fun.likely_a(recv, types::Array, state) {
         let recv = fun.coerce_to(block, recv, types::Array, state);
         let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
-        let result = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state });
+        let result = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state, checked: true });
         return Some(result);
     }
     None
@@ -732,21 +837,43 @@ fn inline_integer_xor(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
     None
 }
 
+/// Lower an operand to a raw double ([`types::CDouble`]) for float arithmetic:
+/// UnboxFlonum a flonum, or F64FromFixnum a fixnum.
+fn unbox_operand_to_f64(fun: &mut hir::Function, block: hir::BlockId, val: hir::InsnId, is_flonum: bool, state: hir::InsnId) -> hir::InsnId {
+    // Guard with recompile (like coerce_float_op_operand) so a site that later
+    // sees heap Floats recompiles to the generic path instead of exiting forever.
+    if is_flonum {
+        let val = coerce_float_op_operand(fun, block, val, types::Flonum, state);
+        fun.push_insn(block, hir::Insn::UnboxFlonum { val })
+    } else {
+        let val = coerce_float_op_operand(fun, block, val, types::Fixnum, state);
+        fun.push_insn(block, hir::Insn::F64FromFixnum { val })
+    }
+}
+
 fn try_inline_float_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
     if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, FLOAT_REDEFINED_OP_FLAG) } {
         return None;
     }
-    // Receiver must be Flonum (cheap tag check: (val & 3) == 2).
-    // The other operand can be Flonum or Fixnum since rb_float_plus/minus/mul/div
-    // handle both via fast paths (FIXNUM_P check + cast to double).
+    // The result box side-exits on a non-flonum double. The final version
+    // cannot recompile out of that, so it calls the generic method instead.
+    if fun.avoids_side_exits() {
+        return None;
+    }
+    // Receiver must be Flonum (cheap tag check: (val & 3) == 2); the other operand
+    // may be Flonum or Fixnum. The op runs on raw doubles: unbox/convert each
+    // operand (f builds the FloatX on the doubles), then box the result. A
+    // UnboxFlonum(BoxFlonum(x)) peephole later cancels the box/unbox at the
+    // boundary between chained float ops, keeping intermediates unboxed.
     // HeapFloat falls back to CCallWithFrame via the default Send path.
     if fun.likely_a(recv, types::Flonum, state)
         && (fun.likely_a(other, types::Flonum, state) || fun.likely_a(other, types::Fixnum, state))
     {
-        let recv = coerce_float_op_operand(fun, block, recv, types::Flonum, state);
-        let other_type = if fun.likely_a(other, types::Flonum, state) { types::Flonum } else { types::Fixnum };
-        let other = coerce_float_op_operand(fun, block, other, other_type, state);
-        return Some(fun.push_insn(block, f(recv, other)));
+        let recv_d = unbox_operand_to_f64(fun, block, recv, true, state);
+        let other_flonum = fun.likely_a(other, types::Flonum, state);
+        let other_d = unbox_operand_to_f64(fun, block, other, other_flonum, state);
+        let result_d = fun.push_insn(block, f(recv_d, other_d));
+        return Some(fun.push_insn(block, hir::Insn::BoxFlonum { val: result_d, state }));
     }
     None
 }
@@ -779,6 +906,47 @@ fn inline_float_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatDiv { recv, other, state }, BOP_DIV, recv, other, state)
 }
 
+fn try_inline_float_cmp(fun: &mut hir::Function, block: hir::BlockId, op: hir::FloatCmpOp, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, FLOAT_REDEFINED_OP_FLAG) } {
+        return None;
+    }
+    // Both operands must be Flonum: rb_zjit_flo_* reads a double from each. A
+    // Fixnum/Bignum argument needs coercion or exact comparison, so it falls back
+    // to the generic (frame-pushing) cfunc via the default Send path. HeapFloat
+    // likewise falls back.
+    if fun.likely_a(recv, types::Flonum, state) && fun.likely_a(other, types::Flonum, state) {
+        let recv = fun.coerce_to(block, recv, types::Flonum, state);
+        let other = fun.coerce_to(block, other, types::Flonum, state);
+        return Some(fun.push_insn(block, hir::Insn::FloatCmp { op, recv, other, state }));
+    }
+    None
+}
+
+fn inline_float_lt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_cmp(fun, block, hir::FloatCmpOp::Lt, BOP_LT, recv, other, state)
+}
+
+fn inline_float_le(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_cmp(fun, block, hir::FloatCmpOp::Le, BOP_LE, recv, other, state)
+}
+
+fn inline_float_gt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_cmp(fun, block, hir::FloatCmpOp::Gt, BOP_GT, recv, other, state)
+}
+
+fn inline_float_ge(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_cmp(fun, block, hir::FloatCmpOp::Ge, BOP_GE, recv, other, state)
+}
+
+fn inline_float_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_cmp(fun, block, hir::FloatCmpOp::Eq, BOP_EQ, recv, other, state)
+}
+
 fn inline_float_to_i(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     if fun.likely_a(recv, types::Flonum, state) {
@@ -806,24 +974,59 @@ fn inline_integer_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumEq { left, right }, BOP_EQ, recv, other, state)
 }
 
+/// `Fixnum <op> Flonum`: `Integer#+/-/*//` with a flonum argument converts the
+/// receiver to a double (see rb_int_plus/mul/... for a Float `y`), so open-code
+/// it as the matching FloatX op -- the codegen converts the fixnum receiver and
+/// unboxes the flonum. Guarded by the Integer#op MethodRedefined patch point and
+/// runtime type checks (fixnum receiver, flonum argument); otherwise the caller
+/// falls back to a Send.
+fn try_inline_fixnum_float_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
+        return None;
+    }
+    // See try_inline_float_op: the final version takes the generic path.
+    if fun.avoids_side_exits() {
+        return None;
+    }
+    if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(other, types::Flonum, state) {
+        let recv_d = unbox_operand_to_f64(fun, block, recv, false, state);
+        let other_d = unbox_operand_to_f64(fun, block, other, true, state);
+        let result_d = fun.push_insn(block, f(recv_d, other_d));
+        return Some(fun.push_insn(block, hir::Insn::BoxFlonum { val: result_d, state }));
+    }
+    None
+}
+
 fn inline_integer_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumAdd { left, right, state }, BOP_PLUS, recv, other, state)
+    if let Some(id) = try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumAdd { left, right, state }, BOP_PLUS, recv, other, state) {
+        return Some(id);
+    }
+    try_inline_fixnum_float_op(fun, block, &|recv, other| hir::Insn::FloatAdd { recv, other, state }, BOP_PLUS, recv, other, state)
 }
 
 fn inline_integer_minus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumSub { left, right, state }, BOP_MINUS, recv, other, state)
+    if let Some(id) = try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumSub { left, right, state }, BOP_MINUS, recv, other, state) {
+        return Some(id);
+    }
+    try_inline_fixnum_float_op(fun, block, &|recv, other| hir::Insn::FloatSub { recv, other, state }, BOP_MINUS, recv, other, state)
 }
 
 fn inline_integer_mult(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumMult { left, right, state }, BOP_MULT, recv, other, state)
+    if let Some(id) = try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumMult { left, right, state }, BOP_MULT, recv, other, state) {
+        return Some(id);
+    }
+    try_inline_fixnum_float_op(fun, block, &|recv, other| hir::Insn::FloatMul { recv, other, state }, BOP_MULT, recv, other, state)
 }
 
 fn inline_integer_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumDiv { left, right, state }, BOP_DIV, recv, other, state)
+    if let Some(id) = try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumDiv { left, right, state }, BOP_DIV, recv, other, state) {
+        return Some(id);
+    }
+    try_inline_fixnum_float_op(fun, block, &|recv, other| hir::Insn::FloatDiv { recv, other, state }, BOP_DIV, recv, other, state)
 }
 
 fn inline_integer_mod(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
@@ -1217,11 +1420,73 @@ fn inline_ary_at(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnI
 
 /// Inline `ary_at_end(ec, self, index)` implies index >= ArrayLength(self).
 /// Called from Array#each etc. where self is Array and index is Fixnum.
+/// Inline `ary_rev_start(ec, self)`: boxed length - 1.
+fn inline_ary_rev_start(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[recv] = args else { return None; };
+    let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
+    let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
+    let length = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state, checked: true });
+    let one = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
+    let result = fun.push_insn(block, hir::Insn::FixnumSub { left: length, right: one, state });
+    Some(result)
+}
+
+/// Inline `fixnum_neg(ec, self, num)`: num < 0.
+fn inline_fixnum_neg(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[_self, num] = args else { return None; };
+    let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(0)) });
+    let result = fun.push_insn(block, hir::Insn::FixnumLt { left: num, right: zero });
+    Some(result)
+}
+
+/// Inline `fixnum_below(ec, self, num, lo)` as a guarded fixnum compare: the
+/// non-fixnum sentinels (empty-range nil, FIXNUM_MIN decrement) fail the
+/// guard and resume in the interpreter, whose C primitive returns true.
+fn inline_fixnum_below(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[_self, num, lo] = args else { return None; };
+    let num = fun.push_insn(block, hir::Insn::GuardType { val: num, guard_type: types::Fixnum, state, recompile: None });
+    let lo = fun.push_insn(block, hir::Insn::GuardType { val: lo, guard_type: types::Fixnum, state, recompile: None });
+    let result = fun.push_insn(block, hir::Insn::FixnumLt { left: num, right: lo });
+    Some(result)
+}
+
+/// Inline `fixnum_dec(ec, self, num)` as an overflow-checked subtract: the
+/// FIXNUM_MIN edge overflows, deopts, and the interpreter's C primitive
+/// produces the nil sentinel.
+fn inline_fixnum_dec(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[_self, num] = args else { return None; };
+    let num = fun.push_insn(block, hir::Insn::GuardType { val: num, guard_type: types::Fixnum, state, recompile: None });
+    let one = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
+    let result = fun.push_insn(block, hir::Insn::FixnumSub { left: num, right: one, state });
+    Some(result)
+}
+
+/// Inline `fixnum_above(ec, self, num, hi)` as a guarded fixnum compare;
+/// the non-fixnum sentinels fail the guard and resume in the interpreter.
+fn inline_fixnum_above(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[_self, num, hi] = args else { return None; };
+    let num = fun.push_insn(block, hir::Insn::GuardType { val: num, guard_type: types::Fixnum, state, recompile: None });
+    let hi = fun.push_insn(block, hir::Insn::GuardType { val: hi, guard_type: types::Fixnum, state, recompile: None });
+    let result = fun.push_insn(block, hir::Insn::FixnumGt { left: num, right: hi });
+    Some(result)
+}
+
+/// Inline `fixnum_inc_checked(ec, self, num)` as an overflow-checked add: the
+/// FIXNUM_MAX edge overflows, deopts, and the interpreter's C primitive
+/// produces the nil sentinel.
+fn inline_fixnum_inc_checked(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[_self, num] = args else { return None; };
+    let num = fun.push_insn(block, hir::Insn::GuardType { val: num, guard_type: types::Fixnum, state, recompile: None });
+    let one = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
+    let result = fun.push_insn(block, hir::Insn::FixnumAdd { left: num, right: one, state });
+    Some(result)
+}
+
 fn inline_ary_at_end(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[recv, index] = args else { return None; };
     let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
     let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
-    let length = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state });
+    let length = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state, checked: true });
     let result = fun.push_insn(block, hir::Insn::FixnumGe { left: index, right: length });
     Some(result)
 }

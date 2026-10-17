@@ -367,6 +367,23 @@ pub fn csel(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd, cond: u8)
     cb.write_bytes(&bytes);
 }
 
+/// CSINC - rd = cond ? rn : rm + 1 (64-bit). With rn = rm = xzr and the
+/// inverted condition this is `cset rd, cond`.
+pub fn csinc(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd, cond: u8) {
+    match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(rd.num_bits == 64, "csinc destination must be a 64-bit register");
+            let insn: u32 = 0x9A80_0400
+                | ((rm.reg_no as u32) << 16)
+                | ((cond as u32) << 12)
+                | ((rn.reg_no as u32) << 5)
+                | (rd.reg_no as u32);
+            cb.write_bytes(&insn.to_le_bytes());
+        },
+        _ => panic!("Invalid operand combination to csinc instruction."),
+    }
+}
+
 /// EOR - perform a bitwise XOR of rn and rm, put the result in rd, don't update flags
 pub fn eor(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
@@ -791,6 +808,39 @@ pub fn mul(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     };
 
     cb.write_bytes(&bytes);
+}
+
+/// SDIV - signed divide rn by rm, truncated quotient into rd (64-bit only).
+/// Division by zero yields 0 in hardware, but callers guard it beforehand.
+pub fn sdiv(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+    match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(rd.num_bits == 64 && rn.num_bits == 64 && rm.num_bits == 64, "sdiv operands must be 64-bit registers");
+            let insn: u32 = 0x9AC0_0C00
+                | ((rm.reg_no as u32) << 16)
+                | ((rn.reg_no as u32) << 5)
+                | (rd.reg_no as u32);
+            cb.write_bytes(&insn.to_le_bytes());
+        },
+        _ => panic!("Invalid operand combination to sdiv instruction"),
+    }
+}
+
+/// MSUB - rd = ra - rn * rm (64-bit). With the quotient in rn this is the
+/// standard remainder idiom after sdiv.
+pub fn msub(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd, ra: A64Opnd) {
+    match (rd, rn, rm, ra) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm), A64Opnd::Reg(ra)) => {
+            assert!(rd.num_bits == 64 && rn.num_bits == 64 && rm.num_bits == 64 && ra.num_bits == 64, "msub operands must be 64-bit registers");
+            let insn: u32 = 0x9B00_8000
+                | ((rm.reg_no as u32) << 16)
+                | ((ra.reg_no as u32) << 10)
+                | ((rn.reg_no as u32) << 5)
+                | (rd.reg_no as u32);
+            cb.write_bytes(&insn.to_le_bytes());
+        },
+        _ => panic!("Invalid operand combination to msub instruction"),
+    }
 }
 
 /// SMULH - multiply two 64-bit registers to produce a 128-bit result, put the high 64-bits of the result into rd
@@ -1236,6 +1286,80 @@ fn cbz_cbnz(num_bits: u8, op: bool, offset: InstructionOffset, rt: u8) -> [u8; 4
           u32::from(op) << 24 |
           truncate_imm::<_, 19>(offset) << 5 |
           rt as u32).to_le_bytes()
+}
+
+// -- Scalar floating-point (double) support ------------------------------------
+//
+// ZJIT open-codes flonum arithmetic by moving a flonum's raw double bits into a
+// SIMD&FP register, doing the op, and moving the result bits back. Only a handful
+// of scalar-double instructions are needed. These take raw register numbers
+// (0-31) rather than A64Opnd because ZJIT has no FP register operand type; the
+// backend uses fixed scratch FP registers (D0/D1) for these short sequences.
+
+/// FMOV (general, X -> D): copy the 64 raw bits of GPR Xn into double reg Dd.
+pub fn fmov_gpr_to_reg(cb: &mut CodeBlock, dd: u8, xn: u8) {
+    let insn: u32 = 0x9E67_0000 | ((xn as u32) << 5) | (dd as u32);
+    cb.write_bytes(&insn.to_le_bytes());
+}
+
+/// FMOV (general, D -> X): copy the 64 raw bits of double reg Dn into GPR Xd.
+pub fn fmov_reg_to_gpr(cb: &mut CodeBlock, xd: u8, dn: u8) {
+    let insn: u32 = 0x9E66_0000 | ((dn as u32) << 5) | (xd as u32);
+    cb.write_bytes(&insn.to_le_bytes());
+}
+
+/// Encoder for scalar-double floating-point data-processing (2 source):
+/// `base | Dm<<16 | Dn<<5 | Dd`.
+fn fp_data_proc2(base: u32, dd: u8, dn: u8, dm: u8) -> [u8; 4] {
+    (base | ((dm as u32) << 16) | ((dn as u32) << 5) | (dd as u32)).to_le_bytes()
+}
+
+/// FADD (scalar, double): Dd = Dn + Dm.
+pub fn fadd(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
+    cb.write_bytes(&fp_data_proc2(0x1E60_2800, dd, dn, dm));
+}
+
+/// FSUB (scalar, double): Dd = Dn - Dm.
+pub fn fsub(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
+    cb.write_bytes(&fp_data_proc2(0x1E60_3800, dd, dn, dm));
+}
+
+/// FMUL (scalar, double): Dd = Dn * Dm.
+pub fn fmul(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
+    cb.write_bytes(&fp_data_proc2(0x1E60_0800, dd, dn, dm));
+}
+
+/// FDIV (scalar, double): Dd = Dn / Dm.
+pub fn fdiv(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
+    cb.write_bytes(&fp_data_proc2(0x1E60_1800, dd, dn, dm));
+}
+
+/// LDR (register, 64-bit, scaled): Xt = [Xn + Xm << 3].
+/// size=11 V=0 opc=01, option=011 (LSL), S=1.
+pub fn ldr_scaled(cb: &mut CodeBlock, xt: u8, xn: u8, xm: u8) {
+    cb.write_bytes(&(0xF860_7800u32 | ((xm as u32) << 16) | ((xn as u32) << 5) | (xt as u32)).to_le_bytes());
+}
+
+/// FMINNM (scalar, double): Dd = minNum(Dn, Dm).
+pub fn fminnm(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
+    cb.write_bytes(&fp_data_proc2(0x1E60_7800, dd, dn, dm));
+}
+
+/// FMAXNM (scalar, double): Dd = maxNum(Dn, Dm).
+pub fn fmaxnm(cb: &mut CodeBlock, dd: u8, dn: u8, dm: u8) {
+    cb.write_bytes(&fp_data_proc2(0x1E60_6800, dd, dn, dm));
+}
+
+/// FSQRT (scalar, double): Dd = sqrt(Dn).
+pub fn fsqrt(cb: &mut CodeBlock, dd: u8, dn: u8) {
+    cb.write_bytes(&(0x1E61_C000u32 | ((dn as u32) << 5) | (dd as u32)).to_le_bytes());
+}
+
+/// SCVTF (scalar, signed 64-bit int -> double): Dd = (double)Xn.
+/// sf=1, type=01 (double), rmode=00, opcode=010.
+pub fn scvtf(cb: &mut CodeBlock, dd: u8, xn: u8) {
+    let insn: u32 = 0x9E62_0000 | ((xn as u32) << 5) | (dd as u32);
+    cb.write_bytes(&insn.to_le_bytes());
 }
 
 #[cfg(test)]

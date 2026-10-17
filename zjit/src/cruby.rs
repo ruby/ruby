@@ -131,6 +131,20 @@ unsafe extern "C" {
     pub fn rb_float_new(d: f64) -> VALUE;
 
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
+    pub fn rb_hash_size(hash: VALUE) -> VALUE;
+    pub fn rb_zjit_str_coderange(str: VALUE) -> u64;
+    pub fn rb_zjit_proc_iseq_captured(procv: VALUE) -> *const rb_captured_block;
+    pub fn rb_zjit_yield_symbol1(symbol: VALUE, recv: VALUE) -> VALUE;
+    pub fn rb_zjit_box_enabled() -> bool;
+    pub fn rb_zjit_iseq_exception_entry_count(iseq: IseqPtr) -> u32;
+    pub fn rb_zjit_iseq_exception_entry(
+        iseq: IseqPtr,
+        index: u32,
+        catch_type: *mut rb_catch_type,
+        cont: *mut u32,
+        stack_size: *mut u32,
+    ) -> bool;
+    pub fn rb_hash_lookup2(hash: VALUE, key: VALUE, def: VALUE) -> VALUE;
     pub fn rb_ary_new_from_args(n: c_long, ...) -> VALUE;
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_str_getbyte(str: VALUE, index: VALUE) -> VALUE;
@@ -204,7 +218,6 @@ pub use rb_vm_ci_mid as vm_ci_mid;
 pub use rb_vm_ci_flag as vm_ci_flag;
 pub use rb_METHOD_ENTRY_VISI as METHOD_ENTRY_VISI;
 pub use rb_RCLASS_ORIGIN as RCLASS_ORIGIN;
-pub use rb_jit_fix_mod_fix as rb_fix_mod_fix;
 
 /// A YARV instruction opcode (`ruby_vminsn_type`), stored as a `u16` since there are only
 /// `VM_INSTRUCTION_SIZE` (~259) instructions. Keeps enums that embed an opcode (e.g.
@@ -1294,7 +1307,7 @@ pub mod test_utils {
             rb_zjit_prepare_options(); // enable `#with_jit` on builtins
             ruby_init();
 
-            // The default rb_zjit_profile_threshold is too high, so lower it for HIR tests.
+            // The default call threshold is too high, so lower it for HIR tests.
             if rb_zjit_call_threshold == DEFAULT_CALL_THRESHOLD {
                 set_call_threshold(2);
             }

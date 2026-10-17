@@ -31,6 +31,7 @@
 #include "internal/range.h"
 #include "shape.h"
 #include "zjit.h"
+#include "vm_core.h"
 
 VALUE rb_cRange;
 static ID id_beg, id_end, id_excl;
@@ -1120,6 +1121,35 @@ range_each_fixnum_loop(VALUE beg, VALUE end, VALUE range)
     return range;
 }
 
+// Loop condition for the with_jit Ruby Range#each: true when the index has
+// passed the (inclusive) limit or stopped being a fixnum (the empty-range
+// nil limit sentinel, or the FIXNUM_MAX increment sentinel).
+VALUE
+rb_builtin_fixnum_above(rb_execution_context_t *ec, VALUE self, VALUE num, VALUE hi)
+{
+    if (!FIXNUM_P(num) || !FIXNUM_P(hi)) return Qtrue;
+    return FIX2LONG(num) > FIX2LONG(hi) ? Qtrue : Qfalse;
+}
+
+// Increment a fixnum by 1; FIXNUM_MAX increments to the nil sentinel.
+VALUE
+rb_builtin_fixnum_inc_checked(rb_execution_context_t *ec, VALUE self, VALUE num)
+{
+    if (num == LONG2FIX(FIXNUM_MAX)) return Qnil;
+    return LONG2FIX(FIX2LONG(num) + 1);
+}
+
+static VALUE range_each(VALUE range);
+
+// Everything the fixnum fast path declines (endless, bignum, string/succ
+// iteration, the beginless TypeError): the original C implementation handles
+// it all, and its rb_yield resolves the Ruby caller's block.
+VALUE
+rb_builtin_range_each_fallback(rb_execution_context_t *ec, VALUE self)
+{
+    return range_each(self);
+}
+
 /*
  *  call-seq:
  *    each {|element| ... } -> self
@@ -1330,6 +1360,92 @@ range_reverse_each_negative_bignum_section(VALUE beg, VALUE end)
  *  With no block given, returns an enumerator.
  *
  */
+
+// Builtin primitives for the with_jit Ruby Range#reverse_each. They are
+// redefinition-immune pieces of the fixnum fast path; everything else
+// (bignum/beginless bounds, non-integers, endless TypeError) funnels into
+// the generic fallback, which replicates the C branches below.
+
+// True when both bounds are fixnums (the fast path).
+VALUE
+rb_builtin_range_fixnum_p(rb_execution_context_t *ec, VALUE self)
+{
+    return FIXNUM_P(RANGE_BEG(self)) && FIXNUM_P(RANGE_END(self)) ? Qtrue : Qfalse;
+}
+
+// The range's begin, known fixnum on the fast path.
+VALUE
+rb_builtin_range_begin(rb_execution_context_t *ec, VALUE self)
+{
+    return RANGE_BEG(self);
+}
+
+// Reverse-iteration start: end, minus one when exclusive. The exclusive
+// FIXNUM_MIN edge cannot represent end - 1; return nil, which the loop
+// condition treats as exhausted (the range is empty there).
+VALUE
+rb_builtin_range_rev_start(rb_execution_context_t *ec, VALUE self)
+{
+    VALUE end = RANGE_END(self);
+    if (EXCL(self)) {
+        if (end == LONG2FIX(FIXNUM_MIN)) return Qnil;
+        end = LONG2FIX(FIX2LONG(end) - 1);
+    }
+    return end;
+}
+
+// Loop condition: true when the index has passed begin (or stopped being a
+// fixnum: the empty-range nil start, or the FIXNUM_MIN decrement sentinel).
+VALUE
+rb_builtin_fixnum_below(rb_execution_context_t *ec, VALUE self, VALUE num, VALUE lo)
+{
+    if (!FIXNUM_P(num)) return Qtrue;
+    return FIX2LONG(num) < FIX2LONG(lo) ? Qtrue : Qfalse;
+}
+
+// Decrement a fixnum by 1; FIXNUM_MIN decrements to the nil sentinel.
+VALUE
+rb_builtin_fixnum_dec(rb_execution_context_t *ec, VALUE self, VALUE num)
+{
+    if (num == LONG2FIX(FIXNUM_MIN)) return Qnil;
+    return LONG2FIX(FIX2LONG(num) - 1);
+}
+
+// True when the generic integer path applies: integer-family bounds beyond
+// the fixnum fast path, or an endless range (whose TypeError the generic
+// path raises). Anything else goes to super in Ruby.
+VALUE
+rb_builtin_range_generic_p(rb_execution_context_t *ec, VALUE self)
+{
+    VALUE beg = RANGE_BEG(self);
+    VALUE end = RANGE_END(self);
+    if (NIL_P(end)) return Qtrue;
+    return (NIL_P(beg) || RB_INTEGER_TYPE_P(beg)) && RB_INTEGER_TYPE_P(end) ? Qtrue : Qfalse;
+}
+
+// The integer branches the fast path declines, replicating
+// range_reverse_each bit for bit (including the endless TypeError).
+VALUE
+rb_builtin_range_reverse_each_generic(rb_execution_context_t *ec, VALUE self)
+{
+    VALUE beg = RANGE_BEG(self);
+    VALUE end = RANGE_END(self);
+    int excl = EXCL(self);
+
+    if (NIL_P(end)) {
+        rb_raise(rb_eTypeError, "can't iterate from %s",
+                 rb_obj_classname(end));
+    }
+
+    if (excl) {
+        end = rb_int_minus(end, INT2FIX(1));
+    }
+    range_reverse_each_positive_bignum_section(beg, end);
+    range_reverse_each_fixnum_section(beg, end);
+    range_reverse_each_negative_bignum_section(beg, end);
+
+    return self;
+}
 
 static VALUE
 range_reverse_each(VALUE range)
@@ -3004,3 +3120,5 @@ Init_Range(void)
     rb_define_method(rb_cRange, "overlap?", range_overlap, 1);
     rb_define_method(rb_cRange, "clamp", range_clamp, -1);
 }
+
+#include "range.rbinc"

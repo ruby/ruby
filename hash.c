@@ -1798,6 +1798,20 @@ rb_hash_modify_check(VALUE hash)
     rb_check_frozen(hash);
 }
 
+// Slow-path fallback for ZJIT's inline Hash#delete: blockless Hash#delete
+// (rb_hash_delete_m). rb_hash_delete neither raises on a frozen hash nor
+// compacts an st_table after a removal, so mirror the method instead.
+// Used for st_tables, a changed bound, and frozen hashes.
+VALUE
+rb_zjit_hash_delete_checked(VALUE hash, VALUE key)
+{
+    rb_hash_modify_check(hash);
+    VALUE val = rb_hash_delete_entry(hash, key);
+    if (UNDEF_P(val)) return Qnil;
+    compact_after_delete(hash);
+    return val;
+}
+
 struct st_table *
 rb_hash_tbl_raw(VALUE hash)
 {

@@ -18,7 +18,8 @@ typedef struct zjit_jit_frame {
     // NULL for C frames (they don't have a Ruby PC).
     const VALUE *pc;
     // The ISEQ this frame belongs to. Marked via rb_execution_context_mark_ctx.
-    // NULL for C frames.
+    // NULL for C frames and side-exit descriptors whose shared epilogue
+    // publishes cfp->_iseq before materialization.
     const rb_iseq_t *iseq;
     // Whether to materialize block_code when this frame is materialized.
     // True when the ISEQ doesn't contain send/invokesuper/invokeblock
@@ -110,7 +111,12 @@ extern void *rb_zjit_entry;
 extern bool rb_zjit_compiling_p;
 extern const zjit_jit_frame_t rb_zjit_c_frame;
 extern unsigned int rb_zjit_call_threshold;
-extern unsigned int rb_zjit_profile_threshold;
+extern unsigned int rb_zjit_call_threshold_large;
+extern unsigned int rb_zjit_eval_call_threshold;
+bool rb_zjit_iseq_eval_rooted(const rb_iseq_t *iseq);
+uint64_t rb_zjit_iseq_compile_threshold(const rb_iseq_t *iseq);
+uint64_t rb_zjit_iseq_profile_threshold(const rb_iseq_t *iseq);
+extern unsigned int rb_zjit_num_profiles;
 extern uint64_t rb_zjit_max_compile_time_ns;
 extern uint64_t rb_zjit_total_compile_time_ns;
 void rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception);
@@ -215,7 +221,13 @@ static inline const rb_iseq_t*
 CFP_ISEQ(const rb_control_frame_t *cfp)
 {
     if (CFP_ZJIT_FRAME_P(cfp)) {
-        return CFP_ZJIT_FRAME(cfp)->iseq;
+        const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
+        // A side-exit descriptor has a PC but no ISEQ: the exit published
+        // cfp->_iseq before installing it, so fall through to that slot.
+        // C frames have neither.
+        if (jit_frame->iseq || !jit_frame->pc) {
+            return jit_frame->iseq;
+        }
     }
     return cfp->_iseq;
 }

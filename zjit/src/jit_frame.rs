@@ -73,14 +73,15 @@ impl JITFrameAllocator {
 }
 
 impl JITFrame {
-    /// Allocate a JITFrame and its trailing stack map on the heap, register it
-    /// with ZJITState, and return a raw pointer that remains valid for the
-    /// lifetime of the process.
+    /// Allocate a JITFrame and its trailing stack map on the heap, optionally
+    /// register it with ZJITState, and return a raw pointer that remains valid
+    /// for the lifetime of the process.
     fn alloc(
         pc: *const VALUE,
         iseq: IseqPtr,
         materialize_block_code: bool,
         stack_size: usize,
+        register_with_gc: bool,
     ) -> *const Self {
         // JITFrame ends with a flexible stack[] array, so allocate enough
         // space for the fixed fields plus the requested stack map entries.
@@ -111,14 +112,30 @@ impl JITFrame {
                 stack: __IncompleteArrayField::new(),
             });
         }
-        ZJITState::get_jit_frames().push(raw_ptr);
+        if register_with_gc {
+            ZJITState::get_jit_frames().push(raw_ptr);
+        }
         raw_ptr as *const _
     }
 
     /// Create a JITFrame for an ISEQ frame.
     pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr, stack_size: usize) -> *const Self {
         let materialize_block_code = !iseq_may_write_block_code(iseq);
-        Self::alloc(pc, iseq, materialize_block_code, stack_size)
+        Self::alloc(pc, iseq, materialize_block_code, stack_size, true)
+    }
+
+    /// Create a pointer-free JITFrame descriptor for a side exit.
+    ///
+    /// The shared descriptor epilogue copies the ISEQ from the active JITFrame
+    /// before replacing it, so this descriptor deliberately stores a null ISEQ
+    /// and does not need registration in ZJIT's GC root list.
+    pub fn new_side_exit_descriptor(
+        pc: *const VALUE,
+        iseq: IseqPtr,
+        stack_size: usize,
+    ) -> *const Self {
+        let materialize_block_code = !iseq_may_write_block_code(iseq);
+        Self::alloc(pc, std::ptr::null(), materialize_block_code, stack_size, false)
     }
 
     /// Mark the iseq pointer for GC. Called from rb_zjit_root_mark.

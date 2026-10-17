@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use std::mem;
 
 use crate::asm::*;
@@ -111,6 +112,100 @@ const SCRATCH1_OPND: Opnd = Opnd::Reg(R10_REG);
 /// Must not overlap with ALLOC_REGS or other preserved registers.
 pub const SCRATCH_REG: Reg = R11_REG;
 
+/// Dedicated target register for indirect calls with arguments. It must not
+/// overlap the allocator, argument registers, or [`SCRATCH_REG`], since call
+/// argument parallel moves use the latter to break cycles.
+pub const CALL_TARGET_REG: Reg = R10_REG;
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+struct LiteralPoolKey {
+    bits: u64,
+    gc_managed: bool,
+}
+
+impl LiteralPoolKey {
+    fn gc_value(value: VALUE) -> Self {
+        debug_assert!(value.heap_object_p());
+        Self { bits: value.as_u64(), gc_managed: true }
+    }
+
+    fn immediate(bits: u64) -> Self {
+        Self { bits, gc_managed: false }
+    }
+}
+
+/// Whether `mov` needs its ten-byte r64/imm64 encoding for these bits.
+fn mov_uses_imm64(bits: u64) -> bool {
+    let signed = bits as i64;
+    u32::try_from(signed).is_err() && imm_num_bits(signed) > 32
+}
+
+struct LiteralPoolEntry {
+    key: LiteralPoolKey,
+    label: Label,
+}
+
+/// Per-compilation x86-64 pool for repeated constants that would otherwise use
+/// a ten-byte movabs. RIP-relative loads have a two-GiB reach, which is larger
+/// than the code region, so one pool at the end of the compilation is enough.
+struct LiteralPool {
+    selected: HashSet<LiteralPoolKey>,
+    labels: HashMap<LiteralPoolKey, Label>,
+    entries: Vec<LiteralPoolEntry>,
+}
+
+impl LiteralPool {
+    fn new(selected: HashSet<LiteralPoolKey>) -> Self {
+        Self {
+            selected,
+            labels: HashMap::new(),
+            entries: Vec::new(),
+        }
+    }
+
+    fn emit_load(&mut self, cb: &mut CodeBlock, dest: X86Opnd, key: LiteralPoolKey) -> bool {
+        if !self.selected.contains(&key) {
+            return false;
+        }
+
+        let label = if let Some(&label) = self.labels.get(&key) {
+            label
+        } else {
+            let label = cb.new_label("literal_pool_entry");
+            self.labels.insert(key, label);
+            self.entries.push(LiteralPoolEntry { key, label });
+            label
+        };
+
+        cb.label_ref(label, 7, move |cb, end_addr, dst_addr| {
+            let disp = i32::try_from(dst_addr - end_addr).map_err(|_| ())?;
+            mov(cb, dest, mem_opnd(64, RIP, disp));
+            Ok(())
+        });
+        true
+    }
+
+    fn flush(&mut self, cb: &mut CodeBlock, gc_offsets: &mut Vec<CodePtr>) {
+        if self.entries.is_empty() {
+            return;
+        }
+
+        // Generic Assembler users may fall through their last instruction.
+        let end_label = cb.new_label("literal_pool_end");
+        jmp_label(cb, end_label);
+
+        for entry in self.entries.drain(..) {
+            cb.write_label(entry.label);
+            let slot = cb.get_write_ptr();
+            cb.write_bytes(&entry.key.bits.to_le_bytes());
+            if entry.key.gc_managed {
+                gc_offsets.push(slot);
+            }
+        }
+        cb.write_label(end_label);
+    }
+}
+
 impl Assembler {
     // This keeps frame growth below the +/-4096-byte displacement range we rely
     // on for common stack-slot accesses on x86_64.
@@ -185,6 +280,9 @@ impl Assembler {
                 Insn::Add { .. } |
                 Insn::Sub { .. } |
                 Insn::Mul { .. } |
+                Insn::SDiv { .. } |
+                Insn::SRem { .. } |
+                Insn::SMulHi { .. } |
                 Insn::And { .. } |
                 Insn::Or { .. } |
                 Insn::Xor { .. } => {
@@ -522,7 +620,16 @@ impl Assembler {
                     *left = split_stack_membase(asm, *left, SCRATCH0_OPND);
                     *left = split_if_both_memory(asm, *left, *right, SCRATCH0_OPND);
                     *right = split_stack_membase(asm, *right, SCRATCH1_OPND);
-                    *right = split_64bit_immediate(asm, *right, SCRATCH1_OPND);
+                    // Two-operand imul has no immediate form at all, so load
+                    // every immediate (split_64bit_immediate would keep 32-bit
+                    // ones inline and panic the encoder).
+                    *right = match *right {
+                        Opnd::Imm(_) | Opnd::UImm(_) | Opnd::Value(_) => {
+                            asm.mov(SCRATCH1_OPND, *right);
+                            SCRATCH1_OPND
+                        }
+                        r => r,
+                    };
                     *out = lower_stack_membase(asm, *out);
 
                     // imul doesn't have (Mem, Reg) encoding. Swap left and right in that case.
@@ -534,10 +641,53 @@ impl Assembler {
                     asm.push_insn(insn);
                     asm_mov(asm, out, left, SCRATCH0_OPND);
                 }
-                &mut Insn::Not { opnd, out } |
-                &mut Insn::LShift { opnd, out, .. } |
-                &mut Insn::RShift { opnd, out, .. } |
-                &mut Insn::URShift { opnd, out, .. } => {
+                Insn::SDiv { left, right, out } |
+                Insn::SRem { left, right, out } |
+                Insn::SMulHi { left, right, out } => {
+                    assert_out_is_phys_reg_or_stack_mem(*out);
+
+                    // Route the dividend and divisor into the scratch registers:
+                    // idiv's fixed rax/rdx usage in the emit must not alias the
+                    // allocator-chosen operand registers (the pool includes both).
+                    let l = split_stack_membase(asm, *left, SCRATCH0_OPND);
+                    asm_mov(asm, SCRATCH0_OPND, l, SCRATCH0_OPND);
+                    let r = split_stack_membase(asm, *right, SCRATCH1_OPND);
+                    asm_mov(asm, SCRATCH1_OPND, r, SCRATCH1_OPND);
+                    *left = SCRATCH0_OPND;
+                    *right = SCRATCH1_OPND;
+                    *out = lower_stack_membase(asm, *out);
+
+                    let out = *out;
+                    asm.push_insn(insn);
+                    // The emit leaves the quotient in SCRATCH0; forward it on.
+                    asm_mov(asm, out, SCRATCH0_OPND, SCRATCH1_OPND);
+                }
+                Insn::FloatArith { left, right, out, .. } => {
+                    // Lower spilled operands' stack membases so movq can address
+                    // them. The emit moves the operands through xmm0/xmm1 and
+                    // uses no GPR scratch, so routing reads through SCRATCH0/
+                    // SCRATCH1 can't collide with it.
+                    *left = split_stack_membase(asm, *left, SCRATCH0_OPND);
+                    *right = split_stack_membase(asm, *right, SCRATCH1_OPND);
+                    *out = lower_stack_membase(asm, *out);
+                    asm.push_insn(insn);
+                }
+                Insn::Int64ToF64Bits { opnd, out } => {
+                    // cvtsi2sd/movq take r/m operands; just lower spilled
+                    // stack membases so they can be addressed.
+                    *opnd = split_stack_membase(asm, *opnd, SCRATCH0_OPND);
+                    *out = lower_stack_membase(asm, *out);
+                    asm.push_insn(insn);
+                }
+                Insn::Not { opnd, out } |
+                Insn::LShift { opnd, out, .. } |
+                Insn::RShift { opnd, out, .. } |
+                Insn::URShift { opnd, out, .. } => {
+                    // The emit works on `opnd` in place (x86_split gave it its own
+                    // vreg), then the result is copied to `out`. Either may be a
+                    // spilled stack slot, which the emit cannot address until lowered.
+                    *opnd = lower_stack_membase(asm, *opnd);
+                    let (opnd, out) = (*opnd, lower_stack_membase(asm, *out));
                     asm.push_insn(insn);
                     asm_mov(asm, out, opnd, SCRATCH0_OPND);
                 }
@@ -756,7 +906,17 @@ impl Assembler {
             }
         }
 
-        fn emit_load_gc_value(cb: &mut CodeBlock, gc_offsets: &mut Vec<CodePtr>, dest_reg: X86Opnd, value: VALUE) {
+        fn emit_load_gc_value(
+            cb: &mut CodeBlock,
+            gc_offsets: &mut Vec<CodePtr>,
+            literal_pool: &mut LiteralPool,
+            dest_reg: X86Opnd,
+            value: VALUE,
+        ) {
+            if literal_pool.emit_load(cb, dest_reg, LiteralPoolKey::gc_value(value)) {
+                return;
+            }
+
             // Using movabs because mov might write value in 32 bits
             movabs(cb, dest_reg, value.0 as _);
             // The pointer immediate is encoded as the last part of the mov written out
@@ -787,6 +947,79 @@ impl Assembler {
         let mut insn_idx: usize = 0;
         assert_eq!(self.basic_blocks.len(), 1, "Assembler should be linearized into a single block before arm64_emit");
         let insns = &self.basic_blocks[0].insns;
+
+        fn pool_candidate(dest: Opnd, src: Opnd) -> Option<LiteralPoolKey> {
+            if !matches!(dest, Opnd::Reg(Reg { num_bits: 64, .. })) {
+                return None;
+            }
+
+            match src {
+                Opnd::Value(value) if value.heap_object_p() => {
+                    Some(LiteralPoolKey::gc_value(value))
+                }
+                Opnd::Value(value) if mov_uses_imm64(value.as_u64()) => {
+                    Some(LiteralPoolKey::immediate(value.as_u64()))
+                }
+                Opnd::UImm(value) if mov_uses_imm64(value) => {
+                    Some(LiteralPoolKey::immediate(value))
+                }
+                Opnd::Imm(value) if mov_uses_imm64(value as u64) => {
+                    Some(LiteralPoolKey::immediate(value as u64))
+                }
+                _ => None,
+            }
+        }
+
+        fn emit_load_opnd(
+            cb: &mut CodeBlock,
+            gc_offsets: &mut Vec<CodePtr>,
+            literal_pool: &mut LiteralPool,
+            dest: Opnd,
+            src: Opnd,
+        ) {
+            if let Opnd::Value(value) = src {
+                if value.heap_object_p() && matches!(dest, Opnd::Reg(Reg { num_bits: 64, .. })) {
+                    emit_load_gc_value(cb, gc_offsets, literal_pool, dest.into(), value);
+                    return;
+                }
+            }
+            if let Some(key) = pool_candidate(dest, src) {
+                if literal_pool.emit_load(cb, dest.into(), key) {
+                    return;
+                }
+            }
+            mov(cb, dest.into(), src.into());
+        }
+
+        let mut literal_counts = HashMap::new();
+        for insn in insns {
+            let candidate = match insn {
+                Insn::Load { opnd, out } |
+                Insn::LoadInto { opnd, dest: out } |
+                Insn::Mov { src: opnd, dest: out } => pool_candidate(*out, *opnd),
+                _ => None,
+            };
+            if let Some(key) = candidate {
+                *literal_counts.entry(key).or_insert(0_usize) += 1;
+            }
+        }
+
+        let mut selected_literals = HashSet::new();
+        let mut selected_savings = 0;
+        for (key, count) in literal_counts {
+            let current_size = count * 10;
+            let pooled_size = count * 7 + SIZEOF_VALUE;
+            if current_size > pooled_size {
+                selected_literals.insert(key);
+                selected_savings += current_size - pooled_size;
+            }
+        }
+        // A pool needs a five-byte branch so generic Assembler users can fall
+        // through the emitted code without executing its data.
+        if selected_savings <= 5 {
+            selected_literals.clear();
+        }
+        let mut literal_pool = LiteralPool::new(selected_literals);
 
         while let Some(insn) = insns.get(insn_idx) {
             match insn {
@@ -858,6 +1091,63 @@ impl Assembler {
                     imul(cb, left.into(), right.into());
                 },
 
+                insn @ (Insn::SDiv { .. } | Insn::SRem { .. } | Insn::SMulHi { .. }) => {
+                    let (left, right) = match insn {
+                        Insn::SDiv { left, right, .. } | Insn::SRem { left, right, .. }
+                        | Insn::SMulHi { left, right, .. } => (left, right),
+                        _ => unreachable!(),
+                    };
+                    // Operands live in the scratch registers (routed by
+                    // x86_scratch_split), so the fixed rax/rdx dance below
+                    // cannot alias them. Preserve rax/rdx around the operation
+                    // and hand the result -- quotient for SDiv, remainder (rdx)
+                    // for SRem, product-high (rdx) for SMulHi -- back through
+                    // the left scratch.
+                    push(cb, RAX);
+                    push(cb, RDX);
+                    mov(cb, RAX, left.into());
+                    if matches!(insn, Insn::SMulHi { .. }) {
+                        imul_one(cb, right.into());
+                        mov(cb, left.into(), RDX);
+                    } else {
+                        cqo(cb);
+                        idiv(cb, right.into());
+                        if matches!(insn, Insn::SDiv { .. }) {
+                            mov(cb, left.into(), RAX);
+                        } else {
+                            mov(cb, left.into(), RDX);
+                        }
+                    }
+                    pop(cb, RDX);
+                    pop(cb, RAX);
+                },
+
+                Insn::FloatArith { op, left, right, out } => {
+                    // Move the raw double bit patterns into XMM scratch registers
+                    // (xmm0/xmm1), perform the scalar-double op, and move the
+                    // result bits back. Uses no GPR scratch; `left` is read into
+                    // xmm0 before `out` is written, so left==out is safe.
+                    movq_xmm_from_reg(cb, 0, left.into());
+                    movq_xmm_from_reg(cb, 1, right.into());
+                    match op {
+                        FloatArithOp::Add => addsd(cb, 0, 1),
+                        FloatArithOp::Sub => subsd(cb, 0, 1),
+                        FloatArithOp::Mul => mulsd(cb, 0, 1),
+                        FloatArithOp::Sqrt => sqrtsd(cb, 0, 0),
+                        FloatArithOp::Min => minsd(cb, 0, 1),
+                        FloatArithOp::Max => maxsd(cb, 0, 1),
+                        FloatArithOp::Div => divsd(cb, 0, 1),
+                    }
+                    movq_reg_from_xmm(cb, out.into(), 0);
+                },
+
+                Insn::Int64ToF64Bits { opnd, out } => {
+                    // (double)int via cvtsi2sd into xmm0, then move the raw bits
+                    // back out. cvtsi2sd/movq accept reg or memory operands.
+                    cvtsi2sd(cb, 0, opnd.into());
+                    movq_reg_from_xmm(cb, out.into(), 0);
+                },
+
                 Insn::And { left, right, .. } => {
                     and(cb, left.into(), right.into());
                 },
@@ -886,23 +1176,21 @@ impl Assembler {
                     shr(cb, opnd.into(), shift.into())
                 },
 
-                // This assumes only load instructions can contain references to GC'd Value operands
+                // Load a constant, using a pool for profitable repeated values.
                 Insn::Load { opnd, out } |
                 Insn::LoadInto { dest: out, opnd } => {
-                    match opnd {
-                        Opnd::Value(val) if val.heap_object_p() => {
-                            emit_load_gc_value(cb, &mut gc_offsets, out.into(), *val);
-                        }
-                        _ => mov(cb, out.into(), opnd.into())
-                    }
+                    emit_load_opnd(cb, &mut gc_offsets, &mut literal_pool, *out, *opnd);
+                },
+
+                Insn::Mov { dest, src } => {
+                    emit_load_opnd(cb, &mut gc_offsets, &mut literal_pool, *dest, *src);
                 },
 
                 Insn::LoadSExt { opnd, out } => {
                     movsx(cb, out.into(), opnd.into());
                 },
 
-                Insn::Store { dest, src } |
-                Insn::Mov { dest, src } => {
+                Insn::Store { dest, src } => {
                     mov(cb, dest.into(), src.into());
                 },
 
@@ -966,6 +1254,31 @@ impl Assembler {
                         }
                         _ => unreachable!("unsupported ccall fptr: {fptr:?}")
                     }
+                },
+                Insn::Call(target) => {
+                    match *target {
+                        Target::CodePtr(dst_ptr) => {
+                            call_ptr(cb, RAX, dst_ptr.raw_ptr(cb));
+                        }
+                        Target::Label(label) => {
+                            call_label(cb, label);
+                        }
+                        Target::Block(_) | Target::SideExit(_) => {
+                            unreachable!("Call target should be resolved before emission")
+                        }
+                    }
+                },
+                Insn::EmbedU64(value) => {
+                    cb.write_bytes(&value.to_le_bytes());
+                },
+                Insn::InstallJITFrameFromCallData => {
+                    pop(cb, SCRATCH0_OPND.into());
+                    mov(cb, SCRATCH0_OPND.into(), mem_opnd(64, SCRATCH0_OPND.into(), 0));
+                    mov(cb, SCRATCH1_OPND.into(), Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN).into());
+                    mov(cb, RAX, mem_opnd(64, SCRATCH1_OPND.into(), -SIZEOF_VALUE_I32));
+                    mov(cb, RAX, mem_opnd(64, RAX, std::mem::offset_of!(zjit_jit_frame, iseq) as i32));
+                    mov(cb, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ).into(), RAX);
+                    mov(cb, mem_opnd(64, SCRATCH1_OPND.into(), -SIZEOF_VALUE_I32), SCRATCH0_OPND.into());
                 },
 
                 Insn::CRet(opnd) => {
@@ -1093,6 +1406,7 @@ impl Assembler {
                 }
 
                 Insn::Joz(..) | Insn::Jonz(..) => unreachable!("Joz/Jonz should be unused for now"),
+                Insn::LoadScaled { .. } => unreachable!("LoadScaled is arm64-only; gen_array_aref keeps shift+add on x86"),
 
                 Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PatchPointPad in x86_scratch_split"),
                 Insn::PatchPointPad => {
@@ -1146,6 +1460,8 @@ impl Assembler {
 
             insn_idx += 1;
         }
+
+        literal_pool.flush(cb, &mut gc_offsets);
 
         // Error if we couldn't write out everything
         if cb.has_dropped_bytes() {
@@ -1477,7 +1793,25 @@ mod tests {
 
         let val64 = asm.add(CFP, Opnd::UImm(64));
         asm.store(Opnd::mem(64, SP, 0x10), val64);
-        let side_exit = Target::SideExit(Box::new(SideExitTarget { reason: SideExitReason::Interrupt, exit: SideExit { pc: 0.into(), iseq: std::ptr::null(), stack: vec![], locals: vec![], stack_map: None, recompile: None } }));
+        let side_exit = Target::SideExit(Box::new(SideExitTarget {
+            reason: SideExitReason::Interrupt,
+            exit: SideExit {
+                pc: 0.into(),
+                stack: vec![],
+                locals: vec![],
+                stack_needs_flonum_box: vec![],
+                locals_needs_flonum_box: vec![],
+                stack_needs_bool_box: vec![],
+                locals_needs_bool_box: vec![],
+                stack_needs_fixnum_box: vec![],
+                locals_needs_fixnum_box: vec![],
+                iseq: std::ptr::null(),
+                frame_depth: 0,
+                stack_map: None,
+                recompile: None,
+                materialize: None,
+            },
+        }));
         asm.push_insn(Insn::Joz(val64, side_exit));
         asm.mov(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32));
         asm.mov(C_ARG_OPNDS[1], Opnd::mem(64, SP, -8));
@@ -1808,6 +2142,20 @@ mod tests {
 
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: add r13, 0x40");
         assert_snapshot!(cb.hexdump(), @"4983c540");
+    }
+
+    #[test]
+    fn test_call_with_inline_jit_frame_data() {
+        let (mut asm, mut cb) = setup_asm();
+        let label = asm.new_label("descriptor");
+        asm.call(label.clone());
+        asm.embed_u64(0x0123_4567_89ab_cdef);
+        asm.write_label(label);
+        asm.install_jit_frame_from_call_data();
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        let hex = cb.hexdump();
+        assert_eq!(&hex[10..26], "efcdab8967452301", "inline data must immediately follow CALL rel32");
     }
 
     #[test]
@@ -2344,6 +2692,47 @@ mod tests {
     }
 
     #[test]
+    fn test_deduplicate_pooled_values() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let imitation_heap_value = VALUE(0x1000);
+        assert!(imitation_heap_value.heap_object_p());
+        for _ in 0..5 {
+            asm.store(Opnd::mem(VALUE_BITS, SP, 0), imitation_heap_value.into());
+        }
+
+        asm = asm.x86_scratch_split();
+        for name in &asm.label_names {
+            cb.new_label(*name);
+        }
+        let gc_offsets = asm.x86_emit(&mut cb).unwrap();
+        cb.link_labels().unwrap();
+
+        assert_eq!(63, cb.get_write_pos(), "five movabs/store pairs would use 65 bytes");
+        assert_eq!(vec![cb.get_ptr(55)], gc_offsets, "the shared slot must be reported to the GC");
+    }
+
+    #[test]
+    fn test_deduplicate_pooled_immediates() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let immediate = 0x1234_5678_9abc_def0_u64;
+        for _ in 0..5 {
+            asm.store(Opnd::mem(VALUE_BITS, SP, 0), immediate.into());
+        }
+
+        asm = asm.x86_scratch_split();
+        for name in &asm.label_names {
+            cb.new_label(*name);
+        }
+        let gc_offsets = asm.x86_emit(&mut cb).unwrap();
+        cb.link_labels().unwrap();
+
+        assert_eq!(63, cb.get_write_pos(), "five movabs/store pairs would use 65 bytes");
+        assert!(gc_offsets.is_empty(), "raw immediates must not be reported to the GC");
+    }
+
+    #[test]
     fn test_csel_split_memory_read() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -2358,6 +2747,20 @@ mod tests {
         0x9: mov qword ptr [rbp - 8], r11
         ");
         assert_snapshot!(cb.hexdump(), @"4c8b5df24c0f445df84c895df8");
+    }
+
+    #[test]
+    fn test_shift_split_spilled_operands() {
+        // With no allocatable registers, a shift's in-place operand and its output both
+        // live in stack slots, which the emit cannot address until the split lowers them.
+        for shift in [Assembler::lshift, Assembler::rshift, Assembler::urshift] {
+            let (mut asm, mut cb) = setup_asm();
+            let opnd = Opnd::Mem(Mem { base: MemBase::Stack { stack_idx: 0, num_bits: 64 }, disp: 0, num_bits: 64 });
+            let out = shift(&mut asm, opnd, Opnd::UImm(1));
+            asm.mov(C_RET_OPND, out);
+            asm.compile_with_num_regs(&mut cb, 0);
+            assert!(cb.get_write_pos() > 0);
+        }
     }
 
     #[test]

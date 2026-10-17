@@ -6,7 +6,7 @@ use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
 use crate::perf;
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
+use crate::cruby::{CfpPtr, EcPtr, IseqPtr, RUBY_OFFSET_CFP_BLOCK_CODE, RUBY_OFFSET_CFP_EP, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SELF, RUBY_OFFSET_CFP_SP, RUBY_OFFSET_EC_CFP, RUBY_SIZEOF_CONTROL_FRAME, SIZEOF_VALUE_I32, VALUE, VM_ENV_DATA_SIZE, VM_FRAME_MAGIC_BLOCK, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
 use crate::asm::LabelName;
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
@@ -631,13 +631,80 @@ pub struct SideExit {
     pub pc: Opnd,
     pub stack: Vec<Opnd>,
     pub locals: Vec<Opnd>,
+    /// Parallel to `stack`/`locals`: `true` where the operand is a raw double
+    /// ([`crate::hir_type::types::CDouble`], left unboxed by the flonum-box sink)
+    /// and must be re-encoded to a flonum VALUE before it is written to the
+    /// interpreter frame. See `compile_exit_save_state`.
+    pub stack_needs_flonum_box: Vec<bool>,
+    pub locals_needs_flonum_box: Vec<bool>,
+    /// Parallel to `stack`/`locals`: `true` where the operand is a raw CBool
+    /// (a deopt-only compare sunk by sink_compare_bools_to_deopt) and must be
+    /// re-encoded to Qtrue/Qfalse before the interpreter frame sees it.
+    pub stack_needs_bool_box: Vec<bool>,
+    pub locals_needs_bool_box: Vec<bool>,
+    /// Parallel to `stack`/`locals`: `true` where the operand is a raw
+    /// untagged fixnum (unbox_loop_carried_fixnums web value) that must be
+    /// re-tagged before the interpreter frame sees it.
+    pub stack_needs_fixnum_box: Vec<bool>,
+    pub locals_needs_fixnum_box: Vec<bool>,
     pub iseq: IseqPtr,
+    /// Inlining depth of the current frame. Descriptor exits use this to
+    /// encode native spill locations relative to cfp->jit_return.
+    pub frame_depth: usize,
     /// Stack map for older inlined frames that are not written directly by this
     /// side exit. The current frame's stack and locals are still handled by
     /// `stack` and `locals` above.
     pub stack_map: Option<StackMap>,
     /// If set, the side exit will invalidate the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
+    /// If set, this exit sits inside an inlined block body whose frame push
+    /// was elided (see hir's elide_inline_block_frames): the exit stub must
+    /// physically create the block frame before the usual state write-back.
+    /// See `compile_exit_save_state`.
+    pub materialize: Option<Box<MaterializeFrame>>,
+}
+
+/// Everything a side exit needs to push the block frame that
+/// elide_inline_block_frames removed from the hot path. All layout numbers are
+/// compile-time constants; the operands are ordinary side-exit operands that
+/// the register allocator keeps live to the exiting instruction.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct MaterializeFrame {
+    /// The block's `self` for the new frame's cfp->self.
+    pub self_val: Opnd,
+    /// The defining frame's EP, pre-tagged like VM_GUARDED_PREV_EP (ep|1),
+    /// for the new frame's specval slot.
+    pub tagged_ep: Opnd,
+    /// Caller locals to spill before the frame push, as (slot displacement
+    /// from the caller stack base in VALUEs, value, needs flonum re-encode).
+    /// These are the spills the elided PushInlineBlockFrame would have done.
+    pub caller_locals: Vec<(i32, Opnd, bool)>,
+    /// The caller's stack size after popping the yield args (its cfp->sp).
+    pub caller_stack_size: usize,
+    /// A plain JITFrame for the caller (resume PC after the yield), installed
+    /// only when no caller stack map would install one itself.
+    pub caller_jit_frame: Option<*const zjit_jit_frame>,
+    /// The caller's inline depth (selects its native JITFrame slot).
+    pub caller_depth: usize,
+    /// The new frame's EP as a slot displacement from the caller stack base.
+    /// The frame's stack base sits one VALUE above it.
+    pub ep_offset: i32,
+}
+
+/// Runtime arguments shared by recompile side exits from the same compiled unit.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct SideExitRecompileEpilogue {
+    compiled_iseq: Opnd,
+    exception_entry: bool,
+}
+
+/// Common suffix of otherwise-distinct side exits.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct SideExitEpilogue {
+    /// Store the current frame's ISEQ here when it was safe to defer the store
+    /// until after the exit-specific register spills.
+    iseq: Option<IseqPtr>,
+    recompile: Option<SideExitRecompileEpilogue>,
 }
 
 /// Metadata for the recompile callback on side exit.
@@ -646,6 +713,8 @@ pub struct SideExitRecompile {
     /// The compiled unit whose version must be invalidated to force a recompile. For inlined
     /// methods, this will be the outer function it was inlined into.
     pub compiled_iseq: Opnd,
+    /// Whether the compiled unit is installed in jit_exception rather than jit_entry.
+    pub exception_entry: bool,
 }
 
 /// Payload of `Target::SideExit`, boxed to keep `Target` (and every `Insn`
@@ -763,11 +832,44 @@ pub struct PatchPointData {
     pub version: IseqVersionRef,
 }
 
+/// Which scalar-double floating-point operation a [`Insn::FloatArith`] performs.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FloatArithOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    /// Unary scalar-double square root (uses only `left`).
+    Sqrt,
+    /// Scalar-double minimum-number (no-NaN operands assumed by callers).
+    Min,
+    /// Scalar-double maximum-number.
+    Max,
+}
+
 /// ZJIT Low-level IR instruction
 #[derive(Clone)]
 pub enum Insn {
     /// Add two operands together, and return the result as a new operand.
     Add { left: Opnd, right: Opnd, out: Opnd },
+
+    /// Scalar-double floating-point arithmetic on raw IEEE-754 bit patterns.
+    /// `left`/`right` hold the 64-bit double bit patterns (already unboxed from
+    /// flonums); `out` receives the result's bit pattern. The backend moves the
+    /// operands into scratch FP registers, performs `op`, and moves the result
+    /// back -- it uses no general-purpose scratch, so unboxing/reboxing is done
+    /// in the caller (see `codegen::gen_flonum_arith`).
+    FloatArith { op: FloatArithOp, left: Opnd, right: Opnd, out: Opnd },
+
+    /// Load a VALUE from `base + index * SIZEOF_VALUE` in one scaled-register
+    /// access (arm64 `ldr Xd, [Xn, Xm, LSL #3]`). Only emitted on arm64.
+    LoadScaled { base: Opnd, index: Opnd, out: Opnd },
+
+    /// Convert a signed 64-bit integer to a double and return its raw IEEE-754
+    /// bit pattern (scvtf/cvtsi2sd + move to a GPR). Used to feed a Fixnum
+    /// operand into open-coded flonum arithmetic. `opnd` is the untagged
+    /// integer; `out` receives the double's bit pattern.
+    Int64ToF64Bits { opnd: Opnd, out: Opnd },
 
     /// This is the same as the OP_ADD instruction, except that it performs the
     /// binary AND operation.
@@ -814,6 +916,11 @@ pub enum Insn {
     CCall {
         data: Box<CCallData>,
     },
+
+    /// Call a nearby generated-code label. Unlike CCall, this does not perform
+    /// ABI argument setup; descriptor side exits use the return address to
+    /// locate the inline data immediately following the call.
+    Call(Target),
 
     // C function return
     CRet(Opnd),
@@ -946,6 +1053,14 @@ pub enum Insn {
     /// case.
     PatchPointPad,
 
+    /// Eight bytes of non-executable data embedded after a non-returning Call.
+    EmbedU64(u64),
+
+    /// Preserve the current frame's ISEQ from the active JITFrame, then load a
+    /// descriptor JITFrame pointer from the data at the preceding Call's
+    /// return address and replace the active slot addressed by cfp->jit_return.
+    InstallJITFrameFromCallData,
+
     /// Space reserved at a boundary that a preceding PatchPoint's invalidation
     /// jump must not cross: the start of a non-entry block, the start of a side
     /// exit, or the end of the last block. Nothing is ever patched at a
@@ -976,6 +1091,22 @@ pub enum Insn {
     // Integer multiplication
     Mul { left: Opnd, right: Opnd, out: Opnd },
 
+    /// Signed 64-bit integer division, truncated quotient (arm64 `sdiv`;
+    /// x86_64 `cqo`+`idiv` behind scratch routing). The divisor must be
+    /// nonzero and the INT64_MIN/-1 case excluded by the caller -- fixnum
+    /// callers satisfy both (untagged fixnums are 63-bit and guard zero).
+    SDiv { left: Opnd, right: Opnd, out: Opnd },
+
+    /// Signed 64-bit integer remainder, truncated (sign follows the
+    /// dividend): arm64 `sdiv`+`msub`, x86_64 takes rdx from the same
+    /// `cqo`+`idiv` sequence as SDiv. Same preconditions as SDiv.
+    SRem { left: Opnd, right: Opnd, out: Opnd },
+
+    /// High 64 bits of the signed 128-bit product (arm64 `smulh`; x86_64
+    /// one-operand `imul` behind the same scratch routing as SDiv/SRem).
+    /// The workhorse of magic-number division by constants.
+    SMulHi { left: Opnd, right: Opnd, out: Opnd },
+
     // Bitwise AND test instruction
     Test { left: Opnd, right: Opnd },
 
@@ -1000,6 +1131,14 @@ macro_rules! target_for_each_operand_impl {
                         }
                     }
                 }
+                if let Some(materialize) = $reborrow!(data.exit.materialize) {
+                    let MaterializeFrame { self_val, tagged_ep, caller_locals, .. } = $reborrow!(**materialize);
+                    visit_one!(self_val);
+                    visit_one!(tagged_ep);
+                    for (_, opnd, _) in caller_locals {
+                        visit_one!(opnd);
+                    }
+                }
             }
             Target::Block(edge) => {
                 visit_many!(edge.args);
@@ -1022,6 +1161,7 @@ macro_rules! for_each_operand_impl {
             Insn::Jg(target) |
             Insn::Jge(target) |
             Insn::Jmp(target) |
+            Insn::Call(target) |
             Insn::Jne(target) |
             Insn::Jnz(target) |
             Insn::Jo(target) |
@@ -1048,6 +1188,8 @@ macro_rules! for_each_operand_impl {
             Insn::Comment(_) |
             Insn::CPop { .. } |
             Insn::PatchPointPad |
+            Insn::EmbedU64(_) |
+            Insn::InstallJITFrameFromCallData |
             Insn::PosMarker(_) |
             Insn::PosMarkerAtBlockEnd(_) => {},
 
@@ -1058,6 +1200,7 @@ macro_rules! for_each_operand_impl {
             Insn::Lea { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
+            Insn::Int64ToF64Bits { opnd, .. } |
             Insn::Not { opnd, .. } => {
                 visit_one!(opnd);
             }
@@ -1069,6 +1212,8 @@ macro_rules! for_each_operand_impl {
             }
             Insn::Add { left: opnd0, right: opnd1, .. } |
             Insn::And { left: opnd0, right: opnd1, .. } |
+            Insn::FloatArith { left: opnd0, right: opnd1, .. } |
+            Insn::LoadScaled { base: opnd0, index: opnd1, .. } |
             Insn::CPopPairInto(opnd0, opnd1) |
             Insn::Cmp { left: opnd0, right: opnd1 } |
             Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
@@ -1088,6 +1233,9 @@ macro_rules! for_each_operand_impl {
             Insn::Store { dest: opnd0, src: opnd1 } |
             Insn::Sub { left: opnd0, right: opnd1, .. } |
             Insn::Mul { left: opnd0, right: opnd1, .. } |
+            Insn::SDiv { left: opnd0, right: opnd1, .. } |
+            Insn::SRem { left: opnd0, right: opnd1, .. } |
+            Insn::SMulHi { left: opnd0, right: opnd1, .. } |
             Insn::Test { left: opnd0, right: opnd1 } |
             Insn::URShift { opnd: opnd0, shift: opnd1, .. } |
             Insn::Xor { left: opnd0, right: opnd1, .. } => {
@@ -1096,6 +1244,7 @@ macro_rules! for_each_operand_impl {
             }
             Insn::CCall { data } => {
                 visit_many!(data.opnds);
+                visit_one!($reborrow!(data.fptr));
                 // `data` is behind a Box. `$reborrow` turns the box field into a `&`/`&mut
                 // Option<StackMap>` matching the iterator, so the same operand-walk works for
                 // both.
@@ -1164,6 +1313,7 @@ impl Insn {
             Insn::Jg(target) |
             Insn::Jge(target) |
             Insn::Jmp(target) |
+            Insn::Call(target) |
             Insn::Jne(target) |
             Insn::Jnz(target) |
             Insn::Jo(target) |
@@ -1186,6 +1336,8 @@ impl Insn {
         match self {
             Insn::Add { .. } => "Add",
             Insn::And { .. } => "And",
+            Insn::FloatArith { .. } => "FloatArith",
+            Insn::LoadScaled { .. } => "LoadScaled",
             Insn::BakeString(_) => "BakeString",
             Insn::BoundaryPad => "BoundaryPad",
             Insn::Breakpoint => "Breakpoint",
@@ -1198,6 +1350,7 @@ impl Insn {
             Insn::CPush(_) => "CPush",
             Insn::CPushPair(_, _) => "CPushPair",
             Insn::CCall { .. } => "CCall",
+            Insn::Call(_) => "Call",
             Insn::CRet(_) => "CRet",
             Insn::CSelE { .. } => "CSelE",
             Insn::CSelG { .. } => "CSelG",
@@ -1234,15 +1387,21 @@ impl Insn {
             Insn::LShift { .. } => "LShift",
             Insn::Mov { .. } => "Mov",
             Insn::Not { .. } => "Not",
+            Insn::Int64ToF64Bits { .. } => "Int64ToF64Bits",
             Insn::Or { .. } => "Or",
             Insn::PatchPoint(..) => "PatchPoint",
             Insn::PatchPointPad => "PatchPointPad",
+            Insn::EmbedU64(_) => "EmbedU64",
+            Insn::InstallJITFrameFromCallData => "InstallJITFrameFromCallData",
             Insn::PosMarker(_) => "PosMarker",
             Insn::PosMarkerAtBlockEnd(_) => "PosMarkerAtBlockEnd",
             Insn::RShift { .. } => "RShift",
             Insn::Store { .. } => "Store",
             Insn::Sub { .. } => "Sub",
             Insn::Mul { .. } => "Mul",
+            Insn::SDiv { .. } => "SDiv",
+            Insn::SRem { .. } => "SRem",
+            Insn::SMulHi { .. } => "SMulHi",
             Insn::Test { .. } => "Test",
             Insn::URShift { .. } => "URShift",
             Insn::Xor { .. } => "Xor"
@@ -1255,6 +1414,8 @@ impl Insn {
         match self {
             Insn::Add { out, .. } |
             Insn::And { out, .. } |
+            Insn::FloatArith { out, .. } |
+            Insn::LoadScaled { out, .. } |
             Insn::CPop { out, .. } |
             Insn::CSelE { out, .. } |
             Insn::CSelG { out, .. } |
@@ -1270,10 +1431,14 @@ impl Insn {
             Insn::LoadSExt { out, .. } |
             Insn::LShift { out, .. } |
             Insn::Not { out, .. } |
+            Insn::Int64ToF64Bits { out, .. } |
             Insn::Or { out, .. } |
             Insn::RShift { out, .. } |
             Insn::Sub { out, .. } |
             Insn::Mul { out, .. } |
+            Insn::SDiv { out, .. } |
+            Insn::SRem { out, .. } |
+            Insn::SMulHi { out, .. } |
             Insn::URShift { out, .. } |
             Insn::Xor { out, .. } => Some(out),
             Insn::CCall { data, .. } => Some(&data.out),
@@ -1287,6 +1452,8 @@ impl Insn {
         match self {
             Insn::Add { out, .. } |
             Insn::And { out, .. } |
+            Insn::FloatArith { out, .. } |
+            Insn::LoadScaled { out, .. } |
             Insn::CPop { out, .. } |
             Insn::CSelE { out, .. } |
             Insn::CSelG { out, .. } |
@@ -1302,10 +1469,14 @@ impl Insn {
             Insn::LoadSExt { out, .. } |
             Insn::LShift { out, .. } |
             Insn::Not { out, .. } |
+            Insn::Int64ToF64Bits { out, .. } |
             Insn::Or { out, .. } |
             Insn::RShift { out, .. } |
             Insn::Sub { out, .. } |
             Insn::Mul { out, .. } |
+            Insn::SDiv { out, .. } |
+            Insn::SRem { out, .. } |
+            Insn::SMulHi { out, .. } |
             Insn::URShift { out, .. } |
             Insn::Xor { out, .. } => Some(out),
             Insn::CCall { data, .. } => Some(&mut data.out),
@@ -1323,6 +1494,7 @@ impl Insn {
             Insn::Jg(target) |
             Insn::Jge(target) |
             Insn::Jmp(target) |
+            Insn::Call(target) |
             Insn::Jne(target) |
             Insn::Jnz(target) |
             Insn::Jo(target) |
@@ -2636,7 +2808,7 @@ impl Assembler
         c_arg_regs: &[Reg],
     ) {
         use crate::backend::parcopy;
-        use crate::backend::current::{C_RET_OPND, SCRATCH_REG, NATIVE_STACK_PTR};
+        use crate::backend::current::{CALL_TARGET_REG, C_RET_OPND, SCRATCH_REG, NATIVE_STACK_PTR};
 
         for block_id in self.block_order() {
             let block = &mut self.basic_blocks[block_id.0];
@@ -2778,6 +2950,24 @@ impl Assembler
                         new_ids.push(None);
                     }
 
+                    // A runtime call target can share an allocator register with
+                    // one of the register arguments. Preserve it in a dedicated
+                    // register before the parallel argument moves below overwrite
+                    // those registers. This must come after the stack-argument
+                    // pushes: CALL_TARGET_REG doubles as the scratch register their
+                    // split uses for spilled or immediate operands. Constant calls
+                    // and the argument-free entry trampoline need no staging.
+                    let fptr = if matches!(fptr, Opnd::UImm(_)) || opnds.is_empty() {
+                        Self::rewritten_opnd(fptr, intervals, alloc_regs)
+                    } else {
+                        new_insns.push(Insn::LoadInto {
+                            dest: Opnd::Reg(CALL_TARGET_REG),
+                            opnd: Self::rewritten_opnd(fptr, intervals, alloc_regs),
+                        });
+                        new_ids.push(None);
+                        Opnd::Reg(CALL_TARGET_REG)
+                    };
+
                     // Extract arguments from CCall, clear opnds
 
                     // Sequentialize argument moves: each arg goes to c_arg_regs[i].
@@ -2900,26 +3090,59 @@ impl Assembler
         })
     }
 
+    /// Exits that need no raw-value boxing or physical block-frame
+    /// materialization can be restored entirely by the JITFrame materializer
+    /// from a descriptor.
+    fn descriptor_side_exit_p(exit: &SideExit) -> bool {
+        exit.materialize.is_none()
+            && !exit.stack_needs_flonum_box.iter().any(|&needs_box| needs_box)
+            && !exit.locals_needs_flonum_box.iter().any(|&needs_box| needs_box)
+            && !exit.stack_needs_bool_box.iter().any(|&needs_box| needs_box)
+            && !exit.locals_needs_bool_box.iter().any(|&needs_box| needs_box)
+            && !exit.stack_needs_fixnum_box.iter().any(|&needs_box| needs_box)
+            && !exit.locals_needs_fixnum_box.iter().any(|&needs_box| needs_box)
+    }
+
     fn side_exit_target_stack_map_slots(target: &Target, intervals: &[Interval]) -> usize {
         let Target::SideExit(data) = target else {
             return 0;
         };
-        let Some(StackMap { stack, .. }) = &data.exit.stack_map else {
-            return 0;
-        };
-
-        stack.iter().filter(|entry| match entry {
-            StackMapEntry::Opnd(Opnd::Value(value)) => !value.special_const_p(),
-            StackMapEntry::Opnd(Opnd::UImm(value)) => !VALUE(*value as usize).special_const_p(),
-            StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => {
+        let captured_opnd = |opnd: Opnd| match opnd {
+            Opnd::Value(value) => !value.special_const_p(),
+            Opnd::UImm(value) => !VALUE(value as usize).special_const_p(),
+            Opnd::Imm(value) => !VALUE(value as usize).special_const_p(),
+            Opnd::VReg { idx, .. } => {
                 matches!(
-                    intervals[*idx].assigned.get().expect("StackMap VReg should have an allocation"),
+                    intervals[idx].assigned.get().expect("StackMap VReg should have an allocation"),
                     Allocation::Reg(_)
                 )
             }
-            StackMapEntry::Opnd(Opnd::Reg(_)) => true,
+            Opnd::Reg(_) => true,
+            Opnd::Mem(Mem { base: MemBase::Stack { .. }, .. }) => false,
+            Opnd::Mem(_) => true,
             _ => false,
-        }).count()
+        };
+
+        // Each distinct operand is captured once, shared by the caller stack
+        // map and (for descriptor exits) the current frame's descriptor.
+        let mut captured = HashSet::new();
+        if let Some(stack_map) = &data.exit.stack_map {
+            for entry in &stack_map.stack {
+                if let StackMapEntry::Opnd(opnd) = entry {
+                    if captured_opnd(*opnd) {
+                        captured.insert(*opnd);
+                    }
+                }
+            }
+        }
+        if Self::descriptor_side_exit_p(&data.exit) {
+            captured.extend(
+                data.exit.stack.iter().chain(&data.exit.locals)
+                    .copied()
+                    .filter(|&opnd| captured_opnd(opnd)),
+            );
+        }
+        captured.len()
     }
 
     /// Walk every instruction and replace VReg operands with the physical
@@ -3026,6 +3249,7 @@ impl Assembler
             let value = match opnd {
                 Opnd::Value(value) => value,
                 Opnd::UImm(value) => VALUE(value as usize),
+                Opnd::Imm(value) => VALUE(value as usize),
                 _ => unreachable!("unexpected immediate StackMap operand: {opnd:?}"),
             };
             value.special_const_p().then_some(value)
@@ -3038,7 +3262,18 @@ impl Assembler
             VALUE(encoded)
         }
 
-        fn capture_stack_map_opnd(asm: &mut Assembler, opnd: Opnd, capture_idx: &mut usize, frame_depth: usize) -> VALUE {
+        fn capture_stack_map_opnd(
+            asm: &mut Assembler,
+            opnd: Opnd,
+            captured: &mut HashMap<Opnd, usize>,
+            capture_idx: &mut usize,
+            frame_depth: usize,
+        ) -> VALUE {
+            let opnd = if matches!(opnd, Opnd::Reg(_)) { opnd.with_num_bits(64) } else { opnd };
+            if let Some(&stack_idx) = captured.get(&opnd) {
+                return encode_stack_map_index(asm, stack_idx, frame_depth);
+            }
+
             let stack_idx = asm.stack_state.stack_idx_for_side_exit_stack_map(*capture_idx);
             *capture_idx += 1;
             let capture_slot = Opnd::Mem(Mem {
@@ -3046,23 +3281,28 @@ impl Assembler
                 disp: 0,
                 num_bits: 64,
             });
-            let opnd = if matches!(opnd, Opnd::Reg(_)) { opnd.with_num_bits(64) } else { opnd };
             asm.store(capture_slot, opnd);
+            captured.insert(opnd, stack_idx);
             encode_stack_map_index(asm, stack_idx, frame_depth)
         }
 
-        fn compile_exit_stack_map(asm: &mut Assembler, stack_map: &StackMap) {
+        fn compile_exit_stack_map(
+            asm: &mut Assembler,
+            stack_map: &StackMap,
+            captured: &mut HashMap<Opnd, usize>,
+            capture_idx: &mut usize,
+            install: bool,
+        ) {
             let StackMap { stack, jit_frame, frame_depth } = stack_map;
             let jit_frame = *jit_frame;
             assert_eq!(unsafe { (*jit_frame).stack_size } as usize, stack.len());
 
-            let mut capture_idx = 0;
             for (idx, stack_entry) in stack.iter().enumerate() {
                 let entry = match *stack_entry {
-                    StackMapEntry::Opnd(Opnd::Value(_) | Opnd::UImm(_)) => {
+                    StackMapEntry::Opnd(Opnd::Value(_) | Opnd::UImm(_) | Opnd::Imm(_)) => {
                         let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
                         immediate_stack_map_value(opnd)
-                            .unwrap_or_else(|| capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth))
+                            .unwrap_or_else(|| capture_stack_map_opnd(asm, opnd, captured, capture_idx, *frame_depth))
                     }
                     StackMapEntry::Skip(size) => {
                         let encoded = (size << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_SKIP_TAG as usize;
@@ -3073,57 +3313,196 @@ impl Assembler
                         assert_eq!(disp, 0, "StackMap stack slot should not have a displacement");
                         encode_stack_map_index(asm, stack_idx.to_usize(), *frame_depth)
                     }
-                    StackMapEntry::Opnd(Opnd::Reg(_)) => {
+                    StackMapEntry::Opnd(Opnd::Reg(_) | Opnd::Mem(_)) => {
                         let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
-                        capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth)
+                        capture_stack_map_opnd(asm, opnd, captured, capture_idx, *frame_depth)
                     }
                     _ => unreachable!("unexpected entry in SideExit StackMap: {stack_entry:?}"),
                 };
                 unsafe { (*jit_frame.cast_mut()).stack.as_mut_ptr().add(idx).write(entry); }
             }
 
-            assert!(capture_idx <= asm.stack_state.num_side_exit_stack_map_slots);
-            asm_comment!(asm, "install side-exit JITFrame for caller depth {}", frame_depth);
-            let jit_frame_slot = Opnd::mem(64, NATIVE_BASE_PTR, -((*frame_depth as i32 + 1) * SIZEOF_VALUE_I32));
-            asm.store(jit_frame_slot, Opnd::const_ptr(jit_frame));
+            assert!(*capture_idx <= asm.stack_state.num_side_exit_stack_map_slots);
+            if install {
+                asm_comment!(asm, "install side-exit JITFrame for caller depth {}", frame_depth);
+                let jit_frame_slot = Opnd::mem(64, NATIVE_BASE_PTR, -((*frame_depth as i32 + 1) * SIZEOF_VALUE_I32));
+                asm.store(jit_frame_slot, Opnd::const_ptr(jit_frame));
+            }
         }
 
-        /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
-        fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals, iseq, stack_map, .. } = exit;
-
-            // Side exit blocks are not part of the CFG at the moment,
-            // so we need to manually ensure that patchpoints get padded
-            // so that nobody stomps on us
-            asm.boundary_pad();
-
+        fn compile_exit_save_pc(asm: &mut Assembler, exit: &SideExit) {
+            let cfp_bias = if exit.materialize.is_some() {
+                -(RUBY_SIZEOF_CONTROL_FRAME as i32)
+            } else {
+                0
+            };
             asm_comment!(asm, "save cfp->pc");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
+            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC + cfp_bias), exit.pc);
+        }
+
+        /// Restore VM state (cfp->sp, stack, locals) for the side exit; compile_exit saves cfp->pc first.
+        ///
+        /// When `exit.materialize` is set, the exiting instruction sits inside
+        /// an inlined block body whose frame push was elided from the hot path
+        /// (hir's elide_inline_block_frames). The stub then first performs the
+        /// caller-side work the elided PushInlineBlockFrame would have done
+        /// (cfp->sp, local spills, JITFrame) and builds the block frame's env
+        /// metadata and control-frame record. The CFP and SP registers still
+        /// point at the *caller* frame throughout, so all block-frame writes
+        /// use compile-time-biased displacements (cfp fields at
+        /// -RUBY_SIZEOF_CONTROL_FRAME, stack/locals shifted by the frame gap),
+        /// and only at the very end does the stub step CFP down one frame so
+        /// the shared materialize_exit trampoline -- which clears the *current*
+        /// frame's jit_return and materializes the older frames behind it --
+        /// sees exactly the same world as a non-elided exit.
+        fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit, defer_iseq: bool) {
+            let SideExit { stack, locals, stack_needs_flonum_box, locals_needs_flonum_box, stack_needs_bool_box, locals_needs_bool_box, stack_needs_fixnum_box, locals_needs_fixnum_box, iseq, stack_map, materialize, .. } = exit;
+
+            // Biases routing the exiting frame's writes one frame below the
+            // caller the CFP/SP registers still point at (see doc above).
+            let (cfp_bias, sp_bias) = match materialize {
+                Some(m) => (-(RUBY_SIZEOF_CONTROL_FRAME as i32), m.ep_offset + 1),
+                None => (0, 0),
+            };
+
+            if let Some(m) = materialize {
+                asm_comment!(asm, "materialize elided block frame: caller side");
+                // The caller-side writes PushInlineBlockFrame would have done:
+                // publish its sp (yield args excluded; they become the block's
+                // leading locals) and spill its locals for the interpreter.
+                asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, m.caller_stack_size as i32 * SIZEOF_VALUE_I32));
+                for &(disp, opnd, _) in &m.caller_locals {
+                    asm.store(Opnd::mem(64, SP, disp * SIZEOF_VALUE_I32), opnd);
+                }
+                // The caller's resume PC, unless the caller stack map installs
+                // a JITFrame for the same slot below anyway.
+                if let Some(jit_frame) = m.caller_jit_frame {
+                    asm.store(
+                        Opnd::mem(64, NATIVE_BASE_PTR, -((m.caller_depth as i32 + 1) * SIZEOF_VALUE_I32)),
+                        Opnd::const_ptr(jit_frame),
+                    );
+                }
+
+                asm_comment!(asm, "materialize elided block frame: env and control frame");
+                // Env metadata (mirrors gen_push_frame for a block frame):
+                // ep[-2] cme/cref, ep[-1] specval (tagged definer EP), ep[0] flags.
+                asm.store(Opnd::mem(64, SP, (m.ep_offset - 2) * SIZEOF_VALUE_I32), 0.into());
+                asm.store(Opnd::mem(64, SP, (m.ep_offset - 1) * SIZEOF_VALUE_I32), m.tagged_ep);
+                asm.store(Opnd::mem(64, SP, m.ep_offset * SIZEOF_VALUE_I32), VM_FRAME_MAGIC_BLOCK.into());
+                // Control-frame record. pc/sp/iseq are written by the biased
+                // stores below; jit_return is cleared by the trampoline after
+                // the final CFP step-down. block_code must be zeroed: the
+                // interpreter resumes this block body and may read it, and the
+                // slot holds stale data from earlier frames at this depth.
+                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF + cfp_bias), m.self_val);
+                asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP + cfp_bias), Opnd::mem(64, SP, m.ep_offset * SIZEOF_VALUE_I32));
+                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE + cfp_bias), 0.into());
+                // Publish the new frame so the interpreter resumes into it.
+                asm.lea_into(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), Opnd::mem(64, CFP, cfp_bias));
+            }
 
             asm_comment!(asm, "save cfp->sp");
-            asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
+            asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP + cfp_bias), Opnd::mem(64, SP, (stack.len() as i32 + sp_bias) * SIZEOF_VALUE_I32));
 
-            asm_comment!(asm, "save cfp->iseq");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
+            if !defer_iseq {
+                asm_comment!(asm, "save cfp->iseq");
+                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ + cfp_bias), VALUE::from(*iseq).into());
+            }
 
             // cfp->block_code and cfp->jit_return are cleared by the materialize_exit trampoline
+
+            // Re-encode a raw-double frame slot (written above) into a flonum VALUE
+            // in place. Only reached for slots the flonum-box sink left unboxed,
+            // where GuardFlonumRepresentable already proved representability, so
+            // rb_zjit_flonum_encode is a pure, non-allocating bit twiddle: no GC can
+            // run, so the other raw doubles still on the frame stay safe, and we read
+            // the value back from the frame (not a register) so the call clobbering
+            // caller-saved registers cannot lose a pending slot. CFP/SP are
+            // callee-saved and survive the call.
+            fn encode_flonum_slot(asm: &mut Assembler, slot: Opnd) {
+                let _ = asm.ccall(crate::codegen::rb_zjit_flonum_encode as *const u8, vec![slot]);
+                asm.store(slot, C_RET_OPND);
+            }
 
             if !stack.is_empty() {
                 asm_comment!(asm, "write stack slots: {}", join_opnds(&stack, ", "));
                 for (idx, &opnd) in stack.iter().enumerate() {
-                    asm.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
+                    asm.store(Opnd::mem(64, SP, (idx as i32 + sp_bias) * SIZEOF_VALUE_I32), opnd);
                 }
             }
 
             if !locals.is_empty() {
                 asm_comment!(asm, "write locals: {}", join_opnds(&locals, ", "));
                 for (idx, &opnd) in locals.iter().enumerate() {
-                    asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
+                    asm.store(Opnd::mem(64, SP, (sp_bias - local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                 }
             }
 
             if let Some(stack_map) = stack_map {
-                compile_exit_stack_map(asm, stack_map);
+                let mut captured = HashMap::new();
+                let mut capture_idx = 0;
+                compile_exit_stack_map(asm, stack_map, &mut captured, &mut capture_idx, true);
+            }
+
+            // All flonum re-encodes run last: every register-held operand above
+            // (frame writes and stack-map captures) is already stored to
+            // memory, so the encode ccalls clobbering caller-saved registers
+            // cannot lose anything. Each encode reads its slot from the frame
+            // and writes it back, so the encodes are order-independent.
+            for (idx, &needs_box) in stack_needs_flonum_box.iter().enumerate() {
+                if needs_box {
+                    encode_flonum_slot(asm, Opnd::mem(64, SP, (idx as i32 + sp_bias) * SIZEOF_VALUE_I32));
+                }
+            }
+            for (idx, &needs_box) in locals_needs_flonum_box.iter().enumerate() {
+                if needs_box {
+                    encode_flonum_slot(asm, Opnd::mem(64, SP, (sp_bias - local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32));
+                }
+            }
+            // Bool re-encodes follow the same slot-roundtrip discipline as the
+            // flonum ones: the ccall reads the raw 0/1 from the frame slot and
+            // the result is stored back, so register clobbers cannot bite.
+            fn encode_bool_slot(asm: &mut Assembler, slot: Opnd) {
+                let _ = asm.ccall(crate::codegen::rb_zjit_bool_encode as *const u8, vec![slot]);
+                asm.store(slot, C_RET_OPND);
+            }
+            for (idx, &needs_box) in stack_needs_bool_box.iter().enumerate() {
+                if needs_box {
+                    encode_bool_slot(asm, Opnd::mem(64, SP, (idx as i32 + sp_bias) * SIZEOF_VALUE_I32));
+                }
+            }
+            for (idx, &needs_box) in locals_needs_bool_box.iter().enumerate() {
+                if needs_box {
+                    encode_bool_slot(asm, Opnd::mem(64, SP, (sp_bias - local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32));
+                }
+            }
+            fn encode_fixnum_slot(asm: &mut Assembler, slot: Opnd) {
+                let _ = asm.ccall(crate::codegen::rb_zjit_fixnum_encode as *const u8, vec![slot]);
+                asm.store(slot, C_RET_OPND);
+            }
+            for (idx, &needs_box) in stack_needs_fixnum_box.iter().enumerate() {
+                if needs_box {
+                    encode_fixnum_slot(asm, Opnd::mem(64, SP, (idx as i32 + sp_bias) * SIZEOF_VALUE_I32));
+                }
+            }
+            for (idx, &needs_box) in locals_needs_fixnum_box.iter().enumerate() {
+                if needs_box {
+                    encode_fixnum_slot(asm, Opnd::mem(64, SP, (sp_bias - local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32));
+                }
+            }
+            if let Some(m) = materialize {
+                for &(disp, _, needs_box) in &m.caller_locals {
+                    if needs_box {
+                        encode_flonum_slot(asm, Opnd::mem(64, SP, disp * SIZEOF_VALUE_I32));
+                    }
+                }
+
+                // Step CFP down to the frame we just built, so the trampoline's
+                // jit_return clear and frame materialization see the same world
+                // as a non-elided exit. Everything after this point (trace and
+                // recompile ccalls in compile_exit) reads a coherent ec->cfp.
+                asm_comment!(asm, "switch CFP to the materialized block frame");
+                asm.sub_into(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
             }
         }
 
@@ -3133,26 +3512,84 @@ impl Assembler
             asm.jmp(Target::CodePtr(ZJITState::get_materialize_exit_trampoline()));
         }
 
-        fn compile_exit_recompile(asm: &mut Assembler, exit: &SideExit) {
-            if let Some(recompile) = &exit.recompile {
-                use crate::codegen::exit_recompile;
-                asm_comment!(asm, "invalidate for recompilation");
-                asm_ccall!(asm, exit_recompile, recompile.compiled_iseq);
+        fn recompile_epilogue(exit: &SideExit) -> Option<SideExitRecompileEpilogue> {
+            exit.recompile.as_ref().map(|recompile| SideExitRecompileEpilogue {
+                compiled_iseq: recompile.compiled_iseq,
+                exception_entry: recompile.exception_entry,
+            })
+        }
+
+        fn compile_exit_recompile(asm: &mut Assembler, recompile: &SideExitRecompileEpilogue) {
+            use crate::codegen::exit_recompile;
+            asm_comment!(asm, "invalidate for recompilation");
+            asm_ccall!(asm, exit_recompile,
+                recompile.compiled_iseq,
+                Opnd::UImm(u64::from(recompile.exception_entry))
+            );
+        }
+
+        /// The current frame's ISEQ can move into a shared suffix only when
+        /// exit-specific code cannot call C or publish a newly materialized
+        /// frame before reaching that suffix.
+        fn can_defer_iseq(exit: &SideExit) -> bool {
+            exit.materialize.is_none()
+                && !exit.stack_needs_flonum_box.iter().any(|&needs_box| needs_box)
+                && !exit.locals_needs_flonum_box.iter().any(|&needs_box| needs_box)
+                && !exit.stack_needs_bool_box.iter().any(|&needs_box| needs_box)
+                && !exit.locals_needs_bool_box.iter().any(|&needs_box| needs_box)
+                && !exit.stack_needs_fixnum_box.iter().any(|&needs_box| needs_box)
+                && !exit.locals_needs_fixnum_box.iter().any(|&needs_box| needs_box)
+        }
+
+        fn exit_epilogue(exit: &SideExit) -> Option<SideExitEpilogue> {
+            let defer_iseq = can_defer_iseq(exit);
+            let recompile = recompile_epilogue(exit);
+            (defer_iseq || recompile.is_some()).then_some(SideExitEpilogue {
+                iseq: defer_iseq.then_some(exit.iseq),
+                recompile,
+            })
+        }
+
+        fn compile_exit_epilogue(asm: &mut Assembler, epilogue: &SideExitEpilogue) {
+            if let Some(iseq) = epilogue.iseq {
+                asm_comment!(asm, "save cfp->iseq");
+                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
             }
+            if let Some(recompile) = &epilogue.recompile {
+                // C calls need a materialized current frame rather than the
+                // stale JITFrame that the trampoline normally clears.
+                asm_comment!(asm, "clear cfp->jit_return");
+                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+                compile_exit_recompile(asm, recompile);
+            }
+            compile_exit_return(asm);
         }
 
         /// Compile the main side-exit code.  The side exit will optionally record a traced exit
         /// stack, optionally trigger recompilation, and then return to the interpreter. Shared
         /// exits pass no trace reason so they can still be deduplicated by SideExit.
         /// IOW, we should never pass a trace reason if we expect the exit to be
-        /// deduplicated.
-        fn compile_exit(asm: &mut Assembler, exit: &SideExit, trace_reason: Option<SideExitReason>) {
+        /// deduplicated. Normal exits can branch to a suffix shared with other exits; traced
+        /// exits stay self-contained because their C call needs a fully saved frame first.
+        fn compile_exit(
+            asm: &mut Assembler,
+            exit: &SideExit,
+            trace_reason: Option<SideExitReason>,
+            epilogue_counts: &HashMap<SideExitEpilogue, usize>,
+            epilogue_labels: &mut HashMap<SideExitEpilogue, Label>,
+            epilogues: &mut Vec<(Label, SideExitEpilogue)>,
+        ) {
+            // Side exit blocks are not part of the CFG at the moment, so
+            // manually ensure that patchpoints cannot stomp on an exit.
+            asm.boundary_pad();
+            compile_exit_save_pc(asm, exit);
             // Save VM state before the ccall so that
             // rb_profile_frames sees valid cfp->pc and the
             // ccall doesn't clobber caller-saved registers
             // holding stack/local operands.
-            compile_exit_save_state(asm, exit);
-            if trace_reason.is_some() || exit.recompile.is_some() {
+            let defer_iseq = trace_reason.is_none() && can_defer_iseq(exit);
+            compile_exit_save_state(asm, exit, defer_iseq);
+            if trace_reason.is_some() {
                 // Clear cfp->jit_return to prepare for a C call. Normally, cfp->jit_return
                 // is cleared by the materialize_exit trampoline, but if we're about to
                 // make a C call, we need to clear any stale JITFrame.
@@ -3165,9 +3602,115 @@ impl Assembler
                     .unwrap_or_else(|_| std::ffi::CString::new("unknown").unwrap());
                 let reason_ptr = reason_cstr.into_raw() as *const u8;
                 asm_ccall!(asm, rb_zjit_record_exit_stack, Opnd::const_ptr(reason_ptr));
+                if let Some(recompile) = recompile_epilogue(exit) {
+                    compile_exit_recompile(asm, &recompile);
+                }
+                compile_exit_return(asm);
+                return;
             }
-            compile_exit_recompile(asm, exit);
-            compile_exit_return(asm);
+
+            let Some(epilogue) = exit_epilogue(exit) else {
+                compile_exit_return(asm);
+                return;
+            };
+
+            // A singleton suffix would add an extra branch. Keep it inline and
+            // share only groups with at least two distinct exit states.
+            if epilogue_counts.get(&epilogue).copied().unwrap_or(0) < 2 {
+                compile_exit_epilogue(asm, &epilogue);
+                return;
+            }
+
+            let label = if let Some(&label) = epilogue_labels.get(&epilogue) {
+                label
+            } else {
+                let label = asm.new_label("side_exit_epilogue").unwrap_label();
+                epilogue_labels.insert(epilogue.clone(), label);
+                epilogues.push((label, epilogue));
+                label
+            };
+            asm.jmp(Target::Label(label));
+        }
+
+        /// Compile an exit whose VM state the JITFrame materializer can rebuild:
+        /// publish cfp->sp, describe the current frame in a pointer-free
+        /// descriptor, and call a shared epilogue that installs it from the
+        /// data embedded after the call.
+        fn compile_descriptor_exit(
+            asm: &mut Assembler,
+            exit: &SideExit,
+            descriptor_labels: &mut HashMap<Option<SideExitRecompileEpilogue>, Label>,
+            descriptor_epilogues: &mut Vec<(Label, Option<SideExitRecompileEpilogue>)>,
+        ) {
+            asm.boundary_pad();
+
+            asm_comment!(asm, "publish descriptor side-exit SP");
+            asm.lea_into(
+                Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP),
+                Opnd::mem(64, SP, exit.stack.len() as i32 * SIZEOF_VALUE_I32),
+            );
+
+            // rb_zjit_materialize_frames walks downward from cfp->sp. Describe
+            // the operand stack from top to bottom, skip the environment
+            // metadata, then describe locals from the highest index downward.
+            let mut entries = exit.stack.iter().rev()
+                .copied()
+                .map(StackMapEntry::Opnd)
+                .collect::<Vec<_>>();
+            if !exit.locals.is_empty() {
+                entries.push(StackMapEntry::Skip(VM_ENV_DATA_SIZE as usize));
+                entries.extend(exit.locals.iter().rev().copied().map(StackMapEntry::Opnd));
+            }
+
+            let pc = match exit.pc {
+                Opnd::UImm(pc) => pc as *const VALUE,
+                _ => unreachable!("side-exit PC should be a constant pointer: {:?}", exit.pc),
+            };
+            let jit_frame = crate::jit_frame::JITFrame::new_side_exit_descriptor(
+                pc,
+                exit.iseq,
+                entries.len(),
+            );
+            let current_map = StackMap::new(entries, jit_frame, exit.frame_depth);
+            let mut captured = HashMap::new();
+            let mut capture_idx = 0;
+            compile_exit_stack_map(asm, &current_map, &mut captured, &mut capture_idx, false);
+            if let Some(caller_map) = &exit.stack_map {
+                compile_exit_stack_map(asm, caller_map, &mut captured, &mut capture_idx, true);
+            }
+
+            let recompile = recompile_epilogue(exit);
+            let label = if let Some(&label) = descriptor_labels.get(&recompile) {
+                label
+            } else {
+                let label = asm.new_label("descriptor_side_exit_epilogue").unwrap_label();
+                descriptor_labels.insert(recompile.clone(), label);
+                descriptor_epilogues.push((label, recompile));
+                label
+            };
+
+            // The call return address points at the embedded JITFrame pointer.
+            // The epilogue consumes it and never returns to these data bytes.
+            asm.call(Target::Label(label));
+            asm.embed_u64(jit_frame as u64);
+        }
+
+        fn compile_descriptor_epilogue(
+            asm: &mut Assembler,
+            recompile: &Option<SideExitRecompileEpilogue>,
+        ) {
+            unsafe extern "C" {
+                fn rb_zjit_materialize_frames(ec: EcPtr, cfp: CfpPtr);
+            }
+
+            asm.install_jit_frame_from_call_data();
+            asm_comment!(asm, "materialize descriptor side exit");
+            asm_ccall!(asm, rb_zjit_materialize_frames, EC, CFP);
+            if let Some(recompile) = recompile {
+                compile_exit_recompile(asm, recompile);
+            }
+            asm_comment!(asm, "exit to the interpreter");
+            asm.jmp(Target::CodePtr(ZJITState::get_exit_trampoline()));
         }
 
         fn join_opnds(opnds: &Vec<Opnd>, delimiter: &str) -> String {
@@ -3196,15 +3739,38 @@ impl Assembler
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::with_capacity(targets.len());
 
+        // Count distinct exits per shareable suffix up front. Whole-exit
+        // deduplication happens separately below, so duplicate guard targets
+        // must not make a singleton suffix look profitable.
+        let unique_exits: HashSet<SideExit> = targets.values().filter_map(|target| {
+            let Target::SideExit(data) = target else { return None };
+            Some(data.exit.clone())
+        }).collect();
+        let mut epilogue_counts: HashMap<SideExitEpilogue, usize> = HashMap::new();
+        for exit in &unique_exits {
+            if let Some(epilogue) = exit_epilogue(exit) {
+                *epilogue_counts.entry(epilogue).or_default() += 1;
+            }
+        }
+
+        // Shared suffixes are emitted after every exit-specific state-save stub.
+        let mut epilogue_labels: HashMap<SideExitEpilogue, Label> = HashMap::new();
+        let mut epilogues: Vec<(Label, SideExitEpilogue)> = vec![];
+        let mut descriptor_labels: HashMap<Option<SideExitRecompileEpilogue>, Label> = HashMap::new();
+        let mut descriptor_epilogues: Vec<(Label, Option<SideExitRecompileEpilogue>)> = vec![];
+        let mut descriptor_exit_count = 0;
+
         // Start a new perf range for side exits.
         let symbol_range = perf::symbol_range_start(self, "side exit");
 
-        // Mark the start of side-exit code so we can measure its size
-        if !targets.is_empty() {
-            self.pos_marker(move |start_pos, cb| {
-                let end_pos = cb.get_write_ptr();
-                let size = end_pos.as_offset() - start_pos.as_offset();
-                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size_bytes, size as u64);
+        // Mark both ends of side-exit code so data appended by the backend,
+        // such as a literal pool, is not counted as side-exit code.
+        let has_targets = !targets.is_empty();
+        let side_exit_range_start = Rc::new(Cell::new(None));
+        if has_targets {
+            let side_exit_range_start = Rc::clone(&side_exit_range_start);
+            self.pos_marker(move |start_pos, _| {
+                side_exit_range_start.set(Some(start_pos));
             });
         }
 
@@ -3240,7 +3806,7 @@ impl Assembler
                     }
 
                     if should_record_exit {
-                        compile_exit(self, &exit, Some(reason));
+                        compile_exit(self, &exit, Some(reason), &epilogue_counts, &mut epilogue_labels, &mut epilogues);
                     } else {
                         // If the side exit has already been compiled, jump to it.
                         // Otherwise, let it fall through and compile the exit next.
@@ -3260,7 +3826,12 @@ impl Assembler
                         let new_exit = self.new_label("side_exit");
                         self.write_label(new_exit.clone());
                         asm_comment!(self, "Exit: {}", entry.key().pc);
-                        compile_exit(self, entry.key(), None);
+                        if Self::descriptor_side_exit_p(entry.key()) {
+                            compile_descriptor_exit(self, entry.key(), &mut descriptor_labels, &mut descriptor_epilogues);
+                            descriptor_exit_count += 1;
+                        } else {
+                            compile_exit(self, entry.key(), None, &epilogue_counts, &mut epilogue_labels, &mut epilogues);
+                        }
                         entry.insert(new_exit.unwrap_label());
                         new_exit
                     }
@@ -3270,11 +3841,38 @@ impl Assembler
             }
         }
 
+        for (label, recompile) in &descriptor_epilogues {
+            self.write_label(Target::Label(*label));
+            asm_comment!(self, "shared descriptor side-exit epilogue");
+            compile_descriptor_epilogue(self, recompile);
+        }
+
+        for (label, epilogue) in &epilogues {
+            self.write_label(Target::Label(*label));
+            asm_comment!(self, "shared side-exit epilogue");
+            compile_exit_epilogue(self, epilogue);
+        }
+
+        if has_targets {
+            self.pos_marker(move |end_pos, _| {
+                let start_pos = side_exit_range_start.get()
+                    .expect("side-exit end marker must follow its start marker");
+                let size = end_pos.as_offset() - start_pos.as_offset();
+                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size_bytes, size as u64);
+            });
+        }
+
         // Measure time spent compiling side-exit LIR
         if !compiled_exits.is_empty() {
             let nanos = side_exit_start.elapsed().as_nanos();
             crate::stats::incr_counter_by(crate::stats::Counter::compile_side_exit_time_ns, nanos as u64);
             crate::stats::incr_counter_by(crate::stats::Counter::compiled_side_exit_count, compiled_exits.len() as u64);
+            crate::stats::incr_counter_by(crate::stats::Counter::compiled_side_exit_epilogue_count, epilogues.len() as u64);
+            let shared_exit_count = epilogues.iter()
+                .map(|(_, epilogue)| epilogue_counts.get(epilogue).copied().unwrap_or(0))
+                .sum::<usize>();
+            crate::stats::incr_counter_by(crate::stats::Counter::shared_side_exit_count, shared_exit_count as u64);
+            crate::stats::incr_counter_by(crate::stats::Counter::compiled_descriptor_side_exit_count, descriptor_exit_count);
         }
 
         // Close the current perf range for side exits
@@ -3917,6 +4515,24 @@ impl Assembler {
         out
     }
 
+    /// Scalar-double floating-point arithmetic on raw double bit patterns.
+    /// `left`/`right` are 64-bit IEEE-754 bit patterns; the result is the
+    /// operation's bit pattern. See [`Insn::FloatArith`].
+    #[must_use]
+    pub fn float_arith(&mut self, op: FloatArithOp, left: Opnd, right: Opnd) -> Opnd {
+        let out = self.new_vreg(64);
+        self.push_insn(Insn::FloatArith { op, left, right, out });
+        out
+    }
+
+    /// Scaled element load: `out = *(base + index * SIZEOF_VALUE)`. arm64 only.
+    #[must_use]
+    pub fn load_scaled(&mut self, base: Opnd, index: Opnd) -> Opnd {
+        let out = self.new_vreg(64);
+        self.push_insn(Insn::LoadScaled { base, index, out });
+        out
+    }
+
     pub fn bake_string(&mut self, text: &str) {
         self.push_insn(Insn::BakeString(text.to_string()));
     }
@@ -3960,6 +4576,26 @@ impl Assembler {
         let out = self.new_vreg(num_bits);
         let stack_map = self.stack_map.take();
         self.push_insn(Insn::CCall { data: Box::new(CCallData { opnds: vec![], stack_map, fptr, start_marker: None, end_marker: None, out }) });
+        out
+    }
+
+    /// Call a runtime function pointer with ZJIT's JIT-to-JIT argument
+    /// convention. Unlike [`Self::ccall_reg`], this accepts arguments and lets
+    /// register allocation choose where the target lives; lowering stages the
+    /// target before shuffling arguments.
+    pub fn ccall_zjit(&mut self, fptr: Opnd, opnds: Vec<Opnd>) -> Opnd {
+        let out = self.new_vreg(Opnd::match_num_bits(&opnds));
+        let stack_map = self.stack_map.take();
+        self.push_insn(Insn::CCall {
+            data: Box::new(CCallData {
+                opnds,
+                stack_map,
+                fptr,
+                start_marker: None,
+                end_marker: None,
+                out,
+            }),
+        });
         out
     }
 
@@ -4114,13 +4750,26 @@ impl Assembler {
         self.push_insn(Insn::IncrCounter { mem, value });
     }
 
-    pub fn jb(&mut self, target: Target) {
-        self.push_insn(Insn::Jb(target));
-    }
-
+    // NOTE: `jb`/`je`/`jnz`/... for CFG-building codegen live in
+    // `define_split_jumps!` (codegen.rs): they end the current block so a
+    // conditional branch never lands mid-block (see `validate_jump_positions`).
+    // `jg` below is a *raw* emit that does NOT split the block; it is only for
+    // backend lowering (post-CFG, e.g. arm64_split), never for codegen.
     #[allow(dead_code)]
     pub fn jg(&mut self, target: Target) {
         self.push_insn(Insn::Jg(target));
+    }
+
+    pub fn call(&mut self, target: Target) {
+        self.push_insn(Insn::Call(target));
+    }
+
+    pub fn embed_u64(&mut self, value: u64) {
+        self.push_insn(Insn::EmbedU64(value));
+    }
+
+    pub fn install_jit_frame_from_call_data(&mut self) {
+        self.push_insn(Insn::InstallJITFrameFromCallData);
     }
 
     pub fn jmp(&mut self, target: Target) {
@@ -4189,6 +4838,15 @@ impl Assembler {
     pub fn not(&mut self, opnd: Opnd) -> Opnd {
         let out = self.new_vreg(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn::Not { opnd, out });
+        out
+    }
+
+    /// Convert a signed 64-bit integer to a double, returning the double's raw
+    /// bit pattern. See [`Insn::Int64ToF64Bits`].
+    #[must_use]
+    pub fn int64_to_f64_bits(&mut self, opnd: Opnd) -> Opnd {
+        let out = self.new_vreg(64);
+        self.push_insn(Insn::Int64ToF64Bits { opnd, out });
         out
     }
 
@@ -4281,10 +4939,39 @@ impl Assembler {
         self.push_insn(Insn::Sub { left, right, out: left });
     }
 
+    /// Integer multiplication. CAUTION: the x86_64 lowering is two-address
+    /// (`imul` writes the product into `left`'s register before the split
+    /// forwards it to `out`), so `left` must not be read after this insn --
+    /// pass a dying value or copy it first (see gen_fixnum_div).
     #[must_use]
     pub fn mul(&mut self, left: Opnd, right: Opnd) -> Opnd {
         let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::Mul { left, right, out });
+        out
+    }
+
+    /// Signed truncated 64-bit division. See [`Insn::SDiv`] for the
+    /// preconditions (nonzero divisor, no INT64_MIN/-1).
+    #[must_use]
+    pub fn sdiv(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
+        self.push_insn(Insn::SDiv { left, right, out });
+        out
+    }
+
+    /// Signed truncated 64-bit remainder. See [`Insn::SRem`].
+    #[must_use]
+    pub fn srem(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
+        self.push_insn(Insn::SRem { left, right, out });
+        out
+    }
+
+    /// High 64 bits of the signed 128-bit product. See [`Insn::SMulHi`].
+    #[must_use]
+    pub fn smulhi(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
+        self.push_insn(Insn::SMulHi { left, right, out });
         out
     }
 
@@ -5360,5 +6047,80 @@ mod tests {
             }
         });
         assert!(has_stack_opnd, "v0 should be rewritten to a Stack memory operand");
+    }
+
+    /// Lower one indirect ZJIT call through register allocation and
+    /// handle_caller_saved_regs with `num_regs` allocatable and argument registers.
+    fn lower_indirect_zjit_call(args: &[Opnd], num_regs: usize) -> (Vec<Insn>, Option<Reg>) {
+        use crate::backend::current::ALLOC_REGS;
+        let mut asm = Assembler::new();
+        let block = asm.new_block(hir::BlockId(0), true, 0);
+        asm.set_current_block(block);
+        let label = asm.new_label("bb0");
+        asm.write_label(label);
+
+        let target = asm.load(Opnd::UImm(0xF00));
+        let mut opnds = vec![];
+        for &arg in args {
+            opnds.push(if matches!(arg, Opnd::UImm(_)) && opnds.len() < num_regs { asm.load(arg) } else { arg });
+        }
+        let result = asm.ccall_zjit(target, opnds);
+        asm.cret(result);
+
+        let live_in = asm.analyze_liveness();
+        asm.number_instructions(0);
+        let mut intervals = asm.build_intervals(live_in);
+        let mut regs = alloc_reg_pool(num_regs);
+        asm.preferred_register_assignments(&mut intervals, &mut regs);
+        let num_stack_slots = asm.linear_scan(&intervals, &regs);
+        asm.stack_state.num_spill_slots = num_stack_slots;
+        let target_reg = intervals[target.vreg_idx()].assigned.get().and_then(|alloc| alloc.assigned_reg(&regs));
+
+        asm.handle_caller_saved_regs(&intervals, &regs, &ALLOC_REGS[..num_regs]);
+        (asm.basic_blocks[block.0].insns.clone(), target_reg)
+    }
+
+    fn position(insns: &[Insn], pred: impl Fn(&Insn) -> bool) -> Option<usize> {
+        insns.iter().position(pred)
+    }
+
+    #[test]
+    fn test_indirect_zjit_call_stages_target_before_arguments() {
+        use crate::backend::current::{ALLOC_REGS, CALL_TARGET_REG};
+
+        // With two registers the call target and the argument both live in
+        // allocatable registers that double as argument registers, so an
+        // argument move could overwrite the target without dedicated staging.
+        let (insns, target_reg) = lower_indirect_zjit_call(&[Opnd::UImm(42)], 2);
+        let target_reg = Opnd::Reg(target_reg.expect("expected the target in a register"));
+
+        let stage_index = position(&insns, |insn| matches!(insn,
+            Insn::LoadInto { dest: Opnd::Reg(reg), opnd } if *reg == CALL_TARGET_REG && *opnd == target_reg))
+            .expect("expected the indirect target to be staged");
+        let call_index = position(&insns, |insn| matches!(insn,
+            Insn::CCall { data } if data.fptr == Opnd::Reg(CALL_TARGET_REG) && data.opnds.is_empty()))
+            .expect("expected an indirect call through the staged target");
+        assert!(stage_index < call_index);
+        if let Some(argument_index) = position(&insns, |insn| matches!(insn,
+            Insn::Mov { dest: Opnd::Reg(reg), .. } | Insn::LoadInto { dest: Opnd::Reg(reg), .. }
+                if *reg != CALL_TARGET_REG && ALLOC_REGS[..2].contains(reg))) {
+            assert!(stage_index < argument_index, "the target must be staged before argument moves");
+        }
+    }
+
+    #[test]
+    fn test_indirect_zjit_call_stages_target_after_stack_arguments() {
+        use crate::backend::current::CALL_TARGET_REG;
+
+        // Arguments beyond the argument registers are pushed, and pushing an
+        // immediate splits through the scratch register that is also
+        // CALL_TARGET_REG. Staging the target first would let the push clobber it.
+        let (insns, _) = lower_indirect_zjit_call(&[Opnd::UImm(1), Opnd::UImm(2), Opnd::UImm(3)], 2);
+        let push_index = position(&insns, |insn| matches!(insn, Insn::CPushPair(None, Opnd::UImm(3))))
+            .expect("expected the third argument to be pushed");
+        let stage_index = position(&insns, |insn| matches!(insn,
+            Insn::LoadInto { dest: Opnd::Reg(reg), .. } if *reg == CALL_TARGET_REG))
+            .expect("expected the indirect target to be staged");
+        assert!(push_index < stage_index, "stack-argument pushes must precede target staging");
     }
 }

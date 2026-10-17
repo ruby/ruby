@@ -165,6 +165,9 @@ make_counters! {
         invalidation_time_ns,
 
         compiled_side_exit_count,
+        compiled_descriptor_side_exit_count,
+        compiled_side_exit_epilogue_count,
+        shared_side_exit_count,
         side_exit_size_bytes,
         compile_side_exit_time_ns,
 
@@ -209,7 +212,9 @@ make_counters! {
         exit_fixnum_lshift_overflow,
         exit_fixnum_mod_by_zero,
         exit_fixnum_div_by_zero,
+        exit_fixnum_div_overflow,
         exit_box_fixnum_overflow,
+        exit_flonum_arith_result_not_flonum,
         exit_guard_type_failure,
         exit_guard_bit_equals_failure,
         exit_guard_int_equals_failure,
@@ -243,11 +248,14 @@ make_counters! {
         exit_splatkw_polymorphic,
         exit_splatkw_not_profiled,
         exit_caller_splat_length_mismatch,
+        exit_caller_kw_splat_mismatch,
+        exit_string_coderange_unknown,
         exit_caller_splat_ruby2_keywords,
         exit_directive_induced,
         exit_send_while_tracing,
         exit_invokeblock_not_ifunc,
         exit_once_not_done,
+        exit_invokeblock_profile_miss,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
@@ -305,6 +313,7 @@ make_counters! {
         non_variadic_cfunc_optimized_send_count,
         variadic_cfunc_optimized_send_count,
         block_iseq_direct_optimized_send_count,
+        block_iseq_dynamic_optimized_send_count,
     }
 
     // Ivar fallback counters that are summed as dynamic_setivar_count
@@ -473,7 +482,9 @@ make_counters! {
     invokeblock_handler_monomorphic_ifunc,
     invokeblock_handler_monomorphic_other,
     invokeblock_handler_polymorphic,
+    invokeblock_handler_skewed_polymorphic,
     invokeblock_handler_megamorphic,
+    invokeblock_handler_skewed_megamorphic,
     invokeblock_handler_no_profiles,
 
     // HIR-level method inliner counters. Most rejection counters are incremented
@@ -613,7 +624,9 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         FixnumLShiftOverflow          => exit_fixnum_lshift_overflow,
         FixnumModByZero               => exit_fixnum_mod_by_zero,
         FixnumDivByZero               => exit_fixnum_div_by_zero,
+        FixnumDivOverflow             => exit_fixnum_div_overflow,
         BoxFixnumOverflow             => exit_box_fixnum_overflow,
+        FlonumArithResultNotFlonum    => exit_flonum_arith_result_not_flonum,
         GuardType(_)                  => exit_guard_type_failure,
         GuardShape(_)                 => exit_guard_shape_failure,
         ExpandArray                   => exit_expandarray_failure,
@@ -633,6 +646,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         SplatKwPolymorphic            => exit_splatkw_polymorphic,
         SplatKwNotProfiled            => exit_splatkw_not_profiled,
         CallerSplatLengthMismatch     => exit_caller_splat_length_mismatch,
+        CallerKwSplatMismatch         => exit_caller_kw_splat_mismatch,
+        StringCoderangeUnknown        => exit_string_coderange_unknown,
         CallerSplatRuby2Keywords      => exit_caller_splat_ruby2_keywords,
         DirectiveInduced              => exit_directive_induced,
         PatchPoint(Invariant::BOPRedefined { .. })
@@ -659,6 +674,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         NoProfileSetIvar              => exit_no_profile_setivar,
         InvokeBlockNotIfunc           => exit_invokeblock_not_ifunc,
         OnceNotDone                   => exit_once_not_done,
+        InvokeBlockProfileMiss        => exit_invokeblock_profile_miss,
     }
 }
 

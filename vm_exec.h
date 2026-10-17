@@ -169,7 +169,6 @@ default:                        \
 #define JIT_EXEC(ec, val) do { \
     /* don't run tailcalls since that breaks FINISH */ \
     if (UNDEF_P(val) && GET_CFP() != ec->cfp) { \
-        rb_zjit_func_t zjit_entry; \
         if (rb_yjit_enabled_p) { \
             rb_jit_func_t func = yjit_compile(ec); \
             if (func) { \
@@ -177,10 +176,11 @@ default:                        \
                 if (ec->tag->state) THROW_EXCEPTION(val); \
             } \
         } \
-        else if ((zjit_entry = (rb_zjit_func_t)rb_zjit_entry)) { \
+        else if (rb_zjit_enabled_p) { \
             rb_jit_func_t func = zjit_compile(ec); \
             if (func) { \
-                val = zjit_entry(ec, ec->cfp, func); \
+                /* jit_entry is a self-contained per-ISEQ entry stub, as in jit_exec() */ \
+                val = func(ec, ec->cfp); \
             } \
         } \
     } \

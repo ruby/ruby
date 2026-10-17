@@ -1,11 +1,11 @@
 #![cfg(test)]
 
-use super::{gen_insn, JITState};
+use super::{gen_insn, resolve_block_iseq, JITState};
 use crate::asm::CodeBlock;
 use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
-use crate::hir::{Insn, iseq_to_hir};
+use crate::hir::{Insn, InsnId, SideExitReason, iseq_to_hir};
 use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_exits_until_invalidate};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
@@ -248,6 +248,52 @@ fn test_recompile_exit_waits_for_exit_budget() {
 }
 
 #[test]
+fn test_float_result_not_flonum_recompiles() {
+    // -0.0 has no flonum encoding, so the open-coded multiply's result box exits on it.
+    // That is legal output, so the exit spends the exit budget and invalidates the
+    // version rather than side-exiting on every call forever.
+    set_call_threshold(2);
+    set_num_exits_until_invalidate(2);
+    eval("
+        def float_mul_result(a, b) = a * b
+        float_mul_result(1.5, 2.0)
+        float_mul_result(1.5, 2.0)
+    ");
+
+    let iseq = get_method_iseq("self", "float_mul_result");
+    assert!(!unsafe { get_or_create_iseq_payload(iseq).versions.last().unwrap().as_ref() }.is_invalidated());
+    for _ in 0..2 {
+        assert_eq!(inspect("float_mul_result(0.0, -1.0)"), "-0.0");
+    }
+    assert!(unsafe { get_or_create_iseq_payload(iseq).versions.last().unwrap().as_ref() }.is_invalidated());
+}
+
+#[test]
+fn test_uses_descriptor_side_exits() {
+    // Guards whose exits need no boxing restore the frame from a descriptor.
+    set_call_threshold(2);
+    eval("
+        def shared_exit_epilogue_sample(a, b, c, d)
+          x = a + b
+          y = x * c
+          z = y - d
+          q = z / b
+          r = q % c
+          r + a
+        end
+    ");
+
+    let counters = crate::state::ZJITState::get_counters();
+    let descriptors_before = counters.compiled_descriptor_side_exit_count;
+    eval("
+        shared_exit_epilogue_sample(7, 3, 5, 2)
+        shared_exit_epilogue_sample(7, 3, 5, 2)
+    ");
+
+    assert!(counters.compiled_descriptor_side_exit_count >= descriptors_before + 2);
+}
+
+#[test]
 fn test_function_stub_reprofiles_after_invalidation() {
     rb_zjit_prepare_options();
     set_inline_threshold(0);
@@ -290,6 +336,38 @@ fn test_function_stub_reprofiles_after_invalidation() {
     // The following hit observes a completed profiling window and recompiles.
     assert_eq!(Qtrue, eval("stub_reprofile_entry(1.5) == 2.5"));
     assert_eq!(2, get_or_create_iseq_payload(target_iseq).versions.len());
+}
+
+#[test]
+fn test_descriptor_side_exit_materializes_locals_and_stack() {
+    set_call_threshold(2);
+    eval("
+        def descriptor_exit_sample(a, b)
+          left = a
+          right = b
+          sum = left + right
+          [left, right, sum]
+        end
+
+        def descriptor_exit_stack_arg(a, b, c, d, e, f, g, h)
+          [a, h, a + h]
+        end
+    ");
+
+    let counters = crate::state::ZJITState::get_counters();
+    let descriptors_before = counters.compiled_descriptor_side_exit_count;
+    eval("
+        descriptor_exit_sample(1, 2)
+        descriptor_exit_sample(1, 2)
+        raise unless descriptor_exit_sample('a', 'b') == ['a', 'b', 'ab']
+
+        descriptor_exit_stack_arg(1, 2, 3, 4, 5, 6, 7, 8)
+        descriptor_exit_stack_arg(1, 2, 3, 4, 5, 6, 7, 8)
+        result = descriptor_exit_stack_arg('a', 2, 3, 4, 5, 6, 7, 'h')
+        raise unless result == ['a', 'h', 'ah']
+    ");
+
+    assert!(counters.compiled_descriptor_side_exit_count > descriptors_before);
 }
 
 #[test]
@@ -475,6 +553,19 @@ fn test_concattoarray() {
     ");
     assert_contains_opcode("test", YARVINSN_concattoarray);
     assert_snapshot!(assert_compiles("test 3"), @"[1, 2, 3]");
+}
+
+#[test]
+fn test_fusion_skips_type_unreachable_array_receiver() {
+    // `!nil` folds to true, so the branch calling `a.max` / `a.sum { }` is unreachable when
+    // fusion runs, and `a` is still typed Empty there. Empty passes is_subtype(ArrayExact),
+    // which once made the fusion matcher emit Array code on a receiver of any type.
+    set_call_threshold(1);
+    eval("
+        def unreachable_max(a) = (!nil) ? 1 : a.max
+        def unreachable_sum(a) = (!nil) ? 1 : a.sum { |x| x }
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("[unreachable_max([1.0, 2.0]), unreachable_sum([1, 2])]"), @"[1, 1]");
 }
 
 #[test]
@@ -1036,8 +1127,9 @@ fn test_yield_polymorphic_blocks_dispatch_directly() {
 
 #[test]
 fn test_yield_polymorphic_non_iseq_handler_falls_back() {
-    // A proc handler at a polymorphic yield site fails the ISEQ tag check and takes the
-    // generic InvokeBlock fallback in-line, without a side exit or another recompile.
+    // A proc handler the profile never saw at a polymorphic yield site fails every dispatch
+    // arm and takes a profiling side exit (InvokeBlockProfileMiss) toward a recompile that
+    // adds its arm; the results stay right throughout.
     set_call_threshold(2);
     eval("
         def invoke = yield(10)
@@ -1051,7 +1143,7 @@ fn test_yield_polymorphic_non_iseq_handler_falls_back() {
     for _ in 0..num_profiles + 2 {
         eval("add_one; double; via_proc(proc { |x| x * 3 })");
     }
-    assert_snapshot!(assert_compiles("[add_one, double, via_proc(proc { |x| x * 3 })]"), @"[11, 20, 30]");
+    assert_snapshot!(assert_compiles_allowing_exits("[add_one, double, via_proc(proc { |x| x * 3 })]"), @"[11, 20, 30]");
 }
 
 #[test]
@@ -1076,8 +1168,9 @@ fn test_yield_polymorphic_symbol_handler_falls_back() {
 
 #[test]
 fn test_yield_polymorphic_ifunc_handler_falls_back() {
-    // An ifunc handler (Enumerator#each yields to the enumerator's C block) at a polymorphic
-    // yield site fails the ISEQ tag check and takes the generic InvokeBlock fallback in-line.
+    // An ifunc handler (Enumerator#each yields to the enumerator's C block) the profile never
+    // saw at a polymorphic yield site fails every dispatch arm and takes a profiling side exit
+    // (InvokeBlockProfileMiss) toward a recompile that adds its arm.
     // Threshold 4 keeps calls 1-3 in the profile window (num_profiles defaults to 5), so
     // invoke's first compile already sees both blocks and installs the polymorphic dispatch;
     // the standalone version matters here because the Enumerator calls invoke from C.
@@ -1090,7 +1183,7 @@ fn test_yield_polymorphic_ifunc_handler_falls_back() {
         add_one; double
         add_one; double
     ");
-    assert_snapshot!(assert_compiles("[add_one, double, via_enum]"), @"[11, 20, [10]]");
+    assert_snapshot!(assert_compiles_allowing_exits("[add_one, double, via_enum]"), @"[11, 20, [10]]");
 }
 
 #[test]
@@ -1235,6 +1328,151 @@ fn test_yield_with_lambda_arg() {
 }
 
 #[test]
+fn test_yield_with_proc_arg_direct_arm() {
+    // A plain iseq-proc passed via &pr takes the direct block call; a lambda reaching
+    // the warmed site keeps its strict arity through the generic fallback.
+    set_call_threshold(2);
+    eval("
+        def foo(a, b) = yield(a, b)
+        def test(pr) = foo(1, 2, &pr)
+        PR = proc { |a| a * 10 }
+        test(PR)
+        test(PR)
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("[test(PR), test(proc { |a| a * 10 }), (test(->(a) { a }) rescue $!.class)]"), @"[10, 10, ArgumentError]");
+}
+
+#[test]
+fn test_yield_refined_proc_copy_keeps_refinements() {
+    // Proc#refined shares the original's block ISEQ, so a site warmed with the plain proc
+    // matches the refined copy's ISEQ too. It must still take the generic call, which
+    // pushes the refinement cref.
+    set_call_threshold(2);
+    eval(r#"
+        class String; def zjit_tag = "plain"; end
+        module ZJITTagRefine; refine(String) { def zjit_tag = "refined" }; end
+        def foo(s) = yield(s)
+        def test(pr) = foo("x", &pr)
+        TAGP = proc { |s| s.zjit_tag }
+        TAGR = TAGP.refined(ZJITTagRefine)
+        test(TAGP)
+        test(TAGP)
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits("[test(TAGP), test(TAGR)]"), @r#"["plain", "refined"]"#);
+}
+
+#[test]
+fn test_yield_symbol_handler_specialized_and_invalidated() {
+    // `yield 5` to &:succ compiles like `5.succ`; redefining Integer#succ afterwards
+    // must invalidate the inlined body.
+    set_call_threshold(2);
+    eval("
+        def foo = yield(5)
+        def test = foo(&:succ)
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"6");
+    assert_snapshot!(inspect("
+        class Integer
+          def succ = self + 100
+        end
+        test
+    "), @"105");
+}
+
+#[test]
+fn test_yield_symbol_handler_with_kwargs_stays_generic() {
+    // `yield(k: 1)` to &:itself makes the keyword hash the receiver ({k: 1}.itself), so the
+    // Symbol arm, which takes the single positional argument as the receiver, must not apply.
+    set_call_threshold(2);
+    eval("
+        def foo = yield(k: 1)
+        def test = foo(&:itself)
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"{k: 1}");
+}
+
+#[test]
+fn test_yield_symbol_handler_private_method_raises() {
+    // Symbol procs call with public visibility: a private target (block_given? is a
+    // private, inlinable Kernel method) or a protected one must raise NoMethodError.
+    set_call_threshold(2);
+    eval("
+        class Integer
+          protected def zjit_prot = 1
+        end
+        def foo = yield(5)
+        def priv = (foo(&:block_given?) rescue $!.class)
+        def prot = (foo(&:zjit_prot) rescue $!.class)
+        priv; priv; prot; prot
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("[priv, prot]"), @"[NoMethodError, NoMethodError]");
+}
+
+#[test]
+fn test_licm_hoists_length_of_constant_array_in_fused_map() {
+    // The constant-folded receiver of a fused map is defined inside the loop, so the
+    // ArrayLength hoisted into the preheader needs its own copy of the Const there.
+    set_call_threshold(2);
+    eval("
+        ARR = (1..10).to_a
+        def test = ARR.map { |x| x * 2 }
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test.sum"), @"110");
+}
+
+#[test]
+fn test_yield_throwing_handler_cascade() {
+    // Profile one literal block and one Proc at the same yield before compiling
+    // the yielder. Both ISEQs contain throw, and both should take a direct
+    // dispatch arm backed by a real VM block frame.
+    set_call_threshold(3);
+    eval("
+        def throwing_handler_cascade(value)
+          result = yield(value)
+          [:yielded, result]
+        end
+
+        def literal_throw_driver(value)
+          result = throwing_handler_cascade(value) do |should_break|
+            break :literal_break if should_break
+            :literal_body
+          end
+          [result, :literal_after]
+        end
+
+        def proc_throw_driver(value)
+          handler = proc do |should_return|
+            return :proc_return if should_return
+            :proc_body
+          end
+          result = throwing_handler_cascade(value, &handler)
+          [result, :proc_after]
+        end
+
+        literal_throw_driver(false)
+        proc_throw_driver(false)
+    ");
+
+    let iseq = get_method_iseq("self", "throwing_handler_cascade");
+    let function = iseq_to_hir(iseq).unwrap();
+    let direct_arms = (0..function.num_insns())
+        .filter(|&index| matches!(function.find(InsnId::from(index)), Insn::InvokeBlockIseqDirect { .. }))
+        .count();
+    assert_eq!(2, direct_arms, "expected direct dispatch arms for the throwing ISEQ and Proc handlers");
+
+    assert_snapshot!(
+        assert_compiles_allowing_exits("[literal_throw_driver(true), proc_throw_driver(true)]"),
+        @"[[:literal_break, :literal_after], :proc_return]"
+    );
+}
+
+#[test]
 fn test_yield_break() {
     set_call_threshold(2);
     eval("
@@ -1321,6 +1559,77 @@ fn test_throw_break_value_used_by_caller() {
         test([1, 2, 3])
     ");
     assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3])"), @r#""102""#);
+}
+
+#[test]
+fn test_throw_break_into_frame_with_float_temporary() {
+    // `a * b` waits on the operand stack across the block call. The break materializes the
+    // frame from that call's stack map and the interpreter resumes it at the `+`, so the slot
+    // must hold a VALUE, not a raw double whose box was sunk to the deopt path (+0.0 read back
+    // as false, 18.0 as a wild pointer).
+    set_call_threshold(2);
+    eval("
+        def each_once = yield
+        def test(a, b) = (a * b) + each_once { break 1.5 }
+        test(0.0, 6.0)
+        test(0.0, 6.0)
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("[test(0.0, 6.0), test(3.0, 6.0)]"), @"[1.5, 19.5]");
+}
+
+#[test]
+fn test_throw_break_into_loop_with_float_accumulator() {
+    // The loop-carried accumulator `s` sits on the operand stack across the block call, so its
+    // stack-map slot must hold a VALUE when the break resumes the frame in the interpreter.
+    // Warming up with a +0.0 accumulator makes a raw slot fail as `false + 0.5`.
+    set_call_threshold(2);
+    eval("
+        def yield_one(x) = yield(x)
+        def test(n, step)
+          s = 0.0
+          i = 0
+          while i < n
+            s = s + yield_one(i) { |v| break 0.5 if v == n - 1; step }
+            i += 1
+          end
+          s
+        end
+        test(4, 0.0)
+        test(4, 0.0)
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("[test(4, 0.0), test(4, 1.0)]"), @"[0.5, 3.5]");
+}
+
+#[test]
+fn test_loop_counter_entering_as_nil_stays_compiled() {
+    // `r` is still nil when the second outer loop is entered and is reset to 0 before
+    // each inner loop. Untagging its loop-carried web would guard that nil to Fixnum on
+    // loop entry -- a guard that can never pass -- so every call would side-exit there.
+    // (The first loop gives that entry a state to hang the guard on.)
+    set_call_threshold(2);
+    eval("
+        def test(a)
+          s = 0
+          i = 0
+          while i < 3
+            s += a[i]
+            i += 1
+          end
+          c = 0
+          while c < 4
+            r = 0
+            while r < 3
+              s += a[r]
+              r += 1
+            end
+            c += 1
+          end
+          s
+        end
+        test([1, 2, 3])
+        test([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles("test([1, 2, 3])"), @"30");
 }
 
 #[test]
@@ -1459,6 +1768,359 @@ fn test_throw_break_inner_loop_repeatedly() {
         test([1, 2, 3])
     ");
     assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3])"), @"18");
+}
+
+#[test]
+fn test_yield_megamorphic_runtime_iseq_dispatch() {
+    rb_zjit_prepare_options();
+    let old_call_threshold = unsafe { crate::options::rb_zjit_call_threshold };
+    let old_inline_threshold = get_option!(inline_threshold);
+    set_call_threshold(2);
+    set_inline_threshold(0);
+
+    // Compile the Proc bodies before they reach the shared yield site.
+    eval("
+        RUNTIME_ISEQ_PROCS = [
+          proc { |x| x + 1 },
+          proc { |x| x + 2 },
+          proc { |x| x + 3 },
+          proc { |x| x + 4 },
+          proc { |x| x + 5 },
+          proc { |x| x + 6 },
+          proc { |x| x + 7 },
+          proc { |x| x + 8 },
+          proc { |x| x + 9 },
+          proc { |x| x + 10 },
+        ]
+
+        def make_runtime_captured_proc(offset)
+          proc { |x| x + offset }
+        end
+        RUNTIME_CAPTURED_PROCS = [10, 20, 30].map do |offset|
+          make_runtime_captured_proc(offset)
+        end
+
+        class RuntimeCapturedSelf
+          def initialize(offset)
+            @offset = offset
+          end
+
+          def handler
+            proc { |x| x + @offset }
+          end
+        end
+        RUNTIME_SELF_PROCS = [100, 200].map do |offset|
+          RuntimeCapturedSelf.new(offset).handler
+        end
+        RUNTIME_NESTED_INNER = proc { |x| x + 1 }
+        RUNTIME_NESTED_OUTER = proc do |x|
+          runtime_iseq_yielder(x, &RUNTIME_NESTED_INNER) + 10
+        end
+        # self plus 9 arguments overflows the argument registers on both arm64 (8) and x86-64 (6).
+        RUNTIME_WIDE_PROC = proc { |a, b, c, d, e, f, g, h, i| a + b + c + d + e + f + g + h + i }
+
+        3.times { RUNTIME_ISEQ_PROCS.each { |handler| handler.call(1) } }
+        3.times { RUNTIME_CAPTURED_PROCS.each { |handler| handler.call(1) } }
+        3.times { RUNTIME_SELF_PROCS.each { |handler| handler.call(1) } }
+        3.times { RUNTIME_NESTED_INNER.call(1) }
+        3.times { RUNTIME_WIDE_PROC.call(1, 2, 3, 4, 5, 6, 7, 8, 9) }
+    ");
+
+    // A shared yield site without a useful static profile should still call
+    // any already-compiled simple ISEQ body without rb_vm_invokeblock.
+    set_call_threshold(1);
+    eval("
+        def runtime_iseq_yielder(value)
+          yield value
+        end
+        def runtime_wide_yielder
+          yield 1, 2, 3, 4, 5, 6, 7, 8, 9
+        end
+        runtime_iseq_yielder(0, &RUNTIME_ISEQ_PROCS[0])
+        runtime_wide_yielder(&RUNTIME_WIDE_PROC)
+        3.times { RUNTIME_NESTED_OUTER.call(1) }
+    ");
+    let iseq = get_method_iseq("self", "runtime_iseq_yielder");
+
+    for index in 0..10 {
+        let block_iseq = get_proc_iseq(&format!("RUNTIME_ISEQ_PROCS[{index}]"));
+        let payload = get_or_create_iseq_payload(block_iseq);
+        assert!(
+            matches!(
+                payload.versions.last().map(|version| &unsafe { version.as_ref() }.status),
+                Some(IseqStatus::Compiled(_))
+            ),
+            "expected Proc body {index} to have a compiled JIT entry"
+        );
+        let handler = eval(&format!("RUNTIME_ISEQ_PROCS[{index}]"));
+        assert!(
+            !resolve_block_iseq(handler, 1).is_null(),
+            "expected Proc body {index} to resolve for dynamic dispatch"
+        );
+    }
+    let payload = get_or_create_iseq_payload(iseq);
+    assert!(matches!(
+        payload.versions.last().map(|version| &unsafe { version.as_ref() }.status),
+        Some(IseqStatus::Compiled(_))
+    ));
+    assert!(!resolve_block_iseq(eval("RUNTIME_WIDE_PROC"), 9).is_null());
+    let function = iseq_to_hir(iseq).unwrap();
+    assert!(
+        (0..function.num_insns()).any(|index| matches!(
+            function.find(InsnId::from(index)),
+            Insn::InvokeBlockIseqDynamic { .. }
+        )),
+        "expected a runtime-resolved ISEQ path"
+    );
+
+    assert_snapshot!(
+        assert_compiles_allowing_exits("
+            [
+              RUNTIME_ISEQ_PROCS.each_with_index.map do |handler, index|
+                runtime_iseq_yielder(index, &handler)
+              end,
+              RUNTIME_CAPTURED_PROCS.each_with_index.map do |handler, index|
+                runtime_iseq_yielder(index, &handler)
+              end,
+              RUNTIME_SELF_PROCS.each_with_index.map do |handler, index|
+                runtime_iseq_yielder(index, &handler)
+              end,
+              runtime_iseq_yielder(5, &RUNTIME_NESTED_OUTER),
+              runtime_wide_yielder(&RUNTIME_WIDE_PROC),
+            ]
+        "),
+        @"[[1, 3, 5, 7, 9, 11, 13, 15, 17, 19], [10, 21, 32], [100, 201], 16, 45]"
+    );
+
+    set_inline_threshold(old_inline_threshold);
+    set_call_threshold(old_call_threshold);
+}
+
+#[test]
+fn test_yield_runtime_iseq_dispatch_falls_back_for_unsupported_handlers() {
+    rb_zjit_prepare_options();
+    let old_call_threshold = unsafe { crate::options::rb_zjit_call_threshold };
+    let old_inline_threshold = get_option!(inline_threshold);
+    set_call_threshold(1);
+    set_inline_threshold(0);
+
+    eval("
+        RUNTIME_UNSUPPORTED_LAMBDA = ->(x) { [:lambda, x] }
+        RUNTIME_UNSUPPORTED_OPTIONAL = proc { |x = :default| [:optional, x] }
+
+        def runtime_unsupported_yielder(value, &block)
+          yield value
+        end
+
+        def runtime_many_args_yielder
+          yield 0, 1, 2, 3, 4, 5, 6, 7,
+                8, 9, 10, 11, 12, 13, 14, 15,
+                16, 17, 18, 19, 20, 21, 22, 23,
+                24, 25, 26, 27, 28, 29, 30, 31
+        end
+
+        runtime_unsupported_yielder(1, &RUNTIME_UNSUPPORTED_LAMBDA)
+        runtime_many_args_yielder { |*args| args.length }
+    ");
+
+    assert!(resolve_block_iseq(eval("RUNTIME_UNSUPPORTED_LAMBDA"), 1).is_null());
+    assert!(resolve_block_iseq(eval("RUNTIME_UNSUPPORTED_OPTIONAL"), 1).is_null());
+    assert!(resolve_block_iseq(eval(":itself"), 1).is_null());
+
+    let iseq = get_method_iseq("self", "runtime_unsupported_yielder");
+    let function = iseq_to_hir(iseq).unwrap();
+    assert!((0..function.num_insns()).any(|index| matches!(
+        function.find(InsnId::from(index)),
+        Insn::InvokeBlockIseqDynamic { .. }
+    )));
+    assert!((0..function.num_insns()).any(|index| matches!(
+        function.find(InsnId::from(index)),
+        Insn::InvokeBlock { .. }
+    )));
+    // Wide yields have no argument cap: the dynamic call passes the excess on the native
+    // stack. The rest-param block itself is unsupported, so resolution fails at runtime and
+    // that call takes the generic helper.
+    let many_args_iseq = get_method_iseq("self", "runtime_many_args_yielder");
+    let many_args_function = iseq_to_hir(many_args_iseq).unwrap();
+    assert!((0..many_args_function.num_insns()).any(|index| matches!(
+        many_args_function.find(InsnId::from(index)),
+        Insn::InvokeBlockIseqDynamic { .. }
+    )));
+
+    assert_snapshot!(
+        assert_compiles_allowing_exits("
+            [
+              runtime_unsupported_yielder(2, &RUNTIME_UNSUPPORTED_LAMBDA),
+              runtime_unsupported_yielder(nil, &RUNTIME_UNSUPPORTED_OPTIONAL),
+              runtime_unsupported_yielder(:symbol, &:itself),
+              runtime_many_args_yielder { |*args| args.length },
+            ]
+        "),
+        @"[[:lambda, 2], [:optional, nil], :symbol, 32]"
+    );
+
+    set_inline_threshold(old_inline_threshold);
+    set_call_threshold(old_call_threshold);
+}
+
+#[test]
+fn test_yield_runtime_iseq_dispatch_preserves_throw_frame() {
+    rb_zjit_prepare_options();
+    let old_call_threshold = unsafe { crate::options::rb_zjit_call_threshold };
+    let old_inline_threshold = get_option!(inline_threshold);
+    set_call_threshold(1);
+    set_inline_threshold(0);
+
+    eval("
+        $runtime_throw_log = []
+
+        def runtime_throw_yielder(value)
+          begin
+            result = yield(value)
+            [:yielded, result]
+          ensure
+            $runtime_throw_log << :ensured
+          end
+        end
+
+        def runtime_throw_driver(value)
+          result = runtime_throw_yielder(value) do |should_break|
+            break :dynamic_break if should_break
+            :dynamic_body
+          end
+          [result, :driver_after]
+        end
+
+        # The first invocation compiles the block body through the generic
+        # fallback. Later invocations can resolve its entry dynamically.
+        runtime_throw_driver(false)
+        runtime_throw_driver(false)
+    ");
+
+    let iseq = get_method_iseq("self", "runtime_throw_yielder");
+    let function = iseq_to_hir(iseq).unwrap();
+    assert!((0..function.num_insns()).any(|index| matches!(
+        function.find(InsnId::from(index)),
+        Insn::InvokeBlockIseqDynamic { .. }
+    )));
+
+    assert_snapshot!(
+        assert_compiles_allowing_exits("
+            $runtime_throw_log.clear
+            [runtime_throw_driver(true), $runtime_throw_log]
+        "),
+        @"[[:dynamic_break, :driver_after], [:ensured]]"
+    );
+
+    set_inline_threshold(old_inline_threshold);
+    set_call_threshold(old_call_threshold);
+}
+
+#[test]
+fn test_yield_throwing_handler_monomorphic() {
+    // A monomorphic throwing ISEQ should use the guarded direct call rather
+    // than falling through to the polymorphic cascade and its generic arm.
+    set_call_threshold(3);
+    eval("
+        def monomorphic_throw_yielder(value)
+          result = yield(value)
+          [:yielded, result]
+        end
+
+        def monomorphic_throw_driver(value)
+          result = monomorphic_throw_yielder(value) do |should_break|
+            break :monomorphic_break if should_break
+            :monomorphic_body
+          end
+          [result, :driver_after]
+        end
+
+        monomorphic_throw_driver(false)
+        monomorphic_throw_driver(false)
+    ");
+
+    let iseq = get_method_iseq("self", "monomorphic_throw_yielder");
+    let function = iseq_to_hir(iseq).unwrap();
+    let direct_calls = (0..function.num_insns())
+        .filter(|&index| matches!(function.find(InsnId::from(index)), Insn::InvokeBlockIseqDirect { .. }))
+        .count();
+    let generic_calls = (0..function.num_insns())
+        .filter(|&index| matches!(function.find(InsnId::from(index)), Insn::InvokeBlock { .. }))
+        .count();
+    assert_eq!(1, direct_calls, "expected the monomorphic direct ISEQ call");
+    assert_eq!(0, generic_calls, "monomorphic dispatch should not retain a generic cascade arm");
+
+    assert_snapshot!(
+        assert_compiles_allowing_exits("monomorphic_throw_driver(true)"),
+        @"[:monomorphic_break, :driver_after]"
+    );
+}
+
+#[test]
+fn test_yield_throwing_inlined_block_body() {
+    with_inlining(|| {
+        assert_snapshot!(
+            assert_inlines_allowing_exits("
+                $body_throw_log = []
+
+                def body_throw_yielder(value)
+                  begin
+                    result = yield(value)
+                    [:yielded, result]
+                  ensure
+                    $body_throw_log << :ensured
+                  end
+                end
+
+                def body_break_driver(value)
+                  result = body_throw_yielder(value) do |should_break|
+                    break :body_break if should_break
+                    :body_value
+                  end
+                  [result, :driver_after]
+                end
+
+                def body_return_driver(value)
+                  body_throw_yielder(value) do |should_return|
+                    return :body_return if should_return
+                    :body_value
+                  end
+                  :unreachable
+                end
+
+                body_break_driver(false)
+                body_return_driver(false)
+                body_break_driver(false)
+                body_return_driver(false)
+                $body_throw_log.clear
+                [body_break_driver(true), body_return_driver(true), $body_throw_log]
+            "),
+            @"[[:body_break, :driver_after], :body_return, [:ensured, :ensured]]"
+        );
+
+        // Rebuild optimized HIR to prove this exercised body inlining, not the
+        // direct-call fallback. Throw is not frame-transparent, so the real
+        // block frame must remain on the hot path for unwinding.
+        let iseq = get_method_iseq("self", "body_break_driver");
+        let mut function = iseq_to_hir(iseq).unwrap();
+        function.optimize();
+        function.optimize();
+        let block_frames = (0..function.num_insns())
+            .filter_map(|index| match function.find(InsnId::from(index)) {
+                Insn::PushInlineBlockFrame { elided, .. } => Some(elided),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        let direct_calls = (0..function.num_insns())
+            .filter(|&index| matches!(function.find(InsnId::from(index)), Insn::InvokeBlockIseqDirect { .. }))
+            .count();
+        let throws = (0..function.num_insns())
+            .filter(|&index| matches!(function.find(InsnId::from(index)), Insn::Throw { .. }))
+            .count();
+        assert_eq!(vec![false], block_frames, "throwing body must keep its real inline block frame");
+        assert_eq!(0, direct_calls, "expected the block body itself to be inlined");
+        assert!(throws > 0, "expected the throwing block body in optimized HIR");
+    });
 }
 
 #[test]
@@ -4069,6 +4731,41 @@ fn test_fixnum_mul() {
     ");
     assert_contains_opcode("test", YARVINSN_opt_mult);
     assert_snapshot!(assert_compiles("test(4)"), @"12");
+}
+
+#[test]
+fn test_fixnum_lshift_overflow_uses_integer_slow_path() {
+    eval("
+        def test(n) = n << 1
+        def test_wide(n) = n << 63
+        test(3) # profile opt_ltlt
+        test_wide(0) # profile opt_ltlt at the largest inline shift
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_contains_opcode("test_wide", YARVINSN_opt_ltlt);
+    assert_snapshot!(assert_compiles("
+        [
+          test(3),
+          test(4611686018427387903),
+          test(-4611686018427387904),
+          test_wide(0),
+          test_wide(1),
+          test_wide(-1),
+        ]
+    "), @"[6, 9223372036854775806, -9223372036854775808, 0, 9223372036854775808, -9223372036854775808]");
+}
+
+#[test]
+fn test_fixnum_lshift_overflow_propagates_bignum() {
+    eval("
+        def test(n) = (n << 1) & 1
+        test(3) # profile opt_ltlt and opt_and
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_snapshot!(
+        assert_compiles_allowing_exits("test(4611686018427387903)"),
+        @"0"
+    );
 }
 
 #[test]
@@ -6909,6 +7606,37 @@ fn test_profile_frames_during_direct_jit_to_jit_entry() {
     });
 }
 
+// A descriptor side exit installs a JITFrame without an ISEQ just before materializing the
+// frame from it. rb_profile_frames sampling that window must still find the frame's ISEQ.
+#[cfg(all(
+    any(target_os = "linux", target_os = "macos"),
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+))]
+#[test]
+fn test_profile_frames_during_descriptor_side_exit() {
+    set_call_threshold(2);
+    // Never invalidate, so every call takes the same descriptor exit.
+    set_num_exits_until_invalidate(crate::options::NumExits::MAX);
+    eval(r#"
+        def descriptor_profile_exit(x) = x + 1
+        descriptor_profile_exit(1)
+        descriptor_profile_exit(1)
+
+        def descriptor_profile_loop(n)
+          i = 0
+          while i < n
+            descriptor_profile_exit(1.5)
+            i += 1
+          end
+          i
+        end
+    "#);
+
+    let profiler = signal_profiler::Profiler::start(10);
+    assert_snapshot!(assert_compiles_allowing_exits("descriptor_profile_loop(300_000)"), @"300000");
+    assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
+}
+
 // Same as test_profile_frames_during_direct_jit_to_jit_entry, but for a direct `yield` to an ISEQ block.
 #[cfg(all(
     any(target_os = "linux", target_os = "macos"),
@@ -7709,6 +8437,75 @@ fn test_invokeblock_ifunc_kwarg() {
         test
     ");
     assert_snapshot!(assert_compiles("test"), @"[[1, {a: 2}]]");
+}
+
+#[test]
+fn test_invokeblock_ifunc_profile_miss_recompiles() {
+    set_call_threshold(2);
+    set_inline_threshold(0);
+    set_max_versions(2);
+    set_num_exits_until_invalidate(3);
+    eval("
+        class IfuncProfileRecoveryList
+          include Enumerable
+
+          def each
+            yield 1
+          end
+        end
+
+        IFUNC_PROFILE_RECOVERY_LIST = IfuncProfileRecoveryList.new
+
+        def ifunc_profile_recovery_warmup
+          IFUNC_PROFILE_RECOVERY_LIST.map { |x| x }
+        end
+
+        def ifunc_profile_recovery_literal
+          IFUNC_PROFILE_RECOVERY_LIST.each { |x| x + 1 }
+        end
+
+        ifunc_profile_recovery_warmup
+        ifunc_profile_recovery_warmup
+    ");
+
+    let count = |function: &crate::hir::Function, pred: &dyn Fn(&Insn) -> bool| {
+        (0..function.num_insns()).filter(|&index| pred(&function.find(InsnId::from(index)))).count()
+    };
+    let is_profile_miss = |insn: &Insn| matches!(insn,
+        Insn::SideExit { reason, recompile: Some(_), .. }
+            if matches!(reason.as_ref(), SideExitReason::InvokeBlockProfileMiss));
+
+    let iseq = get_method_iseq("IFUNC_PROFILE_RECOVERY_LIST", "each");
+    let function = iseq_to_hir(iseq).unwrap();
+    assert_eq!(1, count(&function, &|insn| matches!(insn, Insn::InvokeBlockIfunc { .. })), "expected the monomorphic IFUNC arm");
+    assert_eq!(0, count(&function, &|insn| matches!(insn, Insn::InvokeBlock { .. })), "a recoverable profile miss should not silently call the generic helper");
+    assert_eq!(1, count(&function, &is_profile_miss), "expected the arm miss to collect a fresh profile");
+
+    // The first two profile-miss exits only decrement the exit budget.
+    for _ in 0..2 {
+        assert_eq!("2", inspect("ifunc_profile_recovery_literal"));
+        let payload = get_or_create_iseq_payload(iseq);
+        assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+    }
+
+    // The third exhausts it and invalidates the version.
+    assert_eq!("2", inspect("ifunc_profile_recovery_literal"));
+    let payload = get_or_create_iseq_payload(iseq);
+    assert!(unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+
+    // The following calls re-profile in the interpreter, now seeing the literal block, and
+    // recompile.
+    for _ in 0..4 {
+        assert_eq!("2", inspect("ifunc_profile_recovery_literal"));
+    }
+    let payload = get_or_create_iseq_payload(iseq);
+    assert_eq!(2, payload.versions.len());
+    assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+
+    let function = iseq_to_hir(iseq).unwrap();
+    assert_eq!(1, count(&function, &|insn| matches!(insn, Insn::InvokeBlockIseqDirect { .. })), "expected recompilation to use the literal block profile");
+    assert_eq!(1, count(&function, &|insn| matches!(insn, Insn::InvokeBlock { .. })), "the final version should retain a non-exiting fallback");
+    assert_eq!(0, count(&function, &is_profile_miss), "the final version must not enter a recompile loop");
 }
 
 #[test]
@@ -8993,6 +9790,86 @@ fn test_inlined_method_with_block_break_across_inlined_boundary() {
             test([1, 6, 99])
         "), @"7");
     });
+}
+
+#[test]
+fn test_inline_block_attribute_accepts_throwing_block() {
+    // A threshold of one is too small for Integer#times, so this only inlines
+    // when its :inline_block attribute accepts the throwing literal block.
+    with_inlining_threshold(1, || {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def test_inline_block_attribute_accepts_throwing_block
+              log = []
+              result = 3.times do |i|
+                begin
+                  break :stopped if i == 1
+                  log << i
+                ensure
+                  log << :ensured
+                end
+              end
+              [result, log]
+            end
+
+            test_inline_block_attribute_accepts_throwing_block
+            test_inline_block_attribute_accepts_throwing_block
+        "), @"[:stopped, [0, :ensured, :ensured]]");
+    });
+}
+
+#[test]
+fn test_enumerator_fusion_materializes_throwing_block_frame() {
+    set_call_threshold(2);
+    eval("
+        $fusion_return_log = []
+
+        def fused_break(n)
+          result = n.times.map do |i|
+            break :stopped if i == 2
+            i
+          end
+          [result, :after]
+        end
+
+        def fused_return(n)
+          begin
+            n.times.map do |i|
+              return :returned if i == 2
+              i
+            end
+            :after
+          ensure
+            $fusion_return_log << :ensured
+          end
+        end
+
+        fused_break(1)
+        fused_break(1)
+        fused_return(1)
+        fused_return(1)
+        $fusion_return_log.clear
+    ");
+
+    for method in ["fused_break", "fused_return"] {
+        let iseq = get_method_iseq("self", method);
+        let mut function = iseq_to_hir(iseq).unwrap();
+        function.optimize();
+        function.optimize();
+        let throw_frames = (0..function.num_insns())
+            .filter_map(|index| match function.find(InsnId::from(index)) {
+                Insn::PushInlineBlockFrame { elided, .. } => Some(elided),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(vec![false], throw_frames, "expected a real throw-only block frame in {method}");
+    }
+
+    assert_snapshot!(
+        assert_compiles_allowing_exits("
+            [fused_break(4), fused_return(4), $fusion_return_log]
+        "),
+        @"[[:stopped, :after], :returned, [:ensured]]"
+    );
 }
 
 #[test]
