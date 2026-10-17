@@ -826,16 +826,71 @@ assert_equal 'true', %q{
   end
 }
 
-# given block Proc will be isolated, so can not access outer variables.
+# given block Proc is copied like Ractor.shareable_proc: it can read outer variables
+# which are shareable and never reassigned
+assert_equal '[42, "ok"]', %q{
+  a = 42
+  b = "ok".freeze
+  r = Ractor.new do
+    [a, b]
+  end
+  r.value
+}
+
+# ... through nested blocks and with arguments
+assert_equal '[4, 8]', %q{
+  a = 1
+  r = Ractor.new(2) do |x|
+    v = [1].map { |y| a + x + y }.first
+    [v, v * 2]
+  end
+  r.value
+}
+
+# an outer variable which is reassigned can not be accessed
 assert_equal 'Ractor::IsolationError', %q{
   begin
     a = true
     r = Ractor.new do
       a
     end
+    a = false
   rescue => e
     e.class
   end
+}
+
+# an outer variable holding an unshareable object can not be accessed
+assert_equal 'Ractor::IsolationError', %q{
+  begin
+    a = []
+    r = Ractor.new do
+      a
+    end
+  rescue => e
+    e.class
+  end
+}
+
+# an outer variable can not be written
+assert_equal 'Ractor::IsolationError', %q{
+  begin
+    a = 1
+    Ractor.new do
+      a = 2
+    end
+  rescue => e
+    e.class
+  end
+}
+
+# Ractor.new does not mutate the given Proc
+assert_equal '[false, false, 1, 2]', %q{
+  pr = Proc.new { 1 }
+  r1 = Ractor.new(&pr)
+  r2 = Ractor.new(&pr)
+  pr.instance_variable_set(:@foo, Object.new)
+  [Ractor.shareable?(pr), pr.frozen?, r1.value, r2.value + 1]
 }
 
 # eval with outer locals in a Ractor raises SyntaxError
@@ -948,29 +1003,21 @@ assert_equal "can't modify instance variables of a shareable Ractor", %q{
   end
 }
 
-# a Proc which already has ivars can not be isolated
-assert_equal 'can not isolate a Proc because it has instance variables', %q{
-  pr = Proc.new{}
+# a Proc which already has ivars is fine: the ractor gets a copy without them
+assert_equal 'ok', %q{
+  pr = Proc.new{ :ok }
   pr.instance_variable_set(:@iv, Object.new)
 
-  begin
-    Ractor.new(&pr)
-  rescue Ractor::IsolationError => e
-    e.message
-  end
+  Ractor.new(&pr).value.to_s
 }
 
-# freezing the Proc first does not skip the check
-assert_equal 'can not isolate a Proc because it has instance variables', %q{
-  pr = Proc.new{}
+# ... also when it is frozen
+assert_equal 'ok', %q{
+  pr = Proc.new{ :ok }
   pr.instance_variable_set(:@iv, Object.new)
   pr.freeze
 
-  begin
-    Ractor.new(&pr)
-  rescue Ractor::IsolationError => e
-    e.message
-  end
+  Ractor.new(&pr).value.to_s
 }
 
 # an ivar set by Proc#refined is internal, so it does not block isolation
@@ -985,23 +1032,19 @@ assert_equal 'r', %q{
   Ractor.new(&rp).value
 }
 
-# a Proc made shareable by Ractor.new can not be given ivars afterwards
-assert_equal "can't modify instance variables of a shareable Proc", %q{
+# Ractor.new does not make the given Proc shareable, so it can still be given ivars
+assert_equal "false", %q{
   HAX = -> { }
   Ractor.new(&HAX).join
 
-  begin
-    HAX.instance_variable_set(:@foo, Object.new)
-  rescue Ractor::IsolationError => e
-    e.message
-  end
+  HAX.instance_variable_set(:@foo, Object.new)
+  Ractor.shareable?(HAX).to_s
 }
 
 # freezing a shareable object from another Ractor can not expose an ivar, since
 # none could be set after it became shareable
 assert_equal 'nil', %q{
-  HAX = -> { }
-  Ractor.new(&HAX).join
+  HAX = Ractor.shareable_lambda { }
 
   r = Ractor.new do
     HAX.freeze
@@ -1880,8 +1923,8 @@ assert_equal '[true, false]', %q{
   }.value
 }
 
-# Can not trap with not isolated Proc on non-main ractor
-assert_equal '[:ok, :ok]', %q{
+# Can not trap with a Proc referring to unshareable objects on non-main ractor
+assert_equal '[:ok, :ok, :ok]', %q{
   a = []
   Ractor.new{
     trap(:INT){p :ok}
@@ -1896,6 +1939,13 @@ assert_equal '[:ok, :ok]', %q{
   rescue Ractor::RemoteError
     a << :ok
   end
+
+  # a read-only shareable outer variable is fine
+  msg = 'shareable'.freeze
+  Ractor.new{
+    trap(:INT){p msg}
+  }.join
+  a << :ok
 }
 
 # Ractor.select is interruptible
@@ -3139,7 +3189,7 @@ assert_equal 'ok', %q{
 # the creator's cover for it; otherwise a later global GC enumerates the dead child's objspace
 # twice and reads the freed shell.
 assert_equal 'ok', %q{
-  x = 42 # capturing an outer local makes Ractor.new raise IsolationError
+  x = [] # capturing an unshareable outer local makes Ractor.new raise IsolationError
   worker = Ractor.new { loop { break if Ractor.receive == :quit } }
   begin
     Ractor.new { x }

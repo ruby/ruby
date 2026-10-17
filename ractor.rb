@@ -9,16 +9,16 @@
 # concerns such as data-races and race-conditions are not possible. The other benefit is parallelism.
 #
 # To achieve this, object sharing is limited across ractors.
-# Unlike in threads, ractors can't access all the objects available in other ractors. For example, objects normally
-# available through variables in the outer scope are prohibited from being used across ractors.
+# Unlike in threads, ractors can't access all the objects available in other ractors. For example, unshareable
+# objects available through variables in the outer scope are prohibited from being used across ractors.
 #
-#     a = 1
+#     a = []
 #     r = Ractor.new {puts "I am in Ractor! a=#{a}"}
 #     # fails immediately with
-#     # Ractor::IsolationError (can not isolate a Proc because it accesses outer variables (a).)
+#     # Ractor::IsolationError (cannot make a shareable Proc because it can refer unshareable object [] from variable 'a')
 #
 # The object must be explicitly shared:
-#     a = 1
+#     a = []
 #     r = Ractor.new(a) { |a1| puts "I am in Ractor! a=#{a1}"}
 #
 # On CRuby (the default implementation), the Global Virtual Machine Lock (GVL) is held per ractor, so
@@ -199,7 +199,8 @@ class Ractor
   #
   # Creates a new \Ractor with args and a block.
   #
-  # The given block (Proc) is isolated (can't access any outer variables). +self+
+  # The given block (Proc) is isolated (can only read outer variables which are
+  # never reassigned and refer to shareable objects). +self+
   # inside the block will refer to the current \Ractor.
   #
   #    r = Ractor.new { puts "Hi, I am #{self.inspect}" }
@@ -692,11 +693,12 @@ class Ractor
   # in the Proc will be replaced with the value passed via the `self:` keyword,
   # or +nil+ if not given.
   #
-  # In a shareable Proc, access to any outer variables is prohibited.
+  # A shareable Proc may only read outer variables which are never reassigned
+  # and refer to shareable objects.
   #
-  #     a = 42
+  #     a = []
   #     Ractor.shareable_proc{ p a }
-  #     #=> can not isolate a Proc because it accesses outer variables (a). (Ractor::IsolationError)
+  #     #=> cannot make a shareable Proc because it can refer unshareable object [] from variable 'a' (Ractor::IsolationError)
   #
   # The value of `self` in the Proc must be a shareable object.
   #

@@ -737,14 +737,37 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
-  def test_ractor_new_raises_isolation_error_if_outer_variables_are_accessed
-    assert_raise(Ractor::IsolationError) do
-      channel = Ractor::Port.new
-      Ractor.new(channel) do
-        inbound_work = Ractor::Port.new
-        channel << inbound_work
-      end
+  def test_ractor_new_allows_reading_shareable_outer_variables
+    channel = Ractor::Port.new
+    r = Ractor.new(channel) do
+      inbound_work = Ractor::Port.new
+      channel << inbound_work
     end
+    assert_kind_of Ractor::Port, channel.receive
+    r.join
+  end
+
+  def test_ractor_new_raises_isolation_error_if_unshareable_outer_variables_are_accessed
+    assert_raise_with_message(Ractor::IsolationError, /unshareable object \[\]/) do
+      list = []
+      Ractor.new { list }
+    end
+  end
+
+  def test_ractor_new_raises_isolation_error_if_outer_variables_are_reassigned
+    assert_raise_with_message(Ractor::IsolationError, /'n' may be reassigned/) do
+      n = 1
+      Ractor.new { n }
+      n = 2
+    end
+  end
+
+  def test_ractor_new_does_not_modify_the_block
+    pr = proc { 42 }
+    assert_equal 42, Ractor.new(&pr).value
+    assert_not_predicate pr, :frozen?
+    assert_not_operator Ractor, :shareable?, pr
+    assert_equal 42, Ractor.new(&pr).value
   end
 
   def test_ractor_new_raises_isolation_error_if_proc_uses_yield
@@ -847,7 +870,7 @@ class TestRactor < Test::Unit::TestCase
   # half-created objspace (regression guard for double enumeration / use-after-free).
   def test_stillborn_ractor_gc
     assert_ractor(<<~'RUBY', timeout: 60)
-      x = 42 # capturing an outer local makes Ractor.new raise IsolationError
+      x = [] # capturing an unshareable outer local makes Ractor.new raise IsolationError
       worker = Ractor.new { loop { break if Ractor.receive == :quit } }
       assert_raise(Ractor::IsolationError) { Ractor.new { x } }
       10.times { GC.start; 500.times { Object.new } }
@@ -871,7 +894,7 @@ class TestRactor < Test::Unit::TestCase
   # built by another thread of the same Ractor: a stillborn child frees that objspace.
   def test_stillborn_ractor_with_free_off_gvl
     assert_ractor(<<~'RUBY', require: '-test-/gvl/call_without_gvl', timeout: 60)
-      x = 42 # capturing an outer local makes Ractor.new raise IsolationError
+      x = [] # capturing an unshareable outer local makes Ractor.new raise IsolationError
       stop = false
       ready = Queue.new
       freers = 4.times.map do
