@@ -489,6 +489,82 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([[3, 2], [2, 1], [2, 4], [1, 0], [1, 3]], @obj.each_with_index.sort_by(&cond))
   end
 
+  def test_sort_by_cmp_redefined_in_block
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      redefined = false
+      sorted = [3, 1, 2, 5, 4].sort_by do |x|
+        unless redefined
+          redefined = true
+          class Integer
+            alias_method :orig_cmp, :<=>
+            def <=>(other) = -orig_cmp(other)
+          end
+        end
+        x
+      end
+      assert_equal([5, 4, 3, 2, 1], sorted)
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      redefined = false
+      sorted = [3.0, 1.0, 2.0, 5.0, 4.0].sort_by do |x|
+        unless redefined
+          redefined = true
+          class Float
+            alias_method :orig_cmp, :<=>
+            def <=>(other) = -orig_cmp(other)
+          end
+        end
+        x
+      end
+      assert_equal([5.0, 4.0, 3.0, 2.0, 1.0], sorted)
+    end;
+  end
+
+  def test_sort_by_numeric_keys
+    fixmax = RbConfig::LIMITS["FIXNUM_MAX"]
+    fixmin = RbConfig::LIMITS["FIXNUM_MIN"]
+    rng = Random.new(42)
+    patterns = {
+      int_random: ->(n) { Array.new(n) { rng.rand(fixmin..fixmax) } },
+      int_few: ->(n) { Array.new(n) { rng.rand(-2..2) } },
+      int_sorted: ->(n) { Array.new(n) {|i| i - n / 2 } },
+      int_reversed: ->(n) { Array.new(n) {|i| n - i } },
+      int_non_ascending: ->(n) { Array.new(n) {|i| (n - i) / 3 } },
+      int_equal: ->(n) { Array.new(n, -3) },
+      int_organ_pipe: ->(n) { Array.new(n) {|i| i < n / 2 ? i : n - i } },
+      int_two_runs: ->(n) { Array.new(n) {|i| i < n / 2 ? 2 * i : 2 * (i - n / 2) + 1 } },
+      int_nearly_sorted: ->(n) { Array.new(n) {|i| i }.tap {|a| a[rng.rand(n)] = rng.rand(n) } },
+      int_push_front: ->(n) { Array.new(n) {|i| i + 1 }.tap {|a| a[-1] = 0 } },
+      int_extremes: ->(n) { Array.new(n) { [fixmin, fixmax, 0, -1, 1].sample(random: rng) } },
+      float_random: ->(n) { Array.new(n) { (rng.rand - 0.5) * 10**rng.rand(-60..60) } },
+      float_few: ->(n) { Array.new(n) { [0.0, 1.5, -1.5, 2.0].sample(random: rng) } },
+      float_reversed: ->(n) { Array.new(n) {|i| -i * 0.25 } },
+      # not flonums
+      float_heap: ->(n) { Array.new(n) { [-0.0, 0.0, 1e300, -1e300, Float::INFINITY].sample(random: rng) } },
+      float_one_heap: ->(n) { Array.new(n) { rng.rand } << 1e300 },
+      int_and_float: ->(n) { Array.new(n) { rng.rand(2) == 0 ? rng.rand(-9..9) : rng.rand * 9 } },
+      int_and_bignum: ->(n) { Array.new(n) { rng.rand(100) } << fixmax + 1 },
+    }
+    patterns.each do |name, gen|
+      [2, 3, 5, 24, 25, 26, 47, 48, 49, 100, 1000, 5000].each do |n|
+        keys = gen[n]
+        pairs = keys.each_with_index.to_a
+        sorted = pairs.sort_by {|key, _| key}
+        msg = "#{name} #{n}"
+        assert_equal(pairs.size, sorted.size, msg)
+        assert(sorted.each_cons(2).all? {|(a, _), (b, _)| (a <=> b) <= 0}, msg)
+        # each pair is found once, with its own key
+        assert_equal((0...pairs.size).to_a, sorted.map(&:last).sort, msg)
+        assert(sorted.all? {|pair| pair.equal?(pairs[pair.last])}, msg)
+      end
+    end
+
+    assert_raise(ArgumentError) { (Array.new(100) { rng.rand } << Float::NAN).shuffle(random: rng).sort_by {|x| x} }
+  end
+
   def test_all
     assert_equal(true, @obj.all? {|x| x <= 3 })
     assert_equal(false, @obj.all? {|x| x < 3 })
