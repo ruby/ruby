@@ -1051,6 +1051,46 @@ class TestRange < Test::Unit::TestCase
     assert_not_include(...10, 10)
   end
 
+  def test_include_numeric_string
+    assert_include("08".."11", "09")
+    assert_include("08".."11", "10")
+    assert_not_include("08".."11", "9")
+    assert_not_include("08".."11", "010")
+    assert_include("9".."10", "10")
+    assert_not_include("9".."10", "09")
+    assert_include("008".."0012", "012")
+    assert_not_include("008".."0012", "0012")
+    assert_include("10"..."20", "19")
+    assert_not_include("10"..."20", "20")
+    assert_not_include("20".."10", "15")
+    assert_not_include("10".."20", "")
+    assert_not_include("10".."20", "1x")
+    assert_not_include("10".."20", 15)
+    assert_not_include("10".."20", "15".encode("UTF-16LE"))
+
+    # too many to iterate
+    big = "1" + "0" * 40
+    assert_include("1"..big, "9" * 40)
+    assert_include("1"..big, big)
+    assert_not_include("1"...big, big)
+    assert_not_include("1"..big, "1" + "0" * 41)
+    assert_not_include("1"..big, "0" + "9" * 40)
+    assert_include("0001"..big, "0999")
+    assert_not_include("0001"..big, "999")
+
+    # the same as iterating; the single characters are another case
+    edges = %w[0 00 1 01 001 8 08 9 09 10 010 12 0012 99 100 0100]
+    values = edges + ["", "x", "1x", " 1", "+1", "1.0"]
+    edges.product(edges, [false, true]) do |b, e, excl|
+      next if b.size == 1 && e.size == 1
+      r = Range.new(b, e, excl)
+      a = r.to_a
+      values.each do |v|
+        assert_equal(a.include?(v), r.include?(v), "#{r.inspect} #{v.inspect}")
+      end
+    end
+  end
+
   def test_cover
     assert_operator("a".."z", :cover?, "c")
     assert_not_operator("a".."z", :cover?, "5")
