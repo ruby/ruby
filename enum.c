@@ -768,6 +768,22 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
     return rb_hash_set_pair(hash, rb_yield_values2(argc, argv));
 }
 
+// Block body of the to_h pair-literal fast path.  The block stores each
+// pair directly into `hash`; we only need to yield so the block runs, and
+// to handle the rare case of the block leaving by `next`/`break` (which
+// skips the store and returns some other value) by falling back to the
+// ordinary pair conversion.
+static VALUE
+enum_to_h_pair_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
+{
+    VALUE result = rb_yield_values2(argc, argv);
+
+    if (result != hash) {
+        rb_hash_set_pair(hash, result);
+    }
+    return Qnil;
+}
+
 /*
  *  call-seq:
  *    to_h(*args) -> hash
@@ -792,8 +808,16 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 static VALUE
 enum_to_h(int argc, VALUE *argv, VALUE obj)
 {
-    rb_block_call_func *iter = rb_block_given_p() ? enum_to_h_ii : enum_to_h_i;
-    return enum_hashify(obj, argc, argv, iter);
+    if (rb_block_given_p()) {
+        VALUE hash = rb_hash_new();
+
+        if (rb_vm_to_h_pair_prepare(hash)) {
+            rb_block_call(obj, id_each, argc, argv, enum_to_h_pair_i, hash);
+            return hash;
+        }
+        return enum_hashify_into(obj, argc, argv, enum_to_h_ii, hash);
+    }
+    return enum_hashify(obj, argc, argv, enum_to_h_i);
 }
 
 static VALUE

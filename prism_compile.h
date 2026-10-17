@@ -159,6 +159,37 @@ typedef struct pm_scope_node {
      * nearby byte offsets. This avoids repeated binary searches.
      */
     size_t last_line;
+
+    /* to_h pair-literal block optimization:
+     *
+     * `x.to_h { |*| [key, value] }` compiles the block body without the
+     * trailing `newarray 2`; instead a `to_h_aset` instruction stores the
+     * pair directly into the result hash, which the core to_h
+     * implementations install into a hidden local of the scope containing
+     * the call site (see also insns.def: to_h_aset and rb_vm_to_h_pair_prepare).
+     *
+     * The hidden local is shared by every to_h call site in a scope, so a
+     * block first copies it into a block-local at entry: deeply nested to_h
+     * calls would otherwise overwrite the slot before an outer block reads
+     * it.  The copy is per block invocation, so nesting is safe.
+     */
+
+    /* This scope reserved the hidden result-hash local in its local table
+     * (set while building the local table, before compiling the body). */
+    bool to_h_pair_slot_p;
+    /* Positioned local index (as passed to getlocal/setlocal) of the
+     * hidden slot.  Only valid when to_h_pair_slot_p. */
+    int to_h_pair_slot_index;
+
+    /* This block's body is a two-element array literal and is compiled
+     * with a to_h_aset tail (set by pm_compile_call on the block's scope
+     * node, read while compiling the block body). */
+    bool to_h_pair_result_p;
+    /* Operand that reads the parent scope's hidden slot (already includes
+     * the VM_ENV_DATA_SIZE adjustment); used at block entry. */
+    int to_h_pair_parent_lidx;
+    /* Positioned local index of this block's per-invocation copy slot. */
+    int to_h_pair_copy_index;
 } pm_scope_node_t;
 
 void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous);
