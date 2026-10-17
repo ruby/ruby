@@ -63,6 +63,8 @@ describe 'Socket.getifaddrs' do
     end
   end
 
+  # GetAdaptersAddresses() reports no broadcast address, so on Windows every
+  # Socket::Ifaddr has a nil one and there would be nothing here to look at.
   platform_is_not :windows do
     describe 'the Socket::Ifaddr broadcast address' do
       before do
@@ -84,33 +86,33 @@ describe 'Socket.getifaddrs' do
         end.should == true
       end
     end
+  end
 
-    describe 'the Socket::Ifaddr netmask address' do
-      before do
-        @addrs = @ifaddrs.map(&:netmask).compact.select(&:ip?)
-      end
+  describe 'the Socket::Ifaddr netmask address' do
+    before do
+      @addrs = @ifaddrs.map(&:netmask).compact.select(&:ip?)
+    end
 
-      it 'is an Addrinfo' do
-        @addrs.all? do |addr|
-          addr.should.instance_of?(Addrinfo)
-          true
-        end.should == true
-      end
+    it 'is an Addrinfo' do
+      @addrs.all? do |addr|
+        addr.should.instance_of?(Addrinfo)
+        true
+      end.should == true
+    end
 
-      it 'has an address family' do
-        @addrs.all? do |addr|
-          addr.afamily.should.is_a?(Integer)
-          addr.afamily.should_not == Socket::AF_UNSPEC
-          true
-        end.should == true
-      end
+    it 'has an address family' do
+      @addrs.all? do |addr|
+        addr.afamily.should.is_a?(Integer)
+        addr.afamily.should_not == Socket::AF_UNSPEC
+        true
+      end.should == true
+    end
 
-      it 'has an IP address' do
-        @addrs.all? do |addr|
-          addr.ip_address.should.instance_of?(String)
-          true
-        end.should == true
-      end
+    it 'has an IP address' do
+      @addrs.all? do |addr|
+        addr.ip_address.should.instance_of?(String)
+        true
+      end.should == true
     end
   end
 end
