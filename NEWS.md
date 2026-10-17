@@ -640,10 +640,10 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ### YJIT
 
-* YJIT now supports Windows (mswin) on x64 CPUs.  Configure with
-  `win32\configure.bat --enable-yjit`, which requires `rustc` with the
-  `x86_64-pc-windows-msvc` target.  Only the release build is supported,
-  and MinGW is not.  [[Feature #18439]]
+* YJIT now supports Windows (mswin and mingw) on x64 CPUs.  Configure with
+  option `--enable-yjit`, which requires `rustc` with the mswin target
+  `x86_64-pc-windows-msvc` or `x86_64-pc-windows-gnu` on mingw.  Only the
+  release build is supported. [[Feature #18439]]
 
 [Bug #18661]: https://bugs.ruby-lang.org/issues/18661
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947

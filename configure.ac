@@ -309,7 +309,7 @@ AS_CASE(["${build_os}"],
     AC_PATH_TOOL([NM], [nm], [/usr/ccs/bin/nm], [/usr/ccs/bin:$PATH])
 ])
 AS_CASE(["${target_os}"],
-[cygwin*|msys*|mingw*|darwin*], [
+[cygwin*|msys*|darwin*], [
     ac_ct_OBJCOPY=":"
     ac_cv_prog_OBJCOPY=":"
     ac_cv_prog_ac_ct_OBJCOPY=":"
@@ -3885,7 +3885,7 @@ AS_IF([test "$RUSTC" != "no"],
     AC_MSG_CHECKING([whether ${RUSTC} works for YJIT])
     AS_CASE(["$target_cpu"],
         [arm64|aarch64], [JIT_TARGET_ARCH=aarch64],
-        [x86_64], [JIT_TARGET_ARCH=x86_64],
+        [x86_64|x64], [JIT_TARGET_ARCH=x86_64],
     )
     dnl Fails in case rustc target doesn't match ruby target.
     dnl Can happen on Rosetta, for example.
@@ -3958,9 +3958,6 @@ YJIT_LIBS=
 JIT_CARGO_SUPPORT=no
 AS_CASE(["${YJIT_SUPPORT}"],
 [yes|dev|stats|dev_nodebug], [
-    AS_CASE(["$target_os"], [mingw*], [
-        AC_MSG_ERROR([YJIT is not supported on mingw. Use win32\configure.bat --enable-yjit on mswin instead])
-    ])
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
@@ -4089,6 +4086,12 @@ AS_IF([test -n "$RUST_LIB"], [
 
     # absolute path to stop the "target" dir in src dir from interfering through VPATH
     RUST_LIB='$(TOP_BUILD_DIR)'/"${RUST_LIB}"
+])
+
+AS_CASE(["$target_os"],
+[mingw*], [	AS_IF([test x"$YJIT_SUPPORT" = "xyes"], [
+		    LIBS="$LIBS -lntdll -luserenv -ldbghelp"
+		])
 ])
 
 dnl These variables end up in ::RbConfig::CONFIG

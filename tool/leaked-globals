@@ -77,6 +77,10 @@ if defined?(NM) and NM.include?("--no-llvm-bc")
   puts "Skip #{col.skip("#{bitcode} LLVM bitcode object(s)")}" if bitcode > 0
 end
 
+# TODO: if YJIT is enabled, the Rust functions are exported on MINGW currently
+# Hiding symbols leads to linker errors or segfaults in the resulting binary.
+exit if RUBY_PLATFORM.include?("mingw")
+
 print "Checking leaked global symbols..."
 STDOUT.flush
 if soext

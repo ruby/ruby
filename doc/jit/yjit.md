@@ -9,7 +9,7 @@ YJIT - Yet Another Ruby JIT
 
 YJIT is a lightweight, minimalistic Ruby JIT built inside CRuby.
 It lazily compiles code using a Basic Block Versioning (BBV) architecture.
-YJIT is currently supported for macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs, and for Windows (mswin) on x64 CPUs.
+YJIT is currently supported for macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs, and for Windows (mswin and mingw) on x64 CPUs.
 This project is open source and falls under the same license as CRuby.
 
 <p align="center"><b>
@@ -57,7 +57,7 @@ series = {MPLR 2023}
 
 ## Current Limitations
 
-YJIT may not be suitable for certain applications. It currently only supports macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs, and Windows (mswin) on x64 CPUs. YJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state information.
+YJIT may not be suitable for certain applications. It currently only supports macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs, and Windows (mswin and mingw) on x64 CPUs. YJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state information.
 You can change how much executable memory is allocated using [YJIT's command-line options](#command-line-options).
 
 ## Installation
@@ -133,7 +133,7 @@ brew install openssl libyaml
 make -j && make install
 ```
 
-On Windows (mswin), YJIT can be built only in release mode, with a `rustc` that has the `x86_64-pc-windows-msvc` target.
+On Windows (mswin and mingw), YJIT can be built only in release mode, with a `rustc` that has the `x86_64-pc-windows-msvc` or `x86_64-pc-windows-gnu` target.
 See [Windows](../distribution/windows.md) for the rest of the build steps.
 
 ```batch
@@ -187,7 +187,7 @@ You can see what YJIT has compiled by running YJIT with the `--yjit-log` command
 ```
 
 The machine code generated for a given method can be printed by adding `puts RubyVM::YJIT.disasm(method(:method_name))` to a Ruby script. Note that no code will be generated if the method is not compiled.
-This needs Ruby configured with `--enable-yjit=dev` or `--enable-yjit=dev_nodebug`, so it is not available on Windows (mswin), where YJIT is built only in release mode.
+This needs Ruby configured with `--enable-yjit=dev` or `--enable-yjit=dev_nodebug`, so it is not available on Windows, where YJIT is built only in release mode.
 
 <h3 id="command-line-options">Command-Line Options</h3>
 
@@ -256,7 +256,7 @@ can be optimized by YJIT, at the cost of more memory usage.
 If you start Ruby with `--yjit-stats`, e.g. using an environment variable `RUBYOPT=--yjit-stats`,
 `RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` shows the percentage of total YARV instructions
 executed by YJIT as opposed to the CRuby interpreter.
-This stat is available only when Ruby is configured with `--enable-yjit=stats`, `--enable-yjit=dev` or `--enable-yjit=dev_nodebug`, so not on Windows (mswin), where YJIT is built only in release mode.
+This stat is available only when Ruby is configured with `--enable-yjit=stats`, `--enable-yjit=dev` or `--enable-yjit=dev_nodebug`, so not on Windows, where YJIT is built only in release mode.
 Ideally, `ratio_in_yjit` should be as large as 99%, and increasing `--yjit-mem-size` often
 helps improving `ratio_in_yjit`.
 
