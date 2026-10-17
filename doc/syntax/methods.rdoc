@@ -607,7 +607,7 @@ unexpected results:
 
 == Exception Handling
 
-Methods have an implied exception handling block so you do not need to use
+Methods have an implied exception handling block, so you do not need to use
 +begin+ or +end+ to handle exceptions.  This:
 
   def my_method
