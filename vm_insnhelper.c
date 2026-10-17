@@ -2512,30 +2512,32 @@ FLONUM_2_P(VALUE a, VALUE b)
 static VALUE
 opt_equality_specialized(VALUE recv, VALUE obj)
 {
-    if (FIXNUM_2_P(recv, obj) && EQ_UNREDEFINED_P(INTEGER)) {
-        goto compare_by_identity;
-    }
-    else if (FLONUM_2_P(recv, obj) && EQ_UNREDEFINED_P(FLOAT)) {
-        goto compare_by_identity;
-    }
-    else if (STATIC_SYM_P(recv) && STATIC_SYM_P(obj) && EQ_UNREDEFINED_P(SYMBOL)) {
-        goto compare_by_identity;
-    }
-    else if (SPECIAL_CONST_P(recv)) {
-        //
-    }
-    else if (RBASIC_CLASS(recv) == rb_cFloat && RB_FLOAT_TYPE_P(obj) && EQ_UNREDEFINED_P(FLOAT)) {
-        double a = RFLOAT_VALUE(recv);
-        double b = RFLOAT_VALUE(obj);
-
-        return RBOOL(a == b);
-    }
-    else if (RBASIC_CLASS(recv) == rb_cString && EQ_UNREDEFINED_P(STRING)) {
-        if (recv == obj) {
-            return Qtrue;
+    if (OP_UNREDEFINED_P(EQ, ANY)) {
+        if (FIXNUM_2_P(recv, obj)) {
+            goto compare_by_identity;
         }
-        else if (RB_TYPE_P(obj, T_STRING)) {
-            return rb_str_eql_internal(obj, recv);
+        else if (FLONUM_2_P(recv, obj)) {
+            goto compare_by_identity;
+        }
+        else if (STATIC_SYM_P(recv) && STATIC_SYM_P(obj)) {
+            goto compare_by_identity;
+        }
+        else if (SPECIAL_CONST_P(recv)) {
+            //
+        }
+        else if (RBASIC_CLASS(recv) == rb_cFloat && RB_FLOAT_TYPE_P(obj)) {
+            double a = RFLOAT_VALUE(recv);
+            double b = RFLOAT_VALUE(obj);
+
+            return RBOOL(a == b);
+        }
+        else if (RBASIC_CLASS(recv) == rb_cString) {
+            if (recv == obj) {
+                return Qtrue;
+            }
+            else if (RB_TYPE_P(obj, T_STRING)) {
+                return rb_str_eql_internal(obj, recv);
+            }
         }
     }
     return Qundef;
