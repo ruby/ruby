@@ -7050,7 +7050,6 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv)
 {
     VALUE result;
     rb_len_t n, len, i, j, k, idx[10];
-    rb_len_t rnds[numberof(idx)];
     rb_len_t memo_threshold;
 
     n = NUM2LEN(nv);
@@ -7058,47 +7057,41 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv)
     len = RARRAY_LEN(ary);
     if (n > len) n = len;
     if (n <= numberof(idx)) {
+        rb_len_t rnds[numberof(idx)], sorted[numberof(idx)];
+
         for (i = 0; i < n; ++i) {
             rnds[i] = RAND_UPTO(len - i);
         }
-    }
-    k = len;
-    len = RARRAY_LEN(ary);
-    if (len < k && n <= numberof(idx)) {
-        for (i = 0; i < n; ++i) {
-            if (rnds[i] >= len - i) return rb_ary_new_capa(0);
+        k = len;
+        len = RARRAY_LEN(ary);
+        if (len < k /* && n <= numberof(idx) */) {
+            for (i = 0; i < n; ++i) {
+                if (rnds[i] >= len - i) return rb_ary_new_capa(0);
+            }
         }
-    }
-    if (n > len) n = len;
-    switch (n) {
-      case 0:
-        return rb_ary_new_capa(0);
-      case 1:
-        i = rnds[0];
-        return rb_ary_new_from_args(1, RARRAY_AREF(ary, i));
-      case 2:
-        i = rnds[0];
-        j = rnds[1];
-        if (j >= i) j++;
-        return rb_ary_new_from_args(2, RARRAY_AREF(ary, i), RARRAY_AREF(ary, j));
-      case 3:
-        i = rnds[0];
-        j = rnds[1];
-        k = rnds[2];
-        {
-            rb_len_t l = j, g = i;
-            if (j >= i) l = i, g = ++j;
-            if (k >= l && (++k >= g)) ++k;
+        if (n > len) n = len;
+        switch (n) {
+          case 0:
+            return rb_ary_new_capa(0);
+          case 1:
+            i = rnds[0];
+            return rb_ary_new_from_args(1, RARRAY_AREF(ary, i));
+          case 2:
+            i = rnds[0];
+            j = rnds[1];
+            if (j >= i) j++;
+            return rb_ary_new_from_args(2, RARRAY_AREF(ary, i), RARRAY_AREF(ary, j));
+          case 3:
+            i = rnds[0];
+            j = rnds[1];
+            k = rnds[2];
+            {
+                rb_len_t l = j, g = i;
+                if (j >= i) l = i, g = ++j;
+                if (k >= l && (++k >= g)) ++k;
+            }
+            return rb_ary_new_from_args(3, RARRAY_AREF(ary, i), RARRAY_AREF(ary, j), RARRAY_AREF(ary, k));
         }
-        return rb_ary_new_from_args(3, RARRAY_AREF(ary, i), RARRAY_AREF(ary, j), RARRAY_AREF(ary, k));
-    }
-    memo_threshold =
-        len < 2560 ? len / 128 :
-        len < 5120 ? len / 64 :
-        len < 10240 ? len / 32 :
-        len / 16;
-    if (n <= numberof(idx)) {
-        rb_len_t sorted[numberof(idx)];
         sorted[0] = idx[0] = rnds[0];
         for (i=1; i<n; i++) {
             k = rnds[i];
@@ -7115,8 +7108,16 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv)
                 ptr_result[i] = RARRAY_AREF(ary, idx[i]);
             }
         });
+        ARY_SET_LEN(result, n);
+        return result;
     }
-    else if (n <= memo_threshold / 2) {
+
+    memo_threshold =
+        len < 2560 ? len / 128 :
+        len < 5120 ? len / 64 :
+        len < 10240 ? len / 32 :
+        len / 16;
+    if (n <= memo_threshold / 2) {
         rb_len_t max_idx = 0;
         VALUE vmemo = TypedData_Wrap_Struct(0, &ary_sample_memo_type, 0);
         st_table *memo = st_init_numtable_with_size(n);
