@@ -3766,8 +3766,8 @@ rb_ary_bsearch(VALUE ary)
 {
     VALUE index_result = rb_ary_bsearch_index(ary);
 
-    if (FIXNUM_P(index_result)) {
-        return rb_ary_entry(ary, FIX2LONG(index_result));
+    if (RB_INTEGER_TYPE_P(index_result)) {
+        return rb_ary_entry(ary, NUM2LEN(index_result));
     }
     return index_result;
 }
@@ -6982,11 +6982,10 @@ rand_upto(VALUE randgen, rb_len_t max)
     if (rb_num_negative_p(v)) {
         rb_raise(rb_eRangeError, "random number too small %"PRIsVALUE, v);
     }
-    rb_len_t r = NUM2LEN(v);
-    if (r >= max) {
+    if (RTEST(rb_int_ge(v, lim))) {
         rb_raise(rb_eRangeError, "random number too big %"PRIsVALUE, v);
     }
-    return r;
+    return NUM2LEN(v);
 }
 #define RAND_UPTO(max) rand_upto(randgen, (max))
 #else
