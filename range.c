@@ -2784,14 +2784,25 @@ range_clamp(int argc, VALUE *argv, VALUE self)
  *   end
  *   a # => [2, 4, 6, 8, 10]
  *
- * A range can be both beginless and endless. For literal beginless, endless
- * ranges, at least the beginning or end of the range must be given as an
- * explicit nil value. It is recommended to use an explicit nil beginning and
- * end, since that is what Ruby uses for Range#inspect:
+ * == Beginless and Endless Ranges
  *
- *   (nil..)    # => (nil..nil)
- *   (..nil)    # => (nil..nil)
- *   (nil..nil) # => (nil..nil)
+ * A range may be both beginless and endless.
+ *
+ * For a {range literal}[rdoc-ref:syntax/literals.rdoc@Range+Literals],
+ * give the begin value, the end value, or both as `nil`:
+ *
+ *
+ *   (nil..)    # => nil..nil
+ *   (..nil)    # => nil..nil
+ *   (nil..nil) # => nil..nil  # Recommended; clearest for the reader.
+ *   (..)                      # Raises SyntaxError
+ *
+ * For Range.new, give both the begin value and the end value as `nil`
+ *
+ *   Range.new(nil, nil) # => nil..nil
+ *
+ * A beginless and endless range has no lower or upper bound;
+ * therefore Range#cover? returns +true+ for any value that can be compared appropriately.
  *
  * == Ranges and Other Classes
  *
