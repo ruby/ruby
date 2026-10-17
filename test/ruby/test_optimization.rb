@@ -62,6 +62,13 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_performance_warning('Integer', '%')
   end
 
+  def test_fixnum_eq
+    assert_equal true, 1 == 1
+    assert_equal true, 1 == 1.0
+    assert_redefine_method('Integer', '==', 'assert_equal 2, 1 == 2')
+    assert_performance_warning('Integer', '==')
+  end
+
   def test_fixnum_lt
     assert_equal true, 1 < 2
     assert_redefine_method('Integer', '<', 'assert_equal 2, 1 < 2')
@@ -110,6 +117,14 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_performance_warning('Float', '/')
   end
 
+  def test_float_eq
+    assert_equal true, 1 == 1.0
+    assert_equal true, 1.0 == 1
+    assert_equal false, Float::NAN == Float::NAN
+    assert_redefine_method('Float', '==', 'assert_equal 2.2, 1.1 == 2.2')
+    assert_performance_warning('Float', '==')
+  end
+
   def test_float_lt
     assert_equal true, 1.1 < 2.2
     assert_redefine_method('Float', '<', 'assert_equal 2.2, 1.1 < 2.2')
@@ -132,6 +147,13 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal false, 1.1 >= 2.2
     assert_redefine_method('Float', '>=', 'assert_equal 2.2, 1.1 >= 2.2')
     assert_performance_warning('Float', '>=')
+  end
+
+  def test_string_eq
+    assert_equal true, "a" == "a"
+    assert_equal true, "a".freeze == "a".freeze
+    assert_redefine_method('String', '==', 'assert_equal "b", "a".freeze == "b".freeze')
+    assert_performance_warning('String', '==')
   end
 
   def test_string_length
@@ -185,6 +207,12 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_same "foo".freeze, -"foo"
     assert_redefine_method('String', '-@', 'assert_nil(-"foo")')
     assert_performance_warning('String', '-@')
+  end
+
+  def test_sym_eq
+    assert_equal true, :a == :a
+    assert_redefine_method('Symbol', '==', 'assert_equal :b, :a == :b')
+    assert_performance_warning('Symbol', '==')
   end
 
   def test_array_min
