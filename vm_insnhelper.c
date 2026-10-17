@@ -2551,46 +2551,51 @@ FLONUM_2_P(VALUE a, VALUE b)
 #endif
 }
 
-static VALUE
-opt_equality_specialized(VALUE recv, VALUE obj)
+static inline VALUE
+opt_equality_specialized_miss(VALUE recv, VALUE obj)
 {
     if (OP_UNREDEFINED_P(EQ, ANY)) {
-        if (recv == obj) {
+        if (recv == Qfalse) return Qfalse;
+        if (IMMEDIATE_P(recv)) {
+            // Numeric immediates can be equal to different VALUE via coercion.
+            if (FIXNUM_P(recv)) {
+                if (!SPECIAL_CONST_P(obj) || FLONUM_P(obj)) return Qundef;
+            }
+            else if (FLONUM_P(recv)) {
+                if (!SPECIAL_CONST_P(obj) || FIXNUM_P(obj)) return Qundef;
+
+            }
+            return Qfalse;
+        }
+
+        VALUE klass = RBASIC_CLASS(recv);
+        if (klass == rb_cString) {
+            if (RB_TYPE_P(obj, T_STRING)) {
+                return rb_str_eql_internal(recv, obj);
+            }
+        }
+        else if (klass == rb_cSymbol) {
+            return Qfalse;
+        }
+    }
+    return Qundef;
+}
+
+static inline VALUE
+opt_equality_specialized(VALUE recv, VALUE obj)
+{
+    if (recv == obj) {
+        if (OP_UNREDEFINED_P(EQ, ANY)) {
             // Two identical immediate VALUE are always equal
             if (SPECIAL_CONST_P(recv)) {
                 return Qtrue;
             }
             return Qundef;
         }
-        else {
-            if (recv == Qfalse) return Qfalse;
-            if (IMMEDIATE_P(recv)) {
-                // Numeric immediates can be equal to different VALUE via coercion.
-                if (FIXNUM_P(recv)) {
-                    if (SPECIAL_CONST_P(obj) && !FLONUM_P(obj)) return Qfalse;
-                    return Qundef;
-                }
-                else if (FLONUM_P(recv)) {
-                    if (SPECIAL_CONST_P(obj) && !FIXNUM_P(obj)) return Qfalse;
-                    return Qundef;
-                }
-
-                return Qfalse;
-            }
-
-            VALUE klass = RBASIC_CLASS(recv);
-            if (klass == rb_cString) {
-                if (RB_TYPE_P(obj, T_STRING)) {
-                    return rb_str_eql_internal(recv, obj);
-                }
-            }
-            else if (klass == rb_cSymbol) {
-                return Qfalse;
-            }
-        }
+        return Qundef;
     }
 
-    return Qundef;
+    return opt_equality_specialized_miss(recv, obj);
 }
 
 static VALUE
@@ -2625,16 +2630,16 @@ opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid)
     }
 }
 
-static VALUE
+static inline VALUE
 opt_equality_by_mid(VALUE recv, VALUE obj, ID mid)
 {
-    VALUE val = opt_equality_specialized(recv, obj);
+    RBIMPL_ASSERT_OR_ASSUME(recv != obj);
+    VALUE val = opt_equality_specialized_miss(recv, obj);
     if (!UNDEF_P(val)) {
         return val;
     }
-    else {
-        return opt_equality_by_mid_slowpath(recv, obj, mid);
-    }
+
+    return opt_equality_by_mid_slowpath(recv, obj, mid);
 }
 
 VALUE
