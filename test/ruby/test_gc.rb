@@ -579,6 +579,28 @@ class TestGc < Test::Unit::TestCase
     RUBY
   end
 
+  def test_gc_parameter_init_bytes_after_full_gc
+    env = { "RUBY_GC_HEAP_INIT_BYTES" => "#{8 * 1024 * 1024}" }
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY, timeout: 60)
+      require "rbconfig/sizeof"
+      GC_HEAP_INIT_BYTES = 8 * 1024 * 1024
+
+      heap = GC::INTERNAL_CONSTANTS[:HEAP_COUNT] - 1
+      slot_size = GC.stat_heap(heap, :slot_size)
+      capa = (slot_size - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] - (2 * RbConfig::SIZEOF["void*"])) / RbConfig::SIZEOF["void*"]
+      init_slots = GC_HEAP_INIT_BYTES / slot_size
+
+      GC.start
+      GC.start
+
+      gc_count = GC.count
+      Array.new(capa) while GC.count == gc_count && GC.stat_heap(heap, :heap_eden_slots) < init_slots
+
+      assert_operator GC.count, :>, gc_count
+      assert_operator GC.stat_heap(heap, :heap_eden_slots), :<, init_slots
+    RUBY
+  end
+
   def test_profiler_enabled
     GC::Profiler.enable
     assert_equal(true, GC::Profiler.enabled?)
@@ -750,19 +772,20 @@ class TestGc < Test::Unit::TestCase
   def test_expand_heap
     assert_separately([], __FILE__, __LINE__, <<~'RUBY')
       GC.start
-      base_length = GC.stat[:heap_eden_pages]
-      (base_length * 500).times{ 'a' }
+      eden_pages = GC.stat[:heap_eden_pages]
+      (eden_pages * 500).times{ 'a' }
       GC.start
-      base_length = GC.stat[:heap_eden_pages]
-      (base_length * 500).times{ 'a' }
+      eden_pages = GC.stat[:heap_eden_pages]
+      base_pages = GC.stat[:heap_allocated_pages]
+      (eden_pages * 500).times{ 'a' }
       GC.start
-      assert_in_epsilon base_length, (v = GC.stat[:heap_eden_pages]), 1/8r,
-            "invalid heap expanding (base_length: #{base_length}, GC.stat[:heap_eden_pages]: #{v})"
+      assert_operator (v = GC.stat[:heap_allocated_pages]), :<=, base_pages + base_pages / 8,
+            "invalid heap expanding (base_pages: #{base_pages}, GC.stat[:heap_allocated_pages]: #{v})"
 
       a = []
-      (base_length * 500).times{ a << 'a'; nil }
+      (eden_pages * 500).times{ a << 'a'; nil }
       GC.start
-      assert_operator base_length, :<, GC.stat[:heap_eden_pages] + 1
+      assert_operator base_pages, :<, GC.stat[:heap_allocated_pages] + 1
     RUBY
   end
 
