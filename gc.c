@@ -719,6 +719,7 @@ typedef struct gc_function_map {
     void (*writebarrier_unprotect)(void *objspace_ptr, VALUE obj);
     void (*writebarrier_remember)(void *objspace_ptr, VALUE obj);
     void (*obj_became_shareable)(void *objspace_ptr, VALUE obj);
+    void (*promote_immortal)(void *objspace_ptr, VALUE obj);
     // Heap walking
     void (*each_objects)(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
     void (*each_objects_shareable)(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
@@ -915,6 +916,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(writebarrier_unprotect);
     load_modular_gc_func(writebarrier_remember);
     load_modular_gc_func(obj_became_shareable);
+    load_modular_gc_func(promote_immortal);
     // Heap walking
     load_modular_gc_func(each_objects);
     load_modular_gc_func(each_objects_shareable);
@@ -1020,6 +1022,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_writebarrier_unprotect rb_gc_functions.writebarrier_unprotect
 # define rb_gc_impl_writebarrier_remember rb_gc_functions.writebarrier_remember
 # define rb_gc_impl_obj_became_shareable rb_gc_functions.obj_became_shareable
+# define rb_gc_impl_promote_immortal rb_gc_functions.promote_immortal
 // Heap walking
 # define rb_gc_impl_each_objects rb_gc_functions.each_objects
 # define rb_gc_impl_each_objects_shareable rb_gc_functions.each_objects_shareable
@@ -4089,6 +4092,14 @@ void
 rb_gc_obj_became_shareable(VALUE obj)
 {
     rb_gc_impl_obj_became_shareable(rb_gc_get_objspace(), obj);
+}
+
+// obj is never collected (a registered global object, a top self, ENV, ...).
+// Let the GC treat it as old right away, so RB_OBJ_PROMOTED is true for it from boot.
+void
+rb_gc_promote_immortal(VALUE obj)
+{
+    rb_gc_impl_promote_immortal(rb_gc_get_objspace(), obj);
 }
 
 /* Pin an in-flight message payload in its owner's (the sender's) objspace, so the

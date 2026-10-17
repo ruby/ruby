@@ -1051,6 +1051,20 @@ class TestGc < Test::Unit::TestCase
     end
   end
 
+  def test_immortal_objects_are_old_from_boot
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+
+    assert_in_out_err(%w[-robjspace], <<~'RUBY', %w[true true true], [])
+      # Objects that are never collected are promoted when they're registered,
+      # before surviving RVALUE_OLD_AGE GCs, which a script usually hasn't done yet.
+      boot = GC.count < GC::INTERNAL_CONSTANTS[:RVALUE_OLD_AGE]
+      [self, ENV, ARGF].each do |obj|
+        puts !boot || ObjectSpace.dump(obj).include?('"old":true')
+      end
+      GC.verify_internal_consistency
+    RUBY
+  end
+
   def test_finalizer_not_run_with_vm_lock
     assert_ractor(<<~'RUBY', timeout: 30)
       Thread.new do

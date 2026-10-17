@@ -5004,8 +5004,10 @@ pub(crate) mod hir_build_tests {
         eval("
             def foo(a:) = a
             def test(obj, &block) = foo(**obj, &block)
-            obj = Object.new
-            def obj.to_hash = { a: 1 }
+            class SplatKwToHash
+              def to_hash = { a: 1 }
+            end
+            obj = SplatKwToHash.new
             test(obj) { 2 }
         ");
         assert_contains_opcode("test", YARVINSN_splatkw);
