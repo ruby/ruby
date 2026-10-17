@@ -8,6 +8,9 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Object.
  */
+#include "internal/basic_operators.h"
+#include "internal/string.h"
+#include "internal/vm.h"
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* object.c */
@@ -85,4 +88,51 @@ rb_obj_embedded_size(uint32_t fields_count)
     if (size < sizeof(struct RObject)) size = sizeof(struct RObject);
     return size;
 }
+
+static inline VALUE
+opt_equality_specialized_miss(VALUE recv, VALUE obj)
+{
+    RBIMPL_ASSERT_OR_ASSUME(recv != obj);
+    if (BASIC_OP_UNREDEFINED_P(BOP_EQ, ANY_REDEFINED_OP_FLAG)) {
+        if (recv == Qfalse) return Qfalse;
+        if (IMMEDIATE_P(recv)) {
+            // Numeric immediates can be equal to different VALUE via coercion.
+            if (FIXNUM_P(recv)) {
+                if (!SPECIAL_CONST_P(obj) || FLONUM_P(obj)) return Qundef;
+            }
+            else if (FLONUM_P(recv)) {
+                if (!SPECIAL_CONST_P(obj) || FIXNUM_P(obj)) return Qundef;
+
+            }
+            return Qfalse;
+        }
+
+        VALUE klass = RBASIC_CLASS(recv);
+        if (klass == rb_cString) {
+            if (RB_TYPE_P(obj, T_STRING)) {
+                return rb_str_eql_internal(recv, obj);
+            }
+        }
+        else if (klass == rb_cSymbol) {
+            return Qfalse;
+        }
+    }
+    return Qundef;
+}
+
+static inline VALUE
+rb_equal_inline(VALUE obj1, VALUE obj2)
+{
+    VALUE result;
+
+    if (obj1 == obj2) return Qtrue;
+
+    result = opt_equality_specialized_miss(obj1, obj2);
+    if (!UNDEF_P(result)) return result;
+
+    return rb_equal_opt(obj1, obj2);
+}
+
+#define rb_equal rb_equal_inline
+
 #endif /* INTERNAL_OBJECT_H */
