@@ -93,11 +93,6 @@ module SyncDefaultGems
       ["test/io/nonblock", "test/io/nonblock"],
       ["io-nonblock.gemspec", "ext/io/nonblock/io-nonblock.gemspec"],
     ]),
-    "io-wait": repo("ruby/io-wait", [
-      ["ext/io/wait", "ext/io/wait"],
-      ["test/io/wait", "test/io/wait"],
-      ["io-wait.gemspec", "ext/io/wait/io-wait.gemspec"],
-    ]),
     "net-http": repo("ruby/net-http", [
       ["lib/net/http.rb", "lib/net/http.rb"],
       ["lib/net/http", "lib/net/http"],
