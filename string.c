@@ -6302,11 +6302,14 @@ rb_str_update(VALUE str, rb_len_t beg, rb_len_t len, VALUE val)
     rb_len_t slen;
     char *p, *e;
     rb_encoding *enc;
-    int singlebyte = single_byte_optimizable(str);
+    int singlebyte;
     int cr;
 
     if (len < 0) rb_raise(rb_eIndexError, "negative length %"PRIdLEN, len);
 
+    rb_check_frozen(str);
+
+    singlebyte = single_byte_optimizable(str);
     StringValue(val);
     enc = rb_enc_check(str, val);
     slen = str_strlen(str, enc); /* rb_enc_check */
@@ -6605,6 +6608,8 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 static VALUE
 rb_str_aset_m(int argc, VALUE *argv, VALUE str)
 {
+    rb_check_arity(argc, 2, 3);
+    rb_check_frozen(str);
     if (argc == 3) {
         if (RB_TYPE_P(argv[0], T_REGEXP)) {
             rb_str_subpat_set(str, argv[0], argv[1], argv[2]);
@@ -6614,7 +6619,6 @@ rb_str_aset_m(int argc, VALUE *argv, VALUE str)
         }
         return argv[2];
     }
-    rb_check_arity(argc, 2, 3);
     return rb_str_aset(str, argv[0], argv[1]);
 }
 
@@ -8746,6 +8750,7 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
     if (!(argc == 2 || argc == 3 || argc == 5)) {
         rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 2, 3, or 5)", argc);
     }
+    rb_check_frozen(str);
     if (argc == 2 || (argc == 3 && !RB_INTEGER_TYPE_P(argv[0]))) {
         if (!rb_range_beg_len(argv[0], &beg, &len, RSTRING_LEN(str), 2)) {
             rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
