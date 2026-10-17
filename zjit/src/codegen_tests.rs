@@ -67,6 +67,66 @@ fn assert_inlines_allowing_exits(program: &str) -> String {
     result
 }
 
+
+#[test]
+#[cfg(feature = "runtime_checks")]
+fn test_cfunc_frame_preserves_caller_pc() {
+    with_rubyvm(|| {
+        use crate::backend::lir::{CFP, Opnd, SP};
+
+        // Use a minimal ISEQ to obtain a valid caller PC.
+        let iseq = compile_to_iseq("nil");
+        let function = iseq_to_hir(iseq).unwrap();
+        // `gen_push_frame()` needs a FrameState for the empty caller stack.
+        let state = function.reverse_post_order().into_iter().find_map(|block_id| {
+            function.block(block_id).insns().find_map(|&insn_id| {
+                match function.find(insn_id) {
+                    Insn::Snapshot { state } => Some(*state),
+                    _ => None,
+                }
+            })
+        }).unwrap().without_stack();
+        // The control-frame stack grows down. `frames[1]` is the caller, and
+        // `frames[0]` is the future C frame below it.
+        let pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
+        let mut frames: [rb_control_frame_t; 2] = unsafe { std::mem::zeroed() };
+        frames[1].pc = pc;
+        // Reserve the environment slots that `gen_push_frame()` writes through SP.
+        let mut stack = [Qnil; VM_ENV_DATA_SIZE as usize];
+
+        // Generate a native function that only pushes a C frame.
+        let mut asm = Assembler::new();
+        asm.new_block_without_id("test");
+        asm.frame_setup(&[CFP, SP]);
+        // Keep `CFP` at the caller while `gen_push_frame()` writes the C frame below it.
+        asm.mov(CFP, Opnd::const_ptr(&frames[1]));
+        asm.mov(SP, Opnd::const_ptr(stack.as_mut_ptr()));
+        // Use the same C-frame metadata as a compiled C method call.
+        super::gen_push_frame(&mut asm, 0, &state, super::ControlFrame {
+            recv: Qnil.into(),
+            iseq: None,
+            cme: std::ptr::null(),
+            frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
+            specval: VM_BLOCK_HANDLER_NONE.into(),
+            write_block_code: false,
+            forwarded_argc: None,
+        });
+        // Return without changing `CFP`, so the assertion can inspect caller memory.
+        asm.frame_teardown(&[CFP, SP]);
+        asm.cret(Qnil.into());
+
+        // Compile and execute the generated frame push.
+        let cb = crate::state::ZJITState::get_code_block();
+        let (code, _) = asm.compile(cb).unwrap();
+        cb.mark_all_executable();
+        let push_frame: unsafe extern "C" fn() = unsafe { std::mem::transmute(code.raw_ptr(cb)) };
+        unsafe { push_frame() };
+
+        // A materialized caller has no jit_return. `get_cfp_pc()` must use its saved PC.
+        assert_eq!(unsafe { get_cfp_pc(&mut frames[1]) }, pc);
+    });
+}
+
 #[test]
 fn test_breakpoint_hir_codegen() {
     rb_zjit_prepare_options();
