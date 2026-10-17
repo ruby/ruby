@@ -21,7 +21,7 @@ describe "Set#&" do
     -> { @set & Object.new }.should.raise(ArgumentError)
   end
 
-  ruby_version_is "4.1" do
+  ruby_version_is "4.0" do
     it "retains compare_by_identity flag" do
       @set.compare_by_identity
       (@set & Set[:b, :c, :d, :e]).compare_by_identity?.should == true
