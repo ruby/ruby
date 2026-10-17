@@ -1,0 +1,36 @@
+# The results of a single run vary a lot on a machine that is not idle.
+# Take the best of several runs, as:
+#
+#   make benchmark ITEM=float_conversion OPTS="--repeat-count 6"
+prelude: |
+  srand(42)
+  n = 1_000
+  short = Array.new(n) {rand(100_000) / 100.0}
+  integral = Array.new(n) {rand(1_000_000).to_f}
+  unit = Array.new(n) {rand}
+  wide = Array.new(n) {(rand - 0.5) * 10.0**rand(-300..300)}
+  subnormal = Array.new(n) {rand * 1e-310}
+  short_s = short.map(&:to_s)
+  integral_s = integral.map(&:to_s)
+  unit_s = unit.map(&:to_s)
+  wide_s = wide.map(&:to_s)
+  subnormal_s = subnormal.map(&:to_s)
+  # more digits than double has
+  long_s = unit.map {|f| "%.25f" % f}
+  unit_dump = unit.map {|f| Marshal.dump(f)}
+
+benchmark:
+  to_s_short: short.each {|f| f.to_s}
+  to_s_integral: integral.each {|f| f.to_s}
+  to_s_unit: unit.each {|f| f.to_s}
+  to_s_wide: wide.each {|f| f.to_s}
+  to_s_subnormal: subnormal.each {|f| f.to_s}
+  to_f_short: short_s.each {|s| s.to_f}
+  to_f_integral: integral_s.each {|s| s.to_f}
+  to_f_unit: unit_s.each {|s| s.to_f}
+  to_f_wide: wide_s.each {|s| s.to_f}
+  to_f_long: long_s.each {|s| s.to_f}
+  to_f_subnormal: subnormal_s.each {|s| s.to_f}
+  Float_unit: unit_s.each {|s| Float(s)}
+  marshal_dump_unit: unit.each {|f| Marshal.dump(f)}
+  marshal_load_unit: unit_dump.each {|s| Marshal.load(s)}

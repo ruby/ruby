@@ -31,6 +31,7 @@
 #include "internal/complex.h"
 #include "internal/enumerator.h"
 #include "internal/error.h"
+#include "internal/float_conv.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/numeric.h"
@@ -954,11 +955,12 @@ flo_to_s(VALUE flt)
 {
     enum {decimal_mant = DBL_MANT_DIG-DBL_DIG};
     enum {float_dig = DBL_DIG+1};
-    char buf[float_dig + roomof(decimal_mant, CHAR_BIT) + 10];
+    /* a sign, digits, a point, zeros or an exponent, and a terminator */
+    char buf[1 + (float_dig + roomof(decimal_mant, CHAR_BIT)) + 1 + 10];
+    char digits[float_dig + roomof(decimal_mant, CHAR_BIT) + 10];
     double value = RFLOAT_VALUE(flt);
-    VALUE s;
-    char *p, *e;
-    int sign, decpt, digs;
+    char *p = buf;
+    int decpt, digs;
 
     if (isinf(value)) {
         static const char minf[] = "-Infinity";
@@ -968,59 +970,83 @@ flo_to_s(VALUE flt)
     else if (isnan(value))
         return rb_usascii_str_new2("NaN");
 
-    p = ruby_dtoa(value, 0, 0, &decpt, &sign, &e);
-    s = sign ? rb_usascii_str_new_cstr("-") : rb_usascii_str_new(0, 0);
-    if ((digs = (int)(e - p)) >= (int)sizeof(buf)) digs = (int)sizeof(buf) - 1;
-    memcpy(buf, p, digs);
-    free(p);
+    if (signbit(value)) {
+        *p++ = '-';
+        value = -value;
+    }
+    if (value == 0.0) {
+        digits[0] = '0';
+        digs = 1;
+        decpt = 1;
+    }
+    else if ((digs = rb_float_shortest_digits(value, digits, &decpt)) == 0) {
+        int sign;
+        char *e, *d = ruby_dtoa(value, 0, 0, &decpt, &sign, &e);
+        digs = (int)(e - d);
+        if (digs >= (int)sizeof(digits)) digs = (int)sizeof(digits) - 1;
+        memcpy(digits, d, digs);
+        free(d);
+    }
+
     if (decpt > 0) {
         if (decpt < digs) {
-            memmove(buf + decpt + 1, buf + decpt, digs - decpt);
-            buf[decpt] = '.';
-            rb_str_cat(s, buf, digs + 1);
+            memcpy(p, digits, decpt);
+            p += decpt;
+            *p++ = '.';
+            memcpy(p, digits + decpt, digs - decpt);
+            p += digs - decpt;
         }
         else if (decpt <= DBL_DIG) {
-            rb_len_t len;
-            char *ptr;
-            rb_str_cat(s, buf, digs);
-            rb_str_resize(s, (len = RSTRING_LEN(s)) + decpt - digs + 2);
-            ptr = RSTRING_PTR(s) + len;
-            if (decpt > digs) {
-                memset(ptr, '0', decpt - digs);
-                ptr += decpt - digs;
-            }
-            memcpy(ptr, ".0", 2);
+            memcpy(p, digits, digs);
+            p += digs;
+            memset(p, '0', decpt - digs);
+            p += decpt - digs;
+            *p++ = '.';
+            *p++ = '0';
         }
         else {
             goto exp;
         }
     }
     else if (decpt > -4) {
-        rb_len_t len;
-        char *ptr;
-        rb_str_cat(s, "0.", 2);
-        rb_str_resize(s, (len = RSTRING_LEN(s)) - decpt + digs);
-        ptr = RSTRING_PTR(s);
-        memset(ptr += len, '0', -decpt);
-        memcpy(ptr -= decpt, buf, digs);
+        *p++ = '0';
+        *p++ = '.';
+        memset(p, '0', -decpt);
+        p -= decpt;
+        memcpy(p, digits, digs);
+        p += digs;
     }
     else {
         goto exp;
     }
-    return s;
+    return rb_usascii_str_new(buf, p - buf);
 
   exp:
+    *p++ = digits[0];
+    *p++ = '.';
     if (digs > 1) {
-        memmove(buf + 2, buf + 1, digs - 1);
+        memcpy(p, digits + 1, digs - 1);
+        p += digs - 1;
     }
     else {
-        buf[2] = '0';
-        digs++;
+        *p++ = '0';
     }
-    buf[1] = '.';
-    rb_str_cat(s, buf, digs + 1);
-    rb_str_catf(s, "e%+03d", decpt - 1);
-    return s;
+    *p++ = 'e';
+    decpt--;
+    if (decpt < 0) {
+        *p++ = '-';
+        decpt = -decpt;
+    }
+    else {
+        *p++ = '+';
+    }
+    if (decpt >= 100) {
+        *p++ = (char)('0' + decpt / 100);
+        decpt %= 100;
+    }
+    *p++ = (char)('0' + decpt / 10);
+    *p++ = (char)('0' + decpt % 10);
+    return rb_usascii_str_new(buf, p - buf);
 }
 
 /*
@@ -4388,16 +4414,80 @@ int_accurate_in_double(VALUE n)
     return false;
 }
 
+/*
+ * Returns the double nearest to x / y, the one with the even significand
+ * if two are the nearest, for Integers +x+ and +y+ that are not zero.
+ *
+ * Converting them to double and dividing rounds up to three times, when
+ * they are not accurate in double.
+ */
+static double
+int_fdiv_nearest(VALUE x, VALUE y)
+{
+    /* a bit more than the significand, to round at once */
+    enum {quotient_bits = DBL_MANT_DIG + 2};
+    const bool negative = int_neg_p(x) != int_neg_p(y);
+    size_t xbits, ybits;
+    long shift, exponent;
+    int qbits, prec, drop;
+    uint64_t q, m, rest, half;
+    bool inexact;
+    VALUE qr;
+    double d;
+
+    x = rb_int_abs(x);
+    y = rb_int_abs(y);
+    xbits = rb_absint_numwords(x, 1, NULL);
+    ybits = rb_absint_numwords(y, 1, NULL);
+
+    /* 2**(xbits - ybits - 1) < x / y < 2**(xbits - ybits + 1) */
+    if (xbits > ybits && xbits - ybits > DBL_MAX_EXP + 1) {
+        return negative ? -HUGE_VAL : HUGE_VAL;
+    }
+    if (ybits > xbits && ybits - xbits > DBL_MANT_DIG - DBL_MIN_EXP + 2) {
+        return negative ? -0.0 : 0.0;
+    }
+
+    /* q = floor(x / y * 2**shift), of quotient_bits or one more bits */
+    shift = quotient_bits + (long)ybits - (long)xbits;
+    if (shift >= 0) {
+        x = rb_int_lshift(x, LONG2FIX(shift));
+    }
+    else {
+        y = rb_int_lshift(y, LONG2FIX(-shift));
+    }
+    qr = rb_int_divmod(x, y);
+    q = NUM2ULL(RARRAY_AREF(qr, 0));
+    inexact = !FIXNUM_ZERO_P(RARRAY_AREF(qr, 1));
+
+    /* the bits that the result can have; fewer if it is subnormal */
+    qbits = 64 - (int)nlz_int64(q);
+    exponent = qbits - 1 - shift;
+    prec = DBL_MANT_DIG;
+    if (exponent < DBL_MIN_EXP - 1) {
+        if (DBL_MIN_EXP - 1 - exponent > DBL_MANT_DIG) {
+            return negative ? -0.0 : 0.0;
+        }
+        prec -= (int)(DBL_MIN_EXP - 1 - exponent);
+    }
+
+    drop = qbits - prec;
+    m = q >> drop;
+    rest = q & ((UINT64_C(1) << drop) - 1);
+    half = UINT64_C(1) << (drop - 1);
+    if (rest > half || (rest == half && (inexact || (m & 1)))) m++;
+
+    d = ldexp((double)m, (int)(drop - shift));
+    return negative ? -d : d;
+}
+
 double
 rb_int_fdiv_double(VALUE x, VALUE y)
 {
-    if (RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y) &&
+    if (RB_INTEGER_TYPE_P(x) && !FIXNUM_ZERO_P(x) &&
+        RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y) &&
         !(int_accurate_in_double(x) && int_accurate_in_double(y))) {
-        VALUE gcd = rb_gcd(x, y);
-        if (!FIXNUM_ZERO_P(gcd) && gcd != INT2FIX(1)) {
-            x = rb_int_idiv(x, gcd);
-            y = rb_int_idiv(y, gcd);
-        }
+        return int_fdiv_nearest(x, y);
     }
     if (FIXNUM_P(x)) {
         return fix_fdiv_double(x, y);

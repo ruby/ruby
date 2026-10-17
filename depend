@@ -82,6 +82,7 @@ error.$(OBJEXT): {$(VPATH)}error.c
 eval.$(OBJEXT): {$(VPATH)}eval.c
 explicit_bzero.$(OBJEXT): {$(VPATH)}explicit_bzero.c
 file.$(OBJEXT): {$(VPATH)}file.c
+float_conv.$(OBJEXT): {$(VPATH)}float_conv.c
 gc.$(OBJEXT): {$(VPATH)}gc.c
 goruby.$(OBJEXT): {$(VPATH)}goruby.c
 hash.$(OBJEXT): {$(VPATH)}hash.c

@@ -27,6 +27,7 @@
 #include "internal/class.h"
 #include "internal/encoding.h"
 #include "internal/error.h"
+#include "internal/float_conv.h"
 #include "internal/hash.h"
 #include "internal/marshal.h"
 #include "internal/numeric.h"
@@ -464,10 +465,18 @@ w_float(double d, struct dump_arg *arg)
         else            w_cstr("0", arg);
     }
     else {
-        int decpt, sign, digs, len = 0;
-        char *e, *p = ruby_dtoa(d, 0, 0, &decpt, &sign, &e);
-        if (sign) buf[len++] = '-';
-        digs = (int)(e - p);
+        int decpt, digs, len = 0;
+        const int negative = signbit(d) != 0;
+        char shortest[RB_FLOAT_SHORTEST_DIGITS_MAX];
+        char *p = shortest, *allocated = NULL;
+        if (negative) d = -d;
+        if ((digs = rb_float_shortest_digits(d, shortest, &decpt)) == 0) {
+            int sign;
+            char *e;
+            p = allocated = ruby_dtoa(d, 0, 0, &decpt, &sign, &e);
+            digs = (int)(e - p);
+        }
+        if (negative) buf[len++] = '-';
         if (decpt < -3 || decpt > digs) {
             buf[len++] = p[0];
             if (--digs > 0) buf[len++] = '.';
@@ -494,7 +503,7 @@ w_float(double d, struct dump_arg *arg)
             memcpy(buf + len, p, digs);
             len += digs;
         }
-        free(p);
+        free(allocated);
         w_bytes(buf, len, arg);
     }
 }
