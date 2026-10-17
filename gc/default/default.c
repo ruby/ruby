@@ -607,19 +607,17 @@ STATIC_ASSERT(tdata_unsafe_free_bits_cover_chunk,
               TDATA_UNSAFE_FREE_CHUNK_CAPA <= 32);
 
 struct gc_process_stat_snapshot {
-    uint64_t count;
     uint64_t minor_gc_count;
     uint64_t major_gc_count;
-    uint64_t global_gc_count;
+    uint64_t global_gc_invocation_count;
     uint64_t marking_time_ns;
     uint64_t sweeping_time_ns;
 };
 
 struct gc_process_stat_total {
-    uint64_t count;
     uint64_t minor_gc_count;
     uint64_t major_gc_count;
-    uint64_t global_gc_count;
+    uint64_t global_gc_invocation_count;
     uint64_t marking_time_ns;
     uint64_t sweeping_time_ns;
 };
@@ -725,6 +723,7 @@ typedef struct rb_objspace {
         size_t minor_gc_count;
         size_t major_gc_count;
         size_t global_gc_count;
+        size_t global_gc_invocation_count;
         size_t compact_count;
         size_t read_barrier_faults;
 #if RGENGC_PROFILE > 0
@@ -826,7 +825,7 @@ typedef struct rb_objspace {
     struct rb_gc_vm_context vm_context;
 
     /* Process-wide GC statistics publication.  Default GC only: other
-     * implementations reject GC.stat(scope: :global) and never initialize
+     * implementations reject GC.stat(process: true) and never initialize
      * this lock. */
     struct {
         rb_nativethread_lock_t lock;
@@ -2163,10 +2162,9 @@ static void
 gc_process_stat_capture(const rb_objspace_t *objspace,
                         struct gc_process_stat_snapshot *out)
 {
-    out->count = objspace->profile.count;
     out->minor_gc_count = objspace->profile.minor_gc_count;
     out->major_gc_count = objspace->profile.major_gc_count;
-    out->global_gc_count = objspace->profile.global_gc_count;
+    out->global_gc_invocation_count = objspace->profile.global_gc_invocation_count;
     out->marking_time_ns = objspace->profile.marking_time_ns;
     out->sweeping_time_ns = objspace->profile.sweeping_time_ns;
 }
@@ -2175,8 +2173,9 @@ static void
 gc_process_stat_publish(rb_objspace_t *objspace)
 {
     struct gc_process_stat_snapshot snap;
+    GC_ASSERT(objspace->profile.count == objspace->profile.minor_gc_count +
+              objspace->profile.major_gc_count + objspace->profile.global_gc_count);
     gc_process_stat_capture(objspace, &snap);
-    GC_ASSERT(snap.count == snap.minor_gc_count + snap.major_gc_count + snap.global_gc_count);
     rb_native_mutex_lock(&objspace->process_stat.lock);
     objspace->process_stat.published = snap;
     rb_native_mutex_unlock(&objspace->process_stat.lock);
@@ -2186,10 +2185,9 @@ static void
 gc_process_stat_add(struct gc_process_stat_total *dst,
                     const struct gc_process_stat_snapshot *src)
 {
-    dst->count += src->count;
     dst->minor_gc_count += src->minor_gc_count;
     dst->major_gc_count += src->major_gc_count;
-    dst->global_gc_count += src->global_gc_count;
+    dst->global_gc_invocation_count += src->global_gc_invocation_count;
     dst->marking_time_ns += src->marking_time_ns;
     dst->sweeping_time_ns += src->sweeping_time_ns;
 }
@@ -6301,7 +6299,7 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
     }
     check_rvalue_consistency(objspace, obj);
 
-    objspace->marked_slots++;
+    page->objspace->marked_slots++;
 }
 
 static void
@@ -9632,10 +9630,8 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
 
     reason |= GPR_FLAG_GLOBAL;
 
-    /* A global GC is a collection of the driver's objspace too, and its profile.count
-     * below says so, so report it like a local one.  The driver is the objspace whose
-     * count moves, which is the one a hook reading GC.stat would compare against.  For
-     * the same reason it records a profile entry and reports what triggered it. */
+    /* A global GC is a collection of the driver's objspace too, so report it like a local
+     * one: it records a profile entry and reports what triggered it. */
     gc_start_record(driver, reason, true);
     gc_event_hook(driver, RUBY_INTERNAL_EVENT_GC_START);
     gc_prof_timer_start(driver);
@@ -9694,6 +9690,8 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
         objspace->last_cycle_pinned = 0;
         objspace->rgengc.uncollectible_wb_unprotected_objects = 0;
         objspace->rgengc.old_objects = 0;
+        objspace->profile.count++;
+        objspace->profile.global_gc_count++;
         objspace->rgengc.last_major_gc = objspace->profile.count;
         objspace->rgengc.need_major_gc = GPR_FLAG_NONE;
         objspace->marked_slots = 0;
@@ -9703,7 +9701,7 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
             heap_move_pooled_pages_to_free_pages(heap);
         }
     }
-    driver->profile.global_gc_count++;
+    driver->profile.global_gc_invocation_count++;
     global_objspace->global_gc.count++;
 
     /* Enable compaction in every objspace before the mark: the unified conservative root
@@ -9915,7 +9913,6 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
      * which step 10 below still walks. */
     gc_tdata_unsafe_drain_objspaces(global_objspace->global_gc.objspaces,
                                     global_objspace->global_gc.n_objspaces);
-    driver->profile.count++;
 
     /* step 10 */
     for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
@@ -10959,6 +10956,7 @@ enum gc_stat_sym {
     gc_stat_sym_minor_gc_count,
     gc_stat_sym_major_gc_count,
     gc_stat_sym_global_gc_count,
+    gc_stat_sym_global_gc_invocation_count,
     gc_stat_sym_compact_count,
     gc_stat_sym_read_barrier_faults,
     gc_stat_sym_total_moved_objects,
@@ -11015,6 +11013,7 @@ setup_gc_stat_symbols(void)
     S(minor_gc_count);
     S(major_gc_count);
     S(global_gc_count);
+    S(global_gc_invocation_count);
     S(compact_count);
     S(read_barrier_faults);
     S(total_moved_objects);
@@ -11086,11 +11085,13 @@ gc_process_stat(VALUE hash_or_sym)
 
     rb_objspace_t *const current = rb_gc_get_objspace();
     if (!gc_during_gc_get(current)) {
-        GC_ASSERT(total.global_gc_count == direct_global_gc_count);
+        GC_ASSERT(total.global_gc_invocation_count == direct_global_gc_count);
     }
 
     /* Convert to Ruby values after all collector locks are released. */
     uint64_t time_ns = total.marking_time_ns + total.sweeping_time_ns;
+    uint64_t count = total.minor_gc_count + total.major_gc_count + total.global_gc_invocation_count;
+    size_t page_pool_arenas = global_objspace->page_pool.arena_count;
 
 #define SET64(name, attr) \
     if (key == gc_stat_symbols[gc_stat_sym_##name]) \
@@ -11098,13 +11099,17 @@ gc_process_stat(VALUE hash_or_sym)
     else if (hash != Qnil) \
         rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], ULL2NUM(attr));
 
-    SET64(count, total.count);
+    SET64(count, count);
     SET64(time, ns_to_ms(time_ns));
     SET64(marking_time, ns_to_ms(total.marking_time_ns));
     SET64(sweeping_time, ns_to_ms(total.sweeping_time_ns));
     SET64(minor_gc_count, total.minor_gc_count);
     SET64(major_gc_count, total.major_gc_count);
-    SET64(global_gc_count, total.global_gc_count);
+    SET64(global_gc_count, total.global_gc_invocation_count);
+    SET64(page_pool_arenas, page_pool_arenas);
+    SET64(page_pool_arenas_freed, global_objspace->page_pool.arenas_unmapped);
+    SET64(page_pool_total_pages, (uint64_t)page_pool_arenas * PAGE_POOL_ARENA_BODIES);
+    SET64(page_pool_discarded_pages, global_objspace->page_pool.advised_count);
 
 #undef SET64
 
@@ -11173,6 +11178,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
     SET(global_gc_count, objspace->profile.global_gc_count);
+    SET(global_gc_invocation_count, objspace->profile.global_gc_invocation_count);
     SET(compact_count, objspace->profile.compact_count);
     SET(read_barrier_faults, objspace->profile.read_barrier_faults);
     SET(total_moved_objects, objspace->rcompactor.total_moved);
@@ -11192,11 +11198,6 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(heap_free_slots, objspace_free_slots(objspace));
     SET(heap_final_slots, total_final_slots_count(objspace));
     SET(heap_marked_slots, objspace->marked_slots);
-
-    SET(page_pool_arenas, global_objspace->page_pool.arena_count);
-    SET(page_pool_arenas_freed, global_objspace->page_pool.arenas_unmapped);
-    SET(page_pool_total_pages, (size_t)global_objspace->page_pool.arena_count * PAGE_POOL_ARENA_BODIES);
-    SET(page_pool_discarded_pages, global_objspace->page_pool.advised_count);
 
 #if RGENGC_PROFILE
     SET(total_generated_normal_object_count, objspace->profile.total_generated_normal_object_count);
