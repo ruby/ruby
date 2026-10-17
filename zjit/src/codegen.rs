@@ -1512,17 +1512,21 @@ fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: O
         asm.je(jit, result_edge.clone());
 
         unsafe extern "C" {
-            fn rb_gc_zjit_writebarrier_required_p_ptr() -> *const usize;
+            fn rb_gc_zjit_writebarrier_required_offset() -> c_long;
         }
         // The barrier is a no-op when the receiver is young (not RUBY_FL_PROMOTED),
-        // not RUBY_FL_SHAREABLE, and incremental marking is off; see
-        // rb_gc_impl_writebarrier. NULL means the GC has no such fast path.
-        let marking_ptr = unsafe { rb_gc_zjit_writebarrier_required_p_ptr() };
-        if !marking_ptr.is_null() {
+        // not RUBY_FL_SHAREABLE, and the current Ractor's objspace is not
+        // incremental-marking; see rb_gc_impl_writebarrier. A negative offset
+        // means the GC has no such fast path. The word is per-objspace: compiled
+        // code is shared across Ractors, so find the objspace through EC.
+        let wb_offset = unsafe { rb_gc_zjit_writebarrier_required_offset() };
+        if wb_offset >= 0 {
             let flags = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS));
             let old_or_shareable = asm.and(flags, Opnd::UImm((RUBY_FL_PROMOTED | RUBY_FL_SHAREABLE) as u64));
-            let marking_addr = asm.load(Opnd::const_ptr(marking_ptr));
-            let marking = asm.load(Opnd::mem(64, marking_addr, 0));
+            let thread = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR as i32));
+            let ractor = asm.load(Opnd::mem(64, thread, RUBY_OFFSET_THREAD_RACTOR as i32));
+            let objspace = asm.load(Opnd::mem(64, ractor, unsafe { rb_zjit_runtime_offsets.ractor_objspace }));
+            let marking = asm.load(Opnd::mem(64, objspace, wb_offset as i32));
             let needs_wb = asm.or(old_or_shareable, marking);
             asm.test(needs_wb, needs_wb);
             asm.jz(jit, result_edge.clone());

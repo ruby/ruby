@@ -832,6 +832,12 @@ typedef struct rb_objspace {
         rb_nativethread_lock_t lock;
         struct gc_process_stat_snapshot published;
     } process_stat;
+
+    /* Mirrors flags.during_incremental_marking so that ZJIT-generated code can read
+     * it (a bitfield has no address); see rb_gc_impl_zjit_writebarrier_required_offset.
+     * Single-writer: a local GC runs on the owning Ractor's thread and a global GC
+     * writes under the stop-the-world barrier.  Read by JIT code on the same thread. */
+    uintptr_t zjit_during_incremental_marking;
 } rb_objspace_t;
 
 /* The one VM-global GC structure; for now it only holds the page pool.  Page bodies are
@@ -1541,20 +1547,12 @@ total_final_slots_count(rb_objspace_t *objspace)
 #define is_incremental_marking(objspace) ((objspace)->flags.during_incremental_marking != FALSE)
 #define will_be_incremental_marking(objspace) ((objspace)->rgengc.need_major_gc != GPR_FLAG_NONE)
 
-/* Mirrors flags.during_incremental_marking so that ZJIT-generated code can
- * read it (a bitfield has no address); see rb_gc_impl_zjit_writebarrier_required_p_ptr.
- * Only transitions write to it: incremental marking requires a single objspace,
- * so a redundant FALSE store from another objspace's GC entry must not clobber
- * the marking objspace's TRUE. Written inside GC while mutators are stopped;
- * read by JIT code. */
-static uintptr_t zjit_during_incremental_marking = FALSE;
-
 static void
 gc_set_incremental_marking(rb_objspace_t *objspace, unsigned int value)
 {
     if (objspace->flags.during_incremental_marking != value) {
         objspace->flags.during_incremental_marking = value;
-        zjit_during_incremental_marking = value;
+        objspace->zjit_during_incremental_marking = value;
     }
 }
 /*
@@ -3476,10 +3474,10 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
 #endif
 }
 
-const uintptr_t *
-rb_gc_impl_zjit_writebarrier_required_p_ptr(void *objspace_ptr)
+long
+rb_gc_impl_zjit_writebarrier_required_offset(void)
 {
-    return &zjit_during_incremental_marking;
+    return (long)offsetof(rb_objspace_t, zjit_during_incremental_marking);
 }
 
 NOINLINE(static VALUE newobj_refill(rb_objspace_t *objspace, size_t heap_idx));

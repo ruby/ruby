@@ -89,14 +89,15 @@ GC_IMPL_FN VALUE rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE k
  * generated instruction sequence; see zjit/src/gc_fastpath.rs.
  */
 GC_IMPL_FN bool rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
-/* Returns a pointer to a word that is nonzero while incremental marking is in
- * progress, or NULL if the implementation does not support ZJIT's inline write
- * barrier fast path. ZJIT-generated code skips the call to rb_gc_writebarrier()
- * when the receiver has neither RUBY_FL_PROMOTED nor RUBY_FL_SHAREABLE set and
- * this word is zero, so only implementations whose write barrier is a no-op
- * under exactly those conditions may return non-NULL.
+/* Returns the offset of a word inside the objspace that is nonzero while that
+ * objspace is incremental-marking, or -1 if the implementation does not support
+ * ZJIT's inline write barrier fast path. ZJIT-generated code skips the call to
+ * rb_gc_writebarrier() when the receiver has neither RUBY_FL_PROMOTED nor
+ * RUBY_FL_SHAREABLE set and the word of the current Ractor's objspace is zero,
+ * so only implementations whose write barrier is a no-op under exactly those
+ * conditions may return a nonnegative offset.
  */
-GC_IMPL_FN const uintptr_t *rb_gc_impl_zjit_writebarrier_required_p_ptr(void *objspace_ptr);
+GC_IMPL_FN long rb_gc_impl_zjit_writebarrier_required_offset(void);
 GC_IMPL_FN size_t rb_gc_impl_obj_slot_size(VALUE obj);
 GC_IMPL_FN size_t rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size);
 GC_IMPL_FN bool rb_gc_impl_size_allocatable_p(size_t size);
