@@ -1,0 +1,18 @@
+prelude: |
+  r_0 = 1..0
+  r_1 = 1..1
+  r_10 = 1..10
+  r_1k = 1..1000
+  r_1m = 1..1000000
+  r_big = (2**64)..(2**64 + 1000)
+  r_str = 'a'..'z'
+
+benchmark:
+  'int 0': r_0.to_a
+  'int 1': r_1.to_a
+  'int 10': r_10.to_a
+  'int 1K': r_1k.to_a
+  'int 1M': r_1m.to_a
+  'splat 1K': "[*r_1k]"
+  'bignum 1K': r_big.to_a
+  string: r_str.to_a
