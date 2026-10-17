@@ -235,6 +235,7 @@ releases.
 ### The following bundled gems are promoted from default gems.
 
 * prism 1.9.0
+  * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
 * tsort 0.2.0
 * win32-registry 0.1.2
 
@@ -319,7 +320,7 @@ They are still available on rubygems.org and can be installed with
 * rss 0.3.3
   * 0.3.2 to [0.3.3][rss-0.3.3]
 * net-imap 0.6.8
-  * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4], [v0.6.4.1][net-imap-v0.6.4.1], [v0.6.5][net-imap-v0.6.5], [v0.6.6][net-imap-v0.6.6], [v0.6.7][net-imap-v0.6.7]
+  * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4], [v0.6.4.1][net-imap-v0.6.4.1], [v0.6.5][net-imap-v0.6.5], [v0.6.6][net-imap-v0.6.6], [v0.6.7][net-imap-v0.6.7], [v0.6.8][net-imap-v0.6.8]
 * net-smtp 0.5.2
   * 0.5.1 to [v0.5.2][net-smtp-v0.5.2]
 * rbs 4.2.0
@@ -683,6 +684,9 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22400]: https://bugs.ruby-lang.org/issues/22400
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
+[prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
+[prism-v1.8.1]: https://github.com/ruby/prism/releases/tag/v1.8.1
+[prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
 [RubyGems-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/v4.0.5
 [RubyGems-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/v4.0.6
@@ -791,6 +795,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [net-imap-v0.6.5]: https://github.com/ruby/net-imap/releases/tag/v0.6.5
 [net-imap-v0.6.6]: https://github.com/ruby/net-imap/releases/tag/v0.6.6
 [net-imap-v0.6.7]: https://github.com/ruby/net-imap/releases/tag/v0.6.7
+[net-imap-v0.6.8]: https://github.com/ruby/net-imap/releases/tag/v0.6.8
 [net-smtp-v0.5.2]: https://github.com/ruby/net-smtp/releases/tag/v0.5.2
 [rbs-v3.10.1]: https://github.com/ruby/rbs/releases/tag/v3.10.1
 [rbs-v3.10.2]: https://github.com/ruby/rbs/releases/tag/v3.10.2
