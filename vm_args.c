@@ -322,23 +322,23 @@ args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const VALUE *const pas
 
 static inline void
 args_setup_kw_parameters_not_found(const VALUE *default_values, VALUE *locals, int i, int di,
-                                   int *unspecified_bits, VALUE *unspecified_bits_value)
+                                   unsigned long *unspecified_bits, VALUE *unspecified_bits_value)
 {
     if (UNDEF_P(default_values[di])) {
         locals[i] = Qnil;
 
         if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
-            *unspecified_bits |= 0x01 << di;
+            *unspecified_bits |= 1UL << di;
         }
         else {
             VALUE bits_value = *unspecified_bits_value;
             if (NIL_P(bits_value)) {
                 /* fixnum -> hash */
-                int bits = *unspecified_bits;
+                unsigned long bits = *unspecified_bits;
                 *unspecified_bits_value = bits_value = rb_ident_set_new();
 
                 for (int j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
-                    if (bits & (0x01 << j)) {
+                    if (bits & (1UL << j)) {
                         rb_set_add_no_check(bits_value, INT2FIX(j));
                     }
                 }
@@ -362,7 +362,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
     const VALUE * const default_values = ISEQ_BODY(iseq)->param.keyword->default_values;
     VALUE missing = 0;
     int i, di, found = 0;
-    int unspecified_bits = 0;
+    unsigned long unspecified_bits = 0;
     VALUE unspecified_bits_value = Qnil;
 
     for (i=0; i<req_key_num; i++) {
@@ -400,7 +400,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
     }
 
     if (NIL_P(unspecified_bits_value)) {
-        unspecified_bits_value = INT2FIX(unspecified_bits);
+        unspecified_bits_value = LONG2FIX((long)unspecified_bits);
     }
     locals[key_num] = unspecified_bits_value;
 }
@@ -415,7 +415,7 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
     const VALUE * const default_values = ISEQ_BODY(iseq)->param.keyword->default_values;
     VALUE missing = 0;
     int i, di;
-    int unspecified_bits = 0;
+    unsigned long unspecified_bits = 0;
     size_t keyword_size = RHASH_SIZE(keyword_hash);
     VALUE unspecified_bits_value = Qnil;
 
@@ -481,7 +481,7 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
     }
 
     if (NIL_P(unspecified_bits_value)) {
-        unspecified_bits_value = INT2FIX(unspecified_bits);
+        unspecified_bits_value = LONG2FIX((long)unspecified_bits);
     }
     locals[key_num] = unspecified_bits_value;
 }
