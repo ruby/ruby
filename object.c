@@ -142,11 +142,11 @@ rb_equal(VALUE obj1, VALUE obj2)
     VALUE result;
 
     if (obj1 == obj2) return Qtrue;
-    result = rb_equal_opt(obj1, obj2);
-    if (UNDEF_P(result)) {
-        result = rb_funcall(obj1, id_eq, 1, obj2);
-    }
-    return RBOOL(RTEST(result));
+
+    result = opt_equality_specialized_miss(obj1, obj2);
+    if (!UNDEF_P(result)) return result;
+
+    return rb_equal_opt(obj1, obj2);
 }
 
 int
@@ -155,6 +155,10 @@ rb_eql(VALUE obj1, VALUE obj2)
     VALUE result;
 
     if (obj1 == obj2) return TRUE;
+
+    result = opt_equality_specialized_miss(obj1, obj2);
+    if (!UNDEF_P(result)) return RTEST(result);
+
     result = rb_eql_opt(obj1, obj2);
     if (UNDEF_P(result)) {
         result = rb_funcall(obj1, id_eql, 1, obj2);
