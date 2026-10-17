@@ -219,6 +219,59 @@ case_conv(char *s, ptrdiff_t i, int flags)
 	return s;
 }
 
+/*
+ * write u in decimal after the sign (if any), right-justified in width
+ * and padded with padding, like "%*lu" or "%0*lu"
+ */
+static char *
+format_number(char *s, unsigned long u, char sign, int width, char padding)
+{
+	char buf[sizeof(long) * CHAR_BIT / 3 + 1];
+	char *const buf_end = buf + sizeof(buf);
+	char *p = buf_end;
+	ptrdiff_t n;
+
+	do {
+		*--p = (char)('0' + u % 10);
+	} while (u /= 10);
+	n = buf_end - p + (sign != 0);
+	if (padding != '0' && width > n) {
+		memset(s, padding, width - n);
+		s += width - n;
+	}
+	if (sign) *s++ = sign;
+	if (padding == '0' && width > n) {
+		memset(s, '0', width - n);
+		s += width - n;
+	}
+	memcpy(s, p, buf_end - p);
+	return s + (buf_end - p);
+}
+
+/* number of characters to write val in decimal */
+static int
+long_width(long val)
+{
+	unsigned long u = val < 0 ? 0UL - (unsigned long)val : (unsigned long)val;
+	int n = 1 + (val < 0);
+
+	while (u >= 10) {
+		u /= 10;
+		n++;
+	}
+	return n;
+}
+
+/* write val in decimal, like "%*ld" or "%0*ld" */
+static char *
+format_long(char *s, long val, int width, char padding)
+{
+	if (val < 0) {
+		return format_number(s, 0UL - (unsigned long)val, '-', width, padding);
+	}
+	return format_number(s, (unsigned long)val, 0, width, padding);
+}
+
 static VALUE
 format_value(VALUE val, int base)
 {
@@ -313,6 +366,14 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				    precision, (val)); \
 			REINIT(); \
 		} while (0)
+#define FMT_LONG(def_pad, def_prec, val) \
+		do { \
+			long v = (val); \
+			precision = FMT_PRECISION(def_prec); \
+			NEEDS(max(precision, long_width(v))); \
+			s = format_long(s, v, precision, \
+					(padding == '0' || (!padding && (def_pad) == '0')) ? '0' : ' '); \
+		} while (0)
 #define STRFTIME(fmt) \
 		do { \
 			len = s - start; \
@@ -339,7 +400,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                 do { \
                         VALUE tmp = (val); \
                         if (FIXNUM_P(tmp)) { \
-                                FMT((def_pad), (def_prec), "l"fmt, FIX2LONG(tmp)); \
+                                FMT_LONG((def_pad), (def_prec), FIX2LONG(tmp)); \
                         } \
                         else { \
 				const int base = ((fmt[0] == 'x') ? 16 : \
@@ -431,12 +492,12 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 
 		case 'd':	/* day of the month, 01 - 31 */
 			i = range(1, vtm->mday, 31);
-			FMT('0', 2, "d", (int)i);
+			FMT_LONG('0', 2, (int)i);
 			continue;
 
 		case 'H':	/* hour, 24-hour clock, 00 - 23 */
 			i = range(0, vtm->hour, 23);
-			FMT('0', 2, "d", (int)i);
+			FMT_LONG('0', 2, (int)i);
 			continue;
 
 		case 'I':	/* hour, 12-hour clock, 01 - 12 */
@@ -445,22 +506,22 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				i = 12;
 			else if (i > 12)
 				i -= 12;
-			FMT('0', 2, "d", (int)i);
+			FMT_LONG('0', 2, (int)i);
 			continue;
 
 		case 'j':	/* day of the year, 001 - 366 */
 			i = range(1, vtm->yday, 366);
-			FMT('0', 3, "d", (int)i);
+			FMT_LONG('0', 3, (int)i);
 			continue;
 
 		case 'm':	/* month, 01 - 12 */
 			i = range(1, vtm->mon, 12);
-			FMT('0', 2, "d", (int)i);
+			FMT_LONG('0', 2, (int)i);
 			continue;
 
 		case 'M':	/* minute, 00 - 59 */
 			i = range(0, vtm->min, 59);
-			FMT('0', 2, "d", (int)i);
+			FMT_LONG('0', 2, (int)i);
 			continue;
 
 		case 'p':	/* AM or PM based on 12-hour clock */
@@ -481,7 +542,9 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 		case 's':
                         if (ts) {
                                 time_t sec = ts->tv_sec;
-                                if (~(time_t)0 <= 0)
+                                if (~(time_t)0 <= 0 && sizeof(time_t) <= sizeof(long))
+                                    FMT_LONG('0', 1, (long)sec);
+                                else if (~(time_t)0 <= 0)
                                     FMT('0', 1, PRI_TIMET_PREFIX"d", sec);
                                 else
                                     FMT('0', 1, PRI_TIMET_PREFIX"u", sec);
@@ -494,20 +557,20 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 
 		case 'S':	/* second, 00 - 60 */
 			i = range(0, vtm->sec, 60);
-			FMT('0', 2, "d", (int)i);
+			FMT_LONG('0', 2, (int)i);
 			continue;
 
 		case 'U':	/* week of year, Sunday is first day of week */
-			FMT('0', 2, "d", weeknumber_v(vtm, 0));
+			FMT_LONG('0', 2, weeknumber_v(vtm, 0));
 			continue;
 
 		case 'w':	/* weekday, Sunday == 0, 0 - 6 */
 			i = range(0, vtm->wday, 6);
-			FMT('0', 1, "d", (int)i);
+			FMT_LONG('0', 1, (int)i);
 			continue;
 
 		case 'W':	/* week of year, Monday is first day of week */
-			FMT('0', 2, "d", weeknumber_v(vtm, 1));
+			FMT_LONG('0', 2, weeknumber_v(vtm, 1));
 			continue;
 
 		case 'x':	/* appropriate date representation */
@@ -520,13 +583,13 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 
 		case 'y':	/* year without a century, 00 - 99 */
 			i = NUM2INT(mod(vtm->year, INT2FIX(100)));
-			FMT('0', 2, "d", (int)i);
+			FMT_LONG('0', 2, (int)i);
 			continue;
 
 		case 'Y':	/* year with century */
                         if (FIXNUM_P(vtm->year)) {
 				long y = FIX2LONG(vtm->year);
-				FMT('0', 0 <= y ? 4 : 5, "ld", y);
+				FMT_LONG('0', 0 <= y ? 4 : 5, y);
                         }
                         else {
 				FMTV('0', 4, "d", vtm->year);
@@ -583,29 +646,20 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				format--;
 				goto unknown;
                         }
-			i = snprintf(s, endp - s, (padding == ' ' ? "%+*ld" : "%+.*ld"),
-				     precision + (padding == ' '), sign * (off / 3600));
-			if (i < 0) goto err;
-			if (sign < 0 && off < 3600) {
-				*(padding == ' ' ? s + i - 2 : s) = '-';
-			}
-			s += i;
+			s = format_number(s, (unsigned long)(off / 3600), sign < 0 ? '-' : '+',
+					  precision + 1, padding == ' ' ? ' ' : '0');
                         off = off % 3600;
 			if (colons == 3 && off == 0)
 				continue;
                         if (1 <= colons)
                             *s++ = ':';
-			i = snprintf(s, endp - s, "%02d", (int)(off / 60));
-			if (i < 0) goto err;
-			s += i;
+			s = format_number(s, (unsigned long)(off / 60), 0, 2, '0');
                         off = off % 60;
 			if (colons == 3 && off == 0)
 				continue;
                         if (2 <= colons) {
                             *s++ = ':';
-                            i = snprintf(s, endp - s, "%02d", (int)off);
-                            if (i < 0) goto err;
-                            s += i;
+                            s = format_number(s, (unsigned long)off, 0, 2, '0');
                         }
 			continue;
 #endif /* MAILHEADER_EXT */
@@ -661,7 +715,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			continue;
 
 		case 'e':	/* day of month, blank padded */
-			FMT(' ', 2, "d", range(1, vtm->mday, 31));
+			FMT_LONG(' ', 2, range(1, vtm->mday, 31));
 			continue;
 
 		case 'r':	/* time as %I:%M:%S %p */
@@ -680,7 +734,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 #ifdef SUNOS_EXT
 		case 'k':	/* hour, 24-hour clock, blank pad */
 			i = range(0, vtm->hour, 23);
-			FMT(' ', 2, "d", (int)i);
+			FMT_LONG(' ', 2, (int)i);
 			continue;
 
 		case 'l':	/* hour, 12-hour clock, 1 - 12, blank pad */
@@ -689,7 +743,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				i = 12;
 			else if (i > 12)
 				i -= 12;
-			FMT(' ', 2, "d", (int)i);
+			FMT_LONG(' ', 2, (int)i);
 			continue;
 #endif
 
@@ -718,12 +772,12 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			goto again;
 
 		case 'V':	/* week of year according ISO 8601 */
-			FMT('0', 2, "d", iso8601wknum_v(vtm));
+			FMT_LONG('0', 2, iso8601wknum_v(vtm));
 			continue;
 
 		case 'u':
 		/* ISO 8601: Weekday as a decimal number [1 (Monday) - 7] */
-			FMT('0', 1, "d", vtm->wday == 0 ? 7 : vtm->wday);
+			FMT_LONG('0', 1, vtm->wday == 0 ? 7 : vtm->wday);
 			continue;
 #endif	/* POSIX2_DATE */
 
@@ -750,7 +804,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                 if (*format == 'G') {
                                         if (FIXNUM_P(yv)) {
                                                 const long y = FIX2LONG(yv);
-                                                FMT('0', 0 <= y ? 4 : 5, "ld", y);
+                                                FMT_LONG('0', 0 <= y ? 4 : 5, y);
                                         }
                                         else {
                                                 FMTV('0', 4, "d", yv);
@@ -759,7 +813,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                 else {
                                         yv = mod(yv, INT2FIX(100));
                                         y = FIX2LONG(yv);
-                                        FMT('0', 2, "ld", y);
+                                        FMT_LONG('0', 2, y);
                                 }
                                 continue;
                         }
@@ -790,16 +844,15 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                         if (ts) {
                                 long subsec = ts->tv_nsec;
                                 if (9 < precision) {
-                                        snprintf(s, endp - s, "%09ld", subsec);
-                                        memset(s+9, '0', precision-9);
-                                        s += precision;
+                                        s = format_long(s, subsec, 9, '0');
+                                        memset(s, '0', precision-9);
+                                        s += precision-9;
                                 }
                                 else {
                                         int i;
                                         for (i = 0; i < 9-precision; i++)
                                                 subsec /= 10;
-                                        snprintf(s, endp - s, "%0*ld", precision, subsec);
-                                        s += precision;
+                                        s = format_long(s, subsec, precision, '0');
                                 }
                         }
                         else {
@@ -820,8 +873,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                 subsec = div(subsec, INT2FIX(1));
 
                                 if (FIXNUM_P(subsec)) {
-                                        (void)snprintf(s, endp - s, "%0*ld", precision, FIX2LONG(subsec));
-                                        s += precision;
+                                        s = format_long(s, FIX2LONG(subsec), precision, '0');
                                 }
                                 else {
                                         VALUE args[2], result;
@@ -922,9 +974,18 @@ strftime_size_limit(size_t format_len)
 }
 
 static VALUE
-create_buffer(rb_encoding *enc)
+create_buffer(size_t format_len, rb_encoding *enc)
 {
-	VALUE result = rb_obj_hide(rb_enc_str_new(0, 0, enc));
+	/*
+	 * most results fit in twice the length of the format, or in 32
+	 * bytes for short formats like "%FT%T"
+	 */
+	size_t capa = format_len < RB_LEN_MAX / 2 ? format_len * 2 : format_len;
+	VALUE result;
+
+	if (capa < 32) capa = 32;
+	result = rb_obj_hide(rb_str_buf_new((rb_len_t)capa));
+	rb_enc_associate(result, enc);
 	ENC_CODERANGE_CLEAR(result);
 	return result;
 }
@@ -933,7 +994,7 @@ VALUE
 rb_strftime(const char *format, size_t format_len, rb_encoding *enc,
 	    VALUE time, const struct vtm *vtm, VALUE timev, int gmt)
 {
-	VALUE buff = create_buffer(enc);
+	VALUE buff = create_buffer(format_len, enc);
 	buff = rb_strftime_with_timespec(buff, format, format_len, enc,
 					 time, vtm, timev, NULL, gmt,
 					 strftime_size_limit(format_len));
@@ -944,7 +1005,7 @@ VALUE
 rb_strftime_timespec(const char *format, size_t format_len, rb_encoding *enc,
 		     VALUE time, const struct vtm *vtm, struct timespec *ts, int gmt)
 {
-	VALUE buff = create_buffer(enc);
+	VALUE buff = create_buffer(format_len, enc);
 	buff = rb_strftime_with_timespec(buff, format, format_len, enc,
 					 time, vtm, Qnil, ts, gmt,
 					 strftime_size_limit(format_len));
@@ -957,7 +1018,7 @@ rb_strftime_limit(const char *format, size_t format_len, rb_encoding *enc,
 		  VALUE time, const struct vtm *vtm, struct timespec *ts,
 		  int gmt, size_t maxsize)
 {
-	VALUE buff = create_buffer(enc);
+	VALUE buff = create_buffer(format_len, enc);
 	buff = rb_strftime_with_timespec(buff, format, format_len, enc,
 					 time, vtm, Qnil, ts, gmt, maxsize);
 	return rb_obj_reveal(buff, rb_cString);

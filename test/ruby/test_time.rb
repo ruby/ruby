@@ -968,6 +968,9 @@ class TestTime < Test::Unit::TestCase
     t = Time.utc(-1,1,4)
     assert_equal("-0001", t.strftime("%Y"))
     assert_equal("-0001", t.strftime("%G"))
+    assert_equal("-1", t.strftime("%-Y"))
+    assert_equal("-00001", t.strftime("%06Y"))
+    assert_equal("    -1", t.strftime("%_6Y"))
 
     t = Time.utc(10000000000000000000000,1,1)
     assert_equal("<<10000000000000000000000>>", t.strftime("<<%Y>>"))
@@ -1045,6 +1048,9 @@ class TestTime < Test::Unit::TestCase
     s = t2000.strftime("%28c")
     assert_equal(28, s.size)
     assert_equal(t2000.strftime("%c"), s.strip)
+
+    s = t2000.strftime("%40d%40H%_40M")
+    assert_equal("01".rjust(40, "0") + "0" * 40 + "0".rjust(40), s)
   end
 
   def test_strfimte_zoneoffset
