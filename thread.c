@@ -121,6 +121,10 @@ static VALUE sym_never;
 
 static uint32_t thread_default_quantum_ms = 100;
 
+/* the interval at which the timer thread interrupts the running threads */
+#define THREAD_TIMER_INTERVAL_MSEC 10
+#define THREAD_TIMER_INTERVAL_USEC (THREAD_TIMER_INTERVAL_MSEC * 1000)
+
 #define THREAD_LOCAL_STORAGE_INITIALISED FL_USER13
 #define THREAD_LOCAL_STORAGE_INITIALISED_P(th) RB_FL_TEST_RAW((th), THREAD_LOCAL_STORAGE_INITIALISED)
 
@@ -2972,7 +2976,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
                 limits_us >>= -th->priority;
 
             if (th->status == THREAD_RUNNABLE)
-                th->running_time_us += 10 * 1000; // 10ms = 10_000us // TODO: use macro
+                th->running_time_us += THREAD_TIMER_INTERVAL_USEC;
 
             VM_ASSERT(th->ec->cfp);
             EXEC_EVENT_HOOK(th->ec, RUBY_INTERNAL_EVENT_SWITCH, th->ec->cfp->self,
