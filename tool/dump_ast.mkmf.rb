@@ -5,7 +5,7 @@ require 'fileutils'
 
 workdir, src, *objs = ARGV
 src = Pathname(src)
-tooldir = src.parent.relative_path_from(workdir)
+tooldir = src.parent.expand_path.relative_path_from(File.expand_path(workdir))
 srcdir = tooldir.parent
 target = src.basename.sub_ext('')
 dirs = objs.map {|obj| File.dirname(obj)}.uniq - %w[.]
