@@ -420,8 +420,7 @@ int raddrinfo_thread_create(void *(*start_routine) (void *), void *arg);
 
 #ifndef FAST_FALLBACK_INIT_INETSOCK_IMPL
    /* _WIN32 spawns the resolution threads with _beginthreadex(3) instead. */
-#  if (!defined(_WIN32) && (!defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH))) || \
-      defined(__MINGW32__) || defined(__MINGW64__)
+#  if (!defined(_WIN32) && (!defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH)))
 #    define FAST_FALLBACK_INIT_INETSOCK_IMPL 0
 #  else
 #    include "ruby/thread_native.h"
