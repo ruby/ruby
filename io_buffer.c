@@ -2855,6 +2855,23 @@ io_buffer_size_of(VALUE klass, VALUE buffer_type)
     }
 }
 
+#if USE_ZJIT
+// ZJIT needs this function to never allocate and never raise, so a range it
+// cannot serve is reported as NULL.
+const void *
+rb_jit_io_buffer_readable_ptr(VALUE self, size_t offset, size_t length)
+{
+    void *base;
+    size_t size;
+
+    if (!io_buffer_try_get_bytes(get_io_buffer_view(self), &base, &size)) return NULL;
+    if (!base) return NULL;
+    if (size_sum_is_bigger_than(offset, length, size)) return NULL;
+
+    return (const char *)base + offset;
+}
+#endif
+
 static inline VALUE
 rb_io_buffer_get_value(const void* base, size_t size, ID buffer_type, size_t *offset)
 {
