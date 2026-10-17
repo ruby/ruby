@@ -3947,11 +3947,15 @@ search_delim(const char *p, rb_len_t len, int delim, rb_encoding *enc)
     return NULL;
 }
 
+static void unread_raw_character(rb_io_t *fptr, const char *buf, int len);
+
 static int
 read_raw_character(rb_io_t *fptr, rb_encoding *enc, char *buf)
 {
+    int minlen = rb_enc_mbminlen(enc);
+    int maxlen = rb_enc_mbmaxlen(enc);
     int n = 0;
-    int r;
+    int r = 0;
 
     do {
         if (!READ_DATA_PENDING(fptr)) {
@@ -3962,7 +3966,15 @@ read_raw_character(rb_io_t *fptr, rb_encoding *enc, char *buf)
         fptr->rbuf.off++;
         fptr->rbuf.len--;
         r = rb_enc_precise_mbclen(buf, buf + n, enc);
-    } while (MBCLEN_NEEDMORE_P(r) && n < rb_enc_mbmaxlen(enc));
+    } while ((MBCLEN_NEEDMORE_P(r) || n % minlen) && n < maxlen);
+
+    /* keep only the first code unit of an invalid sequence, and stay on
+     * the code unit boundary when EOF cuts a sequence short */
+    int keep = MBCLEN_INVALID_P(r) ? minlen : n - n % minlen;
+    if (keep > 0 && keep < n) {
+        unread_raw_character(fptr, buf + keep, n - keep);
+        n = keep;
+    }
 
     return n;
 }
@@ -4061,7 +4073,9 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, rb_len_t *lp, rb_encoding *enc
             int delim_len = rb_enc_codelen(delim, enc);
 
             if (delim_len == width) {
-                rb_enc_mbcput(delim, buf, enc);
+                char delim_buf[ONIGENC_CODE_TO_MBC_MAXLEN];
+
+                rb_enc_mbcput(delim, delim_buf, enc);
                 for (;;) {
                     if (!READ_DATA_PENDING(fptr)) {
                         READ_CHECK(fptr);
@@ -4070,7 +4084,7 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, rb_len_t *lp, rb_encoding *enc
                     long pending = READ_DATA_PENDING_COUNT(fptr);
                     long complete = pending - pending % width;
                     const char *p = READ_DATA_PENDING_PTR(fptr);
-                    const char *q = complete ? search_wide_delim(p, complete, buf, width) : NULL;
+                    const char *q = complete ? search_wide_delim(p, complete, delim_buf, width) : NULL;
                     long take = q ? q - p + width : complete;
 
                     if (take > 0) {
@@ -4995,7 +5009,26 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
     if (io_fillbuf(fptr) < 0) {
         return Qnil;
     }
-    if (rb_enc_asciicompat(enc) && ISASCII(fptr->rbuf.ptr[fptr->rbuf.off])) {
+    if (rb_enc_mbminlen(enc) != 1) {
+        r = rb_enc_precise_mbclen(fptr->rbuf.ptr+fptr->rbuf.off, fptr->rbuf.ptr+fptr->rbuf.off+fptr->rbuf.len, enc);
+        if (MBCLEN_CHARFOUND_P(r) &&
+            (n = MBCLEN_CHARFOUND_LEN(r)) <= fptr->rbuf.len) {
+            str = rb_str_new(fptr->rbuf.ptr+fptr->rbuf.off, n);
+            fptr->rbuf.off += n;
+            fptr->rbuf.len -= n;
+            cr = ENC_CODERANGE_VALID;
+        }
+        else {
+            /* keep a wide encoding on the code unit boundary */
+            char buf[ONIGENC_CODE_TO_MBC_MAXLEN];
+
+            n = read_raw_character(fptr, enc, buf);
+            str = rb_str_new(buf, n);
+            r = rb_enc_precise_mbclen(buf, buf + n, enc);
+            if (MBCLEN_CHARFOUND_P(r)) cr = ENC_CODERANGE_VALID;
+        }
+    }
+    else if (rb_enc_asciicompat(enc) && ISASCII(fptr->rbuf.ptr[fptr->rbuf.off])) {
         str = rb_str_new(fptr->rbuf.ptr+fptr->rbuf.off, 1);
         fptr->rbuf.off += 1;
         fptr->rbuf.len -= 1;
