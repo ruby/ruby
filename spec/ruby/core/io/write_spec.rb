@@ -295,6 +295,28 @@ describe "IO#write" do
       r.read.should == "foobar"
     end
   end
+
+  it "writes all data when given more arguments than the platform IOV_MAX" do
+    IO.pipe do |r, w|
+      n = 2000
+      w.write(*(["a"] * n))
+      w.close
+
+      r.read.should == "a" * n
+    end
+  end
+
+  ruby_version_is "4.1" do
+    it "flushes all arguments immediately when sync is true" do
+      IO.pipe do |r, w|
+        w.sync = true
+        n = 2000
+        w.write(*(["a"] * n))
+
+        r.read_nonblock(n).should == "a" * n
+      end
+    end
+  end
 end
 
 platform_is :windows do
