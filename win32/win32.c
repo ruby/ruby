@@ -3580,8 +3580,14 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
                     r = recvfrom(s, buf, len, flags, addr, addrlen);
                 else
                     r = recv(s, buf, len, flags);
-                if (r == SOCKET_ERROR)
-                    errno = map_errno(WSAGetLastError());
+                if (r == SOCKET_ERROR) {
+                    DWORD err = WSAGetLastError();
+                    /* the datagram was truncated to fill the buffer */
+                    if (err == WSAEMSGSIZE)
+                        r = len;
+                    else
+                        errno = map_errno(err);
+                }
             }
             else {
                 if (addr && addrlen)
@@ -3724,8 +3730,17 @@ recvmsg(int fd, struct msghdr *msg, int flags)
     if (GET_FLAGS(mode) & O_NONBLOCK) {
         RUBY_CRITICAL {
             if ((ret = pWSARecvMsg(s, &wsamsg, &len, NULL, NULL)) == SOCKET_ERROR) {
-                errno = map_errno(WSAGetLastError());
-                len = -1;
+                DWORD err = WSAGetLastError();
+                if (err == WSAEMSGSIZE) {
+                    DWORD i;
+                    for (len = 0, i = 0; i < wsamsg.dwBufferCount; ++i)
+                        len += wsamsg.lpBuffers[i].len;
+                    ret = 0;
+                }
+                else {
+                    errno = map_errno(err);
+                    len = -1;
+                }
             }
         }
     }
