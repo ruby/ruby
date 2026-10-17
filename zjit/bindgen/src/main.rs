@@ -85,8 +85,9 @@ fn main() {
         .allowlist_type("ruby_preserved_encindex")
         .allowlist_function("rb_class2name")
 
-        // Coderange constants (ENC_CODERANGE_*) for inlining String predicates
+        // Coderange constants (ENC_CODERANGE_*) and the scan routine for inlining String predicates
         .allowlist_type("ruby_coderange_type")
+        .allowlist_function("rbimpl_enc_str_coderange_scan")
 
         // This struct is public to Ruby C extensions
         .allowlist_type("RBasic")
