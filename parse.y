@@ -3656,20 +3656,23 @@ command		: fcall command_args       %prec tLOWEST
                         fixpos($$, $2);
                     /*% ripper: yield!($:2) %*/
                     }
-                | k_return call_args
+                | k_return_arg call_args
                     {
+                        CMDARG_POP();
                         $$ = NEW_RETURN(ret_args(p, $2), &@$, &@1);
                     /*% ripper: return!($:2) %*/
                     }
-                | keyword_break call_args
+                | k_break_arg call_args
                     {
+                        CMDARG_POP();
                         NODE *args = 0;
                         args = ret_args(p, $2);
                         $$ = add_block_exit(p, NEW_BREAK(args, &@$, &@1));
                     /*% ripper: break!($:2) %*/
                     }
-                | keyword_next call_args
+                | k_next_arg call_args
                     {
+                        CMDARG_POP();
                         NODE *args = 0;
                         args = ret_args(p, $2);
                         $$ = add_block_exit(p, NEW_NEXT(args, &@$, &@1));
@@ -4894,6 +4897,24 @@ k_return	: keyword_return
                     {
                         if (p->ctxt.cant_return && !dyna_in_block(p))
                             yyerror1(&@1, "Invalid return in class/module body");
+                    }
+                ;
+
+k_return_arg	: k_return
+                    {
+                        CMDARG_PUSH(0);
+                    }
+                ;
+
+k_break_arg	: keyword_break
+                    {
+                        CMDARG_PUSH(0);
+                    }
+                ;
+
+k_next_arg	: keyword_next
+                    {
+                        CMDARG_PUSH(0);
                     }
                 ;
 
