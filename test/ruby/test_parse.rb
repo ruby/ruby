@@ -679,6 +679,8 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error("?\v", /unexpected/)
     assert_syntax_error("?\r", /unexpected/)
     assert_syntax_error("?\f", /unexpected/)
+    error = assert_syntax_error(" ?\x8a".force_encoding("utf-8"), /invalid multibyte char/)
+    assert_equal(1, error.message.scan(/invalid multibyte char/).size)
     assert_syntax_error(" ?a\x8a".force_encoding("utf-8"), /invalid multibyte/)
     assert_equal("\u{1234}", eval("?\u{1234}"))
     assert_equal("\u{1234}", eval('?\u{1234}'))
