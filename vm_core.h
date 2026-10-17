@@ -2123,6 +2123,11 @@ void rb_vm_rewind_cfp(rb_execution_context_t *ec, rb_control_frame_t *cfp);
 void rb_vm_env_write(const VALUE *ep, int index, VALUE v);
 VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler);
 
+/* to_h pair-literal block optimization (see insns.def: to_h_aset,
+ * prism_compile.c and the core to_h implementations). */
+int rb_iseq_to_h_pair_lidx(const rb_iseq_t *iseq);
+int rb_vm_to_h_pair_prepare(VALUE hash);
+
 void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE exception_class, VALUE mesg);
 
 #define rb_vm_register_special_exception(sp, e, m) \

@@ -236,6 +236,36 @@ rb_vm_frame_block_handler(const rb_control_frame_t *cfp)
     return VM_CF_BLOCK_HANDLER(cfp);
 }
 
+// to_h pair-literal block optimization.  If the block given to the
+// current (cfunc) method is a `to_h { |*| [key, value] }` pair-literal
+// block (its iseq contains the to_h_aset instruction), install
+// `hash` into the hidden outer local slot that the block reads, so
+// that the block stores each key/value pair directly into `hash`
+// without building an intermediate two-element array.  Returns true
+// if the fast path was taken, in which case the caller just has to
+// invoke the block per element with the same arguments as the original
+// implementation (and, to preserve `next`/`break`, convert the return
+// value with rb_hash_set_pair unless it is `hash`).
+int
+rb_vm_to_h_pair_prepare(VALUE hash)
+{
+    VALUE bh = VM_CF_BLOCK_HANDLER(GET_EC()->cfp);
+
+    if (bh == VM_BLOCK_HANDLER_NONE) return 0;
+    if (!VM_BH_ISEQ_BLOCK_P(bh)) return 0;
+
+    const struct rb_captured_block *capt = VM_BH_TO_ISEQ_BLOCK(bh);
+    const rb_iseq_t *block_iseq = capt->code.iseq;
+
+    if (ISEQ_BODY(block_iseq)->type != ISEQ_TYPE_BLOCK) return 0;
+
+    int lidx = rb_iseq_to_h_pair_lidx(block_iseq);
+    if (lidx <= 0) return 0;
+
+    rb_vm_env_write(capt->ep, -lidx, hash);
+    return 1;
+}
+
 #if VM_CHECK_MODE > 0
 static int
 VM_CFP_IN_HEAP_P(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)

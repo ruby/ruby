@@ -1763,6 +1763,39 @@ opt_invokebuiltin_delegate_leave
     }
 }
 
+/* Store a key/value pair computed by a `to_h { |*| [key, value] }`
+ * pair-literal block directly into the result hash that the core
+ * `to_h` implementation has installed in the hidden outer local at
+ * `idx` (see prism_compile.c and rb_vm_to_h_pair_prepare).
+ * This replaces the `newarray 2` that such a block would otherwise
+ * end with, so that no intermediate two-element array is allocated
+ * per element.
+ *
+ * When the local is not a Hash -- i.e. the block was invoked by
+ * something other than the cooperating core `to_h` (a user-defined
+ * or refined `to_h`, `method_missing`, a stored Proc, ...) --
+ * degrade to the original semantics and return a fresh
+ * two-element array instead.
+ */
+DEFINE_INSN
+to_h_aset
+(lindex_t idx)
+(VALUE key, VALUE val)
+(VALUE result)
+/* rb_hash_aset() may call #hash */
+// attr bool leaf = false;
+{
+    VALUE hash = *(vm_get_ep(GET_EP(), 1) - idx);
+
+    if (RB_TYPE_P(hash, T_HASH)) {
+        rb_hash_aset(hash, key, val);
+        result = hash;
+    }
+    else {
+        result = rb_ary_new3(2, key, val);
+    }
+}
+
 /* BLT */
 DEFINE_INSN_IF(SUPPORT_JOKE)
 bitblt

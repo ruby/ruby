@@ -3366,6 +3366,17 @@ rb_ary_to_h(VALUE ary)
     VALUE hash = rb_hash_new_capa(RARRAY_LEN(ary));
     int block_given = rb_block_given_p();
 
+    // to_h pair-literal fast path: the block stores each pair directly
+    // into `hash`, so yield only for its side effect.
+    if (block_given && rb_vm_to_h_pair_prepare(hash)) {
+        for (i=0; i<RARRAY_LEN(ary); i++) {
+            const VALUE e = rb_ary_elt(ary, i);
+            const VALUE result = rb_yield_force_blockarg(e);
+            if (result != hash) rb_hash_set_pair(hash, result);
+        }
+        return hash;
+    }
+
     for (i=0; i<RARRAY_LEN(ary); i++) {
         const VALUE e = rb_ary_elt(ary, i);
         const VALUE elt = block_given ? rb_yield_force_blockarg(e) : e;

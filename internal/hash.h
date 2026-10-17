@@ -122,6 +122,12 @@ VALUE rb_hash_keys(VALUE hash);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_compare_by_id_p(VALUE hash);
 
+/* to_h pair-literal block optimization (see vm.c, insns.def: to_h_aset
+ * and the core to_h implementations).  Declared here so that the
+ * enumerable/array/hash/struct to_h methods can see it without pulling
+ * in vm_core.h. */
+int rb_vm_to_h_pair_prepare(VALUE hash);
+
 st_table *rb_hash_tbl_raw(VALUE hash);
 
 VALUE rb_hash_compare_by_id(VALUE hash);

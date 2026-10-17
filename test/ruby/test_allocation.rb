@@ -79,6 +79,18 @@ class TestAllocation < Test::Unit::TestCase
   end
 
   class Literal < self
+    def test_no_pair_array_allocation_with_to_h_block
+      check_allocations(<<~RUBY)
+        _array = [1, 2, 3]
+        check_allocations(0, 1, "_array.to_h { |x| [x, x] }")
+        _hash = {a: 1, b: 2, c: 3}
+        check_allocations(0, 1, "_hash.to_h { |k, v| [k, v] }")
+        _struct = Struct.new(:a, :b, :c).new(1, 2, 3)
+        check_allocations(0, 1, "_struct.to_h { |k, v| [k, v] }")
+        check_allocations(0, 1, "(1..3).to_h { |x| [x, x] }")
+      RUBY
+    end
+
     def test_array_literal
       check_allocations(<<~RUBY)
         check_allocations(1, 0, "[]")

@@ -3964,11 +3964,29 @@ to_h_i(VALUE key, VALUE value, VALUE hash)
     return ST_CONTINUE;
 }
 
+// to_h pair-literal fast path: the block stores each pair directly into
+// `hash`; yield only for its side effect, falling back to the ordinary
+// pair conversion when the block leaves by `next`/`break`.
+static int
+to_h_pair_i(VALUE key, VALUE value, VALUE hash)
+{
+    VALUE result = rb_yield_values(2, key, value);
+
+    if (result != hash) rb_hash_set_pair(hash, result);
+    return ST_CONTINUE;
+}
+
 static VALUE
 rb_hash_to_h_block(VALUE hash)
 {
     VALUE h = rb_hash_new_capa(RHASH_SIZE(hash));
-    rb_hash_foreach(hash, to_h_i, h);
+
+    if (rb_vm_to_h_pair_prepare(h)) {
+        rb_hash_foreach(hash, to_h_pair_i, h);
+    }
+    else {
+        rb_hash_foreach(hash, to_h_i, h);
+    }
     return h;
 }
 

@@ -1146,6 +1146,18 @@ rb_struct_to_h(VALUE s)
     rb_len_t i;
     int block_given = rb_block_given_p();
 
+    // to_h pair-literal fast path: the block stores each pair directly
+    // into `h`; yield only for its side effect, falling back to the
+    // ordinary pair conversion when the block leaves by `next`/`break`.
+    if (block_given && rb_vm_to_h_pair_prepare(h)) {
+        for (i=0; i<RSTRUCT_LEN_RAW(s); i++) {
+            VALUE k = rb_ary_entry(members, i), v = RSTRUCT_GET_RAW(s, i);
+            VALUE result = rb_yield_values(2, k, v);
+            if (result != h) rb_hash_set_pair(h, result);
+        }
+        return h;
+    }
+
     for (i=0; i<RSTRUCT_LEN_RAW(s); i++) {
         VALUE k = rb_ary_entry(members, i), v = RSTRUCT_GET_RAW(s, i);
         if (block_given)
