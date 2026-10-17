@@ -58,11 +58,6 @@ static struct rb_id_table *rb_global_tbl;
 // feature (file path) => struct autoload_data
 static VALUE autoload_features;
 
-// This mutex is used to protect autoloading state. We use a global mutex which
-// is held until a per-feature mutex can be created. This ensures there are no
-// race conditions relating to autoload state.
-static VALUE autoload_mutex;
-
 static void check_before_mod_set(VALUE, ID, VALUE, const char *);
 static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t);
 static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility, VALUE *found_in);
@@ -89,10 +84,6 @@ Init_var_tables(void)
 {
     rb_global_tbl = rb_id_table_create(0);
     generic_fields_tbl_ = st_init_numtable();
-
-    autoload_mutex = rb_mutex_new();
-    rb_obj_hide(autoload_mutex);
-    rb_vm_register_global_object(autoload_mutex);
 
     autoload_features = rb_ident_hash_new();
     rb_obj_hide(autoload_features);
@@ -2820,17 +2811,9 @@ autoload_entry(VALUE mod, ID id)
 static void const_set(VALUE klass, ID id, VALUE val);
 static void const_added(VALUE klass, ID const_name);
 
-struct autoload_arguments {
-    VALUE module;
-    ID name;
-    VALUE feature;
-    VALUE box_value;
-};
-
 static VALUE
 autoload_feature_lookup_or_create(VALUE feature, struct autoload_data **autoload_data_pointer)
 {
-    RUBY_ASSERT_MUTEX_OWNED(autoload_mutex);
     RUBY_ASSERT_CRITICAL_SECTION_ENTER();
 
     VALUE autoload_data_value = rb_hash_aref(autoload_features, feature);
@@ -2854,43 +2837,6 @@ autoload_feature_lookup_or_create(VALUE feature, struct autoload_data **autoload
     return autoload_data_value;
 }
 
-static VALUE
-autoload_synchronized(VALUE _arguments)
-{
-    struct autoload_arguments *arguments = (struct autoload_arguments *)_arguments;
-
-    rb_const_entry_t *constant_entry = rb_const_lookup(arguments->module, arguments->name);
-    if (constant_entry && !UNDEF_P(constant_entry->value)) {
-        return Qfalse;
-    }
-
-    // Reset any state associated with any previous constant:
-    const_set(arguments->module, arguments->name, Qundef);
-    constant_entry = rb_const_lookup(arguments->module, arguments->name);
-
-    // Ensure the string is uniqued since we use an identity lookup:
-    VALUE feature = rb_fstring(arguments->feature);
-
-    struct autoload_data *autoload_data;
-    VALUE autoload_data_value = autoload_feature_lookup_or_create(feature, &autoload_data);
-
-    {
-        struct autoload_const *autoload_const;
-        VALUE autoload_const_value = TypedData_Make_Struct(0, struct autoload_const, &autoload_const_type, autoload_const);
-        RB_OBJ_WRITE(autoload_const_value, &autoload_const->box_value, arguments->box_value);
-        RB_OBJ_WRITE(autoload_const_value, &autoload_const->module, arguments->module);
-        RB_OBJ_WRITE(autoload_const_value, &autoload_const->autoload_call_file, constant_entry->u.file);
-        autoload_const->name = arguments->name;
-        autoload_const->value = Qundef;
-        autoload_const->flag = CONST_PUBLIC;
-        RB_OBJ_WRITE(autoload_const_value, &autoload_const->autoload_data_value, autoload_data_value);
-        ccan_list_add_tail(&autoload_data->constants, &autoload_const->cnode);
-        RB_OBJ_WRITE(arguments->module, &constant_entry->u.autoload_const, autoload_const_value);
-    }
-
-    return Qtrue;
-}
-
 void
 rb_autoload_str(VALUE module, ID name, VALUE feature)
 {
@@ -2908,18 +2854,34 @@ rb_autoload_str(VALUE module, ID name, VALUE feature)
         rb_raise(rb_eArgError, "empty feature name");
     }
 
-    struct autoload_arguments arguments = {
-        .module = module,
-        .name = name,
-        .feature = feature,
-        .box_value = current_box_value,
-    };
-
-    VALUE result = rb_mutex_synchronize(autoload_mutex, autoload_synchronized, (VALUE)&arguments);
-
-    if (result == Qtrue) {
-        const_added(module, name);
+    rb_const_entry_t *constant_entry = rb_const_lookup(module, name);
+    if (constant_entry && !UNDEF_P(constant_entry->value)) {
+        return;
     }
+
+    // Reset any state associated with any previous constant:
+    const_set(module, name, Qundef);
+    constant_entry = rb_const_lookup(module, name);
+
+    // Ensure the string is uniqued since we use an identity lookup:
+    feature = rb_fstring(feature);
+
+    struct autoload_data *autoload_data;
+    VALUE autoload_data_value = autoload_feature_lookup_or_create(feature, &autoload_data);
+
+    struct autoload_const *autoload_const;
+    VALUE autoload_const_value = TypedData_Make_Struct(0, struct autoload_const, &autoload_const_type, autoload_const);
+    RB_OBJ_WRITE(autoload_const_value, &autoload_const->box_value, current_box_value);
+    RB_OBJ_WRITE(autoload_const_value, &autoload_const->module, module);
+    RB_OBJ_WRITE(autoload_const_value, &autoload_const->autoload_call_file, constant_entry->u.file);
+    autoload_const->name = name;
+    autoload_const->value = Qundef;
+    autoload_const->flag = CONST_PUBLIC;
+    RB_OBJ_WRITE(autoload_const_value, &autoload_const->autoload_data_value, autoload_data_value);
+    ccan_list_add_tail(&autoload_data->constants, &autoload_const->cnode);
+    RB_OBJ_WRITE(module, &constant_entry->u.autoload_const, autoload_const_value);
+
+    const_added(module, name);
 }
 
 static void
@@ -2967,6 +2929,17 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
 
     VALUE feature = autoload_data->feature;
 
+    loading = RSTRING_PTR(feature);
+
+    /*
+     * If the feature is not provided yet, autoload it.  Note that
+     * rb_feature_provided may switch threads, so whether somebody else is
+     * autoloading must be checked after this.
+     */
+    if (!rb_feature_provided(loading, &loading)) {
+        return autoload_const_value;
+    }
+
     /*
      * if somebody else is autoloading, we MUST wait for them, since
      * rb_provide_feature can provide a feature before autoload_const_set
@@ -2974,12 +2947,6 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
      * the other thread.
      */
     if (autoload_by_someone_else(autoload_data)) {
-        return autoload_const_value;
-    }
-
-    loading = RSTRING_PTR(feature);
-
-    if (!rb_feature_provided(loading, &loading)) {
         return autoload_const_value;
     }
 
@@ -3112,13 +3079,19 @@ autoload_load_needed(VALUE _arguments)
         return Qfalse;
     }
 
+    // Another thread must not create the mutex between the check and the creation:
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+
     if (NIL_P(autoload_data->mutex)) {
         RB_OBJ_WRITE(autoload_const->autoload_data_value, &autoload_data->mutex, rb_mutex_new());
         autoload_data->fork_gen = GET_VM()->fork_gen;
     }
     else if (rb_mutex_owned_p(autoload_data->mutex)) {
+        RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
         return Qfalse;
     }
+
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     arguments->mutex = autoload_data->mutex;
     arguments->autoload_const = autoload_const;
@@ -3160,7 +3133,7 @@ autoload_require_and_apply(VALUE receiver, VALUE _arguments)
 
     VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
     if (RTEST(result)) {
-        return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);
+        return autoload_apply_constants(_arguments);
     }
     return result;
 }
@@ -3307,7 +3280,7 @@ rb_autoload_load(VALUE module, ID name)
     struct autoload_load_arguments arguments = {.module = module, .name = name, .mutex = Qnil};
 
     // Figure out whether we can autoload the named constant:
-    VALUE autoload_const_value = rb_mutex_synchronize(autoload_mutex, autoload_load_needed, (VALUE)&arguments);
+    VALUE autoload_const_value = autoload_load_needed((VALUE)&arguments);
 
     // This confirms whether autoloading is required or not:
     if (autoload_const_value == Qfalse) return autoload_const_value;
