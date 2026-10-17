@@ -1209,6 +1209,22 @@ if defined? Zlib
       }
     end
 
+    def test_reader_wrap_text_mode_io
+      Tempfile.create("test_zlib_gzip_reader_wrap_text_mode") {|t|
+        t.close
+        # stored blocks keep these bytes as-is in the gzip stream
+        content = "\r\n\n" * 100
+        Zlib::GzipWriter.open(t.path, Zlib::NO_COMPRESSION) {|gz| gz.print(content) }
+        File.open(t.path, "r") {|f|
+          assert_not_predicate(f, :binmode?)
+          Zlib::GzipReader.wrap(f) {|gz|
+            assert_predicate(f, :binmode?)
+            assert_equal(content, gz.read)
+          }
+        }
+      }
+    end
+
     def test_corrupted_header
       gz = Zlib::GzipWriter.new(StringIO.new(s = "".dup))
       gz.orig_name = "X"
@@ -1382,6 +1398,22 @@ if defined? Zlib
         t.binmode
         Zlib::GzipWriter.wrap(t) {|gz| gz.print("foo") }
         assert_equal("foo", Zlib::GzipReader.open(t.path) {|gz| gz.read })
+      }
+    end
+
+    def test_writer_wrap_text_mode_io
+      Tempfile.create("test_zlib_gzip_writer_wrap_text_mode") {|t|
+        t.close
+        # stored blocks keep these bytes as-is in the gzip stream
+        content = "\r\n\n" * 100
+        File.open(t.path, "w") {|f|
+          assert_not_predicate(f, :binmode?)
+          Zlib::GzipWriter.wrap(f, Zlib::NO_COMPRESSION) {|gz|
+            assert_predicate(f, :binmode?)
+            gz.print(content)
+          }
+        }
+        assert_equal(content, Zlib::GzipReader.open(t.path) {|gz| gz.read })
       }
     end
 
