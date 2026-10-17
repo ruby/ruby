@@ -233,6 +233,24 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_performance_warning('Array', 'hash')
   end
 
+  def test_nil_eq
+    assert_equal true, nil == nil
+    assert_redefine_method('NilClass', '==', 'assert_equal 1, nil == 1')
+    assert_performance_warning('NilClass', '==')
+  end
+
+  def test_true_eq
+    assert_equal true, true == true
+    assert_redefine_method('TrueClass', '==', 'assert_equal 1, true == 1')
+    assert_performance_warning('TrueClass', '==')
+  end
+
+  def test_false_eq
+    assert_equal true, false == false
+    assert_redefine_method('FalseClass', '==', 'assert_equal 1, false == 1')
+    assert_performance_warning('FalseClass', '==')
+  end
+
   def test_trace_optimized_methods
     bug14870 = "[ruby-core:87638]"
     expected = [:-@, :max, :min, :+, :-, :*, :/, :%, :==, :<, :<=, :>, :>=, :<<,
