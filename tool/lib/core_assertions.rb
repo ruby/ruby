@@ -181,6 +181,18 @@ module Test
         [memory_growth_rate(points[0..midpoint]), memory_growth_rate(points[midpoint..-1])]
       end
 
+      private def memory_growth_tail_rates(points)
+        window = [points.length / 4, 2].max
+        first = points[[points.length - window * 2, 0].max, window]
+        last = points[-window, window]
+        [memory_growth_rate(first), memory_growth_rate(last)]
+      end
+
+      private def memory_growth_settled_in_tail?(points, growth_rate_ratio)
+        early_rate, late_rate = memory_growth_tail_rates(points)
+        memory_growth_settled?(early_rate, late_rate, growth_rate_ratio)
+      end
+
       private def memory_growth_settled?(early_rate, late_rate, growth_rate_ratio)
         if early_rate <= 0
           late_rate <= 0
@@ -189,6 +201,9 @@ module Test
         end
       end
 
+      # growth_rate_ratio compares late and early memory growth rates. With a
+      # sample range, sampling stops when the late rate is at most this ratio
+      # of the early rate, after collecting the minimum number of samples.
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, samples: 1, growth_rate_ratio: 0.25, **opt)
         # TODO: consider choosing some appropriate limit for RJIT and stop skipping this once it does not randomly fail
         pend 'assert_no_memory_leak may consider RJIT memory usage as leak' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
@@ -202,7 +217,28 @@ module Test
         raise Test::Unit::PendedError, "unsupported platform" unless defined?(Memory::Status)
 
         token_dump, token_re = new_test_token
+        start_re = /^#{token_re}START=(\{.*\})\n/
+        sample_re = /^#{token_re}SAMPLE=(\{.*\})\n/
+        final_re = /^#{token_re}FINAL=(\{.*\})\n/
         envs = args.shift if Array === args and Hash === args.first
+        case samples
+        when Integer
+          unless samples > 0
+            raise ArgumentError, "samples must be a positive integer or a bounded range"
+          end
+          min_samples = max_samples = samples
+          adaptive_samples = false
+        when Range
+          min_samples = samples.begin
+          max_samples = samples.end
+          max_samples -= 1 if samples.exclude_end? && Integer === max_samples
+          unless Integer === min_samples and Integer === max_samples and min_samples >= 2 and max_samples >= min_samples
+            raise ArgumentError, "samples range must have a minimum of 2 and a bounded positive maximum"
+          end
+          adaptive_samples = true
+        else
+          raise ArgumentError, "samples must be a positive integer or a bounded range"
+        end
         args = [
           "--disable=gems",
           "-r", File.expand_path("../memory_status", __FILE__),
@@ -215,36 +251,106 @@ module Test
           envs = newenvs if newenvs
         end
         args.unshift(envs) if envs
-        unless Integer === samples and samples > 0
-          raise ArgumentError, "samples must be a positive integer"
-        end
         unless (0..1).cover?(growth_rate_ratio)
           raise ArgumentError, "growth_rate_ratio must be between 0 and 1"
         end
 
         cmd = <<~RUBY
+          STDERR.sync = true
+          #{<<~ADAPTIVE if adaptive_samples}
+            memory_leak_control = STDIN.dup
+            STDIN.reopen(File::NULL, "r")
+          ADAPTIVE
           END {STDERR.puts #{token_dump}"FINAL=\#{Memory::Status.new}"}
           #{prepare}
           STDERR.puts(#{token_dump}"START=\#{$initial_status = Memory::Status.new}")
           $initial_size = $initial_status.size
-          #{samples}.times do
+          #{max_samples}.times do
             begin
           #{code.gsub(/^/, '    ')}
             ensure
               GC.start
               STDERR.puts(#{token_dump}"SAMPLE=\#{Memory::Status.new}")
+              #{<<~ADAPTIVE if adaptive_samples}
+                break unless memory_leak_control.gets == "continue\\n"
+              ADAPTIVE
             end
           end
+          __END__
         RUBY
-        _, err, status = EnvUtil.invoke_ruby(args, cmd, true, true, **opt)
-        before = err.sub!(/^#{token_re}START=(\{.*\})\n/, '') && Memory::Status.parse($1)
-        after = err.sub!(/^#{token_re}FINAL=(\{.*\})\n/, '') && Memory::Status.parse($1)
         sample_statuses = []
-        err.gsub!(/^#{token_re}SAMPLE=(\{.*\})\n/) {sample_statuses << Memory::Status.parse($1); ''}
+        before = after = nil
+        if adaptive_samples
+          stdout, err, status = EnvUtil.invoke_ruby(args, "", true, true, **opt) do |in_p, out_p, err_p, pid|
+            out_reader = Thread.new {out_p.read}
+            in_p.write(cmd)
+            in_p.flush
+            err = +""
+            timeout = EnvUtil.apply_timeout_scale(opt.fetch(:timeout, 10))
+            timed_out = nil
+            begin
+              Timeout.timeout(timeout) do
+                while line = err_p.gets
+                  case line
+                  when start_re
+                    before = Memory::Status.parse($1)
+                  when sample_re
+                    sample_statuses << Memory::Status.parse($1)
+                    count = sample_statuses.length
+                    settled = false
+                    if count >= min_samples && count < max_samples
+                      metrics = [:size, (rss && :rss)] & sample_statuses.last.members
+                      settled = metrics.all? do |n|
+                        values = [before[n], *sample_statuses.map {|sample| sample[n]}]
+                        next true unless values.all? {|value| value && value > 0}
+
+                        memory_growth_settled_in_tail?(values, growth_rate_ratio)
+                      end
+                    end
+                    if settled || count == max_samples
+                      in_p.close
+                    else
+                      in_p.write("continue\n")
+                      in_p.flush
+                    end
+                  when final_re
+                    after = Memory::Status.parse($1)
+                  else
+                    err << line
+                  end
+                end
+                in_p.close
+                status = Process.wait2(pid)[1]
+              end
+            rescue Timeout::Error
+              timed_out = Time.now
+              status = begin
+                EnvUtil.terminate(pid, opt.fetch(:signal, :TERM), opt[:pgroup], opt.fetch(:reprieve, 1))
+              rescue Errno::ESRCH, Errno::ECHILD
+                warn "child not found: #{pid}: #$!"
+              end
+              in_p.close
+            end
+            stdout = out_reader.value
+            if timed_out
+              message = "execution of assert_no_memory_leak expired timeout (#{timeout} sec)"
+              message = EnvUtil.failure_description(status, timed_out, message, [stdout, err].join("\n")) if status
+              raise opt.fetch(:timeout_error, Timeout::Error), message
+            end
+            [stdout, err, status]
+          end
+        else
+          stdout, err, status = EnvUtil.invoke_ruby(args, cmd, true, true, **opt)
+          before = err.sub!(start_re, '') && Memory::Status.parse($1)
+          err.gsub!(sample_re) {sample_statuses << Memory::Status.parse($1); ''}
+          after = err.sub!(final_re, '') && Memory::Status.parse($1)
+        end
         assert(status.success?, FailDesc[status, message, err])
-        assert_equal(samples, sample_statuses.length, "could not collect all memory samples")
+        assert_operator(sample_statuses.length, :>=, min_samples, "could not collect the minimum memory samples")
+        assert_operator(sample_statuses.length, :<=, max_samples, "collected more than the maximum memory samples")
+        assert_equal(samples, sample_statuses.length, "could not collect all memory samples") unless adaptive_samples
         ([:size, (rss && :rss)] & after.members).each do |n|
-          if samples == 1
+          if max_samples == 1
             b = before[n]
             a = after[n]
             next unless a > 0 and b > 0
@@ -253,8 +359,13 @@ module Test
             values = [before[n], *sample_statuses.map {|sample| sample[n]}]
             next unless values.all? {|value| value && value > 0}
 
-            early_rate, late_rate = memory_growth_rates(values)
-            settled = memory_growth_settled?(early_rate, late_rate, growth_rate_ratio)
+            if adaptive_samples
+              early_rate, late_rate = memory_growth_tail_rates(values)
+              settled = memory_growth_settled?(early_rate, late_rate, growth_rate_ratio)
+            else
+              early_rate, late_rate = memory_growth_rates(values)
+              settled = memory_growth_settled?(early_rate, late_rate, growth_rate_ratio)
+            end
             assert(settled, message(message) {
               "#{n} growth did not settle: #{values.inspect} " \
                 "(early rate: #{early_rate}, late rate: #{late_rate})"
