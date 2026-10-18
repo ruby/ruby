@@ -3810,7 +3810,7 @@ match_equal(VALUE match1, VALUE match2)
  *
  *  Returns a captured substring converted to an integer;
  *  the substring is interpreted as a numeric string in the given +radix+,
- *  which defaults to `10`.
+ *  which defaults to +10+.
  *
  *  With integer index +n+ given,
  *  returns the <tt>n</tt>th capture converted to an integer:
