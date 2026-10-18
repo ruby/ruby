@@ -8711,6 +8711,22 @@ fn test_local_write_through_call_in_branch_reaches_merge_point() {
 }
 
 #[test]
+fn test_no_ep_escape_patch_point_resumes_after_call() {
+    // Call eval via Method#call so warmup doesn't escape the EP and suppress the patch point.
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        $n = 0
+        def test(m, s)
+          y = 1
+          method(m).call(s)
+          [y, $n]
+        end
+        test(:Integer, "1"); test(:Integer, "1")
+        test(:eval, "$n += 1; y = 2")
+    "#), @"[2, 1]");
+}
+
+#[test]
 fn test_send_block_to_accepts_no_block() {
     // Methods with &nil should raise ArgumentError when called with a block
     assert_snapshot!(inspect("
