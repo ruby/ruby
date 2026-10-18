@@ -3778,6 +3778,22 @@ pm_compile_newline(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const re
     return lineno;
 }
 
+/* Move the first instruction after `before` onto `loc`, so a preceding
+ * line/coverage trace binds to the array's start line the way duparray
+ * does for a static literal. */
+static void
+pm_bind_first_insn_location(LINK_ELEMENT *before, const pm_node_location_t *loc)
+{
+    for (LINK_ELEMENT *e = before ? before->next : NULL; e; e = e->next) {
+        if (IS_INSN(e)) {
+            INSN *insn = (INSN *)e;
+            insn->insn_info.line_no = loc->line;
+            insn->insn_info.node_id = (int)loc->node_id;
+            return;
+        }
+    }
+}
+
 /* to_h pair-literal block optimization **********************************/
 
 /* Return the two-element array literal that a to_h pair-literal block
@@ -7150,10 +7166,33 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
 
             array_node = (const pm_node_t *) array;
             pm_compile_newline(iseq, array_node, ret, scope_node);
-            pm_compile_node(iseq, array->elements.nodes[0], ret, false, scope_node);
-            pm_compile_node(iseq, array->elements.nodes[1], ret, false, scope_node);
-            PUSH_INSN3(ret, PM_NODE_START_LOCATION(array_node), to_h_aset,
-                       INT2FIX(0), INT2FIX(0), INT2FIX(0));
+
+            // A static pair compiles as duparray at the array's location on
+            // the unoptimized path.  Compiling the elements individually
+            // would attach the array's line event to the first element's
+            // line, so retarget that first instruction and skip per-element
+            // newlines (duparray never compiles the elements).
+            if (PM_NODE_FLAG_P(array_node, PM_NODE_FLAG_STATIC_LITERAL)) {
+                const pm_node_location_t loc = PM_NODE_START_LOCATION(array_node);
+                int saved_line = ISEQ_COMPILE_DATA(iseq)->last_line;
+                LINK_ELEMENT *before = LAST_ELEMENT(ret);
+
+                ISEQ_COMPILE_DATA(iseq)->last_line = (int)PM_NODE_START_LOCATION(array->elements.nodes[0]).line;
+                pm_compile_node(iseq, array->elements.nodes[0], ret, false, scope_node);
+                pm_bind_first_insn_location(before, &loc);
+
+                ISEQ_COMPILE_DATA(iseq)->last_line = (int)PM_NODE_START_LOCATION(array->elements.nodes[1]).line;
+                pm_compile_node(iseq, array->elements.nodes[1], ret, false, scope_node);
+                ISEQ_COMPILE_DATA(iseq)->last_line = saved_line;
+
+                PUSH_INSN3(ret, loc, to_h_aset, INT2FIX(0), INT2FIX(0), INT2FIX(0));
+            }
+            else {
+                pm_compile_node(iseq, array->elements.nodes[0], ret, false, scope_node);
+                pm_compile_node(iseq, array->elements.nodes[1], ret, false, scope_node);
+                PUSH_INSN3(ret, PM_NODE_START_LOCATION(array_node), to_h_aset,
+                           INT2FIX(0), INT2FIX(0), INT2FIX(0));
+            }
         }
         else if (scope_node->body != NULL) {
             switch (PM_NODE_TYPE(scope_node->ast_node)) {
