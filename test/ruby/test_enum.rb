@@ -461,6 +461,40 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(1, key_hash.size)
   end
 
+  # The pair-literal compiler replaces newarray, not the array node's
+  # line/coverage events.  A multi-line block must still fire :line and
+  # count coverage on the pair; a same-line block must not gain events.
+  def test_to_h_block_pair_literal_line_trace_and_coverage
+    events = []
+    trace = TracePoint.new(:line) do |event|
+      events << event.lineno if event.path == "probe"
+    end
+    trace.enable do
+      eval("[1].to_h do |x|\n  [x, x]\nend\n", binding, "probe")
+    end
+    assert_equal([1, 2], events)
+
+    events = []
+    trace.enable do
+      eval("[1].to_h { |x| [x, x] }\n", binding, "probe")
+    end
+    assert_equal([1, 1], events)
+
+    assert_separately(%w[-rcoverage -rtempfile], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      f = Tempfile.open(["to_h_pair_cov", ".rb"])
+      f.write(<<~'FIXTURE')
+        [1].to_h do |x|
+          [x, x]
+        end
+      FIXTURE
+      f.close
+      Coverage.start(lines: true)
+      load f.path
+      assert_equal([1, 1, nil], Coverage.result[f.path][:lines])
+    end;
+  end
+
   def test_inject
     assert_equal(12, @obj.inject {|z, x| z * x })
     assert_equal(48, @obj.inject {|z, x| z * 2 + x })
