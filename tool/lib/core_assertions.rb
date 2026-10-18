@@ -166,7 +166,30 @@ module Test
         end
       end
 
-      def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
+      private def memory_growth_rate(points)
+        n_1 = (n = points.length) - 1
+        mean_x = n_1 / 2.0
+        mean_y = points.inject(:+).fdiv(n)
+        covariance = 0
+        points.each_with_index {|value, i| covariance += (i - mean_x) * (value - mean_y)}
+        variance = (n_1 * n * (2 * n - 1) / 6) - (n_1 * n * mean_x) + (n * mean_x**2)
+        covariance / variance
+      end
+
+      private def memory_growth_rates(points)
+        midpoint = (points.length - 1) / 2
+        [memory_growth_rate(points[0..midpoint]), memory_growth_rate(points[midpoint..-1])]
+      end
+
+      private def memory_growth_settled?(early_rate, late_rate, growth_rate_ratio)
+        if early_rate <= 0
+          late_rate <= 0
+        else
+          late_rate <= early_rate * growth_rate_ratio
+        end
+      end
+
+      def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, samples: 1, growth_rate_ratio: 0.25, **opt)
         # TODO: consider choosing some appropriate limit for RJIT and stop skipping this once it does not randomly fail
         pend 'assert_no_memory_leak may consider RJIT memory usage as leak' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
         # For previous versions which implemented MJIT
@@ -192,23 +215,51 @@ module Test
           envs = newenvs if newenvs
         end
         args.unshift(envs) if envs
-        cmd = [
-          'END {STDERR.puts '"#{token_dump}"'"FINAL=#{Memory::Status.new}"}',
-          prepare,
-          'STDERR.puts('"#{token_dump}"'"START=#{$initial_status = Memory::Status.new}")',
-          '$initial_size = $initial_status.size',
-          code,
-          'GC.start',
-        ].join("\n")
+        unless Integer === samples and samples > 0
+          raise ArgumentError, "samples must be a positive integer"
+        end
+        unless (0..1).cover?(growth_rate_ratio)
+          raise ArgumentError, "growth_rate_ratio must be between 0 and 1"
+        end
+
+        cmd = <<~RUBY
+          END {STDERR.puts #{token_dump}"FINAL=\#{Memory::Status.new}"}
+          #{prepare}
+          STDERR.puts(#{token_dump}"START=\#{$initial_status = Memory::Status.new}")
+          $initial_size = $initial_status.size
+          #{samples}.times do
+            begin
+          #{code.gsub(/^/, '    ')}
+            ensure
+              GC.start
+              STDERR.puts(#{token_dump}"SAMPLE=\#{Memory::Status.new}")
+            end
+          end
+        RUBY
         _, err, status = EnvUtil.invoke_ruby(args, cmd, true, true, **opt)
         before = err.sub!(/^#{token_re}START=(\{.*\})\n/, '') && Memory::Status.parse($1)
         after = err.sub!(/^#{token_re}FINAL=(\{.*\})\n/, '') && Memory::Status.parse($1)
+        sample_statuses = []
+        err.gsub!(/^#{token_re}SAMPLE=(\{.*\})\n/) {sample_statuses << Memory::Status.parse($1); ''}
         assert(status.success?, FailDesc[status, message, err])
+        assert_equal(samples, sample_statuses.length, "could not collect all memory samples")
         ([:size, (rss && :rss)] & after.members).each do |n|
-          b = before[n]
-          a = after[n]
-          next unless a > 0 and b > 0
-          assert_operator(a.fdiv(b), :<, limit, message(message) {"#{n}: #{b} => #{a}"})
+          if samples == 1
+            b = before[n]
+            a = after[n]
+            next unless a > 0 and b > 0
+            assert_operator(a.fdiv(b), :<, limit, message(message) {"#{n}: #{b} => #{a}"})
+          else
+            values = [before[n], *sample_statuses.map {|sample| sample[n]}]
+            next unless values.all? {|value| value && value > 0}
+
+            early_rate, late_rate = memory_growth_rates(values)
+            settled = memory_growth_settled?(early_rate, late_rate, growth_rate_ratio)
+            assert(settled, message(message) {
+              "#{n} growth did not settle: #{values.inspect} " \
+                "(early rate: #{early_rate}, late rate: #{late_rate})"
+            })
+          end
         end
       rescue LoadError
         pend
