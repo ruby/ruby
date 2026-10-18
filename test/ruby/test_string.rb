@@ -104,24 +104,18 @@ class TestString < Test::Unit::TestCase
   def test_initialize_memory_leak
     return unless @cls == String
 
-    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc {('x'*100_000).__send__(:initialize, '')}
-1_000.times(&code)
-PREP
-100_000.times(&code)
-CODE
+    assert_no_memory_leak([], '', <<-CODE, rss: true, samples: 2..100)
+    1_000.times {('x'*100_000).__send__(:initialize, '')}
+    CODE
   end
 
   # Bug #18154
   def test_initialize_nofree_memory_leak
     return unless @cls == String
 
-    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc {0.to_s.__send__(:initialize, capacity: 100_000)}
-1_000.times(&code)
-PREP
-100_000.times(&code)
-CODE
+    assert_no_memory_leak([], '', <<-CODE, rss: true, samples: 2..100)
+    1_000.times {0.to_s.__send__(:initialize, capacity: 100_000)}
+    CODE
   end
 
   def test_AREF # '[]'
@@ -765,12 +759,14 @@ CODE
       assert_raise(ArgumentError) {S("mypassword".encode(enc)).crypt(S("aa"))}
     end
 
-    @cls == String and
-      assert_no_memory_leak([], "s = ''; salt_proc = proc{#{(crypt_supports_des_crypt? ? '..' : good_salt).inspect}}", "#{<<~"begin;"}\n#{<<~'end;'}")
-
-    begin;
-      1000.times { s.crypt(-salt_proc.call).clear  }
-    end;
+    if @cls == String
+      assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", samples: 2..100)
+      s = ''
+      salt = -""#{(crypt_supports_des_crypt? ? '..' : good_salt).dump}
+      begin;
+        10.times { s.crypt(salt).clear  }
+      end;
+    end
   end
 
   def test_delete
@@ -2489,18 +2485,14 @@ CODE
   end
 
   def test_start_with_timeout_memory_leak
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20653]", rss: true)
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20653]", rss: true, samples: 2..100)
       regex = Regexp.new("^#{"(a*)" * 10_000}x$", timeout: 0.000001)
       str = "a" * 1_000_000 + "x"
-
-      code = proc do
+    begin;
+      10.times do
         str.start_with?(regex)
       rescue
       end
-
-      10.times(&code)
-    begin;
-      1_000.times(&code)
     end;
   end
 
@@ -4520,12 +4512,11 @@ CODE
         def fallback.[](_str) = raise MyError
       RUBY
     }.each do |type, code|
-      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+      assert_no_memory_leak([], <<~PREPARE, <<~RUBY, "fallback type is #{type}", rss: true, samples: 2..100)
         class MyError < StandardError; end
-
         #{code}
-
-        100_000.times do |i|
+      PREPARE
+        1000.times do |i|
           "\\ufffd".encode(Encoding::US_ASCII, fallback:)
         rescue MyError
         end
@@ -4550,12 +4541,11 @@ CODE
         def fallback.[](_str) = "\\uffee"
       RUBY
     }.each do |type, code|
-      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+      assert_no_memory_leak([], <<~PREPARE, <<~RUBY, "fallback type is #{type}", rss: true, samples: 2..100)
         class MyError < StandardError; end
-
         #{code}
-
-        100_000.times do |i|
+      PREPARE
+        1000.times do |i|
           "\\ufffd".encode(Encoding::US_ASCII, fallback:)
         rescue ArgumentError
         end
@@ -4580,12 +4570,11 @@ CODE
         def fallback.[](_str) = Object.new
       RUBY
     }.each do |type, code|
-      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+      assert_no_memory_leak([], <<~PREPARE, <<~RUBY, "fallback type is #{type}", rss: true, samples: 2..100)
         class MyError < StandardError; end
-
         #{code}
-
-        100_000.times do |i|
+      PREPARE
+        1000.times do |i|
           "\\ufffd".encode(Encoding::US_ASCII, fallback:)
         rescue TypeError
         end

@@ -179,9 +179,9 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_st_literal_memory_leak
-    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true)
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true, samples: 5)
     begin;
-      1_000_000.times do
+      200_000.times do
         # >8 element hashes are ST allocated rather than AR allocated
         {a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9}
       end
@@ -1523,10 +1523,10 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_compare_by_identy_memory_leak
-    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #20145]", rss: true)
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #20145]", rss: true, samples: 5)
     begin;
       h = { 1 => 2 }.compare_by_identity
-      1_000_000.times do
+      200_000.times do
         h.select { false }
       end
     end;
@@ -1995,9 +1995,9 @@ class TestHashOnly < Test::Unit::TestCase
   end
 
   def test_st_literal_memory_leak
-    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true)
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true, samples: 5)
     begin;
-      1_000_000.times do
+      200_000.times do
         # >8 element hashes are ST allocated rather than AR allocated
         {a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9}
       end
@@ -2096,17 +2096,14 @@ class TestHashOnly < Test::Unit::TestCase
   end
 
   def test_rehash_memory_leak
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true, samples: 2..100)
       ar_hash = 1.times.map { |i| [i, i] }.to_h
       st_hash = 10.times.map { |i| [i, i] }.to_h
-
-      code = proc do
+    PREP
+      10_000.times do
         ar_hash.rehash
         st_hash.rehash
       end
-      1_000.times(&code)
-    PREP
-      1_000_000.times(&code)
     CODE
   end
 
@@ -2172,11 +2169,10 @@ class TestHashOnly < Test::Unit::TestCase
   end
 
   def test_replace_memory_leak
-    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true)
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true, samples: 2..100)
     h = ("aa".."zz").each_with_index.to_h
-    10_000.times {h.dup}
     begin;
-      500_000.times {h.dup.replace(h)}
+      5_000.times {h.dup.replace(h)}
     end;
   end
 
