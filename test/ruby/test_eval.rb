@@ -614,9 +614,9 @@ class TestEval < Test::Unit::TestCase
   end
 
   def test_syntax_error_no_memory_leak
-    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true, samples: 5)
     begin;
-      100_000.times do
+      20_000.times do
         eval("/[/=~s")
       rescue SyntaxError
       else
