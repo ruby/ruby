@@ -659,6 +659,7 @@ parse_regexp_concat(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_
 }
 
 static void pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node);
+static int pm_compile_newline(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node);
 
 static int
 pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, rb_encoding *implicit_regexp_encoding, rb_encoding *explicit_regexp_encoding, bool mutable_result, bool frozen_result)
@@ -3746,6 +3747,36 @@ retry:;
 /**
  * Compile a call node into the given iseq.
  */
+
+/* Emit RUBY_EVENT_LINE / RUBY_EVENT_COVERAGE_LINE for `node` when it
+ * carries PM_NODE_FLAG_NEWLINE and this ISeq has not yet recorded that
+ * line.  Shared by pm_compile_node and the to_h pair-literal path,
+ * which compiles the array's elements itself and so must not skip the
+ * array node's line events. */
+static int
+pm_compile_newline(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node)
+{
+    int lineno = (int) PM_NODE_START_LOCATION(node).line;
+
+    if (PM_NODE_TYPE_P(node, PM_BEGIN_NODE) && (((const pm_begin_node_t *) node)->statements == NULL) && (((const pm_begin_node_t *) node)->rescue_clause != NULL)) {
+        // If this node is a begin node and it has empty statements and also
+        // has a rescue clause, then the other parser considers it as
+        // starting on the same line as the rescue, as opposed to the
+        // location of the begin keyword. We replicate that behavior here.
+        lineno = (int) PM_NODE_START_LINE_COLUMN(((const pm_begin_node_t *) node)->rescue_clause).line;
+    }
+
+    if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_NEWLINE) && ISEQ_COMPILE_DATA(iseq)->last_line != lineno) {
+        int event = RUBY_EVENT_LINE;
+
+        ISEQ_COMPILE_DATA(iseq)->last_line = lineno;
+        if (lineno > 0 && ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
+            event |= RUBY_EVENT_COVERAGE_LINE;
+        }
+        PUSH_TRACE(ret, event);
+    }
+    return lineno;
+}
 
 /* to_h pair-literal block optimization **********************************/
 
@@ -7109,13 +7140,19 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
             // to_h pair-literal block: compile the two elements and let
             // to_h_aset stash them on the cooperating to_h's EC-side ctx
             // (or fall back to a two-element array).  Operands are unused.
+            // The array node itself is not passed through pm_compile_node
+            // (that would emit newarray/duparray), so emit its line and
+            // coverage events the same way pm_compile_node would.
             const pm_array_node_t *array = pm_to_h_pair_literal(scope_node->body);
+            const pm_node_t *array_node;
             RUBY_ASSERT(array != NULL);
             RUBY_ASSERT(array->elements.size == 2);
 
+            array_node = (const pm_node_t *) array;
+            pm_compile_newline(iseq, array_node, ret, scope_node);
             pm_compile_node(iseq, array->elements.nodes[0], ret, false, scope_node);
             pm_compile_node(iseq, array->elements.nodes[1], ret, false, scope_node);
-            PUSH_INSN3(ret, block_location, to_h_aset,
+            PUSH_INSN3(ret, PM_NODE_START_LOCATION(array_node), to_h_aset,
                        INT2FIX(0), INT2FIX(0), INT2FIX(0));
         }
         else if (scope_node->body != NULL) {
@@ -8875,28 +8912,7 @@ static void
 pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
     const pm_node_location_t location = PM_NODE_START_LOCATION(node);
-    int lineno = (int) location.line;
-
-    if (PM_NODE_TYPE_P(node, PM_BEGIN_NODE) && (((const pm_begin_node_t *) node)->statements == NULL) && (((const pm_begin_node_t *) node)->rescue_clause != NULL)) {
-        // If this node is a begin node and it has empty statements and also
-        // has a rescue clause, then the other parser considers it as
-        // starting on the same line as the rescue, as opposed to the
-        // location of the begin keyword. We replicate that behavior here.
-        lineno = (int) PM_NODE_START_LINE_COLUMN(((const pm_begin_node_t *) node)->rescue_clause).line;
-    }
-
-    if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_NEWLINE) && ISEQ_COMPILE_DATA(iseq)->last_line != lineno) {
-        // If this node has the newline flag set and it is on a new line
-        // from the previous nodes that have been compiled for this ISEQ,
-        // then we need to emit a newline event.
-        int event = RUBY_EVENT_LINE;
-
-        ISEQ_COMPILE_DATA(iseq)->last_line = lineno;
-        if (lineno > 0 && ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
-            event |= RUBY_EVENT_COVERAGE_LINE;
-        }
-        PUSH_TRACE(ret, event);
-    }
+    int lineno = pm_compile_newline(iseq, node, ret, scope_node);
 
     switch (PM_NODE_TYPE(node)) {
       case PM_ALIAS_GLOBAL_VARIABLE_NODE:
