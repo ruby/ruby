@@ -5706,26 +5706,43 @@ env_fetch(int argc, VALUE *argv, VALUE _)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   ENV.fetch_values(*names) -> array of values
- *   ENV.fetch_values(*names) {|name| ... } -> array of values
+ *   ENV.fetch_values(*names) -> array
+ *   ENV.fetch_values(*names) {|name| ... } -> array
  *
- * Returns an Array containing the environment variable values associated with
- * the given names:
- *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
- *   ENV.fetch_values('foo', 'baz') # => ["0", "2"]
+ * With no block given,
+ * returns an array containing the values associated with the given `names`:
  *
- * Otherwise if a block is given yields +name+ to
- * the block and returns the block's return value:
- *   ENV.fetch_values('foo', 'bam') {|key| key.to_s} # => ["0", "bam"]
+ * ```ruby
+ * ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ * ENV.fetch_values('baz', 'foo')    # => ["2", "0"]
+ * ENV.fetch_values                  # => []
+ * ENV.fetch_values('foo', 'nosuch') # Raises KeyError: key not found: "nosuch"
+ * ```
  *
- * Raises KeyError if +name+ is valid, but not found and block is not given:
- *   ENV.fetch_values('foo', 'bam') # Raises KeyError (key not found: "bam")
+ * With a block given, returns an array whose size is the count of the given `names`:
  *
- * Returns an empty Array if no names given.
+ * - For each name found, the block is not called,
+ *   and the value for that name is added to the output array.
+ * - For each name not found, the block is called,
+ *   and the block's return value is added to the output array.
  *
- * Raises an exception if any name is invalid.
- * See {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values].
+ * Examples:
+ *
+ * ```ruby
+ * # All found; block not called for any.
+ * ENV.fetch_values('baz', 'foo', 'foo') {|name| fail 'Cannot happen' }
+ * # => ["2", "0", "0"]
+ * # None found; block called for all.
+ * ENV.fetch_values('xxx', 'yyy', 'zzz') {|name| name.upcase }
+ * # => ["XXX", "YYY", "ZZZ"]
+ * # Mixture.
+ * ENV.fetch_values('xxx', 'baz', 'zzz', 'foo') {|name| name.upcase }
+ * # => ["XXX", "2", "ZZZ", "0"]
+ * ```
+ *
  */
 
 static VALUE
