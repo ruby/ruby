@@ -5702,28 +5702,42 @@ env_fetch(int argc, VALUE *argv, VALUE _)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
  *   ENV.fetch_values(*names) -> array
  *   ENV.fetch_values(*names) {|name| ... } -> array
  *
  * With no block given,
- * returns an array containing the values associated with the given +names+:
+ * returns an array containing the values associated with the given `names`:
  *
- *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
- *   ENV.fetch_values('baz', 'foo')    # => ["2", "0"]
- *   ENV.fetch_values                  # => []
- *   ENV.fetch_values('foo', 'nosuch') # Raises KeyError: key not found: "nosuch"
+ * ```ruby
+ * ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ * ENV.fetch_values('baz', 'foo')    # => ["2", "0"]
+ * ENV.fetch_values                  # => []
+ * ENV.fetch_values('foo', 'nosuch') # Raises KeyError: key not found: "nosuch"
+ * ```
  *
- * With a block given, calls the block each given name:
+ * With a block given, returns an array whose size is the count of the given `names`:
  *
- * - If the name is found, passes its value to the block.
- * - If not found, passes the name to the block.
+ * - For each name found, the block is not called,
+ *   and the value for that name is added to the output array.
+ * - For each name not found, the block is called,
+ *   and the block's return value is added to the output array.
  *
- * Returns an array of the block's return values:
+ * Examples:
  *
- *   ENV.fetch_values('baz', 'foo') {|name| name }     # => ["2", "0"]
- *   ENV.fetch_values('nosuch', 'foo') {|name| name }  # => ["nosuch", "0"]
- *   ENV.fetch_values() {|name| fail 'Cannot happen' } # => []  # Block not called.
+ * ```ruby
+ * # All found; block not called for any.
+ * ENV.fetch_values('baz', 'foo', 'foo') {|name| fail 'Cannot happen' }
+ * # => ["2", "0", "0"]
+ * # None found; block called for all.
+ * ENV.fetch_values('xxx', 'yyy', 'zzz') {|name| name.upcase }
+ * # => ["XXX", "YYY", "ZZZ"]
+ * # Mixture.
+ * ENV.fetch_values('xxx', 'baz', 'zzz', 'foo') {|name| name.upcase }
+ * # => ["XXX", "2", "ZZZ", "0"]
+ * ```
  *
  */
 
