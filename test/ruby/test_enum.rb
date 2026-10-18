@@ -461,37 +461,54 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(1, key_hash.size)
   end
 
-  # The pair-literal compiler replaces newarray, not the array node's
-  # line/coverage events.  A multi-line block must still fire :line and
-  # count coverage on the pair; a same-line block must not gain events.
+  # The pair-literal compiler replaces newarray/duparray, not the array
+  # node's line/coverage events.  A multi-line block must still fire
+  # :line and count coverage on the pair; a same-line block must not
+  # gain events.  A static pair with the `[` and the elements on
+  # separate lines must bind the event to the `[` (duparray's line),
+  # not the first constant.
   def test_to_h_block_pair_literal_line_trace_and_coverage
-    events = []
-    trace = TracePoint.new(:line) do |event|
-      events << event.lineno if event.path == "probe"
+    b = binding
+    line_events = ->(src) do
+      events = []
+      trace = TracePoint.new(:line) do |event|
+        events << event.lineno if event.path == "probe"
+      end
+      trace.enable { eval(src, b, "probe") }
+      events
     end
-    trace.enable do
-      eval("[1].to_h do |x|\n  [x, x]\nend\n", binding, "probe")
-    end
-    assert_equal([1, 2], events)
 
-    events = []
-    trace.enable do
-      eval("[1].to_h { |x| [x, x] }\n", binding, "probe")
-    end
-    assert_equal([1, 1], events)
+    assert_equal([1, 2], line_events.call("[1].to_h do |x|\n  [x, x]\nend\n"))
+    assert_equal([1, 1], line_events.call("[1].to_h { |x| [x, x] }\n"))
+
+    # Alias skips the compiler's to_h rewrite (no to_h_aset) while still
+    # calling core Array#to_h, so it is the unoptimized shape on Prism.
+    recv = Class.new(Array) { alias_method :plain_to_h, :to_h }.new([1])
+    static = "recv.%s do |x|\n [\n 1,\n 2\n ]\nend"
+    dynamic = "recv.%s do |x|\n [\n x,\n x\n ]\nend"
+    assert_equal([1, 2], line_events.call(static % "to_h"))
+    assert_equal(line_events.call(static % "plain_to_h"), line_events.call(static % "to_h"))
+    assert_equal([1, 3], line_events.call(dynamic % "to_h"))
+    assert_equal(line_events.call(dynamic % "plain_to_h"), line_events.call(dynamic % "to_h"))
 
     assert_separately(%w[-rcoverage -rtempfile], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-      f = Tempfile.open(["to_h_pair_cov", ".rb"])
-      f.write(<<~'FIXTURE')
-        [1].to_h do |x|
-          [x, x]
-        end
-      FIXTURE
-      f.close
+      files = {
+        one_line: "[1].to_h do |x|\n  [x, x]\nend\n",
+        static: "[1].to_h do |x|\n  [\n    1,\n    2\n  ]\nend\n",
+        dynamic: "[1].to_h do |x|\n  [\n    x,\n    x\n  ]\nend\n",
+      }.transform_values do |src|
+        f = Tempfile.open(["to_h_pair_cov", ".rb"])
+        f.write(src)
+        f.close
+        f
+      end
       Coverage.start(lines: true)
-      load f.path
-      assert_equal([1, 1, nil], Coverage.result[f.path][:lines])
+      files.each_value { |f| load f.path }
+      result = Coverage.result
+      assert_equal([1, 1, nil], result[files[:one_line].path][:lines])
+      assert_equal([1, 1, nil, nil, nil, nil], result[files[:static].path][:lines])
+      assert_equal([1, nil, 1, nil, nil, nil], result[files[:dynamic].path][:lines])
     end;
   end
 
