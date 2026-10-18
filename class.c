@@ -2162,8 +2162,7 @@ rb_mod_include_p(VALUE mod, VALUE mod2)
  *    ancestors -> array
  *
  *  Returns an array of the modules that are ancestors of +self+
- *  and that +self+ includes or prepends, including +self+;
- *  the order of the array elements is undefined:
+ *  and that +self+ includes or prepends, including +self+:
  *
  *    module MyModule
  *      include Math
@@ -2178,9 +2177,6 @@ rb_mod_include_p(VALUE mod, VALUE mod2)
  *    Object.ancestors      # => [Object, JSON::GeneratorMethods, PP::ObjectMixin, Kernel, BasicObject]
  *    BasicObject.ancestors # => [BasicObject]
  *
- *  Note that +self+ does not hold references to its ancestors;
- *  Thus even though all references to a module are dropped,
- *  the module may be reported as an ancestor, depending on garbage collection.
  */
 
 VALUE
