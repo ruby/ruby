@@ -2328,6 +2328,9 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
 
     fiber->cont.saved_ec.fiber_ptr = fiber;
     fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
+    /* cont_init copied the parent EC, including a to_h_pair pointer into
+     * the parent's C stack; this fiber must not inherit it. */
+    fiber->cont.saved_ec.to_h_pair = NULL;
     rb_ec_clear_vm_stack(&fiber->cont.saved_ec);
 
     fiber->prev = NULL;
