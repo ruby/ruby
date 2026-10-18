@@ -1765,49 +1765,34 @@ opt_invokebuiltin_delegate_leave
 }
 
 /* Stores the key/value pair produced by a `to_h { |*| [key, value] }`
- * pair-literal block.  The core to_h implementation has installed its
- * result hash in the hidden outer local `hash_idx` (see
- * rb_vm_to_h_pair_prepare).
+ * pair-literal block.  Operands are unused; they remain so the
+ * instruction layout (and YJIT/ZJIT opcode bindings) stay stable.
  *
- * When the hash slot holds a Hash and no `:b_return` trace observes this
- * block, the pair is stashed in the hidden outer locals `key_idx` and
- * `val_idx` and the hash is returned.  The core to_h then inserts the
- * pair itself, *after* the block has returned, so that the order in
- * which `key.hash` runs relative to the `:b_return` event matches the
- * unoptimized block.  This avoids building the intermediate two-element
- * array per element.
+ * When this frame is the block that the cooperating core to_h just
+ * yielded to and no `:b_return` trace observes this block, the pair is
+ * stashed on the EC-side ctx and the result hash is returned.  The core
+ * then inserts the pair itself, *after* the block has returned, so that
+ * the order in which `key.hash` runs relative to the `:b_return` event
+ * matches the unoptimized block.  This avoids building the intermediate
+ * two-element array per element.
  *
- * Otherwise -- the block was invoked by something other than the
- * cooperating core to_h (a user-defined or refined `to_h`,
- * `method_missing`, a stored Proc, ...) or a `:b_return` trace (global
- * or target-specific) observes this block -- degrade to the original
- * semantics and return a fresh two-element array; the core fast path
- * then stores it with rb_hash_set_pair.
+ * Otherwise -- Proc#call of an escaped block, a user-defined or refined
+ * `to_h`, `method_missing`, a `:b_return` trace (global or
+ * target-specific) -- degrade to the original semantics and return a
+ * fresh two-element array; the core fast path then stores it with
+ * rb_hash_set_pair.
  */
 DEFINE_INSN
 to_h_aset
 (lindex_t hash_idx, lindex_t key_idx, lindex_t val_idx)
 (VALUE key, VALUE val)
 (VALUE result)
-/* rb_hash_aset() may call #hash; the core runs it after this returns */
 // attr bool leaf = false;
 {
-    const VALUE *ep = vm_get_ep(GET_EP(), 1);
-    VALUE hash = *(ep - hash_idx);
-    rb_event_flag_t trace_events = ruby_vm_event_flags;
-
-    if (!(trace_events & RUBY_EVENT_B_RETURN)) {
-        trace_events |= rb_iseq_local_event_flags(GET_ISEQ());
-    }
-
-    if (RB_TYPE_P(hash, T_HASH) && !(trace_events & RUBY_EVENT_B_RETURN)) {
-        rb_vm_env_write(ep, -key_idx, key);
-        rb_vm_env_write(ep, -val_idx, val);
-        result = hash;
-    }
-    else {
-        result = rb_ary_new3(2, key, val);
-    }
+    (void)hash_idx;
+    (void)key_idx;
+    (void)val_idx;
+    result = rb_vm_to_h_aset(GET_CFP(), key, val);
 }
 
 /* BLT */

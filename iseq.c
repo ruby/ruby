@@ -4110,12 +4110,10 @@ rb_vm_insn_decode(const VALUE encoded)
     return rb_vm_insn_addr2insn((void *)encoded);
 }
 
-// Return the three hidden-local operands (result hash, key, value) of the
-// to_h_aset instruction of a `to_h { |*| [key, value] }` pair-literal block
-// iseq, or 0 if the iseq is not such a block.  The operands use the same
-// encoding as getlocal/setlocal operands.
+// Return true if `iseq` is a `to_h { |*| [key, value] }` pair-literal
+// block (it contains a to_h_aset instruction).
 int
-rb_iseq_to_h_pair_slots(const rb_iseq_t *iseq, int *hash_idx, int *key_idx, int *val_idx)
+rb_iseq_to_h_pair_p(const rb_iseq_t *iseq)
 {
     // Use the original (decoded) instruction sequence: insn_len() and
     // the BIN() opcode comparison operate on decoded instructions, not
@@ -4126,13 +4124,7 @@ rb_iseq_to_h_pair_slots(const rb_iseq_t *iseq, int *hash_idx, int *key_idx, int 
     for (unsigned int pos = 0; pos < size; ) {
         int insn = (int)code[pos];
 
-        if (insn == BIN(to_h_aset)) {
-            // lindex_t operands are stored as raw integers, not Fixnums.
-            *hash_idx = (int)code[pos + 1];
-            *key_idx = (int)code[pos + 2];
-            *val_idx = (int)code[pos + 3];
-            return 1;
-        }
+        if (insn == BIN(to_h_aset)) return 1;
         pos += insn_len(insn);
     }
     return 0;

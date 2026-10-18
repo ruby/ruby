@@ -322,13 +322,129 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal({1 => 1}, wrapper.to_h { |x| [x, x] })
     assert_equal([2, 2], wrapper.forwarded)
 
-    # Exception termination must not leave a stale hash behind.
-    escaped = Class.new { def to_h(&b); b; end }.new.to_h { |x| [x, x] }
-    begin
-      [1].to_h { |x| raise "boom" }
-    rescue RuntimeError
+    # Exception termination of a pair-literal block forwarded to core to_h
+    # must not leave the same block cooperating afterwards.
+    wrapper = Class.new do
+      def to_h(&b)
+        [1].to_h(&b)
+      rescue RuntimeError
+        b.call(3)
+      end
     end
-    assert_equal([3, 3], escaped.call(3))
+    assert_equal([3, 3], wrapper.new.to_h { |x| [x == 1 ? raise("boom") : x, x] })
+
+    # A lambda (or binding) created inside the block moves the enclosing
+    # env to the heap.  The core to_h must still read the pair that
+    # to_h_aset wrote, so keys are not lost.  Run from a method so the
+    # env starts on the stack (top-level may already be escaped).
+    env_mover = Object.new
+    def env_mover.lambda_in(recv)
+      recv.to_h { |x| [x, -> { x }] }
+    end
+    def env_mover.binding_in(recv)
+      recv.to_h { |x| [x, binding] }
+    end
+    assert_equal([1, 2], env_mover.lambda_in([1, 2]).keys)
+    assert_equal([1, 2], env_mover.binding_in([1, 2]).keys)
+    assert_equal([1, 2], env_mover.lambda_in({1 => :a, 2 => :b}).keys)
+    assert_equal([1, 2], env_mover.binding_in((1..2)).keys)
+    struct_recv = Struct.new(:a, :b).new(1, 2)
+    assert_equal([:a, :b], env_mover.lambda_in(struct_recv).keys)
+
+    # A Proc captured from the same call site, invoked while core to_h is
+    # running but not as that yield, must still return a pair array.
+    capture = Class.new { def to_h(&b); b; end }.new
+    enum_calling_saved = Class.new do
+      include Enumerable
+      attr_accessor :saved
+      def each
+        yield @saved.call(9).class
+      end
+    end.new
+    receivers = [capture, enum_calling_saved]
+    i = 0
+    result = nil
+    while i < 2
+      result = receivers[i].to_h { |x| [x, x] }
+      enum_calling_saved.saved = result if i == 0
+      i += 1
+    end
+    assert_equal({Array => Array}, result)
+
+    # Same iseq invoked via Proc#call from inside the current yield
+    # must also return a pair, not cooperate.  The body is a single
+    # array literal so the compiler emits to_h_aset.
+    saved = nil
+    capture = Class.new { def to_h(&b); b; end }.new
+    receivers = [capture, [1]]
+    i = 0
+    result = nil
+    while i < 2
+      result = receivers[i].to_h { |x|
+        [x, (saved && x != 9 ? saved.call(9) : x)]
+      }
+      saved = result if i == 0
+      i += 1
+    end
+    if RubyVM::InstructionSequence.compile("").to_a.dig(4, :parser) == :prism
+      assert_match(/to_h_aset/, RubyVM::InstructionSequence.of(saved).disasm)
+    end
+    assert_equal({1 => [9, 9]}, result)
+
+    # Enumerable#each may save the core callback and invoke it after
+    # to_h returns.  Later calls insert into the same result hash
+    # (the unoptimized path's behaviour); they must not crash on a
+    # dangling C-stack pointer.
+    saved_each = Class.new do
+      include Enumerable
+      attr_reader :callback
+      def each(&block)
+        @callback = block
+        block.call(1)
+      end
+    end.new
+    saved_h = saved_each.to_h { |x| [x, x] }
+    assert_equal({1 => 1}, saved_h)
+    assert_same(saved_h, saved_each.callback.call(2))
+    assert_equal({1 => 1, 2 => 2}, saved_h)
+    assert_equal({1 => 1, 2 => 2, 3 => 3}, saved_each.callback.call(3))
+    5.times { GC.start }
+    assert_equal({1 => 1, 2 => 2, 3 => 3, 4 => 4}, saved_each.callback.call(4))
+    fiber_h = Fiber.new { saved_each.callback.call(5) }.resume
+    assert_same(saved_h, fiber_h)
+    assert_equal({1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5}, saved_h)
+
+    # next returning the result hash itself must not be treated as a
+    # submitted pair (it would reuse the previous key/value).
+    enum_exposing_hash = Class.new do
+      include Enumerable
+      attr_accessor :exposed
+      def each
+        self.exposed = yield 1
+        yield 2
+      end
+    end.new
+    assert_raise(TypeError) {
+      enum_exposing_hash.to_h { |x| [begin; next enum_exposing_hash.exposed if x == 2; x; end, x] }
+    }
+
+    # Pair storage must not pin the last value after to_h returns, even
+    # if a closure keeps the enclosing environment alive.  `o` lives only
+    # in the block; the lambda captures the method env that used to hold
+    # hidden key/value locals.
+    w = ObjectSpace::WeakMap.new
+    pin = Object.new
+    def pin.run(w)
+      [1].to_h { |x| [x, (w[o = Object.new] = true; o)] }
+      -> {}
+    end
+    keep = pin.run(w)
+    5.times { GC.start }
+    assert_equal(0, w.size)
+    keep.call
+
+    # Nested pair-literal to_h must not clobber the outer pair.
+    assert_equal({1 => {2 => 2}}, [1].to_h { |x| [x, [2].to_h { |y| [y, y] }] })
 
     # Enabling tracing from inside key.hash happens after the block has
     # returned, so it must not add an extra :b_return observation.

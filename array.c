@@ -3322,26 +3322,19 @@ rb_ary_to_a(VALUE ary)
 
 struct rb_ary_to_h_pair_args {
     VALUE ary;
-    VALUE hash;
-    struct rb_to_h_pair_slots slots;
+    struct rb_to_h_pair_ctx ctx;
 };
 
 static VALUE
 rb_ary_to_h_pair(VALUE arg)
 {
     struct rb_ary_to_h_pair_args *a = (struct rb_ary_to_h_pair_args *)arg;
-    const VALUE ary = a->ary, hash = a->hash;
-    const struct rb_to_h_pair_slots *slots = &a->slots;
+    const VALUE ary = a->ary;
 
     for (rb_len_t i = 0; i < RARRAY_LEN(ary); i++) {
         const VALUE e = rb_ary_elt(ary, i);
-        const VALUE result = rb_yield_force_blockarg(e);
-        if (result == hash) {
-            rb_hash_aset(hash, slots->ep[-slots->key_idx], slots->ep[-slots->val_idx]);
-        }
-        else {
-            rb_hash_set_pair(hash, result);
-        }
+        rb_vm_to_h_pair_begin_yield(&a->ctx);
+        rb_vm_to_h_pair_store(&a->ctx, rb_yield_force_blockarg(e));
     }
     return Qnil;
 }
@@ -3353,14 +3346,13 @@ rb_ary_to_h(VALUE ary)
     VALUE hash = rb_hash_new_capa(RARRAY_LEN(ary));
     int block_given = rb_block_given_p();
 
-    // to_h pair-literal fast path: the block stashes each pair in the
-    // hidden key/value slots and the store is done here, after the block
-    // returned.  rb_ensure() clears the hidden hash slot when the call
-    // ends, so an escaped block cannot read a stale result hash later.
+    // to_h pair-literal fast path: the block stashes each pair on the
+    // EC-side ctx and the store is done here, after the block returned.
+    // rb_ensure() pops the ctx when the call ends.
     if (block_given) {
-        struct rb_ary_to_h_pair_args args = { ary, hash, { NULL, 0, 0, 0 } };
-        if (rb_vm_to_h_pair_prepare(hash, &args.slots)) {
-            rb_ensure(rb_ary_to_h_pair, (VALUE)&args, rb_vm_to_h_pair_finish, Qnil);
+        struct rb_ary_to_h_pair_args args = { ary, { 0 } };
+        if (rb_vm_to_h_pair_prepare(hash, &args.ctx)) {
+            rb_ensure(rb_ary_to_h_pair, (VALUE)&args, rb_vm_to_h_pair_finish, (VALUE)&args.ctx);
             return hash;
         }
     }

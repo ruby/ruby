@@ -768,45 +768,41 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
     return rb_hash_set_pair(hash, rb_yield_values2(argc, argv));
 }
 
-struct enum_to_h_pair_data {
-    VALUE hash;
-    struct rb_to_h_pair_slots slots;
+// Per-invocation state for the pair-literal path.  Enumerable#each may
+// capture this ifunc as a Proc (`each(&block)`) and call it after to_h
+// has returned, so the ctx cannot live on enum_to_h's C stack.  It lives
+// on this callback's own frame for one invocation.
+struct enum_to_h_pair_iter {
+    int argc;
+    const VALUE *argv;
+    struct rb_to_h_pair_ctx ctx;
 };
 
-// Block body of the to_h pair-literal fast path.  The block stashes each
-// pair in the hidden key/value slots; the store is done here, after the
-// block returned, so that `key.hash` runs at the same point relative to
-// the :b_return event as in the unoptimized block.  The return value must
-// be `hash`, like enum_to_h_ii: a custom `each` may use the value yielded
-// back to it.
 static VALUE
-enum_to_h_pair_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, data))
+enum_to_h_pair_yield(VALUE arg)
 {
-    struct enum_to_h_pair_data *d = (struct enum_to_h_pair_data *)data;
-    VALUE result = rb_yield_values2(argc, argv);
+    struct enum_to_h_pair_iter *it = (struct enum_to_h_pair_iter *)arg;
 
-    if (result == d->hash) {
-        rb_hash_aset(d->hash, d->slots.ep[-d->slots.key_idx], d->slots.ep[-d->slots.val_idx]);
-    }
-    else {
-        rb_hash_set_pair(d->hash, result);
-    }
-    return d->hash;
+    rb_vm_to_h_pair_begin_yield(&it->ctx);
+    rb_vm_to_h_pair_store(&it->ctx, rb_yield_values2(it->argc, it->argv));
+    return Qnil;
 }
 
-struct enum_to_h_pair_args {
-    VALUE obj;
-    int argc;
-    VALUE *argv;
-    struct enum_to_h_pair_data data;
-};
-
+// Callback data is the result Hash (a GC-managed VALUE).  Each call
+// tries to start a pair ctx on this C frame; if the user block is not
+// a cooperating pair-literal, fall back to the pair-Array path.  The
+// return value must be `hash`, like enum_to_h_ii: a custom `each` may
+// use the value yielded back to it.
 static VALUE
-enum_to_h_pair(VALUE arg)
+enum_to_h_pair_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
-    struct enum_to_h_pair_args *a = (struct enum_to_h_pair_args *)arg;
-    rb_block_call(a->obj, id_each, a->argc, a->argv, enum_to_h_pair_i, (VALUE)&a->data);
-    return Qnil;
+    struct enum_to_h_pair_iter it = { argc, argv, { 0 } };
+
+    if (rb_vm_to_h_pair_prepare(hash, &it.ctx)) {
+        rb_ensure(enum_to_h_pair_yield, (VALUE)&it, rb_vm_to_h_pair_finish, (VALUE)&it.ctx);
+        return hash;
+    }
+    return enum_to_h_ii(i, hash, argc, argv, blockarg);
 }
 
 /*
@@ -834,19 +830,11 @@ static VALUE
 enum_to_h(int argc, VALUE *argv, VALUE obj)
 {
     if (rb_block_given_p()) {
-        VALUE hash = rb_hash_new();
-        struct enum_to_h_pair_args args;
-
-        args.obj = obj;
-        args.argc = argc;
-        args.argv = argv;
-        args.data.hash = hash;
-
-        if (rb_vm_to_h_pair_prepare(hash, &args.data.slots)) {
-            rb_ensure(enum_to_h_pair, (VALUE)&args, rb_vm_to_h_pair_finish, Qnil);
-            return hash;
-        }
-        return enum_hashify_into(obj, argc, argv, enum_to_h_ii, hash);
+        // Array/Hash/Struct keep one ctx around a direct C loop.  Enumerable
+        // cannot: each may save the ifunc and invoke it after this frame is
+        // gone.  enum_to_h_pair_i therefore owns the ctx per callback, with
+        // the Hash as the only long-lived data.
+        return enum_hashify_into(obj, argc, argv, enum_to_h_pair_i, rb_hash_new());
     }
     return enum_hashify(obj, argc, argv, enum_to_h_i);
 }

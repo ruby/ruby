@@ -163,41 +163,15 @@ typedef struct pm_scope_node {
     /* to_h pair-literal block optimization:
      *
      * `x.to_h { |*| [key, value] }` compiles the block body without the
-     * trailing `newarray 2`; a `to_h_aset` instruction stashes the pair in
-     * hidden locals that the core to_h reads and stores itself, so no
-     * two-element array is allocated per element (see also insns.def:
-     * to_h_aset and rb_vm_to_h_pair_prepare).
+     * trailing `newarray 2`; a `to_h_aset` instruction stashes the pair
+     * on the cooperating to_h's EC-side ctx so no two-element array is
+     * allocated per element (see insns.def: to_h_aset and
+     * rb_vm_to_h_pair_prepare).
      *
-     * Every such call site gets its *own* three hidden locals (result
-     * hash, key, value).  Sharing them per scope would let a later to_h
-     * overwrite slots that an earlier escaped block (e.g. a block
-     * captured as a Proc by a user-defined to_h) still reads.  Distinct
-     * per-call-site slots also make nested to_h calls safe.
-     */
-
-    /* This scope reserved 3 hidden result-hash locals per to_h call site:
-     * the result hash, the current key, and the current value.
-     * (set while building the local table, before compiling the body). */
-    bool to_h_pair_slot_p;
-    /* Number of hidden slots reserved (3x the call-site count), the
-     * local_index of the first one, and how many sites have been handed
-     * slots while compiling the body.  A call site is optimized only
-     * while sites_used < site_count, so a call site the pre-scan missed
-     * is simply left unoptimized. */
-    int to_h_pair_site_count;
-    int to_h_pair_slot_base;
-    int to_h_pair_slots_used;
-
-    /* This block's body is a two-element array literal and is compiled
+     * This block's body is a two-element array literal and is compiled
      * with a to_h_aset tail (set by pm_compile_call on the block's scope
      * node, read while compiling the block body). */
     bool to_h_pair_result_p;
-    /* Operands (including the VM_ENV_DATA_SIZE adjustment) of this
-     * block's call-site slots.  The block reads them one frame up; see
-     * insns.def: to_h_aset. */
-    int to_h_pair_hash_lidx;
-    int to_h_pair_key_lidx;
-    int to_h_pair_val_lidx;
 } pm_scope_node_t;
 
 void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous);
