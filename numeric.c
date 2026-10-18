@@ -5751,25 +5751,22 @@ rb_fix_bit_count(VALUE fix)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    bit_count -> integer
  *
- *  Returns the number of set bits in the binary value of +self+;
+ *  Returns the number of set bits in the binary value of `self`;
  *  also known as the population count
- *  or {Hamming weight}[https://en.wikipedia.org/wiki/Hamming_weight].
+ *  or [Hamming weight](https://en.wikipedia.org/wiki/Hamming_weight):
  *
- *  Set bits may be seen as <tt>'1'</tt> characters
- *  in the string binary representation of an integer:
- *
- *    '%b' % 0        # => "0"
- *    0.bit_count     # => 0
- *    '%b' % 21       # => "10101"
- *    21.bit_count    # => 3
- *    '%b' % 255      # => "11111111"
- *    255.bit_count   # => 8
- *    '%b' % 65535    # => "1111111111111111"
- *    65535.bit_count # => 16
- *    (-1).bit_count  # Raises ArgumentError: 'Integer#bit_count': bit_count is undefined for negative integers.
+ *  ```ruby
+ *  0b0.bit_count                # => 0
+ *  0b101010.bit_count           # => 3
+ *  0b010101.bit_count           # => 3
+ *  0b1111111111111111.bit_count # => 16
+ *  (-1).bit_count # Raises ArgumentError: 'Integer#bit_count': bit_count is undefined for negative integers.
+ *  ```
  *
  */
 
