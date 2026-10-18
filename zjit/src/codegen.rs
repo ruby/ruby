@@ -695,11 +695,11 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             gen_send_iseq_direct(
                 cb, jit, asm,
                 function, *cd, *cme, *iseq, opnd!(recv), opnds!(args),
-                *kw_bits, *jit_entry_idx, &function.frame_state(*state), block.map(|bh| lower_block_handler(jit, function, bh)),
+                *kw_bits, *jit_entry_idx, &function.frame_state(*state), block.map(|bh| lower_block_handler(jit, bh)),
             )
         }
         Insn::PushInlineFrame { cme, iseq, recv, num_args, block, state, .. } => {
-            no_output!(gen_push_inline_frame(jit, asm, function, *cme, *iseq, opnd!(recv), *num_args, &function.frame_state(*state), block.map(|bh| lower_block_handler(jit, function, bh))))
+            no_output!(gen_push_inline_frame(jit, asm, function, *cme, *iseq, opnd!(recv), *num_args, &function.frame_state(*state), block.map(|bh| lower_block_handler(jit, bh))))
         },
         Insn::PopInlineFrame { iseq, argc, state } => {
             no_output!(gen_pop_inline_frame(asm, *iseq, *argc, &function.frame_state(*state)))
@@ -1157,16 +1157,10 @@ fn gen_block_handler_specval(asm: &mut Assembler, blockiseq: IseqPtr) -> lir::Op
     asm.or(cfp_self_addr, Opnd::Imm(1))
 }
 
-fn lower_block_handler(jit: &JITState, function: &Function, bh: BlockHandler) -> lir::BlockHandler {
+fn lower_block_handler(jit: &JITState, bh: BlockHandler) -> lir::BlockHandler {
     match bh {
         BlockHandler::BlockIseq(blockiseq) => lir::BlockHandler::Iseq(blockiseq),
-        BlockHandler::BlockArgProc(proc_id) => {
-            assert!(
-                function.type_of(proc_id).is_subtype(Type::from_class(unsafe { rb_cProc })),
-                "BlockArgProc operand must be a Proc, got {}", function.type_of(proc_id),
-            );
-            lir::BlockHandler::Proc(jit.get_opnd(proc_id))
-        }
+        BlockHandler::BlockArgProc(proc_id) => lir::BlockHandler::Proc(jit.get_opnd(proc_id)),
         BlockHandler::BlockArg => unreachable!("BlockArg in a direct iseq call"),
     }
 }
