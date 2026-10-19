@@ -10015,23 +10015,32 @@ rb_str_tr_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    tr(selector, replacements) -> new_string
  *    tr(pairs) -> new_string
+ *    tr(selector, replacements) -> new_string
  *
- *  Accepts either a +selector+ and a +replacements+ string,
- *  or a single +pairs+ Hash.
+ *  With hash argument +pairs+ given,
+ *  returns a copy of +self+ with some codepoints replaced:
  *
- *  When a +pairs+ Hash is provided the keys, returns a copy of +self+ with
- *  the keys of the hash replaced by the values.
+ *  - Each key in +pairs+ is a string contains at most a single codepoint.
+ *  - Each value in +pairs+ is a string of any length (even length zero).
  *
- *  - They keys must be strings containing a single codepoints.
- *  - The values can be of any length.
+ *  Each codepoint in +self+ is examined;
+ *  when the codepoint in +self+ matches a key codepoint in +pairs+,
+ *  the string value for that key replaces the codepoint in +self+.
  *
- *  Example:
+ *  Examples:
  *
- *    'hello'.tr('e' => 'er', 'l' => '', 'o' => 'o !') #=> "hero !"
+ *    r = {'h' => 'H', 'e' => 'er', 'l' => '', 'o' => 'o!'}
+ *    'hello'.tr(r)           # => "Hero!"
+ *    r = r.to_a.reverse.to_h
+ *    # => {"o" => "o!", "l" => "", "e" => "er", "h" => "H"}
+ *    'hello'.tr(r)           # => "Hero!"  # Hash order does not matter.
+ *    ''.tr('' => 'foo')      # => ""
+ *    'foo'.tr('', 'xxx')     # => "foo"
+ *    'abc'.tr('abc', 'bcd')  # => "bcd"    # Replaced codepoint is not examined.
  *
- *  When +selector+ and +replacements+are provided, returns a copy of +self+
+ *  With string arguments +selector+ and +replacements+ given,
+ *  returns a copy of +self+
  *  with each character specified by string +selector+ translated to the
  *  corresponding character in string +replacements+.
  *  The correspondence is _positional_:
