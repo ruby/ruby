@@ -245,6 +245,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "reverse", types::ArrayExact, leaf, elidable);
     annotate!(rb_cArray, "join", types::StringExact);
     annotate!(rb_cArray, "[]", inline_array_aref);
+    annotate!(rb_cArray, "fetch", inline_array_fetch);
     annotate!(rb_cArray, "[]=", inline_array_aset);
     annotate!(rb_cArray, "<<", inline_array_push);
     annotate!(rb_cArray, "push", inline_array_push);
@@ -447,7 +448,27 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
             let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
             let index = fun.push_insn(block, hir::Insn::AdjustBounds { index, length });
-            let result = fun.push_insn(block, hir::Insn::ArrayArefChecked { array: recv, index, length });
+            let result = fun.push_insn(block, hir::Insn::ArrayArefChecked { array: recv, index, length, default: None });
+            return Some(result);
+        }
+    }
+    None
+}
+
+/// Inline `Array#fetch(index, default)`, which is `Array#[]` but returns `default` rather than
+/// `nil` when `index` is out of bounds. Callers with a block don't get here, so `default` is
+/// always the result for out-of-bounds indices. `fetch(index)` raises instead, so isn't inlined.
+fn inline_array_fetch(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    if let &[index, default] = args {
+        if fun.likely_a(recv, types::Array, state)
+            && fun.likely_a(index, types::Fixnum, state)
+        {
+            let recv = fun.coerce_to(block, recv, types::Array, state);
+            let index = fun.coerce_to(block, index, types::Fixnum, state);
+            let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
+            let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
+            let index = fun.push_insn(block, hir::Insn::AdjustBounds { index, length });
+            let result = fun.push_insn(block, hir::Insn::ArrayArefChecked { array: recv, index, length, default: Some(default) });
             return Some(result);
         }
     }
@@ -1231,6 +1252,6 @@ fn inline_ary_first(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::In
     let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
     let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
     let index = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
-    let result = fun.push_insn(block, hir::Insn::ArrayArefChecked { array: recv, index, length });
+    let result = fun.push_insn(block, hir::Insn::ArrayArefChecked { array: recv, index, length, default: None });
     Some(result)
 }

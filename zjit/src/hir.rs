@@ -1058,8 +1058,9 @@ pub enum Insn {
     /// integer, and `length` is an unboxed integer. Assumes `index` is either positive or the
     /// result of [`Insn::AdjustBounds`] (e.g. index -1 for an array of length 3 has already been
     /// adjusted to index 2, so any negative `index` is definitely considered out-of-bounds).
-    /// `index` but may be out-of-bounds, in which case it returns `nil`.
-    ArrayArefChecked { array: InsnId, index: InsnId, length: InsnId  },
+    /// `index` but may be out-of-bounds, in which case it returns `default`, or `nil` if there's
+    /// no `default` (as with `Array#fetch(index, default)` and `Array#[]` respectively).
+    ArrayArefChecked { array: InsnId, index: InsnId, length: InsnId, default: Option<InsnId> },
     ArrayAset { array: InsnId, index: InsnId, val: InsnId },
     ArrayPop { array: InsnId, state: InsnId },
     /// Return the length of the array as a C `long` ([`types::CInt64`])
@@ -1582,10 +1583,13 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*array);
                 $visit_one!(*index);
             }
-            Insn::ArrayArefChecked { array, index, length } => {
+            Insn::ArrayArefChecked { array, index, length, default } => {
                 $visit_one!(*array);
                 $visit_one!(*index);
                 $visit_one!(*length);
+                if let Some(default) = default {
+                    $visit_one!(*default);
+                }
             }
             Insn::ArrayAset { array, index, val } => {
                 $visit_one!(*array);
@@ -2127,8 +2131,11 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayAref { array, index, .. } => {
                 write!(f, "ArrayAref {array}, {index}")
             }
-            Insn::ArrayArefChecked { array, index, length } => {
+            Insn::ArrayArefChecked { array, index, length, default: None } => {
                 write!(f, "ArrayArefChecked {array}, {index}, {length}")
+            }
+            Insn::ArrayArefChecked { array, index, length, default: Some(default) } => {
+                write!(f, "ArrayArefChecked {array}, {index}, {length}, {default}")
             }
             Insn::ArrayAset { array, index, val, ..} => {
                 write!(f, "ArrayAset {array}, {index}, {val}")
@@ -8152,7 +8159,7 @@ impl Function {
                 self.assert_subtype(insn_id, array, types::Array)?;
                 self.assert_subtype(insn_id, index, types::CInt64)
             }
-            Insn::ArrayArefChecked { array, index, length } => {
+            Insn::ArrayArefChecked { array, index, length, .. } => {
                 self.assert_subtype(insn_id, array, types::Array)?;
                 self.assert_subtype(insn_id, index, types::CInt64)?;
                 self.assert_subtype(insn_id, length, types::CInt64)
@@ -10898,7 +10905,7 @@ fn add_iseq_to_hir(
                     let length = fun.push_insn(block, Insn::ArrayLength { array });
                     for i in (0..num).rev() {
                         let index = fun.push_insn(block, Insn::Const { val: Const::CInt64(i.try_into().unwrap()) });
-                        let element = fun.push_insn(block, Insn::ArrayArefChecked { array, index, length });
+                        let element = fun.push_insn(block, Insn::ArrayArefChecked { array, index, length, default: None });
                         state.stack_push(element);
                     }
                 }
