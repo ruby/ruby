@@ -3,6 +3,8 @@
 
 require "yaml"
 require "optparse"
+require "open3"
+require "rbconfig"
 
 VALID_STATUSES = ["Not Started", "In Progress", "Ported", "Blocked", "N/A"].freeze
 
@@ -10,12 +12,84 @@ def number_with_delimiter(number)
   number.to_s.gsub(/(\d)(?=(\d\d\d)+(?!\d))/, '\1,')
 end
 
+def find_preprocessor_context(file_path, error_line_num)
+  return nil unless File.file?(file_path) && error_line_num.positive?
+
+  lines = File.readlines(file_path)
+  idx = [error_line_num - 1, lines.size - 1].min
+
+  while idx >= 0
+    line = lines[idx]
+    if line =~ /^\s*#\s*(if|ifndef|ifdef)\b/
+      return { line_num: idx + 1, content: line.strip }
+    end
+    idx -= 1
+  end
+
+  nil
+end
+
+def check_c_fallback(repo_root, basename)
+  file_path = File.join(repo_root, basename)
+  return { success: false, output: "File #{basename} not found" } unless File.file?(file_path)
+
+  cmd = nil
+  makefile_path = File.join(repo_root, "Makefile")
+
+  if File.file?(makefile_path)
+    obj_name = basename.sub(/\.c$/, ".o")
+    make_cmd = ["make", "-n", obj_name]
+    stdout, status = Open3.capture2e(*make_cmd, chdir: repo_root)
+    if status.success?
+      compile_line = stdout.lines.find { |l| l =~ /\b(?:cc|gcc|clang)\b.*-c\s+.*#{Regexp.escape(basename)}/i || l =~ /-c\s+.*#{Regexp.escape(basename)}/i }
+      if compile_line
+        dev_null = RbConfig::CONFIG["host_os"] =~ /mswin|mingw/ ? "NUL" : "/dev/null"
+        cmd = compile_line.strip.sub(/-o\s+\S+/, "-o #{dev_null}") + " -DUSE_RUST_PORTS=0"
+      end
+    end
+  end
+
+  unless cmd
+    cc = RbConfig::CONFIG["CC"] || "gcc"
+    dev_null = RbConfig::CONFIG["host_os"] =~ /mswin|mingw/ ? "NUL" : "/dev/null"
+    arch = RbConfig::CONFIG["arch"]
+    inc_flags = "-I. -I.ext/include/#{arch} -I.ext/include -I./include -I. -I./prism"
+    cmd = "#{cc} #{inc_flags} -DUSE_RUST_PORTS=0 -c #{basename} -o #{dev_null}"
+  end
+
+  stdout_and_stderr, status = Open3.capture2e(cmd, chdir: repo_root)
+  if status.success?
+    { success: true, cmd: cmd, output: stdout_and_stderr }
+  else
+    error_line = nil
+    stdout_and_stderr.scan(/#{Regexp.escape(basename)}:(\d+):/) do |m|
+      error_line ||= m[0].to_i
+    end
+
+    preproc_ctx = error_line ? find_preprocessor_context(file_path, error_line) : nil
+
+    {
+      success: false,
+      cmd: cmd,
+      output: stdout_and_stderr,
+      error_line: error_line,
+      preproc_context: preproc_ctx
+    }
+  end
+end
+
 check_mode = false
+check_fallbacks = false
 OptionParser.new do |opts|
   opts.banner = "Usage: ruby tool/generate_porting_ledger.rb [options]"
 
   opts.on("--check", "Check if PORTING.md is up-to-date without modifying it") do
     check_mode = true
+  end
+
+  opts.on("--check-fallbacks", "Verify PORTING.md alignment and check C fallback compilation integrity") do
+    check_mode = true
+    check_fallbacks = true
   end
 
   opts.on("-h", "--help", "Show this help message") do
@@ -165,16 +239,54 @@ if check_mode
     end.join
   end
 
+  failed = false
+
   if existing_markdown == generated_markdown
     puts "PORTING.md is up to date."
-    exit 0
   elsif mask_loc.(existing_markdown) == mask_loc.(generated_markdown)
     puts "PORTING.md is up to date (line counts have drifted; run 'ruby tool/generate_porting_ledger.rb' to refresh them)."
-    exit 0
   else
     warn "Error: PORTING.md is out of date. Please run 'ruby tool/generate_porting_ledger.rb' to update."
-    exit 1
+    failed = true
   end
+
+  if check_fallbacks
+    puts "Verifying C fallback compilation for ported/in-progress C source files..."
+    target_entries = file_entries.select { |e| ["In Progress", "Ported"].include?(e[:status]) }
+
+    if target_entries.empty?
+      puts "No C files marked as 'In Progress' or 'Ported'."
+    else
+      fallback_failures = 0
+      target_entries.sort_by { |e| e[:basename] }.each do |entry|
+        res = check_c_fallback(repo_root, entry[:basename])
+        if res[:success]
+          puts "  [PASS] #{entry[:basename]} C fallback compilation"
+        else
+          fallback_failures += 1
+          warn "  [FAIL] #{entry[:basename]} C fallback compilation:"
+          warn "    Command: #{res[:cmd]}"
+          if res[:error_line] && res[:preproc_context]
+            warn "    Error location: #{entry[:basename]}:#{res[:error_line]}"
+            warn "    Preprocessor context: #{entry[:basename]}:#{res[:preproc_context][:line_num]}: #{res[:preproc_context][:content]}"
+          end
+          warn "    Compiler error output:"
+          res[:output].to_s.each_line do |line|
+            warn "      #{line.chomp}"
+          end
+        end
+      end
+
+      if fallback_failures > 0
+        warn "Error: #{fallback_failures} C fallback compilation check(s) failed."
+        failed = true
+      else
+        puts "All C fallback compilation checks passed successfully."
+      end
+    end
+  end
+
+  exit(failed ? 1 : 0)
 else
   File.write(porting_md_path, generated_markdown)
   puts "Updated PORTING.md successfully (#{total_files} C source files, #{number_with_delimiter(total_loc)} LOC)."
