@@ -221,7 +221,7 @@ void rb_gc_mark_and_move(VALUE *ptr);
 
 /* The objspace a marking walk marks into, plus the per-Ractor traversal redirect slot
  * (vm_core.h's gc_mark_func_data_struct) and the shareable-check flag cached from it.
- * Resolving the current Ractor costs an out-of-line rb_current_ec() call on arm64, so a
+ * Resolving the current Ractor costs an out-of-line rb_current_ec() call, so a
  * walk resolves it once into a ctx and threads that down instead of repeating it per
  * reference.  Pass the pointer along wherever one is already in hand; build a fresh one
  * only at an entry point that has none (rb_gc_current_mark_ctx below). */

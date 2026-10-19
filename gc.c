@@ -2936,7 +2936,7 @@ gc_mark_func_data_slotp_of(rb_ractor_t *const cr)
 #define GC_MARK_FUNC_DATA_SLOTP()  gc_mark_func_data_slotp_of(rb_current_ractor_raw(false))
 
 /* Resolve the current Ractor once for a whole marking walk.  rb_current_ractor_raw() is an
- * out-of-line rb_current_ec() call wherever RB_THREAD_CURRENT_EC_NOINLINE is set (arm64), so
+ * out-of-line rb_current_ec() call, so
  * the walk threads this ctx down rather than repeating the lookup per reference. */
 static inline struct rb_gc_mark_ctx
 gc_current_mark_ctx(void)
