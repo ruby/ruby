@@ -1091,7 +1091,7 @@ fn gen_ccall_with_frame(
         stack_size: caller_stack_size.try_into().expect("stack size overflow"),
     }];
     stack_map.extend(build_stack_map(jit, function, &state.with_stack_size(caller_stack_size)));
-    let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
+    let jit_frame = gen_write_jit_frame(asm, state);
     gen_save_sp(asm, caller_stack_size);
     asm_comment!(asm, "save SP as the stack map anchor");
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit.base_ptr_slot_native_base_ptr_offset()), SP);
@@ -1210,7 +1210,7 @@ fn gen_ccall_variadic(
         stack_size: caller_stack_size.try_into().expect("stack size overflow"),
     }];
     stack_map.extend(build_stack_map(jit, function, &state.with_stack_size(caller_stack_size)));
-    let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
+    let jit_frame = gen_write_jit_frame(asm, state);
     gen_save_sp(asm, caller_stack_size);
     asm_comment!(asm, "save SP as the stack map anchor");
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit.base_ptr_slot_native_base_ptr_offset()), SP);
@@ -1725,7 +1725,7 @@ fn gen_push_inline_frame(
     // Save cfp->pc and cfp->sp for the caller frame.
     // Cannot use gen_prepare_non_leaf_call because we need special SP math.
     let stack_size = state.stack().len() - num_args.to_usize() - 1; // -1 for receiver
-    gen_write_jit_frame(asm, state, 0);
+    gen_write_jit_frame(asm, state);
     gen_save_sp(asm, stack_size);
 
     let block_handler = block.map(|bh| gen_block_handler_opnd(asm, bh));
@@ -1787,7 +1787,7 @@ fn gen_push_inline_frame(
     }
     let callee_depth = state.depth + 1;
     let callee_entry_pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
-    let callee_entry_frame = JITFrame::new_iseq(callee_entry_pc, iseq, 0);
+    let callee_entry_frame = JITFrame::new_iseq(callee_entry_pc, iseq);
     asm_comment!(asm, "install entry JITFrame for inlined callee");
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(callee_depth)), Opnd::const_ptr(callee_entry_frame));
     let callee_jit_return = cfp_jit_return_for_depth(asm, callee_depth);
@@ -1867,7 +1867,7 @@ fn gen_send_iseq_direct(
     // Can't use gen_prepare_non_leaf_call because we need special SP math.
     let stack_size = state.stack().len() - args.len() - 1; // -1 for receiver
     let stack_map = build_stack_map(jit, function, &state.with_stack_size(stack_size));
-    let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
+    let jit_frame = gen_write_jit_frame(asm, state);
     gen_save_sp(asm, stack_size);
 
     asm.stack_map(stack_map, jit_frame, state.depth);
@@ -2113,7 +2113,7 @@ fn gen_invoke_block_iseq_direct(
 
     let stack_size = state.stack().len() - args.len();
     let stack_map = build_stack_map(jit, function, &state.with_stack_size(stack_size));
-    let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
+    let jit_frame = gen_write_jit_frame(asm, state);
     gen_save_sp(asm, stack_size);
 
     asm.stack_map(stack_map, jit_frame, state.depth);
@@ -2888,7 +2888,7 @@ fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Optio
     // Publish a valid entry JITFrame before setting cfp->jit_return. The entry point is
     // always the top-level frame (depth 0). Inlined frames get their own deeper
     // slots in gen_push_inline_frame().
-    let jit_frame = JITFrame::new_iseq(entry_pc(jit.iseq(), jit_entry_idx), jit.iseq(), 0);
+    let jit_frame = JITFrame::new_iseq(entry_pc(jit.iseq(), jit_entry_idx), jit.iseq());
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(jit_frame));
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), NATIVE_BASE_PTR);
 
@@ -3472,7 +3472,7 @@ fn cfp_jit_return_for_depth(asm: &mut Assembler, depth: InlineDepth) -> Opnd {
 }
 
 /// Change to a different [zjit_jit_frame].
-fn gen_write_jit_frame(asm: &mut Assembler, state: &FrameState, stack_map_size: usize) -> *const zjit_jit_frame {
+fn gen_write_jit_frame(asm: &mut Assembler, state: &FrameState) -> *const zjit_jit_frame {
     // The JIT frame describes the frame in the middle of a VM instruction, and VM opcode handler
     // bump PC first thing on entry. So we put an advanced PC in the JIT frame.
     fn jit_frame_next_pc(state: &FrameState) -> *const VALUE {
@@ -3482,7 +3482,7 @@ fn gen_write_jit_frame(asm: &mut Assembler, state: &FrameState, stack_map_size: 
 
     gen_incr_counter(asm, Counter::vm_write_jit_frame_count);
     asm_comment!(asm, "change JITFrame");
-    let jit_frame = JITFrame::new_iseq(jit_frame_next_pc(state), state.iseq, stack_map_size);
+    let jit_frame = JITFrame::new_iseq(jit_frame_next_pc(state), state.iseq);
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(state.depth)), Opnd::const_ptr(jit_frame));
 
     jit_frame
@@ -3496,8 +3496,8 @@ fn gen_write_jit_frame(asm: &mut Assembler, state: &FrameState, stack_map_size: 
 /// because the backend spills all live registers onto the C stack on CCall.
 /// However, to avoid marking uninitialized stack slots, this also updates SP,
 /// which may have cfp->sp for a past frame or a past non-leaf call.
-fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState, leaf: bool, stack_map_size: usize) -> *const zjit_jit_frame {
-    let jit_frame = gen_write_jit_frame(asm, state, stack_map_size);
+fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState, leaf: bool) -> *const zjit_jit_frame {
+    let jit_frame = gen_write_jit_frame(asm, state);
     gen_save_sp(asm, state.stack_size());
     if leaf {
         asm.expect_leaf_ccall(state.stack_size());
@@ -3519,7 +3519,7 @@ fn gen_prepare_leaf_call_with_gc(asm: &mut Assembler, state: &FrameState) {
     // We use state.without_stack() to pass stack_size=0 to gen_save_sp() because we don't write
     // VM stack slots on leaf calls, which leaves those stack slots uninitialized. ZJIT keeps
     // live objects on the C stack, so they are protected from GC properly.
-    gen_prepare_call_with_gc(asm, &state.without_stack(), true, 0);
+    gen_prepare_call_with_gc(asm, &state.without_stack(), true);
 }
 
 /// Save the current SP on the CFP
@@ -3684,7 +3684,7 @@ fn gen_prepare_non_leaf_call_with_operand_stack(
             stack_map.extend(frame_entries.into_iter().skip(stack_size));
         }
     }
-    let jit_frame = gen_prepare_call_with_gc(asm, state, false, stack_map.len());
+    let jit_frame = gen_prepare_call_with_gc(asm, state, false);
 
     // NOTE(alan): This store can be done once per CFP switch, but analysis is required
     //             to avoid the store in functions that make no non-leaf call.
@@ -3851,7 +3851,7 @@ fn build_stackmap_for_sidexit(jit: &JITState, function: &Function, state: &Frame
         return None;
     }
 
-    let jit_frame = JITFrame::new_iseq(state.pc, state.iseq, stack_map.len());
+    let jit_frame = JITFrame::new_iseq(state.pc, state.iseq);
     Some(StackMap::new(stack_map, jit_frame, state.depth))
 }
 

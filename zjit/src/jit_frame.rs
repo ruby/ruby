@@ -1,8 +1,8 @@
 use std::alloc::{handle_alloc_error, Layout};
-use std::mem::{align_of, size_of};
 use std::ptr;
 
-use crate::cruby::{__IncompleteArrayField, IseqPtr, VALUE, rb_gc_mark_movable, rb_gc_location};
+use crate::cruby::{IseqPtr, VALUE, Qnil, rb_gc_mark_movable, rb_gc_location};
+use crate::cruby::{ZJIT_STACK_MAP_OP_BITS, ZJIT_STACK_MAP_VARINT_BITS, ZJIT_STACK_MAP_OP_END, ZJIT_STACK_MAP_OP_VREG, ZJIT_STACK_MAP_OP_SKIP, ZJIT_STACK_MAP_OP_BASE_PTR, ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA, ZJIT_STACK_MAP_OP_PREV_FRAME, ZJIT_STACK_MAP_OP_IMM, ZJIT_STACK_MAP_OP_NIL};
 use crate::cruby::zjit_jit_frame;
 use crate::codegen::iseq_may_write_block_code;
 use crate::options::get_option;
@@ -72,53 +72,150 @@ impl JITFrameAllocator {
     }
 }
 
-impl JITFrame {
-    /// Allocate a JITFrame and its trailing stack map on the heap, register it
-    /// with ZJITState, and return a raw pointer that remains valid for the
-    /// lifetime of the process.
-    fn alloc(
-        pc: *const VALUE,
-        iseq: IseqPtr,
-        materialize_block_code: bool,
-        stack_size: usize,
-    ) -> *const Self {
-        // JITFrame ends with a flexible stack[] array, so allocate enough
-        // space for the fixed fields plus the requested stack map entries.
-        let frame_size = size_of::<JITFrame>()
-            .checked_add(stack_size.checked_mul(size_of::<VALUE>()).unwrap())
-            .unwrap();
-        let layout = Layout::from_size_align(frame_size, align_of::<JITFrame>()).unwrap();
-        // Prefer the low-address arena so that call sites can store this pointer
-        // as a 32-bit immediate. Falling back to the heap only costs code size.
-        let mut raw_ptr = match ZJITState::get_jit_frame_allocator() {
-            Some(arena) => arena.try_alloc(layout) as *mut JITFrame,
-            None => ptr::null_mut(),
-        };
+/// Bump-allocate `layout` from the JITFrame arena, falling back to the heap.
+fn alloc_jit_frame_memory(layout: Layout) -> *mut u8 {
+    // Prefer the low-address arena so that call sites can store JITFrame pointers
+    // as a 32-bit immediate. Falling back to the heap only costs code size.
+    let mut raw_ptr = match ZJITState::get_jit_frame_allocator() {
+        Some(arena) => arena.try_alloc(layout),
+        None => ptr::null_mut(),
+    };
+    if raw_ptr.is_null() {
+        raw_ptr = unsafe { std::alloc::alloc(layout) };
         if raw_ptr.is_null() {
-            raw_ptr = unsafe { std::alloc::alloc(layout) as *mut JITFrame };
-            if raw_ptr.is_null() {
-                handle_alloc_error(layout);
-            }
-            incr_counter_by(Counter::jit_frame_heap_bytes, layout.size() as u64);
+            handle_alloc_error(layout);
         }
+        incr_counter_by(Counter::jit_frame_heap_bytes, layout.size() as u64);
+    }
+    raw_ptr
+}
 
+/// Stack maps with no entries, indexed by materialize_block_code.
+/// Bit 0 is the flag and the END opcode that follows is all zeros.
+static EMPTY_STACK_MAPS: [u8; 2] = [0, 1];
+const _: () = assert!(ZJIT_STACK_MAP_OP_END == 0);
+
+/// Writes a JITFrame stack map bit stream. See ZJIT_STACK_MAP_OP_* in zjit.h.
+pub struct StackMapWriter {
+    bytes: Vec<u8>,
+    num_bits: usize,
+}
+
+impl StackMapWriter {
+    pub fn new(materialize_block_code: bool) -> Self {
+        let mut writer = Self { bytes: vec![], num_bits: 0 };
+        writer.write_bits(materialize_block_code as u64, 1);
+        writer
+    }
+
+    fn write_bits(&mut self, value: u64, num_bits: u32) {
+        for i in 0..num_bits {
+            if self.num_bits % 8 == 0 {
+                self.bytes.push(0);
+            }
+            *self.bytes.last_mut().unwrap() |= (((value >> i) & 1) as u8) << (self.num_bits % 8);
+            self.num_bits += 1;
+        }
+    }
+
+    fn write_op(&mut self, op: u32) {
+        debug_assert!(op < 1 << ZJIT_STACK_MAP_OP_BITS);
+        self.write_bits(op as u64, ZJIT_STACK_MAP_OP_BITS);
+    }
+
+    fn write_varint(&mut self, mut value: u64) {
+        let chunk_mask = (1 << ZJIT_STACK_MAP_VARINT_BITS) - 1;
+        loop {
+            let chunk = value & chunk_mask;
+            value >>= ZJIT_STACK_MAP_VARINT_BITS;
+            let more = (value != 0) as u64;
+            self.write_bits(chunk | more << ZJIT_STACK_MAP_VARINT_BITS, ZJIT_STACK_MAP_VARINT_BITS + 1);
+            if more == 0 {
+                break;
+            }
+        }
+    }
+
+    pub fn vreg(&mut self, slot_index: usize) {
+        self.write_op(ZJIT_STACK_MAP_OP_VREG);
+        self.write_varint(slot_index as u64);
+    }
+
+    pub fn imm(&mut self, value: VALUE) {
+        assert!(value.special_const_p(), "StackMap should only materialize immediate VALUEs, but got: {value:?}");
+        if value == Qnil {
+            self.write_op(ZJIT_STACK_MAP_OP_NIL);
+        } else {
+            self.write_op(ZJIT_STACK_MAP_OP_IMM);
+            self.write_varint(value.0 as u64);
+        }
+    }
+
+    pub fn skip(&mut self, size: usize) {
+        self.write_op(ZJIT_STACK_MAP_OP_SKIP);
+        self.write_varint(size as u64);
+    }
+
+    pub fn base_ptr(&mut self, slot_index: u32, stack_size: u32) {
+        debug_assert_eq!(self.num_bits, 1, "base_ptr must be the first StackMap entry so later entries decode from it");
+        self.write_op(ZJIT_STACK_MAP_OP_BASE_PTR);
+        self.write_varint(slot_index.into());
+        self.write_varint(stack_size.into());
+    }
+
+    pub fn skip_vm_env_data(&mut self) {
+        self.write_op(ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA);
+    }
+
+    pub fn prev_frame(&mut self) {
+        self.write_op(ZJIT_STACK_MAP_OP_PREV_FRAME);
+    }
+
+    /// Terminate the stream and return its bytes.
+    fn finish(mut self) -> Vec<u8> {
+        self.write_op(ZJIT_STACK_MAP_OP_END);
+        self.bytes
+    }
+}
+
+impl JITFrame {
+    /// Allocate a JITFrame with an empty stack map, register it with ZJITState,
+    /// and return a raw pointer that remains valid for the lifetime of the process.
+    fn alloc(pc: *const VALUE, iseq: IseqPtr, materialize_block_code: bool) -> *const Self {
+        let raw_ptr = alloc_jit_frame_memory(Layout::new::<JITFrame>()) as *mut JITFrame;
         unsafe {
             ptr::write(raw_ptr, JITFrame {
                 pc,
                 iseq,
-                materialize_block_code,
-                stack_size: stack_size.try_into().unwrap(),
-                stack: __IncompleteArrayField::new(),
+                stack_map: &EMPTY_STACK_MAPS[materialize_block_code as usize],
             });
         }
         ZJITState::get_jit_frames().push(raw_ptr);
         raw_ptr as *const _
     }
 
+    pub fn materialize_block_code(&self) -> bool {
+        unsafe { *self.stack_map & 1 != 0 }
+    }
+
+    pub fn stack_map_writer(&self) -> StackMapWriter {
+        StackMapWriter::new(self.materialize_block_code())
+    }
+
+    /// Install a stack map built from [Self::stack_map_writer].
+    pub fn set_stack_map(&mut self, writer: StackMapWriter) {
+        debug_assert_eq!(writer.bytes.first().map(|byte| byte & 1 != 0), Some(self.materialize_block_code()));
+        let bytes = writer.finish();
+        let stack_map = alloc_jit_frame_memory(Layout::array::<u8>(bytes.len()).unwrap());
+        unsafe { ptr::copy_nonoverlapping(bytes.as_ptr(), stack_map, bytes.len()); }
+        incr_counter_by(Counter::jit_frame_stack_map_bytes, bytes.len() as u64);
+        self.stack_map = stack_map;
+    }
+
     /// Create a JITFrame for an ISEQ frame.
-    pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr, stack_size: usize) -> *const Self {
+    pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr) -> *const Self {
         let materialize_block_code = !iseq_may_write_block_code(iseq);
-        Self::alloc(pc, iseq, materialize_block_code, stack_size)
+        Self::alloc(pc, iseq, materialize_block_code)
     }
 
     /// Mark the iseq pointer for GC. Called from rb_zjit_root_mark.
@@ -148,8 +245,19 @@ pub extern "C" fn rb_zjit_jit_frame_update_references(jit_frame: *mut JITFrame) 
 
 #[cfg(test)]
 mod tests {
-    use crate::cruby::{eval, inspect};
+    use crate::cruby::{eval, inspect, Qnil};
     use insta::assert_snapshot;
+    use super::StackMapWriter;
+
+    #[test]
+    fn test_stack_map_writer_bit_layout() {
+        let mut writer = StackMapWriter::new(true);
+        writer.vreg(5);
+        writer.imm(Qnil);
+        writer.skip(17); // two varint chunks
+        // flag=1 | VREG 5 | NIL | SKIP 1,1 | END, LSB first
+        assert_eq!(writer.finish(), vec![0x53, 0xae, 0x18, 0x00]);
+    }
 
     #[test]
     fn test_jit_frame_entry_first() {
