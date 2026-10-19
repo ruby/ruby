@@ -530,6 +530,7 @@ pick_addrinfo(struct hostname_resolution_store *resolution_store, int last_famil
 
 #ifdef _WIN32
 #define pipe(fds) rb_w32_pipe(fds)
+#define read(fd, buf, size) rb_w32_read(fd, buf, size)
 #endif
 
 static void
