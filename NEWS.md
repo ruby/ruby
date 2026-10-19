@@ -621,16 +621,10 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
     * Lightweight frames: method calls in JIT code no longer write a full
       VM control frame. Frame metadata used by backtraces and GC is
       materialized only when needed.
-    * Recompilation: when guards keep failing, ZJIT re-profiles the method
-      and compiles a new version for the observed behavior instead of
-      repeatedly exiting to the interpreter. Up to 4 versions per method.
-    * Polymorphic specialization: method calls, block calls, and instance
-      variable reads and writes that see more than one class or shape are
-      specialized for each of them.
-    * A new linear scan register allocator, load-store optimization, and
-      more constant folding and redundant guard elimination.
-    * Allocation of objects, Arrays, Hashes, Strings and Ranges is inlined
-      into JIT code, skipping a call into the GC on the fast path.
+    * Optimization pass: a new linear scan register allocator, load-store
+      optimization, more constant folding, and redundant guard elimination.
+    * GC fastpath: allocation of objects is inlined into JIT code, skipping
+      a call into the GC on the fast path.
 * More Ruby code is compiled
     * Calls with blocks or `&block` arguments, `super`, splats, keyword
       arguments, `...` forwarding, and post-required parameters.
