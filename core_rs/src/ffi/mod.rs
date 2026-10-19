@@ -41,6 +41,7 @@
 //! Like the C it replaces, code using these bindings must run on a Ruby
 //! thread that holds the GVL, with the VM initialised.
 
+pub mod alloc;
 pub mod api;
 pub mod protect;
 pub mod value;
