@@ -10837,36 +10837,24 @@ pm_warning_emit_callback(const pm_diagnostic_t *diagnostic, void *data) {
 }
 
 /**
- * Parse the parse result and raise a Ruby error if there are any syntax errors.
- * It returns an error if one should be raised. It is assumed that the parse
- * result object is zeroed out.
- */
-/**
- * Compute the hash of the source code that was parsed. The data section after
- * an __END__ marker is not part of the code, so the hash covers the source
- * only up to the end of the __END__ line, which also matches the range that
- * parse.y hashes.
+ * Returns the source hash of the source that was parsed, as stored on
+ * instruction sequences. A source hash of 0 means that there is no source hash,
+ * so the checksum is remapped to another value in that case.
+ * Prism::Source#checksum is compared against this value in ast.rb, which
+ * applies the same remapping.
  */
 static uint64_t
 pm_source_hash(const pm_parser_t *parser)
 {
-    const uint8_t *start = pm_parser_start(parser);
-    const uint8_t *end = pm_parser_end(parser);
-    const pm_location_t *data_loc = pm_parser_data_loc(parser);
-
-    if (data_loc->length != 0) {
-        const uint8_t *cursor = start + data_loc->start;
-        while (cursor < end && *cursor != '\n') cursor++;
-        if (cursor < end) cursor++;
-        end = cursor;
-    }
-
-    rb_source_hash_state_t state;
-    rb_source_hash_init(&state);
-    rb_source_hash_update(&state, start, (size_t) (end - start));
-    return rb_source_hash_finalize(&state);
+    uint64_t checksum = pm_parser_checksum(parser);
+    return checksum == 0 ? 1 : checksum;
 }
 
+/**
+ * Parse the parse result and raise a Ruby error if there are any syntax errors.
+ * It returns an error if one should be raised. It is assumed that the parse
+ * result object is zeroed out.
+ */
 static VALUE
 pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines)
 {
@@ -11199,15 +11187,44 @@ pm_node_find(const pm_node_t *node, void *data)
     return context->node == NULL;
 }
 
+/**
+ * Returns whether parsing the given source produces the given source hash.
+ */
+bool
+pm_source_hash_matches(VALUE source, VALUE filepath, uint64_t source_hash)
+{
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
+    pm_parse_string(&result, source, filepath, NULL);
+
+    bool matches = result.parser != NULL && pm_source_hash(result.parser) == source_hash;
+    pm_parse_result_free(&result);
+
+    RB_GC_GUARD(source);
+    RB_GC_GUARD(filepath);
+    return matches;
+}
+
+/**
+ * Find the location of the node with the given node ID in the given source.
+ * Raises if the source does not have the given source hash, which is checked
+ * before any syntax error is raised so that source modified into invalid Ruby
+ * is reported as modified.
+ */
 bool
 pm_node_source_location(VALUE source, VALUE filepath, int start_line,
-                        int node_id, rb_code_location_t *location)
+                        int node_id, uint64_t source_hash, rb_code_location_t *location)
 {
     pm_parse_result_t result;
     pm_parse_result_init(&result);
 
     pm_options_line_set(result.options, start_line);
     VALUE error = pm_parse_string(&result, source, filepath, NULL);
+
+    if (result.parser != NULL && pm_source_hash(result.parser) != source_hash) {
+        pm_parse_result_free(&result);
+        rb_raise(rb_eRuntimeError, "source has been modified");
+    }
 
     if (!NIL_P(error)) {
         pm_parse_result_free(&result);

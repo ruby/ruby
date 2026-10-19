@@ -522,7 +522,10 @@ iseq_from_e_script_p(const rb_iseq_t *iseq, VALUE path, uint64_t source_hash)
         !RTEST(rb_e_script)) {
         return false;
     }
-    if (!location_source_hash_matches(rb_e_script, source_hash)) return false;
+    bool matches = ISEQ_BODY(iseq)->prism ?
+        pm_source_hash_matches(rb_e_script, path, source_hash) :
+        location_source_hash_matches(rb_e_script, source_hash);
+    if (!matches) return false;
 
     const rb_iseq_t *source_iseq = iseq;
     for (; source_iseq; source_iseq = ISEQ_BODY(source_iseq)->parent_iseq) {
@@ -536,7 +539,7 @@ iseq_from_e_script_p(const rb_iseq_t *iseq, VALUE path, uint64_t source_hash)
     rb_code_location_t source_location;
     bool found;
     if (ISEQ_BODY(iseq)->prism) {
-        found = pm_node_source_location(rb_e_script, path, 1, node_id, &source_location);
+        found = pm_node_source_location(rb_e_script, path, 1, node_id, source_hash, &source_location);
     }
     else {
         found = rb_ast_node_source_location(
@@ -632,7 +635,9 @@ location_source_range_m(VALUE self)
     if (NIL_P(parser_path)) {
         parser_path = rb_str_new_cstr("(eval)");
     }
-    if (!location_source_hash_matches(source, source_hash)) {
+    // Prism hashes the source itself, so for prism-compiled code the source
+    // hash is checked by pm_node_source_location.
+    if (!ISEQ_BODY(iseq)->prism && !location_source_hash_matches(source, source_hash)) {
         rb_raise(rb_eRuntimeError, "source has been modified");
     }
 
@@ -645,6 +650,7 @@ location_source_range_m(VALUE self)
             parser_path,
             first_lineno,
             node_id,
+            source_hash,
             &code_location
         );
     }
