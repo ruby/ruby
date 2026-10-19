@@ -641,16 +641,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
     * Instance variable reads and shareable constants are now compiled
       while multiple Ractors are running.
 * Command-line options
-    * `--zjit-perf=hir` writes a perf map symbol per HIR instruction,
-      to profile which kinds of HIR instructions consume CPU cycles.
     * `--zjit-stats=FILE` writes stats as JSON when `FILE` ends with `.json`.
-    * `--zjit-trace-compiles` and `--zjit-trace-invalidation` record
-      compilation phases and invalidation events as
-      [Perfetto](https://ui.perfetto.dev/) trace events.
-    * `--zjit-trace-exits` now writes side exits in the
-      [Fuchsia Trace Format](https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format)
-      to `/tmp/perfetto-{pid}.fxt`, which can be opened in Perfetto,
-      instead of a Stackprof dump.
 * Ruby API
     * `RubyVM::ZJIT.exit_locations` and `RubyVM::ZJIT.dump_exit_locations`
       are removed along with the Stackprof output of `--zjit-trace-exits`.
