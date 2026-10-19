@@ -1717,7 +1717,7 @@ Init_prism(void) {
     rb_ext_ractor_safe(true);
 #endif
 
-    rb_cPrism = rb_define_module_under(rb_define_module("Ruby"), "Prism");
+    VALUE mRuby = rb_define_module("Ruby"); rb_cPrism = rb_define_module_under(mRuby, "Prism");
     rb_cPrismNode = rb_define_class_under(rb_cPrism, "Node", rb_cObject);
     rb_cPrismSource = rb_define_class_under(rb_cPrism, "Source", rb_cObject);
     rb_cPrismToken = rb_define_class_under(rb_cPrism, "Token", rb_cObject);
