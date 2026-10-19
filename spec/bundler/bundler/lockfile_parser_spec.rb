@@ -55,6 +55,15 @@ RSpec.describe Bundler::LockfileParser do
     end
   end
 
+  describe "OVERRIDES" do
+    it "is a known section that no Bundler version ignores" do
+      expect(described_class::KNOWN_SECTIONS).to include(described_class::OVERRIDES)
+      expect(described_class.unknown_sections_in_lockfile("OVERRIDES\n  :all, required_ruby_version: nil\n")).to be_empty
+      expect(described_class.sections_to_ignore(Gem::Version.create("4.0.0"))).not_to include(described_class::OVERRIDES)
+      expect(described_class.sections_to_ignore(nil)).not_to include(described_class::OVERRIDES)
+    end
+  end
+
   describe ".sections_to_ignore" do
     subject { described_class.sections_to_ignore(base_version) }
 
@@ -210,6 +219,30 @@ RSpec.describe Bundler::LockfileParser do
         spec = subject.specs.find {|s| s.name == "mygem" }
 
         expect(spec.content_address).to be_nil
+      end
+    end
+
+    context "without an OVERRIDES section" do
+      it "reports no overrides section" do
+        expect(subject.overrides).to be_nil
+      end
+    end
+
+    context "with an OVERRIDES section" do
+      let(:lockfile_contents) { super().sub("\nBUNDLED WITH", "\nOVERRIDES\n  \"rake\", version: \">= 10\"\n  :all, required_ruby_version: :ignore_upper\n\nBUNDLED WITH") }
+
+      include_examples "parsing"
+
+      it "parses the overrides" do
+        expect(subject.overrides.map(&:to_lock)).to eq([%("rake", version: ">= 10"), %(:all, required_ruby_version: :ignore_upper)])
+      end
+    end
+
+    context "with a malformed OVERRIDES line" do
+      let(:lockfile_contents) { super().sub("\nBUNDLED WITH", "\nOVERRIDES\n  rake, version: >= 10\n\nBUNDLED WITH") }
+
+      it "raises a LockfileError pointing at the line" do
+        expect { subject }.to raise_error(Bundler::LockfileError, /error occurred while evaluating #{Regexp.escape(lockfile_path)}:\d+:\d+/)
       end
     end
 

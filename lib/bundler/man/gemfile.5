@@ -521,7 +521,16 @@ gem "rails", "~> 7\.0"
 .fi
 .IP "" 0
 .P
-The override only affects resolution and the install\-time Ruby/RubyGems compatibility checks; \fBGemfile\.lock\fR continues to reflect the resolved versions, not the rewritten requirements\. When resolution still fails, Bundler appends the active overrides (with their Gemfile location) to the error message so it is clear which override shaped the constraint set\.
+The override only affects resolution and the install\-time Ruby/RubyGems compatibility checks; the gems in \fBGemfile\.lock\fR continue to reflect the resolved versions, not the rewritten requirements\. The overrides themselves are recorded in the lockfile's \fBOVERRIDES\fR section, one line per field, sorted:
+.IP "" 4
+.nf
+OVERRIDES
+  "rails", version: ">= 8\.0"
+  :all, required_ruby_version: :ignore_upper
+.fi
+.IP "" 0
+.P
+Requirements are recorded in normalized form, so \fB">=8\.0"\fR and \fB">= 8\.0"\fR are the same override\. A frozen install fails when the Gemfile's overrides differ from the recorded ones\. Adding or removing a \fB:all\fR or metadata override rewrites the section without moving locked versions; run \fBbundle update\fR to re\-resolve under it\. When resolution still fails, Bundler appends the active overrides (with their Gemfile location) to the error message so it is clear which override shaped the constraint set\.
 .SS "DROPPING OR REPLACING A DEPENDENCY"
 \fBfrom:\fR and \fBto:\fR rewrite a single dependency of a single gem:
 .IP "" 4
@@ -546,7 +555,7 @@ override "foo", from: "bar", to: "foo\-lite"
 .P
 Bundler does not check what a gem loads at runtime\. If \fB<gem>\fR requires \fB<target>\fR unconditionally, dropping it makes that require raise \fBLoadError\fR, as with jekyll's dependency on jekyll\-sass\-converter or the adapters that faraday 1\.x requires on load\. A replacement only works when it provides the files \fB<gem>\fR requires, and it does not take over the name of \fB<target>\fR: \fBGem\.loaded_specs\fR has no entry for \fB<target>\fR, and \fBgem "<target>"\fR fails\.
 .P
-\fBGemfile\.lock\fR keeps listing \fB<target>\fR under \fB<gem>\fR as the gem publishes it, while the locked gems leave \fB<target>\fR out or include \fB<replacement>\fR\. A frozen install accepts that lockfile as long as the Gemfile still has the override\. Removing the override makes Bundler resolve \fB<target>\fR again\.
+\fBGemfile\.lock\fR keeps listing \fB<target>\fR under \fB<gem>\fR as the gem publishes it, while the locked gems leave \fB<target>\fR out or include \fB<replacement>\fR, and the \fBOVERRIDES\fR section records the rewrite so tools that read the lockfile can apply it\. A frozen install accepts that lockfile as long as the Gemfile still has the override\. Removing the override makes Bundler resolve \fB<target>\fR again\.
 .SH "SOURCE PRIORITY"
 When attempting to locate a gem to satisfy a gem requirement, bundler uses the following priority order:
 .IP "1." 4

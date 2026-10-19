@@ -623,8 +623,19 @@ Declaring the same `target` and `field` twice is an error.
     gem "rails", "~> 7.0"
 
 The override only affects resolution and the install-time Ruby/RubyGems
-compatibility checks; `Gemfile.lock` continues to reflect the resolved
-versions, not the rewritten requirements. When resolution still fails,
+compatibility checks; the gems in `Gemfile.lock` continue to reflect the
+resolved versions, not the rewritten requirements. The overrides themselves are
+recorded in the lockfile's `OVERRIDES` section, one line per field, sorted:
+
+    OVERRIDES
+      "rails", version: ">= 8.0"
+      :all, required_ruby_version: :ignore_upper
+
+Requirements are recorded in normalized form, so `">=8.0"` and `">= 8.0"` are
+the same override. A frozen install fails when the Gemfile's overrides differ
+from the recorded ones. Adding or removing a `:all` or metadata override
+rewrites the section without moving locked versions; run `bundle update` to
+re-resolve under it. When resolution still fails,
 Bundler appends the active overrides (with their Gemfile location) to the
 error message so it is clear which override shaped the constraint set.
 
@@ -662,9 +673,10 @@ files `<gem>` requires, and it does not take over the name of `<target>`:
 `Gem.loaded_specs` has no entry for `<target>`, and `gem "<target>"` fails.
 
 `Gemfile.lock` keeps listing `<target>` under `<gem>` as the gem publishes it,
-while the locked gems leave `<target>` out or include `<replacement>`. A
-frozen install accepts that lockfile as long as the Gemfile still has the
-override. Removing the override makes Bundler resolve `<target>` again.
+while the locked gems leave `<target>` out or include `<replacement>`, and the
+`OVERRIDES` section records the rewrite so tools that read the lockfile can
+apply it. A frozen install accepts that lockfile as long as the Gemfile still
+has the override. Removing the override makes Bundler resolve `<target>` again.
 
 ## SOURCE PRIORITY
 

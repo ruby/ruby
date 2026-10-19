@@ -167,6 +167,7 @@ module Bundler
 
       @dependency_changes = converge_dependencies
       @local_changes = converge_locals
+      @override_changes = converge_overrides
 
       check_lockfile
     end
@@ -477,6 +478,11 @@ module Bundler
       @resolved_bundler_version || Bundler.gem_version
     end
 
+    # The lines for the OVERRIDES section of Gemfile.lock.
+    def overrides_to_lock
+      @overrides.map(&:to_lock).uniq
+    end
+
     def to_lock
       require_relative "lockfile_generator"
       LockfileGenerator.generate(self)
@@ -599,6 +605,11 @@ module Bundler
       added.concat new_deps.map {|d| "* #{pretty_dep(d)}" } if new_deps.any?
       deleted.concat deleted_deps.map {|d| "* #{pretty_dep(d)}" } if deleted_deps.any?
 
+      if @override_changes
+        added.concat((overrides_to_lock - locked_overrides_to_lock).sort.map {|o| "* override #{o}" })
+        deleted.concat((locked_overrides_to_lock - overrides_to_lock).sort.map {|o| "* override #{o}" })
+      end
+
       both_sources = Hash.new {|h, k| h[k] = [] }
       current_dependencies.each {|d| both_sources[d.name][0] = d }
       current_locked_dependencies.each {|d| both_sources[d.name][1] = d }
@@ -656,7 +667,8 @@ module Bundler
         @locked_spec_with_missing_checksums ||
         empty_checksums_actionable? ||
         @locked_spec_with_missing_deps ||
-        @locked_spec_with_invalid_deps
+        @locked_spec_with_invalid_deps ||
+        @override_changes
     end
 
     def resolve_needed?
@@ -943,6 +955,7 @@ module Bundler
         [@locked_spec_with_empty_checksums, "your lockfile has an empty CHECKSUMS entry for \"#{@locked_spec_with_empty_checksums}\""],
         [@locked_spec_with_missing_deps, "your lockfile includes \"#{@locked_spec_with_missing_deps}\" but not some of its dependencies"],
         [@locked_spec_with_invalid_deps, "your lockfile does not satisfy dependencies of \"#{@locked_spec_with_invalid_deps}\""],
+        [@override_changes, "the overrides in your gemfile changed"],
       ].select(&:first).map(&:last).join(", ")
     end
 
@@ -1145,13 +1158,27 @@ module Bundler
       end
     end
 
+    # The lockfile records the Gemfile's overrides, so a change to them is a
+    # change to the lockfile even when every locked version still satisfies
+    # them.
+    def converge_overrides
+      return false unless @locked_gems
+
+      overrides_to_lock.sort != locked_overrides_to_lock.sort
+    end
+
+    def locked_overrides_to_lock
+      Array(@locked_gems&.overrides).map(&:to_lock).uniq
+    end
+
     def converge_overrides_outside_dependencies
       @overrides.each do |override|
-        # :all and metadata overrides are intentionally not pre-unlocked. The
-        # lockfile does not record overrides, so unlocking for them would
-        # re-resolve on every run and reject every frozen install. Install-time
-        # compatibility checks already honor them for locked specs, and they
-        # affect resolution on a fresh lock or when the user runs `bundle update`.
+        # :all and metadata overrides are intentionally not pre-unlocked.
+        # Unlocking for them would re-resolve gems the user did not ask to
+        # move. Install-time compatibility checks already honor them for locked
+        # specs, and they affect resolution on a fresh lock or when the user
+        # runs `bundle update`. Changing one still rewrites the OVERRIDES
+        # section (see #converge_overrides).
         next unless override.target.is_a?(String) && override.field == :version
 
         name = override.target

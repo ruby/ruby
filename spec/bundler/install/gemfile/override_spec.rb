@@ -231,14 +231,115 @@ RSpec.describe "override DSL" do
   end
 
   context "lockfile contents" do
-    it "does not record the override directive in Gemfile.lock" do
+    it "records every override in a sorted OVERRIDES section, one line per field" do
       install_gemfile <<-G
         source "https://gem.repo1"
-        override "myrack", version: "= 0.9.1"
+        override :all, required_ruby_version: :ignore_upper
+        override "myrack", from: "myrack_middleware", to: nil
+        override "rails", version: ">=3", required_rubygems_version: nil
+        gem "myrack_middleware"
+      G
+
+      expect(lockfile).to include(<<~L)
+        OVERRIDES
+          "myrack", from: "myrack_middleware", to: nil
+          "rails", required_rubygems_version: nil
+          "rails", version: ">= 3"
+          :all, required_ruby_version: :ignore_upper
+      L
+    end
+
+    it "writes no OVERRIDES section when the Gemfile has no overrides" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
         gem "myrack"
       G
 
-      expect(lockfile).not_to match(/override/i)
+      expect(lockfile).not_to include("OVERRIDES")
+    end
+
+    it "records an added override without moving locked versions, and drops it when removed" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+      expect(lockfile).to include("myrack (1.0.0)")
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", required_ruby_version: :ignore_upper
+        gem "myrack"
+      G
+      expect(lockfile).to include("OVERRIDES\n  \"myrack\", required_ruby_version: :ignore_upper\n")
+      expect(lockfile).to include("myrack (1.0.0)")
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+      expect(lockfile).not_to include("OVERRIDES")
+      expect(lockfile).to include("myrack (1.0.0)")
+    end
+
+    it "treats equivalent requirement spellings as the same override" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", version: ">=0.9.1"
+        gem "myrack"
+      G
+      locked = lockfile
+
+      gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", version: ">= 0.9.1"
+        gem "myrack"
+      G
+
+      bundle :install, env: { "BUNDLE_FROZEN" => "true" }
+      expect(lockfile).to eq(locked)
+    end
+
+    it "refuses a frozen install when an override changed, and names it" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", required_ruby_version: :ignore_upper
+        gem "myrack"
+      G
+
+      gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", required_ruby_version: nil
+        gem "myrack"
+      G
+
+      bundle :install, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+      expect(err).to include("The overrides in your gemfile changed, but the lockfile can't be updated because frozen mode is set")
+      expect(err).to include(%(You have added to the Gemfile:\n* override "myrack", required_ruby_version: nil))
+      expect(err).to include(%(You have deleted from the Gemfile:\n* override "myrack", required_ruby_version: :ignore_upper))
+    end
+
+    context "with a lockfile written before Bundler recorded overrides" do
+      before do
+        install_gemfile <<-G
+          source "https://gem.repo1"
+          override "myrack", required_ruby_version: :ignore_upper
+          gem "myrack"
+        G
+
+        lockfile(lockfile.sub(/^OVERRIDES\n(  .*\n)+\n/, ""))
+        expect(lockfile).not_to include("OVERRIDES")
+      end
+
+      it "adds the section on a regular install" do
+        bundle :install
+        expect(lockfile).to include("OVERRIDES\n  \"myrack\", required_ruby_version: :ignore_upper\n")
+      end
+
+      it "refuses a frozen install and names the missing overrides" do
+        bundle :install, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+        expect(err).to include("The overrides in your gemfile changed, but the lockfile can't be updated because frozen mode is set")
+        expect(err).to include(%(You have added to the Gemfile:\n* override "myrack", required_ruby_version: :ignore_upper))
+      end
     end
   end
 
@@ -762,7 +863,8 @@ RSpec.describe "override DSL" do
       G
 
       bundle :install, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
-      expect(err).to include("The dependencies in your gemfile changed, but the lockfile can't be updated because frozen mode is set")
+      expect(err).to include("The dependencies in your gemfile changed, the overrides in your gemfile changed, but the lockfile can't be updated because frozen mode is set")
+      expect(err).to include(%(You have added to the Gemfile:\n* override "b", from: "a", to: nil))
     end
 
     it "refuses a frozen install when the override was removed without updating the lockfile" do
