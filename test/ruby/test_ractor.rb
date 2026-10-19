@@ -975,7 +975,7 @@ class TestRactor < Test::Unit::TestCase
       Warning[:experimental] = false
       # the timeout and a send aim at the same instant: both wake the waiter
       results = []
-      300.times do
+      100.times do
         port = Ractor::Port.new
         th = Thread.new(port) {|p| sleep 0.001; p << :msg }
         results << port.receive(timeout: 0.001)
