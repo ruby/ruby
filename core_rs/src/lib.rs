@@ -20,6 +20,9 @@
 #![cfg_attr(not(test), no_std)]
 #![deny(unsafe_op_in_unsafe_fn)]
 
+extern crate alloc as std_alloc;
+
+pub mod alloc;
 pub mod complex;
 pub mod ffi;
 pub mod re;

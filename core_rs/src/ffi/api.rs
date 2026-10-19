@@ -83,4 +83,12 @@ unsafe extern "C" {
     pub fn rb_hash_aref(hash: VALUE, key: VALUE) -> VALUE;
     /// `VALUE rb_hash_aset(VALUE hash, VALUE key, VALUE val)`
     pub fn rb_hash_aset(hash: VALUE, key: VALUE, val: VALUE) -> VALUE;
+
+    // ---- memory: include/ruby/internal/xmalloc.h ----
+    /// `void *ruby_xmalloc(size_t size)`
+    pub fn ruby_xmalloc(size: usize) -> *mut core::ffi::c_void;
+    /// `void *ruby_xrealloc(void *ptr, size_t newsiz)`
+    pub fn ruby_xrealloc(ptr: *mut core::ffi::c_void, newsiz: usize) -> *mut core::ffi::c_void;
+    /// `void ruby_xfree(void *ptr)`
+    pub fn ruby_xfree(ptr: *mut core::ffi::c_void);
 }

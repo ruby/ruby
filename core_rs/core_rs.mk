@@ -10,6 +10,7 @@
 
 # Keep in sync with core_rs/src/.
 CORE_RS_SRCS = $(srcdir)/core_rs/src/lib.rs \
+	$(srcdir)/core_rs/src/alloc.rs \
 	$(srcdir)/core_rs/src/complex.rs \
 	$(srcdir)/core_rs/src/ffi/mod.rs \
 	$(srcdir)/core_rs/src/ffi/api.rs \
