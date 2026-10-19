@@ -857,11 +857,11 @@ fundamental_encoding_p(rb_encoding *enc)
 # define READDIR(dir, enc) rb_w32_readdir((dir), (enc))
 # define READDIR_NOGVL READDIR
 #else
-NORETURN(static void *sys_failure(void *function));
+NORETURN(static void *readdir_failure(void *err));
 static void *
-sys_failure(void *function)
+readdir_failure(void *err)
 {
-    rb_sys_fail(function);
+    rb_syserr_fail((int)(VALUE)err, "readdir");
 }
 
 static void *
@@ -869,8 +869,9 @@ nogvl_readdir(void *dir)
 {
     rb_errno_set(0);
     if ((dir = readdir(dir)) == NULL) {
-        if (rb_errno())
-            rb_thread_call_with_gvl(sys_failure, (void *)"readdir");
+        int e = rb_errno();
+        if (e)
+            rb_thread_call_with_gvl(readdir_failure, (void *)(VALUE)e);
     }
     return dir;
 }
