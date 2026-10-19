@@ -2215,12 +2215,6 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
 
     int fd = io->fd;
 
-    // `errno` is only valid when there is an actual error - but we can't
-    // extract that from the return value of `func` alone, so we clear any
-    // prior `errno` value here so that we can later check if it was set by
-    // `func` or not (as opposed to some previously set value).
-    errno = 0;
-
     struct rb_io_blocking_operation blocking_operation = {
         .ec = ec,
         .scheduler_interrupt_target = Qnil,
@@ -2233,6 +2227,11 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
             volatile enum ruby_tag_type saved_state = state; /* for BLOCKING_REGION */
           retry:
             BLOCKING_REGION(th, {
+                // `errno` is only valid when there is an actual error - but we can't
+                // extract that from the return value of `func` alone, so we clear any
+                // prior `errno` value here so that we can later check if it was set by
+                // `func` or not (as opposed to some previously set value).
+                errno = 0;
                 val = func(data1);
                 saved_errno = errno;
             }, ubf_select, th, FALSE);
