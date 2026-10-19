@@ -369,10 +369,19 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 #define FMT_LONG(def_pad, def_prec, val) \
 		do { \
 			long v = (val); \
+			const char pad = (padding == '0' || (!padding && (def_pad) == '0')) ? '0' : ' '; \
 			precision = FMT_PRECISION(def_prec); \
-			NEEDS(max(precision, long_width(v))); \
-			s = format_long(s, v, precision, \
-					(padding == '0' || (!padding && (def_pad) == '0')) ? '0' : ' '); \
+			if (precision == 2 && 0 <= v && v < 100) { \
+				/* most fields are two digits, like %m, %d, %H, %M and %S */ \
+				NEEDS(2); \
+				s[0] = v < 10 ? pad : (char)('0' + v / 10); \
+				s[1] = (char)('0' + v % 10); \
+				s += 2; \
+			} \
+			else { \
+				NEEDS(max(precision, long_width(v))); \
+				s = format_long(s, v, precision, pad); \
+			} \
 		} while (0)
 #define STRFTIME(fmt) \
 		do { \
