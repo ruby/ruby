@@ -563,6 +563,19 @@ method does and why you would want to use it.  Ideally, this
 is a single sentence, but for more complex methods it may require
 an entire paragraph.
 
+Consider mentioning the return value first,
+especially if there are associated conditionals:
+
+> Returns the integer permissions for the entry at the path in `self`
+> if the entry exists and is readable by others;
+> otherwise, returns `nil`:
+
+Not:
+
+> If the entry at the path in `self` exists and is readable by others,
+> returns the integer permissions for the entry;
+> otherwise, returns `nil`:
+
 For `Array#count`, the synopsis is:
 
 > Returns a count of specified elements.

@@ -321,7 +321,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_invalid_source_no_memory_leak
     # [Bug #21394]
-    assert_no_memory_leak(["-rtempfile"], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true)
+    assert_no_memory_leak(["-rtempfile"], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true, samples: 2..100)
       code = proc do |t|
         RubyVM::InstructionSequence.new(nil)
       rescue TypeError
@@ -329,9 +329,8 @@ class TestISeq < Test::Unit::TestCase
         raise "TypeError was not raised during RubyVM::InstructionSequence.new"
       end
 
-      10.times(&code)
     begin;
-      1_000_000.times(&code)
+      10_000.times(&code)
     end;
 
     # [Bug #21394]
@@ -985,10 +984,10 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_loading_kwargs_memory_leak
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true)
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 5)
       a = RubyVM::InstructionSequence.compile("foo(bar: :baz)").to_binary
     begin;
-      1_000_000.times do
+      200_000.times do
         RubyVM::InstructionSequence.load_from_binary(a)
       end
     end;

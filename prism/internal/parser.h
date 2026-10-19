@@ -715,8 +715,22 @@ struct pm_parser_t {
     /* The current local scope. */
     pm_scope_t *current_scope;
 
+    /*
+     * Scopes that have been popped, kept for reuse by the next push. Scopes
+     * are allocated from the metadata arena, so they are never freed
+     * individually.
+     */
+    pm_scope_t *free_scopes;
+
     /* The current parsing context. */
     pm_context_node_t *current_context;
+
+    /*
+     * Context nodes that have been popped, kept for reuse by the next push.
+     * Context nodes are allocated from the metadata arena, so they are never
+     * freed individually.
+     */
+    pm_context_node_t *free_contexts;
 
     /*
      * The encoding functions for the current file is attached to the parser as
@@ -980,5 +994,11 @@ void pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *sourc
  * parser.
  */
 void pm_parser_cleanup(pm_parser_t *parser);
+
+/*
+ * Returns true if the bytes between start and end spell a keyword, using the
+ * same lookup that the lexer does.
+ */
+bool pm_keyword_p(const uint8_t *start, const uint8_t *end);
 
 #endif

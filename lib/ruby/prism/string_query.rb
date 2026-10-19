@@ -11,6 +11,7 @@ module Ruby::Prism
     #    def self.local?: (String string) -> bool
     #    def self.constant?: (String string) -> bool
     #    def self.method_name?: (String string) -> bool
+    #    def self.keyword?: (String string) -> bool
 
     # The string that this query is wrapping.
     attr_reader :string #: String
@@ -41,6 +42,13 @@ module Ruby::Prism
     #: () -> bool
     def method_name?
       StringQuery.method_name?(string)
+    end
+
+    # Whether or not this string is a valid keyword.
+    #
+    #: () -> bool
+    def keyword?
+      StringQuery.keyword?(string)
     end
   end
 end

@@ -204,7 +204,7 @@ module EnvUtil
         Process.wait(pid, Process::WNOHANG) rescue nil
         break
       end
-      if signals.empty? or !reprieve
+      if signals.empty? or !reprieve or dumped
         Process.wait(pid)
       else
         begin

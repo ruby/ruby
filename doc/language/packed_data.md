@@ -855,7 +855,7 @@ for one byte in the input or output string.
     "\x00\x02".unpack("CCXC") # => [0, 2, 2]
     ```
 
-  Cannot to move to outside the string:
+    Cannot to move to outside the string:
 
     ```ruby
     [0, 1, 2].pack("CCX3C")   # Raises ArgumentError.

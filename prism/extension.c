@@ -1332,18 +1332,18 @@ parse_stream_fgets(char *string, int size, void *stream) {
     }
 
     const char *cstr = RSTRING_PTR(line);
-    long length = RSTRING_LEN(line);
+    size_t length = (size_t) RSTRING_LEN(line);
 
     /*
      * Defensively clamp the copy. A misbehaving `gets` may ignore the limit
      * entirely and return an arbitrarily long string; we must never write past
      * the caller's buffer. One byte is reserved for the NUL terminator.
      */
-    if (length > (long) (size - 1)) {
-        length = (long) (size - 1);
+    if (length > (size_t) (size - 1)) {
+        length = (size_t) (size - 1);
     }
 
-    memcpy(string, cstr, (size_t) length);
+    memcpy(string, cstr, length);
     string[length] = '\0';
 
     return string;
@@ -1678,6 +1678,20 @@ string_query_method_name_p(VALUE self, VALUE string) {
     return string_query(pm_string_query_method_name(source, RSTRING_LEN(string), rb_enc_get(string)->name));
 }
 
+/**
+ * :markup: markdown
+ * call-seq:
+ *   keyword?(string) -> bool
+ *
+ * Returns true if the string is a valid keyword, such as `if`, `defined?`, or
+ * `__FILE__`.
+ */
+static VALUE
+string_query_keyword_p(VALUE self, VALUE string) {
+    const uint8_t *source = (const uint8_t *) check_string(string);
+    return string_query(pm_string_query_keyword(source, RSTRING_LEN(string), rb_enc_get(string)->name));
+}
+
 /******************************************************************************/
 /* Initialization of the extension                                            */
 /******************************************************************************/
@@ -1703,7 +1717,7 @@ Init_prism(void) {
     rb_ext_ractor_safe(true);
 #endif
 
-    rb_cPrism = rb_define_module_under(rb_define_module("Ruby"), "Prism");
+    VALUE mRuby = rb_define_module("Ruby"); rb_cPrism = rb_define_module_under(mRuby, "Prism");
     rb_cPrismNode = rb_define_class_under(rb_cPrism, "Node", rb_cObject);
     rb_cPrismSource = rb_define_class_under(rb_cPrism, "Source", rb_cObject);
     rb_cPrismToken = rb_define_class_under(rb_cPrism, "Token", rb_cObject);
@@ -1778,6 +1792,7 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrismStringQuery, "local?", string_query_local_p, 1);
     rb_define_singleton_method(rb_cPrismStringQuery, "constant?", string_query_constant_p, 1);
     rb_define_singleton_method(rb_cPrismStringQuery, "method_name?", string_query_method_name_p, 1);
+    rb_define_singleton_method(rb_cPrismStringQuery, "keyword?", string_query_keyword_p, 1);
 
     Init_prism_api_node();
 }

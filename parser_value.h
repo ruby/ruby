@@ -103,14 +103,24 @@ typedef unsigned LONG_LONG ID;
 # error ---->> ruby requires sizeof(void*) == sizeof(long) or sizeof(LONG_LONG) to be compiled. <<----
 #endif
 
+#if defined(SIZEOF_RB_LEN_T) && SIZEOF_RB_LEN_T > SIZEOF_LONG
+# include <stdint.h>
+typedef int64_t rb_len_t;
+typedef uint64_t rb_ulen_t;
+# define PRI_LEN_PREFIX PRI_64_PREFIX
+# define RB_LEN_MAX INT64_MAX
+# define RB_LEN_MIN INT64_MIN
+# define RB_ULEN_MAX UINT64_MAX
+#else
 typedef long rb_len_t;
 typedef unsigned long rb_ulen_t;
-#ifndef SIZEOF_RB_LEN_T
-# define SIZEOF_RB_LEN_T SIZEOF_LONG
+# ifndef SIZEOF_RB_LEN_T
+#  define SIZEOF_RB_LEN_T SIZEOF_LONG
+# endif
+# define PRI_LEN_PREFIX "l"
+# define RB_LEN_MAX LONG_MAX
+# define RB_LEN_MIN LONG_MIN
+# define RB_ULEN_MAX ULONG_MAX
 #endif
-#define PRI_LEN_PREFIX "l"
-#define RB_LEN_MAX LONG_MAX
-#define RB_LEN_MIN LONG_MIN
-#define RB_ULEN_MAX ULONG_MAX
 
 #endif /* EXTERNAL_VALUE_H */

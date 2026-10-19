@@ -1,13 +1,9 @@
-#include "internal.h"
 #include "ruby/ruby.h"
 #include "ruby/assert.h"
 #include "ruby/atomic.h"
 #include "ruby/debug.h"
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/st.h"
-#include "internal/object.h"
-#include "internal/array.h"
-#include "internal/class.h"
 
 #include "ruby/thread.h"
 #include "gc/gc.h"
@@ -15,6 +11,10 @@
 
 #include <stdbool.h>
 #include <stdarg.h>
+
+// Modular GCs can't include internal headers; this mirrors RCLASS_IS_ROOT
+// from internal/class.h.
+#define WBCHECK_RCLASS_IS_ROOT FL_USER0
 
 // Debug output control
 static bool wbcheck_debug_enabled = false;
@@ -234,6 +234,7 @@ typedef struct {
     wbcheck_object_list_t *weak_references; // Objects holding weak references, found during marking
     wbcheck_phase_t phase;   // Current GC phase
     bool gc_enabled;         // Whether GC is allowed to run
+    bool user_gc_disabled;   // Whether GC was disabled by the user (GC.disable)
     bool gc_stress;          // GC stress mode (run GC on every allocation)
     size_t gc_threshold;     // Trigger GC when object count reaches this
     size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
@@ -374,7 +375,7 @@ wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_
         // Built-in immortal classes can be assigned via RBASIC_SET_CLASS_RAW,
         // which bypasses the write barrier. They're pinned as VM roots and
         // can never be collected, so a missing WB to them is harmless.
-        if (RB_TYPE_P(current_ref, T_CLASS) && FL_TEST_RAW(current_ref, RCLASS_IS_ROOT)) {
+        if (RB_TYPE_P(current_ref, T_CLASS) && FL_TEST_RAW(current_ref, WBCHECK_RCLASS_IS_ROOT)) {
             continue;
         }
 
@@ -453,12 +454,6 @@ rb_gc_impl_objspace_alloc(void)
     rb_wbcheck_objspace_t *objspace = calloc(1, sizeof(rb_wbcheck_objspace_t));
     if (!objspace) rb_bug("wbcheck: failed to allocate objspace");
 
-    objspace->object_table = st_init_numtable();
-    if (!objspace->object_table) {
-        free(objspace);
-        rb_bug("wbcheck: failed to create object table");
-    }
-
     objspace->objects_to_capture = wbcheck_object_list_init();  // Initialize empty list
     objspace->objects_to_verify = wbcheck_object_list_init();   // Initialize empty list
     objspace->current_refs = NULL;     // No current refs initially
@@ -482,7 +477,13 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 {
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
 
-    // Object table is already initialized in objspace_alloc
+    // st_init_numtable allocates through ruby_xmalloc, which needs the objspace
+    // to exist, so the object table can't be created in objspace_alloc.
+    objspace->object_table = st_init_numtable();
+    if (!objspace->object_table) {
+        rb_bug("wbcheck: failed to create object table");
+    }
+
     // Set up global objspace pointer for obj_slot_size function
     wbcheck_global_objspace = objspace;
 
@@ -617,6 +618,29 @@ rb_gc_impl_gc_enabled_p(void *objspace_ptr)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     return objspace->gc_enabled;
+}
+
+bool
+rb_gc_impl_user_gc_disabled_set(void *objspace_ptr, bool disable)
+{
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    const bool was = objspace->user_gc_disabled;
+    objspace->user_gc_disabled = disable;
+    objspace->gc_enabled = !disable;
+    return was;
+}
+
+bool
+rb_gc_impl_user_gc_disabled_p(void *objspace_ptr)
+{
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    return objspace->user_gc_disabled;
+}
+
+void
+rb_gc_impl_gc_rest(void *objspace_ptr)
+{
+    /* wbcheck GCs are stop-the-world: no incremental state to finish. */
 }
 
 void
@@ -1470,6 +1494,90 @@ rb_gc_impl_each_objects(void *objspace_ptr, int (*callback)(void *, void *, size
     }
 
     wbcheck_object_list_free(snapshot);
+}
+
+static int
+wbcheck_each_objects_shareable_i(void *start, void *end, size_t stride, void *d)
+{
+    struct { int (*func)(void *, void *, size_t, void *); void *data; } *args = d;
+    if (RB_FL_TEST_RAW((VALUE)start, RUBY_FL_SHAREABLE)) {
+        return args->func(start, end, stride, args->data);
+    }
+    return 0;
+}
+
+void
+rb_gc_impl_each_objects_shareable(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data)
+{
+    struct { int (*func)(void *, void *, size_t, void *); void *data; } args = { callback, data };
+    rb_gc_impl_each_objects(objspace_ptr, wbcheck_each_objects_shareable_i, &args);
+}
+
+void
+rb_gc_impl_each_objects_foreign(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data)
+{
+    /* A single objspace has no foreign objects. */
+}
+
+bool
+rb_gc_impl_multi_objspace_p(void)
+{
+    return false;
+}
+
+void
+rb_gc_impl_objspace_retire_gc(void *objspace_ptr)
+{
+}
+
+bool
+rb_gc_impl_during_global_gc_p(void *objspace_ptr)
+{
+    /* Snapshots and full GCs both run under the VM lock after rb_gc_vm_barrier(),
+     * so every other Ractor is stopped whenever we are out of the mutator phase. */
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    return objspace->phase != WBCHECK_PHASE_MUTATOR;
+}
+
+bool
+rb_gc_impl_during_postmortem_p(void *objspace_ptr)
+{
+    return false;
+}
+
+bool
+rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj)
+{
+    return false;
+}
+
+bool
+rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
+{
+    return true;
+}
+
+size_t
+rb_gc_impl_heap_page_count(void *objspace_ptr)
+{
+    return 0;
+}
+
+void
+rb_gc_impl_objspace_absorb(void *dst_ptr, void *src_ptr)
+{
+}
+
+void
+rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
+{
+}
+
+int32_t
+rb_gc_impl_zjit_writebarrier_required_offset(void)
+{
+    /* ZJIT must always call rb_gc_writebarrier() so wbcheck sees every barrier. */
+    return -1;
 }
 
 void

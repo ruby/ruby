@@ -1812,11 +1812,11 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_kwarg_eval_memory_leak
-    assert_no_memory_leak([], "", <<~RUBY, rss: true, limit: 1.2)
+    assert_no_memory_leak([], "", <<~RUBY, rss: true, limit: 1.2, samples: 5)
       obj = Object.new
       def obj.test(**kwargs) = nil
 
-      100_000.times do
+      20_000.times do
         eval("obj.test(foo: 123)")
       end
     RUBY

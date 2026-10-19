@@ -60,4 +60,15 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_constant(const uint8_t
  */
 PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint8_t *source, size_t length, const char *encoding_name) PRISM_NONNULL(1, 3);
 
+/**
+ * Check that the slice is a keyword.
+ *
+ * @param source The source to check.
+ * @param length The length of the source.
+ * @param encoding_name The name of the encoding of the source.
+ * @returns PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
+ *   the query is false, and PM_STRING_QUERY_ERROR if the encoding was invalid.
+ */
+PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_keyword(const uint8_t *source, size_t length, const char *encoding_name) PRISM_NONNULL(1, 3);
+
 #endif

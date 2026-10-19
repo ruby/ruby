@@ -235,6 +235,7 @@ releases.
 ### The following bundled gems are promoted from default gems.
 
 * prism 1.9.0
+  * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
 * tsort 0.2.0
 * win32-registry 0.1.2
 
@@ -270,8 +271,8 @@ They are still available on rubygems.org and can be installed with
 * io-console 0.9.4
   * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2], [v0.9.3][io-console-v0.9.3], [v0.9.4][io-console-v0.9.4]
 * io-wait 999.999.999
-* ipaddr 1.2.9
-  * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
+* ipaddr 1.3.0
+  * 1.2.8 to [v1.2.9][ipaddr-v1.2.9], [v1.3.0][ipaddr-v1.3.0]
 * json 3.1.0
   * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0], [v2.21.0][json-v2.21.0], [v2.21.2][json-v2.21.2], [v3.0.0.rc1][json-v3.0.0.rc1], [v3.0.0][json-v3.0.0]
 * net-http 0.10.0
@@ -319,7 +320,7 @@ They are still available on rubygems.org and can be installed with
 * rss 0.3.3
   * 0.3.2 to [0.3.3][rss-0.3.3]
 * net-imap 0.6.8
-  * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4], [v0.6.4.1][net-imap-v0.6.4.1], [v0.6.5][net-imap-v0.6.5], [v0.6.6][net-imap-v0.6.6], [v0.6.7][net-imap-v0.6.7]
+  * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4], [v0.6.4.1][net-imap-v0.6.4.1], [v0.6.5][net-imap-v0.6.5], [v0.6.6][net-imap-v0.6.6], [v0.6.7][net-imap-v0.6.7], [v0.6.8][net-imap-v0.6.8]
 * net-smtp 0.5.2
   * 0.5.1 to [v0.5.2][net-smtp-v0.5.2]
 * rbs 4.2.0
@@ -392,6 +393,10 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   component is still limited to 255 characters, and a child process still
   starts with the `MAX_PATH` limited current directory. [[Bug #18947]]
 
+* On 64-bit Windows with MSVC (mswin), String, Array and MatchData can now be
+  2GiB or longer.  Their lengths used to be `long`, which is 32 bits there.
+  [[Feature #22400]]
+
 * Building Ruby with MSVC now requires Visual Studio 2017 version 15.8
   (`_MSC_VER` 1915) or later.
 
@@ -429,12 +434,12 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   still refer to unshareable objects through the members of `rb_io_t`.
 
 * `Random.urandom` now raises `RangeError` for every size too large for a
-  `long`, as `Random#bytes` does.  A size that still fit in an `unsigned long`
+  String, as `Random#bytes` does.  A size that still fit in an `unsigned long`
   used to raise `ArgumentError`. [[Feature #22400]]
 
 * `Struct#[]` and `Struct#[]=` now raise `IndexError` for every out-of-range
-  Integer index that fits in a `long`.  An index past the `int` range used to
-  raise `RangeError`. [[Feature #22400]]
+  Integer index within the range of Array indices.  An index past the `int`
+  range used to raise `RangeError`. [[Feature #22400]]
 
 ## Stdlib compatibility issues
 
@@ -506,11 +511,26 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 * `rb_len_t` and `rb_ulen_t` are added as the types of the lengths and indices
   of String, Array and MatchData, with `LEN2NUM`, `NUM2LEN`, `ULEN2NUM`,
   `rb_len2int`, `PRIdLEN` and its siblings, `RB_LEN_MAX`, `RB_LEN_MIN`,
-  `RB_ULEN_MAX`, `SIZEOF_RB_LEN_T` and `HAVE_RB_LEN_T`.  `RbConfig::SIZEOF["rb_len_t"]`
-  gives its size to an extconf.rb.  They are `long` on every platform for now, and
-  the C API that carries such lengths, such as `RSTRING_LEN` and
-  `rb_range_beg_len`, uses them.  A later change will makes them 64 bits on mswin,
-  so extensions should keep these lengths in `rb_len_t`. [[Feature #22400]]
+  `RB_ULEN_MAX`, `SIZEOF_RB_LEN_T` and `HAVE_RB_LEN_T`.
+  `RbConfig::SIZEOF["rb_len_t"]` gives its size to an extconf.rb.  They are
+  `long`, except on 64-bit mswin, where they are 64 bits.  The C API that
+  carries such lengths, such as `RSTRING_LEN` and `rb_range_beg_len`, uses
+  them.
+  [[Feature #22400]]
+
+* On 64-bit mswin this changes the ABI, so extensions have to be rebuilt.  An
+  extension that passes a `long *` to an output parameter such as
+  `rb_range_beg_len` no longer compiles there, and one that keeps a length in
+  `long` truncates it at 2GiB.  Keep such lengths in `rb_len_t`, or convert
+  them with `rb_len2long`.  An extension that also supports older versions can
+  check `HAVE_RB_LEN_T` and fall back to `typedef long rb_len_t`.
+  [[Feature #22400]]
+
+* On mswin, extensions are now built with incompatible pointer types
+  (warning C4133) as errors.  Besides a `long *` passed where an
+  `rb_len_t *` is expected, this rejects any other mismatched pointer that
+  used to compile with a warning.
+  [[Feature #22400]]
 
 * `rb_len2long` is added to convert an `rb_len_t` to `long`, raising
   `RangeError` via the new `rb_out_of_long` when it does not fit, for
@@ -637,12 +657,48 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ## JIT
 
+### ZJIT
+
+* Status
+    * ZJIT is now faster than YJIT on many benchmarks, but we expect that
+      ZJIT can be still slower than YJIT on larger benchmarks or applications
+      as of Ruby 4.1.0 preview releases. Stay tuned for the Ruby 4.1.0 release.
+* Major optimizations
+    * Method inlining: small Ruby methods, including methods that yield to
+      a block, are inlined into their callers, so that the optimizer can see
+      across method boundaries.
+    * Lightweight frames: method calls in JIT code no longer write a full
+      VM control frame. Frame metadata used by backtraces and GC is
+      materialized only when needed.
+    * Optimization pass: a new linear scan register allocator, load-store
+      optimization, more constant folding, and redundant guard elimination.
+    * GC fastpath: allocation of objects is inlined into JIT code, skipping
+      a call into the GC on the fast path.
+* More Ruby code is compiled
+    * Calls with blocks or `&block` arguments, `super`, splats, keyword
+      arguments, `...` forwarding, and post-required parameters.
+    * Specialized code for many core methods, e.g. `Float` arithmetic,
+      `Array#[]`, `Array#length`, `Array#empty?`, `Integer#[]`,
+      `String#byteslice`, `String#to_sym`, `Class#allocate`, and `new` on
+      `Struct` classes.
+    * Instance variable reads and shareable constants are now compiled
+      while multiple Ractors are running.
+* Command-line options
+    * `--zjit-stats=FILE` writes stats as JSON when `FILE` ends with `.json`.
+* Ruby API
+    * `RubyVM::ZJIT.exit_locations` and `RubyVM::ZJIT.dump_exit_locations`
+      are removed along with the Stackprof output of `--zjit-trace-exits`.
+
 ### YJIT
 
 * YJIT now supports Windows (mswin) on x64 CPUs.  Configure with
   `win32\configure.bat --enable-yjit`, which requires `rustc` with the
   `x86_64-pc-windows-msvc` target.  Only the release build is supported,
   and MinGW is not.  [[Feature #18439]]
+* Add `RubyVM::YJIT.max_compile_time_ns` and `RubyVM::YJIT.max_compile_time_ns=`
+  to give YJIT a compilation time budget. When `RubyVM::YJIT.total_compile_time_ns`
+  exceeds it, YJIT pauses compilation until the budget is raised, which
+  spreads the warmup overhead over a longer period. [[Feature #22236]]
 
 [Bug #18661]: https://bugs.ruby-lang.org/issues/18661
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
@@ -676,6 +732,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22205]: https://bugs.ruby-lang.org/issues/22205
 [Feature #22226]: https://bugs.ruby-lang.org/issues/22226
 [Feature #22232]: https://bugs.ruby-lang.org/issues/22232
+[Feature #22236]: https://bugs.ruby-lang.org/issues/22236
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
 [Feature #22255]: https://bugs.ruby-lang.org/issues/22255
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
@@ -683,6 +740,9 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22400]: https://bugs.ruby-lang.org/issues/22400
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
+[prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
+[prism-v1.8.1]: https://github.com/ruby/prism/releases/tag/v1.8.1
+[prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
 [RubyGems-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/v4.0.5
 [RubyGems-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/v4.0.6
@@ -737,6 +797,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [io-console-v0.9.3]: https://github.com/ruby/io-console/releases/tag/v0.9.3
 [io-console-v0.9.4]: https://github.com/ruby/io-console/releases/tag/v0.9.4
 [ipaddr-v1.2.9]: https://github.com/ruby/ipaddr/releases/tag/v1.2.9
+[ipaddr-v1.3.0]: https://github.com/ruby/ipaddr/releases/tag/v1.3.0
 [json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
 [json-v2.19.0]: https://github.com/ruby/json/releases/tag/v2.19.0
 [json-v2.19.1]: https://github.com/ruby/json/releases/tag/v2.19.1
@@ -790,6 +851,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [net-imap-v0.6.5]: https://github.com/ruby/net-imap/releases/tag/v0.6.5
 [net-imap-v0.6.6]: https://github.com/ruby/net-imap/releases/tag/v0.6.6
 [net-imap-v0.6.7]: https://github.com/ruby/net-imap/releases/tag/v0.6.7
+[net-imap-v0.6.8]: https://github.com/ruby/net-imap/releases/tag/v0.6.8
 [net-smtp-v0.5.2]: https://github.com/ruby/net-smtp/releases/tag/v0.5.2
 [rbs-v3.10.1]: https://github.com/ruby/rbs/releases/tag/v3.10.1
 [rbs-v3.10.2]: https://github.com/ruby/rbs/releases/tag/v3.10.2

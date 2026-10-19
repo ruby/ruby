@@ -92,13 +92,13 @@ class Array
   #   a.sample(4, random: Random.new(1))  # => [6, 10, 9, 2]
   #
   # Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
-  def sample(n = (ary = false), random: Random)
+  def sample(n = (single = true), random: Random)
     if Primitive.mandatory_only?
-      # Primitive.cexpr! %{ rb_ary_sample(self, rb_cRandom, Qfalse, Qfalse) }
       Primitive.ary_sample0
+    elsif single
+      Primitive.ary_sample1(random)
     else
-      # Primitive.cexpr! %{ rb_ary_sample(self, random, n, ary) }
-      Primitive.ary_sample(random, n, ary)
+      Primitive.ary_sample(random, n)
     end
   end
 
