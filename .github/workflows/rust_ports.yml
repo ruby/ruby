@@ -23,7 +23,45 @@ permissions:
   contents: read
 
 jobs:
+  c-fallback-build-check:
+    name: ubuntu-24.04 (early C fallback compilation)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+      RUBY_DEBUG: ci
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup/ubuntu
+
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
+        with:
+          ruby-version: '3.1'
+          bundler: none
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+          clean: true
+          dummy-files: true
+
+      - name: Configure --without-rust-ports
+        run: ../src/configure -C --disable-install-doc ${ruby_configure_args} --without-rust-ports
+
+      - name: Early C fallback compilation check
+        run: make -j$(nproc) miniruby
+
   rust-ports:
+    needs: [c-fallback-build-check]
     strategy:
       fail-fast: false
       matrix:
@@ -107,6 +145,7 @@ jobs:
   # symbols, and the ledger/inventory checks.  Linux only: the fuzz harness
   # needs GNU or LLVM nm/objcopy (core_rs/fuzz/README.md).
   port-proofs:
+    needs: [c-fallback-build-check]
     name: ubuntu-24.04 (fuzz, exports, ledger)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
