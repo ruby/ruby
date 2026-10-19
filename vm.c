@@ -745,15 +745,11 @@ rb_current_ec_set(rb_execution_context_t *ec)
     ruby_current_ec = ec;
 }
 
-
-#ifdef RB_THREAD_CURRENT_EC_NOINLINE
 rb_execution_context_t *
 rb_current_ec(void)
 {
     return ruby_current_ec;
 }
-
-#endif
 #else
 native_tls_key_t ruby_current_ec_key;
 
