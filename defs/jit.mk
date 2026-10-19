@@ -69,6 +69,8 @@ $(RUST_LIBOBJ): $(RUST_LIB)
 	$(ECHO) 'partial linking $(RUST_LIB) into $@'
 ifneq ($(findstring darwin,$(target_os)),)
 	$(Q) $(CC) -nodefaultlibs -r -o $@ -exported_symbols_list $(RUST_LIB_SYMBOLS) $(RUST_LIB)
+else ifneq ($(findstring mingw,$(target_os)),)
+	$(Q) $(OBJCOPY) --weaken-symbol=lgamma_r $(RUST_LIB) $@
 else
 	$(Q) $(LD) -r -o $@ --whole-archive $(RUST_LIB)
 	-$(Q) $(OBJCOPY) --wildcard --keep-global-symbol='$(SYMBOL_PREFIX)rb_*' $(@)

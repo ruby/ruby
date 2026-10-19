@@ -70,6 +70,7 @@ jobs:
             os: 2022
             test_task: 'check'
             test-all-opts: '--name=!/TestObjSpace#test_reachable_objects_during_iteration/'
+            config_options: '--enable-yjit'
           - msystem: 'CLANGARM64'
             os: 11-arm
             test_task: 'check'
@@ -99,6 +100,7 @@ jobs:
             ${{ env.MINGW_PACKAGE_PREFIX }}-openssl
             ${{ env.MINGW_PACKAGE_PREFIX }}-libyaml
             ${{ env.MINGW_PACKAGE_PREFIX }}-libffi
+            ${{ env.MINGW_PACKAGE_PREFIX }}-rust
 
       - name: Set up env
         id: setup-env
@@ -186,7 +188,7 @@ jobs:
       - name: configure
         run: >
           ../src/configure --disable-install-doc --prefix=/.
-          --build=$CHOST --host=$CHOST --target=$CHOST
+          --build=$CHOST --host=$CHOST --target=$CHOST ${{ matrix.config_options }}
         shell: sh
         env:
           CHOST: ${{ env.MSYS2_ARCH }}-w64-mingw32
