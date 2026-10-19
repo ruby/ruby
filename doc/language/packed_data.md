@@ -834,7 +834,7 @@ for one byte in the input or output string.
 
     ```ruby
     [1, 2].pack("C@0C")     # => "\x02"
-    [1, 2].pack("C!1C")     # => "\x01\x02"
+    [1, 2].pack("C@1C")     # => "\x01\x02"
     [1, 2].pack("C@5C")     # => "\x01\x00\x00\x00\x00\x02"
     [*1..5].pack("CCCC@2C") # => "\x01\x02\x05"
     ```
