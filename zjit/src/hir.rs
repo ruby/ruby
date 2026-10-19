@@ -9423,27 +9423,37 @@ fn add_iseq_to_hir(
                 YARVINSN_splatkw => {
                     let block_val = state.stack_pop()?;
                     let hash = state.stack_pop()?;
-                    // Get profiled type of hash (operand index 0)
-                    let summary = payload.profile.get_operand_types(exit_state.insn_idx)
-                        .and_then(|types| types.first())
-                        .map(|dist| TypeDistributionSummary::new(dist));
-                    let Some(summary) = summary else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SplatKwNotProfiled), recompile: None });
-                        break;  // End the block
-                    };
-                    if !summary.is_monomorphic() {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SplatKwPolymorphic), recompile: None });
-                        break;  // End the block
-                    }
-                    let ty = Type::from_profiled_type(summary.bucket(0));
-                    let obj = if ty.is_subtype(types::NilClass) {
-                        fun.push_insn(block, Insn::GuardType { val: hash, guard_type: types::NilClass, state: exit_id, recompile: None })
-                    } else if ty.is_subtype(types::HashExact) {
-                        fun.push_insn(block, Insn::GuardType { val: hash, guard_type: types::HashExact, state: exit_id, recompile: None })
-                    } else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SplatKwNotNilOrHash), recompile: None });
-                        break;  // End the block
-                    };
+                    // In splatkw insn:
+                    //   if (NIL_P(hash)) {
+                    //       obj = Qnil;
+                    //   }
+                    //   else {
+                    //       obj = rb_to_hash_type(hash);
+                    //   }
+                    // Do the same here except just guard that it's a Hash instead of converting.
+
+                    let is_nil_block = fun.new_block(insn_idx);
+                    let is_not_nil_block = fun.new_block(insn_idx);
+                    let join_block = fun.new_block(insn_idx);
+                    let obj = fun.push_insn(join_block, Insn::Param);
+                    fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+                        val: hash,
+                        expected: types::NilClass,
+                        if_true: BranchEdge { target: is_nil_block, args: vec![] },
+                        if_false: BranchEdge { target: is_not_nil_block, args: vec![] },
+                    })));
+
+                    // is_nil_block
+                    let refined = fun.push_insn(is_nil_block, Insn::RefineType { val: hash, new_type: types::NilClass });
+                    fun.push_insn(is_nil_block, Insn::Jump(BranchEdge { target: join_block, args: vec![refined] }));
+
+                    // is_not_nil_block
+                    let guarded = fun.push_insn(is_not_nil_block, Insn::GuardType { val: hash, guard_type: types::Hash, state: exit_id, recompile: None });
+                    fun.push_insn(is_not_nil_block, Insn::Jump(BranchEdge { target: join_block, args: vec![guarded] }));
+
+                    // join_block
+                    block = join_block;
+
                     state.stack_push(obj);
                     state.stack_push(block_val);
                 }

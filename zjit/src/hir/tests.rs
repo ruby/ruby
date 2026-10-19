@@ -3107,7 +3107,19 @@ pub(crate) mod hir_build_tests {
           v67:BasicObject = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
           Jump bb6(v67, v21)
         bb6(v34:BasicObject, v35:BasicObject):
-          SideExit SplatKwNotProfiled
+          CondBranchHasType v20, NilClass, bb14(), bb15()
+        bb14():
+          v72:NilClass = RefineType v20, NilClass
+          Jump bb16(v72)
+        bb15():
+          v74:Hash = GuardType v20, Hash
+          Jump bb16(v74)
+        bb16(v70:NilClass|Hash):
+          PatchPoint NoEPEscape(test)
+          v79:BasicObject = Send v17, &block, :foo, v18, v29, v70, v34 # SendFallbackReason: Uncategorized(send)
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v79
         ");
     }
 
@@ -4613,7 +4625,7 @@ pub(crate) mod hir_build_tests {
     }
 
     #[test]
-    fn test_splatkw_unprofiled_side_exits() {
+    fn test_splatkw_emits_nil_check_and_hash_guard() {
         eval("
             def foo(**kw, &b) = kw
             def test(**kw, &b) = foo(**kw, &b)
@@ -4678,397 +4690,19 @@ pub(crate) mod hir_build_tests {
           v52:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
           Jump bb6(v52, v13)
         bb6(v19:BasicObject, v20:BasicObject):
-          SideExit SplatKwNotProfiled
-        ");
-    }
-
-    #[test]
-    fn test_splatkw_nil_guards_nil() {
-        eval("
-            def foo(a, ...) = a
-            def test(a, ...) = foo(a, ...)
-            test(1)
-        ");
-        assert_contains_opcode("test", YARVINSN_splatkw);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:ArrayExact = LoadField v2, :*@0x1001
-          v5:BasicObject = LoadField v2, :**@0x1002
-          v6:BasicObject = LoadField v2, :&@0x1003
-          v7:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6, v7)
-        bb2():
-          EntryPoint JIT(0)
-          v10:BasicObject = LoadArg :self@0
-          v11:BasicObject = LoadArg :a@1
-          v12:BasicObject = LoadArg :*@2
-          v13:BasicObject = LoadArg :**@3
-          v14:BasicObject = LoadArg :&@4
-          v15:NilClass = Const Value(nil)
-          Jump bb3(v10, v11, v12, v13, v14, v15)
-        bb3(v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:BasicObject, v22:NilClass):
-          v29:ArrayExact = ToArray v19
+          CondBranchHasType v12, NilClass, bb14(), bb15()
+        bb14():
+          v57:NilClass = RefineType v12, NilClass
+          Jump bb16(v57)
+        bb15():
+          v59:Hash = GuardType v12, Hash
+          Jump bb16(v59)
+        bb16(v55:NilClass|Hash):
           PatchPoint NoEPEscape(test)
-          v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
-          v38:CBool = IsBlockParamModified v37
-          CondBranch v38, bb4(), bb5()
-        bb4():
-          v40:BasicObject = LoadField v36, :&@0x1005
-          Jump bb6(v40, v40)
-        bb5():
-          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64[1] = Const CInt64(1)
-          v44:CInt64 = IntAnd v42, v43
-          v45:CBool = IsBitEqual v44, v43
-          CondBranch v45, bb7(), bb8()
-        bb7():
-          v47:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v47, v21)
-        bb8():
-          v49:CInt64[0] = Const CInt64(0)
-          v50:CBool = IsBitEqual v42, v49
-          CondBranch v50, bb9(), bb10()
-        bb9():
-          v52:NilClass = Const Value(nil)
-          Jump bb6(v52, v21)
-        bb10():
-          v54:CInt64[255] = Const CInt64(255)
-          v55:CInt64 = IntAnd v42, v54
-          v56:CInt64[12] = Const CInt64(12)
-          v57:CBool = IsBitEqual v55, v56
-          CondBranch v57, bb11(), bb12()
-        bb12():
-          v59:CUInt64 = LoadField v42, :RBASIC_FLAGS@0x1004
-          v60:CUInt64[31] = Const CUInt64(31)
-          v61:CInt64 = IntAnd v59, v60
-          v62:CUInt64[20] = Const CUInt64(20)
-          v63:CBool = IsBitEqual v61, v62
-          CondBranch v63, bb11(), bb13()
-        bb11():
-          v65:BasicObject = SymToProc :&, l0, EP@4
-          Jump bb6(v65, v65)
-        bb13():
-          v67:BasicObject = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          Jump bb6(v67, v21)
-        bb6(v34:BasicObject, v35:BasicObject):
-          v70:NilClass = GuardType v20, NilClass
-          PatchPoint NoEPEscape(test)
-          v74:BasicObject = Send v17, &block, :foo, v18, v29, v70, v34 # SendFallbackReason: Uncategorized(send)
+          v64:BasicObject = Send v11, &block, :foo, v55, v19 # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v74
-        ");
-    }
-
-    #[test]
-    fn test_splatkw_empty_hash_guards_hash() {
-        eval("
-            def foo(**kw, &b) = kw
-            def test(**kw, &b) = foo(**kw, &b)
-            test(&proc {})
-        ");
-        assert_contains_opcode("test", YARVINSN_splatkw);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :kw@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :kw@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
-          v23:CBool = IsBlockParamModified v22
-          CondBranch v23, bb4(), bb5()
-        bb4():
-          v25:BasicObject = LoadField v21, :b@0x1003
-          Jump bb6(v25, v25)
-        bb5():
-          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:CInt64[1] = Const CInt64(1)
-          v29:CInt64 = IntAnd v27, v28
-          v30:CBool = IsBitEqual v29, v28
-          CondBranch v30, bb7(), bb8()
-        bb7():
-          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v32, v13)
-        bb8():
-          v34:CInt64[0] = Const CInt64(0)
-          v35:CBool = IsBitEqual v27, v34
-          CondBranch v35, bb9(), bb10()
-        bb9():
-          v37:NilClass = Const Value(nil)
-          Jump bb6(v37, v13)
-        bb10():
-          v39:CInt64[255] = Const CInt64(255)
-          v40:CInt64 = IntAnd v27, v39
-          v41:CInt64[12] = Const CInt64(12)
-          v42:CBool = IsBitEqual v40, v41
-          CondBranch v42, bb11(), bb12()
-        bb12():
-          v44:CUInt64 = LoadField v27, :RBASIC_FLAGS@0x1002
-          v45:CUInt64[31] = Const CUInt64(31)
-          v46:CInt64 = IntAnd v44, v45
-          v47:CUInt64[20] = Const CUInt64(20)
-          v48:CBool = IsBitEqual v46, v47
-          CondBranch v48, bb11(), bb13()
-        bb11():
-          v50:BasicObject = SymToProc :b, l0, EP@3
-          Jump bb6(v50, v50)
-        bb13():
-          v52:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          Jump bb6(v52, v13)
-        bb6(v19:BasicObject, v20:BasicObject):
-          v55:HashExact = GuardType v12, HashExact
-          PatchPoint NoEPEscape(test)
-          v59:BasicObject = Send v11, &block, :foo, v55, v19 # SendFallbackReason: Uncategorized(send)
-          PatchPoint NoEPEscape(test)
-          CheckInterrupts
-          Return v59
-        ");
-    }
-
-    #[test]
-    fn test_splatkw_hash_guards_hash() {
-        eval("
-            def foo(**kw, &b) = kw
-            def test(**kw, &b) = foo(**kw, &b)
-            test(a: 1, &proc {})
-        ");
-        assert_contains_opcode("test", YARVINSN_splatkw);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :kw@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :kw@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
-          v23:CBool = IsBlockParamModified v22
-          CondBranch v23, bb4(), bb5()
-        bb4():
-          v25:BasicObject = LoadField v21, :b@0x1003
-          Jump bb6(v25, v25)
-        bb5():
-          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:CInt64[1] = Const CInt64(1)
-          v29:CInt64 = IntAnd v27, v28
-          v30:CBool = IsBitEqual v29, v28
-          CondBranch v30, bb7(), bb8()
-        bb7():
-          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v32, v13)
-        bb8():
-          v34:CInt64[0] = Const CInt64(0)
-          v35:CBool = IsBitEqual v27, v34
-          CondBranch v35, bb9(), bb10()
-        bb9():
-          v37:NilClass = Const Value(nil)
-          Jump bb6(v37, v13)
-        bb10():
-          v39:CInt64[255] = Const CInt64(255)
-          v40:CInt64 = IntAnd v27, v39
-          v41:CInt64[12] = Const CInt64(12)
-          v42:CBool = IsBitEqual v40, v41
-          CondBranch v42, bb11(), bb12()
-        bb12():
-          v44:CUInt64 = LoadField v27, :RBASIC_FLAGS@0x1002
-          v45:CUInt64[31] = Const CUInt64(31)
-          v46:CInt64 = IntAnd v44, v45
-          v47:CUInt64[20] = Const CUInt64(20)
-          v48:CBool = IsBitEqual v46, v47
-          CondBranch v48, bb11(), bb13()
-        bb11():
-          v50:BasicObject = SymToProc :b, l0, EP@3
-          Jump bb6(v50, v50)
-        bb13():
-          v52:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          Jump bb6(v52, v13)
-        bb6(v19:BasicObject, v20:BasicObject):
-          v55:HashExact = GuardType v12, HashExact
-          PatchPoint NoEPEscape(test)
-          v59:BasicObject = Send v11, &block, :foo, v55, v19 # SendFallbackReason: Uncategorized(send)
-          PatchPoint NoEPEscape(test)
-          CheckInterrupts
-          Return v59
-        ");
-    }
-
-    #[test]
-    fn test_splatkw_polymorphic_side_exits() {
-        set_call_threshold(3);
-        eval("
-            def foo(a, ...) = a
-            def test(a, ...) = foo(a, ...)
-            test(1)
-            test(1, b: 2)
-        ");
-        assert_contains_opcode("test", YARVINSN_splatkw);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:ArrayExact = LoadField v2, :*@0x1001
-          v5:BasicObject = LoadField v2, :**@0x1002
-          v6:BasicObject = LoadField v2, :&@0x1003
-          v7:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6, v7)
-        bb2():
-          EntryPoint JIT(0)
-          v10:BasicObject = LoadArg :self@0
-          v11:BasicObject = LoadArg :a@1
-          v12:BasicObject = LoadArg :*@2
-          v13:BasicObject = LoadArg :**@3
-          v14:BasicObject = LoadArg :&@4
-          v15:NilClass = Const Value(nil)
-          Jump bb3(v10, v11, v12, v13, v14, v15)
-        bb3(v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:BasicObject, v22:NilClass):
-          v29:ArrayExact = ToArray v19
-          PatchPoint NoEPEscape(test)
-          v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
-          v38:CBool = IsBlockParamModified v37
-          CondBranch v38, bb4(), bb5()
-        bb4():
-          v40:BasicObject = LoadField v36, :&@0x1005
-          Jump bb6(v40, v40)
-        bb5():
-          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64[1] = Const CInt64(1)
-          v44:CInt64 = IntAnd v42, v43
-          v45:CBool = IsBitEqual v44, v43
-          CondBranch v45, bb7(), bb8()
-        bb7():
-          v47:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v47, v21)
-        bb8():
-          v49:CInt64[0] = Const CInt64(0)
-          v50:CBool = IsBitEqual v42, v49
-          CondBranch v50, bb9(), bb10()
-        bb9():
-          v52:NilClass = Const Value(nil)
-          Jump bb6(v52, v21)
-        bb10():
-          v54:CInt64[255] = Const CInt64(255)
-          v55:CInt64 = IntAnd v42, v54
-          v56:CInt64[12] = Const CInt64(12)
-          v57:CBool = IsBitEqual v55, v56
-          CondBranch v57, bb11(), bb12()
-        bb12():
-          v59:CUInt64 = LoadField v42, :RBASIC_FLAGS@0x1004
-          v60:CUInt64[31] = Const CUInt64(31)
-          v61:CInt64 = IntAnd v59, v60
-          v62:CUInt64[20] = Const CUInt64(20)
-          v63:CBool = IsBitEqual v61, v62
-          CondBranch v63, bb11(), bb13()
-        bb11():
-          v65:BasicObject = SymToProc :&, l0, EP@4
-          Jump bb6(v65, v65)
-        bb13():
-          v67:BasicObject = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          Jump bb6(v67, v21)
-        bb6(v34:BasicObject, v35:BasicObject):
-          SideExit SplatKwPolymorphic
-        ");
-    }
-
-    #[test]
-    fn test_splatkw_with_non_hash_side_exits() {
-        eval("
-            def foo(a:) = a
-            def test(obj, &block) = foo(**obj, &block)
-            obj = Object.new
-            def obj.to_hash = { a: 1 }
-            test(obj) { 2 }
-        ");
-        assert_contains_opcode("test", YARVINSN_splatkw);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :obj@0x1000
-          v4:BasicObject = LoadField v2, :block@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :obj@1
-          v9:BasicObject = LoadArg :block@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
-          v23:CBool = IsBlockParamModified v22
-          CondBranch v23, bb4(), bb5()
-        bb4():
-          v25:BasicObject = LoadField v21, :block@0x1003
-          Jump bb6(v25, v25)
-        bb5():
-          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:CInt64[1] = Const CInt64(1)
-          v29:CInt64 = IntAnd v27, v28
-          v30:CBool = IsBitEqual v29, v28
-          CondBranch v30, bb7(), bb8()
-        bb7():
-          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v32, v13)
-        bb8():
-          v34:CInt64[0] = Const CInt64(0)
-          v35:CBool = IsBitEqual v27, v34
-          CondBranch v35, bb9(), bb10()
-        bb9():
-          v37:NilClass = Const Value(nil)
-          Jump bb6(v37, v13)
-        bb10():
-          v39:CInt64[255] = Const CInt64(255)
-          v40:CInt64 = IntAnd v27, v39
-          v41:CInt64[12] = Const CInt64(12)
-          v42:CBool = IsBitEqual v40, v41
-          CondBranch v42, bb11(), bb12()
-        bb12():
-          v44:CUInt64 = LoadField v27, :RBASIC_FLAGS@0x1002
-          v45:CUInt64[31] = Const CUInt64(31)
-          v46:CInt64 = IntAnd v44, v45
-          v47:CUInt64[20] = Const CUInt64(20)
-          v48:CBool = IsBitEqual v46, v47
-          CondBranch v48, bb11(), bb13()
-        bb11():
-          v50:BasicObject = SymToProc :block, l0, EP@3
-          Jump bb6(v50, v50)
-        bb13():
-          v52:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          Jump bb6(v52, v13)
-        bb6(v19:BasicObject, v20:BasicObject):
-          SideExit SplatKwNotNilOrHash
+          Return v64
         ");
     }
 
