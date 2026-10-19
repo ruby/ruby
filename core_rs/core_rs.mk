@@ -13,6 +13,8 @@ CORE_RS_SRCS = $(srcdir)/core_rs/src/lib.rs \
 	$(srcdir)/core_rs/src/complex.rs \
 	$(srcdir)/core_rs/src/ffi/mod.rs \
 	$(srcdir)/core_rs/src/ffi/api.rs \
+	$(srcdir)/core_rs/src/ffi/api/non_raising.rs \
+	$(srcdir)/core_rs/src/ffi/api/raising.rs \
 	$(srcdir)/core_rs/src/ffi/protect.rs \
 	$(srcdir)/core_rs/src/ffi/value.rs \
 	$(srcdir)/core_rs/src/re.rs \
