@@ -28,7 +28,8 @@ CORE_RS_SRCS = $(srcdir)/core_rs/src/lib.rs \
 # with a compile_error!) if the preprocessor fails.
 CORE_RS_CFG = $(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/core_rs/cfg.c | \
 	sed -n -e 's/^core_rs_cfg_use_flonum 1$$/--cfg core_rs_flonum/p' \
-	       -e 's/^core_rs_cfg_use_flonum 0$$/--cfg core_rs_no_flonum/p'
+	       -e 's/^core_rs_cfg_use_flonum 0$$/--cfg core_rs_no_flonum/p' \
+	       -e 's/^core_rs_cfg_\([a-z0-9_]*\) \(.*\)$$/--cfg core_rs_\1="\2"/p'
 
 $(CORE_RS_LIB): $(CORE_RS_SRCS) $(srcdir)/core_rs/cfg.c
 	$(ECHO) 'building core_rs (Rust ports)'
