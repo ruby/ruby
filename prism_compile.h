@@ -19,14 +19,15 @@ struct rb_code_location_struct;
 
 /**
  * A direct-indexed lookup table mapping constant IDs to local variable indices.
- * Regular constant IDs (1..constants_size) index directly. Special forwarding
- * parameter IDs (idMULT|FLAG, etc.) are mapped to 4 extra slots at the end.
+ * Regular constant IDs occupy the first constants_size slots, at the position
+ * given by pm_constant_id_index. Special forwarding parameter IDs
+ * (idMULT|FLAG, etc.) are mapped to 4 extra slots at the end.
  *
  * All lookups are O(1) — a single array dereference.
  * The table is arena-allocated for child scopes (no explicit free needed).
  */
 typedef struct {
-    /** Array of local indices, indexed by constant_id. -1 means not present. */
+    /** Array of local indices, indexed by pm_index_lookup_table_index. -1 means not present. */
     int *values;
 
     /** Total number of slots (constants_size + PM_INDEX_LOOKUP_SPECIALS). */
@@ -60,7 +61,7 @@ static inline int
 pm_index_lookup_table_index(const pm_index_lookup_table_t *table, pm_constant_id_t key)
 {
     if (LIKELY(!(key & PM_SPECIAL_CONSTANT_FLAG))) {
-        return (int) key - 1;
+        return (int) pm_constant_id_index(key);
     }
     return table->capacity - PM_INDEX_LOOKUP_SPECIALS + (int)(key & ~PM_SPECIAL_CONSTANT_FLAG);
 }
