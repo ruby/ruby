@@ -26,7 +26,7 @@
 /**
  * The version of the Prism library as a constant string.
  */
-#define PRISM_VERSION "2.0.0.rc1"
+#define PRISM_VERSION "2.0.0.rc2"
 
 /**
  * The prism version and the serialization format.
