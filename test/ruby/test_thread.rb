@@ -1756,6 +1756,46 @@ q.pop
     end;
   end
 
+  # RUBY_MN_THREADS=2 puts the main thread, which receives the traps, on the M:N io wait.
+  def test_mn_threads_io_wait_under_signals
+    omit "needs fork and SIGUSR1" unless Process.respond_to?(:fork) && Signal.list.key?("USR1")
+    assert_separately([{'RUBY_MN_THREADS' => '2'}], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
+    begin;
+      r, w = IO.pipe
+      in_trap = nil
+      trap(:USR1) do
+        if in_trap == :measure
+          # Signals keep coming while TRAP is masked; their wakeups must not end the wait.
+          t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          ret = r.wait_readable(0.2)
+          in_trap = [ret, Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0]
+        end
+      end
+      ppid = Process.pid
+      # Unthrottled, the traps arrive faster than the main thread can run them.
+      pid = fork { (loop { Process.kill(:USR1, ppid); sleep 0.0001 }) rescue exit!(0) }
+      begin
+        # A trap pending when the wait starts must not be reported as readiness.
+        ready = 0
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 1
+        while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+          ready += 1 if r.wait_readable(0.0001)
+        end
+        assert_equal 0, ready, "wait_readable reported a pipe nobody wrote to as readable"
+
+        in_trap = :measure
+        sleep 0.01 while in_trap == :measure
+        ret, elapsed = in_trap
+        assert_nil ret
+        assert_operator elapsed, :>=, 0.15, "wait_readable in a trap handler returned before its timeout"
+      ensure
+        Process.kill(:KILL, pid)
+        Process.wait(pid)
+        w.close # held open until here so that r never reaches EOF
+      end
+    end;
+  end
+
   # [Bug #21926]
   def test_thread_join_during_finalizers
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
