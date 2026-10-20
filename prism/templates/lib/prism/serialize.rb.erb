@@ -644,7 +644,7 @@ module Ruby::Prism
               <%- end -%>
               <%- node.child_fields.reverse_each do |field| -%>
               <%- if field.is_a?(Ruby::Prism::Template::NodeListField) -%>
-              field_<%= field.name %> = stack.pop(<%= field.name %>_size) #: <%= field.rbs_class %>
+              field_<%= field.name %> = stack.slice!(-<%= field.name %>_size, <%= field.name %>_size) #: <%= field.rbs_class %>
               field_<%= field.name %>.freeze if freeze
               <%- else -%>
               field_<%= field.name %> = stack.pop #: <%= field.rbs_class %>
@@ -723,7 +723,7 @@ module Ruby::Prism
               <%- end -%>
               <%- node.child_fields.reverse_each do |field| -%>
               <%- if field.is_a?(Ruby::Prism::Template::NodeListField) -%>
-              field_<%= field.name %> = stack.pop(<%= field.name %>_size) #: <%= field.rbs_class %>
+              field_<%= field.name %> = stack.slice!(-<%= field.name %>_size, <%= field.name %>_size) #: <%= field.rbs_class %>
               field_<%= field.name %>.freeze if freeze
               <%- else -%>
               field_<%= field.name %> = stack.pop #: <%= field.rbs_class %>
