@@ -2,10 +2,6 @@
 //!
 //! Maps Rust memory allocations (`alloc`, `realloc`, `dealloc`) to Ruby's
 //! memory management functions (`ruby_xmalloc`, `ruby_xrealloc`, `ruby_xfree`).
-//!
-//! Out-of-memory allocations in production use `protect()` (`rb_protect`) to trap C
-//! `longjmp` exceptions and safely return `null_mut()` to Rust without unwinding
-//! across Rust frames.
 
 use core::alloc::{GlobalAlloc, Layout};
 use core::ffi::c_void;
@@ -15,10 +11,6 @@ use core::ptr;
 use crate::ffi::api::raising::{ruby_xmalloc, ruby_xrealloc};
 #[cfg(not(test))]
 use crate::ffi::api::ruby_xfree;
-#[cfg(not(test))]
-use crate::ffi::protect::protect;
-#[cfg(not(test))]
-use crate::ffi::value::VALUE;
 
 /// Maximum natural alignment guaranteed by standard malloc/ruby_xmalloc (16 bytes).
 const MAX_NATURAL_ALIGN: usize = 16;
@@ -49,22 +41,12 @@ unsafe fn raw_free(ptr: *mut c_void) {
 
 #[cfg(not(test))]
 unsafe fn raw_malloc(size: usize) -> *mut c_void {
-    // Wrap ruby_xmalloc in protect() to intercept C longjmp on OOM and return null_mut().
-    let res = unsafe { protect(|| ruby_xmalloc(size) as VALUE) };
-    match res {
-        Ok(ptr_val) => ptr_val as *mut c_void,
-        Err(_) => ptr::null_mut(),
-    }
+    unsafe { ruby_xmalloc(size) }
 }
 
 #[cfg(not(test))]
 unsafe fn raw_realloc(ptr: *mut c_void, new_size: usize) -> *mut c_void {
-    // Wrap ruby_xrealloc in protect() to intercept C longjmp on OOM and return null_mut().
-    let res = unsafe { protect(|| ruby_xrealloc(ptr, new_size) as VALUE) };
-    match res {
-        Ok(ptr_val) => ptr_val as *mut c_void,
-        Err(_) => ptr::null_mut(),
-    }
+    unsafe { ruby_xrealloc(ptr, new_size) }
 }
 
 #[cfg(not(test))]
