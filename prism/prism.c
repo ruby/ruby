@@ -13187,7 +13187,7 @@ parse_starred_expression(pm_parser_t *parser, pm_binding_power_t binding_power, 
     return parse_value_expression(parser, binding_power, flags, diag_id, depth);
 }
 
-static bool
+static pm_visit_result_t
 pm_node_unreference_each(const pm_node_t *node, void *data) {
     switch (PM_NODE_TYPE(node)) {
         /* When we are about to destroy a set of nodes that could potentially
@@ -13213,15 +13213,15 @@ pm_node_unreference_each(const pm_node_t *node, void *data) {
                     }
                     parser->current_block_exits->size--;
 
-                    /* Note returning true here because these nodes could have
+                    /* Note descending here because these nodes could have
                      * arguments that are themselves block exits. */
-                    return true;
+                    return PM_VISIT_DESCEND;
                 }
 
                 index++;
             }
 
-            return true;
+            return PM_VISIT_DESCEND;
         }
         /* When an implicit local variable is written to or targeted, it becomes
          * a regular, named local variable. This branch removes it from the list
@@ -13245,10 +13245,10 @@ pm_node_unreference_each(const pm_node_t *node, void *data) {
                 }
             }
 
-            return false;
+            return PM_VISIT_SKIP;
         }
         default:
-            return true;
+            return PM_VISIT_DESCEND;
     }
 }
 
@@ -17808,7 +17808,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_
  * are not captures of this pattern. A nested alternation is not visited
  * either: its operands were already checked when it was parsed.
  */
-static bool
+static pm_visit_result_t
 parse_pattern_alternation_error_each(const pm_node_t *node, void *data) {
     pm_parser_t *parser = (pm_parser_t *) data;
 
@@ -17819,7 +17819,7 @@ parse_pattern_alternation_error_each(const pm_node_t *node, void *data) {
             if (peek_at(parser, parser->start + PM_NODE_START(node)) != '_') {
                 pm_parser_err(parser, PM_NODE_START(node), PM_NODE_LENGTH(node), PM_ERR_PATTERN_CAPTURE_IN_ALTERNATIVE);
             }
-            return false;
+            return PM_VISIT_SKIP;
         case PM_ARRAY_PATTERN_NODE:
         case PM_ASSOC_NODE:
         case PM_ASSOC_SPLAT_NODE:
@@ -17829,9 +17829,9 @@ parse_pattern_alternation_error_each(const pm_node_t *node, void *data) {
         case PM_IMPLICIT_NODE:
         case PM_PARENTHESES_NODE:
         case PM_SPLAT_NODE:
-            return true;
+            return PM_VISIT_DESCEND;
         default:
-            return false;
+            return PM_VISIT_SKIP;
     }
 }
 

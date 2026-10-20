@@ -223,7 +223,7 @@ pm_comments_blank_after(const pm_comments_walk_t *walk, uint32_t offset, uint32_
  * descends itself, so that it can visit children in source order and handle
  * each node after all of its descendants.
  */
-static bool
+static pm_visit_result_t
 pm_comments_push(const pm_node_t *node, void *data) {
     pm_comments_walk_t *walk = (pm_comments_walk_t *) data;
 
@@ -237,7 +237,7 @@ pm_comments_push(const pm_node_t *node, void *data) {
     }
 
     walk->stack.nodes[walk->stack.size++] = node;
-    return false;
+    return PM_VISIT_SKIP;
 }
 
 /*
