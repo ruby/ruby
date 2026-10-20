@@ -1924,9 +1924,10 @@ rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor)
 
     RUBY_ATOMIC_OR(r->postponed_job_triggered_bits, (((rb_atomic_t)1UL) << h));
 
-    /* The racy running_ec read is benign: whichever of the target's threads
-     * checks interrupts first drains the whole per-Ractor mask. */
-    rb_execution_context_t *target_ec = r->threads.running_ec;
+    /* Read after the OR: a thread taking the GVL publishes running_ec, then reads the
+     * mask (rb_ractor_thread_switch), so one of us flags it.  Whichever of the target's
+     * threads checks interrupts first drains the whole per-Ractor mask. */
+    rb_execution_context_t *target_ec = RUBY_ATOMIC_PTR_LOAD(r->threads.running_ec);
     if (target_ec == NULL && r->threads.main) {
         target_ec = r->threads.main->ec;
     }
