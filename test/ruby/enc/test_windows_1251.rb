@@ -14,4 +14,10 @@ class TestWindows1251 < Test::Unit::TestCase
       assert_match(/^[#{ c2 }]+$/i, c1 + c2)
     end
   end
+
+  def test_ascii_control_is_not_print
+    [*0x00..0x1f, 0x7f].each do |c|
+      assert_not_match(/\A[[:print:]]/, c.chr("windows-1251") + "\xC0")
+    end
+  end
 end
