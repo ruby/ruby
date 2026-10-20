@@ -5,10 +5,64 @@
 //! directly from Rust code without `protect()` or special stack frame destructor
 //! restrictions.
 
-#![allow(non_upper_case_globals)]
+#![allow(non_upper_case_globals, unused_imports)]
 
 use crate::ffi::value::VALUE;
-use core::ffi::{c_double, c_longlong, c_ulonglong};
+use core::ffi::{c_double, c_longlong, c_ulonglong, c_void};
+
+#[cfg(not(test))]
+unsafe extern "C" {
+    // ---- memory allocation: include/ruby/internal/xmalloc.h ----
+    /// `void *ruby_xmalloc(size_t size)`
+    pub fn ruby_xmalloc(size: usize) -> *mut c_void;
+    /// `void *ruby_xrealloc(void *ptr, size_t newsiz)`
+    pub fn ruby_xrealloc(ptr: *mut c_void, newsiz: usize) -> *mut c_void;
+    /// `void ruby_xfree(void *ptr)`
+    pub fn ruby_xfree(ptr: *mut c_void);
+}
+
+#[cfg(test)]
+pub use self::mock::{ruby_xfree, ruby_xmalloc, ruby_xrealloc};
+
+#[cfg(test)]
+pub mod mock {
+    use core::ffi::c_void;
+    use core::sync::atomic::{AtomicUsize, Ordering};
+
+    unsafe extern "C" {
+        fn malloc(size: usize) -> *mut c_void;
+        fn realloc(ptr: *mut c_void, size: usize) -> *mut c_void;
+        fn free(ptr: *mut c_void);
+    }
+
+    pub static ALLOC_COUNT: AtomicUsize = AtomicUsize::new(0);
+    pub static FREE_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+    pub unsafe fn ruby_xmalloc(size: usize) -> *mut c_void {
+        let alloc_size = if size == 0 { 1 } else { size };
+        let ptr = unsafe { malloc(alloc_size) };
+        if !ptr.is_null() {
+            ALLOC_COUNT.fetch_add(1, Ordering::SeqCst);
+        }
+        ptr
+    }
+
+    pub unsafe fn ruby_xrealloc(ptr: *mut c_void, newsiz: usize) -> *mut c_void {
+        if ptr.is_null() {
+            return unsafe { ruby_xmalloc(newsiz) };
+        }
+        let alloc_size = if newsiz == 0 { 1 } else { newsiz };
+        let new_ptr = unsafe { realloc(ptr, alloc_size) };
+        new_ptr
+    }
+
+    pub unsafe fn ruby_xfree(ptr: *mut c_void) {
+        if !ptr.is_null() {
+            FREE_COUNT.fetch_add(1, Ordering::SeqCst);
+            unsafe { free(ptr) };
+        }
+    }
+}
 
 unsafe extern "C" {
     // ---- exceptions: include/ruby/internal/error.h, intern/eval.h ----
