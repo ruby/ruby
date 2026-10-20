@@ -1330,15 +1330,17 @@ pm_lookup_local_index(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, pm_con
 
 // This returns the CRuby ID which maps to the pm_constant_id_t
 //
-// Constant_ids in prism are indexes of the constants in prism's constant pool.
-// We add a constants mapping on the scope_node which is a mapping from
-// these constant_id indexes to the CRuby IDs that they represent.
+// We add a constants mapping on the scope_node which holds one CRuby ID per
+// constant in prism's constant pool, filled in pool order. pm_constant_id_index
+// maps a constant_id to its position in that mapping.
 // This helper method allows easy access to those IDs
 static inline ID
 pm_constant_id_lookup(const pm_scope_node_t *scope_node, pm_constant_id_t constant_id)
 {
-    RUBY_ASSERT(constant_id >= 1 && constant_id <= pm_parser_constants_size(scope_node->parser));
-    return scope_node->constants[constant_id - 1];
+    RUBY_ASSERT(constant_id != 0);
+    size_t index = pm_constant_id_index(constant_id);
+    RUBY_ASSERT(index < pm_parser_constants_size(scope_node->parser));
+    return scope_node->constants[index];
 }
 
 static rb_iseq_t *
@@ -10801,20 +10803,6 @@ pm_parse_process_error(const pm_parse_result_t *result)
     return error;
 }
 
-/** Context for interning constants via callback. */
-typedef struct {
-    ID *constants;
-    rb_encoding *encoding;
-    size_t index;
-} pm_intern_constants_ctx_t;
-
-static void
-pm_intern_constants_callback(const pm_constant_t *constant, void *data)
-{
-    pm_intern_constants_ctx_t *ctx = (pm_intern_constants_ctx_t *) data;
-    ctx->constants[ctx->index++] = rb_intern3((const char *) pm_constant_start(constant), pm_constant_length(constant), ctx->encoding);
-}
-
 /**
  * Returns the source hash of the source that was parsed, as stored on
  * instruction sequences. A source hash of 0 means that there is no source hash,
@@ -10849,8 +10837,9 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
     scope_node->filepath_encoding = filepath_encoding;
 
     const char *encoding_name = pm_parser_encoding_name(parser);
-    scope_node->encoding = rb_enc_find(encoding_name);
-    if (!scope_node->encoding) rb_bug("Encoding not found %s!", encoding_name);
+    rb_encoding *encoding = rb_enc_find(encoding_name);
+    if (!encoding) rb_bug("Encoding not found %s!", encoding_name);
+    scope_node->encoding = encoding;
 
     scope_node->coverage_enabled = coverage_enabled;
 
@@ -10863,7 +10852,7 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
         for (size_t index = 0; index < line_offsets->size; index++) {
             size_t offset = line_offsets->offsets[index];
             size_t length = index == line_offsets->size - 1 ? ((size_t) (pm_parser_end(parser) - (pm_parser_start(parser) + offset))) : (line_offsets->offsets[index + 1] - offset);
-            rb_ary_push(*script_lines, rb_enc_str_new((const char *) pm_parser_start(parser) + offset, length, scope_node->encoding));
+            rb_ary_push(*script_lines, rb_enc_str_new((const char *) pm_parser_start(parser) + offset, length, encoding));
         }
 
         scope_node->script_lines = script_lines;
@@ -10880,10 +10869,10 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
         int line = pm_location_line_number(parser, &loc);
 
         if (pm_diagnostic_warning_level(diagnostic) == PM_WARNING_LEVEL_VERBOSE) {
-            rb_enc_compile_warning(scope_node->encoding, filepath, line, "%s", pm_diagnostic_message(diagnostic));
+            rb_enc_compile_warning(encoding, filepath, line, "%s", pm_diagnostic_message(diagnostic));
         }
         else {
-            rb_enc_compile_warn(scope_node->encoding, filepath, line, "%s", pm_diagnostic_message(diagnostic));
+            rb_enc_compile_warn(encoding, filepath, line, "%s", pm_diagnostic_message(diagnostic));
         }
     }
 
@@ -10903,11 +10892,15 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
     scope_node->options = result->options;
     scope_node->line_offsets = pm_parser_line_offsets(parser);
     scope_node->start_line = pm_parser_start_line(parser);
-    size_t constants_size = pm_parser_constants_size(parser);
-    scope_node->constants = constants_size ? xmalloc(constants_size * sizeof(ID)) : NULL;
 
-    pm_intern_constants_ctx_t intern_ctx = { .constants = scope_node->constants, .encoding = scope_node->encoding, .index = 0 };
-    pm_parser_constants_each(parser, pm_intern_constants_callback, &intern_ctx);
+    size_t constants_size = pm_parser_constants_size(parser);
+    ID *constants = constants_size ? xmalloc(constants_size * sizeof(ID)) : NULL;
+    scope_node->constants = constants;
+
+    for (size_t index = 0; index < constants_size; index++) {
+        const pm_constant_t *constant = pm_parser_constant_at(parser, index);
+        constants[index] = rb_intern3((const char *) pm_constant_start(constant), pm_constant_length(constant), encoding);
+    }
 
     // If we got here, this is a success and we can return Qnil to indicate that
     // no error should be raised.
