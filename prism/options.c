@@ -17,6 +17,8 @@ pm_options_t *
 pm_options_new(void) {
     pm_options_t *options = xcalloc(1, sizeof(pm_options_t));
     if (options == NULL) abort();
+
+    options->line = 1;
     return options;
 }
 
