@@ -11174,17 +11174,17 @@ typedef struct {
     const pm_node_t *node;
 } pm_node_find_context_t;
 
-static bool
+static pm_visit_result_t
 pm_node_find(const pm_node_t *node, void *data)
 {
     pm_node_find_context_t *context = data;
 
-    if (context->node == NULL && node->node_id == context->node_id) {
+    if (node->node_id == context->node_id) {
         context->node = node;
-        return false;
+        return PM_VISIT_STOP;
     }
 
-    return context->node == NULL;
+    return PM_VISIT_DESCEND;
 }
 
 /**
