@@ -7693,6 +7693,27 @@ parser_lex_magic_comment_emacs_marker(pm_parser_t *parser, const uint8_t *cursor
 }
 
 /**
+ * Returns true if the given magic comment key matches the given name, which is
+ * written in lowercase with underscores and is the same length as the key.
+ * Keys match case-insensitively, and a dash in the key matches an underscore in
+ * the name. Every byte of a name is ASCII, so a byte of a multibyte character
+ * in the key never matches one.
+ */
+static bool
+parser_magic_comment_key_p(const uint8_t *key, size_t key_length, const char *name) {
+    assert(name[key_length] == '\0');
+
+    for (size_t index = 0; index < key_length; index++) {
+        uint8_t byte = key[index];
+        if (byte == '-') byte = '_';
+        if ('A' <= byte && byte <= 'Z') byte |= 0x20;
+        if (byte != (uint8_t) name[index]) return false;
+    }
+
+    return true;
+}
+
+/**
  * Parse the current token on the parser to see if it's a magic comment and
  * potentially perform some action based on that. A regular expression that this
  * function is effectively matching is:
@@ -7783,73 +7804,34 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
             if (cursor != end) return false;
         }
 
-        // Here, we need to do some processing on the key to swap out dashes for
-        // underscores. We only need to do this if there _is_ a dash in the key.
-        pm_string_t key;
+        /* Finally, we can start checking the key against the list of known
+         * magic comment keys, and potentially change state based on that. */
         const size_t key_length = (size_t) (key_end - key_start);
-        const uint8_t *dash = pm_memchr(key_start, '-', key_length, parser->encoding_changed, parser->encoding);
-
-        if (dash == NULL) {
-            pm_string_shared_init(&key, key_start, key_end);
-        } else {
-            uint8_t *buffer = xmalloc(key_length);
-            if (buffer == NULL) break;
-
-            memcpy(buffer, key_start, key_length);
-            buffer[dash - key_start] = '_';
-
-            while ((dash = pm_memchr(dash + 1, '-', (size_t) (key_end - dash - 1), parser->encoding_changed, parser->encoding)) != NULL) {
-                buffer[dash - key_start] = '_';
-            }
-
-            pm_string_owned_init(&key, buffer, key_length);
-        }
-
-        // Finally, we can start checking the key against the list of known
-        // magic comment keys, and potentially change state based on that.
-        const uint8_t *key_source = pm_string_source(&key);
         uint32_t value_length = (uint32_t) (value_end - value_start);
 
-        // We only want to attempt to compare against encoding comments if it's
-        // the first line in the file (or the second in the case of a shebang).
-        if (parser->current.start == parser->encoding_comment_start && !parser->encoding_locked) {
-            if (
-                (key_length == 8 && pm_strncasecmp(key_source, (const uint8_t *) "encoding", 8) == 0) ||
-                (key_length == 6 && pm_strncasecmp(key_source, (const uint8_t *) "coding", 6) == 0)
-            ) {
-                result = parser_lex_magic_comment_encoding_value(parser, value_start, value_end);
-            }
-        }
-
-        if (key_length == 11) {
-            if (pm_strncasecmp(key_source, (const uint8_t *) "warn_indent", 11) == 0) {
-                switch (parser_lex_magic_comment_boolean_value(value_start, value_length)) {
-                    case PM_MAGIC_COMMENT_BOOLEAN_VALUE_INVALID:
-                        PM_PARSER_WARN_TOKEN_FORMAT(
-                            parser,
-                            &parser->current,
-                            PM_WARN_INVALID_MAGIC_COMMENT_VALUE,
-                            (int) key_length,
-                            (const char *) key_source,
-                            (int) value_length,
-                            (const char *) value_start
-                        );
-                        break;
-                    case PM_MAGIC_COMMENT_BOOLEAN_VALUE_FALSE:
-                        parser->warn_mismatched_indentation = false;
-                        break;
-                    case PM_MAGIC_COMMENT_BOOLEAN_VALUE_TRUE:
-                        parser->warn_mismatched_indentation = true;
-                        break;
+        switch (key_length) {
+            case 6:
+                /* We only want to attempt to compare against encoding comments
+                 * if it is the first line in the file (or the second in the
+                 * case of a shebang). */
+                if (parser->current.start == parser->encoding_comment_start && !parser->encoding_locked) {
+                    if (parser_magic_comment_key_p(key_start, key_length, "coding")) {
+                        result = parser_lex_magic_comment_encoding_value(parser, value_start, value_end);
+                    }
                 }
-            }
-        } else if (key_length == 21) {
-            if (pm_strncasecmp(key_source, (const uint8_t *) "frozen_string_literal", 21) == 0) {
-                // We only want to handle frozen string literal comments if it's
-                // before any semantic tokens have been seen.
-                if (semantic_token_seen) {
-                    pm_parser_warn_token(parser, &parser->current, PM_WARN_IGNORED_FROZEN_STRING_LITERAL);
-                } else {
+                break;
+            case 8:
+                /* We only want to attempt to compare against encoding comments
+                 * if it is the first line in the file (or the second in the
+                 * case of a shebang). */
+                if (parser->current.start == parser->encoding_comment_start && !parser->encoding_locked) {
+                    if (parser_magic_comment_key_p(key_start, key_length, "encoding")) {
+                        result = parser_lex_magic_comment_encoding_value(parser, value_start, value_end);
+                    }
+                }
+                break;
+            case 11:
+                if (parser_magic_comment_key_p(key_start, key_length, "warn_indent")) {
                     switch (parser_lex_magic_comment_boolean_value(value_start, value_length)) {
                         case PM_MAGIC_COMMENT_BOOLEAN_VALUE_INVALID:
                             PM_PARSER_WARN_TOKEN_FORMAT(
@@ -7857,52 +7839,78 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
                                 &parser->current,
                                 PM_WARN_INVALID_MAGIC_COMMENT_VALUE,
                                 (int) key_length,
-                                (const char *) key_source,
+                                "warn_indent",
                                 (int) value_length,
                                 (const char *) value_start
                             );
                             break;
                         case PM_MAGIC_COMMENT_BOOLEAN_VALUE_FALSE:
-                            parser->frozen_string_literal = PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED;
+                            parser->warn_mismatched_indentation = false;
                             break;
                         case PM_MAGIC_COMMENT_BOOLEAN_VALUE_TRUE:
-                            parser->frozen_string_literal = PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED;
+                            parser->warn_mismatched_indentation = true;
                             break;
                     }
                 }
-            }
-        } else if (key_length == 24) {
-            if (pm_strncasecmp(key_source, (const uint8_t *) "shareable_constant_value", 24) == 0) {
-                const uint8_t *cursor = parser->current.start;
-                while ((cursor > parser->start) && ((cursor[-1] == ' ') || (cursor[-1] == '\t'))) cursor--;
-
-                if (!((cursor == parser->start) || (cursor[-1] == '\n'))) {
-                    pm_parser_warn_token(parser, &parser->current, PM_WARN_SHAREABLE_CONSTANT_VALUE_LINE);
-                } else if (value_length == 4 && pm_strncasecmp(value_start, (const uint8_t *) "none", 4) == 0) {
-                    pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_NONE);
-                } else if (value_length == 7 && pm_strncasecmp(value_start, (const uint8_t *) "literal", 7) == 0) {
-                    pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_LITERAL);
-                } else if (value_length == 23 && pm_strncasecmp(value_start, (const uint8_t *) "experimental_everything", 23) == 0) {
-                    pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_EVERYTHING);
-                } else if (value_length == 17 && pm_strncasecmp(value_start, (const uint8_t *) "experimental_copy", 17) == 0) {
-                    pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_COPY);
-                } else {
-                    PM_PARSER_WARN_TOKEN_FORMAT(
-                        parser,
-                        &parser->current,
-                        PM_WARN_INVALID_MAGIC_COMMENT_VALUE,
-                        (int) key_length,
-                        (const char *) key_source,
-                        (int) value_length,
-                        (const char *) value_start
-                    );
+                break;
+            case 21:
+                if (parser_magic_comment_key_p(key_start, key_length, "frozen_string_literal")) {
+                    /* We only want to handle frozen string literal comments if
+                     * it is before any semantic tokens have been seen. */
+                    if (semantic_token_seen) {
+                        pm_parser_warn_token(parser, &parser->current, PM_WARN_IGNORED_FROZEN_STRING_LITERAL);
+                    } else {
+                        switch (parser_lex_magic_comment_boolean_value(value_start, value_length)) {
+                            case PM_MAGIC_COMMENT_BOOLEAN_VALUE_INVALID:
+                                PM_PARSER_WARN_TOKEN_FORMAT(
+                                    parser,
+                                    &parser->current,
+                                    PM_WARN_INVALID_MAGIC_COMMENT_VALUE,
+                                    (int) key_length,
+                                    "frozen_string_literal",
+                                    (int) value_length,
+                                    (const char *) value_start
+                                );
+                                break;
+                            case PM_MAGIC_COMMENT_BOOLEAN_VALUE_FALSE:
+                                parser->frozen_string_literal = PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED;
+                                break;
+                            case PM_MAGIC_COMMENT_BOOLEAN_VALUE_TRUE:
+                                parser->frozen_string_literal = PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED;
+                                break;
+                        }
+                    }
                 }
-            }
-        }
+                break;
+            case 24:
+                if (parser_magic_comment_key_p(key_start, key_length, "shareable_constant_value")) {
+                    const uint8_t *cursor = parser->current.start;
+                    while ((cursor > parser->start) && ((cursor[-1] == ' ') || (cursor[-1] == '\t'))) cursor--;
 
-        // When we're done, we want to free the string in case we had to
-        // allocate memory for it.
-        pm_string_cleanup(&key);
+                    if (!((cursor == parser->start) || (cursor[-1] == '\n'))) {
+                        pm_parser_warn_token(parser, &parser->current, PM_WARN_SHAREABLE_CONSTANT_VALUE_LINE);
+                    } else if (value_length == 4 && pm_strncasecmp(value_start, (const uint8_t *) "none", 4) == 0) {
+                        pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_NONE);
+                    } else if (value_length == 7 && pm_strncasecmp(value_start, (const uint8_t *) "literal", 7) == 0) {
+                        pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_LITERAL);
+                    } else if (value_length == 23 && pm_strncasecmp(value_start, (const uint8_t *) "experimental_everything", 23) == 0) {
+                        pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_EVERYTHING);
+                    } else if (value_length == 17 && pm_strncasecmp(value_start, (const uint8_t *) "experimental_copy", 17) == 0) {
+                        pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_COPY);
+                    } else {
+                        PM_PARSER_WARN_TOKEN_FORMAT(
+                            parser,
+                            &parser->current,
+                            PM_WARN_INVALID_MAGIC_COMMENT_VALUE,
+                            (int) key_length,
+                            "shareable_constant_value",
+                            (int) value_length,
+                            (const char *) value_start
+                        );
+                    }
+                }
+                break;
+        }
 
         // Allocate a new magic comment node to append to the parser's list.
         pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) pm_arena_alloc(&parser->metadata_arena, sizeof(pm_magic_comment_t), PRISM_ALIGNOF(pm_magic_comment_t));
