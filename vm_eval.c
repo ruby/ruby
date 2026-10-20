@@ -1727,10 +1727,20 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     pm_options_line_set(result.options, line);
     result.node.coverage_enabled = coverage_enabled;
 
-    // Count scopes, one for each parent iseq, plus one for our local scope
+    // Count scopes, one for each parent iseq, plus one for our local scope.
+    // Also total the byte lengths of every local name so that they can all be
+    // copied into a single buffer.
     int scopes_count = 0;
+    size_t names_size = 0;
+
     do {
         scopes_count++;
+
+        int locals_count = ISEQ_BODY(iseq)->local_table_size;
+        for (int local_index = 0; local_index < locals_count; local_index++) {
+            ID local = ISEQ_BODY(iseq)->local_table[local_index];
+            if (rb_is_local_id(local)) names_size += RSTRING_LEN(rb_id2str(local));
+        }
     } while ((iseq = ISEQ_BODY(iseq)->parent_iseq));
     pm_options_scopes_init(result.options, scopes_count + 1);
 
@@ -1749,6 +1759,11 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 #define FORWARDING_ALL_CHR '.'
 #define FORWARDING_ALL_STR "."
 
+    /* The scope locals are views into this buffer, so it must outlive every
+     * read of them, including building the parent scope nodes after parsing. */
+    uint8_t *names_buffer = names_size > 0 ? xmalloc(names_size) : NULL;
+    uint8_t *names_cursor = names_buffer;
+
     for (int scopes_index = 0; scopes_index < scopes_count; scopes_index++) {
         VALUE iseq_value = (VALUE)iseq;
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
@@ -1763,35 +1778,30 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
             ID local = ISEQ_BODY(iseq)->local_table[local_index];
 
             if (rb_is_local_id(local)) {
-                VALUE name_obj = rb_id2str(local);
-                const char *name = RSTRING_PTR(name_obj);
-                size_t length = RSTRING_LEN(name_obj);
+                VALUE name = rb_id2str(local);
+                size_t length = RSTRING_LEN(name);
 
-                /* We need to duplicate the string because the Ruby string may
-                 * be embedded so compaction could move the string and the pointer
-                 * will change. */
-                char *name_dup = xmalloc(length);
-                MEMCPY(name_dup, name, char, length);
+                MEMCPY(names_cursor, RSTRING_PTR(name), char, length);
+                RB_GC_GUARD(name);
 
-                RB_GC_GUARD(name_obj);
-
-                pm_string_owned_init(scope_local, (uint8_t *) name_dup, length);
+                pm_string_init(scope_local, names_cursor, length);
+                names_cursor += length;
             }
             else if (local == idMULT) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_POSITIONALS;
-                pm_string_constant_init(scope_local, FORWARDING_POSITIONALS_STR, 1);
+                pm_string_init(scope_local, (const uint8_t *) FORWARDING_POSITIONALS_STR, 1);
             }
             else if (local == idPow) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_KEYWORDS;
-                pm_string_constant_init(scope_local, FORWARDING_KEYWORDS_STR, 1);
+                pm_string_init(scope_local, (const uint8_t *) FORWARDING_KEYWORDS_STR, 1);
             }
             else if (local == idAnd) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_BLOCK;
-                pm_string_constant_init(scope_local, FORWARDING_BLOCK_STR, 1);
+                pm_string_init(scope_local, (const uint8_t *) FORWARDING_BLOCK_STR, 1);
             }
             else if (local == idDot3) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_ALL;
-                pm_string_constant_init(scope_local, FORWARDING_ALL_STR, 1);
+                pm_string_init(scope_local, (const uint8_t *) FORWARDING_ALL_STR, 1);
             }
         }
 
@@ -1813,6 +1823,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 
     // If the parse failed, clean up and raise.
     if (error != Qnil) {
+        if (names_buffer) SIZED_FREE_N(names_buffer, names_size);
         pm_parse_result_free(&result);
         rb_exc_raise(error);
     }
@@ -1876,6 +1887,8 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         node = parent_scope;
         iseq = ISEQ_BODY(iseq)->parent_iseq;
     }
+
+    if (names_buffer) SIZED_FREE_N(names_buffer, names_size);
 
 #undef FORWARDING_POSITIONALS_CHR
 #undef FORWARDING_POSITIONALS_STR
