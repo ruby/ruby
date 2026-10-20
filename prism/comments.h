@@ -56,6 +56,15 @@ PRISM_EXPORTED_FUNCTION pm_location_t pm_comment_location(const pm_comment_t *co
  */
 PRISM_EXPORTED_FUNCTION pm_comment_type_t pm_comment_type(const pm_comment_t *comment) PRISM_NONNULL(1);
 
+/**
+ * Returns the comment that follows the given comment among the comments
+ * associated with the parser that found it.
+ *
+ * @param comment the comment whose successor we want to get
+ * @returns the next comment, or NULL if the given comment is the last one
+ */
+PRISM_EXPORTED_FUNCTION const pm_comment_t * pm_comment_next(const pm_comment_t *comment) PRISM_NONNULL(1);
+
 #ifdef __cplusplus
 }
 #endif
