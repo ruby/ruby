@@ -8159,10 +8159,14 @@ impl Function {
                 self.assert_subtype(insn_id, array, types::Array)?;
                 self.assert_subtype(insn_id, index, types::CInt64)
             }
-            Insn::ArrayArefChecked { array, index, length, .. } => {
+            Insn::ArrayArefChecked { array, index, length, default } => {
                 self.assert_subtype(insn_id, array, types::Array)?;
                 self.assert_subtype(insn_id, index, types::CInt64)?;
-                self.assert_subtype(insn_id, length, types::CInt64)
+                self.assert_subtype(insn_id, length, types::CInt64)?;
+                if let Some(default) = default {
+                    self.assert_subtype(insn_id, default, types::BasicObject)?;
+                }
+                Ok(())
             }
             Insn::ArrayAset { array, index, .. } => {
                 self.assert_subtype(insn_id, array, types::ArrayExact)?;
