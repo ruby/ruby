@@ -1147,6 +1147,8 @@ rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
         {
             ccan_list_del(&th->lt_node);
             cr->threads.cnt--;
+            // th->ec goes with the Thread; readers of running_ec from other Ractors hold this lock
+            if (cr->threads.running_ec == th->ec) RUBY_ATOMIC_PTR_SET(cr->threads.running_ec, NULL);
         }
         RACTOR_UNLOCK(cr);
     }
