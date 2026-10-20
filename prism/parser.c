@@ -107,6 +107,19 @@ pm_parser_constant_find(const pm_parser_t *parser, const uint8_t *start, size_t 
 }
 
 /**
+ * Add a constant to the parser's constant pool, copying its bytes into the
+ * parser's arena only if the constant is not already there.
+ */
+pm_constant_id_t
+pm_parser_constant_insert(pm_parser_t *parser, const uint8_t *start, size_t length) {
+    pm_constant_id_t id = pm_constant_pool_find(&parser->constant_pool, start, length);
+    if (id != PM_CONSTANT_ID_UNSET) return id;
+
+    const uint8_t *copy = (const uint8_t *) pm_arena_memdup(&parser->metadata_arena, start, length, PRISM_ALIGNOF(uint8_t));
+    return pm_constant_pool_insert_constant(&parser->metadata_arena, &parser->constant_pool, copy, length);
+}
+
+/**
  * Returns the frozen string literal value of the parser.
  */
 int8_t

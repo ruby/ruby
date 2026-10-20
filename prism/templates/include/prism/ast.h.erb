@@ -143,7 +143,9 @@ typedef struct pm_node {
 
     /**
      * The unique identifier for this node, which is deterministic based on the
-     * source. It is used to identify unique nodes across parses.
+     * source. It is used to identify unique nodes across parses. Nodes created
+     * outside of parsing have no position in the source and can use 0, which
+     * no parsed node uses.
      */
     uint32_t node_id;
 

@@ -23,6 +23,18 @@ extern "C" {
     for (size_t index = 0; index < (list)->size && ((node) = (list)->nodes[index]); index++)
 
 /**
+ * Append a node to the end of a node list. If the list is full, its storage is
+ * grown by allocating from the given arena, so the arena must live as long as
+ * the list does. For a list in a parsed tree, that is the arena that was passed
+ * to pm_parser_new.
+ *
+ * @param arena The arena to allocate the list's storage from.
+ * @param list The list to append to.
+ * @param node The node to append.
+ */
+PRISM_EXPORTED_FUNCTION void pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) PRISM_NONNULL(1, 2, 3);
+
+/**
  * Returns a string representation of the given node type.
  *
  * @param node_type The node type to convert to a string.

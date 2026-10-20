@@ -155,6 +155,24 @@ PRISM_EXPORTED_FUNCTION const pm_string_t * pm_parser_filepath(const pm_parser_t
 PRISM_EXPORTED_FUNCTION pm_constant_id_t pm_parser_constant_find(const pm_parser_t *parser, const uint8_t *start, size_t length) PRISM_NONNULL(1, 2);
 
 /**
+ * Add a constant to the parser's constant pool, for naming a node that was not
+ * parsed from the source. If the constant is already in the pool, its existing
+ * id is returned. Otherwise the parser copies the bytes, so they only need to
+ * remain valid for the duration of the call.
+ *
+ * Adding a constant makes the pool larger, so a cache with one entry per
+ * constant built beforehand from pm_parser_constants_size and
+ * pm_parser_constant_at does not cover it. Build such caches after adding any
+ * constants.
+ *
+ * @param parser the parser whose constant pool we want to add to
+ * @param start a pointer to the start of the string to add
+ * @param length the length of the string to add
+ * @returns the id of the constant
+ */
+PRISM_EXPORTED_FUNCTION pm_constant_id_t pm_parser_constant_insert(pm_parser_t *parser, const uint8_t *start, size_t length) PRISM_NONNULL(1, 2);
+
+/**
  * Returns the frozen string literal value of the parser, as determined by the
  * frozen_string_literal magic comment or the option set on the parser.
  *
