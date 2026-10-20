@@ -4232,7 +4232,9 @@ fn gen_incr_exit_counter(asm: &mut Assembler, counter: Counter) {
 
 /// Increment an exit counter when `--zjit-stats` or testing for a breakdown of exit reasons.
 fn incr_exit_counter(counter: Counter) {
-    unsafe { *(counter_ptr(counter)) += 1 }
+    if get_option!(stats) || cfg!(test) {
+        unsafe { *(counter_ptr(counter)) += 1 }
+    }
 }
 
 /// Generate a trampoline that materializes ZJIT frames before unwinding native frames.
