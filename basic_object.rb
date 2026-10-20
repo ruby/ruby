@@ -6,8 +6,9 @@ class BasicObject
       undef :!=
 
       def !=(other) # :nodoc:
-        # Keep the replacement classified as a basic method like the C definition.
-        Primitive.attr! :c_trace
+        # Keep the replacement classified as a basic method like the C definition,
+        # and have ZJIT inline it even when its size heuristics would say no.
+        Primitive.attr! :c_trace, :always_inline
 
         # Negate truthiness without calling a possibly redefined #!.
         Primitive.rb_builtin_bool_negate(self == other)

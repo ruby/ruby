@@ -5799,15 +5799,6 @@ impl Function {
             return false;
         }
 
-        // Per-caller cumulative budget. Once that count crosses the budget, every further callee
-        // is rejected and the optimization fixed-point loop reaches its terminal iteration. See
-        // `Options::inline_budget` for the full unit/semantics caveat.
-        let budget = get_option!(inline_budget);
-        if budget != INLINE_BUDGET_UNLIMITED && self.num_instructions > budget {
-            incr_counter!(inline_reject_budget_exceeded);
-            return false;
-        }
-
         // User-supplied denylist of qualified method names (e.g. `User#name` or
         // `Foo.bar`). Lets us isolate the inliner's contribution from individual
         // problem methods without committing to a heuristic. Anonymous code paths
@@ -5828,6 +5819,24 @@ impl Function {
             }
         }
 
+        // Builtins marked `Primitive.attr! :always_inline` skip the size heuristics below:
+        // they are small wrappers (e.g. BasicObject#!=) where the frame push costs more
+        // than the body, so they should be inlined even in callers that have exhausted
+        // their budget. `can_inline` still gates them on correctness.
+        let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(callee_iseq) };
+        if builtin_attrs & BUILTIN_ATTR_ALWAYS_INLINE != 0 {
+            return true;
+        }
+
+        // Per-caller cumulative budget. Once that count crosses the budget, every further callee
+        // is rejected and the optimization fixed-point loop reaches its terminal iteration. See
+        // `Options::inline_budget` for the full unit/semantics caveat.
+        let budget = get_option!(inline_budget);
+        if budget != INLINE_BUDGET_UNLIMITED && self.num_instructions > budget {
+            incr_counter!(inline_reject_budget_exceeded);
+            return false;
+        }
+
         // Check callee bytecode size against threshold.
         let callee_size = unsafe { get_iseq_encoded_size(callee_iseq) } as usize;
         if callee_size > threshold {
@@ -5846,13 +5855,6 @@ impl Function {
             return false;
         }
 
-        // Fail fast if inlining is enabled but we've exhausted our inlining budget.
-        // Otherwise, `can_inline` and `should_inline` will make local inlining decisions.
-        let budget = get_option!(inline_budget);
-        if budget != INLINE_BUDGET_UNLIMITED && self.insns.len() > budget {
-            incr_counter!(inline_reject_budget_exceeded);
-            return false;
-        }
 
         let mut did_inline = false;
 
