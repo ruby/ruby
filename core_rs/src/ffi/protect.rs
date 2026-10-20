@@ -78,6 +78,59 @@ pub unsafe fn jump_tag(state: c_int) -> ! {
     unsafe { rb_jump_tag(state) }
 }
 
+/// Calls `f` under `rb_protect()`, invoking `cleanup` before re-raising if an
+/// exception or non-local exit occurs.
+///
+/// If `f` returns normally, `protect_with_cleanup` returns its `VALUE`.
+/// If `f` leaves by a non-local exit (`Err(state)`), `cleanup` is executed and
+/// then [`jump_tag(state)`] re-raises the exception.
+///
+/// # Safety
+/// Must be called on a Ruby thread holding the GVL, as `rb_protect()`.
+/// `f` must follow the exception-safety rule of [`super`].
+pub unsafe fn protect_with_cleanup<F, C>(f: F, cleanup: C) -> VALUE
+where
+    F: FnOnce() -> VALUE + Copy,
+    C: FnOnce(),
+{
+    match unsafe { protect(f) } {
+        Ok(val) => val,
+        Err(state) => {
+            cleanup();
+            // SAFETY: `state` is a non-zero jump tag from `protect(f)`.
+            unsafe { jump_tag(state) };
+        }
+    }
+}
+
+/// Concise macro for executing a raising expression under `rb_protect()`.
+///
+/// If the call completes normally, its `VALUE` is returned. If an exception or
+/// non-local exit occurs, any optional cleanup closure is executed before
+/// re-raising via [`jump_tag`].
+///
+/// # Examples
+///
+/// ```ignore
+/// let val = protect_call!(rb_funcallv(recv, id, argc, argv));
+///
+/// let val = protect_call!(rb_num2long(raw), || cleanup_local_state());
+/// ```
+#[macro_export]
+macro_rules! protect_call {
+    ($expr:expr) => {
+        match unsafe { $crate::ffi::protect::protect(|| $expr) } {
+            Ok(val) => val,
+            Err(state) => unsafe { $crate::ffi::protect::jump_tag(state) },
+        }
+    };
+    ($expr:expr, $cleanup:expr) => {
+        unsafe { $crate::ffi::protect::protect_with_cleanup(|| $expr, $cleanup) }
+    };
+}
+
+pub use protect_call;
+
 /// Stand-ins for the two C functions, for `make core-rs-test` (which links
 /// no libruby).  They model only the observable contract `protect` relies
 /// on: `func(args)` is called once, and `*state` is 0 on a normal return or
@@ -152,5 +205,89 @@ mod tests {
     #[should_panic(expected = "rb_jump_tag(6)")]
     fn jump_tag_forwards_the_state() {
         unsafe { jump_tag(6) }
+    }
+
+    #[test]
+    fn protect_with_cleanup_normal_return_returns_value_without_cleanup() {
+        let mut cleaned = false;
+        let r = unsafe { protect_with_cleanup(|| INT2FIX(42), || cleaned = true) };
+        assert_eq!(r, INT2FIX(42));
+        assert!(!cleaned);
+    }
+
+    #[test]
+    #[should_panic(expected = "rb_jump_tag(6)")]
+    fn protect_with_cleanup_exception_executes_cleanup_then_jumps() {
+        use std::cell::Cell;
+        std::thread_local! {
+            static CLEANUP_RAN: Cell<bool> = const { Cell::new(false) };
+        }
+
+        struct CheckCleanup;
+        impl Drop for CheckCleanup {
+            fn drop(&mut self) {
+                assert!(CLEANUP_RAN.with(|c| c.get()), "cleanup closure should have been executed before jump_tag panic");
+            }
+        }
+
+        let _check = CheckCleanup;
+        unsafe {
+            protect_with_cleanup(
+                || {
+                    RAISE_TAG.with(|t| t.set(6));
+                    INT2FIX(1)
+                },
+                || {
+                    CLEANUP_RAN.with(|c| c.set(true));
+                },
+            );
+        }
+    }
+
+    #[test]
+    fn protect_call_macro_normal_return() {
+        let v = protect_call!(INT2FIX(100));
+        assert_eq!(v, INT2FIX(100));
+
+        let mut cleaned = false;
+        let v2 = protect_call!(INT2FIX(200), || cleaned = true);
+        assert_eq!(v2, INT2FIX(200));
+        assert!(!cleaned);
+    }
+
+    #[test]
+    #[should_panic(expected = "rb_jump_tag(6)")]
+    fn protect_call_macro_exception_re_raised() {
+        protect_call!({
+            RAISE_TAG.with(|t| t.set(6));
+            INT2FIX(1)
+        });
+    }
+
+    #[test]
+    #[should_panic(expected = "rb_jump_tag(6)")]
+    fn protect_call_macro_exception_executes_cleanup_and_re_raises() {
+        use std::cell::Cell;
+        std::thread_local! {
+            static MACRO_CLEANUP_RAN: Cell<bool> = const { Cell::new(false) };
+        }
+
+        struct CheckMacroCleanup;
+        impl Drop for CheckMacroCleanup {
+            fn drop(&mut self) {
+                assert!(MACRO_CLEANUP_RAN.with(|c| c.get()), "macro cleanup closure should have executed before jump_tag panic");
+            }
+        }
+
+        let _check = CheckMacroCleanup;
+        protect_call!(
+            {
+                RAISE_TAG.with(|t| t.set(6));
+                INT2FIX(1)
+            },
+            || {
+                MACRO_CLEANUP_RAN.with(|c| c.set(true));
+            }
+        );
     }
 }

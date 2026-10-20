@@ -14,6 +14,8 @@ CORE_RS_SRCS = $(srcdir)/core_rs/src/lib.rs \
 	$(srcdir)/core_rs/src/ffi/mod.rs \
 	$(srcdir)/core_rs/src/ffi/alloc.rs \
 	$(srcdir)/core_rs/src/ffi/api.rs \
+	$(srcdir)/core_rs/src/ffi/api/non_raising.rs \
+	$(srcdir)/core_rs/src/ffi/api/raising.rs \
 	$(srcdir)/core_rs/src/ffi/protect.rs \
 	$(srcdir)/core_rs/src/ffi/value.rs \
 	$(srcdir)/core_rs/src/re.rs \
@@ -27,7 +29,8 @@ CORE_RS_SRCS = $(srcdir)/core_rs/src/lib.rs \
 # with a compile_error!) if the preprocessor fails.
 CORE_RS_CFG = $(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/core_rs/cfg.c | \
 	sed -n -e 's/^core_rs_cfg_use_flonum 1$$/--cfg core_rs_flonum/p' \
-	       -e 's/^core_rs_cfg_use_flonum 0$$/--cfg core_rs_no_flonum/p'
+	       -e 's/^core_rs_cfg_use_flonum 0$$/--cfg core_rs_no_flonum/p' \
+	       -e 's/^core_rs_cfg_\([a-z0-9_]*\) \(.*\)$$/--cfg core_rs_\1="\2"/p'
 
 $(CORE_RS_LIB): $(CORE_RS_SRCS) $(srcdir)/core_rs/cfg.c
 	$(ECHO) 'building core_rs (Rust ports)'
@@ -61,3 +64,8 @@ core-rs-check-hidden: $(LIBRUBY_SO)
 	    exit 1; \
 	fi
 	$(Q) echo 'core_rs: no rb_core_* symbol is exported from $(LIBRUBY_SO)'
+
+# Check C fallback compilation for ported functions (#if !USE_RUST_PORTS)
+core-rs-check-fallbacks:
+	$(Q) $(BASERUBY) -I$(srcdir)/tool $(srcdir)/tool/generate_porting_ledger.rb --check-fallbacks
+
