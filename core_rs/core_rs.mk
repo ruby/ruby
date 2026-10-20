@@ -63,3 +63,8 @@ core-rs-check-hidden: $(LIBRUBY_SO)
 	    exit 1; \
 	fi
 	$(Q) echo 'core_rs: no rb_core_* symbol is exported from $(LIBRUBY_SO)'
+
+# Check C fallback compilation for ported functions (#if !USE_RUST_PORTS)
+core-rs-check-fallbacks:
+	$(Q) $(BASERUBY) -I$(srcdir)/tool $(srcdir)/tool/generate_porting_ledger.rb --check-fallbacks
+
