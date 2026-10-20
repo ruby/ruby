@@ -4775,7 +4775,7 @@ guard=INCLUDE_RUBY_CONFIG_H
 {
   echo "#ifndef $guard"
   echo "#define $guard 1"
-  sed "/^@%:@define PACKAGE_/d;s/  *$//;s/^#define USE_RUST_PORTS \(.*\)/#ifndef USE_RUST_PORTS\n#define USE_RUST_PORTS \1\n#endif/" confdefs.h
+  sed -e "/^@%:@define PACKAGE_/d" -e "s/  *$//" -e "s/^#define USE_RUST_PORTS \(.*\)$/#ifndef USE_RUST_PORTS\n#define USE_RUST_PORTS \1\n#endif/" confdefs.h
   echo "#endif /* $guard */"
 } | tr -d '\015' |
 (

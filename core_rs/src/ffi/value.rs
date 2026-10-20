@@ -26,6 +26,7 @@ pub type ID = usize;
 // core_rs supports LP64 and ILP32 targets only (Linux, macOS, FreeBSD), where
 // `long` has the width of a pointer.  The fixnum helpers rely on it.
 const _: () = assert!(core::mem::size_of::<c_long>() == core::mem::size_of::<VALUE>());
+const _: () = assert!(core::mem::size_of::<VALUE>() == core::mem::size_of::<*const ()>());
 
 #[cfg(not(any(core_rs_flonum, core_rs_no_flonum)))]
 compile_error!("build core_rs through core_rs/core_rs.mk: it passes --cfg core_rs_flonum or --cfg core_rs_no_flonum");
@@ -33,6 +34,62 @@ compile_error!("build core_rs through core_rs/core_rs.mk: it passes --cfg core_r
 compile_error!("--cfg core_rs_flonum and --cfg core_rs_no_flonum are exclusive");
 #[cfg(all(core_rs_flonum, not(target_pointer_width = "64")))]
 compile_error!("USE_FLONUM needs a 64-bit VALUE");
+
+#[cfg(core_rs_sizeof_value = "8")]
+const _: () = assert!(core::mem::size_of::<VALUE>() == 8);
+#[cfg(core_rs_sizeof_value = "4")]
+const _: () = assert!(core::mem::size_of::<VALUE>() == 4);
+
+#[cfg(core_rs_sizeof_long = "8")]
+const _: () = assert!(core::mem::size_of::<c_long>() == 8);
+#[cfg(core_rs_sizeof_long = "4")]
+const _: () = assert!(core::mem::size_of::<c_long>() == 4);
+
+#[cfg(core_rs_sizeof_voidp = "8")]
+const _: () = assert!(core::mem::size_of::<*const ()>() == 8);
+#[cfg(core_rs_sizeof_voidp = "4")]
+const _: () = assert!(core::mem::size_of::<*const ()>() == 4);
+
+#[cfg(all(core_rs_flonum, not(core_rs_qfalse = "0x00")))]
+compile_error!("C definition of Qfalse does not match core_rs Qfalse (expected 0x00)");
+#[cfg(all(core_rs_flonum, not(core_rs_qnil = "0x04")))]
+compile_error!("C definition of Qnil does not match core_rs Qnil (expected 0x04)");
+#[cfg(all(core_rs_flonum, not(core_rs_qtrue = "0x14")))]
+compile_error!("C definition of Qtrue does not match core_rs Qtrue (expected 0x14)");
+#[cfg(all(core_rs_flonum, not(core_rs_qundef = "0x24")))]
+compile_error!("C definition of Qundef does not match core_rs Qundef (expected 0x24)");
+#[cfg(all(core_rs_flonum, not(core_rs_immediate_mask = "0x07")))]
+compile_error!("C definition of IMMEDIATE_MASK does not match core_rs IMMEDIATE_MASK (expected 0x07)");
+#[cfg(all(core_rs_flonum, not(core_rs_fixnum_flag = "0x01")))]
+compile_error!("C definition of FIXNUM_FLAG does not match core_rs FIXNUM_FLAG (expected 0x01)");
+#[cfg(all(core_rs_flonum, not(core_rs_flonum_mask = "0x03")))]
+compile_error!("C definition of FLONUM_MASK does not match core_rs FLONUM_MASK (expected 0x03)");
+#[cfg(all(core_rs_flonum, not(core_rs_flonum_flag = "0x02")))]
+compile_error!("C definition of FLONUM_FLAG does not match core_rs FLONUM_FLAG (expected 0x02)");
+#[cfg(all(core_rs_flonum, not(core_rs_symbol_flag = "0x0c")))]
+compile_error!("C definition of SYMBOL_FLAG does not match core_rs SYMBOL_FLAG (expected 0x0c)");
+
+#[cfg(all(core_rs_no_flonum, not(core_rs_qfalse = "0x00")))]
+compile_error!("C definition of Qfalse does not match core_rs Qfalse (expected 0x00)");
+#[cfg(all(core_rs_no_flonum, not(core_rs_qnil = "0x02")))]
+compile_error!("C definition of Qnil does not match core_rs Qnil (expected 0x02)");
+#[cfg(all(core_rs_no_flonum, not(core_rs_qtrue = "0x06")))]
+compile_error!("C definition of Qtrue does not match core_rs Qtrue (expected 0x06)");
+#[cfg(all(core_rs_no_flonum, not(core_rs_qundef = "0x0a")))]
+compile_error!("C definition of Qundef does not match core_rs Qundef (expected 0x0a)");
+#[cfg(all(core_rs_no_flonum, not(core_rs_immediate_mask = "0x03")))]
+compile_error!("C definition of IMMEDIATE_MASK does not match core_rs IMMEDIATE_MASK (expected 0x03)");
+#[cfg(all(core_rs_no_flonum, not(core_rs_fixnum_flag = "0x01")))]
+compile_error!("C definition of FIXNUM_FLAG does not match core_rs FIXNUM_FLAG (expected 0x01)");
+#[cfg(all(core_rs_no_flonum, not(core_rs_flonum_mask = "0x00")))]
+compile_error!("C definition of FLONUM_MASK does not match core_rs FLONUM_MASK (expected 0x00)");
+#[cfg(all(core_rs_no_flonum, not(core_rs_flonum_flag = "0x02")))]
+compile_error!("C definition of FLONUM_FLAG does not match core_rs FLONUM_FLAG (expected 0x02)");
+#[cfg(all(core_rs_no_flonum, not(core_rs_symbol_flag = "0x0e")))]
+compile_error!("C definition of SYMBOL_FLAG does not match core_rs SYMBOL_FLAG (expected 0x0e)");
+
+#[cfg(all(core_rs_special_shift, not(core_rs_special_shift = "8")))]
+compile_error!("C definition of SPECIAL_SHIFT does not match core_rs SPECIAL_SHIFT (expected 8)");
 
 /// `USE_FLONUM`, as the C build sees it.
 pub const USE_FLONUM: bool = cfg!(core_rs_flonum);
@@ -69,6 +126,33 @@ pub use consts::*;
 
 /// `RUBY_SPECIAL_SHIFT`.
 pub const SPECIAL_SHIFT: u32 = 8;
+
+const _: () = {
+    assert!(Qfalse == 0x00);
+    assert!(FIXNUM_FLAG == 0x01);
+    assert!(FLONUM_FLAG == 0x02);
+    assert!(SPECIAL_SHIFT == 8);
+};
+
+#[cfg(core_rs_flonum)]
+const _: () = {
+    assert!(Qnil == 0x04);
+    assert!(Qtrue == 0x14);
+    assert!(Qundef == 0x24);
+    assert!(IMMEDIATE_MASK == 0x07);
+    assert!(FLONUM_MASK == 0x03);
+    assert!(SYMBOL_FLAG == 0x0c);
+};
+
+#[cfg(not(core_rs_flonum))]
+const _: () = {
+    assert!(Qnil == 0x02);
+    assert!(Qtrue == 0x06);
+    assert!(Qundef == 0x0a);
+    assert!(IMMEDIATE_MASK == 0x03);
+    assert!(FLONUM_MASK == 0x00);
+    assert!(SYMBOL_FLAG == 0x0e);
+};
 
 /// `RUBY_FIXNUM_MAX`: `LONG_MAX / 2`.
 pub const FIXNUM_MAX: c_long = c_long::MAX / 2;

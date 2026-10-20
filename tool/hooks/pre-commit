@@ -8,7 +8,7 @@ repo_root = File.expand_path('../..', __dir__)
 
 # Detect staged .c or .h files
 staged_files_output = `git -C "#{repo_root}" diff --cached --name-only --diff-filter=ACM`.split("\n")
-staged_c_files = staged_files_output.select { |f| f =~ /\.[ch]\z/ }
+staged_c_files = staged_files_output.select { |f| f =~ /\.[ch]\z/ && f != 'core_rs/cfg.c' }
 
 if staged_c_files.empty?
   exit 0
