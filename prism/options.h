@@ -339,7 +339,8 @@ PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_scope_local(const pm_opti
 
 /**
  * Return a mutable pointer to the local at the given index within the given
- * scope.
+ * scope, for setting the local's name with pm_string_init. The parser copies
+ * the name when it is created, so its bytes must remain valid until then.
  *
  * @param scope The scope struct to get the local from.
  * @param index The index of the local to get.

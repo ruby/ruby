@@ -27,16 +27,8 @@ pm_options_new(void) {
  */
 void
 pm_options_cleanup(pm_options_t *options) {
-    pm_string_cleanup(&options->filepath);
-    pm_string_cleanup(&options->encoding);
-
     for (size_t scope_index = 0; scope_index < options->scopes_count; scope_index++) {
         pm_options_scope_t *scope = &options->scopes[scope_index];
-
-        for (size_t local_index = 0; local_index < scope->locals_count; local_index++) {
-            pm_string_cleanup(&scope->locals[local_index]);
-        }
-
         xfree_sized(scope->locals, scope->locals_count * sizeof(pm_string_t));
     }
 
@@ -76,7 +68,7 @@ pm_options_filepath(const pm_options_t *options) {
  */
 void
 pm_options_filepath_set(pm_options_t *options, const char *filepath) {
-    pm_string_constant_init(&options->filepath, filepath, strlen(filepath));
+    pm_string_init(&options->filepath, (const uint8_t *) filepath, strlen(filepath));
 }
 
 /**
@@ -84,7 +76,7 @@ pm_options_filepath_set(pm_options_t *options, const char *filepath) {
  */
 void
 pm_options_encoding_set(pm_options_t *options, const char *encoding) {
-    pm_string_constant_init(&options->encoding, encoding, strlen(encoding));
+    pm_string_init(&options->encoding, (const uint8_t *) encoding, strlen(encoding));
 }
 
 /**
@@ -397,7 +389,7 @@ pm_options_read(pm_options_t *options, const char *data) {
     data += 4;
 
     if (filepath_length > 0) {
-        pm_string_constant_init(&options->filepath, data, filepath_length);
+        pm_string_init(&options->filepath, (const uint8_t *) data, filepath_length);
         data += filepath_length;
     }
 
@@ -408,7 +400,7 @@ pm_options_read(pm_options_t *options, const char *data) {
     data += 4;
 
     if (encoding_length > 0) {
-        pm_string_constant_init(&options->encoding, data, encoding_length);
+        pm_string_init(&options->encoding, (const uint8_t *) data, encoding_length);
         data += encoding_length;
     }
 
@@ -441,7 +433,7 @@ pm_options_read(pm_options_t *options, const char *data) {
                 uint32_t local_length = pm_options_read_u32(data);
                 data += 4;
 
-                pm_string_constant_init(&scope->locals[local_index], data, local_length);
+                pm_string_init(&scope->locals[local_index], (const uint8_t *) data, local_length);
                 data += local_length;
             }
         }

@@ -6820,7 +6820,7 @@ pm_symbol_node_synthesized_create(pm_parser_t *parser, const char *content) {
         ((pm_string_t) { 0 })
     );
 
-    pm_string_constant_init(&node->unescaped, content, strlen(content));
+    pm_string_init(&node->unescaped, (const uint8_t *) content, strlen(content));
     return node;
 }
 
@@ -9658,7 +9658,7 @@ lex_question_mark(pm_parser_t *parser) {
 
         // Copy buffer data into the arena and free the heap buffer.
         void *arena_data = pm_arena_memdup(parser->arena, buffer.value, buffer.length, PRISM_ALIGNOF(uint8_t));
-        pm_string_constant_init(&parser->current_string, (const char *) arena_data, buffer.length);
+        pm_string_init(&parser->current_string, (const uint8_t *) arena_data, buffer.length);
         pm_buffer_cleanup(&buffer);
 
         return PM_TOKEN_CHARACTER_LITERAL;
@@ -9982,7 +9982,7 @@ pm_token_buffer_copy(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
     // Copy buffer data into the arena and free the heap buffer.
     size_t len = pm_buffer_length(&token_buffer->buffer);
     void *arena_data = pm_arena_memdup(parser->arena, pm_buffer_value(&token_buffer->buffer), len, PRISM_ALIGNOF(uint8_t));
-    pm_string_constant_init(&parser->current_string, (const char *) arena_data, len);
+    pm_string_init(&parser->current_string, (const uint8_t *) arena_data, len);
     pm_buffer_cleanup(&token_buffer->buffer);
 }
 
@@ -16798,18 +16798,13 @@ parse_method_definition_name(pm_parser_t *parser) {
 
 static void
 parse_heredoc_dedent_string(pm_arena_t *arena, pm_string_t *string, size_t common_whitespace) {
-    // Make a writable copy in the arena if the string isn't already writable.
-    // We keep a mutable pointer to the arena memory so we can memmove into it
-    // below without casting away const from the string's source field.
-    uint8_t *writable;
-
-    if (string->type != PM_STRING_OWNED) {
-        size_t length = pm_string_length(string);
-        writable = (uint8_t *) pm_arena_memdup(arena, pm_string_source(string), length, PRISM_ALIGNOF(uint8_t));
-        pm_string_constant_init(string, (const char *) writable, length);
-    } else {
-        writable = (uint8_t *) string->source;
-    }
+    // Make a writable copy of the string in the arena, since strings only view
+    // their bytes. We keep a mutable pointer to the arena memory so we can
+    // memmove into it below without casting away const from the string's
+    // source field.
+    size_t length = pm_string_length(string);
+    uint8_t *writable = (uint8_t *) pm_arena_memdup(arena, pm_string_source(string), length, PRISM_ALIGNOF(uint8_t));
+    pm_string_init(string, writable, length);
 
     // Now get the bounds of the existing string. We'll use this as a
     // destination to move bytes into. We'll also use it for bounds checking
@@ -22022,9 +22017,7 @@ parse_match(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_pow
         }
 
         if (!interpolated && total_length > 0) {
-            void *memory = xmalloc(total_length);
-            if (!memory) abort();
-
+            uint8_t *memory = (uint8_t *) pm_arena_alloc(&parser->metadata_arena, total_length, PRISM_ALIGNOF(uint8_t));
             uint8_t *cursor = memory;
             PM_NODE_LIST_FOREACH(parts, index, part) {
                 pm_string_t *unescaped = &((pm_string_node_t *) part)->unescaped;
@@ -22034,11 +22027,9 @@ parse_match(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_pow
                 cursor += length;
             }
 
-            pm_string_t owned;
-            pm_string_owned_init(&owned, (uint8_t *) memory, total_length);
-
-            result = parse_interpolated_regular_expression_named_captures(parser, &owned, call, PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED));
-            pm_string_cleanup(&owned);
+            pm_string_t content;
+            pm_string_init(&content, memory, total_length);
+            result = parse_interpolated_regular_expression_named_captures(parser, &content, call, PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED));
         }
     } else if (PM_NODE_TYPE_P(node, PM_REGULAR_EXPRESSION_NODE)) {
         /* If we have a regular expression node, then we can parse the named
@@ -22048,7 +22039,7 @@ parse_match(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_pow
             .call = call,
             .match = NULL,
             .names = { 0 },
-            .shared = regexp->unescaped.type == PM_STRING_SHARED,
+            .shared = pm_string_source(&regexp->unescaped) == parser->start + regexp->content_loc.start,
         };
 
         pm_node_flag_set(UP(regexp), pm_regexp_parse(parser, regexp, parse_regular_expression_named_capture, &name_data));
@@ -23574,7 +23565,6 @@ pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_op
  */
 void
 pm_parser_cleanup(pm_parser_t *parser) {
-    pm_string_cleanup(&parser->filepath);
     pm_arena_cleanup(&parser->metadata_arena);
 
     while (parser->lex_modes.index >= PM_LEX_STACK_SIZE) {
