@@ -25225,6 +25225,67 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_always_inline_ignores_budget() {
+        // BasicObject#!= is marked `Primitive.attr! :always_inline`, so it is inlined
+        // even with the per-caller budget exhausted. Its body calls a user-defined #==
+        // which is *not* always_inline, so that SendDirect stays behind the budget.
+        eval("
+            class CustomEq
+              def ==(o)
+                self.equal?(o)
+              end
+            end
+
+            def test(a, b) = a != b
+
+            custom = CustomEq.new
+            test(custom, custom)
+            test(custom, custom)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let budget_rejects_before = counters.inline_reject_budget_exceeded;
+        let inline_count_before = counters.inline_method_count;
+
+        let old_budget = get_option!(inline_budget);
+        unsafe { OPTIONS.as_mut().unwrap().inline_budget = 1; }
+        let result = hir_string("test");
+        unsafe { OPTIONS.as_mut().unwrap().inline_budget = old_budget; }
+
+        assert_eq!(counters.inline_method_count, inline_count_before + 1,
+            "Expected exactly one inline (BasicObject#!=) under budget=1");
+        assert!(counters.inline_reject_budget_exceeded > budget_rejects_before,
+            "Expected CustomEq#== to be rejected by the budget");
+        assert_snapshot!(result, @"
+        fn test@<compiled>:8:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(CustomEq@0x1008)
+          PatchPoint MethodRedefined(CustomEq@0x1008, !=@0x1010, cme:0x1018)
+          v28:ObjectSubclass[class_exact:CustomEq] = GuardType v12, ObjectSubclass[class_exact:CustomEq] recompile
+          PushInlineFrame :!=, v28 (0x1040), num_args=1
+          PatchPoint MethodRedefined(CustomEq@0x1008, ==@0x1060, cme:0x1068)
+          v54:BasicObject = SendDirect v28, 0x0, :== (0x1090), v13
+          v41:BoolExact = BoolNegate v54
+          PatchPoint NoEPEscape(!=)
+          PopInlineFrame
+          CheckInterrupts
+          Return v41
+        ");
+    }
+
+    #[test]
     fn test_inline_method_with_all_optionals_omitted() {
         // Caller fills 0 optionals: both `b` and `c` defaults must run inside the inlined
         // body. We pick `jit_entry_blocks[0]` so the body's default-init chain executes

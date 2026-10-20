@@ -9439,6 +9439,9 @@ compile_builtin_attr_symbol(rb_iseq_t *iseq, VALUE symbol)
     else if (rb_streql_lit(string, "caller_user_box")) {
         ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_CALLER_USER_BOX;
     }
+    else if (rb_streql_lit(string, "always_inline")) {
+        ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_ALWAYS_INLINE;
+    }
     else {
         return COMPILE_NG;
     }
