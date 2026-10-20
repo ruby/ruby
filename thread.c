@@ -4915,13 +4915,14 @@ wait_for_single_fd_blocking_region(rb_thread_t *th, struct pollfd *fds, nfds_t n
                                    rb_hrtime_t *const to, volatile int *lerrno)
 {
     struct timespec ts;
-    volatile int result = 0;
+    // A skipped ppoll is not a timeout; report EINTR so wait_retryable polls again.
+    volatile int result = -1;
 
-    *lerrno = 0;
+    *lerrno = EINTR;
     BLOCKING_REGION(th, {
         if (!RUBY_VM_INTERRUPTED(th->ec)) {
             result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, to), 0);
-            if (result < 0) *lerrno = errno;
+            *lerrno = result < 0 ? errno : 0;
         }
     }, ubf_select, th, TRUE);
     return result;
