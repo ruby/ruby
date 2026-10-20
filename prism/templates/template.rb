@@ -753,6 +753,7 @@ module Ruby::Prism
     TEMPLATES = [
       "ext/prism/api_node.c",
       "include/prism/ast.h",
+      "include/prism/ast.hpp",
       "include/prism/internal/diagnostic.h",
       "javascript/src/deserialize.js",
       "javascript/src/nodes.js",
