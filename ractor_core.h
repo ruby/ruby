@@ -333,11 +333,14 @@ rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th, bool always_reset)
                               (void *)cr->threads.running_ec, (void *)th->ec);
         }
     }
-    else {
-        return;
-    }
+    // seq_cst even if rb_ractor_set_current_ec stored it already, then read the bits:
+    // a trigger either sees th->ec or its bit is seen here
+    RUBY_ATOMIC_PTR_SET(cr->threads.running_ec, th->ec);
 
-    cr->threads.running_ec = th->ec;
+    // a job for this Ractor may have flagged a thread that went to sleep since
+    if (RUBY_ATOMIC_LOAD(cr->postponed_job_triggered_bits)) {
+        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th->ec);
+    }
 
     VM_ASSERT(cr == GET_RACTOR());
 }
@@ -357,7 +360,7 @@ rb_ractor_set_current_ec_(rb_ractor_t *cr, rb_execution_context_t *ec, const cha
 #endif
     RUBY_DEBUG_LOG2(file, line, "ec:%p->%p", (void *)cr->threads.running_ec, (void *)ec);
     VM_ASSERT(ec == NULL || cr->threads.running_ec != ec);
-    cr->threads.running_ec = ec;
+    RUBY_ATOMIC_PTR_SET(cr->threads.running_ec, ec); // read by other Ractors' triggers
 }
 
 void rb_vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line);
