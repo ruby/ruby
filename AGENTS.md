@@ -185,3 +185,31 @@ The fork stopped syncing from ruby/ruby on 2026-10-07; the base commit and the p
 - **Never merge ruby/ruby `master` into this repository.**
 - Security fixes are cherry-picked as single PRs labelled `security-backport`. When the affected function has a Rust port, fix both the C (behind `#if !USE_RUST_PORTS`) and the Rust port, and add a regression test.
 - After any change to top-level C files, run `ruby tool/generate_porting_ledger.rb` to refresh `PORTING.md`. `--check` ignores line-count drift but fails on file-list, status, target, subsystem or note differences.
+
+---
+
+## 13. What to Work On, and When You May Open a PR
+
+**The backlog is `docs/ruby_on_rust/ROADMAP.md`.** It holds every task needed for
+the conversion, in priority order, with a stable ID per task (`RR-P1-03`,
+`RR-P0-02`, ...). This file tells you *how* to work; the roadmap tells you
+*what*.
+
+- **Work only on a task you were dispatched.** Your instructions name a roadmap
+  task ID, or they paste a port-unit brief. If they name neither, ask for one —
+  do not pick something yourself, and do not open a PR. Undispatched PRs are
+  closed unread.
+- **One task per session, one PR per task.** Touch only the files that task
+  names (§7).
+- **For a porting task, the brief is generated, not improvised:**
+  ```
+  ruby tool/core_rs/inventory.rb --kit <unit-id>     # the full task body
+  ruby tool/core_rs/inventory.rb --units --open      # units with work left
+  ```
+  The kit prints the functions, their line ranges, the scope, the fidelity
+  rules, the required evidence and the acceptance criteria. It is binding. The
+  tool needs Ruby 3.0+.
+- **Do not edit the roadmap as a side effect.** Changing a task's status is its
+  own one-line change, made when that task's PR merges.
+- **If the task conflicts with this file, this file wins.** Say so in the PR
+  description instead of working around it (§6).
