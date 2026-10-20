@@ -66,24 +66,44 @@ Read docs/ruby_on_rust/ROADMAP.md and AGENTS.md, then do task RR-P1-03.
 Open one PR for that task only. Do not touch anything the task does not name.
 ```
 
-For a porting task, the per-unit brief is generated, not hand-written:
+For a porting task, name the port unit and let the agent generate its own brief
+in its own VM:
 
-```bash
-ruby tool/core_rs/inventory.rb --kit util-A-02
+```
+Read docs/ruby_on_rust/ROADMAP.md and AGENTS.md, then do task RR-P1-01,
+which is port unit siphash-A-01. Run
+`ruby tool/core_rs/inventory.rb --kit siphash-A-01` first and follow its
+output exactly. Open one PR for that unit only.
 ```
 
-That prints the full task body (functions, line ranges, scope, fidelity rules,
-required evidence, acceptance criteria). Paste it after the line above. To list
-units that still have work:
+The kit prints the full task body: functions, line ranges, scope, fidelity
+rules, required evidence and acceptance criteria. To list units that still have
+work:
 
 ```bash
 ruby tool/core_rs/inventory.rb --units --wave A --open
 ```
 
-`inventory.rb` needs Ruby 3.0+ (it uses endless method definitions).
+`inventory.rb` needs Ruby 3.0+ (it uses endless method definitions). That is
+consistent with the repository, whose BASERUBY matrix is Ruby 3.1-3.3, so the
+tool is not expected to run on macOS's system Ruby 2.6. Do not downgrade it.
 
 Task IDs are stable and are never renumbered. A task is **pickup-ready** only
 when it names its files, its acceptance criteria and what it is blocked on.
+
+Dispatch is orchestrated by Claude Code rather than driven by hand; the
+orchestration layer is bootstrapped with
+`docs/ruby_on_rust/orchestrator-bootstrap-prompt.md` and lives in `.claude/rr/`.
+
+The delegation target is the Jules v2alpha pipeline in workspace
+`e09b7edc-9ec5-48e1-b8dd-c7dc8cdeb46e` ("Ruby on Rust"), driven with the `jules`
+CLI: a roadmap priority band becomes a Jules **goal**, a roadmap task or port
+unit becomes a **task** under it, and the computed priority state is published
+as a **context**. `autonomyLevel` is the safety dial: `CREATE_SUGGESTIONS` yields insights and
+assessments only, while `CREATE_ASSETS` already opens PRs and `SUBMIT_ASSETS` is
+fully autonomous. No goal should leave `CREATE_SUGGESTIONS` before `RR-OWN-01`
+makes the Port gate a required check.
+`stitch` is Google's UI design product and has no role in this migration.
 
 ---
 

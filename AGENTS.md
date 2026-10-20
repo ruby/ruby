@@ -201,14 +201,19 @@ the conversion, in priority order, with a stable ID per task (`RR-P1-03`,
   closed unread.
 - **One task per session, one PR per task.** Touch only the files that task
   names (§7).
-- **For a porting task, the brief is generated, not improvised:**
+- **For a porting task, generate your own brief before you write any code.**
+  Your instructions name a port-unit id (for example `siphash-A-01`). Run:
   ```
   ruby tool/core_rs/inventory.rb --kit <unit-id>     # the full task body
   ruby tool/core_rs/inventory.rb --units --open      # units with work left
   ```
   The kit prints the functions, their line ranges, the scope, the fidelity
-  rules, the required evidence and the acceptance criteria. It is binding. The
-  tool needs Ruby 3.0+.
+  rules, the required evidence and the acceptance criteria. **It is binding:
+  treat its output as the task specification and port exactly the functions it
+  marks "to port", nothing else.** Quote the kit's function table in your PR
+  description so the scope is reviewable. The tool needs Ruby 3.0+, which the
+  repository already requires as BASERUBY; if your Ruby is older, say so in a
+  `BLOCKED:` comment rather than editing the tool.
 - **Do not edit the roadmap as a side effect.** Changing a task's status is its
   own one-line change, made when that task's PR merges.
 - **If the task conflicts with this file, this file wins.** Say so in the PR
