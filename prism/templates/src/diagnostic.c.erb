@@ -504,6 +504,14 @@ pm_diagnostic_warning_level(const pm_diagnostic_t *diagnostic) {
 }
 
 /**
+ * Get the diagnostic that follows the given diagnostic.
+ */
+const pm_diagnostic_t *
+pm_diagnostic_next(const pm_diagnostic_t *diagnostic) {
+    return (const pm_diagnostic_t *) diagnostic->node.next;
+}
+
+/**
  * Append an error to the given list of diagnostic.
  */
 void

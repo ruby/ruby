@@ -36,6 +36,16 @@ PRISM_EXPORTED_FUNCTION pm_location_t pm_magic_comment_key(const pm_magic_commen
  */
 PRISM_EXPORTED_FUNCTION pm_location_t pm_magic_comment_value(const pm_magic_comment_t *magic_comment) PRISM_NONNULL(1);
 
+/**
+ * Returns the magic comment that follows the given magic comment among the
+ * magic comments associated with the parser that found it.
+ *
+ * @param magic_comment the magic comment whose successor we want to get
+ * @returns the next magic comment, or NULL if the given magic comment is the
+ *     last one
+ */
+PRISM_EXPORTED_FUNCTION const pm_magic_comment_t * pm_magic_comment_next(const pm_magic_comment_t *magic_comment) PRISM_NONNULL(1);
+
 #ifdef __cplusplus
 }
 #endif

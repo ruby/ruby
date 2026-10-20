@@ -94,6 +94,16 @@ PRISM_EXPORTED_FUNCTION pm_error_level_t pm_diagnostic_error_level(const pm_diag
  */
 PRISM_EXPORTED_FUNCTION pm_warning_level_t pm_diagnostic_warning_level(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
 
+/**
+ * Get the diagnostic that follows the given diagnostic among the errors or the
+ * warnings of the parser that produced it.
+ *
+ * @param diagnostic The diagnostic to get the successor of.
+ * @returns The next diagnostic of the same kind, or NULL if the given
+ *     diagnostic is the last one.
+ */
+PRISM_EXPORTED_FUNCTION const pm_diagnostic_t * pm_diagnostic_next(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
+
 #ifdef __cplusplus
 }
 #endif

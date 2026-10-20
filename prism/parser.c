@@ -186,6 +186,14 @@ pm_comment_type(const pm_comment_t *comment) {
 }
 
 /**
+ * Returns the comment that follows the given comment.
+ */
+const pm_comment_t *
+pm_comment_next(const pm_comment_t *comment) {
+    return (const pm_comment_t *) comment->node.next;
+}
+
+/**
  * Returns the number of comments associated with the given parser.
  */
 size_t
@@ -194,17 +202,11 @@ pm_parser_comments_size(const pm_parser_t *parser) {
 }
 
 /**
- * Iterates over the comments associated with the given parser and calls the
- * given callback for each comment.
+ * Returns the first comment associated with the given parser.
  */
-void
-pm_parser_comments_each(const pm_parser_t *parser, pm_comment_callback_t callback, void *data) {
-    const pm_list_node_t *current = parser->comment_list.head;
-    while (current != NULL) {
-        const pm_comment_t *comment = (const pm_comment_t *) current;
-        callback(comment, data);
-        current = current->next;
-    }
+const pm_comment_t *
+pm_parser_comments_first(const pm_parser_t *parser) {
+    return (const pm_comment_t *) parser->comment_list.head;
 }
 
 /**
@@ -271,6 +273,14 @@ pm_magic_comment_value(const pm_magic_comment_t *magic_comment) {
 }
 
 /**
+ * Returns the magic comment that follows the given magic comment.
+ */
+const pm_magic_comment_t *
+pm_magic_comment_next(const pm_magic_comment_t *magic_comment) {
+    return (const pm_magic_comment_t *) magic_comment->node.next;
+}
+
+/**
  * Returns the number of magic comments associated with the given parser.
  */
 size_t
@@ -279,17 +289,11 @@ pm_parser_magic_comments_size(const pm_parser_t *parser) {
 }
 
 /**
- * Iterates over the magic comments associated with the given parser and calls
- * the given callback for each magic comment.
+ * Returns the first magic comment associated with the given parser.
  */
-void
-pm_parser_magic_comments_each(const pm_parser_t *parser, pm_magic_comment_callback_t callback, void *data) {
-    const pm_list_node_t *current = parser->magic_comment_list.head;
-    while (current != NULL) {
-        const pm_magic_comment_t *magic_comment = (const pm_magic_comment_t *) current;
-        callback(magic_comment, data);
-        current = current->next;
-    }
+const pm_magic_comment_t *
+pm_parser_magic_comments_first(const pm_parser_t *parser) {
+    return (const pm_magic_comment_t *) parser->magic_comment_list.head;
 }
 
 /**
@@ -308,32 +312,20 @@ pm_parser_warnings_size(const pm_parser_t *parser) {
     return parser->warning_list.size;
 }
 
-static inline void
-pm_parser_diagnostics_each(const pm_list_t *list, pm_diagnostic_callback_t callback, void *data) {
-    const pm_list_node_t *current = list->head;
-    while (current != NULL) {
-        const pm_diagnostic_t *diagnostic = (const pm_diagnostic_t *) current;
-        callback(diagnostic, data);
-        current = current->next;
-    }
+/**
+ * Returns the first error associated with the given parser.
+ */
+const pm_diagnostic_t *
+pm_parser_errors_first(const pm_parser_t *parser) {
+    return (const pm_diagnostic_t *) parser->error_list.head;
 }
 
 /**
- * Iterates over the errors associated with the given parser and calls the
- * given callback for each error.
+ * Returns the first warning associated with the given parser.
  */
-void
-pm_parser_errors_each(const pm_parser_t *parser, pm_diagnostic_callback_t callback, void *data) {
-    pm_parser_diagnostics_each(&parser->error_list, callback, data);
-}
-
-/**
- * Iterates over the warnings associated with the given parser and calls the
- * given callback for each warning.
- */
-void
-pm_parser_warnings_each(const pm_parser_t *parser, pm_diagnostic_callback_t callback, void *data) {
-    pm_parser_diagnostics_each(&parser->warning_list, callback, data);
+const pm_diagnostic_t *
+pm_parser_warnings_first(const pm_parser_t *parser) {
+    return (const pm_diagnostic_t *) parser->warning_list.head;
 }
 
 /**
