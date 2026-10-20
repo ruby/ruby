@@ -6690,7 +6690,7 @@ impl Function {
 
         let cfi = ControlFlowInfo::new(self);
         let rpo = &cfi.reverse_post_order;
-        let mut changed = true;
+        let mut changed;
         let mut has_back_edge = false;
         let mut rpo_order = vec![usize::MAX; self.blocks.len()];
         for (idx, &block_id) in rpo.iter().enumerate() {
@@ -6711,6 +6711,7 @@ impl Function {
         let mut available_expressions: InsnSet = InsnSet::with_capacity(self.insns.len());
 
         loop {
+            changed = true;
             for (rpo_index, &block_id) in rpo.iter().enumerate() {
                 // Set block_cache equal to the intersection of cached insns of all predecessors
                 // Additionally, check for back edges
@@ -6795,9 +6796,7 @@ impl Function {
                 if cached_insns[block_id] == block_cache {
                     changed = false;
                 }
-                else {
-                    cached_insns[block_id] = block_cache;
-                }
+                cached_insns[block_id] = block_cache;
             }
 
             if !(changed && has_back_edge) {
