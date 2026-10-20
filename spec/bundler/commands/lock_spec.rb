@@ -1471,6 +1471,40 @@ RSpec.describe "bundle lock" do
     bundle "lock --add-platform x86_64-linux"
   end
 
+  it "adds platform specific gems for a new platform when another gem's variant for that platform is incompatible with the current ruby" do
+    build_repo4 do
+      build_gem "sqlite3", "2.10.1"
+      build_gem "sqlite3", "2.10.1" do |s|
+        s.platform = "x86_64-linux"
+      end
+      build_gem "sqlite3", "2.10.1" do |s|
+        s.platform = "arm64-darwin"
+      end
+
+      build_gem "bcrypt_pbkdf", "1.1.2"
+      build_gem "bcrypt_pbkdf", "1.1.2" do |s|
+        s.platform = "arm64-darwin"
+        s.required_ruby_version = "< #{Gem.ruby_version}"
+      end
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+
+      gem "sqlite3"
+      gem "bcrypt_pbkdf"
+    G
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --add-checksums --add-platform arm64-darwin"
+    end
+
+    expect(lockfile).to include("sqlite3 (2.10.1-arm64-darwin)")
+    expect(lockfile).to include("bcrypt_pbkdf (1.1.2)\n")
+    expect(lockfile).not_to include("bcrypt_pbkdf (1.1.2-arm64-darwin)")
+    expect(the_bundle.locked_platforms).to include("arm64-darwin")
+  end
+
   it "adds platform specific gems as necessary, even when adding the current platform" do
     build_repo4 do
       build_gem "nokogiri", "1.16.0"
