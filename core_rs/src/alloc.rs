@@ -12,7 +12,9 @@ use core::ffi::c_void;
 use core::ptr;
 
 #[cfg(not(test))]
-use crate::ffi::api::{ruby_xfree, ruby_xmalloc, ruby_xrealloc};
+use crate::ffi::api::raising::{ruby_xmalloc, ruby_xrealloc};
+#[cfg(not(test))]
+use crate::ffi::api::ruby_xfree;
 #[cfg(not(test))]
 use crate::ffi::protect::protect;
 #[cfg(not(test))]
