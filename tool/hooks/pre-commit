@@ -1,0 +1,117 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'tmpdir'
+require 'fileutils'
+
+repo_root = File.expand_path('../..', __dir__)
+
+# Detect staged .c or .h files
+staged_files_output = `git -C "#{repo_root}" diff --cached --name-only --diff-filter=ACM`.split("\n")
+staged_c_files = staged_files_output.select { |f| f =~ /\.[ch]\z/ && f != 'core_rs/cfg.c' }
+
+if staged_c_files.empty?
+  exit 0
+end
+
+puts "[pre-commit] Inspecting staged C/header files: #{staged_c_files.join(', ')}"
+
+compiler = ENV['CC'] || 'gcc'
+compiler_ok = system("#{compiler} --version >/dev/null 2>&1")
+unless compiler_ok
+  # Fallback to clang or cc
+  %w[clang cc].each do |alt_cc|
+    if system("#{alt_cc} --version >/dev/null 2>&1")
+      compiler = alt_cc
+      compiler_ok = true
+      break
+    end
+  end
+end
+
+unless compiler_ok
+  puts "[pre-commit] Warning: No C compiler (#{compiler}) found. Skipping pre-commit compilation check."
+  exit 0
+end
+
+arch_config = Dir.glob(File.join(repo_root, '.ext', 'include', '*', 'ruby', 'config.h')).first
+arch_dir = arch_config ? File.dirname(File.dirname(arch_config)) : nil
+
+unless arch_dir && File.exist?(arch_config)
+  puts "[pre-commit] Warning: ruby/config.h not found. Please run ./configure first to enable pre-commit checks."
+  exit 0
+end
+
+Dir.mktmpdir('git-pre-commit-') do |tmp_dir|
+  # Extract staged content for all staged files so we only inspect staged changes
+  staged_files_output.each do |file_path|
+    staged_content = `git -C "#{repo_root}" show ":0:#{file_path}" 2>/dev/null`
+    next unless $?.success?
+
+    target_path = File.join(tmp_dir, file_path)
+    FileUtils.mkdir_p(File.dirname(target_path))
+    File.binwrite(target_path, staged_content)
+  end
+
+  include_flags = [
+    "-I#{tmp_dir}",
+    "-I#{repo_root}",
+    "-I#{arch_dir}",
+    "-I#{File.join(repo_root, '.ext', 'include')}",
+    "-I#{File.join(repo_root, 'include')}",
+    "-I#{File.join(repo_root, 'prism')}"
+  ]
+
+  unicode_enc = File.join(repo_root, 'enc', 'unicode', '17.0.0')
+  include_flags << "-I#{unicode_enc}" if File.directory?(unicode_enc)
+
+  failures = []
+
+  staged_c_files.each do |rel_path|
+    staged_file_in_tmp = File.join(tmp_dir, rel_path)
+    file_to_check = File.exist?(staged_file_in_tmp) ? staged_file_in_tmp : File.join(repo_root, rel_path)
+    next unless File.exist?(file_to_check)
+
+    [1, 0].each do |use_rust_ports|
+      cmd = [
+        compiler,
+        *include_flags,
+        "-DUSE_RUST_PORTS=#{use_rust_ports}",
+        "-fsyntax-only",
+        file_to_check
+      ]
+
+      cmd_str = cmd.map { |arg| arg.include?(' ') ? %("#{arg}") : arg }.join(' ')
+      output = `#{cmd_str} 2>&1`
+      status = $?
+
+      unless status.success?
+        mode_str = use_rust_ports == 1 ? "USE_RUST_PORTS=1 (--with-rust-ports)" : "USE_RUST_PORTS=0 (--without-rust-ports)"
+        failures << {
+          file: rel_path,
+          mode: mode_str,
+          output: output
+        }
+      end
+    end
+  end
+
+  unless failures.empty?
+    warn "\n========================================================================"
+    warn "[pre-commit] ERROR: Staged C/header changes failed dual compilation check!"
+    warn "========================================================================"
+    failures.each do |f|
+      warn "\nFile: #{f[:file]} [Mode: #{f[:mode]}]"
+      warn "Compiler output:"
+      warn f[:output]
+    end
+    warn "------------------------------------------------------------------------"
+    warn "Please fix C fallback code or header declarations before committing."
+    warn "Ported C code inside `#if !USE_RUST_PORTS` blocks must remain compile-clean."
+    warn "========================================================================\n"
+    exit 1
+  end
+end
+
+puts "[pre-commit] Staged C/header files passed dual compilation checks (USE_RUST_PORTS=1 and USE_RUST_PORTS=0)."
+exit 0
