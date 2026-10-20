@@ -1,431 +1,346 @@
-name: Windows
+# EPPA + BİZİM SAĞLIK WINDOWS UYGULAMALARI — tek dosyalık derleme
+# Kaydedilince GitHub, Windows kurulum dosyalarını (.exe) derler ve Releases'e koyar.
+name: Windows uygulamalari
 on:
   push:
-    paths-ignore:
-      - 'doc/**'
-      - '**/man/*'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
-      - '.*.yml'
-  pull_request:
-    # Do not use paths-ignore for required status checks
-    # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
-  merge_group:
-
-concurrency:
-  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
-  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
-
+    paths: ['.github/workflows/windows.yml']
+  workflow_dispatch:
 permissions:
-  contents: read
-
+  contents: write
 jobs:
-  make:
-    continue-on-error: ${{ matrix.os == '11-arm' || matrix.make == 'make' }}
-    strategy:
-      matrix:
-        include:
-          - os: 2022
-            test_task: check
-          - os: 2022
-            test_task: test-bundled-gems
-          - os: 2025-vs2026
-            test_task: check
-          - os: 2025-vs2026
-            test_task: check
-            make: make
-          - os: 2025-vs2026
-            test_task: test-bundled-gems
-          - os: 2025-vs2026
-            test_task: check
-            target: x86
-          - os: 2025-vs2026
-            test_task: check
-            yjit: true
-          - os: 11-arm
-            test_task: check
-            target: arm64
-      fail-fast: false
-
-    runs-on: windows-${{ matrix.os }}
-
-    if: >-
-      ${{!(false
-      || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/vcpkg'))
-      )}}
-
-    name: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }}${{ case(matrix.yjit == true, ' YJIT', '') }}${{ case(matrix.make == 'make', ' GNU make', '') }} (${{ matrix.test_task }})
-
-    permissions:
-      contents: read
-      packages: write
-
-    env:
-      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
-      FEED_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
-      NoDefaultCurrentDirectoryInExePath: 1
-
+  exe:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
-      - run: md build
-        working-directory:
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Ortak dosyalar
+        run: |
+          mkdir -p ortak arac
+          cat > ortak/main.js <<'DOSYA_SONU'
+          /* MASAÜSTÜ UYGULAMASI (Windows) — siteyi kendi penceresinde açar.
+             · Kapat'a basınca saat yanında (sistem tepsisi) çalışmaya devam eder → mesaj bildirimleri gelir.
+             · Windows açılınca kendiliğinden başlar (tepsi menüsünden kapatılabilir).
+             · Başka sitelere giden bağlantılar normal tarayıcıda açılır. */
+          const {app, BrowserWindow, Tray, Menu, shell, ipcMain, nativeImage, session, Notification, dialog} = require('electron');
+          const path = require('path');
+          const fs = require('fs');
+          const A = require('./ayar.json');
 
-      - uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1.329.0
+          app.setAppUserModelId(A.appId);
+          if (!app.requestSingleInstanceLock()) { app.quit(); return; }
+
+          let pen = null, tepsi = null, cikiyor = false;
+          const durumDosyasi = path.join(app.getPath('userData'), 'pencere.json');
+          const durumOku = () => { try { return JSON.parse(fs.readFileSync(durumDosyasi, 'utf8')); } catch (e) { return {ilk: true}; } };
+          const durumYaz = (d) => { try { fs.writeFileSync(durumDosyasi, JSON.stringify(d)); } catch (e) {} };
+          const ikon = path.join(__dirname, 'ikon.png');
+          const kendiSitesi = (u) => { try { const h = new URL(u).hostname; return h === A.host || h.endsWith('.' + A.host); } catch (e) { return false; } };
+          // PDF adresleri: …/pdf, …/pdf/ad.pdf, …-pdf/…, .pdf
+          const pdfMi = (u) => /\.pdf(\?|#|$)|[\/-]pdf(\/|\?|#|$)|^data:application\/pdf/i.test(u);
+          const pdfPencere = () => ({width: 1100, height: 900, autoHideMenuBar: true, icon: ikon, backgroundColor: '#525659',
+              webPreferences: {partition: 'persist:' + A.kisa, plugins: true, spellcheck: false}});
+
+          function goster() { if (!pen) return; if (pen.isMinimized()) pen.restore(); pen.show(); pen.focus(); }
+
+          function pencere() {
+              const d = durumOku();
+              pen = new BrowserWindow({
+                  width: d.w || 1280, height: d.h || 820, x: d.x, y: d.y, minWidth: 380, minHeight: 560,
+                  title: A.ad, icon: ikon, backgroundColor: A.zemin, show: false, autoHideMenuBar: true,
+                  webPreferences: {preload: path.join(__dirname, 'preload.js'), partition: 'persist:' + A.kisa, backgroundThrottling: false, spellcheck: false, plugins: true},
+              });
+              pen.setMenuBarVisibility(false);
+              pen.once('ready-to-show', () => { if (d.ilk || d.buyuk) pen.maximize(); if (!process.argv.includes('--gizli')) pen.show(); });
+              pen.webContents.setUserAgent(pen.webContents.getUserAgent().replace(/Electron\/\S+\s?/, '').replace(/\S+\/[\d.]+ (?=Chrome\/)/, '') + ' MasaustuUygulama/' + app.getVersion());
+              pen.loadURL(A.url);
+
+              // açılmazsa (internet yok ve daha önce hiç açılmamış) şık bir uyarı sayfası
+              pen.webContents.on('did-fail-load', (e, kod, aciklama, url, anaCerceve) => {
+                  if (!anaCerceve || kod === -3) return;
+                  pen.loadFile(path.join(__dirname, 'baglanti.html'), {query: {u: url || A.url, ad: A.ad}});
+              });
+              // başka siteler → varsayılan tarayıcı; kendi sitemiz → aynı pencere; PDF → ayrı PDF penceresi
+          pen.webContents.setWindowOpenHandler(({url}) => {
+              const blob = /^(blob|data):/i.test(url);
+              if (pdfMi(url) && (kendiSitesi(url) || blob)) return {action: 'allow', overrideBrowserWindowOptions: pdfPencere()};
+              if (kendiSitesi(url)) { pen.loadURL(url); return {action: 'deny'}; }
+              if (blob) return {action: 'allow', overrideBrowserWindowOptions: pdfPencere()};
+              shell.openExternal(url); return {action: 'deny'};
+          });
+          pen.webContents.on('will-navigate', (e, url) => { if (!kendiSitesi(url) && !url.startsWith('file:')) { e.preventDefault(); shell.openExternal(url); } });
+              // F5 yenile, Ctrl +/- yakınlaştır, Ctrl 0 sıfırla, F11 tam ekran
+              pen.webContents.on('before-input-event', (e, i) => {
+                  if (i.type !== 'keyDown') return;
+                  const wc = pen.webContents;
+                  if (i.key === 'F5' || (i.control && i.key.toLowerCase() === 'r')) { wc.reload(); e.preventDefault(); }
+                  else if (i.key === 'F11') { pen.setFullScreen(!pen.isFullScreen()); e.preventDefault(); }
+                  else if (i.control && (i.key === '+' || i.key === '=')) { wc.setZoomLevel(wc.getZoomLevel() + 0.5); e.preventDefault(); }
+                  else if (i.control && i.key === '-') { wc.setZoomLevel(wc.getZoomLevel() - 0.5); e.preventDefault(); }
+                  else if (i.control && i.key === '0') { wc.setZoomLevel(0); e.preventDefault(); }
+                  else if (i.alt && i.key === 'ArrowLeft' && wc.canGoBack()) { wc.goBack(); e.preventDefault(); }
+              });
+              pen.on('focus', () => pen.flashFrame(false));
+              pen.on('close', (e) => {
+                  const b = pen.getNormalBounds();
+                  durumYaz({x: b.x, y: b.y, w: b.width, h: b.height, buyuk: pen.isMaximized()});
+                  if (cikiyor) return;
+                  e.preventDefault(); pen.hide();
+                  const d2 = durumOku();
+                  if (!d2.tepsiBilgi && Notification.isSupported()) {
+                      new Notification({title: A.ad + ' arka planda çalışıyor', body: 'Mesaj bildirimleri gelmeye devam edecek. Açmak için saat yanındaki simgeye tıklayın.', icon: ikon}).show();
+                      durumYaz(Object.assign(d2, {tepsiBilgi: true}));
+                  }
+              });
+          }
+
+          function tepsiKur() {
+              tepsi = new Tray(nativeImage.createFromPath(ikon).resize({width: 16, height: 16}));
+              tepsi.setToolTip(A.ad);
+              const menu = () => Menu.buildFromTemplate([
+                  {label: A.ad + ' uygulamasını aç', click: goster},
+                  {label: 'Sayfayı yenile', click: () => { goster(); pen.webContents.reload(); }},
+                  {type: 'separator'},
+                  {label: 'Windows açılınca başlat', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin,
+                      click: (m) => app.setLoginItemSettings({openAtLogin: m.checked, args: ['--gizli']})},
+                  {label: 'Sürüm ' + app.getVersion(), enabled: false},
+                  {type: 'separator'},
+                  {label: 'Çıkış', click: () => { cikiyor = true; app.quit(); }},
+              ]);
+              tepsi.setContextMenu(menu());
+              tepsi.on('click', goster);
+              tepsi.on('right-click', () => tepsi.setContextMenu(menu()));
+          }
+
+          app.whenReady().then(() => {
+              const ses = session.fromPartition('persist:' + A.kisa);
+              const izinli = ['notifications', 'geolocation', 'media', 'clipboard-read', 'clipboard-sanitized-write', 'fullscreen'];
+              ses.setPermissionRequestHandler((wc, izin, cb) => cb(izinli.includes(izin)));
+              ses.setPermissionCheckHandler((wc, izin) => izinli.includes(izin));
+              // İndirmeler: İndirilenler klasörüne kaydet, bitince PDF'i aç / dosyayı klasörde göster
+              ses.on('will-download', (e, item) => {
+                  const klasor = app.getPath('downloads');
+                  const ad = (item.getFilename() || 'dosya').replace(/[\\/:*?"<>|]+/g, '_');
+                  const uz = path.extname(ad), kok = path.basename(ad, uz);
+                  let yol = path.join(klasor, ad), i = 1;
+                  while (fs.existsSync(yol)) yol = path.join(klasor, kok + ' (' + (i++) + ')' + uz);
+                  item.setSavePath(yol);
+                  item.on('updated', () => { if (pen && item.getTotalBytes()) pen.setProgressBar(item.getReceivedBytes() / item.getTotalBytes()); });
+                  item.once('done', (ev, durum) => {
+                      if (pen) pen.setProgressBar(-1);
+                      if (durum !== 'completed') { if (Notification.isSupported()) new Notification({title: 'İndirme tamamlanamadı', body: ad, icon: ikon}).show(); return; }
+                      if (/\.pdf$/i.test(yol)) shell.openPath(yol); else shell.showItemInFolder(yol);
+                      if (Notification.isSupported()) new Notification({title: 'İndirildi', body: path.basename(yol) + ' — İndirilenler klasörüne kaydedildi', icon: ikon}).show();
+                  });
+              });
+              // ilk kurulumda Windows açılışında başlasın
+              const d = durumOku();
+              if (d.ilk) { app.setLoginItemSettings({openAtLogin: true, args: ['--gizli']}); }
+              pencere(); tepsiKur();
+              if (d.ilk) durumYaz(Object.assign(durumOku(), {ilk: false}));
+          });
+          app.on('second-instance', goster);
+          app.on('before-quit', () => { cikiyor = true; });
+          app.on('window-all-closed', () => {});
+
+          ipcMain.on('goster', goster);
+          ipcMain.on('dikkat', () => { if (pen && !pen.isFocused()) pen.flashFrame(true); });
+          ipcMain.handle('surum', () => app.getVersion());
+          DOSYA_SONU
+          cat > ortak/preload.js <<'DOSYA_SONU'
+          /* Site ile uygulama arasındaki küçük köprü: bildirime tıklayınca pencereyi öne getir, görev çubuğunda yanıp sönsün */
+          const {contextBridge, ipcRenderer} = require('electron');
+          contextBridge.exposeInMainWorld('__masaustuUyg', {
+              goster: () => ipcRenderer.send('goster'),
+              dikkat: () => ipcRenderer.send('dikkat'),
+              surum: () => ipcRenderer.invoke('surum'),
+          });
+          DOSYA_SONU
+          cat > ortak/baglanti.html <<'DOSYA_SONU'
+          <!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Bağlantı yok</title>
+          <style>
+          html,body{height:100%;margin:0}body{display:grid;place-items:center;background:#f4f1ea;font-family:"Segoe UI",system-ui,sans-serif;color:#20242b}
+          .k{background:#fff;border:1px solid #e6e1d6;border-radius:22px;padding:34px 30px;max-width:420px;text-align:center;box-shadow:0 30px 60px -40px rgba(0,0,0,.45)}
+          .i{width:72px;height:72px;border-radius:50%;background:#eef4fa;display:grid;place-items:center;margin:0 auto 16px}
+          h1{font-size:21px;margin:0 0 8px}p{color:#6c695f;line-height:1.55;margin:0 0 20px;font-size:14px}
+          button{border:0;border-radius:13px;background:#1d72b8;color:#fff;font:700 14px "Segoe UI",sans-serif;padding:13px 26px;cursor:pointer}
+          small{display:block;margin-top:14px;color:#9a958a;font-size:12px}
+          </style></head><body><div class="k">
+          <div class="i"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#1d72b8" stroke-width="2" stroke-linecap="round"><path d="M2 2l20 20M8.5 16.5a5 5 0 017 0M5 12.9a10 10 0 015.2-2.8M19 12.9a10 10 0 00-2.4-1.7M1.5 8.8A15 15 0 016 6.2M22.5 8.8a15 15 0 00-9.8-3.7M12 20h.01"/></svg></div>
+          <h1>İnternete bağlanılamadı</h1><p>Bağlantınızı kontrol edin. İnternet gelince <b id="ad">uygulama</b> kendiliğinden açılacak.</p>
+          <button id="d">Tekrar dene</button><small id="s">Otomatik deneniyor…</small></div>
+          <script>
+          const q=new URLSearchParams(location.search),u=q.get('u');document.getElementById('ad').textContent=q.get('ad')||'Uygulama';
+          const git=()=>location.href=u;document.getElementById('d').onclick=git;addEventListener('online',git);setInterval(()=>{if(navigator.onLine)git()},15000);
+          </script></body></html>
+          DOSYA_SONU
+          cat > arac/ikon.js <<'DOSYA_SONU'
+          // Simgeyi canlı siteden alır, kare yapar, 256 px PNG + ICO üretir
+          const Jimp = require('jimp'); const toIco = require('png-to-ico'); const fs = require('fs');
+          (async () => {
+            const [klasor, ...adresler] = process.argv.slice(2); let im = null;
+            for (const u of adresler) { try { const r = await fetch(u); if (!r.ok) continue; im = await Jimp.read(Buffer.from(await r.arrayBuffer())); console.log('simge:', u); break; } catch (e) {} }
+            if (!im) throw new Error('Simge indirilemedi');
+            im.autocrop(); const kenar = Math.max(im.bitmap.width, im.bitmap.height);
+            const kare = new Jimp(Math.round(kenar * 1.12), Math.round(kenar * 1.12), 0xffffffff);
+            kare.composite(im, Math.round((kare.bitmap.width - im.bitmap.width) / 2), Math.round((kare.bitmap.height - im.bitmap.height) / 2));
+            kare.resize(256, 256);
+            const png = await kare.getBufferAsync(Jimp.MIME_PNG);
+            fs.writeFileSync(klasor + '/ikon.png', png); fs.writeFileSync(klasor + '/build/icon.png', png);
+            const kucuk = await Promise.all([16, 24, 32, 48, 64, 128].map((s) => kare.clone().resize(s, s).getBufferAsync(Jimp.MIME_PNG)));
+            fs.writeFileSync(klasor + '/build/icon.ico', await toIco([...kucuk, png]));
+          })().catch((e) => { console.error(e); process.exit(1); });
+          DOSYA_SONU
+          cd arac && npm init -y >/dev/null && npm install --no-audit --no-fund jimp@0.22.12 png-to-ico@2.1.8
+      - name: eppa projesi
+        run: |
+          mkdir -p eppa/build && cp ortak/* eppa/
+          cat > eppa/package.json <<'DOSYA_SONU'
+          {
+           "name": "eppa-masaustu",
+           "productName": "Eppa",
+           "version": "1.0.1",
+           "description": "Eppa — Medikal Saf Su servis yönetimi",
+           "author": "EppaTech",
+           "main": "main.js",
+           "private": true,
+           "build": {
+            "appId": "online.medikalsafsu.masaustu",
+            "productName": "Eppa",
+            "copyright": "© EppaTech",
+            "files": [
+             "main.js",
+             "preload.js",
+             "baglanti.html",
+             "ayar.json",
+             "ikon.png"
+            ],
+            "directories": {
+             "output": "dist",
+             "buildResources": "build"
+            },
+            "win": {
+             "target": [
+              {
+               "target": "nsis",
+               "arch": [
+                "x64"
+               ]
+              }
+             ],
+             "icon": "build/icon.ico",
+             "artifactName": "Eppa-Kurulum.exe"
+            },
+            "nsis": {
+             "oneClick": true,
+             "perMachine": false,
+             "createDesktopShortcut": "always",
+             "createStartMenuShortcut": true,
+             "shortcutName": "Eppa",
+             "runAfterFinish": true,
+             "deleteAppDataOnUninstall": false,
+             "installerIcon": "build/icon.ico",
+             "uninstallerIcon": "build/icon.ico",
+             "uninstallDisplayName": "Eppa"
+            },
+            "electronVersion": "33.2.1",
+            "compression": "maximum"
+           },
+           "devDependencies": {
+            "electron": "33.2.1",
+            "electron-builder": "25.1.8"
+           }
+          }
+          DOSYA_SONU
+          cat > eppa/ayar.json <<'DOSYA_SONU'
+          {"ad": "Eppa", "kisa": "eppa", "appId": "online.medikalsafsu.masaustu", "host": "medikalsafsu.online", "url": "https://medikalsafsu.online/", "zemin": "#f4f1ea"}
+          DOSYA_SONU
+          node arac/ikon.js eppa https://medikalsafsu.online/icons/eppa-512.png https://medikalsafsu.online/icons/eppa-192.png https://medikalsafsu.online/images/epa/logo-mail.png
+      - name: eppa derle
+        working-directory: eppa
+        run: |
+          npm install --no-audit --no-fund
+          npx electron-builder --win nsis --x64 --publish never
+          cp "dist/Eppa-Kurulum.exe" ../
+      - name: bizimsaglik projesi
+        run: |
+          mkdir -p bizimsaglik/build && cp ortak/* bizimsaglik/
+          cat > bizimsaglik/package.json <<'DOSYA_SONU'
+          {
+           "name": "bizimsaglik-masaustu",
+           "productName": "Bizim Sağlık",
+           "version": "1.0.1",
+           "description": "Bizim Sağlık — teknik servis sistemi",
+           "author": "EppaTech",
+           "main": "main.js",
+           "private": true,
+           "build": {
+            "appId": "online.bizimsaglik.masaustu",
+            "productName": "Bizim Sağlık",
+            "copyright": "© EppaTech",
+            "files": [
+             "main.js",
+             "preload.js",
+             "baglanti.html",
+             "ayar.json",
+             "ikon.png"
+            ],
+            "directories": {
+             "output": "dist",
+             "buildResources": "build"
+            },
+            "win": {
+             "target": [
+              {
+               "target": "nsis",
+               "arch": [
+                "x64"
+               ]
+              }
+             ],
+             "icon": "build/icon.ico",
+             "artifactName": "BizimSaglik-Kurulum.exe"
+            },
+            "nsis": {
+             "oneClick": true,
+             "perMachine": false,
+             "createDesktopShortcut": "always",
+             "createStartMenuShortcut": true,
+             "shortcutName": "Bizim Sağlık",
+             "runAfterFinish": true,
+             "deleteAppDataOnUninstall": false,
+             "installerIcon": "build/icon.ico",
+             "uninstallerIcon": "build/icon.ico",
+             "uninstallDisplayName": "Bizim Sağlık"
+            },
+            "electronVersion": "33.2.1",
+            "compression": "maximum"
+           },
+           "devDependencies": {
+            "electron": "33.2.1",
+            "electron-builder": "25.1.8"
+           }
+          }
+          DOSYA_SONU
+          cat > bizimsaglik/ayar.json <<'DOSYA_SONU'
+          {"ad": "Bizim Sağlık", "kisa": "bizimsaglik", "appId": "online.bizimsaglik.masaustu", "host": "bizimsaglik.online", "url": "https://bizimsaglik.online/servis/panel.php", "zemin": "#f4f1ea"}
+          DOSYA_SONU
+          node arac/ikon.js bizimsaglik https://bizimsaglik.online/icons/bs-512.png https://bizimsaglik.online/img/bizimsaglik-isaret.png https://bizimsaglik.online/img/bizimsaglik-logo.png
+      - name: bizimsaglik derle
+        working-directory: bizimsaglik
+        run: |
+          npm install --no-audit --no-fund
+          npx electron-builder --win nsis --x64 --publish never
+          cp "dist/BizimSaglik-Kurulum.exe" ../
+      - uses: actions/upload-artifact@v4
+        with: { name: windows-kurulum, path: "*-Kurulum.exe" }
+      - name: İndirme sayfasına koy (Releases)
+        uses: softprops/action-gh-release@v2
         with:
-          # windows-11-arm has only 3.4.1, 3.4.2, 3.4.3, head
-          ruby-version: ${{ !endsWith(matrix.os, 'arm') && '3.1' || '3.4' }}
-          bundler: none
-          windows-toolchain: none
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          sparse-checkout-cone-mode: false
-          sparse-checkout: /.github
-
-      - uses: ./.github/actions/setup/directories
-        with:
-          srcdir: src
-          builddir: build
-          make-command: ${{ matrix.make || 'nmake' }}
-          clean: true
-          bundled-gems-src-cache: ${{ matrix.test_task == 'test-bundled-gems' }}
-
-      - name: Install tools with scoop
-        run: |
-          if ((vcpkg.exe help install) -match "manifest") { exit }
-          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-          iwr -useb get.scoop.sh | iex
-          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
-          scoop install vcpkg
-        shell: pwsh
-
-      - name: Set up vcpkg binary cache
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FEED_OWNER: ${{ github.repository_owner }}
-          # The GITHUB_TOKEN of pull_request events (forks, dependabot) is
-          # read-only; packages are uploaded on push and merge_group only.
-          FEED_MODE: ${{ github.event_name != 'pull_request' && 'readwrite' || 'read' }}
-        run: |
-          $nuget = (vcpkg fetch nuget) | Select-Object -Last 1
-          & $nuget sources add -Source $Env:FEED_URL -StorePasswordInClearText `
-            -Name GitHubPackages -UserName $Env:FEED_OWNER -Password $Env:GH_TOKEN
-          & $nuget setapikey $Env:GH_TOKEN -Source $Env:FEED_URL
-          "VCPKG_BINARY_SOURCES=clear;nuget,$Env:FEED_URL,$Env:FEED_MODE" >> $Env:GITHUB_ENV
-
-      - name: Install libraries with vcpkg
-        # The registry pinned by `builtin-baseline` can need a newer tool
-        # than the vcpkg.exe shipped in the runner image, so re-bootstrap
-        # it to the version the pulled registry asks for.
-        run: |
-          git -C "%VCPKG_INSTALLATION_ROOT%" pull --quiet
-          call "%VCPKG_INSTALLATION_ROOT%\bootstrap-vcpkg.bat"
-          vcpkg install --overlay-triplets=.github/vcpkg-triplets
-        working-directory: src
-
-      - name: setup env
-        # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby
-        # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
-        # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
-        run: |
-          set > old.env
-          call ..\src\win32\vssetup.cmd ^
-            -arch=${{ matrix.target || 'amd64' }} ^
-            ${{ matrix.vcvars && '-vcvars_ver=' || '' }}${{ matrix.vcvars }}
-          nmake -f nul
-          set TMP=%RUNNER_TEMP%
-          set TEMP=%RUNNER_TEMP%
-          set MAKEFLAGS=l
-          rem configure.bat runs nmake, which also reads MAKEFLAGS.
-          set GNUMAKEFLAGS=${{ matrix.make == 'make' && '-j%NUMBER_OF_PROCESSORS%' || '' }}
-          set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
-          set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
-          set > new.env
-
-      - name: update env
-        shell: pwsh
-        run: |
-          $old = (Get-Content old.env); $new = (Get-Content new.env)
-          del *.env
-          Compare-Object $old $new |
-            Where-Object { $_.SideIndicator -eq '=>' } |
-            Select-Object -ExpandProperty InputObject |
-            Add-Content -Path $env:GITHUB_ENV
-
-      - name: Install GNU make
-        run: |
-          call ..\src\win32\install-gnumake.cmd || exit /b 1
-          echo %GITHUB_WORKSPACE%\src\.gnumake>>%GITHUB_PATH%
-        if: ${{ matrix.make == 'make' }}
-
-      - name: baseruby version
-        run: ruby -v
-
-      - name: compiler version
-        run: cl
-
-      - name: volume info
-        run: Get-Volume
-        shell: pwsh
-
-      # TODO: We should use `../src` instead of `D:/a/ruby/ruby/src`
-      - name: Configure
-        run: >-
-          ../src/win32/configure.bat --disable-install-doc
-          --with-opt-dir=%RUBY_OPT_DIR%
-          --with-gmp
-          --enable-debug-env
-          ${{ matrix.yjit && '--enable-yjit' || '' }}
-          ${{ matrix.make == 'make' && '--with-gnu-make' || '' }}
-
-      - run: ${{ matrix.make || 'nmake' }} prepare-vcpkg
-
-      - run: ${{ matrix.make || 'nmake' }} incs
-
-      - run: ${{ matrix.make || 'nmake' }} extract-extlibs
-
-      # On all other platforms, test-spec depending on extract-gems (in common.mk) is enough.
-      # But not for this Visual Studio workflow. So here we extract gems before building.
-      - run: ${{ matrix.make || 'nmake' }} extract-gems
-
-      # windows-11-arm runner cannot run `ruby tool/file2lastrev.rb --revision.h --output=revision.h`
-      - name: make revision.h
-        run: |
-          win32\lastrev.bat | win32\ifchange.bat --timestamp=.revision.time revision.h -
-          type revision.h
-        working-directory: src
-
-      - run: ${{ matrix.make || 'nmake' }}
-
-      - name: Set ENV for YJIT
-        shell: pwsh
-        run: |
-          "RUBY_YJIT_ENABLE=1" >> $Env:GITHUB_ENV
-        if: ${{ matrix.yjit }}
-
-      - name: Check YJIT enabled
-        run: .\miniruby.exe -v && .\miniruby.exe -v | findstr /c:"+YJIT" > nul
-        if: ${{ matrix.yjit }}
-
-      - name: Set up Launchable
-        uses: ./.github/actions/launchable/setup
-        with:
-          os: windows-${{ matrix.os }}${{ case(matrix.target == 'x86', '-x86', '') }}
-          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
-          builddir: build
-          srcdir: src
-          test-task: ${{ matrix.test_task || 'check' }}
-          is-yjit: ${{ matrix.yjit || false }}
-        continue-on-error: true
-        if: ${{ matrix.test_task != 'test-bundled-gems' && !matrix.make }}
-        timeout-minutes: 3
-
-      # A minidump with data segments, handles, unloaded modules, the PEB and
-      # TEBs, the memory map and thread info (0x1925).  The heap is left out
-      # to keep the dumps small.
-      - name: Set up crash dumps
-        run: |
-          md "%GITHUB_WORKSPACE%\crashdumps"
-          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpFolder /t REG_EXPAND_SZ /d "%GITHUB_WORKSPACE%\crashdumps" /f
-          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpCount /t REG_DWORD /d 50 /f
-          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpType /t REG_DWORD /d 0 /f
-          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v CustomDumpFlags /t REG_DWORD /d 0x1925 /f
-
-      # A dump carries part of the environment, so the test processes run
-      # without LAUNCHABLE_TOKEN (only the Launchable post step uses it), and
-      # no dump is written after this step.
-      - name: ${{ matrix.make || 'nmake' }} ${{ matrix.test_task || 'check' }}
-        run: |
-          set LAUNCHABLE_TOKEN=
-          ${{ matrix.make || 'nmake' }} ${{ matrix.test_task || 'check' }} ${{ matrix.yjit && 'RUN_OPTS=--yjit-call-threshold=1' || '' }}
-        env:
-          RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }}
-          RUBY_DEBUG: wer
-        timeout-minutes: 70
-
-      - name: Stop crash dumps
-        run: reg delete "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /f
-        if: ${{ always() }}
-
-      - run: nmake binary-package
-        if: ${{ matrix.test_task == 'check' && !matrix.make }}
-        timeout-minutes: 10
-
-      - name: Verify binary package
-        shell: pwsh
-        if: ${{ matrix.test_task == 'check' && !matrix.make }}
-        run: |
-          $zip = Get-Item ruby-*-mswin*.zip
-          $dest = Join-Path $env:RUNNER_TEMP "binpkg"
-          if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
-          New-Item -ItemType Directory $dest | Out-Null
-          & "$env:SystemRoot\System32\tar.exe" -x -f $zip.FullName -C $dest
-          if ((Get-ChildItem $dest).Count -ne 1) { throw "zip must contain a single root directory" }
-          $root = (Get-ChildItem $dest)[0].FullName
-          if (!(Test-Path "$root\bin\ruby.exe")) { throw "bin\ruby.exe not found" }
-          if (Get-ChildItem "$root\bin" | Where-Object Name -match '^vcruntime140(_\w+)?\.dll$') { throw "the VC runtime must not be bundled" }
-          if (!(Get-ChildItem "$root\LICENSES" -ErrorAction SilentlyContinue)) { throw "LICENSES missing" }
-          $env:PATH = "$env:SystemRoot\System32"
-          & "$root\bin\ruby.exe" -v -ropenssl -rfiddle -rpsych -rzlib -e 'abort "configure_args has an absolute path: #{RbConfig::CONFIG[%q(configure_args)]}" if RbConfig::CONFIG[%q(configure_args)] =~ /\b[A-Za-z]:[\/\\]/; puts %q(binary package OK)'
-          if ($LASTEXITCODE -ne 0) { throw "smoke test failed" }
-        timeout-minutes: 5
-
-      - name: List crash dumps
-        run: dir "%GITHUB_WORKSPACE%\crashdumps"
-        if: ${{ always() && hashFiles('crashdumps/**') != '' }}
-
-      - name: Upload crash dumps
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: crashdumps-${{ matrix.os }}${{ case(matrix.target == 'x86', '-x86', '') }}${{ case(matrix.yjit == true, '-yjit', '') }}${{ case(matrix.make == 'make', '-gnumake', '') }}-${{ matrix.test_task }}
-          path: |
-            crashdumps
-            build/*.exe
-            build/*.dll
-            build/**/*.pdb
-            !build/**/vc140.pdb
-            build/.ext/**/*.so
-            build/.bundle/**/*.so
-            src/vcpkg_installed/*/bin
-          include-hidden-files: true
-          retention-days: 7
-          overwrite: true
-        if: ${{ always() && hashFiles('crashdumps/**') != '' }}
-
-      - uses: ./.github/actions/slack
-        with:
-          label: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }}${{ case(matrix.yjit == true, ' YJIT', '') }}${{ case(matrix.make == 'make', ' GNU make', '') }} / ${{ matrix.test_task || 'check' }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() }}
-
-  # Check that ruby can still be built with the older supported MSVC
-  # toolsets.  The runner images no longer preinstall VS 2017/2019, so
-  # install the v141/v142 toolset into the preinstalled VS 2022 and
-  # select it with -vcvars_ver.  This only builds up to ruby.exe;
-  # extensions and tests are not covered.
-  make-old-toolset:
-    strategy:
-      matrix:
-        include:
-          - vs: 2017
-            toolset: '14.16'
-            component: Microsoft.VisualStudio.Component.VC.v141.x86.x64
-            clver: '19.16'
-          - vs: 2019
-            toolset: '14.29'
-            component: Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64
-            clver: '19.29'
-      fail-fast: false
-
-    runs-on: windows-2022
-
-    if: >-
-      ${{!(false
-      || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || github.event.pull_request.user.login == 'dependabot[bot]'
-      )}}
-
-    name: Windows 2022 (VS${{ matrix.vs }} toolset)
-
-    env:
-      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-
-    steps:
-      - run: md build
-        working-directory:
-
-      - uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1.329.0
-        with:
-          ruby-version: '3.1'
-          bundler: none
-          windows-toolchain: none
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          sparse-checkout-cone-mode: false
-          sparse-checkout: /.github
-
-      - uses: ./.github/actions/setup/directories
-        with:
-          srcdir: src
-          builddir: build
-          make-command: nmake
-          clean: true
-
-      - name: Install MSVC v${{ matrix.toolset }} toolset
-        shell: pwsh
-        run: |
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $installPath = & $vswhere -products '*' -latest -property installationPath
-          $setup = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe"
-          $arguments = @('modify', '--installPath', "`"$installPath`"",
-                         '--add', '${{ matrix.component }}',
-                         '--quiet', '--norestart', '--nocache')
-          $proc = Start-Process -FilePath $setup -ArgumentList $arguments -Wait -PassThru
-          if ($proc.ExitCode -notin 0, 3010) { throw "VS installer exited with $($proc.ExitCode)" }
-        timeout-minutes: 20
-
-      - name: setup env
-        run: |
-          set > old.env
-          call ..\src\win32\vssetup.cmd -arch=amd64 -vcvars_ver=${{ matrix.toolset }}
-          nmake -f nul
-          set TMP=%RUNNER_TEMP%
-          set TEMP=%RUNNER_TEMP%
-          set MAKEFLAGS=l
-          set > new.env
-
-      - name: update env
-        shell: pwsh
-        run: |
-          $old = (Get-Content old.env); $new = (Get-Content new.env)
-          del *.env
-          Compare-Object $old $new |
-            Where-Object { $_.SideIndicator -eq '=>' } |
-            Select-Object -ExpandProperty InputObject |
-            Add-Content -Path $env:GITHUB_ENV
-
-      - name: baseruby version
-        run: ruby -v
-
-      - name: compiler version
-        run: cl 2>&1 | findstr /c:"Compiler Version ${{ matrix.clver }}"
-
-      - name: Configure
-        run: ../src/win32/configure.bat --disable-install-doc
-
-      - run: nmake ruby
-        timeout-minutes: 50
-
-      - name: ruby version
-        run: .\ruby.exe -v --disable-gems -e "puts :ok"
-
-      - uses: ./.github/actions/slack
-        with:
-          label: Windows 2022 / VS${{ matrix.vs }} toolset
-          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() }}
-
-  result:
-    if: ${{ always() }}
-    name: ${{ github.workflow }} result
-    runs-on: windows-2025-vs2026
-    needs: [make, make-old-toolset]
-    steps:
-      - run: exit 1
-        working-directory:
-        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
-
-defaults:
-  run:
-    working-directory: build
-    shell: cmd
+          tag_name: windows-${{ github.run_number }}
+          name: Windows uygulamaları ${{ github.run_number }}
+          files: |
+            Eppa-Kurulum.exe
+            BizimSaglik-Kurulum.exe
