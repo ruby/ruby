@@ -4832,7 +4832,9 @@ do_select(VALUE p)
      TRUE)
 
     do {
-        lerrno = 0;
+        // A skipped select is not a timeout; report EINTR so wait_retryable selects again.
+        result = -1;
+        lerrno = EINTR;
 
         BLOCKING_REGION(set->th, {
             struct timeval tv;
@@ -4841,7 +4843,7 @@ do_select(VALUE p)
                 result = native_fd_select(set->max,
                                           set->rset, set->wset, set->eset,
                                           rb_hrtime2timeval(&tv, to), set->th);
-                if (result < 0) lerrno = errno;
+                lerrno = result < 0 ? errno : 0;
             }
         }, ubf_select, set->th, TRUE);
 
