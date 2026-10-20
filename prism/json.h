@@ -18,6 +18,10 @@
 #include "prism/buffer.h"
 #include "prism/parser.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Dump JSON to the given buffer.
  *
@@ -26,6 +30,10 @@
  * @param node The node to serialize.
  */
 PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node) PRISM_NONNULL(1, 2, 3);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

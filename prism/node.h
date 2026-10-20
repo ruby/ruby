@@ -11,6 +11,10 @@
 
 #include "prism/ast.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Loop through each node in the node list, writing each node to the given
  * pm_node_t pointer.
@@ -90,5 +94,9 @@ PRISM_EXPORTED_FUNCTION void pm_visit_node(const pm_node_t *node, bool (*visitor
  * @param data An opaque pointer that is passed to the visitor callback.
  */
 PRISM_EXPORTED_FUNCTION void pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) PRISM_NONNULL(1);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

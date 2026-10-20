@@ -983,8 +983,9 @@ parse_lex_input(const uint8_t *input, size_t input_length, const pm_options_t *o
 
     result_t result = check_raise_error_option(parser, options, path_encoding);
     if (result.type == RESULT_OK) {
-        /* Update the Source object with the correct encoding and line offsets,
-         * which are only available after pm_parse() completes. */
+        /* Update the Source object with the correct encoding, line offsets,
+         * and source hash, which are only available after pm_parse()
+         * completes. */
         rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
         rb_enc_associate(source_string, encoding);
 
@@ -992,6 +993,8 @@ parse_lex_input(const uint8_t *input, size_t input_length, const pm_options_t *o
         for (size_t index = 0; index < line_offsets->size; index++) {
             rb_ary_store(offsets, (long) index, ULONG2NUM(line_offsets->offsets[index]));
         }
+
+        rb_funcall(source, rb_intern("replace_checksum"), 1, ULL2NUM(pm_parser_checksum(parser)));
 
         if (pm_options_freeze(options)) {
             rb_obj_freeze(source_string);

@@ -96,7 +96,7 @@ pm_source_new(const pm_parser_t *parser, rb_encoding *encoding, VALUE comments, 
         offsets = rb_str_new((const char *) line_offsets->offsets, line_offsets->size * sizeof(uint32_t));
     }
 
-    VALUE source = rb_funcall(rb_cPrismSource, rb_intern("for"), 6, source_string, LONG2NUM(pm_parser_start_line(parser)), offsets, comments, comment_attachments, comment_ranges);
+    VALUE source = rb_funcall(rb_cPrismSource, rb_intern("for"), 7, source_string, LONG2NUM(pm_parser_start_line(parser)), offsets, comments, comment_attachments, comment_ranges, ULL2NUM(pm_parser_checksum(parser)));
     if (freeze) rb_obj_freeze(source);
 
     return source;

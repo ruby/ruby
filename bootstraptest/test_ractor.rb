@@ -3303,3 +3303,24 @@ assert_equal 'ok', %q{
   Dir.pwd
   'ok'
 }
+
+# A stale errno left on another native thread must not raise IO::TimeoutError
+assert_equal 'ok', %q{
+  8.times.map do
+    Ractor.new do
+      t = Time.now
+      Thread.new do
+        r, = IO.pipe
+        r.timeout = 0.0001
+        (r.read(1) rescue nil) while Time.now - t < 0.1
+      end
+      r, w = IO.pipe
+      Thread.new do
+        (w << "x"; sleep 0.0001) while Time.now - t < 0.1
+        w.close
+      end
+      nil while r.read(1)
+    end
+  end.each(&:join)
+  :ok
+}

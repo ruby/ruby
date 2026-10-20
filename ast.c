@@ -285,17 +285,6 @@ iseq_compiled_by_prism_p(rb_execution_context_t *ec, VALUE self)
 }
 
 static VALUE
-source_hash_of(rb_execution_context_t *ec, VALUE self, VALUE str)
-{
-    StringValue(str);
-
-    rb_source_hash_state_t state;
-    rb_source_hash_init(&state);
-    rb_source_hash_update(&state, (const uint8_t *)RSTRING_PTR(str), (size_t)RSTRING_LEN(str));
-    return ULL2NUM(rb_source_hash_finalize(&state));
-}
-
-static VALUE
 node_id_for_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE location)
 {
     int node_id;

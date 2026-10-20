@@ -136,6 +136,7 @@ prism/stringy.$(OBJEXT): $(top_srcdir)/prism/stringy.c
 prism/strncasecmp.$(OBJEXT): $(top_srcdir)/prism/strncasecmp.c
 prism/strpbrk.$(OBJEXT): $(top_srcdir)/prism/strpbrk.c
 prism/tokens.$(OBJEXT): $(top_srcdir)/prism/tokens.c
+prism/xxh3.$(OBJEXT): $(top_srcdir)/prism/xxh3.c
 prism_init.$(OBJEXT): {$(VPATH)}prism_init.c
 proc.$(OBJEXT): {$(VPATH)}proc.c
 process.$(OBJEXT): {$(VPATH)}process.c

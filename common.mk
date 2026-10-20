@@ -123,7 +123,8 @@ LIBPRISM_OBJS = \
 		prism/stringy.$(OBJEXT) \
 		prism/strncasecmp.$(OBJEXT) \
 		prism/strpbrk.$(OBJEXT) \
-		prism/tokens.$(OBJEXT)
+		prism/tokens.$(OBJEXT) \
+		prism/xxh3.$(OBJEXT)
 
 EXTPRISM_OBJS = prism/api_node.$(OBJEXT) \
 		prism/extension.$(OBJEXT) \

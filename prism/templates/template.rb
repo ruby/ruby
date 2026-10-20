@@ -70,6 +70,7 @@ module Ruby::Prism
 
       def each_rdoc_line(&block)
         code_block = false
+        code = +""
         value.each_line do |line|
           # Wrap code in explicit language fences so there is syntax highlighting
           if line.start_with?("    ") && !code_block
@@ -77,15 +78,29 @@ module Ruby::Prism
             yield " ```rb"
           elsif !line.strip.empty? && !line.start_with?("    ") && code_block
             code_block = false
-            yield " ```"
+            rdoc_close_codeblock(code, &block)
+            code = +""
           end
 
-          line = line.delete_prefix("    ") if code_block
+          if code_block
+            line = line.delete_prefix("    ")
+            code << line
+          end
           yield line.prepend(" ").rstrip
         end
 
         # Close trailing blocks
-        yield " ```" if code_block
+        rdoc_close_codeblock(code, &block) if code_block
+      end
+
+      def rdoc_close_codeblock(code, &block)
+        yield " ```"
+        return if code.strip.empty?
+
+        code.gsub!(/^[\s^]*$/, "") # clear marker lines
+        encoded = [code].pack("m0").tr("+/", "-_").delete("=") # base64 urlsafe
+        yield ""
+        yield " [Explore code sample](https://ruby.github.io/prism/playground.html##{encoded})"
       end
 
       def each_java_line(&block)
