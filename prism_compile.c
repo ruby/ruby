@@ -10815,27 +10815,6 @@ pm_intern_constants_callback(const pm_constant_t *constant, void *data)
     ctx->constants[ctx->index++] = rb_intern3((const char *) pm_constant_start(constant), pm_constant_length(constant), ctx->encoding);
 }
 
-/** Context for emitting warnings via callback. */
-typedef struct {
-    const pm_parser_t *parser;
-    rb_encoding *encoding;
-    const char *filepath;
-} pm_warning_emit_ctx_t;
-
-static void
-pm_warning_emit_callback(const pm_diagnostic_t *diagnostic, void *data) {
-    pm_warning_emit_ctx_t *ctx = (pm_warning_emit_ctx_t *) data;
-    pm_location_t loc = pm_diagnostic_location(diagnostic);
-    int line = pm_location_line_number(ctx->parser, &loc);
-
-    if (pm_diagnostic_warning_level(diagnostic) == PM_WARNING_LEVEL_VERBOSE) {
-        rb_enc_compile_warning(ctx->encoding, ctx->filepath, line, "%s", pm_diagnostic_message(diagnostic));
-    }
-    else {
-        rb_enc_compile_warn(ctx->encoding, ctx->filepath, line, "%s", pm_diagnostic_message(diagnostic));
-    }
-}
-
 /**
  * Returns the source hash of the source that was parsed, as stored on
  * instruction sequences. A source hash of 0 means that there is no source hash,
@@ -10890,13 +10869,23 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
         scope_node->script_lines = script_lines;
     }
 
-    // Emit all of the various warnings from the parse.
-    pm_warning_emit_ctx_t warning_ctx = {
-        .parser = parser,
-        .encoding = scope_node->encoding,
-        .filepath = (const char *) pm_string_source(pm_parser_filepath(parser))
-    };
-    pm_parser_warnings_each(parser, pm_warning_emit_callback, &warning_ctx);
+    const char *filepath = (const char *) pm_string_source(pm_parser_filepath(parser));
+
+    for (
+        const pm_diagnostic_t *diagnostic = pm_parser_warnings_first(parser);
+        diagnostic != NULL;
+        diagnostic = pm_diagnostic_next(diagnostic)
+    ) {
+        pm_location_t loc = pm_diagnostic_location(diagnostic);
+        int line = pm_location_line_number(parser, &loc);
+
+        if (pm_diagnostic_warning_level(diagnostic) == PM_WARNING_LEVEL_VERBOSE) {
+            rb_enc_compile_warning(scope_node->encoding, filepath, line, "%s", pm_diagnostic_message(diagnostic));
+        }
+        else {
+            rb_enc_compile_warn(scope_node->encoding, filepath, line, "%s", pm_diagnostic_message(diagnostic));
+        }
+    }
 
     // If there are errors, raise an appropriate error and free the result.
     if (pm_parser_errors_size(parser) > 0) {
