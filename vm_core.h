@@ -181,7 +181,7 @@ void *rb_register_sigaltstack(void *);
 /*****************/
 
 /* gcc ver. check */
-#if defined(__GNUC__) && __GNUC__ >= 2
+#if (defined(__GNUC__) && __GNUC__ >= 2) || defined(__clang__)
 
 #if OPT_TOKEN_THREADED_CODE
 #if OPT_DIRECT_THREADED_CODE
@@ -189,7 +189,7 @@ void *rb_register_sigaltstack(void *);
 #endif
 #endif
 
-#else /* defined(__GNUC__) && __GNUC__ >= 2 */
+#else /* (defined(__GNUC__) && __GNUC__ >= 2) || defined(__clang__) */
 
 /* disable threaded code options */
 #if OPT_DIRECT_THREADED_CODE
@@ -2125,7 +2125,7 @@ void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE
 #define rb_vm_register_special_exception(sp, e, m) \
     rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (rb_len_t)rb_strlen_lit(m)))
 
-void rb_gc_mark_machine_context(const rb_execution_context_t *ec);
+void rb_gc_mark_machine_context_ctx(const struct rb_gc_mark_ctx *ctx, const rb_execution_context_t *ec);
 
 const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
 const rb_callable_method_entry_t *rb_vm_frame_method_entry_unchecked(const rb_control_frame_t *cfp);
@@ -2362,7 +2362,7 @@ void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
 VALUE rb_ec_get_errinfo(const rb_execution_context_t *ec);
 void rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo);
 void rb_execution_context_update(rb_execution_context_t *ec);
-void rb_execution_context_mark(const rb_execution_context_t *ec);
+void rb_execution_context_mark_ctx(const struct rb_gc_mark_ctx *ctx, const rb_execution_context_t *ec);
 void rb_fiber_close(rb_fiber_t *fib);
 void Init_native_thread(rb_thread_t *th);
 int rb_vm_check_ints_blocking(rb_execution_context_t *ec);

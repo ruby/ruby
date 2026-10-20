@@ -13,6 +13,7 @@
 #include "ccan/list/list.h"     /* for list in rb_io_close_wait_list */
 
 struct rb_execution_context_struct; /* in vm_core.h */
+struct rb_gc_mark_ctx;          /* in internal/gc.h */
 struct rb_thread_struct;        /* in vm_core.h */
 struct rb_io;
 
@@ -104,6 +105,6 @@ void rb_threadptr_interrupt_exec_task_mark(struct rb_thread_struct *th);
 
 /* Mark the roots of the heap objects a thread owns, excluding ec and fiber.  Used by
  * thread_mark and by the Ractor's local-root marking (rb_ractor_mark_local_roots). */
-void rb_thread_mark_owned_roots(struct rb_thread_struct *th);
+void rb_thread_mark_owned_roots(const struct rb_gc_mark_ctx *ctx, struct rb_thread_struct *th);
 
 #endif /* INTERNAL_THREAD_H */

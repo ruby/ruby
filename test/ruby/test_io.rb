@@ -3942,6 +3942,9 @@ __END__
       assert_raise_with_message(RuntimeError, msg) do
         buf.replace("")
       end
+      assert_raise_with_message(RuntimeError, msg) do
+        buf.__send__(:initialize, encoding: Encoding::UTF_16LE)
+      end
       assert_predicate(th, :alive?)
       w.write(data)
       th.join

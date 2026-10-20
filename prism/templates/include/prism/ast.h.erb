@@ -19,6 +19,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * This enum represents every type of token in the Ruby source.
  */
@@ -274,5 +278,9 @@ PRISM_EXPORTED_FUNCTION pm_<%= node.human %>_t * pm_<%= node.human %>_new(pm_are
  * those build systems.
  */
 #define PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS <%= Ruby::Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS ? 1 : 0 %>
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -34,15 +34,18 @@ module Ruby::Prism
     # empty when the source is created by the parser and filled in afterward,
     # because the comments themselves refer to the source.
     #
-    #: (String source, Integer start_line, Array[Integer] offsets, ?Array[Comment] comments, ?Array[Comment] comment_attachments, ?Array[Integer?] comment_ranges) -> Source
-    def self.for(source, start_line, offsets, comments = [], comment_attachments = [], comment_ranges = [])
+    # The checksum parameter is the value described by the attribute of the same
+    # name. It is nil when the source is not created by the parser.
+    #
+    #: (String source, Integer start_line, Array[Integer] offsets, ?Array[Comment] comments, ?Array[Comment] comment_attachments, ?Array[Integer?] comment_ranges, ?Integer? checksum) -> Source
+    def self.for(source, start_line, offsets, comments = [], comment_attachments = [], comment_ranges = [], checksum = nil)
       if source.ascii_only?
-        ASCIISource.new(source, start_line, offsets, comments, comment_attachments, comment_ranges)
+        ASCIISource.new(source, start_line, offsets, comments, comment_attachments, comment_ranges, checksum)
       elsif source.encoding == Encoding::BINARY
         source.force_encoding(Encoding::UTF_8)
 
         if source.valid_encoding?
-          new(source, start_line, offsets, comments, comment_attachments, comment_ranges)
+          new(source, start_line, offsets, comments, comment_attachments, comment_ranges, checksum)
         else
           # This is an extremely niche use case where the file is marked as
           # binary, contains multi-byte characters, and those characters are not
@@ -51,10 +54,10 @@ module Ruby::Prism
           # problems when asking for code units, but it appears to be the
           # cleanest solution at the moment.
           source.force_encoding(Encoding::BINARY)
-          ASCIISource.new(source, start_line, offsets, comments, comment_attachments, comment_ranges)
+          ASCIISource.new(source, start_line, offsets, comments, comment_attachments, comment_ranges, checksum)
         end
       else
-        new(source, start_line, offsets, comments, comment_attachments, comment_ranges)
+        new(source, start_line, offsets, comments, comment_attachments, comment_ranges, checksum)
       end
     end
 
@@ -63,6 +66,10 @@ module Ruby::Prism
 
     # The line number where this source starts.
     attr_reader :start_line #: Integer
+
+    # The checksum of the source code which can be used to quickly determine if
+    # the source has changed.
+    attr_reader :checksum #: Integer?
 
     # The list of comments that were encountered during parsing. When the source
     # is parsed with the attach_comments option, these are sorted by start
@@ -95,10 +102,11 @@ module Ruby::Prism
     # parameter can be either an Array of Integer byte offsets or a packed
     # binary string of uint32_t values (from the C extension).
     #
-    #: (String source, Integer start_line, Array[Integer] | String offsets, ?Array[Comment] comments, ?Array[Comment] comment_attachments, ?Array[Integer?] comment_ranges) -> void
-    def initialize(source, start_line, offsets, comments = [], comment_attachments = [], comment_ranges = [])
+    #: (String source, Integer start_line, Array[Integer] | String offsets, ?Array[Comment] comments, ?Array[Comment] comment_attachments, ?Array[Integer?] comment_ranges, ?Integer? checksum) -> void
+    def initialize(source, start_line, offsets, comments = [], comment_attachments = [], comment_ranges = [], checksum = nil)
       @source = source
       @start_line = start_line
+      @checksum = checksum
       @offsets = offsets
       @comments = comments
       @comment_attachments = comment_attachments
@@ -110,6 +118,13 @@ module Ruby::Prism
     #: (Integer start_line) -> void
     def replace_start_line(start_line)
       @start_line = start_line
+    end
+
+    # Replace the value of checksum with the given value.
+    #
+    #: (Integer checksum) -> void
+    def replace_checksum(checksum)
+      @checksum = checksum
     end
 
     # Replace the value of offsets with the given value.

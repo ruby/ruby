@@ -127,6 +127,27 @@ void *rb_zjit_reserve_low_addr_space(size_t size) { return NULL; }
 
 #endif
 
+static VALUE
+rb_zjit_total_compile_time_ns_get(rb_execution_context_t *ec, VALUE self)
+{
+    return ULL2NUM(rb_zjit_total_compile_time_ns);
+}
+
+static VALUE
+rb_zjit_max_compile_time_ns_get(rb_execution_context_t *ec, VALUE self)
+{
+    return ULL2NUM(rb_zjit_max_compile_time_ns);
+}
+
+void rb_zjit_update_max_compile_time_ns(uint64_t max_compile_time_ns);
+
+static VALUE
+rb_zjit_max_compile_time_ns_set(rb_execution_context_t *ec, VALUE self, VALUE max_compile_time_ns)
+{
+    rb_zjit_update_max_compile_time_ns(NUM2ULL(max_compile_time_ns));
+    return max_compile_time_ns;
+}
+
 void rb_zjit_profile_disable(const rb_iseq_t *iseq);
 int rb_zjit_insn_to_bare_insn(int insn);
 

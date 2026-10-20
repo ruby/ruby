@@ -2462,20 +2462,20 @@ class Pathname    # * FileTest *
   #
   # ```ruby
   # require 'socket'
-  # sock_path = '/tmp/socket'
-  # sock_pn = Pathname(sock_path)
-  # sock_pn.exist?  # => false
-  # sock_pn.socket? # => false
-  # server = UNIXServer.new(sock_path)
-  # sock_pn.exist?  # => true
-  # sock_pn.socket? # => true
+  # socket_path = '/tmp/socket'
+  # socket_pn = Pathname(socket_path)
+  # socket_pn.exist?  # => false
+  # socket_pn.socket? # => false
+  # server = UNIXServer.new(socket_path)
+  # socket_pn.exist?  # => true
+  # socket_pn.socket? # => true
   # # Clean up.
   # server.close
-  # sock_pn.delete
+  # socket_pn.delete
   # file_path = '/etc/passwd'
   # file_pn = Pathname(file_path)
-  # file_pn.file?   # => true
-  # file_pn.socket? # => false
+  # file_pn.file?     # => true
+  # file_pn.socket?   # => false
   # ```
   #
   # Returns `false` on Windows.
@@ -2530,9 +2530,8 @@ class Pathname    # * FileTest *
   # call-seq:
   #   world_readable? -> integer or nil
   #
-  # If the entry at the path in `self` exists and is readable by others,
-  # returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
-  # for the entry;
+  # Returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+  # for the entry at the path in `self` if the entry exists and is readable by others;
   # otherwise, returns `nil`:
   #
   # ```ruby
@@ -2611,11 +2610,9 @@ class Pathname    # * FileTest *
   # Returns the size in bytes of the entry at the path in `self`:
   #
   # ```ruby
-  # Pathname('doc/maintainers.md').size # => 14900  # Regular file.
-  # Pathname('doc/syntax/').size        # => 4096   # Directory.
+  # Pathname('/etc/passwd').size # => 3092   # Regular file.
+  # Pathname('/etc').size        # => 12288  # Directory.
   # ```
-  #
-  # Raises an exception if the entry does not exist.
   #
   def size() FileTest.size(@path) end
 
@@ -2629,19 +2626,19 @@ class Pathname    # * FileTest *
   #
   # ```ruby
   # # Regular file.
-  # pn = Pathname('/tmp/t.tmp')
-  # pn.write('foo')
-  # pn.size? # => 3     # Non-zero size.
-  # pn.write('')
-  # pn.size? # => nil   # Zero size.
-  # pn.delete           # Clean up.
-  # pn.size? # => nil   # Non-existent.
+  # file_pn = Pathname('/tmp/t.tmp')
+  # file_pn.write('foo')
+  # file_pn.size? # => 3     # Non-zero size.
+  # file_pn.write('')
+  # file_pn.size? # => nil   # Zero size.
+  # file_pn.delete           # Clean up.
+  # file_pn.size? # => nil   # Non-existent.
   # # Directory.
-  # pn = Pathname('/tmp/foo/')
-  # pn.mkdir
-  # pn.size? # => 4096  # Non-zero size.
-  # pn.delete           # Clean up.
-  # pn.size? # => nil   # Non-existent.
+  # dir_pn = Pathname('/tmp/dir')
+  # dir_pn.mkdir
+  # dir_pn.size? # => 4096  # Non-zero size.
+  # dir_pn.delete           # Clean up.
+  # dir_pn.size? # => nil   # Non-existent.
   # ```
   #
   def size?() FileTest.size?(@path) end

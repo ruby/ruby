@@ -928,12 +928,7 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_classext_memory_leak
-    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc { Class.new }
-1_000.times(&code)
-PREP
-3_000_000.times(&code)
-CODE
+    assert_no_memory_leak([], "", "30_000.times {Class.new}", rss: true, samples: 2..100)
   end
 
   def test_instance_freeze_dont_freeze_the_class_bug_19164

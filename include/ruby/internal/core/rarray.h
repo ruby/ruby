@@ -388,17 +388,36 @@ RARRAY_ASET(VALUE ary, rb_len_t i, VALUE v)
         RB_OBJ_WRITE(ary, &ptr[i], v));
 }
 
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 /**
- * @deprecated
+ * @private
  *
- * :FIXME: we want to convert RARRAY_AREF into an inline function (to add rooms
- * for more sanity checks).  However there were situations where the address of
- * this macro is taken i.e. &RARRAY_AREF(...).  They cannot be possible if this
- * is not a  macro.  Such usages are abuse, and  we eliminated them internally.
- * However we are afraid  of similar things to remain in  the wild.  This macro
- * remains as  it is due to  that.  If we could  warn such usages we  can set a
- * transition path, but currently no way is found to do so.
+ * This is  an implementation detail  of RARRAY_AREF().   People do not  use it
+ * directly.
+ *
+ * Allows situations where  the address is taken  i.e. &RARRAY_AREF(...).  Such
+ * usages are abuse, and we eliminated  them internally.  However we are afraid
+ * of similar things to remain in the wild.
+ *
+ * @param[in]  ary  An object of ::RArray.
+ * @param[in]  idx  Index to access ary
+ * @return     Its backend storage.
  */
-#define RARRAY_AREF(a, i) RARRAY_CONST_PTR(a)[i]
+static inline const VALUE *
+RBIMPL_AREF_PTR(VALUE ary, rb_len_t idx)
+{
+    RUBY_ASSERT(idx >= 0);
+    RUBY_ASSERT(idx < RARRAY_LEN(ary));
+    return &rb_array_const_ptr(ary)[idx];
+}
+
+/**
+ * References an object in an array.
+ *
+ * @param[in]  ary  An object of ::RArray.
+ * @param[in]  idx  Index to access ary
+ * @return     The object at idx in ary
+ */
+#define RARRAY_AREF(a, i) (*RBIMPL_AREF_PTR(a, i))
 
 #endif /* RBIMPL_RARRAY_H */

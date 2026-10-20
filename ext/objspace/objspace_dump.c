@@ -759,7 +759,7 @@ dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since, VALUE
         // Mark functions generally can't handle these possibilities so
         // the usual IO code is unsafe in this context. (For example,
         // there are many ways to crash when ruby code runs and mutates
-        // the execution context while rb_execution_context_mark() is in
+        // the execution context while rb_execution_context_mark_ctx() is in
         // progress.)
         //
         // Using FILE* isn't perfect, but it avoids the most acute problems.

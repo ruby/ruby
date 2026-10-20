@@ -31,12 +31,12 @@ class Gem::Ext::Builder
     # try to find make program from Ruby configure arguments first
     target_rbconfig["configure_args"] =~ /with-make-prog\=(\w+)/
     make_program_name = ENV["MAKE"] || ENV["make"] || $1
-    make_program_name ||= RUBY_PLATFORM.include?("mswin") ? "nmake" : "make"
+    make_program_name ||= mswin? ? "nmake" : "make"
     make_program = shellsplit_command(make_program_name)
 
     is_nmake = /\bnmake/i.match?(make_program_name)
-    # The installation of the bundled gems is failed when DESTDIR is empty in mswin platform.
-    destdir = !is_nmake || ENV["DESTDIR"] && ENV["DESTDIR"] != "" ? format("DESTDIR=%s", ENV["DESTDIR"]) : ""
+    # mkmf on mswin moves the drive letter of prefix to DESTDIR, which an empty DESTDIR would drop.
+    destdir = !mswin? || ENV["DESTDIR"] && ENV["DESTDIR"] != "" ? format("DESTDIR=%s", ENV["DESTDIR"]) : ""
 
     # nmake doesn't support parallel build
     unless is_nmake
@@ -68,6 +68,10 @@ class Gem::Ext::Builder
         raise unless target == "clean" # ignore clean failure
       end
     end
+  end
+
+  def self.mswin? # :nodoc:
+    RUBY_PLATFORM.include?("mswin")
   end
 
   def self.ruby

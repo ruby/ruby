@@ -50,6 +50,8 @@ module Ruby::Prism
     incorrect << "4.1/void_value.txt"
     # https://bugs.ruby-lang.org/issues/19107
     incorrect << "4.1/trailing_comma_after_method_arguments.txt"
+    # https://bugs.ruby-lang.org/issues/22450
+    incorrect << "jump_do_block_in_command_args.txt"
 
     # Skip these tests that we haven't implemented yet.
     omitted_sexp_raw = [

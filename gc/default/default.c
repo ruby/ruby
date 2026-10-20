@@ -660,7 +660,6 @@ typedef struct rb_objspace {
         unsigned int gc_lock_barrier : 1;
         unsigned int during_reference_updating : 1;
         unsigned int during_minor_gc : 1;
-        unsigned int during_incremental_marking : 1;
         unsigned int during_postmortem : 1;
         unsigned int measure_gc : 1;
     } flags;
@@ -832,6 +831,12 @@ typedef struct rb_objspace {
         rb_nativethread_lock_t lock;
         struct gc_process_stat_snapshot published;
     } process_stat;
+
+    /* The incremental-marking flag as an addressable field, so that ZJIT-generated
+     * code can read it; see rb_gc_impl_zjit_writebarrier_required_offset.
+     * Single-writer: a local GC runs on the owning Ractor's thread and a global GC
+     * writes under the stop-the-world barrier.  Read by JIT code on the same thread. */
+    bool zjit_during_incremental_marking;
 } rb_objspace_t;
 
 /* The one VM-global GC structure; for now it only holds the page pool.  Page bodies are
@@ -1538,23 +1543,14 @@ total_final_slots_count(rb_objspace_t *objspace)
 #define is_marking(objspace)             (gc_mode(objspace) == gc_mode_marking)
 #define is_sweeping(objspace)            (gc_mode(objspace) == gc_mode_sweeping)
 #define is_full_marking(objspace)        ((objspace)->flags.during_minor_gc == FALSE)
-#define is_incremental_marking(objspace) ((objspace)->flags.during_incremental_marking != FALSE)
+#define is_incremental_marking(objspace) ((objspace)->zjit_during_incremental_marking != FALSE)
 #define will_be_incremental_marking(objspace) ((objspace)->rgengc.need_major_gc != GPR_FLAG_NONE)
-
-/* Mirrors flags.during_incremental_marking so that ZJIT-generated code can
- * read it (a bitfield has no address); see rb_gc_impl_zjit_writebarrier_required_p_ptr.
- * Only transitions write to it: incremental marking requires a single objspace,
- * so a redundant FALSE store from another objspace's GC entry must not clobber
- * the marking objspace's TRUE. Written inside GC while mutators are stopped;
- * read by JIT code. */
-static uintptr_t zjit_during_incremental_marking = FALSE;
 
 static void
 gc_set_incremental_marking(rb_objspace_t *objspace, unsigned int value)
 {
-    if (objspace->flags.during_incremental_marking != value) {
-        objspace->flags.during_incremental_marking = value;
-        zjit_during_incremental_marking = value;
+    if (objspace->zjit_during_incremental_marking != value) {
+        objspace->zjit_during_incremental_marking = value;
     }
 }
 /*
@@ -3476,10 +3472,10 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
 #endif
 }
 
-const uintptr_t *
-rb_gc_impl_zjit_writebarrier_required_p_ptr(void *objspace_ptr)
+int32_t
+rb_gc_impl_zjit_writebarrier_required_offset(void)
 {
-    return &zjit_during_incremental_marking;
+    return (int32_t)offsetof(rb_objspace_t, zjit_during_incremental_marking);
 }
 
 NOINLINE(static VALUE newobj_refill(rb_objspace_t *objspace, size_t heap_idx));

@@ -339,6 +339,7 @@ module OpenSSL::TestPairM
       assert_raise(EOFError) { s1.readpartial(10) }
       assert_raise(EOFError) { s1.readpartial(10) }
       assert_equal("", s1.readpartial(0))
+      assert_raise(ArgumentError) { s1.readpartial(-1) }
     }
   end
 
@@ -440,6 +441,10 @@ module OpenSSL::TestPairM
       obj.define_singleton_method(:to_s) { str }
       s1.syswrite(obj)
       assert_equal(str, s2.sysread(str.bytesize))
+
+      # https://bugs.ruby-lang.org/issues/18880
+      next if !s2.is_a?(OpenSSL::SSL::SSLSocket) && RUBY_VERSION < "3.2"
+      assert_raise(ArgumentError) { s2.sysread(-1) }
     }
   end
 
@@ -461,6 +466,8 @@ module OpenSSL::TestPairM
       s1.close
       IO.select([s2])
       assert_raise(EOFError) { s2.read_nonblock(10) }
+
+      assert_raise(ArgumentError) { s2.read_nonblock(-1) }
     }
   end
 
@@ -506,6 +513,9 @@ module OpenSSL::TestPairM
       ret = s2.read(0, buf)
       assert_same buf, ret
       assert_equal "", ret
+
+      buf = +"garbage"
+      assert_raise(ArgumentError) { s2.read(-1, buf) }
     }
   end
 

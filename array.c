@@ -3766,8 +3766,8 @@ rb_ary_bsearch(VALUE ary)
 {
     VALUE index_result = rb_ary_bsearch_index(ary);
 
-    if (FIXNUM_P(index_result)) {
-        return rb_ary_entry(ary, FIX2LONG(index_result));
+    if (RB_INTEGER_TYPE_P(index_result)) {
+        return rb_ary_entry(ary, NUM2LEN(index_result));
     }
     return index_result;
 }
@@ -5538,12 +5538,24 @@ rb_ary_equal(VALUE ary1, VALUE ary2)
 static VALUE
 recursive_eql(VALUE ary1, VALUE ary2, int recur)
 {
-    rb_len_t i;
+    rb_len_t i, len1;
+    const VALUE *p1, *p2;
 
     if (recur) return Qtrue; /* Subtle! */
-    for (i=0; i<RARRAY_LEN(ary1); i++) {
-        if (!rb_eql(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
-            return Qfalse;
+
+    /* rb_eql() can resize either array and evacuate ptrs */
+    p1 = RARRAY_CONST_PTR(ary1);
+    p2 = RARRAY_CONST_PTR(ary2);
+    len1 = RARRAY_LEN(ary1);
+
+    for (i = 0; i < len1; i++) {
+        if (p1[i] != p2[i]) {
+            if (!rb_eql(p1[i], p2[i])) return Qfalse;
+            len1 = RARRAY_LEN(ary1);
+            if (len1 != RARRAY_LEN(ary2)) return Qfalse;
+            p1 = RARRAY_CONST_PTR(ary1);
+            p2 = RARRAY_CONST_PTR(ary2);
+        }
     }
     return Qtrue;
 }
@@ -6970,11 +6982,10 @@ rand_upto(VALUE randgen, rb_len_t max)
     if (rb_num_negative_p(v)) {
         rb_raise(rb_eRangeError, "random number too small %"PRIsVALUE, v);
     }
-    rb_len_t r = NUM2LEN(v);
-    if (r >= max) {
+    if (RTEST(rb_int_ge(v, lim))) {
         rb_raise(rb_eRangeError, "random number too big %"PRIsVALUE, v);
     }
-    return r;
+    return NUM2LEN(v);
 }
 #define RAND_UPTO(max) rand_upto(randgen, (max))
 #else
@@ -7020,67 +7031,66 @@ static const rb_data_type_t ary_sample_memo_type = {
 };
 
 static VALUE
-ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE to_array)
+ary_sample1(rb_execution_context_t *ec, VALUE ary, const VALUE randgen)
+{
+    rb_len_t len = RARRAY_LEN(ary);
+    rb_len_t i = (len < 2) ?  0 : RAND_UPTO(len);
+    return rb_ary_elt(ary, i);
+}
+
+static VALUE
+ary_sample0(rb_execution_context_t *ec, VALUE ary)
+{
+    return ary_sample1(ec, ary, rb_cRandom);
+}
+
+static VALUE
+ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv)
 {
     VALUE result;
     rb_len_t n, len, i, j, k, idx[10];
-    rb_len_t rnds[numberof(idx)];
     rb_len_t memo_threshold;
 
-    len = RARRAY_LEN(ary);
-    if (!to_array) {
-        if (len < 2)
-            i = 0;
-        else
-            i = RAND_UPTO(len);
-
-        return rb_ary_elt(ary, i);
-    }
     n = NUM2LEN(nv);
     if (n < 0) rb_raise(rb_eArgError, "negative sample number");
+    len = RARRAY_LEN(ary);
     if (n > len) n = len;
     if (n <= numberof(idx)) {
+        rb_len_t rnds[numberof(idx)], sorted[numberof(idx)];
+
         for (i = 0; i < n; ++i) {
             rnds[i] = RAND_UPTO(len - i);
         }
-    }
-    k = len;
-    len = RARRAY_LEN(ary);
-    if (len < k && n <= numberof(idx)) {
-        for (i = 0; i < n; ++i) {
-            if (rnds[i] >= len - i) return rb_ary_new_capa(0);
+        k = len;
+        len = RARRAY_LEN(ary);
+        if (len < k /* && n <= numberof(idx) */) {
+            for (i = 0; i < n; ++i) {
+                if (rnds[i] >= len - i) return rb_ary_new_capa(0);
+            }
         }
-    }
-    if (n > len) n = len;
-    switch (n) {
-      case 0:
-        return rb_ary_new_capa(0);
-      case 1:
-        i = rnds[0];
-        return rb_ary_new_from_args(1, RARRAY_AREF(ary, i));
-      case 2:
-        i = rnds[0];
-        j = rnds[1];
-        if (j >= i) j++;
-        return rb_ary_new_from_args(2, RARRAY_AREF(ary, i), RARRAY_AREF(ary, j));
-      case 3:
-        i = rnds[0];
-        j = rnds[1];
-        k = rnds[2];
-        {
-            rb_len_t l = j, g = i;
-            if (j >= i) l = i, g = ++j;
-            if (k >= l && (++k >= g)) ++k;
+        if (n > len) n = len;
+        switch (n) {
+          case 0:
+            return rb_ary_new_capa(0);
+          case 1:
+            i = rnds[0];
+            return rb_ary_new_from_args(1, RARRAY_AREF(ary, i));
+          case 2:
+            i = rnds[0];
+            j = rnds[1];
+            if (j >= i) j++;
+            return rb_ary_new_from_args(2, RARRAY_AREF(ary, i), RARRAY_AREF(ary, j));
+          case 3:
+            i = rnds[0];
+            j = rnds[1];
+            k = rnds[2];
+            {
+                rb_len_t l = j, g = i;
+                if (j >= i) l = i, g = ++j;
+                if (k >= l && (++k >= g)) ++k;
+            }
+            return rb_ary_new_from_args(3, RARRAY_AREF(ary, i), RARRAY_AREF(ary, j), RARRAY_AREF(ary, k));
         }
-        return rb_ary_new_from_args(3, RARRAY_AREF(ary, i), RARRAY_AREF(ary, j), RARRAY_AREF(ary, k));
-    }
-    memo_threshold =
-        len < 2560 ? len / 128 :
-        len < 5120 ? len / 64 :
-        len < 10240 ? len / 32 :
-        len / 16;
-    if (n <= numberof(idx)) {
-        rb_len_t sorted[numberof(idx)];
         sorted[0] = idx[0] = rnds[0];
         for (i=1; i<n; i++) {
             k = rnds[i];
@@ -7097,8 +7107,16 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
                 ptr_result[i] = RARRAY_AREF(ary, idx[i]);
             }
         });
+        ARY_SET_LEN(result, n);
+        return result;
     }
-    else if (n <= memo_threshold / 2) {
+
+    memo_threshold =
+        len < 2560 ? len / 128 :
+        len < 5120 ? len / 64 :
+        len < 10240 ? len / 32 :
+        len / 16;
+    if (n <= memo_threshold / 2) {
         rb_len_t max_idx = 0;
         VALUE vmemo = TypedData_Wrap_Struct(0, &ary_sample_memo_type, 0);
         st_table *memo = st_init_numtable_with_size(n);
@@ -7152,12 +7170,6 @@ static VALUE
 ary_sized_alloc(rb_execution_context_t *ec, VALUE self)
 {
     return rb_ary_new2(RARRAY_LEN(self));
-}
-
-static VALUE
-ary_sample0(rb_execution_context_t *ec, VALUE ary)
-{
-    return ary_sample(ec, ary, rb_cRandom, Qfalse, Qfalse);
 }
 
 static VALUE

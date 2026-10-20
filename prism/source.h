@@ -15,6 +15,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * An opaque type representing source code being parsed.
  */
@@ -151,5 +155,9 @@ PRISM_EXPORTED_FUNCTION size_t pm_source_length(const pm_source_t *source) PRISM
  * @returns A pointer to the source data.
  */
 PRISM_EXPORTED_FUNCTION const uint8_t * pm_source_source(const pm_source_t *source) PRISM_NONNULL(1);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

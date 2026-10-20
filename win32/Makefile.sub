@@ -124,6 +124,7 @@ LRAMA = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
 AR = lib -nologo
 PURIFY =
 AUTOCONF = autoconf
+LASTREV = $(COMSPEC) /C $(srcdir:/=\)\win32\lastrev.bat
 IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 RM1 = del
@@ -145,6 +146,11 @@ CAT_DEPEND = type
 ! error MSC_VER not defined.  Retry from configure pass.
 !else if $(MSC_VER) < 1915
 ! error MSVC $(MSC_VER) is not supported.  1915 (Visual Studio 2017 version 15.8) or later is required for the conforming preprocessor.
+!endif
+!if defined(CLANG_VER)
+!if $(CLANG_VER) < 15
+! error clang-cl $(CLANG_VER) is not supported.  15 or later is required for pragma optimize, which RB_GC_GUARD relies on.
+!endif
 !endif
 !if !defined(MACHINE)
 MACHINE = x86
@@ -172,7 +178,12 @@ XCFLAGS = $(XCFLAGS) -DRUBY_DEVEL=1
 XCFLAGS = $(XCFLAGS) -Dmodular_gc_dir="$(modular_gc_dir)"
 !endif
 !if !defined(OPTFLAGS)
+!if defined(CLANG_VER)
+# clang-cl takes -O2sy- as -Os
+OPTFLAGS = -O2 -Oy-
+!else
 OPTFLAGS = -O2sy-
+!endif
 !endif
 OPTFLAGS = $(OPTFLAGS) -Zc:inline
 !if !defined(incflags)
@@ -285,7 +296,7 @@ COMPILERFLAG  = -Zm600
 !if !defined(WARNFLAGS)
 WARNFLAGS = -W2 -wd4100 -wd4127 -wd4210 -wd4214 -wd4255 -wd4574 \
 	    -wd4668 -wd4710 -wd4711 -wd4820 -wd4996 \
-	    -we4028 -we4142 -we4047 -we4013
+	    -we4028 -we4142 -we4047 -we4013 -we4133
 !if $(MSC_VER) >= 1944
 # https://developercommunity.visualstudio.com/t/warning-C5287:-operands-are-different-e/10877942
 WARNFLAGS = $(WARNFLAGS) -wd5287
@@ -391,7 +402,9 @@ CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
 !endif
 
 # https://learn.microsoft.com/en-us/cpp/build/reference/zc-preprocessor?view=msvc-170
-!if $(MSC_VER) >= 1925
+!if defined(CLANG_VER)
+# clang-cl conforms already and warns that -Zc:preprocessor is unused
+!elseif $(MSC_VER) >= 1925
 # maybe >= 1926?
 # https://devblogs.microsoft.com/cppblog/announcing-full-support-for-a-c-c-conformant-preprocessor-in-msvc/
 CPPFLAGS = -Zc:preprocessor $(CPPFLAGS)
@@ -778,6 +791,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define SIZEOF_OFF_T 8
 !if "$(TARGET_OS)" == "mswin64"
 #define SIZEOF_VOIDP 8
+#define SIZEOF_RB_LEN_T 8
 !else
 #define SIZEOF_VOIDP 4
 !endif
@@ -1543,7 +1557,7 @@ rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
 	$(ECHO) building $(@F)
 	$(Q)$(MAKEDIRS) $(@D)
 	$(Q)(echo EXPORTS&&echo Init_$(*F))> $*.def
-	$(Q)$(LDSHARED) -Fe$(@) -Fo$(*).obj $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(XLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
+	$(Q)$(LDSHARED) -Fe$(@) -Fo$(*).obj $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< -link $(DLDFLAGS) $(XLDFLAGS) $(LIBRUBYARG) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
 	$(Q)$(RM) $*.def $*.exp $*.lib $*.obj $*.pdb
 
 yesterday:

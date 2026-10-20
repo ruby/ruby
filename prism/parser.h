@@ -16,6 +16,10 @@
 #include "prism/magic_comments.h"
 #include "prism/options.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * The parser used to parse Ruby source.
  */
@@ -176,6 +180,27 @@ PRISM_EXPORTED_FUNCTION const pm_line_offset_list_t * pm_parser_line_offsets(con
  *     given parser. If it is unset, then the length will be set to 0.
  */
 PRISM_EXPORTED_FUNCTION const pm_location_t * pm_parser_data_loc(const pm_parser_t *parser) PRISM_NONNULL(1);
+
+/**
+ * Returns the checksum of the source code that was parsed. The data section
+ * after an __END__ marker is not code, so the hash covers the source only up to
+ * and including the newline that ends the __END__ line. The __END__ marker is
+ * only found by parsing, so this must be called after pm_parse.
+ *
+ * The hash is computed from the source on each call rather than during
+ * parsing, so that parses that never ask for it do not pay for it. This
+ * requires the source to still be alive, and callers that need the value more
+ * than once should keep it.
+ *
+ * The hash is currently the 64-bit variant of XXH3 with a seed of 0. It is not
+ * cryptographic, and the algorithm may change between versions of prism, so
+ * hashes should only be compared against other hashes computed by the same
+ * version of prism.
+ *
+ * @param parser the parser whose checksum we want to get
+ * @returns the checksum of the source code that was parsed
+ */
+PRISM_EXPORTED_FUNCTION uint64_t pm_parser_checksum(const pm_parser_t *parser) PRISM_NONNULL(1);
 
 /**
  * Returns whether the given parser is continuable, meaning that it could become
@@ -400,5 +425,9 @@ PRISM_EXPORTED_FUNCTION const pm_constant_t * pm_parser_constant(const pm_parser
  * @returns The AST representing the source.
  */
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser) PRISM_NONNULL(1);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

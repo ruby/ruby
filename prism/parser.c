@@ -5,8 +5,10 @@
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/magic_comments.h"
+#include "prism/internal/xxh3.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 /**
  * Register a callback that will be called whenever prism changes the encoding
@@ -129,6 +131,22 @@ pm_parser_line_offsets(const pm_parser_t *parser) {
 const pm_location_t *
 pm_parser_data_loc(const pm_parser_t *parser) {
     return &parser->data_loc;
+}
+
+/**
+ * Returns the checksum of the source code that was parsed.
+ */
+uint64_t
+pm_parser_checksum(const pm_parser_t *parser) {
+    const uint8_t *end = parser->end;
+
+    if (parser->data_loc.length != 0) {
+        const uint8_t *cursor = parser->start + parser->data_loc.start;
+        const uint8_t *newline = memchr(cursor, '\n', (size_t) (end - cursor));
+        if (newline != NULL) end = newline + 1;
+    }
+
+    return pm_xxh3(parser->start, (size_t) (end - parser->start));
 }
 
 /**

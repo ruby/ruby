@@ -19,6 +19,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * A constant id is a unique identifier for a constant in the constant pool.
  */
@@ -77,5 +81,9 @@ PRISM_EXPORTED_FUNCTION void pm_constant_id_list_init(pm_constant_id_list_t *lis
  * @param id The constant id to append.
  */
 PRISM_EXPORTED_FUNCTION void pm_constant_id_list_append(pm_arena_t *arena, pm_constant_id_list_t *list, pm_constant_id_t id) PRISM_NONNULL(1, 2);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

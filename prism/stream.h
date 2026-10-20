@@ -14,6 +14,10 @@
 #include "prism/parser.h"
 #include "prism/source.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Parse a stream of Ruby source and return the tree.
  *
@@ -24,5 +28,9 @@
  * @returns The AST representing the source.
  */
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_source_t *source, const pm_options_t *options) PRISM_NONNULL(1, 2, 3);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

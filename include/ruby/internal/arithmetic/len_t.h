@@ -22,6 +22,7 @@
  */
 #include "ruby/internal/config.h"
 #include "ruby/internal/arithmetic/long.h"
+#include "ruby/internal/arithmetic/long_long.h"
 #include "ruby/internal/assume.h"
 #include "ruby/internal/cast.h"
 #include "ruby/internal/value.h"
@@ -32,14 +33,20 @@
 #define rb_len2int rb_len2int_inline      /**< @alias{rb_len2int_inline} */
 #define rb_len2long rb_len2long_inline    /**< @alias{rb_len2long_inline} */
 
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+# define RB_LEN2NUM RB_LL2NUM
+# define RB_NUM2LEN RB_NUM2LL
+# define RB_ULEN2NUM RB_ULL2NUM
+#else
 /** Converts a ::rb_len_t into an instance of ::rb_cInteger. */
-#define RB_LEN2NUM RB_LONG2NUM
+# define RB_LEN2NUM RB_LONG2NUM
 
 /** Converts an instance of ::rb_cNumeric into ::rb_len_t. */
-#define RB_NUM2LEN RB_NUM2LONG
+# define RB_NUM2LEN RB_NUM2LONG
 
 /** Converts a ::rb_ulen_t into an instance of ::rb_cInteger. */
-#define RB_ULEN2NUM RB_ULONG2NUM
+# define RB_ULEN2NUM RB_ULONG2NUM
+#endif
 
 /**
  * Checks if `int` can hold the given integer.

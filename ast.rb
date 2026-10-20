@@ -374,14 +374,11 @@ class RubyVM::InstructionSequence
       result = source ? Ruby::Prism.parse(source, version: "current") : Ruby::Prism.parse_file(path, version: "current")
       return nil unless result.success?
 
-      # Hash exactly the bytes that prism parsed. The data section after an
-      # __END__ marker is not part of the code, so the hash covers the source
-      # only up to the end of the __END__ line.
-      code = result.source.source
-      if (data_loc = result.data_loc) && (eol = code.byteindex("\n", data_loc.start_offset))
-        code = code.byteslice(0, eol + 1)
-      end
-      return nil unless Primitive.source_hash_of(code) == source_hash
+      # The instruction sequence stores a checksum of 0 as 1, because a source
+      # hash of 0 means that there is no source hash (see pm_parse_process).
+      checksum = result.source.checksum
+      checksum = 1 if checksum == 0
+      return nil if checksum != source_hash
 
       root = result.value
     else

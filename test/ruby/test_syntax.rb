@@ -1533,17 +1533,14 @@ eom
   end
 
   def test_invalid_symbol_in_hash_memory_leak
-    assert_no_memory_leak([], "#{<<-'begin;'}", "#{<<-'end;'}", rss: true)
+    assert_no_memory_leak([], "#{<<-'begin;'}", "#{<<-'end;'}", rss: true, samples: 2..1_000)
       str = '{"\xC3": 1}'.force_encoding("UTF-8")
-      code = proc do
+    begin;
+      1_000.times do
         eval(str)
         raise "unreachable"
       rescue SyntaxError
       end
-
-      1_000.times(&code)
-    begin;
-      1_000_000.times(&code)
     end;
   end
 
@@ -2471,16 +2468,15 @@ eom
   end
 
   def test_argument_forwarding_with_super_memory_leak
-    assert_no_memory_leak([], "#{<<-'begin;'}", "#{<<-'end;'}", rss: true)
+    assert_no_memory_leak([], "#{<<-'begin;'}", "#{<<-'end;'}", rss: true, samples: 2..100)
       code = proc do
         eval("def foo(...) super(...) {}; end")
         raise "unreachable"
       rescue SyntaxError
       end
 
-      1_000.times(&code)
     begin;
-      100_000.times(&code)
+      1_000.times(&code)
     end;
   end
 

@@ -3185,7 +3185,7 @@ fn gen_block_series_body(
             for blockref in batch {
                 remove_block_version(&blockref);
                 // SAFETY: block was well connected because it was in a version_map
-                unsafe { free_block(blockref, false) };
+                unsafe { free_block(blockref, true) };
             }
 
             // Stop compiling

@@ -2161,7 +2161,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
         if (!NIL_OR_UNDEF_P(vcapa)) {
             rb_len_t capa = NUM2LEN(vcapa);
             rb_len_t len = 0;
-            int termlen = enc ? rb_enc_mbminlen(enc) : 1;
+            int termlen;
 
             if (capa < STR_BUF_MIN_SIZE) {
                 capa = STR_BUF_MIN_SIZE;
@@ -2174,6 +2174,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
                 }
                 if (orig == str) n = 0;
             }
+            termlen = enc ? rb_enc_mbminlen(enc) : TERM_LEN(n == 1 ? orig : str);
             str_modifiable(str);
             if (STR_EMBED_P(str) || FL_TEST(str, STR_SHARED|STR_NOFREE)) {
                 /* make noembed always */
@@ -2207,7 +2208,13 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
         }
         if (enc) {
             str_modifiable(str);
-            rb_enc_raw_set(str, enc);
+            if (NIL_OR_UNDEF_P(vcapa)) {
+                rb_enc_associate(str, enc);
+            }
+            else {
+                /* the buffer is already sized for enc's terminator */
+                rb_enc_raw_set(str, enc);
+            }
             ENC_CODERANGE_CLEAR(str);
         }
     }
@@ -3284,7 +3291,7 @@ rb_str_subpos(VALUE str, rb_len_t beg, rb_len_t *lenp)
     const char *p, *s = RSTRING_PTR(str), *e = s + blen;
 
     if (len < 0) return 0;
-    if (beg < 0 && -beg < 0) return 0;
+    if (beg == RB_LEN_MIN) return 0;
     if (!blen) {
         len = 0;
     }
@@ -6826,7 +6833,7 @@ str_bit_offset_out_of_range(rb_len_t byte_len, uint64_t bit_offset)
  * Keep both the full bit offset and its rb_len_t representation.  Most calls
  * use a Fixnum-sized offset and can stay on the rb_len_t fast path; only large
  * Bignum offsets need the uint64_t path below.  This matters on platforms where
- * rb_len_t is narrower than the address space, such as 32-bit and LLP64.
+ * rb_len_t is 32 bits.
  */
 struct str_bit_offset {
     uint64_t value;
