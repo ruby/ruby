@@ -10,8 +10,9 @@
 //!   `include/ruby/internal/arithmetic/{long,fixnum}.h`, transcribed from the
 //!   C (same formulas, same wrapping arithmetic).
 //! * [`api`]: `extern "C"` declarations of public C API functions and
-//!   globals, with the exact prototypes of `include/ruby/`.  Add a function
-//!   here (with its prototype copied from the header) when a port needs it.
+//!   globals, categorized into [`api::non_raising`] (re-exported at `api::*`)
+//!   and [`api::raising`] (functions that can raise Ruby exceptions via `longjmp`).
+//!   Add a function here (with its prototype copied from the header) when a port needs it.
 //!   Never declare internal (`internal/*.h`) functions here; a port that
 //!   needs one is out of Wave B.
 //! * [`protect`]: [`protect::protect`] around `rb_protect()`,
