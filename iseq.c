@@ -3007,6 +3007,8 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
         disasm_builtin_attr(str, iseq, SINGLE_NOARG_LEAF);
         disasm_builtin_attr(str, iseq, INLINE_BLOCK);
         disasm_builtin_attr(str, iseq, C_TRACE);
+        disasm_builtin_attr(str, iseq, WITHOUT_INTERRUPTS);
+        disasm_builtin_attr(str, iseq, CALLER_USER_BOX);
     }
     rb_str_cat2(str, "\n");
 
