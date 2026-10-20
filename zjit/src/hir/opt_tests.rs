@@ -16231,6 +16231,43 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_string_valid_encoding_p() {
+        eval(r#"
+            def test(x) = x.valid_encoding?
+            test("iron")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, valid_encoding?@0x1010, cme:0x1018)
+          v25:StringExact = GuardType v10, StringExact recompile
+          v26:CUInt64 = LoadField v25, :RBASIC_FLAGS@0x1040
+          v27:CUInt64[3145728] = Const CUInt64(3145728)
+          v28:CInt64 = IntAnd v26, v27
+          v29:CInt64[1048576] = Const CInt64(1048576)
+          v30:CInt64 = GuardGreaterEq v28, v29
+          v31:CInt64[3145728] = Const CInt64(3145728)
+          v32:CBool = IsBitNotEqual v30, v31
+          v33:BoolExact = BoxBool v32
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v33
+        ");
+    }
+
+    #[test]
     fn test_dont_optimize_when_passing_too_few_args() {
         eval(r#"
             public def foo(lead, opt=raise) = opt
