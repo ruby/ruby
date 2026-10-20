@@ -7,6 +7,7 @@
 #include "prism/internal/magic_comments.h"
 #include "prism/internal/xxh3.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -338,15 +339,13 @@ pm_parser_constants_size(const pm_parser_t *parser) {
 }
 
 /**
- * Iterates over the constants in the constant pool associated with the given
- * parser and calls the given callback for each constant.
+ * Returns the constant at the given index in the constant pool associated with
+ * the given parser.
  */
-void
-pm_parser_constants_each(const pm_parser_t *parser, pm_constant_callback_t callback, void *data) {
-    for (uint32_t index = 0; index < parser->constant_pool.size; index++) {
-        const pm_constant_t *constant = &parser->constant_pool.constants[index];
-        callback(constant, data);
-    }
+const pm_constant_t *
+pm_parser_constant_at(const pm_parser_t *parser, size_t index) {
+    assert(index < parser->constant_pool.size);
+    return &parser->constant_pool.constants[index];
 }
 
 /**

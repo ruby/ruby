@@ -364,30 +364,38 @@ PRISM_EXPORTED_FUNCTION const pm_diagnostic_t * pm_parser_warnings_first(const p
 PRISM_EXPORTED_FUNCTION size_t pm_parser_constants_size(const pm_parser_t *parser) PRISM_NONNULL(1);
 
 /**
- * A callback function that can be used to process constants found while
- * parsing.
- */
-typedef void (*pm_constant_callback_t)(const pm_constant_t *constant, void *data);
-
-/**
- * Iterates over the constants in the constant pool associated with the given
- * parser and calls the given callback for each constant.
+ * Returns the constant at the given index in the constant pool associated with
+ * the given parser. Together with pm_constant_id_index, this lets a caller
+ * build a cache with one entry per constant and then find the entry for any
+ * constant id, as in:
  *
- * @param parser the parser whose constants we want to iterate over
- * @param callback the callback function to call for each constant. This function
- *     will be passed a pointer to the constant and the data parameter passed to
- *     this function.
- * @param data the data to pass to the callback function for each constant. This
- *     can be NULL if no data needs to be passed to the callback function.
+ * ```c
+ * size_t size = pm_parser_constants_size(parser);
+ * for (size_t index = 0; index < size; index++) {
+ *     cache[index] = convert(pm_parser_constant_at(parser, index));
+ * }
+ *
+ * value = cache[pm_constant_id_index(constant_id)];
+ * ```
+ *
+ * For any constant id, pm_parser_constant_at(parser,
+ * pm_constant_id_index(constant_id)) is pm_parser_constant(parser,
+ * constant_id).
+ *
+ * @param parser the parser whose constant pool we want to look up from
+ * @param index the index of the constant, which must be less than
+ *     pm_parser_constants_size(parser)
+ * @returns a pointer to the constant at the given index
  */
-PRISM_EXPORTED_FUNCTION void pm_parser_constants_each(const pm_parser_t *parser, pm_constant_callback_t callback, void *data) PRISM_NONNULL(1);
+PRISM_EXPORTED_FUNCTION const pm_constant_t * pm_parser_constant_at(const pm_parser_t *parser, size_t index) PRISM_NONNULL(1);
 
 /**
  * Returns a pointer to the constant at the given id in the constant pool
  * associated with the given parser.
  *
  * @param parser the parser whose constant pool we want to look up from
- * @param constant_id the id of the constant to look up (1-based)
+ * @param constant_id the id of the constant to look up. Optional constant
+ *     fields on nodes hold 0 when they are absent, which is not a valid id.
  * @returns a pointer to the constant at the given id
  */
 PRISM_EXPORTED_FUNCTION const pm_constant_t * pm_parser_constant(const pm_parser_t *parser, pm_constant_id_t constant_id) PRISM_NONNULL(1);

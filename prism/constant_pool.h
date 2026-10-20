@@ -11,6 +11,7 @@
 #define PRISM_CONSTANT_POOL_H
 
 #include "prism/compiler/exported.h"
+#include "prism/compiler/inline.h"
 #include "prism/compiler/nodiscard.h"
 #include "prism/compiler/nonnull.h"
 
@@ -27,6 +28,22 @@ extern "C" {
  * A constant id is a unique identifier for a constant in the constant pool.
  */
 typedef uint32_t pm_constant_id_t;
+
+/**
+ * Returns the index of the constant with the given id among the constants of
+ * the parser that produced it. The indices run from 0 to one less than
+ * pm_parser_constants_size, so they can index a cache with one entry per
+ * constant that was filled using pm_parser_constant_at.
+ *
+ * @param constant_id the id of the constant. Optional constant fields on nodes
+ *     hold 0 when they are absent, which is not a valid id, so check for it
+ *     before calling this function.
+ * @returns the index of the constant
+ */
+static PRISM_INLINE size_t
+pm_constant_id_index(pm_constant_id_t constant_id) {
+    return (size_t) constant_id - 1;
+}
 
 /**
  * A list of constant IDs. Usually used to represent a set of locals.
