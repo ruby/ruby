@@ -976,9 +976,11 @@ copy_tables(VALUE clone, VALUE orig)
         struct clone_const_arg arg;
         struct rb_id_table *const_tbl;
         struct rb_id_table *orig_tbl = RCLASS_CONST_TBL(orig);
-        arg.tbl = const_tbl = rb_id_table_create(rb_id_table_size(orig_tbl));
         arg.klass = clone;
-        rb_id_table_foreach(orig_tbl, clone_const_i, &arg);
+        RB_VM_LOCKING() { // orig's owner may be removing constants (rb_const_remove)
+            arg.tbl = const_tbl = rb_id_table_create(rb_id_table_size(orig_tbl));
+            rb_id_table_foreach(orig_tbl, clone_const_i, &arg);
+        }
         RCLASS_WRITE_CONST_TBL(clone, const_tbl, false);
         rb_gc_writebarrier_remember(clone);
     }
@@ -1006,10 +1008,9 @@ static enum rb_id_table_iterator_result
 init_copy_check_const_i(ID id, VALUE v, void *data)
 {
     const rb_const_entry_t *ce = (const rb_const_entry_t *)v;
-    if (!UNDEF_P(ce->value) && !rb_ractor_shareable_p(ce->value)) {
-        rb_raise(rb_eRactorIsolationError,
-                 "can not copy a class/module created by another Ractor because "
-                 "constant %"PRIsVALUE" refers to an unshareable object", rb_id2str(id));
+    if (!UNDEF_P(ce->value) && !RB_SPECIAL_CONST_P(ce->value) && !RB_OBJ_SHAREABLE_P(ce->value)) {
+        // checked after the walk, as rb_ractor_shareable_p may allocate or raise
+        rb_ary_push((VALUE)data, ID2SYM(id));
     }
     return ID_TABLE_CONTINUE;
 }
@@ -1067,7 +1068,20 @@ static void
 init_copy_check_tables(VALUE klass)
 {
     if (RCLASS_CONST_TBL(klass)) {
-        rb_id_table_foreach(RCLASS_CONST_TBL(klass), init_copy_check_const_i, NULL);
+        const VALUE ids = rb_ary_hidden_new(0);
+        RB_VM_LOCKING() { // see rb_const_lookup_copy
+            rb_id_table_foreach(RCLASS_CONST_TBL(klass), init_copy_check_const_i, (void *)ids);
+        }
+        for (long i = 0; i < RARRAY_LEN(ids); i++) {
+            const ID id = SYM2ID(RARRAY_AREF(ids, i));
+            rb_const_entry_t entry;
+            if (rb_const_lookup_copy(klass, id, &entry) && !UNDEF_P(entry.value) &&
+                !rb_ractor_shareable_p(entry.value)) {
+                rb_raise(rb_eRactorIsolationError,
+                         "can not copy a class/module created by another Ractor because "
+                         "constant %"PRIsVALUE" refers to an unshareable object", rb_id2str(id));
+            }
+        }
     }
     rb_ivar_foreach_buffered(klass, init_copy_check_field_i, 0);
 }
@@ -1251,9 +1265,11 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
         if (RCLASS_CONST_TBL(klass)) {
             struct clone_const_arg arg;
             struct rb_id_table *table;
-            arg.tbl = table = rb_id_table_create(rb_id_table_size(RCLASS_CONST_TBL(klass)));
             arg.klass = clone;
-            rb_id_table_foreach(RCLASS_CONST_TBL(klass), clone_const_i, &arg);
+            RB_VM_LOCKING() { // see copy_tables
+                arg.tbl = table = rb_id_table_create(rb_id_table_size(RCLASS_CONST_TBL(klass)));
+                rb_id_table_foreach(RCLASS_CONST_TBL(klass), clone_const_i, &arg);
+            }
             RCLASS_SET_CONST_TBL(clone, table, false);
         }
         if (!UNDEF_P(attach)) {
