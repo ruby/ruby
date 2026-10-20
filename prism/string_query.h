@@ -13,6 +13,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Represents the results of a slice query.
  */
@@ -70,5 +74,9 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  *   the query is false, and PM_STRING_QUERY_ERROR if the encoding was invalid.
  */
 PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_keyword(const uint8_t *source, size_t length, const char *encoding_name) PRISM_NONNULL(1, 3);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -16,6 +16,10 @@
 #include "prism/magic_comments.h"
 #include "prism/options.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * The parser used to parse Ruby source.
  */
@@ -421,5 +425,9 @@ PRISM_EXPORTED_FUNCTION const pm_constant_t * pm_parser_constant(const pm_parser
  * @returns The AST representing the source.
  */
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser) PRISM_NONNULL(1);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

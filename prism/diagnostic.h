@@ -12,6 +12,10 @@
 
 #include "prism/ast.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * An opaque pointer to a diagnostic generated during parsing.
  */
@@ -89,5 +93,9 @@ PRISM_EXPORTED_FUNCTION pm_error_level_t pm_diagnostic_error_level(const pm_diag
  *     undefined and should not be relied upon.
  */
 PRISM_EXPORTED_FUNCTION pm_warning_level_t pm_diagnostic_warning_level(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

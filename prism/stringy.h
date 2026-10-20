@@ -12,6 +12,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * A generic string type that can have various ownership semantics.
  */
@@ -68,5 +72,9 @@ PRISM_EXPORTED_FUNCTION size_t pm_string_length(const pm_string_t *string) PRISM
  * @returns The start pointer of the string.
  */
 PRISM_EXPORTED_FUNCTION const uint8_t * pm_string_source(const pm_string_t *string) PRISM_NONNULL(1);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
