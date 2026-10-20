@@ -23,6 +23,7 @@ mod tests {
         let _ = rb_obj_class as unsafe extern "C" fn(crate::ffi::value::VALUE) -> crate::ffi::value::VALUE;
         let _ = rb_int2inum as unsafe extern "C" fn(isize) -> crate::ffi::value::VALUE;
         let _ = rb_uint2inum as unsafe extern "C" fn(usize) -> crate::ffi::value::VALUE;
+        let _ = ruby_xfree as unsafe extern "C" fn(*mut core::ffi::c_void);
     }
 
     #[test]
@@ -49,5 +50,7 @@ mod tests {
             crate::ffi::value::VALUE,
             crate::ffi::value::VALUE,
         ) -> crate::ffi::value::VALUE;
+        let _ = ruby_xmalloc as unsafe extern "C" fn(usize) -> *mut core::ffi::c_void;
+        let _ = ruby_xrealloc as unsafe extern "C" fn(*mut core::ffi::c_void, usize) -> *mut core::ffi::c_void;
     }
 }

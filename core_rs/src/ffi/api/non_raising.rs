@@ -96,4 +96,8 @@ unsafe extern "C" {
     // ---- objects: intern/object.h ----
     /// `VALUE rb_obj_class(VALUE obj)`
     pub fn rb_obj_class(obj: VALUE) -> VALUE;
+
+    // ---- memory: include/ruby/internal/xmalloc.h ----
+    /// `void ruby_xfree(void *ptr)`
+    pub fn ruby_xfree(ptr: *mut core::ffi::c_void);
 }
