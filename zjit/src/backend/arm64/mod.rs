@@ -7,6 +7,7 @@ use crate::options::asm_dump;
 use crate::stats::{CompileError, trace_compile_phase};
 use crate::virtualmem::CodePtr;
 use crate::cast::*;
+use std::collections::{HashMap, HashSet};
 
 // Use the arm64 register type for this platform
 pub type Reg = A64Reg;
@@ -169,6 +170,148 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
     }
 }
 
+/// Determine how many instructions [`emit_load_value`] uses for `value`.
+fn emit_load_size(value: u64) -> u8 {
+    if value <= 0xffff || u16::try_from(!value).is_ok() || BitmaskImmediate::try_from(value).is_ok() {
+        1
+    } else if value < (1 << 32) {
+        2
+    } else if value < (1 << 48) {
+        3
+    } else {
+        4
+    }
+}
+
+/// A literal-pool key includes whether the bits are a movable Ruby object.
+/// A raw pointer and a VALUE can have the same bits, but only the VALUE may be
+/// relocated by GC.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+struct LiteralPoolKey {
+    bits: u64,
+    gc_managed: bool,
+}
+
+impl LiteralPoolKey {
+    fn gc_value(value: VALUE) -> Self {
+        debug_assert!(!value.special_const_p());
+        Self { bits: value.as_u64(), gc_managed: true }
+    }
+
+    fn immediate(bits: u64) -> Self {
+        Self { bits, gc_managed: false }
+    }
+}
+
+struct LiteralPoolEntry {
+    key: LiteralPoolKey,
+    label: Label,
+}
+
+/// Per-compilation ARM64 literal pool.
+///
+/// Loads are linked after the pool slots have been emitted. Large compilations
+/// periodically flush an island with a branch around its data so every LDR
+/// remains within its signed 19-bit, instruction-scaled range.
+struct LiteralPool {
+    selected: HashSet<LiteralPoolKey>,
+    labels: HashMap<LiteralPoolKey, Label>,
+    entries: Vec<LiteralPoolEntry>,
+    first_ref_pos: Option<usize>,
+    island_idx: usize,
+}
+
+impl LiteralPool {
+    /// Leave ample room for a worst-case island containing one distinct
+    /// eight-byte slot per four-byte load.
+    const MAX_CODE_DISTANCE: usize = 384 * 1024;
+
+    fn new(selected: HashSet<LiteralPoolKey>) -> Self {
+        Self {
+            selected,
+            labels: HashMap::new(),
+            entries: Vec::new(),
+            first_ref_pos: None,
+            island_idx: 0,
+        }
+    }
+
+    fn emit_load(&mut self, cb: &mut CodeBlock, dest: A64Opnd, key: LiteralPoolKey) -> bool {
+        if !self.selected.contains(&key) {
+            return false;
+        }
+
+        let label = if let Some(&label) = self.labels.get(&key) {
+            label
+        } else {
+            let label = cb.new_label("literal_pool_entry");
+            self.labels.insert(key, label);
+            self.entries.push(LiteralPoolEntry { key, label });
+            label
+        };
+        self.first_ref_pos.get_or_insert(cb.get_write_pos());
+
+        cb.label_ref(label, 4, move |cb, end_addr, dst_addr| {
+            // CodeBlock reports the address after the reserved instruction.
+            // ARM64 LDR literal offsets are relative to the instruction itself.
+            let offset = (dst_addr - end_addr) / 4 + 1;
+            if imm_fits_bits(offset, 19) {
+                ldr_literal(cb, dest, InstructionOffset::from_insns(offset as i32));
+                Ok(())
+            } else {
+                Err(())
+            }
+        });
+        true
+    }
+
+    fn flush_if_needed(&mut self, cb: &mut CodeBlock, gc_offsets: &mut Vec<CodePtr>, next_bytes: usize) {
+        let Some(first_ref_pos) = self.first_ref_pos else {
+            return;
+        };
+        if cb.get_write_pos().saturating_add(next_bytes).saturating_sub(first_ref_pos) >= Self::MAX_CODE_DISTANCE {
+            self.flush(cb, gc_offsets);
+        }
+    }
+
+    fn flush(&mut self, cb: &mut CodeBlock, gc_offsets: &mut Vec<CodePtr>) {
+        if self.entries.is_empty() {
+            return;
+        }
+
+        // Generic Assembler users are allowed to fall through their last LIR
+        // instruction, so always branch around pool data.
+        let end_label = cb.new_label("literal_pool_end");
+        cb.label_ref(end_label, 4, |cb, end_addr, dst_addr| {
+            let offset = (dst_addr - end_addr) / 4 + 1;
+            if b_offset_fits_bits(offset) {
+                b(cb, InstructionOffset::from_insns(offset as i32));
+                Ok(())
+            } else {
+                Err(())
+            }
+        });
+
+        while cb.get_write_pos() % SIZEOF_VALUE != 0 {
+            cb.write_byte(0);
+        }
+
+        for entry in self.entries.drain(..) {
+            cb.write_label(entry.label);
+            let slot = cb.get_write_ptr();
+            cb.write_bytes(&entry.key.bits.to_le_bytes());
+            if entry.key.gc_managed {
+                gc_offsets.push(slot);
+            }
+        }
+        cb.write_label(end_label);
+
+        self.labels.clear();
+        self.first_ref_pos = None;
+        self.island_idx += 1;
+    }
+}
+
 /// List of registers that can be used for register allocation.
 /// SCRATCH_OPND, SCRATCH1_OPND, and EMIT_OPND are excluded.
 pub const ALLOC_REGS: &[Reg] = &[
@@ -192,6 +335,10 @@ const SCRATCH1_OPND: Opnd = Opnd::Reg(X17_REG);
 /// A scratch register available for use by resolve_ssa to break register copy cycles.
 /// Must not overlap with ALLOC_REGS or other preserved registers.
 pub const SCRATCH_REG: Reg = X15_REG;
+/// Dedicated target register for indirect calls with arguments. It must not
+/// overlap the allocator, argument registers, or [`SCRATCH_REG`], since call
+/// argument parallel moves use the latter to break cycles.
+pub const CALL_TARGET_REG: Reg = X17_REG;
 const SCRATCH2_OPND: Opnd = Opnd::Reg(X14_REG);
 
 impl Assembler {
@@ -352,17 +499,26 @@ impl Assembler {
 
         /// Returns the operands that should be used for a csel instruction.
         fn split_csel_operands(asm: &mut Assembler, opnd0: Opnd, opnd1: Opnd) -> (Opnd, Opnd) {
-            let opnd0 = match opnd0 {
-                Opnd::Reg(_) | Opnd::VReg { .. } => opnd0,
-                _ => split_load_operand(asm, opnd0)
-            };
+            // A zero operand can be read directly from the zero register (xzr)
+            // instead of being materialized into a fresh register with `mov`. This
+            // is common: comparisons csel between two constants (Qtrue/Qfalse, or
+            // 1/0 for FixnumCmpBool), so one side is frequently zero. Cmp/Test
+            // already map Imm(0)/UImm(0) to XZR_REG the same way.
+            fn split_csel_operand(asm: &mut Assembler, opnd: Opnd) -> Opnd {
+                match opnd {
+                    Opnd::Reg(_) | Opnd::VReg { .. } => opnd,
+                    Opnd::UImm(0) | Opnd::Imm(0) => Opnd::Reg(XZR_REG),
+                    _ => split_load_operand(asm, opnd)
+                }
+            }
 
-            let opnd1 = match opnd1 {
-                Opnd::Reg(_) | Opnd::VReg { .. } => opnd1,
-                _ => split_load_operand(asm, opnd1)
-            };
+            // A (1, 0) constant pair needs no materialization at all: the
+            // emit lowers it to a single cset. Keep the 1 as an immediate.
+            if matches!(opnd0, Opnd::UImm(1) | Opnd::Imm(1)) && matches!(opnd1, Opnd::UImm(0) | Opnd::Imm(0)) {
+                return (opnd0, Opnd::Reg(XZR_REG));
+            }
 
-            (opnd0, opnd1)
+            (split_csel_operand(asm, opnd0), split_csel_operand(asm, opnd1))
         }
 
         fn split_less_than_32_cmp(asm: &mut Assembler, opnd0: Opnd) -> Opnd {
@@ -377,6 +533,27 @@ impl Assembler {
                 }
                 _ => opnd0
             }
+        }
+
+        /// True if the next instruction is a conditional jump to a side exit --
+        /// i.e. a `Test`/`Cmp` that can be folded into a flag-free cbz/cbnz.
+        fn peek_is_side_exit_branch(iterator: &mut InsnIter) -> bool {
+            matches!(iterator.peek(), Some((_,
+                Insn::Jz(Target::SideExit(..)) | Insn::Je(Target::SideExit(..)) |
+                Insn::Jnz(Target::SideExit(..)) | Insn::Jne(Target::SideExit(..)))))
+        }
+
+        /// Replace a compare-against-zero / self-`Test` that feeds the peeked
+        /// side-exit branch with a single Joz/Jonz (cbz/cbnz), and consume the
+        /// branch. Joz emits on zero (== / Jz), Jonz on nonzero (!= / Jnz).
+        fn fuse_cmp_zero_jump(asm: &mut Assembler, iterator: &mut InsnIter, reg: Opnd) {
+            let fused = match iterator.peek() {
+                Some((_, Insn::Jz(t) | Insn::Je(t)))   => Insn::Joz(reg, t.clone()),
+                Some((_, Insn::Jnz(t) | Insn::Jne(t))) => Insn::Jonz(reg, t.clone()),
+                _ => unreachable!("peek_is_side_exit_branch guaranteed a conditional jump"),
+            };
+            asm.push_insn(fused);
+            iterator.next(asm); // consume the merged jump
         }
 
         let mut asm_local = Assembler::new_with_asm(&self);
@@ -442,35 +619,25 @@ impl Assembler {
 
                     asm.push_insn(insn);
                 }
-                /*
-                // Lower to Joz and Jonz for generating CBZ/CBNZ for compare-with-0-and-branch.
-                ref insn @ Insn::Cmp { ref left, right: ref right @ (Opnd::UImm(0) | Opnd::Imm(0)) } |
-                ref insn @ Insn::Test { ref left, right: ref right @ (Opnd::InsnOut { .. } | Opnd::Reg(_)) } if {
-                    let same_opnd_if_test = if let Insn::Test { .. } = insn {
-                        left == right
-                    } else {
-                        true
-                    };
-
-                    same_opnd_if_test && if let Some(
-                            Insn::Jz(target) | Insn::Je(target) | Insn::Jnz(target) | Insn::Jne(target)
-                        ) = iterator.peek() {
-                            matches!(target, Target::SideExit(..))
-                        } else {
-                            false
-                        }
-                } => {
+                // Fold a compare-against-zero or self-`Test` that feeds a
+                // side-exit branch into a single flag-free cbz/cbnz (Joz/Jonz).
+                // This is one instruction shorter and, crucially, doesn't
+                // clobber NZCV -- so RUBY_VM_CHECK_INTS (`Test flag,flag; Jnz
+                // exit`) stops wiping the flags of a surrounding compare.
+                // Restricted to SideExit targets: emit_cmp_zero_jump needs a
+                // resolved CodePtr, and side exits are always within range.
+                Insn::Cmp { left, right: Opnd::UImm(0) | Opnd::Imm(0) }
+                    if peek_is_side_exit_branch(&mut iterator) =>
+                {
                     let reg = split_load_operand(asm, *left);
-                    match iterator.peek() {
-                        Some(Insn::Jz(target) | Insn::Je(target))   => asm.push_insn(Insn::Joz(reg, *target)),
-                        Some(Insn::Jnz(target) | Insn::Jne(target)) => asm.push_insn(Insn::Jonz(reg, *target)),
-                        _ => ()
-                    }
-
-                    iterator.map_insn_index(asm);
-                    iterator.next_unmapped(); // Pop merged jump instruction
+                    fuse_cmp_zero_jump(asm, &mut iterator, reg);
                 }
-                */
+                Insn::Test { left, right }
+                    if left == right && peek_is_side_exit_branch(&mut iterator) =>
+                {
+                    let reg = split_load_operand(asm, *left);
+                    fuse_cmp_zero_jump(asm, &mut iterator, reg);
+                }
                 Insn::Cmp { left, right } => {
                     let opnd0 = split_load_operand(asm, *left);
                     let opnd0 = split_less_than_32_cmp(asm, opnd0);
@@ -615,7 +782,10 @@ impl Assembler {
                     }
                     asm.push_insn(insn);
                 },
-                Insn::Mul { left, right, .. } => {
+                Insn::Mul { left, right, .. } |
+                Insn::SDiv { left, right, .. } |
+                Insn::SRem { left, right, .. } |
+                Insn::SMulHi { left, right, .. } => {
                     *left = split_load_operand(asm, *left);
                     *right = split_load_operand(asm, *right);
                     asm.push_insn(insn);
@@ -769,6 +939,37 @@ impl Assembler {
                         asm.store(mem_out, SCRATCH0_OPND);
                     }
                 }
+                Insn::LoadScaled { base, index, out } => {
+                    // Same shape as FloatArith: operands must be registers;
+                    // the load writes out directly, no GPR scratch needed.
+                    *base = split_memory_read(asm, *base, SCRATCH0_OPND);
+                    *index = split_memory_read(asm, *index, SCRATCH1_OPND);
+                    let mem_out = split_memory_write(out, SCRATCH0_OPND);
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND);
+                        asm.store(mem_out, SCRATCH0_OPND);
+                    }
+                }
+                Insn::FloatArith { left, right, out, .. } => {
+                    // The emit sequence moves the operands into FP scratch
+                    // registers (D0/D1) and uses no GPR scratch, so loading
+                    // spilled operands into SCRATCH0/SCRATCH1 (X15/X17) can't
+                    // collide with it. `left` is read into D0 before `out` is
+                    // written, so left==out (both spilled to SCRATCH0) is safe.
+                    *left = split_memory_read(asm, *left, SCRATCH0_OPND);
+                    *right = split_memory_read(asm, *right, SCRATCH1_OPND);
+                    let mem_out = split_memory_write(out, SCRATCH0_OPND);
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND);
+                        asm.store(mem_out, SCRATCH0_OPND);
+                    }
+                }
                 Insn::Mul { left, right, out } => {
                     *left = split_memory_read(asm, *left, SCRATCH0_OPND);
                     *right = split_memory_read(asm, *right, SCRATCH1_OPND);
@@ -789,8 +990,24 @@ impl Assembler {
                         asm.push_insn(Insn::RShift { out: SCRATCH0_OPND, opnd: reg_out, shift: Opnd::UImm(63) });
                     }
                 }
+                Insn::SDiv { left, right, out } |
+                Insn::SRem { left, right, out } |
+                Insn::SMulHi { left, right, out } => {
+                    *left = split_memory_read(asm, *left, SCRATCH0_OPND);
+                    *right = split_memory_read(asm, *right, SCRATCH1_OPND);
+                    let mem_out = split_memory_write(out, SCRATCH0_OPND);
+
+                    asm.push_insn(insn);
+
+                    if let Some(mem_out) = mem_out {
+                        let mem_out = split_stack_membase(asm, mem_out, SCRATCH1_OPND);
+                        asm.store(mem_out, SCRATCH0_OPND);
+                    }
+                }
                 Insn::LShift { opnd, out, .. } |
-                Insn::RShift { opnd, out, .. } => {
+                Insn::RShift { opnd, out, .. } |
+                Insn::URShift { opnd, out, .. } |
+                Insn::Int64ToF64Bits { opnd, out } => {
                     *opnd = split_memory_read(asm, *opnd, SCRATCH0_OPND);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
 
@@ -805,6 +1022,12 @@ impl Assembler {
                 Insn::Test { left, right } => {
                     *left = split_memory_read(asm, *left, SCRATCH0_OPND);
                     *right = split_memory_read(asm, *right, SCRATCH1_OPND);
+                    asm.push_insn(insn);
+                }
+                // cbz/cbnz read a single register; load a spilled operand first.
+                Insn::Joz(opnd, _) |
+                Insn::Jonz(opnd, _) => {
+                    *opnd = split_memory_read(asm, *opnd, SCRATCH0_OPND);
                     asm.push_insn(insn);
                 }
                 // For compile_exits, support splitting simple C arguments here
@@ -905,27 +1128,19 @@ impl Assembler {
     /// Emit platform-specific machine code
     /// Returns a list of GC offsets. Can return failure to signal caller to retry.
     fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Result<Vec<CodePtr>, CompileError> {
-        /// Determine how many instructions it will take to represent moving
-        /// this value into a register. Note that the return value of this
-        /// function must correspond to how many instructions are used to
-        /// represent this load in the emit_load_value function.
-        fn emit_load_size(value: u64) -> u8 {
-            if BitmaskImmediate::try_from(value).is_ok() {
-                return 1;
-            }
-
-            if value < (1 << 16) {
-                1
-            } else if value < (1 << 32) {
-                2
-            } else if value < (1 << 48) {
-                3
-            } else {
-                4
-            }
+        /// Lower a CSel to a single `cset` when it selects between the constants
+    /// 1 and 0 (the shape FixnumCmpBool produces; arm64_split preserves the
+    /// pair as (Imm 1, xzr)); otherwise emit a plain csel.
+    fn emit_csel_helper(cb: &mut CodeBlock, truthy: Opnd, falsy: Opnd, out: Opnd, cond: u8) {
+        if matches!(truthy, Opnd::UImm(1) | Opnd::Imm(1)) && matches!(falsy, Opnd::Reg(XZR_REG)) {
+            // cset out, cond == csinc out, xzr, xzr, !cond
+            csinc(cb, out.into(), A64Opnd::Reg(XZR_REG), A64Opnd::Reg(XZR_REG), Condition::inverse(cond));
+        } else {
+            csel(cb, out.into(), truthy.into(), falsy.into(), cond);
         }
+    }
 
-        /// Emit a conditional jump instruction to a specific target. This is
+    /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
         fn emit_conditional_jump<const CONDITION: u8>(asm: &Assembler, cb: &mut CodeBlock, target: Target) {
             fn generate_branch<const CONDITION: u8>(cb: &mut CodeBlock, src_addr: i64, dst_addr: i64) {
@@ -1007,39 +1222,60 @@ impl Assembler {
 
         /// Emit a CBZ or CBNZ which branches when a register is zero or non-zero
         fn emit_cmp_zero_jump(cb: &mut CodeBlock, reg: A64Opnd, branch_if_zero: bool, target: Target) {
-            if let Target::CodePtr(dst_ptr) = target {
-                let dst_addr = dst_ptr.as_offset();
-                let src_addr = cb.get_write_ptr().as_offset();
+            match target {
+                Target::CodePtr(dst_ptr) => {
+                    let dst_addr = dst_ptr.as_offset();
+                    let src_addr = cb.get_write_ptr().as_offset();
 
-                if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
-                    // If the offset fits in one instruction, generate cbz or cbnz
-                    let bytes = (dst_addr - src_addr) as i32;
-                    if branch_if_zero {
-                        cbz(cb, reg, InstructionOffset::from_bytes(bytes));
+                    if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
+                        // If the offset fits in one instruction, generate cbz or cbnz
+                        let bytes = (dst_addr - src_addr) as i32;
+                        if branch_if_zero {
+                            cbz(cb, reg, InstructionOffset::from_bytes(bytes));
+                        } else {
+                            cbnz(cb, reg, InstructionOffset::from_bytes(bytes));
+                        }
                     } else {
-                        cbnz(cb, reg, InstructionOffset::from_bytes(bytes));
-                    }
-                } else {
-                    // Otherwise, we load the address into a register and
-                    // use the branch register instruction. Note that because
-                    // side exits should always be close, this form should be
-                    // rare or impossible to see.
-                    let dst_addr = dst_ptr.raw_addr(cb) as u64;
-                    let load_insns: i32 = emit_load_size(dst_addr).into();
+                        // Otherwise, we load the address into a register and
+                        // use the branch register instruction. Note that because
+                        // side exits should always be close, this form should be
+                        // rare or impossible to see.
+                        let dst_addr = dst_ptr.raw_addr(cb) as u64;
+                        let load_insns: i32 = emit_load_size(dst_addr).into();
 
-                    // Write out the inverse condition so that if
-                    // it doesn't match it will skip over the
-                    // instructions used for branching.
-                    if branch_if_zero {
-                        cbnz(cb, reg, InstructionOffset::from_insns(load_insns + 2));
-                    } else {
-                        cbz(cb, reg, InstructionOffset::from_insns(load_insns + 2));
+                        // Write out the inverse condition so that if
+                        // it doesn't match it will skip over the
+                        // instructions used for branching.
+                        if branch_if_zero {
+                            cbnz(cb, reg, InstructionOffset::from_insns(load_insns + 2));
+                        } else {
+                            cbz(cb, reg, InstructionOffset::from_insns(load_insns + 2));
+                        }
+                        emit_load_value(cb, Assembler::EMIT_OPND, dst_addr);
+                        br(cb, Assembler::EMIT_OPND);
                     }
-                    emit_load_value(cb, Assembler::EMIT_OPND, dst_addr);
-                    br(cb, Assembler::EMIT_OPND);
                 }
-            } else {
-                unreachable!("We should only generate Joz/Jonz with side-exit targets");
+                // ZJIT's compile_exits lowers side exits to labels resolved during
+                // emit, so Joz/Jonz reach here with a Label. cbz/cbnz share bcond's
+                // 19-bit (+/-1MB) range, and side exits are always in range.
+                Target::Label(label_idx) => {
+                    cb.label_ref(label_idx, 4, move |cb, src_addr, dst_addr| {
+                        // +1 since src_addr is after the instruction while A64
+                        // counts the offset relative to the start.
+                        let offset = (dst_addr - src_addr) / 4 + 1;
+                        if bcond_offset_fits_bits(offset) {
+                            if branch_if_zero {
+                                cbz(cb, reg, InstructionOffset::from_insns(offset as i32));
+                            } else {
+                                cbnz(cb, reg, InstructionOffset::from_insns(offset as i32));
+                            }
+                            Ok(())
+                        } else {
+                            Err(())
+                        }
+                    });
+                }
+                _ => unreachable!("We should only generate Joz/Jonz with side-exit targets"),
             }
         }
 
@@ -1063,11 +1299,26 @@ impl Assembler {
         }
 
         /// Load a VALUE to a register and remember it for GC marking and reference updating
-        fn emit_load_gc_value(cb: &mut CodeBlock, gc_offsets: &mut Vec<CodePtr>, dest: A64Opnd, value: VALUE) {
-            // We dont need to check if it's a special const
-            // here because we only allow these operands to hit
-            // this point if they're not a special const.
-            assert!(!value.special_const_p());
+        fn emit_load_gc_value(
+            cb: &mut CodeBlock,
+            gc_offsets: &mut Vec<CodePtr>,
+            literal_pool: &mut LiteralPool,
+            dest: A64Opnd,
+            value: VALUE,
+        ) {
+            // Special-const VALUEs are immediates (no heap pointer to track), so
+            // load the bits directly. Passes after arm64_split -- e.g. parallel-
+            // move resolution materializing a block-argument constant -- can
+            // produce a Load/Store of a special-const VALUE, which the pre-split
+            // Opnd::Value-to-UImm lowering never saw.
+            if value.special_const_p() {
+                emit_load_value(cb, dest, value.as_u64());
+                return;
+            }
+
+            if literal_pool.emit_load(cb, dest, LiteralPoolKey::gc_value(value)) {
+                return;
+            }
 
             // This assumes only load instructions can contain
             // references to GC'd Value operands. If the value
@@ -1117,7 +1368,162 @@ impl Assembler {
         assert_eq!(self.basic_blocks.len(), 1, "Assembler should be linearized into a single block before arm64_emit");
         let insns = &self.basic_blocks[0].insns;
 
+        // Pool only constants for which the loads plus one deduplicated slot
+        // beat their current encodings. Account conservatively for the branch
+        // and alignment needed to skip a pool island.
+        let mut literal_counts: HashMap<LiteralPoolKey, (usize, usize)> = HashMap::new();
+        for insn in insns {
+            let candidate = match insn {
+                Insn::Store { src, .. } => Some(*src),
+                Insn::Load { opnd, .. } | Insn::LoadInto { opnd, .. } => Some(*opnd),
+                _ => None,
+            };
+            let Some((key, inline_bytes)) = candidate.and_then(|opnd| match opnd {
+                Opnd::Value(value) if !value.special_const_p() => {
+                    Some((LiteralPoolKey::gc_value(value), 16))
+                }
+                Opnd::UImm(value) => {
+                    Some((LiteralPoolKey::immediate(value), emit_load_size(value) as usize * 4))
+                }
+                Opnd::Imm(value) => {
+                    let value = value as u64;
+                    Some((LiteralPoolKey::immediate(value), emit_load_size(value) as usize * 4))
+                }
+                _ => None,
+            }) else {
+                continue;
+            };
+            let entry = literal_counts.entry(key).or_insert((0, inline_bytes));
+            entry.0 += 1;
+            debug_assert_eq!(entry.1, inline_bytes);
+        }
+
+        let mut selected_literals = HashSet::new();
+        let mut selected_savings = 0;
+        for (key, (count, inline_bytes)) in literal_counts {
+            let current_size = count * inline_bytes;
+            let pooled_size = count * 4 + SIZEOF_VALUE;
+            if current_size > pooled_size {
+                selected_literals.insert(key);
+                selected_savings += current_size - pooled_size;
+            }
+        }
+        // A pool island needs a four-byte branch and up to four bytes of alignment.
+        if selected_savings <= 8 {
+            selected_literals.clear();
+        }
+        let mut literal_pool = LiteralPool::new(selected_literals);
+
+        /// Does `opnd` read the register `reg_no` (directly or as a memory base)?
+        fn reads_reg(opnd: &Opnd, reg_no: u8) -> bool {
+            match opnd {
+                Opnd::Reg(r) => r.reg_no == reg_no,
+                Opnd::Mem(Mem { base: MemBase::Reg(base), .. }) => *base == reg_no,
+                _ => false,
+            }
+        }
+
+        // Flags-reuse peephole state: the operands of the last emitted cmp
+        // whose NZCV flags are provably still current. A duplicate cmp on the
+        // same operands (the fused compare-branch re-compare after an
+        // interposed CheckInterrupts) is skipped entirely. Invalidated by
+        // join-point labels, by anything that may write flags, by writes to a
+        // register the compare read, and by stores when a compare operand was
+        // memory. A label reached only by the jump directly preceding it is
+        // pure fallthrough (the linearizer splits HIR blocks that way) and
+        // preserves the flags.
+        let mut live_cmp: Option<(Opnd, Opnd)> = None;
+        let mut label_refs: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
+        for insn in insns.iter() {
+            // A Label insn's target is its own definition, not a reference.
+            if matches!(insn, Insn::Label(_)) {
+                continue;
+            }
+            if let Some(Target::Label(l)) = insn.target() {
+                *label_refs.entry(l.0).or_default() += 1;
+            }
+        }
+
         while let Some(insn) = insns.get(insn_idx) {
+            match insn {
+                Insn::Cmp { left, right } if live_cmp == Some((*left, *right)) => {
+                    insn_idx += 1;
+                    continue;
+                }
+                Insn::Cmp { left, right } => { live_cmp = Some((*left, *right)); }
+                // Flag-neutral with a register definition: keep the compare
+                // unless the definition overlaps its operands.
+                Insn::Mov { dest, .. } | Insn::LoadInto { dest, .. } => {
+                    if let (Some((l, r)), Opnd::Reg(reg)) = (&live_cmp, dest) {
+                        if reads_reg(l, reg.reg_no) || reads_reg(r, reg.reg_no) {
+                            live_cmp = None;
+                        }
+                    } else if matches!(dest, Opnd::Mem(_)) {
+                        if matches!(live_cmp, Some((Opnd::Mem(_), _) | (_, Opnd::Mem(_)))) {
+                            live_cmp = None;
+                        }
+                    }
+                }
+                Insn::Load { out, .. } | Insn::Lea { out, .. }
+                | Insn::CSelZ { out, .. } | Insn::CSelNZ { out, .. }
+                | Insn::CSelE { out, .. } | Insn::CSelNE { out, .. }
+                | Insn::CSelL { out, .. } | Insn::CSelLE { out, .. }
+                | Insn::CSelG { out, .. } | Insn::CSelGE { out, .. }
+                | Insn::RShift { out, .. } | Insn::LShift { out, .. } | Insn::URShift { out, .. } => {
+                    if let (Some((l, r)), Opnd::Reg(reg)) = (&live_cmp, out) {
+                        if reads_reg(l, reg.reg_no) || reads_reg(r, reg.reg_no) {
+                            live_cmp = None;
+                        }
+                    }
+                }
+                Insn::Store { .. } => {
+                    if matches!(live_cmp, Some((Opnd::Mem(_), _) | (_, Opnd::Mem(_)))) {
+                        live_cmp = None;
+                    }
+                }
+                // Flag readers and no-ops preserve the compare. An
+                // unconditional jump writes no flags either; whether they
+                // survive at its destination is decided at the label.
+                // PatchPointPad is nops at runtime, and once patched it
+                // diverts control before any flags consumer we skipped.
+                // BoundaryPad is nops (or nothing) and is never patched.
+                Insn::Comment(_) | Insn::PosMarker(..) | Insn::Jmp(_) | Insn::PatchPointPad | Insn::BoundaryPad
+                | Insn::Jl(_) | Insn::Jg(_) | Insn::Jge(_) | Insn::Je(_) | Insn::Jne(_)
+                | Insn::Jz(_) | Insn::Jnz(_) | Insn::Jo(_) | Insn::Jb(_) | Insn::Jbe(_)
+                | Insn::Joz(..) | Insn::Jonz(..) => {}
+                Insn::Label(target) => {
+                    // A label nothing in the stream targets is a pure
+                    // fallthrough marker (the linearizer elides the jump to
+                    // it); one targeted only by the jump directly before it is
+                    // fallthrough too. Anything else is a join point.
+                    let l = target.unwrap_label();
+                    let refs = label_refs.get(&l.0).copied().unwrap_or(0);
+                    let fallthrough_only = refs == 0
+                        || (refs == 1 && insn_idx > 0
+                            && matches!(insns.get(insn_idx - 1), Some(Insn::Jmp(Target::Label(pl))) if *pl == l));
+                    if !fallthrough_only {
+                        live_cmp = None;
+                    }
+                }
+                // Labels, calls, flag-writing arithmetic, patchable regions,
+                // and anything unlisted: assume the flags are gone.
+                _ => { live_cmp = None; }
+            }
+
+            // Do not let a pending literal load get stranded beyond LDR's
+            // signed 19-bit range by an unusually large embedded string.
+            let next_bytes = match insn {
+                Insn::BakeString(text) => {
+                    let bytes_with_nul = text.len() + 1;
+                    bytes_with_nul + (4 - bytes_with_nul % 4)
+                }
+                // Keep a descriptor Call adjacent to its return-address data.
+                // Flush before the pair rather than between the two insns.
+                Insn::Call(_) if matches!(insns.get(insn_idx + 1), Some(Insn::EmbedU64(_))) => 12,
+                _ => 0,
+            };
+            literal_pool.flush_if_needed(cb, &mut gc_offsets, next_bytes);
+
             match insn {
                 Insn::Comment(text) => {
                     cb.add_comment(text);
@@ -1215,6 +1621,42 @@ impl Assembler {
                         adds(cb, out, left.into(), right.into());
                     }
                 },
+                Insn::LoadScaled { base, index, out } => {
+                    let base: A64Opnd = base.into();
+                    let index: A64Opnd = index.into();
+                    let out: A64Opnd = out.into();
+                    ldr_scaled(cb, out.unwrap_reg().reg_no, base.unwrap_reg().reg_no, index.unwrap_reg().reg_no);
+                },
+                Insn::FloatArith { op, left, right, out } => {
+                    // After arm64_scratch_split, the operands and out are all
+                    // registers. Move the raw double bit patterns into FP scratch
+                    // registers D0/D1, perform the scalar-double op, and move the
+                    // result bits back. `left` is consumed into D0 before `out`
+                    // is written, so left==out is safe.
+                    let left: A64Opnd = left.into();
+                    let right: A64Opnd = right.into();
+                    let out: A64Opnd = out.into();
+                    fmov_gpr_to_reg(cb, 0, left.unwrap_reg().reg_no);
+                    fmov_gpr_to_reg(cb, 1, right.unwrap_reg().reg_no);
+                    match op {
+                        FloatArithOp::Add => fadd(cb, 0, 0, 1),
+                        FloatArithOp::Sub => fsub(cb, 0, 0, 1),
+                        FloatArithOp::Mul => fmul(cb, 0, 0, 1),
+                        FloatArithOp::Div => fdiv(cb, 0, 0, 1),
+                        FloatArithOp::Sqrt => fsqrt(cb, 0, 0),
+                        FloatArithOp::Min => fminnm(cb, 0, 0, 1),
+                        FloatArithOp::Max => fmaxnm(cb, 0, 0, 1),
+                    }
+                    fmov_reg_to_gpr(cb, out.unwrap_reg().reg_no, 0);
+                },
+                Insn::Int64ToF64Bits { opnd, out } => {
+                    // (double)int via scvtf, then read the raw bits back to a GPR.
+                    // opnd/out are registers after arm64_scratch_split.
+                    let opnd: A64Opnd = opnd.into();
+                    let out: A64Opnd = out.into();
+                    scvtf(cb, 0, opnd.unwrap_reg().reg_no);
+                    fmov_reg_to_gpr(cb, out.unwrap_reg().reg_no, 0);
+                },
                 Insn::Sub { left, right, out } => {
                     // Usually, we issue SUBS, so you could branch on overflow, but SUBS with
                     // out=31 refers to out=XZR, which discards the result. So, instead of SUBS
@@ -1266,6 +1708,19 @@ impl Assembler {
                 Insn::Not { opnd, out } => {
                     mvn(cb, out.into(), opnd.into());
                 },
+                Insn::SDiv { left, right, out } => {
+                    sdiv(cb, out.into(), left.into(), right.into());
+                },
+                Insn::SRem { left, right, out } => {
+                    // Truncated remainder: quotient into the emit scratch,
+                    // then msub reads all sources before writing, so `out`
+                    // aliasing an operand register is fine.
+                    sdiv(cb, Self::EMIT_OPND, left.into(), right.into());
+                    msub(cb, out.into(), Self::EMIT_OPND, right.into(), left.into());
+                },
+                Insn::SMulHi { left, right, out } => {
+                    smulh(cb, out.into(), left.into(), right.into());
+                },
                 Insn::RShift { opnd, shift, out } => {
                     asr(cb, out.into(), opnd.into(), shift.into());
                 },
@@ -1283,15 +1738,20 @@ impl Assembler {
                         Opnd::UImm(0) | Opnd::Imm(0) => XZR_REG,
                         // Immediates
                         &Opnd::Imm(imm) => {
-                            emit_load_value(cb, Self::EMIT_OPND, imm as u64);
+                            let imm = imm as u64;
+                            if !literal_pool.emit_load(cb, Self::EMIT_OPND, LiteralPoolKey::immediate(imm)) {
+                                emit_load_value(cb, Self::EMIT_OPND, imm);
+                            }
                             Self::EMIT_REG
                         }
                         &Opnd::UImm(imm) => {
-                            emit_load_value(cb, Self::EMIT_OPND, imm);
+                            if !literal_pool.emit_load(cb, Self::EMIT_OPND, LiteralPoolKey::immediate(imm)) {
+                                emit_load_value(cb, Self::EMIT_OPND, imm);
+                            }
                             Self::EMIT_REG
                         }
                         &Opnd::Value(value) => {
-                            emit_load_gc_value(cb, &mut gc_offsets, Self::EMIT_OPND, value);
+                            emit_load_gc_value(cb, &mut gc_offsets, &mut literal_pool, Self::EMIT_OPND, value);
                             Self::EMIT_REG
                         }
                         src_mem @ &Opnd::Mem(Mem { num_bits: src_num_bits, base: MemBase::Reg(src_base_reg_no), disp: src_disp }) => {
@@ -1334,10 +1794,15 @@ impl Assembler {
                             mov(cb, out.into(), opnd.into());
                         },
                         Opnd::UImm(uimm) => {
-                            emit_load_value(cb, out.into(), uimm);
+                            if !literal_pool.emit_load(cb, out.into(), LiteralPoolKey::immediate(uimm)) {
+                                emit_load_value(cb, out.into(), uimm);
+                            }
                         },
                         Opnd::Imm(imm) => {
-                            emit_load_value(cb, out.into(), imm as u64);
+                            let imm = imm as u64;
+                            if !literal_pool.emit_load(cb, out.into(), LiteralPoolKey::immediate(imm)) {
+                                emit_load_value(cb, out.into(), imm);
+                            }
                         },
                         Opnd::Mem(_) => {
                             match opnd.rm_num_bits() {
@@ -1348,7 +1813,7 @@ impl Assembler {
                             };
                         },
                         Opnd::Value(value) => {
-                            emit_load_gc_value(cb, &mut gc_offsets, out.into(), value);
+                            emit_load_gc_value(cb, &mut gc_offsets, &mut literal_pool, out.into(), value);
                         },
                         Opnd::None => {
                             unreachable!("Attempted to load from None operand");
@@ -1479,6 +1944,53 @@ impl Assembler {
                         _ => unreachable!("unsupported ccall fptr: {fptr:?}")
                     }
                 },
+                Insn::Call(target) => {
+                    match *target {
+                        Target::CodePtr(dst_ptr) => {
+                            let src_addr = cb.get_write_ptr().as_offset();
+                            let dst_addr = dst_ptr.as_offset();
+                            if b_offset_fits_bits((dst_addr - src_addr) / 4) {
+                                bl(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
+                            } else {
+                                emit_load_value(cb, Self::EMIT_OPND, dst_addr as u64);
+                                blr(cb, Self::EMIT_OPND);
+                            }
+                        }
+                        Target::Label(label) => {
+                            cb.label_ref(label, 4, |cb, end_addr, dst_addr| {
+                                let offset = (dst_addr - end_addr) / 4 + 1;
+                                if b_offset_fits_bits(offset) {
+                                    bl(cb, InstructionOffset::from_insns(offset as i32));
+                                    Ok(())
+                                } else {
+                                    Err(())
+                                }
+                            });
+                        }
+                        Target::Block(_) | Target::SideExit(_) => {
+                            unreachable!("Call target should be resolved before emission")
+                        }
+                    }
+                },
+                Insn::EmbedU64(value) => {
+                    cb.write_bytes(&value.to_le_bytes());
+                },
+                Insn::InstallJITFrameFromCallData => {
+                    ldur(cb, SCRATCH1_OPND.into(), Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN).into());
+                    ldur(cb, SCRATCH0_OPND.into(), A64Opnd::new_mem(64, SCRATCH1_OPND.into(), -SIZEOF_VALUE_I32));
+                    ldur(
+                        cb,
+                        SCRATCH0_OPND.into(),
+                        A64Opnd::new_mem(
+                            64,
+                            SCRATCH0_OPND.into(),
+                            std::mem::offset_of!(zjit_jit_frame, iseq) as i32,
+                        ),
+                    );
+                    stur(cb, SCRATCH0_OPND.into(), Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ).into());
+                    ldur(cb, SCRATCH0_OPND.into(), A64Opnd::new_mem(64, A64Opnd::Reg(X30_REG), 0));
+                    stur(cb, SCRATCH0_OPND.into(), A64Opnd::new_mem(64, SCRATCH1_OPND.into(), -SIZEOF_VALUE_I32));
+                },
                 Insn::CRet { .. } => {
                     ret(cb, A64Opnd::None);
                 },
@@ -1599,28 +2111,30 @@ impl Assembler {
                 },
                 Insn::CSelZ { truthy, falsy, out } |
                 Insn::CSelE { truthy, falsy, out } => {
-                    csel(cb, out.into(), truthy.into(), falsy.into(), Condition::EQ);
+                    emit_csel_helper(cb, *truthy, *falsy, *out, Condition::EQ);
                 },
                 Insn::CSelNZ { truthy, falsy, out } |
                 Insn::CSelNE { truthy, falsy, out } => {
-                    csel(cb, out.into(), truthy.into(), falsy.into(), Condition::NE);
+                    emit_csel_helper(cb, *truthy, *falsy, *out, Condition::NE);
                 },
                 Insn::CSelL { truthy, falsy, out } => {
-                    csel(cb, out.into(), truthy.into(), falsy.into(), Condition::LT);
+                    emit_csel_helper(cb, *truthy, *falsy, *out, Condition::LT);
                 },
                 Insn::CSelLE { truthy, falsy, out } => {
-                    csel(cb, out.into(), truthy.into(), falsy.into(), Condition::LE);
+                    emit_csel_helper(cb, *truthy, *falsy, *out, Condition::LE);
                 },
                 Insn::CSelG { truthy, falsy, out } => {
-                    csel(cb, out.into(), truthy.into(), falsy.into(), Condition::GT);
+                    emit_csel_helper(cb, *truthy, *falsy, *out, Condition::GT);
                 },
                 Insn::CSelGE { truthy, falsy, out } => {
-                    csel(cb, out.into(), truthy.into(), falsy.into(), Condition::GE);
+                    emit_csel_helper(cb, *truthy, *falsy, *out, Condition::GE);
                 }
             };
 
             insn_idx += 1;
         }
+
+        literal_pool.flush(cb, &mut gc_offsets);
 
         // Error if we couldn't write out everything
         if cb.has_dropped_bytes() {
@@ -1865,7 +2379,25 @@ mod tests {
 
         let val64 = asm.add(CFP, Opnd::UImm(64));
         asm.store(Opnd::mem(64, SP, 0x10), val64);
-        let side_exit = Target::SideExit(Box::new(SideExitTarget { reason: SideExitReason::Interrupt, exit: SideExit { pc: 0.into(), iseq: std::ptr::null(), stack: vec![], locals: vec![], stack_map: None, recompile: None } }));
+        let side_exit = Target::SideExit(Box::new(SideExitTarget {
+            reason: SideExitReason::Interrupt,
+            exit: SideExit {
+                pc: 0.into(),
+                stack: vec![],
+                locals: vec![],
+                stack_needs_flonum_box: vec![],
+                locals_needs_flonum_box: vec![],
+                stack_needs_bool_box: vec![],
+                locals_needs_bool_box: vec![],
+                stack_needs_fixnum_box: vec![],
+                locals_needs_fixnum_box: vec![],
+                iseq: std::ptr::null(),
+                frame_depth: 0,
+                stack_map: None,
+                recompile: None,
+                materialize: None,
+            },
+        }));
         asm.push_insn(Insn::Joz(val64, side_exit));
         asm.mov(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32));
         asm.mov(C_ARG_OPNDS[1], Opnd::mem(64, SP, -8));
@@ -2266,6 +2798,45 @@ mod tests {
     }
 
     #[test]
+    fn test_deduplicate_pooled_values() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let imitation_heap_value = VALUE(0x1000);
+        assert!(imitation_heap_value.heap_object_p());
+        for offset in [0, 8, 16] {
+            asm.store(Opnd::mem(VALUE_BITS, SP, offset), imitation_heap_value.into());
+        }
+
+        for name in &asm.label_names {
+            cb.new_label(*name);
+        }
+        let gc_offsets = asm.arm64_emit(&mut cb).unwrap();
+        cb.link_labels().unwrap();
+
+        assert_eq!(40, cb.get_write_pos(), "three inline VALUE loads would use 60 bytes");
+        assert_eq!(vec![cb.get_ptr(32)], gc_offsets, "the shared slot must be reported to the GC");
+    }
+
+    #[test]
+    fn test_deduplicate_pooled_immediates() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let immediate = 0x1234_5678_9abc_def0_u64;
+        for offset in [0, 8, 16] {
+            asm.store(Opnd::mem(VALUE_BITS, SP, offset), immediate.into());
+        }
+
+        for name in &asm.label_names {
+            cb.new_label(*name);
+        }
+        let gc_offsets = asm.arm64_emit(&mut cb).unwrap();
+        cb.link_labels().unwrap();
+
+        assert_eq!(40, cb.get_write_pos(), "three four-instruction loads would use 60 bytes");
+        assert!(gc_offsets.is_empty(), "raw immediates must not be reported to the GC");
+    }
+
+    #[test]
     fn test_store_with_valid_scratch_reg() {
         let (mut asm, mut cb, scratch_reg) = setup_asm_with_scratch_reg();
         asm.store(Opnd::mem(64, scratch_reg, 0), 0x83902.into());
@@ -2336,6 +2907,21 @@ mod tests {
         0x18: stur x0, [x21]
         ");
         assert_snapshot!(cb.hexdump(), @"50000010e00310aa48656c6c6f2c20776f726c6421000000a00200f8");
+    }
+
+    #[test]
+    fn test_call_with_inline_jit_frame_data() {
+        let (mut asm, mut cb) = setup_asm();
+        let label = asm.new_label("descriptor");
+        asm.call(label.clone());
+        asm.embed_u64(0x0123_4567_89ab_cdef);
+        asm.write_label(label);
+        asm.install_jit_frame_from_call_data();
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        let hex = cb.hexdump();
+        assert_eq!(&hex[8..24], "efcdab8967452301", "inline data must immediately follow BL");
+        assert_eq!(36, cb.get_write_pos());
     }
 
     #[test]
@@ -2712,11 +3298,10 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 2);
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov x0, #0x14
-            0x4: mov x1, #0
-            0x8: csel x1, x0, x1, lt
+        0x0: mov x0, #0x14
+        0x4: csel x1, x0, xzr, lt
         ");
-        assert_snapshot!(cb.hexdump(), @"800280d2010080d201b0819a");
+        assert_snapshot!(cb.hexdump(), @"800280d201b09f9a");
     }
 
     #[test]

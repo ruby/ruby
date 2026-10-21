@@ -29,6 +29,7 @@ pub type NumExits = u32;
 /// Default --zjit-call-threshold. This should be large enough to avoid compiling
 /// warmup code, but small enough to perform well on micro-benchmarks.
 pub const DEFAULT_CALL_THRESHOLD: CallThreshold = 30;
+pub const DEFAULT_LARGE_CALL_THRESHOLD: CallThreshold = 120;
 pub type CallThreshold = u32;
 
 /// Default --zjit-inline-threshold
@@ -54,18 +55,35 @@ pub const DEFAULT_INLINE_MAX_ITERATIONS: InlineDepth = 10;
 /// native stack size computations, where every consumer is already `usize`.
 pub type InlineDepth = usize;
 
-/// Number of calls to start profiling YARV instructions.
-/// They are profiled `rb_zjit_call_threshold - rb_zjit_profile_threshold` times,
-/// which is equal to --zjit-num-profiles.
+/// Number of calls profiled immediately before a size-aware compilation.
 #[unsafe(no_mangle)]
 #[allow(non_upper_case_globals)]
-pub static mut rb_zjit_profile_threshold: CallThreshold = DEFAULT_CALL_THRESHOLD - DEFAULT_NUM_PROFILES as CallThreshold;
+pub static mut rb_zjit_num_profiles: CallThreshold = DEFAULT_NUM_PROFILES as CallThreshold;
 
 /// Number of calls to compile ISEQ with ZJIT at jit_compile() in vm.c.
 /// --zjit-call-threshold=1 compiles on first execution without profiling information.
 #[unsafe(no_mangle)]
 #[allow(non_upper_case_globals)]
 pub static mut rb_zjit_call_threshold: CallThreshold = DEFAULT_CALL_THRESHOLD;
+
+/// Number of calls to compile a large ISEQ. Intermediate ISEQ sizes interpolate
+/// between rb_zjit_call_threshold and this endpoint.
+#[unsafe(no_mangle)]
+#[allow(non_upper_case_globals)]
+pub static mut rb_zjit_call_threshold_large: CallThreshold = DEFAULT_LARGE_CALL_THRESHOLD;
+
+/// How much more often an ISEQ rooted in an eval body must be called before
+/// it compiles. Eval'd code is usually short-lived (templating engines
+/// re-eval per render, creating fresh ISEQs every time), so compiling at the
+/// normal threshold burns compile time on throwaway code; genuinely hot
+/// eval'd code still crosses the raised bar.
+pub const EVAL_CALL_THRESHOLD_MULT: CallThreshold = 64;
+
+/// Number of calls to compile an ISEQ rooted in an eval body (see
+/// rb_zjit_iseq_eval_rooted). Kept in sync with rb_zjit_call_threshold.
+#[unsafe(no_mangle)]
+#[allow(non_upper_case_globals)]
+pub static mut rb_zjit_eval_call_threshold: CallThreshold = DEFAULT_CALL_THRESHOLD * EVAL_CALL_THRESHOLD_MULT;
 
 /// ZJIT command-line options. This is set before rb_zjit_init() sets
 /// ZJITState so that we can query some options while loading builtins.
@@ -248,7 +266,11 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     ("--zjit-mem-size=num",
                      "Max amount of memory that ZJIT can use in MiB (default: 128)."),
     ("--zjit-call-threshold=num",
-                     "Number of calls to trigger JIT (default: 30)."),
+                     "Set both small and large ISEQ call thresholds."),
+    ("--zjit-call-threshold-small=num",
+                     "Number of calls to compile a small ISEQ (default: 30)."),
+    ("--zjit-call-threshold-large=num",
+                     "Number of calls to compile a large ISEQ (default: 120)."),
     ("--zjit-num-profiles=num",
                      "Number of profiled calls before JIT (default: 5)."),
     ("--zjit-stats-quiet",
@@ -441,15 +463,29 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("call-threshold", _) => match opt_val.parse() {
             Ok(n) => {
                 unsafe { rb_zjit_call_threshold = n; }
-                update_profile_threshold();
+                unsafe { rb_zjit_call_threshold_large = n; }
+                update_eval_call_threshold();
             },
+            Err(_) => return None,
+        },
+
+        ("call-threshold-small", _) => match opt_val.parse() {
+            Ok(n) => {
+                unsafe { rb_zjit_call_threshold = n; }
+                update_eval_call_threshold();
+            },
+            Err(_) => return None,
+        },
+
+        ("call-threshold-large", _) => match opt_val.parse() {
+            Ok(n) => unsafe { rb_zjit_call_threshold_large = n; },
             Err(_) => return None,
         },
 
         ("num-profiles", _) => match opt_val.parse() {
             Ok(n) => {
                 options.num_profiles = n;
-                update_profile_threshold();
+                unsafe { rb_zjit_num_profiles = n.into() };
             },
             Err(_) => return None,
         },
@@ -676,24 +712,18 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
     Some(())
 }
 
-/// Update rb_zjit_profile_threshold based on rb_zjit_call_threshold and options.num_profiles
-fn update_profile_threshold() {
-    if unsafe { rb_zjit_call_threshold == 1 } {
-        // If --zjit-call-threshold=1, never rewrite ISEQs to profile instructions.
-        unsafe { rb_zjit_profile_threshold = 0; }
-    } else {
-        // Otherwise, profile instructions at least once.
-        let num_profiles = get_option!(num_profiles);
-        unsafe { rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(num_profiles.into()).max(1) };
-    }
+/// Keep rb_zjit_eval_call_threshold at its multiple of rb_zjit_call_threshold.
+fn update_eval_call_threshold() {
+    unsafe { rb_zjit_eval_call_threshold = rb_zjit_call_threshold.saturating_mul(EVAL_CALL_THRESHOLD_MULT) };
 }
 
 /// Update --zjit-call-threshold for testing
 #[cfg(test)]
 pub fn set_call_threshold(call_threshold: CallThreshold) {
     unsafe { rb_zjit_call_threshold = call_threshold; }
+    unsafe { rb_zjit_call_threshold_large = call_threshold; }
     rb_zjit_prepare_options();
-    update_profile_threshold();
+    update_eval_call_threshold();
 }
 
 /// Update --zjit-num-exits-until-invalidate for testing
@@ -722,7 +752,7 @@ pub fn set_inline_threshold(inline_threshold: InlineThreshold) {
 pub fn set_num_profiles(num_profiles: NumProfiles) {
     rb_zjit_prepare_options();
     unsafe { OPTIONS.as_mut().unwrap().num_profiles = num_profiles; }
-    update_profile_threshold();
+    unsafe { rb_zjit_num_profiles = num_profiles.into() };
 }
 
 /// Set --zjit-mem-size for testing. It's used to force OOM in tests.
@@ -763,6 +793,13 @@ macro_rules! debug {
     };
 }
 pub(crate) use debug;
+
+/// Validate relationships between options after all command-line flags have
+/// been parsed, so independent endpoint options remain order-independent.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_options_valid_p() -> bool {
+    unsafe { rb_zjit_call_threshold <= rb_zjit_call_threshold_large }
+}
 
 /// Return true if ZJIT should be enabled at boot.
 #[unsafe(no_mangle)]

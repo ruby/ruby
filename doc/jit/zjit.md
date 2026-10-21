@@ -140,7 +140,11 @@ ZJIT options:
   --zjit-mem-size=num
                   Max amount of memory that ZJIT can use in MiB (default: 128).
   --zjit-call-threshold=num
-                  Number of calls to trigger JIT (default: 30).
+                  Set both small and large ISEQ call thresholds.
+  --zjit-call-threshold-small=num
+                  Number of calls to compile a small ISEQ (default: 30).
+  --zjit-call-threshold-large=num
+                  Number of calls to compile a large ISEQ (default: 120).
   --zjit-num-profiles=num
                   Number of profiled calls before JIT (default: 5).
   --zjit-stats[=quiet]
@@ -156,6 +160,13 @@ ZJIT options:
                   Frequency at which to record side exits. Must be `usize`.
 $
 ```
+
+ZJIT interpolates the compilation threshold from
+`--zjit-call-threshold-small=30` to `--zjit-call-threshold-large=120` based on
+ISEQ bytecode size. This avoids generating large amounts of code for methods
+that are only warm. The existing `--zjit-call-threshold` option sets both
+endpoints to the same value for backward compatibility. The small threshold
+must not exceed the large threshold.
 
 ### Profiling with Linux perf
 

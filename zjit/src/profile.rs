@@ -303,15 +303,23 @@ impl ProfiledType {
 
     /// Profile an untagged block handler. ISEQ, Symbol, and no-block handlers are profiled as the object itself.
     /// IFUNC and Proc handlers are recorded only as a flag to avoid retaining them and to reduce GC marking pressure.
+    /// A plain (non-lambda, non-refined) iseq-proc additionally records its block's ISEQ, which yield sites can
+    /// dispatch to directly. Every proc built from the same block shares that ISEQ.
     fn block_handler(block_handler: VALUE) -> Self {
-        let flag = if unsafe { rb_IMEMO_TYPE_P(block_handler, imemo_ifunc) == 1 } {
-            Flags::IS_IFUNC_BLOCK_HANDLER
+        let (flag, recorded) = if unsafe { rb_IMEMO_TYPE_P(block_handler, imemo_ifunc) == 1 } {
+            (Flags::IS_IFUNC_BLOCK_HANDLER, Qnil)
         } else if unsafe { rb_obj_is_proc(block_handler).test() } {
-            Flags::IS_PROC_BLOCK_HANDLER
+            let captured = unsafe { rb_zjit_proc_iseq_captured(block_handler) };
+            let recorded = if captured.is_null() {
+                Qnil
+            } else {
+                VALUE::from(unsafe { *(*captured).code.iseq.as_ref() })
+            };
+            (Flags::IS_PROC_BLOCK_HANDLER, recorded)
         } else {
             return Self::object(block_handler);
         };
-        let mut ty = Self::object(Qnil);
+        let mut ty = Self::object(recorded);
         ty.flags.0 |= flag;
         ty
     }

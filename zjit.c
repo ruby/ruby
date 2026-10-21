@@ -203,18 +203,20 @@ bool
 rb_zjit_iseq_has_profiled_enough(const rb_iseq_t *iseq)
 {
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    uint64_t profile_threshold = rb_zjit_iseq_profile_threshold(iseq);
 
-    if (body->jit_entry_calls < rb_zjit_profile_threshold) {
+    if (body->jit_entry_calls < profile_threshold) {
         // Skip the unprofiled warmup. The compiled caller already establishes
         // that the callee is hot, so go straight to the profiling window.
-        body->jit_entry_calls = rb_zjit_profile_threshold;
+        // Thresholds derive from the unsigned int options, so this is exact.
+        body->jit_entry_calls = (unsigned int)profile_threshold;
         rb_zjit_profile_enable(iseq);
     }
     else {
         body->jit_entry_calls++;
     }
 
-    return body->jit_entry_calls >= rb_zjit_call_threshold;
+    return body->jit_entry_calls >= rb_zjit_iseq_compile_threshold(iseq);
 }
 
 // Convert a given ISEQ's ZJIT instructions to bare instructions
@@ -269,6 +271,103 @@ rb_zjit_singleton_class_p(VALUE klass)
     return RCLASS_SINGLETON_P(klass);
 }
 
+// Whether this ISEQ is lexically rooted in an eval body. Such ISEQs are
+// usually short-lived (templating engines re-eval per render, so every render
+// creates fresh ISEQs); vm.c holds them to a much higher call threshold.
+bool
+rb_zjit_iseq_eval_rooted(const rb_iseq_t *iseq)
+{
+    while (iseq) {
+        if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_EVAL) return true;
+        iseq = ISEQ_BODY(iseq)->parent_iseq;
+    }
+    return false;
+}
+
+// Whether Ruby::Box is enabled (RUBY_BOX=1, fixed at boot). Symbol block
+// handler yields then resolve the method in the caller's box, which JIT code's
+// direct symbol yield does not implement, so the JIT leaves them generic.
+bool
+rb_zjit_box_enabled(void)
+{
+    return rb_box_available();
+}
+
+unsigned int
+rb_zjit_iseq_exception_entry_count(const rb_iseq_t *iseq)
+{
+    const struct iseq_catch_table *table = ISEQ_BODY(iseq)->catch_table;
+    return table ? table->size : 0;
+}
+
+bool
+rb_zjit_iseq_exception_entry(const rb_iseq_t *iseq, unsigned int index,
+                             enum rb_catch_type *type, unsigned int *cont,
+                             unsigned int *stack_size)
+{
+    const struct iseq_catch_table *table = ISEQ_BODY(iseq)->catch_table;
+    if (!table || index >= table->size) return false;
+
+    const struct iseq_catch_table_entry *entry =
+        UNALIGNED_MEMBER_PTR(table, entries[index]);
+    switch (entry->type) {
+      case CATCH_TYPE_RETRY:
+      case CATCH_TYPE_REDO:
+        *stack_size = entry->sp;
+        break;
+      case CATCH_TYPE_BREAK:
+      case CATCH_TYPE_NEXT:
+        // compile.c removes the value pushed by vm_exec_handle_exception()
+        // when it records these catch-table stack depths.
+        *stack_size = entry->sp + 1;
+        break;
+      default:
+        return false;
+    }
+
+    *type = entry->type;
+    *cont = entry->cont;
+    return true;
+}
+
+// Symbol block handler yield for the single-argument shape: `yield x` to a
+// &:sym block calls x.sym, exactly vm_yield_with_symbol -> rb_sym_proc_call
+// with no kw-splat and no sub-block. Only used while Ruby::Box is disabled.
+VALUE
+rb_zjit_yield_symbol1(VALUE symbol, VALUE recv)
+{
+    RUBY_ASSERT(!rb_box_available());
+    return rb_sym_proc_call(SYM2ID(symbol), 1, &recv, 0, Qnil);
+}
+
+// The captured block of a plain (non-lambda, non-refined) iseq-proc, or NULL
+// when the value is anything else (not a Proc, a lambda, a refined proc, a
+// symbol/method proc, or the no-block sentinel). Lets JIT code dispatch a Proc
+// block handler to the same direct block call a plain ISEQ handler takes; NULL
+// routes to the generic path. Lambda procs use strict arity and a lambda frame
+// flag, and refined procs (Proc#refined) push a refinement cref, neither of
+// which the direct block call implements.
+const struct rb_captured_block *
+rb_zjit_proc_iseq_captured(VALUE procv)
+{
+    if (!RB_SPECIAL_CONST_P(procv) && RTEST(rb_obj_is_proc(procv))) {
+        const rb_proc_t *proc;
+        GetProcPtr(procv, proc);
+        if (!proc->header.is_lambda && !proc->header.is_refined && vm_block_type(&proc->block) == block_type_iseq) {
+            return &proc->block.as.captured;
+        }
+    }
+    return NULL;
+}
+
+// Coderange of a string, scanning and caching it when still unknown. Returns
+// the RUBY_ENC_CODERANGE_* flag value widened to a full register.
+unsigned long
+rb_zjit_str_coderange(VALUE str)
+{
+    return (unsigned long)rb_enc_str_coderange(str);
+}
+
 /* Sets all of the required shape flags for the object including the layout type,
  * the frozen status, and the slot size. Mimics `rb_newobj`.
  */
@@ -300,12 +399,38 @@ rb_zjit_new_obj_shape(VALUE flags, size_t alloc_size)
     return (flags & SHAPE_FLAG_MASK) | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
 }
 
+// Pre-sized result array for ZJIT's fused `<fixnum>.times.map` loop. The
+// length is known up front, so reserving capacity removes rb_ary_push's
+// per-element growth reallocs. Capacity is clamped defensively; pushes beyond
+// it just grow the array as usual.
+VALUE
+rb_zjit_ary_new_capa_fix(VALUE n)
+{
+    long capa = FIX2LONG(n);
+    if (capa < 0) capa = 0;
+    if (capa > 0x100000) capa = 0x100000;
+    return rb_ary_new_capa(capa);
+}
+
 VALUE
 rb_zjit_defined_ivar(VALUE obj, ID id, VALUE pushval)
 {
     VALUE result = rb_ivar_defined(obj, id);
     return result ? pushval : Qnil;
 }
+
+// Flonum comparison fast paths for ZJIT's Float#< / #<= / #> / #>= / #==
+// specialization. ZJIT guards that both operands are flonums before calling
+// these, so a plain double comparison is exact and matches the interpreter's
+// FLONUM_2_P fast path in vm_opt_lt() and friends (NaN compares false in every
+// direction, as with the C operators). RFLOAT_VALUE reads both flonums and heap
+// floats. These never allocate, raise, or re-enter the VM, so ZJIT calls them
+// as leaf functions.
+VALUE rb_zjit_flo_lt(VALUE recv, VALUE obj) { return RBOOL(RFLOAT_VALUE(recv) <  RFLOAT_VALUE(obj)); }
+VALUE rb_zjit_flo_le(VALUE recv, VALUE obj) { return RBOOL(RFLOAT_VALUE(recv) <= RFLOAT_VALUE(obj)); }
+VALUE rb_zjit_flo_gt(VALUE recv, VALUE obj) { return RBOOL(RFLOAT_VALUE(recv) >  RFLOAT_VALUE(obj)); }
+VALUE rb_zjit_flo_ge(VALUE recv, VALUE obj) { return RBOOL(RFLOAT_VALUE(recv) >= RFLOAT_VALUE(obj)); }
+VALUE rb_zjit_flo_eq(VALUE recv, VALUE obj) { return RBOOL(RFLOAT_VALUE(recv) == RFLOAT_VALUE(obj)); }
 
 bool
 rb_zjit_method_tracing_currently_enabled(void)
