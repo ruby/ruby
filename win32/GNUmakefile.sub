@@ -550,7 +550,7 @@ $(sharp)define _INTEGRAL_MAX_BITS 64
 $(sharp)endif
 $(sharp)define SIZEOF_OFF_T 8
 $(sharp)define SIZEOF_VOIDP $(if $(mswin64),8,4)
-$(sharp)define SIZEOF_FLOAT 4
+$(if $(mswin64),$(sharp)define SIZEOF_RB_LEN_T 8$(newline))$(sharp)define SIZEOF_FLOAT 4
 $(sharp)define SIZEOF_DOUBLE 8
 $(sharp)define SIGNEDNESS_OF_TIME_T -1
 $(sharp)define NEGATIVE_TIME_T 1
