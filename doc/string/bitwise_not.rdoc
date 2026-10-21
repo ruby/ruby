@@ -1,5 +1,16 @@
-Returns a new string whose bytes are the bitwise complement of +self+:
+Returns a new string whose content is the bitwise complement of +self+:
 
-  "\x00\xAA".bitwise_not # => "\xFF\x55"
+- Each set bit (value +1+) is cleared (to value +0+).
+- Each clear bit (value +0+) is set (to value +1+).
 
-The returned string has BINARY encoding.
+The new string has ASCII-8BIT encoding.
+
+Examples here use {helper method +string_bits+}[rdoc-ref:String@Helper+Method+string_bits]:
+
+  s0 = 0b001010101.chr * 2
+  string_bits(s0)  # => ["01010101", "01010101"]
+  s0.encoding.to_s # => "US-ASCII"
+  s1 = s0.bitwise_not
+  string_bits(s1)  # => ["10101010", "10101010"]
+  s1.encoding.to_s # => "ASCII-8BIT"
+

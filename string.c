@@ -7536,7 +7536,7 @@ STR_DEFINE_BINARY_BITWISE_KERNEL(str_bitwise_xor, STR_BITWISE_XOR_WORD, STR_BITW
 
 /*
  *  call-seq:
- *    bitwise_not -> string
+ *    bitwise_not -> new_string
  *
  *  :include: doc/string/bitwise_not.rdoc
  *
