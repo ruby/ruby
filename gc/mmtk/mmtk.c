@@ -1287,6 +1287,19 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
     mmtk_object_reference_write_post(cache->mutator, (MMTk_ObjectReference)obj);
 }
 
+void
+rb_gc_impl_promote_immortal(void *objspace_ptr, VALUE obj)
+{
+    // MMTk has no use for RUBY_FL_PROMOTED and never sets it. Set it on objects that
+    // are never collected anyway, so that JITs, which read the flag as "this object is
+    // long-lived", treat them the same as under the default GC.
+    // WB-unprotected objects are skipped, as the default GC never promotes those.
+    if (RB_SPECIAL_CONST_P(obj)) return;
+    if (mmtk_object_wb_unprotected_p((MMTk_ObjectReference)obj)) return;
+
+    RB_FL_SET_RAW(obj, RUBY_FL_PROMOTED);
+}
+
 // Heap walking
 static void
 each_objects_i(MMTk_ObjectReference obj, void *d)

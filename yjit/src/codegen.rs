@@ -9246,11 +9246,10 @@ fn gen_send_general(
 
     // Don't compile calls through singleton classes to avoid retaining the receiver.
     // Make an exception for class methods since classes tend to be retained anyways.
-    // Also compile calls on top_self to help tests. The block param proxy is an
-    // immortal global root, so retaining it is a non-issue.
+    // Also compile calls on old objects, which are likely to be retained anyways.
+    // Immortal objects such as top_self and the block param proxy are old from boot.
     if VALUE(0) != unsafe { FL_TEST(comptime_recv_klass, VALUE(RUBY_FL_SINGLETON as usize)) }
-        && comptime_recv != unsafe { rb_vm_top_self() }
-        && comptime_recv != unsafe { rb_block_param_proxy }
+        && !comptime_recv.promoted()
         && !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_CLASS) }
         && !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_MODULE) } {
         gen_counter_incr(jit, asm, Counter::send_singleton_class);

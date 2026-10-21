@@ -8570,6 +8570,39 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
     }
 }
 
+// Promote obj, which the caller guarantees is never collected, to the old generation
+// now instead of after RVALUE_OLD_AGE GCs.  Old is then a fact about the object that
+// JITs can rely on right after boot.
+//
+// No-op for objects the GC must not or need not touch, which then just age normally:
+// - Objects of another objspace: their age and remembered bits belong to its owner.
+// - Calls while a GC or incremental marking is in progress: marking owns the age and
+//   mark bits.  Registering objects normally happens at boot, before any GC.
+// - WB-unprotected objects, which are never old, and objects that are already old.
+void
+rb_gc_impl_promote_immortal(void *objspace_ptr, VALUE obj)
+{
+    rb_objspace_t *objspace = objspace_ptr;
+
+    if (RB_SPECIAL_CONST_P(obj)) return;
+    if (gc_foreign_object_p(objspace, obj)) return;
+    if (during_gc || is_incremental_marking(objspace)) return;
+    if (RVALUE_WB_UNPROTECTED(objspace, obj) || RVALUE_OLD_P(objspace, obj)) return;
+
+    gc_report(1, objspace, "rb_gc_impl_promote_immortal: %s\n", rb_obj_info(obj));
+
+    // Promote it the way gc_aging promotes classes
+    RVALUE_AGE_SET(obj, RVALUE_OLD_AGE);
+    RVALUE_OLD_UNCOLLECTIBLE_SET(objspace, obj);
+    // Outside marking, uncollectible objects must be marked
+    MARK_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj);
+    // obj may already point at young objects that the write barrier didn't record,
+    // since it only remembers old -> young edges
+    rb_gc_impl_writebarrier_remember(objspace, obj);
+
+    check_rvalue_consistency(objspace, obj);
+}
+
 struct rb_gc_object_metadata_names {
     // Must be ID only
     ID ID_wb_protected, ID_age, ID_old, ID_uncollectible, ID_marking,
