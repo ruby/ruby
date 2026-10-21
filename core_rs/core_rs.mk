@@ -70,3 +70,8 @@ core-rs-check-hidden: $(LIBRUBY_SO)
 core-rs-check-fallbacks:
 	$(Q) $(BASERUBY) -I$(srcdir)/tool $(srcdir)/tool/generate_porting_ledger.rb --check-fallbacks
 
+# Re-measure and update the function inventory baseline snapshot
+core-rs-inventory:
+	$(Q) $(BASERUBY) -I$(srcdir)/tool $(srcdir)/tool/core_rs/inventory.rb --snapshot > $(srcdir)/docs/ruby_on_rust/inventory-snapshot.tsv
+
+
