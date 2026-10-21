@@ -15174,17 +15174,18 @@ mod hir_opt_tests {
           v18:StaticSymbol[:U8] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
           PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
-          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
-          v31:Fixnum = GuardType v13, Fixnum
-          v32:CInt64 = UnboxFixnum v31
-          v33:CInt64[0] = Const CInt64(0)
-          v34:CInt64 = GuardGreaterEq v32, v33
-          v35:CUInt64[1] = Const CUInt64(1)
-          v36:CPtr = CCall v30, :rb_jit_io_buffer_readable_ptr@0x1048, v34, v35
-          v37:CPtr = GuardNotNull v36
-          v38:Fixnum = LoadFixnum v37, 1
+          v32:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v33:Fixnum = GuardType v13, Fixnum
+          v34:CInt64 = UnboxFixnum v33
+          v35:CInt64[0] = Const CInt64(0)
+          v36:CInt64 = GuardGreaterEq v34, v35
+          v37:CUInt64[1] = Const CUInt64(1)
+          v38:CPtr = CCall v32, :rb_jit_io_buffer_readable_ptr@0x1048, v36, v37
+          v39:CPtr = GuardNotNull v38
+          v40:Fixnum = LoadFixnum v39, 1
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v38
+          Return v40
         ");
     }
 
@@ -15213,17 +15214,18 @@ mod hir_opt_tests {
           v18:StaticSymbol[:u16] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
           PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
-          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
-          v31:Fixnum = GuardType v13, Fixnum
-          v32:CInt64 = UnboxFixnum v31
-          v33:CInt64[0] = Const CInt64(0)
-          v34:CInt64 = GuardGreaterEq v32, v33
-          v35:CUInt64[2] = Const CUInt64(2)
-          v36:CPtr = CCall v30, :rb_jit_io_buffer_readable_ptr@0x1048, v34, v35
-          v37:CPtr = GuardNotNull v36
-          v38:Fixnum = LoadFixnum v37, 2
+          v32:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v33:Fixnum = GuardType v13, Fixnum
+          v34:CInt64 = UnboxFixnum v33
+          v35:CInt64[0] = Const CInt64(0)
+          v36:CInt64 = GuardGreaterEq v34, v35
+          v37:CUInt64[2] = Const CUInt64(2)
+          v38:CPtr = CCall v32, :rb_jit_io_buffer_readable_ptr@0x1048, v36, v37
+          v39:CPtr = GuardNotNull v38
+          v40:Fixnum = LoadFixnum v39, 2
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v38
+          Return v40
         ");
     }
 
@@ -15252,17 +15254,18 @@ mod hir_opt_tests {
           v18:StaticSymbol[:U16] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
           PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
-          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
-          v31:Fixnum = GuardType v13, Fixnum
-          v32:CInt64 = UnboxFixnum v31
-          v33:CInt64[0] = Const CInt64(0)
-          v34:CInt64 = GuardGreaterEq v32, v33
-          v35:CUInt64[2] = Const CUInt64(2)
-          v36:CPtr = CCall v30, :rb_jit_io_buffer_readable_ptr@0x1048, v34, v35
-          v37:CPtr = GuardNotNull v36
-          v38:Fixnum = LoadFixnum v37, 2 byteswap
+          v32:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v33:Fixnum = GuardType v13, Fixnum
+          v34:CInt64 = UnboxFixnum v33
+          v35:CInt64[0] = Const CInt64(0)
+          v36:CInt64 = GuardGreaterEq v34, v35
+          v37:CUInt64[2] = Const CUInt64(2)
+          v38:CPtr = CCall v32, :rb_jit_io_buffer_readable_ptr@0x1048, v36, v37
+          v39:CPtr = GuardNotNull v38
+          v40:Fixnum = LoadFixnum v39, 2 byteswap
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v38
+          Return v40
         ");
     }
 
@@ -15291,17 +15294,18 @@ mod hir_opt_tests {
           v18:StaticSymbol[:u32] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
           PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
-          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
-          v31:Fixnum = GuardType v13, Fixnum
-          v32:CInt64 = UnboxFixnum v31
-          v33:CInt64[0] = Const CInt64(0)
-          v34:CInt64 = GuardGreaterEq v32, v33
-          v35:CUInt64[4] = Const CUInt64(4)
-          v36:CPtr = CCall v30, :rb_jit_io_buffer_readable_ptr@0x1048, v34, v35
-          v37:CPtr = GuardNotNull v36
-          v38:Fixnum = LoadFixnum v37, 4
+          v32:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v33:Fixnum = GuardType v13, Fixnum
+          v34:CInt64 = UnboxFixnum v33
+          v35:CInt64[0] = Const CInt64(0)
+          v36:CInt64 = GuardGreaterEq v34, v35
+          v37:CUInt64[4] = Const CUInt64(4)
+          v38:CPtr = CCall v32, :rb_jit_io_buffer_readable_ptr@0x1048, v36, v37
+          v39:CPtr = GuardNotNull v38
+          v40:Fixnum = LoadFixnum v39, 4
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v38
+          Return v40
         ");
     }
 
@@ -15330,17 +15334,18 @@ mod hir_opt_tests {
           v18:StaticSymbol[:U32] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
           PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
-          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
-          v31:Fixnum = GuardType v13, Fixnum
-          v32:CInt64 = UnboxFixnum v31
-          v33:CInt64[0] = Const CInt64(0)
-          v34:CInt64 = GuardGreaterEq v32, v33
-          v35:CUInt64[4] = Const CUInt64(4)
-          v36:CPtr = CCall v30, :rb_jit_io_buffer_readable_ptr@0x1048, v34, v35
-          v37:CPtr = GuardNotNull v36
-          v38:Fixnum = LoadFixnum v37, 4 byteswap
+          v32:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v33:Fixnum = GuardType v13, Fixnum
+          v34:CInt64 = UnboxFixnum v33
+          v35:CInt64[0] = Const CInt64(0)
+          v36:CInt64 = GuardGreaterEq v34, v35
+          v37:CUInt64[4] = Const CUInt64(4)
+          v38:CPtr = CCall v32, :rb_jit_io_buffer_readable_ptr@0x1048, v36, v37
+          v39:CPtr = GuardNotNull v38
+          v40:Fixnum = LoadFixnum v39, 4 byteswap
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v38
+          Return v40
         ");
     }
 
@@ -15369,10 +15374,11 @@ mod hir_opt_tests {
           v18:StaticSymbol[:S8] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
           PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
-          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
-          v31:Float|Integer = CCallWithFrame v30, :IO::Buffer#get_value@0x1048, v18, v13
+          v32:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v33:Float|Integer = CCallWithFrame v32, :IO::Buffer#get_value@0x1048, v18, v13
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v31
+          Return v33
         ");
     }
 
@@ -15402,10 +15408,11 @@ mod hir_opt_tests {
         bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
           PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1008)
           PatchPoint MethodRedefined(IO::Buffer::Storage@0x1008, get_value@0x1010, cme:0x1018)
-          v32:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v14, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
-          v33:Float|Integer = CCallWithFrame v32, :IO::Buffer#get_value@0x1040, v15, v16
+          v34:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v14, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v35:Float|Integer = CCallWithFrame v34, :IO::Buffer#get_value@0x1040, v15, v16
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v33
+          Return v35
         ");
     }
 
@@ -15434,10 +15441,11 @@ mod hir_opt_tests {
           v18:StaticSymbol[:U64] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
           PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
-          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
-          v31:Float|Integer = CCallWithFrame v30, :IO::Buffer#get_value@0x1048, v18, v13
+          v32:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v33:Float|Integer = CCallWithFrame v32, :IO::Buffer#get_value@0x1048, v18, v13
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v31
+          Return v33
         ");
     }
 
