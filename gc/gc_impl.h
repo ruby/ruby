@@ -153,7 +153,7 @@ GC_IMPL_FN bool rb_gc_impl_during_postmortem_p(void *objspace_ptr);
  * objspace impl. */
 GC_IMPL_FN bool rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN bool rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj);
-GC_IMPL_FN size_t rb_gc_impl_heap_page_count(void *objspace_ptr);
+GC_IMPL_FN size_t rb_gc_impl_zombie_heap_page_count(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_objspace_absorb(void *dst_ptr, void *src_ptr);
 GC_IMPL_FN void rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), void *data);
 // Finalizers
