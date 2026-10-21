@@ -208,7 +208,7 @@
 # most-significant bit to least-significant bit:
 # the byte-order is not affected:
 #
-#  s = "\xFF" * 2
+#   s = "\xFF" * 2
 #   string_bits(s) # => ["11111111", "11111111"]
 #   s.bit_clear(0, lsb_first: false)
 #   string_bits(s) # => ["01111111", "11111111"]  # High-order bit in first byte.
