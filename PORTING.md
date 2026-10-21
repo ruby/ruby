@@ -7,9 +7,9 @@ Generated automatically by `ruby tool/generate_porting_ledger.rb`. Do not edit m
 
 | Metric | File Count | Lines of Code (LOC) | % of Total LOC |
 | :--- | :--- | :--- | :--- |
-| **Total C Source Files** | 113 | 318,116 | 100.0% |
+| **Total C Source Files** | 113 | 318,121 | 100.0% |
 | **Not Started** | 103 | 309,097 | 97.2% |
-| **In Progress** | 3 | 8,673 | 2.7% |
+| **In Progress** | 3 | 8,678 | 2.7% |
 | **Ported** | 0 | 0 | 0.0% |
 | **Blocked** | 0 | 0 | 0.0% |
 | **N/A** | 7 | 346 | 0.1% |
@@ -134,7 +134,7 @@ _String encodings, transcoding, and regular expressions_
 | C Source File | Lines (LOC) | Status | Target Rust Crate/Module | Notes |
 | :--- | :--- | :--- | :--- | :--- |
 | `encoding.c` | 2,105 | Not Started | `crate::encoding` | String encoding support |
-| `re.c` | 5,212 | In Progress | `core_rs::re` | Ported: rb_memsearch (all search algorithms), rb_memcicmp. Remaining: Regexp class interface |
+| `re.c` | 5,217 | In Progress | `core_rs::re` | Ported: rb_memsearch (all search algorithms), rb_memcicmp. Remaining: Regexp class interface |
 | `regcomp.c` | 6,763 | Not Started | `crate::regcomp` | Onigmo regex compiler |
 | `regenc.c` | 1,032 | Not Started | `crate::regenc` | Onigmo encoding engine |
 | `regerror.c` | 408 | Not Started | `crate::regerror` | Onigmo regex error reporting |
@@ -256,7 +256,7 @@ _Platform stubs, runner wrappers, and target-specific code_
 | `random.c` | IO & Filesystem | 1,862 | Not Started | `crate::random` | Random number generation |
 | `range.c` | Core Data Structures | 3,006 | Not Started | `crate::range` | Range object implementation |
 | `rational.c` | Core Data Structures | 2,847 | Not Started | `crate::rational` | Rational number implementation |
-| `re.c` | Encoding & Regex | 5,212 | In Progress | `core_rs::re` | Ported: rb_memsearch (all search algorithms), rb_memcicmp. Remaining: Regexp class interface |
+| `re.c` | Encoding & Regex | 5,217 | In Progress | `core_rs::re` | Ported: rb_memsearch (all search algorithms), rb_memcicmp. Remaining: Regexp class interface |
 | `regcomp.c` | Encoding & Regex | 6,763 | Not Started | `crate::regcomp` | Onigmo regex compiler |
 | `regenc.c` | Encoding & Regex | 1,032 | Not Started | `crate::regenc` | Onigmo encoding engine |
 | `regerror.c` | Encoding & Regex | 408 | Not Started | `crate::regerror` | Onigmo regex error reporting |
