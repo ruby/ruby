@@ -107,7 +107,7 @@ When porting or updating a C source file:
 
 These decisions are fixed. A PR that deviates from them will be sent back. If you think one is wrong, say so in a PR comment. Do not work around it.
 
-1. **New Rust code lives in `core_rs/`.** It is a `no_std` crate with edition 2024, rustc 1.85.0+, **no external crates** and no allocation. It is independent of the JIT crates and of `ruby.rs`: build rules are in `core_rs/core_rs.mk`, and the crate is partially linked into its own object (`target/core_rs/core_rs.o`) that joins `COMMONOBJS`. Add every new source file to `CORE_RS_SRCS` in `core_rs/core_rs.mk`.
+1. **New Rust code lives in `core_rs/`.** It is a `no_std` crate with edition 2024, rustc 1.85.0+, **no external crates**, and allocation only through `crate::alloc`'s Ruby-GC-backed allocator (`core_rs/src/alloc.rs`). It is independent of the JIT crates and of `ruby.rs`: build rules are in `core_rs/core_rs.mk`, and the crate is partially linked into its own object (`target/core_rs/core_rs.o`) that joins `COMMONOBJS`. Add every new source file to `CORE_RS_SRCS` in `core_rs/core_rs.mk`.
 2. **core_rs is compiled with `rustc` only.** Cargo is never required for it, and builds must work offline. Unit tests run with `make core-rs-test`, which also needs only rustc.
 3. **One switch controls core Rust**, and it sets `USE_RUST_PORTS` (0/1) in `config.h` and `RbConfig::CONFIG["USE_RUST_PORTS"]`:
    - `--with-rust-ports`: the ports are required, and configure fails if they cannot be built.

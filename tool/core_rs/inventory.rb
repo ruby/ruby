@@ -9,6 +9,7 @@
 #   ruby tool/core_rs/inventory.rb --units [--wave A] [--open]
 #   ruby tool/core_rs/inventory.rb --kit st-A-03       # port-kit issue body (Markdown)
 #   ruby tool/core_rs/inventory.rb --check            # C guards vs Rust exports
+#   ruby tool/core_rs/inventory.rb --snapshot         # dump full TSV snapshot
 #
 # Standard Ruby library only.  Paths resolve relative to this file.
 #
@@ -369,11 +370,12 @@ end
 
 opts = { format: "tsv" }
 OptionParser.new do |o|
-  o.banner = "usage: #{$0} [--list|--units|--kit ID|--check] [--wave W] [--file F] [--open] [--format tsv|json]"
+  o.banner = "usage: #{$0} [--list|--units|--kit ID|--check|--snapshot] [--wave W] [--file F] [--open] [--format tsv|json]"
   o.on("--list") { opts[:mode] = :list }
   o.on("--units") { opts[:mode] = :units }
   o.on("--kit ID") { |v| opts[:mode] = :kit; opts[:id] = v }
   o.on("--check") { opts[:mode] = :check }
+  o.on("--snapshot") { opts[:mode] = :snapshot }
   o.on("--wave W") { |v| opts[:wave] = v.upcase }
   o.on("--file F") { |v| opts[:file] = v }
   o.on("--open", "units with at least one function left to port") { opts[:open] = true }
@@ -384,6 +386,9 @@ funcs = inventory
 funcs = funcs.select { |f| f.file == opts[:file] } if opts[:file]
 
 case opts[:mode]
+when :snapshot
+  puts %w[wave file name lines loc static public ported].join("\t")
+  inventory.each { |f| puts [f.wave, f.file, f.name, f.range, f.loc, f.static, f.public, f.ported].join("\t") }
 when :list
   sel = opts[:wave] ? funcs.select { |f| f.wave == opts[:wave] } : funcs
   if opts[:format] == "json"
