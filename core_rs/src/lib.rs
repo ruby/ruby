@@ -25,6 +25,7 @@ extern crate alloc as std_alloc;
 pub mod alloc;
 pub mod complex;
 pub mod ffi;
+pub mod io_buffer;
 pub mod pack;
 pub mod re;
 pub mod util;

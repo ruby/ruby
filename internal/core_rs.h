@@ -60,6 +60,14 @@ int rb_core_complex_read_rat_nos(const char **s, int strict, char **b);
 int rb_core_complex_read_rat(const char **s, int strict, char **b);
 void rb_core_complex_skip_ws(const char **s);
 
+/* io_buffer.c (core_rs/src/io_buffer.rs).  The C definitions qualify the
+ * pointer parameters with `restrict`; callers guarantee the ranges do not
+ * overlap. */
+void rb_core_io_buffer_memory_or_inplace(unsigned char *base, size_t size, unsigned char *mask, size_t mask_size);
+void rb_core_io_buffer_memory_xor_inplace(unsigned char *base, size_t size, unsigned char *mask, size_t mask_size);
+void rb_core_io_buffer_memory_not_inplace(unsigned char *base, size_t size);
+size_t rb_core_io_buffer_memory_bit_count(const unsigned char *base, size_t size);
+
 /* pack.c (core_rs/src/pack.rs) */
 int rb_core_pack_is_bigendian(void);
 char *rb_core_pack_skip_to_eol(const char *p, const char *pend);

@@ -16,12 +16,17 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/bits.h"
+#include "internal/core_rs.h"
 #include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/numeric.h"
 #include "internal/string.h"
 #include "internal/io.h"
 #include "internal/io_buffer.h"
+
+#ifndef USE_RUST_PORTS
+# define USE_RUST_PORTS 0
+#endif
 
 VALUE rb_cIOBuffer;
 VALUE rb_cIOBufferStorage;
@@ -4428,6 +4433,7 @@ io_buffer_and_inplace(VALUE self, VALUE mask)
     return self;
 }
 
+#if !USE_RUST_PORTS /* ported to core_rs/src/io_buffer.rs (port unit io_buffer-A-03) */
 static void
 memory_or_inplace(unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
 {
@@ -4435,6 +4441,9 @@ memory_or_inplace(unsigned char * restrict base, size_t size, unsigned char * re
         base[offset] |= mask[offset % mask_size];
     }
 }
+#else
+#define memory_or_inplace rb_core_io_buffer_memory_or_inplace
+#endif /* !USE_RUST_PORTS: memory_or_inplace */
 
 /*
  *  call-seq:
@@ -4476,6 +4485,7 @@ io_buffer_or_inplace(VALUE self, VALUE mask)
     return self;
 }
 
+#if !USE_RUST_PORTS /* ported to core_rs/src/io_buffer.rs (port unit io_buffer-A-03) */
 static void
 memory_xor_inplace(unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
 {
@@ -4483,6 +4493,9 @@ memory_xor_inplace(unsigned char * restrict base, size_t size, unsigned char * r
         base[offset] ^= mask[offset % mask_size];
     }
 }
+#else
+#define memory_xor_inplace rb_core_io_buffer_memory_xor_inplace
+#endif /* !USE_RUST_PORTS: memory_xor_inplace */
 
 /*
  *  call-seq:
@@ -4524,6 +4537,7 @@ io_buffer_xor_inplace(VALUE self, VALUE mask)
     return self;
 }
 
+#if !USE_RUST_PORTS /* ported to core_rs/src/io_buffer.rs (port unit io_buffer-A-03) */
 static void
 memory_not_inplace(unsigned char * restrict base, size_t size)
 {
@@ -4531,6 +4545,9 @@ memory_not_inplace(unsigned char * restrict base, size_t size)
         base[offset] = ~base[offset];
     }
 }
+#else
+#define memory_not_inplace rb_core_io_buffer_memory_not_inplace
+#endif /* !USE_RUST_PORTS: memory_not_inplace */
 
 /*
  *  call-seq:
@@ -4563,6 +4580,7 @@ io_buffer_not_inplace(VALUE self)
     return self;
 }
 
+#if !USE_RUST_PORTS /* ported to core_rs/src/io_buffer.rs (port unit io_buffer-A-03) */
 static size_t
 memory_bit_count(const unsigned char *base, size_t size)
 {
@@ -4584,6 +4602,9 @@ memory_bit_count(const unsigned char *base, size_t size)
 
     return count;
 }
+#else
+#define memory_bit_count rb_core_io_buffer_memory_bit_count
+#endif /* !USE_RUST_PORTS: memory_bit_count */
 
 /*
  *  call-seq: bit_count([offset, [length]]) -> integer
