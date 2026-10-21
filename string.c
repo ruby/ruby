@@ -7287,8 +7287,7 @@ rb_str_bit_set(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    bit_clear(offset, lsb_first: true) -> self
- *    bit_clear(offset, length, lsb_first: true) -> self
+ *    bit_clear(offset, count = 1, lsb_first: true) -> self
  *    bit_clear(range, lsb_first: true) -> self
  *
  *  :include: doc/string/bit_clear.rdoc

@@ -159,6 +159,66 @@
 # - #rstrip, #rstrip!: Strip trailing whitespace.
 # - #strip, #strip!: Strip leading and trailing whitespace.
 #
+# == Bit-Oriented Methods
+#
+# These methods query the bits in a string:
+#
+# - #bit_count.
+# - #bit_get.
+# - #bit_set?.
+#
+# These methods modify the bits in a string:
+#
+# - #bit_clear.
+# - #bit_flip.
+# - #bit_set.
+#
+# === Helper \Method +string_bits+
+#
+# To aid in the documentation, we use this helper method to display bits in a string:
+#
+#   def string_bits(s) = s.bytes.map { |byte| byte.to_s(2).rjust(8, '0') }
+#
+# Examples:
+#
+#   string_bits('abc') # => ["01100001", "01100010", "01100011"]  # Three 1-byte characters.
+#   string_bits('こ')  # => ["11100011", "10000001", "10010011"]  # One 3-byte character.
+#
+# === Keyword Argument +lsb_first+
+#
+# In each bit-oriented method, keyword argument +lsb_first+ defaults to +true+,
+# which means that the bits within each byte are numbered
+# <i>least-significant bit first</i>
+# least-significant bit to most-significant bit:
+#
+#   s = "\xFF" * 2
+#   string_bits(s) # => ["11111111", "11111111"]
+#   s.bit_clear(0)
+#   string_bits(s) # => ["11111110", "11111111"]  # Low-order bit in first byte.
+#   s.bit_clear(7)
+#   string_bits(s) # => ["01111110", "11111111"]  # High-order bit in first byte.
+#   s.bit_clear(8)
+#   string_bits(s) # => ["01111110", "11111110"]  # Low-order bit in second byte.
+#   s.bit_clear(15)
+#   string_bits(s) # => ["01111110", "01111110"]  # High-order bit in second byte.
+#
+# When +lsb_first+ is given as +false+, the numbering is reversed within each byte,
+# which means that  the bits within each byte are numbered
+# <i>most-significant bit first</i>
+# most-significant bit to least-significant bit:
+# the byte-order is not affected:
+#
+#  s = "\xFF" * 2
+#   string_bits(s) # => ["11111111", "11111111"]
+#   s.bit_clear(0, lsb_first: false)
+#   string_bits(s) # => ["01111111", "11111111"]  # High-order bit in first byte.
+#   s.bit_clear(7, lsb_first: false)
+#   string_bits(s) # => ["01111110", "11111111"]  # Low-order bit in first byte.
+#   s.bit_clear(8, lsb_first: false)
+#   string_bits(s) # => ["01111110", "01111111"]  # High-order bit in second byte.
+#   s.bit_clear(15, lsb_first: false)
+#   string_bits(s) # => ["01111110", "01111110"]  # Low-order bit in second byte.
+#
 # == What's Here
 #
 # First, what's elsewhere. Class +String+:
