@@ -850,24 +850,16 @@ typedef struct rb_objspace {
 typedef struct rb_global_objspace {
     struct {
         rb_nativethread_lock_t lock;
-        struct heap_page_body *hot_list; /* ≤ PAGE_POOL_HOT_MAX un-advised bodies; link at body offset 0 */
-        int hot_count;
-        size_t os_page_size;             /* sysconf(_SC_PAGE_SIZE), cached at init */
-        /* List of mmap'd memory regions (arenas) for page bodies. */
-        struct page_arena {
-            struct page_arena *next;
-            char *start;                  /* usable area, HEAP_PAGE_ALIGN aligned */
-            size_t size;                  /* usable bytes (a multiple of HEAP_PAGE_SIZE) */
-            struct heap_page_body *cold_freelist; /* free bodies of this arena; link at body offset 0 */
-            int free_count;               /* bodies of this arena currently free (hot list + cold_freelist) */
-            int cold_count;               /* bodies on cold_freelist (subset of free_count) */
-        } *arenas;                        /* every arena, newest first */
-        char *arena_cursor;               /* first body not yet carved out of the newest arena */
-        char *arena_end;                  /* end of current arena */
-        struct page_arena *arena_current; /* arena that arena_cursor carves from */
-        int arena_count;                  /* current mapped arenas (for GC.stat total_pages) */
-        int advised_count;                /* page bodies with MADV_* applied (for GC.stat discarded pages) */
-        size_t arenas_unmapped;           /* cumulative arenas munmapped (for GC.stat) */
+        bool can_advise;                        /* page_pool_advise_supported(), cached at init */
+        /* List of mmap'd memory regions (arenas) for page bodies.  struct arena_descriptor
+         * is defined with the rest of the pool code, since its size needs HEAP_PAGE_SIZE. */
+        struct arena_descriptor *arenas;        /* every arena, newest first */
+        char *arena_cursor;                     /* first body not yet carved out of the newest arena */
+        char *arena_end;                        /* end of current arena */
+        struct arena_descriptor *arena_current; /* arena that arena_cursor carves from */
+        int arena_count;                        /* current mapped arenas (for GC.stat total_pages) */
+        int advised_count;                      /* page bodies with MADV_* applied (for GC.stat discarded pages) */
+        size_t arenas_unmapped;                 /* cumulative arenas munmapped (for GC.stat) */
     } page_pool;
 
     /* Pages held by zombie objspaces (sum of their zombie_pages), and what was left of
@@ -953,12 +945,13 @@ tdata_deferred_free_count_load(void)
 static void objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src);
 
 
-static struct heap_page_body *page_pool_acquire(struct page_arena **arena_out);
-static void page_pool_release(struct heap_page_body *body, struct page_arena *arena);
+static struct heap_page_body *page_pool_acquire(struct arena_descriptor **arena_out);
+static void page_pool_release(struct heap_page_body *body, struct arena_descriptor *arena);
 #ifdef HAVE_MMAP
-static void page_pool_release_locked(struct heap_page_body *body, struct page_arena *arena);
+static void page_pool_release_locked(struct heap_page_body *body, struct arena_descriptor *arena);
 #endif
 static void page_pool_reclaim(rb_global_objspace_t *g);
+static bool page_pool_advise_supported(void);
 
 #if RGENGC_CHECK_MODE && !defined(_WIN32) && !defined(__wasi__) && defined(HAVE_PTHREAD_H)
 # define PAGE_POOL_LOCK_ERRORCHECK 1
@@ -984,8 +977,6 @@ global_objspace_init(void)
     if (global_objspace == NULL) {
         rb_global_objspace_t *g = &rb_global_objspace_instance;
         page_pool_lock_initialize(&g->page_pool.lock);
-        g->page_pool.hot_list = NULL;
-        g->page_pool.hot_count = 0;
         g->page_pool.arenas = NULL;
         g->page_pool.arena_cursor = NULL;
         g->page_pool.arena_end = NULL;
@@ -997,11 +988,7 @@ global_objspace_init(void)
         g->tdata_unsafe_free_cache = NULL;
         g->tdata_unsafe_free_cache_len = 0;
         g->page_pool.arenas_unmapped = 0;
-#ifdef HAVE_MMAP
-        g->page_pool.os_page_size = sysconf(_SC_PAGE_SIZE);
-#else
-        g->page_pool.os_page_size = 0;
-#endif
+        g->page_pool.can_advise = page_pool_advise_supported();
         global_objspace = g;
     }
 }
@@ -1171,7 +1158,7 @@ struct heap_page {
 
     struct heap_page *free_next;
     struct heap_page_body *body;
-    struct page_arena *arena;
+    struct arena_descriptor *arena;
     struct ccan_list_node page_node;
 
     bits_t wb_unprotected_bits[HEAP_PAGE_BITMAP_LIMIT];
@@ -2418,7 +2405,7 @@ gc_aligned_free(void *ptr, size_t size)
 }
 
 static void
-heap_page_body_free(struct heap_page_body *page_body, struct page_arena *arena)
+heap_page_body_free(struct heap_page_body *page_body, struct arena_descriptor *arena)
 {
     GC_ASSERT((uintptr_t)page_body % HEAP_PAGE_ALIGN == 0);
 
@@ -2625,24 +2612,75 @@ gc_aligned_malloc(size_t alignment, size_t size)
 }
 
 /* The page pool (global_objspace->page_pool): heap page bodies are carved out of large
- * arenas and reused through the pool.  Free bodies are split into a small global hot
- * list (≤ PAGE_POOL_HOT_MAX, never madvise'd) and per-arena cold freelists (eligible for
- * OS release — see page_pool_reclaim). Both lists use an in-body link at offset 0. */
+ * arenas and reused through the pool.  Free bodies sit on per-arena freelists,
+ * eligible for OS release (see page_pool_reclaim); a freelist is threaded through
+ * indices in the arena descriptor rather than through the bodies, so a free body holds
+ * nothing and page_pool_reclaim can advise all of it. */
 
 #define PAGE_POOL_ARENA_SIZE (HEAP_PAGE_SIZE * 32) /* 2MiB with 64KiB pages */
 #define PAGE_POOL_ARENA_BODIES (PAGE_POOL_ARENA_SIZE / HEAP_PAGE_SIZE) /* 32 */
-#define PAGE_POOL_HOT_MAX 0 /* disabled — empty_pages is the retention buffer */
 #define PAGE_POOL_ARENA_KEEP_HALF (PAGE_POOL_ARENA_BODIES / 2) /* 16 */
 
-/* Steal bit 0 of the in-body link word: set iff the body has been madvise'd (cold). */
-#define PAGE_POOL_ADVISED_BIT ((uintptr_t)1)
+#define PAGE_POOL_BODY_NIL ((int8_t)-1)
 
-/* While a body is free, the arena back-pointer is stored at offset sizeof(header) — one
- * word past the link, inside the spared first OS page.  PAGE_POOL_SCRATCH_SIZE covers
- * both the link (offset 0) and the tag for ASAN unpoison. */
-#define PAGE_POOL_BODY_ARENA(body) \
-    (*(struct page_arena **)((char *)(body) + sizeof(struct heap_page_header)))
-#define PAGE_POOL_SCRATCH_SIZE (sizeof(struct heap_page_header) + sizeof(void *))
+/* Per-body pool bookkeeping.  It lives in the arena descriptor rather than in the body
+ * so that a free body is entirely dead memory: page_pool_reclaim can then advise all of
+ * it, and adjacent bodies coalesce into one call. */
+struct page_pool_body_info {
+    int8_t next;             /* next body on the arena's freelist, or PAGE_POOL_BODY_NIL */
+    bool advised;            /* given back to the OS with madvise */
+#if RGENGC_CHECK_MODE > 0
+    bool on_freelist;        /* catches a double release, which would self-link `next` */
+#endif
+};
+
+struct arena_descriptor {
+    struct arena_descriptor *next;
+    char *start;                  /* usable area, HEAP_PAGE_ALIGN aligned */
+    size_t size;                  /* usable bytes (a multiple of HEAP_PAGE_SIZE) */
+    int8_t freelist;              /* head of the free body list, or PAGE_POOL_BODY_NIL */
+    int free_count;               /* bodies on freelist */
+    int advised_count;            /* free bodies with bodies[].advised set */
+    struct page_pool_body_info bodies[PAGE_POOL_ARENA_BODIES];
+};
+STATIC_ASSERT(page_pool_body_index_fits_int8, PAGE_POOL_ARENA_BODIES <= INT8_MAX);
+/* Step A marks the bodies to advise in a uint32_t. */
+STATIC_ASSERT(page_pool_bodies_fit_advise_mask, PAGE_POOL_ARENA_BODIES <= 32);
+
+/* page_pool_reclaim advises whole bodies, so a body has to be a whole number of OS
+ * pages: rounding a partial one up would reach into the neighbouring body, which may be
+ * in use.  A platform whose page size does not divide HEAP_PAGE_SIZE (or that cannot
+ * report one) therefore advises nothing, and advised_count must not be adjusted
+ * anywhere either. */
+static bool
+page_pool_advise_supported(void)
+{
+#ifdef HAVE_MMAP
+    long os_page_size = sysconf(_SC_PAGE_SIZE);
+    return os_page_size > 0 && HEAP_PAGE_SIZE % (size_t)os_page_size == 0;
+#else
+    return false;
+#endif
+}
+
+#ifdef HAVE_MMAP
+static int
+page_pool_body_index(const struct arena_descriptor *arena, const struct heap_page_body *body)
+{
+    ptrdiff_t off = (const char *)body - arena->start;
+    GC_ASSERT(off >= 0 && off % HEAP_PAGE_SIZE == 0);
+    int i = (int)(off / HEAP_PAGE_SIZE);
+    GC_ASSERT(i < PAGE_POOL_ARENA_BODIES);
+    return i;
+}
+
+static struct heap_page_body *
+page_pool_body_at(const struct arena_descriptor *arena, int i)
+{
+    GC_ASSERT(i >= 0 && i < PAGE_POOL_ARENA_BODIES);
+    return (struct heap_page_body *)(arena->start + (size_t)i * HEAP_PAGE_SIZE);
+}
+#endif
 
 #ifdef HAVE_MMAP
 /* mmap a new arena to carve from.  Called with the pool lock held, at which point the
@@ -2691,7 +2729,7 @@ page_pool_add_arena(rb_global_objspace_t *g)
         }
     }
 
-    struct page_arena *arena = calloc1(sizeof(struct page_arena));
+    struct arena_descriptor *arena = calloc1(sizeof(struct arena_descriptor));
     if (arena == NULL) {
         if (munmap(aligned, PAGE_POOL_ARENA_SIZE)) {
             rb_bug("page_pool_add_arena: munmap failed for arena");
@@ -2700,9 +2738,12 @@ page_pool_add_arena(rb_global_objspace_t *g)
     }
     arena->start = aligned;
     arena->size = PAGE_POOL_ARENA_SIZE;
-    arena->cold_freelist = NULL;
+    arena->freelist = PAGE_POOL_BODY_NIL;
     arena->free_count = 0;
-    arena->cold_count = 0;
+    arena->advised_count = 0;
+    for (int i = 0; i < PAGE_POOL_ARENA_BODIES; i++) {
+        arena->bodies[i].next = PAGE_POOL_BODY_NIL;
+    }
     arena->next = g->page_pool.arenas;
     g->page_pool.arenas = arena;
     g->page_pool.arena_count++;
@@ -2716,7 +2757,7 @@ page_pool_add_arena(rb_global_objspace_t *g)
 #endif
 
 static struct heap_page_body *
-page_pool_acquire(struct page_arena **arena_out)
+page_pool_acquire(struct arena_descriptor **arena_out)
 {
     struct heap_page_body *body = NULL;
 
@@ -2726,47 +2767,43 @@ page_pool_acquire(struct page_arena **arena_out)
         rb_global_objspace_t *g = global_objspace;
 
         rb_native_mutex_lock(&g->page_pool.lock);
-        if (g->page_pool.hot_list != NULL) {
-            body = g->page_pool.hot_list;
-            asan_unpoison_memory_region(body, PAGE_POOL_SCRATCH_SIZE, false);
-            uintptr_t link = *(uintptr_t *)body;
-            g->page_pool.hot_list = (struct heap_page_body *)(link & ~PAGE_POOL_ADVISED_BIT);
-            g->page_pool.hot_count--;
-            struct page_arena *arena = PAGE_POOL_BODY_ARENA(body);
-            arena->free_count--;
-            *arena_out = arena;
-        }
-        else {
-            // find cold page body (madvised reusable)
-            for (struct page_arena *a = g->page_pool.arenas; a; a = a->next) {
-                if (a->cold_count > 0) {
-                    body = a->cold_freelist;
-                    asan_unpoison_memory_region(body, PAGE_POOL_SCRATCH_SIZE, false);
-                    uintptr_t link = *(uintptr_t *)body;
-                    a->cold_freelist = (struct heap_page_body *)(link & ~PAGE_POOL_ADVISED_BIT);
-                    a->cold_count--;
-                    a->free_count--;
-                    *arena_out = a;
-                    need_reuse = (link & PAGE_POOL_ADVISED_BIT) != 0;
-                    if (need_reuse) g->page_pool.advised_count--;
-                    break;
+        // reuse a free body (it may have been madvised)
+        for (struct arena_descriptor *a = g->page_pool.arenas; a; a = a->next) {
+            if (a->free_count > 0) {
+                int i = a->freelist;
+                GC_ASSERT(i != PAGE_POOL_BODY_NIL);
+                struct page_pool_body_info *info = &a->bodies[i];
+                body = page_pool_body_at(a, i);
+                a->freelist = info->next;
+                a->free_count--;
+                info->next = PAGE_POOL_BODY_NIL;
+#if RGENGC_CHECK_MODE > 0
+                GC_ASSERT(info->on_freelist);
+                info->on_freelist = false;
+#endif
+                *arena_out = a;
+                need_reuse = info->advised;
+                if (need_reuse) {
+                    info->advised = false;
+                    a->advised_count--;
+                    g->page_pool.advised_count--;
                 }
+                break;
             }
-            if (body == NULL &&
-                (g->page_pool.arena_cursor != g->page_pool.arena_end ||
-                 page_pool_add_arena(g))) {
-                GC_ASSERT(g->page_pool.arena_cursor + HEAP_PAGE_SIZE <= g->page_pool.arena_end);
-                body = (struct heap_page_body *)g->page_pool.arena_cursor;
-                g->page_pool.arena_cursor += HEAP_PAGE_SIZE;
-                *arena_out = g->page_pool.arena_current;
-            }
+        }
+        if (body == NULL &&
+            (g->page_pool.arena_cursor != g->page_pool.arena_end ||
+             page_pool_add_arena(g))) {
+            GC_ASSERT(g->page_pool.arena_cursor + HEAP_PAGE_SIZE <= g->page_pool.arena_end);
+            body = (struct heap_page_body *)g->page_pool.arena_cursor;
+            g->page_pool.arena_cursor += HEAP_PAGE_SIZE;
+            *arena_out = g->page_pool.arena_current;
         }
         rb_native_mutex_unlock(&g->page_pool.lock);
 
         if (body != NULL) {
             if (need_reuse) {
-                rb_vm_map_reuse((char *)body + g->page_pool.os_page_size,
-                                 HEAP_PAGE_SIZE - g->page_pool.os_page_size);
+                rb_vm_map_reuse(body, HEAP_PAGE_SIZE);
             }
             asan_unpoison_memory_region(body, HEAP_PAGE_SIZE, false);
         }
@@ -2782,33 +2819,29 @@ page_pool_acquire(struct page_arena **arena_out)
 
 #ifdef HAVE_MMAP
 static void
-page_pool_release_locked(struct heap_page_body *body, struct page_arena *arena)
+page_pool_release_locked(struct heap_page_body *body, struct arena_descriptor *arena)
 {
-    rb_global_objspace_t *g = global_objspace;
+    ASSERT_PAGE_POOL_LOCKED(global_objspace);
 
-    ASSERT_PAGE_POOL_LOCKED(g);
+    int i = page_pool_body_index(arena, body);
+    struct page_pool_body_info *info = &arena->bodies[i];
 
-    /* A body in the empty-pages pool stays fully poisoned (see gc_sweep_page), so
-     * unpoison the scratch area (link + arena tag) before writing. */
-    asan_unpoison_memory_region(body, PAGE_POOL_SCRATCH_SIZE, false);
+    /* The body was in use, so page_pool_acquire has already cleared `advised`. */
+    GC_ASSERT(!info->advised);
+#if RGENGC_CHECK_MODE > 0
+    GC_ASSERT(!info->on_freelist);
+    info->on_freelist = true;
+#endif
+
     arena->free_count++;
-    PAGE_POOL_BODY_ARENA(body) = arena;
-    if (g->page_pool.hot_count < PAGE_POOL_HOT_MAX) {
-        *(uintptr_t *)body = (uintptr_t)g->page_pool.hot_list;
-        g->page_pool.hot_list = body;
-        g->page_pool.hot_count++;
-    }
-    else {
-        *(uintptr_t *)body = (uintptr_t)arena->cold_freelist;
-        arena->cold_freelist = body;
-        arena->cold_count++;
-    }
+    info->next = arena->freelist;
+    arena->freelist = (int8_t)i;
     asan_poison_memory_region(body, HEAP_PAGE_SIZE);
 }
 #endif
 
 static void
-page_pool_release(struct heap_page_body *body, struct page_arena *arena)
+page_pool_release(struct heap_page_body *body, struct arena_descriptor *arena)
 {
     if (HEAP_PAGE_ALLOC_USE_MMAP) {
 #ifdef HAVE_MMAP
@@ -2827,8 +2860,7 @@ page_pool_release(struct heap_page_body *body, struct page_arena *arena)
 /* Allow the OS to reclaim pool memory. Runs only at major GC in single-objspace mode
  * (see gc_sweep_finish).
  *
- * Step A: madvise cold bodies, sparing the first OS page (which holds the in-body
- * freelist link and arena tag).
+ * Step A: madvise free bodies, coalescing physically adjacent ones into a single call.
  *
  * Step B: munmap arenas whose 32 bodies are all free, keeping one extra empty
  * arena as a retention buffer when the remaining free pool is < half an arena. */
@@ -2837,82 +2869,62 @@ page_pool_reclaim(rb_global_objspace_t *g)
 {
     if (!HEAP_PAGE_ALLOC_USE_MMAP) return;
 #ifdef HAVE_MMAP
-    size_t os_page_size = g->page_pool.os_page_size;
-
     rb_native_mutex_lock(&g->page_pool.lock);
 
-    /* Advising spares the first OS page of a body (it holds the in-body freelist link
-     * and the arena tag), so it needs sub-page granularity: when the OS page size is
-     * >= HEAP_PAGE_SIZE (e.g. 64KiB pages on aarch64) no body is ever advised, and
-     * advised_count must not be adjusted anywhere either. */
-    const bool can_advise = os_page_size < HEAP_PAGE_SIZE;
+    /* Step A — advise free bodies (immediate release: drop RSS now if the platform
+     * allows).  The freelist is in release order, so collect the bodies to advise in a
+     * mask and walk it in address order instead, issuing one call per run of physically
+     * adjacent ones: a fully free arena costs one madvise rather than 32. */
+    if (g->page_pool.can_advise) {
+        for (struct arena_descriptor *a = g->page_pool.arenas; a; a = a->next) {
+            if (a->advised_count == a->free_count) continue; /* steady state */
 
-    /* Step A — advise cold bodies (immediate release: drop RSS now if the platform allows). */
-    if (can_advise) {
-        for (struct page_arena *a = g->page_pool.arenas; a; a = a->next) {
-            for (struct heap_page_body *body = a->cold_freelist; body; ) {
-                asan_unpoison_memory_region(body, PAGE_POOL_SCRATCH_SIZE, false);
-                uintptr_t link = *(uintptr_t *)body;
-                struct heap_page_body *next =
-                    (struct heap_page_body *)(link & ~PAGE_POOL_ADVISED_BIT);
-                if (!(link & PAGE_POOL_ADVISED_BIT)) {
-                    rb_vm_map_reusable_immediate((char *)body + os_page_size,
-                                        HEAP_PAGE_SIZE - os_page_size, 0);
-                    *(uintptr_t *)body = link | PAGE_POOL_ADVISED_BIT;
-                    g->page_pool.advised_count++;
+            uint32_t advise_mask = 0;
+            for (int i = a->freelist; i != PAGE_POOL_BODY_NIL; i = a->bodies[i].next) {
+                if (!a->bodies[i].advised) advise_mask |= (uint32_t)1 << i;
+            }
+
+            for (int i = 0; i < PAGE_POOL_ARENA_BODIES; i++) {
+                if (!(advise_mask & ((uint32_t)1 << i))) continue;
+
+                int run = i;
+                while (i + 1 < PAGE_POOL_ARENA_BODIES &&
+                       (advise_mask & ((uint32_t)1 << (i + 1)))) {
+                    i++;
                 }
-                asan_poison_memory_region(body, PAGE_POOL_SCRATCH_SIZE);
-                body = next;
+                int run_len = i - run + 1;
+
+                rb_vm_map_reusable_immediate(page_pool_body_at(a, run),
+                                             (size_t)run_len * HEAP_PAGE_SIZE, 0);
+                for (int j = run; j <= i; j++) {
+                    a->bodies[j].advised = true;
+                }
+                a->advised_count += run_len;
+                g->page_pool.advised_count += run_len;
             }
         }
     }
 
     /* Step B — munmap fully-free arenas (with retention buffer).
      *
-     * total_free = Σ free_count; free_count already includes hot-list bodies
-     * (page_pool_release increments it unconditionally), so no separate hot_count.
-     * An arena is eligible when all 32 of its bodies are free AND none sit on
-     * the hot list (≤5 entries, pre-scanned).  Keep one extra empty arena when
-     * the rest of the free pool is < half an arena, to avoid thrash. */
+     * total_free = Σ free_count (every free body is on its arena's freelist, since
+     * page_pool_release pushes there unconditionally).  An arena is eligible when all 32
+     * of its bodies are free.  Keep one extra empty arena when the rest of the free pool
+     * is < half an arena, to avoid thrash. */
     int total_free = 0;
-    for (struct page_arena *a = g->page_pool.arenas; a; a = a->next) {
+    for (struct arena_descriptor *a = g->page_pool.arenas; a; a = a->next) {
         total_free += a->free_count;
     }
 
-    struct page_arena *hot_arenas[PAGE_POOL_HOT_MAX ? PAGE_POOL_HOT_MAX : 1];
-    int n_hot_arenas = 0;
-    /* Collect arenas that have a hot body (≤ PAGE_POOL_HOT_MAX entries). */
-    for (struct heap_page_body *body = g->page_pool.hot_list; body; ) {
-        asan_unpoison_memory_region(body, PAGE_POOL_SCRATCH_SIZE, false);
-        uintptr_t link = *(uintptr_t *)body;
-        struct heap_page_body *next =
-            (struct heap_page_body *)(link & ~PAGE_POOL_ADVISED_BIT);
-        struct page_arena *arena = PAGE_POOL_BODY_ARENA(body);
-        bool found = false;
-        for (int i = 0; i < n_hot_arenas; i++) {
-            if (hot_arenas[i] == arena) { found = true; break; }
-        }
-        if (!found && n_hot_arenas < PAGE_POOL_HOT_MAX) {
-            hot_arenas[n_hot_arenas++] = arena;
-        }
-        asan_poison_memory_region(body, PAGE_POOL_SCRATCH_SIZE);
-        body = next;
-    }
-
     bool retained_one = false;
-    struct page_arena **pp = &g->page_pool.arenas;
+    struct arena_descriptor **pp = &g->page_pool.arenas;
     // munmap fully free arenas
     while (*pp) {
-        struct page_arena *a = *pp;
-        bool has_hot = false;
-        for (int i = 0; i < n_hot_arenas; i++) {
-            if (hot_arenas[i] == a) { has_hot = true; break; }
-        }
-        if (a->free_count != PAGE_POOL_ARENA_BODIES || has_hot) {
+        struct arena_descriptor *a = *pp;
+        if (a->free_count != PAGE_POOL_ARENA_BODIES) {
             pp = &a->next;
             continue;
         }
-        GC_ASSERT(a->cold_count == PAGE_POOL_ARENA_BODIES);
 
         int free_elsewhere = total_free - PAGE_POOL_ARENA_BODIES;
         if (free_elsewhere < PAGE_POOL_ARENA_KEEP_HALF && !retained_one) {
@@ -2926,16 +2938,12 @@ page_pool_reclaim(rb_global_objspace_t *g)
             rb_bug("page_pool_reclaim: munmap failed");
         }
         total_free -= PAGE_POOL_ARENA_BODIES;
-        /* Every body of this arena is on its cold freelist, so Step A above has just
-         * advised all of them -- but only if this platform can advise at all. */
-        if (can_advise) {
-            g->page_pool.advised_count -= PAGE_POOL_ARENA_BODIES;
-            GC_ASSERT(g->page_pool.advised_count >= 0);
-        }
+        g->page_pool.advised_count -= a->advised_count;
+        GC_ASSERT(g->page_pool.advised_count >= 0);
         g->page_pool.arena_count--;
         g->page_pool.arenas_unmapped++;
         if (a == g->page_pool.arena_current) {
-            // During next acquire, any remaining arenas that have cold bodies are used. This is guaranteed
+            // During next acquire, any remaining arenas that have free bodies are used. This is guaranteed
             // because of the retention buffer.
             g->page_pool.arena_current = NULL;
             g->page_pool.arena_cursor = NULL;
@@ -2949,7 +2957,7 @@ page_pool_reclaim(rb_global_objspace_t *g)
 }
 
 static struct heap_page_body *
-heap_page_body_allocate(struct page_arena **arena_out)
+heap_page_body_allocate(struct arena_descriptor **arena_out)
 {
     struct heap_page_body *page_body = page_pool_acquire(arena_out);
 
@@ -2982,7 +2990,7 @@ heap_page_resurrect(rb_objspace_t *objspace)
 static struct heap_page *
 heap_page_allocate(rb_objspace_t *objspace)
 {
-    struct page_arena *arena;
+    struct arena_descriptor *arena;
     struct heap_page_body *page_body = heap_page_body_allocate(&arena);
     if (page_body == 0) {
         rb_memerror();
