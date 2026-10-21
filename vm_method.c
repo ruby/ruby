@@ -2748,7 +2748,7 @@ check_definition(VALUE mod, int argc, VALUE *argv, rb_method_visibility_t visi)
  *     A.method_defined? :method1                 #=> true
  *     C.public_method_defined? "method1"         #=> true
  *     C.public_method_defined? "method1", true   #=> true
- *     C.public_method_defined? "method1", false  #=> true
+ *     C.public_method_defined? "method1", false  #=> false
  *     C.public_method_defined? "method2"         #=> false
  *     C.method_defined? "method2"                #=> true
  */
