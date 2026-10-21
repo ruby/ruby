@@ -2,7 +2,7 @@
  * Differential fuzz: pack.c helper functions (port unit pack-A-01,
  * core_rs/src/pack.rs) against the original C.
  *
- * FUZZ-EXTRACT: pack.c NATINT:53-86 is_bigendian skip_to_eol pack_alignof hex2num
+ * FUZZ-EXTRACT: pack.c NATINT:53-87 is_bigendian skip_to_eol pack_alignof hex2num
  */
 #define FUZZ_UNIT "pack_01"
 #include "ruby/ruby.h"

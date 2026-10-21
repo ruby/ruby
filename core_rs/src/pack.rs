@@ -4,8 +4,7 @@ use core::ffi::{c_char, c_int, c_long, c_short};
 
 /// Checks endianness of the target platform.
 pub fn is_bigendian_impl() -> c_int {
-    let endian_value: [u8; core::mem::size_of::<c_int>()] = 1i32.to_ne_bytes();
-    if endian_value[0] == 0 { 1 } else { 0 }
+    if cfg!(target_endian = "big") { 1 } else { 0 }
 }
 
 /// Exported wrapper for `is_bigendian`.
@@ -22,6 +21,10 @@ pub fn skip_to_eol_impl(slice: &[u8]) -> usize {
     }
 }
 
+unsafe extern "C" {
+    fn memchr(s: *const core::ffi::c_void, c: c_int, n: usize) -> *mut core::ffi::c_void;
+}
+
 /// Exported wrapper for `skip_to_eol`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rb_core_pack_skip_to_eol(
@@ -29,13 +32,16 @@ pub unsafe extern "C" fn rb_core_pack_skip_to_eol(
     pend: *const c_char,
 ) -> *mut c_char {
     // SAFETY: The caller guarantees that `p` and `pend` point to valid memory regions with `p <= pend`.
-    if p.is_null() || pend < p {
+    if p.is_null() || pend <= p {
         return pend as *mut c_char;
     }
     let len = pend as usize - p as usize;
-    let slice = unsafe { core::slice::from_raw_parts(p as *const u8, len) };
-    let offset = skip_to_eol_impl(slice);
-    unsafe { (p as *const u8).add(offset) as *mut c_char }
+    let ptr = unsafe { memchr(p as *const _, b'\n' as c_int, len) };
+    if ptr.is_null() {
+        pend as *mut c_char
+    } else {
+        unsafe { (ptr as *mut c_char).add(1) }
+    }
 }
 
 /// Returns alignment requirement for packing directives.
