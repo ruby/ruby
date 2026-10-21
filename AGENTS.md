@@ -218,3 +218,13 @@ the conversion, in priority order, with a stable ID per task (`RR-P1-03`,
   own one-line change, made when that task's PR merges.
 - **If the task conflicts with this file, this file wins.** Say so in the PR
   description instead of working around it (§6).
+
+---
+
+## 14. Orchestration (owner infrastructure)
+
+Dispatch is driven by Claude Code as orchestrator: see `CLAUDE.md`, with the
+machinery and the priority algorithm in `.claude/rr/` (`priority.md`). These
+files are owner infrastructure. **They never belong in a porting PR**: do not
+create, edit or delete anything under `.claude/` or `CLAUDE.md` unless your task
+names it.
