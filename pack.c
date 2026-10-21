@@ -19,6 +19,7 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/bits.h"
+#include "internal/core_rs.h"
 #include "internal/numeric.h"
 #include "internal/string.h"
 #include "internal/symbol.h"
@@ -54,6 +55,7 @@ static const char endstr[] = "sSiIlLqQjJ";
 # define NATINT_PACK
 #endif
 
+#if !USE_RUST_PORTS
 #ifdef DYNAMIC_ENDIAN
 /* for universal binary of MacOS X */
 /* useless since autoconf 2.63? */
@@ -69,6 +71,10 @@ is_bigendian(void)
 #else
 # define BIGENDIAN_P() 0
 #endif
+#else
+#define is_bigendian rb_core_pack_is_bigendian
+# define BIGENDIAN_P() (rb_core_pack_is_bigendian())
+#endif /* !USE_RUST_PORTS: is_bigendian (core_rs/src/pack.rs) */
 
 #ifdef NATINT_PACK
 # define NATINT_LEN(type,len) (natint?(int)sizeof(type):(int)(len))
@@ -201,12 +207,16 @@ str_expand_fill(VALUE res, int c, rb_len_t len)
     rb_str_set_len(res, olen + len);
 }
 
+#if !USE_RUST_PORTS
 static char *
 skip_to_eol(const char *p, const char *pend)
 {
     p = memchr(p, '\n', pend - p);
     return (char *)(p ? p + 1 : pend);
 }
+#else
+#define skip_to_eol rb_core_pack_skip_to_eol
+#endif /* !USE_RUST_PORTS: skip_to_eol (core_rs/src/pack.rs) */
 
 #define skip_blank(p, type) \
     (ISSPACE(type) || (type == '#' && (p = skip_to_eol(p, pend), 1)))
@@ -247,6 +257,7 @@ pack_modifiers(const char *p, const char *pend, char type, int *natint, int *exp
     return p;
 }
 
+#if !USE_RUST_PORTS
 #ifndef NATINT_PACK
 # define pack_alignof(t, n) pack_alignof(t)
 #endif
@@ -282,6 +293,9 @@ pack_alignof(char type, int natint)
         return 0;
     }
 }
+#else
+#define pack_alignof rb_core_pack_pack_alignof
+#endif /* !USE_RUST_PORTS: pack_alignof (core_rs/src/pack.rs) */
 
 static rb_len_t
 pack_align_pad(rb_len_t pos, rb_len_t base, size_t alignment)
@@ -1056,6 +1070,7 @@ qpencode(VALUE str, VALUE from, rb_len_t len)
     }
 }
 
+#if !USE_RUST_PORTS
 static inline int
 hex2num(char c)
 {
@@ -1065,6 +1080,9 @@ hex2num(char c)
         n = -1;
     return n;
 }
+#else
+#define hex2num rb_core_pack_hex2num
+#endif /* !USE_RUST_PORTS: hex2num (core_rs/src/pack.rs) */
 
 #define PACK_LENGTH_ADJUST_SIZE(sz) do {	\
     tmp_len = 0;				\

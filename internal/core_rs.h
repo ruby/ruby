@@ -60,6 +60,12 @@ int rb_core_complex_read_rat_nos(const char **s, int strict, char **b);
 int rb_core_complex_read_rat(const char **s, int strict, char **b);
 void rb_core_complex_skip_ws(const char **s);
 
+/* pack.c (core_rs/src/pack.rs) */
+int rb_core_pack_is_bigendian(void);
+char *rb_core_pack_skip_to_eol(const char *p, const char *pend);
+size_t rb_core_pack_pack_alignof(char type, int natint);
+int rb_core_pack_hex2num(char c);
+
 #if defined(__ELF__) && (defined(__GNUC__) || defined(__clang__))
 # pragma GCC visibility pop
 #endif
