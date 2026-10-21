@@ -7,8 +7,8 @@ Generated automatically by `ruby tool/generate_porting_ledger.rb`. Do not edit m
 
 | Metric | File Count | Lines of Code (LOC) | % of Total LOC |
 | :--- | :--- | :--- | :--- |
-| **Total C Source Files** | 113 | 318,115 | 100.0% |
-| **Not Started** | 103 | 309,096 | 97.2% |
+| **Total C Source Files** | 113 | 318,116 | 100.0% |
+| **Not Started** | 103 | 309,097 | 97.2% |
 | **In Progress** | 3 | 8,673 | 2.7% |
 | **Ported** | 0 | 0 | 0.0% |
 | **Blocked** | 0 | 0 | 0.0% |
@@ -42,7 +42,7 @@ _Built-in data types, objects, and core classes_
 | `hash.c` | 8,014 | Not Started | `crate::hash` | Hash map implementation |
 | `numeric.c` | 6,818 | Not Started | `crate::numeric` | Numeric base classes and operations |
 | `object.c` | 4,762 | Not Started | `crate::object` | Object class methods and operations |
-| `pack.c` | 1,954 | Not Started | `crate::pack` | Array#pack and String#unpack |
+| `pack.c` | 1,955 | Not Started | `crate::pack` | Array#pack and String#unpack |
 | `proc.c` | 5,609 | Not Started | `crate::proc` | Proc, Method, and Binding objects |
 | `range.c` | 3,006 | Not Started | `crate::range` | Range object implementation |
 | `rational.c` | 2,847 | Not Started | `crate::rational` | Rational number implementation |
@@ -244,7 +244,7 @@ _Platform stubs, runner wrappers, and target-specific code_
 | `node_dump.c` | Parser & AST | 1,325 | Not Started | `crate::parser::node_dump` | AST dump utilities |
 | `numeric.c` | Core Data Structures | 6,818 | Not Started | `crate::numeric` | Numeric base classes and operations |
 | `object.c` | Core Data Structures | 4,762 | Not Started | `crate::object` | Object class methods and operations |
-| `pack.c` | Core Data Structures | 1,954 | Not Started | `crate::pack` | Array#pack and String#unpack |
+| `pack.c` | Core Data Structures | 1,955 | Not Started | `crate::pack` | Array#pack and String#unpack |
 | `parser_st.c` | Parser & AST | 173 | Not Started | `crate::parser::parser_st` | Parser symbol table |
 | `pathname.c` | IO & Filesystem | 457 | Not Started | `crate::pathname` | Pathname standard helper |
 | `prism_compile.c` | Parser & AST | 11,354 | Not Started | `crate::parser::prism_compile` | Prism AST compiler |
