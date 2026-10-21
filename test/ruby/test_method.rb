@@ -214,6 +214,47 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(o.method(:foo), o.method(:foo))
     assert_equal(o.method(:foo), o.method(:bar))
     assert_not_equal(o.method(:foo), o.method(:baz))
+
+    m = Module.new { def m = [:M, *super] }
+    n = Module.new { include m }
+    c = Class.new { def m = :C }
+    sc = Class.new(c) do
+      include n
+      prepend m
+      def m = [:SC, *super]
+    end
+
+    expected = [:M, :SC, :M, :C]
+    o = sc.new
+    meth = o.method(:m)
+    umeth = o.class.instance_method(:m)
+    assert_equal(expected, o.m)
+    assert_equal(expected, meth.call)
+    assert_equal(expected, umeth.bind_call(o))
+
+    super_method = ->(m) do
+      sm = m.super_method
+      if m.is_a?(Method)
+        assert_equal(m.unbind.super_method, sm.unbind)
+        v = m.call
+        assert_equal(expected[-v.size...], Array(v))
+      else
+        assert_equal(m.bind(o).super_method, sm.bind(o))
+        v = m.bind_call(o)
+        assert_equal(expected[-v.size...], Array(v))
+      end
+      sm
+    end
+    [meth, umeth].each do |meth|
+      assert_equal(m, meth.owner)
+      meth = super_method.(meth)
+      assert_equal(sc, meth.owner)
+      meth = super_method.(meth)
+      assert_equal(m, meth.owner)
+      meth = super_method.(meth)
+      assert_equal(c, meth.owner)
+      assert_nil(meth.super_method)
+    end
   end
 
   def test_hash
