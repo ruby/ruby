@@ -122,6 +122,31 @@ VALUE rb_hash_keys(VALUE hash);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_compare_by_id_p(VALUE hash);
 
+/* to_h pair-literal block optimization (see vm.c, insns.def: to_h_aset
+ * and the core to_h implementations).  Declared here so that the
+ * enumerable/array/hash/struct to_h methods can see them without pulling
+ * in vm_core.h.
+ *
+ * The ctx lives on the C stack of the cooperating iteration: the core
+ * to_h call for Array/Hash/Struct, and each ifunc invocation for
+ * Enumerable (whose each may save the callback beyond to_h).  EC points
+ * at the innermost ctx so nested to_h calls stack.  Pair storage is on
+ * the ctx rather than in hidden Ruby locals, so environment escape
+ * (lambda/binding) cannot desync the writer from the reader. */
+struct rb_to_h_pair_ctx {
+    struct rb_to_h_pair_ctx *prev;
+    VALUE hash;
+    VALUE key;
+    VALUE val;
+    const void *iseq;       /* cooperating block iseq */
+    const void *caller_cfp; /* C frame that issued the current yield */
+    int submitted;          /* to_h_aset ran for this yield */
+};
+int rb_vm_to_h_pair_prepare(VALUE hash, struct rb_to_h_pair_ctx *ctx);
+void rb_vm_to_h_pair_begin_yield(struct rb_to_h_pair_ctx *ctx);
+void rb_vm_to_h_pair_store(struct rb_to_h_pair_ctx *ctx, VALUE result);
+VALUE rb_vm_to_h_pair_finish(VALUE arg);
+
 st_table *rb_hash_tbl_raw(VALUE hash);
 
 VALUE rb_hash_compare_by_id(VALUE hash);

@@ -1117,6 +1117,26 @@ rb_struct_to_a(VALUE s)
  *
  */
 
+struct rb_struct_to_h_pair_args {
+    VALUE s;
+    VALUE members;
+    struct rb_to_h_pair_ctx ctx;
+};
+
+static VALUE
+rb_struct_to_h_pair(VALUE arg)
+{
+    struct rb_struct_to_h_pair_args *a = (struct rb_struct_to_h_pair_args *)arg;
+    const VALUE s = a->s, members = a->members;
+
+    for (rb_len_t i = 0; i < RSTRUCT_LEN_RAW(s); i++) {
+        VALUE k = rb_ary_entry(members, i), v = RSTRUCT_GET_RAW(s, i);
+        rb_vm_to_h_pair_begin_yield(&a->ctx);
+        rb_vm_to_h_pair_store(&a->ctx, rb_yield_values(2, k, v));
+    }
+    return Qnil;
+}
+
 static VALUE
 rb_struct_to_h(VALUE s)
 {
@@ -1124,6 +1144,17 @@ rb_struct_to_h(VALUE s)
     VALUE members = rb_struct_members(s);
     rb_len_t i;
     int block_given = rb_block_given_p();
+
+    // to_h pair-literal fast path: the block stashes each pair on the
+    // EC-side ctx and the store is done here, after the block returned.
+    // rb_ensure() pops the ctx on return.
+    if (block_given) {
+        struct rb_struct_to_h_pair_args args = { s, members, { 0 } };
+        if (rb_vm_to_h_pair_prepare(h, &args.ctx)) {
+            rb_ensure(rb_struct_to_h_pair, (VALUE)&args, rb_vm_to_h_pair_finish, (VALUE)&args.ctx);
+            return h;
+        }
+    }
 
     for (i=0; i<RSTRUCT_LEN_RAW(s); i++) {
         VALUE k = rb_ary_entry(members, i), v = RSTRUCT_GET_RAW(s, i);

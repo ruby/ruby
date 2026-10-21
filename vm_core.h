@@ -322,6 +322,7 @@ struct rb_calling_info {
 # define CALLING_ARGC(calling) ((calling)->heap_argv ? RARRAY_LENINT((calling)->heap_argv) : (calling)->argc)
 
 struct rb_execution_context_struct;
+struct rb_to_h_pair_ctx;
 
 #ifndef RUBY_CORE_DATA_TYPE_CHECK
 # if RUBY_DEBUG
@@ -1122,6 +1123,7 @@ struct rb_execution_context_struct {
     /* temporary places */
     VALUE errinfo;
     VALUE passed_block_handler; /* for rb_iterate */
+    struct rb_to_h_pair_ctx *to_h_pair; /* pair-literal to_h yield */
 
     uint8_t raised_flag; /* only 3 bits needed */
 
@@ -2119,6 +2121,12 @@ int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID 
 void rb_vm_rewind_cfp(rb_execution_context_t *ec, rb_control_frame_t *cfp);
 void rb_vm_env_write(const VALUE *ep, int index, VALUE v);
 VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler);
+
+/* to_h pair-literal block optimization (see insns.def: to_h_aset,
+ * prism_compile.c and the core to_h implementations). */
+int rb_iseq_to_h_pair_p(const rb_iseq_t *iseq);
+VALUE rb_vm_to_h_aset(const rb_control_frame_t *cfp, VALUE key, VALUE val);
+rb_event_flag_t rb_iseq_local_event_flags(const rb_iseq_t *iseq);
 
 void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE exception_class, VALUE mesg);
 

@@ -184,6 +184,18 @@ rb_iseq_local_hooks(const rb_iseq_t *iseq, rb_ractor_t *r, bool create)
     return hook_list;
 }
 
+// Event flags enabled for `iseq` through a target-specific TracePoint.
+// Unlike ruby_vm_event_flags (the ractor-wide / global set), these live in
+// the per-iseq local hook list, so tracing set up with
+// `TracePoint#enable(target: ...)` is only visible here.
+rb_event_flag_t
+rb_iseq_local_event_flags(const rb_iseq_t *iseq)
+{
+    if (iseq->aux.exec.local_hooks_cnt == 0) return 0;
+    rb_hook_list_t *hooks = rb_iseq_local_hooks(iseq, GET_RACTOR(), false);
+    return hooks ? hooks->events : 0;
+}
+
 void
 rb_iseq_free(const rb_iseq_t *iseq)
 {
@@ -4096,6 +4108,26 @@ int
 rb_vm_insn_decode(const VALUE encoded)
 {
     return rb_vm_insn_addr2insn((void *)encoded);
+}
+
+// Return true if `iseq` is a `to_h { |*| [key, value] }` pair-literal
+// block (it contains a to_h_aset instruction).
+int
+rb_iseq_to_h_pair_p(const rb_iseq_t *iseq)
+{
+    // Use the original (decoded) instruction sequence: insn_len() and
+    // the BIN() opcode comparison operate on decoded instructions, not
+    // on the encoded form stored in iseq_encoded.
+    const VALUE *code = rb_iseq_original_iseq(iseq);
+    unsigned int size = ISEQ_BODY(iseq)->iseq_size;
+
+    for (unsigned int pos = 0; pos < size; ) {
+        int insn = (int)code[pos];
+
+        if (insn == BIN(to_h_aset)) return 1;
+        pos += insn_len(insn);
+    }
+    return 0;
 }
 
 // Turn on or off tracing for a given instruction address

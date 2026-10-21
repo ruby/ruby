@@ -159,6 +159,19 @@ typedef struct pm_scope_node {
      * nearby byte offsets. This avoids repeated binary searches.
      */
     size_t last_line;
+
+    /* to_h pair-literal block optimization:
+     *
+     * `x.to_h { |*| [key, value] }` compiles the block body without the
+     * trailing `newarray 2`; a `to_h_aset` instruction stashes the pair
+     * on the cooperating to_h's EC-side ctx so no two-element array is
+     * allocated per element (see insns.def: to_h_aset and
+     * rb_vm_to_h_pair_prepare).
+     *
+     * This block's body is a two-element array literal and is compiled
+     * with a to_h_aset tail (set by pm_compile_call on the block's scope
+     * node, read while compiling the block body). */
+    bool to_h_pair_result_p;
 } pm_scope_node_t;
 
 void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous);

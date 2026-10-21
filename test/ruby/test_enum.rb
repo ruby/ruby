@@ -227,6 +227,291 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal "element has wrong array length (expected 2, was 1)", e.message
   end
 
+  # Regression tests for the to_h pair-literal block optimization
+  # (to_h { |*| [key, value] } stores pairs without a per-element array).
+  def test_to_h_block_pair_literal_semantics
+    # A block captured as a Proc by a user-defined to_h must keep returning
+    # the pair array and must not write into some other to_h result hash.
+    capture = Class.new do
+      def to_h(&b); b; end
+    end.new
+    escaped = capture.to_h { |x| [x, x] }
+    assert_equal({1 => 1}, [1].to_h { |x| [x, x] })
+    assert_equal([2, 2], escaped.call(2))
+
+    # A frozen result hash must not be written to later through an escaped
+    # block (the block never stored into it in the first place).
+    frozen = [1].to_h { |x| [x, x] }.freeze
+    assert_equal([3, 3], escaped.call(3))
+    assert_equal({1 => 1}, frozen)
+
+    # A custom each can observe the value yielded back to it; the optimized
+    # path must keep yielding the result hash, as the unoptimized one did.
+    enum = Class.new do
+      include Enumerable
+      def each
+        yielded = yield 1
+        yield yielded.class
+      end
+    end.new
+    assert_equal({1 => 1, Hash => Hash}, enum.to_h { |x| [x, x] })
+
+    # :b_return tracing observes the block return value, so it must see the
+    # pair arrays rather than the result hash.
+    values = []
+    trace = TracePoint.new(:b_return) { |tp| values << tp.return_value }
+    begin
+      trace.enable
+      assert_equal({1 => 1, 2 => 2}, [1, 2].to_h { |x| [x, x] })
+    ensure
+      trace.disable
+    end
+    assert_equal([[1, 1], [2, 2]], values)
+
+    # Enabling tracing mid-run must have the same effect.
+    values = []
+    trace = TracePoint.new(:b_return) { |tp| values << tp.return_value }
+    assert_equal({1 => 1}, [1].to_h { |x| [x, x] })
+    begin
+      trace.enable
+      assert_equal({2 => 2}, [2].to_h { |x| [x, x] })
+    ensure
+      trace.disable
+    end
+    assert_equal([[2, 2]], values)
+
+    # Tracing set up with TracePoint#enable(target: ...) only lives in the
+    # iseq-local hook list, not the global event flags; it must still be
+    # seen.
+    target = Object.new
+    def target.run
+      [1, 2].to_h { |x| [x, x] }
+    end
+    values = []
+    trace = TracePoint.new(:b_return) { |tp| values << tp.return_value }
+    begin
+      trace.enable(target: target.method(:run))
+      assert_equal({1 => 1, 2 => 2}, target.run)
+    ensure
+      trace.disable
+    end
+    assert_equal([[1, 1], [2, 2]], values)
+
+    # Reusing the same call site: the first receiver captures the block, the
+    # second is the core to_h on the same syntactic call.
+    receivers = [Class.new { def to_h(&b); b; end }.new, [1]]
+    results = []
+    i = 0
+    while i < 2
+      results << receivers[i].to_h { |x| [x, x] }
+      i += 1
+    end
+    assert_equal([2, 2], results[0].call(2))
+    assert_equal({1 => 1}, results[1])
+
+    # A wrapper that forwards the block to the core to_h and then reuses it.
+    wrapper_class = Class.new do
+      attr_reader :forwarded
+      def to_h(&b)
+        h = [1].to_h(&b)
+        @forwarded = b.call(2)
+        h
+      end
+    end
+    wrapper = wrapper_class.new
+    assert_equal({1 => 1}, wrapper.to_h { |x| [x, x] })
+    assert_equal([2, 2], wrapper.forwarded)
+
+    # Exception termination of a pair-literal block forwarded to core to_h
+    # must not leave the same block cooperating afterwards.
+    wrapper = Class.new do
+      def to_h(&b)
+        [1].to_h(&b)
+      rescue RuntimeError
+        b.call(3)
+      end
+    end
+    assert_equal([3, 3], wrapper.new.to_h { |x| [x == 1 ? raise("boom") : x, x] })
+
+    # A lambda (or binding) created inside the block moves the enclosing
+    # env to the heap.  The core to_h must still read the pair that
+    # to_h_aset wrote, so keys are not lost.  Run from a method so the
+    # env starts on the stack (top-level may already be escaped).
+    env_mover = Object.new
+    def env_mover.lambda_in(recv)
+      recv.to_h { |x| [x, -> { x }] }
+    end
+    def env_mover.binding_in(recv)
+      recv.to_h { |x| [x, binding] }
+    end
+    assert_equal([1, 2], env_mover.lambda_in([1, 2]).keys)
+    assert_equal([1, 2], env_mover.binding_in([1, 2]).keys)
+    assert_equal([1, 2], env_mover.lambda_in({1 => :a, 2 => :b}).keys)
+    assert_equal([1, 2], env_mover.binding_in((1..2)).keys)
+    struct_recv = Struct.new(:a, :b).new(1, 2)
+    assert_equal([:a, :b], env_mover.lambda_in(struct_recv).keys)
+
+    # A Proc captured from the same call site, invoked while core to_h is
+    # running but not as that yield, must still return a pair array.
+    capture = Class.new { def to_h(&b); b; end }.new
+    enum_calling_saved = Class.new do
+      include Enumerable
+      attr_accessor :saved
+      def each
+        yield @saved.call(9).class
+      end
+    end.new
+    receivers = [capture, enum_calling_saved]
+    i = 0
+    result = nil
+    while i < 2
+      result = receivers[i].to_h { |x| [x, x] }
+      enum_calling_saved.saved = result if i == 0
+      i += 1
+    end
+    assert_equal({Array => Array}, result)
+
+    # Same iseq invoked via Proc#call from inside the current yield
+    # must also return a pair, not cooperate.  The body is a single
+    # array literal so the compiler emits to_h_aset.
+    saved = nil
+    capture = Class.new { def to_h(&b); b; end }.new
+    receivers = [capture, [1]]
+    i = 0
+    result = nil
+    while i < 2
+      result = receivers[i].to_h { |x|
+        [x, (saved && x != 9 ? saved.call(9) : x)]
+      }
+      saved = result if i == 0
+      i += 1
+    end
+    if RubyVM::InstructionSequence.compile("").to_a.dig(4, :parser) == :prism
+      assert_match(/to_h_aset/, RubyVM::InstructionSequence.of(saved).disasm)
+    end
+    assert_equal({1 => [9, 9]}, result)
+
+    # Enumerable#each may save the core callback and invoke it after
+    # to_h returns.  Later calls insert into the same result hash
+    # (the unoptimized path's behaviour); they must not crash on a
+    # dangling C-stack pointer.
+    saved_each = Class.new do
+      include Enumerable
+      attr_reader :callback
+      def each(&block)
+        @callback = block
+        block.call(1)
+      end
+    end.new
+    saved_h = saved_each.to_h { |x| [x, x] }
+    assert_equal({1 => 1}, saved_h)
+    assert_same(saved_h, saved_each.callback.call(2))
+    assert_equal({1 => 1, 2 => 2}, saved_h)
+    assert_equal({1 => 1, 2 => 2, 3 => 3}, saved_each.callback.call(3))
+    5.times { GC.start }
+    assert_equal({1 => 1, 2 => 2, 3 => 3, 4 => 4}, saved_each.callback.call(4))
+    fiber_h = Fiber.new { saved_each.callback.call(5) }.resume
+    assert_same(saved_h, fiber_h)
+    assert_equal({1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5}, saved_h)
+
+    # next returning the result hash itself must not be treated as a
+    # submitted pair (it would reuse the previous key/value).
+    enum_exposing_hash = Class.new do
+      include Enumerable
+      attr_accessor :exposed
+      def each
+        self.exposed = yield 1
+        yield 2
+      end
+    end.new
+    assert_raise(TypeError) {
+      enum_exposing_hash.to_h { |x| [begin; next enum_exposing_hash.exposed if x == 2; x; end, x] }
+    }
+
+    # Pair storage must not pin the last value after to_h returns, even
+    # if a closure keeps the enclosing environment alive.  `o` lives only
+    # in the block; the lambda captures the method env that used to hold
+    # hidden key/value locals.
+    w = ObjectSpace::WeakMap.new
+    pin = Object.new
+    def pin.run(w)
+      [1].to_h { |x| [x, (w[o = Object.new] = true; o)] }
+      -> {}
+    end
+    keep = pin.run(w)
+    5.times { GC.start }
+    assert_equal(0, w.size)
+    keep.call
+
+    # Nested pair-literal to_h must not clobber the outer pair.
+    assert_equal({1 => {2 => 2}}, [1].to_h { |x| [x, [2].to_h { |y| [y, y] }] })
+
+    # Enabling tracing from inside key.hash happens after the block has
+    # returned, so it must not add an extra :b_return observation.
+    values = []
+    trace = TracePoint.new(:b_return) { |tp| values << tp.return_value }
+    key = Object.new
+    key.define_singleton_method(:hash) { trace.enable; 123 }
+    begin
+      key_hash = [key].to_h { |x| [x, 1] }
+    ensure
+      trace.disable
+    end
+    assert_equal([Integer], values.map(&:class))
+    assert_equal(1, key_hash.size)
+  end
+
+  # The pair-literal compiler replaces newarray/duparray, not the array
+  # node's line/coverage events.  A multi-line block must still fire
+  # :line and count coverage on the pair; a same-line block must not
+  # gain events.  A static pair with the `[` and the elements on
+  # separate lines must bind the event to the `[` (duparray's line),
+  # not the first constant.
+  def test_to_h_block_pair_literal_line_trace_and_coverage
+    b = binding
+    line_events = ->(src) do
+      events = []
+      trace = TracePoint.new(:line) do |event|
+        events << event.lineno if event.path == "probe"
+      end
+      trace.enable { eval(src, b, "probe") }
+      events
+    end
+
+    assert_equal([1, 2], line_events.call("[1].to_h do |x|\n  [x, x]\nend\n"))
+    assert_equal([1, 1], line_events.call("[1].to_h { |x| [x, x] }\n"))
+
+    # Alias skips the compiler's to_h rewrite (no to_h_aset) while still
+    # calling core Array#to_h, so it is the unoptimized shape on Prism.
+    recv = Class.new(Array) { alias_method :plain_to_h, :to_h }.new([1])
+    static = "recv.%s do |x|\n [\n 1,\n 2\n ]\nend"
+    dynamic = "recv.%s do |x|\n [\n x,\n x\n ]\nend"
+    assert_equal([1, 2], line_events.call(static % "to_h"))
+    assert_equal(line_events.call(static % "plain_to_h"), line_events.call(static % "to_h"))
+    assert_equal([1, 3], line_events.call(dynamic % "to_h"))
+    assert_equal(line_events.call(dynamic % "plain_to_h"), line_events.call(dynamic % "to_h"))
+
+    assert_separately(%w[-rcoverage -rtempfile], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      files = {
+        one_line: "[1].to_h do |x|\n  [x, x]\nend\n",
+        static: "[1].to_h do |x|\n  [\n    1,\n    2\n  ]\nend\n",
+        dynamic: "[1].to_h do |x|\n  [\n    x,\n    x\n  ]\nend\n",
+      }.transform_values do |src|
+        f = Tempfile.open(["to_h_pair_cov", ".rb"])
+        f.write(src)
+        f.close
+        f
+      end
+      Coverage.start(lines: true)
+      files.each_value { |f| load f.path }
+      result = Coverage.result
+      assert_equal([1, 1, nil], result[files[:one_line].path][:lines])
+      assert_equal([1, 1, nil, nil, nil, nil], result[files[:static].path][:lines])
+      assert_equal([1, nil, 1, nil, nil, nil], result[files[:dynamic].path][:lines])
+    end;
+  end
+
   def test_inject
     assert_equal(12, @obj.inject {|z, x| z * x })
     assert_equal(48, @obj.inject {|z, x| z * 2 + x })

@@ -35,6 +35,7 @@
 #include "internal/vm.h"
 #include "internal/sanitizers.h"
 #include "internal/variable.h"
+#include "internal/hash.h"
 #include "iseq.h"
 #include "symbol.h" // This includes a macro for a more performant rb_id2sym.
 #include "yjit.h"
@@ -234,6 +235,119 @@ VALUE
 rb_vm_frame_block_handler(const rb_control_frame_t *cfp)
 {
     return VM_CF_BLOCK_HANDLER(cfp);
+}
+
+// to_h pair-literal block optimization.  If the current CFP's block
+// handler is a `to_h { |*| [key, value] }` pair-literal block (its iseq
+// contains the to_h_aset instruction), push `ctx` as the innermost
+// cooperating to_h on this EC.  Called from the core to_h CFP
+// (Array/Hash/Struct) or from Enumerable's ifunc, whose LEP still holds
+// the user to_h block.  Pair storage lives on `ctx` (C stack), not in
+// Ruby locals, so a later env escape cannot desync the writer from the
+// reader.  Returns true if the fast path was taken; the caller must
+// then rb_ensure(..., finish, ctx).
+int
+rb_vm_to_h_pair_prepare(VALUE hash, struct rb_to_h_pair_ctx *ctx)
+{
+    rb_execution_context_t *ec = GET_EC();
+    VALUE bh = VM_CF_BLOCK_HANDLER(ec->cfp);
+
+    if (bh == VM_BLOCK_HANDLER_NONE) return 0;
+    if (!VM_BH_ISEQ_BLOCK_P(bh)) return 0;
+
+    const struct rb_captured_block *capt = VM_BH_TO_ISEQ_BLOCK(bh);
+    const rb_iseq_t *block_iseq = capt->code.iseq;
+
+    if (ISEQ_BODY(block_iseq)->type != ISEQ_TYPE_BLOCK) return 0;
+    if (!rb_iseq_to_h_pair_p(block_iseq)) return 0;
+
+    ctx->prev = ec->to_h_pair;
+    ctx->hash = hash;
+    ctx->key = Qnil;
+    ctx->val = Qnil;
+    ctx->iseq = block_iseq;
+    ctx->caller_cfp = NULL;
+    ctx->submitted = 0;
+    ec->to_h_pair = ctx;
+    return 1;
+}
+
+// Bind the next yield to this ctx: only the block frame whose caller
+// is the current CFP may submit a pair.  A Proc#call of the same iseq
+// (escaped block, forwarding wrapper, ...) sees a different caller and
+// degrades to returning [key, val].
+void
+rb_vm_to_h_pair_begin_yield(struct rb_to_h_pair_ctx *ctx)
+{
+    ctx->submitted = 0;
+    ctx->caller_cfp = GET_EC()->cfp;
+}
+
+// Consume a submitted pair, or fall back to rb_hash_set_pair for
+// `next`, tracing, and non-cooperating invocations.  Key/value are
+// cleared once consumed so they do not pin objects past this yield.
+void
+rb_vm_to_h_pair_store(struct rb_to_h_pair_ctx *ctx, VALUE result)
+{
+    if (ctx->submitted) {
+        VALUE key = ctx->key;
+        VALUE val = ctx->val;
+        ctx->key = Qnil;
+        ctx->val = Qnil;
+        ctx->submitted = 0;
+        rb_hash_aset(ctx->hash, key, val);
+    }
+    else {
+        rb_hash_set_pair(ctx->hash, result);
+    }
+}
+
+// Counterpart of rb_vm_to_h_pair_prepare().  Pops this ctx (including
+// on exception, via rb_ensure) so a later invocation of an escaped
+// block cannot observe a cooperating yield.
+VALUE
+rb_vm_to_h_pair_finish(VALUE arg)
+{
+    struct rb_to_h_pair_ctx *ctx = (struct rb_to_h_pair_ctx *)arg;
+    rb_execution_context_t *ec = GET_EC();
+
+    if (ec->to_h_pair == ctx) {
+        ec->to_h_pair = ctx->prev;
+    }
+    ctx->key = Qnil;
+    ctx->val = Qnil;
+    ctx->hash = Qnil;
+    ctx->submitted = 0;
+    ctx->caller_cfp = NULL;
+    ctx->iseq = NULL;
+    ctx->prev = NULL;
+    return Qnil;
+}
+
+// Body of to_h_aset.  `cfp` is the live instruction CFP (passed from
+// the insn; ec->cfp may lag behind reg_cfp).  Submits the pair into
+// the current yield's ctx when this frame is the block that core to_h
+// just yielded to; otherwise returns a fresh two-element array.
+VALUE
+rb_vm_to_h_aset(const rb_control_frame_t *cfp, VALUE key, VALUE val)
+{
+    struct rb_to_h_pair_ctx *ctx = GET_EC()->to_h_pair;
+    rb_event_flag_t trace_events = ruby_vm_event_flags;
+
+    if (!(trace_events & RUBY_EVENT_B_RETURN)) {
+        trace_events |= rb_iseq_local_event_flags(cfp->_iseq);
+    }
+
+    if (ctx &&
+            cfp->_iseq == (const rb_iseq_t *)ctx->iseq &&
+            ctx->caller_cfp == RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp) &&
+            !(trace_events & RUBY_EVENT_B_RETURN)) {
+        ctx->key = key;
+        ctx->val = val;
+        ctx->submitted = 1;
+        return ctx->hash;
+    }
+    return rb_ary_new3(2, key, val);
 }
 
 #if VM_CHECK_MODE > 0
