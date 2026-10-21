@@ -7,8 +7,8 @@ Generated automatically by `ruby tool/generate_porting_ledger.rb`. Do not edit m
 
 | Metric | File Count | Lines of Code (LOC) | % of Total LOC |
 | :--- | :--- | :--- | :--- |
-| **Total C Source Files** | 113 | 318,116 | 100.0% |
-| **Not Started** | 103 | 309,097 | 97.2% |
+| **Total C Source Files** | 113 | 318,135 | 100.0% |
+| **Not Started** | 103 | 309,116 | 97.2% |
 | **In Progress** | 3 | 8,673 | 2.7% |
 | **Ported** | 0 | 0 | 0.0% |
 | **Blocked** | 0 | 0 | 0.0% |
@@ -45,7 +45,7 @@ _Built-in data types, objects, and core classes_
 | `pack.c` | 1,955 | Not Started | `crate::pack` | Array#pack and String#unpack |
 | `proc.c` | 5,609 | Not Started | `crate::proc` | Proc, Method, and Binding objects |
 | `range.c` | 3,006 | Not Started | `crate::range` | Range object implementation |
-| `rational.c` | 2,847 | Not Started | `crate::rational` | Rational number implementation |
+| `rational.c` | 2,866 | Not Started | `crate::rational` | Rational number implementation |
 | `set.c` | 2,677 | Not Started | `crate::set` | Core Set class support |
 | `string.c` | 14,488 | Not Started | `crate::string` | String object implementation |
 | `struct.c` | 2,352 | Not Started | `crate::struct` | Struct class implementation |
@@ -255,7 +255,7 @@ _Platform stubs, runner wrappers, and target-specific code_
 | `ractor_sync.c` | Concurrency & Threads | 1,953 | Not Started | `crate::ractor::sync` | Ractor synchronization |
 | `random.c` | IO & Filesystem | 1,862 | Not Started | `crate::random` | Random number generation |
 | `range.c` | Core Data Structures | 3,006 | Not Started | `crate::range` | Range object implementation |
-| `rational.c` | Core Data Structures | 2,847 | Not Started | `crate::rational` | Rational number implementation |
+| `rational.c` | Core Data Structures | 2,866 | Not Started | `crate::rational` | Rational number implementation |
 | `re.c` | Encoding & Regex | 5,212 | In Progress | `core_rs::re` | Ported: rb_memsearch (all search algorithms), rb_memcicmp. Remaining: Regexp class interface |
 | `regcomp.c` | Encoding & Regex | 6,763 | Not Started | `crate::regcomp` | Onigmo regex compiler |
 | `regenc.c` | Encoding & Regex | 1,032 | Not Started | `crate::regenc` | Onigmo encoding engine |
