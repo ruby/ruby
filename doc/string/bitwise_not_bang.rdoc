@@ -1,7 +1,17 @@
-Replaces each byte in +self+ with its bitwise complement; returns +self+:
+Returns +self+ with content modified to the bitwise complement
+of the value of +self+:
 
-  s = "\x00\xAA"
-  s.bitwise_not! # => "\xFF\x55"
-  s              # => "\xFF\x55"
+- Each set bit (value +1+) is cleared (to value +0+).
+- Each clear bit (value +0+) is set (to value +1+).
 
 The encoding of +self+ is not changed.
+
+Examples here use {helper method +string_bits+}[rdoc-ref:String@Helper+Method+string_bits]:
+
+  s = 0b001010101.chr * 2
+  string_bits(s)  # => ["01010101", "01010101"]
+  s.encoding.to_s # => "US-ASCII"
+  s.bitwise_not!
+  string_bits(s)  # => ["10101010", "10101010"]
+  s.encoding.to_s # => "US-ASCII"
+
