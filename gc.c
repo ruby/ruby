@@ -679,7 +679,7 @@ typedef struct gc_function_map {
     bool (*during_postmortem_p)(void *objspace_ptr);
     bool (*obj_foreign_p)(void *objspace_ptr, VALUE obj);
     bool (*shref_marked_p)(void *objspace_ptr, VALUE obj);
-    size_t (*heap_page_count)(void *objspace_ptr);
+    size_t (*zombie_heap_page_count)(void *objspace_ptr);
     void (*objspace_absorb)(void *dst_ptr, void *src_ptr);
     void (*gc_rest)(void *objspace_ptr);
     VALUE (*config_get)(void *objpace_ptr);
@@ -875,7 +875,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(during_postmortem_p);
     load_modular_gc_func(obj_foreign_p);
     load_modular_gc_func(shref_marked_p);
-    load_modular_gc_func(heap_page_count);
+    load_modular_gc_func(zombie_heap_page_count);
     load_modular_gc_func(objspace_absorb);
     load_modular_gc_func(gc_rest);
     load_modular_gc_func(config_set);
@@ -980,7 +980,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_during_postmortem_p rb_gc_functions.during_postmortem_p
 # define rb_gc_impl_obj_foreign_p rb_gc_functions.obj_foreign_p
 # define rb_gc_impl_shref_marked_p rb_gc_functions.shref_marked_p
-# define rb_gc_impl_heap_page_count rb_gc_functions.heap_page_count
+# define rb_gc_impl_zombie_heap_page_count rb_gc_functions.zombie_heap_page_count
 # define rb_gc_impl_objspace_absorb rb_gc_functions.objspace_absorb
 # define rb_gc_impl_gc_rest rb_gc_functions.gc_rest
 # define rb_gc_impl_config_get rb_gc_functions.config_get
@@ -4460,7 +4460,7 @@ zombie_objspaces_push(rb_vm_t *vm, void *objspace, void **owner_slot, struct rb_
         vm->gc.zombie_objspaces = grown;
         vm->gc.zombie_objspaces_capa = new_capa;
     }
-    size_t pages = rb_gc_impl_heap_page_count(objspace);
+    size_t pages = rb_gc_impl_zombie_heap_page_count(objspace);
     vm->gc.zombie_objspaces[vm->gc.zombie_objspaces_count++] = (struct rb_objspace_zombie){
         .objspace = objspace,
         .owner_slot = owner_slot,
@@ -4601,7 +4601,7 @@ rb_gc_vm_refresh_zombie_pages(void)
     rb_vm_t *vm = GET_VM();
     size_t total = 0;
     for (size_t i = 0; i < vm->gc.zombie_objspaces_count; i++) {
-        size_t pages = rb_gc_impl_heap_page_count(vm->gc.zombie_objspaces[i].objspace);
+        size_t pages = rb_gc_impl_zombie_heap_page_count(vm->gc.zombie_objspaces[i].objspace);
         vm->gc.zombie_objspaces[i].pages = pages;
         total += pages;
     }
