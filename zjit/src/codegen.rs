@@ -4218,7 +4218,7 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> 
 }
 
 /// Generate code to increment [`Counter::side_exit_count`].
-fn gen_incr_side_exit_count(asm: &mut Assembler) {
+fn gen_count_side_exit_unconditionally(asm: &mut Assembler) {
     asm.incr_counter(Opnd::const_ptr(counter_ptr(Counter::side_exit_count)), 1.into());
 }
 
@@ -4246,7 +4246,7 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
     let mut asm = Assembler::new();
     asm.new_block_without_id("materialize_exit_trampoline");
 
-    gen_incr_side_exit_count(&mut asm);
+    gen_count_side_exit_unconditionally(&mut asm);
 
     asm_comment!(asm, "clear JITFrame materialized by exit code");
     asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
@@ -4411,7 +4411,7 @@ fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -
     let mut asm = Assembler::new();
     asm.new_block_without_id("compile_error_counter");
     // This entry returns to the interpreter without materialize_exit_trampoline
-    gen_incr_side_exit_count(&mut asm);
+    gen_count_side_exit_unconditionally(&mut asm);
     gen_incr_exit_counter(&mut asm, exit_compile_error);
     gen_incr_exit_counter(&mut asm, exit_counter_for_compile_error(compile_error));
     asm.cret(Qundef.into());
@@ -4426,7 +4426,7 @@ fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -
 fn gen_exception_handler_counter(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
     asm.new_block_without_id("exception_handler_counter");
-    gen_incr_side_exit_count(&mut asm);
+    gen_count_side_exit_unconditionally(&mut asm);
     gen_incr_exit_counter(&mut asm, Counter::exit_exception_handler);
     asm.cret(Qundef.into());
 

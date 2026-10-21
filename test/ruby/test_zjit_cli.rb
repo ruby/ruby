@@ -108,8 +108,13 @@ class TestZJITCLI < Test::Unit::TestCase
       test
       test
       stats = RubyVM::ZJIT.stats
-      exits = stats.select { |key, _| key.start_with?("exit_") }.values.sum
-      p [RubyVM::ZJIT.stats_enabled?, stats[:side_exit_count] > 0, RubyVM::ZJIT.stats(:side_exit_count) == stats[:side_exit_count], exits == 0 || exits == stats[:side_exit_count]]
+      summed_exits = stats.select { |key, _| key.start_with?("exit_") }.values.sum
+      p([
+           RubyVM::ZJIT.stats_enabled?,
+           stats[:side_exit_count] > 0,
+           RubyVM::ZJIT.stats(:side_exit_count) == stats[:side_exit_count],
+           summed_exits == 0 || summed_exits == stats[:side_exit_count],
+      ])
     RUBY
 
     out, err, status = eval_with_jit(script, call_threshold: 2, stats: false)
