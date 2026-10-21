@@ -7445,6 +7445,7 @@ p_uid_exchange(VALUE obj)
     if (setreuid(euid,uid) < 0) rb_sys_fail(0);
     SAVED_USER_ID = uid;
 #else
+    (void)SAVED_USER_ID;
     rb_notimplement();
 #endif
     return UIDT2NUM(uid);
@@ -7507,6 +7508,7 @@ p_gid_exchange(VALUE obj)
     if (setregid(egid,gid) < 0) rb_sys_fail(0);
     SAVED_GROUP_ID = gid;
 #else
+    (void)SAVED_GROUP_ID;
     rb_notimplement();
 #endif
     return GIDT2NUM(gid);
