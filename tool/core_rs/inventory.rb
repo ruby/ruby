@@ -19,7 +19,7 @@
 # before any `;` (CRuby style: the closing brace is at column 0).  When a
 # function has several #if variants in one file it is counted once.
 #
-# Waves (docs: claude/migration-strategy.md, decisions D2/D3):
+# Waves (docs: docs/ruby_on_rust/migration-strategy.md, decisions D2/D3):
 #   A  leaf: the definition never mentions Ruby objects (VALUE, ID, Qnil,
 #      raising, the VM).  Can be fuzzed as pure functions.
 #   B  public C API (declared in include/ruby/) that uses objects only
@@ -424,7 +424,7 @@ else
   end
   printf("all   %9d  %7d  %6d  %10d\n", funcs.size, funcs.sum(&:loc), funcs.count(&:ported), funcs.select(&:ported).sum(&:loc))
   puts
-  puts "Phase 1 exit criteria (claude/migration-strategy.md): Wave A >= 90% ported, Wave B >= 25% ported"
+  puts "Phase 1 exit criteria (docs/ruby_on_rust/migration-strategy.md): Wave A >= 90% ported, Wave B >= 25% ported"
   { "A" => 0.90, "B" => 0.25 }.each do |w, goal|
     fs = funcs.select { |f| f.wave == w }
     done = fs.count(&:ported)

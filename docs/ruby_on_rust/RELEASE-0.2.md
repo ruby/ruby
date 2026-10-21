@@ -2,7 +2,7 @@
 
 Closed on 2026-10-15. Base commit: `master` at `10e26f3`.
 
-Phase 1 was planned as the foundation plus Wave A (leaf functions that never touch Ruby objects) and as much of Wave B (functions that use objects only through the public C API) as passed the gate. The foundation landed. The porting waves did not get going: the port units dispatched to the coding agent were never picked up. Under decision D8 ("the quality bar is fixed and scope is the variable"), only verified ports merged.
+Phase 1 was planned as the foundation plus Wave A (leaf functions that never touch Ruby objects) and as much of Wave B (functions that use objects only through the public C API) as passed the gate. The foundation landed. The porting waves did not get going: the port units dispatched to the coding agent were never picked up. Under decision D8 ("the quality bar is fixed and scope is the variable", see `docs/ruby_on_rust/migration-strategy.md`), only verified ports merged.
 
 ## What is in 0.2
 
