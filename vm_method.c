@@ -1383,8 +1383,15 @@ lookup_method_table(VALUE klass, ID id)
     }
 }
 
-void
-rb_add_refined_method_entry(VALUE refined_class, ID mid)
+struct method_entry_warnings;
+static rb_method_entry_t *rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibility_t visi,
+                                               rb_method_type_t type, rb_method_definition_t *def, ID original_id, void *opts,
+                                               struct method_entry_warnings *warnings);
+
+/* rb_method_entry_make() passes its `warnings`, as it has the VM lock and so can't
+ * call rb_add_method() (which must be called without it); the caller emits them. */
+static void
+add_refined_method_entry(VALUE refined_class, ID mid, struct method_entry_warnings *warnings)
 {
     rb_method_entry_t *me = lookup_method_table(refined_class, mid);
 
@@ -1392,9 +1399,21 @@ rb_add_refined_method_entry(VALUE refined_class, ID mid)
         make_method_entry_refined(refined_class, me);
         rb_clear_method_cache(refined_class, mid);
     }
+    else if (warnings) {
+        RB_VM_LOCKING() {
+            rb_method_entry_make(refined_class, mid, refined_class, METHOD_VISI_PUBLIC,
+                                 VM_METHOD_TYPE_REFINED, NULL, mid, NULL, warnings);
+        }
+    }
     else {
         rb_add_method(refined_class, mid, VM_METHOD_TYPE_REFINED, 0, METHOD_VISI_PUBLIC);
     }
+}
+
+void
+rb_add_refined_method_entry(VALUE refined_class, ID mid)
+{
+    add_refined_method_entry(refined_class, mid, NULL);
 }
 
 static void
@@ -1504,7 +1523,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
         if (type == VM_METHOD_TYPE_ZSUPER) {
             turn_zsuper_to_super = true;
         }
-        rb_add_refined_method_entry(refined_class, mid);
+        add_refined_method_entry(refined_class, mid, warnings);
     }
     if (type == VM_METHOD_TYPE_REFINED) {
         rb_method_entry_t *old_me = lookup_method_table(RCLASS_ORIGIN(klass), mid);

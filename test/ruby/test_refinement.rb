@@ -5018,6 +5018,27 @@ class TestRefinement < Test::Unit::TestCase
     RUBY
   end
 
+  # Defining a method in a refinement also adds an entry to the refined class.
+  # Once a second Ractor exists that happens with the VM lock held, where it must
+  # neither assert nor warn (Warning.warn can run Ruby code).
+  def test_refine_method_definition_after_ractor_created
+    assert_separately([], <<~'RUBY', timeout: 60)
+      Warning[:experimental] = false
+      Ractor.new { 1 }.value
+      Module.new { refine(Object) { def refined_after_ractor; end } }
+
+      warnings = []
+      Warning.singleton_class.prepend(Module.new {
+        define_method(:warn) {|msg, **| warnings << msg }
+      })
+      verbose, $VERBOSE = $VERBOSE, true
+      Module.new { refine(Object) { def respond_to?(*) = true } }
+      $VERBOSE = verbose
+      assert_equal(1, warnings.size, warnings)
+      assert_match(/redefining Object#respond_to\? may cause infinite loop/, warnings[0])
+    RUBY
+  end
+
   private
 
   def eval_using(mod, s)
