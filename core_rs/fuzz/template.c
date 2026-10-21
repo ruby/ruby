@@ -1,6 +1,9 @@
 /*
- * Template for a differential fuzz unit.  Copy it to
- * core_rs/fuzz/units/<c-file>_<topic>.c and fill in the three TODOs.
+ * Template for a differential fuzz unit.
+ *
+ * Scaffolding with signatures filled in can be generated via:
+ *   ruby tool/core_rs/inventory.rb --fuzz-unit <unit-id>
+ * Or copy this file to core_rs/fuzz/units/<c-file>_<topic>.c and fill in the three TODOs.
  * See core_rs/fuzz/README.md for the rules.
  *
  * TODO 1: name every C definition the port replaces, plus the static
