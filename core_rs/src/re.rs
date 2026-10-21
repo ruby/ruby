@@ -1,4 +1,6 @@
-//! Ports of re.c: byte-string search and ASCII case-insensitive compare.
+//! Ports of re.c: byte-string search and ASCII case-insensitive compare,
+//! and the Unicode range check of the regexp source unescaper (port unit
+//! `re-A-02`).
 //!
 //! Public C API (include/ruby/internal/encoding/string.h and
 //! include/ruby/internal/intern/re.h): `rb_memsearch`, `rb_memcicmp`.
@@ -15,7 +17,7 @@
 //! when the strings are NUL-terminated.  Results are identical whenever the C
 //! result does not depend on memory beyond the strings.
 
-use core::ffi::{c_char, c_int, c_long, c_void};
+use core::ffi::{c_char, c_int, c_long, c_ulong, c_void};
 
 /// The leading fields of `OnigEncodingTypeST` (include/ruby/onigmo.h), which
 /// is public ABI.  Only `min_enc_len` is read.
@@ -262,6 +264,43 @@ pub unsafe extern "C" fn rb_memsearch(
     search_qs(x, y)
 }
 
+/// `ONIG_MAX_ERROR_MESSAGE_LEN` (include/ruby/onigmo.h): the size of re.c's
+/// `onig_errmsg_buffer`.
+pub const ONIG_MAX_ERROR_MESSAGE_LEN: usize = 90;
+
+/// The message `check_unicode_range` copies with `errcpy`, NUL included.
+const INVALID_UNICODE_RANGE: &[u8] = b"invalid Unicode range\0";
+
+/// Safe core of re.c's `check_unicode_range`: -1 for a surrogate
+/// (U+D800..U+DFFF) or a value above U+10FFFF, after copying
+/// "invalid Unicode range" into `err` exactly as `errcpy` (`strlcpy` with
+/// the buffer size) does: the message and its NUL, nothing after it.
+/// Otherwise 0, and `err` is untouched.
+pub fn check_unicode_range(code: c_ulong, err: &mut [u8; ONIG_MAX_ERROR_MESSAGE_LEN]) -> c_int {
+    if (0xd800..=0xdfff).contains(&code) || 0x10ffff < code {
+        err[..INVALID_UNICODE_RANGE.len()].copy_from_slice(INVALID_UNICODE_RANGE);
+        return -1;
+    }
+    0
+}
+
+/// C boundary for re.c's `static int check_unicode_range(unsigned long code,
+/// onig_errmsg_buffer err)`, called by `append_utf8` and
+/// `unescape_unicode_list` through `#define check_unicode_range
+/// rb_core_re_check_unicode_range` (declared hidden in internal/core_rs.h).
+///
+/// # Safety
+///
+/// `err` must point to a writable `onig_errmsg_buffer`
+/// (`char[ONIG_MAX_ERROR_MESSAGE_LEN]`), as every caller in re.c passes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rb_core_re_check_unicode_range(code: c_ulong, err: *mut c_char) -> c_int {
+    // SAFETY: per the contract `err` is a writable buffer of
+    // ONIG_MAX_ERROR_MESSAGE_LEN bytes, so it can be viewed as that array.
+    let err = unsafe { &mut *(err as *mut [u8; ONIG_MAX_ERROR_MESSAGE_LEN]) };
+    check_unicode_range(code, err)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -335,5 +374,21 @@ mod tests {
         assert_eq!(search_char_size(&[0x62, 0x00], &[0x61, 0x00, 0x62, 0x00, 0x61, 0x00], 2), 2);
         // 61 00 occurs only at the odd offset 1, which is not a code unit start.
         assert_eq!(search_char_size(&[0x61, 0x00], &[0x00, 0x61, 0x00, 0x62, 0x00, 0x00], 2), -1);
+    }
+
+    #[test]
+    fn unicode_range_rejects_surrogates_and_beyond_max() {
+        let msg = b"invalid Unicode range\0";
+        for &code in &[0xd800, 0xdabc, 0xdfff, 0x110000, 0x7fff_ffff, c_ulong::MAX] {
+            let mut err = [0xaau8; ONIG_MAX_ERROR_MESSAGE_LEN];
+            assert_eq!(check_unicode_range(code, &mut err), -1, "{code:#x}");
+            assert_eq!(&err[..msg.len()], msg);
+            assert!(err[msg.len()..].iter().all(|&b| b == 0xaa), "nothing written after the NUL");
+        }
+        for &code in &[0, 0x41, 0xd7ff, 0xe000, 0xffff, 0x10ffff] {
+            let mut err = [0xaau8; ONIG_MAX_ERROR_MESSAGE_LEN];
+            assert_eq!(check_unicode_range(code, &mut err), 0, "{code:#x}");
+            assert!(err.iter().all(|&b| b == 0xaa), "err untouched");
+        }
     }
 }

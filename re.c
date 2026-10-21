@@ -17,6 +17,7 @@
 #include "hrtime.h"
 #include "internal.h"
 #include "internal/bignum.h"
+#include "internal/core_rs.h"
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/hash.h"
@@ -2994,6 +2995,7 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
     return 0;
 }
 
+#if !USE_RUST_PORTS /* ported to core_rs/src/re.rs (port unit re-A-02) */
 static int
 check_unicode_range(unsigned long code, onig_errmsg_buffer err)
 {
@@ -3004,6 +3006,9 @@ check_unicode_range(unsigned long code, onig_errmsg_buffer err)
     }
     return 0;
 }
+#else
+#define check_unicode_range rb_core_re_check_unicode_range
+#endif /* !USE_RUST_PORTS: check_unicode_range */
 
 static int
 append_utf8(unsigned long uv,
