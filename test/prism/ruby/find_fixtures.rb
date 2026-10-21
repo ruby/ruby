@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-# Test fixtures for Prism.find. These must be in a separate file because
-# source_location returns the file path and Prism.find re-parses the file.
+# Test fixtures for Ruby::Prism.find. These must be in a separate file because
+# source_location returns the file path and Ruby::Prism.find re-parses the file.
 
-module Prism
+module Ruby::Prism
   module FindFixtures
     module Methods
       def simple_method

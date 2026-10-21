@@ -222,7 +222,7 @@ imemo_count_up(struct MEMO *memo)
         RUBY_ASSERT(RB_TYPE_P(memo->u3.value, T_BIGNUM));
         MEMO_V3_SET(memo, rb_int_succ(memo->u3.value));
     }
-    else if (++memo->u3.cnt == 0) {
+    else if (++memo->u3.ucnt == 0) {
         /* overflow */
         MEMO_V3_SET(memo, rb_int_succ(ULEN2NUM(RB_ULEN_MAX)));
     }
@@ -236,7 +236,7 @@ imemo_count_value(struct MEMO *memo)
         return memo->u3.value;
     }
     else {
-        return ULEN2NUM(memo->u3.cnt);
+        return ULEN2NUM(memo->u3.ucnt);
     }
 }
 
@@ -1021,7 +1021,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *      end
  *
  *      position = "nnneesw".chars.reduce(Turtle.new, :move)
- *      position  #=>> #<Turtle:0x00000001052f4698 @y=2, @x=1>
+ *      position  #=> #<Turtle:0x00000001052f4698 @y=2, @x=1>
  *
  *  <b>Third Shortcut: Reducer With no Initial Value</b>
  *
@@ -3762,13 +3762,13 @@ cycle_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 static VALUE
 enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
 {
-    long mul = 0;
+    rb_len_t mul = 0;
     VALUE n = Qnil;
     VALUE size;
 
     if (args && (RARRAY_LEN(args) > 0)) {
         n = RARRAY_AREF(args, 0);
-        if (!NIL_P(n)) mul = NUM2LONG(n);
+        if (!NIL_P(n)) mul = NUM2LEN(n);
     }
 
     size = enum_size(self, args, 0);
@@ -3776,7 +3776,7 @@ enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
 
     if (NIL_P(n)) return DBL2NUM(HUGE_VAL);
     if (mul <= 0) return INT2FIX(0);
-    n = LONG2NUM(mul);
+    n = LEN2NUM(mul);
     return rb_funcallv(size, '*', 1, &n);
 }
 
@@ -3812,7 +3812,7 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary;
     VALUE nv = Qnil;
-    long n;
+    rb_len_t n;
     rb_len_t i, len;
 
     rb_check_arity(argc, 0, 1);
@@ -3822,7 +3822,7 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
         n = -1;
     }
     else {
-        n = NUM2LONG(nv);
+        n = NUM2LEN(nv);
         if (n <= 0) return Qnil;
     }
     ary = rb_ary_new();

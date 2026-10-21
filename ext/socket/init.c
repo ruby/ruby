@@ -38,13 +38,14 @@ static VALUE sym_wait_readable;
 static ID id_error_code;
 
 void
-rsock_raise_resolution_error(const char *reason, int error)
+rsock_raise_resolution_error_for_host(const char *reason, int error, VALUE host)
 {
 #ifdef EAI_SYSTEM
     int e;
     if (error == EAI_SYSTEM && (e = errno) != 0)
         rb_syserr_fail(e, reason);
 #endif
+
 #ifdef _WIN32
     rb_encoding *enc = rb_default_internal_encoding();
     VALUE msg = rb_sprintf("%s: ", reason);
@@ -53,6 +54,10 @@ rsock_raise_resolution_error(const char *reason, int error)
 #else
     VALUE msg = rb_sprintf("%s: %s", reason, gai_strerror(error));
 #endif
+
+    if (RTEST(host)) {
+        rb_str_catf(msg, " %+"PRIsVALUE, host);
+    }
 
     StringValue(msg);
     VALUE self = rb_class_new_instance(1, &msg, rb_eResolution);
@@ -84,13 +89,20 @@ rsock_init_sock(VALUE sock, int fd)
     return sock;
 }
 
+#ifdef _WIN32
+/* Winsock takes the length as int; the caller sees a short write. */
+# define SEND_LENGTH(str) (int)(RSTRING_LEN(str) > INT_MAX ? INT_MAX : RSTRING_LEN(str))
+#else
+# define SEND_LENGTH(str) RSTRING_LEN(str)
+#endif
+
 VALUE
 rsock_sendto_blocking(void *data)
 {
     struct rsock_send_arg *arg = data;
     VALUE mesg = arg->mesg;
     ssize_t ret;
-    do_write_retry(sendto(arg->fd, RSTRING_PTR(mesg), RSTRING_LEN(mesg),
+    do_write_retry(sendto(arg->fd, RSTRING_PTR(mesg), SEND_LENGTH(mesg),
                           arg->flags, arg->to, arg->tolen));
     return (VALUE)ret;
 }
@@ -101,7 +113,7 @@ rsock_send_blocking(void *data)
     struct rsock_send_arg *arg = data;
     VALUE mesg = arg->mesg;
     ssize_t ret;
-    do_write_retry(send(arg->fd, RSTRING_PTR(mesg), RSTRING_LEN(mesg),
+    do_write_retry(send(arg->fd, RSTRING_PTR(mesg), SEND_LENGTH(mesg),
                         arg->flags));
     return (VALUE)ret;
 }
@@ -133,7 +145,7 @@ recvfrom_blocking(void *data)
 static VALUE
 rsock_strbuf(VALUE str, long buflen)
 {
-    long len;
+    rb_len_t len;
 
     if (NIL_P(str)) return rb_str_new(0, buflen);
 
@@ -409,7 +421,7 @@ rsock_write_nonblock(VALUE sock, VALUE str, VALUE ex)
 #ifdef __APPLE__
   again:
 #endif
-    n = (long)send(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str), MSG_DONTWAIT);
+    n = (long)send(fptr->fd, RSTRING_PTR(str), SEND_LENGTH(str), MSG_DONTWAIT);
     if (n < 0) {
         int e = errno;
 

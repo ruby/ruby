@@ -1587,6 +1587,17 @@ after_fork_ruby(rb_pid_t pid)
         after_exec();
     }
 }
+
+static void
+release_fork_lock_after_fork(rb_pid_t pid)
+{
+    if (pid == 0) {
+        rb_thread_reset_fork_lock();
+    }
+    else {
+        rb_thread_release_fork_lock();
+    }
+}
 #endif
 
 #if defined(HAVE_WORKING_FORK)
@@ -2208,7 +2219,7 @@ check_exec_fds(struct rb_execarg *eargp)
             int oldfd = FIX2INT(RARRAY_AREF(elt, 1));
             int lastfd = oldfd;
             VALUE val = rb_hash_lookup(h, INT2FIX(lastfd));
-            long depth = 0;
+            rb_len_t depth = 0;
             while (FIXNUM_P(val) && 0 <= FIX2INT(val)) {
                 lastfd = FIX2INT(val);
                 val = rb_hash_lookup(h, val);
@@ -3658,9 +3669,11 @@ handle_fork_error(int err, struct rb_process_status *status, int *ep, volatile i
     return -1;
 }
 
+/* Flush the current Ractor's own stdio: taking the write_lock of an IO owned
+ * by another Ractor can block on a thread that rb_check_deadlock can't see. */
 #define prefork() (		\
-        rb_io_flush(rb_stdout), \
-        rb_io_flush(rb_stderr)	\
+        rb_io_flush(rb_ractor_stdout()), \
+        rb_io_flush(rb_ractor_stderr())	\
         )
 
 /*
@@ -4083,16 +4096,7 @@ rb_fork_ruby(int *status)
         }
 
         disable_child_handler_fork_parent(&old); /* yes, bad name */
-        if (
-#if defined(__FreeBSD__)
-            pid != 0 &&
-#endif
-            true) {
-            rb_thread_release_fork_lock();
-        }
-        if (pid == 0) {
-            rb_thread_reset_fork_lock();
-        }
+        release_fork_lock_after_fork(pid);
         after_fork_ruby(pid);
 
         /* repeat while fork failed but retryable */
@@ -5599,7 +5603,7 @@ rb_getlogin(void)
     typedef size_t getlogin_r_size_t;
 #   endif
 
-    long loginsize = GETLOGIN_R_SIZE_INIT;  /* maybe -1 */
+    rb_len_t loginsize = GETLOGIN_R_SIZE_INIT;  /* maybe -1 */
 
     if (loginsize < 0)
         loginsize = GETLOGIN_R_SIZE_DEFAULT;
@@ -5707,7 +5711,7 @@ rb_getpwdirnam_for_login(VALUE login_name)
 # ifdef USE_GETPWNAM_R
 
     char *bufnm;
-    long bufsizenm = GETPW_R_SIZE_INIT;  /* maybe -1 */
+    rb_len_t bufsizenm = GETPW_R_SIZE_INIT;  /* maybe -1 */
 
     if (bufsizenm < 0)
         bufsizenm = GETPW_R_SIZE_DEFAULT;
@@ -5731,7 +5735,7 @@ rb_getpwdirnam_for_login(VALUE login_name)
             rb_syserr_fail(enm, "getpwnam_r");
         }
 
-        rb_str_modify_expand(getpwnm_tmp, (long)args.bufsize);
+        rb_str_modify_expand(getpwnm_tmp, (rb_len_t)args.bufsize);
         args.buf = RSTRING_PTR(getpwnm_tmp);
         args.bufsize = (size_t)rb_str_capacity(getpwnm_tmp);
     }
@@ -5803,7 +5807,7 @@ rb_getpwdiruid(void)
 # ifdef USE_GETPWUID_R
 
     char *bufid;
-    long bufsizeid = GETPW_R_SIZE_INIT;  /* maybe -1 */
+    rb_len_t bufsizeid = GETPW_R_SIZE_INIT;  /* maybe -1 */
 
     if (bufsizeid < 0)
         bufsizeid = GETPW_R_SIZE_DEFAULT;
@@ -5827,7 +5831,7 @@ rb_getpwdiruid(void)
             rb_syserr_fail(eid, "getpwuid_r");
         }
 
-        rb_str_modify_expand(getpwid_tmp, (long)args.bufsize);
+        rb_str_modify_expand(getpwid_tmp, (rb_len_t)args.bufsize);
         args.buf = RSTRING_PTR(getpwid_tmp);
         args.bufsize = (size_t)rb_str_capacity(getpwid_tmp);
     }
@@ -5895,7 +5899,7 @@ obj2uid(VALUE id
         struct passwd *pwptr;
 #ifdef USE_GETPWNAM_R
         char *getpw_buf;
-        long getpw_buf_len;
+        rb_len_t getpw_buf_len;
         int e;
         if (!*getpw_tmp) {
             getpw_buf_len = GETPW_R_SIZE_INIT;
@@ -5913,7 +5917,7 @@ obj2uid(VALUE id
                 rb_str_resize(*getpw_tmp, 0);
                 rb_syserr_fail(e, "getpwnam_r");
             }
-            rb_str_modify_expand(*getpw_tmp, (long)args.bufsize);
+            rb_str_modify_expand(*getpw_tmp, (rb_len_t)args.bufsize);
             args.buf = RSTRING_PTR(*getpw_tmp);
             args.bufsize = (size_t)rb_str_capacity(*getpw_tmp);
         }
@@ -5994,7 +5998,7 @@ obj2gid(VALUE id
         struct group *grptr;
 #ifdef USE_GETGRNAM_R
         char *getgr_buf;
-        long getgr_buf_len;
+        rb_len_t getgr_buf_len;
         int e;
         if (!*getgr_tmp) {
             getgr_buf_len = GETGR_R_SIZE_INIT;
@@ -6012,7 +6016,7 @@ obj2gid(VALUE id
                 rb_str_resize(*getgr_tmp, 0);
                 rb_syserr_fail(e, "getgrnam_r");
             }
-            rb_str_modify_expand(*getgr_tmp, (long)args.bufsize);
+            rb_str_modify_expand(*getgr_tmp, (rb_len_t)args.bufsize);
             args.buf = RSTRING_PTR(*getgr_tmp);
             args.bufsize = (size_t)rb_str_capacity(*getgr_tmp);
         }
@@ -6910,8 +6914,12 @@ rb_daemon(int nochdir, int noclose)
 {
     int err = 0;
 #ifdef HAVE_DAEMON
+    rb_pid_t pid = getpid();
     before_fork_ruby();
+    rb_thread_acquire_fork_lock();
     err = daemon(nochdir, noclose);
+    /* daemon(3) can fail in the child as well, so compare pids */
+    release_fork_lock_after_fork(getpid() == pid ? pid : 0);
     after_fork_ruby(0);
 #else
     int n;

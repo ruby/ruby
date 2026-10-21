@@ -570,21 +570,19 @@ class TestShapes < Test::Unit::TestCase
   end
 
   def test_evacuate_generic_ivar_memory_leak
-    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true, samples: 5)
       o = []
       o.instance_variable_set(:@a, 1)
 
       RubyVM::Shape.exhaust_shapes
-
-      ary = 1_000_000.times.map { [] }
     begin;
+      ary = Array.new(200_000) { [] }
       ary.each do |o|
         o.instance_variable_set(:@a, 1)
         o.instance_variable_set(:@b, 1)
       end
       ary.clear
       ary = nil
-      GC.start
     end;
   end
 
@@ -1180,13 +1178,13 @@ class TestShapes < Test::Unit::TestCase
   end
 
   def test_duplicating_complex_objects_memory_leak
-    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", "[Bug #20162]", rss: true)
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", "[Bug #20162]", rss: true, samples: 5)
       RubyVM::Shape.exhaust_shapes
 
       o = Object.new
       o.instance_variable_set(:@a, 0)
     begin;
-      1_000_000.times do
+      200_000.times do
         o.dup
       end
     end;

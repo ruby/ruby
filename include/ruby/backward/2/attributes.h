@@ -60,7 +60,7 @@
 #define DEPRECATED_BY(n,x) RBIMPL_ATTR_DEPRECATED(("by: " # n)) x
 
 #undef DEPRECATED_TYPE
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
 # define DEPRECATED_TYPE(mesg, decl)                      \
     _Pragma("message \"DEPRECATED_TYPE is deprecated\""); \
     decl RBIMPL_ATTR_DEPRECATED(mseg)

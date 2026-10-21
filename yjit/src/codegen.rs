@@ -20,7 +20,7 @@ use std::collections::HashMap;
 use std::ffi::c_void;
 use std::ffi::CStr;
 use std::mem;
-use std::os::raw::{c_int, c_long};
+use std::os::raw::c_int;
 use std::ptr;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -5976,9 +5976,13 @@ fn jit_rb_str_bytesize(
     let recv = asm.stack_pop(1);
 
     asm_comment!(asm, "get string length");
-    let str_reg = asm.load(recv);
-    let len = asm.c_long_mem(str_reg, RUBY_OFFSET_RSTRING_LEN as i32);
-    let len = asm.load_mem(len);
+    let str_len_opnd = Opnd::mem(
+        rb_len_t::BITS as u8,
+        asm.load(recv),
+        RUBY_OFFSET_RSTRING_LEN as i32,
+    );
+
+    let len = asm.load(str_len_opnd);
     let shifted_val = asm.lshift(len, Opnd::UImm(1));
     let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
     asm.guard_fixnum_fits_long(out_val, Counter::guard_send_str_bytesize_overflow);
@@ -6146,8 +6150,11 @@ fn jit_rb_str_getbyte(
 
     asm_comment!(asm, "get string length");
     let recv = asm.load(recv);
-    let str_reg = asm.load(recv);
-    let str_len_opnd = asm.c_long_mem(str_reg, RUBY_OFFSET_RSTRING_LEN as i32);
+    let str_len_opnd = Opnd::mem(
+        rb_len_t::BITS as u8,
+        asm.load(recv),
+        RUBY_OFFSET_RSTRING_LEN as i32,
+    );
 
     // Exit if the index is out of bounds
     asm.cmp(idx, str_len_opnd);
@@ -6272,7 +6279,7 @@ fn jit_rb_str_empty_p(
 
     asm_comment!(asm, "get string length");
     let str_len_opnd = Opnd::mem(
-        std::os::raw::c_long::BITS as u8,
+        rb_len_t::BITS as u8,
         asm.load(recv_opnd),
         RUBY_OFFSET_RSTRING_LEN as i32,
     );
@@ -7325,22 +7332,17 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
         Opnd::InsnOut { .. } => array_opnd,
         _ => asm.load(array_opnd),
     };
-    let array_len_opnd = asm.c_long_mem(array_reg, RUBY_OFFSET_RARRAY_AS_HEAP_LEN);
+    let array_len_opnd = Opnd::mem(
+        rb_len_t::BITS as u8,
+        array_reg,
+        RUBY_OFFSET_RARRAY_AS_HEAP_LEN,
+    );
 
     // Select the array length value
     asm.csel_nz(emb_len_opnd, array_len_opnd)
 }
 
 impl Assembler {
-    /// Emits a load for memory based operands and returns an InsnOut,
-    /// otherwise returns opnd.
-    fn load_mem(&mut self, opnd: Opnd) -> Opnd {
-        match opnd {
-            Opnd::InsnOut { .. } | Opnd::Reg(_) => opnd,
-            _ => self.load(opnd),
-        }
-    }
-
     /// Side-exit when the arithmetic that produced `val` overflowed the Fixnum range. Where long is
     /// 64-bit, the overflow flag decides. On LLP64 (Windows), Fixnum operands fit in 32 bits, so the
     /// 64-bit arithmetic never overflows and only the range check in cmp_fixnum_fits_long is needed.
@@ -7370,18 +7372,6 @@ impl Assembler {
             true
         } else {
             false
-        }
-    }
-
-    /// Make a C long field at base + disp usable as a 64-bit operand. long is 32-bit on LLP64
-    /// (Windows), where loading it into a register zero-extends it, so the field must never be
-    /// negative.
-    fn c_long_mem(&mut self, base: Opnd, disp: i32) -> Opnd {
-        let opnd = Opnd::mem(std::os::raw::c_long::BITS as u8, base, disp);
-        if std::os::raw::c_long::BITS == 64 {
-            opnd
-        } else {
-            self.load(opnd).with_num_bits(64).unwrap()
         }
     }
 }
@@ -9018,7 +9008,7 @@ fn gen_struct_aref(
 
     // Confidence checks
     assert!(unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRUCT) });
-    assert!((off as c_long) < unsafe { RSTRUCT_LEN(comptime_recv) });
+    assert!((off as rb_len_t) < unsafe { RSTRUCT_LEN(comptime_recv) });
 
     // We are going to use an encoding that takes a 4-byte immediate which
     // limits the offset to INT32_MAX.
@@ -9102,7 +9092,7 @@ fn gen_struct_aset(
 
     // Confidence checks
     assert!(unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRUCT) });
-    assert!((off as c_long) < unsafe { RSTRUCT_LEN(comptime_recv) });
+    assert!((off as rb_len_t) < unsafe { RSTRUCT_LEN(comptime_recv) });
 
     // We are going to use an encoding that takes a 4-byte immediate which
     // limits the offset to INT32_MAX (mirrors struct aref).

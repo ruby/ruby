@@ -2,10 +2,10 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class CommandLineTest < TestCase
     def test_command_line_p
-      program = Prism.parse("1", command_line: "p").value
+      program = Ruby::Prism.parse("1", command_line: "p").value
       statements = program.statements.body
 
       assert_equal 2, statements.length
@@ -14,7 +14,7 @@ module Prism
     end
 
     def test_command_line_n
-      program = Prism.parse("1", command_line: "n").value
+      program = Ruby::Prism.parse("1", command_line: "n").value
       statements = program.statements.body
 
       assert_equal 1, statements.length
@@ -30,7 +30,7 @@ module Prism
     end
 
     def test_command_line_a
-      program = Prism.parse("1", command_line: "na").value
+      program = Ruby::Prism.parse("1", command_line: "na").value
       statements = program.statements.body
 
       assert_equal 1, statements.length
@@ -42,7 +42,7 @@ module Prism
     end
 
     def test_command_line_l
-      program = Prism.parse("1", command_line: "nl").value
+      program = Ruby::Prism.parse("1", command_line: "nl").value
       statements = program.statements.body
 
       assert_equal 1, statements.length
@@ -62,15 +62,15 @@ module Prism
     end
 
     def test_command_line_e
-      result = Prism.parse("1 if 2..3")
+      result = Ruby::Prism.parse("1 if 2..3")
       assert_equal 2, result.warnings.length
 
-      result = Prism.parse("1 if 2..3", command_line: "e")
+      result = Ruby::Prism.parse("1 if 2..3", command_line: "e")
       assert_equal 0, result.warnings.length
     end
 
     def test_command_line_x_implicit
-      result = Prism.parse_statement(<<~RUBY, main_script: true)
+      result = Ruby::Prism.parse_statement(<<~RUBY, main_script: true)
         #!/bin/bash
         exit 1
 
@@ -82,7 +82,7 @@ module Prism
     end
 
     def test_command_line_x_explicit
-      result = Prism.parse_statement(<<~RUBY, command_line: "x")
+      result = Ruby::Prism.parse_statement(<<~RUBY, command_line: "x")
         exit 1
 
         #!/usr/bin/env ruby
@@ -93,7 +93,7 @@ module Prism
     end
 
     def test_command_line_x_implicit_fail
-      result = Prism.parse(<<~RUBY, main_script: true)
+      result = Ruby::Prism.parse(<<~RUBY, main_script: true)
         #!/bin/bash
         exit 1
       RUBY
@@ -103,7 +103,7 @@ module Prism
     end
 
     def test_command_line_x_explicit_fail
-      result = Prism.parse(<<~RUBY, command_line: "x")
+      result = Ruby::Prism.parse(<<~RUBY, command_line: "x")
         exit 1
       RUBY
 

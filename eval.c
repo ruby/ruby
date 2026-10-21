@@ -1454,6 +1454,27 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
             }
         }
     }
+
+    /* Reuse the refinement iclass created by an earlier using/Proc#refined
+     * of the same refinement on the same superclass */
+    ID id_using_iclasses;
+    CONST_ID(id_using_iclasses, "__using_iclasses__");
+    VALUE cache = rb_attr_get(module, id_using_iclasses);
+    VALUE cache_key = superclass;
+
+    if (!NIL_P(cache)) {
+        RB_VM_LOCKING() {
+            iclass = rb_wmap_lookup(cache, cache_key);
+        }
+        if (!UNDEF_P(iclass) &&
+                RCLASS_M_TBL(iclass) == RCLASS_M_TBL(module) &&
+                (cache_key != klass || !RB_TYPE_P(klass, T_MODULE) ||
+                 RCLASS_M_TBL(RCLASS_SUPER(iclass)) == RCLASS_WRITABLE_M_TBL(RCLASS_ORIGIN(klass)))) {
+            rb_hash_aset(CREF_REFINEMENTS(cref), klass, iclass);
+            return;
+        }
+    }
+
     superclass = refinement_superclass(superclass);
     c = iclass = rb_include_class_new(module, superclass);
     RCLASS_SET_REFINED_CLASS(c, klass);
@@ -1463,6 +1484,12 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
     rb_class_subclass_add(klass, iclass);
 
     rb_hash_aset(CREF_REFINEMENTS(cref), klass, iclass);
+
+    if (!NIL_P(cache)) {
+        RB_VM_LOCKING() {
+            rb_wmap_aset(cache, cache_key, iclass);
+        }
+    }
 }
 
 static int
@@ -1577,7 +1604,7 @@ rb_refinement_setup(struct rb_refinements_data *data, VALUE module, VALUE klass)
 {
     VALUE refinement;
     ID id_refinements, id_activated_refinements,
-       id_refined_class, id_defined_at;
+       id_refined_class, id_defined_at, id_using_iclasses;
     VALUE refinements, activated_refinements;
 
     CONST_ID(id_refinements, "__refinements__");
@@ -1604,6 +1631,8 @@ rb_refinement_setup(struct rb_refinements_data *data, VALUE module, VALUE klass)
         rb_ivar_set(refinement, id_refined_class, klass);
         CONST_ID(id_defined_at, "__defined_at__");
         rb_ivar_set(refinement, id_defined_at, module);
+        CONST_ID(id_using_iclasses, "__using_iclasses__");
+        rb_ivar_set(refinement, id_using_iclasses, rb_wmap_new_hidden());
         rb_hash_aset(refinements, klass, refinement);
         add_activated_refinement(activated_refinements, klass, refinement);
     }

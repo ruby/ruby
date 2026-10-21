@@ -193,7 +193,7 @@ dump_append_ref(struct dump_config *dc, VALUE ref)
 static void
 dump_append_string_value(struct dump_config *dc, VALUE obj)
 {
-    long i;
+    rb_len_t i;
     char c;
     const char *value;
 
@@ -326,9 +326,9 @@ reachable_object_i(VALUE ref, void *data)
 }
 
 static bool
-dump_string_ascii_only(const char *str, long size)
+dump_string_ascii_only(const char *str, rb_len_t size)
 {
-    for (long i = 0; i < size; i++) {
+    for (rb_len_t i = 0; i < size; i++) {
         if (str[i] & 0x80) {
             return false;
         }
@@ -340,8 +340,8 @@ static void
 dump_append_string_content(struct dump_config *dc, VALUE obj)
 {
     dump_append(dc, ", \"bytesize\":");
-    dump_append_ld(dc, RSTRING_LEN(obj));
-    if (!STR_EMBED_P(obj) && !STR_SHARED_P(obj) && (long)rb_str_capacity(obj) != RSTRING_LEN(obj)) {
+    dump_append_sizet(dc, (size_t)RSTRING_LEN(obj));
+    if (!STR_EMBED_P(obj) && !STR_SHARED_P(obj) && (rb_len_t)rb_str_capacity(obj) != RSTRING_LEN(obj)) {
         dump_append(dc, ", \"capacity\":");
         dump_append_sizet(dc, rb_str_capacity(obj));
     }
@@ -545,7 +545,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_ARRAY:
         dump_append(dc, ", \"length\":");
-        dump_append_ld(dc, RARRAY_LEN(obj));
+        dump_append_sizet(dc, (size_t)RARRAY_LEN(obj));
         if (RARRAY_LEN(obj) > 0 && FL_TEST(obj, RARRAY_SHARED_FLAG))
             dump_append(dc, ", \"shared\":true");
         if (FL_TEST(obj, RARRAY_EMBED_FLAG))
@@ -759,7 +759,7 @@ dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since, VALUE
         // Mark functions generally can't handle these possibilities so
         // the usual IO code is unsafe in this context. (For example,
         // there are many ways to crash when ruby code runs and mutates
-        // the execution context while rb_execution_context_mark() is in
+        // the execution context while rb_execution_context_mark_ctx() is in
         // progress.)
         //
         // Using FILE* isn't perfect, but it avoids the most acute problems.

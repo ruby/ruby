@@ -61,7 +61,7 @@ rbimpl_atomic_u64_set_relaxed(volatile rbimpl_atomic_uint64_t *address, uint64_t
 #if defined(HAVE_GCC_ATOMIC_BUILTINS_64)
     __atomic_store_n(address, value, __ATOMIC_RELAXED);
 #elif defined(_WIN32)
-    InterlockedExchange64(address, value);
+    InterlockedExchange64(RBIMPL_CAST((LONG64 *)address), value);
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     atomic_swap_64(address, value);
 #else

@@ -188,7 +188,7 @@ ossl_hmac_digest(VALUE self)
     if (EVP_DigestSignFinal(ctx, (unsigned char *)RSTRING_PTR(ret),
                             &buf_len) != 1)
         ossl_raise(eHMACError, "EVP_DigestSignFinal");
-    rb_str_set_len(ret, (long)buf_len);
+    rb_str_set_len(ret, (rb_len_t)buf_len);
 
     return ret;
 }

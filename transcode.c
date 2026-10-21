@@ -2367,7 +2367,7 @@ transcode_loop_fallback_try(VALUE a)
 
     VALUE ret = args->fallback_func(args->fallback, args->rep);
 
-    if (!UNDEF_P(ret) && !NIL_P(ret)) {
+    if (!NIL_OR_UNDEF_P(ret)) {
         StringValue(ret);
     }
 
@@ -2394,7 +2394,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     VALUE fallback = Qnil;
     VALUE (*fallback_func)(VALUE, VALUE) = 0;
     const unsigned char *source_start = *in_pos;
-    long source_len = in_stop - *in_pos;
+    rb_len_t source_len = in_stop - *in_pos;
 
     ec = rb_econv_open_opts(src_encoding, dst_encoding, ecflags, ecopts);
     if (!ec)
@@ -2450,7 +2450,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
             rb_raise(rb_eRuntimeError, "string modified");
         }
 
-        if (!UNDEF_P(rep) && !NIL_P(rep)) {
+        if (!NIL_OR_UNDEF_P(rep)) {
             ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
                     RSTRING_LEN(rep), rb_enc_name(rb_enc_get(rep)));
             RB_GC_GUARD(rep); // insert_output may GC while reading rep's bytes

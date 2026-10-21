@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
   spec.summary       = "Utilities to replace common UNIX commands"
   spec.description   = spec.summary
   spec.homepage      = "https://github.com/ruby/un"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.6.0")
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage

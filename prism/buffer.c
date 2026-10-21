@@ -52,10 +52,16 @@ pm_buffer_length(const pm_buffer_t *buffer) {
 }
 
 /**
- * Append the given amount of space to the buffer.
+ * Append the given amount of space to the buffer. Returns false when there is
+ * nothing to write: either the allocation failed or the length is zero. A
+ * zero-initialized buffer has a NULL value until its first allocation, and
+ * passing NULL to memcpy/memset/memmove is undefined behavior even for zero
+ * bytes, so callers must not write in the zero case.
  */
 static PRISM_INLINE bool
 pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
+    if (length == 0) return false;
+
     size_t next_length = buffer->length + length;
     const size_t original_capacity = buffer->capacity;
 
@@ -178,6 +184,15 @@ void
 pm_buffer_append_double(pm_buffer_t *buffer, double value) {
     const void *source = &value;
     pm_buffer_append(buffer, source, sizeof(double));
+}
+
+/**
+ * Append a 64-bit unsigned integer to the buffer in native endian order.
+ */
+void
+pm_buffer_append_uint64(pm_buffer_t *buffer, uint64_t value) {
+    const void *source = &value;
+    pm_buffer_append(buffer, source, sizeof(uint64_t));
 }
 
 /**

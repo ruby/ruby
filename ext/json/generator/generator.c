@@ -898,7 +898,7 @@ static void raw_generate_json_string(FBuffer *buffer, struct generate_json_data 
     }
     fbuffer_append_char(buffer, '"');
 
-    long len;
+    rb_len_t len;
     search_state search;
     search.buffer = buffer;
     RSTRING_GETMEM(str, search.ptr, len);
@@ -1051,7 +1051,8 @@ static inline long increase_depth(struct generate_json_data *data)
 static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     if (RB_UNLIKELY(data->state->rfc8785)) {
-        obj = rb_proc_call_with_block(rfc8785_sort_keys_proc, 1, &obj, Qnil);
+        VALUE args[2] = {obj, data->state->strict ? data->state->as_json : Qnil};
+        obj = rb_proc_call_with_block(rfc8785_sort_keys_proc, 2, args, Qnil);
         Check_Type(obj, T_HASH);
     } else if (RB_UNLIKELY(data->state->sort_keys)) {
         obj = rb_proc_call_with_block(data->state->sort_keys, 1, &obj, Qnil);
@@ -1097,7 +1098,7 @@ static void generate_json_array(FBuffer *buffer, struct generate_json_data *data
 
     fbuffer_append_char(buffer, '[');
     if (RB_UNLIKELY(data->state->array_nl)) fbuffer_append_str(buffer, data->state->array_nl);
-    for (int i = 0; i < RARRAY_LEN(obj); i++) {
+    for (rb_len_t i = 0; i < RARRAY_LEN(obj); i++) {
         if (i > 0) {
             fbuffer_append_char(buffer, ',');
             if (RB_UNLIKELY(data->state->array_nl)) fbuffer_append_str(buffer, data->state->array_nl);

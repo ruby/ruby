@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class StaticInspectTest < TestCase
     def test_false
       assert_equal "false", static_inspect("false")
@@ -82,7 +82,7 @@ module Prism
     private
 
     def static_inspect(source, **options)
-      warnings = Prism.parse("{ #{source} => 1, #{source} => 1 }", **options).warnings
+      warnings = Ruby::Prism.parse("{ #{source} => 1, #{source} => 1 }", **options).warnings
       warnings.last.message[/^key (.+) is duplicated and overwritten on line \d/, 1]
     end
   end

@@ -188,6 +188,9 @@ RUBY_ATTR_MALLOC void *ruby_mimmalloc(size_t size);
 RUBY_ATTR_MALLOC void *ruby_mimcalloc(size_t num, size_t size);
 void ruby_mimfree(void *ptr);
 void rb_gc_prepare_heap(void);
+VALUE rb_wmap_new_hidden(void);
+VALUE rb_wmap_lookup(VALUE wmap, VALUE key);
+void rb_wmap_aset(VALUE wmap, VALUE key, VALUE val);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
 VALUE rb_objspace_gc_enable(void *objspace);
 VALUE rb_objspace_gc_disable(void *objspace);
@@ -208,7 +211,7 @@ VALUE rb_newobj_of_unprotected(VALUE klass, VALUE flags, size_t size);
 void *rb_gc_ractor_cache_alloc(struct rb_ractor_struct *ractor);
 void rb_gc_ractor_cache_free(void *cache);
 bool rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
-const uintptr_t *rb_gc_zjit_writebarrier_required_p_ptr(void);
+int32_t rb_gc_zjit_writebarrier_required_offset(void);
 
 bool rb_gc_size_allocatable_p(size_t size);
 size_t rb_gc_size_slot_size(size_t size);
@@ -220,7 +223,8 @@ void rb_gc_mark_and_move(VALUE *ptr);
  * (vm_core.h's gc_mark_func_data_struct) and the shareable-check flag cached from it.
  * Resolving the current Ractor costs an out-of-line rb_current_ec() call on arm64, so a
  * walk resolves it once into a ctx and threads that down instead of repeating it per
- * reference.  Only gc.c builds one; everyone else just passes the pointer along. */
+ * reference.  Pass the pointer along wherever one is already in hand; build a fresh one
+ * only at an entry point that has none (rb_gc_current_mark_ctx below). */
 struct gc_mark_func_data_struct;
 
 struct rb_gc_mark_ctx {
@@ -229,7 +233,12 @@ struct rb_gc_mark_ctx {
     bool checking_shareable;
 };
 
+/* Build a ctx for the current Ractor.  Only for an entry point with no ctx to inherit
+ * (a T_DATA dmark, say); anywhere a ctx is already in hand, thread that one down. */
+struct rb_gc_mark_ctx rb_gc_current_mark_ctx(void);
+
 void rb_gc_mark_and_pin_ctx(const struct rb_gc_mark_ctx *ctx, VALUE obj);
+#define rb_gc_mark_ctx(ctx, obj) rb_gc_mark_and_pin_ctx((ctx), (obj))
 void rb_gc_mark_movable_ctx(const struct rb_gc_mark_ctx *ctx, VALUE obj);
 void rb_gc_mark_maybe_ctx(const struct rb_gc_mark_ctx *ctx, VALUE obj);
 void rb_gc_mark_and_move_ctx(const struct rb_gc_mark_ctx *ctx, VALUE *ptr);

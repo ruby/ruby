@@ -10,7 +10,7 @@ class OpenSSL::TestBuffering < OpenSSL::TestCase
     attr_accessor :sync
 
     def initialize
-      @io = Buffer.new
+      @io = String.new
       def @io.sync
         true
       end
@@ -31,7 +31,7 @@ class OpenSSL::TestBuffering < OpenSSL::TestCase
     end
 
     def syswrite(str)
-      @io.append_as_bytes(str)
+      @io << str
       str.size
     end
   end

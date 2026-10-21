@@ -141,18 +141,10 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RARRAY_AREF(VALUE ary, rb_len_t i)
 {
-    VALUE val;
-    RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
+    RBIMPL_ASSERT_OR_ASSUME(i >= 0);
+    RBIMPL_ASSERT_OR_ASSUME(i < RARRAY_LEN(ary));
 
-    RUBY_ASSERT(i < RARRAY_LEN(ary));
-
-    RBIMPL_WARNING_PUSH();
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ == 13
-    RBIMPL_WARNING_IGNORED(-Warray-bounds);
-#endif
-    val = RARRAY_CONST_PTR(ary)[i];
-    RBIMPL_WARNING_POP();
-    return val;
+    return RARRAY_CONST_PTR(ary)[i];
 }
 
 #endif /* INTERNAL_ARRAY_H */

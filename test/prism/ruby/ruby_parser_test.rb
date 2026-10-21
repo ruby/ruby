@@ -13,7 +13,7 @@ rescue LoadError
   return
 end
 
-module Prism
+module Ruby::Prism
   class RubyParserTest < TestCase
     todos = [
       "character_literal.txt",
@@ -37,6 +37,7 @@ module Prism
       "alias.txt",
       "dsym_str.txt",
       "dos_endings.txt",
+      "endless_method_not.txt",
       "endless_method_rescue_modifier.txt",
       "heredoc_dedent_line_continuation.txt",
       "heredoc_percent_q_newline_delimiter.txt",
@@ -103,7 +104,7 @@ module Prism
     def assert_ruby_parser(fixture, allowed_failure)
       source = fixture.read
       expected = ignore_warnings { ::RubyParser.new.parse(source, fixture.path) }
-      actual = Prism::Translation::RubyParser.new.parse(source, fixture.path)
+      actual = Ruby::Prism::Translation::RubyParser.new.parse(source, fixture.path)
       on_failure = -> { message(expected, actual) }
 
       if !allowed_failure
@@ -112,9 +113,19 @@ module Prism
         unless actual.nil?
           assert_equal(expected.line, actual.line, on_failure)
           assert_equal(expected.file, actual.file, on_failure)
+          assert_comments(expected, actual)
         end
       elsif expected == actual && expected.line && actual.line && expected.file == actual.file
         puts "#{name} now passes"
+      end
+    end
+
+    def assert_comments(expected, actual)
+      assert_equal(expected.comments, actual.comments, "comments mismatch on #{expected.inspect}")
+
+      expected.each_with_index do |child, index|
+        next unless child.is_a?(Sexp) && actual[index].is_a?(Sexp)
+        assert_comments(child, actual[index])
       end
     end
 

@@ -124,34 +124,46 @@ typedef unsigned LONG_LONG ID;
 # error ---->> ruby requires sizeof(void*) == sizeof(long) or sizeof(LONG_LONG) to be compiled. <<----
 #endif
 
+#if defined(SIZEOF_RB_LEN_T) && SIZEOF_RB_LEN_T > SIZEOF_LONG
+/* mswin, where long is narrower than a pointer and config.h asks for more. */
+# include <stdint.h>
+typedef int64_t rb_len_t;
+typedef uint64_t rb_ulen_t;
+# define PRI_LEN_PREFIX PRI_64_PREFIX
+# define RB_LEN_MAX INT64_MAX
+# define RB_LEN_MIN INT64_MIN
+# define RB_ULEN_MAX UINT64_MAX
+
+#else
 /**
  * A signed integer type for lengths and indices of objects such as String and
- * Array.  It is `long` for now, on every platform.
+ * Array.  It is `long`, except on 64-bit mswin, where it is `int64_t`.
  */
 typedef long rb_len_t;
 
 /** An unsigned integer type that has the same width with ::rb_len_t. */
 typedef unsigned long rb_ulen_t;
 
-/** Indicates that ::rb_len_t and ::rb_ulen_t are available. */
-#define HAVE_RB_LEN_T 1
-
-#ifndef SIZEOF_RB_LEN_T
+# ifndef SIZEOF_RB_LEN_T
 /** Size of ::rb_len_t, in bytes. */
-# define SIZEOF_RB_LEN_T SIZEOF_LONG
-#endif
+#  define SIZEOF_RB_LEN_T SIZEOF_LONG
+# endif
 
 /** Printf prefix for ::rb_len_t. */
-#define PRI_LEN_PREFIX "l"
+# define PRI_LEN_PREFIX "l"
 
 /** Maximum possible value that a ::rb_len_t can take. */
-#define RB_LEN_MAX LONG_MAX
+# define RB_LEN_MAX LONG_MAX
 
 /** Minimum possible value that a ::rb_len_t can take. */
-#define RB_LEN_MIN LONG_MIN
+# define RB_LEN_MIN LONG_MIN
 
 /** Maximum possible value that a ::rb_ulen_t can take. */
-#define RB_ULEN_MAX ULONG_MAX
+# define RB_ULEN_MAX ULONG_MAX
+#endif
+
+/** Indicates that ::rb_len_t and ::rb_ulen_t are available. */
+#define HAVE_RB_LEN_T 1
 
 /** @cond INTERNAL_MACRO */
 RBIMPL_STATIC_ASSERT(sizeof_int, SIZEOF_INT == sizeof(int));
@@ -159,7 +171,7 @@ RBIMPL_STATIC_ASSERT(sizeof_long, SIZEOF_LONG == sizeof(long));
 RBIMPL_STATIC_ASSERT(sizeof_long_long, SIZEOF_LONG_LONG == sizeof(LONG_LONG));
 RBIMPL_STATIC_ASSERT(sizeof_voidp, SIZEOF_VOIDP == sizeof(void *));
 RBIMPL_STATIC_ASSERT(sizeof_rb_len_t_macro, SIZEOF_RB_LEN_T == sizeof(rb_len_t));
-RBIMPL_STATIC_ASSERT(sizeof_rb_len_t, sizeof(rb_len_t) == sizeof(long));
-RBIMPL_STATIC_ASSERT(sizeof_rb_ulen_t, sizeof(rb_ulen_t) == sizeof(unsigned long));
+RBIMPL_STATIC_ASSERT(sizeof_rb_len_t, sizeof(rb_len_t) <= SIZEOF_VALUE);
+RBIMPL_STATIC_ASSERT(sizeof_rb_ulen_t, sizeof(rb_ulen_t) == sizeof(rb_len_t));
 /** @endcond */
 #endif /* RBIMPL_VALUE_H */

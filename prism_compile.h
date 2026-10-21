@@ -19,14 +19,15 @@ struct rb_code_location_struct;
 
 /**
  * A direct-indexed lookup table mapping constant IDs to local variable indices.
- * Regular constant IDs (1..constants_size) index directly. Special forwarding
- * parameter IDs (idMULT|FLAG, etc.) are mapped to 4 extra slots at the end.
+ * Regular constant IDs occupy the first constants_size slots, at the position
+ * given by pm_constant_id_index. Special forwarding parameter IDs
+ * (idMULT|FLAG, etc.) are mapped to 4 extra slots at the end.
  *
  * All lookups are O(1) — a single array dereference.
  * The table is arena-allocated for child scopes (no explicit free needed).
  */
 typedef struct {
-    /** Array of local indices, indexed by constant_id. -1 means not present. */
+    /** Array of local indices, indexed by pm_index_lookup_table_index. -1 means not present. */
     int *values;
 
     /** Total number of slots (constants_size + PM_INDEX_LOOKUP_SPECIALS). */
@@ -60,7 +61,7 @@ static inline int
 pm_index_lookup_table_index(const pm_index_lookup_table_t *table, pm_constant_id_t key)
 {
     if (LIKELY(!(key & PM_SPECIAL_CONSTANT_FLAG))) {
-        return (int) key - 1;
+        return (int) pm_constant_id_index(key);
     }
     return table->capacity - PM_INDEX_LOOKUP_SPECIALS + (int)(key & ~PM_SPECIAL_CONSTANT_FLAG);
 }
@@ -191,8 +192,10 @@ VALUE pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, V
 VALUE pm_parse_stdin(pm_parse_result_t *result);
 void pm_options_version_for_current_ruby_set(pm_options_t *options);
 void pm_parse_result_free(pm_parse_result_t *result);
+bool pm_source_hash_matches(VALUE source, VALUE filepath, uint64_t source_hash);
 bool pm_node_source_location(VALUE source, VALUE filepath, int start_line,
-                             int node_id, struct rb_code_location_struct *location);
+                             int node_id, uint64_t source_hash,
+                             struct rb_code_location_struct *location);
 
 rb_iseq_t *pm_iseq_new(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, enum rb_iseq_type, int *error_state);
 rb_iseq_t *pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, int *error_state);

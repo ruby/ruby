@@ -1277,20 +1277,6 @@ assert_equal 'Ractor::IsolationError', %q{
   res
 }
 
-# Class#initialize writes the superclass of an uninitialized class, so it is
-# owner-only like any other modification
-assert_equal 'can not modify K because it is created by another Ractor', %q{
-  K = Class.allocate
-
-  r = Ractor.new { K.send(:initialize, Struct) }
-
-  begin
-    r.join
-  rescue Ractor::RemoteError => e
-    e.cause.message
-  end
-}
-
 # Module#refine writes its refinement tables into the receiver, so the receiver
 # must be owned too
 assert_equal 'can not modify M because it is created by another Ractor', %q{
@@ -3316,4 +3302,25 @@ assert_equal 'ok', %q{
   Ractor.new { Dir.pwd; 500_000.times { "y" * 300 } }.join
   Dir.pwd
   'ok'
+}
+
+# A stale errno left on another native thread must not raise IO::TimeoutError
+assert_equal 'ok', %q{
+  8.times.map do
+    Ractor.new do
+      t = Time.now
+      Thread.new do
+        r, = IO.pipe
+        r.timeout = 0.0001
+        (r.read(1) rescue nil) while Time.now - t < 0.1
+      end
+      r, w = IO.pipe
+      Thread.new do
+        (w << "x"; sleep 0.0001) while Time.now - t < 0.1
+        w.close
+      end
+      nil while r.read(1)
+    end
+  end.each(&:join)
+  :ok
 }

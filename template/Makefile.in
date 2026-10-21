@@ -250,6 +250,7 @@ AR            = @AR@
 ARFLAGS       = @ARFLAGS@$(empty)
 RANLIB        = @RANLIB@
 AS            = @AS@
+LASTREV       = $(SHELL) $(tooldir)/lastrev
 IFCHANGE      = $(SHELL) $(tooldir)/ifchange
 OBJDUMP       = @OBJDUMP@
 OBJCOPY       = @OBJCOPY@

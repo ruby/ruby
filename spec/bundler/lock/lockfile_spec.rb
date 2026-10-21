@@ -2151,20 +2151,22 @@ RSpec.describe "the lockfile format" do
       build_gem "net-smtp", "0.5.0"
     end
 
+    git = build_git "rack", "3.2.0"
+
     gemfile <<~G
       source "#{file_uri_for(gem_repo4)}"
       gem "logger"
       gem "net-smtp"
 
       install_if -> { false } do
-        gem 'rack', github: 'rack/rack'
+        gem 'rack', git: "#{lib_path("rack-3.2.0")}"
       end
     G
 
     lockfile <<~L
       GIT
-        remote: https://github.com/rack/rack.git
-        revision: 2fface9ac09fc582a81386becd939c987ad33f99
+        remote: #{lib_path("rack-3.2.0")}
+        revision: #{git.ref_for("main")}
         specs:
           rack (3.2.0)
 
@@ -2188,8 +2190,8 @@ RSpec.describe "the lockfile format" do
 
     expect(lockfile).to eq <<~L
       GIT
-        remote: https://github.com/rack/rack.git
-        revision: 2fface9ac09fc582a81386becd939c987ad33f99
+        remote: #{lib_path("rack-3.2.0")}
+        revision: #{git.ref_for("main")}
         specs:
           rack (3.2.0)
 

@@ -1645,6 +1645,10 @@ ar_add_direct_i(st_data_t key, st_data_t value, st_data_t hash_value, st_data_t 
 {
     VALUE ret = (VALUE)arg;
     ar_insert_direct(ret, key, value, hash_value);
+    // ar_insert_direct can call #eql? and trigger a GC part way through the copy, which
+    // leaves ret old (or snapshotted) with the entries added so far.
+    RB_OBJ_WRITTEN(ret, Qundef, key);
+    RB_OBJ_WRITTEN(ret, Qundef, value);
     return ST_CONTINUE;
 }
 
@@ -1771,7 +1775,7 @@ rb_zjit_hash_new_size(VALUE *flags_out, size_t size)
 }
 
 bool
-rb_zjit_hash_dup_can_fastpath(VALUE hash, size_t *alloc_size_out, VALUE *flags_out, VALUE *ifnone_out, long *bound_out)
+rb_zjit_hash_dup_can_fastpath(VALUE hash, size_t *alloc_size_out, VALUE *flags_out, VALUE *ifnone_out, rb_len_t *bound_out)
 {
     if (!RHASH_AR_TABLE_P(hash)) return false;
     if (rb_hash_compare_by_id_p(hash)) return false;
@@ -1783,7 +1787,7 @@ rb_zjit_hash_dup_can_fastpath(VALUE hash, size_t *alloc_size_out, VALUE *flags_o
         | ((VALUE)RHASH_AR_TABLE_SIZE(hash) << RHASH_AR_TABLE_SIZE_SHIFT)
         | ((VALUE)bound << RHASH_AR_TABLE_BOUND_SHIFT);
     *ifnone_out = RHASH_IFNONE(hash);
-    *bound_out = (long)bound;
+    *bound_out = (rb_len_t)bound;
     return true;
 }
 #endif
@@ -1967,7 +1971,7 @@ rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifn
 }
 
 static VALUE rb_hash_to_a(VALUE hash);
-static VALUE hash_new_with_bulk_insert(VALUE klass, long argc, const VALUE *argv);
+static VALUE hash_new_with_bulk_insert(VALUE klass, rb_len_t argc, const VALUE *argv);
 
 /*
  *  call-seq:
@@ -5407,7 +5411,7 @@ rb_hash_bulk_insert(rb_len_t argc, const VALUE *argv, VALUE hash)
 }
 
 static VALUE
-hash_new_with_bulk_insert(VALUE klass, long argc, const VALUE *argv)
+hash_new_with_bulk_insert(VALUE klass, rb_len_t argc, const VALUE *argv)
 {
     VALUE val = hash_new_capa(klass, argc / 2);
     rb_hash_bulk_insert(argc, argv, val);
@@ -5415,13 +5419,13 @@ hash_new_with_bulk_insert(VALUE klass, long argc, const VALUE *argv)
 }
 
 VALUE
-rb_hash_new_with_bulk_insert(long argc, const VALUE *argv)
+rb_hash_new_with_bulk_insert(rb_len_t argc, const VALUE *argv)
 {
     return hash_new_with_bulk_insert(rb_cHash, argc, argv);
 }
 
 VALUE
-rb_hash_merge2_bulk(VALUE hash, long argc, const VALUE *argv, bool dup)
+rb_hash_merge2_bulk(VALUE hash, rb_len_t argc, const VALUE *argv, bool dup)
 {
     VALUE val = hash;
     if (dup) {
@@ -5488,7 +5492,7 @@ env_encoding(void)
 }
 
 static VALUE
-env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
+env_enc_str_new(const char *ptr, rb_len_t len, rb_encoding *enc)
 {
     VALUE str = rb_external_str_new_with_enc(ptr, len, enc);
 
@@ -5497,7 +5501,7 @@ env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 }
 
 static VALUE
-env_str_new(const char *ptr, long len, rb_encoding *enc)
+env_str_new(const char *ptr, rb_len_t len, rb_encoding *enc)
 {
     return env_enc_str_new(ptr, len, enc);
 }
@@ -5702,26 +5706,43 @@ env_fetch(int argc, VALUE *argv, VALUE _)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   ENV.fetch_values(*names) -> array of values
- *   ENV.fetch_values(*names) {|name| ... } -> array of values
+ *   ENV.fetch_values(*names) -> array
+ *   ENV.fetch_values(*names) {|name| ... } -> array
  *
- * Returns an Array containing the environment variable values associated with
- * the given names:
- *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
- *   ENV.fetch_values('foo', 'baz') # => ["0", "2"]
+ * With no block given,
+ * returns an array containing the values associated with the given `names`:
  *
- * Otherwise if a block is given yields +name+ to
- * the block and returns the block's return value:
- *   ENV.fetch_values('foo', 'bam') {|key| key.to_s} # => ["0", "bam"]
+ * ```ruby
+ * ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
+ * ENV.fetch_values('baz', 'foo')    # => ["2", "0"]
+ * ENV.fetch_values                  # => []
+ * ENV.fetch_values('foo', 'nosuch') # Raises KeyError: key not found: "nosuch"
+ * ```
  *
- * Raises KeyError if +name+ is valid, but not found and block is not given:
- *   ENV.fetch_values('foo', 'bam') # Raises KeyError (key not found: "bam")
+ * With a block given, returns an array whose size is the count of the given `names`:
  *
- * Returns an empty Array if no names given.
+ * - For each name found, the block is not called,
+ *   and the value for that name is added to the output array.
+ * - For each name not found, the block is called,
+ *   and the block's return value is added to the output array.
  *
- * Raises an exception if any name is invalid.
- * See {Invalid Names and Values}[rdoc-ref:ENV@Invalid+Names+and+Values].
+ * Examples:
+ *
+ * ```ruby
+ * # All found; block not called for any.
+ * ENV.fetch_values('baz', 'foo', 'foo') {|name| fail 'Cannot happen' }
+ * # => ["2", "0", "0"]
+ * # None found; block called for all.
+ * ENV.fetch_values('xxx', 'yyy', 'zzz') {|name| name.upcase }
+ * # => ["XXX", "YYY", "ZZZ"]
+ * # Mixture.
+ * ENV.fetch_values('xxx', 'baz', 'zzz', 'foo') {|name| name.upcase }
+ * # => ["XXX", "2", "ZZZ", "0"]
+ * ```
+ *
  */
 
 static VALUE
@@ -6691,7 +6712,7 @@ env_has_value(VALUE dmy, VALUE obj)
         while (*env) {
             char *s = strchr(*env, '=');
             if (s++) {
-                long len = strlen(s);
+                rb_len_t len = strlen(s);
                 if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
                     ret = Qtrue;
                     break;
@@ -6734,7 +6755,7 @@ env_rassoc(VALUE dmy, VALUE obj)
             const char *p = *env;
             const char *s = strchr(p, '=');
             if (s++) {
-                long len = strlen(s);
+                rb_len_t len = strlen(s);
                 if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
                     result = rb_assoc_new(rb_str_new(p, s-p-1), obj);
                     break;
@@ -6776,7 +6797,7 @@ env_key(VALUE dmy, VALUE value)
         while (*env) {
             char *s = strchr(*env, '=');
             if (s++) {
-                long len = strlen(s);
+                rb_len_t len = strlen(s);
                 if (RSTRING_LEN(value) == len && strncmp(s, RSTRING_PTR(value), len) == 0) {
                     str = env_str_new(*env, s-*env-1, enc);
                     break;

@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class ImplicitArrayTest < TestCase
     def test_call_node
       assert_implicit_array("a.a = *b")
@@ -49,8 +49,8 @@ module Prism
     private
 
     def assert_implicit_array(source)
-      assert Prism.parse_success?(source)
-      assert Prism.parse_failure?("if #{source} then end")
+      assert Ruby::Prism.parse_success?(source)
+      assert Ruby::Prism.parse_failure?("if #{source} then end")
 
       assert_valid_syntax(source)
       refute_valid_syntax("if #{source} then end")

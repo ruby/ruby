@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require '-test-/string'
 
 class TestString < Test::Unit::TestCase
   WIDE_ENCODINGS = [
@@ -103,24 +104,18 @@ class TestString < Test::Unit::TestCase
   def test_initialize_memory_leak
     return unless @cls == String
 
-    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc {('x'*100_000).__send__(:initialize, '')}
-1_000.times(&code)
-PREP
-100_000.times(&code)
-CODE
+    assert_no_memory_leak([], '', <<-CODE, rss: true, samples: 2..100)
+    1_000.times {('x'*100_000).__send__(:initialize, '')}
+    CODE
   end
 
   # Bug #18154
   def test_initialize_nofree_memory_leak
     return unless @cls == String
 
-    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc {0.to_s.__send__(:initialize, capacity: 100_000)}
-1_000.times(&code)
-PREP
-100_000.times(&code)
-CODE
+    assert_no_memory_leak([], '', <<-CODE, rss: true, samples: 2..100)
+    1_000.times {0.to_s.__send__(:initialize, capacity: 100_000)}
+    CODE
   end
 
   def test_AREF # '[]'
@@ -764,12 +759,14 @@ CODE
       assert_raise(ArgumentError) {S("mypassword".encode(enc)).crypt(S("aa"))}
     end
 
-    @cls == String and
-      assert_no_memory_leak([], "s = ''; salt_proc = proc{#{(crypt_supports_des_crypt? ? '..' : good_salt).inspect}}", "#{<<~"begin;"}\n#{<<~'end;'}")
-
-    begin;
-      1000.times { s.crypt(-salt_proc.call).clear  }
-    end;
+    if @cls == String
+      assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", samples: 2..100)
+      s = ''
+      salt = -""#{(crypt_supports_des_crypt? ? '..' : good_salt).dump}
+      begin;
+        10.times { s.crypt(salt).clear  }
+      end;
+    end
   end
 
   def test_delete
@@ -2488,18 +2485,14 @@ CODE
   end
 
   def test_start_with_timeout_memory_leak
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20653]", rss: true)
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20653]", rss: true, samples: 2..100)
       regex = Regexp.new("^#{"(a*)" * 10_000}x$", timeout: 0.000001)
       str = "a" * 1_000_000 + "x"
-
-      code = proc do
+    begin;
+      10.times do
         str.start_with?(regex)
       rescue
       end
-
-      10.times(&code)
-    begin;
-      1_000.times(&code)
     end;
   end
 
@@ -4519,12 +4512,11 @@ CODE
         def fallback.[](_str) = raise MyError
       RUBY
     }.each do |type, code|
-      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+      assert_no_memory_leak([], <<~PREPARE, <<~RUBY, "fallback type is #{type}", rss: true, samples: 2..100)
         class MyError < StandardError; end
-
         #{code}
-
-        100_000.times do |i|
+      PREPARE
+        1000.times do |i|
           "\\ufffd".encode(Encoding::US_ASCII, fallback:)
         rescue MyError
         end
@@ -4549,12 +4541,11 @@ CODE
         def fallback.[](_str) = "\\uffee"
       RUBY
     }.each do |type, code|
-      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+      assert_no_memory_leak([], <<~PREPARE, <<~RUBY, "fallback type is #{type}", rss: true, samples: 2..100)
         class MyError < StandardError; end
-
         #{code}
-
-        100_000.times do |i|
+      PREPARE
+        1000.times do |i|
           "\\ufffd".encode(Encoding::US_ASCII, fallback:)
         rescue ArgumentError
         end
@@ -4579,12 +4570,11 @@ CODE
         def fallback.[](_str) = Object.new
       RUBY
     }.each do |type, code|
-      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+      assert_no_memory_leak([], <<~PREPARE, <<~RUBY, "fallback type is #{type}", rss: true, samples: 2..100)
         class MyError < StandardError; end
-
         #{code}
-
-        100_000.times do |i|
+      PREPARE
+        1000.times do |i|
           "\\ufffd".encode(Encoding::US_ASCII, fallback:)
         rescue TypeError
         end
@@ -4648,5 +4638,82 @@ class TestString2 < TestString
   def initialize(*args)
     super
     @cls = S2
+  end
+
+  def assert_capacity(capa, str, msg)
+    assert_equal capa, Bug::String.capacity(str), msg
+  end
+
+  def test_capacity_inflation
+    orig = ("\u{30AF}" * 5)
+    all_assertions_foreach(nil, Encoding::UTF_8, *WIDE_ENCODINGS) do |enc|
+      assert_capacity(200, S2.new(orig.encode(enc), encoding: "UTF-8", capacity: 200), enc.name)
+    end
+  end
+
+  def test_capacity_no_inflation
+    orig = "hello"
+    all_assertions_foreach(nil, Encoding::UTF_8, *WIDE_ENCODINGS) do |enc|
+      assert_capacity(100, S2.new(orig, encoding: enc, capacity: 100), enc.name)
+    end
+  end
+
+  def test_capacity_no_overflow_on_append
+    orig = ("\u{30AF}" * 5)
+    all_assertions_foreach(nil, *WIDE_ENCODINGS) do |enc|
+      encoded = orig.encode(enc)
+      size = encoded.bytesize
+
+      s = S2.new(encoded, encoding: "UTF-8", capacity: 200)
+      s << "x" * 191
+      assert_equal(size + 191, s.bytesize, enc.name)
+
+      s = S2.new(encoded, encoding: "UTF-8", capacity: 207)
+      s << "y" * 207
+      assert_equal(size + 207, s.bytesize, enc.name)
+    end
+  end
+
+  def test_wide_encoding_terminator_without_capacity
+    all_assertions_foreach(nil, *WIDE_ENCODINGS) do |enc|
+      [*1..32, 1000].each do |n|
+        orig = "a" * n
+        s = S2.new(orig, encoding: enc)
+        assert_operator(Bug::String.capacity(s), :>=, n, "#{enc.name} #{n}")
+        assert_nil(Bug::String.cstr_term_char(s), "#{enc.name} #{n}")
+        s[0, 0] = ""
+        assert_equal(n, s.bytesize, "#{enc.name} #{n}")
+        assert_equal("a" * n, orig, "#{enc.name} #{n}")
+
+        s = S2.new("a" * n)
+        s.__send__(:initialize, encoding: enc)
+        assert_operator(Bug::String.capacity(s), :>=, n, "#{enc.name} #{n}")
+        assert_nil(Bug::String.cstr_term_char(s), "#{enc.name} #{n}")
+        s[0, 0] = ""
+        assert_equal(n, s.bytesize, "#{enc.name} #{n}")
+      end
+    end
+  end
+
+  def test_wide_encoding_terminator_with_capacity
+    all_assertions_foreach(nil, *WIDE_ENCODINGS) do |enc|
+      orig = ("b" * 400).force_encoding(enc)
+
+      s = S2.new(orig, capacity: 1)
+      assert_equal(enc, s.encoding)
+      assert_nil(Bug::String.cstr_term_char(s))
+
+      s = S2.new(orig)
+      s.__send__(:initialize, capacity: 100)
+      assert_equal(enc, s.encoding)
+      assert_empty(s)
+      assert_nil(Bug::String.cstr_term_char(s))
+
+      s = S2.new(orig)
+      s.__send__(:initialize, s, capacity: 100)
+      assert_equal(enc, s.encoding)
+      assert_equal(orig, s)
+      assert_nil(Bug::String.cstr_term_char(s))
+    end
   end
 end

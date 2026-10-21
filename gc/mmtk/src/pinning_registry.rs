@@ -125,7 +125,7 @@ impl GCWork<Ruby> for PinPinningChildren {
             .set_temporarily_and_run_code(visit_object, || {
                 for obj in self.pinning_objs.iter().cloned() {
                     log::trace!("  Pinning: {}", obj);
-                    (upcalls().call_gc_mark_children)(obj);
+                    upcalls::call_gc_mark_children(obj);
                 }
             });
 

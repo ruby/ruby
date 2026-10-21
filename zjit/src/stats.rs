@@ -9,7 +9,7 @@ use crate::options::OPTIONS;
 #[path = "../../jit/src/lib.rs"]
 mod jit;
 
-use crate::{cast::IntoUsize as _, cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, ZJITState}};
+use crate::{cast::IntoUsize as _, cruby::*, hir::ParseError, options::get_option, state::{increment_compile_time_ns, zjit_enabled_p, ZJITState}};
 
 macro_rules! make_counters {
     (
@@ -991,6 +991,16 @@ pub fn with_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() ->
     let ret = func();
     let nanos = Instant::now().duration_since(start).as_nanos();
     incr_counter_by(counter, nanos as u64);
+    ret
+}
+
+/// Measure the time taken by func() and add that to zjit_compile_time.
+pub fn with_compile_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() -> R {
+    let start = Instant::now();
+    let ret = func();
+    let nanos = Instant::now().duration_since(start).as_nanos() as u64;
+    increment_compile_time_ns(nanos);
+    incr_counter_by(counter, nanos);
     ret
 }
 

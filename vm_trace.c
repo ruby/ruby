@@ -1670,7 +1670,7 @@ static VALUE
 tracepoint_new_s(rb_execution_context_t *ec, VALUE self, VALUE args)
 {
     rb_event_flag_t events = 0;
-    long i;
+    rb_len_t i;
     rb_len_t argc = RARRAY_LEN(args);
 
     if (argc > 0) {

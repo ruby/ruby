@@ -3308,6 +3308,8 @@ class TestIO < Test::Unit::TestCase
     assert_raise(IOError) { IO.allocate.print "" }
     assert_raise(IOError) { IO.allocate.external_encoding }
     assert_raise(IOError) { IO.allocate.internal_encoding }
+    assert_raise(IOError) { IO.allocate.reopen(__FILE__) }
+    assert_raise(IOError) { IO.allocate.reopen(IO::NULL) }
   end
 
   def test_nofollow
@@ -3940,6 +3942,9 @@ __END__
       assert_raise_with_message(RuntimeError, msg) do
         buf.replace("")
       end
+      assert_raise_with_message(RuntimeError, msg) do
+        buf.__send__(:initialize, encoding: Encoding::UTF_16LE)
+      end
       assert_predicate(th, :alive?)
       w.write(data)
       th.join
@@ -4539,6 +4544,24 @@ __END__
       assert_equal(ret, IO.select([r],nil,nil,0.1))
       assert_equal(ret, IO.select([r],nil,nil,1))
       assert_equal(ret, IO.select([r],nil,nil,Float::INFINITY))
+    }
+  end
+
+  # A select skipped for a pending interrupt (another thread asks for the GVL) was reported as a timeout.
+  def test_select_zero_timeout_at_eof_with_another_thread
+    IO.pipe {|r, w|
+      w.close
+      th = Thread.new { loop { Thread.pass } }
+      begin
+        miss = 0
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 1
+        while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+          miss += 1 unless IO.select([r], nil, nil, 0)
+        end
+        assert_equal(0, miss)
+      ensure
+        th.kill.join
+      end
     }
   end
 

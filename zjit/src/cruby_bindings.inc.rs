@@ -1687,7 +1687,13 @@ pub struct rb_const_entry_struct {
     pub flag: rb_const_flag_t,
     pub line: ::std::os::raw::c_int,
     pub value: VALUE,
-    pub file: VALUE,
+    pub u: rb_const_entry_struct__bindgen_ty_1,
+}
+#[repr(C)]
+pub struct rb_const_entry_struct__bindgen_ty_1 {
+    pub file: __BindgenUnionField<VALUE>,
+    pub autoload_const: __BindgenUnionField<VALUE>,
+    pub bindgen_union_field: u64,
 }
 pub type rb_const_entry_t = rb_const_entry_struct;
 #[repr(C)]
@@ -2380,7 +2386,7 @@ unsafe extern "C" {
         func: st_foreach_callback_func,
         arg: st_data_t,
     ) -> ::std::os::raw::c_int;
-    pub fn rb_hash_new_with_bulk_insert(argc: ::std::os::raw::c_long, argv: *const VALUE) -> VALUE;
+    pub fn rb_hash_new_with_bulk_insert(argc: rb_len_t, argv: *const VALUE) -> VALUE;
     pub fn rb_hash_resurrect(hash: VALUE) -> VALUE;
     pub fn rb_hash_stlike_lookup(
         hash: VALUE,
@@ -2432,7 +2438,7 @@ unsafe extern "C" {
         alloc_size_out: *mut usize,
         flags_out: *mut VALUE,
         ifnone_out: *mut VALUE,
-        bound_out: *mut ::std::os::raw::c_long,
+        bound_out: *mut rb_len_t,
     ) -> bool;
     pub fn rb_zjit_range_new_fastpath(
         exclude_end: bool,
@@ -2483,20 +2489,18 @@ unsafe extern "C" {
         cd: *mut rb_call_data,
         recv: VALUE,
     ) -> *const rb_callable_method_entry_struct;
-    pub fn rb_zjit_class_initialized_p(klass: VALUE) -> bool;
-    pub fn rb_zjit_can_load_superclass_p(klass: VALUE) -> bool;
     pub fn rb_zjit_class_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
     pub fn rb_zjit_class_has_struct_allocator(klass: VALUE) -> bool;
-    pub fn rb_zjit_struct_num_members(klass: VALUE) -> ::std::os::raw::c_long;
-    pub fn rb_zjit_struct_member_id(klass: VALUE, index: ::std::os::raw::c_long) -> ID;
-    pub fn rb_zjit_struct_embedded_p(num_members: ::std::os::raw::c_long) -> bool;
+    pub fn rb_zjit_struct_num_members(klass: VALUE) -> rb_len_t;
+    pub fn rb_zjit_struct_member_id(klass: VALUE, index: rb_len_t) -> ID;
+    pub fn rb_zjit_struct_embedded_p(num_members: rb_len_t) -> bool;
     pub fn rb_struct_s_keyword_init(klass: VALUE) -> VALUE;
     pub fn rb_zjit_class_has_default_allocator(klass: VALUE) -> bool;
     pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
     pub fn rb_vm_once_done_value(is: ISE, result: *mut VALUE) -> bool;
     pub fn rb_zjit_array_aref_with_adjusted_index(
         ary: VALUE,
-        index: ::std::os::raw::c_long,
+        index: rb_len_t,
         out: *mut VALUE,
     ) -> bool;
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
@@ -2506,7 +2510,7 @@ unsafe extern "C" {
         iseq: *const rb_iseq_t,
         pc: *const VALUE,
     ) -> ::std::os::raw::c_int;
-    pub fn rb_RSTRING_LEN(str_: VALUE) -> ::std::os::raw::c_ulong;
+    pub fn rb_RSTRING_LEN(str_: VALUE) -> rb_len_t;
     pub fn rb_RSTRING_PTR(str_: VALUE) -> *mut ::std::os::raw::c_char;
     pub fn rb_insn_name(insn: VALUE) -> *const ::std::os::raw::c_char;
     pub fn rb_vm_ci_argc(ci: *const rb_callinfo) -> ::std::os::raw::c_uint;

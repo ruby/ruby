@@ -87,11 +87,11 @@ srcs: $(TRANSCSRCS)
 
 $(ENC_TRANS_D):
 	$(Q) $(MAKEDIRS) enc/trans
-	@exit > $@
+	-@exit > $@
 
 $(ENC_TRANS_SO_D):
 	$(Q) $(MAKEDIRS) $(TRANSSODIR)
-	@exit > $@
+	-@exit > $@
 
 $(ENCOBJS) $(TRANSOBJS): $(ENC_TRANS_D)
 $(ENCSOS) $(TRANSSOS): $(ENC_TRANS_SO_D)

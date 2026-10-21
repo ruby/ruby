@@ -898,7 +898,7 @@ VALUE
 rb_io_buffer_type_string(VALUE klass, VALUE length)
 {
     klass = io_buffer_storage_class(klass);
-    VALUE string = rb_str_new(NULL, RB_NUM2LONG(length));
+    VALUE string = rb_str_new(NULL, RB_NUM2LEN(length));
 
     struct io_buffer_for_yield_instance_arguments arguments = {
         .klass = klass,
@@ -3924,7 +3924,7 @@ struct io_buffer_pread_internal_argument {
     // The maximum number of bytes to read:
     size_t length;
     // The position to read from:
-    off_t from;
+    rb_off_t from;
 };
 
 static VALUE
@@ -4107,7 +4107,7 @@ struct io_buffer_pwrite_internal_argument {
     // The maximum number of bytes to write:
     size_t length;
     // The position to write to:
-    off_t from;
+    rb_off_t from;
 };
 
 static VALUE

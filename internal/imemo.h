@@ -108,7 +108,7 @@ struct rb_imemo_cdhash {
 };
 
 /* Set on imemo_memo when u3 holds a VALUE that GC must mark.
- * When unset, u3 is a non-VALUE (cnt/state). */
+ * When unset, u3 is a non-VALUE (cnt/ucnt/state). */
 #define MEMO_U3_IS_VALUE IMEMO_FL_USER0
 
 /*! MEMO
@@ -121,6 +121,7 @@ struct MEMO {
     const VALUE v2;
     union {
         rb_len_t cnt;
+        rb_ulen_t ucnt;
         long state;
         const VALUE value;
     } u3;

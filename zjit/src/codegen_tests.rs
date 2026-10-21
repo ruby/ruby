@@ -3703,6 +3703,90 @@ fn test_opt_neq_string_nil() {
 }
 
 #[test]
+fn test_opt_neq_truthy_result_with_overridden_not() {
+    eval(r#"
+        class TruthyResult
+          def ! = :overridden
+        end
+        class CustomEq
+          def ==(other) = TruthyResult.new
+        end
+        def test(obj) = obj != nil
+        obj = CustomEq.new
+        test(obj)
+        test(obj)
+    "#);
+    assert_snapshot!(assert_compiles("test(CustomEq.new)"), @"false");
+}
+
+#[test]
+fn test_opt_neq_truthiness() {
+    with_inlining(|| {
+        eval(r#"
+            class CustomEq
+              def initialize(result) = @result = result
+              def ==(other) = @result
+            end
+            def test(obj) = obj != nil
+            test(CustomEq.new(nil))
+            test(CustomEq.new(false))
+            test(CustomEq.new(true))
+            test(CustomEq.new(0))
+            test(CustomEq.new(Object.new))
+        "#);
+        assert_snapshot!(assert_compiles(r#"
+            [test(CustomEq.new(nil)), test(CustomEq.new(false)),
+             test(CustomEq.new(true)), test(CustomEq.new(0)),
+             test(CustomEq.new(Object.new))]
+        "#), @"[true, true, false, false, false]");
+    });
+}
+
+#[test]
+fn test_opt_neq_unused_result_preserves_eq_side_effect() {
+    with_inlining(|| {
+        eval(r#"
+            class CustomEq
+              attr_reader :calls
+              def initialize = @calls = 0
+              def ==(other)
+                @calls += 1
+                nil
+              end
+            end
+            def test(obj)
+              obj != nil
+              5
+            end
+            $obj = CustomEq.new
+            test($obj)
+            test($obj)
+        "#);
+        assert_snapshot!(assert_compiles("[test($obj), $obj.calls]"), @"[5, 3]");
+    });
+}
+
+#[test]
+fn test_opt_neq_inlined_eq_side_exit_preserves_negation() {
+    with_inlining(|| {
+        eval(r#"
+            class CustomEq
+              def initialize = @value = true
+              def ==(other) = @value
+            end
+            def test(obj) = obj != nil
+            $obj = CustomEq.new
+            test($obj)
+            test($obj)
+        "#);
+        assert_snapshot!(assert_compiles_allowing_exits(r#"
+            $obj.instance_variable_set(:@extra, 1)
+            test($obj)
+        "#), @"false");
+    });
+}
+
+#[test]
 fn test_opt_neq_string_same_operand() {
     assert_snapshot!(inspect(r#"
         def test(s) = s != s
@@ -8434,6 +8518,30 @@ fn test_ep_escape_preserves_keyword_default() {
         forwarder("y", additional_methods: [:to_s])
         target("x")
     "#), @"[]");
+}
+
+#[test]
+fn test_local_write_through_binding_in_branch_reaches_merge_point() {
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        def test(s)
+          y = 1
+          binding.local_variable_set(:y, s) if s
+          y
+        end
+        3.times { test(1) }
+        test(2)
+    "#), @"2");
+}
+
+#[test]
+fn test_local_write_through_call_in_branch_reaches_merge_point() {
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        def test(s) = (y = 1; eval(s) if s; y)
+        3.times { test("1") }
+        test("y = 2")
+    "#), @"2");
 }
 
 #[test]
