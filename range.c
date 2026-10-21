@@ -2783,7 +2783,7 @@ range_clamp(int argc, VALUE *argv, VALUE self)
  *   r.include?(4)  # => true   # Included.
  *
  *   r = nil...4    # => ...4   # Exclude end.
- *   r = ...4)      # => ...4   # The leading nil may be omitted.
+ *   r = ...4       # => ...4   # The leading nil may be omitted.
  *   r.include?(4)  # => false  # Excluded.
  *
  * To create a beginless range with Range.new,
