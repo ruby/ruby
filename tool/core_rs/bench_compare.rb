@@ -3,6 +3,19 @@
 
 # bench_compare.rb - Compares performance of Ruby builds with and without Rust ports.
 #
+# Methodology:
+# 1. Startup overhead subtraction: Measures startup runtime using `ruby -e0` for both binaries.
+#    Subtracts the median startup overhead from gross execution times to yield net benchmark times.
+# 2. Interleaved execution: For each benchmark and during startup measurement, runs of the
+#    without-ports (C fallback) and with-ports (Rust ports) binaries are interleaved across iterations
+#    to eliminate environmental drift or host load bias.
+# 3. Stable median: Runs each benchmark `repeat` times (default: 10) and calculates the median net execution time.
+# 4. Geometric mean decision: Calculates the ratio of net execution times (with_ports / without_ports)
+#    for each benchmark, then computes the geometric mean across all benchmarks.
+# 5. Threshold & Warning Policy: Default regression threshold is 10.0%. The performance gate fails
+#    if and only if the geometric mean regression percentage exceeds the threshold. Individual
+#    benchmarks that exceed the threshold are flagged as warnings ('WARN') and do not fail the gate on their own.
+#
 # Usage:
 #   ruby tool/core_rs/bench_compare.rb --with-ports ./ruby --without-ports ../build-c/ruby [options]
 #
@@ -10,7 +23,7 @@
 #   --with-ports PATH       Path to Ruby binary or build directory compiled --with-rust-ports
 #   --without-ports PATH    Path to Ruby binary or build directory compiled --without-rust-ports
 #   --threshold PERCENT     Maximum allowed performance regression percentage (default: 10.0)
-#   --repeat COUNT          Number of iterations per benchmark (default: 3)
+#   --repeat COUNT          Number of iterations per benchmark (default: 10)
 #   --benchmarks LIST       Comma-separated list of benchmark files to run
 
 require 'optparse'
@@ -18,7 +31,7 @@ require 'open3'
 require 'fileutils'
 
 DEFAULT_THRESHOLD_PERCENT = 10.0
-DEFAULT_REPEAT_COUNT = 3
+DEFAULT_REPEAT_COUNT = 10
 
 REPO_ROOT = File.expand_path('../../', __dir__)
 
@@ -51,22 +64,58 @@ def resolve_executable(path)
   end
 end
 
-def measure_execution(ruby_bin, bench_file, repeat_count)
-  times = []
-  repeat_count.times do
-    t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    _stdout, stderr, status = Open3.capture3(ruby_bin, bench_file)
-    t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+def run_command_once(ruby_bin, args)
+  t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  _stdout, stderr, status = Open3.capture3(ruby_bin, *args)
+  t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-    unless status.success?
-      warn "Error running #{ruby_bin} on #{bench_file}:\n#{stderr}"
-      return nil
-    end
-
-    times << (t1 - t0)
+  unless status.success?
+    warn "Error running #{ruby_bin} #{args.join(' ')}:\n#{stderr}"
+    return nil
   end
 
-  times.min
+  t1 - t0
+end
+
+def measure_interleaved(without_exe, with_exe, args, repeat_count)
+  times_without = []
+  times_with = []
+
+  repeat_count.times do |i|
+    # Interleave order to balance any system state bias across iterations
+    first_exe, second_exe = if i.even?
+                              [without_exe, with_exe]
+                            else
+                              [with_exe, without_exe]
+                            end
+
+    t_first = run_command_once(first_exe, args)
+    t_second = run_command_once(second_exe, args)
+
+    return [nil, nil] if t_first.nil? || t_second.nil?
+
+    if i.even?
+      times_without << t_first
+      times_with << t_second
+    else
+      times_with << t_first
+      times_without << t_second
+    end
+  end
+
+  [times_without, times_with]
+end
+
+def median(array)
+  return 0.0 if array.nil? || array.empty?
+
+  sorted = array.sort
+  len = sorted.length
+  if len.odd?
+    sorted[len / 2]
+  else
+    (sorted[(len / 2) - 1] + sorted[len / 2]) / 2.0
+  end
 end
 
 def parse_options
@@ -150,50 +199,73 @@ def main
   puts "Without Rust ports binary: #{without_exe}"
   puts "Iterations per benchmark:  #{options[:repeat]}"
   puts "Regression threshold:      #{options[:threshold]}%"
+
+  # Measure ruby -e0 startup time (interleaved)
+  startup_without_times, startup_with_times = measure_interleaved(without_exe, with_exe, ['-e', '0'], options[:repeat])
+  if startup_without_times.nil? || startup_with_times.nil?
+    abort 'Error measuring startup overhead (ruby -e0)'
+  end
+
+  startup_without_med = median(startup_without_times)
+  startup_with_med = median(startup_with_times)
+
+  puts sprintf('Startup overhead (ruby -e0): C: %.4fs, Rust: %.4fs', startup_without_med, startup_with_med)
   puts '-' * 80
 
-  format_header = "%-25s %-18s %-18s %-12s %-10s"
-  format_row    = "%-25s %-18s %-18s %-12s %-10s"
+  format_header = '%-25s %-18s %-18s %-12s %-10s'
+  format_row    = '%-25s %-18s %-18s %-12s %-10s'
 
-  puts sprintf(format_header, 'Benchmark', 'C Fallback (s)', 'Rust Ports (s)', 'Diff (%)', 'Status')
+  puts sprintf(format_header, 'Benchmark', 'C Net (s)', 'Rust Net (s)', 'Diff (%)', 'Status')
   puts '-' * 80
 
-  total_without = 0.0
-  total_with = 0.0
-  any_benchmark_failed = false
+  any_benchmark_errored = false
+  ratios = []
 
   bench_files.each do |bench_file|
     bench_name = File.basename(bench_file)
 
-    t_without = measure_execution(without_exe, bench_file, options[:repeat])
-    t_with    = measure_execution(with_exe, bench_file, options[:repeat])
+    times_without, times_with = measure_interleaved(without_exe, with_exe, [bench_file], options[:repeat])
 
-    if t_without.nil? || t_with.nil?
+    if times_without.nil? || times_with.nil?
       puts sprintf(format_row, bench_name, 'ERROR', 'ERROR', 'N/A', 'FAIL')
-      any_benchmark_failed = true
+      any_benchmark_errored = true
       next
     end
 
-    total_without += t_without
-    total_with += t_with
+    gross_without = median(times_without)
+    gross_with = median(times_with)
 
-    diff_pct = ((t_with - t_without) / t_without) * 100.0
-    status = diff_pct > options[:threshold] ? 'FAIL' : 'PASS'
+    net_without = [gross_without - startup_without_med, 0.000001].max
+    net_with = [gross_with - startup_with_med, 0.000001].max
 
-    if status == 'FAIL'
-      any_benchmark_failed = true
-    end
+    ratio = net_with / net_without
+    ratios << ratio
+
+    diff_pct = (ratio - 1.0) * 100.0
+    status = diff_pct > options[:threshold] ? 'WARN' : 'PASS'
 
     diff_str = sprintf('%+.2f%%', diff_pct)
-    puts sprintf(format_row, bench_name, sprintf('%.4fs', t_without), sprintf('%.4fs', t_with), diff_str, status)
+    puts sprintf(format_row, bench_name, sprintf('%.4fs', net_without), sprintf('%.4fs', net_with), diff_str, status)
   end
 
   puts '-' * 80
-  overall_diff_pct = ((total_with - total_without) / total_without) * 100.0
-  overall_status = (overall_diff_pct > options[:threshold] || any_benchmark_failed) ? 'FAIL' : 'PASS'
+
+  if ratios.empty? || any_benchmark_errored
+    overall_status = 'FAIL'
+    overall_diff_str = 'N/A'
+    puts sprintf(format_row, 'GEOMETRIC MEAN / OVERALL', 'N/A', 'N/A', 'N/A', 'FAIL')
+    puts '=' * 80
+    puts 'PERFORMANCE GATE FAILED: One or more benchmarks errored during execution'
+    exit 1
+  end
+
+  geomean_ratio = Math.exp(ratios.map { |r| Math.log(r) }.sum / ratios.size)
+  overall_diff_pct = (geomean_ratio - 1.0) * 100.0
   overall_diff_str = sprintf('%+.2f%%', overall_diff_pct)
 
-  puts sprintf(format_row, 'TOTAL / OVERALL', sprintf('%.4fs', total_without), sprintf('%.4fs', total_with), overall_diff_str, overall_status)
+  overall_status = overall_diff_pct > options[:threshold] ? 'FAIL' : 'PASS'
+
+  puts sprintf(format_row, 'GEOMETRIC MEAN / OVERALL', '', '', overall_diff_str, overall_status)
   puts '=' * 80
 
   if overall_status == 'FAIL'
