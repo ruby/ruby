@@ -2743,16 +2743,17 @@ range_clamp(int argc, VALUE *argv, VALUE self)
  *   (but if so the range has no included values).
  *
  * To create a bounded range with a Range literal,
- * use the double-dot or triple-dot notation with definite begin and end values:
+ * use the double-dot (included end) or triple-dot (excluded end)
+ * notation with definite begin and end values:
  *
- *   r = (0..4)       # => 0..4   # Included end.
+ *   r = 0..4         # => 0..4   # Included end.
  *   r.include?(0)    # => true
  *   r.include?(4)    # => true   # Included.
  *   r.include?(-1)   # => false
  *   r.include?(5)    # => false
  *   r.include?(:foo) # => false  # Not comparable.
  *
- *   r = (0...4)      # => 0...4  # Exclude end.
+ *   r = 0...4        # => 0...4  # Exclude end.
  *   r.include?(0)    # => true
  *   r.include?(3)    # => true
  *   r.include?(-1)   # => false
@@ -2777,12 +2778,12 @@ range_clamp(int argc, VALUE *argv, VALUE self)
  * use the double-dot or triple-dot notation
  * with a +nil+ begin value and a definite end value:
  *
- *   r = (nil..4)   # => ..4    # Include end.
- *   r = (..4)      # => ..4    # The leading nil may be omitted.
+ *   r = nil..4     # => ..4    # Include end.
+ *   r = ..4        # => ..4    # The leading nil may be omitted.
  *   r.include?(4)  # => true   # Included.
  *
- *   r = (nil...4)  # => ...4   # Exclude end.
- *   r = (...4)     # => ...4   # The leading nil may be omitted.
+ *   r = nil...4    # => ...4   # Exclude end.
+ *   r = ...4)      # => ...4   # The leading nil may be omitted.
  *   r.include?(4)  # => false  # Excluded.
  *
  * To create a beginless range with Range.new,
@@ -2806,10 +2807,10 @@ range_clamp(int argc, VALUE *argv, VALUE self)
  * An endless range has no end value to exclude,
  * so these ranges all have the same behavior:
  *
- *   (0..nil)  # => 0..
- *   (0..)     # => 0..   # Trailing nil may be omitted.
- *   (0...nil) # => 0...
- *   (0...)    # => 0...  # Trailing nil may be omitted.
+ *   0..nil  # => 0..
+ *   0..     # => 0..   # Trailing nil may be omitted.
+ *   0...nil # => 0...
+ *   0...    # => 0...  # Trailing nil may be omitted.
  *
  * To create an endless range with Range.new,
  * give a definite begin value and a +nil+ end value.
@@ -2831,15 +2832,12 @@ range_clamp(int argc, VALUE *argv, VALUE self)
  * An unbounded range has no end value to exclude,
  * so these range have the same behavior;
  *
- *   (nil..nil)  # => (nil..nil)
- *   (..nil)     # => (nil..nil)  # The leading nil may be omitted.
- *   (nil..)     # => (nil..nil)  # The trailing nil may be omitted.
- *   (..)                         # Raises SyntaxError.
- *   (nil...nil) # => nil...nil
- *   (...nil)    # => nil...nil   # The leading nil may be omitted.
- *   (nil...)    # => nil...nil   # The trailing nil may be omitted.
- *   (...)                        # Raises SyntaxError.
- *
+ *   nil..nil  # => nil..nil
+ *   ..nil     # => nil..nil   # The leading nil may be omitted.
+ *   nil..     # => nil..nil   # The trailing nil may be omitted.
+ *   nil...nil # => nil...nil
+ *   ...nil    # => nil...nil  # The leading nil may be omitted.
+ *   nil...    # => nil...nil  # The trailing nil may be omitted.
  *
  * To create an unbounded range with Range.new,
  * give both begin and end values as +nil+.
