@@ -10021,7 +10021,7 @@ rb_str_tr_bang(int argc, VALUE *argv, VALUE str)
  *  With hash argument +pairs+ given,
  *  returns a copy of +self+ with some codepoints replaced:
  *
- *  - Each key in +pairs+ is a string contains at most a single codepoint.
+ *  - Each key in +pairs+ is a string contains a single codepoint.
  *  - Each value in +pairs+ is a string of any length (even length zero).
  *
  *  Each codepoint in +self+ is examined;
@@ -10030,14 +10030,8 @@ rb_str_tr_bang(int argc, VALUE *argv, VALUE str)
  *
  *  Examples:
  *
- *    r = {'h' => 'H', 'e' => 'er', 'l' => '', 'o' => 'o!'}
- *    'hello'.tr(r)           # => "Hero!"
- *    r = r.to_a.reverse.to_h
- *    # => {"o" => "o!", "l" => "", "e" => "er", "h" => "H"}
- *    'hello'.tr(r)           # => "Hero!"  # Hash order does not matter.
- *    ''.tr('' => 'foo')      # => ""
- *    'foo'.tr('', 'xxx')     # => "foo"
- *    'abc'.tr('abc', 'bcd')  # => "bcd"    # Replaced codepoint is not examined.
+ *    h = {'h' => 'H', 'e' => 'er', 'l' => '', 'o' => 'o!'}
+ *    'hello'.tr(h)           # => "Hero!"
  *
  *  With string arguments +selector+ and +replacements+ given,
  *  returns a copy of +self+
