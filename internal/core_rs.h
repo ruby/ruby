@@ -66,6 +66,13 @@ char *rb_core_pack_skip_to_eol(const char *p, const char *pend);
 size_t rb_core_pack_pack_alignof(char type, int natint);
 int rb_core_pack_hex2num(char c);
 
+/* rational.c (core_rs/src/rational.rs) */
+long rb_core_rational_i_gcd(long x, long y);
+int rb_core_rational_read_sign(const char **s, const char *const e);
+int rb_core_rational_islettere(int c);
+int rb_core_rational_isletterr(int c);
+const char *rb_core_rational_skip_ws(const char *s, const char *e);
+
 #if defined(__ELF__) && (defined(__GNUC__) || defined(__clang__))
 # pragma GCC visibility pop
 #endif

@@ -27,6 +27,7 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/complex.h"
+#include "internal/core_rs.h"
 #include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/numeric.h"
@@ -34,6 +35,10 @@
 #include "internal/rational.h"
 #include "ruby_assert.h"
 #include "vm_core.h"            /* for GET_EC() */
+
+#ifndef USE_RUST_PORTS
+# define USE_RUST_PORTS 0
+#endif
 
 #if USE_GMP
 RBIMPL_WARNING_PUSH()
@@ -279,6 +284,7 @@ rb_gcd_gmp(VALUE x, VALUE y)
 #define f_gcd f_gcd_orig
 #endif
 
+#if !USE_RUST_PORTS /* ported to core_rs/src/rational.rs (port unit rational-A-01) */
 inline static long
 i_gcd(long x, long y)
 {
@@ -319,6 +325,9 @@ i_gcd(long x, long y)
 
     return (long)(u << shift);
 }
+#else
+#define i_gcd rb_core_rational_i_gcd
+#endif /* !USE_RUST_PORTS: i_gcd */
 
 inline static VALUE
 f_gcd_normal(VALUE x, VALUE y)
@@ -2302,6 +2311,7 @@ float_rationalize(int argc, VALUE *argv, VALUE self)
     return rat;
 }
 
+#if !USE_RUST_PORTS /* ported to core_rs/src/rational.rs (port unit rational-A-01) */
 inline static int
 issign(int c)
 {
@@ -2331,6 +2341,11 @@ isletterr(int c)
 {
     return (c == 'r' || c == 'R');
 }
+#else
+#define read_sign rb_core_rational_read_sign
+#define islettere rb_core_rational_islettere
+#define isletterr rb_core_rational_isletterr
+#endif /* !USE_RUST_PORTS: issign .. isletterr */
 
 static VALUE
 negate_num(VALUE num)
@@ -2410,6 +2425,7 @@ read_num(const char **s, const char *const end, VALUE *num, VALUE *nexp)
     return ok;
 }
 
+#if !USE_RUST_PORTS /* ported to core_rs/src/rational.rs (port unit rational-A-01) */
 inline static const char *
 skip_ws(const char *s, const char *e)
 {
@@ -2417,6 +2433,9 @@ skip_ws(const char *s, const char *e)
         ++s;
     return s;
 }
+#else
+#define skip_ws rb_core_rational_skip_ws
+#endif /* !USE_RUST_PORTS: skip_ws */
 
 static VALUE
 parse_rat(const char *s, const char *const e, int strict, int raise)
