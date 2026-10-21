@@ -48,6 +48,8 @@ The original copyright notice follows.
    email: matumoto@math.keio.ac.jp
 */
 
+#include "internal/core_rs.h"
+
 /* Period parameters */
 #define N 624
 #define M 397
@@ -69,6 +71,7 @@ struct MT {
 #define genrand_initialized(mt) ((mt)->next != 0)
 #define uninit_genrand(mt) ((mt)->next = 0)
 
+#if !USE_RUST_PORTS /* ported to core_rs/src/mt19937.rs (port unit mt19937-A-01) */
 NO_SANITIZE("unsigned-integer-overflow", static void init_genrand(struct MT *mt, unsigned int s));
 NO_SANITIZE("unsigned-integer-overflow", static void init_by_array(struct MT *mt, const uint32_t init_key[], int key_length));
 
@@ -156,3 +159,15 @@ genrand_int32(struct MT *mt)
 
     return y;
 }
+#else
+#define init_genrand rb_core_mt19937_init_genrand
+#define init_by_array rb_core_mt19937_init_by_array
+#define genrand_int32 rb_core_mt19937_genrand_int32
+/* core_rs/src/mt19937.rs mirrors struct MT with #[repr(C)] and asserts the
+ * same layout on its side; fail the C build if the two could disagree. */
+STATIC_ASSERT(core_rs_mt_state, sizeof(((struct MT *)0)->state) == N * sizeof(uint32_t));
+STATIC_ASSERT(core_rs_mt_next, offsetof(struct MT, next) == N * sizeof(uint32_t));
+STATIC_ASSERT(core_rs_mt_left, offsetof(struct MT, left) == N * sizeof(uint32_t) + sizeof(uint32_t *));
+STATIC_ASSERT(core_rs_mt_int, sizeof(int) == 4);
+STATIC_ASSERT(core_rs_mt_size, sizeof(struct MT) == N * sizeof(uint32_t) + 2 * sizeof(uint32_t *));
+#endif /* !USE_RUST_PORTS: init_genrand .. genrand_int32 */
