@@ -4437,7 +4437,10 @@ rb_gc_impl_shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t _da
 
     rb_gc_run_obj_finalizer(RARRAY_AREF(table, 0), RARRAY_LEN(table) - 1, get_final, (void *)table);
 
-    FL_UNSET(obj, FL_FINALIZE);
+    /* obj may be a poisoned zombie */
+    asan_unpoisoning_object(obj) {
+        FL_UNSET(obj, FL_FINALIZE);
+    }
 
     return ST_DELETE;
 }
