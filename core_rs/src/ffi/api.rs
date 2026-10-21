@@ -10,6 +10,7 @@ pub mod raising;
 
 pub use self::non_raising::*;
 pub use self::raising::UnprotectedTag;
+pub use self::raising::{ruby_xmalloc, ruby_xrealloc};
 
 #[cfg(test)]
 mod tests {

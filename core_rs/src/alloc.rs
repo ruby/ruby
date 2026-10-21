@@ -111,8 +111,13 @@ unsafe impl GlobalAlloc for RubyGlobalAlloc {
     }
 
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
-        if ptr.is_null() {
-            let new_layout = match Layout::from_size_align(new_size, layout.align()) {
+        let align = layout.align();
+
+        if ptr.is_null() || layout.size() == 0 {
+            if new_size == 0 {
+                return align as *mut u8;
+            }
+            let new_layout = match Layout::from_size_align(new_size, align) {
                 Ok(l) => l,
                 Err(_) => return ptr::null_mut(),
             };
@@ -121,10 +126,9 @@ unsafe impl GlobalAlloc for RubyGlobalAlloc {
 
         if new_size == 0 {
             unsafe { self.dealloc(ptr, layout) };
-            return layout.align() as *mut u8;
+            return align as *mut u8;
         }
 
-        let align = layout.align();
         if align <= MAX_NATURAL_ALIGN {
             let p = unsafe { raw_realloc(ptr as *mut c_void, new_size) };
             p as *mut u8
@@ -192,6 +196,28 @@ mod tests {
         assert_eq!(v.len(), 2);
         let b = Box::new(());
         assert_eq!(*b, ());
+    }
+
+    #[test]
+    fn zero_sized_realloc() {
+        use super::RubyGlobalAlloc;
+        use core::alloc::GlobalAlloc;
+        use core::alloc::Layout;
+
+        let alloc = RubyGlobalAlloc;
+        let layout0 = Layout::from_size_align(0, 8).unwrap();
+        let ptr0 = unsafe { alloc.alloc(layout0) };
+        assert_eq!(ptr0 as usize, 8);
+
+        // Realloc from size 0 to size 16
+        let ptr16 = unsafe { alloc.realloc(ptr0, layout0, 16) };
+        assert!(!ptr16.is_null());
+        assert_ne!(ptr16 as usize, 8);
+
+        // Realloc back from size 16 to size 0
+        let layout16 = Layout::from_size_align(16, 8).unwrap();
+        let ptr_zero = unsafe { alloc.realloc(ptr16, layout16, 0) };
+        assert_eq!(ptr_zero as usize, 8);
     }
 
     #[repr(align(64))]

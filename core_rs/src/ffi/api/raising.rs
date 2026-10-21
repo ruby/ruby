@@ -130,15 +130,20 @@ unsafe extern "C" {
     pub fn rb_hash_aset(hash: VALUE, key: VALUE, val: VALUE) -> VALUE;
 
     // ---- memory: include/ruby/internal/xmalloc.h ----
+    #[cfg(not(test))]
     /// `void *ruby_xmalloc(size_t size)`
     ///
     /// Allocates `size` bytes. Can raise `NoMemoryError`.
     #[doc(alias = "raising")]
     pub fn ruby_xmalloc(size: usize) -> *mut core::ffi::c_void;
 
+    #[cfg(not(test))]
     /// `void *ruby_xrealloc(void *ptr, size_t newsiz)`
     ///
     /// Reallocates `ptr` to `newsiz` bytes. Can raise `NoMemoryError`.
     #[doc(alias = "raising")]
     pub fn ruby_xrealloc(ptr: *mut core::ffi::c_void, newsiz: usize) -> *mut core::ffi::c_void;
 }
+
+#[cfg(test)]
+pub use super::non_raising::mock::{ruby_xmalloc, ruby_xrealloc};
