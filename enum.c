@@ -1021,7 +1021,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *      end
  *
  *      position = "nnneesw".chars.reduce(Turtle.new, :move)
- *      position  #=>> #<Turtle:0x00000001052f4698 @y=2, @x=1>
+ *      position  #=> #<Turtle:0x00000001052f4698 @y=2, @x=1>
  *
  *  <b>Third Shortcut: Reducer With no Initial Value</b>
  *
