@@ -216,6 +216,54 @@ jobs:
           make core-rs-inventory
           git diff --exit-code ../src/docs/ruby_on_rust/inventory-snapshot.tsv
 
+  perf-gate:
+    needs: [c-fallback-build-check]
+    name: ubuntu-24.04 (performance gate)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+      RUBY_DEBUG: ci
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup/ubuntu
+
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
+        with:
+          ruby-version: '3.1'
+          bundler: none
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+          clean: true
+
+      - name: Configure both modes
+        run: |
+          ../src/configure -C --disable-install-doc ${ruby_configure_args} --with-rust-ports
+          mkdir ../build-c
+          cd ../build-c
+          ../src/configure -C --disable-install-doc ${ruby_configure_args} --without-rust-ports
+
+      - name: Build with Rust ports
+        run: make
+
+      - name: Build without Rust ports
+        run: make
+        working-directory: build-c
+
+      - name: Performance comparison benchmark gate
+        run: ruby ../src/tool/core_rs/bench_compare.rb --with-ports ./ruby --without-ports ../build-c/ruby --threshold 10
+
 
 defaults:
   run:
