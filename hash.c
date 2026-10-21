@@ -420,12 +420,8 @@ RHASH_AR_TABLE_MAX_BOUND(VALUE h)
 {
     size_t usable_space = rb_obj_shape_slot_size(h) - sizeof(struct RHash) - offsetof(ar_table, pairs);
     usable_space /= sizeof(ar_table_pair);
-#if SIZEOF_VALUE == 8
-    RBIMPL_ASSERT_OR_ASSUME(usable_space <= RHASH_AR_TABLE_MAX_SIZE);
-    return (unsigned)usable_space;
-#else
+    /* The GC may give a hash a larger slot than it asked for. */
     return usable_space <= RHASH_AR_TABLE_MAX_SIZE ? (unsigned)usable_space : RHASH_AR_TABLE_MAX_SIZE;
-#endif
 }
 
 #define RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE (RHASH_AR_TABLE_MAX_SIZE + 1)
