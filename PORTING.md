@@ -7,8 +7,8 @@ Generated automatically by `ruby tool/generate_porting_ledger.rb`. Do not edit m
 
 | Metric | File Count | Lines of Code (LOC) | % of Total LOC |
 | :--- | :--- | :--- | :--- |
-| **Total C Source Files** | 113 | 318,116 | 100.0% |
-| **Not Started** | 103 | 309,097 | 97.2% |
+| **Total C Source Files** | 113 | 318,137 | 100.0% |
+| **Not Started** | 103 | 309,118 | 97.2% |
 | **In Progress** | 3 | 8,673 | 2.7% |
 | **Ported** | 0 | 0 | 0.0% |
 | **Blocked** | 0 | 0 | 0.0% |
@@ -123,7 +123,7 @@ _Input/Output operations, files, directories, and processes_
 | `dir.c` | 4,202 | Not Started | `crate::dir` | Directory operations |
 | `file.c` | 9,658 | Not Started | `crate::file` | File system operations |
 | `io.c` | 16,279 | Not Started | `crate::io` | IO class operations |
-| `io_buffer.c` | 5,060 | Not Started | `crate::io::buffer` | IO::Buffer implementation |
+| `io_buffer.c` | 5,081 | Not Started | `crate::io::buffer` | IO::Buffer implementation |
 | `pathname.c` | 457 | Not Started | `crate::pathname` | Pathname standard helper |
 | `process.c` | 9,659 | Not Started | `crate::process` | Process management |
 | `random.c` | 1,862 | Not Started | `crate::random` | Random number generation |
@@ -228,7 +228,7 @@ _Platform stubs, runner wrappers, and target-specific code_
 | `imemo.c` | Memory & Garbage Collection | 726 | Not Started | `crate::imemo` | Internal memo objects |
 | `inits.c` | Utilities & Support | 117 | Not Started | `crate::inits` | Subsystem initializers |
 | `io.c` | IO & Filesystem | 16,279 | Not Started | `crate::io` | IO class operations |
-| `io_buffer.c` | IO & Filesystem | 5,060 | Not Started | `crate::io::buffer` | IO::Buffer implementation |
+| `io_buffer.c` | IO & Filesystem | 5,081 | Not Started | `crate::io::buffer` | IO::Buffer implementation |
 | `iseq.c` | JIT Compiler | 4,737 | Not Started | `crate::iseq` | Instruction sequences |
 | `jit.c` | JIT Compiler | 1,043 | Not Started | `jit` | C helpers shared by upstream YJIT/ZJIT |
 | `load.c` | Utilities & Support | 1,829 | Not Started | `crate::load` | Require and load mechanism |
