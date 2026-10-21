@@ -3373,6 +3373,26 @@ fn gen_incr_counter(asm: &mut Assembler, counter: Counter) {
     }
 }
 
+/// Generate code to increment an exit counter when `--zjit-stats` or testing for a breakdown of
+/// exit reasons.
+fn gen_incr_exit_counter(asm: &mut Assembler, counter: Counter) {
+    if get_option!(stats) || cfg!(test) {
+        asm.incr_counter(Opnd::const_ptr(counter_ptr(counter)), 1.into());
+    }
+}
+
+/// Increment an exit counter when `--zjit-stats` or testing for a breakdown of exit reasons.
+fn incr_exit_counter(counter: Counter) {
+    if get_option!(stats) || cfg!(test) {
+        unsafe { *(counter_ptr(counter)) += 1 }
+    }
+}
+
+/// Generate code to increment [`Counter::side_exit_count`].
+fn gen_count_side_exit_unconditionally(asm: &mut Assembler) {
+    asm.incr_counter(Opnd::const_ptr(counter_ptr(Counter::side_exit_count)), 1.into());
+}
+
 /// Increment a counter for each DynamicSendReason. If the variant has
 /// a counter prefix to break down the details, increment that as well.
 fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReason) {
@@ -4215,26 +4235,6 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> 
         perf::register_current_code_range(cb, "exit trampoline", code_ptr);
         code_ptr
     })
-}
-
-/// Generate code to increment [`Counter::side_exit_count`].
-fn gen_count_side_exit_unconditionally(asm: &mut Assembler) {
-    asm.incr_counter(Opnd::const_ptr(counter_ptr(Counter::side_exit_count)), 1.into());
-}
-
-/// Generate code to increment an exit counter when `--zjit-stats` or testing for a breakdown of
-/// exit reasons.
-fn gen_incr_exit_counter(asm: &mut Assembler, counter: Counter) {
-    if get_option!(stats) || cfg!(test) {
-        asm.incr_counter(Opnd::const_ptr(counter_ptr(counter)), 1.into());
-    }
-}
-
-/// Increment an exit counter when `--zjit-stats` or testing for a breakdown of exit reasons.
-fn incr_exit_counter(counter: Counter) {
-    if get_option!(stats) || cfg!(test) {
-        unsafe { *(counter_ptr(counter)) += 1 }
-    }
 }
 
 /// Generate a trampoline that materializes ZJIT frames before unwinding native frames.
