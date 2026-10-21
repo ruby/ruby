@@ -173,11 +173,15 @@ resize_buffer(VALUE ftime, char *s, const char **start, const char **endp,
 	size_t len = s - *start;
 	size_t need = len + n * 2;
 	size_t nlen = rb_str_capacity(ftime);
-	while (nlen < need) nlen <<= 1;
 
-	if (nlen < len || nlen > maxsize) {
-		return 0;
+	if (nlen > maxsize) return 0;
+	while (nlen < need) {
+		nlen <<= 1;
+		if (nlen < len || nlen > maxsize) {
+			return 0;
+		}
 	}
+
 	rb_str_set_len(ftime, len);
 	rb_str_modify_expand(ftime, nlen-len);
 	s = RSTRING_PTR(ftime);
@@ -548,34 +552,35 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			else {
 				sign = +1;
 			}
-                        switch (colons) {
+#define NEEDS_FOR_ZONE(fmt) do { \
+				const int zone_size = rb_strlen_lit(fmt); \
+				if (precision < zone_size) precision = zone_size; \
+				NEEDS(precision); \
+				precision -= zone_size - rb_strlen_lit("hh"); \
+			} while (0)
+
+                       switch (colons) {
 			case 0: /* %z -> +hhmm */
-				precision = precision <= 5 ? 2 : precision-3;
-				NEEDS(precision + 3);
+				NEEDS_FOR_ZONE("+hhmm");
 				break;
 
 			case 1: /* %:z -> +hh:mm */
-				precision = precision <= 6 ? 2 : precision-4;
-				NEEDS(precision + 4);
+				NEEDS_FOR_ZONE("+hh:mm");
 				break;
 
 			case 2: /* %::z -> +hh:mm:ss */
-				precision = precision <= 9 ? 2 : precision-7;
-				NEEDS(precision + 7);
+				NEEDS_FOR_ZONE("+hh:mm:ss");
 				break;
 
 			case 3: /* %:::z -> +hh[:mm[:ss]] */
 				if (off % 3600 == 0) {
-					precision = precision <= 3 ? 2 : precision-1;
-					NEEDS(precision + 3);
+					NEEDS_FOR_ZONE("+hh");
 				}
 				else if (off % 60 == 0) {
-					precision = precision <= 6 ? 2 : precision-4;
-					NEEDS(precision + 4);
+					NEEDS_FOR_ZONE("+hh:mm");
 				}
 				else {
-					precision = precision <= 9 ? 2 : precision-7;
-					NEEDS(precision + 9);
+					NEEDS_FOR_ZONE("+hh:mm:ss");
 				}
 				break;
 
