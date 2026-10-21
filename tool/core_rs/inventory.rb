@@ -19,7 +19,7 @@
 # before any `;` (CRuby style: the closing brace is at column 0).  When a
 # function has several #if variants in one file it is counted once.
 #
-# Waves (docs: claude/migration-strategy.md, decisions D2/D3):
+# Waves (docs: docs/ruby_on_rust/migration-strategy.md, decisions D2/D3):
 #   A  leaf: the definition never mentions Ruby objects (VALUE, ID, Qnil,
 #      raising, the VM).  Can be fuzzed as pure functions.
 #   B  public C API (declared in include/ruby/) that uses objects only
@@ -38,7 +38,7 @@ require "json"
 
 SRCDIR = File.expand_path("../..", __dir__)
 
-WAVE_D = /\A(reg\w*|compile|prism_compile|prism_init|vm|vm_\w+|gc|ast|node|node_dump|parser_st|ruby_parser|universal_parser|jit|yjit|zjit|iseq|builtin|mini_builtin)\.c\z/
+WAVE_D = /\A(reg\w*|compile|parse|parse_\w+|prism_compile|prism_init|vm|vm_\w+|gc|ast|node|node_dump|parser_st|ruby_parser|universal_parser|jit|yjit|zjit|iseq|builtin|mini_builtin)\.c\z/
 WAVE_X = /\A(main|goruby|ruby-runner|rubystub|dmydln|dmyenc|dmyext|miniinit|inits|debug_counter|sparc)\.c\z/
 
 # Tokens that mean a definition touches Ruby objects or VM state.
@@ -174,6 +174,12 @@ end
 def inventory
   pub, aliases = public_names
   paths = Dir[File.join(SRCDIR, "*.c")].sort
+  if !paths.empty? && system("git", "rev-parse", "--is-inside-work-tree", out: File::NULL, err: File::NULL, chdir: SRCDIR)
+    IO.popen(["git", "-C", SRCDIR, "check-ignore", *paths]) do |io|
+      ignored = io.read.split("\n")
+      paths -= ignored
+    end
+  end
   # missing/*.c sources that a core file compiles in with #include
   # (missing/dtoa.c in util.c, missing/mt19937.c in random.c).
   included = paths.reject { |p| File.basename(p) =~ WAVE_D || File.basename(p) =~ WAVE_X }.flat_map do |p|
@@ -424,7 +430,7 @@ else
   end
   printf("all   %9d  %7d  %6d  %10d\n", funcs.size, funcs.sum(&:loc), funcs.count(&:ported), funcs.select(&:ported).sum(&:loc))
   puts
-  puts "Phase 1 exit criteria (claude/migration-strategy.md): Wave A >= 90% ported, Wave B >= 25% ported"
+  puts "Phase 1 exit criteria (docs/ruby_on_rust/migration-strategy.md): Wave A >= 90% ported, Wave B >= 25% ported"
   { "A" => 0.90, "B" => 0.25 }.each do |w, goal|
     fs = funcs.select { |f| f.wave == w }
     done = fs.count(&:ported)
