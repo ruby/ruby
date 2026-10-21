@@ -522,6 +522,31 @@ RSpec.describe "bundle install with git sources" do
     expect(the_bundle).to include_gems "has_submodule 1.0"
   end
 
+  it "fails when a locked install cannot clone a submodule" do
+    # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
+    system(*%W[git config --global protocol.file.allow always])
+
+    build_git "submodule", "1.0"
+    build_git "has_submodule", "1.0"
+    git "submodule add #{lib_path("submodule-1.0")} submodule-1.0", lib_path("has_submodule-1.0")
+    git "commit -m \"submodulator\"", lib_path("has_submodule-1.0")
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      git "#{lib_path("has_submodule-1.0")}", :submodules => true do
+        gem "has_submodule"
+      end
+    G
+
+    FileUtils.mv(lib_path("submodule-1.0"), lib_path("submodule-gone"))
+    FileUtils.rm_rf(default_bundle_path("bundler/gems"))
+
+    bundle :install, retry: 0, raise_on_error: false
+
+    expect(exitstatus).not_to eq(0)
+    expect(err).to include("git submodule update --init --recursive")
+  end
+
   it "does not warn when deiniting submodules" do
     # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
     system(*%W[git config --global protocol.file.allow always])
