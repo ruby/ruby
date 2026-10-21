@@ -11103,10 +11103,10 @@ D	zjit.c	rb_zjit_insn_leaf	347-350	4	false	false	false
 D	zjit.c	rb_zjit_local_id	353-356	4	false	false	false
 D	zjit.c	rb_zjit_class_has_default_allocator	375-381	7	false	false	false
 D	zjit.c	rb_zjit_array_aref_with_adjusted_index	388-398	11	false	false	false
-A	missing/mt19937.c	init_genrand	77-91	15	true	false	false
-A	missing/mt19937.c	init_by_array	98-121	24	true	false	false
-A	missing/mt19937.c	next_state	124-139	16	true	false	false
-A	missing/mt19937.c	genrand_int32	143-158	16	true	false	false
+A	missing/mt19937.c	init_genrand	80-94	15	true	false	true
+A	missing/mt19937.c	init_by_array	101-124	24	true	false	true
+A	missing/mt19937.c	next_state	127-142	16	true	false	true
+A	missing/mt19937.c	genrand_int32	146-161	16	true	false	true
 A	missing/dtoa.c	ckd_add	223-233	11	true	false	false
 A	missing/dtoa.c	Balloc	538-550	13	true	false	false
 A	missing/dtoa.c	Bclear	553-558	6	true	false	false
