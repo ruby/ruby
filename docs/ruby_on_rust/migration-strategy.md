@@ -31,7 +31,7 @@ Functions in CRuby's top-level C source files are inventoried (`tool/core_rs/inv
 
 ### Wave C — Interpreter Internals
 - **Definition**: Functions outside Wave D that access internal struct layouts (e.g. `RSTRING`, `RARRAY`, `RBASIC`), write barriers (`RB_OBJ_WRITE`), GC state, or VM state (`GET_EC`, `GET_VM`).
-- **Properties**: Requires verified struct mirrors (`docs/ruby_on_rust/design-struct-layouts.md`), GC safety rules, and VM thread-context accessors. Targeted in Phase 2.
+- **Properties**: Requires verified struct mirrors (pending struct-layout design RR-P4-01), GC safety rules, and VM thread-context accessors. Targeted in Phase 2.
 
 ### Wave D — Complex Core Subsystems
 - **Definition**: Core subsystems deferred from Phase 1 by Decision D3:
