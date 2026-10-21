@@ -7571,6 +7571,66 @@ rb_str_bitwise_not_bang(VALUE str)
     return str;
 }
 
+/*
+ * Document-method: String#bitwise_and
+ *
+ * call-seq:
+ *   bitwise_and -> new_string
+ *
+ *  :include: doc/string/bitwise_and.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_and!
+ *
+ * call-seq:
+ *   bitwise_and! -> self
+ *
+ *  :include: doc/string/bitwise_and_bang.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_or
+ *
+ * call-seq:
+ *   bitwise_or -> new_string
+ *
+ *  :include: doc/string/bitwise_or.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_or!
+ *
+ * call-seq:
+ *   bitwise_or! -> self
+ *
+ *  :include: doc/string/bitwise_or_bang.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_xor
+ *
+ * call-seq:
+ *   bitwise_xor -> new_string
+ *
+ *  :include: doc/string/bitwise_xor.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_xor!
+ *
+ * call-seq:
+ *   bitwise_xor! -> self
+ *
+ *  :include: doc/string/bitwise_xor_bang.rdoc
+ *
+ */
+
 #define STR_DEFINE_BINARY_BITWISE_METHOD(name)                              \
     static VALUE                                                            \
     rb_str_bitwise_##name(VALUE str, VALUE other)                           \
