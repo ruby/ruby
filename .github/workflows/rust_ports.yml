@@ -211,6 +211,12 @@ jobs:
         run: ruby tool/core_rs/inventory.rb --check
         working-directory: src
 
+      - name: core_rs inventory snapshot is current
+        run: |
+          make core-rs-inventory
+          git diff --exit-code ../src/docs/ruby_on_rust/inventory-snapshot.tsv
+
+
 defaults:
   run:
     working-directory: build
