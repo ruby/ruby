@@ -2216,11 +2216,7 @@ static inline rb_execution_context_t *
 rb_current_execution_context(bool expect_ec)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #ifdef RB_THREAD_CURRENT_EC_NOINLINE
     rb_execution_context_t * volatile ec = rb_current_ec();
-  #else
-    rb_execution_context_t * volatile ec = ruby_current_ec;
-  #endif
 
     /* On the shared objects, `__tls_get_addr()` is used to access the TLS
      * and the address of the `ruby_current_ec` can be stored on a function

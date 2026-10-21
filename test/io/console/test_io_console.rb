@@ -94,6 +94,10 @@ class TestIO_Console < Test::Unit::TestCase
     assert_equal(STDIN.tty?, STDIN.tty?(nil))
   end
 
+  def test_isatty
+    assert_equal(IO.instance_method(:tty?), IO.instance_method(:isatty))
+  end
+
   def test_tty_non_tty
     File.open(IO::NULL) do |f|
       assert_not_predicate(f, :tty?)

@@ -377,7 +377,13 @@ pm_source_stream_read(pm_source_t *source) {
      */
 #define LINE_FILL 0xff
 
-    while (memset(line, LINE_FILL, LINE_SIZE), source->stream.fgets(line, LINE_SIZE, source->stream.stream) != NULL) {
+    /*
+     * The fgets and feof members share their names with standard library
+     * functions, which <stdio.h> may define as function-like macros (newlib on
+     * Cygwin does this for feof). Parenthesizing the member access keeps those
+     * macros from expanding at the call sites.
+     */
+    while (memset(line, LINE_FILL, LINE_SIZE), (source->stream.fgets)(line, LINE_SIZE, source->stream.stream) != NULL) {
         /*
          * Locate the NUL terminator written by fgets (the last NUL in the
          * buffer) to recover the length of the chunk, then drop the terminator.
@@ -408,7 +414,7 @@ pm_source_stream_read(pm_source_t *source) {
          * EOF. A newline-terminated line needs no such check: if it happens to
          * be the last line, the next fgets returns NULL and ends the loop.
          */
-        if (!newline && !source->stream.feof(source->stream.stream)) {
+        if (!newline && !(source->stream.feof)(source->stream.stream)) {
             continue;
         }
 

@@ -1,7 +1,7 @@
 /**
  * @file stringy.h
  *
- * A generic string type that can have various ownership semantics.
+ * A view of a sequence of bytes owned by someone else.
  */
 #ifndef PRISM_STRINGY_H
 #define PRISM_STRINGY_H
@@ -17,7 +17,8 @@ extern "C" {
 #endif
 
 /**
- * A generic string type that can have various ownership semantics.
+ * A view of a sequence of bytes. The string does not own the bytes, so they
+ * must remain valid for as long as the string is in use.
  */
 typedef struct {
     /** A pointer to the start of the string. */
@@ -25,37 +26,17 @@ typedef struct {
 
     /** The length of the string in bytes of memory. */
     size_t length;
-
-    /** The type of the string. This field determines how the string should be freed. */
-    enum {
-        /** This string is a constant string, and should not be freed. */
-        PM_STRING_CONSTANT,
-
-        /** This is a slice of another string, and should not be freed. */
-        PM_STRING_SHARED,
-
-        /** This string owns its memory, and should be freed internally. */
-        PM_STRING_OWNED
-    } type;
 } pm_string_t;
 
 /**
- * Initialize a constant string that doesn't own its memory source.
+ * Initialize a string that views the given bytes. The bytes are not copied, so
+ * they must remain valid for as long as the string is in use.
  *
  * @param string The string to initialize.
- * @param source The source of the string.
- * @param length The length of the string.
+ * @param source The start of the bytes.
+ * @param length The number of bytes.
  */
-PRISM_EXPORTED_FUNCTION void pm_string_constant_init(pm_string_t *string, const char *source, size_t length) PRISM_NONNULL(1);
-
-/**
- * Initialize an owned string that is responsible for freeing allocated memory.
- *
- * @param string The string to initialize.
- * @param source The source of the string.
- * @param length The length of the string.
- */
-PRISM_EXPORTED_FUNCTION void pm_string_owned_init(pm_string_t *string, uint8_t *source, size_t length) PRISM_NONNULL(1, 2);
+PRISM_EXPORTED_FUNCTION void pm_string_init(pm_string_t *string, const uint8_t *source, size_t length) PRISM_NONNULL(1);
 
 /**
  * Returns the length associated with the string.

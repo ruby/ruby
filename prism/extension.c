@@ -192,7 +192,7 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
             // Add the local to the scope.
             pm_string_t *scope_local = pm_options_scope_local_mut(options_scope, local_index);
             const char *name = rb_id2name(SYM2ID(local));
-            pm_string_constant_init(scope_local, name, strlen(name));
+            pm_string_init(scope_local, (const uint8_t *) name, strlen(name));
         }
 
         // Now set the forwarding options.
@@ -633,28 +633,19 @@ parser_comment(VALUE source, bool freeze, const pm_comment_t *comment) {
     return rb_class_new_instance_freeze(1, argv, type, freeze);
 }
 
-typedef struct {
-    VALUE comments;
-    VALUE source;
-    bool freeze;
-    long index;
-} parser_comments_each_data_t;
-
-static void
-parser_comments_each(const pm_comment_t *comment, void *data) {
-    parser_comments_each_data_t *each_data = (parser_comments_each_data_t *) data;
-    VALUE value = parser_comment(each_data->source, each_data->freeze, comment);
-    rb_ary_store(each_data->comments, each_data->index++, value);
-}
-
 /**
  * Extract the comments out of the parser into the given array, which was
- * created before the source so that the source could hold it.
+ * created before the source so that the source could hold it. The caller may
+ * have already resized it to the number of comments, so each comment is stored
+ * at its index rather than pushed.
  */
 static void
 parser_comments(const pm_parser_t *parser, VALUE comments, VALUE source, bool freeze) {
-    parser_comments_each_data_t each_data = { .comments = comments, .source = source, .freeze = freeze };
-    pm_parser_comments_each(parser, parser_comments_each, &each_data);
+    long index = 0;
+    for (const pm_comment_t *comment = pm_parser_comments_first(parser); comment != NULL; comment = pm_comment_next(comment)) {
+        rb_ary_store(comments, index++, parser_comment(source, freeze, comment));
+    }
+
     if (freeze) rb_obj_freeze(comments);
 }
 
@@ -673,19 +664,6 @@ parser_magic_comment(VALUE source, bool freeze, const pm_magic_comment_t *magic_
     return rb_class_new_instance_freeze(2, argv, rb_cPrismMagicComment, freeze);
 }
 
-typedef struct {
-    VALUE magic_comments;
-    VALUE source;
-    bool freeze;
-} parser_magic_comments_each_data_t;
-
-static void
-parser_magic_comments_each(const pm_magic_comment_t *magic_comment, void *data) {
-    parser_magic_comments_each_data_t *each_data = (parser_magic_comments_each_data_t *) data;
-    VALUE value = parser_magic_comment(each_data->source, each_data->freeze, magic_comment);
-    rb_ary_push(each_data->magic_comments, value);
-}
-
 /**
  * Extract the magic comments out of the parser into an array.
  */
@@ -693,8 +671,9 @@ static VALUE
 parser_magic_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
     VALUE magic_comments = rb_ary_new_capa(pm_parser_magic_comments_size(parser));
 
-    parser_magic_comments_each_data_t each_data = { magic_comments, source, freeze };
-    pm_parser_magic_comments_each(parser, parser_magic_comments_each, &each_data);
+    for (const pm_magic_comment_t *magic_comment = pm_parser_magic_comments_first(parser); magic_comment != NULL; magic_comment = pm_magic_comment_next(magic_comment)) {
+        rb_ary_push(magic_comments, parser_magic_comment(source, freeze, magic_comment));
+    }
 
     if (freeze) rb_obj_freeze(magic_comments);
     return magic_comments;
@@ -715,20 +694,14 @@ parser_data_loc(const pm_parser_t *parser, VALUE source, bool freeze) {
     }
 }
 
-typedef struct {
-    VALUE errors;
-    rb_encoding *encoding;
-    VALUE source;
-    bool freeze;
-} parser_errors_each_data_t;
-
-static void
-parser_errors_each(const pm_diagnostic_t *diagnostic, void *data) {
-    parser_errors_each_data_t *each_data = (parser_errors_each_data_t *) data;
-
+/**
+ * Build a new ParseError instance from the given error.
+ */
+static VALUE
+parser_error(const pm_diagnostic_t *diagnostic, rb_encoding *encoding, VALUE source, bool freeze) {
     VALUE type = ID2SYM(rb_intern(pm_diagnostic_type(diagnostic)));
-    VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(pm_diagnostic_message(diagnostic), each_data->encoding));
-    VALUE location = PARSER_LOCATION(each_data->source, each_data->freeze, pm_diagnostic_location(diagnostic));
+    VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(pm_diagnostic_message(diagnostic), encoding));
+    VALUE location = PARSER_LOCATION(source, freeze, pm_diagnostic_location(diagnostic));
 
     pm_error_level_t error_level = pm_diagnostic_error_level(diagnostic);
     VALUE level = Qnil;
@@ -748,8 +721,7 @@ parser_errors_each(const pm_diagnostic_t *diagnostic, void *data) {
     }
 
     VALUE argv[] = { type, message, location, level };
-    VALUE value = rb_class_new_instance_freeze(4, argv, rb_cPrismParseError, each_data->freeze);
-    rb_ary_push(each_data->errors, value);
+    return rb_class_new_instance_freeze(4, argv, rb_cPrismParseError, freeze);
 }
 
 /**
@@ -759,27 +731,22 @@ static VALUE
 parser_errors(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
     VALUE errors = rb_ary_new_capa(pm_parser_errors_size(parser));
 
-    parser_errors_each_data_t each_data = { errors, encoding, source, freeze };
-    pm_parser_errors_each(parser, parser_errors_each, &each_data);
+    for (const pm_diagnostic_t *error = pm_parser_errors_first(parser); error != NULL; error = pm_diagnostic_next(error)) {
+        rb_ary_push(errors, parser_error(error, encoding, source, freeze));
+    }
 
     if (freeze) rb_obj_freeze(errors);
     return errors;
 }
 
-typedef struct {
-    VALUE warnings;
-    rb_encoding *encoding;
-    VALUE source;
-    bool freeze;
-} parser_warnings_each_data_t;
-
-static void
-parser_warnings_each(const pm_diagnostic_t *diagnostic, void *data) {
-    parser_warnings_each_data_t *each_data = (parser_warnings_each_data_t *) data;
-
+/**
+ * Build a new ParseWarning instance from the given warning.
+ */
+static VALUE
+parser_warning(const pm_diagnostic_t *diagnostic, rb_encoding *encoding, VALUE source, bool freeze) {
     VALUE type = ID2SYM(rb_intern(pm_diagnostic_type(diagnostic)));
-    VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(pm_diagnostic_message(diagnostic), each_data->encoding));
-    VALUE location = PARSER_LOCATION(each_data->source, each_data->freeze, pm_diagnostic_location(diagnostic));
+    VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(pm_diagnostic_message(diagnostic), encoding));
+    VALUE location = PARSER_LOCATION(source, freeze, pm_diagnostic_location(diagnostic));
 
     pm_warning_level_t warning_level = pm_diagnostic_warning_level(diagnostic);
     VALUE level = Qnil;
@@ -796,8 +763,7 @@ parser_warnings_each(const pm_diagnostic_t *diagnostic, void *data) {
     }
 
     VALUE argv[] = { type, message, location, level };
-    VALUE value = rb_class_new_instance_freeze(4, argv, rb_cPrismParseWarning, each_data->freeze);
-    rb_ary_push(each_data->warnings, value);
+    return rb_class_new_instance_freeze(4, argv, rb_cPrismParseWarning, freeze);
 }
 
 /**
@@ -807,8 +773,9 @@ static VALUE
 parser_warnings(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
     VALUE warnings = rb_ary_new_capa(pm_parser_warnings_size(parser));
 
-    parser_warnings_each_data_t each_data = { warnings, encoding, source, freeze };
-    pm_parser_warnings_each(parser, parser_warnings_each, &each_data);
+    for (const pm_diagnostic_t *warning = pm_parser_warnings_first(parser); warning != NULL; warning = pm_diagnostic_next(warning)) {
+        rb_ary_push(warnings, parser_warning(warning, encoding, source, freeze));
+    }
 
     if (freeze) rb_obj_freeze(warnings);
     return warnings;

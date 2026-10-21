@@ -1797,7 +1797,7 @@ rb_obj_cmp(VALUE obj1, VALUE obj2)
  *       end
  *     end
  *     Mod.class              #=> Module
- *     Mod.constants          #=> [:CONST, :PI, :E]
+ *     Mod.constants          #=> [:CONST, :DomainError, :PI, :E]
  *     Mod.instance_methods   #=> [:meth]
  *
  */
@@ -2611,7 +2611,7 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
  *  The value of the constant is returned if a definition is found,
  *  otherwise a +NameError+ is raised.
  *
- *     Math.const_get(:PI)   #=> 3.14159265358979
+ *     Math.const_get(:PI)   #=> 3.141592653589793
  *
  *  This method will recursively look up constant names if a namespaced
  *  class name is provided.  For example:
@@ -2751,8 +2751,8 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
  *  Creates a new constant if no constant with the given name previously
  *  existed.
  *
- *     Math.const_set("HIGH_SCHOOL_PI", 22.0/7.0)   #=> 3.14285714285714
- *     Math::HIGH_SCHOOL_PI - Math::PI              #=> 0.00126448926734968
+ *     Math.const_set("HIGH_SCHOOL_PI", 22.0/7.0)   #=> 3.142857142857143
+ *     Math::HIGH_SCHOOL_PI - Math::PI              #=> 0.0012644892673496777
  *
  *  If +sym+ or +str+ is not a valid constant name a +NameError+ will be
  *  raised with a warning "wrong constant name".
