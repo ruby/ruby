@@ -177,47 +177,95 @@
 #
 # To aid in the documentation, we use this helper method to display bits in a string:
 #
-#   def string_bits(s) = s.bytes.map { |byte| byte.to_s(2).rjust(8, '0') }
+#   def string_bits(s) = s.bytes.map {|byte| byte.to_s(2).rjust(8, '0') }
 #
 # Examples:
 #
 #   string_bits('abc') # => ["01100001", "01100010", "01100011"]  # Three 1-byte characters.
 #   string_bits('こ')  # => ["11100011", "10000001", "10010011"]  # One 3-byte character.
 #
+# Note that in the display, the low-order bits of each byte are always on the right;
+# the order of the displayed bits is not affected by keyword argument +lsb+first+.
+#
 # === Keyword Argument +lsb_first+
 #
-# In each bit-oriented method, keyword argument +lsb_first+ defaults to +true+,
-# which means that the bits within each byte are numbered
-# <i>least-significant bit first</i>
-# least-significant bit to most-significant bit:
+# If you are not familiar with LSB-first and MSB-first conventions,
+# they may not be important to you;
+# in that case, consider ignoring the keyword (allowing it to default to +true+).
 #
-#   s = "\xFF" * 2
+# Importantly, keyword argument +lsb_first+:
+#
+# - _Only_ affects how the given +offset+ refers to bit positions in the string.
+# - _Never_ affects byte order in a string.
+#
+# === <tt>lsb_first: true</tt>
+#
+# LSB-first (least-significant bit first)
+# is the convention commonly used for general in-memory bitmap use,
+# including formats and APIs such as:
+#
+# - Apache Arrow validity bitmaps.
+# - ext4 block bitmaps.
+# - Roaring bitmaps.
+# - Linux/BSD bitmap APIs.
+# - Hardware register descriptions.
+#
+# LSB-first covers many users' needs and expectations,
+# so we define keyword <tt>lsb_first: true</tt> as the default.
+#
+# When +lsb_first+ is given as +true+,
+# the given +offset+ is computed beginning at the least-significant bit in each byte:
+#
+# - Offset +0+ refers to the low-order bit in the first byte.
+# - Offset +7+ refers to the high-order bit in the first byte.
+# - Offset +8+ refers to the low-order bit in the second byte.
+# - Offset +15+ refers to the high-order bit in the second byte.
+# - And so on.
+#
+# Examples:
+#
+#   s = "\xFF\xFF"
 #   string_bits(s) # => ["11111111", "11111111"]
 #   s.bit_clear(0)
-#   string_bits(s) # => ["11111110", "11111111"]  # Low-order bit in first byte.
+#   string_bits(s) # => ["11111110", "11111111"]  #  0:  Low-order bit in first byte.
 #   s.bit_clear(7)
-#   string_bits(s) # => ["01111110", "11111111"]  # High-order bit in first byte.
+#   string_bits(s) # => ["01111110", "11111111"]  #  7:  High-order bit in first byte.
 #   s.bit_clear(8)
-#   string_bits(s) # => ["01111110", "11111110"]  # Low-order bit in second byte.
+#   string_bits(s) # => ["01111110", "11111110"]  #  8:  Low-order bit in second byte.
 #   s.bit_clear(15)
-#   string_bits(s) # => ["01111110", "01111110"]  # High-order bit in second byte.
+#   string_bits(s) # => ["01111110", "01111110"]  # 15:  High-order bit in second byte.
 #
-# When +lsb_first+ is given as +false+, the numbering is reversed within each byte,
-# which means that  the bits within each byte are numbered
-# <i>most-significant bit first</i>
-# most-significant bit to least-significant bit:
-# the byte-order is not affected:
+# <tt>lsb_first: false</tt>
 #
-#   s = "\xFF" * 2
+# MSB-first (most-significant bit first)
+# may be needed for domains such as:
+#
+# - RFC-style network protocol diagrams.
+# - PNG low-bit-depth scanlines.
+# - BitTorrent bitfields.
+# - Some compressed bit streams.
+#
+# When +lsb_first+ is given as +false+,
+# the given +offset+ is computed beginning at the most-significant bit in each byte:
+#
+# - Offset +0+ refers to the high-order bit in the first byte.
+# - Offset +7+ refers to the low-order bit in the first byte.
+# - Offset +8+ refers to the high-order bit in the second byte.
+# - Offset +15+ refers to the low-order bit in the second byte.
+# - And so on.
+#
+# Examples:
+#
+#   s = "\xFF\xFF"
 #   string_bits(s) # => ["11111111", "11111111"]
 #   s.bit_clear(0, lsb_first: false)
-#   string_bits(s) # => ["01111111", "11111111"]  # High-order bit in first byte.
+#   string_bits(s) # => ["01111111", "11111111"]  #  0:  High-order bit in first byte.
 #   s.bit_clear(7, lsb_first: false)
-#   string_bits(s) # => ["01111110", "11111111"]  # Low-order bit in first byte.
+#   string_bits(s) # => ["01111110", "11111111"]  #  7:  Low-order bit in first byte.
 #   s.bit_clear(8, lsb_first: false)
-#   string_bits(s) # => ["01111110", "01111111"]  # High-order bit in second byte.
+#   string_bits(s) # => ["01111110", "01111111"]  #  8:  High-order bit in second byte.
 #   s.bit_clear(15, lsb_first: false)
-#   string_bits(s) # => ["01111110", "01111110"]  # Low-order bit in second byte.
+#   string_bits(s) # => ["01111110", "01111110"]  # 15:  Low-order bit in second byte.
 #
 # == What's Here
 #
