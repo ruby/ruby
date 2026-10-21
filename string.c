@@ -4149,7 +4149,7 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
  *  Raises RangeError if that codepoint is not representable in the encoding of +self+:
  *
  *    s = 'foo'
- *    s.encoding              # => <Encoding:UTF-8>
+ *    s.encoding              # => #<Encoding:UTF-8>
  *    s << 0x00110000         # 1114112 out of char range (RangeError)
  *    s = 'foo'.encode(Encoding::EUC_JP)
  *    s << 0x00800080         # invalid codepoint 0x800080 in EUC-JP (RangeError)
