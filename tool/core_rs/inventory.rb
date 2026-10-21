@@ -38,7 +38,7 @@ require "json"
 
 SRCDIR = File.expand_path("../..", __dir__)
 
-WAVE_D = /\A(reg\w*|compile|prism_compile|prism_init|vm|vm_\w+|gc|ast|node|node_dump|parser_st|ruby_parser|universal_parser|jit|yjit|zjit|iseq|builtin|mini_builtin)\.c\z/
+WAVE_D = /\A(reg\w*|compile|parse|parse_\w+|prism_compile|prism_init|vm|vm_\w+|gc|ast|node|node_dump|parser_st|ruby_parser|universal_parser|jit|yjit|zjit|iseq|builtin|mini_builtin)\.c\z/
 WAVE_X = /\A(main|goruby|ruby-runner|rubystub|dmydln|dmyenc|dmyext|miniinit|inits|debug_counter|sparc)\.c\z/
 
 # Tokens that mean a definition touches Ruby objects or VM state.
@@ -174,6 +174,12 @@ end
 def inventory
   pub, aliases = public_names
   paths = Dir[File.join(SRCDIR, "*.c")].sort
+  if !paths.empty? && system("git", "rev-parse", "--is-inside-work-tree", out: File::NULL, err: File::NULL, chdir: SRCDIR)
+    IO.popen(["git", "-C", SRCDIR, "check-ignore", *paths]) do |io|
+      ignored = io.read.split("\n")
+      paths -= ignored
+    end
+  end
   # missing/*.c sources that a core file compiles in with #include
   # (missing/dtoa.c in util.c, missing/mt19937.c in random.c).
   included = paths.reject { |p| File.basename(p) =~ WAVE_D || File.basename(p) =~ WAVE_X }.flat_map do |p|
