@@ -22,7 +22,7 @@ use crate::profile::reset_profiles_remaining;
 use crate::perf;
 use crate::state::{rb_zjit_compiling_p, ZJITState};
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
-use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
+use crate::stats::{counter_ptr, with_compile_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
 use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
@@ -200,7 +200,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
         update_self_is_heap_object(iseq, unsafe { get_ec_cfp(ec) });
 
         let cb = ZJITState::get_code_block();
-        let mut code_ptr = with_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, jit_exception));
+        let mut code_ptr = with_compile_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, jit_exception));
 
         // If this compile ran out of executable memory, stop compiling so
         // that the interpreter stops incrementing ISEQ call counters. It is
@@ -735,7 +735,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FloatDiv { recv, other, state } => gen_float_div(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::FloatToInt { recv, state } => gen_float_to_int(asm, opnd!(recv), &function.frame_state(*state)),
         Insn::FixnumEq { left, right } => gen_fixnum_eq(asm, opnd!(left), opnd!(right)),
-        Insn::FixnumNeq { left, right } => gen_fixnum_neq(asm, opnd!(left), opnd!(right)),
         Insn::FixnumLt { left, right } => gen_fixnum_lt(asm, opnd!(left), opnd!(right)),
         Insn::FixnumLe { left, right } => gen_fixnum_le(asm, opnd!(left), opnd!(right)),
         Insn::FixnumGt { left, right } => gen_fixnum_gt(asm, opnd!(left), opnd!(right)),
@@ -766,6 +765,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::BoxFixnum { val, state } => gen_box_fixnum(jit, asm, function, opnd!(val), &function.frame_state(state)),
         &Insn::UnboxFixnum { val } => gen_unbox_fixnum(asm, opnd!(val)),
         Insn::Test { val } => gen_test(asm, opnd!(val)),
+        Insn::BoolNegate { val } => gen_bool_negate(asm, opnd!(val), function.type_of(*val)),
         Insn::RefineType { val, .. } => opnd!(val),
         &Insn::GuardType { val, guard_type, state, recompile } => {
             let val_type = function.type_of(val);
@@ -1512,17 +1512,23 @@ fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: O
         asm.je(jit, result_edge.clone());
 
         unsafe extern "C" {
-            fn rb_gc_zjit_writebarrier_required_p_ptr() -> *const usize;
+            fn rb_gc_zjit_writebarrier_required_offset() -> i32;
         }
         // The barrier is a no-op when the receiver is young (not RUBY_FL_PROMOTED),
-        // not RUBY_FL_SHAREABLE, and incremental marking is off; see
-        // rb_gc_impl_writebarrier. NULL means the GC has no such fast path.
-        let marking_ptr = unsafe { rb_gc_zjit_writebarrier_required_p_ptr() };
-        if !marking_ptr.is_null() {
+        // not RUBY_FL_SHAREABLE, and the current Ractor's objspace is not
+        // incremental-marking; see rb_gc_impl_writebarrier. A negative offset
+        // means the GC has no such fast path. The word is per-objspace: compiled
+        // code is shared across Ractors, so find the objspace through EC.
+        let wb_offset = unsafe { rb_gc_zjit_writebarrier_required_offset() };
+        if wb_offset >= 0 {
             let flags = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS));
             let old_or_shareable = asm.and(flags, Opnd::UImm((RUBY_FL_PROMOTED | RUBY_FL_SHAREABLE) as u64));
-            let marking_addr = asm.load(Opnd::const_ptr(marking_ptr));
-            let marking = asm.load(Opnd::mem(64, marking_addr, 0));
+            let thread = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR as i32));
+            let ractor = asm.load(Opnd::mem(64, thread, RUBY_OFFSET_THREAD_RACTOR as i32));
+            let objspace = asm.load(Opnd::mem(64, ractor, unsafe { rb_zjit_runtime_offsets.ractor_objspace }));
+            let marking = asm.load(Opnd::mem(8, objspace, wb_offset));
+            let marking = marking.with_num_bits(64);
+            let marking = asm.and(marking, 0xFF.into());
             let needs_wb = asm.or(old_or_shareable, marking);
             asm.test(needs_wb, needs_wb);
             asm.jz(jit, result_edge.clone());
@@ -3003,12 +3009,6 @@ fn gen_fixnum_eq(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir:
     asm.csel_e(Qtrue.into(), Qfalse.into())
 }
 
-/// Compile Fixnum != Fixnum
-fn gen_fixnum_neq(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
-    asm.cmp(left, right);
-    asm.csel_ne(Qtrue.into(), Qfalse.into())
-}
-
 /// Compile Fixnum < Fixnum
 fn gen_fixnum_lt(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
     asm.cmp(left, right);
@@ -3134,6 +3134,15 @@ fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
     // See RB_TEST(), include/ruby/internal/special_consts.h
     asm.test(val, Opnd::Imm(!Qnil.as_i64()));
     asm.csel_e(0.into(), 1.into())
+}
+
+fn gen_bool_negate(asm: &mut Assembler, val: lir::Opnd, val_type: Type) -> lir::Opnd {
+    if val_type.is_subtype(types::BoolExact) {
+        asm.xor(val, Qtrue.into())
+    } else {
+        asm.test(val, Opnd::Imm(!Qnil.as_i64()));
+        asm.csel_e(Qtrue.into(), Qfalse.into())
+    }
 }
 
 /// Branch to `if_true` if `val` has type `ty` and to `if_false` otherwise, using only the
@@ -4022,7 +4031,7 @@ c_callable! {
             }
 
             // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
-            let code_ptr = with_time_stat(compile_time_ns, || function_stub_hit_body(cb, &iseq_call));
+            let code_ptr = with_compile_time_stat(compile_time_ns, || function_stub_hit_body(cb, &iseq_call));
             if code_ptr.is_ok() {
                 if let Some(version) = payload.versions.last_mut() {
                     unsafe { version.as_mut() }.incoming.push(iseq_call);

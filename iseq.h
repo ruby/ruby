@@ -14,7 +14,6 @@
 #include "internal/gc.h"
 #include "shape.h"
 #include "vm_core.h"
-#include "prism_compile.h"
 
 RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])

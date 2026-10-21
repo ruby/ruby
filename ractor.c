@@ -219,7 +219,7 @@ ractor_status_p(rb_ractor_t *r, enum ractor_status status)
 static void ractor_local_storage_mark(rb_ractor_t *r);
 static void ractor_local_storage_free(rb_ractor_t *r);
 
-static void ractor_sync_mark(rb_ractor_t *r);
+static void ractor_sync_mark(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r);
 static void ractor_sync_free(rb_ractor_t *r);
 static size_t ractor_sync_memsize(const rb_ractor_t *r);
 static void ractor_sync_init(rb_ractor_t *r);
@@ -243,46 +243,46 @@ mark_targeted_hook_list(st_data_t key, st_data_t value, st_data_t _arg)
 }
 
 static void
-ractor_mark_thread(rb_thread_t *th)
+ractor_mark_thread(const struct rb_gc_mark_ctx *ctx, rb_thread_t *th)
 {
-    rb_gc_mark(th->self);
+    rb_gc_mark_ctx(ctx, th->self);
 
     /* A thread's ec lives inside the root fiber struct and is freed with that
      * fiber's wrapper object, so keep the fiber wrappers alive from here too. */
     if (th->root_fiber) {
         VALUE root_fiber_self = rb_fiberptr_self(th->root_fiber);
-        if (root_fiber_self) rb_gc_mark(root_fiber_self);
+        if (root_fiber_self) rb_gc_mark_ctx(ctx, root_fiber_self);
     }
     /* The ec sits inside its fiber, so marking that fiber's wrapper scans the ec
      * as well.  Only when there is no wrapper yet (mid-creation, teardown) does
      * the ec need marking of its own. */
     VALUE ec_fiber_self = (th->ec && th->ec->fiber_ptr) ? rb_fiberptr_self(th->ec->fiber_ptr) : 0;
     if (ec_fiber_self) {
-        rb_gc_mark(ec_fiber_self);
+        rb_gc_mark_ctx(ctx, ec_fiber_self);
     }
     else if (th->ec) {
-        rb_execution_context_mark(th->ec);
+        rb_execution_context_mark_ctx(ctx, th->ec);
     }
 
     /* Root the thread's remaining possessions directly as well; thgroup in
      * particular has no other root. */
-    rb_thread_mark_owned_roots(th);
+    rb_thread_mark_owned_roots(ctx, th);
 }
 
 static void
-ractor_mark_unshareable_parts(rb_ractor_t *r)
+ractor_mark_unshareable_parts(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r)
 {
     /* A single VALUE slot written by the owner in one word, so any GC reads it safely.
      * Its target belongs to another Ractor, so containment makes a foreign marker skip
      * it. */
-    rb_gc_mark(r->r_stdin);
-    rb_gc_mark(r->r_stdout);
-    rb_gc_mark(r->r_stderr);
-    rb_gc_mark(r->verbose);
-    rb_gc_mark(r->debug);
+    rb_gc_mark_ctx(ctx, r->r_stdin);
+    rb_gc_mark_ctx(ctx, r->r_stdout);
+    rb_gc_mark_ctx(ctx, r->r_stderr);
+    rb_gc_mark_ctx(ctx, r->verbose);
+    rb_gc_mark_ctx(ctx, r->debug);
 
     // mark the received messages (the structures the owner mutates guard themselves)
-    ractor_sync_mark(r);
+    ractor_sync_mark(ctx, r);
 
     /* Structures the owner mutates while running follow. */
 
@@ -295,7 +295,7 @@ ractor_mark_unshareable_parts(rb_ractor_t *r)
         rb_thread_t *th = 0;
         ccan_list_for_each(&r->threads.set, th, lt_node) {
             VM_ASSERT(th != NULL);
-            ractor_mark_thread(th);
+            ractor_mark_thread(ctx, th);
         }
     }
 
@@ -306,7 +306,7 @@ ractor_mark_unshareable_parts(rb_ractor_t *r)
      * thread_mark walks whenever a terminated Thread's wrapper is still
      * referenced, and ractor_mark_thread performs the same marks. */
     rb_thread_t *dying_th = RUBY_ATOMIC_PTR_LOAD(r->threads.dying_th);
-    if (dying_th) ractor_mark_thread(dying_th);
+    if (dying_th) ractor_mark_thread(ctx, dying_th);
 
     ractor_local_storage_mark(r);
 }
@@ -315,21 +315,22 @@ static void
 ractor_mark(void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
+    const struct rb_gc_mark_ctx ctx = rb_gc_current_mark_ctx();
 
     /* Only the wrapper's direct references: following an unshareable object from the
      * shareable wrapper would break the shref rule.  Unshareable roots are marked by the
      * root scan (rb_ractor_mark_local_roots); zombie_objspaces covers the terminated. */
-    rb_gc_mark(r->loc);
-    rb_gc_mark(r->name);
+    rb_gc_mark_ctx(&ctx, r->loc);
+    rb_gc_mark_ctx(&ctx, r->name);
     /* The default port is shareable, so following it breaks no rule.  Other Ractors
      * still send/value through it after termination, and once a terminated Ractor left
      * both the set and zombie_objspaces (orphan-merged) this marker is its only cover. */
-    rb_gc_mark(r->sync.default_port_value);
+    rb_gc_mark_ctx(&ctx, r->sync.default_port_value);
     /* A single-objspace impl (mmtk) has no zombie_objspaces and no pin/shref bits, so
      * the root scan cannot reach a terminated Ractor's queue, in-flight payloads or
      * join value; and no shref rule forbids following them from the wrapper. */
     if (!rb_gc_multi_objspace_p()) {
-        ractor_mark_unshareable_parts(r);
+        ractor_mark_unshareable_parts(&ctx, r);
         rb_ractor_mark_terminated_join_value(r);
     }
     else if (rb_gc_during_global_gc_p()) {
@@ -345,7 +346,7 @@ ractor_mark(void *ptr)
  * heap Ractor and Thread wrapper objects, which may live in another objspace, so this
  * Ractor's own possessions are rooted directly from here. */
 void
-rb_ractor_mark_local_roots(rb_ractor_t *r)
+rb_ractor_mark_local_roots(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r)
 {
     if (r->postmortem) {
         /* The final self collection: everything else -- the Thread and Fiber
@@ -360,14 +361,14 @@ rb_ractor_mark_local_roots(rb_ractor_t *r)
         return;
     }
 
-    rb_gc_mark(r->loc);
-    rb_gc_mark(r->name);
+    rb_gc_mark_ctx(ctx, r->loc);
+    rb_gc_mark_ctx(ctx, r->name);
     /* Only the root scan calls this: a local GC for itself, a global GC for the whole
      * set under the barrier.  A terminated Ractor has left the set; zombie_objspaces
      * covers it instead. */
     VM_ASSERT(r == rb_current_ractor_raw(false) || rb_gc_during_global_gc_p());
     VM_ASSERT(!rb_ractor_status_p(r, ractor_terminated));
-    ractor_mark_unshareable_parts(r);
+    ractor_mark_unshareable_parts(ctx, r);
 
     /* This Ractor's rb_gc_register_mark_object pins, treated conservatively: a local GC
      * marks only its own residents and leaves foreign or shareable entries to their
@@ -1755,7 +1756,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         {
             rb_ary_cancel_sharing(obj);
 
-            for (int i = 0; i < RARRAY_LENINT(obj); i++) {
+            for (rb_len_t i = 0; i < RARRAY_LEN(obj); i++) {
                 VALUE e = RARRAY_AREF(obj, i);
                 if (obj_traverse_i(e, data)) return 1;
             }
@@ -2326,7 +2327,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         {
             rb_ary_cancel_sharing(obj);
 
-            for (int i = 0; i < RARRAY_LENINT(obj); i++) {
+            for (rb_len_t i = 0; i < RARRAY_LEN(obj); i++) {
                 VALUE e = RARRAY_AREF(obj, i);
 
                 if (obj_traverse_replace_i(e, data)) {
@@ -3583,48 +3584,48 @@ rb_ractor_courier_free(struct rb_ractor_courier *c)
  * global GC keeps them reachable through the courier.  While it is being built it also
  * holds the sender's sources in seen; the basket is on the sender's own list then. */
 void
-rb_ractor_courier_mark(struct rb_ractor_courier *c)
+rb_ractor_courier_mark(const struct rb_gc_mark_ctx *ctx, struct rb_ractor_courier *c)
 {
     if (!c) return;
     if (c->seen) rb_mark_set(c->seen);
     for (uint32_t i = 0; i < c->refs_count; i++) {
-        rb_gc_mark(c->refs[i]);
+        rb_gc_mark_ctx(ctx, c->refs[i]);
     }
     for (uint32_t i = 0; i < c->count; i++) {
         struct courier_node *n = &c->nodes[i];
         if (n->kind == COURIER_KIND_REF) {
-            rb_gc_mark(n->u.ref);
+            rb_gc_mark_ctx(ctx, n->u.ref);
         }
         else if (n->kind == COURIER_KIND_OBJECT) {
-            rb_gc_mark(n->u.obj.klass);
+            rb_gc_mark_ctx(ctx, n->u.obj.klass);
         }
         else if (n->kind == COURIER_KIND_STRUCT) {
-            rb_gc_mark(n->u.strct.klass);
+            rb_gc_mark_ctx(ctx, n->u.strct.klass);
         }
         else if (n->kind == COURIER_KIND_MATCH) {
-            rb_gc_mark(n->u.match.klass);
+            rb_gc_mark_ctx(ctx, n->u.match.klass);
         }
         else if (n->kind == COURIER_KIND_IO) {
-            rb_gc_mark(n->u.io.klass);
+            rb_gc_mark_ctx(ctx, n->u.io.klass);
         }
         else if (n->kind == COURIER_KIND_STRING) {
-            rb_gc_mark(n->u.str.klass);
+            rb_gc_mark_ctx(ctx, n->u.str.klass);
         }
         else if (n->kind == COURIER_KIND_BACKTRACE) {
-            rb_backtrace_blob_mark(n->u.bt.blob, n->u.bt.size);
+            rb_backtrace_blob_mark_ctx(ctx, n->u.bt.blob, n->u.bt.size);
         }
         else if (n->kind == COURIER_KIND_ARRAY) {
-            rb_gc_mark(n->u.ary.klass);
+            rb_gc_mark_ctx(ctx, n->u.ary.klass);
         }
         else if (n->kind == COURIER_KIND_HASH) {
-            rb_gc_mark(n->u.hash.klass);
+            rb_gc_mark_ctx(ctx, n->u.hash.klass);
         }
         else if (n->kind == COURIER_KIND_REGEXP) {
-            rb_gc_mark(n->u.re.src);
-            rb_gc_mark(n->u.re.klass);
+            rb_gc_mark_ctx(ctx, n->u.re.src);
+            rb_gc_mark_ctx(ctx, n->u.re.klass);
         }
         else if (n->kind == COURIER_KIND_HOOKED) {
-            rb_gc_mark(n->u.hooked.klass);
+            rb_gc_mark_ctx(ctx, n->u.hooked.klass);
         }
     }
 }

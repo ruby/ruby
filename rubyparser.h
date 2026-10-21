@@ -61,7 +61,7 @@ typedef struct rb_parser_string {
     enum rb_parser_string_coderange_type coderange;
     rb_encoding *enc;
     /* Length of the string, not including terminating NUL character. */
-    long len;
+    rb_len_t len;
     /* Pointer to the contents of the string. */
     char *ptr;
 } rb_parser_string_t;

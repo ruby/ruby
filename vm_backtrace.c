@@ -18,6 +18,7 @@
 #include "internal/ruby_parser.h"
 #include "internal/vm.h"
 #include "iseq.h"
+#include "prism_compile.h"
 #include "ruby/debug.h"
 #include "ruby/encoding.h"
 #include "ruby/internal/intern/io.h"
@@ -521,7 +522,10 @@ iseq_from_e_script_p(const rb_iseq_t *iseq, VALUE path, uint64_t source_hash)
         !RTEST(rb_e_script)) {
         return false;
     }
-    if (!location_source_hash_matches(rb_e_script, source_hash)) return false;
+    bool matches = ISEQ_BODY(iseq)->prism ?
+        pm_source_hash_matches(rb_e_script, path, source_hash) :
+        location_source_hash_matches(rb_e_script, source_hash);
+    if (!matches) return false;
 
     const rb_iseq_t *source_iseq = iseq;
     for (; source_iseq; source_iseq = ISEQ_BODY(source_iseq)->parent_iseq) {
@@ -535,7 +539,7 @@ iseq_from_e_script_p(const rb_iseq_t *iseq, VALUE path, uint64_t source_hash)
     rb_code_location_t source_location;
     bool found;
     if (ISEQ_BODY(iseq)->prism) {
-        found = pm_node_source_location(rb_e_script, path, 1, node_id, &source_location);
+        found = pm_node_source_location(rb_e_script, path, 1, node_id, source_hash, &source_location);
     }
     else {
         found = rb_ast_node_source_location(
@@ -631,7 +635,9 @@ location_source_range_m(VALUE self)
     if (NIL_P(parser_path)) {
         parser_path = rb_str_new_cstr("(eval)");
     }
-    if (!location_source_hash_matches(source, source_hash)) {
+    // Prism hashes the source itself, so for prism-compiled code the source
+    // hash is checked by pm_node_source_location.
+    if (!ISEQ_BODY(iseq)->prism && !location_source_hash_matches(source, source_hash)) {
         rb_raise(rb_eRuntimeError, "source has been modified");
     }
 
@@ -644,6 +650,7 @@ location_source_range_m(VALUE self)
             parser_path,
             first_lineno,
             node_id,
+            source_hash,
             &code_location
         );
     }
@@ -869,8 +876,8 @@ rb_backtrace_dup(VALUE btobj)
 
 /* Copy a backtrace's frames into an off-heap blob for a Ractor copy courier.  A frame
  * only references shareable iseq / method-entry imemos, so the blob can carry them as
- * they are.  It has no compaction update hook, so rb_backtrace_blob_mark pins them
- * (rb_gc_mark, not _movable) for as long as the message is in flight. */
+ * they are.  It has no compaction update hook, so rb_backtrace_blob_mark_ctx pins them
+ * (rb_gc_mark_ctx, not _movable) for as long as the message is in flight. */
 void *
 rb_backtrace_blob_dump(VALUE btobj, int *size_out)
 {
@@ -903,12 +910,12 @@ rb_backtrace_blob_load(const void *blob_, int size)
 }
 
 void
-rb_backtrace_blob_mark(const void *blob_, int size)
+rb_backtrace_blob_mark_ctx(const struct rb_gc_mark_ctx *ctx, const void *blob_, int size)
 {
     const rb_backtrace_location_t *blob = blob_;
     for (int i = 0; i < size; i++) {
-        if (blob[i].cme) rb_gc_mark((VALUE)blob[i].cme);
-        if (blob[i].iseq) rb_gc_mark((VALUE)blob[i].iseq);
+        if (blob[i].cme) rb_gc_mark_ctx(ctx, (VALUE)blob[i].cme);
+        if (blob[i].iseq) rb_gc_mark_ctx(ctx, (VALUE)blob[i].iseq);
     }
 }
 

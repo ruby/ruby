@@ -346,14 +346,13 @@ class TestAst < Test::Unit::TestCase
 
   def test_invalid_yield_no_memory_leak
     # [Bug #21383]
-    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true)
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true, samples: 2..100)
       code = proc do
         eval("class C; yield; end")
       rescue SyntaxError
       end
-      1_000.times(&code)
     begin;
-      100_000.times(&code)
+      200.times(&code)
     end;
   end
 

@@ -38,6 +38,7 @@
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
+#include "prism_compile.h"
 #include "ruby/util.h"
 #include "vm_core.h"
 #include "vm_sync.h"
@@ -659,20 +660,19 @@ iseq_alloc(void)
 }
 
 VALUE
-rb_iseq_pathobj_new(VALUE path, VALUE realpath)
+rb_iseq_pathobj_new(VALUE path, VALUE realpath, bool *no_realpath)
 {
     VALUE pathobj;
     VM_ASSERT(RB_TYPE_P(path, T_STRING));
     VM_ASSERT(NIL_P(realpath) || RB_TYPE_P(realpath, T_STRING));
 
-    if (path == realpath ||
-        (!NIL_P(realpath) && rb_str_cmp(path, realpath) == 0)) {
+    *no_realpath = NIL_P(realpath);
+
+    if (*no_realpath || path == realpath || rb_str_cmp(path, realpath) == 0) {
         pathobj = rb_fstring(path);
     }
     else {
-        if (!NIL_P(realpath)) {
-            realpath = rb_fstring(realpath);
-        }
+        realpath = rb_fstring(realpath);
         VALUE fpath = rb_fstring(path);
 
         pathobj = rb_ary_new_from_args(2, fpath, realpath);
@@ -685,8 +685,10 @@ rb_iseq_pathobj_new(VALUE path, VALUE realpath)
 void
 rb_iseq_pathobj_set(const rb_iseq_t *iseq, VALUE path, VALUE realpath)
 {
-    RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->location.pathobj,
-                 rb_iseq_pathobj_new(path, realpath));
+    bool no_realpath;
+    VALUE pathobj = rb_iseq_pathobj_new(path, realpath, &no_realpath);
+    RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->location.pathobj, pathobj);
+    ISEQ_BODY(iseq)->no_realpath = no_realpath;
 }
 
 // Make a dummy iseq for a dummy frame that exposes a path for profilers to inspect
@@ -1594,7 +1596,7 @@ rb_iseq_path(const rb_iseq_t *iseq)
 VALUE
 rb_iseq_realpath(const rb_iseq_t *iseq)
 {
-    return pathobj_realpath(ISEQ_BODY(iseq)->location.pathobj);
+    return pathobj_realpath(ISEQ_BODY(iseq)->location.pathobj, ISEQ_BODY(iseq)->no_realpath);
 }
 
 VALUE

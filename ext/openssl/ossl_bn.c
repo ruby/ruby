@@ -352,11 +352,11 @@ ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
         break;
       case 10:
         if (!(buf = BN_bn2dec(bn))) ossl_raise(eBNError, NULL);
-        str = ossl_buf2str(buf, rb_long2int(strlen(buf)));
+        str = ossl_buf2str(buf);
         break;
       case 16:
         if (!(buf = BN_bn2hex(bn))) ossl_raise(eBNError, NULL);
-        str = ossl_buf2str(buf, rb_long2int(strlen(buf)));
+        str = ossl_buf2str(buf);
         break;
       default:
         ossl_raise(rb_eArgError, "invalid radix %d", base);

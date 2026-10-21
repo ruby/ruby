@@ -4,6 +4,8 @@
 #ifndef PRISM_COMPILER_FORMAT_H
 #define PRISM_COMPILER_FORMAT_H
 
+#include <stdio.h>
+
 /**
  * Certain compilers support specifying that a function accepts variadic
  * parameters that look like printf format strings to provide a better developer

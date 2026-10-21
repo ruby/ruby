@@ -269,6 +269,13 @@ module Ruby::Prism
       refute_warning("\t\t# shareable_constant_value: none")
     end
 
+    def test_magic_comment_invalid_value
+      assert_warning("# frozen_string_literal: maybe\n", "invalid value for frozen_string_literal: maybe")
+      assert_warning("# Frozen-String-Literal: maybe\n", "invalid value for frozen_string_literal: maybe")
+      assert_warning("# Warn-Indent: maybe\n", "invalid value for warn_indent: maybe")
+      assert_warning("# Shareable-Constant-Value: maybe\n", "invalid value for shareable_constant_value: maybe")
+    end
+
     def test_string_in_predicate
       assert_warning("if 'foo'; end", "string")
       assert_warning("if \"\#{foo}\"; end", "string")

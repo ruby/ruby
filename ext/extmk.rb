@@ -789,6 +789,9 @@ begin
     %w[RM RMDIRS RMDIR RMALL].each {|w| mf.macro w, [RbConfig::CONFIG[w]]}
     if $nmake
       message = ['@(for %I in (', ') do @echo.%~I)']
+    elsif $mswin
+      # See MESSAGE_BEGIN in win32/GNUmakefile.sub.
+      message = ['@if 1==1 (for %%I in (', ') do @echo.%%~I)']
     else
       message = ['@for line in', '; do echo "$$line"; done']
     end

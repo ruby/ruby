@@ -3280,7 +3280,10 @@ AS_CASE(["$target_os"],
     AS_IF([test "x$ac_cv_lib_procstat_procstat_open_sysctl" = xyes], [
 	AC_CHECK_FUNCS(procstat_getvmmap)
     ])
-    ])
+],
+[openbsd*], [
+    AC_CHECK_FUNCS([getexecpath])
+])
 AS_CASE(["$target_cpu-$target_os"],
 [*-darwin*], [
     AC_CHECK_HEADERS([libproc.h])
@@ -3689,6 +3692,12 @@ AS_CASE("$enable_shared", [yes], [
   AC_ARG_ENABLE(pie,
           AS_HELP_STRING([--disable-pie], [disable PIE feature]),
           [pie=$enableval], [pie=])
+  AS_CASE(["$target_os:$pie"], [haiku*:], [
+    # Haiku links every executable as a shared object, which rejects
+    # the local-exec TLS relocations in -fPIE objects.  The compiler
+    # generates PIC there by default.
+    pie=no
+  ])
   AS_IF([test "$GCC" = yes -a -z "$EXTSTATIC" -a "x$pie" != xno], [
     RUBY_TRY_CFLAGS(-fPIE, [pie=yes], [pie=no])
     AS_IF([test "$pie" = yes], [

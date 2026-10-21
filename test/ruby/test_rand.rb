@@ -425,12 +425,12 @@ class TestRand < Test::Unit::TestCase
   end
 
   def test_urandom_size_errors
-    beyond_long = 2 ** (RbConfig::SIZEOF['long'] * 8 - 1)
+    beyond_len = 2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1)
     assert_raise(ArgumentError) { Random.urandom(-1) }
-    assert_raise(RangeError) { Random.urandom(beyond_long) }
+    assert_raise(RangeError) { Random.urandom(beyond_len) }
     # Random#bytes converts its size the same way, so the classes have to agree
     assert_raise(ArgumentError) { Random.new.bytes(-1) }
-    assert_raise(RangeError) { Random.new.bytes(beyond_long) }
+    assert_raise(RangeError) { Random.new.bytes(beyond_len) }
   end
 
   def test_new_seed

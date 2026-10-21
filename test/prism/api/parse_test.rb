@@ -61,6 +61,14 @@ module Ruby::Prism
       end
     end
 
+    def test_parse_file_null_byte
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, "target.txt")
+        File.write(path, "# secret")
+        assert_raise(ArgumentError) { Ruby::Prism.parse_file("#{path}\0.rb") }
+      end
+    end
+
     def test_parse_tempfile
       Tempfile.create(["test_parse_tempfile", ".rb"]) do |t|
         t.puts ["begin\n", " end\n"]
@@ -108,6 +116,15 @@ module Ruby::Prism
 
       assert Ruby::Prism.parse_failure?("yield")
       assert Ruby::Prism.parse_success?("yield", partial_script: true)
+    end
+
+    def test_attach_comments
+      assert Ruby::Prism.parse_success?("foo # comment", attach_comments: true)
+      assert Ruby::Prism.parse_success?("foo # comment", attach_comments: false)
+
+      # The serialized options are positional, so the scopes that follow
+      # attach_comments must still be read correctly.
+      assert_kind_of Ruby::Prism::LocalVariableReadNode, Ruby::Prism.parse_statement("foo", attach_comments: true, scopes: [[:foo]])
     end
 
     def test_version
@@ -162,6 +179,17 @@ module Ruby::Prism
 
     def test_nearest
       assert Ruby::Prism.parse_success?("1 + 1", version: "nearest")
+    end
+
+    def test_version_default
+      # Trailing commas in method parameters are only valid as of Ruby 4.1.
+      source = "def foo(a,); end"
+      expected = RUBY_VERSION >= "4.1"
+
+      assert_equal expected, Ruby::Prism.parse_success?(source)
+      assert_equal expected, Ruby::Prism.parse_success?(source, version: nil)
+      assert_equal expected, Ruby::Prism.parse_success?(source, version: "nearest")
+      assert Ruby::Prism.parse_success?(source, version: "latest")
     end
 
     def test_scopes

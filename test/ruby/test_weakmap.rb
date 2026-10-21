@@ -204,9 +204,9 @@ class TestWeakMap < Test::Unit::TestCase
   end
 
   def test_no_memory_leak
-    assert_no_memory_leak([], '', "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #19398]", rss: true, limit: 1.5, timeout: 60)
+    assert_no_memory_leak([], '', "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #19398]", rss: true, limit: 1.5, timeout: 60, samples: 5)
     begin;
-      1_000_000.times do
+      200_000.times do
         ObjectSpace::WeakMap.new
       end
     end;

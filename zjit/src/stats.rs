@@ -9,7 +9,7 @@ use crate::options::OPTIONS;
 #[path = "../../jit/src/lib.rs"]
 mod jit;
 
-use crate::{cast::IntoUsize as _, cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, ZJITState}};
+use crate::{cast::IntoUsize as _, cruby::*, hir::ParseError, options::get_option, state::{increment_compile_time_ns, zjit_enabled_p, ZJITState}};
 
 macro_rules! make_counters {
     (
@@ -239,9 +239,6 @@ make_counters! {
         exit_no_profile_send,
         exit_no_profile_getivar,
         exit_no_profile_setivar,
-        exit_splatkw_not_nil_or_hash,
-        exit_splatkw_polymorphic,
-        exit_splatkw_not_profiled,
         exit_caller_splat_length_mismatch,
         exit_caller_splat_ruby2_keywords,
         exit_directive_induced,
@@ -629,9 +626,6 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         InvokeBlockIseqChanged        => exit_invoke_block_iseq_changed,
         BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
-        SplatKwNotNilOrHash           => exit_splatkw_not_nil_or_hash,
-        SplatKwPolymorphic            => exit_splatkw_polymorphic,
-        SplatKwNotProfiled            => exit_splatkw_not_profiled,
         CallerSplatLengthMismatch     => exit_caller_splat_length_mismatch,
         CallerSplatRuby2Keywords      => exit_caller_splat_ruby2_keywords,
         DirectiveInduced              => exit_directive_induced,
@@ -989,6 +983,16 @@ pub fn with_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() ->
     let ret = func();
     let nanos = Instant::now().duration_since(start).as_nanos();
     incr_counter_by(counter, nanos as u64);
+    ret
+}
+
+/// Measure the time taken by func() and add that to zjit_compile_time.
+pub fn with_compile_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() -> R {
+    let start = Instant::now();
+    let ret = func();
+    let nanos = Instant::now().duration_since(start).as_nanos() as u64;
+    increment_compile_time_ns(nanos);
+    incr_counter_by(counter, nanos);
     ret
 }
 

@@ -9,11 +9,11 @@ module Ruby::Prism
   module Serialize # :nodoc:
     # The major version of prism that we are expecting to find in the serialized
     # strings.
-    MAJOR_VERSION = 1
+    MAJOR_VERSION = 2
 
     # The minor version of prism that we are expecting to find in the serialized
     # strings.
-    MINOR_VERSION = 9
+    MINOR_VERSION = 0
 
     # The patch version of prism that we are expecting to find in the serialized
     # strings.
@@ -33,12 +33,15 @@ module Ruby::Prism
                        loader.load_header
       encoding =       loader.load_encoding
       start_line =     loader.load_varsint
+      checksum =       loader.load_uint64
       offsets =        loader.load_line_offsets(freeze)
 
       source.replace_start_line(start_line)
+      source.replace_checksum(checksum)
       source.replace_offsets(offsets)
 
-      comments =       loader.load_comments(freeze)
+                       loader.load_comments(source.comments, freeze)
+                       loader.load_comment_attachments(source, freeze)
       magic_comments = loader.load_magic_comments(freeze)
       data_loc =       loader.load_optional_location_object(freeze)
       errors =         loader.load_errors(encoding, freeze)
@@ -49,11 +52,11 @@ module Ruby::Prism
 
       constant_pool = ConstantPool.new(serialized, cpool_base, cpool_size)
 
-      node =           loader.load_node(constant_pool, encoding, freeze) #: ProgramNode
+      node =           loader.load_nodes(constant_pool, encoding, freeze, cpool_base) #: ProgramNode
                        loader.load_constant_pool(constant_pool)
       raise unless     loader.eof?
 
-      result = ParseResult.new(node, comments, magic_comments, data_loc, errors, warnings, continuable, source)
+      result = ParseResult.new(node, magic_comments, data_loc, errors, warnings, continuable, source)
       result.freeze if freeze
 
       input.force_encoding(encoding)
@@ -88,12 +91,15 @@ module Ruby::Prism
       tokens =         loader.load_tokens
       encoding =       loader.load_encoding
       start_line =     loader.load_varsint
+      checksum =       loader.load_uint64
       offsets =        loader.load_line_offsets(freeze)
 
       source.replace_start_line(start_line)
+      source.replace_checksum(checksum)
       source.replace_offsets(offsets)
 
-      comments =       loader.load_comments(freeze)
+                       loader.load_comments(source.comments, freeze)
+                       loader.load_comment_attachments(source, freeze)
       magic_comments = loader.load_magic_comments(freeze)
       data_loc =       loader.load_optional_location_object(freeze)
       errors =         loader.load_errors(encoding, freeze)
@@ -101,7 +107,7 @@ module Ruby::Prism
       continuable =    loader.load_bool
       raise unless     loader.eof?
 
-      result = LexResult.new(tokens, comments, magic_comments, data_loc, errors, warnings, continuable, source)
+      result = LexResult.new(tokens, magic_comments, data_loc, errors, warnings, continuable, source)
 
       tokens.each do |token|
         token[0].value.force_encoding(encoding)
@@ -132,16 +138,18 @@ module Ruby::Prism
       source = Source.for(input, 1, [])
       loader = Loader.new(source, serialized)
 
-                   loader.load_header
-                   loader.load_encoding
-      start_line = loader.load_varsint
-      offsets    = loader.load_line_offsets(freeze)
+                    loader.load_header
+                    loader.load_encoding
+      start_line =  loader.load_varsint
+      checksum =    loader.load_uint64
+      offsets =     loader.load_line_offsets(freeze)
 
       source.replace_start_line(start_line)
+      source.replace_checksum(checksum)
       source.replace_offsets(offsets)
 
-      result =     loader.load_comments(freeze)
-      raise unless loader.eof?
+      result =      loader.load_comments(source.comments, freeze)
+      raise unless  loader.eof?
 
       source.deep_freeze if freeze
       result
@@ -162,12 +170,15 @@ module Ruby::Prism
                        loader.load_header
       encoding =       loader.load_encoding
       start_line =     loader.load_varsint
+      checksum =       loader.load_uint64
       offsets =        loader.load_line_offsets(freeze)
 
       source.replace_start_line(start_line)
+      source.replace_checksum(checksum)
       source.replace_offsets(offsets)
 
-      comments =       loader.load_comments(freeze)
+                       loader.load_comments(source.comments, freeze)
+                       loader.load_comment_attachments(source, freeze)
       magic_comments = loader.load_magic_comments(freeze)
       data_loc =       loader.load_optional_location_object(freeze)
       errors =         loader.load_errors(encoding, freeze)
@@ -178,12 +189,12 @@ module Ruby::Prism
 
       constant_pool = ConstantPool.new(serialized, cpool_base, cpool_size)
 
-      node =           loader.load_node(constant_pool, encoding, freeze) #: ProgramNode
+      node =           loader.load_nodes(constant_pool, encoding, freeze, cpool_base) #: ProgramNode
                        loader.load_constant_pool(constant_pool)
       raise unless     loader.eof?
 
       value = [node, tokens] #: [ProgramNode, Array[Token]]
-      result = ParseLexResult.new(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
+      result = ParseLexResult.new(value, magic_comments, data_loc, errors, warnings, continuable, source)
 
       tokens.each do |token|
         token[0].value.force_encoding(encoding)
@@ -316,20 +327,46 @@ module Ruby::Prism
         offsets
       end
 
-      #: (bool freeze) -> Array[Comment]
-      def load_comments(freeze)
-        comments =
-          Array.new(load_varuint) do
-            comment =
-              case load_varuint
-              when 0 then InlineComment.new(load_location_object(freeze))
-              when 1 then EmbDocComment.new(load_location_object(freeze))
-              else raise
-              end
+      # Load the comments attached to each node into the comment attachments and
+      # comment ranges of the given source. For each node that owns comments, the
+      # index at which its comments begin is stored at its node id and the index
+      # at which they end at the following node id.
+      #
+      #: (Source source, bool freeze) -> void
+      def load_comment_attachments(source, freeze)
+        comments = source.comments
+        attachments = source.comment_attachments
+        ranges = source.comment_ranges
 
-            comment.freeze if freeze
-            comment
-          end
+        load_varuint.times do
+          node_id = load_varuint
+          ranges[node_id] = attachments.length
+          load_varuint.times { attachments << comments[load_varuint] }
+          ranges[node_id + 1] = attachments.length
+        end
+
+        if freeze
+          attachments.freeze
+          ranges.freeze
+        end
+      end
+
+      # Load the comments into the given list, which belongs to the source that
+      # the comments refer to.
+      #
+      #: (Array[Comment] comments, bool freeze) -> Array[Comment]
+      def load_comments(comments, freeze)
+        load_varuint.times do
+          comment =
+            case load_varuint
+            when 0 then InlineComment.new(load_location_object(freeze))
+            when 1 then EmbDocComment.new(load_location_object(freeze))
+            else raise
+            end
+
+          comment.freeze if freeze
+          comments << comment
+        end
 
         comments.freeze if freeze
         comments
@@ -502,12 +539,9 @@ module Ruby::Prism
         (io.read(4) or raise).unpack1("L") #: Integer
       end
 
-      #: (ConstantPool constant_pool, Encoding encoding, bool freeze) -> node?
-      def load_optional_node(constant_pool, encoding, freeze)
-        if io.getbyte != 0
-          io.pos -= 1
-          load_node(constant_pool, encoding, freeze)
-        end
+      #: () -> Integer
+      def load_uint64
+        (io.read(8) or raise).unpack1("Q") #: Integer
       end
 
       #: (Encoding encoding) -> String
@@ -559,69 +593,94 @@ module Ruby::Prism
       end
 
       if RUBY_ENGINE == "ruby"
-        #: (ConstantPool constant_pool, Encoding encoding, bool freeze) -> node
-        def load_node(constant_pool, encoding, freeze)
-          type = io.getbyte
-          node_id = load_varuint
-          location = load_location(freeze) #: Location
-          value =
-            case type
+        # Load the nodes that are serialized before the given offset and return
+        # the root. Nodes are serialized in post-order, so the children of each
+        # node are the topmost values on the stack, in field order, by the time
+        # its record is read.
+        #
+        #: (ConstantPool constant_pool, Encoding encoding, bool freeze, Integer finish) -> node
+        def load_nodes(constant_pool, encoding, freeze, finish)
+          stack = [] #: Array[node?]
+
+          while io.pos < finish
+            case (type = io.getbyte)
+            when 0
+              stack << nil
+            when <%= Ruby::Prism::Template::LAZY_MARKER %>
+              io.read(8)
             <%- nodes.each_with_index do |node, index| -%>
             when <%= index + 1 %>
-              <%- if node.needs_serialized_length? -%>
-              load_uint32
+              node_id = load_varuint
+              location = load_location(freeze)
+              flags = load_varuint
+              <%- node.fields.each do |field| -%>
+              <%- case field -%>
+              <%- when Ruby::Prism::Template::NodeField, Ruby::Prism::Template::OptionalNodeField -%>
+              <%- when Ruby::Prism::Template::NodeListField -%>
+              <%= field.name %>_size = load_varuint
+              <%- when Ruby::Prism::Template::StringField -%>
+              field_<%= field.name %> = load_string(encoding)
+              <%- when Ruby::Prism::Template::ConstantField -%>
+              field_<%= field.name %> = load_constant(constant_pool, encoding)
+              <%- when Ruby::Prism::Template::OptionalConstantField -%>
+              field_<%= field.name %> = load_optional_constant(constant_pool, encoding)
+              <%- when Ruby::Prism::Template::ConstantListField -%>
+              field_<%= field.name %> = Array.new(load_varuint) { load_constant(constant_pool, encoding) }
+              field_<%= field.name %>.freeze if freeze
+              <%- when Ruby::Prism::Template::LocationField -%>
+              field_<%= field.name %> = load_location(freeze)
+              <%- when Ruby::Prism::Template::OptionalLocationField -%>
+              field_<%= field.name %> = load_optional_location(freeze)
+              <%- when Ruby::Prism::Template::UInt8Field -%>
+              field_<%= field.name %> = (io.getbyte or raise)
+              <%- when Ruby::Prism::Template::UInt32Field -%>
+              field_<%= field.name %> = load_varuint
+              <%- when Ruby::Prism::Template::IntegerField -%>
+              field_<%= field.name %> = load_integer
+              <%- when Ruby::Prism::Template::DoubleField -%>
+              field_<%= field.name %> = load_double
+              <%- else raise -%>
               <%- end -%>
-              <%= node.name %>.new(
-                source,
-                node_id,
-                location,
-                load_varuint,
-                <%- node.fields.each do |field| -%>
-                <%- case field -%>
-                <%- when Ruby::Prism::Template::NodeField -%>
-                load_node(constant_pool, encoding, freeze), #: <%= field.rbs_class %>
-                <%- when Ruby::Prism::Template::OptionalNodeField -%>
-                load_optional_node(constant_pool, encoding, freeze), #: <%= field.rbs_class %>
-                <%- when Ruby::Prism::Template::StringField -%>
-                load_string(encoding),
-                <%- when Ruby::Prism::Template::NodeListField -%>
-                Array.new(load_varuint) do
-                  load_node(constant_pool, encoding, freeze) #: <%= field.element_rbs_class %>
-                end.tap { |nodes| nodes.freeze if freeze },
-                <%- when Ruby::Prism::Template::ConstantField -%>
-                load_constant(constant_pool, encoding),
-                <%- when Ruby::Prism::Template::OptionalConstantField -%>
-                load_optional_constant(constant_pool, encoding),
-                <%- when Ruby::Prism::Template::ConstantListField -%>
-                Array.new(load_varuint) { load_constant(constant_pool, encoding) }.tap { |constants| constants.freeze if freeze },
-                <%- when Ruby::Prism::Template::LocationField -%>
-                load_location(freeze),
-                <%- when Ruby::Prism::Template::OptionalLocationField -%>
-                load_optional_location(freeze),
-                <%- when Ruby::Prism::Template::UInt8Field -%>
-                (io.getbyte or raise),
-                <%- when Ruby::Prism::Template::UInt32Field -%>
-                load_varuint,
-                <%- when Ruby::Prism::Template::IntegerField -%>
-                load_integer,
-                <%- when Ruby::Prism::Template::DoubleField -%>
-                load_double,
-                <%- else raise -%>
-                <%- end -%>
-                <%- end -%>
-              )
+              <%- end -%>
+              <%- node.child_fields.reverse_each do |field| -%>
+              <%- if field.is_a?(Ruby::Prism::Template::NodeListField) -%>
+              field_<%= field.name %> = stack.slice!(-<%= field.name %>_size, <%= field.name %>_size) #: <%= field.rbs_class %>
+              field_<%= field.name %>.freeze if freeze
+              <%- else -%>
+              field_<%= field.name %> = stack.pop #: <%= field.rbs_class %>
+              <%- end -%>
+              <%- end -%>
+              value = <%= node.name %>.new(source, node_id, location, flags<%= node.fields.map { |field| ", field_#{field.name}" }.join %>)
+              value.freeze if freeze
+              stack << value
             <%- end -%>
             else
               raise "Unknown node type: #{type}"
             end
+          end
 
-          value.freeze if freeze
-          value
+          raise unless io.pos == finish && stack.length == 1
+          stack.first or raise
         end
       else
         # @rbs skip
-        def load_node(constant_pool, encoding, freeze)
-          @load_node_lambdas[(io.getbyte or raise)].call(constant_pool, encoding, freeze)
+        def load_nodes(constant_pool, encoding, freeze, finish)
+          stack = [] #: Array[node?]
+
+          while io.pos < finish
+            type = (io.getbyte or raise)
+
+            if type == 0
+              stack << nil
+            elsif type == <%= Ruby::Prism::Template::LAZY_MARKER %>
+              io.read(8)
+            else
+              stack << @load_node_lambdas[type].call(constant_pool, encoding, freeze, stack)
+            end
+          end
+
+          raise unless io.pos == finish && stack.length == 1
+          stack.first or raise
         end
 
         # @rbs skip
@@ -629,52 +688,48 @@ module Ruby::Prism
           @load_node_lambdas = [
             nil,
             <%- nodes.each do |node| -%>
-            -> (constant_pool, encoding, freeze) {
+            -> (constant_pool, encoding, freeze, stack) {
               node_id = load_varuint
               location = load_location(freeze)
-              <%- if node.needs_serialized_length? -%>
-              load_uint32
+              flags = load_varuint
+              <%- node.fields.each do |field| -%>
+              <%- case field -%>
+              <%- when Ruby::Prism::Template::NodeField, Ruby::Prism::Template::OptionalNodeField -%>
+              <%- when Ruby::Prism::Template::NodeListField -%>
+              <%= field.name %>_size = load_varuint
+              <%- when Ruby::Prism::Template::StringField -%>
+              field_<%= field.name %> = load_string(encoding)
+              <%- when Ruby::Prism::Template::ConstantField -%>
+              field_<%= field.name %> = load_constant(constant_pool, encoding)
+              <%- when Ruby::Prism::Template::OptionalConstantField -%>
+              field_<%= field.name %> = load_optional_constant(constant_pool, encoding)
+              <%- when Ruby::Prism::Template::ConstantListField -%>
+              field_<%= field.name %> = Array.new(load_varuint) { load_constant(constant_pool, encoding) }
+              field_<%= field.name %>.freeze if freeze
+              <%- when Ruby::Prism::Template::LocationField -%>
+              field_<%= field.name %> = load_location(freeze)
+              <%- when Ruby::Prism::Template::OptionalLocationField -%>
+              field_<%= field.name %> = load_optional_location(freeze)
+              <%- when Ruby::Prism::Template::UInt8Field -%>
+              field_<%= field.name %> = (io.getbyte or raise)
+              <%- when Ruby::Prism::Template::UInt32Field -%>
+              field_<%= field.name %> = load_varuint
+              <%- when Ruby::Prism::Template::IntegerField -%>
+              field_<%= field.name %> = load_integer
+              <%- when Ruby::Prism::Template::DoubleField -%>
+              field_<%= field.name %> = load_double
+              <%- else raise -%>
               <%- end -%>
-              value =
-                <%= node.name %>.new(
-                  source,
-                  node_id,
-                  location,
-                  load_varuint,
-                  <%- node.fields.map do |field| -%>
-                  <%- case field -%>
-                  <%- when Ruby::Prism::Template::NodeField -%>
-                  load_node(constant_pool, encoding, freeze), #: <%= field.rbs_class %>
-                  <%- when Ruby::Prism::Template::OptionalNodeField -%>
-                  load_optional_node(constant_pool, encoding, freeze), #: <%= field.rbs_class %>
-                  <%- when Ruby::Prism::Template::StringField -%>
-                  load_string(encoding),
-                  <%- when Ruby::Prism::Template::NodeListField -%>
-                  Array.new(load_varuint) do
-                    load_node(constant_pool, encoding, freeze) #: <%= field.element_rbs_class %>
-                  end,
-                  <%- when Ruby::Prism::Template::ConstantField -%>
-                  load_constant(constant_pool, encoding),
-                  <%- when Ruby::Prism::Template::OptionalConstantField -%>
-                  load_optional_constant(constant_pool, encoding),
-                  <%- when Ruby::Prism::Template::ConstantListField -%>
-                  Array.new(load_varuint) { load_constant(constant_pool, encoding) },
-                  <%- when Ruby::Prism::Template::LocationField -%>
-                  load_location(freeze),
-                  <%- when Ruby::Prism::Template::OptionalLocationField -%>
-                  load_optional_location(freeze),
-                  <%- when Ruby::Prism::Template::UInt8Field -%>
-                  (io.getbyte or raise),
-                  <%- when Ruby::Prism::Template::UInt32Field -%>
-                  load_varuint,
-                  <%- when Ruby::Prism::Template::IntegerField -%>
-                  load_integer,
-                  <%- when Ruby::Prism::Template::DoubleField -%>
-                  load_double,
-                  <%- else raise -%>
-                  <%- end -%>
-                  <%- end -%>
-                )
+              <%- end -%>
+              <%- node.child_fields.reverse_each do |field| -%>
+              <%- if field.is_a?(Ruby::Prism::Template::NodeListField) -%>
+              field_<%= field.name %> = stack.slice!(-<%= field.name %>_size, <%= field.name %>_size) #: <%= field.rbs_class %>
+              field_<%= field.name %>.freeze if freeze
+              <%- else -%>
+              field_<%= field.name %> = stack.pop #: <%= field.rbs_class %>
+              <%- end -%>
+              <%- end -%>
+              value = <%= node.name %>.new(source, node_id, location, flags<%= node.fields.map { |field| ", field_#{field.name}" }.join %>)
               value.freeze if freeze
               value
             },

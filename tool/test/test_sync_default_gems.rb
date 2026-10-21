@@ -458,7 +458,7 @@ class TestPrismFixup < Test::Unit::TestCase
 
   def test_rewrite_c_namespace
     src = %[rb_cPrism = rb_define_module("Prism"); /* Prism::Scope */ rb_cPrismNode\n]
-    expected = %[rb_cPrism = rb_define_module_under(rb_define_module("Ruby"), "Prism"); /* Prism::Scope */ rb_cPrismNode\n]
+    expected = %[VALUE mRuby = rb_define_module("Ruby"); rb_cPrism = rb_define_module_under(mRuby, "Prism"); /* Prism::Scope */ rb_cPrismNode\n]
     assert_equal(expected, SyncDefaultGems.prism_rewrite_c(src))
   end
 

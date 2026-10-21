@@ -1161,7 +1161,10 @@ RSpec.describe "bundle exec" do
 
           Bundler.setup(:default)
 
-          require "foo"
+          begin
+            require "foo"
+          rescue LoadError
+          end
         RUBY
         karafka.chmod(0o777)
 

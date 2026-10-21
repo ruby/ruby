@@ -14,6 +14,10 @@
 #include "prism/diagnostic.h"
 #include "prism/parser.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** The type of formatting to use when formatting errors. */
 typedef enum {
     /** Format errors in a plain format with no colors or styles. Typically
@@ -49,5 +53,9 @@ typedef enum {
  *   Callers should raise appropriate error types based on the returned level.
  */
 PRISM_EXPORTED_FUNCTION pm_error_level_t pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_format_type_t format_type) PRISM_NONNULL(1, 2);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

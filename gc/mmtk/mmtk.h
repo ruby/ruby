@@ -36,6 +36,12 @@ typedef struct MMTk_RubyBindingOptions {
     size_t suffix_size;
 } MMTk_RubyBindingOptions;
 
+typedef struct MMTk_RawVecOfObjRef {
+    MMTk_ObjectReference *ptr;
+    size_t len;
+    size_t capa;
+} MMTk_RawVecOfObjRef;
+
 typedef MMTk_ObjectReference (*MMTk_ObjectClosureFunction)(void*, void*, MMTk_ObjectReference, bool);
 
 typedef struct MMTk_ObjectClosure {
@@ -55,38 +61,6 @@ typedef struct MMTk_GCThreadTLS {
     struct MMTk_ObjectClosure object_closure;
 } MMTk_GCThreadTLS;
 
-typedef struct MMTk_RubyUpcalls {
-    void (*init_gc_worker_thread)(struct MMTk_GCThreadTLS *gc_worker_tls);
-    bool (*is_mutator)(void);
-    void (*stop_the_world)(void);
-    void (*resume_mutators)(bool gc_may_move);
-    void (*block_for_gc)(MMTk_VMMutatorThread tls);
-    void (*before_updating_jit_code)(void);
-    void (*after_updating_jit_code)(void);
-    size_t (*number_of_mutators)(void);
-    void (*get_mutators)(void (*visit_mutator)(MMTk_Mutator*, void*), void *data);
-    void (*scan_gc_roots)(void);
-    void (*scan_objspace)(void);
-    void (*move_obj_during_marking)(MMTk_ObjectReference from, MMTk_ObjectReference to);
-    void (*update_object_references)(MMTk_ObjectReference object);
-    void (*call_gc_mark_children)(MMTk_ObjectReference object);
-    void (*handle_weak_references)(MMTk_ObjectReference object, bool moving);
-    void (*call_obj_free)(MMTk_ObjectReference object);
-    size_t (*vm_live_bytes)(void);
-    void (*update_global_tables)(int tbl_idx, bool moving);
-    int (*global_tables_count)(void);
-    void (*update_finalizer_table)(void);
-    bool (*special_const_p)(MMTk_ObjectReference object);
-    void (*mutator_thread_panic_handler)(void);
-    void (*gc_thread_panic_handler)(void);
-} MMTk_RubyUpcalls;
-
-typedef struct MMTk_RawVecOfObjRef {
-    MMTk_ObjectReference *ptr;
-    size_t len;
-    size_t capa;
-} MMTk_RawVecOfObjRef;
-
 bool mmtk_is_live_object(MMTk_ObjectReference object);
 
 bool mmtk_is_reachable(MMTk_ObjectReference object);
@@ -94,8 +68,7 @@ bool mmtk_is_reachable(MMTk_ObjectReference object);
 MMTk_Builder *mmtk_builder_default(void);
 
 void mmtk_init_binding(MMTk_Builder *builder,
-                       const struct MMTk_RubyBindingOptions *binding_options,
-                       const struct MMTk_RubyUpcalls *upcalls);
+                       const struct MMTk_RubyBindingOptions *binding_options);
 
 size_t mmtk_get_vo_bit_log_region_size(void);
 
@@ -179,5 +152,51 @@ size_t mmtk_heap_min(void);
 size_t mmtk_heap_max(void);
 
 bool mmtk_is_mmtk_object(MMTk_Address addr);
+
+extern void rb_mmtk_init_gc_worker_thread(struct MMTk_GCThreadTLS *gc_worker_tls);
+
+extern bool rb_mmtk_is_mutator(void);
+
+extern void rb_mmtk_stop_the_world(void);
+
+extern void rb_mmtk_resume_mutators(bool gc_may_move);
+
+extern void rb_mmtk_block_for_gc(MMTk_VMMutatorThread tls);
+
+extern void rb_mmtk_before_updating_jit_code(void);
+
+extern void rb_mmtk_after_updating_jit_code(void);
+
+extern size_t rb_mmtk_number_of_mutators(void);
+
+extern void rb_mmtk_get_mutators(void (*visit_mutator)(MMTk_Mutator*, void*), void *data);
+
+extern void rb_mmtk_scan_gc_roots(void);
+
+extern void rb_mmtk_scan_objspace(void);
+
+extern void rb_mmtk_move_obj_during_marking(MMTk_ObjectReference from, MMTk_ObjectReference to);
+
+extern size_t rb_mmtk_obj_optimal_size(MMTk_ObjectReference object);
+
+extern void rb_mmtk_update_object_references(MMTk_ObjectReference object);
+
+extern void rb_mmtk_call_gc_mark_children(MMTk_ObjectReference object);
+
+extern void rb_mmtk_handle_weak_references(MMTk_ObjectReference object, bool moving);
+
+extern void rb_mmtk_call_obj_free(MMTk_ObjectReference object);
+
+extern size_t rb_mmtk_vm_live_bytes(void);
+
+extern void rb_mmtk_update_global_tables(int tbl_idx, bool moving);
+
+extern int rb_mmtk_global_tables_count(void);
+
+extern void rb_mmtk_update_finalizer_table(void);
+
+extern void rb_mmtk_mutator_thread_panic_handler(void);
+
+extern void rb_mmtk_gc_thread_panic_handler(void);
 
 #endif  /* MMTK_H */

@@ -690,7 +690,7 @@ typedef struct gc_function_map {
     // Object allocation
     VALUE (*new_obj)(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size);
     bool (*zjit_new_obj_fastpath)(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
-    const uintptr_t *(*zjit_writebarrier_required_p_ptr)(void *objspace_ptr);
+    int32_t (*zjit_writebarrier_required_offset)(void);
     size_t (*obj_slot_size)(VALUE obj);
     size_t (*size_slot_size)(void *objspace_ptr, size_t size);
     bool (*size_allocatable_p)(size_t size);
@@ -886,7 +886,7 @@ ruby_modular_gc_init(void)
     // Object allocation
     load_modular_gc_func(new_obj);
     load_modular_gc_func(zjit_new_obj_fastpath);
-    load_modular_gc_func(zjit_writebarrier_required_p_ptr);
+    load_modular_gc_func(zjit_writebarrier_required_offset);
     load_modular_gc_func(obj_slot_size);
     load_modular_gc_func(size_slot_size);
     load_modular_gc_func(size_allocatable_p);
@@ -991,7 +991,7 @@ ruby_modular_gc_init(void)
 // Object allocation
 # define rb_gc_impl_new_obj rb_gc_functions.new_obj
 # define rb_gc_impl_zjit_new_obj_fastpath rb_gc_functions.zjit_new_obj_fastpath
-# define rb_gc_impl_zjit_writebarrier_required_p_ptr rb_gc_functions.zjit_writebarrier_required_p_ptr
+# define rb_gc_impl_zjit_writebarrier_required_offset rb_gc_functions.zjit_writebarrier_required_offset
 # define rb_gc_impl_obj_slot_size rb_gc_functions.obj_slot_size
 # define rb_gc_impl_size_slot_size rb_gc_functions.size_slot_size
 # define rb_gc_impl_size_allocatable_p rb_gc_functions.size_allocatable_p
@@ -2936,7 +2936,7 @@ gc_mark_func_data_slotp_of(rb_ractor_t *const cr)
 #define GC_MARK_FUNC_DATA_SLOTP()  gc_mark_func_data_slotp_of(rb_current_ractor_raw(false))
 
 /* Resolve the current Ractor once for a whole marking walk.  rb_current_ractor_raw() is an
- * out-of-line rb_current_ec() call wherever RB_THREAD_CURRENT_EC_NOINLINE is set (arm64), so
+ * out-of-line rb_current_ec() call, so
  * the walk threads this ctx down rather than repeating the lookup per reference. */
 static inline struct rb_gc_mark_ctx
 gc_current_mark_ctx(void)
@@ -2952,6 +2952,12 @@ gc_current_mark_ctx(void)
          * around each mark_func call. */
         .checking_shareable = *mfdp != NULL && (*mfdp)->checking_shareable,
     };
+}
+
+struct rb_gc_mark_ctx
+rb_gc_current_mark_ctx(void)
+{
+    return gc_current_mark_ctx();
 }
 
 #define RB_GC_MARK_OR_TRAVERSE(ctx, func, obj_or_ptr, obj, check_obj) do { \
@@ -3243,7 +3249,7 @@ mark_const_entry_i(VALUE value, void *data)
     const struct rb_gc_mark_ctx *ctx = (const struct rb_gc_mark_ctx *)data;
 
     gc_mark_internal(ctx, ce->value);
-    gc_mark_internal(ctx, ce->file); // TODO: ce->file should be shareable?
+    gc_mark_internal(ctx, ce->u.file); // TODO: ce->u.file should be shareable?
 
     return ID_TABLE_CONTINUE;
 }
@@ -3425,11 +3431,9 @@ gc_mark_machine_context(const struct rb_gc_mark_ctx *ctx, const rb_execution_con
 }
 
 void
-rb_gc_mark_machine_context(const rb_execution_context_t *ec)
+rb_gc_mark_machine_context_ctx(const struct rb_gc_mark_ctx *ctx, const rb_execution_context_t *ec)
 {
-    const struct rb_gc_mark_ctx ctx = gc_current_mark_ctx();
-
-    gc_mark_machine_context(&ctx, ec);
+    gc_mark_machine_context(ctx, ec);
 }
 
 static int
@@ -3586,7 +3590,7 @@ gc_mark_roots_ctx(const struct rb_gc_mark_ctx *ctx, void *objspace, const char *
     if (global_gc) {
         rb_ractor_t *r;
         ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
-            rb_ractor_mark_local_roots(r);
+            rb_ractor_mark_local_roots(ctx, r);
             MARK_CHECKPOINT("registered_addrs");
             rb_gc_mark_registered_addrs(r, true);
             MARK_CHECKPOINT("ractor");
@@ -3595,7 +3599,7 @@ gc_mark_roots_ctx(const struct rb_gc_mark_ctx *ctx, void *objspace, const char *
         /* Early in boot (before rb_ractor_main_setup) main is not in vm->ractor.set
          * yet; do not drop its registered_marks in a single-objspace boot GC. */
         if (vm->ractor.cnt == 0 && vm->ractor.main_ractor) {
-            rb_ractor_mark_local_roots(vm->ractor.main_ractor);
+            rb_ractor_mark_local_roots(ctx, vm->ractor.main_ractor);
             MARK_CHECKPOINT("registered_addrs");
             rb_gc_mark_registered_addrs(vm->ractor.main_ractor, true);
             MARK_CHECKPOINT("ractor");
@@ -3633,7 +3637,7 @@ gc_mark_roots_ctx(const struct rb_gc_mark_ctx *ctx, void *objspace, const char *
     }
     else {
         rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-        rb_ractor_mark_local_roots(cr);
+        rb_ractor_mark_local_roots(ctx, cr);
         MARK_CHECKPOINT("registered_addrs");
         rb_gc_mark_registered_addrs(cr, true);
     }
@@ -4148,10 +4152,10 @@ rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct 
 #endif
 }
 
-const uintptr_t *
-rb_gc_zjit_writebarrier_required_p_ptr(void)
+int32_t
+rb_gc_zjit_writebarrier_required_offset(void)
 {
-    return rb_gc_impl_zjit_writebarrier_required_p_ptr(rb_gc_get_objspace());
+    return rb_gc_impl_zjit_writebarrier_required_offset();
 }
 
 /*
@@ -5004,8 +5008,8 @@ update_const_tbl_i(VALUE value, void *objspace)
         ce->value = gc_location_internal(objspace, ce->value);
     }
 
-    if (gc_object_moved_p_internal(objspace, ce->file)) {
-        ce->file = gc_location_internal(objspace, ce->file);
+    if (gc_object_moved_p_internal(objspace, ce->u.file)) {
+        ce->u.file = gc_location_internal(objspace, ce->u.file);
     }
 
     return ID_TABLE_CONTINUE;

@@ -1297,6 +1297,25 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_rfc8785 '{"a":1,"b":2}', { a: 1, 'b' => 2 }
   end
 
+  def test_rfc8785_key_order_with_as_json
+    key = Object.new
+    def key.to_s
+      raise 'must not sort the original key'
+    end
+    as_json = ->(object, is_key) { is_key ? 'a' : object }
+    options = { rfc8785: true, strict: true, as_json: as_json }
+    object = [{ 'b' => 2, key => 1 }]
+    expected = '[{"a":1,"b":2}]'
+    assert_equal expected, JSON.generate(object, options)
+    assert_equal expected, object.to_json(options)
+    state = JSON::State.new(options)
+    io = StringIO.new
+    state.generate(object, io)
+    assert_equal expected, io.string
+
+    assert_equal '{"1":1,"b":2}', JSON.generate({ 'b' => 2, 1 => 1 }, options.merge(strict: false))
+  end
+
   def test_rfc8785_key_order_with_default_external_encoding
     # https://www.rfc-editor.org/rfc/rfc8785.html#section-3.2.3
     hash = { "\u20ac" => 1, "\r" => 2, "\ufb33" => 3, '1' => 4,

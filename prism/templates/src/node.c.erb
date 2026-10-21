@@ -43,13 +43,21 @@ pm_node_list_grow(pm_arena_t *arena, pm_node_list_t *list, size_t size) {
 }
 
 /**
- * Slow path for pm_node_list_append: grow the list and append the node.
- * Do not call directly - use pm_node_list_append instead.
+ * Slow path for pm_node_list_append_inline: grow the list and append the node.
+ * Do not call directly - use pm_node_list_append_inline instead.
  */
 void
 pm_node_list_append_slow(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
     pm_node_list_grow(arena, list, 1);
     list->nodes[list->size++] = node;
+}
+
+/**
+ * Append a new node onto the end of the node list.
+ */
+void
+pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
+    pm_node_list_append_inline(arena, list, node);
 }
 
 /**
@@ -92,24 +100,26 @@ pm_node_type(pm_node_type_t node_type)
 
 /**
  * Visit each of the nodes in this subtree using the given visitor callback. The
- * callback function will be called for each node in the subtree. If it returns
- * false, then that node's children will not be visited. If it returns true,
- * then the children will be visited. The data parameter is treated as an opaque
- * pointer and is passed to the visitor callback for consumers to use as they
- * see fit.
+ * callback function will be called for each node in the subtree, and its
+ * return value determines whether the walk visits that node's children, skips
+ * them, or stops entirely. The data parameter is treated as an opaque pointer
+ * and is passed to the visitor callback for consumers to use as they see fit.
  */
-void
-pm_visit_node(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) {
-    if (visitor(node, data)) pm_visit_child_nodes(node, visitor, data);
+bool
+pm_visit_node(const pm_node_t *node, pm_visit_callback_t visitor, void *data) {
+    pm_visit_result_t result = visitor(node, data);
+    if (result == PM_VISIT_DESCEND) return pm_visit_child_nodes(node, visitor, data);
+    return result != PM_VISIT_STOP;
 }
 
 /**
  * Visit the children of the given node with the given callback. This is the
  * default behavior for walking the tree that is called from pm_visit_node if
- * the callback returns true.
+ * the callback returns PM_VISIT_DESCEND. A stop from any child returns false
+ * immediately, so that it propagates up through every enclosing call.
  */
-void
-pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) {
+bool
+pm_visit_child_nodes(const pm_node_t *node, pm_visit_callback_t visitor, void *data) {
     switch (PM_NODE_TYPE(node)) {
         <%- nodes.each do |node| -%>
         <%- if (fields = node.fields.select { |field| field.is_a?(Ruby::Prism::Template::NodeField) || field.is_a?(Ruby::Prism::Template::OptionalNodeField) || field.is_a?(Ruby::Prism::Template::NodeListField) }).any? -%>
@@ -120,15 +130,13 @@ pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *nod
             // Visit the <%= field.name %> field
             <%- case field -%>
             <%- when Ruby::Prism::Template::NodeField -%>
-            pm_visit_node((const pm_node_t *) cast-><%= field.name %>, visitor, data);
+            if (!pm_visit_node((const pm_node_t *) cast-><%= field.name %>, visitor, data)) return false;
             <%- when Ruby::Prism::Template::OptionalNodeField -%>
-            if (cast-><%= field.name %> != NULL) {
-                pm_visit_node((const pm_node_t *) cast-><%= field.name %>, visitor, data);
-            }
+            if (cast-><%= field.name %> != NULL && !pm_visit_node((const pm_node_t *) cast-><%= field.name %>, visitor, data)) return false;
             <%- when Ruby::Prism::Template::NodeListField -%>
             const pm_node_list_t *<%= field.name %> = &cast-><%= field.name %>;
             for (size_t index = 0; index < <%= field.name %>->size; index++) {
-                pm_visit_node(<%= field.name %>->nodes[index], visitor, data);
+                if (!pm_visit_node(<%= field.name %>->nodes[index], visitor, data)) return false;
             }
             <%- end -%>
             <%- end -%>
@@ -143,6 +151,8 @@ pm_visit_child_nodes(const pm_node_t *node, bool (*visitor)(const pm_node_t *nod
         case PM_SCOPE_NODE:
             break;
     }
+
+    return true;
 }
 <%- nodes.each do |node| -%>
 

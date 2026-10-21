@@ -231,6 +231,12 @@ rb_obj_not(VALUE obj)
     return RBOOL(!RTEST(obj));
 }
 
+VALUE
+rb_builtin_bool_negate(rb_execution_context_t *ec, VALUE self, VALUE value)
+{
+    return rb_obj_not(value);
+}
+
 /**
  *  call-seq:
  *     obj != other        -> true or false
@@ -840,7 +846,7 @@ rb_obj_inspect(VALUE obj)
 {
     VALUE ivars = rb_check_funcall(obj, id_instance_variables_to_inspect, 0, 0);
     st_index_t n = 0;
-    if (UNDEF_P(ivars) || NIL_P(ivars)) {
+    if (NIL_OR_UNDEF_P(ivars)) {
         n = rb_ivar_count(obj);
         ivars = Qnil;
     }
@@ -1791,7 +1797,7 @@ rb_obj_cmp(VALUE obj1, VALUE obj2)
  *       end
  *     end
  *     Mod.class              #=> Module
- *     Mod.constants          #=> [:CONST, :PI, :E]
+ *     Mod.constants          #=> [:CONST, :DomainError, :PI, :E]
  *     Mod.instance_methods   #=> [:meth]
  *
  */
@@ -2200,15 +2206,16 @@ rb_mod_initialize_clone(int argc, VALUE* argv, VALUE clone)
  *  want to treat it like a regular class.
  */
 
+/* :nodoc: */
 static VALUE
-rb_class_initialize(int argc, VALUE *argv, VALUE klass)
+rb_class_s_new(int argc, VALUE *argv, VALUE self)
 {
     VALUE super;
+    VALUE klass;
 
-    // an uninitialized class is still somebody's, and this writes its superclass
-    rb_class_modify_check(klass);
-    if (RCLASS_SUPER(klass) != 0 || klass == rb_cBasicObject) {
-        rb_raise(rb_eTypeError, "already initialized class");
+    // #<Class:Class> is an ancestor of every metaclass, so this also receives Foo.singleton_class.new
+    if (self != rb_cClass) {
+        rb_raise(rb_eTypeError, "can't create instance of singleton class");
     }
     if (rb_check_arity(argc, 0, 1) == 0) {
         super = rb_cObject;
@@ -2216,10 +2223,9 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     else {
         super = argv[0];
         rb_check_inheritable(super);
-        if (!RCLASS_INITIALIZED_P(super)) {
-            rb_raise(rb_eTypeError, "can't inherit uninitialized class");
-        }
+        RUBY_ASSERT(RCLASS_INITIALIZED_P(super));
     }
+    klass = rb_class_s_alloc(self);
     rb_class_set_super(klass, super);
     RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     RCLASS_SET_ALLOCATOR(klass, RCLASS_ALLOCATOR(super));
@@ -2229,6 +2235,23 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     rb_mod_initialize_exec(klass);
 
     return klass;
+}
+
+/* :nodoc: */
+static VALUE
+rb_class_dup(VALUE self)
+{
+    VALUE dup = rb_class_s_alloc(rb_obj_class(self));
+    return rb_obj_dup_setup(self, dup);
+}
+
+/* :nodoc: */
+static VALUE
+rb_class_clone(int argc, VALUE *argv, VALUE self)
+{
+    VALUE kwfreeze = rb_get_freeze_opt(argc, argv);
+    VALUE clone = rb_class_s_alloc(rb_obj_class(self));
+    return rb_obj_clone_setup(self, clone, kwfreeze);
 }
 
 /*! \private */
@@ -2277,9 +2300,7 @@ class_get_alloc_func(VALUE klass)
 {
     rb_alloc_func_t allocator;
 
-    if (!RCLASS_INITIALIZED_P(klass)) {
-        rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
-    }
+    RUBY_ASSERT(RCLASS_INITIALIZED_P(klass));
     if (RCLASS_SINGLETON_P(klass)) {
         rb_raise(rb_eTypeError, "can't create instance of singleton class");
     }
@@ -2396,10 +2417,7 @@ rb_class_superclass(VALUE klass)
 
     if (klass == rb_cBasicObject) return Qnil;
 
-    if (!superclasses) {
-        RUBY_ASSERT(!RCLASS_SUPER(klass));
-        rb_raise(rb_eTypeError, "uninitialized class");
-    }
+    RUBY_ASSERT(superclasses);
 
     if (!superclasses_depth) {
         return Qnil;
@@ -2593,7 +2611,7 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
  *  The value of the constant is returned if a definition is found,
  *  otherwise a +NameError+ is raised.
  *
- *     Math.const_get(:PI)   #=> 3.14159265358979
+ *     Math.const_get(:PI)   #=> 3.141592653589793
  *
  *  This method will recursively look up constant names if a namespaced
  *  class name is provided.  For example:
@@ -2733,8 +2751,8 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
  *  Creates a new constant if no constant with the given name previously
  *  existed.
  *
- *     Math.const_set("HIGH_SCHOOL_PI", 22.0/7.0)   #=> 3.14285714285714
- *     Math::HIGH_SCHOOL_PI - Math::PI              #=> 0.00126448926734968
+ *     Math.const_set("HIGH_SCHOOL_PI", 22.0/7.0)   #=> 3.142857142857143
+ *     Math::HIGH_SCHOOL_PI - Math::PI              #=> 0.0012644892673496777
  *
  *  If +sym+ or +str+ is not a valid constant name a +NameError+ will be
  *  raised with a warning "wrong constant name".
@@ -4691,11 +4709,13 @@ InitVM_Object(void)
     rb_define_method(rb_singleton_class(rb_cClass), "allocate", rb_class_alloc, 0);
     rb_define_method(rb_cClass, "allocate", rb_class_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance_pass_kw, -1);
-    rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
     rb_define_method(rb_cClass, "subclasses", rb_class_subclasses, 0); /* in class.c */
     rb_define_method(rb_cClass, "attached_object", rb_class_attached_object, 0); /* in class.c */
-    rb_define_alloc_func(rb_cClass, rb_class_s_alloc);
+    rb_define_singleton_method(rb_cClass, "new", rb_class_s_new, -1);
+    rb_define_method(rb_cClass, "dup", rb_class_dup, 0);
+    rb_define_method(rb_cClass, "clone", rb_class_clone, -1);
+    rb_undef_alloc_func(rb_cClass);
     rb_undef_method(rb_cClass, "extend_object");
     rb_undef_method(rb_cClass, "append_features");
     rb_undef_method(rb_cClass, "prepend_features");
@@ -4727,6 +4747,7 @@ InitVM_Object(void)
 
 #include "kernel.rbinc"
 #include "nilclass.rbinc"
+#include "basic_object.rbinc"
 
 void
 Init_Object(void)

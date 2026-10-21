@@ -161,6 +161,18 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     `--enable-yjit` accepts only `yes` or `no`.  A YJIT
     build does not install the static library.
 
+9.  If you want to build with clang-cl instead of `cl`, clang-cl 15 or
+    later is required.  It is the "C++ Clang Compiler for Windows"
+    component (`Microsoft.VisualStudio.Component.VC.Llvm.Clang`) of
+    Visual Studio 2022 version 17.4 or later.  `win32\vssetup.cmd`
+    adds `clang-cl` to `PATH` when the component is installed.  You can
+    add it to the installed Build Tools with Visual Studio Installer, or
+    from the command line like:
+
+    ```batch
+    "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\setup.exe" modify --installPath "%ProgramFiles(x86)%\Microsoft Visual Studio\18\BuildTools" --add Microsoft.VisualStudio.Component.VC.Llvm.Clang --passive
+    ```
+
 ### How to compile and install
 
 1.  Execute `win32\configure.bat` on your build directory.
@@ -186,16 +198,21 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
 3.  You need specify vcpkg directory to use `--with-opt-dir`
     option like `win32\configure.bat --with-opt-dir=C:/vcpkg_installed/x64-windows`
 
-4.  Run `nmake up` if you are building from GIT source.
+4.  If you want to build with clang-cl, specify `CC=clang-cl` like
+    `win32\configure.bat CC=clang-cl`.  The installed ruby also uses
+    clang-cl to build extension libraries, so installing gems with C
+    extensions requires clang-cl too.
 
-5.  Run `nmake`
+5.  Run `nmake up` if you are building from GIT source.
 
-6.  Run `nmake prepare-vcpkg` with administrator privilege if you need to
+6.  Run `nmake`
+
+7.  Run `nmake prepare-vcpkg` with administrator privilege if you need to
     copy vcpkg installed libraries like `libssl-3-x64.dll` to the build directory.
 
-7.  Run `nmake check`
+8.  Run `nmake check`
 
-8.  Run `nmake install`
+9.  Run `nmake install`
 
 ### Build examples
 
@@ -269,6 +286,44 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     nmake install
     ```
 
+* Build x64 version with clang-cl
+
+    ```
+    ruby source directory:  C:\ruby
+    build directory:        C:\ruby
+    install directory:      C:\usr\local
+    ```
+
+    ```batch
+    C:
+    cd \ruby
+    win32\configure --prefix=/usr/local CC=clang-cl
+    nmake
+    nmake check
+    nmake install
+    ```
+
+### Building with GNU make
+
+`nmake` cannot run jobs in parallel. `win32\configure.bat --with-gnu-make` writes `GNUmakefile` instead of `Makefile`, so that you can build with `make -j`. This is experimental, and `nmake` stays the default.
+
+GNU make 4.4 or later built for native Windows is required. `win32\install-gnumake.cmd` downloads the GNU make release, verifies its SHA256, builds it with `cl`, and puts `make.exe` in `.gnumake` under the ruby source directory, or in the directory given as its argument.
+
+```batch
+C:
+cd \ruby
+win32\install-gnumake.cmd
+set PATH=C:\ruby\.gnumake;%PATH%
+win32\configure --prefix=/usr/local --with-opt-dir=C:/ruby/vcpkg_installed/x64-windows --with-gnu-make
+make -j16
+make check
+make install
+```
+
+Use `make` in place of `nmake` for the other targets in this document too, such as `make up`, `make prepare-vcpkg` and `make update-vcpkg`.
+
+The installed ruby also builds extension libraries with `make` found in `PATH`, not with `nmake`. Before installing gems with C extensions, copy `make.exe` from `.gnumake` to a directory in `PATH`, such as the `bin` directory of the install directory, since `make install` does not install it.
+
 ### Bugs
 
 You can **NOT** use a path name that contains any white space characters
@@ -288,6 +343,41 @@ You can update and install it under the build directory like:
 ```batch
 nmake update-vcpkg # Update baseline version of vcpkg
 nmake install-vcpkg # Install vcpkg from build directory
+```
+
+
+## Windows Defender Firewall
+
+Some tests listen on all interfaces, and Windows Defender Firewall shows a security alert dialog when an executable at a path it has no rule for does so. If you keep the same build directory, run `win32\firewall.cmd` there once, and the dialog no longer interrupts the tests. It adds rules that block inbound connections to `ruby.exe` and `rubyw.exe` in that directory, so the tests are not exposed to other machines, while connections from the same machine still work.
+
+```batch
+cd /d D:\build\ruby
+C:\src\ruby\win32\firewall.cmd
+```
+
+It restarts itself as administrator when not elevated. It also takes the build directory as an argument. When you no longer need the rules, delete them with `-delete`.
+
+```batch
+C:\src\ruby\win32\firewall.cmd -delete D:\build\ruby
+```
+
+If you build in a new worktree for each task, as coding agents often do, every worktree meets the dialog. A `post-checkout` hook in `.git/hooks` registers each worktree when `git worktree add` creates it, before its first build, and skips worktrees that already have the rules. The script elevates itself, so the hook runs without stopping when User Account Control is set to never notify.
+
+```sh
+#!/bin/sh
+top=$(git rev-parse --show-toplevel) || exit 0
+fw="$top/win32/firewall.cmd"
+[ -f "$fw" ] || exit 0
+dir=$(cygpath -w "$top")
+netsh advfirewall firewall show rule name="Ruby build directory $dir" >/dev/null 2>&1 && exit 0
+cmd //c "$(cygpath -w "$fw")" "$dir" >/dev/null 2>&1
+exit 0
+```
+
+Otherwise each new worktree asks for administrator privilege. To avoid that, register once from an elevated prompt a task that runs the script for every worktree with the highest privileges, and replace the `cmd` line of the hook with `schtasks //run //tn ruby-firewall >/dev/null 2>&1`. The task runs without asking.
+
+```batch
+schtasks /create /tn ruby-firewall /sc once /st 00:00 /rl highest /tr "cmd /c for /d %D in (C:\src\worktrees\*) do C:\src\ruby\win32\firewall.cmd %D"
 ```
 
 
