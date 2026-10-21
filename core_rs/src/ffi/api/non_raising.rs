@@ -38,7 +38,7 @@ pub mod mock {
     pub static ALLOC_COUNT: AtomicUsize = AtomicUsize::new(0);
     pub static FREE_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-    pub unsafe fn ruby_xmalloc(size: usize) -> *mut c_void {
+    pub unsafe extern "C" fn ruby_xmalloc(size: usize) -> *mut c_void {
         let alloc_size = if size == 0 { 1 } else { size };
         let ptr = unsafe { malloc(alloc_size) };
         if !ptr.is_null() {
@@ -47,7 +47,7 @@ pub mod mock {
         ptr
     }
 
-    pub unsafe fn ruby_xrealloc(ptr: *mut c_void, newsiz: usize) -> *mut c_void {
+    pub unsafe extern "C" fn ruby_xrealloc(ptr: *mut c_void, newsiz: usize) -> *mut c_void {
         if ptr.is_null() {
             return unsafe { ruby_xmalloc(newsiz) };
         }
@@ -56,7 +56,7 @@ pub mod mock {
         new_ptr
     }
 
-    pub unsafe fn ruby_xfree(ptr: *mut c_void) {
+    pub unsafe extern "C" fn ruby_xfree(ptr: *mut c_void) {
         if !ptr.is_null() {
             FREE_COUNT.fetch_add(1, Ordering::SeqCst);
             unsafe { free(ptr) };
@@ -96,8 +96,4 @@ unsafe extern "C" {
     // ---- objects: intern/object.h ----
     /// `VALUE rb_obj_class(VALUE obj)`
     pub fn rb_obj_class(obj: VALUE) -> VALUE;
-
-    // ---- memory: include/ruby/internal/xmalloc.h ----
-    /// `void ruby_xfree(void *ptr)`
-    pub fn ruby_xfree(ptr: *mut core::ffi::c_void);
 }
