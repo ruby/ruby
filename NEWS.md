@@ -516,6 +516,12 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   `RangeError` via the new `rb_out_of_long` when it does not fit, for
   extensions that keep a length in `long`. [[Feature #22400]]
 
+### Atomic operations
+
+* `RUBY_ATOMIC_SIZE_LOAD` is added as the `size_t` counterpart of
+  `RUBY_ATOMIC_LOAD`, alongside the existing `RUBY_ATOMIC_SIZE_ADD`,
+  `RUBY_ATOMIC_SIZE_SUB`, `RUBY_ATOMIC_SIZE_CAS` and `RUBY_ATOMIC_SIZE_EXCHANGE`.
+
 ### Removed APIs
 
 The following APIs, which have been deprecated for many years, are removed.

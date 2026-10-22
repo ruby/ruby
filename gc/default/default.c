@@ -919,13 +919,11 @@ static rb_global_objspace_t rb_global_objspace_instance;
 static rb_global_objspace_t *global_objspace = NULL;
 
 /* Relaxed: every reader only asks whether a drain is worth arranging, and the drain
- * itself stops the world before it touches a chunk.  There is no atomic size_t load, so
- * go through the VALUE one (both are word sized). */
+ * itself stops the world before it touches a chunk. */
 static inline size_t
 tdata_deferred_free_count_load(void)
 {
-    return (size_t)rbimpl_atomic_value_load(
-        (volatile VALUE *)&global_objspace->tdata_deferred_free_count, RBIMPL_ATOMIC_RELAXED);
+    return rbimpl_atomic_size_load(&global_objspace->tdata_deferred_free_count, RBIMPL_ATOMIC_RELAXED);
 }
 
 /* The floor keeps a global GC from running as soon as a few shareable objects appear;
