@@ -12773,7 +12773,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_send_with_proc_block_arg_to_block_param_callee_falls_back() {
+    fn test_send_with_proc_block_arg_to_block_param_callee() {
         eval(r#"
             def foo(&b) = b.call
 
@@ -12797,7 +12797,7 @@ mod hir_opt_tests {
           StoreField v7, :blk@0x1000, v6
           Jump bb3(v5)
         bb3(v10:BasicObject):
-          v39:NilClass = Const Value(nil)
+          v42:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Object@0x1008, proc@0x1010, cme:0x1018)
           v35:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
           v36:BasicObject = CCallWithFrame v35, :Kernel#proc@0x1040, block=0x1048
@@ -12807,9 +12807,10 @@ mod hir_opt_tests {
           v24:CPtr = GetEP 0
           v25:BasicObject = LoadField v24, :blk@0x1000
           v37:ObjectSubclass[class_exact:Proc] = GuardType v25, ObjectSubclass[class_exact:Proc] recompile
-          v27:BasicObject = Send v35, &block, :foo, v37 # SendFallbackReason: Complex argument passing
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1068, cme:0x1070)
+          v41:BasicObject = SendDirect v35, &v37, :foo (0x1098)
           CheckInterrupts
-          Return v27
+          Return v41
         ");
     }
 
@@ -23781,8 +23782,7 @@ mod hir_opt_tests {
     #[test]
     fn test_recompile_no_profile_send_with_blockarg() {
         // Test that no-profile send recompilation profiles explicit blockargs.
-        // The call remains a Send fallback because &block is still complex, but
-        // it should no longer be a NoProfileSend side exit after recompilation.
+        // The profiled Proc should allow a direct send after recompilation.
         eval("
             def passthrough_recompile_blockarg(x, &block)
               block.call(x)
@@ -23835,12 +23835,14 @@ mod hir_opt_tests {
           v21:Truthy = RefineType v12, Truthy
           v25:Fixnum[42] = Const Value(42)
           v48:ObjectSubclass[class_exact:Proc] = GuardType v13, ObjectSubclass[class_exact:Proc] recompile
-          v28:BasicObject = Send v11, &block, :passthrough_recompile_blockarg, v25, v48 # SendFallbackReason: Complex argument passing
+          PatchPoint MethodRedefined(Object@0x1008, passthrough_recompile_blockarg@0x1010, cme:0x1018)
+          v51:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v11, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v52:BasicObject = SendDirect v51, &v48, :passthrough_recompile_blockarg (0x1040), v25
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v28
+          Return v52
         bb4():
-          v41:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v41:StringExact[VALUE(0x1060)] = Const Value(VALUE(0x1060))
           v42:StringExact = StringCopy v41
           CheckInterrupts
           Return v42

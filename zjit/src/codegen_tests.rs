@@ -2201,14 +2201,15 @@ fn test_send_proc_block_arg_rest_optional_keyword_callee() {
     // guarded-Proc block-arg direct-send specialization. The NewArray allocation
     // happens between the Proc guard and the callee send.
     assert_snapshot!(inspect("
-        def foo(opt = 10, *rest, kw: 20) = yield(opt + rest.sum + kw)
+        def foo(opt = 10, *rest, kw: 20, &block) = [yield(opt + rest.sum + kw), block]
         def test
           blk = proc { |x| x + 1 }
-          foo(1, 2, &blk)
+          value, captured = foo(1, 2, &blk)
+          [value, captured.equal?(blk)]
         end
         test
         test
-    "), @"24");
+    "), @"[24, true]");
 }
 
 #[test]
