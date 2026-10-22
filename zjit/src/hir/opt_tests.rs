@@ -27568,9 +27568,8 @@ mod hir_opt_tests {
           v31:Fixnum[2] = Const Value(2)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []=@0x1010, cme:0x1018)
-          v63:CUInt64 = LoadField v47, :RBASIC_FLAGS@0x1040
-          v64:CUInt64 = GuardNoBitsSet v63, RUBY_FL_FREEZE=CUInt64(2048)
-          v66:CUInt64 = GuardNoBitsSet v64, RUBY_ELTS_SHARED=CUInt64(4096)
+          v64:CUInt64 = GuardNoBitsSet v49, RUBY_FL_FREEZE=CUInt64(2048)
+          v66:CUInt64 = GuardNoBitsSet v49, RUBY_ELTS_SHARED=CUInt64(4096)
           v75:CInt64[1] = Const CInt64(1)
           v68:CInt64 = ArrayLength v47
           v69:CInt64[1] = GuardLess v75, v68
@@ -27646,9 +27645,8 @@ mod hir_opt_tests {
           v106:Fixnum = GuardType v103, Fixnum recompile
           v107:Fixnum = FixnumAdd v106, v50
           PatchPoint MethodRedefined(Array@0x1008, []=@0x1078, cme:0x1080)
-          v113:CUInt64 = LoadField v69, :RBASIC_FLAGS@0x10a8
-          v114:CUInt64 = GuardNoBitsSet v113, RUBY_FL_FREEZE=CUInt64(2048)
-          v116:CUInt64 = GuardNoBitsSet v114, RUBY_ELTS_SHARED=CUInt64(4096)
+          v114:CUInt64 = GuardNoBitsSet v85, RUBY_FL_FREEZE=CUInt64(2048)
+          v116:CUInt64 = GuardNoBitsSet v85, RUBY_ELTS_SHARED=CUInt64(4096)
           v117:CInt64 = UnboxFixnum v99
           v118:CInt64 = ArrayLength v69
           v119:CInt64 = GuardLess v117, v118

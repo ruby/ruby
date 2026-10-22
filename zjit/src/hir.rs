@@ -6794,6 +6794,15 @@ impl Function {
                         }
                         insn_id
                     }
+                    &Insn::ArrayAset { .. } => {
+                        // TODO: Model this better using separate effects. Aset doesn't change the
+                        // array's flags, but the current effects system lumps flags in with other
+                        // memory writes, so we manually exclude the flags from invalidation for
+                        // now.
+                        let offset = RUBY_OFFSET_RBASIC_FLAGS;
+                        compile_time_heap.retain(|(_, off), _| *off == offset);
+                        insn_id
+                    }
                     &Insn::WriteBarrier { .. } | &Insn::StringCoderange { .. } => {
                         // Both operations may update object flags. We must invalidate cached flag
                         // bits loads until the effect system can model individual fields.
