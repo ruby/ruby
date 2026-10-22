@@ -1942,6 +1942,44 @@ fn test_send_multiple_keywords_to_positional_hash() {
 }
 
 #[test]
+fn test_send_empty_kwrest_is_fresh() {
+    eval("
+        def test(**kw) = kw
+        def forward(**) = test(**)
+        def entry
+          a = test
+          a[:changed] = 17
+          [a, test, forward]
+        end
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[{changed: 17}, {}, {}]");
+}
+
+#[test]
+fn test_send_empty_kwrest_with_optional_rest_and_post() {
+    eval("
+        def test(a, b = 23, *rest, last, **kw) = [a, b, rest, last, kw]
+        def entry = [test(11, 47), test(11, 31, 59, 47)]
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[[11, 23, [], 47, {}], [11, 31, [59], 47, {}]]");
+}
+
+#[test]
+fn test_send_empty_kwrest_stub_exit_with_optional() {
+    eval("
+        def test(a = 23, **kw)
+          ::RubyVM::ZJIT.induce_compile_failure!
+          [a, kw]
+        end
+        def entry = [test, test(47)]
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[[23, {}], [47, {}]]");
+}
+
+#[test]
 fn test_send_positional_and_keyword_to_positional_hash() {
     eval("
         def test(a, b) = [a, b]

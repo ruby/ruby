@@ -6473,7 +6473,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn dont_specialize_call_to_iseq_with_param_kwrest() {
+    fn specialize_call_to_iseq_with_empty_kwrest() {
         enable_zjit_stats();
         eval("
             def foo(**kwargs) = kwargs.keys
@@ -6496,12 +6496,13 @@ mod hir_opt_tests {
         bb3(v8:BasicObject):
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
-          IncrCounter complex_arg_pass_param_kwrest
-          IncrCounter send_direct_fallback_context_send
-          v15:BasicObject = Send v8, :foo # SendFallbackReason: Complex argument passing
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v8, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v24:HashExact = NewHash
+          v26:BasicObject = SendDirect v23, 0x0, :foo (0x1038), v24
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v15
+          Return v26
         ");
     }
 
