@@ -12863,7 +12863,7 @@ mod hir_opt_tests {
         // frame's specval, so the guarded Proc is only reachable from the VReg at that
         // point (it is not in the block-arg-stripped snapshot).
         eval(r#"
-            def foo(opt = 10, *rest, kw: 20) = yield(opt + rest.sum + kw)
+            def foo(opt = 10, *rest, kw: 20, &block) = yield(opt + rest.sum + kw)
 
             def test
               blk = proc { |x| x + 1 }
