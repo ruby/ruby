@@ -68,11 +68,8 @@
 #include "parser_value.h"           /* for VALUE */
 #include "internal/static_assert.h" /* for STATIC_ASSERT */
 
-/* The most significant bit of the lower part of half-long integer.
- * If sizeof(long) == 4, this is 0x8000.
- * If sizeof(long) == 8, this is 0x80000000.
- */
-#define HALF_LONG_MSB ((SIGNED_VALUE)1<<((SIZEOF_LONG*CHAR_BIT-1)/2))
+/* Largest rb_len_t magnitude whose square fits in rb_len_t. */
+#define SQRT_LEN_MAX ((rb_len_t)1 << ((SIZEOF_RB_LEN_T * CHAR_BIT - 1) / 2))
 
 #define SIGNED_INTEGER_TYPE_P(T) (0 > ((T)0)-1)
 
