@@ -679,7 +679,7 @@ typedef struct gc_function_map {
     bool (*during_postmortem_p)(void *objspace_ptr);
     bool (*obj_foreign_p)(void *objspace_ptr, VALUE obj);
     bool (*shref_marked_p)(void *objspace_ptr, VALUE obj);
-    size_t (*zombie_heap_page_count)(void *objspace_ptr);
+    void (*objspace_zombify)(void *objspace_ptr);
     void (*objspace_absorb)(void *dst_ptr, void *src_ptr);
     void (*gc_rest)(void *objspace_ptr);
     VALUE (*config_get)(void *objpace_ptr);
@@ -875,7 +875,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(during_postmortem_p);
     load_modular_gc_func(obj_foreign_p);
     load_modular_gc_func(shref_marked_p);
-    load_modular_gc_func(zombie_heap_page_count);
+    load_modular_gc_func(objspace_zombify);
     load_modular_gc_func(objspace_absorb);
     load_modular_gc_func(gc_rest);
     load_modular_gc_func(config_set);
@@ -980,7 +980,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_during_postmortem_p rb_gc_functions.during_postmortem_p
 # define rb_gc_impl_obj_foreign_p rb_gc_functions.obj_foreign_p
 # define rb_gc_impl_shref_marked_p rb_gc_functions.shref_marked_p
-# define rb_gc_impl_zombie_heap_page_count rb_gc_functions.zombie_heap_page_count
+# define rb_gc_impl_objspace_zombify rb_gc_functions.objspace_zombify
 # define rb_gc_impl_objspace_absorb rb_gc_functions.objspace_absorb
 # define rb_gc_impl_gc_rest rb_gc_functions.gc_rest
 # define rb_gc_impl_config_get rb_gc_functions.config_get
@@ -4249,19 +4249,6 @@ rb_gc_registered_addr_owned_by_registrant_p(VALUE *addr, void *objspace)
     return false;
 }
 
-/* True while the objspace is a zombie pending merge.  Registration ownership moves to
- * the inheritor before the zombie merge completes, so a value still owned by a zombie
- * is a safe transient for the verifier. */
-bool
-rb_gc_vm_zombie_objspace_p(void *objspace)
-{
-    rb_vm_t *vm = GET_VM();
-    for (size_t i = 0; i < vm->gc.zombie_objspaces_count; i++) {
-        if (vm->gc.zombie_objspaces[i].objspace == objspace) return true;
-    }
-    return false;
-}
-
 static bool
 gc_registered_addrs_remove(rb_ractor_t *r, VALUE *addr)
 {
@@ -4460,14 +4447,12 @@ zombie_objspaces_push(rb_vm_t *vm, void *objspace, void **owner_slot, struct rb_
         vm->gc.zombie_objspaces = grown;
         vm->gc.zombie_objspaces_capa = new_capa;
     }
-    size_t pages = rb_gc_impl_zombie_heap_page_count(objspace);
     vm->gc.zombie_objspaces[vm->gc.zombie_objspaces_count++] = (struct rb_objspace_zombie){
         .objspace = objspace,
         .owner_slot = owner_slot,
         .owner = owner,
-        .pages = pages,
     };
-    vm->gc.zombie_total_pages += pages;
+    rb_gc_impl_objspace_zombify(objspace);
 }
 
 /* Called for a Ractor that terminated without being joined.  Its objspace loses its
@@ -4570,7 +4555,6 @@ rb_gc_vm_forget_zombie(void *objspace)
     size_t n = vm->gc.zombie_objspaces_count;
     for (size_t i = 0; i < n; i++) {
         if (vm->gc.zombie_objspaces[i].objspace == objspace) {
-            vm->gc.zombie_total_pages -= vm->gc.zombie_objspaces[i].pages;
             vm->gc.zombie_objspaces[i] = vm->gc.zombie_objspaces[n - 1];
             vm->gc.zombie_objspaces_count = n - 1;
             break;
@@ -4578,34 +4562,11 @@ rb_gc_vm_forget_zombie(void *objspace)
     }
 }
 
-/* Total zombie pages, deciding whether to start a global GC.  An upper bound between
- * global cycles (each re-measures under the barrier), so a stale value cannot
- * re-trigger; a lock-free read at worst fires one cycle early or late. */
-size_t
-rb_gc_vm_zombie_total_pages(void)
-{
-    return GET_VM()->gc.zombie_total_pages;
-}
-
 /* Number of live Ractors, for the heap growth heuristic (r_mul); a racy read is fine. */
 unsigned int
 rb_gc_vm_ractor_count(void)
 {
     return GET_VM()->ractor.cnt;
-}
-
-/* Called by a global cycle from inside the barrier. */
-void
-rb_gc_vm_refresh_zombie_pages(void)
-{
-    rb_vm_t *vm = GET_VM();
-    size_t total = 0;
-    for (size_t i = 0; i < vm->gc.zombie_objspaces_count; i++) {
-        size_t pages = rb_gc_impl_zombie_heap_page_count(vm->gc.zombie_objspaces[i].objspace);
-        vm->gc.zombie_objspaces[i].pages = pages;
-        total += pages;
-    }
-    vm->gc.zombie_total_pages = total;
 }
 
 void
@@ -4725,9 +4686,8 @@ objspace_absorb_disowned_zombies(void)
         while (i < vm->gc.zombie_objspaces_count) {
             if (vm->gc.zombie_objspaces[i].owner_slot == NULL) {
                 void *zombie = vm->gc.zombie_objspaces[i].objspace;
-                /* Remove via forget, which also subtracts the entry's pages from
-                 * zombie_total_pages; a hand-written swap-remove would leave a phantom
-                 * total that keeps starting stop-the-world global cycles. */
+                /* Drop the entry before the merge, in this same VM-lock section:
+                 * objspace_absorb expects src to be out of the table. */
                 gc_absorbing_zombie++;
                 rb_gc_vm_forget_zombie(zombie);
                 objspace_absorb_merge(rb_gc_get_objspace(), zombie);

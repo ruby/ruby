@@ -809,16 +809,9 @@ typedef struct rb_vm_struct {
              * rb_gc_register_mark_object pins and join value through it.  NULL for an
              * orphan, whose Ractor struct is gone and has neither any more. */
             struct rb_ractor_struct *owner;
-            /* Heap pages this zombie holds: measured when it retires and refreshed
-             * under the barrier of each global cycle.  The total below stays exactly
-             * in sync, entry by entry. */
-            size_t pages;
         } *zombie_objspaces;
         size_t zombie_objspaces_count;
         size_t zombie_objspaces_capa;
-        /* Sum of .pages over zombie_objspaces.  Between global cycles it is an upper
-         * bound: a zombie's heap never grows and only shrinks at a global cycle. */
-        size_t zombie_total_pages;
 
 #if USE_MODULAR_GC
         struct gc_mark_func_data_struct *mark_func_data;

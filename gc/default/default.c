@@ -669,6 +669,9 @@ typedef struct rb_objspace {
     rb_heap_t heaps[HEAP_COUNT];
     size_t empty_pages_count;
     struct heap_page *empty_pages;
+    /* Nonzero while gc.c parks this objspace in its zombie table: the pages it adds to
+     * global_objspace->zombie_total_pages.  Written under the VM lock or the barrier. */
+    size_t zombie_pages;
 
     struct {
         rb_atomic_t finalizing;
@@ -866,8 +869,10 @@ typedef struct rb_global_objspace {
         size_t arenas_unmapped;           /* cumulative arenas munmapped (for GC.stat) */
     } page_pool;
 
-    /* Zombie pages left after the last global cycle (roughly the live data).  Updated
-     * under the barrier; readers (gc_need_global_p) may be racy. */
+    /* Pages held by zombie objspaces (sum of their zombie_pages), and what was left of
+     * it after the last global cycle (roughly the live data).  Written under the VM
+     * lock or the barrier; readers (gc_need_global_p) may be racy. */
+    size_t zombie_total_pages;
     size_t zombie_pages_survivors;
 
     /* An objspace merge (objspace_absorb) is running: suppress the cross-objspace
@@ -7339,7 +7344,7 @@ verify_registered_addr(VALUE *slot, VALUE initial_value, void *owner_objspace, v
     /* Join and orphan handling move a registration to the inheritor before the
      * source objspace merge; a global GC scans every registry while the zombie
      * exists, so this is a safe transient exemption. */
-    if (rb_gc_vm_zombie_objspace_p(value_objspace)) return;
+    if (value_objspace->zombie_pages != 0) return;
     if (value_objspace->flags.during_postmortem) return;
     if (MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(v), v)) return;
     if (MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(v), v)) return;
@@ -8860,7 +8865,7 @@ gc_need_global_p(rb_objspace_t *objspace)
      * is live data, so retrigger only once TRIGGER more pages accumulate on top of it.
      * Otherwise one live-heavy unjoined zombie turns every GC stop-the-world forever. */
     {
-        size_t zp = rb_gc_vm_zombie_total_pages();
+        size_t zp = global_objspace->zombie_total_pages;
         size_t base = global_objspace->zombie_pages_survivors < zp ? global_objspace->zombie_pages_survivors : zp;
         if (zp - base >= ZOMBIE_PAGES_TRIGGER) return true;
     }
@@ -9535,16 +9540,42 @@ rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
     return MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(obj), obj) != 0;
 }
 
-/* What a zombie objspace is worth to the zombie_objspaces page accounting, floored:
- * the retire GC can empty an ownerless objspace outright, yet its struct, mark stack
- * and heap_page structs stay in malloc and it keeps the world multi-objspace until a
- * global GC merges it, so a page-less zombie must still push the zombie trigger. */
-size_t
-rb_gc_impl_zombie_heap_page_count(void *objspace_ptr)
+/* What a zombie objspace is worth to the zombie page trigger, floored: the retire GC
+ * can empty an ownerless objspace outright, yet its struct, mark stack and heap_page
+ * structs stay in malloc and it keeps the world multi-objspace until a global GC
+ * merges it, so a page-less zombie must still push the trigger.  Never 0, so a
+ * nonzero zombie_pages also marks the objspace as a zombie. */
+static size_t
+objspace_zombie_pages(rb_objspace_t *objspace)
 {
-    rb_objspace_t *objspace = objspace_ptr;
     size_t pages = rb_darray_size(objspace->heap_pages.sorted);
     return pages > HEAP_COUNT ? pages : HEAP_COUNT;
+}
+
+/* gc.c parked the objspace in its zombie table, under the VM lock. */
+void
+rb_gc_impl_objspace_zombify(void *objspace_ptr)
+{
+    rb_objspace_t *objspace = objspace_ptr;
+    GC_ASSERT(objspace->zombie_pages == 0);
+    objspace->zombie_pages = objspace_zombie_pages(objspace);
+    global_objspace->zombie_total_pages += objspace->zombie_pages;
+}
+
+/* Re-measure every zombie this cycle covered, by difference, so a zombie parked after
+ * the snapshot keeps the pages it was parked with.  Inside the barrier. */
+static void
+gc_global_refresh_zombie_pages(void)
+{
+    for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
+        rb_objspace_t *objspace = global_objspace->global_gc.objspaces[i];
+        if (objspace->zombie_pages == 0) continue;
+        size_t pages = objspace_zombie_pages(objspace);
+        global_objspace->zombie_total_pages -= objspace->zombie_pages;
+        global_objspace->zombie_total_pages += pages;
+        objspace->zombie_pages = pages;
+    }
+    global_objspace->zombie_pages_survivors = global_objspace->zombie_total_pages;
 }
 
 static void
@@ -9571,11 +9602,14 @@ gc_global_snapshot_objspaces(void)
 #if RGENGC_CHECK_MODE
     /* Check that the incrementally maintained page_index agrees with the per-objspace
      * sorted arrays. */
-    size_t total = 0;
+    size_t total = 0, zombie_total = 0;
     for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
         total += rb_darray_size(global_objspace->global_gc.objspaces[i]->heap_pages.sorted);
+        zombie_total += global_objspace->global_gc.objspaces[i]->zombie_pages;
     }
     GC_ASSERT(total == global_objspace->page_index.n_pages);
+    /* Every zombie is enumerated, so the snapshot sees all of zombie_total_pages. */
+    GC_ASSERT(zombie_total == global_objspace->zombie_total_pages);
 #endif
 }
 
@@ -9949,11 +9983,10 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
      * next absorb). */
     rb_gc_reset_absorbed_since_global_gc();
 
-    /* Re-measure the zombie_objspaces table now that the garbage is gone; entries are stable
-     * inside the barrier.  Without this, the page trigger above keeps firing on the stale
-     * numbers left when a joinable (slotted) zombie retires without any pass merging it. */
-    rb_gc_vm_refresh_zombie_pages();
-    global_objspace->zombie_pages_survivors = rb_gc_vm_zombie_total_pages();
+    /* Re-measure the zombies now that the garbage is gone.  Without this, the page
+     * trigger above keeps firing on the stale numbers left when a joinable (slotted)
+     * zombie retires without any pass merging it. */
+    gc_global_refresh_zombie_pages();
 
     /* If the sweep above collected an unjoined Ractor object, ractor_free disowned its
      * zombie_objspaces entry and posted the merge to main as a postponed job; the objspace
@@ -10018,6 +10051,13 @@ objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src)
      * global_objspace->during_absorb). */
     const bool prev_absorb = global_objspace->during_absorb;
     global_objspace->during_absorb = true;
+
+    /* gc.c dropped src from its zombie table in this same VM-lock section, so src went
+     * through zombify and its pages are part of the total. */
+    GC_ASSERT(src->zombie_pages != 0);
+    GC_ASSERT(global_objspace->zombie_total_pages >= src->zombie_pages);
+    global_objspace->zombie_total_pages -= src->zombie_pages;
+    src->zombie_pages = 0;
 
     /* Settle dst first: adding pages under a walking lazy-sweep cursor, or into a
      * half-marked incremental heap, would sweep the merged pages with src's stale mark
