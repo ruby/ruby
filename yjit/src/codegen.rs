@@ -10130,8 +10130,11 @@ fn gen_invokesuper_specialized(
         return None;
     }
 
-    // Don't compile `super` on objects with singleton class to avoid retaining the receiver.
-    if VALUE(0) != unsafe { FL_TEST(comptime_recv.class_of(), VALUE(RUBY_FL_SINGLETON as usize)) } {
+    // As with ordinary sends, avoid retaining singleton receivers, but allow
+    // Class and Module receivers since they tend to be retained anyways.
+    if VALUE(0) != unsafe { FL_TEST(comptime_recv.class_of(), VALUE(RUBY_FL_SINGLETON as usize)) }
+        && !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_CLASS) }
+        && !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_MODULE) } {
         gen_counter_incr(jit, asm, Counter::invokesuper_singleton_class);
         return None;
     }
