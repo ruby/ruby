@@ -202,7 +202,7 @@ module SyncDefaultGems
     ]),
     pp: lib("ruby/pp"),
     prettyprint: lib("ruby/prettyprint"),
-    prism: repo(["ruby/prism", "main"], [
+    prism: repo(["ruby/prism", "ruby-4.0"], [
       ["ext/prism", "prism"],
       ["lib/prism.rb", "lib/prism.rb"],
       ["lib/prism", "lib/prism"],
