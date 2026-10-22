@@ -23977,6 +23977,10 @@ mod hir_opt_tests {
           Jump bb8(v54)
         bb8(v46:BasicObject):
           PatchPoint NoEPEscape(set_value_loop)
+          v59:CBool = Test v46
+          CondBranch v59, bb5(v18), bb12()
+        bb12():
+          v67:CShape[0x103b] = GuardBitEquals v45, CShape(0x103b) recompile
           StoreField v18, :@levar@0x103a, v19
           v70:CShape[0x1039] = Const CShape(0x1039)
           StoreField v18, :shape_id@0x1038, v70
@@ -26475,16 +26479,15 @@ mod hir_opt_tests {
           v208:FalseClass = RefineType v254, Falsy
           CondBranch v207, bb19(), bb18(v208)
         bb19():
-          v214:CShape = LoadField v85, :shape_id@0x1088
-          v215:CShape[0x108d] = GuardBitEquals v214, CShape(0x108d) recompile
           v216:BasicObject = LoadField v85, :@y@0x108c
           PatchPoint NoEPEscape(==)
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, y@0x1148, cme:0x1150)
-          v259:CShape = LoadField v95, :shape_id@0x1088
-          v260:CShape[0x108d] = GuardBitEquals v259, CShape(0x108d) recompile
-          v261:BasicObject = LoadField v95, :@y@0x108c
           PatchPoint MethodRedefined(Integer@0x1118, ==@0x1098, cme:0x1120)
+          v264:Fixnum = GuardType v216, Fixnum recompile
+          v266:BoolExact = FixnumEq v264, v49
+          Jump bb18(v266)
+        bb18(v230:BoolExact):
           PopInlineFrame
           CheckInterrupts
           Return v230
@@ -27193,7 +27196,7 @@ mod hir_opt_tests {
           v8:BasicObject = LoadArg :modify@1
           Jump bb3(v7, v8)
         bb3(v11:BasicObject, v12:BasicObject):
-          v66:NilClass = Const Value(nil)
+          v70:NilClass = Const Value(nil)
           v17:HeapBasicObject = GuardType v11, HeapBasicObject
           v18:CShape = LoadField v17, :shape_id@0x1001
           v19:CShape[0x1002] = GuardBitEquals v18, CShape(0x1002) recompile
@@ -27206,17 +27209,19 @@ mod hir_opt_tests {
           v30:Truthy = RefineType v12, Truthy
           v33:Fixnum[5] = Const Value(5)
           StoreField v17, :@value@0x1003, v33
+          PatchPoint NoEPEscape(foo)
           Jump bb4(v17, v30)
-        bb4(v42:HeapBasicObject, v43:BasicObject):
-          v50:CShape = LoadField v42, :shape_id@0x1001
-          v51:CShape[0x1002] = GuardBitEquals v50, CShape(0x1002) recompile
-          v52:BasicObject = LoadField v42, :@value@0x1003
+        bb4(v44:HeapBasicObject, v45:BasicObject):
+          v52:CShape = LoadField v44, :shape_id@0x1001
+          v53:CShape[0x1002] = GuardBitEquals v52, CShape(0x1002) recompile
+          v54:BasicObject = LoadField v44, :@value@0x1003
+          PatchPoint NoEPEscape(foo)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v63:Fixnum = GuardType v20, Fixnum recompile
-          v64:Fixnum = GuardType v52, Fixnum
-          v65:Fixnum = FixnumAdd v63, v64
+          v67:Fixnum = GuardType v20, Fixnum recompile
+          v68:Fixnum = GuardType v54, Fixnum
+          v69:Fixnum = FixnumAdd v67, v68
           CheckInterrupts
-          Return v65
+          Return v69
         "
         );
     }
