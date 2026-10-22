@@ -19,7 +19,7 @@
 /**
  * The patch version of the Prism library as an int.
  */
-#define PRISM_VERSION_PATCH 1
+#define PRISM_VERSION_PATCH 2
 
 /**
  * The version of the Prism library as a constant string.
