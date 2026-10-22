@@ -4,6 +4,7 @@
 #include "ruby/thread.h"
 #include "ruby/ractor.h"
 #include "ruby/re.h"
+#include "ruby/debug.h"
 #include "ruby/thread_native.h"
 #include "vm_core.h"
 #include "vm_sync.h"
@@ -31,6 +32,7 @@
 #include "internal/vm.h"
 #include "ruby/encoding.h"
 #include "variable.h"
+#include "constant.h"
 #include "shape.h"
 #include "yjit.h"
 #include "zjit.h"
@@ -310,6 +312,9 @@ ractor_mark_unshareable_parts(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r)
 
     ractor_local_storage_mark(r);
 }
+
+struct class_field_shareable_p;
+static void shareable_p_requests_atfork(rb_ractor_t *r);
 
 static void
 ractor_mark(void *ptr)
@@ -801,10 +806,13 @@ static rb_ractor_t _main_ractor = {
     .main_ractor = true,
 };
 
+static void shareable_p_init(void);
+
 rb_ractor_t *
 rb_ractor_main_alloc(void)
 {
     rb_ractor_t *r = &_main_ractor;
+    shareable_p_init(); // before the first GC marks the requests
     /* The main Ractor is allocated before its objspace exists, so its newobj cache is
      * created later in Init_BareVM, once rb_gc_init_objspaces has set r->objspace. */
     ruby_single_main_ractor = r;
@@ -828,6 +836,8 @@ rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
      * just emptied by rb_vm_living_threads_init, and zombie_objspaces still holds the
      * non-main objspaces that terminate_atfork parked there for the orphan merge. */
     th->ractor->creating_child_objspace = NULL;
+    // requests from the parent's Ractors: their waiters are gone
+    shareable_p_requests_atfork(th->ractor);
     ruby_single_main_ractor = th->ractor;
     th->ractor->status_ = ractor_created;
 
@@ -986,10 +996,15 @@ rb_ractor_atexit_exception(rb_execution_context_t *ec)
     ractor_atexit(ec, cr, ec->errinfo, true);
 }
 
+static void ractor_shareable_p_close(rb_ractor_t *cr);
+
 void
 rb_ractor_teardown(rb_execution_context_t *ec)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+
+    // shareable_p_push wakes threads.main, so close before clearing it
+    ractor_shareable_p_close(cr);
 
     // sync with rb_ractor_terminate_interrupt_main_thread()
     RB_VM_LOCKING() {
@@ -1102,6 +1117,8 @@ rb_vm_ractor_blocking_cnt_dec(rb_vm_t *vm, rb_ractor_t *cr, const char *file, in
     ractor_status_set(cr, ractor_running);
 }
 
+static void ractor_shareable_p_cancel(rb_ractor_t *r);
+
 /* Remove a child that never started (send_parameters failed during creation).  The
  * creator calls this (rb_ractor_living_threads_remove assumes the current Ractor);
  * leaving the set and disowning the objspace share one VM-lock section, no window. */
@@ -1135,6 +1152,7 @@ rb_ractor_cancel_creation(rb_ractor_t *r, rb_thread_t *th)
             rb_gc_objspace_disown(r->objspace);
             r->objspace = NULL;
         }
+        ractor_shareable_p_cancel(r);
         r->status_ = ractor_terminated;
     }
     RB_VM_UNLOCK();
@@ -1411,9 +1429,13 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
  *
  */
 
+static unsigned int shareable_p_pjob;
+static void ractor_shareable_p_drain(void *);
+
 void
 Init_Ractor(void)
 {
+    shareable_p_pjob = rb_postponed_job_preregister(0, ractor_shareable_p_drain, NULL);
     rb_cRactor = rb_define_class("Ractor", rb_cObject);
     rb_undef_alloc_func(rb_cRactor);
 
@@ -1667,6 +1689,14 @@ obj_hash_traverse_i(VALUE key, VALUE val, VALUE ptr)
     return ST_CONTINUE;
 }
 
+static bool
+traverse_child_p(VALUE obj)
+{
+    // under the VM lock the parent may be a zombie's object, with children on its pages
+    return rb_objspace_live_object_p(obj) ||
+        (!SPECIAL_CONST_P(obj) && RB_VM_LOCKED_P() && rb_gc_obj_live_in_zombie_objspace_p(obj));
+}
+
 static void
 obj_traverse_reachable_i(VALUE obj, void *ptr)
 {
@@ -1675,7 +1705,7 @@ obj_traverse_reachable_i(VALUE obj, void *ptr)
     // We need to assume foreign objects are properly shareable. If we check
     // their shareability, this could result in a crash because the page could
     // be unmapped. The object could also be freed concurrently.
-    if (!rb_objspace_live_object_p(obj)) {
+    if (!traverse_child_p(obj)) {
         return;
     }
     // If the object is "garbage" (unmarked during lazy sweeping), it's okay
@@ -1694,7 +1724,12 @@ obj_traverse_reachable(VALUE obj, struct obj_traverse_data *data)
         .stop = false,
         .data = data,
     };
-    rb_objspace_reachable_objects_from_local(obj, obj_traverse_reachable_i, &d);
+    if (RB_VM_LOCKED_P()) {
+        rb_objspace_reachable_objects_from_locked(obj, obj_traverse_reachable_i, &d); // a zombie's object
+    }
+    else {
+        rb_objspace_reachable_objects_from_local(obj, obj_traverse_reachable_i, &d);
+    }
     return d.stop;
 }
 
@@ -1954,6 +1989,9 @@ make_shareable_check_shareable(VALUE obj)
     if (rb_ractor_shareable_p(obj)) {
         return traverse_skip;
     }
+    else if (rb_objspace_foreign_object_p(obj)) {
+        rb_raise(rb_eRactorIsolationError, "can not make shareable an object owned by another Ractor");
+    }
     else if (!allow_frozen_shareable_p(obj)) {
         if (!RB_TYPE_P(obj, T_DATA)) {
             rb_raise(rb_eRactorError,
@@ -2054,6 +2092,13 @@ rb_ractor_ensure_main_ractor(const char *msg)
     }
 }
 
+// see rb_class_field_shareable_p
+static bool
+zombie_writable_p(VALUE obj)
+{
+    return RB_VM_LOCKED_P() && rb_gc_obj_in_zombie_objspace_p(obj);
+}
+
 static enum obj_traverse_iterator_result
 shareable_p_enter(VALUE obj)
 {
@@ -2066,6 +2111,10 @@ shareable_p_enter(VALUE obj)
         // TODO: remove it
         mark_shareable(obj);
         return traverse_skip;
+    }
+    else if (rb_objspace_foreign_object_p(obj) && !zombie_writable_p(obj)) {
+        // making it shareable writes the owner's flags and page bitmaps; only the owner may
+        return traverse_stop;
     }
     else if (RB_OBJ_FROZEN_RAW(obj) &&
              allow_frozen_shareable_p(obj)) {
@@ -2209,7 +2258,7 @@ obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
 {
     int *pcnt = (int *)ptr;
 
-    if (!rb_objspace_live_object_p(obj)) {
+    if (!traverse_child_p(obj)) {
         return;
     }
 
@@ -2222,7 +2271,12 @@ static int
 obj_refer_only_shareables_p(VALUE obj)
 {
     int cnt = 0;
-    rb_objspace_reachable_objects_from_local(obj, obj_refer_only_shareables_p_i, &cnt);
+    if (RB_VM_LOCKED_P()) {
+        rb_objspace_reachable_objects_from_locked(obj, obj_refer_only_shareables_p_i, &cnt); // a zombie's object
+    }
+    else {
+        rb_objspace_reachable_objects_from_local(obj, obj_refer_only_shareables_p_i, &cnt);
+    }
     return cnt == 0;
 }
 
@@ -4264,6 +4318,353 @@ rb_ractor_require(VALUE feature, bool silent)
     }
     else {
         return result;
+    }
+}
+
+// Making a value shareable that was read from a class field owned by another Ractor
+
+// shareable_p_requests of a Ractor that no longer answers
+#define SHAREABLE_P_CLOSED ((struct class_field_shareable_p *)1)
+
+/* Not a Ruby object: allocating one could start a GC while only the reader's stack holds
+ * val, which the GC of val's owner (or of a Ractor absorbing it) cannot see.  From
+ * shareable_p_new until shareable_p_free, every GC marks val (shareable_p_inflight). */
+struct class_field_shareable_p {
+    struct ccan_list_node inflight;
+    struct class_field_shareable_p *next; // in the owner's shareable_p_requests
+    VALUE val; // what the reader read: the owner makes it shareable rather than re-reading the field
+    VALUE reader; // with port_id and reply, set by a reader that waits
+    st_data_t port_id;
+    struct ractor_basket *reply; // the reply to send; owned by the reader until it waits
+    bool shareable; // the answer, written by the owner before it sets DONE
+    rb_atomic_t state;
+};
+
+// PENDING -> DONE (owner) or WAITING (reader); WAITING -> DONE (owner, which then replies);
+// PENDING or WAITING -> ABANDONED (reader).  DONE: the reader frees it; ABANDONED: the owner.
+enum { SHAREABLE_P_PENDING, SHAREABLE_P_DONE, SHAREABLE_P_WAITING, SHAREABLE_P_ABANDONED };
+
+static rb_nativethread_lock_t shareable_p_inflight_lock;
+static CCAN_LIST_HEAD(shareable_p_inflight);
+
+static void
+shareable_p_init(void)
+{
+    rb_native_mutex_initialize(&shareable_p_inflight_lock);
+}
+
+// does not GC, so a reader can call it right after reading val
+static struct class_field_shareable_p *
+shareable_p_new(rb_ractor_t *cr, VALUE val)
+{
+    struct class_field_shareable_p *const c = ruby_mimcalloc(1, sizeof(*c));
+    if (!c) rb_bug("shareable_p_new: out of memory");
+    c->val = val;
+    c->reader = cr->pub.self;
+    c->state = SHAREABLE_P_PENDING;
+    rb_native_mutex_lock(&shareable_p_inflight_lock);
+    ccan_list_add(&shareable_p_inflight, &c->inflight);
+    rb_native_mutex_unlock(&shareable_p_inflight_lock);
+    return c;
+}
+
+static void
+shareable_p_free(struct class_field_shareable_p *c)
+{
+    rb_native_mutex_lock(&shareable_p_inflight_lock);
+    ccan_list_del(&c->inflight);
+    rb_native_mutex_unlock(&shareable_p_inflight_lock);
+    ruby_mimfree(c);
+}
+
+// in every GC's root scan; a local GC leaves the values of other objspaces alone
+void
+rb_ractor_mark_shareable_p_inflight(const struct rb_gc_mark_ctx *ctx)
+{
+    const struct class_field_shareable_p *c;
+    rb_native_mutex_lock(&shareable_p_inflight_lock);
+    ccan_list_for_each(&shareable_p_inflight, c, inflight) {
+        rb_gc_mark_ctx(ctx, c->val);
+        rb_gc_mark_ctx(ctx, c->reader);
+    }
+    rb_native_mutex_unlock(&shareable_p_inflight_lock);
+}
+
+// not the field: the owner's Box may resolve it to another value
+static VALUE
+shareable_p_here(VALUE val)
+{
+    return rb_ractor_shareable_p(val) ? val : Qundef;
+}
+
+// the requests were the parent's threads': free them all, the lock may have had a holder
+static void
+shareable_p_requests_atfork(rb_ractor_t *r)
+{
+    rb_native_mutex_initialize(&shareable_p_inflight_lock);
+    struct class_field_shareable_p *c, *next;
+    ccan_list_for_each_safe(&shareable_p_inflight, c, next, inflight) {
+        if (c->state != SHAREABLE_P_DONE && c->reply) ractor_basket_free(c->reply); // not sent
+        shareable_p_free(c);
+    }
+    r->shareable_p_requests = NULL;
+}
+
+// the owner holds its GVL, so it is the only taker: no ABA
+static struct class_field_shareable_p *
+shareable_p_pop(rb_ractor_t *cr)
+{
+    struct class_field_shareable_p *head;
+    do {
+        head = RUBY_ATOMIC_PTR_LOAD(cr->shareable_p_requests);
+        if (!head || head == SHAREABLE_P_CLOSED) return NULL;
+    } while (RUBY_ATOMIC_PTR_CAS(cr->shareable_p_requests, head, head->next) != head);
+    return head;
+}
+
+static void
+ractor_shareable_p_one(struct class_field_shareable_p *c)
+{
+    // off the list now, so this stack holds them
+    VALUE val = c->val, reader = c->reader;
+    int state;
+    const VALUE result = rb_protect(shareable_p_here, val, &state);
+    // any non-local exit answers "not shareable": a postponed job cannot propagate it
+    if (state) rb_set_errinfo(Qnil);
+    c->shareable = !state && !UNDEF_P(result);
+    // a reader not waiting yet takes the answer from c; only a waiting one needs the port
+    rb_atomic_t st = RUBY_ATOMIC_CAS(c->state, SHAREABLE_P_PENDING, SHAREABLE_P_DONE);
+    if (st == SHAREABLE_P_WAITING) {
+        struct ractor_basket *const reply = c->reply;
+        const st_data_t port_id = c->port_id;
+        st = RUBY_ATOMIC_CAS(c->state, SHAREABLE_P_WAITING, SHAREABLE_P_DONE);
+        // the reader may free c from here on
+        if (st == SHAREABLE_P_WAITING) ractor_reply_send(GET_EC(), RACTOR_PTR(reader), port_id, reply);
+    }
+    if (st == SHAREABLE_P_ABANDONED) {
+        if (c->reply) ractor_basket_free(c->reply); // not sent
+        shareable_p_free(c);
+    }
+    RB_GC_GUARD(val);
+    RB_GC_GUARD(reader);
+}
+
+// postponed job targeted at the owner Ractor: whichever of its threads checks interrupts first
+static void
+ractor_shareable_p_drain(void *_)
+{
+    rb_ractor_t *const cr = GET_RACTOR();
+    struct class_field_shareable_p *c;
+    while ((c = shareable_p_pop(cr)) != NULL) ractor_shareable_p_one(c);
+}
+
+// Stop taking requests and answer the pending ones; the owner can still make values shareable here.
+static void
+ractor_shareable_p_close(rb_ractor_t *cr)
+{
+    bool closed = false;
+    while (!closed) {
+        ractor_shareable_p_drain(NULL);
+        // pushers to a non-main Ractor hold the VM lock, so none sees the Ractor half-closed
+        RB_VM_LOCKING() {
+            closed = RUBY_ATOMIC_PTR_CAS(cr->shareable_p_requests, NULL, SHAREABLE_P_CLOSED) == NULL;
+        }
+    }
+}
+
+// r never started, so it owns no class field a reader could have read: nothing was pushed
+static void
+ractor_shareable_p_cancel(rb_ractor_t *r)
+{
+    ASSERT_vm_locking();
+    VM_ASSERT(r->shareable_p_requests == NULL);
+    r->shareable_p_requests = SHAREABLE_P_CLOSED;
+}
+
+// false if r does not answer: it has not started, or no longer runs
+static bool
+shareable_p_push(rb_ractor_t *r, struct class_field_shareable_p *c)
+{
+    // set by its first thread, cleared under the VM lock (which a non-main r's pushers hold)
+    rb_thread_t *const main_th = r->threads.main;
+    if (!main_th) return false;
+    struct class_field_shareable_p *head;
+    do {
+        head = RUBY_ATOMIC_PTR_LOAD(r->shareable_p_requests);
+        if (head == SHAREABLE_P_CLOSED) return false;
+        c->next = head;
+    } while (RUBY_ATOMIC_PTR_CAS(r->shareable_p_requests, head, c) != head);
+
+    // flags the running thread, which is quickest when it is alive and running;
+    // the lock keeps that thread from exiting and freeing its ec meanwhile
+    RACTOR_LOCK(r);
+    rb_postponed_job_trigger_for_ractor(shareable_p_pjob, r->pub.self);
+    RACTOR_UNLOCK(r);
+    // running_ec may be a thread that went to sleep or exited; main lives until r closes
+    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(main_th->ec);
+    rb_threadptr_interrupt(main_th);
+    return true;
+}
+
+// for a reader whose Ractor is terminating and has no ports
+static void
+shareable_p_poll(struct class_field_shareable_p *c, rb_atomic_t state)
+{
+    // sleeps rather than yields: under M:N a yield keeps the native thread the owner may need
+    while (RUBY_ATOMIC_LOAD(c->state) == state) rb_thread_wait_for((struct timeval){ 0, 100 });
+}
+
+struct shareable_p_wait {
+    struct class_field_shareable_p *c;
+    VALUE port; // Qnil until made; on this stack, so this Ractor's GC keeps it
+    bool done; // the owner has set DONE
+};
+
+static VALUE
+shareable_p_wait_body(VALUE arg)
+{
+    struct shareable_p_wait *const w = (struct shareable_p_wait *)arg;
+    struct class_field_shareable_p *const c = w->c;
+    rb_ractor_t *const cr = GET_RACTOR();
+    if (cr->sync.ports) {
+        // val is registered, so allocating is fine here
+        w->port = ractor_port_new(cr);
+        c->reply = ractor_reply_basket_new();
+        c->port_id = ractor_port_id(RACTOR_PORT_PTR(w->port));
+        // the CAS hands reply and port_id to an owner that loses it
+        if (RUBY_ATOMIC_CAS(c->state, SHAREABLE_P_PENDING, SHAREABLE_P_WAITING) == SHAREABLE_P_PENDING) {
+            if (!ractor_reply_port_receive(GET_EC(), w->port)) shareable_p_poll(c, SHAREABLE_P_WAITING);
+        }
+        else {
+            ractor_basket_free(c->reply);
+            c->reply = NULL;
+        }
+    }
+    else {
+        shareable_p_poll(c, SHAREABLE_P_PENDING); // terminating, no ports: the owner answers through c
+    }
+    w->done = true;
+    return Qnil;
+}
+
+static VALUE
+shareable_p_wait_release(VALUE arg)
+{
+    struct shareable_p_wait *const w = (struct shareable_p_wait *)arg;
+    rb_execution_context_t *const ec = GET_EC();
+    if (!w->done) {
+        // given up: hand c to the owner, unless it has answered already
+        struct class_field_shareable_p *const c = w->c;
+        while (1) {
+            const rb_atomic_t st = RUBY_ATOMIC_LOAD(c->state);
+            if (st == SHAREABLE_P_DONE) {
+                shareable_p_free(c);
+                break;
+            }
+            if (RUBY_ATOMIC_CAS(c->state, st, SHAREABLE_P_ABANDONED) == st) break;
+        }
+    }
+    if (!NIL_P(w->port)) ractor_reply_port_close(ec, w->port);
+    return Qnil;
+}
+
+// returns the owner's answer once it has given one, and frees c
+static bool
+shareable_p_wait(struct class_field_shareable_p *c)
+{
+    if (RUBY_ATOMIC_LOAD(c->state) != SHAREABLE_P_DONE) {
+        struct shareable_p_wait w = { c, Qnil };
+        rb_ensure(shareable_p_wait_body, (VALUE)&w, shareable_p_wait_release, (VALUE)&w);
+    }
+    const bool shareable = c->shareable;
+    shareable_p_free(c);
+    return shareable;
+}
+
+static VALUE
+shareable_p_sleep(VALUE _)
+{
+    rb_thread_wait_for((struct timeval){ 0, 100 });
+    return Qnil;
+}
+
+// a single objspace (MMTk) has no page owners: klass's owner, found by a walk, is the single writer
+static rb_ractor_t *
+ractor_living_by_id(rb_serial_t id)
+{
+    ASSERT_vm_locking();
+    VM_ASSERT(!rb_gc_multi_objspace_p()); // with per-Ractor objspaces rb_gc_obj_ractor is O(1)
+    rb_vm_t *const vm = GET_VM();
+    if (id == 0) return vm->ractor.main_ractor;
+    rb_ractor_t *r;
+    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+        if (rb_ractor_id(r) == id) return r;
+    }
+    return NULL;
+}
+
+/* val was read from a field or constant of klass, which the current Ractor does not own:
+ * whether it is shareable, asking the Ractor that holds val's page to flag it if needed.
+ * Nothing between the read and shareable_p_new may GC: until then only this stack holds val. */
+bool
+rb_class_field_shareable_p(VALUE klass, VALUE val)
+{
+    if (RB_SPECIAL_CONST_P(val) || RB_OBJ_SHAREABLE_P(val)) return true;
+    if (!RB_OBJ_FROZEN_RAW(val)) return false;
+
+    VM_ASSERT(!rb_class_owned_p(klass));
+    ASSERT_vm_unlocking();
+
+    rb_ractor_t *const cr = GET_RACTOR();
+    struct class_field_shareable_p *const c = shareable_p_new(cr, val);
+
+    const bool multi_objspace = rb_gc_multi_objspace_p();
+    // main's pages never move to another objspace (the race with an absorb into main is
+    // benign: a stale read takes the locked path), and main never closes
+    rb_ractor_t *const main_r = GET_VM()->ractor.main_ractor;
+    if (multi_objspace && rb_gc_obj_in_objspace_p(main_r->objspace, val)) {
+        if (cr == main_r) {
+            shareable_p_free(c);
+            return rb_ractor_shareable_p(val);
+        }
+        if (shareable_p_push(main_r, c)) return shareable_p_wait(c);
+    }
+    while (1) {
+        enum { HERE, DONE, PUSHED, RETRY } st;
+        VALUE result = Qundef;
+        int state = 0;
+        // keeps val's page from moving (absorb) and its objspace from changing hands
+        RB_VM_LOCKING() {
+            rb_ractor_t *const r = multi_objspace ? rb_gc_obj_ractor(val) : ractor_living_by_id(RCLASS_OWNER_RACTOR_ID(klass));
+            if (r == cr) {
+                st = HERE; // this Ractor absorbed it
+            }
+            else if (!r) {
+                /* A zombie's page, which nobody owns, and the VM lock keeps out its absorption
+                 * and a global GC, so the lock holder is the single writer (or, with a single
+                 * objspace, klass's owner has terminated). */
+                result = rb_protect(shareable_p_here, val, &state);
+                st = DONE;
+            }
+            else {
+                st = shareable_p_push(r, c) ? PUSHED : RETRY;
+            }
+        }
+        switch (st) {
+          case HERE: shareable_p_free(c); return !UNDEF_P(shareable_p_here(val));
+          case DONE:
+            shareable_p_free(c);
+            if (state) rb_jump_tag(state); // outside the lock
+            return !UNDEF_P(result);
+          case PUSHED: return shareable_p_wait(c);
+          case RETRY: break;
+        }
+        // its Ractor has not started, or is between closing and parking the objspace as a zombie
+        rb_protect(shareable_p_sleep, Qnil, &state);
+        if (state) {
+            shareable_p_free(c);
+            rb_jump_tag(state);
+        }
     }
 }
 

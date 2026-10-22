@@ -49,6 +49,7 @@ struct rb_ractor_sync {
     struct st_table *ports;
     size_t next_port_id;
 
+
     /* The baskets this Ractor holds that are on no queue: one it is building to send,
      * and one it has taken off a queue and is materializing.  A queued basket is rooted
      * by its queue instead.  Only the owner touches this list. */
@@ -137,6 +138,10 @@ struct rb_ractor_struct {
      * in rb_postponed_job_flush. */
     rb_atomic_t postponed_job_triggered_bits;
 
+    // share requests from other Ractors, a lock-free stack: readers push with CAS, a
+    // thread of this Ractor pops
+    struct class_field_shareable_p *shareable_p_requests;
+
     VALUE thgroup_default;
 
     VALUE name;
@@ -188,6 +193,7 @@ struct rb_ractor_struct {
 /* Mark the GC roots held in Ractor r's C structs (from the root scan in gc.c). */
 struct rb_gc_mark_ctx;
 void rb_ractor_mark_local_roots(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r);
+void rb_ractor_mark_shareable_p_inflight(const struct rb_gc_mark_ctx *ctx);
 void rb_ractor_mark_terminated_join_value(rb_ractor_t *r);
 void rb_ractor_reap_dead_ports(rb_ractor_t *r);
 
