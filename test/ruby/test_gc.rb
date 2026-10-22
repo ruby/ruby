@@ -221,6 +221,155 @@ class TestGc < Test::Unit::TestCase
     end
   end
 
+  def test_transient_malloc_does_not_trigger_oldmalloc_major_gc
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    omit 'stress' if GC.stress
+
+    env = {
+      "RUBY_GC_MALLOC_LIMIT" => "4194304",
+      "RUBY_GC_MALLOC_LIMIT_MAX" => "4194304",
+      "RUBY_GC_OLDMALLOC_LIMIT" => "1048576",
+      "RUBY_GC_OLDMALLOC_LIMIT_MAX" => "1048576",
+      "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "1000",
+    }
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      GC.start
+      GC::Profiler.enable
+      40.times do
+        500.times { "x" * 4096 }
+        GC.start(full_mark: false)
+      end
+      profile = GC::Profiler.raw_data
+      GC::Profiler.disable
+
+      oldmalloc_majors = profile.count { |row| row[:GC_FLAGS][:major_by] == :oldmalloc }
+      assert_equal 0, oldmalloc_majors
+    RUBY
+  end
+
+  def test_lazy_sweep_malloc_does_not_trigger_oldmalloc_major_gc
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    omit 'stress' if GC.stress
+
+    env = {
+      "RUBY_GC_MALLOC_LIMIT" => "4194304",
+      "RUBY_GC_MALLOC_LIMIT_MAX" => "4194304",
+      "RUBY_GC_OLDMALLOC_LIMIT" => "4194304",
+      "RUBY_GC_OLDMALLOC_LIMIT_MAX" => "4194304",
+      "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "1000",
+    }
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      sparse = Array.new(100_000) { "y" * 10 }
+      sparse.each_index { |index| sparse[index] = nil if index.odd? }
+      GC.start
+      GC::Profiler.enable
+      20.times do
+        GC.start(full_mark: false, immediate_sweep: false)
+        10.times { "x" * (512 * 1024) }
+      end
+      GC.start(full_mark: false)
+      profile = GC::Profiler.raw_data
+      GC::Profiler.disable
+
+      oldmalloc_majors = profile.count { |row| row[:GC_FLAGS][:major_by] == :oldmalloc }
+      assert_equal 100_000, sparse.length
+      assert_equal 0, oldmalloc_majors
+    RUBY
+  end
+
+  def test_retained_malloc_triggers_oldmalloc_major_gc
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    omit 'stress' if GC.stress
+
+    env = {
+      "RUBY_GC_OLDMALLOC_LIMIT" => "1048576",
+      "RUBY_GC_OLDMALLOC_LIMIT_MAX" => "1048576",
+      "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "1000",
+    }
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      garbage = Array.new(4_000) { "x" * 4096 }
+      garbage = nil
+      GC.start
+      GC::Profiler.enable
+      live = Array.new(1_000) { "x" * 4096 }
+      2.times { GC.start(full_mark: false) }
+      profile = GC::Profiler.raw_data
+      GC::Profiler.disable
+
+      assert_equal 1_000, live.length
+      assert_equal :oldmalloc, profile.last[:GC_FLAGS][:major_by], profile.map { |row| row[:GC_FLAGS][:major_by] }.inspect
+    RUBY
+  end
+
+  def test_retained_malloc_triggers_oldmalloc_major_gc_despite_lazy_sweep_churn
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    omit 'stress' if GC.stress
+
+    env = {
+      "RUBY_GC_OLDMALLOC_LIMIT" => "1048576",
+      "RUBY_GC_OLDMALLOC_LIMIT_MAX" => "1048576",
+      "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "1000",
+    }
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      sparse = Array.new(100_000) { "y" * 10 }
+      sparse.each_index { |index| sparse[index] = nil if index.odd? }
+      GC.start
+      GC::Profiler.enable
+      live = Array.new(1_000) { "x" * 4096 }
+      20.times do
+        GC.start(full_mark: false, immediate_sweep: false)
+        8.times { ("x" * (1 << 20)).clear }
+      end
+      GC.start(full_mark: false)
+      profile = GC::Profiler.raw_data
+      GC::Profiler.disable
+
+      oldmalloc_majors = profile.count { |row| row[:GC_FLAGS][:major_by] == :oldmalloc }
+      assert_equal 1_000, live.length
+      assert_equal 100_000, sparse.length
+      assert_equal 1, oldmalloc_majors
+    RUBY
+  end
+
+  def test_major_sweep_does_not_create_oldmalloc_debt
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    omit 'stress' if GC.stress
+
+    env = {
+      "RUBY_GC_MALLOC_LIMIT" => "1048576",
+      "RUBY_GC_MALLOC_LIMIT_MAX" => "1048576",
+      "RUBY_GC_OLDMALLOC_LIMIT" => "1048576",
+      "RUBY_GC_OLDMALLOC_LIMIT_MAX" => "1048576",
+      "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "1000",
+    }
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      buffer_count = 1_024
+      buffer_size = 4096
+      ring = Array.new(buffer_count) { "x" * buffer_size }
+      GC.start
+      last_major = GC.stat(:major_gc_count)
+      last_iteration = 0
+      intervals = []
+      reasons = []
+      iteration = 0
+
+      while intervals.length < 5
+        ring[iteration % buffer_count] = "x" * buffer_size
+        iteration += 1
+        major = GC.stat(:major_gc_count)
+        next if major == last_major
+
+        intervals << (iteration - last_iteration) * buffer_size
+        reasons << GC.latest_gc_info(:major_by)
+        last_iteration = iteration
+        last_major = major
+      end
+
+      assert_equal [:oldmalloc] * intervals.length, reasons
+      assert_operator intervals.drop(1).max, :<=, 4 * 1024 * 1024, intervals.inspect
+    RUBY
+  end
+
   def test_stat_heap
     omit 'stress' if GC.stress
 
