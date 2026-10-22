@@ -222,6 +222,9 @@ class Gem::Uninstaller
     if remove
       bin_dir = @bin_dir || Gem.bindir(spec.base_dir)
 
+      # Nothing to remove when the bin directory is missing entirely.
+      return unless File.directory? bin_dir
+
       raise Gem::FilePermissionError, bin_dir unless File.writable? bin_dir
 
       executables.each do |exe_name|

@@ -86,6 +86,36 @@ class TestGemUninstaller < Gem::InstallerTestCase
     refute File.exist? executable
   end
 
+  def test_remove_executables_force_remove_missing_bin_dir
+    uninstaller = Gem::Uninstaller.new nil, executables: true
+
+    bin_dir = Gem.bindir(@user_spec.base_dir)
+    FileUtils.rm_rf bin_dir
+    refute File.exist?(bin_dir), "bin dir not removed"
+
+    use_ui @ui do
+      uninstaller.remove_executables @user_spec
+    end
+  end
+
+  def test_uninstall_user_install_with_missing_bin_dir
+    Gem::Specification.dirs = [Gem.user_dir]
+
+    bin_dir = Gem.bindir(@user_spec.base_dir)
+    FileUtils.rm_rf bin_dir
+    refute File.exist?(bin_dir), "bin dir not removed"
+
+    uninstaller = Gem::Uninstaller.new(@user_spec.name,
+                                       executables: true,
+                                       user_install: true)
+
+    gem_dir = @user_spec.gem_dir
+
+    uninstaller.uninstall
+
+    assert_path_not_exist gem_dir
+  end
+
   def test_remove_executables_user
     uninstaller = Gem::Uninstaller.new nil, executables: true
 
