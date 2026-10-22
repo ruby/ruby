@@ -3963,7 +3963,10 @@ c_callable! {
                     let opts_filled = num_opts_filled.to_usize();
                     let opts_unfilled = opt_num.saturating_sub(opts_filled);
                     if opts_unfilled > 0 {
-                        let argc = argc.to_usize();
+                        // Kwrest after named keywords is already spilled to its
+                        // final slot, beyond the hidden keyword-bits local.
+                        let kwrest_spilled = params.flags.has_kw() != 0 && params.flags.has_kwrest() != 0;
+                        let argc = argc.to_usize() - usize::from(kwrest_spilled);
                         let lead_num: usize = params.lead_num.try_into().expect("ISEQ lead_num should be non-negative");
                         let param_locals = &mut locals[..params_size];
                         // Gap of unspecified optional parameters
@@ -4098,7 +4101,17 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
         (argc + 1, block_local_idx) // +1 for self
     });
 
-    let spills = (0..argc).map(|arg_idx| (arg_idx + 1, arg_idx)) // +1 for self
+    let spills = (0..argc).map(|arg_idx| {
+        // The caller has already written keyword bits to their final local.
+        // Spill kwrest beyond that slot, not over it. Leave the other args
+        // packed for prepare_for_exit() to shift past unfilled optionals.
+        let local_idx = if params.flags.has_kw() != 0 && params.flags.has_kwrest() != 0 && arg_idx == argc - 1 {
+            (unsafe { (*params.keyword).rest_start }) as usize
+        } else {
+            arg_idx
+        };
+        (arg_idx + 1, local_idx) // +1 for self
+    })
         .chain(block_spill);
     for (c_arg_idx, local_idx) in spills {
         let src = match lir::c_arg_location(c_arg_idx) {

@@ -6316,7 +6316,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn dont_specialize_call_to_iseq_with_kwrest() {
+    fn specialize_call_to_iseq_with_literal_kwrest() {
         enable_zjit_stats();
         eval("
             def foo(**args) = 1
@@ -6341,12 +6341,49 @@ mod hir_opt_tests {
           IncrCounter zjit_insn_count
           v15:Fixnum[1] = Const Value(1)
           IncrCounter zjit_insn_count
-          IncrCounter complex_arg_pass_param_kwrest
-          IncrCounter send_direct_fallback_context_send
-          v18:BasicObject = Send v8, :foo, v15 # SendFallbackReason: Complex argument passing
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v26:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v8, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v27:StaticSymbol[:a] = Const Value(VALUE(0x1038))
+          v28:HashExact = NewHash v27: v15
+          IncrCounter inline_iseq_optimized_send_count
+          v31:Fixnum[1] = Const Value(1)
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v18
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_named_keywords_and_kwrest() {
+        eval("
+            def foo(a:, b: 23, **kw) = [a, b, kw]
+            def test = foo(z: 47, a: 31, x: 59)
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[47] = Const Value(47)
+          v13:Fixnum[31] = Const Value(31)
+          v15:Fixnum[59] = Const Value(59)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v24:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v25:Fixnum[23] = Const Value(23)
+          v26:StaticSymbol[:z] = Const Value(VALUE(0x1038))
+          v27:StaticSymbol[:x] = Const Value(VALUE(0x1040))
+          v28:HashExact = NewHash v26: v11, v27: v15
+          v30:BasicObject = SendDirect v24, 0x0, :foo (0x1048), v13, v25, v28
+          CheckInterrupts
+          Return v30
         ");
     }
 
