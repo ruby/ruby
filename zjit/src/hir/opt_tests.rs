@@ -27138,16 +27138,12 @@ mod hir_opt_tests {
           v89:CInt64[0] = Const CInt64(0)
           v65:CInt64 = ArrayLength v63
           v67:BasicObject = ArrayArefChecked v63, v89, v65
-          PatchPoint NoEPEscape(test)
           PatchPoint MethodRedefined(Integer@0x1080, +@0x1088, cme:0x1090)
           v71:Fixnum = GuardType v67, Fixnum
           v72:Fixnum = FixnumAdd v59, v71
           v36:Fixnum[1] = Const Value(1)
-          PatchPoint NoSingletonClass(String@0x1008)
-          PatchPoint MethodRedefined(String@0x1008, getbyte@0x1010, cme:0x1018)
           v90:CInt64[1] = Const CInt64(1)
-          v78:CInt64 = LoadField v52, :len@0x1040
-          v79:CInt64[1] = GuardLess v90, v78
+          v79:CInt64[1] = GuardLess v90, v54
           v83:Fixnum = StringGetbyte v52, v79
           v87:Fixnum = FixnumAdd v72, v83
           CheckInterrupts
@@ -27248,7 +27244,6 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1040, +@0x1048, cme:0x1050)
           v77:Fixnum = GuardType v74, Fixnum recompile
           v78:Fixnum = FixnumAdd v77, v28
-          PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []=@0x1078, cme:0x1080)
           v84:CUInt64 = LoadField v69, :RBASIC_FLAGS@0x10a8
           v85:CUInt64 = GuardNoBitsSet v84, RUBY_FL_FREEZE=CUInt64(2048)
@@ -27269,12 +27264,10 @@ mod hir_opt_tests {
           v102:CInt64 = ArrayLength v69
           v103:CInt64 = AdjustBounds v101, v102
           v104:BasicObject = ArrayArefChecked v69, v103, v102
-          PatchPoint NoEPEscape(test)
           v50:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1040, +@0x1048, cme:0x1050)
           v107:Fixnum = GuardType v104, Fixnum recompile
           v108:Fixnum = FixnumAdd v107, v50
-          PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []=@0x1078, cme:0x1080)
           v114:CUInt64 = LoadField v69, :RBASIC_FLAGS@0x10a8
           v115:CUInt64 = GuardNoBitsSet v114, RUBY_FL_FREEZE=CUInt64(2048)
