@@ -1858,11 +1858,10 @@ rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
     return true;
 }
 
-size_t
-rb_gc_impl_zombie_heap_page_count(void *objspace_ptr)
+void
+rb_gc_impl_objspace_zombify(void *objspace_ptr)
 {
     /* With a single objspace zombie_objspaces is always empty. */
-    return 0;
 }
 
 void

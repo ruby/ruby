@@ -153,7 +153,11 @@ GC_IMPL_FN bool rb_gc_impl_during_postmortem_p(void *objspace_ptr);
  * objspace impl. */
 GC_IMPL_FN bool rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN bool rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj);
-GC_IMPL_FN size_t rb_gc_impl_zombie_heap_page_count(void *objspace_ptr);
+/* gc.c parked objspace_ptr in its zombie table: a terminated Ractor's objspace that
+ * rb_gc_impl_objspace_absorb later merges.  Called under the VM lock, possibly from
+ * inside a global GC sweep (an unjoined Ractor's dfree disowns its objspace), so it
+ * must not allocate through the GC or expect to take a barrier. */
+GC_IMPL_FN void rb_gc_impl_objspace_zombify(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_objspace_absorb(void *dst_ptr, void *src_ptr);
 GC_IMPL_FN void rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), void *data);
 // Finalizers
