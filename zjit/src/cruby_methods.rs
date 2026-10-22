@@ -237,6 +237,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "empty?", inline_string_empty_p, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cString, "<<", inline_string_append);
     annotate!(rb_cString, "==", inline_string_eq);
+    annotate!(rb_cString, "%", types::StringExact);
     // Not elidable; has a side effect of setting the encoding if ENC_CODERANGE_UNKNOWN.
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", inline_module_eqq, types::BoolExact, no_gc, leaf);
