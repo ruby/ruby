@@ -28,6 +28,22 @@ class TestRubyOptimization < Test::Unit::TestCase
     end;
   end
 
+  # The warning is emitted while redefining a method, which must not happen with the
+  # VM lock held once a second Ractor exists.
+  def test_performance_warning_after_ractor_created
+    assert_in_out_err([], "#{<<-"begin;"}\n#{<<~"end;"}", [], ["-:6: warning: Redefining 'Integer#+' disables interpreter and JIT optimizations"])
+    begin;
+      Warning[:experimental] = false
+      Warning[:performance] = true
+      Ractor.new { 1 }.value
+      class Integer
+        undef +
+        def +(other)
+        end
+      end
+    end;
+  end
+
   def disasm(name)
     RubyVM::InstructionSequence.of(method(name)).disasm
   end
