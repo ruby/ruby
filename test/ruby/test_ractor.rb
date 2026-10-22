@@ -955,6 +955,19 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # [Bug #22460] Ractor.shareable? must not replace the buffer of a frozen shared array.
+  def test_shareable_p_keeps_frozen_shared_array_buffer
+    assert_ractor(<<~'RUBY')
+      o = Object.new
+      a = Array.new(200) { it }
+      a[50] = o
+      b = a.pop(150)
+      o.define_singleton_method(:to_s) { Ractor.shareable?(b); "x" }
+      b.freeze
+      assert_nothing_raised { assert_equal "x 51", "%1$s %2$s" % b }
+    RUBY
+  end
+
   # Ractor::Port.new must not deadlock under GC.stress (regression guard for a stress GC
   # triggered by malloc while the ractor lock is held).
   def test_port_new_under_gc_stress

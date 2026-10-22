@@ -579,8 +579,8 @@ rb_ary_cancel_sharing(VALUE ary)
         else if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && len > ((shared_len = RARRAY_LEN(shared_root))>>1)) {
             rb_len_t shift = RARRAY_CONST_PTR(ary) - RARRAY_CONST_PTR(shared_root);
             FL_UNSET_SHARED(ary);
-            ARY_SET_PTR(ary, RARRAY_CONST_PTR(shared_root));
-            ARY_SET_CAPA(ary, shared_len);
+            ARY_SET_PTR_FORCE(ary, RARRAY_CONST_PTR(shared_root));
+            ARY_SET_CAPA_FORCE(ary, shared_len);
             RARRAY_PTR_USE(ary, ptr, {
                 MEMMOVE(ptr, ptr+shift, VALUE, len);
             });
