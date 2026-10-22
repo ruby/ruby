@@ -623,6 +623,8 @@ struct gc_process_stat_total {
 };
 
 typedef struct rb_objspace {
+    void *ractor; // the Ractor running on it, NULL once a zombie; under the VM lock
+
     struct {
         struct gc_malloc_bytes counters;
 #if RGENGC_ESTIMATE_OLDMALLOC
@@ -9544,6 +9546,19 @@ bool
 rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj)
 {
     return gc_foreign_object_p(objspace_ptr, obj);
+}
+
+void
+rb_gc_impl_objspace_set_ractor(void *objspace_ptr, void *ractor)
+{
+    ((rb_objspace_t *)objspace_ptr)->ractor = ractor;
+}
+
+// the absorb that moves a page to another objspace runs under the VM lock
+void *
+rb_gc_impl_obj_ractor(void *objspace_ptr, VALUE obj)
+{
+    return GET_HEAP_OBJSPACE(obj)->ractor;
 }
 
 

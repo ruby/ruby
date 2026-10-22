@@ -29,6 +29,7 @@
 #include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/gc.h"
+#include "internal/ractor.h"
 #include "internal/re.h"
 #include "internal/string.h"
 #include "internal/struct.h"
@@ -1299,7 +1300,7 @@ cvar_set_ractor_check(VALUE klass, ID id)
 static void
 cvar_read_ractor_check(VALUE klass, ID id, VALUE val)
 {
-    if (UNLIKELY(!rb_class_owned_p(klass)) && !rb_ractor_shareable_p(val)) {
+    if (UNLIKELY(!rb_class_owned_p(klass)) && !rb_cross_ractor_shareable_p(klass, val)) {
         rb_raise(rb_eRactorIsolationError,
                  "can not read non-shareable class variable %"PRIsVALUE" of %"PRIsVALUE", which was created by another Ractor",
                  rb_id2str(id), klass);
@@ -1627,7 +1628,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
     }
 
     if (is_class && val != undef && rb_is_instance_id(id)) {
-        if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
+        if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_cross_ractor_shareable_p(obj, val)) {
             rb_raise(
                 rb_eRactorIsolationError,
                 "can not get unshareable values from instance variables of classes/modules "
@@ -1664,7 +1665,7 @@ rb_ivar_get_at(VALUE obj, attr_index_t index, ID id)
             VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             VALUE val = rb_imemo_fields_ptr(fields_obj)[index];
 
-            if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
+            if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_cross_ractor_shareable_p(obj, val)) {
                 rb_raise(
                     rb_eRactorIsolationError,
                     "can not get unshareable values from instance variables of classes/modules "
@@ -3374,18 +3375,19 @@ rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id)
     }
 }
 
+void
+rb_const_unshareable_error(VALUE klass, ID id)
+{
+    rb_raise(rb_eRactorIsolationError, "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(klass), rb_id2str(id));
+}
+
 static VALUE
 rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
     VALUE found_in;
     VALUE c = rb_const_search(klass, id, exclude, recurse, visibility, &found_in);
     if (!UNDEF_P(c)) {
-        if (UNLIKELY(!rb_class_owned_p(found_in))) {
-            if (!rb_ractor_shareable_p(c)) {
-                rb_raise(rb_eRactorIsolationError, "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(found_in), rb_id2str(id));
-            }
-        }
-        return c;
+        return c; // rb_const_search_from checked a foreign class's value
     }
     return rb_const_missing(klass, ID2SYM(id));
 }
@@ -3421,8 +3423,13 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
                 GET_EC()->private_const_reference = tmp;
                 return Qundef;
             }
-            rb_const_warn_if_deprecated(ce, tmp, id);
             value = ce->value;
+            // before the warning, which may run Ruby: only this stack holds value until the owner has it
+            if (!UNDEF_P(value) && UNLIKELY(!rb_class_owned_p(tmp)) && !rb_cross_ractor_shareable_p(tmp, value)) {
+                rb_const_warn_if_deprecated(ce, tmp, id);
+                rb_const_unshareable_error(tmp, id);
+            }
+            rb_const_warn_if_deprecated(ce, tmp, id);
             if (UNDEF_P(value)) {
                 struct autoload_const *ac;
                 if (am == tmp) break;
@@ -3430,6 +3437,9 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
                 ac = autoloading_const_entry(tmp, id);
                 if (ac) {
                     if (found_in) { *found_in = tmp; }
+                    if (UNLIKELY(!rb_class_owned_p(tmp)) && !rb_cross_ractor_shareable_p(tmp, ac->value)) {
+                        rb_const_unshareable_error(tmp, id);
+                    }
                     return ac->value;
                 }
                 rb_autoload_load(tmp, id);
@@ -4218,15 +4228,21 @@ cvar_front_klass(VALUE klass)
 }
 
 static void
+cvar_overtaken_check(VALUE front, VALUE target, ID id)
+{
+    if (front && target != front && original_module(front) != original_module(target)) {
+        rb_raise(rb_eRuntimeError,
+                 "class variable % "PRIsVALUE" of %"PRIsVALUE" is overtaken by %"PRIsVALUE"",
+                   ID2SYM(id), rb_class_name(original_module(front)),
+                   rb_class_name(original_module(target)));
+    }
+}
+
+// the clean-up after cvar_overtaken_check
+static void
 cvar_overtaken(VALUE front, VALUE target, ID id)
 {
     if (front && target != front) {
-        if (original_module(front) != original_module(target)) {
-            rb_raise(rb_eRuntimeError,
-                     "class variable % "PRIsVALUE" of %"PRIsVALUE" is overtaken by %"PRIsVALUE"",
-                       ID2SYM(id), rb_class_name(original_module(front)),
-                       rb_class_name(original_module(target)));
-        }
         if (BUILTIN_TYPE(front) == T_CLASS && rb_class_owned_p(front)) {
             // only clean-up, and reachable from reads: never write a foreign class
             rb_ivar_delete(front, id, Qundef);
@@ -4268,6 +4284,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     tmp = klass;
     CVAR_LOOKUP(0, {if (!front) front = klass; target = klass;});
     if (target) {
+        cvar_overtaken_check(front, target, id);
         cvar_overtaken(front, target, id);
     }
     else {
@@ -4331,12 +4348,11 @@ rb_cvar_find(VALUE klass, ID id, VALUE *front)
         rb_name_err_raise("uninitialized class variable %1$s in %2$s",
                           klass, ID2SYM(id));
     }
+    cvar_overtaken_check(*front, target, id);
+    // before the clean-up in cvar_overtaken, which may GC: only this stack holds value until the owner has it
+    cvar_read_ractor_check(RB_TYPE_P(target, T_ICLASS) ? RBASIC(target)->klass : target, id, value);
     cvar_overtaken(*front, target, id);
-    if (RB_TYPE_P(target, T_ICLASS)) {
-        target = RBASIC(target)->klass;
-    }
-    cvar_read_ractor_check(target, id, value);
-    return (VALUE)value;
+    return value;
 }
 
 VALUE

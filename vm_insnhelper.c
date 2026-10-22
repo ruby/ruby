@@ -24,6 +24,7 @@
 #include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/proc.h"
+#include "internal/ractor.h"
 #include "internal/random.h"
 #include "internal/variable.h"
 #include "internal/set.h"
@@ -1129,13 +1130,24 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                 rb_const_entry_t entry, *ce = &entry;
               search_continue:
                 if (rb_const_lookup_copy(klass, id, ce)) {
-                    rb_const_warn_if_deprecated(ce, klass, id);
                     val = ce->value;
+                    // before the warning, which may run Ruby: only this stack holds val until the owner has it
+                    if (!is_defined && !UNDEF_P(val) && UNLIKELY(!rb_class_owned_p(klass)) &&
+                        !rb_cross_ractor_shareable_p(klass, val)) {
+                        rb_const_warn_if_deprecated(ce, klass, id);
+                        rb_const_unshareable_error(klass, id);
+                    }
+                    rb_const_warn_if_deprecated(ce, klass, id);
                     if (UNDEF_P(val)) {
                         if (am == klass) break;
                         am = klass;
                         if (is_defined) return 1;
-                        if (rb_autoloading_value(klass, id, &av, NULL)) return av;
+                        if (rb_autoloading_value(klass, id, &av, NULL)) {
+                            if (UNLIKELY(!rb_class_owned_p(klass)) && !rb_cross_ractor_shareable_p(klass, av)) {
+                                rb_const_unshareable_error(klass, id);
+                            }
+                            return av;
+                        }
                         rb_autoload_load(klass, id);
                         goto search_continue;
                     }
@@ -1144,12 +1156,6 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                             return 1;
                         }
                         else {
-                            if (UNLIKELY(!rb_class_owned_p(klass))) {
-                                if (!rb_ractor_shareable_p(val)) {
-                                    rb_raise(rb_eRactorIsolationError,
-                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(klass), rb_id2str(id));
-                                }
-                            }
                             return val;
                         }
                     }
