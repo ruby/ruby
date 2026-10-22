@@ -21,6 +21,7 @@
 #include "internal.h"
 #include "internal/bignum.h"
 #include "internal/complex.h"
+#include "internal/fixnum.h"
 #include "internal/math.h"
 #include "internal/object.h"
 #include "internal/vm.h"
@@ -744,7 +745,7 @@ inline static VALUE
 f_negative_p(VALUE x)
 {
     if (FIXNUM_P(x))
-        return RBOOL(FIX2LONG(x) < 0);
+        return RBOOL(FIXNUM_NEGATIVE_P(x));
     return rb_funcall(x, '<', 1, INT2FIX(0));
 }
 inline static VALUE
