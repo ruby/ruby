@@ -2954,6 +2954,9 @@ pub struct Function {
     union_find: std::cell::RefCell<UnionFind<InsnId>>,
     insn_types: Vec<Type>,
     blocks: Vec<Block>,
+    /// Runtime counters emitted while specializing a send, paired with that send.
+    /// Remove them before retrying a send that stayed dynamic.
+    send_counters: Vec<(InsnId, InsnId)>,
     /// Superblock that targets all entry blocks. The sole root for RPO/dominator computation.
     pub entries_block: BlockId,
     /// Entry block for the interpreter
@@ -3091,13 +3094,13 @@ impl SendDirectFailure {
         context: SendDirectFallbackContext,
     ) {
         for &counter in &self.counters {
-            function.count(block, counter);
+            function.count_send(block, send_insn, counter);
         }
         let context_counter = match context {
             SendDirectFallbackContext::Send => Counter::send_direct_fallback_context_send,
             SendDirectFallbackContext::Super => Counter::send_direct_fallback_context_super,
         };
-        function.count(block, context_counter);
+        function.count_send(block, send_insn, context_counter);
         function.set_dynamic_send_reason(send_insn, self.reason);
     }
 }
@@ -3220,6 +3223,7 @@ impl Function {
             insn_types: vec![],
             union_find: UnionFind::new().into(),
             blocks: vec![Block::default(), Block::default()],
+            send_counters: vec![],
             entries_block: BlockId(0),
             entry_block: BlockId(1),
             jit_entry_blocks: vec![],
@@ -3589,6 +3593,13 @@ impl Function {
     pub fn count(&mut self, block: BlockId, counter: Counter) {
         if get_option!(stats) {
             self.push_insn(block, Insn::IncrCounter(counter));
+        }
+    }
+
+    fn count_send(&mut self, block: BlockId, send: InsnId, counter: Counter) {
+        if get_option!(stats) {
+            let counter = self.push_insn(block, Insn::IncrCounter(counter));
+            self.send_counters.push((send, counter));
         }
     }
 
@@ -4648,22 +4659,22 @@ impl Function {
         result
     }
 
-    fn count_complex_call_features(&mut self, block: BlockId, ci_flags: c_uint, state: InsnId) {
+    fn count_complex_call_features(&mut self, block: BlockId, send: InsnId, ci_flags: c_uint, state: InsnId) {
         use Counter::*;
         if 0 != ci_flags & VM_CALL_ARGS_SPLAT {
-            self.count(block, complex_arg_pass_caller_splat);
-            self.count_caller_splat_profile(block, state);
+            self.count_send(block, send, complex_arg_pass_caller_splat);
+            self.count_caller_splat_profile(block, send, state);
         }
-        if 0 != ci_flags & VM_CALL_ARGS_BLOCKARG  { self.count(block, complex_arg_pass_caller_blockarg);   }
-        if 0 != ci_flags & VM_CALL_KWARG          { self.count(block, complex_arg_pass_caller_kwarg);      }
-        if 0 != ci_flags & VM_CALL_KW_SPLAT       { self.count(block, complex_arg_pass_caller_kw_splat);   }
-        if 0 != ci_flags & VM_CALL_TAILCALL       { self.count(block, complex_arg_pass_caller_tailcall);   }
-        if 0 != ci_flags & VM_CALL_SUPER          { self.count(block, complex_arg_pass_caller_super);      }
-        if 0 != ci_flags & VM_CALL_ZSUPER         { self.count(block, complex_arg_pass_caller_zsuper);     }
-        if 0 != ci_flags & VM_CALL_FORWARDING     { self.count(block, complex_arg_pass_caller_forwarding); }
+        if 0 != ci_flags & VM_CALL_ARGS_BLOCKARG  { self.count_send(block, send, complex_arg_pass_caller_blockarg);   }
+        if 0 != ci_flags & VM_CALL_KWARG          { self.count_send(block, send, complex_arg_pass_caller_kwarg);      }
+        if 0 != ci_flags & VM_CALL_KW_SPLAT       { self.count_send(block, send, complex_arg_pass_caller_kw_splat);   }
+        if 0 != ci_flags & VM_CALL_TAILCALL       { self.count_send(block, send, complex_arg_pass_caller_tailcall);   }
+        if 0 != ci_flags & VM_CALL_SUPER          { self.count_send(block, send, complex_arg_pass_caller_super);      }
+        if 0 != ci_flags & VM_CALL_ZSUPER         { self.count_send(block, send, complex_arg_pass_caller_zsuper);     }
+        if 0 != ci_flags & VM_CALL_FORWARDING     { self.count_send(block, send, complex_arg_pass_caller_forwarding); }
     }
 
-    fn count_caller_splat_profile(&mut self, block: BlockId, state: InsnId) {
+    fn count_caller_splat_profile(&mut self, block: BlockId, send: InsnId, state: InsnId) {
         let (iseq, insn_idx) = {
             let frame_state = self.frame_state_ref(state);
             (frame_state.iseq, frame_state.insn_idx)
@@ -4678,7 +4689,7 @@ impl Function {
             Some(summary) if summary.is_skewed_megamorphic() => Counter::caller_splat_profile_skewed_megamorphic,
             Some(_) => unreachable!(),
         };
-        self.count(block, counter);
+        self.count_send(block, send, counter);
     }
 
     pub fn try_inline_object_alloc(&mut self, block: BlockId, recv: InsnId, state: InsnId) -> Option<InsnId> {
@@ -4842,6 +4853,18 @@ impl Function {
     /// opens the door for inlining.
     /// Also try and inline constant caches, specialize object allocations, and more.
     fn type_specialize(&mut self) {
+        // Retry dynamic sends without accumulating counters from previous attempts.
+        // Keep counters for successful replacements, even if an inlined call's
+        // return value resolves to another dynamic send.
+        let counters: HashSet<_> = std::mem::take(&mut self.send_counters).into_iter()
+            .filter(|&(send, _)| self.find_id(send) == send && matches!(self.insns[send], Insn::Send { .. } | Insn::InvokeSuper { .. }))
+            .map(|(_, counter)| counter)
+            .collect();
+        if !counters.is_empty() {
+            for block in &mut self.blocks {
+                block.insns.retain(|insn| !counters.contains(insn));
+            }
+        }
         for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block].insns);
             assert!(self.blocks[block].insns.is_empty());
@@ -4920,7 +4943,7 @@ impl Function {
                             // Reject complex argument passing before emitting any block-arg guard;
                             // a guard in front of a send that stays dynamic gates nothing.
                             if unspecializable_call_type(flags & !VM_CALL_ARGS_BLOCKARG) {
-                                self.count_complex_call_features(block, flags, state);
+                                self.count_complex_call_features(block, insn_id, flags, state);
                                 self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                                 self.push_insn_id(block, insn_id); continue;
                             }
@@ -4989,7 +5012,7 @@ impl Function {
                             flags_for_check &= !VM_CALL_ARGS_SPLAT;
                         }
                         if def_type != VM_METHOD_TYPE_OPTIMIZED && def_type != VM_METHOD_TYPE_CFUNC && unspecializable_call_type(flags_for_check) {
-                            self.count_complex_call_features(block, flags, state);
+                            self.count_complex_call_features(block, insn_id, flags, state);
                             self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                             self.push_insn_id(block, insn_id); continue;
                         }
@@ -5003,11 +5026,11 @@ impl Function {
                             let caller_splat = if let Some(arg_idx) = caller_args.splat_arg_idx {
                                 // Count the profile shape for every caller-splat execution;
                                 // complex_arg_pass_caller_splat separately tracks fallbacks.
-                                self.count_caller_splat_profile(block, state);
+                                self.count_caller_splat_profile(block, insn_id, state);
                                 // A Send without a caller-splat expansion selected by
                                 // `add_iseq_to_hir` stays dynamic.
                                 let Some(length) = caller_splat_length else {
-                                    self.count(block, Counter::complex_arg_pass_caller_splat);
+                                    self.count_send(block, insn_id, Counter::complex_arg_pass_caller_splat);
                                     self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                                     self.push_insn_id(block, insn_id); continue;
                                 };
@@ -5140,7 +5163,7 @@ impl Function {
                             match (opt_type, args.as_slice()) {
                                 (OptimizedMethodType::Call, _) => {
                                     if flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG) != 0 {
-                                        self.count_complex_call_features(block, flags, state);
+                                        self.count_complex_call_features(block, insn_id, flags, state);
                                         self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                                         self.push_insn_id(block, insn_id); continue;
                                     }
@@ -5159,7 +5182,7 @@ impl Function {
                                 }
                                 (OptimizedMethodType::StructAref, &[]) | (OptimizedMethodType::StructAset, &[_]) => {
                                     if unspecializable_call_type(flags) {
-                                        self.count_complex_call_features(block, flags, state);
+                                        self.count_complex_call_features(block, insn_id, flags, state);
                                         self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                                         self.push_insn_id(block, insn_id); continue;
                                     }
@@ -5248,7 +5271,7 @@ impl Function {
                                 if unspecializable_c_call_type(ci_flags) {
                                     // Only count features NOT already counted in type_specialize.
                                     if !unspecializable_call_type(ci_flags) {
-                                        fun.count_complex_call_features(block, ci_flags, state);
+                                        fun.count_complex_call_features(block, send_insn_id, ci_flags, state);
                                     }
                                     fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
                                     return Err(());
@@ -5270,7 +5293,7 @@ impl Function {
                                 // Look up annotations
                                 let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
                                 if props.is_none() && get_option!(stats) {
-                                    fun.count_not_annotated_cfunc(block, cme);
+                                    fun.count_not_annotated_cfunc(block, send_insn_id, cme);
                                 }
                                 let props = props.unwrap_or_default();
                                 let return_type = props.return_type;
@@ -5631,7 +5654,7 @@ impl Function {
 
                             let props = ZJITState::get_method_annotations().get_cfunc_properties(super_cme);
                             if props.is_none() && get_option!(stats) {
-                                self.count_not_annotated_cfunc(block, super_cme);
+                                self.count_not_annotated_cfunc(block, insn_id, super_cme);
                             }
                             let props = props.unwrap_or_default();
 
@@ -6468,7 +6491,7 @@ impl Function {
         self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
     }
 
-    fn count_not_annotated_cfunc(&mut self, block: BlockId, cme: *const rb_callable_method_entry_t) {
+    fn count_not_annotated_cfunc(&mut self, block: BlockId, send: InsnId, cme: *const rb_callable_method_entry_t) {
         let owner = unsafe { (*cme).owner };
         let called_id = unsafe { (*cme).called_id };
         let qualified_method_name = qualified_method_name(owner, called_id);
@@ -6476,7 +6499,8 @@ impl Function {
         let counter_ptr = not_annotated_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
         let counter_ptr = &mut **counter_ptr as *mut u64;
 
-        self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
+        let counter = self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
+        self.send_counters.push((send, counter));
     }
 
     /// Convert `Send` instructions with no profile data into `SideExit` with recompile info.
