@@ -9651,7 +9651,9 @@ rb_gc_impl_during_global_gc_p(void *objspace_ptr)
 bool
 rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj)
 {
-    return gc_foreign_object_p(objspace_ptr, obj);
+    if (RB_LIKELY(!rb_gc_ever_multi_ractor_p())) return false;
+    // may run without the VM lock (rb_class_field_shareable_p); paired with the store in an absorb
+    return RUBY_ATOMIC_PTR_LOAD(GET_HEAP_PAGE(obj)->objspace) != objspace_ptr;
 }
 
 void
@@ -10278,7 +10280,7 @@ objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src)
         GC_ASSERT(sheap->pooled_pages == NULL);
 
         ccan_list_for_each(&sheap->pages, page, page_node) {
-            page->objspace = dst;
+            RUBY_ATOMIC_PTR_SET(page->objspace, dst); // read without the VM lock: rb_gc_impl_obj_foreign_p
             page->heap = dheap;
         }
         ccan_list_append_list(&dheap->pages, &sheap->pages);

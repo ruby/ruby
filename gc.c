@@ -3722,6 +3722,9 @@ gc_mark_roots_ctx(const struct rb_gc_mark_ctx *ctx, void *objspace, const char *
     MARK_CHECKPOINT("trap_list");
     rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
 
+    MARK_CHECKPOINT("shareable_p");
+    rb_ractor_mark_shareable_p_inflight(ctx);
+
     /* VM-global roots belong to the main Ractor's objspace, since the boot objects
      * live there.  A non-main Ractor's local GC skips them; a global GC walks all. */
     if (global_gc || objspace == vm->ractor.main_ractor->objspace) {
@@ -4321,6 +4324,36 @@ rb_gc_registered_addr_owned_by_registrant_p(VALUE *addr, void *objspace)
         }
     }
     return false;
+}
+
+/* obj is on a page of a zombie objspace: its Ractor terminated and nobody absorbed it
+ * yet, so no thread owns the page. */
+bool
+rb_gc_obj_in_zombie_objspace_p(VALUE obj)
+{
+    ASSERT_vm_locking();
+    rb_vm_t *vm = GET_VM();
+    for (size_t i = 0; i < vm->gc.zombie_objspaces_count; i++) {
+        if (!rb_gc_impl_obj_foreign_p(vm->gc.zombie_objspaces[i].objspace, obj)) return true;
+    }
+    return false;
+}
+
+bool
+rb_gc_obj_live_in_zombie_objspace_p(VALUE obj)
+{
+    ASSERT_vm_locking();
+    rb_vm_t *vm = GET_VM();
+    for (size_t i = 0; i < vm->gc.zombie_objspaces_count; i++) {
+        if (rb_gc_impl_live_object_p(vm->gc.zombie_objspaces[i].objspace, (const void *)obj)) return true;
+    }
+    return false;
+}
+
+bool
+rb_gc_obj_in_objspace_p(void *objspace, VALUE obj)
+{
+    return !rb_gc_impl_obj_foreign_p(objspace, obj);
 }
 
 static bool
@@ -5965,7 +5998,6 @@ reachable_objects_from_body(VALUE obj, void (func)(VALUE, void *), void *data, b
         *mfdp = &mfd;
 
         if (can_run_ruby) {
-            ASSERT_vm_unlocking();
             rb_execution_context_t *volatile ec = GET_EC();
             enum ruby_tag_type state;
 
@@ -6015,6 +6047,15 @@ rb_objspace_reachable_objects_from_local(VALUE obj, void (func)(VALUE, void *), 
                rb_obj_info(obj));
     }
 
+    reachable_objects_from_body(obj, func, data, true);
+}
+
+/* For a caller already holding the VM lock (a zombie's obj): func may raise, and
+ * the walk does not take the lock again, so the raise leaves no lock level behind. */
+void
+rb_objspace_reachable_objects_from_locked(VALUE obj, void (func)(VALUE, void *), void *data)
+{
+    ASSERT_vm_locking();
     reachable_objects_from_body(obj, func, data, true);
 }
 

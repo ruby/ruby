@@ -1669,6 +1669,54 @@ ractor_send0(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj
     return rp->r->pub.self;
 }
 
+/* Reply ports: a Ractor waiting for an internal request's answer makes a Ractor::Port and
+ * hands (Ractor, port id) to the replier, which sends a basket the waiter built beforehand,
+ * so the reply cannot fail and never touches the object.  The wait closes the port when it
+ * ends, so a late reply is dropped at the send. */
+
+// built by the waiter, as building it may raise
+static struct ractor_basket *
+ractor_reply_basket_new(void)
+{
+    struct ractor_basket *b = ractor_basket_alloc();
+    b->type = basket_type_ref;
+    b->p.v = Qtrue;
+    return b;
+}
+
+// does not raise: dropped if the waiter has gone (closed its port, or its Ractor terminated)
+static void
+ractor_reply_send(rb_execution_context_t *ec, rb_ractor_t *r, st_data_t id, struct ractor_basket *b)
+{
+    const struct ractor_port rp = { r, id };
+    ractor_send_basket(ec, &rp, b, false);
+}
+
+/* Waits for the one message the port can get.  Returns false if this Ractor's ports were
+ * freed meanwhile (it is terminating): the reply is dropped. */
+static bool
+ractor_reply_port_receive(rb_execution_context_t *ec, VALUE port)
+{
+    rb_ractor_t *const cr = rb_ec_ractor_ptr(ec);
+    const struct ractor_port *const rp = RACTOR_PORT_PTR(port);
+    while (ractor_get_queue(cr, ractor_port_id(rp), false)) {
+        if (!UNDEF_P(ractor_try_receive(ec, cr, rp))) return true;
+        ractor_wait_receive(ec, cr, NULL);
+    }
+    return false;
+}
+
+static void
+ractor_reply_port_close(rb_execution_context_t *ec, VALUE port)
+{
+    rb_ractor_t *const cr = rb_ec_ractor_ptr(ec);
+    if (!cr->sync.ports) return; // terminating: freed already
+    const struct ractor_port *const rp = RACTOR_PORT_PTR(port);
+    ractor_close_port(ec, cr, rp);
+    // close keeps a port while it holds messages: drop a reply that came meanwhile
+    while (ractor_get_queue(cr, ractor_port_id(rp), false) && !UNDEF_P(ractor_try_receive(ec, cr, rp)));
+}
+
 static VALUE
 ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move)
 {
