@@ -3274,6 +3274,12 @@ impl Function {
         id
     }
 
+    pub fn write_barrier(&mut self, block: BlockId, recv: InsnId, val: InsnId) {
+        if !self.is_a(val, types::Immediate) {
+            self.push_insn(block, Insn::WriteBarrier { recv, val });
+        }
+    }
+
     pub fn prepend_insn(&mut self, block: BlockId, insn: Insn) -> InsnId {
         assert!(!matches!(insn, Insn::Param), "Cannot prepend a Param instruction");
         let id = self.new_insn(insn);
@@ -5282,7 +5288,7 @@ impl Function {
 
                                     let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
                                         self.push_insn(block, Insn::StoreField { recv: target, id: mid.into(), offset, val, num_bits: types::BasicObject.num_bits() });
-                                        self.push_insn(block, Insn::WriteBarrier { recv, val });
+                                        self.write_barrier(block, recv, val);
                                         val
                                     } else { // StructAref
                                         self.load_field(block, target, mid.into(), offset, types::BasicObject)
@@ -6407,7 +6413,7 @@ impl Function {
         };
 
         self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val, num_bits: types::BasicObject.num_bits() });
-        self.push_insn(block, Insn::WriteBarrier { recv: ivar_storage, val });
+        self.write_barrier(block, ivar_storage, val);
         if spec.next_shape != spec.profiled_type.shape() {
             // Write the new shape ID
             let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(spec.next_shape) });
