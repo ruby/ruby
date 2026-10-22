@@ -9183,6 +9183,9 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
     // Save PC and SP to prepare for dynamic dispatch
     jit_prepare_non_leaf_call(jit, asm);
 
+    // Count dispatches even when the call raises or leaves nonlocally.
+    gen_counter_incr(jit, asm, Counter::num_send_dynamic);
+
     // Dispatch a method
     let ret = vm_sendish(asm);
 
@@ -9195,8 +9198,6 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
 
     // Fix the interpreter SP deviated by vm_sendish
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), SP);
-
-    gen_counter_incr(jit, asm, Counter::num_send_dynamic);
 
     jit_perf_symbol_pop!(jit, asm, PerfMap::Codegen);
 
