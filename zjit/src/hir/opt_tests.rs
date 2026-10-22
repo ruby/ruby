@@ -14000,6 +14000,33 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_string_format_returns_string() {
+        eval(r#"
+            def test = "%d" % 1
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v11:StringExact = StringCopy v10
+          v13:Fixnum[1] = Const Value(1)
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, %@0x1010, cme:0x1018)
+          v25:StringExact = CCallWithFrame v11, :String#%@0x1040, v13
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
     fn test_string_to_s_returns_string() {
         eval(r#"
             def test = "".to_s
