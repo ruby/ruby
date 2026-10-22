@@ -85,6 +85,14 @@ impl<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> Distributi
         Self { kind: DistributionKind::Empty, buckets: [Default::default(); N] }
     }
 
+    /// Construct a monomorphic summary from the single entry `item`.
+    pub fn monomorphic(item: T) -> Self {
+        assert!(N > 0, "need at least one bucket");
+        let mut buckets = [Default::default(); N];
+        buckets[0] = item;
+        Self { kind: DistributionKind::Monomorphic, buckets }
+    }
+
     pub fn new(dist: &Distribution<T, N>) -> Self {
         #[cfg(debug_assertions)]
         {
