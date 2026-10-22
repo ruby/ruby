@@ -6734,6 +6734,15 @@ impl Function {
                         }
                         insn_id
                     }
+                    &Insn::ArrayAset { .. } => {
+                        // TODO: Model this better using separate effects. Aset doesn't change the
+                        // array's flags, but the current effects system lumps flags in with other
+                        // memory writes, so we manually exclude the flags from invalidation for
+                        // now.
+                        let offset = RUBY_OFFSET_RBASIC_FLAGS;
+                        compile_time_heap.retain(|(_, off), _| *off == offset);
+                        insn_id
+                    }
                     &Insn::WriteBarrier { .. } => {
                         // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
                         // We don't use LoadField for mark bits so we can ignore them for now.
