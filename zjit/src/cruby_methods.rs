@@ -475,7 +475,7 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state });
 
             let _ = fun.push_insn(block, hir::Insn::ArrayAset { array: recv, index, val });
-            fun.push_insn(block, hir::Insn::WriteBarrier { recv, val });
+            fun.write_barrier(block, recv, val);
             return Some(val);
         }
     }
@@ -1006,7 +1006,7 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
             match args.get(index as usize) {
                 Some(&val) => {
                     fun.push_insn(block, hir::Insn::StoreField { recv, id, offset, val, num_bits });
-                    fun.push_insn(block, hir::Insn::WriteBarrier { recv, val });
+                    fun.write_barrier(block, recv, val);
                 }
                 // nil is an immediate, so the tail needs no write barrier.
                 None => {
