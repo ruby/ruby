@@ -116,6 +116,127 @@ fn test_nil() {
 }
 
 #[test]
+fn test_protected_send_checks_current_caller_self() {
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        module Caller
+          def call_secret(other)
+            other.secret
+          rescue NoMethodError
+            :denied
+          end
+        end
+        class Root
+          include Caller
+        end
+        class Owner < Root
+          protected def secret = 47
+        end
+        class Child < Owner; end
+        class Sibling < Root; end
+        module Secret
+          protected def secret = 59
+        end
+        class ModuleOwner
+          include Caller, Secret
+        end
+        class OtherModuleOwner
+          include Caller, Secret
+        end
+        owner, child, sibling = Owner.new, Child.new, Sibling.new
+        module_owner, other_module_owner = ModuleOwner.new, OtherModuleOwner.new
+        singleton = Object.new
+        singleton.extend(Caller, Secret)
+        30.times do
+          owner.call_secret(owner)
+          child.call_secret(owner)
+          module_owner.call_secret(module_owner)
+          other_module_owner.call_secret(module_owner)
+          singleton.call_secret(singleton)
+        end
+        [owner.call_secret(owner), child.call_secret(owner), sibling.call_secret(owner),
+         module_owner.call_secret(module_owner), other_module_owner.call_secret(module_owner),
+         sibling.call_secret(module_owner), singleton.call_secret(singleton),
+         singleton.call_secret(owner), owner.call_secret(owner)]
+    "#), @"[47, 47, :denied, 59, 59, :denied, 59, :denied, 47]");
+}
+
+#[test]
+fn test_protected_send_checks_instance_exec_self() {
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        class Owner < BasicObject
+          protected def secret = 47
+          def permission_block
+            ->(other) do
+              other.secret
+            rescue ::NoMethodError
+              :denied
+            end
+          end
+        end
+        class Child < Owner; end
+        owner = Owner.new
+        call = owner.permission_block
+        30.times { owner.instance_exec(owner, &call) }
+        [owner.instance_exec(owner, &call), Child.new.instance_exec(owner, &call),
+         BasicObject.new.instance_exec(owner, &call), owner.instance_exec(owner, &call)]
+    "#), @"[47, 47, :denied, 47]");
+}
+
+#[test]
+fn test_protected_send_visibility_changes() {
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        class Owner
+          protected def secret = 47
+          def call_secret(other)
+            other.secret
+          rescue NoMethodError
+            :denied
+          end
+        end
+        owner = Owner.new
+        30.times { owner.call_secret(owner) }
+        values = [owner.call_secret(owner)]
+        Owner.send(:public, :secret)
+        values << owner.call_secret(owner)
+        Owner.send(:private, :secret)
+        values << owner.call_secret(owner)
+        Owner.send(:protected, :secret)
+        30.times { owner.call_secret(owner) }
+        values << owner.call_secret(owner)
+        values
+    "#), @"[47, 47, :denied, 47]");
+}
+
+#[test]
+fn test_protected_send_refinement() {
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        class Owner
+          protected def secret = 47
+        end
+        module Refined
+          refine Owner do
+            protected def secret = 71
+          end
+        end
+        class Owner
+          using Refined
+          def call_secret(other) = other.secret
+        end
+        module Outside
+          using Refined
+          def self.call_secret(other)
+            other.secret
+          rescue NoMethodError
+            :denied
+          end
+        end
+        owner = Owner.new
+        30.times { owner.call_secret(owner) }
+        [owner.call_secret(owner), Outside.call_secret(owner)]
+    "#), @"[71, :denied]");
+}
+
+#[test]
 fn test_function_stub_profiles_before_compiling() {
     rb_zjit_prepare_options();
     set_inline_threshold(0);

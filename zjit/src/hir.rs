@@ -647,6 +647,7 @@ pub enum SideExitReason {
     GuardLess,
     GuardGreaterEq,
     GuardSuperMethodEntry,
+    ProtectedCheckFailed,
     PatchPoint(Invariant),
     CalleeSideExit,
     Interrupt,
@@ -1108,8 +1109,8 @@ pub enum Insn {
     /// Test the bit at index of val, a Fixnum.
     /// Return Qtrue if the bit is set, else Qfalse.
     FixnumBitCheck { val: InsnId, index: u8 },
-    /// Return Qtrue if `val` is an instance of `class`, else Qfalse.
-    /// Equivalent to `class_search_ancestor(CLASS_OF(val), class)`.
+    /// Return Qtrue if `val` is kind_of? `class` (a Class or Module), else Qfalse.
+    /// Equivalent to `rb_obj_is_kind_of(val, class)`.
     IsA { val: InsnId, class: InsnId },
     /// `case`/`when`/`rescue` match check for `pattern` against `target`.
     CheckMatch { target: InsnId, pattern: InsnId, flag: u32, state: InsnId },
@@ -4896,6 +4897,25 @@ impl Function {
                             (METHOD_VISI_PUBLIC, _) => {}
                             (METHOD_VISI_PRIVATE, true) => {}
                             (METHOD_VISI_PROTECTED, true) => {}
+                            (METHOD_VISI_PROTECTED, false) if self.frame_depth(state) == 0 && unsafe { get_cme_def_type(cme) } != VM_METHOD_TYPE_REFINED => {
+                                // The VM checks the actual caller self, not the receiver or
+                                // the ISEQ owner. Inlined frames need an SSA self operand;
+                                // keep those calls dynamic rather than load the outer self.
+                                let caller_self = self.load_self(block);
+                                let defined_class = unsafe { (*cme).defined_class };
+                                // Normalize an ICLASS to the Ruby class/module it represents;
+                                // IsA constants cannot be internal ICLASS objects.
+                                let defined_class = if defined_class.builtin_type() == RUBY_T_ICLASS { defined_class.class_of() } else { defined_class };
+                                let class = self.push_insn(block, Insn::Const { val: Const::Value(defined_class) });
+                                let allowed = self.push_insn(block, Insn::IsA { val: caller_self, class });
+                                self.push_insn(block, Insn::GuardBitEquals {
+                                    val: allowed,
+                                    expected: Const::Value(Qtrue),
+                                    reason: Box::new(SideExitReason::ProtectedCheckFailed),
+                                    state,
+                                    recompile: None,
+                                });
+                            }
                             _ => {
                                 self.set_dynamic_send_reason(insn_id, SendNotOptimizedNeedPermission);
                                 self.push_insn_id(block, insn_id); continue;
@@ -8312,7 +8332,7 @@ impl Function {
             }
             Insn::IsA { val, class } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)?;
-                self.assert_subtype(insn_id, class, types::Class)
+                self.assert_subtype(insn_id, class, types::Class.union(types::Module))
             }
             Insn::RefineType { .. } => Ok(()),
             Insn::CondBranchHasType(ref insn) => self.assert_subtype(insn_id, insn.val, types::BasicObject),

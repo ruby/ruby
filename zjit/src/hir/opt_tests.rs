@@ -21752,7 +21752,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn dont_optimize_call_to_protected_method_iseq() {
+    fn guard_call_to_protected_method_iseq() {
         eval(r#"
             class C
               protected def secret = 42
@@ -21775,9 +21775,15 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Obj)
           v12:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v14:BasicObject = Send v12, :secret # SendFallbackReason: Send: method private or protected and no FCALL
+          v21:BasicObject = LoadSelf
+          v22:ClassSubclass[C@0x1010] = Const Value(VALUE(0x1010))
+          v23:BoolExact = IsA v21, v22
+          v24:TrueClass = GuardBitEquals v23, Value(true)
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, secret@0x1011, cme:0x1018)
+          v28:Fixnum[42] = Const Value(42)
           CheckInterrupts
-          Return v14
+          Return v28
         ");
     }
 
