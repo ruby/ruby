@@ -287,8 +287,8 @@ class TestGc < Test::Unit::TestCase
       "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "1000",
     }
     assert_separately([env, "-W0"], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
-      garbage = Array.new(4_000) { "x" * 4096 }
-      garbage = nil
+      # Allocate in a dead thread so no stale stack slot keeps the garbage alive past GC.start.
+      Thread.new { Array.new(4_000) { "x" * 4096 }; nil }.join
       GC.start
       GC::Profiler.enable
       live = Array.new(1_000) { "x" * 4096 }
