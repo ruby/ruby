@@ -2,7 +2,7 @@ use std::alloc::{handle_alloc_error, Layout};
 use std::ptr;
 
 use crate::cruby::{IseqPtr, VALUE, Qnil, rb_gc_mark_movable, rb_gc_location};
-use crate::cruby::{ZJIT_STACK_MAP_OP_BITS, ZJIT_STACK_MAP_VARINT_BITS, ZJIT_STACK_MAP_OP_END, ZJIT_STACK_MAP_OP_VREG, ZJIT_STACK_MAP_OP_SKIP, ZJIT_STACK_MAP_OP_BASE_PTR, ZJIT_STACK_MAP_OP_IMM, ZJIT_STACK_MAP_OP_NIL};
+use crate::cruby::{ZJIT_STACK_MAP_OP_BITS, ZJIT_STACK_MAP_VARINT_BITS, ZJIT_STACK_MAP_OP_END, ZJIT_STACK_MAP_OP_VREG, ZJIT_STACK_MAP_OP_SKIP, ZJIT_STACK_MAP_OP_BASE_PTR, ZJIT_STACK_MAP_OP_IMM, ZJIT_STACK_MAP_OP_NIL, ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA, ZJIT_STACK_MAP_OP_PREV_FRAME};
 use crate::cruby::zjit_jit_frame;
 use crate::codegen::iseq_may_write_block_code;
 use crate::options::get_option;
@@ -181,6 +181,20 @@ impl StackMapWriter {
         self.write_op(ZJIT_STACK_MAP_OP_BASE_PTR);
         self.write_varint(slot_index.into());
         self.write_varint(stack_size.into());
+    }
+
+    /// ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA. Moves the cursor past the frame's env
+    /// data (me/cref, specval, flags) and starts the frame's locals area. Writes in
+    /// the locals area are dropped when the frame's env has escaped.
+    pub fn skip_vm_env_data(&mut self) {
+        self.write_op(ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA);
+    }
+
+    /// ZJIT_STACK_MAP_OP_PREV_FRAME. Moves the cursor past an inlined callee's
+    /// receiver slot and continues decoding in the caller's control frame, leaving
+    /// the locals area.
+    pub fn prev_frame(&mut self) {
+        self.write_op(ZJIT_STACK_MAP_OP_PREV_FRAME);
     }
 
     /// Terminate the stream with ZJIT_STACK_MAP_OP_END and return its bytes.

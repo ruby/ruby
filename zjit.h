@@ -47,6 +47,8 @@ ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P(const zjit_jit_frame_t *jit_frame)
 #define ZJIT_STACK_MAP_OP_BASE_PTR  3
 #define ZJIT_STACK_MAP_OP_IMM       4
 #define ZJIT_STACK_MAP_OP_NIL       5
+#define ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA 6
+#define ZJIT_STACK_MAP_OP_PREV_FRAME 7
 
 extern void *rb_zjit_entry;
 extern bool rb_zjit_compiling_p;

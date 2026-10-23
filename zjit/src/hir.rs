@@ -5969,6 +5969,8 @@ impl Function {
                 let send = self.resolve(send_insn_id);
                 let Insn::SendDirect(data) = send.insn(self)
                 else {
+                    // TODO(alan): If we start to inline `invokeblock` here, we need to change
+                    // build_stack_map() to account for the lack of receiver on the operand stack.
                     unreachable!("position {send_insn_id} is not a SendDirect");
                 };
                 let SendDirectData { recv, cme, iseq, kw_bits, jit_entry_idx, block: call_block, state, .. } = **data;

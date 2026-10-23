@@ -1797,6 +1797,8 @@ impl StackMap {
 
 /// Entry in a JITFrame stack map. These are opcodes for zjit_materialize_frames(),
 /// which walks them in order moving a write cursor down the VM stack.
+/// See Markdown file under `doc/` for diagram of stack layout.
+// TODO(alan): In documentation pass, centralize the mapping for these with corresponding C tag macros.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum StackMapEntry {
     /// Immediate Ruby VALUE or VReg to materialize.
@@ -1808,6 +1810,13 @@ pub enum StackMapEntry {
     /// the first entry by gen_prepare_non_leaf_call(); see
     /// [crate::jit_frame::StackMapWriter::base_ptr].
     BasePtr { slot_index: u32, stack_size: u32 },
+    /// Move the write cursor past the frame's env data (me/cref, specval, flags),
+    /// which already lives in VM stack memory, and start the frame's locals area.
+    SkipVmEnvData,
+    /// Boundary between two control frames that one stack map describes, emitted
+    /// by `build_stack_map()` between an inlined callee and its caller. Resets
+    /// the cursor to be not in the locals area.
+    PrevFrame,
 }
 
 /// Initial capacity for asm.insns vector
@@ -2689,6 +2698,8 @@ impl Assembler
                                 StackMapEntry::Opnd(Opnd::UImm(value)) => writer.imm(VALUE(value as usize)),
                                 StackMapEntry::Skip(size) => writer.skip(size),
                                 StackMapEntry::BasePtr { slot_index, stack_size } => writer.base_ptr(slot_index, stack_size),
+                                StackMapEntry::SkipVmEnvData => writer.skip_vm_env_data(),
+                                StackMapEntry::PrevFrame => writer.prev_frame(),
                                 StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) => {
                                     let vreg_stack_index = match intervals[vreg].assigned.get().expect("StackMap VReg should have an allocation") {
                                         Allocation::Reg(_) => {
@@ -3015,6 +3026,11 @@ impl Assembler
                         }
                     }
                     StackMapEntry::Skip(size) => writer.skip(size),
+                    StackMapEntry::BasePtr { .. } => {
+                        unreachable!("no BasePtr stackmap code in side-exit for now");
+                    }
+                    StackMapEntry::SkipVmEnvData => writer.skip_vm_env_data(),
+                    StackMapEntry::PrevFrame => writer.prev_frame(),
                     StackMapEntry::Opnd(Opnd::Mem(Mem { base: MemBase::Stack { stack_idx, .. }, disp, .. })) => {
                         assert_eq!(disp, 0, "StackMap stack slot should not have a displacement");
                         writer.vreg(asm.stack_state.stack_map_index_for_spill(stack_idx.to_usize(), *frame_depth));
@@ -3022,7 +3038,7 @@ impl Assembler
                     StackMapEntry::Opnd(opnd @ Opnd::Reg(_)) => {
                         writer.vreg(capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth));
                     }
-                    _ => unreachable!("unexpected entry in SideExit StackMap: {stack_entry:?}"),
+                    StackMapEntry::Opnd(_) => unreachable!("unexpected entry in SideExit StackMap: {stack_entry:?}"),
                 }
             }
             unsafe { &mut *jit_frame.cast_mut() }.set_stack_map(writer);
