@@ -2478,7 +2478,7 @@ static VALUE
 lazy_take_size(VALUE entry, VALUE receiver)
 {
     rb_len_t len = NUM2LEN(RARRAY_AREF(rb_ivar_get(entry, id_arguments), 0));
-    if (NIL_P(receiver) || (FIXNUM_P(receiver) && FIX2LONG(receiver) < len))
+    if (NIL_P(receiver) || (FIXNUM_P(receiver) && FIX2LEN(receiver) < len))
         return receiver;
     return LEN2NUM(len);
 }
@@ -2551,7 +2551,7 @@ lazy_drop_size(VALUE proc_entry, VALUE receiver)
     if (NIL_P(receiver))
         return receiver;
     if (FIXNUM_P(receiver)) {
-        len = FIX2LONG(receiver) - len;
+        len = FIX2LEN(receiver) - len;
         return LEN2NUM(len < 0 ? 0 : len);
     }
     return rb_funcall(receiver, '-', 1, LEN2NUM(len));
@@ -4075,15 +4075,15 @@ arith_seq_take(VALUE self, VALUE num)
     x = arith_seq_exclude_end_p(self);
 
     if (FIXNUM_P(b) && NIL_P(e) && FIXNUM_P(s)) {
-        long i = FIX2LONG(b), unit = FIX2LONG(s);
+        rb_len_t i = FIX2LEN(b), unit = FIX2LEN(s);
         ary = rb_ary_new_capa(n);
         while (n > 0 && FIXABLE(i)) {
-            rb_ary_push(ary, LONG2FIX(i));
+            rb_ary_push(ary, LEN2FIX(i));
             i += unit;  // FIXABLE + FIXABLE never overflow;
             --n;
         }
         if (n > 0) {
-            b = LONG2NUM(i);
+            b = LEN2NUM(i);
             while (n > 0) {
                 rb_ary_push(ary, b);
                 b = rb_big_plus(b, s);
@@ -4093,20 +4093,25 @@ arith_seq_take(VALUE self, VALUE num)
         return ary;
     }
     else if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(s)) {
-        long i = FIX2LONG(b);
-        long end = FIX2LONG(e);
-        long unit = FIX2LONG(s);
+        rb_len_t i = FIX2LEN(b);
+        rb_len_t end = FIX2LEN(e);
+        rb_len_t unit = FIX2LEN(s);
         rb_len_t len;
 
         if (unit >= 0) {
             if (!x) end += 1;
 
-            len = end - i;
-            if (len < 0) len = 0;
+            if (end <= i) {
+                len = 0;
+            }
+            else {
+                rb_ulen_t dist = (rb_ulen_t)end - (rb_ulen_t)i;
+                len = dist > (rb_ulen_t)n ? n : (rb_len_t)dist;
+            }
             ary = rb_ary_new_capa((n < len) ? n : len);
             while (n > 0 && i < end) {
-                rb_ary_push(ary, LONG2FIX(i));
-                if (i > LONG_MAX - unit) break;
+                rb_ary_push(ary, LEN2FIX(i));
+                if (i > ((rb_len_t)((rb_ulen_t)-1 >> 1)) - unit) break;
                 i += unit;
                 --n;
             }
@@ -4114,12 +4119,17 @@ arith_seq_take(VALUE self, VALUE num)
         else {
             if (!x) end -= 1;
 
-            len = i - end;
-            if (len < 0) len = 0;
+            if (i <= end) {
+                len = 0;
+            }
+            else {
+                rb_ulen_t dist = (rb_ulen_t)i - (rb_ulen_t)end;
+                len = dist > (rb_ulen_t)n ? n : (rb_len_t)dist;
+            }
             ary = rb_ary_new_capa((n < len) ? n : len);
             while (n > 0 && i > end) {
-                rb_ary_push(ary, LONG2FIX(i));
-                if (i < LONG_MIN - unit) break;
+                rb_ary_push(ary, LEN2FIX(i));
+                if (i < (-((rb_len_t)((rb_ulen_t)-1 >> 1)) - 1) - unit) break;
                 i += unit;
                 --n;
             }

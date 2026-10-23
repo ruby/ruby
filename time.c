@@ -108,7 +108,7 @@ static VALUE
 addv(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
-        return LONG2NUM(FIX2LONG(x) + FIX2LONG(y));
+        return LEN2NUM(FIX2LEN(x) + FIX2LEN(y));
     }
     if (RB_BIGNUM_TYPE_P(x)) return rb_big_plus(x, y);
     return rb_funcall(x, '+', 1, y);
@@ -118,7 +118,7 @@ static VALUE
 subv(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
-        return LONG2NUM(FIX2LONG(x) - FIX2LONG(y));
+        return LEN2NUM(FIX2LEN(x) - FIX2LEN(y));
     }
     if (RB_BIGNUM_TYPE_P(x)) return rb_big_minus(x, y);
     return rb_funcall(x, '-', 1, y);
@@ -150,7 +150,7 @@ static VALUE
 modv(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-        if (FIX2LONG(y) == 0) rb_num_zerodiv();
+        if (FIX2LEN(y) == 0) rb_num_zerodiv();
         if (FIXNUM_P(x)) return rb_fix_mod_fix(x, y);
     }
     if (RB_BIGNUM_TYPE_P(x)) return rb_big_modulo(x, y);
@@ -163,14 +163,14 @@ static VALUE
 quor(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
-        long a, b, c;
-        a = FIX2LONG(x);
-        b = FIX2LONG(y);
+        rb_len_t a, b, c;
+        a = FIX2LEN(x);
+        b = FIX2LEN(y);
         if (b == 0) rb_num_zerodiv();
-        if (a == FIXNUM_MIN && b == -1) return LONG2NUM(-a);
+        if (a == FIXNUM_MIN && b == -1) return LEN2NUM(-a);
         c = a / b;
         if (c * b == a) {
-            return LONG2FIX(c);
+            return LEN2NUM(c);
         }
     }
     return rb_numeric_quo(x, y);
@@ -194,7 +194,7 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
 {
     VALUE tmp, ary;
     if (FIXNUM_P(d)) {
-        if (FIX2LONG(d) == 0) rb_num_zerodiv();
+        if (FIX2LEN(d) == 0) rb_num_zerodiv();
         if (FIXNUM_P(n)) {
             rb_fix_divmod_fix(n, d, q, r);
             return;

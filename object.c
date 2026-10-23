@@ -3746,7 +3746,7 @@ rb_str_to_dbl(VALUE str, int badcheck)
 }
 
 /*! \cond INTERNAL_MACRO */
-#define fix2dbl_without_to_f(x) (double)FIX2LONG(x)
+#define fix2dbl_without_to_f(x) (double)FIX2LEN(x)
 #define big2dbl_without_to_f(x) rb_big2dbl(x)
 #define int2dbl_without_to_f(x) \
     (FIXNUM_P(x) ? fix2dbl_without_to_f(x) : big2dbl_without_to_f(x))

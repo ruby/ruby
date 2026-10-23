@@ -572,12 +572,12 @@ range_step(int argc, VALUE *argv, VALUE range)
 
     if (FIXNUM_P(b) && NIL_P(e) && FIXNUM_P(step)) {
         /* perform summation of numbers in C until their reach Fixnum limit */
-        long i = FIX2LONG(b), unit = FIX2LONG(step);
+        rb_len_t i = FIX2LEN(b), unit = FIX2LEN(step);
         do {
-            rb_yield(LONG2FIX(i));
+            rb_yield(LEN2FIX(i));
             i += unit;          /* FIXABLE+FIXABLE never overflow */
         } while (FIXABLE(i));
-        b = LONG2NUM(i);
+        b = LEN2NUM(i);
 
         /* then switch to Bignum API */
         for (;; b = rb_big_plus(b, step))
@@ -585,24 +585,24 @@ range_step(int argc, VALUE *argv, VALUE range)
     }
     else if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) {
         /* fixnums are special: summation is performed in C for performance */
-        long end = FIX2LONG(e);
-        long i, unit = FIX2LONG(step);
+        rb_len_t end = FIX2LEN(e);
+        rb_len_t i, unit = FIX2LEN(step);
 
         if (unit < 0) {
             if (!EXCL(range))
                 end -= 1;
-            i = FIX2LONG(b);
+            i = FIX2LEN(b);
             while (i > end) {
-                rb_yield(LONG2NUM(i));
+                rb_yield(LEN2NUM(i));
                 i += unit;
             }
         }
         else {
             if (!EXCL(range))
                 end += 1;
-            i = FIX2LONG(b);
+            i = FIX2LEN(b);
             while (i < end) {
-                rb_yield(LONG2NUM(i));
+                rb_yield(LEN2NUM(i));
                 i += unit;
             }
         }
@@ -870,10 +870,10 @@ range_bsearch(VALUE range)
 
 #define BSEARCH_FIXNUM(beg, end, excl) \
     do { \
-        long low = FIX2LONG(beg); \
-        long high = FIX2LONG(end); \
-        long mid; \
-        BSEARCH(INT2FIX, (excl)); \
+        rb_len_t low = FIX2LEN(beg); \
+        rb_len_t high = FIX2LEN(end); \
+        rb_len_t mid; \
+        BSEARCH(LEN2FIX, (excl)); \
     } while (0)
 
     beg = RANGE_BEG(range);
@@ -1102,20 +1102,20 @@ RBIMPL_ATTR_NORETURN()
 static void
 range_each_fixnum_endless(VALUE beg)
 {
-    for (long i = FIX2LONG(beg); FIXABLE(i); i++) {
-        rb_yield(LONG2FIX(i));
+    for (rb_len_t i = FIX2LEN(beg); FIXABLE(i); i++) {
+        rb_yield(LEN2FIX(i));
     }
 
-    range_each_bignum_endless(LONG2NUM(RUBY_FIXNUM_MAX + 1));
+    range_each_bignum_endless(LEN2NUM(RUBY_FIXNUM_MAX + 1));
     UNREACHABLE;
 }
 
 static VALUE
 range_each_fixnum_loop(VALUE beg, VALUE end, VALUE range)
 {
-    long lim = FIX2LONG(end) + !EXCL(range);
-    for (long i = FIX2LONG(beg); i < lim; i++) {
-        rb_yield(LONG2FIX(i));
+    rb_len_t lim = FIX2LEN(end) + !EXCL(range);
+    for (rb_len_t i = FIX2LEN(beg); i < lim; i++) {
+        rb_yield(LEN2FIX(i));
     }
     return range;
 }
@@ -1170,11 +1170,11 @@ range_each(VALUE range)
                 }
             }
             if (FIXNUM_P(beg)) {
-                i = FIX2LONG(beg);
+                i = FIX2LEN(beg);
                 do {
-                    rb_yield(LONG2FIX(i));
+                    rb_yield(LEN2FIX(i));
                 } while (POSFIXABLE(++i));
-                beg = LONG2NUM(i);
+                beg = LEN2NUM(i);
             }
             ASSUME(!FIXNUM_P(beg));
             ASSUME(!SPECIAL_CONST_P(end));
@@ -1264,7 +1264,7 @@ range_reverse_each_positive_bignum_section(VALUE beg, VALUE end)
     if (FIXNUM_P(end) || RBIGNUM_NEGATIVE_P(end)) return;
 
     if (NIL_P(beg) || FIXNUM_P(beg) || RBIGNUM_NEGATIVE_P(beg)) {
-        beg = LONG2NUM(FIXNUM_MAX + 1);
+        beg = LEN2NUM(FIXNUM_MAX + 1);
     }
 
     range_reverse_each_bignum(beg, end);
@@ -1278,19 +1278,19 @@ range_reverse_each_fixnum_section(VALUE beg, VALUE end)
     if (!FIXNUM_P(beg)) {
         if (!NIL_P(beg) && RBIGNUM_POSITIVE_P(beg)) return;
 
-        beg = LONG2FIX(FIXNUM_MIN);
+        beg = LEN2FIX(FIXNUM_MIN);
     }
 
     if (!FIXNUM_P(end)) {
         if (RBIGNUM_NEGATIVE_P(end)) return;
 
-        end = LONG2FIX(FIXNUM_MAX);
+        end = LEN2FIX(FIXNUM_MAX);
     }
 
-    long b = FIX2LONG(beg);
-    long e = FIX2LONG(end);
-    for (long i = e; i >= b; --i) {
-        rb_yield(LONG2FIX(i));
+    rb_len_t b = FIX2LEN(beg);
+    rb_len_t e = FIX2LEN(end);
+    for (rb_len_t i = e; i >= b; --i) {
+        rb_yield(LEN2FIX(i));
     }
 }
 
@@ -1300,7 +1300,7 @@ range_reverse_each_negative_bignum_section(VALUE beg, VALUE end)
     RUBY_ASSERT(!NIL_P(end));
 
     if (FIXNUM_P(end) || RBIGNUM_POSITIVE_P(end)) {
-        end = LONG2NUM(FIXNUM_MIN - 1);
+        end = LEN2NUM(FIXNUM_MIN - 1);
     }
 
     if (NIL_P(beg)) {
@@ -1347,7 +1347,7 @@ range_reverse_each(VALUE range)
 
     if (FIXNUM_P(beg) && FIXNUM_P(end)) {
         if (excl) {
-            if (end == LONG2FIX(FIXNUM_MIN)) return range;
+            if (end == LEN2FIX(FIXNUM_MIN)) return range;
 
             end = rb_int_minus(end, INT2FIX(1));
         }
@@ -1787,7 +1787,7 @@ range_max(int argc, VALUE *argv, VALUE range)
                 rb_raise(rb_eTypeError, "cannot exclude end value with non Integer begin value");
             }
             if (FIXNUM_P(e)) {
-                return LONG2NUM(FIX2LONG(e) - 1);
+                return LEN2NUM(FIX2LEN(e) - 1);
             }
             return rb_int_minus(e,INT2FIX(1));
         }
