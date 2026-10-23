@@ -781,12 +781,12 @@ cc_refinement_set_compact(void *ptr)
 }
 
 static void
-cc_refinement_set_handle_weak_references(void *ptr)
+cc_refinement_set_handle_weak_references(void *ptr, void *objspace)
 {
     struct cc_refinement_entries *e = ptr;
     size_t write = 0;
     for (size_t read = 0; read < e->len; read++) {
-        if (rb_gc_handle_weak_references_alive_p(e->entries[read])) {
+        if (rb_gc_handle_weak_references_alive_p(objspace, e->entries[read])) {
             e->entries[write++] = e->entries[read];
         }
     }

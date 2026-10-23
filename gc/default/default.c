@@ -7624,7 +7624,7 @@ gc_update_weak_references(rb_objspace_t *objspace)
     VALUE *obj_ptr;
     rb_darray_foreach(objspace->weak_references, i, obj_ptr) {
         gc_mark_set_parent(objspace, *obj_ptr);
-        rb_gc_handle_weak_references(*obj_ptr);
+        rb_gc_handle_weak_references(objspace, *obj_ptr);
         gc_mark_set_parent_invalid(objspace);
     }
 
