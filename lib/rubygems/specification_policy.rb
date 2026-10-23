@@ -506,7 +506,7 @@ You have specified rake based extension, but rake is not added as runtime depend
       next unless require_paths.any? {|rp| rb_file.start_with?("#{rp}/") }
       next unless File.file?(rb_file)
 
-      File.foreach(rb_file).with_index(1) do |line, lineno|
+      File.foreach(rb_file, encoding: Encoding::BINARY).with_index(1) do |line, lineno|
         next unless line =~ /^\s*require_relative\s+["']([^"']+)["']/
 
         required_path = Regexp.last_match(1)
