@@ -135,6 +135,8 @@ impl std::fmt::Display for BlockId {
 
 type InsnSet = BitSet<InsnId>;
 type BlockSet = BitSet<BlockId>;
+/// A bit for each local in a frame, matched by local table index.
+pub type LocalSet = BitSet<usize>;
 
 fn write_vec<T: std::fmt::Display>(f: &mut std::fmt::Formatter, objs: &Vec<T>) -> std::fmt::Result {
     write!(f, "[")?;
@@ -4841,8 +4843,11 @@ impl Function {
         self.load_field(block, sp, local_id.into(), offset, return_type)
     }
 
-    fn try_inline_invoke_builtin(&mut self, block: BlockId, insn: Insn) -> InsnId {
-        let Insn::InvokeBuiltin { bf, recv, ref args, state, .. } = insn else {
+    /// Try to inline a builtin call into HIR. When inlining fails and we really do emit the
+    /// `InvokeBuiltin`, we also emit spills for locals so `Primitive.cexpr!` and friends can read
+    /// all Ruby locals as C locals.
+    fn try_inline_invoke_builtin(&mut self, block: BlockId, mut insn: Insn) -> InsnId {
+        let Insn::InvokeBuiltin { bf, recv, ref args, state, leaf, .. } = insn else {
             panic!("try_inline_invoke_builtin called with non-InvokeBuiltin instruction");
         };
         let props = ZJITState::get_method_annotations().get_builtin_properties(bf).unwrap_or_default();
@@ -4861,7 +4866,18 @@ impl Function {
             self.remove_block(tmp_block);
             return replacement;
         }
-        return self.push_insn(block, insn);
+        // We're really calling the builtin, so put the locals it can read in memory.
+        if !leaf {
+            let pre_call_state = self.frame_state(state);
+            let mut all_locals = LocalSet::with_capacity(pre_call_state.locals.len());
+            all_locals.insert_all();
+            let ep_escaped = iseq_ep_escaped(pre_call_state.iseq);
+            if let Some(spilled_state) = self.spill_locals(block, &pre_call_state, all_locals, ep_escaped) {
+                let Insn::InvokeBuiltin { state, .. } = &mut insn else { unreachable!() };
+                *state = spilled_state;
+            }
+        }
+        self.push_insn(block, insn)
     }
 
     /// Try trivially inlining the method. If we can't, emit a SendDirect instruction instead and
@@ -5857,7 +5873,7 @@ impl Function {
 
         // Reject callees whose environment pointer can escape (e.g., via binding).
         // TODO (nirvdrum 2026-04-15) The interaction between inlined frames and EP escape hasn't been verified.
-        if iseq_ep_starts_escaped(callee_iseq) || iseq_seen_ep_escape(callee_iseq) {
+        if iseq_ep_escaped(callee_iseq) {
             incr_counter!(inline_reject_ep_escapes);
             return false;
         }
@@ -6514,6 +6530,44 @@ impl Function {
             };
             state.setlocal(ep_offset_u32, val);
         }
+    }
+
+    /// Before a call that may observe this frame, put the locals in `spilled` into frame memory
+    /// and return the `Snapshot` that the call should use as its deopt state. Returns `None` when
+    /// there is nothing to spill, so callers keep the snapshot they already have.
+    ///
+    /// Locals put in memory end up in the set [`field@FrameState::spilled_locals`].
+    ///
+    /// Addressing is SP-relative, mirroring [`Self::get_local_from_sp`], rather than EP-relative:
+    /// `StoreField` emits no write barrier, and writing a VALUE into a heap environment needs
+    /// `rb_vm_env_write` (see `gen_setlocal`).
+    fn spill_locals(&mut self, block: BlockId, state: &FrameState, spilled: LocalSet, ep_escaped: bool) -> Option<InsnId> {
+        if spilled.is_empty() {
+            return None;
+        }
+        if !ep_escaped {
+            let iseq = state.iseq;
+            let mut sp: Option<InsnId> = None;
+            for local_idx in 0..state.locals.len() {
+                if !spilled.get(local_idx) {
+                    continue;
+                }
+                let val = state.locals[local_idx];
+                let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
+                let local_id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
+                let recv = *sp.get_or_insert_with(|| self.push_insn(block, Insn::LoadSP));
+                self.push_insn(block, Insn::StoreField {
+                    recv,
+                    id: local_id.into(),
+                    offset: -(SIZEOF_VALUE_I32 * (ep_offset + 1)),
+                    val,
+                    num_bits: types::BasicObject.num_bits(),
+                });
+            }
+        }
+        let mut spilled_state = state.clone();
+        spilled_state.spilled_locals = spilled;
+        Some(self.push_insn(block, Insn::Snapshot { state: Box::new(spilled_state) }))
     }
 
     fn count_not_inlined_cfunc(&mut self, block: BlockId, cme: *const rb_callable_method_entry_t) {
@@ -8697,6 +8751,57 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     }
 }
 
+/// Whether we have to assume `iseq`'s EP is shared with other frames, either because it starts
+/// out escaped or because it has escaped at some point. Locals of such a frame live in EP memory
+/// rather than only in HIR values.
+fn iseq_ep_escaped(iseq: IseqPtr) -> bool {
+    iseq_ep_starts_escaped(iseq) || iseq_seen_ep_escape(iseq)
+}
+
+/// Local variables of `iseq` that the block `blockiseq` (or any iseq nested within
+/// the block) syntactically read or write.
+fn block_accessed_local_set(iseq: IseqPtr, blockiseq: IseqPtr, num_locals: usize, ep_escaped: bool) -> LocalSet {
+    let mut accessed = LocalSet::with_capacity(num_locals);
+    if ep_escaped {
+        accessed.insert_all();
+        return accessed;
+    }
+    let outer_variables = unsafe { blockiseq.outer_variables() };
+    for local_idx in 0..num_locals {
+        let id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
+        if outer_variables.local_access(id).is_some() {
+            accessed.insert(local_idx);
+        }
+    }
+    accessed
+}
+
+/// Put the locals that `blockiseq` can access into frame memory before a with-block call, and
+/// return the `Snapshot` that call should use as its deopt state. `exit_id` is returned unchanged
+/// when there is nothing to spill, including when `blockiseq` is null (no literal block).
+fn spill_locals_for_block(
+    fun: &mut Function,
+    profiles: &mut ProfileOracle,
+    block: BlockId,
+    blockiseq: IseqPtr,
+    exit_state: &FrameState,
+    exit_id: InsnId,
+    ep_escaped: bool,
+) -> InsnId {
+    if blockiseq.is_null() {
+        return exit_id;
+    }
+    let spilled = block_accessed_local_set(exit_state.iseq, blockiseq, exit_state.locals.len(), ep_escaped);
+    if let Some(snapshot) = fun.spill_locals(block, exit_state, spilled, ep_escaped) {
+        // Profiles are keyed by `Snapshot`, and only `exit_id` gets entries from `profile_stack()`.
+        // Copy them over so the call can still specialize on its profiled receiver and arguments.
+        profiles.copy_entries(exit_id, snapshot);
+        snapshot
+    } else {
+        exit_id
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct FrameState {
     pub iseq: IseqPtr,
@@ -8705,7 +8810,13 @@ pub struct FrameState {
     pub pc: *const VALUE,
 
     stack: Vec<InsnId>,
+
+    /// Values for local variables in `rb_iseq_constant_body::local_table` order.
     locals: Vec<InsnId>,
+    /// The subset of locals that are already in frame memory prior to a safepoint, established by
+    /// [`Function::spill_locals`]. Predominantly used for with-block sends for locals
+    /// syntactically accessed within the block.
+    spilled_locals: LocalSet,
 
     /// `InsnId` of the caller's post-send `Snapshot` for inlined frames; `None`
     /// for non-inlined frames. Stored as an instruction reference rather than
@@ -8781,7 +8892,7 @@ pub struct FrameStatePrinter<'a> {
 
 impl FrameState {
     fn new(iseq: IseqPtr) -> FrameState {
-        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], caller: None, depth: 0 }
+        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], caller: None, depth: 0, spilled_locals: LocalSet::with_capacity(0) }
     }
 
     /// Construct a `FrameState` for an inlined callee. `caller` is the `InsnId`
@@ -9088,6 +9199,14 @@ impl ProfileOracle {
         }
     }
 
+    /// Copy every profile entry recorded for the `src` Snapshot to the `dst` Snapshot. Used when
+    /// an instruction gets a fresh Snapshot for reasons unrelated to profiling, e.g. to carry a
+    /// spilled-local set (see `spill_locals_for_block`).
+    fn copy_entries(&mut self, src: InsnId, dst: InsnId) {
+        let Some(entries) = self.types.get(&src).cloned() else { return };
+        self.types.entry(dst).or_default().extend(entries);
+    }
+
     /// Copy the profile entries recorded for the `src` Snapshot to the `dst` Snapshot, excluding
     /// entries for `exclude` (chased through guards). Used by polymorphic dispatch, where each
     /// refined arm gets a fresh Snapshot: the receiver must resolve from its refined type rather
@@ -9319,6 +9438,7 @@ fn add_iseq_to_hir(
             for _ in 0..local_size {
                 result.locals.push(fun.push_insn(block, Insn::Param));
             }
+            result.spilled_locals = LocalSet::with_capacity(result.locals.len());
             for _ in incoming_state.stack {
                 result.stack.push(fun.push_insn(block, Insn::Param));
             }
@@ -9985,6 +10105,7 @@ fn add_iseq_to_hir(
                         state.stack_push(val);
                     } else {
                         assert!(level == 0); // from place in decision tree
+                        // Read the local from FrameState
                         let val = state.getlocal(ep_offset);
                         state.stack_push(val);
                     }
@@ -10484,6 +10605,8 @@ fn add_iseq_to_hir(
                     };
                     let lengths = fun.caller_splat_lengths(call_info, recv, exit_id, &profiles);
                     let caller_splat_length = if lengths.len() == 1 { Some(lengths[0]) } else { None };
+                    // Spill once for all arms in the polymorphic dispatch tree
+                    let send_state = spill_locals_for_block(fun, &mut profiles, block, blockiseq, &exit_state, exit_id, ep_escaped);
                     if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_id) {
                         let join_block = fun.new_block(insn_idx);
                         let join_param = fun.push_insn(join_block, Insn::Param);
@@ -10506,16 +10629,12 @@ fn add_iseq_to_hir(
                                 if_false: BranchEdge { target: fall_through, args: vec![] }
                             })));
                             block = fall_through;
-                            // Take a fresh Snapshot rather than
-                            // reusing exit_id so type specialization resolves the receiver from
-                            // its refined, exact type instead of the polymorphic profile that is
-                            // keyed at exit_id.
-                            let snapshot = fun.push_insn(iftrue_block, Insn::Snapshot { state: Box::new(exit_state.clone()) });
-                            // Keep the other operands' profile entries visible at the fresh
-                            // Snapshot so the specialized send can still see argument profiles
-                            // (e.g. Array#[] needs a Fixnum-profiled index to be inlined). Only
-                            // the receiver's entry is dropped: it must resolve from its refined,
-                            // exact type, and resolve_receiver_type prefers profiles over types.
+                            // Take a fresh Snapshot so the receiver's type info could be
+                            // specialized for this polymorphic send match arm. Keep the other
+                            // operands' profile entries visible at the fresh Snapshot so the
+                            // specialized send can still see argument profiles (e.g. Array#[] needs
+                            // a Fixnum-profiled index to be inlined).
+                            let snapshot = fun.push_insn(iftrue_block, Insn::Snapshot { state: Box::new(fun.frame_state(send_state)) });
                             profiles.copy_entries_except(exit_id, snapshot, recv, fun);
                             let refined_recv = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: expected });
                             let send = fun.push_insn(iftrue_block, Insn::Send { recv: refined_recv, cd, block: block_handler, args: args.clone(), caller_splat_length, state: snapshot, reason: Uncategorized(opcode.into()) });
@@ -10523,14 +10642,14 @@ fn add_iseq_to_hir(
                         }
                         // In the fallthrough case, do a generic interpreter send and then join.
                         let reason = SendPolymorphicFallback;
-                        let send = fun.push_insn(block, Insn::Send { recv, cd, block: block_handler, args, caller_splat_length, state: exit_id, reason });
+                        let send = fun.push_insn(block, Insn::Send { recv, cd, block: block_handler, args, caller_splat_length, state: send_state, reason });
                         fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
                         state.stack_push(join_param);
                         // Continue compilation from the join block at the next instruction.
                         block = join_block;
                     } else {
                         // Maybe monomorphic; handled in type_specialize
-                        let send = fun.push_insn(block, Insn::Send { recv, cd, block: block_handler, args, caller_splat_length, state: exit_id, reason: Uncategorized(opcode.into()) });
+                        let send = fun.push_insn(block, Insn::Send { recv, cd, block: block_handler, args, caller_splat_length, state: send_state, reason: Uncategorized(opcode.into()) });
                         state.stack_push(send);
                     }
 
@@ -10559,7 +10678,9 @@ fn add_iseq_to_hir(
 
                     let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
                     let recv = state.stack_pop()?;
-                    let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args, state: exit_id, reason: SendForwardNotSpecialized });
+                    // Put locals accessed by the block into frame memory before the call.
+                    let send_state = spill_locals_for_block(fun, &mut profiles, block, blockiseq, &exit_state, exit_id, ep_escaped);
+                    let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args, state: send_state, reason: SendForwardNotSpecialized });
                     state.stack_push(send_forward);
 
                     if !blockiseq.is_null() {
@@ -10584,7 +10705,9 @@ fn add_iseq_to_hir(
                     let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
                     let recv = state.stack_pop()?;
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
-                    let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode.into()) });
+                    // Put locals accessed by the block into frame memory before the call.
+                    let send_state = spill_locals_for_block(fun, &mut profiles, block, blockiseq, &exit_state, exit_id, ep_escaped);
+                    let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: send_state, reason: Uncategorized(opcode.into()) });
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {
@@ -10611,7 +10734,9 @@ fn add_iseq_to_hir(
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
                     let recv = state.stack_pop()?;
-                    let result = fun.push_insn(block, Insn::InvokeSuperForward { recv, cd, blockiseq, args, state: exit_id, reason: InvokeSuperForwardNotSpecialized });
+                    // Put locals accessed by the block into frame memory before the call.
+                    let send_state = spill_locals_for_block(fun, &mut profiles, block, blockiseq, &exit_state, exit_id, ep_escaped);
+                    let result = fun.push_insn(block, Insn::InvokeSuperForward { recv, cd, blockiseq, args, state: send_state, reason: InvokeSuperForwardNotSpecialized });
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {
@@ -11136,6 +11261,7 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
             entry_state.locals.push(fun.push_insn(entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
     }
+    entry_state.spilled_locals = LocalSet::with_capacity(entry_state.locals.len());
     (self_param, entry_state)
 }
 
@@ -11233,6 +11359,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
             });
         }
     }
+    entry_state.spilled_locals = LocalSet::with_capacity(entry_state.locals.len());
     (self_param, entry_state)
 }
 
