@@ -1591,7 +1591,7 @@ ractor_timeout_deadline(VALUE timeout, rb_hrtime_t *storage)
 {
     if (NIL_P(timeout)) return NULL;
 
-    if (!(FIXNUM_P(timeout) && FIX2LONG(timeout) == 0)) {
+    if (!(FIXNUM_P(timeout) && FIX2LEN(timeout) == 0)) {
         struct timeval tv = rb_time_interval(timeout); // raises on a negative timeout
         rb_hrtime_t rel = rb_timeval2hrtime(&tv);
 

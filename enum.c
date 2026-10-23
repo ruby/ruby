@@ -842,7 +842,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
     ID id;
     VALUE v, e;
     rb_len_t i;
-    long n;
+    rb_len_t n;
 
     if (RARRAY_LEN(ary) == 0)
         return UNDEF_P(init) ? Qnil : init;
@@ -867,9 +867,9 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
             for (; i < RARRAY_LEN(ary); i++) {
                 e = RARRAY_AREF(ary, i);
                 if (FIXNUM_P(e)) {
-                    n += FIX2LONG(e); /* should not overflow long type */
+                    n += FIX2LEN(e); /* should not overflow rb_len_t type */
                     if (!FIXABLE(n)) {
-                        v = rb_big_plus(LONG2NUM(n), v);
+                        v = rb_big_plus(LEN2NUM(n), v);
                         n = 0;
                     }
                 }
@@ -879,12 +879,12 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
                     goto not_integer;
             }
             if (n != 0)
-                v = rb_fix_plus(LONG2FIX(n), v);
+                v = rb_fix_plus(LEN2FIX(n), v);
             return v;
 
           not_integer:
             if (n != 0)
-                v = rb_fix_plus(LONG2FIX(n), v);
+                v = rb_fix_plus(LEN2FIX(n), v);
         }
     }
     for (; i < RARRAY_LEN(ary); i++) {
@@ -4615,7 +4615,7 @@ enum_chunk_while(VALUE enumerable)
 
 struct enum_sum_memo {
     VALUE v, r;
-    long n;
+    rb_len_t n;
     double f, c;
     int block_given;
     int float_value;
@@ -4625,7 +4625,7 @@ static void
 sum_iter_normalize_memo(struct enum_sum_memo *memo)
 {
     RUBY_ASSERT(FIXABLE(memo->n));
-    memo->v = rb_fix_plus(LONG2FIX(memo->n), memo->v);
+    memo->v = rb_fix_plus(LEN2FIX(memo->n), memo->v);
     memo->n = 0;
 
     switch (TYPE(memo->r)) {
@@ -4639,9 +4639,9 @@ sum_iter_normalize_memo(struct enum_sum_memo *memo)
 static void
 sum_iter_fixnum(VALUE i, struct enum_sum_memo *memo)
 {
-    memo->n += FIX2LONG(i); /* should not overflow long type */
+    memo->n += FIX2LEN(i); /* should not overflow rb_len_t type */
     if (! FIXABLE(memo->n)) {
-        memo->v = rb_big_plus(LONG2NUM(memo->n), memo->v);
+        memo->v = rb_big_plus(LEN2NUM(memo->n), memo->v);
         memo->n = 0;
     }
 }
@@ -4680,7 +4680,7 @@ sum_iter_Kahan_Babuska(VALUE i, struct enum_sum_memo *memo)
 
     switch (TYPE(i)) {
       case T_FLOAT:    x = RFLOAT_VALUE(i); break;
-      case T_FIXNUM:   x = FIX2LONG(i);     break;
+      case T_FIXNUM:   x = (double)FIX2LEN(i); break;
       case T_BIGNUM:   x = rb_big2dbl(i);   break;
       case T_RATIONAL: x = rb_num2dbl(i);   break;
       default:
@@ -4788,7 +4788,7 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
 {
     if (excl) {
         if (FIXNUM_P(end))
-            end = LONG2FIX(FIX2LONG(end) - 1);
+            end = LEN2NUM(FIX2LEN(end) - 1);
         else
             end = rb_big_minus(end, LONG2FIX(1));
     }
@@ -4842,7 +4842,7 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
     VALUE beg, end;
     int excl;
 
-    memo.v = (rb_check_arity(argc, 0, 1) == 0) ? LONG2FIX(0) : argv[0];
+    memo.v = (rb_check_arity(argc, 0, 1) == 0) ? LEN2FIX(0) : argv[0];
     memo.block_given = rb_block_given_p();
     memo.n = 0;
     memo.r = Qundef;
@@ -4882,7 +4882,7 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
     }
     else {
         if (memo.n != 0)
-            memo.v = rb_fix_plus(LONG2FIX(memo.n), memo.v);
+            memo.v = rb_fix_plus(LEN2FIX(memo.n), memo.v);
         if (!UNDEF_P(memo.r)) {
             memo.v = rb_rational_plus(memo.r, memo.v);
         }

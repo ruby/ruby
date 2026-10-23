@@ -8317,15 +8317,15 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
 }
 
 static inline VALUE
-finish_exact_sum(long n, VALUE r, VALUE v, int z)
+finish_exact_sum(rb_len_t n, VALUE r, VALUE v, int z)
 {
     if (n != 0)
-        v = rb_fix_plus(LONG2FIX(n), v);
+        v = rb_fix_plus(LEN2FIX(n), v);
     if (!UNDEF_P(r)) {
         v = rb_rational_plus(r, v);
     }
     else if (!n && z) {
-        v = rb_fix_plus(LONG2FIX(0), v);
+        v = rb_fix_plus(LEN2FIX(0), v);
     }
     return v;
 }
@@ -8376,10 +8376,10 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
 {
     VALUE e, v, r;
     rb_len_t i;
-    long n;
+    rb_len_t n;
     int block_given;
 
-    v = (rb_check_arity(argc, 0, 1) ? argv[0] : LONG2FIX(0));
+    v = (rb_check_arity(argc, 0, 1) ? argv[0] : LEN2FIX(0));
 
     block_given = rb_block_given_p();
 
@@ -8391,7 +8391,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
 
     bool init_is_float = RB_FLOAT_TYPE_P(v);
     if (init_is_float) {
-        v = LONG2FIX(0);
+        v = LEN2FIX(0);
     }
     else if (!RB_INTEGER_TYPE_P(v) && !RB_TYPE_P(v, T_RATIONAL)) {
         i = 0;
@@ -8403,9 +8403,9 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
         if (block_given)
             e = rb_yield(e);
         if (FIXNUM_P(e)) {
-            n += FIX2LONG(e); /* should not overflow long type */
+            n += FIX2LEN(e); /* should not overflow rb_len_t type */
             if (!FIXABLE(n)) {
-                v = rb_big_plus(LONG2NUM(n), v);
+                v = rb_big_plus(LEN2NUM(n), v);
                 n = 0;
             }
         }
@@ -8456,7 +8456,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
               has_float_value:
                 x = RFLOAT_VALUE(e);
             else if (FIXNUM_P(e))
-                x = FIX2LONG(e);
+                x = (double)FIX2LEN(e);
             else if (RB_BIGNUM_TYPE_P(e))
                 x = rb_big2dbl(e);
             else if (RB_TYPE_P(e, T_RATIONAL))

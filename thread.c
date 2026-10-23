@@ -6280,7 +6280,7 @@ update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
         if (lines) {
             long line = rb_sourceline() - 1;
             VM_ASSERT(line >= 0);
-            long count;
+            rb_len_t count;
             VALUE num;
             void rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset);
             if (GET_VM()->coverage_mode & COVERAGE_TARGET_ONESHOT_LINES) {
@@ -6293,9 +6293,9 @@ update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
             }
             num = RARRAY_AREF(lines, line);
             if (!FIXNUM_P(num)) return;
-            count = FIX2LONG(num) + 1;
+            count = FIX2LEN(num) + 1;
             if (POSFIXABLE(count)) {
-                RARRAY_ASET(lines, line, LONG2FIX(count));
+                RARRAY_ASET(lines, line, LEN2FIX(count));
             }
         }
     }
@@ -6310,12 +6310,13 @@ update_branch_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
         VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
         if (branches) {
             long pc = CFP_PC(cfp) - ISEQ_BODY(CFP_ISEQ(cfp))->iseq_encoded - 1;
-            long idx = FIX2INT(RARRAY_AREF(ISEQ_PC2BRANCHINDEX(CFP_ISEQ(cfp)), pc)), count;
+            long idx = FIX2INT(RARRAY_AREF(ISEQ_PC2BRANCHINDEX(CFP_ISEQ(cfp)), pc));
+            rb_len_t count;
             VALUE counters = RARRAY_AREF(branches, 1);
             VALUE num = RARRAY_AREF(counters, idx);
-            count = FIX2LONG(num) + 1;
+            count = FIX2LEN(num) + 1;
             if (POSFIXABLE(count)) {
-                RARRAY_ASET(counters, idx, LONG2FIX(count));
+                RARRAY_ASET(counters, idx, LEN2FIX(count));
             }
         }
     }
@@ -6397,7 +6398,7 @@ rb_coverage_method_data_of(VALUE me_v, VALUE count, struct rb_coverage_method_da
     const rb_method_entry_t *resolved_me = rb_resolve_me_location(me, location);
 
     if (me != resolved_me || RB_TYPE_P(me->owner, T_ICLASS) ||
-        FIX2LONG(location[1]) <= 0) return false;
+        FIX2LEN(location[1]) <= 0) return false;
 
     out->owner = me->owner;
     out->method_id = ID2SYM(me->def->original_id);
@@ -6459,15 +6460,15 @@ update_method_coverage(VALUE cme2counter, rb_trace_arg_t *trace_arg)
     const rb_callable_method_entry_t *cme = rb_vm_frame_method_entry(cfp);
     const rb_method_entry_t *me = (const rb_method_entry_t *)cme;
     VALUE rcount;
-    long count;
+    rb_len_t count;
 
     me = rb_resolve_me_location(me, 0);
     if (!me) return;
 
     rcount = rb_hash_aref(cme2counter, (VALUE) me);
-    count = FIXNUM_P(rcount) ? FIX2LONG(rcount) + 1 : 1;
+    count = FIXNUM_P(rcount) ? FIX2LEN(rcount) + 1 : 1;
     if (POSFIXABLE(count)) {
-        rb_hash_aset(cme2counter, (VALUE) me, LONG2FIX(count));
+        rb_hash_aset(cme2counter, (VALUE) me, LEN2FIX(count));
     }
 }
 

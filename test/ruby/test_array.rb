@@ -3921,6 +3921,7 @@ class TestArray < Test::Unit::TestCase
     assert_int_equal(0, ([FIXNUM_MAX, 1, -FIXNUM_MAX, -1]*10).sum)
     assert_int_equal(FIXNUM_MAX*10, ([FIXNUM_MAX+1, -1]*10).sum)
     assert_int_equal(2*FIXNUM_MIN, Array.new(2, FIXNUM_MIN).sum)
+    assert_int_equal(51_051_000_000_000, Array.new(10_000, 5105100000).sum)
 
     assert_float_equal(0.0, [].sum(0.0))
     assert_float_equal(3.0, [3].sum(0.0))
