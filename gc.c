@@ -3743,6 +3743,16 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE box_value, void *a
         gc_mark_internal(ctx, RCLASSEXT_SUBCLASSES(ext));
     }
     gc_mark_internal(ctx, RCLASSEXT_CLASSPATH(ext));
+
+    GC_ASSERT(prime || ext->inline_fields_count == 0);
+}
+
+static void
+gc_mark_rclass(const struct rb_gc_mark_ctx *ctx, VALUE klass)
+{
+    for (size_t index = 0; index < RCLASS_EXT_PRIME(klass)->inline_fields_count; index++) {
+        gc_mark_internal(ctx, RCLASS_INLINE_FIELD_GET(klass, index));
+    }
 }
 
 static void
@@ -3837,6 +3847,7 @@ gc_mark_children_ctx(const struct rb_gc_mark_ctx *ctx, VALUE obj)
       case T_MODULE:
         foreach_args.ctx = ctx;
         foreach_args.obj = obj;
+        gc_mark_rclass(ctx, obj);
         rb_class_classext_foreach(obj, gc_mark_classext_module, (void *)&foreach_args);
         if (BOX_USER_P(RCLASS_PRIME_BOX(obj))) {
             gc_mark_internal(ctx, RCLASS_PRIME_BOX(obj)->box_object);
@@ -5045,6 +5056,14 @@ update_classext_values(rb_objspace_t *objspace, rb_classext_t *ext, bool is_icla
 }
 
 static void
+update_rclass(rb_objspace_t *objspace, VALUE klass)
+{
+    for (size_t index = 0; index < RCLASS_EXT_PRIME(klass)->inline_fields_count; index++) {
+        UPDATE_IF_MOVED(objspace, *RCLASS_INLINE_FIELD(klass, index));
+    }
+}
+
+static void
 update_classext(rb_classext_t *ext, bool is_prime, VALUE box_value, void *arg)
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
@@ -5453,6 +5472,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
       case T_MODULE:
         args.klass = obj;
         args.objspace = objspace;
+        update_rclass(objspace, obj);
         rb_class_classext_foreach(obj, update_classext, (void *)&args);
         break;
 
