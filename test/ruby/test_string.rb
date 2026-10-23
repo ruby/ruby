@@ -223,6 +223,8 @@ CODE
     s[/([A-Z]..)([A-Z]..)/, -2] = S("Bar")
     assert_equal(S("BarFoo"), s)
     assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, -3] = "None" }
+    assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, RbConfig::LIMITS["INT_MIN"]] = "None" }
+    assert_equal(S("BarFoo"), s)
 
     s = S("FooBar")
     s[S("Foo")] = S("Bar")

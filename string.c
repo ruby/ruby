@@ -5997,8 +5997,8 @@ rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
     }
     match = rb_backref_get();
     nth = rb_reg_backref_number(match, backref);
-    int num_regs = RMATCH_NREGS(match);
-    if ((nth >= num_regs) || ((nth < 0) && (-nth >= num_regs))) {
+    int num_regs = RMATCH_NREGS(match); /* 1 <= num_regs <= ONIG_MAX_CAPTURE_GROUP_NUM (= 32767) */
+    if (nth >= num_regs || nth + num_regs <= 0) {
         rb_raise(rb_eIndexError, "index %d out of regexp", nth);
     }
     if (nth < 0) {
