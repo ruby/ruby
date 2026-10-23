@@ -346,7 +346,7 @@ mod snapshot_tests {
           PatchPoint NoTracePoint, v19
           v21:Any = Snapshot FrameState { pc: 0x1028, stack: [v12], locals: [o=v12, y=v17] }
           v22:BasicObject = Send v12, :foo # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v23:Any = Snapshot FrameState { pc: 0x1030, stack: [v22], locals: [] }
+          v23:Any = Snapshot FrameState { pc: 0x1030, stack: [v22], locals: [o=v12, y=v17] }
           PatchPoint NoEPEscape(test), v23
           v25:Any = Snapshot FrameState { pc: 0x1030, stack: [v22], locals: [o=v12, y=v17] }
           v26:Any = Snapshot FrameState { pc: 0x1038, stack: [], locals: [o=v12, y=v17] }
