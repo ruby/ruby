@@ -8920,6 +8920,10 @@ impl FrameState {
         self.locals.iter()
     }
 
+    pub fn spilled_locals(&self) -> &LocalSet {
+        &self.spilled_locals
+    }
+
     /// Push a stack operand
     fn stack_push(&mut self, opnd: InsnId) {
         self.stack.push(opnd);

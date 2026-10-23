@@ -1191,6 +1191,13 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
         if (rb_zjit_enabled_p) rb_zjit_invalidate_no_ep_escape(iseq);
     }
 
+    // Spill ZJIT frame if there is one to get locals out.
+    if (VM_FRAME_RUBYFRAME_P(cfp)) {
+        // We only need the locals here but we reconstruct the stack as well for simplicity.
+        // TODO(alan): directly construct env using stackmap as source.
+        rb_zjit_spill_frame(ec, cfp);
+    }
+
     /*
      * # local variables on a stack frame (N == local_size)
      * [lvar1, lvar2, ..., lvarN, SPECVAL]
@@ -3033,9 +3040,9 @@ zjit_check_owned_slot(const rb_control_frame_t *cfp, const zjit_jit_frame_t *jit
 #define zjit_check_owned_slot(cfp, jit_frame, slot, i) ((void)0)
 #endif
 
-// Write a ZJIT frame's off-stack Ruby slots into VM-stack memory using its
-// stack map, decoding downward from cfp->sp. Does not touch any frame metadata
-// (pc/_iseq/block_code/jit_return).
+// Write a ZJIT frame's off-stack Ruby slots (operands and locals) into VM-stack
+// memory using its stack map, decoding downward from cfp->sp. Does not touch
+// any frame metadata (pc/_iseq/block_code/jit_return).
 static void
 zjit_write_frame_stack(const rb_execution_context_t *ec, rb_control_frame_t *cfp, const zjit_jit_frame_t *jit_frame)
 {
@@ -3171,6 +3178,19 @@ rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb_cont
     // A ZJIT frame active before the tag's setjmp is below it on the native
     // stack and survives longjmp. Materialize only the frames unwound above it.
     zjit_materialize_frames(ec, cfp, !ec->tag->zjit_frame_active);
+}
+
+// Spill a single ZJIT frame's off-stack Ruby slots (operands and locals) into
+// VM-stack memory, leaving the frame lazy (jit_return and pc/_iseq intact).
+// vm_make_env_each() calls this so an escaping env can MEMCPY live locals out
+// of VM memory.
+void
+rb_zjit_spill_frame(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
+{
+    if (!rb_zjit_enabled_p) return;
+    if (CFP_ZJIT_FRAME_P(cfp)) {
+        zjit_write_frame_stack(ec, cfp, CFP_ZJIT_FRAME(cfp));
+    }
 }
 #endif
 
