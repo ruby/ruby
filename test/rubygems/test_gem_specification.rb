@@ -3242,7 +3242,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       @a1.extensions = ["ext/a/extconf.rb"]
       @a1.files = %w[lib/code.rb lib/a.rb ext/a/extconf.rb]
 
-      File.binwrite File.join("lib", "a.rb"), "# caf\xE9\nrequire_relative \"a/a\"\n".b
+      File.binwrite File.join("lib", "a.rb"), "# \xFF\xFE\nrequire_relative \"a/a\"\n".b
 
       with_default_external(Encoding::UTF_8) do
         use_ui @ui do
