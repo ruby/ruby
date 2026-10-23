@@ -61,6 +61,10 @@ enum jit_bindgen_constants {
     RUBY_OFFSET_EC_INTERRUPT_FLAG = offsetof(rb_execution_context_t, interrupt_flag),
     RUBY_OFFSET_EC_INTERRUPT_MASK = offsetof(rb_execution_context_t, interrupt_mask),
     RUBY_OFFSET_EC_THREAD_PTR = offsetof(rb_execution_context_t, thread_ptr),
+    // String flags used by String#force_encoding.
+    RUBY_STR_CHILLED = STR_CHILLED,
+    RUBY_STR_TMPLOCK = RUBY_FL_USER7,
+
     RUBY_OFFSET_EC_RACTOR_ID = offsetof(rb_execution_context_t, ractor_id),
 };
 
