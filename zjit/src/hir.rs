@@ -7149,6 +7149,8 @@ impl Function {
                     &Insn::HashAref { hash, key, .. } => {
                         match (self.type_of(hash).ruby_object(), self.type_of(key).ruby_object()) {
                             (Some(hash_obj), Some(key_obj)) if hash_obj.is_frozen() => {
+                                // By limiting to hit lookups in a frozen all-symbols Hash, we fold
+                                // while avoiding runtime probing which may involve method calls.
                                 match static_symbol_hash_lookup(hash_obj, key_obj) {
                                     Some(val) => self.new_insn(Insn::Const { val: Const::Value(val) }),
                                     None => insn_id,
