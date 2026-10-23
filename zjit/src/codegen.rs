@@ -373,6 +373,7 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
                     let size = cb.get_write_pos().saturating_sub(start_pos) as u64;
                     let total = cb.get_write_pos() as u64;
                     tracer.write_compile_size(&iseq_get_location(iseq, 0), size, total);
+                    tracer.write_code_size_counter(size, total);
                 }
             }
         }
