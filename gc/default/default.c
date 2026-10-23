@@ -1268,6 +1268,8 @@ slot_index_for_offset(size_t offset, uint64_t reciprocal)
 static inline bool
 gc_foreign_object_p(const rb_objspace_t *objspace, VALUE obj)
 {
+    if (RB_LIKELY(!rb_gc_ever_multi_ractor_p())) return false;
+
     return RB_UNLIKELY(GET_HEAP_OBJSPACE(obj) != objspace);
 }
 
@@ -8462,13 +8464,8 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     if (!is_incremental_marking(objspace)) {
         /* The generational barrier covers old->young edges within one objspace only.
          * NOTE: we shouldn't even check the age of `a` or `b` if they are in another
-         * objspace, so check locality first.  The test is rb_gc_ever_multi_ractor_p, not
-         * rb_gc_multi_ractor_p: a foreign objspace exists before the process is
-         * multi-Ractor (rb_gc_objspace_alloc runs while the creator is still the only
-         * Ractor) and outlives the return to one (a fork parks the others in
-         * zombie_objspaces). */
-        if ((rb_gc_ever_multi_ractor_p() &&
-                (GET_HEAP_OBJSPACE(a) != objspace || GET_HEAP_OBJSPACE(b) != objspace)) ||
+         * objspace, so check locality first. */
+        if (gc_foreign_object_p(objspace, a) || gc_foreign_object_p(objspace, b) ||
                 !RVALUE_OLD_P(objspace, a) || RVALUE_OLD_P(objspace, b)) {
             // do nothing
         }
@@ -8478,8 +8475,7 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     }
     else {
         // Shareable objects from different object spaces are kept alive by shareable bits
-        if (rb_gc_ever_multi_ractor_p() &&
-                (GET_HEAP_OBJSPACE(a) != objspace || GET_HEAP_OBJSPACE(b) != objspace)) {
+        if (gc_foreign_object_p(objspace, a) || gc_foreign_object_p(objspace, b)) {
             // do nothing
         }
         else {
@@ -8576,7 +8572,7 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 
     // Shareable objects from other object spaces don't need to be put on the remembered set
     // and are only collected during global GC, so not while incremental marking.
-    if (RB_LIKELY(!rb_gc_ever_multi_ractor_p() || GET_HEAP_OBJSPACE(obj) == objspace)) {
+    if (RB_LIKELY(!gc_foreign_object_p(objspace, obj))) {
         gc_report(1, objspace, "rb_gc_writebarrier_remember: %s\n", rb_obj_info(obj));
         if (is_incremental_marking(objspace)) {
             if (RVALUE_BLACK_P(objspace, obj)) {
