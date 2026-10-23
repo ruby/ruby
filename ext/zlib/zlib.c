@@ -2202,14 +2202,24 @@ rb_inflate_inflate_body(VALUE _arguments)
                 rb_str_modify_expand(buffer, len);
             }
             rb_str_set_len(buffer, 0);
+            if (ZSTREAM_REUSE_BUFFER_P(z) && !NIL_P(z->buf) && RSTRING_LEN(z->buf) > 0) {
+                /* carry over the output pending in the previous buffer */
+                rb_str_buf_cat(buffer, RSTRING_PTR(z->buf), RSTRING_LEN(z->buf));
+            }
             z->flags |= ZSTREAM_REUSE_BUFFER;
             z->buf = buffer;
         }
     } else if (ZSTREAM_REUSE_BUFFER_P(z)) {
+        VALUE pending = z->buf;
         z->flags &= ~ZSTREAM_REUSE_BUFFER;
         z->buf = Qnil;
         z->stream.next_out = NULL;
         z->stream.avail_out = 0;
+        if (RSTRING_LEN(pending) > 0) {
+            /* carry over the output pending in the previous buffer */
+            zstream_append_buffer2(z, pending);
+        }
+        RB_GC_GUARD(pending);
     }
     rb_scan_args(argc, argv, "10", &src);
 

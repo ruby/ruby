@@ -472,6 +472,45 @@ if defined? Zlib
       assert_match(/\A0*\z/, inflated)
     end
 
+    def test_inflate_buffer_replaced_between_calls
+      # Output pending in the previous buffer is carried over when another
+      # buffer (or no buffer) is given for the next call.
+      src = "0" * 100_000
+      deflated = Zlib::Deflate.deflate(src)
+
+      # block form, a different buffer object for each call
+      z = Zlib::Inflate.new
+      inflated = "".dup
+      (0...deflated.bytesize).step(200) do |i|
+        z.inflate(deflated.byteslice(i, 200), buffer: String.new(capacity: 1 << 14)) { |chunk| inflated << chunk }
+      end
+      z.inflate(nil, buffer: String.new) { |chunk| inflated << chunk }
+      assert_equal src, inflated
+
+      # block form, buffer: dropped mid-stream
+      z = Zlib::Inflate.new
+      buf = String.new(capacity: 1 << 14)
+      inflated = "".dup
+      half = deflated.bytesize / 2
+      z.inflate(deflated.byteslice(0, half), buffer: buf) { |chunk| inflated << chunk }
+      z.inflate(deflated.byteslice(half..)) { |chunk| inflated << chunk }
+      inflated << z.finish
+      assert_equal src, inflated
+
+      # NeedDict handled with a different buffer object, with GC in between
+      dict = "dictionary-" * 4
+      d = Zlib::Deflate.new
+      d.set_dictionary(dict)
+      deflated = d.deflate("A" * 12_000, Zlib::FINISH)
+      z = Zlib::Inflate.new
+      head, rest = deflated.byteslice(0, 6), deflated.byteslice(6..)
+      assert_raise(Zlib::NeedDict) { z.inflate(head, buffer: String.new(capacity: 1 << 14)) }
+      z.set_dictionary(dict)
+      EnvUtil.under_gc_stress do
+        assert_equal "A" * 12_000, z.inflate(rest, buffer: String.new(capacity: 1 << 14))
+      end
+    end
+
     def test_inflate_buffer_then_addstr_and_finish
       src = "A" * 50_000
       deflated = Zlib::Deflate.deflate(src)
