@@ -427,6 +427,98 @@ if defined? Zlib
       }
     end
 
+    def test_inflate_buffer_modified_between_calls
+      # In the block form the buffer is kept across calls while the stream
+      # is in progress; the application may modify it in between.
+      src = "0" * 100_000
+      deflated = Zlib::Deflate.deflate(src)
+      half = deflated.bytesize / 2
+
+      # buffer cleared between calls: the output pending in the buffer is
+      # discarded by the application, the rest must still be inflated
+      z = Zlib::Inflate.new
+      buf = String.new(capacity: 1 << 14)
+      inflated = "".dup
+      z.inflate(deflated.byteslice(0, half), buffer: buf) { |chunk| inflated << chunk }
+      discarded = buf.bytesize
+      buf.clear
+      z.inflate(deflated.byteslice(half..), buffer: buf) { |chunk| inflated << chunk }
+      z.inflate(nil, buffer: buf) { |chunk| inflated << chunk }
+      assert_equal src.bytesize - discarded, inflated.bytesize
+      assert_match(/\A0*\z/, inflated)
+
+      # buffer reallocated between calls, content preserved
+      z = Zlib::Inflate.new
+      buf = String.new(capacity: 1 << 14)
+      inflated = "".dup
+      z.inflate(deflated.byteslice(0, half), buffer: buf) { |chunk| inflated << chunk }
+      pending = buf.dup
+      buf << ("x" * 50_000)
+      buf.replace(pending)
+      z.inflate(deflated.byteslice(half..), buffer: buf) { |chunk| inflated << chunk }
+      z.inflate(nil, buffer: buf) { |chunk| inflated << chunk }
+      assert_equal src, inflated
+
+      # buffer cleared, then continued with Inflate#<< and ZStream#finish
+      z = Zlib::Inflate.new
+      buf = String.new(capacity: 1 << 14)
+      inflated = "".dup
+      z.inflate(deflated.byteslice(0, half), buffer: buf) { |chunk| inflated << chunk }
+      discarded = buf.bytesize
+      buf.clear
+      z << deflated.byteslice(half..)
+      inflated << z.finish
+      assert_equal src.bytesize - discarded, inflated.bytesize
+      assert_match(/\A0*\z/, inflated)
+    end
+
+    def test_inflate_buffer_dropped_while_handling_need_dict
+      dict = "dictionary-" * 4
+      d = Zlib::Deflate.new
+      d.set_dictionary(dict)
+      deflated = d.deflate("A" * 12_000, Zlib::FINISH)
+
+      z = Zlib::Inflate.new
+      buf = String.new(capacity: 1 << 14)
+      assert_raise(Zlib::NeedDict) { z.inflate(deflated, buffer: buf) }
+      buf.clear
+      z.set_dictionary(dict)
+      assert_equal "A" * 12_000, z.inflate("")
+    end
+
+    def test_inflate_buffer_modified_while_handling_need_dict
+      dict = "dictionary-" * 4
+      d = Zlib::Deflate.new
+      d.set_dictionary(dict)
+      deflated = d.deflate("A" * 12_000, Zlib::FINISH)
+
+      # buffer cleared (its heap block is freed) before retrying
+      z = Zlib::Inflate.new
+      buf = String.new(capacity: 1 << 14)
+      assert_raise(Zlib::NeedDict) { z.inflate(deflated, buffer: buf) }
+      buf.clear
+      z.set_dictionary(dict)
+      assert_equal "A" * 12_000, z.inflate("", buffer: buf)
+
+      # buffer grown beyond its capacity (its heap block is reallocated)
+      z = Zlib::Inflate.new
+      buf = String.new(capacity: 1 << 14)
+      assert_raise(Zlib::NeedDict) { z.inflate(deflated, buffer: buf) }
+      buf << ("x" * 20_000)
+      buf.clear
+      z.set_dictionary(dict)
+      assert_equal "A" * 12_000, z.inflate("", buffer: buf)
+
+      # buffer replaced by another string
+      z = Zlib::Inflate.new
+      buf = String.new(capacity: 1 << 14)
+      assert_raise(Zlib::NeedDict) { z.inflate(deflated, buffer: buf) }
+      buf.replace("x" * 20_000)
+      buf.clear
+      z.set_dictionary(dict)
+      assert_equal "A" * 12_000, z.inflate("", buffer: buf)
+    end
+
     def test_inflate_chunked_break
       # zeros = Zlib::Deflate.deflate("0" * 100_000)
       zeros = "x\234\355\3011\001\000\000\000\302\240J\353\237\316\032\036@" \

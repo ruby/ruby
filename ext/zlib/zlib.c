@@ -1154,6 +1154,12 @@ zstream_run_try(VALUE value_arg)
     }
     z->flags |= ZSTREAM_IN_PROGRESS;
 
+    if (ZSTREAM_REUSE_BUFFER_P(z)) {
+	/* always re-derive next_out; the user may have modified z->buf */
+	z->stream.next_out = NULL;
+	z->stream.avail_out = 0;
+    }
+
     if (NIL_P(z->input) && len == 0) {
 	z->stream.next_in = (Bytef*)"";
 	z->stream.avail_in = 0;
@@ -2201,6 +2207,8 @@ rb_inflate_inflate_body(VALUE _arguments)
     } else if (ZSTREAM_REUSE_BUFFER_P(z)) {
         z->flags &= ~ZSTREAM_REUSE_BUFFER;
         z->buf = Qnil;
+        z->stream.next_out = NULL;
+        z->stream.avail_out = 0;
     }
     rb_scan_args(argc, argv, "10", &src);
 
