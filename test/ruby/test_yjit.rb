@@ -1087,6 +1087,27 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_super_class_receiver_rebound_block
+    assert_compiles(<<~'RUBY', result: [7, 7, :wrong_type], exits: :any)
+      class Parent
+        def self.foo = 7
+      end
+
+      class Child < Parent
+        def self.foo = proc { super() }
+      end
+
+      block = Child.foo
+      results = Array.new(2) { Child.instance_exec(&block) }
+      begin
+        Class.new.instance_exec(&block)
+      rescue TypeError
+        results << :wrong_type
+      end
+      results
+    RUBY
+  end
+
   def test_super_singleton_object_receiver
     stats = assert_compiles(<<~'RUBY', result: 17)
       class Parent
