@@ -252,7 +252,7 @@ rb_gcd_gmp(VALUE x, VALUE y)
     mpz_t mx, my, mz;
     size_t count;
     VALUE z;
-    long zn;
+    rb_len_t zn;
 
     mpz_init(mx);
     mpz_init(my);
@@ -279,10 +279,10 @@ rb_gcd_gmp(VALUE x, VALUE y)
 #define f_gcd f_gcd_orig
 #endif
 
-inline static long
-i_gcd(long x, long y)
+inline static rb_len_t
+i_gcd(rb_len_t x, rb_len_t y)
 {
-    unsigned long u, v, t;
+    rb_ulen_t u, v, t;
     int shift;
 
     if (x < 0)
@@ -295,8 +295,8 @@ i_gcd(long x, long y)
     if (y == 0)
         return x;
 
-    u = (unsigned long)x;
-    v = (unsigned long)y;
+    u = (rb_ulen_t)x;
+    v = (rb_ulen_t)y;
     for (shift = 0; ((u | v) & 1) == 0; ++shift) {
         u >>= 1;
         v >>= 1;
@@ -317,7 +317,7 @@ i_gcd(long x, long y)
         v = v - u;
     } while (v != 0);
 
-    return (long)(u << shift);
+    return (rb_len_t)(u << shift);
 }
 
 inline static VALUE
@@ -326,7 +326,7 @@ f_gcd_normal(VALUE x, VALUE y)
     VALUE z;
 
     if (FIXNUM_P(x) && FIXNUM_P(y))
-        return LONG2NUM(i_gcd(FIX2LONG(x), FIX2LONG(y)));
+        return LEN2NUM(i_gcd(FIX2LEN(x), FIX2LEN(y)));
 
     if (INT_NEGATIVE_P(x))
         x = rb_int_uminus(x);
@@ -343,7 +343,7 @@ f_gcd_normal(VALUE x, VALUE y)
             if (FIXNUM_ZERO_P(x))
                 return y;
             if (FIXNUM_P(y))
-                return LONG2NUM(i_gcd(FIX2LONG(x), FIX2LONG(y)));
+                return LEN2NUM(i_gcd(FIX2LEN(x), FIX2LEN(y)));
         }
         z = x;
         x = rb_int_modulo(y, x);
@@ -615,21 +615,21 @@ rb_rational_uminus(VALUE self)
 #endif
 
 inline static VALUE
-f_imul(long a, long b)
+f_imul(rb_len_t a, rb_len_t b)
 {
     VALUE r;
 
     if (a == 0 || b == 0)
         return ZERO;
     else if (a == 1)
-        return LONG2NUM(b);
+        return LEN2NUM(b);
     else if (b == 1)
-        return LONG2NUM(a);
+        return LEN2NUM(a);
 
-    if (MUL_OVERFLOW_LONG_P(a, b))
+    if (MUL_OVERFLOW_FIXNUM_P(a, b))
         r = rb_big_mul(rb_int2big(a), rb_int2big(b));
     else
-        r = LONG2NUM(a * b);
+        r = LEN2NUM(a * b);
     return r;
 }
 
@@ -637,10 +637,10 @@ f_imul(long a, long b)
 #undef f_imul
 
 inline static VALUE
-f_imul(long x, long y)
+f_imul(rb_len_t x, rb_len_t y)
 {
     VALUE r = f_imul_orig(x, y);
-    RUBY_ASSERT(f_eqeq_p(r, f_mul(LONG2NUM(x), LONG2NUM(y))));
+    RUBY_ASSERT(f_eqeq_p(r, f_mul(LEN2NUM(x), LEN2NUM(y))));
     return r;
 }
 #endif
@@ -652,13 +652,13 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 
     if (FIXNUM_P(anum) && FIXNUM_P(aden) &&
         FIXNUM_P(bnum) && FIXNUM_P(bden)) {
-        long an = FIX2LONG(anum);
-        long ad = FIX2LONG(aden);
-        long bn = FIX2LONG(bnum);
-        long bd = FIX2LONG(bden);
-        long ig = i_gcd(ad, bd);
+        rb_len_t an = FIX2LEN(anum);
+        rb_len_t ad = FIX2LEN(aden);
+        rb_len_t bn = FIX2LEN(bnum);
+        rb_len_t bd = FIX2LEN(bden);
+        rb_len_t ig = i_gcd(ad, bd);
 
-        VALUE g = LONG2NUM(ig);
+        VALUE g = LEN2NUM(ig);
         VALUE a = f_imul(an, bd / ig);
         VALUE b = f_imul(bn, ad / ig);
         VALUE c;
@@ -830,12 +830,12 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 
     if (FIXNUM_P(anum) && FIXNUM_P(aden) &&
         FIXNUM_P(bnum) && FIXNUM_P(bden)) {
-        long an = FIX2LONG(anum);
-        long ad = FIX2LONG(aden);
-        long bn = FIX2LONG(bnum);
-        long bd = FIX2LONG(bden);
-        long g1 = i_gcd(an, bd);
-        long g2 = i_gcd(ad, bn);
+        rb_len_t an = FIX2LEN(anum);
+        rb_len_t ad = FIX2LEN(aden);
+        rb_len_t bn = FIX2LEN(bnum);
+        rb_len_t bd = FIX2LEN(bden);
+        rb_len_t g1 = i_gcd(an, bd);
+        rb_len_t g2 = i_gcd(ad, bn);
 
         num = f_imul(an / g1, bn / g2);
         den = f_imul(ad / g2, bd / g1);
@@ -1109,8 +1109,8 @@ rb_rational_cmp(VALUE self, VALUE other)
 
             if (FIXNUM_P(adat->num) && FIXNUM_P(adat->den) &&
                 FIXNUM_P(bdat->num) && FIXNUM_P(bdat->den)) {
-                num1 = f_imul(FIX2LONG(adat->num), FIX2LONG(bdat->den));
-                num2 = f_imul(FIX2LONG(bdat->num), FIX2LONG(adat->den));
+                num1 = f_imul(FIX2LEN(adat->num), FIX2LEN(bdat->den));
+                num2 = f_imul(FIX2LEN(bdat->num), FIX2LEN(adat->den));
             }
             else {
                 num1 = rb_int_mul(adat->num, bdat->den);
@@ -1151,7 +1151,7 @@ nurat_eqeq_p(VALUE self, VALUE other)
 
             if (!FIXNUM_P(dat->den))
                 return Qfalse;
-            if (FIX2LONG(dat->den) != 1)
+            if (FIX2LEN(dat->den) != 1)
                 return Qfalse;
             return rb_int_equal(dat->num, other);
         }
@@ -1798,9 +1798,9 @@ rb_rational_hash(VALUE self)
 
     get_dat1(self);
     n = rb_hash(dat->num);
-    h[0] = NUM2LONG(n);
+    h[0] = NUM2LEN(n);
     n = rb_hash(dat->den);
-    h[1] = NUM2LONG(n);
+    h[1] = NUM2LEN(n);
     v = rb_memhash(h, sizeof(h));
     return v;
 }
@@ -2458,7 +2458,7 @@ parse_rat(const char *s, const char *const e, int strict, int raise)
         if (INT_NEGATIVE_P(nexp)) {
             VALUE mul;
             if (FIXNUM_P(nexp)) {
-                mul = f_expt10(LONG2NUM(-FIX2LONG(nexp)));
+                mul = f_expt10(LEN2NUM(-FIX2LEN(nexp)));
                 if (! RB_FLOAT_TYPE_P(mul)) {
                     num = rb_int_mul(num, mul);
                     goto reduce;
