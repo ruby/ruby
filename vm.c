@@ -3010,6 +3010,29 @@ zjit_stack_map_read_varint(zjit_stack_map_reader_t *r)
     return (int64_t)value;
 }
 
+#if RUBY_DEBUG
+static void
+zjit_check_owned_slot(const rb_control_frame_t *cfp, const zjit_jit_frame_t *jit_frame,
+                      const VALUE *slot, int32_t i)
+{
+    if (LIKELY(slot < cfp->sp)) return;
+
+    const rb_iseq_t *iseq = jit_frame->iseq;
+    const char *label = "(no iseq)";
+    unsigned int line = 0;
+    if (iseq && jit_frame->pc) {
+        label = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
+        line = rb_iseq_line_no(iseq, jit_frame->pc - ISEQ_BODY(iseq)->iseq_encoded);
+    }
+    rb_bug("ZJIT: stack map opcode %d writes %p, at or above cfp->sp %p (ep=%p, %s:%u). "
+           "That slot belongs to a frame pushed over this frame's operand stack.",
+           i, (const void *)slot, (const void *)cfp->sp,
+           (const void *)cfp->ep, label, line);
+}
+#else
+#define zjit_check_owned_slot(cfp, jit_frame, slot, i) ((void)0)
+#endif
+
 // Write a ZJIT frame's off-stack Ruby slots into VM-stack memory using its
 // stack map, decoding downward from cfp->sp. Does not touch any frame metadata
 // (pc/_iseq/block_code/jit_return).
@@ -3036,6 +3059,7 @@ zjit_write_frame_stack(const rb_execution_context_t *ec, rb_control_frame_t *cfp
 #define WRITE_ONE(value) do { \
     --stack; \
     if (!(locals_area && env_escaped)) { \
+        zjit_check_owned_slot(cfp, jit_frame, stack, i); \
         *stack = (value); \
     } \
 } while (0)
@@ -3087,6 +3111,9 @@ zjit_write_frame_stack(const rb_execution_context_t *ec, rb_control_frame_t *cfp
                 env_escaped = VM_ENV_ESCAPED_P(env_cfp->ep);
                 break;
             }
+            // The cursor only ever moves down, and an opcode that moves it off the
+            // bottom of the VM stack means the map or the anchor is malformed.
+            RUBY_ASSERT(stack >= ec->vm_stack);
         }
 #undef WRITE_ONE
     }
