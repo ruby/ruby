@@ -930,37 +930,37 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
     return old;
 }
 
-static unsigned long
-make_mask(unsigned long x)
+static rb_ulen_t
+make_mask(rb_ulen_t x)
 {
     x = x | x >> 1;
     x = x | x >> 2;
     x = x | x >> 4;
     x = x | x >> 8;
     x = x | x >> 16;
-#if 4 < SIZEOF_LONG
+#if 4 < SIZEOF_RB_LEN_T
     x = x | x >> 32;
 #endif
     return x;
 }
 
-static unsigned long
-limited_rand(const rb_random_interface_t *rng, rb_random_t *rnd, unsigned long limit)
+static rb_ulen_t
+limited_rand(const rb_random_interface_t *rng, rb_random_t *rnd, rb_ulen_t limit)
 {
     /* mt must be initialized */
-    unsigned long val, mask;
+    rb_ulen_t val, mask;
 
     if (!limit) return 0;
     mask = make_mask(limit);
 
-#if 4 < SIZEOF_LONG
+#if 4 < SIZEOF_RB_LEN_T
     if (0xffffffff < limit) {
         int i;
       retry:
         val = 0;
-        for (i = SIZEOF_LONG/SIZEOF_INT32-1; 0 <= i; i--) {
+        for (i = SIZEOF_RB_LEN_T/SIZEOF_INT32-1; 0 <= i; i--) {
             if ((mask >> (i * 32)) & 0xffffffff) {
-                val |= (unsigned long)rng->get_int32(rnd) << (i * 32);
+                val |= (rb_ulen_t)rng->get_int32(rnd) << (i * 32);
                 val &= mask;
                 if (limit < val)
                     goto retry;
@@ -1031,21 +1031,33 @@ limited_big_rand(const rb_random_interface_t *rng, rb_random_t *rnd, VALUE limit
 unsigned long
 rb_genrand_ulong_limited(unsigned long limit)
 {
+    return (unsigned long)rb_genrand_ulen_limited(limit);
+}
+
+/*
+ * Returns random unsigned long value in [0, +limit+].
+ *
+ * Note that +limit+ is included, and the range of the argument and the
+ * return value depends on environments.
+ */
+rb_ulen_t
+rb_genrand_ulen_limited(rb_ulen_t limit)
+{
     rb_random_mt_t *mt = default_mt();
     return limited_rand(&random_mt_if, &mt->base, limit);
 }
 
 static VALUE
-obj_random_bytes(VALUE obj, void *p, rb_len_t n)
+obj_random_bytes(VALUE obj, void *p, size_t n)
 {
-    VALUE len = LEN2NUM(n);
+    VALUE len = SIZET2NUM(n);
     VALUE v = rb_funcallv_public(obj, id_bytes, 1, &len);
     rb_len_t l;
     Check_Type(v, T_STRING);
     l = RSTRING_LEN(v);
-    if (l < n)
+    if ((rb_ulen_t)l < (rb_ulen_t)n)
         rb_raise(rb_eRangeError, "random data too short %"PRIdLEN, l);
-    else if (l > n)
+    else if ((rb_ulen_t)l > (rb_ulen_t)n)
         rb_raise(rb_eRangeError, "random data too long %"PRIdLEN, l);
     if (p) memcpy(p, RSTRING_PTR(v), n);
     return v;
@@ -1132,21 +1144,21 @@ ulong_to_num_plus_1(unsigned long n)
 #endif
 }
 
-static unsigned long
-random_ulong_limited(VALUE obj, const rb_random_interface_t *rng, rb_random_t *rnd, unsigned long limit)
+static rb_ulen_t
+random_ulen_limited(VALUE obj, const rb_random_interface_t *rng, rb_random_t *rnd, rb_ulen_t limit)
 {
     if (!limit) return 0;
     if (!rnd) {
-        const int w = sizeof(limit) * CHAR_BIT - nlz_long(limit);
-        const int n = w > 32 ? sizeof(unsigned long) : sizeof(uint32_t);
-        const unsigned long mask = ~(~0UL << w);
-        const unsigned long full =
-            (size_t)n >= sizeof(unsigned long) ? ~0UL :
-            ~(~0UL << n * CHAR_BIT);
-        unsigned long val, bits = 0, rest = 0;
+        const unsigned int w = sizeof(limit) * CHAR_BIT - nlz_intptr((uintptr_t)limit);
+        const size_t n = w > 32 ? sizeof(rb_ulen_t) : sizeof(uint32_t);
+        const rb_ulen_t mask = ~(~(rb_ulen_t)0 << w);
+        const rb_ulen_t full =
+            n >= sizeof(rb_ulen_t) ? ~(rb_ulen_t)0 :
+            ~(~(rb_ulen_t)0 << n * CHAR_BIT);
+        rb_ulen_t val, bits = 0, rest = 0;
         do {
             if (mask & ~rest) {
-                union {uint32_t u32; unsigned long ul;} buf;
+                union {uint32_t u32; rb_ulen_t ul;} buf;
                 obj_random_bytes(obj, &buf, n);
                 rest = full;
                 bits = (n == sizeof(uint32_t)) ? buf.u32 : buf.ul;
@@ -1163,6 +1175,14 @@ random_ulong_limited(VALUE obj, const rb_random_interface_t *rng, rb_random_t *r
 
 unsigned long
 rb_random_ulong_limited(VALUE obj, unsigned long limit)
+{
+    rb_ulen_t r = rb_random_ulen_limited(obj, limit);
+    RBIMPL_ASSERT_OR_ASSUME(r <= limit);
+    return (unsigned long)r;
+}
+
+rb_ulen_t
+rb_random_ulen_limited(VALUE obj, rb_ulen_t limit)
 {
     const rb_random_interface_t *rng;
     rb_random_t *rnd = try_get_rnd(obj, &rng);
@@ -1235,7 +1255,7 @@ random_bytes(VALUE obj, VALUE len)
 {
     const rb_random_interface_t *rng = NULL;
     rb_random_t *rnd = try_get_rnd(obj, &rng);
-    return rand_bytes(rng, rnd, NUM2LEN(rb_to_int(len)));
+    return rand_bytes(rng, rnd, NUM2LEN(len));
 }
 
 void
@@ -1282,7 +1302,7 @@ static VALUE
 random_s_bytes(VALUE obj, VALUE len)
 {
     rb_random_t *rnd = default_rand_start();
-    return rand_bytes(&random_mt_if, rnd, NUM2LEN(rb_to_int(len)));
+    return rand_bytes(&random_mt_if, rnd, NUM2LEN(len));
 }
 
 /*
@@ -1324,17 +1344,18 @@ static VALUE
 rand_int(VALUE obj, const rb_random_interface_t *rng, rb_random_t *rnd, VALUE vmax, int restrictive)
 {
     /* mt must be initialized */
-    unsigned long r;
+    rb_ulen_t r;
 
     if (FIXNUM_P(vmax)) {
-        long max = FIX2LONG(vmax);
+        rb_len_t max = FIX2LEN(vmax);
         if (!max) return Qnil;
         if (max < 0) {
             if (restrictive) return Qnil;
             max = -max;
         }
-        r = random_ulong_limited(obj, rng, rnd, (unsigned long)max - 1);
-        return ULONG2NUM(r);
+        rb_ulen_t limit = max < 0 ? (rb_ulen_t)RB_LEN_MAX : (rb_ulen_t)max - 1;
+        r = random_ulen_limited(obj, rng, rnd, limit);
+        return ULEN2NUM(r);
     }
     else {
         VALUE ret;
@@ -1345,10 +1366,10 @@ rand_int(VALUE obj, const rb_random_interface_t *rng, rb_random_t *rnd, VALUE vm
         }
         vmax = rb_big_minus(vmax, INT2FIX(1));
         if (FIXNUM_P(vmax)) {
-            long max = FIX2LONG(vmax);
+            rb_len_t max = FIX2LEN(vmax);
             if (max == -1) return Qnil;
-            r = random_ulong_limited(obj, rng, rnd, max);
-            return LONG2NUM(r);
+            r = random_ulen_limited(obj, rng, rnd, (rb_ulen_t)max);
+            return ULEN2NUM(r);
         }
         ret = random_ulong_limited_big(obj, rng, rnd, vmax);
         RB_GC_GUARD(vmax);
@@ -1403,14 +1424,14 @@ rand_range(VALUE obj, const rb_random_interface_t *rng, rb_random_t* rnd, VALUE 
         return Qfalse;
     if (NIL_P(v)) domain_error();
     if (!RB_FLOAT_TYPE_P(vmax) && (v = rb_check_to_int(vmax), !NIL_P(v))) {
-        long max;
+        rb_len_t max;
         vmax = v;
         v = Qnil;
       fixnum:
         if (FIXNUM_P(vmax)) {
-            if ((max = FIX2LONG(vmax) - excl) >= 0) {
-                unsigned long r = random_ulong_limited(obj, rng, rnd, (unsigned long)max);
-                v = ULONG2NUM(r);
+            if ((max = FIX2LEN(vmax) - excl) >= 0) {
+                rb_ulen_t r = random_ulen_limited(obj, rng, rnd, (rb_ulen_t)max);
+                v = ULEN2NUM(r);
             }
         }
         else if (BUILTIN_TYPE(vmax) == T_BIGNUM && BIGNUM_SIGN(vmax) && !rb_bigzero_p(vmax)) {
@@ -1449,8 +1470,7 @@ rand_range(VALUE obj, const rb_random_interface_t *rng, rb_random_t* rnd, VALUE 
     }
 
     if (FIXNUM_P(beg) && FIXNUM_P(v)) {
-        long x = FIX2LONG(beg) + FIX2LONG(v);
-        return LONG2NUM(x);
+        return rb_fix_plus_fix(beg, v);
     }
     switch (TYPE(v)) {
       case T_NIL:
