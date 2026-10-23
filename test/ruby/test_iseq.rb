@@ -915,6 +915,22 @@ class TestISeq < Test::Unit::TestCase
 
   def test_short_circuited_loop_condition
     assert_ruby_status([], "while true || true; exit; end; abort")
+    disasm = compile("while true || true; exit; end; abort").disasm
+    assert_not_match(/^\d+ putnil\s*\n\d+ jump\s+\d+/m, disasm)
+  end
+
+  def test_short_circuited_break_in_ensure
+    assert_in_out_err(["--parser=parse.y"], <<~'RUBY', %w[OK], success: true)
+      while false
+        begin
+          if false && (break if foo); end
+        ensure
+          puts 'BUG'
+          exit!(false)
+        end
+      end
+      raise 'OK' rescue puts $!
+    RUBY
   end
 
   def test_unreachable_syntax_error
