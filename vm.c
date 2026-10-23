@@ -1130,6 +1130,12 @@ vm_block_handler_escape(const rb_execution_context_t *ec, VALUE block_handler)
     return Qnil;
 }
 
+#if USE_ZJIT
+static void rb_zjit_extract_values_from_stack_map(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
+#else
+#define rb_zjit_extract_values_from_stack_map(ec, cfp) ((void)0)
+#endif
+
 // child_ep is the on-stack ep of a frame whose prev ep is cfp->ep, or NULL.
 static VALUE
 vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp, const VALUE *const child_ep)
@@ -1191,6 +1197,13 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
         !rbimpl_atomic_load(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED)) {
         if (rb_yjit_enabled_p) rb_yjit_invalidate_ep_is_bp(iseq);
         if (rb_zjit_enabled_p) rb_zjit_invalidate_no_ep_escape(iseq);
+    }
+
+    // Spill ZJIT frame if there is one to get locals out.
+    if (VM_FRAME_RUBYFRAME_P(cfp)) {
+        // We only need the locals here but we reconstruct the stack as well for simplicity.
+        // TODO(alan): Directly extract to the heap env from the stackmap.
+        rb_zjit_extract_values_from_stack_map(ec, cfp);
     }
 
     /*
@@ -3010,9 +3023,9 @@ zjit_check_owned_slot(const rb_control_frame_t *cfp, const zjit_jit_frame_t *jit
 #define zjit_check_owned_slot(cfp, jit_frame, slot, i) ((void)0)
 #endif
 
-// Write a ZJIT frame's off-stack Ruby slots into VM-stack memory using its
-// stack map, decoding downward from cfp->sp. Does not touch any frame metadata
-// (pc/_iseq/block_code/jit_return).
+// Write a ZJIT frame's off-stack Ruby slots (operands and locals) into VM-stack
+// memory using its stack map, decoding downward from cfp->sp. Does not touch
+// any frame metadata (pc/_iseq/block_code/jit_return).
 static void
 zjit_frame_write_stack(const rb_execution_context_t *ec, rb_control_frame_t *cfp, const zjit_jit_frame_t *jit_frame)
 {
@@ -3151,6 +3164,18 @@ rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb_cont
     // A ZJIT frame active before the tag's setjmp is below it on the native
     // stack and survives longjmp. Materialize only the frames unwound above it.
     zjit_materialize_frames(ec, cfp, !ec->tag->zjit_frame_active);
+}
+
+// Extract a single control frame's off-stack Ruby slots (operands and locals) into
+// VM-stack memory, leaving jit_return intact. Used for doing environment escape
+// (vm_make_env_each()).
+static void
+rb_zjit_extract_values_from_stack_map(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
+{
+    if (!rb_zjit_enabled_p) return;
+    if (CFP_ZJIT_FRAME_P(cfp)) {
+        zjit_frame_write_stack(ec, cfp, CFP_ZJIT_FRAME(cfp));
+    }
 }
 #endif
 

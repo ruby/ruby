@@ -519,6 +519,20 @@ mod tests {
         "#), @r#""Object#test""#);
     }
 
+    #[test]
+    fn test_define_method_env_escape() {
+        // This is a regression for fallback call into a method which performs env escape.
+        // At the time of writing the call to define_method is a fallback and relies on a
+        // proper stack map to work.
+        assert_snapshot!(inspect(r#"
+            def go(i)
+              Class.new { define_method(:m) { i } }
+            end
+            4.times { |i| go(i) }
+            go(99).new.m
+        "#), @"99");
+    }
+
     // A send fallback may throw (e.g. via method_missing raising). The
     // interpreter must be able to find the correct rescue handler in the
     // caller's ISEQ catch table. This exercises throw through send fallback.
@@ -579,6 +593,32 @@ mod tests {
             test.outer
             test.outer
         "#), @"[1, nil]");
+    }
+
+    // vm_make_env_each() spills through the same decoder, so an escaping env in
+    // an inlined frame decodes a map that spans three control frames and crosses
+    // two StackMapEntry::PrevFrame boundaries. Unlike the raise-based tests in
+    // codegen_tests.rs, nothing unwinds here: `keep` has to survive in the
+    // caller frame that the map also describes.
+    #[test]
+    fn test_stack_map_spill_across_inlined_frames() {
+        assert_snapshot!(inspect("
+            def leaf(escape)
+              proc { } if escape # escapes only this frame's env
+              escape ? 2 : 1
+            end
+
+            def middle(n)
+              keep = n + 40
+              keep + leaf(n > 0)
+            end
+
+            def outer(n) = middle(n)
+
+            outer(0)
+            outer(0)
+            [outer(1), outer(0)]
+        "), @"[43, 41]");
     }
 
     // Proc.new inside a block passed via invokeblock captures the caller's
