@@ -41,7 +41,7 @@ require 'socket'
 
 class IPAddr
   # The version string
-  VERSION = "1.2.9"
+  VERSION = "1.3.0"
 
   # 32 bit mask for IPv4
   IN4MASK = 0xffffffff
@@ -205,6 +205,48 @@ class IPAddr
     return @addr
   end
 
+  # Returns a string containing the binary representation of the
+  # IP address value, right adjusted to the address size (32 bits
+  # for IPv4, 128 bits for IPv6), regardless of the prefix length.
+  #
+  # e.g.:
+  #   require 'ipaddr'
+  #   p IPAddr.new("192.168.1.1").to_bits
+  #   #=> "11000000101010000000000100000001"
+  #   p IPAddr.new("3ffe:505:2::1").to_bits
+  #   #=> "00111111111111100000010100000101" \
+  #   #   "00000000000000100000000000000000" \
+  #   #   "00000000000000000000000000000000" \
+  #   #   "00000000000000000000000000000001"
+  def to_bits
+    case @family
+    when Socket::AF_INET
+      @addr.to_s(2).rjust(32, '0')
+    when Socket::AF_INET6
+      @addr.to_s(2).rjust(128, '0')
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
+  # Returns a string containing the hexadecimal representation of the
+  # IP address value, right adjusted to the address size.
+  #
+  # e.g.:
+  #   require 'ipaddr'
+  #   p IPAddr.new("192.168.1.1").to_hex   #=> "c0a80101"
+  #   p IPAddr.new("3ffe:505:2::1").to_hex #=> "3ffe0505000200000000000000000001"
+  def to_hex
+    case @family
+    when Socket::AF_INET
+      @addr.to_s(16).rjust(8, '0')
+    when Socket::AF_INET6
+      @addr.to_s(16).rjust(32, '0')
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
   # Returns a string containing the IP address representation.
   def to_s
     str = _to_string(@addr)
@@ -268,12 +310,9 @@ class IPAddr
   # Returns a network byte ordered string form of the IP address.
   def hton
     case @family
-    when Socket::AF_INET
-      return [@addr].pack('N')
-    when Socket::AF_INET6
-      return (0..7).map { |i|
-        (@addr >> (112 - 16 * i)) & 0xffff
-      }.pack('n8')
+    when Socket::AF_INET, Socket::AF_INET6
+      value = to_hex
+      return [value].pack("H#{value.length}")
     else
       raise AddressFamilyError, "unsupported address family"
     end
@@ -712,10 +751,12 @@ class IPAddr
         raise AddressFamilyError, "unsupported address family: #{family}"
       end
     end
+    requested_family = family
     prefix, prefixlen = addr.split('/', 2)
     if prefix =~ /\A\[(.*)\]\z/i
       prefix = $1
       family = Socket::AF_INET6
+      bracketed = true
     end
     if prefix =~ /\A(.*)(%\w+)\z/
       prefix = $1
@@ -737,11 +778,17 @@ class IPAddr
       @family = Socket::AF_INET6
     end
     @zone_id = zone_id
-    if family != Socket::AF_UNSPEC && @family != family
+    if requested_family != Socket::AF_UNSPEC && @family != requested_family
       raise AddressFamilyError, "address family mismatch"
     end
     if prefixlen
       mask!(prefixlen)
+
+      if bracketed
+        warn "bracketed IPv6 address with a prefix length is an invalid address " \
+             "and will raise IPAddr::InvalidAddressError in a future version: #{addr}",
+             uplevel: 1
+      end
     else
       @mask_addr = (@family == Socket::AF_INET) ? IN4MASK : IN6MASK
     end
@@ -829,7 +876,7 @@ class IPAddr
         (@addr >> (8 * i)) & 0xff
       }.join('.')
     when Socket::AF_INET6
-      return ("%.32x" % @addr).reverse!.gsub!(/.(?!$)/, '\&.')
+      return to_hex.reverse.chars.join('.')
     else
       raise AddressFamilyError, "unsupported address family"
     end

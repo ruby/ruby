@@ -33,8 +33,6 @@ module Ruby::Prism
     #      def end_character_column: () -> Integer
     #      def cached_start_code_units_column: (_CodeUnitsCache cache) -> Integer
     #      def cached_end_code_units_column: (_CodeUnitsCache cache) -> Integer
-    #      def leading_comments: () -> Array[Comment]
-    #      def trailing_comments: () -> Array[Comment]
     #    end
     #
     #    interface _Field
@@ -168,27 +166,6 @@ module Ruby::Prism
       #: () -> Integer
       def end_code_units_column
         fetch_value(:end_code_units_column)
-      end
-
-      # Fetch the leading comments of the value.
-      #
-      #: () -> Array[CommentsField::Comment]
-      def leading_comments
-        fetch_value(:leading_comments)
-      end
-
-      # Fetch the trailing comments of the value.
-      #
-      #: () -> Array[CommentsField::Comment]
-      def trailing_comments
-        fetch_value(:trailing_comments)
-      end
-
-      # Fetch the leading and trailing comments of the value.
-      #
-      #: () -> Array[CommentsField::Comment]
-      def comments
-        [*leading_comments, *trailing_comments]
       end
 
       # Reify the values on this entry with the given values. This is an
@@ -427,51 +404,6 @@ module Ruby::Prism
       end
     end
 
-    # An abstract field used as the parent class of the two comments fields.
-    class CommentsField
-      # An object that represents a slice of a comment.
-      class Comment
-        # The slice of the comment.
-        attr_reader :slice #: String
-
-        # Initialize a new comment with the given slice.
-        #
-        #: (String slice) -> void
-        def initialize(slice)
-          @slice = slice
-        end
-      end
-
-      private
-
-      # Create comment objects from the given values.
-      #
-      #: (entry_value values) -> Array[Comment]
-      def comments(values)
-        values.map { |value| Comment.new(value.slice) }
-      end
-    end
-
-    # A field representing the leading comments.
-    class LeadingCommentsField < CommentsField
-      # Fetches the leading comments of a value.
-      #
-      #: (_Value value) -> entry_values
-      def fields(value)
-        { leading_comments: comments(value.leading_comments) }
-      end
-    end
-
-    # A field representing the trailing comments.
-    class TrailingCommentsField < CommentsField
-      # Fetches the trailing comments of a value.
-      #
-      #: (_Value value) -> entry_values
-      def fields(value)
-        { trailing_comments: comments(value.trailing_comments) }
-      end
-    end
-
     # A repository is a configured collection of fields and a set of entries
     # that knows how to reparse a source and reify the values.
     class Repository
@@ -567,30 +499,6 @@ module Ruby::Prism
         field(:code_unit_columns, CodeUnitColumnsField.new(self, encoding))
       end
 
-      # Configure the leading comments field for this repository and return
-      # self.
-      #
-      #: () -> self
-      def leading_comments
-        field(:leading_comments, LeadingCommentsField.new)
-      end
-
-      # Configure the trailing comments field for this repository and return
-      # self.
-      #
-      #: () -> self
-      def trailing_comments
-        field(:trailing_comments, TrailingCommentsField.new)
-      end
-
-      # Configure both the leading and trailing comment fields for this
-      # repository and return self.
-      #
-      #: () -> self
-      def comments
-        leading_comments.trailing_comments
-      end
-
       # This method is called from nodes and locations when they want to enter
       # themselves into the repository. It it internal-only and meant to be
       # called from the #save* APIs.
@@ -609,12 +517,6 @@ module Ruby::Prism
       #: () -> void
       def reify! # :nodoc:
         result = source.result
-
-        # Attach the comments if they have been requested as part of the
-        # configuration of this repository.
-        if fields.key?(:leading_comments) || fields.key?(:trailing_comments)
-          result.attach_comments!
-        end
 
         queue = [result.value] #: Array[Ruby::Prism::node]
         while (node = queue.shift)

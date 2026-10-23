@@ -660,8 +660,9 @@ typedef struct rb_objspace {
         unsigned int gc_lock_barrier : 1;
         unsigned int during_reference_updating : 1;
         unsigned int during_minor_gc : 1;
-        unsigned int during_incremental_marking : 1;
         unsigned int during_postmortem : 1;
+        /* No Ractor will own this objspace any more and it will never allocate again. */
+        unsigned int ownerless : 1;
         unsigned int measure_gc : 1;
     } flags;
 
@@ -832,6 +833,12 @@ typedef struct rb_objspace {
         rb_nativethread_lock_t lock;
         struct gc_process_stat_snapshot published;
     } process_stat;
+
+    /* The incremental-marking flag as an addressable field, so that ZJIT-generated
+     * code can read it; see rb_gc_impl_zjit_writebarrier_required_offset.
+     * Single-writer: a local GC runs on the owning Ractor's thread and a global GC
+     * writes under the stop-the-world barrier.  Read by JIT code on the same thread. */
+    bool zjit_during_incremental_marking;
 } rb_objspace_t;
 
 /* The one VM-global GC structure; for now it only holds the page pool.  Page bodies are
@@ -1538,23 +1545,14 @@ total_final_slots_count(rb_objspace_t *objspace)
 #define is_marking(objspace)             (gc_mode(objspace) == gc_mode_marking)
 #define is_sweeping(objspace)            (gc_mode(objspace) == gc_mode_sweeping)
 #define is_full_marking(objspace)        ((objspace)->flags.during_minor_gc == FALSE)
-#define is_incremental_marking(objspace) ((objspace)->flags.during_incremental_marking != FALSE)
+#define is_incremental_marking(objspace) ((objspace)->zjit_during_incremental_marking != FALSE)
 #define will_be_incremental_marking(objspace) ((objspace)->rgengc.need_major_gc != GPR_FLAG_NONE)
-
-/* Mirrors flags.during_incremental_marking so that ZJIT-generated code can
- * read it (a bitfield has no address); see rb_gc_impl_zjit_writebarrier_required_p_ptr.
- * Only transitions write to it: incremental marking requires a single objspace,
- * so a redundant FALSE store from another objspace's GC entry must not clobber
- * the marking objspace's TRUE. Written inside GC while mutators are stopped;
- * read by JIT code. */
-static uintptr_t zjit_during_incremental_marking = FALSE;
 
 static void
 gc_set_incremental_marking(rb_objspace_t *objspace, unsigned int value)
 {
-    if (objspace->flags.during_incremental_marking != value) {
-        objspace->flags.during_incremental_marking = value;
-        zjit_during_incremental_marking = value;
+    if (objspace->zjit_during_incremental_marking != value) {
+        objspace->zjit_during_incremental_marking = value;
     }
 }
 /*
@@ -2366,6 +2364,31 @@ heap_unlink_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *pag
     ccan_list_del(&page->page_node);
     heap->total_pages--;
     heap->total_slots -= page->total_slots;
+}
+
+/* Detach a page with no living objects from its heap and park it on the objspace's
+ * empty pages, from where it is reused or released to the page pool.  The caller has
+ * already taken it off the heap's free_pages chain, if it was on it. */
+static void
+heap_page_detach_empty(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
+{
+    heap_unlink_page(objspace, heap, page);
+
+    page->start = 0;
+    page->total_slots = 0;
+    page->slot_size = 0;
+    page->heap = NULL;
+    page->free_slots = 0;
+
+    asan_unlock_freelist(page);
+    page->free_region = NULL;
+    asan_lock_freelist(page);
+
+    asan_poison_memory_region(page->body, HEAP_PAGE_SIZE);
+
+    objspace->empty_pages_count++;
+    page->free_next = objspace->empty_pages;
+    objspace->empty_pages = page;
 }
 
 static void
@@ -3476,10 +3499,10 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
 #endif
 }
 
-const uintptr_t *
-rb_gc_impl_zjit_writebarrier_required_p_ptr(void *objspace_ptr)
+int32_t
+rb_gc_impl_zjit_writebarrier_required_offset(void)
 {
-    return &zjit_during_incremental_marking;
+    return (int32_t)offsetof(rb_objspace_t, zjit_during_incremental_marking);
 }
 
 NOINLINE(static VALUE newobj_refill(rb_objspace_t *objspace, size_t heap_idx));
@@ -4441,7 +4464,10 @@ rb_gc_impl_shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t _da
 
     rb_gc_run_obj_finalizer(RARRAY_AREF(table, 0), RARRAY_LEN(table) - 1, get_final, (void *)table);
 
-    FL_UNSET(obj, FL_FINALIZE);
+    /* obj may be a poisoned zombie */
+    asan_unpoisoning_object(obj) {
+        FL_UNSET(obj, FL_FINALIZE);
+    }
 
     return ST_DELETE;
 }
@@ -5590,6 +5616,9 @@ gc_sweep_start(rb_objspace_t *objspace)
 static void
 gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
 {
+    /* Nothing allocates from an ownerless objspace, so it has no growth decision */
+    if (objspace->flags.ownerless) return;
+
     size_t total_slots = heap->total_slots;
     size_t swept_slots = heap->freed_slots + heap->empty_slots;
 
@@ -5726,26 +5755,12 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 
         heap->sweeping_page = ccan_list_next(&heap->pages, sweep_page, page_node);
 
-        if (free_slots == sweep_page->total_slots && heap->total_pages > 1) {
+        if (free_slots == sweep_page->total_slots &&
+                (heap->total_pages > 1 || objspace->flags.ownerless)) {
             /* There are no living objects, so move this page to the global empty pages.
-             * The last one stays: nothing grows a heap that has no pages at all. */
-            heap_unlink_page(objspace, heap, sweep_page);
-
-            sweep_page->start = 0;
-            sweep_page->total_slots = 0;
-            sweep_page->slot_size = 0;
-            sweep_page->heap = NULL;
-            sweep_page->free_slots = 0;
-
-            asan_unlock_freelist(sweep_page);
-            sweep_page->free_region = NULL;
-            asan_lock_freelist(sweep_page);
-
-            asan_poison_memory_region(sweep_page->body, HEAP_PAGE_SIZE);
-
-            objspace->empty_pages_count++;
-            sweep_page->free_next = objspace->empty_pages;
-            objspace->empty_pages = sweep_page;
+             * The last one stays so the heap has something to grow from -- except in an
+             * ownerless objspace, which will never allocate again. */
+            heap_page_detach_empty(objspace, heap, sweep_page);
         }
         else if (free_slots > 0) {
             heap->freed_slots += ctx.freed_slots;
@@ -8689,6 +8704,7 @@ rb_gc_impl_objspace_retire_gc(void *objspace_ptr)
     /* The dying thread's stack is already torn down here, so the root scan must skip
      * its machine context (rb_gc_mark_roots). */
     objspace->flags.during_postmortem = 1;
+    objspace->flags.ownerless = 1;
 
     gc_rest(objspace);
     gc_start(objspace, GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP);
@@ -9521,12 +9537,16 @@ rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
     return MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(obj), obj) != 0;
 }
 
-/* The objspace's current page count (used for the zombie_objspaces page accounting). */
+/* What a zombie objspace is worth to the zombie_objspaces page accounting, floored:
+ * the retire GC can empty an ownerless objspace outright, yet its struct, mark stack
+ * and heap_page structs stay in malloc and it keeps the world multi-objspace until a
+ * global GC merges it, so a page-less zombie must still push the zombie trigger. */
 size_t
-rb_gc_impl_heap_page_count(void *objspace_ptr)
+rb_gc_impl_zombie_heap_page_count(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
-    return rb_darray_size(objspace->heap_pages.sorted);
+    size_t pages = rb_darray_size(objspace->heap_pages.sorted);
+    return pages > HEAP_COUNT ? pages : HEAP_COUNT;
 }
 
 static void
@@ -10018,6 +10038,9 @@ objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src)
             gc_abort_incremental_marking(objspace);
             gc_make_mid_mark_objspace_absorbable(objspace);
         }
+        /* rb_ractor_terminate_atfork retires without the retire GC, so src may arrive
+         * with the flag unset; the sweep gc_rest may finish is the last one it gets. */
+        objspace->flags.ownerless = 1;
         gc_rest(src); // if mid-sweep
         heap_alloc_state_clear(objspace);
         /* gc_sweep_finish leaves swept pages "pooled" for a coming incremental mark; src
@@ -10026,6 +10049,29 @@ objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src)
          * gc_start_global step 3). */
         for (int h = 0; h < HEAP_COUNT; h++) {
             heap_move_pooled_pages_to_free_pages(&heaps[h]);
+        }
+
+        /* Backstop for pages a sweep that ran before `ownerless` was set left attached */
+        for (int h = 0; h < HEAP_COUNT; h++) {
+            rb_heap_t *heap = &heaps[h];
+            struct heap_page **link = &heap->free_pages;
+            while (*link) {
+                struct heap_page *page = *link;
+                if (page->free_slots == page->total_slots) {
+                    *link = page->free_next;
+                }
+                else {
+                    link = &page->free_next;
+                }
+            }
+
+            struct heap_page *page, *next;
+            ccan_list_for_each_safe(&heap->pages, page, next, page_node) {
+                if (page->free_slots == page->total_slots) {
+                    GC_ASSERT(page->final_slots == 0);
+                    heap_page_detach_empty(objspace, heap, page);
+                }
+            }
         }
     }
 

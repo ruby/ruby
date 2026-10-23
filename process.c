@@ -1587,6 +1587,17 @@ after_fork_ruby(rb_pid_t pid)
         after_exec();
     }
 }
+
+static void
+release_fork_lock_after_fork(rb_pid_t pid)
+{
+    if (pid == 0) {
+        rb_thread_reset_fork_lock();
+    }
+    else {
+        rb_thread_release_fork_lock();
+    }
+}
 #endif
 
 #if defined(HAVE_WORKING_FORK)
@@ -3658,9 +3669,11 @@ handle_fork_error(int err, struct rb_process_status *status, int *ep, volatile i
     return -1;
 }
 
+/* Flush the current Ractor's own stdio: taking the write_lock of an IO owned
+ * by another Ractor can block on a thread that rb_check_deadlock can't see. */
 #define prefork() (		\
-        rb_io_flush(rb_stdout), \
-        rb_io_flush(rb_stderr)	\
+        rb_io_flush(rb_ractor_stdout()), \
+        rb_io_flush(rb_ractor_stderr())	\
         )
 
 /*
@@ -4083,16 +4096,7 @@ rb_fork_ruby(int *status)
         }
 
         disable_child_handler_fork_parent(&old); /* yes, bad name */
-        if (
-#if defined(__FreeBSD__)
-            pid != 0 &&
-#endif
-            true) {
-            rb_thread_release_fork_lock();
-        }
-        if (pid == 0) {
-            rb_thread_reset_fork_lock();
-        }
+        release_fork_lock_after_fork(pid);
         after_fork_ruby(pid);
 
         /* repeat while fork failed but retryable */
@@ -6910,8 +6914,12 @@ rb_daemon(int nochdir, int noclose)
 {
     int err = 0;
 #ifdef HAVE_DAEMON
+    rb_pid_t pid = getpid();
     before_fork_ruby();
+    rb_thread_acquire_fork_lock();
     err = daemon(nochdir, noclose);
+    /* daemon(3) can fail in the child as well, so compare pids */
+    release_fork_lock_after_fork(getpid() == pid ? pid : 0);
     after_fork_ruby(0);
 #else
     int n;

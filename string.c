@@ -2161,7 +2161,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
         if (!NIL_OR_UNDEF_P(vcapa)) {
             rb_len_t capa = NUM2LEN(vcapa);
             rb_len_t len = 0;
-            int termlen = enc ? rb_enc_mbminlen(enc) : 1;
+            int termlen;
 
             if (capa < STR_BUF_MIN_SIZE) {
                 capa = STR_BUF_MIN_SIZE;
@@ -2174,6 +2174,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
                 }
                 if (orig == str) n = 0;
             }
+            termlen = enc ? rb_enc_mbminlen(enc) : TERM_LEN(n == 1 ? orig : str);
             str_modifiable(str);
             if (STR_EMBED_P(str) || FL_TEST(str, STR_SHARED|STR_NOFREE)) {
                 /* make noembed always */
@@ -2207,7 +2208,13 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
         }
         if (enc) {
             str_modifiable(str);
-            rb_enc_raw_set(str, enc);
+            if (NIL_OR_UNDEF_P(vcapa)) {
+                rb_enc_associate(str, enc);
+            }
+            else {
+                /* the buffer is already sized for enc's terminator */
+                rb_enc_raw_set(str, enc);
+            }
             ENC_CODERANGE_CLEAR(str);
         }
     }
@@ -3284,7 +3291,7 @@ rb_str_subpos(VALUE str, rb_len_t beg, rb_len_t *lenp)
     const char *p, *s = RSTRING_PTR(str), *e = s + blen;
 
     if (len < 0) return 0;
-    if (beg < 0 && -beg < 0) return 0;
+    if (beg == RB_LEN_MIN) return 0;
     if (!blen) {
         len = 0;
     }
@@ -4142,7 +4149,7 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
  *  Raises RangeError if that codepoint is not representable in the encoding of +self+:
  *
  *    s = 'foo'
- *    s.encoding              # => <Encoding:UTF-8>
+ *    s.encoding              # => #<Encoding:UTF-8>
  *    s << 0x00110000         # 1114112 out of char range (RangeError)
  *    s = 'foo'.encode(Encoding::EUC_JP)
  *    s << 0x00800080         # invalid codepoint 0x800080 in EUC-JP (RangeError)
@@ -5768,7 +5775,7 @@ rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive)
 
                 if (ISASCII(b) && ISASCII(e) && ISASCII(v)) {
                     if (b <= v && v < e) return Qtrue;
-                    return RBOOL(!RTEST(exclusive) && v == e);
+                    return RBOOL(!RTEST(exclusive) && b <= v && v == e);
                 }
             }
         }
@@ -6826,7 +6833,7 @@ str_bit_offset_out_of_range(rb_len_t byte_len, uint64_t bit_offset)
  * Keep both the full bit offset and its rb_len_t representation.  Most calls
  * use a Fixnum-sized offset and can stay on the rb_len_t fast path; only large
  * Bignum offsets need the uint64_t path below.  This matters on platforms where
- * rb_len_t is narrower than the address space, such as 32-bit and LLP64.
+ * rb_len_t is 32 bits.
  */
 struct str_bit_offset {
     uint64_t value;
@@ -7563,6 +7570,66 @@ rb_str_bitwise_not_bang(VALUE str)
     str_bitwise_not(ptr, ptr, len);
     return str;
 }
+
+/*
+ * Document-method: String#bitwise_and
+ *
+ * call-seq:
+ *   bitwise_and -> new_string
+ *
+ *  :include: doc/string/bitwise_and.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_and!
+ *
+ * call-seq:
+ *   bitwise_and! -> self
+ *
+ *  :include: doc/string/bitwise_and_bang.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_or
+ *
+ * call-seq:
+ *   bitwise_or -> new_string
+ *
+ *  :include: doc/string/bitwise_or.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_or!
+ *
+ * call-seq:
+ *   bitwise_or! -> self
+ *
+ *  :include: doc/string/bitwise_or_bang.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_xor
+ *
+ * call-seq:
+ *   bitwise_xor -> new_string
+ *
+ *  :include: doc/string/bitwise_xor.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_xor!
+ *
+ * call-seq:
+ *   bitwise_xor! -> self
+ *
+ *  :include: doc/string/bitwise_xor_bang.rdoc
+ *
+ */
 
 #define STR_DEFINE_BINARY_BITWISE_METHOD(name)                              \
     static VALUE                                                            \
@@ -10008,23 +10075,26 @@ rb_str_tr_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    tr(selector, replacements) -> new_string
  *    tr(pairs) -> new_string
+ *    tr(selector, replacements) -> new_string
  *
- *  Accepts either a +selector+ and a +replacements+ string,
- *  or a single +pairs+ Hash.
+ *  With hash argument +pairs+ given,
+ *  returns a copy of +self+ with some codepoints replaced:
  *
- *  When a +pairs+ Hash is provided the keys, returns a copy of +self+ with
- *  the keys of the hash replaced by the values.
+ *  - Each key in +pairs+ is a string contains a single codepoint.
+ *  - Each value in +pairs+ is a string of any length (even length zero).
  *
- *  - They keys must be strings containing a single codepoints.
- *  - The values can be of any length.
+ *  Each codepoint in +self+ is examined;
+ *  when the codepoint in +self+ matches a key codepoint in +pairs+,
+ *  the string value for that key replaces the codepoint in +self+.
  *
- *  Example:
+ *  Examples:
  *
- *    'hello'.tr('e' => 'er', 'l' => '', 'o' => 'o !') #=> "hero !"
+ *    h = {'h' => 'H', 'e' => 'er', 'l' => '', 'o' => 'o!'}
+ *    'hello'.tr(h)           # => "Hero!"
  *
- *  When +selector+ and +replacements+are provided, returns a copy of +self+
+ *  With string arguments +selector+ and +replacements+ given,
+ *  returns a copy of +self+
  *  with each character specified by string +selector+ translated to the
  *  corresponding character in string +replacements+.
  *  The correspondence is _positional_:

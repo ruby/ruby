@@ -35,11 +35,19 @@ module Ruby::Prism
         # pattern, so we need to track that state.
         attr_reader :in_pattern
 
+        # The list of comments from the parse result, sorted by start offset.
+        attr_reader :parse_comments
+
+        # The source string being compiled.
+        attr_reader :source_string
+
         # Initialize a new compiler with the given file name.
-        def initialize(file, in_def: false, in_pattern: false)
+        def initialize(file, in_def: false, in_pattern: false, parse_comments: [], source_string: "")
           @file = file
           @in_def = in_def
           @in_pattern = in_pattern
+          @parse_comments = parse_comments
+          @source_string = source_string
         end
 
         # alias foo bar
@@ -1549,20 +1557,48 @@ module Ruby::Prism
 
         private
 
-        # Attach prism comments to the given sexp.
+        # Attach leading comments to the given sexp, mirroring ruby_parser's
+        # behavior: all comments preceding the class/module/def keyword are
+        # attached as long as no source code appears between the last comment
+        # and the keyword. Blank lines between comments are preserved.
         def attach_comments(sexp, node)
-          return unless node.comments
-          return if node.comments.empty?
+          node_start = node.location.start_offset
+          leading = []
 
-          extra = node.location.start_line - node.comments.last.location.start_line
-          comments = node.comments.map(&:slice)
-          comments.concat([nil] * [0, extra].max)
-          sexp.comments = comments.join("\n")
+          parse_comments.each do |comment|
+            if comment.location.start_offset < node_start
+              leading << comment
+            end
+          end
+
+          return if leading.empty?
+
+          # Walk backwards and drop comments that have source code between
+          # them and the node (or between them and the next kept comment).
+          result = []
+          boundary = node_start
+
+          leading.reverse_each do |comment|
+            gap = source_string[comment.location.end_offset...boundary]
+
+            if gap.match?(/\S/)
+              break
+            end
+
+            result.unshift(comment)
+            boundary = comment.location.start_offset
+          end
+
+          return if result.empty?
+
+          # Build the comment string from the first comment through to the
+          # keyword, preserving blank lines (mirroring ruby_parser's lexer).
+          sexp.comments = source_string[result.first.location.start_offset...node_start].gsub(/^ +#/, "#").gsub(/^ +$/, "")
         end
 
         # Create a new compiler with the given options.
         def copy_compiler(in_def: self.in_def, in_pattern: self.in_pattern)
-          self.class.new(file, in_def: in_def, in_pattern: in_pattern)
+          self.class.new(file, in_def: in_def, in_pattern: in_pattern, parse_comments: parse_comments, source_string: source_string)
         end
 
         # Create a new Sexp object from the given prism node and arguments.
@@ -1678,8 +1714,7 @@ module Ruby::Prism
           raise ::RubyParser::SyntaxError, "#{filepath}:#{error.location.start_line} :: #{error.message}"
         end
 
-        result.attach_comments!
-        result.value.accept(self.class::Compiler.new(filepath))
+        result.value.accept(self.class::Compiler.new(filepath, parse_comments: result.comments, source_string: result.source.source))
       end
     end
   end

@@ -364,7 +364,6 @@ typedef unsigned int  BitStatusType;
 
 
 #define INT_MAX_LIMIT           ((1UL << (SIZEOF_INT * 8 - 1)) - 1)
-#define LONG_MAX_LIMIT           ((1UL << (SIZEOF_LONG * 8 - 1)) - 1)
 
 /* Program offsets are RelAddrType, and the compile_length_*() functions sum
    into int, so a larger program would wrap both.  The quarter leaves room
@@ -854,7 +853,7 @@ typedef struct _OnigStackType {
     } absent_pos;
 #ifdef USE_MATCH_CACHE
     struct {
-      long    index;      /* index of the match cache buffer */
+      OnigPosition index; /* index of the match cache buffer */
       uint8_t mask;       /* bit-mask for the match cache buffer */
     } match_cache_point;
 #endif
@@ -897,7 +896,7 @@ typedef struct {
 #endif
 #ifdef USE_MATCH_CACHE
   int              match_cache_status;
-  long             num_fails;
+  OnigPosition     num_fails;
   long             num_cache_opcodes;
   OnigCacheOpcode* cache_opcodes;
   long             num_cache_points;

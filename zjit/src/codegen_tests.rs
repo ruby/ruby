@@ -1207,6 +1207,107 @@ fn test_yield_inlined_caller_block_dispatches_without_guards() {
 }
 
 #[test]
+fn test_inline_blockarg_proc_yield() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def sum2 = (yield 1) + (yield 2)
+            def test(pr) = sum2(&pr)
+            pr = proc { |x| x * 10 }
+            test(pr)
+            test(pr)
+        "), @"30");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_block_given() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def maybe_yield = block_given? ? yield(10) : :no_block
+            def test(pr) = maybe_yield(&pr)
+            pr = proc { |x| x * 2 }
+            test(pr)
+            test(pr)
+        "), @"20");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_lambda_strict_arity() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines(r#"
+            def call_it = yield(1, 2)
+            def test(l) = call_it(&l)
+            lam = ->(x) { x }
+            def run(l) = begin; test(l); rescue ArgumentError; :arg_error; end
+            run(lam)
+            run(lam)
+        "#), @":arg_error");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_side_exit() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def compute(x) = yield(x + 1)
+            def test(pr, x) = compute(x, &pr)
+            pr = proc { |v| v * 10 }
+            test(pr, 1)
+            test(pr, 1)
+            test(pr, 1.5)
+        "), @"25.0");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_forwarded_block_param_inlines_inner() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def inner = yield(3)
+            def outer(&b) = inner(&b)
+            def test(pr) = outer(&pr)
+            pr = proc { |x| x * 7 }
+            test(pr)
+            test(pr)
+        "), @"21");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_non_local_return() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def run = yield
+            def test
+              pr = proc { return :returned }
+              run(&pr)
+              :not_returned
+            end
+            test
+            test
+        "), @":returned");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_break() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def run = yield
+            def test
+              pr = proc { break :broke }
+              run(&pr)
+            rescue LocalJumpError
+              :local_jump_error
+            end
+            test
+            test
+        "), @":local_jump_error");
+    });
+}
+
+#[test]
 fn test_yield_block_iseq_guard_survives_compaction() {
     with_inlining_threshold(0, || {
         eval("
@@ -3700,6 +3801,90 @@ fn test_opt_neq_string_nil() {
         test("x") # profile opt_neq
         [test("x"), test(nil)]
     "#), @"[true, false]");
+}
+
+#[test]
+fn test_opt_neq_truthy_result_with_overridden_not() {
+    eval(r#"
+        class TruthyResult
+          def ! = :overridden
+        end
+        class CustomEq
+          def ==(other) = TruthyResult.new
+        end
+        def test(obj) = obj != nil
+        obj = CustomEq.new
+        test(obj)
+        test(obj)
+    "#);
+    assert_snapshot!(assert_compiles("test(CustomEq.new)"), @"false");
+}
+
+#[test]
+fn test_opt_neq_truthiness() {
+    with_inlining(|| {
+        eval(r#"
+            class CustomEq
+              def initialize(result) = @result = result
+              def ==(other) = @result
+            end
+            def test(obj) = obj != nil
+            test(CustomEq.new(nil))
+            test(CustomEq.new(false))
+            test(CustomEq.new(true))
+            test(CustomEq.new(0))
+            test(CustomEq.new(Object.new))
+        "#);
+        assert_snapshot!(assert_compiles(r#"
+            [test(CustomEq.new(nil)), test(CustomEq.new(false)),
+             test(CustomEq.new(true)), test(CustomEq.new(0)),
+             test(CustomEq.new(Object.new))]
+        "#), @"[true, true, false, false, false]");
+    });
+}
+
+#[test]
+fn test_opt_neq_unused_result_preserves_eq_side_effect() {
+    with_inlining(|| {
+        eval(r#"
+            class CustomEq
+              attr_reader :calls
+              def initialize = @calls = 0
+              def ==(other)
+                @calls += 1
+                nil
+              end
+            end
+            def test(obj)
+              obj != nil
+              5
+            end
+            $obj = CustomEq.new
+            test($obj)
+            test($obj)
+        "#);
+        assert_snapshot!(assert_compiles("[test($obj), $obj.calls]"), @"[5, 3]");
+    });
+}
+
+#[test]
+fn test_opt_neq_inlined_eq_side_exit_preserves_negation() {
+    with_inlining(|| {
+        eval(r#"
+            class CustomEq
+              def initialize = @value = true
+              def ==(other) = @value
+            end
+            def test(obj) = obj != nil
+            $obj = CustomEq.new
+            test($obj)
+            test($obj)
+        "#);
+        assert_snapshot!(assert_compiles_allowing_exits(r#"
+            $obj.instance_variable_set(:@extra, 1)
+            test($obj)
+        "#), @"false");
+    });
 }
 
 #[test]
@@ -8434,6 +8619,30 @@ fn test_ep_escape_preserves_keyword_default() {
         forwarder("y", additional_methods: [:to_s])
         target("x")
     "#), @"[]");
+}
+
+#[test]
+fn test_local_write_through_binding_in_branch_reaches_merge_point() {
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        def test(s)
+          y = 1
+          binding.local_variable_set(:y, s) if s
+          y
+        end
+        3.times { test(1) }
+        test(2)
+    "#), @"2");
+}
+
+#[test]
+fn test_local_write_through_call_in_branch_reaches_merge_point() {
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        def test(s) = (y = 1; eval(s) if s; y)
+        3.times { test("1") }
+        test("y = 2")
+    "#), @"2");
 }
 
 #[test]

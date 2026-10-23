@@ -265,7 +265,7 @@ branch_template(VALUE branches)
 
     if (!NIL_P(cache) &&
         FIX2LONG(RARRAY_AREF(cache, 1)) == nbases &&
-        FIX2LONG(RARRAY_AREF(cache, 2)) == ntargets) {
+        NUM2LEN(RARRAY_AREF(cache, 2)) == ntargets) {
         return RARRAY_AREF(cache, 0);
     }
     else {
@@ -276,7 +276,7 @@ branch_template(VALUE branches)
         cache = rb_ary_hidden_new(3);
         rb_ary_push(cache, b.result);
         rb_ary_push(cache, LONG2FIX(nbases));
-        rb_ary_push(cache, LONG2FIX(ntargets));
+        rb_ary_push(cache, LEN2NUM(ntargets));
         rb_ary_store(branches, 2, cache);
         return b.result;
     }

@@ -38,6 +38,56 @@ module JSON
           block
         end
       end
+
+      def valid_encoding?(str) # :nodoc:
+        str.ascii_only? || (str.encoding == Encoding::UTF_8 && str.valid_encoding?)
+      end
+
+      def coerce_key(key, as_json) # :nodoc:
+        as_json_called = false
+
+        unless String === key || Symbol === key
+          key = as_json.call(key, true)
+          as_json_called = true
+        end
+
+        if Symbol === key
+          key = key.to_s
+        end
+
+        unless String === key
+          raise GeneratorError.new("#{key.class} not allowed as object key in JSON", key)
+        end
+
+        unless valid_encoding?(key)
+          if as_json_called
+            raise GeneratorError.new("source sequence is illegal/malformed utf-8", key)
+          end
+
+          key = as_json.call(key, true)
+          unless String === key
+            raise GeneratorError.new("#{key.class} not allowed as object key in JSON", key)
+          end
+
+          unless Ext.valid_encoding?(key)
+            raise GeneratorError.new("source sequence is illegal/malformed utf-8", key)
+          end
+        end
+
+        key
+      end
+
+      def on_duplicate_key(hash, as_json)
+        set = {}
+        hash.each_key do |key|
+          key = coerce_key(key, as_json)
+          if set[key]
+            raise GeneratorError.new("detected duplicate key #{key.inspect}", key)
+          else
+            set[key] = true
+          end
+        end
+      end
     end
 
     require 'json/ext/parser'
@@ -100,8 +150,18 @@ module JSON
       end
     })
 
-    generator::State.rfc8785_sort_keys_proc = shareable_lambda(->(hash) {
-      hash.sort_by { |k,| k.to_s.encode(Encoding::UTF_16) }.to_h
+    generator::State.rfc8785_sort_keys_proc = shareable_lambda(->(hash, as_json) {
+      converted = if as_json
+        hash.transform_keys { |k| Ext.coerce_key(k, as_json) }
+      else
+        hash.transform_keys(&:to_s)
+      end
+
+      if converted.size < hash.size
+        Ext.on_duplicate_key(hash, as_json)
+      end
+
+      converted.sort_by { |k,| k.encode(Encoding::UTF_16) }.to_h
     })
 
     JSON.generator = generator

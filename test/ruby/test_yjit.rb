@@ -2087,6 +2087,29 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_invalidate_after_failed_block_series
+    assert_ruby_status(%w[--disable-all --yjit --yjit-call-threshold=2 --yjit-exec-mem-size=1], <<~'RUBY')
+      class A; def m(esc) = esc ? 2 : 1; end
+      class B; eval "def m(esc); a = b = 1; #{'b = a; a = b; ' * 2000}binding if esc; a; end"; end
+      B.new.m(true)
+
+      def call_site(o, esc)
+        v = o.m(false)
+        binding if esc
+        v
+      end
+
+      call_site(A.new, false)
+      call_site(A.new, false)
+
+      i = 0
+      eval "def f#{i += 1}(a) = a + 1; f#{i}(1); f#{i}(1)" while RubyVM::YJIT.runtime_stats[:code_region_size] < 1024 * 1024 - 32 * 1024
+
+      call_site(B.new, false)
+      call_site(A.new, true)
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

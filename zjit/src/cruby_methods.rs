@@ -14,13 +14,13 @@ use std::ffi::c_void;
 use crate::hir_type::{types, Type};
 use crate::hir::{self, FieldName};
 
-// Array iteration builtin functions (defined in array.c)
+// Core library builtin functions (defined in array.c and object.c)
 unsafe extern "C" {
     fn rb_builtin_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_builtin_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_builtin_ary_first(ec: EcPtr, self_: VALUE) -> VALUE;
     fn rb_builtin_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
-    fn rb_str_equal(str1: VALUE, str2: VALUE) -> VALUE;
+    fn rb_builtin_bool_negate(ec: EcPtr, self_: VALUE, value: VALUE) -> VALUE;
 }
 
 pub struct Annotations {
@@ -211,6 +211,16 @@ pub fn init() -> Annotations {
             props.inline = $inline;
             $(props.$properties = true;)+
             annotate_builtin_method(builtin_funcs, unsafe { $module }, $method_name, props);
+        };
+        ($func:ident, $inline:ident) => {
+            annotate_builtin!($func, $inline, types::BasicObject)
+        };
+        ($func:ident, $inline:ident, $return_type:expr) => {
+            builtin_funcs.insert($func as *mut c_void, FnProperties {
+                inline: $inline,
+                return_type: $return_type,
+                ..Default::default()
+            });
         }
     }
 
@@ -249,7 +259,6 @@ pub fn init() -> Annotations {
     annotate!(rb_mKernel, "dup", inline_kernel_dup);
     annotate!(rb_cBasicObject, "==", inline_basic_object_eq, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", inline_basic_object_not, types::BoolExact, no_gc, leaf, elidable);
-    annotate!(rb_cBasicObject, "!=", inline_basic_object_neq, types::BoolExact);
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
     annotate!(rb_cStruct, "initialize", inline_struct_initialize);
     annotate!(rb_cClass, "allocate", inline_class_allocate);
@@ -308,11 +317,13 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_cString, "valid_encoding?", inline_string_valid_encoding_p, types::BoolExact, no_gc, leaf);
     annotate_builtin!(rb_cSymbol, "empty?", types::BoolExact);
 
+    annotate_builtin!(rb_builtin_bool_negate, inline_bool_negate, types::BoolExact);
+
     // Array iteration builtins (used in with_jit Array#each, map, select, find)
-    builtin_funcs.insert(rb_builtin_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
-    builtin_funcs.insert(rb_builtin_ary_at as *mut c_void, FnProperties { inline: inline_ary_at, ..Default::default() });
-    builtin_funcs.insert(rb_builtin_ary_at_end as *mut c_void, FnProperties { inline: inline_ary_at_end, return_type: types::BoolExact, ..Default::default() });
-    builtin_funcs.insert(rb_builtin_ary_first as *mut c_void, FnProperties { inline: inline_ary_first, ..Default::default() });
+    annotate_builtin!(rb_builtin_fixnum_inc, inline_fixnum_inc, types::Fixnum);
+    annotate_builtin!(rb_builtin_ary_at, inline_ary_at);
+    annotate_builtin!(rb_builtin_ary_at_end, inline_ary_at_end, types::BoolExact);
+    annotate_builtin!(rb_builtin_ary_first, inline_ary_first);
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
@@ -783,11 +794,6 @@ fn try_inline_fixnum_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn
         return None;
     }
     if fun.likely_a(left, types::Fixnum, state) && fun.likely_a(right, types::Fixnum, state) {
-        if bop == BOP_NEQ {
-            // For opt_neq, the interpreter checks that both neq and eq are unchanged.
-            fun.push_insn(block, hir::Insn::PatchPoint { invariant: hir::Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }, state });
-        }
-        // Rely on the MethodRedefined PatchPoint for other bops.
         let left = fun.coerce_to(block, left, types::Fixnum, state);
         let right = fun.coerce_to(block, right, types::Fixnum, state);
         return Some(fun.push_insn(block, f(left, right)));
@@ -910,6 +916,11 @@ fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hi
     Some(result)
 }
 
+fn inline_bool_negate(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[_self, val] = args else { return None; };
+    Some(fun.push_insn(block, hir::Insn::BoolNegate { val }))
+}
+
 fn inline_basic_object_not(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     if fun.type_of(recv).is_known_truthy() {
@@ -921,45 +932,6 @@ fn inline_basic_object_not(fun: &mut hir::Function, block: hir::BlockId, recv: h
         return Some(result);
     }
     None
-}
-
-fn try_inline_string_not_equal(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
-    if !fun.likely_a(recv, types::String, state) || !fun.likely_a(other, types::String, state) {
-        return None;
-    }
-    let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
-
-    // String#!= is lowered to #==. Keep this specialization only while #==
-    // still resolves to rb_str_equal.
-    if !fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_str_equal as _, state) {
-        return None;
-    }
-
-    let eq_result = try_inline_string_equal(fun, block, recv, other, state)?;
-    // StringEqual always returns a Ruby boolean (Qtrue/Qfalse),
-    // so `!=` can be lowered to `eq_result != Qtrue`.
-    let true_val = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qtrue) });
-    let not_equal = fun.push_insn(block, hir::Insn::IsBitNotEqual { left: eq_result, right: true_val });
-    Some(fun.push_insn(block, hir::Insn::BoxBool { val: not_equal }))
-}
-
-fn inline_basic_object_neq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    let &[other] = args else { return None; };
-    if let Some(result) = try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumNeq { left, right }, BOP_NEQ, recv, other, state) {
-        return Some(result);
-    }
-
-    if let Some(result) = try_inline_string_not_equal(fun, block, recv, other, state) {
-        return Some(result);
-    }
-
-    let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
-    if !fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_obj_equal as _, state) {
-        return None;
-    }
-    let c_result = fun.push_insn(block, hir::Insn::IsBitNotEqual { left: recv, right: other });
-    let result = fun.push_insn(block, hir::Insn::BoxBool { val: c_result });
-    Some(result)
 }
 
 fn inline_class_allocate(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
@@ -978,9 +950,6 @@ fn inline_class_superclass(fun: &mut hir::Function, block: hir::BlockId, recv: h
     // compile-time constant.
     let recv_class = fun.type_of(recv).ruby_object()?;
     if !unsafe { RB_TYPE_P(recv_class, RUBY_T_CLASS) } { return None; }
-    // rb_class_superclass raises TypeError on an uninitialized class (e.g. from Class.allocate);
-    // don't fold.
-    if !unsafe { rb_zjit_can_load_superclass_p(recv_class) } { return None; }
     let superclass = unsafe { rb_class_superclass(recv_class) };
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(superclass) }))
 }

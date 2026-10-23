@@ -188,6 +188,7 @@ consensus on ruby-core/ruby-dev.
 #### lib/ipaddr.rb
 
 * Akinori MUSHA ([knu])
+* Taketo Takashima ([taketo1113])
 * https://github.com/ruby/ipaddr
 * https://rubygems.org/gems/ipaddr
 

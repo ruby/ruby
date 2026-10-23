@@ -84,7 +84,7 @@
  */
 #define RUBY
 
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__clang__)
 # /** This is expanded to nothing for non-GCC compilers. */
 # define RB_GNUC_EXTENSION __extension__
 # /** This is expanded to the passed token for non-GCC compilers. */

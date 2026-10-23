@@ -147,6 +147,13 @@ struct pm_options_t {
      * between concurrency primitives.
      */
     bool freeze;
+
+    /*
+     * Whether or not the parser should attach comments to the nodes that own
+     * them after parsing. When this is set, the parser's comment list is
+     * sorted by start offset and every comment is assigned an owning node.
+     */
+    bool attach_comments;
 };
 
 /* Free the internal memory associated with the options. */
@@ -179,6 +186,7 @@ void pm_options_cleanup(pm_options_t *options);
  * | `1`     | main script                |
  * | `1`     | partial script             |
  * | `1`     | freeze                     |
+ * | `1`     | attach comments            |
  * | `4`     | the number of scopes       |
  * | ...     | the scopes                 |
  *

@@ -121,6 +121,28 @@ class TestData < Test::Unit::TestCase
     assert_equal([[], {foo: 1, bar: 2, baz: 3}], klass.new(foo: 1, bar: 2, baz: 3).passed)
   end
 
+  def test_new_with_all_positional_arguments_calls_initialize
+    klass = Data.define(:foo, :bar)
+    assert_equal([1, 2], klass.new(1, 2).to_h.values)
+
+    # initialize redefined after instances were already created
+    klass.class_eval { def initialize(foo:, bar:) = super(foo: bar, bar: foo) }
+    assert_equal([2, 1], klass.new(1, 2).to_h.values)
+
+    prepended = Data.define(:foo, :bar)
+    prepended.prepend(Module.new { def initialize(foo:, bar:) = super(foo: foo * 10, bar:) })
+    assert_equal([10, 2], prepended.new(1, 2).to_h.values)
+  end
+
+  def test_new_with_all_positional_arguments_without_data_initialize
+    assert_separately([], <<~'RUBY')
+      klass = Data.define(:foo, :bar)
+      $VERBOSE = nil # removing 'initialize' warns
+      Data.send(:remove_method, :initialize)
+      assert_raise(ArgumentError) { klass.new(1, 2) }
+    RUBY
+  end
+
   def test_instance_behavior
     klass = Data.define(:foo, :bar)
 

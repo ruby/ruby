@@ -9439,6 +9439,9 @@ compile_builtin_attr_symbol(rb_iseq_t *iseq, VALUE symbol)
     else if (rb_streql_lit(string, "caller_user_box")) {
         ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_CALLER_USER_BOX;
     }
+    else if (rb_streql_lit(string, "always_inline")) {
+        ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_ALWAYS_INLINE;
+    }
     else {
         return COMPILE_NG;
     }
@@ -12770,7 +12773,7 @@ typedef uint32_t ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #ifdef RUBY_DEVEL
-#define IBF_DEVEL_VERSION 8
+#define IBF_DEVEL_VERSION 9
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -13955,6 +13958,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(param_opt_table_offset));
     ibf_dump_write_small_value(dump, param_keyword_offset);
     ibf_dump_write_small_value(dump, location_pathobj_index);
+    ibf_dump_write_small_value(dump, body->no_realpath);
     ibf_dump_write_small_value(dump, location_label_index);
     ibf_dump_write_small_value(dump, body->location.first_lineno);
     ibf_dump_write_small_value(dump, body->location.node_id);
@@ -14070,6 +14074,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const ibf_offset_t param_opt_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const ibf_offset_t param_keyword_offset = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
     const VALUE location_pathobj_index = ibf_load_small_value(load, &reading_pos);
+    const bool no_realpath = (bool)ibf_load_small_value(load, &reading_pos);
     const VALUE location_label_index = ibf_load_small_value(load, &reading_pos);
     const int location_first_lineno = (int)ibf_load_small_value(load, &reading_pos);
     const int location_node_id = (int)ibf_load_small_value(load, &reading_pos);
@@ -14111,7 +14116,8 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
         VALUE realpath = Qnil;
 
         if (RB_TYPE_P(path, T_STRING)) {
-            realpath = path = rb_fstring(path);
+            path = rb_fstring(path);
+            realpath = no_realpath ? Qnil : path;
         }
         else if (RB_TYPE_P(path, T_ARRAY)) {
             VALUE pathobj = path;
@@ -15398,6 +15404,7 @@ rb_iseq_dup_with_independent_caches(const rb_iseq_t *src_root)
         struct rb_iseq_constant_body *cb = ISEQ_BODY(copy);
         if (!cb->local_iseq) RB_OBJ_WRITE(copy, &cb->local_iseq, sb->local_iseq);
         RB_OBJ_WRITE(copy, &cb->location.pathobj, sb->location.pathobj);
+        cb->no_realpath = sb->no_realpath;
         VALUE sl = ISEQ_SCRIPT_LINES(src_root);
         VALUE cov = ISEQ_COVERAGE(src_root);
         if (!NIL_P(sl) || !NIL_P(cov)) {

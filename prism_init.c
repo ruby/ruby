@@ -23,13 +23,13 @@ Init_Prism(void)
      * \Ruby::Prism is the prism parser built into the interpreter, i.e., the
      * very parser that parsed the running program.
      *
-     * Its API follows the version of prism bundled with this Ruby, and may
-     * change incompatibly between Ruby minor versions: not only the node
-     * definitions but also the other APIs, as the bundled prism may move to a
-     * new major version.
-     *
-     * In most cases, use the prism gem instead.  Use \Ruby::Prism only when you
+     * Its API and behavior will be identical to the version of prism bundled with this Ruby.
+     * In most cases, use the prism gem instead. Use \Ruby::Prism only when you
      * need the very parser of the running interpreter.
+     *
+     * \Ruby::Prism is autoloaded when it is first referenced.  Do not
+     * <code>require "ruby/prism"</code> explicitly, as it does not work well
+     * with Ruby::Box for a technical reason.
      */
     VALUE rb_mPrism = rb_define_module_under(rb_mRuby, "Prism");
 #endif

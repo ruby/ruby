@@ -307,6 +307,19 @@ rb_struct_s_inspect(VALUE klass)
     return inspect;
 }
 
+static VALUE rb_data_initialize_m(int argc, const VALUE *argv, VALUE self);
+
+// Given every member, Data#initialize can only store them and freeze the
+// instance: it raises nothing and calls no Ruby code. So when initialize is
+// that method, the members can be stored without calling it.
+static bool
+data_initialize_default_p(VALUE klass)
+{
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, idInitialize);
+    return cme && cme->def->type == VM_METHOD_TYPE_CFUNC &&
+        cme->def->body.cfunc.func == (rb_cfunc_t)rb_data_initialize_m;
+}
+
 static VALUE
 rb_data_s_new(int argc, const VALUE *argv, VALUE klass)
 {
@@ -321,6 +334,14 @@ rb_data_s_new(int argc, const VALUE *argv, VALUE klass)
         int num_members = RARRAY_LENINT(members);
 
         rb_check_arity(argc, 0, num_members);
+        if (argc == num_members && data_initialize_default_p(klass)) {
+            VALUE self = rb_obj_alloc(klass);
+            for (rb_len_t i=0; i<argc; i++) {
+                RSTRUCT_SET_RAW(self, i, argv[i]);
+            }
+            OBJ_FREEZE(self);
+            return self;
+        }
         VALUE arg_hash = rb_hash_new_capa(argc);
         for (rb_len_t i=0; i<argc; i++) {
             VALUE k = rb_ary_entry(members, i), v = argv[i];
@@ -766,7 +787,7 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass = rb_obj_class(self);
     rb_struct_modify(self);
-    rb_len_t n = num_members(klass);
+    rb_len_t n = RSTRUCT_LEN_RAW(self);
     if (argc == 0) {
         rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
         return Qnil;

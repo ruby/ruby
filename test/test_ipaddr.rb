@@ -100,7 +100,9 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("0:0:0:1::", IPAddr.new("0:0:0:1::").to_s)
     assert_equal("2001:200:300::", IPAddr.new("2001:200:300::/48").to_s)
 
-    assert_equal("2001:200:300::", IPAddr.new("[2001:200:300::]/48").to_s)
+    assert_warning(/will raise IPAddr::InvalidAddressError/) {
+      assert_equal("2001:200:300::", IPAddr.new("[2001:200:300::]/48").to_s)
+    }
     assert_equal("1:2:3:4:5:6:7:0", IPAddr.new("1:2:3:4:5:6:7::").to_s)
     assert_equal("0:2:3:4:5:6:7:8", IPAddr.new("::2:3:4:5:6:7:8").to_s)
 
@@ -108,10 +110,14 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.011") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("fe80::1%") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("fe80::1%]") }
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("[192.168.1.2]") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("[192.168.1.2]/120") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("[2001:200:300::]\nINVALID") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.1/32\nINVALID") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.1/32/20") }
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.1.2", Socket::AF_INET6) }
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("[192.168.1.2]", Socket::AF_INET6) }
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("[192.168.1.2]", Socket::AF_INET) }
     assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("192.168.0.1/032") }
     assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("::1/0128") }
     assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("::1/255.255.255.0") }
@@ -120,6 +126,9 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("192.168.0.1/255.255.255.1") }
     assert_raise(IPAddr::AddressFamilyError) { IPAddr.new(1) }
     assert_raise(IPAddr::AddressFamilyError) { IPAddr.new("::ffff:192.168.1.2/120", Socket::AF_INET) }
+    assert_raise(IPAddr::AddressFamilyError) { IPAddr.new("[::]", Socket::AF_INET) }
+    assert_raise(IPAddr::AddressFamilyError) { IPAddr.new("::%eth0", Socket::AF_INET) }
+    assert_raise(IPAddr::AddressFamilyError) { IPAddr.new("[::%eth0]", Socket::AF_INET) }
   end
 
   def test_s_new_ntoh
@@ -293,6 +302,33 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("::192.168.1.2%eth0", IPAddr.new("::192.168.1.2%eth0").to_s)
     assert_equal("fe80::1%0ab", IPAddr.new("fe80::1%0ab").to_s)
     assert_equal("fe80::1%0012", IPAddr.new("fe80::1%0012").to_s)
+  end
+
+  def test_to_bits
+    assert_equal("11000000101010000000000100000001", IPAddr.new("192.168.1.1").to_bits)
+    assert_equal("00000000000000000000000000000000", IPAddr.new("0.0.0.0").to_bits)
+    assert_equal("00111111111111100000010100000101" + "00000000000000100000000000000000" +
+                 "00000000000000000000000000000000" + "00000000000000000000000000000001",
+                 IPAddr.new("3ffe:505:2::1").to_bits)
+    assert_equal("00000001001000110100010101100111" + "10001001101010111100110111101111" +
+                 "00001010101111001101111011110000" + "00010010001101000101011001111000",
+                 IPAddr.new("123:4567:89ab:cdef:0abc:def0:1234:5678").to_bits)
+    assert_equal("00000000000000000000000000000000" + "00000000000000000000000000000000" +
+                 "00000000000000000000000000000000" + "00000000000000000000000000000000",
+                 IPAddr.new("::").to_bits)
+    assert_equal("11111111111111111111111111111111" + "11111111111111111111111111111111" +
+                 "11111111111111111111111111111111" + "11111111111111111111111111111111",
+                 IPAddr.new("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff").to_bits)
+  end
+
+  def test_to_hex
+    assert_equal("c0a80101", IPAddr.new("192.168.1.1").to_hex)
+    assert_equal("00000000", IPAddr.new("0.0.0.0").to_hex)
+    assert_equal("ffffffff", IPAddr.new("255.255.255.255").to_hex)
+    assert_equal("3ffe0505000200000000000000000001", IPAddr.new("3ffe:505:2::1").to_hex)
+    assert_equal("0123456789abcdef0abcdef012345678", IPAddr.new("123:4567:89ab:cdef:0abc:def0:1234:5678").to_hex)
+    assert_equal("00000000000000000000000000000000", IPAddr.new("::").to_hex)
+    assert_equal("ffffffffffffffffffffffffffffffff", IPAddr.new("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff").to_hex)
   end
 
   def test_as_json
@@ -764,5 +800,17 @@ class TC_Operator < Test::Unit::TestCase
       IPAddr.new('INVALID')
     end
     assert_equal('invalid address: INVALID', e.message)
+  end
+
+  def test_s_new_bracketed_with_prefix_is_deprecated
+    assert_warning(/will raise IPAddr::InvalidAddressError/) {
+      assert_equal("2001:db8::", IPAddr.new("[2001:db8::]/32").to_s)
+    }
+    assert_warning(/will raise IPAddr::InvalidAddressError/) {
+      assert_equal("2001:db8::", IPAddr.new("[2001:db8::]/ffff:ffff::").to_s)
+    }
+
+    assert_warning("") { assert_equal("2001:db8::", IPAddr.new("[2001:db8::]").to_s) }
+    assert_warning("") { assert_equal("2001:db8::", IPAddr.new("2001:db8::/32").to_s) }
   end
 end

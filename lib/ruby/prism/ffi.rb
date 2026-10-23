@@ -124,6 +124,7 @@ module Ruby::Prism # :nodoc:
       "pm_string_query_local",
       "pm_string_query_constant",
       "pm_string_query_method_name",
+      "pm_string_query_keyword",
       []
     )
 
@@ -217,12 +218,12 @@ module Ruby::Prism # :nodoc:
 
       # Yields a PrismSource to the given block, backed by a pm_source_t.
       def self.with_file(filepath, options)
-        unless filepath.is_a?(String)
-          filepath = filepath.to_path if filepath.respond_to?(:to_path)
-          filepath = filepath.to_str if filepath.respond_to?(:to_str)
-        end
+        # File.path applies the same coercion and validation as the C
+        # extension's rb_get_path: it accepts to_path/to_str objects and
+        # rejects paths containing a NUL byte, which would otherwise truncate
+        # the path when it is handed to C as a NUL-terminated string.
+        filepath = File.path(filepath)
         options[:filepath] = filepath
-        raise TypeError unless filepath.is_a?(String)
 
         # On Windows and Mac, it's expected that filepaths will be encoded in
         # UTF-8. If they are not, we need to convert them to UTF-8 before
@@ -565,9 +566,9 @@ module Ruby::Prism # :nodoc:
       case version
       when "current"
         version_string_to_number(RUBY_VERSION) || raise(CurrentVersionError, RUBY_VERSION)
-      when "latest", nil
+      when "latest"
         0 # Handled in pm_parser_init
-      when "nearest"
+      when "nearest", nil
         dump = version_string_to_number(RUBY_VERSION)
         return dump if dump
         if RUBY_VERSION < "3.3"
@@ -598,7 +599,7 @@ module Ruby::Prism # :nodoc:
     # The set of options that are understood by the parsing APIs. Note that
     # raise_error is not listed here because it is deleted from the options
     # hash by raise_error_format_type before the options are dumped.
-    DUMP_OPTIONS_KEYS = [:command_line, :encoding, :filepath, :freeze, :frozen_string_literal, :line, :main_script, :partial_script, :scopes, :version].freeze
+    DUMP_OPTIONS_KEYS = [:attach_comments, :command_line, :encoding, :filepath, :freeze, :frozen_string_literal, :line, :main_script, :partial_script, :scopes, :version].freeze
     private_constant :DUMP_OPTIONS_KEYS
 
     # Convert the given options into a serialized options string.
@@ -649,6 +650,9 @@ module Ruby::Prism # :nodoc:
 
       template << "C"
       values << (options.fetch(:freeze, false) ? 1 : 0)
+
+      template << "C"
+      values << (options.fetch(:attach_comments, false) ? 1 : 0)
 
       template << "L"
       if (scopes = options[:scopes])
@@ -717,6 +721,11 @@ module Ruby::Prism # :nodoc:
       # Mirrors the C extension's StringQuery::method_name? method.
       def method_name?(string)
         query(LibRubyParser.pm_string_query_method_name(string, string.bytesize, string.encoding.name))
+      end
+
+      # Mirrors the C extension's StringQuery::keyword? method.
+      def keyword?(string)
+        query(LibRubyParser.pm_string_query_keyword(string, string.bytesize, string.encoding.name))
       end
 
       private

@@ -763,6 +763,12 @@ class TestSocket < Test::Unit::TestCase
     end
   end
 
+  def test_tcp_socket_resolution_error_with_host
+    assert_raise_with_message(Socket::ResolutionError, /^getaddrinfo(\(3\))?: .+ "unknown"$/) do
+      TCPSocket.new("unknown", 80)
+    end
+  end
+
   def test_tcp_socket_v6_hostname_resolved_earlier
     opts = %w[-rsocket -W1]
     assert_separately opts, <<~RUBY
@@ -1023,6 +1029,32 @@ class TestSocket < Test::Unit::TestCase
 
     assert_raise(Errno::ECONNREFUSED) do
       Socket.tcp("localhost", port)
+    end
+    RUBY
+  end
+
+  def test_tcp_socket_resolves_only_local_host_family
+    opts = %w[-rsocket -W1]
+    assert_separately opts, <<~RUBY
+    begin
+      server = TCPServer.new("127.0.0.1", 0)
+      port = server.connect_address.ip_port
+      families = []
+
+      Addrinfo.define_singleton_method(:getaddrinfo) do |host, _, family, *_|
+        if host == "127.0.0.1"
+          [Addrinfo.tcp("127.0.0.1", 0)]
+        else
+          families << family
+          [Addrinfo.tcp("127.0.0.1", port)]
+        end
+      end
+
+      socket = Socket.tcp("localhost", port, "127.0.0.1")
+      assert_equal([Socket::AF_INET], families)
+    ensure
+      server&.close
+      socket&.close
     end
     RUBY
   end

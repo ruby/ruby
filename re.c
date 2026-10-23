@@ -3805,37 +3805,54 @@ match_equal(VALUE match1, VALUE match2)
 
 /*
  *  call-seq:
- *    integer_at(index, base = 10) -> integer or nil
- *    integer_at(name, base = 10) -> integer or nil
+ *    integer_at(n, radix = 10) -> integer or nil
+ *    integer_at(name, radix = 10) -> integer or nil
  *
- *  Converts the matched substring to integer and return the result.
- *  +$~.integer_at(N)+ is equivalent to +$N&.to_i+.
+ *  Returns a captured substring converted to an integer;
+ *  the substring is interpreted as a numeric string in the given +radix+,
+ *  which defaults to +10+.
  *
- *    m = /(\d+{4})(\d+{2})(\d+{2})/.match("20260308")
+ *  With integer index +n+ given,
+ *  returns the <tt>n</tt>th capture converted to an integer:
+ *
+ *    re = /(\d+{4})(\d+{2})(\d+{2})/  # Capture year, month, day.
+ *    m = re.match("20260308")
  *    # => #<MatchData "20260308" 1:"2026" 2:"03" 3:"08">
- *    m.integer_at(0)     # => 20260308
- *    m.integer_at(1)     # => 2026
- *    m.integer_at(2)     # => 3
- *    m.integer_at(3)     # => 8
+ *    m.integer_at(0)  # => 20260308
+ *    m.integer_at(1)  # => 2026
+ *    m.integer_at(2)  # => 3
+ *    m.integer_at(3)  # => 8
+ *    m.integer_at(4)  # => nil
+ *    m.integer_at(-1) # => 8  # For negative index, counts backward in the captures.
  *
- *    m = /(?<y>\d+{4})(?<m>\d+{2})(?<d>\d+{2})/.match("20260308")
- *    m.integer_at("y")   # => 2026
- *    m.integer_at("m")   # => 3
- *    m.integer_at("d")   # => 8
+ *  With string +name+ given,
+ *  returns the named capture converted to an integer:
  *
- *  If the substring does not match, returns +nil+.
+ *    re = /(?<y>\d+{4})(?<m>\d+{2})(?<d>\d+{2})/
+ *    m = re.match("20260308")
+ *    # => #<MatchData "20260308" y:"2026" m:"03" d:"08">
+ *    m.integer_at('y')      # => 2026
+ *    m.integer_at('m')      # => 3
+ *    m.integer_at('d')      # => 8
+ *    m.integer_at('nosuch') # Raises IndexError: undefined group name reference: nosuch.
+ *
+ *  Returns +nil+ if there were no captures:
  *
  *    re = /(\d+)?/
- *    re.match("123").integer_at(1) #=> 123
- *    re.match("abc").integer_at(1) #=> nil
+ *    m = re.match('abc')
+ *    m.integer_at(0) # => nil
  *
- *  The string is converted in decimal by default.
+ *  The string is converted in the given +radix+:
  *
- *    /\d+/.match("011").integer_at(0)     #=> 10
- *    /\d+/.match("011").integer_at(0, 12) #=> 13
- *    /\d+/.match("011").integer_at(0, 0)  #=> 9
+ *    re = /\d+/
+ *    m = re.match('11')
+ *    m.integer_at(0)     # => 11
+ *    m.integer_at(0, 2)  # => 3
+ *    m.integer_at(0, 8)  # => 9
+ *    m.integer_at(0, 16) # => 17
+ *    m.integer_at(0, 1)  # Raises ArgumentError: invalid radix 1.
  *
- *  See also MatchData#[], String#to_i.
+ *  Related: MatchData#[], String#to_i.
  */
 static VALUE
 match_integer_at(int argc, VALUE *argv, VALUE match)

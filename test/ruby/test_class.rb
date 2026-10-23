@@ -83,12 +83,6 @@ class TestClass < Test::Unit::TestCase
     assert_nil(Class.new <=> 1)
   end
 
-  def test_class_initialize
-    assert_raise(TypeError) do
-      Class.new.instance_eval { initialize }
-    end
-  end
-
   def test_instantiate_singleton_class
     c = class << Object.new; self; end
     assert_raise(TypeError) { c.new }
@@ -317,24 +311,18 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_uninitialized
-    assert_raise(TypeError) { Class.allocate.new }
-    assert_raise(TypeError) { Class.allocate.superclass }
-    bug6863 = '[ruby-core:47148]'
-    assert_raise(TypeError, bug6863) { Class.new(Class.allocate) }
+    assert_raise(TypeError) { Class.allocate }
 
     allocator = Class.instance_method(:allocate)
+    assert_raise(TypeError) { allocator.bind_call(Class) }
     assert_nothing_raised { allocator.bind(Rational).call }
     assert_nothing_raised { allocator.bind_call(Rational) }
   end
 
-  def test_uninitialized_with_singleton_class
-    c = Class.allocate
-    c.singleton_class
-    assert_raise(TypeError) { c.new }
-  end
-
-  def test_uninitialized_dup
-    assert_raise(TypeError) { Class.allocate.dup.new }
+  def test_singleton_class_new
+    assert_raise_with_message(TypeError, /singleton class/) { Integer.singleton_class.new }
+    assert_raise_with_message(TypeError, /singleton class/) { Class.new.singleton_class.new }
+    assert_raise_with_message(TypeError, /singleton class/) { Class.singleton_class.new }
   end
 
   def test_nonascii_name
@@ -940,12 +928,7 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_classext_memory_leak
-    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc { Class.new }
-1_000.times(&code)
-PREP
-3_000_000.times(&code)
-CODE
+    assert_no_memory_leak([], "", "30_000.times {Class.new}", rss: true, samples: 2..100)
   end
 
   def test_instance_freeze_dont_freeze_the_class_bug_19164

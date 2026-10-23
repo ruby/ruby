@@ -42,6 +42,16 @@ module Ruby::Prism
       end
     end
 
+    # These trees are each 20,000 nodes deep, which is deeper than the stack of
+    # a thread allows a walk of the tree to recurse.
+    def test_dump_and_load_deep_trees
+      ["1" + "+1" * 20_000, "a" + ".b" * 20_000, "A" + "::B" * 20_000].each do |source|
+        Thread.new do
+          assert_kind_of ProgramNode, Ruby::Prism.load(source, Ruby::Prism.dump(source)).value
+        end.join
+      end
+    end
+
     private
 
     def assert_dump(fixture)

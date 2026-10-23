@@ -1901,6 +1901,8 @@ ossl_ssl_read(VALUE self, VALUE len, VALUE str)
         rb_raise(eSSLError, "SSL session is not started yet");
 
     ilen = NUM2INT(len);
+    if (ilen < 0)
+        rb_raise(rb_eArgError, "negative length %d given", ilen);
     StringValue(str);
     if ((rb_len_t)rb_str_capacity(str) >= ilen)
         rb_str_modify(str);
@@ -1969,7 +1971,7 @@ ossl_ssl_write(VALUE self, VALUE str)
     if (!ssl_started(ssl))
         rb_raise(eSSLError, "SSL session is not started yet");
 
-    StringValue(str);
+    str = rb_obj_as_string(str);
     /* SSL_write(3ssl) manpage states num == 0 is undefined */
     int num = RSTRING_LENINT(str);
     if (num == 0)

@@ -105,30 +105,6 @@ module Ruby::Prism
       )
     end
 
-    def test_attaching_comments
-      source = <<~RUBY
-        # Foo class
-        class Foo
-          # bar method
-          def bar
-            # baz invocation
-            baz
-          end # bar end
-        end # Foo end
-      RUBY
-
-      result = Ruby::Prism.parse(source)
-      result.attach_comments!
-      tree = result.value
-      class_node = tree.statements.body.first
-      method_node = class_node.body.body.first
-      call_node = method_node.body.body.first
-
-      assert_equal("# Foo class\n# Foo end", class_node.location.comments.map { |c| c.location.slice }.join("\n"))
-      assert_equal("# bar method\n# bar end", method_node.location.comments.map { |c| c.location.slice }.join("\n"))
-      assert_equal("# baz invocation", call_node.location.comments.map { |c| c.location.slice }.join("\n"))
-    end
-
     private
 
     def assert_comment(source, type, start_offset:, end_offset:, start_line:, end_line:, start_column:, end_column:)

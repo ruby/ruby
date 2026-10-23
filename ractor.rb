@@ -400,6 +400,23 @@ class Ractor
     "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''} #{status}>"
   end
 
+  #
+  # call-seq:
+  #    ractor.alive? -> true or false
+  #
+  # Returns +true+ if the ractor has not yet terminated, +false+ once it has
+  # finished running (whether normally or by an unhandled exception).
+  #
+  #     r = Ractor.new { Ractor.receive }
+  #     r.alive? #=> true
+  #     r << :done
+  #     r.join
+  #     r.alive? #=> false
+  #
+  def alive?
+    __builtin_ractor_alive_p
+  end
+
   alias to_s inspect
 
   # Returns the name set in Ractor.new, or +nil+.

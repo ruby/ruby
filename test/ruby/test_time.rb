@@ -3,6 +3,7 @@ require 'test/unit'
 require 'delegate'
 require 'timeout'
 require 'delegate'
+require 'rbconfig/sizeof'
 
 class TestTime < Test::Unit::TestCase
   def setup
@@ -1114,6 +1115,12 @@ class TestTime < Test::Unit::TestCase
     assert_equal("  -0:55:00", t.strftime("%_10::z"), bug6323)
     assert_equal("-000:55:00", t.strftime("%10::z"), bug6323)
     assert_equal("-000000:55", t.strftime("%10:::z"))
+
+    t = Time.at(0, in: 0)
+    max = RbConfig::LIMITS["INT_MAX"]
+    all_assertions_foreach(nil, *%W[%#{max}z %#{max}:z %#{max}::z %#{max}:::z]) do |z|
+      assert_raise(Errno::ERANGE) {t.strftime(z)}
+    end
   end
 
   def test_strftime_invalid_modifier

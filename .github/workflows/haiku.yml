@@ -1,0 +1,80 @@
+name: Haiku
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+jobs:
+  make:
+    runs-on: ubuntu-24.04
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    defaults:
+      run:
+        shell: cpa.sh {0} --sync-files none
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Start Haiku VM
+        uses: cross-platform-actions/action@e0b9770014ba65d5e0815f15b74031c3a635f641 # v1.6.0
+        with:
+          operating_system: haiku
+          version: 'r1beta6'
+          cpu_count: 4
+          sync_files: runner-to-vm
+
+      - name: Install dependencies
+        run: |
+          pkgman install -y cmd:autoconf cmd:git cmd:ruby \
+            devel:libffi devel:libgmp devel:libssl devel:libyaml_0 devel:libz
+
+      - name: configure
+        run: |
+          ./autogen.sh
+          ./configure --disable-install-doc
+
+      - name: Extract bundled gems
+        run: |
+          make ruby -j4
+          make extract-gems
+
+      - name: make all
+        timeout-minutes: 30
+        run: make -j4 V=1
+
+      - uses: ./.github/actions/slack
+        with:
+          label: Haiku
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}

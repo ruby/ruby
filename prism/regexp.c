@@ -40,7 +40,7 @@ typedef struct {
     pm_regexp_name_callback_t name_callback;
 
     /** The data to pass to the name callback. */
-    pm_regexp_name_data_t *name_data;
+    void *name_data;
 
     /** The start of the regexp node (for error locations). */
     const uint8_t *node_start;
@@ -90,8 +90,13 @@ typedef struct {
     /** Whether the encoding has changed from the default. */
     bool encoding_changed;
 
-    /** Whether the source content is shared (for named capture callback). */
-    bool shared;
+    /**
+     * Whether syntax errors are reported. The named capture pass walks content
+     * that may be an owned copy of the source (so pointers into it have no
+     * offset in the source), and whose errors the validation pass has already
+     * reported, so it reports nothing.
+     */
+    bool report_errors;
 
     /** Whether a `\u{...}` escape with value >= 0x80 was seen. */
     bool has_unicode_escape;
@@ -122,42 +127,29 @@ typedef struct {
 } pm_regexp_parser_t;
 
 /**
- * Append a syntax error to the parser's error list. If the source is shared
- * (points into the original source), we can point to the exact error location.
- * Otherwise, we point to the whole regexp node.
+ * Append a syntax error to the parser's error list. Errors are only reported
+ * when report_errors is set, which is the case for the validation pass that
+ * walks the raw source, so start and end always point into the original source.
  */
 static PRISM_INLINE void
-pm_regexp_parse_error(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, const char *message) {
-    pm_parser_t *pm = parser->parser;
-    uint32_t loc_start, loc_length;
-
-    if (parser->shared) {
-        loc_start = (uint32_t) (start - pm->start);
-        loc_length = (uint32_t) (end - start);
-    } else {
-        loc_start = (uint32_t) (parser->node_start - pm->start);
-        loc_length = (uint32_t) (parser->node_end - parser->node_start);
+pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, const uint8_t *end, const char *message) {
+    if (regexp_parser->report_errors) {
+        pm_parser_t *parser = regexp_parser->parser;
+        pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, (uint32_t) (start - parser->start), (uint32_t) (end - start), PM_ERR_REGEXP_PARSE_ERROR, message);
     }
-
-    pm_diagnostic_list_append_format(&pm->metadata_arena, &pm->error_list, loc_start, loc_length, PM_ERR_REGEXP_PARSE_ERROR, message);
 }
 
 /**
- * Append a formatted diagnostic error with proper shared/non-shared location
- * handling. This is a macro because we need variadic args for the format string.
+ * Append a formatted syntax error to the parser's error list, following the
+ * same rules as pm_regexp_parse_error. This is a macro because we need
+ * variadic args for the format string.
  */
-#define pm_regexp_parse_error_format(parser_, err_start_, err_end_, diag_id, ...) \
+#define pm_regexp_parse_error_format(regexp_parser_, err_start_, err_end_, diag_id, ...) \
     do { \
-        pm_parser_t *pm__ = (parser_)->parser; \
-        uint32_t loc_start__, loc_length__; \
-        if ((parser_)->shared) { \
-            loc_start__ = (uint32_t) ((err_start_) - pm__->start); \
-            loc_length__ = (uint32_t) ((err_end_) - (err_start_)); \
-        } else { \
-            loc_start__ = (uint32_t) ((parser_)->node_start - pm__->start); \
-            loc_length__ = (uint32_t) ((parser_)->node_end - (parser_)->node_start); \
+        if ((regexp_parser_)->report_errors) { \
+            pm_parser_t *parser_ = (regexp_parser_)->parser; \
+            pm_diagnostic_list_append_format(&parser_->metadata_arena, &parser_->error_list, (uint32_t) ((err_start_) - parser_->start), (uint32_t) ((err_end_) - (err_start_)), diag_id, __VA_ARGS__); \
         } \
-        pm_diagnostic_list_append_format(&pm__->metadata_arena, &pm__->error_list, loc_start__, loc_length__, diag_id, __VA_ARGS__); \
     } while (0)
 
 /**
@@ -168,8 +160,7 @@ static void
 pm_regexp_parser_named_capture(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end) {
     pm_string_t string;
     pm_string_shared_init(&string, start, end);
-    parser->name_callback(parser->parser, &string, parser->shared, parser->name_data);
-    pm_string_cleanup(&string);
+    parser->name_callback(parser->parser, &string, parser->name_data);
 }
 
 /**
@@ -1607,7 +1598,7 @@ pm_regexp_validate_encoding(pm_regexp_parser_t *parser, bool ascii_only, pm_node
  * (e.g., line continuations) have already been processed by the lexer.
  */
 pm_node_flags_t
-pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, pm_regexp_name_callback_t name_callback, pm_regexp_name_data_t *name_data) {
+pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, pm_regexp_name_callback_t name_callback, void *name_data) {
     const uint8_t *source = parser->start + node->content_loc.start;
     size_t size = node->content_loc.length;
     bool extended_mode = PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED);
@@ -1627,7 +1618,7 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, pm_rege
         .encoding = parser->encoding,
         .name_callback = NULL,
         .name_data = NULL,
-        .shared = true,
+        .report_errors = true,
         .node_start = node_start,
         .node_end = node_end,
         .has_unicode_escape = false,
@@ -1663,8 +1654,7 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, pm_rege
 
     // Second pass: walk unescaped content for named capture extraction.
     if (name_callback != NULL) {
-        bool shared = node->unescaped.type == PM_STRING_SHARED;
-        pm_regexp_parse_named_captures(parser, pm_string_source(&node->unescaped), pm_string_length(&node->unescaped), shared, extended_mode, name_callback, name_data);
+        pm_regexp_parse_named_captures(parser, pm_string_source(&node->unescaped), pm_string_length(&node->unescaped), extended_mode, name_callback, name_data);
     }
 
     return encoding_flags;
@@ -1681,7 +1671,7 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, pm_rege
  * them as they walk through the content.
  */
 void
-pm_regexp_parse_named_captures(pm_parser_t *parser, const uint8_t *source, size_t size, bool shared, bool extended_mode, pm_regexp_name_callback_t name_callback, pm_regexp_name_data_t *name_data) {
+pm_regexp_parse_named_captures(pm_parser_t *parser, const uint8_t *source, size_t size, bool extended_mode, pm_regexp_name_callback_t name_callback, void *name_data) {
     pm_regexp_parser_t regexp_parser = {
         .parser = parser,
         .start = source,
@@ -1692,9 +1682,7 @@ pm_regexp_parse_named_captures(pm_parser_t *parser, const uint8_t *source, size_
         .encoding = parser->encoding,
         .name_callback = name_callback,
         .name_data = name_data,
-        .shared = shared,
-        .node_start = source,
-        .node_end = source + size,
+        .report_errors = false,
         .has_unicode_escape = false,
         .has_hex_escape = false,
         .last_escape_was_unicode = false,
