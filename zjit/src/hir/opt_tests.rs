@@ -24899,6 +24899,32 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fallback_counters_after_inlining() {
+        enable_zjit_stats();
+        eval("
+            def helper(n) = n + 1
+            def target(**kw) = kw
+            def forward(value) = target
+            def test
+              helper(1)
+              target
+              forward(*[1])
+            end
+            test
+            test
+        ");
+        let result = hir_string_with_inlining("test");
+
+        // The outer target send is revisited after inlining. The inlined forward
+        // returns another dynamic send, but its successful splat counters must stay.
+        assert_eq!(result.matches(" = Send ").count(), 2, "{result}");
+        assert_eq!(result.matches("IncrCounter complex_arg_pass_param_kwrest").count(), 2, "{result}");
+        assert_eq!(result.matches("IncrCounter send_direct_fallback_context_send").count(), 2, "{result}");
+        assert_eq!(result.matches("IncrCounter caller_splat_profile_monomorphic").count(), 1, "{result}");
+        assert_eq!(result.matches("IncrCounter caller_splat_optimized").count(), 1, "{result}");
+    }
+
+    #[test]
     fn test_inline_method_with_send() {
         // The callee-internal `x + x` Send gets specialized to FixnumAdd because the callee's
         // profile entries are merged into the caller's ProfileOracle during inlining.

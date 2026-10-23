@@ -343,29 +343,6 @@ class TestZJITCLI < Test::Unit::TestCase
     }, stats: true
   end
 
-  def test_fallback_stats_after_inlining
-    assert_runs '[18, 18, 18, 9, 9]', %q{
-      def helper(n) = n + 1
-      def target(**kw) = kw
-      def forward(value) = target
-      def test
-        helper(1)
-        target
-        forward(*[1])
-      end
-
-      100.times { test }
-      RubyVM::ZJIT.reset_stats!
-      9.times { test }
-      stats = RubyVM::ZJIT.stats
-      stats.values_at(:complex_arg_pass_param_kwrest,
-                      :send_direct_fallback_context_send,
-                      :send_fallback_one_or_more_complex_arg_pass,
-                      :caller_splat_profile_monomorphic,
-                      :caller_splat_optimized)
-    }, stats: true
-  end
-
   def test_reset_stats
     assert_runs 'true', %q{
       def test = 1

@@ -2954,9 +2954,9 @@ pub struct Function {
     union_find: std::cell::RefCell<UnionFind<InsnId>>,
     insn_types: Vec<Type>,
     blocks: Vec<Block>,
-    /// Runtime counters emitted while specializing a send, paired with that send.
+    /// Maps each runtime counter instruction to the send that emitted it.
     /// Remove them before retrying a send that stayed dynamic.
-    send_counters: Vec<(InsnId, InsnId)>,
+    send_counters: HashMap<InsnId, InsnId>,
     /// Superblock that targets all entry blocks. The sole root for RPO/dominator computation.
     pub entries_block: BlockId,
     /// Entry block for the interpreter
@@ -3223,7 +3223,7 @@ impl Function {
             insn_types: vec![],
             union_find: UnionFind::new().into(),
             blocks: vec![Block::default(), Block::default()],
-            send_counters: vec![],
+            send_counters: HashMap::new(),
             entries_block: BlockId(0),
             entry_block: BlockId(1),
             jit_entry_blocks: vec![],
@@ -3599,7 +3599,7 @@ impl Function {
     fn count_send(&mut self, block: BlockId, send: InsnId, counter: Counter) {
         if get_option!(stats) {
             let counter = self.push_insn(block, Insn::IncrCounter(counter));
-            self.send_counters.push((send, counter));
+            self.send_counters.insert(counter, send);
         }
     }
 
@@ -4853,22 +4853,19 @@ impl Function {
     /// opens the door for inlining.
     /// Also try and inline constant caches, specialize object allocations, and more.
     fn type_specialize(&mut self) {
-        // Retry dynamic sends without accumulating counters from previous attempts.
-        // Keep counters for successful replacements, even if an inlined call's
-        // return value resolves to another dynamic send.
-        let counters: HashSet<_> = std::mem::take(&mut self.send_counters).into_iter()
-            .filter(|&(send, _)| self.find_id(send) == send && matches!(self.insns[send], Insn::Send { .. } | Insn::InvokeSuper { .. }))
-            .map(|(_, counter)| counter)
-            .collect();
-        if !counters.is_empty() {
-            for block in &mut self.blocks {
-                block.insns.retain(|insn| !counters.contains(insn));
-            }
-        }
+        let send_counters = std::mem::take(&mut self.send_counters);
         for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block].insns);
             assert!(self.blocks[block].insns.is_empty());
             for insn_id in old_insns {
+                // Retry dynamic sends without accumulating counters from previous attempts.
+                // Keep counters for successful replacements, even if an inlined call's
+                // return value resolves to another dynamic send.
+                if send_counters.get(&insn_id).is_some_and(|&send|
+                    self.find_id(send) == send && matches!(self.insns[send], Insn::Send { .. } | Insn::InvokeSuper { .. })
+                ) {
+                    continue;
+                }
                 let resolved = self.resolve(insn_id);
                 match resolved.insn(self) {
                     &Insn::Send { mut recv, cd, state, block: send_block, caller_splat_length, .. } => {
@@ -6500,7 +6497,7 @@ impl Function {
         let counter_ptr = &mut **counter_ptr as *mut u64;
 
         let counter = self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
-        self.send_counters.push((send, counter));
+        self.send_counters.insert(counter, send);
     }
 
     /// Convert `Send` instructions with no profile data into `SideExit` with recompile info.
