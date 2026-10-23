@@ -7,7 +7,9 @@
 #include "prism/internal/buffer.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/isinf.h"
+#include "prism/internal/parser.h"
 #include "prism/internal/stringy.h"
+#include "prism/internal/xxh3.h"
 
 #include <assert.h>
 #include <math.h>
@@ -16,271 +18,105 @@
 #include <string.h>
 
 /**
- * A small struct used for passing around a subset of the information that is
- * stored on the parser. We use this to avoid having static literals explicitly
- * depend on the parser struct.
+ * Hash the key built from the given values. Nodes that compare as equal must
+ * produce identical keys, so each value is either held directly or is the
+ * digest of a variable-length value. The key is an array so that its values are
+ * contiguous with no padding between them, which makes every hashed byte
+ * defined.
  */
-typedef struct {
-    /** The list of newline offsets to use to calculate line numbers. */
-    const pm_line_offset_list_t *line_offsets;
-
-    /** The start of the source being parsed. */
-    const uint8_t *start;
-
-    /** The line number that the parser starts on. */
-    int32_t start_line;
-
-    /** The encoding that the parser is using. */
-    const pm_encoding_t *encoding;
-} pm_static_literals_metadata_t;
-
-static PRISM_INLINE uint32_t
-murmur_scramble(uint32_t value) {
-    value *= 0xcc9e2d51;
-    value = (value << 15) | (value >> 17);
-    value *= 0x1b873593;
-    return value;
+static PRISM_INLINE uint64_t
+key_hash(uint64_t type, uint64_t a, uint64_t b) {
+    const uint64_t key[3] = { type, a, b };
+    return pm_xxh3((const uint8_t *) key, sizeof(key));
 }
 
 /**
- * Murmur hash (https://en.wikipedia.org/wiki/MurmurHash) is a non-cryptographic
- * general-purpose hash function. It is fast, which is what we care about in
- * this case.
+ * Return the hash of the value of an integer. An integer that fits into a
+ * uint32_t keys on its value directly, and a larger one keys on the digest of
+ * its words.
  */
-static uint32_t
-murmur_hash(const uint8_t *key, size_t length) {
-    uint32_t hash = 0x9747b28c;
-    uint32_t segment;
-
-    for (size_t index = length >> 2; index; index--) {
-        memcpy(&segment, key, sizeof(uint32_t));
-        key += sizeof(uint32_t);
-        hash ^= murmur_scramble(segment);
-        hash = (hash << 13) | (hash >> 19);
-        hash = hash * 5 + 0xe6546b64;
-    }
-
-    segment = 0;
-    for (size_t index = length & 3; index; index--) {
-        segment <<= 8;
-        segment |= key[index - 1];
-    }
-
-    hash ^= murmur_scramble(segment);
-    hash ^= (uint32_t) length;
-    hash ^= hash >> 16;
-    hash *= 0x85ebca6b;
-    hash ^= hash >> 13;
-    hash *= 0xc2b2ae35;
-    hash ^= hash >> 16;
-    return hash;
-}
-
-/**
- * Hash the value of an integer and return it.
- */
-static uint32_t
+static uint64_t
 integer_hash(const pm_integer_t *integer) {
-    uint32_t hash;
-    if (integer->values) {
-        hash = murmur_hash((const uint8_t *) integer->values, sizeof(uint32_t) * integer->length);
-    } else {
-        hash = murmur_hash((const uint8_t *) &integer->value, sizeof(uint32_t));
-    }
-
-    if (integer->negative) {
-        hash ^= murmur_scramble((uint32_t) 1);
-    }
-
-    return hash;
+    uint64_t magnitude = integer->values ? pm_xxh3((const uint8_t *) integer->values, sizeof(uint32_t) * integer->length) : integer->value;
+    return key_hash(PM_INTEGER_NODE, integer->negative, magnitude);
 }
 
 /**
- * Return the flags of the given node that determine the encoding of its string.
- *
- * The FORCED_* flags record how a literal was written. An escape that locks the
- * encoding to UTF-8 (a `\u` escape above U+007F, or any `\u` in a character
- * literal) sets FORCED_UTF8 whether or not the file is already UTF-8. So in a
- * UTF-8 file a `\u00E9` escape and a literal e-acute carry different flags
- * while being the same string, and the flag has to be dropped for them to
- * compare equally.
+ * Return the hash of the key of the given node. It is important that nodes that
+ * have equivalent static literal values have the same key. This is because we
+ * hash these keys to look for duplicates.
  */
-static pm_node_flags_t
-node_encoding_flags(const pm_static_literals_metadata_t *metadata, const pm_node_t *node) {
+static uint64_t
+node_hash(const pm_parser_t *parser, const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
-        case PM_STRING_NODE: {
-            pm_node_flags_t mask = PM_STRING_FLAGS_FORCED_BINARY_ENCODING;
-            if (metadata->encoding != PM_ENCODING_UTF_8_ENTRY) mask |= PM_STRING_FLAGS_FORCED_UTF8_ENCODING;
-            return node->flags & mask;
-        }
-        case PM_SYMBOL_NODE: {
-            pm_node_flags_t mask = PM_SYMBOL_FLAGS_FORCED_BINARY_ENCODING | PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING;
-            if (metadata->encoding != PM_ENCODING_UTF_8_ENTRY) mask |= PM_SYMBOL_FLAGS_FORCED_UTF8_ENCODING;
-            return node->flags & mask;
-        }
-        case PM_SOURCE_FILE_NODE:
-            /* __FILE__ takes the encoding of the filepath, and every instance
-             * of it in a parse resolves the same way. */
-            return 0;
-        default:
-            assert(false && "unreachable");
-            return 0;
-    }
-}
-
-/**
- * Return the hash of the given node. It is important that nodes that have
- * equivalent static literal values have the same hash. This is because we use
- * these hashes to look for duplicates.
- */
-static uint32_t
-node_hash(const pm_static_literals_metadata_t *metadata, const pm_node_t *node) {
-    switch (PM_NODE_TYPE(node)) {
-        case PM_INTEGER_NODE: {
-            // Integers hash their value.
-            const pm_integer_node_t *cast = (const pm_integer_node_t *) node;
-            return integer_hash(&cast->value);
-        }
+        case PM_INTEGER_NODE:
+            return integer_hash(&((const pm_integer_node_t *) node)->value);
         case PM_SOURCE_LINE_NODE: {
-            // Source lines hash their line number.
-            const pm_line_column_t line_column = pm_line_offset_list_line_column(metadata->line_offsets, node->location.start, metadata->start_line);
-            const int32_t *value = &line_column.line;
-            return murmur_hash((const uint8_t *) value, sizeof(int32_t));
+            int64_t line = (int64_t) pm_line_offset_list_line_column(&parser->line_offsets, node->location.start, parser->start_line).line;
+            return key_hash(PM_INTEGER_NODE, line < 0, (uint64_t) (line < 0 ? -line : line));
         }
         case PM_FLOAT_NODE: {
-            // Floats hash their value.
-            const double *value = &((const pm_float_node_t *) node)->value;
-            return murmur_hash((const uint8_t *) value, sizeof(double));
+            const pm_float_node_t *cast = (const pm_float_node_t *) node;
+            double value = cast->value;
+            if (value == 0.0) value = 0.0; /* Normalize -0.0 to 0.0. */
+
+            uint64_t bits;
+            memcpy(&bits, &value, sizeof(bits));
+            return key_hash(PM_FLOAT_NODE, bits, 0);
         }
         case PM_RATIONAL_NODE: {
-            // Rationals hash their numerator and denominator.
             const pm_rational_node_t *cast = (const pm_rational_node_t *) node;
-            return integer_hash(&cast->numerator) ^ integer_hash(&cast->denominator) ^ murmur_scramble((uint32_t) cast->base.type);
+            return key_hash(PM_RATIONAL_NODE, integer_hash(&cast->numerator), integer_hash(&cast->denominator));
         }
         case PM_IMAGINARY_NODE: {
-            // Imaginaries hash their numeric value. Because their numeric value
-            // is stored as a subnode, we hash that node and then mix in the
-            // fact that this is an imaginary node.
-            const pm_node_t *numeric = ((const pm_imaginary_node_t *) node)->numeric;
-            return node_hash(metadata, numeric) ^ murmur_scramble((uint32_t) node->type);
+            const pm_imaginary_node_t *cast = (const pm_imaginary_node_t *) node;
+            return key_hash(PM_IMAGINARY_NODE, node_hash(parser, cast->numeric), 0);
         }
         case PM_STRING_NODE: {
-            // Strings hash their value and mix in their flags so that different
-            // encodings are not considered equal.
-            const pm_string_t *value = &((const pm_string_node_t *) node)->unescaped;
-            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node_encoding_flags(metadata, node));
+            const pm_string_node_t *cast = (const pm_string_node_t *) node;
+
+            pm_node_flags_t mask = PM_STRING_FLAGS_FORCED_BINARY_ENCODING;
+            if (parser->encoding != PM_ENCODING_UTF_8_ENTRY) mask |= PM_STRING_FLAGS_FORCED_UTF8_ENCODING;
+
+            return key_hash(PM_STRING_NODE, pm_xxh3(pm_string_source(&cast->unescaped), pm_string_length(&cast->unescaped)), node->flags & mask);
         }
         case PM_SOURCE_FILE_NODE: {
-            // Source files hash their value and mix in their flags so that
-            // different encodings are not considered equal.
-            const pm_string_t *value = &((const pm_source_file_node_t *) node)->filepath;
-            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t));
+            const pm_source_file_node_t *cast = (const pm_source_file_node_t *) node;
+            return key_hash(PM_STRING_NODE, pm_xxh3(pm_string_source(&cast->filepath), pm_string_length(&cast->filepath)), 0);
         }
         case PM_REGULAR_EXPRESSION_NODE: {
-            // Regular expressions hash their value and mix in their flags so
-            // that different encodings are not considered equal.
-            const pm_string_t *value = &((const pm_regular_expression_node_t *) node)->unescaped;
-            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node->flags);
+            const pm_regular_expression_node_t *cast = (const pm_regular_expression_node_t *) node;
+            return key_hash(PM_REGULAR_EXPRESSION_NODE, pm_xxh3(pm_string_source(&cast->unescaped), pm_string_length(&cast->unescaped)), node->flags & (pm_node_flags_t) ~PM_REGULAR_EXPRESSION_FLAGS_ONCE);
         }
         case PM_SYMBOL_NODE: {
-            // Symbols hash their value and mix in their flags so that different
-            // encodings are not considered equal.
-            const pm_string_t *value = &((const pm_symbol_node_t *) node)->unescaped;
-            return murmur_hash(pm_string_source(value), pm_string_length(value) * sizeof(uint8_t)) ^ murmur_scramble((uint32_t) node_encoding_flags(metadata, node));
+            const pm_symbol_node_t *cast = (const pm_symbol_node_t *) node;
+
+            pm_node_flags_t mask = PM_SYMBOL_FLAGS_FORCED_BINARY_ENCODING | PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING;
+            if (parser->encoding != PM_ENCODING_UTF_8_ENTRY) mask |= PM_SYMBOL_FLAGS_FORCED_UTF8_ENCODING;
+
+            return key_hash(PM_SYMBOL_NODE, pm_xxh3(pm_string_source(&cast->unescaped), pm_string_length(&cast->unescaped)), node->flags & mask);
         }
+        case PM_FALSE_NODE:
+        case PM_NIL_NODE:
+        case PM_SOURCE_ENCODING_NODE:
+        case PM_TRUE_NODE:
+            return key_hash(PM_NODE_TYPE(node), 0, 0);
         default:
             assert(false && "unreachable");
             return 0;
     }
-}
-
-/**
- * Insert a node into the node hash. It accepts the hash that should hold the
- * new node, the parser that generated the node, the node to insert, and a
- * comparison function. The comparison function is used for collision detection,
- * and must be able to compare all node types that will be stored in this hash.
- */
-static pm_node_t *
-pm_node_hash_insert(pm_node_hash_t *hash, const pm_static_literals_metadata_t *metadata, pm_node_t *node, bool replace, int (*compare)(const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right)) {
-    // If we are out of space, we need to resize the hash. This will cause all
-    // of the nodes to be rehashed and reinserted into the new hash.
-    if (hash->size * 2 >= hash->capacity) {
-        // First, allocate space for the new node list.
-        uint32_t new_capacity = hash->capacity == 0 ? 4 : hash->capacity * 2;
-        pm_node_t **new_nodes = xcalloc(new_capacity, sizeof(pm_node_t *));
-        if (new_nodes == NULL) abort();
-
-        // It turns out to be more efficient to mask the hash value than to use
-        // the modulo operator. Because our capacities are always powers of two,
-        // we can use a bitwise AND to get the same result as the modulo
-        // operator.
-        uint32_t mask = new_capacity - 1;
-
-        // Now, rehash all of the nodes into the new list.
-        for (uint32_t index = 0; index < hash->capacity; index++) {
-            pm_node_t *node = hash->nodes[index];
-
-            if (node != NULL) {
-                uint32_t new_index = node_hash(metadata, node) & mask;
-                while (new_nodes[new_index] != NULL) {
-                    new_index = (new_index + 1) & mask;
-                }
-                new_nodes[new_index] = node;
-            }
-        }
-
-        // Finally, free the old node list and update the hash.
-        xfree_sized(hash->nodes, hash->capacity * sizeof(pm_node_t *));
-        hash->nodes = new_nodes;
-        hash->capacity = new_capacity;
-    }
-
-    // Now, insert the node into the hash.
-    uint32_t mask = hash->capacity - 1;
-    uint32_t index = node_hash(metadata, node) & mask;
-
-    // We use linear probing to resolve collisions. This means that if the
-    // current index is occupied, we will move to the next index and try again.
-    // We are guaranteed that this will eventually find an empty slot because we
-    // resize the hash when it gets too full.
-    while (hash->nodes[index] != NULL) {
-        if (compare(metadata, hash->nodes[index], node) == 0) break;
-        index = (index + 1) & mask;
-    }
-
-    // If the current index is occupied, we need to return the node that was
-    // already in the hash. Otherwise, we can just increment the size and insert
-    // the new node.
-    pm_node_t *result = hash->nodes[index];
-
-    if (result == NULL) {
-        hash->size++;
-        hash->nodes[index] = node;
-    } else if (replace) {
-        hash->nodes[index] = node;
-    }
-
-    return result;
-}
-
-/**
- * Free the internal memory associated with the given node hash.
- */
-static void
-pm_node_hash_free(pm_node_hash_t *hash) {
-    if (hash->capacity > 0) xfree_sized(hash->nodes, hash->capacity * sizeof(pm_node_t *));
 }
 
 /**
  * Compare two values that can be compared with a simple numeric comparison.
  */
-#define PM_NUMERIC_COMPARISON(left, right) ((left < right) ? -1 : (left > right) ? 1 : 0)
+#define COMPARE(left_, right_) (((left_) < (right_)) ? -1 : ((left_) > (right_)) ? 1 : 0)
 
 /**
  * Return the integer value of the given node as an int64_t.
  */
 static int64_t
-pm_int64_value(const pm_static_literals_metadata_t *metadata, const pm_node_t *node) {
+int64_value(const pm_parser_t *parser, const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_INTEGER_NODE: {
             const pm_integer_t *integer = &((const pm_integer_node_t *) node)->value;
@@ -290,7 +126,7 @@ pm_int64_value(const pm_static_literals_metadata_t *metadata, const pm_node_t *n
             return integer->negative ? -value : value;
         }
         case PM_SOURCE_LINE_NODE:
-            return (int64_t) pm_line_offset_list_line_column(metadata->line_offsets, node->location.start, metadata->start_line).line;
+            return (int64_t) pm_line_offset_list_line_column(&parser->line_offsets, node->location.start, parser->start_line).line;
         default:
             assert(false && "unreachable");
             return 0;
@@ -302,11 +138,9 @@ pm_int64_value(const pm_static_literals_metadata_t *metadata, const pm_node_t *n
  * instances.
  */
 static int
-pm_compare_integer_nodes(const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
+compare_integer_nodes(const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right) {
     if (PM_NODE_TYPE_P(left, PM_SOURCE_LINE_NODE) || PM_NODE_TYPE_P(right, PM_SOURCE_LINE_NODE)) {
-        int64_t left_value = pm_int64_value(metadata, left);
-        int64_t right_value = pm_int64_value(metadata, right);
-        return PM_NUMERIC_COMPARISON(left_value, right_value);
+        return COMPARE(int64_value(parser, left), int64_value(parser, right));
     }
 
     const pm_integer_t *left_integer = &((const pm_integer_node_t *) left)->value;
@@ -318,48 +152,15 @@ pm_compare_integer_nodes(const pm_static_literals_metadata_t *metadata, const pm
  * A comparison function for comparing two FloatNode instances.
  */
 static int
-pm_compare_float_nodes(PRISM_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
-    const double left_value = ((const pm_float_node_t *) left)->value;
-    const double right_value = ((const pm_float_node_t *) right)->value;
-    return PM_NUMERIC_COMPARISON(left_value, right_value);
-}
-
-/**
- * A comparison function for comparing two nodes that have attached numbers.
- */
-static int
-pm_compare_number_nodes(const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
-    if (PM_NODE_TYPE(left) != PM_NODE_TYPE(right)) {
-        return PM_NUMERIC_COMPARISON(PM_NODE_TYPE(left), PM_NODE_TYPE(right));
-    }
-
-    switch (PM_NODE_TYPE(left)) {
-        case PM_IMAGINARY_NODE:
-            return pm_compare_number_nodes(metadata, ((const pm_imaginary_node_t *) left)->numeric, ((const pm_imaginary_node_t *) right)->numeric);
-        case PM_RATIONAL_NODE: {
-            const pm_rational_node_t *left_rational = (const pm_rational_node_t *) left;
-            const pm_rational_node_t *right_rational = (const pm_rational_node_t *) right;
-
-            int result = pm_integer_compare(&left_rational->denominator, &right_rational->denominator);
-            if (result != 0) return result;
-
-            return pm_integer_compare(&left_rational->numerator, &right_rational->numerator);
-        }
-        case PM_INTEGER_NODE:
-            return pm_compare_integer_nodes(metadata, left, right);
-        case PM_FLOAT_NODE:
-            return pm_compare_float_nodes(metadata, left, right);
-        default:
-            assert(false && "unreachable");
-            return 0;
-    }
+compare_float_nodes(PRISM_UNUSED const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right) {
+    return COMPARE(((const pm_float_node_t *) left)->value, ((const pm_float_node_t *) right)->value);
 }
 
 /**
  * Return a pointer to the string value of the given node.
  */
 static const pm_string_t *
-pm_string_value(const pm_node_t *node) {
+string_value(const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_STRING_NODE:
             return &((const pm_string_node_t *) node)->unescaped;
@@ -375,11 +176,20 @@ pm_string_value(const pm_node_t *node) {
 
 /**
  * A comparison function for comparing two nodes that have attached strings.
+ * Only the flags in the given mask take part in the comparison.
+ *
+ * The FORCED_* flags record how a literal was written. An escape that locks the
+ * encoding to UTF-8 (a `\u` escape above U+007F, or any `\u` in a character
+ * literal) sets FORCED_UTF8 whether or not the file is already UTF-8. So in a
+ * UTF-8 file a `\u00E9` escape and a literal e-acute carry different flags
+ * while being the same string, and the flag is left out of the mask for them
+ * to compare equally. A source file node never carries a FORCED_* flag, because
+ * every instance of __FILE__ in a parse resolves to the same encoding.
  */
 static int
-pm_compare_string_nodes(const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
-    const pm_string_t *left_string = pm_string_value(left);
-    const pm_string_t *right_string = pm_string_value(right);
+compare_string_nodes(const pm_node_t *left, const pm_node_t *right, pm_node_flags_t mask) {
+    const pm_string_t *left_string = string_value(left);
+    const pm_string_t *right_string = string_value(right);
 
     int result = pm_string_compare(left_string, right_string);
     if (result != 0) return result;
@@ -389,137 +199,223 @@ pm_compare_string_nodes(const pm_static_literals_metadata_t *metadata, const pm_
      * as `"\xC3\xA9"` stay BINARY while a `"\u00E9"` escape is forced to UTF-8,
      * so those are distinct keys even though the bytes match.
      */
-    pm_node_flags_t left_flags = node_encoding_flags(metadata, left);
-    pm_node_flags_t right_flags = node_encoding_flags(metadata, right);
-    return PM_NUMERIC_COMPARISON(left_flags, right_flags);
+    return COMPARE(left->flags & mask, right->flags & mask);
 }
 
 /**
- * A comparison function for comparing two RegularExpressionNode instances.
+ * A comparison function for comparing two RegularExpressionNode instances. The
+ * once flag is left out because it only controls how many times an
+ * interpolated regular expression is compiled, not its value.
  */
 static int
-pm_compare_regular_expression_nodes(PRISM_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
+compare_regular_expression_nodes(PRISM_UNUSED const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right) {
     const pm_regular_expression_node_t *left_regexp = (const pm_regular_expression_node_t *) left;
     const pm_regular_expression_node_t *right_regexp = (const pm_regular_expression_node_t *) right;
 
     int result = pm_string_compare(&left_regexp->unescaped, &right_regexp->unescaped);
     if (result != 0) return result;
 
-    return PM_NUMERIC_COMPARISON(left_regexp->base.flags, right_regexp->base.flags);
+    pm_node_flags_t mask = (pm_node_flags_t) ~PM_REGULAR_EXPRESSION_FLAGS_ONCE;
+    return COMPARE(left->flags & mask, right->flags & mask);
 }
 
-#undef PM_NUMERIC_COMPARISON
+/**
+ * Return the type that the given node is compared as. A source line node can
+ * equal an integer node and a source file node can equal a string node, so
+ * each takes the type of the node it can equal.
+ */
+static enum pm_node_type
+static_literal_type(const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_SOURCE_LINE_NODE:
+            return PM_INTEGER_NODE;
+        case PM_SOURCE_FILE_NODE:
+            return PM_STRING_NODE;
+        default:
+            return PM_NODE_TYPE(node);
+    }
+}
 
 /**
- * Add a node to the set of static literals.
+ * A comparison function for comparing any two static literal nodes. Nodes that
+ * are compared as different types are never equal.
+ */
+static int
+compare_nodes(const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right) {
+    enum pm_node_type left_type = static_literal_type(left);
+    enum pm_node_type right_type = static_literal_type(right);
+    if (left_type != right_type) return COMPARE(left_type, right_type);
+
+    switch (left_type) {
+        case PM_INTEGER_NODE:
+            return compare_integer_nodes(parser, left, right);
+        case PM_FLOAT_NODE:
+            return compare_float_nodes(parser, left, right);
+        case PM_IMAGINARY_NODE:
+            return compare_nodes(parser, ((const pm_imaginary_node_t *) left)->numeric, ((const pm_imaginary_node_t *) right)->numeric);
+        case PM_RATIONAL_NODE: {
+            const pm_rational_node_t *left_rational = (const pm_rational_node_t *) left;
+            const pm_rational_node_t *right_rational = (const pm_rational_node_t *) right;
+
+            int result = pm_integer_compare(&left_rational->denominator, &right_rational->denominator);
+            if (result != 0) return result;
+
+            return pm_integer_compare(&left_rational->numerator, &right_rational->numerator);
+        }
+        case PM_STRING_NODE: {
+            pm_node_flags_t mask = PM_STRING_FLAGS_FORCED_BINARY_ENCODING;
+            if (parser->encoding != PM_ENCODING_UTF_8_ENTRY) mask |= PM_STRING_FLAGS_FORCED_UTF8_ENCODING;
+            return compare_string_nodes(left, right, mask);
+        }
+        case PM_SYMBOL_NODE: {
+            pm_node_flags_t mask = PM_SYMBOL_FLAGS_FORCED_BINARY_ENCODING | PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING;
+            if (parser->encoding != PM_ENCODING_UTF_8_ENTRY) mask |= PM_SYMBOL_FLAGS_FORCED_UTF8_ENCODING;
+            return compare_string_nodes(left, right, mask);
+        }
+        case PM_REGULAR_EXPRESSION_NODE:
+            return compare_regular_expression_nodes(parser, left, right);
+        case PM_FALSE_NODE:
+        case PM_NIL_NODE:
+        case PM_SOURCE_ENCODING_NODE:
+        case PM_TRUE_NODE:
+            return 0;
+        default:
+            assert(false && "unreachable");
+            return 0;
+    }
+}
+
+#undef COMPARE
+
+/**
+ * Place an entry into a hash table that is known not to hold an equal node, so
+ * no comparisons are needed to find its slot.
+ */
+static void
+pm_static_literals_place(pm_static_literals_entry_t *entries, uint32_t mask, pm_static_literals_entry_t entry) {
+    uint32_t index = (uint32_t) (entry.hash & mask);
+    while (entries[index].node != NULL) {
+        index = (index + 1) & mask;
+    }
+    entries[index] = entry;
+}
+
+/**
+ * Move the nodes of the set into a new hash table with the given capacity. A
+ * set that has no hash table yet hashes its inline nodes. A set that already
+ * has one moves its entries, which keep their hashes.
+ */
+static void
+pm_static_literals_resize(const pm_parser_t *parser, pm_static_literals_t *literals, uint32_t capacity) {
+    pm_static_literals_entry_t *entries = xcalloc(capacity, sizeof(pm_static_literals_entry_t));
+    if (entries == NULL) abort();
+
+    /* It turns out to be more efficient to mask the hash value than to use the
+     * modulo operator. Because our capacities are always powers of two, we can
+     * use a bitwise AND to get the same result as the modulo operator. */
+    uint32_t mask = capacity - 1;
+
+    if (literals->capacity == 0) {
+        for (uint32_t index = 0; index < literals->size; index++) {
+            pm_node_t *node = literals->nodes[index];
+            pm_static_literals_place(entries, mask, (pm_static_literals_entry_t) { .node = node, .hash = node_hash(parser, node) });
+        }
+    } else {
+        for (uint32_t index = 0; index < literals->capacity; index++) {
+            if (literals->entries[index].node != NULL) {
+                pm_static_literals_place(entries, mask, literals->entries[index]);
+            }
+        }
+
+        xfree_sized(literals->entries, literals->capacity * sizeof(pm_static_literals_entry_t));
+    }
+
+    literals->entries = entries;
+    literals->capacity = capacity;
+}
+
+/**
+ * Add a node to the set of static literals. If an equal node is already in the
+ * set, it is returned (and replaced by the new node if replace is set).
+ * Otherwise the new node is inserted and NULL is returned. Nodes that are not
+ * static literals are ignored.
  */
 pm_node_t *
-pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, const pm_encoding_t *encoding, pm_static_literals_t *literals, pm_node_t *node, bool replace) {
+pm_static_literals_add(const pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *node, bool replace) {
     switch (PM_NODE_TYPE(node)) {
-        case PM_INTEGER_NODE:
-        case PM_SOURCE_LINE_NODE:
-            return pm_node_hash_insert(
-                &literals->integer_nodes,
-                &(pm_static_literals_metadata_t) {
-                    .line_offsets = line_offsets,
-                    .start = start,
-                    .start_line = start_line,
-                    .encoding = encoding
-                },
-                node,
-                replace,
-                pm_compare_integer_nodes
-            );
+        case PM_FALSE_NODE:
         case PM_FLOAT_NODE:
-            return pm_node_hash_insert(
-                &literals->float_nodes,
-                &(pm_static_literals_metadata_t) {
-                    .line_offsets = line_offsets,
-                    .start = start,
-                    .start_line = start_line,
-                    .encoding = encoding
-                },
-                node,
-                replace,
-                pm_compare_float_nodes
-            );
-        case PM_RATIONAL_NODE:
         case PM_IMAGINARY_NODE:
-            return pm_node_hash_insert(
-                &literals->number_nodes,
-                &(pm_static_literals_metadata_t) {
-                    .line_offsets = line_offsets,
-                    .start = start,
-                    .start_line = start_line,
-                    .encoding = encoding
-                },
-                node,
-                replace,
-                pm_compare_number_nodes
-            );
-        case PM_STRING_NODE:
-        case PM_SOURCE_FILE_NODE:
-            return pm_node_hash_insert(
-                &literals->string_nodes,
-                &(pm_static_literals_metadata_t) {
-                    .line_offsets = line_offsets,
-                    .start = start,
-                    .start_line = start_line,
-                    .encoding = encoding
-                },
-                node,
-                replace,
-                pm_compare_string_nodes
-            );
+        case PM_INTEGER_NODE:
+        case PM_NIL_NODE:
+        case PM_RATIONAL_NODE:
         case PM_REGULAR_EXPRESSION_NODE:
-            return pm_node_hash_insert(
-                &literals->regexp_nodes,
-                &(pm_static_literals_metadata_t) {
-                    .line_offsets = line_offsets,
-                    .start = start,
-                    .start_line = start_line,
-                    .encoding = encoding
-                },
-                node,
-                replace,
-                pm_compare_regular_expression_nodes
-            );
+        case PM_SOURCE_ENCODING_NODE:
+        case PM_SOURCE_FILE_NODE:
+        case PM_SOURCE_LINE_NODE:
+        case PM_STRING_NODE:
         case PM_SYMBOL_NODE:
-            return pm_node_hash_insert(
-                &literals->symbol_nodes,
-                &(pm_static_literals_metadata_t) {
-                    .line_offsets = line_offsets,
-                    .start = start,
-                    .start_line = start_line,
-                    .encoding = encoding
-                },
-                node,
-                replace,
-                pm_compare_string_nodes
-            );
-        case PM_TRUE_NODE: {
-            pm_node_t *duplicated = literals->true_node;
-            if ((duplicated == NULL) || replace) literals->true_node = node;
-            return duplicated;
-        }
-        case PM_FALSE_NODE: {
-            pm_node_t *duplicated = literals->false_node;
-            if ((duplicated == NULL) || replace) literals->false_node = node;
-            return duplicated;
-        }
-        case PM_NIL_NODE: {
-            pm_node_t *duplicated = literals->nil_node;
-            if ((duplicated == NULL) || replace) literals->nil_node = node;
-            return duplicated;
-        }
-        case PM_SOURCE_ENCODING_NODE: {
-            pm_node_t *duplicated = literals->source_encoding_node;
-            if ((duplicated == NULL) || replace) literals->source_encoding_node = node;
-            return duplicated;
-        }
+        case PM_TRUE_NODE:
+            break;
         default:
             return NULL;
     }
+
+    if (literals->capacity == 0) {
+        /* A set without a hash table compares the new node against each of
+         * its nodes directly. Comparing nodes of different types returns
+         * early, so this costs about as much as hashing the new node. */
+        for (uint32_t index = 0; index < literals->size; index++) {
+            pm_node_t *existing = literals->nodes[index];
+
+            if (compare_nodes(parser, existing, node) == 0) {
+                if (replace) literals->nodes[index] = node;
+                return existing;
+            }
+        }
+
+        if (literals->size < PM_STATIC_LITERALS_INLINE_CAPACITY) {
+            literals->nodes[literals->size++] = node;
+            return NULL;
+        }
+
+        /* The set is full, so its nodes move into a hash table. The table is
+         * sized to stay at most half full after this node is added, with room
+         * to spare before its first resize. */
+        pm_static_literals_resize(parser, literals, PM_STATIC_LITERALS_INLINE_CAPACITY * 4);
+    } else if (literals->size * 2 >= literals->capacity) {
+        /* If we are out of space, we need to resize the hash. */
+        pm_static_literals_resize(parser, literals, literals->capacity * 2);
+    }
+
+    uint64_t hash = node_hash(parser, node);
+    uint32_t mask = literals->capacity - 1;
+    uint32_t index = (uint32_t) (hash & mask);
+
+    /* We use linear probing to resolve collisions. This means that if the
+     * current index is occupied, we will move to the next index and try again.
+     * We are guaranteed that this will eventually find an empty slot because we
+     * resize the hash when it gets too full. Entries whose hash differs cannot
+     * be equal, so only entries with a matching hash are compared. */
+    while (literals->entries[index].node != NULL) {
+        const pm_static_literals_entry_t *entry = &literals->entries[index];
+        if (entry->hash == hash && compare_nodes(parser, entry->node, node) == 0) break;
+        index = (index + 1) & mask;
+    }
+
+    /* If the current index is occupied, we need to return the node that was
+     * already in the hash. Otherwise, we can just increment the size and insert
+     * the new node. */
+    pm_node_t *result = literals->entries[index].node;
+
+    if (result == NULL) {
+        literals->size++;
+        literals->entries[index] = (pm_static_literals_entry_t) { .node = node, .hash = hash };
+    } else if (replace) {
+        literals->entries[index].node = node;
+    }
+
+    return result;
 }
 
 /**
@@ -527,12 +423,7 @@ pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t 
  */
 void
 pm_static_literals_free(pm_static_literals_t *literals) {
-    pm_node_hash_free(&literals->integer_nodes);
-    pm_node_hash_free(&literals->float_nodes);
-    pm_node_hash_free(&literals->number_nodes);
-    pm_node_hash_free(&literals->string_nodes);
-    pm_node_hash_free(&literals->regexp_nodes);
-    pm_node_hash_free(&literals->symbol_nodes);
+    if (literals->capacity > 0) xfree_sized(literals->entries, literals->capacity * sizeof(pm_static_literals_entry_t));
 }
 
 /**
@@ -559,8 +450,8 @@ pm_static_literal_positive_p(const pm_node_t *node) {
 /**
  * Create a string-based representation of the given static literal.
  */
-static PRISM_INLINE void
-pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_metadata_t *metadata, const pm_node_t *node) {
+void
+pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_FALSE_NODE:
             pm_buffer_append_string(buffer, "false", 5);
@@ -569,21 +460,21 @@ pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_met
             const double value = ((const pm_float_node_t *) node)->value;
 
             if (PRISM_ISINF(value)) {
-                if (metadata->start[node->location.start] == '-') {
+                if (parser->start[node->location.start] == '-') {
                     pm_buffer_append_byte(buffer, '-');
                 }
                 pm_buffer_append_string(buffer, "Infinity", 8);
             } else if (value == 0.0) {
-                if (metadata->start[node->location.start] == '-') {
+                if (parser->start[node->location.start] == '-') {
                     pm_buffer_append_byte(buffer, '-');
                 }
                 pm_buffer_append_string(buffer, "0.0", 3);
             } else {
                 pm_buffer_append_format(buffer, "%g", value);
 
-                // %g will not insert a .0 for 1e100 (we'll get back 1e+100). So
-                // we check for the decimal point and add it in here if it's not
-                // present.
+                /* %g will not insert a .0 for 1e100 (we'll get back 1e+100). So
+                 * we check for the decimal point and add it in here if it's not
+                 * present. */
                 if (pm_buffer_index(buffer, '.') == SIZE_MAX) {
                     size_t exponent_index = pm_buffer_index(buffer, 'e');
                     size_t index = exponent_index == SIZE_MAX ? pm_buffer_length(buffer) : exponent_index;
@@ -597,7 +488,7 @@ pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_met
             const pm_node_t *numeric = ((const pm_imaginary_node_t *) node)->numeric;
             pm_buffer_append_string(buffer, "(0", 2);
             if (pm_static_literal_positive_p(numeric)) pm_buffer_append_byte(buffer, '+');
-            pm_static_literal_inspect_node(buffer, metadata, numeric);
+            pm_static_literal_inspect(buffer, parser, numeric);
             if (PM_NODE_TYPE_P(numeric, PM_RATIONAL_NODE)) {
                 pm_buffer_append_byte(buffer, '*');
             }
@@ -633,7 +524,7 @@ pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_met
             break;
         }
         case PM_SOURCE_ENCODING_NODE:
-            pm_buffer_append_format(buffer, "#<Encoding:%s>", metadata->encoding->name);
+            pm_buffer_append_format(buffer, "#<Encoding:%s>", parser->encoding->name);
             break;
         case PM_SOURCE_FILE_NODE: {
             const pm_string_t *filepath = &((const pm_source_file_node_t *) node)->filepath;
@@ -643,7 +534,7 @@ pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_met
             break;
         }
         case PM_SOURCE_LINE_NODE:
-            pm_buffer_append_format(buffer, "%d", pm_line_offset_list_line_column(metadata->line_offsets, node->location.start, metadata->start_line).line);
+            pm_buffer_append_format(buffer, "%d", pm_line_offset_list_line_column(&parser->line_offsets, node->location.start, parser->start_line).line);
             break;
         case PM_STRING_NODE: {
             const pm_string_t *unescaped = &((const pm_string_node_t *) node)->unescaped;
@@ -665,21 +556,4 @@ pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_met
             assert(false && "unreachable");
             break;
     }
-}
-
-/**
- * Create a string-based representation of the given static literal.
- */
-void
-pm_static_literal_inspect(pm_buffer_t *buffer, const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, const pm_encoding_t *encoding, const pm_node_t *node) {
-    pm_static_literal_inspect_node(
-        buffer,
-        &(pm_static_literals_metadata_t) {
-            .line_offsets = line_offsets,
-            .start = start,
-            .start_line = start_line,
-            .encoding = encoding
-        },
-        node
-    );
 }

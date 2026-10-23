@@ -13890,7 +13890,7 @@ parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
 static void
 pm_hash_key_duplicated_warn(pm_parser_t *parser, const pm_node_t *duplicated, const pm_node_t *node) {
     pm_buffer_t buffer = { 0 };
-    pm_static_literal_inspect(&buffer, &parser->line_offsets, parser->start, parser->start_line, parser->encoding, duplicated);
+    pm_static_literal_inspect(&buffer, parser, duplicated);
 
     pm_diagnostic_list_append_format(
         &parser->metadata_arena,
@@ -13912,7 +13912,7 @@ pm_hash_key_duplicated_warn(pm_parser_t *parser, const pm_node_t *duplicated, co
  */
 static void
 pm_hash_key_static_literals_add(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *node) {
-    const pm_node_t *duplicated = pm_static_literals_add(&parser->line_offsets, parser->start, parser->start_line, parser->encoding, literals, node, true);
+    const pm_node_t *duplicated = pm_static_literals_add(parser, literals, node, true);
 
     if (duplicated != NULL) {
         pm_hash_key_duplicated_warn(parser, duplicated, node);
@@ -13936,7 +13936,7 @@ pm_hash_key_static_literals_merge(pm_parser_t *parser, pm_static_literals_t *lit
         switch (PM_NODE_TYPE(element)) {
             case PM_ASSOC_NODE: {
                 pm_node_t *key = ((pm_assoc_node_t *) element)->key;
-                const pm_node_t *duplicated = pm_static_literals_add(&parser->line_offsets, parser->start, parser->start_line, parser->encoding, literals, key, true);
+                const pm_node_t *duplicated = pm_static_literals_add(parser, literals, key, true);
 
                 if (duplicated != NULL && PM_NODE_START(duplicated) < boundary) {
                     pm_hash_key_duplicated_warn(parser, duplicated, key);
@@ -13967,7 +13967,7 @@ static void
 pm_when_clause_static_literals_add(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *node) {
     pm_node_t *previous;
 
-    if ((previous = pm_static_literals_add(&parser->line_offsets, parser->start, parser->start_line, parser->encoding, literals, node, false)) != NULL) {
+    if ((previous = pm_static_literals_add(parser, literals, node, false)) != NULL) {
         pm_diagnostic_list_append_format(
             &parser->metadata_arena,
             &parser->warning_list,
@@ -17377,7 +17377,7 @@ parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_set_t *cap
  */
 static void
 parse_pattern_hash_key(pm_parser_t *parser, pm_static_literals_t *keys, pm_node_t *node) {
-    if (pm_static_literals_add(&parser->line_offsets, parser->start, parser->start_line, parser->encoding, keys, node, true) != NULL) {
+    if (pm_static_literals_add(parser, keys, node, true) != NULL) {
         pm_parser_err_node(parser, node, PM_ERR_PATTERN_HASH_KEY_DUPLICATE);
     }
 }
