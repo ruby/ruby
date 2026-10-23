@@ -23,6 +23,7 @@
 #include "ruby/internal/value.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/special_consts.h"
+#include "ruby/internal/arithmetic/len_t.h"
 #include "ruby/backward/2/long_long.h"
 
 #define RB_LL2NUM  rb_ll2num_inline   /**< @alias{rb_ll2num_inline} */
@@ -81,7 +82,7 @@ RBIMPL_SYMBOL_EXPORT_END()
 static inline VALUE
 rb_ll2num_inline(LONG_LONG n)
 {
-    if (FIXABLE(n)) return LONG2FIX((long)n);
+    if (FIXABLE(n)) return LEN2FIX(RBIMPL_CAST((rb_len_t)n));
     return rb_ll2inum(n);
 }
 
@@ -94,7 +95,7 @@ rb_ll2num_inline(LONG_LONG n)
 static inline VALUE
 rb_ull2num_inline(unsigned LONG_LONG n)
 {
-    if (POSFIXABLE(n)) return LONG2FIX((long)n);
+    if (POSFIXABLE(n)) return LEN2FIX(RBIMPL_CAST((rb_len_t)n));
     return rb_ull2inum(n);
 }
 
@@ -110,7 +111,7 @@ static inline LONG_LONG
 rb_num2ll_inline(VALUE x)
 {
     if (RB_FIXNUM_P(x))
-        return RB_FIX2LONG(x);
+        return FIX2LEN(x);
     else
         return rb_num2ll(x);
 }
@@ -127,7 +128,7 @@ static inline unsigned LONG_LONG
 rb_num2ull_inline(VALUE x)
 {
     if (RB_FIXNUM_P(x))
-        return RBIMPL_CAST((unsigned LONG_LONG)RB_FIX2LONG(x));
+        return RBIMPL_CAST((unsigned LONG_LONG)FIX2LEN(x));
     else
         return rb_num2ull(x);
 }

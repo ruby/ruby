@@ -2,6 +2,10 @@
 require 'test/unit'
 
 class TestInteger < Test::Unit::TestCase
+  def test_negative_integer_literal_wider_than_long
+    assert_equal(Integer("-2147483649"), -2147483649)
+  end
+
   FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
   FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
   LONG_MAX = RbConfig::LIMITS['LONG_MAX']

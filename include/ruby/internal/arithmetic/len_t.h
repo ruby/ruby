@@ -22,7 +22,6 @@
  */
 #include "ruby/internal/config.h"
 #include "ruby/internal/arithmetic/long.h"
-#include "ruby/internal/arithmetic/long_long.h"
 #include "ruby/internal/assume.h"
 #include "ruby/internal/cast.h"
 #include "ruby/internal/value.h"

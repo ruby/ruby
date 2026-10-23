@@ -27,6 +27,7 @@
 #include "ruby/internal/value_type.h"
 #include "ruby/internal/arithmetic/int.h"
 #include "ruby/internal/arithmetic/len_t.h"
+#include "ruby/internal/arithmetic/long_long.h"
 #if !defined RUBY_EXPORT && !defined RUBY_NO_OLD_COMPATIBILITY
 # include "ruby/backward.h"
 #endif
