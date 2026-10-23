@@ -15,6 +15,38 @@ class TestRubyVM < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) {RubyVM.stat(:"\u{30eb 30d3 30fc}")}
   end
 
+  def test_shape_redblack_cache_size
+    code = "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      obj = Object.new
+      20.times { |i| obj.instance_variable_set(:"@a#{i}", i) }
+      raise unless obj.instance_variable_get(:@a19) == 19
+      p RubyVM.stat(:shape_cache_size)
+    end;
+    env = "RUBY_SHAPE_REDBLACK_CACHE_SIZE"
+
+    default = nil
+    assert_in_out_err([{env => nil}], code, [], []) do |out, _|
+      default = out
+      assert_operator Integer(out.first), :>, 50
+    end
+
+    # Valid values
+    assert_in_out_err([{env => "0"}], code, ["0"], [])
+    assert_in_out_err([{env => "50"}], code, ["49"], [])
+    assert_in_out_err([{env => "0x32"}], code, ["49"], [])
+    assert_in_out_err([{env => "50 "}], code, ["49"], [])
+
+    # Ignored values
+    assert_in_out_err([{env => ""}], code, default, [])
+    assert_in_out_err([{env => "50x"}], code, default,
+                      ["invalid string for #{env}: 50x"])
+    assert_in_out_err([{env => "-1"}], code, default,
+                      ["#{env}=-1 (default value: 16777216) is ignored because it must be between 0 and 134217728."])
+    assert_in_out_err([{env => "134217729"}], code, default,
+                      ["#{env}=134217729 (default value: 16777216) is ignored because it must be between 0 and 134217728."])
+  end if RUBY_PLATFORM.include?("linux")
+
   def parse_and_compile
     script = <<~RUBY
       _a = 1
