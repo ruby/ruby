@@ -5978,6 +5978,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   r = compile_tree(root, reg);
   if (r == 0) {
     r = add_opcode(reg, OP_END);
+    if (r != 0) goto err_unset;
 #ifdef USE_SUBEXP_CALL
     if (scan_env.num_call > 0) {
       r = unset_addr_list_fix(&uslist, reg);
