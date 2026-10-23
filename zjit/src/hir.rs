@@ -6470,9 +6470,9 @@ impl Function {
     fn gen_post_send_no_ep_escape_patch_point(&mut self, block: BlockId, state: &FrameState, insn_idx: u32) {
         let iseq = state.iseq;
         let mut reload_state = state.clone();
-        reload_state.insn_idx = insn_idx as usize;
+        reload_state.insn_idx = insn_idx.to_usize();
         reload_state.pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
-        let reload_exit_id = self.push_insn(block, Insn::Snapshot { state: Box::new(reload_state.without_locals()) });
+        let reload_exit_id = self.push_insn(block, Insn::Snapshot { state: Box::new(reload_state) });
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: reload_exit_id });
     }
 
@@ -8837,13 +8837,6 @@ impl FrameState {
     /// Get the YARV instruction index for the current instruction
     pub fn insn_idx(&self) -> YarvInsnIdx {
         self.insn_idx
-    }
-
-    /// Return itself without locals. Useful for side-exiting without spilling locals.
-    fn without_locals(&self) -> Self {
-        let mut state = self.clone();
-        state.locals.clear();
-        state
     }
 
     /// Return itself without stack. Used by leaf calls with GC to reset SP to the base pointer.

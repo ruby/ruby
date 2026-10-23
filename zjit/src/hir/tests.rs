@@ -261,6 +261,58 @@ mod snapshot_tests {
         ");
     }
 
+    // Two levels of inlining, so the innermost Snapshot's caller chain is two
+    // deep. build_stack_map() turns each link in that chain into a
+    // StackMapEntry::PrevFrame, so this is the HIR shape behind a stack map that
+    // describes three control frames.
+    #[test]
+    fn test_nested_inline_frames_have_caller_chain() {
+        eval("
+            def inner(x) = x + 1
+            def middle(x) = inner(x)
+            def test = middle(1)
+            test
+            test
+        ");
+        assert_snapshot!(optimized_hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          Entries bb1, bb2
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
+          PatchPoint NoTracePoint, v8
+          v11:Fixnum[1] = Const Value(1)
+          v12:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11], locals: [] }
+          PatchPoint MethodRedefined(Object@0x1010, middle@0x1018, cme:0x1020), v12
+          v20:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          v22:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
+          PushInlineFrame :middle, v20 (0x1048), num_args=1
+          v29:Any = Snapshot FrameState { pc: 0x1068, stack: [v20, v11], locals: [x=v11], caller: v22 }
+          PatchPoint MethodRedefined(Object@0x1010, inner@0x1070, cme:0x1078), v29
+          v43:Any = Snapshot FrameState { pc: 0x1068, stack: [], locals: [x=v11], caller: v22 }
+          PushInlineFrame :inner, v20 (0x10a0), num_args=1
+          v50:Fixnum[1] = Const Value(1)
+          v51:Any = Snapshot FrameState { pc: 0x10c0, stack: [v11, v50], locals: [x=v11], caller: v43 }
+          PatchPoint MethodRedefined(Integer@0x10c8, +@0x10d0, cme:0x10d8), v51
+          v65:Fixnum[2] = Const Value(2)
+          PopInlineFrame
+          v31:Any = Snapshot FrameState { pc: 0x1100, stack: [v65], locals: [x=v11], caller: v22 }
+          PatchPoint NoEPEscape(middle), v31
+          PopInlineFrame
+          v14:Any = Snapshot FrameState { pc: 0x1108, stack: [v65], locals: [] }
+          CheckInterrupts
+          Return v65
+        ");
+    }
+
     #[test]
     fn test_send_direct_with_many_kwargs_no_reorder_snapshot() {
         eval("
@@ -346,7 +398,7 @@ mod snapshot_tests {
           PatchPoint NoTracePoint, v19
           v21:Any = Snapshot FrameState { pc: 0x1028, stack: [v12], locals: [o=v12, y=v17] }
           v22:BasicObject = Send v12, :foo # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v23:Any = Snapshot FrameState { pc: 0x1030, stack: [v22], locals: [] }
+          v23:Any = Snapshot FrameState { pc: 0x1030, stack: [v22], locals: [o=v12, y=v17] }
           PatchPoint NoEPEscape(test), v23
           v25:Any = Snapshot FrameState { pc: 0x1030, stack: [v22], locals: [o=v12, y=v17] }
           v26:Any = Snapshot FrameState { pc: 0x1038, stack: [], locals: [o=v12, y=v17] }

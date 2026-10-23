@@ -3154,10 +3154,6 @@ zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cf
             if (ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P(jit_frame)) {
                 cfp->block_code = NULL;
             }
-
-            // On side exit, the exiting frame is already written by compile_exit_save_state()
-            // and skipped here after materialize_exit_trampoline clears its
-            // jit_return, so this restores older ZJIT frames from stack maps.
             zjit_write_frame_stack(ec, cfp, jit_frame);
             cfp->jit_return = 0;
         }

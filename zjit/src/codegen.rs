@@ -3472,31 +3472,20 @@ fn cfp_jit_return_for_depth(asm: &mut Assembler, depth: InlineDepth) -> Opnd {
     }
 }
 
-fn jit_frame_next_pc(state: &FrameState) -> *const VALUE {
-    let opcode: usize = state.get_opcode().try_into().unwrap();
-    unsafe { state.pc.offset(insn_len(opcode) as isize) }
-}
-
-fn jit_frame_for_state(state: &FrameState) -> *const zjit_jit_frame {
-    JITFrame::new_iseq(jit_frame_next_pc(state), state.iseq)
-}
-
-/// Save only the PC to CFP. Use this when you need to call gen_save_sp()
-/// immediately after with a custom stack size (e.g., gen_ccall_with_frame
-/// adjusts SP to exclude receiver and arguments).
+/// Change to a different [zjit_jit_frame].
 fn gen_write_jit_frame(asm: &mut Assembler, state: &FrameState) -> *const zjit_jit_frame {
+    // The JIT frame describes the frame in the middle of a VM instruction, and VM opcode handler
+    // bump PC first thing on entry. So we put an advanced PC in the JIT frame.
+    fn jit_frame_next_pc(state: &FrameState) -> *const VALUE {
+        let opcode: usize = state.get_opcode().try_into().unwrap();
+        unsafe { state.pc.add(insn_len(opcode).to_usize()) }
+    }
+
     gen_incr_counter(asm, Counter::vm_write_jit_frame_count);
-    asm_comment!(asm, "save JITFrame to CFP");
-    let jit_frame = jit_frame_for_state(state);
+    asm_comment!(asm, "change JITFrame");
+    let jit_frame = JITFrame::new_iseq(jit_frame_next_pc(state), state.iseq);
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(state.depth)), Opnd::const_ptr(jit_frame));
 
-    // CFP_PC for a live JIT frame routes through the JITFrame on the native
-    // stack (cfp->jit_return points at this frame's slot), so we don't need to
-    // touch cfp->pc here. Poisoning cfp->pc with PC_POISON would actively
-    // break the case where rb_zjit_materialize_frames() previously copied
-    // jit_frame->pc into cfp->pc and cleared cfp->jit_return: the JIT keeps
-    // running, lands on this routine again, and the poison would replace
-    // the valid materialized pc behind the GC's back.
     jit_frame
 }
 
@@ -3848,36 +3837,23 @@ fn side_exit_with_recompile(jit: &JITState, function: &Function, state: &FrameSt
 
 /// Build a side-exit context
 fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> SideExit {
-    let mut stack = Vec::new();
-    for &insn_id in state.stack() {
-        stack.push(jit.get_opnd(insn_id));
-    }
-
-    let mut locals = Vec::new();
-    for &insn_id in state.locals() {
-        locals.push(jit.get_opnd(insn_id));
-    }
-
     SideExit{
         pc: Opnd::const_ptr(state.pc),
-        stack,
-        locals,
+        vm_stack_size: state.stack().len(),
         iseq: state.iseq,
-        stack_map: build_caller_stack_map(jit, function, state),
+        stack_map: build_stackmap_for_sidexit(jit, function, state),
         recompile: None,
     }
 }
 
-fn build_caller_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> Option<StackMap> {
-    let caller = state.caller()?;
-    let caller_state = function.frame_state(caller);
-    let stack_map = build_stack_map(jit, function, &caller_state);
+fn build_stackmap_for_sidexit(jit: &JITState, function: &Function, state: &FrameState) -> Option<StackMap> {
+    let stack_map = build_stack_map(jit, function, state);
     if stack_map.is_empty() {
         return None;
     }
 
-    let jit_frame = jit_frame_for_state(&caller_state);
-    Some(StackMap::new(stack_map, jit_frame, caller_state.depth))
+    let jit_frame = JITFrame::new_iseq(state.pc, state.iseq);
+    Some(StackMap::new(stack_map, jit_frame, state.depth))
 }
 
 #[cfg(target_arch = "x86_64")]
@@ -4286,13 +4262,6 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
 
     let mut asm = Assembler::new();
     asm.new_block_without_id("materialize_exit_trampoline");
-
-    asm_comment!(asm, "clear JITFrame materialized by exit code");
-    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
-    // Clear cfp->block_code since it may have been left uninitialized by JITFrame mechanisms.
-    // Zero is the right value because we're dealing with the top most frame.
-    // Non-zero values are only set before pushing a frame.
-    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
 
     asm_comment!(asm, "materialize ZJIT frames");
     asm_ccall!(asm, rb_zjit_materialize_frames, EC, CFP);

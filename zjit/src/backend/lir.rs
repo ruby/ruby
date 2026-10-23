@@ -6,15 +6,14 @@ use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
 use crate::perf;
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
-use crate::asm::LabelName;
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, vm_stack_canary, zjit_jit_frame};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, get_option};
 use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
-use crate::asm::{CodeBlock, Label};
+use crate::asm::{CodeBlock, Label, LabelName};
 use crate::state::{ZJITState, rb_zjit_record_exit_stack};
 use crate::cast::IntoUsize;
 
@@ -629,12 +628,9 @@ pub enum BlockHandler {
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExit {
     pub pc: Opnd,
-    pub stack: Vec<Opnd>,
-    pub locals: Vec<Opnd>,
+    pub vm_stack_size: usize,
     pub iseq: IseqPtr,
-    /// Stack map for older inlined frames that are not written directly by this
-    /// side exit. The current frame's stack and locals are still handled by
-    /// `stack` and `locals` above.
+    /// Stack map for the top-most frame and any inlined frames below.
     pub stack_map: Option<StackMap>,
     /// If set, the side exit will invalidate the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
@@ -991,8 +987,6 @@ macro_rules! target_for_each_operand_impl {
     ($self:expr, $visit_one:ident, $visit_many:ident, $reborrow:ident) => {
         match $self {
             Target::SideExit(data) => {
-                visit_many!(data.exit.stack);
-                visit_many!(data.exit.locals);
                 if let Some(StackMap { stack, .. }) = $reborrow!(data.exit.stack_map) {
                     for entry in stack {
                         if let StackMapEntry::Opnd(opnd) = entry {
@@ -3049,39 +3043,18 @@ impl Assembler
             asm.store(jit_frame_slot, Opnd::const_ptr(jit_frame));
         }
 
-        /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
+        /// Restore VM state for the side exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals, iseq, stack_map, .. } = exit;
+            let SideExit { vm_stack_size, stack_map, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
             // so that nobody stomps on us
             asm.boundary_pad();
 
-            asm_comment!(asm, "save cfp->pc");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
-
+            // TODO(alan): Use the stack map to handle cfp->sp
             asm_comment!(asm, "save cfp->sp");
-            asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
-
-            asm_comment!(asm, "save cfp->iseq");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
-
-            // cfp->block_code and cfp->jit_return are cleared by the materialize_exit trampoline
-
-            if !stack.is_empty() {
-                asm_comment!(asm, "write stack slots: {}", join_opnds(&stack, ", "));
-                for (idx, &opnd) in stack.iter().enumerate() {
-                    asm.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
-                }
-            }
-
-            if !locals.is_empty() {
-                asm_comment!(asm, "write locals: {}", join_opnds(&locals, ", "));
-                for (idx, &opnd) in locals.iter().enumerate() {
-                    asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
-                }
-            }
+            asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, *vm_stack_size as i32 * SIZEOF_VALUE_I32));
 
             if let Some(stack_map) = stack_map {
                 compile_exit_stack_map(asm, stack_map);
@@ -3113,13 +3086,6 @@ impl Assembler
             // ccall doesn't clobber caller-saved registers
             // holding stack/local operands.
             compile_exit_save_state(asm, exit);
-            if trace_reason.is_some() || exit.recompile.is_some() {
-                // Clear cfp->jit_return to prepare for a C call. Normally, cfp->jit_return
-                // is cleared by the materialize_exit trampoline, but if we're about to
-                // make a C call, we need to clear any stale JITFrame.
-                asm_comment!(asm, "clear cfp->jit_return");
-                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
-            }
             if let Some(reason) = trace_reason {
                 // Leak a CString with the reason so it's available at runtime
                 let reason_cstr = std::ffi::CString::new(reason.to_string())

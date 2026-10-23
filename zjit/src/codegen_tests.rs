@@ -1864,6 +1864,24 @@ fn test_eval_local_write_survives_send_without_hir_opt() {
 }
 
 #[test]
+fn test_eval_local_write_survives_side_exit() {
+    // Like test_eval_local_write_survives_send_without_hir_opt(), but through a side exit
+    // instead of a send: the exit used to write the JIT's stale `n = 0` over the 2 from `eval`.
+    set_call_threshold(2);
+    eval(r#"
+        def test
+          n = 0
+          eval("n = 2")
+          ::RubyVM::ZJIT.induce_side_exit!
+          n
+        end
+        test
+        test
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"2");
+}
+
+#[test]
 fn test_nested_local_access() {
     assert_snapshot!(inspect("
         1.times do |l2|
@@ -9453,6 +9471,22 @@ fn test_uncached_getconstant_path() {
     // RUBY_COPYRIGHT is version-dependent, so compare against its runtime value
     // rather than a fixed snapshot.
     assert_eq!(assert_compiles_allowing_exits("test"), inspect("RUBY_COPYRIGHT"));
+}
+
+#[test]
+fn test_trace_point_side_exit_materializes_locals() {
+    set_call_threshold(1);
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        tp = TracePoint.new(:line) { }
+        out = []
+        [1, 2, 3, 4].each do |x|
+          out << x
+          tp.enable if x == 2
+        end
+        tp.disable
+        out
+    "#), @"[1, 2, 3, 4]");
 }
 
 #[test]
