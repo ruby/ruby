@@ -243,27 +243,23 @@ anonymous_struct(VALUE klass)
     return nstr;
 }
 
-static VALUE
-new_struct(VALUE name, VALUE super)
+static void
+name_struct(VALUE st, VALUE name, VALUE outer)
 {
     /* old style: should we warn? */
     ID id;
     name = rb_str_to_str(name);
     if (!rb_is_const_name(name)) {
         rb_name_err_raise("identifier %1$s needs to be constant",
-                          super, name);
+                          outer, name);
     }
     id = rb_to_id(name);
-    if (rb_const_defined_at(super, id)) {
-        rb_warn("redefining constant %"PRIsVALUE"::%"PRIsVALUE, super, name);
-        rb_mod_remove_const(super, ID2SYM(id));
+    if (rb_const_defined_at(outer, id)) {
+        rb_warn("redefining constant %"PRIsVALUE"::%"PRIsVALUE, outer, name);
+        rb_mod_remove_const(outer, ID2SYM(id));
     }
-
-    VALUE klass = anonymous_struct(super);
-    rb_set_class_path_string(klass, super, rb_id2str(id));
-    rb_const_set(super, id, klass);
-    rb_class_inherited(super, klass);
-    return klass;
+    rb_set_class_path_string(st, outer, rb_id2str(id));
+    rb_const_set(outer, id, st);
 }
 
 NORETURN(static void invalid_struct_pos(VALUE s, VALUE idx));
@@ -504,14 +500,14 @@ rb_struct_define(const char *name, ...)
     ary = struct_make_members_list(ar);
     va_end(ar);
 
-    if (!name) {
-        st = anonymous_struct(rb_cStruct);
-    }
-    else {
-        st = new_struct(rb_str_new2(name), rb_cStruct);
+    st = anonymous_struct(rb_cStruct);
+    setup_struct(st, ary);
+
+    if (name) {
+        name_struct(st, rb_str_new2(name), rb_cStruct);
         rb_vm_register_global_object(st);
     }
-    return setup_struct(st, ary);
+    return st;
 }
 
 VALUE
@@ -696,14 +692,13 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     rest = rb_hash_keys(rest);
     RBASIC_CLEAR_CLASS(rest);
     OBJ_FREEZE(rest);
-    if (NIL_P(name)) {
-        st = anonymous_struct(klass);
-    }
-    else {
-        st = new_struct(name, klass);
-    }
+    st = anonymous_struct(klass);
     setup_struct(st, rest);
-    RCLASS_INLINE_FIELD_SET(klass, RSTRUCT_KEYWORD_INIT_FIELD, keyword_init);
+    RCLASS_INLINE_FIELD_SET(st, RSTRUCT_KEYWORD_INIT_FIELD, keyword_init);
+
+    if (!NIL_P(name)) {
+        name_struct(st, name, klass);
+    }
     if (rb_block_given_p()) {
         rb_mod_module_eval(0, 0, st);
     }
