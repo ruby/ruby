@@ -24281,13 +24281,15 @@ mod hir_opt_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1008, anybits?@0x1010, cme:0x1018)
-          v27:Fixnum = GuardType v12, Fixnum recompile
-          v28:Fixnum = GuardType v13, Fixnum
-          v29:Fixnum = FixnumAnd v27, v28
-          v30:Fixnum[0] = Const Value(0)
-          v31:BoolExact = FixnumNeq v29, v30
+          v29:Fixnum = GuardType v12, Fixnum recompile
+          v30:Fixnum = GuardType v13, Fixnum
+          v31:Fixnum = FixnumAnd v29, v30
+          v32:Fixnum[0] = Const Value(0)
+          v33:CBool = IsBitNotEqual v31, v32
+          v34:BoolExact = BoxBool v33
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v31
+          Return v34
         ");
     }
 

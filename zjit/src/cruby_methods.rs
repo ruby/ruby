@@ -851,7 +851,8 @@ fn inline_integer_anybits_p(fun: &mut hir::Function, block: hir::BlockId, recv: 
         // tagged Fixnum, so compare against tagged Fixnum zero.
         let bits = fun.push_insn(block, hir::Insn::FixnumAnd { left: recv, right: mask });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(0)) });
-        return Some(fun.push_insn(block, hir::Insn::FixnumNeq { left: bits, right: zero }));
+        let any_bits = fun.push_insn(block, hir::Insn::IsBitNotEqual { left: bits, right: zero });
+        return Some(fun.push_insn(block, hir::Insn::BoxBool { val: any_bits }));
     }
     None
 }
