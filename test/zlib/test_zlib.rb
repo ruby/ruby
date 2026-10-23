@@ -472,6 +472,20 @@ if defined? Zlib
       assert_match(/\A0*\z/, inflated)
     end
 
+    def test_inflate_buffer_then_addstr_and_finish
+      src = "A" * 50_000
+      deflated = Zlib::Deflate.deflate(src)
+      half = deflated.bytesize / 2
+
+      z = Zlib::Inflate.new
+      buf = String.new(capacity: 1 << 14)
+      inflated = z.inflate(deflated.byteslice(0, half), buffer: buf).dup
+      z << deflated.byteslice(half..)
+      rest = z.finish
+      assert_instance_of String, rest
+      assert_equal src, inflated + rest
+    end
+
     def test_inflate_buffer_dropped_while_handling_need_dict
       dict = "dictionary-" * 4
       d = Zlib::Deflate.new

@@ -815,6 +815,7 @@ zstream_detach_buffer(struct zstream *z)
     }
 
     z->buf = Qnil;
+    z->flags &= ~ZSTREAM_REUSE_BUFFER;
     z->stream.next_out = 0;
     z->stream.avail_out = 0;
 
