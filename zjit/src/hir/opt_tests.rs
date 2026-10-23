@@ -5347,19 +5347,19 @@ mod hir_opt_tests {
           StoreField v7, :a@0x1000, v6
           Jump bb3(v5)
         bb3(v10:BasicObject):
-          v48:NilClass = Const Value(nil)
+          v50:NilClass = Const Value(nil)
           v15:Fixnum[1] = Const Value(1)
           SetLocal :a, l0, EP@3, v15
           PatchPoint MethodRedefined(Object@0x1008, lambda@0x1010, cme:0x1018)
-          v43:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          v44:BasicObject = CCallWithFrame v43, :Kernel#lambda@0x1040, block=0x1048
-          v22:CPtr = GetEP 0
-          v23:BasicObject = LoadField v22, :a@0x1000
+          v45:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v46:BasicObject = CCallWithFrame v45, :Kernel#lambda@0x1040, block=0x1048
+          v23:CPtr = GetEP 0
+          v24:BasicObject = LoadField v23, :a@0x1000
           PatchPoint MethodRedefined(Object@0x1008, foo@0x1068, cme:0x1070)
-          v34:CPtr = GetEP 0
-          v35:BasicObject = LoadField v34, :a@0x1000
+          v36:CPtr = GetEP 0
+          v37:BasicObject = LoadField v36, :a@0x1000
           CheckInterrupts
-          Return v35
+          Return v37
         ");
     }
 
@@ -12877,22 +12877,22 @@ mod hir_opt_tests {
           StoreField v7, :blk@0x1000, v6
           Jump bb3(v5)
         bb3(v10:BasicObject):
-          v55:NilClass = Const Value(nil)
+          v56:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Object@0x1008, proc@0x1010, cme:0x1018)
-          v35:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          v36:BasicObject = CCallWithFrame v35, :Kernel#proc@0x1040, block=0x1048
-          v17:CPtr = GetEP 0
-          v18:BasicObject = LoadField v17, :blk@0x1000
-          SetLocal :blk, l0, EP@3, v36
-          v24:CPtr = GetEP 0
-          v25:BasicObject = LoadField v24, :blk@0x1000
-          v37:ObjectSubclass[class_exact:Proc] = GuardType v25, ObjectSubclass[class_exact:Proc] recompile
+          v36:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v37:BasicObject = CCallWithFrame v36, :Kernel#proc@0x1040, block=0x1048
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :blk@0x1000
+          SetLocal :blk, l0, EP@3, v37
+          v25:CPtr = GetEP 0
+          v26:BasicObject = LoadField v25, :blk@0x1000
+          v38:ObjectSubclass[class_exact:Proc] = GuardType v26, ObjectSubclass[class_exact:Proc] recompile
           PatchPoint MethodRedefined(Object@0x1008, foo@0x1068, cme:0x1070)
-          PushInlineFrame :foo, v35 (0x1098), num_args=0, block=&v37
-          v47:BasicObject = InvokeBlock # SendFallbackReason: InvokeBlock: not yet specialized
+          PushInlineFrame :foo, v36 (0x1098), num_args=0, block=&v38
+          v48:BasicObject = InvokeBlock # SendFallbackReason: InvokeBlock: not yet specialized
           PopInlineFrame
           CheckInterrupts
-          Return v47
+          Return v48
         ");
     }
 
@@ -12921,19 +12921,19 @@ mod hir_opt_tests {
           StoreField v7, :blk@0x1000, v6
           Jump bb3(v5)
         bb3(v10:BasicObject):
-          v39:NilClass = Const Value(nil)
+          v40:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Object@0x1008, proc@0x1010, cme:0x1018)
-          v35:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          v36:BasicObject = CCallWithFrame v35, :Kernel#proc@0x1040, block=0x1048
-          v17:CPtr = GetEP 0
-          v18:BasicObject = LoadField v17, :blk@0x1000
-          SetLocal :blk, l0, EP@3, v36
-          v24:CPtr = GetEP 0
-          v25:BasicObject = LoadField v24, :blk@0x1000
-          v37:ObjectSubclass[class_exact:Proc] = GuardType v25, ObjectSubclass[class_exact:Proc] recompile
-          v27:BasicObject = Send v35, &block, :foo, v37 # SendFallbackReason: Complex argument passing
+          v36:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v37:BasicObject = CCallWithFrame v36, :Kernel#proc@0x1040, block=0x1048
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :blk@0x1000
+          SetLocal :blk, l0, EP@3, v37
+          v25:CPtr = GetEP 0
+          v26:BasicObject = LoadField v25, :blk@0x1000
+          v38:ObjectSubclass[class_exact:Proc] = GuardType v26, ObjectSubclass[class_exact:Proc] recompile
+          v28:BasicObject = Send v36, &block, :foo, v38 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -12962,19 +12962,19 @@ mod hir_opt_tests {
           StoreField v7, :blk@0x1000, v6
           Jump bb3(v5)
         bb3(v10:BasicObject):
-          v39:NilClass = Const Value(nil)
+          v40:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Object@0x1008, proc@0x1010, cme:0x1018)
-          v35:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          v36:BasicObject = CCallWithFrame v35, :Kernel#proc@0x1040, block=0x1048
-          v17:CPtr = GetEP 0
-          v18:BasicObject = LoadField v17, :blk@0x1000
-          SetLocal :blk, l0, EP@3, v36
-          v24:CPtr = GetEP 0
-          v25:BasicObject = LoadField v24, :blk@0x1000
-          v37:ObjectSubclass[class_exact:Proc] = GuardType v25, ObjectSubclass[class_exact:Proc] recompile
-          v27:BasicObject = Send v35, &block, :foo, v37 # SendFallbackReason: Complex argument passing
+          v36:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v37:BasicObject = CCallWithFrame v36, :Kernel#proc@0x1040, block=0x1048
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :blk@0x1000
+          SetLocal :blk, l0, EP@3, v37
+          v25:CPtr = GetEP 0
+          v26:BasicObject = LoadField v25, :blk@0x1000
+          v38:ObjectSubclass[class_exact:Proc] = GuardType v26, ObjectSubclass[class_exact:Proc] recompile
+          v28:BasicObject = Send v36, &block, :foo, v38 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -13008,36 +13008,36 @@ mod hir_opt_tests {
           StoreField v7, :blk@0x1000, v6
           Jump bb3(v5)
         bb3(v10:BasicObject):
-          v82:NilClass = Const Value(nil)
+          v83:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Object@0x1008, proc@0x1010, cme:0x1018)
-          v39:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          v40:BasicObject = CCallWithFrame v39, :Kernel#proc@0x1040, block=0x1048
-          v17:CPtr = GetEP 0
-          v18:BasicObject = LoadField v17, :blk@0x1000
-          SetLocal :blk, l0, EP@3, v40
-          v24:Fixnum[1] = Const Value(1)
-          v26:Fixnum[2] = Const Value(2)
-          v28:CPtr = GetEP 0
-          v29:BasicObject = LoadField v28, :blk@0x1000
-          v41:ObjectSubclass[class_exact:Proc] = GuardType v29, ObjectSubclass[class_exact:Proc] recompile
+          v40:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v41:BasicObject = CCallWithFrame v40, :Kernel#proc@0x1040, block=0x1048
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :blk@0x1000
+          SetLocal :blk, l0, EP@3, v41
+          v25:Fixnum[1] = Const Value(1)
+          v27:Fixnum[2] = Const Value(2)
+          v29:CPtr = GetEP 0
+          v30:BasicObject = LoadField v29, :blk@0x1000
+          v42:ObjectSubclass[class_exact:Proc] = GuardType v30, ObjectSubclass[class_exact:Proc] recompile
           PatchPoint MethodRedefined(Object@0x1008, foo@0x1068, cme:0x1070)
-          v45:ArrayExact = NewArray v26
-          v46:Fixnum[20] = Const Value(20)
-          v77:Fixnum[0] = Const Value(0)
-          PushInlineFrame :foo, v39 (0x1098), num_args=3, block=&v41
+          v46:ArrayExact = NewArray v27
+          v47:Fixnum[20] = Const Value(20)
+          v78:Fixnum[0] = Const Value(0)
+          PushInlineFrame :foo, v40 (0x1098), num_args=3, block=&v42
           PatchPoint NoSingletonClass(Array@0x10b8)
           PatchPoint MethodRedefined(Array@0x10b8, sum@0x10c0, cme:0x10c8)
-          v87:BasicObject = CCallVariadic v45, :Array#sum@0x10f0
+          v88:BasicObject = CCallVariadic v46, :Array#sum@0x10f0
           PatchPoint NoEPEscape(foo)
           PatchPoint MethodRedefined(Integer@0x10f8, +@0x1100, cme:0x1108)
-          v91:Fixnum = GuardType v87, Fixnum
-          v92:Fixnum = FixnumAdd v24, v91
-          v96:Fixnum = FixnumAdd v92, v46
-          v71:BasicObject = InvokeBlock v96 # SendFallbackReason: InvokeBlock: not yet specialized
+          v92:Fixnum = GuardType v88, Fixnum
+          v93:Fixnum = FixnumAdd v25, v92
+          v97:Fixnum = FixnumAdd v93, v47
+          v72:BasicObject = InvokeBlock v97 # SendFallbackReason: InvokeBlock: not yet specialized
           PatchPoint NoEPEscape(foo)
           PopInlineFrame
           CheckInterrupts
-          Return v71
+          Return v72
         ");
     }
 
@@ -13073,26 +13073,26 @@ mod hir_opt_tests {
           StoreField v8, :args@0x1001, v10
           Jump bb3(v6)
         bb3(v13:BasicObject):
+          v55:NilClass = Const Value(nil)
           v54:NilClass = Const Value(nil)
-          v53:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Object@0x1008, proc@0x1010, cme:0x1018)
-          v51:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v13, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          v52:BasicObject = CCallWithFrame v51, :Kernel#proc@0x1040, block=0x1048
-          v21:CPtr = GetEP 0
-          v22:BasicObject = LoadField v21, :blk@0x1000
-          v23:BasicObject = LoadField v21, :args@0x1001
-          SetLocal :blk, l0, EP@4, v52
-          v28:ArrayExact[VALUE(0x1068)] = Const Value(VALUE(0x1068))
-          v29:ArrayExact = ArrayDup v28
-          SetLocal :args, l0, EP@3, v29
-          v35:CPtr = GetEP 0
-          v36:BasicObject = LoadField v35, :args@0x1001
-          v38:ArrayExact = ToArray v36
-          v40:CPtr = GetEP 0
-          v41:BasicObject = LoadField v40, :blk@0x1000
-          v43:BasicObject = Send v51, &block, :foo, v38, v41 # SendFallbackReason: Complex argument passing
+          v52:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v13, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v53:BasicObject = CCallWithFrame v52, :Kernel#proc@0x1040, block=0x1048
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :blk@0x1000
+          v24:BasicObject = LoadField v22, :args@0x1001
+          SetLocal :blk, l0, EP@4, v53
+          v29:ArrayExact[VALUE(0x1068)] = Const Value(VALUE(0x1068))
+          v30:ArrayExact = ArrayDup v29
+          SetLocal :args, l0, EP@3, v30
+          v36:CPtr = GetEP 0
+          v37:BasicObject = LoadField v36, :args@0x1001
+          v39:ArrayExact = ToArray v37
+          v41:CPtr = GetEP 0
+          v42:BasicObject = LoadField v41, :blk@0x1000
+          v44:BasicObject = Send v52, &block, :foo, v39, v42 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v43
+          Return v44
         ");
     }
 
@@ -21244,7 +21244,7 @@ mod hir_opt_tests {
          StoreField v11, :formatted@0x1004, v17
          Jump bb3(v9, v10, v13, v15)
        bb3(v20:BasicObject, v21:BasicObject, v22:BasicObject, v23:BasicObject):
-         v87:NilClass = Const Value(nil)
+         v88:NilClass = Const Value(nil)
          v28:CPtr = GetEP 0
          v29:BasicObject = LoadField v28, :formatted@0x1004
          v31:CBool = Test v29
@@ -21278,14 +21278,14 @@ mod hir_opt_tests {
        bb6():
          v70:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1010))
          PatchPoint MethodRedefined(Class@0x1018, lambda@0x1020, cme:0x1028)
-         v86:BasicObject = CCallWithFrame v70, :RubyVM::FrozenCore.lambda@0x1050, block=0x1058
-         v73:CPtr = GetEP 0
-         v74:BasicObject = LoadField v73, :a@0x1001
-         v75:BasicObject = LoadField v73, :_b@0x1002
-         v76:BasicObject = LoadField v73, :_c@0x1003
-         v77:BasicObject = LoadField v73, :formatted@0x1004
+         v87:BasicObject = CCallWithFrame v70, :RubyVM::FrozenCore.lambda@0x1050, block=0x1058
+         v74:CPtr = GetEP 0
+         v75:BasicObject = LoadField v74, :a@0x1001
+         v76:BasicObject = LoadField v74, :_b@0x1002
+         v77:BasicObject = LoadField v74, :_c@0x1003
+         v78:BasicObject = LoadField v74, :formatted@0x1004
          CheckInterrupts
-         Return v86
+         Return v87
        ");
     }
 
@@ -22581,20 +22581,20 @@ mod hir_opt_tests {
           StoreField v9, :other_block@0x1002, v11
           Jump bb3(v7, v8)
         bb3(v14:HeapBasicObject, v15:BasicObject):
-          v44:NilClass = Const Value(nil)
+          v45:NilClass = Const Value(nil)
           PatchPoint NoSingletonClass(B@0x1008)
           PatchPoint MethodRedefined(B@0x1008, proc@0x1010, cme:0x1018)
-          v42:ObjectSubclass[class_exact:B] = GuardType v14, ObjectSubclass[class_exact:B] recompile
-          v43:BasicObject = CCallWithFrame v42, :Kernel#proc@0x1040, block=0x1048
-          v22:CPtr = GetEP 0
-          v23:BasicObject = LoadField v22, :blk@0x1001
-          v24:BasicObject = LoadField v22, :other_block@0x1002
-          SetLocal :other_block, l0, EP@3, v43
-          v30:CPtr = GetEP 0
-          v31:BasicObject = LoadField v30, :other_block@0x1002
-          v33:BasicObject = InvokeSuper v42, 0x1068, v31 # SendFallbackReason: super: complex argument passing to `super` call
+          v43:ObjectSubclass[class_exact:B] = GuardType v14, ObjectSubclass[class_exact:B] recompile
+          v44:BasicObject = CCallWithFrame v43, :Kernel#proc@0x1040, block=0x1048
+          v23:CPtr = GetEP 0
+          v24:BasicObject = LoadField v23, :blk@0x1001
+          v25:BasicObject = LoadField v23, :other_block@0x1002
+          SetLocal :other_block, l0, EP@3, v44
+          v31:CPtr = GetEP 0
+          v32:BasicObject = LoadField v31, :other_block@0x1002
+          v34:BasicObject = InvokeSuper v43, 0x1068, v32 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
-          Return v33
+          Return v34
         ");
     }
 
@@ -23328,7 +23328,7 @@ mod hir_opt_tests {
           StoreField v18, :kwsplat@0x1006, v24
           Jump bb3(v16, v17, v20, v22)
         bb3(v51:BasicObject, v52:BasicObject, v53:BasicObject, v54:BasicObject):
-          v134:NilClass = Const Value(nil)
+          v136:NilClass = Const Value(nil)
           v58:NilClass = Const Value(nil)
           SetLocal :sep, l0, EP@5, v58
           Jump bb5(v51, v52, v58, v54)
@@ -23346,7 +23346,7 @@ mod hir_opt_tests {
           StoreField v30, :kwsplat@0x1006, v36
           Jump bb5(v28, v29, v32, v34)
         bb5(v62:BasicObject, v63:BasicObject, v64:BasicObject, v65:BasicObject):
-          v135:NilClass = Const Value(nil)
+          v137:NilClass = Const Value(nil)
           v69:StaticSymbol[:each] = Const Value(VALUE(0x1008))
           SetLocal :iter_method, l0, EP@4, v69
           Jump bb7(v62, v63, v64, v69)
@@ -23364,40 +23364,40 @@ mod hir_opt_tests {
           StoreField v42, :kwsplat@0x1006, v48
           Jump bb7(v40, v41, v44, v46)
         bb7(v73:BasicObject, v74:BasicObject, v75:BasicObject, v76:BasicObject):
-          v136:NilClass = Const Value(nil)
+          v138:NilClass = Const Value(nil)
           v81:CPtr = GetEP 0
           v82:BasicObject = LoadField v81, :sep@0x1002
           v84:CBool = Test v82
           v85:Truthy = RefineType v82, Truthy
-          CondBranch v84, bb8(v74, v85, v76, v136), bb11()
+          CondBranch v84, bb8(v74, v85, v76, v138), bb11()
         bb11():
           v87:Falsy = RefineType v82, Falsy
           PatchPoint MethodRedefined(Object@0x1010, lambda@0x1018, cme:0x1020)
-          v132:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v73, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
-          v133:BasicObject = CCallWithFrame v132, :Kernel#lambda@0x1048, block=0x1050
-          v91:CPtr = GetEP 0
-          v92:BasicObject = LoadField v91, :list@0x1001
-          v93:BasicObject = LoadField v91, :sep@0x1002
-          v94:BasicObject = LoadField v91, :iter_method@0x1005
-          v95:BasicObject = LoadField v91, :kwsplat@0x1006
-          SetLocal :sep, l0, EP@5, v133
-          Jump bb8(v92, v133, v94, v95)
-        bb8(v100:BasicObject, v101:BasicObject, v102:BasicObject, v103:BasicObject):
+          v134:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v73, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          v135:BasicObject = CCallWithFrame v134, :Kernel#lambda@0x1048, block=0x1050
+          v92:CPtr = GetEP 0
+          v93:BasicObject = LoadField v92, :list@0x1001
+          v94:BasicObject = LoadField v92, :sep@0x1002
+          v95:BasicObject = LoadField v92, :iter_method@0x1005
+          v96:BasicObject = LoadField v92, :kwsplat@0x1006
+          SetLocal :sep, l0, EP@5, v135
+          Jump bb8(v93, v135, v95, v96)
+        bb8(v101:BasicObject, v102:BasicObject, v103:BasicObject, v104:BasicObject):
           PatchPoint StableConstantNames(0x1070, CONST)
-          v108:HashExact[VALUE(0x1078)] = Const Value(VALUE(0x1078))
-          SetLocal :kwsplat, l0, EP@3, v108
-          v113:CPtr = GetEP 0
-          v114:BasicObject = LoadField v113, :list@0x1001
-          v116:CPtr = GetEP 0
-          v117:BasicObject = LoadField v116, :iter_method@0x1005
-          v119:BasicObject = Send v114, 0x1080, :__send__, v117 # SendFallbackReason: Send: unsupported method type Optimized
-          v120:CPtr = GetEP 0
-          v121:BasicObject = LoadField v120, :list@0x1001
-          v122:BasicObject = LoadField v120, :sep@0x1002
-          v123:BasicObject = LoadField v120, :iter_method@0x1005
-          v124:BasicObject = LoadField v120, :kwsplat@0x1006
+          v109:HashExact[VALUE(0x1078)] = Const Value(VALUE(0x1078))
+          SetLocal :kwsplat, l0, EP@3, v109
+          v114:CPtr = GetEP 0
+          v115:BasicObject = LoadField v114, :list@0x1001
+          v117:CPtr = GetEP 0
+          v118:BasicObject = LoadField v117, :iter_method@0x1005
+          v121:BasicObject = Send v115, 0x1080, :__send__, v118 # SendFallbackReason: Send: unsupported method type Optimized
+          v122:CPtr = GetEP 0
+          v123:BasicObject = LoadField v122, :list@0x1001
+          v124:BasicObject = LoadField v122, :sep@0x1002
+          v125:BasicObject = LoadField v122, :iter_method@0x1005
+          v126:BasicObject = LoadField v122, :kwsplat@0x1006
           CheckInterrupts
-          Return v119
+          Return v121
         ");
     }
 
@@ -23686,32 +23686,32 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, each@0x1010, cme:0x1018)
           PushInlineFrame :each, v11 (0x1040), num_args=0, block=0x1060
-          v53:Fixnum[0] = Const Value(0)
-          Jump bb10(v53)
-        bb10(v66:Fixnum):
-          v70:CInt64 = ArrayLength v11
-          v71:Fixnum = BoxFixnum v70
-          v72:BoolExact = FixnumGe v66, v71
+          v56:Fixnum[0] = Const Value(0)
+          Jump bb10(v56)
+        bb10(v69:Fixnum):
+          v73:CInt64 = ArrayLength v11
+          v74:Fixnum = BoxFixnum v73
+          v75:BoolExact = FixnumGe v69, v74
           PatchPoint NoEPEscape(each)
-          v76:CBool = Test v72
-          CondBranch v76, bb13(), bb9()
+          v79:CBool = Test v75
+          CondBranch v79, bb13(), bb9()
         bb13():
           PopInlineFrame
           CheckInterrupts
           Return v11
         bb9():
-          v94:CInt64 = UnboxFixnum v66
-          v95:BasicObject = ArrayAref v11, v94
+          v97:CInt64 = UnboxFixnum v69
+          v98:BasicObject = ArrayAref v11, v97
           PatchPoint NoEPEscape(each)
-          v99:CPtr = GetEP 0
-          v100:CInt64 = LoadField v99, :VM_ENV_DATA_INDEX_SPECVAL@0x1080
-          v101:CInt64[-4] = Const CInt64(-4)
-          v102:CInt64 = IntAnd v100, v101
-          v103:BasicObject = InvokeBlockIseqDirect (0x1060), v102, v95
+          v102:CPtr = GetEP 0
+          v103:CInt64 = LoadField v102, :VM_ENV_DATA_INDEX_SPECVAL@0x1080
+          v104:CInt64[-4] = Const CInt64(-4)
+          v105:CInt64 = IntAnd v103, v104
+          v106:BasicObject = InvokeBlockIseqDirect (0x1060), v105, v98
           PatchPoint NoEPEscape(each)
-          v109:Fixnum[1] = Const Value(1)
-          v110:Fixnum = FixnumAdd v66, v109
-          Jump bb10(v110)
+          v112:Fixnum[1] = Const Value(1)
+          v113:Fixnum = FixnumAdd v69, v112
+          Jump bb10(v113)
         ");
     }
 
