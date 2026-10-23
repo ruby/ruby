@@ -13149,8 +13149,8 @@ mod hir_opt_tests {
           v32:CShape = LoadField v30, :shape_id@0x1040
           v33:CShape[0x1041] = GuardBitEquals v32, CShape(0x1041)
           StoreField v30, :@foo@0x1042, v17
-          v36:CShape[0x1043] = Const CShape(0x1043)
-          StoreField v30, :shape_id@0x1040, v36
+          v35:CShape[0x1043] = Const CShape(0x1043)
+          StoreField v30, :shape_id@0x1040, v35
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v17
@@ -13188,8 +13188,8 @@ mod hir_opt_tests {
           v32:CShape = LoadField v30, :shape_id@0x1040
           v33:CShape[0x1041] = GuardBitEquals v32, CShape(0x1041)
           StoreField v30, :@foo@0x1042, v17
-          v36:CShape[0x1043] = Const CShape(0x1043)
-          StoreField v30, :shape_id@0x1040, v36
+          v35:CShape[0x1043] = Const CShape(0x1043)
+          StoreField v30, :shape_id@0x1040, v35
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v17
@@ -13372,9 +13372,9 @@ mod hir_opt_tests {
           StoreField v50, :a@0x1069, v15
           StoreField v50, :b@0x106a, v17
           PatchPoint MethodRedefined(C@0x1008, b@0x106b, cme:0x1070)
-          v68:BasicObject = LoadField v50, :b@0x106a
+          v66:BasicObject = LoadField v50, :b@0x106a
           CheckInterrupts
-          Return v68
+          Return v66
         ");
     }
 
@@ -14683,9 +14683,9 @@ mod hir_opt_tests {
           v36:CUInt64 = LoadField v35, :RBASIC_FLAGS@0x1040
           v37:CUInt64 = GuardNoBitsSet v36, RUBY_FL_FREEZE=CUInt64(2048)
           v39:CUInt64 = GuardNoBitsSet v37, RUBY_ELTS_SHARED=CUInt64(4096)
-          v48:CInt64[1] = Const CInt64(1)
+          v47:CInt64[1] = Const CInt64(1)
           v41:CInt64 = ArrayLength v35
-          v42:CInt64[1] = GuardLess v48, v41
+          v42:CInt64[1] = GuardLess v47, v41
           ArrayAset v35, v42, v19
           PatchPoint NoEPEscape(test)
           CheckInterrupts
@@ -27262,6 +27262,289 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v100
+        ");
+    }
+
+    #[test]
+    fn test_array_aref_does_not_clobber_loads() {
+        eval("
+            def test(s, arr)
+              s.getbyte(0) + arr[0] + s.getbyte(1)
+            end
+            test('ab', [1])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :arr@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :s@1
+          v9:BasicObject = LoadArg :arr@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v18:Fixnum[0] = Const Value(0)
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, getbyte@0x1010, cme:0x1018)
+          v52:StringExact = GuardType v12, StringExact recompile
+          v88:CInt64[0] = Const CInt64(0)
+          v54:CInt64 = LoadField v52, :len@0x1040
+          v55:CInt64[0] = GuardLess v88, v54
+          v59:Fixnum = StringGetbyte v52, v55
+          PatchPoint NoEPEscape(test)
+          v25:Fixnum[0] = Const Value(0)
+          PatchPoint NoSingletonClass(Array@0x1048)
+          PatchPoint MethodRedefined(Array@0x1048, []@0x1050, cme:0x1058)
+          v63:ArrayExact = GuardType v13, ArrayExact recompile
+          v89:CInt64[0] = Const CInt64(0)
+          v65:CInt64 = ArrayLength v63
+          v67:BasicObject = ArrayArefChecked v63, v89, v65
+          PatchPoint MethodRedefined(Integer@0x1080, +@0x1088, cme:0x1090)
+          v71:Fixnum = GuardType v67, Fixnum
+          v72:Fixnum = FixnumAdd v59, v71
+          v36:Fixnum[1] = Const Value(1)
+          v90:CInt64[1] = Const CInt64(1)
+          v79:CInt64[1] = GuardLess v90, v54
+          v83:Fixnum = StringGetbyte v52, v79
+          v87:Fixnum = FixnumAdd v72, v83
+          CheckInterrupts
+          Return v87
+        ");
+    }
+
+    #[test]
+    fn test_array_aset_immediates_share_flags_load() {
+        eval("
+            def test(arr)
+              arr[0] = 1
+              arr[1] = 2
+            end
+            test([0, 0])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[0] = Const Value(0)
+          v17:Fixnum[1] = Const Value(1)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []=@0x1010, cme:0x1018)
+          v47:ArrayExact = GuardType v10, ArrayExact recompile
+          v48:CUInt64 = LoadField v47, :RBASIC_FLAGS@0x1040
+          v49:CUInt64 = GuardNoBitsSet v48, RUBY_FL_FREEZE=CUInt64(2048)
+          v51:CUInt64 = GuardNoBitsSet v49, RUBY_ELTS_SHARED=CUInt64(4096)
+          v74:CInt64[0] = Const CInt64(0)
+          v53:CInt64 = ArrayLength v47
+          v54:CInt64[0] = GuardLess v74, v53
+          ArrayAset v47, v54, v17
+          PatchPoint NoEPEscape(test)
+          v29:Fixnum[1] = Const Value(1)
+          v31:Fixnum[2] = Const Value(2)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []=@0x1010, cme:0x1018)
+          v64:CUInt64 = GuardNoBitsSet v49, RUBY_FL_FREEZE=CUInt64(2048)
+          v66:CUInt64 = GuardNoBitsSet v49, RUBY_ELTS_SHARED=CUInt64(4096)
+          v75:CInt64[1] = Const CInt64(1)
+          v68:CInt64 = ArrayLength v47
+          v69:CInt64[1] = GuardLess v75, v68
+          ArrayAset v47, v69, v31
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn test_array_incr_pair_shares_flags_load() {
+        eval("
+            def test(arr, i, j)
+              arr[i] += 1
+              arr[j] += 1
+            end
+            test([0, 0], 0, 1)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          v4:BasicObject = LoadField v2, :i@0x1001
+          v5:BasicObject = LoadField v2, :j@0x1002
+          Jump bb3(v1, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :arr@1
+          v10:BasicObject = LoadArg :i@2
+          v11:BasicObject = LoadArg :j@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
+          v69:ArrayExact = GuardType v14, ArrayExact recompile
+          v70:Fixnum = GuardType v15, Fixnum
+          v71:CInt64 = UnboxFixnum v70
+          v72:CInt64 = ArrayLength v69
+          v73:CInt64 = AdjustBounds v71, v72
+          v74:BasicObject = ArrayArefChecked v69, v73, v72
+          PatchPoint NoEPEscape(test)
+          v28:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1040, +@0x1048, cme:0x1050)
+          v77:Fixnum = GuardType v74, Fixnum recompile
+          v78:Fixnum = FixnumAdd v77, v28
+          PatchPoint MethodRedefined(Array@0x1008, []=@0x1078, cme:0x1080)
+          v84:CUInt64 = LoadField v69, :RBASIC_FLAGS@0x10a8
+          v85:CUInt64 = GuardNoBitsSet v84, RUBY_FL_FREEZE=CUInt64(2048)
+          v87:CUInt64 = GuardNoBitsSet v85, RUBY_ELTS_SHARED=CUInt64(4096)
+          v88:CInt64 = UnboxFixnum v70
+          v89:CInt64 = ArrayLength v69
+          v90:CInt64 = GuardLess v88, v89
+          v91:CInt64 = AdjustBounds v90, v89
+          v92:CInt64[0] = Const CInt64(0)
+          v93:CInt64 = GuardGreaterEq v91, v92
+          ArrayAset v69, v93, v78
+          PatchPoint NoEPEscape(test)
+          v40:NilClass = Const Value(nil)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
+          v99:Fixnum = GuardType v16, Fixnum
+          v100:CInt64 = UnboxFixnum v99
+          v101:CInt64 = ArrayLength v69
+          v102:CInt64 = AdjustBounds v100, v101
+          v103:BasicObject = ArrayArefChecked v69, v102, v101
+          v50:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1040, +@0x1048, cme:0x1050)
+          v106:Fixnum = GuardType v103, Fixnum recompile
+          v107:Fixnum = FixnumAdd v106, v50
+          PatchPoint MethodRedefined(Array@0x1008, []=@0x1078, cme:0x1080)
+          v114:CUInt64 = GuardNoBitsSet v85, RUBY_FL_FREEZE=CUInt64(2048)
+          v116:CUInt64 = GuardNoBitsSet v85, RUBY_ELTS_SHARED=CUInt64(4096)
+          v117:CInt64 = UnboxFixnum v99
+          v118:CInt64 = ArrayLength v69
+          v119:CInt64 = GuardLess v117, v118
+          v120:CInt64 = AdjustBounds v119, v118
+          v121:CInt64[0] = Const CInt64(0)
+          v122:CInt64 = GuardGreaterEq v120, v121
+          ArrayAset v69, v122, v107
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v107
+        ");
+    }
+
+    #[test]
+    fn test_array_aset_heap_values_reload_flags() {
+        eval("
+            def test(arr, a, b)
+              arr[0] = a
+              arr[1] = b
+            end
+            test([nil, nil], 'x', 'y')
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          v4:BasicObject = LoadField v2, :a@0x1001
+          v5:BasicObject = LoadField v2, :b@0x1002
+          Jump bb3(v1, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :arr@1
+          v10:BasicObject = LoadArg :a@2
+          v11:BasicObject = LoadArg :b@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          v21:Fixnum[0] = Const Value(0)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []=@0x1010, cme:0x1018)
+          v51:ArrayExact = GuardType v14, ArrayExact recompile
+          v52:CUInt64 = LoadField v51, :RBASIC_FLAGS@0x1040
+          v53:CUInt64 = GuardNoBitsSet v52, RUBY_FL_FREEZE=CUInt64(2048)
+          v55:CUInt64 = GuardNoBitsSet v53, RUBY_ELTS_SHARED=CUInt64(4096)
+          v80:CInt64[0] = Const CInt64(0)
+          v57:CInt64 = ArrayLength v51
+          v58:CInt64[0] = GuardLess v80, v57
+          ArrayAset v51, v58, v15
+          WriteBarrier v51, v15
+          PatchPoint NoEPEscape(test)
+          v34:Fixnum[1] = Const Value(1)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, []=@0x1010, cme:0x1018)
+          v68:CUInt64 = LoadField v51, :RBASIC_FLAGS@0x1040
+          v69:CUInt64 = GuardNoBitsSet v68, RUBY_FL_FREEZE=CUInt64(2048)
+          v71:CUInt64 = GuardNoBitsSet v69, RUBY_ELTS_SHARED=CUInt64(4096)
+          v81:CInt64[1] = Const CInt64(1)
+          v73:CInt64 = ArrayLength v51
+          v74:CInt64[1] = GuardLess v81, v73
+          ArrayAset v51, v74, v16
+          WriteBarrier v51, v16
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn test_struct_aset_immediates_share_flags_load() {
+        eval("
+            S = Struct.new(:a, :b)
+            def test(s)
+              s.a = 1
+              s.b = 2
+            end
+            test(S.new(0, 0))
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint NoSingletonClass(S@0x1008)
+          PatchPoint MethodRedefined(S@0x1008, a=@0x1010, cme:0x1018)
+          v40:ObjectSubclass[class_exact:S] = GuardType v10, ObjectSubclass[class_exact:S] recompile
+          v41:CUInt64 = LoadField v40, :RBASIC_FLAGS@0x1040
+          v42:CUInt64 = GuardNoBitsSet v41, RUBY_FL_FREEZE=CUInt64(2048)
+          StoreField v40, :a=@0x1041, v15
+          PatchPoint NoEPEscape(test)
+          v26:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(S@0x1008, b=@0x1042, cme:0x1048)
+          v48:CUInt64 = GuardNoBitsSet v42, RUBY_FL_FREEZE=CUInt64(2048)
+          StoreField v40, :b=@0x1070, v26
+          CheckInterrupts
+          Return v26
         ");
     }
 }

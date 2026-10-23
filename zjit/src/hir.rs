@@ -1834,8 +1834,8 @@ impl Insn {
             Insn::DupArrayInclude { .. } => effects::Any,
             Insn::ArrayExtend { .. } => effects::Any,
             Insn::ArrayPush { .. } => effects::Any,
-            Insn::ArrayAref { ..  } => effects::Any,
-            Insn::ArrayArefChecked { ..  } => effects::Any,
+            Insn::ArrayAref { ..  } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
+            Insn::ArrayArefChecked { ..  } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::ArrayAset { .. } => effects::Any,
             Insn::ArrayPop { ..  } => effects::Any,
             Insn::ArrayLength { .. } => Effect::write(abstract_heaps::Empty),
@@ -3261,6 +3261,12 @@ impl Function {
             self.blocks[block].insns.push(id);
         }
         id
+    }
+
+    pub fn write_barrier(&mut self, block: BlockId, recv: InsnId, val: InsnId) {
+        if !self.is_a(val, types::Immediate) {
+            self.push_insn(block, Insn::WriteBarrier { recv, val });
+        }
     }
 
     pub fn prepend_insn(&mut self, block: BlockId, insn: Insn) -> InsnId {
@@ -5217,7 +5223,7 @@ impl Function {
 
                                     let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
                                         self.push_insn(block, Insn::StoreField { recv: target, id: mid.into(), offset, val, num_bits: types::BasicObject.num_bits() });
-                                        self.push_insn(block, Insn::WriteBarrier { recv, val });
+                                        self.write_barrier(block, recv, val);
                                         val
                                     } else { // StructAref
                                         self.load_field(block, target, mid.into(), offset, types::BasicObject)
@@ -6342,7 +6348,7 @@ impl Function {
         };
 
         self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val, num_bits: types::BasicObject.num_bits() });
-        self.push_insn(block, Insn::WriteBarrier { recv: ivar_storage, val });
+        self.write_barrier(block, ivar_storage, val);
         if spec.next_shape != spec.profiled_type.shape() {
             // Write the new shape ID
             let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(spec.next_shape) });
@@ -6721,6 +6727,15 @@ impl Function {
                                 compile_time_heap.insert(key, insn_id);
                             }
                         }
+                        insn_id
+                    }
+                    &Insn::ArrayAset { .. } => {
+                        // TODO: Model this better using separate effects. Aset doesn't change the
+                        // array's flags, but the current effects system lumps flags in with other
+                        // memory writes, so we manually exclude the flags from invalidation for
+                        // now.
+                        let offset = RUBY_OFFSET_RBASIC_FLAGS;
+                        compile_time_heap.retain(|(_, off), _| *off == offset);
                         insn_id
                     }
                     &Insn::WriteBarrier { .. } => {
