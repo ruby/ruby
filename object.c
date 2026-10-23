@@ -136,18 +136,13 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
     /* The default implementation of #=== is
      * to call #== with the rb_equal() optimization. */
 
+#undef rb_equal
 VALUE
 rb_equal(VALUE obj1, VALUE obj2)
 {
-    VALUE result;
-
-    if (obj1 == obj2) return Qtrue;
-    result = rb_equal_opt(obj1, obj2);
-    if (UNDEF_P(result)) {
-        result = rb_funcall(obj1, id_eq, 1, obj2);
-    }
-    return RBOOL(RTEST(result));
+    return rb_equal_inline(obj1, obj2);
 }
+#define rb_equal rb_equal_inline
 
 int
 rb_eql(VALUE obj1, VALUE obj2)
@@ -155,6 +150,10 @@ rb_eql(VALUE obj1, VALUE obj2)
     VALUE result;
 
     if (obj1 == obj2) return TRUE;
+
+    result = opt_equality_specialized_miss(obj1, obj2);
+    if (!UNDEF_P(result)) return RTEST(result);
+
     result = rb_eql_opt(obj1, obj2);
     if (UNDEF_P(result)) {
         result = rb_funcall(obj1, id_eql, 1, obj2);
@@ -4644,6 +4643,7 @@ InitVM_Object(void)
     rb_define_method(rb_cNilClass, "|", false_or, 1);
     rb_define_method(rb_cNilClass, "^", false_xor, 1);
     rb_define_method(rb_cNilClass, "===", case_equal, 1);
+    rb_define_method(rb_cNilClass, "==", rb_obj_equal, 1);
 
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
     rb_undef_alloc_func(rb_cNilClass);
@@ -4729,6 +4729,7 @@ InitVM_Object(void)
     rb_define_method(rb_cTrueClass, "|", true_or, 1);
     rb_define_method(rb_cTrueClass, "^", true_xor, 1);
     rb_define_method(rb_cTrueClass, "===", case_equal, 1);
+    rb_define_method(rb_cTrueClass, "==", rb_obj_equal, 1);
     rb_undef_alloc_func(rb_cTrueClass);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
 
@@ -4741,6 +4742,7 @@ InitVM_Object(void)
     rb_define_method(rb_cFalseClass, "|", false_or, 1);
     rb_define_method(rb_cFalseClass, "^", false_xor, 1);
     rb_define_method(rb_cFalseClass, "===", case_equal, 1);
+    rb_define_method(rb_cFalseClass, "==", rb_obj_equal, 1);
     rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
 }
