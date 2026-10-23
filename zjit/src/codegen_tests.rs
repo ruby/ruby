@@ -208,6 +208,32 @@ fn test_protected_send_visibility_changes() {
 }
 
 #[test]
+fn test_protected_alias_visibility_and_definition_changes() {
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        module Secret
+          protected def original = 47
+        end
+        class Owner
+          include Secret
+          alias secret original
+          def call_secret(other)
+            other.secret
+          rescue NoMethodError
+            :denied
+          end
+        end
+        owner = Owner.new
+        30.times { owner.call_secret(owner) }
+        values = [owner.call_secret(owner)]
+        Owner.send(:private, :secret)
+        values << owner.call_secret(owner)
+        Owner.class_eval { def secret = 99 }
+        values << owner.call_secret(owner)
+        values
+    "#), @"[47, :denied, 99]");
+}
+
+#[test]
 fn test_protected_send_refinement() {
     assert_snapshot!(assert_compiles_allowing_exits(r#"
         class Owner

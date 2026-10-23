@@ -21775,16 +21775,77 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Obj)
           v12:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v21:BasicObject = LoadSelf
-          v22:ClassSubclass[C@0x1010] = Const Value(VALUE(0x1010))
-          v23:BoolExact = IsA v21, v22
-          v24:TrueClass = GuardBitEquals v23, Value(true)
           PatchPoint NoSingletonClass(C@0x1010)
-          PatchPoint MethodRedefined(C@0x1010, secret@0x1011, cme:0x1018)
+          PatchPoint MethodRedefined(C@0x1010, secret@0x1018, cme:0x1020)
+          v24:BasicObject = LoadSelf
+          v25:ClassSubclass[C@0x1010] = Const Value(VALUE(0x1010))
+          v26:BoolExact = IsA v24, v25
+          v27:TrueClass = GuardBitEquals v26, Value(true)
           v28:Fixnum[42] = Const Value(42)
           CheckInterrupts
           Return v28
         ");
+    }
+
+    #[test]
+    fn dont_guard_protected_send_with_complex_args() {
+        set_inline_threshold(100);
+        eval(r#"
+            class C
+              protected def secret(**kwargs) = kwargs
+              def helper = 1 + 2
+              def test(other, kwargs)
+                helper
+                other.secret(**kwargs)
+              end
+            end
+            obj = C.new
+            obj.test(obj, {a: 1})
+        "#);
+        let hir = hir_string_proc("C.instance_method(:test)");
+        assert!(hir.contains("Complex argument passing"), "{hir}");
+        assert!(!hir.contains("IsA"), "{hir}");
+    }
+
+    #[test]
+    fn dont_guard_protected_send_in_inlined_frame() {
+        set_inline_threshold(100);
+        eval(r#"
+            class C
+              protected def secret = 42
+              def call_secret(other) = other.secret
+            end
+            Obj = C.new
+            def test = Obj.call_secret(Obj)
+            test
+        "#);
+        let hir = hir_string("test");
+        assert!(hir.contains("PushInlineFrame :call_secret"), "{hir}");
+        assert!(hir.contains("method private or protected and no FCALL"), "{hir}");
+        assert!(!hir.contains("IsA"), "{hir}");
+    }
+
+    #[test]
+    fn dont_guard_protected_send_with_refinement() {
+        eval(r#"
+            class C
+              protected def secret = 42
+            end
+            module R
+              refine C do
+                protected def secret = 71
+              end
+            end
+            class C
+              using R
+              def test(other) = other.secret
+            end
+            obj = C.new
+            obj.test(obj)
+        "#);
+        let hir = hir_string_proc("C.instance_method(:test)");
+        assert!(hir.contains(" = Send "), "{hir}");
+        assert!(!hir.contains("IsA"), "{hir}");
     }
 
     // Test that when a singleton class has been seen for a class, we skip the
