@@ -1528,6 +1528,20 @@ if defined? Zlib
       }
     end
 
+    def test_gets_separator_inside_multibyte_char
+      pend "rb_io_extract_encoding_option ignores the encoding options on TruffleRuby" if RUBY_ENGINE == 'truffleruby'
+      # In Shift_JIS the second byte of a character can be an ASCII byte such
+      # as "@"; a separator must only match on a character boundary.
+      content = "\x81\x40?\x81\x40@".b
+      r = Zlib::GzipReader.new(StringIO.new(Zlib.gzip(content)), external_encoding: "Shift_JIS")
+      assert_equal(content.dup.force_encoding("Shift_JIS"), r.gets("@"))
+      assert_nil(r.gets("@"))
+      r = Zlib::GzipReader.new(StringIO.new(Zlib.gzip(content)), external_encoding: "Shift_JIS")
+      assert_equal("\x81\x40?".b.force_encoding("Shift_JIS"), r.gets("?"))
+      assert_equal("\x81\x40@".b.force_encoding("Shift_JIS"), r.gets("?"))
+      assert_nil(r.gets("?"))
+    end
+
     def test_corrupted_header
       gz = Zlib::GzipWriter.new(StringIO.new(s = "".dup))
       gz.orig_name = "X"
