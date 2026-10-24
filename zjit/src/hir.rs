@@ -1310,6 +1310,10 @@ pub enum Insn {
     FixnumAnd  { left: InsnId, right: InsnId },
     FixnumOr   { left: InsnId, right: InsnId },
     FixnumXor  { left: InsnId, right: InsnId },
+    /// CInt64 addition without overflow checks.
+    /// Callers must ensure the sum fits in CInt64.
+    IntAdd     { left: InsnId, right: InsnId },
+    IntLt      { left: InsnId, right: InsnId },
     IntAnd     { left: InsnId, right: InsnId },
     IntOr      { left: InsnId, right: InsnId },
     FixnumLShift { left: InsnId, right: InsnId, state: InsnId },
@@ -1553,6 +1557,8 @@ macro_rules! for_each_operand_impl {
             | Insn::FixnumAnd { left, right }
             | Insn::FixnumOr { left, right }
             | Insn::FixnumXor { left, right }
+            | Insn::IntAdd { left, right }
+            | Insn::IntLt { left, right }
             | Insn::IntAnd { left, right }
             | Insn::IntOr { left, right }
             | Insn::FixnumRShift { left, right }
@@ -1970,6 +1976,8 @@ impl Insn {
             Insn::FixnumAnd { .. } => effects::Empty,
             Insn::FixnumOr { .. } => effects::Empty,
             Insn::FixnumXor { .. } => effects::Empty,
+            Insn::IntAdd { .. } => effects::Empty,
+            Insn::IntLt { .. } => effects::Empty,
             Insn::IntAnd { .. } => effects::Empty,
             Insn::IntOr { .. } => effects::Empty,
             Insn::FixnumLShift { .. } => effects::Empty,
@@ -2392,6 +2400,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumAnd  { left, right, .. } => { write!(f, "FixnumAnd {left}, {right}") },
             Insn::FixnumOr   { left, right, .. } => { write!(f, "FixnumOr {left}, {right}") },
             Insn::FixnumXor  { left, right, .. } => { write!(f, "FixnumXor {left}, {right}") },
+            Insn::IntAdd     { left, right } => { write!(f, "IntAdd {left}, {right}") },
+            Insn::IntLt      { left, right } => { write!(f, "IntLt {left}, {right}") },
             Insn::IntAnd     { left, right } => { write!(f, "IntAnd {left}, {right}") },
             Insn::IntOr      { left, right } => { write!(f, "IntOr {left}, {right}") },
             Insn::FixnumLShift { left, right, .. } => { write!(f, "FixnumLShift {left}, {right}") },
@@ -3830,6 +3840,8 @@ impl Function {
             Insn::FixnumAnd  { .. } => types::Fixnum,
             Insn::FixnumOr   { .. } => types::Fixnum,
             Insn::FixnumXor  { .. } => types::Fixnum,
+            Insn::IntAdd { .. } => types::CInt64,
+            Insn::IntLt { .. } => types::CBool,
             Insn::IntAnd { .. } => types::CInt64,
             Insn::IntOr { left, .. } => self.type_of(*left).unspecialized(),
             Insn::FixnumLShift { .. } => types::Fixnum,
@@ -8249,6 +8261,11 @@ impl Function {
                     Err(ValidationError::MiscValidationError(insn_id, "IsBitEqual can only compare CInt/CInt or RubyValue/RubyValue".to_string()))
                 }
             }
+            Insn::IntAdd { left, right }
+            | Insn::IntLt { left, right } => {
+                self.assert_subtype(insn_id, left, types::CInt64)?;
+                self.assert_subtype(insn_id, right, types::CInt64)
+            }
             Insn::IntAnd { left, right }
             | Insn::IntOr { left, right } => {
                 // TODO: Expand this to other matching C integer sizes when we need them.
@@ -10964,17 +10981,42 @@ fn add_iseq_to_hir(
                 YARVINSN_expandarray => {
                     let num = get_arg(pc, 0).as_u64();
                     let flag = get_arg(pc, 1).as_u64();
-                    if flag != 0 {
-                        // We don't (yet) handle 0x01 (rest args), 0x02 (post args), or 0x04
-                        // (reverse?)
-                        //
-                        // Unhandled opcode; side-exit into the interpreter
+                    if flag != 0 && flag != 1 {
+                        // Post arguments (0x02 and 0x03) are not supported.
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledYARVInsn(opcode)), recompile: None });
                         break;  // End the block
                     }
                     let val = state.stack_pop()?;
                     let array = fun.push_insn(block, Insn::GuardType { val, guard_type: types::ArrayExact, state: exit_id, recompile: None });
                     let length = fun.push_insn(block, Insn::ArrayLength { array });
+                    if flag == 1 {
+                        // vm_expandarray's forward splat path copies into a fresh Array,
+                        // including when there are no remaining elements.
+                        let rest = fun.push_insn(block, Insn::NewArray { elements: vec![], state: exit_id });
+                        let start = fun.push_insn(block, Insn::Const { val: Const::CInt64(num.try_into().unwrap()) });
+                        let one = fun.push_insn(block, Insn::Const { val: Const::CInt64(1) });
+                        let loop_block = fun.new_block(insn_idx);
+                        let body_block = fun.new_block(insn_idx);
+                        let join_block = fun.new_block(insn_idx);
+                        fun.push_insn(block, Insn::Jump(BranchEdge { target: loop_block, args: vec![start] }));
+
+                        let index = fun.push_insn(loop_block, Insn::Param);
+                        let in_bounds = fun.push_insn(loop_block, Insn::IntLt { left: index, right: length });
+                        fun.push_insn(loop_block, Insn::CondBranch {
+                            val: in_bounds,
+                            if_true: BranchEdge { target: body_block, args: vec![] },
+                            if_false: BranchEdge { target: join_block, args: vec![] },
+                        });
+
+                        let element = fun.push_insn(body_block, Insn::ArrayAref { array, index });
+                        fun.push_insn(body_block, Insn::ArrayPush { array: rest, val: element, state: exit_id });
+                        // index < array length <= ARY_MAX_SIZE < i64::MAX, so this cannot overflow.
+                        let next_index = fun.push_insn(body_block, Insn::IntAdd { left: index, right: one });
+                        fun.push_insn(body_block, Insn::Jump(BranchEdge { target: loop_block, args: vec![next_index] }));
+
+                        block = join_block;
+                        state.stack_push(rest);
+                    }
                     for i in (0..num).rev() {
                         let index = fun.push_insn(block, Insn::Const { val: Const::CInt64(i.try_into().unwrap()) });
                         let element = fun.push_insn(block, Insn::ArrayArefChecked { array, index, length });

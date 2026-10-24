@@ -6082,7 +6082,26 @@ pub(crate) mod hir_build_tests {
           v11:NilClass = Const Value(nil)
           Jump bb3(v8, v9, v10, v11)
         bb3(v13:BasicObject, v14:BasicObject, v15:NilClass, v16:NilClass):
-          SideExit UnhandledYARVInsn(expandarray)
+          v22:ArrayExact = GuardType v14, ArrayExact
+          v23:CInt64 = ArrayLength v22
+          v24:ArrayExact = NewArray
+          v25:CInt64[1] = Const CInt64(1)
+          v26:CInt64[1] = Const CInt64(1)
+          Jump bb4(v25)
+        bb4(v28:CInt64):
+          v29:CBool = IntLt v28, v23
+          CondBranch v29, bb5(), bb6()
+        bb5():
+          v31:BasicObject = ArrayAref v22, v28
+          ArrayPush v24, v31
+          v33:CInt64 = IntAdd v28, v26
+          Jump bb4(v33)
+        bb6():
+          v35:CInt64[0] = Const CInt64(0)
+          v36:BasicObject = ArrayArefChecked v22, v35, v23
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v14
         ");
     }
 
@@ -6114,6 +6133,24 @@ pub(crate) mod hir_build_tests {
           v13:NilClass = Const Value(nil)
           Jump bb3(v9, v10, v11, v12, v13)
         bb3(v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass, v19:NilClass):
+          v25:ArrayExact = GuardType v16, ArrayExact
+          v26:CInt64 = ArrayLength v25
+          v27:ArrayExact = NewArray
+          v28:CInt64[1] = Const CInt64(1)
+          v29:CInt64[1] = Const CInt64(1)
+          Jump bb4(v28)
+        bb4(v31:CInt64):
+          v32:CBool = IntLt v31, v26
+          CondBranch v32, bb5(), bb6()
+        bb5():
+          v34:BasicObject = ArrayAref v25, v31
+          ArrayPush v27, v34
+          v36:CInt64 = IntAdd v31, v29
+          Jump bb4(v36)
+        bb6():
+          v38:CInt64[0] = Const CInt64(0)
+          v39:BasicObject = ArrayArefChecked v25, v38, v26
+          PatchPoint NoEPEscape(test)
           SideExit UnhandledYARVInsn(expandarray)
         ");
     }
