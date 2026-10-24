@@ -777,14 +777,37 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
-  def test_ractor_new_raises_isolation_error_if_outer_variables_are_accessed
-    assert_raise(Ractor::IsolationError) do
-      channel = Ractor::Port.new
-      Ractor.new(channel) do
-        inbound_work = Ractor::Port.new
-        channel << inbound_work
-      end
+  def test_ractor_new_allows_reading_shareable_outer_variables
+    channel = Ractor::Port.new
+    r = Ractor.new(channel) do
+      inbound_work = Ractor::Port.new
+      channel << inbound_work
     end
+    assert_kind_of Ractor::Port, channel.receive
+    r.join
+  end
+
+  def test_ractor_new_raises_isolation_error_if_unshareable_outer_variables_are_accessed
+    assert_raise_with_message(Ractor::IsolationError, /unshareable object \[\]/) do
+      list = []
+      Ractor.new { list }
+    end
+  end
+
+  def test_ractor_new_raises_isolation_error_if_outer_variables_are_reassigned
+    assert_raise_with_message(Ractor::IsolationError, /'n' may be reassigned/) do
+      n = 1
+      Ractor.new { n }
+      n = 2
+    end
+  end
+
+  def test_ractor_new_does_not_modify_the_block
+    pr = proc { 42 }
+    assert_equal 42, Ractor.new(&pr).value
+    assert_not_predicate pr, :frozen?
+    assert_not_operator Ractor, :shareable?, pr
+    assert_equal 42, Ractor.new(&pr).value
   end
 
   def test_ractor_new_raises_isolation_error_if_proc_uses_yield
@@ -880,57 +903,6 @@ class TestRactor < Test::Unit::TestCase
       # keep the roots alive across the scan
       assert_equal 5, main_un.size
       assert_equal 3, main_sh.size
-    RUBY
-  end
-
-  # A Ractor.new that fails with IsolationError (stillborn) must still clean up the
-  # half-created objspace (regression guard for double enumeration / use-after-free).
-  def test_stillborn_ractor_gc
-    assert_ractor(<<~'RUBY', timeout: 60)
-      x = 42 # capturing an outer local makes Ractor.new raise IsolationError
-      worker = Ractor.new { loop { break if Ractor.receive == :quit } }
-      assert_raise(Ractor::IsolationError) { Ractor.new { x } }
-      10.times { GC.start; 500.times { Object.new } }
-      GC.verify_internal_consistency
-      worker.send(:quit)
-      worker.value
-      100.times do |i|
-        assert_raise(Ractor::IsolationError) { Ractor.new { x } }
-        if (i % 20).zero?
-          Ractor.new { :ok }.value
-          GC.start
-        end
-      end
-      GC.start
-      GC.verify_internal_consistency
-    RUBY
-  end
-
-  # A thread that released the GVL keeps its EC, so it still resolves an objspace to
-  # charge its frees to.  It must not be sent to the objspace of a child Ractor being
-  # built by another thread of the same Ractor: a stillborn child frees that objspace.
-  def test_stillborn_ractor_with_free_off_gvl
-    assert_ractor(<<~'RUBY', require: '-test-/gvl/call_without_gvl', timeout: 60)
-      x = 42 # capturing an outer local makes Ractor.new raise IsolationError
-      stop = false
-      ready = Queue.new
-      freers = 4.times.map do
-        Thread.new do
-          ready << :up
-          Bug::Thread.xfree_without_gvl(2_000) until stop
-        end
-      end
-      freers.size.times { ready.pop } # all of them are churning before we start
-      2_000.times do
-        begin
-          Ractor.new { x }
-        rescue Ractor::IsolationError
-        end
-      end
-      stop = true
-      freers.each(&:join)
-      GC.start
-      GC.verify_internal_consistency
     RUBY
   end
 

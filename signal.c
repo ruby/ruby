@@ -1450,7 +1450,7 @@ sig_trap(int argc, VALUE *argv, VALUE _)
 
     if (rb_obj_is_proc(cmd) &&
         !rb_ractor_main_p() && !rb_ractor_shareable_p(cmd)) {
-        cmd = rb_proc_isolate(cmd);
+        cmd = rb_proc_ractor_make_shareable(rb_proc_dup(cmd), Qnil);
     }
 
     return trap(sig, func, cmd);
