@@ -647,6 +647,7 @@ pub enum SideExitReason {
     GuardLess,
     GuardGreaterEq,
     GuardSuperMethodEntry,
+    ProtectedCheckFailed,
     PatchPoint(Invariant),
     CalleeSideExit,
     Interrupt,
@@ -1109,8 +1110,8 @@ pub enum Insn {
     /// Test the bit at index of val, a Fixnum.
     /// Return Qtrue if the bit is set, else Qfalse.
     FixnumBitCheck { val: InsnId, index: u8 },
-    /// Return Qtrue if `val` is an instance of `class`, else Qfalse.
-    /// Equivalent to `class_search_ancestor(CLASS_OF(val), class)`.
+    /// Return Qtrue if `val` is kind_of? `class` (a Class or Module), else Qfalse.
+    /// Equivalent to `rb_obj_is_kind_of(val, class)`.
     IsA { val: InsnId, class: InsnId },
     /// `case`/`when`/`rescue` match check for `pattern` against `target`.
     CheckMatch { target: InsnId, pattern: InsnId, flag: u32, state: InsnId },
@@ -4853,6 +4854,23 @@ impl Function {
         }
     }
 
+    /// Check protected visibility only after committing to an optimized send.
+    fn guard_protected_send(&mut self, block: BlockId, defined_class: Option<VALUE>, state: InsnId) {
+        let Some(defined_class) = defined_class else { return };
+        let caller_self = self.load_self(block);
+        // IsA constants cannot be internal ICLASS objects.
+        let defined_class = if defined_class.builtin_type() == RUBY_T_ICLASS { defined_class.class_of() } else { defined_class };
+        let class = self.push_insn(block, Insn::Const { val: Const::Value(defined_class) });
+        let allowed = self.push_insn(block, Insn::IsA { val: caller_self, class });
+        self.push_insn(block, Insn::GuardBitEquals {
+            val: allowed,
+            expected: Const::Value(Qtrue),
+            reason: Box::new(SideExitReason::ProtectedCheckFailed),
+            state,
+            recompile: None,
+        });
+    }
+
     /// Rewrite eligible Send opcodes into SendDirect
     /// opcodes if we know the target ISEQ statically. This removes run-time method lookups and
     /// opens the door for inlining.
@@ -4902,15 +4920,23 @@ impl Function {
                         // It allows you to use a faster ISEQ if possible.
                         cme = unsafe { rb_check_overloaded_cme(cme, ci) };
                         let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
-                        match (visibility, flags & VM_CALL_FCALL != 0) {
-                            (METHOD_VISI_PUBLIC, _) => {}
-                            (METHOD_VISI_PRIVATE, true) => {}
-                            (METHOD_VISI_PROTECTED, true) => {}
+                        let protected_class = match (visibility, flags & VM_CALL_FCALL != 0) {
+                            (METHOD_VISI_PUBLIC, _) => None,
+                            (METHOD_VISI_PRIVATE, true) => None,
+                            (METHOD_VISI_PROTECTED, true) => None,
+                            (METHOD_VISI_PROTECTED, false) if self.frame_depth(state) == 0 && !matches!(unsafe { get_cme_def_type(cme) }, VM_METHOD_TYPE_REFINED | VM_METHOD_TYPE_ALIAS) => {
+                                // The VM checks the actual caller self, not the receiver or
+                                // the ISEQ owner. Inlined frames need an SSA self operand;
+                                // keep those calls dynamic rather than load the outer self.
+                                // Alias resolution loses the lookup CME's invalidation
+                                // dependency, so leave protected aliases dynamic as well.
+                                Some(unsafe { (*cme).defined_class })
+                            }
                             _ => {
                                 self.set_dynamic_send_reason(insn_id, SendNotOptimizedNeedPermission);
                                 self.push_insn_id(block, insn_id); continue;
                             }
-                        }
+                        };
                         let mut def_type = unsafe { get_cme_def_type(cme) };
                         while def_type == VM_METHOD_TYPE_ALIAS {
                             cme = unsafe { rb_aliased_callable_method_entry(cme) };
@@ -5061,6 +5087,7 @@ impl Function {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
                                 self.insn_types[recv] = self.infer_type(recv);
                             }
+                            self.guard_protected_send(block, protected_class, state);
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
                                 self.emit_send_direct_args(block, call, &args, send_frame_state, state);
@@ -5102,6 +5129,7 @@ impl Function {
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                             }
+                            self.guard_protected_send(block, protected_class, state);
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
                                 self.emit_send_direct_args(block, call, &args, send_frame_state, state);
@@ -5119,6 +5147,7 @@ impl Function {
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
+                                self.guard_protected_send(block, protected_class, state);
 
                                 let replacement = self.try_emit_optimized_getivar(block, recv, id, profiled_type, state).unwrap_or_else(|counter| {
                                     self.count(block, counter);
@@ -5130,6 +5159,7 @@ impl Function {
                                 let resolution = self.resolve_receiver_type_from_profile(recv, state);
                                 let counter = Self::getivar_fallback_reason(resolution, std::ptr::null());
                                 self.count(block, counter);
+                                self.guard_protected_send(block, protected_class, state);
                                 let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
                                 self.make_equal_to(insn_id, getivar);
                             }
@@ -5141,6 +5171,7 @@ impl Function {
                                 // operand other than CFP self. Support it with a reprofile strategy that
                                 // profiles the receiver operand even after the send insn has finished profiling.
                                 recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
+                                self.guard_protected_send(block, protected_class, state);
                                 let recompile = None;
                                 self.try_emit_optimized_setivar(block, recv, id, val, profiled_type, state, recompile).unwrap_or_else(|counter| {
                                     self.count(block, counter);
@@ -5148,6 +5179,7 @@ impl Function {
                                 });
                             } else {
                                 // No shape information, just static class information
+                                self.guard_protected_send(block, protected_class, state);
                                 self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
                             }
                             self.make_equal_to(insn_id, val);
@@ -5169,6 +5201,7 @@ impl Function {
                                     if let Some(profiled_type) = profiled_type {
                                         recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                     }
+                                    self.guard_protected_send(block, protected_class, state);
                                     let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
                                     let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args: args.clone(), state, kw_splat });
                                     self.make_equal_to(insn_id, invoke_proc);
@@ -5206,6 +5239,7 @@ impl Function {
                                     if let Some(profiled_type) = profiled_type {
                                         recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                     }
+                                    self.guard_protected_send(block, protected_class, state);
                                     // All structs from the same Struct class should have the same
                                     // length. So if our recv is embedded all runtime
                                     // structs of the same class should be as well, and the same is
@@ -5253,6 +5287,7 @@ impl Function {
                                 recv_class: VALUE,
                                 profiled_type: Option<ProfiledType>,
                                 cme: *const rb_callable_method_entry_struct,
+                                protected_class: Option<VALUE>,
                             ) -> Result<(), ()> {
                                 let call_info = unsafe { (*cd).ci };
                                 let argc = unsafe { vm_ci_argc(call_info) };
@@ -5318,6 +5353,7 @@ impl Function {
                                             // Guard receiver class
                                             recv = fun.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                         }
+                                        fun.guard_protected_send(block, protected_class, state);
 
                                         // Try inlining the cfunc into HIR. Only inline if we don't have a block argument
                                         if blockiseq.is_none() {
@@ -5385,6 +5421,7 @@ impl Function {
                                             // Guard receiver class
                                             recv = fun.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                         }
+                                        fun.guard_protected_send(block, protected_class, state);
 
                                         // Try inlining the cfunc into HIR. Only inline if we don't have a block argument
                                         if blockiseq.is_none() {
@@ -5444,7 +5481,7 @@ impl Function {
                                 }
                             }
 
-                            if reduce_send_to_ccall(self, block, insn_id, recv, cd, send_block, args, state, klass, profiled_type, cme).is_ok() {
+                            if reduce_send_to_ccall(self, block, insn_id, recv, cd, send_block, args, state, klass, profiled_type, cme, protected_class).is_ok() {
                                 continue;
                             }
 
@@ -8375,7 +8412,7 @@ impl Function {
             }
             Insn::IsA { val, class } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)?;
-                self.assert_subtype(insn_id, class, types::Class)
+                self.assert_subtype(insn_id, class, types::Class.union(types::Module))
             }
             Insn::RefineType { .. } => Ok(()),
             Insn::CondBranchHasType(ref insn) => self.assert_subtype(insn_id, insn.val, types::BasicObject),
