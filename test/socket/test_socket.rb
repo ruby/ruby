@@ -617,6 +617,26 @@ class TestSocket < Test::Unit::TestCase
     }
   end
 
+  def test_getifaddrs_netmask
+    begin
+      list = Socket.getifaddrs
+    rescue NotImplementedError
+      return
+    end
+    loopback = list.find {|ifaddr| ifaddr.addr&.ipv4_loopback?}
+    omit "no IPv4 loopback interface" unless loopback
+    # Windows derives the netmask from OnLinkPrefixLength, so it always has one.
+    omit "no netmask reported" unless loopback.netmask || /mswin|mingw/ =~ RUBY_PLATFORM
+    assert_not_nil(loopback.netmask)
+
+    to_i = ->(ai) {ai.ip_address.split(".").inject(0) {|n, o| n << 8 | o.to_i}}
+    mask = to_i[loopback.netmask]
+    host_bits = ~mask & 0xffffffff
+    assert_equal(0, host_bits & (host_bits + 1), "netmask is not contiguous")
+    assert_equal(0x7f000000, to_i[loopback.addr] & mask & 0xff000000,
+                 "netmask does not cover the loopback prefix")
+  end
+
   def test_connect_in_rescue
     serv = Addrinfo.tcp(nil, 0).listen
     addr = serv.connect_address
