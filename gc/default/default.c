@@ -4979,6 +4979,9 @@ struct gc_sweep_context {
     bool trigger_thread_unsafe_sweep_postponed_job;
 
     struct free_region *free_region;
+    /* The region still growing downwards, whose header is written when it is closed. */
+    uintptr_t region_start;
+    uintptr_t region_end;
 };
 
 /* NOTE: We must free the root fiber during postmortem collection, otherwise another Ractor
@@ -5149,6 +5152,22 @@ gc_tdata_deferred_free_job(void *unused)
 }
 
 static inline void
+gc_sweep_close_free_region(struct gc_sweep_context *ctx)
+{
+    if (!ctx->region_start) return;
+
+    struct free_region *region = (struct free_region *)ctx->region_start;
+    rb_asan_unpoison_object((VALUE)region, false);
+    region->end = ctx->region_end;
+    region->next = ctx->free_region;
+    rb_asan_poison_object((VALUE)region);
+
+    /* Regions close from the top of the page, so pushing each one keeps the list in
+     * address order and allocation runs upwards across the whole page. */
+    ctx->free_region = region;
+}
+
+static inline void
 gc_sweep_register_free_slot(rb_objspace_t *objspace, struct heap_page *page, struct gc_sweep_context *ctx, uintptr_t p, short slot_size)
 {
     rb_asan_unpoison_object(p, false);
@@ -5158,21 +5177,16 @@ gc_sweep_register_free_slot(rb_objspace_t *objspace, struct heap_page *page, str
      * object born there; the actual clear happens per bitmap word at the end of
      * gc_sweep_page rather than per slot. */
 
-    struct free_region *existing_region = ctx->free_region;
-    if (existing_region) rb_asan_unpoison_object((VALUE)existing_region, false);
-
-    if (RB_LIKELY(existing_region && p == existing_region->end)) {
-        existing_region->end = p + slot_size;
+    /* Slots come in descending address order (see gc_sweep_page). */
+    if (RB_LIKELY(p + slot_size == ctx->region_start)) {
+        ctx->region_start = p;
     }
     else {
-        struct free_region *free_region = (struct free_region *)p;
-        free_region->end = p + slot_size;
-        free_region->next = existing_region;
-
-        ctx->free_region = free_region;
+        gc_sweep_close_free_region(ctx);
+        ctx->region_start = p;
+        ctx->region_end = p + slot_size;
     }
 
-    if (existing_region) rb_asan_poison_object((VALUE)existing_region);
     rb_asan_poison_object(p);
 }
 
@@ -5182,12 +5196,13 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
     struct heap_page *sweep_page = ctx->page;
     short slot_size = sweep_page->slot_size;
 
+    /* p is the plane's last slot, which may lie past the end of the page. */
     do {
         VALUE vp = (VALUE)p;
         GC_ASSERT(vp % sizeof(VALUE) == 0);
 
-        rb_asan_unpoison_object(vp, false);
-        if (bitset & 1) {
+        if (bitset >> (BITS_BITLENGTH - 1)) {
+            rb_asan_unpoison_object(vp, false);
             switch (BUILTIN_TYPE(vp)) {
               case T_MOVED:
                 if (objspace->flags.during_compacting) {
@@ -5279,8 +5294,8 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                 break;
             }
         }
-        p += slot_size;
-        bitset >>= 1;
+        p -= slot_size;
+        bitset <<= 1;
     } while (bitset);
 }
 
@@ -5307,6 +5322,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
     sweep_page->free_region = NULL;
     asan_lock_freelist(sweep_page);
     ctx->free_region = NULL;
+    ctx->region_start = 0;
 
     p = (uintptr_t)sweep_page->start;
     bits = sweep_page->mark_bits;
@@ -5331,13 +5347,18 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         }
     }
 
-    for (int i = 0; i < bitmap_plane_count; i++) {
+    /* Sweep from the end of the page.  Allocation runs upwards, so this frees the
+     * slots' malloc'ed buffers in the reverse order of their allocation.  Freeing them
+     * in the same order fragments the Windows heap. */
+    p += (uintptr_t)(bitmap_plane_count * BITS_BITLENGTH - 1) * slot_size;
+    for (int i = bitmap_plane_count - 1; i >= 0; i--) {
         bitset = ~bits[i];
         if (bitset) {
             gc_sweep_plane(objspace, heap, p, bitset, ctx);
         }
-        p += BITS_BITLENGTH * slot_size;
+        p -= BITS_BITLENGTH * slot_size;
     }
+    gc_sweep_close_free_region(ctx);
 
     /* Bulk-clear the freed slots' shareable and shref bits before the freelist is
      * published, so a reused slot is clean.  Freed slots are exactly the unmarked ones,
@@ -5398,6 +5419,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 
         GC_ASSERT(region_end > region_start);
         GC_ASSERT((region_end - region_start) % slot_size == 0);
+        GC_ASSERT(next == NULL || (uintptr_t)next > region_end);
         region_slots += (int)((region_end - region_start) / slot_size);
 
         region = next;
