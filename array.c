@@ -2123,8 +2123,8 @@ rb_ary_find(int argc, VALUE *argv, VALUE ary)
     VALUE if_none;
     rb_len_t idx;
 
-    RETURN_ENUMERATOR(ary, argc, argv);
     if_none = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
+    RETURN_ENUMERATOR(ary, argc, argv);
 
     for (idx = 0; idx < RARRAY_LEN(ary); idx++) {
         VALUE elem = RARRAY_AREF(ary, idx);
@@ -2166,8 +2166,8 @@ rb_ary_rfind(int argc, VALUE *argv, VALUE ary)
     VALUE if_none;
     rb_len_t len, idx;
 
-    RETURN_ENUMERATOR(ary, argc, argv);
     if_none = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
+    RETURN_ENUMERATOR(ary, argc, argv);
 
     idx = RARRAY_LEN(ary);
     while (idx--) {
