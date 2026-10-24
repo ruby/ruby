@@ -4635,6 +4635,25 @@ rb_gzreader_readline(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
+ * IO#each_line and IO#readlines reject a zero limit: gets(..., 0) returns ""
+ * without consuming anything, so a loop over it would never terminate.
+ */
+static void
+gzreader_check_limit(int argc, VALUE *argv, const char *name)
+{
+    VALUE rs, lim;
+
+    if (argc == 0) return;
+    rb_scan_args(argc, argv, "11", &rs, &lim);
+    if (NIL_P(lim) && !NIL_P(rs) && NIL_P(rb_check_string_type(rs))) {
+	lim = rs;
+    }
+    if (!NIL_P(lim) && NUM2LEN(lim) == 0) {
+	rb_raise(rb_eArgError, "invalid limit: 0 for %s", name);
+    }
+}
+
+/*
  * Document-method: Zlib::GzipReader#each
  *
  * See Zlib::GzipReader documentation for a description.
@@ -4646,6 +4665,7 @@ rb_gzreader_each(int argc, VALUE *argv, VALUE obj)
 
     RETURN_ENUMERATOR(obj, 0, 0);
 
+    gzreader_check_limit(argc, argv, "each_line");
     while (!NIL_P(str = gzreader_gets(argc, argv, obj))) {
 	rb_yield(str);
     }
@@ -4661,6 +4681,7 @@ static VALUE
 rb_gzreader_readlines(int argc, VALUE *argv, VALUE obj)
 {
     VALUE str, dst;
+    gzreader_check_limit(argc, argv, "readlines");
     dst = rb_ary_new();
     while (!NIL_P(str = gzreader_gets(argc, argv, obj))) {
 	rb_ary_push(dst, str);

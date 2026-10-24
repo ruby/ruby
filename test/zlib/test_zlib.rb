@@ -1734,6 +1734,20 @@ if defined? Zlib
       assert_nil(r.gets("?"))
     end
 
+    def test_each_line_limit_zero
+      # IO#each_line / IO#readlines raise for a zero limit; gets(0) returns ""
+      # without consuming anything, so GzipReader used to loop forever here.
+      s = Zlib.gzip("ab\ncd\n")
+      [[0], [nil, 0], ["\n", 0]].each do |args|
+        r = Zlib::GzipReader.new(StringIO.new(s))
+        assert_raise(ArgumentError) { r.readlines(*args) }
+        r = Zlib::GzipReader.new(StringIO.new(s))
+        assert_raise(ArgumentError) { r.each_line(*args) { } }
+        r = Zlib::GzipReader.new(StringIO.new(s))
+        assert_equal("", r.gets(*args))
+      end
+    end
+
     def test_corrupted_header
       gz = Zlib::GzipWriter.new(StringIO.new(s = "".dup))
       gz.orig_name = "X"
