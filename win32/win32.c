@@ -4526,18 +4526,18 @@ rb_w32_set_nonblock2(int fd, int nonblock)
         return setfl(sock, nonblock ? O_NONBLOCK : 0);
     }
     else if (is_pipe(sock)) {
-        DWORD state;
+        DWORD state, mode;
         if (!GetNamedPipeHandleState((HANDLE)sock, &state, NULL, NULL, NULL, NULL, 0)) {
             errno = map_errno(GetLastError());
             return -1;
         }
         if (nonblock) {
-            state |= PIPE_NOWAIT;
+            mode = state | PIPE_NOWAIT;
         }
         else {
-            state &= ~PIPE_NOWAIT;
+            mode = state & ~PIPE_NOWAIT;
         }
-        if (!SetNamedPipeHandleState((HANDLE)sock, &state, NULL, NULL)) {
+        if (mode != state && !SetNamedPipeHandleState((HANDLE)sock, &mode, NULL, NULL)) {
             errno = map_errno(GetLastError());
             return -1;
         }
