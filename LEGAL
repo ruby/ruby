@@ -65,6 +65,25 @@ mentioned below.
   Unless otherwise specified, these files are licensed under the
   {MIT License}[rdoc-ref:@MIT+License].
 
+[float_conv.c]
+[float_conv_table.h]
+
+  The conversion of a Float to the shortest digits in these files is
+  adapted from Drachennest by Alexander Bolz https://github.com/abolz/Drachennest
+
+  >>>
+    Copyright 2020 Alexander Bolz
+
+    {Boost Software License}[rdoc-ref:@Boost+Software+License+1.0]
+
+  The conversion of a decimal number to a Float in these files is
+  adapted from the Fast Float C++ library by The fast_float authors https://github.com/fastfloat/fast_float
+
+  >>>
+    Copyright (c) 2021 The fast_float authors
+
+    {MIT License}[rdoc-ref:@MIT+License]
+
 [include/ruby/onigmo.h]
 [include/ruby/oniguruma.h]
 [regcomp.c]
