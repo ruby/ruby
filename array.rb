@@ -288,15 +288,11 @@ class Array
     if Primitive.rb_builtin_basic_definition_p(:find)
       undef :find
 
-      def find(if_none_proc = (if_none_proc_omitted = true; nil)) # :nodoc:
+      def find(if_none_proc = nil) # :nodoc:
         Primitive.attr! :inline_block, :c_trace, :without_interrupts
 
         unless defined?(yield)
-          if if_none_proc_omitted
-            return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, 0)'
-          else
-            return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 1, &if_none_proc, 0)'
-          end
+          return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
         end
         i = 0
         until Primitive.rb_builtin_ary_at_end(i)
@@ -305,11 +301,6 @@ class Array
           i = Primitive.rb_builtin_fixnum_inc(i)
         end
         if_none_proc&.call
-      end
-
-      if Primitive.rb_builtin_basic_definition_p(:detect)
-        undef :detect
-        alias detect find
       end
     end
   end
