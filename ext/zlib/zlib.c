@@ -1801,7 +1801,13 @@ rb_deflate_init_copy(VALUE self, VALUE orig)
 	raise_zlib_error(err, 0);
     }
     z1->input = NIL_P(z2->input) ? Qnil : rb_str_dup(z2->input);
-    z1->buf   = NIL_P(z2->buf)   ? Qnil : rb_str_dup(z2->buf);
+    z1->buf = Qnil;
+    if (!NIL_P(z2->buf)) {
+	/* next_out was copied from orig; point it into our own buffer */
+	z1->buf = rb_obj_hide(rb_str_new(RSTRING_PTR(z2->buf), RSTRING_LEN(z2->buf)));
+	z1->stream.next_out = (Bytef*)RSTRING_END(z1->buf);
+	z1->stream.avail_out = 0;
+    }
     z1->flags = z2->flags;
 
     return self;

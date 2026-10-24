@@ -39,6 +39,17 @@ if defined? Zlib
       assert_equal("foobaz", Zlib::Inflate.inflate(s2))
     end
 
+    def test_dup_with_pending_output
+      s = Random.new(0).bytes(50_000)
+      z1 = Zlib::Deflate.new
+      z1 << s
+      z2 = z1.dup
+      z1 << "bar"
+      z2 << "baz"
+      assert_equal(s + "bar", Zlib::Inflate.inflate(z1.finish))
+      assert_equal(s + "baz", Zlib::Inflate.inflate(z2.finish))
+    end
+
     def test_deflate
       s = Zlib::Deflate.deflate("foo")
       assert_equal("foo", Zlib::Inflate.inflate(s))
