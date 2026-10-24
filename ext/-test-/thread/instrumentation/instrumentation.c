@@ -210,6 +210,12 @@ thread_register_and_unregister_callback(VALUE thread)
     return Qtrue;
 }
 
+static VALUE
+thread_specific_key_create(VALUE self)
+{
+    return INT2FIX(rb_internal_thread_specific_key_create());
+}
+
 void
 Init_instrumentation(void)
 {
@@ -221,4 +227,6 @@ Init_instrumentation(void)
     rb_define_singleton_method(klass, "register_callback", thread_register_callback, 1);
     rb_define_singleton_method(klass, "unregister_callback", thread_unregister_callback, 0);
     rb_define_singleton_method(klass, "register_and_unregister_callbacks", thread_register_and_unregister_callback, 0);
+    rb_define_const(klass, "SPECIFIC_KEY_MAX", INT2FIX(RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX));
+    rb_define_singleton_method(klass, "specific_key_create", thread_specific_key_create, 0);
 }
