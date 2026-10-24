@@ -327,6 +327,8 @@ typedef struct RNode_ITER {
 
     struct RNode *nd_body;
     struct RNode *nd_iter;
+    rb_code_location_t opening_loc;
+    rb_code_location_t closing_loc;
 } rb_node_iter_t;
 
 typedef struct RNode_FOR {
