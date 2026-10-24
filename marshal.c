@@ -802,7 +802,7 @@ w_objivar(VALUE obj, struct dump_call_arg *arg)
     w_ivar_each(obj, num, arg);
 }
 
-#if SIZEOF_LONG > 4
+#if SIZEOF_RB_LEN_T > 4
 // Optimized dump for fixnum larger than 31-bits
 static void
 w_bigfixnum(VALUE obj, struct dump_arg *arg)
@@ -835,7 +835,7 @@ w_bigfixnum(VALUE obj, struct dump_arg *arg)
         }
     }
 
-    RUBY_ASSERT(slen > 0 && slen <= SIZEOF_LONG / 2);
+    RUBY_ASSERT(slen > 0 && slen <= SIZEOF_RB_LEN_T / 2);
 
     w_long((long)slen, arg);
 
@@ -881,13 +881,14 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
         w_byte(TYPE_FALSE, arg);
     }
     else if (FIXNUM_P(obj)) {
-#if SIZEOF_LONG <= 4
+#if SIZEOF_RB_LEN_T <= 4
         w_byte(TYPE_FIXNUM, arg);
         w_long(FIX2INT(obj), arg);
 #else
-        if (RSHIFT((long)obj, 31) == 0 || RSHIFT((long)obj, 31) == -1) {
+        rb_len_t num = FIX2LEN(obj);
+        if (RSHIFT(num, 31) == 0 || RSHIFT(num, 31) == -1) {
             w_byte(TYPE_FIXNUM, arg);
-            w_long(FIX2LONG(obj), arg);
+            w_long(num, arg);
         }
         else {
             w_bigfixnum(obj, arg);
