@@ -280,6 +280,14 @@ class TestTime < Test::Unit::TestCase
     end
   end
 
+  def test_time_far_future_year
+    year = 0x40000000
+    days = (year - 2040) * 365 + (year - 1) / 4 - (2040 - 1) / 4 -
+      ((year - 1) / 100 - (2040 - 1) / 100) +
+      ((year - 1) / 400 - (2040 - 1) / 400)
+    assert_equal(days * 86400, Time.utc(year).to_i - Time.utc(2040).to_i)
+  end
+
   def test_big_minus
     begin
       bigtime0 = Time.at(2**60)
@@ -757,7 +765,10 @@ class TestTime < Test::Unit::TestCase
 
   def test_zone
     assert_zone_encoding Time.now
-    t = Time.now.utc
+    t = Time.now
+    sec = t.to_i
+    t.utc
+    assert_equal(sec, t.to_i)
     assert_equal("UTC", t.zone)
     assert_nil(t.getlocal(0).zone)
     assert_nil(t.getlocal("+02:00").zone)

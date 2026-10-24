@@ -67,6 +67,7 @@
 
 #include "internal.h"
 #include "internal/encoding.h"
+#include "internal/numeric.h"
 #include "internal/string.h"
 #include "internal/vm.h"
 #include "ruby/encoding.h"
@@ -223,14 +224,6 @@ case_conv(char *s, ptrdiff_t i, int flags)
 	return s;
 }
 
-static VALUE
-format_value(VALUE val, int base)
-{
-	if (!RB_BIGNUM_TYPE_P(val))
-		val = rb_Integer(val);
-	return rb_big2str(val, base);
-}
-
 /*
  * enc is the encoding of the format and the initial result string. It is also
  * used as the target encoding when a timezone name is incompatible with the
@@ -342,22 +335,20 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 #define FMTV(def_pad, def_prec, fmt, val) \
                 do { \
                         VALUE tmp = (val); \
-                        if (FIXNUM_P(tmp)) { \
-                                FMT((def_pad), (def_prec), "l"fmt, FIX2LONG(tmp)); \
-                        } \
-                        else { \
-				const int base = ((fmt[0] == 'x') ? 16 : \
-						  (fmt[0] == 'o') ? 8 : \
-						  10); \
-				precision = FMT_PRECISION(def_prec); \
-				if (!padding) padding = (def_pad); \
-				tmp = format_value(tmp, base); \
-				i = RSTRING_LEN(tmp); \
-				FILL_PADDING(i); \
+			if (FIXNUM_P(tmp)) { \
+				FMT((def_pad), (def_prec), PRI_LEN_PREFIX fmt, FIX2LEN(tmp)); \
+			} \
+			else { \
+				struct RString fmt_buffer = {RBASIC_INIT}; \
+				const char *fmt_cstr = FMT_PADDING(fmt, (def_pad)); \
+				VALUE args[2] = {INT2NUM(FMT_PRECISION(def_prec)), tmp}; \
+				VALUE fmt_str = rb_setup_fake_str(&fmt_buffer, fmt_cstr, \
+								  strlen(fmt_cstr), NULL); \
 				rb_str_set_len(ftime, s-start); \
+				tmp = rb_str_format(2, args, fmt_str); \
 				rb_str_append(ftime, tmp); \
 				REINIT(); \
-                        } \
+			} \
                 } while (0)
 
 		tp = memchr(format, '%', format_end - format);
@@ -528,13 +519,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			continue;
 
 		case 'Y':	/* year with century */
-                        if (FIXNUM_P(vtm->year)) {
-				long y = FIX2LONG(vtm->year);
-				FMT('0', 0 <= y ? 4 : 5, "ld", y);
-                        }
-                        else {
-				FMTV('0', 4, "d", vtm->year);
-                        }
+			FMTV('0', rb_int_negative_p(vtm->year) ? 5 : 4, "d", vtm->year);
 			continue;
 
 #ifdef MAILHEADER_EXT
@@ -753,13 +738,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                         yv = sub(yv, INT2FIX(1));
 
                                 if (*format == 'G') {
-                                        if (FIXNUM_P(yv)) {
-                                                const long y = FIX2LONG(yv);
-                                                FMT('0', 0 <= y ? 4 : 5, "ld", y);
-                                        }
-                                        else {
-                                                FMTV('0', 4, "d", yv);
-                                        }
+                                        FMTV('0', rb_int_negative_p(yv) ? 5 : 4, "d", yv);
                                 }
                                 else {
                                         yv = mod(yv, INT2FIX(100));
@@ -825,7 +804,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                 subsec = div(subsec, INT2FIX(1));
 
                                 if (FIXNUM_P(subsec)) {
-                                        (void)snprintf(s, endp - s, "%0*ld", precision, FIX2LONG(subsec));
+                                        (void)snprintf(s, endp - s, "%0*"PRIdLEN, precision, FIX2LEN(subsec));
                                         s += precision;
                                 }
                                 else {
