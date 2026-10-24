@@ -1960,6 +1960,16 @@ if defined? Zlib
       };
     end
 
+    def test_gzip_reader_encoding_conversion_no_memory_leak
+      assert_no_memory_leak(%W[-r#{LOADED_ZLIB} -rstringio], "#{<<~"{#"}", "#{<<~'};'}", rss: true)
+      d = Zlib.gzip("data")
+      opts = {external_encoding: "Shift_JIS", internal_encoding: "UTF-8"}
+      10_000.times {Zlib::GzipReader.new(StringIO.new(d), **opts).close}
+      {#
+        20_000.times {Zlib::GzipReader.new(StringIO.new(d), **opts).close}
+      };
+    end
+
     # Test for signal interrupt bug: Z_BUF_ERROR with avail_out > 0
     # This reproduces the issue where thread wakeup during GzipReader operations
     # can cause Z_BUF_ERROR to be raised incorrectly
