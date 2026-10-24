@@ -611,9 +611,12 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable, size_t inline
 
     obj->object_id = 0;
 
-    memset(RCLASS_EXT_PRIME(obj), 0, sizeof(rb_classext_t) + (sizeof(VALUE) * inline_fields_count));
+    memset(RCLASS_EXT_PRIME(obj), 0, sizeof(rb_classext_t));
 
     RCLASS_EXT_PRIME(obj)->inline_fields_count = (uint8_t)inline_fields_count;
+    for (size_t index = 0; index < inline_fields_count; index++) {
+        RCLASS_INLINE_FIELD_SET((VALUE)obj, index, Qnil);
+    }
 
     // The creating Ractor owns the new class/module; an iclass has no owner.
     // Singleton classes of classes/modules override this below.
@@ -874,7 +877,7 @@ rb_class_new_with_inline_fields(VALUE super, size_t inline_fields_count)
 VALUE
 rb_class_new(VALUE super)
 {
-    return rb_class_new_with_inline_fields(super, 0);
+    return rb_class_new_with_inline_fields(super, RCLASS_EXT_PRIME(super)->inline_fields_count);
 }
 
 VALUE

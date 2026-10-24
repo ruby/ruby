@@ -42,16 +42,39 @@ enum rstruct_inline_fields {
 
 static VALUE struct_alloc(VALUE);
 
+static inline VALUE
+struct_inline_field_get(VALUE c, size_t field)
+{
+    VALUE orig = c;
+    VALUE ivar = RCLASS_INLINE_FIELD_GET(c, field);
+
+    if (!NIL_P(ivar))
+        return ivar;
+
+    for (;;) {
+        c = rb_class_superclass(c);
+        if (c == rb_cStruct || c == rb_cData || !RTEST(c))
+            return Qnil;
+        RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
+        ivar = RCLASS_INLINE_FIELD_GET(c, field);
+        if (!NIL_P(ivar)) {
+            RCLASS_INLINE_FIELD_SET(orig, field, ivar);
+            return ivar;
+        }
+    }
+}
+
+
 VALUE
 rb_struct_s_keyword_init(VALUE klass)
 {
-    return RCLASS_INLINE_FIELD_GET(klass, RSTRUCT_KEYWORD_INIT_FIELD);
+    return struct_inline_field_get(klass, RSTRUCT_KEYWORD_INIT_FIELD);
 }
 
 VALUE
 rb_struct_s_members(VALUE klass)
 {
-    VALUE members = RCLASS_INLINE_FIELD_GET(klass, RSTRUCT_MEMBERS_FIELD);
+    VALUE members = struct_inline_field_get(klass, RSTRUCT_MEMBERS_FIELD);
 
     if (UNLIKELY(!RTEST(members))) {
         rb_raise(rb_eTypeError, "uninitialized struct");
@@ -132,7 +155,7 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
 static inline int
 struct_member_pos(VALUE s, VALUE name)
 {
-    VALUE back = RCLASS_INLINE_FIELD_GET(s, RSTRUCT_BACK_MEMBERS_FIELD);
+    VALUE back = struct_inline_field_get(s, RSTRUCT_BACK_MEMBERS_FIELD);
     rb_len_t j, mask;
 
     if (UNLIKELY(NIL_P(back))) {
@@ -315,7 +338,7 @@ rb_data_s_new(int argc, const VALUE *argv, VALUE klass)
         return rb_class_new_instance_pass_kw(argc, argv, klass);
     }
     else {
-        VALUE members = RCLASS_INLINE_FIELD_GET(klass, RSTRUCT_MEMBERS_FIELD);
+        VALUE members = struct_inline_field_get(klass, RSTRUCT_MEMBERS_FIELD);
         int num_members = RARRAY_LENINT(members);
 
         rb_check_arity(argc, 0, num_members);
@@ -709,7 +732,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 static rb_len_t
 num_members(VALUE klass)
 {
-    VALUE members = RCLASS_INLINE_FIELD_GET(klass, RSTRUCT_MEMBERS_FIELD);
+    VALUE members = struct_inline_field_get(klass, RSTRUCT_MEMBERS_FIELD);
     if (UNLIKELY(!RB_TYPE_P(members, T_ARRAY))) {
         rb_bug("broken members"); /* should never happen */
     }
@@ -890,7 +913,7 @@ rb_zjit_class_has_struct_allocator(VALUE klass)
 ID
 rb_zjit_struct_member_id(VALUE klass, rb_len_t index)
 {
-    VALUE members = RCLASS_INLINE_FIELD_GET(klass, RSTRUCT_MEMBERS_FIELD);
+    VALUE members = struct_inline_field_get(klass, RSTRUCT_MEMBERS_FIELD);
     RUBY_ASSERT(RB_TYPE_P(members, T_ARRAY));
     RUBY_ASSERT(index >= 0 && index < RARRAY_LEN(members));
     return SYM2ID(RARRAY_AREF(members, index));
@@ -1864,7 +1887,7 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass = rb_obj_class(self);
     rb_struct_modify(self);
-    VALUE members = RCLASS_INLINE_FIELD_GET(klass, RSTRUCT_MEMBERS_FIELD);
+    VALUE members = struct_inline_field_get(klass, RSTRUCT_MEMBERS_FIELD);
     size_t num_members = RARRAY_LEN(members);
 
     if (argc == 0) {
