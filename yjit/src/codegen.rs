@@ -2832,15 +2832,22 @@ fn gen_checkmatch(
     Some(KeepCompiling)
 }
 
+/// The number of keywords up to which the unspecified bits are handled here.
+/// The interpreter keeps them in a Fixnum for more keywords than this, up to
+/// VM_KW_SPECIFIED_BITS_MAX, but the generated code assumes that the bits
+/// fit in 32 bits.
+const KW_SPECIFIED_BITS_MAX: u32 = 31;
+
 // Push Qtrue or Qfalse depending on whether the given keyword was supplied by
 // the caller
 fn gen_checkkeyword(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
-    // When a keyword is unspecified past index 32, a hash will be used
-    // instead. This can only happen in iseqs taking more than 32 keywords.
-    if unsafe { (*get_iseq_body_param_keyword(jit.iseq)).num >= VM_KW_SPECIFIED_BITS_MAX.try_into().unwrap() } {
+    // When a keyword is unspecified past index 32, the bits do not fit in 32
+    // bits, or a set will be used instead. This can only happen in iseqs
+    // taking more than 32 keywords.
+    if unsafe { (*get_iseq_body_param_keyword(jit.iseq)).num >= KW_SPECIFIED_BITS_MAX.try_into().unwrap() } {
         return None;
     }
 
