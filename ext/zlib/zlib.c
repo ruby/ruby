@@ -1077,9 +1077,6 @@ static VALUE
 zstream_run_once_begin(VALUE _arguments)
 {
     struct zstream_run_args *arguments = (struct zstream_run_args *)_arguments;
-    struct zstream *z = arguments->z;
-
-    rb_str_locktmp(z->buf);
 
 #ifndef RB_NOGVL_UBF_ASYNC_SAFE
     return (VALUE)rb_thread_call_without_gvl(zstream_run_once, (void *)arguments, zstream_unblock_func, (void *)arguments);
@@ -1110,6 +1107,9 @@ zstream_run_func(struct zstream_run_args *args)
     while (!args->interrupt) {
         n = z->stream.avail_out;
 
+        /* lock outside rb_ensure, so that a lock held by someone else is not
+           released when rb_str_locktmp fails */
+        rb_str_locktmp(z->buf);
         err = (int)(VALUE)rb_ensure(zstream_run_once_begin, (VALUE)args, zstream_run_once_ensure, (VALUE)args);
 
         rb_str_set_len(z->buf, ZSTREAM_BUF_FILLED(z) + (n - z->stream.avail_out));
