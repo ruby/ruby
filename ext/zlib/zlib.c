@@ -2679,6 +2679,9 @@ gzfile_read_raw_until_zero(struct gzfile *gz, rb_len_t offset)
 	p = memchr(RSTRING_PTR(gz->z.input) + offset, '\0',
 		   RSTRING_LEN(gz->z.input) - offset);
 	if (p) break;
+	if (gz->io == Qundef) {
+	    rb_raise(cGzError, "unexpected end of string");
+	}
 	str = gzfile_read_raw(gz, Qnil);
 	if (NIL_P(str)) {
 	    rb_raise(cGzError, "unexpected end of file");
