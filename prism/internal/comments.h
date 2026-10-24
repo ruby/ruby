@@ -46,7 +46,8 @@ typedef struct {
 /*
  * Sort the parser's comment list in place by start offset, then assign every
  * comment to the node that owns it. This is called after parsing when the
- * attach_comments option is set.
+ * attach_comments option is set, before the parser's scratch arena is released,
+ * because the walk allocates from it.
  */
 void pm_comments_attach(pm_parser_t *parser, const pm_node_t *root);
 
