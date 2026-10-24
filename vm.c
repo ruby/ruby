@@ -2474,7 +2474,8 @@ vm_redefinition_check_method_type(const rb_method_entry_t *me)
 }
 
 static void
-rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
+rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass,
+                                    struct method_entry_warnings *warnings)
 {
     st_data_t bop;
     if (RB_TYPE_P(klass, T_ICLASS) && RICLASS_IS_ORIGIN_P(klass) &&
@@ -2485,8 +2486,7 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
         if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
             int flag = vm_redefinition_check_flag(klass);
             if (flag != 0) {
-                rb_category_warn(
-                    RB_WARN_CATEGORY_PERFORMANCE,
+                method_entry_warn_performance(warnings,
                     "Redefining '%s#%s' disables interpreter and JIT optimizations",
                     rb_class2name(me->owner),
                     rb_id2name(me->called_id)
@@ -2506,7 +2506,7 @@ check_redefined_method(ID mid, VALUE value, void *data)
     const rb_method_entry_t *me = (rb_method_entry_t *)value;
     const rb_method_entry_t *newme = rb_method_entry(klass, mid);
 
-    if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner);
+    if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner, NULL);
 
     return ID_TABLE_CONTINUE;
 }
