@@ -171,7 +171,7 @@ kdf_scrypt(int argc, VALUE *argv, VALUE self)
     VALUE pass, salt, opts, kwargs[5], str, pass_tmp, salt_tmp;
     static ID kwargs_ids[5];
     size_t passlen, saltlen;
-    long len;
+    rb_len_t len;
     uint64_t N, r, p;
 
     if (!kwargs_ids[0]) {
@@ -189,7 +189,7 @@ kdf_scrypt(int argc, VALUE *argv, VALUE self)
     N = NUM2UINT64T(kwargs[1]);
     r = NUM2UINT64T(kwargs[2]);
     p = NUM2UINT64T(kwargs[3]);
-    len = NUM2LONG(kwargs[4]);
+    len = NUM2LEN(kwargs[4]);
     passlen = RSTRING_LEN(pass);
     saltlen = RSTRING_LEN(salt);
     str = rb_str_new(NULL, len);
@@ -270,12 +270,12 @@ kdf_hkdf(int argc, VALUE *argv, VALUE self)
     saltlen = RSTRING_LENINT(salt);
     info = StringValue(kwargs[1]);
     infolen = RSTRING_LENINT(info);
-    len = (size_t)NUM2LONG(kwargs[2]);
-    if (len > LONG_MAX)
+    len = (size_t)NUM2LEN(kwargs[2]);
+    if (len > RB_LEN_MAX)
         rb_raise(rb_eArgError, "length must be non-negative");
     md = ossl_evp_md_fetch(kwargs[3], &md_holder);
 
-    str = rb_str_new(NULL, (long)len);
+    str = rb_str_new(NULL, (rb_len_t)len);
     pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
     if (!pctx)
         ossl_raise(eKDF, "EVP_PKEY_CTX_new_id");
@@ -306,7 +306,7 @@ kdf_hkdf(int argc, VALUE *argv, VALUE self)
         EVP_PKEY_CTX_free(pctx);
         ossl_raise(eKDF, "EVP_PKEY_derive");
     }
-    rb_str_set_len(str, (long)len);
+    rb_str_set_len(str, (rb_len_t)len);
     EVP_PKEY_CTX_free(pctx);
 
     return str;

@@ -110,6 +110,29 @@ class TestZJITCLI < Test::Unit::TestCase
     end
   end
 
+  def test_enable_through_feature_flag
+    child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => nil, 'RUBYOPT' => nil}
+    args_list = [
+      %w[--enable=zjit],
+      %w[--enable-zjit],
+      %w[--disable=zjit --enable=zjit],
+      %w[--zjit --zjit-disable --enable=zjit],
+    ]
+    args_list += [%w[--jit], %w[--enable=jit]] unless JITSupport.yjit_supported?
+    args_list.each do |args|
+      assert_in_out_err([child_env, '--disable-all', *args, '-e', 'p RubyVM::ZJIT.enabled?']) do |stdout, stderr|
+        expected = args.include?('--zjit-disable') ? 'false' : 'true'
+        assert_equal([expected], stdout, args.inspect)
+        assert_equal([], stderr, args.inspect)
+      end
+    end
+
+    assert_in_out_err([child_env.merge('RUBYOPT' => '--enable=zjit'), '--disable=gems,yjit', '-v']) do |stdout, stderr|
+      assert_include(stdout.first, '+ZJIT')
+      assert_equal([], stderr)
+    end
+  end
+
   def test_zjit_enable
     # --disable-all is important in case the build/environment has YJIT enabled by
     # default through e.g. -DYJIT_FORCE_ENABLE. Can't enable ZJIT when YJIT is on.
@@ -135,6 +158,46 @@ class TestZJITCLI < Test::Unit::TestCase
 
       assert_predicate RubyVM::ZJIT, :enabled?
       assert_include RUBY_DESCRIPTION, "+ZJIT"
+    RUBY
+  end
+
+  def test_zjit_max_compile_time
+    assert_runs ':ok', <<~'RUBY'
+      def compiled_iseq?
+        count = RubyVM::ZJIT.stats(:compiled_iseq_count)
+        yield
+        RubyVM::ZJIT.stats(:compiled_iseq_count) > count
+      end
+
+      def compile_for(ns)
+        total = RubyVM::ZJIT.total_compile_time_ns
+        target = total + ns
+        while true
+          return unless eval("compiled_iseq? { nil.to_i }")
+          return if RubyVM::ZJIT.total_compile_time_ns > target
+        end
+      end
+
+      return :not_compiled1 unless eval('compiled_iseq? { nil.to_i }')
+
+      RubyVM::ZJIT.max_compile_time_ns = RubyVM::ZJIT.total_compile_time_ns + 1_000_000
+      compile_for(50_000_000)
+
+      unless RubyVM::ZJIT.total_compile_time_ns >= RubyVM::ZJIT.max_compile_time_ns
+        return :not_over
+      end
+
+      return :did_compile1 if eval('compiled_iseq? { nil.to_i }')
+
+      :ok
+    RUBY
+  end
+
+  def test_zjit_max_compile_time_when_disabled
+    assert_separately(["--zjit", "--zjit-disable"], <<~'RUBY')
+      refute_predicate RubyVM::ZJIT, :enabled?
+      RubyVM::ZJIT.max_compile_time_ns = 42
+      assert_equal 42, RubyVM::ZJIT.max_compile_time_ns
     RUBY
   end
 
@@ -301,6 +364,13 @@ class TestZJITCLI < Test::Unit::TestCase
         :compiled_iseq_count.then { |s| initial_stats[s] > 0 && reset_stats[s] < initial_stats[s] }
       ].all?
     }, stats: true
+  end
+
+  def test_reset_stats_with_zjit_off
+    # [Bug #22327]
+    assert_runs 'nil', <<~RUBY, zjit: false
+      RubyVM::ZJIT.reset_stats!
+    RUBY
   end
 
   def test_exit_tracing

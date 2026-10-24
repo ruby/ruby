@@ -20,19 +20,15 @@ describe "The socket class hierarchy" do
     UDPSocket.superclass.should == IPSocket
   end
 
-  platform_is_not :windows do
-    it "has a UNIXSocket in parallel to Socket" do
-      Socket.ancestors.include?(UNIXSocket).should == false
-      UNIXSocket.ancestors.include?(Socket).should == false
-      UNIXSocket.superclass.should == BasicSocket
-    end
+  it "has a UNIXSocket in parallel to Socket" do
+    Socket.ancestors.include?(UNIXSocket).should == false
+    UNIXSocket.ancestors.include?(Socket).should == false
+    UNIXSocket.superclass.should == BasicSocket
   end
 end
 
-platform_is_not :windows do
-  describe "Server class hierarchy" do
-    it "contains UNIXServer" do
-      UNIXServer.superclass.should == UNIXSocket
-    end
+describe "Server class hierarchy" do
+  it "contains UNIXServer" do
+    UNIXServer.superclass.should == UNIXSocket
   end
 end

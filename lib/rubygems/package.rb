@@ -89,6 +89,18 @@ class Gem::Package
 
   class TarInvalidError < Error; end
 
+  ##
+  # Raised when a filename contains characters that are invalid on Windows
+
+  class InvalidWindowsFileNameError < Gem::InstallError
+    def initialize(filename, gem_name = nil)
+      message = "The gem contains a file '#{filename}' with characters in its name that are not allowed on Windows (e.g., colons)."
+      message += " This is a problem with the '#{gem_name}' gem, not Rubygems." if gem_name
+      message += " Please report this issue to the gem author."
+      super message
+    end
+  end
+
   attr_accessor :build_time # :nodoc:
 
   ##
@@ -129,13 +141,46 @@ class Gem::Package
   # Permission for other files
   attr_accessor :data_mode
 
-  def self.build(spec, skip_validation = false, strict_validation = false, file_name = nil)
-    gem_file = file_name || spec.file_name
+  ##
+  # The minimum RubyGems version that can install content-addressable gems.
+  # Built into +required_rubygems_version+ so older clients reject skinny
+  # gems through both the local and remote install paths.
 
-    package = new gem_file
-    package.spec = spec
-    package.build skip_validation, strict_validation
+  MINIMUM_RUBYGEMS_VERSION = ">= 4.1.0.a"
 
+  ##
+  # Builds the gem described by +spec+ and returns the built file name.
+  #
+  # When +content_addressable+ is true, builds a gem named by the SHA-256
+  # digest of its contents. The spec must declare a non-Ruby platform and a
+  # +required_ruby_version+ identifying a single Ruby ABI. Its
+  # +required_rubygems_version+ is constrained to at least
+  # MINIMUM_RUBYGEMS_VERSION. Content-addressable builds are incompatible
+  # with +file_name+.
+
+  def self.build(spec, skip_validation = false, strict_validation = false, file_name = nil, content_addressable: false)
+    if content_addressable && file_name
+      raise ArgumentError, "Cannot specify an output file name for a content-addressable gem as these gems must use the generated file name."
+    end
+    if content_addressable
+      require "digest"
+      require "stringio"
+
+      io = StringIO.new
+      io.set_encoding(Encoding::BINARY)
+
+      package = new io
+      package.spec = spec.dup
+      gem_file = package.build_content_addressable_file skip_validation, strict_validation
+
+      spec.required_rubygems_version = package.spec.required_rubygems_version
+    else
+      gem_file = file_name || spec.file_name
+
+      package = new gem_file
+      package.spec = spec
+      package.build skip_validation, strict_validation
+    end
     gem_file
   end
 
@@ -217,6 +262,21 @@ class Gem::Package
   end
 
   ##
+  # Derives the content address from the gem's file name and verifies it
+  # against the SHA256 digest of the file contents.
+
+  def content_address
+    path = @gem&.path
+    return unless path
+
+    address = Gem::ContentAddress.verified_file_name_claim(path, spec)
+    return nil unless address
+    return nil unless Gem::ContentAddress.eligible?(spec)
+
+    address
+  end
+
+  ##
   # Adds a checksum for each entry in the gem to checksums.yaml.gz.
 
   def add_checksums(tar)
@@ -262,6 +322,10 @@ class Gem::Package
 
   def add_files(tar) # :nodoc:
     @spec.files.each do |file|
+      if invalid_windows_filename?(file)
+        alert_warning "filename '#{file}' contains characters that are invalid on Windows (e.g., colons). This gem may fail to install on Windows."
+      end
+
       stat = File.lstat file
 
       if stat.symlink?
@@ -315,14 +379,43 @@ class Gem::Package
       end
     end
 
-    say <<-EOM
+    message = <<-EOM
   Successfully built RubyGem
   Name: #{@spec.name}
   Version: #{@spec.version}
-  File: #{File.basename @gem.path}
 EOM
+
+    message += "  File: #{File.basename(@gem.path)}\n" if @gem.path
+    say message
   ensure
     @signer = nil
+  end
+
+  ##
+  # Builds this package and writes it to a content-addressable file name
+  # derived from the SHA-256 digest of the gem contents, for example
+  # "example-1.0-01234567.gem". Returns the written file name.
+  #
+  # The spec is validated for content addressing. Its
+  # +required_ruby_version+ determines the Ruby ABI, while its
+  # +required_rubygems_version+ is constrained before building.
+
+  def build_content_addressable_file(skip_validation = false, strict_validation = false)
+    Gem::ContentAddress.eligible!(@spec)
+    ruby_abi = Gem::ContentAddress.ruby_abi_for(@spec.required_ruby_version)
+    @spec.required_rubygems_version = normalized_required_rubygems_version(ruby_abi)
+
+    build skip_validation, strict_validation
+
+    bytes = @gem.with_read_io(&:read)
+    gem_file = "#{@spec.name}-#{@spec.version}-#{Gem::ContentAddress.address_for(bytes)}.gem"
+    File.binwrite(gem_file, bytes)
+
+    say "  File: #{gem_file}"
+    say "  Platform: #{@spec.platform}"
+    say "  Ruby ABI: #{ruby_abi}"
+
+    gem_file
   end
 
   ##
@@ -429,11 +522,16 @@ EOM
         full_name = entry.full_name
         next unless File.fnmatch pattern, full_name, File::FNM_DOTMATCH
 
+        if Gem.win_platform? && invalid_windows_filename?(full_name)
+          gem_name = @spec ? @spec.full_name : "unknown"
+          raise Gem::Package::InvalidWindowsFileNameError.new(full_name, gem_name)
+        end
+
         destination = install_location full_name, destination_dir
 
         if entry.symlink?
           link_target = entry.header.linkname
-          real_destination = link_target.start_with?("/") ? link_target : File.expand_path(link_target, File.dirname(destination))
+          real_destination = File.expand_path(link_target, File.dirname(destination))
 
           raise Gem::Package::SymlinkError.new(full_name, real_destination, destination_dir) unless
             normalize_path(real_destination).start_with? normalize_path(destination_dir + "/")
@@ -449,7 +547,7 @@ EOM
           end
 
         unless directories.include?(mkdir)
-          FileUtils.mkdir_p mkdir, mode: dir_mode ? 0o755 : (entry.header.mode if entry.directory?)
+          FileUtils.mkdir_p mkdir, mode: dir_mode ? 0o755 : (entry.header.mode & 0o777 if entry.directory?)
           directories << mkdir
         end
 
@@ -478,7 +576,7 @@ EOM
       end
     end
 
-    if dir_mode
+    if dir_mode && !directories.empty?
       File.chmod(dir_mode, *directories)
     end
   end
@@ -486,10 +584,10 @@ EOM
   def file_mode(mode) # :nodoc:
     ((mode & 0o111).zero? ? data_mode : prog_mode) ||
       # If we're not using one of the default modes, then we're going to fall
-      # back to the mode from the tarball. In this case we need to mask it down
-      # to fit into 2^16 bits (the maximum value for a mode in CRuby since it
-      # gets put into an unsigned short).
-      (mode & ((1 << 16) - 1))
+      # back to the permission bits from the tarball. Masking drops setuid,
+      # setgid and sticky bits along with anything that does not fit into a
+      # mode in CRuby (an unsigned short).
+      (mode & 0o777)
   end
 
   ##
@@ -515,6 +613,16 @@ EOM
     def normalize_path(pathname) # :nodoc:
       pathname
     end
+  end
+
+  ##
+  # Checks if a filename contains characters that are invalid on Windows.
+  # Windows doesn't allow: < > : " | ? * \ and control characters (0x00-0x1F).
+  # Colons are the most common issue since they're allowed on Unix.
+  # Note: Colons are only valid as drive letter separators (e.g., C:), not in filenames.
+
+  def invalid_windows_filename?(filename) # :nodoc:
+    filename.to_s.split("/").any? {|part| part.match?(/[:<>"|?*\\\x00-\x1f]/) }
   end
 
   ##
@@ -640,6 +748,76 @@ EOM
   end
 
   private
+
+  ##
+  # The +required_rubygems_version+ for a content-addressable build: the
+  # spec's requirement raised to at least MINIMUM_RUBYGEMS_VERSION, warning
+  # if it had to be changed. Raises if the requirement excludes every version
+  # satisfying that floor, since no RubyGems could install the built gem.
+
+  def normalized_required_rubygems_version(ruby_abi)
+    minimum = Gem::Requirement.new(MINIMUM_RUBYGEMS_VERSION)
+    existing = @spec.required_rubygems_version
+
+    return minimum if existing.nil? || existing == Gem::Requirement.default
+
+    floor = minimum.requirements.first.last
+
+    if excludes_rubygems_floor?(existing, floor)
+      raise ArgumentError,
+        "Cannot build gem for Ruby ABI #{ruby_abi} because required_rubygems_version is set to #{existing}, " \
+        "which excludes RubyGems #{MINIMUM_RUBYGEMS_VERSION} required to install content addressable gems. " \
+        "Please remove or loosen the conflicting constraint."
+    end
+
+    return existing if satisfies_rubygems_floor?(existing, floor)
+
+    preserved = existing.requirements.filter_map do |op, version|
+      "#{op} #{version}" if ["~>", "<", "<=", "!="].include?(op)
+    end
+
+    normalized = Gem::Requirement.new([MINIMUM_RUBYGEMS_VERSION, *preserved])
+
+    alert_warning \
+      "required_rubygems_version was changed from \"#{existing}\" to \"#{normalized}\" for this build " \
+      "because content addressable gems can only be installed by RubyGems #{MINIMUM_RUBYGEMS_VERSION}."
+
+    normalized
+  end
+
+  ##
+  # Whether +requirement+ excludes every RubyGems version satisfying the
+  # +floor+, so that no RubyGems could install the built gem.
+
+  def excludes_rubygems_floor?(requirement, floor)
+    capped_below_floor = requirement.requirements.any? do |op, version|
+      case op
+      when "<" then version <= floor
+      when "<=", "=" then version < floor
+      when "~>" then version.bump <= floor.release
+      else false
+      end
+    end
+
+    return true if capped_below_floor
+
+    !requirement.satisfied_by?(floor) && requirement.requirements.any? do |op, version|
+      ["<=", "="].include?(op) && version == floor
+    end
+  end
+
+  ##
+  # Whether one of the lower bounds of +requirement+ already guarantees the
+  # +floor+.
+
+  def satisfies_rubygems_floor?(requirement, floor)
+    requirement.requirements.any? do |op, version|
+      case op
+      when ">=", "~>", "=", ">" then version >= floor
+      else false
+      end
+    end
+  end
 
   ##
   # Returns the full path for installing +filename+ into +destination_dir+,

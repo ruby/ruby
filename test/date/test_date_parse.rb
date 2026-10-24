@@ -889,6 +889,24 @@ class TestDateParse < Test::Unit::TestCase
     assert_raise(TypeError) {Date._rfc3339('2001-02-03T04:05:06Z'.to_sym)}
   end
 
+  def test__rfc3339__deprecated_separator
+    pat = /Invalid RFC3339 date time separator/
+
+    ["\t", "\n", "\v", "\f", "\r"].each do |sep|
+      h = assert_deprecated_warn(pat) do
+        Date._rfc3339("2001-02-03#{sep}04:05:06Z")
+      end
+      assert_equal([2001, 2, 3, 4, 5, 6, 0],
+                   h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
+    end
+
+    ["T", "t", " "].each do |sep|
+      assert_deprecated_warn("") do
+        Date._rfc3339("2001-02-03#{sep}04:05:06Z")
+      end
+    end
+  end
+
   def test__xmlschema
     h = Date._xmlschema('2001-02-03')
     assert_equal([2001, 2, 3, nil, nil, nil, nil],

@@ -2,6 +2,13 @@
 
 !include $(config_make)
 
+# configure.bat writes these into config_make only for nmake, but -gmp-
+# needs them for GNU make too.
+!if "$(make_command)" != "nmake" && "$(optdirs)" != ""
+XINCFLAGS = -I"$(optdirs:;=/include" -I")/include"
+XLDFLAGS = -libpath:"$(optdirs:;=/lib" -libpath:")/lib"
+!endif
+
 !if "$(srcdir)" != ""
 WIN32DIR = $(srcdir)/win32
 !elseif "$(WIN32DIR)" == "win32"
@@ -14,7 +21,11 @@ srcdir = $(WIN32DIR)/..
 !ifndef prefix
 prefix = /usr
 !endif
+!if "$(make_command)" == "nmake"
 BANG = !
+!else
+BANG =
+!endif
 APPEND = echo.>>$(MAKEFILE)
 !ifdef MAKEFILE
 MAKE = $(MAKE) -f $(MAKEFILE)
@@ -42,7 +53,9 @@ arm64-mswin64: -prologue- -arm64- -epilogue-
 -basic-vars-: nul
 	@rem <<$(MAKEFILE)
 ### Makefile for ruby ###
+!if "$(make_command)" == "nmake"
 MAKE = nmake
+!endif
 srcdir = $(srcdir:\=/)
 prefix = $(prefix:\=/)
 
@@ -55,10 +68,14 @@ prefix = $(prefix:\=/)
 	@cd $(srcdir:/=\)\tool && $(BASERUBY:/=\) missing-baseruby.bat --verbose || exit $(HAVE_BASERUBY:yes=non-)0
 !endif
 
+# Unlike -baseruby-, this runs in the build directory, where a just
+# built `ruby.exe` would be found prior to $PATH but cannot load the
+# standard library yet.
 -dependencies-: -baseruby-
 !if "$(HAVE_BASERUBY)" != "no"
-	@$(BASERUBY:/=\) $(srcdir)/tool/mkdepend.rb --root=$(srcdir) \
-	    --scope=core --nmake --output=.deps
+	@$(COMSPEC) /C "set NoDefaultCurrentDirectoryInExePath=1& \
+	$(BASERUBY:/=\) $(srcdir)/tool/mkdepend.rb --root=$(srcdir) \
+	    --scope=core $(BANG:!=--nmake) --output=.deps"
 !endif
 
 -gmp-:
@@ -178,7 +195,7 @@ revision_opt = -DRUBY_REVISION=0
 
 verconf.mk: nul
 	@findstr /R /C:"^#define RUBY_ABI_VERSION " $(srcdir:/=\)\include\ruby\internal\abi.h > $(@)
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include $(revision_opt) <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include $(revision_opt) -Tc <<"Creating $(@)" > $(*F).bat && cmd /c .\$(*F).bat > $(@)
 @echo off
 #define STRINGIZE0(expr) #expr
 #define STRINGIZE(x) STRINGIZE0(x)
@@ -216,13 +233,19 @@ set /a MSC_VER = _MSC_VER
 #elif _MSC_VER >= 1920
 set /a MSC_VER_LOWER = MSC_VER/20*20+0
 set /a MSC_VER_UPPER = MSC_VER/20*20+19
-#elif _MSC_VER >= 1900
+#elif _MSC_VER >= 1915
 set /a MSC_VER_LOWER = MSC_VER/10*10+0
 set /a MSC_VER_UPPER = MSC_VER/10*10+9
 #else
-# error Unsupported VC++ compiler
+# error MSVC 1915 (Visual Studio 2017 version 15.8) or later is required
 #endif
 set MSC_VER
+#ifdef __clang__
+#if __clang_major__ < 15
+# error clang-cl 15 or later is required
+#endif
+echo CLANG_VER = __clang_major__
+#endif
 del %0 & exit
 <<
 
@@ -289,7 +312,7 @@ MACHINE = $(@:-=)
 
 # RUBY_INSTALL_NAME = ruby
 # RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
-# CFLAGS = $$(RUNTIMEFLAG) $$(DEBUGFLAGS) $$(WARNFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG) $$(COMPILERFLAG)
+# CFLAGS = $$(RUNTIMEFLAG) $$(DEBUGFLAGS) $$(WARNFLAGS) $$(OPTFLAGS) $$(COMPILERFLAG)
 # CPPFLAGS =
 # STACK = 0x2000000
 # LDFLAGS = $$(CFLAGS) -Fm
@@ -308,9 +331,9 @@ AS = $(AS) -nologo
 !endif
 	@type << >>$(MAKEFILE)
 
-$(BANG)include $$(srcdir)/win32/Makefile.sub
+$(BANG)include $$(srcdir)/win32/$(MAKEFILE:.new=).sub
 <<
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat config.h config.status
 	-@move /y $(MAKEFILE_NEW) $(MAKEFILE_BACK) > nul 2> nul
 	@move /y $(MAKEFILE) $(MAKEFILE_NEW) > nul
-	@echo type 'nmake' to make ruby.
+	@echo type '$(make_command)' to make ruby.

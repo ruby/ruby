@@ -12,6 +12,7 @@
 #include "id_table.h"           /* for struct rb_id_table */
 #include "internal/box.h"
 #include "internal/serial.h"    /* for rb_serial_t */
+#include "ractor_core.h"        /* for rb_ractor_main_p */
 #include "internal/static_assert.h"
 #include "internal/variable.h"  /* for rb_class_ivar_set */
 #include "ruby/internal/stdbool.h"     /* for bool */
@@ -39,6 +40,12 @@ struct rb_classext_struct {
     const rb_box_t *box;
     VALUE super;
     VALUE fields_obj; // Fields are either ivar or other internal properties stored inline
+    /**
+     * For class/module: name of class/module
+     * For refinement iclass: hidden hash with refinement module keys and module refinement
+     *                        iclass values
+     * TODO: move into as union below
+     */
     VALUE classpath;
     struct rb_id_table *m_tbl;
     struct rb_id_table *const_tbl;
@@ -65,6 +72,11 @@ struct rb_classext_struct {
             const VALUE includer;
         } iclass;
     } as;
+    /* Id of the Ractor that created this class/module; only that Ractor may modify
+     * it.  0 is the main Ractor, so a program that never leaves it stores nothing.
+     * Ids are never reused, so a terminated owner leaves the class read-only for
+     * everybody.  Prime classext only; always 0 for T_ICLASS. */
+    rb_serial_t owner_ractor_id;
     uint16_t superclass_depth;
     attr_index_t max_iv_count;
     uint8_t variation_count;
@@ -115,6 +127,37 @@ static inline void RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE obj, bool writable);
 #define RCLASS_EXT_PRIME(c) (&((struct RClass_and_rb_classext_t*)(c))->classext)
 #define RCLASS_EXT_PRIME_P(ext, c) (&((struct RClass_and_rb_classext_t*)(c))->classext == ext)
 
+// Class ownership. See rb_classext_struct::owner_ractor_id.
+#define RCLASSEXT_OWNER_RACTOR_ID(ext) (ext->owner_ractor_id)
+
+static inline rb_serial_t
+RCLASS_OWNER_RACTOR_ID(VALUE klass)
+{
+    return RCLASS_EXT_PRIME(klass)->owner_ractor_id;
+}
+
+static inline void
+RCLASS_SET_OWNER_RACTOR_ID(VALUE klass, rb_serial_t ractor_id)
+{
+    // not a VALUE: no write barrier, nothing for the GC to mark or move
+    RCLASS_EXT_PRIME(klass)->owner_ractor_id = ractor_id;
+}
+
+bool rb_class_owned_by_ractor_p(rb_serial_t owner_id); // rb_class_owned_p's slow half
+void rb_class_owner_check(VALUE klass);      // raise Ractor::IsolationError unless rb_class_owned_p(klass)
+void rb_class_take_ownership(VALUE klass);   // for a moved object's singleton class only
+void rb_class_check_singleton_movable(VALUE klass); // raise if it holds unshareable values
+
+// true if the current Ractor created klass.  Inline because the class ivar and
+// constant read paths take it on every access.
+static inline bool
+rb_class_owned_p(VALUE klass)
+{
+    rb_serial_t owner_id = RCLASS_OWNER_RACTOR_ID(klass);
+    if (LIKELY(!owner_id)) return rb_ractor_main_p(); // the only case single-Ractor programs take
+    return rb_class_owned_by_ractor_p(owner_id);
+}
+
 static inline rb_classext_t * RCLASS_EXT_READABLE_IN_BOX(VALUE obj, const rb_box_t *box);
 static inline rb_classext_t * RCLASS_EXT_READABLE(VALUE obj);
 static inline rb_classext_t * RCLASS_EXT_WRITABLE_IN_BOX(VALUE obj, const rb_box_t *box);
@@ -143,6 +186,7 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 #define RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) (ext->iclass_origin_shared_mtbl)
 #define RCLASSEXT_SUPERCLASSES_WITH_SELF(ext) (ext->superclasses_with_self)
 #define RCLASSEXT_CLASSPATH(ext) (ext->classpath)
+#define RCLASSEXT_MODULE_REFINEMENT_ICLASSES(ext) (ext->classpath)
 
 static inline void RCLASSEXT_SET_ORIGIN(rb_classext_t *ext, VALUE klass, VALUE origin);
 static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE includer);
@@ -184,6 +228,7 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT_PRIME(c)->refined_class)
 #define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT_PRIME(c)->as.singleton_class.attached_object)
 #define RCLASS_INCLUDER(c) (RCLASS_EXT_PRIME(c)->as.iclass.includer)
+#define RCLASS_MODULE_REFINEMENT_ICLASSES(c) (RCLASS_EXT_PRIME(c)->classpath)
 
 // max IV count and variation count are just hints, so they don't need to be per-box
 #define RCLASS_MAX_IV_COUNT(ext) (RCLASS_EXT_PRIME(ext)->max_iv_count)
@@ -222,6 +267,7 @@ static inline void RCLASS_SET_ALLOCATOR(VALUE klass, rb_alloc_func_t allocator);
 static inline VALUE RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_object);
 
 static inline void RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass);
+static inline void RCLASS_SET_MODULE_REFINEMENT_ICLASSES(VALUE iclass, VALUE table);
 static inline void RCLASS_SET_MAX_IV_COUNT(VALUE klass, attr_index_t count);
 static inline void RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
 static inline void RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
@@ -254,7 +300,7 @@ RCLASS_SET_CLASSEXT_TBL(VALUE klass, st_table *tbl)
 }
 
 /* class.c */
-rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_box_t *box);
+rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_box_t *box, int *first_set);
 void rb_class_ensure_writable(VALUE obj);
 
 void rb_class_set_box_classext(VALUE obj, const rb_box_t *box, rb_classext_t *ext);
@@ -376,8 +422,7 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_box_t *box)
         // re-check the classext is not created to avoid the multi-thread race
         ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, box);
         if (!ext) {
-            ext = rb_class_duplicate_classext(RCLASS_EXT_PRIME(obj), obj, box);
-            first_set = RCLASS_SET_BOX_CLASSEXT(obj, box, ext);
+            ext = rb_class_duplicate_classext(RCLASS_EXT_PRIME(obj), obj, box, &first_set);
             if (first_set) {
                 // TODO: are there any case that a class/module become non-writable after its birthtime?
                 RCLASS_SET_PRIME_CLASSEXT_WRITABLE(obj, false);
@@ -456,6 +501,7 @@ VALUE rb_keyword_error_new(const char *, VALUE);
 rb_classext_t *rb_class_unlink_classext(VALUE klass, const rb_box_t *box);
 void rb_class_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime);
 void rb_iclass_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime);
+void rb_freeze_singleton_class(VALUE attached_object);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
@@ -660,6 +706,13 @@ RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass)
 {
     RUBY_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
     RB_OBJ_WRITE(iclass, &RCLASS_INCLUDER(iclass), klass);
+}
+
+static inline void
+RCLASS_SET_MODULE_REFINEMENT_ICLASSES(VALUE iclass, VALUE table)
+{
+    RUBY_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
+    RB_OBJ_WRITE(iclass, &RCLASS_MODULE_REFINEMENT_ICLASSES(iclass), table);
 }
 
 static inline void

@@ -73,7 +73,6 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_to_s_under_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       str = "abcd\u3042"
       [:UTF_16BE, :UTF_16LE, :UTF_32BE, :UTF_32LE].each do |es|
@@ -142,6 +141,16 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(SyntaxError) {eval "/[\\users]/x"}
     assert_raise(SyntaxError) {eval "/(?<\\users)/x"}
     assert_raise(SyntaxError) {eval "/# \\users/"}
+  end
+
+  def test_extended_comment_invalid_unicode_escape_with_multibyte_characters
+    ["\u3042", "\u00e9z", "\u{1f600}"].each do |content|
+      source = "a # \\u{#{content}}\n"
+      re = eval("/#{source}/x")
+      assert_equal(source, re.source)
+      assert_predicate(re.source, :valid_encoding?)
+      assert_match(re, "a")
+    end
   end
 
   def test_nonextended_section_of_extended_regexp_bug_19379
@@ -471,7 +480,6 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_inspect_under_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       assert_equal('/(?-mix:\\/)|/', Regexp.union(/\//, "").inspect)
     end
@@ -904,7 +912,6 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match_under_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
       assert_equal("h", m.match(:foo))
@@ -1007,27 +1014,41 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('foobazquux/foobazquux', result, bug8856)
   end
 
+  def test_alternation_compile_error_no_memory_leak
+    # A compile error in the 2nd+ branch of a top-level alternation leaked the
+    # partially parsed branch (parse_subexp freed the alternation list but not
+    # the node parse_branch had built so far). Regexp#to_s reaches this path
+    # for every /(?:a|b)c(d)/-shaped regexp.
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", "[Bug #22384]", rss: true, samples: 2..100)
+      code = proc do
+        Regexp.new("a|b(c") rescue nil
+        /(?:a|b)c(d)/.to_s
+      end
+
+    begin;
+      3_000.times(&code)
+    end;
+  end
+
   def test_regsub_no_memory_leak
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true)
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true, samples: 2..100)
       code = proc do
         "aaaaaaaaaaa".gsub(/a/, "")
       end
 
-      1_000.times(&code)
     begin;
-      100_000.times(&code)
+      1_000.times(&code)
     end;
   end
 
   def test_regsub_no_memory_leak_many_captures
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true)
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true, samples: 2..100)
       code = proc do
         "aaaaaaaaaaa".gsub(/(a)(b)?(c)?(d)?(e)?(f)?(g)?(h)?/, "")
       end
 
-      1_000.times(&code)
     begin;
-      100_000.times(&code)
+      1_000.times(&code)
     end;
   end
 
@@ -1043,6 +1064,19 @@ class TestRegexp < Test::Unit::TestCase
     /bar/ =~ "bar"
     $~ = m
     assert_equal("foo", $&)
+  end
+
+  def test_match_setter_with_copy
+    [:dup, :clone].each do |copy|
+      [false, true].each do |freeze|
+        m = /a/.match("a").public_send(copy)
+        m.freeze if freeze
+        $~ = m
+        /b/ =~ "b"
+        assert_equal("a", m[0], "#{copy}, freeze: #{freeze}")
+        assert_equal("b", $&)
+      end
+    end
   end
 
   def test_match_without_regexp
@@ -2080,10 +2114,10 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_s_timeout_memory_leak
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", "[Bug #20228]", rss: true)
-      Regexp.timeout = 0.001
-      regex = /^(a*)*$/
-      str = "a" * 1000000 + "x"
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20228]", rss: true, samples: 100..200)
+      Regexp.timeout = 0.000001
+      regex = Regexp.new("^#{"(a*)" * 10_000}x$")
+      str = "a" * 1_000_000 + "x"
 
       code = proc do
         regex =~ str
@@ -2092,7 +2126,7 @@ class TestRegexp < Test::Unit::TestCase
 
       10.times(&code)
     begin;
-      1_000.times(&code)
+      100.times(&code)
     end;
   end
 
@@ -2142,7 +2176,6 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_timeout_longer_than_global
-    omit "timeout test is too unstable on s390x" if RUBY_PLATFORM =~ /s390x/
     per_instance_redos_test(0.01, 0.5, 0.5)
   end
 
@@ -2170,7 +2203,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_timeout_memory_leak
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20650]", timeout: 100, rss: true)
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20650]", rss: true, samples: 100..200)
       regex = Regexp.new("^#{"(a*)" * 10_000}x$", timeout: 0.000001)
       str = "a" * 1_000_000 + "x"
 
@@ -2181,7 +2214,7 @@ class TestRegexp < Test::Unit::TestCase
 
       10.times(&code)
     begin;
-      1_000.times(&code)
+      100.times(&code)
     end;
   end
 
@@ -2398,5 +2431,17 @@ class TestRegexp < Test::Unit::TestCase
     source = '(?:(?:foo)?|(?:bar)?)*' * 100000
     assert_raise(RegexpError) { Regexp.new(source) }
     assert_raise(SyntaxError) { eval("/#{source}/") }
+  end
+
+  def test_nested_repeat_expansion_overflow
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 30)
+    begin;
+      # A nested repeat whose expanded size overflows int must not be
+      # unrolled: the compiler used to hang or emit wrapped jump offsets.
+      ["(?:.{90000,}){90000}", "(?:.{46341,}){46341}"].each do |src|
+        re = Regexp.new(src)
+        assert_nil(re.match("x" * 10), src)
+      end
+    end;
   end
 end

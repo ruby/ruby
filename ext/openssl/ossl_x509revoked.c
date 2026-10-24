@@ -33,7 +33,7 @@ static const rb_data_type_t ossl_x509rev_type = {
     {
         0, ossl_x509rev_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -195,7 +195,7 @@ ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
 {
     X509_REVOKED *rev;
     X509_EXTENSION *ext;
-    long i;
+    rb_len_t i;
     VALUE item;
 
     Check_Type(ary, T_ARRAY);

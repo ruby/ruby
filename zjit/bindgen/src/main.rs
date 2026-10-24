@@ -100,6 +100,7 @@ fn main() {
         .allowlist_var("RB_GC_ZJIT_FASTPATH_.*")
 
         .allowlist_type("ruby_rstring_flags")
+        .allowlist_type("ruby_rstruct_flags")
 
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_raw_obj_info")
@@ -110,6 +111,8 @@ fn main() {
         .allowlist_function("ruby_executable_node")
         .allowlist_function("rb_funcallv")
         .allowlist_function("rb_protect")
+        .allowlist_function("rb_zjit_iseq_has_profiled_enough")
+        .allowlist_function("rb_zjit_iseq_set_jit_entry")
         .allowlist_function("rb_zjit_profile_disable")
         .allowlist_function("rb_zjit_profile_enable")
         .allowlist_function("rb_zjit_insn_to_bare_insn")
@@ -120,6 +123,7 @@ fn main() {
         .allowlist_function("rb_zjit_array_new_can_fastpath")
         .allowlist_function("rb_zjit_hash_dup_can_fastpath")
         .allowlist_function("rb_zjit_range_new_fastpath")
+        .allowlist_function("rb_zjit_array_aref_with_adjusted_index")
 
         // For crashing
         .allowlist_function("rb_bug")
@@ -166,6 +170,7 @@ fn main() {
         .allowlist_function("rb_singleton_class")
         .allowlist_function("rb_define_class")
         .allowlist_function("rb_class_get_superclass")
+        .allowlist_function("rb_class_superclass")
         .allowlist_function("rb_gc_disable")
         .allowlist_function("rb_gc_enable")
         .allowlist_function("rb_gc_mark")
@@ -190,10 +195,12 @@ fn main() {
         .allowlist_var("rb_cNumeric")
         .allowlist_var("rb_cRange")
         .allowlist_var("rb_cString")
+        .allowlist_var("rb_cProc")
         .allowlist_var("rb_cThread")
         .allowlist_var("rb_cArray")
         .allowlist_var("rb_cHash")
         .allowlist_var("rb_cSet")
+        .allowlist_var("rb_cStruct")
         .allowlist_var("rb_cClass")
         .allowlist_var("rb_cRegexp")
         .allowlist_var("rb_cISeq")
@@ -276,6 +283,7 @@ fn main() {
         .allowlist_function("rb_callable_method_entry")
         .allowlist_function("rb_callable_method_entry_or_negative")
         .allowlist_function("rb_vm_frame_method_entry")
+        .allowlist_function("rb_vm_once_done_value")
         .allowlist_type("IVC") // pointer to iseq_inline_iv_cache_entry
         .allowlist_type("IC")  // pointer to iseq_inline_constant_cache
         .allowlist_type("iseq_inline_constant_cache_entry")
@@ -303,16 +311,18 @@ fn main() {
         .allowlist_type("rb_iseq_type")
         .allowlist_type("rb_event_flag_t")
         .allowlist_function("rb_object_shape_count")
-        .allowlist_function("rb_iseq_(get|set)_jit_payload")
+        .allowlist_function("rb_iseq_(get|set|clear)_jit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")
         .allowlist_function("rb_iseq_bare_opcode_at_pc")
         .allowlist_function("rb_jit_reserve_addr_space")
+        .allowlist_function("rb_zjit_reserve_low_addr_space")
         .allowlist_function("rb_jit_mark_writable")
         .allowlist_function("rb_jit_mark_executable")
         .allowlist_function("rb_jit_mark_unused")
         .allowlist_function("rb_jit_get_page_size")
         .allowlist_function("rb_jit_array_len")
+        .allowlist_function("rb_jit_ruby2_keywords_splat_p")
         .allowlist_function("rb_jit_fix_div_fix")
         .allowlist_function("rb_jit_iseq_builtin_attrs")
         .allowlist_function("rb_jit_str_concat_codepoint")
@@ -397,8 +407,12 @@ fn main() {
         .allowlist_function("rb_insn_name")
         .allowlist_function("rb_insn_len")
         .allowlist_function("rb_yarv_class_of")
-        .allowlist_function("rb_zjit_class_initialized_p")
         .allowlist_function("rb_zjit_class_has_default_allocator")
+        .allowlist_function("rb_zjit_class_has_struct_allocator")
+        .allowlist_function("rb_zjit_struct_num_members")
+        .allowlist_function("rb_zjit_struct_member_id")
+        .allowlist_function("rb_zjit_struct_embedded_p")
+        .allowlist_function("rb_struct_s_keyword_init")
         .allowlist_function("rb_zjit_class_get_alloc_func")
         .allowlist_function("rb_get_ec_cfp")
         .allowlist_function("rb_get_cfp_iseq")
@@ -406,7 +420,6 @@ fn main() {
         .allowlist_function("rb_get_cfp_sp")
         .allowlist_function("rb_get_cfp_self")
         .allowlist_function("rb_get_cfp_ep")
-        .allowlist_function("rb_get_cfp_ep_level")
         .allowlist_function("rb_get_cme_def_type")
         .allowlist_function("rb_zjit_vm_search_method")
         .allowlist_function("rb_zjit_cme_is_cfunc")
@@ -454,7 +467,6 @@ fn main() {
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
         .allowlist_function("rb_vm_get_untagged_block_handler")
-        .allowlist_function("rb_vm_untag_block_handler")
         .allowlist_function("rb_FL_TEST")
         .allowlist_function("rb_FL_TEST_RAW")
         .allowlist_function("rb_RB_TYPE_P")
@@ -496,16 +508,21 @@ fn main() {
     // Write to a Vec for post-processing
     let mut bindings_string = Vec::new();
     bindings.write(Box::new(&mut bindings_string)).expect("Couldn't write bindings!");
+    let mut bindings_string = String::from_utf8(bindings_string).expect("bindings should be UTF-8");
 
-    // Use i32 for this type since that's what the assembler APIs expect
-    const JIT_CONSTANTS_NEEDLE: &[u8]      = b"pub type jit_bindgen_constants = u32;";
-    const JIT_CONSTANTS_REPLACEMENT: &[u8] = b"pub type jit_bindgen_constants = i32;";
+    // Give some generated type aliases an integer type that is nicer to use from
+    // Rust than the one bindgen derives from C.
+    const TYPE_REPLACEMENTS: &[(&str, &str)] = &[
+        // i32 is what the assembler APIs expect
+        ("pub type jit_bindgen_constants = u32;", "pub type jit_bindgen_constants = i32;"),
+        // usize is what VALUE() takes, so flag masks need no cast at their use sites
+        ("pub type ruby_rstruct_flags = u32;", "pub type ruby_rstruct_flags = usize;"),
+    ];
+    // Each needle is a whole line of the output, so plain replacement is unambiguous.
     // Yes, this search-and-replace could be faster, but it's a small file.
-    for line in bindings_string.as_mut_slice().split_mut(|&byte| byte == b'\n') {
-        if line == JIT_CONSTANTS_NEEDLE {
-            line.copy_from_slice(JIT_CONSTANTS_REPLACEMENT);
-            break;
-        }
+    for (needle, replacement) in TYPE_REPLACEMENTS {
+        assert!(bindings_string.contains(needle), "no line to replace: {needle}");
+        bindings_string = bindings_string.replace(needle, replacement);
     }
 
     // Write out to file

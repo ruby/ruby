@@ -21,12 +21,12 @@
 
 require 'socket'
 require 'timeout'
-require 'io/wait'
+require 'io/wait' if RUBY_VERSION < '3.2'
 
 module Net # :nodoc:
 
   class Protocol   #:nodoc: internal use only
-    VERSION = "0.3.0"
+    VERSION = "0.4.0"
 
     private
     def Protocol.protocol_param(name, val)
@@ -189,6 +189,7 @@ module Net # :nodoc:
     public
 
     def read(len, dest = ''.b, ignore_eof = false)
+      raise ArgumentError, "negative length #{len} given" if len < 0
       LOG "reading #{len} bytes..."
       read_bytes = 0
       begin
@@ -356,9 +357,9 @@ module Net # :nodoc:
       @debug_output << '<- ' if @debug_output
       yield
       @debug_output << "\n" if @debug_output
-      bytes = @written_bytes
+      @written_bytes
+    ensure
       @written_bytes = nil
-      bytes
     end
 
     def write0(*strs)
@@ -383,6 +384,9 @@ module Net # :nodoc:
             need_retry = false
             # next string
           end
+          # continue looping
+        when :wait_readable
+          (io = @io.to_io).wait_readable(@write_timeout) or raise Net::WriteTimeout.new(io)
           # continue looping
         when :wait_writable
           (io = @io.to_io).wait_writable(@write_timeout) or raise Net::WriteTimeout.new(io)
@@ -426,12 +430,15 @@ module Net # :nodoc:
     def each_message_chunk
       LOG 'reading message...'
       LOG_off()
-      read_bytes = 0
-      while (line = readuntil("\r\n")) != ".\r\n"
-        read_bytes += line.size
-        yield line.delete_prefix('.')
+      begin
+        read_bytes = 0
+        while (line = readuntil("\r\n")) != ".\r\n"
+          read_bytes += line.size
+          yield line.delete_prefix('.')
+        end
+      ensure
+        LOG_on()
       end
-      LOG_on()
       LOG "read message (#{read_bytes} bytes)"
     end
 
@@ -457,12 +464,15 @@ module Net # :nodoc:
     def write_message(src)
       LOG "writing message from #{src.class}"
       LOG_off()
-      len = writing {
-        using_each_crlf_line {
-          write_message_0 src
+      begin
+        len = writing {
+          using_each_crlf_line {
+            write_message_0 src
+          }
         }
-      }
-      LOG_on()
+      ensure
+        LOG_on()
+      end
       LOG "wrote #{len} bytes"
       len
     end
@@ -470,16 +480,19 @@ module Net # :nodoc:
     def write_message_by_block(&block)
       LOG 'writing message from block'
       LOG_off()
-      len = writing {
-        using_each_crlf_line {
-          begin
-            block.call(WriteAdapter.new(self.method(:write_message_0)))
-          rescue LocalJumpError
-            # allow `break' from writer block
-          end
+      begin
+        len = writing {
+          using_each_crlf_line {
+            begin
+              block.call(WriteAdapter.new(self.method(:write_message_0)))
+            rescue LocalJumpError
+              # allow `break' from writer block
+            end
+          }
         }
-      }
-      LOG_on()
+      ensure
+        LOG_on()
+      end
       LOG "wrote #{len} bytes"
       len
     end
@@ -499,6 +512,8 @@ module Net # :nodoc:
         write0 "\r\n"
       end
       write0 ".\r\n"
+      nil
+    ensure
       @wbuf = nil
     end
 

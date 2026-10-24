@@ -5,7 +5,7 @@ require_relative "helper"
 class GemTest < Gem::TestCase
   def test_rubygems_normal_behaviour
     _ = Gem::Util.popen(*ruby_with_rubygems_in_load_path, "-e", "'require \"rubygems\"'", { err: [:child, :out] }).strip
-    assert $?.success?
+    assert Process.last_status.success?
   end
 
   def test_operating_system_other_exceptions
@@ -17,7 +17,7 @@ class GemTest < Gem::TestCase
     RUBY
 
     output = Gem::Util.popen(*ruby_with_rubygems_and_fake_operating_system_in_load_path(path), "-e", "'require \"rubygems\"'", { err: [:child, :out] }).strip
-    assert !$?.success?
+    assert !Process.last_status.success?
     assert_match(/undefined local variable or method [`']intentionally_not_implemented_method'/, output)
     assert_includes output, "Loading the #{operating_system_rb_at(path)} file caused an error. " \
     "This file is owned by your OS, not by rubygems upstream. " \
@@ -52,7 +52,43 @@ class GemTest < Gem::TestCase
     end
   end
 
+  def test_autoload_does_not_load_a_second_copy_of_the_same_file
+    # Two RubyGems trees on the load path, as when Bundler runs from a RubyGems
+    # checkout while the host RubyGems is already loaded.
+    path = util_install_name_tuple_rb
+
+    script = File.join @tempdir, "count_name_tuple.rb"
+
+    write_file script do |io|
+      io.puts 'require "rubygems/name_tuple"'
+      io.puts 'puts $LOADED_FEATURES.count {|f| f.end_with?("name_tuple.rb") }'
+    end
+
+    output = Gem::Util.popen(
+      *ruby_with_shadowing_rubygems_in_load_path(path),
+      script,
+      { err: [:child, :out] }
+    ).strip
+
+    assert_equal "1", output
+  end
+
   private
+
+  def util_install_name_tuple_rb
+    dir = Dir.mktmpdir("test_shadowing_rubygems_lib", @tempdir)
+
+    name_tuple_rb = File.join dir, "rubygems", "name_tuple.rb"
+
+    FileUtils.mkdir_p File.dirname(name_tuple_rb)
+    FileUtils.cp File.join(rubygems_path, "rubygems", "name_tuple.rb"), name_tuple_rb
+
+    dir
+  end
+
+  def ruby_with_shadowing_rubygems_in_load_path(shadowing_path)
+    [Gem.ruby, "-I", shadowing_path, *ruby_with_rubygems_in_load_path.drop(1)]
+  end
 
   def util_install_operating_system_rb(content)
     dir_lib = Dir.mktmpdir("test_operating_system_lib", @tempdir)

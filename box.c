@@ -203,21 +203,21 @@ rb_box_gc_update_references(void *ptr)
     if (!box) return;
 
     if (box->box_object)
-        box->box_object = rb_gc_location(box->box_object);
+        rb_gc_update_moved(&box->box_object);
     if (box->top_self)
-        box->top_self = rb_gc_location(box->top_self);
-    box->load_path = rb_gc_location(box->load_path);
-    box->expanded_load_path = rb_gc_location(box->expanded_load_path);
-    box->load_path_snapshot = rb_gc_location(box->load_path_snapshot);
+        rb_gc_update_moved(&box->top_self);
+    rb_gc_update_moved(&box->load_path);
+    rb_gc_update_moved(&box->expanded_load_path);
+    rb_gc_update_moved(&box->load_path_snapshot);
     if (box->load_path_check_cache) {
-        box->load_path_check_cache = rb_gc_location(box->load_path_check_cache);
+        rb_gc_update_moved(&box->load_path_check_cache);
     }
-    box->loaded_features = rb_gc_location(box->loaded_features);
-    box->loaded_features_snapshot = rb_gc_location(box->loaded_features_snapshot);
-    box->loaded_features_realpaths = rb_gc_location(box->loaded_features_realpaths);
-    box->loaded_features_realpath_map = rb_gc_location(box->loaded_features_realpath_map);
-    box->ruby_dln_libmap = rb_gc_location(box->ruby_dln_libmap);
-    box->gvar_tbl = rb_gc_location(box->gvar_tbl);
+    rb_gc_update_moved(&box->loaded_features);
+    rb_gc_update_moved(&box->loaded_features_snapshot);
+    rb_gc_update_moved(&box->loaded_features_realpaths);
+    rb_gc_update_moved(&box->loaded_features_realpath_map);
+    rb_gc_update_moved(&box->ruby_dln_libmap);
+    rb_gc_update_moved(&box->gvar_tbl);
 }
 
 void
@@ -284,6 +284,12 @@ free_classext_for_box(st_data_t key, st_data_t _value, st_data_t box_arg)
     rb_classext_t *ext;
     VALUE obj = (VALUE)key;
     const rb_box_t *box = (const rb_box_t *)box_arg;
+
+    if (RB_TYPE_P(obj, T_NONE)) {
+        /* RUBY_FREE_AT_EXIT can free a class before the box that refers to
+         * it, and freeing a class already freed its classext for this box. */
+        return ST_CONTINUE;
+    }
 
     if (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) {
         ext = rb_class_unlink_classext(obj, box);
@@ -1193,10 +1199,10 @@ dump_classext_i(rb_classext_t *ext, bool is_prime, VALUE _recv, void *data)
 
     tbl = RCLASSEXT_M_TBL(ext);
     if (tbl) {
-        ary = rb_ary_new_capa((long)rb_id_table_size(tbl));
+        ary = rb_ary_new_capa((rb_len_t)rb_id_table_size(tbl));
         rb_id_table_foreach(RCLASSEXT_M_TBL(ext), dump_classext_methods_i, (void *)ary);
         rb_ary_sort_bang(ary);
-        snprintf(buf, 4096, "  Methods(%ld): ", RARRAY_LEN(ary));
+        snprintf(buf, 4096, "  Methods(%"PRIdLEN"): ", RARRAY_LEN(ary));
         rb_str_cat_cstr(res, buf);
         rb_str_concat(res, rb_ary_join(ary, rb_str_new_cstr(",")));
         rb_str_cat_cstr(res, "\n");
@@ -1207,10 +1213,10 @@ dump_classext_i(rb_classext_t *ext, bool is_prime, VALUE _recv, void *data)
 
     tbl = RCLASSEXT_CONST_TBL(ext);
     if (tbl) {
-        ary = rb_ary_new_capa((long)rb_id_table_size(tbl));
+        ary = rb_ary_new_capa((rb_len_t)rb_id_table_size(tbl));
         rb_id_table_foreach(tbl, dump_classext_constants_i, (void *)ary);
         rb_ary_sort_bang(ary);
-        snprintf(buf, 4096, "  Constants(%ld): ", RARRAY_LEN(ary));
+        snprintf(buf, 4096, "  Constants(%"PRIdLEN"): ", RARRAY_LEN(ary));
         rb_str_cat_cstr(res, buf);
         rb_str_concat(res, rb_ary_join(ary, rb_str_new_cstr(",")));
         rb_str_cat_cstr(res, "\n");

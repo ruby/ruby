@@ -153,7 +153,9 @@ require_relative "openssl"
 #                                      certificate for EMAIL_ADDR
 #     -C, --certificate CERT           Signing certificate for --sign
 #     -K, --private-key KEY            Key for --sign or --build
-#     -A, --key-algorithm ALGORITHM    Select key algorithm for --build from RSA, DSA, or EC. Defaults to RSA.
+#     -A, --key-algorithm ALGORITHM    Select key algorithm for --build from
+#                                      RSA, DSA, EC, ML-DSA-44, ML-DSA-65,
+#                                      or ML-DSA-87. Defaults to RSA.
 #     -s, --sign CERT                  Signs CERT with the key from -K
 #                                      and the certificate from -C
 #     -d, --days NUMBER_OF_DAYS        Days before the certificate expires
@@ -352,6 +354,35 @@ module Gem::Security
   EC_NAME = "secp384r1"
 
   ##
+  # ML-DSA algorithm names to use when building a key pair.
+  # ML-DSA-44: NIST security strength category 2, signature size 2420 bytes
+  # ML-DSA-65: NIST security strength category 3, signature size 3309 bytes
+  # ML-DSA-87: NIST security strength category 5, signature size 4627 bytes
+  # See NIST FIPS 204 Section 4 (Parameter Sets).
+  # https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.204.pdf
+  # See Security (Evaluation Criteria) - 4.A.5 Security Strength Categories.
+  # https://csrc.nist.gov/projects/post-quantum-cryptography/post-quantum-cryptography-standardization/evaluation-criteria/security-(evaluation-criteria)
+
+  ML_DSA_44_NAME = "ML-DSA-44"
+  ML_DSA_65_NAME = "ML-DSA-65"
+  ML_DSA_87_NAME = "ML-DSA-87"
+
+  # ML-DSA SubjectPublicKeyInfo algorithm OIDs (RFC 9881 Sections 2 and 4).
+  # https://www.rfc-editor.org/rfc/rfc9881.html
+  # ml_dsa_key? matches these OIDs rather than a display name because the
+  # SubjectPublicKeyInfo always carries the OID, while the algorithm's display
+  # name is library-specific: for 2.16.840.1.101.3.4.3.18, OpenSSL 3.5 exposes
+  # "ML-DSA-65" while AWS-LC's short name is "MLDSA65".
+  # https://github.com/aws/aws-lc/blob/9e4ee89259a5aece47b047f7a47b36fade4f8c51/crypto/obj/objects.txt#L1400-L1409
+
+  ML_DSA_OIDS = %w[
+    2.16.840.1.101.3.4.3.17
+    2.16.840.1.101.3.4.3.18
+    2.16.840.1.101.3.4.3.19
+  ].freeze
+  private_constant :ML_DSA_OIDS
+
+  ##
   # Cipher used to encrypt the key pair used to sign gems.
   # Must be in the list returned by OpenSSL::Cipher.ciphers
 
@@ -371,14 +402,12 @@ module Gem::Security
   # The default set of extensions are:
   #
   # * The certificate is not a certificate authority
-  # * The key for the certificate may be used for key and data encipherment
-  #   and digital signatures
+  # * The key for the certificate may be used for digital signatures
   # * The certificate contains a subject key identifier
 
   EXTENSIONS = {
     "basicConstraints" => "CA:FALSE",
-    "keyUsage" =>
-      "keyEncipherment,dataEncipherment,digitalSignature",
+    "keyUsage" => "digitalSignature",
     "subjectKeyIdentifier" => "hash",
   }.freeze
 
@@ -423,13 +452,7 @@ module Gem::Security
   # Gets the right public key from a PKey instance
 
   def self.get_public_key(key)
-    # Ruby 3.0 (Ruby/OpenSSL 2.2) or later
-    return OpenSSL::PKey.read(key.public_to_der) if key.respond_to?(:public_to_der)
-    return key.public_key unless key.is_a?(OpenSSL::PKey::EC)
-
-    ec_key = OpenSSL::PKey::EC.new(key.group.curve_name)
-    ec_key.public_key = key.public_key
-    ec_key
+    OpenSSL::PKey.read(key.public_to_der)
   end
 
   ##
@@ -464,22 +487,74 @@ module Gem::Security
   end
 
   ##
-  # Creates a new key pair of the specified +algorithm+. RSA, DSA, and EC
-  # are supported.
+  # Creates a new key pair of the specified +algorithm+. RSA, DSA, EC,
+  # ML-DSA-44, ML-DSA-65, and ML-DSA-87 are supported.
 
   def self.create_key(algorithm)
     if defined?(OpenSSL::PKey)
       case algorithm.downcase
-      when "dsa"
-        OpenSSL::PKey::DSA.new(RSA_DSA_KEY_LENGTH)
       when "rsa"
         OpenSSL::PKey::RSA.new(RSA_DSA_KEY_LENGTH)
+      when "dsa"
+        OpenSSL::PKey::DSA.new(RSA_DSA_KEY_LENGTH)
       when "ec"
         OpenSSL::PKey::EC.generate(EC_NAME)
+      when "ml-dsa-44"
+        create_ml_dsa_key(ML_DSA_44_NAME)
+      when "ml-dsa-65"
+        create_ml_dsa_key(ML_DSA_65_NAME)
+      when "ml-dsa-87"
+        create_ml_dsa_key(ML_DSA_87_NAME)
       else
         raise Gem::Security::Exception,
-        "#{algorithm} algorithm not found. RSA, DSA, and EC algorithms are supported."
+          "#{algorithm} algorithm not found. RSA, DSA, EC, ML-DSA-44, "\
+          "ML-DSA-65, and ML-DSA-87 algorithms are supported."
       end
+    end
+  end
+
+  ##
+  # Creates an ML-DSA key pair of the +algorithm+ such as ML-DSA-65. ML-DSA
+  # requires OpenSSL >= 3.5 or an SSL library supporting ML-DSA.
+
+  def self.create_ml_dsa_key(algorithm)
+    OpenSSL::PKey.generate_key(algorithm)
+  rescue OpenSSL::PKey::PKeyError
+    raise Gem::Security::Exception,
+      "#{algorithm} key generation failed: #{algorithm} requires "\
+      "OpenSSL >= 3.5 or an SSL library supporting ML-DSA."
+  end
+  private_class_method :create_ml_dsa_key
+
+  ##
+  # Returns whether +key+ uses ML-DSA. OpenSSL::PKey::PKey#oid raises for the
+  # provider-backed keys ML-DSA uses, so the algorithm is read from the
+  # SubjectPublicKeyInfo instead.
+
+  def self.ml_dsa_key?(key)
+    algorithm = OpenSSL::ASN1.decode(key.public_to_der).value.first.value.first
+    ML_DSA_OIDS.include?(algorithm.oid)
+  rescue OpenSSL::ASN1::ASN1Error, OpenSSL::PKey::PKeyError, NoMethodError
+    false
+  end
+  private_class_method :ml_dsa_key?
+
+  ##
+  # Returns whether the +key+ requires an explicit digest algorithm for signing
+  # and verification. ML-DSA has a built-in digest and does not accept one.
+  # Any other algorithm raises, since a gem carries no record of how its
+  # signature was produced and RubyGems must not guess.
+
+  def self.digest_required?(key)
+    case key
+    when OpenSSL::PKey::RSA, OpenSSL::PKey::DSA, OpenSSL::PKey::EC
+      true
+    else
+      return false if ml_dsa_key?(key)
+
+      raise Gem::Security::Exception,
+        "unsupported key algorithm. RSA, DSA, EC, ML-DSA-44, ML-DSA-65, and "\
+        "ML-DSA-87 keys are supported."
     end
   end
 
@@ -562,11 +637,19 @@ module Gem::Security
     signed = create_cert signee_subject, signee_key, age, extensions, serial
     signed.issuer = signing_cert.subject
 
+    digest_name = Gem::Security::DIGEST_NAME if digest_required?(signing_key)
+
     begin
-      signed.sign signing_key, Gem::Security::DIGEST_NAME
+      signed.sign signing_key, digest_name
     rescue OpenSSL::PKey::PKeyError, ArgumentError
       raise Gem::Security::Exception,
         "incorrect signing key for signing"
+    # Ruby OpenSSL only accepts the nil digest ML-DSA needs from 3.3 on.
+    rescue TypeError
+      raise if digest_name
+
+      raise Gem::Security::Exception,
+        "certificate signing failed: ML-DSA requires Ruby OpenSSL >= 3.3."
     end
   end
 

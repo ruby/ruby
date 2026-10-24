@@ -79,7 +79,7 @@ is_notop_id2(ID id)
 }
 
 static VALUE
-enc_str_new(const char *ptr, long len, parser_encoding *enc)
+enc_str_new(const char *ptr, rb_len_t len, parser_encoding *enc)
 {
     return rb_enc_str_new(ptr, len, enc);
 }
@@ -169,13 +169,13 @@ enc_isspace(OnigCodePoint c, parser_encoding *enc)
 }
 
 static ID
-intern3(const char *name, long len, parser_encoding *enc)
+intern3(const char *name, rb_len_t len, parser_encoding *enc)
 {
     return rb_intern3(name, len, enc);
 }
 
 static int
-enc_symname_type(const char *name, long len, parser_encoding *enc, unsigned int allowed_attrset)
+enc_symname_type(const char *name, rb_len_t len, parser_encoding *enc, unsigned int allowed_attrset)
 {
     return rb_enc_symname_type(name, len, enc, allowed_attrset);
 }
@@ -285,7 +285,7 @@ static_id2sym(ID id)
     return (((VALUE)(id)<<RUBY_SPECIAL_SHIFT)|SYMBOL_FLAG);
 }
 
-static long
+static rb_len_t
 str_coderange_scan_restartable(const char *s, const char *e, parser_encoding *enc, int *cr)
 {
     return rb_str_coderange_scan_restartable(s, e, enc, cr);
@@ -435,7 +435,7 @@ static const rb_parser_config_t rb_global_parser_config = {
     .qnil = Qnil,
     .qfalse = Qfalse,
     .eArgError = arg_error,
-    .long2int = rb_long2int,
+    .long2int = rb_len2int,
 
     /* For Ripper */
     .static_id2sym = static_id2sym,
@@ -605,7 +605,7 @@ rb_parser_string_t *
 rb_parser_lex_get_str(struct parser_params *p, struct lex_pointer_string *ptr_str)
 {
     char *beg, *end, *start;
-    long len;
+    rb_len_t len;
     VALUE s = ptr_str->str;
 
     beg = RSTRING_PTR(s);
@@ -1096,10 +1096,13 @@ parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
     rb_hash_aset(hash, path, script_lines);
 }
 
-/* The source hash API currently computes FNV-1a, but the algorithm is an
- * implementation detail. The hash values are only ever compared against
- * hashes computed by the same interpreter, so the algorithm can be changed
- * freely between releases. */
+/* The source hash API hashes the source that parse.y reads. Code parsed by
+ * prism is hashed by prism itself (see pm_parser_checksum), and the two are
+ * never compared with each other, so they need not use the same algorithm.
+ *
+ * This currently computes FNV-1a, but the algorithm is an implementation
+ * detail. The hash values are only ever compared against hashes computed by the
+ * same interpreter, so the algorithm can be changed freely between releases. */
 void
 rb_source_hash_init(rb_source_hash_state_t *state)
 {

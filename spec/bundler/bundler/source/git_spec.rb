@@ -149,4 +149,30 @@ RSpec.describe Bundler::Source::Git do
       expect(::Bundler::FileUtils).to have_received(:rm_rf).once
     end
   end
+
+  describe "#load_gemspec" do
+    let(:options) do
+      { "uri" => uri, "revision" => "123abc" }
+    end
+
+    before do
+      allow(Bundler).to receive(:root).and_return(tmp)
+      allow(subject).to receive(:install_path).and_return(tmp("install/bar-123abc"))
+
+      create_file(tmp("bar/bar.gemspec"), <<~GEMSPEC)
+        Gem::Specification.new do |s|
+          s.name = "bar"
+          s.version = "1.0"
+        end
+      GEMSPEC
+    end
+
+    it "resolves a relative path against the root, not the gemspec directory" do
+      spec = Dir.chdir(tmp) { subject.send(:load_gemspec, "bar/bar.gemspec") }
+
+      expect(spec.name).to eq("bar")
+      expect(spec.loaded_from).to eq(tmp("bar/bar.gemspec").to_s)
+      expect(spec.full_gem_path).to eq(tmp("bar").to_s)
+    end
+  end
 end

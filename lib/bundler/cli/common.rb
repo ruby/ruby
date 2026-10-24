@@ -2,26 +2,37 @@
 
 module Bundler
   module CLI::Common
+    # Validates the `--cooldown` flag and makes it the setting for this
+    # command. Every command that takes the flag goes through here, so they
+    # share one reading of the value.
+    def self.configure_cooldown(options)
+      value = options[:cooldown]
+
+      validate_cooldown!(value)
+      Bundler.settings.set_command_option_if_given :cooldown, value
+    end
+
     def self.validate_cooldown!(value)
-      # Without the flag the config file and BUNDLE_COOLDOWN decide, and those
-      # only warn, so a typo left in a config file keeps the command usable.
+      # Without the flag the config files, BUNDLE_COOLDOWN and the gemrc
+      # setting decide, and those only warn, so a typo left in a config file
+      # keeps the command usable.
       return warn_invalid_cooldown_setting if value.nil?
       return if value.is_a?(Integer) && value >= 0
       raise InvalidOption, "Expected `--cooldown` to be a non-negative integer, got #{value.inspect}"
     end
 
-    # A cooldown value that cannot be read as a non-negative integer disables
-    # the cooldown for every source, overriding any per-source `cooldown:` in
-    # the Gemfile, so say so rather than letting the protection lapse quietly.
+    # A cooldown value that cannot be read as a non-negative integer takes no
+    # part in the resolution, so say so rather than letting the protection
+    # lapse quietly. The RubyGems `:cooldown:` setting feeds the same
+    # resolution and is checked in Bundler::Settings#rubygems_cooldown, where
+    # reading it is already being paid for.
     def self.warn_invalid_cooldown_setting
+      require "rubygems/cooldown_settings"
+
       value = Bundler.settings.locations(:cooldown).values.first
-      return if value.nil?
+      return unless Gem::CooldownSettings.invalid?(value)
 
-      days = Integer(value.to_s, exception: false)
-      return if days && !days.negative?
-
-      Bundler.ui.warn "Invalid cooldown value #{value.inspect}, so the cooldown is disabled for all sources. " \
-                      "Expected a non-negative integer number of days."
+      Bundler.ui.warn Gem::CooldownSettings.invalid_message(value, "Bundler's configuration")
     end
 
     def self.output_post_install_messages(messages)
@@ -109,6 +120,10 @@ module Bundler
       end
     rescue RegexpError
       raise GemNotFound, gem_not_found_message(name, Bundler.definition.dependencies)
+    end
+
+    def self.select_spec_with_match_type(name, options)
+      select_spec(name, options["exact-match"] ? nil : :regex_match)
     end
 
     def self.default_gem_spec(name)

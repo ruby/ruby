@@ -16,7 +16,7 @@ class TestFile < Test::Unit::TestCase
       w.close
       r = File.open(filename, "r")
       begin
-        if /(mswin|bccwin|mingw|emx)/ =~ RUBY_PLATFORM
+        if /(mswin|mingw)/ =~ RUBY_PLATFORM
           assert_raise(Errno::EACCES) {File.unlink(filename)}
         else
           assert_nothing_raised {File.unlink(filename)}
@@ -145,6 +145,19 @@ class TestFile < Test::Unit::TestCase
       th.join
     end
   end
+
+  def test_size_over_2gb
+    Tempfile.create("test-size") do |f|
+      size = 0x8000_0000
+      begin
+        f.truncate(size)
+      rescue Errno::ENOSPC
+        omit "no space for #{size} bytes"
+      end
+      assert_equal(size, f.size)
+      assert_equal(size, f.stat.size)
+    end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_read_all_extended_file
     [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|

@@ -94,9 +94,8 @@ RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTER()` and
 `RUBY_ASSERT_CRITICAL_SECTION_LEAVE()`, a failed assertion will result.
 */
-extern int ruby_assert_critical_section_entered;
-#define RUBY_ASSERT_CRITICAL_SECTION_ENTER() do{ruby_assert_critical_section_entered += 1;}while(false)
-#define RUBY_ASSERT_CRITICAL_SECTION_LEAVE() do{VM_ASSERT(ruby_assert_critical_section_entered > 0);ruby_assert_critical_section_entered -= 1;}while(false)
+#define RUBY_ASSERT_CRITICAL_SECTION_ENTER() do{GET_EC()->assert_critical_section_entered += 1;}while(false)
+#define RUBY_ASSERT_CRITICAL_SECTION_LEAVE() do{rb_execution_context_t *ec__ = GET_EC();VM_ASSERT(ec__->assert_critical_section_entered > 0);ec__->assert_critical_section_entered -= 1;}while(false)
 #else
 #define RUBY_ASSERT_CRITICAL_SECTION_ENTER()
 #define RUBY_ASSERT_CRITICAL_SECTION_LEAVE()
@@ -147,8 +146,6 @@ extern int ruby_assert_critical_section_entered;
 #elif defined(_SIG_MAXSIG)      /* FreeBSD */
 # undef NSIG
 # define NSIG _SIG_MAXSIG
-#elif defined(_SIGMAX)          /* QNX */
-# define NSIG (_SIGMAX + 1)
 #elif defined(NSIG)             /* 99% of everything else */
 # /* take it */
 #else                           /* Last resort */
@@ -184,7 +181,7 @@ void *rb_register_sigaltstack(void *);
 /*****************/
 
 /* gcc ver. check */
-#if defined(__GNUC__) && __GNUC__ >= 2
+#if (defined(__GNUC__) && __GNUC__ >= 2) || defined(__clang__)
 
 #if OPT_TOKEN_THREADED_CODE
 #if OPT_DIRECT_THREADED_CODE
@@ -192,7 +189,7 @@ void *rb_register_sigaltstack(void *);
 #endif
 #endif
 
-#else /* defined(__GNUC__) && __GNUC__ >= 2 */
+#else /* (defined(__GNUC__) && __GNUC__ >= 2) || defined(__clang__) */
 
 /* disable threaded code options */
 #if OPT_DIRECT_THREADED_CODE
@@ -263,10 +260,13 @@ struct iseq_inline_constant_cache_entry {
 
     VALUE value;
     const rb_cref_t *ic_cref;
+    /* Ractor that filled this entry.  An unshareable value may be handed out again
+     * only to that Ractor: it is the one that passed the owner check. */
+    rb_serial_t ractor_id;
 };
 STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
-              (offsetof(struct iseq_inline_constant_cache_entry, ic_cref) +
-               sizeof(const rb_cref_t *)) <= RVALUE_SIZE);
+              (offsetof(struct iseq_inline_constant_cache_entry, ractor_id) +
+               sizeof(rb_serial_t)) <= RVALUE_SIZE);
 
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
@@ -337,7 +337,7 @@ struct rb_execution_context_struct;
 #endif
 
 typedef struct rb_iseq_location_struct {
-    VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. */
+    VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. See pathobj_realpath(). */
     VALUE label;        /* String */
     int first_lineno;
     int node_id;
@@ -360,9 +360,13 @@ pathobj_path(VALUE pathobj)
 }
 
 static inline VALUE
-pathobj_realpath(VALUE pathobj)
+pathobj_realpath(VALUE pathobj, bool no_realpath)
 {
-    if (RB_TYPE_P(pathobj, T_STRING)) {
+    if (no_realpath) {
+        VM_ASSERT(RB_TYPE_P(pathobj, T_STRING));
+        return Qnil;
+    }
+    else if (RB_TYPE_P(pathobj, T_STRING)) {
         return pathobj;
     }
     else {
@@ -404,6 +408,10 @@ enum rb_builtin_attr {
     BUILTIN_ATTR_C_TRACE = 0x08,
     // The iseq uses noint branch/jump opcodes that skip interrupt checking.
     BUILTIN_ATTR_WITHOUT_INTERRUPTS = 0x10,
+    // The iseq operates on the nearest user box in its caller frames.
+    BUILTIN_ATTR_CALLER_USER_BOX = 0x20,
+    // The JIT should inline the iseq regardless of its size heuristics.
+    BUILTIN_ATTR_ALWAYS_INLINE = 0x40,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
@@ -552,6 +560,7 @@ struct rb_iseq_constant_body {
     unsigned int builtin_attrs; // Union of rb_builtin_attr
 
     bool prism; // ISEQ was generated from prism compiler
+    bool no_realpath; // location.pathobj names no real file (ex: during eval)
 
     // Set once an EP escape of this iseq has been reported to the enabled JIT.
     rb_atomic_t jit_ep_escape_recorded;
@@ -566,20 +575,20 @@ struct rb_iseq_constant_body {
     const rb_iseq_t *mandatory_only_iseq;
 
 #if USE_YJIT || USE_ZJIT
+    // Number of calls on jit_exec()
+    unsigned int jit_entry_calls;
+    // Number of calls on jit_exec_exception()
+    unsigned int jit_exception_calls;
     // Function pointer for JIT code on jit_exec()
     rb_jit_func_t jit_entry;
-    // Number of calls on jit_exec()
-    long unsigned jit_entry_calls;
     // Function pointer for JIT code on jit_exec_exception()
     rb_jit_func_t jit_exception;
-    // Number of calls on jit_exec_exception()
-    long unsigned jit_exception_calls;
     void *jit_payload;
 #endif
 
 #if USE_YJIT
     // Used to estimate how frequently this ISEQ gets called
-    uint64_t yjit_calls_at_interv;
+    unsigned int yjit_calls_at_interv;
 #endif
 
     // Hash of the source this iseq was compiled from, or 0 if it is
@@ -775,9 +784,6 @@ typedef struct rb_vm_struct {
 
     int src_encoding_index;
 
-    /* workqueue (thread-safe, NOT async-signal-safe) */
-    struct ccan_list_head workqueue; /* <=> rb_workqueue_job.jnode */
-    rb_nativethread_lock_t workqueue_lock;
 
     /* `once` completion event (see vm_once_dispatch) */
     rb_nativethread_lock_t once_lock;
@@ -803,28 +809,18 @@ typedef struct rb_vm_struct {
              * rb_gc_register_mark_object pins and join value through it.  NULL for an
              * orphan, whose Ractor struct is gone and has neither any more. */
             struct rb_ractor_struct *owner;
-            /* Heap pages this zombie holds: measured when it retires and refreshed
-             * under the barrier of each global cycle.  The total below stays exactly
-             * in sync, entry by entry. */
-            size_t pages;
         } *zombie_objspaces;
         size_t zombie_objspaces_count;
         size_t zombie_objspaces_capa;
-        /* Sum of .pages over zombie_objspaces.  Between global cycles it is an upper
-         * bound: a zombie's heap never grows and only shrinks at a global cycle. */
-        size_t zombie_total_pages;
 
 #if USE_MODULAR_GC
         struct gc_mark_func_data_struct *mark_func_data;
 #endif
-        /* One VM-wide list for rb_gc_register_address: a slot can later hold another
-         * objspace's value, so it is not split per Ractor and every Ractor's GC scans it
-         * conservatively.  Leaf lock; register/unregister are cold paths. */
         struct {
             rb_nativethread_lock_t lock;
-            VALUE **addrs;              /* rb_gc_register_address: mark_maybe on *addr */
-            size_t addrs_cnt, addrs_capa;
-        } registered_globals;
+            struct rb_ractor_struct **registry;
+            size_t registry_cnt, registry_capa;
+        } registered_addrs;
 
         /* Holders keeping GC disabled (atomic): Ractors that called GC.disable (at
          * most one hold each) plus short internal critical sections.  One holder stops
@@ -890,7 +886,7 @@ extern bool ruby_vm_during_cleanup;
 #define RUBY_VM_FIBER_VM_STACK_SIZE           (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
 #define RUBY_VM_FIBER_VM_STACK_SIZE_MIN       (   2 * 1024 * sizeof(VALUE)) /*    8 KB or   16 KB */
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE      (  64 * 1024 * sizeof(VALUE)) /*  256 KB or  512 KB */
-#if defined(__powerpc64__) || defined(__ppc64__) // macOS has __ppc64__
+#if defined(__powerpc64__)
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  32 * 1024 * sizeof(VALUE)) /*  128 KB or  256 KB */
 #else
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
@@ -1145,6 +1141,10 @@ struct rb_execution_context_struct {
         void *asan_fake_stack_handle;
 #endif
     } machine;
+
+#ifdef RUBY_ASSERT_CRITICAL_SECTION
+    int assert_critical_section_entered;
+#endif
 };
 
 #ifndef rb_execution_context_t
@@ -1414,6 +1414,7 @@ typedef struct {
     const struct rb_block block;
     const VALUE pathobj;
     int first_lineno;
+    bool no_realpath;
 } rb_binding_t;
 
 /* used by compile time and send insn */
@@ -1717,11 +1718,16 @@ VM_ENV_BOX_UNCHECKED(const VALUE *ep)
 #if VM_CHECK_MODE > 0
 int rb_vm_ep_in_heap_p(const VALUE *ep);
 #endif
+static inline rb_execution_context_t * rb_current_execution_context(bool expect_ec);
 
 static inline int
 VM_ENV_ESCAPED_P(const VALUE *ep)
 {
-    VM_ASSERT(rb_vm_ep_in_heap_p(ep) == !!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED));
+#if VM_CHECK_MODE > 0
+    if (rb_current_execution_context(false)) {
+        VM_ASSERT(rb_vm_ep_in_heap_p(ep) == !!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED));
+    }
+#endif
     return VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) ? 1 : 0;
 }
 
@@ -2022,6 +2028,9 @@ VM_BH_FROM_PROC(VALUE procval)
 
 /* VM related object allocate functions */
 VALUE rb_thread_alloc(VALUE klass);
+/* Build the Thread out of objects a named objspace owns; only a Ractor building its
+ * child needs this (create_ractor_alloc_thread). */
+VALUE rb_thread_alloc_in_objspace(VALUE klass, void *objspace);
 VALUE rb_binding_alloc(VALUE klass);
 VALUE rb_proc_alloc(VALUE klass, enum rb_block_type block_type);
 VALUE rb_proc_dup(VALUE self);
@@ -2047,7 +2056,7 @@ VALUE rb_iseq_path(const rb_iseq_t *iseq);
 VALUE rb_iseq_realpath(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
-VALUE rb_iseq_pathobj_new(VALUE path, VALUE realpath);
+VALUE rb_iseq_pathobj_new(VALUE path, VALUE realpath, bool *no_realpath);
 void rb_iseq_pathobj_set(const rb_iseq_t *iseq, VALUE path, VALUE realpath);
 
 int rb_ec_frame_method_id_and_class(const rb_execution_context_t *ec, ID *idp, ID *called_idp, VALUE *klassp);
@@ -2087,7 +2096,6 @@ void rb_thread_wakeup_timer_thread(int);
 static inline void
 rb_vm_living_threads_init(rb_vm_t *vm)
 {
-    ccan_list_head_init(&vm->workqueue);
     ccan_list_head_init(&vm->ractor.set);
     ccan_list_head_init(&vm->ractor.terminated_set);
 }
@@ -2110,9 +2118,9 @@ VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
 void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE exception_class, VALUE mesg);
 
 #define rb_vm_register_special_exception(sp, e, m) \
-    rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (long)rb_strlen_lit(m)))
+    rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (rb_len_t)rb_strlen_lit(m)))
 
-void rb_gc_mark_machine_context(const rb_execution_context_t *ec);
+void rb_gc_mark_machine_context_ctx(const struct rb_gc_mark_ctx *ctx, const rb_execution_context_t *ec);
 
 const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
 const rb_callable_method_entry_t *rb_vm_frame_method_entry_unchecked(const rb_control_frame_t *cfp);
@@ -2203,11 +2211,7 @@ static inline rb_execution_context_t *
 rb_current_execution_context(bool expect_ec)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #ifdef RB_THREAD_CURRENT_EC_NOINLINE
     rb_execution_context_t * volatile ec = rb_current_ec();
-  #else
-    rb_execution_context_t * volatile ec = ruby_current_ec;
-  #endif
 
     /* On the shared objects, `__tls_get_addr()` is used to access the TLS
      * and the address of the `ruby_current_ec` can be stored on a function
@@ -2349,21 +2353,17 @@ void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
 VALUE rb_ec_get_errinfo(const rb_execution_context_t *ec);
 void rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo);
 void rb_execution_context_update(rb_execution_context_t *ec);
-void rb_execution_context_mark(const rb_execution_context_t *ec);
+void rb_execution_context_mark_ctx(const struct rb_gc_mark_ctx *ctx, const rb_execution_context_t *ec);
 void rb_fiber_close(rb_fiber_t *fib);
 void Init_native_thread(rb_thread_t *th);
 int rb_vm_check_ints_blocking(rb_execution_context_t *ec);
-
-// vm_sync.h
-void rb_vm_cond_wait(rb_vm_t *vm, rb_nativethread_cond_t *cond);
-void rb_vm_cond_timedwait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec);
 
 #define RUBY_VM_CHECK_INTS(ec) rb_vm_check_ints(ec)
 static inline void
 rb_vm_check_ints(rb_execution_context_t *ec)
 {
 #ifdef RUBY_ASSERT_CRITICAL_SECTION
-    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+    VM_ASSERT(ec->assert_critical_section_entered == 0);
 #endif
 
     VM_ASSERT(ec == rb_current_ec_noinline());
@@ -2395,6 +2395,7 @@ struct rb_trace_arg_struct {
 void rb_hook_list_mark(rb_hook_list_t *hooks);
 void rb_hook_list_mark_and_move(rb_hook_list_t *hooks);
 void rb_hook_list_free(rb_hook_list_t *hooks);
+size_t rb_hook_list_memsize(const rb_hook_list_t *hooks);
 void rb_hook_list_connect_local_tracepoint(rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
 bool rb_hook_list_remove_local_tracepoint(rb_hook_list_t *list, VALUE tpval);
 unsigned int rb_hook_list_count(rb_hook_list_t *list);
@@ -2434,7 +2435,7 @@ rb_exec_event_hook_orig(rb_execution_context_t *ec, rb_hook_list_t *hooks, rb_ev
 
 struct rb_ractor_pub {
     VALUE self;
-    uint32_t id;
+    rb_serial_t id;
     rb_hook_list_t hooks;
     st_table targeted_hooks; // also called "local hooks". {ISEQ => hook_list, def => hook_list...}
     unsigned int targeted_hooks_cnt; // ex: tp.enabled(target: method(:puts))
@@ -2493,7 +2494,7 @@ int rb_thread_check_trap_pending(void);
 #define RUBY_EVENT_COVERAGE_LINE                0x010000
 #define RUBY_EVENT_COVERAGE_BRANCH              0x020000
 
-void rb_postponed_job_flush(rb_vm_t *vm);
+void rb_postponed_job_flush(void);
 void rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor);
 
 // ractor.c

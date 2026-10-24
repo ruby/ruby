@@ -7,10 +7,26 @@ Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
+* `super` in a module method that was called via `super` from a refinement
+  method now works correctly.
+  [[Feature #22309]]
+
 * `Module#clone` and `Module#dup` no longer rewrite the lexical scope of
   copied methods. Constants and class variables resolve through the
   original class, consistent with inheritance and mixins.
   [[Feature #21981]]
+
+* `alias` and `Module#alias_method` in a module emit a deprecation warning
+  when the original method is not a method of the module or its ancestors
+  and is only found through the fallback to `Object`. The fallback will be
+  removed in Ruby 4.3, and such an alias will raise a `NameError`.
+  [[Bug #22276]]
+
+* `alias` and `Module#alias_method` emit a deprecation warning when the
+  original method is defined in a prepended module. This behavior will
+  be removed in Ruby 4.3, and alias lookup will start at the origin
+  class (after prepended modules).
+  [[Bug #22273]]
 
 ## Core classes updates
 
@@ -24,6 +40,7 @@ Note: We're only listing outstanding class updates.
       interrupts, including interrupts masked by `Thread.handle_interrupt`.
       As with the existing skip path, `errno` is `0` because the function was
       never called.
+    * `RHASH_TBL` is deprecated.  [[Feature #22232]]
 
 * Array
 
@@ -32,6 +49,12 @@ Note: We're only listing outstanding class updates.
     * `Array#pack` accepts new formats `x!` and `@!` to align the current
       offset to a byte boundary or to the ABI alignment of another
       directive. [[Feature #22185]]
+
+* Dir
+
+    * `Dir.glob` supports `***/` for recursive matching that follows
+      directory symbolic links, stopping at links to ancestor directories.
+      [[Feature #17548]]
 
 * ENV
 
@@ -43,6 +66,37 @@ Note: We're only listing outstanding class updates.
 
     * The `fiber_interrupt` hook is now required. Schedulers which do not
       implement it can no longer be installed with `Fiber.set_scheduler`.
+
+* GC
+
+    * `GC.stat` accepts a `process:` keyword. `GC.stat` and
+      `GC.stat(process: false)` report the current Ractor's object space.
+      With the default collector, `GC.stat(process: true)` reports cumulative
+      collection counts and measured marking/sweeping CPU time across Ractors,
+      including history from destroyed object spaces, without requesting a
+      stop-the-world snapshot. It also reports the `:page_pool_arenas`,
+      `:page_pool_arenas_freed`, `:page_pool_total_pages` and
+      `:page_pool_discarded_pages` keys, which the Ractor data does not
+      include. `GC.count` and `GC.total_time` retain their current-Ractor
+      behavior.
+    * `GC.stat` reports a new key, `:global_gc_count`: the number of
+      stop-the-world global garbage collection cycles that collected the
+      current Ractor's heap, whichever Ractor started them. The new key
+      `:global_gc_invocation_count` reports the global collections that the
+      current Ractor started. `GC.stat(:global_gc_count, process: true)`
+      reports the number of global collections in the process, including
+      those started by terminated Ractors.
+    * A global garbage collection is not counted in `:major_gc_count`.
+      `:count` equals `:minor_gc_count` plus `:major_gc_count` plus
+      `:global_gc_count` in both the Ractor and the process data. In the
+      process data each global collection counts once. When another Ractor's
+      object space exists, including one left by a terminated Ractor that is
+      not yet absorbed, or one was absorbed since the last global collection,
+      `GC.start` runs a global collection by default, so it increments
+      `:global_gc_count` rather than `:major_gc_count`; pass `global: false`
+      for a local major collection.
+    * Global compaction no longer counts overlapping CPU intervals in scalar GC
+      timing statistics. Profiler wall-time intervals are unchanged.
 
 * Hash
 
@@ -84,7 +138,9 @@ Note: We're only listing outstanding class updates.
     * `Module#descendants` is added.  It returns an array of classes and
       modules that have the receiver in their ancestors.  [[Feature #9779]]
     * `Module#ruby2_keywords` and top-level `ruby2_keywords` are
-      deprecated and will be removed in Ruby 4.4. [[Feature #22205]]
+      deprecated and will be removed in Ruby 4.4.  [[Feature #22205]]
+    * `Module#method_defined?` now accepts a third optional argument to also
+      match private methods.  [[Feature #22297]]
 
 * ObjectSpace
 
@@ -98,6 +154,16 @@ Note: We're only listing outstanding class updates.
       [[Feature #22097]]
     * `Proc#ruby2_keywords` is deprecated and will be removed in Ruby 4.4.
       [[Feature #22205]]
+
+* Ractor
+
+    * `Ractor::Port#receive`, `Ractor.receive` and `Ractor.select` accept a
+      `timeout:` keyword argument (in seconds) and return `nil` once it passes.
+      `timeout: 0` never blocks: it takes a message if one is already queued
+      and returns `nil` otherwise.  [[Feature #22255]]
+
+    * `Ractor#alive?` is added. It returns `false` once the ractor has
+      terminated. [[Feature #22441]]
 
 * Range
 
@@ -130,10 +196,17 @@ Note: We're only listing outstanding class updates.
       `String#bit_count` handle individual bits, and `String#bitwise_not`,
       `String#bitwise_and`, `String#bitwise_or`, `String#bitwise_xor`
       (with their `!` variants) handle whole strings. [[Feature #22118]]
+    * `String#tr` now accept a Hash for multi-character replacement.
+      [[Feature #22238]]
 
 * Symbol
 
     * `Symbol#to_s` now returns a frozen string. [[Feature #22137]]
+
+* Thread
+
+    * Assigning `nil` with `Thread#thread_variable_set` now deletes the
+      thread-local variable. [[Feature #19333]]
 
 * Thread::Backtrace::Location
 
@@ -149,6 +222,15 @@ Note: We're only listing outstanding class updates.
       default libyaml backend remains unchanged otherwise.  It is not
       supported on Windows.  [[GH-psych #805]]
 
+* Ruby::Prism
+
+    * `Ruby::Prism` is added.  It is the prism parser built into the
+      interpreter, i.e., the very parser that parsed the running program,
+      independent of the prism gem.  It is autoloaded.
+      `Method#syntax_tree` and others return its nodes.  Its API may change
+      between Ruby minor versions; use the `prism` gem unless you need the
+      parser of the running interpreter.  [[Bug #22379]]
+
 ### The following bundled gems are added.
 
 
@@ -160,6 +242,8 @@ releases.
 
 ### The following bundled gems are promoted from default gems.
 
+* prism 1.9.0
+  * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
 * tsort 0.2.0
 * win32-registry 0.1.2
 
@@ -175,39 +259,62 @@ They are still available on rubygems.org and can be installed with
 
 ### The following default gems are updated.
 
-* RubyGems 4.1.0.dev
-  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18], [v4.0.19][RubyGems-v4.0.19]
-* bundler 4.1.0.dev
+* RubyGems 4.1.0.beta2
+  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18], [v4.0.19][RubyGems-v4.0.19], [v4.0.20][RubyGems-v4.0.20], [v4.0.21][RubyGems-v4.0.21], [v4.0.22][RubyGems-v4.0.22], [v4.0.23][RubyGems-v4.0.23], [v4.1.0.beta1][RubyGems-v4.1.0.beta1], [v4.1.0.beta2][RubyGems-v4.1.0.beta2]
+* bundler 4.1.0.beta2
   * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10], [v4.0.11][bundler-v4.0.11], [v4.0.12][bundler-v4.0.12], [v4.0.13][bundler-v4.0.13], [v4.0.14][bundler-v4.0.14], [v4.0.15][bundler-v4.0.15], [v4.0.16][bundler-v4.0.16], [v4.0.17][bundler-v4.0.17]
-* erb 6.0.7
+* date 3.6.0
+  * 3.5.1 to [v3.6.0][date-v3.6.0]
+* delegate 0.7.0
+  * 0.6.1 to [v0.7.0][delegate-v0.7.0]
+* digest 3.3.0
+  * 3.2.1 to [v3.3.0][digest-v3.3.0]
+* erb 6.1.0
   * 6.0.1 to [v6.0.1.1][erb-v6.0.1.1], [v6.0.2][erb-v6.0.2], [v6.0.3][erb-v6.0.3], [v6.0.4][erb-v6.0.4], [v6.0.5][erb-v6.0.5], [v6.0.6][erb-v6.0.6], [v6.0.7][erb-v6.0.7]
 * error_highlight 0.7.2
-* io-console 0.9.2
-  * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2]
-* ipaddr 1.2.9
-  * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
-* json 3.0.0.rc1
-  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0], [v2.21.0][json-v2.21.0], [v2.21.2][json-v2.21.2], [v3.0.0.rc1][json-v3.0.0.rc1]
-* net-protocol 0.3.0
-  * 0.2.2 to [v0.3.0][net-protocol-v0.3.0]
+* etc 1.5.0
+  * 1.4.6 to [v1.5.0][etc-v1.5.0]
+* fileutils 1.8.1
+  * 1.8.0 to [v1.8.1][fileutils-v1.8.1]
+* io-console 0.9.4
+  * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2], [v0.9.3][io-console-v0.9.3], [v0.9.4][io-console-v0.9.4]
+* io-wait 999.999.999
+* ipaddr 1.3.0
+  * 1.2.8 to [v1.2.9][ipaddr-v1.2.9], [v1.3.0][ipaddr-v1.3.0]
+* json 3.1.0
+  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0], [v2.21.0][json-v2.21.0], [v2.21.2][json-v2.21.2], [v3.0.0.rc1][json-v3.0.0.rc1], [v3.0.0][json-v3.0.0]
+* net-http 0.10.0
+  * 0.9.1 to [v0.10.0][net-http-v0.10.0]
+* net-protocol 0.4.0
+  * 0.2.2 to [v0.3.0][net-protocol-v0.3.0], [v0.4.0][net-protocol-v0.4.0]
+* open3 0.3.0
+  * 0.2.1 to [v0.3.0][open3-v0.3.0]
 * openssl 4.0.2
   * 4.0.0 to [v4.0.1][openssl-v4.0.1], [v4.0.2][openssl-v4.0.2]
 * pp 0.6.4
   * 0.6.3 to [v0.6.4][pp-v0.6.4]
-* prism 1.9.0
-  * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
+* prettyprint 0.2.1
+  * 0.2.0 to [v0.2.1][prettyprint-v0.2.1]
 * psych 5.5.0
   * 5.3.1 to [v5.4.0][psych-v5.4.0], [v5.5.0][psych-v5.5.0]
-* resolv 0.7.1
-  * 0.7.0 to [v0.7.1][resolv-v0.7.1]
+* resolv 0.8.1
+  * 0.7.0 to [v0.7.1][resolv-v0.7.1], [v0.7.2][resolv-v0.7.2], [v0.8.0][resolv-v0.8.0], [v0.8.1][resolv-v0.8.1]
 * stringio 3.2.1.dev
 * strscan 3.1.9.dev
   * 3.1.6 to [v3.1.7][strscan-v3.1.7], [v3.1.8][strscan-v3.1.8]
 * syntax_suggest 3.0.0
+* tempfile 0.3.2
+  * 0.3.1 to [v0.3.2][tempfile-v0.3.2]
+* time 0.5.0
+  * 0.4.2 to [v0.5.0][time-v0.5.0]
 * timeout 0.6.1
   * 0.6.0 to [v0.6.1][timeout-v0.6.1]
-* zlib 3.2.3
-  * 3.2.2 to [v3.2.3][zlib-v3.2.3]
+* tmpdir 0.3.2
+  * 0.3.1 to [v0.3.2][tmpdir-v0.3.2]
+* uri 1.1.2
+  * 1.1.1 to [v1.1.2][uri-v1.1.2]
+* zlib 3.2.4
+  * 3.2.2 to [v3.2.3][zlib-v3.2.3], [v3.2.4][zlib-v3.2.4]
 
 ### The following bundled gems are updated.
 
@@ -220,14 +327,16 @@ They are still available on rubygems.org and can be installed with
   * 3.7.5 to [3.7.6][test-unit-3.7.6], [3.7.7][test-unit-3.7.7], [3.7.8][test-unit-3.7.8]
 * rss 0.3.3
   * 0.3.2 to [0.3.3][rss-0.3.3]
-* net-imap 0.6.6
-  * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4], [v0.6.4.1][net-imap-v0.6.4.1], [v0.6.5][net-imap-v0.6.5], [v0.6.6][net-imap-v0.6.6]
+* net-imap 0.6.8
+  * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4], [v0.6.4.1][net-imap-v0.6.4.1], [v0.6.5][net-imap-v0.6.5], [v0.6.6][net-imap-v0.6.6], [v0.6.7][net-imap-v0.6.7], [v0.6.8][net-imap-v0.6.8]
+* net-smtp 0.5.2
+  * 0.5.1 to [v0.5.2][net-smtp-v0.5.2]
 * rbs 4.2.0
   * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3], [v3.10.4][rbs-v3.10.4], [v4.0.0.dev.1][rbs-v4.0.0.dev.1], [v4.0.0.dev.2][rbs-v4.0.0.dev.2], [v4.0.0.dev.3][rbs-v4.0.0.dev.3], [v4.0.0.dev.4][rbs-v4.0.0.dev.4], [v4.0.0.dev.5][rbs-v4.0.0.dev.5], [v4.0.0][rbs-v4.0.0], [v4.0.1.dev.1][rbs-v4.0.1.dev.1], [v4.0.1.dev.2][rbs-v4.0.1.dev.2], [v4.0.1][rbs-v4.0.1], [v4.0.2][rbs-v4.0.2], [v4.0.3][rbs-v4.0.3], [v4.1.0.pre.1][rbs-v4.1.0.pre.1], [v4.1.0.pre.2][rbs-v4.1.0.pre.2], [v4.1.0][rbs-v4.1.0], [v4.1.1.pre.1][rbs-v4.1.1.pre.1], [v4.1.1][rbs-v4.1.1], [v4.1.2][rbs-v4.1.2], [v4.1.3][rbs-v4.1.3], [v4.2.0.pre.1][rbs-v4.2.0.pre.1], [v4.2.0][rbs-v4.2.0]
-* typeprof 0.32.0
+* typeprof 0.33.2
 * mutex_m 0.3.0
-* bigdecimal 4.1.2
-  * 4.0.1 to [v4.1.0][bigdecimal-v4.1.0], [v4.1.1][bigdecimal-v4.1.1], [v4.1.2][bigdecimal-v4.1.2]
+* bigdecimal 4.1.3
+  * 4.0.1 to [v4.1.0][bigdecimal-v4.1.0], [v4.1.1][bigdecimal-v4.1.1], [v4.1.2][bigdecimal-v4.1.2], [v4.1.3][bigdecimal-v4.1.3]
 * resolv-replace 0.2.0
   * 0.1.1 to [v0.2.0][resolv-replace-v0.2.0]
 * nkf 0.3.0
@@ -240,8 +349,8 @@ They are still available on rubygems.org and can be installed with
   * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14], [v0.1.15][repl_type_completor-v0.1.15], [v0.1.16][repl_type_completor-v0.1.16]
 * pstore 0.2.1
   * 0.2.0 to [v0.2.1][pstore-v0.2.1]
-* rdoc 8.0.0
-  * 7.0.3 to [v7.0.4][rdoc-v7.0.4], [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0], [v8.0.0][rdoc-v8.0.0]
+* rdoc 8.1.0
+  * 7.0.3 to [v7.0.4][rdoc-v7.0.4], [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0], [v8.0.0][rdoc-v8.0.0], [v8.1.0][rdoc-v8.1.0]
 * win32ole 1.9.3
   * 1.9.2 to [v1.9.3][win32ole-v1.9.3]
 * irb 1.18.0
@@ -255,13 +364,36 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 ## Supported platforms
 
-* Support code for the following platforms has been removed.  Note
-  that all of them reached end of life many years ago and Ruby has
-  long been unbuildable on them.
+* Support code for the following platforms has been removed.  Their
+  vendors or distributors have ended support, there is no environment to
+  test Ruby on them, and none of them has a platform maintainer.
 
-    * Interix (Windows Services for UNIX)
-    * SunOS 4 (Solaris, i.e. SunOS 5, is unaffected)
+    * AmigaOS
+    * AtheOS
     * BSD/OS (BSDi)
+    * ESIX
+    * EWS-UX (NEC EWS4800)
+    * FreeBSD, NetBSD and OpenBSD with a.out binaries
+    * GNU/kFreeBSD
+    * GNU/kOpenSolaris
+    * HI-UX/MPP
+    * HP-UX on the HP 9000 Series 300
+    * Interix (Windows Services for UNIX)
+    * IRIX
+    * MirOS BSD
+    * NeXTSTEP, OpenStep and Rhapsody
+    * OSF/1 (Tru64 UNIX)
+    * QNX Neutrino
+    * SunOS 4 (Solaris, i.e. SunOS 5, is unaffected)
+    * System V Release 4
+    * UNICOS/mp (Cray X1)
+    * UX/PDS
+
+* Support code for the following old versions has been removed.
+
+    * Cygwin 1.3 and earlier
+    * Solaris 9 and earlier
+    * Linux 2.6.23 and earlier (RHEL 5)
 
 * Windows 10 1703 or later no longer needs the `LongPathsEnabled` registry
   value to use paths longer than 260 characters.  This applies to any process
@@ -269,7 +401,36 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   component is still limited to 255 characters, and a child process still
   starts with the `MAX_PATH` limited current directory. [[Bug #18947]]
 
+* On 64-bit Windows with MSVC (mswin), String, Array and MatchData can now be
+  2GiB or longer.  Their lengths used to be `long`, which is 32 bits there.
+  [[Feature #22400]]
+
+* Building Ruby with MSVC now requires Visual Studio 2017 version 15.8
+  (`_MSC_VER` 1915) or later.
+
+* Ruby built with MSVC now requires Windows 10 version 1809 (build 17763)
+  or Windows Server 2019 or later.  Earlier Windows 10 releases and Windows
+  Server 2016 are no longer supported.
+
+* Ruby on macOS now requires Mac OS X 10.6 or later.  Mac OS X 10.5 and
+  PowerPC Macs are no longer supported.
+
 ## Compatibility issues
+
+* A class or module can now be modified only by the Ractor which created it,
+  its *owner*.  Defining, removing or undefining methods, `alias`, changing
+  visibility, `include`/`prepend`, `Module#refine`, defining or removing
+  constants, registering an `autoload`, writing the class's own instance
+  variables and class variables, `Module#freeze` and
+  `Module#set_temporary_name` raise `Ractor::IsolationError` in any other
+  Ractor.  Reading is unchanged.  Everything defined at boot or by the main
+  Ractor, `require`d libraries included, is owned by the main Ractor, so a
+  non-main Ractor can no longer monkey-patch it; and since defining a constant
+  in a foreign class is prohibited, it can not define a top-level class or
+  module name either.  In exchange a Ractor has full use of the classes it
+  creates itself, including unshareable constant, instance variable and class
+  variable values, which not even the main Ractor could do before.  See
+  doc/language/ractor.md. [[Feature #22226]]
 
 * `Kernel#at_exit` and `END {}` now raise `Ractor::IsolationError` when called
   in a non-main Ractor.  Previously the registered handler ran in the main
@@ -280,7 +441,37 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   shareable, but almost all of its methods raise `FrozenError` and it can
   still refer to unshareable objects through the members of `rb_io_t`.
 
+* `Random.urandom` now raises `RangeError` for every size too large for a
+  String, as `Random#bytes` does.  A size that still fit in an `unsigned long`
+  used to raise `ArgumentError`. [[Feature #22400]]
+
+* `Struct#[]` and `Struct#[]=` now raise `IndexError` for every out-of-range
+  Integer index within the range of Array indices.  An index past the `int`
+  range used to raise `RangeError`. [[Feature #22400]]
+
 ## Stdlib compatibility issues
+
+* prism is now a bundled gem.  Under Bundler, `require "prism"` needs prism
+  in the Gemfile.  Use `Ruby::Prism` for the parser of the running
+  interpreter.  [[Bug #22379]]
+
+* `Etc.getlogin` on Windows now returns the login name determined when the
+  process starts, from the `USER` or `USERNAME` environment variable or
+  `GetUserName()`.  It used to follow later changes to `ENV['USER']`.
+
+* Socket
+
+    * On Windows, a connection that is refused or unreachable now raises the
+      matching `Errno` class as soon as Winsock reports it, instead of
+      `Errno::ETIMEDOUT` once the whole `connect_timeout` has passed. Code
+      rescuing `Errno::ETIMEDOUT` there has to rescue the real error instead.
+
+    * On Windows, `BasicSocket#getsockopt(:SOCKET, :ERROR)` now reports an
+      errno as it does on the other platforms, instead of the raw WinSock
+      error code. Code comparing it with a `WSAE*` value has to compare it
+      with the matching `Errno::*::Errno` instead.
+
+    [[Bug #18661]]
 
 ## C API updates
 
@@ -303,6 +494,61 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   - `ruby_xrealloc2_sized(void *ptr, size_t newelems, size_t newsiz, size_t oldelems)`
 
   [[Feature #21861]]
+
+### Ractor-scoped GC address registration
+
+* `rb_gc_register_address` and `rb_global_variable` now register the address
+  with the calling Ractor, and only that Ractor's GC marks the stored object.
+
+  Any Ractor may register an address, but the value stored through it must be a
+  special constant, a shareable object, or an unshareable object owned by the
+  registering Ractor. Storing another Ractor's unshareable object can result in
+  the object being freed while the address still refers to it (use-after-free).
+
+  If the address has process lifetime (a static VALUE), register it from the
+  main Ractor or keep the stored values shareable.
+
+  When the registering Ractor is joined with `Ractor#value`, remaining
+  registrations move to the joining Ractor; otherwise they move to the main
+  Ractor once the dead Ractor is collected.
+
+  [[Feature #22277]]
+
+### Type for lengths and indices
+
+* `rb_len_t` and `rb_ulen_t` are added as the types of the lengths and indices
+  of String, Array and MatchData, with `LEN2NUM`, `NUM2LEN`, `ULEN2NUM`,
+  `rb_len2int`, `PRIdLEN` and its siblings, `RB_LEN_MAX`, `RB_LEN_MIN`,
+  `RB_ULEN_MAX`, `SIZEOF_RB_LEN_T` and `HAVE_RB_LEN_T`.
+  `RbConfig::SIZEOF["rb_len_t"]` gives its size to an extconf.rb.  They are
+  `long`, except on 64-bit mswin, where they are 64 bits.  The C API that
+  carries such lengths, such as `RSTRING_LEN` and `rb_range_beg_len`, uses
+  them.
+  [[Feature #22400]]
+
+* On 64-bit mswin this changes the ABI, so extensions have to be rebuilt.  An
+  extension that passes a `long *` to an output parameter such as
+  `rb_range_beg_len` no longer compiles there, and one that keeps a length in
+  `long` truncates it at 2GiB.  Keep such lengths in `rb_len_t`, or convert
+  them with `rb_len2long`.  An extension that also supports older versions can
+  check `HAVE_RB_LEN_T` and fall back to `typedef long rb_len_t`.
+  [[Feature #22400]]
+
+* On mswin, extensions are now built with incompatible pointer types
+  (warning C4133) as errors.  Besides a `long *` passed where an
+  `rb_len_t *` is expected, this rejects any other mismatched pointer that
+  used to compile with a warning.
+  [[Feature #22400]]
+
+* `rb_len2long` is added to convert an `rb_len_t` to `long`, raising
+  `RangeError` via the new `rb_out_of_long` when it does not fit, for
+  extensions that keep a length in `long`. [[Feature #22400]]
+
+### Atomic operations
+
+* `RUBY_ATOMIC_SIZE_LOAD` is added as the `size_t` counterpart of
+  `RUBY_ATOMIC_LOAD`, alongside the existing `RUBY_ATOMIC_SIZE_ADD`,
+  `RUBY_ATOMIC_SIZE_SUB`, `RUBY_ATOMIC_SIZE_CAS` and `RUBY_ATOMIC_SIZE_EXCHANGE`.
 
 ### Removed APIs
 
@@ -337,6 +583,11 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
   shareable-object growth, reclaiming dead Ractors' heaps).  Allocation-heavy
   Ractor programs now scale like forked processes.
 
+* `GC.start(global: false)` can be used when multiple Ractors are running to force
+   a Ractor-local GC. By default, `GC.start` runs a global GC (all Ractors) like
+   before. This can also be triggered with `GC.start(global: true)`. The `global`
+   keyword argument has no effect when a single Ractor is running.
+
   Visible behavior changes:
 
   * `Ractor#value` returns the value only once; a second call raises
@@ -350,12 +601,129 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
   * `ObjectSpace.define_finalizer` on another Ractor's object raises
     `Ractor::IsolationError`.
 
+* `Ractor#monitor` now sends an Array naming the Ractor and what happened to
+  it, `[ractor, :exited]` or `[ractor, :aborted]`, where it used to send the
+  bare Symbol `:exited` or `:aborted`.  Several Ractors can then report to one
+  port and the receiver still knows which one finished.  The Array is built for
+  the receiving Ractor, so watching many Ractors leaves no shareable objects
+  behind.
+
+      r = Ractor.new { :ok }
+      r.monitor(port = Ractor::Port.new)
+      port.receive #=> [r, :exited]
+
+  One port can therefore watch a whole group, which is all a supervisor
+  needs:
+
+      workers.each { |r| r.monitor port }
+
+      until workers.empty?
+        r, status = port.receive
+        workers.delete(r)
+        workers << restart(r) if status == :aborted
+      end
+
+### M:N thread scheduler
+
+* The scheduler scales with the number of waiters and of Ractors, where it
+  used to walk a list or take one lock for all of them:
+
+  * A timed wait sits in a hierarchical timer wheel rather than on a list
+    sorted by deadline, which was inserted into by a linear scan.
+  * An fd stays armed in the backend between waits, instead of being added
+    before each wait and removed after each wake.
+  * The io-wait bookkeeping is sharded by fd, rather than serialized on one
+    lock across every fd.
+  * A timed wait on an fd rides the scheduler instead of going to a blocking
+    region, which cost a native thread handoff per wait.
+  * A context switch, and leaving or rejoining the shared pool, no longer take
+    the scheduler's global lock.
+
+* The `RUBY_MN_THREADS` environment variable now runs from no M:N scheduling
+  at all to all of it.  `-1` is new: a Ractor's threads have been M:N since
+  the scheduler was added, with no way to turn that off.  `0` and `1` are
+  unchanged.
+
+  | | main thread | the main Ractor's other threads | a Ractor's threads |
+  |---|---|---|---|
+  | `-1` | 1:1 | 1:1 | 1:1 |
+  | `0` or unset | 1:1 | 1:1 | M:N |
+  | `1` | 1:1 | M:N | M:N |
+  | `2` | M:N | M:N | M:N |
+
+* `RUBY_MN_THREADS=2` is new.  The main thread is resumed like any other M:N
+  thread rather than woken on a native thread of its own, which costs an order
+  of magnitude more.  It pays off when the main thread drives the work, and
+  does nothing for one that only starts other threads and waits.
+
+  The main thread is then no longer bound to one OS thread, which is what the
+  M:N scheduler already meant for every other thread:
+
+  * A C extension that keeps state per OS thread has to call
+    `rb_thread_lock_native_thread()`.
+  * What must run on the process's initial thread does not work at all,
+    pinning included: macOS AppKit and CFRunLoop, and hosts that embed Ruby
+    and return into their own main loop.
+
+* The OS thread name is no longer set from the Ruby thread for M:N threads:
+  one native thread runs many of them over its life.  `Thread#name=` was
+  already skipped for the same reason.
+
 ## JIT
 
+### ZJIT
+
+* Status
+    * ZJIT is now faster than YJIT on many benchmarks, but we expect that
+      ZJIT can be still slower than YJIT on larger benchmarks or applications
+      as of Ruby 4.1.0 preview releases. Stay tuned for the Ruby 4.1.0 release.
+* Major optimizations
+    * Method inlining: small Ruby methods, including methods that yield to
+      a block, are inlined into their callers, so that the optimizer can see
+      across method boundaries.
+    * Lightweight frames: method calls in JIT code no longer write a full
+      VM control frame. Frame metadata used by backtraces and GC is
+      materialized only when needed.
+    * Optimization pass: a new linear scan register allocator, load-store
+      optimization, more constant folding, and redundant guard elimination.
+    * GC fastpath: allocation of objects is inlined into JIT code, skipping
+      a call into the GC on the fast path.
+* More Ruby code is compiled
+    * Calls with blocks or `&block` arguments, `super`, splats, keyword
+      arguments, `...` forwarding, and post-required parameters.
+    * Specialized code for many core methods, e.g. `Float` arithmetic,
+      `Array#[]`, `Array#length`, `Array#empty?`, `Integer#[]`,
+      `String#byteslice`, `String#to_sym`, `Class#allocate`, and `new` on
+      `Struct` classes.
+    * Instance variable reads and shareable constants are now compiled
+      while multiple Ractors are running.
+* Command-line options
+    * `--zjit-stats=FILE` writes stats as JSON when `FILE` ends with `.json`.
+* Ruby API
+    * `RubyVM::ZJIT.exit_locations` and `RubyVM::ZJIT.dump_exit_locations`
+      are removed along with the Stackprof output of `--zjit-trace-exits`.
+
+### YJIT
+
+* YJIT now supports Windows (mswin) on x64 CPUs.  Configure with
+  `win32\configure.bat --enable-yjit`, which requires `rustc` with the
+  `x86_64-pc-windows-msvc` target.  Only the release build is supported,
+  and MinGW is not.  [[Feature #18439]]
+* Add `RubyVM::YJIT.max_compile_time_ns` and `RubyVM::YJIT.max_compile_time_ns=`
+  to give YJIT a compilation time budget. When `RubyVM::YJIT.total_compile_time_ns`
+  exceeds it, YJIT pauses compilation until the budget is raised, which
+  spreads the warmup overhead over a longer period. [[Feature #22236]]
+
+[Bug #18661]: https://bugs.ruby-lang.org/issues/18661
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
+[Bug #22273]: https://bugs.ruby-lang.org/issues/22273
+[Bug #22276]: https://bugs.ruby-lang.org/issues/22276
+[Bug #22379]: https://bugs.ruby-lang.org/issues/22379
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
+[Feature #17548]: https://bugs.ruby-lang.org/issues/17548
+[Feature #18439]: https://bugs.ruby-lang.org/issues/18439
 [Feature #20163]: https://bugs.ruby-lang.org/issues/20163
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21768]: https://bugs.ruby-lang.org/issues/21768
@@ -376,8 +744,20 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22175]: https://bugs.ruby-lang.org/issues/22175
 [Feature #22185]: https://bugs.ruby-lang.org/issues/22185
 [Feature #22205]: https://bugs.ruby-lang.org/issues/22205
+[Feature #22226]: https://bugs.ruby-lang.org/issues/22226
+[Feature #22232]: https://bugs.ruby-lang.org/issues/22232
+[Feature #22236]: https://bugs.ruby-lang.org/issues/22236
+[Feature #22238]: https://bugs.ruby-lang.org/issues/22238
+[Feature #22255]: https://bugs.ruby-lang.org/issues/22255
+[Feature #22297]: https://bugs.ruby-lang.org/issues/22297
+[Feature #22309]: https://bugs.ruby-lang.org/issues/22309
+[Feature #22400]: https://bugs.ruby-lang.org/issues/22400
+[Feature #22441]: https://bugs.ruby-lang.org/issues/22441
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
+[prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
+[prism-v1.8.1]: https://github.com/ruby/prism/releases/tag/v1.8.1
+[prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
 [RubyGems-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/v4.0.5
 [RubyGems-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/v4.0.6
@@ -394,6 +774,12 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [RubyGems-v4.0.17]: https://github.com/rubygems/rubygems/releases/tag/v4.0.17
 [RubyGems-v4.0.18]: https://github.com/rubygems/rubygems/releases/tag/v4.0.18
 [RubyGems-v4.0.19]: https://github.com/rubygems/rubygems/releases/tag/v4.0.19
+[RubyGems-v4.0.20]: https://github.com/rubygems/rubygems/releases/tag/v4.0.20
+[RubyGems-v4.0.21]: https://github.com/rubygems/rubygems/releases/tag/v4.0.21
+[RubyGems-v4.0.22]: https://github.com/rubygems/rubygems/releases/tag/v4.0.22
+[RubyGems-v4.0.23]: https://github.com/rubygems/rubygems/releases/tag/v4.0.23
+[RubyGems-v4.1.0.beta1]: https://github.com/rubygems/rubygems/releases/tag/v4.1.0.beta1
+[RubyGems-v4.1.0.beta2]: https://github.com/rubygems/rubygems/releases/tag/v4.1.0.beta2
 [bundler-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.4
 [bundler-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.5
 [bundler-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.6
@@ -408,6 +794,9 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [bundler-v4.0.15]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.15
 [bundler-v4.0.16]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.16
 [bundler-v4.0.17]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.17
+[date-v3.6.0]: https://github.com/ruby/date/releases/tag/v3.6.0
+[delegate-v0.7.0]: https://github.com/ruby/delegate/releases/tag/v0.7.0
+[digest-v3.3.0]: https://github.com/ruby/digest/releases/tag/v3.3.0
 [erb-v6.0.1.1]: https://github.com/ruby/erb/releases/tag/v6.0.1.1
 [erb-v6.0.2]: https://github.com/ruby/erb/releases/tag/v6.0.2
 [erb-v6.0.3]: https://github.com/ruby/erb/releases/tag/v6.0.3
@@ -415,10 +804,15 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [erb-v6.0.5]: https://github.com/ruby/erb/releases/tag/v6.0.5
 [erb-v6.0.6]: https://github.com/ruby/erb/releases/tag/v6.0.6
 [erb-v6.0.7]: https://github.com/ruby/erb/releases/tag/v6.0.7
+[etc-v1.5.0]: https://github.com/ruby/etc/releases/tag/v1.5.0
+[fileutils-v1.8.1]: https://github.com/ruby/fileutils/releases/tag/v1.8.1
 [io-console-v0.9.0]: https://github.com/ruby/io-console/releases/tag/v0.9.0
 [io-console-v0.9.1]: https://github.com/ruby/io-console/releases/tag/v0.9.1
 [io-console-v0.9.2]: https://github.com/ruby/io-console/releases/tag/v0.9.2
+[io-console-v0.9.3]: https://github.com/ruby/io-console/releases/tag/v0.9.3
+[io-console-v0.9.4]: https://github.com/ruby/io-console/releases/tag/v0.9.4
 [ipaddr-v1.2.9]: https://github.com/ruby/ipaddr/releases/tag/v1.2.9
+[ipaddr-v1.3.0]: https://github.com/ruby/ipaddr/releases/tag/v1.3.0
 [json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
 [json-v2.19.0]: https://github.com/ruby/json/releases/tag/v2.19.0
 [json-v2.19.1]: https://github.com/ruby/json/releases/tag/v2.19.1
@@ -434,20 +828,30 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [json-v2.21.0]: https://github.com/ruby/json/releases/tag/v2.21.0
 [json-v2.21.2]: https://github.com/ruby/json/releases/tag/v2.21.2
 [json-v3.0.0.rc1]: https://github.com/ruby/json/releases/tag/v3.0.0.rc1
+[json-v3.0.0]: https://github.com/ruby/json/releases/tag/v3.0.0
+[net-http-v0.10.0]: https://github.com/ruby/net-http/releases/tag/v0.10.0
 [net-protocol-v0.3.0]: https://github.com/ruby/net-protocol/releases/tag/v0.3.0
+[net-protocol-v0.4.0]: https://github.com/ruby/net-protocol/releases/tag/v0.4.0
+[open3-v0.3.0]: https://github.com/ruby/open3/releases/tag/v0.3.0
 [openssl-v4.0.1]: https://github.com/ruby/openssl/releases/tag/v4.0.1
 [openssl-v4.0.2]: https://github.com/ruby/openssl/releases/tag/v4.0.2
 [pp-v0.6.4]: https://github.com/ruby/pp/releases/tag/v0.6.4
-[prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
-[prism-v1.8.1]: https://github.com/ruby/prism/releases/tag/v1.8.1
-[prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
+[prettyprint-v0.2.1]: https://github.com/ruby/prettyprint/releases/tag/v0.2.1
 [psych-v5.4.0]: https://github.com/ruby/psych/releases/tag/v5.4.0
 [psych-v5.5.0]: https://github.com/ruby/psych/releases/tag/v5.5.0
 [resolv-v0.7.1]: https://github.com/ruby/resolv/releases/tag/v0.7.1
+[resolv-v0.7.2]: https://github.com/ruby/resolv/releases/tag/v0.7.2
+[resolv-v0.8.0]: https://github.com/ruby/resolv/releases/tag/v0.8.0
+[resolv-v0.8.1]: https://github.com/ruby/resolv/releases/tag/v0.8.1
 [strscan-v3.1.7]: https://github.com/ruby/strscan/releases/tag/v3.1.7
 [strscan-v3.1.8]: https://github.com/ruby/strscan/releases/tag/v3.1.8
+[tempfile-v0.3.2]: https://github.com/ruby/tempfile/releases/tag/v0.3.2
+[time-v0.5.0]: https://github.com/ruby/time/releases/tag/v0.5.0
 [timeout-v0.6.1]: https://github.com/ruby/timeout/releases/tag/v0.6.1
+[tmpdir-v0.3.2]: https://github.com/ruby/tmpdir/releases/tag/v0.3.2
+[uri-v1.1.2]: https://github.com/ruby/uri/releases/tag/v1.1.2
 [zlib-v3.2.3]: https://github.com/ruby/zlib/releases/tag/v3.2.3
+[zlib-v3.2.4]: https://github.com/ruby/zlib/releases/tag/v3.2.4
 [power_assert-v3.1.0]: https://github.com/ruby/power_assert/releases/tag/v3.1.0
 [rake-v13.4.0]: https://github.com/ruby/rake/releases/tag/v13.4.0
 [rake-v13.4.1]: https://github.com/ruby/rake/releases/tag/v13.4.1
@@ -461,6 +865,9 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [net-imap-v0.6.4.1]: https://github.com/ruby/net-imap/releases/tag/v0.6.4.1
 [net-imap-v0.6.5]: https://github.com/ruby/net-imap/releases/tag/v0.6.5
 [net-imap-v0.6.6]: https://github.com/ruby/net-imap/releases/tag/v0.6.6
+[net-imap-v0.6.7]: https://github.com/ruby/net-imap/releases/tag/v0.6.7
+[net-imap-v0.6.8]: https://github.com/ruby/net-imap/releases/tag/v0.6.8
+[net-smtp-v0.5.2]: https://github.com/ruby/net-smtp/releases/tag/v0.5.2
 [rbs-v3.10.1]: https://github.com/ruby/rbs/releases/tag/v3.10.1
 [rbs-v3.10.2]: https://github.com/ruby/rbs/releases/tag/v3.10.2
 [rbs-v3.10.3]: https://github.com/ruby/rbs/releases/tag/v3.10.3
@@ -488,6 +895,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [bigdecimal-v4.1.0]: https://github.com/ruby/bigdecimal/releases/tag/v4.1.0
 [bigdecimal-v4.1.1]: https://github.com/ruby/bigdecimal/releases/tag/v4.1.1
 [bigdecimal-v4.1.2]: https://github.com/ruby/bigdecimal/releases/tag/v4.1.2
+[bigdecimal-v4.1.3]: https://github.com/ruby/bigdecimal/releases/tag/v4.1.3
 [resolv-replace-v0.2.0]: https://github.com/ruby/resolv-replace/releases/tag/v0.2.0
 [nkf-v0.3.0]: https://github.com/ruby/nkf/releases/tag/v0.3.0
 [syslog-v0.4.0]: https://github.com/ruby/syslog/releases/tag/v0.4.0
@@ -501,6 +909,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [rdoc-v7.1.0]: https://github.com/ruby/rdoc/releases/tag/v7.1.0
 [rdoc-v7.2.0]: https://github.com/ruby/rdoc/releases/tag/v7.2.0
 [rdoc-v8.0.0]: https://github.com/ruby/rdoc/releases/tag/v8.0.0
+[rdoc-v8.1.0]: https://github.com/ruby/rdoc/releases/tag/v8.1.0
 [win32ole-v1.9.3]: https://github.com/ruby/win32ole/releases/tag/v1.9.3
 [irb-v1.17.0]: https://github.com/ruby/irb/releases/tag/v1.17.0
 [irb-v1.18.0]: https://github.com/ruby/irb/releases/tag/v1.18.0

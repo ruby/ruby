@@ -7,11 +7,8 @@ module Gem
   # An Array of Regexps that match windows Ruby platforms.
 
   WIN_PATTERNS = [
-    /bccwin/i,
-    /djgpp/i,
     /mingw/i,
     /mswin/i,
-    /wince/i,
   ].freeze
 
   @@win_platform = nil

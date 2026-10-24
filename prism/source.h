@@ -15,6 +15,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * An opaque type representing source code being parsed.
  */
@@ -73,7 +77,7 @@ typedef enum {
  * @param length The length of the source data in bytes.
  * @returns A new source. Aborts on allocation failure.
  */
-PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_source_t * pm_source_constant_new(const uint8_t *data, size_t length);
+PRISM_NODISCARD PRISM_EXPORTED_FUNCTION pm_source_t * pm_source_constant_new(const uint8_t *data, size_t length);
 
 /**
  * Create a new source that wraps existing shared memory. The memory is not
@@ -83,7 +87,7 @@ PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_source_t * pm_source_constant_new(con
  * @param length The length of the source data in bytes.
  * @returns A new source. Aborts on allocation failure.
  */
-PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_source_t * pm_source_shared_new(const uint8_t *data, size_t length);
+PRISM_NODISCARD PRISM_EXPORTED_FUNCTION pm_source_t * pm_source_shared_new(const uint8_t *data, size_t length);
 
 /**
  * Create a new source that owns its memory. The memory will be freed with
@@ -93,7 +97,7 @@ PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_source_t * pm_source_shared_new(const
  * @param length The length of the source data in bytes.
  * @returns A new source. Aborts on allocation failure.
  */
-PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_source_t * pm_source_owned_new(uint8_t *data, size_t length);
+PRISM_NODISCARD PRISM_EXPORTED_FUNCTION pm_source_t * pm_source_owned_new(uint8_t *data, size_t length);
 
 /**
  * Create a new source by reading a file into a heap-allocated buffer.
@@ -102,7 +106,7 @@ PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_source_t * pm_source_owned_new(uint8_
  * @param result Out parameter for the result of the initialization.
  * @returns A new source, or NULL on error (with result written to out param).
  */
-PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_source_t * pm_source_file_new(const char *filepath, pm_source_init_result_t *result) PRISM_NONNULL(1, 2);
+PRISM_NODISCARD PRISM_EXPORTED_FUNCTION pm_source_t * pm_source_file_new(const char *filepath, pm_source_init_result_t *result) PRISM_NONNULL(1, 2);
 
 /**
  * Create a new source by memory-mapping a file. Falls back to file reading on
@@ -117,7 +121,7 @@ PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_source_t * pm_source_file_new(const c
  * @param result Out parameter for the result of the initialization.
  * @returns A new source, or NULL on error (with result written to out param).
  */
-PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_source_t * pm_source_mapped_new(const char *filepath, int open_flags, pm_source_init_result_t *result) PRISM_NONNULL(1, 3);
+PRISM_NODISCARD PRISM_EXPORTED_FUNCTION pm_source_t * pm_source_mapped_new(const char *filepath, int open_flags, pm_source_init_result_t *result) PRISM_NONNULL(1, 3);
 
 /**
  * Create a new source by reading from a stream using the provided callbacks.
@@ -127,7 +131,7 @@ PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_source_t * pm_source_mapped_new(const
  * @param feof The function to use to check if the stream is at EOF.
  * @returns A new source. Aborts on allocation failure.
  */
-PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_source_t * pm_source_stream_new(void *stream, pm_source_stream_fgets_t *fgets, pm_source_stream_feof_t *feof);
+PRISM_NODISCARD PRISM_EXPORTED_FUNCTION pm_source_t * pm_source_stream_new(void *stream, pm_source_stream_fgets_t *fgets, pm_source_stream_feof_t *feof);
 
 /**
  * Free the given source and any memory it owns.
@@ -151,5 +155,9 @@ PRISM_EXPORTED_FUNCTION size_t pm_source_length(const pm_source_t *source) PRISM
  * @returns A pointer to the source data.
  */
 PRISM_EXPORTED_FUNCTION const uint8_t * pm_source_source(const pm_source_t *source) PRISM_NONNULL(1);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

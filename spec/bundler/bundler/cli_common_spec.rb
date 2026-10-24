@@ -22,7 +22,7 @@ RSpec.describe Bundler::CLI::Common do
 
   describe "validate_cooldown!" do
     def warning(inspected)
-      "Invalid cooldown value #{inspected}, so the cooldown is disabled for all sources. " \
+      "Invalid cooldown value #{inspected} in Bundler's configuration, so it is ignored. " \
         "Expected a non-negative integer number of days."
     end
 
@@ -64,6 +64,11 @@ RSpec.describe Bundler::CLI::Common do
         expect(Bundler.ui).not_to receive(:warn)
         Bundler.settings.temporary(cooldown: "7") { subject.validate_cooldown!(nil) }
         Bundler.settings.temporary(cooldown: "0") { subject.validate_cooldown!(nil) }
+        subject.validate_cooldown!(nil)
+      end
+
+      it "leaves the RubyGems setting to Bundler::Settings#rubygems_cooldown" do
+        expect(Bundler.settings).not_to receive(:rubygems_cooldown)
         subject.validate_cooldown!(nil)
       end
     end

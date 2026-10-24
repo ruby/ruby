@@ -53,6 +53,9 @@ class Gem::Request::ConnectionPools # :nodoc:
     # A lone "*" entry bypasses the proxy for every host
     return true if env_no_proxy.include?("*")
 
+    # A URI such as the typo "https:/host" has no host to match
+    return false if host.nil?
+
     host = host.downcase
 
     env_no_proxy.any? do |pattern|
@@ -83,9 +86,8 @@ class Gem::Request::ConnectionPools # :nodoc:
     no_proxy = get_no_proxy_from_env
 
     if proxy_uri && !no_proxy?(hostname, no_proxy)
-      proxy_hostname = proxy_uri.respond_to?(:hostname) ? proxy_uri.hostname : proxy_uri.host
       net_http_args + [
-        proxy_hostname,
+        proxy_uri.hostname,
         proxy_uri.port,
         Gem::UriFormatter.new(proxy_uri.user).unescape,
         Gem::UriFormatter.new(proxy_uri.password).unescape,

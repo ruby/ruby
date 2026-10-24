@@ -41,7 +41,7 @@ require 'socket'
 
 class IPAddr
   # The version string
-  VERSION = "1.2.9"
+  VERSION = "1.3.0"
 
   # 32 bit mask for IPv4
   IN4MASK = 0xffffffff
@@ -205,9 +205,51 @@ class IPAddr
     return @addr
   end
 
+  # Returns a string containing the binary representation of the
+  # IP address value, right adjusted to the address size (32 bits
+  # for IPv4, 128 bits for IPv6), regardless of the prefix length.
+  #
+  # e.g.:
+  #   require 'ipaddr'
+  #   p IPAddr.new("192.168.1.1").to_bits
+  #   #=> "11000000101010000000000100000001"
+  #   p IPAddr.new("3ffe:505:2::1").to_bits
+  #   #=> "00111111111111100000010100000101" \
+  #   #   "00000000000000100000000000000000" \
+  #   #   "00000000000000000000000000000000" \
+  #   #   "00000000000000000000000000000001"
+  def to_bits
+    case @family
+    when Socket::AF_INET
+      @addr.to_s(2).rjust(32, '0')
+    when Socket::AF_INET6
+      @addr.to_s(2).rjust(128, '0')
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
+  # Returns a string containing the hexadecimal representation of the
+  # IP address value, right adjusted to the address size.
+  #
+  # e.g.:
+  #   require 'ipaddr'
+  #   p IPAddr.new("192.168.1.1").to_hex   #=> "c0a80101"
+  #   p IPAddr.new("3ffe:505:2::1").to_hex #=> "3ffe0505000200000000000000000001"
+  def to_hex
+    case @family
+    when Socket::AF_INET
+      @addr.to_s(16).rjust(8, '0')
+    when Socket::AF_INET6
+      @addr.to_s(16).rjust(32, '0')
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
   # Returns a string containing the IP address representation.
   def to_s
-    str = to_string
+    str = _to_string(@addr)
     return str if ipv4?
 
     str.gsub!(/\b0{1,3}([\da-f]+)\b/i, '\1')
@@ -227,6 +269,7 @@ class IPAddr
       str = sprintf('::%s%d.%d.%d.%d', $1, $2.hex / 256, $2.hex % 256, $3.hex / 256, $3.hex % 256)
     end
 
+    str << @zone_id if @zone_id
     str
   end
 
@@ -267,12 +310,9 @@ class IPAddr
   # Returns a network byte ordered string form of the IP address.
   def hton
     case @family
-    when Socket::AF_INET
-      return [@addr].pack('N')
-    when Socket::AF_INET6
-      return (0..7).map { |i|
-        (@addr >> (112 - 16 * i)) & 0xffff
-      }.pack('n8')
+    when Socket::AF_INET, Socket::AF_INET6
+      value = to_hex
+      return [value].pack("H#{value.length}")
     else
       raise AddressFamilyError, "unsupported address family"
     end
@@ -294,11 +334,11 @@ class IPAddr
   def loopback?
     case @family
     when Socket::AF_INET
-      @addr & 0xff000000 == 0x7f000000 # 127.0.0.1/8
+      (@addr & 0xff000000 == 0x7f000000) && prefix >= 8 # 127.0.0.1/8
     when Socket::AF_INET6
       @addr == 1 || # ::1
         (@addr >> 32 == 0xffff && (
-          @addr & 0xff000000 == 0x7f000000 # ::ffff:127.0.0.1/8
+          (@addr & 0xff000000 == 0x7f000000) && prefix >= 104 # ::ffff:127.0.0.0/104 (127.0.0.1/8)
         ))
     else
       raise AddressFamilyError, "unsupported address family"
@@ -313,15 +353,15 @@ class IPAddr
   def private?
     case @family
     when Socket::AF_INET
-      @addr & 0xff000000 == 0x0a000000 ||    # 10.0.0.0/8
-        @addr & 0xfff00000 == 0xac100000 ||  # 172.16.0.0/12
-        @addr & 0xffff0000 == 0xc0a80000     # 192.168.0.0/16
+      (@addr & 0xff000000 == 0x0a000000) && prefix >= 8 ||    # 10.0.0.0/8
+        (@addr & 0xfff00000 == 0xac100000) && prefix >= 12 || # 172.16.0.0/12
+        (@addr & 0xffff0000 == 0xc0a80000) && prefix >= 16    # 192.168.0.0/16
     when Socket::AF_INET6
-      @addr & 0xfe00_0000_0000_0000_0000_0000_0000_0000 == 0xfc00_0000_0000_0000_0000_0000_0000_0000 ||
+      (@addr & 0xfe00_0000_0000_0000_0000_0000_0000_0000 == 0xfc00_0000_0000_0000_0000_0000_0000_0000) && prefix >= 7 || # fc00::/7
         (@addr >> 32 == 0xffff && (
-          @addr & 0xff000000 == 0x0a000000 ||  # ::ffff:10.0.0.0/8
-          @addr & 0xfff00000 == 0xac100000 ||  # ::ffff:172.16.0.0/12
-          @addr & 0xffff0000 == 0xc0a80000     # ::ffff:192.168.0.0/16
+          (@addr & 0xff000000 == 0x0a000000) && prefix >= 104 || # ::ffff:10.0.0.0/104 (10.0.0.0/8)
+          (@addr & 0xfff00000 == 0xac100000) && prefix >= 108 || # ::ffff:172.16.0.0/108 (172.16.0.0/12)
+          (@addr & 0xffff0000 == 0xc0a80000) && prefix >= 112    # ::ffff:192.168.0.0/112 (192.168.0.0/16)
         ))
     else
       raise AddressFamilyError, "unsupported address family"
@@ -336,11 +376,11 @@ class IPAddr
   def link_local?
     case @family
     when Socket::AF_INET
-      @addr & 0xffff0000 == 0xa9fe0000 # 169.254.0.0/16
+      (@addr & 0xffff0000 == 0xa9fe0000) && prefix >= 16 # 169.254.0.0/16
     when Socket::AF_INET6
-      @addr & 0xffc0_0000_0000_0000_0000_0000_0000_0000 == 0xfe80_0000_0000_0000_0000_0000_0000_0000 || # fe80::/10
+      (@addr & 0xffc0_0000_0000_0000_0000_0000_0000_0000 == 0xfe80_0000_0000_0000_0000_0000_0000_0000) && prefix >= 10 || # fe80::/10
         (@addr >> 32 == 0xffff && (
-          @addr & 0xffff0000 == 0xa9fe0000 # ::ffff:169.254.0.0/16
+          (@addr & 0xffff0000 == 0xa9fe0000) && prefix >= 112 # ::ffff:169.254.0.0/112 (169.254.0.0/16)
         ))
     else
       raise AddressFamilyError, "unsupported address family"
@@ -356,11 +396,11 @@ class IPAddr
   def multicast?
     case @family
     when Socket::AF_INET
-      @addr & 0xf0000000 == 0xe0000000 # 224.0.0.0/4
+      (@addr & 0xf0000000 == 0xe0000000) && prefix >= 4 # 224.0.0.0/4
     when Socket::AF_INET6
-      @addr & 0xff00_0000_0000_0000_0000_0000_0000_0000 == 0xff00_0000_0000_0000_0000_0000_0000_0000 || # ff00::/8
+      (@addr & 0xff00_0000_0000_0000_0000_0000_0000_0000 == 0xff00_0000_0000_0000_0000_0000_0000_0000) && prefix >= 8 || # ff00::/8
         (@addr >> 32 == 0xffff &&
-          @addr & 0xf0000000 == 0xe0000000 # ::ffff:224.0.0.0/4
+          (@addr & 0xf0000000 == 0xe0000000) && prefix >= 100 # ::ffff:224.0.0.0/100 (224.0.0.0/4)
         )
     else
       raise AddressFamilyError, "unsupported address family"
@@ -374,11 +414,11 @@ class IPAddr
   def link_local_multicast?
     case @family
     when Socket::AF_INET
-      @addr & 0xffffff00 == 0xe0000000 # 224.0.0.0/24 Local Network Control Block
+      (@addr & 0xffffff00 == 0xe0000000) && prefix >= 24 # 224.0.0.0/24 Local Network Control Block
     when Socket::AF_INET6
-      @addr & 0xffff_0000_0000_0000_0000_0000_0000_0000 == 0xff02_0000_0000_0000_0000_0000_0000_0000 || # ff02::/16
+      (@addr & 0xffff_0000_0000_0000_0000_0000_0000_0000 == 0xff02_0000_0000_0000_0000_0000_0000_0000) && prefix >= 16 || # ff02::/16
         (@addr >> 32 == 0xffff && (
-          @addr & 0xffff0000 == 0xe0000000 # ::ffff:224.0.0.0/24
+          (@addr & 0xffffff00 == 0xe0000000) && prefix >= 120 # ::ffff:224.0.0.0/120 (224.0.0.0/24)
         ))
     else
       raise AddressFamilyError, "unsupported address family"
@@ -711,10 +751,12 @@ class IPAddr
         raise AddressFamilyError, "unsupported address family: #{family}"
       end
     end
+    requested_family = family
     prefix, prefixlen = addr.split('/', 2)
     if prefix =~ /\A\[(.*)\]\z/i
       prefix = $1
       family = Socket::AF_INET6
+      bracketed = true
     end
     if prefix =~ /\A(.*)(%\w+)\z/
       prefix = $1
@@ -736,11 +778,17 @@ class IPAddr
       @family = Socket::AF_INET6
     end
     @zone_id = zone_id
-    if family != Socket::AF_UNSPEC && @family != family
+    if requested_family != Socket::AF_UNSPEC && @family != requested_family
       raise AddressFamilyError, "address family mismatch"
     end
     if prefixlen
       mask!(prefixlen)
+
+      if bracketed
+        warn "bracketed IPv6 address with a prefix length is an invalid address " \
+             "and will raise IPAddr::InvalidAddressError in a future version: #{addr}",
+             uplevel: 1
+      end
     else
       @mask_addr = (@family == Socket::AF_INET) ? IN4MASK : IN6MASK
     end
@@ -828,7 +876,7 @@ class IPAddr
         (@addr >> (8 * i)) & 0xff
       }.join('.')
     when Socket::AF_INET6
-      return ("%.32x" % @addr).reverse!.gsub!(/.(?!$)/, '\&.')
+      return to_hex.reverse.chars.join('.')
     else
       raise AddressFamilyError, "unsupported address family"
     end

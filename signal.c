@@ -212,7 +212,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
     const struct signals *sigs;
     VALUE vsig = *sig_ptr;
     const char *nm;
-    long len, nmlen;
+    rb_len_t len, nmlen;
     int prefix = 0;
 
     if (RB_SYMBOL_P(vsig)) {
@@ -245,7 +245,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
         if (memcmp(nm + prefix, signame_prefix, signame_prefix_len) == 0)
             prefix += signame_prefix_len;
     }
-    if (len <= (long)prefix) {
+    if (len <= (rb_len_t)prefix) {
         goto unsupported;
     }
 
@@ -770,9 +770,9 @@ static const char *received_signal;
 #endif
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
-# if defined __HAIKU__
+# if !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
+# elif defined __HAIKU__
 #   define USE_UCONTEXT_REG 1
-# elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
 # elif defined __linux__
 #   define USE_UCONTEXT_REG 1
 # elif defined __APPLE__
@@ -815,12 +815,7 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     const greg_t bp = mctx->gregs[REG_EBP];
 #   endif
 # elif defined __APPLE__
-#   include <AvailabilityMacros.h>
-#   if defined(MAC_OS_X_VERSION_10_5) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5
-#     define MCTX_SS_REG(reg) __ss.__##reg
-#   else
-#     define MCTX_SS_REG(reg) ss.reg
-#   endif
+#   define MCTX_SS_REG(reg) __ss.__##reg
 #   if defined(__LP64__)
     const uintptr_t sp = mctx->MCTX_SS_REG(rsp);
     const uintptr_t bp = mctx->MCTX_SS_REG(rbp);
@@ -896,7 +891,41 @@ check_stack_overflow(int sig, const void *addr)
 #   else
 #     define CHECK_STACK_OVERFLOW_() check_stack_overflow(sig, FAULT_ADDRESS)
 #   endif
-#   define MESSAGE_FAULT_ADDRESS " at %p", FAULT_ADDRESS
+
+/* Only the si_code values whose siginfo_t carries a sender pid; SI_TIMER and
+ * SI_SIGIO overlay si_tid/si_band at si_pid's offset. */
+static bool
+is_user_generated(const siginfo_t *info)
+{
+    int code = info->si_code;
+    if (code == SI_USER) return true;
+#   ifdef SI_QUEUE
+    if (code == SI_QUEUE) return true;
+#   endif
+#   ifdef SI_TKILL
+    if (code == SI_TKILL) return true;
+#   endif
+    return code == 0;
+}
+
+static const char *
+signal_sender_message(const siginfo_t *info)
+{
+    /* check_reserved_signal_ lets only the first fatal signal get this far. */
+    static char buf[64];
+
+    if (info && is_user_generated(info)) {
+        rb_pid_t pid = info->si_pid;
+        if (pid == getpid()) return "";
+        /* si_pid is 0 when the sender is not visible in our PID namespace. */
+        if (pid == 0) return " (sent by another process)";
+        snprintf(buf, sizeof(buf), " (sent by pid %"PRI_PIDT_PREFIX"d)", pid);
+        return buf;
+    }
+    return "";
+}
+
+#   define MESSAGE_FAULT_ADDRESS " at %p%s", FAULT_ADDRESS, signal_sender_message(info)
 #   define SIGNAL_FROM_USER_P() ((info)->si_code == SI_USER)
 #   define CHECK_STACK_OVERFLOW() (SIGNAL_FROM_USER_P() ? (void)0 : CHECK_STACK_OVERFLOW_())
 # endif
@@ -1219,7 +1248,7 @@ trap_handler(VALUE *cmd, int sig)
         }
         if (!NIL_P(command)) {
             const char *cptr;
-            long len;
+            rb_len_t len;
             StringValue(command);
             *cmd = command;
             RSTRING_GETMEM(command, cptr, len);

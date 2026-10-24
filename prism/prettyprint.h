@@ -17,6 +17,10 @@
 #include "prism/buffer.h"
 #include "prism/parser.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Pretty-prints the AST represented by the given node to the given buffer.
  *
@@ -25,6 +29,10 @@
  * @param node The root node of the AST to pretty-print.
  */
 PRISM_EXPORTED_FUNCTION void pm_prettyprint(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_node_t *node) PRISM_NONNULL(1, 2, 3);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

@@ -187,7 +187,8 @@ void rb_gc_mark(VALUE obj);
  * your struct  in the  first place.   But if  that is  not possible,  use this
  * function  from your  ::rb_data_type_struct::dmark  then.   This way  objects
  * marked using it are  considered movable.  If you chose this  way you have to
- * manually fix up locations of such moved pointers using rb_gc_location().
+ * manually fix up locations of such  moved pointers using rb_gc_update_moved()
+ * or rb_gc_location().
  *
  * @see  Bartlett,  Joel  F.,  "Compacting Garbage  Collection  with  Ambiguous
  *       Roots",  ACM  SIGPLAN  Lisp  Pointers  Volume  1  Issue  6  pp.  3-12,
@@ -208,6 +209,18 @@ void rb_gc_mark_movable(VALUE obj);
  * @return     An object, which holds the current contents of former `obj`.
  */
 VALUE rb_gc_location(VALUE obj);
+
+/**
+ * Updates  a reference  to a possibly moved object.  This is the same as doing
+ * `struct->field = rb_gc_location(struct->field)`, except it does not write to
+ * `struct->field`   when the   object did   not move.    Prefer this  over the
+ * assignment,  which dirties the page it writes to, and so un-shares it from a
+ * forked parent process.
+ *
+ * @param[in,out]  ptr  A place holding an object, possibly already moved.
+ * @post           `*ptr` holds the current location of the object.
+ */
+void rb_gc_update_moved(VALUE *ptr);
 
 /**
  * Triggers a GC process.  This was the only  GC entry point that we had at the
@@ -393,17 +406,40 @@ void rb_gc_adjust_memory_usage(ssize_t diff);
  * Because this  registration itself has  a possibility  to trigger a  GC, this
  * function  must be  called  before any  GC-able objects  is  assigned to  the
  * address pointed by `valptr`.
+ *
+ * Registration is scoped to the calling Ractor. The calling Ractor owns the
+ * registered address, and only that Ractor's GC marks the object stored in it.
+ * Any Ractor may call this function to register an address but the value at
+ * that address must be a special constant, a shareable object, or an
+ * unshareable object owned by the registering Ractor.
+ *
+ * The owning Ractor's GC cannot see the registration, so if the object at the
+ * registered address is unshareable, and owned by another ractor, the owning
+ * Ractor could free it while the address still refers to it, which results in a
+ * use-after-free crash, when the address is next accessed. If the address has
+ * process lifetime (a static VALUE), register it from the main Ractor or keep
+ * the stored values shareable.
+ *
+ * Calling `Ractor#value` on the registering Ractor moves its remaining
+ * registrations to the calling Ractor; otherwise they move to the main
+ * Ractor once the dead Ractor is collected.
  */
 void rb_gc_register_address(VALUE *valptr);
 
 /**
- * An alias for `rb_gc_register_address()`.
+ * An alias for `rb_gc_register_address()`.  The same Ractor-ownership
+ * rule applies to the value stored in the variable:  a special constant,
+ * a shareable object, or an unshareable object owned by the registering
+ * Ractor.
  */
 void rb_global_variable(VALUE *);
 
 /**
  * Inform the garbage collector that a pointer previously passed to
  * `rb_gc_register_address()` no longer points to a live Ruby object.
+ *
+ * Any Ractor may call this function; the address is removed from the
+ * registering Ractor's list, which need not be the calling Ractor.
  */
 void rb_gc_unregister_address(VALUE *valptr);
 

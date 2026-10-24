@@ -4,6 +4,7 @@
 #include "prism/compiler/accel.h"
 
 #include "prism/internal/arena.h"
+#include "prism/internal/comments.h"
 #include "prism/internal/constant_pool.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/list.h"
@@ -155,6 +156,22 @@ typedef struct pm_lex_mode {
 
             /* Whether or not interpolation is allowed in this list. */
             bool interpolation;
+
+            /*
+             * Whether any token has been emitted from this list. A word
+             * separator delimits the opener from the first word, so one
+             * without source characters is emitted when the list does not
+             * start with whitespace.
+             */
+            bool started;
+
+            /*
+             * Whether the previously emitted token was a word separator. A
+             * word separator delimits the last word from the terminator, so
+             * one without source characters is emitted when the list does
+             * not end with whitespace.
+             */
+            bool separated;
 
             /*
              * When lexing a list, it takes into account balancing the
@@ -432,6 +449,9 @@ typedef enum {
 
     /* a while statement */
     PM_CONTEXT_WHILE,
+
+    /* the number of contexts, which is not itself a context */
+    PM_CONTEXT_MAXIMUM,
 } pm_context_t;
 
 /* This is a node in a linked list of contexts. */
@@ -441,6 +461,9 @@ typedef struct pm_context_node {
 
     /* A pointer to the previous context in the linked list. */
     struct pm_context_node *prev;
+
+    /* One bit set per context in this list, including one for this node. */
+    uint64_t mask;
 } pm_context_node_t;
 
 /* The type of shareable constant value that can be set. */
@@ -667,6 +690,12 @@ struct pm_parser_t {
     /* The list of comments that have been found while parsing. */
     pm_list_t comment_list;
 
+    /*
+     * The attachments of comments to the nodes that own them, populated after
+     * parsing when the attach_comments option is set.
+     */
+    pm_comment_attachments_t comment_attachments;
+
     /* The list of magic comments that have been found while parsing. */
     pm_list_t magic_comment_list;
 
@@ -686,8 +715,22 @@ struct pm_parser_t {
     /* The current local scope. */
     pm_scope_t *current_scope;
 
+    /*
+     * Scopes that have been popped, kept for reuse by the next push. Scopes
+     * are allocated from the metadata arena, so they are never freed
+     * individually.
+     */
+    pm_scope_t *free_scopes;
+
     /* The current parsing context. */
     pm_context_node_t *current_context;
+
+    /*
+     * Context nodes that have been popped, kept for reuse by the next push.
+     * Context nodes are allocated from the metadata arena, so they are never
+     * freed individually.
+     */
+    pm_context_node_t *free_contexts;
 
     /*
      * The encoding functions for the current file is attached to the parser as
@@ -854,6 +897,12 @@ struct pm_parser_t {
      */
     bool partial_script;
 
+    /*
+     * Whether or not comments should be attached to their owning nodes once
+     * parsing has finished.
+     */
+    bool attach_comments;
+
     /* Whether or not we're at the beginning of a command. */
     bool command_start;
 
@@ -911,7 +960,7 @@ struct pm_parser_t {
      */
     bool warn_mismatched_indentation;
 
-#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSSE3) || defined(PRISM_HAS_SWAR)
+#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSE2) || defined(PRISM_HAS_SWAR)
     /*
      * Cached lookup tables for pm_strpbrk's SIMD fast path. Avoids rebuilding
      * the nibble-based tables on every call when the charset hasn't changed
@@ -945,5 +994,11 @@ void pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *sourc
  * parser.
  */
 void pm_parser_cleanup(pm_parser_t *parser);
+
+/*
+ * Returns true if the bytes between start and end spell a keyword, using the
+ * same lookup that the lexer does.
+ */
+bool pm_keyword_p(const uint8_t *start, const uint8_t *end);
 
 #endif

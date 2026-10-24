@@ -739,8 +739,9 @@ static struct {
 } w32_tz;
 
 static char *
-get_tzname(int dst)
+get_tzname(int dst, rb_encoding **enc)
 {
+    *enc = NULL;
     if (w32_tz.use_tzkey) {
         if (w32_tz.name[0]) {
             return w32_tz.name;
@@ -765,6 +766,11 @@ get_tzname(int dst)
             }
         }
     }
+    /* CRT timezone names are encoded in the active code page, which
+     * may differ from the locale (console) code page */
+    char cp[(sizeof(UINT) * 8 / 3) + 4];
+    snprintf(cp, sizeof(cp), "CP%u", GetACP());
+    *enc = rb_enc_find(cp);
     return _tzname[_daylight && dst];
 }
 #endif
@@ -1002,7 +1008,7 @@ timegmw_noleapsecond(struct vtm *vtm)
 }
 
 static VALUE
-zone_str(const char *zone)
+zone_str_enc(const char *zone, rb_encoding *enc)
 {
     const char *p;
     int ascii_only = 1;
@@ -1023,6 +1029,9 @@ zone_str(const char *zone)
     if (ascii_only) {
         return rb_enc_interned_str(zone, len, rb_usascii_encoding());
     }
+    else if (enc) {
+        return rb_enc_interned_str(zone, len, enc);
+    }
     else {
 #ifdef _WIN32
         VALUE str = rb_utf8_str_new(zone, len);
@@ -1034,6 +1043,8 @@ zone_str(const char *zone)
 #endif
     }
 }
+
+#define zone_str(zone) zone_str_enc(zone, NULL)
 
 static void
 gmtimew_noleapsecond(wideval_t timew, struct vtm *vtm)
@@ -1730,7 +1741,9 @@ localtime_with_gmtoff_zone(const time_t *t, struct tm *result, long *gmtoff, VAL
 #if defined(HAVE_TM_ZONE)
             *zone = zone_str(tm.tm_zone);
 #elif defined(_WIN32)
-            *zone = zone_str(get_tzname(tm.tm_isdst));
+            rb_encoding *enc;
+            const char *name = get_tzname(tm.tm_isdst, &enc);
+            *zone = zone_str_enc(name, enc);
 #elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
             /* this needs tzset or localtime, instead of localtime_r */
             *zone = zone_str(tzname[daylight && tm.tm_isdst]);
@@ -2642,13 +2655,14 @@ time_init_parse(rb_execution_context_t *ec, VALUE time, VALUE str, VALUE zone, V
         rb_raise(rb_eArgError, "time string should have ASCII compatible encoding");
     }
 
+    size_t prec = NIL_P(precision) ? SIZE_MAX : NUM2SIZET(precision);
+
     const char *const begin = RSTRING_PTR(str);
     const char *const end = RSTRING_END(str);
     const char *ptr = begin;
     VALUE year = Qnil, subsec = Qnil;
     int mon = -1, mday = -1, hour = -1, min = -1, sec = -1;
     size_t ndigits;
-    size_t prec = NIL_P(precision) ? SIZE_MAX : NUM2SIZET(precision);
 
     if ((ptr < end) && (ISSPACE(*ptr) || ISSPACE(*(end-1)))) {
         rb_raise(rb_eArgError, "can't parse: %+"PRIsVALUE, str);
@@ -4433,7 +4447,7 @@ time_inspect(VALUE time)
     if (subsec == INT2FIX(0)) {
     }
     else if (FIXNUM_P(subsec) && FIX2LONG(subsec) < TIME_SCALE) {
-        long len;
+        rb_len_t len;
         rb_str_catf(str, ".%09ld", FIX2LONG(subsec));
         for (len=RSTRING_LEN(str); RSTRING_PTR(str)[len-1] == '0' && len > 0; len--)
             ;
@@ -5185,7 +5199,7 @@ time_deconstruct_keys(VALUE time, VALUE keys)
 {
     struct time_object *tobj;
     VALUE h;
-    long i;
+    rb_len_t i;
 
     GetTimeval(time, tobj);
     MAKE_TM_ENSURE(time, tobj, tobj->vtm.yday != 0);
@@ -5282,7 +5296,7 @@ time_strftime(VALUE time, VALUE format)
 {
     struct time_object *tobj;
     const char *fmt;
-    long len;
+    rb_len_t len;
     rb_encoding *enc;
     VALUE tmp;
 
@@ -5410,7 +5424,7 @@ time_xmlschema(int argc, VALUE *argv, VALUE time)
         }
         else {
             subsecx = rb_int2str(subsecx, 10);
-            long len = RSTRING_LEN(subsecx);
+            rb_len_t len = RSTRING_LEN(subsecx);
             if (fraction_digits > len) {
                 memset(ptr, '0', fraction_digits - len);
             }
@@ -5439,7 +5453,7 @@ time_xmlschema(int argc, VALUE *argv, VALUE time)
     return str;
 }
 
-int ruby_marshal_write_long(long x, char *buf);
+int ruby_marshal_write_long(rb_len_t x, char *buf);
 
 enum {base_dump_size = 8};
 
@@ -5525,8 +5539,8 @@ time_mdump(VALUE time)
          */
         size_t ysize = rb_absint_size(year_extend, NULL);
         char *p, *const buf_year_extend = buf + base_dump_size;
-        if (ysize > LONG_MAX ||
-            (i = ruby_marshal_write_long((long)ysize, buf_year_extend)) < 0) {
+        if (ysize > RB_LEN_MAX ||
+            (i = ruby_marshal_write_long((rb_len_t)ysize, buf_year_extend)) < 0) {
             rb_raise(rb_eArgError, "year too %s to marshal: %"PRIsVALUE" UTC",
                      (year == 1900 ? "small" : "big"), vtm.year);
         }
@@ -5617,7 +5631,7 @@ mload_zone(VALUE time, VALUE zone)
     return z;
 }
 
-long ruby_marshal_read_long(const char **buf, long len);
+long ruby_marshal_read_long(const char **buf, rb_len_t len);
 
 /* :nodoc: */
 static VALUE
@@ -5683,7 +5697,7 @@ time_mload(VALUE time, VALUE str)
             year = INT2FIX(((int)(p >> 14) & 0xffff) + 1900);
         }
         if (RSTRING_LEN(str) > base_dump_size) {
-            long len = RSTRING_LEN(str) - base_dump_size;
+            rb_len_t len = RSTRING_LEN(str) - base_dump_size;
             long ysize = 0;
             VALUE year_extend;
             const char *ybuf = (const char *)(buf += base_dump_size);
@@ -5725,7 +5739,7 @@ time_mload(VALUE time, VALUE str)
         }
         else if (submicro != Qnil) { /* for Ruby 1.9.1 compatibility */
             unsigned char *ptr;
-            long len;
+            rb_len_t len;
             int digit;
             ptr = (unsigned char*)StringValuePtr(submicro);
             len = RSTRING_LEN(submicro);

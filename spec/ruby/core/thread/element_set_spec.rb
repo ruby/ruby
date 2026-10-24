@@ -28,6 +28,15 @@ describe "Thread#[]=" do
     t2[:value].should == 2
   end
 
+  it "removes a key if the value is nil" do
+    thread = Thread.new {}.join
+    thread[:value] = 1
+    thread[:value] = nil
+
+    thread.key?(:value).should == false
+    thread.keys.should_not.include?(:value)
+  end
+
   it "converts a key that is neither String nor Symbol with #to_str" do
     key = mock('value')
     key.should_receive(:to_str).and_return('value')

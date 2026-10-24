@@ -12,7 +12,9 @@ module Gem
     # want other processes or threads to see half-written files.
 
     def self.open(file_name)
-      require "securerandom" unless defined?(SecureRandom)
+      # Vendored, because activating the securerandom default gem here pins it for
+      # the rest of the process and conflicts with gems that need a newer one.
+      require_relative "../vendored_securerandom"
 
       old_stat = begin
                    File.stat(file_name)
@@ -21,7 +23,7 @@ module Gem
                  end
 
       # Names can't be longer than 255B
-      tmp_suffix = ".tmp.#{SecureRandom.hex}"
+      tmp_suffix = ".tmp.#{Gem::SecureRandom.hex}"
       dirname = File.dirname(file_name)
       basename = File.basename(file_name)
       base_slice = byteslice_at_char_boundary(basename, 254 - tmp_suffix.bytesize)
@@ -53,9 +55,9 @@ module Gem
         if old_stat
           # Set correct permissions on new file
           begin
-            File.chown(old_stat.uid, old_stat.gid, tmp_path)
+            temp_file.chown(old_stat.uid, old_stat.gid)
             # This operation will affect filesystem ACL's
-            File.chmod(old_stat.mode, tmp_path)
+            temp_file.chmod(old_stat.mode)
           rescue Errno::EPERM, Errno::EACCES
             # Changing file ownership failed, moving on.
           end

@@ -118,6 +118,12 @@ describe "IO#external_encoding" do
         @io.external_encoding.should.equal?(Encoding::IBM437)
       end
 
+      it "returns the value of Encoding.default_external when the instance was created if only the internal encoding is set" do
+        @io = new_io @name, mode: "r", internal_encoding: "utf-8"
+        Encoding.default_external = Encoding::IBM437
+        @io.external_encoding.should.equal?(Encoding::IBM866)
+      end
+
       it "returns the external encoding specified when the instance was created" do
         @io = new_io @name, "r:utf-8"
         Encoding.default_external = Encoding::IBM437

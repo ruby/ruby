@@ -58,7 +58,7 @@ ZJIT_BINDGEN_DIFF_OPTS =
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-zjit=dev` and Clang.
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
-.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-update
+.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-build zjit-test-update
 .PHONY: zjit-test-debug zjit-test-lldb zjit-test-gdb zjit-test-rr
 zjit-bindgen: zjit.$(OBJEXT)
 	ZJIT_SRC_ROOT_PATH='$(top_srcdir)' BINDGEN_JIT_NAME=zjit $(CARGO) run --manifest-path '$(top_srcdir)/zjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
@@ -89,6 +89,13 @@ zjit-test: libminiruby.a
 		echo "Pending snapshots found. Accept with: make zjit-test-update"; \
 	fi; \
 	exit $$exit_code
+
+# Build the `make zjit-test` binary without running it.
+zjit-test-build: libminiruby.a
+	$(ECHO) 'building ZJIT test binary'
+	$(ZJIT_NEXTEST_ENV) $(CARGO) build --tests \
+		--manifest-path '$(top_srcdir)/zjit/Cargo.toml' \
+		'--features=$(ZJIT_TEST_FEATURES)'
 
 # Accept all pending snapshots (requires cargo-insta)
 # Install with: cargo install cargo-insta

@@ -56,25 +56,59 @@ RSpec.describe Bundler::ParallelInstaller do
     end
     let(:installer) { Bundler::Installer.new(bundled_app, definition) }
 
-    it "queues native extensions in priority" do
+    it "prioritizes native extensions for installation" do
       parallel_installer = Bundler::ParallelInstaller.new(installer, definition.specs, 2, false, true)
-      worker_pool = parallel_installer.send(:worker_pool)
-      expected = 6 # Enqueue to download bundler and the 2 gems. Enqueue to install Bundler and the 2 gems.
+      download_worker_pool = parallel_installer.send(:download_worker_pool)
+      install_worker_pool = parallel_installer.send(:worker_pool)
 
-      expect(worker_pool).to receive(:enq).exactly(expected).times.and_wrap_original do |original_enq, spec, opts|
-        unless opts.nil? # Enqueued for download, no priority
-          if spec.name == "gem_with_extension"
-            expect(opts).to eq({ priority: true })
-          else
-            expect(opts).to eq({ priority: false })
-          end
+      expect(download_worker_pool).to receive(:enq).exactly(3).times.and_call_original
+      expect(install_worker_pool).to receive(:enq).exactly(3).times.and_wrap_original do |original_enq, spec, opts|
+        if spec.name == "gem_with_extension"
+          expect(opts).to eq({ priority: true })
+        else
+          expect(opts).to eq({ priority: false })
         end
 
-        opts ||= {}
         original_enq.call(spec, **opts)
       end
 
       parallel_installer.call
+    end
+  end
+
+  describe "worker pools" do
+    it "uses separate worker pools with the configured size" do
+      parallel_installer = described_class.new(nil, [], 2, false, false)
+
+      download_worker_pool = parallel_installer.send(:download_worker_pool)
+      install_worker_pool = parallel_installer.send(:worker_pool)
+
+      expect(download_worker_pool).not_to equal(install_worker_pool)
+      expect(download_worker_pool.instance_variable_get(:@size)).to eq(2)
+      expect(install_worker_pool.instance_variable_get(:@size)).to eq(2)
+    ensure
+      install_worker_pool&.stop
+      download_worker_pool&.stop
+    end
+
+    it "restores the previous interrupt handler after shutting down" do
+      parallel_installer = described_class.new(nil, [], 2, false, false)
+      download_worker_pool = parallel_installer.send(:download_worker_pool)
+      install_worker_pool = parallel_installer.send(:worker_pool)
+
+      previous_handler = Signal.trap("INT", "IGNORE")
+      custom_handler = proc {}
+      Signal.trap("INT", custom_handler)
+
+      download_worker_pool.send(:create_threads)
+      install_worker_pool.send(:create_threads)
+
+      parallel_installer.call
+
+      restored_handler = Signal.trap("INT", previous_handler)
+      expect(restored_handler).to equal(custom_handler)
+    ensure
+      Signal.trap("INT", previous_handler) if previous_handler
     end
   end
 
@@ -152,34 +186,37 @@ RSpec.describe Bundler::ParallelInstaller do
     let(:gem_two) { definition.specs.find {|spec| spec.name == "two" } }
 
     it "takes all available slots" do
-      redefine_build_jobs do
+      acquired = track_build_jobs(rendezvous: true) do
         Bundler::ParallelInstaller.call(installer, definition.specs, 5, false, true)
       end
 
-      # Take 3 slots out of the 5 available.
-      expect(File.read(File.join(gem_one.extension_dir, "gem_make.out"))).to include("make -j3")
+      # Take 3 slots (capped per gem) out of the 5 available.
+      expect(acquired["one"]).to eq(3)
       # Take the remaining 2 slots.
-      expect(File.read(File.join(gem_two.extension_dir, "gem_make.out"))).to include("make -j2")
+      expect(acquired["two"]).to eq(2)
     end
 
     it "fallback to non parallel when no slots are available" do
-      redefine_build_jobs do
+      acquired = track_build_jobs(rendezvous: true) do
         Bundler::ParallelInstaller.call(installer, definition.specs, 3, false, true)
       end
 
       # Take 3 slots out of the 3 available.
-      expect(File.read(File.join(gem_one.extension_dir, "gem_make.out"))).to include("make -j3")
+      expect(acquired["one"]).to eq(3)
       # Fallback to one slot (non parallel).
-      expect(File.read(File.join(gem_two.extension_dir, "gem_make.out"))).to_not include("make -j")
+      expect(acquired["two"]).to eq(1)
     end
 
     it "uses one jobs when installing serially" do
+      acquired = nil
       Bundler.settings.temporary(jobs: 1) do
-        Bundler::ParallelInstaller.call(installer, definition.specs, 1, false, true)
+        acquired = track_build_jobs do
+          Bundler::ParallelInstaller.call(installer, definition.specs, 1, false, true)
+        end
       end
 
-      expect(File.read(File.join(gem_one.extension_dir, "gem_make.out"))).to_not include("make -j")
-      expect(File.read(File.join(gem_two.extension_dir, "gem_make.out"))).to_not include("make -j")
+      expect(acquired["one"]).to eq(1)
+      expect(acquired["two"]).to eq(1)
     end
 
     it "release the job slots" do
@@ -191,39 +228,52 @@ RSpec.describe Bundler::ParallelInstaller do
         end
       end
 
-      Bundler::ParallelInstaller.call(installer, definition.specs, 3, false, true)
+      acquired = track_build_jobs do
+        Bundler::ParallelInstaller.call(installer, definition.specs, 3, false, true)
+      end
 
       # Take 3 slots out of the 3 available.
-      expect(File.read(File.join(gem_one.extension_dir, "gem_make.out"))).to include("make -j3")
-      # Take 3 slots that were released.
-      expect(File.read(File.join(gem_two.extension_dir, "gem_make.out"))).to include("make -j3")
+      expect(acquired["one"]).to eq(3)
+      # Take 3 slots that were released by `one`.
+      expect(acquired["two"]).to eq(3)
     end
 
-    def redefine_build_jobs
+    # Records how many jobserver slots each gem's build acquired. RubyGems turns
+    # that count directly into `make -jN`, so asserting on it verifies slot
+    # allocation and release without reading a build log, which a successful
+    # build no longer writes. With +rendezvous+, "one" grabs its slots first and
+    # holds them until "two" has grabbed the rest, making the split deterministic.
+    def track_build_jobs(rendezvous: false)
+      acquired = {}
       old_method = Bundler::RubyGemsGemInstaller.instance_method(:build_jobs)
       Bundler::RubyGemsGemInstaller.remove_method(:build_jobs)
 
-      # Rendezvous so that "one" grabs its slots first and keeps holding them
-      # until "two" has grabbed the rest. Blocking on a queue avoids the
-      # busy-wait and makes the ordering deterministic.
       one_acquired = Thread::Queue.new
       two_acquired = Thread::Queue.new
 
       Bundler::RubyGemsGemInstaller.define_method(:build_jobs) do
-        if spec.name == "one"
-          value = old_method.bind(self).call
-          one_acquired << true
-          two_acquired.pop
-        elsif spec.name == "two"
-          one_acquired.pop
-          value = old_method.bind(self).call
-          two_acquired << true
-        end
+        value =
+          if rendezvous && spec.name == "one"
+            v = old_method.bind(self).call
+            one_acquired << true
+            two_acquired.pop
+            v
+          elsif rendezvous && spec.name == "two"
+            one_acquired.pop
+            v = old_method.bind(self).call
+            two_acquired << true
+            v
+          else
+            old_method.bind(self).call
+          end
 
+        acquired[spec.name] = value
         value
       end
 
       yield
+
+      acquired
     ensure
       Bundler::RubyGemsGemInstaller.remove_method(:build_jobs)
       Bundler::RubyGemsGemInstaller.define_method(:build_jobs, old_method)

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 # This module allows for introspection of ZJIT, CRuby's just-in-time compiler.
 # Everything in the module is highly implementation specific and the API might
@@ -60,6 +61,29 @@ class << RubyVM::ZJIT
   # Other forms are too dynamic to detect during compilation.
   def induce_breakpoint! = nil
 
+  # Monotonically increasing counter representing the amount of wall time
+  # nanoseconds spent compiling.
+  def total_compile_time_ns
+    Primitive.rb_zjit_total_compile_time_ns_get
+  end
+
+  # The maximum amount of time `ZJIT` is allowed to spend compiling.
+  # When `total_compile_time_ns` goes over `max_compile_time_ns`, `YJIT`
+  # pause compilation until `max_compile_time_ns` is raised.
+  # If set to `0`, there is no limit.
+  # This is a best-effort functionality, there are situations in which `ZJIT` may
+  # still compile even when paused.
+  # This feature is intended to be used to control how fast the JIT warms up,
+  # to spread the compilation overhead over a longer period of time.
+  def max_compile_time_ns
+    Primitive.rb_zjit_max_compile_time_ns_get
+  end
+
+  # Set the maximum amount of time YJIT is allowed to spend compiling.
+  def max_compile_time_ns=(max_compile_time_ns)
+    Primitive.rb_zjit_max_compile_time_ns_set(max_compile_time_ns)
+  end
+
   # Check if `--zjit-stats` is used
   def stats_enabled?
     Primitive.rb_zjit_stats_enabled_p
@@ -87,7 +111,7 @@ class << RubyVM::ZJIT
       stats[:guard_shape_exit_ratio] = stats[:exit_guard_shape_failure].to_f / stats[:guard_shape_count] * 100
     end
     if stats[:code_region_bytes]&.nonzero?
-      stats[:side_exit_size_ratio] = stats[:side_exit_size].to_f / stats[:code_region_bytes] * 100
+      stats[:side_exit_size_ratio] = stats[:side_exit_size_bytes].to_f / stats[:code_region_bytes] * 100
     end
     if stats[:compile_time_ns]&.nonzero?
       stats[:compile_side_exit_time_ratio] = stats[:compile_side_exit_time_ns].to_f / stats[:compile_time_ns] * 100
@@ -110,7 +134,6 @@ class << RubyVM::ZJIT
     print_counters_with_prefix(prefix: 'getivar_fallback_', prompt: 'getivar fallback reasons', buf:, stats:, limit: 5)
     print_counters_with_prefix(prefix: 'definedivar_fallback_', prompt: 'definedivar fallback reasons', buf:, stats:, limit: 5)
     print_counters_with_prefix(prefix: 'invokeblock_handler_', prompt: 'invokeblock handler', buf:, stats:, limit: 10)
-    print_counters_with_prefix(prefix: 'getblockparamproxy_handler_', prompt: 'getblockparamproxy handler', buf:, stats:, limit: 10)
     print_counters_with_prefix(prefix: 'inline_reject_', prompt: 'HIR-level inlining rejection reasons', buf:, stats:, limit: 10)
 
     # Show most popular unsupported call features. Because each call can
@@ -137,6 +160,7 @@ class << RubyVM::ZJIT
       :empty_inline_frame_count,
       :non_variadic_cfunc_optimized_send_count,
       :variadic_cfunc_optimized_send_count,
+      :caller_splat_optimized,
     ], buf:, stats:, right_align: true, base: :send_count)
     print_counters([
       :dynamic_setivar_count,
@@ -161,6 +185,7 @@ class << RubyVM::ZJIT
       :compile_hir_clean_cfg_time_ns,
       :compile_hir_remove_redundant_patch_points_time_ns,
       :compile_hir_remove_duplicate_check_interrupts_time_ns,
+      :compile_hir_eliminate_empty_inline_frames_time_ns,
       :compile_hir_eliminate_dead_code_time_ns,
       :compile_lir_time_ns,
       :profile_time_ns,
@@ -183,9 +208,11 @@ class << RubyVM::ZJIT
 
       :throw_count,
 
-      :side_exit_size,
-      :code_region_bytes,
+      :side_exit_size_bytes,
       :side_exit_size_ratio,
+      :jit_frame_heap_bytes,
+      :jit_frame_region_bytes,
+      :code_region_bytes,
       :zjit_alloc_bytes,
       :total_mem_bytes,
       :total_native_stack_bytes,

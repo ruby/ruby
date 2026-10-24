@@ -762,7 +762,7 @@ rb_complex_real(VALUE self)
  * {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates], the returned value
  * is computed, and may be inexact:
  *
- *   Complex.polar(1, Math::PI/4).imag # => 0.7071067811865476 # Square root of 2.
+ *   Complex.polar(1, Math::PI/4).imag # => 0.7071067811865475
  *
  */
 VALUE
@@ -1728,7 +1728,7 @@ nucomp_marshal_load(VALUE self, VALUE a)
 {
     Check_Type(a, T_ARRAY);
     if (RARRAY_LEN(a) != 2)
-        rb_raise(rb_eArgError, "marshaled complex must have an array whose length is 2 but %ld", RARRAY_LEN(a));
+        rb_raise(rb_eArgError, "marshaled complex must have an array whose length is 2 but %"PRIdLEN, RARRAY_LEN(a));
     rb_ivar_set(self, id_i_real, RARRAY_AREF(a, 0));
     rb_ivar_set(self, id_i_imag, RARRAY_AREF(a, 1));
     return self;

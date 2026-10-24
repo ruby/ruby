@@ -1053,6 +1053,12 @@ class TestGem < Gem::TestCase
     assert_equal Gem::Requirement.default, Gem.env_requirement("qux")
   end
 
+  def test_self_ruby_abi
+    Gem.stub(:ruby_version, Gem::Version.new("3.4.1")) do
+      assert_equal "3.4", Gem.ruby_abi
+    end
+  end
+
   def test_self_ruby_version_with_non_mri_implementations
     util_set_RUBY_VERSION "2.5.0", 0, 60_928, "jruby 9.2.0.0 (2.5.0) 2018-05-24 81156a8 OpenJDK 64-Bit Server VM 25.171-b11 on 1.8.0_171-8u171-b11-0ubuntu0.16.04.1-b11 [linux-x86_64]"
 
@@ -1497,6 +1503,79 @@ class TestGem < Gem::TestCase
     Gem.load_plugins
 
     assert_equal %w[plugin], PLUGINS_LOADED
+  end
+
+  def test_load_plugins_loads_latest_non_content_addressed_plugin_after_content_addressed_plugin
+    ruby_abi = Gem.ruby_abi
+
+    _, ca_gem = util_gem "plugin_latest", "1.0", ruby_abi: ruby_abi do |s|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "class TestGem; PLUGINS_LOADED << 'ca-1.0'; end"
+      end
+
+      s.files += %w[lib/rubygems_plugin.rb]
+      s.platform = "x86_64-linux"
+    end
+
+    installed_ca_spec = Gem::Installer.at(ca_gem, force: true).install
+
+    spec = quick_gem "plugin_latest", "2.0" do |s|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "class TestGem; PLUGINS_LOADED << 'fat-2.0'; end"
+      end
+
+      s.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    installed_fat_spec = install_gem spec
+
+    PLUGINS_LOADED.clear
+    $LOADED_FEATURES.delete File.join(installed_ca_spec.gem_dir, "lib", "rubygems_plugin.rb")
+    $LOADED_FEATURES.delete File.join(installed_fat_spec.gem_dir, "lib", "rubygems_plugin.rb")
+    Gem.load_plugins
+
+    assert_equal %w[fat-2.0], PLUGINS_LOADED
+  end
+
+  def test_load_plugins_loads_current_ruby_abi_plugins
+    Gem.stub(:ruby_version, Gem::Version.new("3.4.0")) do
+      plugins_dir = Gem.plugindir
+      current_abi_plugins_dir = File.join plugins_dir, Gem.ruby_abi
+      other_abi_plugins_dir = File.join plugins_dir, "3.3"
+
+      write_file File.join(plugins_dir, "root_plugin.rb") do |fp|
+        fp.puts "class TestGem; PLUGINS_LOADED << 'root'; end"
+      end
+
+      write_file File.join(current_abi_plugins_dir, "current_plugin.rb") do |fp|
+        fp.puts "class TestGem; PLUGINS_LOADED << 'current'; end"
+      end
+
+      write_file File.join(other_abi_plugins_dir, "other_plugin.rb") do |fp|
+        fp.puts "class TestGem; PLUGINS_LOADED << 'other'; end"
+      end
+
+      Gem.load_plugins
+
+      assert_equal %w[root current], PLUGINS_LOADED
+    end
+  end
+
+  def test_load_plugins_prefers_abi_scoped_stub_over_root_stub_for_the_same_gem
+    plugins_dir = Gem.plugindir
+    current_abi_plugins_dir = File.join plugins_dir, Gem.ruby_abi
+
+    write_file File.join(plugins_dir, "mygem_plugin.rb") do |fp|
+      fp.puts "class TestGem; PLUGINS_LOADED << 'root'; end"
+    end
+
+    write_file File.join(current_abi_plugins_dir, "mygem_plugin.rb") do |fp|
+      fp.puts "class TestGem; PLUGINS_LOADED << 'abi'; end"
+    end
+
+    Gem.load_plugins
+
+    assert_equal %w[abi], PLUGINS_LOADED
   end
 
   def test_load_user_installed_plugins

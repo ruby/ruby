@@ -8,7 +8,7 @@ use std::sync::atomic::Ordering;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
 use crate::options::{get_option, rb_zjit_prepare_options};
-use crate::jit_frame::JITFrame;
+use crate::jit_frame::{JITFrame, JITFrameAllocator};
 use crate::stats::{Counters, InsnCounters, PerfettoTracer};
 use crate::virtualmem::CodePtr;
 use std::sync::atomic::AtomicUsize;
@@ -29,9 +29,45 @@ pub static mut rb_zjit_entry: *const u8 = null();
 #[unsafe(no_mangle)]
 pub static mut rb_zjit_compiling_p: bool = false;
 
+/// Monotonically increasing total of time spent compiling.
+#[unsafe(no_mangle)]
+pub static mut rb_zjit_total_compile_time_ns: u64 = 0;
+
+// Time allocated for compilation. When going over, compilation is paused.
+#[unsafe(no_mangle)]
+pub static mut rb_zjit_max_compile_time_ns: u64 = 0;
+
 /// Like rb_zjit_enabled_p, but for Rust code.
 pub fn zjit_enabled_p() -> bool {
     unsafe { rb_zjit_entry != null() }
+}
+
+pub fn increment_compile_time_ns(nanos: u64) {
+    unsafe {
+        rb_zjit_total_compile_time_ns += nanos;
+        if rb_zjit_max_compile_time_ns != 0 && rb_zjit_max_compile_time_ns <= rb_zjit_total_compile_time_ns {
+            rb_zjit_compiling_p = false;
+        }
+    }
+}
+
+/// Stop compiling new ZJIT entries if the code region or max compile time is exhausted.
+pub fn update_zjit_compiling() {
+    if zjit_enabled_p() {
+        unsafe {
+            if rb_zjit_max_compile_time_ns == 0 || rb_zjit_max_compile_time_ns > rb_zjit_total_compile_time_ns {
+                let cb = ZJITState::get_code_block();
+                rb_zjit_compiling_p = !cb.has_dropped_bytes()
+            } else {
+                rb_zjit_compiling_p = false;
+            }
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_update_max_compile_time_ns(max_compile_time_ns: u64) {
+    unsafe { rb_zjit_max_compile_time_ns = max_compile_time_ns; }
 }
 
 /// Global state needed for code generation
@@ -86,6 +122,11 @@ pub struct ZJITState {
 
     /// Frame metadata for ISEQ and C calls that are known at compile time
     jit_frames: Vec<*mut JITFrame>,
+
+    /// Bump allocator that serves JITFrame allocations from address space below
+    /// INT32_MAX, so that call sites can store frame pointers as 32-bit immediates.
+    /// None when the platform cannot provide low memory.
+    jit_frame_allocator: Option<JITFrameAllocator>,
 }
 
 /// Tracks the initialization progress
@@ -166,6 +207,7 @@ impl ZJITState {
             iseq_calls_count_pointers: HashMap::new(),
             perfetto_tracer,
             jit_frames: vec![],
+            jit_frame_allocator: JITFrameAllocator::new(),
         };
         unsafe { ZJIT_STATE = Enabled(zjit_state); }
 
@@ -207,6 +249,11 @@ impl ZJITState {
 
     pub fn get_jit_frames() -> &'static mut Vec<*mut JITFrame> {
         &mut ZJITState::get_instance().jit_frames
+    }
+
+    /// Get a mutable reference to the JITFrame allocator
+    pub fn get_jit_frame_allocator() -> Option<&'static mut JITFrameAllocator> {
+        ZJITState::get_instance().jit_frame_allocator.as_mut()
     }
 
     pub fn get_method_annotations() -> &'static cruby_methods::Annotations {

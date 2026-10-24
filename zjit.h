@@ -17,7 +17,7 @@ typedef struct zjit_jit_frame {
     // Program counter for this frame, used for backtraces and GC.
     // NULL for C frames (they don't have a Ruby PC).
     const VALUE *pc;
-    // The ISEQ this frame belongs to. Marked via rb_execution_context_mark.
+    // The ISEQ this frame belongs to. Marked via rb_execution_context_mark_ctx.
     // NULL for C frames.
     const rb_iseq_t *iseq;
     // Whether to materialize block_code when this frame is materialized.
@@ -109,8 +109,10 @@ ZJIT_STACK_MAP_BASE_PTR_STACK_SIZE(VALUE entry)
 extern void *rb_zjit_entry;
 extern bool rb_zjit_compiling_p;
 extern const zjit_jit_frame_t rb_zjit_c_frame;
-extern uint64_t rb_zjit_call_threshold;
-extern uint64_t rb_zjit_profile_threshold;
+extern unsigned int rb_zjit_call_threshold;
+extern unsigned int rb_zjit_profile_threshold;
+extern uint64_t rb_zjit_max_compile_time_ns;
+extern uint64_t rb_zjit_total_compile_time_ns;
 void rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception);
 void rb_zjit_profile_insn(uint32_t insn, rb_execution_context_t *ec);
 void rb_zjit_profile_enable(const rb_iseq_t *iseq);
@@ -136,10 +138,10 @@ void rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb
 size_t rb_zjit_hash_new_size(VALUE *flags_out, size_t size);
 VALUE rb_zjit_new_obj_shape(VALUE flags, size_t alloc_size);
 bool rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, VALUE *flags_out);
-bool rb_zjit_str_resurrect_fastpath(VALUE str, bool chilled, size_t *size_out, VALUE *flags_out, long *len_out, size_t *byte_size_out);
-bool rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_out, long *len_out);
-bool rb_zjit_array_new_can_fastpath(long len, size_t *alloc_size_out, VALUE *flags_out);
-bool rb_zjit_hash_dup_can_fastpath(VALUE hash, size_t *alloc_size_out, VALUE *flags_out, VALUE *ifnone_out, long *bound_out);
+bool rb_zjit_str_resurrect_fastpath(VALUE str, bool chilled, size_t *size_out, VALUE *flags_out, rb_len_t *len_out, size_t *byte_size_out);
+bool rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_out, rb_len_t *len_out);
+bool rb_zjit_array_new_can_fastpath(rb_len_t len, size_t *alloc_size_out, VALUE *flags_out);
+bool rb_zjit_hash_dup_can_fastpath(VALUE hash, size_t *alloc_size_out, VALUE *flags_out, VALUE *ifnone_out, rb_len_t *bound_out);
 void rb_zjit_range_new_fastpath(bool exclude_end, size_t *alloc_size_out, VALUE *flags_out);
 void rb_zjit_array_new_fastpath(size_t *alloc_size_out, VALUE *flags_out);
 bool rb_zjit_newobj_hook_enabled_p(void);

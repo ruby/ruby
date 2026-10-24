@@ -384,9 +384,19 @@ RBIMPL_WARNING_POP()
     rb_parser_set_location(p, &(Current))
 #define RUBY_INIT_YYLLOC() \
     { \
-        {p->ruby_sourceline, (int)(p->lex.ptok - p->lex.pbeg)}, \
-        {p->ruby_sourceline, (int)(p->lex.pcur - p->lex.pbeg)}, \
+        {p->ruby_sourceline, parser_column(p->lex.ptok - p->lex.pbeg)}, \
+        {p->ruby_sourceline, parser_column(p->lex.pcur - p->lex.pbeg)}, \
     }
+
+/* Saturate instead of wrapping to a column before the line. */
+static inline int
+parser_column(rb_len_t pos)
+{
+#if SIZEOF_INT < SIZEOF_RB_LEN_T
+    if (pos > INT_MAX) return INT_MAX;
+#endif
+    return (int)pos;
+}
 
 #define IS_lex_state_for(x, ls)	((x) & (ls))
 #define IS_lex_state_all_for(x, ls) (((x) & (ls)) == (ls))
@@ -517,6 +527,14 @@ struct parser_params {
         /* track the nest level of only braces "{}" */
         int brace_nest;
     } lex;
+    /* Cache the tail of the and/or chain most recently built by logop(), so a
+     * left-associative chain does not rescan its right branch on every
+     * operator. head is the chain's top node, tail the node whose nd_2nd is the
+     * next insertion point. */
+    struct {
+        NODE *head;
+        NODE *tail;
+    } logop;
     stack_type cond_stack;
     stack_type cmdarg_stack;
     int tokidx;
@@ -724,7 +742,7 @@ after_pop_stack(int len, struct parser_params *p)
 static inline int
 char_at_end(struct parser_params *p, VALUE str, int when_empty)
 {
-    long len = RSTRING_LEN(str);
+    rb_len_t len = RSTRING_LEN(str);
     return len > 0 ? (unsigned char)RSTRING_PTR(str)[len-1] : when_empty;
 }
 #endif
@@ -1982,7 +2000,7 @@ djb2(const uint8_t *str, size_t len)
 }
 
 static st_index_t
-parser_memhash(const void *ptr, long len)
+parser_memhash(const void *ptr, rb_len_t len)
 {
     return djb2(ptr, len);
 }
@@ -2011,12 +2029,12 @@ parser_string_char_at_end(struct parser_params *p, rb_parser_string_t *str, int 
 }
 
 static rb_parser_string_t *
-rb_parser_string_new(rb_parser_t *p, const char *ptr, long len)
+rb_parser_string_new(rb_parser_t *p, const char *ptr, rb_len_t len)
 {
     rb_parser_string_t *str;
 
     if (len < 0) {
-        rb_bug("negative string size (or size too big): %ld", len);
+        rb_bug("negative string size (or size too big): %"PRIdLEN, len);
     }
 
     str = xcalloc(1, sizeof(rb_parser_string_t));
@@ -2031,7 +2049,7 @@ rb_parser_string_new(rb_parser_t *p, const char *ptr, long len)
 }
 
 static rb_parser_string_t *
-rb_parser_encoding_string_new(rb_parser_t *p, const char *ptr, long len, rb_encoding *enc)
+rb_parser_encoding_string_new(rb_parser_t *p, const char *ptr, rb_len_t len, rb_encoding *enc)
 {
     rb_parser_string_t *str = rb_parser_string_new(p, ptr, len);
     str->coderange = RB_PARSER_ENC_CODERANGE_UNKNOWN;
@@ -2154,7 +2172,7 @@ rb_parser_search_nonascii(const char *p, const char *e)
 }
 
 static int
-rb_parser_coderange_scan(struct parser_params *p, const char *ptr, long len, rb_encoding *enc)
+rb_parser_coderange_scan(struct parser_params *p, const char *ptr, rb_len_t len, rb_encoding *enc)
 {
     const char *e = ptr + len;
 
@@ -2262,13 +2280,13 @@ rb_parser_str_modify(rb_parser_string_t *str)
 }
 
 static void
-rb_parser_str_set_len(struct parser_params *p, rb_parser_string_t *str, long len)
+rb_parser_str_set_len(struct parser_params *p, rb_parser_string_t *str, rb_len_t len)
 {
-    long capa;
+    rb_len_t capa;
     const int termlen = STRING_TERM_LEN(str);
 
-    if (len > (capa = (long)(rb_parser_str_capacity(str, termlen))) || len < 0) {
-        rb_bug("probable buffer overflow: %ld for %ld", len, capa);
+    if (len > (capa = (rb_len_t)(rb_parser_str_capacity(str, termlen))) || len < 0) {
+        rb_bug("probable buffer overflow: %"PRIdLEN" for %"PRIdLEN, len, capa);
     }
 
     int cr = PARSER_ENC_CODERANGE(str);
@@ -2291,12 +2309,12 @@ rb_parser_str_set_len(struct parser_params *p, rb_parser_string_t *str, long len
 }
 
 static rb_parser_string_t *
-rb_parser_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, long len)
+rb_parser_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, rb_len_t len)
 {
     rb_parser_str_modify(str);
     if (len == 0) return 0;
 
-    long total, olen, off = -1;
+    rb_len_t total, olen, off = -1;
     char *sptr;
     const int termlen = STRING_TERM_LEN(str);
 
@@ -2305,7 +2323,7 @@ rb_parser_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const ch
         off = ptr - sptr;
     }
 
-    if (olen > LONG_MAX - len) {
+    if (olen > RB_LEN_MAX - len) {
         compile_error(p, "string sizes too big");
         return 0;
     }
@@ -2326,7 +2344,7 @@ rb_parser_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const ch
 #define parser_str_cat_cstr(str, lit) rb_parser_str_buf_cat(p, str, lit, strlen(lit))
 
 static rb_parser_string_t *
-rb_parser_enc_cr_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, long len,
+rb_parser_enc_cr_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, rb_len_t len,
     rb_encoding *ptr_enc, int ptr_cr, int *ptr_cr_ret)
 {
     int str_cr, res_cr;
@@ -2402,7 +2420,7 @@ rb_parser_enc_cr_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, c
 }
 
 static rb_parser_string_t *
-rb_parser_enc_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, long len,
+rb_parser_enc_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, rb_len_t len,
     rb_encoding *ptr_enc)
 {
     return rb_parser_enc_cr_str_buf_cat(p, str, ptr, len, ptr_enc, RB_PARSER_ENC_CODERANGE_UNKNOWN, NULL);
@@ -2422,20 +2440,20 @@ rb_parser_str_buf_append(struct parser_params *p, rb_parser_string_t *str, rb_pa
 }
 
 static rb_parser_string_t *
-rb_parser_str_resize(struct parser_params *p, rb_parser_string_t *str, long len)
+rb_parser_str_resize(struct parser_params *p, rb_parser_string_t *str, rb_len_t len)
 {
     if (len < 0) {
         rb_bug("negative string size (or size too big)");
     }
 
-    long slen = PARSER_STRING_LEN(str);
+    rb_len_t slen = PARSER_STRING_LEN(str);
 
     if (slen > len && PARSER_ENC_CODERANGE(str) != RB_PARSER_ENC_CODERANGE_7BIT) {
         PARSER_ENC_CODERANGE_CLEAR(str);
     }
 
     {
-        long capa;
+        rb_len_t capa;
         const int termlen = STRING_TERM_LEN(str);
 
         if ((capa = slen) < len) {
@@ -2456,7 +2474,7 @@ rb_parser_str_resize(struct parser_params *p, rb_parser_string_t *str, long len)
 static int
 rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
 {
-    long len1, len2;
+    rb_len_t len1, len2;
     const char *ptr1, *ptr2;
     rb_encoding *enc1, *enc2;
 
@@ -3638,20 +3656,23 @@ command		: fcall command_args       %prec tLOWEST
                         fixpos($$, $2);
                     /*% ripper: yield!($:2) %*/
                     }
-                | k_return call_args
+                | k_return_arg call_args
                     {
+                        CMDARG_POP();
                         $$ = NEW_RETURN(ret_args(p, $2), &@$, &@1);
                     /*% ripper: return!($:2) %*/
                     }
-                | keyword_break call_args
+                | k_break_arg call_args
                     {
+                        CMDARG_POP();
                         NODE *args = 0;
                         args = ret_args(p, $2);
                         $$ = add_block_exit(p, NEW_BREAK(args, &@$, &@1));
                     /*% ripper: break!($:2) %*/
                     }
-                | keyword_next call_args
+                | k_next_arg call_args
                     {
+                        CMDARG_POP();
                         NODE *args = 0;
                         args = ret_args(p, $2);
                         $$ = add_block_exit(p, NEW_NEXT(args, &@$, &@1));
@@ -4876,6 +4897,24 @@ k_return	: keyword_return
                     {
                         if (p->ctxt.cant_return && !dyna_in_block(p))
                             yyerror1(&@1, "Invalid return in class/module body");
+                    }
+                ;
+
+k_return_arg	: k_return
+                    {
+                        CMDARG_PUSH(0);
+                    }
+                ;
+
+k_break_arg	: keyword_break
+                    {
+                        CMDARG_PUSH(0);
+                    }
+                ;
+
+k_next_arg	: keyword_next
+                    {
+                        CMDARG_PUSH(0);
                     }
                 ;
 
@@ -7528,7 +7567,7 @@ enum string_type {
 };
 
 static rb_parser_string_t *
-parser_str_new(struct parser_params *p, const char *ptr, long len, rb_encoding *enc, int func, rb_encoding *enc0)
+parser_str_new(struct parser_params *p, const char *ptr, rb_len_t len, rb_encoding *enc, int func, rb_encoding *enc0)
 {
     rb_parser_string_t *pstr;
 
@@ -7595,11 +7634,11 @@ parser_add_delayed_token(struct parser_params *p, const char *tok, const char *e
             p->delayed.token = rb_parser_string_new(p, 0, 0);
             rb_parser_enc_associate(p, p->delayed.token, p->enc);
             p->delayed.beg_line = p->ruby_sourceline;
-            p->delayed.beg_col = rb_long2int(tok - p->lex.pbeg);
+            p->delayed.beg_col = rb_len2int(tok - p->lex.pbeg);
         }
         parser_str_cat(p->delayed.token, tok, end - tok);
         p->delayed.end_line = p->ruby_sourceline;
-        p->delayed.end_col = rb_long2int(end - p->lex.pbeg);
+        p->delayed.end_col = rb_len2int(end - p->lex.pbeg);
         p->lex.ptok = end;
     }
 }
@@ -7887,7 +7926,8 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
              * does its own validation and will catch any issues.
              */
             tokadd(p, open_brace);
-            while (!lex_eol_ptr_p(p, ++p->lex.pcur)) {
+            ++p->lex.pcur;
+            while (!lex_eol_p(p)) {
                 int c = peekc(p);
                 if (c == close_brace) {
                     tokadd(p, c);
@@ -7901,6 +7941,7 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
                     tokadd(p, c);
                     c = *++p->lex.pcur;
                 }
+                ++p->lex.pcur;
                 tokadd_mbchar(p, c);
             }
         }
@@ -8492,7 +8533,7 @@ flush_string_content(struct parser_params *p, rb_encoding *enc, size_t back)
         if (len > 0) {
             rb_parser_enc_str_buf_cat(p, p->delayed.token, p->lex.ptok, len, enc);
             p->delayed.end_line = p->ruby_sourceline;
-            p->delayed.end_col = rb_long2int(p->lex.pcur - p->lex.pbeg);
+            p->delayed.end_col = rb_len2int(p->lex.pcur - p->lex.pbeg);
         }
         dispatch_delayed_token(p, tSTRING_CONTENT);
         p->lex.ptok = p->lex.pcur;
@@ -8678,7 +8719,7 @@ heredoc_identifier(struct parser_params *p)
      * term_len is length of `<<"END"` except `END`,
      * in this case term_len is 4 (<, <, " and ").
      */
-    long len, offset = p->lex.pcur - p->lex.pbeg;
+    rb_len_t len, offset = p->lex.pcur - p->lex.pbeg;
     int c = nextc(p), term, func = 0, quote = 0;
     enum yytokentype token = tSTRING_BEG;
     int indent = 0;
@@ -8735,7 +8776,7 @@ heredoc_identifier(struct parser_params *p)
     }
 
     len = p->lex.pcur - (p->lex.pbeg + offset) - quote;
-    if ((unsigned long)len >= HERETERM_LENGTH_MAX)
+    if ((rb_ulen_t)len >= HERETERM_LENGTH_MAX)
         yyerror0("too long here document identifier");
     dispatch_scan_event(p, tHEREDOC_BEG);
     lex_goto_eol(p);
@@ -8776,7 +8817,7 @@ heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
 }
 
 static int
-dedent_string_column(const char *str, long len, int width)
+dedent_string_column(const char *str, rb_len_t len, int width)
 {
     int i, col = 0;
 
@@ -8801,7 +8842,7 @@ static int
 dedent_string(struct parser_params *p, rb_parser_string_t *string, int width)
 {
     char *str;
-    long len;
+    rb_len_t len;
     int i;
 
     len = PARSER_STRING_LEN(string);
@@ -9885,6 +9926,7 @@ parse_numeric(struct parser_params *p, int c)
             type = tRATIONAL;
         }
         else {
+            errno = 0;
             strtod(tok(p), 0);
             if (errno == ERANGE) {
                 rb_warning1("Float %s out of range", WARN_S(tok(p)));
@@ -10341,7 +10383,7 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
     if (peek_end_expect_token_locations(p)) {
         const rb_code_position_t *end_pos;
         int lineno, column;
-        int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
+        int beg_pos = parser_column(p->lex.ptok - p->lex.pbeg);
 
         end_pos = peek_end_expect_token_locations(p)->pos;
         lineno = end_pos->lineno;
@@ -13409,9 +13451,9 @@ YYLTYPE *
 rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_heredoc_t *here, YYLTYPE *yylloc)
 {
     int sourceline = here->sourceline;
-    int beg_pos = (int)here->offset - here->quote
-        - (rb_strlen_lit("<<-") - !(here->func & STR_FUNC_INDENT));
-    int end_pos = (int)here->offset + here->length + here->quote;
+    int beg_pos = parser_column(here->offset - here->quote
+        - (rb_strlen_lit("<<-") - !(here->func & STR_FUNC_INDENT)));
+    int end_pos = parser_column(here->offset + here->length + here->quote);
 
     return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
 }
@@ -13431,8 +13473,8 @@ YYLTYPE *
 rb_parser_set_location_of_heredoc_end(struct parser_params *p, YYLTYPE *yylloc)
 {
     int sourceline = p->ruby_sourceline;
-    int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
-    int end_pos = (int)(p->lex.pend - p->lex.pbeg);
+    int beg_pos = parser_column(p->lex.ptok - p->lex.pbeg);
+    int end_pos = parser_column(p->lex.pend - p->lex.pbeg);
     return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
 }
 
@@ -13448,8 +13490,8 @@ YYLTYPE *
 rb_parser_set_location_of_none(struct parser_params *p, YYLTYPE *yylloc)
 {
     int sourceline = p->ruby_sourceline;
-    int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
-    int end_pos = (int)(p->lex.ptok - p->lex.pbeg);
+    int beg_pos = parser_column(p->lex.ptok - p->lex.pbeg);
+    int end_pos = parser_column(p->lex.ptok - p->lex.pbeg);
     return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
 }
 
@@ -13457,8 +13499,8 @@ YYLTYPE *
 rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc)
 {
     int sourceline = p->ruby_sourceline;
-    int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
-    int end_pos = (int)(p->lex.pcur - p->lex.pbeg);
+    int beg_pos = parser_column(p->lex.ptok - p->lex.pbeg);
+    int end_pos = parser_column(p->lex.pcur - p->lex.pbeg);
     return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
 }
 #endif /* !RIPPER */
@@ -13917,8 +13959,10 @@ value_expr_check(struct parser_params *p, NODE *node)
 
           case NODE_AND:
           case NODE_OR:
-            node = RNODE_AND(node)->nd_1st;
-            break;
+            /* The left operand was already checked for a value when logop()
+             * built this node, so stop here instead of re-reporting the same
+             * void value once per operator in a chain. */
+            return NULL;
 
           case NODE_LASGN:
           case NODE_DASGN:
@@ -14085,8 +14129,12 @@ reduce_nodes(struct parser_params *p, NODE **body)
     while (node) {
         int newline = (int)nd_fl_newline(node);
         switch (nd_type(node)) {
-          end:
           case NODE_NIL:
+            // Keep an explicit nil in a method's tail (value) position when it
+            // is on its own line, so it still emits a :line event and records
+            // line coverage for that line. [Bug #22302]
+            if (newline) return;
+          end:
             *body = 0;
             return;
           case NODE_BEGIN:
@@ -14339,25 +14387,70 @@ new_unless(struct parser_params *p, NODE *cc, NODE *left, NODE *right, const YYL
 
 #define NEW_AND_OR(type, f, s, loc, op_loc) (type == NODE_AND ? NEW_AND(f,s,loc,op_loc) : NEW_OR(f,s,loc,op_loc))
 
+/* A cached logop tail is usable only if it is still a node of the chain's type
+ * whose nd_2nd is the insertion point, i.e. not itself another node of that
+ * type. This rejects a stale cache left over from an earlier parse. */
+static int
+logop_valid_tail(NODE *tail, enum node_type type)
+{
+    NODE *second;
+    return tail && nd_type_p(tail, type) &&
+        ((second = RNODE_AND(tail)->nd_2nd) == 0 || !nd_type_p(second, type));
+}
+
 static NODE*
 logop(struct parser_params *p, ID id, NODE *left, NODE *right,
           const YYLTYPE *op_loc, const YYLTYPE *loc)
 {
     enum node_type type = id == idAND || id == idANDOP ? NODE_AND : NODE_OR;
     NODE *op;
+    /* Snapshot the cache from the previous logop() call before overwriting it. */
+    NODE *prev_head = p->logop.head;
+    NODE *prev_tail = p->logop.tail;
+    NODE *node, *second;
     value_expr(p, left);
     if (left && nd_type_p(left, type)) {
-        NODE *node = left, *second;
-        while ((second = RNODE_AND(node)->nd_2nd) != 0 && nd_type_p(second, type)) {
-            node = second;
+        /* The insertion point is the far end of left's right branch.
+         * Reusing the cached tail keeps a chain such as `a && a && ... && a`
+         * linear instead of rescanning the whole branch on every operator. The
+         * cache is validated (its nd_2nd is not another node of the same type)
+         * so a stale entry falls back to the scan. */
+        if (left == prev_head && logop_valid_tail(prev_tail, type)) {
+            node = prev_tail;
         }
+        else {
+            node = left;
+            while ((second = RNODE_AND(node)->nd_2nd) != 0 && nd_type_p(second, type)) {
+                node = second;
+            }
+        }
+        second = RNODE_AND(node)->nd_2nd;
         RNODE_AND(node)->nd_2nd = NEW_AND_OR(type, second, right, loc, op_loc);
         nd_set_line(RNODE_AND(node)->nd_2nd, op_loc->beg_pos.lineno);
         left->nd_loc.end_pos = loc->end_pos;
+        p->logop.head = left;
+        p->logop.tail = RNODE_AND(node)->nd_2nd;
         return left;
     }
     op = NEW_AND_OR(type, left, right, loc, op_loc);
     nd_set_line(op, op_loc->beg_pos.lineno);
+    /* Record where the next operator will extend op, mirroring the scan the
+     * chained branch above would perform: if right is itself a chain of the
+     * same type (from parentheses), its far end; otherwise op itself. */
+    p->logop.head = op;
+    if (right == prev_head && logop_valid_tail(prev_tail, type)) {
+        p->logop.tail = prev_tail;
+    }
+    else if (right && nd_type_p(right, type)) {
+        node = right;
+        while ((second = RNODE_AND(node)->nd_2nd) != 0 && nd_type_p(second, type)) {
+            node = second;
+        }
+        p->logop.tail = node;
+    }
+    else {
+        p->logop.tail = op;
+    }
     return op;
 }
 
@@ -14767,19 +14860,25 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_c
     if (lhs) {
         ID vid = get_nd_vid(p, lhs);
         YYLTYPE lhs_loc = lhs->nd_loc;
+        /* A constant read can raise NameError. Prism has no separate read node
+         * for `Const op= value` and reports the whole expression, so give the
+         * NODE_CONST the location of the whole operator assignment as well,
+         * for consistent Thread::Backtrace::Location#source_range between both
+         * parsers. */
+        const YYLTYPE *read_loc = nd_type_p(lhs, NODE_CDECL) ? loc : &lhs_loc;
         if (op == tOROP) {
             set_nd_value(p, lhs, rhs);
             nd_set_loc(lhs, loc);
-            asgn = NEW_OP_ASGN_OR(gettable(p, vid, &lhs_loc), lhs, loc);
+            asgn = NEW_OP_ASGN_OR(gettable(p, vid, read_loc), lhs, loc);
         }
         else if (op == tANDOP) {
             set_nd_value(p, lhs, rhs);
             nd_set_loc(lhs, loc);
-            asgn = NEW_OP_ASGN_AND(gettable(p, vid, &lhs_loc), lhs, loc);
+            asgn = NEW_OP_ASGN_AND(gettable(p, vid, read_loc), lhs, loc);
         }
         else {
             asgn = lhs;
-            rhs = NEW_CALL(gettable(p, vid, &lhs_loc), op, NEW_LIST(rhs, &rhs->nd_loc), loc);
+            rhs = NEW_CALL(gettable(p, vid, read_loc), op, NEW_LIST(rhs, &rhs->nd_loc), loc);
             set_nd_value(p, asgn, rhs);
             nd_set_loc(asgn, loc);
         }
@@ -15917,7 +16016,7 @@ parser_compile_error(struct parser_params *p, const rb_code_location_t *loc, con
     }
     else {
         lineno = p->ruby_sourceline;
-        column = rb_long2int(p->lex.pcur - p->lex.pbeg);
+        column = rb_len2int(p->lex.pcur - p->lex.pbeg);
     }
 
     rb_io_flush(p->debug_output);

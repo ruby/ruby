@@ -206,18 +206,18 @@ RSpec.describe Bundler::Source::Rubygems::Remote do
 
     it "reads the settings only once, however many candidates ask" do
       r = Bundler::Source::Rubygems::Remote.new(uri_no_auth, cooldown: 7)
-      expect(Bundler.settings).to receive(:[]).with(:cooldown).once.and_return(14)
+      expect(Bundler.settings).to receive(:cooldown_for).with(7).once.and_return(14)
 
       expect(r.effective_cooldown).to eq(14)
       expect(r.effective_cooldown).to eq(14)
     end
 
-    it "memoizes an absent override without re-reading the settings" do
+    it "memoizes an absent cooldown without re-reading the settings" do
       r = Bundler::Source::Rubygems::Remote.new(uri_no_auth, cooldown: 7)
-      expect(Bundler.settings).to receive(:[]).with(:cooldown).once.and_return(nil)
+      expect(Bundler.settings).to receive(:cooldown_for).with(7).once.and_return(nil)
 
-      expect(r.effective_cooldown).to eq(7)
-      expect(r.effective_cooldown).to eq(7)
+      expect(r.effective_cooldown).to be_nil
+      expect(r.effective_cooldown).to be_nil
     end
   end
 end

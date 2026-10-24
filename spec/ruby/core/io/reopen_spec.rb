@@ -45,8 +45,8 @@ describe "IO#reopen" do
   it "raises an IOError when called on a closed stream with an object" do
     @io.close
     obj = mock("io")
-    obj.should_not_receive(:to_io)
-    -> { @io.reopen(STDOUT) }.should.raise(IOError)
+    obj.should_receive(:to_io).and_return(STDOUT)
+    -> { @io.reopen obj }.should.raise(IOError)
   end
 
   it "raises an IOError if the IO argument is closed" do

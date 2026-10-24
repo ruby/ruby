@@ -76,7 +76,7 @@ The position need not be at a character boundary:
 <b>Special Record Separators</b>
 
 Like some methods in class IO, method +gets+ honors two special record separators;
-see {Special Line Separators}[https://docs.ruby-lang.org/en/master/IO.html#class-IO-label-Special+Line+Separator+Values]:
+see {Special Line Separators}[rdoc-ref:IO@Special+Line+Separator+Values]:
 
   strio = StringIO.new(TEXT)
   strio.gets('')  # Read "paragraph" (up to empty line).

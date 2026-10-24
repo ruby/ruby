@@ -1,9 +1,10 @@
 use crate::abi::GCThreadTLS;
 
-use crate::upcalls;
-use crate::utils::ChunkedVecCollector;
 use crate::Ruby;
 use crate::RubySlot;
+use crate::upcalls;
+use crate::utils::ChunkedVecCollector;
+use mmtk::Mutator;
 use mmtk::memory_manager;
 use mmtk::scheduler::GCWork;
 use mmtk::scheduler::GCWorker;
@@ -14,7 +15,6 @@ use mmtk::vm::ObjectTracer;
 use mmtk::vm::RootsWorkFactory;
 use mmtk::vm::Scanning;
 use mmtk::vm::SlotVisitor;
-use mmtk::Mutator;
 
 pub struct VMScanning {}
 
@@ -76,10 +76,10 @@ impl Scanning<Ruby> for VMScanning {
         gc_tls
             .object_closure
             .set_temporarily_and_run_code(visit_object, || {
-                (upcalls().call_gc_mark_children)(object);
+                upcalls::call_gc_mark_children(object);
 
                 if crate::mmtk().get_plan().current_gc_may_move_object() {
-                    (upcalls().update_object_references)(object);
+                    upcalls::update_object_references(object);
                 }
             });
     }
@@ -111,7 +111,7 @@ impl Scanning<Ruby> for VMScanning {
 
         'gen_wb_unprotected_work: {
             let is_nursery_gc = (crate::mmtk().get_plan().generational())
-                .is_some_and(|gen| gen.is_current_gc_nursery());
+                .is_some_and(|gen_plan| gen_plan.is_current_gc_nursery());
             if !is_nursery_gc {
                 break 'gen_wb_unprotected_work;
             }
@@ -256,11 +256,11 @@ macro_rules! define_global_root_scanner {
 }
 
 define_global_root_scanner!(ScanGCRoots, {
-    (crate::upcalls().scan_gc_roots)();
+    crate::upcalls::scan_gc_roots();
 });
 
 define_global_root_scanner!(ScanObjspace, {
-    (crate::upcalls().scan_objspace)();
+    crate::upcalls::scan_objspace();
 });
 
 struct ScanWbUnprotectedRoots<F: RootsWorkFactory<RubySlot>> {
@@ -275,10 +275,10 @@ impl<F: RootsWorkFactory<RubySlot>> GCWork<Ruby> for ScanWbUnprotectedRoots<F> {
             for object in self.objects.iter().copied() {
                 if object.is_reachable() {
                     debug!("[wb_unprot_roots] Visiting WB-unprotected object (parent): {object}");
-                    (upcalls().call_gc_mark_children)(object);
+                    upcalls::call_gc_mark_children(object);
 
                     if crate::mmtk().get_plan().current_gc_may_move_object() {
-                        (upcalls().update_object_references)(object);
+                        upcalls::update_object_references(object);
                     }
                 } else {
                     debug!(

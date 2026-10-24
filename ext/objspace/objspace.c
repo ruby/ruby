@@ -403,7 +403,7 @@ count_tdata_objects(int argc, VALUE *argv, VALUE self)
     return hash;
 }
 
-static ID imemo_type_ids[IMEMO_MASK+1];
+static ID imemo_type_ids[(IMEMO_MASK >> FL_USHIFT) + 1];
 
 static void
 count_imemo_objects_i(VALUE v, void *data)

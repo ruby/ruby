@@ -2,12 +2,12 @@
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   # These tests are simply to exercise snippets found by the fuzzer that caused
   # invalid memory access.
   class FuzzerTest < TestCase
     def self.snippet(name, source)
-      define_method(:"test_fuzzer_#{name}") { Prism.profile(source) }
+      define_method(:"test_fuzzer_#{name}") { Ruby::Prism.profile(source) }
     end
 
     snippet "incomplete global variable", "$"
@@ -63,5 +63,13 @@ module Prism
       a
       /{/, ''\\
     RUBY
+
+    snippet "escaped newline in char literal after heredoc opener", "<<i=?\\\n\n\n"
+    snippet "escaped newline in char literal after heredoc opener with operator", "<<T^?\\\n\n\n"
+    snippet "control escape consuming newline after heredoc in interpolation", "%\n\#{<<e}\\c\n\n"
+    snippet "named capture that is a single backslash", "/(?<\\>/ =~ a"
+    snippet "named capture that starts with an escape", "/(?<\\<>/ =~ a"
+    snippet "named capture that is an empty unicode escape", "/(?<\\u{}>/ =~ a"
+    snippet "named capture with consecutive empty unicode escapes", "/(?<\\u{}\\u{}\\x41>/ =~ a"
   end
 end

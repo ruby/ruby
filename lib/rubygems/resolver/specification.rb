@@ -61,6 +61,11 @@ class Gem::Resolver::Specification
   attr_reader :created_at
 
   ##
+  # The content address of this specification.
+
+  attr_reader :content_address
+
+  ##
   # Sets default instance variables for the specification.
 
   def initialize
@@ -73,6 +78,7 @@ class Gem::Resolver::Specification
     @version      = nil
     @required_ruby_version = Gem::Requirement.default
     @required_rubygems_version = Gem::Requirement.default
+    @content_address = nil
   end
 
   ##
@@ -105,7 +111,9 @@ class Gem::Resolver::Specification
 
     gem = download options
 
-    installer = Gem::Installer.at gem, options
+    installer = Gem::Installer.at gem, options.merge(
+      content_address: (spec.content_address if Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false))
+    )
 
     yield installer if block_given?
 

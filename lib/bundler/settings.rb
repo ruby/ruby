@@ -187,6 +187,7 @@ module Bundler
       # The listing comes from the globally selected store, but a host can name
       # its own, so keep only the keys the per-host lookup agrees are set.
       keys.select! {|key| credential_stored?(key) }
+      keys << "cooldown" if gemrc_cooldown_days
 
       all.union(keys).sort
     end
@@ -258,8 +259,25 @@ module Bundler
         locations << "Set for the current user (#{global_config_file}): #{printable_value(value, exposed_key).inspect}"
       end
 
+      # The gemrc cooldown sits outside the priority order too. It is not one
+      # of the layers, it raises whatever they resolve to. See #cooldown_for.
+      if key == key_for(:cooldown) && (days = gemrc_cooldown_days)
+        line = "Set in the RubyGems configuration as `:cooldown:`: #{days}"
+        line += ". The longer of that and the top value applies" unless locations.empty?
+        locations << line
+      end
+
       return ["You have not configured a value for `#{exposed_key}`"] if locations.empty?
       locations
+    end
+
+    ##
+    # True when +name+ has a configured value Settings#[] cannot see. A
+    # credential in the store is one, and so is the RubyGems `:cooldown:`
+    # setting that #cooldown_for raises the config layers to.
+
+    def stored_outside_config_files?(name)
+      credential_stored?(name) || (key_for(name) == key_for(:cooldown) && !gemrc_cooldown_days.nil?)
     end
 
     ##
@@ -369,6 +387,50 @@ module Bundler
       self[:jobs] || processor_count
     end
 
+    ##
+    # The cooldown that applies to a source whose Gemfile declaration asks for
+    # +source_cooldown+ days.
+    #
+    # `--cooldown` is set as a command line option, and it wins outright so
+    # that `--cooldown 0` bypasses the cooldown however the two tools are
+    # configured. Otherwise this setting, or the per-source value when this
+    # setting is unset, is raised to RubyGems' own `:cooldown:` setting, so a
+    # cooldown configured for only one of the two tools covers both.
+
+    def cooldown_for(source_cooldown = nil)
+      command_line = @temporary[key_for(:cooldown)]
+      return converted_value(command_line, :cooldown) unless command_line.nil?
+
+      # Read raw rather than through #[], whose `to_i` would turn a value that
+      # is not a number into a 0 that suppresses `source_cooldown`.
+      configured = cooldown_settings.days(configured_value(:cooldown))
+
+      cooldown_settings.combine(configured || source_cooldown, rubygems_cooldown)
+    end
+
+    ##
+    # RubyGems' `:cooldown:` gemrc setting, read from the loaded gemrc rather
+    # than from `Gem.configuration.cooldown`, which only exists on RubyGems
+    # versions that know the setting. A value assigned to that accessor from
+    # Ruby after startup is therefore not seen here.
+    #
+    # Reading it builds Gem::ConfigFile, which costs a command that never
+    # resolves against a remote around 30ms it has no use for, so the setting
+    # is validated here, at the point of use, rather than when the command
+    # starts.
+
+    def rubygems_cooldown
+      return @rubygems_cooldown if defined?(@rubygems_cooldown)
+
+      @rubygems_cooldown = gemrc_cooldown
+
+      if cooldown_settings.invalid?(@rubygems_cooldown)
+        Bundler.ui.warn cooldown_settings.invalid_message(@rubygems_cooldown, "the gemrc file")
+      end
+
+      @rubygems_cooldown
+    end
+
     def validate!
       all.each do |raw_key|
         [@local_config, @env_config, @global_config].each do |settings|
@@ -383,6 +445,27 @@ module Bundler
     end
 
     private
+
+    def cooldown_settings
+      require "rubygems/cooldown_settings"
+      Gem::CooldownSettings
+    end
+
+    # Scanned rather than looked up, because ConfigFile#[] stringifies the key
+    # on RubyGems 3.4 and a `:cooldown:` gemrc entry is stored under a Symbol.
+
+    def gemrc_cooldown
+      Gem.configuration.each {|key, value| return value if key.to_s == "cooldown" }
+      nil
+    end
+
+    # The gemrc cooldown as a usable number of days, or nil. A value that is
+    # not one takes no part in the resolution, so nothing reports it as
+    # configured either.
+
+    def gemrc_cooldown_days
+      cooldown_settings.days(rubygems_cooldown)
+    end
 
     def configs
       @configs ||= {
@@ -813,32 +896,16 @@ module Bundler
       "#{prefix}#{uri}#{suffix}"
     end
 
-    # This is a hot method, so avoid respond_to? checks on every invocation
-    if :read.respond_to?(:name)
-      def self.key_to_s(key)
-        case key
-        when String
-          key
-        when Symbol
-          key.name
-        when Gem::URI::HTTP
-          key.to_s
-        else
-          raise ArgumentError, "Invalid key: #{key.inspect}"
-        end
-      end
-    else
-      def self.key_to_s(key)
-        case key
-        when String
-          key
-        when Symbol
-          key.to_s
-        when Gem::URI::HTTP
-          key.to_s
-        else
-          raise ArgumentError, "Invalid key: #{key.inspect}"
-        end
+    def self.key_to_s(key)
+      case key
+      when String
+        key
+      when Symbol
+        key.name
+      when Gem::URI::HTTP
+        key.to_s
+      else
+        raise ArgumentError, "Invalid key: #{key.inspect}"
       end
     end
   end

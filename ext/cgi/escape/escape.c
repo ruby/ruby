@@ -1,6 +1,11 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
 
+#ifndef HAVE_RB_LEN_T
+typedef long rb_len_t;
+# define RB_LEN_MAX LONG_MAX
+#endif
+
 RUBY_EXTERN unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
 RUBY_EXTERN const char ruby_hexdigits[];
 RUBY_EXTERN const signed char ruby_digit36_to_number_table[];
@@ -32,11 +37,11 @@ preserve_original_state(VALUE orig, VALUE dest)
     rb_enc_associate(dest, rb_enc_get(orig));
 }
 
-static inline long
+static inline rb_len_t
 escaped_length(VALUE str)
 {
-    const long len = RSTRING_LEN(str);
-    if (len >= LONG_MAX / HTML_ESCAPE_MAX_LEN) {
+    const rb_len_t len = RSTRING_LEN(str);
+    if (len >= RB_LEN_MAX / HTML_ESCAPE_MAX_LEN) {
         ruby_malloc_size_overflow(len, HTML_ESCAPE_MAX_LEN);
     }
     return len * HTML_ESCAPE_MAX_LEN;
@@ -83,7 +88,7 @@ optimized_unescape_html(VALUE str)
     unsigned long charlimit = (strcasecmp(rb_enc_name(enc), "UTF-8") == 0 ? UNICODE_MAX :
                                strcasecmp(rb_enc_name(enc), "ISO-8859-1") == 0 ? 256 :
                                128);
-    long i, j, len, beg = 0;
+    rb_len_t i, j, len, beg = 0;
     size_t clen, plen;
     int overflow;
     const char *cstr;
@@ -221,7 +226,7 @@ url_unreserved_char(unsigned char c)
 static VALUE
 optimized_escape(VALUE str, int plus_escape)
 {
-    long i, len, beg = 0;
+    rb_len_t i, len, beg = 0;
     VALUE dest = 0;
     const char *cstr;
     char buf[4] = {'%'};
@@ -263,7 +268,7 @@ optimized_escape(VALUE str, int plus_escape)
 static VALUE
 optimized_unescape(VALUE str, VALUE encoding, int unescape_plus)
 {
-    long i, len, beg = 0;
+    rb_len_t i, len, beg = 0;
     VALUE dest = 0;
     const char *cstr;
     rb_encoding *enc = rb_to_encoding(encoding);

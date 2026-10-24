@@ -177,6 +177,58 @@ RSpec.describe "bundle lock" do
     expect(read_lockfile).to eq(expected_lockfile)
   end
 
+  it "writes the lockfile configured in the Gemfile" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+      gem "foo", "1.0"
+      lockfile "custom.lock"
+    G
+
+    bundle "lock"
+
+    expect(bundled_app("Gemfile.lock")).not_to exist
+    expect(bundled_app("custom.lock")).to exist
+  end
+
+  it "writes to BUNDLE_LOCKFILE over the lockfile configured in the Gemfile" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+      gem "foo", "1.0"
+      lockfile "custom.lock"
+    G
+
+    bundle "lock", env: { "BUNDLE_LOCKFILE" => "env.lock" }
+
+    expect(bundled_app("env.lock")).to exist
+    expect(bundled_app("custom.lock")).not_to exist
+  end
+
+  it "does not write a lockfile when the Gemfile sets lockfile false" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+      gem "foo", "1.0"
+      lockfile false
+    G
+
+    bundle "lock"
+
+    expect(err).to include("Not writing a lockfile because the Gemfile sets `lockfile false`")
+    expect(out).not_to include("Writing lockfile")
+    expect(bundled_app_lock).not_to exist
+  end
+
   it "prints a lockfile without fetching new checksums if the existing lockfile had no checksums" do
     gemfile_with_rails_weakling_and_foo_from_repo4
 
@@ -884,6 +936,26 @@ RSpec.describe "bundle lock" do
 
     bundle "lock --update --bundler --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
     expect(lockfile).to end_with("BUNDLED WITH\n  99\n")
+  end
+
+  it "does not update the bundler version in the lockfile to a prerelease version, unless the target version allows prereleases" do
+    build_repo4 do
+      build_gem "bundler", "55"
+      build_gem "bundler", "56.0.0.beta1"
+    end
+
+    system_gems "bundler-55", gem_repo: gem_repo4
+
+    install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      source "https://gem.repo4"
+    G
+    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
+
+    bundle "lock --update --bundler --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    expect(lockfile).to end_with("BUNDLED WITH\n  55\n")
+
+    bundle "lock --update --bundler '> 0.a' --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    expect(lockfile).to end_with("BUNDLED WITH\n  56.0.0.beta1\n")
   end
 
   it "supports adding new platforms when there's no previous lockfile" do

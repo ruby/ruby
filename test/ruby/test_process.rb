@@ -20,7 +20,7 @@ class TestProcess < Test::Unit::TestCase
     self.class.windows?
   end
   def self.windows?
-    return /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+    return /mswin|mingw/ =~ RUBY_PLATFORM
   end
 
   def with_tmpchdir
@@ -292,7 +292,7 @@ class TestProcess < Test::Unit::TestCase
   end
   case RbConfig::CONFIG['target_os']
   when /mswin|mingw/
-    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR PROCESSOR_ARCHITECTURE])
+    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR PROCESSOR_ARCHITECTURE PROCESSOR_ARCHITEW6432])
   when /darwin/
     MANDATORY_ENVS.concat(%w[TMPDIR], ENV.keys.grep(/\A__CF_/))
     # IO.popen([ENV.keys.to_h {|e| [e, nil]},
@@ -1166,6 +1166,21 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_exec_relative_path_after_multibyte_dir
+    return unless windows?
+    with_tmpchdir {|d|
+      dir = "\u{3042}"
+      Dir.mkdir(dir)
+      File.write("#{dir}/foo.cmd", "@echo cwd\n")
+      Dir.mkdir("path")
+      Dir.mkdir("path/#{dir}")
+      File.write("path/#{dir}/foo.cmd", "@echo path\n")
+      env = {"PATH"=>"#{d}/path;#{ENV["PATH"]}"}
+      r = IO.popen([env, RUBY, "-e", "exec(*ARGV)", "#{dir}\\foo", "x"], &:read)
+      assert_equal("cwd", r.chomp)
+    }
+  end
+
   def test_system_wordsplit
     with_tmpchdir {|d|
       File.write("script", <<-'End')
@@ -1270,7 +1285,7 @@ class TestProcess < Test::Unit::TestCase
     with_tmpchdir {|d|
       File.write("script", <<-'End')
         File.open("result", "w") {|t|
-          if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+          if /mswin|mingw/ =~ RUBY_PLATFORM
             t << "hehe ppid=#{Process.ppid}"
           else
             t << "hehe pid=#{$$} ppid=#{Process.ppid}"
@@ -1795,7 +1810,7 @@ class TestProcess < Test::Unit::TestCase
       end
       assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
-    assert_equal [true], signal_received, "[ruby-core:19744]"
+    assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
   ensure
     begin
@@ -1840,46 +1855,29 @@ class TestProcess < Test::Unit::TestCase
 
   def test_spawn_too_long_path
     bug4314 = '[ruby-core:34842]'
-    assert_fail_too_long_path(%w"echo", bug4314)
+    assert_fail_too_long_path(false, bug4314)
   end
 
   def test_aspawn_too_long_path
-    bug4315 = '[ruby-core:34833] #7904 [ruby-core:52628] #11613'
-    assert_fail_too_long_path(%w"echo |", bug4315)
+    bug4315 = '[ruby-core:34833]'
+    assert_fail_too_long_path(true, bug4315)
   end
 
-  def assert_fail_too_long_path((cmd, sep), mesg)
-    sep ||= ""
-    min = 1_000 / (cmd.size + sep.size)
-    cmds = Array.new(min, cmd)
+  def assert_fail_too_long_path(use_shell, mesg)
+    cmd = "a" * 10_000_000
+    cmd.prepend("echo|") if use_shell
     exs = [Errno::ENOENT]
     exs << Errno::EINVAL if windows?
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
     opts = {[STDOUT, STDERR]=>File::NULL}
-    if defined?(Process::RLIMIT_NPROC)
-      opts[:rlimit_nproc] = /openbsd/i =~ RUBY_PLATFORM ? 64 : 128
-    end
-    EnvUtil.suppress_warning do
-      assert_raise(*exs, mesg) do
-        begin
-          loop do
-            Process.spawn(cmds.join(sep), opts)
-            min = [cmds.size, min].max
-            begin
-              cmds *= 100
-            rescue ArgumentError
-              raise NoMemoryError
-            end
-          end
-        rescue NoMemoryError
-          size = cmds.size
-          raise if min >= size - 1
-          min = [min, size /= 2].max
-          cmds[size..-1] = []
-          raise if size < 250
-          retry
-        end
+    begin
+      EnvUtil.suppress_warning do
+        Process.spawn(cmd, opts)
       end
+    rescue => e
+      assert_include(exs, e.class, mesg)
+    else
+      omit "system supports very long command line; skipping"
     end
   end
 
@@ -1947,6 +1945,32 @@ class TestProcess < Test::Unit::TestCase
         puts $$
       end
       assert_not_equal(cpid, dpid)
+    end
+
+    def test_daemon_after_getaddrinfo
+      data = IO.popen("-", "r+") do |f|
+        break f.read if f
+        require "socket"
+        Addrinfo.getaddrinfo("localhost", 80, :INET, :STREAM)
+        Process.daemon(true, true)
+        Addrinfo.getaddrinfo("localhost", 80, :INET, :STREAM)
+        Process.wait(fork {})
+        puts "ok"
+      end
+      assert_equal("ok\n", data, "[Bug #22406]")
+    end
+
+    def test_daemon_after_getnameinfo
+      data = IO.popen("-", "r+") do |f|
+        break f.read if f
+        require "socket"
+        Socket.getnameinfo(["AF_INET", 80, "127.0.0.1"], Socket::NI_NUMERICHOST)
+        Process.daemon(true, true)
+        Socket.getnameinfo(["AF_INET", 80, "127.0.0.1"], Socket::NI_NUMERICHOST)
+        Process.wait(fork {})
+        puts "ok"
+      end
+      assert_equal("ok\n", data, "[Bug #22406]")
     end
 
     def test_daemon_detached
@@ -2587,7 +2611,7 @@ EOS
       bin = "#{EnvUtil.rubybin}"
       args = Array.new(256) {"x"}
       GC.stress = true
-      system(bin, "--disable=gems", "-w", "-e", "puts ARGV", *args)
+      system(bin, "--disable=gems", "-w", "-W:no-experimental", "-e", "puts ARGV", *args)
     end;
   end
 

@@ -93,6 +93,40 @@ EOS
     assert_equal('XXX YYY', res['x-bar'])
   end
 
+  def test_multiline_header_whitespace_only
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Content-Length: 5
+#{" \t"}
+X-After: value
+
+hello
+EOS
+    res = Net::HTTPResponse.read_new(io)
+    # Whitespace only line is ignored
+    assert_equal('5', res['content-length'])
+    assert_equal('value', res['x-after'])
+    body = nil
+    res.reading_body io, true do
+      body = res.read_body
+    end
+    assert_equal('hello', body)
+  end
+
+  def test_multiline_header_no_preceding_header
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+#{" \t"}
+Content-Length: 5
+
+hello
+EOS
+    e = assert_raise(Net::HTTPBadResponse) do
+      Net::HTTPResponse.read_new(io)
+    end
+    assert_equal 'wrong header line format', e.message
+  end
+
   def test_read_body
     io = dummy_io(<<EOS)
 HTTP/1.1 200 OK
@@ -111,6 +145,73 @@ EOS
     end
 
     assert_equal 'hello', body
+  end
+
+  def test_read_body_chunked_is_final_transfer_coding
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Transfer-Encoding: gzip, chunked
+
+5
+hello
+0
+
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal 'hello', body
+  end
+
+  def test_read_body_chunked_is_not_final_transfer_coding
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Transfer-Encoding: chunked, gzip
+
+5
+hello
+0
+
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal "5\r\nhello\r\n0\r\n\r\n", body
+  end
+
+  def test_read_body_transfer_encoding_overrides_content_length
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Transfer-Encoding: chunked, gzip
+Content-Length: 2
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal "hello\r\n", body
   end
 
   def test_read_body_invalid_content_length

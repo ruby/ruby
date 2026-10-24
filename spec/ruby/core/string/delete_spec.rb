@@ -54,12 +54,15 @@ describe "String#delete" do
     '哥哥我倒'.delete('哥').should == "我倒"
   end
 
-  it "respects backslash for escaping a -" do
+  it "respects backslash for escaping" do
     'Non-Authoritative Information'.delete(' \-\'').should ==
       'NonAuthoritativeInformation'
+    "a-b".delete("a\\-b").should == ""
+    "^".delete("\\^").should == ""
+    "\\".delete("\\\\").should == ""
   end
 
-  it "raises if the given ranges are invalid" do
+  it "raises an ArgumentError when the sequence is invalid" do
     not_supported_on :opal do
       xFF = [0xFF].pack('C')
       range = "\x00 - #{xFF}".force_encoding('utf-8')
@@ -69,7 +72,7 @@ describe "String#delete" do
     -> { "hello".delete("^h-e") }.should.raise(ArgumentError)
   end
 
-  it "tries to convert each set arg to a string using to_str" do
+  it "tries to convert each argument to a string using to_str" do
     other_string = mock('lo')
     other_string.should_receive(:to_str).and_return("lo")
 
@@ -79,7 +82,7 @@ describe "String#delete" do
     "hello world".delete(other_string, other_string2).should == "hell wrld"
   end
 
-  it "raises a TypeError when one set arg can't be converted to a string" do
+  it "raises a TypeError when an argument can't be converted to a string" do
     -> { "hello world".delete(100)       }.should.raise(TypeError)
     -> { "hello world".delete([])        }.should.raise(TypeError)
     -> { "hello world".delete(mock('x')) }.should.raise(TypeError)
@@ -91,6 +94,11 @@ describe "String#delete" do
 
   it "returns a String in the same encoding as self" do
     "hello".encode("US-ASCII").delete("lo").encoding.should == Encoding::US_ASCII
+  end
+
+  it "raises an Encoding::CompatibilityError when the encodings are incompatible" do
+    -> { "hello".delete("e".encode("UTF-16LE")) }.should.raise(Encoding::CompatibilityError)
+    -> { "hello".encode("UTF-16LE").delete("e") }.should.raise(Encoding::CompatibilityError)
   end
 end
 

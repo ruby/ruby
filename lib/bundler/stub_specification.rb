@@ -4,7 +4,8 @@ module Bundler
   class StubSpecification < RemoteSpecification
     def self.from_stub(stub)
       return stub if stub.is_a?(Bundler::StubSpecification)
-      spec = new(stub.name, stub.version, stub.platform, nil)
+      content_address = stub.content_address
+      spec = new(stub.name, stub.version, stub.platform, nil, content_address: content_address)
       spec.stub = stub
       spec
     end

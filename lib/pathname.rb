@@ -88,9 +88,9 @@ class Pathname    # * FileUtils *
   # :markup: markdown
   #
   # call-seq:
-  #   rmtree -> 0
+  #   rmtree(noop: nil, verbose: nil, secure: nil) -> self
   #
-  # Deletes the entire filetree at the path in `self`; returns `0`:
+  # Deletes the entire filetree at the path in `self`; returns `self`:
   #
   # ```ruby
   # dir_pn = Pathname('foo/bar/baz') # => #<Pathname:foo/bar/baz>
@@ -102,6 +102,8 @@ class Pathname    # * FileUtils *
   # ```
   #
   # Use method #rmdir to delete a single (empty) directory.
+  #
+  # See FileUtils.rm_rf for keyword arguments.
   #
   def rmtree(noop: nil, verbose: nil, secure: nil)
     # The name "rmtree" is borrowed from File::Path of Perl.

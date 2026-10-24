@@ -188,11 +188,14 @@ class Net::HTTPResponse
         line = read_line(sock, MAX_RESPONSE_HEADER_LENGTH, true)
         remaining -= line.bytesize
         raise Net::HTTPBadResponse, 'response header too large' if remaining < 0
-        line = line.sub(/\s+\z/, '')
+        line = line.chomp
         break if line.empty?
         if line[0] == ?\s or line[0] == ?\t and value
-          value << ' ' unless value.empty?
-          value << line.strip
+          folded = line.strip
+          unless folded.empty?
+            value << ' ' unless value.empty?
+            value << folded
+          end
         else
           yield key, value if key
           key, value = line.strip.split(/\s*:\s*/, 2)
@@ -616,15 +619,20 @@ class Net::HTTPResponse
 
       @socket = inflate_body_io
 
-      clen = content_length()
-      if clen
-        @socket.read clen, dest, @ignore_eof
-        return
-      end
-      clen = range_length()
-      if clen
-        @socket.read clen, dest
-        return
+      # Transfer-Encoding overrides Content-Length, so a body that is not
+      # chunk-framed runs until the server closes the connection.
+      # See RFC 9112 Section 6.3.
+      unless @header['transfer-encoding']
+        clen = content_length()
+        if clen
+          @socket.read clen, dest, @ignore_eof
+          return
+        end
+        clen = range_length()
+        if clen
+          @socket.read clen, dest
+          return
+        end
       end
       @socket.read_all dest
     end

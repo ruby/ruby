@@ -1,16 +1,17 @@
-use std::cell::{Cell, RefCell};
+use std::cell::Cell;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
 use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
-use crate::codegen::{perf_symbol_range_start, perf_symbol_range_end, register_with_perf};
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
+use crate::perf;
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
+use crate::asm::LabelName;
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
-use crate::options::{TraceExits, PerfMap, get_option};
-use crate::payload::{IseqVersionRef, get_or_create_iseq_payload};
+use crate::options::{TraceExits, get_option};
+use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
@@ -617,6 +618,13 @@ impl From<VALUE> for Opnd {
     }
 }
 
+/// `hir::BlockHandler` lowered for codegen: a block ISEQ (encoded as a specval
+/// at frame push) or an already-guarded Proc VALUE.
+pub enum BlockHandler {
+    Iseq(IseqPtr),
+    Proc(Opnd),
+}
+
 /// Context for a side exit. If `SideExit` matches, it reuses the same code.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExit {
@@ -628,8 +636,7 @@ pub struct SideExit {
     /// side exit. The current frame's stack and locals are still handled by
     /// `stack` and `locals` above.
     pub stack_map: Option<StackMap>,
-    /// If set, the side exit will profile the current instruction and invalidate
-    /// the compiled ISEQ for recompilation.
+    /// If set, the side exit will invalidate the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
 }
 
@@ -639,11 +646,6 @@ pub struct SideExitRecompile {
     /// The compiled unit whose version must be invalidated to force a recompile. For inlined
     /// methods, this will be the outer function it was inlined into.
     pub compiled_iseq: Opnd,
-    /// The exiting frame's ISEQ, which owns the profile entry for `insn_idx`. For
-    /// an exit out of inlined code this is the inlined callee, not the compiled unit.
-    pub frame_iseq: Opnd,
-    /// The exiting frame's instruction index within `frame_iseq`.
-    pub insn_idx: u32,
 }
 
 /// Payload of `Target::SideExit`, boxed to keep `Target` (and every `Insn`
@@ -1349,6 +1351,7 @@ impl Insn {
         self.is_jump() ||
             match self {
                 Insn::CRet(_) => true,
+                Insn::Abort => true,
                 _ => false
             }
     }
@@ -1483,13 +1486,6 @@ impl Interval {
 
     pub fn ends_before(&self, pos: usize) -> bool {
         self.end() <= pos
-    }
-
-    /// Check if the interval is alive at position
-    /// Panics if the range is not set
-    pub fn survives(&self, position: usize) -> bool {
-        assert!(self.ranges.len() > 0, "survives called on interval with no range");
-        self.ranges.iter().any(|range| range.from < position && position < range.to)
     }
 
     /// Returns true if position falls inside one of the ranges in this
@@ -1859,7 +1855,7 @@ pub struct Assembler {
     pub(super) num_vregs: usize,
 
     /// Names of labels
-    pub(super) label_names: Vec<String>,
+    pub(super) label_names: Vec<LabelName>,
 
     /// If true, `push_insn` is allowed to use scratch registers.
     /// On `compile`, it also disables the backend's use of them.
@@ -1961,7 +1957,7 @@ impl Assembler
     }
 
     // Create a LIR basic block without a valid HIR block ID (for testing or internal use).
-    pub fn new_block_without_id(&mut self, name: &str) -> BlockId {
+    pub fn new_block_without_id(&mut self, name: &'static str) -> BlockId {
         let bb_id = self.new_block(hir::BlockId(DUMMY_HIR_BLOCK_ID), true, DUMMY_RPO_INDEX);
         let label = self.new_label(name);
         self.write_label(label);
@@ -2034,42 +2030,6 @@ impl Assembler
     }
 
     pub fn linearize_instructions(&self) -> Vec<Insn> {
-        // Wrap instructions emitted by `push_insns` with PosMarkers and record
-        // the emitted byte range under `symbol_name` in the perf map.
-        fn push_insns_with_perf_symbol(
-            insns: &mut Vec<Insn>,
-            symbol_name: &str,
-            push_insns: impl FnOnce(&mut Vec<Insn>),
-        ) {
-            // ISEQ perf symbols cover the whole compiled ISEQ, including this
-            // padding. HIR perf needs a separate symbol because the padding
-            // doesn't belong to any HIR instruction.
-            if get_option!(perf) != Some(PerfMap::HIR) {
-                push_insns(insns);
-                return;
-            }
-
-            let symbol_name = symbol_name.to_string();
-            let start = Rc::new(RefCell::new(None));
-            let current = start.clone();
-            insns.push(Insn::PosMarker(Rc::new(move |code_ptr, _| {
-                let mut current = current.borrow_mut();
-                assert!(current.is_none(), "perf symbol range already open");
-                *current = Some(code_ptr);
-            })));
-
-            push_insns(insns);
-
-            insns.push(Insn::PosMarker(Rc::new(move |end, cb| {
-                if let Some(start) = start.borrow_mut().take() {
-                    let start_addr = start.raw_addr(cb);
-                    let end_addr = end.raw_addr(cb);
-                    if start_addr < end_addr {
-                        register_with_perf(symbol_name.clone(), start_addr, end_addr - start_addr);
-                    }
-                }
-            })));
-        }
 
         // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
@@ -2080,7 +2040,7 @@ impl Assembler
             // Entry blocks shouldn't ever be preceded by something that can
             // stomp on this block.
             if !block.is_entry {
-                push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
+                perf::push_insns_with_synthetic_symbol(&mut insns, "BoundaryPad", |insns| {
                     insns.push(Insn::BoundaryPad);
                 });
             }
@@ -2113,7 +2073,7 @@ impl Assembler
             }
         }
         // Make sure we don't stomp on the next function
-        push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
+        perf::push_insns_with_synthetic_symbol(&mut insns, "BoundaryPad", |insns| {
             insns.push(Insn::BoundaryPad);
         });
 
@@ -2213,12 +2173,15 @@ impl Assembler
     }
 
     /// Create a new label instance that we can jump to
-    pub fn new_label(&mut self, name: &str) -> Target
+    pub fn new_label(&mut self, name: impl Into<LabelName>) -> Target
     {
-        assert!(!name.contains(' '), "use underscores in label names, not spaces");
+        let name = name.into();
+        if let LabelName::Static(name) = name {
+            assert!(!name.contains(' '), "use underscores in label names, not spaces");
+        }
 
         let label = Label(self.label_names.len());
-        self.label_names.push(name.to_string());
+        self.label_names.push(name);
         Target::Label(label)
     }
 
@@ -2703,19 +2666,28 @@ impl Assembler
                         HashSet::default()
                     };
 
-                    // Find survivors: intervals that survive this Call instruction
-                    // We need to preserve the "surviving" registers past the ccall,
-                    // so we're going to push them all on the stack, then pop
-                    // after we make the ccall
+                    // Find survivors: intervals that are live across this Call
+                    // instruction. We need to preserve the "surviving" registers
+                    // past the ccall, so we're going to push them all on the
+                    // stack, then pop after we make the ccall
+                    let out_vreg_id = out.is_vreg().then(|| out.vreg_idx());
+                    debug_assert!(
+                        out_vreg_id.is_none_or(|id| !intervals[id].has_bounds() || intervals[id].born_at(insn_number)),
+                        "a CCall's output interval must start at the CCall"
+                    );
                     let survivors: Vec<VRegId> = intervals.iter()
                         .filter(|interval| {
                             // We need to spill register intervals on this CCall in two cases:
-                            // 1) The VReg is referenced in an instruction after the CCall
-                            let survives_call = interval.has_bounds() && interval.survives(insn_number);
+                            // 1) The VReg is live across the CCall. The VReg this CCall
+                            //    defines is not one of them: its range starts here, so it
+                            //    holds no value yet and there is nothing to preserve.
+                            let live_across_call = Some(interval.vreg_id) != out_vreg_id
+                                && interval.covers(insn_number);
+
                             // 2) The VReg is referenced by the stack map for the CCall
                             let stack_map_reg = stack_vreg_ids.contains(&interval.vreg_id);
                             let is_register = interval.assigned.get().and_then(|alloc| alloc.alloc_pool_index(alloc_regs)).is_some();
-                            is_register && (survives_call || stack_map_reg)
+                            is_register && (live_across_call || stack_map_reg)
                         })
                         .map(|interval| interval.vreg_id)
                         .collect();
@@ -3163,15 +3135,9 @@ impl Assembler
 
         fn compile_exit_recompile(asm: &mut Assembler, exit: &SideExit) {
             if let Some(recompile) = &exit.recompile {
-                let payload = get_or_create_iseq_payload(exit.iseq);
-                payload.reset_profiles_remaining(recompile.insn_idx as YarvInsnIdx);
                 use crate::codegen::exit_recompile;
-                asm_comment!(asm, "profile and maybe recompile");
-                asm_ccall!(asm, exit_recompile,
-                    recompile.compiled_iseq,
-                    recompile.frame_iseq,
-                    recompile.insn_idx.into()
-                );
+                asm_comment!(asm, "invalidate for recompilation");
+                asm_ccall!(asm, exit_recompile, recompile.compiled_iseq);
             }
         }
 
@@ -3230,19 +3196,15 @@ impl Assembler
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::with_capacity(targets.len());
 
-        // Start a new perf range for side exits
-        let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) {
-            Some(perf_symbol_range_start(self, "side exit"))
-        } else {
-            None
-        };
+        // Start a new perf range for side exits.
+        let symbol_range = perf::symbol_range_start(self, "side exit");
 
         // Mark the start of side-exit code so we can measure its size
         if !targets.is_empty() {
             self.pos_marker(move |start_pos, cb| {
                 let end_pos = cb.get_write_ptr();
                 let size = end_pos.as_offset() - start_pos.as_offset();
-                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size, size as u64);
+                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size_bytes, size as u64);
             });
         }
 
@@ -3316,8 +3278,8 @@ impl Assembler
         }
 
         // Close the current perf range for side exits
-        if let Some(perf_symbol) = &perf_symbol {
-            perf_symbol_range_end(self, perf_symbol);
+        if let Some(symbol_range) = &symbol_range {
+            perf::symbol_range_end(self, symbol_range);
         }
 
         // Extract exit instructions and restore the previous current block
@@ -3732,7 +3694,7 @@ fn format_insn_compact(asm: &Assembler, insn: &Insn) -> String {
 impl fmt::Display for Assembler {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Count the number of duplicated label names to disambiguate them if needed
-        let mut label_counts: HashMap<&String, usize> = HashMap::new();
+        let mut label_counts: HashMap<&LabelName, usize> = HashMap::new();
         let colors = crate::ttycolors::get_colors();
         let bold_begin = colors.bold_begin;
         let bold_end = colors.bold_end;
@@ -3742,7 +3704,7 @@ impl fmt::Display for Assembler {
         }
 
         /// Return a label name String. Suffix "_{label_idx}" if the label name is used multiple times.
-        fn label_name(asm: &Assembler, label_idx: usize, label_counts: &HashMap<&String, usize>) -> String {
+        fn label_name(asm: &Assembler, label_idx: usize, label_counts: &HashMap<&LabelName, usize>) -> String {
             let label_name = &asm.label_names[label_idx];
             let label_count = label_counts.get(&label_name).unwrap_or(&0);
             if *label_count > 1 {
@@ -4778,12 +4740,12 @@ mod tests {
         assert_eq!(interval.end(), 25);
 
         // The vreg is not live inside the hole ...
-        assert!(!interval.survives(10));
-        assert!(!interval.survives(15));
+        assert!(!interval.covers(10));
+        assert!(!interval.covers(15));
         // ... but the interval is not over, so it must keep its register.
         assert!(interval.end() > 15);
         // ... and it is live again on the far side.
-        assert!(interval.survives(22));
+        assert!(interval.covers(22));
 
         // A range that abuts the last one merges into it.
         interval.add_range(25, 30);
@@ -4809,15 +4771,15 @@ mod tests {
     }
 
     #[test]
-    fn test_interval_survives() {
+    fn test_interval_covers() {
         let mut interval = Interval::new(VRegId(1));
         interval.add_range(3, 10);
 
-        assert!(!interval.survives(2));  // Before range
-        assert!(!interval.survives(3));  // At start (exclusive)
-        assert!(interval.survives(5));   // Inside range
-        assert!(!interval.survives(10)); // At end (exclusive)
-        assert!(!interval.survives(11)); // After range
+        assert!(!interval.covers(2));  // Before range
+        assert!(interval.covers(3));   // At start (inclusive: the def position)
+        assert!(interval.covers(5));   // Inside range
+        assert!(!interval.covers(10)); // At end (exclusive)
+        assert!(!interval.covers(11)); // After range
     }
 
     #[test]
@@ -4829,7 +4791,6 @@ mod tests {
         // so position 11 belongs to no instruction.
         interval.set_from(10);
         assert_eq!(interval.ranges, vec![LiveRange { from: 10, to: 11 }]);
-        assert!(!interval.survives(10));
         assert!(interval.is_dead());
 
         // With existing range, updates start but keeps end
@@ -4861,13 +4822,6 @@ mod tests {
     fn test_interval_add_range_invalid() {
         let mut interval = Interval::new(VRegId(1));
         interval.add_range(10, 5);
-    }
-
-    #[test]
-    #[should_panic(expected = "survives called on interval with no range")]
-    fn test_interval_survives_panics_without_range() {
-        let interval = Interval::new(VRegId(1));
-        interval.survives(5);
     }
 
     #[test]
@@ -4906,7 +4860,7 @@ mod tests {
         ]);
         assert_eq!(intervals[r12_idx].start(), 20);
         assert_eq!(intervals[r12_idx].end(), 38);
-        assert!(!intervals[r12_idx].survives(32));
+        assert!(!intervals[r12_idx].covers(32));
 
         assert_eq!(intervals[r13_idx].ranges, vec![LiveRange { from: 20, to: 32 }]);
 

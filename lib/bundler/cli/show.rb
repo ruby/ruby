@@ -20,7 +20,7 @@ module Bundler
         if gem_name == "bundler"
           path = File.expand_path("../../..", __dir__)
         else
-          spec = Bundler::CLI::Common.select_spec(gem_name, :regex_match)
+          spec = spec_for_gem(gem_name)
           return unless spec
           path = spec.full_gem_path
           unless File.directory?(path)
@@ -54,6 +54,10 @@ module Bundler
     end
 
     private
+
+    def spec_for_gem(name)
+      Bundler::CLI::Common.select_spec_with_match_type(name, options)
+    end
 
     def fetch_latest_specs
       definition = Bundler.definition(true)

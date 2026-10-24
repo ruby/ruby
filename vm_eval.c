@@ -12,6 +12,8 @@
 **********************************************************************/
 
 #include "internal/thread.h"
+#include "prism_compile.h"
+
 struct local_var_list {
     VALUE tbl;
 };
@@ -594,9 +596,8 @@ static VALUE
 check_funcall_exec(VALUE v)
 {
     struct rescue_funcall_args *args = (void *)v;
-    return call_method_entry(args->ec, args->defined_class,
-                             args->recv, idMethodMissing,
-                             args->cme, args->argc, args->argv, args->kw_splat);
+    return rb_vm_call_kw(args->ec, args->recv, idMethodMissing,
+                         args->argc, args->argv, args->cme, args->kw_splat);
 }
 
 static VALUE
@@ -1726,10 +1727,20 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     pm_options_line_set(result.options, line);
     result.node.coverage_enabled = coverage_enabled;
 
-    // Count scopes, one for each parent iseq, plus one for our local scope
+    // Count scopes, one for each parent iseq, plus one for our local scope.
+    // Also total the byte lengths of every local name so that they can all be
+    // copied into a single buffer.
     int scopes_count = 0;
+    size_t names_size = 0;
+
     do {
         scopes_count++;
+
+        int locals_count = ISEQ_BODY(iseq)->local_table_size;
+        for (int local_index = 0; local_index < locals_count; local_index++) {
+            ID local = ISEQ_BODY(iseq)->local_table[local_index];
+            if (rb_is_local_id(local)) names_size += RSTRING_LEN(rb_id2str(local));
+        }
     } while ((iseq = ISEQ_BODY(iseq)->parent_iseq));
     pm_options_scopes_init(result.options, scopes_count + 1);
 
@@ -1738,7 +1749,6 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     // scopes array refer to root nodes on the tree, and higher indexes are the
     // leaf nodes.
     iseq = parent;
-    rb_encoding *encoding = rb_enc_get(src);
 
 #define FORWARDING_POSITIONALS_CHR '*'
 #define FORWARDING_POSITIONALS_STR "*"
@@ -1748,6 +1758,11 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 #define FORWARDING_BLOCK_STR "&"
 #define FORWARDING_ALL_CHR '.'
 #define FORWARDING_ALL_STR "."
+
+    /* The scope locals are views into this buffer, so it must outlive every
+     * read of them, including building the parent scope nodes after parsing. */
+    uint8_t *names_buffer = names_size > 0 ? xmalloc(names_size) : NULL;
+    uint8_t *names_cursor = names_buffer;
 
     for (int scopes_index = 0; scopes_index < scopes_count; scopes_index++) {
         VALUE iseq_value = (VALUE)iseq;
@@ -1763,49 +1778,30 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
             ID local = ISEQ_BODY(iseq)->local_table[local_index];
 
             if (rb_is_local_id(local)) {
-                VALUE name_obj = rb_id2str(local);
-                const char *name = RSTRING_PTR(name_obj);
-                size_t length = RSTRING_LEN(name_obj);
+                VALUE name = rb_id2str(local);
+                size_t length = RSTRING_LEN(name);
 
-                // Explicitly skip numbered parameters. These should not be sent
-                // into the eval.
-                if (length == 2 && name[0] == '_' && name[1] >= '1' && name[1] <= '9') {
-                    continue;
-                }
+                MEMCPY(names_cursor, RSTRING_PTR(name), char, length);
+                RB_GC_GUARD(name);
 
-                // Check here if this local can be represented validly in the
-                // encoding of the source string. If it _cannot_, then it should
-                // not be added to the constant pool as it would not be able to
-                // be referenced anyway.
-                if (rb_enc_str_coderange_scan(name_obj, encoding) == ENC_CODERANGE_BROKEN) {
-                    continue;
-                }
-
-                /* We need to duplicate the string because the Ruby string may
-                 * be embedded so compaction could move the string and the pointer
-                 * will change. */
-                char *name_dup = xmalloc(length);
-                MEMCPY(name_dup, name, char, length);
-
-                RB_GC_GUARD(name_obj);
-
-                pm_string_owned_init(scope_local, (uint8_t *) name_dup, length);
+                pm_string_init(scope_local, names_cursor, length);
+                names_cursor += length;
             }
             else if (local == idMULT) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_POSITIONALS;
-                pm_string_constant_init(scope_local, FORWARDING_POSITIONALS_STR, 1);
+                pm_string_init(scope_local, (const uint8_t *) FORWARDING_POSITIONALS_STR, 1);
             }
             else if (local == idPow) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_KEYWORDS;
-                pm_string_constant_init(scope_local, FORWARDING_KEYWORDS_STR, 1);
+                pm_string_init(scope_local, (const uint8_t *) FORWARDING_KEYWORDS_STR, 1);
             }
             else if (local == idAnd) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_BLOCK;
-                pm_string_constant_init(scope_local, FORWARDING_BLOCK_STR, 1);
+                pm_string_init(scope_local, (const uint8_t *) FORWARDING_BLOCK_STR, 1);
             }
             else if (local == idDot3) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_ALL;
-                pm_string_constant_init(scope_local, FORWARDING_ALL_STR, 1);
+                pm_string_init(scope_local, (const uint8_t *) FORWARDING_ALL_STR, 1);
             }
         }
 
@@ -1827,6 +1823,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 
     // If the parse failed, clean up and raise.
     if (error != Qnil) {
+        if (names_buffer) SIZED_FREE_N(names_buffer, names_size);
         pm_parse_result_free(&result);
         rb_exc_raise(error);
     }
@@ -1890,6 +1887,8 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         node = parent_scope;
         iseq = ISEQ_BODY(iseq)->parent_iseq;
     }
+
+    if (names_buffer) SIZED_FREE_N(names_buffer, names_size);
 
 #undef FORWARDING_POSITIONALS_CHR
 #undef FORWARDING_POSITIONALS_STR
@@ -2913,7 +2912,7 @@ rb_current_realfilepath(void)
         }
 
         // [Feature #19755] implicit eval location is "(eval at #{__FILE__}:#{__LINE__})"
-        const long len = RSTRING_LEN(path);
+        const rb_len_t len = RSTRING_LEN(path);
         if (len > EVAL_LOCATION_MARK_LEN+1) {
             const char *const ptr = RSTRING_PTR(path);
             if (ptr[len - 1] == ')' &&

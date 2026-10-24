@@ -38,7 +38,7 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def no_safe_rename
-    /cygwin|mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+    /cygwin|mswin|mingw/ =~ RUBY_PLATFORM
   end
 
   def assert_src_expected(src, args = nil, line: caller_locations(1, 1)[0].lineno+1)
@@ -1093,6 +1093,14 @@ class TestArgf < Test::Unit::TestCase
     end
   end
 
+  def test_read_nonblock_file
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    assert_equal("foo", argf.read_nonblock(3))
+  ensure
+    argf.close
+  end
+
   def test_wrong_type
     assert_separately([], "#{<<~"{#"}\n#{<<~'};'}")
     {#
@@ -1131,7 +1139,9 @@ class TestArgf < Test::Unit::TestCase
   def test_puts
     t = make_tempfile("argf-#{__method__}", 'bar')
     err = "#{@tmpdir}/errout"
-    ruby('-pi-', '-W2', '-e', "print ARGF.puts('foo')", t.path, {err: err}) do |f|
+    # -W:no-experimental because -W2 turns the category back on, and Ruby::Box
+    # warns at startup when it is enabled.
+    ruby('-pi-', '-W2', '-W:no-experimental', '-e', "print ARGF.puts('foo')", t.path, {err: err}) do |f|
     end
     assert_equal("foo\nbar\n", File.read(t.path))
     assert_empty File.read(err)

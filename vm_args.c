@@ -79,7 +79,7 @@ static inline void
 args_reduce(struct args_info *args, int over_argc)
 {
     if (args->rest) {
-        const long len = RARRAY_LEN(args->rest);
+        const rb_len_t len = RARRAY_LEN(args->rest);
 
         if (len > over_argc) {
             arg_rest_dup(args);
@@ -230,7 +230,7 @@ args_setup_lead_parameters(struct args_info *args, int argc, VALUE *locals)
 static inline void
 args_setup_post_parameters(struct args_info *args, int argc, VALUE *locals)
 {
-    long len;
+    rb_len_t len;
     len = RARRAY_LEN(args->rest);
     MEMCPY(locals, RARRAY_CONST_PTR(args->rest) + len - argc, VALUE, argc);
     rb_ary_resize(args->rest, len - argc);
@@ -320,6 +320,37 @@ args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const VALUE *const pas
     return FALSE;
 }
 
+static inline void
+args_setup_kw_parameters_not_found(const VALUE *default_values, VALUE *locals, int i, int di,
+                                   int *unspecified_bits, VALUE *unspecified_bits_value)
+{
+    if (UNDEF_P(default_values[di])) {
+        locals[i] = Qnil;
+
+        if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
+            *unspecified_bits |= 0x01 << di;
+        }
+        else {
+            VALUE bits_value = *unspecified_bits_value;
+            if (NIL_P(bits_value)) {
+                /* fixnum -> hash */
+                int bits = *unspecified_bits;
+                *unspecified_bits_value = bits_value = rb_ident_set_new();
+
+                for (int j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
+                    if (bits & (0x01 << j)) {
+                        rb_set_add_no_check(bits_value, INT2FIX(j));
+                    }
+                }
+            }
+            rb_set_add_no_check(bits_value, INT2FIX(di));
+        }
+    }
+    else {
+        locals[i] = default_values[di];
+    }
+}
+
 static void
 args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq, const rb_callable_method_entry_t *cme,
                          VALUE *const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
@@ -352,30 +383,8 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
             found++;
         }
         else {
-            if (UNDEF_P(default_values[di])) {
-                locals[i] = Qnil;
-
-                if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
-                    unspecified_bits |= 0x01 << di;
-                }
-                else {
-                    if (NIL_P(unspecified_bits_value)) {
-                        /* fixnum -> hash */
-                        int j;
-                        unspecified_bits_value = rb_hash_new();
-
-                        for (j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
-                            if (unspecified_bits & (0x01 << j)) {
-                                rb_hash_aset(unspecified_bits_value, INT2FIX(j), Qtrue);
-                            }
-                        }
-                    }
-                    rb_hash_aset(unspecified_bits_value, INT2FIX(di), Qtrue);
-                }
-            }
-            else {
-                locals[i] = default_values[di];
-            }
+            args_setup_kw_parameters_not_found(default_values, locals, i, di,
+                                               &unspecified_bits, &unspecified_bits_value);
         }
     }
 
@@ -447,30 +456,8 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
             locals[i] = value;
         }
         else {
-            if (UNDEF_P(default_values[di])) {
-                locals[i] = Qnil;
-
-                if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
-                    unspecified_bits |= 0x01 << di;
-                }
-                else {
-                    if (NIL_P(unspecified_bits_value)) {
-                        /* fixnum -> hash */
-                        int j;
-                        unspecified_bits_value = rb_hash_new();
-
-                        for (j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
-                            if (unspecified_bits & (0x01 << j)) {
-                                rb_hash_aset(unspecified_bits_value, INT2FIX(j), Qtrue);
-                            }
-                        }
-                    }
-                    rb_hash_aset(unspecified_bits_value, INT2FIX(di), Qtrue);
-                }
-            }
-            else {
-                locals[i] = default_values[di];
-            }
+            args_setup_kw_parameters_not_found(default_values, locals, i, di,
+                                               &unspecified_bits, &unspecified_bits_value);
         }
     }
 
@@ -624,6 +611,13 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
      * <- ISEQ_BODY(iseq)->param.size------------>
      * ^ locals                             ^ sp
      */
+    if ((unsigned int)calling->argc < ISEQ_BODY(iseq)->param.size) {
+        /* Ensure the nil-fill below and the SP extension do not run into the
+         * control frame region, clobbering frames before the stack overflow
+         * check in vm_push_frame has a chance to raise SystemStackError. */
+        CHECK_VM_STACK_OVERFLOW0(ec->cfp, locals + calling->argc,
+                                 ISEQ_BODY(iseq)->param.size - calling->argc);
+    }
     for (i=calling->argc; i<ISEQ_BODY(iseq)->param.size; i++) {
         locals[i] = Qnil;
     }
@@ -910,17 +904,18 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 
     if (ISEQ_BODY(iseq)->param.flags.has_rest) {
         if (UNLIKELY(ISEQ_BODY(iseq)->param.flags.anon_rest && args->argc == 0 && !args->rest && !ISEQ_BODY(iseq)->param.flags.has_post)) {
-           *(locals + ISEQ_BODY(iseq)->param.rest_start) = args->rest = rb_cArray_empty_frozen;
-           args->rest_index = 0;
+            *(locals + ISEQ_BODY(iseq)->param.rest_start) = args->rest = rb_cArray_empty_frozen;
+            args->rest_index = 0;
         }
         else {
             args_setup_rest_parameter(args, locals + ISEQ_BODY(iseq)->param.rest_start);
             VALUE ary = *(locals + ISEQ_BODY(iseq)->param.rest_start);
-            VALUE index = RARRAY_LEN(ary) - 1;
+            rb_len_t index = RARRAY_LEN(ary);
             if (splat_flagged_keyword_hash &&
                 !ISEQ_BODY(iseq)->param.flags.ruby2_keywords &&
                 !ISEQ_BODY(iseq)->param.flags.has_kw &&
                 !ISEQ_BODY(iseq)->param.flags.has_kwrest &&
+                index-- > 0 &&
                 RARRAY_AREF(ary, index) == splat_flagged_keyword_hash) {
                 ((struct RHash *)rest_last)->basic.flags &= ~RHASH_PASS_AS_KEYWORDS;
                 RARRAY_ASET(ary, index, rest_last);

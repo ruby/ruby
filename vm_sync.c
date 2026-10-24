@@ -111,6 +111,7 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
 
     vm->ractor.sync.lock_rec++;
     *lev = vm->ractor.sync.lock_rec;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
 
     RUBY_DEBUG_LOG2(file, line, "rec:%u owner:%u", vm->ractor.sync.lock_rec,
                     (unsigned int)rb_ractor_id(vm->ractor.sync.lock_owner));
@@ -144,6 +145,7 @@ vm_lock_leave(rb_vm_t *vm, bool no_barrier, unsigned int *lev APPEND_LOCATION_AR
         RUBY_DTRACE_GVL_RELEASE();
     }
 
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
     vm->ractor.sync.lock_rec--;
     *lev = vm->ractor.sync.lock_rec;
 
@@ -212,37 +214,6 @@ rb_vm_unlock_body(LOCATION_ARGS)
     ASSERT_vm_locking();
     VM_ASSERT(vm->ractor.sync.lock_rec == 1);
     vm_lock_leave(vm, false, &vm->ractor.sync.lock_rec APPEND_LOCATION_PARAMS);
-}
-
-static void
-vm_cond_wait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec)
-{
-    ASSERT_vm_locking();
-    unsigned int lock_rec = vm->ractor.sync.lock_rec;
-    rb_ractor_t *cr = vm->ractor.sync.lock_owner;
-
-    vm->ractor.sync.lock_rec = 0;
-    vm->ractor.sync.lock_owner = NULL;
-    if (msec > 0) {
-        rb_native_cond_timedwait(cond, &vm->ractor.sync.lock, msec);
-    }
-    else {
-        rb_native_cond_wait(cond, &vm->ractor.sync.lock);
-    }
-    vm->ractor.sync.lock_rec = lock_rec;
-    vm->ractor.sync.lock_owner = cr;
-}
-
-void
-rb_vm_cond_wait(rb_vm_t *vm, rb_nativethread_cond_t *cond)
-{
-    vm_cond_wait(vm, cond, 0);
-}
-
-void
-rb_vm_cond_timedwait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec)
-{
-    vm_cond_wait(vm, cond, msec);
 }
 
 static bool

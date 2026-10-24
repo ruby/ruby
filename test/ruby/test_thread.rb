@@ -824,6 +824,59 @@ class TestThread < Test::Unit::TestCase
     end
   end
 
+  # Thread.handle_interrupt checks for interrupts after the block returns,
+  # before re-raising the jump (break/return/raise) that left the block.
+  # Running a signal handler there must not clobber ec->errinfo, which still
+  # holds the payload of that jump.
+  def test_handle_interrupt_with_return_and_trap_handler
+    omit "needs fork" unless Process.respond_to?(:fork)
+    omit "SIGUSR1 is not supported" unless Signal.list.key?("USR1")
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 120)
+    begin;
+      trap(:USR1) do
+        begin
+          raise "entering a rescue clause clears errinfo"
+        rescue
+        end
+      end
+
+      def return_from_handle_interrupt(array)
+        array.each do |i|
+          Thread.handle_interrupt(Exception => :immediate) { return i }
+        end
+        nil
+      end
+
+      # Signal from another process: a thread of this process would only get
+      # scheduled a few times a second while the main thread spins.
+      pid = Process.pid
+      killer = fork do
+        begin
+          # Process.ppid changes if the parent crashes.
+          while Process.ppid == pid
+            Process.kill(:USR1, pid)
+            sleep 0.001
+          end
+        rescue Errno::ESRCH
+        end
+        exit!(0)
+      end
+
+      returned = nil
+      begin
+        500_000.times do
+          returned = return_from_handle_interrupt([1, 2, 3])
+          break unless returned == 1
+        end
+      ensure
+        Process.kill(:KILL, killer) rescue Errno::ESRCH
+        Process.waitpid(killer)
+      end
+      assert_equal(1, returned)
+    end;
+  end
+
   def test_handle_interrupt_blocking
     r = nil
     q = Thread::Queue.new
@@ -848,10 +901,6 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_handle_interrupt_masks_sigint
-    if /mswin|mingw/ =~ RUBY_PLATFORM
-      omit "SIGINT handling differs on Windows"
-    end
-
     assert_in_out_err([], <<-INPUT, %w(outer false), [])
       waiting = Thread::Queue.new
       release = Thread::Queue.new
@@ -1009,8 +1058,6 @@ _eom
   end
 
   def test_thread_timer_and_interrupt
-    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
-
     bug5757 = '[ruby-dev:44985]'
     pid = nil
     cmd = 'Signal.trap(:INT, "DEFAULT"); pipe=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; pipe[0].read'
@@ -1238,7 +1285,7 @@ q.pop
     assert_operator(size_default, :>=, size_0, "0 size")
     size_large = invoke_rec script, vm_stack_size, 1024 * 1024 * 10
     assert_operator(size_default, :<=, size_large, "large size")
-  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+  end
 
   def test_blocking_mutex_unlocked_on_fork
     bug8433 = '[ruby-core:55102] [Bug #8433]'
@@ -1530,10 +1577,6 @@ q.pop
       # opt = {new_pgroup: true}
     end
 
-    if /freebsd/ =~ RUBY_PLATFORM
-      omit "[Bug #18613]"
-    end
-
     assert_separately([], "#{<<~"{#"}\n#{<<~'};'}", timeout: 120)
     {#
       n = 1000
@@ -1690,6 +1733,66 @@ q.pop
       t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = t1 - t0
       assert_operator elapsed, :>=, 0.1, "sub-millisecond sleeps should not return immediately"
+    end;
+  end
+
+  def test_mn_threads_killed_io_waiter_does_not_spin
+    assert_separately([{'RUBY_MN_THREADS' => '1'}], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
+      r, w = IO.pipe
+      th = Thread.new { r.read(1) }
+      sleep 0.1 # let th park in the M:N poller
+      th.kill
+      th.join
+      w.close # r hangs up while the poller still holds a registration for it
+
+      t0 = Process.clock_gettime(Process::CLOCK_PROCESS_CPUTIME_ID)
+      sleep 0.3
+      cpu = Process.clock_gettime(Process::CLOCK_PROCESS_CPUTIME_ID) - t0
+      # A spinning timer thread never reaches its timeout branch, which under
+      # RUBY_MN_THREADS=2 is the only thing that can serve the exiting Ractor.
+      assert_operator cpu, :<, 0.15, "timer thread spins on an fd nobody waits on"
+      r.close
+    end;
+  end
+
+  # RUBY_MN_THREADS=2 puts the main thread, which receives the traps, on the M:N io wait.
+  def test_mn_threads_io_wait_under_signals
+    omit "needs fork and SIGUSR1" unless Process.respond_to?(:fork) && Signal.list.key?("USR1")
+    assert_separately([{'RUBY_MN_THREADS' => '2'}], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
+    begin;
+      r, w = IO.pipe
+      in_trap = nil
+      trap(:USR1) do
+        if in_trap == :measure
+          # Signals keep coming while TRAP is masked; their wakeups must not end the wait.
+          t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          ret = r.wait_readable(0.2)
+          in_trap = [ret, Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0]
+        end
+      end
+      ppid = Process.pid
+      # Unthrottled, the traps arrive faster than the main thread can run them.
+      pid = fork { (loop { Process.kill(:USR1, ppid); sleep 0.0001 }) rescue exit!(0) }
+      begin
+        # A trap pending when the wait starts must not be reported as readiness.
+        ready = 0
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 1
+        while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+          ready += 1 if r.wait_readable(0.0001)
+        end
+        assert_equal 0, ready, "wait_readable reported a pipe nobody wrote to as readable"
+
+        in_trap = :measure
+        sleep 0.01 while in_trap == :measure
+        ret, elapsed = in_trap
+        assert_nil ret
+        assert_operator elapsed, :>=, 0.15, "wait_readable in a trap handler returned before its timeout"
+      ensure
+        Process.kill(:KILL, pid)
+        Process.wait(pid)
+        w.close # held open until here so that r never reaches EOF
+      end
     end;
   end
 

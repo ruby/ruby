@@ -513,6 +513,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(Errno::EINVAL) { f.seek(-1) }
     f.seek(-1, 2)
     assert_equal("4", f.getc)
+    f.seek(-2, 2.0)
+    assert_equal("3", f.getc)
     assert_raise(Errno::EINVAL) { f.seek(1, 3) }
     f.close
     assert_raise(IOError) { f.seek(0) }
@@ -899,6 +901,12 @@ class TestStringIO < Test::Unit::TestCase
     s.pos = 0
     s.ungetc("b")
     assert_equal("b""\0""a", s.string)
+
+    s = StringIO.new("abc")
+    s.pos = 5
+    s.ungetc("d")
+    assert_equal("abc""\0""d", s.string)
+    assert_equal(4, s.pos)
   end
 
   def test_ungetc_fill
@@ -944,6 +952,24 @@ class TestStringIO < Test::Unit::TestCase
     s.pos = 0
     s.ungetbyte("b".ord)
     assert_equal("b""\0""a", s.string)
+
+    s = StringIO.new("abc")
+    s.pos = 5
+    s.ungetbyte("d".ord)
+    assert_equal("abc""\0""d", s.string)
+    assert_equal(4, s.pos)
+
+    s = StringIO.new("abcde")
+    s.pos = 9
+    s.ungetbyte("f")
+    assert_equal("abcde""\0\0\0""f", s.string)
+    assert_equal(8, s.pos)
+
+    s = StringIO.new("abc")
+    s.pos = 4
+    s.ungetbyte("de")
+    assert_equal("abde", s.string)
+    assert_equal(2, s.pos)
   end
 
   def test_ungetbyte_fill

@@ -1004,6 +1004,19 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 2, 1, 2, 1, c], b.flatten(4))
   end
 
+  def test_flatten_modify_during_to_ary
+    # [Bug #22318]
+    a = (1..10_000).to_a
+    obj = Object.new
+    obj.define_singleton_method(:to_ary) do
+      a.clear
+      [1, 2, 3]
+    end
+    a << obj
+    assert_nothing_raised { a.flatten }
+    assert_equal([], a)
+  end
+
   def test_flatten!
     a1 = @cls[ 1, 2, 3]
     a2 = @cls[ 5, 6 ]
@@ -1820,8 +1833,34 @@ class TestArray < Test::Unit::TestCase
     assert_equal([100], a.slice(-1, 1_000_000_000))
   end
 
+  def test_slice_shrinking_array_by_to_int
+    bug22325 = '[Bug #22325]'
+    cls = Class.new(Numeric) do
+      attr_reader :val
+      def initialize(ary, val)
+        @ary = ary
+        @val = val
+      end
+      def <=>(other)
+        val <=> (other.is_a?(self.class) ? other.val : other)
+      end
+      def to_int
+        @ary.clear
+        val
+      end
+      def coerce(other)
+        [other, val]
+      end
+    end
+
+    ary = @cls[*(1..100).to_a]
+    assert_equal([], ary[Range.new(cls.new(ary, 50), cls.new(ary, 60))], bug22325)
+
+    ary.replace((1..100).to_a)
+    assert_equal([], ary[Range.new(cls.new(ary, 50), cls.new(ary, 60)).step(2)], bug22325)
+  end
+
   def test_slice_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress { assert_equal([1, 2, 3, 4, 5], (0..10).to_a[1, 5]) }
     EnvUtil.under_gc_compact_stress do
       a = [0, 1, 2, 3, 4, 5]
@@ -2019,11 +2058,10 @@ class TestArray < Test::Unit::TestCase
 
   def test_short_heap_array_sort_bang_memory_leak
     bug11332 = '[ruby-dev:49166] [Bug #11332]'
-    assert_no_memory_leak([], <<-PREP, <<-TEST, bug11332, limit: 1.3, timeout: 60)
+    assert_no_memory_leak([], <<-PREP, <<-TEST, bug11332, limit: 1.3, timeout: 60, samples: 2..100)
       def t; ary = [*1..5]; ary.pop(2); ary.sort!; end
-      1.times {t}
     PREP
-      500000.times {t}
+      5_000.times {t}
     TEST
   end
 
@@ -2594,6 +2632,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal(b, @cls[0, 1, 2, 3, 4][1, 4].permutation.to_a, bug3708)
   end
 
+  def test_permutation_array_modified
+    ary = @cls[*(1..1000)]
+    cls = @cls
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(cls[1, 2])
+      2
+    end
+    assert_equal(@cls[[1, 2], [2, 1]], ary.permutation(obj).to_a)
+  end
+
   def test_permutation_stack_error
     bug9932 = '[ruby-core:63103] [Bug #9932]'
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
@@ -2635,6 +2684,17 @@ class TestArray < Test::Unit::TestCase
 
     a = @cls[0, 1, 2, 3, 4][1, 4].repeated_permutation(2)
     assert_empty(a.reject {|x| !x.include?(0)})
+  end
+
+  def test_repeated_permutation_array_modified
+    ary = @cls[*(1..1000)]
+    cls = @cls
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(cls[1, 2])
+      2
+    end
+    assert_equal(@cls[[1, 1], [1, 2], [2, 1], [2, 2]], ary.repeated_permutation(obj).to_a)
   end
 
   def test_repeated_permutation_stack_error
@@ -2741,6 +2801,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 1, 1], Array.new(3, 1))
     assert_equal([1, 1, 1], Array.new(3) { 1 })
     assert_equal([1, 1, 1], assert_warning(/block supersedes default value argument/) {Array.new(3, 1) { 1 }})
+    assert_equal([], [1].instance_eval { initialize(0) })
   end
 
   def test_aset_error
@@ -2965,6 +3026,18 @@ class TestArray < Test::Unit::TestCase
     assert_equal([nil], a.values_at(2**31-1))
   end
 
+  def test_values_at_ary_modify
+    a = (0..100_000).to_a
+    obj = Object.new
+    obj.define_singleton_method(:begin) do
+      a.clear
+      0
+    end
+    obj.define_singleton_method(:end) { 10_000 }
+    obj.define_singleton_method(:exclude_end?) { false }
+    assert_equal(10_001, a.values_at(obj).length)
+  end
+
   def test_select
     assert_equal([0, 2], [0, 1, 2, 3].select {|x| x % 2 == 0 })
   end
@@ -3113,6 +3186,34 @@ class TestArray < Test::Unit::TestCase
     assert_equal([["a", 6], ["b", 7], ["c", 8]], a.zip(e), bug17814)
   end
 
+  def test_zip_modify_during_to_ary
+    # [Bug #22319]
+    a = (1..100_000).to_a
+    obj = Object.new
+    obj.define_singleton_method(:to_ary) do
+      a.clear
+      [1, 2, 3]
+    end
+    assert_nothing_raised { a.zip(obj) }
+    assert_equal([], a)
+  end
+
+  def test_zip_method_missing_block
+    # [Bug #22436]
+    obj = Object.new
+    def obj.method_missing(*) = nil
+    out = Object.new
+    def out.write(*) = nil
+    def out.puts(*) = yield # called without a block; must raise, not crash
+    begin
+      original_stdout, $stdout = $stdout, out
+      [1].zip(obj)
+      assert_raise(LocalJumpError) { puts 1 }
+    ensure
+      $stdout = original_stdout
+    end
+  end
+
   def test_transpose
     assert_equal([[1, :a], [2, :b], [3, :c]],
       [[1, 2, 3], [:a, :b, :c]].transpose)
@@ -3150,6 +3251,87 @@ class TestArray < Test::Unit::TestCase
     end
     $test_equal_resize_a[1] = o
     assert_equal($test_equal_resize_a, $test_equal_resize_b)
+  end
+
+  def test_eql_resize
+    a = Array.new(3, &:to_s)
+    b = a.dup
+    o = Object.new
+    o.define_singleton_method(:eql?) do |_|
+      a.clear
+      b.clear
+      true
+    end
+    a[1] = o
+    assert_send([a, :eql?, b])
+
+    a = [0, nil, nil]
+    b = [0, 1, nil]
+    o = Object.new
+    o.define_singleton_method(:eql?) do |_|
+      b.pop
+      true
+    end
+    a[1] = o
+    assert_not_send([a, :eql?, b])
+  end
+
+  def test_eql_grow
+    a = Array.new(3, &:to_s)
+    b = a.dup
+    extra = Array.new(100, &:to_s)
+    o = Object.new
+    o.define_singleton_method(:eql?) do |_|
+      a.concat(extra)
+      b.concat(extra)
+      true
+    end
+    a[1] = o
+    assert_send([a, :eql?, b])
+
+    a = Array.new(3, &:to_s)
+    b = a.dup
+    o = Object.new
+    o.define_singleton_method(:eql?) do |_|
+      a.concat(extra)
+      b.concat(extra.map(&:dup).tap { |e| e[-1] = :different })
+      true
+    end
+    a[1] = o
+    assert_not_send([a, :eql?, b])
+  end
+
+  def test_eql_replace
+    # Unlike resizing small arrays, whose elements are embedded in the
+    # array objects, replacing arrays too long to embed frees the
+    # buffers being compared, so reading them after eql? returns would
+    # read freed memory.
+    ints = ->(n) { Array.new(n) { |i| i } }
+    compare = ->(new_a, new_b) do
+      a = ints[200]
+      b = ints[200]
+      o = Object.new
+      o.define_singleton_method(:eql?) do |_|
+        a.replace(new_a)
+        b.replace(new_b) if new_b
+        true
+      end
+      a[100] = o
+      b[100] = Object.new
+      a.eql?(b)
+    end
+
+    # shorter than the index being compared
+    assert_equal(true, compare[ints[50], ints[50]])
+    # shorter, and equal or different after the index being compared
+    assert_equal(true, compare[ints[150], ints[150]])
+    assert_equal(false, compare[ints[150], ints[150].tap { |e| e[125] = -1 }])
+    # longer, and equal or different beyond the original length
+    assert_equal(true, compare[ints[400], ints[400]])
+    assert_equal(false, compare[ints[400], ints[400].tap { |e| e[300] = -1 }])
+    # only one of them replaced
+    assert_equal(false, compare[ints[150], nil])
+    assert_equal(false, compare[ints[400], nil])
   end
 
   def test_flatten_error
@@ -3329,6 +3511,34 @@ class TestArray < Test::Unit::TestCase
     assert_raise(NoMethodError) {
       ary.sample(random: Object.new)
     }
+  end
+
+  def test_sample_modify_array_out_of_bounds
+    ary = (1..1_000).to_a
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace((1..50).to_a)
+      10
+    end
+    gen = Object.new
+    # 49 will be out-of-bounds when ary.replace is called
+    def gen.rand(lim) = 49
+    assert_raise(RangeError) {ary.sample(obj, random: gen)}
+
+    ary = (1..100).to_a
+    gen = Object.new
+    def gen.rand(lim) = lim-1
+    assert_equal((41..50).to_a.reverse, ary.sample(obj, random: gen))
+
+    ary = (1..100).to_a
+    gen = Object.new
+    gen.define_singleton_method(:rand) do |lim|
+      if (lim -= 1) <= 90
+        ary.replace((1..50).to_a)
+      end
+      lim
+    end
+    assert_equal([], ary.sample(10, random: gen))
   end
 
   def test_cycle
@@ -3567,34 +3777,10 @@ class TestArray < Test::Unit::TestCase
     assert_include([1, 2], a.bsearch_index {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
   end
 
-  def test_shared_marking
-    reduce = proc do |s|
-      s.gsub(/(verify_internal_consistency_reachable_i:\sWB\smiss\s\S+\s\(T_ARRAY\)\s->\s)\S+\s\((proc|T_NONE)\)\n
-             \K(?:\1\S+\s\(\2\)\n)*/x) do
-        "...(snip #{$&.count("\n")} lines)...\n"
-      end
-    end
-    begin
-      assert_normal_exit(<<-EOS, '[Bug #9718]', timeout: 5, stdout_filter: reduce)
-      queue = []
-      50.times do
-        10_000.times do
-          queue << lambda{}
-        end
-        GC.start(full_mark: false, immediate_sweep: true)
-        GC.verify_internal_consistency
-        queue.shift.call
-      end
-    EOS
-    rescue Timeout::Error => e
-      omit e.message
-    end
-  end
-
-  sizeof_long = [0].pack("l!").size
+  sizeof_len = RbConfig::SIZEOF["rb_len_t"]
   sizeof_voidp = [""].pack("p").size
-  if sizeof_long < sizeof_voidp
-    ARY_MAX = (1<<(8*sizeof_long-1)) / sizeof_voidp - 1
+  if sizeof_len < sizeof_voidp
+    ARY_MAX = (1<<(8*sizeof_len-1)) / sizeof_voidp - 1
     Bug11235 = '[ruby-dev:49043] [Bug #11235]'
 
     def test_push_over_ary_max
@@ -3688,6 +3874,15 @@ class TestArray < Test::Unit::TestCase
     assert_float_equal(8.5, [3.5, 5].sum)
     assert_float_equal(10.5, [2, 8.5].sum)
     assert_float_equal(1_000 * 0.1, Array.new(1_000, 0.1).sum(0.0))
+
+    # Init with a float, but start with some fixnums in the array.
+    # Tests compensated summation fallthrough in array.c
+    assert_float_equal(5.0, [1, 1, 1.0, 1.0, 1.0].sum(0.0))
+
+    assert_float_equal(11.5, [1.5].sum(10.0))
+    assert_float_equal(16.5, [1, 2, 3.5].sum(10.0))
+    assert_complex_equal(11.0 + 2i, [Complex(1, 2)].sum(10.0))
+
     assert_float_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].sum)
     assert_float_equal((FIXNUM_MAX+1).to_f, [0.0, FIXNUM_MAX+1].sum)
 
@@ -3705,7 +3900,22 @@ class TestArray < Test::Unit::TestCase
     assert_float_equal(12.0, ary.sum {|x| yielded << x; x * 2 })
     assert_equal(ary, yielded)
 
+    yielded_ctr = 0
+    result = %w[a b].sum(0) do
+      yielded_ctr += 1
+    end
+    assert_equal(result, 3)
+
+    yielded_ctr = 0.0
+    result = %w[a b].sum(0.0) do
+      yielded_ctr += 1
+      yielded_ctr.to_f
+    end
+    assert_equal(result, 3.0)
+
     assert_raise(TypeError) { [Object.new].sum }
+    assert_raise(TypeError) { [nil].sum(10.0) }
+    assert_raise(TypeError) { ["hello"].sum(10.0) }
 
     large_number = 100000000
     small_number = 1e-9

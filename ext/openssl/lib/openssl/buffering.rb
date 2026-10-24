@@ -22,23 +22,20 @@
 module OpenSSL::Buffering
   include Enumerable
 
-  # A buffer which will retain binary encoding.
-  class Buffer < String
-    unless String.method_defined?(:append_as_bytes)
-      alias_method :_append, :<<
-      def append_as_bytes(string)
-        if string.encoding == Encoding::BINARY
-          _append(string)
-        else
-          _append(string.b)
+  unless String.method_defined?(:append_as_bytes)
+    using Module.new {
+      refine String do
+        def append_as_bytes(string)
+          if string.encoding == Encoding::BINARY
+            self << string
+          else
+            self << string.b
+          end
+
+          self
         end
-
-        self
       end
-    end
-
-    undef_method :concat
-    undef_method :<<
+    }
   end
 
   ##
@@ -59,7 +56,7 @@ module OpenSSL::Buffering
   def initialize(*)
     super
     @eof = false
-    @rbuffer = Buffer.new
+    @rbuffer = String.new
     @sync = @io.sync
   end
 
@@ -74,8 +71,6 @@ module OpenSSL::Buffering
   def fill_rbuff
     begin
       @rbuffer.append_as_bytes(self.sysread(BLOCK_SIZE))
-    rescue Errno::EAGAIN
-      retry
     rescue EOFError
       @eof = true
     end
@@ -116,24 +111,21 @@ module OpenSSL::Buffering
   # See IO#read for full details.
 
   def read(size=nil, buf=nil)
-    if size == 0
-      if buf
-        buf.clear
-        return buf
-      else
-        return ""
-      end
+    if size
+      return buf&.clear || String.new if size == 0
+      raise ArgumentError, "negative length #{size} given" if size < 0
     end
     until @eof
       break if size && size <= @rbuffer.size
       fill_rbuff
     end
-    ret = consume_rbuff(size) || ""
-    if buf
-      buf.replace(ret)
-      ret = buf
+    if ret = consume_rbuff(size)
+      buf ? buf.replace(ret) : ret
+    else
+      buf.clear if buf
+      return nil if size
+      buf || String.new
     end
-    (size && ret.empty?) ? nil : ret
   end
 
   ##
@@ -143,20 +135,12 @@ module OpenSSL::Buffering
   # See IO#readpartial for full details.
 
   def readpartial(maxlen, buf=nil)
-    if maxlen == 0
-      if buf
-        buf.clear
-        return buf
-      else
-        return ""
-      end
+    if maxlen
+      return buf&.clear || String.new if maxlen == 0
+      raise ArgumentError, "negative length #{maxlen} given" if maxlen < 0
     end
     if @rbuffer.empty?
-      begin
-        return sysread(maxlen, buf)
-      rescue Errno::EAGAIN
-        retry
-      end
+      return sysread(maxlen, buf)
     end
     ret = consume_rbuff(maxlen)
     if buf
@@ -201,13 +185,9 @@ module OpenSSL::Buffering
   # it will return +nil+ instead of raising EOFError.
 
   def read_nonblock(maxlen, buf=nil, exception: true)
-    if maxlen == 0
-      if buf
-        buf.clear
-        return buf
-      else
-        return ""
-      end
+    if maxlen
+      return buf&.clear || String.new if maxlen == 0
+      raise ArgumentError, "negative length #{maxlen} given" if maxlen < 0
     end
     if @rbuffer.empty?
       return sysread_nonblock(maxlen, buf, exception: exception)
@@ -225,32 +205,92 @@ module OpenSSL::Buffering
   # _limit_ is provided the result will not be longer than the given number of
   # bytes.
   #
-  # _eol_ may be a String or Regexp.
+  # _eol_ may be a String or Regexp. _eol_ defaults to +$/+.
   #
-  # Unlike IO#gets the line read will not be assigned to +$_+.
+  # Note that Regexp _eol_ is an extension to the standard IO#gets. This mode
+  # is incompatible with _chomp_ option.
   #
-  # Unlike IO#gets the separator must be provided if a limit is provided.
+  # Unlike IO#gets, the line read will not be assigned to +$_+.
 
-  def gets(eol=$/, limit=nil, chomp: false)
-    idx = @rbuffer.index(eol)
-    until @eof
-      break if idx
-      fill_rbuff
-      idx = @rbuffer.index(eol)
+  def gets(eol = $/, limit = nil, chomp: false)
+    if limit.nil? && Integer === eol
+      eol, limit = $/, eol
     end
-    if eol.is_a?(Regexp)
-      size = idx ? idx+$&.size : nil
+    limit = nil if limit && limit < 0
+    return String.new if limit == 0
+
+    case eol
+    when nil
+      gets_slurp(limit)
+    when Regexp
+      if chomp
+        raise ArgumentError,
+          "chomp is not supported with Regexp record separator"
+      end
+      gets_regexp(eol, limit)
+    when ""
+      swallow_newlines
+      ret = gets_string("\n\n", limit, chomp)
+      swallow_newlines
+      ret
     else
-      size = idx ? idx+eol.size : nil
+      gets_string(eol, limit, chomp)
     end
-    if size && limit && limit >= 0
-      size = [size, limit].min
+  end
+
+  private def gets_string(eol, limit, chomp)
+    pos = 0
+    while true
+      break if idx = @rbuffer.index(eol, pos)
+      break if limit && @rbuffer.bytesize >= limit
+      pos = [0, @rbuffer.bytesize - eol.bytesize + 1].max
+      break if @eof
+      fill_rbuff
+    end
+    if idx
+      size = idx + eol.bytesize
+      if limit && size > limit
+        size = limit
+        chomp = false
+      end
+    else
+      size = limit
     end
     line = consume_rbuff(size)
-    if chomp && line
+    if chomp && idx
       line.chomp!(eol)
     end
     line
+  end
+
+  private def gets_regexp(eol, limit)
+    while true
+      break if idx = @rbuffer.index(eol)
+      break if limit && @rbuffer.bytesize >= limit
+      break if @eof
+      fill_rbuff
+    end
+    if idx
+      size = idx + $&.size
+      size = [size, limit].min if limit
+    else
+      size = limit
+    end
+    consume_rbuff(size)
+  end
+
+  private def gets_slurp(limit)
+    ret = read(limit)
+    return nil if ret && ret.empty?
+    ret
+  end
+
+  private def swallow_newlines
+    while true
+      @rbuffer.sub!(/\A\n+/, "")
+      break if @eof || !@rbuffer.empty?
+      fill_rbuff
+    end
   end
 
   ##
@@ -259,10 +299,16 @@ module OpenSSL::Buffering
   #
   # See also #gets
 
-  def each(eol=$/)
-    while line = self.gets(eol)
+  def each(eol = $/, limit = nil, chomp: false)
+    return to_enum(__method__, eol, limit, chomp: chomp) unless block_given?
+    if limit.nil? && Integer === eol
+      eol, limit = $/, eol
+    end
+    raise ArgumentError, "invalid limit: 0 for each_line" if limit == 0
+    while line = gets(eol, limit, chomp: chomp)
       yield line
     end
+    self
   end
   alias each_line each
 
@@ -271,12 +317,8 @@ module OpenSSL::Buffering
   #
   # See also #gets
 
-  def readlines(eol=$/)
-    ary = []
-    while line = self.gets(eol)
-      ary << line
-    end
-    ary
+  def readlines(eol = $/, limit = nil, chomp: false)
+    each_line(eol, limit, chomp: chomp).to_a
   end
 
   ##
@@ -284,9 +326,8 @@ module OpenSSL::Buffering
   #
   # Raises EOFError if at end of file.
 
-  def readline(eol=$/)
-    raise EOFError if eof?
-    gets(eol)
+  def readline(eol = $/, limit = nil, chomp: false)
+    gets(eol, limit, chomp: chomp) or raise EOFError
   end
 
   ##
@@ -298,12 +339,25 @@ module OpenSSL::Buffering
   end
 
   ##
+  # Calls the given block once for each character in the stream.
+
+  def each_char
+    return to_enum(__method__) unless block_given?
+    while c = getc
+      yield c
+    end
+    self
+  end
+
+  ##
   # Calls the given block once for each byte in the stream.
 
   def each_byte # :yields: byte
-    while c = getc
-      yield(c.ord)
+    return to_enum(__method__) unless block_given?
+    while c = getbyte
+      yield c
     end
+    self
   end
 
   ##
@@ -319,12 +373,28 @@ module OpenSSL::Buffering
   # Pushes character _c_ back onto the stream such that a subsequent buffered
   # character read will return it.
   #
-  # Unlike IO#getc multiple bytes may be pushed back onto the stream.
-  #
   # Has no effect on unbuffered reads (such as #sysread).
 
   def ungetc(c)
-    @rbuffer[0,0] = c.chr
+    if Integer === c
+      @rbuffer[0, 0] = c.chr(Encoding::BINARY)
+    else
+      @rbuffer[0, 0] = c.to_str.b
+    end
+    nil
+  end
+
+  ##
+  # Pushes byte _c_ back onto the stream such that a subsequent buffered byte
+  # read will return it.
+
+  def ungetbyte(c)
+    if Integer === c
+      @rbuffer[0, 0] = (c & 0xff).chr
+    else
+      @rbuffer[0, 0] = c.to_str.b
+    end
+    nil
   end
 
   ##
@@ -347,7 +417,7 @@ module OpenSSL::Buffering
   # buffer is flushed to the underlying socket.
 
   def do_write(s)
-    @wbuffer = Buffer.new unless defined? @wbuffer
+    @wbuffer = String.new unless defined? @wbuffer
     @wbuffer.append_as_bytes(s)
 
     @sync ||= false
@@ -356,17 +426,13 @@ module OpenSSL::Buffering
       nwrote = 0
       begin
         while nwrote < buffer_size do
-          begin
-            chunk = if nwrote > 0
-              @wbuffer.byteslice(nwrote, @wbuffer.bytesize)
-            else
-              @wbuffer
-            end
-
-            nwrote += syswrite(chunk)
-          rescue Errno::EAGAIN
-            retry
+          chunk = if nwrote > 0
+            @wbuffer.byteslice(nwrote, @wbuffer.bytesize)
+          else
+            @wbuffer
           end
+
+          nwrote += syswrite(chunk)
         end
       ensure
         if nwrote < @wbuffer.bytesize
@@ -385,10 +451,13 @@ module OpenSSL::Buffering
   # converted using +.to_s+ method.  Returns the number of bytes written.
 
   def write(*s)
-    s.inject(0) do |written, str|
+    written = 0
+    s.each do |str|
+      str = str.to_s
       do_write(str)
-      written + str.bytesize
+      written += str.bytesize
     end
+    written
   end
 
   ##
@@ -438,26 +507,41 @@ module OpenSSL::Buffering
   # +.to_s+ method.
 
   def <<(s)
-    do_write(s)
+    do_write(s.to_s)
     self
   end
 
   ##
-  # Writes _args_ to the stream along with a record separator.
+  # Writes _args_ to the stream along with a newline.
   #
   # See IO#puts for full details.
 
   def puts(*args)
-    s = Buffer.new
     if args.empty?
-      s.append_as_bytes("\n")
+      do_write("\n")
+      return nil
     end
-    args.each{|arg|
-      s.append_as_bytes(arg.to_s)
-      s.sub!(/(?<!\n)\z/, "\n")
-    }
+    # IO#puts writes "[...]" when it encounters a recursion (undocumented).
+    # We ignore that for now.
+    s = String.new
+    args.flatten!
+    args.each do |arg|
+      b = arg.to_s
+      s.append_as_bytes(b)
+      s.append_as_bytes("\n") unless b.getbyte(-1) == 0x0a
+    end
     do_write(s)
     nil
+  end
+
+  ##
+  # Writes character _ch_ to the stream.
+  #
+  # See IO#putc for full details.
+
+  def putc(ch)
+    do_write(String === ch ? ch.chr : (ch.to_int & 0xff).chr)
+    ch
   end
 
   ##
@@ -466,7 +550,7 @@ module OpenSSL::Buffering
   # See IO#print for full details.
 
   def print(*args)
-    s = Buffer.new
+    s = String.new
     args.each{ |arg| s.append_as_bytes(arg.to_s) }
     do_write(s)
     nil

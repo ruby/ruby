@@ -25,6 +25,45 @@ Your current platform satisfies the Ruby version requirement.
 G
     end
 
+    it "reports the effective platform when force_ruby_platform is set in the environment" do
+      gemfile <<-G
+        source "https://gem.repo1"
+
+        #{ruby_version_correct}
+
+        gem "foo"
+      G
+
+      bundle "platform", env: { "BUNDLE_FORCE_RUBY_PLATFORM" => "true" }
+      expect(out).to eq(<<-G.chomp)
+Your platform is: #{Gem::Platform.local}
+However, your effective platform is: ruby (because force_ruby_platform is set via BUNDLE_FORCE_RUBY_PLATFORM: true)
+
+Your app has gems that work on these platforms:
+* #{Gem::Platform::RUBY}
+
+Your Gemfile specifies a Ruby version requirement:
+* ruby #{Gem.ruby_version}
+
+Your current platform satisfies the Ruby version requirement.
+G
+    end
+
+    it "points at the config file when force_ruby_platform is set there" do
+      gemfile <<-G
+        source "https://gem.repo1"
+
+        #{ruby_version_correct}
+
+        gem "foo"
+      G
+
+      bundle "config set --local force_ruby_platform true"
+      bundle "platform"
+      expect(out).to include("However, your effective platform is: ruby " \
+                             "(because force_ruby_platform is set for your local app (#{bundled_app(".bundle/config")}): true)")
+    end
+
     it "returns all the output including the patchlevel" do
       gemfile <<-G
         source "https://gem.repo1"

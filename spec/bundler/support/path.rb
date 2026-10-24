@@ -96,7 +96,7 @@ module Spec
     end
 
     def shipped_files
-      @shipped_files ||= if ruby_core_tarball?
+      @shipped_files ||= if !git_repository?
         loaded_gemspec.files.map {|f| f.gsub(%r{^exe/}, "libexec/") }
       elsif ruby_core?
         tracked_files
@@ -304,15 +304,13 @@ module Spec
       File.open(gemspec_file, "w") {|f| f << contents }
     end
 
-    def replace_changelog(version, dir:)
-      changelog = File.expand_path("CHANGELOG-bundler.md", dir)
-      contents = File.readlines(changelog)
-      contents = [contents[0], contents[1], "## #{version} / 2100-01-01\n", *contents[3..-1]].join
-      File.open(changelog, "w") {|f| f << contents }
-    end
-
     def git_root
       source_root
+    end
+
+    def git_repository?
+      # `.git` may be a file rather than a directory in linked git worktrees.
+      git_root.join(".git").exist?
     end
 
     def rake_path
@@ -353,13 +351,13 @@ module Spec
     end
 
     def git_ls_files(glob)
-      skip "Not running on a git context, since running tests from a tarball" if ruby_core_tarball?
+      skip "Not running on a git context, since running tests from a tarball" unless git_repository?
 
       git("ls-files -z -- #{glob}", source_root).split("\x0")
     end
 
     def tracked_files_glob
-      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/compact_index_client* lib/rubygems/credential_store* spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/compact_index_client* lib/rubygems/credential_store* bundler.gemspec CHANGELOG-bundler.md LICENSE-bundler.md README-bundler.md"
+      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/cooldown_settings.rb lib/rubygems/compact_index_client* lib/rubygems/credential_store* spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/cooldown_settings.rb lib/rubygems/compact_index_client* lib/rubygems/credential_store* bundler.gemspec MIT.txt"
     end
 
     def lib_tracked_files_glob
@@ -368,12 +366,6 @@ module Spec
 
     def man_tracked_files_glob
       "lib/bundler/man/bundle*.1.ronn lib/bundler/man/gemfile*.5.ronn"
-    end
-
-    def ruby_core_tarball?
-      # A tarball checkout has no `.git` entry at all. Note that `.git` may be
-      # a file rather than a directory in linked git worktrees.
-      !git_root.join(".git").exist?
     end
 
     def rubocop_gemfile_basename

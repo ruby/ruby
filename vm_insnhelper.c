@@ -26,6 +26,7 @@
 #include "internal/proc.h"
 #include "internal/random.h"
 #include "internal/variable.h"
+#include "internal/set.h"
 #include "internal/set_table.h"
 #include "internal/struct.h"
 #include "ruby/thread.h"
@@ -264,7 +265,8 @@ rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
         /* This is at the very beginning of a thread. cfp does not exist. */
         return;
     }
-    else if (! (iseq = GET_ISEQ())) {
+    else if (! VM_FRAME_RUBYFRAME_P(reg_cfp) || ! (iseq = GET_ISEQ())) {
+        /* The iseq field of an IFUNC frame holds the ifunc. */
         return;
     }
     else if (LIKELY(sp[0] != vm_stack_canary)) {
@@ -1124,9 +1126,9 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
 
             if (!NIL_P(klass)) {
                 VALUE av, am = 0;
-                rb_const_entry_t *ce;
+                rb_const_entry_t entry, *ce = &entry;
               search_continue:
-                if ((ce = rb_const_lookup(klass, id))) {
+                if (rb_const_lookup_copy(klass, id, ce)) {
                     rb_const_warn_if_deprecated(ce, klass, id);
                     val = ce->value;
                     if (UNDEF_P(val)) {
@@ -1142,10 +1144,10 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                             return 1;
                         }
                         else {
-                            if (UNLIKELY(!rb_ractor_main_p())) {
+                            if (UNLIKELY(!rb_class_owned_p(klass))) {
                                 if (!rb_ractor_shareable_p(val)) {
                                     rb_raise(rb_eRactorIsolationError,
-                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" by non-main ractor.", rb_class_path(klass), rb_id2str(id));
+                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(klass), rb_id2str(id));
                                 }
                             }
                             return val;
@@ -1255,10 +1257,10 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
       case T_CLASS:
       case T_MODULE:
         {
-            if (UNLIKELY(!rb_ractor_main_p())) {
-                // For two reasons we can only use the fast path on the main
-                // ractor.
-                // First, only the main ractor is allowed to set ivars on classes
+            if (UNLIKELY(!rb_class_owned_p(obj))) {
+                // For two reasons we can only use the fast path on the Ractor
+                // that owns the class.
+                // First, only the owner Ractor is allowed to set ivars on classes
                 // and modules. So we can skip locking.
                 // Second, other ractors need to check the shareability of the
                 // values returned from the class ivars.
@@ -1394,7 +1396,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 #if OPT_IC_FOR_IVAR
     RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
 
-    rb_check_frozen(obj);
+    rb_check_ivar_modifiable(obj);
 
     shape_id_t previous_shape_id = RBASIC_SHAPE_ID(obj);
     attr_index_t index = rb_ivar_set_index(obj, id, val);
@@ -1428,7 +1430,7 @@ NOINLINE(static VALUE vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache ca
 static VALUE
 vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache cache)
 {
-    if (UNLIKELY(!rb_ractor_main_p())) {
+    if (UNLIKELY(!rb_class_owned_p(obj))) {
         return Qundef;
     }
 
@@ -1559,7 +1561,10 @@ vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
     const rb_cref_t *cref;
     cref = vm_get_cref(GET_EP());
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref && LIKELY(rb_ractor_main_p())) {
+    // The fast path skips rb_cvar_find's checks, so it is for class_value's owner:
+    // the sole writer, and the only one allowed to see an unshareable value.
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref &&
+        LIKELY(rb_class_owned_p(ic->entry->class_value))) {
         RB_DEBUG_COUNTER_INC(cvar_read_inline_hit);
 
         VALUE v = rb_ivar_lookup(ic->entry->class_value, id, Qundef);
@@ -1585,7 +1590,9 @@ vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
     const rb_cref_t *cref;
     cref = vm_get_cref(GET_EP());
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref && LIKELY(rb_ractor_main_p())) {
+    // as on the read side: the fast path writes straight into class_value
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref &&
+        LIKELY(rb_class_owned_p(ic->entry->class_value))) {
         RB_DEBUG_COUNTER_INC(cvar_write_inline_hit);
 
         rb_class_ivar_set(ic->entry->class_value, id, val);
@@ -1880,6 +1887,8 @@ rb_vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_nu
 {
     return vm_throw(ec, reg_cfp, throw_state, throwobj);
 }
+
+NORETURN(VALUE rb_zjit_throw(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj));
 
 // Fallback for ZJIT. Make a longjmp and unwind to the most recent vm_exec().
 VALUE
@@ -2766,7 +2775,7 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calli
 
     if (!NIL_P(ary)) {
         const VALUE *ptr = RARRAY_CONST_PTR(ary);
-        long len = RARRAY_LEN(ary);
+        rb_len_t len = RARRAY_LEN(ary);
         int argc = calling->argc;
 
         if (UNLIKELY(max_args <= ALLOW_HEAP_ARGV && len + argc > VM_ARGC_STACK_MAX)) {
@@ -4594,7 +4603,7 @@ current_method_entry(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
     rb_control_frame_t *top_cfp = cfp;
 
-    if (CFP_ISEQ(cfp) && ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_BLOCK) {
+    if (CFP_ISEQ(cfp) && !VM_FRAME_BMETHOD_P(cfp) && ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_BLOCK) {
         const rb_iseq_t *local_iseq = ISEQ_BODY(CFP_ISEQ(cfp))->local_iseq;
 
         do {
@@ -4603,7 +4612,7 @@ current_method_entry(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
                 /* TODO: orphan block */
                 return top_cfp;
             }
-        } while (CFP_ISEQ(cfp) != local_iseq);
+        } while (CFP_ISEQ(cfp) != local_iseq && !VM_FRAME_BMETHOD_P(cfp));
     }
     return cfp;
 }
@@ -4631,6 +4640,69 @@ refined_method_callable_without_refinement(const rb_callable_method_entry_t *me)
     return cme;
 }
 
+// Construct correct super chain for module refinements.
+// Each class including/prepending a module has a weak map mapping refinement
+// iclasses to refinement module iclasses with the correct super. Like
+// singleton classes, these are lazily initialized (both the map and
+// the refinement module iclasses).
+static VALUE
+module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class)
+{
+    VALUE module_ref_iclass = Qundef;
+
+    RB_VM_LOCKING() {
+        VALUE cache = RCLASS_MODULE_REFINEMENT_ICLASSES(defined_class);
+
+        if (LIKELY(cache)) {
+            module_ref_iclass = rb_wmap_lookup(cache, refinement_iclass);
+        }
+        else {
+            cache = rb_wmap_new_hidden();
+            RCLASS_SET_MODULE_REFINEMENT_ICLASSES(defined_class, cache);
+        }
+
+        if (UNDEF_P(module_ref_iclass)) {
+            VALUE super;
+            VALUE refinement_iclass_super = RCLASS_SUPER(refinement_iclass);
+
+            if (RICLASS_FOR_REFINEMENT_P(refinement_iclass_super)) {
+                super = module_refinement_iclass(refinement_iclass_super, defined_class);
+            }
+            else {
+                super = defined_class;
+            }
+
+            module_ref_iclass = rb_include_class_new(RBASIC(refinement_iclass)->klass, super);
+            RCLASS_SET_REFINED_CLASS(module_ref_iclass, RCLASS_REFINED_CLASS(refinement_iclass));
+            rb_class_subclass_add(RCLASS_REFINED_CLASS(refinement_iclass), module_ref_iclass);
+            rb_wmap_aset(cache, refinement_iclass, module_ref_iclass);
+        }
+    }
+
+    return module_ref_iclass;
+}
+
+VALUE
+rb_vm_module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class)
+{
+    return module_refinement_iclass(refinement_iclass, defined_class);
+}
+
+static VALUE
+refinement_iclass_for_cme(VALUE refinement_iclass, const rb_callable_method_entry_t *cme)
+{
+    if (RB_TYPE_P(cme->owner, T_MODULE) && RB_TYPE_P(cme->defined_class, T_ICLASS)) {
+        refinement_iclass = module_refinement_iclass(refinement_iclass, cme->defined_class);
+    }
+    return refinement_iclass;
+}
+
+VALUE
+rb_vm_refinement_iclass_for_cme(VALUE refinement_iclass, const rb_callable_method_entry_t *cme)
+{
+    return refinement_iclass_for_cme(refinement_iclass, cme);
+}
+
 static const rb_callable_method_entry_t *
 search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
@@ -4640,8 +4712,10 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
 
     for (; cref; cref = CREF_NEXT(cref)) {
-        const VALUE refinement = find_refinement(CREF_REFINEMENTS(cref), vm_cc_cme(cc)->owner);
+        VALUE refinement = find_refinement(CREF_REFINEMENTS(cref), vm_cc_cme(cc)->owner);
         if (NIL_P(refinement)) continue;
+
+        refinement = refinement_iclass_for_cme(refinement, vm_cc_cme(cc));
 
         const rb_callable_method_entry_t *const ref_me =
             rb_callable_method_entry(refinement, mid);
@@ -5089,6 +5163,14 @@ static inline VALUE
 vm_search_normal_superclass(VALUE klass)
 {
     if (RICLASS_FOR_REFINEMENT_P(klass)) {
+        if (RB_TYPE_P(RCLASS_REFINED_CLASS(klass), T_MODULE)) {
+            do {
+                klass = RCLASS_SUPER(klass);
+            } while (RICLASS_FOR_REFINEMENT_P(klass));
+
+            return klass;
+        }
+
         klass = RBASIC(klass)->klass;
     }
     klass = RCLASS_ORIGIN(klass);
@@ -5166,13 +5248,6 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         /* bound instance method of module */
         cc = vm_cc_new(Qundef, NULL, vm_call_method_missing, cc_type_super);
         RB_OBJ_WRITE(iseq, &cd->cc, cc);
-    }
-    else if (klass == rb_cBasicObject &&
-             RB_TYPE_P(me->defined_class, T_ICLASS) &&
-             RCLASS_INCLUDER(me->defined_class) == 0) {
-        rb_raise(rb_eNoMethodError,
-                 "super in a method in a module that has been refined and that is called via super"
-                 " from a refinement method is not supported.");
     }
     else {
         cc = vm_search_method_fastpath(reg_cfp, cd, klass);
@@ -5278,14 +5353,79 @@ rb_vm_yield_with_cfunc(rb_execution_context_t *ec, const struct rb_captured_bloc
 static VALUE
 vm_yield_with_symbol(rb_execution_context_t *ec,  VALUE symbol, int argc, const VALUE *argv, int kw_splat, VALUE block_handler)
 {
-    return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, rb_vm_bh_to_procval(ec, block_handler));
+    VALUE passed_proc = rb_vm_bh_to_procval(ec, block_handler);
+
+    if (!rb_box_available()) {
+        return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+    }
+
+    const rb_control_frame_t *reg_cfp = ec->cfp;
+    const rb_control_frame_t *ruby_cfp = rb_vm_get_ruby_level_next_cfp(ec, reg_cfp);
+    const rb_box_t *box = NULL;
+
+    /*
+     * Traverse the frames until a user box (Main or Optional Box) is found.
+     * Frames for built-in methods like <internal:xxx> run in the Root or Master Box,
+     */
+    while (ruby_cfp) {
+        box = current_box_on_cfp(ec, ruby_cfp);
+        if (BOX_USER_P(box)) {
+            break;
+        }
+        ruby_cfp = rb_vm_get_ruby_level_next_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(ruby_cfp));
+    }
+
+    // Fallback to the normal call if no user box is found
+    if (!ruby_cfp || !box) {
+        return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+    }
+
+    /*
+     * Push a dummy block frame whose outer env is `ruby_cfp` so that the
+     * method resolves in the caller's box (via the ep chain) and the
+     * backtrace reads like a usual block invocation at the caller's site.
+     */
+    const rb_iseq_t *caller_iseq = CFP_ISEQ(ruby_cfp);
+    VALUE name = rb_sprintf("block in %"PRIsVALUE, rb_iseq_label(caller_iseq));
+    const rb_iseq_t *iseq = rb_iseq_new_with_opt(Qnil, name,
+                                                 rb_iseq_path(caller_iseq), rb_iseq_realpath(caller_iseq),
+                                                 rb_vm_get_sourceline(ruby_cfp), caller_iseq, 0,
+                                                 ISEQ_TYPE_BLOCK, NULL, Qnil);
+    volatile VALUE val = Qnil;
+    enum ruby_tag_type state;
+
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_FINISH,
+                  ruby_cfp->self, VM_GUARDED_PREV_EP(ruby_cfp->ep),
+                  Qfalse, /* cref or me */
+                  ISEQ_BODY(iseq)->iseq_encoded, reg_cfp->sp,
+                  ISEQ_BODY(iseq)->local_table_size, ISEQ_BODY(iseq)->stack_max);
+
+    /*
+     * The pushed frame is finished (owned by no vm_exec loop), so catch the
+     * non-local exit here, pop the frame, and let the caller's handlers see
+     * the exception.
+     */
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        val = rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+    }
+    EC_POP_TAG();
+
+    if (state != TAG_NONE) {
+        rb_vm_rewind_cfp(ec, (rb_control_frame_t *)reg_cfp);
+        EC_JUMP_TAG(ec, state);
+    }
+
+    rb_vm_pop_frame(ec);
+
+    return val;
 }
 
 static inline int
 vm_callee_setup_block_arg_arg0_splat(rb_control_frame_t *cfp, const rb_iseq_t *iseq, VALUE *argv, VALUE ary)
 {
     int i;
-    long len = RARRAY_LEN(ary);
+    rb_len_t len = RARRAY_LEN(ary);
 
     CHECK_VM_STACK_OVERFLOW(cfp, ISEQ_BODY(iseq)->param.lead_num);
 
@@ -5846,8 +5986,8 @@ vm_check_match(rb_execution_context_t *ec, VALUE target, VALUE pattern, rb_num_t
     enum vm_check_match_type type = ((int)flag) & VM_CHECKMATCH_TYPE_MASK;
 
     if (flag & VM_CHECKMATCH_ARRAY) {
-        long i;
-        const long n = RARRAY_LEN(pattern);
+        rb_len_t i;
+        const rb_len_t n = RARRAY_LEN(pattern);
 
         for (i = 0; i < n; i++) {
             VALUE v = RARRAY_AREF(pattern, i);
@@ -5881,8 +6021,8 @@ vm_check_keyword(lindex_t bits, lindex_t idx, const VALUE *ep)
             return Qfalse;
     }
     else {
-        VM_ASSERT(RB_TYPE_P(kw_bits, T_HASH));
-        if (rb_hash_has_key(kw_bits, INT2FIX(idx))) return Qfalse;
+        VM_ASSERT(rb_set_p(kw_bits), "%s", rb_obj_info(kw_bits));
+        if (rb_set_lookup(kw_bits, INT2FIX(idx))) return Qfalse;
     }
     return Qtrue;
 }
@@ -6528,7 +6668,7 @@ rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t array_len, const VA
     return vm_opt_newarray_hash(ec, array_len, ptr);
 }
 
-VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len);
+VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, rb_len_t len);
 VALUE rb_ec_pack_ary(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer);
 
 static VALUE
@@ -6584,11 +6724,6 @@ rb_vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, c
     return vm_opt_newarray_pack_buffer(ec, array_len, ptr, fmt, buffer);
 }
 
-VALUE
-rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE fmt)
-{
-    return vm_opt_newarray_pack_buffer(ec, array_len, ptr, fmt, Qundef);
-}
 
 #undef id_cmp
 
@@ -6641,9 +6776,11 @@ vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, const ID *segments)
 
 // For JIT inlining
 static inline bool
-vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, const VALUE *reg_ep)
+vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, rb_serial_t ractor_id, const VALUE *reg_ep)
 {
-    if ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
+    // Not rb_ractor_main_p(): an owner Ractor may now cache an unshareable constant
+    // of its own class, and only it may be handed that value back.
+    if ((flags & IMEMO_CONST_CACHE_SHAREABLE) || ractor_id == rb_ractor_id(GET_RACTOR())) {
         VM_ASSERT(ractor_incidental_shareable_p(flags & IMEMO_CONST_CACHE_SHAREABLE, value));
 
         return (ic_cref == NULL || // no need to check CREF
@@ -6656,7 +6793,7 @@ static bool
 vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg_ep)
 {
     VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
-    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, reg_ep);
+    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, ice->ractor_id, reg_ep);
 }
 
 // YJIT needs this function to never allocate and never raise
@@ -6667,7 +6804,7 @@ rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 }
 
 static void
-vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const VALUE *pc)
+vm_ic_update(const rb_execution_context_t *ec, const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const VALUE *pc)
 {
     if (ruby_vm_const_missing_count > 0) {
         ruby_vm_const_missing_count = 0;
@@ -6678,6 +6815,7 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
     struct iseq_inline_constant_cache_entry *ice = SHAREABLE_IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
     RB_OBJ_WRITE(ice, &ice->value, val);
     ice->ic_cref = vm_get_const_key_cref(reg_ep);
+    ice->ractor_id = rb_ractor_id(rb_ec_ractor_ptr(ec));
 
     if (rb_ractor_shareable_p(val)) {
         RUBY_ASSERT((rb_gc_verify_shareable(val), 1));
@@ -6711,9 +6849,23 @@ rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const
         vm_ic_track_const_chain(GET_CFP(), ic, segments);
         // Undo the PC increment to get the address to this instruction
         // INSN_ATTR(width) == 2
-        vm_ic_update(CFP_ISEQ(GET_CFP()), ic, val, GET_EP(), CFP_PC(GET_CFP()) - 2);
+        vm_ic_update(ec, CFP_ISEQ(GET_CFP()), ic, val, GET_EP(), CFP_PC(GET_CFP()) - 2);
     }
     return val;
+}
+
+// Return true if the once value is already computed and set *result to the value.
+// Otherwise, return false.
+// Used for ZJIT. Keep in sync with `vm_once_dispatch` below.
+bool
+rb_vm_once_done_value(ISE is, VALUE *result)
+{
+    rb_thread_t *running_th = rbimpl_atomic_ptr_load((void**)&is->once.running_thread, RBIMPL_ATOMIC_ACQUIRE);
+    if (running_th == RUNNING_THREAD_ONCE_DONE) {
+        *result = is->once.value;
+        return true;
+    }
+    return false;
 }
 
 static VALUE
@@ -7180,7 +7332,7 @@ vm_opt_length(VALUE recv, int bop)
     else if (RBASIC_CLASS(recv) == rb_cString &&
              BASIC_OP_UNREDEFINED_P(bop, STRING_REDEFINED_OP_FLAG)) {
         if (bop == BOP_EMPTY_P) {
-            return LONG2NUM(RSTRING_LEN(recv));
+            return LEN2NUM(RSTRING_LEN(recv));
         }
         else {
             return rb_str_length(recv);
@@ -7188,7 +7340,7 @@ vm_opt_length(VALUE recv, int bop)
     }
     else if (RBASIC_CLASS(recv) == rb_cArray &&
              BASIC_OP_UNREDEFINED_P(bop, ARRAY_REDEFINED_OP_FLAG)) {
-        return LONG2NUM(RARRAY_LEN(recv));
+        return LEN2NUM(RARRAY_LEN(recv));
     }
     else if (RBASIC_CLASS(recv) == rb_cHash &&
              BASIC_OP_UNREDEFINED_P(bop, HASH_REDEFINED_OP_FLAG)) {
@@ -7478,6 +7630,10 @@ Init_vm_stack_canary(void)
 {
     /* This has to be called _after_ our PRNG is properly set up. */
     int n = ruby_fill_random_bytes(&vm_stack_canary, sizeof vm_stack_canary, false);
+    /* Make it a large positive Fixnum.  Arguments a block does not take
+     * stay at the stack top, where vm_push_frame checks the canary. */
+    vm_stack_canary >>= 2;
+    vm_stack_canary |= (VALUE)1 << (SIZEOF_VALUE * CHAR_BIT - 2);
     vm_stack_canary |= 0x01; // valid VALUE (Fixnum)
 
     vm_stack_canary_was_born = true;

@@ -36,8 +36,9 @@ VALUE cSSLSocket;
 static VALUE eSSLErrorWaitReadable;
 static VALUE eSSLErrorWaitWritable;
 
-static ID id_call, ID_callback_state, id_npn_protocols_encoded, id_each;
-static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
+static ID id_call, ID_callback_state, id_npn_protocols_encoded, id_each,
+          id_original_context;
+static VALUE sym_wait_readable, sym_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
           id_i_verify_depth, id_i_verify_callback, id_i_client_ca,
@@ -83,7 +84,7 @@ static const rb_data_type_t ossl_sslctx_type = {
         .dfree = ossl_sslctx_free,
         .dcompact = ossl_sslctx_compact,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -531,7 +532,7 @@ npn_select_cb_common_i(VALUE tmp)
     struct npn_select_cb_common_args *args = (void *)tmp;
     const unsigned char *in = args->in, *in_end = in + args->inlen;
     unsigned char l;
-    long len;
+    rb_len_t len;
     VALUE selected, protocols = rb_ary_new();
 
     /* assume OpenSSL verifies this format */
@@ -715,7 +716,7 @@ ossl_sslctx_setup(VALUE self)
     EVP_PKEY *key = NULL;
     char *ca_path = NULL, *ca_file = NULL;
     int verify_mode;
-    long i;
+    rb_len_t i;
     VALUE val;
 
     if(OBJ_FROZEN(self)) return Qnil;
@@ -1030,7 +1031,7 @@ build_cipher_string(VALUE v)
 
     if (RB_TYPE_P(v, T_ARRAY)) {
         str = rb_str_new(0, 0);
-        for (long i = 0; i < RARRAY_LEN(v); i++) {
+        for (rb_len_t i = 0; i < RARRAY_LEN(v); i++) {
             elem = rb_ary_entry(v, i);
             if (RB_TYPE_P(elem, T_ARRAY)) elem = rb_ary_entry(elem, 0);
             elem = rb_String(elem);
@@ -1178,11 +1179,13 @@ ossl_sslctx_set_client_sigalgs(VALUE self, VALUE v)
  *
  * Added in version 3.0. See also the man page SSL_CTX_set0_tmp_dh_pkey(3).
  *
- * Example:
+ * === Example
  *   ctx = OpenSSL::SSL::SSLContext.new
- *   ctx.tmp_dh = OpenSSL::DH.generate(2048)
- *   svr = OpenSSL::SSL::SSLServer.new(tcp_svr, ctx)
- *   Thread.new { svr.accept }
+ *   ctx.tmp_dh = OpenSSL::PKey::DH.generate(2048)
+ *   Thread.new {
+ *     ssl = OpenSSL::SSL::SSLSocket.new(tcp_svr.accept, ctx)
+ *     ssl.accept
+ *   }
  */
 static VALUE
 ossl_sslctx_set_tmp_dh(VALUE self, VALUE arg)
@@ -1230,9 +1233,11 @@ ossl_sslctx_set_tmp_dh(VALUE self, VALUE arg)
  *
  * === Example
  *   ctx1 = OpenSSL::SSL::SSLContext.new
- *   ctx1.groups = "X25519:P-256:P-224"
- *   svr = OpenSSL::SSL::SSLServer.new(tcp_svr, ctx1)
- *   Thread.new { svr.accept }
+ *   ctx1.groups = "X25519:P-256"
+ *   Thread.new {
+ *     ssl = OpenSSL::SSL::SSLSocket.new(tcp_svr.accept, ctx1)
+ *     ssl.accept
+ *   }
  *
  *   ctx2 = OpenSSL::SSL::SSLContext.new
  *   ctx2.groups = "P-256"
@@ -1632,7 +1637,7 @@ const rb_data_type_t ossl_ssl_type = {
         .dfree = ossl_ssl_free,
         .dcompact = ossl_ssl_compact,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1656,8 +1661,9 @@ fallback_peer_ip_address(VALUE self, VALUE exc)
 }
 
 static VALUE
-peeraddr_ip_str(VALUE io)
+peeraddr_ip_str(VALUE self)
 {
+    VALUE io = rb_attr_get(self, id_i_io);
     return rb_rescue2(peer_ip_address, io, fallback_peer_ip_address, Qnil,
                       rb_eSystemCallError, (VALUE)0);
 }
@@ -1709,6 +1715,7 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
 
     GetSSLCTX(v_ctx, ctx);
     rb_ivar_set(self, id_i_context, v_ctx);
+    rb_ivar_set(self, id_original_context, v_ctx);
     ossl_sslctx_setup(v_ctx);
 
     if (rb_respond_to(io, rb_intern("nonblock=")))
@@ -1772,422 +1779,234 @@ errno_mapped(void)
 #endif
 }
 
-static void
-write_would_block(int nonblock)
-{
-    if (nonblock)
-        ossl_raise(eSSLErrorWaitWritable, "write would block");
-}
-
-static void
-read_would_block(int nonblock)
-{
-    if (nonblock)
-        ossl_raise(eSSLErrorWaitReadable, "read would block");
-}
-
-static int
-no_exception_p(VALUE opts)
-{
-    if (RB_TYPE_P(opts, T_HASH) &&
-          rb_hash_lookup2(opts, sym_exception, Qundef) == Qfalse)
-        return 1;
-    return 0;
-}
-
-// Provided by Ruby 3.2.0 and later in order to support the default IO#timeout.
-#ifndef RUBY_IO_TIMEOUT_DEFAULT
-#define RUBY_IO_TIMEOUT_DEFAULT Qnil
-#endif
-
-#ifdef HAVE_RB_IO_TIMEOUT
-#define IO_TIMEOUT_ERROR rb_eIOTimeoutError
-#else
-#define IO_TIMEOUT_ERROR rb_eIOError
-#endif
-
-
-static void
-io_wait_writable(VALUE io)
-{
-#ifdef HAVE_RB_IO_MAYBE_WAIT
-    if (!rb_io_wait(io, INT2NUM(RUBY_IO_WRITABLE), RUBY_IO_TIMEOUT_DEFAULT)) {
-        rb_raise(IO_TIMEOUT_ERROR, "Timed out while waiting to become writable!");
-    }
-#else
-    rb_io_t *fptr;
-    GetOpenFile(io, fptr);
-    rb_thread_fd_writable(fptr->fd);
-#endif
-}
-
-static void
-io_wait_readable(VALUE io)
-{
-#ifdef HAVE_RB_IO_MAYBE_WAIT
-    if (!rb_io_wait(io, INT2NUM(RUBY_IO_READABLE), RUBY_IO_TIMEOUT_DEFAULT)) {
-        rb_raise(IO_TIMEOUT_ERROR, "Timed out while waiting to become readable!");
-    }
-#else
-    rb_io_t *fptr;
-    GetOpenFile(io, fptr);
-    rb_thread_wait_fd(fptr->fd);
-#endif
-}
-
 static VALUE
-ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
+ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname)
 {
     SSL *ssl;
     VALUE cb_state;
-    int nonblock = opts != Qfalse;
 
     rb_ivar_set(self, ID_callback_state, Qnil);
 
     GetSSL(self, ssl);
 
-    VALUE io = rb_attr_get(self, id_i_io);
-    for (;;) {
-        int ret = func(ssl);
-        int saved_errno = errno_mapped();
+#ifdef __APPLE__
+  retry:;
+#endif
+    int ret = func(ssl);
+    int saved_errno = errno_mapped();
 
-        cb_state = rb_attr_get(self, ID_callback_state);
-        if (!NIL_P(cb_state)) {
-            /* must cleanup OpenSSL error stack before re-raising */
+    cb_state = rb_attr_get(self, ID_callback_state);
+    if (!NIL_P(cb_state)) {
+        /* must cleanup OpenSSL error stack before re-raising */
+        ossl_clear_error();
+        rb_jump_tag(NUM2INT(cb_state));
+    }
+
+    int code = SSL_get_error(ssl, ret);
+    switch (code) {
+      case SSL_ERROR_NONE:
+        return self;
+      case SSL_ERROR_WANT_WRITE:
+        return sym_wait_writable;
+      case SSL_ERROR_WANT_READ:
+        return sym_wait_readable;
+      case SSL_ERROR_SYSCALL:
+        if (saved_errno) {
             ossl_clear_error();
-            rb_jump_tag(NUM2INT(cb_state));
-        }
-
-        if (ret > 0)
-            break;
-
-        int code = SSL_get_error(ssl, ret);
-        switch (code) {
-          case SSL_ERROR_WANT_WRITE:
-            if (no_exception_p(opts)) { return sym_wait_writable; }
-            write_would_block(nonblock);
-            io_wait_writable(io);
-            continue;
-          case SSL_ERROR_WANT_READ:
-            if (no_exception_p(opts)) { return sym_wait_readable; }
-            read_would_block(nonblock);
-            io_wait_readable(io);
-            continue;
-          case SSL_ERROR_SYSCALL:
 #ifdef __APPLE__
             /* See ossl_ssl_write_internal() */
             if (saved_errno == EPROTOTYPE)
-                continue;
+                goto retry;
 #endif
-            if (saved_errno)
-                rb_exc_raise(rb_syserr_new(saved_errno, funcname));
-            /* fallthrough */
-          default: {
-              VALUE error_append = Qnil;
-#if defined(SSL_R_CERTIFICATE_VERIFY_FAILED)
-              unsigned long err = ERR_peek_last_error();
-              if (ERR_GET_LIB(err) == ERR_LIB_SSL &&
-                  ERR_GET_REASON(err) == SSL_R_CERTIFICATE_VERIFY_FAILED) {
-                  const char *err_msg = ERR_reason_error_string(err),
-                        *verify_msg = X509_verify_cert_error_string(SSL_get_verify_result(ssl));
-                  if (!err_msg)
-                      err_msg = "(null)";
-                  if (!verify_msg)
-                      verify_msg = "(null)";
-                  ossl_clear_error(); /* let ossl_raise() not append message */
-                  error_append = rb_sprintf(": %s (%s)", err_msg, verify_msg);
-              }
-#endif
-              ossl_raise(eSSLError,
-                         "%s%s returned=%d errno=%d peeraddr=%"PRIsVALUE" state=%s%"PRIsVALUE,
-                         funcname,
-                         code == SSL_ERROR_SYSCALL ? " SYSCALL" : "",
-                         code,
-                         saved_errno,
-                         peeraddr_ip_str(io),
-                         SSL_state_string_long(ssl),
-                         error_append);
-          }
+            rb_exc_raise(rb_syserr_new(saved_errno, funcname));
         }
+        /* fallthrough */
+      default: {
+        VALUE str = rb_sprintf(
+            "%s%s returned=%d errno=%d peeraddr=%"PRIsVALUE" state=%s",
+            funcname,
+            code == SSL_ERROR_SYSCALL ? " SYSCALL" : "",
+            code,
+            saved_errno,
+            peeraddr_ip_str(self),
+            SSL_state_string_long(ssl)
+        );
+#if defined(SSL_R_CERTIFICATE_VERIFY_FAILED)
+        unsigned long err = ERR_peek_last_error();
+        if (ERR_GET_LIB(err) == ERR_LIB_SSL &&
+            ERR_GET_REASON(err) == SSL_R_CERTIFICATE_VERIFY_FAILED) {
+            long verify_result = SSL_get_verify_result(ssl);
+            const char *err_msg = ERR_reason_error_string(err),
+                  *verify_msg = X509_verify_cert_error_string(verify_result);
+            if (!err_msg)
+                err_msg = "(null)";
+            if (!verify_msg)
+                verify_msg = "(null)";
+            ossl_clear_error(); /* let ossl_raise() not append message */
+            rb_str_catf(str, ": %s (%s)", err_msg, verify_msg);
+        }
+#endif
+        rb_exc_raise(ossl_make_error(eSSLError, str));
+      }
     }
-
-    return self;
 }
 
 /*
  * call-seq:
- *    ssl.connect => self
- *
- * Initiates an SSL/TLS handshake with a server.
+ *    ssl.ssl_connect -> self, :wait_readable, or :wait_writable
  */
 static VALUE
 ossl_ssl_connect(VALUE self)
 {
     ossl_ssl_setup(self);
-
-    return ossl_start_ssl(self, SSL_connect, "SSL_connect", Qfalse);
+    return ossl_start_ssl(self, SSL_connect, "SSL_connect");
 }
 
 /*
  * call-seq:
- *    ssl.connect_nonblock([options]) => self
- *
- * Initiates the SSL/TLS handshake as a client in non-blocking manner.
- *
- *   # emulates blocking connect
- *   begin
- *     ssl.connect_nonblock
- *   rescue IO::WaitReadable
- *     IO.select([s2])
- *     retry
- *   rescue IO::WaitWritable
- *     IO.select(nil, [s2])
- *     retry
- *   end
- *
- * By specifying a keyword argument _exception_ to +false+, you can indicate
- * that connect_nonblock should not raise an IO::WaitReadable or
- * IO::WaitWritable exception, but return the symbol +:wait_readable+ or
- * +:wait_writable+ instead.
- */
-static VALUE
-ossl_ssl_connect_nonblock(int argc, VALUE *argv, VALUE self)
-{
-    VALUE opts;
-    rb_scan_args(argc, argv, "0:", &opts);
-
-    ossl_ssl_setup(self);
-
-    return ossl_start_ssl(self, SSL_connect, "SSL_connect", opts);
-}
-
-/*
- * call-seq:
- *    ssl.accept => self
- *
- * Waits for a SSL/TLS client to initiate a handshake.
+ *    ssl.ssl_accept -> self, :wait_readable, or :wait_writable
  */
 static VALUE
 ossl_ssl_accept(VALUE self)
 {
     ossl_ssl_setup(self);
+    return ossl_start_ssl(self, SSL_accept, "SSL_accept");
+}
 
-    return ossl_start_ssl(self, SSL_accept, "SSL_accept", Qfalse);
+/*
+ * TODO: This shouldn't be necessary, but we do not want to use
+ * String.new(capacity: len) in #sysread because it allocates Hash objects
+ * for the kwargs.
+ */
+static VALUE
+ossl_ssl_string_new_capacity(VALUE self, VALUE len)
+{
+    rb_len_t capa = NUM2LEN(len);
+    return rb_str_buf_new(capa >= 0 ? capa : 0);
 }
 
 /*
  * call-seq:
- *    ssl.accept_nonblock([options]) => self
- *
- * Initiates the SSL/TLS handshake as a server in non-blocking manner.
- *
- *   # emulates blocking accept
- *   begin
- *     ssl.accept_nonblock
- *   rescue IO::WaitReadable
- *     IO.select([s2])
- *     retry
- *   rescue IO::WaitWritable
- *     IO.select(nil, [s2])
- *     retry
- *   end
- *
- * By specifying a keyword argument _exception_ to +false+, you can indicate
- * that accept_nonblock should not raise an IO::WaitReadable or
- * IO::WaitWritable exception, but return the symbol +:wait_readable+ or
- * +:wait_writable+ instead.
+ *    ssl.ssl_read(len, str) -> str, nil, :wait_readable, or :wait_writable
  */
 static VALUE
-ossl_ssl_accept_nonblock(int argc, VALUE *argv, VALUE self)
-{
-    VALUE opts;
-
-    rb_scan_args(argc, argv, "0:", &opts);
-    ossl_ssl_setup(self);
-
-    return ossl_start_ssl(self, SSL_accept, "SSL_accept", opts);
-}
-
-static VALUE
-ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
+ossl_ssl_read(VALUE self, VALUE len, VALUE str)
 {
     SSL *ssl;
     int ilen;
-    VALUE len, str, cb_state;
-    VALUE opts = Qnil;
+    VALUE cb_state;
 
-    if (nonblock) {
-        rb_scan_args(argc, argv, "11:", &len, &str, &opts);
-    } else {
-        rb_scan_args(argc, argv, "11", &len, &str);
-    }
     GetSSL(self, ssl);
     if (!ssl_started(ssl))
         rb_raise(eSSLError, "SSL session is not started yet");
 
     ilen = NUM2INT(len);
-    if (NIL_P(str))
-        str = rb_str_new(0, ilen);
-    else {
-        StringValue(str);
-        if (RSTRING_LEN(str) >= ilen)
-            rb_str_modify(str);
-        else
-            rb_str_modify_expand(str, ilen - RSTRING_LEN(str));
-    }
+    if (ilen < 0)
+        rb_raise(rb_eArgError, "negative length %d given", ilen);
+    StringValue(str);
+    if ((rb_len_t)rb_str_capacity(str) >= ilen)
+        rb_str_modify(str);
+    else
+        rb_str_modify_expand(str, ilen - RSTRING_LEN(str));
 
     if (ilen == 0) {
         rb_str_set_len(str, 0);
         return str;
     }
 
-    VALUE io = rb_attr_get(self, id_i_io);
+    rb_str_locktmp(str);
+    int nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
+    rb_str_unlocktmp(str);
+    int saved_errno = errno_mapped();
 
-    for (;;) {
-        rb_str_locktmp(str);
-        int nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
-        int saved_errno = errno_mapped();
-        rb_str_unlocktmp(str);
+    cb_state = rb_attr_get(self, ID_callback_state);
+    if (!NIL_P(cb_state)) {
+        rb_ivar_set(self, ID_callback_state, Qnil);
+        ossl_clear_error();
+        rb_jump_tag(NUM2INT(cb_state));
+    }
 
-        cb_state = rb_attr_get(self, ID_callback_state);
-        if (!NIL_P(cb_state)) {
-            rb_ivar_set(self, ID_callback_state, Qnil);
+    switch (SSL_get_error(ssl, nread)) {
+      case SSL_ERROR_NONE:
+        rb_str_set_len(str, nread);
+        return str;
+      case SSL_ERROR_ZERO_RETURN:
+        return Qnil;
+      case SSL_ERROR_WANT_WRITE:
+        return sym_wait_writable;
+      case SSL_ERROR_WANT_READ:
+        return sym_wait_readable;
+      case SSL_ERROR_SYSCALL:
+        if (saved_errno) {
             ossl_clear_error();
-            rb_jump_tag(NUM2INT(cb_state));
+            rb_exc_raise(rb_syserr_new(saved_errno, "SSL_read"));
         }
-
-        switch (SSL_get_error(ssl, nread)) {
-          case SSL_ERROR_NONE:
-            rb_str_set_len(str, nread);
-            return str;
-          case SSL_ERROR_ZERO_RETURN:
-            if (no_exception_p(opts)) { return Qnil; }
-            rb_eof_error();
-          case SSL_ERROR_WANT_WRITE:
-            if (nonblock) {
-                if (no_exception_p(opts)) { return sym_wait_writable; }
-                write_would_block(nonblock);
-            }
-            io_wait_writable(io);
-            break;
-          case SSL_ERROR_WANT_READ:
-            if (nonblock) {
-                if (no_exception_p(opts)) { return sym_wait_readable; }
-                read_would_block(nonblock);
-            }
-            io_wait_readable(io);
-            break;
-          case SSL_ERROR_SYSCALL:
-            if (!ERR_peek_error()) {
-                if (saved_errno)
-                    rb_exc_raise(rb_syserr_new(saved_errno, "SSL_read"));
-                else {
-                    /*
-                     * The underlying BIO returned 0. This is actually a
-                     * protocol error. But unfortunately, not all
-                     * implementations cleanly shutdown the TLS connection
-                     * but just shutdown/close the TCP connection. So report
-                     * EOF for now...
-                     */
-                    if (no_exception_p(opts)) { return Qnil; }
-                    rb_eof_error();
-                }
-            }
-            /* fall through */
-          default:
-            ossl_raise(eSSLError, "SSL_read");
+        if (!ERR_peek_error()) {
+            /*
+             * The underlying BIO returned 0. This is actually a
+             * protocol error. But unfortunately, not all
+             * implementations cleanly shutdown the TLS connection
+             * but just shutdown/close the TCP connection. So report
+             * EOF for now...
+             */
+            return Qnil;
         }
-
-        // Ensure the buffer is not modified during io_wait_*able()
-        rb_str_modify(str);
-        if (rb_str_capacity(str) < (size_t)ilen)
-            rb_raise(eSSLError, "read buffer was modified");
+        /* fall through */
+      default:
+        ossl_raise(eSSLError, "SSL_read");
     }
 }
 
 /*
  * call-seq:
- *    ssl.sysread(length) => string
- *    ssl.sysread(length, buffer) => buffer
- *
- * Reads _length_ bytes from the SSL connection.  If a pre-allocated _buffer_
- * is provided the data will be written into it.
+ *    ssl.ssl_write(str) -> integer, :wait_readable, or :wait_writable
  */
 static VALUE
-ossl_ssl_read(int argc, VALUE *argv, VALUE self)
+ossl_ssl_write(VALUE self, VALUE str)
 {
-    return ossl_ssl_read_internal(argc, argv, self, 0);
-}
-
-/*
- * call-seq:
- *    ssl.sysread_nonblock(length) => string
- *    ssl.sysread_nonblock(length, buffer) => buffer
- *    ssl.sysread_nonblock(length[, buffer [, opts]) => buffer
- *
- * A non-blocking version of #sysread.  Raises an SSLError if reading would
- * block.  If "exception: false" is passed, this method returns a symbol of
- * :wait_readable, :wait_writable, or nil, rather than raising an exception.
- *
- * Reads _length_ bytes from the SSL connection.  If a pre-allocated _buffer_
- * is provided the data will be written into it.
- */
-static VALUE
-ossl_ssl_read_nonblock(int argc, VALUE *argv, VALUE self)
-{
-    return ossl_ssl_read_internal(argc, argv, self, 1);
-}
-
-static VALUE
-ossl_ssl_write_internal_safe(VALUE _args)
-{
-    VALUE *args = (VALUE*)_args;
-    VALUE self = args[0];
-    VALUE str = args[1];
-    VALUE opts = args[2];
-
     SSL *ssl;
-    rb_io_t *fptr;
-    int num, nonblock = opts != Qfalse;
     VALUE cb_state;
 
     GetSSL(self, ssl);
     if (!ssl_started(ssl))
         rb_raise(eSSLError, "SSL session is not started yet");
 
-    VALUE io = rb_attr_get(self, id_i_io);
-    GetOpenFile(io, fptr);
-
+    str = rb_obj_as_string(str);
     /* SSL_write(3ssl) manpage states num == 0 is undefined */
-    num = RSTRING_LENINT(str);
+    int num = RSTRING_LENINT(str);
     if (num == 0)
         return INT2FIX(0);
 
-    for (;;) {
-        int nwritten = SSL_write(ssl, RSTRING_PTR(str), num);
-        int saved_errno = errno_mapped();
+#ifdef __APPLE__
+  retry:;
+#endif
+    int frozen = RB_OBJ_FROZEN(str);
+    if (!frozen) {
+        rb_str_locktmp(str);
+    }
+    int nwritten = SSL_write(ssl, RSTRING_PTR(str), num);
+    if (!frozen) {
+        rb_str_unlocktmp(str);
+    }
+    int saved_errno = errno_mapped();
 
-        cb_state = rb_attr_get(self, ID_callback_state);
-        if (!NIL_P(cb_state)) {
-            rb_ivar_set(self, ID_callback_state, Qnil);
+    cb_state = rb_attr_get(self, ID_callback_state);
+    if (!NIL_P(cb_state)) {
+        rb_ivar_set(self, ID_callback_state, Qnil);
+        ossl_clear_error();
+        rb_jump_tag(NUM2INT(cb_state));
+    }
+
+    switch (SSL_get_error(ssl, nwritten)) {
+      case SSL_ERROR_NONE:
+        return INT2NUM(nwritten);
+      case SSL_ERROR_WANT_WRITE:
+        return sym_wait_writable;
+      case SSL_ERROR_WANT_READ:
+        return sym_wait_readable;
+      case SSL_ERROR_SYSCALL:
+        if (saved_errno) {
             ossl_clear_error();
-            rb_jump_tag(NUM2INT(cb_state));
-        }
-
-        switch (SSL_get_error(ssl, nwritten)) {
-          case SSL_ERROR_NONE:
-            return INT2NUM(nwritten);
-          case SSL_ERROR_WANT_WRITE:
-            if (no_exception_p(opts)) { return sym_wait_writable; }
-            write_would_block(nonblock);
-            io_wait_writable(io);
-            continue;
-          case SSL_ERROR_WANT_READ:
-            if (no_exception_p(opts)) { return sym_wait_readable; }
-            read_would_block(nonblock);
-            io_wait_readable(io);
-            continue;
-          case SSL_ERROR_SYSCALL:
 #ifdef __APPLE__
             /*
              * It appears that send syscall can return EPROTOTYPE if the
@@ -2196,69 +2015,14 @@ ossl_ssl_write_internal_safe(VALUE _args)
              * [Bug #14713] https://bugs.ruby-lang.org/issues/14713
              */
             if (saved_errno == EPROTOTYPE)
-                continue;
+                goto retry;
 #endif
-            if (saved_errno)
-                rb_exc_raise(rb_syserr_new(saved_errno, "SSL_write"));
-            /* fallthrough */
-          default:
-            ossl_raise(eSSLError, "SSL_write");
+            rb_exc_raise(rb_syserr_new(saved_errno, "SSL_write"));
         }
+        /* fallthrough */
+      default:
+        ossl_raise(eSSLError, "SSL_write");
     }
-}
-
-
-static VALUE
-ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
-{
-    StringValue(str);
-    int frozen = RB_OBJ_FROZEN(str);
-    if (!frozen) {
-        rb_str_locktmp(str);
-    }
-    int state;
-    VALUE args[3] = {self, str, opts};
-    VALUE result = rb_protect(ossl_ssl_write_internal_safe, (VALUE)args, &state);
-    if (!frozen) {
-        rb_str_unlocktmp(str);
-    }
-
-    if (state) {
-        rb_jump_tag(state);
-    }
-    return result;
-}
-
-/*
- * call-seq:
- *    ssl.syswrite(string) => Integer
- *
- * Writes _string_ to the SSL connection.
- */
-static VALUE
-ossl_ssl_write(VALUE self, VALUE str)
-{
-    return ossl_ssl_write_internal(self, str, Qfalse);
-}
-
-/*
- * call-seq:
- *    ssl.syswrite_nonblock(string) => Integer
- *    ssl.syswrite_nonblock(string, opts) => Integer
- *
- * Writes _string_ to the SSL connection in a non-blocking manner.  Raises an
- * SSLError if writing would block.  If "exception: false" is passed, this
- * method returns a symbol of :wait_readable or :wait_writable, rather than
- * raising an exception.
- */
-static VALUE
-ossl_ssl_write_nonblock(int argc, VALUE *argv, VALUE self)
-{
-    VALUE str, opts;
-
-    rb_scan_args(argc, argv, "1:", &str, &opts);
-
-    return ossl_ssl_write_internal(self, str, opts);
 }
 
 /*
@@ -2436,7 +2200,14 @@ ossl_ssl_get_state(VALUE self)
  * call-seq:
  *    ssl.pending => Integer
  *
- * The number of bytes that are immediately available for reading.
+ * Returns the number of bytes buffered by the OpenSSL library and immediately
+ * available for reading with #sysread.
+ *
+ * This does not include data read ahead and buffered by SSLSocket. It may
+ * therefore return 0 even when data is available for reading with methods
+ * that are aware of the SSLSocket buffer, such as #read or #gets.
+ *
+ * See also the man page SSL_pending(3).
  */
 static VALUE
 ossl_ssl_pending(VALUE self)
@@ -2679,7 +2450,7 @@ ossl_ssl_export_keying_material(int argc, VALUE *argv, VALUE self)
 
     GetSSL(self, ssl);
 
-    len = (size_t)NUM2LONG(length);
+    len = (size_t)NUM2LEN(length);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if (!NIL_P(context)) {
@@ -2799,8 +2570,8 @@ Init_ossl_ssl(void)
     /* Document-module: OpenSSL::SSL
      *
      * Use SSLContext to set up the parameters for a TLS (former SSL)
-     * connection. Both client and server TLS connections are supported,
-     * SSLSocket and SSLServer may be used in conjunction with an instance
+     * connection. Both client and server TLS connections are supported.
+     * SSLSocket may be used in conjunction with a TCPServer and an instance
      * of SSLContext to set up connections.
      */
     mSSL = rb_define_module_under(mOSSL, "SSL");
@@ -3182,14 +2953,11 @@ Init_ossl_ssl(void)
     rb_define_alloc_func(cSSLSocket, ossl_ssl_s_alloc);
     rb_define_method(cSSLSocket, "initialize", ossl_ssl_initialize, -1);
     rb_undef_method(cSSLSocket, "initialize_copy");
-    rb_define_method(cSSLSocket, "connect",    ossl_ssl_connect, 0);
-    rb_define_method(cSSLSocket, "connect_nonblock",    ossl_ssl_connect_nonblock, -1);
-    rb_define_method(cSSLSocket, "accept",     ossl_ssl_accept, 0);
-    rb_define_method(cSSLSocket, "accept_nonblock", ossl_ssl_accept_nonblock, -1);
-    rb_define_method(cSSLSocket, "sysread",    ossl_ssl_read, -1);
-    rb_define_private_method(cSSLSocket, "sysread_nonblock",    ossl_ssl_read_nonblock, -1);
-    rb_define_method(cSSLSocket, "syswrite",   ossl_ssl_write, 1);
-    rb_define_private_method(cSSLSocket, "syswrite_nonblock",    ossl_ssl_write_nonblock, -1);
+    rb_define_private_method(cSSLSocket, "ssl_connect", ossl_ssl_connect, 0);
+    rb_define_private_method(cSSLSocket, "ssl_accept", ossl_ssl_accept, 0);
+    rb_define_private_method(cSSLSocket, "string_new_capacity", ossl_ssl_string_new_capacity, 1);
+    rb_define_private_method(cSSLSocket, "ssl_read", ossl_ssl_read, 2);
+    rb_define_private_method(cSSLSocket, "ssl_write", ossl_ssl_write, 1);
     rb_define_private_method(cSSLSocket, "stop",   ossl_ssl_stop, 0);
     rb_define_method(cSSLSocket, "cert",       ossl_ssl_get_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert",  ossl_ssl_get_peer_cert, 0);
@@ -3367,13 +3135,12 @@ Init_ossl_ssl(void)
     /* TLS 1.3 */
     rb_define_const(mSSL, "TLS1_3_VERSION", INT2NUM(TLS1_3_VERSION));
 
-
-    sym_exception = ID2SYM(rb_intern_const("exception"));
     sym_wait_readable = ID2SYM(rb_intern_const("wait_readable"));
     sym_wait_writable = ID2SYM(rb_intern_const("wait_writable"));
 
     id_npn_protocols_encoded = rb_intern_const("npn_protocols_encoded");
     id_each = rb_intern_const("each");
+    id_original_context = rb_intern_const("original_context");
 
 #define DefIVarID(name) do \
     id_i_##name = rb_intern_const("@"#name); while (0)

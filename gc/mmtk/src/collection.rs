@@ -1,19 +1,19 @@
 use crate::abi::GCThreadTLS;
 
+use crate::Ruby;
 use crate::api::RubyMutator;
+use crate::heap::CPU_HEAP_TRIGGER_CONFIG;
 use crate::heap::CpuHeapTrigger;
 use crate::heap::RubyHeapTrigger;
-use crate::heap::CPU_HEAP_TRIGGER_CONFIG;
 use crate::mmtk;
 use crate::upcalls;
-use crate::Ruby;
 use mmtk::memory_manager;
 use mmtk::scheduler::*;
-use mmtk::util::alloc::AllocationError;
-use mmtk::util::heap::GCTriggerPolicy;
 use mmtk::util::VMMutatorThread;
 use mmtk::util::VMThread;
 use mmtk::util::VMWorkerThread;
+use mmtk::util::alloc::AllocationError;
+use mmtk::util::heap::GCTriggerPolicy;
 use mmtk::vm::Collection;
 use mmtk::vm::GCThreadContext;
 use std::sync::atomic::AtomicBool;
@@ -29,18 +29,18 @@ impl Collection<Ruby> for VMCollection {
     where
         F: FnMut(&'static mut mmtk::Mutator<Ruby>),
     {
-        (upcalls().stop_the_world)();
+        upcalls::stop_the_world();
 
         if crate::mmtk().get_plan().current_gc_may_move_object() {
             CURRENT_GC_MAY_MOVE.store(true, Ordering::Relaxed);
-            (upcalls().before_updating_jit_code)();
+            upcalls::before_updating_jit_code();
         } else {
             CURRENT_GC_MAY_MOVE.store(false, Ordering::Relaxed);
         }
 
         crate::binding().pinning_registry.pin_children(tls);
 
-        (upcalls().get_mutators)(
+        upcalls::get_mutators(
             Self::notify_mutator_ready::<F>,
             &mut mutator_visitor as *mut F as *mut _,
         );
@@ -50,14 +50,14 @@ impl Collection<Ruby> for VMCollection {
         let current_gc_may_move = CURRENT_GC_MAY_MOVE.load(Ordering::Relaxed);
 
         if current_gc_may_move {
-            (upcalls().after_updating_jit_code)();
+            upcalls::after_updating_jit_code();
         }
 
-        (upcalls().resume_mutators)(current_gc_may_move);
+        upcalls::resume_mutators(current_gc_may_move);
     }
 
     fn block_for_gc(tls: VMMutatorThread) {
-        (upcalls().block_for_gc)(tls);
+        upcalls::block_for_gc(tls);
     }
 
     fn out_of_memory(_tls: VMThread, err_kind: AllocationError) {
@@ -68,7 +68,7 @@ impl Collection<Ruby> for VMCollection {
             // The OS refused an mmap. This is unrecoverable, so abort the
             // process via the same panic handler used for GC-thread panics.
             AllocationError::MmapOutOfMemory => {
-                (upcalls().mutator_thread_panic_handler)();
+                upcalls::mutator_thread_panic_handler();
             }
         }
     }
@@ -84,7 +84,7 @@ impl Collection<Ruby> for VMCollection {
                     let ptr_worker = &mut *worker as *mut GCWorker<Ruby>;
                     let gc_thread_tls =
                         Box::into_raw(Box::new(GCThreadTLS::for_worker(ptr_worker)));
-                    (upcalls().init_gc_worker_thread)(gc_thread_tls);
+                    upcalls::init_gc_worker_thread(gc_thread_tls);
                     memory_manager::start_worker(
                         mmtk(),
                         GCThreadTLS::to_vwt(gc_thread_tls),
@@ -103,7 +103,7 @@ impl Collection<Ruby> for VMCollection {
     }
 
     fn vm_live_bytes() -> usize {
-        (upcalls().vm_live_bytes)()
+        upcalls::vm_live_bytes()
     }
 
     fn create_gc_trigger() -> Box<dyn GCTriggerPolicy<Ruby>> {

@@ -179,9 +179,9 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_st_literal_memory_leak
-    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true)
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true, samples: 5)
     begin;
-      1_000_000.times do
+      200_000.times do
         # >8 element hashes are ST allocated rather than AR allocated
         {a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9}
       end
@@ -617,7 +617,10 @@ class TestHash < Test::Unit::TestCase
   end
 
   def hash_hint hv
-    hv & 0xff
+    hint = hv & 0xff
+    # hash.c's ar_do_hash_hint() substitutes RHASH_AR_CLEARED_HINT (0x00)
+    # with RHASH_AR_SUBSTITUTION_HINT (0x01), so those two alias.
+    hint == 0 ? 1 : hint
   end
 
   def test_rehash
@@ -1327,6 +1330,11 @@ class TestHash < Test::Unit::TestCase
     assert_equal({1=>8, 2=>4, 3=>4, 5=>7}, h1.merge(h2, h3) {|k, v1, v2| k + v1 + v2 })
   end
 
+  def test_merge_during_gc
+    hash = @cls[a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8]
+    assert_equal(9, EnvUtil.under_gc_stress(0x04) { hash.merge(i: 9) }[:i])
+  end
+
   def test_merge_on_identhash
     h = @cls[1=>2,3=>4,5=>6]
     h.compare_by_identity
@@ -1515,10 +1523,10 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_compare_by_identy_memory_leak
-    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #20145]", rss: true)
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #20145]", rss: true, samples: 5)
     begin;
       h = { 1 => 2 }.compare_by_identity
-      1_000_000.times do
+      200_000.times do
         h.select { false }
       end
     end;
@@ -1987,9 +1995,9 @@ class TestHashOnly < Test::Unit::TestCase
   end
 
   def test_st_literal_memory_leak
-    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true)
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true, samples: 5)
     begin;
-      1_000_000.times do
+      200_000.times do
         # >8 element hashes are ST allocated rather than AR allocated
         {a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9}
       end
@@ -2088,17 +2096,14 @@ class TestHashOnly < Test::Unit::TestCase
   end
 
   def test_rehash_memory_leak
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true, samples: 2..100)
       ar_hash = 1.times.map { |i| [i, i] }.to_h
       st_hash = 10.times.map { |i| [i, i] }.to_h
-
-      code = proc do
+    PREP
+      10_000.times do
         ar_hash.rehash
         st_hash.rehash
       end
-      1_000.times(&code)
-    PREP
-      1_000_000.times(&code)
     CODE
   end
 
@@ -2164,11 +2169,10 @@ class TestHashOnly < Test::Unit::TestCase
   end
 
   def test_replace_memory_leak
-    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true)
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true, samples: 2..100)
     h = ("aa".."zz").each_with_index.to_h
-    10_000.times {h.dup}
     begin;
-      500_000.times {h.dup.replace(h)}
+      5_000.times {h.dup.replace(h)}
     end;
   end
 

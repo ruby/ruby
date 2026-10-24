@@ -198,7 +198,7 @@ prefix or only the files that are requireable.
 
   def specification_directories # :nodoc:
     options[:specdirs].flat_map do |i|
-      [i, File.join(i, "specifications")]
+      Gem::SpecificationRecord.dirs_with_abi([i, File.join(i, "specifications")])
     end
   end
 end

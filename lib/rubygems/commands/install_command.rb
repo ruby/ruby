@@ -93,7 +93,7 @@ options and the extension's build options:
   [build fails]
   Gem files will remain installed in \\
   /path/to/gems/some_extension_gem-1.0 for inspection.
-  Results logged to /path/to/gems/some_extension_gem-1.0/gem_make.out
+  Results logged to /path/to/build_info/some_extension_gem-1.0.gem_make.out
   $ gem install some_extension_gem -- --with-extension-lib=/path/to/lib
   [build succeeds]
   $ gem list some_extension_gem
@@ -110,7 +110,7 @@ to write the specification by hand.  For example:
   [build fails]
   Gem files will remain installed in \\
   /path/to/gems/some_extension_gem-1.0 for inspection.
-  Results logged to /path/to/gems/some_extension_gem-1.0/gem_make.out
+  Results logged to /path/to/build_info/some_extension_gem-1.0.gem_make.out
   $ [cd /path/to/gems/some_extension_gem-1.0]
   $ [edit files or what-have-you and run make]
   $ gem spec ../../cache/some_extension_gem-1.0.gem --ruby > \\

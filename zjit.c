@@ -23,8 +23,13 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "internal/jit.h"
 #include "ractor_core.h"
 #include "shape.h"
+
+#ifndef _WIN32
+#include <sys/mman.h>
+#endif
 
 // This build config impacts the pointer tagging scheme and we only want to
 // support one scheme for simplicity.
@@ -62,6 +67,87 @@ const zjit_jit_frame_t rb_zjit_c_frame = (zjit_jit_frame_t) {
     .materialize_block_code = false,
 };
 
+#if !defined(_WIN32) && defined(MAP_ANONYMOUS)
+uint8_t *rb_jit_align_ptr(uint8_t *ptr, uint32_t multiple); // defined in jit.c
+
+// Reserve address space that lives entirely below INT32_MAX for JITFrame.
+//
+// When a JITFrame pointer fits in 32 bits, x86_64 can encode the store
+// as `mov qword ptr [mem], imm32` (8 bytes) instead of `movabs` + a store,
+// and arm64 materializes it in two instructions instead of four.
+//
+// Like rb_jit_reserve_addr_space in jit.c, this only reserves address space (PROT_NONE).
+// VirtualMem is in charge of mapping physical memory into the reserved space page by page.
+void *
+rb_zjit_reserve_low_addr_space(size_t size)
+{
+    void *mem_block = MAP_FAILED;
+
+    // Linux (x86_64): Use MAP_32BIT to map within the first 2GiB of address space.
+    // This works only for x86_64, and the kernel restricts it to [1GiB, 2GiB).
+  #ifdef MAP_32BIT
+    mem_block = mmap(NULL, size, PROT_NONE,
+                     MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT, -1, 0);
+  #endif
+
+    // Linux (all arch): Probe a free hole below 2GiB if MAP_32BIT is not possible.
+    // MAP_FIXED_NOREPLACE fails rather than clobbering an existing mapping.
+  #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+    if (mem_block == MAP_FAILED) {
+        // Distance between probes. 64MiB sweeps the usable 2GiB in at most 32 mmap calls.
+        const uintptr_t probe_stride = 64 * 1024 * 1024;
+        const uint32_t page_size = (uint32_t)sysconf(_SC_PAGESIZE);
+        const uintptr_t limit = (uintptr_t)INT32_MAX - size;
+        for (uintptr_t addr = probe_stride; addr < limit; addr += probe_stride) {
+            // mmap only honors a hint that is page-aligned.
+            void *req = rb_jit_align_ptr((uint8_t *)addr, page_size);
+            mem_block = mmap(req, size, PROT_NONE,
+                             MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
+            if (mem_block != MAP_FAILED) break;
+        }
+    }
+  #endif
+
+    if (mem_block == MAP_FAILED) return NULL;
+
+    // Both MAP_32BIT and MAP_FIXED_NOREPLACE are advisory in some platforms, e.g.
+    // sandboxes or older kernels. Fallback to normal allocation if it doesn't work.
+    if ((uintptr_t)mem_block + size > (uintptr_t)INT32_MAX) {
+        munmap(mem_block, size);
+        return NULL;
+    }
+    ruby_annotate_mmap(mem_block, size, "Ruby:rb_zjit_reserve_low_addr_space");
+    return mem_block;
+}
+
+#else
+
+// Windows not supported for now
+void *rb_zjit_reserve_low_addr_space(size_t size) { return NULL; }
+
+#endif
+
+static VALUE
+rb_zjit_total_compile_time_ns_get(rb_execution_context_t *ec, VALUE self)
+{
+    return ULL2NUM(rb_zjit_total_compile_time_ns);
+}
+
+static VALUE
+rb_zjit_max_compile_time_ns_get(rb_execution_context_t *ec, VALUE self)
+{
+    return ULL2NUM(rb_zjit_max_compile_time_ns);
+}
+
+void rb_zjit_update_max_compile_time_ns(uint64_t max_compile_time_ns);
+
+static VALUE
+rb_zjit_max_compile_time_ns_set(rb_execution_context_t *ec, VALUE self, VALUE max_compile_time_ns)
+{
+    rb_zjit_update_max_compile_time_ns(NUM2ULL(max_compile_time_ns));
+    return max_compile_time_ns;
+}
+
 void rb_zjit_profile_disable(const rb_iseq_t *iseq);
 int rb_zjit_insn_to_bare_insn(int insn);
 
@@ -84,6 +170,13 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
     }
 }
 
+// This is used by a function stub to install compiled code as the ISEQ's entry point.
+void
+rb_zjit_iseq_set_jit_entry(const rb_iseq_t *iseq, void *code_ptr)
+{
+    ISEQ_BODY(iseq)->jit_entry = (rb_jit_func_t)code_ptr;
+}
+
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
 
 // Convert a given ISEQ's instructions to zjit_* instructions
@@ -102,6 +195,26 @@ rb_zjit_profile_enable(const rb_iseq_t *iseq)
         }
         insn_idx += insn_len(insn);
     }
+}
+
+// Return false if a function stub has not collected enough profiles yet, enabling
+// profiling instructions as needed. Return true once enough profiles are collected.
+bool
+rb_zjit_iseq_has_profiled_enough(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+
+    if (body->jit_entry_calls < rb_zjit_profile_threshold) {
+        // Skip the unprofiled warmup. The compiled caller already establishes
+        // that the callee is hot, so go straight to the profiling window.
+        body->jit_entry_calls = rb_zjit_profile_threshold;
+        rb_zjit_profile_enable(iseq);
+    }
+    else {
+        body->jit_entry_calls++;
+    }
+
+    return body->jit_entry_calls >= rb_zjit_call_threshold;
 }
 
 // Convert a given ISEQ's ZJIT instructions to bare instructions
@@ -247,13 +360,14 @@ bool rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const void *func
 const struct rb_callable_method_entry_struct *
 rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv);
 
-bool
-rb_zjit_class_initialized_p(VALUE klass)
-{
-    return RCLASS_INITIALIZED_P(klass);
-}
-
 rb_alloc_func_t rb_zjit_class_get_alloc_func(VALUE klass);
+
+// Defined in struct.c, where struct_alloc and the members ivar are visible.
+bool rb_zjit_class_has_struct_allocator(VALUE klass);
+rb_len_t rb_zjit_struct_num_members(VALUE klass);
+ID rb_zjit_struct_member_id(VALUE klass, rb_len_t index);
+bool rb_zjit_struct_embedded_p(rb_len_t num_members);
+VALUE rb_struct_s_keyword_init(VALUE klass);
 
 VALUE rb_class_allocate_instance(VALUE klass);
 
@@ -267,8 +381,21 @@ rb_zjit_class_has_default_allocator(VALUE klass)
 }
 
 
-VALUE rb_vm_untag_block_handler(VALUE block_handler);
 VALUE rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp);
+bool rb_vm_once_done_value(ISE is, VALUE *result);
+
+bool
+rb_zjit_array_aref_with_adjusted_index(VALUE ary, rb_len_t index, VALUE *out)
+{
+    RUBY_ASSERT(RB_TYPE_P(ary, T_ARRAY));
+    if (index >= 0 && index < RARRAY_LEN(ary)) {
+        *out = RARRAY_AREF(ary, index);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_enable(rb_execution_context_t *ec, VALUE self);

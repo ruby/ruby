@@ -27,10 +27,6 @@
 # include <sys/wait.h>
 #endif
 
-#if defined __APPLE__
-# include <AvailabilityMacros.h>
-#endif
-
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/error.h"
@@ -545,7 +541,7 @@ deprecation_warning_enabled(void)
 }
 
 static void
-warn_deprecated(VALUE mesg, const char *removal, const char *suggest)
+warn_deprecated(VALUE mesg, const char *removal, const char *suggest, VALUE category)
 {
     rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_cat_cstr(mesg, " is deprecated");
@@ -554,7 +550,7 @@ warn_deprecated(VALUE mesg, const char *removal, const char *suggest)
     }
     if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
     rb_str_cat_cstr(mesg, "\n");
-    rb_warn_category(mesg, ID2SYM(id_deprecated));
+    rb_warn_category(mesg, category);
 }
 
 void
@@ -563,7 +559,7 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
     if (!deprecation_warning_enabled()) return;
 
     with_warning_string_from(mesg, 0, fmt, suggest) {
-        warn_deprecated(mesg, NULL, suggest);
+        warn_deprecated(mesg, NULL, suggest, ID2SYM(id_deprecated));
     }
 }
 
@@ -573,7 +569,17 @@ rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *s
     if (!deprecation_warning_enabled()) return;
 
     with_warning_string_from(mesg, 0, fmt, suggest) {
-        warn_deprecated(mesg, removal, suggest);
+        warn_deprecated(mesg, removal, suggest, ID2SYM(id_deprecated));
+    }
+}
+
+void
+rb_warn_to_remove(const char *removal, const char *fmt, const char *suggest, ...)
+{
+    if (NIL_P(ruby_verbose)) return;
+
+    with_warning_string_from(mesg, 0, fmt, suggest) {
+        warn_deprecated(mesg, removal, suggest, Qnil);
     }
 }
 
@@ -954,11 +960,6 @@ bug_important_message(FILE *out, const char *const msg, size_t len)
     fwrite(p, 1, endmsg - p, out);
 }
 
-#undef CRASH_REPORTER_MAY_BE_CREATED
-#if defined(__APPLE__) && \
-    (!defined(MAC_OS_X_VERSION_10_6) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6 || defined(__POWERPC__)) /* 10.6 PPC case */
-# define CRASH_REPORTER_MAY_BE_CREATED
-#endif
 static void
 preface_dump(FILE *out)
 {
@@ -967,10 +968,6 @@ preface_dump(FILE *out)
         "-- Crash Report log information "
         "--------------------------------------------\n"
         "   See Crash Report log file in one of the following locations:\n"
-# ifdef CRASH_REPORTER_MAY_BE_CREATED
-        "     * ~/Library/Logs/CrashReporter\n"
-        "     * /Library/Logs/CrashReporter\n"
-# endif
         "     * ~/Library/Logs/DiagnosticReports\n"
         "     * /Library/Logs/DiagnosticReports\n"
         "   for more details.\n"
@@ -992,9 +989,6 @@ postscript_dump(FILE *out)
         "[IMPORTANT]"
         /*" ------------------------------------------------"*/
         "\n""Don't forget to include the Crash Report log file under\n"
-# ifdef CRASH_REPORTER_MAY_BE_CREATED
-        "CrashReporter or "
-# endif
         "DiagnosticReports directory in bug reports.\n"
         /*"------------------------------------------------------------\n"*/
         "\n";
@@ -1042,9 +1036,41 @@ bug_report_end(FILE *out, rb_pid_t pid)
     finish_report(out, pid);
 }
 
+/* Only the first thread to get here writes a report.  A second one -- another Ractor
+ * failing the same assertion, say -- would interleave into it and leave both
+ * unreadable [Bug #21146], so it waits for the writer to abort the process instead.
+ * The writer is let through again, for the crash-while-reporting path. */
+static const rb_execution_context_t *bug_reporter_ec;
+static rb_atomic_t bug_reporter_claimed;
+
+static bool
+bug_report_claim(void)
+{
+    const rb_execution_context_t *ec = rb_current_execution_context(false);
+
+    if (RUBY_ATOMIC_CAS(bug_reporter_claimed, 0, 1) == 0) {
+        bug_reporter_ec = ec;
+        return true;
+    }
+    if (ec != NULL && ec == bug_reporter_ec) {
+        return true;
+    }
+
+    /* Bounded, so a writer that hangs ends as a crash and not as a hang. */
+    for (int i = 0; i < 100; i++) {
+#ifdef _WIN32
+        Sleep(100);
+#else
+        struct timespec ts = { 0, 100 * 1000 * 1000 };
+        nanosleep(&ts, NULL);
+#endif
+    }
+    return false;
+}
+
 #define report_bug(file, line, fmt, ctx) do { \
     rb_pid_t pid = -1; \
-    FILE *out = bug_report_file(file, line, &pid); \
+    FILE *out = bug_report_claim() ? bug_report_file(file, line, &pid) : NULL; \
     if (out) { \
         bug_report_begin(out, fmt); \
         rb_vm_bugreport(ctx, out); \
@@ -1054,7 +1080,7 @@ bug_report_end(FILE *out, rb_pid_t pid)
 
 #define report_bug_valist(file, line, fmt, ctx, args) do { \
     rb_pid_t pid = -1; \
-    FILE *out = bug_report_file(file, line, &pid); \
+    FILE *out = bug_report_claim() ? bug_report_file(file, line, &pid) : NULL; \
     if (out) { \
         bug_report_begin_valist(out, fmt, args); \
         rb_vm_bugreport(ctx, out); \
@@ -1207,7 +1233,7 @@ rb_assert_failure_detail(const char *file, int line, const char *name, const cha
                          const char *fmt, ...)
 {
     rb_pid_t pid = -1;
-    FILE *out = bug_report_file(file, line, &pid);
+    FILE *out = bug_report_claim() ? bug_report_file(file, line, &pid) : NULL;
     if (out) {
         fputs("Assertion Failed: ", out);
         if (name) fprintf(out, "%s:", name);
@@ -1466,7 +1492,7 @@ static ID id_private_call_p, id_top, id_bottom;
 #undef rb_exc_new_cstr
 
 VALUE
-rb_exc_new(VALUE etype, const char *ptr, long len)
+rb_exc_new(VALUE etype, const char *ptr, rb_len_t len)
 {
     VALUE mesg = rb_str_new(ptr, len);
     return rb_class_new_instance(1, &mesg, etype);
@@ -1761,22 +1787,15 @@ exc_message(VALUE exc)
     return rb_funcallv(exc, idTo_s, 0, 0);
 }
 
-// Whether error_highlight, did_you_mean, and syntax_suggest have already
-// been loaded (lazily on the first error, or eagerly via Process.warmup).
-// Ractors run in parallel, so the load is claimed by an atomic exchange.
-static rb_atomic_t decoration_gems_loaded = 0;
-
 static VALUE
-load_decoration_gem(VALUE feature)
+load_decoration_gem(VALUE name)
 {
-    // The C-level require bypasses Kernel#require monkeypatches;
-    // displaying an error must not invoke or depend on them.
-    return rb_require_string(feature);
+    // Fire the autoload, which waits for a concurrent load to complete.
+    return rb_autoload_load(rb_cObject, (ID)name);
 }
 
 // Require error_highlight, did_you_mean, and syntax_suggest.
-// rb_define_gem_modules registers an autoload entry for each enabled gem;
-// disabled gems have no entry and are skipped.
+// rb_define_gem_modules registers an autoload entry for each enabled gem.
 static void
 require_decoration_gems(void)
 {
@@ -1787,32 +1806,26 @@ require_decoration_gems(void)
     VALUE saved_errinfo = rb_errinfo();
     static const char *const gems[] = {"ErrorHighlight", "DidYouMean", "SyntaxSuggest"};
     for (size_t i = 0; i < numberof(gems); i++) {
-        VALUE feature = rb_autoload_p(rb_cObject, rb_intern(gems[i]));
-        if (NIL_P(feature)) continue;
         int state;
-        rb_protect(load_decoration_gem, feature, &state);
+        rb_protect(load_decoration_gem, (VALUE)rb_intern(gems[i]), &state);
         (void)state;
     }
     rb_set_errinfo(saved_errinfo);
 }
 
 // Load the decoration gems on the first error display instead of at boot.
-// In non-main Ractors rb_require_string delegates the require to the main
+// In non-main Ractors rb_autoload_load delegates the load to the main
 // Ractor, so this works from any Ractor.
 // Returns whether the caller should re-dispatch to pick up the
 // detailed_message decorators the gems prepend.
 static bool
 lazy_load_decoration_gems(VALUE exc)
 {
-    if (ATOMIC_EXCHANGE(decoration_gems_loaded, 1)) return false;
-
-    // When entered through super from a decorator already sitting above
-    // this method, the caller decorates the result; re-dispatching would
-    // decorate it twice.
-    bool redispatch = rb_method_basic_definition_p(CLASS_OF(exc), id_detailed_message);
-
+    // Re-dispatch only if the load has just prepended a decorator.
+    bool before = rb_method_basic_definition_p(CLASS_OF(exc), id_detailed_message);
     require_decoration_gems();
-    return redispatch;
+    bool after = rb_method_basic_definition_p(CLASS_OF(exc), id_detailed_message);
+    return before && !after;
 }
 
 // Load the decoration gems eagerly, e.g. from Process.warmup before a
@@ -1821,8 +1834,6 @@ lazy_load_decoration_gems(VALUE exc)
 void
 rb_eager_load_detailed_message_extension(void)
 {
-    if (ATOMIC_EXCHANGE(decoration_gems_loaded, 1)) return;
-
     require_decoration_gems();
 }
 
@@ -2054,7 +2065,7 @@ exc_backtrace_locations(VALUE exc)
 static VALUE
 rb_check_backtrace(VALUE bt)
 {
-    long i;
+    rb_len_t i;
     static const char err[] = "backtrace must be an Array of String or an Array of Thread::Backtrace::Location";
 
     if (!NIL_P(bt)) {

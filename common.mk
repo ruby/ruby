@@ -20,6 +20,8 @@ mflags = $(MFLAGS)
 gnumake_recursive =
 sequential = $(gnumake:yes=-sequential)
 enable_shared = $(ENABLE_SHARED:no=)
+yes_git = $(HAVE_GIT:no=)
+no_git = $(HAVE_GIT:yes=)
 
 UNICODE_VERSION = 17.0.0
 UNICODE_EMOJI_VERSION_0 = $(UNICODE_VERSION)///
@@ -98,6 +100,7 @@ LIBPRISM_OBJS = \
 		prism/arena.$(OBJEXT) \
 		prism/buffer.$(OBJEXT) \
 		prism/char.$(OBJEXT) \
+		prism/comments.$(OBJEXT) \
 		prism/constant_pool.$(OBJEXT) \
 		prism/diagnostic.$(OBJEXT) \
 		prism/encoding.$(OBJEXT) \
@@ -120,7 +123,8 @@ LIBPRISM_OBJS = \
 		prism/stringy.$(OBJEXT) \
 		prism/strncasecmp.$(OBJEXT) \
 		prism/strpbrk.$(OBJEXT) \
-		prism/tokens.$(OBJEXT)
+		prism/tokens.$(OBJEXT) \
+		prism/xxh3.$(OBJEXT)
 
 EXTPRISM_OBJS = prism/api_node.$(OBJEXT) \
 		prism/extension.$(OBJEXT) \
@@ -410,7 +414,7 @@ program: $(SHOWFLAGS) $(DOT_WAIT) $(PROGRAM)
 wprogram: $(SHOWFLAGS) $(DOT_WAIT) $(WPROGRAM)
 mini: PHONY miniruby$(EXEEXT)
 
-$(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
+$(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP) $(PROGRAM_EXTS)
 
 $(LIBRUBY_A):	$(LIBRUBY_A_OBJS) $(MAINOBJ) $(INITOBJS) $(ARCHFILE)
 
@@ -423,7 +427,7 @@ $(LIBRUBY_EXTS):
 
 $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	$(Q)$(RM) $@
-	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
+	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
 
 ruby.imp: $(COMMONOBJS)
 	$(Q){ \
@@ -932,7 +936,7 @@ yes-test-tool: prog PHONY
 no-test-tool: PHONY
 
 test-sample: test-basic # backward compatibility for mswin-build
-test-short: btest-ruby $(DOT_WAIT) test-knownbug $(DOT_WAIT) test-basic
+test-short: test-coroutine $(DOT_WAIT) btest-ruby $(DOT_WAIT) test-knownbug $(DOT_WAIT) test-basic
 test: test-short
 
 # Separate to skip updating encs and exts by `make -o test-precheck`
@@ -1043,15 +1047,15 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: distclean-srcs distclean-srcs-local distclean-srcs-ext
 .PHONY: realclean realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 .PHONY: realclean-srcs realclean-srcs-local realclean-srcs-ext
-.PHONY: exam check test test-short test-all btest btest-ruby test-basic test-knownbug
+.PHONY: exam check test test-short test-all test-coroutine btest btest-ruby test-basic test-knownbug
 .PHONY: run runruby parse benchmark gdb gdb-ruby
 .PHONY: update-mspec update-rubyspec test-rubyspec test-spec
 .PHONY: touch-unicode-files
 
 PHONY:
 
-{$(VPATH)}parse.c: {$(VPATH)}parse.y {$(VPATH)}id.h
-{$(VPATH)}parse.h: {$(VPATH)}parse.c
+parse.c: {$(VPATH)}parse.y {$(VPATH)}id.h
+parse.h: {$(VPATH)}parse.c
 
 {$(srcdir)}.y.c:
 	$(ECHO) generating $@
@@ -1065,7 +1069,7 @@ $(PLATFORM_D):
 exe/$(PROGRAM): $(TIMESTAMPDIR)/$(arch)/.time
 exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time $(PREP) {$(VPATH)}config.h
 	$(Q) $(CC) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(COUTFLAG)ruby-runner.$(OBJEXT) -c $(CSRCFLAG)$(srcdir)/ruby-runner.c
-	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(LDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
+	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(LDFLAGS) $(XLDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
 	$(Q) $(POSTLINK)
 	$(Q) $(BOOTSTRAPRUBY) \
 	    -e 'prog, dest, inst = ARGV; dest += "/ruby"' \
@@ -1186,6 +1190,7 @@ $(srcs_vpath)vm.inc: $(tooldir)/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
 
 BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
+		$(srcdir)/basic_object.rb \
 		$(srcdir)/dir.rb \
 		$(srcdir)/gc.rb \
 		$(srcdir)/numeric.rb \
@@ -1310,9 +1315,7 @@ $(MAINOBJ): $(srcdir)/$(MAINSRC)
 	$(ECHO) compiling $(srcdir)/$(MAINSRC)
 	$(Q) $(CC) $(MAINCPPFLAGS) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/$(MAINSRC)
 
-{$(VPATH)}probes.dmyh: {$(srcdir)}probes.d $(tooldir)/gen_dummy_probes.rb
-
-probes.dmyh:
+probes.dmyh: {$(srcdir)}probes.d $(tooldir)/gen_dummy_probes.rb
 	$(BASERUBY) $(tooldir)/gen_dummy_probes.rb $(srcdir)/probes.d > $@
 
 probes.h: {$(VPATH)}probes.$(DTRACE_EXT) $(srcdir)/vm_opts.h
@@ -1356,11 +1359,14 @@ clean-build-tool:
 	- cd build-tool 2> $(NULL) && $(MAKE) clean 2> $(NULL) || $(NULLCMD)
 	- $(RMDIR) build-tool 2> $(NULL) || $(NULLCMD)
 
-$(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
+$(srcdir)/revision.h$(no_git:no=~disabled~): $(REVISION_H)
 
-$(REVISION_H)$(no_baseruby:no=~disabled~):
-	$(Q) $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" --output=revision.h --timestamp=$@
-$(REVISION_H)$(yes_baseruby:yes=~disabled~):
+REVISION_H_CMD = $(LASTREV) $(srcdir) | $(IFCHANGE) --empty --timestamp=.revision.time revision.h -
+
+$(REVISION_H)$(no_git:no=~disabled~):
+	$(Q) $(REVISION_H_CMD)
+$(REVISION_H)$(yes_git:yes=~disabled~):
+	$(Q) exit >> revision.h
 	$(Q) exit > $@
 
 # uncommon.mk: $(REVISION_H)
@@ -1519,9 +1525,15 @@ after-update:: extract-extlibs
 after-update:: extract-gems
 after-update:: update-default-gemspecs
 
+# Do not remove or empty revision.h itself, whose content file2lastrev.rb
+# keeps when the source tree has no VCS.
 update-src::
-	$(Q) $(RM) $(REVISION_H) revision.h "$(srcdir)/$(REVISION_H)" "$(srcdir)/revision.h"
-	$(Q) exit > "$(srcdir)/revision.h"
+	$(Q) $(RM) $(REVISION_H) "$(srcdir)/$(REVISION_H)"
+
+# $(REVISION_H) can have been made already in this run, as a prerequisite
+# of the included dependency file, and make does not make it twice.
+update-src$(no_baseruby:no=~disabled~)::
+	$(Q) $(REVISION_H_CMD)
 
 update-remote:: update-src update-download
 update-download:: $(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
@@ -1978,9 +1990,14 @@ sudo-precheck: PHONY
 
 update-man-date: PHONY
 	$(Q) $(BASERUBY) -I"$(tooldir)/lib" -rvcs -i -p \
-	-e 'BEGIN{@vcs=VCS.detect(ARGV.shift)}' \
-	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.author_date(@vcs.relative_to(ARGF.path)).strftime("%B %d, %Y")}' \
-	"$(srcdir)" "$(srcdir)"/man/*.1
+	-C "$(srcdir)" \
+	-e 'BEGIN{@vcs=VCS.detect; ARGV.replace(Dir.glob(ARGV))}' \
+	-e '$$_.sub!(/^\.Dd \K.*/){' \
+	-e   'STDOUT.puts "Updating #{ARGF.path}"' \
+	-e   '@vcs.author_date(@vcs.relative_to(ARGF.path)).strftime("%B %d, %Y")' \
+	-e '}' \
+	$(MANPAGES_TO_UPDATE)
+MANPAGES_TO_UPDATE = man/*.1
 
 .PHONY: ChangeLog
 ChangeLog:
@@ -2096,3 +2113,4 @@ $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}miniprelude.c
 
 !include $(srcdir)/prism/srcs.mk
 !include $(DEPENDENCIES_DIR)/depend
+!include $(srcdir)/coroutine/test.mk

@@ -107,6 +107,7 @@ class TestFiberMutex < Test::Unit::TestCase
     condition = Thread::ConditionVariable.new
 
     signalled = 0
+    pending = 0
 
     Thread.new do
       scheduler = Scheduler.new
@@ -115,7 +116,8 @@ class TestFiberMutex < Test::Unit::TestCase
       Fiber.schedule do
         mutex.synchronize do
           3.times do
-            condition.wait(mutex)
+            condition.wait(mutex) while pending.zero?
+            pending -= 1
             signalled += 1
           end
         end
@@ -124,6 +126,7 @@ class TestFiberMutex < Test::Unit::TestCase
       Fiber.schedule do
         3.times do
           mutex.synchronize do
+            pending += 1
             condition.signal
           end
 

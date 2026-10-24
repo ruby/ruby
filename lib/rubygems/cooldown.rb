@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "cooldown_settings"
 require_relative "user_interaction"
 
 ##
@@ -10,8 +11,10 @@ require_relative "user_interaction"
 # sources that do not provide publish times keep working.
 #
 # The cooldown period comes from the <tt>--cooldown DAYS</tt> option when
-# given, falling back to the <tt>:cooldown:</tt> setting in the gemrc file.
-# A value of 0 disables the cooldown.
+# given, and 0 there disables the cooldown.  Without the option the
+# <tt>:cooldown:</tt> setting in the gemrc file and Bundler's own cooldown
+# setting both apply and the longer of the two wins, so a 0 in either of them
+# disables nothing while the other names a period.
 
 class Gem::Cooldown
   ##
@@ -20,23 +23,30 @@ class Gem::Cooldown
   attr_reader :days
 
   ##
-  # Creates a Cooldown from the command line +options+, preferring the
-  # --cooldown option over the :cooldown: gemrc setting.
+  # Creates a Cooldown from the command line +options+.  The --cooldown
+  # option wins outright, so <tt>--cooldown 0</tt> bypasses the cooldown
+  # however the two tools are configured.  Without it the :cooldown: gemrc
+  # setting and Bundler's cooldown setting are both read and the longer of
+  # the two applies, so a cooldown configured for only one of them still
+  # covers gem commands.
 
   def self.from_options(options)
-    new(options[:cooldown] || Gem.configuration.cooldown)
+    days = options[:cooldown]
+    return new(days) unless days.nil?
+
+    require_relative "bundler_settings"
+
+    new Gem::CooldownSettings.combine(warn_unless_valid(Gem.configuration.cooldown, "the gemrc file"),
+                                      warn_unless_valid(Gem::BundlerSettings["cooldown"], "Bundler's configuration"))
   end
 
   def initialize(days, now: Time.now)
-    # A gemrc value is arbitrary YAML, so it can be any type at all. Anything
-    # that cannot be read as a non-negative integer leaves the cooldown
-    # disabled rather than raising out of an unrelated command.
-    valid = valid_days?(days)
+    invalid = Gem::CooldownSettings.invalid?(days)
 
-    @days = valid ? days.to_i : 0
+    @days = Gem::CooldownSettings.days(days) || 0
     @now = now
 
-    Gem::Cooldown.warn_invalid_days(days) unless valid || days.nil?
+    Gem::Cooldown.warn_invalid_days(days, "the cooldown setting") if invalid
   end
 
   ##
@@ -94,14 +104,21 @@ class Gem::Cooldown
   TIME_ZONE_SUFFIX = /(?:Z|z|[+-]\d{2}(?::?\d{2})?)\z/ # :nodoc:
   private_constant :TIME_ZONE_SUFFIX
 
+  # Matches the four-digit year an ISO 8601 timestamp starts with.
+  # Time.iso8601 also accepts a year of any length, and one far enough
+  # away overflows the Float arithmetic behind #remaining_days.
+  FOUR_DIGIT_YEAR = /\A\d{4}-/ # :nodoc:
+  private_constant :FOUR_DIGIT_YEAR
+
   ##
   # Parses a +created_at+ timestamp from the compact index.  A timestamp
   # without a time zone offset is read as UTC, because reading it as local
   # time would shift the cooldown window by the environment's offset.
-  # Returns nil for anything unparsable, so the cooldown fails open.
+  # Returns nil for anything unparsable, including a year outside four
+  # digits, so the cooldown fails open.
 
   def self.parse_created_at(value)
-    return unless value.is_a?(String)
+    return unless value.is_a?(String) && value.match?(FOUR_DIGIT_YEAR)
 
     require "time"
     begin
@@ -127,29 +144,30 @@ class Gem::Cooldown
     @warned = nil
   end
 
-  # Warns once per process that a configured cooldown value cannot be read
-  # as a non-negative integer, which leaves the cooldown disabled.  The
-  # --cooldown option is validated by the option parser; this catches the
-  # gemrc path.
+  # Returns +value+, warning first when it is configured but cannot be read
+  # as a number of days.
 
-  def self.warn_invalid_days(value) # :nodoc:
-    return if @warned_invalid_days
-    @warned_invalid_days = true
+  def self.warn_unless_valid(value, source) # :nodoc:
+    warn_invalid_days(value, source) if Gem::CooldownSettings.invalid?(value)
 
-    Gem::DefaultUserInteraction.ui.alert_warning \
-      "Invalid cooldown value #{value.inspect}, so the cooldown is disabled. " \
-      "Expected a non-negative integer number of days."
+    value
+  end
+
+  # Warns that a configured cooldown value cannot be read as a non-negative
+  # integer, so it does not apply.  The --cooldown option is validated by the
+  # option parser; this catches the config file paths.  Both the gemrc and
+  # Bundler settings feed one resolution, so each source gets its own warning
+  # rather than the first one silencing the other.
+
+  def self.warn_invalid_days(value, source) # :nodoc:
+    @warned_invalid_days ||= []
+    return if @warned_invalid_days.include?(source)
+    @warned_invalid_days << source
+
+    Gem::DefaultUserInteraction.ui.alert_warning Gem::CooldownSettings.invalid_message(value, source)
   end
 
   def self.reset_warned_invalid_days # :nodoc:
     @warned_invalid_days = nil
-  end
-
-  private
-
-  def valid_days?(value)
-    days = Integer(value.to_s, exception: false)
-
-    !days.nil? && !days.negative?
   end
 end

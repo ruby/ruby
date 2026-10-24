@@ -167,10 +167,13 @@ runs:
     - if: inputs.makeup
       shell: bash
       working-directory: ${{ inputs.srcdir }}
+      env:
+        HAVE_GIT: yes
+        GIT: git
       run: |
         ruby tool/missing-baseruby.bat --verbose
-        bash tool/gen-sources.bash up
-        echo RUBY_DUMP_AST=true >> "$GITHUB_ENV"
+        bash tool/gen-sources.bash ${{ case(inputs.makeup == 'true', 'up', inputs.makeup) }} HAVE_GIT=yes
+        echo RUBY_DUMP_AST=./dump_ast-required-unexpectedly >> "$GITHUB_ENV"
 
     - if: steps.which.outputs.sudo
       shell: bash
@@ -218,7 +221,7 @@ runs:
         INPUT_MAKE_COMMAND: ${{ inputs.make-command }}
 
     - name: clean
-      uses: gacts/run-and-post-run@598d7a875d5620e0457490555b5e18e46082aa47 # v1.4.4
+      uses: gacts/run-and-post-run@fc6503862aba998e2f2123225ad63c09a92ed46e # v1.4.5
       with:
         working-directory:
         post: |

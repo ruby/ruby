@@ -313,24 +313,9 @@ class Scheduler
     io.write_nonblock('.')
   end
 
-  class FiberInterrupt
-    def initialize(fiber, exception)
-      @fiber = fiber
-      @exception = exception
-    end
-
-    def alive?
-      @fiber.alive?
-    end
-
-    def transfer
-      @fiber.raise(@exception)
-    end
-  end
-
-  def fiber_interrupt(fiber, exception)
+  def fiber_interrupt(target, _exception)
     @lock.synchronize do
-      @ready << FiberInterrupt.new(fiber, exception)
+      @ready << target
     end
 
     io = @urgent.last
@@ -424,6 +409,50 @@ class IOErrorScheduler < Scheduler
 
   def io_write(io, buffer, offset, length)
     return -Errno::EINVAL::Errno
+  end
+end
+
+class FailingIOScheduler < Scheduler
+  # Expose the last temporary IO::Buffer to test escaping scenarios.
+  attr_reader :buffer
+
+  def io_read(io, buffer, offset, length)
+    @buffer = buffer
+    raise "scheduler read error"
+  end
+
+  def io_write(io, buffer, offset, length)
+    @buffer = buffer
+    raise "scheduler write error"
+  end
+
+  def io_pread(io, buffer, from, offset, length)
+    @buffer = buffer
+    raise "scheduler pread error"
+  end
+
+  def io_pwrite(io, buffer, from, offset, length)
+    @buffer = buffer
+    raise "scheduler pwrite error"
+  end
+end
+
+class IOWaitErrorScheduler < Scheduler
+  def initialize(result)
+    super()
+    @result = result
+  end
+
+  def io_read(*)
+    -Errno::EAGAIN::Errno
+  end
+
+  alias io_write io_read
+
+  def io_wait(*)
+    # A successful blocking read clears errno while the scheduler is waiting.
+    Fiber.blocking { File.read(File::NULL) }
+    @result
   end
 end
 

@@ -177,13 +177,13 @@ module Bundler
     def specs(gem_names, source)
       index = Bundler::Index.new
 
-      fetch_specs(gem_names).each do |name, version, platform, dependencies, metadata|
+      fetch_specs(gem_names).each do |name, version, suffix, dependencies, metadata|
         spec = if dependencies
-          EndpointSpecification.new(name, version, platform, self, dependencies, metadata).tap do |es|
+          EndpointSpecification.new(name, version, suffix, self, dependencies, metadata).tap do |es|
             source.checksum_store.replace(es, es.checksum)
           end
         else
-          RemoteSpecification.new(name, version, platform, self)
+          RemoteSpecification.new(name, version, suffix, self)
         end
         spec.source = source
         spec.remote = @remote

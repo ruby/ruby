@@ -22,7 +22,7 @@ static const rb_data_type_t ossl_config_type = {
     {
         0, nconf_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 CONF *
@@ -105,7 +105,7 @@ static VALUE
 config_s_parse_config(VALUE klass, VALUE io)
 {
     VALUE obj, sections, ret;
-    long i;
+    rb_len_t i;
 
     obj = config_s_parse(klass, io);
     sections = config_get_sections(obj);
@@ -451,6 +451,6 @@ Init_ossl_config(void)
      * The default system configuration file for OpenSSL.
      */
     path = CONF_get1_default_config_file();
-    path_str = rb_obj_freeze(ossl_buf2str(path, rb_long2int(strlen(path))));
+    path_str = rb_obj_freeze(ossl_buf2str(path));
     rb_define_const(cConfig, "DEFAULT_CONFIG_FILE", path_str);
 }

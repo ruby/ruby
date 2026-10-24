@@ -607,6 +607,29 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     define_method(test.sub(/xmlschema/, 'rfc3339')) {__send__(sub, :rfc3339)}
   end
 
+  def test_rfc3339_separator
+    # RFC 3339 section 5.6 defines the separator as "T", and only notes that an
+    # application may use a space for readability. The other \s characters are
+    # not permitted, and Time.xmlschema has never accepted any of them.
+    t = Time.utc(2011, 10, 5, 22, 26, 12)
+    assert_equal(t, Time.rfc3339("2011-10-05T22:26:12Z"))
+    assert_equal(t, Time.rfc3339("2011-10-05 22:26:12Z"))
+
+    ["\t", "\n", "\v", "\f", "\r"].each do |sep|
+      s = "2011-10-05#{sep}22:26:12Z"
+      e = assert_raise(ArgumentError, "separator #{sep.inspect}") { Time.rfc3339(s) }
+      assert_match(/invalid rfc3339 format/, e.message, "separator #{sep.inspect}")
+    end
+
+    # Time.xmlschema keeps rejecting every separator but "T".
+    assert_equal(t, Time.xmlschema("2011-10-05T22:26:12Z"))
+    ["\t", "\n", "\v", "\f", "\r", " "].each do |sep|
+      assert_raise(ArgumentError, "separator #{sep.inspect}") do
+        Time.xmlschema("2011-10-05#{sep}22:26:12Z")
+      end
+    end
+  end
+
   def test_parse_with_various_object
     d  = Date.new(2010, 10, 28)
     dt = DateTime.new(2010, 10, 28)

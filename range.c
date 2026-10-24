@@ -1369,43 +1369,18 @@ range_reverse_each(VALUE range)
     return range;
 }
 
-/*
- *  call-seq:
- *    self.begin -> object
- *
- *  Returns the object that defines the beginning of +self+.
- *
- *    (1..4).begin # => 1
- *    (..2).begin  # => nil
- *
- *  Related: Range#first, Range#end.
- */
-
-/*
- *  call-seq:
- *    self.end -> object
- *
- *  Returns the object that defines the end of +self+.
- *
- *    (1..4).end  # => 4
- *    (1...4).end # => 4
- *    (1..).end   # => nil
- *
- *  Related: Range#begin, Range#last.
- */
-
 static VALUE
 first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, cbarg))
 {
     VALUE *ary = (VALUE *)cbarg;
-    long n = NUM2LONG(ary[0]);
+    rb_len_t n = NUM2LEN(ary[0]);
 
     if (n <= 0) {
         rb_iter_break();
     }
     rb_ary_push(ary[1], i);
     n--;
-    ary[0] = LONG2NUM(n);
+    ary[0] = LEN2NUM(n);
     return Qnil;
 }
 
@@ -1443,7 +1418,7 @@ range_first(int argc, VALUE *argv, VALUE range)
 
     rb_scan_args(argc, argv, "1", &n);
     ary[0] = n;
-    ary[1] = rb_ary_new2(NUM2LONG(n));
+    ary[1] = rb_ary_new2(NUM2LEN(n));
     rb_block_call(range, idEach, 0, 0, first_i, (VALUE)ary);
 
     return ary[1];
@@ -1473,7 +1448,7 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
 
     VALUE b, e, len_1 = Qnil, len = Qnil, nv, ary;
     int x;
-    long n;
+    rb_len_t n;
 
     RUBY_ASSERT(argc > 0);
 
@@ -1505,15 +1480,15 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
     }
 
     rb_scan_args(argc, argv, "1", &nv);
-    n = NUM2LONG(nv);
+    n = NUM2LEN(nv);
     if (n < 0) {
         rb_raise(rb_eArgError, "negative array size");
     }
 
-    nv = LONG2NUM(n);
+    nv = LEN2NUM(n);
     if (!NIL_P(b) && RTEST(rb_int_gt(nv, len))) {
         nv = len;
-        n = NUM2LONG(nv);
+        n = NUM2LEN(nv);
     }
 
     ary = rb_ary_new_capa(n);
@@ -1788,7 +1763,7 @@ range_max(int argc, VALUE *argv, VALUE range)
         ID reverse_each;
         CONST_ID(reverse_each, "reverse_each");
         rb_scan_args(argc, argv, "1", &ary[0]);
-        ary[1] = rb_ary_new2(NUM2LONG(ary[0]));
+        ary[1] = rb_ary_new2(NUM2LEN(ary[0]));
         rb_block_call(range, reverse_each, 0, 0, first_i, (VALUE)ary);
         return ary[1];
 #if 0
@@ -1932,12 +1907,12 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
  */
 VALUE
 rb_range_component_beg_len(VALUE b, VALUE e, int excl,
-                           long *begp, long *lenp, long len, int err)
+                           rb_len_t *begp, rb_len_t *lenp, rb_len_t len, int err)
 {
-    long beg, end;
+    rb_len_t beg, end;
 
-    beg = NIL_P(b) ? 0 : NUM2LONG(b);
-    end = NIL_P(e) ? -1 : NUM2LONG(e);
+    beg = NIL_P(b) ? 0 : NUM2LEN(b);
+    end = NIL_P(e) ? -1 : NUM2LEN(e);
     if (NIL_P(e)) excl = 0;
     if (beg < 0) {
         beg += len;
@@ -1967,7 +1942,7 @@ rb_range_component_beg_len(VALUE b, VALUE e, int excl,
 }
 
 VALUE
-rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
+rb_range_beg_len(VALUE range, rb_len_t *begp, rb_len_t *lenp, rb_len_t len, int err)
 {
     VALUE b, e;
     int excl;
@@ -2720,103 +2695,158 @@ range_clamp(int argc, VALUE *argv, VALUE self)
     return rb_range_new(self_beg, self_end, self_excl);
 }
 
-/* A \Range object represents a collection of values
- * that are between given begin and end values.
+/*
+ * A \Range object represents an interval of values.
+ *
+ * A range is useful for:
+ *
+ * - Testing whether a value falls within the interval.
+ * - Iterating over the values in the interval.
+ * - Slicing elements from a collection such as an array or a string.
+ *
+ * == Creating Ranges
  *
  * You can create an \Range object explicitly with:
  *
- * - A {range literal}[rdoc-ref:syntax/literals.rdoc@Range+Literals]:
+ * - A {range literal}[rdoc-ref:syntax/literals.rdoc@Range+Literals]:.
+ * - Method Range.new.
  *
- *     # Ranges that use '..' to include the given end value.
- *     (1..4).to_a      # => [1, 2, 3, 4]
- *     ('a'..'d').to_a  # => ["a", "b", "c", "d"]
- *     # Ranges that use '...' to exclude the given end value.
- *     (1...4).to_a     # => [1, 2, 3]
- *     ('a'...'d').to_a # => ["a", "b", "c"]
+ * == Range Bounds
  *
- * - Method Range.new:
+ * A range may have a lower bound, an upper bound, both, or neither.
  *
- *     # Ranges that by default include the given end value.
- *     Range.new(1, 4).to_a     # => [1, 2, 3, 4]
- *     Range.new('a', 'd').to_a # => ["a", "b", "c", "d"]
- *     # Ranges that use third argument +exclude_end+ to exclude the given end value.
- *     Range.new(1, 4, true).to_a     # => [1, 2, 3]
- *     Range.new('a', 'd', true).to_a # => ["a", "b", "c"]
+ * The bounds for a range are set when the range is created, and are immutable:
+ *
+ * - The lower bound (which may be +nil+) is its begin value,
+ *   and is returned by method #begin.
+ * - The upper bound (which may be +nil+) is its end value,
+ *   and is returned by method #end.
+ *
+ * A range may be:
+ *
+ * - {Bounded}[rdoc-ref:Range@Bounded+Ranges]:
+ *   having definite begin and end values.
+ * - {Beginless}[rdoc-ref:Range@Beginless+Ranges]:
+ *   having a +nil+ begin value and a definite end value.
+ * - {Endless}[rdoc-ref:Range@Endless+Ranges]:
+ *   having a definite begin value and a +nil+ end value.
+ * - {Unbounded}[rdoc-ref:Range@Unbounded+Ranges]:
+ *   having +nil+ begin and end values.
+ *
+ * == Bounded Ranges
+ *
+ * A bounded range has definite values for both its begin and end values:
+ *
+ * - The two values for a range +r+ must comparable;
+ *   that is <tt>(r.begin <=> r.end) != nil</tt>.
+ * - The begin value may be greater than the end value
+ *   (but if so the range has no included values).
+ *
+ * To create a bounded range with a Range literal,
+ * use the double-dot (included end) or triple-dot (excluded end)
+ * notation with definite begin and end values:
+ *
+ *   r = 0..4         # => 0..4   # Included end.
+ *   r.include?(0)    # => true
+ *   r.include?(4)    # => true   # Included.
+ *   r.include?(-1)   # => false
+ *   r.include?(5)    # => false
+ *   r.include?(:foo) # => false  # Not comparable.
+ *
+ *   r = 0...4        # => 0...4  # Exclude end.
+ *   r.include?(0)    # => true
+ *   r.include?(3)    # => true
+ *   r.include?(-1)   # => false
+ *   r.include?(4)    # => false  # Excluded.
+ *   r.include?(:foo) # => false  # Not comparable.
+ *
+ * To create a bounded range with Range.new,
+ * give definite values for both begin and end:
+ *
+ *   r = Range.new(0, 4)       # => 0..4   # Include end.
+ *   r.include?(4)             # => true   # Included.
+ *   r = Range.new(0, 4, true) # => 0...4  # Exclude end.
+ *   r.include?(4)             # => false  # Excluded.
  *
  * == Beginless Ranges
  *
- * A _beginless_ _range_ has a definite end value, but a +nil+ begin value.
- * Such a range includes all values up to the end value.
+ * A beginless range has a +nil+ begin value and a definite end value.
+ * Such a range includes all comparable values
+ * that are less than or equal to to the end value.
  *
- *   r = (..4)               # => nil..4
- *   r.begin                 # => nil
- *   r.include?(-50)         # => true
- *   r.include?(4)           # => true
+ * To create a beginless range with a Range literal,
+ * use the double-dot or triple-dot notation
+ * with a +nil+ begin value and a definite end value:
  *
- *   r = (...4)              # => nil...4
- *   r.include?(4)           # => false
+ *   r = nil..4     # => ..4    # Include end.
+ *   r = ..4        # => ..4    # The leading nil may be omitted.
+ *   r.include?(4)  # => true   # Included.
  *
- *   Range.new(nil, 4)       # => nil..4
- *   Range.new(nil, 4, true) # => nil...4
+ *   r = nil...4    # => ...4   # Exclude end.
+ *   r = ...4       # => ...4   # The leading nil may be omitted.
+ *   r.include?(4)  # => false  # Excluded.
  *
- * A beginless range may be used to slice an array:
+ * To create a beginless range with Range.new,
+ * give a +nil+ begin value and a definite end value:
  *
- *  a = [1, 2, 3, 4]
- *  # Include the third array element in the slice
- *  r = (..2)  # => nil..2
- *  a[r]       # => [1, 2, 3]
- *  # Exclude the third array element from the slice
- *  r = (...2) # => nil...2
- *  a[r]       # => [1, 2]
- *
- * Method +each+ for a beginless range raises an exception.
+ *   r = Range.new(nil, 4)       # => ..4    # Include end.
+ *   r.include?(4)               # => true   # Included.
+ *   r = Range.new(nil, 4, true) # => ...4   # Exclude end.
+ *   r.include?(4)               # => false  # Excluded.
  *
  * == Endless Ranges
  *
- * An _endless_ _range_ has a definite begin value, but a +nil+ end value.
- * Such a range includes all values from the begin value.
+ * An endless range has a definite begin value and a +nil+ end value.
+ * Such a range includes all comparable values
+ * that are greater than or equal to to the begin value.
  *
- *   r = (1..)         # => 1..
- *   r.end             # => nil
- *   r.include?(50)    # => true
+ * To create an endless range with a Range literal,
+ * use the double-dot or triple-dot notation
+ * with a definite begin value and a +nil+ end value.
  *
- *   Range.new(1, nil) # => 1..
+ * An endless range has no end value to exclude,
+ * so these ranges all have the same behavior:
  *
- * The literal for an endless range may be written with either two dots
- * or three.
- * The range has the same elements, either way.
- * But note that the two are not equal:
+ *   0..nil  # => 0..
+ *   0..     # => 0..   # Trailing nil may be omitted.
+ *   0...nil # => 0...
+ *   0...    # => 0...  # Trailing nil may be omitted.
  *
- *   r0 = (1..)           # => 1..
- *   r1 = (1...)          # => 1...
- *   r0.begin == r1.begin # => true
- *   r0.end == r1.end     # => true
- *   r0 == r1             # => false
+ * To create an endless range with Range.new,
+ * give a definite begin value and a +nil+ end value.
  *
- * An endless range may be used to slice an array:
+ * As before, an endless range has no end value to exclude,
+ * so these ranges have the same behavior:
  *
- *   a = [1, 2, 3, 4]
- *   r = (2..) # => 2..
- *   a[r]      # => [3, 4]
+ *   Range.new(0, nil)       # => 0..
+ *   Range.new(0, nil, true) # => 0...
  *
- * Method +each+ for an endless range calls the given block indefinitely:
+ * == Unbounded Ranges
  *
- *   a = []
- *   r = (1..)
- *   r.each do |i|
- *     a.push(i) if i.even?
- *     break if i > 10
- *   end
- *   a # => [2, 4, 6, 8, 10]
+ * An unbounded range is both beginless and endless.
+ * Such a range includes all comparable values.
  *
- * A range can be both beginless and endless. For literal beginless, endless
- * ranges, at least the beginning or end of the range must be given as an
- * explicit nil value. It is recommended to use an explicit nil beginning and
- * end, since that is what Ruby uses for Range#inspect:
+ * To create an unbounded range with a \Range literal,
+ * give both begin and end values as +nil+.
  *
- *   (nil..)    # => (nil..nil)
- *   (..nil)    # => (nil..nil)
- *   (nil..nil) # => (nil..nil)
+ * An unbounded range has no end value to exclude,
+ * so these range have the same behavior;
+ *
+ *   nil..nil  # => nil..nil
+ *   ..nil     # => nil..nil   # The leading nil may be omitted.
+ *   nil..     # => nil..nil   # The trailing nil may be omitted.
+ *   nil...nil # => nil...nil
+ *   ...nil    # => nil...nil  # The leading nil may be omitted.
+ *   nil...    # => nil...nil  # The trailing nil may be omitted.
+ *
+ * To create an unbounded range with Range.new,
+ * give both begin and end values as +nil+.
+ *
+ * As before, an unbounded range has no end value to exclude,
+ * so these range have the same behavior:
+ *
+ *   Range.new(nil, nil)       # => nil..nil
+ *   Range.new(nil, nil, true) # => nil...nil
  *
  * == Ranges and Other Classes
  *
@@ -2984,6 +3014,28 @@ Init_Range(void)
     rb_define_method(rb_cRange, "%", range_percent_step, 1);
     rb_define_method(rb_cRange, "reverse_each", range_reverse_each, 0);
     rb_define_method(rb_cRange, "bsearch", range_bsearch, 0);
+#if 0 /* for RDoc */
+    /*
+     *  The object that defines the beginning of +self+.
+     *
+     *    (1..4).begin # => 1
+     *    (..2).begin  # => nil
+     *
+     *  Related: Range#first, Range#end.
+     */
+    rb_define_attr(rb_cRange, "begin", TRUE, FALSE);
+
+    /*
+     *  The object that defines the end of +self+.
+     *
+     *    (1..4).end  # => 4
+     *    (1...4).end # => 4
+     *    (1..).end   # => nil
+     *
+     *  Related: Range#begin, Range#last.
+     */
+    rb_define_attr(rb_cRange, "end", TRUE, FALSE);
+#endif
     rb_struct_define_aref_method(rb_cRange, id_beg, 0);
     rb_struct_define_aref_method(rb_cRange, id_end, 1);
     rb_define_method(rb_cRange, "first", range_first, -1);

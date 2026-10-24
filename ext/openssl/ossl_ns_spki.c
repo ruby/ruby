@@ -42,7 +42,7 @@ static const rb_data_type_t ossl_netscape_spki_type = {
     {
         0, ossl_netscape_spki_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -78,9 +78,9 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
     if (!(spki = NETSCAPE_SPKI_b64_decode(RSTRING_PTR(buffer), RSTRING_LENINT(buffer)))) {
         ossl_clear_error();
         p = (unsigned char *)RSTRING_PTR(buffer);
-        if (!(spki = d2i_NETSCAPE_SPKI(NULL, &p, RSTRING_LEN(buffer)))) {
-            ossl_raise(eSPKIError, NULL);
-        }
+        spki = d2i_NETSCAPE_SPKI(NULL, &p, rb_len2long(RSTRING_LEN(buffer)));
+        if (!spki)
+            ossl_raise(eSPKIError, "d2i_NETSCAPE_SPKI");
     }
     RTYPEDDATA_DATA(self) = spki;
 
@@ -130,7 +130,7 @@ ossl_spki_to_pem(VALUE self)
     if (!(data = NETSCAPE_SPKI_b64_encode(spki))) {
         ossl_raise(eSPKIError, NULL);
     }
-    str = ossl_buf2str(data, rb_long2int(strlen(data)));
+    str = ossl_buf2str(data);
 
     return str;
 }

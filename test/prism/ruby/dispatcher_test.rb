@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class DispatcherTest < TestCase
     class TestListener
       attr_reader :events_received
@@ -32,7 +32,7 @@ module Prism
       dispatcher.register(listener_manual, :on_call_node_enter, :on_call_node_leave, :on_integer_node_enter)
       dispatcher.register_public_methods(listener_public)
 
-      root = Prism.parse(<<~RUBY).value
+      root = Ruby::Prism.parse(<<~RUBY).value
         def foo
           something(1, 2, 3)
         end

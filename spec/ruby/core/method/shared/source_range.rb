@@ -130,4 +130,9 @@ describe :method_source_range, shared: true do
 
     range.start_line.should == 100
   end
+
+  it "returns nil if the method is not defined in Ruby" do
+    method = @object.call(42.method(:__id__))
+    method.source_range.should == nil
+  end
 end

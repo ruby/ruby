@@ -1,15 +1,76 @@
-use std::alloc::{alloc, handle_alloc_error, Layout};
+use std::alloc::{handle_alloc_error, Layout};
 use std::mem::{align_of, size_of};
 use std::ptr;
 
 use crate::cruby::{__IncompleteArrayField, IseqPtr, VALUE, rb_gc_mark_movable, rb_gc_location};
 use crate::cruby::zjit_jit_frame;
 use crate::codegen::iseq_may_write_block_code;
+use crate::options::get_option;
 use crate::state::ZJITState;
+use crate::stats::{incr_counter_by, Counter};
+use crate::virtualmem::VirtualMem;
 
 /// JITFrame struct is defined in zjit.h (the single source of truth) and
 /// imported into Rust via bindgen. See zjit.h for field documentation.
 pub type JITFrame = zjit_jit_frame;
+
+/// A bump allocator for JITFrame backed by address space below INT32_MAX.
+pub struct JITFrameAllocator {
+    /// Address space below `INT32_MAX`. Physical pages are mapped in on demand
+    /// and, since the region is never marked executable, stay read/write for the
+    /// life of the process.
+    virt_mem: VirtualMem,
+
+    /// Offset of the next free byte in `virt_mem`, or the region size once the
+    /// arena is exhausted.
+    cursor: usize,
+}
+
+impl JITFrameAllocator {
+    /// Reserve the arena's address space, or return None when the platform cannot
+    /// provide low memory.
+    pub fn new() -> Option<Self> {
+        // A tenth of --zjit-mem-size is reserved, not mapped: physical pages are
+        // mapped in one at a time as the bump cursor crosses into them. lobsters
+        // allocates up to 4MiB of JITFrames, well below the 12.8MiB default.
+        Some(JITFrameAllocator {
+            virt_mem: VirtualMem::alloc_low(get_option!(mem_bytes) / 10)?,
+            cursor: 0,
+        })
+    }
+
+    /// The number of bytes the allocator has mapped physical memory for.
+    pub fn mapped_bytes(&self) -> usize {
+        self.virt_mem.mapped_region_size()
+    }
+
+    /// Bump-allocate `layout` from the arena, or return null when it's full.
+    fn try_alloc(&mut self, layout: Layout) -> *mut u8 {
+        // The region start is page-aligned, so aligning the offset aligns the pointer.
+        debug_assert!(layout.align() <= self.virt_mem.system_page_size());
+        let start = self.cursor.next_multiple_of(layout.align());
+        let Some(end) = start.checked_add(layout.size()) else {
+            return ptr::null_mut();
+        };
+        if end > self.virt_mem.virtual_region_size() {
+            return ptr::null_mut();
+        }
+        // Touch the last byte of the allocation on first use: write_byte maps every
+        // page between the end of the mapped region and the byte it writes.
+        if end > self.virt_mem.mapped_region_size() {
+            let last_byte = self.virt_mem.start_ptr().add_bytes(end - 1);
+            if self.virt_mem.write_byte(last_byte, 0).is_err() {
+                // write_byte's bound check refuses the final page of the region, so
+                // treat any failure as permanent exhaustion instead of retrying on
+                // every allocation.
+                self.cursor = self.virt_mem.virtual_region_size();
+                return ptr::null_mut();
+            }
+        }
+        self.cursor = end;
+        self.virt_mem.start_ptr().add_bytes(start).raw_ptr(&self.virt_mem) as *mut u8
+    }
+}
 
 impl JITFrame {
     /// Allocate a JITFrame and its trailing stack map on the heap, register it
@@ -27,9 +88,18 @@ impl JITFrame {
             .checked_add(stack_size.checked_mul(size_of::<VALUE>()).unwrap())
             .unwrap();
         let layout = Layout::from_size_align(frame_size, align_of::<JITFrame>()).unwrap();
-        let raw_ptr = unsafe { alloc(layout) as *mut JITFrame };
+        // Prefer the low-address arena so that call sites can store this pointer
+        // as a 32-bit immediate. Falling back to the heap only costs code size.
+        let mut raw_ptr = match ZJITState::get_jit_frame_allocator() {
+            Some(arena) => arena.try_alloc(layout) as *mut JITFrame,
+            None => ptr::null_mut(),
+        };
         if raw_ptr.is_null() {
-            handle_alloc_error(layout);
+            raw_ptr = unsafe { std::alloc::alloc(layout) as *mut JITFrame };
+            if raw_ptr.is_null() {
+                handle_alloc_error(layout);
+            }
+            incr_counter_by(Counter::jit_frame_heap_bytes, layout.size() as u64);
         }
 
         unsafe {

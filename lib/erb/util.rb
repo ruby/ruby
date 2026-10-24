@@ -21,7 +21,8 @@ rescue LoadError
   module ERB::Escape
     # :stopdoc:
     def html_escape(s)
-      CGI.escapeHTML(s.to_s)
+      s = s.to_s unless String === s
+      CGI.escapeHTML(s)
     end
     module_function :html_escape
   end

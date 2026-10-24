@@ -20,7 +20,7 @@
 #include "eval_intern.h"
 #include "internal.h"
 #include "internal/class.h"
-#include "internal/cont.h"
+#include "internal/jit.h"
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/gc.h"
@@ -30,6 +30,7 @@
 #include "internal/object.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
+#include "internal/vm.h"
 #include "ruby/fiber/scheduler.h"
 #include "iseq.h"
 #include "probes.h"
@@ -81,6 +82,7 @@ ruby_setup(void)
     rb_w32_init_long_paths();
 #endif
     Init_BareVM();
+    Init_default_shapes();
     rb_vm_encoded_insn_data_table_init();
     Init_enable_box();
     Init_vm_objects();
@@ -455,6 +457,7 @@ rb_class_modify_check(VALUE klass)
         }
         rb_error_frozen_object(klass);
     }
+    rb_class_owner_check(klass);
 }
 
 NORETURN(static void rb_longjmp(rb_execution_context_t *, enum ruby_tag_type, volatile VALUE, VALUE));
@@ -1328,8 +1331,8 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
         }
     }
     while (argc--) {
-        rb_funcall(argv[argc], id_append_features, 1, module);
-        rb_funcall(argv[argc], id_included, 1, module);
+        rb_funcallv_uncached(argv[argc], id_append_features, 1, &module);
+        rb_funcallv_uncached(argv[argc], id_included, 1, &module);
     }
     return module;
 }
@@ -1385,8 +1388,8 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
         }
     }
     while (argc--) {
-        rb_funcall(argv[argc], id_prepend_features, 1, module);
-        rb_funcall(argv[argc], id_prepended, 1, module);
+        rb_funcallv_uncached(argv[argc], id_prepend_features, 1, &module);
+        rb_funcallv_uncached(argv[argc], id_prepended, 1, &module);
     }
     return module;
 }
@@ -1451,6 +1454,27 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
             }
         }
     }
+
+    /* Reuse the refinement iclass created by an earlier using/Proc#refined
+     * of the same refinement on the same superclass */
+    ID id_using_iclasses;
+    CONST_ID(id_using_iclasses, "__using_iclasses__");
+    VALUE cache = rb_attr_get(module, id_using_iclasses);
+    VALUE cache_key = superclass;
+
+    if (!NIL_P(cache)) {
+        RB_VM_LOCKING() {
+            iclass = rb_wmap_lookup(cache, cache_key);
+        }
+        if (!UNDEF_P(iclass) &&
+                RCLASS_M_TBL(iclass) == RCLASS_M_TBL(module) &&
+                (cache_key != klass || !RB_TYPE_P(klass, T_MODULE) ||
+                 RCLASS_M_TBL(RCLASS_SUPER(iclass)) == RCLASS_WRITABLE_M_TBL(RCLASS_ORIGIN(klass)))) {
+            rb_hash_aset(CREF_REFINEMENTS(cref), klass, iclass);
+            return;
+        }
+    }
+
     superclass = refinement_superclass(superclass);
     c = iclass = rb_include_class_new(module, superclass);
     RCLASS_SET_REFINED_CLASS(c, klass);
@@ -1460,6 +1484,12 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
     rb_class_subclass_add(klass, iclass);
 
     rb_hash_aset(CREF_REFINEMENTS(cref), klass, iclass);
+
+    if (!NIL_P(cache)) {
+        RB_VM_LOCKING() {
+            rb_wmap_aset(cache, cache_key, iclass);
+        }
+    }
 }
 
 static int
@@ -1574,7 +1604,7 @@ rb_refinement_setup(struct rb_refinements_data *data, VALUE module, VALUE klass)
 {
     VALUE refinement;
     ID id_refinements, id_activated_refinements,
-       id_refined_class, id_defined_at;
+       id_refined_class, id_defined_at, id_using_iclasses;
     VALUE refinements, activated_refinements;
 
     CONST_ID(id_refinements, "__refinements__");
@@ -1601,6 +1631,8 @@ rb_refinement_setup(struct rb_refinements_data *data, VALUE module, VALUE klass)
         rb_ivar_set(refinement, id_refined_class, klass);
         CONST_ID(id_defined_at, "__defined_at__");
         rb_ivar_set(refinement, id_defined_at, module);
+        CONST_ID(id_using_iclasses, "__using_iclasses__");
+        rb_ivar_set(refinement, id_using_iclasses, rb_wmap_new_hidden());
         rb_hash_aset(refinements, klass, refinement);
         add_activated_refinement(activated_refinements, klass, refinement);
     }
@@ -1634,6 +1666,11 @@ rb_mod_refine(VALUE module, VALUE klass)
     }
 
     ensure_class_or_module(klass);
+
+    // refine installs refined method entries into the target's method table, and
+    // rb_refinement_setup writes the refinement tables into the receiver
+    rb_class_owner_check(module);
+    rb_class_owner_check(klass);
 
     rb_refinement_setup(&data, module, klass);
 
@@ -1981,8 +2018,8 @@ rb_obj_extend(int argc, VALUE *argv, VALUE obj)
         }
     }
     while (argc--) {
-        rb_funcall(argv[argc], id_extend_object, 1, obj);
-        rb_funcall(argv[argc], id_extended, 1, obj);
+        rb_funcallv_uncached(argv[argc], id_extend_object, 1, &obj);
+        rb_funcallv_uncached(argv[argc], id_extended, 1, &obj);
     }
     return obj;
 }

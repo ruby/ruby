@@ -43,20 +43,17 @@ RSpec.describe "Self management" do
       bundle "-v", artifice: nil
       expect(out).to eq(previous_minor)
 
-      # ruby-core test setup has always "lib" in $LOAD_PATH so `require "bundler/setup"` always activate the local version rather than using RubyGems gem activation stuff
-      unless ruby_core?
-        # App now uses locked version, even when not using the CLI directly
-        file = bundled_app("bin/bundle_version.rb")
-        create_file file, <<-RUBY
-          #!#{Gem.ruby}
-          require 'bundler/setup'
-          puts '#{previous_minor}'
-        RUBY
-        file.chmod(0o777)
-        cmd = Gem.win_platform? ? "#{Gem.ruby} bin/bundle_version.rb" : "bin/bundle_version.rb"
-        in_bundled_app cmd
-        expect(out).to eq(previous_minor)
-      end
+      # App now uses locked version, even when not using the CLI directly
+      file = bundled_app("bin/bundle_version.rb")
+      create_file file, <<-RUBY
+        #!#{Gem.ruby}
+        require 'bundler/setup'
+        puts '#{previous_minor}'
+      RUBY
+      file.chmod(0o777)
+      cmd = Gem.win_platform? ? "#{Gem.ruby} bin/bundle_version.rb" : "bin/bundle_version.rb"
+      in_bundled_app cmd
+      expect(out).to eq(previous_minor)
 
       # Subsequent installs use the locked version without reinstalling
       bundle "install --verbose", artifice: nil
@@ -84,20 +81,17 @@ RSpec.describe "Self management" do
       bundle "exec ruby -e 'puts Bundler.original_env[\"GEM_HOME\"]'"
       expect(out).to eq(ENV["GEM_HOME"])
 
-      # ruby-core test setup has always "lib" in $LOAD_PATH so `require "bundler/setup"` always activate the local version rather than using RubyGems gem activation stuff
-      unless ruby_core?
-        # App now uses locked version, even when not using the CLI directly
-        file = bundled_app("bin/bundle_version.rb")
-        create_file file, <<-RUBY
-          #!#{Gem.ruby}
-          require 'bundler/setup'
-          puts '#{previous_minor}'
-        RUBY
-        file.chmod(0o777)
-        cmd = Gem.win_platform? ? "#{Gem.ruby} bin/bundle_version.rb" : "bin/bundle_version.rb"
-        in_bundled_app cmd
-        expect(out).to eq(previous_minor)
-      end
+      # App now uses locked version, even when not using the CLI directly
+      file = bundled_app("bin/bundle_version.rb")
+      create_file file, <<-RUBY
+        #!#{Gem.ruby}
+        require 'bundler/setup'
+        puts '#{previous_minor}'
+      RUBY
+      file.chmod(0o777)
+      cmd = Gem.win_platform? ? "#{Gem.ruby} bin/bundle_version.rb" : "bin/bundle_version.rb"
+      in_bundled_app cmd
+      expect(out).to eq(previous_minor)
 
       # Subsequent installs use the locked version without reinstalling
       bundle "install --verbose"
@@ -173,7 +167,7 @@ RSpec.describe "Self management" do
 
     # Can only run when Gem::BundlerVersionFinder.bundler_versions reads
     # bundler configs
-    it "requires the right bundler version from the config and run bundle CLI without re-exec", rubygems: ">= 4.1.0.dev" do
+    it "requires the right bundler version from the config and run bundle CLI without re-exec", rubygems: ">= 4.1.0.a" do
       lockfile_bundled_with(current_version)
 
       bundle_config "version #{previous_minor}"

@@ -30,10 +30,12 @@
 #include "internal/object.h"
 #include "internal/gc.h"
 #include "internal/re.h"
+#include "internal/string.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
+#include "internal/vm.h"
 #include "ruby/encoding.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
@@ -50,7 +52,6 @@ RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 typedef void rb_gvar_compact_t(void *var);
 
 static struct rb_id_table *rb_global_tbl;
-static ID autoload;
 
 // This hash table maps file paths to loadable features. We use this to track
 // autoload state until it's no longer needed.
@@ -88,7 +89,6 @@ Init_var_tables(void)
 {
     rb_global_tbl = rb_id_table_create(0);
     generic_fields_tbl_ = st_init_numtable();
-    autoload = rb_intern_const("__autoload__");
 
     autoload_mutex = rb_mutex_new();
     rb_obj_hide(autoload_mutex);
@@ -245,7 +245,7 @@ set_sub_temporary_name_foreach(VALUE mod, struct sub_temporary_name_args *args, 
         rb_id_table_foreach(tbl, set_sub_temporary_name_i, args);
     }
     else {
-        long names_len = RARRAY_LEN(args->names); // paranoiac check?
+        rb_len_t names_len = RARRAY_LEN(args->names); // paranoiac check?
         rb_ary_push(args->names, name);
         rb_id_table_foreach(tbl, set_sub_temporary_name_i, args);
         rb_ary_set_len(args->names, names_len);
@@ -311,6 +311,8 @@ set_sub_temporary_name(VALUE mod, VALUE name)
 VALUE
 rb_mod_set_temporary_name(VALUE mod, VALUE name)
 {
+    rb_class_owner_check(mod);
+
     // We don't allow setting the name if the classpath is already permanent:
     if (RCLASS_PERMANENT_CLASSPATH_P(mod)) {
         rb_raise(rb_eRuntimeError, "can't change permanent name");
@@ -547,6 +549,7 @@ struct rb_global_variable {
     rb_gvar_marker_t *marker;
     rb_gvar_compact_t *compactor;
     struct trace_var *trace;
+    ID id;
     bool box_ready;
     bool box_dynamic;
 };
@@ -596,25 +599,70 @@ rb_free_generic_fields_tbl_(void)
     st_free_table(generic_fields_tbl_);
 }
 
+static void
+rb_gvar_undef_compactor(void *var)
+{
+}
+
+NORETURN(static void global_entry_isolation_error(ID id));
+
+static void
+global_entry_isolation_error(ID id)
+{
+    rb_raise(rb_eRactorIsolationError, "can not access global variable %s from non-main Ractor", rb_id2name(id));
+}
+
+/* Sets *isolation_error when the caller must raise; the caller has to do that
+ * once it no longer holds the VM lock. */
 static struct rb_global_entry*
-rb_find_global_entry(ID id)
+global_entry_lookup(ID id, bool create_entry, bool *isolation_error)
 {
     struct rb_global_entry *entry;
     VALUE data;
 
     RB_VM_LOCKING() {
-        if (!rb_id_table_lookup(rb_global_tbl, id, &data)) {
-            entry = NULL;
-        }
-        else {
+        if (rb_id_table_lookup(rb_global_tbl, id, &data)) {
             entry = (struct rb_global_entry *)data;
             RUBY_ASSERT(entry != NULL);
         }
+        else {
+            entry = NULL;
+        }
+
+        *isolation_error = UNLIKELY(!rb_ractor_main_p()) && (!entry || !entry->ractor_local);
+
+        if (!entry && create_entry && !*isolation_error) {
+            struct rb_global_variable *var = ALLOC(struct rb_global_variable);
+            entry = ALLOC(struct rb_global_entry);
+            entry->id = id;
+            entry->var = var;
+            entry->ractor_local = false;
+            var->id = id;
+            var->counter = 1;
+            var->data = 0;
+            var->getter = rb_gvar_undef_getter;
+            var->setter = rb_gvar_undef_setter;
+            var->marker = rb_gvar_undef_marker;
+            var->compactor = rb_gvar_undef_compactor;
+
+            var->block_trace = 0;
+            var->trace = 0;
+            var->box_ready = false;
+            var->box_dynamic = false;
+            rb_id_table_insert(rb_global_tbl, id, (VALUE)entry);
+        }
     }
 
-    if (UNLIKELY(!rb_ractor_main_p()) && (!entry || !entry->ractor_local)) {
-        rb_raise(rb_eRactorIsolationError, "can not access global variable %s from non-main Ractor", rb_id2name(id));
-    }
+    return entry;
+}
+
+static struct rb_global_entry*
+rb_find_global_entry(ID id)
+{
+    bool isolation_error;
+    struct rb_global_entry *entry = global_entry_lookup(id, false, &isolation_error);
+
+    if (isolation_error) global_entry_isolation_error(id);
 
     return entry;
 }
@@ -640,38 +688,14 @@ rb_gvar_box_dynamic(const char *name)
     entry->var->box_dynamic = true;
 }
 
-static void
-rb_gvar_undef_compactor(void *var)
-{
-}
-
 static struct rb_global_entry*
 rb_global_entry(ID id)
 {
-    struct rb_global_entry *entry;
-    RB_VM_LOCKING() {
-        entry = rb_find_global_entry(id);
-        if (!entry) {
-            struct rb_global_variable *var;
-            entry = ALLOC(struct rb_global_entry);
-            var = ALLOC(struct rb_global_variable);
-            entry->id = id;
-            entry->var = var;
-            entry->ractor_local = false;
-            var->counter = 1;
-            var->data = 0;
-            var->getter = rb_gvar_undef_getter;
-            var->setter = rb_gvar_undef_setter;
-            var->marker = rb_gvar_undef_marker;
-            var->compactor = rb_gvar_undef_compactor;
+    bool isolation_error;
+    struct rb_global_entry *entry = global_entry_lookup(id, true, &isolation_error);
 
-            var->block_trace = 0;
-            var->trace = 0;
-            var->box_ready = false;
-            var->box_dynamic = false;
-            rb_id_table_insert(rb_global_tbl, id, (VALUE)entry);
-        }
-    }
+    if (isolation_error) global_entry_isolation_error(id);
+
     return entry;
 }
 
@@ -688,13 +712,8 @@ rb_gvar_val_compactor(void *_var)
 {
     struct rb_global_variable *var = (struct rb_global_variable *)_var;
 
-    VALUE obj = (VALUE)var->data;
-
-    if (obj) {
-        VALUE new = rb_gc_location(obj);
-        if (new != obj) {
-            var->data = (void*)new;
-        }
+    if (var->data) {
+        rb_gc_update_moved_ptr(&var->data);
     }
 }
 
@@ -1006,13 +1025,10 @@ trace_en(VALUE v)
     return Qnil;		/* not reached */
 }
 
-static VALUE
-rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
+static void
+gvar_trace(struct rb_global_variable *var, VALUE val)
 {
     struct trace_data trace;
-    struct rb_global_variable *var = entry->var;
-
-    (*var->setter)(val, entry->id, var->data);
 
     if (var->trace && !var->block_trace) {
         var->block_trace = 1;
@@ -1020,6 +1036,15 @@ rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
         trace.val = val;
         rb_ensure(trace_ev, (VALUE)&trace, trace_en, (VALUE)var);
     }
+}
+
+static VALUE
+rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
+{
+    struct rb_global_variable *var = entry->var;
+
+    (*var->setter)(val, entry->id, var->data);
+    gvar_trace(var, val);
     return val;
 }
 
@@ -1038,19 +1063,24 @@ rb_gvar_set(ID id, VALUE val)
     struct rb_global_entry *entry = NULL;
     const rb_box_t *box = rb_current_box();
     bool use_box_tbl = false;
+    bool isolation_error = false;
 
     RB_VM_LOCKING() {
-        entry = rb_global_entry(id);
+        entry = global_entry_lookup(id, true, &isolation_error);
 
-        if (gvar_use_box_tbl(box, entry)) {
+        if (!isolation_error && gvar_use_box_tbl(box, entry)) {
             use_box_tbl = true;
-            rb_hash_aset(box->gvar_tbl, rb_id2sym(entry->id), val);
+            rb_hash_aset(box->gvar_tbl, rb_id2sym(entry->var->id), val);
             retval = val;
-            // TODO: think about trace
         }
     }
 
-    if (!use_box_tbl) {
+    if (isolation_error) global_entry_isolation_error(id);
+
+    if (use_box_tbl) {
+        gvar_trace(entry->var, val);
+    }
+    else {
         retval = rb_gvar_set_entry(entry, val);
     }
     return retval;
@@ -1068,33 +1098,44 @@ rb_gvar_get(ID id)
     VALUE retval, gvars, key;
     const rb_box_t *box = rb_current_box();
     bool use_box_tbl = false;
+    bool isolation_error = false;
     struct rb_global_entry *entry = NULL;
     struct rb_global_variable *var = NULL;
-    // TODO: use lock-free rb_id_table when it's available for use (doesn't yet exist)
-    RB_VM_LOCKING() {
-        entry = rb_global_entry(id);
-        var = entry->var;
 
-        if (gvar_use_box_tbl(box, entry)) {
-            use_box_tbl = true;
-            gvars = box->gvar_tbl;
-            key = rb_id2sym(entry->id);
-            if (RTEST(rb_hash_has_key(gvars, key))) { // this gvar is already cached
-                retval = rb_hash_aref(gvars, key);
-            }
-            else {
-                RB_VM_UNLOCK();
-                {
-                    retval = (*var->getter)(entry->id, var->data);
-                    if (rb_obj_respond_to(retval, rb_intern("clone"), 1)) {
-                        retval = rb_funcall(retval, rb_intern("clone"), 0);
-                    }
+    RB_VM_LOCKING() {
+        // TODO: use lock-free rb_id_table when it's available for use (doesn't yet exist)
+        entry = global_entry_lookup(id, true, &isolation_error);
+
+        if (!isolation_error) {
+            var = entry->var;
+
+            if (gvar_use_box_tbl(box, entry)) {
+                use_box_tbl = true;
+                gvars = box->gvar_tbl;
+                key = rb_id2sym(var->id);
+                if (RTEST(rb_hash_has_key(gvars, key))) { // this gvar is already cached
+                    retval = rb_hash_aref(gvars, key);
                 }
-                RB_VM_LOCK();
-                rb_hash_aset(gvars, key, retval);
+                else {
+                    // An undefined gvar has no value to snapshot, and caching its nil
+                    // would make rb_gvar_defined() report it as defined in this box.
+                    bool cache = var->getter != rb_gvar_undef_getter;
+                    RB_VM_UNLOCK();
+                    {
+                        retval = (*var->getter)(entry->id, var->data);
+                        if (rb_obj_respond_to(retval, rb_intern("clone"), 1)) {
+                            retval = rb_funcall(retval, rb_intern("clone"), 0);
+                        }
+                    }
+                    RB_VM_LOCK();
+                    if (cache) rb_hash_aset(gvars, key, retval);
+                }
             }
         }
     }
+
+    if (isolation_error) global_entry_isolation_error(id);
+
     if (!use_box_tbl) {
         retval = (*var->getter)(entry->id, var->data);
     }
@@ -1117,8 +1158,17 @@ rb_gv_get(const char *name)
 VALUE
 rb_gvar_defined(ID id)
 {
-    struct rb_global_entry *entry = rb_global_entry(id);
-    return RBOOL(entry->var->getter != rb_gvar_undef_getter);
+    const rb_box_t *box = rb_current_box();
+    bool defined;
+
+    RB_VM_LOCKING() {
+        const struct rb_global_entry *entry = rb_global_entry(id);
+
+        defined = entry->var->getter != rb_gvar_undef_getter ||
+            (gvar_use_box_tbl(box, entry) &&
+             RTEST(rb_hash_has_key(box->gvar_tbl, rb_id2sym(entry->var->id))));
+    }
+    return RBOOL(defined);
 }
 
 rb_gvar_getter_t *
@@ -1182,13 +1232,17 @@ rb_alias_variable(ID name1, ID name2)
     struct rb_global_entry *entry1 = NULL, *entry2;
     VALUE data1;
     struct rb_id_table *gtbl = rb_global_tbl;
+    bool tracer_error = false;
 
     if (!rb_ractor_main_p()) {
         rb_raise(rb_eRactorIsolationError, "can not access global variables from non-main Ractors");
     }
 
     RB_VM_LOCKING() {
-        entry2 = rb_global_entry(name2);
+        bool isolation_error;
+        entry2 = global_entry_lookup(name2, true, &isolation_error);
+        VM_ASSERT(!isolation_error); /* main Ractor, checked above */
+
         if (!rb_id_table_lookup(gtbl, name1, &data1)) {
             entry1 = ZALLOC(struct rb_global_entry);
             entry1->id = name1;
@@ -1197,59 +1251,72 @@ rb_alias_variable(ID name1, ID name2)
         else if ((entry1 = (struct rb_global_entry *)data1)->var != entry2->var) {
             struct rb_global_variable *var = entry1->var;
             if (var->block_trace) {
-                RB_VM_UNLOCK();
-                rb_raise(rb_eRuntimeError, "can't alias in tracer");
+                tracer_error = true;
             }
-            var->counter--;
-            if (var->counter == 0) {
-                free_global_variable(var);
+            else {
+                var->counter--;
+                if (var->counter == 0) {
+                    free_global_variable(var);
+                }
             }
         }
-        if (entry1->var != entry2->var) {
+        if (!tracer_error && entry1->var != entry2->var) {
             entry2->var->counter++;
             entry1->var = entry2->var;
         }
     }
+
+    if (tracer_error) rb_raise(rb_eRuntimeError, "can't alias in tracer");
 }
 
 static void
-IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(ID id)
+class_ivar_set_ractor_check(VALUE klass, ID id)
 {
-    if (UNLIKELY(!rb_ractor_main_p())) {
-        if (rb_is_instance_id(id)) { // check only normal ivars
-            rb_raise(rb_eRactorIsolationError, "can not set instance variables of classes/modules by non-main Ractors");
-        }
+    if (rb_is_instance_id(id) && // check only normal ivars
+        UNLIKELY(!rb_class_owned_p(klass))) {
+        rb_raise(
+            rb_eRactorIsolationError,
+            "can not set instance variables of classes/modules "
+            "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
+            rb_id2str(id),
+            rb_class_path(klass)
+        );
     }
 }
 
+// klass is the class the variable is stored in, not the receiver: which one that
+// is can migrate (cvar_overtaken), and it is the one with a single writer.
 static void
-CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(VALUE klass, ID id)
+cvar_set_ractor_check(VALUE klass, ID id)
 {
-    if (UNLIKELY(!rb_ractor_main_p())) {
-        rb_raise(rb_eRactorIsolationError, "can not set class variables from non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")", rb_id2str(id), klass);
+    if (UNLIKELY(!rb_class_owned_p(klass))) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not set class variable %"PRIsVALUE" of %"PRIsVALUE", which was created by another Ractor",
+                 rb_id2str(id), klass);
     }
 }
 
 static void
 cvar_read_ractor_check(VALUE klass, ID id, VALUE val)
 {
-    if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
+    if (UNLIKELY(!rb_class_owned_p(klass)) && !rb_ractor_shareable_p(val)) {
         rb_raise(rb_eRactorIsolationError,
-                 "can not read non-shareable class variable %"PRIsVALUE" from non-main Ractors (%"PRIsVALUE")",
+                 "can not read non-shareable class variable %"PRIsVALUE" of %"PRIsVALUE", which was created by another Ractor",
                  rb_id2str(id), klass);
     }
 }
 
 static inline void
-ivar_ractor_check(VALUE obj, ID id)
+ivar_ractor_assert(VALUE obj, ID id)
 {
-    if (LIKELY(rb_is_instance_id(id)) /* not internal ID */ &&
-        !RB_OBJ_FROZEN_RAW(obj) &&
-        UNLIKELY(!rb_ractor_main_p()) &&
-        UNLIKELY(rb_ractor_shareable_p(obj))) {
-
-        rb_raise(rb_eRactorIsolationError, "can not access instance variables of shareable objects from non-main Ractors");
-    }
+    RUBY_ASSERT(!rb_is_instance_id(id) /* internal ID */ ||
+                SPECIAL_CONST_P(obj) ||
+                !rb_ractor_shareable_p(obj) ||
+                RB_OBJ_FROZEN_RAW(obj) ||
+                RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE) ||
+                RB_TYPE_P(obj, T_ICLASS) || RB_TYPE_P(obj, T_IMEMO) ||
+                rb_shape_frozen_p(RBASIC_SHAPE_ID(obj)),
+                "shareable object must not have writable instance variables");
 }
 
 struct st_table *
@@ -1335,7 +1402,7 @@ obj_use_generic_fields_tbl_p(VALUE obj)
 VALUE
 rb_obj_fields(VALUE obj, ID field_name)
 {
-    ivar_ractor_check(obj, field_name);
+    ivar_ractor_assert(obj, field_name);
 
     switch (BUILTIN_TYPE(obj)) {
       case T_IMEMO:
@@ -1424,7 +1491,7 @@ rb_free_generic_ivar(VALUE obj)
 static void
 rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fields_obj)
 {
-    ivar_ractor_check(obj, field_name);
+    ivar_ractor_assert(obj, field_name);
 
     if (!fields_obj) {
         RUBY_ASSERT(original_fields_obj);
@@ -1560,13 +1627,13 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
     }
 
     if (is_class && val != undef && rb_is_instance_id(id)) {
-        if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
+        if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
             rb_raise(
                 rb_eRactorIsolationError,
-                "can not get unshareable values from instance variables of classes/modules from "
-                "non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")",
+                "can not get unshareable values from instance variables of classes/modules "
+                "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
                 rb_id2str(id),
-                obj
+                rb_class_path(obj)
             );
         }
     }
@@ -1597,9 +1664,14 @@ rb_ivar_get_at(VALUE obj, attr_index_t index, ID id)
             VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             VALUE val = rb_imemo_fields_ptr(fields_obj)[index];
 
-            if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
-                rb_raise(rb_eRactorIsolationError,
-                        "can not get unshareable values from instance variables of classes/modules from non-main Ractors");
+            if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
+                rb_raise(
+                    rb_eRactorIsolationError,
+                    "can not get unshareable values from instance variables of classes/modules "
+                    "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
+                    rb_id2str(id),
+                    rb_class_path(obj)
+                );
             }
 
             return val;
@@ -1652,7 +1724,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     int type = BUILTIN_TYPE(obj);
 
     if (type == T_CLASS || type == T_MODULE) {
-        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+        class_ivar_set_ractor_check(obj, id);
 
         if (rb_multi_ractor_p()) {
             concurrent = true;
@@ -1992,6 +2064,25 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
     return obj_field_set(obj, target_shape_id, id, val);
 }
 
+void
+rb_check_ivar_modifiable(VALUE obj)
+{
+    if (UNLIKELY(!RB_FL_ABLE(obj) || rb_shape_frozen_p(RBASIC_SHAPE_ID(obj)))) {
+        rb_check_frozen(obj);
+
+        RUBY_ASSERT(RB_OBJ_SHAREABLE_P(obj), "unfrozen object with a frozen shape must be shareable");
+
+        rb_raise(rb_eRactorIsolationError,
+                 "can't modify instance variables of a shareable %"PRIsVALUE,
+                 rb_obj_class(obj));
+    }
+    else if (UNLIKELY(CHILLED_STRING_P(obj))) {
+        CHILLED_STRING_MUTATED(obj);
+    }
+
+    RUBY_ASSERT(!RB_OBJ_FROZEN_RAW(obj), "frozen object with an unfrozen shape");
+}
+
 /* Set the instance variable +val+ on object +obj+ at ivar name +id+.
  * This function only works with T_OBJECT objects, so make sure
  * +obj+ is of type T_OBJECT before using this function.
@@ -1999,7 +2090,7 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
 VALUE
 rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val)
 {
-    rb_check_frozen(obj);
+    rb_check_ivar_modifiable(obj);
     obj_ivar_set(obj, id, val);
     return val;
 }
@@ -2046,7 +2137,7 @@ ivar_set(VALUE obj, ID id, VALUE val)
       case T_CLASS:
       case T_MODULE:
         {
-            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+            class_ivar_set_ractor_check(obj, id);
             bool dontcare;
             return class_ivar_set(obj, id, val, &dontcare);
         }
@@ -2058,7 +2149,7 @@ ivar_set(VALUE obj, ID id, VALUE val)
 VALUE
 rb_ivar_set(VALUE obj, ID id, VALUE val)
 {
-    rb_check_frozen(obj);
+    rb_check_ivar_modifiable(obj);
     ivar_set(obj, id, val);
     return val;
 }
@@ -2332,7 +2423,8 @@ rb_field_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, 
       case T_CLASS:
       case T_MODULE:
         {
-            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(0);
+            // No owner check: every caller of this walk uses the names only for a
+            // class/module.  Values are checked where they are read (rb_ivar_lookup).
             VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             if (fields_obj) {
                 imemo_fields_each(fields_obj, func, arg, ivar_only);
@@ -2591,69 +2683,6 @@ rb_mod_const_missing(VALUE klass, VALUE name)
     UNREACHABLE_RETURN(Qnil);
 }
 
-static void
-autoload_table_mark(void *ptr)
-{
-    rb_mark_tbl_no_pin((st_table *)ptr);
-}
-
-static void
-autoload_table_free(void *ptr)
-{
-    st_free_table((st_table *)ptr);
-}
-
-static size_t
-autoload_table_memsize(const void *ptr)
-{
-    const st_table *tbl = ptr;
-    return st_memsize(tbl);
-}
-
-static void
-autoload_table_compact(void *ptr)
-{
-    rb_gc_ref_update_table_values_only((st_table *)ptr);
-}
-
-static const rb_data_type_t autoload_table_type = {
-    "autoload_table",
-    {autoload_table_mark, autoload_table_free, autoload_table_memsize, autoload_table_compact,},
-    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
-};
-
-#define check_autoload_table(av) \
-    (struct st_table *)rb_check_typeddata((av), &autoload_table_type)
-
-static VALUE
-autoload_data(VALUE mod, ID id)
-{
-    struct st_table *tbl;
-    st_data_t val;
-
-    // If we are called with a non-origin ICLASS, fetch the autoload data from
-    // the original module.
-    if (RB_TYPE_P(mod, T_ICLASS)) {
-        if (RICLASS_IS_ORIGIN_P(mod)) {
-            return 0;
-        }
-        else {
-            mod = RBASIC(mod)->klass;
-        }
-    }
-
-    RUBY_ASSERT(RB_TYPE_P(mod, T_CLASS) || RB_TYPE_P(mod, T_MODULE));
-
-    // Look up the instance variable table for `autoload`, then index into that table with the given constant name `id`.
-
-    VALUE tbl_value = rb_ivar_lookup(mod, autoload, Qfalse);
-    if (!RTEST(tbl_value) || !(tbl = check_autoload_table(tbl_value)) || !st_lookup(tbl, (st_data_t)id, &val)) {
-        return 0;
-    }
-
-    return (VALUE)val;
-}
-
 // Every autoload constant has exactly one instance of autoload_const, stored in `autoload_features`. Since multiple autoload constants can refer to the same file, every `autoload_const` refers to a de-duplicated `autoload_data`.
 struct autoload_const {
     // The linked list node of all constants which are loaded by the related autoload feature.
@@ -2668,6 +2697,9 @@ struct autoload_const {
 
     // The module we are loading a constant into.
     VALUE module;
+
+    // The file that called autoload
+    VALUE autoload_call_file;
 
     // The name of the constant we are loading.
     ID name;
@@ -2738,6 +2770,7 @@ autoload_const_mark_and_move(void *ptr)
     struct autoload_const *ac = ptr;
 
     rb_gc_mark_and_move(&ac->module);
+    rb_gc_mark_and_move(&ac->autoload_call_file);
     rb_gc_mark_and_move(&ac->autoload_data_value);
     rb_gc_mark_and_move(&ac->value);
     rb_gc_mark_and_move(&ac->file);
@@ -2784,15 +2817,16 @@ get_autoload_data(VALUE autoload_const_value, struct autoload_const **autoload_c
     return autoload_data;
 }
 
-void
-rb_autoload(VALUE module, ID name, const char *feature)
+// The autoload entry of the constant `id` of `mod`, or 0.
+static VALUE
+autoload_entry(VALUE mod, ID id)
 {
-    if (!feature || !*feature) {
-        rb_raise(rb_eArgError, "empty feature name");
-    }
-
-    rb_autoload_str(module, name, rb_fstring_cstr(feature));
+    rb_const_entry_t *ce = rb_const_lookup(mod, id);
+    if (!ce || !UNDEF_P(ce->value)) return 0;
+    VM_ASSERT(rb_typeddata_is_kind_of(ce->u.autoload_const, &autoload_const_type));
+    return ce->u.autoload_const;
 }
+
 
 static void const_set(VALUE klass, ID id, VALUE val);
 static void const_added(VALUE klass, ID const_name);
@@ -2832,21 +2866,6 @@ autoload_feature_lookup_or_create(VALUE feature, struct autoload_data **autoload
 }
 
 static VALUE
-autoload_table_lookup_or_create(VALUE module)
-{
-    VALUE autoload_table_value = rb_ivar_lookup(module, autoload, Qfalse);
-    if (RTEST(autoload_table_value)) {
-        return autoload_table_value;
-    }
-    else {
-        autoload_table_value = TypedData_Wrap_Struct(0, &autoload_table_type, NULL);
-        rb_class_ivar_set(module, autoload, autoload_table_value);
-        RTYPEDDATA_DATA(autoload_table_value) = st_init_numtable();
-        return autoload_table_value;
-    }
-}
-
-static VALUE
 autoload_synchronized(VALUE _arguments)
 {
     struct autoload_arguments *arguments = (struct autoload_arguments *)_arguments;
@@ -2858,9 +2877,7 @@ autoload_synchronized(VALUE _arguments)
 
     // Reset any state associated with any previous constant:
     const_set(arguments->module, arguments->name, Qundef);
-
-    VALUE autoload_table_value = autoload_table_lookup_or_create(arguments->module);
-    struct st_table *autoload_table = check_autoload_table(autoload_table_value);
+    constant_entry = rb_const_lookup(arguments->module, arguments->name);
 
     // Ensure the string is uniqued since we use an identity lookup:
     VALUE feature = rb_fstring(arguments->feature);
@@ -2873,13 +2890,13 @@ autoload_synchronized(VALUE _arguments)
         VALUE autoload_const_value = TypedData_Make_Struct(0, struct autoload_const, &autoload_const_type, autoload_const);
         RB_OBJ_WRITE(autoload_const_value, &autoload_const->box_value, arguments->box_value);
         RB_OBJ_WRITE(autoload_const_value, &autoload_const->module, arguments->module);
+        RB_OBJ_WRITE(autoload_const_value, &autoload_const->autoload_call_file, constant_entry->u.file);
         autoload_const->name = arguments->name;
         autoload_const->value = Qundef;
         autoload_const->flag = CONST_PUBLIC;
         RB_OBJ_WRITE(autoload_const_value, &autoload_const->autoload_data_value, autoload_data_value);
         ccan_list_add_tail(&autoload_data->constants, &autoload_const->cnode);
-        st_insert(autoload_table, (st_data_t)arguments->name, (st_data_t)autoload_const_value);
-        RB_OBJ_WRITTEN(autoload_table_value, Qundef, autoload_const_value);
+        RB_OBJ_WRITE(arguments->module, &constant_entry->u.autoload_const, autoload_const_value);
     }
 
     return Qtrue;
@@ -2894,6 +2911,8 @@ rb_autoload_str(VALUE module, ID name, VALUE feature)
     if (!rb_is_const_id(name)) {
         rb_raise(rb_eNameError, "autoload must be constant name: %"PRIsVALUE"", QUOTE_ID(name));
     }
+
+    rb_class_owner_check(module);
 
     Check_Type(feature, T_STRING);
     if (!RSTRING_LEN(feature)) {
@@ -2915,45 +2934,26 @@ rb_autoload_str(VALUE module, ID name, VALUE feature)
 }
 
 static void
-autoload_delete(VALUE module, ID name)
+autoload_delete(VALUE autoload_const_value)
 {
     RUBY_ASSERT_CRITICAL_SECTION_ENTER();
 
-    st_data_t load = 0, key = name;
+    VM_ASSERT(rb_typeddata_is_kind_of(autoload_const_value, &autoload_const_type));
 
-    RUBY_ASSERT(RB_TYPE_P(module, T_CLASS) || RB_TYPE_P(module, T_MODULE));
+    struct autoload_const *autoload_const;
+    struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, &autoload_const);
 
-    VALUE table_value = rb_ivar_lookup(module, autoload, Qfalse);
-    if (RTEST(table_value)) {
-        struct st_table *table = check_autoload_table(table_value);
+    VM_ASSERT(autoload_data);
 
-        st_delete(table, &key, &load);
-        RB_OBJ_WRITTEN(table_value, load, Qundef);
+    /*
+     * we must delete here to avoid "already initialized" warnings
+     * with parallel autoload.  Using list_del_init here so list_del
+     * works in autoload_const_free
+     */
+    ccan_list_del_init(&autoload_const->cnode);
 
-        /* Qfalse can indicate already deleted */
-        if (load != Qfalse) {
-            struct autoload_const *autoload_const;
-            struct autoload_data *autoload_data = get_autoload_data((VALUE)load, &autoload_const);
-
-            VM_ASSERT(autoload_data);
-            VM_ASSERT(!ccan_list_empty(&autoload_data->constants));
-
-            /*
-             * we must delete here to avoid "already initialized" warnings
-             * with parallel autoload.  Using list_del_init here so list_del
-             * works in autoload_const_free
-             */
-            ccan_list_del_init(&autoload_const->cnode);
-
-            if (ccan_list_empty(&autoload_data->constants)) {
-                rb_hash_delete(autoload_features, autoload_data->feature);
-            }
-
-            // If the autoload table is empty, we can delete it.
-            if (table->num_entries == 0) {
-                rb_attr_delete(module, autoload);
-            }
-        }
+    if (ccan_list_empty(&autoload_data->constants)) {
+        rb_hash_delete(autoload_features, autoload_data->feature);
     }
 
     RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
@@ -2962,13 +2962,13 @@ autoload_delete(VALUE module, ID name)
 static int
 autoload_by_someone_else(struct autoload_data *ele)
 {
-    return ele->mutex != Qnil && !rb_mutex_owned_p(ele->mutex);
+    return ele->mutex != Qnil && RTEST(rb_mutex_locked_p(ele->mutex)) && !rb_mutex_owned_p(ele->mutex);
 }
 
 static VALUE
 check_autoload_required(VALUE mod, ID id, const char **loadingpath)
 {
-    VALUE autoload_const_value = autoload_data(mod, id);
+    VALUE autoload_const_value = autoload_entry(mod, id);
     struct autoload_data *autoload_data;
     const char *loading;
 
@@ -3033,7 +3033,7 @@ autoload_by_current(struct autoload_data *ele)
 struct autoload_const *
 autoloading_const_entry(VALUE mod, ID id)
 {
-    VALUE load = autoload_data(mod, id);
+    VALUE load = autoload_entry(mod, id);
     struct autoload_data *ele;
     struct autoload_const *ac;
 
@@ -3163,12 +3163,25 @@ autoload_apply_constants(VALUE _arguments)
     return Qtrue;
 }
 
+// Require the feature and set the constants of the autoload.
 static VALUE
-autoload_feature_require_in_box(VALUE receiver, VALUE feature)
+autoload_require_and_apply(VALUE receiver, VALUE _arguments)
+{
+    struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
+
+    VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
+    if (RTEST(result)) {
+        return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);
+    }
+    return result;
+}
+
+static VALUE
+autoload_feature_require_in_box(VALUE receiver, VALUE _arguments)
 {
     rb_vm_frame_flag_set_box_require(GET_EC());
 
-    return rb_funcall(receiver, rb_intern("require"), 1, feature);
+    return autoload_require_and_apply(receiver, _arguments);
 }
 
 static VALUE
@@ -3196,24 +3209,36 @@ autoload_feature_require(VALUE _arguments)
         box = rb_get_box_t(autoload_box_value);
     }
 
-    VALUE result;
     if (box && box->top_self) {
         /*
          * Call `require` on the top self of the box that registered the autoload, in a frame
          * running in that box, so that `Kernel#require` decorations in the box (RubyGems,
          * Zeitwerk, etc.) are dispatched and the feature is loaded into that box.
          */
-        result = rb_vm_call_cfunc_in_box(box->top_self, autoload_feature_require_in_box,
-                                         box->top_self, feature, feature, box);
+        return rb_vm_call_cfunc_in_box(box->top_self, autoload_feature_require_in_box,
+                                       box->top_self, _arguments, feature, box);
     }
-    else {
-        result = rb_funcall(rb_vm_top_self(), rb_intern("require"), 1, feature);
-    }
+    return autoload_require_and_apply(rb_vm_top_self(), _arguments);
+}
 
-    if (RTEST(result)) {
-        return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);
+static rb_const_entry_t *const_lookup(struct rb_id_table *tbl, ID id);
+
+// The box in which the feature of the autoload is required.
+static const rb_box_t *
+autoload_box(const struct autoload_const *ac)
+{
+    if (rb_box_available() && BOX_OBJ_P(ac->box_value)) {
+        const rb_box_t *box = rb_get_box_t(ac->box_value);
+        if (box->top_self) return box;
     }
-    return result;
+    return rb_current_box();
+}
+
+// The constant entry `id` of `mod` in the view of `box`.
+static rb_const_entry_t *
+const_lookup_in_box(VALUE mod, ID id, const rb_box_t *box)
+{
+    return const_lookup(RCLASSEXT_CONST_TBL(RCLASS_EXT_READABLE_IN_BOX(mod, box)), id);
 }
 
 static VALUE
@@ -3221,10 +3246,29 @@ autoload_try_load(VALUE _arguments)
 {
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
+    // Load the feature and set the constants in the box that registered the autoload:
     VALUE result = autoload_feature_require(_arguments);
 
     // After we loaded the feature, if the constant is not defined, we remove it completely:
     rb_const_entry_t *ce = rb_const_lookup(arguments->module, arguments->name);
+
+    // Copy the constant from the box that registered the autoload into the current box.
+    // E.g., after a box B1 triggers the autoload, another box B2 with its own copy of the
+    // module still has it; referring to it in B2 comes here too, as the require does nothing.
+    if (ce && UNDEF_P(ce->value)) {
+        rb_const_entry_t *loaded = const_lookup_in_box(arguments->module, arguments->name,
+                                                       autoload_box(arguments->autoload_const));
+        if (loaded && !UNDEF_P(loaded->value)) {
+            RB_VM_LOCKING() {
+                ce->flag = loaded->flag;
+                RB_OBJ_WRITE(arguments->module, &ce->value, loaded->value);
+                RB_OBJ_WRITE(arguments->module, &ce->u.file, loaded->u.file);
+                ce->line = loaded->line;
+                rb_clear_constant_cache_for_id(arguments->name);
+            }
+            result = Qtrue;
+        }
+    }
 
     if (!ce || UNDEF_P(ce->value)) {
         result = Qfalse;
@@ -3336,9 +3380,9 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
     VALUE found_in;
     VALUE c = rb_const_search(klass, id, exclude, recurse, visibility, &found_in);
     if (!UNDEF_P(c)) {
-        if (UNLIKELY(!rb_ractor_main_p())) {
+        if (UNLIKELY(!rb_class_owned_p(found_in))) {
             if (!rb_ractor_shareable_p(c)) {
-                rb_raise(rb_eRactorIsolationError, "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" by non-main Ractor.", rb_class_path(found_in), rb_id2str(id));
+                rb_raise(rb_eRactorIsolationError, "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(found_in), rb_id2str(id));
             }
         }
         return c;
@@ -3357,7 +3401,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
             current = RCLASS_SUPER(current), first_iteration = false) {
         VALUE tmp;
         VALUE am = 0;
-        rb_const_entry_t *ce;
+        rb_const_entry_t entry, *ce = &entry;
 
         if (!first_iteration && RCLASS_ORIGIN(current) != current) {
             // This item in the super chain has an origin iclass
@@ -3372,7 +3416,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
         if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
 
         // Do the lookup. Loop in case of autoload.
-        while ((ce = rb_const_lookup(tmp, id))) {
+        while (rb_const_lookup_copy(tmp, id, ce)) {
             if (visibility && RB_CONST_PRIVATE_P(ce)) {
                 GET_EC()->private_const_reference = tmp;
                 return Qundef;
@@ -3461,9 +3505,9 @@ static VALUE
 rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
     while (RTEST(klass)) {
-        rb_const_entry_t *ce;
+        rb_const_entry_t entry, *ce = &entry;
 
-        while ((ce = rb_const_lookup(klass, id))) {
+        while (rb_const_lookup_copy(klass, id, ce)) {
             if (visibility && RB_CONST_PRIVATE_P(ce)) {
                 return Qnil;
             }
@@ -3471,20 +3515,20 @@ rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibil
                 goto not_found;
             }
 
-            if (UNDEF_P(ce->value)) { // autoload
-                VALUE autoload_const_value = autoload_data(klass, id);
-                if (RTEST(autoload_const_value)) {
-                    struct autoload_const *autoload_const;
-                    struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, &autoload_const);
+            VALUE file = ce->u.file;
+            VALUE autoload_const_value = autoload_entry(klass, id);
+            if (autoload_const_value) {
+                struct autoload_const *autoload_const;
+                struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, &autoload_const);
 
-                    if (!UNDEF_P(autoload_const->value) && RTEST(rb_mutex_owned_p(autoload_data->mutex))) {
-                        return rb_assoc_new(autoload_const->file, INT2NUM(autoload_const->line));
-                    }
+                if (!UNDEF_P(autoload_const->value) && RTEST(rb_mutex_owned_p(autoload_data->mutex))) {
+                    return rb_assoc_new(autoload_const->file, INT2NUM(autoload_const->line));
                 }
+                file = autoload_const->autoload_call_file;
             }
 
-            if (NIL_P(ce->file)) return rb_ary_new();
-            return rb_assoc_new(ce->file, INT2NUM(ce->line));
+            if (NIL_P(file)) return rb_ary_new();
+            return rb_assoc_new(file, INT2NUM(ce->line));
         }
         if (!recurse) break;
         klass = RCLASS_SUPER(klass);
@@ -3550,6 +3594,7 @@ rb_const_remove(VALUE mod, ID id)
     rb_const_entry_t *ce;
 
     rb_check_frozen(mod);
+    rb_class_owner_check(mod);
 
     ce = rb_const_lookup(mod, id);
 
@@ -3562,11 +3607,13 @@ rb_const_remove(VALUE mod, ID id)
     }
 
     VALUE writable_ce = 0;
-    if (rb_id_table_lookup(RCLASS_WRITABLE_CONST_TBL(mod), id, &writable_ce)) {
-        rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id);
-        if ((rb_const_entry_t *)writable_ce != ce) {
-            SIZED_FREE((rb_const_entry_t *)writable_ce);
-        }
+    bool found;
+    RB_VM_LOCKING() { // see rb_const_lookup_copy
+        found = rb_id_table_lookup(RCLASS_WRITABLE_CONST_TBL(mod), id, &writable_ce);
+        if (found) rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id);
+    }
+    if (found && (rb_const_entry_t *)writable_ce != ce) {
+        SIZED_FREE((rb_const_entry_t *)writable_ce);
     }
 
     rb_const_warn_if_deprecated(ce, mod, id);
@@ -3575,7 +3622,7 @@ rb_const_remove(VALUE mod, ID id)
     val = ce->value;
 
     if (UNDEF_P(val)) {
-        autoload_delete(mod, id);
+        autoload_delete(ce->u.autoload_const);
         val = Qnil;
     }
 
@@ -3721,12 +3768,12 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
     VALUE tmp;
     int mod_retry = 0;
-    rb_const_entry_t *ce;
+    rb_const_entry_t entry, *ce = &entry;
 
     tmp = klass;
   retry:
     while (tmp) {
-        if ((ce = rb_const_lookup(tmp, id))) {
+        if (rb_const_lookup_copy(tmp, id, ce)) {
             if (visibility && RB_CONST_PRIVATE_P(ce)) {
                 return (int)Qfalse;
             }
@@ -3831,8 +3878,8 @@ static void
 const_added(VALUE klass, ID const_name)
 {
     if (GET_VM()->running) {
-        VALUE name = ID2SYM(const_name);
-        rb_funcallv(klass, idConst_added, 1, &name);
+        VALUE arg = ID2SYM(const_name);
+        rb_funcallv_uncached(klass, idConst_added, 1, &arg);
     }
 }
 
@@ -3846,8 +3893,8 @@ const_set(VALUE klass, ID id, VALUE val)
                  QUOTE_ID(id));
     }
 
-    if (!rb_ractor_main_p() && !rb_ractor_shareable_p(val)) {
-        rb_raise(rb_eRactorIsolationError, "can not set constants with non-shareable objects by non-main Ractors");
+    if (UNLIKELY(!rb_class_owned_p(klass))) {
+        rb_raise(rb_eRactorIsolationError, "can not set constants of classes/modules created by another Ractor");
     }
 
     check_before_mod_set(klass, id, val, "constant");
@@ -3913,7 +3960,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 static VALUE
 autoload_const_value_for_named_constant(VALUE module, ID name, struct autoload_const **autoload_const_pointer)
 {
-    VALUE autoload_const_value = autoload_data(module, name);
+    VALUE autoload_const_value = autoload_entry(module, name);
     if (!autoload_const_value) return Qfalse;
 
     struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, autoload_const_pointer);
@@ -3954,10 +4001,10 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
             }
             else {
                 /* otherwise autoloaded constant, allow to override */
-                autoload_delete(klass, id);
+                autoload_delete(ce->u.autoload_const);
                 ce->flag = visibility;
                 RB_OBJ_WRITE(klass, &ce->value, val);
-                RB_OBJ_WRITE(klass, &ce->file, file);
+                RB_OBJ_WRITE(klass, &ce->u.file, file);
                 ce->line = line;
             }
             RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
@@ -3968,8 +4015,8 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
             visibility = ce->flag;
 
             VALUE previous = Qnil;
-            if (!NIL_P(ce->file) && ce->line) {
-                previous = rb_sprintf("\n%"PRIsVALUE":%d: warning: previous definition of %"PRIsVALUE" was here", ce->file, ce->line, name);
+            if (!NIL_P(ce->u.file) && ce->line) {
+                previous = rb_sprintf("\n%"PRIsVALUE":%d: warning: previous definition of %"PRIsVALUE" was here", ce->u.file, ce->line, name);
             }
 
             if (klass == rb_cObject)
@@ -3997,7 +4044,7 @@ setup_const_entry(rb_const_entry_t *ce, VALUE klass, VALUE val,
 {
     ce->flag = visibility;
     RB_OBJ_WRITE(klass, &ce->value, val);
-    RB_OBJ_WRITE(klass, &ce->file, rb_source_location(&ce->line));
+    RB_OBJ_WRITE(klass, &ce->u.file, rb_source_location(&ce->line));
 }
 
 void
@@ -4180,7 +4227,8 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
                        ID2SYM(id), rb_class_name(original_module(front)),
                        rb_class_name(original_module(target)));
         }
-        if (BUILTIN_TYPE(front) == T_CLASS) {
+        if (BUILTIN_TYPE(front) == T_CLASS && rb_class_owned_p(front)) {
+            // only clean-up, and reachable from reads: never write a foreign class
             rb_ivar_delete(front, id, Qundef);
         }
     }
@@ -4215,8 +4263,6 @@ find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
 void
 rb_cvar_set(VALUE klass, ID id, VALUE val)
 {
-    CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(klass, id);
-
     VALUE tmp, front = 0, target = 0;
 
     tmp = klass;
@@ -4231,6 +4277,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     if (RB_TYPE_P(target, T_ICLASS)) {
         target = RBASIC(target)->klass;
     }
+    cvar_set_ractor_check(target, id);
     check_before_mod_set(target, id, val, "class variable");
 
     bool new_cvar = rb_class_ivar_set(target, id, val);
@@ -4285,7 +4332,10 @@ rb_cvar_find(VALUE klass, ID id, VALUE *front)
                           klass, ID2SYM(id));
     }
     cvar_overtaken(*front, target, id);
-    cvar_read_ractor_check(klass, id, value);
+    if (RB_TYPE_P(target, T_ICLASS)) {
+        target = RBASIC(target)->klass;
+    }
+    cvar_read_ractor_check(target, id, value);
     return (VALUE)value;
 }
 
@@ -4464,6 +4514,7 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
         goto not_defined;
     }
     rb_check_frozen(mod);
+    cvar_set_ractor_check(mod, id);
     val = rb_ivar_delete(mod, id, Qundef);
     if (!UNDEF_P(val)) {
         return (VALUE)val;
@@ -4612,8 +4663,13 @@ rb_fields_tbl_copy(VALUE dst, VALUE src)
 
     VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(src);
     if (fields_obj) {
-        RCLASS_WRITABLE_SET_FIELDS_OBJ(dst, rb_imemo_fields_clone(fields_obj));
-        RBASIC_SET_SHAPE_ID(dst, RBASIC_SHAPE_ID(src));
+        VALUE dst_fields_obj = rb_imemo_fields_clone(fields_obj);
+        // `dst` is a freshly allocated object, so it must not inherit `src`'s
+        // frozen status. Callers that need it re-freeze `dst` themselves.
+        shape_id_t shape_id = RBASIC_SHAPE_ID(dst_fields_obj) & ~SHAPE_ID_FL_FROZEN;
+        RBASIC_SET_SHAPE_ID(dst_fields_obj, shape_id);
+        RCLASS_WRITABLE_SET_FIELDS_OBJ(dst, dst_fields_obj);
+        RBASIC_SET_SHAPE_ID(dst, shape_id);
     }
 }
 
@@ -4636,4 +4692,21 @@ rb_const_entry_t *
 rb_const_lookup(VALUE klass, ID id)
 {
     return const_lookup(RCLASS_CONST_TBL(klass), id);
+}
+
+// For readers that may not own klass: rb_const_remove frees the entry once it is out of
+// the table, so copy it while the VM lock keeps it in.
+bool
+rb_const_lookup_copy(VALUE klass, ID id, rb_const_entry_t *ce)
+{
+    bool found = false;
+    RB_VM_LOCKING() {
+        struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
+        VALUE entry;
+        if (tbl && rb_id_table_lookup(tbl, id, &entry)) {
+            *ce = *(rb_const_entry_t *)entry;
+            found = true;
+        }
+    }
+    return found;
 }

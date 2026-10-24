@@ -28,6 +28,7 @@ struct rb_cref_struct;                  /* in method.h */
 struct rb_execution_context_struct;     /* in vm_core.h */
 struct rb_control_frame_struct;         /* in vm_core.h */
 struct rb_callinfo;                     /* in vm_core.h */
+struct rb_gc_mark_ctx;                  /* in internal/gc.h */
 
 enum method_missing_reason {
     MISSING_NOENTRY   = 0x00,
@@ -63,6 +64,7 @@ void rb_lastline_set_up(VALUE val, unsigned int up);
 
 /* vm_eval.c */
 VALUE rb_current_realfilepath(void);
+VALUE rb_current_filepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, VALUE);
 typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
@@ -81,6 +83,7 @@ void rb_check_stack_overflow(void);
 VALUE rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, VALUE data2, long flags);
 struct vm_ifunc *rb_current_ifunc(void);
 VALUE rb_gccct_clear_table(void);
+VALUE rb_funcallv_uncached(VALUE recv, ID mid, int argc, const VALUE *argv);
 VALUE rb_eval_cmd_call_kw(VALUE cmd, int argc, const VALUE *argv, int kw_splat);
 
 #if USE_YJIT || USE_ZJIT
@@ -117,7 +120,7 @@ int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_dup(VALUE btobj);
 void *rb_backtrace_blob_dump(VALUE btobj, int *size_out);
 VALUE rb_backtrace_blob_load(const void *blob, int size);
-void rb_backtrace_blob_mark(const void *blob, int size);
+void rb_backtrace_blob_mark_ctx(const struct rb_gc_mark_ctx *ctx, const void *blob, int size);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);
 VALUE rb_location_ary_to_backtrace(VALUE ary);

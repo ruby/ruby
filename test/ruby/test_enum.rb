@@ -654,6 +654,32 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([nil, nil], [].minmax)
   end
 
+  %i[min max min_by max_by].each do |method|
+    define_method("test_#{method}_with_count_and_saved_block") do
+      with_block = method.end_with?("_by")
+      assert_separately([], <<~RUBY)
+        enum = Object.new
+        class << enum
+          include Enumerable
+          attr_reader :block
+
+          def each(&block)
+            @block = block
+          end
+        end
+
+        yielded = []
+        assert_equal([], enum.#{method}(2) { |x| yielded << x; x })
+        block = enum.block
+        assert_nil(block.call(1))
+        assert_equal(#{with_block ? '[1]' : '[]'}, yielded)
+        GC.start
+        assert_nil(block.call(2))
+        assert_equal(#{with_block ? '[1, 2]' : '[]'}, yielded)
+      RUBY
+    end
+  end
+
   def test_min_by
     assert_equal(3, @obj.min_by {|x| -x })
     cond = ->(x, i) { -x }
@@ -1252,6 +1278,31 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, [2], 3], [[1], [[2]], [3]].each.sum([]))
   end
 
+  [false, true].each do |with_block|
+    define_method("test_sum_with_saved_block#{'_and_block' if with_block}") do
+      assert_separately([], <<~RUBY)
+        enum = Object.new
+        class << enum
+          include Enumerable
+          attr_reader :block
+
+          def each(&block)
+            @block = block
+          end
+        end
+
+        yielded = []
+        assert_equal(0, enum.sum #{'{ |x| yielded << x; x * 2 }' if with_block})
+        block = enum.block
+        assert_nil(block.call(1))
+        assert_equal(#{with_block ? '[1]' : '[]'}, yielded)
+        GC.start
+        assert_nil(block.call(2))
+        assert_equal(#{with_block ? '[1, 2]' : '[]'}, yielded)
+      RUBY
+    end
+  end
+
   def test_hash_sum
     histogram = { 1 => 6, 2 => 4, 3 => 3, 4 => 7, 5 => 5, 6 => 4 }
     assert_equal(100, histogram.sum {|v, n| v * n })
@@ -1295,6 +1346,15 @@ class TestEnumerable < Test::Unit::TestCase
                  olympics.uniq{|k,v| v})
     assert_equal([1, 2, 3, 4, 5, 10], (1..100).uniq{|x| (x**2) % 10 }.first(6))
     assert_equal([1, [1, 2]], Foo.new.to_enum.uniq)
+
+    b = Struct.new(:block) do
+      def each(&blk)
+        self.block = blk
+        nil
+      end
+    end.new
+    b.uniq {|x| x}
+    assert_nil(b.block.call(:foo))
   end
 
   def test_compact

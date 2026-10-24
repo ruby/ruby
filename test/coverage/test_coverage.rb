@@ -489,6 +489,26 @@ def test_branch_coverage_for_eval_repeated
     end;
   end
 
+  def test_line_coverage_for_implicit_nil_return
+    result = {
+      :lines => [1, 1, nil, nil, 1, 1, 1, nil, nil, nil, 1, 1]
+    }
+    assert_coverage(<<~"end;", { lines: true }, result) # Bug #22302
+      def a
+        nil
+      end
+
+      def b(x)
+        if x
+          nil
+        end
+      end
+
+      a
+      b(true)
+    end;
+  end
+
   def test_branch_coverage_for_if_statement
     result = {
       :branches => {

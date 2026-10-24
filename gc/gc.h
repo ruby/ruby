@@ -68,15 +68,18 @@ bool ruby_free_at_exit_p(void);
 void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *passing_data);
 void rb_gc_verify_shareable(VALUE);
 
+typedef void (*rb_gc_registered_addr_cb)(VALUE *slot, VALUE initial_value, void *owner_objspace, void *data);
+
 MODULAR_GC_FN unsigned int rb_gc_vm_lock(const char *file, int line);
 MODULAR_GC_FN void rb_gc_vm_unlock(unsigned int lev, const char *file, int line);
 MODULAR_GC_FN unsigned int rb_gc_vm_lock_no_barrier(const char *file, int line);
 MODULAR_GC_FN void rb_gc_vm_unlock_no_barrier(unsigned int lev, const char *file, int line);
 MODULAR_GC_FN void rb_gc_vm_barrier(void);
 MODULAR_GC_FN void rb_gc_vm_each_objspace(void (*func)(void *objspace, void *data), void *data);
-MODULAR_GC_FN size_t rb_gc_vm_zombie_total_pages(void);
+MODULAR_GC_FN void rb_gc_each_registered_addr(rb_gc_registered_addr_cb func, void *data);
+/* Verifier support, valid only with the world stopped (no extra locking inside). */
+MODULAR_GC_FN bool rb_gc_registered_addr_owned_by_registrant_p(VALUE *addr, void *objspace);
 MODULAR_GC_FN unsigned int rb_gc_vm_ractor_count(void);
-MODULAR_GC_FN void rb_gc_vm_refresh_zombie_pages(void);
 /* No MODULAR_GC_FN: the VM side (ractor.c) calls this too, so it needs external
  * linkage even in a non-modular build (see internal/gc.h). */
 bool rb_gc_single_objspace_p(void);
@@ -95,9 +98,10 @@ MODULAR_GC_FN void rb_gc_update_object_references(void *objspace, VALUE obj);
 MODULAR_GC_FN void rb_gc_update_vm_references(void *objspace);
 MODULAR_GC_FN void rb_gc_event_hook(VALUE obj, rb_event_flag_t event);
 MODULAR_GC_FN void *rb_gc_get_objspace(void);
-MODULAR_GC_FN void rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void *data), void *data);
+MODULAR_GC_FN void rb_gc_run_obj_finalizer(VALUE objid, rb_len_t count, VALUE (*callback)(rb_len_t i, void *data), void *data);
 MODULAR_GC_FN void rb_gc_set_pending_interrupt(void);
 MODULAR_GC_FN void rb_gc_trigger_finalize_deferred(void *objspace, rb_postponed_job_handle_t pjob);
+MODULAR_GC_FN void rb_gc_trigger_postponed_job_on_main(rb_postponed_job_handle_t pjob);
 MODULAR_GC_FN void rb_gc_unset_pending_interrupt(void);
 MODULAR_GC_FN void rb_gc_obj_free_vm_weak_references(VALUE obj);
 MODULAR_GC_FN bool rb_gc_obj_free(void *objspace, VALUE obj);
@@ -120,6 +124,17 @@ MODULAR_GC_FN bool rb_gc_obj_shareable_p(VALUE);
 MODULAR_GC_FN void rb_gc_rp(VALUE);
 MODULAR_GC_FN void rb_gc_handle_weak_references(VALUE obj);
 MODULAR_GC_FN bool rb_gc_obj_needs_cleanup_p(VALUE obj);
+
+/* True when a dead T_DATA of this type cannot have its dfree run during a parallel
+ * local sweep. Such a type is never embedded, which lets the sweep reclaim the slot
+ * immediately. */
+static inline bool
+rb_gc_data_type_deferred_free_p(const rb_data_type_t *type)
+{
+    void (*dfree)(void *) = type->function.dfree;
+    if (!dfree || dfree == RUBY_DEFAULT_FREE) return false;
+    return !(type->flags & RUBY_TYPED_THREAD_SAFE_FREE);
+}
 
 void rb_gc_initialize_vm_context(struct rb_gc_vm_context *context);
 #if USE_MODULAR_GC
@@ -171,7 +186,7 @@ hash_foreach_replace_value(st_data_t key, st_data_t value, st_data_t argp, int e
 static int
 hash_replace_ref_value(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
-    *value = rb_gc_location((VALUE)*value);
+    rb_gc_update_moved((VALUE *)value);
 
     return ST_CONTINUE;
 }
@@ -184,22 +199,6 @@ gc_ref_update_table_values_only(st_table *tbl)
     if (st_foreach_with_replace(tbl, hash_foreach_replace_value, hash_replace_ref_value, 0)) {
         rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
-}
-
-static int
-gc_mark_tbl_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
-{
-    rb_gc_mark_movable((VALUE)value);
-
-    return ST_CONTINUE;
-}
-
-static int
-gc_mark_set_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
-{
-    rb_gc_mark_movable((VALUE)key);
-
-    return ST_CONTINUE;
 }
 
 static int
@@ -219,15 +218,8 @@ hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
 static int
 hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
-    VALUE new_key = rb_gc_location((VALUE)*key);
-    if (new_key != (VALUE)*key) {
-        *key = new_key;
-    }
-
-    VALUE new_value = rb_gc_location((VALUE)*value);
-    if (new_value != (VALUE)*value) {
-        *value = new_value;
-    }
+    rb_gc_update_moved((VALUE *)key);
+    rb_gc_update_moved((VALUE *)value);
 
     return ST_CONTINUE;
 }

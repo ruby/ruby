@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 begin
   require 'io/console'
+  require 'io/console/size'
   require 'test/unit'
   require 'pty'
 rescue LoadError
@@ -9,7 +10,7 @@ end
 class TestIO_Console < Test::Unit::TestCase
   def test_console_namespace
     assert_kind_of(Module, IO::Console)
-  end unless RUBY_ENGINE == "jruby" && RbConfig::CONFIG["host_os"] !~ /mswin|mingw/
+  end
 
   HOST_OS = RbConfig::CONFIG['host_os']
 
@@ -25,14 +26,14 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   begin
-    PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
+    paths = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
   rescue Encoding::CompatibilityError
     $stderr.puts "test_io_console.rb debug"
     $LOADED_FEATURES.each{|path| $stderr.puts [path, path.encoding].inspect}
     raise
   end
-  PATHS.uniq!
-  INCLUDE_OPTS = "-I#{PATHS.join(File::PATH_SEPARATOR)}"
+  paths.uniq!
+  INCLUDE_OPTS = "-I#{paths.join(File::PATH_SEPARATOR)}".freeze
 
   # FreeBSD seems to hang on TTOU when running parallel tests
   # tested on FreeBSD 11.x.
@@ -73,11 +74,19 @@ class TestIO_Console < Test::Unit::TestCase
     end
   end
 
-  TTY_ENHANCED = IO.instance_method(:tty?).arity != 0
+  TTY_MODE_STTY = IO.private_method_defined?(:_io_console_stty)
+
+  def test_stty_mode_arguments
+    mode = IO::Console::Mode.new(
+      "saved\n",
+      "echo icanon isig opost; min = 1; time = 0;",
+    )
+    mode.raw!(min: 2, time: 0.3)
+
+    assert_equal(["saved", "raw", "min", "2", "time", "3"], mode.arguments)
+  end if TTY_MODE_STTY
 
   def test_tty?
-    pend "not supported" unless TTY_ENHANCED
-
     tty = STDIN.tty?(:any)
     assert_include([true, false], tty)
     assert_equal(tty, STDIN.tty?(:any, :any))
@@ -85,9 +94,11 @@ class TestIO_Console < Test::Unit::TestCase
     assert_equal(STDIN.tty?, STDIN.tty?(nil))
   end
 
-  def test_tty_non_tty
-    pend "not supported" unless TTY_ENHANCED
+  def test_isatty
+    assert_equal(IO.instance_method(:tty?), IO.instance_method(:isatty))
+  end
 
+  def test_tty_non_tty
     File.open(IO::NULL) do |f|
       assert_not_predicate(f, :tty?)
       assert_not_operator(f, :tty?, :any)
@@ -292,8 +303,10 @@ class TestIO_Console
           assert_same(IO::Console::Mode, IO.const_get(:ConsoleMode))
         end
 
+        assert_predicate(original, :echo?)
         noecho = original.dup
         noecho.echo = false
+        assert_not_predicate(noecho, :echo?)
         assert_same(noecho, s.send(:console_mode=, noecho))
         assert_not_predicate(s, :echo?)
 
@@ -303,6 +316,15 @@ class TestIO_Console
         assert_same(raw, s.send(:console_mode=, raw))
         s.print "raw\n"
         assert_equal("raw\n", m.gets)
+
+        if min = s.console_mode.min
+          assert_equal(1, min)
+          assert_equal(2, s.raw(min: 2) {s.console_mode.min})
+        end
+        if time = s.console_mode.time
+          assert_equal(0, time)
+          assert_equal(3.1, s.raw(time: 3.14r) {s.console_mode.time})
+        end
       ensure
         s.console_mode = original if original
       end
@@ -321,11 +343,9 @@ class TestIO_Console
       end
       assert_not_empty(mode)
     end
-  end if IO.private_method_defined?(:_io_console_stty)
+  end if TTY_MODE_STTY
 
   def test_tty_on_pty
-    pend "not supported" unless TTY_ENHANCED
-
     helper {|_, s|
       assert_predicate(s, :tty?)
       assert_operator(s, :tty?, :any)
@@ -347,7 +367,9 @@ class TestIO_Console
       assert_equal("\r\n", r.gets)
       assert_equal("\"asdf\"", r.gets.chomp)
     end
+  end
 
+  def test_getpass_eof
     run_pty("p IO.console.getpass('> ')") do |r, w|
       assert_equal("> ", r.readpartial(10))
       sleep 0.1
@@ -356,7 +378,9 @@ class TestIO_Console
       assert_equal("\r\n", r.gets)
       assert_equal("\"asdf\"", r.gets.chomp)
     end
+  end
 
+  def test_getpass_rs
     run_pty("$VERBOSE, $/ = nil, '.'; p IO.console.getpass('> ')") do |r, w|
       assert_equal("> ", r.readpartial(10))
       sleep 0.1
@@ -367,8 +391,19 @@ class TestIO_Console
     end
   end
 
+  def test_getpass_empty
+    helper do |m, s|
+      result = Thread.new {s.getpass("> ")}
+      assert_equal("> ", m.readpartial(10))
+      Timeout.timeout(1) {Thread.pass while s.echo?}
+      m.write "\C-D"
+      assert_nil(result.value)
+      assert_equal("\r\n", m.readpartial(10))
+    end
+  end
+
   def test_iflush
-    pend "stty cannot flush terminal queues" if IO.private_method_defined?(:_io_console_stty)
+    pend "stty cannot flush terminal queues" if TTY_MODE_STTY
 
     helper {|m, s|
       m.print "a"
@@ -391,7 +426,7 @@ class TestIO_Console
   end
 
   def test_ioflush
-    pend "stty cannot flush terminal queues" if IO.private_method_defined?(:_io_console_stty)
+    pend "stty cannot flush terminal queues" if TTY_MODE_STTY
 
     helper {|m, s|
       m.print "a"
@@ -456,6 +491,8 @@ class TestIO_Console
         con.cursor_right(4); con.puts
         con.cursor_left(2); con.puts
         con.cursor_up(1); con.puts
+        p con.cursor
+        p con.cursor
       end;
       assert_equal("\e[6n", r.readpartial(5))
       w.print("\e[12;34R"); w.flush
@@ -464,6 +501,14 @@ class TestIO_Console
       assert_equal("\e[4C", r.gets.chomp)
       assert_equal("\e[2D", r.gets.chomp)
       assert_equal("\e[1A", r.gets.chomp)
+
+      assert_equal("\e[6n", r.readpartial(5))
+      w.print("\e[12R"); w.flush
+      assert_equal("nil", r.gets.chomp)
+
+      assert_equal("\e[6n", r.readpartial(5))
+      w.print("\e[12;34;56R"); w.flush
+      assert_equal("nil", r.gets.chomp)
     end
   end
 
@@ -487,7 +532,7 @@ class TestIO_Console
       assert_equal("b", read.getc)
       assert_false(read.input_pending?)
     end
-  end unless RbConfig::CONFIG["host_os"] =~ /mswin|mingw/ || RUBY_ENGINE == "jruby"
+  end
 
   def assert_ctrl(expect, cc, r, w)
     sleep 0.1
@@ -507,15 +552,6 @@ class TestIO_Console
   end
 
   def test_intr
-    # This test fails randomly on FreeBSD 13
-    # http://rubyci.s3.amazonaws.com/freebsd13/ruby-master/log/20220304T163001Z.fail.html.gz
-    #
-    #   1) Failure:
-    # TestIO_Console#test_intr [/usr/home/chkbuild/chkbuild/tmp/build/20220304T163001Z/ruby/test/io/console/test_io_console.rb:387]:
-    # <"25"> expected but was
-    # <"-e:12:in `p': \e[1mexecution expired (\e[1;4mTimeout::Error\e[m\e[1m)\e[m">.
-    omit if host_os?(/freebsd/)
-
     run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
       begin;
         require 'timeout'
@@ -558,6 +594,10 @@ class TestIO_Console
         assert_ctrl("#{cc.ord}", cc, r, w)
       end
     end
+  end
+
+  def test_getch_timeout
+    assert_equal(["nil"], run_pty("p IO.console.getch(intr: true, time: 0.1, min: 0)"))
   end
 
   unless IO.console
@@ -669,7 +709,7 @@ class TestIO_Console
 
   def test_getch_timeout
     assert_nil(IO.console.getch(intr: true, time: 0.1, min: 0))
-  end
+  end if ENV["CI"]
 
   def test_ttyname
     return unless IO.method_defined?(:ttyname)
@@ -691,7 +731,7 @@ class TestIO_Console
   if noctty
     require 'tempfile'
     NOCTTY = noctty
-    def run_noctty(src)
+    def run_noctty(src, require: "io/console", env: nil)
       t = Tempfile.new("noctty_out")
       t.close
       t2 = Tempfile.new("noctty_run")
@@ -701,12 +741,13 @@ class TestIO_Console
         '-e', 'open(ARGV[0], "w") {|f|',
         '-e',   'STDOUT.reopen(f)',
         '-e',   'STDERR.reopen(f)',
-        '-e',   'require "io/console"',
+        '-e',   "require #{require.dump}",
         '-e',   "f.puts (#{src}).inspect",
         '-e',   'f.flush',
         '-e',   'File.unlink(ARGV[1])',
         '-e', '}',
         '--', t.path, t2.path]
+      cmd.unshift(env) if env
       assert_ruby_status(cmd, rubybin: NOCTTY[0])
       30.times do
         break unless File.exist?(t2.path)
@@ -720,9 +761,28 @@ class TestIO_Console
     end
 
     def test_noctty
-      assert_equal(["nil"], run_noctty("IO.console"))
+      assert_equal(["[nil, nil]"], run_noctty("[IO.console, IO.console(:tty?)]"))
       if IO.method_defined?(:ttyname)
         assert_equal(["nil"], run_noctty("STDIN.ttyname rescue $!"))
+      end
+    end
+
+    def test_default_console_size
+      [
+        [40, 100],
+        [nil, 50],
+        [30, nil],
+        [0, 50],
+        [30, 0],
+        [-1, 50],
+        [30, -1],
+      ].each do |lines, columns|
+        result = run_noctty("IO.console_size",
+                            require: "io/console/size",
+                            env: {"LINES"=>lines&.to_s, "COLUMNS"=>columns&.to_s})
+        lines = 25 unless lines&.positive?
+        columns = 80 unless columns&.positive?
+        assert_equal([[lines, columns].inspect], result)
       end
     end
   end

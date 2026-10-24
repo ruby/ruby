@@ -144,6 +144,7 @@ module Spec
         "spec/bundler/ci_detector_spec.rb",
       ],
       shard_d: [
+        "spec/bundler/cli/exec_spec.rb",
         "spec/bundler/rubygems_ext_spec.rb",
         "spec/bundler/resolver/cooldown_spec.rb",
         "spec/install/cooldown_spec.rb",
@@ -199,6 +200,7 @@ module Spec
         "spec/bundler/plugin/unloaded_source_spec.rb",
         "spec/bundler/cli/open_spec.rb",
         "spec/commands/prune_spec.rb",
+        "spec/install/gemfile/git_sparse_checkout_spec.rb",
       ],
     }.freeze
   end

@@ -90,16 +90,18 @@ The following is a list of all configuration keys and their purpose\. You can le
 .IP
 The effective cooldown for any given gem is resolved from three layers, highest precedence first:
 .IP "1." 4
-CLI flag \fB\-\-cooldown N\fR on \fBinstall\fR, \fBupdate\fR, \fBadd\fR, and \fBoutdated\fR\.
+CLI flag \fB\-\-cooldown N\fR on \fBinstall\fR, \fBupdate\fR, \fBadd\fR, \fBcache\fR, \fBlock\fR, and \fBoutdated\fR\.
 .IP "2." 4
 This setting (\fBbundle config set cooldown N\fR or \fBBUNDLE_COOLDOWN=N\fR)\.
 .IP "3." 4
 The per\-source \fBcooldown:\fR keyword in the Gemfile, such as \fBsource "https://rubygems\.org", cooldown: 7\fR\.
 .IP "" 0
 .IP
-The CLI flag and this setting apply uniformly to every source, including ones declared with their own \fBcooldown:\fR value\. To keep a private registry permanently exempt while still cooling down public gems, declare \fBsource "https://internal", cooldown: 0\fR in the Gemfile; remember that \fB\-\-cooldown N\fR on the command line will still override it for that single run\.
+The CLI flag and this setting apply uniformly to every source, including ones declared with their own \fBcooldown:\fR value\. To exempt a private registry while still cooling down public gems, declare \fBsource "https://internal", cooldown: 0\fR in the Gemfile\. That exemption is not absolute\. \fB\-\-cooldown N\fR on the command line overrides it for a single run, and a gemrc cooldown raises it the same way it raises any other layer, as described below\. Where a gemrc cooldown is configured, \fB\-\-cooldown 0\fR is the only way to get the exemption back\.
 .IP
-The value must be a non\-negative integer\. \fB\-\-cooldown\fR rejects anything else outright, while a value coming from this setting or from \fBBUNDLE_COOLDOWN\fR only warns, because a typo left in a config file should not make every command fail\. Such a value disables the cooldown for every source, including sources that declare their own \fBcooldown:\fR in the Gemfile\.
+RubyGems has a cooldown of its own, set with \fBgem\fR's \fB\-\-cooldown\fR flag or the \fB:cooldown:\fR key in the gemrc file, and the two are read together\. Whatever the three layers above resolve to is raised to the gemrc value, and the longer of the two wins\. It carries the other way round as well\. \fBgem install\fR, \fBgem update\fR and \fBgem outdated\fR read this setting and \fBBUNDLE_COOLDOWN\fR, so a cooldown configured for either tool covers both\. The Gemfile per\-source \fBcooldown:\fR is the exception, since \fBgem\fR never reads a Gemfile\. A configured \fB0\fR takes part like any other value rather than switching the cooldown off, so \fBbundle config set cooldown 0\fR does not cancel a gemrc cooldown\. The \fB\-\-cooldown\fR flag is what bypasses the other tool's setting\. It wins outright, which is why \fB\-\-cooldown 0\fR remains the escape hatch for an urgent update\.
+.IP
+The value must be a non\-negative integer\. \fB\-\-cooldown\fR rejects anything else outright, while a value coming from this setting, from \fBBUNDLE_COOLDOWN\fR or from the gemrc file only warns, because a typo left in a config file should not make every command fail\. Such a value takes no part in the resolution above, so a per\-source \fBcooldown:\fR in the Gemfile, or a usable value configured for the other tool, still applies\. The warning names where the value came from, since either tool reports the other's setting as well as its own\.
 .IP
 Cooldown filtering depends on the gem server providing a per\-version \fBcreated_at\fR timestamp in the v2 compact\-index format\. Versions without that metadata \- older gem servers, historical entries that predate the v2 cutover on \fBrubygems\.org\fR, or private registries that still emit the v1 format \- are treated as outside the cooldown window and remain resolvable\. If you rely on cooldown for supply\-chain protection, confirm that the gem server emits \fBcreated_at\fR in its \fB/info/<gem>\fR responses\.
 .IP

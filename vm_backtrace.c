@@ -18,6 +18,7 @@
 #include "internal/ruby_parser.h"
 #include "internal/vm.h"
 #include "iseq.h"
+#include "prism_compile.h"
 #include "ruby/debug.h"
 #include "ruby/encoding.h"
 #include "ruby/internal/intern/io.h"
@@ -143,7 +144,7 @@ static void
 location_ref_update(void *ptr)
 {
     struct valued_frame_info *vfi = ptr;
-    vfi->btobj = rb_gc_location(vfi->btobj);
+    rb_gc_update_moved(&vfi->btobj);
 }
 
 static void
@@ -521,7 +522,10 @@ iseq_from_e_script_p(const rb_iseq_t *iseq, VALUE path, uint64_t source_hash)
         !RTEST(rb_e_script)) {
         return false;
     }
-    if (!location_source_hash_matches(rb_e_script, source_hash)) return false;
+    bool matches = ISEQ_BODY(iseq)->prism ?
+        pm_source_hash_matches(rb_e_script, path, source_hash) :
+        location_source_hash_matches(rb_e_script, source_hash);
+    if (!matches) return false;
 
     const rb_iseq_t *source_iseq = iseq;
     for (; source_iseq; source_iseq = ISEQ_BODY(source_iseq)->parent_iseq) {
@@ -535,7 +539,7 @@ iseq_from_e_script_p(const rb_iseq_t *iseq, VALUE path, uint64_t source_hash)
     rb_code_location_t source_location;
     bool found;
     if (ISEQ_BODY(iseq)->prism) {
-        found = pm_node_source_location(rb_e_script, path, 1, node_id, &source_location);
+        found = pm_node_source_location(rb_e_script, path, 1, node_id, source_hash, &source_location);
     }
     else {
         found = rb_ast_node_source_location(
@@ -631,7 +635,9 @@ location_source_range_m(VALUE self)
     if (NIL_P(parser_path)) {
         parser_path = rb_str_new_cstr("(eval)");
     }
-    if (!location_source_hash_matches(source, source_hash)) {
+    // Prism hashes the source itself, so for prism-compiled code the source
+    // hash is checked by pm_node_source_location.
+    if (!ISEQ_BODY(iseq)->prism && !location_source_hash_matches(source, source_hash)) {
         rb_raise(rb_eRuntimeError, "source has been modified");
     }
 
@@ -644,6 +650,7 @@ location_source_range_m(VALUE self)
             parser_path,
             first_lineno,
             node_id,
+            source_hash,
             &code_location
         );
     }
@@ -798,9 +805,9 @@ backtrace_mark(void *ptr)
 static void
 location_update_entry(rb_backtrace_location_t *fi)
 {
-    fi->cme = (rb_callable_method_entry_t *)rb_gc_location((VALUE)fi->cme);
+    rb_gc_update_moved_ptr(&fi->cme);
     if (fi->iseq) {
-        fi->iseq = (rb_iseq_t *)rb_gc_location((VALUE)fi->iseq);
+        rb_gc_update_moved_ptr(&fi->iseq);
     }
 }
 
@@ -813,8 +820,8 @@ backtrace_update(void *ptr)
     for (i=0; i<s; i++) {
         location_update_entry(&bt->backtrace[i]);
     }
-    bt->strary = rb_gc_location(bt->strary);
-    bt->locary = rb_gc_location(bt->locary);
+    rb_gc_update_moved(&bt->strary);
+    rb_gc_update_moved(&bt->locary);
 }
 
 static const rb_data_type_t backtrace_data_type = {
@@ -838,7 +845,7 @@ rb_backtrace_p(VALUE obj)
 }
 
 static VALUE
-backtrace_alloc_capa(long num_frames, rb_backtrace_t **backtrace)
+backtrace_alloc_capa(rb_len_t num_frames, rb_backtrace_t **backtrace)
 {
     size_t memsize = offsetof(rb_backtrace_t, backtrace) + num_frames * sizeof(rb_backtrace_location_t);
     VALUE btobj = rb_data_typed_object_zalloc(rb_cBacktrace, memsize, &backtrace_data_type);
@@ -869,8 +876,8 @@ rb_backtrace_dup(VALUE btobj)
 
 /* Copy a backtrace's frames into an off-heap blob for a Ractor copy courier.  A frame
  * only references shareable iseq / method-entry imemos, so the blob can carry them as
- * they are.  It has no compaction update hook, so rb_backtrace_blob_mark pins them
- * (rb_gc_mark, not _movable) for as long as the message is in flight. */
+ * they are.  It has no compaction update hook, so rb_backtrace_blob_mark_ctx pins them
+ * (rb_gc_mark_ctx, not _movable) for as long as the message is in flight. */
 void *
 rb_backtrace_blob_dump(VALUE btobj, int *size_out)
 {
@@ -903,12 +910,12 @@ rb_backtrace_blob_load(const void *blob_, int size)
 }
 
 void
-rb_backtrace_blob_mark(const void *blob_, int size)
+rb_backtrace_blob_mark_ctx(const struct rb_gc_mark_ctx *ctx, const void *blob_, int size)
 {
     const rb_backtrace_location_t *blob = blob_;
     for (int i = 0; i < size; i++) {
-        if (blob[i].cme) rb_gc_mark((VALUE)blob[i].cme);
-        if (blob[i].iseq) rb_gc_mark((VALUE)blob[i].iseq);
+        if (blob[i].cme) rb_gc_mark_ctx(ctx, (VALUE)blob[i].cme);
+        if (blob[i].iseq) rb_gc_mark_ctx(ctx, (VALUE)blob[i].iseq);
     }
 }
 
@@ -960,7 +967,7 @@ bt_yield_loc(rb_backtrace_location_t *loc, long num_frames, VALUE btobj)
 }
 
 static VALUE
-rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_frame, long num_frames, int* start_too_large, bool skip_internal, bool do_yield)
+rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, rb_len_t start_frame, rb_len_t num_frames, int* start_too_large, bool skip_internal, bool do_yield)
 {
     const rb_control_frame_t *cfp = ec->cfp;
     const rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
@@ -1182,10 +1189,10 @@ rb_location_ary_to_backtrace(VALUE ary)
     }
 
     rb_backtrace_t *new_backtrace;
-    long num_frames = RARRAY_LEN(ary);
+    rb_len_t num_frames = RARRAY_LEN(ary);
     VALUE btobj = backtrace_alloc_capa(num_frames, &new_backtrace);
 
-    for (long index = 0; index < RARRAY_LEN(ary); index++) {
+    for (rb_len_t index = 0; index < RARRAY_LEN(ary); index++) {
         VALUE locobj = RARRAY_AREF(ary, index);
 
         if (!rb_frame_info_p(locobj)) {
@@ -1556,11 +1563,11 @@ rb_make_backtrace(void)
     return rb_ec_backtrace_str_ary(GET_EC(), RUBY_BACKTRACE_START, RUBY_ALL_BACKTRACE_LINES);
 }
 
-static long
-ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv, int lev_default, int lev_plus, long *len_ptr)
+static rb_len_t
+ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv, int lev_default, int lev_plus, rb_len_t *len_ptr)
 {
     VALUE level, vn, opts;
-    long lev, n;
+    rb_len_t lev, n;
 
     rb_scan_args(argc, argv, "02:", &level, &vn, &opts);
 
@@ -1576,12 +1583,12 @@ ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv
         break;
       case 1:
         {
-            long beg, len, bt_size = backtrace_size(ec);
+            rb_len_t beg, len, bt_size = backtrace_size(ec);
             switch (rb_range_beg_len(level, &beg, &len, bt_size - lev_plus, 0)) {
               case Qfalse:
-                lev = NUM2LONG(level);
+                lev = NUM2LEN(level);
                 if (lev < 0) {
-                    rb_raise(rb_eArgError, "negative level (%ld)", lev);
+                    rb_raise(rb_eArgError, "negative level (%"PRIdLEN")", lev);
                 }
                 lev += lev_plus;
                 n = RUBY_ALL_BACKTRACE_LINES;
@@ -1596,13 +1603,13 @@ ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv
             break;
         }
       case 2:
-        lev = NUM2LONG(level);
-        n = NUM2LONG(vn);
+        lev = NUM2LEN(level);
+        n = NUM2LEN(vn);
         if (lev < 0) {
-            rb_raise(rb_eArgError, "negative level (%ld)", lev);
+            rb_raise(rb_eArgError, "negative level (%"PRIdLEN")", lev);
         }
         if (n < 0) {
-            rb_raise(rb_eArgError, "negative size (%ld)", n);
+            rb_raise(rb_eArgError, "negative size (%"PRIdLEN")", n);
         }
         lev += lev_plus;
         break;
@@ -1618,7 +1625,7 @@ ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv
 static VALUE
 ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *argv, int lev_default, int lev_plus, int to_str)
 {
-    long lev, n;
+    rb_len_t lev, n;
     VALUE btval, r;
     int too_large;
 
@@ -1763,7 +1770,7 @@ static VALUE
 each_caller_location(int argc, VALUE *argv, VALUE _)
 {
     rb_execution_context_t *ec = GET_EC();
-    long n, lev = ec_backtrace_range(ec, argc, argv, 1, 1, &n);
+    rb_len_t n, lev = ec_backtrace_range(ec, argc, argv, 1, 1, &n);
     if (lev >= 0 && n != 0) {
         rb_ec_partial_backtrace_object(ec, lev, n, NULL, FALSE, TRUE);
     }
@@ -2048,7 +2055,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
 }
 
 static VALUE
-frame_get(const rb_debug_inspector_t *dc, long index)
+frame_get(const rb_debug_inspector_t *dc, rb_len_t index)
 {
     if (index < 0 || index >= RARRAY_LEN(dc->contexts)) {
         rb_raise(rb_eArgError, "no such frame");
@@ -2057,28 +2064,28 @@ frame_get(const rb_debug_inspector_t *dc, long index)
 }
 
 VALUE
-rb_debug_inspector_frame_self_get(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_self_get(const rb_debug_inspector_t *dc, rb_len_t index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, CALLER_BINDING_SELF);
 }
 
 VALUE
-rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, rb_len_t index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, CALLER_BINDING_CLASS);
 }
 
 VALUE
-rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, rb_len_t index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, CALLER_BINDING_BINDING);
 }
 
 VALUE
-rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, rb_len_t index)
 {
     VALUE frame = frame_get(dc, index);
     VALUE iseq = rb_ary_entry(frame, CALLER_BINDING_ISEQ);
@@ -2087,7 +2094,7 @@ rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index)
 }
 
 VALUE
-rb_debug_inspector_frame_depth(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_depth(const rb_debug_inspector_t *dc, rb_len_t index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, CALLER_BINDING_DEPTH);
@@ -2397,9 +2404,9 @@ rb_profile_frame_full_label(VALUE frame)
         return label;
     }
     else {
-        long label_length = RSTRING_LEN(label);
-        long base_label_length = RSTRING_LEN(base_label);
-        int prefix_len = rb_long2int(label_length - base_label_length);
+        rb_len_t label_length = RSTRING_LEN(label);
+        rb_len_t base_label_length = RSTRING_LEN(base_label);
+        int prefix_len = rb_len2int(label_length - base_label_length);
 
         return rb_sprintf("%.*s%"PRIsVALUE, prefix_len, RSTRING_PTR(label), qualified_method_name);
     }

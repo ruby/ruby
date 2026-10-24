@@ -544,7 +544,7 @@ rb_cp50220_encoder = {
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     3, /* max_input */
-    5, /* max_output */
+    9, /* max_output */
     asciicompat_encoder, /* asciicompat_type */
     3, iso2022jp_init, iso2022jp_init, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_cp50220_encoder,

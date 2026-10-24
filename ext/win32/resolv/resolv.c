@@ -247,11 +247,11 @@ InitVM_resolv(void)
 
     reg_key_class = regkey;
     rb_undef_alloc_func(regkey);
-    rb_define_private_method(singl, "get_dns_server_list", get_dns_server_list, 0);
-    rb_define_private_method(singl, "tcpip_params", tcpip_params_open, 0);
-    rb_define_method(regkey, "open", reg_open, 1);
-    rb_define_method(regkey, "each_key", reg_each_key, 0);
-    rb_define_method(regkey, "value", reg_value, 1);
+    rb_define_private_method(singl, "get_dns_server_list", RUBY_METHOD_FUNC(get_dns_server_list), 0);
+    rb_define_private_method(singl, "tcpip_params", RUBY_METHOD_FUNC(tcpip_params_open), 0);
+    rb_define_method(regkey, "open", RUBY_METHOD_FUNC(reg_open), 1);
+    rb_define_method(regkey, "each_key", RUBY_METHOD_FUNC(reg_each_key), 0);
+    rb_define_method(regkey, "value", RUBY_METHOD_FUNC(reg_value), 1);
 }
 
 void

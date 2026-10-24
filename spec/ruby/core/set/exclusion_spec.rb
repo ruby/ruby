@@ -10,9 +10,13 @@ describe "Set#^" do
     (@set ^ [3, 4, 5]).should == Set[1, 2, 5]
   end
 
+  it "correctly excludes elements that appear multiple times in the passed Enumerable" do
+    (@set ^ [3, 4, 5, 5]).should == Set[1, 2, 5]
+  end
+
   it "raises an ArgumentError when passed a non-Enumerable" do
-    -> { @set ^ 3 }.should.raise(ArgumentError)
-    -> { @set ^ Object.new }.should.raise(ArgumentError)
+    -> { @set ^ 3 }.should.raise(ArgumentError, "value must be enumerable")
+    -> { @set ^ Object.new }.should.raise(ArgumentError, "value must be enumerable")
   end
 
   ruby_version_is ""..."4.0" do

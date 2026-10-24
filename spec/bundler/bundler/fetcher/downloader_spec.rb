@@ -39,12 +39,13 @@ RSpec.describe Bundler::Fetcher::Downloader do
 
     context "when the request response is a Gem::Net::HTTPRedirection" do
       let(:http_response) { Gem::Net::HTTPRedirection.new(httpv, 308, "Moved") }
+      let(:options) { {} }
 
       before { http_response["location"] = "http://www.redirect-uri.com/api/v2/endpoint" }
 
       it "should try to fetch the redirect uri and iterate the # requests counter" do
         expect(subject).to receive(:fetch).with(Gem::URI("http://www.uri-to-fetch.com/api/v2/endpoint"), options, 0).and_call_original
-        expect(subject).to receive(:fetch).with(Gem::URI("http://www.redirect-uri.com/api/v2/endpoint"), options, 1)
+        expect(subject).to receive(:fetch).with(Gem::URI("http://www.redirect-uri.com/api/v2/endpoint"), { "X-Gemfile-Source" => nil }, 1)
         subject.fetch(uri, options, counter)
       end
 
@@ -57,6 +58,43 @@ RSpec.describe Bundler::Fetcher::Downloader do
           expect(subject).to receive(:fetch).with(Gem::URI("ssh://username:password@www.uri-to-fetch.com/api/v2/endpoint"), options, 0).and_call_original
           expect(subject).to receive(:fetch).with(Gem::URI("ssh://username:password@www.uri-to-fetch.com/api/v1/endpoint"), options, 1)
           subject.fetch(uri, options, counter)
+        end
+      end
+
+      context "when the redirect uri is on the same host but another port" do
+        let(:uri) { Gem::URI("https://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
+
+        before { http_response["location"] = "https://www.uri-to-fetch.com:8443/api/v1/endpoint" }
+
+        it "should not set the user and password for the redirect uri" do
+          expect(subject).to receive(:fetch).with(uri, options, 0).and_call_original
+          expect(subject).to receive(:fetch).with(Gem::URI("https://www.uri-to-fetch.com:8443/api/v1/endpoint"), { "X-Gemfile-Source" => nil }, 1)
+          subject.fetch(uri, options, counter)
+        end
+      end
+
+      context "when the redirect uri is on the same host but another scheme" do
+        let(:uri) { Gem::URI("http://username:password@www.uri-to-fetch.com:8080/api/v2/endpoint") }
+
+        before { http_response["location"] = "https://www.uri-to-fetch.com:8080/api/v1/endpoint" }
+
+        it "should not set the user and password for the redirect uri" do
+          expect(subject).to receive(:fetch).with(uri, options, 0).and_call_original
+          expect(subject).to receive(:fetch).with(Gem::URI("https://www.uri-to-fetch.com:8080/api/v1/endpoint"), { "X-Gemfile-Source" => nil }, 1)
+          subject.fetch(uri, options, counter)
+        end
+      end
+
+      context "when the redirect uri downgrades https to http" do
+        let(:uri) { Gem::URI("https://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
+
+        before { http_response["location"] = "http://www.uri-to-fetch.com/api/v2/endpoint" }
+
+        it "should raise a Bundler::HTTPError instead of following the redirect" do
+          expect(subject).to receive(:fetch).with(uri, options, 0).and_call_original
+          expect(subject).not_to receive(:fetch).with(Gem::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint"), options, 1)
+          expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::HTTPError,
+            "Redirecting to a non-https URI is not allowed: http://www.uri-to-fetch.com/api/v2/endpoint")
         end
       end
     end
@@ -157,6 +195,19 @@ RSpec.describe Bundler::Fetcher::Downloader do
       it "should return the successful response" do
         result = subject.fetch(uri, options, counter)
         expect(result).to eq(success_response)
+      end
+
+      context "when the retry without the Range header gets a 416 too" do
+        before do
+          allow(subject).to receive(:request).with(uri, { "If-None-Match" => "some-etag" }).and_return(http_response)
+        end
+
+        it "should raise a Bundler::HTTPError instead of retrying again" do
+          expect(subject).to receive(:request).with(uri, options).ordered
+          expect(subject).to receive(:request).with(uri, { "If-None-Match" => "some-etag" }).ordered
+          expect { subject.fetch(uri, options, counter) }.
+            to raise_error(Bundler::HTTPError, "Gem::Net::HTTPRangeNotSatisfiable: Body with info")
+        end
       end
     end
 

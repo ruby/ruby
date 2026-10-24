@@ -35,7 +35,7 @@ const rb_data_type_t ossl_evp_pkey_type = {
     {
         0, ossl_evp_pkey_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1231,11 +1231,11 @@ ossl_pkey_sign(int argc, VALUE *argv, VALUE self)
         EVP_MD_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_DigestSign");
     }
-    if (siglen > LONG_MAX) {
+    if (siglen > RB_LEN_MAX) {
         EVP_MD_CTX_free(ctx);
         rb_raise(ePKeyError, "signature would be too large");
     }
-    sig = ossl_str_new(NULL, (long)siglen, &state);
+    sig = ossl_str_new(NULL, (rb_len_t)siglen, &state);
     if (state) {
         EVP_MD_CTX_free(ctx);
         rb_jump_tag(state);
@@ -1392,11 +1392,11 @@ ossl_pkey_sign_raw(int argc, VALUE *argv, VALUE self)
         EVP_PKEY_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_PKEY_sign");
     }
-    if (outlen > LONG_MAX) {
+    if (outlen > RB_LEN_MAX) {
         EVP_PKEY_CTX_free(ctx);
         rb_raise(ePKeyError, "signature would be too large");
     }
-    sig = ossl_str_new(NULL, (long)outlen, &state);
+    sig = ossl_str_new(NULL, (rb_len_t)outlen, &state);
     if (state) {
         EVP_PKEY_CTX_free(ctx);
         rb_jump_tag(state);
@@ -1533,7 +1533,7 @@ ossl_pkey_verify_recover(int argc, VALUE *argv, VALUE self)
         EVP_PKEY_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_PKEY_verify_recover");
     }
-    out = ossl_str_new(NULL, (long)outlen, &state);
+    out = ossl_str_new(NULL, (rb_len_t)outlen, &state);
     if (state) {
         EVP_PKEY_CTX_free(ctx);
         rb_jump_tag(state);
@@ -1584,11 +1584,11 @@ ossl_pkey_derive(int argc, VALUE *argv, VALUE self)
         EVP_PKEY_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_PKEY_derive");
     }
-    if (keylen > LONG_MAX) {
+    if (keylen > RB_LEN_MAX) {
         EVP_PKEY_CTX_free(ctx);
         rb_raise(ePKeyError, "derived key would be too large");
     }
-    str = ossl_str_new(NULL, (long)keylen, &state);
+    str = ossl_str_new(NULL, (rb_len_t)keylen, &state);
     if (state) {
         EVP_PKEY_CTX_free(ctx);
         rb_jump_tag(state);
@@ -1633,16 +1633,16 @@ ossl_pkey_encapsulate(VALUE self)
         EVP_PKEY_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_PKEY_encapsulate");
     }
-    if (ciphertextlen > LONG_MAX || shared_secretlen > LONG_MAX) {
+    if (ciphertextlen > RB_LEN_MAX || shared_secretlen > RB_LEN_MAX) {
         EVP_PKEY_CTX_free(ctx);
         rb_raise(ePKeyError, "encapsulated data would be too large");
     }
-    ciphertext = ossl_str_new(NULL, (long)ciphertextlen, &state);
+    ciphertext = ossl_str_new(NULL, (rb_len_t)ciphertextlen, &state);
     if (state) {
         EVP_PKEY_CTX_free(ctx);
         rb_jump_tag(state);
     }
-    shared_secret = ossl_str_new(NULL, (long)shared_secretlen, &state);
+    shared_secret = ossl_str_new(NULL, (rb_len_t)shared_secretlen, &state);
     if (state) {
         EVP_PKEY_CTX_free(ctx);
         rb_jump_tag(state);
@@ -1695,11 +1695,11 @@ ossl_pkey_decapsulate(VALUE self, VALUE ciphertext)
         EVP_PKEY_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_PKEY_decapsulate");
     }
-    if (shared_secretlen > LONG_MAX) {
+    if (shared_secretlen > RB_LEN_MAX) {
         EVP_PKEY_CTX_free(ctx);
         rb_raise(ePKeyError, "decapsulated data would be too large");
     }
-    shared_secret = ossl_str_new(NULL, (long)shared_secretlen, &state);
+    shared_secret = ossl_str_new(NULL, (rb_len_t)shared_secretlen, &state);
     if (state) {
         EVP_PKEY_CTX_free(ctx);
         rb_jump_tag(state);
@@ -1774,11 +1774,11 @@ ossl_pkey_encrypt(int argc, VALUE *argv, VALUE self)
         EVP_PKEY_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_PKEY_encrypt");
     }
-    if (outlen > LONG_MAX) {
+    if (outlen > RB_LEN_MAX) {
         EVP_PKEY_CTX_free(ctx);
         rb_raise(ePKeyError, "encrypted data would be too large");
     }
-    str = ossl_str_new(NULL, (long)outlen, &state);
+    str = ossl_str_new(NULL, (rb_len_t)outlen, &state);
     if (state) {
         EVP_PKEY_CTX_free(ctx);
         rb_jump_tag(state);
@@ -1837,11 +1837,11 @@ ossl_pkey_decrypt(int argc, VALUE *argv, VALUE self)
         EVP_PKEY_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_PKEY_decrypt");
     }
-    if (outlen > LONG_MAX) {
+    if (outlen > RB_LEN_MAX) {
         EVP_PKEY_CTX_free(ctx);
         rb_raise(ePKeyError, "decrypted data would be too large");
     }
-    str = ossl_str_new(NULL, (long)outlen, &state);
+    str = ossl_str_new(NULL, (rb_len_t)outlen, &state);
     if (state) {
         EVP_PKEY_CTX_free(ctx);
         rb_jump_tag(state);

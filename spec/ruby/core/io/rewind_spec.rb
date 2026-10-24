@@ -47,6 +47,14 @@ describe "IO#rewind" do
     @io.rewind.should == 0
   end
 
+  ruby_bug "#20919", "" ... "3.4" do
+    it "clears the character buffer" do
+      @io.ungetc("a")
+      @io.rewind
+      @io.getc.should == "V"
+    end
+  end
+
   it "raises IOError on closed stream" do
     -> { IOSpecs.closed_io.rewind }.should.raise(IOError)
   end

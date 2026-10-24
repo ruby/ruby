@@ -124,8 +124,9 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
         return NULL;
     }
 #ifdef DOSISH
-# ifndef CharNext
-# define CharNext(p) ((p)+1)
+# ifndef DLN_CHAR_NEXT
+/* fname is UTF-8 unless win32.c includes this file with its code page */
+# define DLN_CHAR_NEXT(p) ((p)+1)
 # endif
 # ifdef DOSISH_DRIVE_LETTER
     if ((unsigned char)((p[0] | 0x20) - 'a') < 26u  && p[1] == ':') {
@@ -151,7 +152,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
             p++;
             break;
           default:
-            p = CharNext(p);
+            p = DLN_CHAR_NEXT(p);
         }
     }
     if (ext) {

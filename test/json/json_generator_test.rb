@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 require_relative 'test_helper'
@@ -84,6 +83,51 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '"World"', "World".to_json(strict: true)
     assert_equal '["hello"]', dump([:hello], strict: true)
     assert_equal '{"hello":"world"}', dump({ hello: :world }, strict: true)
+  end
+
+  def test_dump_deprecated_limit
+    io = StringIO.new
+    JSON.dump([1], io, 0)
+    assert_equal '[1]', io.string
+  end
+
+  def test_dump_string_mutated_during_io_write
+    [{}, {ascii_only: true}, {script_safe: true}, {buffer_initial_length: 1}].each do |options|
+      ['a', "a\né/"].each do |pattern|
+        string = pattern * 100_000
+        assert_dump_preserves_string_during_io_write(string, string, options)
+      end
+    end
+  end
+
+  def test_dump_fragment_mutated_during_io_write
+    string = JSON.generate('a' * 100_000)
+    assert_dump_preserves_string_during_io_write(JSON::Fragment.new(string), string)
+  end
+
+  def test_dump_to_json_result_mutated_during_io_write
+    string = JSON.generate('a' * 100_000)
+    object = Object.new
+    object.define_singleton_method(:to_json) { |*| string }
+    assert_dump_preserves_string_during_io_write(object, string)
+  end
+
+  def assert_dump_preserves_string_during_io_write(object, string, options = {})
+    expected = JSON.dump([object], options)
+    io = StringIO.new
+    mutated = false
+    io.define_singleton_method(:write) do |chunk|
+      unless mutated
+        string.setbyte(0, 'b'.ord)
+        string.replace('changed')
+        mutated = true
+        GC.start
+      end
+      super(chunk)
+    end
+    assert_same io, JSON.dump([object], io, options)
+    assert_equal 'changed', string
+    assert_equal true, expected == io.string, 'IO output must preserve the original string'
   end
 
   def test_not_frozen
@@ -322,6 +366,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
       space: "",
       space_before: "",
       sort_keys: false,
+      rfc8785: false,
     }.sort_by { |n,| n.to_s }.to_h, state.to_h.sort_by { |n,| n.to_s }.to_h)
 
     state = JSON::State.new(allow_duplicate_key: true)
@@ -341,6 +386,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
       space: "",
       space_before: "",
       sort_keys: false,
+      rfc8785: false,
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
@@ -431,6 +477,18 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_raise(JSON::NestingError) { JSON.pretty_generate(ary) }
   end
 
+  def test_nesting_error_reports_attempted_depth
+    [[[]], { a: {} }].each do |object|
+      [0, 1].each do |depth|
+        state = JSON.state.new(depth: depth, max_nesting: depth + 1)
+        error = assert_raise(JSON::NestingError) { state.generate(object) }
+        assert_match(/\Anesting of #{depth + 2} is too deep\./, error.message)
+        assert_equal depth, state.depth
+        assert_equal '[]', state.generate([])
+      end
+    end
+  end
+
   def test_depth_nesting_error_to_json
     ary = []; ary << ary
     s = JSON.state.new(depth: 1)
@@ -511,6 +569,61 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '5', state2.array_nl
   end
 
+  def test_configure_only_writes_the_string_options_it_is_given
+    state = JSON.state.new(indent: '1', space: '2', space_before: '3', object_nl: '4', array_nl: '5')
+    state.configure(space: '9')
+    assert_equal '1', state.indent
+    assert_equal '9', state.space
+    assert_equal '3', state.space_before
+    assert_equal '4', state.object_nl
+    assert_equal '5', state.array_nl
+    state.merge(array_nl: '8')
+    assert_equal '1', state.indent
+    assert_equal '9', state.space
+    assert_equal '3', state.space_before
+    assert_equal '4', state.object_nl
+    assert_equal '8', state.array_nl
+  end
+
+  def test_configure_keeps_the_layout_of_a_pretty_state
+    state = JSON.state.new(indent: '  ', object_nl: "\n", array_nl: "\n")
+    state.configure(depth: 0)
+    assert_equal %({\n  "foo":[\n    1\n  ]\n}), state.generate({ 'foo' => [1] })
+  end
+
+  def test_configure_only_writes_the_other_options_it_is_given
+    state = JSON.state.new(max_nesting: 3, allow_nan: true, ascii_only: true, script_safe: true,
+                           strict: true, buffer_initial_length: 32)
+    state.configure(indent: '1')
+    assert_equal '1', state.indent
+    assert_equal 3, state.max_nesting
+    assert_equal true, state.allow_nan?
+    assert_equal true, state.ascii_only?
+    assert_equal true, state.script_safe?
+    assert_equal true, state.strict?
+    assert_equal 32, state.buffer_initial_length
+  end
+
+  def test_configure_keeps_sort_keys
+    state = JSON.state.new(sort_keys: true)
+    state.configure(depth: 0)
+    assert_equal '{"a":2,"b":1}', state.generate({ 'b' => 1, 'a' => 2 })
+  end
+
+  def test_configure_keeps_as_json
+    as_json = ->(object, _is_key) { object.to_s }
+    state = JSON.state.new(strict: true, as_json: as_json)
+    state.configure(depth: 0)
+    assert_equal as_json, state.as_json
+  end
+
+  def test_configure_writes_a_string_option_given_as_nil
+    state = JSON.state.new(indent: '1', space: '2')
+    state.configure(indent: nil)
+    assert_equal '', state.indent
+    assert_equal '2', state.space
+  end
+
   def test_configure_hash_conversion
     state = JSON.state.new
     state.configure(indent: '1')
@@ -557,6 +670,16 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_json_state_to_h_roundtrip
     state = JSON.state.new
     assert_equal state.to_h, JSON.state.new(state.to_h).to_h
+  end
+
+  def test_json_state_to_h_ignores_instance_variables
+    state = JSON.state.new(indent: '  ')
+    expected = state.to_h
+    state.instance_variable_set(:@custom, 42)
+    state.instance_variable_set(:@enabled, false)
+
+    assert_equal expected, state.to_h
+    assert_equal expected, state.to_hash
   end
 
   def test_json_generate
@@ -938,20 +1061,23 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
-  if defined?(JSON::Ext::Generator) and RUBY_PLATFORM != "java"
-    def test_valid_utf8_in_different_encoding
-      utf8_string = "€™"
-      wrong_encoding_string = utf8_string.b
-      # This behavior is historical. Not necessary desirable. We should deprecated it.
-      # The pure and java version of the gem already don't behave this way.
-      assert_warning(/UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0/) do
-        assert_equal utf8_string.to_json, wrong_encoding_string.to_json
-      end
-
-      assert_warning(/UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0/) do
-        assert_equal JSON.dump(utf8_string), JSON.dump(wrong_encoding_string)
-      end
+  def test_valid_utf8_in_binary_encoding
+    string = "€™".b.freeze
+    assert_raise(JSON::GeneratorError) { string.to_json }
+    assert_raise(JSON::GeneratorError) { JSON.dump(string) }
+    [string, [string], { string => 1 }, { value: string }].each do |object|
+      error = assert_raise(JSON::GeneratorError) { JSON.generate(object) }
+      assert_same string, error.invalid_object
+      assert_kind_of Encoding::UndefinedConversionError, error.cause
     end
+  end
+
+  def test_ascii_in_binary_encoding
+    string = "ascii".b
+    assert_equal '"ascii"', string.to_json
+    assert_equal '"ascii"', JSON.dump(string)
+    assert_equal '["ascii"]', JSON.generate([string])
+    assert_equal '{"ascii":1}', JSON.generate(string => 1)
   end
 
   def test_nonutf8_encoding
@@ -973,6 +1099,43 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_json_generate_as_json_convert_to_proc
     object = Object.new
     assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: -> (o, is_key) { o.object_id })
+  end
+
+  def test_json_generate_as_json_method
+    object = Object.new
+    as_json = -> (o, is_key) { o.object_id }.method(:call)
+    assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: as_json)
+  end
+
+  def test_state_as_json_method
+    object = Object.new
+    state = JSON.state.new(strict: true)
+    state.as_json = -> (o, is_key) { o.object_id }.method(:call)
+    assert_kind_of Proc, state.as_json
+    assert_equal object.object_id.to_json, state.generate(object)
+  end
+
+  def test_json_generate_as_json_invalid_type
+    [Object.new, Time.now].each do |as_json|
+      assert_raise(TypeError) { JSON.generate(Object.new, strict: true, as_json: as_json) }
+    end
+  end
+
+  def test_state_as_json_invalid_type
+    state = JSON.state.new(strict: true)
+    [Object.new, Time.now].each do |as_json|
+      assert_raise(TypeError) { state.as_json = as_json }
+      assert_raise(TypeError) { state.configure(as_json: as_json) }
+    end
+  end
+
+  def test_as_json_to_proc_returns_invalid_type
+    as_json = Object.new
+    def as_json.to_proc
+      method(:to_proc)
+    end
+    assert_raise(TypeError) { JSON.generate(Object.new, strict: true, as_json: as_json) }
+    assert_raise(TypeError) { JSON.state.new.as_json = as_json }
   end
 
   def test_as_json_nan_does_not_call_to_json
@@ -1060,6 +1223,38 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  def test_adversary_encode
+    fake_string = Class.new(String) do
+      def to_s
+        self
+      end
+
+      def encode(*)
+        42
+      end
+    end
+
+    assert_raise TypeError, JSON::GeneratorError do
+      JSON.generate({fake_string.new("\xff".b) => 1})
+    end
+
+    no_to_json = Class.new do
+      undef_method :to_json
+
+      def initialize(str)
+        @str = str
+      end
+
+      def to_s
+        @str
+      end
+    end
+
+    assert_raise TypeError, JSON::GeneratorError do
+      JSON.generate([no_to_json.new(fake_string.new("\xff".b))])
+    end
+  end
+
   # The case when the State is frozen is tested in JSONCoderTest#test_nesting_recovery
   def test_nesting_recovery
     state = JSON::State.new
@@ -1090,4 +1285,223 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  def test_rfc8785_key_order
+    assert_rfc8785 '{"a":1,"a b":2}', { 'a' => 1, 'a b' => 2 }
+    assert_rfc8785 '{"a":2,"a!":1}', { 'a!' => 1, 'a' => 2 }
+    assert_rfc8785 '{"\n":1,"A":2}', { "\n" => 1, 'A' => 2 }
+    assert_rfc8785 '[{"a":1,"a b":2}]', [{ 'a b' => 2, 'a' => 1 }]
+  end
+
+  def test_rfc8785_mixed_key_order
+    assert_rfc8785 '{"10":2,"9":1}', { '9' => 1, 10 => 2 }
+    assert_rfc8785 '{"a":1,"b":2}', { a: 1, 'b' => 2 }
+  end
+
+  def test_rfc8785_key_order_with_as_json
+    key = Object.new
+    def key.to_s
+      raise 'must not sort the original key'
+    end
+    as_json = ->(object, is_key) { is_key ? 'a' : object }
+    options = { rfc8785: true, strict: true, as_json: as_json }
+    object = [{ 'b' => 2, key => 1 }]
+    expected = '[{"a":1,"b":2}]'
+    assert_equal expected, JSON.generate(object, options)
+    assert_equal expected, object.to_json(options)
+    state = JSON::State.new(options)
+    io = StringIO.new
+    state.generate(object, io)
+    assert_equal expected, io.string
+
+    assert_equal '{"1":1,"b":2}', JSON.generate({ 'b' => 2, 1 => 1 }, options.merge(strict: false))
+  end
+
+  def test_rfc8785_key_order_with_default_external_encoding
+    # https://www.rfc-editor.org/rfc/rfc8785.html#section-3.2.3
+    hash = { "\u20ac" => 1, "\r" => 2, "\ufb33" => 3, '1' => 4,
+             "\u{1f600}" => 5, "\u0080" => 6, "\u00f6" => 7 }
+    expected = "{\"\\r\":2,\"1\":4,\"\u0080\":6,\"\u00f6\":7,\"\u20ac\":1,\"\u{1f600}\":5,\"\ufb33\":3}"
+    verbose = $VERBOSE
+    previous_encoding = Encoding.default_external
+    $VERBOSE = nil
+    outputs = [Encoding::UTF_8, Encoding::US_ASCII].map do |encoding|
+      Encoding.default_external = encoding
+      JSON.generate(hash, rfc8785: true)
+    end
+    assert_equal [expected, expected], outputs
+  ensure
+    Encoding.default_external = previous_encoding
+    $VERBOSE = verbose
+  end
+
+  {
+    0 => '0',
+    1 => '1',
+    2**53 - 1 => '9007199254740991',
+    2**53 => '9007199254740992',
+    2**53 + 1 => '9007199254740992',
+    2**53 + 3 => '9007199254740996',
+    2**63 - 1 => '9223372036854776000',
+    2**68 => '295147905179352830000',
+    10**20 => '100000000000000000000',
+    10**21 => '1e+21',
+    Float::MAX.to_i => '1.7976931348623157e+308',
+  }.each do |integer, expected|
+    define_method("test_rfc8785_integer_#{integer}") do
+      [1, -1].each do |sign|
+        number = sign * integer
+        json = sign < 0 && integer != 0 ? "-#{expected}" : expected
+        assert_rfc8785 json, number
+        assert_rfc8785 %({"n":[#{json}]}), { 'n' => [number] }
+        assert_equal json, number.to_json(rfc8785: true)
+        assert_equal json, JSON.generate(number, rfc8785: true, max_nesting: false)
+        assert_equal json, JSON::Coder.new(rfc8785: true).dump(number)
+        io = StringIO.new
+        JSON.dump(number, io, rfc8785: true)
+        assert_equal json, io.string
+        assert_equal number.to_s, JSON.generate(number)
+      end
+    end
+  end
+
+  def test_rfc8785_rejects_out_of_range_integers
+    [Float::MAX.to_i + 1, 10**400].each do |integer|
+      [integer, -integer].each do |number|
+        error = assert_raise(JSON::GeneratorError) { JSON.generate(number, rfc8785: true) }
+        assert_same number, error.invalid_object
+        assert_equal 'Integer out of range for RFC 8785', error.message
+        assert_raise(JSON::GeneratorError) { JSON.dump([number], rfc8785: true) }
+        assert_equal number.to_s, JSON.generate(number)
+      end
+    end
+  end
+
+  {
+    indent: ' ', space: ' ', space_before: ' ', object_nl: "\n", array_nl: "\n",
+    ascii_only: true, script_safe: true, allow_nan: true,
+  }.each do |option, value|
+    define_method("test_rfc8785_rejects_#{option}") do
+      options = { rfc8785: true, option => value }
+      error = assert_raise(ArgumentError) { JSON.generate({ 'a' => [1] }, options) }
+      assert_equal "#{option} cannot be used with rfc8785", error.message
+      assert_raise(ArgumentError) { JSON.generate(nil, options.to_a.reverse.to_h) }
+      assert_raise(ArgumentError) { [1].to_json(options) }
+      assert_raise(ArgumentError) { { 'a' => 1 }.to_json(options) }
+      assert_raise(ArgumentError) { JSON::Coder.new(**options).dump([1]) }
+
+      state = JSON::State.new(option => value)
+      state.rfc8785 = true
+      io = StringIO.new
+      assert_raise(ArgumentError) { state.generate([1], io) }
+      assert_equal '', io.string
+      assert_raise(ArgumentError) { [1].to_json(state) }
+      assert_equal 0, state.depth
+      assert_raise(ArgumentError) { state.freeze.generate([1]) }
+    end
+  end
+
+  def test_rfc8785_accepts_disabled_options
+    options = { rfc8785: true, indent: '', space: '', space_before: '',
+                object_nl: '', array_nl: '', ascii_only: false,
+                script_safe: false, allow_nan: false }
+    assert_equal '["é/",1]', JSON.generate(['é/', 1], options)
+  end
+
+  def test_rfc8785_rejects_pretty_generation
+    assert_raise(ArgumentError) { JSON.pretty_generate({ 'a' => 1 }, rfc8785: true) }
+  end
+
+  def test_rfc8785_dump_disables_allow_nan_by_default
+    assert_equal '[1]', JSON.dump([1], rfc8785: true)
+    [Float::NAN, Float::INFINITY, -Float::INFINITY].each do |number|
+      assert_raise(JSON::GeneratorError) { JSON.dump([number], rfc8785: true) }
+    end
+    assert_raise(ArgumentError) { JSON.dump([1], rfc8785: true, allow_nan: true) }
+  end
+
+  def test_rfc8785_fragments
+    fragment = JSON::Fragment.new('[1,2]')
+    assert_rfc8785 '[1,2]', fragment
+    assert_rfc8785 '[[1,2]]', [fragment]
+    assert_rfc8785 '{"a":[1,2]}', { 'a' => fragment }
+    assert_equal '[[1,2]]', JSON.generate([fragment], rfc8785: true, max_nesting: false)
+    assert_equal '[1,2]', JSON::Coder.new(rfc8785: true).dump(fragment)
+    assert_equal '[1,2]', fragment.to_json(rfc8785: true)
+
+    # Fragment contents are the caller's responsibility and are inserted as is.
+    assert_rfc8785 '[1, 2]', JSON::Fragment.new('[1, 2]')
+  end
+
+  def test_rfc8785_numbers
+    assert_rfc8785 '-9007199254740992', -9007199254740992
+    assert_rfc8785 '0', 0
+    assert_rfc8785 '0.000001', 0.000001
+    assert_rfc8785 '1e+21', 1e+21
+    assert_rfc8785 '9.999999999999997e+22', 9.999999999999997e+22
+    assert_rfc8785 '9.999999999999997e-7', 9.999999999999997e-7
+    assert_rfc8785 '9007199254740992', 9007199254740992
+    assert_rfc8785 '9007199254740994', 9007199254740994
+    assert_rfc8785 '9007199254740996', 9007199254740996
+    assert_rfc8785 '999999999999999700000', 999999999999999700000
+    assert_rfc8785 '999999999999999900000', 999999999999999900000
+    assert_rfc8785 '333333333.3333333', 333333333.33333329
+    assert_rfc8785 '0.30000000000000004', 0.1 + 0.2
+  end
+
+  # https://www.rfc-editor.org/rfc/rfc8785.html#appendix-B
+  {
+    '0000000000000000' => '0',
+    '8000000000000000' => '0',
+    '0000000000000001' => '5e-324',
+    '8000000000000001' => '-5e-324',
+    '7fefffffffffffff' => '1.7976931348623157e+308',
+    'ffefffffffffffff' => '-1.7976931348623157e+308',
+    '4340000000000000' => '9007199254740992',
+    'c340000000000000' => '-9007199254740992',
+    '4430000000000000' => '295147905179352830000',
+    '7fffffffffffffff' => nil,
+    '7ff0000000000000' => nil,
+    '44b52d02c7e14af5' => '9.999999999999997e+22',
+    '44b52d02c7e14af6' => '1e+23',
+    '44b52d02c7e14af7' => '1.0000000000000001e+23',
+    '444b1ae4d6e2ef4e' => '999999999999999700000',
+    '444b1ae4d6e2ef4f' => '999999999999999900000',
+    '444b1ae4d6e2ef50' => '1e+21',
+    '3eb0c6f7a0b5ed8c' => '9.999999999999997e-7',
+    '3eb0c6f7a0b5ed8d' => '0.000001',
+    '41b3de4355555553' => '333333333.3333332',
+    '41b3de4355555554' => '333333333.33333325',
+    '41b3de4355555555' => '333333333.3333333',
+    '41b3de4355555556' => '333333333.3333334',
+    '41b3de4355555557' => '333333333.33333343',
+    'becbf647612f3696' => '-0.0000033333333333333333',
+    '43143ff3c1cb0959' => '1424953923781206.2',
+  }.each do |bits, expected|
+    define_method("test_rfc8785_number_#{bits}") do
+      omit "Float#to_s is not always shortest on this engine" unless RUBY_ENGINE == "ruby"
+      number = [bits].pack('H*').unpack('G').first
+      if expected
+        assert_rfc8785 expected, number
+        assert_equal number, JSON.parse(JSON.generate(number, rfc8785: true)).to_f
+      else
+        assert_raise(JSON::GeneratorError) { JSON.generate(number, rfc8785: true) }
+      end
+    end
+  end
+
+  fixtures_path = File.expand_path('../fixtures/rfc8785/', __FILE__)
+  Dir[File.join(fixtures_path, "input/*.json", __FILE__)].each do |input|
+    filename = File.basename(input)
+    name, _ = File.basename(filename, ".json")
+    expected = File.join(fixtures_path, 'output', filename)
+    define_method("test_rfc8785_#{name}") do
+      assert_rfc8785(File.read(output), JSON.load_file(input))
+    end
+  end
+
+  private
+
+  def assert_rfc8785(expected, value)
+    assert_equal(expected, JSON.generate(value, rfc8785: true))
+  end
 end

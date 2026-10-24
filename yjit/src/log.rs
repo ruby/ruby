@@ -4,7 +4,6 @@ use crate::options::*;
 use crate::yjit::yjit_enabled_p;
 
 use std::fmt::{Display, Formatter};
-use std::os::raw::c_long;
 use crate::utils::iseq_get_location;
 
 type Timestamp = f64;
@@ -73,15 +72,12 @@ impl Log {
                     eprintln!("{}", entry);
                 }
 
-                LogOutput::File(fd) => {
-                    use std::os::unix::io::{FromRawFd, IntoRawFd};
+                LogOutput::File(mut file) => {
                     use std::io::Write;
 
-                    // Write with the fd opened during boot
-                    let mut file = unsafe { std::fs::File::from_raw_fd(fd) };
+                    // Write with the file opened during boot
                     writeln!(file, "{}", entry).unwrap();
                     file.flush().unwrap();
-                    let _ = file.into_raw_fd(); // keep the fd open
                 }
 
                 LogOutput::MemoryOnly => () // Don't print or write anything
@@ -162,7 +158,7 @@ fn rb_yjit_get_log_array() -> VALUE {
     }
 
     let log = Log::get_instance();
-    let array = unsafe { rb_ary_new_capa(log.len() as c_long) };
+    let array = unsafe { rb_ary_new_capa(log.len() as rb_len_t) };
 
     while log.len() > 0 {
         let entry = log.pop().unwrap();

@@ -2,7 +2,7 @@
 
 require 'socket'
 require 'timeout'
-require 'io/wait'
+require 'io/wait' if RUBY_VERSION < '3.2'
 require 'securerandom'
 require 'rbconfig'
 
@@ -35,7 +35,7 @@ require 'rbconfig'
 class Resolv
 
   # The version string
-  VERSION = "0.7.1"
+  VERSION = "0.8.1"
 
   ##
   # Looks up the first IP address for +name+.
@@ -179,7 +179,7 @@ class Resolv
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
+    if /mswin|cygwin|mingw/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
       begin
         require 'win32/resolv' unless defined?(Win32::Resolv)
         hosts = Win32::Resolv.get_hosts_path || IO::NULL
@@ -568,9 +568,7 @@ class Resolv
             # Giving up part way through a frame loses stream sync, and a peer
             # seen going away leaves the socket dead.  Either way the requester
             # says so, and the next attempt has to open a fresh connection.  A
-            # timeout with the stream still on a frame boundary keeps it; a
-            # peer that leaves while nothing is being read goes unnoticed here
-            # and only shows up when the next request is written.
+            # timeout with the stream still on a frame boundary keeps it.
             unless requester.reusable?
               requesters.delete([nameserver, port])
               requester.close
@@ -693,6 +691,19 @@ class Resolv
       def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
         udpsock.bind(bind_host, 0)
       end
+    when /mswin|mingw/
+      # Sequential port assignment
+      def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
+        # SO_EXCLUSIVEADDRUSE: make bind fail if another socket already uses the port
+        udpsock.setsockopt(Socket::SOL_SOCKET, ~Socket::SO_REUSEADDR, 1)
+        begin
+          # Ephemeral port number range recommended by RFC 6056
+          port = random(1024..65535)
+          udpsock.bind(bind_host, port)
+        rescue Errno::EADDRINUSE, Errno::EACCES
+          retry
+        end
+      end
     else
       # Sequential port assignment
       def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
@@ -718,13 +729,21 @@ class Resolv
         true
       end
 
+      # A request could not be written.  Only a stream transport can be left
+      # unusable by that; see #reusable?.
+      def send_failed
+      end
+
       def request(sender, tout)
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         timelimit = start + tout
         begin
           sender.send
         rescue Errno::EHOSTUNREACH, # multi-homed IPv6 may generate this
-               Errno::ENETUNREACH
+               Errno::ENETUNREACH,
+               Errno::EPIPE, # a peer that went away between requests
+               Errno::ECONNRESET # the same, as Windows reports it
+          send_failed
           raise ResolvTimeout
         end
         while true
@@ -880,20 +899,37 @@ class Resolv
           @mutex.synchronize {
             next if @initialized
             @initialized = true
-            is_ipv6 = @host.index(':')
-            sock = UDPSocket.new(is_ipv6 ? Socket::AF_INET6 : Socket::AF_INET)
-            @socks = [sock]
-            sock.do_not_reverse_lookup = true
-            DNS.bind_random_port(sock, is_ipv6 ? "::" : "0.0.0.0")
-            sock.connect(@host, @port)
+            connect_socket
           }
           self
+        end
+
+        # The socket to talk to the nameserver over, opening one if there is
+        # none yet.  #recv_reply may have replaced it since a sender was
+        # created, so senders ask for it per request instead of holding on to
+        # one.
+        def sock
+          lazy_initialize
+          @socks[0]
         end
 
         def recv_reply(readable_socks, timelimit = nil)
           lazy_initialize
           reply = readable_socks[0].recv(UDPSize)
           return reply, nil
+        rescue Errno::ECONNREFUSED, Errno::ECONNRESET
+          # The kernel reports these from an ICMP message, and a second one for
+          # the same pair of endpoints is not always passed on: macOS 26.1 and
+          # later deliver every other one.  A retry over this socket would then
+          # wait out its whole timeout rather than fail at once, so start over
+          # from a new source port.
+          @mutex.synchronize {
+            if @initialized
+              @socks&.each(&:close)
+              connect_socket
+            end
+          }
+          raise
         end
 
         def sender(msg, data, host=@host, port=@port)
@@ -904,7 +940,7 @@ class Resolv
           id = DNS.allocate_request_id(@host, @port)
           request = msg.encode
           request[0,2] = [id].pack('n')
-          return @senders[[nil,id]] = Sender.new(request, data, @socks[0])
+          return @senders[[nil,id]] = Sender.new(request, data, self)
         end
 
         def close
@@ -919,10 +955,23 @@ class Resolv
           end
         end
 
+        private def connect_socket
+          is_ipv6 = @host.index(':')
+          sock = UDPSocket.new(is_ipv6 ? Socket::AF_INET6 : Socket::AF_INET)
+          @socks = [sock]
+          sock.do_not_reverse_lookup = true
+          DNS.bind_random_port(sock, is_ipv6 ? "::" : "0.0.0.0")
+          sock.connect(@host, @port)
+        end
+
         class Sender < Requester::Sender # :nodoc:
+          def initialize(msg, data, requester)
+            super(msg, data, nil)
+            @requester = requester
+          end
+
           def send
-            raise "@sock is nil." if @sock.nil?
-            @sock.send(@msg, 0)
+            @requester.sock.send(@msg, 0)
           end
           attr_reader :data
         end
@@ -958,6 +1007,10 @@ class Resolv
 
         def reusable?
           @reusable
+        end
+
+        def send_failed
+          @reusable = false
         end
 
         def recv_reply(readable_socks, timelimit = nil)
@@ -1092,14 +1145,15 @@ class Resolv
       end
 
       def Config.default_config_hash(filename="/etc/resolv.conf")
-        if File.exist? filename
-          Config.parse_resolv_conf(filename)
-        elsif defined?(Win32::Resolv)
+        # Native Windows resolves the path against the current drive, while Cygwin's own resolver honors it.
+        if defined?(Win32::Resolv) and !(/cygwin/ =~ RUBY_PLATFORM and File.exist?(filename))
           search, nameserver = Win32::Resolv.get_resolv_info
           config_hash = {}
           config_hash[:nameserver] = nameserver if nameserver
           config_hash[:search] = [search].flatten if search
           config_hash
+        elsif File.exist? filename
+          Config.parse_resolv_conf(filename)
         else
           {}
         end
@@ -1151,7 +1205,7 @@ class Resolv
               if /\./ =~ hostname
                 @search = [Label.split($')]
               else
-                @search = [[]]
+                @search = []
               end
             end
 
@@ -1198,23 +1252,18 @@ class Resolv
       end
 
       def generate_candidates(name)
-        candidates = nil
         name = Name.create(name)
         if name.absolute?
-          candidates = [name]
+          [name]
         else
+          abs = Name.new(name.to_a)
+          search = @search.map {|domain| Name.new(name.to_a + domain)}
           if @ndots <= name.length - 1
-            candidates = [Name.new(name.to_a)]
+            [abs, *search].uniq
           else
-            candidates = []
-          end
-          candidates.concat(@search.map {|domain| Name.new(name.to_a + domain)})
-          fname = Name.create("#{name}.")
-          if !candidates.include?(fname)
-            candidates << fname
+            [*search, abs].uniq
           end
         end
-        return candidates
       end
 
       InitialTimeout = 5
@@ -1809,6 +1858,9 @@ class Resolv
           # size counts the encoded form, so it starts at 1 for the root
           # label's terminating zero octet. [RFC 1035 3.1]
           size = 1
+          # A pointer chain decodes to few or no labels, so the 255-octet cap
+          # never bounds its work; cap the pointers followed per name too.
+          pointers = 0
           while true
             raise DecodeError.new("limit exceeded") if @limit <= @index
             case @data.getbyte(@index)
@@ -1819,6 +1871,8 @@ class Resolv
               end
               return d
             when 192..255
+              pointers += 1
+              raise DecodeError.new("too many compression pointers") if pointers > 128
               idx = self.get_unpack('n')[0] & 0x3fff
               if prev_index <= idx
                 raise DecodeError.new("non-backward name pointer")

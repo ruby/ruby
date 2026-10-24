@@ -85,7 +85,7 @@ module RubyTimelineTool
   })
 
   # Keep in sync with `IMEMO_MASK` in `internal/imemo.h`.
-  IMEMO_MASK = 0x0f
+  IMEMO_MASK = 0x1f
 
   # Keep in sync with both `internal/string.h` and `include/ruby/internal/core/rstring.h`.
   StringFlags = FlagsConverter.new({

@@ -180,7 +180,6 @@ pub use rb_get_ec_cfp as get_ec_cfp;
 pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
 pub use rb_get_cfp_sp as get_cfp_sp;
-pub use rb_get_cfp_ep_level as get_cfp_ep_level;
 pub use rb_get_cme_def_type as get_cme_def_type;
 pub use rb_get_cme_def_body_attr_id as get_cme_def_body_attr_id;
 pub use rb_get_cme_def_body_optimized_type as get_cme_def_body_optimized_type;
@@ -757,6 +756,12 @@ impl VALUE {
         unsafe { rb_IMEMO_TYPE_P(self, imemo_ment) == 1 }
     }
 
+    /// Return true if `self` is an ISEQ (`imemo_iseq`)
+    pub fn iseq_p(self) -> bool {
+        if self == VALUE(0) { return false; }
+        unsafe { rb_IMEMO_TYPE_P(self, imemo_iseq) == 1 }
+    }
+
     /// Assert that `self` is a method entry in debug builds
     pub fn as_cme(self) -> *const rb_callable_method_entry_t {
         let ptr: *const rb_callable_method_entry_t = self.as_ptr();
@@ -884,6 +889,12 @@ impl From<*const rb_callable_method_entry_t> for VALUE {
     /// For `.into()` convenience
     fn from(cme: *const rb_callable_method_entry_t) -> Self {
         VALUE(cme as usize)
+    }
+}
+
+impl From<*const rb_callinfo> for VALUE {
+    fn from(ci: *const rb_callinfo) -> Self {
+        VALUE(ci as usize)
     }
 }
 
@@ -1220,12 +1231,6 @@ mod manual_defs {
     pub const VM_CALL_ZSUPER : u32 = 1 << VM_CALL_ZSUPER_bit;
     pub const VM_CALL_OPT_SEND : u32 = 1 << VM_CALL_OPT_SEND_bit;
 
-    // From internal/struct.h - in anonymous enum, so we can't easily import it
-    pub const RSTRUCT_EMBED_LEN_MASK: usize = (RUBY_FL_USER7 | RUBY_FL_USER6 | RUBY_FL_USER5 | RUBY_FL_USER4 | RUBY_FL_USER3 |RUBY_FL_USER2 | RUBY_FL_USER1) as usize;
-
-    // From iseq.h - via a different constant, which seems to confuse bindgen
-    pub const ISEQ_TRANSLATED: usize = RUBY_FL_USER7 as usize;
-
     // We'll need to encode a lot of Ruby struct/field offsets as constants unless we want to
     // redeclare all the Ruby C structs and write our own offsetof macro. For now, we use constants.
     pub const RUBY_OFFSET_RBASIC_FLAGS: i32 = 0; // struct RBasic, field "flags"
@@ -1322,9 +1327,15 @@ pub mod test_utils {
         }
     }
 
+    /// Make sure the Ruby VM is booted and ZJITState is initialized. Test helpers that
+    /// touch ZJITState or ZJIT stats before running any Ruby code must call this first.
+    pub fn ensure_rubyvm() {
+        RUBY_VM_INIT.call_once(boot_rubyvm);
+    }
+
     /// Make sure the Ruby VM is set up and run a given callback with rb_protect()
     pub fn with_rubyvm<T>(mut func: impl FnMut() -> T) -> T {
-        RUBY_VM_INIT.call_once(boot_rubyvm);
+        ensure_rubyvm();
 
         // Invoke callback through rb_protect() so exceptions don't crash the process.
         // "Fun" double pointer dance to get a thin function pointer to pass through C
@@ -1392,6 +1403,7 @@ pub mod test_utils {
     #[track_caller]
     pub fn assert_compiles_allowing_exits(program: &str) -> String {
         use crate::state::ZJITState;
+        ensure_rubyvm(); // ZJITState is not available until the VM is booted
         ZJITState::enable_assert_compiles();
         let result = inspect(program);
         ZJITState::disable_assert_compiles();
@@ -1403,6 +1415,7 @@ pub mod test_utils {
     #[track_caller]
     pub fn assert_compiles(program: &str) -> String {
         use crate::state::ZJITState;
+        ensure_rubyvm(); // ZJITState is not available until the VM is booted
         let exits_before = crate::stats::total_exit_count();
         ZJITState::enable_assert_compiles();
         let result = inspect(program);
@@ -1627,10 +1640,7 @@ mod class_name_tests {
 }
 
 pub fn class_has_leaf_allocator(class: VALUE) -> bool {
-    // We need to check if the class is initialized and not a singleton before
-    // trying to read the allocator, otherwise it will raise.
-    // Because of this they should be considered non-leaf anyways.
-    if !unsafe { rb_zjit_class_initialized_p(class) } { return false; }
+    // Reading a singleton class's allocator raises, which makes it non-leaf.
     if unsafe { rb_zjit_singleton_class_p(class) } { return false; }
 
     // empty_hash_alloc
@@ -1641,6 +1651,10 @@ pub fn class_has_leaf_allocator(class: VALUE) -> bool {
     if class == unsafe { rb_cString } { return true; }
     // rb_reg_s_alloc
     if class == unsafe { rb_cRegexp } { return true; }
+    // struct_alloc, used by every Struct subclass, is leaf: it reads the hidden __members__ ivar
+    // and allocates, without calling into Ruby. It does modify the class's __members__ ivar once
+    // to cache the members, but without a Ractor check.
+    if unsafe { rb_zjit_class_has_struct_allocator(class) } { return true; }
     // rb_class_allocate_instance
     unsafe { rb_zjit_class_has_default_allocator(class) }
 }
@@ -1664,10 +1678,9 @@ pub fn class_has_leaf_allocator(class: VALUE) -> bool {
 pub fn iseq_self_is_heap_object(iseq: IseqPtr, owner: VALUE) -> bool {
     if unsafe { rb_get_iseq_body_type(iseq) } != ISEQ_TYPE_METHOD { return false; }
     if !unsafe { RB_TYPE_P(owner, RUBY_T_CLASS) } { return false; }
-    // Check initialized + non-singleton before reading the allocator (reading it otherwise
+    // Check non-singleton before reading the allocator (reading it otherwise
     // aborts).
     // TODO(max): Determine if we can loosen this to allow methods defined on singleton classes.
-    if !unsafe { rb_zjit_class_initialized_p(owner) } { return false; }
     if unsafe { rb_zjit_singleton_class_p(owner) } { return false; }
     if !unsafe { rb_zjit_class_has_default_allocator(owner) } { return false; }
     // Exclude Object/BasicObject/Numeric and friends: classes that use the default
@@ -1734,8 +1747,8 @@ pub(crate) mod ids {
         name: freeze
         name: minusat            content: b"-@"
         name: aref               content: b"[]"
-        name: rb_obj_is_proc
         name: rb_ivar_get_at_no_ractor_check
+        name: rb_jit_ruby2_keywords_splat_p
         name: RUBY_FL_FREEZE
         name: RUBY_ELTS_SHARED
         name: RubyVM

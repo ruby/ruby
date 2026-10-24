@@ -3,6 +3,7 @@ require 'test/unit'
 require 'delegate'
 require 'timeout'
 require 'delegate'
+require 'rbconfig/sizeof'
 
 class TestTime < Test::Unit::TestCase
   def setup
@@ -163,6 +164,18 @@ class TestTime < Test::Unit::TestCase
     }
     assert_raise_with_message(ArgumentError, /utc_offset/) {
       Time.new("2020-12-25 00:00:00 +09:00:60")
+    }
+  end
+
+  def test_new_from_string_modified_by_precision
+    str = "2020-12-25 00:00:00" + "0" * 1_000_000
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      str.clear
+      9
+    end
+    assert_raise_with_message(ArgumentError, /can't parse/) {
+      Time.new(str, precision: obj)
     }
   end
 
@@ -722,7 +735,9 @@ class TestTime < Test::Unit::TestCase
     assert_predicate(zone, :valid_encoding?)
     if zone.ascii_only?
       assert_equal(Encoding::US_ASCII, zone.encoding)
-    else
+    elsif !/mswin|mingw/.match?(RUBY_PLATFORM)
+      # Windows takes the name from the CRT, which encodes it in the
+      # active code page rather than the locale one. [Bug #19383]
       enc = Encoding.default_internal || Encoding.find('locale')
       assert_equal(enc, zone.encoding)
     end
@@ -1100,6 +1115,12 @@ class TestTime < Test::Unit::TestCase
     assert_equal("  -0:55:00", t.strftime("%_10::z"), bug6323)
     assert_equal("-000:55:00", t.strftime("%10::z"), bug6323)
     assert_equal("-000000:55", t.strftime("%10:::z"))
+
+    t = Time.at(0, in: 0)
+    max = RbConfig::LIMITS["INT_MAX"]
+    all_assertions_foreach(nil, *%W[%#{max}z %#{max}:z %#{max}::z %#{max}:::z]) do |z|
+      assert_raise(Errno::ERANGE) {t.strftime(z)}
+    end
   end
 
   def test_strftime_invalid_modifier

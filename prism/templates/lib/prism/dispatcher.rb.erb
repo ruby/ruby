@@ -1,7 +1,7 @@
 #--
 # rbs_inline: enabled
 
-module Prism
+module Ruby::Prism
   # The dispatcher class fires events for nodes that are found while walking an
   # AST to all registered listeners. It's useful for performing different types
   # of analysis on the AST while only having to walk the tree once.
@@ -18,12 +18,12 @@ module Prism
   #     end
   #
   #     listener = OctalListener.new
-  #     dispatcher = Prism::Dispatcher.new
+  #     dispatcher = Ruby::Prism::Dispatcher.new
   #     dispatcher.register(listener, :on_integer_node_enter)
   #
   # Then, you can walk any number of trees and dispatch events to the listeners:
   #
-  #     result = Prism.parse("001 + 002 + 003")
+  #     result = Ruby::Prism.parse("001 + 002 + 003")
   #     dispatcher.dispatch(result.value)
   #
   # Optionally, you can also use `#dispatch_once` to dispatch enter and leave

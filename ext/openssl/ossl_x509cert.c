@@ -33,7 +33,7 @@ static const rb_data_type_t ossl_x509_type = {
     {
         0, ossl_x509_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -608,7 +608,7 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
 {
     X509 *x509;
     X509_EXTENSION *ext;
-    long i;
+    rb_len_t i;
 
     Check_Type(ary, T_ARRAY);
     /* All ary's members should be X509Extension */

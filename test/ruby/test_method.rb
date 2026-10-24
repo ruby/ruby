@@ -492,7 +492,6 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_clone_under_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       o = Object.new
       def o.foo; :foo; end
@@ -559,6 +558,12 @@ class TestMethod < Test::Unit::TestCase
     c5.extend(m)
     c6 = Class.new(c5)
     assert_equal("#<Method: #<Class:#{c6.inspect}>(#{m.inspect})#prep(prepend)() #{__FILE__}:#{line_no}>", c6.method(:prep).inspect, bug17428)
+
+    mod = Module.new { def foo; end }; line_no = __LINE__
+    cls = Class.new { include mod }
+    o = cls.new
+    assert_equal("#<Method: #{mod.inspect}#foo() #{__FILE__}:#{line_no}>",
+                 o.method(:foo).unbind.bind(o).inspect, "[ruby-core:126737] [Bug #22321]")
   end
 
   def test_callee_top_level
@@ -1285,7 +1290,9 @@ class TestMethod < Test::Unit::TestCase
         [:C1_m1] + super
       end
       prepend m
-      alias m2 m1
+    end
+    assert_deprecated_warning(/aliasing .*#m1 defined in a prepended module .* is deprecated/) do
+      c1.class_eval { alias m2 m1 }
     end
 
     o1 = c1.new
@@ -1465,10 +1472,6 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_splat_long_array
-    if File.exist?('/etc/os-release') && File.read('/etc/os-release').include?('openSUSE Leap')
-      # For RubyCI's openSUSE machine http://rubyci.s3.amazonaws.com/opensuseleap/ruby-trunk/recent.html, which tends to die with NoMemoryError here.
-      omit 'do not exhaust memory on RubyCI openSUSE Leap machine'
-    end
     n = 10_000_000
     assert_equal n  , rest_parameter(*(1..n)).size, '[Feature #10440]'
   end
@@ -1809,11 +1812,11 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_kwarg_eval_memory_leak
-    assert_no_memory_leak([], "", <<~RUBY, rss: true, limit: 1.2)
+    assert_no_memory_leak([], "", <<~RUBY, rss: true, limit: 1.2, samples: 5)
       obj = Object.new
       def obj.test(**kwargs) = nil
 
-      100_000.times do
+      20_000.times do
         eval("obj.test(foo: 123)")
       end
     RUBY

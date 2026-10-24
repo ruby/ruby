@@ -33,6 +33,29 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
+  # Monotonically increasing counter representing the amount of wall time
+  # nanoseconds spent compiling.
+  def self.total_compile_time_ns
+    Primitive.rb_yjit_total_compile_time_ns_get
+  end
+
+  # The maximum amount of time `YJIT` is allowed to spend compiling.
+  # When `total_compile_time_ns` goes over `max_compile_time_ns`, `YJIT`
+  # pause compilation until `max_compile_time_ns` is raised.
+  # If set to `0`, there is no limit.
+  # This is a best-effort functionality, there are situations in which `YJIT` may
+  # still compile even when paused.
+  # This feature is intended to be used to control how fast the JIT warms up,
+  # to spread the compilation overhead over a longer period of time.
+  def self.max_compile_time_ns
+    Primitive.rb_yjit_max_compile_time_ns_get
+  end
+
+  # Set the maximum amount of time YJIT is allowed to spend compiling.
+  def self.max_compile_time_ns=(max_compile_time_ns)
+    Primitive.rb_yjit_max_compile_time_ns_set(max_compile_time_ns)
+  end
+
   # Enable YJIT compilation. `stats` option decides whether to enable YJIT stats or not. `log` decides
   # whether to enable YJIT compilation logging or not. Optional `mem_size` and `call_threshold` can be
   # provided to override default configuration.
@@ -227,10 +250,12 @@ module RubyVM::YJIT
     disasm_str = Primitive.rb_yjit_disasm_iseq(iseq)
 
     if !disasm_str
-      warn(
-        "YJIT disasm is only available when YJIT is built in dev mode, i.e.\n" +
-        "./configure --enable-yjit=dev (see doc/jit/yjit.md)\n"
-      )
+      hint = if RUBY_PLATFORM.include?("mswin")
+        ",\nbut YJIT on mswin supports release builds only"
+      else
+        ", i.e.\n./configure --enable-yjit=dev"
+      end
+      warn("YJIT disasm is only available when YJIT is built in dev mode#{hint} (see doc/jit/yjit.md)\n")
       return nil
     end
 

@@ -14,8 +14,7 @@ module Bundler
     def run
       Bundler.ui.level = "warn" if options[:quiet]
 
-      Bundler::CLI::Common.validate_cooldown!(options[:cooldown])
-      Bundler.settings.set_command_option_if_given :cooldown, options[:cooldown]
+      Bundler::CLI::Common.configure_cooldown(options)
 
       validate_options!
       inject_dependencies

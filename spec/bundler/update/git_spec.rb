@@ -2,6 +2,11 @@
 
 RSpec.describe "bundle update" do
   describe "git sources" do
+    def cached_head_for(name)
+      path = default_cache_path("git/#{name}-#{Digest(:SHA1).hexdigest(lib_path(name).to_s)}")
+      File.read(path.join("HEAD")).strip
+    end
+
     it "floats on a branch when :branch is used" do
       build_git "foo", "1.0"
       update_git "foo", branch: "omg"
@@ -20,6 +25,45 @@ RSpec.describe "bundle update" do
       bundle "update", all: true
 
       expect(the_bundle).to include_gems "foo 1.1"
+    end
+
+    it "updates a source with no :branch when its default branch was renamed" do
+      build_git "foo", "1.0"
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "foo", :git => "#{lib_path("foo-1.0")}"
+      G
+
+      git "branch -m renamed", lib_path("foo-1.0")
+      update_git "foo" do |s|
+        s.write "lib/foo.rb", "FOO = '1.1'"
+      end
+
+      bundle "update", all: true
+
+      expect(err).to include("no longer has main, now following its default branch renamed")
+      expect(the_bundle).to include_gems "foo 1.1"
+    end
+
+    it "does not follow a renamed default branch when :branch is used" do
+      build_git "foo", "1.0"
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "foo", :git => "#{lib_path("foo-1.0")}", :branch => "main"
+      G
+
+      git "branch -m renamed", lib_path("foo-1.0")
+      update_git "foo" do |s|
+        s.write "lib/foo.rb", "FOO = '1.1'"
+      end
+
+      bundle "update", all: true
+
+      expect(err).to include("Revision main does not exist")
+      expect(the_bundle).to include_gems "foo 1.0"
+      expect(cached_head_for("foo-1.0")).to eq("ref: refs/heads/main")
     end
 
     it "updates correctly when you have like craziness" do

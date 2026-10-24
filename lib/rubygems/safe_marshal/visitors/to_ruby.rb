@@ -331,28 +331,14 @@ module Gem::SafeMarshal
         end
       end
 
-      # This is a hot method, so avoid respond_to? checks on every invocation
-      if :read.respond_to?(:name)
-        def resolve_symbol_name(element)
-          case element
-          when Elements::Symbol
-            element.name
-          when Elements::SymbolLink
-            visit_Gem_SafeMarshal_Elements_SymbolLink(element).name
-          else
-            raise FormatError, "Expected symbol or symbol link, got #{element.inspect} @ #{formatted_stack.join(".")}"
-          end
-        end
-      else
-        def resolve_symbol_name(element)
-          case element
-          when Elements::Symbol
-            element.name
-          when Elements::SymbolLink
-            visit_Gem_SafeMarshal_Elements_SymbolLink(element).to_s
-          else
-            raise FormatError, "Expected symbol or symbol link, got #{element.inspect} @ #{formatted_stack.join(".")}"
-          end
+      def resolve_symbol_name(element)
+        case element
+        when Elements::Symbol
+          element.name
+        when Elements::SymbolLink
+          visit_Gem_SafeMarshal_Elements_SymbolLink(element).name
+        else
+          raise FormatError, "Expected symbol or symbol link, got #{element.inspect} @ #{formatted_stack.join(".")}"
         end
       end
 

@@ -204,9 +204,9 @@ class TestWeakMap < Test::Unit::TestCase
   end
 
   def test_no_memory_leak
-    assert_no_memory_leak([], '', "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #19398]", rss: true, limit: 1.5, timeout: 60)
+    assert_no_memory_leak([], '', "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #19398]", rss: true, limit: 1.5, timeout: 60, samples: 5)
     begin;
-      1_000_000.times do
+      200_000.times do
         ObjectSpace::WeakMap.new
       end
     end;
@@ -257,7 +257,6 @@ class TestWeakMap < Test::Unit::TestCase
   end
 
   def test_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress { ObjectSpace::WeakMap.new }
   end
 

@@ -92,13 +92,13 @@ class Array
   #   a.sample(4, random: Random.new(1))  # => [6, 10, 9, 2]
   #
   # Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
-  def sample(n = (ary = false), random: Random)
+  def sample(n = (single = true), random: Random)
     if Primitive.mandatory_only?
-      # Primitive.cexpr! %{ rb_ary_sample(self, rb_cRandom, Qfalse, Qfalse) }
       Primitive.ary_sample0
+    elsif single
+      Primitive.ary_sample1(random)
     else
-      # Primitive.cexpr! %{ rb_ary_sample(self, random, n, ary) }
-      Primitive.ary_sample(random, n, ary)
+      Primitive.ary_sample(random, n)
     end
   end
 
@@ -129,12 +129,12 @@ class Array
   def first n = unspecified = true
     if Primitive.mandatory_only?
       Primitive.attr! :leaf
-      Primitive.cexpr! %q{ ary_first(self) }
+      Primitive.rb_builtin_ary_first
     else
       if unspecified
-        Primitive.cexpr! %q{ ary_first(self) }
+        Primitive.rb_builtin_ary_first
       else
-        Primitive.cexpr! %q{  ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_FIRST) }
+        Primitive.cexpr! %q{  ary_take_first_or_last_n(self, NUM2LEN(n), ARY_TAKE_FIRST) }
       end
     end
   end
@@ -171,7 +171,7 @@ class Array
       if unspecified
         Primitive.cexpr! %q{ ary_last(self) }
       else
-        Primitive.cexpr! %q{ ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_LAST) }
+        Primitive.cexpr! %q{ ary_take_first_or_last_n(self, NUM2LEN(n), ARY_TAKE_LAST) }
       end
     end
   end

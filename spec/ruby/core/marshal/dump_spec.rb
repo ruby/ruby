@@ -622,6 +622,13 @@ describe "Marshal.dump" do
       Marshal.dump(h).should == "\004\bC:\tHash{\x00"
     end
 
+    it "dumps a Hash with compare_by_identity and registers the \"Hash\" symbol in the link table" do
+      h = {}
+      h.compare_by_identity
+
+      Marshal.dump([h, :Hash]).should == "\x04\b[\aC:\tHash{\x00;\x00"
+    end
+
     it "dumps a Hash subclass with compare_by_identity" do
       h = UserHash.new
       h.compare_by_identity

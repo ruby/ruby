@@ -21,6 +21,7 @@
 #include "internal/eval.h"
 #include "internal/gc.h"
 #include "internal/inits.h"
+#include "internal/jit.h"
 #include "internal/missing.h"
 #include "internal/object.h"
 #include "internal/proc.h"
@@ -56,8 +57,12 @@
 #include "probes.h"
 #include "probes_helper.h"
 
-#ifdef RUBY_ASSERT_CRITICAL_SECTION
-int ruby_assert_critical_section_entered = 0;
+#if defined(_MSC_VER) && !defined(__clang__)
+/* Favor speed over the default -Os, which makes vm_exec_core dispatch
+ * instructions by a binary search instead of a jump table.  This must
+ * follow ruby/internal/memory.h, whose `#pragma optimize("", on)`
+ * restores the command line options. */
+#pragma optimize("t", on)
 #endif
 
 static void *native_main_thread_stack_top;
@@ -118,53 +123,62 @@ VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *curre
     const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
     const rb_control_frame_t *cfp = current_cfp;
 
-    if (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_IFUNC)) {
-        ep = VM_EP_LEP(current_cfp->ep);
-        /**
-         * Returns CFUNC frame only in this case.
-         *
-         * Usually CFUNC frame doesn't represent the current box and it should operate
-         * the caller box. See the example:
-         *
-         * # in the main box
-         * module Kernel
-         *   def foo = "foo"
-         *   module_function :foo
-         * end
-         *
-         * In the case above, `module_function` is defined in the root box.
-         * If `module_function` worked in the root box, `Kernel#foo` is invisible
-         * from it and it causes NameError: undefined method `foo` for module `Kernel`.
-         *
-         * But in cases of IFUNC (blocks written in C), IFUNC doesn't have its own box
-         * and its local env frame will be CFUNC frame.
-         * For example, `Enumerator#chunk` calls IFUNC blocks, written as `chunk_i` function.
-         *
-         * [1].chunk{ it.even? }.each{ ... }
-         *
-         * Before calling the Ruby block `{ it.even? }`, `#chunk` calls `chunk_i` as IFUNC
-         * to iterate the array's members (it's just like `#each`).
-         * We expect that `chunk_i` works as expected by the implementation of `#chunk`
-         * without any overwritten definitions from boxes.
-         * So the definitions on IFUNC frames should be equal to the caller CFUNC.
-         */
-        VM_ASSERT(VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC));
-        return ep;
-    }
+    /**
+     * For IFUNC frames, returns the ep of the enclosing CFUNC frame.
+     *
+     * Usually CFUNC frame doesn't represent the current box and it should operate
+     * the caller box. See the example:
+     *
+     * # in the main box
+     * module Kernel
+     *   def foo = "foo"
+     *   module_function :foo
+     * end
+     *
+     * In the case above, `module_function` is defined in the root box.
+     * If `module_function` worked in the root box, `Kernel#foo` is invisible
+     * from it and it causes NameError: undefined method `foo` for module `Kernel`.
+     *
+     * But in cases of IFUNC (blocks written in C), IFUNC doesn't have its own box
+     * and its local env frame will be CFUNC frame.
+     * For example, `Enumerator#chunk` calls IFUNC blocks, written as `chunk_i` function.
+     *
+     * [1].chunk{ it.even? }.each{ ... }
+     *
+     * Before calling the Ruby block `{ it.even? }`, `#chunk` calls `chunk_i` as IFUNC
+     * to iterate the array's members (it's just like `#each`).
+     * We expect that `chunk_i` works as expected by the implementation of `#chunk`
+     * without any overwritten definitions from boxes.
+     * So the definitions on IFUNC frames should be equal to the caller CFUNC.
+     *
+     * NOTE: We traverse the cfp chain directly instead of using VM_EP_LEP.
+     * When an IFUNC env is escaped to the heap (e.g., due to a surrounding
+     * `binding` call), the env may acquire VM_ENV_FLAG_LOCAL, causing VM_EP_LEP
+     * to return the IFUNC ep itself rather than the enclosing CFUNC ep.
+     *
+     * NOTE: An IFUNC may also have no enclosing CFUNC frame at all, when an
+     * ifunc proc is invoked directly from Ruby code (e.g. Proc#call on a proc
+     * created by Method#to_proc). In that case the caller Ruby frame
+     * determines the box, so continue to the local ep walk below.
+     */
+    while (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_IFUNC) ||
+           VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+        bool from_ifunc = VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_IFUNC);
 
-    while (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-
-        VM_BOX_ASSERT(cfp, "CFUNC should have a valid previous control frame");
-        VM_BOX_ASSERT(cfp < eocfp, "CFUNC should have a valid caller frame");
-        if (!cfp || cfp >= eocfp) {
+        VM_BOX_ASSERT(RUBY_VM_VALID_CONTROL_FRAME_P(cfp, eocfp), "Valid caller control frame expected");
+        if (!RUBY_VM_VALID_CONTROL_FRAME_P(cfp, eocfp)) {
             return NULL;
         }
 
-        VM_BOX_ASSERT(cfp->ep, "CFUNC should have a valid caller frame with env");
+        VM_BOX_ASSERT(cfp->ep, "Caller control frame should have a valid env");
         ep = cfp->ep;
         if (!ep) {
             return NULL;
+        }
+
+        if (from_ifunc && VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+            return ep;
         }
     }
 
@@ -470,14 +484,14 @@ static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
 
 #if USE_YJIT
 // Counter to serve as a proxy for execution time, total number of calls
-static uint64_t yjit_total_entry_hits = 0;
+static unsigned int yjit_total_entry_hits = 0;
 
 // Number of calls used to estimate how hot an ISEQ is
 #define YJIT_CALL_COUNT_INTERV 20u
 
 /// Test whether we are ready to compile an ISEQ or not
 static inline bool
-rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
+rb_yjit_threshold_hit(const rb_iseq_t *iseq, unsigned int entry_calls)
 {
     yjit_total_entry_hits += 1;
 
@@ -494,7 +508,7 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
             return true;
         }
 
-        uint64_t num_calls = yjit_total_entry_hits - ISEQ_BODY(iseq)->yjit_calls_at_interv;
+        unsigned int num_calls = yjit_total_entry_hits - ISEQ_BODY(iseq)->yjit_calls_at_interv;
 
         // Reject ISEQs that don't get called often enough
         if (num_calls > rb_yjit_cold_threshold) {
@@ -567,6 +581,23 @@ zjit_compile(rb_execution_context_t *ec)
 #else
 # define zjit_compile(ec) ((rb_jit_func_t)0)
 #endif
+
+// Return the call threshold of the enabled JIT, or 0 when no JIT is enabled.
+unsigned int
+rb_jit_call_threshold(void)
+{
+#if USE_YJIT
+    if (rb_yjit_enabled_p) {
+        return rb_yjit_call_threshold;
+    }
+#endif
+#if USE_ZJIT
+    if (rb_zjit_enabled_p) {
+        return rb_zjit_call_threshold;
+    }
+#endif
+    return 0;
+}
 
 #if USE_YJIT || USE_ZJIT
 // Execute JIT code compiled by yjit_compile() or zjit_compile()
@@ -673,6 +704,8 @@ static void add_opt_method_entry(const rb_method_entry_t *me);
 #define VM_ASSERT_TYPE3(obj, type1, type2, type3) \
     VM_ASSERT(RB_TYPE_3_P(obj, type1, type2, type3), #obj ": %s", rb_obj_info(obj))
 
+static const rb_box_t * current_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
+
 #include "vm_insnhelper.c"
 
 #include "vm_exec.c"
@@ -712,15 +745,11 @@ rb_current_ec_set(rb_execution_context_t *ec)
     ruby_current_ec = ec;
 }
 
-
-#ifdef RB_THREAD_CURRENT_EC_NOINLINE
 rb_execution_context_t *
 rb_current_ec(void)
 {
     return ruby_current_ec;
 }
-
-#endif
 #else
 native_tls_key_t ruby_current_ec_key;
 
@@ -1534,6 +1563,13 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
         RB_OBJ_WRITTEN(copied_env, Qundef, new_prev_env);
         VM_ENV_FLAGS_UNSET(ep, VM_ENV_FLAG_LOCAL);
     }
+    else if (VM_ENV_BOXED_P(src_ep)) {
+        // A TOP/CLASS local env stores its box, not a block handler, in the
+        // SPECVAL slot (VM_ENV_BOX). Preserve it: method lookup inside the
+        // isolated proc reads the box back via rb_current_box(), and a
+        // cleared slot dereferences a NULL box.
+        ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
+    }
     else {
         ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_BLOCK_HANDLER_NONE;
     }
@@ -1551,6 +1587,16 @@ proc_isolate_env(VALUE self, rb_proc_t *proc, VALUE read_only_variables)
     RB_OBJ_WRITTEN(self, Qundef, env);
 }
 
+static int
+proc_has_ivar_i(ID name, VALUE val, st_data_t arg)
+{
+    if (rb_is_instance_id(name)) {
+        *(bool *)arg = true;
+        return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
 static VALUE
 proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, const char *message)
 {
@@ -1566,7 +1612,7 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, c
         VALUE str = rb_sprintf("can not %s because it accesses outer variables", message);
         VALUE ary = data.ary;
         const char *sep = " (";
-        for (long i = 0; i < RARRAY_LEN(ary); i++) {
+        for (rb_len_t i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE name = rb_id2str(NUM2ID(RARRAY_AREF(ary, i)));
             if (!name) continue;
             rb_str_cat_cstr(str, sep);
@@ -1606,6 +1652,16 @@ rb_proc_isolate_bang(VALUE self, VALUE replace_self)
         proc_isolate_env(self, proc, Qfalse);
         proc->header.is_isolated = TRUE;
         RB_OBJ_WRITE(self, &proc->block.as.captured.self, Qnil);
+    }
+
+    /* ivars are not traversed here, so their values may be unshareable */
+    if (UNLIKELY(rb_obj_shape_has_ivars(self))) {
+        bool has_ivar = false;
+        rb_ivar_foreach(self, proc_has_ivar_i, (st_data_t)&has_ivar);
+
+        if (has_ivar) {
+            rb_raise(rb_eRactorIsolationError, "can not isolate a Proc because it has instance variables");
+        }
     }
 
     RB_OBJ_SET_SHAREABLE(self);
@@ -1733,6 +1789,7 @@ rb_vm_make_binding(const rb_execution_context_t *ec, const rb_control_frame_t *s
     RB_OBJ_WRITE(bindval, &bind->block.as.captured.self, cfp->self);
     RB_OBJ_WRITE(bindval, &bind->block.as.captured.code.iseq, CFP_ISEQ(cfp));
     RB_OBJ_WRITE(bindval, &bind->pathobj, ISEQ_BODY(CFP_ISEQ(ruby_level_cfp))->location.pathobj);
+    bind->no_realpath = ISEQ_BODY(CFP_ISEQ(ruby_level_cfp))->no_realpath;
     bind->first_lineno = rb_vm_get_sourceline(ruby_level_cfp);
 
     return bindval;
@@ -1743,7 +1800,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
 {
     VALUE envval, pathobj = bind->pathobj;
     VALUE path = pathobj_path(pathobj);
-    VALUE realpath = pathobj_realpath(pathobj);
+    VALUE realpath = pathobj_realpath(pathobj, bind->no_realpath);
     const struct rb_block *base_block;
     const rb_env_t *env;
     rb_execution_context_t *ec = GET_EC();
@@ -3298,6 +3355,31 @@ rb_vm_frame_flag_set_box_require(const rb_execution_context_t *ec)
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_BOX_REQUIRE);
 }
 
+static const rb_box_t *current_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
+
+/**
+ * Returns the nearest user box in the caller frames, or NULL if there is none.
+ *
+ * Builtin methods written in Ruby are defined in the master box, so their own
+ * frame tells nothing about the caller. Those marked with
+ * `Primitive.attr! :caller_user_box` need the box owning the caller code, and the
+ * frames in between may belong to the master or the root box, e.g. when another
+ * builtin method or a proc made in the root box calls them.
+ */
+static const rb_box_t *
+caller_user_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
+{
+    const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec);
+
+    while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, eocfp)) {
+        const rb_box_t *box = current_box_on_cfp(ec, cfp);
+        if (BOX_USER_P(box))
+            return box;
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+    return NULL;
+}
+
 static const rb_box_t *
 current_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
@@ -3311,6 +3393,15 @@ current_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *c
         cme = check_method_entry(lep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
         VM_BOX_ASSERT(cme, "cme should be valid");
         VM_BOX_ASSERT(cme->def, "cme->def shold be valid");
+        if (cme->def->type == VM_METHOD_TYPE_ISEQ &&
+            (ISEQ_BODY(cme->def->body.iseq.iseqptr)->builtin_attrs & BUILTIN_ATTR_CALLER_USER_BOX)) {
+            const rb_control_frame_t *owner_cfp = rb_vm_search_cf_from_ep(ec, cfp, lep);
+            if (owner_cfp) {
+                box = caller_user_box_on_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(owner_cfp));
+                if (box)
+                    return box;
+            }
+        }
         return cme->def->box;
     }
     else if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_TOP) || VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_CLASS)) {
@@ -3388,9 +3479,9 @@ rb_vm_update_references(void *ptr)
     if (ptr) {
         rb_vm_t *vm = ptr;
 
-        vm->self = rb_gc_location(vm->self);
-        vm->orig_progname = rb_gc_location(vm->orig_progname);
-        vm->cc_refinement_set = rb_gc_location(vm->cc_refinement_set);
+        rb_gc_update_moved(&vm->self);
+        rb_gc_update_moved(&vm->orig_progname);
+        rb_gc_update_moved(&vm->cc_refinement_set);
 
         if (vm->root_box)
             rb_box_gc_update_references(vm->root_box);
@@ -3400,9 +3491,9 @@ rb_vm_update_references(void *ptr)
         rb_gc_update_values(RUBY_NSIG, vm->trap_list.cmd);
 
         if (vm->coverages) {
-            vm->coverages = rb_gc_location(vm->coverages);
-            vm->cme2counter = rb_gc_location(vm->cme2counter);
-            vm->me_set = rb_gc_location(vm->me_set);
+            rb_gc_update_moved(&vm->coverages);
+            rb_gc_update_moved(&vm->cme2counter);
+            rb_gc_update_moved(&vm->me_set);
         }
     }
 }
@@ -3578,7 +3669,10 @@ ruby_vm_destruct(rb_vm_t *vm)
             }
             rb_objspace_free(objspace);
         }
-        rb_native_mutex_destroy(&vm->workqueue_lock);
+
+        if (rb_free_at_exit) {
+            free(vm->gc.registered_addrs.registry);
+        }
         rb_native_mutex_destroy(&vm->once_lock);
         rb_native_cond_destroy(&vm->once_cond);
         /* after freeing objspace, you *can't* use ruby_xfree() */
@@ -3596,7 +3690,6 @@ ruby_vm_destruct(rb_vm_t *vm)
     return 0;
 }
 
-size_t rb_vm_memsize_workqueue(struct ccan_list_head *workqueue); // vm_trace.c
 
 // Used for VM memsize reporting. Returns the size of the at_exit list by
 // looping through the linked list and adding up the size of the structs.
@@ -3651,7 +3744,6 @@ vm_memsize(const void *ptr)
     return (
         sizeof(rb_vm_t) +
         rb_vm_memsize_postponed_job_queue() +
-        rb_vm_memsize_workqueue(&vm->workqueue) +
         vm_memsize_at_exit_list(vm->at_exit) +
         (rb_st_memsize(&vm->ci_table) - sizeof(struct st_table)) +
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
@@ -3774,17 +3866,13 @@ rb_execution_context_update(rb_execution_context_t *ec)
         // safely use rb_gc_location on such slots.
         if (!rb_zjit_enabled_p) {
             for (i = 0; i < (long)(sp - p); i++) {
-                VALUE ref = p[i];
-                VALUE update = rb_gc_location(ref);
-                if (ref != update) {
-                    p[i] = update;
-                }
+                rb_gc_update_moved(&p[i]);
             }
         }
 
         while (cfp != limit_cfp) {
             const VALUE *ep = cfp->ep;
-            cfp->self = rb_gc_location(cfp->self);
+            rb_gc_update_moved(&cfp->self);
             if (CFP_ZJIT_FRAME_P(cfp)) {
                 const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
                 rb_zjit_jit_frame_update_references((zjit_jit_frame_t *)jit_frame);
@@ -3793,23 +3881,23 @@ rb_execution_context_update(rb_execution_context_t *ec)
                 // was initialized by ZJIT and may have been written later by
                 // vm_caller_setup_arg_block (ISEQ frames) or rb_iterate0 (C frames).
                 if (!jit_frame->materialize_block_code) {
-                    cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
+                    rb_gc_update_moved_ptr(&cfp->block_code);
                 }
             }
             else {
-                cfp->_iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->_iseq);
-                cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
+                rb_gc_update_moved_ptr(&cfp->_iseq);
+                rb_gc_update_moved_ptr(&cfp->block_code);
             }
 
             if (!VM_ENV_LOCAL_P(ep)) {
                 const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
                 if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-                    VM_FORCE_WRITE(&prev_ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(prev_ep[VM_ENV_DATA_INDEX_ENV]));
+                    rb_gc_update_moved((VALUE *)&prev_ep[VM_ENV_DATA_INDEX_ENV]);
                 }
 
                 if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
-                    VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(ep[VM_ENV_DATA_INDEX_ENV]));
-                    VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ME_CREF], rb_gc_location(ep[VM_ENV_DATA_INDEX_ME_CREF]));
+                    rb_gc_update_moved((VALUE *)&ep[VM_ENV_DATA_INDEX_ENV]);
+                    rb_gc_update_moved((VALUE *)&ep[VM_ENV_DATA_INDEX_ME_CREF]);
                 }
             }
 
@@ -3817,21 +3905,21 @@ rb_execution_context_update(rb_execution_context_t *ec)
         }
     }
 
-    ec->storage = rb_gc_location(ec->storage);
+    rb_gc_update_moved(&ec->storage);
 
-    ec->gen_fields_cache.obj = rb_gc_location(ec->gen_fields_cache.obj);
-    ec->gen_fields_cache.fields_obj = rb_gc_location(ec->gen_fields_cache.fields_obj);
+    rb_gc_update_moved(&ec->gen_fields_cache.obj);
+    rb_gc_update_moved(&ec->gen_fields_cache.fields_obj);
 }
 
 static enum rb_id_table_iterator_result
 mark_local_storage_i(VALUE local, void *data)
 {
-    rb_gc_mark(local);
+    rb_gc_mark_ctx((const struct rb_gc_mark_ctx *)data, local);
     return ID_TABLE_CONTINUE;
 }
 
 void
-rb_execution_context_mark(const rb_execution_context_t *ec)
+rb_execution_context_mark_ctx(const struct rb_gc_mark_ctx *ctx, const rb_execution_context_t *ec)
 {
     /* mark VM stack */
     if (ec->vm_stack) {
@@ -3845,10 +3933,10 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             if (rb_zjit_enabled_p) {
                 // ZJIT leaves uninitialized slots on the VM stack, so we need
                 // to mark such slots conservatively.
-                rb_gc_mark_maybe(p[i]);
+                rb_gc_mark_maybe_ctx(ctx, p[i]);
             }
             else {
-                rb_gc_mark_movable(p[i]);
+                rb_gc_mark_movable_ctx(ctx, p[i]);
             }
         }
 
@@ -3856,39 +3944,39 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             const VALUE *ep = cfp->ep;
             VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
 
-            rb_gc_mark_movable(cfp->self);
+            rb_gc_mark_movable_ctx(ctx, cfp->self);
             if (CFP_ZJIT_FRAME_P(cfp)) {
                 const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
-                rb_gc_mark_movable((VALUE)jit_frame->iseq);
+                rb_gc_mark_movable_ctx(ctx, (VALUE)jit_frame->iseq);
                 // materialize_block_code means cfp->block_code is lazy and may
                 // still contain stale data from a previous frame. Otherwise it
                 // was initialized by ZJIT and may have been written later by
                 // vm_caller_setup_arg_block (ISEQ frames) or rb_iterate0 (C frames).
                 if (!jit_frame->materialize_block_code) {
-                    rb_gc_mark_movable((VALUE)cfp->block_code);
+                    rb_gc_mark_movable_ctx(ctx, (VALUE)cfp->block_code);
                 }
             }
             else {
-                rb_gc_mark_movable((VALUE)cfp->_iseq);
-                rb_gc_mark_movable((VALUE)cfp->block_code);
+                rb_gc_mark_movable_ctx(ctx, (VALUE)cfp->_iseq);
+                rb_gc_mark_movable_ctx(ctx, (VALUE)cfp->block_code);
             }
 
             if (VM_ENV_LOCAL_P(ep) && VM_ENV_BOXED_P(ep)) {
                 const rb_box_t *box = VM_ENV_BOX(ep);
                 if (BOX_USER_P(box)) {
-                    rb_gc_mark_movable(box->box_object);
+                    rb_gc_mark_movable_ctx(ctx, box->box_object);
                 }
             }
 
             if (!VM_ENV_LOCAL_P(ep)) {
                 const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
                 if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-                    rb_gc_mark_movable(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+                    rb_gc_mark_movable_ctx(ctx, prev_ep[VM_ENV_DATA_INDEX_ENV]);
                 }
 
                 if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
-                    rb_gc_mark_movable(ep[VM_ENV_DATA_INDEX_ENV]);
-                    rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);
+                    rb_gc_mark_movable_ctx(ctx, ep[VM_ENV_DATA_INDEX_ENV]);
+                    rb_gc_mark_ctx(ctx, ep[VM_ENV_DATA_INDEX_ME_CREF]);
                 }
             }
 
@@ -3900,25 +3988,25 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     if (ec->machine.stack_start && ec->machine.stack_end &&
             /* marked for current ec at the first stage of marking */
             ec != rb_gc_get_ec()) {
-        rb_gc_mark_machine_context(ec);
+        rb_gc_mark_machine_context_ctx(ctx, ec);
     }
 
-    rb_gc_mark(ec->errinfo);
-    rb_gc_mark(ec->root_svar);
+    rb_gc_mark_ctx(ctx, ec->errinfo);
+    rb_gc_mark_ctx(ctx, ec->root_svar);
     if (ec->local_storage) {
-        rb_id_table_foreach_values(ec->local_storage, mark_local_storage_i, NULL);
+        rb_id_table_foreach_values(ec->local_storage, mark_local_storage_i, (void *)ctx);
     }
-    rb_gc_mark(ec->local_storage_recursive_hash);
-    rb_gc_mark(ec->local_storage_recursive_hash_for_trace);
-    rb_gc_mark(ec->private_const_reference);
+    rb_gc_mark_ctx(ctx, ec->local_storage_recursive_hash);
+    rb_gc_mark_ctx(ctx, ec->local_storage_recursive_hash_for_trace);
+    rb_gc_mark_ctx(ctx, ec->private_const_reference);
 
-    rb_gc_mark_movable(ec->storage);
+    rb_gc_mark_movable_ctx(ctx, ec->storage);
 }
 
-void rb_fiber_mark_self(rb_fiber_t *fib);
+void rb_fiber_mark_self(const struct rb_gc_mark_ctx *ctx, const rb_fiber_t *fib);
 void rb_fiber_update_self(rb_fiber_t *fib);
 void rb_threadptr_root_fiber_setup(rb_thread_t *th);
-void rb_root_fiber_obj_setup(rb_thread_t *th);
+void rb_root_fiber_obj_setup(rb_thread_t *th, void *objspace);
 void rb_threadptr_root_fiber_release(rb_thread_t *th);
 
 static void
@@ -3926,39 +4014,39 @@ thread_compact(void *ptr)
 {
     rb_thread_t *th = ptr;
 
-    th->self = rb_gc_location(th->self);
+    rb_gc_update_moved(&th->self);
 }
 
 /* Mark the heap objects a thread owns (the caller handles ec and fiber).  Split
  * out of thread_mark so that a local GC can root them straight from the Ractor's
  * local roots (rb_ractor_mark_local_roots). */
 void
-rb_thread_mark_owned_roots(rb_thread_t *th)
+rb_thread_mark_owned_roots(const struct rb_gc_mark_ctx *ctx, rb_thread_t *th)
 {
     /* mark ruby objects */
     switch (th->invoke_type) {
       case thread_invoke_type_proc:
       case thread_invoke_type_ractor_proc:
-        rb_gc_mark(th->invoke_arg.proc.proc);
-        rb_gc_mark(th->invoke_arg.proc.args);
+        rb_gc_mark_ctx(ctx, th->invoke_arg.proc.proc);
+        rb_gc_mark_ctx(ctx, th->invoke_arg.proc.args);
         break;
       case thread_invoke_type_func:
-        rb_gc_mark_maybe((VALUE)th->invoke_arg.func.arg);
+        rb_gc_mark_maybe_ctx(ctx, (VALUE)th->invoke_arg.func.arg);
         break;
       default:
         break;
     }
 
-    rb_gc_mark(th->thgroup);
-    rb_gc_mark(th->value);
-    rb_gc_mark(th->pending_interrupt_queue);
-    rb_gc_mark(th->pending_interrupt_mask_stack);
-    rb_gc_mark(th->top_self);
-    rb_gc_mark(th->top_wrapper);
-    rb_gc_mark(th->last_status);
-    rb_gc_mark(th->locking_mutex);
-    rb_gc_mark(th->name);
-    rb_gc_mark(th->scheduler);
+    rb_gc_mark_ctx(ctx, th->thgroup);
+    rb_gc_mark_ctx(ctx, th->value);
+    rb_gc_mark_ctx(ctx, th->pending_interrupt_queue);
+    rb_gc_mark_ctx(ctx, th->pending_interrupt_mask_stack);
+    rb_gc_mark_ctx(ctx, th->top_self);
+    rb_gc_mark_ctx(ctx, th->top_wrapper);
+    rb_gc_mark_ctx(ctx, th->last_status);
+    rb_gc_mark_ctx(ctx, th->locking_mutex);
+    rb_gc_mark_ctx(ctx, th->name);
+    rb_gc_mark_ctx(ctx, th->scheduler);
 
     rb_threadptr_interrupt_exec_task_mark(th);
 }
@@ -3967,22 +4055,23 @@ static void
 thread_mark(void *ptr)
 {
     rb_thread_t *th = ptr;
+    const struct rb_gc_mark_ctx ctx = rb_gc_current_mark_ctx();
     RUBY_MARK_ENTER("thread");
 
     // ec is null when setting up the thread in rb_threadptr_root_fiber_setup
     if (th->ec) {
-        rb_fiber_mark_self(th->ec->fiber_ptr);
+        rb_fiber_mark_self(&ctx, th->ec->fiber_ptr);
     }
 
     /* A live thread wrapper keeps its Ractor object alive (and through its dfree the
      * rb_ractor_t), so an inherited Thread keeps a dead Ractor alive just as it does
      * upstream. */
-    if (th->ractor) rb_gc_mark(rb_ractor_self(th->ractor));
-    if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
+    if (th->ractor) rb_gc_mark_ctx(&ctx, rb_ractor_self(th->ractor));
+    if (th->root_fiber) rb_fiber_mark_self(&ctx, th->root_fiber);
 
     RUBY_ASSERT(th->ec == NULL || th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
 
-    rb_thread_mark_owned_roots(th);
+    rb_thread_mark_owned_roots(&ctx, th);
 
     RUBY_MARK_LEAVE("thread");
 }
@@ -4072,10 +4161,9 @@ rb_obj_is_thread(VALUE obj)
 }
 
 static VALUE
-thread_alloc(VALUE klass)
+thread_alloc(VALUE klass, void *objspace)
 {
-    rb_thread_t *th;
-    return TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
+    return rb_data_typed_object_zalloc_in_objspace(objspace, klass, sizeof(rb_thread_t), &thread_data_type);
 }
 
 void
@@ -4187,14 +4275,20 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 }
 
 VALUE
-rb_thread_alloc(VALUE klass)
+rb_thread_alloc_in_objspace(VALUE klass, void *objspace)
 {
-    VALUE self = thread_alloc(klass);
+    VALUE self = thread_alloc(klass, objspace);
     rb_thread_t *target_th = rb_thread_ptr(self);
     target_th->ractor = GET_RACTOR();
     th_init(target_th, self, target_th->vm = GET_VM());
-    rb_root_fiber_obj_setup(target_th);
+    rb_root_fiber_obj_setup(target_th, objspace);
     return self;
+}
+
+VALUE
+rb_thread_alloc(VALUE klass)
+{
+    return rb_thread_alloc_in_objspace(klass, GET_RACTOR()->objspace);
 }
 
 #define REWIND_CFP(expr) do { \
@@ -4241,6 +4335,36 @@ m_core_set_postexe(VALUE self)
     rb_ractor_ensure_main_ractor("can not use END{} in non-main Ractors");
     rb_set_end_proc(rb_call_end_proc, rb_block_proc());
     return Qnil;
+}
+
+static VALUE
+m_core_iseq_path(VALUE self, VALUE frozen_string_literal_option_value)
+{
+    rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
+    cfp = vm_get_ruby_level_caller_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+    if (cfp == NULL) {
+        return Qnil;
+    }
+    const rb_iseq_t *iseq = CFP_ISEQ(cfp);
+    VALUE path = rb_iseq_path(iseq);
+    if (RTEST(path)) {
+        int frozen_string_literal_option = NUM2INT(frozen_string_literal_option_value);
+        switch (frozen_string_literal_option) {
+          case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
+            RUBY_ASSERT(OBJ_FROZEN(path));
+            break;
+          case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
+            path = rb_str_resurrect(path);
+            break;
+          case ISEQ_FROZEN_STRING_LITERAL_UNSET:
+            path = rb_ec_str_resurrect(ec, path, true);
+            break;
+          default:
+            UNREACHABLE_RETURN(Qundef);
+        }
+    }
+    return path;
 }
 
 static VALUE
@@ -4538,6 +4662,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_set_variable_alias, m_core_set_variable_alias, 2);
     rb_define_method_id(klass, id_core_undef_method, m_core_undef_method, 2);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
+    rb_define_method_id(klass, id_core_iseq_path, m_core_iseq_path, 1);
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_bang_ptr, m_core_hash_merge_bang_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
@@ -4811,7 +4936,7 @@ Init_VM(void)
         th->top_wrapper = 0;
         th->top_self = rb_vm_top_self();
 
-        rb_root_fiber_obj_setup(th);
+        rb_root_fiber_obj_setup(th, th->ractor->objspace);
 
         rb_vm_register_global_object((VALUE)iseq);
         th->ec->cfp->_iseq = iseq;
@@ -4878,6 +5003,7 @@ Init_BareVM(void)
     /* The boot objspace belongs to the main Ractor, so the main Ractor has to exist
      * before rb_gc_init_objspaces allocates it. */
     vm->ractor.main_ractor = rb_ractor_main_alloc();
+    rb_native_mutex_initialize(&vm->gc.registered_addrs.lock);
     rb_gc_init_objspaces();
     vm->ractor.main_ractor->newobj_cache = rb_gc_ractor_cache_alloc(vm->ractor.main_ractor);
     rb_id_table_init(&vm->negative_cme_table, 16);
@@ -4902,7 +5028,6 @@ Init_BareVM(void)
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
     rb_native_mutex_initialize(&vm->ractor.generic_fields_lock);
-    rb_native_mutex_initialize(&vm->gc.registered_globals.lock);
     vm->gc.orphan_merge_pjob = POSTPONED_JOB_HANDLE_INVALID;
 
     vm_opt_method_def_table = st_init_numtable();

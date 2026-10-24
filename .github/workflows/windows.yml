@@ -22,6 +22,7 @@ permissions:
 
 jobs:
   make:
+    continue-on-error: ${{ matrix.os == '11-arm' || matrix.make == 'make' }}
     strategy:
       matrix:
         include:
@@ -32,9 +33,18 @@ jobs:
           - os: 2025-vs2026
             test_task: check
           - os: 2025-vs2026
+            test_task: check
+            make: make
+          - os: 2025-vs2026
             test_task: test-bundled-gems
+          - os: 2025-vs2026
+            test_task: check
+            target: x86
+          - os: 2025-vs2026
+            test_task: check
+            yjit: true
           - os: 11-arm
-            test_task: 'btest test-basic test-tool' # check and test-spec are broken yet.
+            test_task: check
             target: arm64
       fail-fast: false
 
@@ -48,7 +58,7 @@ jobs:
       || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/vcpkg'))
       )}}
 
-    name: Windows ${{ matrix.os }} (${{ matrix.test_task }})
+    name: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }}${{ case(matrix.yjit == true, ' YJIT', '') }}${{ case(matrix.make == 'make', ' GNU make', '') }} (${{ matrix.test_task }})
 
     permissions:
       contents: read
@@ -58,12 +68,13 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
       FEED_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+      NoDefaultCurrentDirectoryInExePath: 1
 
     steps:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+      - uses: ruby/setup-ruby@824c0e29fdfc7d689c191c27acc969d2d04b7dd8 # v1.331.0
         with:
           # windows-11-arm has only 3.4.1, 3.4.2, 3.4.3, head
           ruby-version: ${{ !endsWith(matrix.os, 'arm') && '3.1' || '3.4' }}
@@ -80,7 +91,7 @@ jobs:
         with:
           srcdir: src
           builddir: build
-          make-command: nmake
+          make-command: ${{ matrix.make || 'nmake' }}
           clean: true
           bundled-gems-src-cache: ${{ matrix.test_task == 'test-bundled-gems' }}
 
@@ -115,7 +126,7 @@ jobs:
         run: |
           git -C "%VCPKG_INSTALLATION_ROOT%" pull --quiet
           call "%VCPKG_INSTALLATION_ROOT%\bootstrap-vcpkg.bat"
-          vcpkg install
+          vcpkg install --overlay-triplets=.github/vcpkg-triplets
         working-directory: src
 
       - name: setup env
@@ -131,6 +142,8 @@ jobs:
           set TMP=%RUNNER_TEMP%
           set TEMP=%RUNNER_TEMP%
           set MAKEFLAGS=l
+          rem configure.bat runs nmake, which also reads MAKEFLAGS.
+          set GNUMAKEFLAGS=${{ matrix.make == 'make' && '-j%NUMBER_OF_PROCESSORS%' || '' }}
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
           set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
           set > new.env
@@ -144,6 +157,12 @@ jobs:
             Where-Object { $_.SideIndicator -eq '=>' } |
             Select-Object -ExpandProperty InputObject |
             Add-Content -Path $env:GITHUB_ENV
+
+      - name: Install GNU make
+        run: |
+          call ..\src\win32\install-gnumake.cmd || exit /b 1
+          echo %GITHUB_WORKSPACE%\src\.gnumake>>%GITHUB_PATH%
+        if: ${{ matrix.make == 'make' }}
 
       - name: baseruby version
         run: ruby -v
@@ -161,16 +180,19 @@ jobs:
           ../src/win32/configure.bat --disable-install-doc
           --with-opt-dir=%RUBY_OPT_DIR%
           --with-gmp
+          --enable-debug-env
+          ${{ matrix.yjit && '--enable-yjit' || '' }}
+          ${{ matrix.make == 'make' && '--with-gnu-make' || '' }}
 
-      - run: nmake prepare-vcpkg
+      - run: ${{ matrix.make || 'nmake' }} prepare-vcpkg
 
-      - run: nmake incs
+      - run: ${{ matrix.make || 'nmake' }} incs
 
-      - run: nmake extract-extlibs
+      - run: ${{ matrix.make || 'nmake' }} extract-extlibs
 
       # On all other platforms, test-spec depending on extract-gems (in common.mk) is enough.
       # But not for this Visual Studio workflow. So here we extract gems before building.
-      - run: nmake extract-gems
+      - run: ${{ matrix.make || 'nmake' }} extract-gems
 
       # windows-11-arm runner cannot run `ruby tool/file2lastrev.rb --revision.h --output=revision.h`
       - name: make revision.h
@@ -179,32 +201,65 @@ jobs:
           type revision.h
         working-directory: src
 
-      - run: nmake
+      - run: ${{ matrix.make || 'nmake' }}
+
+      - name: Set ENV for YJIT
+        shell: pwsh
+        run: |
+          "RUBY_YJIT_ENABLE=1" >> $Env:GITHUB_ENV
+        if: ${{ matrix.yjit }}
+
+      - name: Check YJIT enabled
+        run: .\miniruby.exe -v && .\miniruby.exe -v | findstr /c:"+YJIT" > nul
+        if: ${{ matrix.yjit }}
 
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: windows-${{ matrix.os }}
+          os: windows-${{ matrix.os }}${{ case(matrix.target == 'x86', '-x86', '') }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
           test-task: ${{ matrix.test_task || 'check' }}
+          is-yjit: ${{ matrix.yjit || false }}
         continue-on-error: true
-        if: ${{ matrix.test_task != 'test-bundled-gems' }}
+        if: ${{ matrix.test_task != 'test-bundled-gems' && !matrix.make }}
         timeout-minutes: 3
 
-      - run: nmake ${{ matrix.test_task || 'check' }}
+      # A minidump with data segments, handles, unloaded modules, the PEB and
+      # TEBs, the memory map and thread info (0x1925).  The heap is left out
+      # to keep the dumps small.
+      - name: Set up crash dumps
+        run: |
+          md "%GITHUB_WORKSPACE%\crashdumps"
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpFolder /t REG_EXPAND_SZ /d "%GITHUB_WORKSPACE%\crashdumps" /f
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpCount /t REG_DWORD /d 50 /f
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpType /t REG_DWORD /d 0 /f
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v CustomDumpFlags /t REG_DWORD /d 0x1925 /f
+
+      # A dump carries part of the environment, so the test processes run
+      # without LAUNCHABLE_TOKEN (only the Launchable post step uses it), and
+      # no dump is written after this step.
+      - name: ${{ matrix.make || 'nmake' }} ${{ matrix.test_task || 'check' }}
+        run: |
+          set LAUNCHABLE_TOKEN=
+          ${{ matrix.make || 'nmake' }} ${{ matrix.test_task || 'check' }} ${{ matrix.yjit && 'RUN_OPTS=--yjit-call-threshold=1' || '' }}
         env:
           RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }}
+          RUBY_DEBUG: wer
         timeout-minutes: 70
 
+      - name: Stop crash dumps
+        run: reg delete "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /f
+        if: ${{ always() }}
+
       - run: nmake binary-package
-        if: ${{ matrix.test_task == 'check' }}
+        if: ${{ matrix.test_task == 'check' && !matrix.make }}
         timeout-minutes: 10
 
       - name: Verify binary package
         shell: pwsh
-        if: ${{ matrix.test_task == 'check' }}
+        if: ${{ matrix.test_task == 'check' && !matrix.make }}
         run: |
           $zip = Get-Item ruby-*-mswin*.zip
           $dest = Join-Path $env:RUNNER_TEMP "binpkg"
@@ -214,16 +269,38 @@ jobs:
           if ((Get-ChildItem $dest).Count -ne 1) { throw "zip must contain a single root directory" }
           $root = (Get-ChildItem $dest)[0].FullName
           if (!(Test-Path "$root\bin\ruby.exe")) { throw "bin\ruby.exe not found" }
-          if (Get-ChildItem "$root\bin" -Filter "vcruntime140*.dll") { throw "the VC runtime must not be bundled" }
+          if (Get-ChildItem "$root\bin" | Where-Object Name -match '^vcruntime140(_\w+)?\.dll$') { throw "the VC runtime must not be bundled" }
           if (!(Get-ChildItem "$root\LICENSES" -ErrorAction SilentlyContinue)) { throw "LICENSES missing" }
           $env:PATH = "$env:SystemRoot\System32"
           & "$root\bin\ruby.exe" -v -ropenssl -rfiddle -rpsych -rzlib -e 'abort "configure_args has an absolute path: #{RbConfig::CONFIG[%q(configure_args)]}" if RbConfig::CONFIG[%q(configure_args)] =~ /\b[A-Za-z]:[\/\\]/; puts %q(binary package OK)'
           if ($LASTEXITCODE -ne 0) { throw "smoke test failed" }
         timeout-minutes: 5
 
+      - name: List crash dumps
+        run: dir "%GITHUB_WORKSPACE%\crashdumps"
+        if: ${{ always() && hashFiles('crashdumps/**') != '' }}
+
+      - name: Upload crash dumps
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: crashdumps-${{ matrix.os }}${{ case(matrix.target == 'x86', '-x86', '') }}${{ case(matrix.yjit == true, '-yjit', '') }}${{ case(matrix.make == 'make', '-gnumake', '') }}-${{ matrix.test_task }}
+          path: |
+            crashdumps
+            build/*.exe
+            build/*.dll
+            build/**/*.pdb
+            !build/**/vc140.pdb
+            build/.ext/**/*.so
+            build/.bundle/**/*.so
+            src/vcpkg_installed/*/bin
+          include-hidden-files: true
+          retention-days: 7
+          overwrite: true
+        if: ${{ always() && hashFiles('crashdumps/**') != '' }}
+
       - uses: ./.github/actions/slack
         with:
-          label: Windows ${{ matrix.os }} / ${{ matrix.test_task || 'check' }}
+          label: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }}${{ case(matrix.yjit == true, ' YJIT', '') }}${{ case(matrix.make == 'make', ' GNU make', '') }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
@@ -265,7 +342,7 @@ jobs:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+      - uses: ruby/setup-ruby@824c0e29fdfc7d689c191c27acc969d2d04b7dd8 # v1.331.0
         with:
           ruby-version: '3.1'
           bundler: none

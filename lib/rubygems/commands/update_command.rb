@@ -165,9 +165,9 @@ command to remove old versions.
     hig = {} # highest installed gems
 
     # Get only gem specifications installed as --user-install
-    Gem::Specification.dirs = Gem.user_dir if options[:user_install]
+    specification_record = options[:user_install] ? Gem::SpecificationRecord.from_path(Gem.user_dir) : Gem::Specification.specification_record
 
-    Gem::Specification.each do |spec|
+    specification_record.each do |spec|
       if hig[spec.name].nil? || hig[spec.name].version < spec.version
         hig[spec.name] = spec
       end
@@ -194,7 +194,7 @@ command to remove old versions.
     return spec_tuples unless @cooldown&.active?
 
     with_times = spec_tuples.map do |tup, source|
-      [tup, source, source.created_at(tup.name, tup.version, tup.platform)]
+      [tup, source, source.created_at_for_tuple(tup)]
     end
 
     if !with_times.empty? && with_times.none? {|_, _, created_at| created_at }

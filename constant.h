@@ -34,7 +34,10 @@ typedef struct rb_const_entry_struct {
     rb_const_flag_t flag;
     int line;
     VALUE value;            /* should be mark */
-    VALUE file;             /* should be mark */
+    union {                 /* should be mark */
+        VALUE file;             /* the file where the constant is defined */
+        VALUE autoload_const;   /* the autoload registration if value is Qundef */
+    } u;
 } rb_const_entry_t;
 
 VALUE rb_mod_private_constant(int argc, const VALUE *argv, VALUE obj);
@@ -45,6 +48,7 @@ VALUE rb_const_source_location(VALUE, ID);
 
 int rb_autoloading_value(VALUE mod, ID id, VALUE *value, rb_const_flag_t *flag);
 rb_const_entry_t *rb_const_lookup(VALUE klass, ID id);
+bool rb_const_lookup_copy(VALUE klass, ID id, rb_const_entry_t *ce);
 VALUE rb_public_const_get_at(VALUE klass, ID id);
 VALUE rb_public_const_get_from(VALUE klass, ID id);
 int rb_public_const_defined_from(VALUE klass, ID id);

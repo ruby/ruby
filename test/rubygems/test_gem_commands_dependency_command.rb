@@ -188,6 +188,53 @@ ERROR:  Only reverse dependencies for local gems are supported.
     assert_equal "", @stub_ui.error
   end
 
+  def test_execute_remote_content_addressable_compact_index_gem
+    spec_fetcher {}
+    util_set_arch "x86_64-linux"
+
+    _spec, _gem_path, content_address = util_setup_content_addressable_compact_index_gem(
+      "ca_dependency",
+      "1.0.0",
+      platform: "x86_64-linux",
+      required_ruby_version: "~> 3.3.0"
+    ) do |s|
+      s.add_runtime_dependency "dep_tophat", "~> 1.0"
+    end
+
+    @cmd.options[:args] = %w[ca_dependency]
+    @cmd.options[:domain] = :remote
+
+    use_ui @stub_ui do
+      @cmd.execute
+    end
+
+    assert_equal "Gem ca_dependency-1.0.0-#{content_address} (Platform: x86_64-linux Ruby ABI: 3.3)\n  dep_tophat (~> 1.0)\n\n", @stub_ui.output
+    assert_equal "", @stub_ui.error
+  end
+
+  def test_execute_remote_platform_compact_index_gem
+    spec_fetcher {}
+    util_set_arch "x86_64-linux"
+
+    spec = util_spec "platform_dependency", "1.0.0" do |s|
+      s.platform = "x86_64-linux"
+      s.add_runtime_dependency "dep_tophat", "~> 1.0"
+    end
+    util_setup_compact_index spec
+    write_marshalled_gemspecs spec
+    Gem::SpecFetcher.fetcher = nil
+
+    @cmd.options[:args] = %w[platform_dependency]
+    @cmd.options[:domain] = :remote
+
+    use_ui @stub_ui do
+      @cmd.execute
+    end
+
+    assert_equal "Gem platform_dependency-1.0.0-x86_64-linux\n  dep_tophat (~> 1.0)\n\n", @stub_ui.output
+    assert_equal "", @stub_ui.error
+  end
+
   def test_execute_remote_version
     @fetcher = Gem::FakeFetcher.new
     Gem::RemoteFetcher.fetcher = @fetcher

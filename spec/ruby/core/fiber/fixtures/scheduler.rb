@@ -11,6 +11,11 @@ module FiberSpecs
       Fiber.yield
     end
 
+    def fiber(*args, &block)
+      @events << { event: :fiber, fiber: Fiber.current, args: args }
+      Fiber.new(blocking: false, &block).tap(&:resume)
+    end
+
     def io_wait(*args)
       @events << { event: :io_wait, fiber: Fiber.current, args: args }
       Fiber.yield

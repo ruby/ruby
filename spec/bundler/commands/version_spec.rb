@@ -3,10 +3,10 @@
 require_relative "../support/path"
 
 RSpec.describe "bundle version" do
-  if Spec::Path.ruby_core?
-    COMMIT_HASH = /unknown|[a-fA-F0-9]{7,}/
-  else
+  if Spec::Path.git_repository?
     COMMIT_HASH = /[a-fA-F0-9]{7,}/
+  else
+    COMMIT_HASH = /unknown|[a-fA-F0-9]{7,}/
   end
 
   context "with -v" do
@@ -39,11 +39,11 @@ RSpec.describe "bundle version" do
 
       it "outputs the version, virtual version if set, and build metadata" do
         bundle "version"
-        expect(out).to match(/\A4\.9\.9 \(2100-01-01 commit #{COMMIT_HASH}\)\z/)
+        expect(out).to match(/\A4\.9\.9 \(#{Spec::Builders::BundlerBuilder::RELEASED_BUILT_AT} commit #{COMMIT_HASH}\)\z/)
 
         bundle_config "simulate_version 5"
         bundle "version"
-        expect(out).to match(/\A4\.9\.9 \(simulating Bundler 5\) \(2100-01-01 commit #{COMMIT_HASH}\)\z/)
+        expect(out).to match(/\A4\.9\.9 \(simulating Bundler 5\) \(#{Spec::Builders::BundlerBuilder::RELEASED_BUILT_AT} commit #{COMMIT_HASH}\)\z/)
       end
     end
 

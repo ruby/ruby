@@ -203,6 +203,35 @@ fn test_alloc_ccall_regs() {
 }
 
 #[test]
+fn test_reorder_reg_moves_mem_base() {
+    let arg0 = C_ARG_OPNDS[0].unwrap_reg();
+    let arg1 = C_ARG_OPNDS[1].unwrap_reg();
+    let load = Opnd::mem(64, C_ARG_OPNDS[0], 8);
+
+    assert_eq!(
+        Assembler::reorder_reg_moves(&vec![(arg0, C_ARG_OPNDS[2]), (arg1, load)]),
+        vec![(arg1, load), (arg0, C_ARG_OPNDS[2])],
+    );
+    assert_eq!(
+        Assembler::reorder_reg_moves(&vec![(arg0, C_ARG_OPNDS[1]), (arg1, load)]),
+        vec![(Assembler::SCRATCH_REG, C_ARG_OPNDS[1]), (arg1, load), (arg0, Opnd::Reg(Assembler::SCRATCH_REG))],
+    );
+    assert_eq!(Assembler::reorder_reg_moves(&vec![(arg0, load)]), vec![(arg0, load)]);
+}
+
+#[test]
+fn test_reorder_reg_moves_narrow_reg() {
+    let arg0 = C_ARG_OPNDS[0].unwrap_reg();
+    let arg1 = C_ARG_OPNDS[1].unwrap_reg();
+    let arg0_32 = C_ARG_OPNDS[0].with_num_bits(32).unwrap();
+
+    assert_eq!(
+        Assembler::reorder_reg_moves(&vec![(arg0, C_ARG_OPNDS[2]), (arg1, arg0_32)]),
+        vec![(arg1, arg0_32), (arg0, C_ARG_OPNDS[2])],
+    );
+}
+
+#[test]
 fn test_lea_ret()
 {
     let (mut asm, mut cb) = setup_asm();
@@ -308,6 +337,16 @@ fn test_cmp_8_bit() {
     asm.cmp(Opnd::Reg(reg).with_num_bits(8).unwrap(), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
 
     asm.compile_with_num_regs(&mut cb, 1);
+}
+
+#[test]
+fn test_load_sext_insn_out() {
+    let (mut asm, mut cb) = setup_asm();
+    let val = asm.load(Opnd::mem(64, SP, 0));
+    let sext = asm.load_sext(val.with_num_bits(32).unwrap());
+    asm.cmp(sext, val);
+
+    asm.compile_with_num_regs(&mut cb, 2);
 }
 
 #[test]

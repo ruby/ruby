@@ -343,6 +343,32 @@ RSpec.describe "bundle exec" do
     expect(out).to include(rubylib)
   end
 
+  it "does not duplicate a relative path prefix when exec'ing to a relative path" do
+    skip "https://github.com/ruby/rubygems/issues/3351" if Gem.win_platform?
+
+    create_file("script", "#!/usr/bin/env ruby\nputs $0")
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+    G
+
+    bundle "exec ./script", env: { "BUNDLE_DISABLE_EXEC_LOAD" => "true" }
+    expect(out).to eq("./script")
+  end
+
+  it "prepends a relative path prefix when exec'ing to a hidden file in the current directory" do
+    skip "https://github.com/ruby/rubygems/issues/3351" if Gem.win_platform?
+
+    create_file(".script", "#!/usr/bin/env ruby\nputs $0")
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+    G
+
+    bundle "exec .script", env: { "BUNDLE_DISABLE_EXEC_LOAD" => "true" }
+    expect(out).to eq("./.script")
+  end
+
   it "errors nicely when the argument doesn't exist" do
     install_gemfile <<-G
       source "https://gem.repo1"
@@ -1135,7 +1161,10 @@ RSpec.describe "bundle exec" do
 
           Bundler.setup(:default)
 
-          require "foo"
+          begin
+            require "foo"
+          rescue LoadError
+          end
         RUBY
         karafka.chmod(0o777)
 
@@ -1247,7 +1276,7 @@ RSpec.describe "bundle exec" do
           expect(run(file.read, artifice: nil, env: env)).to eq(default_openssl_version)
         end
 
-        skip "ruby_core has openssl and rubygems in the same folder, and this test needs rubygems require but default openssl not in a directly added entry in $LOAD_PATH" if ruby_core?
+        skip "the default openssl on RUBYLIB takes precedence over the installed openssl gem" if rubylib_provides?("openssl")
         # sanity check that we get the newer, custom version without bundler
         sys_exec "#{Gem.ruby} #{file}", env: env, raise_on_error: false
         expect(err).to include("custom openssl should not be loaded")

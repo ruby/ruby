@@ -547,10 +547,9 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
     {
         // NOTE: there's a lock ordering inversion here with the ubf call, but it's benign.
         if (ubf_set(th, ubf_event_waiting, (void *)th, NULL)) {
-            // Already interrupted: report an event so the caller retries and then
-            // processes the interrupt, as it always has.
+            // Already interrupted: the fd was never looked at, so this is no event.
             thread_sched_unlock(sched, th);
-            return thread_sched_wait_event;
+            return thread_sched_wait_interrupted;
         }
 
         reg = timer_thread_register_waiting(th, fd, events, rel, event_serial);
@@ -609,6 +608,8 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
     if (reg == timer_thread_unavailable) return thread_sched_wait_unavailable;
     // A ready fd never registered, so it never timed out either.
     if (reg == timer_thread_already_ready) return thread_sched_wait_event;
+    // No event fired and we are interrupted: that is an interrupt, not a timeout.
+    if (timedout && RUBY_VM_INTERRUPTED(th->ec)) return thread_sched_wait_interrupted;
     return timedout ? thread_sched_wait_timeout : thread_sched_wait_event;
 }
 
@@ -832,7 +833,7 @@ nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
                 char *mstack_start = stack_start + vm_stack_area + MSTACK_PAGE_SIZE;
 
                 int mstack_flags = MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE;
-#if defined(MAP_STACK) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+#if defined(MAP_STACK) && !defined(__FreeBSD__)
                 mstack_flags |= MAP_STACK;
 #endif
 
@@ -919,11 +920,18 @@ nt_free_stack(void *mstack)
     rb_native_mutex_unlock(&nt_machine_stack_lock);
 }
 
+static bool
+mn_threads_enabled_p(void)
+{
+    return mn_threads_mode >= 0;
+}
 
 static int
 native_thread_check_and_create_shared(rb_vm_t *vm)
 {
     bool need_to_make = false;
+
+    if (!mn_threads_enabled_p()) return 0; // no thread is M:N: the pool serves nobody
 
     ractor_sched_lock(vm, NULL); // NULL: the timer thread also calls this
     {
@@ -1271,23 +1279,26 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want, bool consumed)
     }
 #elif HAVE_SYS_EPOLL_H
     if (want == 0) {
-        // A delivered oneshot event has already disarmed the fd; otherwise
-        // disarm by MOD to no events.  Either way the registration stays, so
-        // the next wait is one MOD instead of DEL + ADD.
+        // A delivered oneshot event has already disarmed the fd; otherwise DEL
+        // it.  MOD to no events would not do: EPOLLHUP and EPOLLERR are
+        // reported whatever the mask asks for, and without EPOLLONESHOT they
+        // are reported level-triggered, so a registration left behind by a
+        // waiter that gave up (kill, interrupt, timeout) spins the timer
+        // thread once the fd hangs up -- and a spinning timer thread never
+        // reaches its timeout branch, the only place that mints an snt.
         if (!consumed && e->registered) {
-            struct epoll_event off = { .events = 0, .data = { .u64 = 0 } };
-            if (epoll_ctl(timer_th.event_fd, EPOLL_CTL_MOD, fd, &off) == -1) {
+            if (epoll_ctl(timer_th.event_fd, EPOLL_CTL_DEL, fd, NULL) == -1) {
                 switch (errno) {
                   case EBADF:
                   case ENOENT:
                     // the fd is already closed or gone from the set
-                    e->registered = false;
                     break;
                   default:
                     perror("epoll_ctl");
                     rb_bug("fd_waiters_arm/epoll_ctl disarm failed (fd:%d errno:%d)", fd, errno);
                 }
             }
+            e->registered = false;
         }
         // Anything epoll_wait already queued for the old arming is stale now.
         e->generation++;
@@ -1343,23 +1354,16 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want, bool consumed)
 }
 
 static bool
-fd_readable_nonblock(int fd)
+fd_ready_nonblock(int fd, short events)
 {
     struct pollfd pfd = {
         .fd = fd,
-        .events = POLLIN,
+        .events = events,
     };
-    return poll(&pfd, 1, 0) != 0;
-}
 
-static bool
-fd_writable_nonblock(int fd)
-{
-    struct pollfd pfd = {
-        .fd = fd,
-        .events = POLLOUT,
-    };
-    return poll(&pfd, 1, 0) != 0;
+    // A "ready" answer makes the caller report the requested event, so a
+    // closed fd (POLLNVAL) must not count: it owes the caller EBADF.
+    return poll(&pfd, 1, 0) > 0 && !(pfd.revents & POLLNVAL);
 }
 
 static void
@@ -1479,16 +1483,16 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
     }
 
     if (flags & thread_sched_waiting_io_read) {
-        if (!(flags & thread_sched_waiting_io_force) && fd_readable_nonblock(fd)) {
-            RUBY_DEBUG_LOG("fd_readable_nonblock");
+        if (!(flags & thread_sched_waiting_io_force) && fd_ready_nonblock(fd, POLLIN)) {
+            RUBY_DEBUG_LOG("fd readable");
             return timer_thread_already_ready;
         }
         VM_ASSERT(fd >= 0);
     }
 
     if (flags & thread_sched_waiting_io_write) {
-        if (!(flags & thread_sched_waiting_io_force) && fd_writable_nonblock(fd)) {
-            RUBY_DEBUG_LOG("fd_writable_nonblock");
+        if (!(flags & thread_sched_waiting_io_force) && fd_ready_nonblock(fd, POLLOUT)) {
+            RUBY_DEBUG_LOG("fd writable");
             return timer_thread_already_ready;
         }
         VM_ASSERT(fd >= 0);
