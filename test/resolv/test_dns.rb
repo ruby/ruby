@@ -542,6 +542,39 @@ class TestResolvDNS < Test::Unit::TestCase
     }
   end
 
+  def test_search_list_continues_on_nodata
+    bug18842 = '[Bug #18842]'
+    with_udp('127.0.0.1', 0) {|u|
+      _, server_port, _, server_address = u.addr
+      client_thread = Thread.new {
+        Resolv::DNS.open(:nameserver_port => [[server_address, server_port]], :search => ['bad1.com', 'bad2.com', 'good.com'], :ndots => 5) {|dns|
+          dns.getaddress("example")
+        }
+      }
+      server_thread = Thread.new {
+        3.times do
+          msg, (_, client_port, _, client_address) = Timeout.timeout(5) {u.recvfrom(4096)}
+          query = Resolv::DNS::Message.decode(msg)
+          reply = Resolv::DNS::Message.new(query.id)
+          reply.qr = 1
+          reply.rd = query.rd
+          reply.ra = 1
+          query.each_question {|name, typeclass|
+            reply.add_question(name, typeclass)
+            if name.to_s == "example.good.com"
+              reply.add_answer(name, 3600, Resolv::DNS::Resource::IN::A.new("192.0.2.1"))
+            end
+          }
+          # No answers for the other candidates: a NODATA reply.
+          u.send(reply.encode, 0, client_address, client_port)
+        end
+      }
+      address = client_thread.value
+      server_thread.join
+      assert_equal(Resolv::IPv4.create("192.0.2.1"), address, bug18842)
+    }
+  end
+
   def test_no_server
     omit if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
     u = UDPSocket.new
