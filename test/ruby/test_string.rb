@@ -1618,7 +1618,6 @@ class TestString < Test::Unit::TestCase
 
   def test_each_line_modified_separator
     sep = S("x" * 1_000_000)
-    res = []
     assert_raise_with_message(RuntimeError, /string modified/) do
       S("a#{sep}b#{sep}c").each_line(sep) do |x|
         sep.clear
