@@ -267,6 +267,20 @@ if defined? Zlib
       z.close # without this, outputs `zlib(finalizer): the stream was freed prematurely.'
     end
 
+    def test_params_without_output_buffer
+      z = Zlib::Deflate.new
+      z.params(Zlib::BEST_SPEED, Zlib::DEFAULT_STRATEGY)
+      z << "foo"
+      assert_equal("foo", Zlib::Inflate.inflate(z.finish))
+
+      z = Zlib::Deflate.new
+      z << "foo"
+      s = z.flush_next_out
+      z.params(Zlib::BEST_COMPRESSION, Zlib::FILTERED)
+      z << "bar"
+      assert_equal("foobar", Zlib::Inflate.inflate(s + z.finish))
+    end
+
     def test_set_dictionary
       z = Zlib::Deflate.new
       z.set_dictionary("foo")

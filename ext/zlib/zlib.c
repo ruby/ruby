@@ -2002,6 +2002,9 @@ rb_deflate_params(VALUE obj, VALUE v_level, VALUE v_strategy)
     level = ARG_LEVEL(v_level);
     strategy = ARG_STRATEGY(v_strategy);
 
+    if (NIL_P(z->buf) || z->stream.avail_out == 0) {
+	zstream_expand_buffer(z);
+    }
     n = z->stream.avail_out;
     err = deflateParams(&z->stream, level, strategy);
     filled = n - z->stream.avail_out;
