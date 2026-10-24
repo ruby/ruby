@@ -1304,6 +1304,12 @@ if defined? Zlib
       }
     end
 
+    def test_read_non_string_outbuf
+      gz = Zlib::GzipReader.new(StringIO.new(Zlib.gzip("foo")))
+      assert_raise(TypeError) { gz.read(1, []) }
+      assert_raise(TypeError) { gz.read(nil, Object.new) }
+    end
+
     def test_readpartial
       Tempfile.create("test_zlib_gzip_reader_readpartial") {|t|
         t.close

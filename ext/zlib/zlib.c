@@ -4200,6 +4200,8 @@ rb_gzreader_read(int argc, VALUE *argv, VALUE obj)
     rb_len_t len;
 
     rb_scan_args(argc, argv, "02", &vlen, &outbuf);
+    if (!NIL_P(outbuf))
+        Check_Type(outbuf, T_STRING);
     if (NIL_P(vlen)) {
 	return gzfile_read_all(gz, outbuf);
     }
