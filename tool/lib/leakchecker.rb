@@ -123,6 +123,14 @@ class LeakChecker
           if header = open_list&.shift
             columns = header.split
             fd_index, type_index, node_index = %w'FD TYPE NODE'.map {|n| columns.index(n)}
+          end
+          unless fd_index and type_index and node_index
+            # Not the lsof we expect, e.g. busybox lsof which ignores
+            # the options and prints no header.
+            @@try_lsof = false if header
+            header = nil
+          end
+          if header
             open_list.reject! do |of|
               of = of.chomp.split(' ', node_index + 2)
               if of[node_index] == 'TCP' and of.last.end_with?('(CLOSE_WAIT)', '(CLOSED)')
