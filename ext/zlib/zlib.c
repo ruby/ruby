@@ -621,6 +621,7 @@ struct zstream_run_args {
     struct zstream *const z;
     Bytef *src;
     rb_len_t len;
+    rb_len_t rest_in;  /* input after next_in + avail_in, as avail_in is a uInt */
     int flush;         /* stream flush value for inflate() or deflate() */
     int interrupt;     /* stop processing the stream and return to ruby */
     int jump_state;    /* for buffer expansion block break or exception */
@@ -1033,8 +1034,10 @@ zstream_run_once(void *_arguments)
 {
     struct zstream_run_args *arguments = (struct zstream_run_args *)_arguments;
     struct zstream *z = arguments->z;
+    /* Z_FINISH would end the stream before rest_in is given */
+    int flush = arguments->rest_in > 0 ? Z_NO_FLUSH : arguments->flush;
 
-    uintptr_t error = z->func->run(&z->stream, arguments->flush);
+    uintptr_t error = z->func->run(&z->stream, flush);
 
     return (void*)error;
 }
@@ -1107,6 +1110,12 @@ zstream_run_func(struct zstream_run_args *args)
             break;
         }
 
+        if (z->stream.avail_in == 0 && args->rest_in > 0) {
+            z->stream.avail_in = MAX_UINT(args->rest_in);
+            args->rest_in -= z->stream.avail_in;
+            if (z->stream.avail_out > 0) continue;
+        }
+
         if (z->stream.avail_out > 0) {
             z->flags |= ZSTREAM_FLAG_IN_STREAM;
             break;
@@ -1174,6 +1183,7 @@ zstream_run_try(VALUE value_arg)
 	rb_obj_hide(old_input); /* for GVL release and later recycle */
 	z->stream.next_in = (Bytef*)RSTRING_PTR(old_input);
 	z->stream.avail_in = MAX_UINT(RSTRING_LEN(old_input));
+	args->rest_in = RSTRING_LEN(old_input) - z->stream.avail_in;
     }
 
     if (z->stream.avail_out == 0) {
@@ -1202,9 +1212,7 @@ loop:
     zstream_reset_input(z);
 
     if (err != Z_OK && err != Z_STREAM_END) {
-	if (z->stream.avail_in > 0) {
-	    zstream_append_input(z, z->stream.next_in, z->stream.avail_in);
-	}
+	zstream_append_input(z, z->stream.next_in, z->stream.avail_in + args->rest_in);
 	if (err == Z_NEED_DICT) {
 	    VALUE self = (VALUE)z->stream.opaque;
 	    if (self) {
@@ -1219,9 +1227,7 @@ loop:
 	raise_zlib_error(err, z->stream.msg);
     }
 
-    if (z->stream.avail_in > 0) {
-	zstream_append_input(z, z->stream.next_in, z->stream.avail_in);
-    }
+    zstream_append_input(z, z->stream.next_in, z->stream.avail_in + args->rest_in);
     if (!NIL_P(old_input)) {
 	rb_str_resize(old_input, 0);
     }
@@ -1248,6 +1254,7 @@ zstream_run(struct zstream *z, Bytef *src, rb_len_t len, int flush)
         .z = z,
         .src = src,
         .len = len,
+        .rest_in = 0,
         .flush = flush,
         .interrupt = 0,
         .jump_state = 0,
