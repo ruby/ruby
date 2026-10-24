@@ -4870,7 +4870,7 @@ Init_zlib(void)
 
     mZlib = rb_define_module("Zlib");
 
-    id_dictionaries = rb_intern("@dictionaries");
+    id_dictionaries = rb_intern("dictionaries");
 
     cZError = rb_define_class_under(mZlib, "Error", rb_eStandardError);
     cStreamEnd    = rb_define_class_under(mZlib, "StreamEnd", cZError);
