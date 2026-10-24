@@ -528,28 +528,13 @@ impl Assembler {
                     }
                 },
                 Insn::Load { opnd, .. } |
-                Insn::LoadInto { opnd, .. } => {
+                Insn::LoadInto { opnd, .. } |
+                Insn::LoadSExt { opnd, .. } => {
                     *opnd = match opnd {
                         Opnd::Mem(_) => split_memory_address(asm, *opnd),
                         _ => *opnd
                     };
                     asm.push_insn(insn);
-                },
-                Insn::LoadSExt { opnd, out } => {
-                    match opnd {
-                        // We only want to sign extend if the operand is a
-                        // register, instruction output, or memory address that
-                        // is 32 bits. Otherwise we'll just load the value
-                        // directly since there's no need to sign extend.
-                        Opnd::Reg(Reg { num_bits: 32, .. }) |
-                        Opnd::VReg { num_bits: 32, .. } |
-                        Opnd::Mem(Mem { num_bits: 32, .. }) => {
-                            asm.push_insn(insn);
-                        },
-                        _ => {
-                            asm.push_insn(Insn::Load { opnd: *opnd, out: *out });
-                        }
-                    };
                 },
                 Insn::Mov { dest, src } => {
                     match (&dest, &src) {
@@ -1357,14 +1342,30 @@ impl Assembler {
                 },
                 Insn::LoadSExt { opnd, out } => {
                     match *opnd {
+                        // Arm has no 8-bit or 16-bit operands, so a narrow
+                        // register is sign extended out of its 32-bit register.
+                        Opnd::Reg(Reg { num_bits: 8, .. }) |
+                        Opnd::VReg { num_bits: 8, .. } => {
+                            sxtb(cb, out.into(), opnd.with_num_bits(32).into());
+                        },
+                        Opnd::Reg(Reg { num_bits: 16, .. }) |
+                        Opnd::VReg { num_bits: 16, .. } => {
+                            sxth(cb, out.into(), opnd.with_num_bits(32).into());
+                        },
                         Opnd::Reg(Reg { num_bits: 32, .. }) |
                         Opnd::VReg { num_bits: 32, .. } => {
                             sxtw(cb, out.into(), opnd.into());
                         },
+                        Opnd::Mem(Mem { num_bits: 8, .. }) => {
+                            ldursb(cb, out.into(), opnd.into());
+                        },
+                        Opnd::Mem(Mem { num_bits: 16, .. }) => {
+                            ldursh(cb, out.into(), opnd.into());
+                        },
                         Opnd::Mem(Mem { num_bits: 32, .. }) => {
                             ldursw(cb, out.into(), opnd.into());
                         },
-                        _ => unreachable!()
+                        _ => unreachable!("unexpected operand in Insn::LoadSExt: {opnd:?}")
                     };
                 },
                 Insn::Mov { dest, src } => {
@@ -2390,6 +2391,90 @@ mod tests {
     }
 
     #[test]
+    fn test_emit_load_sext_mem_8() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let out = asm.load_sext(Opnd::mem(8, SP, 0));
+        asm.mov(C_RET_OPND, out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldursb x0, [x21]");
+        assert_snapshot!(cb.hexdump(), @"a0028038");
+    }
+
+    #[test]
+    fn test_emit_load_sext_mem_16() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let out = asm.load_sext(Opnd::mem(16, SP, 0));
+        asm.mov(C_RET_OPND, out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldursh x0, [x21]");
+        assert_snapshot!(cb.hexdump(), @"a0028078");
+    }
+
+    #[test]
+    fn test_emit_load_sext_mem_32() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let out = asm.load_sext(Opnd::mem(32, SP, 0));
+        asm.mov(C_RET_OPND, out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldursw x0, [x21]");
+        assert_snapshot!(cb.hexdump(), @"a00280b8");
+    }
+
+    #[test]
+    fn test_emit_load_sext_reg_8() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(8, SP, 0));
+        let out = asm.load_sext(opnd.with_num_bits(8));
+        asm.mov(C_RET_OPND, out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: ldurb w0, [x21]
+        0x4: sxtb x0, w0
+        ");
+        assert_snapshot!(cb.hexdump(), @"a0024038001c4093");
+    }
+
+    #[test]
+    fn test_emit_load_sext_reg_16() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(16, SP, 0));
+        let out = asm.load_sext(opnd.with_num_bits(16));
+        asm.mov(C_RET_OPND, out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: ldurh w0, [x21]
+        0x4: sxth x0, w0
+        ");
+        assert_snapshot!(cb.hexdump(), @"a0024078003c4093");
+    }
+
+    #[test]
+    fn test_emit_load_sext_reg_32() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(32, SP, 0));
+        let out = asm.load_sext(opnd.with_num_bits(32));
+        asm.mov(C_RET_OPND, out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: ldur w0, [x21]
+        0x4: sxtw x0, w0
+        ");
+        assert_snapshot!(cb.hexdump(), @"a00240b8007c4093");
+    }
+
+    #[test]
     fn test_emit_load_value_immediate() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -3128,6 +3213,20 @@ mod tests {
         0x4: ldurh w0, [x0]
         ");
         assert_snapshot!(cb.hexdump(), @"0000089100004078");
+    }
+
+    #[test]
+    fn test_split_load_sext_mem_mem_with_large_displacement() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let _ = asm.load_sext(Opnd::mem(8, C_RET_OPND, 0x200));
+        asm.compile(&mut cb).unwrap();
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: add x0, x0, #0x200
+        0x4: ldursb x0, [x0]
+        ");
+        assert_snapshot!(cb.hexdump(), @"0000089100008038");
     }
 
     #[test]
