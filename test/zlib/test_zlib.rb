@@ -1388,6 +1388,14 @@ if defined? Zlib
       }
     end
 
+    def test_gets_limit_shorter_than_separator
+      gz = Zlib::GzipReader.new(StringIO.new(Zlib.gzip("abcd")))
+      assert_equal("a", gz.gets("xyz", 1))
+      assert_equal("bc", gz.gets("xyz", 2))
+      assert_equal("d", gz.gets("xyz", 2))
+      assert_nil(gz.gets("xyz", 2))
+    end
+
     def test_readline
       Tempfile.create("test_zlib_gzip_reader_readline") {|t|
         t.close

@@ -4511,6 +4511,10 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
     n = rslen;
     for (;;) {
 	rb_len_t filled;
+	if (limit > 0 && limit < rslen) {
+	    n = limit;
+	    break;
+	}
 	if (n > ZSTREAM_BUF_FILLED(&gz->z)) {
 	    if (ZSTREAM_IS_FINISHED(&gz->z)) break;
 	    gzfile_read_more(gz, Qnil);
