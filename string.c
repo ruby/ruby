@@ -335,6 +335,20 @@ rb_str_make_embedded(VALUE str)
     TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
 }
 
+/* Converts an embedded string into a heap allocated string. The buffer of an
+ * embedded string lives inside a GC heap slot, which the compactor may mprotect
+ * to implement its read barrier.  A pointer to such a buffer must not be given
+ * to a system call without the GVL. */
+void
+rb_str_make_heap(VALUE str)
+{
+    if (STR_EMBED_P(str)) {
+        const int termlen = TERM_LEN(str);
+        rb_len_t len = RSTRING_LEN(str);
+        str_make_independent_expand(str, len, (rb_len_t)rb_str_capacity(str) - len, termlen);
+    }
+}
+
 void
 rb_debug_rstring_null_ptr(const char *func)
 {
