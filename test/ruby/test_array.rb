@@ -3963,6 +3963,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(2, ary.find {|x| x % 2 == 0 })
     assert_equal(nil, ary.find {|x| false })
     assert_equal(:foo, ary.find(proc { :foo }) {|x| false })
+    assert_raise(ArgumentError) { ary.find(1, 2) }
   end
 
   def test_rfind
@@ -3973,6 +3974,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(nil, ary.rfind {|x| false })
     assert_equal(:foo, ary.rfind(proc { :foo }) {|x| false })
     assert_equal(nil, ary.rfind {|x| ary.clear; false })
+    assert_raise(ArgumentError) { ary.rfind(1, 2) }
   end
 
   private
