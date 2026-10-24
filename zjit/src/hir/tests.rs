@@ -6174,23 +6174,20 @@ pub(crate) mod hir_build_tests {
           v22:ArrayExact = GuardType v14, ArrayExact
           v23:CInt64 = ArrayLength v22
           v24:ArrayExact = NewArray
-          v25:Fixnum[1] = Const Value(1)
-          v26:Fixnum = BoxFixnum v23
-          v27:Fixnum[1] = Const Value(1)
+          v25:CInt64[1] = Const CInt64(1)
+          v26:CInt64[1] = Const CInt64(1)
           Jump bb4(v25)
-        bb4(v29:Fixnum):
-          v30:BoolExact = FixnumLt v29, v26
-          v31:CBool = Test v30
-          CondBranch v31, bb5(), bb6()
+        bb4(v28:CInt64):
+          v29:CBool = IntLt v28, v23
+          CondBranch v29, bb5(), bb6()
         bb5():
-          v33:CInt64 = UnboxFixnum v29
-          v34:BasicObject = ArrayAref v22, v33
-          ArrayPush v24, v34
-          v36:Fixnum = FixnumAdd v29, v27
-          Jump bb4(v36)
+          v31:BasicObject = ArrayAref v22, v28
+          ArrayPush v24, v31
+          v33:CInt64 = IntAdd v28, v26
+          Jump bb4(v33)
         bb6():
-          v38:CInt64[0] = Const CInt64(0)
-          v39:BasicObject = ArrayArefChecked v22, v38, v23
+          v35:CInt64[0] = Const CInt64(0)
+          v36:BasicObject = ArrayArefChecked v22, v35, v23
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v14
@@ -6228,23 +6225,20 @@ pub(crate) mod hir_build_tests {
           v25:ArrayExact = GuardType v16, ArrayExact
           v26:CInt64 = ArrayLength v25
           v27:ArrayExact = NewArray
-          v28:Fixnum[1] = Const Value(1)
-          v29:Fixnum = BoxFixnum v26
-          v30:Fixnum[1] = Const Value(1)
+          v28:CInt64[1] = Const CInt64(1)
+          v29:CInt64[1] = Const CInt64(1)
           Jump bb4(v28)
-        bb4(v32:Fixnum):
-          v33:BoolExact = FixnumLt v32, v29
-          v34:CBool = Test v33
-          CondBranch v34, bb5(), bb6()
+        bb4(v31:CInt64):
+          v32:CBool = IntLt v31, v26
+          CondBranch v32, bb5(), bb6()
         bb5():
-          v36:CInt64 = UnboxFixnum v32
-          v37:BasicObject = ArrayAref v25, v36
-          ArrayPush v27, v37
-          v39:Fixnum = FixnumAdd v32, v30
-          Jump bb4(v39)
+          v34:BasicObject = ArrayAref v25, v31
+          ArrayPush v27, v34
+          v36:CInt64 = IntAdd v31, v29
+          Jump bb4(v36)
         bb6():
-          v41:CInt64[0] = Const CInt64(0)
-          v42:BasicObject = ArrayArefChecked v25, v41, v26
+          v38:CInt64[0] = Const CInt64(0)
+          v39:BasicObject = ArrayArefChecked v25, v38, v26
           PatchPoint NoEPEscape(test)
           SideExit UnhandledYARVInsn(expandarray)
         ");
