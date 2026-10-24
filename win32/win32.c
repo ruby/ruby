@@ -3697,6 +3697,18 @@ typedef struct {
     } while (0)
 
 /* License: Ruby's */
+/* WSARecvMsg and WSASendMsg accept only SOCK_DGRAM and SOCK_RAW sockets. */
+static BOOL
+is_stream_socket(SOCKET s)
+{
+    int type;
+    int len = sizeof(type);
+
+    return getsockopt(s, SOL_SOCKET, SO_TYPE, (char *)&type, &len) == 0 &&
+        type == SOCK_STREAM;
+}
+
+/* License: Ruby's */
 int
 recvmsg(int fd, struct msghdr *msg, int flags)
 {
@@ -3707,10 +3719,12 @@ recvmsg(int fd, struct msghdr *msg, int flags)
     int mode = 0;
     DWORD len;
     int ret;
+    BOOL stream;
 
     s = TO_SOCKET(fd);
+    stream = is_stream_socket(s);
 
-    if (!pWSARecvMsg) {
+    if (!stream && !pWSARecvMsg) {
         static const GUID guid = WSAID_WSARECVMSG;
         pWSARecvMsg = (WSARecvMsg_t)get_wsa_extension_function(s, guid);
         if (!pWSARecvMsg)
@@ -3723,7 +3737,11 @@ recvmsg(int fd, struct msghdr *msg, int flags)
     socklist_lookup(s, &mode);
     if (GET_FLAGS(mode) & O_NONBLOCK) {
         RUBY_CRITICAL {
-            if ((ret = pWSARecvMsg(s, &wsamsg, &len, NULL, NULL)) == SOCKET_ERROR) {
+            if (stream)
+                ret = WSARecv(s, wsamsg.lpBuffers, wsamsg.dwBufferCount, &len, &wsamsg.dwFlags, NULL, NULL);
+            else
+                ret = pWSARecvMsg(s, &wsamsg, &len, NULL, NULL);
+            if (ret == SOCKET_ERROR) {
                 errno = map_errno(WSAGetLastError());
                 len = -1;
             }
@@ -3735,7 +3753,10 @@ recvmsg(int fd, struct msghdr *msg, int flags)
         memset(&wol, 0, sizeof(wol));
         RUBY_CRITICAL {
             wol.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-            ret = pWSARecvMsg(s, &wsamsg, &size, &wol, NULL);
+            if (stream)
+                ret = WSARecv(s, wsamsg.lpBuffers, wsamsg.dwBufferCount, &size, &wsamsg.dwFlags, &wol, NULL);
+            else
+                ret = pWSARecvMsg(s, &wsamsg, &size, &wol, NULL);
         }
 
         ret = finish_overlapped_socket(TRUE, s, &wol, ret, &len, size);
@@ -3745,7 +3766,7 @@ recvmsg(int fd, struct msghdr *msg, int flags)
 
     /* WSAMSG to msghdr */
     msg->msg_name = wsamsg.name;
-    msg->msg_namelen = wsamsg.namelen;
+    msg->msg_namelen = stream ? 0 : wsamsg.namelen;
     msg->msg_flags = wsamsg.dwFlags;
 
     return len;
@@ -3762,10 +3783,12 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
     int mode = 0;
     DWORD len;
     int ret;
+    BOOL stream;
 
     s = TO_SOCKET(fd);
+    stream = is_stream_socket(s);
 
-    if (!pWSASendMsg) {
+    if (!stream && !pWSASendMsg) {
         static const GUID guid = WSAID_WSASENDMSG;
         pWSASendMsg = (WSASendMsg_t)get_wsa_extension_function(s, guid);
         if (!pWSASendMsg)
@@ -3777,7 +3800,11 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
     socklist_lookup(s, &mode);
     if (GET_FLAGS(mode) & O_NONBLOCK) {
         RUBY_CRITICAL {
-            if ((ret = pWSASendMsg(s, &wsamsg, flags, &len, NULL, NULL)) == SOCKET_ERROR) {
+            if (stream)
+                ret = WSASend(s, wsamsg.lpBuffers, wsamsg.dwBufferCount, &len, flags, NULL, NULL);
+            else
+                ret = pWSASendMsg(s, &wsamsg, flags, &len, NULL, NULL);
+            if (ret == SOCKET_ERROR) {
                 errno = map_errno(WSAGetLastError());
                 len = -1;
             }
@@ -3789,7 +3816,10 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
         memset(&wol, 0, sizeof(wol));
         RUBY_CRITICAL {
             wol.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-            ret = pWSASendMsg(s, &wsamsg, flags, &size, &wol, NULL);
+            if (stream)
+                ret = WSASend(s, wsamsg.lpBuffers, wsamsg.dwBufferCount, &size, flags, &wol, NULL);
+            else
+                ret = pWSASendMsg(s, &wsamsg, flags, &size, &wol, NULL);
         }
 
         finish_overlapped_socket(FALSE, s, &wol, ret, &len, size);
