@@ -197,6 +197,7 @@
 # - #bytesize: Returns the count of bytes.
 # - #count: Returns the count of substrings matching given strings.
 # - #empty?: Returns whether the length of +self+ is zero.
+# - #blank?: Returns whether the string is empty or contains only whitespace characters.
 # - #length (aliased as #size): Returns the count of characters (not bytes).
 #
 # _Substrings_
