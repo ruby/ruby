@@ -7,36 +7,146 @@ use crate::disasms;
 use crate::{asm::x86_64::*, hexdumps, assert_disasm_snapshot};
 
 /// Check that the bytes for an instruction sequence match a hex string
-fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {
-    let mut cb = super::CodeBlock::new_dummy();
-    run(&mut cb);
+fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut CodeWriter<'_>) {
+    let cb = compile(run);
     assert_eq!(format!("{:x}", cb), bytes);
 }
 
-fn compile<R>(run: R) -> CodeBlock where R: FnOnce(&mut super::CodeBlock) {
-    let mut cb = super::CodeBlock::new_dummy();
-    run(&mut cb);
+fn compile<R>(run: R) -> CodeBlock where R: FnOnce(&mut CodeWriter<'_>) {
+    let mut cb = CodeBlock::new_dummy();
+    run(&mut cb.writer());
+    cb
+}
+
+fn compile_with_label<R>(name: &'static str, run: R) -> CodeBlock
+where R: FnOnce(&mut CodeWriter<'_>, Label) {
+    let mut cb = CodeBlock::new_dummy();
+    let label = cb.new_label(name);
+
+    run(&mut cb.writer(), label);
+
+    cb.link_labels().unwrap();
     cb
 }
 
 #[test]
+fn test_writer_encoder_sequence_across_pages() {
+    fn emit(writer: &mut CodeWriter<'_>) {
+        write_lock_prefix(writer);
+        add(writer, mem_opnd_sib(64, R12, R9, 4, 0x1234), imm_opnd(0x123456));
+        movabs(writer, R11, 0x123456789abcdef0);
+        cmp(writer, AX, imm_opnd(0x1234));
+        call_rel32(writer, -12345);
+        nop(writer, 9);
+        ret(writer);
+    }
+
+    let page_size = unsafe { crate::cruby::rb_jit_get_page_size() } as usize;
+    let expected = compile(emit);
+    let len = expected.get_write_pos();
+    let expected_bytes = unsafe { std::slice::from_raw_parts(expected.get_ptr(0).raw_ptr(&expected), len) };
+
+    for offset in [0, page_size - 1, page_size - 7] {
+        let mut scoped = CodeBlock::new_dummy();
+        scoped.set_write_ptr(scoped.get_ptr(offset));
+        {
+            let mut writer = scoped.writer();
+            emit(&mut writer);
+
+            assert_eq!(writer.get_write_pos(), offset + len);
+            assert!(!writer.has_dropped_bytes());
+        }
+
+        let actual = unsafe { std::slice::from_raw_parts(scoped.get_ptr(offset).raw_ptr(&scoped), len) };
+        assert_eq!(actual, expected_bytes);
+    }
+}
+
+#[test]
+fn test_writer_address_dependent_calls_and_jumps() {
+    let mut cb = CodeBlock::new_dummy();
+    {
+        let mut writer = cb.writer();
+        nop(&mut writer, 1);
+        let start = writer.get_write_ptr();
+        let near = start.raw_ptr(&writer);
+        call_ptr(&mut writer, RAX, near);
+        jmp_ptr(&mut writer, start);
+        je_ptr(&mut writer, start);
+        assert_eq!(writer.get_write_ptr(), start.add_bytes(16));
+    }
+    assert_eq!(cb.hexdump(), "90e8fbffffffe9f6ffffff0f84f0ffffff");
+
+    // Force a far-call w/o relying on executable/heap placement or ASLR.
+    let mut far = CodeBlock::new_dummy();
+    let target = far.get_write_ptr().raw_addr(&far) + (1usize << 32);
+    let mut expected = CodeBlock::new_dummy();
+    {
+        let mut writer = expected.writer();
+        mov(&mut writer, RAX, const_ptr_opnd(target as *const u8));
+        call(&mut writer, RAX);
+    }
+    {
+        let mut writer = far.writer();
+        call_ptr(&mut writer, RAX, target as *const u8);
+        assert!(!writer.has_dropped_bytes());
+    }
+    assert_eq!(far.hexdump(), expected.hexdump());
+}
+
+#[test]
+fn test_writer_label_encoders_link_after_teardown() {
+    let mut cb = CodeBlock::new_dummy();
+    let label = cb.new_label("end");
+    {
+        let mut writer = cb.writer();
+        call_label(&mut writer, label);
+        jmp_label(&mut writer, label);
+        je_label(&mut writer, label);
+        writer.write_label(label);
+        ret(&mut writer);
+    }
+    assert_eq!(cb.resolve_label(label), cb.get_ptr(16));
+    cb.link_labels().unwrap();
+    assert_eq!(cb.hexdump(), "e80b000000e9060000000f8400000000c3");
+}
+
+#[test]
+fn test_writer_movabs_partial_failure() {
+    let page_size = unsafe { crate::cruby::rb_jit_get_page_size() } as usize;
+    let mut cb = CodeBlock::new_dummy_sized(2 * page_size);
+    cb.set_write_ptr(cb.get_ptr(page_size - 5));
+    {
+        let mut writer = cb.writer();
+        movabs(&mut writer, RAX, 0x123456789abcdef0);
+        assert!(writer.has_dropped_bytes());
+        assert_eq!(writer.get_write_pos(), page_size);
+        ret(&mut writer); // failure stays live and sticky
+        assert_eq!(writer.get_write_pos(), page_size);
+    }
+    assert!(cb.has_dropped_bytes());
+    let ptr = cb.get_ptr(page_size - 5).raw_ptr(&cb);
+    assert_eq!(unsafe { std::slice::from_raw_parts(ptr, 5) }, &[0x48, 0xb8, 0xf0, 0xde, 0xbc]);
+}
+
+#[test]
 fn test_add() {
-    let cb01 = compile(|cb| add(cb, CL, imm_opnd(3)));
-    let cb02 = compile(|cb| add(cb, CL, BL));
-    let cb03 = compile(|cb| add(cb, CL, SPL));
-    let cb04 = compile(|cb| add(cb, CX, BX));
-    let cb05 = compile(|cb| add(cb, RAX, RBX));
-    let cb06 = compile(|cb| add(cb, ECX, EDX));
-    let cb07 = compile(|cb| add(cb, RDX, R14));
-    let cb08 = compile(|cb| add(cb, mem_opnd(64, RAX, 0), RDX));
-    let cb09 = compile(|cb| add(cb, RDX, mem_opnd(64, RAX, 0)));
-    let cb10 = compile(|cb| add(cb, RDX, mem_opnd(64, RAX, 8)));
-    let cb11 = compile(|cb| add(cb, RDX, mem_opnd(64, RAX, 255)));
-    let cb12 = compile(|cb| add(cb, mem_opnd(64, RAX, 127), imm_opnd(255)));
-    let cb13 = compile(|cb| add(cb, mem_opnd(32, RAX, 0), EDX));
-    let cb14 = compile(|cb| add(cb, RSP, imm_opnd(8)));
-    let cb15 = compile(|cb| add(cb, ECX, imm_opnd(8)));
-    let cb16 = compile(|cb| add(cb, ECX, imm_opnd(255)));
+    let cb01 = compile(|writer| add(writer, CL, imm_opnd(3)));
+    let cb02 = compile(|writer| add(writer, CL, BL));
+    let cb03 = compile(|writer| add(writer, CL, SPL));
+    let cb04 = compile(|writer| add(writer, CX, BX));
+    let cb05 = compile(|writer| add(writer, RAX, RBX));
+    let cb06 = compile(|writer| add(writer, ECX, EDX));
+    let cb07 = compile(|writer| add(writer, RDX, R14));
+    let cb08 = compile(|writer| add(writer, mem_opnd(64, RAX, 0), RDX));
+    let cb09 = compile(|writer| add(writer, RDX, mem_opnd(64, RAX, 0)));
+    let cb10 = compile(|writer| add(writer, RDX, mem_opnd(64, RAX, 8)));
+    let cb11 = compile(|writer| add(writer, RDX, mem_opnd(64, RAX, 255)));
+    let cb12 = compile(|writer| add(writer, mem_opnd(64, RAX, 127), imm_opnd(255)));
+    let cb13 = compile(|writer| add(writer, mem_opnd(32, RAX, 0), EDX));
+    let cb14 = compile(|writer| add(writer, RSP, imm_opnd(8)));
+    let cb15 = compile(|writer| add(writer, ECX, imm_opnd(8)));
+    let cb16 = compile(|writer| add(writer, ECX, imm_opnd(255)));
 
     assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16), @"
     0x0: add cl, 3
@@ -80,17 +190,17 @@ fn test_add() {
 #[test]
 fn test_add_unsigned() {
     // ADD r/m8, imm8
-    let cb1 = compile(|cb| add(cb, R8B, uimm_opnd(1)));
-    let cb2 = compile(|cb| add(cb, R8B, imm_opnd(i8::MAX.into())));
+    let cb1 = compile(|writer| add(writer, R8B, uimm_opnd(1)));
+    let cb2 = compile(|writer| add(writer, R8B, imm_opnd(i8::MAX.into())));
     // ADD r/m16, imm16
-    let cb3 = compile(|cb| add(cb, R8W, uimm_opnd(1)));
-    let cb4 = compile(|cb| add(cb, R8W, uimm_opnd(i16::MAX.try_into().unwrap())));
+    let cb3 = compile(|writer| add(writer, R8W, uimm_opnd(1)));
+    let cb4 = compile(|writer| add(writer, R8W, uimm_opnd(i16::MAX.try_into().unwrap())));
     // ADD r/m32, imm32
-    let cb5 = compile(|cb| add(cb, R8D, uimm_opnd(1)));
-    let cb6 = compile(|cb| add(cb, R8D, uimm_opnd(i32::MAX.try_into().unwrap())));
+    let cb5 = compile(|writer| add(writer, R8D, uimm_opnd(1)));
+    let cb6 = compile(|writer| add(writer, R8D, uimm_opnd(i32::MAX.try_into().unwrap())));
     // ADD r/m64, imm32
-    let cb7 = compile(|cb| add(cb, R8, uimm_opnd(1)));
-    let cb8 = compile(|cb| add(cb, R8, uimm_opnd(i32::MAX.try_into().unwrap())));
+    let cb7 = compile(|writer| add(writer, R8, uimm_opnd(1)));
+    let cb8 = compile(|writer| add(writer, R8, uimm_opnd(i32::MAX.try_into().unwrap())));
 
     assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @"
     0x0: add r8b, 1
@@ -117,8 +227,8 @@ fn test_add_unsigned() {
 
 #[test]
 fn test_and() {
-    let cb1 = compile(|cb| and(cb, EBP, R12D));
-    let cb2 = compile(|cb| and(cb, mem_opnd(64, RAX, 0), imm_opnd(0x08)));
+    let cb1 = compile(|writer| and(writer, EBP, R12D));
+    let cb2 = compile(|writer| and(writer, mem_opnd(64, RAX, 0), imm_opnd(0x08)));
 
     assert_disasm_snapshot!(disasms!(cb1, cb2), @"
     0x0: and ebp, r12d
@@ -133,11 +243,7 @@ fn test_and() {
 
 #[test]
 fn test_call_label() {
-    let cb = compile(|cb| {
-        let label_idx = cb.new_label("fn");
-        call_label(cb, label_idx);
-        cb.link_labels().unwrap();
-    });
+    let cb = compile_with_label("fn", |writer, label| call_label(writer, label));
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: call 0");
     assert_snapshot!(cb.hexdump(), @"e8fbffffff");
 }
@@ -145,9 +251,9 @@ fn test_call_label() {
 #[test]
 fn test_call_ptr() {
     // calling a lower address
-    let cb = compile(|cb| {
-        let ptr = cb.get_write_ptr();
-        call_ptr(cb, RAX, ptr.raw_ptr(cb));
+    let cb = compile(|writer| {
+        let ptr = writer.get_write_ptr();
+        call_ptr(writer, RAX, ptr.raw_ptr(writer));
     });
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: call 0");
     assert_snapshot!(cb.hexdump(), @"e8fbffffff");
@@ -155,25 +261,25 @@ fn test_call_ptr() {
 
 #[test]
 fn test_call_reg() {
-    let cb = compile(|cb| call(cb, RAX));
+    let cb = compile(|writer| call(writer, RAX));
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: call rax");
     assert_snapshot!(cb.hexdump(), @"ffd0");
 }
 
 #[test]
 fn test_call_mem() {
-    let cb = compile(|cb| call(cb, mem_opnd(64, RSP, 8)));
+    let cb = compile(|writer| call(writer, mem_opnd(64, RSP, 8)));
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: call qword ptr [rsp + 8]");
     assert_snapshot!(cb.hexdump(), @"ff542408");
 }
 
 #[test]
 fn test_cmovcc() {
-    let cb1 = compile(|cb| cmovg(cb, ESI, EDI));
-    let cb2 = compile(|cb| cmovg(cb, ESI, mem_opnd(32, RBP, 12)));
-    let cb3 = compile(|cb| cmovl(cb, EAX, ECX));
-    let cb4 = compile(|cb| cmovl(cb, RBX, RBP));
-    let cb5 = compile(|cb| cmovle(cb, ESI, mem_opnd(32, RSP, 4)));
+    let cb1 = compile(|writer| cmovg(writer, ESI, EDI));
+    let cb2 = compile(|writer| cmovg(writer, ESI, mem_opnd(32, RBP, 12)));
+    let cb3 = compile(|writer| cmovl(writer, EAX, ECX));
+    let cb4 = compile(|writer| cmovl(writer, RBX, RBP));
+    let cb5 = compile(|writer| cmovle(writer, ESI, mem_opnd(32, RSP, 4)));
 
     assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5), @"
     0x0: cmovg esi, edi
@@ -194,11 +300,11 @@ fn test_cmovcc() {
 
 #[test]
 fn test_cmp() {
-    let cb1 = compile(|cb| cmp(cb, CL, DL));
-    let cb2 = compile(|cb| cmp(cb, ECX, EDI));
-    let cb3 = compile(|cb| cmp(cb, RDX, mem_opnd(64, R12, 0)));
-    let cb4 = compile(|cb| cmp(cb, RAX, imm_opnd(2)));
-    let cb5 = compile(|cb| cmp(cb, ECX, uimm_opnd(0x8000_0000)));
+    let cb1 = compile(|writer| cmp(writer, CL, DL));
+    let cb2 = compile(|writer| cmp(writer, ECX, EDI));
+    let cb3 = compile(|writer| cmp(writer, RDX, mem_opnd(64, R12, 0)));
+    let cb4 = compile(|writer| cmp(writer, RAX, imm_opnd(2)));
+    let cb5 = compile(|writer| cmp(writer, ECX, uimm_opnd(0x8000_0000)));
 
     assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5), @"
     0x0: cmp cl, dl
@@ -226,8 +332,8 @@ fn test_cqo() {
 
 #[test]
 fn test_imul() {
-    let cb1 = compile(|cb| imul(cb, RAX, RBX));
-    let cb2 = compile(|cb| imul(cb, RDX, mem_opnd(64, RAX, 0)));
+    let cb1 = compile(|writer| imul(writer, RAX, RBX));
+    let cb2 = compile(|writer| imul(writer, RDX, mem_opnd(64, RAX, 0)));
 
     assert_disasm_snapshot!(disasms!(cb1, cb2), @"
     0x0: imul rax, rbx
@@ -247,16 +353,12 @@ fn test_imul_mem_reg() {
     // swap operands. However, x86_scratch_split may need to move the result to the output operand,
     // which can be complicated if the assembler may sometimes change the result operand.
     // So x86_scratch_split should be responsible for that swap, not the assembler.
-    compile(|cb| imul(cb, mem_opnd(64, RAX, 0), RDX));
+    compile(|writer| imul(writer, mem_opnd(64, RAX, 0), RDX));
 }
 
 #[test]
 fn test_jge_label() {
-    let cb = compile(|cb| {
-        let label_idx = cb.new_label("loop");
-        jge_label(cb, label_idx);
-        cb.link_labels().unwrap();
-    });
+    let cb = compile_with_label("loop", |writer, label| jge_label(writer, label));
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: jge 0");
     assert_snapshot!(cb.hexdump(), @"0f8dfaffffff");
 }
@@ -264,18 +366,14 @@ fn test_jge_label() {
 #[test]
 fn test_jmp_label() {
     // Forward jump
-    let cb1 = compile(|cb| {
-        let label_idx = cb.new_label("next");
-        jmp_label(cb, label_idx);
-        cb.write_label(label_idx);
-        cb.link_labels().unwrap();
+    let cb1 = compile_with_label("next", |writer, label| {
+        jmp_label(writer, label);
+        writer.write_label(label);
     });
     // Backwards jump
-    let cb2 = compile(|cb| {
-        let label_idx = cb.new_label("loop");
-        cb.write_label(label_idx);
-        jmp_label(cb, label_idx);
-        cb.link_labels().unwrap();
+    let cb2 = compile_with_label("loop", |writer, label| {
+        writer.write_label(label);
+        jmp_label(writer, label);
     });
 
     assert_disasm_snapshot!(disasms!(cb1, cb2), @"
@@ -291,18 +389,14 @@ fn test_jmp_label() {
 
 #[test]
 fn test_jmp_rm() {
-    let cb = compile(|cb| jmp_rm(cb, R12));
+    let cb = compile(|writer| jmp_rm(writer, R12));
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: jmp r12");
     assert_snapshot!(cb.hexdump(), @"41ffe4");
 }
 
 #[test]
 fn test_jo_label() {
-    let cb = compile(|cb| {
-        let label_idx = cb.new_label("loop");
-        jo_label(cb, label_idx);
-        cb.link_labels().unwrap();
-    });
+    let cb = compile_with_label("loop", |writer, label| jo_label(writer, label));
 
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: jo 0");
     assert_snapshot!(cb.hexdump(), @"0f80faffffff");
@@ -310,10 +404,10 @@ fn test_jo_label() {
 
 #[test]
 fn test_lea() {
-    let cb1 = compile(|cb| lea(cb, RDX, mem_opnd(64, RCX, 8)));
-    let cb2 = compile(|cb| lea(cb, RAX, mem_opnd(8, RIP, 0)));
-    let cb3 = compile(|cb| lea(cb, RAX, mem_opnd(8, RIP, 5)));
-    let cb4 = compile(|cb| lea(cb, RDI, mem_opnd(8, RIP, 5)));
+    let cb1 = compile(|writer| lea(writer, RDX, mem_opnd(64, RCX, 8)));
+    let cb2 = compile(|writer| lea(writer, RAX, mem_opnd(8, RIP, 0)));
+    let cb3 = compile(|writer| lea(writer, RAX, mem_opnd(8, RIP, 5)));
+    let cb4 = compile(|writer| lea(writer, RDI, mem_opnd(8, RIP, 5)));
 
     assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4), @"
     0x0: lea rdx, [rcx + 8]
@@ -332,34 +426,34 @@ fn test_lea() {
 
 #[test]
 fn test_mov() {
-    let cb01 = compile(|cb| mov(cb, EAX, imm_opnd(7)));
-    let cb02 = compile(|cb| mov(cb, EAX, imm_opnd(-3)));
-    let cb03 = compile(|cb| mov(cb, R15, imm_opnd(3)));
-    let cb04 = compile(|cb| mov(cb, EAX, EBX));
-    let cb05 = compile(|cb| mov(cb, EAX, ECX));
-    let cb06 = compile(|cb| mov(cb, EDX, mem_opnd(32, RBX, 128)));
-    let cb07 = compile(|cb| mov(cb, RAX, mem_opnd(64, RSP, 4)));
+    let cb01 = compile(|writer| mov(writer, EAX, imm_opnd(7)));
+    let cb02 = compile(|writer| mov(writer, EAX, imm_opnd(-3)));
+    let cb03 = compile(|writer| mov(writer, R15, imm_opnd(3)));
+    let cb04 = compile(|writer| mov(writer, EAX, EBX));
+    let cb05 = compile(|writer| mov(writer, EAX, ECX));
+    let cb06 = compile(|writer| mov(writer, EDX, mem_opnd(32, RBX, 128)));
+    let cb07 = compile(|writer| mov(writer, RAX, mem_opnd(64, RSP, 4)));
     // Test `mov rax, 3` => `mov eax, 3` optimization
-    let cb08 = compile(|cb| mov(cb, R8, imm_opnd(0x34)));
-    let cb09 = compile(|cb| mov(cb, R8, imm_opnd(0x80000000)));
-    let cb10 = compile(|cb| mov(cb, R8, imm_opnd(-1)));
-    let cb11 = compile(|cb| mov(cb, RAX, imm_opnd(0x34)));
-    let cb12 = compile(|cb| mov(cb, RAX, imm_opnd(-18014398509481982)));
-    let cb13 = compile(|cb| mov(cb, RAX, imm_opnd(0x80000000)));
-    let cb14 = compile(|cb| mov(cb, RAX, imm_opnd(-52))); // yasm thinks this could use a dword immediate instead of qword
-    let cb15 = compile(|cb| mov(cb, RAX, imm_opnd(-1))); // yasm thinks this could use a dword immediate instead of qword
-    let cb16 = compile(|cb| mov(cb, CL, R9B));
-    let cb17 = compile(|cb| mov(cb, RBX, RAX));
-    let cb18 = compile(|cb| mov(cb, RDI, RBX));
-    let cb19 = compile(|cb| mov(cb, SIL, imm_opnd(11)));
-    let cb20 = compile(|cb| mov(cb, mem_opnd(8, RSP, 0), imm_opnd(-3)));
-    let cb21 = compile(|cb| mov(cb, mem_opnd(64, RDI, 8), imm_opnd(1)));
-    //let cb = compile(|cb| mov(cb, mem_opnd(32, EAX, 4), imm_opnd(0x34))); // We don't distinguish between EAX and RAX here - that's probably fine?
-    let cb22 = compile(|cb| mov(cb, mem_opnd(32, RAX, 4), imm_opnd(17)));
-    let cb23 = compile(|cb| mov(cb, mem_opnd(32, RAX, 4), uimm_opnd(0x80000001)));
-    let cb24 = compile(|cb| mov(cb, mem_opnd(32, R8, 20), EBX));
-    let cb25 = compile(|cb| mov(cb, mem_opnd(64, R11, 0), R10));
-    let cb26 = compile(|cb| mov(cb, mem_opnd(64, RDX, -8), imm_opnd(-12)));
+    let cb08 = compile(|writer| mov(writer, R8, imm_opnd(0x34)));
+    let cb09 = compile(|writer| mov(writer, R8, imm_opnd(0x80000000)));
+    let cb10 = compile(|writer| mov(writer, R8, imm_opnd(-1)));
+    let cb11 = compile(|writer| mov(writer, RAX, imm_opnd(0x34)));
+    let cb12 = compile(|writer| mov(writer, RAX, imm_opnd(-18014398509481982)));
+    let cb13 = compile(|writer| mov(writer, RAX, imm_opnd(0x80000000)));
+    let cb14 = compile(|writer| mov(writer, RAX, imm_opnd(-52))); // yasm thinks this could use a dword immediate instead of qword
+    let cb15 = compile(|writer| mov(writer, RAX, imm_opnd(-1))); // yasm thinks this could use a dword immediate instead of qword
+    let cb16 = compile(|writer| mov(writer, CL, R9B));
+    let cb17 = compile(|writer| mov(writer, RBX, RAX));
+    let cb18 = compile(|writer| mov(writer, RDI, RBX));
+    let cb19 = compile(|writer| mov(writer, SIL, imm_opnd(11)));
+    let cb20 = compile(|writer| mov(writer, mem_opnd(8, RSP, 0), imm_opnd(-3)));
+    let cb21 = compile(|writer| mov(writer, mem_opnd(64, RDI, 8), imm_opnd(1)));
+    //let cb = compile(|writer| mov(writer, mem_opnd(32, EAX, 4), imm_opnd(0x34))); // We don't distinguish between EAX and RAX here - that's probably fine?
+    let cb22 = compile(|writer| mov(writer, mem_opnd(32, RAX, 4), imm_opnd(17)));
+    let cb23 = compile(|writer| mov(writer, mem_opnd(32, RAX, 4), uimm_opnd(0x80000001)));
+    let cb24 = compile(|writer| mov(writer, mem_opnd(32, R8, 20), EBX));
+    let cb25 = compile(|writer| mov(writer, mem_opnd(64, R11, 0), R10));
+    let cb26 = compile(|writer| mov(writer, mem_opnd(64, RDX, -8), imm_opnd(-12)));
 
     assert_disasm_snapshot!(disasms!(
         cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13,
@@ -428,8 +522,8 @@ fn test_mov() {
 
 #[test]
 fn test_movabs() {
-    let cb1 = compile(|cb| movabs(cb, R8, 0x34));
-    let cb2 = compile(|cb| movabs(cb, R8, 0x80000000));
+    let cb1 = compile(|writer| movabs(writer, R8, 0x34));
+    let cb2 = compile(|writer| movabs(writer, R8, 0x80000000));
 
     assert_disasm_snapshot!(disasms!(cb1, cb2), @"
     0x0: movabs r8, 0x34
@@ -445,36 +539,36 @@ fn test_movabs() {
 #[test]
 fn test_mov_unsigned() {
     // MOV AL, imm8
-    let cb01 = compile(|cb| mov(cb, AL, uimm_opnd(1)));
-    let cb02 = compile(|cb| mov(cb, AL, uimm_opnd(u8::MAX.into())));
+    let cb01 = compile(|writer| mov(writer, AL, uimm_opnd(1)));
+    let cb02 = compile(|writer| mov(writer, AL, uimm_opnd(u8::MAX.into())));
     // MOV AX, imm16
-    let cb03 = compile(|cb| mov(cb, AX, uimm_opnd(1)));
-    let cb04 = compile(|cb| mov(cb, AX, uimm_opnd(u16::MAX.into())));
+    let cb03 = compile(|writer| mov(writer, AX, uimm_opnd(1)));
+    let cb04 = compile(|writer| mov(writer, AX, uimm_opnd(u16::MAX.into())));
     // MOV EAX, imm32
-    let cb05 = compile(|cb| mov(cb, EAX, uimm_opnd(1)));
-    let cb06 = compile(|cb| mov(cb, EAX, uimm_opnd(u32::MAX.into())));
-    let cb07 = compile(|cb| mov(cb, R8, uimm_opnd(0)));
-    let cb08 = compile(|cb| mov(cb, R8, uimm_opnd(0xFF_FF_FF_FF)));
+    let cb05 = compile(|writer| mov(writer, EAX, uimm_opnd(1)));
+    let cb06 = compile(|writer| mov(writer, EAX, uimm_opnd(u32::MAX.into())));
+    let cb07 = compile(|writer| mov(writer, R8, uimm_opnd(0)));
+    let cb08 = compile(|writer| mov(writer, R8, uimm_opnd(0xFF_FF_FF_FF)));
     // MOV RAX, imm64, will move down into EAX since it fits into 32 bits
-    let cb09 = compile(|cb| mov(cb, RAX, uimm_opnd(1)));
-    let cb10 = compile(|cb| mov(cb, RAX, uimm_opnd(u32::MAX.into())));
+    let cb09 = compile(|writer| mov(writer, RAX, uimm_opnd(1)));
+    let cb10 = compile(|writer| mov(writer, RAX, uimm_opnd(u32::MAX.into())));
     // MOV RAX, imm64, will not move down into EAX since it does not fit into 32 bits
-    let cb11 = compile(|cb| mov(cb, RAX, uimm_opnd(u32::MAX as u64 + 1)));
-    let cb12 = compile(|cb| mov(cb, RAX, uimm_opnd(u64::MAX)));
-    let cb13 = compile(|cb| mov(cb, R8, uimm_opnd(u64::MAX)));
+    let cb11 = compile(|writer| mov(writer, RAX, uimm_opnd(u32::MAX as u64 + 1)));
+    let cb12 = compile(|writer| mov(writer, RAX, uimm_opnd(u64::MAX)));
+    let cb13 = compile(|writer| mov(writer, R8, uimm_opnd(u64::MAX)));
     // MOV r8, imm8
-    let cb14 = compile(|cb| mov(cb, R8B, uimm_opnd(1)));
-    let cb15 = compile(|cb| mov(cb, R8B, uimm_opnd(u8::MAX.into())));
+    let cb14 = compile(|writer| mov(writer, R8B, uimm_opnd(1)));
+    let cb15 = compile(|writer| mov(writer, R8B, uimm_opnd(u8::MAX.into())));
     // MOV r16, imm16
-    let cb16 = compile(|cb| mov(cb, R8W, uimm_opnd(1)));
-    let cb17 = compile(|cb| mov(cb, R8W, uimm_opnd(u16::MAX.into())));
+    let cb16 = compile(|writer| mov(writer, R8W, uimm_opnd(1)));
+    let cb17 = compile(|writer| mov(writer, R8W, uimm_opnd(u16::MAX.into())));
     // MOV r32, imm32
-    let cb18 = compile(|cb| mov(cb, R8D, uimm_opnd(1)));
-    let cb19 = compile(|cb| mov(cb, R8D, uimm_opnd(u32::MAX.into())));
+    let cb18 = compile(|writer| mov(writer, R8D, uimm_opnd(1)));
+    let cb19 = compile(|writer| mov(writer, R8D, uimm_opnd(u32::MAX.into())));
     // MOV r64, imm64, will move down into 32 bit since it fits into 32 bits
-    let cb20 = compile(|cb| mov(cb, R8, uimm_opnd(1)));
+    let cb20 = compile(|writer| mov(writer, R8, uimm_opnd(1)));
     // MOV r64, imm64, will not move down into 32 bit since it does not fit into 32 bits
-    let cb21 = compile(|cb| mov(cb, R8, uimm_opnd(u64::MAX)));
+    let cb21 = compile(|writer| mov(writer, R8, uimm_opnd(u64::MAX)));
 
     assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21), @"
     0x0: mov al, 1
@@ -527,11 +621,11 @@ fn test_mov_unsigned() {
 
 #[test]
 fn test_mov_iprel() {
-    let cb1 = compile(|cb| mov(cb, EAX, mem_opnd(32, RIP, 0)));
-    let cb2 = compile(|cb| mov(cb, EAX, mem_opnd(32, RIP, 5)));
-    let cb3 = compile(|cb| mov(cb, RAX, mem_opnd(64, RIP, 0)));
-    let cb4 = compile(|cb| mov(cb, RAX, mem_opnd(64, RIP, 5)));
-    let cb5 = compile(|cb| mov(cb, RDI, mem_opnd(64, RIP, 5)));
+    let cb1 = compile(|writer| mov(writer, EAX, mem_opnd(32, RIP, 0)));
+    let cb2 = compile(|writer| mov(writer, EAX, mem_opnd(32, RIP, 5)));
+    let cb3 = compile(|writer| mov(writer, RAX, mem_opnd(64, RIP, 0)));
+    let cb4 = compile(|writer| mov(writer, RAX, mem_opnd(64, RIP, 5)));
+    let cb5 = compile(|writer| mov(writer, RDI, mem_opnd(64, RIP, 5)));
 
     assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5), @"
     0x0: mov eax, dword ptr [rip]
@@ -552,14 +646,14 @@ fn test_mov_iprel() {
 
 #[test]
 fn test_movsx() {
-    let cb1 = compile(|cb| movsx(cb, AX, AL));
-    let cb2 = compile(|cb| movsx(cb, EDX, AL));
-    let cb3 = compile(|cb| movsx(cb, RAX, BL));
-    let cb4 = compile(|cb| movsx(cb, ECX, AX));
-    let cb5 = compile(|cb| movsx(cb, R11, CL));
-    let cb6 = compile(|cb| movsx(cb, R10, mem_opnd(32, RSP, 12)));
-    let cb7 = compile(|cb| movsx(cb, RAX, mem_opnd(8, RSP, 0)));
-    let cb8 = compile(|cb| movsx(cb, RDX, mem_opnd(16, R13, 4)));
+    let cb1 = compile(|writer| movsx(writer, AX, AL));
+    let cb2 = compile(|writer| movsx(writer, EDX, AL));
+    let cb3 = compile(|writer| movsx(writer, RAX, BL));
+    let cb4 = compile(|writer| movsx(writer, ECX, AX));
+    let cb5 = compile(|writer| movsx(writer, R11, CL));
+    let cb6 = compile(|writer| movsx(writer, R10, mem_opnd(32, RSP, 12)));
+    let cb7 = compile(|writer| movsx(writer, RAX, mem_opnd(8, RSP, 0)));
+    let cb8 = compile(|writer| movsx(writer, RDX, mem_opnd(16, R13, 4)));
 
     assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @"
     0x0: movsx ax, al
@@ -586,18 +680,18 @@ fn test_movsx() {
 
 #[test]
 fn test_nop() {
-    let cb01 = compile(|cb| nop(cb, 1));
-    let cb02 = compile(|cb| nop(cb, 2));
-    let cb03 = compile(|cb| nop(cb, 3));
-    let cb04 = compile(|cb| nop(cb, 4));
-    let cb05 = compile(|cb| nop(cb, 5));
-    let cb06 = compile(|cb| nop(cb, 6));
-    let cb07 = compile(|cb| nop(cb, 7));
-    let cb08 = compile(|cb| nop(cb, 8));
-    let cb09 = compile(|cb| nop(cb, 9));
-    let cb10 = compile(|cb| nop(cb, 10));
-    let cb11 = compile(|cb| nop(cb, 11));
-    let cb12 = compile(|cb| nop(cb, 12));
+    let cb01 = compile(|writer| nop(writer, 1));
+    let cb02 = compile(|writer| nop(writer, 2));
+    let cb03 = compile(|writer| nop(writer, 3));
+    let cb04 = compile(|writer| nop(writer, 4));
+    let cb05 = compile(|writer| nop(writer, 5));
+    let cb06 = compile(|writer| nop(writer, 6));
+    let cb07 = compile(|writer| nop(writer, 7));
+    let cb08 = compile(|writer| nop(writer, 8));
+    let cb09 = compile(|writer| nop(writer, 9));
+    let cb10 = compile(|writer| nop(writer, 10));
+    let cb11 = compile(|writer| nop(writer, 11));
+    let cb12 = compile(|writer| nop(writer, 12));
 
     assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12), @"
     0x0: nop
@@ -635,23 +729,23 @@ fn test_nop() {
 
 #[test]
 fn test_not() {
-    let cb01 = compile(|cb| not(cb, AX));
-    let cb02 = compile(|cb| not(cb, EAX));
-    let cb03 = compile(|cb| not(cb, mem_opnd(64, R12, 0)));
-    let cb04 = compile(|cb| not(cb, mem_opnd(32, RSP, 301)));
-    let cb05 = compile(|cb| not(cb, mem_opnd(32, RSP, 0)));
-    let cb06 = compile(|cb| not(cb, mem_opnd(32, RSP, 3)));
-    let cb07 = compile(|cb| not(cb, mem_opnd(32, RBP, 0)));
-    let cb08 = compile(|cb| not(cb, mem_opnd(32, RBP, 13)));
-    let cb09 = compile(|cb| not(cb, RAX));
-    let cb10 = compile(|cb| not(cb, R11));
-    let cb11 = compile(|cb| not(cb, mem_opnd(32, RAX, 0)));
-    let cb12 = compile(|cb| not(cb, mem_opnd(32, RSI, 0)));
-    let cb13 = compile(|cb| not(cb, mem_opnd(32, RDI, 0)));
-    let cb14 = compile(|cb| not(cb, mem_opnd(32, RDX, 55)));
-    let cb15 = compile(|cb| not(cb, mem_opnd(32, RDX, 1337)));
-    let cb16 = compile(|cb| not(cb, mem_opnd(32, RDX, -55)));
-    let cb17 = compile(|cb| not(cb, mem_opnd(32, RDX, -555)));
+    let cb01 = compile(|writer| not(writer, AX));
+    let cb02 = compile(|writer| not(writer, EAX));
+    let cb03 = compile(|writer| not(writer, mem_opnd(64, R12, 0)));
+    let cb04 = compile(|writer| not(writer, mem_opnd(32, RSP, 301)));
+    let cb05 = compile(|writer| not(writer, mem_opnd(32, RSP, 0)));
+    let cb06 = compile(|writer| not(writer, mem_opnd(32, RSP, 3)));
+    let cb07 = compile(|writer| not(writer, mem_opnd(32, RBP, 0)));
+    let cb08 = compile(|writer| not(writer, mem_opnd(32, RBP, 13)));
+    let cb09 = compile(|writer| not(writer, RAX));
+    let cb10 = compile(|writer| not(writer, R11));
+    let cb11 = compile(|writer| not(writer, mem_opnd(32, RAX, 0)));
+    let cb12 = compile(|writer| not(writer, mem_opnd(32, RSI, 0)));
+    let cb13 = compile(|writer| not(writer, mem_opnd(32, RDI, 0)));
+    let cb14 = compile(|writer| not(writer, mem_opnd(32, RDX, 55)));
+    let cb15 = compile(|writer| not(writer, mem_opnd(32, RDX, 1337)));
+    let cb16 = compile(|writer| not(writer, mem_opnd(32, RDX, -55)));
+    let cb17 = compile(|writer| not(writer, mem_opnd(32, RDX, -555)));
 
     assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17), @"
     0x0: not ax
@@ -696,23 +790,23 @@ fn test_not() {
 
 #[test]
 fn test_or() {
-    let cb = compile(|cb| or(cb, EDX, ESI));
+    let cb = compile(|writer| or(writer, EDX, ESI));
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: or edx, esi");
     assert_snapshot!(cb.hexdump(), @"09f2");
 }
 
 #[test]
 fn test_pop() {
-    let cb01 = compile(|cb| pop(cb, RAX));
-    let cb02 = compile(|cb| pop(cb, RBX));
-    let cb03 = compile(|cb| pop(cb, RSP));
-    let cb04 = compile(|cb| pop(cb, RBP));
-    let cb05 = compile(|cb| pop(cb, R12));
-    let cb06 = compile(|cb| pop(cb, mem_opnd(64, RAX, 0)));
-    let cb07 = compile(|cb| pop(cb, mem_opnd(64, R8, 0)));
-    let cb08 = compile(|cb| pop(cb, mem_opnd(64, R8, 3)));
-    let cb09 = compile(|cb| pop(cb, mem_opnd_sib(64, RAX, RCX, 8, 3)));
-    let cb10 = compile(|cb| pop(cb, mem_opnd_sib(64, R8, RCX, 8, 3)));
+    let cb01 = compile(|writer| pop(writer, RAX));
+    let cb02 = compile(|writer| pop(writer, RBX));
+    let cb03 = compile(|writer| pop(writer, RSP));
+    let cb04 = compile(|writer| pop(writer, RBP));
+    let cb05 = compile(|writer| pop(writer, R12));
+    let cb06 = compile(|writer| pop(writer, mem_opnd(64, RAX, 0)));
+    let cb07 = compile(|writer| pop(writer, mem_opnd(64, R8, 0)));
+    let cb08 = compile(|writer| pop(writer, mem_opnd(64, R8, 3)));
+    let cb09 = compile(|writer| pop(writer, mem_opnd_sib(64, RAX, RCX, 8, 3)));
+    let cb10 = compile(|writer| pop(writer, mem_opnd_sib(64, R8, RCX, 8, 3)));
 
     assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10), @"
     0x0: pop rax
@@ -743,14 +837,14 @@ fn test_pop() {
 
 #[test]
 fn test_push() {
-    let cb1 = compile(|cb| push(cb, RAX));
-    let cb2 = compile(|cb| push(cb, RBX));
-    let cb3 = compile(|cb| push(cb, R12));
-    let cb4 = compile(|cb| push(cb, mem_opnd(64, RAX, 0)));
-    let cb5 = compile(|cb| push(cb, mem_opnd(64, R8, 0)));
-    let cb6 = compile(|cb| push(cb, mem_opnd(64, R8, 3)));
-    let cb7 = compile(|cb| push(cb, mem_opnd_sib(64, RAX, RCX, 8, 3)));
-    let cb8 = compile(|cb| push(cb, mem_opnd_sib(64, R8, RCX, 8, 3)));
+    let cb1 = compile(|writer| push(writer, RAX));
+    let cb2 = compile(|writer| push(writer, RBX));
+    let cb3 = compile(|writer| push(writer, R12));
+    let cb4 = compile(|writer| push(writer, mem_opnd(64, RAX, 0)));
+    let cb5 = compile(|writer| push(writer, mem_opnd(64, R8, 0)));
+    let cb6 = compile(|writer| push(writer, mem_opnd(64, R8, 3)));
+    let cb7 = compile(|writer| push(writer, mem_opnd_sib(64, RAX, RCX, 8, 3)));
+    let cb8 = compile(|writer| push(writer, mem_opnd_sib(64, R8, RCX, 8, 3)));
 
     assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @"
     0x0: push rax
@@ -784,11 +878,11 @@ fn test_ret() {
 
 #[test]
 fn test_sal() {
-    let cb1 = compile(|cb| sal(cb, CX, uimm_opnd(1)));
-    let cb2 = compile(|cb| sal(cb, ECX, uimm_opnd(1)));
-    let cb3 = compile(|cb| sal(cb, EBP, uimm_opnd(5)));
-    let cb4 = compile(|cb| sal(cb, mem_opnd(32, RSP, 68), uimm_opnd(1)));
-    let cb5 = compile(|cb| sal(cb, RCX, CL));
+    let cb1 = compile(|writer| sal(writer, CX, uimm_opnd(1)));
+    let cb2 = compile(|writer| sal(writer, ECX, uimm_opnd(1)));
+    let cb3 = compile(|writer| sal(writer, EBP, uimm_opnd(5)));
+    let cb4 = compile(|writer| sal(writer, mem_opnd(32, RSP, 68), uimm_opnd(1)));
+    let cb5 = compile(|writer| sal(writer, RCX, CL));
 
     assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5), @"
     0x0: shl cx, 1
@@ -809,22 +903,22 @@ fn test_sal() {
 
 #[test]
 fn test_sar() {
-    let cb = compile(|cb| sar(cb, EDX, uimm_opnd(1)));
+    let cb = compile(|writer| sar(writer, EDX, uimm_opnd(1)));
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: sar edx, 1");
     assert_snapshot!(cb.hexdump(), @"d1fa");
 }
 
 #[test]
 fn test_shr() {
-    let cb = compile(|cb| shr(cb, R14, uimm_opnd(7)));
+    let cb = compile(|writer| shr(writer, R14, uimm_opnd(7)));
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: shr r14, 7");
     assert_snapshot!(cb.hexdump(), @"49c1ee07");
 }
 
 #[test]
 fn test_sub() {
-    let cb1 = compile(|cb| sub(cb, EAX, imm_opnd(1)));
-    let cb2 = compile(|cb| sub(cb, RAX, imm_opnd(2)));
+    let cb1 = compile(|writer| sub(writer, EAX, imm_opnd(1)));
+    let cb2 = compile(|writer| sub(writer, RAX, imm_opnd(2)));
 
     assert_disasm_snapshot!(disasms!(cb1, cb2), @"
     0x0: sub eax, 1
@@ -842,30 +936,30 @@ fn test_sub() {
 fn test_sub_uimm_too_large() {
     // This immediate becomes a different value after
     // sign extension, so not safe to encode.
-    compile(|cb| sub(cb, RCX, uimm_opnd(0x8000_0000)));
+    compile(|writer| sub(writer, RCX, uimm_opnd(0x8000_0000)));
 }
 
 #[test]
 fn test_test() {
-    let cb01 = compile(|cb| test(cb, AL, AL));
-    let cb02 = compile(|cb| test(cb, AX, AX));
-    let cb03 = compile(|cb| test(cb, CL, uimm_opnd(8)));
-    let cb04 = compile(|cb| test(cb, DL, uimm_opnd(7)));
-    let cb05 = compile(|cb| test(cb, RCX, uimm_opnd(8)));
-    let cb06 = compile(|cb| test(cb, mem_opnd(8, RDX, 8), uimm_opnd(8)));
-    let cb07 = compile(|cb| test(cb, mem_opnd(8, RDX, 8), uimm_opnd(255)));
-    let cb08 = compile(|cb| test(cb, DX, uimm_opnd(0xffff)));
-    let cb09 = compile(|cb| test(cb, mem_opnd(16, RDX, 8), uimm_opnd(0xffff)));
-    let cb10 = compile(|cb| test(cb, mem_opnd(8, RSI, 0), uimm_opnd(1)));
-    let cb11 = compile(|cb| test(cb, mem_opnd(8, RSI, 16), uimm_opnd(1)));
-    let cb12 = compile(|cb| test(cb, mem_opnd(8, RSI, -16), uimm_opnd(1)));
-    let cb13 = compile(|cb| test(cb, mem_opnd(32, RSI, 64), EAX));
-    let cb14 = compile(|cb| test(cb, mem_opnd(64, RDI, 42), RAX));
-    let cb15 = compile(|cb| test(cb, RAX, RAX));
-    let cb16 = compile(|cb| test(cb, RAX, RSI));
-    let cb17 = compile(|cb| test(cb, mem_opnd(64, RSI, 64), imm_opnd(!0x08)));
-    let cb18 = compile(|cb| test(cb, mem_opnd(64, RSI, 64), imm_opnd(0x08)));
-    let cb19 = compile(|cb| test(cb, RCX, imm_opnd(0x08)));
+    let cb01 = compile(|writer| test(writer, AL, AL));
+    let cb02 = compile(|writer| test(writer, AX, AX));
+    let cb03 = compile(|writer| test(writer, CL, uimm_opnd(8)));
+    let cb04 = compile(|writer| test(writer, DL, uimm_opnd(7)));
+    let cb05 = compile(|writer| test(writer, RCX, uimm_opnd(8)));
+    let cb06 = compile(|writer| test(writer, mem_opnd(8, RDX, 8), uimm_opnd(8)));
+    let cb07 = compile(|writer| test(writer, mem_opnd(8, RDX, 8), uimm_opnd(255)));
+    let cb08 = compile(|writer| test(writer, DX, uimm_opnd(0xffff)));
+    let cb09 = compile(|writer| test(writer, mem_opnd(16, RDX, 8), uimm_opnd(0xffff)));
+    let cb10 = compile(|writer| test(writer, mem_opnd(8, RSI, 0), uimm_opnd(1)));
+    let cb11 = compile(|writer| test(writer, mem_opnd(8, RSI, 16), uimm_opnd(1)));
+    let cb12 = compile(|writer| test(writer, mem_opnd(8, RSI, -16), uimm_opnd(1)));
+    let cb13 = compile(|writer| test(writer, mem_opnd(32, RSI, 64), EAX));
+    let cb14 = compile(|writer| test(writer, mem_opnd(64, RDI, 42), RAX));
+    let cb15 = compile(|writer| test(writer, RAX, RAX));
+    let cb16 = compile(|writer| test(writer, RAX, RSI));
+    let cb17 = compile(|writer| test(writer, mem_opnd(64, RSI, 64), imm_opnd(!0x08)));
+    let cb18 = compile(|writer| test(writer, mem_opnd(64, RSI, 64), imm_opnd(0x08)));
+    let cb19 = compile(|writer| test(writer, RCX, imm_opnd(0x08)));
 
     assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17, cb18, cb19), @"
     0x0: test al, al
@@ -914,10 +1008,10 @@ fn test_test() {
 
 #[test]
 fn test_xchg() {
-    let cb1 = compile(|cb| xchg(cb, RAX, RCX));
-    let cb2 = compile(|cb| xchg(cb, RAX, R13));
-    let cb3 = compile(|cb| xchg(cb, RCX, RBX));
-    let cb4 = compile(|cb| xchg(cb, R9, R15));
+    let cb1 = compile(|writer| xchg(writer, RAX, RCX));
+    let cb2 = compile(|writer| xchg(writer, RAX, R13));
+    let cb3 = compile(|writer| xchg(writer, RCX, RBX));
+    let cb4 = compile(|writer| xchg(writer, R9, R15));
 
     assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4), @"
     0x0: xchg rcx, rax
@@ -936,7 +1030,7 @@ fn test_xchg() {
 
 #[test]
 fn test_xor() {
-    let cb = compile(|cb| xor(cb, EAX, EAX));
+    let cb = compile(|writer| xor(writer, EAX, EAX));
     assert_disasm_snapshot!(cb.disasm(), @"  0x0: xor eax, eax");
     assert_snapshot!(cb.hexdump(), @"31c0");
 }

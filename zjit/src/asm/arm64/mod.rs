@@ -4,6 +4,8 @@
 #![allow(clippy::self_named_constructors)]
 #![allow(clippy::unusual_byte_groupings)]
 
+use crate::asm::CodeWriter;
+#[cfg(test)]
 use crate::asm::CodeBlock;
 
 mod arg;
@@ -48,7 +50,7 @@ pub const fn uimm_fits_bits(uimm: u64, num_bits: u8) -> bool {
 }
 
 /// ADD - add rn and rm, put the result in rd, don't update flags
-pub fn add(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+pub fn add(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(
@@ -75,7 +77,7 @@ pub fn add(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to add instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// Encode ADD (extended register)
@@ -102,7 +104,7 @@ fn encode_add_extend(rd: u8, rn: u8, rm: u8, extend_type: ExtendType, shift: u8,
 /// ADD (extended register) - add rn and rm with UXTX extension (no extension for 64-bit registers)
 /// This is equivalent to a regular ADD for 64-bit registers since UXTX with shift 0 means no modification.
 /// For reg_no=31, rd and rn mean SP while with rm means the zero register.
-pub fn add_extended(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+pub fn add_extended(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
@@ -111,11 +113,11 @@ pub fn add_extended(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to add_extend instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// ADDS - add rn and rm, put the result in rd, update flags
-pub fn adds(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+pub fn adds(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(
@@ -142,11 +144,11 @@ pub fn adds(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to adds instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// ADR - form a PC-relative address and load it into a register
-pub fn adr(cb: &mut CodeBlock, rd: A64Opnd, imm: A64Opnd) {
+pub fn adr(writer: &mut CodeWriter<'_>, rd: A64Opnd, imm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, imm) {
         (A64Opnd::Reg(rd), A64Opnd::Imm(imm)) => {
             assert!(rd.num_bits == 64, "The destination register must be 64 bits.");
@@ -157,13 +159,13 @@ pub fn adr(cb: &mut CodeBlock, rd: A64Opnd, imm: A64Opnd) {
         _ => panic!("Invalid operand combination to adr instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// ADRP - form a PC-relative address to a 4KB page and load it into a register.
 /// This is effectively the same as ADR except that the immediate must be a
 /// multiple of 4KB.
-pub fn adrp(cb: &mut CodeBlock, rd: A64Opnd, imm: A64Opnd) {
+pub fn adrp(writer: &mut CodeWriter<'_>, rd: A64Opnd, imm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, imm) {
         (A64Opnd::Reg(rd), A64Opnd::Imm(imm)) => {
             assert!(rd.num_bits == 64, "The destination register must be 64 bits.");
@@ -174,11 +176,11 @@ pub fn adrp(cb: &mut CodeBlock, rd: A64Opnd, imm: A64Opnd) {
         _ => panic!("Invalid operand combination to adr instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// AND - and rn and rm, put the result in rd, don't update flags
-pub fn and(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+pub fn and(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(
@@ -201,11 +203,11 @@ pub fn and(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to and instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// ANDS - and rn and rm, put the result in rd, update flags
-pub fn ands(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+pub fn ands(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(
@@ -228,12 +230,12 @@ pub fn ands(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to ands instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// ASR - arithmetic shift right rn by shift, put the result in rd, don't update
 /// flags
-pub fn asr(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
+pub fn asr(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, shift) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(shift)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
@@ -244,7 +246,7 @@ pub fn asr(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
         _ => panic!("Invalid operand combination to asr instruction: asr {rd:?}, {rn:?}, {shift:?}"),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// Whether or not the offset between two instructions fits into the branch with
@@ -255,11 +257,11 @@ pub const fn b_offset_fits_bits(offset: i64) -> bool {
 }
 
 /// B - branch without link (offset is number of instructions to jump)
-pub fn b(cb: &mut CodeBlock, offset: InstructionOffset) {
+pub fn b(writer: &mut CodeWriter<'_>, offset: InstructionOffset) {
     assert!(b_offset_fits_bits(offset.into()), "The immediate operand must be 26 bits or less.");
     let bytes: [u8; 4] = Call::b(offset).into();
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// Whether or not the offset in number of instructions between two instructions
@@ -271,44 +273,44 @@ pub const fn bcond_offset_fits_bits(offset: i64) -> bool {
 }
 
 /// B.cond - branch to target if condition is true
-pub fn bcond(cb: &mut CodeBlock, cond: u8, offset: InstructionOffset) {
+pub fn bcond(writer: &mut CodeWriter<'_>, cond: u8, offset: InstructionOffset) {
     _ = Condition;
     assert!(bcond_offset_fits_bits(offset.into()), "The offset must be 19 bits or less.");
     let bytes: [u8; 4] = BranchCond::bcond(cond, offset).into();
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// BL - branch with link (offset is number of instructions to jump)
-pub fn bl(cb: &mut CodeBlock, offset: InstructionOffset) {
+pub fn bl(writer: &mut CodeWriter<'_>, offset: InstructionOffset) {
     assert!(b_offset_fits_bits(offset.into()), "The offset must be 26 bits or less.");
     let bytes: [u8; 4] = Call::bl(offset).into();
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// BLR - branch with link to a register
-pub fn blr(cb: &mut CodeBlock, rn: A64Opnd) {
+pub fn blr(writer: &mut CodeWriter<'_>, rn: A64Opnd) {
     let bytes: [u8; 4] = match rn {
         A64Opnd::Reg(rn) => Branch::blr(rn.reg_no).into(),
         _ => panic!("Invalid operand to blr instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// BR - branch to a register
-pub fn br(cb: &mut CodeBlock, rn: A64Opnd) {
+pub fn br(writer: &mut CodeWriter<'_>, rn: A64Opnd) {
     let bytes: [u8; 4] = match rn {
         A64Opnd::Reg(rn) => Branch::br(rn.reg_no).into(),
         _ => panic!("Invalid operand to br instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// BRK - create a breakpoint
-pub fn brk(cb: &mut CodeBlock, imm16: A64Opnd) {
+pub fn brk(writer: &mut CodeWriter<'_>, imm16: A64Opnd) {
     let bytes: [u8; 4] = match imm16 {
         A64Opnd::None => Breakpoint::brk(0xf000).into(),
         A64Opnd::UImm(imm16) => {
@@ -318,17 +320,17 @@ pub fn brk(cb: &mut CodeBlock, imm16: A64Opnd) {
         _ => panic!("Invalid operand combination to brk instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// UDF - permanently undefined instruction
-pub fn udf(cb: &mut CodeBlock, imm16: u16) {
+pub fn udf(writer: &mut CodeWriter<'_>, imm16: u16) {
     let bytes: [u8; 4] = Udf::udf(imm16).into();
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// CMP - compare rn and rm, update flags
-pub fn cmp(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
+pub fn cmp(writer: &mut CodeWriter<'_>, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rn, rm) {
         (A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(
@@ -347,11 +349,11 @@ pub fn cmp(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to cmp instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// CSEL - conditionally select between two registers
-pub fn csel(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd, cond: u8) {
+pub fn csel(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd, cond: u8) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(
@@ -364,11 +366,11 @@ pub fn csel(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd, cond: u8)
         _ => panic!("Invalid operand combination to csel instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// EOR - perform a bitwise XOR of rn and rm, put the result in rd, don't update flags
-pub fn eor(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+pub fn eor(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(
@@ -391,11 +393,11 @@ pub fn eor(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to eor instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDADDAL - atomic add with acquire and release semantics
-pub fn ldaddal(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
+pub fn ldaddal(writer: &mut CodeWriter<'_>, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rs, rt, rn) {
         (A64Opnd::Reg(rs), A64Opnd::Reg(rt), A64Opnd::Reg(rn)) => {
             assert!(
@@ -408,11 +410,11 @@ pub fn ldaddal(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to ldaddal instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDAXR - atomic load with acquire semantics
-pub fn ldaxr(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn ldaxr(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Reg(rn)) => {
             assert_eq!(rn.num_bits, 64, "rn must be a 64-bit register.");
@@ -422,11 +424,11 @@ pub fn ldaxr(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to ldaxr instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDP (signed offset) - load a pair of registers from memory
-pub fn ldp(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
+pub fn ldp(writer: &mut CodeWriter<'_>, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt1, rt2, rn) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
@@ -438,11 +440,11 @@ pub fn ldp(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to ldp instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDP (pre-index) - load a pair of registers from memory, update the base pointer before loading it
-pub fn ldp_pre(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
+pub fn ldp_pre(writer: &mut CodeWriter<'_>, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt1, rt2, rn) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
@@ -454,11 +456,11 @@ pub fn ldp_pre(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to ldp instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDP (post-index) - load a pair of registers from memory, update the base pointer after loading it
-pub fn ldp_post(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
+pub fn ldp_post(writer: &mut CodeWriter<'_>, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt1, rt2, rn) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
@@ -470,11 +472,11 @@ pub fn ldp_post(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to ldp instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDR - load a memory address into a register with a register offset
-pub fn ldr(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+pub fn ldr(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn, rm) {
         (A64Opnd::Reg(rt), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
@@ -485,11 +487,11 @@ pub fn ldr(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to ldr instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDR - load a PC-relative memory address into a register
-pub fn ldr_literal(cb: &mut CodeBlock, rt: A64Opnd, rn: InstructionOffset) {
+pub fn ldr_literal(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: InstructionOffset) {
     let bytes: [u8; 4] = match rt {
         A64Opnd::Reg(rt) => {
             LoadLiteral::ldr_literal(rt.reg_no, rn, rt.num_bits).into()
@@ -497,11 +499,11 @@ pub fn ldr_literal(cb: &mut CodeBlock, rt: A64Opnd, rn: InstructionOffset) {
         _ => panic!("Invalid operand combination to ldr instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDRH - load a halfword from memory
-pub fn ldrh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn ldrh(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert_eq!(rt.num_bits, 32, "Expected to be loading a halfword");
@@ -512,11 +514,11 @@ pub fn ldrh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to ldrh instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDRH (pre-index) - load a halfword from memory, update the base pointer before loading it
-pub fn ldrh_pre(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn ldrh_pre(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert_eq!(rt.num_bits, 32, "Expected to be loading a halfword");
@@ -527,11 +529,11 @@ pub fn ldrh_pre(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to ldrh instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDRH (post-index) - load a halfword from memory, update the base pointer after loading it
-pub fn ldrh_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn ldrh_post(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert_eq!(rt.num_bits, 32, "Expected to be loading a halfword");
@@ -542,7 +544,7 @@ pub fn ldrh_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to ldrh instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// Whether or not a memory address displacement fits into the maximum number of
@@ -552,7 +554,7 @@ pub fn mem_disp_fits_bits(disp: i32) -> bool {
 }
 
 /// LDR (post-index) - load a register from memory, update the base pointer after loading it
-pub fn ldr_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn ldr_post(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "All operands must be of the same size.");
@@ -563,11 +565,11 @@ pub fn ldr_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to ldr instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDR (pre-index) - load a register from memory, update the base pointer before loading it
-pub fn ldr_pre(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn ldr_pre(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "All operands must be of the same size.");
@@ -578,11 +580,11 @@ pub fn ldr_pre(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to ldr instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDUR - load a memory address into a register
-pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn ldur(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Reg(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "All operands must be of the same size.");
@@ -598,11 +600,11 @@ pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operands for LDUR")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDURH - load a byte from memory, zero-extend it, and write it to a register
-pub fn ldurh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn ldurh(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
@@ -612,11 +614,11 @@ pub fn ldurh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operands for LDURH")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDURB - load a byte from memory, zero-extend it, and write it to a register
-pub fn ldurb(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn ldurb(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
@@ -628,11 +630,11 @@ pub fn ldurb(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operands for LDURB")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LDURSW - load a 32-bit memory address into a register and sign-extend it
-pub fn ldursw(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn ldursw(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
@@ -643,11 +645,11 @@ pub fn ldursw(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to ldursw instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LSL - logical shift left a register by an immediate
-pub fn lsl(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
+pub fn lsl(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, shift) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(uimm)) => {
             assert!(rd.num_bits == rn.num_bits, "Expected registers to be the same size");
@@ -658,11 +660,11 @@ pub fn lsl(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
         _ => panic!("Invalid operands combination {rd:?} {rn:?} {shift:?} to lsl instruction")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// LSR - logical shift right a register by an immediate
-pub fn lsr(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
+pub fn lsr(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, shift) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(uimm)) => {
             assert!(rd.num_bits == rn.num_bits, "Expected registers to be the same size");
@@ -673,11 +675,11 @@ pub fn lsr(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
         _ => panic!("Invalid operands combination to lsr instruction")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// MOV - move a value in a register to another register
-pub fn mov(cb: &mut CodeBlock, rd: A64Opnd, rm: A64Opnd) {
+pub fn mov(writer: &mut CodeWriter<'_>, rd: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rm) {
         (A64Opnd::Reg(A64Reg { reg_no: 31, num_bits: 64 }), A64Opnd::Reg(rm)) => {
             assert!(rm.num_bits == 64, "Expected rm to be 64 bits");
@@ -709,11 +711,11 @@ pub fn mov(cb: &mut CodeBlock, rd: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to mov instruction: {rd:?}, {rm:?}")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// MOVK - move a 16 bit immediate into a register, keep the other bits in place
-pub fn movk(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
+pub fn movk(writer: &mut CodeWriter<'_>, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
     let bytes: [u8; 4] = match (rd, imm16) {
         (A64Opnd::Reg(rd), A64Opnd::UImm(imm16)) => {
             assert!(uimm_fits_bits(imm16, 16), "The immediate operand must be 16 bits or less.");
@@ -723,12 +725,12 @@ pub fn movk(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
         _ => panic!("Invalid operand combination to movk instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// MOVN - load a register with the complement of a shifted then zero extended 16-bit immediate
 /// <https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/MOVN--Move-wide-with-NOT->
-pub fn movn(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
+pub fn movn(writer: &mut CodeWriter<'_>, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
     let bytes: [u8; 4] = match (rd, imm16) {
         (A64Opnd::Reg(rd), A64Opnd::UImm(imm16)) => {
             assert!(uimm_fits_bits(imm16, 16), "The immediate operand must be 16 bits or less.");
@@ -738,11 +740,11 @@ pub fn movn(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
         _ => panic!("Invalid operand combination to movn instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// MOVZ - move a 16 bit immediate into a register, zero the other bits
-pub fn movz(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
+pub fn movz(writer: &mut CodeWriter<'_>, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
     let bytes: [u8; 4] = match (rd, imm16) {
         (A64Opnd::Reg(rd), A64Opnd::UImm(imm16)) => {
             assert!(uimm_fits_bits(imm16, 16), "The immediate operand must be 16 bits or less.");
@@ -752,11 +754,11 @@ pub fn movz(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
         _ => panic!("Invalid operand combination to movz instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// MRS - move a system register into a general-purpose register
-pub fn mrs(cb: &mut CodeBlock, rt: A64Opnd, systemregister: SystemRegister) {
+pub fn mrs(writer: &mut CodeWriter<'_>, rt: A64Opnd, systemregister: SystemRegister) {
     let bytes: [u8; 4] = match rt {
         A64Opnd::Reg(rt) => {
             SysReg::mrs(rt.reg_no, systemregister).into()
@@ -764,11 +766,11 @@ pub fn mrs(cb: &mut CodeBlock, rt: A64Opnd, systemregister: SystemRegister) {
         _ => panic!("Invalid operand combination to mrs instruction")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// MSR - move a general-purpose register into a system register
-pub fn msr(cb: &mut CodeBlock, systemregister: SystemRegister, rt: A64Opnd) {
+pub fn msr(writer: &mut CodeWriter<'_>, systemregister: SystemRegister, rt: A64Opnd) {
     let bytes: [u8; 4] = match rt {
         A64Opnd::Reg(rt) => {
             SysReg::msr(systemregister, rt.reg_no).into()
@@ -776,11 +778,11 @@ pub fn msr(cb: &mut CodeBlock, systemregister: SystemRegister, rt: A64Opnd) {
         _ => panic!("Invalid operand combination to msr instruction")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// MUL - multiply two registers, put the result in a third register
-pub fn mul(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+pub fn mul(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits, "Expected registers to be the same size");
@@ -790,11 +792,11 @@ pub fn mul(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to mul instruction")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// SMULH - multiply two 64-bit registers to produce a 128-bit result, put the high 64-bits of the result into rd
-pub fn smulh(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+pub fn smulh(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits, "Expected registers to be the same size");
@@ -805,11 +807,11 @@ pub fn smulh(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to mul instruction")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// MVN - move a value in a register to another register, negating it
-pub fn mvn(cb: &mut CodeBlock, rd: A64Opnd, rm: A64Opnd) {
+pub fn mvn(writer: &mut CodeWriter<'_>, rd: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rm)) => {
             assert!(rd.num_bits == rm.num_bits, "Expected registers to be the same size");
@@ -819,18 +821,18 @@ pub fn mvn(cb: &mut CodeBlock, rd: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to mvn instruction")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// NOP - no-operation, used for alignment purposes
-pub fn nop(cb: &mut CodeBlock) {
+pub fn nop(writer: &mut CodeWriter<'_>) {
     let bytes: [u8; 4] = Nop::nop().into();
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// ORN - perform a bitwise OR of rn and NOT rm, put the result in rd, don't update flags
-pub fn orn(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+pub fn orn(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits, "Expected registers to be the same size");
@@ -840,11 +842,11 @@ pub fn orn(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to orn instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// ORR - perform a bitwise OR of rn and rm, put the result in rd, don't update flags
-pub fn orr(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+pub fn orr(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(
@@ -867,11 +869,11 @@ pub fn orr(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to orr instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// STLXR - store a value to memory, release exclusive access
-pub fn stlxr(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
+pub fn stlxr(writer: &mut CodeWriter<'_>, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rs, rt, rn) {
         (A64Opnd::Reg(rs), A64Opnd::Reg(rt), A64Opnd::Reg(rn)) => {
             assert_eq!(rs.num_bits, 32, "rs must be a 32-bit register.");
@@ -882,7 +884,7 @@ pub fn stlxr(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to stlxr instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// STP (signed offset) - store a pair of registers to memory
@@ -890,7 +892,7 @@ pub fn stlxr(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
 /// Unlike LDP, STP with the same source register twice is well-defined
 /// (e.g. `stp xzr, xzr` is a common way to zero 16 bytes), so the pair is
 /// not asserted to be distinct.
-pub fn stp(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
+pub fn stp(writer: &mut CodeWriter<'_>, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt1, rt2, rn) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
@@ -901,13 +903,13 @@ pub fn stp(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to stp instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// STP (pre-index) - store a pair of registers to memory, update the base pointer before loading it
 ///
 /// Unlike LDP, STP with the same source register twice is well-defined; see [stp].
-pub fn stp_pre(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
+pub fn stp_pre(writer: &mut CodeWriter<'_>, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt1, rt2, rn) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
@@ -920,13 +922,13 @@ pub fn stp_pre(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to stp instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// STP (post-index) - store a pair of registers to memory, update the base pointer after loading it
 ///
 /// Unlike LDP, STP with the same source register twice is well-defined; see [stp].
-pub fn stp_post(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
+pub fn stp_post(writer: &mut CodeWriter<'_>, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt1, rt2, rn) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
@@ -939,11 +941,11 @@ pub fn stp_post(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to stp instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// STR (post-index) - store a register to memory, update the base pointer after loading it
-pub fn str_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn str_post(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "All operands must be of the same size.");
@@ -954,11 +956,11 @@ pub fn str_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to str instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// STR (pre-index) - store a register to memory, update the base pointer before loading it
-pub fn str_pre(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn str_pre(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "All operands must be of the same size.");
@@ -969,11 +971,11 @@ pub fn str_pre(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to str instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// STRH - store a halfword into memory
-pub fn strh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn strh(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert_eq!(rt.num_bits, 32, "Expected to be loading a halfword");
@@ -984,11 +986,11 @@ pub fn strh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to strh instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// STRH (pre-index) - store a halfword into memory, update the base pointer before loading it
-pub fn strh_pre(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn strh_pre(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert_eq!(rt.num_bits, 32, "Expected to be loading a halfword");
@@ -999,11 +1001,11 @@ pub fn strh_pre(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to strh instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// STRH (post-index) - store a halfword into memory, update the base pointer after loading it
-pub fn strh_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn strh_post(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert_eq!(rt.num_bits, 32, "Expected to be loading a halfword");
@@ -1014,11 +1016,11 @@ pub fn strh_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to strh instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// STUR - store a value in a register at a memory address
-pub fn stur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn stur(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rn.num_bits == 32 || rn.num_bits == 64);
@@ -1029,11 +1031,11 @@ pub fn stur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to stur instruction: {rt:?}, {rn:?}")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// STURH - store a value in a register at a memory address
-pub fn sturh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn sturh(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rn.num_bits == 16);
@@ -1044,10 +1046,10 @@ pub fn sturh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to sturh instruction: {rt:?}, {rn:?}")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
-pub fn sturb(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+pub fn sturb(writer: &mut CodeWriter<'_>, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rn.num_bits == 8);
@@ -1058,11 +1060,11 @@ pub fn sturb(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to sturb instruction: {rt:?}, {rn:?}")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// SUB - subtract rm from rn, put the result in rd, don't update flags
-pub fn sub(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+pub fn sub(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(
@@ -1089,11 +1091,11 @@ pub fn sub(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to sub instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// SUBS - subtract rm from rn, put the result in rd, update flags
-pub fn subs(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+pub fn subs(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(
@@ -1120,11 +1122,11 @@ pub fn subs(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to subs instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// SXTW - sign extend a 32-bit register into a 64-bit register
-pub fn sxtw(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
+pub fn sxtw(writer: &mut CodeWriter<'_>, rd: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn)) => {
             assert_eq!(rd.num_bits, 64, "rd must be 64-bits wide.");
@@ -1135,22 +1137,22 @@ pub fn sxtw(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
         _ => panic!("Invalid operand combination to sxtw instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// RET - unconditionally return to a location in a register, defaults to X30
-pub fn ret(cb: &mut CodeBlock, rn: A64Opnd) {
+pub fn ret(writer: &mut CodeWriter<'_>, rn: A64Opnd) {
     let bytes: [u8; 4] = match rn {
         A64Opnd::None => Branch::ret(30).into(),
         A64Opnd::Reg(reg) => Branch::ret(reg.reg_no).into(),
         _ => panic!("Invalid operand to ret instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// TBNZ - test bit and branch if not zero
-pub fn tbnz(cb: &mut CodeBlock, rt: A64Opnd, bit_num: A64Opnd, offset: A64Opnd) {
+pub fn tbnz(writer: &mut CodeWriter<'_>, rt: A64Opnd, bit_num: A64Opnd, offset: A64Opnd) {
     let bytes: [u8; 4] = match (rt, bit_num, offset) {
         (A64Opnd::Reg(rt), A64Opnd::UImm(bit_num), A64Opnd::Imm(offset)) => {
             TestBit::tbnz(rt.reg_no, bit_num.try_into().unwrap(), offset.try_into().unwrap()).into()
@@ -1158,11 +1160,11 @@ pub fn tbnz(cb: &mut CodeBlock, rt: A64Opnd, bit_num: A64Opnd, offset: A64Opnd) 
         _ => panic!("Invalid operand combination to tbnz instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// TBZ - test bit and branch if zero
-pub fn tbz(cb: &mut CodeBlock, rt: A64Opnd, bit_num: A64Opnd, offset: A64Opnd) {
+pub fn tbz(writer: &mut CodeWriter<'_>, rt: A64Opnd, bit_num: A64Opnd, offset: A64Opnd) {
     let bytes: [u8; 4] = match (rt, bit_num, offset) {
         (A64Opnd::Reg(rt), A64Opnd::UImm(bit_num), A64Opnd::Imm(offset)) => {
             TestBit::tbz(rt.reg_no, bit_num.try_into().unwrap(), offset.try_into().unwrap()).into()
@@ -1170,11 +1172,11 @@ pub fn tbz(cb: &mut CodeBlock, rt: A64Opnd, bit_num: A64Opnd, offset: A64Opnd) {
         _ => panic!("Invalid operand combination to tbz instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// TST - test the bits of a register against a mask, then update flags
-pub fn tst(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
+pub fn tst(writer: &mut CodeWriter<'_>, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rn, rm) {
         (A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
             assert!(rn.num_bits == rm.num_bits, "All operands must be of the same size.");
@@ -1193,11 +1195,11 @@ pub fn tst(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
         _ => panic!("Invalid operand combination to tst instruction."),
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// CBZ - branch if a register is zero
-pub fn cbz(cb: &mut CodeBlock, rt: A64Opnd, offset: InstructionOffset) {
+pub fn cbz(writer: &mut CodeWriter<'_>, rt: A64Opnd, offset: InstructionOffset) {
     assert!(imm_fits_bits(offset.into(), 19), "jump offset for cbz must fit in 19 bits");
     let bytes: [u8; 4] = if let A64Opnd::Reg(rt) = rt {
         cbz_cbnz(rt.num_bits, false, offset, rt.reg_no)
@@ -1205,11 +1207,11 @@ pub fn cbz(cb: &mut CodeBlock, rt: A64Opnd, offset: InstructionOffset) {
         panic!("Invalid operand combination to cbz instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// CBNZ - branch if a register is non-zero
-pub fn cbnz(cb: &mut CodeBlock, rt: A64Opnd, offset: InstructionOffset) {
+pub fn cbnz(writer: &mut CodeWriter<'_>, rt: A64Opnd, offset: InstructionOffset) {
     assert!(imm_fits_bits(offset.into(), 19), "jump offset for cbz must fit in 19 bits");
     let bytes: [u8; 4] = if let A64Opnd::Reg(rt) = rt {
         cbz_cbnz(rt.num_bits, true, offset, rt.reg_no)
@@ -1217,7 +1219,7 @@ pub fn cbnz(cb: &mut CodeBlock, rt: A64Opnd, offset: InstructionOffset) {
         panic!("Invalid operand combination to cbnz instruction.")
     };
 
-    cb.write_bytes(&bytes);
+    writer.write_bytes(&bytes);
 }
 
 /// Encode Compare and Branch on Zero (CBZ) with `op=0` or Compare and Branch on Nonzero (CBNZ)
@@ -1244,9 +1246,9 @@ mod tests {
     use insta::assert_snapshot;
     use crate::assert_disasm_snapshot;
 
-    fn compile<R>(run: R) -> CodeBlock where R: FnOnce(&mut super::CodeBlock) {
-        let mut cb = super::CodeBlock::new_dummy();
-        run(&mut cb);
+    fn compile<R>(run: R) -> CodeBlock where R: FnOnce(&mut CodeWriter<'_>) {
+        let mut cb = CodeBlock::new_dummy();
+        run(&mut cb.writer());
         cb
     }
 
@@ -1275,112 +1277,112 @@ mod tests {
 
     #[test]
     fn test_add_reg() {
-        let cb = compile(|cb| add(cb, X0, X1, X2));
+        let cb = compile(|writer| add(writer, X0, X1, X2));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: add x0, x1, x2");
         assert_snapshot!(cb.hexdump(), @"2000028b");
     }
 
     #[test]
     fn test_add_uimm() {
-        let cb = compile(|cb| add(cb, X0, X1, A64Opnd::new_uimm(7)));
+        let cb = compile(|writer| add(writer, X0, X1, A64Opnd::new_uimm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: add x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c0091");
     }
 
     #[test]
     fn test_add_imm_positive() {
-        let cb = compile(|cb| add(cb, X0, X1, A64Opnd::new_imm(7)));
+        let cb = compile(|writer| add(writer, X0, X1, A64Opnd::new_imm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: add x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c0091");
     }
 
     #[test]
     fn test_add_imm_negative() {
-        let cb = compile(|cb| add(cb, X0, X1, A64Opnd::new_imm(-7)));
+        let cb = compile(|writer| add(writer, X0, X1, A64Opnd::new_imm(-7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: sub x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c00d1");
     }
 
     #[test]
     fn test_adds_reg() {
-        let cb = compile(|cb| adds(cb, X0, X1, X2));
+        let cb = compile(|writer| adds(writer, X0, X1, X2));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: adds x0, x1, x2");
         assert_snapshot!(cb.hexdump(), @"200002ab");
     }
 
     #[test]
     fn test_adds_uimm() {
-        let cb = compile(|cb| adds(cb, X0, X1, A64Opnd::new_uimm(7)));
+        let cb = compile(|writer| adds(writer, X0, X1, A64Opnd::new_uimm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: adds x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c00b1");
     }
 
     #[test]
     fn test_adds_imm_positive() {
-        let cb = compile(|cb| adds(cb, X0, X1, A64Opnd::new_imm(7)));
+        let cb = compile(|writer| adds(writer, X0, X1, A64Opnd::new_imm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: adds x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c00b1");
     }
 
     #[test]
     fn test_adds_imm_negative() {
-        let cb = compile(|cb| adds(cb, X0, X1, A64Opnd::new_imm(-7)));
+        let cb = compile(|writer| adds(writer, X0, X1, A64Opnd::new_imm(-7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: subs x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c00f1");
     }
 
     #[test]
     fn test_adr() {
-        let cb = compile(|cb| adr(cb, X10, A64Opnd::new_imm(20)));
+        let cb = compile(|writer| adr(writer, X10, A64Opnd::new_imm(20)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: adr x10, #0x14");
         assert_snapshot!(cb.hexdump(), @"aa000010");
     }
 
     #[test]
     fn test_adrp() {
-        let cb = compile(|cb| adrp(cb, X10, A64Opnd::new_imm(0x8000)));
+        let cb = compile(|writer| adrp(writer, X10, A64Opnd::new_imm(0x8000)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: adrp x10, #0x8000");
         assert_snapshot!(cb.hexdump(), @"4a000090");
     }
 
     #[test]
     fn test_and_register() {
-        let cb = compile(|cb| and(cb, X0, X1, X2));
+        let cb = compile(|writer| and(writer, X0, X1, X2));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: and x0, x1, x2");
         assert_snapshot!(cb.hexdump(), @"2000028a");
     }
 
     #[test]
     fn test_and_immediate() {
-        let cb = compile(|cb| and(cb, X0, X1, A64Opnd::new_uimm(7)));
+        let cb = compile(|writer| and(writer, X0, X1, A64Opnd::new_uimm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: and x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"20084092");
     }
 
     #[test]
     fn test_and_32b_immediate() {
-        let cb = compile(|cb| and(cb, W0, W2, A64Opnd::new_uimm(0xfffff)));
+        let cb = compile(|writer| and(writer, W0, W2, A64Opnd::new_uimm(0xfffff)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: and w0, w2, #0xfffff");
         assert_snapshot!(cb.hexdump(), @"404c0012");
     }
 
     #[test]
     fn test_ands_register() {
-        let cb = compile(|cb| ands(cb, X0, X1, X2));
+        let cb = compile(|writer| ands(writer, X0, X1, X2));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ands x0, x1, x2");
         assert_snapshot!(cb.hexdump(), @"200002ea");
     }
 
     #[test]
     fn test_ands_immediate() {
-        let cb = compile(|cb| ands(cb, X0, X1, A64Opnd::new_uimm(7)));
+        let cb = compile(|writer| ands(writer, X0, X1, A64Opnd::new_uimm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ands x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"200840f2");
     }
 
     #[test]
     fn test_asr() {
-        let cb = compile(|cb| asr(cb, X20, X21, A64Opnd::new_uimm(10)));
+        let cb = compile(|writer| asr(writer, X20, X21, A64Opnd::new_uimm(10)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: asr x20, x21, #0xa");
         assert_snapshot!(cb.hexdump(), @"b4fe4a93");
     }
@@ -1388,7 +1390,7 @@ mod tests {
     #[test]
     fn test_bcond() {
         let offset = InstructionOffset::from_insns(0x100);
-        let cb = compile(|cb| bcond(cb, Condition::NE, offset));
+        let cb = compile(|writer| bcond(writer, Condition::NE, offset));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: b.ne #0x400");
         assert_snapshot!(cb.hexdump(), @"01200054");
     }
@@ -1396,7 +1398,7 @@ mod tests {
     #[test]
     fn test_b() {
         let offset = InstructionOffset::from_insns((1 << 25) - 1);
-        let cb = compile(|cb| b(cb, offset));
+        let cb = compile(|writer| b(writer, offset));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: b #0x7fffffc");
         assert_snapshot!(cb.hexdump(), @"ffffff15");
     }
@@ -1406,7 +1408,7 @@ mod tests {
     fn test_b_too_big() {
         // There are 26 bits available
         let offset = InstructionOffset::from_insns(1 << 25);
-        compile(|cb| b(cb, offset));
+        compile(|writer| b(writer, offset));
     }
 
     #[test]
@@ -1414,13 +1416,13 @@ mod tests {
     fn test_b_too_small() {
         // There are 26 bits available
         let offset = InstructionOffset::from_insns(-(1 << 25) - 1);
-        compile(|cb| b(cb, offset));
+        compile(|writer| b(writer, offset));
     }
 
     #[test]
     fn test_bl() {
         let offset = InstructionOffset::from_insns(-(1 << 25));
-        let cb = compile(|cb| bl(cb, offset));
+        let cb = compile(|writer| bl(writer, offset));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: bl #0xfffffffff8000000");
         assert_snapshot!(cb.hexdump(), @"00000096");
     }
@@ -1430,7 +1432,7 @@ mod tests {
     fn test_bl_too_big() {
         // There are 26 bits available
         let offset = InstructionOffset::from_insns(1 << 25);
-        compile(|cb| bl(cb, offset));
+        compile(|writer| bl(writer, offset));
     }
 
     #[test]
@@ -1438,19 +1440,19 @@ mod tests {
     fn test_bl_too_small() {
         // There are 26 bits available
         let offset = InstructionOffset::from_insns(-(1 << 25) - 1);
-        compile(|cb| bl(cb, offset));
+        compile(|writer| bl(writer, offset));
     }
 
     #[test]
     fn test_blr() {
-        let cb = compile(|cb| blr(cb, X20));
+        let cb = compile(|writer| blr(writer, X20));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: blr x20");
         assert_snapshot!(cb.hexdump(), @"80023fd6");
     }
 
     #[test]
     fn test_br() {
-        let cb = compile(|cb| br(cb, X20));
+        let cb = compile(|writer| br(writer, X20));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: br x20");
         assert_snapshot!(cb.hexdump(), @"80021fd6");
     }
@@ -1458,9 +1460,9 @@ mod tests {
     #[test]
     fn test_cbz() {
         let offset = InstructionOffset::from_insns(-1);
-        let cb = compile(|cb| {
-            cbz(cb, X0, offset);
-            cbz(cb, W0, offset);
+        let cb = compile(|writer| {
+            cbz(writer, X0, offset);
+            cbz(writer, W0, offset);
         });
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: cbz x0, #0xfffffffffffffffc
@@ -1472,9 +1474,9 @@ mod tests {
     #[test]
     fn test_cbnz() {
         let offset = InstructionOffset::from_insns(2);
-        let cb = compile(|cb| {
-            cbnz(cb, X20, offset);
-            cbnz(cb, W20, offset);
+        let cb = compile(|writer| {
+            cbnz(writer, X20, offset);
+            cbnz(writer, W20, offset);
         });
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: cbnz x20, #8
@@ -1485,149 +1487,149 @@ mod tests {
 
     #[test]
     fn test_brk_none() {
-        let cb = compile(|cb| brk(cb, A64Opnd::None));
+        let cb = compile(|writer| brk(writer, A64Opnd::None));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: brk #0xf000");
         assert_snapshot!(cb.hexdump(), @"00003ed4");
     }
 
     #[test]
     fn test_brk_uimm() {
-        let cb = compile(|cb| brk(cb, A64Opnd::new_uimm(14)));
+        let cb = compile(|writer| brk(writer, A64Opnd::new_uimm(14)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: brk #0xe");
         assert_snapshot!(cb.hexdump(), @"c00120d4");
     }
 
     #[test]
     fn test_cmp_register() {
-        let cb = compile(|cb| cmp(cb, X10, X11));
+        let cb = compile(|writer| cmp(writer, X10, X11));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: cmp x10, x11");
         assert_snapshot!(cb.hexdump(), @"5f010beb");
     }
 
     #[test]
     fn test_cmp_immediate() {
-        let cb = compile(|cb| cmp(cb, X10, A64Opnd::new_uimm(14)));
+        let cb = compile(|writer| cmp(writer, X10, A64Opnd::new_uimm(14)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: cmp x10, #0xe");
         assert_snapshot!(cb.hexdump(), @"5f3900f1");
     }
 
     #[test]
     fn test_csel() {
-        let cb = compile(|cb| csel(cb, X10, X11, X12, Condition::EQ));
+        let cb = compile(|writer| csel(writer, X10, X11, X12, Condition::EQ));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: csel x10, x11, x12, eq");
         assert_snapshot!(cb.hexdump(), @"6a018c9a");
     }
 
     #[test]
     fn test_eor_register() {
-        let cb = compile(|cb| eor(cb, X10, X11, X12));
+        let cb = compile(|writer| eor(writer, X10, X11, X12));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: eor x10, x11, x12");
         assert_snapshot!(cb.hexdump(), @"6a010cca");
     }
 
     #[test]
     fn test_eor_immediate() {
-        let cb = compile(|cb| eor(cb, X10, X11, A64Opnd::new_uimm(7)));
+        let cb = compile(|writer| eor(writer, X10, X11, A64Opnd::new_uimm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: eor x10, x11, #7");
         assert_snapshot!(cb.hexdump(), @"6a0940d2");
     }
 
     #[test]
     fn test_eor_32b_immediate() {
-        let cb = compile(|cb| eor(cb, W9, W1, A64Opnd::new_uimm(0x80000001)));
+        let cb = compile(|writer| eor(writer, W9, W1, A64Opnd::new_uimm(0x80000001)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: eor w9, w1, #0x80000001");
         assert_snapshot!(cb.hexdump(), @"29040152");
     }
 
     #[test]
     fn test_ldaddal() {
-        let cb = compile(|cb| ldaddal(cb, X10, X11, X12));
+        let cb = compile(|writer| ldaddal(writer, X10, X11, X12));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldaddal x10, x11, [x12]");
         assert_snapshot!(cb.hexdump(), @"8b01eaf8");
     }
 
     #[test]
     fn test_ldaxr() {
-        let cb = compile(|cb| ldaxr(cb, X10, X11));
+        let cb = compile(|writer| ldaxr(writer, X10, X11));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldaxr x10, [x11]");
         assert_snapshot!(cb.hexdump(), @"6afd5fc8");
     }
 
     #[test]
     fn test_ldp() {
-        let cb = compile(|cb| ldp(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
+        let cb = compile(|writer| ldp(writer, X10, X11, A64Opnd::new_mem(64, X12, 208)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldp x10, x11, [x12, #0xd0]");
         assert_snapshot!(cb.hexdump(), @"8a2d4da9");
     }
 
     #[test]
     fn test_ldp_pre() {
-        let cb = compile(|cb| ldp_pre(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
+        let cb = compile(|writer| ldp_pre(writer, X10, X11, A64Opnd::new_mem(64, X12, 208)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldp x10, x11, [x12, #0xd0]!");
         assert_snapshot!(cb.hexdump(), @"8a2dcda9");
     }
 
     #[test]
     fn test_ldp_post() {
-        let cb = compile(|cb| ldp_post(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
+        let cb = compile(|writer| ldp_post(writer, X10, X11, A64Opnd::new_mem(64, X12, 208)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldp x10, x11, [x12], #0xd0");
         assert_snapshot!(cb.hexdump(), @"8a2dcda8");
     }
 
     #[test]
     fn test_ldr() {
-        let cb = compile(|cb| ldr(cb, X10, X11, X12));
+        let cb = compile(|writer| ldr(writer, X10, X11, X12));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldr x10, [x11, x12]");
         assert_snapshot!(cb.hexdump(), @"6a696cf8");
     }
 
     #[test]
     fn test_ldr_literal() {
-        let cb = compile(|cb| ldr_literal(cb, X0, 10.into()));
+        let cb = compile(|writer| ldr_literal(writer, X0, 10.into()));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldr x0, #0x28");
         assert_snapshot!(cb.hexdump(), @"40010058");
     }
 
     #[test]
     fn test_ldr_post() {
-        let cb = compile(|cb| ldr_post(cb, X10, A64Opnd::new_mem(64, X11, 16)));
+        let cb = compile(|writer| ldr_post(writer, X10, A64Opnd::new_mem(64, X11, 16)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldr x10, [x11], #0x10");
         assert_snapshot!(cb.hexdump(), @"6a0541f8");
     }
 
     #[test]
     fn test_ldr_pre() {
-        let cb = compile(|cb| ldr_pre(cb, X10, A64Opnd::new_mem(64, X11, 16)));
+        let cb = compile(|writer| ldr_pre(writer, X10, A64Opnd::new_mem(64, X11, 16)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldr x10, [x11, #0x10]!");
         assert_snapshot!(cb.hexdump(), @"6a0d41f8");
     }
 
     #[test]
     fn test_ldrh() {
-        let cb = compile(|cb| ldrh(cb, W10, A64Opnd::new_mem(64, X11, 12)));
+        let cb = compile(|writer| ldrh(writer, W10, A64Opnd::new_mem(64, X11, 12)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldrh w10, [x11, #0xc]");
         assert_snapshot!(cb.hexdump(), @"6a194079");
     }
 
     #[test]
     fn test_ldrh_pre() {
-        let cb = compile(|cb| ldrh_pre(cb, W10, A64Opnd::new_mem(64, X11, 12)));
+        let cb = compile(|writer| ldrh_pre(writer, W10, A64Opnd::new_mem(64, X11, 12)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldrh w10, [x11, #0xc]!");
         assert_snapshot!(cb.hexdump(), @"6acd4078");
     }
 
     #[test]
     fn test_ldrh_post() {
-        let cb = compile(|cb| ldrh_post(cb, W10, A64Opnd::new_mem(64, X11, 12)));
+        let cb = compile(|writer| ldrh_post(writer, W10, A64Opnd::new_mem(64, X11, 12)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldrh w10, [x11], #0xc");
         assert_snapshot!(cb.hexdump(), @"6ac54078");
     }
 
     #[test]
     fn test_ldurh_memory() {
-        let cb = compile(|cb| {
-            ldurh(cb, W10, A64Opnd::new_mem(64, X1, 0));
-            ldurh(cb, W10, A64Opnd::new_mem(64, X1, 123));
+        let cb = compile(|writer| {
+            ldurh(writer, W10, A64Opnd::new_mem(64, X1, 0));
+            ldurh(writer, W10, A64Opnd::new_mem(64, X1, 123));
         });
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: ldurh w10, [x1]
@@ -1638,118 +1640,118 @@ mod tests {
 
     #[test]
     fn test_ldur_memory() {
-        let cb = compile(|cb| ldur(cb, X0, A64Opnd::new_mem(64, X1, 123)));
+        let cb = compile(|writer| ldur(writer, X0, A64Opnd::new_mem(64, X1, 123)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldur x0, [x1, #0x7b]");
         assert_snapshot!(cb.hexdump(), @"20b047f8");
     }
 
     #[test]
     fn test_ldur_register() {
-        let cb = compile(|cb| ldur(cb, X0, X1));
+        let cb = compile(|writer| ldur(writer, X0, X1));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldur x0, [x1]");
         assert_snapshot!(cb.hexdump(), @"200040f8");
     }
 
     #[test]
     fn test_ldursw() {
-        let cb = compile(|cb| ldursw(cb, X10, A64Opnd::new_mem(64, X11, 123)));
+        let cb = compile(|writer| ldursw(writer, X10, A64Opnd::new_mem(64, X11, 123)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldursw x10, [x11, #0x7b]");
         assert_snapshot!(cb.hexdump(), @"6ab187b8");
     }
 
     #[test]
     fn test_lsl() {
-        let cb = compile(|cb| lsl(cb, X10, X11, A64Opnd::new_uimm(14)));
+        let cb = compile(|writer| lsl(writer, X10, X11, A64Opnd::new_uimm(14)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: lsl x10, x11, #0xe");
         assert_snapshot!(cb.hexdump(), @"6ac572d3");
     }
 
     #[test]
     fn test_lsr() {
-        let cb = compile(|cb| lsr(cb, X10, X11, A64Opnd::new_uimm(14)));
+        let cb = compile(|writer| lsr(writer, X10, X11, A64Opnd::new_uimm(14)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: lsr x10, x11, #0xe");
         assert_snapshot!(cb.hexdump(), @"6afd4ed3");
     }
 
     #[test]
     fn test_mov_registers() {
-        let cb = compile(|cb| mov(cb, X10, X11));
+        let cb = compile(|writer| mov(writer, X10, X11));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: mov x10, x11");
         assert_snapshot!(cb.hexdump(), @"ea030baa");
     }
 
     #[test]
     fn test_mov_immediate() {
-        let cb = compile(|cb| mov(cb, X10, A64Opnd::new_uimm(0x5555555555555555)));
+        let cb = compile(|writer| mov(writer, X10, A64Opnd::new_uimm(0x5555555555555555)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: mov x10, #0x5555555555555555");
         assert_snapshot!(cb.hexdump(), @"eaf300b2");
     }
 
     #[test]
     fn test_mov_32b_immediate() {
-        let cb = compile(|cb| mov(cb, W10, A64Opnd::new_uimm(0x80000001)));
+        let cb = compile(|writer| mov(writer, W10, A64Opnd::new_uimm(0x80000001)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: mov w10, #-0x7fffffff");
         assert_snapshot!(cb.hexdump(), @"ea070132");
     }
     #[test]
     fn test_mov_into_sp() {
-        let cb = compile(|cb| mov(cb, X31, X0));
+        let cb = compile(|writer| mov(writer, X31, X0));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: mov sp, x0");
         assert_snapshot!(cb.hexdump(), @"1f000091");
     }
 
     #[test]
     fn test_mov_from_sp() {
-        let cb = compile(|cb| mov(cb, X0, X31));
+        let cb = compile(|writer| mov(writer, X0, X31));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: mov x0, sp");
         assert_snapshot!(cb.hexdump(), @"e0030091");
     }
 
     #[test]
     fn test_movk() {
-        let cb = compile(|cb| movk(cb, X0, A64Opnd::new_uimm(123), 16));
+        let cb = compile(|writer| movk(writer, X0, A64Opnd::new_uimm(123), 16));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: movk x0, #0x7b, lsl #16");
         assert_snapshot!(cb.hexdump(), @"600fa0f2");
     }
 
     #[test]
     fn test_movn() {
-        let cb = compile(|cb| movn(cb, X0, A64Opnd::new_uimm(123), 16));
+        let cb = compile(|writer| movn(writer, X0, A64Opnd::new_uimm(123), 16));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: mov x0, #-0x7b0001");
         assert_snapshot!(cb.hexdump(), @"600fa092");
     }
 
     #[test]
     fn test_movz() {
-        let cb = compile(|cb| movz(cb, X0, A64Opnd::new_uimm(123), 16));
+        let cb = compile(|writer| movz(writer, X0, A64Opnd::new_uimm(123), 16));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: mov x0, #0x7b0000");
         assert_snapshot!(cb.hexdump(), @"600fa0d2");
     }
 
     #[test]
     fn test_mrs() {
-        let cb = compile(|cb| mrs(cb, X10, SystemRegister::NZCV));
+        let cb = compile(|writer| mrs(writer, X10, SystemRegister::NZCV));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: mrs x10, nzcv");
         assert_snapshot!(cb.hexdump(), @"0a423bd5");
     }
 
     #[test]
     fn test_msr() {
-        let cb = compile(|cb| msr(cb, SystemRegister::NZCV, X10));
+        let cb = compile(|writer| msr(writer, SystemRegister::NZCV, X10));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: msr nzcv, x10");
         assert_snapshot!(cb.hexdump(), @"0a421bd5");
     }
 
     #[test]
     fn test_mul() {
-        let cb = compile(|cb| mul(cb, X10, X11, X12));
+        let cb = compile(|writer| mul(writer, X10, X11, X12));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: mul x10, x11, x12");
         assert_snapshot!(cb.hexdump(), @"6a7d0c9b");
     }
 
     #[test]
     fn test_mvn() {
-        let cb = compile(|cb| mvn(cb, X10, X11));
+        let cb = compile(|writer| mvn(writer, X10, X11));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: mvn x10, x11");
         assert_snapshot!(cb.hexdump(), @"ea032baa");
     }
@@ -1763,70 +1765,70 @@ mod tests {
 
     #[test]
     fn test_orn() {
-        let cb = compile(|cb| orn(cb, X10, X11, X12));
+        let cb = compile(|writer| orn(writer, X10, X11, X12));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: orn x10, x11, x12");
         assert_snapshot!(cb.hexdump(), @"6a012caa");
     }
 
     #[test]
     fn test_orr_register() {
-        let cb = compile(|cb| orr(cb, X10, X11, X12));
+        let cb = compile(|writer| orr(writer, X10, X11, X12));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: orr x10, x11, x12");
         assert_snapshot!(cb.hexdump(), @"6a010caa");
     }
 
     #[test]
     fn test_orr_immediate() {
-        let cb = compile(|cb| orr(cb, X10, X11, A64Opnd::new_uimm(7)));
+        let cb = compile(|writer| orr(writer, X10, X11, A64Opnd::new_uimm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: orr x10, x11, #7");
         assert_snapshot!(cb.hexdump(), @"6a0940b2");
     }
 
     #[test]
     fn test_orr_32b_immediate() {
-        let cb = compile(|cb| orr(cb, W10, W11, A64Opnd::new_uimm(1)));
+        let cb = compile(|writer| orr(writer, W10, W11, A64Opnd::new_uimm(1)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: orr w10, w11, #1");
         assert_snapshot!(cb.hexdump(), @"6a010032");
     }
 
     #[test]
     fn test_ret_none() {
-        let cb = compile(|cb| ret(cb, A64Opnd::None));
+        let cb = compile(|writer| ret(writer, A64Opnd::None));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ret");
         assert_snapshot!(cb.hexdump(), @"c0035fd6");
     }
 
     #[test]
     fn test_ret_register() {
-        let cb = compile(|cb| ret(cb, X20));
+        let cb = compile(|writer| ret(writer, X20));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ret x20");
         assert_snapshot!(cb.hexdump(), @"80025fd6");
     }
 
     #[test]
     fn test_stlxr() {
-        let cb = compile(|cb| stlxr(cb, W10, X11, X12));
+        let cb = compile(|writer| stlxr(writer, W10, X11, X12));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: stlxr w10, x11, [x12]");
         assert_snapshot!(cb.hexdump(), @"8bfd0ac8");
     }
 
     #[test]
     fn test_stp() {
-        let cb = compile(|cb| stp(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
+        let cb = compile(|writer| stp(writer, X10, X11, A64Opnd::new_mem(64, X12, 208)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: stp x10, x11, [x12, #0xd0]");
         assert_snapshot!(cb.hexdump(), @"8a2d0da9");
     }
 
     #[test]
     fn test_stp_pre() {
-        let cb = compile(|cb| stp_pre(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
+        let cb = compile(|writer| stp_pre(writer, X10, X11, A64Opnd::new_mem(64, X12, 208)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: stp x10, x11, [x12, #0xd0]!");
         assert_snapshot!(cb.hexdump(), @"8a2d8da9");
     }
 
     #[test]
     fn test_stp_post() {
-        let cb = compile(|cb| stp_post(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
+        let cb = compile(|writer| stp_post(writer, X10, X11, A64Opnd::new_mem(64, X12, 208)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: stp x10, x11, [x12], #0xd0");
         assert_snapshot!(cb.hexdump(), @"8a2d8da8");
     }
@@ -1834,7 +1836,7 @@ mod tests {
     #[test]
     fn test_stp_pre_same_reg() {
         // Unlike LDP, storing the same register twice is well-defined.
-        let cb = compile(|cb| stp_pre(cb, X31, X31, A64Opnd::new_mem(64, X31, -16)));
+        let cb = compile(|writer| stp_pre(writer, X31, X31, A64Opnd::new_mem(64, X31, -16)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: stp xzr, xzr, [sp, #-0x10]!");
         assert_snapshot!(cb.hexdump(), @"ff7fbfa9");
     }
@@ -1842,169 +1844,169 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_stp_pre_write_back_to_source() {
-        compile(|cb| stp_pre(cb, X0, X0, A64Opnd::new_mem(64, X0, -16)));
+        compile(|writer| stp_pre(writer, X0, X0, A64Opnd::new_mem(64, X0, -16)));
     }
 
     #[test]
     #[should_panic]
     fn test_stp_post_write_back_to_source() {
-        compile(|cb| stp_post(cb, X0, X0, A64Opnd::new_mem(64, X0, -16)));
+        compile(|writer| stp_post(writer, X0, X0, A64Opnd::new_mem(64, X0, -16)));
     }
 
     #[test]
     fn test_str_post() {
-        let cb = compile(|cb| str_post(cb, X10, A64Opnd::new_mem(64, X11, -16)));
+        let cb = compile(|writer| str_post(writer, X10, A64Opnd::new_mem(64, X11, -16)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: str x10, [x11], #0xfffffffffffffff0");
         assert_snapshot!(cb.hexdump(), @"6a051ff8");
     }
 
     #[test]
     fn test_str_pre() {
-        let cb = compile(|cb| str_pre(cb, X10, A64Opnd::new_mem(64, X11, -16)));
+        let cb = compile(|writer| str_pre(writer, X10, A64Opnd::new_mem(64, X11, -16)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: str x10, [x11, #-0x10]!");
         assert_snapshot!(cb.hexdump(), @"6a0d1ff8");
     }
 
     #[test]
     fn test_strh() {
-        let cb = compile(|cb| strh(cb, W10, A64Opnd::new_mem(64, X11, 12)));
+        let cb = compile(|writer| strh(writer, W10, A64Opnd::new_mem(64, X11, 12)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: strh w10, [x11, #0xc]");
         assert_snapshot!(cb.hexdump(), @"6a190079");
     }
 
     #[test]
     fn test_strh_pre() {
-        let cb = compile(|cb| strh_pre(cb, W10, A64Opnd::new_mem(64, X11, 12)));
+        let cb = compile(|writer| strh_pre(writer, W10, A64Opnd::new_mem(64, X11, 12)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: strh w10, [x11, #0xc]!");
         assert_snapshot!(cb.hexdump(), @"6acd0078");
     }
 
     #[test]
     fn test_strh_post() {
-        let cb = compile(|cb| strh_post(cb, W10, A64Opnd::new_mem(64, X11, 12)));
+        let cb = compile(|writer| strh_post(writer, W10, A64Opnd::new_mem(64, X11, 12)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: strh w10, [x11], #0xc");
         assert_snapshot!(cb.hexdump(), @"6ac50078");
     }
 
     #[test]
     fn test_stur_64_bits() {
-        let cb = compile(|cb| stur(cb, X10, A64Opnd::new_mem(64, X11, 128)));
+        let cb = compile(|writer| stur(writer, X10, A64Opnd::new_mem(64, X11, 128)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: stur x10, [x11, #0x80]");
         assert_snapshot!(cb.hexdump(), @"6a0108f8");
     }
 
     #[test]
     fn test_stur_32_bits() {
-        let cb = compile(|cb| stur(cb, X10, A64Opnd::new_mem(32, X11, 128)));
+        let cb = compile(|writer| stur(writer, X10, A64Opnd::new_mem(32, X11, 128)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: stur w10, [x11, #0x80]");
         assert_snapshot!(cb.hexdump(), @"6a0108b8");
     }
 
     #[test]
     fn test_sub_reg() {
-        let cb = compile(|cb| sub(cb, X0, X1, X2));
+        let cb = compile(|writer| sub(writer, X0, X1, X2));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: sub x0, x1, x2");
         assert_snapshot!(cb.hexdump(), @"200002cb");
     }
 
     #[test]
     fn test_sub_uimm() {
-        let cb = compile(|cb| sub(cb, X0, X1, A64Opnd::new_uimm(7)));
+        let cb = compile(|writer| sub(writer, X0, X1, A64Opnd::new_uimm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: sub x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c00d1");
     }
 
     #[test]
     fn test_sub_imm_positive() {
-        let cb = compile(|cb| sub(cb, X0, X1, A64Opnd::new_imm(7)));
+        let cb = compile(|writer| sub(writer, X0, X1, A64Opnd::new_imm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: sub x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c00d1");
     }
 
     #[test]
     fn test_sub_imm_negative() {
-        let cb = compile(|cb| sub(cb, X0, X1, A64Opnd::new_imm(-7)));
+        let cb = compile(|writer| sub(writer, X0, X1, A64Opnd::new_imm(-7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: add x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c0091");
     }
 
     #[test]
     fn test_subs_reg() {
-        let cb = compile(|cb| subs(cb, X0, X1, X2));
+        let cb = compile(|writer| subs(writer, X0, X1, X2));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: subs x0, x1, x2");
         assert_snapshot!(cb.hexdump(), @"200002eb");
     }
 
     #[test]
     fn test_subs_imm_positive() {
-        let cb = compile(|cb| subs(cb, X0, X1, A64Opnd::new_imm(7)));
+        let cb = compile(|writer| subs(writer, X0, X1, A64Opnd::new_imm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: subs x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c00f1");
     }
 
     #[test]
     fn test_subs_imm_negative() {
-        let cb = compile(|cb| subs(cb, X0, X1, A64Opnd::new_imm(-7)));
+        let cb = compile(|writer| subs(writer, X0, X1, A64Opnd::new_imm(-7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: adds x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c00b1");
     }
 
     #[test]
     fn test_subs_uimm() {
-        let cb = compile(|cb| subs(cb, X0, X1, A64Opnd::new_uimm(7)));
+        let cb = compile(|writer| subs(writer, X0, X1, A64Opnd::new_uimm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: subs x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c00f1");
     }
 
     #[test]
     fn test_sxtw() {
-        let cb = compile(|cb| sxtw(cb, X10, W11));
+        let cb = compile(|writer| sxtw(writer, X10, W11));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: sxtw x10, w11");
         assert_snapshot!(cb.hexdump(), @"6a7d4093");
     }
 
     #[test]
     fn test_tbnz() {
-        let cb = compile(|cb| tbnz(cb, X10, A64Opnd::UImm(10), A64Opnd::Imm(2)));
+        let cb = compile(|writer| tbnz(writer, X10, A64Opnd::UImm(10), A64Opnd::Imm(2)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: tbnz w10, #0xa, #8");
         assert_snapshot!(cb.hexdump(), @"4a005037");
     }
 
     #[test]
     fn test_tbz() {
-        let cb = compile(|cb| tbz(cb, X10, A64Opnd::UImm(10), A64Opnd::Imm(2)));
+        let cb = compile(|writer| tbz(writer, X10, A64Opnd::UImm(10), A64Opnd::Imm(2)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: tbz w10, #0xa, #8");
         assert_snapshot!(cb.hexdump(), @"4a005036");
     }
 
     #[test]
     fn test_tst_register() {
-        let cb = compile(|cb| tst(cb, X0, X1));
+        let cb = compile(|writer| tst(writer, X0, X1));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: tst x0, x1");
         assert_snapshot!(cb.hexdump(), @"1f0001ea");
     }
 
     #[test]
     fn test_tst_immediate() {
-        let cb = compile(|cb| tst(cb, X1, A64Opnd::new_uimm(7)));
+        let cb = compile(|writer| tst(writer, X1, A64Opnd::new_uimm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: tst x1, #7");
         assert_snapshot!(cb.hexdump(), @"3f0840f2");
     }
 
     #[test]
     fn test_tst_32b_immediate() {
-        let cb = compile(|cb| tst(cb, W0, A64Opnd::new_uimm(0xffff)));
+        let cb = compile(|writer| tst(writer, W0, A64Opnd::new_uimm(0xffff)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: tst w0, #0xffff");
         assert_snapshot!(cb.hexdump(), @"1f3c0072");
     }
 
     #[test]
     fn test_add_extend_various_regs() {
-        let mut cb = CodeBlock::new_dummy();
-
-        add_extended(&mut cb, X10, X11, X9);
-        add_extended(&mut cb, X30, X30, X30);
-        add_extended(&mut cb, X31, X31, X31);
+        let cb = compile(|writer| {
+            add_extended(writer, X10, X11, X9);
+            add_extended(writer, X30, X30, X30);
+            add_extended(writer, X31, X31, X31);
+        });
 
         assert_disasm_snapshot!(cb.disasm(), @"
             0x0: add x10, x11, x9, uxtx
