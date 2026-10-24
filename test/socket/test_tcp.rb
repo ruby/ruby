@@ -486,7 +486,71 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     socket&.close
   end
 
+  # [Bug #22286]
+  def test_accept_interrupted_by_close
+    assert_interrupted_accept_no_leak(:accept, :close)
+  end
+
+  def test_accept_interrupted_by_kill
+    assert_interrupted_accept_no_leak(:accept, :kill)
+  end
+
+  def test_sysaccept_interrupted_by_close
+    assert_interrupted_accept_no_leak(:sysaccept, :close)
+  end
+
+  def test_sysaccept_interrupted_by_kill
+    assert_interrupted_accept_no_leak(:sysaccept, :kill)
+  end
+
   private
+
+  # Interrupt a thread blocked in +method+ while clients keep connecting.
+  def assert_interrupted_accept_no_leak(method, interrupt, iterations: 30)
+    fd_dir = ["/proc/self/fd", "/dev/fd"].find {|dir| File.directory?(dir) }
+    omit "cannot list open descriptors" unless fd_dir
+    ports = []
+    iterations.times do
+      server = TCPServer.new("127.0.0.1", 0)
+      port = server.local_address.ip_port
+      ports << port
+      accept_thread = Thread.new do
+        loop do
+          sock = server.__send__(method)
+          sock = IO.for_fd(sock) if sock.is_a?(Integer)
+          sock.close
+        end
+      rescue IOError
+      end
+      connecting = true
+      client_threads = Array.new(4) do
+        Thread.new do
+          while connecting
+            begin
+              TCPSocket.new("127.0.0.1", port, connect_timeout: 1).close
+            rescue SystemCallError, IO::TimeoutError
+            end
+          end
+        end
+      end
+      sleep(rand * 0.005)
+      interrupt == :close ? server.close : accept_thread.kill
+      accept_thread.join
+      server.close
+      connecting = false
+      client_threads.each(&:join)
+    end
+    leaked = Dir.children(fd_dir).filter_map do |name|
+      sock = BasicSocket.for_fd(Integer(name))
+      sock.autoclose = false
+      sock.fileno if ports.include?(sock.local_address.ip_port)
+    rescue SystemCallError, SocketError, ArgumentError
+    ensure
+      sock&.close
+    end
+    leaked.each {|fd| IO.for_fd(fd).close }
+    assert_empty(leaked, "accepted descriptors left open")
+  end
 
   # On success, wait for the accept thread to finish. If the test failed
   # before the client connected, `server.accept` never returns, so kill

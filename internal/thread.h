@@ -67,6 +67,7 @@ void rb_thread_register_exiting(void); /* for ext/socket/raddrinfo.c */
 /* Temporary.  This API will be removed (renamed). */
 VALUE rb_thread_io_blocking_region(struct rb_io *io, rb_blocking_function_t *func, void *data1);
 VALUE rb_thread_io_blocking_call(struct rb_io *io, rb_blocking_function_t *func, void *data1, int events);
+VALUE rb_thread_io_blocking_call_release(struct rb_io *io, rb_blocking_function_t *func, void *data1, int events, void (*release)(VALUE result, void *data1));
 
 // Invoke the given function, with the specified argument, in a way that `IO#close` from another execution context can interrupt it.
 VALUE rb_thread_io_blocking_operation(VALUE self, VALUE(*function)(VALUE), VALUE argument);
