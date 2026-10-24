@@ -442,7 +442,6 @@ Init_native_thread(rb_thread_t *main_th)
     thread_sched_init_vm(vm);
 
     // setup main thread
-    main_th->nt->thread_id = pthread_self();
     main_th->nt->serial = 1;
 #ifdef RUBY_NT_SERIAL
     ruby_nt_serial = 1;
@@ -631,8 +630,7 @@ static struct {
 
 // Whether the calling native thread may leave the shared pool.  The process's
 // main pthread cannot: under RUBY_MN_THREADS=2 its loop runs on a stack only
-// it could free (thread_sched_main_to_shared).  By pthread_self(), not
-// nt->thread_id, which pthread_create may still be writing.
+// it could free (thread_sched_main_to_shared).
 static bool
 native_thread_self_can_retire_p(void)
 {
@@ -811,9 +809,15 @@ native_thread_create0(struct rb_native_thread *nt)
 # endif
     CHECK_ERR(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED));
 
-    err = pthread_create(&nt->thread_id, &attr, nt_start, nt);
+    // pthread_create may store the id after the thread has started, and a
+    // shared nt may retire and free itself by then
+    rb_nativethread_id_t thread_id;
+#if USE_RUBY_DEBUG_LOG
+    const rb_atomic_t serial = nt->serial;
+#endif
+    err = pthread_create(&thread_id, &attr, nt_start, nt);
 
-    RUBY_DEBUG_LOG("nt:%d err:%d", (int)nt->serial, err);
+    RUBY_DEBUG_LOG("nt:%d err:%d", (int)serial, err);
 
     CHECK_ERR(pthread_attr_destroy(&attr));
 
@@ -832,6 +836,9 @@ native_thread_setup(struct rb_native_thread *nt)
 static void
 native_thread_setup_on_thread(struct rb_native_thread *nt)
 {
+    // init thread_id
+    nt->thread_id = pthread_self();
+
     // init tid
 #ifdef RB_THREAD_T_HAS_NATIVE_ID
     nt->tid = get_native_thread_id();
@@ -1121,7 +1128,9 @@ native_thread_native_thread_id(rb_thread_t *target_th)
     return INT2FIX(tid);
 #elif defined(__APPLE__)
     uint64_t tid;
-    int e = pthread_threadid_np(target_th->nt->thread_id, &tid);
+    pthread_t thread_id = ACCESS_ONCE(pthread_t, target_th->nt->thread_id);
+    if (!thread_id) return Qnil;
+    int e = pthread_threadid_np(thread_id, &tid);
     if (e != 0) rb_syserr_fail(e, "pthread_threadid_np");
     return ULL2NUM((unsigned long long)tid);
 #endif
