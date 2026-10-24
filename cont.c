@@ -1506,14 +1506,14 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 }
 
 static void
-cont_handle_weak_references(void *ptr)
+cont_handle_weak_references(void *ptr, void *objspace)
 {
     rb_context_t *cont = ptr;
 
     if (!cont) return;
 
-    if (!rb_gc_handle_weak_references_alive_p(cont->saved_ec.gen_fields_cache.obj) ||
-            !rb_gc_handle_weak_references_alive_p(cont->saved_ec.gen_fields_cache.fields_obj)) {
+    if (!rb_gc_handle_weak_references_alive_p(objspace, cont->saved_ec.gen_fields_cache.obj) ||
+            !rb_gc_handle_weak_references_alive_p(objspace, cont->saved_ec.gen_fields_cache.fields_obj)) {
         cont->saved_ec.gen_fields_cache.obj = Qundef;
         cont->saved_ec.gen_fields_cache.fields_obj = Qundef;
     }
@@ -2267,14 +2267,14 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  */
 
 static void
-fiber_handle_weak_references(void *ptr)
+fiber_handle_weak_references(void *ptr, void *objspace)
 {
     rb_fiber_t *fiber = ptr;
 
     if (!fiber) return;
 
-    if (!rb_gc_handle_weak_references_alive_p(fiber->cont.saved_ec.gen_fields_cache.obj) ||
-            !rb_gc_handle_weak_references_alive_p(fiber->cont.saved_ec.gen_fields_cache.fields_obj)) {
+    if (!rb_gc_handle_weak_references_alive_p(objspace, fiber->cont.saved_ec.gen_fields_cache.obj) ||
+            !rb_gc_handle_weak_references_alive_p(objspace, fiber->cont.saved_ec.gen_fields_cache.fields_obj)) {
         fiber->cont.saved_ec.gen_fields_cache.obj = Qundef;
         fiber->cont.saved_ec.gen_fields_cache.fields_obj = Qundef;
     }

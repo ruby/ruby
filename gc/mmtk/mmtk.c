@@ -363,7 +363,7 @@ rb_mmtk_handle_weak_references(MMTk_ObjectReference mmtk_object, bool moving)
 
     marking_parent_object = object;
 
-    rb_gc_handle_weak_references(object);
+    rb_gc_handle_weak_references(rb_gc_get_objspace(), object);
 
     if (moving) {
         rb_gc_update_object_references(rb_gc_get_objspace(), object);
