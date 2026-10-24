@@ -1844,6 +1844,13 @@ rb_gc_obj_free(void *objspace, VALUE obj)
       case T_REGEXP:
         if (FL_TEST_RAW(obj, RREGEXP_INITIALIZED)) {
             onig_free_body(RREGEXP_PTR(obj));
+            struct rb_regexp_variant *variant = RREGEXP(obj)->variants;
+            while (variant) {
+                struct rb_regexp_variant *next = variant->next;
+                onig_free_body(&variant->reg);
+                SIZED_FREE(variant);
+                variant = next;
+            }
             RB_DEBUG_COUNTER_INC(obj_regexp_ptr);
         }
         break;
@@ -2664,6 +2671,10 @@ rb_obj_memsize_of(VALUE obj)
       case T_REGEXP:
         if (RREGEXP_PTR(obj)) {
             size += onig_memsize(RREGEXP_PTR(obj));
+            for (struct rb_regexp_variant *variant = RUBY_ATOMIC_PTR_LOAD(RREGEXP(obj)->variants);
+                 variant; variant = variant->next) {
+                size += sizeof(*variant) - sizeof(variant->reg) + onig_memsize(&variant->reg);
+            }
         }
         break;
       case T_DATA:
