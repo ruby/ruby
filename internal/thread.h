@@ -51,6 +51,7 @@ int rb_thread_wait_for_single_fd(struct rb_thread_struct *th, int fd, int events
 
 size_t rb_thread_io_close_interrupt(struct rb_io *);
 void rb_thread_io_close_wait(struct rb_io *);
+VALUE rb_thread_io_blocking_call_release(struct rb_io *io, rb_blocking_function_t *func, void *data1, int events, void (*release)(VALUE result, void *data1));
 
 void rb_ec_check_ints(struct rb_execution_context_struct *ec);
 

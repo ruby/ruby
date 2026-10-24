@@ -848,4 +848,107 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       assert_equal :wait_readable, serv.accept_nonblock(exception: false)
     }
   end
+
+  # [Bug #22286]
+  def test_accept_interrupted_by_close
+    fd_dir = ["/proc/self/fd", "/dev/fd"].find {|dir| File.directory?(dir) }
+    omit "cannot list open descriptors" unless fd_dir
+    paths = []
+    Dir.mktmpdir do |dir|
+      30.times do |i|
+        path = File.join(dir, "s#{i}")
+        paths << path
+        serv = UNIXServer.new(path)
+        accept_thread = Thread.new do
+          loop { serv.accept.close }
+        rescue IOError
+        end
+        connecting = true
+        client_threads = Array.new(4) do
+          Thread.new do
+            while connecting
+              begin
+                UNIXSocket.new(path).close
+              rescue SystemCallError, IOError
+              end
+            end
+          end
+        end
+        sleep(rand * 0.005)
+        serv.close
+        accept_thread.join
+        connecting = false
+        client_threads.each(&:join)
+      end
+    end
+    leaked = Dir.children(fd_dir).filter_map do |name|
+      sock = BasicSocket.for_fd(Integer(name))
+      sock.autoclose = false
+      sock.fileno if paths.include?(sock.local_address.unix_path)
+    rescue SystemCallError, SocketError, ArgumentError
+    ensure
+      sock&.close
+    end
+    leaked.each {|fd| IO.for_fd(fd).close }
+    assert_empty(leaked, "accepted descriptors left open")
+  end
+
+  def test_recv_io_interrupted_by_close
+    assert_interrupted_fd_passing_no_leak(:close) {|s| s.recv_io.close }
+  end
+
+  def test_recv_io_interrupted_by_kill
+    assert_interrupted_fd_passing_no_leak(:kill) {|s| s.recv_io.close }
+  end
+
+  def test_recvmsg_interrupted_by_close
+    assert_interrupted_fd_passing_no_leak(:close) {|s| s.recvmsg(scm_rights: true)[3].unix_rights[0].close }
+  end
+
+  def test_recvmsg_interrupted_by_kill
+    assert_interrupted_fd_passing_no_leak(:kill) {|s| s.recvmsg(scm_rights: true)[3].unix_rights[0].close }
+  end
+
+  def assert_interrupted_fd_passing_no_leak(interrupt, iterations: 30)
+    fd_dir = ["/proc/self/fd", "/dev/fd"].find {|dir| File.directory?(dir) }
+    omit "cannot list open descriptors" unless fd_dir
+    r, w = IO.pipe
+    iterations.times do
+      s1, s2 = UNIXSocket.pair
+      receive_thread = Thread.new do
+        loop { yield s2 }
+      rescue IOError, Errno::EBADF # recv_io may use a descriptor closed under it
+      end
+      sending = true
+      send_thread = Thread.new do
+        while sending
+          begin
+            s1.send_io(r)
+          rescue SystemCallError, IOError
+          end
+        end
+      end
+      sleep(rand * 0.005)
+      interrupt == :close ? s2.close : receive_thread.kill
+      receive_thread.join
+      s2.close
+      sending = false
+      send_thread.join
+      s1.close
+    end
+    leaked = Dir.children(fd_dir).filter_map do |name|
+      io = IO.for_fd(Integer(name))
+      io.autoclose = false
+      io.fileno if io.fileno != r.fileno && io.fileno != w.fileno &&
+        io.stat.dev == r.stat.dev && io.stat.ino == r.stat.ino
+    rescue SystemCallError, ArgumentError
+    ensure
+      io&.close
+    end
+    leaked.each {|fd| IO.for_fd(fd).close }
+    assert_empty(leaked, "received descriptors left open")
+  ensure
+    r&.close
+    w&.close
+  end
 end if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
