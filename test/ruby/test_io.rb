@@ -1739,6 +1739,16 @@ class TestIO < Test::Unit::TestCase
     end
   end if /cygwin/ !~ RUBY_PLATFORM
 
+  def test_read_interrupted_by_wakeup
+    with_pipe do |r, w|
+      t = Thread.new { r.read }
+      Thread.pass until t.stop?
+      100_000.times { t.wakeup; w.write("x") }
+      w.close
+      assert_equal(100_000, t.value.size)
+    end
+  end
+
   def test_read
     pipe(proc do |w|
       w.write "foobarbaz"
