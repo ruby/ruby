@@ -791,6 +791,17 @@ if defined? Zlib
       zd&.close
     end
 
+    def test_in_progress_error_does_not_end_in_progress
+      zd = Zlib::Deflate.new
+      s = Random.new(0).bytes(100_000)
+      zd.deflate(s, Zlib::FINISH) do
+        assert_raise(Zlib::InProgressError) { zd.flush }
+        assert_raise(Zlib::InProgressError) { zd << s }
+        break
+      end
+      zd.finish
+    end
+
     def test_recursive_inflate
       original_gc_stress = GC.stress
       GC.stress = true

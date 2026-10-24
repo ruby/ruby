@@ -1172,10 +1172,6 @@ zstream_run_try(VALUE value_arg)
     int err;
     VALUE old_input = Qnil;
 
-    /* Cannot start zstream while it is in progress. */
-    if (z->flags & ZSTREAM_IN_PROGRESS) {
-	rb_raise(cInProgressError, "zlib stream is in progress");
-    }
     z->flags |= ZSTREAM_IN_PROGRESS;
 
     if (ZSTREAM_REUSE_BUFFER_P(z)) {
@@ -1286,6 +1282,11 @@ zstream_run(struct zstream *z, Bytef *src, rb_len_t len, int flush)
         .jump_state = 0,
         .stream_output = !ZSTREAM_IS_GZFILE(z) && rb_block_given_p(),
     };
+
+    /* Cannot start zstream while it is in progress. */
+    if (z->flags & ZSTREAM_IN_PROGRESS) {
+	rb_raise(cInProgressError, "zlib stream is in progress");
+    }
 
     rb_ensure(zstream_run_try, (VALUE)&args, zstream_run_ensure, (VALUE)&args);
     if (args.jump_state)
