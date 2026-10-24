@@ -104,6 +104,12 @@ class TestFnmatch < Test::Unit::TestCase
     assert_file.fnmatch('[a-z]', 'D', File::FNM_CASEFOLD)
     assert_file.not_fnmatch('[abc]', 'B')
     assert_file.fnmatch('[abc]', 'B', File::FNM_CASEFOLD)
+    assert_file.fnmatch('[abc]', 'A', File::FNM_CASEFOLD)
+    assert_file.fnmatch('[abc]', 'C', File::FNM_CASEFOLD)
+    assert_file.fnmatch('[a]', 'A', File::FNM_CASEFOLD)
+    assert_file.fnmatch('[A]', 'a', File::FNM_CASEFOLD)
+    assert_file.not_fnmatch('[abc]', 'D', File::FNM_CASEFOLD)
+    assert_file.not_fnmatch('[^a]', 'A', File::FNM_CASEFOLD)
   end
 
   def test_fnm_pathname
