@@ -1259,6 +1259,23 @@ zstream_run(struct zstream *z, Bytef *src, rb_len_t len, int flush)
 	rb_jump_tag(args.jump_state);
 }
 
+static int
+zstream_inflate_sync(struct zstream *z, Bytef *src, rb_len_t len)
+{
+    int err;
+
+    z->stream.next_in = src;
+    do {
+	z->stream.avail_in = MAX_UINT(len);
+	len -= z->stream.avail_in;
+	err = inflateSync(&z->stream);
+    } while (err == Z_DATA_ERROR && len > 0);
+    /* do_inflate() looks at avail_in for the input left after the sync point */
+    z->stream.avail_in = MAX_UINT(z->stream.avail_in + len);
+
+    return err;
+}
+
 static VALUE
 zstream_sync(struct zstream *z, Bytef *src, rb_len_t len)
 {
@@ -1266,12 +1283,11 @@ zstream_sync(struct zstream *z, Bytef *src, rb_len_t len)
     int err;
 
     if (!NIL_P(z->input)) {
-	z->stream.next_in = (Bytef*)RSTRING_PTR(z->input);
-	z->stream.avail_in = MAX_UINT(RSTRING_LEN(z->input));
-	err = inflateSync(&z->stream);
+	err = zstream_inflate_sync(z, (Bytef*)RSTRING_PTR(z->input),
+				   RSTRING_LEN(z->input));
 	if (err == Z_OK) {
-	    zstream_discard_input(z,
-				  RSTRING_LEN(z->input) - z->stream.avail_in);
+	    zstream_discard_input(z, z->stream.next_in -
+				  (Bytef*)RSTRING_PTR(z->input));
 	    zstream_append_input(z, src, len);
 	    return Qtrue;
 	}
@@ -1284,11 +1300,9 @@ zstream_sync(struct zstream *z, Bytef *src, rb_len_t len)
 
     if (len <= 0) return Qfalse;
 
-    z->stream.next_in = src;
-    z->stream.avail_in = MAX_UINT(len);
-    err = inflateSync(&z->stream);
+    err = zstream_inflate_sync(z, src, len);
     if (err == Z_OK) {
-	zstream_append_input(z, z->stream.next_in, z->stream.avail_in);
+	zstream_append_input(z, z->stream.next_in, src + len - z->stream.next_in);
 	return Qtrue;
     }
     if (err != Z_DATA_ERROR) {
