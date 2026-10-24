@@ -15989,53 +15989,6 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_string_append_reuses_flags_load() {
-        eval(r#"
-            def test(s, t)
-              s.ascii_only?
-              s << t
-            end
-            test("iron", "fish")
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :s@0x1000
-          v4:BasicObject = LoadField v2, :t@0x1001
-          Jump bb3(v1, v3, v4)
-        bb2():
-          EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :s@1
-          v9:BasicObject = LoadArg :t@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          PatchPoint NoSingletonClass(String@0x1008)
-          PatchPoint MethodRedefined(String@0x1008, ascii_only?@0x1010, cme:0x1018)
-          v37:StringExact = GuardType v12, StringExact recompile
-          v38:CUInt64 = LoadField v37, :RBASIC_FLAGS@0x1040
-          v39:CUInt64[3145728] = Const CUInt64(3145728)
-          v40:CInt64 = IntAnd v38, v39
-          v41:CInt64[1048576] = Const CInt64(1048576)
-          v42:CInt64 = GuardGreaterEq v40, v41
-          v43:CInt64[1048576] = Const CInt64(1048576)
-          v44:CBool = IsBitEqual v42, v43
-          v45:BoolExact = BoxBool v44
-          PatchPoint NoEPEscape(test)
-          PatchPoint MethodRedefined(String@0x1008, <<@0x1041, cme:0x1048)
-          v50:String = GuardType v13, String
-          v52:CUInt64 = LoadField v50, :RBASIC_FLAGS@0x1040
-          v53:StringExact = StringAppend v37, v50, recv_flags: v38, other_flags: v52
-          PatchPoint NoEPEscape(test)
-          CheckInterrupts
-          Return v37
-        ");
-    }
-
-    #[test]
     fn test_optimize_string_append_codepoint() {
         eval(r#"
             def test(x, y) = x << y
@@ -16219,14 +16172,49 @@ mod hir_opt_tests {
           v26:CUInt64 = LoadField v25, :RBASIC_FLAGS@0x1040
           v27:CUInt64[3145728] = Const CUInt64(3145728)
           v28:CInt64 = IntAnd v26, v27
-          v29:CInt64[1048576] = Const CInt64(1048576)
-          v30:CInt64 = GuardGreaterEq v28, v29
-          v31:CInt64[1048576] = Const CInt64(1048576)
-          v32:CBool = IsBitEqual v30, v31
-          v33:BoolExact = BoxBool v32
+          v29:CInt64 = StringCoderange v25, v28
+          v30:CInt64[1048576] = Const CInt64(1048576)
+          v31:CBool = IsBitEqual v29, v30
+          v32:BoolExact = BoxBool v31
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v33
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_optimize_string_valid_encoding_p() {
+        eval(r#"
+            def test(x) = x.valid_encoding?
+            test("iron")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, valid_encoding?@0x1010, cme:0x1018)
+          v25:StringExact = GuardType v10, StringExact recompile
+          v26:CUInt64 = LoadField v25, :RBASIC_FLAGS@0x1040
+          v27:CUInt64[3145728] = Const CUInt64(3145728)
+          v28:CInt64 = IntAnd v26, v27
+          v29:CInt64 = StringCoderange v25, v28
+          v30:CInt64[3145728] = Const CInt64(3145728)
+          v31:CBool = IsBitNotEqual v29, v30
+          v32:BoolExact = BoxBool v31
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v32
         ");
     }
 
