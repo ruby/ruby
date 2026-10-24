@@ -14351,6 +14351,45 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_array_fetch_with_default_fixnum_profiled() {
+        eval("
+            def test(arr, idx)
+              arr.fetch(idx, :none)
+            end
+            test([1, 2, 3], 0)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          v4:BasicObject = LoadField v2, :idx@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :arr@1
+          v9:BasicObject = LoadArg :idx@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v19:StaticSymbol[:none] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(Array@0x1010)
+          PatchPoint MethodRedefined(Array@0x1010, fetch@0x1018, cme:0x1020)
+          v32:ArrayExact = GuardType v12, ArrayExact recompile
+          v33:Fixnum = GuardType v13, Fixnum
+          v34:CInt64 = UnboxFixnum v33
+          v35:CInt64 = ArrayLength v32
+          v36:CInt64 = AdjustBounds v34, v35
+          v37:BasicObject = ArrayArefChecked v32, v36, v35, v19
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v37
+        ");
+    }
+
+    #[test]
     fn test_array_aref_fixnum_array_subclass() {
         eval("
             class C < Array; end
