@@ -1282,6 +1282,10 @@ zstream_sync(struct zstream *z, Bytef *src, rb_len_t len)
     /* VALUE rest; */
     int err;
 
+    if (z->flags & ZSTREAM_IN_PROGRESS) {
+	rb_raise(cInProgressError, "zlib stream is in progress");
+    }
+
     if (!NIL_P(z->input)) {
 	err = zstream_inflate_sync(z, (Bytef*)RSTRING_PTR(z->input),
 				   RSTRING_LEN(z->input));
