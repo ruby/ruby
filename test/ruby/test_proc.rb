@@ -188,12 +188,12 @@ class TestProc < Test::Unit::TestCase
     assert_operator(procs.map(&:hash).uniq.size, :>=, 500)
 
     # iseq backed proc
-    unique_hashes = 1000.times.map { proc {}.hash }.uniq
-    assert_operator(unique_hashes.size, :>=, 500)
+    procs = 1000.times.map { proc {} }
+    assert_operator(procs.map(&:hash).uniq.size, :>=, 500)
 
     # ifunc backed proc
-    unique_hashes = 1000.times.map { {}.to_proc.hash }.uniq
-    assert_operator(unique_hashes.size, :>=, 500)
+    procs = 1000.times.map { {}.to_proc }
+    assert_operator(procs.map(&:hash).uniq.size, :>=, 500)
 
     # symbol backed proc
     unique_hashes = 1000.times.map { |i| :"test#{i}".to_proc.hash }.uniq
