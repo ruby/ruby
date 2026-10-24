@@ -88,9 +88,9 @@ static int
 cmp(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
-        if ((long)x < (long)y)
+        if ((SIGNED_VALUE)x < (SIGNED_VALUE)y)
             return -1;
-        if ((long)x > (long)y)
+        if ((SIGNED_VALUE)x > (SIGNED_VALUE)y)
             return 1;
         return 0;
     }
@@ -351,7 +351,7 @@ v2w(VALUE v)
     }
 #if WIDEVALUE_IS_WIDER
     if (FIXNUM_P(v)) {
-        return WIDEVAL_WRAP((WIDEVALUE)(SIGNED_WIDEVALUE)(long)v);
+        return WIDEVAL_WRAP((WIDEVALUE)(SIGNED_WIDEVALUE)(SIGNED_VALUE)v);
     }
     else if (RB_BIGNUM_TYPE_P(v) &&
         rb_absint_size(v, NULL) <= sizeof(WIDEVALUE)) {
@@ -1636,10 +1636,10 @@ timelocalw(struct vtm *vtm)
     int n;
 
     if (FIXNUM_P(vtm->year)) {
-        long l = FIX2LONG(vtm->year) - 1900;
-        if (l < INT_MIN || INT_MAX < l)
+        rb_len_t year = FIX2LEN(vtm->year);
+        if (year < INT_MIN + 1900 || year - 1900 > INT_MAX)
             goto no_localtime;
-        tm.tm_year = (int)l;
+        tm.tm_year = (int)(year - 1900);
     }
     else {
         v = subv(vtm->year, INT2FIX(1900));
@@ -4446,9 +4446,9 @@ time_inspect(VALUE time)
     subsec = w2v(wmod(tobj->timew, WINT2FIXWV(TIME_SCALE)));
     if (subsec == INT2FIX(0)) {
     }
-    else if (FIXNUM_P(subsec) && FIX2LONG(subsec) < TIME_SCALE) {
+    else if (FIXNUM_P(subsec) && FIX2LEN(subsec) < TIME_SCALE) {
         rb_len_t len;
-        rb_str_catf(str, ".%09ld", FIX2LONG(subsec));
+        rb_str_catf(str, ".%09"PRIdLEN, FIX2LEN(subsec));
         for (len=RSTRING_LEN(str); RSTRING_PTR(str)[len-1] == '0' && len > 0; len--)
             ;
         rb_str_resize(str, len);
@@ -5369,9 +5369,13 @@ time_xmlschema(int argc, VALUE *argv, VALUE time)
 # define fill_digits_long(len, prec, n) \
     for (int fill_it = 1, written = snprintf(ptr, len, "%0*ld", prec, n); \
          fill_it; ptr += written, fill_it = 0)
+# define fill_digits_len(len, prec, n) \
+    for (int fill_it = 1, written = snprintf(ptr, len, "%0*"PRIdLEN, prec, n); \
+         fill_it; ptr += written, fill_it = 0)
 
-    if (FIXNUM_P(tobj->vtm.year)) {
-        long year = FIX2LONG(tobj->vtm.year);
+    if (FIXNUM_P(tobj->vtm.year) &&
+        FIX2LEN(tobj->vtm.year) >= LONG_MIN && FIX2LEN(tobj->vtm.year) <= LONG_MAX) {
+        long year = (long)FIX2LEN(tobj->vtm.year);
         int year_width = (year < 0) + rb_strlen_lit("YYYY");
         int w = (year >= -9999 && year <= 9999 ? year_width : (year < 0) + (int)DECIMAL_SIZE_OF(year));
         str = rb_usascii_str_new(0, w + size_after_year);
@@ -5401,7 +5405,7 @@ time_xmlschema(int argc, VALUE *argv, VALUE time)
 
     if (fraction_digits > 0) {
         VALUE subsecx = tobj->vtm.subsecx;
-        long subsec;
+        rb_len_t subsec;
         int digits = -1;
         *ptr++ = '.';
         if (fraction_digits <= TIME_SCALE_NUMDIGITS) {
@@ -5416,9 +5420,9 @@ time_xmlschema(int argc, VALUE *argv, VALUE time)
             if (FIXNUM_P(subsecx)) digits = 0;
         }
         if (digits >= 0 && fraction_digits < INT_MAX) {
-            subsec = NUM2LONG(subsecx);
-            if (digits > 0) subsec /= (long)pow(10, digits);
-            fill_digits_long(fraction_digits + 1, (int)fraction_digits, subsec) {
+            subsec = NUM2LEN(subsecx);
+            if (digits > 0) subsec /= (rb_len_t)pow(10, digits);
+            fill_digits_len(fraction_digits + 1, (int)fraction_digits, subsec) {
                 RUBY_ASSERT(written == (int)fraction_digits);
             }
         }
@@ -5450,6 +5454,8 @@ time_xmlschema(int argc, VALUE *argv, VALUE time)
     }
     const char *const start = RSTRING_PTR(str);
     rb_str_set_len(str, ptr - start); // We could skip coderange scanning as we know it's full ASCII.
+# undef fill_digits_len
+# undef fill_digits_long
     return str;
 }
 
@@ -5463,13 +5469,13 @@ time_mdump(VALUE time)
 {
     struct time_object *tobj;
     unsigned long p, s;
-    char buf[base_dump_size + sizeof(long) + 1];
+    char buf[base_dump_size + sizeof(rb_len_t) + 1];
     int i;
     VALUE str;
 
     struct vtm vtm;
-    long year;
-    long usec, nsec;
+    rb_len_t year;
+    rb_len_t usec, nsec;
     VALUE subsecx, nano, subnano, v, zone;
 
     VALUE year_extend = Qnil;
@@ -5480,13 +5486,13 @@ time_mdump(VALUE time)
     gmtimew(tobj->timew, &vtm);
 
     if (FIXNUM_P(vtm.year)) {
-        year = FIX2LONG(vtm.year);
+        year = FIX2LEN(vtm.year);
         if (year > max_year) {
-            year_extend = INT2FIX(year - max_year);
+            year_extend = LEN2NUM(year - max_year);
             year = max_year;
         }
         else if (year < 1900) {
-            year_extend = LONG2NUM(1900 - year);
+            year_extend = rb_int_minus(INT2FIX(1900), vtm.year);
             year = 1900;
         }
     }
@@ -5505,11 +5511,11 @@ time_mdump(VALUE time)
 
     nano = mulquov(subsecx, INT2FIX(1000000000), INT2FIX(TIME_SCALE));
     divmodv(nano, INT2FIX(1), &v, &subnano);
-    nsec = FIX2LONG(v);
+    nsec = FIX2LEN(v);
     usec = nsec / 1000;
     nsec = nsec % 1000;
 
-    nano = addv(LONG2FIX(nsec), subnano);
+    nano = addv(LEN2FIX(nsec), subnano);
 
     p = 0x1UL            << 31 | /*  1 */
         TZMODE_UTC_P(tobj) << 30 | /*  1 */
