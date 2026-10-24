@@ -17745,8 +17745,6 @@ mod hir_opt_tests {
         bb5():
           IncrCounter caller_splat_profile_polymorphic
           IncrCounter complex_arg_pass_caller_splat
-          IncrCounter caller_splat_profile_polymorphic
-          IncrCounter complex_arg_pass_caller_splat
           v38:BasicObject = Send v11, :foo, v21 # SendFallbackReason: Complex argument passing
           Jump bb4(v38)
         bb4(v26:BasicObject):
@@ -18011,8 +18009,6 @@ mod hir_opt_tests {
         bb6():
           IncrCounter caller_splat_profile_polymorphic
           IncrCounter send_direct_fallback_context_send
-          IncrCounter caller_splat_profile_polymorphic
-          IncrCounter send_direct_fallback_context_send
           v31:BasicObject = Send v11, :foo, v21 # SendFallbackReason: Argument count does not match parameter count
           Jump bb4(v31)
         bb7():
@@ -18037,8 +18033,6 @@ mod hir_opt_tests {
           PopInlineFrame
           Jump bb4(v59)
         bb5():
-          IncrCounter caller_splat_profile_polymorphic
-          IncrCounter complex_arg_pass_caller_splat
           IncrCounter caller_splat_profile_polymorphic
           IncrCounter complex_arg_pass_caller_splat
           v38:BasicObject = Send v11, :foo, v21 # SendFallbackReason: Complex argument passing
@@ -18147,8 +18141,6 @@ mod hir_opt_tests {
           PopInlineFrame
           Jump bb4(v73)
         bb5():
-          IncrCounter caller_splat_profile_skewed_polymorphic
-          IncrCounter complex_arg_pass_caller_splat
           IncrCounter caller_splat_profile_skewed_polymorphic
           IncrCounter complex_arg_pass_caller_splat
           v38:BasicObject = Send v11, :foo, v21 # SendFallbackReason: Complex argument passing
@@ -25118,6 +25110,32 @@ mod hir_opt_tests {
         let result = hir_string(method);
         unsafe { OPTIONS.as_mut().unwrap().inline_threshold = old_threshold; }
         result
+    }
+
+    #[test]
+    fn test_fallback_counters_after_inlining() {
+        enable_zjit_stats();
+        eval("
+            def helper(n) = n + 1
+            def target(**kw) = kw
+            def forward(value) = target
+            def test
+              helper(1)
+              target
+              forward(*[1])
+            end
+            test
+            test
+        ");
+        let result = hir_string_with_inlining("test");
+
+        // The outer target send is revisited after inlining. The inlined forward
+        // returns another dynamic send, but its successful splat counters must stay.
+        assert_eq!(result.matches(" = Send ").count(), 2, "{result}");
+        assert_eq!(result.matches("IncrCounter complex_arg_pass_param_kwrest").count(), 2, "{result}");
+        assert_eq!(result.matches("IncrCounter send_direct_fallback_context_send").count(), 2, "{result}");
+        assert_eq!(result.matches("IncrCounter caller_splat_profile_monomorphic").count(), 1, "{result}");
+        assert_eq!(result.matches("IncrCounter caller_splat_optimized").count(), 1, "{result}");
     }
 
     #[test]
