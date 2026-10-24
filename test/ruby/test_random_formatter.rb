@@ -136,6 +136,27 @@ module Random::Formatter
           assert_equal(n, an.length)
         end
       end
+
+      def test_numeric
+        65.times do |n|
+          an = @it.numeric(n)
+          assert_match(/\A[0-9]*\z/, an)
+          assert_equal(n, an.length)
+        end
+      end
+
+      def test_numeric_chars
+        [
+          [[*"0".."9"], /\A\d*\z/],
+          [[*"0".."4"], /\A[0-4]*\z/],
+        ].each do |chars, pattern|
+          10.times do |n|
+            an = @it.numeric(n, chars: chars)
+            assert_match(pattern, an)
+            assert_equal(n, an.length)
+          end
+        end
+      end
     end
 
     def assert_in_range(range, result, mesg = nil)
