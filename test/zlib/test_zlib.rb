@@ -1623,6 +1623,13 @@ if defined? Zlib
       }
     end
 
+    def test_getc_with_encoding_conversion
+      gz = Zlib.gzip("\x82\xa0\x82\xa2".b)
+      Zlib::GzipReader.wrap(StringIO.new(gz), external_encoding: "Shift_JIS", internal_encoding: "UTF-8") do |f|
+        assert_equal(["\u3042", "\u3044"], f.each_char.to_a)
+      end
+    end
+
     def test_gets2
       Tempfile.create("test_zlib_gzip_reader_gets2") {|t|
         t.close

@@ -2567,6 +2567,9 @@ struct gzfile {
 
 #define GZFILE_READ_SIZE  2048
 
+/* the encoding of the data before conversion */
+#define GZFILE_RAW_ENC(gz) ((gz)->enc2 ? (gz)->enc2 : (gz)->enc)
+
 enum { read_raw_arg_len, read_raw_arg_buf, read_raw_arg__count};
 struct read_raw_arg {
     VALUE io;
@@ -3179,7 +3182,7 @@ gzfile_getc(struct gzfile *gz)
     VALUE buf, dst = 0;
     int len;
 
-    len = rb_enc_mbmaxlen(gz->enc);
+    len = rb_enc_mbmaxlen(GZFILE_RAW_ENC(gz));
     while (!ZSTREAM_IS_FINISHED(&gz->z) && ZSTREAM_BUF_FILLED(&gz->z) < len) {
 	gzfile_read_more(gz, Qnil);
     }
@@ -3208,7 +3211,7 @@ gzfile_getc(struct gzfile *gz)
     }
     else {
 	buf = gz->z.buf;
-	len = rb_enc_mbclen(RSTRING_PTR(buf), RSTRING_END(buf), gz->enc);
+	len = rb_enc_mbclen(RSTRING_PTR(buf), RSTRING_END(buf), GZFILE_RAW_ENC(gz));
 	dst = gzfile_read(gz, len, Qnil);
 	if (NIL_P(dst)) return dst;
 	return gzfile_newstr(gz, dst);
@@ -4445,10 +4448,11 @@ gzreader_charboundary(struct gzfile *gz, rb_len_t n)
 {
     char *s = RSTRING_PTR(gz->z.buf);
     char *e = s + ZSTREAM_BUF_FILLED(&gz->z);
-    char *p = rb_enc_left_char_head(s, s + n - 1, e, gz->enc);
+    rb_encoding *enc = GZFILE_RAW_ENC(gz);
+    char *p = rb_enc_left_char_head(s, s + n - 1, e, enc);
     rb_len_t l = p - s;
     if (l < n) {
-	int n_bytes = rb_enc_precise_mbclen(p, e, gz->enc);
+	int n_bytes = rb_enc_precise_mbclen(p, e, enc);
 	if (MBCLEN_NEEDMORE_P(n_bytes)) {
 	    /* the character needs MBCLEN_NEEDMORE_LEN bytes beyond the END of the
 	     * buffer, which may lie past n */
@@ -4473,8 +4477,7 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
     char *p, *res;
     rb_len_t rslen, n, limit = -1;
     int rspara;
-    rb_encoding *enc = gz->enc;
-    int maxlen = rb_enc_mbmaxlen(enc);
+    int maxlen = rb_enc_mbmaxlen(GZFILE_RAW_ENC(gz));
 
     if (argc == 0) {
 	rs = rb_rs;
