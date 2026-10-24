@@ -328,6 +328,27 @@ class Integer
   end
 
   with_jit do
+    if Primitive.rb_builtin_basic_definition_p(:upto)
+      undef :upto
+
+      def upto(to) # :nodoc:
+        Primitive.attr! :inline_block, :c_trace
+
+        # When no block is given, return an Enumerator that enumerates from `self` to `to`.
+        # Not using `block_given?` and `to_enum` to keep them unaffected by redefinitions.
+        unless defined?(yield)
+          return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 1, &to, int_upto_size)'
+        end
+
+        from = self
+        while from <= to
+          yield from
+          from = from.succ
+        end
+        self
+      end
+    end
+
     if Primitive.rb_builtin_basic_definition_p(:downto)
       undef :downto
 
