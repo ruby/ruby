@@ -2043,6 +2043,98 @@ fn test_send_multiple_keywords_to_positional_hash() {
 }
 
 #[test]
+fn test_send_empty_kwrest_is_fresh() {
+    eval("
+        def test(**kw) = kw
+        def forward(**) = test(**)
+        def entry
+          a = test
+          a[:changed] = 17
+          [a, test, forward]
+        end
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[{changed: 17}, {}, {}]");
+}
+
+#[test]
+fn test_send_empty_kwrest_with_optional_rest_and_post() {
+    eval("
+        def test(a, b = 23, *rest, last, **kw) = [a, b, rest, last, kw]
+        def entry = [test(11, 47), test(11, 31, 59, 47)]
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[[11, 23, [], 47, {}], [11, 31, [59], 47, {}]]");
+}
+
+#[test]
+fn test_send_empty_kwrest_stub_exit_with_optional() {
+    eval("
+        def test(a = 23, **kw)
+          ::RubyVM::ZJIT.induce_compile_failure!
+          [a, kw]
+        end
+        def entry = [test, test(47)]
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[[23, {}], [47, {}]]");
+}
+
+#[test]
+fn test_send_literal_kwrest_order_and_freshness() {
+    eval("
+        def test(**kw) = kw
+        def entry
+          a = test(z: 17, a: 31)
+          b = test(z: 17, a: 31)
+          a[:changed] = 47
+          [a, b, b.keys, b.default, b.default_proc, b.frozen?]
+        end
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[{z: 17, a: 31, changed: 47}, {z: 17, a: 31}, [:z, :a], nil, nil, false]");
+}
+
+#[test]
+fn test_send_literal_kwrest_named_defaults_and_exit() {
+    eval("
+        def test(a, b = 23, *rest, last, required:, value: (required + 2), **kw)
+          ::RubyVM::ZJIT.induce_compile_failure!
+          [a, b, rest, last, required, value, kw]
+        end
+        def entry
+          [test(11, 47, z: 59, required: 31, x: 71),
+           test(11, 37, 41, 47, x: 73, value: 53, required: 31, z: 61)]
+        end
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[[11, 23, [], 47, 31, 33, {z: 59, x: 71}], [11, 37, [41], 47, 31, 53, {x: 73, z: 61}]]");
+}
+
+#[test]
+fn test_send_literal_kwrest_named_defaults() {
+    eval("
+        def test(required:, a: 23, b: (required + 2), **kw) = [required, a, b, kw]
+        def entry
+          [test(z: 59, required: 31, x: 71), test(b: 53, required: 37, a: 47)]
+        end
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[[31, 23, 33, {z: 59, x: 71}], [37, 47, 53, {}]]");
+}
+
+#[test]
+fn test_send_literal_kwrest_anonymous_forwarding() {
+    eval("
+        def test(**kw) = kw
+        def forward(a: 23, **) = [a, test(**)]
+        def entry = [forward(z: 59, a: 31, x: 71), forward(a: 47)]
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[[31, {z: 59, x: 71}], [47, {}]]");
+}
+
+#[test]
 fn test_send_positional_and_keyword_to_positional_hash() {
     eval("
         def test(a, b) = [a, b]
