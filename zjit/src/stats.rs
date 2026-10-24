@@ -1215,6 +1215,94 @@ impl PerfettoTracer {
         let _ = self.writer.flush();
     }
 
+    // Record a compilation as an instant event (a point on the timeline) with
+    // the compiled method's name, so each compile stays attributable to its iseq.
+    pub fn write_compile_size(&mut self, iseq_name: &str, size_bytes: u64, total_bytes: u64) {
+        let ts_nanos = self.start_time.elapsed().as_nanos() as u64;
+
+        let category_ref = self.intern_string("compile");
+        let name_ref = self.intern_string(iseq_name);
+        let size_name_ref = self.intern_string("size");
+        let total_name_ref = self.intern_string("total");
+
+        let size_words = if size_bytes <= u32::MAX as u64 { 1 } else { 2 };
+        let total_words = if total_bytes <= u32::MAX as u64 { 1 } else { 2 };
+        let event_words: u64 = 2 + size_words + total_words;
+        // Instant event (event type 0): the event-type bits (16-19) are
+        // deliberately left at 0, so Perfetto renders each compile as a
+        // point.
+        let header: u64 = 4u64
+            | (event_words << 4)
+            | (2u64 << 20)
+            | (1u64 << 24)
+            | ((category_ref as u64) << 32)
+            | ((name_ref as u64) << 48);
+
+        self.write_word(header);
+        self.write_word(ts_nanos);
+        self.write_uint_arg(size_name_ref, size_bytes);
+        self.write_uint_arg(total_name_ref, total_bytes);
+
+        self.event_count += 1;
+
+        use std::io::Write;
+        let _ = self.writer.flush();
+    }
+
+    // Record the cumulative compiled code size as FXT counter events so that
+    // Perfetto renders size and total as line graphs over time.
+    // Uses one shared track name ("code size") so all samples form a single
+    // gauge; each argument becomes its own line ("size" per compile,
+    // "total" running sum).
+    pub fn write_code_size_counter(&mut self, size_bytes: u64, total_bytes: u64) {
+        let ts_nanos = self.start_time.elapsed().as_nanos() as u64;
+
+        let category_ref = self.intern_string("compile");
+        let name_ref = self.intern_string("code size");
+        let size_name_ref = self.intern_string("size");
+        let total_name_ref = self.intern_string("total");
+
+        let size_words = if size_bytes <= u32::MAX as u64 { 1 } else { 2 };
+        let total_words = if total_bytes <= u32::MAX as u64 { 1 } else { 2 };
+        let event_words: u64 = 3 + size_words + total_words;
+        let header: u64 = 4u64
+            | (event_words << 4)
+            | (1u64 << 16)                                // event type = counter
+            | (2u64 << 20)
+            | (1u64 << 24)
+            | ((category_ref as u64) << 32)
+            | ((name_ref as u64) << 48);
+
+        self.write_word(header);
+        self.write_word(ts_nanos);
+        self.write_uint_arg(size_name_ref, size_bytes);
+        self.write_uint_arg(total_name_ref, total_bytes);
+        // Counter events end with a 64-bit counter id word.
+        self.write_word(0);
+
+        self.event_count += 1;
+
+        use std::io::Write;
+        let _ = self.writer.flush();
+    }
+
+    // Encode numeric argument using the appropriate FXT representation for compile size.
+    fn write_uint_arg(&mut self, name_ref: u16, value: u64) {
+        if value <= u32::MAX as u64 {
+            let arg_header: u64 = 2u64
+                | (1u64 << 4)
+                | ((name_ref as u64) << 16)
+                | (value << 32);
+            self.write_word(arg_header);
+        } else {
+            let arg_header: u64 = 4u64
+                | (2u64 << 4)
+                | ((name_ref as u64) << 16);
+            self.write_word(arg_header);
+            self.write_word(value);
+        }
+    }
+
     pub fn write_event(&mut self, category: &str, reason: &str, frames: &[String]) {
         let ts_nanos = self.start_time.elapsed().as_nanos() as u64;
 
