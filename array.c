@@ -5667,12 +5667,52 @@ rb_ary_includes(VALUE ary, VALUE item)
     return Qfalse;
 }
 
+/*
+ * Returns whether +item+ is eql? only to itself.  A Fixnum, a Symbol,
+ * nil, true and false are, unless #eql? of the class is redefined.  A
+ * flonum is not, as 0.0.eql?(-0.0) and -0.0 is not a flonum.
+ */
+static bool
+eql_identical_only_p(VALUE item)
+{
+    if (FIXNUM_P(item)) return BASIC_OP_UNREDEFINED_P(BOP_EQL, INTEGER_REDEFINED_OP_FLAG);
+    if (SYMBOL_P(item)) return BASIC_OP_UNREDEFINED_P(BOP_EQL, SYMBOL_REDEFINED_OP_FLAG);
+    if (NIL_P(item)) return BASIC_OP_UNREDEFINED_P(BOP_EQL, NIL_REDEFINED_OP_FLAG);
+    if (item == Qtrue) return BASIC_OP_UNREDEFINED_P(BOP_EQL, TRUE_REDEFINED_OP_FLAG);
+    if (item == Qfalse) return BASIC_OP_UNREDEFINED_P(BOP_EQL, FALSE_REDEFINED_OP_FLAG);
+    return false;
+}
+
+/*
+ * Returns whether +item+ is in +ary+, comparing VALUEs only, or Qundef
+ * if #eql? needs to be called.  It is kept out of line so that
+ * rb_ary_includes_by_eql() is inlined.
+ */
+NOINLINE(static VALUE ary_includes_identical(VALUE ary, VALUE item));
+static VALUE
+ary_includes_identical(VALUE ary, VALUE item)
+{
+    if (!eql_identical_only_p(item)) return Qundef;
+
+    const VALUE *ptr = RARRAY_CONST_PTR(ary);
+    rb_len_t i, len = RARRAY_LEN(ary);
+
+    for (i = 0; i < len; i++) {
+        if (ptr[i] == item) return Qtrue;
+    }
+    return Qfalse;
+}
+
 static VALUE
 rb_ary_includes_by_eql(VALUE ary, VALUE item)
 {
     rb_len_t i;
     VALUE e;
 
+    if (SPECIAL_CONST_P(item) || UNLIKELY(DYNAMIC_SYM_P(item))) {
+        VALUE found = ary_includes_identical(ary, item);
+        if (!UNDEF_P(found)) return found;
+    }
     for (i=0; i<RARRAY_LEN(ary); i++) {
         e = RARRAY_AREF(ary, i);
         if (rb_eql(item, e)) {

@@ -717,6 +717,14 @@ class TestRubyOptimization < Test::Unit::TestCase
     end
   end
 
+  def test_eql
+    [ nil, true, false, :sym, 1 ].each do |v|
+      k = v.class.to_s
+      assert_redefine_method(k, 'eql?', "assert_equal([], [#{v.inspect}] - ['x'])")
+      assert_performance_warning(k, 'eql?')
+    end
+  end
+
   def test_opt_case_dispatch_inf
     inf = 1.0/0.0
     result = case inf
