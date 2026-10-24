@@ -546,8 +546,15 @@ rb_zlib_crc32(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_zlib_crc32_combine(VALUE klass, VALUE crc1, VALUE crc2, VALUE len2)
 {
+    z_off_t len = (z_off_t)NUM2ULEN(len2);
+
+    /* zlib 1.3.1 loops forever on a negative length. NUM2ULEN wraps a
+     * negative len2, which stays positive when z_off_t is the wider type. */
+    if (len < 0 || RTEST(rb_funcall(len2, '<', 1, INT2FIX(0)))) {
+	rb_raise(rb_eArgError, "negative length");
+    }
     return ULEN2NUM(
-	crc32_combine(NUM2ULONG(crc1), NUM2ULONG(crc2), NUM2ULEN(len2)));
+	crc32_combine(NUM2ULONG(crc1), NUM2ULONG(crc2), len));
 }
 #else
 #define rb_zlib_crc32_combine rb_f_notimplement

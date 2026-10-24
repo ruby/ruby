@@ -2085,6 +2085,12 @@ if defined? Zlib
       end
     end
 
+    def test_crc32_combine_negative_length
+      assert_raise(ArgumentError) { Zlib.crc32_combine(0, 0, -1) }
+    rescue NotImplementedError
+      omit "crc32_combine is not implemented"
+    end
+
     def test_crc_table
       t = Zlib.crc_table
       assert_instance_of(Array, t)
