@@ -91,7 +91,11 @@ end.invert
 # recalculate composition_exclusions
 composition_exclusions = decomposition_table.keys - composition_table.values
 
-accent_array = combining_class.keys + composition_table.keys.collect {|key| key.last}
+accent_array = combining_class.keys +
+  composition_table.keys.collect {|key| key.last} +
+  decomposition_table.filter_map do |key, value|
+    next key if value.all? { |c| combining_class.fetch(c, 0) != 0 }
+  end
 
 composition_starters = composition_table.keys.collect {|key| key.first}
 
