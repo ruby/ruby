@@ -1205,6 +1205,13 @@ loop:
        }
     }
 
+    if (err == Z_BUF_ERROR && z->func == &deflate_funcs && z->stream.avail_in == 0) {
+	/* deflate() reports Z_BUF_ERROR for a flush when no input was consumed
+	 * since the previous flush of the same or higher rank. Nothing is lost,
+	 * so treat it as a no-op like zlib's own gzflush() does. */
+	err = Z_OK;
+    }
+
     if (flush != Z_FINISH && err == Z_BUF_ERROR && z->stream.avail_out > 0) {
         z->flags |= ZSTREAM_FLAG_IN_STREAM;
     }

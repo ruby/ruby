@@ -121,6 +121,16 @@ if defined? Zlib
       assert_equal("foobarbazqux", Zlib::Inflate.inflate(s))
     end
 
+    def test_flush_twice
+      z = Zlib::Deflate.new
+      s = z.deflate("foo", Zlib::SYNC_FLUSH)
+      s << z.flush << z.flush
+      s << z.flush(Zlib::FULL_FLUSH) << z.flush(Zlib::SYNC_FLUSH)
+      s << z.deflate("", Zlib::SYNC_FLUSH)
+      s << z.finish
+      assert_equal("foo", Zlib::Inflate.inflate(s))
+    end
+
     def test_avail
       z = Zlib::Deflate.new
       assert_equal(0, z.avail_in)
@@ -1542,6 +1552,22 @@ if defined? Zlib
         Zlib::GzipWriter.open(t.path) {|gz| gz.puts("foo") }
         assert_equal("foo\n", Zlib::GzipReader.open(t.path) {|gz| gz.read })
       }
+    end
+
+    def test_flush_twice
+      io = StringIO.new("".b)
+      Zlib::GzipWriter.wrap(io) do |gz|
+        gz.write("a")
+        gz.flush
+        gz.flush
+        gz.flush(Zlib::FULL_FLUSH)
+        gz.flush(Zlib::SYNC_FLUSH)
+        gz.sync = true
+        gz.write("")
+        gz.write("")
+        gz.write("b")
+      end
+      assert_equal("ab", Zlib.gunzip(io.string))
     end
 
     def test_writer_wrap
