@@ -6315,7 +6315,32 @@ fn test_expandarray_splat() {
         test [3, 4]
     ");
     assert_contains_opcode("test", YARVINSN_expandarray);
-    assert_snapshot!(assert_compiles_allowing_exits("test [3, 4]"), @"[3, [4]]");
+    assert_snapshot!(assert_compiles("test [3, 4]"), @"[3, [4]]");
+}
+
+#[test]
+fn test_expandarray_splat_short() {
+    eval("
+        def test(o)
+          a, b, *rest = o
+          [a, b, rest]
+        end
+        test [1, 2, 3]
+    ");
+    assert_snapshot!(assert_compiles("test([1])"), @"[1, nil, []]");
+}
+
+#[test]
+fn test_expandarray_splat_only() {
+    eval("
+        def test(o)
+          *rest = o
+          rest
+        end
+        test [1, 2]
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("test([1, 2])"), @"[1, 2]");
 }
 
 #[test]
