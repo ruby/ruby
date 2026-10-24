@@ -49,6 +49,11 @@ struct rb_ractor_sync {
     struct st_table *ports;
     size_t next_port_id;
 
+    // reused by ractor_reply_port_acquire (0: none yet), busy while one request waits on it
+    st_data_t reply_port_id;
+    bool reply_port_busy;
+    struct ccan_list_head reply_leases; // ractor_reply_lease held by this Ractor's threads
+
     /* The baskets this Ractor holds that are on no queue: one it is building to send,
      * and one it has taken off a queue and is materializing.  A queued basket is rooted
      * by its queue instead.  Only the owner touches this list. */
@@ -137,6 +142,10 @@ struct rb_ractor_struct {
      * in rb_postponed_job_flush. */
     rb_atomic_t postponed_job_triggered_bits;
 
+    // share requests from other Ractors, a lock-free stack: readers push with CAS, a
+    // thread of this Ractor pops
+    struct cross_ractor_shareable_p *shareable_p_requests;
+
     VALUE thgroup_default;
 
     VALUE name;
@@ -188,6 +197,7 @@ struct rb_ractor_struct {
 /* Mark the GC roots held in Ractor r's C structs (from the root scan in gc.c). */
 struct rb_gc_mark_ctx;
 void rb_ractor_mark_local_roots(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r);
+void rb_ractor_mark_shareable_p_inflight(const struct rb_gc_mark_ctx *ctx);
 void rb_ractor_mark_terminated_join_value(rb_ractor_t *r);
 void rb_ractor_reap_dead_ports(rb_ractor_t *r);
 
@@ -333,11 +343,14 @@ rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th, bool always_reset)
                               (void *)cr->threads.running_ec, (void *)th->ec);
         }
     }
-    else {
-        return;
-    }
+    // seq_cst even if rb_ractor_set_current_ec stored it already, then read the bits:
+    // a trigger either sees th->ec or its bit is seen here
+    RUBY_ATOMIC_PTR_SET(cr->threads.running_ec, th->ec);
 
-    cr->threads.running_ec = th->ec;
+    // a job for this Ractor may have flagged a thread that went to sleep since
+    if (RUBY_ATOMIC_LOAD(cr->postponed_job_triggered_bits)) {
+        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th->ec);
+    }
 
     VM_ASSERT(cr == GET_RACTOR());
 }
@@ -357,7 +370,7 @@ rb_ractor_set_current_ec_(rb_ractor_t *cr, rb_execution_context_t *ec, const cha
 #endif
     RUBY_DEBUG_LOG2(file, line, "ec:%p->%p", (void *)cr->threads.running_ec, (void *)ec);
     VM_ASSERT(ec == NULL || cr->threads.running_ec != ec);
-    cr->threads.running_ec = ec;
+    RUBY_ATOMIC_PTR_SET(cr->threads.running_ec, ec); // read by other Ractors' triggers
 }
 
 void rb_vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line);
