@@ -3371,3 +3371,21 @@ assert_equal 'ok', %q{
   end.each(&:join)
   :ok
 }
+
+# A Ractor's main thread must not share its ec serial with its threads
+assert_equal 'false', %q{
+  rs = 4.times.map {
+    Ractor.new {
+      m = Thread::Mutex.new
+      m.lock
+      ok = 8.times.map { Thread.new { m.owned? } }.map(&:value)
+      begin
+        8.times.map { Thread.new { m.unlock rescue nil } }.each(&:join)
+      ensure
+        m.unlock
+      end
+      ok.any?
+    }
+  }
+  rs.map(&:value).any?
+}
