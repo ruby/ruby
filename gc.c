@@ -1083,15 +1083,14 @@ rb_gc_init_objspaces(void)
 #endif
 }
 
-/* Stays true once the process has gone multi-Ractor (rb_multi_ractor_p goes back to
- * false when the other Ractors finish).  Used by verification that spans generation
- * state built while multiple Ractors ran. */
+/* Stays true once a second objspace has existed (rb_multi_ractor_p goes back to false
+ * when the other Ractors finish, and is false for the whole window in which the creator
+ * builds the child objspace). */
 static bool gc_ever_multi_ractor = false;
 
 bool
 rb_gc_ever_multi_ractor_p(void)
 {
-    if (!gc_ever_multi_ractor && rb_multi_ractor_p()) gc_ever_multi_ractor = true;
     return gc_ever_multi_ractor;
 }
 
@@ -1100,7 +1099,9 @@ rb_gc_ever_multi_ractor_p(void)
 void *
 rb_gc_objspace_alloc(void)
 {
-    gc_ever_multi_ractor = true;
+    /* The one store that ever runs is the first Ractor creation, which is by definition
+     * single-Ractor and so races no reader. */
+    if (!gc_ever_multi_ractor) gc_ever_multi_ractor = true;
     if (!rb_gc_impl_multi_objspace_p()) {
         /* One objspace shared by every Ractor. */
         return rb_gc_get_objspace();
