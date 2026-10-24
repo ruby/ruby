@@ -140,6 +140,10 @@ If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTE
 # define VM_INSN_INFO_TABLE_IMPL 2
 #endif
 
+#ifndef USE_ISEQ_NODE_ID
+#define USE_ISEQ_NODE_ID 1
+#endif
+
 #if defined(NSIG_MAX)           /* POSIX issue 8 */
 # undef NSIG
 # define NSIG NSIG_MAX
@@ -528,6 +532,10 @@ struct rb_iseq_constant_body {
 #endif
         } positions_or_succ_index_table;
         unsigned int size;
+#ifdef USE_ISEQ_NODE_ID
+        const int *node_ids;
+        unsigned int node_ids_size;
+#endif
     } insns_info;
 
     const ID *local_table;		/* must free */
