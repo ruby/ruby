@@ -1110,6 +1110,19 @@ if defined? Zlib
       assert_equal("", Zlib::GzipReader.new(StringIO.new(D0)).read(0))
     end
 
+    def test_gets_separator_modified_by_io
+      rs = "-" * 1000
+      src = StringIO.new(Zlib.gzip(Random.new(0).bytes(200_000).tr("-", "x") + rs))
+      n = 0
+      io = Object.new
+      io.define_singleton_method(:readpartial) do |len, buf = nil|
+        (rs.clear << "-" * 1000) if (n += 1) == 300
+        src.readpartial([len, 100].min, *buf)
+      end
+      gz = Zlib::GzipReader.new(io)
+      assert_raise_with_message(RuntimeError, "rs modified") { gz.gets(rs) }
+    end
+
     def test_ungetc
       s = "".dup
       w = Zlib::GzipWriter.new(StringIO.new(s))

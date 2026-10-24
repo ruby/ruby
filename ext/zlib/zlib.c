@@ -4418,7 +4418,7 @@ gzreader_skip_linebreaks(struct gzfile *gz)
 static void
 rscheck(const char *rsptr, rb_len_t rslen, VALUE rs)
 {
-    if (RSTRING_PTR(rs) != rsptr && RSTRING_LEN(rs) != rslen)
+    if (RSTRING_PTR(rs) != rsptr || RSTRING_LEN(rs) != rslen)
 	rb_raise(rb_eRuntimeError, "rs modified");
 }
 
