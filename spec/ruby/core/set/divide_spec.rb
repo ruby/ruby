@@ -18,7 +18,7 @@ describe "Set#divide" do
     ret.each(&:even?).should == Set[Set[1, 3], Set[2, 4]]
   end
 
-  ruby_version_is "4.1" do
+  ruby_version_is "4.0" do
     it "retains compare_by_identity flag" do
       set = Set["one", "two"].compare_by_identity
       res = set.divide { |x| x.length }

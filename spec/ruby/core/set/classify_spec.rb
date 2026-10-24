@@ -24,7 +24,7 @@ describe "Set#classify" do
     classified.should == { 3 => Set["one", "two"], 4 => Set["four"], 5 => Set["three"] }
   end
 
-  ruby_version_is "4.1" do
+  ruby_version_is "4.0" do
     it "retains compare_by_identity flag" do
       set = Set["one", "two"].compare_by_identity
       classified = set.classify { |x| x.length }
