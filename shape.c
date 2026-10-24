@@ -1628,8 +1628,14 @@ Init_default_shapes(void)
 
 #ifdef HAVE_MMAP
     size_t shape_cache_mmap_size = rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError);
-    redblack_cache = (redblack_node_t *)mmap(NULL, shape_cache_mmap_size,
-                         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    const char *shape_redblack_cache_env = getenv("RUBY_SHAPE_REDBLACK_CACHE");
+    if (shape_redblack_cache_env && strcmp("disable", shape_redblack_cache_env) == 0) {
+        redblack_cache = (redblack_node_t *)MAP_FAILED;
+    }
+    else {
+        redblack_cache = (redblack_node_t *)mmap(NULL, shape_cache_mmap_size,
+                             PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    }
     redblack_cache_size = 0;
 
     // If mmap fails, then give up on the redblack tree cache.

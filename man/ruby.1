@@ -1,5 +1,5 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd September 25, 2026
+.Dd October 23, 2026
 .Dt RUBY 1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
@@ -696,6 +696,12 @@ Increases the limit of old generation malloc allocation, reducing full
 GC frequency but increasing malloc growth until RUBY_GC_OLDMALLOC_LIMIT_MAX
 is reached.
 Introduced in Ruby 2.1, default: 1.2, minimum: 1.0 (no growth)
+.Pp
+.It Ev RUBY_SHAPE_REDBLACK_CACHE
+If set to "disable", disables the redblack cache for object shapes. This can
+avoid a 384MiB mmap allocation at startup (which can result in a significant
+negative effect if operating system uses strict memory overcommit and the
+machine is memory constrained), but will decrease performance.
 .Pp
 .It Ev RUBY_SHARED_FIBER_POOL_FREE_STACKS
 Frees stacks of pooled fibers, if set to 1.
