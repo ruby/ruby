@@ -87,6 +87,16 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
 
+      - name: Remove WindowsApps from PATH
+        shell: pwsh
+        run: |
+          # Exclude `WindowsApps` from PATH to avoid `EACCES: permission denied`
+          # error triggered by Node.js toolkit scanning the directory during the
+          # post-run execution of gacts/run-and-post-run.
+          $filteredPath = ($env:PATH -split ';' | Where-Object { $_ -notlike '*WindowsApps' }) -join ';'
+          echo "PATH=$filteredPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        working-directory: .
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
