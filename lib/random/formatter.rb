@@ -312,6 +312,8 @@ module Random::Formatter
   #   prng.choose([*'0'..'9'], 5)  #=> "27309"
   private def choose(source, n)
     size = source.size
+    raise ArgumentError, "character length must not be negative" if 0 > n
+    raise ArgumentError, "character source must contain at least two entries" if size < 2
     m = 1
     limit = size
     while limit * size <= 0x100000000
@@ -346,8 +348,9 @@ module Random::Formatter
   #
   # The argument _n_ specifies the length, in characters, of the alphanumeric
   # string to be generated.
-  # The argument _chars_ specifies the character list which the result is
-  # consist of.
+  # The argument _chars_ specifies the list of characters used for producing the
+  # result. A negative _n_ or a character list with fewer than two entries raises
+  # ArgumentError.
   #
   # If _n_ is not specified or is nil, 16 is assumed.
   # It may be larger in the future.
