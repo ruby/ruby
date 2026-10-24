@@ -3989,7 +3989,9 @@ rb_thread_setname(VALUE thread, VALUE name)
     target_th->name = name;
     if (threadptr_initialized(target_th) && target_th->has_dedicated_nt &&
         target_th->status != THREAD_KILLED) {
-        native_set_another_thread_name(target_th->nt->thread_id, name);
+        // 0 until the new thread records it; thread_do_start names it then
+        rb_nativethread_id_t thread_id = ACCESS_ONCE(rb_nativethread_id_t, target_th->nt->thread_id);
+        if (thread_id) native_set_another_thread_name(thread_id, name);
     }
     return name;
 }
