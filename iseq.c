@@ -204,6 +204,9 @@ rb_iseq_free(const rb_iseq_t *iseq)
 #endif
         SIZED_FREE_N(body->iseq_encoded, body->iseq_size);
         SIZED_FREE_N(body->insns_info.body, body->insns_info.size);
+#ifdef USE_ISEQ_NODE_ID
+        SIZED_FREE_N(body->insns_info.node_ids, body->insns_info.node_ids_size);
+#endif
 #if VM_INSN_INFO_TABLE_IMPL == 2
         ruby_xfree(body->insns_info.positions_or_succ_index_table.succ_index_table);
 #else
@@ -593,6 +596,9 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         if (body->variable) size += sizeof(struct rb_iseq_variable);
         size += body->iseq_size * sizeof(VALUE);
         size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
+#ifdef USE_ISEQ_NODE_ID
+        size += body->insns_info.node_ids_size * sizeof(int);
+#endif
         size += body->local_table_size * sizeof(ID); // body->local_table
         if (!ISEQ_LVAR_STATES_EMBED_P(body->local_table_size) && body->lvar_states.list) {
             size += ISEQ_LVAR_STATES_BUFLEN(body->local_table_size) * sizeof(uint8_t);
@@ -2575,14 +2581,27 @@ rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
 int
 rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
 {
-    const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
-
-    if (entry) {
-        return entry->node_id;
-    }
-    else {
+    const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+    if (body->insns_info.node_ids_size == 0) {
         return 0;
     }
+
+    const VALUE *code = rb_iseq_original_iseq(iseq);
+    const int *node_ids = body->insns_info.node_ids;
+    unsigned int i = 0;
+    size_t code_pos = 0;
+
+    while (i < body->insns_info.node_ids_size && code_pos < body->iseq_size) {
+        size_t len = (size_t)insn_len(code[code_pos]);
+        if (pos < code_pos + len) {
+            return node_ids[i];
+        }
+        code_pos += len;
+        i++;
+    }
+
+    VM_ASSERT(0); /* node_ids out of sync with the instruction sequence */
+    return -1;
 }
 #endif
 
@@ -3777,7 +3796,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 
         info = get_insn_info(iseq, pos);
 #ifdef USE_ISEQ_NODE_ID
-        rb_ary_push(node_ids, INT2FIX(info->node_id));
+        VM_ASSERT(l < (long)iseq_body->insns_info.node_ids_size);
+        rb_ary_push(node_ids, INT2FIX(l < (long)iseq_body->insns_info.node_ids_size ?
+                                      iseq_body->insns_info.node_ids[l] : -1));
 #endif
 
         if (prev_insn_info != info) {
