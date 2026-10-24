@@ -6082,7 +6082,29 @@ pub(crate) mod hir_build_tests {
           v11:NilClass = Const Value(nil)
           Jump bb3(v8, v9, v10, v11)
         bb3(v13:BasicObject, v14:BasicObject, v15:NilClass, v16:NilClass):
-          SideExit UnhandledYARVInsn(expandarray)
+          v22:ArrayExact = GuardType v14, ArrayExact
+          v23:CInt64 = ArrayLength v22
+          v24:ArrayExact = NewArray
+          v25:Fixnum[1] = Const Value(1)
+          v26:Fixnum = BoxFixnum v23
+          v27:Fixnum[1] = Const Value(1)
+          Jump bb4(v25)
+        bb4(v29:Fixnum):
+          v30:BoolExact = FixnumLt v29, v26
+          v31:CBool = Test v30
+          CondBranch v31, bb5(), bb6()
+        bb5():
+          v33:CInt64 = UnboxFixnum v29
+          v34:BasicObject = ArrayAref v22, v33
+          ArrayPush v24, v34
+          v36:Fixnum = FixnumAdd v29, v27
+          Jump bb4(v36)
+        bb6():
+          v38:CInt64[0] = Const CInt64(0)
+          v39:BasicObject = ArrayArefChecked v22, v38, v23
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v14
         ");
     }
 
@@ -6114,6 +6136,27 @@ pub(crate) mod hir_build_tests {
           v13:NilClass = Const Value(nil)
           Jump bb3(v9, v10, v11, v12, v13)
         bb3(v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass, v19:NilClass):
+          v25:ArrayExact = GuardType v16, ArrayExact
+          v26:CInt64 = ArrayLength v25
+          v27:ArrayExact = NewArray
+          v28:Fixnum[1] = Const Value(1)
+          v29:Fixnum = BoxFixnum v26
+          v30:Fixnum[1] = Const Value(1)
+          Jump bb4(v28)
+        bb4(v32:Fixnum):
+          v33:BoolExact = FixnumLt v32, v29
+          v34:CBool = Test v33
+          CondBranch v34, bb5(), bb6()
+        bb5():
+          v36:CInt64 = UnboxFixnum v32
+          v37:BasicObject = ArrayAref v25, v36
+          ArrayPush v27, v37
+          v39:Fixnum = FixnumAdd v32, v30
+          Jump bb4(v39)
+        bb6():
+          v41:CInt64[0] = Const CInt64(0)
+          v42:BasicObject = ArrayArefChecked v25, v41, v26
+          PatchPoint NoEPEscape(test)
           SideExit UnhandledYARVInsn(expandarray)
         ");
     }

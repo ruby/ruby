@@ -10894,17 +10894,42 @@ fn add_iseq_to_hir(
                 YARVINSN_expandarray => {
                     let num = get_arg(pc, 0).as_u64();
                     let flag = get_arg(pc, 1).as_u64();
-                    if flag != 0 {
-                        // We don't (yet) handle 0x01 (rest args), 0x02 (post args), or 0x04
-                        // (reverse?)
-                        //
-                        // Unhandled opcode; side-exit into the interpreter
+                    if flag != 0 && flag != 1 {
+                        // Post arguments (0x02 and 0x03) are not supported.
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledYARVInsn(opcode)), recompile: None });
                         break;  // End the block
                     }
                     let val = state.stack_pop()?;
                     let array = fun.push_insn(block, Insn::GuardType { val, guard_type: types::ArrayExact, state: exit_id, recompile: None });
                     let length = fun.push_insn(block, Insn::ArrayLength { array });
+                    if flag == 1 {
+                        let rest = fun.push_insn(block, Insn::NewArray { elements: vec![], state: exit_id });
+                        let start = fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(num as usize)) });
+                        let end = fun.push_insn(block, Insn::BoxFixnum { val: length, state: exit_id });
+                        let one = fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) });
+                        let loop_block = fun.new_block(insn_idx);
+                        let body_block = fun.new_block(insn_idx);
+                        let join_block = fun.new_block(insn_idx);
+                        fun.push_insn(block, Insn::Jump(BranchEdge { target: loop_block, args: vec![start] }));
+
+                        let index = fun.push_insn(loop_block, Insn::Param);
+                        let in_bounds = fun.push_insn(loop_block, Insn::FixnumLt { left: index, right: end });
+                        let test = fun.push_insn(loop_block, Insn::Test { val: in_bounds });
+                        fun.push_insn(loop_block, Insn::CondBranch {
+                            val: test,
+                            if_true: BranchEdge { target: body_block, args: vec![] },
+                            if_false: BranchEdge { target: join_block, args: vec![] },
+                        });
+
+                        let unboxed_index = fun.push_insn(body_block, Insn::UnboxFixnum { val: index });
+                        let element = fun.push_insn(body_block, Insn::ArrayAref { array, index: unboxed_index });
+                        fun.push_insn(body_block, Insn::ArrayPush { array: rest, val: element, state: exit_id });
+                        let next_index = fun.push_insn(body_block, Insn::FixnumAdd { left: index, right: one, state: exit_id });
+                        fun.push_insn(body_block, Insn::Jump(BranchEdge { target: loop_block, args: vec![next_index] }));
+
+                        block = join_block;
+                        state.stack_push(rest);
+                    }
                     for i in (0..num).rev() {
                         let index = fun.push_insn(block, Insn::Const { val: Const::CInt64(i.try_into().unwrap()) });
                         let element = fun.push_insn(block, Insn::ArrayArefChecked { array, index, length });
