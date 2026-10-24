@@ -1775,6 +1775,15 @@ if defined? Zlib
       end
     end
 
+    def test_each_line_enumerator_arguments
+      # each_line(sep, limit) without a block must keep its arguments
+      s = Zlib.gzip("a,b,c\nd,e\n")
+      assert_equal(["a,", "b,", "c\nd,", "e\n"], Zlib::GzipReader.new(StringIO.new(s)).each_line(",").to_a)
+      assert_equal(["a,b", ",c\n", "d,e", "\n"], Zlib::GzipReader.new(StringIO.new(s)).each_line(3).to_a)
+      assert_equal(["a,", "b,", "c\n", "d,", "e\n"], Zlib::GzipReader.new(StringIO.new(s)).each_line(",", 2).to_a)
+      assert_equal(["a,", "b,"], Zlib::GzipReader.new(StringIO.new(s)).each(",").first(2))
+    end
+
     def test_corrupted_header
       gz = Zlib::GzipWriter.new(StringIO.new(s = "".dup))
       gz.orig_name = "X"
