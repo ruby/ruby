@@ -86,6 +86,7 @@ struct rb_classext_struct {
     bool iclass_origin_shared_mtbl : 1;
     bool superclasses_with_self : 1;
     bool expect_no_ivar : 1;
+    uint8_t inline_fields_count;
 };
 typedef struct rb_classext_struct rb_classext_t;
 
@@ -104,6 +105,18 @@ struct RClass_and_rb_classext_t {
     struct RClass rclass;
     rb_classext_t classext;
 };
+
+struct RClass_with_inline_fields {
+    struct RClass_and_rb_classext_t rclass_and_classext;
+   /* This is a length 1 array because:
+    *   1. GCC has a bug that does not optimize C flexible array members
+    *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
+    *   2. Zero length arrays are not supported by all compilers
+    */
+   VALUE inline_fields[1];
+};
+
+#define RCLASS_MAX_INLINE_FIELDS ((size_t)((uint8_t)-1))
 
 #if SIZEOF_VALUE >= SIZEOF_LONG_LONG
 // Assert that classes can be embedded in heaps[3] (256B slot size on 64-bit).
@@ -302,6 +315,7 @@ RCLASS_SET_CLASSEXT_TBL(VALUE klass, st_table *tbl)
 /* class.c */
 rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_box_t *box, int *first_set);
 void rb_class_ensure_writable(VALUE obj);
+VALUE rb_class_new_with_inline_fields(VALUE, size_t);
 
 void rb_class_set_box_classext(VALUE obj, const rb_box_t *box, rb_classext_t *ext);
 
@@ -478,7 +492,7 @@ void rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE);
 void rb_class_update_superclasses(VALUE);
 int rb_singleton_class_internal_p(VALUE sklass);
 VALUE rb_class_set_super(VALUE klass, VALUE super);
-VALUE rb_class_boot(VALUE);
+VALUE rb_class_boot(VALUE, size_t);
 VALUE rb_class_s_alloc(VALUE klass);
 VALUE rb_module_s_alloc(VALUE klass);
 void rb_class_set_initialized(VALUE klass);
@@ -580,6 +594,27 @@ RCLASS_FIELDS_COUNT(VALUE obj)
         }
     }
     return 0;
+}
+
+static inline VALUE *
+RCLASS_INLINE_FIELD(VALUE obj, size_t index)
+{
+    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
+    struct RClass_with_inline_fields *klass = (struct RClass_with_inline_fields *)obj;
+    RUBY_ASSERT(klass->rclass_and_classext.classext.inline_fields_count > index);
+    return &klass->inline_fields[index];
+}
+
+static inline VALUE
+RCLASS_INLINE_FIELD_GET(VALUE obj, size_t index)
+{
+    return *RCLASS_INLINE_FIELD(obj, index);
+}
+
+static inline void
+RCLASS_INLINE_FIELD_SET(VALUE obj, size_t index, VALUE value)
+{
+    RB_OBJ_WRITE(obj, RCLASS_INLINE_FIELD(obj, index), value);
 }
 
 static inline void

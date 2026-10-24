@@ -32,15 +32,21 @@ enum {
    on the C level, but is unrelated on the Ruby level. */
 VALUE rb_cStruct;
 static VALUE rb_cData;
-static ID id_members, id_back_members, id_keyword_init;
+
+enum rstruct_inline_fields {
+    RSTRUCT_MEMBERS_FIELD,
+    RSTRUCT_BACK_MEMBERS_FIELD,
+    RSTRUCT_KEYWORD_INIT_FIELD,
+    RSTRUCT_INLINE_FIELDS_COUNT,
+};
 
 static VALUE struct_alloc(VALUE);
 
 static inline VALUE
-struct_ivar_get(VALUE c, ID id)
+struct_inline_field_get(VALUE c, size_t field)
 {
     VALUE orig = c;
-    VALUE ivar = rb_attr_get(c, id);
+    VALUE ivar = RCLASS_INLINE_FIELD_GET(c, field);
 
     if (!NIL_P(ivar))
         return ivar;
@@ -50,29 +56,30 @@ struct_ivar_get(VALUE c, ID id)
         if (c == rb_cStruct || c == rb_cData || !RTEST(c))
             return Qnil;
         RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
-        ivar = rb_attr_get(c, id);
+        ivar = RCLASS_INLINE_FIELD_GET(c, field);
         if (!NIL_P(ivar)) {
-            if (!OBJ_FROZEN(orig)) rb_ivar_set(orig, id, ivar);
+            RCLASS_INLINE_FIELD_SET(orig, field, ivar);
             return ivar;
         }
     }
 }
 
+
 VALUE
 rb_struct_s_keyword_init(VALUE klass)
 {
-    return struct_ivar_get(klass, id_keyword_init);
+    return struct_inline_field_get(klass, RSTRUCT_KEYWORD_INIT_FIELD);
 }
 
 VALUE
 rb_struct_s_members(VALUE klass)
 {
-    VALUE members = struct_ivar_get(klass, id_members);
+    VALUE members = struct_inline_field_get(klass, RSTRUCT_MEMBERS_FIELD);
 
-    if (NIL_P(members)) {
+    if (UNLIKELY(!RTEST(members))) {
         rb_raise(rb_eTypeError, "uninitialized struct");
     }
-    if (!RB_TYPE_P(members, T_ARRAY)) {
+    if (UNLIKELY(!RB_TYPE_P(members, T_ARRAY))) {
         rb_raise(rb_eTypeError, "corrupted struct");
     }
     return members;
@@ -139,8 +146,8 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
         }
         OBJ_FREEZE(back);
     }
-    rb_ivar_set(klass, id_members, members);
-    rb_ivar_set(klass, id_back_members, back);
+    RCLASS_INLINE_FIELD_SET(klass, RSTRUCT_MEMBERS_FIELD, members);
+    RCLASS_INLINE_FIELD_SET(klass, RSTRUCT_BACK_MEMBERS_FIELD, back);
 
     return members;
 }
@@ -148,7 +155,7 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
 static inline int
 struct_member_pos(VALUE s, VALUE name)
 {
-    VALUE back = struct_ivar_get(rb_obj_class(s), id_back_members);
+    VALUE back = struct_inline_field_get(s, RSTRUCT_BACK_MEMBERS_FIELD);
     rb_len_t j, mask;
 
     if (UNLIKELY(NIL_P(back))) {
@@ -253,28 +260,29 @@ anonymous_struct(VALUE klass)
 {
     VALUE nstr;
 
-    nstr = rb_class_new(klass);
+    nstr = rb_class_new_with_inline_fields(klass, RSTRUCT_INLINE_FIELDS_COUNT);
     rb_make_metaclass(nstr, RBASIC(klass)->klass);
     rb_class_inherited(klass, nstr);
     return nstr;
 }
 
-static VALUE
-new_struct(VALUE name, VALUE super)
+static void
+name_struct(VALUE st, VALUE name, VALUE outer)
 {
     /* old style: should we warn? */
     ID id;
     name = rb_str_to_str(name);
     if (!rb_is_const_name(name)) {
         rb_name_err_raise("identifier %1$s needs to be constant",
-                          super, name);
+                          outer, name);
     }
     id = rb_to_id(name);
-    if (rb_const_defined_at(super, id)) {
-        rb_warn("redefining constant %"PRIsVALUE"::%"PRIsVALUE, super, name);
-        rb_mod_remove_const(super, ID2SYM(id));
+    if (rb_const_defined_at(outer, id)) {
+        rb_warn("redefining constant %"PRIsVALUE"::%"PRIsVALUE, outer, name);
+        rb_mod_remove_const(outer, ID2SYM(id));
     }
-    return rb_define_class_id_under_no_pin(super, id, super);
+    rb_set_class_path_string(st, outer, rb_id2str(id));
+    rb_const_set(outer, id, st);
 }
 
 NORETURN(static void invalid_struct_pos(VALUE s, VALUE idx));
@@ -330,7 +338,7 @@ rb_data_s_new(int argc, const VALUE *argv, VALUE klass)
         return rb_class_new_instance_pass_kw(argc, argv, klass);
     }
     else {
-        VALUE members = struct_ivar_get(klass, id_members);
+        VALUE members = struct_inline_field_get(klass, RSTRUCT_MEMBERS_FIELD);
         int num_members = RARRAY_LENINT(members);
 
         rb_check_arity(argc, 0, num_members);
@@ -457,19 +465,7 @@ struct_make_members_list(va_list ar)
 static VALUE
 struct_define_without_accessor(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, VALUE members)
 {
-    VALUE klass;
-
-    if (class_name) {
-        if (outer) {
-            klass = rb_define_class_under(outer, class_name, super);
-        }
-        else {
-            klass = rb_define_class(class_name, super);
-        }
-    }
-    else {
-        klass = anonymous_struct(super);
-    }
+    VALUE klass = anonymous_struct(super);
 
     struct_set_members(klass, members);
 
@@ -478,6 +474,14 @@ struct_define_without_accessor(VALUE outer, const char *class_name, VALUE super,
     }
     else {
         rb_define_alloc_func(klass, struct_alloc);
+    }
+
+    if (class_name) {
+        if (!outer) outer = rb_cObject;
+        ID id = rb_intern(class_name);
+        rb_set_class_path_string(klass, outer, rb_id2str(id));
+        rb_const_set(outer, id, klass);
+        rb_class_inherited(super, klass);
     }
 
     return klass;
@@ -519,14 +523,14 @@ rb_struct_define(const char *name, ...)
     ary = struct_make_members_list(ar);
     va_end(ar);
 
-    if (!name) {
-        st = anonymous_struct(rb_cStruct);
-    }
-    else {
-        st = new_struct(rb_str_new2(name), rb_cStruct);
+    st = anonymous_struct(rb_cStruct);
+    setup_struct(st, ary);
+
+    if (name) {
+        name_struct(st, rb_str_new2(name), rb_cStruct);
         rb_vm_register_global_object(st);
     }
-    return setup_struct(st, ary);
+    return st;
 }
 
 VALUE
@@ -539,7 +543,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
     ary = struct_make_members_list(ar);
     va_end(ar);
 
-    return setup_struct(rb_define_class_id_under(outer, rb_intern(name), rb_cStruct), ary);
+    return setup_struct(struct_define_without_accessor(outer, name, rb_cStruct, NULL, ary), ary);
 }
 
 /*
@@ -711,14 +715,13 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     rest = rb_hash_keys(rest);
     RBASIC_CLEAR_CLASS(rest);
     OBJ_FREEZE(rest);
-    if (NIL_P(name)) {
-        st = anonymous_struct(klass);
-    }
-    else {
-        st = new_struct(name, klass);
-    }
+    st = anonymous_struct(klass);
     setup_struct(st, rest);
-    rb_ivar_set(st, id_keyword_init, keyword_init);
+    RCLASS_INLINE_FIELD_SET(st, RSTRUCT_KEYWORD_INIT_FIELD, keyword_init);
+
+    if (!NIL_P(name)) {
+        name_struct(st, name, klass);
+    }
     if (rb_block_given_p()) {
         rb_mod_module_eval(0, 0, st);
     }
@@ -729,9 +732,8 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 static rb_len_t
 num_members(VALUE klass)
 {
-    VALUE members;
-    members = struct_ivar_get(klass, id_members);
-    if (!RB_TYPE_P(members, T_ARRAY)) {
+    VALUE members = struct_inline_field_get(klass, RSTRUCT_MEMBERS_FIELD);
+    if (UNLIKELY(!RB_TYPE_P(members, T_ARRAY))) {
         rb_bug("broken members"); /* should never happen */
     }
     return RARRAY_LEN(members);
@@ -911,7 +913,7 @@ rb_zjit_class_has_struct_allocator(VALUE klass)
 ID
 rb_zjit_struct_member_id(VALUE klass, rb_len_t index)
 {
-    VALUE members = struct_ivar_get(klass, id_members);
+    VALUE members = struct_inline_field_get(klass, RSTRUCT_MEMBERS_FIELD);
     RUBY_ASSERT(RB_TYPE_P(members, T_ARRAY));
     RUBY_ASSERT(index >= 0 && index < RARRAY_LEN(members));
     return SYM2ID(RARRAY_AREF(members, index));
@@ -1885,7 +1887,7 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass = rb_obj_class(self);
     rb_struct_modify(self);
-    VALUE members = struct_ivar_get(klass, id_members);
+    VALUE members = struct_inline_field_get(klass, RSTRUCT_MEMBERS_FIELD);
     size_t num_members = RARRAY_LEN(members);
 
     if (argc == 0) {
@@ -2365,9 +2367,5 @@ InitVM_Struct(void)
 void
 Init_Struct(void)
 {
-    id_members = rb_intern("__members__");
-    id_back_members = rb_intern("__members_back__");
-    id_keyword_init = rb_intern("__keyword_init__");
-
     InitVM(Struct);
 }
