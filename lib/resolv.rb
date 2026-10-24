@@ -1654,7 +1654,7 @@ class Resolv
 
       class MessageEncoder # :nodoc:
         def initialize
-          @data = ''.dup
+          @data = ''.dup.b
           @names = {}
           yield self
         end
@@ -1664,7 +1664,7 @@ class Resolv
         end
 
         def put_bytes(d)
-          @data << d
+          @data << d.b
         end
 
         def put_pack(template, *d)
@@ -1689,7 +1689,7 @@ class Resolv
             raise ArgumentError, "character-string is too long (#{s.bytesize} bytes, max 255): #{s.inspect}"
           end
           self.put_pack("C", s.bytesize)
-          @data << s
+          @data << s.b
         end
 
         def put_string_list(ds)

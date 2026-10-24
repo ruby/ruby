@@ -567,6 +567,33 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
+  def test_internationalized_domain_name_query
+    bug19697 = '[Bug #19697]'
+    with_udp('127.0.0.1', 0) {|u|
+      _, server_port, _, server_address = u.addr
+      client_thread = Thread.new {
+        Resolv::DNS.open(:nameserver_port => [[server_address, server_port]], :search => [], :ndots => 0) {|dns|
+          dns.getresources("\uC6B0\uD3B8.\uB2F7\uCEF4", Resolv::DNS::Resource::IN::MX)
+        }
+      }
+      server_thread = Thread.new {
+        msg, (_, client_port, _, client_address) = Timeout.timeout(5) {u.recvfrom(4096)}
+        query = Resolv::DNS::Message.decode(msg)
+        reply = Resolv::DNS::Message.new(query.id)
+        reply.qr = 1
+        reply.rd = query.rd
+        reply.ra = 1
+        query.each_question {|name, typeclass|
+          reply.add_question(name, typeclass)
+        }
+        u.send(reply.encode, 0, client_address, client_port)
+      }
+      resources = client_thread.value
+      server_thread.join
+      assert_equal([], resources, bug19697)
+    }
+  end
+
   def test_invalid_byte_comment
     bug9273 = '[ruby-core:59239] [Bug #9273]'
     Tempfile.create('resolv_test_dns_') do |tmpfile|
