@@ -1748,6 +1748,22 @@ if defined? Zlib
       end
     end
 
+    def test_gets_limit_multibyte_boundary
+      # The inflated buffer ends in the middle of a character whenever a
+      # 2048-byte read of compressed data does; gets(limit) must still return
+      # whole characters (same as IO#gets(limit)).
+      content = (("\u3042\u3044\u3046" * 700) + "\n") * 3
+      [1, 4, 7, 10].each do |limit|
+        r = Zlib::GzipReader.new(StringIO.new(Zlib.gzip(content, level: 0)))
+        lines = []
+        while (line = r.gets(limit))
+          lines << line
+        end
+        assert_equal(content, lines.join)
+        assert_empty(lines.reject(&:valid_encoding?), "limit #{limit}")
+      end
+    end
+
     def test_corrupted_header
       gz = Zlib::GzipWriter.new(StringIO.new(s = "".dup))
       gz.orig_name = "X"

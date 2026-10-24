@@ -4450,7 +4450,9 @@ gzreader_charboundary(struct gzfile *gz, rb_len_t n)
     if (l < n) {
 	int n_bytes = rb_enc_precise_mbclen(p, e, gz->enc);
 	if (MBCLEN_NEEDMORE_P(n_bytes)) {
-	    if ((l = gzfile_fill(gz, n + MBCLEN_NEEDMORE_LEN(n_bytes), Qnil)) > 0) {
+	    /* the character needs MBCLEN_NEEDMORE_LEN bytes beyond the END of the
+	     * buffer, which may lie past n */
+	    if ((l = gzfile_fill(gz, ZSTREAM_BUF_FILLED(&gz->z) + MBCLEN_NEEDMORE_LEN(n_bytes), Qnil)) > 0) {
 		return l;
 	    }
 	}
