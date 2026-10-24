@@ -134,6 +134,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/process.h"
+#include "internal/string.h"
 #include "internal/thread.h"
 #include "internal/transcode.h"
 #include "internal/variable.h"
@@ -3203,6 +3204,8 @@ io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
     struct bufread_arg arg;
 
     io_setstrbuf(&str, offset + size);
+    if (!READ_DATA_PENDING(fptr))
+        rb_str_make_heap(str);
     arg.str_ptr = RSTRING_PTR(str) + offset;
     arg.len = size;
     arg.fptr = fptr;
@@ -3580,6 +3583,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
             rb_io_set_nonblock(fptr);
         }
         io_setstrbuf(&str, len);
+        rb_str_make_heap(str);
         iis.th = rb_thread_current();
         iis.fptr = fptr;
         iis.nonblock = nonblock;
@@ -6218,6 +6222,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     rb_io_check_closed(fptr);
 
     io_setstrbuf(&str, ilen);
+    rb_str_make_heap(str);
     iis.th = rb_thread_current();
     iis.fptr = fptr;
     iis.nonblock = 0;
@@ -6316,6 +6321,7 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
 
     shrinkable = io_setstrbuf(&str, (long)arg.count);
     if (arg.count == 0) return str;
+    rb_str_make_heap(str);
     arg.buf = RSTRING_PTR(str);
 
     GetOpenFile(io, fptr);
