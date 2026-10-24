@@ -2271,6 +2271,12 @@ rb_inflate_inflate_body(VALUE _arguments)
  *   :buffer keyword argument.
  * * When passing a block, the yielded chunks will be the same value as the
  *   :buffer keyword argument.
+ * * When using the :buffer keyword argument, pass the same String object in
+ *   every call to this method on the stream, from the first call until the
+ *   stream is finished, and do not modify it other than through this method
+ *   until then.  Also, do not mix it with other methods that produce output,
+ *   such as #<< and Zlib::ZStream#finish.  Otherwise, the behavior is
+ *   undefined.
  *
  * Raises a Zlib::NeedDict exception if a preset dictionary is needed to
  * decompress.  Set the dictionary by Zlib::Inflate#set_dictionary and then
