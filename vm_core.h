@@ -533,7 +533,7 @@ struct rb_iseq_constant_body {
         } positions_or_succ_index_table;
         unsigned int size;
 #ifdef USE_ISEQ_NODE_ID
-        const int *node_ids;
+        const uint8_t *node_ids;
         unsigned int node_ids_size;
 #endif
     } insns_info;

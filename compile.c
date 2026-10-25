@@ -2624,6 +2624,19 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     return stack_max;
 }
 
+#ifdef USE_ISEQ_NODE_ID
+static void
+add_node_id(uint8_t *node_ids, unsigned int *node_ids_size, int node_id)
+{
+    uint32_t v = (uint32_t)node_id + 1;
+    do {
+        uint8_t byte = v & 0x7f;
+        v >>= 7;
+        node_ids[(*node_ids_size)++] = v ? (byte | 0x80) : byte;
+    } while (v);
+}
+#endif
+
 static int
 add_insn_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions,
               int insns_info_index, int code_index, const INSN *iobj)
@@ -2771,7 +2784,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     const int positions_size = insn_num;
     positions = ALLOC_N(unsigned int, insn_num);
 #ifdef USE_ISEQ_NODE_ID
-    int *node_ids = ALLOC_N(int, insn_num);
+    uint8_t *node_ids = ALLOC_N(uint8_t, (size_t)insn_num * 5);
     unsigned int node_ids_size = 0;
 #endif
     if (ISEQ_IS_SIZE(body)) {
@@ -2952,7 +2965,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                 }
                 if (add_insn_info(insns_info, positions, insns_info_index, code_index, iobj)) insns_info_index++;
 #ifdef USE_ISEQ_NODE_ID
-                node_ids[node_ids_size++] = iobj->insn_info.node_id;
+                add_node_id(node_ids, &node_ids_size, iobj->insn_info.node_id);
 #endif
                 code_index += len;
                 break;
@@ -2990,7 +3003,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                         }
                         if (add_adjust_info(insns_info, positions, insns_info_index, code_index, adjust)) insns_info_index++;
 #ifdef USE_ISEQ_NODE_ID
-                        node_ids[node_ids_size++] = -1;
+                        add_node_id(node_ids, &node_ids_size, -1);
 #endif
                     }
                     if (diff > 1) {
@@ -3006,7 +3019,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                         SIZED_FREE_N(insns_info, insns_info_size);
                         SIZED_FREE_N(positions, positions_size);
 #ifdef USE_ISEQ_NODE_ID
-                        SIZED_FREE_N(node_ids, insns_info_size);
+                        SIZED_FREE_N(node_ids, (size_t)insns_info_size * 5);
 #endif
                         if (ISEQ_MBITS_BUFLEN(code_size) > 1) {
                             SIZED_FREE_N(mark_offset_bits, ISEQ_MBITS_BUFLEN(code_index));
@@ -3058,6 +3071,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     body->insns_info.positions_or_succ_index_table.positions = positions;
     body->insns_info.size = insns_info_index;
 #ifdef USE_ISEQ_NODE_ID
+    SIZED_REALLOC_N(node_ids, uint8_t, node_ids_size, (size_t)insns_info_size * 5);
     body->insns_info.node_ids = node_ids;
     body->insns_info.node_ids_size = node_ids_size;
 #endif
@@ -12800,7 +12814,7 @@ typedef uint32_t ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #ifdef RUBY_DEVEL
-#define IBF_DEVEL_VERSION 10
+#define IBF_DEVEL_VERSION 11
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -13528,7 +13542,7 @@ ibf_dump_insns_info_body(struct ibf_dump *dump, const rb_iseq_t *iseq)
     }
 #ifdef USE_ISEQ_NODE_ID
     if (body->insns_info.node_ids_size > 0) {
-        ibf_dump_write(dump, body->insns_info.node_ids, sizeof(int) * body->insns_info.node_ids_size);
+        ibf_dump_write(dump, body->insns_info.node_ids, body->insns_info.node_ids_size);
     }
 #endif
 
@@ -13552,11 +13566,11 @@ ibf_load_insns_info_body(const struct ibf_load *load, ibf_offset_t body_offset, 
     }
 #ifdef USE_ISEQ_NODE_ID
     if (node_ids_size > 0) {
-        if ((size_t)node_ids_size > (load->current_buffer->size - reading_pos) / sizeof(int)) {
+        if (node_ids_size > load->current_buffer->size - reading_pos) {
             rb_raise(rb_eRuntimeError, "invalid byte sequence");
         }
-        int *node_ids = ALLOC_N(int, node_ids_size);
-        memcpy(node_ids, load->current_buffer->buff + reading_pos, sizeof(int) * node_ids_size);
+        uint8_t *node_ids = ALLOC_N(uint8_t, node_ids_size);
+        memcpy(node_ids, load->current_buffer->buff + reading_pos, node_ids_size);
         load_body->insns_info.node_ids = node_ids;
         load_body->insns_info.node_ids_size = node_ids_size;
     }
