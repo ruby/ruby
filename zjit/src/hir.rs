@@ -7775,6 +7775,7 @@ impl Function {
             } else {
                 false
             };
+            has_ever_inlined |= did_inline;
             run_pass!(convert_no_profile_sends);
             run_pass!(remove_trivial_block_params);
             run_pass!(optimize_load_store);
@@ -7783,7 +7784,6 @@ impl Function {
             run_pass!(clean_cfg);
             run_pass!(remove_redundant_patch_points);
             run_pass!(remove_duplicate_check_interrupts);
-            has_ever_inlined |= did_inline;
             if has_ever_inlined {
                 run_pass!(eliminate_empty_inline_frames);
             }
