@@ -510,7 +510,7 @@ You have specified rake based extension, but rake is not added as runtime depend
         file.each_line.with_index(1) do |line, lineno|
           next unless line =~ /^\s*require_relative\s+["']([^"']+)["']/
 
-          required_path = Regexp.last_match(1)
+          required_path = Regexp.last_match(1).force_encoding(rb_file.encoding)
           resolved = File.join(File.dirname(rb_file), required_path)
 
           next if @specification.files.any? {|f| f == "#{resolved}.rb" || f == resolved }

@@ -3254,6 +3254,26 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     end
   end
 
+  def test_validate_extension_require_relative_with_non_ascii_path
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["ext/a/extconf.rb"]
+      @a1.files = %w[lib/code.rb lib/a.rb lib/ü/b.rb lib/ü/é.rb ext/a/extconf.rb]
+
+      FileUtils.mkdir_p File.join("lib", "ü")
+      File.write File.join("lib", "a.rb"), "require_relative \"ü/b\"\n"
+      File.write File.join("lib", "ü", "b.rb"), "require_relative \"é\"\n"
+      File.write File.join("lib", "ü", "é.rb"), ""
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      refute_match(/require_relative/, @ui.error)
+    end
+  end
+
   def test_validate_extension_require_relative_no_warning_when_rb_exists
     util_setup_validate
 
