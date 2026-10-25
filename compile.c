@@ -2871,7 +2871,7 @@ static int
 iseq_set_exception_table(rb_iseq_t *iseq)
 {
     const VALUE *tptr, *ptr;
-    unsigned int tlen, i;
+    unsigned int tlen, i, table_size = 0;
     struct iseq_catch_table_entry *entry;
 
     ISEQ_BODY(iseq)->catch_table = NULL;
@@ -2886,24 +2886,30 @@ iseq_set_exception_table(rb_iseq_t *iseq)
         table->size = tlen;
 
         for (i = 0; i < table->size; i++) {
-            int pos;
             ptr = RARRAY_CONST_PTR(tptr[i]);
-            entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
+            int start = label_get_position((LABEL *)(ptr[1] & ~1));
+            int end = label_get_position((LABEL *)(ptr[2] & ~1));
+            int cont = 0;
+            int sp = 0;
+            if (start < 0 || end < 0) continue;
+            if (ptr[4]) {
+                LABEL *lobj = (LABEL *)(ptr[4] & ~1);
+                cont = label_get_position(lobj);
+                if (cont < 0) continue;
+                sp = label_get_sp(lobj);
+            }
+
+            entry = UNALIGNED_MEMBER_PTR(table, entries[table_size++]);
             entry->type = (enum rb_catch_type)(ptr[0] & 0xffff);
-            pos = label_get_position((LABEL *)(ptr[1] & ~1));
-            RUBY_ASSERT(pos >= 0);
-            entry->start = (unsigned int)pos;
-            pos = label_get_position((LABEL *)(ptr[2] & ~1));
-            RUBY_ASSERT(pos >= 0);
-            entry->end = (unsigned int)pos;
+            entry->start = (unsigned int)start;
+            entry->end = (unsigned int)end;
             entry->iseq = (rb_iseq_t *)ptr[3];
             RB_OBJ_WRITTEN(iseq, Qundef, entry->iseq);
 
             /* stack depth */
             if (ptr[4]) {
-                LABEL *lobj = (LABEL *)(ptr[4] & ~1);
-                entry->cont = label_get_position(lobj);
-                entry->sp = label_get_sp(lobj);
+                entry->cont = (unsigned int)cont;
+                entry->sp = sp;
 
                 /* TODO: Dirty Hack!  Fix me */
                 if (entry->type == CATCH_TYPE_RESCUE ||
@@ -2916,6 +2922,14 @@ iseq_set_exception_table(rb_iseq_t *iseq)
             else {
                 entry->cont = 0;
             }
+        }
+        table->size = table_size;
+        if (table_size == 0) {
+            ruby_xfree(table);
+            table = NULL;
+        }
+        else if (table_size < tlen) {
+            table = ruby_xrealloc(table, iseq_catch_table_bytes(table_size));
         }
         ISEQ_BODY(iseq)->catch_table = table;
         RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, 0); /* free */
