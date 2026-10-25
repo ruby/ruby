@@ -3634,8 +3634,11 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
         wbuf.len = len;
         wbuf.buf = buf;
         memset(&wol, 0, sizeof(wol));
+        if (!overlapped_event_new(&wol, FALSE)) {
+            errno = map_errno(GetLastError());
+            return -1;
+        }
         RUBY_CRITICAL {
-            overlapped_event_new(&wol, FALSE);
             if (input) {
                 flg = flags;
                 if (addr && addrlen)
@@ -3763,8 +3766,11 @@ recvmsg(int fd, struct msghdr *msg, int flags)
         DWORD size;
         WSAOVERLAPPED wol;
         memset(&wol, 0, sizeof(wol));
+        if (!overlapped_event_new(&wol, FALSE)) {
+            errno = map_errno(GetLastError());
+            return -1;
+        }
         RUBY_CRITICAL {
-            overlapped_event_new(&wol, FALSE);
             ret = pWSARecvMsg(s, &wsamsg, &size, &wol, NULL);
         }
 
@@ -3817,8 +3823,11 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
         DWORD size;
         WSAOVERLAPPED wol;
         memset(&wol, 0, sizeof(wol));
+        if (!overlapped_event_new(&wol, FALSE)) {
+            errno = map_errno(GetLastError());
+            return -1;
+        }
         RUBY_CRITICAL {
-            overlapped_event_new(&wol, FALSE);
             ret = pWSASendMsg(s, &wsamsg, flags, &size, &wol, NULL);
         }
 
