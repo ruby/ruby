@@ -597,7 +597,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         size += body->iseq_size * sizeof(VALUE);
         size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
 #ifdef USE_ISEQ_NODE_ID
-        size += body->insns_info.node_ids_size * sizeof(int);
+        size += body->insns_info.node_ids_size;
 #endif
         size += body->local_table_size * sizeof(ID); // body->local_table
         if (!ISEQ_LVAR_STATES_EMBED_P(body->local_table_size) && body->lvar_states.list) {
@@ -2578,6 +2578,21 @@ rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
 }
 
 #ifdef USE_ISEQ_NODE_ID
+static int
+node_id_stream_read(const uint8_t **ptr, const uint8_t *end)
+{
+    uint32_t v = 0;
+    unsigned int shift = 0;
+    while (*ptr < end) {
+        uint8_t byte = **ptr;
+        (*ptr)++;
+        v |= (uint32_t)(byte & 0x7f) << shift;
+        if (!(byte & 0x80)) break;
+        shift += 7;
+    }
+    return (int)v - 1;
+}
+
 int
 rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
 {
@@ -2587,17 +2602,17 @@ rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
     }
 
     const VALUE *code = rb_iseq_original_iseq(iseq);
-    const int *node_ids = body->insns_info.node_ids;
-    unsigned int i = 0;
+    const uint8_t *ptr = body->insns_info.node_ids;
+    const uint8_t *end = ptr + body->insns_info.node_ids_size;
     size_t code_pos = 0;
 
-    while (i < body->insns_info.node_ids_size && code_pos < body->iseq_size) {
+    while (ptr < end && code_pos < body->iseq_size) {
         size_t len = (size_t)insn_len(code[code_pos]);
+        int node_id = node_id_stream_read(&ptr, end);
         if (pos < code_pos + len) {
-            return node_ids[i];
+            return node_id;
         }
         code_pos += len;
-        i++;
     }
 
     VM_ASSERT(0); /* node_ids out of sync with the instruction sequence */
@@ -3783,6 +3798,10 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     prev_insn_info = NULL;
 #ifdef USE_ISEQ_NODE_ID
     VALUE node_ids = rb_ary_new();
+    /* The node id stream holds one varint per instruction, in the same
+     * order as the instructions in nbody. */
+    const uint8_t *nid_ptr = iseq_body->insns_info.node_ids;
+    const uint8_t *nid_end = nid_ptr ? nid_ptr + iseq_body->insns_info.node_ids_size : NULL;
 #endif
 
     for (l=0, pos=0; l<RARRAY_LEN(nbody); l++) {
@@ -3796,9 +3815,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 
         info = get_insn_info(iseq, pos);
 #ifdef USE_ISEQ_NODE_ID
-        VM_ASSERT(l < (long)iseq_body->insns_info.node_ids_size);
-        rb_ary_push(node_ids, INT2FIX(l < (long)iseq_body->insns_info.node_ids_size ?
-                                      iseq_body->insns_info.node_ids[l] : -1));
+        VM_ASSERT(nid_ptr && nid_ptr < nid_end);
+        rb_ary_push(node_ids, INT2FIX(nid_ptr && nid_ptr < nid_end ?
+                                      node_id_stream_read(&nid_ptr, nid_end) : -1));
 #endif
 
         if (prev_insn_info != info) {

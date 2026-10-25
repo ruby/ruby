@@ -1276,7 +1276,7 @@ pub struct rb_iseq_constant_body_iseq_insn_info {
     pub body: *const iseq_insn_info_entry,
     pub positions_or_succ_index_table: rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1,
     pub size: ::std::os::raw::c_uint,
-    pub node_ids: *const ::std::os::raw::c_int,
+    pub node_ids: *const u8,
     pub node_ids_size: ::std::os::raw::c_uint,
 }
 #[repr(C)]
