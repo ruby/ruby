@@ -2302,7 +2302,7 @@ rb_inflate_inflate_body(VALUE _arguments)
 	    StringValue(src);
 	    zstream_append_buffer2(z, src);
 	    if (ZSTREAM_REUSE_BUFFER_P(z)) {
-                dst = rb_str_resize(buffer, 0);
+                dst = zstream_detach_buffer(z);
             } else {
                 dst = rb_str_new(0, 0);
             }

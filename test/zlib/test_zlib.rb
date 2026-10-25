@@ -659,6 +659,26 @@ if defined? Zlib
       assert_equal src, inflated + rest
     end
 
+    def test_inflate_buffer_after_finished
+      src = "0" * 100_000
+      deflated = Zlib::Deflate.deflate(src)
+
+      z = Zlib::Inflate.new
+      buf = String.new
+      assert_equal src, z.inflate(deflated, buffer: buf)
+      assert_same buf, z.inflate("tail", buffer: buf)
+      assert_equal "tail", buf
+      assert_equal "", z.inflate(nil, buffer: buf)
+
+      z = Zlib::Inflate.new
+      buf = String.new
+      inflated = "".dup
+      z.inflate(deflated, buffer: buf) { |chunk| inflated << chunk }
+      z.inflate("tail", buffer: buf) { |chunk| inflated << chunk }
+      z.inflate(nil, buffer: buf) { |chunk| inflated << chunk }
+      assert_equal src + "tail", inflated
+    end
+
     def test_inflate_buffer_dropped_while_handling_need_dict
       dict = "dictionary-" * 4
       d = Zlib::Deflate.new
