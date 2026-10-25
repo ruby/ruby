@@ -2035,6 +2035,15 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_invalid_condition_in_alternation_and_call
+    assert_raise_with_message(RegexpError, /invalid conditional pattern/) do
+      Regexp.new("(x)|(?(1)x|x|)")
+    end
+    assert_raise_with_message(RegexpError, /invalid conditional pattern/) do
+      Regexp.new("(?<b>x)(?<a>(?(<b>)x|x|))\\g<a>")
+    end
+  end
+
   def test_too_big_number_for_repeat_range
     assert_raise_with_message(SyntaxError, /too big number for repeat range/) do
       eval(%[/|{1000000}/])
