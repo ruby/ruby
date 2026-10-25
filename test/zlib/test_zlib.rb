@@ -704,6 +704,8 @@ if defined? Zlib
         w.write("foo")
         assert_equal "foo", reader.value
       end
+      buf.clear
+      assert_equal "A" * 12_000, z.inflate("", buffer: buf)
     end
 
     def test_inflate_chunked_break

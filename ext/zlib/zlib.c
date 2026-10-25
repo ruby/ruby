@@ -1108,8 +1108,14 @@ zstream_run_func(struct zstream_run_args *args)
         n = z->stream.avail_out;
 
         /* lock outside rb_ensure, so that a lock held by someone else is not
-           released when rb_str_locktmp fails */
-        rb_str_locktmp(z->buf);
+           released when rb_str_locktmp fails, and raise the failure after
+           zstream_run_try has put back the pending input */
+        rb_protect(rb_str_locktmp, z->buf, &state);
+        if (state) {
+            err = Z_OK;
+            args->jump_state = state;
+            break;
+        }
         err = (int)(VALUE)rb_ensure(zstream_run_once_begin, (VALUE)args, zstream_run_once_ensure, (VALUE)args);
 
         rb_str_set_len(z->buf, ZSTREAM_BUF_FILLED(z) + (n - z->stream.avail_out));
