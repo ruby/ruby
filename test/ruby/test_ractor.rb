@@ -1248,6 +1248,33 @@ class TestRactor < Test::Unit::TestCase
     GC.start
   end
 
+  # A child's #freeze can change the frozen parent's shape (object_id adds a field).
+  # Several parent types and ivar counts are tried so that object_id is added both in
+  # place and by growing the fields.
+  def test_make_shareable_child_freeze_changes_parent_shape
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      parent = nil
+      child_class = Class.new do
+        define_method(:freeze) do
+          parent.object_id
+          super()
+        end
+      end
+
+      struct = Struct.new(:a)
+      [Object, String, Array, Hash, struct].each do |klass|
+        1.upto(40) do |n|
+          parent = klass.new
+          n.times { |i| parent.instance_variable_set(:"@ivar#{i}", child_class.new) }
+          Ractor.make_shareable(parent)
+          parent.instance_variables.each do |name|
+            assert Ractor.shareable?(parent.instance_variable_get(name)), "#{name} of a #{klass} with #{n} ivars"
+          end
+        end
+      end
+    RUBY
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
