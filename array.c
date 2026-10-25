@@ -1804,7 +1804,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *  Returns elements from +self+; does not modify +self+.
  *
- *  In brief:
+ *  <b>In Brief</b>
  *
  *    a = [:foo, 'bar', 2]
  *
@@ -1821,7 +1821,10 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[0..-2] # => [:foo, "bar"] # Negative range-begin counts backwards from end.
  *    a[-2..2] # => ["bar", 2]    # Negative range-end counts backwards from end.
  *
- *  When a single integer argument +offset+ is given, returns the element at offset +offset+:
+ *  <b>Argument +offset+</b>
+ *
+ *  When the single integer argument +offset+ is given,
+ *  returns the element at offset +offset+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0] # => :foo
@@ -1834,10 +1837,13 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[-1] # => 2
  *    a[-2] # => "bar"
  *
- *  If +index+ is out of range, returns +nil+.
+ *  If +offset+ is out of range, returns +nil+.
  *
- *  When two Integer arguments +offset+ and +size+ are given,
- *  returns a new array of size +size+ containing successive elements beginning at offset +offset+:
+ *  <b>Arguments +offset+ and +size+</b>
+ *
+ *  When integer arguments +offset+ and +size+ are given,
+ *  returns a new array of size +size+ containing successive elements
+ *  beginning at offset +offset+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0, 2] # => [:foo, "bar"]
@@ -1856,7 +1862,9 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *  If +size+ is negative, returns +nil+.
  *
- *  When a single Range argument +range+ is given,
+ *  <b>Argument +range+</b>
+ *
+ *  When {bounded range}[rdoc-ref:Range@Bounded+Ranges] argument +range+ is given,
  *  treats <tt>range.min</tt> as +offset+ above
  *  and <tt>range.size</tt> as +size+ above:
  *
@@ -1886,6 +1894,37 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[4..1] # => nil
  *    a[4..0] # => nil
  *    a[4..-1] # => nil
+ *
+ *  With {beginless range}[rdoc-ref:Range@Beginless+Ranges] +range+ given,
+ *  includes elements up through <tt>self[range.end]</tt>:
+ *
+ *    a = %w[foo bar baz] # => ["foo", "bar", "baz"]
+ *    a[..0]              # => ["foo"]
+ *    a[..2]              # => ["foo", "bar", "baz"]
+ *    a[..5]              # => ["foo", "bar", "baz"]
+ *    a[..-1]             # => ["foo", "bar", "baz"]
+ *    a[..-3]             # => ["foo"]
+ *    a[..-5]             # => []
+ *
+ *  With {endless range}[rdoc-ref:Range@Endless+Ranges] +range+ given,
+ *  includes elements from <tt>self[range.begin]</tt>:
+ *
+ *    a = %w[foo bar baz] # => ["foo", "bar", "baz"]
+ *    a[0..]              # => ["foo", "bar", "baz"]
+ *    a[2..]              # => ["baz"]
+ *    a[4..]              # => nil
+ *    a[-1..]             # => ["baz"]
+ *    a[-3..]             # => ["foo", "bar", "baz"]
+ *    a[-5..]             # => nil
+ *
+ *  With {unbounded range}[rdoc-ref:Range@Unbounded+Ranges] +range+ given,
+ *  returns all elements:
+ *
+ *    a = %w[foo bar baz] # => ["foo", "bar", "baz"]
+      a[nil..nil]         # => ["foo", "bar", "baz"]
+
+ *
+ *  <b>Argument +aseq+</b>
  *
  *  When a single Enumerator::ArithmeticSequence argument +aseq+ is given,
  *  returns an array of elements corresponding to the indexes produced by
