@@ -293,10 +293,12 @@ VALUE rb_str_tmp_new(rb_len_t len);
  * by calling rb_str_no_gvl_safe_release when you are done using it.
  *
  * A string may not be safe to be used without the GVL because Ruby code may
- * execute and cause a GC compaction to run. If the string is embedded, GC
- * compaction will mprotect the memory region and thus cause a segmentation
- * fault when the string is read from. This function will guarantee that the
- * returned string is not embedded.
+ * execute and cause a GC compaction to run. If the string's buffer is in the
+ * GC heap, because the string is embedded or shares the buffer of an embedded
+ * string, GC compaction may mprotect the memory region while the string is in
+ * use. Reading the string then faults, and a system call that reads it fails
+ * with EFAULT. This function will guarantee that the returned string's buffer
+ * is outside the GC heap.
  *
  * @param[in] orig String to create a copy of.
  * @return String that is safe to be used in operations without the GVL.
