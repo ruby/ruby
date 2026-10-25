@@ -2273,7 +2273,7 @@ rb_inflate_inflate_body(VALUE _arguments)
                 rb_str_modify_expand(buffer, len);
             }
             rb_str_set_len(buffer, 0);
-            if (ZSTREAM_REUSE_BUFFER_P(z) && !NIL_P(z->buf) && RSTRING_LEN(z->buf) > 0) {
+            if (!NIL_P(z->buf) && RSTRING_LEN(z->buf) > 0) {
                 /* carry over the output pending in the previous buffer */
                 rb_str_buf_cat(buffer, RSTRING_PTR(z->buf), RSTRING_LEN(z->buf));
             }
