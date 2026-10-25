@@ -1987,24 +1987,6 @@ get_nd_args(struct parser_params *p, NODE *node)
     }
 }
 
-static st_index_t
-djb2(const uint8_t *str, size_t len)
-{
-    st_index_t hash = 5381;
-
-    for (size_t i = 0; i < len; i++) {
-        hash = ((hash << 5) + hash) + str[i];
-    }
-
-    return hash;
-}
-
-static st_index_t
-parser_memhash(const void *ptr, rb_len_t len)
-{
-    return djb2(ptr, len);
-}
-
 #define PARSER_STRING_PTR(str) (str->ptr)
 #define PARSER_STRING_LEN(str) (str->len)
 #define PARSER_STRING_END(str) (&str->ptr[str->len])
@@ -2079,13 +2061,13 @@ rb_parser_string_free(rb_parser_t *p, rb_parser_string_t *str)
 static st_index_t
 rb_parser_str_hash(rb_parser_string_t *str)
 {
-    return parser_memhash((const void *)PARSER_STRING_PTR(str), PARSER_STRING_LEN(str));
+    return rb_memhash((const void *)PARSER_STRING_PTR(str), PARSER_STRING_LEN(str));
 }
 
 static st_index_t
 rb_char_p_hash(const char *c)
 {
-    return parser_memhash((const void *)c, strlen(c));
+    return rb_memhash((const void *)c, strlen(c));
 }
 
 static size_t
