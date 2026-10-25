@@ -1663,6 +1663,20 @@ if defined? Zlib
       }
     end
 
+    def test_read_encoding_at_eof
+      gz = Zlib.gzip("foo")
+      Zlib::GzipReader.wrap(StringIO.new(gz), external_encoding: "EUC-JP") do |f|
+        f.read
+        s = f.read
+        assert_equal("", s)
+        assert_equal(Encoding::EUC_JP, s.encoding)
+      end
+      Zlib::GzipReader.wrap(StringIO.new(gz), external_encoding: "Shift_JIS", internal_encoding: "UTF-8") do |f|
+        f.read
+        assert_equal(Encoding::UTF_8, f.read.encoding)
+      end
+    end
+
     def test_double_close
       Tempfile.create("test_zlib_gzip_reader_close") {|t|
         t.binmode

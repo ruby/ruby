@@ -3153,7 +3153,7 @@ gzfile_read_all(struct gzfile *gz, VALUE dst)
             rb_enc_associate(dst, gz->enc);
             return dst;
         }
-	return rb_str_new(0, 0);
+	return rb_enc_str_new(0, 0, gz->enc);
     }
 
     str = zstream_detach_buffer(&gz->z);
