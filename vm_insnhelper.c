@@ -3985,6 +3985,31 @@ rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci)
 }
 
 static VALUE
+vm_call_get_kwarg(rb_control_frame_t *reg_cfp, CALL_DATA cd, ID kw)
+{
+
+    VALUE sym = ID2SYM(kw);
+    if (vm_ci_flag(cd->ci) & VM_CALL_KW_SPLAT) {
+        VALUE keywords = TOPN(0);
+        if (UNLIKELY(!RB_TYPE_P(keywords, T_HASH))) {
+            TOPN(0) = keywords = rb_to_hash_type(keywords);
+        }
+        return rb_hash_lookup2(keywords, sym, Qundef);
+    }
+    else {
+        const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(cd->ci);
+        if (kwarg) {
+            for (int index = 0; index < kwarg->keyword_len; index++) {
+                if (kwarg->keywords[index] == sym) {
+                    return TOPN(kwarg->keyword_len - index - 1);
+                }
+            }
+        }
+    }
+    return Qundef;
+}
+
+static VALUE
 vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
 {
     int argc = calling->argc;

@@ -6899,30 +6899,10 @@ mod hir_opt_tests {
           PatchPoint StableConstantNames(0x1000, Hash)
           v13:ClassSubclass[Hash@0x1008] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(Hash@0x1008, new@0x1009, cme:0x1010)
-          v42:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
-          PatchPoint NoSingletonClass(Hash@0x1008)
-          PatchPoint MethodRedefined(Hash@0x1008, initialize@0x1038, cme:0x1040)
-          v46:Fixnum[0] = Const Value(0)
-          v96:Fixnum[0] = Const Value(0)
-          v97:NilClass = Const Value(nil)
-          PushInlineFrame :initialize, v42 (0x1068), num_args=1
-          v62:TrueClass = Const Value(true)
-          v80:CPtr = GetEP 0
-          v81:CUInt64 = LoadField v80, :VM_ENV_DATA_INDEX_FLAGS@0x1088
-          v82:CBool = IsBlockParamModified v81
-          CondBranch v82, bb11(), bb12()
-        bb11():
-          v84:BasicObject = LoadField v80, :block@0x1089
-          Jump bb13(v84)
-        bb12():
-          v86:BasicObject = GetBlockParam :block, l0, EP@4
-          Jump bb13(v86)
-        bb13(v79:BasicObject):
-          v89:BasicObject = InvokeBuiltin rb_hash_init, v42, v46, v62, v62, v79
-          PatchPoint NoEPEscape(initialize)
-          PopInlineFrame
+          PatchPoint MethodRedefined(Class@0x1038, new@0x1009, cme:0x1010)
+          v51:BasicObject = CCallVariadic v13, :Hash.new@0x1040
           CheckInterrupts
-          Return v42
+          Return v51
         ");
         assert_snapshot!(inspect("test"), @"{}");
     }

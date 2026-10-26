@@ -18,7 +18,9 @@ firstline, predefined = __LINE__+1, %[\
   singleton_method_removed
   method_undefined
   singleton_method_undefined
+  new
   length
+  capacity
   size
   gets
   succ
