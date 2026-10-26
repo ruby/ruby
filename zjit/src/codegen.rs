@@ -692,15 +692,15 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Send { block: Some(BlockHandler::BlockArgProc(_)), .. } => unreachable!("BlockArgProc only appears in SendDirect"),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, function, cd, blockiseq, &function.frame_state(state), reason),
         Insn::SendDirect(insn) => {
-            let SendDirectData { cd, cme, iseq, recv, args, kw_bits, jit_entry_idx, block, state, .. } = &**insn;
+            let SendDirectData { cd, cme, iseq, recv, args, kw_bits, jit_entry_idx, block, state, exit_state, .. } = &**insn;
             gen_send_iseq_direct(
                 cb, jit, asm,
                 function, *cd, *cme, *iseq, opnd!(recv), opnds!(args),
-                *kw_bits, *jit_entry_idx, &function.frame_state(*state), block.map(|bh| lower_block_handler(jit, bh)),
+                *kw_bits, *jit_entry_idx, &function.frame_state(*state), &function.frame_state(*exit_state), block.map(|bh| lower_block_handler(jit, bh)),
             )
         }
-        Insn::PushInlineFrame { cme, iseq, recv, num_args, block, state, .. } => {
-            no_output!(gen_push_inline_frame(jit, asm, function, *cme, *iseq, opnd!(recv), *num_args, &function.frame_state(*state), block.map(|bh| lower_block_handler(jit, bh))))
+        Insn::PushInlineFrame { cme, iseq, recv, num_args, block, state, exit_state, .. } => {
+            no_output!(gen_push_inline_frame(jit, asm, function, *cme, *iseq, opnd!(recv), *num_args, &function.frame_state(*state), &function.frame_state(*exit_state), block.map(|bh| lower_block_handler(jit, bh))))
         },
         Insn::PopInlineFrame { iseq, argc, state } => {
             no_output!(gen_pop_inline_frame(asm, *iseq, *argc, &function.frame_state(*state)))
@@ -1702,11 +1702,12 @@ fn gen_push_inline_frame(
     recv: Opnd,
     num_args: u16,
     state: &FrameState,
+    exit_state: &FrameState,
     block: Option<lir::BlockHandler>,
 ) {
     let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
     let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
-    gen_stack_overflow_check(jit, asm, function, state, stack_growth);
+    gen_stack_overflow_check(jit, asm, function, exit_state, stack_growth);
 
     // Save cfp->pc and cfp->sp for the caller frame.
     // Cannot use gen_prepare_non_leaf_call because we need special SP math.
@@ -1836,6 +1837,7 @@ fn gen_send_iseq_direct(
     kw_bits: u32,
     jit_entry_idx: u16,
     state: &FrameState,
+    exit_state: &FrameState,
     block: Option<lir::BlockHandler>,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::iseq_optimized_send_count);
@@ -1849,7 +1851,7 @@ fn gen_send_iseq_direct(
     let forwarded_ci = Opnd::Value(unsafe { (*cd).ci }.into());
     let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize() + forwarded_argc;
     let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
-    gen_stack_overflow_check(jit, asm, function, state, stack_growth);
+    gen_stack_overflow_check(jit, asm, function, exit_state, stack_growth);
 
     // Save cfp->pc and cfp->sp for the caller frame
     // Can't use gen_prepare_non_leaf_call because we need special SP math.

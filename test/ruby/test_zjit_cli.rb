@@ -412,6 +412,43 @@ class TestZJITCLI < Test::Unit::TestCase
     RUBY
   end
 
+  def test_stack_overflow_exit_from_send_with_normalized_keywords
+    # When the VM stack overflows at a SendDirect or an inlined frame, the side
+    # exit re-executes the send in the interpreter. It must restore the caller's
+    # operands, not the callee's arguments with the keywords reordered or the
+    # defaults filled in. The pad methods shift the stack layout so that some
+    # overflow hits the send in entry.
+    [
+      ['def target(x: 0, a: 0, b: 0, c: 0) = x', 'target(x: 1)', '--zjit-inline-max-iterations=0'],
+      ['def target(a: 0, b: 0, c: 0, x: 0) = [x].sum', 'target(x: 1)', '--zjit-inline-max-iterations=0'],
+      ['def target(a: 0, b: 0, c: 0, x: 0) = [x].sum', 'target(x: 1)', nil],
+      ['def target(x:, a:) = x', 'target(a: 0, x: 1)', '--zjit-inline-max-iterations=0'],
+    ].each do |target, call, inline|
+      args = [{'RUBY_THREAD_VM_STACK_SIZE' => '32768'}, '--disable-gems', '--zjit',
+              '--zjit-call-threshold=2', '--zjit-num-profiles=1', *inline]
+      assert_in_out_err(args, <<~RUBY, ['ok'], [], "#{target}; #{call} #{inline}")
+        #{target}
+        def entry = #{call}
+        def recur(n) = n == 0 ? entry : recur(n - 1)
+        16.times do |k|
+          eval "def pad\#{k}(n)\n\#{(0...k).map { "l\#{_1} = 0\n" }.join}recur(n)\nend"
+        end
+        20.times { 16.times { |k| __send__(:"pad\#{k}", 3) } }
+
+        overflows = 0
+        16.times do |k|
+          (1..400).each do |n|
+            __send__(:"pad\#{k}", n) == 1 or raise 'wrong result'
+          rescue SystemStackError
+            overflows += 1
+          end
+        end
+        raise 'stack overflow not exercised' if overflows == 0
+        puts 'ok'
+      RUBY
+    end
+  end
+
   def test_send_forwarded_nil_block_arg_with_polymorphic_receiver
     # Regression test: the nil block optimization strips the block arg from the
     # frame state used to set up the callee frame, but the pre-call guards
