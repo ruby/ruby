@@ -4,6 +4,10 @@
 #include "prism/internal/buffer.h"
 
 #include <assert.h>
+// Include sys/types.h before inttypes.h to work around an issue with certain
+// versions of GCC and newlib which causes omission of PRIu64 and the other
+// 64-bit macros (see 61ebe5123; the removal of defines.h dropped it).
+#include <sys/types.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
