@@ -346,7 +346,7 @@ class TestGc < Test::Unit::TestCase
       buffer_count = 1_024
       buffer_size = 4096
       ring = Array.new(buffer_count) { "x" * buffer_size }
-      GC.start
+      GC::INTERNAL_CONSTANTS[:RVALUE_OLD_AGE].times { GC.start }
       last_major = GC.stat(:major_gc_count)
       last_iteration = 0
       intervals = []
