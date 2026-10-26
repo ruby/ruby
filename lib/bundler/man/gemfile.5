@@ -530,7 +530,7 @@ OVERRIDES
 .fi
 .IP "" 0
 .P
-Requirements are recorded in normalized form, so \fB">=8\.0"\fR and \fB">= 8\.0"\fR are the same override\. A frozen install fails when the Gemfile's overrides differ from the recorded ones\. Adding or removing a \fB:all\fR or metadata override rewrites the section without moving locked versions; run \fBbundle update\fR to re\-resolve under it\. When resolution still fails, Bundler appends the active overrides (with their Gemfile location) to the error message so it is clear which override shaped the constraint set\.
+Requirements are recorded in normalized form, so \fB">=8\.0"\fR and \fB">= 8\.0"\fR are the same override\. A frozen install fails when the Gemfile's overrides differ from the recorded ones\. Adding or removing a \fB:all\fR or metadata override rewrites the section and keeps the locked versions\. The exception is a locked gem that is not installed and whose metadata rejects the current Ruby\. Bundler re\-resolves it, as it does without the override\. Run \fBbundle update\fR to re\-resolve under the override\. When resolution still fails, Bundler appends the active overrides (with their Gemfile location) to the error message so it is clear which override shaped the constraint set\.
 .SS "DROPPING OR REPLACING A DEPENDENCY"
 \fBfrom:\fR and \fBto:\fR rewrite a single dependency of a single gem:
 .IP "" 4
