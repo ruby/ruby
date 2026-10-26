@@ -12,6 +12,7 @@
 #include "prism/internal/xxh3.h"
 
 #include <assert.h>
+#include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -534,7 +535,7 @@ pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const 
             break;
         }
         case PM_SOURCE_LINE_NODE:
-            pm_buffer_append_format(buffer, "%d", pm_line_offset_list_line_column(&parser->line_offsets, node->location.start, parser->start_line).line);
+            pm_buffer_append_format(buffer, "%" PRIi32, pm_line_offset_list_line_column(&parser->line_offsets, node->location.start, parser->start_line).line);
             break;
         case PM_STRING_NODE: {
             const pm_string_t *unescaped = &((const pm_string_node_t *) node)->unescaped;
