@@ -102,6 +102,27 @@ if defined? Zlib
       assert_equal input, original
     end
 
+    def test_params_after_chunked_break
+      chunks = []
+      r = Random.new 0
+
+      # small enough that params can flush what zlib holds without Z_BUF_ERROR
+      z = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, 9, 1)
+
+      input = r.bytes(20000)
+      z.deflate(input) do |chunk|
+        chunks << chunk
+        break
+      end
+
+      assert_operator 0, :<, z.avail_in
+
+      z.params(Zlib::BEST_SPEED, Zlib::FILTERED)
+      chunks << z.finish
+
+      assert_equal input, Zlib.inflate(chunks.join)
+    end
+
     def test_addstr
       z = Zlib::Deflate.new
       z << "foo"
@@ -637,6 +658,24 @@ if defined? Zlib
       end
 
       assert_equal "foofoofoo", out
+    end
+
+    def test_inflate_empty_after_chunked_break
+      chunks = []
+      input = Random.new(0).bytes(20000)
+
+      z = Zlib::Inflate.new
+
+      z.inflate(Zlib.deflate(input)) do |chunk|
+        chunks << chunk
+        break
+      end
+
+      assert_operator 0, :<, z.avail_in
+
+      chunks << z.inflate("")
+
+      assert_equal input, chunks.join
     end
 
     def test_sync
