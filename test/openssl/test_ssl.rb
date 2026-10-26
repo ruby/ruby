@@ -2187,13 +2187,14 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     # PQC algorithm ML-DSA (FIPS 204) is supported on OpenSSL 3.5 or later.
     return unless openssl?(3, 5, 0)
 
-    mldsa = Fixtures.pkey("mldsa65-1")
-    mldsa_ca_key  = Fixtures.pkey("mldsa65-2")
+    mldsa_ca_key  = Fixtures.pkey("mldsa65-1")
     mldsa_ca_cert = issue_cert(@ca, mldsa_ca_key, 1, @ca_exts, nil, nil,
                                digest: nil)
+    mldsa = Fixtures.pkey("mldsa65-2")
     mldsa_cert = issue_cert(@svr, mldsa, 60, [], mldsa_ca_cert, mldsa_ca_key,
                             digest: nil)
-    rsa = Fixtures.pkey("rsa-1")
+    # rsa-1 is used for @ca_key
+    rsa = Fixtures.pkey("rsa-2")
     rsa_cert = issue_cert(@svr, rsa, 61, [], @ca_cert, @ca_key)
 
     sctx = OpenSSL::SSL::SSLContext.new
