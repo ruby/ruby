@@ -1761,6 +1761,11 @@ impl Insn {
         }
     }
 
+    /// Return true if the instruction is a dynamic send that can own counters in `send_counters`.
+    pub fn is_send(&self) -> bool {
+        matches!(self, Insn::Send { .. } | Insn::InvokeSuper { .. })
+    }
+
     /// Call `f` on each operand (InsnId) of this instruction.
     pub fn for_each_operand(&self, mut f: impl FnMut(InsnId)) {
         macro_rules! visit_one { ($p:expr) => { f($p) }; }
@@ -3597,6 +3602,7 @@ impl Function {
     }
 
     fn count_send(&mut self, block: BlockId, send: InsnId, counter: Counter) {
+        debug_assert!(self.insns[send].is_send());
         if get_option!(stats) {
             let counter = self.push_insn(block, Insn::IncrCounter(counter));
             self.send_counters.insert(counter, send);
@@ -4862,7 +4868,7 @@ impl Function {
                 // Keep counters for successful replacements, even if an inlined call's
                 // return value resolves to another dynamic send.
                 if send_counters.get(&insn_id).is_some_and(|&send|
-                    self.find_id(send) == send && matches!(self.insns[send], Insn::Send { .. } | Insn::InvokeSuper { .. })
+                    self.find_id(send) == send && self.insns[send].is_send()
                 ) {
                     continue;
                 }
@@ -6496,6 +6502,7 @@ impl Function {
         let counter_ptr = not_annotated_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
         let counter_ptr = &mut **counter_ptr as *mut u64;
 
+        debug_assert!(self.insns[send].is_send());
         let counter = self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
         self.send_counters.insert(counter, send);
     }
