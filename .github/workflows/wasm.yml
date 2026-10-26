@@ -65,7 +65,7 @@ jobs:
           sparse-checkout: /.github
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@824c0e29fdfc7d689c191c27acc969d2d04b7dd8 # v1.331.0
+      - uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
         with:
           ruby-version: '3.1'
           bundler: none
