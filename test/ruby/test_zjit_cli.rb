@@ -431,7 +431,7 @@ class TestZJITCLI < Test::Unit::TestCase
         def entry = #{call}
         def recur(n) = n == 0 ? entry : recur(n - 1)
         16.times do |k|
-          eval "def pad\#{k}(n)\n\#{(0...k).map { "l\#{_1} = 0\n" }.join}recur(n)\nend"
+          eval "def pad\#{k}(n)\n\#{(0...k).map { "_l\#{_1} = 0\n" }.join}recur(n)\nend"
         end
         20.times { 16.times { |k| __send__(:"pad\#{k}", 3) } }
 
