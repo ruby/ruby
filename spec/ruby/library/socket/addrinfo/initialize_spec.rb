@@ -274,7 +274,7 @@ describe "Addrinfo#initialize" do
         end
       end
 
-      platform_is_not :android do
+      platform_is_not :android, :musl do
         with_feature :sock_packet do
           [:SOCK_SEQPACKET].each do |type|
             it "overwrites the socket type #{type}" do
@@ -450,7 +450,7 @@ describe "Addrinfo#initialize" do
       end
 
       platform_is :linux do
-        platform_is_not :android do
+        platform_is_not :android, :musl do
           describe 'and the socket type is set to SOCK_SEQPACKET' do
             before do
               @socktype = Socket::SOCK_SEQPACKET
