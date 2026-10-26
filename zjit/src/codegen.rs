@@ -691,7 +691,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Send { block: Some(BlockHandler::BlockArgProc(_)), .. } => unreachable!("BlockArgProc only appears in SendDirect"),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, function, cd, blockiseq, &function.frame_state(state), reason),
         Insn::SendDirect(insn) => {
-            let SendDirectData { cd, cme, iseq, recv, args, kw_bits, jit_entry_idx, block, exit_state, state } = &**insn;
+            let SendDirectData { cd, cme, iseq, recv, args, kw_bits, jit_entry_idx, block, state, exit_state, .. } = &**insn;
             let block = block.map(|bh| match bh {
                 BlockHandler::BlockIseq(blockiseq) => lir::BlockHandler::Iseq(blockiseq),
                 BlockHandler::BlockArgProc(proc_id) => {
@@ -1850,7 +1850,6 @@ fn gen_send_iseq_direct(
     let forwarded_ci = Opnd::Value(unsafe { (*cd).ci }.into());
     let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize() + forwarded_argc;
     let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
-    // An exit resumes the original send, not its normalized callee arguments.
     gen_stack_overflow_check(jit, asm, function, exit_state, stack_growth);
 
     // Save cfp->pc and cfp->sp for the caller frame

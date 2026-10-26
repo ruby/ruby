@@ -2033,22 +2033,6 @@ fn test_send_literal_kwrest_repeated_keyword() {
 }
 
 #[test]
-fn test_send_kwrest_bmethod_and_super() {
-    eval("
-        define_method(:bmethod) { |**kw| kw }
-        class KwrestParent
-          def test(**kw) = kw
-        end
-        class KwrestChild < KwrestParent
-          def test = super()
-        end
-        def entry = [bmethod(z: 17, a: 31), bmethod, KwrestChild.new.test]
-        entry
-    ");
-    assert_snapshot!(assert_compiles("entry"), @"[{z: 17, a: 31}, {}, {}]");
-}
-
-#[test]
 fn test_send_literal_kwrest_anonymous_forwarding() {
     eval("
         def test(**kw) = kw

@@ -963,10 +963,9 @@ pub struct SendDirectData {
     pub kw_bits: u32,
     pub jit_entry_idx: u16,
     pub block: Option<BlockHandler>,
-    /// Snapshot of the original send, for exits that re-execute it in the interpreter.
-    pub exit_state: InsnId,
-    /// Frame state with the normalized callee arguments, used for everything else.
     pub state: InsnId,
+    /// Snapshot of the original send, for exits that re-execute it in the interpreter
+    pub exit_state: InsnId,
 }
 
 /// Payload of [`Insn::CondBranchHasType`]. Boxed in the enum to keep `Insn` small.
@@ -1637,8 +1636,8 @@ macro_rules! for_each_operand_impl {
                 if let Some(BlockHandler::BlockArgProc(id)) = &$($mut)? insn.block {
                     $visit_one!(*id);
                 }
-                $visit_one!(insn.exit_state);
                 $visit_one!(insn.state);
+                $visit_one!(insn.exit_state);
             }
             Insn::CCallWithFrame(insn) => {
                 $visit_one!(insn.recv);
@@ -2754,25 +2753,6 @@ const FORWARDABLE_CALLEE_BLOCKERS: u32 =
     // We only support `def foo(...)` cases for now.
     | VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG;
 
-/// Check if a **kwrest callee needs VM dispatch for this call shape.
-fn kwrest_needs_vm_dispatch(iseq: *const rb_iseq_t, caller_args: &CallerArguments, has_block: bool) -> bool {
-    let params = unsafe { iseq.params() };
-    if params.flags.has_kwrest() == 0 {
-        return false;
-    }
-    // Anonymous positional * stays on VM dispatch: the VM may pass it the shared
-    // frozen empty array (rb_cArray_empty_frozen).
-    if params.flags.anon_rest() != 0 {
-        return true;
-    }
-    // Without caller keywords, only kwrest-only callees get an empty kwrest here.
-    if caller_args.kwarg_count == 0 {
-        return params.flags.has_kw() != 0;
-    }
-    // Literal keywords are packed statically, so keep blocks and runtime splats out.
-    has_block || caller_args.flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_FORWARDING) != 0
-}
-
 /// Check if we can emit SendDirect to the given ISEQ with the given arguments.
 fn can_direct_send(iseq: *const rb_iseq_t, caller_args: &CallerArguments, has_block: bool, caller_splat: Option<CallerSplat>) -> Result<(), SendDirectFailure> {
     let mut complex_arg_counters = vec![];
@@ -2788,7 +2768,14 @@ fn can_direct_send(iseq: *const rb_iseq_t, caller_args: &CallerArguments, has_bl
                                        { count_failure(complex_arg_pass_param_forwardable) }
     if callee_has_block_param && caller_passes_block_arg
                                        { count_failure(complex_arg_pass_param_block) }
-    if kwrest_needs_vm_dispatch(iseq, caller_args, has_block)
+    // Support literal keywords, or empty kwrest without named keywords.
+    // Keep splats and block passing out of the literal-keyword path, and leave
+    // anonymous * on VM dispatch: its empty rest array may be shared.
+    if 0 != params.flags.has_kwrest() &&
+        (params.flags.anon_rest() != 0 ||
+         (caller_args.kwarg_count == 0 && params.flags.has_kw() != 0) ||
+         (caller_args.kwarg_count != 0 && (has_block ||
+          caller_args.flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG) != 0)))
                                        { count_failure(complex_arg_pass_param_kwrest) }
 
     // If the caller passes a block (literal or &block), we need to fall back to the
@@ -4120,7 +4107,7 @@ impl Function {
             });
         }
         let args = Self::expand_caller_splat_args(caller_args, caller_splat);
-        let (args, kw_bits) = Self::plan_send_direct_keyword_arguments(args, caller_args, iseq, has_block)
+        let (args, kw_bits) = Self::plan_send_direct_keyword_arguments(args, caller_args, iseq)
             .map_err(SendDirectFailure::new)?;
         let (args, jit_entry_idx) = Self::plan_send_direct_rest_parameter(args, iseq)
             .map_err(SendDirectFailure::new)?;
@@ -4330,20 +4317,7 @@ impl Function {
         args: Vec<SendDirectArg>,
         caller_args: &CallerArguments,
         iseq: IseqPtr,
-        has_block: bool,
     ) -> Result<(Vec<SendDirectArg>, u32), SendFallbackReason> {
-        // Recheck can_direct_send's preconditions so the packing below never sees
-        // a runtime **hash or an unsupported kwrest shape.
-        if caller_args.flags & VM_CALL_KW_SPLAT != 0 {
-            // Caller **kw is one runtime Hash, not explicit keyword slots, so
-            // there is no static key/value list to repack here.
-            return Err(SendDirectKeywordMismatch);
-        }
-        if kwrest_needs_vm_dispatch(iseq, caller_args, has_block) {
-            return Err(ComplexArgPass);
-        }
-        let params = unsafe { iseq.params() };
-        let has_kwrest = params.flags.has_kwrest() != 0;
         let kwarg = caller_args.kwarg;
         // Kwrest-only callees also have this struct, with num == 0 and a rest_start.
         let callee_keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
@@ -4351,6 +4325,13 @@ impl Function {
             if kwarg.is_null() {
                 // Neither caller nor callee have keywords - nothing to do
                 return Ok((args, 0));
+            }
+
+            let params = unsafe { iseq.params() };
+            if caller_args.flags & VM_CALL_KW_SPLAT != 0 {
+                // Caller **kw is one runtime Hash, not explicit keyword slots, so
+                // there is no static key/value list to repack here.
+                return Err(SendDirectKeywordMismatch);
             }
 
             if params.flags.accepts_no_kwarg() != 0 || params.flags.ruby2_keywords() != 0 {
@@ -4390,6 +4371,8 @@ impl Function {
         let callee_kw_required = unsafe { (*callee_keyword).required_num } as usize;
         let callee_kw_table = unsafe { (*callee_keyword).table };
         let default_values = unsafe { (*callee_keyword).default_values };
+        let params = unsafe { iseq.params() };
+        let has_kwrest = params.flags.has_kwrest() != 0;
 
         // Without kwrest, extra keywords must be handled by VM dispatch.
         if !has_kwrest && caller_kw_count > callee_kw_count {
@@ -4409,21 +4392,21 @@ impl Function {
             }
         }
 
+        // Verify all caller keywords are expected by callee (no unknown keywords).
         // Without **kwrest, unexpected keywords should raise ArgumentError at runtime.
-        if !has_kwrest {
-            for &caller_id in &caller_kw_order {
-                let mut found = false;
-                for i in 0..callee_kw_count {
-                    let expected_id = unsafe { *callee_kw_table.add(i) };
-                    if caller_id == expected_id {
-                        found = true;
-                        break;
-                    }
+        for &caller_id in &caller_kw_order {
+            let mut found = false;
+            for i in 0..callee_kw_count {
+                let expected_id = unsafe { *callee_kw_table.add(i) };
+                if caller_id == expected_id {
+                    found = true;
+                    break;
                 }
-                if !found {
-                    // Fall back to VM dispatch to handle the error.
-                    return Err(SendDirectKeywordMismatch);
-                }
+            }
+            if !found && !has_kwrest {
+                // Caller is passing an unknown keyword - this will raise ArgumentError.
+                // Fall back to VM dispatch to handle the error.
+                return Err(SendDirectKeywordMismatch);
             }
         }
 
@@ -4444,7 +4427,7 @@ impl Function {
             let mut found = false;
             for (j, &caller_id) in caller_kw_order.iter().enumerate() {
                 if caller_id == expected_id {
-                    // Repeated underscore-prefixed parameters may consume the same keyword.
+                    // Repeated underscore-prefixed parameters may name the same keyword.
                     reordered_kw_args.push(keyword_values[j].take().ok_or(SendDirectKeywordMismatch)?);
                     found = true;
                     break;
@@ -4478,6 +4461,11 @@ impl Function {
         // Replace the keyword arguments with the reordered ones.
         processed_args.extend(reordered_kw_args);
         if has_kwrest {
+            // Only static caller keywords can be packed here; runtime keyword
+            // splats must use VM dispatch.
+            if caller_args.flags & VM_CALL_KW_SPLAT != 0 {
+                return Err(SendDirectKeywordMismatch);
+            }
             // Match make_rest_kw_hash: retain unconsumed keywords in caller
             // order, in a fresh Hash even when all keywords were named.
             let mut elements = Vec::new();
@@ -4490,7 +4478,7 @@ impl Function {
             }
             // With no caller keywords, args_setup_kw_rest_parameter leaves
             // anonymous ** as nil. Named **rest always receives a fresh Hash.
-            processed_args.push(if caller_kw_count == 0 && params.flags.has_kw() == 0 && params.flags.anon_kwrest() != 0 {
+            processed_args.push(if caller_kw_count == 0 && params.flags.anon_kwrest() != 0 {
                 SendDirectArg::Constant(Qnil)
             } else {
                 SendDirectArg::KeywordHash(elements)
@@ -5099,7 +5087,7 @@ impl Function {
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
                                 self.emit_send_direct_args(block, call, &args, send_frame_state, state);
-                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, exit_state: state, state: send_state, block: send_block })));
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, exit_state: state, block: send_block })));
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
@@ -5140,7 +5128,7 @@ impl Function {
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
                                 self.emit_send_direct_args(block, call, &args, send_frame_state, state);
-                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, exit_state: state, state: send_state, block: None })));
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, exit_state: state, block: None })));
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             // Check singleton class assumption first, before emitting other patchpoints
@@ -5670,8 +5658,8 @@ impl Function {
                                 args: send_args,
                                 kw_bits,
                                 jit_entry_idx,
-                                exit_state: state,
                                 state: send_state,
+                                exit_state: state,
                                 block: None,
                             })));
                             self.make_equal_to(insn_id, replacement);

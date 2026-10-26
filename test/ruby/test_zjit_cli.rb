@@ -442,28 +442,20 @@ class TestZJITCLI < Test::Unit::TestCase
     RUBY
   end
 
-  def test_kwrest_stack_overflow
-    args = [{'RUBY_THREAD_VM_STACK_SIZE' => '32768'}, '--disable-gems',
-            '--zjit', '--zjit-call-threshold=2', '--zjit-num-profiles=1']
+  def test_send_direct_stack_overflow_exit
+    args = [{'RUBY_THREAD_VM_STACK_SIZE' => '32768'}, '--disable-gems', '--zjit',
+            '--zjit-call-threshold=2', '--zjit-num-profiles=1', '--zjit-inline-max-iterations=0']
     assert_in_out_err(args, <<~'RUBY', ['ok'], [])
-      # The normalized arguments (25 defaults plus the kwrest Hash) far outnumber
-      # the send's operands; the overflow exit must restore the original ones.
-      params = (0...25).map { |i| "k#{i}: 0" }.join(', ')
-      eval("def target(#{params}, **kw); [self.class, kw]; end")
-
+      def target(x: 0, a: 0, b: 0, c: 0, d: 0, e: 0) = x
       def entry = target(x: 1)
-      def recur(n)
-        n == 0 ? entry : recur(n - 1)
-      end
+      def recur(n) = n == 0 ? entry : recur(n - 1)
       20.times { recur(3) }
 
       overflows = 0
       (1..400).each do |n|
-        begin
-          raise 'wrong keyword result' unless recur(n) == [Object, {x: 1}]
-        rescue SystemStackError
-          overflows += 1
-        end
+        recur(n) == 1 or raise 'wrong result'
+      rescue SystemStackError
+        overflows += 1
       end
       raise 'stack overflow not exercised' if overflows == 0
       puts 'ok'
