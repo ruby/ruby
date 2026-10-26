@@ -247,6 +247,15 @@ RSpec.describe Bundler::Override do
         expect { described_class.from_lock(line) }.to raise_error(ArgumentError, /invalid override in lockfile/)
       end
     end
+
+    [
+      %("rails", version: "garbage"),
+      %("b", from: "a", to: "c", version: "garbage"),
+    ].each do |line|
+      it "rejects the ill-formed requirement in #{line}" do
+        expect { described_class.from_lock(line) }.to raise_error(Gem::Requirement::BadRequirementError)
+      end
+    end
   end
 
   describe ".rewrite_dependencies" do

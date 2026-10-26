@@ -246,6 +246,14 @@ RSpec.describe Bundler::LockfileParser do
       end
     end
 
+    context "with an ill-formed requirement in an OVERRIDES line" do
+      let(:lockfile_contents) { super().sub("\nBUNDLED WITH", "\nOVERRIDES\n  \"rake\", version: \"garbage\"\n\nBUNDLED WITH") }
+
+      it "raises a LockfileError pointing at the line" do
+        expect { subject }.to raise_error(Bundler::LockfileError, /error occurred while evaluating #{Regexp.escape(lockfile_path)}:\d+:\d+/)
+      end
+    end
+
     context "when an extra section is at the end" do
       let(:lockfile_contents) { super() + "\n\nFOO BAR\n  baz\n   baa\n    qux\n" }
       include_examples "parsing"

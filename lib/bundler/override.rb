@@ -89,13 +89,13 @@ module Bundler
         unless (keys - [:from, :to, :version]).empty? && fields.key?(:to) && fields[:from].is_a?(String)
           raise ArgumentError, "invalid override in lockfile: #{line.inspect}"
         end
-        new(target, :to, fields[:to], from: fields[:from], requirement: fields[:version])
+        new(target, :to, fields[:to], from: fields[:from], requirement: normalize(fields[:version]))
       else
         field, operation = fields.first
         unless fields.size == 1 && Dsl::SUPPORTED_OVERRIDE_FIELDS.include?(field)
           raise ArgumentError, "invalid override in lockfile: #{line.inspect}"
         end
-        new(target, field, operation)
+        new(target, field, normalize(operation))
       end
     end
 
