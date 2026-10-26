@@ -11730,8 +11730,8 @@ mod hir_opt_tests {
             @a = 0
           end
 
+          ARGF.class.include Reader
           ARGF.instance_eval do
-            extend Reader
             @a = :a
           end
 
@@ -11967,8 +11967,8 @@ mod hir_opt_tests {
             @a = 0
           end
 
+          ARGF.class.include Reader
           ARGF.instance_eval do
-            extend Reader
             @a = :a
           end
 

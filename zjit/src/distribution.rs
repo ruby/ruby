@@ -34,6 +34,11 @@ impl<T: Copy + PartialEq + Default, const N: usize> Distribution<T, N> {
         self.other = self.other.saturating_add(1);
     }
 
+    /// Count an item without recording it, as if all buckets were taken by other items.
+    pub fn observe_other(&mut self) {
+        self.other = self.other.saturating_add(1);
+    }
+
     /// Keep the highest counted bucket at index 0
     fn bubble_up(&mut self) {
         if N == 0 { return; }
