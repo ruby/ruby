@@ -4,6 +4,14 @@ module ProcessSpecs
     ENV["CODEX_CI"] == "1"
   end
 
+  # busybox is a multi-call binary which dispatches on argv[0],
+  # so it cannot run as /bin/sh with an arbitrary argv[0].
+  def self.busybox_sh?
+    File.basename(File.realpath("/bin/sh")) == "busybox"
+  rescue SystemCallError
+    false
+  end
+
   def self.use_system_ruby(context)
     if defined?(MSpecScript::SYSTEM_RUBY)
       context.send(:before, :all) do
