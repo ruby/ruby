@@ -123,6 +123,17 @@ if defined? Zlib
       assert_equal input, Zlib.inflate(chunks.join)
     end
 
+    def test_params_after_failed_deflate
+      z = Zlib::Deflate.new
+      z << "foo"
+      assert_raise(Zlib::StreamError) { z.deflate("bar", 10000) }
+      assert_equal "bar", z.flush_next_in
+
+      z.params(Zlib::BEST_SPEED, Zlib::FILTERED)
+
+      assert_equal "foo", Zlib::Inflate.inflate(z.finish)
+    end
+
     def test_addstr
       z = Zlib::Deflate.new
       z << "foo"
