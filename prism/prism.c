@@ -23255,6 +23255,16 @@ pm_parser_init_shebang(pm_parser_t *parser, const pm_options_t *options, const c
 }
 
 /**
+ * The smallest capacity the constant pool starts with, whatever the source
+ * size suggests. An embedder that interns a fixed set of names into the pool
+ * at every parse (a symbol table) can raise it to that set's size, so the
+ * pool does not grow to hold them and leave each outgrown array in the arena.
+ */
+#ifndef PM_CONSTANT_POOL_MIN_CAPACITY
+#define PM_CONSTANT_POOL_MIN_CAPACITY 4
+#endif
+
+/**
  * Initialize a parser with the given start and end pointers.
  */
 void
@@ -23331,7 +23341,8 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
      * frequency. Resizes are cheap with arena allocation, so we lean toward
      * under-estimating. */
     uint32_t constant_size = ((uint32_t) size) / 120;
-    pm_constant_pool_init(&parser->metadata_arena, &parser->constant_pool, constant_size < 4 ? 4 : constant_size);
+    if (constant_size < PM_CONSTANT_POOL_MIN_CAPACITY) constant_size = PM_CONSTANT_POOL_MIN_CAPACITY;
+    pm_constant_pool_init(&parser->metadata_arena, &parser->constant_pool, constant_size);
 
     /* Initialize the line offset list. Similar to the constant pool, we are
      * going to estimate the number of newlines that we will need based on the
