@@ -924,13 +924,26 @@ opt_new
 ()
 // attr bool leaf = false;
 {
-    VALUE argc = vm_ci_argc(cd->ci);
+    int argc = vm_ci_argc(cd->ci);
     VALUE val = TOPN(argc);
 
     // The bookkeeping slot should be empty.
     RUBY_ASSERT(TOPN(argc + 1) == Qnil);
 
-    if (vm_method_cfunc_is(GET_CFP(), cd, val, rb_class_new_instance_pass_kw)) {
+    if (val == rb_cHash && BASIC_OP_UNREDEFINED_P(BOP_NEW, HASH_REDEFINED_OP_FLAG)) {
+        RB_DEBUG_COUNTER_INC(opt_new_hit);
+
+        rb_len_t capa = 0;
+        VALUE capacity = vm_call_get_kwarg(reg_cfp, cd, idCapacity);
+        if (FIXNUM_P(capacity)) {
+            capa = NUM2LEN(capacity);
+        }
+
+        val = rb_hash_alloc_capa(capa);
+        TOPN(argc) = val;
+        TOPN(argc + 1) = val;
+    }
+    else if (vm_method_cfunc_is(GET_CFP(), cd, val, rb_class_new_instance_pass_kw)) {
         RB_DEBUG_COUNTER_INC(opt_new_hit);
         val = rb_obj_alloc(val);
         TOPN(argc) = val;
