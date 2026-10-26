@@ -942,6 +942,8 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_open_file_with_lock_excludes_late_arrivals_after_handover
+    omit "JRuby on Windows raises EINVAL when two threads flock the same file" if Gem.win_platform? && Gem.java_platform?
+
     path = File.join(@tempdir, "resource")
     events = Queue.new
     release_waiter = Queue.new
