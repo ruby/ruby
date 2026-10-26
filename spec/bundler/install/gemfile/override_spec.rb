@@ -281,6 +281,23 @@ RSpec.describe "override DSL" do
       expect(lockfile).to include("myrack (1.0.0)")
     end
 
+    it "records an override change without fetching from the source" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      gemfile <<-G
+        source "https://gem.repo1"
+        override :all, required_ruby_version: :ignore_upper
+        gem "myrack"
+      G
+
+      FileUtils.rm_rf(compact_index_cache_path)
+      bundle :install, artifice: "fail"
+      expect(lockfile).to include("OVERRIDES\n  :all, required_ruby_version: :ignore_upper\n")
+    end
+
     it "treats equivalent requirement spellings as the same override" do
       install_gemfile <<-G
         source "https://gem.repo1"

@@ -667,8 +667,7 @@ module Bundler
         @locked_spec_with_missing_checksums ||
         empty_checksums_actionable? ||
         @locked_spec_with_missing_deps ||
-        @locked_spec_with_invalid_deps ||
-        @override_changes
+        @locked_spec_with_invalid_deps
     end
 
     def resolve_needed?
@@ -920,6 +919,8 @@ module Bundler
         else
           lockfile_changed_reason
         end
+      elsif @override_changes
+        "the overrides in your gemfile changed"
       else
         "some dependencies were deleted from your gemfile"
       end
@@ -1160,7 +1161,9 @@ module Bundler
 
     # The lockfile records the Gemfile's overrides, so a change to them is a
     # change to the lockfile even when every locked version still satisfies
-    # them.
+    # them. Rewriting the section needs no resolution, so this stays out of
+    # #something_changed?. #write_lock rewrites it because the generated
+    # contents differ, and the frozen check reports it.
     def converge_overrides
       return false unless @locked_gems
 
