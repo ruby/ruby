@@ -20,6 +20,8 @@
 #ifdef BUILDING_MODULAR_GC
 # define nlz_int64(x) (x == 0 ? 64 : (unsigned int)__builtin_clzll((unsigned long long)x))
 # define rb_popcount_intptr(x) ((unsigned int)__builtin_popcountll((unsigned long long)(x)))
+# define rb_popcount32(x) ((unsigned int)__builtin_popcount((unsigned int)(x)))
+# define ntz_int32(x) ((int)((x) == 0 ? 32 : __builtin_ctz((unsigned int)(x))))
 #else
 # include "internal/bits.h"
 #endif
@@ -845,8 +847,8 @@ typedef struct rb_objspace {
 } rb_objspace_t;
 
 /* The one VM-global GC structure; for now it only holds the page pool.  Page bodies are
- * carved out of large mmap arenas and reused via a process-wide freelist (per-page
- * mmap/munmap would serialize on the kernel's mmap_lock).  Leaf lock: no alloc, no GC. */
+ * carved out of large mmap arenas and reused through the pool (per-page mmap/munmap
+ * would serialize on the kernel's mmap_lock).  Leaf lock: no alloc, no GC. */
 typedef struct rb_global_objspace {
     struct {
         rb_nativethread_lock_t lock;
@@ -2612,40 +2614,29 @@ gc_aligned_malloc(size_t alignment, size_t size)
 }
 
 /* The page pool (global_objspace->page_pool): heap page bodies are carved out of large
- * arenas and reused through the pool.  Free bodies sit on per-arena freelists,
- * eligible for OS release (see page_pool_reclaim); a freelist is threaded through
- * indices in the arena descriptor rather than through the bodies, so a free body holds
- * nothing and page_pool_reclaim can advise all of it. */
+ * arenas and reused through the pool.  Each arena descriptor tracks its bodies in two
+ * bitmasks rather than threading a freelist through the bodies themselves, so a free
+ * body holds nothing and page_pool_reclaim can advise all of it. */
 
 #define PAGE_POOL_ARENA_SIZE (HEAP_PAGE_SIZE * 32) /* 2MiB with 64KiB pages */
 #define PAGE_POOL_ARENA_BODIES (PAGE_POOL_ARENA_SIZE / HEAP_PAGE_SIZE) /* 32 */
 #define PAGE_POOL_ARENA_KEEP_HALF (PAGE_POOL_ARENA_BODIES / 2) /* 16 */
 
-#define PAGE_POOL_BODY_NIL ((int8_t)-1)
+#define PAGE_POOL_ALL_BODIES ((uint32_t)((UINT64_C(1) << PAGE_POOL_ARENA_BODIES) - 1))
 
-/* Per-body pool bookkeeping.  It lives in the arena descriptor rather than in the body
- * so that a free body is entirely dead memory: page_pool_reclaim can then advise all of
- * it, and adjacent bodies coalesce into one call. */
-struct page_pool_body_info {
-    int8_t next;             /* next body on the arena's freelist, or PAGE_POOL_BODY_NIL */
-    bool advised;            /* given back to the OS with madvise */
-#if RGENGC_CHECK_MODE > 0
-    bool on_freelist;        /* catches a double release, which would self-link `next` */
-#endif
-};
-
+/* An arena's descriptor: the mapping, plus two bits per body -- free (the pool may hand
+ * it out) and advised (the OS no longer backs it; always a subset of free).  Keeping that
+ * state out of the bodies leaves a free body entirely dead memory, so page_pool_reclaim
+ * can advise all of it and coalesce neighbours.  Bit i is the body at
+ * start + i * HEAP_PAGE_SIZE: both masks are in address order. */
 struct arena_descriptor {
     struct arena_descriptor *next;
     char *start;                  /* usable area, HEAP_PAGE_ALIGN aligned */
     size_t size;                  /* usable bytes (a multiple of HEAP_PAGE_SIZE) */
-    int8_t freelist;              /* head of the free body list, or PAGE_POOL_BODY_NIL */
-    int free_count;               /* bodies on freelist */
-    int advised_count;            /* free bodies with bodies[].advised set */
-    struct page_pool_body_info bodies[PAGE_POOL_ARENA_BODIES];
+    uint32_t free_mask;
+    uint32_t advised_mask;
 };
-STATIC_ASSERT(page_pool_body_index_fits_int8, PAGE_POOL_ARENA_BODIES <= INT8_MAX);
-/* Step A marks the bodies to advise in a uint32_t. */
-STATIC_ASSERT(page_pool_bodies_fit_advise_mask, PAGE_POOL_ARENA_BODIES <= 32);
+STATIC_ASSERT(page_pool_bodies_fit_mask, PAGE_POOL_ARENA_BODIES <= 32);
 
 /* page_pool_reclaim advises whole bodies, so a body has to be a whole number of OS
  * pages: rounding a partial one up would reach into the neighbouring body, which may be
@@ -2738,12 +2729,8 @@ page_pool_add_arena(rb_global_objspace_t *g)
     }
     arena->start = aligned;
     arena->size = PAGE_POOL_ARENA_SIZE;
-    arena->freelist = PAGE_POOL_BODY_NIL;
-    arena->free_count = 0;
-    arena->advised_count = 0;
-    for (int i = 0; i < PAGE_POOL_ARENA_BODIES; i++) {
-        arena->bodies[i].next = PAGE_POOL_BODY_NIL;
-    }
+    arena->free_mask = 0;
+    arena->advised_mask = 0;
     arena->next = g->page_pool.arenas;
     g->page_pool.arenas = arena;
     g->page_pool.arena_count++;
@@ -2769,27 +2756,23 @@ page_pool_acquire(struct arena_descriptor **arena_out)
         rb_native_mutex_lock(&g->page_pool.lock);
         // reuse a free body (it may have been madvised)
         for (struct arena_descriptor *a = g->page_pool.arenas; a; a = a->next) {
-            if (a->free_count > 0) {
-                int i = a->freelist;
-                GC_ASSERT(i != PAGE_POOL_BODY_NIL);
-                struct page_pool_body_info *info = &a->bodies[i];
-                body = page_pool_body_at(a, i);
-                a->freelist = info->next;
-                a->free_count--;
-                info->next = PAGE_POOL_BODY_NIL;
-#if RGENGC_CHECK_MODE > 0
-                GC_ASSERT(info->on_freelist);
-                info->on_freelist = false;
-#endif
-                *arena_out = a;
-                need_reuse = info->advised;
-                if (need_reuse) {
-                    info->advised = false;
-                    a->advised_count--;
-                    g->page_pool.advised_count--;
-                }
-                break;
+            if (a->free_mask == 0) continue;
+
+            /* Prefer a body the OS still backs: that skips both the MADV_FREE_REUSE
+             * handshake and the refault. */
+            uint32_t warm = a->free_mask & ~a->advised_mask;
+            int i = ntz_int32(warm ? warm : a->free_mask);
+            uint32_t bit = (uint32_t)1 << i;
+
+            body = page_pool_body_at(a, i);
+            a->free_mask &= ~bit;
+            *arena_out = a;
+            need_reuse = (a->advised_mask & bit) != 0;
+            if (need_reuse) {
+                a->advised_mask &= ~bit;
+                g->page_pool.advised_count--;
             }
+            break;
         }
         if (body == NULL &&
             (g->page_pool.arena_cursor != g->page_pool.arena_end ||
@@ -2823,19 +2806,12 @@ page_pool_release_locked(struct heap_page_body *body, struct arena_descriptor *a
 {
     ASSERT_PAGE_POOL_LOCKED(global_objspace);
 
-    int i = page_pool_body_index(arena, body);
-    struct page_pool_body_info *info = &arena->bodies[i];
+    uint32_t bit = (uint32_t)1 << page_pool_body_index(arena, body);
 
-    /* The body was in use, so page_pool_acquire has already cleared `advised`. */
-    GC_ASSERT(!info->advised);
-#if RGENGC_CHECK_MODE > 0
-    GC_ASSERT(!info->on_freelist);
-    info->on_freelist = true;
-#endif
+    GC_ASSERT(!(arena->free_mask & bit));    /* double release */
+    GC_ASSERT(!(arena->advised_mask & bit)); /* a body in use is never advised */
 
-    arena->free_count++;
-    info->next = arena->freelist;
-    arena->freelist = (int8_t)i;
+    arena->free_mask |= bit;
     asan_poison_memory_region(body, HEAP_PAGE_SIZE);
 }
 #endif
@@ -2872,17 +2848,12 @@ page_pool_reclaim(rb_global_objspace_t *g)
     rb_native_mutex_lock(&g->page_pool.lock);
 
     /* Step A — advise free bodies (immediate release: drop RSS now if the platform
-     * allows).  The freelist is in release order, so collect the bodies to advise in a
-     * mask and walk it in address order instead, issuing one call per run of physically
-     * adjacent ones: a fully free arena costs one madvise rather than 32. */
+     * allows).  The mask is in address order, so walking it issues one call per run of
+     * physically adjacent bodies: a fully free arena costs one madvise rather than 32. */
     if (g->page_pool.can_advise) {
         for (struct arena_descriptor *a = g->page_pool.arenas; a; a = a->next) {
-            if (a->advised_count == a->free_count) continue; /* steady state */
-
-            uint32_t advise_mask = 0;
-            for (int i = a->freelist; i != PAGE_POOL_BODY_NIL; i = a->bodies[i].next) {
-                if (!a->bodies[i].advised) advise_mask |= (uint32_t)1 << i;
-            }
+            uint32_t advise_mask = a->free_mask & ~a->advised_mask;
+            if (advise_mask == 0) continue; /* steady state */
 
             for (int i = 0; i < PAGE_POOL_ARENA_BODIES; i++) {
                 if (!(advise_mask & ((uint32_t)1 << i))) continue;
@@ -2896,24 +2867,20 @@ page_pool_reclaim(rb_global_objspace_t *g)
 
                 rb_vm_map_reusable_immediate(page_pool_body_at(a, run),
                                              (size_t)run_len * HEAP_PAGE_SIZE, 0);
-                for (int j = run; j <= i; j++) {
-                    a->bodies[j].advised = true;
-                }
-                a->advised_count += run_len;
-                g->page_pool.advised_count += run_len;
             }
+            a->advised_mask |= advise_mask;
+            g->page_pool.advised_count += (int)rb_popcount32(advise_mask);
         }
     }
 
     /* Step B — munmap fully-free arenas (with retention buffer).
      *
-     * total_free = Σ free_count (every free body is on its arena's freelist, since
-     * page_pool_release pushes there unconditionally).  An arena is eligible when all 32
-     * of its bodies are free.  Keep one extra empty arena when the rest of the free pool
-     * is < half an arena, to avoid thrash. */
+     * total_free = Σ popcount(free_mask).  An arena is eligible when all 32 of its
+     * bodies are free.  Keep one extra empty arena when the rest of the free pool is
+     * < half an arena, to avoid thrash. */
     int total_free = 0;
     for (struct arena_descriptor *a = g->page_pool.arenas; a; a = a->next) {
-        total_free += a->free_count;
+        total_free += (int)rb_popcount32(a->free_mask);
     }
 
     bool retained_one = false;
@@ -2921,7 +2888,7 @@ page_pool_reclaim(rb_global_objspace_t *g)
     // munmap fully free arenas
     while (*pp) {
         struct arena_descriptor *a = *pp;
-        if (a->free_count != PAGE_POOL_ARENA_BODIES) {
+        if (a->free_mask != PAGE_POOL_ALL_BODIES) {
             pp = &a->next;
             continue;
         }
@@ -2938,7 +2905,7 @@ page_pool_reclaim(rb_global_objspace_t *g)
             rb_bug("page_pool_reclaim: munmap failed");
         }
         total_free -= PAGE_POOL_ARENA_BODIES;
-        g->page_pool.advised_count -= a->advised_count;
+        g->page_pool.advised_count -= (int)rb_popcount32(a->advised_mask);
         GC_ASSERT(g->page_pool.advised_count >= 0);
         g->page_pool.arena_count--;
         g->page_pool.arenas_unmapped++;
