@@ -1500,6 +1500,39 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_socket_minmax_version
+    start_server { |port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.sync_close = true
+      ssl.min_version = ssl.max_version = :TLS1_2
+      ssl.connect
+      assert_equal("TLSv1.2", ssl.ssl_version)
+      ssl.close
+    }
+
+    # Invalid
+    IO.pipe { |r, _w|
+      ssl = OpenSSL::SSL::SSLSocket.new(r)
+      assert_raise(ArgumentError) { ssl.min_version = :bogus }
+      assert_raise(ArgumentError) { ssl.max_version = :bogus }
+    }
+  end
+
+  def test_socket_minmax_version_server
+    sctx = make_server_context
+    server_proc = -> sock {
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, sctx)
+      ssl.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      ssl.accept
+    }
+    start_server_proc(server_proc) { |port|
+      server_connect(port) { |ssl|
+        assert_equal("TLSv1.2", ssl.ssl_version)
+      }
+    }
+  end
+
   def test_minmax_version_system_default
     omit "LibreSSL and AWS-LC do not support OPENSSL_CONF" if libressl? || aws_lc?
 
