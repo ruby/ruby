@@ -2,6 +2,7 @@
 require 'test/unit'
 EnvUtil.suppress_warning {require 'continuation'}
 require 'stringio'
+require_relative '../lib/parser_support'
 
 class TestEnumerable < Test::Unit::TestCase
   def setup
@@ -229,7 +230,9 @@ class TestEnumerable < Test::Unit::TestCase
 
   # Regression tests for the to_h pair-literal block optimization
   # (to_h { |*| [key, value] } stores pairs without a per-element array).
-  def test_to_h_block_pair_literal_semantics
+
+  # A block that escapes as a Proc is not the core yield.
+  def test_to_h_block_pair_literal_escaped_block
     # A block captured as a Proc by a user-defined to_h must keep returning
     # the pair array and must not write into some other to_h result hash.
     capture = Class.new do
@@ -244,18 +247,10 @@ class TestEnumerable < Test::Unit::TestCase
     frozen = [1].to_h { |x| [x, x] }.freeze
     assert_equal([3, 3], escaped.call(3))
     assert_equal({1 => 1}, frozen)
+  end
 
-    # A custom each can observe the value yielded back to it; the optimized
-    # path must keep yielding the result hash, as the unoptimized one did.
-    enum = Class.new do
-      include Enumerable
-      def each
-        yielded = yield 1
-        yield yielded.class
-      end
-    end.new
-    assert_equal({1 => 1, Hash => Hash}, enum.to_h { |x| [x, x] })
-
+  # :b_return observes the block value, so traced blocks return arrays.
+  def test_to_h_block_pair_literal_b_return_trace
     # :b_return tracing observes the block return value, so it must see the
     # pair arrays rather than the result hash.
     values = []
@@ -297,6 +292,23 @@ class TestEnumerable < Test::Unit::TestCase
     end
     assert_equal([[1, 1], [2, 2]], values)
 
+    # Enabling tracing from inside key.hash happens after the block has
+    # returned, so it must not add an extra :b_return observation.
+    values = []
+    trace = TracePoint.new(:b_return) { |tp| values << tp.return_value }
+    key = Object.new
+    key.define_singleton_method(:hash) { trace.enable; 123 }
+    begin
+      key_hash = [key].to_h { |x| [x, 1] }
+    ensure
+      trace.disable
+    end
+    assert_equal([Integer], values.map(&:class))
+    assert_equal(1, key_hash.size)
+  end
+
+  # Only the yield in progress may submit; other runs of the same site may not.
+  def test_to_h_block_pair_literal_reused_call_site
     # Reusing the same call site: the first receiver captures the block, the
     # second is the core to_h on the same syntactic call.
     receivers = [Class.new { def to_h(&b); b; end }.new, [1]]
@@ -332,7 +344,10 @@ class TestEnumerable < Test::Unit::TestCase
       end
     end
     assert_equal([3, 3], wrapper.new.to_h { |x| [x == 1 ? raise("boom") : x, x] })
+  end
 
+  # Pair storage is on the C stack, so an env moved to the heap keeps working.
+  def test_to_h_block_pair_literal_env_escape
     # A lambda (or binding) created inside the block moves the enclosing
     # env to the heap.  The core to_h must still read the pair that
     # to_h_aset wrote, so keys are not lost.  Run from a method so the
@@ -350,7 +365,10 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, 2], env_mover.binding_in((1..2)).keys)
     struct_recv = Struct.new(:a, :b).new(1, 2)
     assert_equal([:a, :b], env_mover.lambda_in(struct_recv).keys)
+  end
 
+  # The same iseq called during a core yield, but not as it, returns a pair.
+  def test_to_h_block_pair_literal_same_iseq_during_yield
     # A Proc captured from the same call site, invoked while core to_h is
     # running but not as that yield, must still return a pair array.
     capture = Class.new { def to_h(&b); b; end }.new
@@ -386,52 +404,16 @@ class TestEnumerable < Test::Unit::TestCase
       saved = result if i == 0
       i += 1
     end
-    if RubyVM::InstructionSequence.compile("").to_a.dig(4, :parser) == :prism
+    if ParserSupport.prism_enabled?
       assert_match(/to_h_aset/, RubyVM::InstructionSequence.of(saved).disasm)
     end
     assert_equal({1 => [9, 9]}, result)
+  end
 
-    # Enumerable#each may save the core callback and invoke it after
-    # to_h returns.  Later calls insert into the same result hash
-    # (the unoptimized path's behaviour); they must not crash on a
-    # dangling C-stack pointer.
-    saved_each = Class.new do
-      include Enumerable
-      attr_reader :callback
-      def each(&block)
-        @callback = block
-        block.call(1)
-      end
-    end.new
-    saved_h = saved_each.to_h { |x| [x, x] }
-    assert_equal({1 => 1}, saved_h)
-    assert_same(saved_h, saved_each.callback.call(2))
-    assert_equal({1 => 1, 2 => 2}, saved_h)
-    assert_equal({1 => 1, 2 => 2, 3 => 3}, saved_each.callback.call(3))
-    5.times { GC.start }
-    assert_equal({1 => 1, 2 => 2, 3 => 3, 4 => 4}, saved_each.callback.call(4))
-    fiber_h = Fiber.new { saved_each.callback.call(5) }.resume
-    assert_same(saved_h, fiber_h)
-    assert_equal({1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5}, saved_h)
-
-    # next returning the result hash itself must not be treated as a
-    # submitted pair (it would reuse the previous key/value).
-    enum_exposing_hash = Class.new do
-      include Enumerable
-      attr_accessor :exposed
-      def each
-        self.exposed = yield 1
-        yield 2
-      end
-    end.new
-    assert_raise(TypeError) {
-      enum_exposing_hash.to_h { |x| [begin; next enum_exposing_hash.exposed if x == 2; x; end, x] }
-    }
-
+  def test_to_h_block_pair_literal_no_pinning
     # Pair storage must not pin the last value after to_h returns, even
     # if a closure keeps the enclosing environment alive.  `o` lives only
-    # in the block; the lambda captures the method env that used to hold
-    # hidden key/value locals.
+    # in the block, and the lambda keeps the method env alive.
     w = ObjectSpace::WeakMap.new
     pin = Object.new
     def pin.run(w)
@@ -442,23 +424,11 @@ class TestEnumerable < Test::Unit::TestCase
     5.times { GC.start }
     assert_equal(0, w.size)
     keep.call
+  end
 
+  def test_to_h_block_pair_literal_nested
     # Nested pair-literal to_h must not clobber the outer pair.
     assert_equal({1 => {2 => 2}}, [1].to_h { |x| [x, [2].to_h { |y| [y, y] }] })
-
-    # Enabling tracing from inside key.hash happens after the block has
-    # returned, so it must not add an extra :b_return observation.
-    values = []
-    trace = TracePoint.new(:b_return) { |tp| values << tp.return_value }
-    key = Object.new
-    key.define_singleton_method(:hash) { trace.enable; 123 }
-    begin
-      key_hash = [key].to_h { |x| [x, 1] }
-    ensure
-      trace.disable
-    end
-    assert_equal([Integer], values.map(&:class))
-    assert_equal(1, key_hash.size)
   end
 
   # Cases where the pair-literal block must fall back to exactly the
@@ -493,6 +463,20 @@ class TestEnumerable < Test::Unit::TestCase
     hash = Class.new.tap { _1.define_method(:hash, &s.saved) }
     e = assert_raise(TypeError) { site.([hash.new]) }
     assert_equal("no implicit conversion of Array into Integer", e.message)
+
+    # next returning the result hash itself must not be treated as a
+    # submitted pair (it would reuse the previous key/value).
+    enum_exposing_hash = Class.new do
+      include Enumerable
+      attr_accessor :exposed
+      def each
+        self.exposed = yield 1
+        yield 2
+      end
+    end.new
+    assert_raise(TypeError) {
+      enum_exposing_hash.to_h { |x| [begin; next enum_exposing_hash.exposed if x == 2; x; end, x] }
+    }
   end
 
   # Enumerable#to_h's callback finds the pair ctx through the EC; it must
@@ -503,6 +487,40 @@ class TestEnumerable < Test::Unit::TestCase
       def initialize(&b) = @b = b
       def each(&blk) = @b.(blk)
     end
+
+    # A custom each can observe the value yielded back to it; the optimized
+    # path must keep yielding the result hash, as the unoptimized one did.
+    observer = Class.new do
+      include Enumerable
+      def each
+        yielded = yield 1
+        yield yielded.class
+      end
+    end.new
+    assert_equal({1 => 1, Hash => Hash}, observer.to_h { |x| [x, x] })
+
+    # Enumerable#each may save the core callback and invoke it after
+    # to_h returns.  Later calls insert into the same result hash
+    # (the unoptimized path's behaviour); they must not crash on a
+    # dangling C-stack pointer.
+    saved_each = Class.new do
+      include Enumerable
+      attr_reader :callback
+      def each(&block)
+        @callback = block
+        block.call(1)
+      end
+    end.new
+    saved_h = saved_each.to_h { |x| [x, x] }
+    assert_equal({1 => 1}, saved_h)
+    assert_same(saved_h, saved_each.callback.call(2))
+    assert_equal({1 => 1, 2 => 2}, saved_h)
+    assert_equal({1 => 1, 2 => 2, 3 => 3}, saved_each.callback.call(3))
+    5.times { GC.start }
+    assert_equal({1 => 1, 2 => 2, 3 => 3, 4 => 4}, saved_each.callback.call(4))
+    fiber_h = Fiber.new { saved_each.callback.call(5) }.resume
+    assert_same(saved_h, fiber_h)
+    assert_equal({1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5}, saved_h)
 
     # each rescues an error raised in the block and keeps going
     assert_equal({2 => 2}, enum.new { |b| (b.(1) rescue nil); b.(2) }.to_h { |x| [x, x == 1 ? raise("boom") : x] })

@@ -7,6 +7,7 @@ require 'test/unit'
 require 'envutil'
 require 'tmpdir'
 require_relative '../lib/jit_support'
+require_relative '../lib/parser_support'
 
 return unless JITSupport.yjit_supported?
 
@@ -251,8 +252,7 @@ class TestYJIT < Test::Unit::TestCase
   def test_compile_to_h_aset
     # Prism compiles a pair-literal to_h block with to_h_aset; parse.y
     # keeps newarray.
-    prism = RubyVM::InstructionSequence.compile("").to_a.dig(4, :parser) == :prism
-    insns = prism ? %i[to_h_aset] : %i[newarray]
+    insns = ParserSupport.prism_enabled_in_subprocess? ? %i[to_h_aset] : %i[newarray]
     assert_compiles('[1, 2].to_h { |x| [x, x * 2] }', insns:, result: {1 => 2, 2 => 4})
     assert_compiles('{a: 1}.to_h { |k, v| [v, k] }', insns:, result: {1 => :a})
     # Not yielded by a core to_h: the block returns the pair array.

@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require_relative '../lib/parser_support'
 
 class TestAllocation < Test::Unit::TestCase
   def setup
@@ -82,7 +83,7 @@ class TestAllocation < Test::Unit::TestCase
     def test_no_pair_array_allocation_with_to_h_block
       # Prism emits to_h_aset for a pair-literal block; parse.y still
       # compiles newarray 2, so each of the three elements allocates.
-      pair_arrays = RubyVM::InstructionSequence.compile("").to_a.dig(4, :parser) == :prism ? 0 : 3
+      pair_arrays = ParserSupport.prism_enabled_in_subprocess? ? 0 : 3
       check_allocations(<<~RUBY)
         _array = [1, 2, 3]
         check_allocations(#{pair_arrays}, 1, "_array.to_h { |x| [x, x] }")
