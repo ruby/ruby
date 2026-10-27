@@ -1379,29 +1379,29 @@ iter_lev_in_ivar(VALUE hash)
 {
     VALUE levval = rb_ivar_get(hash, id_hash_iter_lev);
     HASH_ASSERT(FIXNUM_P(levval));
-    long lev = FIX2LONG(levval);
+    rb_len_t lev = FIX2LEN(levval);
     HASH_ASSERT(lev >= 0);
-    return (unsigned long)lev;
+    return (rb_ulen_t)lev;
 }
 
 void rb_ivar_set_internal(VALUE obj, ID id, VALUE val);
 
 static void
-iter_lev_in_ivar_set(VALUE hash, unsigned long lev)
+iter_lev_in_ivar_set(VALUE hash, rb_ulen_t lev)
 {
     HASH_ASSERT(lev >= RHASH_LEV_MAX);
     HASH_ASSERT(POSFIXABLE(lev)); /* POSFIXABLE means fitting to long */
-    rb_ivar_set_internal(hash, id_hash_iter_lev, LONG2FIX((long)lev));
+    rb_ivar_set_internal(hash, id_hash_iter_lev, LEN2FIX((rb_len_t)lev));
 }
 
-static inline unsigned long
+static inline unsigned int
 iter_lev_in_flags(VALUE hash)
 {
-    return (unsigned long)((RBASIC(hash)->flags >> RHASH_LEV_SHIFT) & RHASH_LEV_MAX);
+    return (unsigned int)((RBASIC(hash)->flags >> RHASH_LEV_SHIFT) & RHASH_LEV_MAX);
 }
 
 static inline void
-iter_lev_in_flags_set(VALUE hash, unsigned long lev)
+iter_lev_in_flags_set(VALUE hash, rb_ulen_t lev)
 {
     HASH_ASSERT(lev <= RHASH_LEV_MAX);
     RBASIC(hash)->flags = ((RBASIC(hash)->flags & ~RHASH_LEV_MASK) | ((VALUE)lev << RHASH_LEV_SHIFT));
@@ -1416,7 +1416,7 @@ hash_iterating_p(VALUE hash)
 static void
 hash_iter_lev_inc(VALUE hash)
 {
-    unsigned long lev = iter_lev_in_flags(hash);
+    rb_ulen_t lev = iter_lev_in_flags(hash);
     if (lev == RHASH_LEV_MAX) {
         lev = iter_lev_in_ivar(hash) + 1;
         if (!POSFIXABLE(lev)) { /* paranoiac check */
@@ -1434,7 +1434,7 @@ hash_iter_lev_inc(VALUE hash)
 static void
 hash_iter_lev_dec(VALUE hash)
 {
-    unsigned long lev = iter_lev_in_flags(hash);
+    rb_ulen_t lev = iter_lev_in_flags(hash);
     if (lev == RHASH_LEV_MAX) {
         lev = iter_lev_in_ivar(hash);
         if (lev > RHASH_LEV_MAX) {
@@ -6063,7 +6063,7 @@ static VALUE
 rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
 {
     char **env;
-    long cnt = 0;
+    size_t cnt = 0;
 
     ENV_LOCKING() {
         env = GET_ENVIRON(environ);
@@ -6075,7 +6075,7 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
         FREE_ENVIRON(environ);
     }
 
-    return LONG2FIX(cnt);
+    return SIZET2NUM(cnt);
 }
 
 /*

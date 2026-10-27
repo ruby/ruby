@@ -832,7 +832,7 @@ rand_mt_load(VALUE obj, VALUE dump)
     rb_random_mt_t *rnd = rb_check_typeddata(obj, &random_mt_type);
     struct MT *mt = &rnd->mt;
     VALUE state, left = INT2FIX(1), seed = INT2FIX(0);
-    unsigned long x;
+    rb_len_t x;
 
     rb_check_copyable(obj, dump);
     Check_Type(dump, T_ARRAY);
@@ -850,12 +850,12 @@ rand_mt_load(VALUE obj, VALUE dump)
     rb_integer_pack(state, mt->state, numberof(mt->state),
         sizeof(*mt->state), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
-    x = NUM2ULONG(left);
-    if (x > numberof(mt->state) || x == 0) {
+    x = NUM2LEN(left);
+    if (x > numberof(mt->state) || x <= 0) {
         rb_raise(rb_eArgError, "wrong value");
     }
     mt->left = (unsigned int)x;
-    mt->next = mt->state + numberof(mt->state) - x + 1;
+    mt->next = mt->state + numberof(mt->state) - (unsigned int)x + 1;
     RB_OBJ_WRITE(obj, &rnd->base.seed, rb_to_int(seed));
 
     return obj;
@@ -1132,15 +1132,15 @@ rb_random_real(VALUE obj)
 }
 
 static inline VALUE
-ulong_to_num_plus_1(unsigned long n)
+ulen_to_num_plus_1(rb_ulen_t n)
 {
-#if HAVE_LONG_LONG
+#if HAVE_LONG_LONG && SIZEOF_LONG_LONG > SIZEOF_RB_LEN_T
     return ULL2NUM((LONG_LONG)n+1);
 #else
-    if (n >= ULONG_MAX) {
-        return rb_big_plus(ULONG2NUM(n), INT2FIX(1));
+    if (n >= RB_LEN_MAX) {
+        return rb_big_plus(ULEN2NUM(n), INT2FIX(1));
     }
-    return ULONG2NUM(n+1);
+    return ULEN2NUM(n+1);
 #endif
 }
 
@@ -1187,14 +1187,14 @@ rb_random_ulen_limited(VALUE obj, rb_ulen_t limit)
     const rb_random_interface_t *rng;
     rb_random_t *rnd = try_get_rnd(obj, &rng);
     if (!rnd) {
-        VALUE lim = ulong_to_num_plus_1(limit);
+        VALUE lim = ulen_to_num_plus_1(limit);
         VALUE v = rb_to_int(rb_funcallv_public(obj, id_rand, 1, &lim));
-        unsigned long r = NUM2ULONG(v);
+        rb_ulen_t r = NUM2ULEN(v);
         if (rb_num_negative_p(v)) {
-            rb_raise(rb_eRangeError, "random number too small %ld", r);
+            rb_raise(rb_eRangeError, "random number too small %" PRIdLEN, r);
         }
         if (r > limit) {
-            rb_raise(rb_eRangeError, "random number too big %ld", r);
+            rb_raise(rb_eRangeError, "random number too big %" PRIdLEN, r);
         }
         return r;
     }
@@ -1396,7 +1396,7 @@ check_random_number(VALUE v, const VALUE *argv)
 {
     switch (v) {
       case Qfalse:
-        (void)NUM2LONG(argv[0]);
+        (void)NUM2LEN(argv[0]);
         break;
       case Qnil:
         invalid_argument(argv[0]);

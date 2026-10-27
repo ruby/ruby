@@ -1366,7 +1366,7 @@ nurat_round_half_even(VALUE self)
     qr = rb_int_divmod(num, den);
     num = RARRAY_AREF(qr, 0);
     if (INT_ZERO_P(RARRAY_AREF(qr, 1)))
-        num = rb_int_and(num, LONG2FIX(((int)~1)));
+        num = rb_int_and(num, INT2FIX(((int)~1)));
 
     if (neg)
         num = rb_int_uminus(num);

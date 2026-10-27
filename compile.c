@@ -109,7 +109,7 @@ typedef struct iseq_adjust_data {
 typedef struct iseq_trace_data {
     LINK_ELEMENT link;
     rb_event_flag_t event;
-    long data;
+    rb_len_t data;
 } TRACE;
 
 struct ensure_range {
@@ -504,7 +504,7 @@ static int calc_sp_depth(int depth, INSN *iobj);
 static INSN *new_insn_body(rb_iseq_t *iseq, int line_no, int node_id, enum ruby_vminsn_type insn_id, int argc, ...);
 static LABEL *new_label_body(rb_iseq_t *iseq, long line);
 static ADJUST *new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line);
-static TRACE *new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event, long data);
+static TRACE *new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event, rb_len_t data);
 
 
 static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor, const NODE *n, int);
@@ -717,17 +717,17 @@ add_trace_branch_coverage(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const rb_code
 
     VALUE key = INT2FIX(branch_id);
     VALUE branch = rb_hash_aref(branches, key);
-    long counter_idx;
+    rb_len_t counter_idx;
 
     if (NIL_P(branch)) {
         branch = setup_branch(loc, type, branches, key);
         VALUE counters = RARRAY_AREF(ISEQ_BRANCH_COVERAGE(iseq), 1);
         counter_idx = RARRAY_LEN(counters);
-        rb_ary_push(branch, LONG2FIX(counter_idx));
+        rb_ary_push(branch, LEN2FIX(counter_idx));
         rb_ary_push(counters, INT2FIX(0));
     }
     else {
-        counter_idx = FIX2LONG(RARRAY_AREF(branch, 5));
+        counter_idx = FIX2LEN(RARRAY_AREF(branch, 5));
     }
 
     ADD_TRACE_WITH_DATA(seq, RUBY_EVENT_COVERAGE_BRANCH, counter_idx);
@@ -1385,7 +1385,7 @@ debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor, LINK_ELEMENT *cur)
 #endif
 
 static TRACE *
-new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event, long data)
+new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event, rb_len_t data)
 {
     TRACE *trace = compile_data_alloc_trace(iseq);
 
@@ -2700,7 +2700,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     LINK_ELEMENT *list;
     VALUE *generated_iseq;
     rb_event_flag_t events = 0;
-    long data = 0;
+    rb_len_t data = 0;
 
     int insn_num, code_index, insns_info_index, sp = 0;
     int stack_max = fix_sp_depth(iseq, anchor);
@@ -2730,7 +2730,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                         while (RARRAY_LEN(ISEQ_PC2BRANCHINDEX(iseq)) <= code_index) {
                             rb_ary_push(ISEQ_PC2BRANCHINDEX(iseq), Qnil);
                         }
-                        RARRAY_ASET(ISEQ_PC2BRANCHINDEX(iseq), code_index, INT2FIX(data));
+                        RARRAY_ASET(ISEQ_PC2BRANCHINDEX(iseq), code_index, LEN2FIX(data));
                     }
                 }
                 code_index += insn_data_length(iobj);
@@ -4052,7 +4052,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, struct unreachable_unref *unref, LINK_EL
                 }
             }
             else {
-                long diff = FIX2LONG(op1) - FIX2LONG(op2);
+                rb_len_t diff = FIX2LEN(op1) - FIX2LEN(op2);
                 INSN_OF(iobj) = BIN(opt_reverse);
                 OPERAND_AT(iobj, 0) = OPERAND_AT(next, 0);
 
@@ -4132,7 +4132,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, struct unreachable_unref *unref, LINK_EL
             INSN *next = (INSN *)iobj->link.next;
             if (OPERAND_AT(next, 1) == INT2FIX(1)) {
                 VALUE src = OPERAND_AT(iobj, 0);
-                int opt = (int)FIX2LONG(OPERAND_AT(next, 0));
+                int opt = (int)FIX2LEN(OPERAND_AT(next, 0));
                 VALUE path = rb_iseq_path(iseq);
                 int line = iobj->insn_info.line_no;
                 VALUE re = iseq_reg_compile(iseq, src, opt, RSTRING_PTR(path), line);
@@ -5754,7 +5754,7 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
         double ival;
 
         if (modf(RFLOAT_VALUE(v), &ival) == 0.0) {
-            return FIXABLE(ival) ? LONG2FIX((long)ival) : rb_dbl2big(ival);
+            return FIXABLE(ival) ? LEN2FIX((rb_len_t)ival) : rb_dbl2big(ival);
         }
         return v;
       }
@@ -11049,7 +11049,7 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
             long len = RNODE_LIST(RNODE_HASH(node)->nd_head)->as.nd_alen;
             RBIMPL_ASSERT_OR_ASSUME(len >= 0);
             RBIMPL_ASSERT_OR_ASSUME(RB_POSFIXABLE(len));
-            ADD_INSN1(anchor, node, newhash, LONG2FIX(len));
+            ADD_INSN1(anchor, node, newhash, LEN2FIX(len));
         }
         *value_p = Qundef;
         *shareable_literal_p = 0;
@@ -11066,7 +11066,7 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
             long len = RNODE_LIST(RNODE_HASH(node)->nd_head)->as.nd_alen;
             RBIMPL_ASSERT_OR_ASSUME(len >= 0);
             RBIMPL_ASSERT_OR_ASSUME(RB_POSFIXABLE(len));
-            ADD_INSN1(anchor, node, newhash, LONG2FIX(len));
+            ADD_INSN1(anchor, node, newhash, LEN2FIX(len));
         }
         CHECK(compile_make_shareable_node(iseq, ret, anchor, node, false));
         *value_p = Qundef;
@@ -12485,12 +12485,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                         break;
                       case TS_FUNCPTR:
                         {
-#if SIZEOF_VALUE <= SIZEOF_LONG
-                            long funcptr = NUM2LONG(op);
-#else
-                            LONG_LONG funcptr = NUM2LL(op);
-#endif
-                            argv[j] = (VALUE)funcptr;
+                            argv[j] = NUM2FUNCPTR(op);
                         }
                         break;
                       default:
@@ -12672,7 +12667,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
             tbl[i] = 0;
         }
         else {
-            tbl[i] = FIXNUM_P(lv) ? (ID)FIX2LONG(lv) : SYM2ID(CHECK_SYMBOL(lv));
+            tbl[i] = FIXNUM_P(lv) ? (ID)FIX2LEN(lv) : SYM2ID(CHECK_SYMBOL(lv));
         }
     }
 
@@ -13101,7 +13096,7 @@ ibf_load_id(const struct ibf_load *load, const ID id_index)
     VALUE sym = ibf_load_object(load, id_index);
     if (rb_integer_type_p(sym)) {
         /* Load hidden local variables as indexes */
-        return NUM2ULONG(sym);
+        return NUM2ULEN(sym);
     }
     return rb_sym2id(sym);
 }
@@ -13632,7 +13627,7 @@ ibf_dump_local_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
         VALUE v = ibf_dump_id(dump, body->local_table[i]);
         if (v == 0) {
             /* Dump hidden local variables as indexes, so load_from_binary will work with them */
-            v = ibf_dump_object(dump, ULONG2NUM(body->local_table[i]));
+            v = ibf_dump_object(dump, ULEN2NUM(body->local_table[i]));
         }
         table[i] = v;
     }

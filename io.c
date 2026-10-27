@@ -11413,7 +11413,7 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
  typedef IOCTL_REQ_TYPE ioctl_req_t;
 #else
  typedef int ioctl_req_t;
-# define NUM2IOCTLREQ(num) ((int)NUM2LONG(num))
+# define NUM2IOCTLREQ(num) NUM2INT(num)
 #endif
 
 #ifdef HAVE_IOCTL
@@ -11471,10 +11471,10 @@ linux_iocparm_len(ioctl_req_t cmd)
 #endif
 
 #ifdef HAVE_IOCTL
-static long
+static size_t
 ioctl_narg_len(ioctl_req_t cmd)
 {
-    long len;
+    size_t len;
 
 #ifdef IOCPARM_MASK
 #ifndef IOCPARM_LEN
@@ -11502,10 +11502,10 @@ typedef long fcntl_arg_t;
 typedef int fcntl_arg_t;
 #endif
 
-static long
+static size_t
 fcntl_narg_len(ioctl_req_t cmd)
 {
-    long len;
+    size_t len;
 
     switch (cmd) {
 #ifdef F_DUPFD
@@ -11622,7 +11622,7 @@ fcntl_narg_len(ioctl_req_t cmd)
     return len;
 }
 #else /* HAVE_FCNTL */
-static long
+static size_t
 fcntl_narg_len(ioctl_req_t cmd)
 {
     return 0;
@@ -11631,17 +11631,17 @@ fcntl_narg_len(ioctl_req_t cmd)
 
 #define NARG_SENTINEL 17
 
-static long
-setup_narg(ioctl_req_t cmd, VALUE *argp, long (*narg_len)(ioctl_req_t))
+static SIGNED_VALUE
+setup_narg(ioctl_req_t cmd, VALUE *argp, size_t (*narg_len)(ioctl_req_t))
 {
-    long narg = 0;
+    SIGNED_VALUE narg = 0;
     VALUE arg = *argp;
 
     if (!RTEST(arg)) {
         narg = 0;
     }
     else if (FIXNUM_P(arg)) {
-        narg = FIX2LONG(arg);
+        narg = FIX2LEN(arg);
     }
     else if (arg == Qtrue) {
         narg = 1;
@@ -11650,11 +11650,11 @@ setup_narg(ioctl_req_t cmd, VALUE *argp, long (*narg_len)(ioctl_req_t))
         VALUE tmp = rb_check_string_type(arg);
 
         if (NIL_P(tmp)) {
-            narg = NUM2LONG(arg);
+            narg = NUM2LEN(arg);
         }
         else {
             char *ptr;
-            long req_len;
+            size_t req_len;
             rb_len_t slen;
 
             *argp = arg = tmp;
@@ -11663,7 +11663,7 @@ setup_narg(ioctl_req_t cmd, VALUE *argp, long (*narg_len)(ioctl_req_t))
 
             slen = RSTRING_LEN(arg);
             /* expand for data + sentinel. */
-            if (slen < req_len+1) {
+            if ((size_t)slen < req_len+1) {
                 rb_str_resize(arg, req_len+1);
                 MEMZERO(RSTRING_PTR(arg)+slen, char, req_len-slen);
                 slen = req_len+1;
@@ -11671,7 +11671,7 @@ setup_narg(ioctl_req_t cmd, VALUE *argp, long (*narg_len)(ioctl_req_t))
             /* a little sanity check here */
             ptr = RSTRING_PTR(arg);
             ptr[slen - 1] = NARG_SENTINEL;
-            narg = (long)(SIGNED_VALUE)ptr;
+            narg = (SIGNED_VALUE)ptr;
         }
     }
 
@@ -11700,7 +11700,7 @@ rb_ioctl(VALUE io, VALUE req, VALUE arg)
 {
     ioctl_req_t cmd = NUM2IOCTLREQ(req);
     rb_io_t *fptr;
-    long narg;
+    SIGNED_VALUE narg;
     int retval;
 
     narg = setup_narg(cmd, &arg, ioctl_narg_len);
@@ -11743,7 +11743,7 @@ rb_io_ioctl(int argc, VALUE *argv, VALUE io)
 struct fcntl_arg {
     int		fd;
     int 	cmd;
-    long	narg;
+    SIGNED_VALUE narg;
 };
 
 static VALUE
@@ -11759,7 +11759,7 @@ nogvl_fcntl(void *ptr)
 }
 
 static int
-do_fcntl(struct rb_io *io, int cmd, long narg)
+do_fcntl(struct rb_io *io, int cmd, SIGNED_VALUE narg)
 {
     int retval;
     struct fcntl_arg arg;
@@ -11789,7 +11789,7 @@ rb_fcntl(VALUE io, VALUE req, VALUE arg)
 {
     int cmd = NUM2INT(req);
     rb_io_t *fptr;
-    long narg;
+    SIGNED_VALUE narg;
     int retval;
 
     narg = setup_narg(cmd, &arg, fcntl_narg_len);

@@ -36,6 +36,11 @@
 
 static char *fmt_setup(char*,size_t,int,int,int,int);
 static char *ruby_ultoa(unsigned long val, char *endp, int base, int octzero);
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+static char *ruby_ulentoa(rb_ulen_t val, char *endp, int base, int octzero);
+#else
+# define ruby_ulentoa ruby_ultoa
+#endif
 
 static char
 sign_bits(int base, const char *p)
@@ -582,11 +587,11 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
             {
                 volatile VALUE val = GETARG();
                 int valsign;
-                char nbuf[BIT_DIGITS(SIZEOF_LONG*CHAR_BIT)+2], *s;
+                char nbuf[BIT_DIGITS(SIZEOF_RB_LEN_T*CHAR_BIT)+2], *s;
                 const char *prefix = 0;
                 int sign = 0, dots = 0;
                 char sc = 0;
-                long v = 0;
+                rb_len_t v = 0;
                 int base, bignum = 0;
                 int len;
 
@@ -622,7 +627,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                 switch (TYPE(val)) {
                   case T_FLOAT:
                     if (FIXABLE(RFLOAT_VALUE(val))) {
-                        val = LONG2FIX((long)RFLOAT_VALUE(val));
+                        val = LEN2FIX((rb_len_t)RFLOAT_VALUE(val));
                         goto bin_retry;
                     }
                     val = rb_dbl2big(RFLOAT_VALUE(val));
@@ -636,7 +641,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                     bignum = 1;
                     break;
                   case T_FIXNUM:
-                    v = FIX2LONG(val);
+                    v = FIX2LEN(val);
                     break;
                   default:
                     val = rb_Integer(val);
@@ -729,7 +734,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                         sc = ' ';
                         width--;
                     }
-                    s = ruby_ultoa((unsigned long)v, nbuf + sizeof(nbuf), 10, 0);
+                    s = ruby_ulentoa((rb_ulen_t)v, nbuf + sizeof(nbuf), 10, 0);
                     len = (int)(nbuf + sizeof(nbuf) - s);
                 }
                 else {
@@ -841,8 +846,8 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                 if (!(flags&FPREC)) prec = default_float_precision;
                 if (FIXNUM_P(num)) {
                     if ((SIGNED_VALUE)num < 0) {
-                        long n = -FIX2LONG(num);
-                        num = LONG2NUM(n);
+                        rb_len_t n = -FIX2LEN(num);
+                        num = LEN2NUM(n);
                         sign = -1;
                     }
                 }
@@ -1047,6 +1052,16 @@ ruby_ultoa(unsigned long val, char *endp, int base, int flags)
     int octzero = flags & FSHARP;
     return BSD__ultoa(val, endp, base, octzero, xdigs);
 }
+
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+static char *
+ruby_ulentoa(rb_ulen_t val, char *endp, int base, int flags)
+{
+    const char *xdigs = lower_hexdigits;
+    int octzero = flags & FSHARP;
+    return BSD__uqtoa((unsigned LONG_LONG)val, endp, base, octzero, xdigs);
+}
+#endif
 
 static int ruby_do_vsnprintf(char *str, size_t n, const char *fmt, va_list ap);
 

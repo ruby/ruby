@@ -1347,7 +1347,7 @@ rb_iseq_compile_iseq(VALUE str, VALUE fname)
 #define CHECK_HASH(v)    rb_to_hash_type(v)
 #define CHECK_STRING(v)  rb_str_to_str(v)
 #define CHECK_SYMBOL(v)  rb_to_symbol_type(v)
-static inline VALUE CHECK_INTEGER(VALUE v) {(void)NUM2LONG(v); return v;}
+static inline VALUE CHECK_INTEGER(VALUE v) {(void)NUM2LEN(v); return v;}
 
 static enum rb_iseq_type
 iseq_type_from_sym(VALUE type)
@@ -3743,22 +3743,13 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
                 break;
               case TS_FUNCPTR:
                 {
-#if SIZEOF_VALUE <= SIZEOF_LONG
-                    VALUE val = LONG2NUM((SIGNED_VALUE)*seq);
-#else
-                    VALUE val = LL2NUM((SIGNED_VALUE)*seq);
-#endif
-                    rb_ary_push(ary, val);
+                    rb_ary_push(ary, FUNCPTR2NUM(*seq));
                 }
                 break;
               case TS_BUILTIN:
                 {
                     VALUE val = rb_hash_new();
-#if SIZEOF_VALUE <= SIZEOF_LONG
-                    VALUE func_ptr = LONG2NUM((SIGNED_VALUE)((RB_BUILTIN)*seq)->func_ptr);
-#else
-                    VALUE func_ptr = LL2NUM((SIGNED_VALUE)((RB_BUILTIN)*seq)->func_ptr);
-#endif
+                    VALUE func_ptr = FUNCPTR2NUM(((RB_BUILTIN)*seq)->func_ptr);
                     rb_hash_aset(val, ID2SYM(rb_intern("func_ptr")), func_ptr);
                     rb_hash_aset(val, ID2SYM(rb_intern("argc")), INT2NUM(((RB_BUILTIN)*seq)->argc));
                     rb_hash_aset(val, ID2SYM(rb_intern("index")), INT2NUM(((RB_BUILTIN)*seq)->index));

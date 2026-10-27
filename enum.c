@@ -500,7 +500,7 @@ limit_by_enum_size(VALUE obj, rb_len_t n)
     rb_ulen_t limit;
     VALUE size = rb_check_funcall(obj, id_size, 0, 0);
     if (!FIXNUM_P(size)) return n;
-    limit = FIX2ULONG(size);
+    limit = FIX2ULEN(size);
     return ((rb_ulen_t)n > limit) ? (rb_len_t)limit : n;
 }
 
@@ -509,7 +509,7 @@ enum_size_over_p(VALUE obj, rb_len_t n)
 {
     VALUE size = rb_check_funcall(obj, id_size, 0, 0);
     if (!FIXNUM_P(size)) return 0;
-    return ((rb_ulen_t)n > FIX2ULONG(size));
+    return ((rb_ulen_t)n > FIX2ULEN(size));
 }
 
 /*

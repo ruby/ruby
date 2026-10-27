@@ -428,4 +428,12 @@ void rb_free_encoded_insn_data(void);
 
 RUBY_SYMBOL_EXPORT_END
 
+#if SIZEOF_VALUE <= SIZEOF_LONG
+# define NUM2FUNCPTR(num) (VALUE)NUM2LONG(num)
+# define FUNCPTR2NUM(ptr) LONG2NUM((SIGNED_VALUE)(ptr))
+#else
+# define NUM2FUNCPTR(num) (VALUE)NUM2LL(num)
+# define FUNCPTR2NUM(ptr) LL2NUM((SIGNED_VALUE)(ptr))
+#endif
+
 #endif /* RUBY_ISEQ_H */
