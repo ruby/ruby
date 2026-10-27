@@ -1,6 +1,6 @@
 Returns the offset (in characters) of the beginning of the specified match.
 
-With integer argument `n` given,
+With non-negative integer argument `n` given,
 returns the character offset of the beginning of the `n`th match:
 
 ```ruby
