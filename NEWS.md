@@ -109,6 +109,11 @@ Note: We're only listing outstanding class updates.
       binary representation of a non-negative integer (its population count).
       [[Feature #20163]]
 
+* IO
+
+    * `IO#wait_priority` is deprecated and will be removed in a later
+      release.  Use `IO#wait(IO::PRIORITY, timeout)` instead.  [[Bug #22328]]
+
 * IO::Buffer
 
     * `read`, `write`, `pread`, and `pwrite` now perform one IO operation using
@@ -718,6 +723,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
 [Bug #22273]: https://bugs.ruby-lang.org/issues/22273
 [Bug #22276]: https://bugs.ruby-lang.org/issues/22276
+[Bug #22328]: https://bugs.ruby-lang.org/issues/22328
 [Bug #22379]: https://bugs.ruby-lang.org/issues/22379
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
