@@ -2616,8 +2616,7 @@ rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
         code_pos += len;
     }
 
-    VM_ASSERT(0); /* node_ids out of sync with the instruction sequence */
-    return -1;
+    rb_bug("node_id out of sync with iseq");
 }
 #endif
 
