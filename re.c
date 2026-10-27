@@ -3837,12 +3837,27 @@ match_hash(VALUE match)
 }
 
 /*
- *  call-seq:
- *    self == other -> true or false
+ *  :markup: markdown
  *
- *  Returns whether +other+ is another \MatchData object
- *  whose target string, regexp, match, and captures
- *  are the same as +self+.
+ *  call-seq:
+ *    self == object -> true or false
+ *
+ *  Returns whether `object` is a \MatchData object
+ *  whose #string, #regexp, and #begin values are the same as those of `self`:
+ *
+ *  ```ruby
+ *  re = /a/
+ *  s = 'aba'
+ *  m0 = re.match(s)
+ *  m1 = re.match(s, 2)
+ *  m0[0]       # => "a"
+ *  m1[0]       # => "a"
+ *  m0.begin(0) # => 0
+ *  m1.begin(0) # => 2
+ *  m0 == m0    # => true
+ *  m0 == m1    # => false
+ *  ```
+ *
  */
 
 static VALUE
