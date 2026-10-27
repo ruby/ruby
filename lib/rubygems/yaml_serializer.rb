@@ -55,6 +55,10 @@ module Gem
         "\\f" => "\f",
         "\\r" => "\r",
         "\\e" => "\e",
+        "\\N" => "\u0085",
+        "\\_" => "\u00A0",
+        "\\L" => "\u2028",
+        "\\P" => "\u2029",
       }.freeze
 
       def initialize(source)
@@ -323,8 +327,11 @@ module Gem
         val = val.sub(/^! /, "") if val.start_with?("! ")
 
         if val =~ /^"(.*)"$/
-          $1.gsub(/\\(?:["\\0abtnvfre]|x\h{2})/) do |m|
-            STRING_UNESCAPES[m] || m[2..].to_i(16).chr(Encoding::UTF_8)
+          inner = $1
+          inner.gsub(/\\(?:["\\0abtnvfreN_LP]|x\h{2}|u\h{4}|U\h{8})/) do |m|
+            char = STRING_UNESCAPES[m] || unescape_code_point(m)
+            # Metadata is read as binary, where non-ASCII text stays as UTF-8 bytes.
+            Encoding.compatible?(inner, char) ? char : char.b
           end
         elsif val =~ /^'(.*)'$/
           $1.gsub(/''/, "'")
@@ -357,6 +364,12 @@ module Gem
         else
           val
         end
+      end
+
+      def unescape_code_point(escape)
+        code = escape[2..].hex
+        return escape if code > 0x10FFFF || code.between?(0xD800, 0xDFFF)
+        code.chr(Encoding::UTF_8)
       end
 
       def decode_binary_tag(str)

@@ -1026,6 +1026,38 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "a\\\\b", result["val"]
   end
 
+  def test_load_double_quoted_unicode_escapes
+    yaml = <<~'YAML'
+      ---
+      nel: "x\Ny"
+      nbsp: "x\_y"
+      line_separator: "x\Ly"
+      paragraph_separator: "x\Py"
+      bom: "\uFEFFx"
+      astral: "x\U0001F600y"
+    YAML
+
+    expected = {
+      "nel" => "x\u0085y",
+      "nbsp" => "x\u00A0y",
+      "line_separator" => "x\u2028y",
+      "paragraph_separator" => "x\u2029y",
+      "bom" => "\uFEFFx",
+      "astral" => "x\u{1F600}y",
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_double_quoted_unicode_escape_in_binary_metadata
+    yaml = "description: \"caf\xC3\xA9\\N\"\n".b
+
+    assert_equal({ "description" => "caf\xC3\xA9\xC2\x85".b }, Gem::YAMLSerializer.load(yaml))
+  end
+
+  def test_load_double_quoted_invalid_code_point_escape_kept
+    assert_equal({ "a" => "x\\uD800y" }, Gem::YAMLSerializer.load(%(a: "x\\uD800y")))
+  end
+
   def test_load_single_quoted_escape
     result = yaml_load("key: 'it''s'")
     assert_equal "it's", result["key"]
