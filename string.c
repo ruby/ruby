@@ -14326,7 +14326,7 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
     char *ptr, *p, *pend;
     rb_len_t len;
     VALUE sum = INT2FIX(0);
-    unsigned long sum0 = 0;
+    rb_len_t sum0 = 0;
 
     if (rb_check_arity(argc, 0, 1) && (bits = NUM2INT(argv[0])) < 0) {
         bits = 0;
@@ -14337,7 +14337,7 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
 
     while (p < pend) {
         if (FIXNUM_MAX - UCHAR_MAX < sum0) {
-            sum = rb_funcall(sum, '+', 1, LONG2FIX(sum0));
+            sum = rb_funcall(sum, '+', 1, LEN2FIX(sum0));
             str_mod_check(str, ptr, len);
             sum0 = 0;
         }
@@ -14347,26 +14347,26 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
 
     if (bits == 0) {
         if (sum0) {
-            sum = rb_funcall(sum, '+', 1, LONG2FIX(sum0));
+            sum = rb_funcall(sum, '+', 1, LEN2FIX(sum0));
         }
     }
     else {
         if (sum == INT2FIX(0)) {
-            if (bits < (int)sizeof(long)*CHAR_BIT) {
-                sum0 &= (((unsigned long)1)<<bits)-1;
+            if (bits < (int)sizeof(rb_len_t)*CHAR_BIT) {
+                sum0 &= (((rb_len_t)1)<<bits)-1;
             }
-            sum = LONG2FIX(sum0);
+            sum = LEN2FIX(sum0);
         }
         else {
             VALUE mod;
 
             if (sum0) {
-                sum = rb_funcall(sum, '+', 1, LONG2FIX(sum0));
+                sum = rb_funcall(sum, '+', 1, LEN2FIX(sum0));
             }
 
-            mod = rb_funcall(INT2FIX(1), idLTLT, 1, INT2FIX(bits));
-            mod = rb_funcall(mod, '-', 1, INT2FIX(1));
-            sum = rb_funcall(sum, '&', 1, mod);
+            mod = rb_int_lshift(INT2FIX(1), INT2FIX(bits));
+            mod = rb_int_minus(mod, INT2FIX(1));
+            sum = rb_int_and(sum, mod);
         }
     }
     return sum;
