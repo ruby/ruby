@@ -3846,16 +3846,16 @@ match_hash(VALUE match)
  *  whose #string, #regexp, and #begin values are the same as those of `self`:
  *
  *  ```ruby
- *  re = /a/
+ *  regexp = /a/
  *  s = 'aba'
- *  m0 = re.match(s)
- *  m1 = re.match(s, 2)
- *  m0[0]       # => "a"
- *  m1[0]       # => "a"
- *  m0.begin(0) # => 0
- *  m1.begin(0) # => 2
- *  m0 == m0    # => true
- *  m0 == m1    # => false
+ *  match0 = regexp.match(s)
+ *  match1 = regexp.match(s, 2)
+ *  match0[0]        # => "a"
+ *  match1[0]        # => "a"
+ *  match0.begin(0)  # => 0
+ *  match1.begin(0)  # => 2
+ *  match0 == match0 # => true
+ *  match0 == match1 # => false
  *  ```
  *
  */
