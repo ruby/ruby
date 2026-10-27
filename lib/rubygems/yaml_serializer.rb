@@ -39,6 +39,8 @@ module Gem
       # A quoted mapping key followed by ":". A whole-line quoted scalar
       # cannot match because its closing quote is at the end of the line.
       QUOTED_KEY_RE = /^("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'):(?:[ ]+(.*))?$/
+      # An entry of a flow sequence. A quoted entry may contain commas.
+      FLOW_SEQUENCE_ENTRY_RE = /"(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^,\s](?:[^,]*[^,\s])?/
       MAX_NESTING_DEPTH = 1_000
       BLANK_RE = /\A[\0\s]*\z/
       BLANK_OR_COMMENT_RE = /\A[\0\s]*(?:#|\z)/
@@ -346,7 +348,7 @@ module Gem
         elsif val =~ /^\[(.*)\]$/
           inner = $1.strip
           return Sequence.new if inner.empty?
-          items = inner.split(/\s*,\s*/).reject(&:empty?).map {|e| Scalar.new(value: coerce(e, depth + 1)) }
+          items = inner.scan(FLOW_SEQUENCE_ENTRY_RE).map {|e| Scalar.new(value: coerce(e, depth + 1)) }
           Sequence.new(items: items)
         elsif /\A\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}:\d{2})?/.match?(val)
           begin

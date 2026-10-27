@@ -1194,6 +1194,11 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal ["a", "b", "c"], result["items"]
   end
 
+  def test_load_flow_array_with_quoted_commas
+    result = yaml_load(%(items: ["x, y", 'a, b', z]))
+    assert_equal ["x, y", "a, b", "z"], result["items"]
+  end
+
   def test_load_flow_empty_array
     result = yaml_load("items: []")
     assert_equal [], result["items"]
