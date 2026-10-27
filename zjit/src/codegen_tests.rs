@@ -248,6 +248,47 @@ fn test_recompile_exit_waits_for_exit_budget() {
 }
 
 #[test]
+fn test_reprofile_polymorphic_send_miss() {
+    ensure_rubyvm();
+    set_call_threshold(30);
+    set_inline_threshold(0);
+    crate::options::enable_zjit_stats();
+    eval("
+        class A
+          attr_reader :value
+          def initialize(value) = @value = value
+          def with_block(n) = yield(value + n)
+        end
+        class C < A
+        end
+        def dispatch(obj)
+          [obj.value, obj.with_block(3) { |n| n * 2 }]
+        end
+        A_OBJ, B_OBJ, C_OBJ = A.new(11), A.new(23), C.new(47)
+        B_OBJ.instance_variable_set(:@extra, true)
+        100.times { |i| dispatch(i.even? ? A_OBJ : B_OBJ) }
+    ");
+
+    let iseq = get_method_iseq("self", "dispatch");
+    assert_eq!(1, get_or_create_iseq_payload(iseq).versions.len());
+    let misses = crate::state::ZJITState::get_counters().exit_send_polymorphic_miss;
+    assert_compiles_allowing_exits("100.times { dispatch(C_OBJ) }");
+    assert!(crate::state::ZJITState::get_counters().exit_send_polymorphic_miss > misses);
+    let payload = get_or_create_iseq_payload(iseq);
+    assert!(payload.versions.len() > 1);
+    assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+
+    // A new class appearing after a shape-polymorphic profile should be learned,
+    // rather than making every subsequent call take the generic send fallback.
+    let before = crate::state::ZJITState::get_counters().send_fallback_send_polymorphic_fallback;
+    assert_snapshot!(assert_compiles("
+        100.times { dispatch(C_OBJ) }
+        [dispatch(A_OBJ), dispatch(B_OBJ), dispatch(C_OBJ)]
+    "), @"[[11, 28], [23, 52], [47, 100]]");
+    assert_eq!(before, crate::state::ZJITState::get_counters().send_fallback_send_polymorphic_fallback);
+}
+
+#[test]
 fn test_function_stub_reprofiles_after_invalidation() {
     rb_zjit_prepare_options();
     set_inline_threshold(0);
