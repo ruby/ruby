@@ -1133,6 +1133,49 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "value # not a comment", result["key"]
   end
 
+  def test_load_comment_and_blank_lines_inside_nested_collections
+    yaml = <<~YAML
+      ---
+      sources:
+      - https://rubygems.org/
+      # - https://old.example/
+
+      - https://gems.example.com/
+      nested:
+        a: 1
+        # note
+
+        b: 2
+      backtrace: true
+    YAML
+
+    expected = {
+      "sources" => ["https://rubygems.org/", "https://gems.example.com/"],
+      "nested" => { "a" => 1, "b" => 2 },
+      "backtrace" => true,
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_comment_before_first_entry_of_nested_collection
+    yaml = <<~YAML
+      ---
+      sources:
+      # first
+      - https://rubygems.org/
+      items:
+      -
+      # note
+        name: foo
+    YAML
+
+    expected = {
+      "sources" => ["https://rubygems.org/"],
+      "items" => [{ "name" => "foo" }],
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
   def test_load_crlf_line_endings
     result = yaml_load("key: value\r\nother: data\r\n")
     assert_equal "value", result["key"]

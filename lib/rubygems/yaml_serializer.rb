@@ -142,6 +142,8 @@ module Gem
       def parse_sequence(indent, anchor)
         items = []
         while @lines.any?
+          skip_blank_and_comments
+          break if @lines.empty?
           line = @lines[0]
           stripped = line.lstrip
           break unless line.size - stripped.size == indent &&
@@ -158,6 +160,7 @@ module Gem
         if content.start_with?("*")
           parse_inline_alias(content)
         elsif content.empty?
+          skip_blank_and_comments
           @lines.any? && current_indent > indent ? parse_node(indent) : nil
         elsif content.start_with?("!ruby/object:")
           parse_tagged_content(content.strip, indent)
@@ -180,6 +183,8 @@ module Gem
       def parse_mapping(indent, anchor)
         pairs = []
         while @lines.any?
+          skip_blank_and_comments
+          break if @lines.empty?
           line = @lines[0]
           stripped = line.lstrip
           break unless line.size - stripped.size == indent
@@ -212,6 +217,7 @@ module Gem
         elsif val.start_with?("!binary ")
           parse_binary_value(val, indent)
         elsif val.empty?
+          skip_blank_and_comments
           next_stripped = nil
           next_indent = nil
           if @lines.any?
