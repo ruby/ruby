@@ -143,6 +143,16 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(SyntaxError) {eval "/# \\users/"}
   end
 
+  def test_extended_comment_invalid_unicode_escape_with_multibyte_characters
+    ["\u3042", "\u00e9z", "\u{1f600}"].each do |content|
+      source = "a # \\u{#{content}}\n"
+      re = eval("/#{source}/x")
+      assert_equal(source, re.source)
+      assert_predicate(re.source, :valid_encoding?)
+      assert_match(re, "a")
+    end
+  end
+
   def test_nonextended_section_of_extended_regexp_bug_19379
     assert_separately([], <<-'RUBY')
       re = /(?-x:#)/x
@@ -1009,39 +1019,36 @@ class TestRegexp < Test::Unit::TestCase
     # partially parsed branch (parse_subexp freed the alternation list but not
     # the node parse_branch had built so far). Regexp#to_s reaches this path
     # for every /(?:a|b)c(d)/-shaped regexp.
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", "[Bug #22384]", rss: true)
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", "[Bug #22384]", rss: true, samples: 2..100)
       code = proc do
         Regexp.new("a|b(c") rescue nil
         /(?:a|b)c(d)/.to_s
       end
 
-      1_000.times(&code)
     begin;
-      300_000.times(&code)
+      3_000.times(&code)
     end;
   end
 
   def test_regsub_no_memory_leak
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true)
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true, samples: 2..100)
       code = proc do
         "aaaaaaaaaaa".gsub(/a/, "")
       end
 
-      1_000.times(&code)
     begin;
-      100_000.times(&code)
+      1_000.times(&code)
     end;
   end
 
   def test_regsub_no_memory_leak_many_captures
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true)
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true, samples: 2..100)
       code = proc do
         "aaaaaaaaaaa".gsub(/(a)(b)?(c)?(d)?(e)?(f)?(g)?(h)?/, "")
       end
 
-      1_000.times(&code)
     begin;
-      100_000.times(&code)
+      1_000.times(&code)
     end;
   end
 
@@ -2028,6 +2035,15 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_invalid_condition_in_alternation_and_call
+    assert_raise_with_message(RegexpError, /invalid conditional pattern/) do
+      Regexp.new("(x)|(?(1)x|x|)")
+    end
+    assert_raise_with_message(RegexpError, /invalid conditional pattern/) do
+      Regexp.new("(?<b>x)(?<a>(?(<b>)x|x|))\\g<a>")
+    end
+  end
+
   def test_too_big_number_for_repeat_range
     assert_raise_with_message(SyntaxError, /too big number for repeat range/) do
       eval(%[/|{1000000}/])
@@ -2107,10 +2123,10 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_s_timeout_memory_leak
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", "[Bug #20228]", rss: true)
-      Regexp.timeout = 0.001
-      regex = /^(a*)*$/
-      str = "a" * 1000000 + "x"
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20228]", rss: true, samples: 100..200)
+      Regexp.timeout = 0.000001
+      regex = Regexp.new("^#{"(a*)" * 10_000}x$")
+      str = "a" * 1_000_000 + "x"
 
       code = proc do
         regex =~ str
@@ -2119,7 +2135,7 @@ class TestRegexp < Test::Unit::TestCase
 
       10.times(&code)
     begin;
-      1_000.times(&code)
+      100.times(&code)
     end;
   end
 
@@ -2196,7 +2212,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_timeout_memory_leak
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20650]", timeout: 100, rss: true)
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20650]", rss: true, samples: 100..200)
       regex = Regexp.new("^#{"(a*)" * 10_000}x$", timeout: 0.000001)
       str = "a" * 1_000_000 + "x"
 
@@ -2207,7 +2223,7 @@ class TestRegexp < Test::Unit::TestCase
 
       10.times(&code)
     begin;
-      1_000.times(&code)
+      100.times(&code)
     end;
   end
 

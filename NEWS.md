@@ -69,24 +69,29 @@ Note: We're only listing outstanding class updates.
 
 * GC
 
-    * `GC.stat` accepts `scope: :ractor` (the default), `scope: :local`
-      (a synonym for `:ractor`), and `scope: :global`.
-      With the default collector, the global scope reports cumulative collection
-      counts and measured marking/sweeping CPU time across Ractors, including
-      history from destroyed object spaces, without requesting a stop-the-world
-      snapshot. Unscoped `GC.stat`, `GC.count`, and `GC.total_time` retain their
-      current-Ractor behavior.
+    * `GC.stat` accepts a `process:` keyword. `GC.stat` and
+      `GC.stat(process: false)` report the current Ractor's object space.
+      With the default collector, `GC.stat(process: true)` reports cumulative
+      collection counts and measured marking/sweeping CPU time across Ractors,
+      including history from destroyed object spaces, without requesting a
+      stop-the-world snapshot. It also reports the `:page_pool_arenas`,
+      `:page_pool_arenas_freed`, `:page_pool_total_pages` and
+      `:page_pool_discarded_pages` keys, which the Ractor data does not
+      include. `GC.count` and `GC.total_time` retain their current-Ractor
+      behavior.
     * `GC.stat` reports a new key, `:global_gc_count`: the number of
-      stop-the-world global garbage collection cycles the current Ractor
-      initiated. Each global collection is attributed to exactly one Ractor,
-      so the values sum across Ractors. `GC.stat(:global_gc_count,
-      scope: :global)` reports the process total, including the counts of
-      terminated Ractors.
+      stop-the-world global garbage collection cycles that collected the
+      current Ractor's heap, whichever Ractor started them. The new key
+      `:global_gc_invocation_count` reports the global collections that the
+      current Ractor started. `GC.stat(:global_gc_count, process: true)`
+      reports the number of global collections in the process, including
+      those started by terminated Ractors.
     * A global garbage collection is not counted in `:major_gc_count`.
       `:count` equals `:minor_gc_count` plus `:major_gc_count` plus
-      `:global_gc_count` in both scopes. When another Ractor's object space
-      exists, including one left by a terminated Ractor that is not yet
-      absorbed, or one was absorbed since the last global collection,
+      `:global_gc_count` in both the Ractor and the process data. In the
+      process data each global collection counts once. When another Ractor's
+      object space exists, including one left by a terminated Ractor that is
+      not yet absorbed, or one was absorbed since the last global collection,
       `GC.start` runs a global collection by default, so it increments
       `:global_gc_count` rather than `:major_gc_count`; pass `global: false`
       for a local major collection.
@@ -156,6 +161,9 @@ Note: We're only listing outstanding class updates.
       `timeout:` keyword argument (in seconds) and return `nil` once it passes.
       `timeout: 0` never blocks: it takes a message if one is already queued
       and returns `nil` otherwise.  [[Feature #22255]]
+
+    * `Ractor#alive?` is added. It returns `false` once the ractor has
+      terminated. [[Feature #22441]]
 
 * Range
 
@@ -393,6 +401,10 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   component is still limited to 255 characters, and a child process still
   starts with the `MAX_PATH` limited current directory. [[Bug #18947]]
 
+* On 64-bit Windows with MSVC (mswin), String, Array and MatchData can now be
+  2GiB or longer.  Their lengths used to be `long`, which is 32 bits there.
+  [[Feature #22400]]
+
 * Building Ruby with MSVC now requires Visual Studio 2017 version 15.8
   (`_MSC_VER` 1915) or later.
 
@@ -430,12 +442,12 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   still refer to unshareable objects through the members of `rb_io_t`.
 
 * `Random.urandom` now raises `RangeError` for every size too large for a
-  `long`, as `Random#bytes` does.  A size that still fit in an `unsigned long`
+  String, as `Random#bytes` does.  A size that still fit in an `unsigned long`
   used to raise `ArgumentError`. [[Feature #22400]]
 
 * `Struct#[]` and `Struct#[]=` now raise `IndexError` for every out-of-range
-  Integer index that fits in a `long`.  An index past the `int` range used to
-  raise `RangeError`. [[Feature #22400]]
+  Integer index within the range of Array indices.  An index past the `int`
+  range used to raise `RangeError`. [[Feature #22400]]
 
 ## Stdlib compatibility issues
 
@@ -507,15 +519,36 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 * `rb_len_t` and `rb_ulen_t` are added as the types of the lengths and indices
   of String, Array and MatchData, with `LEN2NUM`, `NUM2LEN`, `ULEN2NUM`,
   `rb_len2int`, `PRIdLEN` and its siblings, `RB_LEN_MAX`, `RB_LEN_MIN`,
-  `RB_ULEN_MAX`, `SIZEOF_RB_LEN_T` and `HAVE_RB_LEN_T`.  `RbConfig::SIZEOF["rb_len_t"]`
-  gives its size to an extconf.rb.  They are `long` on every platform for now, and
-  the C API that carries such lengths, such as `RSTRING_LEN` and
-  `rb_range_beg_len`, uses them.  A later change will makes them 64 bits on mswin,
-  so extensions should keep these lengths in `rb_len_t`. [[Feature #22400]]
+  `RB_ULEN_MAX`, `SIZEOF_RB_LEN_T` and `HAVE_RB_LEN_T`.
+  `RbConfig::SIZEOF["rb_len_t"]` gives its size to an extconf.rb.  They are
+  `long`, except on 64-bit mswin, where they are 64 bits.  The C API that
+  carries such lengths, such as `RSTRING_LEN` and `rb_range_beg_len`, uses
+  them.
+  [[Feature #22400]]
+
+* On 64-bit mswin this changes the ABI, so extensions have to be rebuilt.  An
+  extension that passes a `long *` to an output parameter such as
+  `rb_range_beg_len` no longer compiles there, and one that keeps a length in
+  `long` truncates it at 2GiB.  Keep such lengths in `rb_len_t`, or convert
+  them with `rb_len2long`.  An extension that also supports older versions can
+  check `HAVE_RB_LEN_T` and fall back to `typedef long rb_len_t`.
+  [[Feature #22400]]
+
+* On mswin, extensions are now built with incompatible pointer types
+  (warning C4133) as errors.  Besides a `long *` passed where an
+  `rb_len_t *` is expected, this rejects any other mismatched pointer that
+  used to compile with a warning.
+  [[Feature #22400]]
 
 * `rb_len2long` is added to convert an `rb_len_t` to `long`, raising
   `RangeError` via the new `rb_out_of_long` when it does not fit, for
   extensions that keep a length in `long`. [[Feature #22400]]
+
+### Atomic operations
+
+* `RUBY_ATOMIC_SIZE_LOAD` is added as the `size_t` counterpart of
+  `RUBY_ATOMIC_LOAD`, alongside the existing `RUBY_ATOMIC_SIZE_ADD`,
+  `RUBY_ATOMIC_SIZE_SUB`, `RUBY_ATOMIC_SIZE_CAS` and `RUBY_ATOMIC_SIZE_EXCHANGE`.
 
 ### Removed APIs
 
@@ -638,12 +671,48 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ## JIT
 
+### ZJIT
+
+* Status
+    * ZJIT is now faster than YJIT on many benchmarks, but we expect that
+      ZJIT can be still slower than YJIT on larger benchmarks or applications
+      as of Ruby 4.1.0 preview releases. Stay tuned for the Ruby 4.1.0 release.
+* Major optimizations
+    * Method inlining: small Ruby methods, including methods that yield to
+      a block, are inlined into their callers, so that the optimizer can see
+      across method boundaries.
+    * Lightweight frames: method calls in JIT code no longer write a full
+      VM control frame. Frame metadata used by backtraces and GC is
+      materialized only when needed.
+    * Optimization pass: a new linear scan register allocator, load-store
+      optimization, more constant folding, and redundant guard elimination.
+    * GC fastpath: allocation of objects is inlined into JIT code, skipping
+      a call into the GC on the fast path.
+* More Ruby code is compiled
+    * Calls with blocks or `&block` arguments, `super`, splats, keyword
+      arguments, `...` forwarding, and post-required parameters.
+    * Specialized code for many core methods, e.g. `Float` arithmetic,
+      `Array#[]`, `Array#length`, `Array#empty?`, `Integer#[]`,
+      `String#byteslice`, `String#to_sym`, `Class#allocate`, and `new` on
+      `Struct` classes.
+    * Instance variable reads and shareable constants are now compiled
+      while multiple Ractors are running.
+* Command-line options
+    * `--zjit-stats=FILE` writes stats as JSON when `FILE` ends with `.json`.
+* Ruby API
+    * `RubyVM::ZJIT.exit_locations` and `RubyVM::ZJIT.dump_exit_locations`
+      are removed along with the Stackprof output of `--zjit-trace-exits`.
+
 ### YJIT
 
 * YJIT now supports Windows (mswin) on x64 CPUs.  Configure with
   `win32\configure.bat --enable-yjit`, which requires `rustc` with the
   `x86_64-pc-windows-msvc` target.  Only the release build is supported,
   and MinGW is not.  [[Feature #18439]]
+* Add `RubyVM::YJIT.max_compile_time_ns` and `RubyVM::YJIT.max_compile_time_ns=`
+  to give YJIT a compilation time budget. When `RubyVM::YJIT.total_compile_time_ns`
+  exceeds it, YJIT pauses compilation until the budget is raised, which
+  spreads the warmup overhead over a longer period. [[Feature #22236]]
 
 [Bug #18661]: https://bugs.ruby-lang.org/issues/18661
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
@@ -677,11 +746,13 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22205]: https://bugs.ruby-lang.org/issues/22205
 [Feature #22226]: https://bugs.ruby-lang.org/issues/22226
 [Feature #22232]: https://bugs.ruby-lang.org/issues/22232
+[Feature #22236]: https://bugs.ruby-lang.org/issues/22236
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
 [Feature #22255]: https://bugs.ruby-lang.org/issues/22255
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
 [Feature #22309]: https://bugs.ruby-lang.org/issues/22309
 [Feature #22400]: https://bugs.ruby-lang.org/issues/22400
+[Feature #22441]: https://bugs.ruby-lang.org/issues/22441
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0

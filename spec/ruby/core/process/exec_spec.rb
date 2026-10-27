@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Process.exec" do
   it "raises Errno::ENOENT for an empty string" do
@@ -152,21 +153,23 @@ describe "Process.exec" do
   end
 
   describe "with a command array" do
-    it "uses the first element as the command name and the second as the argv[0] value" do
-      platform_is_not :windows do
-        ruby_exe('Process.exec(["/bin/sh", "argv_zero"], "-c", "echo $0")').should == "argv_zero\n"
+    guard_not -> { ProcessSpecs.busybox_sh? } do
+      it "uses the first element as the command name and the second as the argv[0] value" do
+        platform_is_not :windows do
+          ruby_exe('Process.exec(["/bin/sh", "argv_zero"], "-c", "echo $0")').should == "argv_zero\n"
+        end
+        platform_is :windows do
+          ruby_exe('Process.exec(["cmd.exe", "/C"], "/C", "echo", "argv_zero")').should == "argv_zero\n"
+        end
       end
-      platform_is :windows do
-        ruby_exe('Process.exec(["cmd.exe", "/C"], "/C", "echo", "argv_zero")').should == "argv_zero\n"
-      end
-    end
 
-    it "coerces the argument using to_ary" do
-      platform_is_not :windows do
-        ruby_exe('o = Object.new; def o.to_ary; ["/bin/sh", "argv_zero"]; end; Process.exec(o, "-c", "echo $0")').should == "argv_zero\n"
-      end
-      platform_is :windows do
-        ruby_exe('o = Object.new; def o.to_ary; ["cmd.exe", "/C"]; end; Process.exec(o, "/C", "echo", "argv_zero")').should == "argv_zero\n"
+      it "coerces the argument using to_ary" do
+        platform_is_not :windows do
+          ruby_exe('o = Object.new; def o.to_ary; ["/bin/sh", "argv_zero"]; end; Process.exec(o, "-c", "echo $0")').should == "argv_zero\n"
+        end
+        platform_is :windows do
+          ruby_exe('o = Object.new; def o.to_ary; ["cmd.exe", "/C"]; end; Process.exec(o, "/C", "echo", "argv_zero")').should == "argv_zero\n"
+        end
       end
     end
 

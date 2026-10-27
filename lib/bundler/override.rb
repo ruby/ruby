@@ -50,13 +50,66 @@ module Bundler
     end
 
     def to_s
-      options = if @from
-        ["from: #{@from.inspect}", "to: #{@operation.inspect}", *("version: #{@requirement.inspect}" if @requirement)].join(", ")
-      else
-        "#{@field}: #{@operation.inspect}"
-      end
       location = source_location_label
-      "override #{@target == :all ? ":all" : @target.inspect}, #{options}#{" (declared at #{location})" if location}"
+      "override #{to_lock}#{" (declared at #{location})" if location}"
+    end
+
+    # The override as recorded in the OVERRIDES section of Gemfile.lock: the
+    # `override` arguments with requirements normalized, so equivalent
+    # spellings ("<=3", "<= 3") record the same line.
+    def to_lock
+      target = @target == :all ? ":all" : @target.inspect
+      fields = if @from
+        ["from: #{@from.inspect}", "to: #{@operation.inspect}", *("version: #{self.class.normalize(@requirement).inspect}" if @requirement)]
+      else
+        ["#{@field}: #{self.class.normalize(@operation).inspect}"]
+      end
+      [target, *fields].join(", ")
+    end
+
+    LOCK_VALUE = /"[^"\\]*"|:[a-z_]+|nil/
+    LOCK_FIELD = /, ([a-z_]+): (#{LOCK_VALUE})/
+    LOCK_LINE = /\A(:all|"[a-zA-Z0-9._-]+")((?:#{LOCK_FIELD})+)\z/
+    private_constant :LOCK_VALUE, :LOCK_FIELD, :LOCK_LINE
+
+    # Parses a line written by #to_lock. The DSL only accepts valid gem names,
+    # and requirements are normalized, so no recorded value contains a quote
+    # or a backslash and the line can be read without evaluating it.
+    def self.from_lock(line)
+      match = LOCK_LINE.match(line)
+      raise ArgumentError, "invalid override in lockfile: #{line.inspect}" unless match
+
+      target = match[1] == ":all" ? :all : match[1][1..-2]
+      fields = match[2].scan(LOCK_FIELD).map {|key, value| [key.to_sym, parse_lock_value(value)] }
+      keys = fields.map(&:first)
+      raise ArgumentError, "invalid override in lockfile: #{line.inspect}" unless keys.uniq.size == keys.size
+      fields = fields.to_h
+
+      if fields.key?(:from)
+        unless (keys - [:from, :to, :version]).empty? && fields.key?(:to) && fields[:from].is_a?(String)
+          raise ArgumentError, "invalid override in lockfile: #{line.inspect}"
+        end
+        new(target, :to, fields[:to], from: fields[:from], requirement: normalize(fields[:version]))
+      else
+        field, operation = fields.first
+        unless fields.size == 1 && Dsl::SUPPORTED_OVERRIDE_FIELDS.include?(field)
+          raise ArgumentError, "invalid override in lockfile: #{line.inspect}"
+        end
+        new(target, field, normalize(operation))
+      end
+    end
+
+    def self.parse_lock_value(value)
+      case value
+      when "nil" then nil
+      when /\A:/ then value[1..].to_sym
+      else value[1..-2]
+      end
+    end
+    private_class_method :parse_lock_value
+
+    def self.normalize(operation)
+      operation.is_a?(String) ? Gem::Requirement.new(operation).to_s : operation
     end
 
     def apply_to(requirement)

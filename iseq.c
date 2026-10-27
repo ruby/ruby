@@ -204,6 +204,9 @@ rb_iseq_free(const rb_iseq_t *iseq)
 #endif
         SIZED_FREE_N(body->iseq_encoded, body->iseq_size);
         SIZED_FREE_N(body->insns_info.body, body->insns_info.size);
+#ifdef USE_ISEQ_NODE_ID
+        SIZED_FREE_N(body->insns_info.node_ids, body->insns_info.node_ids_size);
+#endif
 #if VM_INSN_INFO_TABLE_IMPL == 2
         ruby_xfree(body->insns_info.positions_or_succ_index_table.succ_index_table);
 #else
@@ -430,7 +433,8 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
                 if (cds[i].ci) rb_gc_mark_and_move_ptr_ctx(ctx, &cds[i].ci);
 
                 const struct rb_callcache *cc = cds[i].cc;
-                if (!cc || cc == rb_vm_empty_cc() || cc == rb_vm_empty_cc_for_super()) {
+                if (!cc || cc == &rb_vm_empty_cc || cc == &rb_vm_empty_cc_for_super ||
+                    cc == &rb_vm_uncached_cc) {
                     // No need for marking, reference updating, or clearing
                     // We also want to avoid reassigning to improve CoW
                     continue;
@@ -446,7 +450,7 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
                     else {
                         // Either the CC or CME has been invalidated. Replace
                         // it with the empty CC so that it can be GC'd.
-                        cds[i].cc = rb_vm_empty_cc();
+                        cds[i].cc = &rb_vm_empty_cc;
                     }
                 }
             }
@@ -593,6 +597,9 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         if (body->variable) size += sizeof(struct rb_iseq_variable);
         size += body->iseq_size * sizeof(VALUE);
         size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
+#ifdef USE_ISEQ_NODE_ID
+        size += body->insns_info.node_ids_size;
+#endif
         size += body->local_table_size * sizeof(ID); // body->local_table
         if (!ISEQ_LVAR_STATES_EMBED_P(body->local_table_size) && body->lvar_states.list) {
             size += ISEQ_LVAR_STATES_BUFLEN(body->local_table_size) * sizeof(uint8_t);
@@ -2572,17 +2579,46 @@ rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
 }
 
 #ifdef USE_ISEQ_NODE_ID
+static int
+node_id_stream_read(const uint8_t **ptr, const uint8_t *end)
+{
+    uint32_t zz = 0;
+    unsigned int shift = 0;
+    while (*ptr < end) {
+        uint8_t byte = **ptr;
+        (*ptr)++;
+        zz |= (uint32_t)(byte & 0x7f) << shift;
+        if (!(byte & 0x80)) break;
+        shift += 7;
+    }
+    return (int)(zz >> 1) ^ -(int)(zz & 1);
+}
+
 int
 rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
 {
-    const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
-
-    if (entry) {
-        return entry->node_id;
-    }
-    else {
+    const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+    if (body->insns_info.node_ids_size == 0) {
         return 0;
     }
+
+    const VALUE *code = rb_iseq_original_iseq(iseq);
+    const uint8_t *ptr = body->insns_info.node_ids;
+    const uint8_t *end = ptr + body->insns_info.node_ids_size;
+    size_t code_pos = 0;
+    int node_id = 0;
+
+    while (ptr < end && code_pos < body->iseq_size) {
+        size_t len = (size_t)insn_len(code[code_pos]);
+        node_id += node_id_stream_read(&ptr, end);
+        if (pos < code_pos + len) {
+            return node_id;
+        }
+        code_pos += len;
+    }
+
+    VM_ASSERT(0); /* node_ids out of sync with the instruction sequence */
+    return -1;
 }
 #endif
 
@@ -3007,6 +3043,9 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
         disasm_builtin_attr(str, iseq, SINGLE_NOARG_LEAF);
         disasm_builtin_attr(str, iseq, INLINE_BLOCK);
         disasm_builtin_attr(str, iseq, C_TRACE);
+        disasm_builtin_attr(str, iseq, WITHOUT_INTERRUPTS);
+        disasm_builtin_attr(str, iseq, CALLER_USER_BOX);
+        disasm_builtin_attr(str, iseq, ALWAYS_INLINE);
     }
     rb_str_cat2(str, "\n");
 
@@ -3761,6 +3800,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     prev_insn_info = NULL;
 #ifdef USE_ISEQ_NODE_ID
     VALUE node_ids = rb_ary_new();
+    const uint8_t *nid_ptr = iseq_body->insns_info.node_ids;
+    const uint8_t *nid_end = nid_ptr ? nid_ptr + iseq_body->insns_info.node_ids_size : NULL;
+    int node_id = 0;
 #endif
 
     for (l=0, pos=0; l<RARRAY_LEN(nbody); l++) {
@@ -3774,7 +3816,11 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 
         info = get_insn_info(iseq, pos);
 #ifdef USE_ISEQ_NODE_ID
-        rb_ary_push(node_ids, INT2FIX(info->node_id));
+        VM_ASSERT(nid_ptr && nid_ptr < nid_end);
+        if (nid_ptr && nid_ptr < nid_end) {
+            node_id += node_id_stream_read(&nid_ptr, nid_end);
+        }
+        rb_ary_push(node_ids, INT2FIX(node_id));
 #endif
 
         if (prev_insn_info != info) {

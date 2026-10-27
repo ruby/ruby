@@ -943,52 +943,109 @@ make_regexp(Regexp *rp, const char *s, rb_len_t len, rb_encoding *enc, int flags
 
 
 /*
- *  Document-class: MatchData
+ * Document-class: MatchData
  *
- *  MatchData encapsulates the result of matching a Regexp against
- *  string. It is returned by Regexp#match and String#match, and also
- *  stored in a global variable returned by Regexp.last_match.
+ * :markup: markdown
  *
- *  Usage:
+ * Ruby [matcher methods][matcher methods] create \MatchData objects.
  *
- *      url = 'https://docs.ruby-lang.org/en/2.5.0/MatchData.html'
- *      m = url.match(/(\d\.?)+/)   # => #<MatchData "2.5.0" 1:"0">
- *      m.string                    # => "https://docs.ruby-lang.org/en/2.5.0/MatchData.html"
- *      m.regexp                    # => /(\d\.?)+/
- *      # entire matched substring:
- *      m[0]                        # => "2.5.0"
+ * A \MatchData object contains the detailed result of a match, including:
  *
- *      # Working with unnamed captures
- *      m = url.match(%r{([^/]+)/([^/]+)\.html$})
- *      m.captures                  # => ["2.5.0", "MatchData"]
- *      m[1]                        # => "2.5.0"
- *      m.values_at(1, 2)           # => ["2.5.0", "MatchData"]
+ * - The target string used for the match.
+ * - The Regexp used for the match.
+ * - The matched substring.
+ * - The substring preceding the matched substring.
+ * - The substring following the matched substring.
+ * - Captured substrings.
  *
- *      # Working with named captures
- *      m = url.match(%r{(?<version>[^/]+)/(?<module>[^/]+)\.html$})
- *      m.captures                  # => ["2.5.0", "MatchData"]
- *      m.named_captures            # => {"version"=>"2.5.0", "module"=>"MatchData"}
- *      m[:version]                 # => "2.5.0"
- *      m.values_at(:version, :module)
- *                                  # => ["2.5.0", "MatchData"]
- *      # Numerical indexes are working, too
- *      m[1]                        # => "2.5.0"
- *      m.values_at(1, 2)           # => ["2.5.0", "MatchData"]
+ * ## In Brief
  *
- *  == Global variables equivalence
+ * ```ruby
+ * # Basics.
+ * s = 'https://docs.ruby-lang.org/en/2.5.0/MatchData.html'
+ * m = s.match(/(\d\.?)+/) # => #<MatchData "2.5.0" 1:"0">
+ * m.string                # => "https://docs.ruby-lang.org/en/2.5.0/MatchData.html"
+ * m.regexp                # => /(\d\.?)+/
+ * m[0]                    # => "2.5.0"  # Matched substring.
+ * m.pre_match             # => "https://docs.ruby-lang.org/en/"
+ * m.post_match            # => "/MatchData.html"
  *
- *  Parts of last MatchData (returned by Regexp.last_match) are also
- *  aliased as global variables:
+ * # Unnamed (numbered) captures.
+ * m = "2025-12-25".match(/(\d{4})-(\d{2})-(\d{2})/)
+ * # => #<MatchData "2025-12-25" 1:"2025" 2:"12" 3:"25">
+ * m[0] # => "2025-12-25"  # Entire matched substring.
+ * m[1] # => "2025"        # First captured substring.
+ * m[2] # => "12"          # Second captured substring.
+ * m[3] # => "25"          # Third captured substring.
+ * m[4] # => nil           # No more captured substrings.
  *
- *  * <code>$~</code> is Regexp.last_match;
- *  * <code>$&</code> is Regexp.last_match<code>[ 0 ]</code>;
- *  * <code>$1</code>, <code>$2</code>, and so on are
- *    Regexp.last_match<code>[ i ]</code> (captures by number);
- *  * <code>$`</code> is Regexp.last_match<code>.pre_match</code>;
- *  * <code>$'</code> is Regexp.last_match<code>.post_match</code>;
- *  * <code>$+</code> is Regexp.last_match<code>[ -1 ]</code> (the last capture).
+ * # Named captures.
+ * m = "2025-12-25".match(/(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/)
+ * m[:year]   # "2025"
+ * m[:month]  # "12"
+ * m[:day]    # "25"
+ * # Also available by numbers.
+ * m[0]       # => "2025-12-25"
+ * m[1]       # => "2025"
+ * m[:nosuch] # Raises IndexError: undefined group name reference: nosuch.
+ * ```
  *
- *  See also Regexp@Global+Variables.
+ * ## Matcher Methods
+ *
+ * Each of these methods creates a \MatchData object,
+ * updates the [matcher global variables][matcher global variables],
+ * and returns the \MatchData object:
+ *
+ * - Regexp#match.
+ * - String#match.
+ * - Symbol#match.
+ *
+ * Each of these methods creates a \MatchData object,
+ * updates the [matcher global variables][matcher global variables],
+ * but _does not_ return the \MatchData object;
+ * the \MatchData object is available in global variable `$~`:
+ *
+ * - Regexp#=~
+ * - String#=~
+ * - String#gsub
+ * - String#gsub!
+ * - String#scan
+ * - String#sub
+ * - String#sub!
+ * - Symbol#=~
+ *
+ * Each of these methods, when called with a Regexp argument,
+ * creates a \MatchData object,
+ * updates the [matcher global variables][matcher global variables],
+ * but _does not_ return the \MatchData object;
+ * the \MatchData object is available in global variable `$~`:
+ *
+ * - String#index
+ * - String#partition
+ * - String#rindex
+ * - String#rpartition
+ * - String#slice
+ * - String#slice!
+ * - String#split
+ *
+ * ## Match-Related Methods
+ *
+ * Each of these predicate methods performs a "fast match,"
+ * returning whether a match was found,
+ * but _not_ creating a \MatchData object,
+ * and _not_ setting [matcher global variables][matcher global variables]:
+ *
+ * - Regexp#match?
+ * - String#match?
+ * - Symbol#match?
+ *
+ * This method return the \MatchData object resulting from the most recent match:
+ *
+ * - Regexp::last_match.
+ *
+ * [matcher methods]:          rdoc-ref:MatchData@Matcher+Methods
+ * [matcher global variables]: rdoc-ref:Regexp@Global+Variables
+ *
  */
 
 VALUE rb_cMatch;

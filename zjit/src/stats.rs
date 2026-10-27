@@ -239,9 +239,6 @@ make_counters! {
         exit_no_profile_send,
         exit_no_profile_getivar,
         exit_no_profile_setivar,
-        exit_splatkw_not_nil_or_hash,
-        exit_splatkw_polymorphic,
-        exit_splatkw_not_profiled,
         exit_caller_splat_length_mismatch,
         exit_caller_splat_ruby2_keywords,
         exit_directive_induced,
@@ -476,10 +473,8 @@ make_counters! {
     invokeblock_handler_megamorphic,
     invokeblock_handler_no_profiles,
 
-    // HIR-level method inliner counters. Most rejection counters are incremented
-    // once per SendDirect the inliner considers. inline_reject_budget_exceeded may
-    // be incremented only once, rather than once per SendDirect, if the caller
-    // already exceeds the budget before scanning for its SendDirects.
+    // HIR-level method inliner counters. Rejection counters are incremented once per
+    // SendDirect the inliner considers.
     inline_method_count,
     empty_inline_frame_count,
     inline_reject_too_large,
@@ -629,9 +624,6 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         InvokeBlockIseqChanged        => exit_invoke_block_iseq_changed,
         BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
-        SplatKwNotNilOrHash           => exit_splatkw_not_nil_or_hash,
-        SplatKwPolymorphic            => exit_splatkw_polymorphic,
-        SplatKwNotProfiled            => exit_splatkw_not_profiled,
         CallerSplatLengthMismatch     => exit_caller_splat_length_mismatch,
         CallerSplatRuby2Keywords      => exit_caller_splat_ruby2_keywords,
         DirectiveInduced              => exit_directive_induced,

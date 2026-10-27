@@ -976,9 +976,11 @@ copy_tables(VALUE clone, VALUE orig)
         struct clone_const_arg arg;
         struct rb_id_table *const_tbl;
         struct rb_id_table *orig_tbl = RCLASS_CONST_TBL(orig);
-        arg.tbl = const_tbl = rb_id_table_create(rb_id_table_size(orig_tbl));
         arg.klass = clone;
-        rb_id_table_foreach(orig_tbl, clone_const_i, &arg);
+        RB_VM_LOCKING() { // orig's owner may be removing constants (rb_const_remove)
+            arg.tbl = const_tbl = rb_id_table_create(rb_id_table_size(orig_tbl));
+            rb_id_table_foreach(orig_tbl, clone_const_i, &arg);
+        }
         RCLASS_WRITE_CONST_TBL(clone, const_tbl, false);
         rb_gc_writebarrier_remember(clone);
     }
@@ -1002,31 +1004,6 @@ rb_module_check_initializable(VALUE mod)
     }
 }
 
-static enum rb_id_table_iterator_result
-init_copy_check_const_i(ID id, VALUE v, void *data)
-{
-    const rb_const_entry_t *ce = (const rb_const_entry_t *)v;
-    if (!UNDEF_P(ce->value) && !rb_ractor_shareable_p(ce->value)) {
-        rb_raise(rb_eRactorIsolationError,
-                 "can not copy a class/module created by another Ractor because "
-                 "constant %"PRIsVALUE" refers to an unshareable object", rb_id2str(id));
-    }
-    return ID_TABLE_CONTINUE;
-}
-
-static int
-init_copy_check_field_i(ID id, VALUE val, st_data_t arg)
-{
-    if ((rb_is_instance_id(id) || rb_is_class_id(id)) && !rb_ractor_shareable_p(val)) {
-        rb_raise(rb_eRactorIsolationError,
-                 "can not copy a class/module created by another Ractor because "
-                 "variable %"PRIsVALUE" refers to an unshareable object", rb_id2str(id));
-    }
-    return ST_CONTINUE;
-}
-
-// The copy belongs to the copying Ractor, so it must not carry over unshareable
-// objects owned by the source's Ractor.
 static enum rb_id_table_iterator_result
 move_check_const_i(ID id, VALUE v, void *data)
 {
@@ -1063,26 +1040,13 @@ rb_class_check_singleton_movable(VALUE klass)
     } while ((klass = class_own_metaclass(klass)) != 0);
 }
 
-static void
-init_copy_check_tables(VALUE klass)
-{
-    if (RCLASS_CONST_TBL(klass)) {
-        rb_id_table_foreach(RCLASS_CONST_TBL(klass), init_copy_check_const_i, NULL);
-    }
-    rb_ivar_foreach_buffered(klass, init_copy_check_field_i, 0);
-}
-
+// the copy would carry the owner's field values, which only the owner may read
 static void
 init_copy_owner_check(VALUE orig)
 {
-    if (!rb_class_owned_p(orig)) {
-        init_copy_check_tables(orig);
-
-        // rb_singleton_class_clone_and_attach copies the metaclass's tables too
-        VALUE meta = METACLASS_OF(orig);
-        if (RCLASS_SINGLETON_P(meta)) {
-            init_copy_check_tables(meta);
-        }
+    VALUE meta = METACLASS_OF(orig);
+    if (!rb_class_owned_p(orig) || (RCLASS_SINGLETON_P(meta) && !rb_class_owned_p(meta))) {
+        rb_raise(rb_eRactorIsolationError, "can not copy a class/module created by another Ractor");
     }
 }
 
@@ -1251,9 +1215,11 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
         if (RCLASS_CONST_TBL(klass)) {
             struct clone_const_arg arg;
             struct rb_id_table *table;
-            arg.tbl = table = rb_id_table_create(rb_id_table_size(RCLASS_CONST_TBL(klass)));
             arg.klass = clone;
-            rb_id_table_foreach(RCLASS_CONST_TBL(klass), clone_const_i, &arg);
+            RB_VM_LOCKING() { // see copy_tables
+                arg.tbl = table = rb_id_table_create(rb_id_table_size(RCLASS_CONST_TBL(klass)));
+                rb_id_table_foreach(RCLASS_CONST_TBL(klass), clone_const_i, &arg);
+            }
             RCLASS_SET_CONST_TBL(clone, table, false);
         }
         if (!UNDEF_P(attach)) {
@@ -2159,20 +2125,24 @@ rb_mod_include_p(VALUE mod, VALUE mod2)
 
 /*
  *  call-seq:
- *     mod.ancestors -> array
+ *    ancestors -> array
  *
- *  Returns a list of modules included/prepended in <i>mod</i>
- *  (including <i>mod</i> itself).
+ *  Returns an array of the modules that are ancestors of +self+
+ *  and that +self+ includes or prepends, including +self+:
  *
- *     module Mod
- *       include Math
- *       include Comparable
- *       prepend Enumerable
- *     end
+ *    module MyModule
+ *      include Math
+ *      include Comparable
+ *      prepend Enumerable
+ *    end
+ *    MyModule.ancestors    # => [Enumerable, MyModule, Comparable, Math]
  *
- *     Mod.ancestors        #=> [Enumerable, Mod, Comparable, Math]
- *     Math.ancestors       #=> [Math]
- *     Enumerable.ancestors #=> [Enumerable]
+ *    class MyClass; end
+ *    MyClass.ancestors     # => [MyClass, Object, JSON::GeneratorMethods, PP::ObjectMixin, Kernel, BasicObject]
+ *
+ *    Object.ancestors      # => [Object, JSON::GeneratorMethods, PP::ObjectMixin, Kernel, BasicObject]
+ *    BasicObject.ancestors # => [BasicObject]
+ *
  */
 
 VALUE
@@ -2360,11 +2330,8 @@ module_descendants_recursive(VALUE entry, VALUE v)
  *  call-seq:
  *     descendants -> array
  *
- *  Returns an array of classes and modules that have the receiver in
- *  their ancestors. This is the inverse of Module#ancestors:
- *  +x.descendants.include?(y)+ holds if and only if
- *  +y.ancestors.include?(x)+ holds, except that the receiver itself,
- *  singleton classes, and refinements are never included.
+ *  Returns an array of classes and modules that have +self+ as an ancestor.
+ *  Singleton classes and refinements are not included.
  *  The order of the returned array is not defined.
  *
  *     module A; end
@@ -2376,11 +2343,9 @@ module_descendants_recursive(VALUE entry, VALUE v)
  *     B.descendants    #=> [C, D]
  *     C.descendants    #=> [D]
  *
- *  Note that the receiver does not hold references to its descendants
- *  and doesn't prevent them from being garbage collected. This means
- *  that a descendant might disappear from the result when all
- *  references to it are dropped, depending on whether garbage
- *  collector was run.
+ *  Note that +self+ does not hold references to its descendants;
+ *  Thus even though all references to a module are dropped,
+ *  the module may be reported as a descendant, depending on garbage collection.
  */
 
 VALUE

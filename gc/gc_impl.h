@@ -89,14 +89,15 @@ GC_IMPL_FN VALUE rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE k
  * generated instruction sequence; see zjit/src/gc_fastpath.rs.
  */
 GC_IMPL_FN bool rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
-/* Returns a pointer to a word that is nonzero while incremental marking is in
- * progress, or NULL if the implementation does not support ZJIT's inline write
- * barrier fast path. ZJIT-generated code skips the call to rb_gc_writebarrier()
- * when the receiver has neither RUBY_FL_PROMOTED nor RUBY_FL_SHAREABLE set and
- * this word is zero, so only implementations whose write barrier is a no-op
- * under exactly those conditions may return non-NULL.
+/* Returns the offset of a word inside the objspace that is nonzero while that
+ * objspace is incremental-marking, or -1 if the implementation does not support
+ * ZJIT's inline write barrier fast path. ZJIT-generated code skips the call to
+ * rb_gc_writebarrier() when the receiver has neither RUBY_FL_PROMOTED nor
+ * RUBY_FL_SHAREABLE set and the word of the current Ractor's objspace is zero,
+ * so only implementations whose write barrier is a no-op under exactly those
+ * conditions may return a nonnegative offset.
  */
-GC_IMPL_FN const uintptr_t *rb_gc_impl_zjit_writebarrier_required_p_ptr(void *objspace_ptr);
+GC_IMPL_FN int32_t rb_gc_impl_zjit_writebarrier_required_offset(void);
 GC_IMPL_FN size_t rb_gc_impl_obj_slot_size(VALUE obj);
 GC_IMPL_FN size_t rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size);
 GC_IMPL_FN bool rb_gc_impl_size_allocatable_p(size_t size);
@@ -152,7 +153,11 @@ GC_IMPL_FN bool rb_gc_impl_during_postmortem_p(void *objspace_ptr);
  * objspace impl. */
 GC_IMPL_FN bool rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN bool rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj);
-GC_IMPL_FN size_t rb_gc_impl_heap_page_count(void *objspace_ptr);
+/* gc.c parked objspace_ptr in its zombie table: a terminated Ractor's objspace that
+ * rb_gc_impl_objspace_absorb later merges.  Called under the VM lock, possibly from
+ * inside a global GC sweep (an unjoined Ractor's dfree disowns its objspace), so it
+ * must not allocate through the GC or expect to take a barrier. */
+GC_IMPL_FN void rb_gc_impl_objspace_zombify(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_objspace_absorb(void *dst_ptr, void *src_ptr);
 GC_IMPL_FN void rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), void *data);
 // Finalizers
@@ -171,7 +176,7 @@ GC_IMPL_FN unsigned long long rb_gc_impl_get_total_time(void *objspace_ptr);
 GC_IMPL_FN size_t rb_gc_impl_gc_count(void *objspace_ptr);
 GC_IMPL_FN VALUE rb_gc_impl_latest_gc_info(void *objspace_ptr, VALUE key);
 /* A NULL objspace requests cumulative process-wide statistics. Collectors that
- * do not support this scope must raise NotImplementedError. */
+ * do not support them must raise NotImplementedError. */
 GC_IMPL_FN VALUE rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym);
 GC_IMPL_FN VALUE rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym);
 GC_IMPL_FN const char *rb_gc_impl_active_gc_name(void);

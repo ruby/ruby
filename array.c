@@ -579,8 +579,8 @@ rb_ary_cancel_sharing(VALUE ary)
         else if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && len > ((shared_len = RARRAY_LEN(shared_root))>>1)) {
             rb_len_t shift = RARRAY_CONST_PTR(ary) - RARRAY_CONST_PTR(shared_root);
             FL_UNSET_SHARED(ary);
-            ARY_SET_PTR(ary, RARRAY_CONST_PTR(shared_root));
-            ARY_SET_CAPA(ary, shared_len);
+            ARY_SET_PTR_FORCE(ary, RARRAY_CONST_PTR(shared_root));
+            ARY_SET_CAPA_FORCE(ary, shared_len);
             RARRAY_PTR_USE(ary, ptr, {
                 MEMMOVE(ptr, ptr+shift, VALUE, len);
             });
@@ -1804,7 +1804,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *  Returns elements from +self+; does not modify +self+.
  *
- *  In brief:
+ *  <b>In Brief</b>
  *
  *    a = [:foo, 'bar', 2]
  *
@@ -1821,7 +1821,10 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[0..-2] # => [:foo, "bar"] # Negative range-begin counts backwards from end.
  *    a[-2..2] # => ["bar", 2]    # Negative range-end counts backwards from end.
  *
- *  When a single integer argument +offset+ is given, returns the element at offset +offset+:
+ *  <b>Argument +offset+</b>
+ *
+ *  When the single integer argument +offset+ is given,
+ *  returns the element at offset +offset+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0] # => :foo
@@ -1834,10 +1837,13 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[-1] # => 2
  *    a[-2] # => "bar"
  *
- *  If +index+ is out of range, returns +nil+.
+ *  If +offset+ is out of range, returns +nil+.
  *
- *  When two Integer arguments +offset+ and +size+ are given,
- *  returns a new array of size +size+ containing successive elements beginning at offset +offset+:
+ *  <b>Arguments +offset+ and +size+</b>
+ *
+ *  When integer arguments +offset+ and +size+ are given,
+ *  returns a new array of size +size+ containing successive elements
+ *  beginning at offset +offset+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0, 2] # => [:foo, "bar"]
@@ -1856,7 +1862,9 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *
  *  If +size+ is negative, returns +nil+.
  *
- *  When a single Range argument +range+ is given,
+ *  <b>Argument +range+</b>
+ *
+ *  When {bounded range}[rdoc-ref:Range@Bounded+Ranges] argument +range+ is given,
  *  treats <tt>range.min</tt> as +offset+ above
  *  and <tt>range.size</tt> as +size+ above:
  *
@@ -1886,6 +1894,37 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[4..1] # => nil
  *    a[4..0] # => nil
  *    a[4..-1] # => nil
+ *
+ *  With {beginless range}[rdoc-ref:Range@Beginless+Ranges] +range+ given,
+ *  includes elements up through <tt>self[range.end]</tt>:
+ *
+ *    a = %w[foo bar baz] # => ["foo", "bar", "baz"]
+ *    a[..0]              # => ["foo"]
+ *    a[..2]              # => ["foo", "bar", "baz"]
+ *    a[..5]              # => ["foo", "bar", "baz"]
+ *    a[..-1]             # => ["foo", "bar", "baz"]
+ *    a[..-3]             # => ["foo"]
+ *    a[..-5]             # => []
+ *
+ *  With {endless range}[rdoc-ref:Range@Endless+Ranges] +range+ given,
+ *  includes elements from <tt>self[range.begin]</tt>:
+ *
+ *    a = %w[foo bar baz] # => ["foo", "bar", "baz"]
+ *    a[0..]              # => ["foo", "bar", "baz"]
+ *    a[2..]              # => ["baz"]
+ *    a[4..]              # => nil
+ *    a[-1..]             # => ["baz"]
+ *    a[-3..]             # => ["foo", "bar", "baz"]
+ *    a[-5..]             # => nil
+ *
+ *  With {unbounded range}[rdoc-ref:Range@Unbounded+Ranges] +range+ given,
+ *  returns all elements:
+ *
+ *    a = %w[foo bar baz] # => ["foo", "bar", "baz"]
+      a[nil..nil]         # => ["foo", "bar", "baz"]
+
+ *
+ *  <b>Argument +aseq+</b>
  *
  *  When a single Enumerator::ArithmeticSequence argument +aseq+ is given,
  *  returns an array of elements corresponding to the indexes produced by
@@ -2123,8 +2162,8 @@ rb_ary_find(int argc, VALUE *argv, VALUE ary)
     VALUE if_none;
     rb_len_t idx;
 
-    RETURN_ENUMERATOR(ary, argc, argv);
     if_none = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
+    RETURN_ENUMERATOR(ary, argc, argv);
 
     for (idx = 0; idx < RARRAY_LEN(ary); idx++) {
         VALUE elem = RARRAY_AREF(ary, idx);
@@ -2166,8 +2205,8 @@ rb_ary_rfind(int argc, VALUE *argv, VALUE ary)
     VALUE if_none;
     rb_len_t len, idx;
 
-    RETURN_ENUMERATOR(ary, argc, argv);
     if_none = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
+    RETURN_ENUMERATOR(ary, argc, argv);
 
     idx = RARRAY_LEN(ary);
     while (idx--) {
@@ -3766,8 +3805,8 @@ rb_ary_bsearch(VALUE ary)
 {
     VALUE index_result = rb_ary_bsearch_index(ary);
 
-    if (FIXNUM_P(index_result)) {
-        return rb_ary_entry(ary, FIX2LONG(index_result));
+    if (RB_INTEGER_TYPE_P(index_result)) {
+        return rb_ary_entry(ary, NUM2LEN(index_result));
     }
     return index_result;
 }
@@ -6851,16 +6890,16 @@ single_nested_array(VALUE ary)
  *  With non-negative integer argument +depth+, flattens recursively through +depth+ levels:
  *
  *    a = [ 0, [ 1, [2, 3], 4 ], 5, {foo: 0}, Set.new([6, 7]) ]
- *    a                   # => [0, [1, [2, 3], 4], 5, {foo: 0}, #<Set: {6, 7}>]
- *    a.dup.flatten!(1)   # => [0, 1, [2, 3], 4, 5, {foo: 0}, #<Set: {6, 7}>]
- *    a.dup.flatten!(1.1) # => [0, 1, [2, 3], 4, 5, {foo: 0}, #<Set: {6, 7}>]
- *    a.dup.flatten!(2)   # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
- *    a.dup.flatten!(3)   # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a                   # => [0, [1, [2, 3], 4], 5, {foo: 0}, Set[6, 7]]
+ *    a.dup.flatten!(1)   # => [0, 1, [2, 3], 4, 5, {foo: 0}, Set[6, 7]]
+ *    a.dup.flatten!(1.1) # => [0, 1, [2, 3], 4, 5, {foo: 0}, Set[6, 7]]
+ *    a.dup.flatten!(2)   # => [0, 1, 2, 3, 4, 5, {foo: 0}, Set[6, 7]]
+ *    a.dup.flatten!(3)   # => [0, 1, 2, 3, 4, 5, {foo: 0}, Set[6, 7]]
  *
  *  With +nil+ or negative argument +depth+, flattens all levels:
  *
- *    a.dup.flatten!     # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
- *    a.dup.flatten!(-1) # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a.dup.flatten!     # => [0, 1, 2, 3, 4, 5, {foo: 0}, Set[6, 7]]
+ *    a.dup.flatten!(-1) # => [0, 1, 2, 3, 4, 5, {foo: 0}, Set[6, 7]]
  *
  *  Related: Array#flatten;
  *  see also {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
@@ -6920,17 +6959,17 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *  With non-negative integer argument +depth+, flattens recursively through +depth+ levels:
  *
  *    a = [ 0, [ 1, [2, 3], 4 ], 5, {foo: 0}, Set.new([6, 7]) ]
- *    a              # => [0, [1, [2, 3], 4], 5, {foo: 0}, #<Set: {6, 7}>]
- *    a.flatten(0)   # => [0, [1, [2, 3], 4], 5, {foo: 0}, #<Set: {6, 7}>]
- *    a.flatten(1  ) # => [0, 1, [2, 3], 4, 5, {foo: 0}, #<Set: {6, 7}>]
- *    a.flatten(1.1) # => [0, 1, [2, 3], 4, 5, {foo: 0}, #<Set: {6, 7}>]
- *    a.flatten(2)   # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
- *    a.flatten(3)   # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a              # => [0, [1, [2, 3], 4], 5, {foo: 0}, Set[6, 7]]
+ *    a.flatten(0)   # => [0, [1, [2, 3], 4], 5, {foo: 0}, Set[6, 7]]
+ *    a.flatten(1  ) # => [0, 1, [2, 3], 4, 5, {foo: 0}, Set[6, 7]]
+ *    a.flatten(1.1) # => [0, 1, [2, 3], 4, 5, {foo: 0}, Set[6, 7]]
+ *    a.flatten(2)   # => [0, 1, 2, 3, 4, 5, {foo: 0}, Set[6, 7]]
+ *    a.flatten(3)   # => [0, 1, 2, 3, 4, 5, {foo: 0}, Set[6, 7]]
  *
  *  With +nil+ or negative +depth+, flattens all levels.
  *
- *    a.flatten     # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
- *    a.flatten(-1) # => [0, 1, 2, 3, 4, 5, {foo: 0}, #<Set: {6, 7}>]
+ *    a.flatten     # => [0, 1, 2, 3, 4, 5, {foo: 0}, Set[6, 7]]
+ *    a.flatten(-1) # => [0, 1, 2, 3, 4, 5, {foo: 0}, Set[6, 7]]
  *
  *  Related: Array#flatten!;
  *  see also {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
@@ -6982,11 +7021,10 @@ rand_upto(VALUE randgen, rb_len_t max)
     if (rb_num_negative_p(v)) {
         rb_raise(rb_eRangeError, "random number too small %"PRIsVALUE, v);
     }
-    rb_len_t r = NUM2LEN(v);
-    if (r >= max) {
+    if (RTEST(rb_int_ge(v, lim))) {
         rb_raise(rb_eRangeError, "random number too big %"PRIsVALUE, v);
     }
-    return r;
+    return NUM2LEN(v);
 }
 #define RAND_UPTO(max) rand_upto(randgen, (max))
 #else

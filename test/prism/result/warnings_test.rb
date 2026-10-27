@@ -95,6 +95,24 @@ module Ruby::Prism
       assert_warning("case 1; when 1, 1; end", "when' clause")
     end
 
+    # Negative zero and positive zero are the same key: Float#eql? treats them
+    # as equal and Float#hash gives them the same hash, so the second one
+    # overwrites the first.
+    def test_duplicated_float_zero
+      assert_warning("{ 0.0 => 1, -0.0 => 2 }", "duplicated and overwritten", compare: false)
+      assert_warning("case foo; when 0.0; when -0.0; end", "when' clause", compare: false)
+      refute_warning("{ 0.0 => 1, 1.0 => 2 }")
+    end
+
+    # The once flag only controls how many times an interpolated regular
+    # expression is compiled, so it does not change the value of a regular
+    # expression and both of these are the same key.
+    def test_duplicated_regular_expression_once
+      assert_warning("{ /a/ => 1, /a/o => 2 }", "duplicated and overwritten", compare: false)
+      assert_warning("case foo; when /a/; when /a/o; end", "when' clause", compare: false)
+      refute_warning("{ /a/ => 1, /a/i => 2 }")
+    end
+
     # Two literals with the same bytes are the same key only when they also end
     # up in the same encoding. An escape that locks the encoding to UTF-8 sets
     # FORCED_UTF8 whether or not the file is already UTF-8, so the flag has to
@@ -267,6 +285,13 @@ module Ruby::Prism
       refute_warning("# shareable_constant_value: none")
       refute_warning("    # shareable_constant_value: none")
       refute_warning("\t\t# shareable_constant_value: none")
+    end
+
+    def test_magic_comment_invalid_value
+      assert_warning("# frozen_string_literal: maybe\n", "invalid value for frozen_string_literal: maybe")
+      assert_warning("# Frozen-String-Literal: maybe\n", "invalid value for frozen_string_literal: maybe")
+      assert_warning("# Warn-Indent: maybe\n", "invalid value for warn_indent: maybe")
+      assert_warning("# Shareable-Constant-Value: maybe\n", "invalid value for shareable_constant_value: maybe")
     end
 
     def test_string_in_predicate

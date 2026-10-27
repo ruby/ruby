@@ -1739,6 +1739,63 @@ class TestIO < Test::Unit::TestCase
     end
   end if /cygwin/ !~ RUBY_PLATFORM
 
+  def test_readpartial_gc_compact
+    # [Bug #22467]
+    omit "fork is not supported" unless Process.respond_to?(:fork)
+    omit "compaction not supported" unless GC.respond_to?(:compact)
+
+    assert_separately(["-rsocket"], <<~RUBY, timeout: 60)
+      begin
+        socket, peer = UNIXSocket.pair
+        delays, delays_in = IO.pipe
+        # The data must come from another process: no thread in this one runs
+        # while it compacts.
+        writer = fork { loop { sleep(delays.read(1).ord / 1000.0); peer.write('x') } }
+
+        buffers = Queue.new
+        reader = Thread.new { loop { socket.readpartial(512, buffers.pop) } }
+        reader.report_on_exception = false
+
+        assert_nothing_raised do
+          20.times do
+            strings = Array.new(200_000) { 'y' * 500 }
+            pinned = {}.compare_by_identity
+            _movable = strings.each_slice(20).map {|slice| pinned[slice[0]] = true; slice[10] }
+            buffers << strings[100_000]
+            strings = nil
+            sleep 0.01
+            delays_in.write(rand(12).chr)
+            GC.compact
+            reader.join(0)
+          end
+        end
+      ensure
+        if writer
+          begin
+            Process.kill(:KILL, writer)
+            Process.waitpid(writer)
+          rescue Errno::ESRCH, Errno::ECHILD
+          end
+        end
+        (reader.kill; reader.join) if reader
+        socket&.close
+        peer&.close
+        delays&.close
+        delays_in&.close
+      end
+    RUBY
+  end
+
+  def test_read_interrupted_by_wakeup
+    with_pipe do |r, w|
+      t = Thread.new { r.read }
+      Thread.pass until t.stop?
+      100_000.times { t.wakeup; w.write("x") }
+      w.close
+      assert_equal(100_000, t.value.size)
+    end
+  end
+
   def test_read
     pipe(proc do |w|
       w.write "foobarbaz"
@@ -4544,6 +4601,24 @@ __END__
       assert_equal(ret, IO.select([r],nil,nil,0.1))
       assert_equal(ret, IO.select([r],nil,nil,1))
       assert_equal(ret, IO.select([r],nil,nil,Float::INFINITY))
+    }
+  end
+
+  # A select skipped for a pending interrupt (another thread asks for the GVL) was reported as a timeout.
+  def test_select_zero_timeout_at_eof_with_another_thread
+    IO.pipe {|r, w|
+      w.close
+      th = Thread.new { loop { Thread.pass } }
+      begin
+        miss = 0
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 1
+        while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+          miss += 1 unless IO.select([r], nil, nil, 0)
+        end
+        assert_equal(0, miss)
+      ensure
+        th.kill.join
+      end
     }
   end
 

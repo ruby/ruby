@@ -16,11 +16,11 @@ class Test_StringModifyExpand < Test::Unit::TestCase
   end
 
   def test_integer_overflow
-    return if RbConfig::SIZEOF['size_t'] > RbConfig::SIZEOF['long']
+    return if RbConfig::SIZEOF['size_t'] > RbConfig::SIZEOF['rb_len_t']
     bug12390 = '[ruby-core:75592] [Bug #12390]'
     s = Bug::String.new
     assert_raise(ArgumentError, bug12390) {
-      s.modify_expand!(RbConfig::LIMITS["LONG_MAX"])
+      s.modify_expand!(2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 1)
     }
   end
 end

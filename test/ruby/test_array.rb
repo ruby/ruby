@@ -2058,11 +2058,10 @@ class TestArray < Test::Unit::TestCase
 
   def test_short_heap_array_sort_bang_memory_leak
     bug11332 = '[ruby-dev:49166] [Bug #11332]'
-    assert_no_memory_leak([], <<-PREP, <<-TEST, bug11332, limit: 1.3, timeout: 60)
+    assert_no_memory_leak([], <<-PREP, <<-TEST, bug11332, limit: 1.3, timeout: 60, samples: 2..100)
       def t; ary = [*1..5]; ary.pop(2); ary.sort!; end
-      1.times {t}
     PREP
-      500000.times {t}
+      5_000.times {t}
     TEST
   end
 
@@ -3778,10 +3777,10 @@ class TestArray < Test::Unit::TestCase
     assert_include([1, 2], a.bsearch_index {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
   end
 
-  sizeof_long = [0].pack("l!").size
+  sizeof_len = RbConfig::SIZEOF["rb_len_t"]
   sizeof_voidp = [""].pack("p").size
-  if sizeof_long < sizeof_voidp
-    ARY_MAX = (1<<(8*sizeof_long-1)) / sizeof_voidp - 1
+  if sizeof_len < sizeof_voidp
+    ARY_MAX = (1<<(8*sizeof_len-1)) / sizeof_voidp - 1
     Bug11235 = '[ruby-dev:49043] [Bug #11235]'
 
     def test_push_over_ary_max
@@ -3964,6 +3963,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(2, ary.find {|x| x % 2 == 0 })
     assert_equal(nil, ary.find {|x| false })
     assert_equal(:foo, ary.find(proc { :foo }) {|x| false })
+    assert_raise(ArgumentError) { ary.find(1, 2) }
   end
 
   def test_rfind
@@ -3974,6 +3974,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(nil, ary.rfind {|x| false })
     assert_equal(:foo, ary.rfind(proc { :foo }) {|x| false })
     assert_equal(nil, ary.rfind {|x| ary.clear; false })
+    assert_raise(ArgumentError) { ary.rfind(1, 2) }
   end
 
   private

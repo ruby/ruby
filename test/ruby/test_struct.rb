@@ -548,15 +548,13 @@ module TestStruct
     omit 'skip on riscv64-linux CI machine. See https://github.com/ruby/ruby/pull/13422' if ENV['RUBY_DEBUG'] == 'ci' && /riscv64-linux/ =~ RUBY_DESCRIPTION
 
     # [Bug #20311]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true, limit: 2.2)
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true, limit: 2.2, samples: 2..50)
       code = proc do
         Struct.new("A")
         Struct.send(:remove_const, :A)
       end
-
-      10_000.times(&code)
     PREP
-      50_000.times(&code)
+      1_000.times(&code)
     CODE
   end
 

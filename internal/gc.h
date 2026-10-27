@@ -211,7 +211,7 @@ VALUE rb_newobj_of_unprotected(VALUE klass, VALUE flags, size_t size);
 void *rb_gc_ractor_cache_alloc(struct rb_ractor_struct *ractor);
 void rb_gc_ractor_cache_free(void *cache);
 bool rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
-const uintptr_t *rb_gc_zjit_writebarrier_required_p_ptr(void);
+int32_t rb_gc_zjit_writebarrier_required_offset(void);
 
 bool rb_gc_size_allocatable_p(size_t size);
 size_t rb_gc_size_slot_size(size_t size);
@@ -221,7 +221,7 @@ void rb_gc_mark_and_move(VALUE *ptr);
 
 /* The objspace a marking walk marks into, plus the per-Ractor traversal redirect slot
  * (vm_core.h's gc_mark_func_data_struct) and the shareable-check flag cached from it.
- * Resolving the current Ractor costs an out-of-line rb_current_ec() call on arm64, so a
+ * Resolving the current Ractor costs an out-of-line rb_current_ec() call, so a
  * walk resolves it once into a ctx and threads that down instead of repeating it per
  * reference.  Pass the pointer along wherever one is already in hand; build a fresh one
  * only at an entry point that has none (rb_gc_current_mark_ctx below). */

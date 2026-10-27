@@ -302,6 +302,26 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("::192.168.1.2%eth0", IPAddr.new("::192.168.1.2%eth0").to_s)
     assert_equal("fe80::1%0ab", IPAddr.new("fe80::1%0ab").to_s)
     assert_equal("fe80::1%0012", IPAddr.new("fe80::1%0012").to_s)
+    assert_equal("fe80::1%eth0.100", IPAddr.new("fe80::1%eth0.100").to_s)
+    assert_equal("fe80::1%br-lan", IPAddr.new("fe80::1%br-lan").to_s)
+    assert_equal("fe80::%a~b/64", IPAddr.new("fe80::1%a~b/64").cidr)
+  end
+
+  def test_to_bits
+    assert_equal("11000000101010000000000100000001", IPAddr.new("192.168.1.1").to_bits)
+    assert_equal("00000000000000000000000000000000", IPAddr.new("0.0.0.0").to_bits)
+    assert_equal("00111111111111100000010100000101" + "00000000000000100000000000000000" +
+                 "00000000000000000000000000000000" + "00000000000000000000000000000001",
+                 IPAddr.new("3ffe:505:2::1").to_bits)
+    assert_equal("00000001001000110100010101100111" + "10001001101010111100110111101111" +
+                 "00001010101111001101111011110000" + "00010010001101000101011001111000",
+                 IPAddr.new("123:4567:89ab:cdef:0abc:def0:1234:5678").to_bits)
+    assert_equal("00000000000000000000000000000000" + "00000000000000000000000000000000" +
+                 "00000000000000000000000000000000" + "00000000000000000000000000000000",
+                 IPAddr.new("::").to_bits)
+    assert_equal("11111111111111111111111111111111" + "11111111111111111111111111111111" +
+                 "11111111111111111111111111111111" + "11111111111111111111111111111111",
+                 IPAddr.new("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff").to_bits)
   end
 
   def test_to_hex
@@ -372,6 +392,12 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal('%ab0', a.zone_id)
     assert_equal("1:2:3:4:5:6:7:8%ab0", a.to_s)
     assert_raise(IPAddr::InvalidAddressError) { a.zone_id = '%' }
+    a.zone_id = '%eth0.100'
+    assert_equal("1:2:3:4:5:6:7:8%eth0.100", a.to_s)
+    a.zone_id = '%br-lan'
+    assert_equal('%br-lan', a.zone_id)
+    assert_raise(IPAddr::InvalidAddressError) { a.zone_id = '%a b' }
+    assert_raise(IPAddr::InvalidAddressError) { a.zone_id = '%a/b' }
   end
 
   def test_to_range

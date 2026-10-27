@@ -1274,7 +1274,13 @@ class_ivar_set_ractor_check(VALUE klass, ID id)
 {
     if (rb_is_instance_id(id) && // check only normal ivars
         UNLIKELY(!rb_class_owned_p(klass))) {
-        rb_raise(rb_eRactorIsolationError, "can not set instance variables of classes/modules created by another Ractor");
+        rb_raise(
+            rb_eRactorIsolationError,
+            "can not set instance variables of classes/modules "
+            "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
+            rb_id2str(id),
+            rb_class_path(klass)
+        );
     }
 }
 
@@ -1627,7 +1633,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
                 "can not get unshareable values from instance variables of classes/modules "
                 "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
                 rb_id2str(id),
-                obj
+                rb_class_path(obj)
             );
         }
     }
@@ -1659,8 +1665,13 @@ rb_ivar_get_at(VALUE obj, attr_index_t index, ID id)
             VALUE val = rb_imemo_fields_ptr(fields_obj)[index];
 
             if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
-                rb_raise(rb_eRactorIsolationError,
-                        "can not get unshareable values from instance variables of classes/modules created by another Ractor");
+                rb_raise(
+                    rb_eRactorIsolationError,
+                    "can not get unshareable values from instance variables of classes/modules "
+                    "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
+                    rb_id2str(id),
+                    rb_class_path(obj)
+                );
             }
 
             return val;
@@ -3390,7 +3401,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
             current = RCLASS_SUPER(current), first_iteration = false) {
         VALUE tmp;
         VALUE am = 0;
-        rb_const_entry_t *ce;
+        rb_const_entry_t entry, *ce = &entry;
 
         if (!first_iteration && RCLASS_ORIGIN(current) != current) {
             // This item in the super chain has an origin iclass
@@ -3405,7 +3416,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
         if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
 
         // Do the lookup. Loop in case of autoload.
-        while ((ce = rb_const_lookup(tmp, id))) {
+        while (rb_const_lookup_copy(tmp, id, ce)) {
             if (visibility && RB_CONST_PRIVATE_P(ce)) {
                 GET_EC()->private_const_reference = tmp;
                 return Qundef;
@@ -3494,9 +3505,9 @@ static VALUE
 rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
     while (RTEST(klass)) {
-        rb_const_entry_t *ce;
+        rb_const_entry_t entry, *ce = &entry;
 
-        while ((ce = rb_const_lookup(klass, id))) {
+        while (rb_const_lookup_copy(klass, id, ce)) {
             if (visibility && RB_CONST_PRIVATE_P(ce)) {
                 return Qnil;
             }
@@ -3596,11 +3607,13 @@ rb_const_remove(VALUE mod, ID id)
     }
 
     VALUE writable_ce = 0;
-    if (rb_id_table_lookup(RCLASS_WRITABLE_CONST_TBL(mod), id, &writable_ce)) {
-        rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id);
-        if ((rb_const_entry_t *)writable_ce != ce) {
-            SIZED_FREE((rb_const_entry_t *)writable_ce);
-        }
+    bool found;
+    RB_VM_LOCKING() { // see rb_const_lookup_copy
+        found = rb_id_table_lookup(RCLASS_WRITABLE_CONST_TBL(mod), id, &writable_ce);
+        if (found) rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id);
+    }
+    if (found && (rb_const_entry_t *)writable_ce != ce) {
+        SIZED_FREE((rb_const_entry_t *)writable_ce);
     }
 
     rb_const_warn_if_deprecated(ce, mod, id);
@@ -3755,12 +3768,12 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
     VALUE tmp;
     int mod_retry = 0;
-    rb_const_entry_t *ce;
+    rb_const_entry_t entry, *ce = &entry;
 
     tmp = klass;
   retry:
     while (tmp) {
-        if ((ce = rb_const_lookup(tmp, id))) {
+        if (rb_const_lookup_copy(tmp, id, ce)) {
             if (visibility && RB_CONST_PRIVATE_P(ce)) {
                 return (int)Qfalse;
             }
@@ -4679,4 +4692,21 @@ rb_const_entry_t *
 rb_const_lookup(VALUE klass, ID id)
 {
     return const_lookup(RCLASS_CONST_TBL(klass), id);
+}
+
+// For readers that may not own klass: rb_const_remove frees the entry once it is out of
+// the table, so copy it while the VM lock keeps it in.
+bool
+rb_const_lookup_copy(VALUE klass, ID id, rb_const_entry_t *ce)
+{
+    bool found = false;
+    RB_VM_LOCKING() {
+        struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
+        VALUE entry;
+        if (tbl && rb_id_table_lookup(tbl, id, &entry)) {
+            *ce = *(rb_const_entry_t *)entry;
+            found = true;
+        }
+    }
+    return found;
 }

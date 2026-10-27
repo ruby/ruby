@@ -108,31 +108,13 @@ long rb_num2long(VALUE num);
 unsigned long rb_num2ulong(VALUE num);
 RBIMPL_SYMBOL_EXPORT_END()
 
+/* defined in len_t.h */
 RBIMPL_ATTR_CONST_UNLESS_DEBUG()
 RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(CXX14)
 RBIMPL_ATTR_ARTIFICIAL()
-/**
- * Converts a C's `long` into an instance of ::rb_cInteger.
- *
- * @param[in]  i  Arbitrary `long` value.
- * @return     An instance of ::rb_cInteger.
- */
-static inline VALUE
-RB_INT2FIX(long i)
-{
-    RBIMPL_ASSERT_OR_ASSUME(RB_FIXABLE(i));
-
-    /* :NOTE: VALUE can be wider than long.  As j being unsigned, 2j+1 is fully
-     * defined. Also it can be compiled into a single LEA instruction. */
-    const unsigned long j = RBIMPL_CAST((unsigned long)i);
-    const unsigned long k = (j << 1) + RUBY_FIXNUM_FLAG;
-    const long          l = RBIMPL_CAST((long)k);
-    const SIGNED_VALUE  m = l; /* Sign extend */
-    const VALUE         n = RBIMPL_CAST((VALUE)m);
-
-    RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(n));
-    return n;
-}
+static inline VALUE RB_INT2FIX(long i);
+static inline long rb_fix2long(VALUE x);
+static inline unsigned long rb_fix2ulong(VALUE x);
 
 /**
  * Checks if `int` can hold the given integer.
@@ -154,115 +136,6 @@ rb_long2int_inline(long n)
         rb_out_of_int(n);
 
     return i;
-}
-
-RBIMPL_ATTR_CONST_UNLESS_DEBUG()
-RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(CXX14)
-/**
- * @private
- *
- * This  is an  implementation detail  of rb_fix2long().   People don't  use it
- * directly.
- *
- * @param[in]  x  A Fixnum.
- * @return     Identical value of type `long`
- * @pre        Must not pass anything other than a Fixnum.
- */
-static inline long
-rbimpl_fix2long_by_idiv(VALUE x)
-{
-    RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
-
-    /* :NOTE: VALUE  can be wider  than long.  (x-1)/2 never  overflows because
-     * RB_FIXNUM_P(x)  holds.   Also it  has  no  portability issue  like  y>>1
-     * below. */
-    const SIGNED_VALUE y = RBIMPL_CAST((SIGNED_VALUE)(x - RUBY_FIXNUM_FLAG));
-    const SIGNED_VALUE z = y / 2;
-    const long         w = RBIMPL_CAST((long)z);
-
-    RBIMPL_ASSERT_OR_ASSUME(RB_FIXABLE(w));
-    return w;
-}
-
-RBIMPL_ATTR_CONST_UNLESS_DEBUG()
-RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(CXX14)
-/**
- * @private
- *
- * This  is an  implementation detail  of rb_fix2long().   People don't  use it
- * directly.
- *
- * @param[in]  x  A Fixnum.
- * @return     Identical value of type `long`
- * @pre        Must not pass anything other than a Fixnum.
- */
-static inline long
-rbimpl_fix2long_by_shift(VALUE x)
-{
-    RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
-
-    /* :NOTE: VALUE can be wider than long.  If right shift is arithmetic, this
-     * is noticeably faster than above. */
-    const SIGNED_VALUE y = RBIMPL_CAST((SIGNED_VALUE)x);
-    const SIGNED_VALUE z = y >> 1;
-    const long         w = RBIMPL_CAST((long)z);
-
-    RBIMPL_ASSERT_OR_ASSUME(RB_FIXABLE(w));
-    return w;
-}
-
-RBIMPL_ATTR_CONST()
-RBIMPL_ATTR_CONSTEXPR(CXX11)
-/**
- * @private
- *
- * This  is an  implementation detail  of rb_fix2long().   People don't  use it
- * directly.
- *
- * @retval  true   This C compiler's right shift operator is arithmetic.
- * @retval  false  This C compiler's right shift operator is logical.
- */
-static inline bool
-rbimpl_right_shift_is_arithmetic_p(void)
-{
-    return (-1 >> 1) == -1;
-}
-
-RBIMPL_ATTR_CONST_UNLESS_DEBUG()
-RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(CXX14)
-/**
- * Converts a Fixnum into C's `long`.
- *
- * @param[in]  x  Some Fixnum.
- * @pre        Must not pass anything other than a Fixnum.
- * @return     The passed value converted into C's `long`.
- */
-static inline long
-rb_fix2long(VALUE x)
-{
-    if /* constexpr */ (rbimpl_right_shift_is_arithmetic_p()) {
-        return rbimpl_fix2long_by_shift(x);
-    }
-    else {
-        return rbimpl_fix2long_by_idiv(x);
-    }
-}
-
-RBIMPL_ATTR_CONST_UNLESS_DEBUG()
-RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(CXX14)
-/**
- * Converts a Fixnum into C's `unsigned long`.
- *
- * @param[in]  x  Some Fixnum.
- * @pre        Must not pass anything other than a Fixnum.
- * @return     The passed value converted into C's `unsigned long`.
- * @note       Negative fixnums will be converted into large unsigned longs.
- */
-static inline unsigned long
-rb_fix2ulong(VALUE x)
-{
-    RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
-    return RBIMPL_CAST((unsigned long)rb_fix2long(x));
 }
 
 /**

@@ -425,8 +425,6 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .make_backtrace = rb_make_backtrace,
 
-    .scan_hex = ruby_scan_hex,
-    .scan_oct = ruby_scan_oct,
     .scan_digits = ruby_scan_digits,
     .strtod = ruby_strtod,
 
@@ -1096,10 +1094,13 @@ parser_aset_script_lines_for(VALUE path, rb_parser_ary_t *lines)
     rb_hash_aset(hash, path, script_lines);
 }
 
-/* The source hash API currently computes FNV-1a, but the algorithm is an
- * implementation detail. The hash values are only ever compared against
- * hashes computed by the same interpreter, so the algorithm can be changed
- * freely between releases. */
+/* The source hash API hashes the source that parse.y reads. Code parsed by
+ * prism is hashed by prism itself (see pm_parser_checksum), and the two are
+ * never compared with each other, so they need not use the same algorithm.
+ *
+ * This currently computes FNV-1a, but the algorithm is an implementation
+ * detail. The hash values are only ever compared against hashes computed by the
+ * same interpreter, so the algorithm can be changed freely between releases. */
 void
 rb_source_hash_init(rb_source_hash_state_t *state)
 {

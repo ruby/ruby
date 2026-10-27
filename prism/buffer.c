@@ -187,6 +187,15 @@ pm_buffer_append_double(pm_buffer_t *buffer, double value) {
 }
 
 /**
+ * Append a 64-bit unsigned integer to the buffer in native endian order.
+ */
+void
+pm_buffer_append_uint64(pm_buffer_t *buffer, uint64_t value) {
+    const void *source = &value;
+    pm_buffer_append(buffer, source, sizeof(uint64_t));
+}
+
+/**
  * Append a unicode codepoint to the buffer.
  */
 bool

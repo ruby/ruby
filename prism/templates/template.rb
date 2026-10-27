@@ -16,6 +16,12 @@ module Ruby::Prism
 
     COMMON_FLAGS_COUNT = 2
 
+    # The byte that precedes the child subtrees of a node with a lazy field in
+    # the serialized output (see NodeType#lazy_field). Node types are serialized
+    # as 1 through the number of node types and 0 marks an absent optional node,
+    # so this must be greater than the number of node types.
+    LAZY_MARKER = 0xFF
+
     class Error
       attr_reader :name
 
@@ -70,6 +76,7 @@ module Ruby::Prism
 
       def each_rdoc_line(&block)
         code_block = false
+        code = +""
         value.each_line do |line|
           # Wrap code in explicit language fences so there is syntax highlighting
           if line.start_with?("    ") && !code_block
@@ -77,15 +84,29 @@ module Ruby::Prism
             yield " ```rb"
           elsif !line.strip.empty? && !line.start_with?("    ") && code_block
             code_block = false
-            yield " ```"
+            rdoc_close_codeblock(code, &block)
+            code = +""
           end
 
-          line = line.delete_prefix("    ") if code_block
+          if code_block
+            line = line.delete_prefix("    ")
+            code << line
+          end
           yield line.prepend(" ").rstrip
         end
 
         # Close trailing blocks
-        yield " ```" if code_block
+        rdoc_close_codeblock(code, &block) if code_block
+      end
+
+      def rdoc_close_codeblock(code, &block)
+        yield " ```"
+        return if code.strip.empty?
+
+        code.gsub!(/^[\s^]*$/, "") # clear marker lines
+        encoded = [code].pack("m0").tr("+/", "-_").delete("=") # base64 urlsafe
+        yield ""
+        yield " [Explore code sample](https://ruby.github.io/prism/playground.html##{encoded})"
       end
 
       def each_java_line(&block)
@@ -555,10 +576,19 @@ module Ruby::Prism
         @semantic_fields ||= @fields.select(&:semantic_field?)
       end
 
-      # Should emit serialized length of node so implementations can skip
-      # the node to enable lazy parsing.
-      def needs_serialized_length?
-        name == "DefNode"
+      # The fields that hold child nodes. In the serialized output, their
+      # subtrees are written in field order ahead of this node's own record.
+      def child_fields
+        @child_fields ||= fields.grep(NodeKindField)
+      end
+
+      # The field whose subtree loaders can skip and deserialize on demand. In
+      # the serialized output, the node's child subtrees are preceded by
+      # LAZY_MARKER and two uint32 values: the byte length of the subtrees
+      # before this field's subtree, and the byte length of this field's
+      # subtree.
+      def lazy_field
+        fields.find { |field| field.name == "body" } if name == "DefNode"
       end
 
       private
@@ -700,10 +730,19 @@ module Ruby::Prism
             config = YAML.load_file(File.expand_path("../config.yml", __dir__))
             flags = config.fetch("flags").to_h { |flags| [flags["name"], Flags.new(flags)] }
 
+            nodes = config.fetch("nodes").map { |node| NodeType.new(node, flags) }.sort_by(&:name)
+            raise "Too many node types to reserve LAZY_MARKER" if nodes.length >= LAZY_MARKER
+
+            nodes.each do |node|
+              if (field = node.lazy_field) && !field.is_a?(OptionalNodeField)
+                raise "Lazy field #{node.name}##{field.name} must be an optional node field"
+              end
+            end
+
             {
               errors: config.fetch("errors").map { |name| Error.new(name) },
               warnings: config.fetch("warnings").map { |name| Warning.new(name) },
-              nodes: config.fetch("nodes").map { |node| NodeType.new(node, flags) }.sort_by(&:name),
+              nodes: nodes,
               tokens: config.fetch("tokens").map { |token| Token.new(token) },
               flags: flags.values
             }
@@ -714,6 +753,7 @@ module Ruby::Prism
     TEMPLATES = [
       "ext/prism/api_node.c",
       "include/prism/ast.h",
+      "include/prism/ast.hpp",
       "include/prism/internal/diagnostic.h",
       "javascript/src/deserialize.js",
       "javascript/src/nodes.js",

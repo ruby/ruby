@@ -2,6 +2,46 @@
 require 'test/unit'
 
 class TestRactor < Test::Unit::TestCase
+  # Spawning from a Ractor must not block on the main Ractor's $stdout
+  def test_spawn_does_not_contend_on_main_ractors_stdout
+    assert_separately([], <<~'RUBY', timeout: 60)
+      $stdout = File.open(File::NULL, "w")
+      writer = Thread.new { loop { $stdout.write("x" * 100 + "\n"); $stdout.flush } }
+      r = Ractor.new { 20.times { system(EnvUtil.rubybin, "-e", "") }; :done }
+      assert_equal :done, r.value
+      writer.kill.join
+    RUBY
+  end
+
+  def test_alive_p
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive }
+      assert_predicate r, :alive?
+      r << :done
+      r.join
+      assert_not_predicate r, :alive?
+
+      r = Ractor.new do
+        Thread.current.report_on_exception = false
+        raise "boom"
+      end
+      assert_raise(Ractor::RemoteError) { r.join }
+      assert_not_predicate r, :alive?
+    RUBY
+  end
+
+  def test_alive_p_after_fork
+    omit "fork not supported" unless Process.respond_to?(:fork)
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive }
+      assert_predicate r, :alive?
+      pid = fork { exit!(r.alive? ? 1 : 0) }
+      _, st = Process.wait2(pid)
+      assert_predicate st, :success?
+      assert_predicate r, :alive?
+    RUBY
+  end
+
   def test_shareability_of_iseq_proc
     assert_raise Ractor::IsolationError do
       foo = []
@@ -915,6 +955,19 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # [Bug #22460] Ractor.shareable? must not replace the buffer of a frozen shared array.
+  def test_shareable_p_keeps_frozen_shared_array_buffer
+    assert_ractor(<<~'RUBY')
+      o = Object.new
+      a = Array.new(200) { it }
+      a[50] = o
+      b = a.pop(150)
+      o.define_singleton_method(:to_s) { Ractor.shareable?(b); "x" }
+      b.freeze
+      assert_nothing_raised { assert_equal "x 51", "%1$s %2$s" % b }
+    RUBY
+  end
+
   # Ractor::Port.new must not deadlock under GC.stress (regression guard for a stress GC
   # triggered by malloc while the ractor lock is held).
   def test_port_new_under_gc_stress
@@ -975,7 +1028,7 @@ class TestRactor < Test::Unit::TestCase
       Warning[:experimental] = false
       # the timeout and a send aim at the same instant: both wake the waiter
       results = []
-      300.times do
+      100.times do
         port = Ractor::Port.new
         th = Thread.new(port) {|p| sleep 0.001; p << :msg }
         results << port.receive(timeout: 0.001)

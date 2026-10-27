@@ -140,6 +140,10 @@ If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTE
 # define VM_INSN_INFO_TABLE_IMPL 2
 #endif
 
+#ifndef USE_ISEQ_NODE_ID
+#define USE_ISEQ_NODE_ID 1
+#endif
+
 #if defined(NSIG_MAX)           /* POSIX issue 8 */
 # undef NSIG
 # define NSIG NSIG_MAX
@@ -410,6 +414,8 @@ enum rb_builtin_attr {
     BUILTIN_ATTR_WITHOUT_INTERRUPTS = 0x10,
     // The iseq operates on the nearest user box in its caller frames.
     BUILTIN_ATTR_CALLER_USER_BOX = 0x20,
+    // The JIT should inline the iseq regardless of its size heuristics.
+    BUILTIN_ATTR_ALWAYS_INLINE = 0x40,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
@@ -526,6 +532,10 @@ struct rb_iseq_constant_body {
 #endif
         } positions_or_succ_index_table;
         unsigned int size;
+#ifdef USE_ISEQ_NODE_ID
+        const uint8_t *node_ids;
+        unsigned int node_ids_size;
+#endif
     } insns_info;
 
     const ID *local_table;		/* must free */
@@ -807,16 +817,9 @@ typedef struct rb_vm_struct {
              * rb_gc_register_mark_object pins and join value through it.  NULL for an
              * orphan, whose Ractor struct is gone and has neither any more. */
             struct rb_ractor_struct *owner;
-            /* Heap pages this zombie holds: measured when it retires and refreshed
-             * under the barrier of each global cycle.  The total below stays exactly
-             * in sync, entry by entry. */
-            size_t pages;
         } *zombie_objspaces;
         size_t zombie_objspaces_count;
         size_t zombie_objspaces_capa;
-        /* Sum of .pages over zombie_objspaces.  Between global cycles it is an upper
-         * bound: a zombie's heap never grows and only shrinks at a global cycle. */
-        size_t zombie_total_pages;
 
 #if USE_MODULAR_GC
         struct gc_mark_func_data_struct *mark_func_data;
@@ -2216,11 +2219,7 @@ static inline rb_execution_context_t *
 rb_current_execution_context(bool expect_ec)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #ifdef RB_THREAD_CURRENT_EC_NOINLINE
     rb_execution_context_t * volatile ec = rb_current_ec();
-  #else
-    rb_execution_context_t * volatile ec = ruby_current_ec;
-  #endif
 
     /* On the shared objects, `__tls_get_addr()` is used to access the TLS
      * and the address of the `ruby_current_ec` can be stored on a function

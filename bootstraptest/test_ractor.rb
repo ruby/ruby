@@ -888,6 +888,91 @@ assert_equal "can not get unshareable values from instance variables of classes/
   end
 RUBY
 
+# setting an ivar of a class/module from a non-owner Ractor reports the ivar and class
+assert_equal "can not set instance variables of classes/modules created by another Ractor (@iv from C)", <<~'RUBY', frozen_string_literal: false
+  class C
+    @iv = 'str'
+  end
+
+  r = Ractor.new do
+    class C
+      @iv = 'other'
+    end
+  end
+
+  begin
+    r.value
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+RUBY
+
+# a non-main Ractor can read, set, and remove ivars of classes/modules it created
+assert_equal 'ok', <<~'RUBY', frozen_string_literal: false
+  Ractor.new do
+    [Class.new, Module.new].each do |mod|
+      mod.instance_variable_set(:@iv, 'str')
+      raise unless mod.instance_variable_get(:@iv) == 'str'
+      raise unless mod.remove_instance_variable(:@iv) == 'str'
+    end
+    :ok
+  end.value
+RUBY
+
+# even main cannot modify another Ractor's module; reporting its name must not call to_s
+assert_equal 'true', <<~'RUBY', frozen_string_literal: false
+  port = Ractor::Port.new
+  r = Ractor.new(port) do |port|
+    mod = Module.new
+    mod.set_temporary_name('worker_module')
+    mod.instance_variable_set(:@iv, 'str')
+    def mod.to_s = raise('to_s must not be called')
+    port << mod
+    Ractor.receive
+  end
+  mod = port.receive
+
+  begin
+    messages = [[:instance_variable_set, :@iv, 'other'], [:remove_instance_variable, :@iv]].map do |args|
+      begin
+        mod.public_send(*args)
+      rescue Ractor::IsolationError => e
+        e.message
+      end
+    end
+    messages == ["can not set instance variables of classes/modules created by another Ractor (@iv from worker_module)"] * 2
+  ensure
+    r << nil
+    r.join
+  end
+RUBY
+
+# normal and JIT-compiled ivar reads report the same names without calling to_s
+assert_equal 'true', <<~'RUBY', frozen_string_literal: false
+  class C
+    @iv = 'str'
+    def self.read = @iv
+    def self.to_s = raise('to_s must not be called')
+  end
+
+  Ractor.new do
+    messages = []
+    begin
+      C.instance_variable_get(:@iv)
+    rescue Ractor::IsolationError => e
+      messages << e.message
+    end
+    40.times do
+      begin
+        C.read
+      rescue Ractor::IsolationError => e
+        messages << e.message
+      end
+    end
+    messages == ["can not get unshareable values from instance variables of classes/modules created by another Ractor (@iv from C)"] * 41
+  end.value
+RUBY
+
 # setting an ivar on a shareable but unfrozen object is not allowed, by instance_variable_set
 assert_equal "can't modify instance variables of a shareable Ractor", %q{
   shared = Ractor.new{}
@@ -1555,63 +1640,25 @@ assert_equal "can not access non-shareable objects in constant Object::STR of a 
   end
 RUBY
 
-# Copying a class/module created by another Ractor raises if its constants or
-# fields refer to unshareable objects
-assert_equal 'can not copy a class/module created by another Ractor because constant CONST refers to an unshareable object', <<~'RUBY', frozen_string_literal: false
-  class C
-    CONST = 'str'
-  end
-
-  r = Ractor.new { C.dup }
-
-  begin
-    r.join
-  rescue Ractor::RemoteError => e
-    e.cause.message
-  end
-  RUBY
-
-assert_equal 'can not copy a class/module created by another Ractor because variable @iv refers to an unshareable object', <<~'RUBY', frozen_string_literal: false
-  class C
-    @iv = 'str'
-  end
-
-  r = Ractor.new { C.dup }
-
-  begin
-    r.join
-  rescue Ractor::RemoteError => e
-    e.cause.message
-  end
-  RUBY
-
-# ... the metaclass is checked too, because the copy carries it over
-assert_equal 'can not copy a class/module created by another Ractor because variable @secret refers to an unshareable object', <<~'RUBY', frozen_string_literal: false
-  class C; end
-  C.singleton_class.instance_variable_set(:@secret, 'str')
-
-  r = Ractor.new { C.dup }
-
-  begin
-    r.join
-  rescue Ractor::RemoteError => e
-    e.cause.message
-  end
-  RUBY
-
-# ... and the copy of a class which refers to nothing unshareable belongs to the
-# copying Ractor, which is a way to modify a foreign class without mutating it
-assert_equal 'copy orig', %q{
+# Copying a class/module created by another Ractor is not allowed: the copy would
+# carry the owner's field values
+assert_equal 'can not copy a class/module created by another Ractor', %q{
   class C
     CONST = 1
-    def m = 'orig'
   end
 
-  Ractor.new do
-    k = C.dup
-    k.class_eval { def m = 'copy' }
-    "#{k.new.m} #{C.new.m}"
-  end.value
+  r = Ractor.new { C.dup }
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+assert_equal 'Ractor::IsolationError', %q{
+  module M; end
+  Ractor.new { M.clone rescue $!.class.to_s }.value
 }
 
 # Setting constants of classes created by other Ractors is not allowed
@@ -3302,4 +3349,43 @@ assert_equal 'ok', %q{
   Ractor.new { Dir.pwd; 500_000.times { "y" * 300 } }.join
   Dir.pwd
   'ok'
+}
+
+# A stale errno left on another native thread must not raise IO::TimeoutError
+assert_equal 'ok', %q{
+  8.times.map do
+    Ractor.new do
+      t = Time.now
+      Thread.new do
+        r, = IO.pipe
+        r.timeout = 0.0001
+        (r.read(1) rescue nil) while Time.now - t < 0.1
+      end
+      r, w = IO.pipe
+      Thread.new do
+        (w << "x"; sleep 0.0001) while Time.now - t < 0.1
+        w.close
+      end
+      nil while r.read(1)
+    end
+  end.each(&:join)
+  :ok
+}
+
+# A Ractor's main thread must not share its ec serial with its threads
+assert_equal 'false', %q{
+  rs = 4.times.map {
+    Ractor.new {
+      m = Thread::Mutex.new
+      m.lock
+      ok = 8.times.map { Thread.new { m.owned? } }.map(&:value)
+      begin
+        8.times.map { Thread.new { m.unlock rescue nil } }.each(&:join)
+      ensure
+        m.unlock
+      end
+      ok.any?
+    }
+  }
+  rs.map(&:value).any?
 }

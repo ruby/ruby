@@ -52,6 +52,9 @@ void pm_buffer_append_varsint(pm_buffer_t *buffer, int32_t value);
 /* Append a double to the buffer. */
 void pm_buffer_append_double(pm_buffer_t *buffer, double value);
 
+/* Append a 64-bit unsigned integer to the buffer in native endian order. */
+void pm_buffer_append_uint64(pm_buffer_t *buffer, uint64_t value);
+
 /* Append a unicode codepoint to the buffer. */
 bool pm_buffer_append_unicode_codepoint(pm_buffer_t *buffer, uint32_t value);
 

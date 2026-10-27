@@ -1557,10 +1557,9 @@ rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
     return true;
 }
 
-size_t
-rb_gc_impl_heap_page_count(void *objspace_ptr)
+void
+rb_gc_impl_objspace_zombify(void *objspace_ptr)
 {
-    return 0;
 }
 
 void
@@ -1573,11 +1572,11 @@ rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
 {
 }
 
-const uintptr_t *
-rb_gc_impl_zjit_writebarrier_required_p_ptr(void *objspace_ptr)
+int32_t
+rb_gc_impl_zjit_writebarrier_required_offset(void)
 {
     /* ZJIT must always call rb_gc_writebarrier() so wbcheck sees every barrier. */
-    return NULL;
+    return -1;
 }
 
 void

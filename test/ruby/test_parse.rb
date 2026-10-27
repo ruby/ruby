@@ -1394,6 +1394,10 @@ x = __ENCODING__
     assert_syntax_error('1e', /expecting end-of-input/)
   end
 
+  def test_broken_numeric
+    assert_syntax_error('undef.0when', /0when/)
+  end
+
   def test_truncated_source_line
     lineno = __LINE__ + 1
     e = assert_syntax_error("'0123456789012345678901234567890123456789' abcdefghijklmnopqrstuvwxyz0123456789 123456789012345678901234567890123456789",

@@ -1004,6 +1004,18 @@ class JSONParserTest < Test::Unit::TestCase
     assert_parse_error_at '$.foo["1x"]', '{"foo": {"1x": xyz}}'
   end
 
+  def test_parse_error_json_path_symbolize_names
+    assert_parse_error_at "$.a[1].b" do
+      JSON.parse('{"a": [1, {"b": xyz}]}', symbolize_names: true)
+    end
+    assert_parse_error_at '$["hello world"]' do
+      JSON.parse('{"hello world": xyz}', symbolize_names: true)
+    end
+    assert_parse_error_at "$.x.a" do
+      JSON.parse('{"x": {"a": 1, "a": 2}}', symbolize_names: true)
+    end
+  end
+
   def test_parse_error_json_path_duplicate_key
     assert_parse_error_at "$.a", '{"a": 1, "a": 2}'
     assert_parse_error_at "$.x.a", '{"x": {"a": 1, "b": 2, "a": 3}}'

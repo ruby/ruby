@@ -898,6 +898,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_verify_hostname
     assert_equal(true,  OpenSSL::SSL.verify_hostname("www.example.com", "*.example.com"))
     assert_equal(false, OpenSSL::SSL.verify_hostname("www.subdomain.example.com", "*.example.com"))
+    assert_equal(false, OpenSSL::SSL.verify_hostname("www.example.com", ".example.com"))
   end
 
   def test_verify_wildcard

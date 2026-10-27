@@ -205,6 +205,30 @@ class IPAddr
     return @addr
   end
 
+  # Returns a string containing the binary representation of the
+  # IP address value, right adjusted to the address size (32 bits
+  # for IPv4, 128 bits for IPv6), regardless of the prefix length.
+  #
+  # e.g.:
+  #   require 'ipaddr'
+  #   p IPAddr.new("192.168.1.1").to_bits
+  #   #=> "11000000101010000000000100000001"
+  #   p IPAddr.new("3ffe:505:2::1").to_bits
+  #   #=> "00111111111111100000010100000101" \
+  #   #   "00000000000000100000000000000000" \
+  #   #   "00000000000000000000000000000000" \
+  #   #   "00000000000000000000000000000001"
+  def to_bits
+    case @family
+    when Socket::AF_INET
+      @addr.to_s(2).rjust(32, '0')
+    when Socket::AF_INET6
+      @addr.to_s(2).rjust(128, '0')
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
   # Returns a string containing the hexadecimal representation of the
   # IP address value, right adjusted to the address size.
   #
@@ -593,7 +617,7 @@ class IPAddr
   def zone_id=(zid)
     if @family == Socket::AF_INET6
       case zid
-      when nil, /\A%(\w+)\z/
+      when nil, /\A%[-0-9A-Za-z._~]+\z/
         @zone_id = zid
       else
         raise InvalidAddressError, "invalid zone identifier for address"
@@ -734,7 +758,7 @@ class IPAddr
       family = Socket::AF_INET6
       bracketed = true
     end
-    if prefix =~ /\A(.*)(%\w+)\z/
+    if prefix =~ /\A(.*)(%[-0-9A-Za-z._~]+)\z/
       prefix = $1
       zone_id = $2
       family = Socket::AF_INET6

@@ -1,5 +1,6 @@
 require_relative '../spec_helper'
 require_relative '../core/exception/shared/set_backtrace'
+require_relative '../core/process/fixtures/common'
 require 'stringio'
 
 # The following tables are excerpted from Programming Ruby: The Pragmatic Programmer's Guide'
@@ -1263,7 +1264,7 @@ describe "Global variable $0" do
     it "actually sets the program name" do
       title = "rubyspec-dollar0-test"
       $0 = title
-      `ps -ocommand= -p#{$$}`.should.include?(title)
+      ProcessSpecs.command_line_include?(title).should == true
     end
   end
 

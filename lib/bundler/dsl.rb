@@ -292,8 +292,16 @@ module Bundler
 
     def validate_override_target!(target)
       return if target == :all
-      return if target.is_a?(String)
-      raise ArgumentError, "override target must be :all or a gem name string, got #{target.inspect}"
+      raise ArgumentError, "override target must be :all or a gem name string, got #{target.inspect}" unless target.is_a?(String)
+      validate_override_gem_name!(target)
+    end
+
+    # Override names are recorded in the lockfile's OVERRIDES section, so they
+    # must be valid gem names.
+    def validate_override_gem_name!(name)
+      validate_gem_name!(name)
+      return if Gem::Specification::VALID_NAME_PATTERN.match?(name)
+      raise GemfileError, "#{name.inspect} is not a valid gem name"
     end
 
     def validate_override_field!(field)
@@ -339,8 +347,8 @@ module Bundler
       raise ArgumentError, "`from:` must be a gem name string, got #{from.inspect}" unless from.is_a?(String)
       raise ArgumentError, "`to:` must be a gem name string or nil, got #{to.inspect}" unless to.nil? || to.is_a?(String)
       raise ArgumentError, "`to:` must name a gem other than #{target.inspect} and #{from.inspect}" if to == target || to == from
-      validate_gem_name!(from)
-      validate_gem_name!(to) if to
+      validate_override_gem_name!(from)
+      validate_override_gem_name!(to) if to
 
       unsupported = operations.keys - [:from, :to, :version]
       if unsupported.any?

@@ -3216,6 +3216,64 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     end
   end
 
+  def test_validate_extension_require_relative_with_non_ascii_source_under_ascii_locale
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["ext/a/extconf.rb"]
+      @a1.files = %w[lib/code.rb lib/a.rb ext/a/extconf.rb]
+
+      File.binwrite File.join("lib", "a.rb"), "# Copyright \u00A9\nrequire_relative \"a/a\"\n"
+
+      with_default_external(Encoding::US_ASCII) do
+        use_ui @ui do
+          @a1.validate
+        end
+      end
+
+      assert_match(%r{lib/a\.rb:2 uses `require_relative "a/a"`}, @ui.error)
+    end
+  end
+
+  def test_validate_extension_require_relative_with_invalid_utf8_source
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["ext/a/extconf.rb"]
+      @a1.files = %w[lib/code.rb lib/a.rb ext/a/extconf.rb]
+
+      File.binwrite File.join("lib", "a.rb"), "# \xFF\xFE\nrequire_relative \"a/a\"\n".b
+
+      with_default_external(Encoding::UTF_8) do
+        use_ui @ui do
+          @a1.validate
+        end
+      end
+
+      assert_match(%r{lib/a\.rb:2 uses `require_relative "a/a"`}, @ui.error)
+    end
+  end
+
+  def test_validate_extension_require_relative_with_non_ascii_path
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["ext/a/extconf.rb"]
+      @a1.files = %w[lib/code.rb lib/a.rb lib/ü/b.rb lib/ü/é.rb ext/a/extconf.rb]
+
+      FileUtils.mkdir_p File.join("lib", "ü")
+      File.write File.join("lib", "a.rb"), "require_relative \"ü/b\"\n"
+      File.write File.join("lib", "ü", "b.rb"), "require_relative \"é\"\n"
+      File.write File.join("lib", "ü", "é.rb"), ""
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      refute_match(/require_relative/, @ui.error)
+    end
+  end
+
   def test_validate_extension_require_relative_no_warning_when_rb_exists
     util_setup_validate
 
@@ -4538,5 +4596,16 @@ end
         File.umask(umask_orig)
       end
     end
+  end
+
+  def with_default_external(encoding)
+    verbose = $VERBOSE
+    $VERBOSE = nil
+    original = Encoding.default_external
+    Encoding.default_external = encoding
+    yield
+  ensure
+    Encoding.default_external = original
+    $VERBOSE = verbose
   end
 end

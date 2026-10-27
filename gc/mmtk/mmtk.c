@@ -742,12 +742,12 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
 #endif
 }
 
-const uintptr_t *
-rb_gc_impl_zjit_writebarrier_required_p_ptr(void *objspace_ptr)
+int32_t
+rb_gc_impl_zjit_writebarrier_required_offset(void)
 {
     /* MMTk's write barrier is not a no-op for young, unshareable receivers,
      * so ZJIT must always call rb_gc_writebarrier(). */
-    return NULL;
+    return -1;
 }
 
 void
@@ -1858,11 +1858,10 @@ rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
     return true;
 }
 
-size_t
-rb_gc_impl_heap_page_count(void *objspace_ptr)
+void
+rb_gc_impl_objspace_zombify(void *objspace_ptr)
 {
     /* With a single objspace zombie_objspaces is always empty. */
-    return 0;
 }
 
 void

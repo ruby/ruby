@@ -273,13 +273,6 @@ typedef struct pm_lex_mode {
 } pm_lex_mode_t;
 
 /*
- * We pre-allocate a certain number of lex states in order to avoid having to
- * call malloc too many times while parsing. You really shouldn't need more than
- * this because you only really nest deeply when doing string interpolation.
- */
-#define PM_LEX_STACK_SIZE 4
-
-/*
  * While parsing, we keep track of a stack of contexts. This is helpful for
  * error recovery so that we can pop back to a previous context when we hit a
  * token that is understood by a parent context but not by the current context.
@@ -596,8 +589,19 @@ struct pm_parser_t {
     /* The arena used for all AST-lifetime allocations. Caller-owned. */
     pm_arena_t *arena;
 
-    /* The arena used for parser metadata (comments, diagnostics, etc.). */
+    /*
+     * The arena used for parser metadata (comments, diagnostics, etc.), which
+     * lives as long as the parser.
+     */
     pm_arena_t metadata_arena;
+
+    /*
+     * The arena used for state that is only needed while parsing, such as
+     * scopes, locals, and contexts. It is released when pm_parse returns, so
+     * nothing allocated in it can be reachable from the tree or from the
+     * parser's metadata.
+     */
+    pm_arena_t scratch_arena;
 
     /*
      * The next node identifier that will be assigned. This is a unique
@@ -648,16 +652,23 @@ struct pm_parser_t {
      */
     pm_state_stack_t accepts_block_stack;
 
-    /* A stack of lex modes. */
+    /* A stack of lex modes, linked through their prev pointers. */
     struct {
         /* The current mode of the lexer. */
         pm_lex_mode_t *current;
 
-        /* The stack of lexer modes. */
-        pm_lex_mode_t stack[PM_LEX_STACK_SIZE];
+        /*
+         * The mode at the bottom of the stack, which is never popped. Every
+         * other mode is allocated from the scratch arena.
+         */
+        pm_lex_mode_t base;
 
-        /* The current index into the lexer mode stack. */
-        size_t index;
+        /*
+         * Lex modes that have been popped, kept for reuse by the next push.
+         * They are allocated from the scratch arena, so they are never freed
+         * individually.
+         */
+        pm_lex_mode_t *free;
     } lex_modes;
 
     /* The pointer to the start of the source. */
@@ -717,7 +728,7 @@ struct pm_parser_t {
 
     /*
      * Scopes that have been popped, kept for reuse by the next push. Scopes
-     * are allocated from the metadata arena, so they are never freed
+     * are allocated from the scratch arena, so they are never freed
      * individually.
      */
     pm_scope_t *free_scopes;
@@ -727,7 +738,7 @@ struct pm_parser_t {
 
     /*
      * Context nodes that have been popped, kept for reuse by the next push.
-     * Context nodes are allocated from the metadata arena, so they are never
+     * Context nodes are allocated from the scratch arena, so they are never
      * freed individually.
      */
     pm_context_node_t *free_contexts;

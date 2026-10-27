@@ -192,6 +192,72 @@ RSpec.describe Bundler::Override do
     end
   end
 
+  describe "#to_lock" do
+    it "renders the override without the keyword or its location" do
+      override = described_class.new("rails", :version, ">= 8.0", source_location: caller_locations(0, 1).first)
+      expect(override.to_lock).to eq(%("rails", version: ">= 8.0"))
+    end
+
+    it "normalizes requirements" do
+      expect(described_class.new("rails", :version, ">=8").to_lock).to eq(%("rails", version: ">= 8"))
+      expect(described_class.new("rails", :version, "8.0").to_lock).to eq(%("rails", version: "= 8.0"))
+      expect(described_class.new("b", :to, "c", from: "a", requirement: ">=2").to_lock).to eq(%("b", from: "a", to: "c", version: ">= 2"))
+    end
+
+    it "keeps dropping a dependency distinct from replacing it with a gem named nil" do
+      expect(described_class.new("b", :to, nil, from: "a").to_lock).to eq(%("b", from: "a", to: nil))
+      expect(described_class.new("b", :to, "nil", from: "a").to_lock).to eq(%("b", from: "a", to: "nil"))
+    end
+  end
+
+  describe ".from_lock" do
+    [
+      %(:all, required_ruby_version: :ignore_upper),
+      %("rails", version: ">= 8.0"),
+      %("rails", version: nil),
+      %("rails", required_rubygems_version: :ignore_upper),
+      %("b", from: "a", to: nil),
+      %("b", from: "a", to: "nil"),
+      %("b", from: "a", to: "c", version: ">= 2"),
+    ].each do |line|
+      it "round-trips #{line}" do
+        expect(described_class.from_lock(line).to_lock).to eq(line)
+      end
+    end
+
+    it "reads the operation back with its type" do
+      expect(described_class.from_lock(%(:all, required_ruby_version: :ignore_upper)).operation).to eq(:ignore_upper)
+      expect(described_class.from_lock(%("b", from: "a", to: nil)).operation).to be_nil
+      expect(described_class.from_lock(%("b", from: "a", to: "nil")).operation).to eq("nil")
+    end
+
+    [
+      %(rails, version: ">= 8.0"),
+      %("rails"),
+      %("rails", version: ">= 8.0", required_ruby_version: nil),
+      %("rails", as: "y"),
+      %("b", from: "a"),
+      %("b", from: nil, to: "c"),
+      %("b", from: "a", to: "c", as: "d"),
+      %("b", to: "c"),
+      %("foo bar", version: nil),
+      %("rails", version: ">= 8.0") + "\n",
+    ].each do |line|
+      it "rejects #{line.inspect}" do
+        expect { described_class.from_lock(line) }.to raise_error(ArgumentError, /invalid override in lockfile/)
+      end
+    end
+
+    [
+      %("rails", version: "garbage"),
+      %("b", from: "a", to: "c", version: "garbage"),
+    ].each do |line|
+      it "rejects the ill-formed requirement in #{line}" do
+        expect { described_class.from_lock(line) }.to raise_error(Gem::Requirement::BadRequirementError)
+      end
+    end
+  end
+
   describe ".rewrite_dependencies" do
     let(:deps) { [Gem::Dependency.new("grpc", "~> 1.0"), Gem::Dependency.new("json", ">= 2")] }
 

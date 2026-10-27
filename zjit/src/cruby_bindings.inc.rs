@@ -644,6 +644,7 @@ pub const BUILTIN_ATTR_INLINE_BLOCK: rb_builtin_attr = 4;
 pub const BUILTIN_ATTR_C_TRACE: rb_builtin_attr = 8;
 pub const BUILTIN_ATTR_WITHOUT_INTERRUPTS: rb_builtin_attr = 16;
 pub const BUILTIN_ATTR_CALLER_USER_BOX: rb_builtin_attr = 32;
+pub const BUILTIN_ATTR_ALWAYS_INLINE: rb_builtin_attr = 64;
 pub type rb_builtin_attr = u32;
 pub type rb_jit_func_t = ::std::option::Option<
     unsafe extern "C" fn(
@@ -1275,6 +1276,8 @@ pub struct rb_iseq_constant_body_iseq_insn_info {
     pub body: *const iseq_insn_info_entry,
     pub positions_or_succ_index_table: rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1,
     pub size: ::std::os::raw::c_uint,
+    pub node_ids: *const u8,
+    pub node_ids_size: ::std::os::raw::c_uint,
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -1989,38 +1992,37 @@ pub const YARVINSN_trace_putobject_INT2FIX_0_: ruby_vminsn_type = 224;
 pub const YARVINSN_trace_putobject_INT2FIX_1_: ruby_vminsn_type = 225;
 pub const YARVINSN_zjit_getinstancevariable: ruby_vminsn_type = 226;
 pub const YARVINSN_zjit_setinstancevariable: ruby_vminsn_type = 227;
-pub const YARVINSN_zjit_splatkw: ruby_vminsn_type = 228;
-pub const YARVINSN_zjit_definedivar: ruby_vminsn_type = 229;
-pub const YARVINSN_zjit_send: ruby_vminsn_type = 230;
-pub const YARVINSN_zjit_opt_send_without_block: ruby_vminsn_type = 231;
-pub const YARVINSN_zjit_objtostring: ruby_vminsn_type = 232;
-pub const YARVINSN_zjit_opt_nil_p: ruby_vminsn_type = 233;
-pub const YARVINSN_zjit_invokesuper: ruby_vminsn_type = 234;
-pub const YARVINSN_zjit_invokeblock: ruby_vminsn_type = 235;
-pub const YARVINSN_zjit_opt_case_dispatch: ruby_vminsn_type = 236;
-pub const YARVINSN_zjit_opt_plus: ruby_vminsn_type = 237;
-pub const YARVINSN_zjit_opt_minus: ruby_vminsn_type = 238;
-pub const YARVINSN_zjit_opt_mult: ruby_vminsn_type = 239;
-pub const YARVINSN_zjit_opt_div: ruby_vminsn_type = 240;
-pub const YARVINSN_zjit_opt_mod: ruby_vminsn_type = 241;
-pub const YARVINSN_zjit_opt_eq: ruby_vminsn_type = 242;
-pub const YARVINSN_zjit_opt_neq: ruby_vminsn_type = 243;
-pub const YARVINSN_zjit_opt_lt: ruby_vminsn_type = 244;
-pub const YARVINSN_zjit_opt_le: ruby_vminsn_type = 245;
-pub const YARVINSN_zjit_opt_gt: ruby_vminsn_type = 246;
-pub const YARVINSN_zjit_opt_ge: ruby_vminsn_type = 247;
-pub const YARVINSN_zjit_opt_ltlt: ruby_vminsn_type = 248;
-pub const YARVINSN_zjit_opt_and: ruby_vminsn_type = 249;
-pub const YARVINSN_zjit_opt_or: ruby_vminsn_type = 250;
-pub const YARVINSN_zjit_opt_aref: ruby_vminsn_type = 251;
-pub const YARVINSN_zjit_opt_aset: ruby_vminsn_type = 252;
-pub const YARVINSN_zjit_opt_length: ruby_vminsn_type = 253;
-pub const YARVINSN_zjit_opt_size: ruby_vminsn_type = 254;
-pub const YARVINSN_zjit_opt_empty_p: ruby_vminsn_type = 255;
-pub const YARVINSN_zjit_opt_succ: ruby_vminsn_type = 256;
-pub const YARVINSN_zjit_opt_not: ruby_vminsn_type = 257;
-pub const YARVINSN_zjit_opt_regexpmatch2: ruby_vminsn_type = 258;
-pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 259;
+pub const YARVINSN_zjit_definedivar: ruby_vminsn_type = 228;
+pub const YARVINSN_zjit_send: ruby_vminsn_type = 229;
+pub const YARVINSN_zjit_opt_send_without_block: ruby_vminsn_type = 230;
+pub const YARVINSN_zjit_objtostring: ruby_vminsn_type = 231;
+pub const YARVINSN_zjit_opt_nil_p: ruby_vminsn_type = 232;
+pub const YARVINSN_zjit_invokesuper: ruby_vminsn_type = 233;
+pub const YARVINSN_zjit_invokeblock: ruby_vminsn_type = 234;
+pub const YARVINSN_zjit_opt_case_dispatch: ruby_vminsn_type = 235;
+pub const YARVINSN_zjit_opt_plus: ruby_vminsn_type = 236;
+pub const YARVINSN_zjit_opt_minus: ruby_vminsn_type = 237;
+pub const YARVINSN_zjit_opt_mult: ruby_vminsn_type = 238;
+pub const YARVINSN_zjit_opt_div: ruby_vminsn_type = 239;
+pub const YARVINSN_zjit_opt_mod: ruby_vminsn_type = 240;
+pub const YARVINSN_zjit_opt_eq: ruby_vminsn_type = 241;
+pub const YARVINSN_zjit_opt_neq: ruby_vminsn_type = 242;
+pub const YARVINSN_zjit_opt_lt: ruby_vminsn_type = 243;
+pub const YARVINSN_zjit_opt_le: ruby_vminsn_type = 244;
+pub const YARVINSN_zjit_opt_gt: ruby_vminsn_type = 245;
+pub const YARVINSN_zjit_opt_ge: ruby_vminsn_type = 246;
+pub const YARVINSN_zjit_opt_ltlt: ruby_vminsn_type = 247;
+pub const YARVINSN_zjit_opt_and: ruby_vminsn_type = 248;
+pub const YARVINSN_zjit_opt_or: ruby_vminsn_type = 249;
+pub const YARVINSN_zjit_opt_aref: ruby_vminsn_type = 250;
+pub const YARVINSN_zjit_opt_aset: ruby_vminsn_type = 251;
+pub const YARVINSN_zjit_opt_length: ruby_vminsn_type = 252;
+pub const YARVINSN_zjit_opt_size: ruby_vminsn_type = 253;
+pub const YARVINSN_zjit_opt_empty_p: ruby_vminsn_type = 254;
+pub const YARVINSN_zjit_opt_succ: ruby_vminsn_type = 255;
+pub const YARVINSN_zjit_opt_not: ruby_vminsn_type = 256;
+pub const YARVINSN_zjit_opt_regexpmatch2: ruby_vminsn_type = 257;
+pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 258;
 pub type ruby_vminsn_type = u32;
 #[repr(C)]
 #[repr(align(8))]
@@ -2050,7 +2052,6 @@ pub struct iseq_compile_data__bindgen_ty_3 {
 #[derive(Debug, Copy, Clone)]
 pub struct iseq_insn_info_entry {
     pub line_no: ::std::os::raw::c_int,
-    pub node_id: ::std::os::raw::c_int,
     pub events: rb_event_flag_t,
 }
 pub const CATCH_TYPE_RESCUE: rb_catch_type = 3;
@@ -2114,7 +2115,7 @@ pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
 >;
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
-pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 240;
+pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 256;
 pub const RUBY_OFFSET_THREAD_RACTOR: zjit_struct_offsets = 24;
 pub type zjit_struct_offsets = u32;
 #[repr(C)]
@@ -2308,6 +2309,7 @@ unsafe extern "C" {
     pub fn rb_ivar_defined(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_const_get(space: VALUE, name: ID) -> VALUE;
+    pub fn rbimpl_enc_str_coderange_scan(str_: VALUE) -> ::std::os::raw::c_int;
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_obj_equal(obj1: VALUE, obj2: VALUE) -> VALUE;
     pub fn rb_reg_new_from_values(

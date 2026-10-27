@@ -1207,6 +1207,107 @@ fn test_yield_inlined_caller_block_dispatches_without_guards() {
 }
 
 #[test]
+fn test_inline_blockarg_proc_yield() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def sum2 = (yield 1) + (yield 2)
+            def test(pr) = sum2(&pr)
+            pr = proc { |x| x * 10 }
+            test(pr)
+            test(pr)
+        "), @"30");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_block_given() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def maybe_yield = block_given? ? yield(10) : :no_block
+            def test(pr) = maybe_yield(&pr)
+            pr = proc { |x| x * 2 }
+            test(pr)
+            test(pr)
+        "), @"20");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_lambda_strict_arity() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines(r#"
+            def call_it = yield(1, 2)
+            def test(l) = call_it(&l)
+            lam = ->(x) { x }
+            def run(l) = begin; test(l); rescue ArgumentError; :arg_error; end
+            run(lam)
+            run(lam)
+        "#), @":arg_error");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_side_exit() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def compute(x) = yield(x + 1)
+            def test(pr, x) = compute(x, &pr)
+            pr = proc { |v| v * 10 }
+            test(pr, 1)
+            test(pr, 1)
+            test(pr, 1.5)
+        "), @"25.0");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_forwarded_block_param_inlines_inner() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def inner = yield(3)
+            def outer(&b) = inner(&b)
+            def test(pr) = outer(&pr)
+            pr = proc { |x| x * 7 }
+            test(pr)
+            test(pr)
+        "), @"21");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_non_local_return() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def run = yield
+            def test
+              pr = proc { return :returned }
+              run(&pr)
+              :not_returned
+            end
+            test
+            test
+        "), @":returned");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_break() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def run = yield
+            def test
+              pr = proc { break :broke }
+              run(&pr)
+            rescue LocalJumpError
+              :local_jump_error
+            end
+            test
+            test
+        "), @":local_jump_error");
+    });
+}
+
+#[test]
 fn test_yield_block_iseq_guard_survives_compaction() {
     with_inlining_threshold(0, || {
         eval("
@@ -4775,6 +4876,71 @@ fn test_string_copy_chilled_gc_stress() {
           GC.stress = false
         end
     "#), @r#"[String, "hello world!", false, "UTF-8", 12, "hello world"]"#);
+}
+
+// Runs both `StringCoderange` paths: the first five strings are built at runtime so their code range
+// is UNKNOWN. `valid_encoding?` will force a code range scan since UNKNOWN is never returned in Ruby.
+// The String literals will have a precomputed code range so we can use the flag bits directly.
+#[test]
+fn test_string_valid_encoding_unknown_coderange() {
+    eval(r#"
+        def test(s) = s.valid_encoding?
+        test("iron")
+    "#);
+    assert_snapshot!(assert_compiles(r#"
+        [
+          test(["ascii"].pack("a*").force_encoding(Encoding::UTF_8).freeze),
+          test(String.new("", encoding: Encoding::UTF_8).freeze),
+          test("\xC3\xA9".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xE2\x82".b.force_encoding(Encoding::UTF_8).freeze),
+          test("ascii".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.freeze)
+        ]
+    "#), @"[true, true, true, false, false, true, true]");
+}
+
+// Same inputs and rationale as `test_string_valid_encoding_unknown_coderange`. Here, we're
+// testing the `ascii_only?` path handles the code range (scanned or already cached) properly.
+#[test]
+fn test_string_ascii_only_unknown_coderange() {
+    eval(r#"
+        def test(s) = s.ascii_only?
+        test("iron")
+    "#);
+    assert_snapshot!(assert_compiles(r#"
+        [
+          test(["ascii"].pack("a*").force_encoding(Encoding::UTF_8).freeze),
+          test(String.new("", encoding: Encoding::UTF_8).freeze),
+          test("\xC3\xA9".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xE2\x82".b.force_encoding(Encoding::UTF_8).freeze),
+          test("ascii".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.freeze)
+        ]
+    "#), @"[true, true, false, false, false, true, false]");
+}
+
+// `ascii_only?` and `valid_encoding?` will force a code range scan if necessary and the code range
+// will be stored in the object header. This test intermingles operations that would invalidate the
+// code range so we ensure we aren't reporting stale values on subsequent calls.
+#[test]
+fn test_string_coderange_after_mutation() {
+    eval(r#"
+        def test(s)
+          original = [s.valid_encoding?, s.ascii_only?]
+          s.setbyte(0, 0xFF)
+          broken = [s.valid_encoding?, s.ascii_only?]
+          s.force_encoding(Encoding::BINARY)
+          binary = [s.valid_encoding?, s.ascii_only?]
+          s.force_encoding(Encoding::UTF_8)
+          utf8 = [s.valid_encoding?, s.ascii_only?]
+          [original, broken, binary, utf8]
+        end
+        test(+"abc")
+    "#);
+    assert_snapshot!(assert_compiles(r#"test(+"abc")"#),
+        @"[[true, true], [false, false], [true, false], [false, false]]");
 }
 
 #[test]

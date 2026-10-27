@@ -674,6 +674,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(jit, asm, function, class, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(jit, asm, function, *val, opnd!(val), *chilled, &function.frame_state(*state)),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, function, opnds!(strings), &function.frame_state(*state)),
+        Insn::StringCoderange { string, cached } => gen_string_coderange(jit, asm, opnd!(string), opnd!(cached)),
         &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
         Insn::StringByteslice { string, beg, len, state } => gen_string_byteslice(asm, opnd!(string), opnd!(beg), opnd!(len), &function.frame_state(*state)),
         Insn::StringSetbyteFixnum { string, index, value } => gen_string_setbyte_fixnum(asm, opnd!(string), opnd!(index), opnd!(value)),
@@ -692,26 +693,14 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, function, cd, blockiseq, &function.frame_state(state), reason),
         Insn::SendDirect(insn) => {
             let SendDirectData { cd, cme, iseq, recv, args, kw_bits, jit_entry_idx, block, state, .. } = &**insn;
-            let block = block.map(|bh| match bh {
-                BlockHandler::BlockIseq(blockiseq) => lir::BlockHandler::Iseq(blockiseq),
-                BlockHandler::BlockArgProc(proc_id) => {
-                    let proc_type = function.type_of(proc_id);
-                    assert!(
-                        proc_type.is_subtype(Type::from_class(unsafe { rb_cProc })),
-                        "BlockArgProc operand must be a Proc, got {proc_type}",
-                    );
-                    lir::BlockHandler::Proc(opnd!(proc_id))
-                }
-                BlockHandler::BlockArg => unreachable!("BlockArg in SendDirect"),
-            });
             gen_send_iseq_direct(
                 cb, jit, asm,
                 function, *cd, *cme, *iseq, opnd!(recv), opnds!(args),
-                *kw_bits, *jit_entry_idx, &function.frame_state(*state), block,
+                *kw_bits, *jit_entry_idx, &function.frame_state(*state), block.map(|bh| lower_block_handler(jit, bh)),
             )
         }
-        Insn::PushInlineFrame { cme, iseq, recv, num_args, blockiseq, state, .. } => {
-            no_output!(gen_push_inline_frame(jit, asm, function, *cme, *iseq, opnd!(recv), *num_args, &function.frame_state(*state), *blockiseq))
+        Insn::PushInlineFrame { cme, iseq, recv, num_args, block, state, .. } => {
+            no_output!(gen_push_inline_frame(jit, asm, function, *cme, *iseq, opnd!(recv), *num_args, &function.frame_state(*state), block.map(|bh| lower_block_handler(jit, bh))))
         },
         Insn::PopInlineFrame { iseq, argc, state } => {
             no_output!(gen_pop_inline_frame(asm, *iseq, *argc, &function.frame_state(*state)))
@@ -1169,6 +1158,21 @@ fn gen_block_handler_specval(asm: &mut Assembler, blockiseq: IseqPtr) -> lir::Op
     asm.or(cfp_self_addr, Opnd::Imm(1))
 }
 
+fn lower_block_handler(jit: &JITState, bh: BlockHandler) -> lir::BlockHandler {
+    match bh {
+        BlockHandler::BlockIseq(blockiseq) => lir::BlockHandler::Iseq(blockiseq),
+        BlockHandler::BlockArgProc(proc_id) => lir::BlockHandler::Proc(jit.get_opnd(proc_id)),
+        BlockHandler::BlockArg => unreachable!("BlockArg in a direct iseq call"),
+    }
+}
+
+fn gen_block_handler_opnd(asm: &mut Assembler, bh: lir::BlockHandler) -> Opnd {
+    match bh {
+        lir::BlockHandler::Iseq(blockiseq) => gen_block_handler_specval(asm, blockiseq),
+        lir::BlockHandler::Proc(proc) => proc,
+    }
+}
+
 /// Generate code for a variadic C function call
 /// func(int argc, VALUE *argv, VALUE recv)
 fn gen_ccall_variadic(
@@ -1512,17 +1516,23 @@ fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: O
         asm.je(jit, result_edge.clone());
 
         unsafe extern "C" {
-            fn rb_gc_zjit_writebarrier_required_p_ptr() -> *const usize;
+            fn rb_gc_zjit_writebarrier_required_offset() -> i32;
         }
         // The barrier is a no-op when the receiver is young (not RUBY_FL_PROMOTED),
-        // not RUBY_FL_SHAREABLE, and incremental marking is off; see
-        // rb_gc_impl_writebarrier. NULL means the GC has no such fast path.
-        let marking_ptr = unsafe { rb_gc_zjit_writebarrier_required_p_ptr() };
-        if !marking_ptr.is_null() {
+        // not RUBY_FL_SHAREABLE, and the current Ractor's objspace is not
+        // incremental-marking; see rb_gc_impl_writebarrier. A negative offset
+        // means the GC has no such fast path. The word is per-objspace: compiled
+        // code is shared across Ractors, so find the objspace through EC.
+        let wb_offset = unsafe { rb_gc_zjit_writebarrier_required_offset() };
+        if wb_offset >= 0 {
             let flags = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS));
             let old_or_shareable = asm.and(flags, Opnd::UImm((RUBY_FL_PROMOTED | RUBY_FL_SHAREABLE) as u64));
-            let marking_addr = asm.load(Opnd::const_ptr(marking_ptr));
-            let marking = asm.load(Opnd::mem(64, marking_addr, 0));
+            let thread = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR as i32));
+            let ractor = asm.load(Opnd::mem(64, thread, RUBY_OFFSET_THREAD_RACTOR as i32));
+            let objspace = asm.load(Opnd::mem(64, ractor, unsafe { rb_zjit_runtime_offsets.ractor_objspace }));
+            let marking = asm.load(Opnd::mem(8, objspace, wb_offset));
+            let marking = marking.with_num_bits(64);
+            let marking = asm.and(marking, 0xFF.into());
             let needs_wb = asm.or(old_or_shareable, marking);
             asm.test(needs_wb, needs_wb);
             asm.jz(jit, result_edge.clone());
@@ -1692,7 +1702,7 @@ fn gen_push_inline_frame(
     recv: Opnd,
     num_args: u16,
     state: &FrameState,
-    blockiseq: Option<IseqPtr>,
+    block: Option<lir::BlockHandler>,
 ) {
     let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
     let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
@@ -1706,11 +1716,7 @@ fn gen_push_inline_frame(
 
     gen_spill_locals(jit, asm, state);
 
-    // This mirrors vm_caller_setup_arg_block() for the `blockiseq != NULL` case.
-    // The HIR specialization guards ensure we will only reach here for literal blocks,
-    // not &block forwarding, &:foo, etc. These are rejected in `type_specialize` by
-    // `unspecializable_call_type`.
-    let block_handler = blockiseq.map(|b| gen_block_handler_specval(asm, b));
+    let block_handler = block.map(|bh| gen_block_handler_opnd(asm, bh));
 
     let callee_is_bmethod = VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) };
 
@@ -1855,14 +1861,7 @@ fn gen_send_iseq_direct(
     gen_spill_locals(jit, asm, state);
     asm.stack_map(stack_map, jit_frame, state.depth);
 
-    // This mirrors vm_caller_setup_arg_block().
-    // Unsupported block args (BlockHandler::BlockArg) are rejected upstream in `type_specialize`.
-    let block_handler = block.map(|bh| match bh {
-        // the `blockiseq != NULL` case
-        lir::BlockHandler::Iseq(b) => gen_block_handler_specval(asm, b),
-        // the VM_CALL_ARGS_BLOCKARG case, where vm_to_proc(block_code) returns the given Proc as is
-        lir::BlockHandler::Proc(proc) => proc,
-    });
+    let block_handler = block.map(|bh| gen_block_handler_opnd(asm, bh));
 
     let callee_is_bmethod = VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) };
 
@@ -4305,6 +4304,32 @@ fn get_string_ptr(asm: &mut Assembler, string: Opnd) -> Opnd {
     // (struct RString *)(obj)->as.ary
     let ary = asm.lea(Opnd::mem(VALUE_BITS, string, RUBY_OFFSET_RSTRING_AS_ARY));
     asm.csel_nz(heap_ptr, ary)
+}
+
+fn gen_string_coderange(jit: &mut JITState, asm: &mut Assembler, string: Opnd, cached: Opnd) -> Opnd {
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let result_edge = |coderange| Target::Block(Box::new(lir::BranchEdge {
+        target: result_block,
+        args: vec![coderange],
+    }));
+
+    // If the code range is unknown, we need to scan the string to compute it.
+    asm.cmp(cached, RUBY_ENC_CODERANGE_UNKNOWN.into());
+    asm.jne(jit, result_edge(cached));
+
+    // Scan the string for the code range. The string's flag bits will update with the code range value.
+    let scanned = asm_ccall!(asm, rbimpl_enc_str_coderange_scan, string);
+    let scanned = asm.and(scanned, RUBY_ENC_CODERANGE_MASK.to_usize().into());
+    asm.jmp(result_edge(scanned));
+
+    asm.set_current_block(result_block);
+    let label = jit.get_label(asm, result_block, hir_block_id);
+    asm.write_label(label);
+    let param = asm.new_block_param(VALUE_BITS);
+    asm.current_block().add_parameter(param);
+    param
 }
 
 fn gen_string_getbyte(asm: &mut Assembler, string: Opnd, index: Opnd) -> Opnd {

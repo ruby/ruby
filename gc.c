@@ -679,7 +679,7 @@ typedef struct gc_function_map {
     bool (*during_postmortem_p)(void *objspace_ptr);
     bool (*obj_foreign_p)(void *objspace_ptr, VALUE obj);
     bool (*shref_marked_p)(void *objspace_ptr, VALUE obj);
-    size_t (*heap_page_count)(void *objspace_ptr);
+    void (*objspace_zombify)(void *objspace_ptr);
     void (*objspace_absorb)(void *dst_ptr, void *src_ptr);
     void (*gc_rest)(void *objspace_ptr);
     VALUE (*config_get)(void *objpace_ptr);
@@ -690,7 +690,7 @@ typedef struct gc_function_map {
     // Object allocation
     VALUE (*new_obj)(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size);
     bool (*zjit_new_obj_fastpath)(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
-    const uintptr_t *(*zjit_writebarrier_required_p_ptr)(void *objspace_ptr);
+    int32_t (*zjit_writebarrier_required_offset)(void);
     size_t (*obj_slot_size)(VALUE obj);
     size_t (*size_slot_size)(void *objspace_ptr, size_t size);
     bool (*size_allocatable_p)(size_t size);
@@ -875,7 +875,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(during_postmortem_p);
     load_modular_gc_func(obj_foreign_p);
     load_modular_gc_func(shref_marked_p);
-    load_modular_gc_func(heap_page_count);
+    load_modular_gc_func(objspace_zombify);
     load_modular_gc_func(objspace_absorb);
     load_modular_gc_func(gc_rest);
     load_modular_gc_func(config_set);
@@ -886,7 +886,7 @@ ruby_modular_gc_init(void)
     // Object allocation
     load_modular_gc_func(new_obj);
     load_modular_gc_func(zjit_new_obj_fastpath);
-    load_modular_gc_func(zjit_writebarrier_required_p_ptr);
+    load_modular_gc_func(zjit_writebarrier_required_offset);
     load_modular_gc_func(obj_slot_size);
     load_modular_gc_func(size_slot_size);
     load_modular_gc_func(size_allocatable_p);
@@ -980,7 +980,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_during_postmortem_p rb_gc_functions.during_postmortem_p
 # define rb_gc_impl_obj_foreign_p rb_gc_functions.obj_foreign_p
 # define rb_gc_impl_shref_marked_p rb_gc_functions.shref_marked_p
-# define rb_gc_impl_heap_page_count rb_gc_functions.heap_page_count
+# define rb_gc_impl_objspace_zombify rb_gc_functions.objspace_zombify
 # define rb_gc_impl_objspace_absorb rb_gc_functions.objspace_absorb
 # define rb_gc_impl_gc_rest rb_gc_functions.gc_rest
 # define rb_gc_impl_config_get rb_gc_functions.config_get
@@ -991,7 +991,7 @@ ruby_modular_gc_init(void)
 // Object allocation
 # define rb_gc_impl_new_obj rb_gc_functions.new_obj
 # define rb_gc_impl_zjit_new_obj_fastpath rb_gc_functions.zjit_new_obj_fastpath
-# define rb_gc_impl_zjit_writebarrier_required_p_ptr rb_gc_functions.zjit_writebarrier_required_p_ptr
+# define rb_gc_impl_zjit_writebarrier_required_offset rb_gc_functions.zjit_writebarrier_required_offset
 # define rb_gc_impl_obj_slot_size rb_gc_functions.obj_slot_size
 # define rb_gc_impl_size_slot_size rb_gc_functions.size_slot_size
 # define rb_gc_impl_size_allocatable_p rb_gc_functions.size_allocatable_p
@@ -1083,15 +1083,14 @@ rb_gc_init_objspaces(void)
 #endif
 }
 
-/* Stays true once the process has gone multi-Ractor (rb_multi_ractor_p goes back to
- * false when the other Ractors finish).  Used by verification that spans generation
- * state built while multiple Ractors ran. */
+/* Stays true once a second objspace has existed (rb_multi_ractor_p goes back to false
+ * when the other Ractors finish, and is false for the whole window in which the creator
+ * builds the child objspace). */
 static bool gc_ever_multi_ractor = false;
 
 bool
 rb_gc_ever_multi_ractor_p(void)
 {
-    if (!gc_ever_multi_ractor && rb_multi_ractor_p()) gc_ever_multi_ractor = true;
     return gc_ever_multi_ractor;
 }
 
@@ -1100,7 +1099,9 @@ rb_gc_ever_multi_ractor_p(void)
 void *
 rb_gc_objspace_alloc(void)
 {
-    gc_ever_multi_ractor = true;
+    /* The one store that ever runs is the first Ractor creation, which is by definition
+     * single-Ractor and so races no reader. */
+    if (!gc_ever_multi_ractor) gc_ever_multi_ractor = true;
     if (!rb_gc_impl_multi_objspace_p()) {
         /* One objspace shared by every Ractor. */
         return rb_gc_get_objspace();
@@ -2936,7 +2937,7 @@ gc_mark_func_data_slotp_of(rb_ractor_t *const cr)
 #define GC_MARK_FUNC_DATA_SLOTP()  gc_mark_func_data_slotp_of(rb_current_ractor_raw(false))
 
 /* Resolve the current Ractor once for a whole marking walk.  rb_current_ractor_raw() is an
- * out-of-line rb_current_ec() call wherever RB_THREAD_CURRENT_EC_NOINLINE is set (arm64), so
+ * out-of-line rb_current_ec() call, so
  * the walk threads this ctx down rather than repeating the lookup per reference. */
 static inline struct rb_gc_mark_ctx
 gc_current_mark_ctx(void)
@@ -4152,10 +4153,10 @@ rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct 
 #endif
 }
 
-const uintptr_t *
-rb_gc_zjit_writebarrier_required_p_ptr(void)
+int32_t
+rb_gc_zjit_writebarrier_required_offset(void)
 {
-    return rb_gc_impl_zjit_writebarrier_required_p_ptr(rb_gc_get_objspace());
+    return rb_gc_impl_zjit_writebarrier_required_offset();
 }
 
 /*
@@ -4245,19 +4246,6 @@ rb_gc_registered_addr_owned_by_registrant_p(VALUE *addr, void *objspace)
         for (size_t j = 0; j < r->registered_addrs_cnt; j++) {
             if (r->registered_addrs[j].addr == addr) return true;
         }
-    }
-    return false;
-}
-
-/* True while the objspace is a zombie pending merge.  Registration ownership moves to
- * the inheritor before the zombie merge completes, so a value still owned by a zombie
- * is a safe transient for the verifier. */
-bool
-rb_gc_vm_zombie_objspace_p(void *objspace)
-{
-    rb_vm_t *vm = GET_VM();
-    for (size_t i = 0; i < vm->gc.zombie_objspaces_count; i++) {
-        if (vm->gc.zombie_objspaces[i].objspace == objspace) return true;
     }
     return false;
 }
@@ -4460,14 +4448,12 @@ zombie_objspaces_push(rb_vm_t *vm, void *objspace, void **owner_slot, struct rb_
         vm->gc.zombie_objspaces = grown;
         vm->gc.zombie_objspaces_capa = new_capa;
     }
-    size_t pages = rb_gc_impl_heap_page_count(objspace);
     vm->gc.zombie_objspaces[vm->gc.zombie_objspaces_count++] = (struct rb_objspace_zombie){
         .objspace = objspace,
         .owner_slot = owner_slot,
         .owner = owner,
-        .pages = pages,
     };
-    vm->gc.zombie_total_pages += pages;
+    rb_gc_impl_objspace_zombify(objspace);
 }
 
 /* Called for a Ractor that terminated without being joined.  Its objspace loses its
@@ -4570,7 +4556,6 @@ rb_gc_vm_forget_zombie(void *objspace)
     size_t n = vm->gc.zombie_objspaces_count;
     for (size_t i = 0; i < n; i++) {
         if (vm->gc.zombie_objspaces[i].objspace == objspace) {
-            vm->gc.zombie_total_pages -= vm->gc.zombie_objspaces[i].pages;
             vm->gc.zombie_objspaces[i] = vm->gc.zombie_objspaces[n - 1];
             vm->gc.zombie_objspaces_count = n - 1;
             break;
@@ -4578,34 +4563,11 @@ rb_gc_vm_forget_zombie(void *objspace)
     }
 }
 
-/* Total zombie pages, deciding whether to start a global GC.  An upper bound between
- * global cycles (each re-measures under the barrier), so a stale value cannot
- * re-trigger; a lock-free read at worst fires one cycle early or late. */
-size_t
-rb_gc_vm_zombie_total_pages(void)
-{
-    return GET_VM()->gc.zombie_total_pages;
-}
-
 /* Number of live Ractors, for the heap growth heuristic (r_mul); a racy read is fine. */
 unsigned int
 rb_gc_vm_ractor_count(void)
 {
     return GET_VM()->ractor.cnt;
-}
-
-/* Called by a global cycle from inside the barrier. */
-void
-rb_gc_vm_refresh_zombie_pages(void)
-{
-    rb_vm_t *vm = GET_VM();
-    size_t total = 0;
-    for (size_t i = 0; i < vm->gc.zombie_objspaces_count; i++) {
-        size_t pages = rb_gc_impl_heap_page_count(vm->gc.zombie_objspaces[i].objspace);
-        vm->gc.zombie_objspaces[i].pages = pages;
-        total += pages;
-    }
-    vm->gc.zombie_total_pages = total;
 }
 
 void
@@ -4725,9 +4687,8 @@ objspace_absorb_disowned_zombies(void)
         while (i < vm->gc.zombie_objspaces_count) {
             if (vm->gc.zombie_objspaces[i].owner_slot == NULL) {
                 void *zombie = vm->gc.zombie_objspaces[i].objspace;
-                /* Remove via forget, which also subtracts the entry's pages from
-                 * zombie_total_pages; a hand-written swap-remove would leave a phantom
-                 * total that keeps starting stop-the-world global cycles. */
+                /* Drop the entry before the merge, in this same VM-lock section:
+                 * objspace_absorb expects src to be out of the table. */
                 gc_absorbing_zombie++;
                 rb_gc_vm_forget_zombie(zombie);
                 objspace_absorb_merge(rb_gc_get_objspace(), zombie);
@@ -5652,7 +5613,7 @@ rb_gc_latest_gc_info(VALUE key)
 }
 
 static VALUE
-gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg, VALUE global_scope)
+gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg, VALUE process)
 {
     if (NIL_P(arg)) {
         arg = rb_hash_new();
@@ -5661,7 +5622,7 @@ gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg, VALUE global_scope)
         rb_raise(rb_eTypeError, "non-hash or symbol given");
     }
 
-    VALUE ret = rb_gc_impl_stat(RTEST(global_scope) ? NULL : rb_gc_get_objspace(), arg);
+    VALUE ret = rb_gc_impl_stat(RTEST(process) ? NULL : rb_gc_get_objspace(), arg);
 
     if (ret == Qundef) {
         GC_ASSERT(SYMBOL_P(arg));

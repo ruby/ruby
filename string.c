@@ -335,6 +335,20 @@ rb_str_make_embedded(VALUE str)
     TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
 }
 
+/* Converts an embedded string into a heap allocated string. The buffer of an
+ * embedded string lives inside a GC heap slot, which the compactor may mprotect
+ * to implement its read barrier.  A pointer to such a buffer must not be given
+ * to a system call without the GVL. */
+void
+rb_str_make_heap(VALUE str)
+{
+    if (STR_EMBED_P(str)) {
+        const int termlen = TERM_LEN(str);
+        rb_len_t len = RSTRING_LEN(str);
+        str_make_independent_expand(str, len, (rb_len_t)rb_str_capacity(str) - len, termlen);
+    }
+}
+
 void
 rb_debug_rstring_null_ptr(const char *func)
 {
@@ -4149,7 +4163,7 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
  *  Raises RangeError if that codepoint is not representable in the encoding of +self+:
  *
  *    s = 'foo'
- *    s.encoding              # => <Encoding:UTF-8>
+ *    s.encoding              # => #<Encoding:UTF-8>
  *    s << 0x00110000         # 1114112 out of char range (RangeError)
  *    s = 'foo'.encode(Encoding::EUC_JP)
  *    s << 0x00800080         # invalid codepoint 0x800080 in EUC-JP (RangeError)
@@ -6004,8 +6018,8 @@ rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
     }
     match = rb_backref_get();
     nth = rb_reg_backref_number(match, backref);
-    int num_regs = RMATCH_NREGS(match);
-    if ((nth >= num_regs) || ((nth < 0) && (-nth >= num_regs))) {
+    int num_regs = RMATCH_NREGS(match); /* 1 <= num_regs <= ONIG_MAX_CAPTURE_GROUP_NUM (= 32767) */
+    if (nth >= num_regs || nth + num_regs <= 0) {
         rb_raise(rb_eIndexError, "index %d out of regexp", nth);
     }
     if (nth < 0) {
@@ -6833,7 +6847,7 @@ str_bit_offset_out_of_range(rb_len_t byte_len, uint64_t bit_offset)
  * Keep both the full bit offset and its rb_len_t representation.  Most calls
  * use a Fixnum-sized offset and can stay on the rb_len_t fast path; only large
  * Bignum offsets need the uint64_t path below.  This matters on platforms where
- * rb_len_t is narrower than the address space, such as 32-bit and LLP64.
+ * rb_len_t is 32 bits.
  */
 struct str_bit_offset {
     uint64_t value;
@@ -7570,6 +7584,66 @@ rb_str_bitwise_not_bang(VALUE str)
     str_bitwise_not(ptr, ptr, len);
     return str;
 }
+
+/*
+ * Document-method: String#bitwise_and
+ *
+ * call-seq:
+ *   bitwise_and -> new_string
+ *
+ *  :include: doc/string/bitwise_and.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_and!
+ *
+ * call-seq:
+ *   bitwise_and! -> self
+ *
+ *  :include: doc/string/bitwise_and_bang.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_or
+ *
+ * call-seq:
+ *   bitwise_or -> new_string
+ *
+ *  :include: doc/string/bitwise_or.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_or!
+ *
+ * call-seq:
+ *   bitwise_or! -> self
+ *
+ *  :include: doc/string/bitwise_or_bang.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_xor
+ *
+ * call-seq:
+ *   bitwise_xor -> new_string
+ *
+ *  :include: doc/string/bitwise_xor.rdoc
+ *
+ */
+
+/*
+ * Document-method: String#bitwise_xor!
+ *
+ * call-seq:
+ *   bitwise_xor! -> self
+ *
+ *  :include: doc/string/bitwise_xor_bang.rdoc
+ *
+ */
 
 #define STR_DEFINE_BINARY_BITWISE_METHOD(name)                              \
     static VALUE                                                            \
@@ -10015,23 +10089,26 @@ rb_str_tr_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    tr(selector, replacements) -> new_string
  *    tr(pairs) -> new_string
+ *    tr(selector, replacements) -> new_string
  *
- *  Accepts either a +selector+ and a +replacements+ string,
- *  or a single +pairs+ Hash.
+ *  With hash argument +pairs+ given,
+ *  returns a copy of +self+ with some codepoints replaced:
  *
- *  When a +pairs+ Hash is provided the keys, returns a copy of +self+ with
- *  the keys of the hash replaced by the values.
+ *  - Each key in +pairs+ is a string contains a single codepoint.
+ *  - Each value in +pairs+ is a string of any length (even length zero).
  *
- *  - They keys must be strings containing a single codepoints.
- *  - The values can be of any length.
+ *  Each codepoint in +self+ is examined;
+ *  when the codepoint in +self+ matches a key codepoint in +pairs+,
+ *  the string value for that key replaces the codepoint in +self+.
  *
- *  Example:
+ *  Examples:
  *
- *    'hello'.tr('e' => 'er', 'l' => '', 'o' => 'o !') #=> "hero !"
+ *    h = {'h' => 'H', 'e' => 'er', 'l' => '', 'o' => 'o!'}
+ *    'hello'.tr(h)           # => "Hero!"
  *
- *  When +selector+ and +replacements+are provided, returns a copy of +self+
+ *  With string arguments +selector+ and +replacements+ given,
+ *  returns a copy of +self+
  *  with each character specified by string +selector+ translated to the
  *  corresponding character in string +replacements+.
  *  The correspondence is _positional_:

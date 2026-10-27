@@ -425,8 +425,8 @@ module SyncDefaultGems
   # Rewrite the namespace in C code: only the module definition.  The
   # `rb_cPrism*` C identifiers are left alone.
   def prism_rewrite_c(src)
-    src.gsub('rb_define_module("Prism")',
-             'rb_define_module_under(rb_define_module("Ruby"), "Prism")')
+    src.gsub('rb_cPrism = rb_define_module("Prism")',
+             'VALUE mRuby = rb_define_module("Ruby"); rb_cPrism = rb_define_module_under(mRuby, "Prism")')
   end
 
   def prism_do_fixup
