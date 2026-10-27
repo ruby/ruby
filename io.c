@@ -3329,6 +3329,11 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
         fptr->cbuf.len += (int)(dp - ds);
 
         putbackable = rb_econv_putbackable(fptr->readconv);
+        /* The converter can hold readagain bytes it received in an earlier
+         * fill (a character split across reads). Only bytes still in rbuf
+         * can be put back there; the rest stay in the converter. */
+        if (putbackable > fptr->rbuf.off)
+            putbackable = fptr->rbuf.off;
         if (putbackable) {
             rb_econv_putback(fptr->readconv, (unsigned char *)fptr->rbuf.ptr + fptr->rbuf.off - putbackable, putbackable);
             fptr->rbuf.off -= putbackable;
