@@ -5579,7 +5579,7 @@ ary_hash_values(rb_len_t len, const VALUE *elements, const VALUE ary)
     h = rb_hash_uint(h, (st_index_t)rb_ary_hash_values);
     for (i=0; i<len; i++) {
         n = rb_hash(elements[i]);
-        h = rb_hash_uint(h, NUM2LONG(n));
+        h = rb_hash_uint(h, NUM2ST(n));
         if (ary) {
             len = RARRAY_LEN(ary);
             elements = RARRAY_CONST_PTR(ary);

@@ -181,7 +181,7 @@ rb_dbl_long_hash(double d)
 #endif
 }
 
-static inline long
+static inline rb_len_t
 any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 {
     VALUE hval;
@@ -208,7 +208,7 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
         break;
       case T_BIGNUM:
         hval = rb_big_hash(a);
-        hnum = FIX2LONG(hval);
+        hnum = FIX2ST(hval);
         break;
       case T_FLOAT: /* prevent pathological behavior: [Bug #10761] */
         hnum = rb_dbl_long_hash(rb_float_value(a));
@@ -220,7 +220,7 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
         hnum &= FIXNUM_MAX;
     else
         hnum |= FIXNUM_MIN;
-    return (long)hnum;
+    return (rb_len_t)hnum;
 }
 
 VALUE rb_obj_hash(VALUE obj);
@@ -251,20 +251,21 @@ obj_any_hash(VALUE obj)
     while (!FIXNUM_P(hval)) {
         if (RB_TYPE_P(hval, T_BIGNUM)) {
             int sign;
-            unsigned long ul;
+            rb_ulen_t ul;
             sign = rb_integer_pack(hval, &ul, 1, sizeof(ul), 0,
                     INTEGER_PACK_NATIVE_BYTE_ORDER);
             if (sign < 0) {
-                hval = LONG2FIX(ul | FIXNUM_MIN);
+                ul |= FIXNUM_MIN;
             }
             else {
-                hval = LONG2FIX(ul & FIXNUM_MAX);
+                ul &= FIXNUM_MAX;
             }
+            return (st_index_t)ul;
         }
         hval = rb_to_int(hval);
     }
 
-    return FIX2LONG(hval);
+    return FIX2ST(hval);
 }
 
 st_index_t
@@ -276,7 +277,7 @@ rb_any_hash(VALUE a)
 VALUE
 rb_hash(VALUE obj)
 {
-    return LONG2FIX(any_hash(obj, obj_any_hash));
+    return ST2FIX(any_hash(obj, obj_any_hash));
 }
 
 
@@ -328,11 +329,7 @@ objid_hash(VALUE obj)
     if (!FIXNUM_P(object_id))
         object_id = rb_big_hash(object_id);
 
-#if SIZEOF_LONG == SIZEOF_VOIDP
-    return (st_index_t)st_index_hash((st_index_t)NUM2LONG(object_id));
-#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-    return (st_index_t)st_index_hash((st_index_t)NUM2LL(object_id));
-#endif
+    return (st_index_t)st_index_hash(NUM2ST(object_id));
 }
 
 /*
@@ -1374,7 +1371,7 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
     return hash_iter_status_check(status);
 }
 
-static unsigned long
+static rb_ulen_t
 iter_lev_in_ivar(VALUE hash)
 {
     VALUE levval = rb_ivar_get(hash, id_hash_iter_lev);

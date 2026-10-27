@@ -1525,9 +1525,9 @@ rb_complex_hash(VALUE self)
 
     get_dat1(self);
     n = rb_hash(dat->real);
-    h[0] = NUM2LONG(n);
+    h[0] = NUM2ST(n);
     n = rb_hash(dat->imag);
-    h[1] = NUM2LONG(n);
+    h[1] = NUM2ST(n);
     v = rb_memhash(h, sizeof(h));
     return v;
 }
