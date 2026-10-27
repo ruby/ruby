@@ -20,6 +20,7 @@ double rb_num_to_dbl(VALUE val);
 VALUE rb_obj_dig(int argc, VALUE *argv, VALUE self, VALUE notfound);
 VALUE rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze);
 VALUE rb_obj_dup_setup(VALUE obj, VALUE dup);
+VALUE rb_obj_deep_freeze(VALUE obj); /* in ractor.c */
 VALUE rb_immutable_obj_clone(int, VALUE *, VALUE);
 VALUE rb_check_convert_type_with_id_slow(VALUE,int,const char*,ID);
 int rb_bool_expected(VALUE, const char *, int raise);
