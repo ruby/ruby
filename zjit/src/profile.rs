@@ -178,7 +178,6 @@ fn observe_profiled_type(profiler: &Profiler, distribution: &mut TypeDistributio
     let class = ty.class();
 
     // A singleton class belongs to one object, so specializing on it doesn't help other objects.
-    // Skip profiling it unless the object is self, rb_block_param_proxy, a class, or a module.
     if class.is_singleton_class()
         && obj != unsafe { rb_vm_top_self() }
         && obj != unsafe { rb_block_param_proxy }
