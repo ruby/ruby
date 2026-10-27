@@ -1779,13 +1779,15 @@ opt_invokebuiltin_delegate_leave
  * target-specific) -- degrade to the original semantics and return a
  * fresh two-element array, which the core to_h checks and stores as it
  * does without the optimization.
+ *
+ * It allocates at most that array and never calls Ruby, so it is a leaf
+ * (YJIT compiles it as a leaf ccall too).
  */
 DEFINE_INSN
 to_h_aset
 ()
 (VALUE key, VALUE val)
 (VALUE result)
-// attr bool leaf = false;
 {
     result = rb_vm_to_h_aset(GET_CFP(), key, val);
 }
