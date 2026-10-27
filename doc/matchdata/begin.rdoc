@@ -11,6 +11,7 @@ match[0]         # => "2026-12-25"
 match.begin(0)   # => 0
 match[3]         # => "25"
 match.begin(3)   # => 8
+match.begin(10)  # Raises IndexError: index 10 out of matches.
 
 match = /(ん)(に)(ち)/.match('こんにちは')
 # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
