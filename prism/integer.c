@@ -2,6 +2,7 @@
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/buffer.h"
+#include "prism/internal/oom.h"
 
 /* Include sys/types.h before inttypes.h to work around an issue with certain
  * versions of GCC and newlib which causes omission of PRIu64 and the other
@@ -55,7 +56,7 @@ big_add(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *right, uint
 
     size_t length = left_length < right_length ? right_length : left_length;
     uint32_t *values = (uint32_t *) xmalloc(sizeof(uint32_t) * (length + 1));
-    if (values == NULL) return;
+    if (values == NULL) PRISM_OOM();
 
     uint64_t carry = 0;
     for (size_t index = 0; index < length; index++) {
@@ -92,8 +93,9 @@ big_sub2(pm_integer_t *destination, pm_integer_t *a, pm_integer_t *b, pm_integer
     INTEGER_EXTRACT(c, c_length, c_values)
 
     uint32_t *values = (uint32_t*) xmalloc(sizeof(uint32_t) * a_length);
-    int64_t carry = 0;
+    if (values == NULL) PRISM_OOM();
 
+    int64_t carry = 0;
     for (size_t index = 0; index < a_length; index++) {
         int64_t sub = (
             carry +
@@ -143,7 +145,7 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
     if (left_length <= 10) {
         size_t length = left_length + right_length;
         uint32_t *values = (uint32_t *) xcalloc(length, sizeof(uint32_t));
-        if (values == NULL) return;
+        if (values == NULL) PRISM_OOM();
 
         for (size_t left_index = 0; left_index < left_length; left_index++) {
             uint32_t carry = 0;
@@ -162,6 +164,7 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
 
     if (left_length * 2 <= right_length) {
         uint32_t *values = (uint32_t *) xcalloc(left_length + right_length, sizeof(uint32_t));
+        if (values == NULL) PRISM_OOM();
 
         for (size_t start_offset = 0; start_offset < right_length; start_offset += left_length) {
             size_t end_offset = start_offset + left_length;
@@ -227,6 +230,7 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
 
     size_t length = left_length + right_length;
     uint32_t *values = (uint32_t*) xcalloc(length, sizeof(uint32_t));
+    if (values == NULL) PRISM_OOM();
 
     assert(z0.values != NULL);
     memcpy(values, z0.values, sizeof(uint32_t) * z0.length);
@@ -315,7 +319,7 @@ pm_integer_from_uint64(pm_integer_t *integer, uint64_t value, uint64_t base) {
     }
 
     uint32_t *values = (uint32_t *) xmalloc(sizeof(uint32_t) * length);
-    if (values == NULL) return;
+    if (values == NULL) PRISM_OOM();
 
     for (size_t value_index = 0; value_index < length; value_index++) {
         values[value_index] = (uint32_t) (value % base);
@@ -366,7 +370,7 @@ pm_integer_convert_base(pm_integer_t *destination, const pm_integer_t *source, u
     assert(bigints_length > 0);
 
     pm_integer_t *bigints = (pm_integer_t *) xcalloc(bigints_length, sizeof(pm_integer_t));
-    if (bigints == NULL) return;
+    if (bigints == NULL) PRISM_OOM();
 
     for (size_t index = 0; index < source_length; index += 2) {
         uint64_t value = source_values[index] + base_from * (index + 1 < source_length ? source_values[index + 1] : 0);
@@ -385,6 +389,7 @@ pm_integer_convert_base(pm_integer_t *destination, const pm_integer_t *source, u
 
         size_t next_length = (bigints_length + 1) / 2;
         pm_integer_t *next_bigints = (pm_integer_t *) xcalloc(next_length, sizeof(pm_integer_t));
+        if (next_bigints == NULL) PRISM_OOM();
 
         for (size_t bigints_index = 0; bigints_index < bigints_length; bigints_index += 2) {
             if (bigints_index + 1 == bigints_length) {
@@ -425,6 +430,7 @@ pm_integer_parse_powof2(pm_integer_t *integer, uint32_t base, const uint8_t *dig
 
     size_t length = (digits_length * bit + 31) / 32;
     uint32_t *values = (uint32_t *) xcalloc(length, sizeof(uint32_t));
+    if (values == NULL) PRISM_OOM();
 
     for (size_t digit_index = 0; digit_index < digits_length; digit_index++) {
         size_t bit_position = bit * (digits_length - digit_index - 1);
@@ -451,8 +457,9 @@ pm_integer_parse_decimal(pm_integer_t *integer, const uint8_t *digits, size_t di
     const size_t length = (digits_length + batch - 1) / batch;
 
     uint32_t *values = (uint32_t *) xcalloc(length, sizeof(uint32_t));
-    uint32_t value = 0;
+    if (values == NULL) PRISM_OOM();
 
+    uint32_t value = 0;
     for (size_t digits_index = 0; digits_index < digits_length; digits_index++) {
         value = value * 10 + digits[digits_index];
 
@@ -476,8 +483,9 @@ pm_integer_parse_big(pm_integer_t *integer, uint32_t multiplier, const uint8_t *
     // Allocate an array to store digits.
     const size_t digits_capa = sizeof(uint8_t) * (size_t) (end - start);
     uint8_t *digits = xmalloc(digits_capa);
-    size_t digits_length = 0;
+    if (digits == NULL) PRISM_OOM();
 
+    size_t digits_length = 0;
     for (; start < end; start++) {
         if (*start == '_') continue;
         digits[digits_length++] = pm_integer_parse_digit(*start);
@@ -664,7 +672,7 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
     // Allocate a buffer that we'll copy the decimal digits into.
     const size_t digits_length = converted.length * 9;
     char *digits = xcalloc(digits_length, sizeof(char));
-    if (digits == NULL) return;
+    if (digits == NULL) PRISM_OOM();
 
     // Pack bigdecimal to digits.
     for (size_t value_index = 0; value_index < converted.length; value_index++) {

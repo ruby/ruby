@@ -19,6 +19,7 @@
 #include "prism/internal/magic_comments.h"
 #include "prism/internal/memchr.h"
 #include "prism/internal/node.h"
+#include "prism/internal/oom.h"
 #include "prism/internal/options.h"
 #include "prism/internal/parser.h"
 #include "prism/internal/regexp.h"
@@ -4122,6 +4123,8 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
     size_t length = (size_t) diff;
     const size_t buffer_size = sizeof(char) * (length + 1);
     char *buffer = xmalloc(buffer_size);
+    if (buffer == NULL) PRISM_OOM();
+
     memcpy((void *) buffer, token->start, length);
 
     // Next, determine if we need to replace the decimal point because of
@@ -4255,10 +4258,7 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(point && "should have a decimal point");
 
     uint8_t *digits = xmalloc(length);
-    if (digits == NULL) {
-        fputs("[pm_float_node_rational_create] Failed to allocate memory", stderr);
-        abort();
-    }
+    if (digits == NULL) PRISM_OOM();
 
     memcpy(digits, start, (unsigned long) (point - start));
     memcpy(digits + (point - start), point + 1, (unsigned long) (end - point - 1));
@@ -23527,7 +23527,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
 pm_parser_t *
 pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_options_t *options) {
     pm_parser_t *parser = (pm_parser_t *) xmalloc(sizeof(pm_parser_t));
-    if (parser == NULL) abort();
+    if (parser == NULL) PRISM_OOM();
 
     pm_parser_init(arena, parser, source, size, options);
     return parser;

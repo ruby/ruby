@@ -7,6 +7,7 @@
 #include "prism/internal/buffer.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/isinf.h"
+#include "prism/internal/oom.h"
 #include "prism/internal/parser.h"
 #include "prism/internal/stringy.h"
 #include "prism/internal/xxh3.h"
@@ -14,7 +15,6 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -309,7 +309,7 @@ pm_static_literals_place(pm_static_literals_entry_t *entries, uint32_t mask, pm_
 static void
 pm_static_literals_resize(const pm_parser_t *parser, pm_static_literals_t *literals, uint32_t capacity) {
     pm_static_literals_entry_t *entries = xcalloc(capacity, sizeof(pm_static_literals_entry_t));
-    if (entries == NULL) abort();
+    if (entries == NULL) PRISM_OOM();
 
     /* It turns out to be more efficient to mask the hash value than to use the
      * modulo operator. Because our capacities are always powers of two, we can
