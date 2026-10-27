@@ -860,7 +860,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			{
 				size_t n;
 				int ov;
-				unsigned long u = ruby_scan_digits(format, format_end-format, 10, &n, &ov);
+				rb_ulen_t u = ruby_scan_digits(format, format_end-format, 10, &n, &ov);
 				if (ov || u > INT_MAX) goto unknown;
 				precision = (int)u;
 				format += n - 1;

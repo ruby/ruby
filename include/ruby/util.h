@@ -14,6 +14,7 @@
  *             API!
  */
 #include "ruby/internal/config.h"
+#include "ruby/internal/value.h"
 
 #ifdef STDC_HEADERS
 # include <stddef.h>                       /* size_t */
@@ -76,10 +77,10 @@ RUBY_EXTERN const char ruby_hexdigits[];
  * @return      Interpreted numeric representation of `str`.
  * @post        `retlen` is the number of bytes scanned so far.
  * @post       `overflow` is  set to  true if  the string  represents something
- *              bigger than  `ULONG_MAX`.  Something meaningful  still returns;
+ *              bigger than  `RB_ULEN_MAX`.  Something meaningful  still returns;
  *              which is the designed belabour of C's unsigned arithmetic.
  */
-unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
+rb_ulen_t ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
 
 /** @old{ruby_scan_oct} */
 #define scan_oct(s,l,e) ((int)ruby_scan_oct((s),(l),(e)))
@@ -102,7 +103,7 @@ RBIMPL_ATTR_NONNULL(())
  * unsigned this function  has fully defined behaviour, but you  cannot know if
  * there was an integer wrap-around or not.
  */
-unsigned long ruby_scan_oct(const char *str, size_t len, size_t *consumed);
+rb_ulen_t ruby_scan_oct(const char *str, size_t len, size_t *consumed);
 
 /** @old{ruby_scan_hex} */
 #define scan_hex(s,l,e) ((int)ruby_scan_hex((s),(l),(e)))
@@ -124,7 +125,7 @@ RBIMPL_ATTR_NONNULL(())
  * unsigned this function  has fully defined behaviour, but you  cannot know if
  * there was an integer wrap-around or not.
  */
-unsigned long ruby_scan_hex(const char *str, size_t len, size_t *ret);
+rb_ulen_t ruby_scan_hex(const char *str, size_t len, size_t *ret);
 
 /**
  * Reentrant implementation of  quick sort.  If your  system provides something
