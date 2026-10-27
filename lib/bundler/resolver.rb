@@ -546,6 +546,8 @@ module Bundler
       @cooldown_skipped_specs.each do |(name, version), spec|
         resolved = resolved_versions[name]
         next unless resolved && version > resolved
+        package = @base.get_package(name)
+        next if !package.unlock? && package.locked_version == resolved
         next unless requirements[name].all? {|req| req.satisfied_by?(version) }
         newest = newest_skipped[name]
         newest_skipped[name] = spec if newest.nil? || version > newest.version
