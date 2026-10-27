@@ -2129,7 +2129,6 @@ VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
 /* to_h pair-literal block optimization (see insns.def: to_h_aset,
  * prism_compile.c and the core to_h implementations). */
 VALUE rb_vm_to_h_aset(const rb_control_frame_t *cfp, VALUE key, VALUE val);
-rb_event_flag_t rb_iseq_local_event_flags(const rb_iseq_t *iseq);
 
 void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE exception_class, VALUE mesg);
 

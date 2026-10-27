@@ -184,18 +184,6 @@ rb_iseq_local_hooks(const rb_iseq_t *iseq, rb_ractor_t *r, bool create)
     return hook_list;
 }
 
-// Event flags enabled for `iseq` through a target-specific TracePoint.
-// Unlike ruby_vm_event_flags (the ractor-wide / global set), these live in
-// the per-iseq local hook list, so tracing set up with
-// `TracePoint#enable(target: ...)` is only visible here.
-rb_event_flag_t
-rb_iseq_local_event_flags(const rb_iseq_t *iseq)
-{
-    if (iseq->aux.exec.local_hooks_cnt == 0) return 0;
-    rb_hook_list_t *hooks = rb_iseq_local_hooks(iseq, GET_RACTOR(), false);
-    return hooks ? hooks->events : 0;
-}
-
 void
 rb_iseq_free(const rb_iseq_t *iseq)
 {

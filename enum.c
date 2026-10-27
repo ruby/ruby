@@ -21,6 +21,7 @@
 #include "internal/rational.h"
 #include "internal/re.h"
 #include "internal/set.h"
+#include "internal/vm.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
 #include "symbol.h"
@@ -768,14 +769,14 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
     return rb_hash_set_pair(hash, rb_yield_values2(argc, argv));
 }
 
-// Pair-literal path.  enum_to_h pushes one ctx for the whole call, like
-// Array/Hash/Struct; this callback only finds it through the EC.
-// Enumerable#each may capture the ifunc as a Proc and call it after to_h
-// has returned (or from another fiber), so the callback holds no pointer
-// to the ctx.  Its data is the result Hash, a GC-managed VALUE, and a
-// callback whose to_h is not the innermost one on this EC uses the
-// pair-Array path.  The return value must be `hash`, like enum_to_h_ii:
-// a custom `each` may use the value yielded back to it.
+// Pair-literal callback.  rb_vm_to_h_pair_iterate pushes one ctx for the
+// whole call, like Array/Hash/Struct; this callback only finds it through
+// the EC.  Enumerable#each may capture the ifunc as a Proc and call it
+// after to_h has returned (or from another fiber), so the callback holds
+// no pointer to the ctx.  Its data is the result Hash, a GC-managed VALUE,
+// and a callback whose to_h is not the innermost one on this EC stores the
+// block value like enum_to_h_ii.  The return value must be `hash`, like
+// enum_to_h_ii: a custom `each` may use the value yielded back to it.
 static VALUE
 enum_to_h_pair_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
@@ -788,18 +789,18 @@ enum_to_h_pair_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
     return hash;
 }
 
-struct enum_to_h_pair_args {
+struct enum_to_h_args {
     VALUE obj;
     int argc;
     const VALUE *argv;
-    struct rb_to_h_pair_ctx ctx;
 };
 
+// Block iteration of Enumerable#to_h (see rb_vm_to_h_pair_iterate).
 static VALUE
-enum_to_h_pair(VALUE arg)
+enum_to_h_block(VALUE arg, VALUE hash, struct rb_to_h_pair_ctx *ctx)
 {
-    struct enum_to_h_pair_args *a = (struct enum_to_h_pair_args *)arg;
-    return enum_hashify_into(a->obj, a->argc, a->argv, enum_to_h_pair_i, a->ctx.hash);
+    const struct enum_to_h_args *a = (const struct enum_to_h_args *)arg;
+    return enum_hashify_into(a->obj, a->argc, a->argv, ctx ? enum_to_h_pair_i : enum_to_h_ii, hash);
 }
 
 /*
@@ -827,16 +828,8 @@ static VALUE
 enum_to_h(int argc, VALUE *argv, VALUE obj)
 {
     if (rb_block_given_p()) {
-        VALUE hash = rb_hash_new();
-        struct enum_to_h_pair_args args = { obj, argc, argv, { 0 } };
-
-        // to_h pair-literal fast path; rb_ensure() pops the ctx when the
-        // call ends.  See enum_to_h_pair_i.
-        if (rb_vm_to_h_pair_prepare(hash, &args.ctx)) {
-            rb_ensure(enum_to_h_pair, (VALUE)&args, rb_vm_to_h_pair_finish, (VALUE)&args.ctx);
-            return hash;
-        }
-        return enum_hashify_into(obj, argc, argv, enum_to_h_ii, hash);
+        struct enum_to_h_args args = { obj, argc, argv };
+        return rb_vm_to_h_pair_iterate(rb_hash_new(), enum_to_h_block, (VALUE)&args);
     }
     return enum_hashify(obj, argc, argv, enum_to_h_i);
 }

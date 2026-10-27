@@ -29,6 +29,7 @@ struct rb_execution_context_struct;     /* in vm_core.h */
 struct rb_control_frame_struct;         /* in vm_core.h */
 struct rb_callinfo;                     /* in vm_core.h */
 struct rb_gc_mark_ctx;                  /* in internal/gc.h */
+struct rb_to_h_pair_ctx;                /* in vm.c */
 
 enum method_missing_reason {
     MISSING_NOENTRY   = 0x00,
@@ -61,6 +62,15 @@ struct rb_cref_struct *rb_vm_cref_dup(const struct rb_cref_struct *cref);
 VALUE ruby_vm_special_exception_copy(VALUE);
 
 void rb_lastline_set_up(VALUE val, unsigned int up);
+
+/* to_h pair-literal block optimization, used by the core to_h methods
+ * (see insns.def: to_h_aset).  `loop` gets a NULL ctx when the block is
+ * not a pair literal. */
+typedef VALUE rb_vm_to_h_pair_loop_func(VALUE arg, VALUE hash, struct rb_to_h_pair_ctx *ctx);
+VALUE rb_vm_to_h_pair_iterate(VALUE hash, rb_vm_to_h_pair_loop_func *loop, VALUE arg);
+void rb_vm_to_h_pair_begin_yield(struct rb_to_h_pair_ctx *ctx);
+struct rb_to_h_pair_ctx *rb_vm_to_h_pair_begin_yield_for(VALUE hash);
+int rb_vm_to_h_pair_consume(struct rb_to_h_pair_ctx *ctx);
 
 /* vm_eval.c */
 VALUE rb_current_realfilepath(void);

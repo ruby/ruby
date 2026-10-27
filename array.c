@@ -3374,48 +3374,30 @@ ary_to_h_set_pair(VALUE hash, rb_len_t i, VALUE elt)
     rb_hash_aset(hash, RARRAY_AREF(key_value_pair, 0), RARRAY_AREF(key_value_pair, 1));
 }
 
-struct rb_ary_to_h_pair_args {
-    VALUE ary;
-    struct rb_to_h_pair_ctx ctx;
-};
-
+// Block iteration of Array#to_h; `ctx` is the to_h pair-literal ctx, or
+// NULL when the block is not a pair literal (see rb_vm_to_h_pair_iterate).
 static VALUE
-rb_ary_to_h_pair(VALUE arg)
+ary_to_h_block(VALUE ary, VALUE hash, struct rb_to_h_pair_ctx *ctx)
 {
-    struct rb_ary_to_h_pair_args *a = (struct rb_ary_to_h_pair_args *)arg;
-    const VALUE ary = a->ary;
-
     for (rb_len_t i = 0; i < RARRAY_LEN(ary); i++) {
         const VALUE e = rb_ary_elt(ary, i);
-        rb_vm_to_h_pair_begin_yield(&a->ctx);
+        if (ctx) rb_vm_to_h_pair_begin_yield(ctx);
         const VALUE elt = rb_yield_force_blockarg(e);
-        if (!rb_vm_to_h_pair_consume(&a->ctx)) ary_to_h_set_pair(a->ctx.hash, i, elt);
+        if (!ctx || !rb_vm_to_h_pair_consume(ctx)) ary_to_h_set_pair(hash, i, elt);
     }
-    return Qnil;
+    return hash;
 }
 
 static VALUE
 rb_ary_to_h(VALUE ary)
 {
-    rb_len_t i;
     VALUE hash = rb_hash_new_capa(RARRAY_LEN(ary));
-    int block_given = rb_block_given_p();
 
-    // to_h pair-literal fast path: the block stashes each pair on the
-    // EC-side ctx and the store is done here, after the block returned.
-    // rb_ensure() pops the ctx when the call ends.
-    if (block_given) {
-        struct rb_ary_to_h_pair_args args = { ary, { 0 } };
-        if (rb_vm_to_h_pair_prepare(hash, &args.ctx)) {
-            rb_ensure(rb_ary_to_h_pair, (VALUE)&args, rb_vm_to_h_pair_finish, (VALUE)&args.ctx);
-            return hash;
-        }
+    if (rb_block_given_p()) {
+        return rb_vm_to_h_pair_iterate(hash, ary_to_h_block, ary);
     }
-
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-        const VALUE e = rb_ary_elt(ary, i);
-        const VALUE elt = block_given ? rb_yield_force_blockarg(e) : e;
-        ary_to_h_set_pair(hash, i, elt);
+    for (rb_len_t i = 0; i < RARRAY_LEN(ary); i++) {
+        ary_to_h_set_pair(hash, i, rb_ary_elt(ary, i));
     }
     return hash;
 }

@@ -35,7 +35,6 @@
 #include "internal/vm.h"
 #include "internal/sanitizers.h"
 #include "internal/variable.h"
-#include "internal/hash.h"
 #include "iseq.h"
 #include "symbol.h" // This includes a macro for a more performant rb_id2sym.
 #include "yjit.h"
@@ -237,59 +236,110 @@ rb_vm_frame_block_handler(const rb_control_frame_t *cfp)
     return VM_CF_BLOCK_HANDLER(cfp);
 }
 
-// to_h pair-literal block optimization.  If the current CFP's block
-// handler is a `to_h { |*| [key, value] }` pair-literal block (its iseq
-// contains the to_h_aset instruction), push `ctx` as the innermost
-// cooperating to_h on this EC.  Called from the core to_h CFP
-// (Array/Hash/Struct) or from Enumerable's ifunc, whose LEP still holds
-// the user to_h block.  Pair storage lives on `ctx` (C stack), not in
-// Ruby locals, so a later env escape cannot desync the writer from the
-// reader.  Returns true if the fast path was taken; the caller must
-// then rb_ensure(..., finish, ctx).
-int
-rb_vm_to_h_pair_prepare(VALUE hash, struct rb_to_h_pair_ctx *ctx)
+/* to_h pair-literal block optimization ***********************************
+ *
+ * A `to_h { |*| [key, value] }` block ends in to_h_aset instead of
+ * `newarray 2` (see insns.def).  The cooperating core to_h keeps one ctx
+ * per call on its C stack and the EC points at the innermost one, so
+ * nested to_h calls stack.  The ctx records which yield may submit: the
+ * block iseq and the C frame that issued the current yield. */
+struct rb_to_h_pair_ctx {
+    struct rb_to_h_pair_ctx *prev;
+    VALUE hash;
+    VALUE key;
+    VALUE val;
+    const rb_iseq_t *iseq;                /* cooperating block iseq */
+    const rb_control_frame_t *caller_cfp; /* frame that issued the yield */
+    int submitted;                        /* to_h_aset ran for this yield */
+};
+
+struct to_h_pair_iterate_args {
+    rb_vm_to_h_pair_loop_func *loop;
+    VALUE arg;
+    struct rb_to_h_pair_ctx ctx;
+};
+
+static VALUE
+to_h_pair_iterate_body(VALUE p)
+{
+    struct to_h_pair_iterate_args *a = (struct to_h_pair_iterate_args *)p;
+    return a->loop(a->arg, a->ctx.hash, &a->ctx);
+}
+
+static VALUE
+to_h_pair_iterate_ensure(VALUE p)
+{
+    struct rb_to_h_pair_ctx *ctx = &((struct to_h_pair_iterate_args *)p)->ctx;
+    rb_execution_context_t *ec = GET_EC();
+
+    VM_ASSERT(ec->to_h_pair == ctx);
+    ec->to_h_pair = ctx->prev;
+    return Qnil;
+}
+
+// Run the block iteration of a core to_h: `loop(arg, hash, ctx)`.  When
+// the block given to the current (core to_h) frame is a pair-literal
+// block, `ctx` is pushed as the innermost cooperating to_h for the call
+// and popped by rb_ensure; otherwise `ctx` is NULL and the loop stores
+// block values as usual.  Pair storage lives on the ctx (C stack), not in
+// Ruby locals, so an env escape (lambda/binding) cannot desync the writer
+// from the reader.
+VALUE
+rb_vm_to_h_pair_iterate(VALUE hash, rb_vm_to_h_pair_loop_func *loop, VALUE arg)
 {
     rb_execution_context_t *ec = GET_EC();
     VALUE bh = VM_CF_BLOCK_HANDLER(ec->cfp);
 
-    if (bh == VM_BLOCK_HANDLER_NONE) return 0;
-    if (!VM_BH_ISEQ_BLOCK_P(bh)) return 0;
+    if (bh == VM_BLOCK_HANDLER_NONE || !VM_BH_ISEQ_BLOCK_P(bh)) {
+        return loop(arg, hash, NULL);
+    }
 
-    const struct rb_captured_block *capt = VM_BH_TO_ISEQ_BLOCK(bh);
-    const rb_iseq_t *block_iseq = capt->code.iseq;
+    const rb_iseq_t *block_iseq = VM_BH_TO_ISEQ_BLOCK(bh)->code.iseq;
 
-    if (ISEQ_BODY(block_iseq)->type != ISEQ_TYPE_BLOCK) return 0;
-    if (!ISEQ_BODY(block_iseq)->to_h_pair) return 0;
+    if (ISEQ_BODY(block_iseq)->type != ISEQ_TYPE_BLOCK || !ISEQ_BODY(block_iseq)->to_h_pair) {
+        return loop(arg, hash, NULL);
+    }
 
-    ctx->prev = ec->to_h_pair;
-    ctx->hash = hash;
-    ctx->key = Qnil;
-    ctx->val = Qnil;
-    ctx->iseq = block_iseq;
-    ctx->caller_cfp = NULL;
-    ctx->submitted = 0;
-    ec->to_h_pair = ctx;
-    return 1;
+    struct to_h_pair_iterate_args a = {
+        .loop = loop,
+        .arg = arg,
+        .ctx = {
+            .prev = ec->to_h_pair,
+            .hash = hash,
+            .key = Qnil,
+            .val = Qnil,
+            .iseq = block_iseq,
+        },
+    };
+    ec->to_h_pair = &a.ctx;
+    return rb_ensure(to_h_pair_iterate_body, (VALUE)&a, to_h_pair_iterate_ensure, (VALUE)&a);
 }
 
-// Bind the next yield to this ctx: only the block frame whose caller
-// is the current CFP may submit a pair.  A Proc#call of the same iseq
-// (escaped block, forwarding wrapper, ...) sees a different caller and
-// degrades to returning [key, val].
+static inline void
+to_h_pair_bind(const rb_execution_context_t *ec, struct rb_to_h_pair_ctx *ctx)
+{
+    ctx->submitted = 0;
+    ctx->caller_cfp = ec->cfp;
+}
+
+// Bind the next yield to `ctx`: only the block frame whose caller is the
+// current CFP may submit a pair.  A Proc#call of the same iseq (escaped
+// block, forwarding wrapper, ...) sees a different caller and degrades
+// to returning [key, val].
 void
 rb_vm_to_h_pair_begin_yield(struct rb_to_h_pair_ctx *ctx)
 {
-    ctx->submitted = 0;
-    ctx->caller_cfp = GET_EC()->cfp;
+    to_h_pair_bind(GET_EC(), ctx);
 }
 
-// rb_vm_to_h_pair_begin_yield() for a callback that cannot own the ctx
-// (Enumerable's ifunc, which `each` may save and call later).  Binds the
-// next yield to the innermost ctx only if it belongs to the to_h building
-// `hash`, and returns it.  Returns NULL when that to_h is not in progress
-// on this EC (called after to_h returned, from another fiber, or under a
-// nested to_h); the caller then uses the pair-Array path.  The ctx chain
-// holds only live ctxs, so reading the innermost one is safe.
+// rb_vm_to_h_pair_begin_yield() for a callback that is not handed the
+// ctx (Enumerable's ifunc, which `each` may save and call later).  Binds
+// the next yield to the innermost ctx only if it belongs to the to_h
+// building `hash`, and returns it.  Returns NULL when that to_h is not in
+// progress on this EC (called after to_h returned, from another fiber or
+// thread, or under a nested to_h); the caller then stores the block value
+// as usual.  The ctx chain holds only live ctxs, so reading the innermost
+// one is safe.
 struct rb_to_h_pair_ctx *
 rb_vm_to_h_pair_begin_yield_for(VALUE hash)
 {
@@ -297,18 +347,17 @@ rb_vm_to_h_pair_begin_yield_for(VALUE hash)
     struct rb_to_h_pair_ctx *ctx = ec->to_h_pair;
 
     if (!ctx || ctx->hash != hash) return NULL;
-    ctx->submitted = 0;
-    ctx->caller_cfp = ec->cfp;
+    to_h_pair_bind(ec, ctx);
     return ctx;
 }
 
-// End the yield bound by rb_vm_to_h_pair_begin_yield().  Unbinds the
-// caller first so Ruby code run from here (`key.hash`, `eql?`) cannot
-// submit.  Inserts a submitted pair and returns true; returns false when
-// the block returned a value instead (`next`, tracing, non-cooperating
-// invocation) and the caller must store it with its own error messages.
-// Key/value are cleared once consumed so they do not pin objects past
-// this yield.
+// End the yield bound by rb_vm_to_h_pair_begin_yield() or
+// rb_vm_to_h_pair_begin_yield_for().  Unbinds the caller first so Ruby
+// code run from here (`key.hash`, `eql?`) cannot submit.  Inserts a
+// submitted pair and returns true; returns false when the block returned
+// a value instead (`next`, tracing, non-cooperating invocation) and the
+// caller must store it with its own checks.  Key/value are cleared once
+// consumed so they do not pin objects past this yield.
 int
 rb_vm_to_h_pair_consume(struct rb_to_h_pair_ctx *ctx)
 {
@@ -324,29 +373,6 @@ rb_vm_to_h_pair_consume(struct rb_to_h_pair_ctx *ctx)
     return 1;
 }
 
-// Counterpart of rb_vm_to_h_pair_prepare().  Pops this ctx (including
-// on exception, via rb_ensure) so a later invocation of an escaped
-// block cannot observe a cooperating yield.
-VALUE
-rb_vm_to_h_pair_finish(VALUE arg)
-{
-    struct rb_to_h_pair_ctx *ctx = (struct rb_to_h_pair_ctx *)arg;
-    rb_execution_context_t *ec = GET_EC();
-
-    VM_ASSERT(ec->to_h_pair == ctx);
-    if (ec->to_h_pair == ctx) {
-        ec->to_h_pair = ctx->prev;
-    }
-    ctx->key = Qnil;
-    ctx->val = Qnil;
-    ctx->hash = Qnil;
-    ctx->submitted = 0;
-    ctx->caller_cfp = NULL;
-    ctx->iseq = NULL;
-    ctx->prev = NULL;
-    return Qnil;
-}
-
 // Body of to_h_aset.  `cfp` is the live instruction CFP (passed from
 // the insn; ec->cfp may lag behind reg_cfp).  Submits the pair into
 // the current yield's ctx when this frame is the block that core to_h
@@ -354,11 +380,15 @@ rb_vm_to_h_pair_finish(VALUE arg)
 VALUE
 rb_vm_to_h_aset(const rb_control_frame_t *cfp, VALUE key, VALUE val)
 {
-    struct rb_to_h_pair_ctx *ctx = GET_EC()->to_h_pair;
+    rb_execution_context_t *ec = GET_EC();
+    struct rb_to_h_pair_ctx *ctx = ec->to_h_pair;
+    const rb_iseq_t *iseq = cfp->_iseq;
     rb_event_flag_t trace_events = ruby_vm_event_flags;
 
-    if (!(trace_events & RUBY_EVENT_B_RETURN) && cfp->_iseq->aux.exec.local_hooks_cnt) {
-        trace_events |= rb_iseq_local_event_flags(cfp->_iseq);
+    // TracePoint#enable(target: ...) lives only in the iseq's local hooks.
+    if (!(trace_events & RUBY_EVENT_B_RETURN) && iseq->aux.exec.local_hooks_cnt) {
+        rb_hook_list_t *hooks = rb_iseq_local_hooks(iseq, rb_ec_ractor_ptr(ec), false);
+        if (hooks) trace_events |= hooks->events;
     }
 
     // A bmethod defined from the same block (`define_method(:hash, &b)`)
@@ -366,7 +396,7 @@ rb_vm_to_h_aset(const rb_control_frame_t *cfp, VALUE key, VALUE val)
     // arg splat, `hash`/`eql?` in rb_hash_aset) can call it right on top
     // of the caller frame.  Only the yielded block frame may submit.
     if (ctx &&
-            cfp->_iseq == (const rb_iseq_t *)ctx->iseq &&
+            iseq == ctx->iseq &&
             ctx->caller_cfp == RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp) &&
             !VM_FRAME_BMETHOD_P(cfp) &&
             !(trace_events & RUBY_EVENT_B_RETURN)) {

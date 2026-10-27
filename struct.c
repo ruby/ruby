@@ -18,6 +18,7 @@
 #include "internal/proc.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
+#include "internal/vm.h"
 #include "vm_core.h"
 #include "builtin.h"
 
@@ -1138,25 +1139,20 @@ rb_struct_to_a(VALUE s)
  *
  */
 
-struct rb_struct_to_h_pair_args {
-    VALUE s;
-    VALUE members;
-    struct rb_to_h_pair_ctx ctx;
-};
-
+// Block iteration of Struct#to_h; `ctx` is the to_h pair-literal ctx, or
+// NULL when the block is not a pair literal (see rb_vm_to_h_pair_iterate).
 static VALUE
-rb_struct_to_h_pair(VALUE arg)
+struct_to_h_block(VALUE s, VALUE h, struct rb_to_h_pair_ctx *ctx)
 {
-    struct rb_struct_to_h_pair_args *a = (struct rb_struct_to_h_pair_args *)arg;
-    const VALUE s = a->s, members = a->members;
+    VALUE members = rb_struct_members(s);
 
     for (rb_len_t i = 0; i < RSTRUCT_LEN_RAW(s); i++) {
         VALUE k = rb_ary_entry(members, i), v = RSTRUCT_GET_RAW(s, i);
-        rb_vm_to_h_pair_begin_yield(&a->ctx);
+        if (ctx) rb_vm_to_h_pair_begin_yield(ctx);
         VALUE result = rb_yield_values(2, k, v);
-        if (!rb_vm_to_h_pair_consume(&a->ctx)) rb_hash_set_pair(a->ctx.hash, result);
+        if (!ctx || !rb_vm_to_h_pair_consume(ctx)) rb_hash_set_pair(h, result);
     }
-    return Qnil;
+    return h;
 }
 
 static VALUE
@@ -1165,25 +1161,12 @@ rb_struct_to_h(VALUE s)
     VALUE h = rb_hash_new_capa(RSTRUCT_LEN_RAW(s));
     VALUE members = rb_struct_members(s);
     rb_len_t i;
-    int block_given = rb_block_given_p();
 
-    // to_h pair-literal fast path: the block stashes each pair on the
-    // EC-side ctx and the store is done here, after the block returned.
-    // rb_ensure() pops the ctx on return.
-    if (block_given) {
-        struct rb_struct_to_h_pair_args args = { s, members, { 0 } };
-        if (rb_vm_to_h_pair_prepare(h, &args.ctx)) {
-            rb_ensure(rb_struct_to_h_pair, (VALUE)&args, rb_vm_to_h_pair_finish, (VALUE)&args.ctx);
-            return h;
-        }
+    if (rb_block_given_p()) {
+        return rb_vm_to_h_pair_iterate(h, struct_to_h_block, s);
     }
-
     for (i=0; i<RSTRUCT_LEN_RAW(s); i++) {
-        VALUE k = rb_ary_entry(members, i), v = RSTRUCT_GET_RAW(s, i);
-        if (block_given)
-            rb_hash_set_pair(h, rb_yield_values(2, k, v));
-        else
-            rb_hash_aset(h, k, v);
+        rb_hash_aset(h, rb_ary_entry(members, i), RSTRUCT_GET_RAW(s, i));
     }
     return h;
 }

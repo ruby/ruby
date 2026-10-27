@@ -3957,56 +3957,36 @@ rb_hash_set_pair(VALUE hash, VALUE arg)
     return hash;
 }
 
-static int
-to_h_i(VALUE key, VALUE value, VALUE hash)
-{
-    rb_hash_set_pair(hash, rb_yield_values(2, key, value));
-    return ST_CONTINUE;
-}
-
-// to_h pair-literal fast path: the block stashes each pair on the
-// EC-side ctx; the store is done here, after the block returned, so
-// that `key.hash` runs at the same point relative to the :b_return event
-// as in the unoptimized block.
-static int
-to_h_pair_i(VALUE key, VALUE value, VALUE arg)
-{
-    struct rb_to_h_pair_ctx *ctx = (struct rb_to_h_pair_ctx *)arg;
-
-    rb_vm_to_h_pair_begin_yield(ctx);
-    VALUE result = rb_yield_values(2, key, value);
-    if (!rb_vm_to_h_pair_consume(ctx)) rb_hash_set_pair(ctx->hash, result);
-    return ST_CONTINUE;
-}
-
-struct rb_hash_to_h_pair_args {
+struct hash_to_h_block_arg {
     VALUE hash;
-    struct rb_to_h_pair_ctx ctx;
+    struct rb_to_h_pair_ctx *ctx;
 };
 
-static VALUE
-rb_hash_to_h_pair(VALUE arg)
+static int
+to_h_i(VALUE key, VALUE value, VALUE arg)
 {
-    struct rb_hash_to_h_pair_args *a = (struct rb_hash_to_h_pair_args *)arg;
-    rb_hash_foreach(a->hash, to_h_pair_i, (VALUE)&a->ctx);
-    return Qnil;
+    const struct hash_to_h_block_arg *a = (const struct hash_to_h_block_arg *)arg;
+
+    if (a->ctx) rb_vm_to_h_pair_begin_yield(a->ctx);
+    VALUE result = rb_yield_values(2, key, value);
+    if (!a->ctx || !rb_vm_to_h_pair_consume(a->ctx)) rb_hash_set_pair(a->hash, result);
+    return ST_CONTINUE;
+}
+
+// Block iteration of Hash#to_h; `ctx` is the to_h pair-literal ctx, or
+// NULL when the block is not a pair literal (see rb_vm_to_h_pair_iterate).
+static VALUE
+hash_to_h_block(VALUE hash, VALUE h, struct rb_to_h_pair_ctx *ctx)
+{
+    struct hash_to_h_block_arg arg = { h, ctx };
+    rb_hash_foreach(hash, to_h_i, (VALUE)&arg);
+    return h;
 }
 
 static VALUE
 rb_hash_to_h_block(VALUE hash)
 {
-    VALUE h = rb_hash_new_capa(RHASH_SIZE(hash));
-    struct rb_hash_to_h_pair_args args;
-
-    args.hash = hash;
-
-    if (rb_vm_to_h_pair_prepare(h, &args.ctx)) {
-        rb_ensure(rb_hash_to_h_pair, (VALUE)&args, rb_vm_to_h_pair_finish, (VALUE)&args.ctx);
-    }
-    else {
-        rb_hash_foreach(hash, to_h_i, h);
-    }
-    return h;
+    return rb_vm_to_h_pair_iterate(rb_hash_new_capa(RHASH_SIZE(hash)), hash_to_h_block, hash);
 }
 
 /*
