@@ -20,91 +20,33 @@ typedef struct zjit_jit_frame {
     // The ISEQ this frame belongs to. Marked via rb_execution_context_mark_ctx.
     // NULL for C frames.
     const rb_iseq_t *iseq;
-    // Whether to materialize block_code when this frame is materialized.
-    // True when the ISEQ doesn't contain send/invokesuper/invokeblock
-    // (which write block_code themselves), so we must restore it.
-    // Always false for C frames.
-    bool materialize_block_code;
-
-    // Number of stack map entries in stack[].
-    uint32_t stack_size;
-    // Flexible array of stack map entries, executed in order by
-    // zjit_materialize_frames(). See the ZJIT_STACK_MAP_* opcodes above.
-    VALUE stack[];
+    // Stack map bit stream, decoded by zjit_materialize_frames(). Bit 0 is
+    // materialize_block_code, see ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P().
+    // The rest are ZJIT_STACK_MAP_OP_* opcodes, each followed by its operands.
+    // NULL for C frames.
+    const uint8_t *stack_map;
 } zjit_jit_frame_t;
 
+// Whether to materialize block_code when this frame is materialized.
+// True when the ISEQ doesn't contain send/invokesuper/invokeblock
+// (which write block_code themselves), so we must restore it.
+// Always false for C frames.
+static inline bool
+ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P(const zjit_jit_frame_t *jit_frame)
+{
+    return jit_frame->stack_map && (jit_frame->stack_map[0] & 1);
+}
+
 #if USE_ZJIT
-// Stack map entries are opcodes for zjit_materialize_frames(), which walks them
-// in order while moving a cursor down the VM stack. An untagged entry is an
-// immediate Ruby VALUE to store; the tagged forms below copy from the native
-// stack, skip slots, or move the cursor. Stack maps never contain heap VALUEs,
-// so these tags are available: they are not Qfalse (0), and their low 3 bits
-// are zero, so RB_SPECIAL_CONST_P is false. Tags must stay non-zero multiples
-// of 8 for that to hold.
-#define ZJIT_STACK_MAP_VREG_TAG 0x08
-#define ZJIT_STACK_MAP_SKIP_TAG 0x10
-#define ZJIT_STACK_MAP_BASE_PTR_TAG 0x18
-#define ZJIT_STACK_MAP_TAG_MASK 0xff
-#define ZJIT_STACK_MAP_SHIFT 8
-
-// The BASE_PTR payload packs two fields above the tag byte: the slot index in
-// bits 8..=31 and the operand stack size in bits 32..=63.
-#define ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT 32
-#define ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK 0xffffff
-
-static inline bool
-ZJIT_STACK_MAP_VREG_P(VALUE entry)
-{
-    return (entry & ZJIT_STACK_MAP_TAG_MASK) == ZJIT_STACK_MAP_VREG_TAG;
-}
-
-static inline size_t
-ZJIT_STACK_MAP_VREG_INDEX(VALUE entry)
-{
-    return entry >> ZJIT_STACK_MAP_SHIFT;
-}
-
-static inline bool
-ZJIT_STACK_MAP_SKIP_P(VALUE entry)
-{
-    return (entry & ZJIT_STACK_MAP_TAG_MASK) == ZJIT_STACK_MAP_SKIP_TAG;
-}
-
-static inline size_t
-ZJIT_STACK_MAP_SKIP_SIZE(VALUE entry)
-{
-    return entry >> ZJIT_STACK_MAP_SHIFT;
-}
-
-// Anchor the write cursor using the SP register the JIT saved on its native
-// stack, instead of cfp->sp. cfp->sp is not a reliable starting point for a
-// frame that is in the middle of a non-leaf C call, as e.g. raising
-// ArgumentError can push through and move cfp->sp, then use the stack map.
-// gen_prepare_non_leaf_call() emits this opcode, always as stack[0], so the
-// entries after decode to the right place.
-static inline bool
-ZJIT_STACK_MAP_BASE_PTR_P(VALUE entry)
-{
-    return (entry & ZJIT_STACK_MAP_TAG_MASK) == ZJIT_STACK_MAP_BASE_PTR_TAG;
-}
-
-// VALUE index from cfp->jit_return down to the native stack slot holding the
-// saved SP register, i.e. base_ptr is `((VALUE **)cfp->jit_return)[-index]`.
-// There is one such slot per compiled function, so the index depends on the
-// frame's inlining depth.
-static inline size_t
-ZJIT_STACK_MAP_BASE_PTR_SLOT_INDEX(VALUE entry)
-{
-    return (entry >> ZJIT_STACK_MAP_SHIFT) & ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK;
-}
-
-// Number of VM stack slots above base_ptr, i.e. the frame's operand stack
-// depth. The cursor is set to `base_ptr + this`.
-static inline size_t
-ZJIT_STACK_MAP_BASE_PTR_STACK_SIZE(VALUE entry)
-{
-    return entry >> ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT;
-}
+// JITFrame stack map bit stream format. See StackMapWriter in zjit/src/jit_frame.rs.
+#define ZJIT_STACK_MAP_VARINT_BITS  4
+#define ZJIT_STACK_MAP_OP_BITS      3
+#define ZJIT_STACK_MAP_OP_END       0
+#define ZJIT_STACK_MAP_OP_VREG      1
+#define ZJIT_STACK_MAP_OP_SKIP      2
+#define ZJIT_STACK_MAP_OP_BASE_PTR  3
+#define ZJIT_STACK_MAP_OP_IMM       4
+#define ZJIT_STACK_MAP_OP_NIL       5
 
 extern void *rb_zjit_entry;
 extern bool rb_zjit_compiling_p;
