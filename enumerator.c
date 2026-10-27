@@ -4456,11 +4456,11 @@ arith_seq_hash(VALUE self)
 
     hash = rb_hash_start(arith_seq_exclude_end_p(self));
     v = rb_hash(arith_seq_begin(self));
-    hash = rb_hash_uint(hash, NUM2LONG(v));
+    hash = rb_hash_uint(hash, NUM2ST(v));
     v = rb_hash(arith_seq_end(self));
-    hash = rb_hash_uint(hash, NUM2LONG(v));
+    hash = rb_hash_uint(hash, NUM2ST(v));
     v = rb_hash(arith_seq_step(self));
-    hash = rb_hash_uint(hash, NUM2LONG(v));
+    hash = rb_hash_uint(hash, NUM2ST(v));
     hash = rb_hash_end(hash);
 
     return ST2FIX(hash);

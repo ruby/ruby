@@ -31,9 +31,14 @@
 #include "ruby/st.h"
 
 #define ST2FIX    RB_ST2FIX     /**< @old{RB_ST2FIX} */
+#define FIX2ST    RB_FIX2ST     /**< @old{RB_FIX2ST} */
+#define NUM2ST    RB_NUM2ST     /**< @old{RB_NUM2ST} */
 /** @cond INTERNAL_MACRO */
 #define RB_ST2FIX RB_ST2FIX
 /** @endcond */
+
+#define RB_FIX2ST(num) RBIMPL_CAST((st_data_t)RB_FIX2LEN(num))
+#define RB_NUM2ST(num) RBIMPL_CAST((st_data_t)RB_NUM2LEN(num))
 
 RBIMPL_ATTR_CONST_UNLESS_DEBUG()
 RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(CXX14)
@@ -68,8 +73,8 @@ RB_ST2FIX(st_data_t i)
     }
 
     RBIMPL_ASSERT_OR_ASSUME(RB_FIXABLE(x));
-    unsigned long y = RBIMPL_CAST((unsigned long)x);
-    return RB_LONG2FIX(RBIMPL_CAST((long)y));
+    rb_ulen_t y = RBIMPL_CAST((rb_ulen_t)x);
+    return RB_LEN2FIX(RBIMPL_CAST((rb_len_t)y));
 }
 
 #endif /* RBIMPL_ARITHMETIC_ST_DATA_T_H */

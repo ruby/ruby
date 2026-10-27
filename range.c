@@ -313,9 +313,9 @@ range_hash(VALUE range)
 
     hash = rb_hash_start(hash);
     v = rb_hash(RANGE_BEG(range));
-    hash = rb_hash_uint(hash, NUM2LONG(v));
+    hash = rb_hash_uint(hash, NUM2ST(v));
     v = rb_hash(RANGE_END(range));
-    hash = rb_hash_uint(hash, NUM2LONG(v));
+    hash = rb_hash_uint(hash, NUM2ST(v));
     hash = rb_hash_uint(hash, EXCL(range) << 24);
     hash = rb_hash_end(hash);
 

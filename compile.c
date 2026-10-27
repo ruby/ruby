@@ -2403,7 +2403,7 @@ rb_iseq_cdhash_hash(VALUE a)
       case T_STRING:
         return rb_str_hash(a);
       case T_BIGNUM:
-        return FIX2LONG(rb_big_hash(a));
+        return FIX2ST(rb_big_hash(a));
       case T_FLOAT:
         return rb_dbl_long_hash(RFLOAT_VALUE(a));
       case T_RATIONAL:
@@ -2411,7 +2411,7 @@ rb_iseq_cdhash_hash(VALUE a)
       case T_COMPLEX:
         return rb_complex_hash(a);
       case T_REGEXP:
-        return NUM2LONG(rb_reg_hash(a));
+        return FIX2ST(rb_reg_hash(a));
       default:
         UNREACHABLE_RETURN(0);
     }
