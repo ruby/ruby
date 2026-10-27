@@ -1456,6 +1456,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/^\u00df$/i, "ss")
     #assert_match(/^(\u00df)\1$/i, "\u00dfss") # this must be bug...
     assert_match(/^\u00df{2}$/i, "\u00dfss")
+    assert_no_match(/s/i, "\u00df")
+    assert_no_match(/is/i, "i\u00df")
+    assert_no_match(/f/i, "\ufb03")
+    assert_match(/ss/i, "\u00df")
     assert_match(/^\u00c5$/i, "\u00c5")
     assert_match(/^\u00c5$/i, "\u00e5")
     assert_match(/^\u00c5$/i, "\u212b")
