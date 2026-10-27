@@ -1,30 +1,35 @@
 Returns the offset (in bytes) of the beginning of the specified match.
 
-When non-negative integer argument +n+ is given,
-returns the offset of the beginning of the <tt>n</tt>th match:
+With non-negative integer argument `n` given,
+returns the offset of the beginning of the `n`th match:
 
-  m = /(.)(.)(\d+)(\d)/.match("THX1138.")
-  # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
-  m[0]       # => "HX1138"
-  m.bytebegin(0) # => 1
-  m[3]       # => "113"
-  m.bytebegin(3) # => 3
+```ruby
+regexp = /(\d{4})-(\d{2})-(\d{2})/
+match = '2026-12-25'.match(regexp)
+# => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+match[0]            # => "2026-12-25"
+match.bytebegin(0)  # => 0
+match[2]            # => "12"
+match.bytebegin(2)  # => 5
+match.bytebegin(20) # Raises IndexError: index 20 out of matches.
 
-  m = /(ん)(に)(ち)/.match('こんにちは')
-  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
-  m[0]           # => "んにち"
-  m.bytebegin(0) # => 3
-  m[3]           # => "ち"
-  m.bytebegin(3) # => 9
+match = /(ん)(に)(ち)/.match('こんにちは')
+# => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+match[2]           # => "に"
+match.bytebegin(2) # => 6  # Byte offset.
+match.begin(2)     # => 2  # Character offset.
+```
 
-When string or symbol argument +name+ is given,
+With string or symbol argument `name` given,
 returns the offset of the beginning for the named match:
 
-  m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
-  # => #<MatchData "hog" foo:"h" bar:"g">
-  m[:foo]        # => "h"
-  m.bytebegin('foo') # => 0
-  m[:bar]        # => "g"
-  m.bytebegin(:bar)  # => 2
+```ruby
+regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+match = '2026-12-25'.match(regexp)
+# => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+match[:month]           # => "12"
+match.bytebegin(:month) # => 5
+match.bytebegin('day')  # => 8
+```
 
-Related: MatchData#byteend, MatchData#byteoffset.
+Related: MatchData#begin.
