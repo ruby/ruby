@@ -1141,7 +1141,7 @@ static VALUE
 range_each(VALUE range)
 {
     VALUE beg, end;
-    long i;
+    rb_len_t i;
 
     RETURN_SIZED_ENUMERATOR(range, 0, 0, range_enum_size);
 
