@@ -259,7 +259,7 @@ rb_vm_to_h_pair_prepare(VALUE hash, struct rb_to_h_pair_ctx *ctx)
     const rb_iseq_t *block_iseq = capt->code.iseq;
 
     if (ISEQ_BODY(block_iseq)->type != ISEQ_TYPE_BLOCK) return 0;
-    if (!rb_iseq_to_h_pair_p(block_iseq)) return 0;
+    if (!ISEQ_BODY(block_iseq)->to_h_pair) return 0;
 
     ctx->prev = ec->to_h_pair;
     ctx->hash = hash;
@@ -283,23 +283,26 @@ rb_vm_to_h_pair_begin_yield(struct rb_to_h_pair_ctx *ctx)
     ctx->caller_cfp = GET_EC()->cfp;
 }
 
-// Consume a submitted pair, or fall back to rb_hash_set_pair for
-// `next`, tracing, and non-cooperating invocations.  Key/value are
-// cleared once consumed so they do not pin objects past this yield.
-void
-rb_vm_to_h_pair_store(struct rb_to_h_pair_ctx *ctx, VALUE result)
+// End the yield bound by rb_vm_to_h_pair_begin_yield().  Unbinds the
+// caller first so Ruby code run from here (`key.hash`, `eql?`) cannot
+// submit.  Inserts a submitted pair and returns true; returns false when
+// the block returned a value instead (`next`, tracing, non-cooperating
+// invocation) and the caller must store it with its own error messages.
+// Key/value are cleared once consumed so they do not pin objects past
+// this yield.
+int
+rb_vm_to_h_pair_consume(struct rb_to_h_pair_ctx *ctx)
 {
-    if (ctx->submitted) {
-        VALUE key = ctx->key;
-        VALUE val = ctx->val;
-        ctx->key = Qnil;
-        ctx->val = Qnil;
-        ctx->submitted = 0;
-        rb_hash_aset(ctx->hash, key, val);
-    }
-    else {
-        rb_hash_set_pair(ctx->hash, result);
-    }
+    ctx->caller_cfp = NULL;
+    if (!ctx->submitted) return 0;
+
+    VALUE key = ctx->key;
+    VALUE val = ctx->val;
+    ctx->key = Qnil;
+    ctx->val = Qnil;
+    ctx->submitted = 0;
+    rb_hash_aset(ctx->hash, key, val);
+    return 1;
 }
 
 // Counterpart of rb_vm_to_h_pair_prepare().  Pops this ctx (including
@@ -311,6 +314,7 @@ rb_vm_to_h_pair_finish(VALUE arg)
     struct rb_to_h_pair_ctx *ctx = (struct rb_to_h_pair_ctx *)arg;
     rb_execution_context_t *ec = GET_EC();
 
+    VM_ASSERT(ec->to_h_pair == ctx);
     if (ec->to_h_pair == ctx) {
         ec->to_h_pair = ctx->prev;
     }
@@ -338,9 +342,14 @@ rb_vm_to_h_aset(const rb_control_frame_t *cfp, VALUE key, VALUE val)
         trace_events |= rb_iseq_local_event_flags(cfp->_iseq);
     }
 
+    // A bmethod defined from the same block (`define_method(:hash, &b)`)
+    // runs this iseq too, and C code in the core to_h (`to_ary` for block
+    // arg splat, `hash`/`eql?` in rb_hash_aset) can call it right on top
+    // of the caller frame.  Only the yielded block frame may submit.
     if (ctx &&
             cfp->_iseq == (const rb_iseq_t *)ctx->iseq &&
             ctx->caller_cfp == RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp) &&
+            !VM_FRAME_BMETHOD_P(cfp) &&
             !(trace_events & RUBY_EVENT_B_RETURN)) {
         ctx->key = key;
         ctx->val = val;

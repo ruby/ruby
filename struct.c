@@ -1153,7 +1153,8 @@ rb_struct_to_h_pair(VALUE arg)
     for (rb_len_t i = 0; i < RSTRUCT_LEN_RAW(s); i++) {
         VALUE k = rb_ary_entry(members, i), v = RSTRUCT_GET_RAW(s, i);
         rb_vm_to_h_pair_begin_yield(&a->ctx);
-        rb_vm_to_h_pair_store(&a->ctx, rb_yield_values(2, k, v));
+        VALUE result = rb_yield_values(2, k, v);
+        if (!rb_vm_to_h_pair_consume(&a->ctx)) rb_hash_set_pair(a->ctx.hash, result);
     }
     return Qnil;
 }

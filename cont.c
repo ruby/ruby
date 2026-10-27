@@ -1879,6 +1879,10 @@ cont_restore_thread(rb_context_t *cont)
         th->ec->root_lep = sec->root_lep;
         th->ec->root_svar = sec->root_svar;
         th->ec->errinfo = sec->errinfo;
+        /* to_h pair ctxs live on the machine stack restored below; a jump
+         * skips their rb_ensure, so the current chain may point into dead
+         * frames. */
+        th->ec->to_h_pair = sec->to_h_pair;
 
         VM_ASSERT(th->ec->vm_stack != NULL);
     }

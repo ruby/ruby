@@ -2847,6 +2847,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                 operands = iobj->operands;
                 insn = iobj->insn_id;
                 generated_iseq[code_index] = insn;
+                if (insn == BIN(to_h_aset)) body->to_h_pair = true;
                 types = insn_op_types(insn);
                 len = insn_len(insn);
 
@@ -13332,6 +13333,8 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         const VALUE insn = code[code_index] = ibf_load_small_value(load, &reading_pos);
         const char *types = insn_op_types(insn);
         int op_index;
+
+        if (insn == BIN(to_h_aset)) load_body->to_h_pair = true;
 
         code_index++;
 

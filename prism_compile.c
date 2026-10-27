@@ -3817,8 +3817,13 @@ pm_to_h_pair_literal(const pm_node_t *body)
     const pm_array_node_t *array = (const pm_array_node_t *) body;
     if (array->elements.size != 2) return NULL;
 
+    // A splat changes the element count, and so does a keyword hash: the
+    // array literal drops an empty `**h` (`[k, **{}]` is `[k]`), which
+    // compiling the element alone would keep as `{}`.
     for (size_t i = 0; i < 2; i++) {
-        if (PM_NODE_TYPE_P(array->elements.nodes[i], PM_SPLAT_NODE)) return NULL;
+        const pm_node_t *element = array->elements.nodes[i];
+        if (PM_NODE_TYPE_P(element, PM_SPLAT_NODE)) return NULL;
+        if (PM_NODE_TYPE_P(element, PM_KEYWORD_HASH_NODE)) return NULL;
     }
 
     return array;

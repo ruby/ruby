@@ -784,7 +784,8 @@ enum_to_h_pair_yield(VALUE arg)
     struct enum_to_h_pair_iter *it = (struct enum_to_h_pair_iter *)arg;
 
     rb_vm_to_h_pair_begin_yield(&it->ctx);
-    rb_vm_to_h_pair_store(&it->ctx, rb_yield_values2(it->argc, it->argv));
+    VALUE result = rb_yield_values2(it->argc, it->argv);
+    if (!rb_vm_to_h_pair_consume(&it->ctx)) rb_hash_set_pair(it->ctx.hash, result);
     return Qnil;
 }
 

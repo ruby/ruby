@@ -570,6 +570,7 @@ struct rb_iseq_constant_body {
 
     bool prism; // ISEQ was generated from prism compiler
     bool no_realpath; // location.pathobj names no real file (ex: during eval)
+    bool to_h_pair; // contains to_h_aset (a `to_h { [key, value] }` block)
 
     // Set once an EP escape of this iseq has been reported to the enabled JIT.
     rb_atomic_t jit_ep_escape_recorded;
@@ -2127,7 +2128,6 @@ VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
 
 /* to_h pair-literal block optimization (see insns.def: to_h_aset,
  * prism_compile.c and the core to_h implementations). */
-int rb_iseq_to_h_pair_p(const rb_iseq_t *iseq);
 VALUE rb_vm_to_h_aset(const rb_control_frame_t *cfp, VALUE key, VALUE val);
 rb_event_flag_t rb_iseq_local_event_flags(const rb_iseq_t *iseq);
 

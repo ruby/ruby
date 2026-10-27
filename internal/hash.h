@@ -144,7 +144,7 @@ struct rb_to_h_pair_ctx {
 };
 int rb_vm_to_h_pair_prepare(VALUE hash, struct rb_to_h_pair_ctx *ctx);
 void rb_vm_to_h_pair_begin_yield(struct rb_to_h_pair_ctx *ctx);
-void rb_vm_to_h_pair_store(struct rb_to_h_pair_ctx *ctx, VALUE result);
+int rb_vm_to_h_pair_consume(struct rb_to_h_pair_ctx *ctx);
 VALUE rb_vm_to_h_pair_finish(VALUE arg);
 
 st_table *rb_hash_tbl_raw(VALUE hash);

@@ -3974,7 +3974,8 @@ to_h_pair_i(VALUE key, VALUE value, VALUE arg)
     struct rb_to_h_pair_ctx *ctx = (struct rb_to_h_pair_ctx *)arg;
 
     rb_vm_to_h_pair_begin_yield(ctx);
-    rb_vm_to_h_pair_store(ctx, rb_yield_values(2, key, value));
+    VALUE result = rb_yield_values(2, key, value);
+    if (!rb_vm_to_h_pair_consume(ctx)) rb_hash_set_pair(ctx->hash, result);
     return ST_CONTINUE;
 }
 

@@ -3359,6 +3359,21 @@ rb_ary_to_a(VALUE ary)
  *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
+static void
+ary_to_h_set_pair(VALUE hash, rb_len_t i, VALUE elt)
+{
+    const VALUE key_value_pair = rb_check_array_type(elt);
+    if (NIL_P(key_value_pair)) {
+        rb_raise(rb_eTypeError, "wrong element type %"PRIsVALUE" at %"PRIdLEN" (expected array)",
+                 rb_obj_class(elt), i);
+    }
+    if (RARRAY_LEN(key_value_pair) != 2) {
+        rb_raise(rb_eArgError, "wrong array length at %"PRIdLEN" (expected 2, was %"PRIdLEN")",
+            i, RARRAY_LEN(key_value_pair));
+    }
+    rb_hash_aset(hash, RARRAY_AREF(key_value_pair, 0), RARRAY_AREF(key_value_pair, 1));
+}
+
 struct rb_ary_to_h_pair_args {
     VALUE ary;
     struct rb_to_h_pair_ctx ctx;
@@ -3373,7 +3388,8 @@ rb_ary_to_h_pair(VALUE arg)
     for (rb_len_t i = 0; i < RARRAY_LEN(ary); i++) {
         const VALUE e = rb_ary_elt(ary, i);
         rb_vm_to_h_pair_begin_yield(&a->ctx);
-        rb_vm_to_h_pair_store(&a->ctx, rb_yield_force_blockarg(e));
+        const VALUE elt = rb_yield_force_blockarg(e);
+        if (!rb_vm_to_h_pair_consume(&a->ctx)) ary_to_h_set_pair(a->ctx.hash, i, elt);
     }
     return Qnil;
 }
@@ -3399,16 +3415,7 @@ rb_ary_to_h(VALUE ary)
     for (i=0; i<RARRAY_LEN(ary); i++) {
         const VALUE e = rb_ary_elt(ary, i);
         const VALUE elt = block_given ? rb_yield_force_blockarg(e) : e;
-        const VALUE key_value_pair = rb_check_array_type(elt);
-        if (NIL_P(key_value_pair)) {
-            rb_raise(rb_eTypeError, "wrong element type %"PRIsVALUE" at %"PRIdLEN" (expected array)",
-                     rb_obj_class(elt), i);
-        }
-        if (RARRAY_LEN(key_value_pair) != 2) {
-            rb_raise(rb_eArgError, "wrong array length at %"PRIdLEN" (expected 2, was %"PRIdLEN")",
-                i, RARRAY_LEN(key_value_pair));
-        }
-        rb_hash_aset(hash, RARRAY_AREF(key_value_pair, 0), RARRAY_AREF(key_value_pair, 1));
+        ary_to_h_set_pair(hash, i, elt);
     }
     return hash;
 }

@@ -461,6 +461,40 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(1, key_hash.size)
   end
 
+  # Cases where the pair-literal block must fall back to exactly the
+  # unoptimized behaviour.
+  def test_to_h_block_pair_literal_fallbacks
+    # A value returned with `next` is checked by Array#to_h with the
+    # element index in the message, as without the optimization.
+    e = assert_raise(TypeError) { [1].to_h { |x| [x, (next x if x > 0; x)] } }
+    assert_equal("wrong element type Integer at 0 (expected array)", e.message)
+    e = assert_raise(ArgumentError) { [1].to_h { |x| [x, (next [x] if x > 0; x)] } }
+    assert_equal("wrong array length at 0 (expected 2, was 1)", e.message)
+
+    # An empty keyword splat disappears from an array literal, so the
+    # block returns a one-element array.
+    h = {}
+    e = assert_raise(ArgumentError) { [1].to_h { |x| [x, **h] } }
+    assert_equal("wrong array length at 0 (expected 2, was 1)", e.message)
+    assert_equal({1 => {a: 1}}, [1].to_h { |x| [x, **{a: 1}] })
+
+    # A bmethod defined from the same block runs the same iseq, and the
+    # core to_h can call it right on top of its own frame: #to_ary for
+    # the block argument splat (before the yield) and #hash while
+    # inserting the pair (after it).  Neither is the yield.
+    saver = Class.new { def to_h(&b) = (@saved = b; {}); attr_reader :saved }
+    site = ->(recv) { recv.to_h { |a = nil, b = nil| [a, b] } }
+    site.(s = saver.new)
+    to_ary = Class.new.tap { _1.define_method(:to_ary, &s.saved) }
+    assert_equal({nil => nil}, site.([to_ary.new]))
+
+    site = ->(recv) { recv.to_h { |*x| [x.first, 1] } }
+    site.(s = saver.new)
+    hash = Class.new.tap { _1.define_method(:hash, &s.saved) }
+    e = assert_raise(TypeError) { site.([hash.new]) }
+    assert_equal("no implicit conversion of Array into Integer", e.message)
+  end
+
   # The pair-literal compiler replaces newarray/duparray, not the array
   # node's line/coverage events.  A multi-line block must still fire
   # :line and count coverage on the pair; a same-line block must not

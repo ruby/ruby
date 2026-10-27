@@ -4156,26 +4156,6 @@ rb_vm_insn_decode(const VALUE encoded)
     return rb_vm_insn_addr2insn((void *)encoded);
 }
 
-// Return true if `iseq` is a `to_h { |*| [key, value] }` pair-literal
-// block (it contains a to_h_aset instruction).
-int
-rb_iseq_to_h_pair_p(const rb_iseq_t *iseq)
-{
-    // Use the original (decoded) instruction sequence: insn_len() and
-    // the BIN() opcode comparison operate on decoded instructions, not
-    // on the encoded form stored in iseq_encoded.
-    const VALUE *code = rb_iseq_original_iseq(iseq);
-    unsigned int size = ISEQ_BODY(iseq)->iseq_size;
-
-    for (unsigned int pos = 0; pos < size; ) {
-        int insn = (int)code[pos];
-
-        if (insn == BIN(to_h_aset)) return 1;
-        pos += insn_len(insn);
-    }
-    return 0;
-}
-
 // Turn on or off tracing for a given instruction address
 static inline int
 encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, bool remain_traced)
