@@ -2420,8 +2420,12 @@ heap_page_body_free(struct heap_page_body *page_body, struct arena_descriptor *a
 # define ASSERT_PAGE_POOL_LOCKED(g) ((void)0)
 #endif
 
-/* Insert into page_index.  Writers serialize on page_pool.lock; lomem and himem are a
- * monotonically growing over-approximation used for a quick reject. */
+/* Insert into page_index. Writers serialize on page_pool.lock; lomem and himem are a
+ * monotonically growing over-approximation used for a quick reject. We need to keep
+ * track of this for conservative marking during global GC.
+ *
+ * TODO: This can use its own lock, it shouldn't block the page pool.
+ */
 static void
 global_page_index_insert(struct heap_page *page)
 {
@@ -2743,6 +2747,8 @@ page_pool_add_arena(rb_global_objspace_t *g)
 }
 #endif
 
+/* Acquire a free page from the page pool. It can give back a warm or "cold" page that will cause
+ * a page fault on first access. If there are no free pages, an extra arena is allocated. */
 static struct heap_page_body *
 page_pool_acquire(struct arena_descriptor **arena_out)
 {
@@ -2833,11 +2839,9 @@ page_pool_release(struct heap_page_body *body, struct arena_descriptor *arena)
     }
 }
 
-/* Allow the OS to reclaim pool memory. Runs only at major GC in single-objspace mode
- * (see gc_sweep_finish).
+/* Allow the OS to reclaim pool memory.
  *
  * Step A: madvise free bodies, coalescing physically adjacent ones into a single call.
- *
  * Step B: munmap arenas whose 32 bodies are all free, keeping one extra empty
  * arena as a retention buffer when the remaining free pool is < half an arena. */
 static void
@@ -2875,8 +2879,8 @@ page_pool_reclaim(rb_global_objspace_t *g)
 
     /* Step B — munmap fully-free arenas (with retention buffer).
      *
-     * total_free = Σ popcount(free_mask).  An arena is eligible when all 32 of its
-     * bodies are free.  Keep one extra empty arena when the rest of the free pool is
+     * total_free = sum(popcount(free_mask)). An arena is eligible when all 32 of its
+     * bodies are free. Keep one extra empty arena when the rest of the free pool is
      * < half an arena, to avoid thrash. */
     int total_free = 0;
     for (struct arena_descriptor *a = g->page_pool.arenas; a; a = a->next) {
