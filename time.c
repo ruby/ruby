@@ -4572,7 +4572,7 @@ ndigits_denominator(VALUE ndigits)
         return INT2FIX(1);
     }
     return rb_rational_new(INT2FIX(1),
-                           rb_int_positive_pow(10, (unsigned long)nd));
+                           rb_int_positive_pow(10, (rb_ulen_t)nd));
 }
 
 /*
@@ -5413,7 +5413,7 @@ time_xmlschema(int argc, VALUE *argv, VALUE time)
         }
         else {
             long w = fraction_digits - TIME_SCALE_NUMDIGITS; /* > 0 */
-            subsecx = mulv(subsecx, rb_int_positive_pow(10, (unsigned long)w));
+            subsecx = mulv(subsecx, rb_int_positive_pow(10, (rb_ulen_t)w));
             if (!RB_INTEGER_TYPE_P(subsecx)) { /* maybe Rational */
                 subsecx = rb_Integer(subsecx);
             }
