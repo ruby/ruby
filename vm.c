@@ -3532,6 +3532,12 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
     // set cfp to NULL before clearing the stack in case `thread_profile_frames`
     // gets called in this middle of `rb_ec_set_vm_stack` via signal handler.
     ec->cfp = NULL;
+
+    // Ensure the store to ec->cfp above is not reordered after the stores below.
+#if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
+
     rb_ec_set_vm_stack(ec, NULL, 0);
 }
 
