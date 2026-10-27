@@ -4760,9 +4760,9 @@ int_pow(rb_len_t x, rb_ulen_t y)
 }
 
 VALUE
-rb_int_positive_pow(long x, unsigned long y)
+rb_int_positive_pow(rb_len_t x, rb_ulen_t y)
 {
-    return int_pow((rb_len_t)x, (rb_ulen_t)y);
+    return int_pow(x, y);
 }
 
 static VALUE

@@ -21,6 +21,10 @@ class Test_Integer < Test::Unit::TestCase
       assert_equal(3, Bug::Integer.positive_pow(3, 1))
       assert_equal(-3, Bug::Integer.positive_pow(-3, 1))
       assert_equal(9, Bug::Integer.positive_pow(-3, 2))
+      rb_len_max = RbConfig::LIMITS['RB_LEN_MAX']
+      assert_equal(rb_len_max, Bug::Integer.positive_pow(rb_len_max, 1))
+      rb_len_min = RbConfig::LIMITS['RB_LEN_MIN']
+      assert_equal(rb_len_min, Bug::Integer.positive_pow(rb_len_min, 1))
     end;
   end
 end
