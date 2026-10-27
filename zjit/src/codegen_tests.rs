@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_exits_until_invalidate};
+use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_exits_until_invalidate, set_num_profiles};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -6508,6 +6508,60 @@ fn test_constant_invalidation() {
     ");
     assert_contains_opcode("test", YARVINSN_opt_getconstant_path);
     assert_snapshot!(assert_compiles("test"), @"123");
+}
+
+#[test]
+fn test_constant_invalidation_on_final_version() {
+    set_call_threshold(2);
+    set_max_versions(2);
+    set_num_exits_until_invalidate(1);
+    set_num_profiles(1);
+    for inline_threshold in [0, 30] {
+        set_inline_threshold(inline_threshold);
+        eval("
+            module ChangingConstant
+              VALUE = 11
+            end
+            def constant_value = ChangingConstant::VALUE
+            def constant_reader = constant_value
+            constant_reader
+            constant_reader
+
+            ChangingConstant::VALUE = 17
+            constant_reader
+            constant_reader
+        ");
+
+        // The final version must keep reading the current value without a
+        // permanently patched exit, including when the read is inlined.
+        assert_eq!(assert_compiles("
+            ChangingConstant::VALUE = 31
+            [constant_reader, constant_reader]
+        "), "[31, 31]");
+        assert_eq!(assert_compiles("
+            ChangingConstant = Module.new { const_set(:VALUE, 53) }
+            [constant_reader, constant_reader]
+        "), "[53, 53]");
+
+        // Other guards can exhaust the budget before the first constant
+        // invalidation, including a new constant in an unrelated namespace.
+        eval("
+            module StableConstant
+              TOKEN = 11
+            end
+            def constant_value(value) = value + StableConstant::TOKEN
+            def constant_reader(value) = constant_value(value)
+            constant_reader(1)
+            constant_reader(1)
+            constant_reader(1.5)
+            constant_reader(1.5)
+            constant_reader(1.5)
+        ");
+        assert_eq!(assert_compiles("
+            Module.new.const_set(:TOKEN, 31)
+            [constant_reader(1.5), constant_reader(2.5)]
+        "), "[12.5, 13.5]");
+    }
 }
 
 #[test]

@@ -2081,15 +2081,15 @@ mod hir_opt_tests {
         bb9():
           PatchPoint NoSingletonClass(A@0x1008)
           PatchPoint MethodRedefined(A@0x1008, foo@0x1010, cme:0x1018)
-          v181:Fixnum[1] = Const Value(1)
-          Jump bb7(v181)
+          v180:Fixnum[1] = Const Value(1)
+          Jump bb7(v180)
         bb10():
           CondBranchHasType v15, ObjectSubclass[class_exact:B], bb11(), bb8()
         bb11():
           PatchPoint NoSingletonClass(B@0x1040)
           PatchPoint MethodRedefined(B@0x1040, foo@0x1010, cme:0x1048)
-          v184:Fixnum[2] = Const Value(2)
-          Jump bb7(v184)
+          v183:Fixnum[2] = Const Value(2)
+          Jump bb7(v183)
         bb8():
           v32:BasicObject = Send v15, :foo # SendFallbackReason: Send: polymorphic fallback
           Jump bb7(v32)
@@ -2097,39 +2097,38 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(open_uri)
           v40:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(NilClass@0x1070, ==@0x1078, cme:0x1080)
-          v187:NilClass = GuardType v16, NilClass recompile
-          v188:CBool = IsBitEqual v187, v40
-          CondBranch v188, bb6(), bb12()
+          v186:NilClass = GuardType v16, NilClass recompile
+          v187:CBool = IsBitEqual v186, v40
+          CondBranch v187, bb6(), bb12()
         bb12():
           v51:StringExact[VALUE(0x10a8)] = Const Value(VALUE(0x10a8))
           v52:StringExact = StringCopy v51
           PatchPoint NoSingletonClass(String@0x10b0)
           PatchPoint MethodRedefined(String@0x10b0, ==@0x1078, cme:0x10b8)
-          v193 = GuardType v187, StringExact recompile
-          v194:BoolExact = StringEqual v193, v52
-          v57:CBool = Test v194
+          v192 = GuardType v186, StringExact recompile
+          v193:BoolExact = StringEqual v192, v52
+          v57:CBool = Test v193
           CondBranch v57, bb6(), bb13()
         bb13():
           v63:StringExact[VALUE(0x10e0)] = Const Value(VALUE(0x10e0))
           v64:StringExact = StringCopy v63
           PatchPoint NoSingletonClass(String@0x10b0)
           PatchPoint MethodRedefined(String@0x10b0, ==@0x1078, cme:0x10b8)
-          v198 = GuardType v187, StringExact recompile
-          v199:BoolExact = StringEqual v198, v64
-          v69:CBool = Test v199
+          v197 = GuardType v186, StringExact recompile
+          v198:BoolExact = StringEqual v197, v64
+          v69:CBool = Test v198
           CondBranch v69, bb6(), bb14()
         bb6():
-          v143:StaticSymbol[:ok] = Const Value(VALUE(0x10e8))
+          v142:StaticSymbol[:ok] = Const Value(VALUE(0x10e8))
           CheckInterrupts
-          Return v143
+          Return v142
         bb14():
           v76:NilClass = Const Value(nil)
-          PatchPoint StableConstantNames(0x10f0, ArgumentError)
-          v79:ClassSubclass[ArgumentError@0x10f8] = Const Value(VALUE(0x10f8))
+          v78:BasicObject = GetConstantPath 0x10f0
           PatchPoint NoEPEscape(open_uri)
-          v83:StringExact[VALUE(0x1100)] = Const Value(VALUE(0x1100))
+          v82:StringExact[VALUE(0x1100)] = Const Value(VALUE(0x1100))
           PatchPoint NoSingletonClass(String@0x10b0)
-          v88 = GuardType v187, String
+          v87 = GuardType v186, String
           Unreachable
         ");
     }

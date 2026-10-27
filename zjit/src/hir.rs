@@ -9705,7 +9705,9 @@ fn add_iseq_to_hir(
                     let ic: *const iseq_inline_constant_cache = get_arg(pc, 0).as_ptr();
                     let idlist: *const ID = unsafe { (*ic).segments };
                     let ice = unsafe { (*ic).entry };
-                    let can_fold = !ice.is_null()
+                    // A patched constant read would keep exiting if this version cannot
+                    // recompile. Use the inline cache when avoiding speculative exits.
+                    let can_fold = !fun.policy.no_side_exits && !ice.is_null()
                         && unsafe { (*ice).ic_cref }.is_null()
                         && (unsafe { rb_jit_constcache_shareable(ice) } || fun.assume_single_ractor_mode(block, exit_id));
                     let result = if can_fold {
