@@ -248,6 +248,22 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles('[1, 2, 3]', insns: %i[duparray], result: [1, 2, 3])
   end
 
+  def test_compile_to_h_aset
+    # Prism compiles a pair-literal to_h block with to_h_aset; parse.y
+    # keeps newarray.
+    prism = RubyVM::InstructionSequence.compile("").to_a.dig(4, :parser) == :prism
+    insns = prism ? %i[to_h_aset] : %i[newarray]
+    assert_compiles('[1, 2].to_h { |x| [x, x * 2] }', insns:, result: {1 => 2, 2 => 4})
+    assert_compiles('{a: 1}.to_h { |k, v| [v, k] }', insns:, result: {1 => :a})
+    # Not yielded by a core to_h: the block returns the pair array.
+    assert_compiles(<<~RUBY, insns:, result: [3, 3])
+      class ToHCapture
+        def to_h(&b) = b
+      end
+      ToHCapture.new.to_h { |x| [x, x] }.call(3)
+    RUBY
+  end
+
   def test_compile_newrange
     assert_compiles('s = 1; (s..5)', insns: %i[newrange], result: 1..5)
     assert_compiles('s = 1; e = 5; (s..e)', insns: %i[newrange], result: 1..5)

@@ -10261,6 +10261,27 @@ fn gen_setglobal(
     Some(KeepCompiling)
 }
 
+fn gen_to_h_aset(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    // Stash the pair on the to_h that yielded to this block and get its
+    // result Hash, or allocate [key, val]. Never calls Ruby methods.
+    // The instruction's operands are unused.
+    jit_prepare_call_with_gc(jit, asm);
+
+    let key = asm.stack_opnd(1);
+    let val = asm.stack_opnd(0);
+
+    let result = asm.ccall(rb_vm_to_h_aset as *const u8, vec![CFP, key, val]);
+    asm.stack_pop(2); // Keep them during ccall for GC
+
+    let stack_ret = asm.stack_push(Type::UnknownHeap);
+    asm.mov(stack_ret, result);
+
+    Some(KeepCompiling)
+}
+
 fn gen_anytostring(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -11012,6 +11033,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_getglobal => Some(gen_getglobal),
         YARVINSN_setglobal => Some(gen_setglobal),
         YARVINSN_anytostring => Some(gen_anytostring),
+        YARVINSN_to_h_aset => Some(gen_to_h_aset),
         YARVINSN_objtostring => Some(gen_objtostring),
         YARVINSN_intern => Some(gen_intern),
         YARVINSN_toregexp => Some(gen_toregexp),

@@ -1203,6 +1203,7 @@ extern "C" {
     pub fn rb_iseq_path(iseq: *const rb_iseq_t) -> VALUE;
     pub fn rb_vm_env_write(ep: *const VALUE, index: ::std::os::raw::c_int, v: VALUE);
     pub fn rb_vm_bh_to_procval(ec: *const rb_execution_context_t, block_handler: VALUE) -> VALUE;
+    pub fn rb_vm_to_h_aset(cfp: *const rb_control_frame_t, key: VALUE, val: VALUE) -> VALUE;
     pub fn rb_vm_frame_method_entry(
         cfp: *const rb_control_frame_t,
     ) -> *const rb_callable_method_entry_t;
