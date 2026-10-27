@@ -2436,40 +2436,99 @@ match_ary_aref(VALUE match, VALUE idx, VALUE result)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    self[offset] -> string or nil
- *    self[offset, size] -> array
- *    self[range] -> array
+ *    self[n] -> string or nil
+ *    self[n, size] -> string or array
  *    self[name] -> string or nil
+ *    self[range] -> array or nil
  *
- *  When arguments +offset+, +offset+ and +size+, or +range+ are given,
- *  returns match and captures in the style of Array#[]:
+ *  With only integer argument `n` given,
+ *  returns the matched substring at offset `n`:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m[0] # => "HX1138"
- *    m[1, 2]  # => ["H", "X"]
- *    m[1..3]  # => ["H", "X", "113"]
- *    m[-3, 2] # => ["X", "113"]
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0]  # => "2026-12-25"  # Entire matched string.
+ *  match[1]  # => "2026"        # First matched substring.
+ *  match[2]  # => "12"          # Second matched substring.
+ *  match[3]  # => "25"          # Third matched substring.
+ *  match[4]  # => nil           # No more matches.
+ *  match[-1] # => "25"          # For negative offset, counts backwards.
+ *  ```
  *
- *  When string or symbol argument +name+ is given,
- *  returns the matched substring for the given name:
+ *  With integer arguments `n` and `size` given,
+ *  returns `size` matched substrings beginning at offset `n`:
  *
- *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *    # => #<MatchData "hoge" foo:"h" bar:"ge">
- *    m['foo'] # => "h"
- *    m[:bar]  # => "ge"
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0, 1]  # => ["2026-12-25"]
+ *  match[0, 4]  # => ["2026-12-25", "2026", "12", "25"]
+ *  match[0, 10] # => ["2026-12-25", "2026", "12", "25"]
+ *  match[-3, 2] # => ["2026", "12"]
+ *  match[0, 0]  # => []
+ *  ```
  *
- *  If multiple captures have the same name, returns the last matched
- *  substring.
+ *  With string or symbol argument `name` given,
+ *  returns the named matched substring:
  *
- *    m = /(?<foo>.)(?<foo>.+)/.match("hoge")
- *    # => #<MatchData "hoge" foo:"h" foo:"oge">
- *    m[:foo] #=> "oge"
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = regexp.match('2026-10-27')
+ *  # => #<MatchData "2026-10-27" year:"2026" month:"10" day:"27">
+ *  match[:year]    # => "2026"
+ *  match['day']    # => "27"
+ *  match[:nosuch]  # Raises IndexError : undefined group name reference: nosuch.
+ *  ```
  *
- *    m = /\W(?<foo>.+)|\w(?<foo>.+)|(?<foo>.+)/.match("hoge")
- *    #<MatchData "hoge" foo:nil foo:"oge" foo:nil>
- *    m[:foo] #=> "oge"
+ *  If multiple captures have the same name, returns matched substring for the last one.
+ *
+ *  With [bounded range][bounded range] argument `range` given,
+ *  returns an array of matched substrings:
+ *
+ *  ```
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0..2]  # => ["2026-12-25", "2026", "12"]
+ *  match[0..10] # => ["2026-12-25", "2026", "12", "25"]
+ *  match[0..-3] # => ["2026-12-25", "2026"]
+ *  match[-3..2] # => ["2026", "12"]
+ *  ```
+ *
+ *  With [beginless range][beginless range] argument `range` given,
+ *  returns an array of matched substrings:
+ *
+ *  ```ruby
+ *  match[..0]  # => ["2026-12-25"]
+ *  match[..1]  # => ["2026-12-25", "2026"]
+ *  match[..10] # => ["2026-12-25", "2026", "12", "25"]
+ *  ```
+ *
+ *  With [endless range][endless range] argument `range` given,
+ *  returns an array of matched substrings:
+ *
+ *  ```ruby
+ *  match[0..]  # => ["2026-12-25", "2026", "12", "25"]
+ *  match[2..]  # => ["12", "25"]
+ *  match[10..] # => nil
+ *  ```
+ *
+ *  With [unbounded range][unbounded range] argument `range` given,
+ *  returns an array of all matched substrings:
+ *
+ *  ```ruby
+ *  match[nil..nil] # => ["2026-12-25", "2026", "12", "25"]
+ *  ```
+ *
+ *  [bounded range]: rdoc-ref:Range@Bounded+Ranges
+ *  [beginless range]: rdoc-ref:Range@Beginless+Ranges
+ *  [endless range]: rdoc-ref:Range@Endless+Ranges
+ *  [unbounded range]: rdoc-ref:Range@Unbounded+Ranges
  *
  */
 
