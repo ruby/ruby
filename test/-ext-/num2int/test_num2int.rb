@@ -163,11 +163,13 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:long, LONG_MAX)
     assert_num2i_error(:long, LONG_MIN-1)
     assert_num2i_error(:long, LONG_MAX+1)
-    assert_num2i_success(:long, FIXNUM_MIN)
-    assert_num2i_success(:long, FIXNUM_MIN+1)
-    assert_num2i_success(:long, FIXNUM_MIN-1)
-    assert_num2i_success(:long, FIXNUM_MAX)
-    assert_num2i_success(:long, FIXNUM_MAX+1)
+    [FIXNUM_MIN, FIXNUM_MIN+1, FIXNUM_MIN-1, FIXNUM_MAX, FIXNUM_MAX+1].each do |n|
+      if LONG_MIN <= n && n <= LONG_MAX
+        assert_num2i_success(:long, n)
+      else
+        assert_num2i_error(:long, n)
+      end
+    end
   end
 
   def test_num2ulong
@@ -178,11 +180,19 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:ulong, LONG_MIN+1, LONG_MAX+2)
     assert_num2i_error(:ulong, LONG_MIN-1)
     assert_num2i_error(:ulong, ULONG_MAX+1)
-    assert_num2i_success(:ulong, FIXNUM_MIN, ULONG_MAX-FIXNUM_MAX)
-    assert_num2i_success(:ulong, FIXNUM_MIN+1, ULONG_MAX-FIXNUM_MAX+1)
-    assert_num2i_success(:ulong, FIXNUM_MIN-1, ULONG_MAX-FIXNUM_MAX-1)
-    assert_num2i_success(:ulong, FIXNUM_MAX, FIXNUM_MAX)
-    assert_num2i_success(:ulong, FIXNUM_MAX+1, FIXNUM_MAX+1)
+    [FIXNUM_MIN, FIXNUM_MIN+1, FIXNUM_MIN-1, FIXNUM_MAX, FIXNUM_MAX+1].each do |n|
+      if n < 0
+        if n < LONG_MIN
+          assert_num2i_error(:ulong, n)
+        else
+          assert_num2i_success(:ulong, n, ULONG_MAX+1+n)
+        end
+      elsif n > ULONG_MAX
+        assert_num2i_error(:ulong, n)
+      else
+        assert_num2i_success(:ulong, n)
+      end
+    end
   end
 
   def test_num2ll
@@ -252,14 +262,22 @@ class TestNum2int < Test::Unit::TestCase
 
   def test_fix2long
     assert_fix2i_success(:long, 0)
-    assert_fix2i_success(:long, FIXNUM_MAX)
-    assert_fix2i_success(:long, FIXNUM_MIN)
-    assert_fix2i_success(:long, FIXNUM_MIN+1)
+    [FIXNUM_MAX, FIXNUM_MIN, FIXNUM_MIN+1].each do |n|
+      if LONG_MIN <= n && n <= LONG_MAX
+        assert_fix2i_success(:long, n)
+      else
+        assert_fix2i_error(:long, n)
+      end
+    end
   end
 
   def test_fix2ulong
     assert_fix2i_success(:ulong, 0)
-    assert_fix2i_success(:ulong, FIXNUM_MAX)
+    if FIXNUM_MAX <= ULONG_MAX
+      assert_fix2i_success(:ulong, FIXNUM_MAX)
+    else
+      assert_fix2i_error(:ulong, FIXNUM_MAX)
+    end
     assert_fix2i_success(:ulong, -1, ULONG_MAX)
   end
 

@@ -3267,7 +3267,8 @@ rb_num2uint(VALUE val)
         wrap = FIXNUM_NEGATIVE_P(val);
     }
     else {
-        num = rb_num2ulong_internal(val, &wrap);
+        unsigned long ul = rb_num2ulong_internal(val, &wrap);
+        num = wrap ? (rb_ulen_t)(rb_len_t)(long)ul : (rb_ulen_t)ul;
     }
 
     check_uint(num, wrap);
@@ -3373,7 +3374,8 @@ rb_num2ushort(VALUE val)
         wrap = FIXNUM_NEGATIVE_P(val);
     }
     else {
-        num = rb_num2ulong_internal(val, &wrap);
+        unsigned long ul = rb_num2ulong_internal(val, &wrap);
+        num = wrap ? (rb_ulen_t)(rb_len_t)(long)ul : (rb_ulen_t)ul;
     }
 
     check_ushort(num, wrap);
