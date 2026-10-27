@@ -624,9 +624,9 @@ rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel, VALU
     if (!NIL_P(ruby_verbose) && argc > 0) {
         VALUE str = argv[0];
         if (!NIL_P(uplevel)) {
-            long lev = NUM2LONG(uplevel);
+            rb_len_t lev = NUM2LEN(uplevel);
             if (lev < 0) {
-                rb_raise(rb_eArgError, "negative level (%ld)", lev);
+                rb_raise(rb_eArgError, "negative level (%" PRIdLEN ")", lev);
             }
             location = rb_ec_backtrace_location_ary(ec, lev + 1, 1, TRUE);
             if (!NIL_P(location)) {
@@ -643,9 +643,9 @@ rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel, VALU
                 str = rb_str_new_cstr("warning: ");
             }
             else {
-                str = rb_sprintf("%s:%ld: warning: ",
+                str = rb_sprintf("%s:%" PRIdLEN ": warning: ",
                     rb_string_value_ptr(&path),
-                    NUM2LONG(rb_funcall(location, rb_intern("lineno"), 0)));
+                    NUM2LEN(rb_funcall(location, rb_intern("lineno"), 0)));
             }
             RBASIC_SET_CLASS(str, rb_cWarningBuffer);
             rb_io_puts(argc, argv, str);
@@ -3277,7 +3277,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
         if (argc == 1 && FIXNUM_P(mesg)) {
             error = mesg; mesg = Qnil;
         }
-        if (!NIL_P(error) && st_lookup(syserr_tbl, NUM2LONG(error), &data)) {
+        if (!NIL_P(error) && st_lookup(syserr_tbl, NUM2INT(error), &data)) {
             klass = (VALUE)data;
             /* change class */
             if (!RB_TYPE_P(self, T_OBJECT)) { /* insurance to avoid type crash */

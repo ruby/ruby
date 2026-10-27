@@ -378,7 +378,7 @@ ruby_marshal_write_long(rb_len_t x, char *buf)
         buf[0] = (char)((x - 5)&0xff);
         return 1;
     }
-    for (i=1;i<(int)sizeof(long)+1;i++) {
+    for (i=1;i<(int)sizeof(x)+1;i++) {
         buf[i] = (char)(x & 0xff);
         x = RSHIFT(x,8);
         if (x == 0) {
@@ -532,7 +532,7 @@ w_symbol(VALUE sym, struct dump_arg *arg)
 
     if (st_lookup(&arg->symbols, sym, &num)) {
         w_byte(TYPE_SYMLINK, arg);
-        w_long((long)num, arg);
+        w_long(num, arg);
     }
     else {
         const VALUE orig_sym = sym;
@@ -811,13 +811,8 @@ w_bigfixnum(VALUE obj, struct dump_arg *arg)
 
     w_byte(TYPE_BIGNUM, arg);
 
-#if SIZEOF_LONG == SIZEOF_VALUE
-    long num, slen_num;
-    num = FIX2LONG(obj);
-#else
-    long long num, slen_num;
-    num = NUM2LL(obj);
-#endif
+    rb_len_t num, slen_num;
+    num = FIX2LEN(obj);
 
     char sign = num < 0 ? '-' : '+';
     w_byte(sign, arg);
@@ -837,7 +832,7 @@ w_bigfixnum(VALUE obj, struct dump_arg *arg)
 
     RUBY_ASSERT(slen > 0 && slen <= SIZEOF_RB_LEN_T / 2);
 
-    w_long((long)slen, arg);
+    w_long(slen, arg);
 
     for (int i = 0; i < slen; i++) {
         w_short(num & SHORTMASK, arg);
@@ -901,7 +896,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     else {
         if (st_lookup(&arg->data, obj, &num)) {
             w_byte(TYPE_LINK, arg);
-            w_long((long)num, arg);
+            w_long(num, arg);
             return;
         }
 
@@ -1033,12 +1028,12 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
                 BDIGIT *d = BIGNUM_DIGITS(obj);
 
                 slen = SHORTLEN(len);
-                if (LONG_MAX < slen) {
+                if (RB_LEN_MAX < slen) {
                     rb_raise(rb_eTypeError, "too big Bignum can't be dumped");
                 }
 
                 w_byte(sign, arg);
-                w_long((long)slen, arg);
+                w_long(slen, arg);
                 for (j = 0; j < len; j++) {
 #if SIZEOF_BDIGIT > SIZEOF_SHORT
                     BDIGIT num = *d;
@@ -1436,22 +1431,22 @@ long_toobig(int size)
              STRINGIZE(SIZEOF_LONG)", given %d)", size);
 }
 
-static long
+static rb_len_t
 r_long(struct load_arg *arg)
 {
-    register long x;
+    register rb_len_t x;
     int c = (signed char)r_byte(arg);
-    long i;
+    int i;
 
     if (c == 0) return 0;
     if (c > 0) {
         if (4 < c && c < 128) {
             return c - 5;
         }
-        if (c > (int)sizeof(long)) long_toobig(c);
+        if (c > (int)sizeof(rb_len_t)) long_toobig(c);
         x = 0;
         for (i=0;i<c;i++) {
-            x |= (long)r_byte(arg) << (8*i);
+            x |= (rb_len_t)r_byte(arg) << (8*i);
         }
     }
     else {
@@ -1459,11 +1454,11 @@ r_long(struct load_arg *arg)
             return c + 5;
         }
         c = -c;
-        if (c > (int)sizeof(long)) long_toobig(c);
+        if (c > (int)sizeof(rb_len_t)) long_toobig(c);
         x = -1;
         for (i=0;i<c;i++) {
-            x &= ~((long)0xff << (8*i));
-            x |= (long)r_byte(arg) << (8*i);
+            x &= ~((rb_len_t)0xff << (8*i));
+            x |= (rb_len_t)r_byte(arg) << (8*i);
         }
     }
     return x;
@@ -1482,8 +1477,8 @@ ruby_marshal_read_long(const char **buf, rb_len_t len)
     return x;
 }
 
-static long
-r_keep_readable(struct load_arg *arg, long len, size_t size)
+static rb_len_t
+r_keep_readable(struct load_arg *arg, rb_len_t len, size_t size)
 {
     if (UNLIKELY(len < 0)) {
         rb_raise(rb_eArgError, "negative length");
@@ -1631,7 +1626,7 @@ static VALUE
 r_symlink(struct load_arg *arg)
 {
     st_data_t sym;
-    long num = r_long(arg);
+    rb_len_t num = r_long(arg);
 
     if (!st_lookup(&arg->symbols, num, &sym)) {
         rb_raise(rb_eArgError, "bad symbol");
@@ -1650,7 +1645,7 @@ r_symreal(struct load_arg *arg, int ivar)
     if (rb_enc_str_asciionly_p(s)) rb_enc_associate_index(s, ENCINDEX_US_ASCII);
     st_insert(&arg->symbols, (st_data_t)n, (st_data_t)s);
     if (ivar) {
-        long num = r_long(arg);
+        rb_len_t num = r_long(arg);
         while (num-- > 0) {
             sym = r_symbol(arg);
             idx = sym2encidx(sym, r_object(arg));
@@ -1809,10 +1804,10 @@ r_ivar_encoding(VALUE obj, struct load_arg *arg, VALUE sym, VALUE val)
     return FALSE;
 }
 
-static long
+static rb_len_t
 r_encname(VALUE obj, struct load_arg *arg)
 {
-    long len = r_long(arg);
+    rb_len_t len = r_long(arg);
     if (len > 0) {
         VALUE sym = r_symbol(arg);
         VALUE val = r_object(arg);
@@ -1824,7 +1819,7 @@ r_encname(VALUE obj, struct load_arg *arg)
 static void
 r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
 {
-    long len;
+    rb_len_t len;
 
     len = r_long(arg);
     if (len > 0) {
@@ -1937,7 +1932,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
 {
     VALUE (*hash_new_capa)(rb_len_t) = rb_hash_new_capa;
     VALUE v = Qnil;
-    long id;
+    rb_len_t id;
     st_data_t link;
 
     switch (type) {
@@ -2058,8 +2053,8 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
 
       case TYPE_FIXNUM:
         {
-            long i = r_long(arg);
-            v = LONG2FIX(i);
+            rb_len_t i = r_long(arg);
+            v = LEN2FIX(i);
         }
         v = r_leave(v, arg, false);
         break;
@@ -2092,7 +2087,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
 
       case TYPE_BIGNUM:
         {
-            long len;
+            rb_len_t len;
             VALUE data;
             int sign;
 
@@ -2104,16 +2099,12 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
 
             if (SIZEOF_VALUE >= 8 && len <= 4) {
                 // Representable within uintptr, likely FIXNUM
-                VALUE num = 0;
-                for (int i = 0; i < len; i++) {
-                    num |= (VALUE)r_byte(arg) << (i * 16);
-                    num |= (VALUE)r_byte(arg) << (i * 16 + 8);
+                rb_ulen_t num = 0;
+                for (rb_len_t i = 0; i < len; i++) {
+                    num |= (rb_ulen_t)r_byte(arg) << (i * 16);
+                    num |= (rb_ulen_t)r_byte(arg) << (i * 16 + 8);
                 }
-#if SIZEOF_VALUE == SIZEOF_LONG
-                v = ULONG2NUM(num);
-#else
-                v = ULL2NUM(num);
-#endif
+                v = ULEN2NUM(num);
                 if (sign == '-') {
                     v = rb_int_uminus(v);
                 }
@@ -2178,7 +2169,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
 
       case TYPE_ARRAY:
         {
-            long len = r_keep_readable(arg, r_long(arg), 1);
+            rb_len_t len = r_keep_readable(arg, r_long(arg), 1);
 
             v = rb_ary_new2(len);
             v = r_entry(v, arg);
@@ -2196,7 +2187,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
       case TYPE_HASH_DEF:
       type_hash:
         {
-            long len = r_keep_readable(arg, r_long(arg), 2);
+            rb_len_t len = r_keep_readable(arg, r_long(arg), 2);
 
             v = hash_new_capa(len);
             v = r_entry(v, arg);
@@ -2218,11 +2209,10 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
       case TYPE_STRUCT:
         {
             VALUE mem, values;
-            long i;
             VALUE slot;
             st_index_t idx = r_prepare(arg);
             VALUE klass = path2class(r_unique(arg));
-            long len = r_keep_readable(arg, r_long(arg), 2);
+            rb_len_t i, len = r_keep_readable(arg, r_long(arg), 2);
 
             v = rb_obj_alloc(klass);
             if (!RB_TYPE_P(v, T_STRUCT)) {

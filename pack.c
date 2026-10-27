@@ -760,11 +760,11 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 
                 from = NEXTFROM;
                 from = rb_to_int(from);
-                l = NUM2LONG(from);
-                if (l < 0) {
+                l = NUM2LEN(from);
+                if (l < 0 || (rb_ulen_t)l > ULONG_MAX) {
                     rb_raise(rb_eRangeError, "pack(U): value out of range");
                 }
-                le = rb_uv_to_utf8(buf, l);
+                le = rb_uv_to_utf8(buf, (unsigned long)l);
                 rb_str_buf_cat(res, (char*)buf, le);
             }
             break;

@@ -3470,7 +3470,7 @@ rb_convert_to_integer(VALUE val, int base, int raise_exception)
     if (RB_FLOAT_TYPE_P(val)) {
         double f = RFLOAT_VALUE(val);
         if (!raise_exception && !isfinite(f)) return Qnil;
-        if (FIXABLE(f)) return LONG2FIX((long)f);
+        if (FIXABLE(f)) return LEN2FIX((rb_len_t)f);
         return rb_dbl2big(f);
     }
     else if (RB_INTEGER_TYPE_P(val)) {
