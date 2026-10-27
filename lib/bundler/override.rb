@@ -10,7 +10,7 @@ module Bundler
     end
 
     # Drops or replaces the dependencies of the gem named `from` that a
-    # `from:`/`to:` override targets. The requirement `from` put on the
+    # `from:`/`with:` override targets. The requirement `from` put on the
     # replaced gem is discarded.
     def self.rewrite_dependencies(overrides, from, dependencies)
       return dependencies if overrides.nil? || overrides.none? {|o| o.from == from }
@@ -60,7 +60,7 @@ module Bundler
     def to_lock
       target = @target == :all ? ":all" : @target.inspect
       fields = if @from
-        ["from: #{@from.inspect}", "to: #{@operation.inspect}", *("version: #{self.class.normalize(@requirement).inspect}" if @requirement)]
+        ["from: #{@from.inspect}", "with: #{@operation.inspect}", *("version: #{self.class.normalize(@requirement).inspect}" if @requirement)]
       else
         ["#{@field}: #{self.class.normalize(@operation).inspect}"]
       end
@@ -86,10 +86,10 @@ module Bundler
       fields = fields.to_h
 
       if fields.key?(:from)
-        unless (keys - [:from, :to, :version]).empty? && fields.key?(:to) && fields[:from].is_a?(String)
+        unless (keys - [:from, :with, :version]).empty? && fields.key?(:with) && fields[:from].is_a?(String)
           raise ArgumentError, "invalid override in lockfile: #{line.inspect}"
         end
-        new(target, :to, fields[:to], from: fields[:from], requirement: normalize(fields[:version]))
+        new(target, :with, fields[:with], from: fields[:from], requirement: normalize(fields[:version]))
       else
         field, operation = fields.first
         unless fields.size == 1 && Dsl::SUPPORTED_OVERRIDE_FIELDS.include?(field)

@@ -1129,7 +1129,7 @@ module Bundler
     end
 
     # The lockfile keeps the upstream dependencies of every gem, so a gem that
-    # a `from:`/`to:` override cut loose stays locked until a resolution drops
+    # a `from:`/`with:` override cut loose stays locked until a resolution drops
     # it.
     def converge_rewritten_dependencies
       @overrides.each do |override|
