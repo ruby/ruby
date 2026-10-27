@@ -127,10 +127,10 @@ VALUE rb_hash_compare_by_id_p(VALUE hash);
  * enumerable/array/hash/struct to_h methods can see them without pulling
  * in vm_core.h.
  *
- * The ctx lives on the C stack of the cooperating iteration: the core
- * to_h call for Array/Hash/Struct, and each ifunc invocation for
- * Enumerable (whose each may save the callback beyond to_h).  EC points
- * at the innermost ctx so nested to_h calls stack.  Pair storage is on
+ * The ctx lives on the C stack of the cooperating core to_h call, one
+ * per call.  EC points at the innermost ctx so nested to_h calls stack.
+ * Enumerable's callback (which each may save beyond to_h) holds no
+ * pointer to it and looks it up through the EC.  Pair storage is on
  * the ctx rather than in hidden Ruby locals, so environment escape
  * (lambda/binding) cannot desync the writer from the reader. */
 struct rb_to_h_pair_ctx {
@@ -144,6 +144,7 @@ struct rb_to_h_pair_ctx {
 };
 int rb_vm_to_h_pair_prepare(VALUE hash, struct rb_to_h_pair_ctx *ctx);
 void rb_vm_to_h_pair_begin_yield(struct rb_to_h_pair_ctx *ctx);
+struct rb_to_h_pair_ctx *rb_vm_to_h_pair_begin_yield_for(VALUE hash);
 int rb_vm_to_h_pair_consume(struct rb_to_h_pair_ctx *ctx);
 VALUE rb_vm_to_h_pair_finish(VALUE arg);
 

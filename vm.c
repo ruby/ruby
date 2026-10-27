@@ -283,6 +283,25 @@ rb_vm_to_h_pair_begin_yield(struct rb_to_h_pair_ctx *ctx)
     ctx->caller_cfp = GET_EC()->cfp;
 }
 
+// rb_vm_to_h_pair_begin_yield() for a callback that cannot own the ctx
+// (Enumerable's ifunc, which `each` may save and call later).  Binds the
+// next yield to the innermost ctx only if it belongs to the to_h building
+// `hash`, and returns it.  Returns NULL when that to_h is not in progress
+// on this EC (called after to_h returned, from another fiber, or under a
+// nested to_h); the caller then uses the pair-Array path.  The ctx chain
+// holds only live ctxs, so reading the innermost one is safe.
+struct rb_to_h_pair_ctx *
+rb_vm_to_h_pair_begin_yield_for(VALUE hash)
+{
+    rb_execution_context_t *ec = GET_EC();
+    struct rb_to_h_pair_ctx *ctx = ec->to_h_pair;
+
+    if (!ctx || ctx->hash != hash) return NULL;
+    ctx->submitted = 0;
+    ctx->caller_cfp = ec->cfp;
+    return ctx;
+}
+
 // End the yield bound by rb_vm_to_h_pair_begin_yield().  Unbinds the
 // caller first so Ruby code run from here (`key.hash`, `eql?`) cannot
 // submit.  Inserts a submitted pair and returns true; returns false when
@@ -338,7 +357,7 @@ rb_vm_to_h_aset(const rb_control_frame_t *cfp, VALUE key, VALUE val)
     struct rb_to_h_pair_ctx *ctx = GET_EC()->to_h_pair;
     rb_event_flag_t trace_events = ruby_vm_event_flags;
 
-    if (!(trace_events & RUBY_EVENT_B_RETURN)) {
+    if (!(trace_events & RUBY_EVENT_B_RETURN) && cfp->_iseq->aux.exec.local_hooks_cnt) {
         trace_events |= rb_iseq_local_event_flags(cfp->_iseq);
     }
 

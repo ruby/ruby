@@ -495,6 +495,31 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal("no implicit conversion of Array into Integer", e.message)
   end
 
+  # Enumerable#to_h's callback finds the pair ctx through the EC; it must
+  # still work, or fall back to the pair array, however each calls it.
+  def test_to_h_block_pair_literal_enum_callback
+    enum = Class.new do
+      include Enumerable
+      def initialize(&b) = @b = b
+      def each(&blk) = @b.(blk)
+    end
+
+    # each rescues an error raised in the block and keeps going
+    assert_equal({2 => 2}, enum.new { |b| (b.(1) rescue nil); b.(2) }.to_h { |x| [x, x == 1 ? raise("boom") : x] })
+    # the callback runs in another thread
+    assert_equal({1 => 10, 2 => 20, 3 => 30},
+                 enum.new { |b| b.(1); Thread.new { b.(2) }.join; b.(3) }.to_h { |x| [x, x * 10] })
+    # the block re-enters the saved callback during its own yield
+    saved = nil
+    assert_equal({2 => Integer, 1 => Hash},
+                 enum.new { |b| saved = b; b.(1) }.to_h { |x| [x, (x == 1 ? saved.(2) : x).class] })
+    # nested Enumerable to_h, and a saved callback called during another to_h
+    assert_equal({1 => {11 => 11}}, enum.new { |b| b.(1) }.to_h { |x| [x, enum.new { |c| c.(x + 10) }.to_h { |y| [y, y] }] })
+    h = enum.new { |b| saved = b; b.(1) }.to_h { |x| [x, x] }
+    assert_equal({4 => 4}, enum.new { |b| saved.(3); b.(4) }.to_h { |x| [x, x] })
+    assert_equal({1 => 1, 3 => 3}, h)
+  end
+
   # The pair-literal compiler replaces newarray/duparray, not the array
   # node's line/coverage events.  A multi-line block must still fire
   # :line and count coverage on the pair; a same-line block must not
