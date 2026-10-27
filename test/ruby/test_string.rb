@@ -1584,6 +1584,135 @@ class TestString < Test::Unit::TestCase
     end
   end
 
+  def test_bit_index
+    data = S("\xF0")
+    assert_equal(4, data.bit_index(1))
+    assert_equal(0, data.bit_index(0))
+    assert_nil(S("\x00").bit_index(1))
+    assert_nil(S("\xFF").bit_index(0))
+    assert_nil(S("").bit_index(1))
+    assert_equal(4, data.dup.freeze.bit_index(1))
+
+    # offset: the search begins there, the result stays absolute.
+    assert_equal(5, data.bit_index(1, 5))
+    assert_nil(data.bit_index(0, 4))
+    assert_nil(data.bit_index(1, 8))
+
+    # A window clamps to the end of self; an empty window is nil.
+    assert_equal(4, data.bit_index(1, 0..4))
+    assert_nil(data.bit_index(1, 0...4))
+    assert_equal(4, data.bit_index(1, 4..4))
+    assert_nil(data.bit_index(1, 4...4))
+    assert_nil(data.bit_index(1, 5..4))
+    assert_equal(7, data.bit_index(1, 7..100))
+    assert_nil(data.bit_index(1, 8..100))
+    assert_equal(4, data.bit_index(1, 0, 5))
+    assert_nil(data.bit_index(1, 0, 4))
+    assert_nil(data.bit_index(1, 4, 0))
+    assert_equal(7, data.bit_index(1, 7, 100))
+    assert_nil(data.bit_index(1, 8, 100))
+    assert_equal(1, S("\xFD\x03").bit_index(0, 1...10))
+    assert_nil(S("\xFD\x03").bit_index(0, 2...10))
+    assert_equal(10, S("\xFD\x03").bit_index(0, 2..))
+
+    # Bytes with no matching bit are skipped.
+    sparse = S("\x00" * 100 + "\x40" + "\x00" * 100)
+    assert_equal(806, sparse.bit_index(1))
+    assert_equal(806, sparse.bit_index(1, 806))
+    assert_nil(sparse.bit_index(1, 807))
+    assert_equal(801, sparse.bit_index(1, lsb_first: false))
+    dense = S("\xFF" * 100 + "\xBF" + "\xFF" * 100)
+    assert_equal(806, dense.bit_index(0))
+    assert_equal(801, dense.bit_index(0, lsb_first: false))
+
+    # lsb_first: false numbers the bits within each byte from the MSB.
+    assert_equal(0, data.bit_index(1, lsb_first: false))
+    assert_equal(4, data.bit_index(0, lsb_first: false))
+    assert_nil(data.bit_index(0, 0...4, lsb_first: false))
+    assert_equal(4, data.bit_index(0, 0..4, lsb_first: false))
+
+    # The encoding has no effect.
+    utf8 = S("\xE3\x81\x82").force_encoding(Encoding::UTF_8)
+    assert_equal(2, utf8.bit_index(0))
+    assert_equal(3, utf8.bit_index(0, lsb_first: false))
+    assert_equal(4, S("\xF0\xAA").force_encoding(Encoding::UTF_16LE).bit_index(1))
+
+    # A negative Range endpoint does not count from the end.
+    assert_raise(IndexError) { data.bit_index(1, -1..3) }
+    assert_raise(IndexError) { data.bit_index(1, 0..-1) }
+    assert_raise(IndexError) { data.bit_index(1, ..-1) }
+
+    # A position or a length beyond 2**64 - 1 is not representable.  One
+    # within that limit is only beyond the end, and a window clamps.
+    assert_raise(ArgumentError) { data.bit_index(1, 2**64) }
+    assert_raise(ArgumentError) { data.bit_index(1, 0, 2**64) }
+    assert_raise(ArgumentError) { data.bit_index(1, 2**64..) }
+    assert_raise(ArgumentError) { data.bit_index(1, 0..2**64) }
+    assert_nil(data.bit_index(1, 2**64 - 1))
+    assert_nil(data.bit_index(1, 2**63, 0))
+    assert_equal(4, data.bit_index(1, 0, 2**64 - 1))
+    assert_equal(4, data.bit_index(1, 0..2**64 - 1))
+
+    # Agrees with a scan of the one-bit form of bit_get at every window, for
+    # both bits and both orders.  The string has a byte of only 0 bits and a
+    # byte of only 1 bits, so that the search skips a byte for either bit.
+    s = S("\x5A\x00\xFF\x3C")
+    [true, false].each do |order|
+      [0, 1].each do |bit|
+        (0..32).each do |off|
+          scan = ->(len) { (off...(off + len)).find { |i| s.bit_get(i, lsb_first: order) == bit } }
+          msg = "bit=#{bit} off=#{off} lsb_first=#{order}"
+          assert_equal(scan.(32 - off), s.bit_index(bit, off, lsb_first: order), msg)
+          (0..(32 - off)).each do |len|
+            msg = "bit=#{bit} off=#{off} len=#{len} lsb_first=#{order}"
+            assert_equal(scan.(len), s.bit_index(bit, off, len, lsb_first: order), msg)
+            assert_equal(scan.(len), s.bit_index(bit, off...(off + len), lsb_first: order), msg)
+          end
+        end
+      end
+    end
+
+    # The search skips the words that hold no matching bit.  Compare it with
+    # a search of the unpacked bit string on windows that cross the word
+    # boundaries.
+    [
+      S("\x00" * 40), S("\xFF" * 40),
+      S("\x00" * 17 + "\x08" + "\x00" * 22), S("\xFF" * 23 + "\xEF" + "\xFF" * 16),
+      S("\x00" * 39 + "\x80"), S("\x01" + "\x00" * 39),
+    ].each do |s|
+      [true, false].each do |order|
+        unpacked = s.unpack1(order ? "b*" : "B*")
+        [0, 1].each do |bit|
+          (0..320).each do |off|
+            msg = "s=#{s.b.inspect} bit=#{bit} off=#{off} lsb_first=#{order}"
+            assert_equal(unpacked.index(bit.to_s, off), s.bit_index(bit, off, lsb_first: order), msg)
+            [1, 63, 64, 65, 129, 320 - off].each do |len|
+              next if off + len > 320
+              expected = unpacked[off, len].index(bit.to_s)
+              expected += off if expected
+              assert_equal(expected, s.bit_index(bit, off, len, lsb_first: order), "#{msg} len=#{len}")
+            end
+          end
+        end
+      end
+    end
+
+    assert_raise(ArgumentError) { data.bit_index(2) }
+    assert_raise(ArgumentError) { data.bit_index(-1) }
+    assert_raise(TypeError) { data.bit_index(nil) }
+    assert_raise(TypeError) { data.bit_index("1") }
+    # true and false are not bit values.
+    assert_raise(TypeError) { data.bit_index(true) }
+    assert_raise(TypeError) { data.bit_index(false) }
+    assert_raise(TypeError) { data.bit_index(true, 0, 4) }
+    assert_raise(IndexError) { data.bit_index(1, -1) }
+    assert_raise(ArgumentError) { data.bit_index(1, 0, -1) }
+    assert_raise(ArgumentError) { data.bit_index(1, 0..4, 1) }
+    assert_raise(ArgumentError) { data.bit_index }
+    assert_raise(ArgumentError) { data.bit_index(1, 0, 0, 0) }
+    assert_raise(ArgumentError) { data.bit_index(1, lsb_first: nil) }
+  end
+
   def test_bit_region_argument_side_effect
     # Coercing an argument (Integer#to_int, or a Range endpoint) may run user
     # code that resizes the receiver.  The bounds check and the memory access
@@ -1615,6 +1744,22 @@ class TestString < Test::Unit::TestCase
     # reading past the end.
     s = S("\xFF") * 8
     assert_nil(s.bit_get(0, shrink.new(s, 64)))
+    assert_equal("\xFF".b, s.b)
+
+    # bit_index searches the post-coercion string.
+    s = S("\x00") * 8
+    assert_nil(s.bit_index(0, shrink.new(s, 1)))
+    assert_equal("\xFF".b, s.b)
+    # The bit, the length and a Range endpoint are coerced before the search
+    # too, so the window clamps to the shrunken string.
+    s = S("\x00") * 8
+    assert_nil(s.bit_index(shrink.new(s, 0)))
+    assert_equal("\xFF".b, s.b)
+    s = S("\x00") * 8
+    assert_nil(s.bit_index(0, 0, shrink.new(s, 64)))
+    assert_equal("\xFF".b, s.b)
+    s = S("\x00") * 8
+    assert_nil(s.bit_index(0, ..shrink.new(s, 63)))
     assert_equal("\xFF".b, s.b)
   end
 
