@@ -1031,6 +1031,12 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     env->env = env_body;
     env->env_size = env_size;
 
+    // Ensure the heap ep is fully initialized before cfp->ep and child_ep point to it,
+    // as rb_profile_frames() might read it from a signal handler.
+#if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
+
     cfp->ep = env_ep;
     VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
 
@@ -1040,6 +1046,12 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     if (child_ep) {
         VM_FORCE_WRITE_SPECIAL_CONST(&child_ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(env_ep));
     }
+
+    // Ensure the stores to cfp->ep and child_ep above are not reordered after the
+    // overwrite of the on-stack ep flags below.
+#if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
 
     VM_STACK_ENV_WRITE(ep, 0, (VALUE)env);		/* GC mark */
 
