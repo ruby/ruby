@@ -2024,6 +2024,13 @@ rb_prepend_module(VALUE klass, VALUE module)
                 /* During lazy sweeping, the entry could be a dead object that
                  * has not yet been swept. */
                 if (!rb_objspace_garbage_object_p(subclass)) {
+                    /* An origin iclass backfilled by a previous prepend is
+                     * registered in the subclasses list only so that method
+                     * cache invalidation can reach it. The module is inserted
+                     * between the includer's iclass and that origin when the
+                     * includer's iclass is visited, so visiting the origin too
+                     * would insert the module a second time. */
+                    if (RICLASS_IS_ORIGIN_P(subclass)) continue;
                     if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(subclass)) {
                         // backfill an origin iclass to handle refinements and future prepends
                         rb_id_table_foreach(RCLASS_M_TBL(subclass), clear_module_cache_i, (void *)subclass);
