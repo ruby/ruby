@@ -268,6 +268,7 @@ module Gem
       def parse_block_scalar(base_indent, modifier)
         parts = []
         indentation = modifier[/\A[+-]?([1-9])/, 1]
+        chomping = modifier[/\A[1-9]?([+-])/, 1]
         block_indent = indentation && base_indent + indentation.to_i
 
         while @lines.any?
@@ -284,7 +285,7 @@ module Gem
         end
 
         res = parts.join
-        res.chomp! if modifier == "-" && res.end_with?("\n")
+        res.delete_suffix!("\n") while chomping == "-" && res.end_with?("\n")
         res
       end
 

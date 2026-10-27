@@ -5,6 +5,11 @@ require_relative "helper"
 Gem.load_yaml
 
 class TestGemSafeYAML < Gem::TestCase
+  unless method_defined?(:assert_linear_performance)
+    require "core_assertions"
+    include Test::Unit::CoreAssertions
+  end
+
   def yaml_load(input, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES,
     permitted_symbols: Gem::SafeYAML::PERMITTED_SYMBOLS,
     aliases: true)
@@ -1090,6 +1095,37 @@ class TestGemSafeYAML < Gem::TestCase
     result = yaml_load(yaml)
     assert_equal "no trailing newline", result["text"]
     refute result["text"].end_with?("\n")
+  end
+
+  def test_load_block_scalar_strip_indicator_removes_every_trailing_newline
+    yaml = <<~YAML
+      ---
+      message: |2-
+
+        Thanks!
+      reversed: |-2
+          indented
+      trailing: |-
+        text
+
+
+      other: value
+    YAML
+
+    expected = {
+      "message" => "\nThanks!",
+      "reversed" => "  indented",
+      "trailing" => "text",
+      "other" => "value",
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_block_scalar_strip_indicator_in_linear_time
+    pre = ->(n) { "text: |-\n  a\n#{"\n" * n}  b\n" }
+    assert_linear_performance([1_000, 10_000, 100_000], rehearsal: 10, pre: pre) do |yaml|
+      Gem::YAMLSerializer.load(yaml)
+    end
   end
 
   def test_load_block_scalar_indentation_indicator
