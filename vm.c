@@ -1164,6 +1164,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     env->ep = env_ep;
     env->env = env_body;
     env->env_size = env_size;
+    VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
 
     // Ensure the heap ep is fully initialized before cfp->ep and child_ep point to it,
     // as rb_profile_frames() might read it from a signal handler.
@@ -1172,7 +1173,6 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 #endif
 
     cfp->ep = env_ep;
-    VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
 
     // The child frame must point to the heap ep before the on-stack ep flags are
     // overwritten below, otherwise rb_profile_frames() called from a signal handler
