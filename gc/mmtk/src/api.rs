@@ -26,6 +26,7 @@ use mmtk::MMTKBuilder;
 use mmtk::Mutator;
 use mmtk::memory_manager;
 use mmtk::memory_manager::mmtk_init;
+use mmtk::plan::BarrierSelector;
 use mmtk::util::Address;
 use mmtk::util::ObjectReference;
 use mmtk::util::VMMutatorThread;
@@ -342,6 +343,11 @@ pub extern "C" fn mmtk_max_non_los_default_alloc_bytes() -> usize {
         .get_plan()
         .constraints()
         .max_non_los_default_alloc_bytes
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn mmtk_plan_has_write_barrier() -> bool {
+    mmtk().get_plan().constraints().barrier != BarrierSelector::NoBarrier
 }
 
 #[unsafe(no_mangle)]

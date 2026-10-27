@@ -90,6 +90,8 @@ bool mmtk_gc_enabled_p(void);
 
 size_t mmtk_max_non_los_default_alloc_bytes(void);
 
+bool mmtk_plan_has_write_barrier(void);
+
 MMTk_Address mmtk_alloc(MMTk_Mutator *mutator,
                         size_t size,
                         size_t align,
