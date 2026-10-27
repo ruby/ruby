@@ -3,7 +3,7 @@
 static VALUE
 bug_big_zero(VALUE self, VALUE length)
 {
-    long len = NUM2ULONG(length);
+    size_t len = NUM2SIZET(length);
     VALUE z = rb_big_new(len, 1);
     MEMZERO(BIGNUM_DIGITS(z), BDIGIT, len);
     return z;
@@ -12,7 +12,7 @@ bug_big_zero(VALUE self, VALUE length)
 static VALUE
 bug_big_negzero(VALUE self, VALUE length)
 {
-    long len = NUM2ULONG(length);
+    size_t len = NUM2SIZET(length);
     VALUE z = rb_big_new(len, 0);
     MEMZERO(BIGNUM_DIGITS(z), BDIGIT, len);
     return z;

@@ -13,7 +13,7 @@ legacy_prepare_re(VALUE self, VALUE re, VALUE str)
     OnigPosition pos = onig_search(reg, beg, end, beg, end, NULL, ONIG_OPTION_NONE);
 
     if (tmpreg) onig_free(reg);
-    return rb_ary_new_from_args(2, LONG2NUM((long)pos), tmpreg ? Qtrue : Qfalse);
+    return rb_ary_new_from_args(2, LEN2NUM(pos), tmpreg ? Qtrue : Qfalse);
 }
 
 void
