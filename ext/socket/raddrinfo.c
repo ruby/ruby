@@ -13,13 +13,14 @@
 
 // GETADDRINFO_IMPL == 0 : call getaddrinfo/getnameinfo directly
 // GETADDRINFO_IMPL == 1 : call getaddrinfo/getnameinfo without gvl (but uncancellable)
-// GETADDRINFO_IMPL == 2 : call getaddrinfo/getnameinfo in a dedicated pthread
-//                         (and if the call is interrupted, the pthread is left running)
+// GETADDRINFO_IMPL == 2 : call getaddrinfo/getnameinfo in a dedicated native thread
+//                         (and if the call is interrupted, the thread is left running)
 
 #ifndef GETADDRINFO_IMPL
 #  ifdef GETADDRINFO_EMU
 #    define GETADDRINFO_IMPL 0
-#  elif !defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH) || defined(__MINGW32__) || defined(__MINGW64__)
+#  elif defined(__MINGW32__) || defined(__MINGW64__) || \
+        (!defined(_WIN32) && (!defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH)))
 #    define GETADDRINFO_IMPL 1
 #  else
 #    define GETADDRINFO_IMPL 2
@@ -360,6 +361,11 @@ rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hint
 
 #elif GETADDRINFO_IMPL == 2
 
+#ifndef EAI_SYSTEM
+/* Winsock has no EAI_SYSTEM. Report a thread that fails to start as a temporary failure. */
+#  define EAI_SYSTEM EAI_AGAIN
+#endif
+
 struct getaddrinfo_arg
 {
     char *node, *service;
@@ -498,6 +504,48 @@ cancel_getaddrinfo(void *ptr)
     rb_nativethread_lock_unlock(&arg->lock);
 }
 
+#ifdef _WIN32
+
+struct raddrinfo_thread_arg
+{
+    void *(*start_routine)(void *);
+    void *arg;
+};
+
+static unsigned __stdcall
+raddrinfo_thread_start(void *ptr)
+{
+    struct raddrinfo_thread_arg *th_arg = ptr;
+    void *(*start_routine)(void *) = th_arg->start_routine;
+    void *arg = th_arg->arg;
+
+    free(th_arg);
+    start_routine(arg);
+    return 0;
+}
+
+int
+raddrinfo_thread_create(void *(*start_routine) (void *), void *arg)
+{
+    struct raddrinfo_thread_arg *th_arg = malloc(sizeof(struct raddrinfo_thread_arg));
+    if (!th_arg) return ENOMEM;
+    th_arg->start_routine = start_routine;
+    th_arg->arg = arg;
+
+    // _beginthreadex(3), not CreateThread, because the thread calls the CRT.
+    uintptr_t th = _beginthreadex(NULL, 0, raddrinfo_thread_start, th_arg, 0, NULL);
+    if (!th) {
+        int err = errno;
+        free(th_arg);
+        return err;
+    }
+    // Nobody joins the thread, so drop the handle and let the system reap it.
+    CloseHandle((HANDLE)th);
+    return 0;
+}
+
+#else
+
 // start_routine must call rb_thread_register_exiting(), or the thread is never joined.
 int
 raddrinfo_thread_create(void *(*start_routine) (void *), void *arg)
@@ -545,6 +593,8 @@ retry_attr_init:
 #endif
     return ret;
 }
+
+#endif
 
 static void *
 fork_safe_do_getaddrinfo(void *ptr)
