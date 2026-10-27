@@ -3188,10 +3188,12 @@ do_fast_fallback_getaddrinfo(void *ptr)
     int err = 0, shared_need_free = 0;
     struct addrinfo *ai = NULL;
 
+#ifndef _WIN32
     sigset_t set;
     sigemptyset(&set);
     sigaddset(&set, SIGPIPE);
     pthread_sigmask(SIG_BLOCK, &set, NULL);
+#endif
 
     err = numeric_getaddrinfo(shared->node, shared->service, &entry->hints, &entry->ai);
 
@@ -3208,6 +3210,12 @@ do_fast_fallback_getaddrinfo(void *ptr)
 
     /* for testing HEv2 */
     if (entry->test_sleep_ms > 0) {
+#ifdef _WIN32
+        /* Not Sleep(), which the ruby DLL exports as rb_w32_Sleep().  That
+         * waits through the Ruby thread scheduler, which this thread does
+         * not belong to. */
+        SleepEx((DWORD)entry->test_sleep_ms, FALSE);
+#else
         struct timespec sleep_ts;
         sleep_ts.tv_sec = entry->test_sleep_ms / 1000;
         sleep_ts.tv_nsec = (entry->test_sleep_ms % 1000) * 1000000L;
@@ -3216,6 +3224,7 @@ do_fast_fallback_getaddrinfo(void *ptr)
             sleep_ts.tv_nsec = sleep_ts.tv_nsec % 1000000000L;
         }
         nanosleep(&sleep_ts, NULL);
+#endif
     }
     if (entry->test_ecode != 0) {
         err = entry->test_ecode;
