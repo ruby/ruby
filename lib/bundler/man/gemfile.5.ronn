@@ -643,10 +643,10 @@ error message so it is clear which override shaped the constraint set.
 
 ### DROPPING OR REPLACING A DEPENDENCY
 
-`from:` and `with:` rewrite a single dependency of a single gem:
+`with:` and `in:` rewrite a single dependency of a single gem:
 
-    override <target>, from: <gem>, with: nil
-    override <target>, from: <gem>, with: <replacement>, version: <requirement>
+    override <target>, with: nil, in: <gem>
+    override <target>, with: <replacement>, in: <gem>, version: <requirement>
 
 `with: nil` removes the dependency of `<gem>` on `<target>`, so `<target>` is
 not installed unless something else still requires it. `with: <replacement>`
@@ -655,17 +655,17 @@ makes `<gem>` depend on `<replacement>` instead of `<target>`. The requirement
 replacement its own. Both forms apply whether `<gem>` is a direct or a
 transitive dependency.
 
-`from:` is required, and so is `with:` once `from:` is given. To rewrite the
+`in:` is required, and so is `with:` once `in:` is given. To rewrite the
 same dependency of several gems, write one `override` per gem. It is an error
-to declare the same `<target>` and `from:` twice, to drop a gem that the
+to declare the same `<target>` and `in:` twice, to drop a gem that the
 Gemfile requires directly, or to replace a gem that another gem still
 requires, since both would then be in the bundle.
 
     # jekyll only loads em-websocket for `jekyll serve --livereload`.
-    override "em-websocket", from: "jekyll", with: nil
+    override "em-websocket", with: nil, in: "jekyll"
 
     # Use an API-compatible gem that provides the same files.
-    override "foo", from: "bar", with: "foo-lite"
+    override "foo", with: "foo-lite", in: "bar"
 
 Bundler does not check what a gem loads at runtime. If `<gem>` requires
 `<target>` unconditionally, dropping it makes that require raise `LoadError`,

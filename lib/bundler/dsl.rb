@@ -202,7 +202,7 @@ module Bundler
       validate_override_target!(target)
       source_location = caller_locations(1, 1)&.first
 
-      if operations.key?(:from) || operations.key?(:with)
+      if operations.key?(:in) || operations.key?(:with)
         add_dependency_override(target, operations, source_location)
         return
       end
@@ -332,37 +332,37 @@ module Bundler
     end
 
     def add_dependency_override(target, operations, source_location)
-      unless operations.key?(:from)
-        raise ArgumentError, "`override #{target.inspect}, with:` requires `from:` naming the gem whose dependency is rewritten"
+      unless operations.key?(:in)
+        raise ArgumentError, "`override #{target.inspect}, with:` requires `in:` naming the gem whose dependency is rewritten"
       end
       unless operations.key?(:with)
-        raise ArgumentError, "`override #{target.inspect}, from:` requires `with:`; use `with: nil` to drop the dependency or `with: \"<gem>\"` to replace it"
+        raise ArgumentError, "`override #{target.inspect}, in:` requires `with:`; use `with: nil` to drop the dependency or `with: \"<gem>\"` to replace it"
       end
 
-      from = operations[:from]
+      from = operations[:in]
       with = operations[:with]
       requirement = operations[:version]
 
-      raise ArgumentError, "`override :all` does not accept `from:`" if target == :all
-      raise ArgumentError, "`from:` must be a gem name string, got #{from.inspect}" unless from.is_a?(String)
+      raise ArgumentError, "`override :all` does not accept `in:`" if target == :all
+      raise ArgumentError, "`in:` must be a gem name string, got #{from.inspect}" unless from.is_a?(String)
       raise ArgumentError, "`with:` must be a gem name string or nil, got #{with.inspect}" unless with.nil? || with.is_a?(String)
       raise ArgumentError, "`with:` must name a gem other than #{target.inspect} and #{from.inspect}" if with == target || with == from
       validate_override_gem_name!(from)
       validate_override_gem_name!(with) if with
 
-      unsupported = operations.keys - [:from, :with, :version]
+      unsupported = operations.keys - [:in, :with, :version]
       if unsupported.any?
-        raise ArgumentError, "unsupported override field `#{unsupported.first}:` with `from:`; supported fields: `with:`, `version:`"
+        raise ArgumentError, "unsupported override field `#{unsupported.first}:` with `in:`; supported fields: `with:`, `version:`"
       end
 
       if operations.key?(:version)
-        raise ArgumentError, "`version:` with `from:` requires `with:` to name a replacement gem" if with.nil?
-        raise ArgumentError, "`version:` with `from:` must be a version requirement string, got #{requirement.inspect}" unless requirement.is_a?(String)
+        raise ArgumentError, "`version:` with `in:` requires `with:` to name a replacement gem" if with.nil?
+        raise ArgumentError, "`version:` with `in:` must be a version requirement string, got #{requirement.inspect}" unless requirement.is_a?(String)
         validate_override_operation!(requirement)
       end
 
       if @overrides.any? {|o| o.target == target && o.from == from }
-        raise ArgumentError, "duplicate override for #{target.inspect} `from: #{from.inspect}`"
+        raise ArgumentError, "duplicate override for #{target.inspect} `in: #{from.inspect}`"
       end
 
       @overrides << Override.new(target, :with, with, from: from, requirement: requirement, source_location: source_location)

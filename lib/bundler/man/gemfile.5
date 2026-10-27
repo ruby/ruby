@@ -532,24 +532,24 @@ OVERRIDES
 .P
 Requirements are recorded in normalized form, so \fB">=8\.0"\fR and \fB">= 8\.0"\fR are the same override\. A frozen install fails when the Gemfile's overrides differ from the recorded ones\. Adding or removing a \fB:all\fR or metadata override rewrites the section and keeps the locked versions\. The exception is a locked gem that is not installed and whose metadata rejects the current Ruby\. Bundler re\-resolves it, as it does without the override\. Run \fBbundle update\fR to re\-resolve under the override\. When resolution still fails, Bundler appends the active overrides (with their Gemfile location) to the error message so it is clear which override shaped the constraint set\.
 .SS "DROPPING OR REPLACING A DEPENDENCY"
-\fBfrom:\fR and \fBwith:\fR rewrite a single dependency of a single gem:
+\fBwith:\fR and \fBin:\fR rewrite a single dependency of a single gem:
 .IP "" 4
 .nf
-override <target>, from: <gem>, with: nil
-override <target>, from: <gem>, with: <replacement>, version: <requirement>
+override <target>, with: nil, in: <gem>
+override <target>, with: <replacement>, in: <gem>, version: <requirement>
 .fi
 .IP "" 0
 .P
 \fBwith: nil\fR removes the dependency of \fB<gem>\fR on \fB<target>\fR, so \fB<target>\fR is not installed unless something else still requires it\. \fBwith: <replacement>\fR makes \fB<gem>\fR depend on \fB<replacement>\fR instead of \fB<target>\fR\. The requirement \fB<gem>\fR put on \fB<target>\fR is discarded, and the optional \fBversion:\fR gives the replacement its own\. Both forms apply whether \fB<gem>\fR is a direct or a transitive dependency\.
 .P
-\fBfrom:\fR is required, and so is \fBwith:\fR once \fBfrom:\fR is given\. To rewrite the same dependency of several gems, write one \fBoverride\fR per gem\. It is an error to declare the same \fB<target>\fR and \fBfrom:\fR twice, to drop a gem that the Gemfile requires directly, or to replace a gem that another gem still requires, since both would then be in the bundle\.
+\fBin:\fR is required, and so is \fBwith:\fR once \fBin:\fR is given\. To rewrite the same dependency of several gems, write one \fBoverride\fR per gem\. It is an error to declare the same \fB<target>\fR and \fBin:\fR twice, to drop a gem that the Gemfile requires directly, or to replace a gem that another gem still requires, since both would then be in the bundle\.
 .IP "" 4
 .nf
 # jekyll only loads em\-websocket for `jekyll serve \-\-livereload`\.
-override "em\-websocket", from: "jekyll", with: nil
+override "em\-websocket", with: nil, in: "jekyll"
 
 # Use an API\-compatible gem that provides the same files\.
-override "foo", from: "bar", with: "foo\-lite"
+override "foo", with: "foo\-lite", in: "bar"
 .fi
 .IP "" 0
 .P
