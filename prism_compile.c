@@ -3342,7 +3342,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         scope->local_table_for_iseq_size = 0;
         scope->index_lookup_table = (pm_index_lookup_table_t) PM_INDEX_LOOKUP_TABLE_INIT;
         scope->pre_execution_anchor = NULL;
-        scope->to_h_pair_result_p = false;
+        scope->to_h_pair_literal = NULL;
     }
     else {
         memset(scope, 0, sizeof(pm_scope_node_t));
@@ -3744,10 +3744,6 @@ retry:;
     return COMPILE_OK;
 }
 
-/**
- * Compile a call node into the given iseq.
- */
-
 /* Emit RUBY_EVENT_LINE / RUBY_EVENT_COVERAGE_LINE for `node` when it
  * carries PM_NODE_FLAG_NEWLINE and this ISeq has not yet recorded that
  * line.  Shared by pm_compile_node and the to_h pair-literal path,
@@ -3829,18 +3825,22 @@ pm_to_h_pair_literal(const pm_node_t *body)
     return array;
 }
 
-static bool
-pm_call_node_to_h_pair_shape_p(const pm_call_node_t *call_node)
+/* The pair literal of `call_node`'s literal block, if the call has no
+ * arguments and the block body is one (see pm_to_h_pair_literal). */
+static const pm_array_node_t *
+pm_call_node_to_h_pair_literal(const pm_call_node_t *call_node)
 {
     const pm_node_t *block = call_node->block;
 
-    if (block == NULL || !PM_NODE_TYPE_P(block, PM_BLOCK_NODE)) return false;
-    if (call_node->arguments != NULL) return false;
+    if (block == NULL || !PM_NODE_TYPE_P(block, PM_BLOCK_NODE)) return NULL;
+    if (call_node->arguments != NULL) return NULL;
 
-    const pm_block_node_t *block_cast = (const pm_block_node_t *) block;
-    return pm_to_h_pair_literal(block_cast->body) != NULL;
+    return pm_to_h_pair_literal(((const pm_block_node_t *) block)->body);
 }
 
+/**
+ * Compile a call node into the given iseq.
+ */
 static void
 pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, ID method_id, LABEL *start)
 {
@@ -3923,9 +3923,9 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         // `recv.to_h { |*| [key, value] }` compile the block with a
         // to_h_aset tail instead of building a two-element array per
         // element.  See insns.def: to_h_aset.
-        if (method_id == rb_intern("to_h") &&
-                pm_call_node_to_h_pair_shape_p(call_node)) {
-            next_scope_node.to_h_pair_result_p = true;
+        const pm_array_node_t *to_h_pair = pm_call_node_to_h_pair_literal(call_node);
+        if (to_h_pair != NULL && method_id == rb_intern("to_h")) {
+            next_scope_node.to_h_pair_literal = to_h_pair;
         }
 
         block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, pm_node_line_number_cached(call_node->block, scope_node));
@@ -7157,46 +7157,30 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         PUSH_INSN(ret, block_location, nop);
         PUSH_LABEL(ret, start);
 
-        if (scope_node->to_h_pair_result_p) {
+        if (scope_node->to_h_pair_literal != NULL) {
             // to_h pair-literal block: compile the two elements and let
-            // to_h_aset stash them on the cooperating to_h's EC-side ctx
-            // (or fall back to a two-element array).
-            // The array node itself is not passed through pm_compile_node
-            // (that would emit newarray/duparray), so emit its line and
-            // coverage events the same way pm_compile_node would.
-            const pm_array_node_t *array = pm_to_h_pair_literal(scope_node->body);
-            const pm_node_t *array_node;
-            RUBY_ASSERT(array != NULL);
-            RUBY_ASSERT(array->elements.size == 2);
+            // to_h_aset stash them on the cooperating to_h's ctx (or fall
+            // back to a two-element array).  The array node itself is not
+            // passed through pm_compile_node (that would emit
+            // newarray/duparray), so emit its line and coverage events the
+            // same way pm_compile_node would.
+            const pm_array_node_t *array = scope_node->to_h_pair_literal;
+            const pm_node_t *array_node = (const pm_node_t *) array;
+            const pm_node_location_t array_location = PM_NODE_START_LOCATION(array_node);
 
-            array_node = (const pm_node_t *) array;
             pm_compile_newline(iseq, array_node, ret, scope_node);
+            LINK_ELEMENT *before = LAST_ELEMENT(ret);
+            PM_COMPILE_NOT_POPPED(array->elements.nodes[0]);
 
             // A static pair compiles as duparray at the array's location on
-            // the unoptimized path.  Compiling the elements individually
-            // would attach the array's line event to the first element's
-            // line, so retarget that first instruction and skip per-element
-            // newlines (duparray never compiles the elements).
+            // the unoptimized path, so its line event belongs to the `[`,
+            // not to the first element's line.
             if (PM_NODE_FLAG_P(array_node, PM_NODE_FLAG_STATIC_LITERAL)) {
-                const pm_node_location_t loc = PM_NODE_START_LOCATION(array_node);
-                int saved_line = ISEQ_COMPILE_DATA(iseq)->last_line;
-                LINK_ELEMENT *before = LAST_ELEMENT(ret);
-
-                ISEQ_COMPILE_DATA(iseq)->last_line = (int)PM_NODE_START_LOCATION(array->elements.nodes[0]).line;
-                pm_compile_node(iseq, array->elements.nodes[0], ret, false, scope_node);
-                pm_bind_first_insn_location(before, &loc);
-
-                ISEQ_COMPILE_DATA(iseq)->last_line = (int)PM_NODE_START_LOCATION(array->elements.nodes[1]).line;
-                pm_compile_node(iseq, array->elements.nodes[1], ret, false, scope_node);
-                ISEQ_COMPILE_DATA(iseq)->last_line = saved_line;
-
-                PUSH_INSN(ret, loc, to_h_aset);
+                pm_bind_first_insn_location(before, &array_location);
             }
-            else {
-                pm_compile_node(iseq, array->elements.nodes[0], ret, false, scope_node);
-                pm_compile_node(iseq, array->elements.nodes[1], ret, false, scope_node);
-                PUSH_INSN(ret, PM_NODE_START_LOCATION(array_node), to_h_aset);
-            }
+
+            PM_COMPILE_NOT_POPPED(array->elements.nodes[1]);
+            PUSH_INSN(ret, array_location, to_h_aset);
         }
         else if (scope_node->body != NULL) {
             switch (PM_NODE_TYPE(scope_node->ast_node)) {
