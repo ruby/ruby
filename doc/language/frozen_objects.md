@@ -60,6 +60,17 @@ CONFIG = {foo: 0, bar: 1}.freeze
 # => {foo: 0, bar: 1}
 ```
 
+Note that `#freeze` is shallow: it freezes only the receiver, not the objects it refers to.
+`#deep_freeze` freezes the receiver and, recursively, all objects reachable from it
+(instance variables, Array elements, Hash keys and values, Struct members, etc.),
+except classes and modules which are never frozen:
+
+```ruby
+CONFIG = {db: {host: 'localhost', ports: [5432]}}.deep_freeze
+CONFIG[:db].frozen?         # => true
+CONFIG[:db][:ports].frozen? # => true
+```
+
 Freezing string objects enables deduplication, which can save memory and improve performance:
 
 ```ruby
