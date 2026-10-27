@@ -42,6 +42,7 @@ module Gem
       # An entry of a flow sequence. A quoted entry may contain commas.
       FLOW_SEQUENCE_ENTRY_RE = /"(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^,\s](?:[^,]*[^,\s])?/
       MAX_NESTING_DEPTH = 1_000
+      NULL_SCALARS = %w[~ null].freeze
       BLANK_RE = /\A[\0\s]*\z/
       BLANK_OR_COMMENT_RE = /\A[\0\s]*(?:#|\z)/
 
@@ -341,7 +342,7 @@ module Gem
           true
         elsif val == "false"
           false
-        elsif ["~", "null"].include?(val)
+        elsif NULL_SCALARS.include?(val)
           nil
         elsif val == "{}"
           Mapping.new
