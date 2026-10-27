@@ -274,6 +274,7 @@ module Gem
         while @lines.any?
           line = @lines[0]
           if line.strip.empty?
+            parts << line[block_indent..] if block_indent && line.size > block_indent
             parts << "\n"
             @lines.shift
           else

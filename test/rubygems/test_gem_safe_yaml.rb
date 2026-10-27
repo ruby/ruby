@@ -1097,6 +1097,16 @@ class TestGemSafeYAML < Gem::TestCase
     refute result["text"].end_with?("\n")
   end
 
+  def test_load_block_scalar_keeps_spaces_beyond_indentation_on_blank_lines
+    yaml = "text: |\n  x\n     \n  \n  y\n"
+    assert_equal({ "text" => "x\n   \n\ny\n" }, yaml_load(yaml))
+  end
+
+  def test_roundtrip_block_scalar_with_whitespace_only_lines
+    obj = { "inner" => "x\n   \ny\n", "last" => "x\n  " }
+    assert_equal obj, yaml_load(yaml_dump(obj))
+  end
+
   def test_load_block_scalar_strip_indicator_removes_every_trailing_newline
     yaml = <<~YAML
       ---
