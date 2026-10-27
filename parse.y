@@ -10145,9 +10145,9 @@ parse_numvar(struct parser_params *p)
 {
     size_t len;
     int overflow;
-    unsigned long n = ruby_scan_digits(tok(p)+1, toklen(p)-1, 10, &len, &overflow);
-    const unsigned long nth_ref_max =
-        ((FIXNUM_MAX < INT_MAX) ? FIXNUM_MAX : INT_MAX) >> 1;
+    rb_ulen_t n = ruby_scan_digits(tok(p)+1, toklen(p)-1, 10, &len, &overflow);
+    const rb_ulen_t nth_ref_max =
+        (((rb_ulen_t)FIXNUM_MAX < (rb_ulen_t)INT_MAX) ? (rb_ulen_t)FIXNUM_MAX : (rb_ulen_t)INT_MAX) >> 1;
     /* NTH_REF is left-shifted to be ORed with back-ref flag and
      * turned into a Fixnum, in compile.c */
 

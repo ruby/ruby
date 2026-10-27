@@ -183,7 +183,7 @@ ruby_env_debug_option(const char *str, int len, void *arg)
 {
     int ov;
     size_t retlen;
-    unsigned long n;
+    rb_ulen_t n;
 #define NAME_MATCH(name) (len == sizeof(name) - 1 && strncmp(str, (name), len) == 0)
 #define SET_WHEN(name, var, val) do {	    \
         if (NAME_MATCH(name)) { \
@@ -199,7 +199,7 @@ ruby_env_debug_option(const char *str, int len, void *arg)
        (str += sizeof(name), len -= sizeof(name), 1))))
 #define SET_UINT(val) do { \
         n = ruby_scan_digits(str, len, 10, &retlen, &ov); \
-        if (!ov && retlen) { \
+        if (!ov && retlen && n <= (rb_ulen_t)UINT_MAX) { \
             val = (unsigned int)n; \
         } \
         str += retlen; \
