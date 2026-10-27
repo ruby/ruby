@@ -239,6 +239,7 @@ RSpec.describe Bundler::Override do
       %("b", from: "a"),
       %("b", from: nil, with: "c"),
       %("b", from: "a", with: "c", as: "d"),
+      %("b", from: "a", to: nil),
       %("b", with: "c"),
       %("foo bar", version: nil),
       %("rails", version: ">= 8.0") + "\n",

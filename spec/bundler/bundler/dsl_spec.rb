@@ -597,6 +597,24 @@ RSpec.describe Bundler::Dsl do
       end.to raise_error(ArgumentError, /`override "grpc", from:` requires `with:`/)
     end
 
+    it "rejects to:, which with: replaced" do
+      expect do
+        subject.override("grpc", from: "a", to: nil)
+      end.to raise_error(ArgumentError, /`override "grpc", from:` requires `with:`/)
+    end
+
+    it "rejects to: next to with:" do
+      expect do
+        subject.override("grpc", from: "a", with: nil, to: nil)
+      end.to raise_error(ArgumentError, /unsupported override field `to:` with `from:`/)
+    end
+
+    it "rejects to: without from:" do
+      expect do
+        subject.override("grpc", to: "grpc-lite")
+      end.to raise_error(ArgumentError, /unsupported override field `to:`;/)
+    end
+
     it "rejects from: on an :all target" do
       expect do
         subject.override(:all, from: "a", with: nil)
