@@ -324,12 +324,15 @@ module Test
               end
             rescue Timeout::Error
               timed_out = Time.now
+              # Close the control pipe first. Otherwise the child, whose ensure
+              # clause waits for the next "continue" on it, can't exit by the
+              # signal and has to be aborted.
+              in_p.close
               status = begin
                 EnvUtil.terminate(pid, opt.fetch(:signal, :TERM), opt[:pgroup], opt.fetch(:reprieve, 1))
               rescue Errno::ESRCH, Errno::ECHILD
                 warn "child not found: #{pid}: #$!"
               end
-              in_p.close
             end
             stdout = out_reader.value
             if timed_out
