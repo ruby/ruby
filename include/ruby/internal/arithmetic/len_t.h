@@ -271,7 +271,11 @@ rb_fix2long(VALUE x)
 static inline unsigned long
 rb_fix2ulong(VALUE x)
 {
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+    return rb_num2ulong(x);
+#else
     return RBIMPL_CAST((unsigned long)rb_fix2ulen(x));
+#endif
 }
 
 static inline bool
