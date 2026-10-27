@@ -603,6 +603,18 @@ RSpec.describe Bundler::Dsl do
       end.to raise_error(ArgumentError, /`override "grpc", in:` requires `with:`/)
     end
 
+    it "points the from: and to: of 4.1.0.beta2 at with: and in:" do
+      expect do
+        subject.override("grpc", from: "a", to: "grpc-lite")
+      end.to raise_error(ArgumentError, /write `override "grpc", with: "grpc-lite", in: "a"`/)
+    end
+
+    it "points from: without to: at with: and in:" do
+      expect do
+        subject.override("grpc", from: "a")
+      end.to raise_error(ArgumentError, /write `override "grpc", with: "<gem>", in: "a"`/)
+    end
+
     it "rejects to: next to with:" do
       expect do
         subject.override("grpc", with: nil, in: "a", to: nil)

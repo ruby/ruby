@@ -202,6 +202,11 @@ module Bundler
       validate_override_target!(target)
       source_location = caller_locations(1, 1)&.first
 
+      # 4.1.0.beta2 spelled `with:` and `in:` as `to:` and `from:`.
+      if operations.key?(:from)
+        raise ArgumentError, "`from:` and `to:` of `override` are now `in:` and `with:`; write `override #{target.inspect}, with: #{operations.fetch(:to, "<gem>").inspect}, in: #{operations[:from].inspect}`"
+      end
+
       if operations.key?(:in) || operations.key?(:with)
         add_dependency_override(target, operations, source_location)
         return
