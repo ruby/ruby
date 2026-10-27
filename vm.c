@@ -1073,8 +1073,9 @@ vm_block_handler_escape(const rb_execution_context_t *ec, VALUE block_handler)
     return Qnil;
 }
 
+// child_ep is the on-stack ep of a frame whose prev ep is cfp->ep, or NULL.
 static VALUE
-vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp)
+vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp, const VALUE *const child_ep)
 {
     const VALUE * const ep = cfp->ep;
     VALUE *env_body, *env_ep;
@@ -1094,8 +1095,9 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
                 VM_ASSERT(prev_cfp->ep != NULL);
             }
 
-            vm_make_env_each(ec, prev_cfp);
-            VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(prev_cfp->ep));
+            // Updates ep[VM_ENV_DATA_INDEX_SPECVAL] to point to the heap ep of prev_cfp
+            vm_make_env_each(ec, prev_cfp, ep);
+            VM_ASSERT(VM_ENV_PREV_EP(ep) == prev_cfp->ep);
         }
     }
     else {
@@ -1165,6 +1167,14 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 
     cfp->ep = env_ep;
     VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
+
+    // The child frame must point to the heap ep before the on-stack ep flags are
+    // overwritten below, otherwise rb_profile_frames() called from a signal handler
+    // could walk from the child frame to the overwritten on-stack ep and crash.
+    if (child_ep) {
+        VM_FORCE_WRITE_SPECIAL_CONST(&child_ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(env_ep));
+    }
+
     VM_STACK_ENV_WRITE(ep, 0, (VALUE)env);		/* GC mark */
 
 #if 0
@@ -1182,7 +1192,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 static VALUE
 vm_make_env_object(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
-    VALUE envval = vm_make_env_each(ec, cfp);
+    VALUE envval = vm_make_env_each(ec, cfp, NULL);
 
     if (PROCDEBUG) {
         check_env_value((const rb_env_t *)envval);
