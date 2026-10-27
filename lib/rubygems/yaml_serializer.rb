@@ -267,7 +267,8 @@ module Gem
 
       def parse_block_scalar(base_indent, modifier)
         parts = []
-        block_indent = nil
+        indentation = modifier[/\A[+-]?([1-9])/, 1]
+        block_indent = indentation && base_indent + indentation.to_i
 
         while @lines.any?
           line = @lines[0]

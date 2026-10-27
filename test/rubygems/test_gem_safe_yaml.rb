@@ -1092,6 +1092,25 @@ class TestGemSafeYAML < Gem::TestCase
     refute result["text"].end_with?("\n")
   end
 
+  def test_load_block_scalar_indentation_indicator
+    yaml = <<~YAML
+      ---
+      description: |2
+          Indented first line
+        second line
+      list:
+      - |2
+          indented item
+        next line
+    YAML
+
+    expected = {
+      "description" => "  Indented first line\nsecond line\n",
+      "list" => ["  indented item\nnext line\n"],
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
   def test_load_flow_array
     result = yaml_load("items: [a, b, c]")
     assert_equal ["a", "b", "c"], result["items"]
