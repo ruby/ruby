@@ -1133,6 +1133,54 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "value # not a comment", result["key"]
   end
 
+  def test_load_indented_comment_line_after_plain_scalar
+    yaml = <<~YAML
+      ---
+      ssl_ca_cert: /etc/ssl/ca.pem
+        # the corporate bundle
+      plain:
+        value
+          # trailing note
+      folded: first
+        second
+        # trailing note
+    YAML
+
+    expected = {
+      "ssl_ca_cert" => "/etc/ssl/ca.pem",
+      "plain" => "value",
+      "folded" => "first second",
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_open_quoted_scalar_keeps_continuation_line_starting_with_hash
+    yaml = <<~YAML
+      ---
+      summary: 'first part of a summary Psych folded
+        #tag and the rest'
+      other: 1
+    YAML
+
+    result = yaml_load(yaml)
+    # Gem::YAMLSerializer does not fold multi-line quoted scalars, so only check that no text is lost.
+    assert_include result["summary"], "#tag and the rest"
+    assert_equal 1, result["other"]
+  end
+
+  def test_skipping_blank_and_comment_lines_does_not_allocate
+    omit "GC.stat(:total_allocated_objects) is CRuby only" unless RUBY_ENGINE == "ruby"
+
+    parser = Gem::YAMLSerializer::Parser.new("- item\n")
+    parser.send(:skip_blank_and_comments)
+    calls = 100
+    before = GC.stat(:total_allocated_objects)
+    calls.times { parser.send(:skip_blank_and_comments) }
+    allocated = GC.stat(:total_allocated_objects) - before
+
+    assert_operator allocated, :<, calls
+  end
+
   def test_load_comment_and_blank_lines_inside_nested_collections
     yaml = <<~YAML
       ---

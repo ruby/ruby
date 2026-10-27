@@ -40,6 +40,8 @@ module Gem
       # cannot match because its closing quote is at the end of the line.
       QUOTED_KEY_RE = /^("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'):(?:[ ]+(.*))?$/
       MAX_NESTING_DEPTH = 1_000
+      BLANK_RE = /\A[\0\s]*\z/
+      BLANK_OR_COMMENT_RE = /\A[\0\s]*(?:#|\z)/
 
       STRING_UNESCAPES = {
         "\\\\" => "\\",
@@ -286,13 +288,11 @@ module Gem
       end
 
       def parse_plain_scalar(indent, anchor)
-        result = coerce(@lines.shift.strip)
+        val = @lines.shift.strip
+        result = coerce(val)
         return register_anchor(anchor, result) if result.is_a?(Mapping) || result.is_a?(Sequence)
 
-        while result.is_a?(String) && @lines.any? &&
-              !@lines[0].strip.empty? && current_indent > indent
-          result << " " << @lines.shift.strip
-        end
+        fold_continuation_lines(result, val, indent)
         register_anchor(anchor, Scalar.new(value: result))
       end
 
@@ -300,11 +300,18 @@ module Gem
         result = coerce(val)
         return result if result.is_a?(Mapping) || result.is_a?(Sequence)
 
-        while result.is_a?(String) && @lines.any? &&
-              !@lines[0].strip.empty? && current_indent > indent
+        fold_continuation_lines(result, val, indent)
+        Scalar.new(value: result)
+      end
+
+      def fold_continuation_lines(result, val, indent)
+        return unless result.is_a?(String)
+
+        # "#" does not start a comment inside a quoted scalar that runs onto the next lines.
+        stop = val.start_with?("'", "\"") && result == val ? BLANK_RE : BLANK_OR_COMMENT_RE
+        while @lines.any? && !stop.match?(@lines[0]) && current_indent > indent
           result << " " << @lines.shift.strip
         end
-        Scalar.new(value: result)
       end
 
       def coerce(val, depth = 0)
@@ -420,12 +427,7 @@ module Gem
       end
 
       def skip_blank_and_comments
-        while @lines.any?
-          line = @lines[0]
-          stripped = line.lstrip
-          break unless stripped.empty? || stripped.start_with?("#")
-          @lines.shift
-        end
+        @lines.shift while @lines.any? && BLANK_OR_COMMENT_RE.match?(@lines[0])
       end
 
       def strip_comment(val)
