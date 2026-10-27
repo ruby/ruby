@@ -651,8 +651,8 @@ start:
     if (need_free) free_getaddrinfo_arg(arg);
 
     if (timedout) {
-        VALUE host = rb_str_new_cstr(hostp);
-        VALUE port = rb_str_new_cstr(portp);
+        VALUE host = hostp ? rb_str_new_cstr(hostp) : Qnil;
+        VALUE port = portp ? rb_str_new_cstr(portp) : Qnil;
         rsock_raise_user_specified_timeout(NULL, host, port);
     }
 
