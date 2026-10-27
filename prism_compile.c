@@ -7160,7 +7160,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         if (scope_node->to_h_pair_result_p) {
             // to_h pair-literal block: compile the two elements and let
             // to_h_aset stash them on the cooperating to_h's EC-side ctx
-            // (or fall back to a two-element array).  Operands are unused.
+            // (or fall back to a two-element array).
             // The array node itself is not passed through pm_compile_node
             // (that would emit newarray/duparray), so emit its line and
             // coverage events the same way pm_compile_node would.
@@ -7190,13 +7190,12 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                 pm_compile_node(iseq, array->elements.nodes[1], ret, false, scope_node);
                 ISEQ_COMPILE_DATA(iseq)->last_line = saved_line;
 
-                PUSH_INSN3(ret, loc, to_h_aset, INT2FIX(0), INT2FIX(0), INT2FIX(0));
+                PUSH_INSN(ret, loc, to_h_aset);
             }
             else {
                 pm_compile_node(iseq, array->elements.nodes[0], ret, false, scope_node);
                 pm_compile_node(iseq, array->elements.nodes[1], ret, false, scope_node);
-                PUSH_INSN3(ret, PM_NODE_START_LOCATION(array_node), to_h_aset,
-                           INT2FIX(0), INT2FIX(0), INT2FIX(0));
+                PUSH_INSN(ret, PM_NODE_START_LOCATION(array_node), to_h_aset);
             }
         }
         else if (scope_node->body != NULL) {
