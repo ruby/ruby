@@ -633,6 +633,20 @@ RSpec.describe Bundler::Dsl do
       end.to raise_error(Bundler::GemfileError, /an empty gem name is not valid/)
     end
 
+    ["foo bar", ":all", "rails\nbad", "rails@1"].each do |name|
+      it "rejects the target #{name.inspect}" do
+        expect { subject.override(name, version: ">= 1") }.to raise_error(Bundler::GemfileError, /not a valid gem name/)
+      end
+
+      it "rejects the from: #{name.inspect}" do
+        expect { subject.override("grpc", from: name, to: nil) }.to raise_error(Bundler::GemfileError, /not a valid gem name/)
+      end
+
+      it "rejects the to: #{name.inspect}" do
+        expect { subject.override("grpc", from: "a", to: name) }.to raise_error(Bundler::GemfileError, /not a valid gem name/)
+      end
+    end
+
     it "rejects a from: containing whitespace" do
       expect do
         subject.override("grpc", from: "google cloud", to: nil)

@@ -208,6 +208,9 @@ class Gem::Uninstaller
 
     return if executables.empty?
 
+    bin_dir = @bin_dir || Gem.bindir(spec.base_dir)
+    return if bin_dir_missing?(bin_dir)
+
     executables = executables.map {|exec| formatted_program_filename exec }
 
     remove = if @force_executables.nil?
@@ -220,8 +223,6 @@ class Gem::Uninstaller
     end
 
     if remove
-      bin_dir = @bin_dir || Gem.bindir(spec.base_dir)
-
       raise Gem::FilePermissionError, bin_dir unless File.writable? bin_dir
 
       executables.each do |exe_name|
@@ -399,6 +400,17 @@ class Gem::Uninstaller
   end
 
   private
+
+  # Only a directory that does not exist is skipped. Any other error, such as
+  # EACCES on a parent directory, is left to the writable check.
+  def bin_dir_missing?(bin_dir)
+    File.stat(bin_dir)
+    false
+  rescue Errno::ENOENT
+    true
+  rescue SystemCallError
+    false
+  end
 
   def rm_r(path, exclusions:)
     FileUtils::Entry_.new(path).postorder_traverse do |ent|

@@ -4878,6 +4878,71 @@ fn test_string_copy_chilled_gc_stress() {
     "#), @r#"[String, "hello world!", false, "UTF-8", 12, "hello world"]"#);
 }
 
+// Runs both `StringCoderange` paths: the first five strings are built at runtime so their code range
+// is UNKNOWN. `valid_encoding?` will force a code range scan since UNKNOWN is never returned in Ruby.
+// The String literals will have a precomputed code range so we can use the flag bits directly.
+#[test]
+fn test_string_valid_encoding_unknown_coderange() {
+    eval(r#"
+        def test(s) = s.valid_encoding?
+        test("iron")
+    "#);
+    assert_snapshot!(assert_compiles(r#"
+        [
+          test(["ascii"].pack("a*").force_encoding(Encoding::UTF_8).freeze),
+          test(String.new("", encoding: Encoding::UTF_8).freeze),
+          test("\xC3\xA9".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xE2\x82".b.force_encoding(Encoding::UTF_8).freeze),
+          test("ascii".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.freeze)
+        ]
+    "#), @"[true, true, true, false, false, true, true]");
+}
+
+// Same inputs and rationale as `test_string_valid_encoding_unknown_coderange`. Here, we're
+// testing the `ascii_only?` path handles the code range (scanned or already cached) properly.
+#[test]
+fn test_string_ascii_only_unknown_coderange() {
+    eval(r#"
+        def test(s) = s.ascii_only?
+        test("iron")
+    "#);
+    assert_snapshot!(assert_compiles(r#"
+        [
+          test(["ascii"].pack("a*").force_encoding(Encoding::UTF_8).freeze),
+          test(String.new("", encoding: Encoding::UTF_8).freeze),
+          test("\xC3\xA9".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xE2\x82".b.force_encoding(Encoding::UTF_8).freeze),
+          test("ascii".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.freeze)
+        ]
+    "#), @"[true, true, false, false, false, true, false]");
+}
+
+// `ascii_only?` and `valid_encoding?` will force a code range scan if necessary and the code range
+// will be stored in the object header. This test intermingles operations that would invalidate the
+// code range so we ensure we aren't reporting stale values on subsequent calls.
+#[test]
+fn test_string_coderange_after_mutation() {
+    eval(r#"
+        def test(s)
+          original = [s.valid_encoding?, s.ascii_only?]
+          s.setbyte(0, 0xFF)
+          broken = [s.valid_encoding?, s.ascii_only?]
+          s.force_encoding(Encoding::BINARY)
+          binary = [s.valid_encoding?, s.ascii_only?]
+          s.force_encoding(Encoding::UTF_8)
+          utf8 = [s.valid_encoding?, s.ascii_only?]
+          [original, broken, binary, utf8]
+        end
+        test(+"abc")
+    "#);
+    assert_snapshot!(assert_compiles(r#"test(+"abc")"#),
+        @"[[true, true], [false, false], [true, false], [false, false]]");
+}
+
 #[test]
 fn test_string_append_same_encoding() {
     eval(r#"
@@ -8643,6 +8708,22 @@ fn test_local_write_through_call_in_branch_reaches_merge_point() {
         3.times { test("1") }
         test("y = 2")
     "#), @"2");
+}
+
+#[test]
+fn test_no_ep_escape_patch_point_resumes_after_call() {
+    // Call eval via Method#call so warmup doesn't escape the EP and suppress the patch point.
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        $n = 0
+        def test(m, s)
+          y = 1
+          method(m).call(s)
+          [y, $n]
+        end
+        test(:Integer, "1"); test(:Integer, "1")
+        test(:eval, "$n += 1; y = 2")
+    "#), @"[2, 1]");
 }
 
 #[test]

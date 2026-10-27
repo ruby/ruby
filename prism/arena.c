@@ -12,8 +12,13 @@
  */
 #define PM_ARENA_BLOCK_SIZE(data_size) (offsetof(pm_arena_block_t, data) + (data_size))
 
-/** Initial block data size: 8 KB. */
+/**
+ * Initial block data size: 8 KB. An embedder on a small heap can define a
+ * smaller one; a parse of a short program then takes blocks of that size.
+ */
+#ifndef PM_ARENA_INITIAL_SIZE
 #define PM_ARENA_INITIAL_SIZE 8192
+#endif
 
 /** Double the block size every this many blocks. */
 #define PM_ARENA_GROWTH_INTERVAL 8

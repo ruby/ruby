@@ -184,27 +184,22 @@ lex_mode_terminator(const uint8_t start) {
 }
 
 /**
- * Push a new lex state onto the stack. If we're still within the pre-allocated
- * space of the lex state stack, then we'll just use a new slot. Otherwise we'll
- * allocate a new pointer and use that.
+ * Push a new lex state onto the stack, reusing a popped lex mode if there is
+ * one and allocating a new one otherwise.
  */
 static void
 lex_mode_push(pm_parser_t *parser, pm_lex_mode_t lex_mode) {
-    lex_mode.prev = parser->lex_modes.current;
-    parser->lex_modes.index++;
+    pm_lex_mode_t *next = parser->lex_modes.free;
 
-    if (parser->lex_modes.index > PM_LEX_STACK_SIZE - 1) {
-        parser->lex_modes.current = (pm_lex_mode_t *) xmalloc(sizeof(pm_lex_mode_t));
-        if (PRISM_UNLIKELY(parser->lex_modes.current == NULL)) {
-            fprintf(stderr, "prism: out of memory; aborting\n");
-            abort();
-        }
-
-        *parser->lex_modes.current = lex_mode;
+    if (next != NULL) {
+        parser->lex_modes.free = next->prev;
     } else {
-        parser->lex_modes.stack[parser->lex_modes.index] = lex_mode;
-        parser->lex_modes.current = &parser->lex_modes.stack[parser->lex_modes.index];
+        next = (pm_lex_mode_t *) pm_arena_alloc(&parser->scratch_arena, sizeof(pm_lex_mode_t), PRISM_ALIGNOF(pm_lex_mode_t));
     }
+
+    lex_mode.prev = parser->lex_modes.current;
+    *next = lex_mode;
+    parser->lex_modes.current = next;
 }
 
 /**
@@ -357,22 +352,20 @@ lex_mode_push_string_eof(pm_parser_t *parser) {
 }
 
 /**
- * Pop the current lex state off the stack. If we're within the pre-allocated
- * space of the lex state stack, then we'll just decrement the index. Otherwise
- * we'll free the current pointer and use the previous pointer.
+ * Pop the current lex state off the stack, keeping it for reuse by the next
+ * push. The base lex mode is never popped, so popping it instead resets it to
+ * the default mode.
  */
 static void
 lex_mode_pop(pm_parser_t *parser) {
-    if (parser->lex_modes.index == 0) {
-        parser->lex_modes.current->mode = PM_LEX_DEFAULT;
-    } else if (parser->lex_modes.index < PM_LEX_STACK_SIZE) {
-        parser->lex_modes.index--;
-        parser->lex_modes.current = &parser->lex_modes.stack[parser->lex_modes.index];
+    pm_lex_mode_t *popped = parser->lex_modes.current;
+
+    if (popped == &parser->lex_modes.base) {
+        popped->mode = PM_LEX_DEFAULT;
     } else {
-        parser->lex_modes.index--;
-        pm_lex_mode_t *prev = parser->lex_modes.current->prev;
-        xfree_sized(parser->lex_modes.current, sizeof(pm_lex_mode_t));
-        parser->lex_modes.current = prev;
+        parser->lex_modes.current = popped->prev;
+        popped->prev = parser->lex_modes.free;
+        parser->lex_modes.free = popped;
     }
 }
 
@@ -709,7 +702,7 @@ pm_parser_scope_push(pm_parser_t *parser, bool closed) {
             memset(locals.locals, 0, locals.capacity * sizeof(pm_local_t));
         }
     } else {
-        scope = (pm_scope_t *) pm_arena_alloc(&parser->metadata_arena, sizeof(pm_scope_t), PRISM_ALIGNOF(pm_scope_t));
+        scope = (pm_scope_t *) pm_arena_alloc(&parser->scratch_arena, sizeof(pm_scope_t), PRISM_ALIGNOF(pm_scope_t));
     }
 
     *scope = (pm_scope_t) {
@@ -7262,7 +7255,7 @@ pm_parser_local_depth(pm_parser_t *parser, pm_token_t *token) {
  */
 static PRISM_INLINE void
 pm_parser_local_add(pm_parser_t *parser, pm_constant_id_t constant_id, const uint8_t *start, const uint8_t *end, uint32_t reads) {
-    pm_locals_write(&parser->metadata_arena, &parser->current_scope->locals, constant_id, U32(start - parser->start), U32(end - start), reads);
+    pm_locals_write(&parser->scratch_arena, &parser->current_scope->locals, constant_id, U32(start - parser->start), U32(end - start), reads);
 }
 
 /**
@@ -7997,7 +7990,7 @@ context_push(pm_parser_t *parser, pm_context_t context) {
     if (context_node != NULL) {
         parser->free_contexts = context_node->prev;
     } else {
-        context_node = (pm_context_node_t *) pm_arena_alloc(&parser->metadata_arena, sizeof(pm_context_node_t), PRISM_ALIGNOF(pm_context_node_t));
+        context_node = (pm_context_node_t *) pm_arena_alloc(&parser->scratch_arena, sizeof(pm_context_node_t), PRISM_ALIGNOF(pm_context_node_t));
     }
 
     pm_context_node_t *previous = parser->current_context;
@@ -13890,7 +13883,7 @@ parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
 static void
 pm_hash_key_duplicated_warn(pm_parser_t *parser, const pm_node_t *duplicated, const pm_node_t *node) {
     pm_buffer_t buffer = { 0 };
-    pm_static_literal_inspect(&buffer, &parser->line_offsets, parser->start, parser->start_line, parser->encoding, duplicated);
+    pm_static_literal_inspect(&buffer, parser, duplicated);
 
     pm_diagnostic_list_append_format(
         &parser->metadata_arena,
@@ -13912,7 +13905,7 @@ pm_hash_key_duplicated_warn(pm_parser_t *parser, const pm_node_t *duplicated, co
  */
 static void
 pm_hash_key_static_literals_add(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *node) {
-    const pm_node_t *duplicated = pm_static_literals_add(&parser->line_offsets, parser->start, parser->start_line, parser->encoding, literals, node, true);
+    const pm_node_t *duplicated = pm_static_literals_add(parser, literals, node, true);
 
     if (duplicated != NULL) {
         pm_hash_key_duplicated_warn(parser, duplicated, node);
@@ -13936,7 +13929,7 @@ pm_hash_key_static_literals_merge(pm_parser_t *parser, pm_static_literals_t *lit
         switch (PM_NODE_TYPE(element)) {
             case PM_ASSOC_NODE: {
                 pm_node_t *key = ((pm_assoc_node_t *) element)->key;
-                const pm_node_t *duplicated = pm_static_literals_add(&parser->line_offsets, parser->start, parser->start_line, parser->encoding, literals, key, true);
+                const pm_node_t *duplicated = pm_static_literals_add(parser, literals, key, true);
 
                 if (duplicated != NULL && PM_NODE_START(duplicated) < boundary) {
                     pm_hash_key_duplicated_warn(parser, duplicated, key);
@@ -13967,7 +13960,7 @@ static void
 pm_when_clause_static_literals_add(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *node) {
     pm_node_t *previous;
 
-    if ((previous = pm_static_literals_add(&parser->line_offsets, parser->start, parser->start_line, parser->encoding, literals, node, false)) != NULL) {
+    if ((previous = pm_static_literals_add(parser, literals, node, false)) != NULL) {
         pm_diagnostic_list_append_format(
             &parser->metadata_arena,
             &parser->warning_list,
@@ -15981,7 +15974,7 @@ ensure_valid_jump(pm_parser_t *parser, pm_node_t *node) {
                 // block exit to the list of exits for the expression, and
                 // the node parsing will handle validating it instead.
                 assert(parser->current_block_exits != NULL);
-                pm_node_list_append_inline(parser->arena, parser->current_block_exits, node);
+                pm_node_list_append_inline(&parser->scratch_arena, parser->current_block_exits, node);
                 return;
             case PM_CONTEXT_BEGIN_ELSE:
             case PM_CONTEXT_BEGIN_ENSURE:
@@ -16073,7 +16066,7 @@ pop_block_exits(pm_parser_t *parser, pm_node_list_t *previous_block_exits) {
         // However, they could still become valid in a higher level context if
         // there is another list above this one. In this case we'll push all of
         // the block exits up to the previous list.
-        pm_node_list_concat(parser->arena, previous_block_exits, parser->current_block_exits);
+        pm_node_list_concat(&parser->scratch_arena, previous_block_exits, parser->current_block_exits);
         parser->current_block_exits = previous_block_exits;
     } else {
         // If we did not match a trailing while/until and this was the last
@@ -16719,12 +16712,12 @@ parse_variable(pm_parser_t *parser) {
             }
 
             pm_node_t *node = UP(pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, 0, false));
-            pm_node_list_append_inline(parser->arena, &current_scope->implicit_parameters, node);
+            pm_node_list_append_inline(&parser->scratch_arena, &current_scope->implicit_parameters, node);
 
             return node;
         } else if ((parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4) && pm_token_is_it(parser->previous.start, parser->previous.end)) {
             pm_node_t *node = UP(pm_it_local_variable_read_node_create(parser, &parser->previous));
-            pm_node_list_append_inline(parser->arena, &current_scope->implicit_parameters, node);
+            pm_node_list_append_inline(&parser->scratch_arena, &current_scope->implicit_parameters, node);
 
             return node;
         }
@@ -17111,7 +17104,7 @@ parse_pattern_capture(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_co
     // Skip this capture if it starts with an underscore.
     if (peek_at(parser, parser->start + location->start) == '_') return;
 
-    if (!pm_constant_id_set_insert(parser->arena, captures, capture)) {
+    if (!pm_constant_id_set_insert(&parser->scratch_arena, captures, capture)) {
         pm_parser_err(parser, location->start, location->length, PM_ERR_PATTERN_CAPTURE_DUPLICATE);
     }
 }
@@ -17377,7 +17370,7 @@ parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_set_t *cap
  */
 static void
 parse_pattern_hash_key(pm_parser_t *parser, pm_static_literals_t *keys, pm_node_t *node) {
-    if (pm_static_literals_add(&parser->line_offsets, parser->start, parser->start_line, parser->encoding, keys, node, true) != NULL) {
+    if (pm_static_literals_add(parser, keys, node, true) != NULL) {
         pm_parser_err_node(parser, node, PM_ERR_PATTERN_HASH_KEY_DUPLICATE);
     }
 }
@@ -21804,7 +21797,7 @@ parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *c
      * Add this name to the set of constants if it is valid, not duplicated,
      * and not a keyword.
      */
-    if (name != 0 && pm_constant_id_set_insert(parser->arena, names, name)) {
+    if (name != 0 && pm_constant_id_set_insert(&parser->scratch_arena, names, name)) {
 
         int depth;
         if ((depth = pm_parser_local_depth_constant_id(parser, name)) == -1) {
@@ -22000,7 +21993,7 @@ parse_match(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_pow
         }
 
         if (!interpolated && total_length > 0) {
-            uint8_t *memory = (uint8_t *) pm_arena_alloc(&parser->metadata_arena, total_length, PRISM_ALIGNOF(uint8_t));
+            uint8_t *memory = (uint8_t *) pm_arena_alloc(&parser->scratch_arena, total_length, PRISM_ALIGNOF(uint8_t));
             uint8_t *cursor = memory;
             PM_NODE_LIST_FOREACH(parts, index, part) {
                 pm_string_t *unescaped = &((pm_string_node_t *) part)->unescaped;
@@ -23262,6 +23255,16 @@ pm_parser_init_shebang(pm_parser_t *parser, const pm_options_t *options, const c
 }
 
 /**
+ * The smallest capacity the constant pool starts with, whatever the source
+ * size suggests. An embedder that interns a fixed set of names into the pool
+ * at every parse (a symbol table) can raise it to that set's size, so the
+ * pool does not grow to hold them and leave each outgrown array in the arena.
+ */
+#ifndef PM_CONSTANT_POOL_MIN_CAPACITY
+#define PM_CONSTANT_POOL_MIN_CAPACITY 4
+#endif
+
+/**
  * Initialize a parser with the given start and end pointers.
  */
 void
@@ -23280,9 +23283,8 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .do_loop_stack = 0,
         .accepts_block_stack = 0,
         .lex_modes = {
-            .index = 0,
-            .stack = {{ .mode = PM_LEX_DEFAULT }},
-            .current = &parser->lex_modes.stack[0],
+            .current = &parser->lex_modes.base,
+            .base = { .mode = PM_LEX_DEFAULT },
         },
         .start = source,
         .end = source + size,
@@ -23339,7 +23341,8 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
      * frequency. Resizes are cheap with arena allocation, so we lean toward
      * under-estimating. */
     uint32_t constant_size = ((uint32_t) size) / 120;
-    pm_constant_pool_init(&parser->metadata_arena, &parser->constant_pool, constant_size < 4 ? 4 : constant_size);
+    if (constant_size < PM_CONSTANT_POOL_MIN_CAPACITY) constant_size = PM_CONSTANT_POOL_MIN_CAPACITY;
+    pm_constant_pool_init(&parser->metadata_arena, &parser->constant_pool, constant_size);
 
     /* Initialize the line offset list. Similar to the constant pool, we are
      * going to estimate the number of newlines that we will need based on the
@@ -23549,10 +23552,7 @@ pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_op
 void
 pm_parser_cleanup(pm_parser_t *parser) {
     pm_arena_cleanup(&parser->metadata_arena);
-
-    while (parser->lex_modes.index >= PM_LEX_STACK_SIZE) {
-        lex_mode_pop(parser);
-    }
+    pm_arena_cleanup(&parser->scratch_arena);
 }
 
 /**
@@ -23734,6 +23734,7 @@ pm_parse(pm_parser_t *parser) {
     pm_node_t *node = parse_program(parser);
     pm_parse_continuable(parser);
     if (parser->attach_comments) pm_comments_attach(parser, node);
+    pm_arena_cleanup(&parser->scratch_arena);
     return node;
 }
 

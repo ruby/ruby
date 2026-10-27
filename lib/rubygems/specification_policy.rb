@@ -506,19 +506,21 @@ You have specified rake based extension, but rake is not added as runtime depend
       next unless require_paths.any? {|rp| rb_file.start_with?("#{rp}/") }
       next unless File.file?(rb_file)
 
-      File.foreach(rb_file).with_index(1) do |line, lineno|
-        next unless line =~ /^\s*require_relative\s+["']([^"']+)["']/
+      File.open(rb_file, "rb") do |file|
+        file.each_line.with_index(1) do |line, lineno|
+          next unless line =~ /^\s*require_relative\s+["']([^"']+)["']/
 
-        required_path = Regexp.last_match(1)
-        resolved = File.join(File.dirname(rb_file), required_path)
+          required_path = Regexp.last_match(1).force_encoding(rb_file.encoding)
+          resolved = File.join(File.dirname(rb_file), required_path)
 
-        next if @specification.files.any? {|f| f == "#{resolved}.rb" || f == resolved }
+          next if @specification.files.any? {|f| f == "#{resolved}.rb" || f == resolved }
 
-        warning <<~WARNING
-          #{rb_file}:#{lineno} uses `require_relative "#{required_path}"` to load a compiled extension.
-          This will break in RubyGems 4.2, which will stop copying compiled extensions into the gem's lib directory.
-          Use `require` instead of `require_relative` to load compiled extensions.
-        WARNING
+          warning <<~WARNING
+            #{rb_file}:#{lineno} uses `require_relative "#{required_path}"` to load a compiled extension.
+            This will break in RubyGems 4.2, which will stop copying compiled extensions into the gem's lib directory.
+            Use `require` instead of `require_relative` to load compiled extensions.
+          WARNING
+        end
       end
     end
   end

@@ -307,6 +307,56 @@ mod snapshot_tests {
           Return v59
         ");
     }
+
+    #[test]
+    fn test_no_ep_escape_patch_point_snapshot_points_after_send() {
+        // Send's snapshot is at pc 0x1028. The NoEPEscape snapshot must be at 0x1030,
+        // the instruction after the send, with the send result on the stack.
+        eval("
+            def test(o)
+              y = 1
+              o.foo
+              y
+            end
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb0():
+          Entries bb1, bb2
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :o@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          v14:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [o=v12, y=v13] }
+          v15:Any = Snapshot FrameState { pc: 0x1010, stack: [], locals: [o=v12, y=v13] }
+          PatchPoint NoTracePoint, v15
+          v17:Fixnum[1] = Const Value(1)
+          v18:Any = Snapshot FrameState { pc: 0x1018, stack: [v17], locals: [o=v12, y=v13] }
+          v19:Any = Snapshot FrameState { pc: 0x1020, stack: [], locals: [o=v12, y=v17] }
+          PatchPoint NoTracePoint, v19
+          v21:Any = Snapshot FrameState { pc: 0x1028, stack: [v12], locals: [o=v12, y=v17] }
+          v22:BasicObject = Send v12, :foo # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v23:Any = Snapshot FrameState { pc: 0x1030, stack: [v22], locals: [] }
+          PatchPoint NoEPEscape(test), v23
+          v25:Any = Snapshot FrameState { pc: 0x1030, stack: [v22], locals: [o=v12, y=v17] }
+          v26:Any = Snapshot FrameState { pc: 0x1038, stack: [], locals: [o=v12, y=v17] }
+          PatchPoint NoTracePoint, v26
+          v28:Any = Snapshot FrameState { pc: 0x1040, stack: [v17], locals: [o=v12, y=v17] }
+          PatchPoint NoTracePoint, v28
+          CheckInterrupts
+          Return v17
+        ");
+    }
 }
 
 #[cfg(test)]

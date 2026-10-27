@@ -143,6 +143,16 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(SyntaxError) {eval "/# \\users/"}
   end
 
+  def test_extended_comment_invalid_unicode_escape_with_multibyte_characters
+    ["\u3042", "\u00e9z", "\u{1f600}"].each do |content|
+      source = "a # \\u{#{content}}\n"
+      re = eval("/#{source}/x")
+      assert_equal(source, re.source)
+      assert_predicate(re.source, :valid_encoding?)
+      assert_match(re, "a")
+    end
+  end
+
   def test_nonextended_section_of_extended_regexp_bug_19379
     assert_separately([], <<-'RUBY')
       re = /(?-x:#)/x
@@ -2023,6 +2033,15 @@ class TestRegexp < Test::Unit::TestCase
         Regexp.new("((?(1)x|x|)x)+")
       end
     end;
+  end
+
+  def test_invalid_condition_in_alternation_and_call
+    assert_raise_with_message(RegexpError, /invalid conditional pattern/) do
+      Regexp.new("(x)|(?(1)x|x|)")
+    end
+    assert_raise_with_message(RegexpError, /invalid conditional pattern/) do
+      Regexp.new("(?<b>x)(?<a>(?(<b>)x|x|))\\g<a>")
+    end
   end
 
   def test_too_big_number_for_repeat_range

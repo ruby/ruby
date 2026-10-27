@@ -940,6 +940,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
         th->invoke_type = thread_invoke_type_ractor_proc;
         th->ractor = params->g;
         th->ec->ractor_id = rb_ractor_id(th->ractor);
+        th->ec->serial = th->ractor->next_ec_serial++;
         th->ractor->threads.main = th;
         th->invoke_arg.proc.proc = rb_proc_isolate_bang(params->proc, Qnil);
         th->invoke_arg.proc.args = INT2FIX(RARRAY_LENINT(params->args));
@@ -3986,7 +3987,8 @@ rb_thread_setname(VALUE thread, VALUE name)
         name = rb_str_new_frozen(name);
     }
     target_th->name = name;
-    if (threadptr_initialized(target_th) && target_th->has_dedicated_nt) {
+    if (threadptr_initialized(target_th) && target_th->has_dedicated_nt &&
+        target_th->status != THREAD_KILLED) {
         native_set_another_thread_name(target_th->nt->thread_id, name);
     }
     return name;

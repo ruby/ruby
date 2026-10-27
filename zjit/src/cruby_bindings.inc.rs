@@ -1276,6 +1276,8 @@ pub struct rb_iseq_constant_body_iseq_insn_info {
     pub body: *const iseq_insn_info_entry,
     pub positions_or_succ_index_table: rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1,
     pub size: ::std::os::raw::c_uint,
+    pub node_ids: *const u8,
+    pub node_ids_size: ::std::os::raw::c_uint,
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -2050,7 +2052,6 @@ pub struct iseq_compile_data__bindgen_ty_3 {
 #[derive(Debug, Copy, Clone)]
 pub struct iseq_insn_info_entry {
     pub line_no: ::std::os::raw::c_int,
-    pub node_id: ::std::os::raw::c_int,
     pub events: rb_event_flag_t,
 }
 pub const CATCH_TYPE_RESCUE: rb_catch_type = 3;
@@ -2114,7 +2115,7 @@ pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
 >;
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
-pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 240;
+pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 256;
 pub const RUBY_OFFSET_THREAD_RACTOR: zjit_struct_offsets = 24;
 pub type zjit_struct_offsets = u32;
 #[repr(C)]
@@ -2308,6 +2309,7 @@ unsafe extern "C" {
     pub fn rb_ivar_defined(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_const_get(space: VALUE, name: ID) -> VALUE;
+    pub fn rbimpl_enc_str_coderange_scan(str_: VALUE) -> ::std::os::raw::c_int;
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_obj_equal(obj1: VALUE, obj2: VALUE) -> VALUE;
     pub fn rb_reg_new_from_values(

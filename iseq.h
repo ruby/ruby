@@ -46,10 +46,6 @@ iseq_lvar_state_set(uint8_t *buf, unsigned int i, enum lvar_state state)
     *byte = (*byte & ~(((1 << ISEQ_LVAR_STATE_BITS) - 1) << shift)) | ((uint8_t)state << shift);
 }
 
-#ifndef USE_ISEQ_NODE_ID
-#define USE_ISEQ_NODE_ID 1
-#endif
-
 #ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
 #define rb_iseq_t rb_iseq_t
@@ -337,9 +333,6 @@ struct rb_compile_option_struct {
 
 struct iseq_insn_info_entry {
     int line_no;
-#ifdef USE_ISEQ_NODE_ID
-    int node_id;
-#endif
     rb_event_flag_t events;
 };
 

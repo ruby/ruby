@@ -868,14 +868,30 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Open a file with given flags, and protect access with a file lock
+  # Open a file with given flags, and protect access with a file lock.
+  #
+  # The lock file is removed once done, while still holding the lock. Since
+  # processes waiting for the lock may end up acquiring it on the removed file,
+  # after acquiring it we check that the locked file is still the one at the
+  # lock path, and start over otherwise.
 
-  def self.open_file_with_lock(path, &block)
+  def self.open_file_with_lock(path)
     file_lock = "#{path}.lock"
-    open_file_with_flock(file_lock, &block)
-  ensure
-    require "fileutils"
-    FileUtils.rm_f file_lock
+
+    loop do
+      open_file_with_flock(file_lock) do |io|
+        # The previous holder removed the file while we were waiting on it, so
+        # leave this block and try again on the file now at the lock path
+        next unless File.identical?(io, file_lock)
+
+        begin
+          return yield io
+        ensure
+          require "fileutils"
+          FileUtils.rm_f file_lock
+        end
+      end
+    end
   end
 
   ##
