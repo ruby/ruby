@@ -21,6 +21,7 @@
 #include "internal/variable.h"
 #include "eval_intern.h"
 #include "internal/io.h"
+#include "internal/load.h"
 #include "internal/marshal.h"
 #include "internal/ractor.h"
 #include "internal/rational.h"
@@ -4228,12 +4229,22 @@ rb_ractor_require(VALUE feature, bool silent)
     // We're about to block on the main ractor, so if we're holding the global lock we'll deadlock.
     ASSERT_vm_unlocking();
 
+    feature = rb_fstring(FilePathValue(feature));
+
+    // Already loaded?  Answer locally rather than waking the main Ractor, which
+    // would otherwise spawn a thread there for every require, hit or miss.
+    // Mirror require_body()'s two return conventions: silent callers go through
+    // NUM2INT() and expect require_internal()'s int, which is 0 when the feature
+    // was already provided.
+    if (rb_feature_provided_ractor_safe(feature)) {
+        return silent ? INT2FIX(0) : Qfalse;
+    }
+
     struct cross_ractor_require *crr;
     VALUE crr_obj = TypedData_Make_Struct(0, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
     RB_OBJ_SET_SHAREABLE(crr_obj); // TODO: internal data?
 
-    // Convert feature to proper file path and make it shareable as fstring
-    RB_OBJ_WRITE(crr_obj, &crr->as.require.feature, rb_fstring(FilePathValue(feature)));
+    RB_OBJ_WRITE(crr_obj, &crr->as.require.feature, feature);
     RB_OBJ_WRITE(crr_obj, &crr->port, rb_ractor_make_shareable(ractor_port_new(GET_RACTOR())));
     crr->raised = false;
     crr->silent = silent;
