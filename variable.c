@@ -4517,6 +4517,7 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
     cvar_set_ractor_check(mod, id);
     val = rb_ivar_delete(mod, id, Qundef);
     if (!UNDEF_P(val)) {
+        ruby_vm_global_cvar_state++;
         return (VALUE)val;
     }
     if (rb_cvar_defined(mod, id)) {
