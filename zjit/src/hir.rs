@@ -10919,7 +10919,10 @@ fn add_iseq_to_hir(
                     let val = state.stack_pop()?;
                     let array = fun.push_insn(block, Insn::GuardType { val, guard_type: types::ArrayExact, state: exit_id, recompile: None });
                     let length = fun.push_insn(block, Insn::ArrayLength { array });
-                    if flag == 1 {
+                    let is_splat = flag & 0x01 != 0;
+                    // Build the rest Array as in vm_expandarray's normal-path is_splat branch:
+                    // rb_ary_new() when num > len, otherwise rb_ary_new4(len - num, ptr + num).
+                    if is_splat {
                         let rest = fun.push_insn(block, Insn::NewArray { elements: vec![], state: exit_id });
                         let start = fun.push_insn(block, Insn::Const { val: Const::CInt64(num.try_into().unwrap()) });
                         let one = fun.push_insn(block, Insn::Const { val: Const::CInt64(1) });
@@ -10930,6 +10933,7 @@ fn add_iseq_to_hir(
 
                         let index = fun.push_insn(loop_block, Insn::Param);
                         let in_bounds = fun.push_insn(loop_block, Insn::IntLt { left: index, right: length });
+                        // Continue copying into the rest Array while source elements remain.
                         fun.push_insn(loop_block, Insn::CondBranch {
                             val: in_bounds,
                             if_true: BranchEdge { target: body_block, args: vec![] },
