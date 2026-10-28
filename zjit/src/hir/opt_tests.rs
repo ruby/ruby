@@ -1651,6 +1651,40 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
           v27:StringExact = GuardType v10, StringExact recompile
+          PatchPoint MethodRedefined(NilClass@0x1040, to_str@0x1048, cme:0x1050)
+          v29:FalseClass = Const Value(false)
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_dont_fold_string_eq_nil_if_nilclass_to_to_str_defined() {
+        eval(r#"
+            class NilClass
+              def to_str = "abc"
+            end
+            def test(o) = o == nil
+            test("abc")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:NilClass = Const Value(nil)
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
+          v27:StringExact = GuardType v10, StringExact recompile
           v28:BasicObject = CCallWithFrame v27, :String#==@0x1040, v15
           CheckInterrupts
           Return v28
@@ -19462,12 +19496,12 @@ mod hir_opt_tests {
           v26:StringExact = GuardType v10, StringExact recompile
           PushInlineFrame :!=, v26 (0x1040), num_args=1
           PatchPoint MethodRedefined(String@0x1008, ==@0x1060, cme:0x1068)
-          v53:BasicObject = CCallWithFrame v26, :String#==@0x1090, v15
-          v39:BoolExact = BoolNegate v53
+          PatchPoint MethodRedefined(NilClass@0x1090, to_str@0x1098, cme:0x10a0)
+          v55:TrueClass = Const Value(true)
           PatchPoint NoEPEscape(!=)
           PopInlineFrame
           CheckInterrupts
-          Return v39
+          Return v55
         ");
     }
 

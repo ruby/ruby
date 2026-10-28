@@ -2498,6 +2498,9 @@ unsafe extern "C" {
     pub fn rb_zjit_struct_embedded_p(num_members: rb_len_t) -> bool;
     pub fn rb_struct_s_keyword_init(klass: VALUE) -> VALUE;
     pub fn rb_zjit_class_has_default_allocator(klass: VALUE) -> bool;
+    pub fn rb_zjit_callable_method_entry_is_undefined(
+        cme: *const rb_callable_method_entry_t,
+    ) -> bool;
     pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
     pub fn rb_vm_once_done_value(is: ISE, result: *mut VALUE) -> bool;
     pub fn rb_zjit_array_aref_with_adjusted_index(

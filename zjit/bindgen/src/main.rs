@@ -267,6 +267,7 @@ fn main() {
         .allowlist_type("method_optimized_type")
         .allowlist_type("rb_callable_method_entry_t")
         .allowlist_type("rb_callable_method_entry_struct")
+        .allowlist_function("rb_zjit_callable_method_entry_is_undefined")
         .allowlist_function("rb_method_entry_at")
         .allowlist_type("rb_method_entry_t")
         .blocklist_type("rb_method_cfunc_t")

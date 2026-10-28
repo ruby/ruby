@@ -659,19 +659,22 @@ fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
     None
 }
 
-fn try_inline_string_equal(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
     if fun.likely_a(recv, types::String, state) && fun.likely_a(other, types::String, state) {
         let recv = fun.coerce_to(block, recv, types::String, state);
         let other = fun.coerce_to(block, other, types::String, state);
         let result = fun.push_insn(block, hir::Insn::StringEqual { left: recv, right: other });
         return Some(result);
     }
+    // Heuristic: Objects get compared to nil a lot, so we can optimize that case:
+    // * `String#==` (`rb_str_equal`) checks if the other object is not `String` but responds to
+    //   `to_str`, and, if neither, returns `Qfalse`
+    if fun.is_a(other, types::NilClass)
+        && fun.assume_method_not_defined(block, unsafe { rb_cNilClass }, ID!(to_str), state) {
+        return Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }));
+    }
     None
-}
-
-fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    let &[other] = args else { return None; };
-    try_inline_string_equal(fun, block, recv, other, state)
 }
 
 fn inline_module_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
