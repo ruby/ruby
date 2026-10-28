@@ -8,6 +8,7 @@
 
 #include "prism/arena.h"
 
+#include <assert.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -103,6 +104,18 @@ pm_arena_memdup(pm_arena_t *arena, const void *src, size_t size, size_t alignmen
     void *dst = pm_arena_alloc(arena, size, alignment);
     memcpy(dst, src, size);
     return dst;
+}
+
+/*
+ * Shrink the most recent allocation from the arena to new_size bytes, giving
+ * the rest back to the arena. The allocation must be the most recent one, so
+ * that it ends exactly where the current block's used bytes do.
+ */
+static PRISM_INLINE void
+pm_arena_shrink(pm_arena_t *arena, void *ptr, size_t size, size_t new_size) {
+    assert(new_size <= size);
+    assert(arena->current != NULL && (char *) ptr + size == arena->current->data + arena->current->used);
+    arena->current->used -= size - new_size;
 }
 
 #endif
