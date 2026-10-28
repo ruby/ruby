@@ -250,6 +250,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "<<", inline_array_push);
     annotate!(rb_cArray, "push", inline_array_push);
     annotate!(rb_cArray, "pop", inline_array_pop);
+    annotate!(rb_cArray, "==", inline_array_eq);
     annotate!(rb_cHash, "[]", inline_hash_aref);
     annotate!(rb_cHash, "[]=", inline_hash_aset);
     annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
@@ -502,6 +503,18 @@ fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     fun.guard_not_frozen(block, recv, state);
     fun.guard_not_shared(block, recv, state);
     Some(fun.push_insn(block, hir::Insn::ArrayPop { array: recv, state }))
+}
+
+fn inline_array_eq(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    // Heuristic: Objects get compared to nil a lot, so we can optimize that case:
+    // * `Array#==` (`rb_ary_equal`) checks if the other object is not `Array` but responds to
+    //   `to_ary`, and, if neither, returns `Qfalse`
+    if fun.is_a(other, types::NilClass)
+        && fun.assume_method_not_defined(block, unsafe { rb_cNilClass }, ID!(to_ary), state) {
+        return Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }));
+    }
+    None
 }
 
 fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
