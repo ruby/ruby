@@ -4,6 +4,7 @@
 #ifndef PRISM_INTERNAL_INTEGER_H
 #define PRISM_INTERNAL_INTEGER_H
 
+#include "prism/arena.h"
 #include "prism/buffer.h"
 #include "prism/integer.h"
 
@@ -37,23 +38,16 @@ typedef enum {
     PM_INTEGER_BASE_DECIMAL,
 
     /* The hexadecimal base, indicated by a 0x or 0X prefix. */
-    PM_INTEGER_BASE_HEXADECIMAL,
-
-    /*
-     * An unknown base, in which case pm_integer_parse will derive it based on
-     * the content of the string. This is less efficient and does more
-     * comparisons, so if callers know the base ahead of time, they should use
-     * that instead.
-     */
-    PM_INTEGER_BASE_UNKNOWN
+    PM_INTEGER_BASE_HEXADECIMAL
 } pm_integer_base_t;
 
 /*
  * Parse an integer from a string. This assumes that the format of the integer
  * has already been validated, as internal validation checks are not performed
- * here.
+ * here. The words of an integer that does not fit in two words are allocated
+ * from the given arena.
  */
-void pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *start, const uint8_t *end);
+void pm_integer_parse(pm_arena_t *arena, pm_integer_t *integer, pm_integer_base_t base, const uint8_t *start, const uint8_t *end);
 
 /*
  * Compare two integers. This function returns -1 if the left integer is less

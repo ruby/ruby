@@ -1,6 +1,10 @@
 #include "prism/internal/integer.h"
 
+#include "prism/compiler/align.h"
+
 #include "prism/internal/allocator.h"
+#include "prism/internal/arena.h"
+#include "prism/internal/bit.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/oom.h"
 
@@ -395,49 +399,61 @@ pm_bignum_convert_base(pm_bignum_t *destination, const pm_bignum_t *source, uint
 }
 
 /**
- * Convert digits to integer with the given power-of-two base.
+ * Parse the digits of an integer in a power-of-two base that does not fit in
+ * two words. Every digit but the leading one contributes exactly the same number
+ * of bits, so the exact number of words is known before parsing, and the digits
+ * are packed directly into words allocated from the arena.
  */
 static void
-pm_integer_parse_powof2(pm_integer_t *integer, uint32_t base, const uint8_t *digits, size_t digits_length) {
-    size_t bit = 1;
-    while (base > (uint32_t) (1 << bit)) bit++;
+pm_integer_parse_powof2(pm_arena_t *arena, pm_integer_t *integer, uint32_t base, size_t digits, const uint8_t *start, const uint8_t *end) {
+    static const uint8_t digit_bits[16] = { 0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4 };
+    size_t leading_bits = digit_bits[pm_integer_parse_digit(*start)];
 
-    uint32_t length = (uint32_t) ((digits_length * bit + 31) / 32);
-    uint32_t *words = (uint32_t *) xcalloc(length, sizeof(uint32_t));
-    if (words == NULL) PRISM_OOM();
+    size_t bit = pm_ctzll(base);
+    uint32_t length = (uint32_t) (((digits - 1) * bit + leading_bits + 31) / 32);
+    assert(length > 2);
 
-    for (size_t digit_index = 0; digit_index < digits_length; digit_index++) {
-        size_t bit_position = bit * (digits_length - digit_index - 1);
-        uint32_t value = digits[digit_index];
+    uint32_t *words = pm_arena_zalloc(arena, sizeof(uint32_t) * length, PRISM_ALIGNOF(uint32_t));
+    size_t bit_position = 0;
+
+    for (const uint8_t *cursor = end; cursor > start;) {
+        if (*--cursor == '_') continue;
+        uint32_t value = pm_integer_parse_digit(*cursor);
 
         size_t index = bit_position / 32;
         size_t shift = bit_position % 32;
 
         words[index] |= value << shift;
-        if (32 - shift < bit) words[index + 1] |= value >> (32 - shift);
+        if (32 - shift < bit && index + 1 < length) words[index + 1] |= value >> (32 - shift);
+
+        bit_position += bit;
     }
 
-    pm_integer_from_bignum(integer, &((pm_bignum_t) { length, words }));
+    *integer = (pm_integer_t) { .length = length, .words = { .values = words } };
 }
 
 /**
- * Convert decimal digits to pm_integer_t.
+ * Parse the digits of a decimal integer that does not fit in two words. The
+ * digits are packed nine at a time into base 10**9 words, which are then
+ * converted to base 1<<32.
  */
 static void
-pm_integer_parse_decimal(pm_integer_t *integer, const uint8_t *digits, size_t digits_length) {
+pm_integer_parse_decimal(pm_arena_t *arena, pm_integer_t *integer, size_t digits, const uint8_t *start, const uint8_t *end) {
     const size_t batch = 9;
-    const uint32_t length = (uint32_t) ((digits_length + batch - 1) / batch);
+    const uint32_t length = (uint32_t) ((digits + batch - 1) / batch);
 
     uint32_t *words = (uint32_t *) xcalloc(length, sizeof(uint32_t));
     if (words == NULL) PRISM_OOM();
 
     uint32_t value = 0;
-    for (size_t digits_index = 0; digits_index < digits_length; digits_index++) {
-        value = value * 10 + digits[digits_index];
+    size_t remaining = digits;
 
-        size_t reverse_index = digits_length - digits_index - 1;
-        if (reverse_index % batch == 0) {
-            words[reverse_index / batch] = value;
+    for (const uint8_t *cursor = start; cursor < end; cursor++) {
+        if (*cursor == '_') continue;
+        value = value * 10 + pm_integer_parse_digit(*cursor);
+
+        if (--remaining % batch == 0) {
+            words[remaining / batch] = value;
             value = 0;
         }
     }
@@ -448,32 +464,14 @@ pm_integer_parse_decimal(pm_integer_t *integer, const uint8_t *digits, size_t di
     xfree_sized(words, length * sizeof(uint32_t));
 
     pm_integer_from_bignum(integer, &converted);
-}
 
-/**
- * Parse a large integer from a string that does not fit into uint64_t.
- */
-static void
-pm_integer_parse_big(pm_integer_t *integer, uint32_t multiplier, const uint8_t *start, const uint8_t *end) {
-    // Allocate an array to store digits.
-    const size_t digits_capa = sizeof(uint8_t) * (size_t) (end - start);
-    uint8_t *digits = xmalloc(digits_capa);
-    if (digits == NULL) PRISM_OOM();
-
-    size_t digits_length = 0;
-    for (; start < end; start++) {
-        if (*start == '_') continue;
-        digits[digits_length++] = pm_integer_parse_digit(*start);
+    /* The base conversion leaves the words on the heap, so copy them into the
+     * arena. */
+    if (integer->length > 2) {
+        uint32_t *heap_words = integer->words.values;
+        integer->words.values = (uint32_t *) pm_arena_memdup(arena, heap_words, sizeof(uint32_t) * integer->length, PRISM_ALIGNOF(uint32_t));
+        xfree(heap_words);
     }
-
-    // Construct pm_integer_t from the digits.
-    if (multiplier == 10) {
-        pm_integer_parse_decimal(integer, digits, digits_length);
-    } else {
-        pm_integer_parse_powof2(integer, multiplier, digits, digits_length);
-    }
-
-    xfree_sized(digits, digits_capa);
 }
 
 /**
@@ -482,7 +480,7 @@ pm_integer_parse_big(pm_integer_t *integer, uint32_t multiplier, const uint8_t *
  * here.
  */
 void
-pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *start, const uint8_t *end) {
+pm_integer_parse(pm_arena_t *arena, pm_integer_t *integer, pm_integer_base_t base, const uint8_t *start, const uint8_t *end) {
     // Ignore unary +. Unary - is parsed differently and will not end up here.
     // Instead, it will modify the parsed integer later.
     if (*start == '+') start++;
@@ -491,7 +489,6 @@ pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *s
     uint32_t multiplier = 10;
     switch (base) {
         case PM_INTEGER_BASE_DEFAULT:
-            while (start < end && *start == '0') start++; // 01 -> 1
             break;
         case PM_INTEGER_BASE_BINARY:
             start += 2; // 0b
@@ -509,24 +506,18 @@ pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *s
             start += 2; // 0x
             multiplier = 16;
             break;
-        case PM_INTEGER_BASE_UNKNOWN:
-            if (*start == '0' && (end - start) > 1) {
-                switch (start[1]) {
-                    case '_': start += 2; multiplier = 8; break;
-                    case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': start++; multiplier = 8; break;
-                    case 'b': case 'B': start += 2; multiplier = 2; break;
-                    case 'o': case 'O': start += 2; multiplier = 8; break;
-                    case 'd': case 'D': start += 2; break;
-                    case 'x': case 'X': start += 2; multiplier = 16; break;
-                    default: assert(false && "unreachable"); break;
-                }
-            }
-            break;
     }
 
-    // It's possible that we've consumed everything at this point if there is an
-    // invalid integer. If this is the case, we'll just return 0.
-    if (start >= end) return;
+    /* Leading zeros do not change the value, so skip them here and the paths
+     * below always start at a nonzero digit. */
+    while (start < end && (*start == '0' || *start == '_')) start++;
+
+    /* Everything has been consumed if the integer is zero, or if it is invalid
+     * and has no digits. Either way the result is zero. */
+    if (start >= end) {
+        *integer = (pm_integer_t) { 0 };
+        return;
+    }
 
     /* Accumulate into a uint64_t, which covers every integer whose words are
      * stored inline. value * multiplier + digit overflows exactly when value
@@ -542,7 +533,17 @@ pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *s
         uint64_t digit = (uint64_t) pm_integer_parse_digit(*cursor);
 
         if (value > limit || (value == limit && digit > limit_digit)) {
-            pm_integer_parse_big(integer, multiplier, start, end);
+            size_t digits = 0;
+            for (const uint8_t *scan = start; scan < end; scan++) {
+                if (*scan != '_') digits++;
+            }
+
+            if (multiplier == 10) {
+                pm_integer_parse_decimal(arena, integer, digits, start, end);
+            } else {
+                pm_integer_parse_powof2(arena, integer, multiplier, digits, start, end);
+            }
+
             return;
         }
 
