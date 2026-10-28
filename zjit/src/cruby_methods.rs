@@ -255,6 +255,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
+    annotate!(rb_cNilClass, "to_s", inline_nilclass_to_s);
     annotate!(rb_mKernel, "nil?", inline_kernel_nil_p);
     annotate!(rb_mKernel, "respond_to?", inline_kernel_respond_to_p);
     annotate!(rb_mKernel, "dup", inline_kernel_dup);
@@ -298,7 +299,9 @@ pub fn init() -> Annotations {
     annotate!(rb_cFloat, "finite?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cFloat, "infinite?", types::Fixnum.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cFalseClass, "&", inline_falseclass_and);
+    annotate!(rb_cFalseClass, "to_s", inline_falseclass_to_s);
     annotate!(rb_cTrueClass, "&", inline_trueclass_and);
+    annotate!(rb_cTrueClass, "to_s", inline_trueclass_to_s);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
     annotate!(thread_singleton, "current", inline_thread_current, types::BasicObject, no_gc, leaf);
 
@@ -391,11 +394,23 @@ fn inline_falseclass_and(fun: &mut hir::Function, block: hir::BlockId, _recv: hi
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }))
 }
 
+fn inline_falseclass_to_s(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    // Just returns static constant rb_cFalseClass_to_s
+    Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(unsafe { rb_false_to_s(Qfalse) }) }))
+}
+
 fn inline_trueclass_and(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     // TrueClass#& does RBOOL(RTEST(arg))
     let &[val] = args else { return None; };
     let test = fun.push_insn(block, hir::Insn::Test { val });
     Some(fun.push_insn(block, hir::Insn::BoxBool { val: test }))
+}
+
+fn inline_trueclass_to_s(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    // Just returns static constant rb_cTrueClass_to_s
+    Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(unsafe { rb_true_to_s(Qtrue) }) }))
 }
 
 fn inline_thread_current(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
@@ -1022,6 +1037,12 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
 fn inline_nilclass_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qtrue) }))
+}
+
+fn inline_nilclass_to_s(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    if !args.is_empty() { return None; }
+    // Just returns static constant rb_cNilClass_to_s
+    Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(unsafe { rb_nil_to_s(Qnil) }) }))
 }
 
 fn inline_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {

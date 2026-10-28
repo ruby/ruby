@@ -27241,7 +27241,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(NilClass@0x1000, to_s@0x1008, cme:0x1010)
-          v21:BasicObject = CCallWithFrame v10, :NilClass#to_s@0x1038
+          v21:StringExact[VALUE(0x1038)] = Const Value(VALUE(0x1038))
           CheckInterrupts
           Return v21
         ");
@@ -27266,7 +27266,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:TrueClass = Const Value(true)
           PatchPoint MethodRedefined(TrueClass@0x1000, to_s@0x1008, cme:0x1010)
-          v21:BasicObject = CCallWithFrame v10, :TrueClass#to_s@0x1038
+          v21:StringExact[VALUE(0x1038)] = Const Value(VALUE(0x1038))
           CheckInterrupts
           Return v21
         ");
@@ -27291,7 +27291,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:FalseClass = Const Value(false)
           PatchPoint MethodRedefined(FalseClass@0x1000, to_s@0x1008, cme:0x1010)
-          v21:BasicObject = CCallWithFrame v10, :FalseClass#to_s@0x1038
+          v21:StringExact[VALUE(0x1038)] = Const Value(VALUE(0x1038))
           CheckInterrupts
           Return v21
         ");

@@ -397,6 +397,10 @@ rb_zjit_array_aref_with_adjusted_index(VALUE ary, rb_len_t index, VALUE *out)
     }
 }
 
+VALUE rb_nil_to_s(VALUE obj);
+VALUE rb_true_to_s(VALUE obj);
+VALUE rb_false_to_s(VALUE obj);
+
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_enable(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
