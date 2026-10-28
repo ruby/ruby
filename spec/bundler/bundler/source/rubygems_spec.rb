@@ -56,6 +56,15 @@ RSpec.describe Bundler::Source::Rubygems do
     end
   end
 
+  describe "#eql?" do
+    it "compares a source with itself without building its remotes" do
+      source = described_class.new("remotes" => ["https://user:pass@gems.example.com/"])
+
+      expect(source).not_to receive(:credless_remotes)
+      expect(source.eql?(source)).to be true
+    end
+  end
+
   describe "#clear_cache" do
     it "invalidates memoized indexes so subsequent reads rebuild them" do
       source = described_class.new

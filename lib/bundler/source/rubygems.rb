@@ -81,7 +81,7 @@ module Bundler
       end
 
       def eql?(other)
-        other.is_a?(Rubygems) && other.credless_remotes == credless_remotes
+        equal?(other) || (other.is_a?(Rubygems) && other.credless_remotes == credless_remotes)
       end
 
       alias_method :==, :eql?
