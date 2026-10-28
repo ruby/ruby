@@ -368,14 +368,7 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
             incr_counter!(compiled_iseq_count);
             // Give the new version a fresh budget of recompile exits. See exit_recompile().
             payload.num_exits_until_invalidate = get_option!(num_exits_until_invalidate);
-            if get_option!(trace_compiles, false) {
-                if let Some(tracer) = ZJITState::get_tracer() {
-                    let size = cb.get_write_pos().saturating_sub(start_pos) as u64;
-                    let total = cb.get_write_pos() as u64;
-                    tracer.write_compile_size(&iseq_get_location(iseq, 0), size, total);
-                    tracer.write_code_size_counter(size, total);
-                }
-            }
+            trace_compile_size(cb, &iseq_get_location(iseq, 0), start_pos);
         }
         Err(err) => {
             unsafe { version.as_mut() }.status = IseqStatus::CantCompile(err.clone());
@@ -384,6 +377,22 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
     }
     payload.versions.push(version);
     code_ptrs
+}
+
+/// Report how many bytes of machine code were generated since `start_pos`.
+/// Writes the size to the Perfetto trace as a one-off event (labeled with
+/// `name`) and as a point on the running "code size" graph. We call this for
+/// method compiles and the startup trampolines, so the code-size graph is
+/// attributable from the moment ZJIT starts up.
+pub fn trace_compile_size(cb: &CodeBlock, name: &str, start_pos: usize) {
+    if get_option!(trace_compiles, false) {
+        if let Some(tracer) = ZJITState::get_tracer() {
+            let end_pos = cb.get_write_pos();
+            let size = end_pos.saturating_sub(start_pos) as u64;
+            tracer.write_compile_size(name, size, end_pos as u64);
+            tracer.write_code_size_counter(size, end_pos as u64);
+        }
+    }
 }
 
 /// Compile an ISEQ into machine code

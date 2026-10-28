@@ -1,6 +1,6 @@
 //! Runtime state of ZJIT.
 
-use crate::codegen::{gen_entry_trampoline, gen_exit_trampoline, gen_function_stub_hit_trampoline, gen_materialize_exit_trampoline, gen_materialize_exit_trampoline_with_counter};
+use crate::codegen::{gen_entry_trampoline, gen_exit_trampoline, gen_function_stub_hit_trampoline, gen_materialize_exit_trampoline, gen_materialize_exit_trampoline_with_counter, trace_compile_size};
 use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, src_loc, EcPtr, Qnil, Qtrue, rb_profile_frames, rb_profile_frame_full_label, rb_profile_frame_absolute_path, rb_profile_frame_path, VALUE, VM_INSTRUCTION_SIZE, with_vm_lock, rust_str_to_id, rb_funcallv, rb_const_get, rb_cRubyVM};
 use crate::cruby_methods;
 use cruby::{ID, rb_callable_method_entry, get_def_method_serial, rb_gc_register_mark_object, ruby_str_to_rust_string_result};
@@ -177,6 +177,8 @@ impl ZJITState {
             CodeBlock::new(mem_block.clone(), get_option_ref!(dump_disasm).is_some())
         };
 
+        let startup_start_pos = cb.get_write_pos();
+
         let entry_trampoline = gen_entry_trampoline(&mut cb).unwrap().raw_ptr(&cb);
         let exit_trampoline = gen_exit_trampoline(&mut cb).unwrap();
         let materialize_exit_trampoline = gen_materialize_exit_trampoline(&mut cb, exit_trampoline).unwrap();
@@ -219,6 +221,10 @@ impl ZJITState {
             let code_ptr = gen_materialize_exit_trampoline_with_counter(cb, materialize_exit_trampoline).unwrap();
             ZJITState::get_instance().materialize_exit_trampoline_with_counter = code_ptr;
         }
+
+        // Record the machine code generated during startup (entry/exit/materialize
+        // trampolines).
+        trace_compile_size(ZJITState::get_code_block(), "startup trampolines", startup_start_pos);
 
         entry_trampoline
     }
