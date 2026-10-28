@@ -8999,7 +8999,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    upcase(mapping = :ascii) -> new_string
+ *    upcase(mapping) -> new_string
  *
  *  :include: doc/string/upcase.rdoc
  */
@@ -9085,7 +9085,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    downcase(mapping = :ascii) -> new_string
+ *    downcase(mapping) -> new_string
  *
  *  :include: doc/string/downcase.rdoc
  *
@@ -9146,7 +9146,7 @@ capitalize_single(VALUE str)
 
 /*
  *  call-seq:
- *    capitalize!(mapping = :ascii) -> self or nil
+ *    capitalize!(mapping) -> self or nil
  *
  *  Like String#capitalize, except that:
  *
@@ -9182,7 +9182,7 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    capitalize(mapping = :ascii) -> new_string
+ *    capitalize(mapping) -> new_string
  *
  *  :include: doc/string/capitalize.rdoc
  *
@@ -9247,7 +9247,7 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    swapcase(mapping = :ascii) -> new_string
+ *    swapcase(mapping) -> new_string
  *
  *  :include: doc/string/swapcase.rdoc
  *
