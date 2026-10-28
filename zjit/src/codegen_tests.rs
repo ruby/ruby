@@ -7283,6 +7283,53 @@ fn test_method_redefined_with_module() {
 }
 
 #[test]
+fn test_module_alias_redefined() {
+    for threshold in [0, 30] {
+        let result = with_inlining_threshold(threshold, || {
+            let program = "
+                module M
+                  def original(x) = x + 11
+                  def another(x) = x * 3
+                  alias via original
+                end
+                class Subject
+                  include M
+                end
+                class SuperSubject < Subject
+                  def via(x) = super
+                end
+                def test_direct(o) = o.via(7)
+                def test_super(o) = o.via(7)
+
+                direct = Subject.new
+                indirect = SuperSubject.new
+                i = 0
+                while i < 10
+                  test_direct(direct)
+                  test_super(indirect)
+                  i += 1
+                end
+                # An alias keeps its copied body when the source method changes.
+                module M
+                  def original(x) = -100
+                end
+                before = [test_direct(direct), test_super(indirect)]
+                module M
+                  alias via another
+                end
+                [before, test_direct(direct), test_super(indirect)]
+            ";
+            if threshold == 0 {
+                assert_compiles(program)
+            } else {
+                assert_inlines(program)
+            }
+        });
+        assert_eq!(result, "[[18, 18], 21, 21]");
+    }
+}
+
+#[test]
 fn test_module_name_with_guard_passes() {
     assert_snapshot!(inspect(r#"
         def test(mod)

@@ -4966,6 +4966,8 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             }
                         }
+                        // Guard the lookup entry: re-aliasing invalidates it, not the resolved target.
+                        let lookup_cme = cme;
                         let mut def_type = unsafe { get_cme_def_type(cme) };
                         while def_type == VM_METHOD_TYPE_ALIAS {
                             cme = unsafe { rb_aliased_callable_method_entry(cme) };
@@ -5109,7 +5111,7 @@ impl Function {
                             }
 
                             // Add PatchPoint for method redefinition
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme: lookup_cme }, state });
 
                             // Add GuardType for profiled receiver
                             if let Some(profiled_type) = profiled_type {
@@ -5152,7 +5154,7 @@ impl Function {
                                 self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
                                 self.push_insn_id(block, insn_id); continue;
                             }
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme: lookup_cme }, state });
 
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
@@ -5169,7 +5171,7 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme: lookup_cme }, state });
 
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
                             if let Some(profiled_type) = profiled_type {
@@ -5189,7 +5191,7 @@ impl Function {
                                 self.make_equal_to(insn_id, getivar);
                             }
                         } else if let (false, VM_METHOD_TYPE_ATTRSET, &[val]) = (has_block, def_type, args.as_slice()) {
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme: lookup_cme }, state });
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
                             if let Some(profiled_type) = profiled_type {
                                 // TODO: attr_writer SetIvar has a null inline cache and may target a receiver
@@ -5220,7 +5222,7 @@ impl Function {
                                         self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
                                         self.push_insn_id(block, insn_id); continue;
                                     }
-                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme: lookup_cme }, state });
                                     if let Some(profiled_type) = profiled_type {
                                         recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                     }
@@ -5257,7 +5259,7 @@ impl Function {
                                         self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
                                         self.push_insn_id(block, insn_id); continue;
                                     }
-                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme: lookup_cme }, state });
                                     if let Some(profiled_type) = profiled_type {
                                         recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                     }
@@ -5308,6 +5310,7 @@ impl Function {
                                 recv_class: VALUE,
                                 profiled_type: Option<ProfiledType>,
                                 cme: *const rb_callable_method_entry_struct,
+                                lookup_cme: *const rb_callable_method_entry_struct,
                             ) -> Result<(), ()> {
                                 let call_info = unsafe { (*cd).ci };
                                 let argc = unsafe { vm_ci_argc(call_info) };
@@ -5367,7 +5370,7 @@ impl Function {
                                         }
 
                                         // Commit to the replacement. Put PatchPoint.
-                                        fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
+                                        fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, lookup_cme, state);
 
                                         if let Some(profiled_type) = profiled_type {
                                             // Guard receiver class
@@ -5434,7 +5437,7 @@ impl Function {
                                             return Err(());
                                         }
 
-                                        fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
+                                        fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, lookup_cme, state);
 
                                         if let Some(profiled_type) = profiled_type {
                                             // Guard receiver class
@@ -5499,7 +5502,7 @@ impl Function {
                                 }
                             }
 
-                            if reduce_send_to_ccall(self, block, insn_id, recv, cd, send_block, args, state, klass, profiled_type, cme).is_ok() {
+                            if reduce_send_to_ccall(self, block, insn_id, recv, cd, send_block, args, state, klass, profiled_type, cme, lookup_cme).is_ok() {
                                 continue;
                             }
 
@@ -5655,6 +5658,8 @@ impl Function {
                             continue;
                         }
 
+                        // As with Send, depend on the lookup entry rather than its alias target.
+                        let lookup_cme = super_cme;
                         let mut def_type = unsafe { get_cme_def_type(super_cme) };
                         while def_type == VM_METHOD_TYPE_ALIAS {
                             super_cme = unsafe { rb_aliased_callable_method_entry(super_cme) };
@@ -5677,7 +5682,7 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             };
 
-                            emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state_iseq);
+                            emit_super_call_guards(self, block, lookup_cme, current_cme, mid, state, frame_state_iseq);
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
                                 self.emit_send_direct_args(block, call, &args, state, state);
@@ -5715,7 +5720,7 @@ impl Function {
                                         self.set_dynamic_send_reason(insn_id, ArgcParamMismatch);
                                         continue;
                                     }
-                                    emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state_iseq);
+                                    emit_super_call_guards(self, block, lookup_cme, current_cme, mid, state, frame_state_iseq);
 
                                     // Try inlining the cfunc into HIR
                                     let tmp_block = self.new_block(u32::MAX);
@@ -5765,7 +5770,7 @@ impl Function {
 
                                 // Variadic C function: func(int argc, VALUE *argv, VALUE recv)
                                 -1 => {
-                                    emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state_iseq);
+                                    emit_super_call_guards(self, block, lookup_cme, current_cme, mid, state, frame_state_iseq);
 
                                     // Try inlining the cfunc into HIR
                                     let tmp_block = self.new_block(u32::MAX);
