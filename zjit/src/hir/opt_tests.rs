@@ -2318,39 +2318,9 @@ mod hir_opt_tests {
           v40:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(NilClass@0x1070, ==@0x1078, cme:0x1080)
           v187:NilClass = GuardType v16, NilClass recompile
-          v188:CBool = IsBitEqual v187, v40
-          CondBranch v188, bb6(), bb12()
-        bb12():
-          v51:StringExact[VALUE(0x10a8)] = Const Value(VALUE(0x10a8))
-          v52:StringExact = StringCopy v51
-          PatchPoint NoSingletonClass(String@0x10b0)
-          PatchPoint MethodRedefined(String@0x10b0, ==@0x1078, cme:0x10b8)
-          v193 = GuardType v187, StringExact recompile
-          v194:BoolExact = StringEqual v193, v52
-          v57:CBool = Test v194
-          CondBranch v57, bb6(), bb13()
-        bb13():
-          v63:StringExact[VALUE(0x10e0)] = Const Value(VALUE(0x10e0))
-          v64:StringExact = StringCopy v63
-          PatchPoint NoSingletonClass(String@0x10b0)
-          PatchPoint MethodRedefined(String@0x10b0, ==@0x1078, cme:0x10b8)
-          v198 = GuardType v187, StringExact recompile
-          v199:BoolExact = StringEqual v198, v64
-          v69:CBool = Test v199
-          CondBranch v69, bb6(), bb14()
-        bb6():
-          v143:StaticSymbol[:ok] = Const Value(VALUE(0x10e8))
+          v143:StaticSymbol[:ok] = Const Value(VALUE(0x10a8))
           CheckInterrupts
           Return v143
-        bb14():
-          v76:NilClass = Const Value(nil)
-          PatchPoint StableConstantNames(0x10f0, ArgumentError)
-          v79:ClassSubclass[ArgumentError@0x10f8] = Const Value(VALUE(0x10f8))
-          PatchPoint NoEPEscape(open_uri)
-          v83:StringExact[VALUE(0x1100)] = Const Value(VALUE(0x1100))
-          PatchPoint NoSingletonClass(String@0x10b0)
-          v88 = GuardType v187, String
-          Unreachable
         ");
     }
 
@@ -28047,8 +28017,8 @@ mod hir_opt_tests {
           PushInlineFrame :is_equal, v26 (0x1050), num_args=2
           PatchPoint NoSingletonClass(Object@0x1070)
           PatchPoint MethodRedefined(Object@0x1070, ==@0x1078, cme:0x1080)
-          v50:CBool = IsBitEqual v13, v17
-          v51:BoolExact = BoxBool v50
+          v52:CBool[true] = Const CBool(true)
+          v51:BoolExact = BoxBool v52
           PopInlineFrame
           CheckInterrupts
           Return v51
@@ -28091,66 +28061,17 @@ mod hir_opt_tests {
           PushInlineFrame :acts_like?, v20 (0x1040), num_args=1
           v31:StaticSymbol[:time] = Const Value(VALUE(0x1000))
           PatchPoint MethodRedefined(Symbol@0x1060, ===@0x1068, cme:0x1070)
-          v163:CBool = IsBitEqual v31, v11
-          v164:BoolExact = BoxBool v163
+          v200:CBool[true] = Const CBool(true)
+          v164:BoolExact = BoxBool v200
           PatchPoint NoEPEscape(acts_like?)
-          CondBranch v163, bb6(), bb9()
-        bb6():
           v115:StaticSymbol[:acts_like_time?] = Const Value(VALUE(0x1098))
           PatchPoint MethodRedefined(Object@0x1008, respond_to?@0x10a0, cme:0x10a8)
           PatchPoint MethodRedefined(Object@0x1008, respond_to_missing?@0x10d0, cme:0x10d8)
           PatchPoint MethodRedefined(Object@0x1008, acts_like_time?@0x1100, cme:0x1108)
           v172:FalseClass = Const Value(false)
-          PatchPoint NoEPEscape(acts_like?)
-          Jump bb4(v172)
-        bb9():
-          v43:StaticSymbol[:date] = Const Value(VALUE(0x1130))
-          PatchPoint MethodRedefined(Symbol@0x1060, ===@0x1068, cme:0x1070)
-          v175:CBool = IsBitEqual v43, v11
-          v176:BoolExact = BoxBool v175
-          PatchPoint NoEPEscape(acts_like?)
-          CondBranch v175, bb7(), bb10()
-        bb7():
-          v131:StaticSymbol[:acts_like_date?] = Const Value(VALUE(0x1138))
-          PatchPoint MethodRedefined(Object@0x1008, respond_to?@0x10a0, cme:0x10a8)
-          PatchPoint MethodRedefined(Object@0x1008, respond_to_missing?@0x10d0, cme:0x10d8)
-          PatchPoint MethodRedefined(Object@0x1008, acts_like_date?@0x1140, cme:0x1148)
-          v183:FalseClass = Const Value(false)
-          PatchPoint NoEPEscape(acts_like?)
-          Jump bb4(v183)
-        bb10():
-          v55:StaticSymbol[:string] = Const Value(VALUE(0x1170))
-          PatchPoint MethodRedefined(Symbol@0x1060, ===@0x1068, cme:0x1070)
-          v186:CBool = IsBitEqual v55, v11
-          v187:BoolExact = BoxBool v186
-          PatchPoint NoEPEscape(acts_like?)
-          CondBranch v186, bb8(), bb11()
-        bb8():
-          v147:StaticSymbol[:acts_like_string?] = Const Value(VALUE(0x1178))
-          PatchPoint MethodRedefined(Object@0x1008, respond_to?@0x10a0, cme:0x10a8)
-          PatchPoint MethodRedefined(Object@0x1008, respond_to_missing?@0x10d0, cme:0x10d8)
-          PatchPoint MethodRedefined(Object@0x1008, acts_like_string?@0x1180, cme:0x1188)
-          v194:FalseClass = Const Value(false)
-          PatchPoint NoEPEscape(acts_like?)
-          Jump bb4(v194)
-        bb11():
-          v70:StringExact[VALUE(0x11b0)] = Const Value(VALUE(0x11b0))
-          PatchPoint MethodRedefined(Symbol@0x1060, to_s@0x11b8, cme:0x11c0)
-          v196:StringExact = InvokeBuiltin leaf <inline_expr>, v11
-          PatchPoint NoEPEscape(acts_like?)
-          v91:StringExact[VALUE(0x11e8)] = Const Value(VALUE(0x11e8))
-          v93:StringExact = StringConcat v70, v196, v91
-          PatchPoint NoEPEscape(acts_like?)
-          v97:Symbol = StringIntern v93
-          PatchPoint NoEPEscape(acts_like?)
-          PatchPoint MethodRedefined(Object@0x1008, respond_to?@0x10a0, cme:0x10a8)
-          v199:BasicObject = CCallVariadic v20, :Kernel#respond_to?@0x11f0, v97
-          PatchPoint NoEPEscape(acts_like?)
-          Jump bb4(v199)
-        bb4(v155:BasicObject):
           PopInlineFrame
           CheckInterrupts
-          Return v155
+          Return v172
         ");
     }
 }

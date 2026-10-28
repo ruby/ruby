@@ -6964,6 +6964,11 @@ impl Function {
         if left == right {
             return true;
         }
+        let left_obj = self.type_of(left).ruby_object();
+        let right_obj = self.type_of(right).ruby_object();
+        if left_obj.is_some() && right_obj.is_some() && left_obj == right_obj {
+            return true;
+        }
         false
     }
 
