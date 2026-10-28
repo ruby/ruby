@@ -276,7 +276,7 @@ They are still available on rubygems.org and can be installed with
   * 1.4.6 to [v1.5.0][etc-v1.5.0]
 * fileutils 1.8.1
   * 1.8.0 to [v1.8.1][fileutils-v1.8.1]
-* io-console 0.9.4
+* io-console 0.9.5
   * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2], [v0.9.3][io-console-v0.9.3], [v0.9.4][io-console-v0.9.4]
 * io-wait 999.999.999
 * ipaddr 1.3.0
