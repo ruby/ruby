@@ -1309,6 +1309,14 @@ class TestRegexp < Test::Unit::TestCase
     assert_no_match(/[[:ascii:]]/, "\x80\xFF")
   end
 
+  def test_too_many_multibyte_ranges_in_intersection
+    chars = (0...9999).map {|i| (0x4e00 + 2 * i).chr("UTF-8") }.join
+    cc = "[[:^ascii:][^#{chars}]&&[^\u9fff]&&x]"
+    assert_raise(RegexpError) { Regexp.new(cc, Regexp::IGNORECASE) }
+    assert_raise(RegexpError) { Regexp.new("[x&&#{cc}]", Regexp::IGNORECASE) }
+    assert_raise(RegexpError) { Regexp.new(cc.encode("UTF-16LE"), Regexp::IGNORECASE) }
+  end
+
   def test_cclass_R
     assert_match(/\A\R\z/, "\r")
     assert_match(/\A\R\z/, "\n")

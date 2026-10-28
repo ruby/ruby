@@ -4981,6 +4981,7 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
           r = and_cclass(prev_cc, cc, env);
           if (r != 0) goto err;
           bbuf_free(cc->mbuf);
+          cc->mbuf = NULL;
           if (IS_NOT_NULL(asc_cc)) {
             r = and_cclass(asc_prev_cc, asc_cc, env);
             if (r != 0) goto err;
