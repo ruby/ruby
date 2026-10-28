@@ -1527,11 +1527,13 @@ match_bytebegin(VALUE match, VALUE n)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    byteend(n) -> integer
  *    byteend(name) -> integer
  *
- *  :include: doc/matchdata/byteend.rdoc
+ *  :include: doc/matchdata/byteend.md
  *
  */
 
