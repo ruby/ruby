@@ -1556,7 +1556,7 @@ match_byteend(VALUE match, VALUE n)
  *    begin(n) -> integer
  *    begin(name) -> integer
  *
- *  :include: doc/matchdata/begin.rdoc
+ *  :include: doc/matchdata/begin.md
  *
  */
 
