@@ -11745,6 +11745,109 @@ mod hir_opt_tests {
         ");
     }
 
+    // When a PatchPoint fires on the final version, which exit_recompile() never invalidates,
+    // the ISEQ should be compiled again instead of side-exiting at the patched point on every call.
+    #[test]
+    fn test_patch_point_recompiles_final_version() {
+        set_num_exits_until_invalidate(1);
+        set_max_versions(2);
+        set_patch_versions(2);
+        eval("
+            PATCH_POINT_FINAL = 1
+            def test(a) = a + PATCH_POINT_FINAL
+            test(1); test(1)       # compile version 1 for Integer
+            test(1.5)              # recompile exit invalidates version 1
+            test(1.5); test(1.5)   # compile version 2, the final version
+        ");
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", "test"));
+        let payload = crate::payload::get_or_create_iseq_payload(iseq);
+        assert_eq!(payload.versions.len(), 2);
+        assert!(matches!(unsafe { payload.versions.last().unwrap().as_ref() }.status, crate::payload::IseqStatus::Compiled(_)));
+
+        // Redefining the constant invalidates the final version, and it gets compiled again
+        // with the new constant.
+        eval("
+            Object.send(:remove_const, :PATCH_POINT_FINAL)
+            PATCH_POINT_FINAL = 2
+            test(1); test(1)
+        ");
+        let payload = crate::payload::get_or_create_iseq_payload(iseq);
+        assert_eq!(payload.versions.len(), 3);
+        assert!(matches!(unsafe { payload.versions.last().unwrap().as_ref() }.status, crate::payload::IseqStatus::Compiled(_)));
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint StableConstantNames(0x1008, PATCH_POINT_FINAL)
+          v16:Fixnum[2] = Const Value(2)
+          PatchPoint NoEPEscape(test)
+          CondBranchHasType v10, Fixnum, bb6(), bb7()
+        bb6():
+          v24:Fixnum = RefineType v10, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020)
+          v41:Fixnum = FixnumAdd v24, v16
+          Jump bb4(v41)
+        bb7():
+          CondBranchHasType v10, Flonum, bb8(), bb5()
+        bb8():
+          v29:Flonum = RefineType v10, Flonum
+          PatchPoint MethodRedefined(Float@0x1048, +@0x1018, cme:0x1050)
+          v44:Float = FloatAdd v29, v16
+          Jump bb4(v44)
+        bb5():
+          v32:BasicObject = Send v10, :+, v16 # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v32)
+        bb4(v21:BasicObject):
+          CheckInterrupts
+          Return v21
+        ");
+
+        // Repeated redefinitions don't compile more than max_versions + patch_versions versions.
+        let result = eval("
+            10.times do |i|
+              Object.send(:remove_const, :PATCH_POINT_FINAL)
+              PATCH_POINT_FINAL = i
+              test(1); test(1)
+            end
+            test(1)
+        ");
+        assert_eq!(result.as_fixnum(), 10);
+        let payload = crate::payload::get_or_create_iseq_payload(iseq);
+        assert_eq!(payload.versions.len(), 4);
+        assert!(matches!(unsafe { payload.versions.last().unwrap().as_ref() }.status, crate::payload::IseqStatus::Compiled(_)));
+    }
+
+    // --zjit-patch-versions=0 keeps the final version in place when a PatchPoint fires on it.
+    #[test]
+    fn test_patch_point_keeps_final_version_without_patch_versions() {
+        set_num_exits_until_invalidate(1);
+        set_max_versions(2);
+        set_patch_versions(0);
+        let result = eval("
+            PATCH_POINT_KEPT = 1
+            def test(a) = a + PATCH_POINT_KEPT
+            test(1); test(1)       # compile version 1 for Integer
+            test(1.5)              # recompile exit invalidates version 1
+            test(1.5); test(1.5)   # compile version 2, the final version
+            Object.send(:remove_const, :PATCH_POINT_KEPT)
+            PATCH_POINT_KEPT = 2
+            test(1); test(1); test(1)
+        ");
+        assert_eq!(result.as_fixnum(), 3);
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", "test"));
+        assert_eq!(crate::payload::get_or_create_iseq_payload(iseq).versions.len(), 2);
+    }
+
     #[test]
     fn test_coerce_to_guard_failure_recompiles() {
         set_num_exits_until_invalidate(1);

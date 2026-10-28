@@ -3,7 +3,7 @@
 use super::{gen_insn, JITState};
 use crate::asm::CodeBlock;
 use crate::backend::lir::Assembler;
-use crate::codegen::max_iseq_versions;
+use crate::codegen::{max_iseq_versions, max_iseq_versions_with_patch_points};
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
 use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_exits_until_invalidate};
@@ -8226,7 +8226,8 @@ fn test_invokesuper_with_local_written_by_blockiseq() {
 
 #[test]
 fn test_max_iseq_versions() {
-    let max_versions = max_iseq_versions();
+    // PatchPoint invalidations may replace the final version, up to --zjit-patch-versions more times.
+    let max_versions = max_iseq_versions_with_patch_points();
     eval(&format!("
         TEST = -1
         def test = TEST
@@ -8243,10 +8244,10 @@ fn test_max_iseq_versions() {
         end
     "));
 
-    // It should not exceed MAX_ISEQ_VERSIONS
+    // It should not exceed the version limit for PatchPoint invalidations
     let iseq = get_method_iseq("self", "test");
     let payload = get_or_create_iseq_payload(iseq);
-    assert_eq!(payload.versions.len(), max_iseq_versions());
+    assert_eq!(payload.versions.len(), max_versions);
 
     // The last call should not discard the JIT code
     assert!(matches!(unsafe { payload.versions.last().unwrap().as_ref() }.status, IseqStatus::Compiled(_)));
