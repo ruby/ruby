@@ -1942,6 +1942,553 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_kernel_send_to_iseq() {
+        eval("
+            class C
+              def foo = 1
+            end
+            def test(o) = o.send(:foo)
+            test(C.new); test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(C@0x1010, send@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1048, cme:0x1050)
+          v29:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C] recompile
+          v36:Fixnum[1] = Const Value(1)
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v36
+        ");
+    }
+
+    #[test]
+    fn test_optimize_kernel_send_to_private_iseq() {
+        eval("
+            class C
+              private def foo = 1
+            end
+            def test(o) = o.send(:foo)
+            test(C.new); test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(C@0x1010, send@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1048, cme:0x1050)
+          v29:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C] recompile
+          v36:Fixnum[1] = Const Value(1)
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v36
+        ");
+    }
+
+    #[test]
+    fn test_optimize_kernel_send_to_iseq_with_args() {
+        eval("
+            class C
+              def foo(a, b) = a + b
+            end
+            def test(o) = o.send(:foo, 1, 2)
+            test(C.new); test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          v17:Fixnum[1] = Const Value(1)
+          v19:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(C@0x1010, send@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1048, cme:0x1050)
+          v33:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C] recompile
+          PushInlineFrame :foo, v33 (0x1078), num_args=2
+          PatchPoint MethodRedefined(Integer@0x1098, +@0x10a0, cme:0x10a8)
+          v57:Fixnum[3] = Const Value(3)
+          PopInlineFrame
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v57
+        ");
+    }
+
+    #[test]
+    fn test_optimize_kernel_send_to_iseq_with_block() {
+        eval("
+            class C
+              def foo = yield
+            end
+            def test(o) = o.send(:foo) { 1 }
+            test(C.new); test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(C@0x1010, send@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1048, cme:0x1050)
+          v29:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C] recompile
+          PushInlineFrame :foo, v29 (0x1078), num_args=0, block=0x1098
+          v36:CPtr = GetEP 0
+          v37:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x10b8
+          v38:CInt64[-4] = Const CInt64(-4)
+          v39:CInt64 = IntAnd v37, v38
+          v40:BasicObject = InvokeBlockIseqDirect (0x1098), v39
+          PopInlineFrame
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v40
+        ");
+    }
+
+    #[test]
+    fn test_optimize_kernel_send_to_inlined_cfunc() {
+        eval("
+            def test(a) = a.send(:+, 1)
+            test(1); test(2)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:+] = Const Value(VALUE(0x1008))
+          v17:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1010, send@0x1018, cme:0x1020)
+          PatchPoint MethodRedefined(Integer@0x1010, +@0x1048, cme:0x1050)
+          v31:Fixnum = GuardType v10, Fixnum recompile
+          v32:Fixnum = FixnumAdd v31, v17
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_optimize_kernel_send_to_cfunc_with_frame() {
+        eval("
+            class C
+              def initialize = @x = 1
+            end
+            def test(o) = o.send(:instance_variable_get, :@x)
+            test(C.new); test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:instance_variable_get] = Const Value(VALUE(0x1008))
+          v17:StaticSymbol[:@x] = Const Value(VALUE(0x1010))
+          PatchPoint MethodRedefined(C@0x1018, send@0x1020, cme:0x1028)
+          PatchPoint NoSingletonClass(C@0x1018)
+          PatchPoint MethodRedefined(C@0x1018, instance_variable_get@0x1050, cme:0x1058)
+          v32:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C] recompile
+          v33:BasicObject = CCallWithFrame v32, :Kernel#instance_variable_get@0x1080, v17
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v33
+        ");
+    }
+
+    #[test]
+    fn test_optimize_kernel_send_to_attr_reader() {
+        eval("
+            class C
+              attr_reader :foo
+              def initialize = @foo = 1
+            end
+            def test(o) = o.send(:foo)
+            test(C.new); test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(C@0x1010, send@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1048, cme:0x1050)
+          v29:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C] recompile
+          v31:CShape = LoadField v29, :shape_id@0x1078
+          v32:CShape[0x1079] = GuardBitEquals v31, CShape(0x1079) recompile
+          v33:BasicObject = LoadField v29, :@foo@0x107a
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v33
+        ");
+    }
+
+    #[test]
+    fn test_optimize_kernel_send_via_underscore_send() {
+        eval("
+            class C
+              def foo = 1
+            end
+            def test(o) = o.__send__(:foo)
+            test(C.new); test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(C@0x1010, __send__@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1048, cme:0x1050)
+          v29:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C] recompile
+          v36:Fixnum[1] = Const Value(1)
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v36
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_kernel_send_with_non_constant_name() {
+        eval("
+            class C
+              def foo = 1
+            end
+            def test(o, m) = o.send(m)
+            test(C.new, :foo); test(C.new, :foo)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          v4:BasicObject = LoadField v2, :m@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :o@1
+          v9:BasicObject = LoadArg :m@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v19:BasicObject = Send v12, :send, v13 # SendFallbackReason: Send: method name is not a compile-time constant symbol
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_kernel_send_with_string_name() {
+        eval("
+            class C
+              def foo = 1
+            end
+            def test(o) = o.send(\"foo\")
+            test(C.new); test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v16:StringExact = StringCopy v15
+          v18:BasicObject = Send v10, :send, v16 # SendFallbackReason: Send: method name is not a compile-time constant symbol
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v18
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_kernel_send_to_missing_method() {
+        eval("
+            class C
+              def method_missing(*) = 1
+            end
+            def test(o) = o.send(:foo)
+            test(C.new); test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          v17:BasicObject = Send v10, :send, v15 # SendFallbackReason: Send: unsupported method type Null
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_kernel_send_nested() {
+        eval("
+            class C
+              def foo = 1
+            end
+            def test(o) = o.send(:send, :foo)
+            test(C.new); test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:send] = Const Value(VALUE(0x1008))
+          v17:StaticSymbol[:foo] = Const Value(VALUE(0x1010))
+          v19:BasicObject = Send v10, :send, v15, v17 # SendFallbackReason: Send: unsupported optimized method type Send
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_kernel_send_without_name() {
+        eval("
+            class C; end
+            def test(o) = o.send rescue 1
+            test(C.new); test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:BasicObject = Send v10, :send # SendFallbackReason: Argument count does not match parameter count
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_kernel_send_with_kwargs() {
+        eval("
+            class C
+              def foo(a:) = a
+            end
+            def test(o) = o.send(:foo, a: 1)
+            test(C.new); test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          v17:Fixnum[1] = Const Value(1)
+          v19:BasicObject = Send v10, :send, v15, v17 # SendFallbackReason: Complex argument passing
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_kernel_send_with_splat() {
+        eval("
+            class C
+              def foo(a) = a
+            end
+            def test(o, args) = o.send(:foo, *args)
+            test(C.new, [1]); test(C.new, [1])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          v4:BasicObject = LoadField v2, :args@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :o@1
+          v9:BasicObject = LoadArg :args@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v18:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          v21:ArrayExact = ToArray v13
+          PatchPoint NoEPEscape(test)
+          v25:BasicObject = Send v12, :send, v18, v21 # SendFallbackReason: Complex argument passing
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_kernel_send_with_block_arg() {
+        eval("
+            class C
+              def foo = yield
+            end
+            def test(o, blk) = o.send(:foo, &blk)
+            test(C.new, proc { 1 }); test(C.new, proc { 1 })
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          v4:BasicObject = LoadField v2, :blk@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :o@1
+          v9:BasicObject = LoadArg :blk@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v18:StaticSymbol[:foo] = Const Value(VALUE(0x1008))
+          v21:BasicObject = Send v12, &block, :send, v18, v13 # SendFallbackReason: Complex argument passing
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
     fn test_inline_nonparam_local_return() {
         eval("
             def foo(a)
@@ -23402,7 +23949,7 @@ mod hir_opt_tests {
           v114:BasicObject = LoadField v113, :list@0x1001
           v116:CPtr = GetEP 0
           v117:BasicObject = LoadField v116, :iter_method@0x1005
-          v119:BasicObject = Send v114, 0x1080, :__send__, v117 # SendFallbackReason: Send: unsupported method type Optimized
+          v119:BasicObject = Send v114, 0x1080, :__send__, v117 # SendFallbackReason: Send: method name is not a compile-time constant symbol
           v120:CPtr = GetEP 0
           v121:BasicObject = LoadField v120, :list@0x1001
           v122:BasicObject = LoadField v120, :sep@0x1002

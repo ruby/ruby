@@ -390,6 +390,8 @@ rb_get_iseq_flags_forwardable(const rb_iseq_t *iseq)
 // Bindgen's temp/anon name isn't guaranteed stable.
 typedef struct rb_iseq_param_keyword rb_iseq_param_keyword_struct;
 
+ID rb_get_symbol_id(VALUE namep);
+
 const rb_iseq_param_keyword_struct *
 rb_get_iseq_body_param_keyword(const rb_iseq_t *iseq)
 {

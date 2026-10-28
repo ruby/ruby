@@ -355,6 +355,19 @@ rb_zjit_local_id(const rb_iseq_t *iseq, unsigned idx)
     return ISEQ_BODY(iseq)->local_table[idx];
 }
 
+// Allocate call data for a synthesized `recv.send(:mid, args...)` call.
+// Return NULL if `mid`, `flags`, or `argc` doesn't fit the packed encoding.
+// TODO(max): Don't use `cd` inside the compiler so we avoid having to allocate it.
+struct rb_call_data *
+rb_zjit_new_packed_call_data(ID mid, unsigned int flags, unsigned int argc)
+{
+    if (!VM_CI_EMBEDDABLE_P(mid, flags, argc, NULL)) return NULL;
+    struct rb_call_data *cd = ZALLOC(struct rb_call_data);
+    cd->ci = vm_ci_new_id(mid, flags, argc, NULL);
+    cd->cc = vm_cc_empty();
+    return cd;
+}
+
 bool rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const void *func);
 
 const struct rb_callable_method_entry_struct *
