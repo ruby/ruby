@@ -6946,6 +6946,13 @@ impl Function {
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
+    fn is_bit_equal(&self, left: InsnId, right: InsnId) -> bool {
+        if left == right {
+            return true;
+        }
+        false
+    }
+
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
     ///
     /// It can fold fixnum math, truthiness tests, and branches with constant conditionals.
@@ -7116,6 +7123,9 @@ impl Function {
                                 _ => insn_id,
                             }
                         }
+                    }
+                    &Insn::IsBitEqual { left, right } if self.is_bit_equal(left, right) => {
+                        self.new_insn(Insn::Const { val: Const::CBool(true) })
                     }
                     &Insn::FixnumAdd { left, right, .. } => {
                         match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
