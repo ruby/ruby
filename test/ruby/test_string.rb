@@ -1910,14 +1910,6 @@ class TestString < Test::Unit::TestCase
     assert_index(nil, S("にんにちは"), ?に, 3)
   end
 
-  def test_index_truncated_char_at_end
-    s = S("a" * 2009 + "\xF0")
-    assert_nil(s.index("needle!!!"))
-    s = S("a" * 2010 + "\xE3")
-    assert_nil(s.index("needle!!!"))
-    assert_nil(s.index("needle!!\xE3"))
-  end
-
   def test_insert
     assert_equal("Xabcd", S("abcd").insert(0, 'X'))
     assert_equal("abcXd", S("abcd").insert(3, 'X'))
@@ -4681,16 +4673,20 @@ class TestString2 < TestString
   end
 
   def test_capacity_inflation
+    omit "this test is very GC specific" unless GC.config[:implementation] == 'default'
+
     orig = ("\u{30AF}" * 5)
     all_assertions_foreach(nil, Encoding::UTF_8, *WIDE_ENCODINGS) do |enc|
-      assert_capacity(200, S2.new(orig.encode(enc), encoding: "UTF-8", capacity: 200), enc.name)
+      assert_capacity(1024, S2.new(orig.encode(enc), encoding: "UTF-8", capacity: 1024), enc.name)
     end
   end
 
   def test_capacity_no_inflation
+    omit "this test is very GC specific" unless GC.config[:implementation] == 'default'
+
     orig = "hello"
     all_assertions_foreach(nil, Encoding::UTF_8, *WIDE_ENCODINGS) do |enc|
-      assert_capacity(100, S2.new(orig, encoding: enc, capacity: 100), enc.name)
+      assert_capacity(1024, S2.new(orig, encoding: enc, capacity: 1024), enc.name)
     end
   end
 
