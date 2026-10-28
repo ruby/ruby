@@ -2750,6 +2750,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 		    case_fold_flag,
 		    &s, end, lowbuf);
 	DATA_ENSURE(0);
+	if (len != enclen(encode, p, reg->p + reg->used)) goto fail;
 	q = lowbuf;
 	while (len-- > 0) {
 	  if (*p != *q) {
@@ -2839,6 +2840,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 		      case_fold_flag,
 		      &s, end, lowbuf);
 	  DATA_ENSURE(0);
+	  if (len > endp - p) goto fail;
 	  q = lowbuf;
 	  while (len-- > 0) {
 	    if (*p != *q) goto fail;
