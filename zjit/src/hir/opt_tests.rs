@@ -27223,6 +27223,81 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_nilclass_to_s() {
+        eval(r#"
+            def test = nil.to_s
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(NilClass@0x1000, to_s@0x1008, cme:0x1010)
+          v21:BasicObject = CCallWithFrame v10, :NilClass#to_s@0x1038
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_fold_trueclass_to_s() {
+        eval(r#"
+            def test = true.to_s
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:TrueClass = Const Value(true)
+          PatchPoint MethodRedefined(TrueClass@0x1000, to_s@0x1008, cme:0x1010)
+          v21:BasicObject = CCallWithFrame v10, :TrueClass#to_s@0x1038
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_fold_falseclass_to_s() {
+        eval(r#"
+            def test = false.to_s
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:FalseClass = Const Value(false)
+          PatchPoint MethodRedefined(FalseClass@0x1000, to_s@0x1008, cme:0x1010)
+          v21:BasicObject = CCallWithFrame v10, :FalseClass#to_s@0x1038
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
     fn test_specialize_polymorphic_send_with_block() {
         set_call_threshold(4);
         eval(r#"
