@@ -27755,4 +27755,182 @@ mod hir_opt_tests {
           Return v26
         ");
     }
+
+    #[test]
+    fn test_fold_is_bit_equal_with_same_ssa_value() {
+        eval("
+            def is_equal(a, b) = a == b
+            O = Object.new
+            def test
+              o = O
+              is_equal(o, o)
+            end
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v53:NilClass = Const Value(nil)
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, O)
+          v15:ObjectExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(Object@0x1010, is_equal@0x1018, cme:0x1020)
+          v33:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v8, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          PushInlineFrame :is_equal, v33 (0x1048), num_args=2
+          PatchPoint NoSingletonClass(Object@0x1068)
+          PatchPoint MethodRedefined(Object@0x1068, ==@0x1070, cme:0x1078)
+          v58:CBool = IsBitEqual v15, v15
+          v59:BoolExact = BoxBool v58
+          PopInlineFrame
+          CheckInterrupts
+          Return v59
+        ");
+    }
+
+    #[test]
+    fn test_fold_is_bit_equal_with_same_ruby_object() {
+        eval("
+            def is_equal(a, b) = a == b
+            O = Object.new
+            def test
+              is_equal(O, O)
+            end
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, O)
+          v13:ObjectExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint StableConstantNames(0x1010, O)
+          v17:ObjectExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Object@0x1018, is_equal@0x1020, cme:0x1028)
+          v26:ObjectSubclass[class_exact*:Object@VALUE(0x1018)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1018)] recompile
+          PushInlineFrame :is_equal, v26 (0x1050), num_args=2
+          PatchPoint NoSingletonClass(Object@0x1070)
+          PatchPoint MethodRedefined(Object@0x1070, ==@0x1078, cme:0x1080)
+          v50:CBool = IsBitEqual v13, v17
+          v51:BoolExact = BoxBool v50
+          PopInlineFrame
+          CheckInterrupts
+          Return v51
+        ");
+    }
+
+    #[test]
+    fn test_fold_acts_like_p() {
+        set_inline_threshold(200);
+        eval(r#"
+            def acts_like?(duck)
+              case duck
+              when :time
+                respond_to? :acts_like_time?
+              when :date
+                respond_to? :acts_like_date?
+              when :string
+                respond_to? :acts_like_string?
+              else
+                respond_to? :"acts_like_#{duck}?"
+              end
+            end
+            def test = acts_like?(:time)
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:14:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:StaticSymbol[:time] = Const Value(VALUE(0x1000))
+          PatchPoint MethodRedefined(Object@0x1008, acts_like?@0x1010, cme:0x1018)
+          v20:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame :acts_like?, v20 (0x1040), num_args=1
+          v31:StaticSymbol[:time] = Const Value(VALUE(0x1000))
+          PatchPoint MethodRedefined(Symbol@0x1060, ===@0x1068, cme:0x1070)
+          v163:CBool = IsBitEqual v31, v11
+          v164:BoolExact = BoxBool v163
+          PatchPoint NoEPEscape(acts_like?)
+          CondBranch v163, bb6(), bb9()
+        bb6():
+          v115:StaticSymbol[:acts_like_time?] = Const Value(VALUE(0x1098))
+          PatchPoint MethodRedefined(Object@0x1008, respond_to?@0x10a0, cme:0x10a8)
+          PatchPoint MethodRedefined(Object@0x1008, respond_to_missing?@0x10d0, cme:0x10d8)
+          PatchPoint MethodRedefined(Object@0x1008, acts_like_time?@0x1100, cme:0x1108)
+          v172:FalseClass = Const Value(false)
+          PatchPoint NoEPEscape(acts_like?)
+          Jump bb4(v172)
+        bb9():
+          v43:StaticSymbol[:date] = Const Value(VALUE(0x1130))
+          PatchPoint MethodRedefined(Symbol@0x1060, ===@0x1068, cme:0x1070)
+          v175:CBool = IsBitEqual v43, v11
+          v176:BoolExact = BoxBool v175
+          PatchPoint NoEPEscape(acts_like?)
+          CondBranch v175, bb7(), bb10()
+        bb7():
+          v131:StaticSymbol[:acts_like_date?] = Const Value(VALUE(0x1138))
+          PatchPoint MethodRedefined(Object@0x1008, respond_to?@0x10a0, cme:0x10a8)
+          PatchPoint MethodRedefined(Object@0x1008, respond_to_missing?@0x10d0, cme:0x10d8)
+          PatchPoint MethodRedefined(Object@0x1008, acts_like_date?@0x1140, cme:0x1148)
+          v183:FalseClass = Const Value(false)
+          PatchPoint NoEPEscape(acts_like?)
+          Jump bb4(v183)
+        bb10():
+          v55:StaticSymbol[:string] = Const Value(VALUE(0x1170))
+          PatchPoint MethodRedefined(Symbol@0x1060, ===@0x1068, cme:0x1070)
+          v186:CBool = IsBitEqual v55, v11
+          v187:BoolExact = BoxBool v186
+          PatchPoint NoEPEscape(acts_like?)
+          CondBranch v186, bb8(), bb11()
+        bb8():
+          v147:StaticSymbol[:acts_like_string?] = Const Value(VALUE(0x1178))
+          PatchPoint MethodRedefined(Object@0x1008, respond_to?@0x10a0, cme:0x10a8)
+          PatchPoint MethodRedefined(Object@0x1008, respond_to_missing?@0x10d0, cme:0x10d8)
+          PatchPoint MethodRedefined(Object@0x1008, acts_like_string?@0x1180, cme:0x1188)
+          v194:FalseClass = Const Value(false)
+          PatchPoint NoEPEscape(acts_like?)
+          Jump bb4(v194)
+        bb11():
+          v70:StringExact[VALUE(0x11b0)] = Const Value(VALUE(0x11b0))
+          PatchPoint MethodRedefined(Symbol@0x1060, to_s@0x11b8, cme:0x11c0)
+          v196:StringExact = InvokeBuiltin leaf <inline_expr>, v11
+          PatchPoint NoEPEscape(acts_like?)
+          v91:StringExact[VALUE(0x11e8)] = Const Value(VALUE(0x11e8))
+          v93:StringExact = StringConcat v70, v196, v91
+          PatchPoint NoEPEscape(acts_like?)
+          v97:Symbol = StringIntern v93
+          PatchPoint NoEPEscape(acts_like?)
+          PatchPoint MethodRedefined(Object@0x1008, respond_to?@0x10a0, cme:0x10a8)
+          v199:BasicObject = CCallVariadic v20, :Kernel#respond_to?@0x11f0, v97
+          PatchPoint NoEPEscape(acts_like?)
+          Jump bb4(v199)
+        bb4(v155:BasicObject):
+          PopInlineFrame
+          CheckInterrupts
+          Return v155
+        ");
+    }
 }
