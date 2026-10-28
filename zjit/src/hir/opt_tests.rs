@@ -5114,7 +5114,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_yield_single_iseq_with_ifunc_profile_dispatches_without_guard() {
+    fn test_yield_single_iseq_with_ifunc_profile_dispatches_without_side_exit() {
         let result = eval("
             def invoke = yield(10)
             def add_one = invoke { |x| x + 1 }
