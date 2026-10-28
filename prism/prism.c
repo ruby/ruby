@@ -2293,20 +2293,6 @@ static size_t
 pm_statements_node_body_length(pm_statements_node_t *node);
 
 /**
- * Move an integer's words into the arena. If the integer's words are not stored
- * inline, copy them to the arena and free the original.
- */
-static PRISM_INLINE void
-pm_integer_arena_move(pm_arena_t *arena, pm_integer_t *integer) {
-    if (integer->length > 2) {
-        size_t byte_size = integer->length * sizeof(uint32_t);
-        uint32_t *old_values = integer->words.values;
-        integer->words.values = (uint32_t *) pm_arena_memdup(arena, old_values, byte_size, PRISM_ALIGNOF(uint32_t));
-        xfree(old_values);
-    }
-}
-
-/**
  * Allocate a new ErrorRecoveryNode node with no unexpected child.
  */
 static pm_error_recovery_node_t *
@@ -4272,7 +4258,7 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
 
     memcpy(digits, start, (unsigned long) (point - start));
     memcpy(digits + (point - start), point + 1, (unsigned long) (end - point - 1));
-    pm_integer_parse(&node->numerator, PM_INTEGER_BASE_DEFAULT, digits, digits + length - 1);
+    pm_integer_parse(parser->arena, &node->numerator, PM_INTEGER_BASE_DEFAULT, digits, digits + length - 1);
 
     size_t fract_length = 0;
     for (const uint8_t *fract = point; fract < end; ++fract) {
@@ -4280,12 +4266,10 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
     }
     digits[0] = '1';
     if (fract_length > 1) memset(digits + 1, '0', fract_length - 1);
-    pm_integer_parse(&node->denominator, PM_INTEGER_BASE_DEFAULT, digits, digits + fract_length);
+    pm_integer_parse(parser->arena, &node->denominator, PM_INTEGER_BASE_DEFAULT, digits, digits + fract_length);
     xfree_sized(digits, length);
 
     pm_integers_reduce(&node->numerator, &node->denominator);
-    pm_integer_arena_move(parser->arena, &node->numerator);
-    pm_integer_arena_move(parser->arena, &node->denominator);
     return node;
 }
 
@@ -4795,8 +4779,7 @@ pm_integer_node_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token
             default: assert(false && "unreachable"); break;
         }
 
-        pm_integer_parse(&node->value, integer_base, token->start, token->end);
-        pm_integer_arena_move(parser->arena, &node->value);
+        pm_integer_parse(parser->arena, &node->value, integer_base, token->start, token->end);
     }
 
     return node;
@@ -4849,8 +4832,7 @@ pm_integer_node_rational_create(pm_parser_t *parser, pm_node_flags_t base, const
         default: assert(false && "unreachable"); break;
     }
 
-    pm_integer_parse(&node->numerator, integer_base, token->start, token->end - 1);
-    pm_integer_arena_move(parser->arena, &node->numerator);
+    pm_integer_parse(parser->arena, &node->numerator, integer_base, token->start, token->end - 1);
 
     return node;
 }
