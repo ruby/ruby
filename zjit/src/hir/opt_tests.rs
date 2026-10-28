@@ -23833,7 +23833,8 @@ mod hir_opt_tests {
     #[test]
     fn test_recompile_no_profile_send_with_blockarg() {
         // Test that no-profile send recompilation profiles explicit blockargs.
-        // The profiled Proc should allow inlining after recompilation.
+        // The profiled Proc should allow a direct send after recompilation.
+        set_inline_threshold(0);
         eval("
             def passthrough_recompile_blockarg(x, &block)
               block.call(x)
@@ -23888,62 +23889,12 @@ mod hir_opt_tests {
           v48:ObjectSubclass[class_exact:Proc] = GuardType v13, ObjectSubclass[class_exact:Proc] recompile
           PatchPoint MethodRedefined(Object@0x1008, passthrough_recompile_blockarg@0x1010, cme:0x1018)
           v51:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v11, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          v103:NilClass = Const Value(nil)
-          PushInlineFrame :passthrough_recompile_blockarg, v51 (0x1040), num_args=1, block=&v48
-          v62:CPtr = GetEP 0
-          v63:CUInt64 = LoadField v62, :VM_ENV_DATA_INDEX_FLAGS@0x1060
-          v64:CBool = IsBlockParamModified v63
-          CondBranch v64, bb8(), bb9()
-        bb8():
-          v66:BasicObject = LoadField v62, :block@0x1061
-          Jump bb10(v66, v66)
-        bb9():
-          v68:CInt64 = LoadField v62, :VM_ENV_DATA_INDEX_SPECVAL@0x1062
-          v69:CInt64[1] = Const CInt64(1)
-          v70:CInt64 = IntAnd v68, v69
-          v71:CBool = IsBitEqual v70, v69
-          CondBranch v71, bb11(), bb12()
-        bb11():
-          v73:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1068))
-          Jump bb10(v73, v103)
-        bb12():
-          v75:CInt64[0] = Const CInt64(0)
-          v76:CBool = IsBitEqual v68, v75
-          CondBranch v76, bb13(), bb14()
-        bb13():
-          v78:NilClass = Const Value(nil)
-          Jump bb10(v78, v103)
-        bb14():
-          v80:CInt64[255] = Const CInt64(255)
-          v81:CInt64 = IntAnd v68, v80
-          v82:CInt64[12] = Const CInt64(12)
-          v83:CBool = IsBitEqual v81, v82
-          CondBranch v83, bb15(), bb16()
-        bb16():
-          v85:CUInt64 = LoadField v68, :RBASIC_FLAGS@0x1060
-          v86:CUInt64[31] = Const CUInt64(31)
-          v87:CInt64 = IntAnd v85, v86
-          v88:CUInt64[20] = Const CUInt64(20)
-          v89:CBool = IsBitEqual v87, v88
-          CondBranch v89, bb15(), bb17()
-        bb15():
-          v91:BasicObject = SymToProc :block, l0, EP@3
-          Jump bb10(v91, v91)
-        bb17():
-          v93:BasicObject = LoadField v62, :VM_ENV_DATA_INDEX_SPECVAL@0x1062
-          Jump bb10(v93, v103)
-        bb10(v60:BasicObject, v61:BasicObject):
-          PatchPoint NoSingletonClass(Proc@0x1070)
-          PatchPoint MethodRedefined(Proc@0x1070, call@0x1078, cme:0x1080)
-          v110:ObjectSubclass[class_exact:Proc] = GuardType v60, ObjectSubclass[class_exact:Proc] recompile
-          v111:BasicObject = InvokeProc v110, v25
-          PatchPoint NoEPEscape(passthrough_recompile_blockarg)
-          PopInlineFrame
+          v52:BasicObject = SendDirect v51, &v48, :passthrough_recompile_blockarg (0x1040), v25
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v111
+          Return v52
         bb4():
-          v41:StringExact[VALUE(0x10a8)] = Const Value(VALUE(0x10a8))
+          v41:StringExact[VALUE(0x1060)] = Const Value(VALUE(0x1060))
           v42:StringExact = StringCopy v41
           CheckInterrupts
           Return v42
