@@ -1380,6 +1380,31 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_comment_separates_tokens
+    assert_raise(RegexpError) { Regexp.new('\3(?#)43') }
+    assert_raise(RegexpError) { Regexp.new("\\3#c\n43", Regexp::EXTENDED) }
+    assert_raise(RegexpError) { Regexp.new("(?x:\\3#c\n43)") }
+    re = Regexp.new('(a)(b)(c)\3(?#)43')
+    assert_match(re, "abcc43")
+    assert_not_match(re, "abc\u00e3")
+    re = Regexp.new("(a)(b)(c)\\3#c\n43", Regexp::EXTENDED)
+    assert_match(re, "abcc43")
+    assert_not_match(re, "abc\u00e3")
+    assert_match(/a(?#x)+b/, "aaab")
+    assert_match(/a #x
+                 +b/x, "aaab")
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise(RegexpError) {
+        Regexp.new('(?~.*\3(?#)43.|(?i:\u{3380}))').match?("a\u3042")
+      }
+      assert_raise(RegexpError) {
+        Regexp.new("(?~.*(?x:\\3#c\n43).|(?i:\\u{3380}))").match?("a\u3042")
+      }
+    end;
+  end
+
   def test_char_type
     check(/\u3042\d/, ["\u30421", "\u30422"])
 

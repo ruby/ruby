@@ -3791,6 +3791,7 @@ escape_asis:
                         *encp = enc;
                     }
                 }
+                rb_str_buf_cat(buf, "(?#)", 4);
                 break;
             }
             rb_str_buf_cat(buf, (char *)&c, 1);
@@ -3848,6 +3849,9 @@ escape_asis:
                         p = orig_p;
                         c = '(';
                         rb_str_buf_cat(buf, (char *)&c, 1);
+                    }
+                    else {
+                        rb_str_buf_cat(buf, "(?#)", 4);
                     }
                     break;
                 }
