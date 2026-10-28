@@ -155,6 +155,8 @@ make_counters! {
     // Default counters that are available without --zjit-stats
     default {
         compiled_iseq_count,
+        // Versions compiled beyond --zjit-max-versions after a PatchPoint invalidated the final one
+        patch_point_version_count,
         failed_iseq_count,
         jit_frame_heap_bytes,
         skipped_native_stack_full,
@@ -264,6 +266,7 @@ make_counters! {
         send_fallback_send_no_profiles,
         send_fallback_send_not_optimized_method_type,
         send_fallback_send_not_optimized_need_permission,
+        send_fallback_send_method_redefined_before,
         send_fallback_send_block_arg_not_nil,
         send_fallback_argc_param_mismatch,
         // The call has at least one feature on the caller or callee side
@@ -685,6 +688,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
+        SendMethodRedefinedBefore                 => send_fallback_send_method_redefined_before,
         SendBlockArgNotNil                        => send_fallback_send_block_arg_not_nil,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
         SuperCallWithBlock                        => send_fallback_super_call_with_block,

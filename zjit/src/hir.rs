@@ -6,7 +6,7 @@
 #![allow(clippy::if_same_then_else)]
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
-    cast::IntoUsize, codegen::max_iseq_versions, cruby::*, invariants::{self, iseq_seen_ep_escape}, json::Json, options::{DumpHIR, InlineDepth, debug, get_option}, payload::get_or_create_iseq_payload, profile::reset_profiles_remaining, state::{self, ZJITState},
+    cast::IntoUsize, cruby::*, invariants::{self, iseq_seen_ep_escape}, json::Json, options::{DumpHIR, InlineDepth, debug, get_option}, payload::get_or_create_iseq_payload, profile::reset_profiles_remaining, state::{self, ZJITState},
 };
 use std::{
     cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, ptr, slice::Iter,
@@ -788,6 +788,7 @@ pub enum SendFallbackReason {
     SendCfuncArrayVariadic,
     SendNotOptimizedMethodType(MethodType),
     SendNotOptimizedNeedPermission,
+    SendMethodRedefinedBefore,
     /// The block argument is not nil, so we can't optimize to SendWithoutBlockDirect
     SendBlockArgNotNil,
     ObjToStringNotString,
@@ -847,6 +848,7 @@ impl Display for SendFallbackReason {
             SendCfuncNotVariadic => write!(f, "Send: C function is not variadic"),
             SendNotOptimizedMethodTypeOptimized(opt_type) => write!(f, "Send: unsupported optimized method type {:?}", opt_type),
             SendNotOptimizedNeedPermission => write!(f, "Send: method private or protected and no FCALL"),
+            SendMethodRedefinedBefore => write!(f, "Send: a method with this name was redefined before"),
             SendOperandsNotFixnum => write!(f, "Send: operands are not fixnums"),
             SendPolymorphicFallback => write!(f, "Send: polymorphic fallback"),
             SendDirectKeywordMismatch => write!(f, "SendDirect: keyword mismatch"),
@@ -2900,6 +2902,11 @@ struct CompilePolicy {
     /// side-exit, and instead use fallback paths (e.g. C calls) on mismatch.
     /// Set when this is the final version of an ISEQ after recompilation.
     no_side_exits: bool,
+    /// Set for a version allowed by a PatchPoint beyond --zjit-max-versions. It can't
+    /// recompile again, so it avoids assumptions that program events are likely to break
+    /// again: it reads constants through the inline cache instead of folding them, and
+    /// doesn't specialize sends to methods with a name whose redefinition invalidated code.
+    extra_version: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -2913,15 +2920,17 @@ impl CompilePolicy {
     fn new(iseq: *const rb_iseq_t) -> Self {
         // When a previous version was invalidated and we've reached the version
         // limit, avoid speculative optimizations that may side-exit.
-        let no_side_exits = if iseq.is_null() {
-            false
-        } else {
-            let payload = get_or_create_iseq_payload(iseq);
-            payload.versions.iter().any(
-                |v| unsafe { v.as_ref() }.is_invalidated()
-            ) && payload.versions.len() + 1 >= max_iseq_versions()
-        };
-        Self { no_side_exits }
+        if iseq.is_null() {
+            return Self { no_side_exits: false, extra_version: false };
+        }
+        let payload = get_or_create_iseq_payload(iseq);
+        let final_version = payload.versions.len() + 1 >= payload.max_versions();
+        let no_side_exits = final_version && payload.versions.iter().any(
+            |v| unsafe { v.as_ref() }.is_invalidated()
+        );
+        let extra_version = payload.patch_point_versions > 0
+            && payload.versions.len() >= crate::codegen::max_iseq_versions();
+        Self { no_side_exits, extra_version }
     }
 }
 
@@ -4892,6 +4901,10 @@ impl Function {
                         let flags = unsafe { rb_vm_ci_flag(ci) };
 
                         let mid = unsafe { vm_ci_mid(ci) };
+                        if self.policy.extra_version && invariants::method_was_redefined(mid) {
+                            self.set_dynamic_send_reason(insn_id, SendMethodRedefinedBefore);
+                            self.push_insn_id(block, insn_id); continue;
+                        }
                         // Do method lookup
                         let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
                         if cme.is_null() {
@@ -6494,7 +6507,7 @@ impl Function {
         // SideExits would just add overhead (the exit fires every time without benefit).
         // Keep them as Send fallbacks so the interpreter handles them directly.
         let payload = get_or_create_iseq_payload(self.iseq);
-        if payload.versions.len() + 1 >= crate::codegen::max_iseq_versions() {
+        if payload.versions.len() + 1 >= payload.max_versions() {
             return;
         }
         for block in self.reverse_post_order() {
@@ -9705,9 +9718,7 @@ fn add_iseq_to_hir(
                     let ic: *const iseq_inline_constant_cache = get_arg(pc, 0).as_ptr();
                     let idlist: *const ID = unsafe { (*ic).segments };
                     let ice = unsafe { (*ic).entry };
-                    // A patched constant read would keep exiting if this version cannot
-                    // recompile. Use the inline cache when avoiding speculative exits.
-                    let can_fold = !fun.policy.no_side_exits && !ice.is_null()
+                    let can_fold = !fun.policy.extra_version && !ice.is_null()
                         && unsafe { (*ice).ic_cref }.is_null()
                         && (unsafe { rb_jit_constcache_shareable(ice) } || fun.assume_single_ractor_mode(block, exit_id));
                     let result = if can_fold {

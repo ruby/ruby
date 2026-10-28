@@ -27,6 +27,12 @@ macro_rules! compile_patch_points {
                 let mut version = patch_point.version;
                 let iseq = unsafe { version.as_ref() }.iseq;
                 if !iseq.is_null() {
+                    // A program event in the final version would otherwise make this
+                    // patch point exit on every call. Allow one more version.
+                    if get_or_create_iseq_payload(iseq).grant_patch_point_version(version) {
+                        // Collect fresh samples before compiling it.
+                        crate::profile::reset_profiles_remaining(iseq);
+                    }
                     invalidate_iseq_version($cb, iseq, &mut version);
                     // Remember NoSingletonClass busts on the payload
                     if is_no_singleton_class!($cause) {
@@ -100,6 +106,9 @@ pub struct Invariants {
 
     /// Whether a non-root box has ever been created
     non_root_box_created: bool,
+
+    /// Names of methods whose redefinition invalidated JIT code
+    redefined_method_ids: HashSet<ID>,
 }
 
 impl Invariants {
@@ -220,10 +229,10 @@ pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
             // instead of [] for keyword defaults).
             //
             // We can't rely on the invalidate_iseq_version() calls made by
-            // compile_patch_points! because it skips when at MAX_ISEQ_VERSIONS
-            // (to prevent unbounded recompilation). Instead, directly mark the
+            // compile_patch_points! because it skips once the ISEQ has used all of its
+            // versions (to prevent unbounded recompilation). Instead, directly mark the
             // versions as invalidated, reset jit_func, and re-stub incoming
-            // JIT-to-JIT calls so the interpreter takes over permanently.
+            // JIT-to-JIT calls so the interpreter takes over for those versions.
             let payload = get_or_create_iseq_payload(iseq);
             patched_versions.extend(payload.versions.last());
             for mut version in patched_versions {
@@ -364,6 +373,7 @@ pub extern "C" fn rb_zjit_cme_invalidate(cme: *const rb_callable_method_entry_t)
 
             // Invalidate all patch points for this CME
             compile_patch_points!(cb, patch_points, CME, "CME is invalidated: {:?}", cme);
+            invariants.redefined_method_ids.insert(unsafe { (*cme).called_id });
 
             cb.mark_all_executable();
         }
@@ -456,6 +466,7 @@ pub extern "C" fn rb_zjit_tracing_invalidate_all() {
         for_each_iseq(|iseq| {
             let payload = get_or_create_iseq_payload(iseq);
 
+            // This also keeps compile_patch_points! below from allowing extra versions.
             if let Some(version) = payload.versions.last_mut() {
                 unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
             }
@@ -519,6 +530,11 @@ pub fn track_root_box_assumption(
         side_exit_ptr,
         version,
     ));
+}
+
+/// Returns true if redefining a method named `mid` has invalidated JIT code.
+pub fn method_was_redefined(mid: ID) -> bool {
+    ZJITState::get_invariants().redefined_method_ids.contains(&mid)
 }
 
 /// Returns true if a non-root box has ever been created.

@@ -7,6 +7,9 @@ use crate::{cruby::*, profile::IseqProfile, virtualmem::CodePtr};
 
 pub use crate::jit_frame::JITFrame;
 
+/// Number of versions a PatchPoint may allow beyond --zjit-max-versions.
+pub const MAX_PATCH_POINT_VERSIONS: usize = 1;
+
 /// This is all the data ZJIT stores on an ISEQ. We mark objects in this struct on GC.
 #[derive(Debug)]
 pub struct IseqPayload {
@@ -27,6 +30,8 @@ pub struct IseqPayload {
     pub self_is_heap_object: bool,
     /// Number of recompile exits before invalidating the current version. See `exit_recompile`.
     pub num_exits_until_invalidate: NumExits,
+    /// Versions allowed beyond --zjit-max-versions. See [`Self::grant_patch_point_version`].
+    pub patch_point_versions: usize,
 }
 
 impl IseqPayload {
@@ -37,7 +42,28 @@ impl IseqPayload {
             was_invalidated_for_singleton_class_creation: false,
             self_is_heap_object: false,
             num_exits_until_invalidate: get_option!(num_exits_until_invalidate),
+            patch_point_versions: 0,
         }
+    }
+
+    /// Maximum number of compiled versions for this ISEQ.
+    pub fn max_versions(&self) -> usize {
+        crate::codegen::max_iseq_versions() + self.patch_point_versions
+    }
+
+    /// Allow one version beyond --zjit-max-versions when a PatchPoint invalidates the
+    /// compiled final version. PatchPoints fire on program events such as constant or
+    /// method redefinition, not on profiled speculation, so without another version the
+    /// patch point would exit on every call. Returns whether the version was allowed.
+    pub fn grant_patch_point_version(&mut self, version: IseqVersionRef) -> bool {
+        let grant = matches!(unsafe { version.as_ref() }.status, IseqStatus::Compiled(_))
+            && self.versions.last() == Some(&version)
+            && self.versions.len() >= self.max_versions()
+            && self.patch_point_versions < MAX_PATCH_POINT_VERSIONS;
+        if grant {
+            self.patch_point_versions += 1;
+        }
+        grant
     }
 }
 

@@ -168,6 +168,7 @@ class << RubyVM::ZJIT
       :dynamic_definedivar_count,
 
       :compiled_iseq_count,
+      :patch_point_version_count,
       :compiled_side_exit_count,
       :failed_iseq_count,
 

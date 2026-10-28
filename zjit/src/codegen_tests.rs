@@ -6565,6 +6565,49 @@ fn test_constant_invalidation_on_final_version() {
 }
 
 #[test]
+fn test_patch_point_version_after_method_redefinition() {
+    set_call_threshold(2);
+    set_max_versions(1);
+    set_num_profiles(1);
+    set_inline_threshold(0);
+    eval("
+        module PatchPointConstant
+          VALUE = 11
+        end
+        class PatchPointHelper
+          def value = 1
+        end
+        PATCH_POINT_HELPER = PatchPointHelper.new
+        def patch_point_reader = PATCH_POINT_HELPER.value + PatchPointConstant::VALUE
+        3.times { patch_point_reader }
+
+        class PatchPointHelper
+          def value = 2
+        end
+        3.times { patch_point_reader }
+    ");
+    // Redefining the method in the only version allows one more.
+    let iseq = get_method_iseq("self", "patch_point_reader");
+    assert_eq!(get_or_create_iseq_payload(iseq).versions.len(), 2);
+
+    // That version can't recompile, so it reads constants through the inline cache.
+    assert_eq!(assert_compiles("
+        PatchPointConstant::VALUE = 31
+        [patch_point_reader, patch_point_reader]
+    "), "[33, 33]");
+
+    // It also calls the redefined method dynamically, so redefining it again
+    // neither exits nor needs another version.
+    assert_eq!(assert_compiles("
+        class PatchPointHelper
+          def value = 3
+        end
+        [patch_point_reader, patch_point_reader]
+    "), "[34, 34]");
+    assert_eq!(get_or_create_iseq_payload(iseq).versions.len(), 2);
+}
+
+#[test]
 fn test_constant_path_invalidation() {
     eval("
         module A
@@ -8140,7 +8183,8 @@ fn test_invokesuper_with_local_written_by_blockiseq() {
 
 #[test]
 fn test_max_iseq_versions() {
-    let max_versions = max_iseq_versions();
+    // A constant redefinition in the final version allows one extra version.
+    let max_versions = max_iseq_versions() + MAX_PATCH_POINT_VERSIONS;
     eval(&format!("
         TEST = -1
         def test = TEST
@@ -8157,10 +8201,10 @@ fn test_max_iseq_versions() {
         end
     "));
 
-    // It should not exceed MAX_ISEQ_VERSIONS
+    // It should not exceed that, however often the constant changes
     let iseq = get_method_iseq("self", "test");
     let payload = get_or_create_iseq_payload(iseq);
-    assert_eq!(payload.versions.len(), max_iseq_versions());
+    assert_eq!(payload.versions.len(), max_versions);
 
     // The last call should not discard the JIT code
     assert!(matches!(unsafe { payload.versions.last().unwrap().as_ref() }.status, IseqStatus::Compiled(_)));
@@ -9446,9 +9490,9 @@ fn test_keep_jit_frame_for_caught_jump() {
 
 // A NoEPEscape patch point can be reached without the frame's locals ever being
 // written to the stack: JIT-to-JIT calls don't write locals, and the code before
-// the patch point may be leaf. When an EP escape fires while the version limit
-// prevents invalidate_iseq_version() from running, every version containing a
-// patched point must still stop receiving calls. Otherwise a fresh call would
+// the patch point may be leaf. When an EP escape fires after the ISEQ has used
+// all of its versions, so invalidate_iseq_version() doesn't run, every version
+// containing a patched point must still stop receiving calls. Otherwise a fresh call would
 // side-exit through the patched point's without_locals() frame state and the
 // interpreter would read garbage locals.
 #[test]
@@ -9464,7 +9508,8 @@ fn test_no_ep_escape_invalidation_at_max_versions() {
           a
         end
 
-        def ep_escape_caller = ep_escape_callee
+        EP_ESCAPE_TOKEN = 1
+        def ep_escape_caller = (EP_ESCAPE_TOKEN; ep_escape_callee)
 
         def ep_escape_dirty(x) = x
         def ep_escape_dirty_caller = ep_escape_dirty(:garbage)
@@ -9472,6 +9517,9 @@ fn test_no_ep_escape_invalidation_at_max_versions() {
         @ep_escape = nil
         ep_escape_callee; ep_escape_callee    # profile + compile callee
         ep_escape_caller; ep_escape_caller    # profile + compile caller
+        Object.send(:remove_const, :EP_ESCAPE_TOKEN)
+        EP_ESCAPE_TOKEN = 2                   # use up the caller's extra version
+        ep_escape_caller; ep_escape_caller    # compile the extra version
         @ep_escape = true
         ep_escape_caller                      # binding escapes callee's EP -> invalidation
         @ep_escape = nil
