@@ -2200,16 +2200,36 @@ fn test_send_proc_block_arg_rest_optional_keyword_callee() {
     // a `NewArray` for the rest param) and also `yield`s, so it's eligible for the
     // guarded-Proc block-arg direct-send specialization. The NewArray allocation
     // happens between the Proc guard and the callee send.
-    assert_snapshot!(assert_compiles("
-        def foo(opt = 10, *rest, kw: 20, &block) = [yield(opt + rest.sum + kw), block]
+    assert_snapshot!(inspect("
+        def foo(opt = 10, *rest, kw: 20) = yield(opt + rest.sum + kw)
         def test
           blk = proc { |x| x + 1 }
-          value, captured = foo(1, 2, &blk)
-          [value, captured.equal?(blk)]
+          foo(1, 2, &blk)
         end
         test
         test
-    "), @"[24, true]");
+    "), @"24");
+}
+
+#[test]
+fn test_send_proc_block_arg_to_block_param_callee() {
+    // A guarded Proc reaches `&block` callees through SendDirect, or through an inlined
+    // frame. The callee must see the same Proc, and reassigning `block` must not affect
+    // the block.
+    let program = "
+        def foo(opt = 10, *rest, kw: 20, &block) = [block, block.lambda?, yield(opt + rest.sum + kw)]
+        def bar(&block) = (block = nil; [block, block_given?, yield(3)])
+        def test(blk) = [foo(1, 2, &blk), bar(&blk)]
+        blk = lambda { |x| x + 1 }
+        test(blk)
+        (value, reassigned) = test(blk)
+        [value[0].equal?(blk), value[1], value[2], reassigned]
+    ";
+    set_inline_threshold(0);
+    assert_snapshot!(assert_compiles(program), @"[true, true, 24, [nil, true, 4]]");
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines(program), @"[true, true, 24, [nil, true, 4]]");
+    });
 }
 
 #[test]

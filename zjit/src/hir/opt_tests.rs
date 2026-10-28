@@ -12909,11 +12909,11 @@ mod hir_opt_tests {
     fn test_send_with_proc_block_arg_to_rest_optional_keyword_callee() {
         // The callee has rest/optional/keyword params, so `prepare_direct_send_args`
         // builds a `NewArray` for the rest param. That allocation sits between the
-        // Proc `GuardType` and the `PushInlineFrame` that stores the Proc into the callee
+        // Proc `GuardType` and the `SendDirect` that stores the Proc into the callee
         // frame's specval, so the guarded Proc is only reachable from the VReg at that
         // point (it is not in the block-arg-stripped snapshot).
         eval(r#"
-            def foo(opt = 10, *rest, kw: 20, &block) = yield(opt + rest.sum + kw)
+            def foo(opt = 10, *rest, kw: 20) = yield(opt + rest.sum + kw)
 
             def test
               blk = proc { |x| x + 1 }
@@ -12935,7 +12935,7 @@ mod hir_opt_tests {
           StoreField v7, :blk@0x1000, v6
           Jump bb3(v5)
         bb3(v10:BasicObject):
-          v84:NilClass = Const Value(nil)
+          v82:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Object@0x1008, proc@0x1010, cme:0x1018)
           v39:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
           v40:BasicObject = CCallWithFrame v39, :Kernel#proc@0x1040, block=0x1048
@@ -12950,22 +12950,21 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1008, foo@0x1068, cme:0x1070)
           v45:ArrayExact = NewArray v26
           v46:Fixnum[20] = Const Value(20)
-          v78:Fixnum[0] = Const Value(0)
-          v79:NilClass = Const Value(nil)
+          v77:Fixnum[0] = Const Value(0)
           PushInlineFrame :foo, v39 (0x1098), num_args=3, block=&v41
           PatchPoint NoSingletonClass(Array@0x10b8)
           PatchPoint MethodRedefined(Array@0x10b8, sum@0x10c0, cme:0x10c8)
-          v89:BasicObject = CCallVariadic v45, :Array#sum@0x10f0
+          v87:BasicObject = CCallVariadic v45, :Array#sum@0x10f0
           PatchPoint NoEPEscape(foo)
           PatchPoint MethodRedefined(Integer@0x10f8, +@0x1100, cme:0x1108)
-          v93:Fixnum = GuardType v89, Fixnum
-          v94:Fixnum = FixnumAdd v24, v93
-          v98:Fixnum = FixnumAdd v94, v46
-          v72:BasicObject = InvokeBlock v98 # SendFallbackReason: InvokeBlock: not yet specialized
+          v91:Fixnum = GuardType v87, Fixnum
+          v92:Fixnum = FixnumAdd v24, v91
+          v96:Fixnum = FixnumAdd v92, v46
+          v71:BasicObject = InvokeBlock v96 # SendFallbackReason: InvokeBlock: not yet specialized
           PatchPoint NoEPEscape(foo)
           PopInlineFrame
           CheckInterrupts
-          Return v72
+          Return v71
         ");
     }
 

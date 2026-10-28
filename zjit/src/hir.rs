@@ -2762,8 +2762,6 @@ fn can_direct_send(iseq: *const rb_iseq_t, caller_args: &CallerArguments, has_bl
     let mut count_failure = |counter| complex_arg_counters.push(counter);
     let params = unsafe { iseq.params() };
 
-    let caller_passes_block_arg = has_block && (caller_args.flags & VM_CALL_ARGS_BLOCKARG) != 0;
-
     use Counter::*;
     let forwardable = 0 != params.flags.forwardable();
     if forwardable && caller_args.flags & FORWARDABLE_CALLEE_BLOCKERS != 0
@@ -2774,10 +2772,9 @@ fn can_direct_send(iseq: *const rb_iseq_t, caller_args: &CallerArguments, has_bl
     // interpreter for two cases it handles that we don't:
     // 1. Methods with &nil reject blocks with ArgumentError
     // 2. Methods that don't use blocks emit "unused block" warnings
-    let caller_passes_block = has_block || caller_passes_block_arg;
-    if caller_passes_block && 0 != params.flags.accepts_no_block()
+    if has_block && 0 != params.flags.accepts_no_block()
                                        { count_failure(complex_arg_pass_accepts_no_block) }
-    if caller_passes_block && 0 == params.flags.use_block()
+    if has_block && 0 == params.flags.use_block()
                                        { count_failure(complex_arg_pass_does_not_use_block) }
 
     if !complex_arg_counters.is_empty() {
