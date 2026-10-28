@@ -7,6 +7,14 @@ describe "Kernel#raise" do
     Kernel.private_instance_methods.should.include?(:raise)
   end
 
+  it "preserves NameError attributes when given a replacement message" do
+    error = NameError.new("original", :name)
+
+    -> { raise error, "replacement" }.should.raise(NameError, "replacement") { |raised|
+      raised.name.should == :name
+    }
+  end
+
   # Shared specs expect a public #raise method.
   public_raiser = Object.new
   class << public_raiser

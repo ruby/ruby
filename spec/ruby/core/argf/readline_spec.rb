@@ -21,3 +21,33 @@ describe "ARGF.readline" do
     end
   end
 end
+
+describe "ARGF.readline when reading $stdin and $stdin is not an IO" do
+  before :each do
+    @stdin = $stdin
+  end
+
+  after :each do
+    $stdin = @stdin
+  end
+
+  it "calls readline on $stdin" do
+    $stdin = mock("stdin")
+    $stdin.should_receive(:readline).with("\n", 1, chomp: true).and_return("line")
+    ARGF.class.new.readline("\n", 1, chomp: true).should == "line"
+  end
+
+  it "raises an EOFError when reaching end of $stdin" do
+    $stdin = StringIO.new("a\n")
+    argf = ARGF.class.new
+    argf.readline.should == "a\n"
+    -> { argf.readline }.should.raise(EOFError)
+  end
+
+  it "raises NoMethodError when $stdin has no public readline" do
+    stdin = Object.new
+    def stdin.gets(*) = "line\n"
+    $stdin = stdin
+    -> { ARGF.class.new.readline }.should.raise(NoMethodError)
+  end
+end

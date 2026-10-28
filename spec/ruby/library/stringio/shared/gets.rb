@@ -110,6 +110,50 @@ describe :stringio_gets_limit, shared: true do
     it "ignores it when passed a negative limit" do
       @io.send(@method, -4).should == "this>is>an>example"
     end
+
+    it "does not split a multi-byte character" do
+      io = StringIO.new("éééabc")
+
+      io.send(@method, 1).should == "é"
+      io.send(@method, 3).should == "éé"
+      io.send(@method, 2).should == "ab"
+    end
+
+    it "does not split a multi-byte character when the limit is the last byte of one" do
+      io = StringIO.new("👍ab")
+
+      io.send(@method, 3).should == "👍"
+      io.pos.should == 4
+    end
+
+    it "does not split a multi-byte character in a non-Unicode encoding" do
+      io = StringIO.new("あいabc".encode("Shift_JIS"))
+
+      io.send(@method, 1).should == "あ".encode("Shift_JIS")
+      io.send(@method, 3).should == "いa".encode("Shift_JIS")
+    end
+
+    it "does not extend over bytes that are not a character" do
+      io = StringIO.new("\xFF\xFEabc".b.force_encoding("UTF-8"))
+
+      io.send(@method, 1).bytes.should == [0xFF]
+      io.send(@method, 1).bytes.should == [0xFE]
+    end
+
+    it "does not extend over a character that starts before the current position" do
+      io = StringIO.new("👍ab")
+      io.read(1)
+
+      io.send(@method, 1).bytes.should == [0x9F]
+      io.pos.should == 2
+    end
+
+    it "counts bytes, not characters, when the encoding is binary" do
+      io = StringIO.new("éé".b)
+
+      io.send(@method, 1).bytes.should == [0xC3]
+      io.pos.should == 1
+    end
   end
 end
 
@@ -129,6 +173,20 @@ describe :stringio_gets_separator_and_limit, shared: true do
 
     it "truncates the multi-character separator at the end to meet the limit" do
       @io.send(@method, "is>an", 7).should == "this>is"
+    end
+
+    it "does not split a multi-byte character when the limit is met before the separator" do
+      io = StringIO.new("aé>b")
+
+      io.send(@method, '>', 2).should == "aé"
+      io.pos.should == 3
+    end
+
+    it "does not split a multi-byte character when passed a nil separator" do
+      io = StringIO.new("ééa")
+
+      io.send(@method, nil, 1).should == "é"
+      io.send(@method, nil, 3).should == "éa"
     end
 
     it "sets $_ to the read content" do

@@ -25,6 +25,18 @@ describe "ENV.[]=" do
     ENV.key?("foo").should == false
   end
 
+  platform_is_not :windows do
+    it "accepts a BINARY variable name containing non-ASCII bytes" do
+      key = "ENV_ELEMENT_SET_SPEC_\u00DCBER"
+      begin
+        ENV[key.b] = "bar"
+        ENV[key].should == "bar"
+      ensure
+        ENV[key] = nil
+      end
+    end
+  end
+
   it "coerces the key argument with #to_str" do
     k = mock("key")
     k.should_receive(:to_str).and_return("foo")
@@ -58,5 +70,45 @@ describe "ENV.[]=" do
   it "does nothing when the key is not a valid environment variable key and the value is nil" do
     ENV["foo="] = nil
     ENV.key?("foo=").should == false
+  end
+
+  it "supports concurrent access from multiple threads" do
+    n_threads = 8
+    n = 200
+    keys = Array.new(10) { |i| "ENV_ELEMENT_SET_SPEC_THREAD_SAFETY_#{i}" }
+
+    begin
+      # This reproduces the pattern of Bundler.with_unbundled_env called
+      # concurrently: threads repeatedly mutate the environment and replace it
+      # with a snapshot.
+      start = Queue.new
+      go = Queue.new
+      threads = Array.new(n_threads) do |t|
+        Thread.new do
+          start << true
+          go.pop
+          n.times do |i|
+            key = keys[(i + t) % keys.size]
+            ENV[key] = "value"
+            ENV[key]
+            ENV.each { nil }
+            ENV.replace(ENV.to_hash)
+            ENV.delete(key) if i % 3 == 0
+          end
+        end
+      end
+      n_threads.times { start.pop }
+      n_threads.times { go << true }
+      threads.each(&:join)
+
+      # ENV must remain consistent: every key it reports must still be
+      # readable from the process environment.
+      ENV.size.should == ENV.keys.size
+      ENV.keys.each do |key|
+        ENV[key].should_not == nil
+      end
+    ensure
+      keys.each { |key| ENV.delete(key) }
+    end
   end
 end

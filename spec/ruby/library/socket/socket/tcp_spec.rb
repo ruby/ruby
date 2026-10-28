@@ -86,3 +86,43 @@ describe 'Socket.tcp' do
     end
   end
 end
+
+platform_is_not :windows do
+  guard -> {
+    begin
+      !Socket.getaddrinfo('localhost', nil, Socket::AF_INET).empty? &&
+        !Socket.getaddrinfo('localhost', nil, Socket::AF_INET6).empty?
+    rescue SocketError
+      false
+    end
+  } do
+    describe 'Socket.tcp' do
+      describe 'when the hostname resolves to both an IPv6 and an IPv4 address' do
+        before do
+          @server = TCPServer.new('127.0.0.1', 0)
+          @port = @server.addr[1]
+          @client = nil
+        end
+
+        after do
+          @client.close if @client && !@client.closed?
+          @server.close
+        end
+
+        it 'connects over IPv4 when only the IPv4 address is listening' do
+          @client = Socket.tcp('localhost', @port, connect_timeout: 10)
+
+          @client.remote_address.ip_address.should == '127.0.0.1'
+          @client.write('hello').should == 5
+
+          connection = @server.accept
+          begin
+            connection.read(5).should == 'hello'
+          ensure
+            connection.close
+          end
+        end
+      end
+    end
+  end
+end

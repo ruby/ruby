@@ -487,13 +487,15 @@ describe "Pattern matching" do
     end
 
     it "does not support variable binding" do
+      error_pattern = ruby_version_is("4.0") ? /variable capture in alternative pattern/ : /illegal variable in alternative pattern \(a\)/
+
       -> {
         eval <<~RUBY
           case [0, 1]
           in [0, 0] | [0, a]
           end
         RUBY
-      }.should.raise(SyntaxError)
+      }.should.raise(SyntaxError, error_pattern)
     end
 
     it "support underscore prefixed variables in alternation" do
@@ -983,6 +985,32 @@ describe "Pattern matching" do
       }.should.raise(TypeError, /deconstruct_keys must return Hash/)
     end
 
+    it "accepts a subclass of Hash from #deconstruct_keys" do
+      subclass = Class.new(Hash) do
+        def key?(key)
+          super(key.to_s)
+        end
+
+        def [](key)
+          super(key.to_s)
+        end
+      end
+
+      obj = Object.new
+      obj.define_singleton_method(:deconstruct_keys) do |*|
+        h = subclass.new
+        h["a"] = 1
+        h
+      end
+
+      case obj
+      in {b: 1}
+        false
+      in {a: 1}
+        true
+      end.should == true
+    end
+
     it "does not match object if #deconstruct_keys method returns Hash with non-symbol keys" do
       obj = Object.new
 
@@ -1070,6 +1098,21 @@ describe "Pattern matching" do
       in {a: 0, **rest}
         rest
       end.should == {b: 1, c: 2}
+    end
+
+    it "copies the hash when matching **rest with no preceding keys" do
+      h = {a: 1}
+      case h
+      in **rest
+        rest.should_not.equal?(h)
+        rest.should == h
+      end
+
+      case h
+      in {**rest}
+        rest.should_not.equal?(h)
+        rest.should == h
+      end
     end
 
     it "treats **nil like there should not be any other keys in a matched Hash" do
@@ -1224,28 +1267,27 @@ describe "Pattern matching" do
     end
   end
 
-  describe "Ruby 3.1 improvements" do
-    it "can omit parentheses in one line pattern matching" do
-      [1, 2] => a, b
-      [a, b].should == [1, 2]
+  it "can omit parentheses in one line pattern matching" do
+    [1, 2] => a, b
+    [a, b].should == [1, 2]
 
-      {a: 1} => a:
-      a.should == 1
-    end
+    {a: 1} => a:
+    a.should == 1
+  end
 
-    it "supports pinning instance variables" do
-      @a = /a/
-      case 'abc'
-      in ^@a
-        true
-      end.should == true
-    end
+  it "supports pinning instance variables" do
+    @a = /a/
+    case 'abc'
+    in ^@a
+      true
+    end.should == true
+  end
 
-    it "supports pinning class variables" do
-      result = nil
-      Module.new do
-        # avoid "class variable access from toplevel" runtime error with #module_eval
-        result = module_eval(<<~RUBY)
+  it "supports pinning class variables" do
+    result = nil
+    Module.new do
+      # avoid "class variable access from toplevel" runtime error with #module_eval
+      result = module_eval(<<~RUBY)
           @@a = 0..10
 
           case 2
@@ -1253,44 +1295,43 @@ describe "Pattern matching" do
             true
           end
         RUBY
-      end
-
-      result.should == true
     end
 
-    it "supports pinning global variables" do
-      $a = /a/
-      case 'abc'
-      in ^$a
-        true
-      end.should == true
-    end
+    result.should == true
+  end
 
-    it "supports pinning expressions" do
-      case 'abc'
-      in ^(/a/)
-        true
-      end.should == true
+  it "supports pinning global variables" do
+    $a = /a/
+    case 'abc'
+    in ^$a
+      true
+    end.should == true
+  end
 
-      case 0
-      in ^(0 + 0)
-        true
-      end.should == true
-    end
+  it "supports pinning expressions" do
+    case 'abc'
+    in ^(/a/)
+      true
+    end.should == true
 
-    it "supports pinning expressions in array pattern" do
-      case [3]
-      in [^(1 + 2)]
-        true
-      end.should == true
-    end
+    case 0
+    in ^(0 + 0)
+      true
+    end.should == true
+  end
 
-    it "supports pinning expressions in hash pattern" do
-      case {name: '2.6', released_at: Time.new(2018, 12, 25)}
-      in {released_at: ^(Time.new(2010)..Time.new(2020))}
-        true
-      end.should == true
-    end
+  it "supports pinning expressions in array pattern" do
+    case [3]
+    in [^(1 + 2)]
+      true
+    end.should == true
+  end
+
+  it "supports pinning expressions in hash pattern" do
+    case {name: '2.6', released_at: Time.new(2018, 12, 25)}
+    in {released_at: ^(Time.new(2010)..Time.new(2020))}
+      true
+    end.should == true
   end
 
   describe "value in pattern" do
