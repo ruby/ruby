@@ -255,6 +255,10 @@ fn main() {
         .allowlist_var("ONIG_OPTION_EXTEND")
         .allowlist_var("ONIG_OPTION_MULTILINE")
 
+        .allowlist_function("rb_nil_to_s")
+        .allowlist_function("rb_true_to_s")
+        .allowlist_function("rb_false_to_s")
+
         // `ruby_value_type` is a C enum and this stops it from
         // prefixing all the members with the name of the type
         .prepend_enum_name(false)

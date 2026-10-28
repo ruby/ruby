@@ -2508,6 +2508,9 @@ unsafe extern "C" {
         index: rb_len_t,
         out: *mut VALUE,
     ) -> bool;
+    pub fn rb_nil_to_s(obj: VALUE) -> VALUE;
+    pub fn rb_true_to_s(obj: VALUE) -> VALUE;
+    pub fn rb_false_to_s(obj: VALUE) -> VALUE;
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;
