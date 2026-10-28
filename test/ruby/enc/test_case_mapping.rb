@@ -215,6 +215,27 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     assert_equal s, s.downcase(:ascii)
   end
 
+  SHARP_S_SINGLE_BYTE_ENCODINGS = %w[
+    ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 ISO-8859-9 ISO-8859-10
+    ISO-8859-13 ISO-8859-14 ISO-8859-15 ISO-8859-16
+    Windows-1250 Windows-1252 Windows-1254 Windows-1257
+  ]
+
+  def test_single_byte_sharp_s_expansion
+    SHARP_S_SINGLE_BYTE_ENCODINGS.each do |name|
+      enc = Encoding.find(name)
+      (1..64).each do |n|
+        s = ("\xDF".b * n).force_encoding(enc)
+        assert_equal "SS" * n, s.upcase, "#{name} upcase #{n}"
+        assert_equal "ss" * n, s.downcase(:fold), "#{name} fold #{n}"
+        assert_equal "SS" * n, s.swapcase, "#{name} swapcase #{n}"
+        assert_equal ("Ss" + "\xDF".b * (n - 1)).force_encoding(enc), s.capitalize, "#{name} capitalize #{n}"
+        assert_equal "SS" * n, ("a".b + "\xDF".b * n).force_encoding(enc).upcase[1..], "#{name} upcase a+#{n}"
+        assert_equal true, s.casecmp?(("ss" * n).force_encoding(enc)), "#{name} casecmp? #{n}"
+      end
+    end
+  end
+
   def test_shift_jis_upcase_ascii
     s = ("a".."z").map {|c| "\x89#{c}"}.join("").force_encoding("Shift_JIS")
     assert_equal s, s.upcase(:ascii)
