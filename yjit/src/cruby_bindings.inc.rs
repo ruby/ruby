@@ -1258,7 +1258,6 @@ extern "C" {
     ) -> VALUE;
     pub fn rb_c_method_tracing_currently_enabled(ec: *const rb_execution_context_t) -> bool;
     pub fn rb_full_cfunc_return(ec: *mut rb_execution_context_t, return_value: VALUE);
-    pub fn rb_get_symbol_id(namep: VALUE) -> ID;
     pub fn rb_yjit_builtin_function(iseq: *const rb_iseq_t) -> *const rb_builtin_function;
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_str_neq_internal(str1: VALUE, str2: VALUE) -> VALUE;
@@ -1361,6 +1360,7 @@ extern "C" {
     pub fn rb_get_iseq_flags_ambiguous_param0(iseq: *const rb_iseq_t) -> bool;
     pub fn rb_get_iseq_flags_accepts_no_kwarg(iseq: *const rb_iseq_t) -> bool;
     pub fn rb_get_iseq_flags_forwardable(iseq: *const rb_iseq_t) -> bool;
+    pub fn rb_get_symbol_id(namep: VALUE) -> ID;
     pub fn rb_get_iseq_body_param_keyword(
         iseq: *const rb_iseq_t,
     ) -> *const rb_iseq_param_keyword_struct;
