@@ -1510,7 +1510,7 @@ match_byteoffset(VALUE match, VALUE n)
  *    bytebegin(n) -> integer
  *    bytebegin(name) -> integer
  *
- *  :include: doc/matchdata/bytebegin.rdoc
+ *  :include: doc/matchdata/bytebegin.md
  *
  */
 
