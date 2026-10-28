@@ -1919,10 +1919,8 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(==)
           PatchPoint NoSingletonClass(CustomEq@0x1008)
           PatchPoint MethodRedefined(CustomEq@0x1008, equal?@0x1170, cme:0x1178)
-          v156:CBool[true] = Const CBool(true)
-          v142:BoolExact = BoxBool v156
           PopInlineFrame
-          v42:BoolExact = BoolNegate v142
+          v158:FalseClass = Const Value(false)
           PatchPoint NoEPEscape(!=)
           PopInlineFrame
           v21:NilClass = Const Value(nil)
@@ -27978,11 +27976,10 @@ mod hir_opt_tests {
           PushInlineFrame :is_equal, v33 (0x1048), num_args=2
           PatchPoint NoSingletonClass(Object@0x1068)
           PatchPoint MethodRedefined(Object@0x1068, ==@0x1070, cme:0x1078)
-          v60:CBool[true] = Const CBool(true)
-          v59:BoolExact = BoxBool v60
+          v61:TrueClass = Const Value(true)
           PopInlineFrame
           CheckInterrupts
-          Return v59
+          Return v61
         ");
     }
 
@@ -28017,11 +28014,10 @@ mod hir_opt_tests {
           PushInlineFrame :is_equal, v26 (0x1050), num_args=2
           PatchPoint NoSingletonClass(Object@0x1070)
           PatchPoint MethodRedefined(Object@0x1070, ==@0x1078, cme:0x1080)
-          v52:CBool[true] = Const CBool(true)
-          v51:BoolExact = BoxBool v52
+          v53:TrueClass = Const Value(true)
           PopInlineFrame
           CheckInterrupts
-          Return v51
+          Return v53
         ");
     }
 
@@ -28061,8 +28057,7 @@ mod hir_opt_tests {
           PushInlineFrame :acts_like?, v20 (0x1040), num_args=1
           v31:StaticSymbol[:time] = Const Value(VALUE(0x1000))
           PatchPoint MethodRedefined(Symbol@0x1060, ===@0x1068, cme:0x1070)
-          v200:CBool[true] = Const CBool(true)
-          v164:BoolExact = BoxBool v200
+          v201:TrueClass = Const Value(true)
           PatchPoint NoEPEscape(acts_like?)
           v115:StaticSymbol[:acts_like_time?] = Const Value(VALUE(0x1098))
           PatchPoint MethodRedefined(Object@0x1008, respond_to?@0x10a0, cme:0x10a8)
