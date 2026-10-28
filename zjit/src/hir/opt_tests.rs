@@ -1621,9 +1621,43 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, ==@0x1010, cme:0x1018)
           v27:ArrayExact = GuardType v10, ArrayExact recompile
-          v28:BasicObject = CCallWithFrame v27, :Array#==@0x1040, v15
+          PatchPoint MethodRedefined(NilClass@0x1040, to_ary@0x1048, cme:0x1050)
+          v29:FalseClass = Const Value(false)
           CheckInterrupts
-          Return v28
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_dont_fold_array_eq_nil_if_nilclass_to_ary_defined() {
+        eval("
+            class NilClass
+              def to_ary = [1,2,3]
+            end
+            def test(o) = o == nil
+            test(3)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Integer@0x1008, ==@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum recompile
+          PatchPoint MethodRedefined(NilClass@0x1040, ==@0x1010, cme:0x1048)
+          v29:FalseClass = Const Value(false)
+          CheckInterrupts
+          Return v29
         ");
     }
 
