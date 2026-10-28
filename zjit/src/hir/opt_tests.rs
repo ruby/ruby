@@ -1919,8 +1919,8 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(==)
           PatchPoint NoSingletonClass(CustomEq@0x1008)
           PatchPoint MethodRedefined(CustomEq@0x1008, equal?@0x1170, cme:0x1178)
-          v141:CBool = IsBitEqual v29, v29
-          v142:BoolExact = BoxBool v141
+          v156:CBool[true] = Const CBool(true)
+          v142:BoolExact = BoxBool v156
           PopInlineFrame
           v42:BoolExact = BoolNegate v142
           PatchPoint NoEPEscape(!=)
@@ -28008,8 +28008,8 @@ mod hir_opt_tests {
           PushInlineFrame :is_equal, v33 (0x1048), num_args=2
           PatchPoint NoSingletonClass(Object@0x1068)
           PatchPoint MethodRedefined(Object@0x1068, ==@0x1070, cme:0x1078)
-          v58:CBool = IsBitEqual v15, v15
-          v59:BoolExact = BoxBool v58
+          v60:CBool[true] = Const CBool(true)
+          v59:BoolExact = BoxBool v60
           PopInlineFrame
           CheckInterrupts
           Return v59
