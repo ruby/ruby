@@ -4093,31 +4093,11 @@ rb_fix2str(VALUE x, int base)
         u = val;
     }
     if (base == 10) {
-        /* Emit two digits per iteration from a precomputed table.  The
-         * compiler lowers `u % 100` and `u / 100` to a single multiply +
-         * shift, so each iteration costs roughly one multiply, one shift,
-         * and two stores.  About 2x fewer iterations than the classic
-         * per-digit loop for multi-digit inputs. */
-        while (u >= 100) {
-            unsigned long idx = (u % 100) * 2;
-            u /= 100;
-            b -= 2;
-            b[0] = ruby_decimal_digit_pairs[idx];
-            b[1] = ruby_decimal_digit_pairs[idx + 1];
-        }
-        if (u >= 10) {
-            unsigned long idx = u * 2;
-            b -= 2;
-            b[0] = ruby_decimal_digit_pairs[idx];
-            b[1] = ruby_decimal_digit_pairs[idx + 1];
-        }
-        else {
-            *--b = (char)('0' + u);
-        }
+        b -= ruby_convert_to_decimals(b, u);
     }
     else {
         do {
-            *--b = ruby_digitmap[(int)(u % base)];
+            *--b = ruby_digitmap[(unsigned int)(u % base)];
         } while (u /= base);
     }
     if (neg) {

@@ -107,7 +107,42 @@ struct RBignum {
 
 /* bignum.c */
 extern const char ruby_digitmap[];
-extern const char ruby_decimal_digit_pairs[];
+extern const char ruby_decimal_digit_pairs[100][2];
+
+#if UINT_MAX < 200
+# error Need unsigned int to be wider
+#endif
+#if SIZEOF_BDIGIT*2 < SIZEOF_RB_LEN_T
+# error BDIGIT can be wider, at least the half of rb_len_t
+#endif
+/* Stores the decimal string for num, backward from dest.  Returns the
+ * stored size. */
+static inline size_t
+ruby_convert_to_decimals(char *dest, BDIGIT_DBL num)
+{
+    /* Emit two digits per iteration from a precomputed table.  The
+     * compiler lowers `num % 100` and `num / 100` to a single
+     * multiply + shift, so each iteration costs roughly one multiply,
+     * one shift, and two stores.  About 2x fewer iterations than the
+     * classic per-digit loop for multi-digit inputs. */
+    char *b = dest;
+    while (num >= 100) {
+        const char (*pair)[2] = &ruby_decimal_digit_pairs[num % 100];
+        num /= 100;
+        *--b = (*pair)[1];
+        *--b = (*pair)[0];
+    }
+    if (num >= 10) {
+        const char (*pair)[2] = &ruby_decimal_digit_pairs[num];
+        *--b = (*pair)[1];
+        *--b = (*pair)[0];
+    }
+    else {
+        *--b = (char)('0' + num);
+    }
+    return (size_t)(dest - b);
+}
+
 double rb_big_fdiv_double(VALUE x, VALUE y);
 VALUE rb_big_uminus(VALUE x);
 VALUE rb_big_hash(VALUE);
