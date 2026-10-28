@@ -1528,9 +1528,10 @@ mod hir_opt_tests {
           v15:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Integer@0x1008, ==@0x1010, cme:0x1018)
           v26:Fixnum = GuardType v10, Fixnum recompile
-          v27:BasicObject = CCallWithFrame v26, :Integer#==@0x1040, v15
+          PatchPoint MethodRedefined(NilClass@0x1040, ==@0x1010, cme:0x1048)
+          v29:FalseClass = Const Value(false)
           CheckInterrupts
-          Return v27
+          Return v29
         ");
     }
 
@@ -1557,6 +1558,39 @@ mod hir_opt_tests {
           v15:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Integer@0x1008, ==@0x1010, cme:0x1018)
           v26:Bignum = GuardType v10, Bignum recompile
+          PatchPoint MethodRedefined(NilClass@0x1040, ==@0x1010, cme:0x1048)
+          v29:FalseClass = Const Value(false)
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_dont_fold_fixnum_eq_nil_if_nilclass_eq_redefined() {
+        eval("
+            class NilClass
+              def ==(other) = 10
+            end
+            def test(o) = o == nil
+            test(3)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Integer@0x1008, ==@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum recompile
           v27:BasicObject = CCallWithFrame v26, :Integer#==@0x1040, v15
           CheckInterrupts
           Return v27

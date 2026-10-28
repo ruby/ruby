@@ -800,7 +800,18 @@ fn try_inline_fixnum_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn
 
 fn inline_integer_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumEq { left, right }, BOP_EQ, recv, other, state)
+    if let Some(result) = try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumEq { left, right }, BOP_EQ, recv, other, state) {
+        return Some(result);
+    }
+    // Heuristic: Objects get compared to nil a lot, so we can optimize that case:
+    // * `Integer#==` (`num_equal`) checks if the other object is not `Integer`/`Float`, and, if not,
+    //   dispatches to `#==` on the other object. If the other object is `nil` and `NilClass#==`
+    //   (`rb_obj_equal`, pointer equality) has not been redefined, it returns `Qfalse`
+    if fun.is_a(other, types::NilClass)
+        && fun.assume_expected_cfunc(block, unsafe { rb_cNilClass }, ID!(eq), rb_obj_equal as _, state) {
+        return Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }));
+    }
+    None
 }
 
 fn inline_integer_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
