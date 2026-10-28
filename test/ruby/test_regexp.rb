@@ -1580,6 +1580,33 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/^\u03b9\u0308\u0301$/i, "\u0390")
   end
 
+  def test_ignorecase_fold_longer_than_operand
+    %w[UTF-16LE UTF-16BE UTF-32LE UTF-32BE].each do |enc|
+      tail = "\u0103\u3042\u3044"
+      s = ("x" * 16 + "\u1E98" + "y" * 8).encode(enc)
+      re = Regexp.new(("x" * 16 + "(?i:w)" + tail).encode(enc))
+      assert_match(re, ("x" * 16 + "W" + tail).encode(enc))
+      assert_no_match(re, s)
+      re = Regexp.new(("(?i:" + "x" * 16 + "w)" + tail).encode(enc))
+      assert_match(re, ("x" * 16 + "W" + tail).encode(enc))
+      assert_no_match(re, s)
+      re = Regexp.new("(?-i:xyz)t(?-i:\u0103)".encode(enc), Regexp::IGNORECASE)
+      assert_match(re, "xyzT\u0103".encode(enc))
+      assert_no_match(re, "xyz\u1E97".encode(enc))
+    end
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      enc = Encoding::UTF_16LE
+      re = Regexp.new("(?i:w)\u6203AB".encode(enc))
+      assert_match(re, "W\u6203AB".encode(enc))
+      assert_no_match(re, "\u1E98\u6203AB".encode(enc))
+      re = Regexp.new("(?i:xw)\u6203AB".encode(enc))
+      assert_match(re, "xW\u6203AB".encode(enc))
+      assert_no_match(re, "x\u1E98\u6203AB".encode(enc))
+    end;
+  end
+
   def test_unicode_age
     assert_unicode_age("\u261c", matches: %w"6.0 1.1", unmatches: [])
 
