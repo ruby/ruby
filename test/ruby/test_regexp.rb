@@ -1279,6 +1279,21 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_emacs_mule_case_fold_at_mid_character
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      %w[Emacs-Mule stateless-ISO-2022-JP stateless-ISO-2022-JP-KDDI].each do |name|
+        enc = Encoding.find(name)
+        re = Regexp.new("(?i)(?!x)\x81\xa1{2}".b.force_encoding(enc))
+        assert_nil(re.match("\x81\xa1\x9c\xf0\xa1\xa1".b.force_encoding(enc)))
+        assert_equal(0, re =~ "\x81\xa1\x81\xa1".b.force_encoding(enc))
+        assert_equal(1, re =~ "\x81\xa2\x81\xa1\x81\xa1".b.force_encoding(enc))
+        re = Regexp.new("(?i)\x81\xa1".b.force_encoding(enc))
+        assert_equal(1, re =~ "\x9c\xf0\xa1\xa1\x81\xa1".b.force_encoding(enc))
+      end
+    end;
+  end
+
   def test_char_type
     check(/\u3042\d/, ["\u30421", "\u30422"])
 
