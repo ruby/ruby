@@ -7335,6 +7335,12 @@ impl Function {
                             insn_id
                         }
                     }
+                    &Insn::BoxBool { val: bool_val } if self.is_a(bool_val, Type::from_cbool(true)) => {
+                        self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
+                    }
+                    &Insn::BoxBool { val: bool_val } if self.is_a(bool_val, Type::from_cbool(false)) => {
+                        self.new_insn(Insn::Const { val: Const::Value(Qfalse) })
+                    }
                     &Insn::BoxBool { val: bool_val } => {
                         if let &Insn::Test { val: test_val } = self.resolve(bool_val).insn(self) {
                             // If the thing being Test'd is already a BoolExact
