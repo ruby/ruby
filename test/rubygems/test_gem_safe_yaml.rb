@@ -1049,9 +1049,9 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_load_double_quoted_unicode_escape_in_binary_metadata
-    yaml = "description: \"caf\xC3\xA9\\N\"\n".b
+    yaml = "description: \"\xE3\x81\x82\\N\"\n".b
 
-    assert_equal({ "description" => "caf\xC3\xA9\xC2\x85".b }, Gem::YAMLSerializer.load(yaml))
+    assert_equal({ "description" => "\xE3\x81\x82\xC2\x85".b }, Gem::YAMLSerializer.load(yaml))
   end
 
   def test_load_double_quoted_invalid_code_point_escape_kept
