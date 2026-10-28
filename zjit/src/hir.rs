@@ -4765,9 +4765,10 @@ impl Function {
         Type::from_profiled_type(profiled_type).is_subtype(ty)
     }
 
+    /// Guard that `val` is a `guard_type`, unless it is already known to be one.
     pub fn coerce_to(&mut self, block: BlockId, val: InsnId, guard_type: Type, state: InsnId) -> InsnId {
         if self.is_a(val, guard_type) { return val; }
-        self.push_insn(block, Insn::GuardType { val, guard_type, state, recompile: None })
+        self.guard_type_recompile(block, val, guard_type, state, Recompile)
     }
 
     pub fn guard_type_recompile(&mut self, block: BlockId, val: InsnId, guard_type: Type, state: InsnId, recompile: Recompile) -> InsnId {
