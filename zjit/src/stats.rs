@@ -157,6 +157,7 @@ make_counters! {
         compiled_iseq_count,
         failed_iseq_count,
         jit_frame_heap_bytes,
+        jit_frame_stack_map_bytes,
         skipped_native_stack_full,
 
         compile_time_ns,
@@ -165,6 +166,7 @@ make_counters! {
         invalidation_time_ns,
 
         compiled_side_exit_count,
+        side_exit_count,
         side_exit_size_bytes,
         compile_side_exit_time_ns,
 
@@ -184,10 +186,11 @@ make_counters! {
         compile_lir_time_ns,
     }
 
-    // Exit counters that are summed as side_exit_count
+    // Exit counters that break down side_exit_count by reason (--zjit-stats only)
     exit {
         // exit_: Side exits reasons
         exit_compile_error,
+        exit_function_stub_not_profiled,
         exit_exception_handler,
         exit_unhandled_newarray_send_min,
         exit_unhandled_newarray_send_hash,
@@ -450,7 +453,6 @@ make_counters! {
     // Writes to the VM frame
     vm_write_jit_frame_count,
     vm_write_sp_count,
-    vm_write_locals_count,
     vm_write_stack_count,
     vm_write_to_parent_iseq_local_count,
     // TODO(max): Implement
@@ -843,6 +845,7 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     let jit_frame_region_bytes = ZJITState::get_jit_frame_allocator().map_or(0, |allocator| allocator.mapped_bytes());
     let code_region_bytes = ZJITState::get_code_block().mapped_region_size();
     set_stat_usize!(hash, "jit_frame_region_bytes", jit_frame_region_bytes);
+    set_stat_usize!(hash, "jit_frame_count", ZJITState::get_jit_frames().len());
     set_stat_usize!(hash, "code_region_bytes", code_region_bytes);
     set_stat_usize!(hash, "zjit_alloc_bytes", zjit_alloc_bytes());
     set_stat_usize!(hash, "total_mem_bytes", code_region_bytes + jit_frame_region_bytes + zjit_alloc_bytes());
@@ -858,13 +861,9 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     }
 
     // Set side-exit counters for each SideExitReason
-    let mut side_exit_count = 0;
     for &counter in EXIT_COUNTERS {
-        let count = unsafe { *counter_ptr(counter) };
-        side_exit_count += count;
-        set_stat_usize!(hash, &counter.name(), count);
+        set_stat_usize!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
     }
-    set_stat_usize!(hash, "side_exit_count", side_exit_count);
 
     // Set side-exit counters for UnhandledYARVInsn
     let exit_counters = ZJITState::get_exit_counters();

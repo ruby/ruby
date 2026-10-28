@@ -6,15 +6,14 @@ use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
 use crate::perf;
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
-use crate::asm::LabelName;
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, vm_stack_canary, zjit_jit_frame};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, get_option};
 use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
-use crate::asm::{CodeBlock, Label};
+use crate::asm::{CodeBlock, Label, LabelName};
 use crate::state::{ZJITState, rb_zjit_record_exit_stack};
 use crate::cast::IntoUsize;
 
@@ -629,12 +628,9 @@ pub enum BlockHandler {
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExit {
     pub pc: Opnd,
-    pub stack: Vec<Opnd>,
-    pub locals: Vec<Opnd>,
+    pub vm_stack_size: usize,
     pub iseq: IseqPtr,
-    /// Stack map for older inlined frames that are not written directly by this
-    /// side exit. The current frame's stack and locals are still handled by
-    /// `stack` and `locals` above.
+    /// Stack map for the top-most frame and any inlined frames below.
     pub stack_map: Option<StackMap>,
     /// If set, the side exit will invalidate the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
@@ -991,8 +987,6 @@ macro_rules! target_for_each_operand_impl {
     ($self:expr, $visit_one:ident, $visit_many:ident, $reborrow:ident) => {
         match $self {
             Target::SideExit(data) => {
-                visit_many!(data.exit.stack);
-                visit_many!(data.exit.locals);
                 if let Some(StackMap { stack, .. }) = $reborrow!(data.exit.stack_map) {
                     for entry in stack {
                         if let StackMapEntry::Opnd(opnd) = entry {
@@ -1394,6 +1388,12 @@ impl fmt::Debug for Insn {
         });
         write!(fmt, ")")?;
 
+        if let Insn::CCall { data } = self {
+            if let Some(StackMap { stack, .. }) = &data.stack_map {
+                write!(fmt, " stack_map={stack:?}")?;
+            }
+        }
+
         // Print text, target, and pos if they are present
         if let Some(text) = self.text() {
             write!(fmt, " {text:?}")?
@@ -1791,6 +1791,8 @@ impl StackMap {
 
 /// Entry in a JITFrame stack map. These are opcodes for zjit_materialize_frames(),
 /// which walks them in order moving a write cursor down the VM stack.
+/// See Markdown file under `doc/` for diagram of stack layout.
+// TODO(alan): In documentation pass, centralize the mapping for these with corresponding C tag macros.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum StackMapEntry {
     /// Immediate Ruby VALUE or VReg to materialize.
@@ -1801,40 +1803,13 @@ pub enum StackMapEntry {
     /// at `cfp->jit_return[-slot_index]`, plus `stack_size` VM slots. Emitted as
     /// the first entry by gen_prepare_non_leaf_call(); see zjit.h.
     BasePtr { slot_index: u32, stack_size: u32 },
-}
-
-/// The base_ptr payload splits in two above the tag byte, so the slot index has
-/// to occupy exactly the bits between the tag and the stack size field.
-const _: () = assert!(
-    ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK as u64
-        == (1u64 << (ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT - ZJIT_STACK_MAP_SHIFT)) - 1,
-    "BASE_PTR index mask must cover the bits between the tag byte and the stack size field",
-);
-
-/// The stack size field runs from its shift to the top of the VALUE, so a u32
-/// always fits and StackMapEntry::BasePtr needs no runtime check for it.
-const _: () = assert!(
-    ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT + u32::BITS <= usize::BITS,
-    "BASE_PTR stack size field must be at least 32 bits wide",
-);
-
-impl StackMapEntry {
-    /// Encode a [`StackMapEntry::BasePtr`] into its tagged VALUE form.
-    /// `stack_size` is bound by [`CompileError::IseqStackTooLarge`]
-    /// `slot_index` by the max inline iteration.
-    // TODO(alan): bounds check max inline iteration as it's user-controlled.
-    fn encode_base_ptr(slot_index: u32, stack_size: u32) -> VALUE {
-        const INDEX_BITS: u32 = ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT - ZJIT_STACK_MAP_SHIFT;
-        assert!(
-            slot_index <= ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK,
-            "StackMap base_ptr slot index {slot_index} does not fit in {INDEX_BITS} bits",
-        );
-        let encoded = ((stack_size as usize) << ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT)
-            | ((slot_index as usize) << ZJIT_STACK_MAP_SHIFT)
-            | ZJIT_STACK_MAP_BASE_PTR_TAG as usize;
-        debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap base_ptr should not look like an immediate VALUE");
-        VALUE(encoded)
-    }
+    /// Move the write cursor past the frame's env data (me/cref, specval, flags),
+    /// which already lives in VM stack memory, and start the frame's locals area.
+    SkipVmEnvData,
+    /// Boundary between two control frames that one stack map describes, emitted
+    /// by `build_stack_map()` between an inlined callee and its caller. Resets
+    /// the cursor to be not in the locals area.
+    PrevFrame,
 }
 
 /// Initial capacity for asm.insns vector
@@ -2707,29 +2682,17 @@ impl Assembler
                     }
 
                     if let Some(StackMap { stack, jit_frame, frame_depth }) = stack_map {
-                        assert_eq!(unsafe { (*jit_frame).stack_size } as usize, stack.len());
-                        for (idx, stack_entry) in stack.iter().enumerate() {
-                            let entry = match *stack_entry {
-                                StackMapEntry::Opnd(Opnd::Value(value)) => {
-                                    // TODO: Investigate using a constant pool to track any value reference in the stack map
-                                    assert!(value.special_const_p(), "StackMap should only materialize immediate VALUEs, but got: {value:?}");
-                                    value
-                                }
-                                StackMapEntry::Opnd(Opnd::UImm(value)) => {
-                                    let value = VALUE(value as usize);
-                                    // TODO: Investigate using a constant pool to track any value reference in the stack map
-                                    assert!(value.special_const_p(), "StackMap should only materialize immediate VALUEs, but got: {value:?}");
-                                    value
-                                }
-                                StackMapEntry::Skip(size) => {
-                                    let encoded = (size << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_SKIP_TAG as usize;
-                                    debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap skip should not look like an immediate VALUE");
-                                    VALUE(encoded)
-                                }
-                                StackMapEntry::BasePtr { slot_index, stack_size } => {
-                                    debug_assert_eq!(idx, 0, "base_ptr must be the first StackMap entry so later entries decode from it");
-                                    StackMapEntry::encode_base_ptr(slot_index, stack_size)
-                                }
+                        let jit_frame = unsafe { &mut *jit_frame.cast_mut() };
+                        let mut writer = jit_frame.stack_map_writer();
+                        for stack_entry in stack.iter() {
+                            match *stack_entry {
+                                // TODO: Investigate using a constant pool to track any value reference in the stack map
+                                StackMapEntry::Opnd(Opnd::Value(value)) => writer.imm(value),
+                                StackMapEntry::Opnd(Opnd::UImm(value)) => writer.imm(VALUE(value as usize)),
+                                StackMapEntry::Skip(size) => writer.skip(size),
+                                StackMapEntry::BasePtr { slot_index, stack_size } => writer.base_ptr(slot_index, stack_size),
+                                StackMapEntry::SkipVmEnvData => writer.skip_vm_env_data(),
+                                StackMapEntry::PrevFrame => writer.prev_frame(),
                                 StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) => {
                                     let vreg_stack_index = match intervals[vreg].assigned.get().expect("StackMap VReg should have an allocation") {
                                         Allocation::Reg(_) => {
@@ -2741,16 +2704,12 @@ impl Assembler
                                             self.stack_state.stack_map_index_for_spill(stack_idx, frame_depth)
                                         }
                                     };
-
-                                    // Encode the offset as a shifted-and-tagged integer.
-                                    let encoded = (vreg_stack_index << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_VREG_TAG as usize;
-                                    debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap VReg should not look like an immediate VALUE");
-                                    VALUE(encoded)
+                                    writer.vreg(vreg_stack_index);
                                 }
                                 _ => unreachable!("unexpected entry in StackMap: {stack_entry:?}"),
-                            };
-                            unsafe { (*jit_frame.cast_mut()).stack.as_mut_ptr().add(idx).write(entry); }
+                            }
                         }
+                        jit_frame.set_stack_map(writer);
                     }
 
                     // Push arguments that don't fit in `c_arg_regs` onto the
@@ -3031,14 +2990,8 @@ impl Assembler
             value.special_const_p().then_some(value)
         }
 
-        fn encode_stack_map_index(asm: &Assembler, stack_idx: usize, frame_depth: usize) -> VALUE {
-            let vreg_stack_index = asm.stack_state.stack_map_index_for_spill(stack_idx, frame_depth);
-            let encoded = (vreg_stack_index << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_VREG_TAG as usize;
-            debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap VReg should not look like an immediate VALUE");
-            VALUE(encoded)
-        }
-
-        fn capture_stack_map_opnd(asm: &mut Assembler, opnd: Opnd, capture_idx: &mut usize, frame_depth: usize) -> VALUE {
+        /// Copy `opnd` into a reserved native stack slot and return the slot's stack map index.
+        fn capture_stack_map_opnd(asm: &mut Assembler, opnd: Opnd, capture_idx: &mut usize, frame_depth: usize) -> usize {
             let stack_idx = asm.stack_state.stack_idx_for_side_exit_stack_map(*capture_idx);
             *capture_idx += 1;
             let capture_slot = Opnd::Mem(Mem {
@@ -3048,39 +3001,40 @@ impl Assembler
             });
             let opnd = if matches!(opnd, Opnd::Reg(_)) { opnd.with_num_bits(64) } else { opnd };
             asm.store(capture_slot, opnd);
-            encode_stack_map_index(asm, stack_idx, frame_depth)
+            asm.stack_state.stack_map_index_for_spill(stack_idx, frame_depth)
         }
 
         fn compile_exit_stack_map(asm: &mut Assembler, stack_map: &StackMap) {
             let StackMap { stack, jit_frame, frame_depth } = stack_map;
             let jit_frame = *jit_frame;
-            assert_eq!(unsafe { (*jit_frame).stack_size } as usize, stack.len());
+            let mut writer = unsafe { &*jit_frame }.stack_map_writer();
 
             let mut capture_idx = 0;
-            for (idx, stack_entry) in stack.iter().enumerate() {
-                let entry = match *stack_entry {
-                    StackMapEntry::Opnd(Opnd::Value(_) | Opnd::UImm(_)) => {
-                        let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
-                        immediate_stack_map_value(opnd)
-                            .unwrap_or_else(|| capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth))
+            for stack_entry in stack.iter() {
+                match *stack_entry {
+                    StackMapEntry::Opnd(opnd @ (Opnd::Value(_) | Opnd::UImm(_))) => {
+                        match immediate_stack_map_value(opnd) {
+                            Some(value) => writer.imm(value),
+                            None => writer.vreg(capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth)),
+                        }
                     }
-                    StackMapEntry::Skip(size) => {
-                        let encoded = (size << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_SKIP_TAG as usize;
-                        debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap skip should not look like an immediate VALUE");
-                        VALUE(encoded)
+                    StackMapEntry::Skip(size) => writer.skip(size),
+                    StackMapEntry::BasePtr { .. } => {
+                        unreachable!("no BasePtr stackmap code in side-exit for now");
                     }
+                    StackMapEntry::SkipVmEnvData => writer.skip_vm_env_data(),
+                    StackMapEntry::PrevFrame => writer.prev_frame(),
                     StackMapEntry::Opnd(Opnd::Mem(Mem { base: MemBase::Stack { stack_idx, .. }, disp, .. })) => {
                         assert_eq!(disp, 0, "StackMap stack slot should not have a displacement");
-                        encode_stack_map_index(asm, stack_idx.to_usize(), *frame_depth)
+                        writer.vreg(asm.stack_state.stack_map_index_for_spill(stack_idx.to_usize(), *frame_depth));
                     }
-                    StackMapEntry::Opnd(Opnd::Reg(_)) => {
-                        let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
-                        capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth)
+                    StackMapEntry::Opnd(opnd @ Opnd::Reg(_)) => {
+                        writer.vreg(capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth));
                     }
-                    _ => unreachable!("unexpected entry in SideExit StackMap: {stack_entry:?}"),
-                };
-                unsafe { (*jit_frame.cast_mut()).stack.as_mut_ptr().add(idx).write(entry); }
+                    StackMapEntry::Opnd(_) => unreachable!("unexpected entry in SideExit StackMap: {stack_entry:?}"),
+                }
             }
+            unsafe { &mut *jit_frame.cast_mut() }.set_stack_map(writer);
 
             assert!(capture_idx <= asm.stack_state.num_side_exit_stack_map_slots);
             asm_comment!(asm, "install side-exit JITFrame for caller depth {}", frame_depth);
@@ -3088,39 +3042,18 @@ impl Assembler
             asm.store(jit_frame_slot, Opnd::const_ptr(jit_frame));
         }
 
-        /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
+        /// Restore VM state for the side exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals, iseq, stack_map, .. } = exit;
+            let SideExit { vm_stack_size, stack_map, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
             // so that nobody stomps on us
             asm.boundary_pad();
 
-            asm_comment!(asm, "save cfp->pc");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
-
+            // TODO(alan): Use the stack map to handle cfp->sp
             asm_comment!(asm, "save cfp->sp");
-            asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
-
-            asm_comment!(asm, "save cfp->iseq");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
-
-            // cfp->block_code and cfp->jit_return are cleared by the materialize_exit trampoline
-
-            if !stack.is_empty() {
-                asm_comment!(asm, "write stack slots: {}", join_opnds(&stack, ", "));
-                for (idx, &opnd) in stack.iter().enumerate() {
-                    asm.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
-                }
-            }
-
-            if !locals.is_empty() {
-                asm_comment!(asm, "write locals: {}", join_opnds(&locals, ", "));
-                for (idx, &opnd) in locals.iter().enumerate() {
-                    asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
-                }
-            }
+            asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, *vm_stack_size as i32 * SIZEOF_VALUE_I32));
 
             if let Some(stack_map) = stack_map {
                 compile_exit_stack_map(asm, stack_map);
@@ -3152,13 +3085,6 @@ impl Assembler
             // ccall doesn't clobber caller-saved registers
             // holding stack/local operands.
             compile_exit_save_state(asm, exit);
-            if trace_reason.is_some() || exit.recompile.is_some() {
-                // Clear cfp->jit_return to prepare for a C call. Normally, cfp->jit_return
-                // is cleared by the materialize_exit trampoline, but if we're about to
-                // make a C call, we need to clear any stale JITFrame.
-                asm_comment!(asm, "clear cfp->jit_return");
-                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
-            }
             if let Some(reason) = trace_reason {
                 // Leak a CString with the reason so it's available at runtime
                 let reason_cstr = std::ffi::CString::new(reason.to_string())
@@ -3816,6 +3742,12 @@ impl fmt::Display for Assembler {
                                 sep = ", ";
                                 result
                             })?;
+                        }
+
+                        if let Insn::CCall { data } = insn {
+                            if let Some(StackMap { stack, .. }) = &data.stack_map {
+                                write!(f, " stack_map={stack:?}")?;
+                            }
                         }
 
                         write!(f, "\n")?;
