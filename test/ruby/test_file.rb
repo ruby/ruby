@@ -313,6 +313,24 @@ class TestFile < Test::Unit::TestCase
     end
   end
 
+  def test_realdirpath_relative_symlink_under_gc_stress
+    Dir.mktmpdir('rubytest-realdirpath') {|tmpdir|
+      realdir = File.realpath(tmpdir)
+      # A long link with several names, so GC can free the link string
+      # while its later names are still being read.
+      target = "store/#{"t" * 100}/node_modules/pkg"
+      FileUtils.mkdir_p(File.join(realdir, target, "sub"))
+      Dir.mkdir(File.join(realdir, "app"))
+      begin
+        File.symlink(File.join("..", target), File.join(realdir, "app", "link"))
+      rescue Errno::EACCES, Errno::EPERM
+        omit "need privilege"
+      end
+      result = EnvUtil.under_gc_stress {File.realdirpath(File.join(realdir, "app", "link", "sub"))}
+      assert_equal(File.join(realdir, target, "sub"), result)
+    }
+  end
+
   def test_realdirpath_junction
     Dir.mktmpdir('rubytest-realpath') {|tmpdir|
       Dir.chdir(tmpdir) do
