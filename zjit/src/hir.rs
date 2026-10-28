@@ -4741,6 +4741,20 @@ impl Function {
         true
     }
 
+    /// Look up the method `method` on class `klass`.
+    /// * If the method is defined, return `false`.
+    /// * If the method is *not* defined and the class has no singleton class descendants, cache
+    ///   the negative lookup in a CME and emit a MethodRedefined PatchPoint.
+    pub fn assume_method_not_defined(&mut self, block: BlockId, klass: VALUE, method: ID, state: InsnId) -> bool {
+        let cme = unsafe { rb_callable_method_entry_or_negative(klass, method) };
+        if cme.is_null() { return false; }
+        if !unsafe { rb_zjit_callable_method_entry_is_undefined(cme) } { return false; }
+        if !self.assume_no_singleton_classes(block, klass, state) { return false; }
+        // Cache the negative lookup
+        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method, cme }, state });
+        true
+    }
+
     pub fn likely_a(&self, val: InsnId, ty: Type, state: InsnId) -> bool {
         if self.type_of(val).is_subtype(ty) {
             return true;

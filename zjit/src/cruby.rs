@@ -1729,6 +1729,7 @@ pub(crate) mod ids {
         name: include_p          content: b"include?"
         name: to_ary
         name: to_s
+        name: to_str
         name: compile
         name: eval
         name: plus               content: b"+"
