@@ -2293,15 +2293,15 @@ static size_t
 pm_statements_node_body_length(pm_statements_node_t *node);
 
 /**
- * Move an integer's values array into the arena. If the integer has heap-
- * allocated values, copy them to the arena and free the original.
+ * Move an integer's words into the arena. If the integer's words are not stored
+ * inline, copy them to the arena and free the original.
  */
 static PRISM_INLINE void
 pm_integer_arena_move(pm_arena_t *arena, pm_integer_t *integer) {
-    if (integer->values != NULL) {
+    if (integer->length > 2) {
         size_t byte_size = integer->length * sizeof(uint32_t);
-        uint32_t *old_values = integer->values;
-        integer->values = (uint32_t *) pm_arena_memdup(arena, old_values, byte_size, PRISM_ALIGNOF(uint32_t));
+        uint32_t *old_values = integer->words.values;
+        integer->words.values = (uint32_t *) pm_arena_memdup(arena, old_values, byte_size, PRISM_ALIGNOF(uint32_t));
         xfree(old_values);
     }
 }
@@ -4260,7 +4260,7 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
 
     size_t length = (size_t) (end - start);
     if (length == 1) {
-        node->denominator.value = 1;
+        node->denominator = pm_integer_uint64(1);
         return node;
     }
 
@@ -4783,7 +4783,7 @@ pm_integer_node_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token
 
     if (parser->integer.lexed) {
         // The value was already computed during lexing.
-        node->value.value = parser->integer.value;
+        node->value = pm_integer_uint64(parser->integer.value);
         parser->integer.lexed = false;
     } else {
         pm_integer_base_t integer_base = PM_INTEGER_BASE_DECIMAL;
@@ -4837,7 +4837,7 @@ pm_integer_node_rational_create(pm_parser_t *parser, pm_node_flags_t base, const
         base | PM_NODE_FLAG_STATIC_LITERAL,
         PM_LOCATION_INIT_TOKEN(parser, token),
         ((pm_integer_t) { 0 }),
-        ((pm_integer_t) { .value = 1 })
+        pm_integer_uint64(1)
     );
 
     pm_integer_base_t integer_base = PM_INTEGER_BASE_DECIMAL;
@@ -8304,18 +8304,18 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
             const uint8_t *end = parser->end;
             uint64_t value = (uint64_t) (cursor[-1] - '0');
 
-            bool has_underscore = false;
+            size_t underscores = 0;
             bool prev_underscore = false;
             const uint8_t *invalid = NULL;
 
             while (cursor < end) {
                 uint8_t c = *cursor;
                 if (c >= '0' && c <= '9') {
-                    if (value <= UINT32_MAX) value = value * 10 + (uint64_t) (c - '0');
+                    value = value * 10 + (uint64_t) (c - '0');
                     prev_underscore = false;
                     cursor++;
                 } else if (c == '_') {
-                    has_underscore = true;
+                    underscores++;
                     if (prev_underscore && invalid == NULL) invalid = cursor;
                     prev_underscore = true;
                     cursor++;
@@ -8324,13 +8324,16 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                 }
             }
 
-            if (has_underscore) {
+            if (underscores > 0) {
                 if (prev_underscore && invalid == NULL) invalid = cursor - 1;
                 pm_strspn_number_validate(parser, parser->current.end, (size_t) (cursor - parser->current.end), invalid);
             }
 
-            if (value <= UINT32_MAX) {
-                parser->integer.value = (uint32_t) value;
+            /* This literal does not start with 0, so at most 19 digits means
+             * it is below 10**19 and value has not wrapped. */
+            size_t digits = (size_t) (cursor - parser->current.end) + 1 - underscores;
+            if (digits <= 19) {
+                parser->integer.value = value;
                 parser->integer.lexed = true;
             }
 

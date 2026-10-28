@@ -32,13 +32,15 @@ key_hash(uint64_t type, uint64_t a, uint64_t b) {
 }
 
 /**
- * Return the hash of the value of an integer. An integer that fits into a
- * uint32_t keys on its value directly, and a larger one keys on the digest of
- * its words.
+ * Return the hash of the value of an integer. An integer whose words are stored
+ * inline keys on its value directly, and a larger one keys on the digest of its
+ * words.
  */
 static uint64_t
 integer_hash(const pm_integer_t *integer) {
-    uint64_t magnitude = integer->values ? pm_xxh3((const uint8_t *) integer->values, sizeof(uint32_t) * integer->length) : integer->value;
+    uint64_t magnitude = (integer->length > 2)
+        ? pm_xxh3((const uint8_t *) integer->words.values, sizeof(uint32_t) * integer->length)
+        : (((uint64_t) integer->words.value[1] << 32) | integer->words.value[0]);
     return key_hash(PM_INTEGER_NODE, integer->negative, magnitude);
 }
 
@@ -121,9 +123,9 @@ int64_value(const pm_parser_t *parser, const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_INTEGER_NODE: {
             const pm_integer_t *integer = &((const pm_integer_node_t *) node)->value;
-            if (integer->values) return integer->negative ? INT64_MIN : INT64_MAX;
+            if (integer->length > 1) return integer->negative ? INT64_MIN : INT64_MAX;
 
-            int64_t value = (int64_t) integer->value;
+            int64_t value = (int64_t) integer->words.value[0];
             return integer->negative ? -value : value;
         }
         case PM_SOURCE_LINE_NODE:
