@@ -25,9 +25,6 @@ pm_integer_uint64(uint64_t value) {
  * from the string itself.
  */
 typedef enum {
-    /* The default decimal base, with no prefix. Leading 0s will be ignored. */
-    PM_INTEGER_BASE_DEFAULT,
-
     /* The binary base, indicated by a 0b or 0B prefix. */
     PM_INTEGER_BASE_BINARY,
 
@@ -57,13 +54,11 @@ void pm_integer_parse(pm_arena_t *arena, pm_integer_t *integer, pm_integer_base_
 int pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right);
 
 /*
- * Reduce a ratio of integers to its simplest form.
- *
- * If either the numerator or denominator do not fit into a 32-bit integer, then
- * this function is a no-op. In the future, we may consider reducing even the
- * larger numbers, but for now we're going to keep it simple.
+ * Parse a float rational literal like 1.5r, given its digits and decimal point
+ * without the r suffix, into a numerator and denominator in lowest terms. Words
+ * of either that do not fit in two words are allocated from the given arena.
  */
-void pm_integers_reduce(pm_integer_t *numerator, pm_integer_t *denominator);
+void pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer_t *denominator, const uint8_t *start, const uint8_t *end);
 
 /* Convert an integer to a decimal string. */
 void pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer);

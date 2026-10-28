@@ -4238,38 +4238,7 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
         ((pm_integer_t) { 0 })
     );
 
-    const uint8_t *start = token->start;
-    const uint8_t *end = token->end - 1; // r
-
-    while (start < end && *start == '0') start++; // 0.1 -> .1
-    while (end > start && end[-1] == '0') end--; // 1.0 -> 1.
-
-    size_t length = (size_t) (end - start);
-    if (length == 1) {
-        node->denominator = pm_integer_uint64(1);
-        return node;
-    }
-
-    const uint8_t *point = memchr(start, '.', length);
-    assert(point && "should have a decimal point");
-
-    uint8_t *digits = xmalloc(length);
-    if (digits == NULL) PRISM_OOM();
-
-    memcpy(digits, start, (unsigned long) (point - start));
-    memcpy(digits + (point - start), point + 1, (unsigned long) (end - point - 1));
-    pm_integer_parse(parser->arena, &node->numerator, PM_INTEGER_BASE_DEFAULT, digits, digits + length - 1);
-
-    size_t fract_length = 0;
-    for (const uint8_t *fract = point; fract < end; ++fract) {
-        if (*fract != '_') ++fract_length;
-    }
-    digits[0] = '1';
-    if (fract_length > 1) memset(digits + 1, '0', fract_length - 1);
-    pm_integer_parse(parser->arena, &node->denominator, PM_INTEGER_BASE_DEFAULT, digits, digits + fract_length);
-    xfree_sized(digits, length);
-
-    pm_integers_reduce(&node->numerator, &node->denominator);
+    pm_integer_parse_rational(parser->arena, &node->numerator, &node->denominator, token->start, token->end - 1);
     return node;
 }
 
