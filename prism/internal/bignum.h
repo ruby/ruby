@@ -7,8 +7,13 @@
 
 #include "prism/compiler/inline.h"
 
+#include "prism/internal/bit.h"
+
 #include <assert.h>
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 /*
  * An arbitrary-precision unsigned integer.
@@ -61,6 +66,86 @@ pm_bignum_div(pm_bignum_t *bignum, uint32_t divisor) {
 
     if (bignum->length > 0 && bignum->words[bignum->length - 1] == 0) bignum->length--;
     return (uint32_t) remainder;
+}
+
+/*
+ * Divide the number by divisor if it divides evenly, and return whether it did.
+ * Otherwise the number is left unchanged: multiplying the quotient back and
+ * adding the remainder restores it exactly.
+ */
+static PRISM_INLINE bool
+pm_bignum_div_exact(pm_bignum_t *bignum, uint32_t divisor) {
+    uint32_t remainder = pm_bignum_div(bignum, divisor);
+    if (remainder == 0) return true;
+
+    pm_bignum_mul_add(bignum, divisor, remainder);
+    return false;
+}
+
+/*
+ * Shift the number left by count bits, in place. The words grow by count / 32
+ * plus possibly one more, so the storage must have room for them.
+ */
+static PRISM_INLINE void
+pm_bignum_shift_left(pm_bignum_t *bignum, size_t count) {
+    if (bignum->length == 0) return;
+
+    uint32_t *words = bignum->words;
+    uint32_t length = bignum->length;
+    uint32_t word_shift = (uint32_t) (count / 32);
+    uint32_t bit_shift = (uint32_t) (count % 32);
+
+    /* Work down from the top word, so each word is read before the word that
+     * replaces it is written. */
+    uint32_t carry = bit_shift == 0 ? 0 : words[length - 1] >> (32 - bit_shift);
+    for (uint32_t index = length; index > 0; index--) {
+        uint32_t below = (bit_shift == 0 || index == 1) ? 0 : words[index - 2] >> (32 - bit_shift);
+        words[index - 1 + word_shift] = (words[index - 1] << bit_shift) | below;
+    }
+
+    memset(words, 0, sizeof(uint32_t) * word_shift);
+    bignum->length = length + word_shift;
+    if (carry != 0) words[bignum->length++] = carry;
+}
+
+/*
+ * Shift the number right by count bits, in place, dropping the bits that are
+ * shifted out.
+ */
+static PRISM_INLINE void
+pm_bignum_shift_right(pm_bignum_t *bignum, size_t count) {
+    uint32_t *words = bignum->words;
+    uint32_t word_shift = (uint32_t) (count / 32);
+    uint32_t bit_shift = (uint32_t) (count % 32);
+
+    if (word_shift >= bignum->length) {
+        bignum->length = 0;
+        return;
+    }
+
+    /* Work up from the bottom word, so each word is read before the word that
+     * replaces it is written. */
+    uint32_t length = bignum->length - word_shift;
+    for (uint32_t index = 0; index < length; index++) {
+        uint32_t above = (bit_shift == 0 || index + 1 == length) ? 0 : words[index + word_shift + 1] << (32 - bit_shift);
+        words[index] = (words[index + word_shift] >> bit_shift) | above;
+    }
+
+    bignum->length = length;
+    if (words[length - 1] == 0) bignum->length--;
+}
+
+/*
+ * Return the number of trailing zero bits in a nonzero number. Its top word is
+ * nonzero, so the scan for the first nonzero word stops within its length.
+ */
+static PRISM_INLINE size_t
+pm_bignum_trailing_zeros(const pm_bignum_t *bignum) {
+    assert(bignum->length > 0 && bignum->words[bignum->length - 1] != 0);
+
+    size_t index = 0;
+    while (bignum->words[index] == 0) index++;
+    return index * 32 + pm_ctzll(bignum->words[index]);
 }
 
 /*

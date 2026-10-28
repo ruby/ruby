@@ -60,6 +60,34 @@ pm_integer_parse_digit(const uint8_t character) {
 }
 
 /**
+ * Whether a character between the digits of a number is skipped. Underscores
+ * separate digits, and the decimal point of a float rational like 1.5r does not
+ * change its numerator, which is all of its digits.
+ */
+static PRISM_INLINE bool
+pm_integer_separator(uint8_t character) {
+    return character == '_' || character == '.';
+}
+
+/**
+ * Store a bignum whose words are the most recent allocation in the arena, with
+ * room for capacity words, into an integer. An integer with at most two words
+ * stores them inline, so all of the arena words are given back; otherwise only
+ * the unused ones are.
+ */
+static void
+pm_integer_from_bignum(pm_arena_t *arena, pm_integer_t *integer, const pm_bignum_t *bignum, size_t capacity) {
+    if (bignum->length <= 2) {
+        uint64_t value = (bignum->length > 0 ? (uint64_t) bignum->words[0] : 0) | (bignum->length > 1 ? (uint64_t) bignum->words[1] << 32 : 0);
+        pm_arena_shrink(arena, bignum->words, sizeof(uint32_t) * capacity, 0);
+        *integer = pm_integer_uint64(value);
+    } else {
+        pm_arena_shrink(arena, bignum->words, sizeof(uint32_t) * capacity, sizeof(uint32_t) * bignum->length);
+        *integer = (pm_integer_t) { .length = bignum->length, .words = { .values = bignum->words } };
+    }
+}
+
+/**
  * Parse the digits of an integer in a power-of-two base that does not fit in
  * two words. Every digit but the leading one contributes exactly the same number
  * of bits, so the exact number of words is known before parsing, and the digits
@@ -78,7 +106,7 @@ pm_integer_parse_powof2(pm_arena_t *arena, pm_integer_t *integer, uint32_t base,
     size_t bit_position = 0;
 
     for (const uint8_t *cursor = end; cursor > start;) {
-        if (*--cursor == '_') continue;
+        if (pm_integer_separator(*--cursor)) continue;
         uint32_t value = pm_integer_parse_digit(*cursor);
 
         size_t index = bit_position / 32;
@@ -119,7 +147,7 @@ pm_integer_parse_decimal(pm_arena_t *arena, pm_integer_t *integer, size_t digits
     uint32_t chunk = 0;
 
     for (const uint8_t *cursor = start; cursor < end; cursor++) {
-        if (*cursor == '_') continue;
+        if (pm_integer_separator(*cursor)) continue;
         chunk = chunk * 10 + pm_integer_parse_digit(*cursor);
 
         if (++chunk_digits == chunk_size) {
@@ -132,47 +160,17 @@ pm_integer_parse_decimal(pm_arena_t *arena, pm_integer_t *integer, size_t digits
     }
 
     assert(bignum.length > 2 && bignum.length <= capacity);
-    pm_arena_shrink(arena, bignum.words, sizeof(uint32_t) * capacity, sizeof(uint32_t) * bignum.length);
-    *integer = (pm_integer_t) { .length = bignum.length, .words = { .values = bignum.words } };
+    pm_integer_from_bignum(arena, integer, &bignum, capacity);
 }
 
 /**
- * Parse an integer from a string. This assumes that the format of the integer
- * has already been validated, as internal validation checks are not performed
- * here.
+ * Parse the digits of an integer in the given base, after any prefix.
  */
-void
-pm_integer_parse(pm_arena_t *arena, pm_integer_t *integer, pm_integer_base_t base, const uint8_t *start, const uint8_t *end) {
-    /* Ignore unary +. Unary - is parsed differently and will not end up here.
-     * Instead, it will modify the parsed integer later. */
-    if (*start == '+') start++;
-
-    /* Determine the multiplier from the base, and skip past any prefixes. */
-    uint32_t multiplier = 10;
-    switch (base) {
-        case PM_INTEGER_BASE_DEFAULT:
-            break;
-        case PM_INTEGER_BASE_BINARY:
-            start += 2; /* 0b */
-            multiplier = 2;
-            break;
-        case PM_INTEGER_BASE_OCTAL:
-            start++; /* 0 */
-            if (*start == '_' || *start == 'o' || *start == 'O') start++; /* o */
-            multiplier = 8;
-            break;
-        case PM_INTEGER_BASE_DECIMAL:
-            if (*start == '0' && (end - start) > 1) start += 2; /* 0d */
-            break;
-        case PM_INTEGER_BASE_HEXADECIMAL:
-            start += 2; /* 0x */
-            multiplier = 16;
-            break;
-    }
-
+static void
+pm_integer_parse_digits(pm_arena_t *arena, pm_integer_t *integer, uint32_t multiplier, const uint8_t *start, const uint8_t *end) {
     /* Leading zeros do not change the value, so skip them here and the paths
      * below always start at a nonzero digit. */
-    while (start < end && (*start == '0' || *start == '_')) start++;
+    while (start < end && (*start == '0' || pm_integer_separator(*start))) start++;
 
     /* Everything has been consumed if the integer is zero, or if it is invalid
      * and has no digits. Either way the result is zero. */
@@ -191,13 +189,13 @@ pm_integer_parse(pm_arena_t *arena, pm_integer_t *integer, pm_integer_base_t bas
     uint64_t value = (uint64_t) pm_integer_parse_digit(*cursor++);
 
     for (; cursor < end; cursor++) {
-        if (*cursor == '_') continue;
+        if (pm_integer_separator(*cursor)) continue;
         uint64_t digit = (uint64_t) pm_integer_parse_digit(*cursor);
 
         if (value > limit || (value == limit && digit > limit_digit)) {
             size_t digits = 0;
             for (const uint8_t *scan = start; scan < end; scan++) {
-                if (*scan != '_') digits++;
+                if (!pm_integer_separator(*scan)) digits++;
             }
 
             if (multiplier == 10) {
@@ -213,6 +211,114 @@ pm_integer_parse(pm_arena_t *arena, pm_integer_t *integer, pm_integer_base_t bas
     }
 
     *integer = pm_integer_uint64(value);
+}
+
+/**
+ * Parse an integer from a string. This assumes that the format of the integer
+ * has already been validated, as internal validation checks are not performed
+ * here.
+ */
+void
+pm_integer_parse(pm_arena_t *arena, pm_integer_t *integer, pm_integer_base_t base, const uint8_t *start, const uint8_t *end) {
+    /* Ignore unary +. Unary - is parsed differently and will not end up here.
+     * Instead, it will modify the parsed integer later. */
+    if (*start == '+') start++;
+
+    /* Determine the multiplier from the base, and skip past any prefixes. */
+    uint32_t multiplier = 10;
+    switch (base) {
+        case PM_INTEGER_BASE_BINARY:
+            start += 2; /* 0b */
+            multiplier = 2;
+            break;
+        case PM_INTEGER_BASE_OCTAL:
+            start++; /* 0 */
+            if (*start == '_' || *start == 'o' || *start == 'O') start++; /* o */
+            multiplier = 8;
+            break;
+        case PM_INTEGER_BASE_DECIMAL:
+            if (*start == '0' && (end - start) > 1) start += 2; /* 0d */
+            break;
+        case PM_INTEGER_BASE_HEXADECIMAL:
+            start += 2; /* 0x */
+            multiplier = 16;
+            break;
+    }
+
+    pm_integer_parse_digits(arena, integer, multiplier, start, end);
+}
+
+/**
+ * Parse a float rational literal like 1.5r, given its digits and decimal point
+ * without the r suffix, into a numerator and denominator in lowest terms. Its
+ * value is its digits read as an integer over 10**k, where k is the number of
+ * digits after the decimal point. Since 10**k is 2**k * 5**k, the greatest
+ * common divisor of the two is a power of two times a power of five, so the
+ * fraction is reduced by dividing those out of the numerator and leaving them
+ * out of the denominator.
+ */
+void
+pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer_t *denominator, const uint8_t *start, const uint8_t *end) {
+    static const uint32_t powof5[14] = { 1, 5, 25, 125, 625, 3125, 15625, 78125, 390625, 1953125, 9765625, 48828125, 244140625, 1220703125 };
+
+    const uint8_t *point = memchr(start, '.', (size_t) (end - start));
+    assert(point != NULL);
+
+    /* Each trailing zero after the decimal point divides both sides by 10, so
+     * drop them before parsing. */
+    while (end > point + 1 && (end[-1] == '0' || end[-1] == '_')) end--;
+
+    size_t exponent = 0;
+    for (const uint8_t *cursor = point + 1; cursor < end; cursor++) {
+        if (*cursor != '_') exponent++;
+    }
+
+    pm_integer_parse_digits(arena, numerator, 10, start, end);
+    size_t twos = 0;
+    size_t fives = 0;
+
+    if (numerator->length > 0 && exponent > 0) {
+        uint32_t length = numerator->length;
+        pm_bignum_t bignum = {
+            .length = length,
+            .words = length <= 2 ? numerator->words.value : numerator->words.values
+        };
+
+        twos = pm_bignum_trailing_zeros(&bignum);
+        if (twos > exponent) twos = exponent;
+        pm_bignum_shift_right(&bignum, twos);
+
+        /* 5**13 is the largest power of five that fits in a word, so divide by
+         * it while it divides evenly before dividing by five alone. */
+        while (exponent - fives >= 13 && pm_bignum_div_exact(&bignum, powof5[13])) fives += 13;
+        while (fives < exponent && pm_bignum_div_exact(&bignum, 5)) fives++;
+
+        if (length <= 2) {
+            uint64_t value = (bignum.length > 0 ? (uint64_t) bignum.words[0] : 0) | (bignum.length > 1 ? (uint64_t) bignum.words[1] << 32 : 0);
+            *numerator = pm_integer_uint64(value);
+        } else {
+            pm_integer_from_bignum(arena, numerator, &bignum, length);
+        }
+    }
+
+    /* The denominator is what is left of 10**exponent. 2378/1024 is just above
+     * log2(5), so this capacity never undercounts. */
+    size_t remaining_fives = exponent - fives;
+    size_t remaining_twos = exponent - twos;
+    size_t capacity = (remaining_fives * 2378 / 1024 + remaining_twos + 32) / 32;
+
+    pm_bignum_t bignum = {
+        .length = 1,
+        .words = (uint32_t *) pm_arena_alloc(arena, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t))
+    };
+    bignum.words[0] = 1;
+
+    for (; remaining_fives >= 13; remaining_fives -= 13) pm_bignum_mul_add(&bignum, powof5[13], 0);
+    if (remaining_fives > 0) pm_bignum_mul_add(&bignum, powof5[remaining_fives], 0);
+    pm_bignum_shift_left(&bignum, remaining_twos);
+
+    assert(bignum.length <= capacity);
+    pm_integer_from_bignum(arena, denominator, &bignum, capacity);
 }
 
 /**
@@ -239,39 +345,6 @@ pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right) {
     pm_bignum_t left_bignum = pm_integer_bignum(left);
     pm_bignum_t right_bignum = pm_integer_bignum(right);
     return pm_bignum_compare(&left_bignum, &right_bignum) * negative;
-}
-
-/**
- * Reduce a ratio of integers to its simplest form.
- */
-void pm_integers_reduce(pm_integer_t *numerator, pm_integer_t *denominator) {
-    /* If either the numerator or denominator do not fit into a 32-bit integer,
-     * then this function is a no-op. In the future, we may consider reducing
-     * even the larger numbers, but for now we're going to keep it simple. */
-    if (
-        /* If the numerator doesn't fit into a 32-bit integer, return early. */
-        numerator->length > 1 ||
-        /* If the denominator doesn't fit into a 32-bit integer, return early. */
-        denominator->length > 1 ||
-        /* If the numerator is 0, then return early. */
-        numerator->length == 0 ||
-        /* If the denominator is 1, then return early. */
-        denominator->words.value[0] == 1
-    ) return;
-
-    /* Find the greatest common divisor of the numerator and denominator. */
-    uint32_t divisor = numerator->words.value[0];
-    uint32_t remainder = denominator->words.value[0];
-
-    while (remainder != 0) {
-        uint32_t temporary = remainder;
-        remainder = divisor % remainder;
-        divisor = temporary;
-    }
-
-    /* Divide the numerator and denominator by the greatest common divisor. */
-    numerator->words.value[0] /= divisor;
-    denominator->words.value[0] /= divisor;
 }
 
 /**
