@@ -3197,13 +3197,9 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
     }
 }
 
-/// True if the `invokeblock` call flags permit ifunc block handlers with
-/// `rb_vm_yield_with_cfunc`, which takes only positional arguments.
-fn can_invoke_block_ifunc(flags: u32) -> bool {
-    (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG)) == 0
-}
-
-/// True if the `invokeblock` call flags permit inlining the block dispatch.
+/// True if the `invokeblock` call flags permit dispatching the block directly, either to an
+/// ISEQ block or to an ifunc block with `rb_vm_yield_with_cfunc`. Both take only positional
+/// arguments. `VM_CALL_ARGS_BLOCKARG` never appears with `yield` since it's a syntax error.
 fn can_direct_invoke_block(flags: u32) -> bool {
     (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG | VM_CALL_ARGS_BLOCKARG)) == 0
 }
@@ -3436,7 +3432,7 @@ impl Function {
         state: InsnId,
         reason: SendFallbackReason,
     ) -> (BlockId, InsnId) {
-        if !can_invoke_block_ifunc(flags) {
+        if !can_direct_invoke_block(flags) {
             let result = self.push_insn(block, Insn::InvokeBlock { cd, args, state, reason });
             return (block, result);
         }
