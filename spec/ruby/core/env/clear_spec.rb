@@ -17,4 +17,17 @@ describe "ENV.clear" do
     end
   end
 
+  platform_is_not :windows do
+    it "deletes environment variables with non-ASCII names" do
+      orig = ENV.to_hash
+      begin
+        ENV["ENV_CLEAR_SPEC_\u00DCBER"] = "value"
+        ENV.clear
+        ENV.size.should == 0
+        ENV["ENV_CLEAR_SPEC_\u00DCBER"].should == nil
+      ensure
+        ENV.replace orig
+      end
+    end
+  end
 end

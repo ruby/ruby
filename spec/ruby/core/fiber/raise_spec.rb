@@ -138,4 +138,22 @@ describe "Fiber#raise" do
     fiber.transfer
     -> { fiber.raise "msg" }.should.raise(RuntimeError, "msg")
   end
+
+  it "lets a transferring fiber that rescues the exception transfer back" do
+    root = Fiber.current
+    fiber = Fiber.new do
+      2.times do
+        begin
+          root.transfer
+        rescue RuntimeError => e
+          e.message.should == "msg"
+        end
+      end
+      :done
+    end
+    fiber.transfer
+    fiber.raise("msg").should == nil
+    fiber.raise("msg").should == :done
+    fiber.should_not.alive?
+  end
 end

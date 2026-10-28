@@ -22,6 +22,12 @@ describe "BigDecimal#==" do
     (@bigint == 1000).should == true
   end
 
+  it "compares Float values using at most 16 significant decimal digits" do
+    (BigDecimal("8.03") == 8.03).should == true
+    (BigDecimal("0.84551240822557006") == 0.84551240822557006).should == false
+    (BigDecimal("1.2345678901234567") == 1.2345678901234567).should == false
+  end
+
   it "returns false for NaN as it is never equal to any number" do
     (@nan == @nan).should == false
     (@a == @nan).should == false

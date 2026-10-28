@@ -152,6 +152,12 @@ describe "StringIO#each_line when passed limit" do
     @io.each_line(4) { |s| seen << s }
     seen.should == ["a b ", "c d ", "e\n", "1 2 ", "3 4 ", "5"]
   end
+
+  it "does not split a multi-byte character" do
+    seen = []
+    StringIO.new("ééé").each_line(3) { |s| seen << s }
+    seen.should == ["éé", "é"]
+  end
 end
 
 describe "StringIO#each when passed separator and limit" do

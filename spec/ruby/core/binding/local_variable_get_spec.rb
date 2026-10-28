@@ -36,6 +36,15 @@ describe "Binding#local_variable_get" do
     }.call.should == 10
   end
 
+  it "gets a local variable from a block inside a for loop" do
+    results = []
+    for i in 1..2
+      -> { results << binding.local_variable_get(:i) }.call
+    end
+
+    results.should == [1, 2]
+  end
+
   it 'gets a local variable defined using eval()' do
     bind = binding
     bind.eval('number = 10')

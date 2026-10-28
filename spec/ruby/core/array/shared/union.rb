@@ -76,4 +76,21 @@ describe :array_binary_union, shared: true do
 
     [x].send(@method, [x]).should == [x]
   end
+
+  it "does not call #hash for small arrays" do
+    a = Object.new
+    b = Object.new
+    [a, b].each { |object| object.define_singleton_method(:hash) { raise "#hash called" } }
+
+    [a, b].send(@method, [b]).should == [a, b]
+  end
+
+  it "uses #hash when the combined size exceeds the small array limit" do
+    poison = Object.new
+    poison.define_singleton_method(:hash) { raise "#hash called" }
+    array = Array.new(15) { Object.new }
+
+    array.send(@method, [poison]).should == array + [poison]
+    -> { Array.new(16) { Object.new }.send(@method, [poison]) }.should.raise(RuntimeError, "#hash called")
+  end
 end

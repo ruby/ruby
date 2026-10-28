@@ -56,4 +56,31 @@ describe "UNIXSocket.pair" do
       @s2.path.should == ""
     end
   end
+
+  it "yields the sockets, returns the block's value and closes them afterwards" do
+    sockets = nil
+    UNIXSocket.pair { |s1, s2| sockets = [s1, s2]; :result }.should == :result
+    sockets.map(&:closed?).should == [true, true]
+  end
+
+  it "closes the sockets when the block raises" do
+    sockets = nil
+    -> { UNIXSocket.pair { |s1, s2| sockets = [s1, s2]; raise "boom" } }.should.raise(RuntimeError, "boom")
+    sockets.map(&:closed?).should == [true, true]
+  end
+
+  it "ignores a StandardError from closing a socket and still closes the other one" do
+    sockets = nil
+    UNIXSocket.pair do |s1, s2|
+      sockets = [s1, s2]
+      def s2.close
+        raise IOError, "close failed"
+      end
+      :result
+    end.should == :result
+    sockets[0].should.closed?
+    $!.should == nil
+  ensure
+    IO.instance_method(:close).bind_call(sockets[1]) if sockets
+  end
 end
