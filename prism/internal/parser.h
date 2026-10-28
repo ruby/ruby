@@ -814,12 +814,12 @@ struct pm_parser_t {
         pm_node_flags_t base;
 
         /*
-         * When lexing a decimal integer that fits in a uint32_t, we compute
+         * When lexing a decimal integer that fits in a uint64_t, we compute
          * the value during lexing to avoid re-scanning the digits during
          * parsing. If lexed is true, this holds the result and
          * pm_integer_parse can be skipped.
          */
-        uint32_t value;
+        uint64_t value;
 
         /* Whether value holds a valid pre-computed integer. */
         bool lexed;

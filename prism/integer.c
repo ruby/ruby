@@ -17,249 +17,237 @@
 #include <string.h>
 
 /**
- * Free the internal memory of an integer. This memory will only be allocated if
- * the integer exceeds the size of a single uint32_t.
+ * An unsigned integer used as scratch space by the arithmetic below. Its words
+ * are digits in whichever base the operation works in (1<<32 or 10**9), least
+ * significant first. They always live on the heap and there is always at least
+ * one, so the arithmetic needs no special cases for small values;
+ * pm_integer_from_bignum converts a result into a pm_integer_t.
+ */
+typedef struct {
+    /** The number of words. */
+    uint32_t length;
+
+    /** The words, least significant first. */
+    uint32_t *words;
+} pm_bignum_t;
+
+/**
+ * Free the words of a bignum.
  */
 static void
-pm_integer_free(pm_integer_t *integer) {
-    if (integer->values) {
-        xfree(integer->values);
-    }
+pm_bignum_free(pm_bignum_t *bignum) {
+    xfree(bignum->words);
 }
 
 /**
- * Pull out the length and values from the integer, regardless of the form in
- * which the length/values are stored.
- */
-#define INTEGER_EXTRACT(integer, length_variable, values_variable) \
-    if ((integer)->values == NULL) { \
-        length_variable = 1; \
-        values_variable = &(integer)->value; \
-    } else { \
-        length_variable = (integer)->length; \
-        values_variable = (integer)->values; \
-    }
-
-/**
- * Adds two positive pm_integer_t with the given base.
- * Return pm_integer_t with values allocated. Not normalized.
+ * Adds two pm_bignum_t with the given base.
+ * Return pm_bignum_t with words allocated. Not normalized.
  */
 static void
-big_add(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *right, uint64_t base) {
-    size_t left_length;
-    uint32_t *left_values;
-    INTEGER_EXTRACT(left, left_length, left_values)
+big_add(pm_bignum_t *destination, const pm_bignum_t *left, const pm_bignum_t *right, uint64_t base) {
+    uint32_t left_length = left->length;
+    const uint32_t *left_words = left->words;
 
-    size_t right_length;
-    uint32_t *right_values;
-    INTEGER_EXTRACT(right, right_length, right_values)
+    uint32_t right_length = right->length;
+    const uint32_t *right_words = right->words;
 
-    size_t length = left_length < right_length ? right_length : left_length;
-    uint32_t *values = (uint32_t *) xmalloc(sizeof(uint32_t) * (length + 1));
-    if (values == NULL) PRISM_OOM();
+    uint32_t length = left_length < right_length ? right_length : left_length;
+    uint32_t *words = (uint32_t *) xmalloc(sizeof(uint32_t) * (length + 1));
+    if (words == NULL) PRISM_OOM();
 
     uint64_t carry = 0;
     for (size_t index = 0; index < length; index++) {
-        uint64_t sum = carry + (index < left_length ? left_values[index] : 0) + (index < right_length ? right_values[index] : 0);
-        values[index] = (uint32_t) (sum % base);
+        uint64_t sum = carry + (index < left_length ? left_words[index] : 0) + (index < right_length ? right_words[index] : 0);
+        words[index] = (uint32_t) (sum % base);
         carry = sum / base;
     }
 
     if (carry > 0) {
-        values[length] = (uint32_t) carry;
+        words[length] = (uint32_t) carry;
         length++;
     }
 
-    *destination = (pm_integer_t) { length, values, 0, false };
+    *destination = (pm_bignum_t) { length, words };
 }
 
 /**
  * Internal use for karatsuba_multiply. Calculates `a - b - c` with the given
  * base. Assume a, b, c, a - b - c all to be positive.
- * Return pm_integer_t with values allocated. Not normalized.
+ * Return pm_bignum_t with words allocated. Not normalized.
  */
 static void
-big_sub2(pm_integer_t *destination, pm_integer_t *a, pm_integer_t *b, pm_integer_t *c, uint64_t base) {
-    size_t a_length;
-    uint32_t *a_values;
-    INTEGER_EXTRACT(a, a_length, a_values)
+big_sub2(pm_bignum_t *destination, const pm_bignum_t *a, const pm_bignum_t *b, const pm_bignum_t *c, uint64_t base) {
+    uint32_t a_length = a->length;
+    const uint32_t *a_words = a->words;
 
-    size_t b_length;
-    uint32_t *b_values;
-    INTEGER_EXTRACT(b, b_length, b_values)
+    uint32_t b_length = b->length;
+    const uint32_t *b_words = b->words;
 
-    size_t c_length;
-    uint32_t *c_values;
-    INTEGER_EXTRACT(c, c_length, c_values)
+    uint32_t c_length = c->length;
+    const uint32_t *c_words = c->words;
 
-    uint32_t *values = (uint32_t*) xmalloc(sizeof(uint32_t) * a_length);
-    if (values == NULL) PRISM_OOM();
+    uint32_t *words = (uint32_t*) xmalloc(sizeof(uint32_t) * a_length);
+    if (words == NULL) PRISM_OOM();
 
     int64_t carry = 0;
     for (size_t index = 0; index < a_length; index++) {
         int64_t sub = (
             carry +
-            a_values[index] -
-            (index < b_length ? b_values[index] : 0) -
-            (index < c_length ? c_values[index] : 0)
+            a_words[index] -
+            (index < b_length ? b_words[index] : 0) -
+            (index < c_length ? c_words[index] : 0)
         );
 
         if (sub >= 0) {
-            values[index] = (uint32_t) sub;
+            words[index] = (uint32_t) sub;
             carry = 0;
         } else {
             sub += 2 * (int64_t) base;
-            values[index] = (uint32_t) ((uint64_t) sub % base);
+            words[index] = (uint32_t) ((uint64_t) sub % base);
             carry = sub / (int64_t) base - 2;
         }
     }
 
-    while (a_length > 1 && values[a_length - 1] == 0) a_length--;
-    *destination = (pm_integer_t) { a_length, values, 0, false };
+    while (a_length > 1 && words[a_length - 1] == 0) a_length--;
+    *destination = (pm_bignum_t) { a_length, words };
 }
 
 /**
- * Multiply two positive integers with the given base using karatsuba algorithm.
- * Return pm_integer_t with values allocated. Not normalized.
+ * Multiply two pm_bignum_t with the given base using karatsuba algorithm.
+ * Return pm_bignum_t with words allocated. Not normalized.
  */
 static void
-karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *right, uint64_t base) {
-    size_t left_length;
-    uint32_t *left_values;
-    INTEGER_EXTRACT(left, left_length, left_values)
+karatsuba_multiply(pm_bignum_t *destination, const pm_bignum_t *left, const pm_bignum_t *right, uint64_t base) {
+    uint32_t left_length = left->length;
+    uint32_t *left_words = left->words;
 
-    size_t right_length;
-    uint32_t *right_values;
-    INTEGER_EXTRACT(right, right_length, right_values)
+    uint32_t right_length = right->length;
+    uint32_t *right_words = right->words;
 
     if (left_length > right_length) {
-        size_t temporary_length = left_length;
+        uint32_t temporary_length = left_length;
         left_length = right_length;
         right_length = temporary_length;
 
-        uint32_t *temporary_values = left_values;
-        left_values = right_values;
-        right_values = temporary_values;
+        uint32_t *temporary_words = left_words;
+        left_words = right_words;
+        right_words = temporary_words;
     }
 
     if (left_length <= 10) {
-        size_t length = left_length + right_length;
-        uint32_t *values = (uint32_t *) xcalloc(length, sizeof(uint32_t));
-        if (values == NULL) PRISM_OOM();
+        uint32_t length = left_length + right_length;
+        uint32_t *words = (uint32_t *) xcalloc(length, sizeof(uint32_t));
+        if (words == NULL) PRISM_OOM();
 
         for (size_t left_index = 0; left_index < left_length; left_index++) {
             uint32_t carry = 0;
             for (size_t right_index = 0; right_index < right_length; right_index++) {
-                uint64_t product = (uint64_t) left_values[left_index] * right_values[right_index] + values[left_index + right_index] + carry;
-                values[left_index + right_index] = (uint32_t) (product % base);
+                uint64_t product = (uint64_t) left_words[left_index] * right_words[right_index] + words[left_index + right_index] + carry;
+                words[left_index + right_index] = (uint32_t) (product % base);
                 carry = (uint32_t) (product / base);
             }
-            values[left_index + right_length] = carry;
+            words[left_index + right_length] = carry;
         }
 
-        while (length > 1 && values[length - 1] == 0) length--;
-        *destination = (pm_integer_t) { length, values, 0, false };
+        while (length > 1 && words[length - 1] == 0) length--;
+        *destination = (pm_bignum_t) { length, words };
         return;
     }
 
     if (left_length * 2 <= right_length) {
-        uint32_t *values = (uint32_t *) xcalloc(left_length + right_length, sizeof(uint32_t));
-        if (values == NULL) PRISM_OOM();
+        uint32_t *words = (uint32_t *) xcalloc(left_length + right_length, sizeof(uint32_t));
+        if (words == NULL) PRISM_OOM();
 
-        for (size_t start_offset = 0; start_offset < right_length; start_offset += left_length) {
-            size_t end_offset = start_offset + left_length;
+        for (uint32_t start_offset = 0; start_offset < right_length; start_offset += left_length) {
+            uint32_t end_offset = start_offset + left_length;
             if (end_offset > right_length) end_offset = right_length;
 
-            pm_integer_t sliced_left = {
+            pm_bignum_t sliced_left = {
                 .length = left_length,
-                .values = left_values,
-                .value = 0,
-                .negative = false
+                .words = left_words
             };
 
-            pm_integer_t sliced_right = {
+            pm_bignum_t sliced_right = {
                 .length = end_offset - start_offset,
-                .values = right_values + start_offset,
-                .value = 0,
-                .negative = false
+                .words = right_words + start_offset
             };
 
-            pm_integer_t product;
+            pm_bignum_t product;
             karatsuba_multiply(&product, &sliced_left, &sliced_right, base);
 
             uint32_t carry = 0;
             for (size_t index = 0; index < product.length; index++) {
-                uint64_t sum = (uint64_t) values[start_offset + index] + product.values[index] + carry;
-                values[start_offset + index] = (uint32_t) (sum % base);
+                uint64_t sum = (uint64_t) words[start_offset + index] + product.words[index] + carry;
+                words[start_offset + index] = (uint32_t) (sum % base);
                 carry = (uint32_t) (sum / base);
             }
 
-            if (carry > 0) values[start_offset + product.length] += carry;
-            pm_integer_free(&product);
+            if (carry > 0) words[start_offset + product.length] += carry;
+            pm_bignum_free(&product);
         }
 
-        *destination = (pm_integer_t) { left_length + right_length, values, 0, false };
+        *destination = (pm_bignum_t) { left_length + right_length, words };
         return;
     }
 
-    size_t half = left_length / 2;
-    pm_integer_t x0 = { half, left_values, 0, false };
-    pm_integer_t x1 = { left_length - half, left_values + half, 0, false };
-    pm_integer_t y0 = { half, right_values, 0, false };
-    pm_integer_t y1 = { right_length - half, right_values + half, 0, false };
+    uint32_t half = left_length / 2;
+    pm_bignum_t x0 = { half, left_words };
+    pm_bignum_t x1 = { left_length - half, left_words + half };
+    pm_bignum_t y0 = { half, right_words };
+    pm_bignum_t y1 = { right_length - half, right_words + half };
 
-    pm_integer_t z0 = { 0 };
+    pm_bignum_t z0 = { 0 };
     karatsuba_multiply(&z0, &x0, &y0, base);
 
-    pm_integer_t z2 = { 0 };
+    pm_bignum_t z2 = { 0 };
     karatsuba_multiply(&z2, &x1, &y1, base);
 
     // For simplicity to avoid considering negative values,
     // use `z1 = (x0 + x1) * (y0 + y1) - z0 - z2` instead of original karatsuba algorithm.
-    pm_integer_t x01 = { 0 };
+    pm_bignum_t x01 = { 0 };
     big_add(&x01, &x0, &x1, base);
 
-    pm_integer_t y01 = { 0 };
+    pm_bignum_t y01 = { 0 };
     big_add(&y01, &y0, &y1, base);
 
-    pm_integer_t xy = { 0 };
+    pm_bignum_t xy = { 0 };
     karatsuba_multiply(&xy, &x01, &y01, base);
 
-    pm_integer_t z1;
+    pm_bignum_t z1;
     big_sub2(&z1, &xy, &z0, &z2, base);
 
-    size_t length = left_length + right_length;
-    uint32_t *values = (uint32_t*) xcalloc(length, sizeof(uint32_t));
-    if (values == NULL) PRISM_OOM();
+    uint32_t length = left_length + right_length;
+    uint32_t *words = (uint32_t*) xcalloc(length, sizeof(uint32_t));
+    if (words == NULL) PRISM_OOM();
 
-    assert(z0.values != NULL);
-    memcpy(values, z0.values, sizeof(uint32_t) * z0.length);
+    assert(z0.words != NULL);
+    memcpy(words, z0.words, sizeof(uint32_t) * z0.length);
 
-    assert(z2.values != NULL);
-    memcpy(values + 2 * half, z2.values, sizeof(uint32_t) * z2.length);
+    assert(z2.words != NULL);
+    memcpy(words + 2 * half, z2.words, sizeof(uint32_t) * z2.length);
 
     uint32_t carry = 0;
     for(size_t index = 0; index < z1.length; index++) {
-        uint64_t sum = (uint64_t) carry + values[index + half] + z1.values[index];
-        values[index + half] = (uint32_t) (sum % base);
+        uint64_t sum = (uint64_t) carry + words[index + half] + z1.words[index];
+        words[index + half] = (uint32_t) (sum % base);
         carry = (uint32_t) (sum / base);
     }
 
     for(size_t index = half + z1.length; carry > 0; index++) {
-        uint64_t sum = (uint64_t) carry + values[index];
-        values[index] = (uint32_t) (sum % base);
+        uint64_t sum = (uint64_t) carry + words[index];
+        words[index] = (uint32_t) (sum % base);
         carry = (uint32_t) (sum / base);
     }
 
-    while (length > 1 && values[length - 1] == 0) length--;
-    pm_integer_free(&z0);
-    pm_integer_free(&z1);
-    pm_integer_free(&z2);
-    pm_integer_free(&x01);
-    pm_integer_free(&y01);
-    pm_integer_free(&xy);
+    while (length > 1 && words[length - 1] == 0) length--;
+    pm_bignum_free(&z0);
+    pm_bignum_free(&z1);
+    pm_bignum_free(&z2);
+    pm_bignum_free(&x01);
+    pm_bignum_free(&y01);
+    pm_bignum_free(&xy);
 
-    *destination = (pm_integer_t) { length, values, 0, false };
+    *destination = (pm_bignum_t) { length, words };
 }
 
 /**
@@ -301,124 +289,110 @@ pm_integer_parse_digit(const uint8_t character) {
 }
 
 /**
- * Create a pm_integer_t from uint64_t with the given base. It is assumed that
- * the memory for the pm_integer_t pointer has been zeroed.
+ * Create a pm_bignum_t from uint64_t with the given base.
  */
 static void
-pm_integer_from_uint64(pm_integer_t *integer, uint64_t value, uint64_t base) {
-    if (value < base) {
-        integer->value = (uint32_t) value;
-        return;
-    }
-
-    size_t length = 0;
+pm_bignum_from_uint64(pm_bignum_t *bignum, uint64_t value, uint64_t base) {
+    uint32_t length = 0;
     uint64_t length_value = value;
-    while (length_value > 0) {
+
+    do {
         length++;
         length_value /= base;
-    }
+    } while (length_value > 0);
 
-    uint32_t *values = (uint32_t *) xmalloc(sizeof(uint32_t) * length);
-    if (values == NULL) PRISM_OOM();
+    uint32_t *words = (uint32_t *) xmalloc(sizeof(uint32_t) * length);
+    if (words == NULL) PRISM_OOM();
 
     for (size_t value_index = 0; value_index < length; value_index++) {
-        values[value_index] = (uint32_t) (value % base);
+        words[value_index] = (uint32_t) (value % base);
         value /= base;
     }
 
-    integer->length = length;
-    integer->values = values;
+    *bignum = (pm_bignum_t) { length, words };
 }
 
 /**
- * Normalize pm_integer_t.
- * Heading zero values will be removed. If the integer fits into uint32_t,
- * values is set to NULL, length is set to 0, and value field will be used.
+ * Move a bignum in base 1<<32 into an integer, dropping leading zero words.
+ * An integer with at most two words stores them inline, so the bignum's words
+ * are freed; a larger one takes ownership of them.
  */
 static void
-pm_integer_normalize(pm_integer_t *integer) {
-    if (integer->values == NULL) {
-        return;
+pm_integer_from_bignum(pm_integer_t *integer, pm_bignum_t *bignum) {
+    uint32_t length = bignum->length;
+    const uint32_t *words = bignum->words;
+    while (length > 0 && words[length - 1] == 0) length--;
+
+    if (length <= 2) {
+        *integer = (pm_integer_t) {
+            .length = length,
+            .words = { .value = { length > 0 ? words[0] : 0, length > 1 ? words[1] : 0 } }
+        };
+        pm_bignum_free(bignum);
+    } else {
+        *integer = (pm_integer_t) { .length = length, .words = { .values = bignum->words } };
     }
-
-    while (integer->length > 1 && integer->values[integer->length - 1] == 0) {
-        integer->length--;
-    }
-
-    if (integer->length > 1) {
-        return;
-    }
-
-    uint32_t value = integer->values[0];
-    bool negative = integer->negative && value != 0;
-
-    pm_integer_free(integer);
-    *integer = (pm_integer_t) { .values = NULL, .value = value, .length = 0, .negative = negative };
 }
 
 /**
- * Convert base of the integer.
+ * Convert base of the bignum.
  * In practice, it converts 10**9 to 1<<32 or 1<<32 to 10**9.
  */
 static void
-pm_integer_convert_base(pm_integer_t *destination, const pm_integer_t *source, uint64_t base_from, uint64_t base_to) {
-    size_t source_length;
-    const uint32_t *source_values;
-    INTEGER_EXTRACT(source, source_length, source_values)
+pm_bignum_convert_base(pm_bignum_t *destination, const pm_bignum_t *source, uint64_t base_from, uint64_t base_to) {
+    uint32_t source_length = source->length;
+    const uint32_t *source_words = source->words;
 
     size_t bigints_length = (source_length + 1) / 2;
     assert(bigints_length > 0);
 
-    pm_integer_t *bigints = (pm_integer_t *) xcalloc(bigints_length, sizeof(pm_integer_t));
+    pm_bignum_t *bigints = (pm_bignum_t *) xcalloc(bigints_length, sizeof(pm_bignum_t));
     if (bigints == NULL) PRISM_OOM();
 
     for (size_t index = 0; index < source_length; index += 2) {
-        uint64_t value = source_values[index] + base_from * (index + 1 < source_length ? source_values[index + 1] : 0);
-        pm_integer_from_uint64(&bigints[index / 2], value, base_to);
+        uint64_t value = source_words[index] + base_from * (index + 1 < source_length ? source_words[index + 1] : 0);
+        pm_bignum_from_uint64(&bigints[index / 2], value, base_to);
     }
 
-    pm_integer_t base = { 0 };
-    pm_integer_from_uint64(&base, base_from, base_to);
+    pm_bignum_t base = { 0 };
+    pm_bignum_from_uint64(&base, base_from, base_to);
 
     while (bigints_length > 1) {
-        pm_integer_t next_base;
+        pm_bignum_t next_base;
         karatsuba_multiply(&next_base, &base, &base, base_to);
 
-        pm_integer_free(&base);
+        pm_bignum_free(&base);
         base = next_base;
 
         size_t next_length = (bigints_length + 1) / 2;
-        pm_integer_t *next_bigints = (pm_integer_t *) xcalloc(next_length, sizeof(pm_integer_t));
+        pm_bignum_t *next_bigints = (pm_bignum_t *) xcalloc(next_length, sizeof(pm_bignum_t));
         if (next_bigints == NULL) PRISM_OOM();
 
         for (size_t bigints_index = 0; bigints_index < bigints_length; bigints_index += 2) {
             if (bigints_index + 1 == bigints_length) {
                 next_bigints[bigints_index / 2] = bigints[bigints_index];
             } else {
-                pm_integer_t multiplied = { 0 };
+                pm_bignum_t multiplied = { 0 };
                 karatsuba_multiply(&multiplied, &base, &bigints[bigints_index + 1], base_to);
 
                 big_add(&next_bigints[bigints_index / 2], &bigints[bigints_index], &multiplied, base_to);
-                pm_integer_free(&bigints[bigints_index]);
-                pm_integer_free(&bigints[bigints_index + 1]);
-                pm_integer_free(&multiplied);
+                pm_bignum_free(&bigints[bigints_index]);
+                pm_bignum_free(&bigints[bigints_index + 1]);
+                pm_bignum_free(&multiplied);
             }
         }
 
-        xfree_sized(bigints, bigints_length * sizeof(pm_integer_t));
+        xfree_sized(bigints, bigints_length * sizeof(pm_bignum_t));
         bigints = next_bigints;
         bigints_length = next_length;
     }
 
     *destination = bigints[0];
-    destination->negative = source->negative;
-    pm_integer_normalize(destination);
+    while (destination->length > 1 && destination->words[destination->length - 1] == 0) destination->length--;
 
-    xfree_sized(bigints, bigints_length * sizeof(pm_integer_t));
-    pm_integer_free(&base);
+    xfree_sized(bigints, bigints_length * sizeof(pm_bignum_t));
+    pm_bignum_free(&base);
 }
-
-#undef INTEGER_EXTRACT
 
 /**
  * Convert digits to integer with the given power-of-two base.
@@ -428,9 +402,9 @@ pm_integer_parse_powof2(pm_integer_t *integer, uint32_t base, const uint8_t *dig
     size_t bit = 1;
     while (base > (uint32_t) (1 << bit)) bit++;
 
-    size_t length = (digits_length * bit + 31) / 32;
-    uint32_t *values = (uint32_t *) xcalloc(length, sizeof(uint32_t));
-    if (values == NULL) PRISM_OOM();
+    uint32_t length = (uint32_t) ((digits_length * bit + 31) / 32);
+    uint32_t *words = (uint32_t *) xcalloc(length, sizeof(uint32_t));
+    if (words == NULL) PRISM_OOM();
 
     for (size_t digit_index = 0; digit_index < digits_length; digit_index++) {
         size_t bit_position = bit * (digits_length - digit_index - 1);
@@ -439,13 +413,11 @@ pm_integer_parse_powof2(pm_integer_t *integer, uint32_t base, const uint8_t *dig
         size_t index = bit_position / 32;
         size_t shift = bit_position % 32;
 
-        values[index] |= value << shift;
-        if (32 - shift < bit) values[index + 1] |= value >> (32 - shift);
+        words[index] |= value << shift;
+        if (32 - shift < bit) words[index + 1] |= value >> (32 - shift);
     }
 
-    while (length > 1 && values[length - 1] == 0) length--;
-    *integer = (pm_integer_t) { .length = length, .values = values, .value = 0, .negative = false };
-    pm_integer_normalize(integer);
+    pm_integer_from_bignum(integer, &((pm_bignum_t) { length, words }));
 }
 
 /**
@@ -454,10 +426,10 @@ pm_integer_parse_powof2(pm_integer_t *integer, uint32_t base, const uint8_t *dig
 static void
 pm_integer_parse_decimal(pm_integer_t *integer, const uint8_t *digits, size_t digits_length) {
     const size_t batch = 9;
-    const size_t length = (digits_length + batch - 1) / batch;
+    const uint32_t length = (uint32_t) ((digits_length + batch - 1) / batch);
 
-    uint32_t *values = (uint32_t *) xcalloc(length, sizeof(uint32_t));
-    if (values == NULL) PRISM_OOM();
+    uint32_t *words = (uint32_t *) xcalloc(length, sizeof(uint32_t));
+    if (words == NULL) PRISM_OOM();
 
     uint32_t value = 0;
     for (size_t digits_index = 0; digits_index < digits_length; digits_index++) {
@@ -465,18 +437,21 @@ pm_integer_parse_decimal(pm_integer_t *integer, const uint8_t *digits, size_t di
 
         size_t reverse_index = digits_length - digits_index - 1;
         if (reverse_index % batch == 0) {
-            values[reverse_index / batch] = value;
+            words[reverse_index / batch] = value;
             value = 0;
         }
     }
 
     // Convert base from 10**9 to 1<<32.
-    pm_integer_convert_base(integer, &((pm_integer_t) { .length = length, .values = values,  .value = 0, .negative = false }), 1000000000, ((uint64_t) 1 << 32));
-    xfree_sized(values, length * sizeof(uint32_t));
+    pm_bignum_t converted = { 0 };
+    pm_bignum_convert_base(&converted, &((pm_bignum_t) { length, words }), 1000000000, ((uint64_t) 1 << 32));
+    xfree_sized(words, length * sizeof(uint32_t));
+
+    pm_integer_from_bignum(integer, &converted);
 }
 
 /**
- * Parse a large integer from a string that does not fit into uint32_t.
+ * Parse a large integer from a string that does not fit into uint64_t.
  */
 static void
 pm_integer_parse_big(pm_integer_t *integer, uint32_t multiplier, const uint8_t *start, const uint8_t *end) {
@@ -553,22 +528,28 @@ pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *s
     // invalid integer. If this is the case, we'll just return 0.
     if (start >= end) return;
 
+    /* Accumulate into a uint64_t, which covers every integer whose words are
+     * stored inline. value * multiplier + digit overflows exactly when value
+     * is past limit, or equal to it with digit past limit_digit. */
+    const uint64_t limit = UINT64_MAX / multiplier;
+    const uint64_t limit_digit = UINT64_MAX % multiplier;
+
     const uint8_t *cursor = start;
     uint64_t value = (uint64_t) pm_integer_parse_digit(*cursor++);
 
     for (; cursor < end; cursor++) {
         if (*cursor == '_') continue;
-        value = value * multiplier + (uint64_t) pm_integer_parse_digit(*cursor);
+        uint64_t digit = (uint64_t) pm_integer_parse_digit(*cursor);
 
-        if (value > UINT32_MAX) {
-            // If the integer is too large to fit into a single uint32_t, then
-            // we'll parse it as a big integer.
+        if (value > limit || (value == limit && digit > limit_digit)) {
             pm_integer_parse_big(integer, multiplier, start, end);
             return;
         }
+
+        value = value * multiplier + digit;
     }
 
-    integer->value = (uint32_t) value;
+    *integer = pm_integer_uint64(value);
 }
 
 /**
@@ -581,19 +562,17 @@ pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right) {
     if (left->negative != right->negative) return left->negative ? -1 : 1;
     int negative = left->negative ? -1 : 1;
 
-    if (left->values == NULL && right->values == NULL) {
-        if (left->value < right->value) return -1 * negative;
-        if (left->value > right->value) return 1 * negative;
-        return 0;
-    }
+    if (left->length < right->length) return -1 * negative;
+    if (left->length > right->length) return 1 * negative;
 
-    if (left->values == NULL || left->length < right->length) return -1 * negative;
-    if (right->values == NULL || left->length > right->length) return 1 * negative;
+    uint32_t length;
+    const uint32_t *left_words = pm_integer_words(left, &length);
+    const uint32_t *right_words = pm_integer_words(right, &length);
 
-    for (size_t index = 0; index < left->length; index++) {
-        size_t value_index = left->length - index - 1;
-        uint32_t left_value = left->values[value_index];
-        uint32_t right_value = right->values[value_index];
+    for (uint32_t index = 0; index < length; index++) {
+        uint32_t value_index = length - index - 1;
+        uint32_t left_value = left_words[value_index];
+        uint32_t right_value = right_words[value_index];
 
         if (left_value < right_value) return -1 * negative;
         if (left_value > right_value) return 1 * negative;
@@ -611,18 +590,18 @@ void pm_integers_reduce(pm_integer_t *numerator, pm_integer_t *denominator) {
     // even the larger numbers, but for now we're going to keep it simple.
     if (
         // If the numerator doesn't fit into a 32-bit integer, return early.
-        numerator->length != 0 ||
+        numerator->length > 1 ||
         // If the denominator doesn't fit into a 32-bit integer, return early.
-        denominator->length != 0 ||
+        denominator->length > 1 ||
         // If the numerator is 0, then return early.
-        numerator->value == 0 ||
+        numerator->length == 0 ||
         // If the denominator is 1, then return early.
-        denominator->value == 1
+        denominator->words.value[0] == 1
     ) return;
 
     // Find the greatest common divisor of the numerator and denominator.
-    uint32_t divisor = numerator->value;
-    uint32_t remainder = denominator->value;
+    uint32_t divisor = numerator->words.value[0];
+    uint32_t remainder = denominator->words.value[0];
 
     while (remainder != 0) {
         uint32_t temporary = remainder;
@@ -631,8 +610,8 @@ void pm_integers_reduce(pm_integer_t *numerator, pm_integer_t *denominator) {
     }
 
     // Divide the numerator and denominator by the greatest common divisor.
-    numerator->value /= divisor;
-    denominator->value /= divisor;
+    numerator->words.value[0] /= divisor;
+    denominator->words.value[0] /= divisor;
 }
 
 /**
@@ -644,39 +623,26 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
         pm_buffer_append_byte(buffer, '-');
     }
 
-    // If the integer fits into a single uint32_t, then we can just append the
-    // value directly to the buffer.
-    if (integer->values == NULL) {
-        pm_buffer_append_format(buffer, "%" PRIu32, integer->value);
-        return;
-    }
-
-    // If the integer is two uint32_t values, then we can | them together and
-    // append the result to the buffer.
-    if (integer->length == 2) {
-        const uint64_t value = ((uint64_t) integer->values[0]) | ((uint64_t) integer->values[1] << 32);
+    /* An integer whose words are inline fits in a uint64_t, so it can be
+     * appended directly. */
+    if (integer->length <= 2) {
+        const uint64_t value = ((uint64_t) integer->words.value[0]) | ((uint64_t) integer->words.value[1] << 32);
         pm_buffer_append_format(buffer, "%" PRIu64, value);
         return;
     }
 
     // Otherwise, first we'll convert the base from 1<<32 to 10**9.
-    pm_integer_t converted = { 0 };
-    pm_integer_convert_base(&converted, integer, (uint64_t) 1 << 32, 1000000000);
-
-    if (converted.values == NULL) {
-        pm_buffer_append_format(buffer, "%" PRIu32, converted.value);
-        pm_integer_free(&converted);
-        return;
-    }
+    pm_bignum_t converted = { 0 };
+    pm_bignum_convert_base(&converted, &((pm_bignum_t) { integer->length, integer->words.values }), (uint64_t) 1 << 32, 1000000000);
 
     // Allocate a buffer that we'll copy the decimal digits into.
-    const size_t digits_length = converted.length * 9;
+    const size_t digits_length = (size_t) converted.length * 9;
     char *digits = xcalloc(digits_length, sizeof(char));
     if (digits == NULL) PRISM_OOM();
 
     // Pack bigdecimal to digits.
     for (size_t value_index = 0; value_index < converted.length; value_index++) {
-        uint32_t value = converted.values[value_index];
+        uint32_t value = converted.words[value_index];
 
         for (size_t digit_index = 0; digit_index < 9; digit_index++) {
             digits[digits_length - 9 * value_index - digit_index - 1] = (char) ('0' + value % 10);
@@ -690,5 +656,5 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
     // Finally, append the string to the buffer and free the digits.
     pm_buffer_append_string(buffer, digits + start_offset, digits_length - start_offset);
     xfree_sized(digits, sizeof(char) * digits_length);
-    pm_integer_free(&converted);
+    pm_bignum_free(&converted);
 }
