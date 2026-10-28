@@ -3861,53 +3861,56 @@ match_equal(VALUE match1, VALUE match2)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    integer_at(n, radix = 10) -> integer or nil
  *    integer_at(name, radix = 10) -> integer or nil
  *
  *  Returns a captured substring converted to an integer;
- *  the substring is interpreted as a numeric string in the given +radix+,
- *  which defaults to +10+.
+ *  the substring is interpreted as a numeric string in the given `radix`.
  *
- *  With integer index +n+ given,
- *  returns the <tt>n</tt>th capture converted to an integer:
+ *  With integer index `n` given,
+ *  returns the `n`th capture converted to an integer:
  *
- *    re = /(\d+{4})(\d+{2})(\d+{2})/  # Capture year, month, day.
- *    m = re.match("20260308")
- *    # => #<MatchData "20260308" 1:"2026" 2:"03" 3:"08">
- *    m.integer_at(0)  # => 20260308
- *    m.integer_at(1)  # => 2026
- *    m.integer_at(2)  # => 3
- *    m.integer_at(3)  # => 8
- *    m.integer_at(4)  # => nil
- *    m.integer_at(-1) # => 8  # For negative index, counts backward in the captures.
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[0]             # => "2026-12-25"
+ *  match.integer_at(0)  # => 2026  # Stops interpreting at the hyphen.
+ *  match.integer_at(1)  # => 2026
+ *  match.integer_at(2)  # => 12
+ *  match.integer_at(3)  # => 25
+ *  match.integer_at(-1) # => 25    # For negative n, counts backwards in the captures.
+ *  match.integer_at(4) # => nil
+ *  ```
  *
- *  With string +name+ given,
+ *  With string or symbol `name` given,
  *  returns the named capture converted to an integer:
  *
- *    re = /(?<y>\d+{4})(?<m>\d+{2})(?<d>\d+{2})/
- *    m = re.match("20260308")
- *    # => #<MatchData "20260308" y:"2026" m:"03" d:"08">
- *    m.integer_at('y')      # => 2026
- *    m.integer_at('m')      # => 3
- *    m.integer_at('d')      # => 8
- *    m.integer_at('nosuch') # Raises IndexError: undefined group name reference: nosuch.
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.integer_at(:year)   # => 2026
+ *  match.integer_at('month') # => 12
+ *  match.integer_at(:nosuch) # Raises IndexError: undefined group name reference: nosuch.
+ *  ```
  *
- *  Returns +nil+ if there were no captures:
+ *  Returns `nil` if there were no captures.
  *
- *    re = /(\d+)?/
- *    m = re.match('abc')
- *    m.integer_at(0) # => nil
+ *  For both forms above, the string is converted in the given `radix`:
  *
- *  The string is converted in the given +radix+:
- *
- *    re = /\d+/
- *    m = re.match('11')
- *    m.integer_at(0)     # => 11
- *    m.integer_at(0, 2)  # => 3
- *    m.integer_at(0, 8)  # => 9
- *    m.integer_at(0, 16) # => 17
- *    m.integer_at(0, 1)  # Raises ArgumentError: invalid radix 1.
+ *  ```ruby
+ *  match = /\d+/.match('11')
+ *  # => #<MatchData "11">
+ *  match.integer_at(0)     # => 11
+ *  match.integer_at(0, 2)  # => 3
+ *  match.integer_at(0, 8)  # => 9
+ *  match.integer_at(0, 16) # => 17
+ *  match.integer_at(0, 1)  # Raises ArgumentError: invalid radix 1.
+ *  ```
  *
  *  Related: MatchData#[], String#to_i.
  */
