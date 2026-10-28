@@ -194,6 +194,11 @@ impl VMScanning {
                 mmtk::memory_manager::is_mmtk_object(object.to_raw_address()).is_some(),
                 "Root does not point to MMTk object.  object: {object}"
             );
+            if pin && crate::mmtk().get_plan().current_gc_may_move_object() {
+                crate::binding()
+                    .pinning_registry
+                    .register_pinned_obj(object);
+            }
             buffer.push(object);
             if buffer.len() >= Self::OBJECT_BUFFER_SIZE {
                 factory.create_process_pinning_roots_work(std::mem::take(&mut buffer));
