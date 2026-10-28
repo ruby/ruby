@@ -4968,10 +4968,10 @@ gc_compact_finish(rb_objspace_t *objspace)
 }
 
 #ifdef _WIN32
-/* Allocation runs upwards within a page, so sweeping upwards frees the slots' malloc'ed
- * buffers in the order they were allocated.  That fragments the NT heap, and a program
- * that keeps allocating large strings gets slower on every GC.  Sweep from the end of
- * the page there, to free them in the reverse order. */
+/* Allocation runs upwards within each free region, so sweeping upwards frees the slots'
+ * malloc'ed buffers in the order they were allocated.  That fragments the NT heap, and a
+ * program that keeps allocating large strings gets slower on every GC.  Sweep from the
+ * end of the page there, to free them in the reverse order. */
 # define GC_SWEEP_DOWNWARDS 1
 #else
 # define GC_SWEEP_DOWNWARDS 0
@@ -5177,8 +5177,8 @@ gc_sweep_close_free_region(struct gc_sweep_context *ctx)
     region->next = ctx->free_region;
     rb_asan_poison_object((VALUE)region);
 
-    /* Regions close from the top of the page, so pushing each one keeps the list in
-     * address order and allocation runs upwards across the whole page. */
+    /* Regions close from the top of the page, so pushing each one leaves the list in address
+     * order, until heap_page_add_free_region pushes a single slot in front of it. */
     ctx->free_region = region;
 }
 #endif
