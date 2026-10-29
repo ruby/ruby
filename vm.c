@@ -2601,6 +2601,7 @@ vm_init_redefined_flag(void)
     OP(Hash, HASH), (C(Array));
     OP(Call, CALL), (C(Proc));
     OP(Yield, YIELD), (C(Proc));
+    OP(EqlP, EQL), (C(Integer), C(Symbol), C(NilClass), C(TrueClass), C(FalseClass));
     OP(And, AND), (C(Integer));
     OP(Or, OR), (C(Integer));
     OP(NilP, NIL_P), (C(NilClass));
@@ -2642,6 +2643,7 @@ vm_redefinition_bop_for_id(ID mid)
     OP(Hash, HASH);
     OP(Call, CALL);
     OP(Yield, YIELD);
+    OP(EqlP, EQL);
     OP(And, AND);
     OP(Or, OR);
     OP(NilP, NIL_P);
