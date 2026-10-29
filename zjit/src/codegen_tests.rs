@@ -68,6 +68,19 @@ fn assert_inlines_allowing_exits(program: &str) -> String {
     result
 }
 
+/// Like `assert_compiles`, but also asserts that the program inlined at least one block
+/// body into its yielding frame while running.
+#[track_caller]
+fn assert_inlines_block(program: &str) -> String {
+    ensure_rubyvm(); // ZJITState is not available until the VM is booted
+    let counters = crate::state::ZJITState::get_counters();
+    let inline_count_before = counters.inline_block_count;
+    let result = assert_compiles(program);
+    assert!(counters.inline_block_count > inline_count_before,
+        "expected the program to inline at least one block, but inline_block_count did not increase");
+    result
+}
+
 #[test]
 fn test_breakpoint_hir_codegen() {
     rb_zjit_prepare_options();
@@ -1216,6 +1229,152 @@ fn test_yield_inline_invocation_live_stack_below_args() {
         test
     ");
     assert_snapshot!(assert_compiles("test"), @"13");
+}
+
+#[test]
+fn test_inline_block_into_array_each() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_block("
+            def test(a)
+              sum = 0
+              a.each { |x| sum += x }
+              sum
+            end
+            test([1, 2, 3])
+            test([1, 2, 3])
+        "), @"6");
+    });
+}
+
+#[test]
+fn test_inline_block_self_is_captured_self() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_block("
+            class InlineBlockSelf
+              def initialize(v) = @v = v
+              def run(a) = a.map { |x| x + @v }
+            end
+            O = InlineBlockSelf.new(10)
+            def test = O.run([1, 2])
+            test
+            test
+        "), @"[11, 12]");
+    });
+}
+
+#[test]
+fn test_inline_block_writes_outer_locals() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_block("
+            def test(a)
+              seen = []
+              last = nil
+              a.each { |x| seen << x; last = x }
+              [seen, last]
+            end
+            test([1, 2])
+            test([1, 2])
+        "), @"[[1, 2], 2]");
+    });
+}
+
+#[test]
+fn test_inline_block_side_exit_materializes_block_frame() {
+    with_inlining(|| {
+        eval("
+            def test(a)
+              r = []
+              a.each { |x| r << x + 1 }
+              r
+            end
+            test([1, 2])
+            test([1, 2])
+        ");
+        // Float + 1 fails the Fixnum guard inside the inlined block.
+        assert_snapshot!(assert_compiles_allowing_exits("test([1, 2.5, 3])"), @"[2, 3.5, 4]");
+    });
+}
+
+#[test]
+fn test_inline_block_raise_has_block_frame_in_backtrace() {
+    with_inlining(|| {
+        eval("
+            def test(a)
+              a.each { |x| raise 'boom' if x == 2 }
+            rescue => e
+              e.backtrace_locations.map(&:label).first(3)
+            end
+            test([1])
+            test([1])
+        ");
+        assert_snapshot!(assert_compiles_allowing_exits("test([1, 2])"), @r#"["block in Object#test", "Array#each", "Object#test"]"#);
+    });
+}
+
+#[test]
+fn test_inline_block_raise_with_caller_stack() {
+    // The caller frames have stack slots below the inlined block frame. Materializing them
+    // must account for `invokeblock` not having a receiver below the block's locals.
+    with_inlining(|| {
+        eval("
+            def test(a)
+              [:before, :before2, a.map { |x| x.fetch(9) }]
+            rescue IndexError
+              :rescued
+            end
+            test([[1]])
+            test([[1]])
+        ");
+        assert_snapshot!(assert_compiles_allowing_exits("[test([[1]]), test([[1]])]"), @"[:rescued, :rescued]");
+    });
+}
+
+#[test]
+fn test_inline_block_yields_to_method_block() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_block("
+            def each_twice(a)
+              a.each { |x| yield x; yield x }
+            end
+            def test
+              r = []
+              each_twice([1, 2]) { |x| r << x }
+              r
+            end
+            test
+            test
+        "), @"[1, 1, 2, 2]");
+    });
+}
+
+#[test]
+fn test_inline_block_defined_yield_checks_method_block() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_block("
+            def foo(a)
+              a.map { |x| defined?(yield) ? yield(x) : x }
+            end
+            def test = [foo([1]), foo([1]) { |x| x * 10 }]
+            test
+            test
+        "), @"[[1], [10]]");
+    });
+}
+
+#[test]
+fn test_inline_block_skips_block_with_break() {
+    // can_direct_invoke_block_iseq rejects blocks that may throw, so a block with `break`
+    // is not inlined. Make sure it still works.
+    with_inlining(|| {
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_block_count;
+        assert_snapshot!(assert_compiles_allowing_exits("
+            def test(a) = a.each { |x| break x * 10 if x == 2 }
+            test([1, 2, 3])
+            test([1, 2, 3])
+        "), @"20");
+        assert_eq!(counters.inline_block_count, inline_count_before, "expected the block with `break` not to be inlined");
+    });
 }
 
 #[test]

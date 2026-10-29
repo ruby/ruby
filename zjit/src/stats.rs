@@ -306,6 +306,7 @@ make_counters! {
         non_variadic_cfunc_optimized_send_count,
         variadic_cfunc_optimized_send_count,
         block_iseq_direct_optimized_send_count,
+        inline_block_optimized_send_count,
     }
 
     // Ivar fallback counters that are summed as dynamic_setivar_count
@@ -471,6 +472,7 @@ make_counters! {
     // HIR-level method inliner counters. Rejection counters are incremented once per
     // SendDirect the inliner considers.
     inline_method_count,
+    inline_block_count,
     empty_inline_frame_count,
     inline_reject_too_large,
     inline_reject_complex_params,
