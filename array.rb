@@ -212,6 +212,50 @@ class Array
     indexes
   end
 
+  # call-seq:
+  #   each_index {|index| ... } -> self
+  #   each_index -> new_enumerator
+  #
+  # With a block given, iterates over the elements of +self+,
+  # passing each <i>array index</i> to the block;
+  # returns +self+:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.each_index {|index|  puts "#{index} #{a[index]}" }
+  #
+  # Output:
+  #
+  #   0 foo
+  #   1 bar
+  #   2 2
+  #
+  # Allows the array to be modified during iteration:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.each_index {|index| puts index; a.clear if index > 0 }
+  #   a # => []
+  #
+  # Output:
+  #
+  #   0
+  #   1
+  #
+  # With no block given, returns a new Enumerator.
+  #
+  # Related: see {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
+  def each_index
+    Primitive.attr! :inline_block, :without_interrupts
+    unless defined?(yield)
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
+    end
+    i = 0
+    until Primitive.rb_builtin_ary_at_end(i)
+      yield i
+      i = Primitive.rb_builtin_fixnum_inc(i)
+    end
+    self
+  end
+
   with_jit do
     if Primitive.rb_builtin_basic_definition_p(:each)
       undef :each

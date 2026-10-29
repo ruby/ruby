@@ -2852,52 +2852,6 @@ rb_ary_each(VALUE ary)
 
 /*
  *  call-seq:
- *    each_index {|index| ... } -> self
- *    each_index -> new_enumerator
- *
- *  With a block given, iterates over the elements of +self+,
- *  passing each <i>array index</i> to the block;
- *  returns +self+:
- *
- *    a = [:foo, 'bar', 2]
- *    a.each_index {|index|  puts "#{index} #{a[index]}" }
- *
- *  Output:
- *
- *    0 foo
- *    1 bar
- *    2 2
- *
- *  Allows the array to be modified during iteration:
- *
- *    a = [:foo, 'bar', 2]
- *    a.each_index {|index| puts index; a.clear if index > 0 }
- *    a # => []
- *
- *  Output:
- *
- *    0
- *    1
- *
- *  With no block given, returns a new Enumerator.
- *
- *  Related: see {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
- */
-
-static VALUE
-rb_ary_each_index(VALUE ary)
-{
-    rb_len_t i;
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
-
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-        rb_yield(LEN2NUM(i));
-    }
-    return ary;
-}
-
-/*
- *  call-seq:
  *    reverse_each {|element| ... } -> self
  *    reverse_each -> Enumerator
  *
@@ -9116,7 +9070,6 @@ Init_Array(void)
     rb_define_alias(rb_cArray,  "prepend", "unshift");
     rb_define_method(rb_cArray, "insert", rb_ary_insert, -1);
     rb_define_method(rb_cArray, "each", rb_ary_each, 0);
-    rb_define_method(rb_cArray, "each_index", rb_ary_each_index, 0);
     rb_define_method(rb_cArray, "reverse_each", rb_ary_reverse_each, 0);
     rb_define_method(rb_cArray, "length", rb_ary_length, 0);
     rb_define_method(rb_cArray, "size", rb_ary_length, 0);
