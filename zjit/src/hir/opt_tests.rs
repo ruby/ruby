@@ -3191,6 +3191,102 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_new_range_fixnum_profiled_bounds() {
+        // Neither bound is statically a Fixnum, but both were profiled as Fixnums.
+        eval("
+            def test(a, b)
+              (a..b)
+            end
+            test(1, 2); test(3, 4)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v27:Fixnum = GuardType v12, Fixnum recompile
+          v28:Fixnum = GuardType v13, Fixnum recompile
+          v29:RangeExact = NewRangeFixnum v27 NewRangeInclusive v28
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_no_optimize_new_range_fixnum_endless() {
+        // The nil upper bound must not be guarded as a Fixnum.
+        eval("
+            def test(a)
+              (a..)
+            end
+            test(1); test(2)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:NilClass = Const Value(nil)
+          v17:RangeExact = NewRange v10 NewRangeInclusive v15
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
+    fn test_no_optimize_new_range_fixnum_float_bound() {
+        // The upper bound was profiled as a Float, so don't speculate on Fixnum bounds.
+        eval("
+            def test(a)
+              (1..a)
+            end
+            test(2.5); test(3.5)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          v17:RangeExact = NewRange v14 NewRangeInclusive v10
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
     fn test_do_not_eliminate_comment() {
         let mut function = Function::new(std::ptr::null());
         let block = function.entry_block;

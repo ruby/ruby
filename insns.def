@@ -605,6 +605,7 @@ newrange
 (VALUE val)
 /* rb_range_new() exercises "bad value for range" check. */
 // attr bool leaf = false; /* see also: range.c:range_init() */
+// attr bool zjit_profile = true;
 {
     val = rb_range_new(low, high, (int)flag);
 }

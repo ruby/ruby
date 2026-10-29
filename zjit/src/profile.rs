@@ -81,6 +81,7 @@ fn profile_insn_sample(
         YARVINSN_opt_or    => profile_operands(profiler, profile, 2),
         YARVINSN_opt_empty_p => profile_operands(profiler, profile, 1),
         YARVINSN_opt_aref  => profile_operands(profiler, profile, 2),
+        YARVINSN_newrange  => profile_operands(profiler, profile, 2),
         YARVINSN_opt_ltlt  => profile_operands(profiler, profile, 2),
         YARVINSN_opt_aset  => profile_operands(profiler, profile, 3),
         YARVINSN_opt_not   => profile_operands(profiler, profile, 1),
