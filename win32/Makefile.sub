@@ -707,8 +707,12 @@ reconfig $(MKFILES): $(srcdir)/common.mk $(srcdir)/version.h \
 	    $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat \
 	    $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak \
 	    $(srcdir)/enc/Makefile.in
+	@if exist verconf.mk copy /y verconf.mk verconf.mk.old > nul
 	$(COMSPEC) /C $(win_srcdir:/=\)\configure.bat $(configure_args)
-	@fc Makefile Makefile.old > nul && echo Makefile unchanged || \
+# This run keeps the values read from the old verconf.mk, such as
+# ABI_VERSION for config.h, so stop when it changed too.
+	@fc Makefile Makefile.old > nul && fc verconf.mk verconf.mk.old > nul && \
+	echo $(MKFILES) unchanged || \
 	(echo $(MKFILES) was updated, re-run $(MAKE). & exit 1)
 
 RUBY_CONFIG_H = $(arch_hdrdir)/ruby/config.h
@@ -1301,7 +1305,7 @@ clean-prism:
 
 distclean-local::
 		$(Q)$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\) miniprelude.c
-		-$(Q)$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h verconf.h
+		-$(Q)$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h verconf.h verconf.mk.old
 		-$(Q)$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 		-$(Q)$(RMDIR) win32
 
