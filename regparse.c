@@ -1570,6 +1570,15 @@ node_str_cat_codepoint(Node* node, OnigEncoding enc, OnigCodePoint c)
   return onig_node_str_cat(node, buf, buf + num);
 }
 
+static int
+check_code_point(OnigCodePoint code, OnigEncoding enc)
+{
+  if (ONIGENC_IS_UNICODE(enc) &&
+      (code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)))
+    return ONIGERR_INVALID_CODE_POINT_VALUE;
+  return 0;
+}
+
 #if 0
 extern void
 onig_node_conv_to_str_node(Node* node, int flag)
@@ -4825,6 +4834,8 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
 
     case TK_CODE_POINT:
       v = tok->u.code;
+      r = check_code_point(v, env->enc);
+      if (r != 0) goto err;
       in_israw = 1;
     val_entry:
       len = ONIGENC_CODE_TO_MBCLEN(env->enc, v);
@@ -6397,6 +6408,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
         }
 #ifndef NUMBERED_CHAR_IS_NOT_CASE_AMBIG
         else if (r == TK_CODE_POINT) {
+          r = check_code_point(tok->u.code, env->enc);
+          if (r != 0) return r;
           r = node_str_cat_codepoint(*np, env->enc, tok->u.code);
         }
 #endif
@@ -6459,6 +6472,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
 
   case TK_CODE_POINT:
     {
+      r = check_code_point(tok->u.code, env->enc);
+      if (r != 0) return r;
       *np = node_new_empty();
       CHECK_NULL_RETURN_MEMERR(*np);
       r = node_str_cat_codepoint(*np, env->enc, tok->u.code);
