@@ -866,7 +866,7 @@ reg_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
     for (i = 0; i < back_num; i++)
         rb_ary_store(ary, i, INT2NUM(back_refs[i]));
 
-    rb_hash_aset(hash, rb_str_new((const char*)name, name_end-name),ary);
+    rb_hash_aset(hash, rb_enc_str_new((const char*)name, name_end-name, regex->enc), ary);
 
     return 0;
 }
