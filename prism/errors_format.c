@@ -140,104 +140,108 @@ rich_errors_are_utf8(const pm_parser_t *parser, size_t nerrors, const pm_rich_er
 #define WINDOW 80
 
 typedef struct {
-    const char *number_prefix;
-    const char *blank_prefix;
-    const char *divider;
-    size_t blank_prefix_length;
-    size_t divider_length;
+    /** The type of formatting to use when formatting the errors. */
+    pm_errors_format_type_t type;
+
+    /**
+     * The number of columns taken up by the widest line number that will be
+     * displayed, including the sign of a negative line number. The widest
+     * possible is the 11 columns of -2147483648.
+     */
+    uint8_t width;
 } pm_error_line_format_t;
 
 /**
+ * Write the decimal digits of the given line number, including the sign if it
+ * is negative, so that they end at the end of the given buffer. The buffer is
+ * large enough for the widest possible line number, -2147483648. Returns the
+ * number of characters written.
+ */
+static uint8_t
+pm_error_line_digits(int32_t line, char digits[11]) {
+    /* The magnitude is computed in unsigned arithmetic so that negating the
+     * minimum value of a 32-bit integer is well-defined. */
+    uint32_t magnitude = (line < 0) ? (0U - (uint32_t) line) : (uint32_t) line;
+    uint8_t length = 0;
+
+    do {
+        digits[10 - length++] = (char) ('0' + (magnitude % 10));
+        magnitude /= 10;
+    } while (magnitude > 0);
+
+    if (line < 0) digits[10 - length++] = '-';
+    return length;
+}
+
+/**
+ * Append the given line number to the buffer, right aligned within the given
+ * width.
+ */
+static void
+pm_error_append_line_number(pm_buffer_t *buffer, int32_t line, uint8_t width) {
+    char digits[11];
+    uint8_t length = pm_error_line_digits(line, digits);
+
+    if (width > length) pm_buffer_append_repeated(buffer, ' ', (size_t) (width - length));
+    pm_buffer_append_string(buffer, digits + sizeof(digits) - length, length);
+}
+
+/**
  * Initialize the given line format struct based on whether or not to highlight
- * the line and the first and last line numbers.
+ * the line and the first and last line numbers that will be displayed. Every
+ * line number in between is no wider than one of these two.
  */
 static void
 pm_error_line_format_init(pm_error_line_format_t *format, pm_errors_format_type_t format_type, int32_t first_line, int32_t last_line) {
-    /* If we have a maximum line number that is negative, then we are going to
-     * use the absolute value for comparison but multiply by 10 to additionally
-     * have a column for the negative sign. */
-    if (first_line < 0) first_line = (-first_line) * 10;
-    if (last_line < 0) last_line = (-last_line) * 10;
-    int32_t max_line = first_line > last_line ? first_line : last_line;
+    char digits[11];
+    uint8_t first_width = pm_error_line_digits(first_line, digits);
+    uint8_t last_width = pm_error_line_digits(last_line, digits);
 
-    if (max_line < 10) {
-        if (format_type > PM_ERRORS_FORMAT_PLAIN) {
-            *format = (pm_error_line_format_t) {
-                .number_prefix = COLOR_GRAY "%1" PRIi32 " | " COLOR_RESET,
-                .blank_prefix = COLOR_GRAY "  | " COLOR_RESET,
-                .divider = COLOR_GRAY "  ~~~~~" COLOR_RESET "\n"
-            };
-        } else {
-            *format = (pm_error_line_format_t) {
-                .number_prefix = "%1" PRIi32 " | ",
-                .blank_prefix = "  | ",
-                .divider = "  ~~~~~\n"
-            };
-        }
-    } else if (max_line < 100) {
-        if (format_type > PM_ERRORS_FORMAT_PLAIN) {
-            *format = (pm_error_line_format_t) {
-                .number_prefix = COLOR_GRAY "%2" PRIi32 " | " COLOR_RESET,
-                .blank_prefix = COLOR_GRAY "   | " COLOR_RESET,
-                .divider = COLOR_GRAY "  ~~~~~~" COLOR_RESET "\n"
-            };
-        } else {
-            *format = (pm_error_line_format_t) {
-                .number_prefix = "%2" PRIi32 " | ",
-                .blank_prefix = "   | ",
-                .divider = "  ~~~~~~\n"
-            };
-        }
-    } else if (max_line < 1000) {
-        if (format_type > PM_ERRORS_FORMAT_PLAIN) {
-            *format = (pm_error_line_format_t) {
-                .number_prefix = COLOR_GRAY "%3" PRIi32 " | " COLOR_RESET,
-                .blank_prefix = COLOR_GRAY "    | " COLOR_RESET,
-                .divider = COLOR_GRAY "  ~~~~~~~" COLOR_RESET "\n"
-            };
-        } else {
-            *format = (pm_error_line_format_t) {
-                .number_prefix = "%3" PRIi32 " | ",
-                .blank_prefix = "    | ",
-                .divider = "  ~~~~~~~\n"
-            };
-        }
-    } else if (max_line < 10000) {
-        if (format_type > PM_ERRORS_FORMAT_PLAIN) {
-            *format = (pm_error_line_format_t) {
-                .number_prefix = COLOR_GRAY "%4" PRIi32 " | " COLOR_RESET,
-                .blank_prefix = COLOR_GRAY "     | " COLOR_RESET,
-                .divider = COLOR_GRAY "  ~~~~~~~~" COLOR_RESET "\n"
-            };
-        } else {
-            *format = (pm_error_line_format_t) {
-                .number_prefix = "%4" PRIi32 " | ",
-                .blank_prefix = "     | ",
-                .divider = "  ~~~~~~~~\n"
-            };
-        }
-    } else {
-        if (format_type > PM_ERRORS_FORMAT_PLAIN) {
-            *format = (pm_error_line_format_t) {
-                .number_prefix = COLOR_GRAY "%5" PRIi32 " | " COLOR_RESET,
-                .blank_prefix = COLOR_GRAY "      | " COLOR_RESET,
-                .divider = COLOR_GRAY "  ~~~~~~~~" COLOR_RESET "\n"
-            };
-        } else {
-            *format = (pm_error_line_format_t) {
-                .number_prefix = "%5" PRIi32 " | ",
-                .blank_prefix = "      | ",
-                .divider = "  ~~~~~~~~\n"
-            };
-        }
-    }
+    *format = (pm_error_line_format_t) {
+        .type = format_type,
+        .width = (first_width > last_width) ? first_width : last_width
+    };
+}
 
-    format->blank_prefix_length = strlen(format->blank_prefix);
-    format->divider_length = strlen(format->divider);
+/**
+ * Append the prefix for a line of source, which displays the line number right
+ * aligned within the width of the widest line number.
+ */
+static void
+pm_error_line_format_number(const pm_error_line_format_t *format, pm_buffer_t *buffer, int32_t line) {
+    if (format->type > PM_ERRORS_FORMAT_PLAIN) PM_BUFFER_APPEND_LITERAL(buffer, COLOR_GRAY);
+    pm_error_append_line_number(buffer, line, format->width);
+    PM_BUFFER_APPEND_LITERAL(buffer, " | ");
+    if (format->type > PM_ERRORS_FORMAT_PLAIN) PM_BUFFER_APPEND_LITERAL(buffer, COLOR_RESET);
+}
+
+/**
+ * Append the prefix for a line beneath the source that displays an error, which
+ * is blank where the line number would be so that the columns line up.
+ */
+static void
+pm_error_line_format_blank(const pm_error_line_format_t *format, pm_buffer_t *buffer) {
+    if (format->type > PM_ERRORS_FORMAT_PLAIN) PM_BUFFER_APPEND_LITERAL(buffer, COLOR_GRAY);
+    pm_buffer_append_repeated(buffer, ' ', (size_t) format->width + 1);
+    PM_BUFFER_APPEND_LITERAL(buffer, "| ");
+    if (format->type > PM_ERRORS_FORMAT_PLAIN) PM_BUFFER_APPEND_LITERAL(buffer, COLOR_RESET);
+}
+
+/**
+ * Append the divider that marks lines of source that are skipped between two
+ * displayed snippets. It extends just past the line number prefix.
+ */
+static void
+pm_error_line_format_divider(const pm_error_line_format_t *format, pm_buffer_t *buffer) {
+    if (format->type > PM_ERRORS_FORMAT_PLAIN) PM_BUFFER_APPEND_LITERAL(buffer, COLOR_GRAY);
+    PM_BUFFER_APPEND_LITERAL(buffer, "  ");
+    pm_buffer_append_repeated(buffer, '~', (size_t) format->width + 4);
+    if (format->type > PM_ERRORS_FORMAT_PLAIN) PM_BUFFER_APPEND_LITERAL(buffer, COLOR_RESET);
+    pm_buffer_append_byte(buffer, '\n');
 }
 
 static void
-pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const char *number_prefix, int32_t line, uint32_t column_start, uint32_t column_end) {
+pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const pm_error_line_format_t *format, int32_t line, uint32_t column_start, uint32_t column_end) {
     int32_t line_delta = line - parser->start_line;
     assert(line_delta >= 0);
 
@@ -253,7 +257,7 @@ pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const char 
         end = parser->start + parser->line_offsets.offsets[index + 1];
     }
 
-    pm_buffer_append_format(buffer, number_prefix, line);
+    pm_error_line_format_number(format, buffer, line);
 
     /* Here we determine if we should truncate the start of the line. The
      * column is the start of a diagnostic, so it is on a character boundary. */
@@ -302,8 +306,19 @@ pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const char 
 
 static void
 pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_format_type_t format_type, size_t nerrors, pm_rich_error_t *rich_errors, bool inline_messages) {
+    int32_t final_line = pm_rich_errors_final_line(parser);
+
+    /* The line numbers that are displayed range from the first line of context
+     * of the first error to the last line of context of the last error. */
+    int32_t first_displayed_line;
+    int32_t last_displayed_line;
+    int32_t unused_line;
+    pm_rich_error_context(rich_errors[0].line_start, parser->start_line, final_line, &first_displayed_line, &unused_line);
+    pm_rich_error_context(rich_errors[nerrors - 1].line_start, parser->start_line, final_line, &unused_line, &last_displayed_line);
+
     pm_error_line_format_t format;
-    pm_error_line_format_init(&format, format_type, rich_errors[0].line_start, rich_errors[nerrors - 1].line_start);
+    pm_error_line_format_init(&format, format_type, first_displayed_line, last_displayed_line);
+
 
     /* We are going to iterate through every error in our error list and display
      * it. While we are iterating, we will display some padding lines of the
@@ -329,15 +344,15 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
         if (rich_error->line_start - last_line > 1) {
             if (rich_error->line_start - last_line > 2) {
                 if ((idx != 0) && (rich_error->line_start - last_line > 3)) {
-                    pm_buffer_append_string(buffer, format.divider, format.divider_length);
+                    pm_error_line_format_divider(&format, buffer);
                 }
 
                 pm_buffer_append_string(buffer, "  ", 2);
-                pm_error_format_line(parser, buffer, format.number_prefix, rich_error->line_start - 2, 0, 0);
+                pm_error_format_line(parser, buffer, &format, rich_error->line_start - 2, 0, 0);
             }
 
             pm_buffer_append_string(buffer, "  ", 2);
-            pm_error_format_line(parser, buffer, format.number_prefix, rich_error->line_start - 1, 0, 0);
+            pm_error_format_line(parser, buffer, &format, rich_error->line_start - 1, 0, 0);
         }
 
         /* If this error is not in the current window (because it is the first
@@ -371,7 +386,7 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
             }
 
             if (window_column_end > window_limit) window_column_end = window_limit;
-            pm_error_format_line(parser, buffer, format.number_prefix, rich_error->line_start, rich_error->column_start, window_column_end);
+            pm_error_format_line(parser, buffer, &format, rich_error->line_start, rich_error->column_start, window_column_end);
         }
 
         const uint8_t *start = parser->start + parser->line_offsets.offsets[rich_error->line_start - parser->start_line];
@@ -387,7 +402,7 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
          * languages or emoji, this means it can be thrown off pretty badly. We
          * will need to solve this eventually. */
         pm_buffer_append_string(buffer, "  ", 2);
-        pm_buffer_append_string(buffer, format.blank_prefix, format.blank_prefix_length);
+        pm_error_line_format_blank(&format, buffer);
 
         size_t column = 0;
         if (window_column_start > 0) {
@@ -438,31 +453,20 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
         pm_buffer_append_byte(buffer, '\n');
 
         /* Here we determine how many lines of padding to display after the
-         * diagnostic, depending on where the next diagnostic is in source. */
+         * diagnostic, depending on where the next diagnostic is in source. The
+         * line after the last error is one past the last line that can be
+         * displayed. */
         last_line = rich_error->line_start;
-        int32_t next_line;
+        int32_t next_line = (idx == nerrors - 1) ? (final_line + 1) : rich_errors[idx + 1].line_start;
 
-        if (idx == nerrors - 1) {
-            next_line = ((int32_t) parser->line_offsets.size) + parser->start_line;
-
-            /* If the file ends with a newline, subtract one from our
-             * "next_line" so that we do not output an extra line at the end of
-             * the file. */
-            if ((parser->start + parser->line_offsets.offsets[parser->line_offsets.size - 1]) == parser->end) {
-                next_line--;
-            }
-        } else {
-            next_line = rich_errors[idx + 1].line_start;
+        if (next_line - last_line > 1) {
+            pm_buffer_append_string(buffer, "  ", 2);
+            pm_error_format_line(parser, buffer, &format, ++last_line, 0, 0);
         }
 
         if (next_line - last_line > 1) {
             pm_buffer_append_string(buffer, "  ", 2);
-            pm_error_format_line(parser, buffer, format.number_prefix, ++last_line, 0, 0);
-        }
-
-        if (next_line - last_line > 1) {
-            pm_buffer_append_string(buffer, "  ", 2);
-            pm_error_format_line(parser, buffer, format.number_prefix, ++last_line, 0, 0);
+            pm_error_format_line(parser, buffer, &format, ++last_line, 0, 0);
         }
     }
 }

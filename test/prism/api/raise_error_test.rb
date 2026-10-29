@@ -67,6 +67,28 @@ module Ruby::Prism
       assert_equal 2, error.message.scan("> 1 |").size
     end
 
+    def test_syntax_error_wide_line_numbers
+      # The gutter is as wide as the widest line number displayed, so the
+      # markers beneath the line stay aligned with the source.
+      error = assert_raise(SyntaxError) { Ruby::Prism.parse("1 2", raise_error: :plain, line: 123_456) }
+      source_line, marker_line = error.message.lines.grep(/\|/).first(2)
+
+      assert_equal "> 123456 | 1 2\n", source_line
+      assert_equal source_line.index("|"), marker_line.index("|")
+      assert_equal source_line.rindex("2"), marker_line.index("^")
+    end
+
+    def test_syntax_error_context_line_numbers
+      # The gutter is as wide as the widest line number displayed, including the
+      # lines of context after the last error.
+      source = "x = 1\n" * 98 + "1 2\n" + "y = 2\n" * 2
+      error = assert_raise(SyntaxError) { Ruby::Prism.parse(source, raise_error: :plain) }
+      gutters = error.message.lines.grep(/\|/).map { |line| line.index("|") }
+
+      assert_includes error.message, "101 | y = 2"
+      assert_equal [gutters.first], gutters.uniq
+    end
+
     def test_syntax_error_not_utf8_in_context
       # A line of context is displayed, so it must be valid UTF-8 for the
       # snippet to be displayed, even though it has no error of its own.

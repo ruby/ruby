@@ -105,6 +105,17 @@ pm_buffer_append_zeroes(pm_buffer_t *buffer, size_t length) {
 }
 
 /**
+ * Append the given byte to the buffer the given number of times.
+ */
+void
+pm_buffer_append_repeated(pm_buffer_t *buffer, uint8_t value, size_t length) {
+    size_t cursor = buffer->length;
+    if (pm_buffer_append_length(buffer, length)) {
+        memset(buffer->value + cursor, value, length);
+    }
+}
+
+/**
  * Append a formatted string to the buffer.
  */
 void
