@@ -1049,7 +1049,7 @@ class TestFileUtils < Test::Unit::TestCase
     lnfname = File.join(dest, 'zsh')
 
     if /mingw|mswin/ =~ RUBY_PLATFORM
-      unless /<SYMLINKD>/ =~ IO.popen({"DIRCMD"=>nil}, "dir zsh", chdir: File.dirname(dest), &:read)
+      unless /<SYMLINKD>/ =~ IO.popen({"DIRCMD"=>nil}, "dir zsh", "rb", chdir: File.dirname(dest), &:read)
         omit "[Bug #22338]"
       end
     end
