@@ -1294,6 +1294,19 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_invalid_code_point_escape_in_utf16
+    %w[UTF-16LE UTF-16BE UTF-32LE UTF-32BE].each do |enc|
+      assert_raise(RegexpError) { Regexp.new("\\x{D801}".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("a\\x{D801}".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("a\\x{110000}".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("[\\x{D801}]".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("\\x{110000}".encode(enc)) }
+      s = "\u{1F600}".encode(enc)
+      assert_match(Regexp.new("\\x{1F600}".encode(enc)), s)
+      assert_match(Regexp.new("[\\x{1F600}]".encode(enc)), s)
+    end
+  end
+
   def test_char_type
     check(/\u3042\d/, ["\u30421", "\u30422"])
 
