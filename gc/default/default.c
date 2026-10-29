@@ -4995,6 +4995,7 @@ struct gc_sweep_context {
     /* The region still growing downwards, whose header is written when it is closed. */
     uintptr_t region_start;
     uintptr_t region_end;
+    struct free_region *free_region_tail;
 #endif
 };
 
@@ -5174,12 +5175,21 @@ gc_sweep_close_free_region(struct gc_sweep_context *ctx)
     struct free_region *region = (struct free_region *)ctx->region_start;
     rb_asan_unpoison_object((VALUE)region, false);
     region->end = ctx->region_end;
-    region->next = ctx->free_region;
+    region->next = NULL;
     rb_asan_poison_object((VALUE)region);
 
-    /* Regions close from the top of the page, so pushing each one leaves the list in address
-     * order, until heap_page_add_free_region pushes a single slot in front of it. */
-    ctx->free_region = region;
+    /* Regions close from the top of the page, so appending each one keeps the highest region
+     * first, as the upward sweep leaves the list.  Only the order of the frees has to change,
+     * and pushing would also reorder allocation, which made the NT heap fault in more pages. */
+    if (ctx->free_region_tail) {
+        rb_asan_unpoison_object((VALUE)ctx->free_region_tail, false);
+        ctx->free_region_tail->next = region;
+        rb_asan_poison_object((VALUE)ctx->free_region_tail);
+    }
+    else {
+        ctx->free_region = region;
+    }
+    ctx->free_region_tail = region;
 }
 #endif
 
@@ -5366,6 +5376,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
     ctx->free_region = NULL;
 #if GC_SWEEP_DOWNWARDS
     ctx->region_start = 0;
+    ctx->free_region_tail = NULL;
 #endif
 
     p = (uintptr_t)sweep_page->start;
@@ -5470,9 +5481,6 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 
         GC_ASSERT(region_end > region_start);
         GC_ASSERT((region_end - region_start) % slot_size == 0);
-#if GC_SWEEP_DOWNWARDS
-        GC_ASSERT(next == NULL || (uintptr_t)next > region_end);
-#endif
         region_slots += (int)((region_end - region_start) / slot_size);
 
         region = next;
