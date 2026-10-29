@@ -165,7 +165,7 @@ impl StackMapWriter {
     /// without writing.
     pub fn skip(&mut self, size: usize) {
         self.write_op(ZJIT_STACK_MAP_OP_SKIP);
-        self.write_varint(size as u64);
+        self.write_varint(size.as_u64());
     }
 
     /// ZJIT_STACK_MAP_OP_BASE_PTR. Operands: slot index, stack size. Anchors the
