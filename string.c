@@ -10843,10 +10843,14 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         int idx;
         int last_null = 0;
         VALUE match = 0;
+        /* Search the frozen copy made by the first match, so that every
+         * following match does not copy an embedded str again. */
+        VALUE search = str;
 
-        for (; rb_reg_search(spat, str, start, 0) >= 0;
+        for (; rb_reg_search(spat, search, start, 0) >= 0;
              (match ? (rb_match_unbusy(match), rb_backref_set(match)) : (void)0)) {
             match = rb_backref_get();
+            search = RMATCH(match)->str;
             if (!result) rb_match_busy(match);
             end = RMATCH_BEG(match, 0);
             if (start == end && RMATCH_BEG(match, 0) == RMATCH_END(match, 0)) {
