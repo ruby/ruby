@@ -85,7 +85,7 @@ fn alloc_jit_frame_memory(layout: Layout) -> *mut u8 {
         if raw_ptr.is_null() {
             handle_alloc_error(layout);
         }
-        incr_counter_by(Counter::jit_frame_heap_bytes, layout.size() as u64);
+        incr_counter_by(Counter::jit_frame_heap_bytes, layout.size().as_u64());
     }
     raw_ptr
 }
