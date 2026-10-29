@@ -200,7 +200,7 @@ impl JITFrame {
             ptr::write(raw_ptr, JITFrame {
                 pc,
                 iseq,
-                stack_map: &EMPTY_STACK_MAPS[materialize_block_code as usize],
+                stack_map: &EMPTY_STACK_MAPS[usize::from(materialize_block_code)],
             });
         }
         ZJITState::get_jit_frames().push(raw_ptr);
