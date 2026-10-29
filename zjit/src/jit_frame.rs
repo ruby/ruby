@@ -127,7 +127,7 @@ impl StackMapWriter {
 
     fn write_op(&mut self, op: u32) {
         debug_assert!(op < 1 << ZJIT_STACK_MAP_OP_BITS);
-        self.write_bits(op as u64, ZJIT_STACK_MAP_OP_BITS);
+        self.write_bits(op.into(), ZJIT_STACK_MAP_OP_BITS);
     }
 
     fn write_varint(&mut self, mut value: u64) {
