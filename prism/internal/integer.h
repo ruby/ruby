@@ -26,16 +26,16 @@ pm_integer_uint64(uint64_t value) {
  */
 typedef enum {
     /* The binary base, indicated by a 0b or 0B prefix. */
-    PM_INTEGER_BASE_BINARY,
+    PM_INTEGER_BASE_BINARY = 2,
 
     /* The octal base, indicated by a 0, 0o, or 0O prefix. */
-    PM_INTEGER_BASE_OCTAL,
+    PM_INTEGER_BASE_OCTAL = 8,
 
     /* The decimal base, indicated by a 0d, 0D, or empty prefix. */
-    PM_INTEGER_BASE_DECIMAL,
+    PM_INTEGER_BASE_DECIMAL = 10,
 
     /* The hexadecimal base, indicated by a 0x or 0X prefix. */
-    PM_INTEGER_BASE_HEXADECIMAL
+    PM_INTEGER_BASE_HEXADECIMAL = 16
 } pm_integer_base_t;
 
 /*

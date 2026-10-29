@@ -167,7 +167,7 @@ pm_integer_parse_decimal(pm_arena_t *arena, pm_integer_t *integer, size_t digits
  * Parse the digits of an integer in the given base, after any prefix.
  */
 static void
-pm_integer_parse_digits(pm_arena_t *arena, pm_integer_t *integer, uint32_t multiplier, const uint8_t *start, const uint8_t *end) {
+pm_integer_parse_digits(pm_arena_t *arena, pm_integer_t *integer, uint32_t base, const uint8_t *start, const uint8_t *end) {
     /* Leading zeros do not change the value, so skip them here and the paths
      * below always start at a nonzero digit. */
     while (start < end && (*start == '0' || pm_integer_separator(*start))) start++;
@@ -180,10 +180,10 @@ pm_integer_parse_digits(pm_arena_t *arena, pm_integer_t *integer, uint32_t multi
     }
 
     /* Accumulate into a uint64_t, which covers every integer whose words are
-     * stored inline. value * multiplier + digit overflows exactly when value
+     * stored inline. value * base + digit overflows exactly when value
      * is past limit, or equal to it with digit past limit_digit. */
-    const uint64_t limit = UINT64_MAX / multiplier;
-    const uint64_t limit_digit = UINT64_MAX % multiplier;
+    const uint64_t limit = UINT64_MAX / base;
+    const uint64_t limit_digit = UINT64_MAX % base;
 
     const uint8_t *cursor = start;
     uint64_t value = (uint64_t) pm_integer_parse_digit(*cursor++);
@@ -198,16 +198,16 @@ pm_integer_parse_digits(pm_arena_t *arena, pm_integer_t *integer, uint32_t multi
                 if (!pm_integer_separator(*scan)) digits++;
             }
 
-            if (multiplier == 10) {
+            if (base == 10) {
                 pm_integer_parse_decimal(arena, integer, digits, start, end);
             } else {
-                pm_integer_parse_powof2(arena, integer, multiplier, digits, start, end);
+                pm_integer_parse_powof2(arena, integer, base, digits, start, end);
             }
 
             return;
         }
 
-        value = value * multiplier + digit;
+        value = value * base + digit;
     }
 
     *integer = pm_integer_uint64(value);
@@ -224,28 +224,24 @@ pm_integer_parse(pm_arena_t *arena, pm_integer_t *integer, pm_integer_base_t bas
      * Instead, it will modify the parsed integer later. */
     if (*start == '+') start++;
 
-    /* Determine the multiplier from the base, and skip past any prefixes. */
-    uint32_t multiplier = 10;
+    /* Skip past any prefixes. */
     switch (base) {
         case PM_INTEGER_BASE_BINARY:
             start += 2; /* 0b */
-            multiplier = 2;
             break;
         case PM_INTEGER_BASE_OCTAL:
             start++; /* 0 */
             if (*start == '_' || *start == 'o' || *start == 'O') start++; /* o */
-            multiplier = 8;
             break;
         case PM_INTEGER_BASE_DECIMAL:
             if (*start == '0' && (end - start) > 1) start += 2; /* 0d */
             break;
         case PM_INTEGER_BASE_HEXADECIMAL:
             start += 2; /* 0x */
-            multiplier = 16;
             break;
     }
 
-    pm_integer_parse_digits(arena, integer, multiplier, start, end);
+    pm_integer_parse_digits(arena, integer, (uint32_t) base, start, end);
 }
 
 /**
