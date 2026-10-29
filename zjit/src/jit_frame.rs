@@ -158,7 +158,7 @@ impl StackMapWriter {
             self.write_op(ZJIT_STACK_MAP_OP_NIL);
         } else {
             self.write_op(ZJIT_STACK_MAP_OP_IMM);
-            self.write_varint(value.0 as u64);
+            self.write_varint(value.as_u64());
         }
     }
 
