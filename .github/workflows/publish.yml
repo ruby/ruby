@@ -30,6 +30,10 @@ jobs:
         env:
           RUBY_VERSION: ${{ github.event.client_payload.version || github.event.inputs.version }}
         run: |
+          if [[ ! "$RUBY_VERSION" =~ ^([1-9]\.[0-9])\.([0-9]|[1-9][0-9]|0-(preview[1-9]|rc[1-9]))$ ]]; then
+            echo "::error::Invalid Ruby version: $RUBY_VERSION"
+            exit 1
+          fi
           echo "RUBY_VERSION=${RUBY_VERSION}" >> $GITHUB_ENV
 
       - name: Store ABI version
