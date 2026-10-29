@@ -136,7 +136,8 @@ rich_errors_are_utf8(const pm_parser_t *parser, size_t nerrors, const pm_rich_er
 
 /* The maximum number of columns of a line that errors are displayed beneath
  * before the line is displayed again. This must be at least TRUNCATE so that
- * every window after the first on a line starts with a truncated line. */
+ * every window after the first on a line starts with a truncated line. Lines
+ * of context are cut off at the same width. */
 #define WINDOW 80
 
 typedef struct {
@@ -304,6 +305,16 @@ pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const pm_er
     }
 }
 
+/**
+ * Display a line of context around an error, which is cut off at the same width
+ * as a window so that a long line does not dominate the output.
+ */
+static void
+pm_error_format_context_line(const pm_parser_t *parser, pm_buffer_t *buffer, const pm_error_line_format_t *format, int32_t line) {
+    PM_BUFFER_APPEND_LITERAL(buffer, "  ");
+    pm_error_format_line(parser, buffer, format, line, 0, WINDOW);
+}
+
 static void
 pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_format_type_t format_type, size_t nerrors, pm_rich_error_t *rich_errors, bool inline_messages) {
     int32_t final_line = pm_rich_errors_final_line(parser);
@@ -347,12 +358,10 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
                     pm_error_line_format_divider(&format, buffer);
                 }
 
-                pm_buffer_append_string(buffer, "  ", 2);
-                pm_error_format_line(parser, buffer, &format, rich_error->line_start - 2, 0, 0);
+                pm_error_format_context_line(parser, buffer, &format, rich_error->line_start - 2);
             }
 
-            pm_buffer_append_string(buffer, "  ", 2);
-            pm_error_format_line(parser, buffer, &format, rich_error->line_start - 1, 0, 0);
+            pm_error_format_context_line(parser, buffer, &format, rich_error->line_start - 1);
         }
 
         /* If this error is not in the current window (because it is the first
@@ -460,13 +469,11 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
         int32_t next_line = (idx == nerrors - 1) ? (final_line + 1) : rich_errors[idx + 1].line_start;
 
         if (next_line - last_line > 1) {
-            pm_buffer_append_string(buffer, "  ", 2);
-            pm_error_format_line(parser, buffer, &format, ++last_line, 0, 0);
+            pm_error_format_context_line(parser, buffer, &format, ++last_line);
         }
 
         if (next_line - last_line > 1) {
-            pm_buffer_append_string(buffer, "  ", 2);
-            pm_error_format_line(parser, buffer, &format, ++last_line, 0, 0);
+            pm_error_format_context_line(parser, buffer, &format, ++last_line);
         }
     }
 }

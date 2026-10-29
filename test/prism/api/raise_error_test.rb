@@ -99,6 +99,15 @@ module Ruby::Prism
       assert_not_include error.message, "> 2 |"
     end
 
+    def test_syntax_error_long_context_line
+      # Lines of context are cut off at the width of a window.
+      source = "x = #{"a" * 100_000}\n1 2\n"
+      error = assert_raise(SyntaxError) { Ruby::Prism.parse(source, raise_error: :plain) }
+
+      assert_operator error.message.bytesize, :<, 1000
+      assert_match(/^  1 \| x = a+ \.\.\.$/, error.message)
+    end
+
     def test_syntax_error_not_utf8
       error = assert_raise(SyntaxError) { Ruby::Prism.parse("foo = 1 + \xFF\xFE\n".b, raise_error: :plain, filepath: "bin.rb") }
       assert_include error.message, "invalid multibyte character"
