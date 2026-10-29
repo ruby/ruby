@@ -1306,6 +1306,59 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_copy_stream_write_redefined_during_copy
+    chunks = []
+    reads = ["a" * 6, "b" * 6, "c" * 6, nil]
+    dst = nil
+    src = Object.new
+    src.define_singleton_method(:readpartial) do |len, buf|
+      data = reads.shift
+      raise EOFError unless data
+      if reads.size == 2
+        dst.define_singleton_method(:write) { |s| chunks << s; s.bytesize }
+      end
+      buf.replace(data)
+    end
+    File.open(File::NULL, "w") do |f|
+      dst = f
+      IO.copy_stream(src, dst)
+    end
+    assert_equal(["b" * 6, "c" * 6], chunks)
+    assert_not_same(chunks[0], chunks[1])
+  end
+
+  def test_copy_stream_retained_buffer
+    dst_class = Class.new do
+      attr_reader :chunks
+
+      def initialize
+        @chunks = []
+      end
+
+      def write(data)
+        @chunks << data
+        data.bytesize
+      end
+    end
+
+    IO.pipe do |r, w|
+      dst = dst_class.new
+      th = Thread.new { IO.copy_stream(r, dst) }
+      w.write("a" * 6)
+      Thread.pass until dst.chunks.size == 1 && th.stop?
+      first = dst.chunks[0]
+      size = first.bytesize
+      first.replace("c" * 100_000)
+      w.write("b" * 6)
+      w.close
+      th.join
+      assert_equal(6, size)
+      assert_equal(2, dst.chunks.size)
+      assert_not_same(first, dst.chunks[1])
+      assert_equal("b" * 6, dst.chunks[1])
+    end
+  end
+
   def test_copy_stream_write_in_binmode
     bug8767 = '[ruby-core:56518] [Bug #8767]'
     mkcdtmpdir {

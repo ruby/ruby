@@ -13410,7 +13410,7 @@ copy_stream_fallback_body(VALUE arg)
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
     const int buflen = 16*1024;
     VALUE n;
-    VALUE buf = rb_str_buf_new(buflen);
+    VALUE buf = Qnil;
     rb_off_t rest = stp->copy_length;
     rb_off_t off = stp->src_offset;
     ID read_method = id_readpartial;
@@ -13424,17 +13424,16 @@ copy_stream_fallback_body(VALUE arg)
     while (1) {
         rb_len_t numwrote;
         rb_len_t l;
-        rb_str_make_independent(buf);
         if (stp->copy_length < (rb_off_t)0) {
             l = buflen;
         }
         else {
             if (rest == 0) {
-                rb_str_resize(buf, 0);
                 break;
             }
             l = buflen < rest ? buflen : (rb_len_t)rest;
         }
+        if (NIL_P(buf)) buf = rb_str_buf_new(buflen);
         if (!stp->src_fptr) {
             VALUE rc = rb_funcall(stp->src, read_method, 2, INT2FIX(l), buf);
 
@@ -13453,11 +13452,14 @@ copy_stream_fallback_body(VALUE arg)
             if (off >= (rb_off_t)0)
                 off += ss;
         }
+        int reuse_buf = stp->dst_fptr && rb_method_basic_definition_p(CLASS_OF(stp->dst), id_write);
+        rb_len_t nread = RSTRING_LEN(buf);
         n = rb_io_write(stp->dst, buf);
         numwrote = NUM2LEN(n);
         stp->total += numwrote;
         rest -= numwrote;
-        if (read_method == id_read && RSTRING_LEN(buf) == 0) {
+        if (!reuse_buf) buf = Qnil;
+        if (read_method == id_read && nread == 0) {
             break;
         }
     }
