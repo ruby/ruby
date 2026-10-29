@@ -91,6 +91,7 @@ typedef struct {
 rb_symbols_t ruby_global_symbols = {
     .next_id = tNEXT_ID,
 };
+RUBY_DEBUG_EXPORT(ruby_debug_global_symbols, ruby_global_symbols)
 
 struct sym_set_static_sym_entry {
     VALUE sym;
