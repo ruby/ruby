@@ -4734,10 +4734,9 @@ pm_integer_node_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token
         ((pm_integer_t) { 0 })
     );
 
-    if (parser->integer.lexed) {
+    if (parser->integer.start == token->start) {
         // The value was already computed during lexing.
         node->value = pm_integer_uint64(parser->integer.value);
-        parser->integer.lexed = false;
     } else {
         pm_integer_base_t integer_base = PM_INTEGER_BASE_DECIMAL;
         switch (base) {
@@ -8245,6 +8244,12 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                 type = lex_optional_float_suffix(parser, seen_e);
                 break;
             }
+
+            /* Anything else ends the literal, which is just 0. */
+            default:
+                parser->integer.value = 0;
+                parser->integer.start = parser->current.start;
+                break;
         }
     } else {
         // If it didn't start with a 0, then we'll lex as far as we can into a
@@ -8285,7 +8290,7 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
             size_t digits = (size_t) (cursor - parser->current.end) + 1 - underscores;
             if (digits <= 19) {
                 parser->integer.value = value;
-                parser->integer.lexed = true;
+                parser->integer.start = parser->current.start;
             }
 
             parser->current.end = cursor;
@@ -8299,12 +8304,6 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
             uint8_t next = peek(parser);
             if (next == '.' || next == 'e' || next == 'E') {
                 type = lex_optional_float_suffix(parser, seen_e);
-
-                // If it turned out to be a float, the cached integer value is
-                // invalid.
-                if (type != PM_TOKEN_INTEGER) {
-                    parser->integer.lexed = false;
-                }
             }
         }
     }
@@ -8326,7 +8325,6 @@ static pm_token_type_t
 lex_numeric(pm_parser_t *parser) {
     pm_token_type_t type = PM_TOKEN_INTEGER;
     parser->integer.base = PM_INTEGER_BASE_FLAGS_DECIMAL;
-    parser->integer.lexed = false;
 
     if (parser->current.end < parser->end) {
         bool seen_e = false;

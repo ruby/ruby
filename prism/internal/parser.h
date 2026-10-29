@@ -814,15 +814,20 @@ struct pm_parser_t {
         pm_node_flags_t base;
 
         /*
-         * When lexing a decimal integer that fits in a uint64_t, we compute
-         * the value during lexing to avoid re-scanning the digits during
-         * parsing. If lexed is true, this holds the result and
-         * pm_integer_parse can be skipped.
+         * When lexing a decimal integer that fits in a uint64_t, or a plain 0,
+         * we compute the value during lexing to avoid re-scanning the digits
+         * during parsing. If start is set, this holds the result for the
+         * token that begins there and pm_integer_parse can be skipped.
          */
         uint64_t value;
 
-        /* Whether value holds a valid pre-computed integer. */
-        bool lexed;
+        /*
+         * The start of the token whose value is held in value, or NULL before
+         * any has been. The parser creates the node for a token only after
+         * lexing the next one, which may be another integer that replaces the
+         * value, so node creation checks that it belongs to the token at hand.
+         */
+        const uint8_t *start;
     } integer;
 
     /*
