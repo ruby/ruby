@@ -157,6 +157,7 @@ make_counters! {
         compiled_iseq_count,
         failed_iseq_count,
         jit_frame_heap_bytes,
+        jit_frame_stack_map_bytes,
         skipped_native_stack_full,
 
         compile_time_ns,
@@ -450,7 +451,6 @@ make_counters! {
     // Writes to the VM frame
     vm_write_jit_frame_count,
     vm_write_sp_count,
-    vm_write_locals_count,
     vm_write_stack_count,
     vm_write_to_parent_iseq_local_count,
     // TODO(max): Implement
@@ -843,6 +843,7 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     let jit_frame_region_bytes = ZJITState::get_jit_frame_allocator().map_or(0, |allocator| allocator.mapped_bytes());
     let code_region_bytes = ZJITState::get_code_block().mapped_region_size();
     set_stat_usize!(hash, "jit_frame_region_bytes", jit_frame_region_bytes);
+    set_stat_usize!(hash, "jit_frame_count", ZJITState::get_jit_frames().len());
     set_stat_usize!(hash, "code_region_bytes", code_region_bytes);
     set_stat_usize!(hash, "zjit_alloc_bytes", zjit_alloc_bytes());
     set_stat_usize!(hash, "total_mem_bytes", code_region_bytes + jit_frame_region_bytes + zjit_alloc_bytes());

@@ -234,12 +234,16 @@ pub const VM_ENV_DATA_INDEX_ME_CREF: i32 = -2;
 pub const VM_ENV_DATA_INDEX_SPECVAL: i32 = -1;
 pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
-pub const ZJIT_STACK_MAP_VREG_TAG: u32 = 8;
-pub const ZJIT_STACK_MAP_SKIP_TAG: u32 = 16;
-pub const ZJIT_STACK_MAP_BASE_PTR_TAG: u32 = 24;
-pub const ZJIT_STACK_MAP_SHIFT: u32 = 8;
-pub const ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT: u32 = 32;
-pub const ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK: u32 = 16777215;
+pub const ZJIT_STACK_MAP_VARINT_BITS: u32 = 4;
+pub const ZJIT_STACK_MAP_OP_BITS: u32 = 3;
+pub const ZJIT_STACK_MAP_OP_END: u32 = 0;
+pub const ZJIT_STACK_MAP_OP_VREG: u32 = 1;
+pub const ZJIT_STACK_MAP_OP_SKIP: u32 = 2;
+pub const ZJIT_STACK_MAP_OP_BASE_PTR: u32 = 3;
+pub const ZJIT_STACK_MAP_OP_IMM: u32 = 4;
+pub const ZJIT_STACK_MAP_OP_NIL: u32 = 5;
+pub const ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA: u32 = 6;
+pub const ZJIT_STACK_MAP_OP_PREV_FRAME: u32 = 7;
 pub const ZJIT_JIT_RETURN_C_FRAME: u32 = 1;
 pub const RB_GC_ZJIT_FASTPATH_DATA_WORDS: u32 = 19;
 pub type rb_len_t = ::std::os::raw::c_long;
@@ -2105,12 +2109,11 @@ pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
 #[repr(C)]
+#[derive(Debug, Copy, Clone)]
 pub struct zjit_jit_frame {
     pub pc: *const VALUE,
     pub iseq: *const rb_iseq_t,
-    pub materialize_block_code: bool,
-    pub stack_size: u32,
-    pub stack: __IncompleteArrayField<VALUE>,
+    pub stack_map: *const u8,
 }
 pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),

@@ -1,8 +1,8 @@
 use std::alloc::{handle_alloc_error, Layout};
-use std::mem::{align_of, size_of};
 use std::ptr;
 
-use crate::cruby::{__IncompleteArrayField, IseqPtr, VALUE, rb_gc_mark_movable, rb_gc_location};
+use crate::cruby::{IseqPtr, VALUE, Qnil, rb_gc_mark_movable, rb_gc_location};
+use crate::cruby::{ZJIT_STACK_MAP_OP_BITS, ZJIT_STACK_MAP_VARINT_BITS, ZJIT_STACK_MAP_OP_END, ZJIT_STACK_MAP_OP_VREG, ZJIT_STACK_MAP_OP_SKIP, ZJIT_STACK_MAP_OP_BASE_PTR, ZJIT_STACK_MAP_OP_IMM, ZJIT_STACK_MAP_OP_NIL, ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA, ZJIT_STACK_MAP_OP_PREV_FRAME};
 use crate::cruby::zjit_jit_frame;
 use crate::codegen::iseq_may_write_block_code;
 use crate::options::get_option;
@@ -30,11 +30,11 @@ impl JITFrameAllocator {
     /// Reserve the arena's address space, or return None when the platform cannot
     /// provide low memory.
     pub fn new() -> Option<Self> {
-        // A tenth of --zjit-mem-size is reserved, not mapped: physical pages are
-        // mapped in one at a time as the bump cursor crosses into them. lobsters
-        // allocates up to 4MiB of JITFrames, well below the 12.8MiB default.
+        // A quarter of --zjit-mem-size is reserved, not mapped: physical pages are
+        // mapped in one at a time as the bump cursor crosses into them. We pick this
+        // ratio emperically by running against ruby-bench.
         Some(JITFrameAllocator {
-            virt_mem: VirtualMem::alloc_low(get_option!(mem_bytes) / 10)?,
+            virt_mem: VirtualMem::alloc_low(get_option!(mem_bytes) / 4)?,
             cursor: 0,
         })
     }
@@ -72,53 +72,176 @@ impl JITFrameAllocator {
     }
 }
 
-impl JITFrame {
-    /// Allocate a JITFrame and its trailing stack map on the heap, register it
-    /// with ZJITState, and return a raw pointer that remains valid for the
-    /// lifetime of the process.
-    fn alloc(
-        pc: *const VALUE,
-        iseq: IseqPtr,
-        materialize_block_code: bool,
-        stack_size: usize,
-    ) -> *const Self {
-        // JITFrame ends with a flexible stack[] array, so allocate enough
-        // space for the fixed fields plus the requested stack map entries.
-        let frame_size = size_of::<JITFrame>()
-            .checked_add(stack_size.checked_mul(size_of::<VALUE>()).unwrap())
-            .unwrap();
-        let layout = Layout::from_size_align(frame_size, align_of::<JITFrame>()).unwrap();
-        // Prefer the low-address arena so that call sites can store this pointer
-        // as a 32-bit immediate. Falling back to the heap only costs code size.
-        let mut raw_ptr = match ZJITState::get_jit_frame_allocator() {
-            Some(arena) => arena.try_alloc(layout) as *mut JITFrame,
-            None => ptr::null_mut(),
-        };
+/// Bump-allocate `layout` from the JITFrame arena, falling back to the heap.
+fn alloc_jit_frame_memory(layout: Layout) -> *mut u8 {
+    // Prefer the low-address arena so that call sites can store JITFrame pointers
+    // as a 32-bit immediate. Falling back to the heap only costs code size.
+    let mut raw_ptr = match ZJITState::get_jit_frame_allocator() {
+        Some(arena) => arena.try_alloc(layout),
+        None => ptr::null_mut(),
+    };
+    if raw_ptr.is_null() {
+        raw_ptr = unsafe { std::alloc::alloc(layout) };
         if raw_ptr.is_null() {
-            raw_ptr = unsafe { std::alloc::alloc(layout) as *mut JITFrame };
-            if raw_ptr.is_null() {
-                handle_alloc_error(layout);
-            }
-            incr_counter_by(Counter::jit_frame_heap_bytes, layout.size() as u64);
+            handle_alloc_error(layout);
         }
+        incr_counter_by(Counter::jit_frame_heap_bytes, layout.size() as u64);
+    }
+    raw_ptr
+}
 
+/// Stack maps with no entries, indexed by materialize_block_code.
+/// Bit 0 is the flag and the END opcode that follows is all zeros.
+static EMPTY_STACK_MAPS: [u8; 2] = [0, 1];
+const _: () = assert!(ZJIT_STACK_MAP_OP_END == 0);
+
+/// Writes a JITFrame stack map bit stream. Bit 0 is materialize_block_code. The
+/// rest are opcodes, ZJIT_STACK_MAP_OP_BITS wide, each followed by its operands.
+/// Operands are varints made of ZJIT_STACK_MAP_VARINT_BITS payload chunks, least
+/// significant first, each followed by a bit that says whether another chunk
+/// follows. Streams are little-endian bit order: bit i is
+/// `(bytes[i / 8] >> (i % 8)) & 1`. zjit_materialize_frames() decodes the
+/// opcodes in order while moving a write cursor down the VM stack.
+pub struct StackMapWriter {
+    bytes: Vec<u8>,
+    num_bits: usize,
+}
+
+impl StackMapWriter {
+    pub fn new(materialize_block_code: bool) -> Self {
+        let mut writer = Self { bytes: vec![], num_bits: 0 };
+        writer.write_bits(materialize_block_code as u64, 1);
+        writer
+    }
+
+    fn write_bits(&mut self, value: u64, num_bits: u32) {
+        for i in 0..num_bits {
+            if self.num_bits % 8 == 0 {
+                self.bytes.push(0);
+            }
+            *self.bytes.last_mut().unwrap() |= (((value >> i) & 1) as u8) << (self.num_bits % 8);
+            self.num_bits += 1;
+        }
+    }
+
+    fn write_op(&mut self, op: u32) {
+        debug_assert!(op < 1 << ZJIT_STACK_MAP_OP_BITS);
+        self.write_bits(op as u64, ZJIT_STACK_MAP_OP_BITS);
+    }
+
+    fn write_varint(&mut self, mut value: u64) {
+        let payload_mask = (1 << ZJIT_STACK_MAP_VARINT_BITS) - 1;
+        loop {
+            let chunk = value & payload_mask;
+            value >>= ZJIT_STACK_MAP_VARINT_BITS;
+            let more = u64::from(value != 0);
+            self.write_bits(chunk | more << ZJIT_STACK_MAP_VARINT_BITS, ZJIT_STACK_MAP_VARINT_BITS + 1);
+            if more == 0 {
+                break;
+            }
+        }
+    }
+
+    /// ZJIT_STACK_MAP_OP_VREG. Operand: slot index below `cfp->jit_return`.
+    /// Writes `jit_return[-slot_index]`.
+    pub fn vreg(&mut self, slot_index: usize) {
+        self.write_op(ZJIT_STACK_MAP_OP_VREG);
+        self.write_varint(slot_index as u64);
+    }
+
+    /// ZJIT_STACK_MAP_OP_NIL writes Qnil. Other immediates use
+    /// ZJIT_STACK_MAP_OP_IMM, whose operand is the VALUE to write.
+    pub fn imm(&mut self, value: VALUE) {
+        assert!(value.special_const_p(), "StackMap should only materialize immediate VALUEs, but got: {value:?}");
+        if value == Qnil {
+            self.write_op(ZJIT_STACK_MAP_OP_NIL);
+        } else {
+            self.write_op(ZJIT_STACK_MAP_OP_IMM);
+            self.write_varint(value.0 as u64);
+        }
+    }
+
+    /// ZJIT_STACK_MAP_OP_SKIP. Operand: number of slots to move the cursor down
+    /// without writing.
+    pub fn skip(&mut self, size: usize) {
+        self.write_op(ZJIT_STACK_MAP_OP_SKIP);
+        self.write_varint(size as u64);
+    }
+
+    /// ZJIT_STACK_MAP_OP_BASE_PTR. Operands: slot index, stack size. Anchors the
+    /// cursor at `((VALUE **)cfp->jit_return)[-slot_index] + stack_size`, i.e. on
+    /// the SP register the JIT saved on its native stack instead of on `cfp->sp`.
+    /// `cfp->sp` is not a reliable starting point for a frame that is in the
+    /// middle of a non-leaf C call, as e.g. raising ArgumentError can push through
+    /// and move `cfp->sp`, then use the stack map. gen_prepare_non_leaf_call()
+    /// emits this opcode, always as the first one, so the opcodes after decode to
+    /// the right place.
+    pub fn base_ptr(&mut self, slot_index: u32, stack_size: u32) {
+        debug_assert_eq!(self.num_bits, 1, "base_ptr must be the first StackMap entry so later entries decode from it");
+        self.write_op(ZJIT_STACK_MAP_OP_BASE_PTR);
+        self.write_varint(slot_index.into());
+        self.write_varint(stack_size.into());
+    }
+
+    /// ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA. Moves the cursor past the frame's env
+    /// data (me/cref, specval, flags) and starts the frame's locals area. Writes in
+    /// the locals area are dropped when the frame's env has escaped.
+    pub fn skip_vm_env_data(&mut self) {
+        self.write_op(ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA);
+    }
+
+    /// ZJIT_STACK_MAP_OP_PREV_FRAME. Moves the cursor past an inlined callee's
+    /// receiver slot and continues decoding in the caller's control frame, leaving
+    /// the locals area.
+    pub fn prev_frame(&mut self) {
+        self.write_op(ZJIT_STACK_MAP_OP_PREV_FRAME);
+    }
+
+    /// Terminate the stream with ZJIT_STACK_MAP_OP_END and return its bytes.
+    fn finish(mut self) -> Vec<u8> {
+        self.write_op(ZJIT_STACK_MAP_OP_END);
+        self.bytes
+    }
+}
+
+impl JITFrame {
+    /// Allocate a JITFrame with an empty stack map, register it with ZJITState,
+    /// and return a raw pointer that remains valid for the lifetime of the process.
+    fn alloc(pc: *const VALUE, iseq: IseqPtr, materialize_block_code: bool) -> *const Self {
+        let raw_ptr = alloc_jit_frame_memory(Layout::new::<JITFrame>()) as *mut JITFrame;
         unsafe {
             ptr::write(raw_ptr, JITFrame {
                 pc,
                 iseq,
-                materialize_block_code,
-                stack_size: stack_size.try_into().unwrap(),
-                stack: __IncompleteArrayField::new(),
+                stack_map: &EMPTY_STACK_MAPS[materialize_block_code as usize],
             });
         }
         ZJITState::get_jit_frames().push(raw_ptr);
         raw_ptr as *const _
     }
 
+    pub fn materialize_block_code(&self) -> bool {
+        unsafe { *self.stack_map & 1 != 0 }
+    }
+
+    pub fn stack_map_writer(&self) -> StackMapWriter {
+        StackMapWriter::new(self.materialize_block_code())
+    }
+
+    /// Install a stack map built from [Self::stack_map_writer].
+    pub fn set_stack_map(&mut self, writer: StackMapWriter) {
+        debug_assert_eq!(writer.bytes.first().map(|byte| byte & 1 != 0), Some(self.materialize_block_code()));
+        let bytes = writer.finish();
+        let stack_map = alloc_jit_frame_memory(Layout::array::<u8>(bytes.len()).unwrap());
+        unsafe { ptr::copy_nonoverlapping(bytes.as_ptr(), stack_map, bytes.len()); }
+        incr_counter_by(Counter::jit_frame_stack_map_bytes, bytes.len() as u64);
+        self.stack_map = stack_map;
+    }
+
     /// Create a JITFrame for an ISEQ frame.
-    pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr, stack_size: usize) -> *const Self {
+    pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr) -> *const Self {
         let materialize_block_code = !iseq_may_write_block_code(iseq);
-        Self::alloc(pc, iseq, materialize_block_code, stack_size)
+        Self::alloc(pc, iseq, materialize_block_code)
     }
 
     /// Mark the iseq pointer for GC. Called from rb_zjit_root_mark.
@@ -148,8 +271,36 @@ pub extern "C" fn rb_zjit_jit_frame_update_references(jit_frame: *mut JITFrame) 
 
 #[cfg(test)]
 mod tests {
-    use crate::cruby::{eval, inspect};
+    use crate::cruby::{eval, inspect, VALUE};
     use insta::assert_snapshot;
+    use super::StackMapWriter;
+
+    #[test]
+    fn test_stack_map_writer_bit_layout() {
+        let mut writer = StackMapWriter::new(true);
+        writer.vreg(5);
+        writer.imm(VALUE::fixnum_from_isize(-1)); // all 64 bits set, so 16 varint chunks
+        writer.skip(17); // two varint chunks
+        // Fields are packed LSB first, so each byte reads right to left. A varint
+        // chunk is 4 payload bits followed by a continuation bit, so 17 is chunks
+        // lo=1 and hi=1, and -1 is 15 chunks of 1111 with cont=1, then 1111 with cont=0.
+        assert_eq!(writer.finish(), vec![
+            0b0101_001_1,   // 5 payload=0101 | VREG=001       | flag=1
+            0b1111_100_0,   // -1 chunk 0     | IMM=100        | 5 cont=0
+            0b11111111,     // -1 chunk 0 cont through chunk 15 payload[0], all ones
+            0b11111111,
+            0b11111111,
+            0b11111111,
+            0b11111111,
+            0b11111111,
+            0b11111111,
+            0b11111111,
+            0b11111111,
+            0b1_010_0_111,  // 17 lo[0]=1     | SKIP=010       | -1 chunk 15 cont=0 | -1 chunk 15 payload[3:1]=111
+            0b0001_1_000,   // 17 hi=0001     | 17 lo cont=1   | 17 lo[3:1]=000
+            0b0000_000_0,   // padding=0000   | END=000        | 17 hi cont=0
+        ]);
+    }
 
     #[test]
     fn test_jit_frame_entry_first() {
@@ -343,6 +494,25 @@ mod tests {
         "#), @r#""Object#test""#);
     }
 
+    // A fallback send hands the receiver and arguments to a VM helper that pushes the
+    // callee's frame over those same slots and drops this frame's cfp->sp below them
+    // (vm_call_cfunc_with_frame_(), vm_call_iseq_setup_normal()). Here define_method
+    // turns the literal block into a Proc, which escapes the calling block's env and
+    // materializes it while the define_method frame is still live, so this frame's
+    // stack map has to skip its operand stack rather than write it back over that
+    // frame. See gen_prepare_fallback_call(); on a build with RUBY_DEBUG this dies in
+    // zjit_check_owned_slot() without the skip.
+    #[test]
+    fn test_fallback_send_does_not_write_over_callee_frame() {
+        assert_snapshot!(inspect(r#"
+            def go(i)
+              Class.new { define_method(:m) { i } }
+            end
+            4.times { |i| go(i) }
+            go(99).new.m
+        "#), @"99");
+    }
+
     // A send fallback may throw (e.g. via method_missing raising). The
     // interpreter must be able to find the correct rescue handler in the
     // caller's ISEQ catch table. This exercises throw through send fallback.
@@ -403,6 +573,32 @@ mod tests {
             test.outer
             test.outer
         "#), @"[1, nil]");
+    }
+
+    // vm_make_env_each() spills through the same decoder, so an escaping env in
+    // an inlined frame decodes a map that spans three control frames and crosses
+    // two StackMapEntry::PrevFrame boundaries. Unlike the raise-based tests in
+    // codegen_tests.rs, nothing unwinds here: `keep` has to survive in the
+    // caller frame that the map also describes.
+    #[test]
+    fn test_stack_map_spill_across_inlined_frames() {
+        assert_snapshot!(inspect("
+            def leaf(escape)
+              proc { } if escape # escapes only this frame's env
+              escape ? 2 : 1
+            end
+
+            def middle(n)
+              keep = n + 40
+              keep + leaf(n > 0)
+            end
+
+            def outer(n) = middle(n)
+
+            outer(0)
+            outer(0)
+            [outer(1), outer(0)]
+        "), @"[43, 41]");
     }
 
     // Proc.new inside a block passed via invokeblock captures the caller's
