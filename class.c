@@ -575,7 +575,7 @@ class_switch_superclass(VALUE super, VALUE klass)
  * @note this function is not Class#allocate.
  */
 static VALUE
-class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
+class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable, size_t inline_fields_count)
 {
     const rb_box_t *box = rb_current_box();
 
@@ -583,9 +583,15 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
         boxable = true;
     }
 
+    RUBY_ASSERT(inline_fields_count <= RCLASS_MAX_INLINE_FIELDS);
+    RUBY_ASSERT(!boxable || !inline_fields_count);
+
     size_t alloc_size = sizeof(struct RClass_and_rb_classext_t);
     if (boxable) {
         alloc_size = sizeof(struct RClass_boxable);
+    }
+    else if (inline_fields_count) {
+        alloc_size = offsetof(struct RClass_with_inline_fields, inline_fields) + (sizeof(VALUE) * inline_fields_count);
     }
 
     RUBY_ASSERT(type == T_CLASS || type == T_ICLASS || type == T_MODULE);
@@ -606,6 +612,11 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
     obj->object_id = 0;
 
     memset(RCLASS_EXT_PRIME(obj), 0, sizeof(rb_classext_t));
+
+    RCLASS_EXT_PRIME(obj)->inline_fields_count = (uint8_t)inline_fields_count;
+    for (size_t index = 0; index < inline_fields_count; index++) {
+        RCLASS_INLINE_FIELD_SET((VALUE)obj, index, Qnil);
+    }
 
     // The creating Ractor owns the new class/module; an iclass has no owner.
     // Singleton classes of classes/modules override this below.
@@ -639,7 +650,7 @@ static VALUE
 class_alloc(enum ruby_value_type type, VALUE klass)
 {
     bool boxable = rb_box_available() && BOX_MASTER_P(rb_current_box());
-    return class_alloc0(type, klass, boxable);
+    return class_alloc0(type, klass, boxable, 0);
 }
 
 bool
@@ -741,9 +752,9 @@ class_clear_method_table(VALUE c)
 }
 
 static VALUE
-class_boot_boxable(VALUE super, bool boxable)
+class_boot_boxable(VALUE super, bool boxable, size_t inline_fields_count)
 {
-    VALUE klass = class_alloc0(T_CLASS, rb_cClass, boxable);
+    VALUE klass = class_alloc0(T_CLASS, rb_cClass, boxable, inline_fields_count);
 
     // initialize method table prior to class_associate_super()
     // because class_associate_super() may cause GC and promote klass
@@ -768,9 +779,9 @@ class_boot_boxable(VALUE super, bool boxable)
  * @post the metaclass of the new class is Class.
  */
 VALUE
-rb_class_boot(VALUE super)
+rb_class_boot(VALUE super, size_t inline_fields_count)
 {
-    return class_boot_boxable(super, false);
+    return class_boot_boxable(super, false, inline_fields_count);
 }
 
 static VALUE *
@@ -849,12 +860,13 @@ rb_check_inheritable(VALUE super)
     }
 }
 
+
 VALUE
-rb_class_new(VALUE super)
+rb_class_new_with_inline_fields(VALUE super, size_t inline_fields_count)
 {
     Check_Type(super, T_CLASS);
     rb_check_inheritable(super);
-    VALUE klass = rb_class_boot(super);
+    VALUE klass = rb_class_boot(super, inline_fields_count);
 
     RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     RUBY_ASSERT(getenv("RUBY_BOX") || RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass));
@@ -863,9 +875,15 @@ rb_class_new(VALUE super)
 }
 
 VALUE
+rb_class_new(VALUE super)
+{
+    return rb_class_new_with_inline_fields(super, RCLASS_EXT_PRIME(super)->inline_fields_count);
+}
+
+VALUE
 rb_class_s_alloc(VALUE klass)
 {
-    return rb_class_boot(0);
+    return rb_class_boot(0, 0);
 }
 
 static void
@@ -1300,7 +1318,7 @@ static inline VALUE
 make_metaclass(VALUE klass)
 {
     VALUE super;
-    VALUE metaclass = class_boot_boxable(Qundef, FL_TEST_RAW(klass, RCLASS_BOXABLE));
+    VALUE metaclass = class_boot_boxable(Qundef, FL_TEST_RAW(klass, RCLASS_BOXABLE), 0);
 
     FL_SET(metaclass, FL_SINGLETON);
     // owned by the attached class's owner, not by whoever triggered the lazy creation
@@ -1338,7 +1356,7 @@ static inline VALUE
 make_singleton_class(VALUE obj)
 {
     VALUE orig_class = METACLASS_OF(obj);
-    VALUE klass = class_alloc0(T_CLASS, rb_cClass, FL_TEST_RAW(orig_class, RCLASS_BOXABLE));
+    VALUE klass = class_alloc0(T_CLASS, rb_cClass, FL_TEST_RAW(orig_class, RCLASS_BOXABLE), 0);
     FL_SET(klass, FL_SINGLETON);
     if (RB_TYPE_P(obj, T_MODULE)) {
         // as in make_metaclass: the module's owner, not the lazy creator
@@ -1368,7 +1386,7 @@ make_singleton_class(VALUE obj)
 static VALUE
 boot_defclass(const char *name, VALUE super)
 {
-    VALUE obj = rb_class_boot(super);
+    VALUE obj = rb_class_boot(super, 0);
     ID id = rb_intern(name);
 
     rb_const_set((rb_cObject ? rb_cObject : obj), id, obj);
