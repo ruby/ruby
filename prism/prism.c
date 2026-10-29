@@ -19,6 +19,7 @@
 #include "prism/internal/magic_comments.h"
 #include "prism/internal/memchr.h"
 #include "prism/internal/node.h"
+#include "prism/internal/oom.h"
 #include "prism/internal/options.h"
 #include "prism/internal/parser.h"
 #include "prism/internal/regexp.h"
@@ -4122,6 +4123,8 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
     size_t length = (size_t) diff;
     const size_t buffer_size = sizeof(char) * (length + 1);
     char *buffer = xmalloc(buffer_size);
+    if (buffer == NULL) PRISM_OOM();
+
     memcpy((void *) buffer, token->start, length);
 
     // Next, determine if we need to replace the decimal point because of
@@ -4255,10 +4258,7 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(point && "should have a decimal point");
 
     uint8_t *digits = xmalloc(length);
-    if (digits == NULL) {
-        fputs("[pm_float_node_rational_create] Failed to allocate memory", stderr);
-        abort();
-    }
+    if (digits == NULL) PRISM_OOM();
 
     memcpy(digits, start, (unsigned long) (point - start));
     memcpy(digits + (point - start), point + 1, (unsigned long) (end - point - 1));
@@ -5853,53 +5853,40 @@ pm_numbered_parameters_node_create(pm_parser_t *parser, const pm_token_t *openin
 }
 
 /**
- * The maximum numbered reference value is defined as the maximum value that an
- * integer can hold minus 1 bit for CRuby instruction sequence operand tagging.
- */
-#define NTH_REF_MAX ((uint32_t) (INT_MAX >> 1))
-
-/**
  * Parse the decimal number represented by the range of bytes. Returns
- * 0 if the number fails to parse or if the number is greater than the maximum
- * value representable by a numbered reference. This function assumes that the
- * range of bytes has already been validated to contain only decimal digits.
+ * 0 if the number is greater than the maximum value representable by a numbered
+ * reference. This function assumes that the range of bytes has already been
+ * validated to contain only decimal digits.
  */
 static uint32_t
 pm_numbered_reference_read_node_number(pm_parser_t *parser, const pm_token_t *token) {
+/**
+ * The maximum numbered reference value is defined as the maximum value that an
+ * integer can hold minus 1 bit for CRuby instruction sequence operand tagging.
+ */
+#define NTH_REF_MAX ((uint64_t) (uint32_t) (INT_MAX >> 1))
+
     const uint8_t *start = token->start + 1;
-    const uint8_t *end = token->end;
-
-    ptrdiff_t diff = end - start;
+    ptrdiff_t diff = token->end - start;
     assert(diff > 0);
-#if PTRDIFF_MAX > SIZE_MAX
-    assert(diff < (ptrdiff_t) SIZE_MAX);
-#endif
+
     size_t length = (size_t) diff;
+    uint64_t value = 0;
 
-    char *digits = xcalloc(length + 1, sizeof(char));
-    memcpy(digits, start, length);
-    digits[length] = '\0';
+    for (size_t idx = 0; idx < length; ++idx) {
+        value = value * 10 + (uint64_t) (start[idx] - '0');
 
-    char *endptr;
-    errno = 0;
-    unsigned long value = strtoul(digits, &endptr, 10);
-
-    if ((digits == endptr) || (*endptr != '\0')) {
-        pm_parser_err(parser, U32(start - parser->start), U32(length), PM_ERR_INVALID_NUMBER_DECIMAL);
-        value = 0;
-    }
-
-    xfree_sized(digits, sizeof(char) * (length + 1));
-
-    if ((errno == ERANGE) || (value > NTH_REF_MAX)) {
-        PM_PARSER_WARN_FORMAT(parser, U32(start - parser->start), U32(length), PM_WARN_INVALID_NUMBERED_REFERENCE, (int) (length + 1), (const char *) token->start);
-        value = 0;
+        if (value > NTH_REF_MAX) {
+            PM_PARSER_WARN_FORMAT(parser, U32(start - parser->start), U32(length), PM_WARN_INVALID_NUMBERED_REFERENCE, (int) (length + 1), (const char *) token->start);
+            value = 0;
+            break;
+        }
     }
 
     return (uint32_t) value;
-}
 
 #undef NTH_REF_MAX
+}
 
 /**
  * Allocate and initialize a new NthReferenceReadNode node.
@@ -23540,7 +23527,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
 pm_parser_t *
 pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_options_t *options) {
     pm_parser_t *parser = (pm_parser_t *) xmalloc(sizeof(pm_parser_t));
-    if (parser == NULL) abort();
+    if (parser == NULL) PRISM_OOM();
 
     pm_parser_init(arena, parser, source, size, options);
     return parser;

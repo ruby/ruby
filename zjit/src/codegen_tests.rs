@@ -1094,6 +1094,31 @@ fn test_yield_polymorphic_ifunc_handler_falls_back() {
 }
 
 #[test]
+fn test_yield_single_iseq_and_ifunc_handlers_no_side_exits() {
+    set_call_threshold(4);
+    eval("
+        def invoke = yield(10)
+        def add_one = invoke { |x| x + 1 }
+        def via_enum = to_enum(:invoke).to_a
+        add_one; via_enum
+        add_one; via_enum
+    ");
+    assert_snapshot!(assert_compiles("[add_one, via_enum, add_one, via_enum]"), @"[11, [10], 11, [10]]");
+}
+
+#[test]
+fn test_yield_non_direct_iseq_profile_then_ifunc() {
+    set_call_threshold(2);
+    eval("
+        def invoke = yield(10)
+        def two = invoke { |a, b| [a, b] }
+        def via_enum = to_enum(:invoke).to_a
+        two; two
+    ");
+    assert_snapshot!(assert_compiles("[two, via_enum, via_enum]"), @"[[10, nil], [10], [10]]");
+}
+
+#[test]
 fn test_yield_megamorphic_mixed_block_handlers() {
     // A yield site that sees ISEQ, proc, symbol, and ifunc handlers mixed together goes
     // megamorphic (each to_enum call profiles a distinct ifunc), so it compiles to the
@@ -7150,6 +7175,39 @@ fn test_profiled_proc_block_handler_does_not_retain_proc() {
         # Allow one object kept alive by conservative stack scanning
         PROFILED_PROC_OBJECTS.keys.size <= 1
     "), @"true");
+}
+
+#[test]
+fn test_profiled_singleton_class_does_not_retain_young_object() {
+    assert_snapshot!(inspect("
+        def profiled_singleton_send(obj) = obj.profiled_singleton_method
+
+        PROFILED_SINGLETON_OBJECTS = ObjectSpace::WeakMap.new
+        def profiled_singleton_make(i)
+          obj = Object.new
+          obj.define_singleton_method(:profiled_singleton_method) { i }
+          PROFILED_SINGLETON_OBJECTS[i] = obj
+          profiled_singleton_send(obj)
+          nil
+        end
+
+        100.times { |i| profiled_singleton_make(i) }
+        4.times { GC.start(full_mark: true, immediate_sweep: true) }
+        # Allow one object kept alive by conservative stack scanning
+        PROFILED_SINGLETON_OBJECTS.keys.size <= 1
+    "), @"true");
+}
+
+#[test]
+fn test_profiled_block_param_proxy_in_ractor() {
+    // rb_block_param_proxy is unshareable and belongs to the main Ractor, so
+    // rb_class_attached_object() on its singleton class raises in other Ractors.
+    // Profiling it must not raise while holding the VM lock.
+    assert_snapshot!(inspect("
+        def profiled_proxy_callee = yield
+        def profiled_proxy_caller(&block) = profiled_proxy_callee(&block)
+        Ractor.new { profiled_proxy_caller { 1 } }.value
+    "), @"1");
 }
 
 #[test]

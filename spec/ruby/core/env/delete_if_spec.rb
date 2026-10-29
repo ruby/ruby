@@ -21,6 +21,19 @@ describe "ENV.delete_if" do
     ENV["bar"].should == nil
   end
 
+  platform_is_not :windows do
+    it "deletes pairs with non-ASCII names" do
+      key = "ENV_DELETE_IF_SPEC_\u00DCBER"
+      begin
+        ENV[key] = "value"
+        ENV.delete_if { |k, v| k.b == key.b }
+        ENV[key].should == nil
+      ensure
+        ENV[key] = nil
+      end
+    end
+  end
+
   it "returns ENV when block given" do
     ENV.delete_if { |k, v| ["foo", "bar"].include?(k) }.should.equal?(ENV)
   end

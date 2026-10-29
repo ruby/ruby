@@ -202,7 +202,12 @@ module Bundler
       validate_override_target!(target)
       source_location = caller_locations(1, 1)&.first
 
-      if operations.key?(:from) || operations.key?(:to)
+      # 4.1.0.beta2 spelled `with:` and `in:` as `to:` and `from:`.
+      if operations.key?(:from)
+        raise ArgumentError, "`from:` and `to:` of `override` are now `in:` and `with:`; write `override #{target.inspect}, with: #{operations.fetch(:to, "<gem>").inspect}, in: #{operations[:from].inspect}`"
+      end
+
+      if operations.key?(:in) || operations.key?(:with)
         add_dependency_override(target, operations, source_location)
         return
       end
@@ -332,40 +337,40 @@ module Bundler
     end
 
     def add_dependency_override(target, operations, source_location)
-      unless operations.key?(:from)
-        raise ArgumentError, "`override #{target.inspect}, to:` requires `from:` naming the gem whose dependency is rewritten"
+      unless operations.key?(:in)
+        raise ArgumentError, "`override #{target.inspect}, with:` requires `in:` naming the gem whose dependency is rewritten"
       end
-      unless operations.key?(:to)
-        raise ArgumentError, "`override #{target.inspect}, from:` requires `to:`; use `to: nil` to drop the dependency or `to: \"<gem>\"` to replace it"
+      unless operations.key?(:with)
+        raise ArgumentError, "`override #{target.inspect}, in:` requires `with:`; use `with: nil` to drop the dependency or `with: \"<gem>\"` to replace it"
       end
 
-      from = operations[:from]
-      to = operations[:to]
+      from = operations[:in]
+      with = operations[:with]
       requirement = operations[:version]
 
-      raise ArgumentError, "`override :all` does not accept `from:`" if target == :all
-      raise ArgumentError, "`from:` must be a gem name string, got #{from.inspect}" unless from.is_a?(String)
-      raise ArgumentError, "`to:` must be a gem name string or nil, got #{to.inspect}" unless to.nil? || to.is_a?(String)
-      raise ArgumentError, "`to:` must name a gem other than #{target.inspect} and #{from.inspect}" if to == target || to == from
+      raise ArgumentError, "`override :all` does not accept `in:`" if target == :all
+      raise ArgumentError, "`in:` must be a gem name string, got #{from.inspect}" unless from.is_a?(String)
+      raise ArgumentError, "`with:` must be a gem name string or nil, got #{with.inspect}" unless with.nil? || with.is_a?(String)
+      raise ArgumentError, "`with:` must name a gem other than #{target.inspect} and #{from.inspect}" if with == target || with == from
       validate_override_gem_name!(from)
-      validate_override_gem_name!(to) if to
+      validate_override_gem_name!(with) if with
 
-      unsupported = operations.keys - [:from, :to, :version]
+      unsupported = operations.keys - [:in, :with, :version]
       if unsupported.any?
-        raise ArgumentError, "unsupported override field `#{unsupported.first}:` with `from:`; supported fields: `to:`, `version:`"
+        raise ArgumentError, "unsupported override field `#{unsupported.first}:` with `in:`; supported fields: `with:`, `version:`"
       end
 
       if operations.key?(:version)
-        raise ArgumentError, "`version:` with `from:` requires `to:` to name a replacement gem" if to.nil?
-        raise ArgumentError, "`version:` with `from:` must be a version requirement string, got #{requirement.inspect}" unless requirement.is_a?(String)
+        raise ArgumentError, "`version:` with `in:` requires `with:` to name a replacement gem" if with.nil?
+        raise ArgumentError, "`version:` with `in:` must be a version requirement string, got #{requirement.inspect}" unless requirement.is_a?(String)
         validate_override_operation!(requirement)
       end
 
       if @overrides.any? {|o| o.target == target && o.from == from }
-        raise ArgumentError, "duplicate override for #{target.inspect} `from: #{from.inspect}`"
+        raise ArgumentError, "duplicate override for #{target.inspect} `in: #{from.inspect}`"
       end
 
-      @overrides << Override.new(target, :to, to, from: from, requirement: requirement, source_location: source_location)
+      @overrides << Override.new(target, :with, with, from: from, requirement: requirement, source_location: source_location)
     end
 
     # Dropping a gem the Gemfile requires directly would leave it installed

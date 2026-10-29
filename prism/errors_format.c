@@ -5,6 +5,7 @@
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/line_offset_list.h"
+#include "prism/internal/oom.h"
 #include "prism/internal/parser.h"
 
 #include <assert.h>
@@ -420,7 +421,7 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
     if (rich_errors_size / sizeof(pm_rich_error_t) != nerrors) abort();
 
     pm_rich_error_t *rich_errors = xmalloc(rich_errors_size);
-    if (rich_errors == NULL) abort();
+    if (rich_errors == NULL) PRISM_OOM();
 
     bool is_utf8 = true;
     size_t rich_errors_idx = 0;

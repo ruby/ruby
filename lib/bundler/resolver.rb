@@ -158,7 +158,7 @@ module Bundler
         lines.concat(dependents.map {|name| "  #{name}" })
         if dependents.any?
           lines << "Replace it for each of them, for example:"
-          lines << "  #{Override.new(override.target, :to, override.operation, from: dependents.first)}"
+          lines << "  #{Override.new(override.target, :with, override.operation, from: dependents.first)}"
         end
         raise GemfileError, lines.join("\n")
       end

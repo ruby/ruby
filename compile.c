@@ -3118,7 +3118,11 @@ iseq_set_exception_table(rb_iseq_t *iseq)
             int end = label_get_position((LABEL *)(ptr[2] & ~1));
             int cont = 0;
             int sp = 0;
-            if (start < 0 || end < 0) continue;
+            if (start < 0 || end < 0) {
+                if ((ptr[0] & 0xffff) != CATCH_TYPE_ENSURE) continue;
+                if (start < 0) start = 0;
+                if (end < 0) end = 0;
+            }
             if (ptr[4]) {
                 LABEL *lobj = (LABEL *)(ptr[4] & ~1);
                 cont = label_get_position(lobj);

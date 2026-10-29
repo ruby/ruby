@@ -1840,8 +1840,8 @@ impl Insn {
             Insn::DupArrayInclude { .. } => effects::Any,
             Insn::ArrayExtend { .. } => effects::Any,
             Insn::ArrayPush { .. } => effects::Any,
-            Insn::ArrayAref { ..  } => effects::Any,
-            Insn::ArrayArefChecked { ..  } => effects::Any,
+            Insn::ArrayAref { ..  } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
+            Insn::ArrayArefChecked { ..  } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::ArrayAset { .. } => effects::Any,
             Insn::ArrayPop { ..  } => effects::Any,
             Insn::ArrayLength { .. } => Effect::write(abstract_heaps::Empty),
@@ -3197,7 +3197,9 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
     }
 }
 
-/// True if the `invokeblock` call flags permit inlining the block dispatch.
+/// True if the `invokeblock` call flags permit dispatching the block directly, either to an
+/// ISEQ block or to an ifunc block with `rb_vm_yield_with_cfunc`. Both take only positional
+/// arguments. `VM_CALL_ARGS_BLOCKARG` never appears with `yield` since it's a syntax error.
 fn can_direct_invoke_block(flags: u32) -> bool {
     (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG | VM_CALL_ARGS_BLOCKARG)) == 0
 }
@@ -3272,6 +3274,12 @@ impl Function {
         id
     }
 
+    pub fn write_barrier(&mut self, block: BlockId, recv: InsnId, val: InsnId) {
+        if !self.is_a(val, types::Immediate) {
+            self.push_insn(block, Insn::WriteBarrier { recv, val });
+        }
+    }
+
     pub fn prepend_insn(&mut self, block: BlockId, insn: Insn) -> InsnId {
         assert!(!matches!(insn, Insn::Param), "Cannot prepend a Param instruction");
         let id = self.new_insn(insn);
@@ -3335,14 +3343,17 @@ impl Function {
         self.push_insn(block, Insn::InvokeBlockIseqDirect { iseq: block_iseq, captured, args, state })
     }
 
-    /// Dispatch `yield` to the profiled ISEQ blocks.
+    /// Dispatch `yield` to the profiled ISEQ blocks. If `monomorphic_iseq`, it guards on a single ISEQ
+    /// and side-exit if it doesn't match. Otherwise, it also generates an ifunc handler and a fallback.
     fn dispatch_invoke_block_iseqs(
         &mut self,
         iseqs: &[IseqPtr],
+        monomorphic_iseq: bool,
         block: BlockId,
         insn_idx: u32,
         level: u32,
         cd: *const rb_call_data,
+        flags: u32,
         args: Vec<InsnId>,
         state: InsnId,
     ) -> (BlockId, InsnId) {
@@ -3356,7 +3367,7 @@ impl Function {
 
         // Monomorphic: guard the tag and the ISEQ, then invoke directly in-place.
         // No need for new HIR blocks.
-        if iseqs.len() == 1 && !self.policy.no_side_exits {
+        if iseqs.len() == 1 && monomorphic_iseq && !self.policy.no_side_exits {
             let block_iseq = iseqs[0];
             self.push_insn(block, Insn::GuardBitEquals { val: tag, expected: Const::CInt64(0x1), reason: Box::new(SideExitReason::InvokeBlockHandlerNotIseq), state, recompile: Some(Recompile) });
             let captured = self.untag_block_handler(block, block_handler);
@@ -3406,10 +3417,60 @@ impl Function {
         }
         self.push_insn(compare_block, Insn::Jump(BranchEdge { target: fallback_block, args: vec![] }));
 
-        let fallback_result = self.push_insn(fallback_block, Insn::InvokeBlock {
-            cd, args, state, reason: InvokeBlockPolymorphicMiss,
-        });
+        let (fallback_block, fallback_result) = self.dispatch_invoke_block_fallback(
+            fallback_block, insn_idx, level, Some((block_handler, tag)), cd, flags, args, state, InvokeBlockPolymorphicMiss,
+        );
         self.push_insn(fallback_block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
+
+        (join_block, join_param)
+    }
+
+    /// Dispatch IFUNC handler or generic fallback for `yield`, depending on the block handler tag.
+    fn dispatch_invoke_block_fallback(
+        &mut self,
+        block: BlockId,
+        insn_idx: u32,
+        level: u32,
+        loaded_block_handler: Option<(InsnId, InsnId)>,
+        cd: *const rb_call_data,
+        flags: u32,
+        args: Vec<InsnId>,
+        state: InsnId,
+        reason: SendFallbackReason,
+    ) -> (BlockId, InsnId) {
+        if !can_direct_invoke_block(flags) {
+            let result = self.push_insn(block, Insn::InvokeBlock { cd, args, state, reason });
+            return (block, result);
+        }
+
+        // Load the block handler from the current frame's LEP.
+        let (block_handler, tag_bits) = loaded_block_handler.unwrap_or_else(|| {
+            let lep = self.get_ep(block, level);
+            let block_handler = self.load_ep_env_field(block, lep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
+            let tag_mask = self.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
+            let tag_bits = self.push_insn(block, Insn::IntAnd { left: block_handler, right: tag_mask });
+            (block_handler, tag_bits)
+        });
+
+        // Check the IFUNC tag: VM_BH_IFUNC_P is `& 0x3 == 0x3`
+        let ifunc_tag = self.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
+        let is_ifunc = self.push_insn(block, Insn::IsBitEqual { left: tag_bits, right: ifunc_tag });
+
+        let join_block = self.new_block(insn_idx);
+        let join_param = self.push_insn(join_block, Insn::Param);
+        let ifunc_block = self.new_block(insn_idx);
+        let generic_block = self.new_block(insn_idx);
+        self.push_insn(block, Insn::CondBranch {
+            val: is_ifunc,
+            if_true: BranchEdge { target: ifunc_block, args: vec![] },
+            if_false: BranchEdge { target: generic_block, args: vec![] },
+        });
+
+        let ifunc_result = self.push_insn(ifunc_block, Insn::InvokeBlockIfunc { cd, block_handler, args: args.clone(), state });
+        self.push_insn(ifunc_block, Insn::Jump(BranchEdge { target: join_block, args: vec![ifunc_result] }));
+
+        let generic_result = self.push_insn(generic_block, Insn::InvokeBlock { cd, args, state, reason });
+        self.push_insn(generic_block, Insn::Jump(BranchEdge { target: join_block, args: vec![generic_result] }));
 
         (join_block, join_param)
     }
@@ -5227,7 +5288,7 @@ impl Function {
 
                                     let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
                                         self.push_insn(block, Insn::StoreField { recv: target, id: mid.into(), offset, val, num_bits: types::BasicObject.num_bits() });
-                                        self.push_insn(block, Insn::WriteBarrier { recv, val });
+                                        self.write_barrier(block, recv, val);
                                         val
                                     } else { // StructAref
                                         self.load_field(block, target, mid.into(), offset, types::BasicObject)
@@ -6352,7 +6413,7 @@ impl Function {
         };
 
         self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val, num_bits: types::BasicObject.num_bits() });
-        self.push_insn(block, Insn::WriteBarrier { recv: ivar_storage, val });
+        self.write_barrier(block, ivar_storage, val);
         if spec.next_shape != spec.profiled_type.shape() {
             // Write the new shape ID
             let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(spec.next_shape) });
@@ -6731,6 +6792,15 @@ impl Function {
                                 compile_time_heap.insert(key, insn_id);
                             }
                         }
+                        insn_id
+                    }
+                    &Insn::ArrayAset { .. } => {
+                        // TODO: Model this better using separate effects. Aset doesn't change the
+                        // array's flags, but the current effects system lumps flags in with other
+                        // memory writes, so we manually exclude the flags from invalidation for
+                        // now.
+                        let offset = RUBY_OFFSET_RBASIC_FLAGS;
+                        compile_time_heap.retain(|(_, off), _| *off == offset);
                         insn_id
                     }
                     &Insn::WriteBarrier { .. } | &Insn::StringCoderange { .. } => {
@@ -7775,6 +7845,7 @@ impl Function {
             } else {
                 false
             };
+            has_ever_inlined |= did_inline;
             run_pass!(convert_no_profile_sends);
             run_pass!(remove_trivial_block_params);
             run_pass!(optimize_load_store);
@@ -7783,7 +7854,6 @@ impl Function {
             run_pass!(clean_cfg);
             run_pass!(remove_redundant_patch_points);
             run_pass!(remove_duplicate_check_interrupts);
-            has_ever_inlined |= did_inline;
             if has_ever_inlined {
                 run_pass!(eliminate_empty_inline_frames);
             }
@@ -10572,19 +10642,10 @@ fn add_iseq_to_hir(
                             None
                         }
                     });
-                    // The monomorphic block handler type the profile recorded, if any.
-                    let block_handler_type = block_handler_summary.as_ref().and_then(|summary| {
-                        if !summary.is_monomorphic() { return None; }
-                        Some(summary.bucket(0))
-                    });
 
                     // The profile is per callee ISEQ and may describe other callers' blocks.
                     // For a known &proc its IFUNC/ISEQ guards would always fail.
                     let inlined_blockarg_proc = matches!(mode, AddIseqMode::Inlined { block: Some(BlockHandler::BlockArgProc(_)), .. });
-
-                    let is_ifunc = !inlined_blockarg_proc
-                        && (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG)) == 0
-                        && block_handler_type.is_some_and(|ty| ty.flags().is_ifunc_block_handler());
 
                     // Collect the profiled ISEQ blocks that can be invoked directly with a JIT-to-JIT call.
                     let mut fallback_reason = InvokeBlockNotSpecialized;
@@ -10633,61 +10694,21 @@ fn add_iseq_to_hir(
 
                     let result = if let Some(block_iseq) = inlined_known_block {
                         fun.push_invoke_block_iseq_direct(block, block_iseq, 0, args, exit_id)
-                    } else if !direct_iseqs.is_empty() {
-                        let level = get_lvar_level(exit_state.iseq);
-                        let (continue_block, result) = fun.dispatch_invoke_block_iseqs(&direct_iseqs, block, insn_idx, level, cd, args, exit_id);
-                        // Continue compilation from the block the dispatch ended in
-                        block = continue_block;
-                        result
-                    } else if is_ifunc {
-                        // Load the block handler from the current frame's LEP. In inlined
-                        // code, the function ISEQ is the caller while `exit_state.iseq` is the
-                        // callee containing this `invokeblock`.
-                        let level = get_lvar_level(exit_state.iseq);
-                        let lep = fun.get_ep(block, level);
-                        let block_handler = fun.load_field(block, lep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
-
-                        // Check IFUNC tag: (block_handler & 0x3) == 0x3
-                        let tag_mask = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
-                        let tag_bits = fun.push_insn(block, Insn::IntAnd { left: block_handler, right: tag_mask });
-                        let ifunc_tag = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
-                        let is_ifunc_match = fun.push_insn(block, Insn::IsBitEqual { left: tag_bits, right: ifunc_tag });
-
-                        // Branch: on match, call InvokeBlockIfunc directly
-                        let join_block = fun.new_block(insn_idx);
-                        let join_param = fun.push_insn(join_block, Insn::Param);
-                        let ifunc_block = fun.new_block(insn_idx);
-                        let fall_through = fun.new_block(insn_idx);
-
-                        fun.push_insn(block, Insn::CondBranch {
-                            val: is_ifunc_match,
-                            if_true: BranchEdge { target: ifunc_block, args: vec![] },
-                            if_false: BranchEdge { target: fall_through, args: vec![] },
-                        });
-
-                        block = fall_through;
-
-                        let ifunc_result = fun.push_insn(ifunc_block, Insn::InvokeBlockIfunc {
-                            cd,
-                            block_handler,
-                            args: args.clone(),
-                            state: exit_id,
-                        });
-                        fun.push_insn(ifunc_block, Insn::Jump(BranchEdge { target: join_block, args: vec![ifunc_result] }));
-
-                        // In the fallthrough case, use generic rb_vm_invokeblock and join
-                        let fallback_result = fun.push_insn(block, Insn::InvokeBlock {
-                            cd, args, state: exit_id, reason: InvokeBlockNotSpecialized,
-                        });
-                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
-
-                        // Continue compilation from the join block
-                        block = join_block;
-                        join_param
-                    } else {
+                    } else if inlined_blockarg_proc {
                         // TODO: Specialize a known BlockArgProc. InvokeBlockIseqDirect assumes a non-lambda
                         // ISEQ block, so it needs guards on what the Proc wraps.
                         fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id, reason: fallback_reason })
+                    } else {
+                        let level = get_lvar_level(exit_state.iseq);
+                        let (continue_block, result) = if !direct_iseqs.is_empty() {
+                            let monomorphic_iseq = block_handler_summary.as_ref().is_some_and(|summary| summary.is_monomorphic());
+                            fun.dispatch_invoke_block_iseqs(&direct_iseqs, monomorphic_iseq, block, insn_idx, level, cd, flags, args, exit_id)
+                        } else {
+                            fun.dispatch_invoke_block_fallback(block, insn_idx, level, None, cd, flags, args, exit_id, fallback_reason)
+                        };
+                        // Continue compilation from the block the dispatch ended in
+                        block = continue_block;
+                        result
                     };
                     state.stack_push(result);
                 }
