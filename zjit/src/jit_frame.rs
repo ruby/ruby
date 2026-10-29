@@ -221,7 +221,7 @@ impl JITFrame {
         let bytes = writer.finish();
         let stack_map = alloc_jit_frame_memory(Layout::array::<u8>(bytes.len()).unwrap());
         unsafe { ptr::copy_nonoverlapping(bytes.as_ptr(), stack_map, bytes.len()); }
-        incr_counter_by(Counter::jit_frame_stack_map_bytes, bytes.len() as u64);
+        incr_counter_by(Counter::jit_frame_stack_map_bytes, bytes.len().as_u64());
         self.stack_map = stack_map;
     }
 
