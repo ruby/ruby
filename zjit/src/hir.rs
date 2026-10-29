@@ -963,7 +963,10 @@ pub struct SendDirectData {
     pub kw_bits: u32,
     pub jit_entry_idx: u16,
     pub block: Option<BlockHandler>,
+    /// Frame state with the callee's normalized arguments; don't exit with it
     pub state: InsnId,
+    /// Snapshot of the original send, for exits that re-execute it in the interpreter
+    pub exit_state: InsnId,
 }
 
 /// Payload of [`Insn::CondBranchHasType`]. Boxed in the enum to keep `Insn` small.
@@ -1268,7 +1271,10 @@ pub enum Insn {
         recv: InsnId,
         num_args: u16,
         block: Option<BlockHandler>,
+        /// Frame state with the callee's normalized arguments; don't exit with it
         state: InsnId,
+        /// Snapshot of the original send, for exits that re-execute it in the interpreter
+        exit_state: InsnId,
     },
 
     /// Pop a lighter weight frame used for inlined methods.
@@ -1632,12 +1638,13 @@ macro_rules! for_each_operand_impl {
                 $visit_many!(args);
                 $visit_one!(*state);
             }
-            Insn::PushInlineFrame { recv, state, block, .. } => {
+            Insn::PushInlineFrame { recv, state, exit_state, block, .. } => {
                 $visit_one!(*recv);
                 if let Some(BlockHandler::BlockArgProc(id)) = &$($mut)? *block {
                     $visit_one!(*id);
                 }
                 $visit_one!(*state);
+                $visit_one!(*exit_state);
             }
             // SendDirect/CCallWithFrame/CCallVariadic carry their operands behind a Box,
             // which stable Rust can't destructure in a pattern. visit_one takes a place, so
@@ -1649,6 +1656,7 @@ macro_rules! for_each_operand_impl {
                     $visit_one!(*id);
                 }
                 $visit_one!(insn.state);
+                $visit_one!(insn.exit_state);
             }
             Insn::CCallWithFrame(insn) => {
                 $visit_one!(insn.recv);
@@ -5139,7 +5147,7 @@ impl Function {
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
                                 self.emit_send_direct_args(block, call, &args, send_frame_state, state);
-                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, block: send_block })));
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, exit_state: state, block: send_block })));
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
@@ -5180,7 +5188,7 @@ impl Function {
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
                                 self.emit_send_direct_args(block, call, &args, send_frame_state, state);
-                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, block: None })));
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, exit_state: state, block: None })));
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             // Check singleton class assumption first, before emitting other patchpoints
@@ -5714,6 +5722,7 @@ impl Function {
                                 kw_bits,
                                 jit_entry_idx,
                                 state: send_state,
+                                exit_state: state,
                                 block: None,
                             })));
                             self.make_equal_to(insn_id, replacement);
@@ -5988,7 +5997,7 @@ impl Function {
                 else {
                     unreachable!("position {send_insn_id} is not a SendDirect");
                 };
-                let SendDirectData { recv, cme, iseq, kw_bits, jit_entry_idx, block: call_block, state, .. } = **data;
+                let SendDirectData { recv, cme, iseq, kw_bits, jit_entry_idx, block: call_block, state, exit_state, .. } = **data;
                 let args_len = data.args.len();
                 // TODO(max): If we accept BlockArg here, we need to change the folding of Defined
                 // in HIR construction for the defined opcode to check the send flags of the method
@@ -6196,7 +6205,7 @@ impl Function {
 
                 // Insert PushLightweightFrame and jump to callee body entry.
                 self.push_insn(block, Insn::PushInlineFrame {
-                    iseq, cme, recv, num_args: args.len().try_into().unwrap(), block: call_block, state,
+                    iseq, cme, recv, num_args: args.len().try_into().unwrap(), block: call_block, state, exit_state,
                 });
                 self.count(block, Counter::inline_iseq_optimized_send_count);
                 self.push_insn(block, Insn::Jump(BranchEdge {
