@@ -1142,6 +1142,43 @@ class TestNetHTTPContinue < Test::Unit::TestCase
     assert_match(/Expect: 100-continue/, @debug.string)
     assert_not_match(/HTTP\/1.1 100 continue/, @debug.string)
   end
+
+  def test_expect_continue_early_response
+    server = TCPServer.new(config('host'), 0)
+    th = Thread.new do
+      2.times do
+        sock = server.accept
+        begin
+          while (reqline = sock.gets)
+            clen = 0
+            while (line = sock.gets) && line != "\r\n"
+              clen = line.split(':', 2)[1].to_i if line.start_with?('Content-Length')
+            end
+            if reqline.start_with?('PUT')
+              sock.write "HTTP/1.1 429 Too Many Requests\r\nContent-Length: 0\r\n\r\n"
+              sock.read(clen)
+            else
+              sock.write "HTTP/1.1 200 OK\r\nContent-Length: #{reqline.bytesize}\r\n\r\n#{reqline}"
+            end
+          end
+        ensure
+          sock.close
+        end
+      end
+    end
+    http = Net::HTTP.new(config('host'), server.addr[1])
+    http.continue_timeout = 1
+    http.start {
+      res = http.request_put('/first', 'data!', 'expect' => '100-continue')
+      assert_equal('429', res.code)
+      res = http.get('/second')
+      assert_equal("GET /second HTTP/1.1\r\n", res.body)
+    }
+  ensure
+    th&.kill
+    th&.join
+    server&.close
+  end
 end
 
 class TestNetHTTPSwitchingProtocols < Test::Unit::TestCase
