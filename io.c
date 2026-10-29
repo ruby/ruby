@@ -120,6 +120,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/process.h"
+#include "internal/string.h"
 #include "internal/thread.h"
 #include "internal/transcode.h"
 #include "internal/variable.h"
@@ -3216,6 +3217,8 @@ io_fread(VALUE str, rb_len_t offset, rb_len_t size, rb_io_t *fptr)
     struct bufread_arg arg;
 
     io_setstrbuf(&str, offset + size);
+    if (!READ_DATA_PENDING(fptr))
+        rb_str_make_heap(str);
     arg.str_ptr = RSTRING_PTR(str);
     arg.offset = offset;
     arg.len = size;
@@ -3326,6 +3329,11 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
         fptr->cbuf.len += (int)(dp - ds);
 
         putbackable = rb_econv_putbackable(fptr->readconv);
+        /* The converter can hold readagain bytes it received in an earlier
+         * fill (a character split across reads). Only bytes still in rbuf
+         * can be put back there; the rest stay in the converter. */
+        if (putbackable > fptr->rbuf.off)
+            putbackable = fptr->rbuf.off;
         if (putbackable) {
             rb_econv_putback(fptr->readconv, (unsigned char *)fptr->rbuf.ptr + fptr->rbuf.off - putbackable, putbackable);
             fptr->rbuf.off -= putbackable;
@@ -3602,6 +3610,7 @@ io_getpartial(VALUE io, VALUE length, VALUE str, int no_exception, int nonblock)
             rb_fd_set_nonblock(fptr->fd);
         }
         io_setstrbuf(&str, len);
+        rb_str_make_heap(str);
         iis.th = rb_thread_current();
         iis.fptr = fptr;
         iis.nonblock = nonblock;
@@ -6367,6 +6376,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     rb_io_check_closed(fptr);
 
     io_setstrbuf(&str, ilen);
+    rb_str_make_heap(str);
     iis.th = rb_thread_current();
     iis.fptr = fptr;
     iis.nonblock = 0;
@@ -6465,6 +6475,7 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
 
     shrinkable = io_setstrbuf(&str, (rb_len_t)arg.count);
     if (arg.count == 0) return str;
+    rb_str_make_heap(str);
     arg.buf = RSTRING_PTR(str);
 
     GetOpenFile(io, fptr);

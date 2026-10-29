@@ -136,4 +136,35 @@ describe "Socket.pair" do
       s2.close
     end
   end
+
+  it "yields the sockets, returns the block's value and closes them afterwards" do
+    sockets = nil
+    Socket.pair(:UNIX, :STREAM) { |s1, s2| sockets = [s1, s2]; :result }.should == :result
+    sockets.map(&:closed?).should == [true, true]
+  end
+
+  it "closes the sockets when the block raises" do
+    sockets = nil
+    -> { Socket.pair(:UNIX, :STREAM) { |s1, s2| sockets = [s1, s2]; raise "boom" } }.should.raise(RuntimeError, "boom")
+    sockets.map(&:closed?).should == [true, true]
+  end
+
+  it "does not raise when the block closes the sockets itself" do
+    Socket.pair(:UNIX, :STREAM) { |s1, s2| s1.close; s2.close; :ok }.should == :ok
+  end
+
+  it "ignores a StandardError from closing a socket and still closes the other one" do
+    sockets = nil
+    Socket.pair(:UNIX, :STREAM) do |s1, s2|
+      sockets = [s1, s2]
+      def s2.close
+        raise IOError, "close failed"
+      end
+      :result
+    end.should == :result
+    sockets[0].should.closed?
+    $!.should == nil
+  ensure
+    IO.instance_method(:close).bind_call(sockets[1]) if sockets
+  end
 end

@@ -771,7 +771,7 @@ rb_serial_t ruby_vm_constant_cache_invalidations = 0;
 rb_serial_t ruby_vm_constant_cache_misses = 0;
 rb_serial_t ruby_vm_global_cvar_state = 1;
 
-static const struct rb_callcache vm_empty_cc = {
+const struct rb_callcache rb_vm_empty_cc = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
     .klass = Qundef,
     .cme_  = NULL,
@@ -781,7 +781,20 @@ static const struct rb_callcache vm_empty_cc = {
     }
 };
 
-static const struct rb_callcache vm_empty_cc_for_super = {
+/* Installed instead of a real cc at call sites of methods that opted out of
+ * call caching: dispatch resolves the cme on every call rather than leaving a
+ * cc behind on the receiver's class. */
+const struct rb_callcache rb_vm_uncached_cc = {
+    .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
+    .klass = Qundef,
+    .cme_  = NULL,
+    .call_ = vm_call_uncached,
+    .aux_  = {
+        .v = Qfalse,
+    }
+};
+
+const struct rb_callcache rb_vm_empty_cc_for_super = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
     .klass = Qundef,
     .cme_  = NULL,
@@ -2528,6 +2541,9 @@ add_opt_method_entry_bop(const rb_method_entry_t *me, ID mid, enum ruby_basic_op
 static void
 add_opt_method(VALUE klass, ID mid, enum ruby_basic_operators bop)
 {
+    if (bop == BOP_NEW) {
+        klass = rb_singleton_class(klass);
+    }
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
     if (me && vm_redefinition_check_method_type(me)) {
@@ -2560,6 +2576,7 @@ vm_init_redefined_flag(void)
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
+    OP(New, NEW), (C(Hash));
     OP(PLUS, PLUS), (C(Integer), C(Float), C(String), C(Array));
     OP(MINUS, MINUS), (C(Integer), C(Float));
     OP(MULT, MULT), (C(Integer), C(Float));
@@ -4199,6 +4216,12 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
     // set cfp to NULL before clearing the stack in case `thread_profile_frames`
     // gets called in this middle of `rb_ec_set_vm_stack` via signal handler.
     ec->cfp = NULL;
+
+    // Ensure the store to ec->cfp above is not reordered after the stores below.
+#if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
+
     rb_ec_set_vm_stack(ec, NULL, 0);
 }
 
@@ -5450,17 +5473,5 @@ vm_collect_usage_register(int reg, int isset)
         (*ruby_vm_collect_usage_func_register)(reg, isset);
 }
 #endif
-
-const struct rb_callcache *
-rb_vm_empty_cc(void)
-{
-    return &vm_empty_cc;
-}
-
-const struct rb_callcache *
-rb_vm_empty_cc_for_super(void)
-{
-    return &vm_empty_cc_for_super;
-}
 
 #include "vm_call_iseq_optimized.inc" /* required from vm_insnhelper.c */

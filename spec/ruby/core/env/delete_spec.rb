@@ -14,6 +14,15 @@ describe "ENV.delete" do
     ENV["foo"].should == nil
   end
 
+  platform_is_not :windows do
+    it "accepts a BINARY variable name containing non-ASCII bytes" do
+      key = "ENV_DELETE_SPEC_\u00DCBER"
+      ENV[key] = "bar"
+      ENV.delete(key.b).should == "bar"
+      ENV[key].should == nil
+    end
+  end
+
   it "returns the previous value" do
     ENV["foo"] = "bar"
     ENV.delete("foo").should == "bar"

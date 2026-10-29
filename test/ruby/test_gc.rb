@@ -221,6 +221,155 @@ class TestGc < Test::Unit::TestCase
     end
   end
 
+  def test_transient_malloc_does_not_trigger_oldmalloc_major_gc
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    omit 'stress' if GC.stress
+
+    env = {
+      "RUBY_GC_MALLOC_LIMIT" => "4194304",
+      "RUBY_GC_MALLOC_LIMIT_MAX" => "4194304",
+      "RUBY_GC_OLDMALLOC_LIMIT" => "1048576",
+      "RUBY_GC_OLDMALLOC_LIMIT_MAX" => "1048576",
+      "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "1000",
+    }
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      GC.start
+      GC::Profiler.enable
+      40.times do
+        500.times { "x" * 4096 }
+        GC.start(full_mark: false)
+      end
+      profile = GC::Profiler.raw_data
+      GC::Profiler.disable
+
+      oldmalloc_majors = profile.count { |row| row[:GC_FLAGS][:major_by] == :oldmalloc }
+      assert_equal 0, oldmalloc_majors
+    RUBY
+  end
+
+  def test_lazy_sweep_malloc_does_not_trigger_oldmalloc_major_gc
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    omit 'stress' if GC.stress
+
+    env = {
+      "RUBY_GC_MALLOC_LIMIT" => "4194304",
+      "RUBY_GC_MALLOC_LIMIT_MAX" => "4194304",
+      "RUBY_GC_OLDMALLOC_LIMIT" => "4194304",
+      "RUBY_GC_OLDMALLOC_LIMIT_MAX" => "4194304",
+      "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "1000",
+    }
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      sparse = Array.new(100_000) { "y" * 10 }
+      sparse.each_index { |index| sparse[index] = nil if index.odd? }
+      GC.start
+      GC::Profiler.enable
+      20.times do
+        GC.start(full_mark: false, immediate_sweep: false)
+        10.times { "x" * (512 * 1024) }
+      end
+      GC.start(full_mark: false)
+      profile = GC::Profiler.raw_data
+      GC::Profiler.disable
+
+      oldmalloc_majors = profile.count { |row| row[:GC_FLAGS][:major_by] == :oldmalloc }
+      assert_equal 100_000, sparse.length
+      assert_equal 0, oldmalloc_majors
+    RUBY
+  end
+
+  def test_retained_malloc_triggers_oldmalloc_major_gc
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    omit 'stress' if GC.stress
+
+    env = {
+      "RUBY_GC_OLDMALLOC_LIMIT" => "1048576",
+      "RUBY_GC_OLDMALLOC_LIMIT_MAX" => "1048576",
+      "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "1000",
+    }
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      # Allocate in a dead thread so no stale stack slot keeps the garbage alive past GC.start.
+      Thread.new { Array.new(4_000) { "x" * 4096 }; nil }.join
+      GC.start
+      GC::Profiler.enable
+      live = Array.new(1_000) { "x" * 4096 }
+      2.times { GC.start(full_mark: false) }
+      profile = GC::Profiler.raw_data
+      GC::Profiler.disable
+
+      assert_equal 1_000, live.length
+      assert_equal :oldmalloc, profile.last[:GC_FLAGS][:major_by], profile.map { |row| row[:GC_FLAGS][:major_by] }.inspect
+    RUBY
+  end
+
+  def test_retained_malloc_triggers_oldmalloc_major_gc_despite_lazy_sweep_churn
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    omit 'stress' if GC.stress
+
+    env = {
+      "RUBY_GC_OLDMALLOC_LIMIT" => "1048576",
+      "RUBY_GC_OLDMALLOC_LIMIT_MAX" => "1048576",
+      "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "1000",
+    }
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      sparse = Array.new(100_000) { "y" * 10 }
+      sparse.each_index { |index| sparse[index] = nil if index.odd? }
+      GC.start
+      GC::Profiler.enable
+      live = Array.new(1_000) { "x" * 4096 }
+      20.times do
+        GC.start(full_mark: false, immediate_sweep: false)
+        8.times { ("x" * (1 << 20)).clear }
+      end
+      GC.start(full_mark: false)
+      profile = GC::Profiler.raw_data
+      GC::Profiler.disable
+
+      oldmalloc_majors = profile.count { |row| row[:GC_FLAGS][:major_by] == :oldmalloc }
+      assert_equal 1_000, live.length
+      assert_equal 100_000, sparse.length
+      assert_equal 1, oldmalloc_majors
+    RUBY
+  end
+
+  def test_major_sweep_does_not_create_oldmalloc_debt
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    omit 'stress' if GC.stress
+
+    env = {
+      "RUBY_GC_MALLOC_LIMIT" => "1048576",
+      "RUBY_GC_MALLOC_LIMIT_MAX" => "1048576",
+      "RUBY_GC_OLDMALLOC_LIMIT" => "1048576",
+      "RUBY_GC_OLDMALLOC_LIMIT_MAX" => "1048576",
+      "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "1000",
+    }
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      buffer_count = 1_024
+      buffer_size = 4096
+      ring = Array.new(buffer_count) { "x" * buffer_size }
+      GC::INTERNAL_CONSTANTS[:RVALUE_OLD_AGE].times { GC.start }
+      last_major = GC.stat(:major_gc_count)
+      last_iteration = 0
+      intervals = []
+      reasons = []
+      iteration = 0
+
+      while intervals.length < 5
+        ring[iteration % buffer_count] = "x" * buffer_size
+        iteration += 1
+        major = GC.stat(:major_gc_count)
+        next if major == last_major
+
+        intervals << (iteration - last_iteration) * buffer_size
+        reasons << GC.latest_gc_info(:major_by)
+        last_iteration = iteration
+        last_major = major
+      end
+
+      assert_equal [:oldmalloc] * intervals.length, reasons
+      assert_operator intervals.drop(1).max, :<=, 4 * 1024 * 1024, intervals.inspect
+    RUBY
+  end
+
   def test_stat_heap
     omit 'stress' if GC.stress
 
@@ -312,11 +461,10 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_page_pool_stat_consistency
-    omit 'no page pool' unless GC.stat.key?(:page_pool_total_pages)
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
 
     # Freeing arenas back to the OS must keep page_pool_discarded_pages in range.
-    # An underflowed counter wraps to a huge value, which also makes GC.stat
-    # allocate a Bignum and perturb the object counts it reports.
+    # An underflowed counter wraps to a huge value.
     assert_separately([], __FILE__, __LINE__, <<~RUBY, timeout: 60)
       3.times do
         ary = 200_000.times.map { "x" * 40 }
@@ -325,7 +473,7 @@ class TestGc < Test::Unit::TestCase
         GC.start(full_mark: true, immediate_sweep: true)
       end
 
-      stat = GC.stat
+      stat = GC.stat(process: true)
       assert_operator stat[:page_pool_discarded_pages], :<=, stat[:page_pool_total_pages]
       assert_operator stat[:page_pool_arenas], :>=, 0 # arenas is always 0 if doesn't have mmap
     RUBY
@@ -1072,214 +1220,221 @@ class TestGc < Test::Unit::TestCase
     RUBY
   end
 
-  def test_stat_global_scope_matches_local_statistics
+  PROCESS_STAT_KEYS = %i[
+    count time marking_time sweeping_time minor_gc_count major_gc_count global_gc_count
+    page_pool_arenas page_pool_arenas_freed page_pool_total_pages page_pool_discarded_pages
+  ].freeze
+
+  def test_stat_process_matches_ractor_statistics
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
 
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
       GC.disable
       local = GC.stat
-      process = GC.stat(scope: :global)
+      process = GC.stat(process: true)
       keys = %i[count minor_gc_count major_gc_count global_gc_count time marking_time sweeping_time]
       assert_equal local.values_at(*keys), process.values_at(*keys)
     RUBY
   end
 
-  def test_stat_global_scope_count_consistency
+  def test_stat_process_count_consistency
     omit 'default GC only' unless GC.config[:implementation] == 'default'
 
-    stat = GC.stat(scope: :global)
+    stat = GC.stat(process: true)
     assert_equal stat[:minor_gc_count] + stat[:major_gc_count] + stat[:global_gc_count], stat[:count]
   end
 
-  def test_stat_global_scope_time_rounding
+  def test_stat_process_time_rounding
     omit 'default GC only' unless GC.config[:implementation] == 'default'
 
-    stat = GC.stat(scope: :global)
+    stat = GC.stat(process: true)
     assert_include 0..1, stat[:time] - (stat[:marking_time] + stat[:sweeping_time])
   end
 
-  def test_stat_global_scope_no_argument_returns_new_hash
+  def test_stat_process_no_argument_returns_new_hash
     omit 'default GC only' unless GC.config[:implementation] == 'default'
 
-    stat = GC.stat(scope: :global)
-    keys = %i[count minor_gc_count major_gc_count global_gc_count time marking_time sweeping_time]
+    stat = GC.stat(process: true)
     assert_kind_of Hash, stat
-    assert_not_same stat, GC.stat(scope: :global)
-    assert_equal keys.sort, stat.keys.sort
+    assert_not_same stat, GC.stat(process: true)
+    assert_equal PROCESS_STAT_KEYS.sort, stat.keys.sort
     assert stat.values.all? { |value| Integer === value }
   end
 
-  def test_stat_global_scope_nil_argument_returns_new_hash
+  def test_stat_process_nil_argument_returns_new_hash
     omit 'default GC only' unless GC.config[:implementation] == 'default'
 
-    stat = GC.stat(nil, scope: :global)
-    keys = %i[count minor_gc_count major_gc_count global_gc_count time marking_time sweeping_time]
+    stat = GC.stat(nil, process: true)
     assert_kind_of Hash, stat
-    assert_not_same stat, GC.stat(scope: :global)
-    assert_equal keys.sort, stat.keys.sort
+    assert_not_same stat, GC.stat(process: true)
+    assert_equal PROCESS_STAT_KEYS.sort, stat.keys.sort
     assert stat.values.all? { |value| Integer === value }
   end
 
-  def test_stat_global_scope_symbol_argument_returns_selected_value
+  def test_stat_process_symbol_argument_returns_selected_value
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
 
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
       GC.disable
-      stat = GC.stat(scope: :global)
-      value = GC.stat(:count, scope: :global)
+      stat = GC.stat(process: true)
+      value = GC.stat(:count, process: true)
       assert_kind_of Integer, value
       assert_equal stat[:count], value
     RUBY
   end
 
-  def test_stat_global_scope_supplied_hash_is_updated_and_preserved
+  def test_stat_process_supplied_hash_is_updated_and_preserved
     omit 'default GC only' unless GC.config[:implementation] == 'default'
 
-    keys = %i[count minor_gc_count major_gc_count global_gc_count time marking_time sweeping_time]
     buffer = { sentinel: :keep }
-    assert_same buffer, GC.stat(buffer, scope: :global)
+    assert_same buffer, GC.stat(buffer, process: true)
     assert_equal :keep, buffer[:sentinel]
-    assert_equal keys.sort, (buffer.keys - [:sentinel]).sort
-    assert buffer.values_at(*keys).all? { |value| Integer === value }
+    assert_equal PROCESS_STAT_KEYS.sort, (buffer.keys - [:sentinel]).sort
+    assert buffer.values_at(*PROCESS_STAT_KEYS).all? { |value| Integer === value }
   end
 
-  def test_stat_global_scope_supplied_hash_overwrites_stale_values
+  def test_stat_process_supplied_hash_overwrites_stale_values
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
 
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
       GC.disable
       buffer = { count: -1, time: -1, sentinel: :keep }
-      assert_same buffer, GC.stat(buffer, scope: :global)
+      assert_same buffer, GC.stat(buffer, process: true)
       assert_equal :keep, buffer[:sentinel]
-      assert_equal GC.stat(:count, scope: :global), buffer[:count]
-      assert_equal GC.stat(:time, scope: :global), buffer[:time]
+      assert_equal GC.stat(:count, process: true), buffer[:count]
+      assert_equal GC.stat(:time, process: true), buffer[:time]
     RUBY
   end
 
-  def test_stat_global_scope_rejects_non_hash_or_symbol_arguments
+  def test_stat_process_rejects_non_hash_or_symbol_arguments
     omit 'default GC only' unless GC.config[:implementation] == 'default'
 
-    assert_raise(TypeError) { GC.stat(0, scope: :global) }
-    assert_raise(TypeError) { GC.stat("count", scope: :global) }
+    assert_raise(TypeError) { GC.stat(0, process: true) }
+    assert_raise(TypeError) { GC.stat("count", process: true) }
   end
 
-  def test_stat_global_scope_rejects_unknown_keys
+  def test_stat_process_rejects_unknown_keys
     omit 'default GC only' unless GC.config[:implementation] == 'default'
 
-    assert_raise(ArgumentError) { GC.stat(:no_such_key, scope: :global) }
-    assert_raise(ArgumentError) { GC.stat(:"café", scope: :global) }
+    assert_raise(ArgumentError) { GC.stat(:no_such_key, process: true) }
+    assert_raise(ArgumentError) { GC.stat(:"café", process: true) }
   end
 
-  def test_stat_global_scope_rejects_extra_positional_arguments
+  def test_stat_process_rejects_extra_positional_arguments
     omit 'default GC only' unless GC.config[:implementation] == 'default'
 
-    assert_raise(ArgumentError) { GC.stat(:count, :time, scope: :global) }
+    assert_raise(ArgumentError) { GC.stat(:count, :time, process: true) }
   end
 
-  def test_stat_global_scope_rejects_frozen_hash
+  def test_stat_process_rejects_frozen_hash
     omit 'default GC only' unless GC.config[:implementation] == 'default'
 
-    assert_raise(FrozenError) { GC.stat({ sentinel: 1 }.freeze, scope: :global) }
+    assert_raise(FrozenError) { GC.stat({ sentinel: 1 }.freeze, process: true) }
   end
 
-  def test_stat_global_scope_counts_deferred_collection_once
+  def test_stat_process_counts_deferred_collection_once
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
 
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
       GC.disable
-      before = GC.stat(scope: :global)
+      before = GC.stat(process: true)
       GC.start(full_mark: true, immediate_mark: false, immediate_sweep: false)
-      started = GC.stat(scope: :global)
+      started = GC.stat(process: true)
       assert_equal [1, 1], [started[:count] - before[:count], started[:major_gc_count] - before[:major_gc_count]]
 
       GC.start(full_mark: false, immediate_mark: true, immediate_sweep: true)
-      settled = GC.stat(scope: :global)
+      settled = GC.stat(process: true)
       assert_equal 1, settled[:count] - started[:count]
     RUBY
   end
 
-  def test_stat_global_scope_counts_collection_with_profiler_disabled
+  def test_stat_process_counts_collection_with_profiler_disabled
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
 
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
       GC.disable
       GC::Profiler.disable
-      before = GC.stat(:count, scope: :global)
+      before = GC.stat(:count, process: true)
       GC.start
-      assert_equal 1, GC.stat(:count, scope: :global) - before
+      assert_equal 1, GC.stat(:count, process: true) - before
     RUBY
   end
 
-  def test_stat_global_scope_profiler_enable_preserves_totals
+  def test_stat_process_profiler_enable_preserves_totals
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
 
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      counts = %i[count time marking_time sweeping_time minor_gc_count major_gc_count global_gc_count]
       GC.disable
       GC::Profiler.disable
       GC.start
-      before = GC.stat(scope: :global)
+      before = GC.stat(process: true).slice(*counts)
       GC::Profiler.enable
-      assert_equal before, GC.stat(scope: :global)
+      assert_equal before, GC.stat(process: true).slice(*counts)
     RUBY
   end
 
-  def test_stat_global_scope_profiler_disable_preserves_totals
+  def test_stat_process_profiler_disable_preserves_totals
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
 
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      counts = %i[count time marking_time sweeping_time minor_gc_count major_gc_count global_gc_count]
       GC.disable
       GC::Profiler.enable
       GC.start
-      before = GC.stat(scope: :global)
+      before = GC.stat(process: true).slice(*counts)
       GC::Profiler.disable
-      assert_equal before, GC.stat(scope: :global)
+      assert_equal before, GC.stat(process: true).slice(*counts)
     RUBY
   end
 
-  def test_stat_global_scope_profiler_clear_preserves_totals
+  def test_stat_process_profiler_clear_preserves_totals
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
 
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      counts = %i[count time marking_time sweeping_time minor_gc_count major_gc_count global_gc_count]
       GC.disable
       GC::Profiler.enable
       GC.start
-      before = GC.stat(scope: :global)
+      before = GC.stat(process: true).slice(*counts)
       GC::Profiler.clear
-      assert_equal before, GC.stat(scope: :global)
+      assert_equal before, GC.stat(process: true).slice(*counts)
     RUBY
   end
 
-  def test_stat_global_scope_profiler_configure_preserves_totals
+  def test_stat_process_profiler_configure_preserves_totals
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
 
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      counts = %i[count time marking_time sweeping_time minor_gc_count major_gc_count global_gc_count]
       GC.disable
       GC::Profiler.enable
       3.times { GC.start }
-      before = GC.stat(scope: :global)
+      before = GC.stat(process: true).slice(*counts)
       GC::Profiler.configure(max_records: 2)
-      assert_equal before, GC.stat(scope: :global)
+      assert_equal before, GC.stat(process: true).slice(*counts)
     RUBY
   end
 
-  def test_stat_global_scope_retains_finished_ractor_history
+  def test_stat_process_retains_finished_ractor_history
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
 
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
       Warning[:experimental] = false
+      counts = %i[count time marking_time sweeping_time minor_gc_count major_gc_count global_gc_count]
       GC.disable
       local_before = GC.stat(:count)
-      process_before = GC.stat(:count, scope: :global)
+      process_before = GC.stat(:count, process: true)
       ready = Ractor::Port.new
       worker = Ractor.new(ready) do |reply|
         GC.disable
@@ -1291,7 +1446,7 @@ class TestGc < Test::Unit::TestCase
 
       worker_count, control = ready.receive
       assert_equal(3, worker_count, "worker count")
-      live = GC.stat(:count, scope: :global)
+      live = GC.stat(:count, process: true)
       assert_equal(3, live - process_before, "live work missing")
       assert_equal(local_before, GC.stat(:count), "worker changed main count")
 
@@ -1299,21 +1454,21 @@ class TestGc < Test::Unit::TestCase
       worker.monitor(monitor)
       control << :finish
       assert_equal([worker, :exited], monitor.receive, "worker did not exit")
-      assert_equal(live + 1, GC.stat(:count, scope: :global), "history lost on exit")
+      assert_equal(live + 1, GC.stat(:count, process: true), "history lost on exit")
 
-      global_before = GC.stat(:count, scope: :global)
+      global_before = GC.stat(:count, process: true)
       GC.start(full_mark: true, immediate_mark: true, immediate_sweep: true)
-      assert_equal(1, GC.stat(:count, scope: :global) - global_before, "global count")
+      assert_equal(1, GC.stat(:count, process: true) - global_before, "global count")
       local_after_global = GC.stat(:count)
 
-      snapshot = GC.stat(scope: :global)
+      snapshot = GC.stat(process: true).slice(*counts)
       assert_equal(:finish, worker.value, "worker result")
-      assert_equal(snapshot, GC.stat(scope: :global), "absorption changed history")
+      assert_equal(snapshot, GC.stat(process: true).slice(*counts), "absorption changed history")
       assert_equal(local_after_global, GC.stat(:count), "absorption changed main count")
     RUBY
   end
 
-  def test_stat_global_scope_preserves_nested_ractor_history
+  def test_stat_process_preserves_nested_ractor_history
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
 
@@ -1321,7 +1476,7 @@ class TestGc < Test::Unit::TestCase
       Warning[:experimental] = false
       GC.disable
       local_before = GC.stat(:count)
-      process_before = GC.stat(:count, scope: :global)
+      process_before = GC.stat(:count, process: true)
       ready = Ractor::Port.new
       outer = assert_in_ractor(ready, value: false) do |reply|
         GC.disable
@@ -1338,15 +1493,15 @@ class TestGc < Test::Unit::TestCase
 
       ready.receive
 
-      assert_equal(9, GC.stat(:count, scope: :global) - process_before, "nested history missing")
+      assert_equal(9, GC.stat(:count, process: true) - process_before, "nested history missing")
       outer.ractor.send(:finish)
       assert_equal(:finish, outer.value, "outer result")
-      assert_equal(10, GC.stat(:count, scope: :global) - process_before, "nested history changed")
+      assert_equal(10, GC.stat(:count, process: true) - process_before, "nested history changed")
       assert_equal(local_before, GC.stat(:count), "main inherited nested counts")
     RUBY
   end
 
-  def test_stat_global_scope_counts_global_collection_once
+  def test_stat_process_counts_global_collection_once
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
 
@@ -1361,9 +1516,9 @@ class TestGc < Test::Unit::TestCase
       end
       ready.receive
 
-      before = GC.stat(scope: :global)
+      before = GC.stat(process: true)
       GC.start(full_mark: true, immediate_mark: true, immediate_sweep: true)
-      after = GC.stat(scope: :global)
+      after = GC.stat(process: true)
       assert_equal 1, after[:count] - before[:count]
       assert_equal before[:major_gc_count], after[:major_gc_count]
       assert_equal 1, after[:global_gc_count] - before[:global_gc_count]
@@ -1374,13 +1529,13 @@ class TestGc < Test::Unit::TestCase
     RUBY
   end
 
-  def test_stat_global_scope_reads_are_coherent_during_ractor_collection
+  def test_stat_process_reads_are_coherent_during_ractor_collection
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
       Warning[:experimental] = false
       GC.disable
       keys = %i[count minor_gc_count major_gc_count global_gc_count time marking_time sweeping_time]
-      start_count = GC.stat(:count, scope: :global)
+      start_count = GC.stat(:count, process: true)
       ready = Ractor::Port.new
 
       worker = Ractor.new(ready) do |reply|
@@ -1399,7 +1554,7 @@ class TestGc < Test::Unit::TestCase
         control.receive
         previous = nil
         read = lambda do
-          stat = GC.stat(scope: :global)
+          stat = GC.stat(process: true)
           assert_equal(stat[:minor_gc_count] + stat[:major_gc_count] + stat[:global_gc_count], stat[:count], "count invariant")
           assert_include(0..1, stat[:time] - (stat[:marking_time] + stat[:sweeping_time]), "time rounding")
           ks.each { |key| assert_operator stat[key], :>=, previous[key], "decreasing #{key}" if previous }
@@ -1420,15 +1575,15 @@ class TestGc < Test::Unit::TestCase
       reader_control << :continue
       reader_last = reader.value
 
-      final = GC.stat(scope: :global)
+      final = GC.stat(process: true)
       assert_equal final[:minor_gc_count] + final[:major_gc_count] + final[:global_gc_count], final[:count]
       assert_include 0..1, final[:time] - (final[:marking_time] + final[:sweeping_time])
-      assert reader_last.all? { |key, value| final[key] >= value }
+      assert keys.all? { |key| final[key] >= reader_last[key] }
       assert_operator final[:count] - start_count, :>=, 50
     RUBY
   end
 
-  def test_stat_global_scope_preserves_measured_time_when_measurement_disabled
+  def test_stat_process_preserves_measured_time_when_measurement_disabled
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
 
@@ -1436,7 +1591,7 @@ class TestGc < Test::Unit::TestCase
       Warning[:experimental] = false
       GC.disable
       GC.measure_total_time = false
-      baseline = GC.stat(scope: :global)
+      baseline = GC.stat(process: true)
       ready = Ractor::Port.new
       worker = assert_in_ractor(ready, value: false) do |reply|
         GC.disable
@@ -1458,7 +1613,7 @@ class TestGc < Test::Unit::TestCase
       end
 
       worker_count, worker_time, worker_marking, worker_sweeping, control = ready.receive
-      before = GC.stat(scope: :global)
+      before = GC.stat(process: true)
       assert_equal worker_count, before[:count] - baseline[:count]
       assert_operator worker_time, :>=, 2
       assert_include worker_time..worker_time + 1, before[:time] - baseline[:time]
@@ -1468,21 +1623,22 @@ class TestGc < Test::Unit::TestCase
       assert_equal [3, 100_000], [after_count - worker_count, retained_count]
       assert_equal [worker_time, worker_marking, worker_sweeping], [after_time, after_marking, after_sweeping]
 
-      after = GC.stat(scope: :global)
+      after = GC.stat(process: true)
       assert_equal 4, after[:count] - before[:count]
       assert_equal before.values_at(:time, :marking_time, :sweeping_time),
                    after.values_at(:time, :marking_time, :sweeping_time)
     RUBY
   end
 
-  def test_stat_global_scope_fork_inherits_archived_and_live_history
+  def test_stat_process_fork_inherits_archived_and_live_history
     omit 'fork not supported' unless Process.respond_to?(:fork)
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
       Warning[:experimental] = false
+      counts = %i[count time marking_time sweeping_time minor_gc_count major_gc_count global_gc_count]
       GC.disable
-      process_before = GC.stat(:count, scope: :global)
+      process_before = GC.stat(:count, process: true)
 
       assert_in_ractor do
         GC.disable
@@ -1499,15 +1655,15 @@ class TestGc < Test::Unit::TestCase
       end
       assert_equal(2, live_ready.receive, "live count")
 
-      snapshot = GC.stat(scope: :global)
+      snapshot = GC.stat(process: true).slice(*counts)
       assert_equal 6, snapshot[:count] - process_before
       read, write = IO.pipe
       pid = Process.fork do
         read.close
-        child_initial = GC.stat(scope: :global)
+        child_initial = GC.stat(process: true).slice(*counts)
         write.write(Marshal.dump(child_initial))
         GC.start(full_mark: true, immediate_mark: true, immediate_sweep: true)
-        child_after = GC.stat(scope: :global)
+        child_after = GC.stat(process: true).slice(*counts)
         write.write(Marshal.dump(child_after))
         write.close
         exit!(0)
@@ -1520,78 +1676,80 @@ class TestGc < Test::Unit::TestCase
       assert_predicate(status, :success?, "child exit status")
       assert_equal snapshot, child_initial
       assert_equal 1, child_after[:count] - child_initial[:count]
-      assert_equal snapshot[:count], GC.stat(:count, scope: :global)
+      assert_equal snapshot[:count], GC.stat(:count, process: true)
 
       live.send(:finish)
       assert_equal :finish, live.value
     RUBY
   end
 
-  def test_stat_scope_selects_ractor_or_global_and_validates_options
+  def test_stat_process_selects_ractor_or_process_data
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     omit 'stress' if GC.stress
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
       Warning[:experimental] = false
       GC.disable
-      global_keys = %i[count minor_gc_count major_gc_count global_gc_count time marking_time sweeping_time]
+      count_keys = %i[count minor_gc_count major_gc_count global_gc_count time marking_time sweeping_time]
+      page_pool_keys = %i[page_pool_arenas page_pool_arenas_freed page_pool_total_pages page_pool_discarded_pages]
+      process_keys = count_keys + page_pool_keys
       local_gauge = :heap_live_slots
 
       default = GC.stat
       assert_include default.keys, local_gauge
-      [:ractor, :local].each do |scope|
-        explicit = GC.stat(scope: scope)
+      assert_include default.keys, :global_gc_invocation_count
+      assert_empty default.keys & page_pool_keys
+      page_pool_keys.each do |key|
+        assert_raise(ArgumentError) { GC.stat(key) }
+      end
+
+      [false, nil].each do |process|
+        explicit = GC.stat(process: process)
         assert_not_same default, explicit
-        assert_equal default.values_at(*global_keys), explicit.values_at(*global_keys)
-        assert_include explicit.keys, local_gauge
-        assert_equal default[:count], GC.stat(:count, scope: scope)
-        assert_equal default[:count], GC.stat(nil, scope: scope)[:count]
+        assert_equal default.keys, explicit.keys
+        assert_equal default.values_at(*count_keys), explicit.values_at(*count_keys)
+        assert_equal default[:count], GC.stat(:count, process: process)
+        assert_equal default[:count], GC.stat(nil, process: process)[:count]
 
-        buffer = { scope: :global, sentinel: :keep, count: -1 }
-        assert_same buffer, GC.stat(buffer, scope: scope)
-        assert_equal [:global, :keep, default[:count]], buffer.values_at(:scope, :sentinel, :count)
+        buffer = { process: true, sentinel: :keep, count: -1 }
+        assert_same buffer, GC.stat(buffer, process: process)
+        assert_equal [true, :keep, default[:count]], buffer.values_at(:process, :sentinel, :count)
         assert_kind_of Integer, buffer[local_gauge]
-        assert_raise(FrozenError) { GC.stat({}.freeze, scope: scope) }
+        assert_raise(FrozenError) { GC.stat({}.freeze, process: process) }
       end
 
-      global = GC.stat(scope: :global)
-      assert_equal global_keys.sort, global.keys.sort
-      assert_raise(ArgumentError) { GC.stat(local_gauge, scope: :global) }
-      assert_equal global[:count], GC.stat(:count, scope: :global)
-
-      [:process, :thread, "global", "ractor", "local", nil, true].each do |scope|
-        assert_raise(ArgumentError) { GC.stat(scope: scope) }
+      process = GC.stat(process: true)
+      assert_equal process_keys.sort, process.keys.sort
+      [local_gauge, :global_gc_invocation_count].each do |key|
+        assert_raise(ArgumentError) { GC.stat(key, process: true) }
       end
+      assert_equal process[:count], GC.stat(:count, process: true)
+      [1, :ractor, "false"].each do |value|
+        assert_equal process.keys, GC.stat(process: value).keys
+      end
+
+      assert_raise(ArgumentError) { GC.stat(scope: :global) }
       assert_raise(ArgumentError) { GC.stat(foo: :bar) }
 
-      buffer = { scope: :global, sentinel: :keep }
-      assert_same buffer, GC.stat(buffer)
-      assert_equal :global, buffer[:scope]
-      assert_equal :keep, buffer[:sentinel]
-      assert_kind_of Integer, buffer[local_gauge]
+      out = { process: false, sentinel: :ok, count: -1 }
+      assert_same out, GC.stat(out, process: true)
+      assert_equal [false, :ok], out.values_at(:process, :sentinel)
+      assert_equal process_keys.sort, (out.keys - [:process, :sentinel]).sort
+      assert_equal GC.stat(:count, process: true), out[:count]
 
-      out = { scope: :local, sentinel: :ok, count: -1 }
-      assert_same out, GC.stat(out, scope: :global)
-      assert_equal :local, out[:scope]
-      assert_equal :ok, out[:sentinel]
-      assert_equal global_keys.sort, (out.keys - [:scope, :sentinel]).sort
-      assert_equal GC.stat(:count, scope: :global), out[:count]
-
-      assert_raise(FrozenError) { GC.stat({}.freeze, scope: :global) }
+      assert_raise(FrozenError) { GC.stat({}.freeze, process: true) }
     RUBY
   end
 
-  def test_stat_global_scope_is_unsupported_by_non_default_gc
+  def test_stat_process_is_unsupported_by_non_default_gc
     omit 'skipped on default GC' if GC.config[:implementation] == 'default'
 
     assert_kind_of Hash, GC.stat
     assert_kind_of Integer, GC.stat(:count)
-    [:ractor, :local].each do |scope|
-      assert_kind_of Hash, GC.stat(scope: scope)
-      assert_kind_of Integer, GC.stat(:count, scope: scope)
-    end
-    assert_raise(NotImplementedError) { GC.stat(scope: :global) }
-    assert_raise(NotImplementedError) { GC.stat(:count, scope: :global) }
-    assert_raise(NotImplementedError) { GC.stat({}, scope: :global) }
+    assert_kind_of Hash, GC.stat(process: false)
+    assert_kind_of Integer, GC.stat(:count, process: false)
+    assert_raise(NotImplementedError) { GC.stat(process: true) }
+    assert_raise(NotImplementedError) { GC.stat(:count, process: true) }
+    assert_raise(NotImplementedError) { GC.stat({}, process: true) }
   end
 
   def test_gc_start_ractor_global_false
@@ -1620,7 +1778,7 @@ class TestGc < Test::Unit::TestCase
     RUBY
   end
 
-  def test_stat_global_gc_count_counts_initiated_cycles_only
+  def test_stat_global_gc_counts_in_driver
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     assert_ractor(<<~'RUBY')
       r = Ractor.new { Ractor.receive }
@@ -1629,70 +1787,106 @@ class TestGc < Test::Unit::TestCase
       GC.start(global: true)
       after = GC.stat
       assert_equal 1, after[:global_gc_count] - before[:global_gc_count]
+      assert_equal 1, after[:global_gc_invocation_count] - before[:global_gc_invocation_count]
       assert_equal 1, after[:count] - before[:count]
       assert_equal before[:major_gc_count], after[:major_gc_count]
-      assert_equal after[:global_gc_count], GC.stat(:global_gc_count, scope: :ractor)
 
       GC.start(global: false)
       local = GC.stat
-      assert_equal after[:global_gc_count], local[:global_gc_count]
+      global_keys = %i[global_gc_count global_gc_invocation_count]
+      assert_equal after.values_at(*global_keys), local.values_at(*global_keys)
       assert_equal 1, local[:major_gc_count] - after[:major_gc_count]
       r.send(:done)
     RUBY
   end
 
-  def test_stat_global_gc_count_is_per_ractor
+  def test_stat_global_gc_count_includes_collections_started_by_other_ractors
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     assert_ractor(<<~'RUBY')
-      worker = Ractor.new do
-        before = GC.stat(:global_gc_count)
+      ready = Ractor::Port.new
+      worker = Ractor.new(ready) do |port|
+        port << :ready
+        Ractor.receive
+        before = GC.stat(:global_gc_invocation_count)
         GC.start(global: true)
-        GC.stat(:global_gc_count) - before
+        GC.stat(:global_gc_invocation_count) - before
       end
-      main_before = GC.stat(:global_gc_count)
-      initiated = worker.value
-      assert_operator initiated, :>=, 1
-      assert_equal 0, GC.stat(:global_gc_count) - main_before
+      ready.receive
+      GC.disable
+      main_before = GC.stat
+      worker << :go
+      assert_operator worker.value, :>=, 1
+      main_after = GC.stat
+
+      collected = main_after[:global_gc_count] - main_before[:global_gc_count]
+      assert_operator collected, :>=, 1
+      assert_equal collected, main_after[:count] - main_before[:count]
+      assert_equal main_before[:global_gc_invocation_count], main_after[:global_gc_invocation_count]
     RUBY
   end
 
-  def test_stat_global_scope_global_gc_count_sums_ractor_counts
+  def test_stat_process_global_gc_count_sums_invocation_counts
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     assert_ractor(<<~'RUBY')
       worker = Ractor.new do
         Ractor.receive
         GC.start(global: true)
-        GC.stat(:global_gc_count)
+        GC.stat(:global_gc_invocation_count)
       end
 
       GC.disable
-      before = GC.stat(scope: :global)
-      assert_equal GC.stat(:global_gc_count), before[:global_gc_count]
+      before = GC.stat(process: true)
+      assert_equal GC.stat(:global_gc_invocation_count), before[:global_gc_count]
 
       worker << :go
       worker_count = worker.value
       assert_operator worker_count, :>=, 1
 
-      after = GC.stat(scope: :global)
-      assert_equal GC.stat(:global_gc_count) + worker_count, after[:global_gc_count]
+      after = GC.stat(process: true)
+      assert_equal GC.stat(:global_gc_invocation_count) + worker_count, after[:global_gc_count]
     RUBY
   end
 
-  def test_stat_global_scope_global_gc_count_retains_unjoined_ractor
+  def test_stat_process_global_gc_count_retains_unjoined_ractor
     omit 'default GC only' unless GC.config[:implementation] == 'default'
     assert_ractor(<<~'RUBY')
       done = Ractor::Port.new
       Ractor.new(done) do |reply|
         GC.start(global: true)
-        reply << GC.stat(:global_gc_count)
+        reply << GC.stat(:global_gc_invocation_count)
       end
       worker_count = done.receive
       assert_operator worker_count, :>=, 1
       Thread.pass until Ractor.count == 1
 
       GC.disable
-      after = GC.stat(scope: :global)
-      assert_equal GC.stat(:global_gc_count) + worker_count, after[:global_gc_count]
+      after = GC.stat(process: true)
+      assert_equal GC.stat(:global_gc_invocation_count) + worker_count, after[:global_gc_count]
+    RUBY
+  end
+
+  def test_stat_heap_marked_slots_counts_own_heap_after_global_gc
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    omit 'stress' if GC.stress
+    assert_ractor(<<~'RUBY')
+      ready = Ractor::Port.new
+      worker = Ractor.new(ready) do |port|
+        GC.disable
+        retained = Array.new(200_000) { Object.new }
+        port << :ready
+        Ractor.receive
+        [GC.stat(:heap_marked_slots), retained.size]
+      end
+      ready.receive
+
+      GC.disable
+      GC.start(global: true)
+      main = GC.stat
+      assert_operator main[:heap_marked_slots], :<=, main[:heap_available_slots]
+
+      worker << :go
+      worker_marked, retained = worker.value
+      assert_operator worker_marked, :>=, retained
     RUBY
   end
 end

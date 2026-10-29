@@ -617,7 +617,7 @@ class IPAddr
   def zone_id=(zid)
     if @family == Socket::AF_INET6
       case zid
-      when nil, /\A%(\w+)\z/
+      when nil, /\A%[-0-9A-Za-z._~]+\z/
         @zone_id = zid
       else
         raise InvalidAddressError, "invalid zone identifier for address"
@@ -758,7 +758,7 @@ class IPAddr
       family = Socket::AF_INET6
       bracketed = true
     end
-    if prefix =~ /\A(.*)(%\w+)\z/
+    if prefix =~ /\A(.*)(%[-0-9A-Za-z._~]+)\z/
       prefix = $1
       zone_id = $2
       family = Socket::AF_INET6

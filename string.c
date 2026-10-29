@@ -335,6 +335,20 @@ rb_str_make_embedded(VALUE str)
     TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
 }
 
+/* Converts an embedded string into a heap allocated string. The buffer of an
+ * embedded string lives inside a GC heap slot, which the compactor may mprotect
+ * to implement its read barrier.  A pointer to such a buffer must not be given
+ * to a system call without the GVL. */
+void
+rb_str_make_heap(VALUE str)
+{
+    if (STR_EMBED_P(str)) {
+        const int termlen = TERM_LEN(str);
+        rb_len_t len = RSTRING_LEN(str);
+        str_make_independent_expand(str, len, (rb_len_t)rb_str_capacity(str) - len, termlen);
+    }
+}
+
 void
 rb_debug_rstring_null_ptr(const char *func)
 {
@@ -6004,8 +6018,8 @@ rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
     }
     match = rb_backref_get();
     nth = rb_reg_backref_number(match, backref);
-    int num_regs = RMATCH_NREGS(match);
-    if ((nth >= num_regs) || ((nth < 0) && (-nth >= num_regs))) {
+    int num_regs = RMATCH_NREGS(match); /* 1 <= num_regs <= ONIG_MAX_CAPTURE_GROUP_NUM (= 32767) */
+    if (nth >= num_regs || nth + num_regs <= 0) {
         rb_raise(rb_eIndexError, "index %d out of regexp", nth);
     }
     if (nth < 0) {
@@ -8985,7 +8999,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    upcase(mapping = :ascii) -> new_string
+ *    upcase(mapping) -> new_string
  *
  *  :include: doc/string/upcase.rdoc
  */
@@ -9071,7 +9085,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    downcase(mapping = :ascii) -> new_string
+ *    downcase(mapping) -> new_string
  *
  *  :include: doc/string/downcase.rdoc
  *
@@ -9132,7 +9146,7 @@ capitalize_single(VALUE str)
 
 /*
  *  call-seq:
- *    capitalize!(mapping = :ascii) -> self or nil
+ *    capitalize!(mapping) -> self or nil
  *
  *  Like String#capitalize, except that:
  *
@@ -9168,7 +9182,7 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    capitalize(mapping = :ascii) -> new_string
+ *    capitalize(mapping) -> new_string
  *
  *  :include: doc/string/capitalize.rdoc
  *
@@ -9233,7 +9247,7 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    swapcase(mapping = :ascii) -> new_string
+ *    swapcase(mapping) -> new_string
  *
  *  :include: doc/string/swapcase.rdoc
  *

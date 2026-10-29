@@ -363,7 +363,7 @@ rb_mmtk_handle_weak_references(MMTk_ObjectReference mmtk_object, bool moving)
 
     marking_parent_object = object;
 
-    rb_gc_handle_weak_references(object);
+    rb_gc_handle_weak_references(rb_gc_get_objspace(), object);
 
     if (moving) {
         rb_gc_update_object_references(rb_gc_get_objspace(), object);
@@ -1858,11 +1858,10 @@ rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
     return true;
 }
 
-size_t
-rb_gc_impl_heap_page_count(void *objspace_ptr)
+void
+rb_gc_impl_objspace_zombify(void *objspace_ptr)
 {
     /* With a single objspace zombie_objspaces is always empty. */
-    return 0;
 }
 
 void

@@ -5,6 +5,11 @@ require_relative 'shared/parse_eu'
 require 'date'
 
 describe "Date#parse" do
+  it "parses an ISO week without an explicit weekday" do
+    Date._parse("2020-W09").should == { cwyear: 2020, cweek: 9 }
+    Date.parse("2020-W09").should == Date.civil(2020, 2, 24)
+  end
+
   # The space separator is also different, doesn't work for only numbers
   it "parses a day name into a Date object" do
     d = Date.parse("friday")

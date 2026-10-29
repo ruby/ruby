@@ -11,7 +11,10 @@
 
 /* The state used while walking the tree to find the owner of each comment. */
 typedef struct {
-    /* The arena for memory that is only needed during the walk. */
+    /*
+     * The arena for memory that is only needed during the walk, which is the
+     * scratch arena of the parser.
+     */
     pm_arena_t *arena;
 
     /* The start of the source that was parsed. */
@@ -389,15 +392,15 @@ pm_comments_attach(pm_parser_t *parser, const pm_node_t *root) {
     uint32_t size = (uint32_t) parser->comment_list.size;
     if (size == 0) return;
 
-    pm_arena_t arena = { 0 };
+    pm_arena_t *arena = &parser->scratch_arena;
     pm_comments_walk_t walk = {
-        .arena = &arena,
+        .arena = arena,
         .source = parser->start,
         .comments = pm_comments_sort(parser, size),
         .size = size,
-        .starts = (uint32_t *) pm_arena_alloc(&arena, sizeof(uint32_t) * size, PRISM_ALIGNOF(uint32_t)),
-        .attached = (const pm_node_t **) pm_arena_zalloc(&arena, sizeof(pm_node_t *) * size, PRISM_ALIGNOF(pm_node_t *)),
-        .unclaimed = (uint32_t *) pm_arena_alloc(&arena, sizeof(uint32_t) * (size + 1), PRISM_ALIGNOF(uint32_t))
+        .starts = (uint32_t *) pm_arena_alloc(arena, sizeof(uint32_t) * size, PRISM_ALIGNOF(uint32_t)),
+        .attached = (const pm_node_t **) pm_arena_zalloc(arena, sizeof(pm_node_t *) * size, PRISM_ALIGNOF(pm_node_t *)),
+        .unclaimed = (uint32_t *) pm_arena_alloc(arena, sizeof(uint32_t) * (size + 1), PRISM_ALIGNOF(uint32_t))
     };
 
     for (uint32_t index = 0; index < size; index++) walk.starts[index] = walk.comments[index]->location.start;
@@ -442,8 +445,6 @@ pm_comments_attach(pm_parser_t *parser, const pm_node_t *root) {
         pm_comment_range_t *range = &ranges[walk.attached[index]->node_id];
         attachments[range->index + range->length++] = index;
     }
-
-    pm_arena_cleanup(&arena);
 
     parser->comment_attachments = (pm_comment_attachments_t) {
         .comments = walk.comments,

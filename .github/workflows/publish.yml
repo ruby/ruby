@@ -22,7 +22,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1.329.0
+      - uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
         with:
           ruby-version: 3.3.4
 
@@ -30,6 +30,10 @@ jobs:
         env:
           RUBY_VERSION: ${{ github.event.client_payload.version || github.event.inputs.version }}
         run: |
+          if [[ ! "$RUBY_VERSION" =~ ^([1-9]\.[0-9])\.([0-9]|[1-9][0-9]|0-(preview[1-9]|rc[1-9]))$ ]]; then
+            echo "::error::Invalid Ruby version: $RUBY_VERSION"
+            exit 1
+          fi
           echo "RUBY_VERSION=${RUBY_VERSION}" >> $GITHUB_ENV
 
       - name: Store ABI version
@@ -72,6 +76,15 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/ruby/actions/dispatches \
             -d '{"event_type": "update_index"}'
+
+      - name: Publish Windows binary package
+        run: |
+          curl -L -X POST \
+            -H "Authorization: Bearer ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/ruby/actions/dispatches \
+            -d "{\"event_type\": \"publish-binaries\", \"client_payload\": {\"version\": \"${RUBY_VERSION}\"}}"
 
       - name: Build and push Docker images
         run: |

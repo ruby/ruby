@@ -203,31 +203,31 @@ runs:
         done
         # drop {a..z}.rb if case-insensitive filesystem
         grep -F A.rb a.rb > /dev/null && set "${@:27}"
-        echo clean="cd ${INPUT_BUILDDIR} && rm $*" >> $GITHUB_OUTPUT
+        echo clean_files="$*" >> $GITHUB_OUTPUT
       env:
         INPUT_BUILDDIR: ${{ inputs.builddir }}
 
-    - if: inputs.clean == 'true'
-      shell: bash
-      id: clean
-      run: |
-        echo distclean="cd ${INPUT_BUILDDIR} && ${INPUT_MAKE_COMMAND} distclean" >> $GITHUB_OUTPUT
-        echo remained-files="find ${INPUT_BUILDDIR} -ls" >> $GITHUB_OUTPUT
-        [ "${INPUT_BUILDDIR}" = "${INPUT_SRCDIR}" ] ||
-        echo final="rmdir ${INPUT_BUILDDIR}" >> $GITHUB_OUTPUT
+    - name: clean
+      if: inputs.clean == 'true'
+      uses: gacts/run-and-post-run@fc6503862aba998e2f2123225ad63c09a92ed46e # v1.4.5
       env:
         INPUT_BUILDDIR: ${{ inputs.builddir }}
         INPUT_SRCDIR: ${{ inputs.srcdir }}
         INPUT_MAKE_COMMAND: ${{ inputs.make-command }}
-
-    - name: clean
-      uses: gacts/run-and-post-run@fc6503862aba998e2f2123225ad63c09a92ed46e # v1.4.5
+        CLEAN_FILES: ${{ steps.dummy-files.outputs.clean_files }}
       with:
         working-directory:
         post: |
-          ${{ steps.dummy-files.outputs.clean }}
-          ${{ steps.clean.outputs.distclean }}
-          ${{ steps.clean.outputs.remained-files }}
-          ${{ steps.clean.outputs.final }}
+          (cd "${INPUT_BUILDDIR}"; \
+          rm -f ${CLEAN_FILES}; \
+          ${INPUT_MAKE_COMMAND} distclean; \
+          )
+          if [ "${INPUT_BUILDDIR}" = "${INPUT_SRCDIR}" ]; then \
+            echo "In-place build"; \
+          elif (cd "${INPUT_BUILDDIR}" && ls -ARl); then \
+            rmdir -v "${INPUT_BUILDDIR}"; \
+          else \
+            echo "Already removed: ${INPUT_BUILDDIR}"; \
+          fi
       # rmdir randomly fails due to launchable files
       continue-on-error: true

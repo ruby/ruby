@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Mutex#sleep" do
   describe "when not locked by the current thread" do
@@ -107,5 +108,34 @@ describe "Mutex#sleep" do
       # just testing that sleep completes
       -> {m.sleep(time)}.should_not.raise
     end
+  end
+end
+
+describe "Mutex#sleep with a Fiber scheduler" do
+  before :each do
+    Fiber.set_scheduler(MutexSpecs::UnblockScheduler.new)
+  end
+
+  after :each do
+    Fiber.set_scheduler(nil)
+  end
+
+  it "raises an ArgumentError if passed a negative duration, keeping the lock" do
+    m = Mutex.new
+    sleeper = Fiber.new(blocking: false) do
+      m.lock
+      -> { m.sleep(-1) }.should.raise(ArgumentError)
+      m.owned?
+    end
+    sleeper.resume.should == true
+  end
+
+  it "raises a ThreadError when not locked by the current fiber" do
+    m = Mutex.new
+    sleeper = Fiber.new(blocking: false) do
+      -> { m.sleep(0.01) }.should.raise(ThreadError)
+      :raised
+    end
+    sleeper.resume.should == :raised
   end
 end

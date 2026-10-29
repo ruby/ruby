@@ -302,6 +302,9 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("::192.168.1.2%eth0", IPAddr.new("::192.168.1.2%eth0").to_s)
     assert_equal("fe80::1%0ab", IPAddr.new("fe80::1%0ab").to_s)
     assert_equal("fe80::1%0012", IPAddr.new("fe80::1%0012").to_s)
+    assert_equal("fe80::1%eth0.100", IPAddr.new("fe80::1%eth0.100").to_s)
+    assert_equal("fe80::1%br-lan", IPAddr.new("fe80::1%br-lan").to_s)
+    assert_equal("fe80::%a~b/64", IPAddr.new("fe80::1%a~b/64").cidr)
   end
 
   def test_to_bits
@@ -389,6 +392,12 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal('%ab0', a.zone_id)
     assert_equal("1:2:3:4:5:6:7:8%ab0", a.to_s)
     assert_raise(IPAddr::InvalidAddressError) { a.zone_id = '%' }
+    a.zone_id = '%eth0.100'
+    assert_equal("1:2:3:4:5:6:7:8%eth0.100", a.to_s)
+    a.zone_id = '%br-lan'
+    assert_equal('%br-lan', a.zone_id)
+    assert_raise(IPAddr::InvalidAddressError) { a.zone_id = '%a b' }
+    assert_raise(IPAddr::InvalidAddressError) { a.zone_id = '%a/b' }
   end
 
   def test_to_range

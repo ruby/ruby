@@ -1052,8 +1052,7 @@ rb_box_inspect(VALUE obj)
         return r;
     }
     box = rb_get_box_t(obj);
-    r = rb_str_new_cstr("#<Ruby::Box:");
-    rb_str_concat(r, rb_funcall(LONG2NUM(box->box_id), rb_intern("to_s"), 0));
+    r = rb_sprintf("#<Ruby::Box:%ld", box->box_id);
     if (BOX_MASTER_P(box)) {
         rb_str_cat_cstr(r, ",master");
     }

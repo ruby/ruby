@@ -981,7 +981,7 @@ wbcheck_process_weak_references(rb_wbcheck_objspace_t *objspace)
 
     for (size_t i = 0; i < objspace->weak_references->count; i++) {
         VALUE obj = objspace->weak_references->items[i];
-        rb_gc_handle_weak_references(obj);
+        rb_gc_handle_weak_references(objspace, obj);
     }
 
     objspace->weak_references->count = 0;
@@ -1557,10 +1557,9 @@ rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
     return true;
 }
 
-size_t
-rb_gc_impl_heap_page_count(void *objspace_ptr)
+void
+rb_gc_impl_objspace_zombify(void *objspace_ptr)
 {
-    return 0;
 }
 
 void

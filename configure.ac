@@ -4693,11 +4693,13 @@ AC_SUBST(XCC_WRAPPER)
 
 AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s/^ *//;s/  *$//'`])
 
-AS_IF([test ! -f "$srcdir/revision.h"], [
+# Generate revision.h in the build directory, as make does; one in
+# $srcdir would shadow it, since version.h includes "revision.h".
+AS_IF([test ! -f "$srcdir/revision.h" -a ! -f revision.h], [
     AS_IF([test "x$HAVE_BASERUBY" = xyes], [
-	${BASERUBY} -C "$srcdir" tool/file2lastrev.rb -q --revision.h > "$srcdir/revision.h"
+	${BASERUBY} -C "$srcdir" tool/file2lastrev.rb -q --revision.h > revision.h
     ], [
-	touch "$srcdir/revision.h"
+	touch revision.h
     ])
 ])
 
@@ -4724,7 +4726,7 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	AS_CASE("$VCS",
 		['$(GIT)'|git], [VCSUP='$(VCS) pull --rebase $(GITPULLOPTIONS)'],
 		[VCSUP='$(VCS)'])
-	for f in "$srcdir/version.h" "$srcdir/revision.h"; do
+	for f in "$srcdir/version.h" "$srcdir/revision.h" revision.h; do
             test -f "$f" || continue
 	    sed -n \
 	        -e '[/^@%:@define \(RUBY_RELEASE_[A-Z]*\) \([0-9][0-9]*\)/]{' \

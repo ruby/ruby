@@ -592,7 +592,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
     remote_addrinfo_hints |= AI_ADDRCONFIG;
     #endif
 
-    pthread_t threads[arg->family_size];
     char resolved_type[2];
     ssize_t resolved_type_size;
     int hostname_resolution_waiter = -1, hostname_resolution_notifier = -1;
@@ -639,7 +638,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
     /* start of hostname resolution */
     if (arg->family_size == 1) {
-        arg->wait = -1;
         arg->getaddrinfo_shared = NULL;
 
         int family = arg->families[0];
@@ -726,7 +724,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 }
             }
 
-            if (raddrinfo_pthread_create(&threads[i], fork_safe_do_fast_fallback_getaddrinfo, arg->getaddrinfo_entries[i]) != 0) {
+            if (raddrinfo_thread_create(fork_safe_do_fast_fallback_getaddrinfo, arg->getaddrinfo_entries[i]) != 0) {
                 rsock_raise_resolution_error_for_host("getaddrinfo(3)", EAI_AGAIN, arg->remote.host);
             }
         }
@@ -1390,6 +1388,7 @@ rsock_init_inetsock(
 
             struct fast_fallback_inetsock_arg fast_fallback_arg;
             memset(&fast_fallback_arg, 0, sizeof(fast_fallback_arg));
+            fast_fallback_arg.wait = -1;
 
             fast_fallback_arg.self = self;
             fast_fallback_arg.io = Qnil;

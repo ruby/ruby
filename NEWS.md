@@ -69,24 +69,29 @@ Note: We're only listing outstanding class updates.
 
 * GC
 
-    * `GC.stat` accepts `scope: :ractor` (the default), `scope: :local`
-      (a synonym for `:ractor`), and `scope: :global`.
-      With the default collector, the global scope reports cumulative collection
-      counts and measured marking/sweeping CPU time across Ractors, including
-      history from destroyed object spaces, without requesting a stop-the-world
-      snapshot. Unscoped `GC.stat`, `GC.count`, and `GC.total_time` retain their
-      current-Ractor behavior.
+    * `GC.stat` accepts a `process:` keyword. `GC.stat` and
+      `GC.stat(process: false)` report the current Ractor's object space.
+      With the default collector, `GC.stat(process: true)` reports cumulative
+      collection counts and measured marking/sweeping CPU time across Ractors,
+      including history from destroyed object spaces, without requesting a
+      stop-the-world snapshot. It also reports the `:page_pool_arenas`,
+      `:page_pool_arenas_freed`, `:page_pool_total_pages` and
+      `:page_pool_discarded_pages` keys, which the Ractor data does not
+      include. `GC.count` and `GC.total_time` retain their current-Ractor
+      behavior.
     * `GC.stat` reports a new key, `:global_gc_count`: the number of
-      stop-the-world global garbage collection cycles the current Ractor
-      initiated. Each global collection is attributed to exactly one Ractor,
-      so the values sum across Ractors. `GC.stat(:global_gc_count,
-      scope: :global)` reports the process total, including the counts of
-      terminated Ractors.
+      stop-the-world global garbage collection cycles that collected the
+      current Ractor's heap, whichever Ractor started them. The new key
+      `:global_gc_invocation_count` reports the global collections that the
+      current Ractor started. `GC.stat(:global_gc_count, process: true)`
+      reports the number of global collections in the process, including
+      those started by terminated Ractors.
     * A global garbage collection is not counted in `:major_gc_count`.
       `:count` equals `:minor_gc_count` plus `:major_gc_count` plus
-      `:global_gc_count` in both scopes. When another Ractor's object space
-      exists, including one left by a terminated Ractor that is not yet
-      absorbed, or one was absorbed since the last global collection,
+      `:global_gc_count` in both the Ractor and the process data. In the
+      process data each global collection counts once. When another Ractor's
+      object space exists, including one left by a terminated Ractor that is
+      not yet absorbed, or one was absorbed since the last global collection,
       `GC.start` runs a global collection by default, so it increments
       `:global_gc_count` rather than `:major_gc_count`; pass `global: false`
       for a local major collection.
@@ -254,9 +259,9 @@ They are still available on rubygems.org and can be installed with
 
 ### The following default gems are updated.
 
-* RubyGems 4.1.0.beta2
+* RubyGems 4.1.0.beta3
   * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18], [v4.0.19][RubyGems-v4.0.19], [v4.0.20][RubyGems-v4.0.20], [v4.0.21][RubyGems-v4.0.21], [v4.0.22][RubyGems-v4.0.22], [v4.0.23][RubyGems-v4.0.23], [v4.1.0.beta1][RubyGems-v4.1.0.beta1], [v4.1.0.beta2][RubyGems-v4.1.0.beta2]
-* bundler 4.1.0.beta2
+* bundler 4.1.0.beta3
   * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10], [v4.0.11][bundler-v4.0.11], [v4.0.12][bundler-v4.0.12], [v4.0.13][bundler-v4.0.13], [v4.0.14][bundler-v4.0.14], [v4.0.15][bundler-v4.0.15], [v4.0.16][bundler-v4.0.16], [v4.0.17][bundler-v4.0.17]
 * date 3.6.0
   * 3.5.1 to [v3.6.0][date-v3.6.0]
@@ -271,7 +276,7 @@ They are still available on rubygems.org and can be installed with
   * 1.4.6 to [v1.5.0][etc-v1.5.0]
 * fileutils 1.8.1
   * 1.8.0 to [v1.8.1][fileutils-v1.8.1]
-* io-console 0.9.4
+* io-console 0.9.5
   * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2], [v0.9.3][io-console-v0.9.3], [v0.9.4][io-console-v0.9.4]
 * io-wait 999.999.999
 * ipaddr 1.3.0
@@ -538,6 +543,12 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 * `rb_len2long` is added to convert an `rb_len_t` to `long`, raising
   `RangeError` via the new `rb_out_of_long` when it does not fit, for
   extensions that keep a length in `long`. [[Feature #22400]]
+
+### Atomic operations
+
+* `RUBY_ATOMIC_SIZE_LOAD` is added as the `size_t` counterpart of
+  `RUBY_ATOMIC_LOAD`, alongside the existing `RUBY_ATOMIC_SIZE_ADD`,
+  `RUBY_ATOMIC_SIZE_SUB`, `RUBY_ATOMIC_SIZE_CAS` and `RUBY_ATOMIC_SIZE_EXCHANGE`.
 
 ### Removed APIs
 

@@ -74,7 +74,7 @@ jobs:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1.329.0
+      - uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
         with:
           # windows-11-arm has only 3.4.1, 3.4.2, 3.4.3, head
           ruby-version: ${{ !endsWith(matrix.os, 'arm') && '3.1' || '3.4' }}
@@ -86,6 +86,16 @@ jobs:
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+
+      - name: Remove WindowsApps from PATH
+        shell: pwsh
+        run: |
+          # Exclude `WindowsApps` from PATH to avoid `EACCES: permission denied`
+          # error triggered by Node.js toolkit scanning the directory during the
+          # post-run execution of gacts/run-and-post-run.
+          $filteredPath = ($env:PATH -split ';' | Where-Object { $_ -notlike '*WindowsApps' }) -join ';'
+          echo "PATH=$filteredPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        working-directory: .
 
       - uses: ./.github/actions/setup/directories
         with:
@@ -342,7 +352,7 @@ jobs:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1.329.0
+      - uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
         with:
           ruby-version: '3.1'
           bundler: none

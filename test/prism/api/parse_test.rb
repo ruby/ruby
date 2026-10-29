@@ -210,7 +210,20 @@ module Ruby::Prism
       assert Ruby::Prism.parse_success?("foo(...)", scopes: [Ruby::Prism.scope(forwarding: [:"..."])])
     end
 
+    def test_repeated_escape_prefixes
+      count = 100_000
+
+      assert_repeated_escape_prefixes("\"#{"\\M-" * count}a\"", "meta cannot be repeated", count - 1)
+      assert_repeated_escape_prefixes("?#{"\\C-" * count}a", "control cannot be repeated", count - 1)
+      assert_repeated_escape_prefixes("/#{"\\c" * count}a/", "control cannot be repeated", count - 1)
+    end
+
     private
+
+    def assert_repeated_escape_prefixes(source, message, expected)
+      messages = Ruby::Prism.parse(source).errors.map(&:message)
+      assert_equal expected, messages.count { |m| m.end_with?(message) }
+    end
 
     def find_source_file_node(program)
       queue = [program]

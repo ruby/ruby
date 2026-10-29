@@ -98,3 +98,88 @@ describe 'TCPSocket#initialize' do
     end
   end
 end
+
+# A nonblocking connect to loopback reports EINPROGRESS, as in Socket#connect_nonblock's specs
+platform_is_not :windows, :freebsd, :aix do
+  describe "TCPSocket#initialize with Fiber scheduler" do
+    require_relative '../../../core/fiber/fixtures/scheduler'
+
+    before :each do
+      @server = TCPServer.new("127.0.0.1", 0)
+      @port = @server.connect_address.ip_port
+      Fiber.set_scheduler(FiberSpecs::LoggingScheduler.new)
+    end
+
+    # The scheduler leaves the fiber parked inside #io_wait, so end its connect
+    # before closing: #io_wait returning false makes it raise IO::TimeoutError.
+    after :each do
+      begin
+        @fiber.resume(false) if @fiber&.alive?
+      rescue IO::TimeoutError
+      end
+      Fiber.set_scheduler(nil)
+      @socket&.close
+      @server.close unless @server.closed?
+    end
+
+    ruby_version_is "3.4" do
+      it "calls the scheduler's #io_wait with IO::READABLE | IO::WRITABLE and no timeout" do
+        @fiber = Fiber.new(blocking: false) { TCPSocket.new("127.0.0.1", @port) }
+        @fiber.resume
+
+        Fiber.scheduler.events.size.should == 1
+        event = Fiber.scheduler.events[0]
+        event[:event].should == :io_wait
+        event[:fiber].should == @fiber
+        event[:args][0].should.instance_of?(TCPSocket)
+        event[:args][1..].should == [IO::READABLE | IO::WRITABLE, nil]
+      end
+    end
+
+    it "passes the connect_timeout to #io_wait" do
+      @fiber = Fiber.new(blocking: false) { TCPSocket.new("127.0.0.1", @port, connect_timeout: 2) }
+      @fiber.resume
+
+      Fiber.scheduler.events[0][:args][2].should == 2
+    end
+
+    it "returns the connected socket once #io_wait returns" do
+      @fiber = Fiber.new(blocking: false) { TCPSocket.new("127.0.0.1", @port) }
+      @fiber.resume
+      IO.select(nil, [Fiber.scheduler.events[0][:args][0]])
+
+      @socket = @fiber.resume(IO::WRITABLE)
+      @socket.should.instance_of?(TCPSocket)
+      @socket.remote_address.ip_port.should == @port
+    end
+
+    ruby_version_is "3.4" do
+      it "raises IO::TimeoutError when #io_wait returns false" do
+        @fiber = Fiber.new(blocking: false) { TCPSocket.new("127.0.0.1", @port) }
+        @fiber.resume
+
+        -> { @fiber.resume(false) }.should.raise(IO::TimeoutError)
+      end
+    end
+
+    it "raises Errno::ECONNREFUSED once #io_wait returns when no server is listening" do
+      @server.close
+      @fiber = Fiber.new(blocking: false) { TCPSocket.new("127.0.0.1", @port) }
+      begin
+        @fiber.resume
+      rescue Errno::ECONNREFUSED
+        skip "connect(2) was refused synchronously without calling #io_wait"
+      end
+
+      IO.select(nil, [Fiber.scheduler.events[0][:args][0]])
+
+      -> { @fiber.resume(IO::WRITABLE) }.should.raise(Errno::ECONNREFUSED)
+    end
+
+    it "does not call the scheduler if the fiber is blocking" do
+      @socket = TCPSocket.new("127.0.0.1", @port)
+      @socket.should.instance_of?(TCPSocket)
+      Fiber.scheduler.events.should == []
+    end
+  end
+end

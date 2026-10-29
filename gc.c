@@ -679,7 +679,7 @@ typedef struct gc_function_map {
     bool (*during_postmortem_p)(void *objspace_ptr);
     bool (*obj_foreign_p)(void *objspace_ptr, VALUE obj);
     bool (*shref_marked_p)(void *objspace_ptr, VALUE obj);
-    size_t (*heap_page_count)(void *objspace_ptr);
+    void (*objspace_zombify)(void *objspace_ptr);
     void (*objspace_absorb)(void *dst_ptr, void *src_ptr);
     void (*gc_rest)(void *objspace_ptr);
     VALUE (*config_get)(void *objpace_ptr);
@@ -875,7 +875,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(during_postmortem_p);
     load_modular_gc_func(obj_foreign_p);
     load_modular_gc_func(shref_marked_p);
-    load_modular_gc_func(heap_page_count);
+    load_modular_gc_func(objspace_zombify);
     load_modular_gc_func(objspace_absorb);
     load_modular_gc_func(gc_rest);
     load_modular_gc_func(config_set);
@@ -980,7 +980,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_during_postmortem_p rb_gc_functions.during_postmortem_p
 # define rb_gc_impl_obj_foreign_p rb_gc_functions.obj_foreign_p
 # define rb_gc_impl_shref_marked_p rb_gc_functions.shref_marked_p
-# define rb_gc_impl_heap_page_count rb_gc_functions.heap_page_count
+# define rb_gc_impl_objspace_zombify rb_gc_functions.objspace_zombify
 # define rb_gc_impl_objspace_absorb rb_gc_functions.objspace_absorb
 # define rb_gc_impl_gc_rest rb_gc_functions.gc_rest
 # define rb_gc_impl_config_get rb_gc_functions.config_get
@@ -1083,15 +1083,14 @@ rb_gc_init_objspaces(void)
 #endif
 }
 
-/* Stays true once the process has gone multi-Ractor (rb_multi_ractor_p goes back to
- * false when the other Ractors finish).  Used by verification that spans generation
- * state built while multiple Ractors ran. */
+/* Stays true once a second objspace has existed (rb_multi_ractor_p goes back to false
+ * when the other Ractors finish, and is false for the whole window in which the creator
+ * builds the child objspace). */
 static bool gc_ever_multi_ractor = false;
 
 bool
 rb_gc_ever_multi_ractor_p(void)
 {
-    if (!gc_ever_multi_ractor && rb_multi_ractor_p()) gc_ever_multi_ractor = true;
     return gc_ever_multi_ractor;
 }
 
@@ -1100,7 +1099,9 @@ rb_gc_ever_multi_ractor_p(void)
 void *
 rb_gc_objspace_alloc(void)
 {
-    gc_ever_multi_ractor = true;
+    /* The one store that ever runs is the first Ractor creation, which is by definition
+     * single-Ractor and so races no reader. */
+    if (!gc_ever_multi_ractor) gc_ever_multi_ractor = true;
     if (!rb_gc_impl_multi_objspace_p()) {
         /* One objspace shared by every Ractor. */
         return rb_gc_get_objspace();
@@ -1500,16 +1501,22 @@ rb_gc_declare_weak_references(VALUE obj)
     rb_gc_impl_declare_weak_references(rb_gc_get_objspace(), obj);
 }
 
-bool
-rb_gc_handle_weak_references_alive_p(VALUE obj)
+static inline bool
+gc_weak_reference_alive_p(void *objspace, VALUE obj)
 {
     if (SPECIAL_CONST_P(obj)) return true;
 
-    return rb_gc_impl_handle_weak_references_alive_p(rb_gc_get_objspace(), obj);
+    return rb_gc_impl_handle_weak_references_alive_p(objspace, obj);
+}
+
+bool
+rb_gc_handle_weak_references_alive_p(void *objspace, VALUE obj)
+{
+    return gc_weak_reference_alive_p(objspace, obj);
 }
 
 void
-rb_gc_handle_weak_references(VALUE obj)
+rb_gc_handle_weak_references(void *objspace, VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
       case T_DATA:
@@ -1517,7 +1524,7 @@ rb_gc_handle_weak_references(VALUE obj)
             const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
 
             if (type->function.handle_weak_references) {
-                (type->function.handle_weak_references)(RTYPEDDATA_GET_DATA(obj));
+                (type->function.handle_weak_references)(RTYPEDDATA_GET_DATA(obj), objspace);
             }
             else {
                 rb_bug(
@@ -1533,8 +1540,8 @@ rb_gc_handle_weak_references(VALUE obj)
           case imemo_callcache: {
             struct rb_callcache *cc = (struct rb_callcache *)obj;
             if (cc->klass != Qundef &&
-                (!rb_gc_handle_weak_references_alive_p(cc->klass) ||
-                 !rb_gc_handle_weak_references_alive_p((VALUE)cc->cme_))) {
+                (!gc_weak_reference_alive_p(objspace, cc->klass) ||
+                 !gc_weak_reference_alive_p(objspace, (VALUE)cc->cme_))) {
                 vm_cc_invalidate(cc);
             }
             break;
@@ -1543,7 +1550,7 @@ rb_gc_handle_weak_references(VALUE obj)
             struct rb_subclasses *subs = (struct rb_subclasses *)obj;
             VALUE *entries = rb_imemo_subclasses_entries(obj);
             for (uint32_t i = 0; i < subs->count; i++) {
-                if (entries[i] && !rb_gc_handle_weak_references_alive_p(entries[i])) {
+                if (entries[i] && !gc_weak_reference_alive_p(objspace, entries[i])) {
                     entries[i] = 0;
                 }
             }
@@ -4249,19 +4256,6 @@ rb_gc_registered_addr_owned_by_registrant_p(VALUE *addr, void *objspace)
     return false;
 }
 
-/* True while the objspace is a zombie pending merge.  Registration ownership moves to
- * the inheritor before the zombie merge completes, so a value still owned by a zombie
- * is a safe transient for the verifier. */
-bool
-rb_gc_vm_zombie_objspace_p(void *objspace)
-{
-    rb_vm_t *vm = GET_VM();
-    for (size_t i = 0; i < vm->gc.zombie_objspaces_count; i++) {
-        if (vm->gc.zombie_objspaces[i].objspace == objspace) return true;
-    }
-    return false;
-}
-
 static bool
 gc_registered_addrs_remove(rb_ractor_t *r, VALUE *addr)
 {
@@ -4460,14 +4454,12 @@ zombie_objspaces_push(rb_vm_t *vm, void *objspace, void **owner_slot, struct rb_
         vm->gc.zombie_objspaces = grown;
         vm->gc.zombie_objspaces_capa = new_capa;
     }
-    size_t pages = rb_gc_impl_heap_page_count(objspace);
     vm->gc.zombie_objspaces[vm->gc.zombie_objspaces_count++] = (struct rb_objspace_zombie){
         .objspace = objspace,
         .owner_slot = owner_slot,
         .owner = owner,
-        .pages = pages,
     };
-    vm->gc.zombie_total_pages += pages;
+    rb_gc_impl_objspace_zombify(objspace);
 }
 
 /* Called for a Ractor that terminated without being joined.  Its objspace loses its
@@ -4570,7 +4562,6 @@ rb_gc_vm_forget_zombie(void *objspace)
     size_t n = vm->gc.zombie_objspaces_count;
     for (size_t i = 0; i < n; i++) {
         if (vm->gc.zombie_objspaces[i].objspace == objspace) {
-            vm->gc.zombie_total_pages -= vm->gc.zombie_objspaces[i].pages;
             vm->gc.zombie_objspaces[i] = vm->gc.zombie_objspaces[n - 1];
             vm->gc.zombie_objspaces_count = n - 1;
             break;
@@ -4578,34 +4569,11 @@ rb_gc_vm_forget_zombie(void *objspace)
     }
 }
 
-/* Total zombie pages, deciding whether to start a global GC.  An upper bound between
- * global cycles (each re-measures under the barrier), so a stale value cannot
- * re-trigger; a lock-free read at worst fires one cycle early or late. */
-size_t
-rb_gc_vm_zombie_total_pages(void)
-{
-    return GET_VM()->gc.zombie_total_pages;
-}
-
 /* Number of live Ractors, for the heap growth heuristic (r_mul); a racy read is fine. */
 unsigned int
 rb_gc_vm_ractor_count(void)
 {
     return GET_VM()->ractor.cnt;
-}
-
-/* Called by a global cycle from inside the barrier. */
-void
-rb_gc_vm_refresh_zombie_pages(void)
-{
-    rb_vm_t *vm = GET_VM();
-    size_t total = 0;
-    for (size_t i = 0; i < vm->gc.zombie_objspaces_count; i++) {
-        size_t pages = rb_gc_impl_heap_page_count(vm->gc.zombie_objspaces[i].objspace);
-        vm->gc.zombie_objspaces[i].pages = pages;
-        total += pages;
-    }
-    vm->gc.zombie_total_pages = total;
 }
 
 void
@@ -4725,9 +4693,8 @@ objspace_absorb_disowned_zombies(void)
         while (i < vm->gc.zombie_objspaces_count) {
             if (vm->gc.zombie_objspaces[i].owner_slot == NULL) {
                 void *zombie = vm->gc.zombie_objspaces[i].objspace;
-                /* Remove via forget, which also subtracts the entry's pages from
-                 * zombie_total_pages; a hand-written swap-remove would leave a phantom
-                 * total that keeps starting stop-the-world global cycles. */
+                /* Drop the entry before the merge, in this same VM-lock section:
+                 * objspace_absorb expects src to be out of the table. */
                 gc_absorbing_zombie++;
                 rb_gc_vm_forget_zombie(zombie);
                 objspace_absorb_merge(rb_gc_get_objspace(), zombie);
@@ -5652,7 +5619,7 @@ rb_gc_latest_gc_info(VALUE key)
 }
 
 static VALUE
-gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg, VALUE global_scope)
+gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg, VALUE process)
 {
     if (NIL_P(arg)) {
         arg = rb_hash_new();
@@ -5661,7 +5628,7 @@ gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg, VALUE global_scope)
         rb_raise(rb_eTypeError, "non-hash or symbol given");
     }
 
-    VALUE ret = rb_gc_impl_stat(RTEST(global_scope) ? NULL : rb_gc_get_objspace(), arg);
+    VALUE ret = rb_gc_impl_stat(RTEST(process) ? NULL : rb_gc_get_objspace(), arg);
 
     if (ret == Qundef) {
         GC_ASSERT(SYMBOL_P(arg));

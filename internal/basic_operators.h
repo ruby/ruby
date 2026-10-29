@@ -27,6 +27,7 @@ enum ruby_basic_operators {
     BOP_GTGT,
     BOP_NOT,
     BOP_NEQ,
+    BOP_NEW,
     BOP_MATCH,
     BOP_FREEZE,
     BOP_UMINUS,

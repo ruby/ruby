@@ -130,3 +130,128 @@ describe 'TCPServer#accept' do
     end
   end
 end
+
+platform_is_not :windows do # Hangs on Windows
+describe "TCPServer#accept with Fiber scheduler" do
+  require_relative '../../../core/fiber/fixtures/scheduler'
+
+  before :each do
+    @server = TCPServer.new("127.0.0.1", 0)
+    @port = @server.connect_address.ip_port
+    Fiber.set_scheduler(FiberSpecs::LoggingScheduler.new)
+  end
+
+  # The server cannot be closed while a fiber waits on it, and the scheduler
+  # leaves the fiber parked inside #io_wait, so end its accept before closing:
+  # #io_wait returning false makes accept raise IO::TimeoutError.
+  after :each do
+    @closer.resume if @closer&.alive?
+    begin
+      @fiber.resume(false) if @fiber&.alive?
+    rescue IOError
+    end
+    @closer.resume if @closer&.alive?
+    Fiber.set_scheduler(nil)
+    @socket&.close
+    @client&.close
+    @server.close unless @server.closed?
+  end
+
+  ruby_version_is "3.4" do
+    it "calls the scheduler's #io_wait with IO::READABLE and no timeout" do
+      @fiber = Fiber.new(blocking: false) { @server.accept }
+      @fiber.resume
+
+      Fiber.scheduler.events.should == [
+        { event: :io_wait, fiber: @fiber, args: [@server, IO::READABLE, nil] }
+      ]
+    end
+  end
+
+  it "returns the connection once #io_wait reports the server readable" do
+    @fiber = Fiber.new(blocking: false) { @server.accept }
+    @fiber.resume
+    @client = TCPSocket.new("127.0.0.1", @port)
+    IO.select([@server])
+
+    @socket = @fiber.resume(IO::READABLE)
+    @socket.should.instance_of?(TCPSocket)
+    @client.write("hello")
+    @socket.read(5).should == "hello"
+  end
+
+  it "accepts a pending connection without calling #io_wait" do
+    @client = TCPSocket.new("127.0.0.1", @port)
+    IO.select([@server])
+
+    @fiber = Fiber.new(blocking: false) { @server.accept }
+    @socket = @fiber.resume
+    @socket.should.instance_of?(TCPSocket)
+    Fiber.scheduler.events.should == []
+  end
+
+  ruby_version_is "3.4" do
+    it "calls #io_wait again when it reports the server readable but no connection is pending" do
+      @fiber = Fiber.new(blocking: false) { @server.accept }
+      @fiber.resume
+      @fiber.resume(IO::READABLE)
+
+      io_wait = { event: :io_wait, fiber: @fiber, args: [@server, IO::READABLE, nil] }
+      Fiber.scheduler.events.should == [io_wait, io_wait]
+    end
+  end
+
+  it "raises Errno::EAGAIN when #io_wait returns nil" do
+    @fiber = Fiber.new(blocking: false) { @server.accept }
+    @fiber.resume
+
+    -> { @fiber.resume(nil) }.should.raise(Errno::EAGAIN, /accept\(2\)/) { |e| e.should.instance_of?(Errno::EAGAIN) }
+  end
+
+  ruby_version_is "3.4" do
+    it "raises IO::TimeoutError when #io_wait returns false" do
+      @fiber = Fiber.new(blocking: false) { @server.accept }
+      @fiber.resume
+
+      -> { @fiber.resume(false) }.should.raise(IO::TimeoutError, "Timed out waiting for IO to become readable!")
+    end
+  end
+
+  ruby_version_is "4.0" do
+    it "calls the scheduler's #fiber_interrupt with an IOError when the server is closed while it waits" do
+      @fiber = Fiber.new(blocking: false) { @server.accept }
+      @fiber.resume
+      @closer = Fiber.new(blocking: false) { @server.close }
+      @closer.resume
+
+      event = Fiber.scheduler.events.last
+      event[:event].should == :fiber_interrupt
+      event[:fiber].should == @closer
+      ruby_version_is "4.0"..."4.1" do
+        event[:args][0].should == @fiber
+      end
+      event[:args][1].should.instance_of?(IOError)
+      event[:args][1].message.should == "stream closed in another thread"
+
+      @closer.resume
+      -> { @fiber.resume(IO::READABLE) while @fiber.alive? }.should.raise(IOError)
+      @closer.resume
+    end
+  end
+
+  it "does not call the scheduler if the fiber is blocking" do
+    # the root fiber is blocking; the client connects once it waits in #accept
+    main = Thread.current
+    connector = Thread.new do
+      Thread.pass until main.status == "sleep"
+      TCPSocket.new("127.0.0.1", @port)
+    end
+
+    @socket = @server.accept
+    @socket.should.instance_of?(TCPSocket)
+    Fiber.scheduler.events.should == []
+  ensure
+    @client = connector&.value
+  end
+end
+end

@@ -80,4 +80,24 @@ describe "Fiber#resume" do
     fiber1 = Fiber.new { root_fiber.resume }
     -> { fiber1.resume }.should.raise(FiberError, /attempt to resume a resuming fiber/)
   end
+
+  it "can resume a fiber that was transferred away from and back before it yielded" do
+    other = nil
+    fiber = Fiber.new do
+      other.transfer
+      Fiber.yield :yielded
+      :done
+    end
+    other = Fiber.new { fiber.transfer }
+
+    fiber.resume.should == :yielded
+    fiber.resume.should == :done
+  end
+
+  it "raises a FiberError when resuming a fiber suspended by transfer" do
+    root = Fiber.current
+    fiber = Fiber.new { root.transfer }
+    fiber.transfer
+    -> { fiber.resume }.should.raise(FiberError, /attempt to resume a transferring fiber/)
+  end
 end
