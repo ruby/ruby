@@ -1400,8 +1400,6 @@ void rb_proc_set_refinements_recipe(VALUE procval, VALUE recipe);
 const rb_cref_t *rb_proc_refinements_cref_for_call(VALUE procval);
 
 RUBY_SYMBOL_EXPORT_BEGIN
-VALUE rb_proc_isolate(VALUE self);
-VALUE rb_proc_isolate_bang(VALUE self, VALUE replace_self);
 VALUE rb_proc_ractor_make_shareable(VALUE proc, VALUE replace_self);
 RUBY_SYMBOL_EXPORT_END
 
