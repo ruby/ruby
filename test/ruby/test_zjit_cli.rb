@@ -126,6 +126,15 @@ class TestZJITCLI < Test::Unit::TestCase
     assert_equal("[true, true, true, true]\n", out, "side_exit_count should match the sum of per-reason exit counters")
   end
 
+  def test_no_exit_counting
+    assert_compiles('0', <<~RUBY, call_threshold: 2, extra_args: ['--zjit-no-exit-counting'])
+      def test = ::RubyVM::ZJIT.induce_side_exit!
+      test
+      test
+      RubyVM::ZJIT.stats(:side_exit_count)
+    RUBY
+  end
+
   def test_enable_through_env
     child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
     assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
