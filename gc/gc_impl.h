@@ -152,6 +152,8 @@ GC_IMPL_FN bool rb_gc_impl_during_postmortem_p(void *objspace_ptr);
 /* Whether obj is owned by an objspace other than objspace_ptr.  Always false for a single
  * objspace impl. */
 GC_IMPL_FN bool rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj);
+GC_IMPL_FN void rb_gc_impl_objspace_set_ractor(void *objspace_ptr, void *ractor);
+GC_IMPL_FN void *rb_gc_impl_obj_ractor(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN bool rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj);
 /* gc.c parked objspace_ptr in its zombie table: a terminated Ractor's objspace that
  * rb_gc_impl_objspace_absorb later merges.  Called under the VM lock, possibly from
