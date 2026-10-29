@@ -209,8 +209,6 @@ rb_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
 // Bindgen's temp/anon name isn't guaranteed stable.
 typedef struct rb_iseq_param_keyword rb_seq_param_keyword_struct;
 
-ID rb_get_symbol_id(VALUE namep);
-
 // If true, the iseq has only opt_invokebuiltin_delegate(_leave) and leave insns.
 static bool
 invokebuiltin_delegate_leave_p(const rb_iseq_t *iseq)

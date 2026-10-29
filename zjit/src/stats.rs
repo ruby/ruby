@@ -265,6 +265,7 @@ make_counters! {
         send_fallback_send_not_optimized_method_type,
         send_fallback_send_not_optimized_need_permission,
         send_fallback_send_block_arg_not_nil,
+        send_fallback_send_name_not_constant_symbol,
         send_fallback_argc_param_mismatch,
         // The call has at least one feature on the caller or callee side
         // that the optimizer does not support.
@@ -686,6 +687,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
         SendBlockArgNotNil                        => send_fallback_send_block_arg_not_nil,
+        SendNameNotConstantSymbol                 => send_fallback_send_name_not_constant_symbol,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
         SuperCallWithBlock                        => send_fallback_super_call_with_block,
         SuperFromBlock                            => send_fallback_super_from_block,

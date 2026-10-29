@@ -2482,6 +2482,11 @@ unsafe extern "C" {
     pub fn rb_zjit_iseq_tracing_currently_enabled() -> bool;
     pub fn rb_zjit_insn_leaf(insn: ::std::os::raw::c_int, opes: *const VALUE) -> bool;
     pub fn rb_zjit_local_id(iseq: *const rb_iseq_t, idx: ::std::os::raw::c_uint) -> ID;
+    pub fn rb_zjit_new_packed_call_data(
+        mid: ID,
+        flags: ::std::os::raw::c_uint,
+        argc: ::std::os::raw::c_uint,
+    ) -> *mut rb_call_data;
     pub fn rb_zjit_cme_is_cfunc(
         me: *const rb_callable_method_entry_t,
         func: *const ::std::os::raw::c_void,
@@ -2570,6 +2575,7 @@ unsafe extern "C" {
     pub fn rb_get_iseq_flags_ambiguous_param0(iseq: *const rb_iseq_t) -> bool;
     pub fn rb_get_iseq_flags_accepts_no_kwarg(iseq: *const rb_iseq_t) -> bool;
     pub fn rb_get_iseq_flags_forwardable(iseq: *const rb_iseq_t) -> bool;
+    pub fn rb_get_symbol_id(namep: VALUE) -> ID;
     pub fn rb_get_iseq_body_param_keyword(
         iseq: *const rb_iseq_t,
     ) -> *const rb_iseq_param_keyword_struct;

@@ -790,6 +790,8 @@ pub enum SendFallbackReason {
     SendNotOptimizedNeedPermission,
     /// The block argument is not nil, so we can't optimize to SendWithoutBlockDirect
     SendBlockArgNotNil,
+    /// The method name passed to `send`/`__send__` is not a compile-time constant symbol
+    SendNameNotConstantSymbol,
     ObjToStringNotString,
     /// An operand doesn't fit in the integer type that encodes it,
     /// e.g. an argument count that overflows IseqCall's u16.
@@ -860,6 +862,7 @@ impl Display for SendFallbackReason {
             SendCfuncArrayVariadic => write!(f, "Send: C function expects array variadic"),
             SendNotOptimizedMethodType(method_type) => write!(f, "Send: unsupported method type {:?}", method_type),
             SendBlockArgNotNil => write!(f, "Send: block argument is not nil"),
+            SendNameNotConstantSymbol => write!(f, "Send: method name is not a compile-time constant symbol"),
             ObjToStringNotString => write!(f, "ObjToString: result is not a string"),
             OperandTooLarge => write!(f, "Operand doesn't fit in its encoding"),
             BmethodNonIseqProc => write!(f, "Bmethod: Proc object is not defined by an ISEQ"),
@@ -4914,6 +4917,66 @@ impl Function {
         }
     }
 
+    /// Rewrite `recv.send(:name, args...)` (`Kernel#send`/`BasicObject#__send__`) into
+    /// `recv.name(args...)` when `name` is a compile-time constant symbol.
+    ///
+    /// On success, emits a PatchPoint on `send` itself and a Snapshot with the method name removed
+    /// from the stack, and returns the call data, arguments, and FrameState of the rewritten
+    /// call.
+    ///
+    /// On failure, count complex call features and return the reason for the fallback.
+    fn rewrite_opt_send(
+        &mut self,
+        block: BlockId,
+        klass: VALUE,
+        send_mid: ID,
+        send_cme: *const rb_callable_method_entry_struct,
+        flags: u32,
+        args: &[InsnId],
+        frame_state: InsnId,
+        state: InsnId,
+    ) -> Result<OptSendRewrite, SendFallbackReason> {
+        // Keyword arguments, splats, and `...` need a non-packed callinfo, and a block arg is
+        // not supported for optimized methods (same as YJIT).
+        if flags & VM_CALL_KWARG != 0 || unspecializable_call_type(flags) {
+            self.count_complex_call_features(block, flags, state);
+            return Err(ComplexArgPass);
+        }
+        // `send` without a method name raises ArgumentError; leave that to the interpreter.
+        let Some((&name, rest)) = args.split_first() else {
+            return Err(ArgcParamMismatch);
+        };
+        let Some(name) = self.type_of(name).ruby_object().filter(|v| v.symbol_p()) else {
+            return Err(SendNameNotConstantSymbol);
+        };
+        let mid = unsafe { rb_get_symbol_id(name) };
+        if mid.0 == 0 {
+            return Err(SendNameNotConstantSymbol);
+        }
+        // A missing method goes through method_missing (see vm_call_symbol); don't specialize that.
+        let cme = unsafe { rb_callable_method_entry(klass, mid) };
+        if cme.is_null() {
+            return Err(SendNotOptimizedMethodType(MethodType::Null));
+        }
+        // Reject nested cases such as `send(:send, :name)`, like YJIT does.
+        if unsafe { get_cme_def_type(cme) } == VM_METHOD_TYPE_OPTIMIZED
+            && OptimizedMethodType::from(unsafe { get_cme_def_body_optimized_type(cme) }) == OptimizedMethodType::Send {
+            return Err(SendNotOptimizedMethodTypeOptimized(OptimizedMethodType::Send));
+        }
+        let Ok(argc) = u32::try_from(rest.len()) else {
+            return Err(OperandTooLarge);
+        };
+        let cd = unsafe { rb_zjit_new_packed_call_data(mid, flags | VM_CALL_FCALL | VM_CALL_OPT_SEND, argc) };
+        if cd.is_null() {
+            return Err(OperandTooLarge);
+        }
+        // Redefining `send` on the receiver's class must undo the rewrite.
+        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: send_mid, cme: send_cme }, state });
+        let new_state = self.frame_state(frame_state).with_replaced_args(rest, args.len());
+        let send_frame_state = self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) });
+        Ok(OptSendRewrite { cd, args: rest.to_vec(), send_frame_state })
+    }
+
     /// Rewrite eligible Send opcodes into SendDirect
     /// opcodes if we know the target ISEQ statically. This removes run-time method lookups and
     /// opens the door for inlining.
@@ -4922,7 +4985,7 @@ impl Function {
         for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block].insns);
             assert!(self.blocks[block].insns.is_empty());
-            for insn_id in old_insns {
+            'insns: for insn_id in old_insns {
                 let resolved = self.resolve(insn_id);
                 match resolved.insn(self) {
                     &Insn::Send { mut recv, cd, state, block: send_block, caller_splat_length, .. } => {
@@ -4948,50 +5011,75 @@ impl Function {
                                 continue;
                             }
                         };
-                        let ci = unsafe { (*cd).ci }; // info about the call site
-
-                        let flags = unsafe { rb_vm_ci_flag(ci) };
-
-                        let mid = unsafe { vm_ci_mid(ci) };
-                        // Do method lookup
-                        let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
-                        if cme.is_null() {
-                            self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodType(MethodType::Null));
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        // Load an overloaded cme if applicable. See vm_search_cc().
-                        // It allows you to use a faster ISEQ if possible.
-                        cme = unsafe { rb_check_overloaded_cme(cme, ci) };
-                        let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
-                        match (visibility, flags & VM_CALL_FCALL != 0) {
-                            (METHOD_VISI_PUBLIC, _) => {}
-                            (METHOD_VISI_PRIVATE, true) => {}
-                            (METHOD_VISI_PROTECTED, true) => {}
-                            _ => {
-                                self.set_dynamic_send_reason(insn_id, SendNotOptimizedNeedPermission);
-                                self.push_insn_id(block, insn_id); continue;
+                        let mut args = match resolved.insn(self) {
+                            Insn::Send { args, .. } => args.to_vec(),
+                            _ => panic!("Expected Send instruction"),
+                        };
+                        // `cd` (and `ci`, `flags`, `mid` derived from it) and `args` describe the
+                        // call being specialized. When the call is `recv.send(:name, args...)`
+                        // with a constant name, the loop below rewrites it into `recv.name(args...)`
+                        // and looks up `name` instead.
+                        //
+                        // `state` keeps referring to the pre-send frame state as the interpreter
+                        // sees it (method name and block arg still on the stack). Any guard that
+                        // side-exits before the call re-executes the original send in the
+                        // interpreter, so it must reconstruct the stack with those present. Only the
+                        // callee frame setup uses `send_frame_state`, which has the method name and
+                        // (below) a nil or Proc block arg stripped from the stack.
+                        let mut cd = cd;
+                        let mut send_frame_state = state;
+                        let (mut ci, mut flags, mut mid, mut cme, mut def_type);
+                        loop {
+                            ci = unsafe { (*cd).ci }; // info about the call site
+                            flags = unsafe { rb_vm_ci_flag(ci) };
+                            mid = unsafe { vm_ci_mid(ci) };
+                            // Do method lookup
+                            cme = unsafe { rb_callable_method_entry(klass, mid) };
+                            if cme.is_null() {
+                                self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodType(MethodType::Null));
+                                self.push_insn_id(block, insn_id); continue 'insns;
                             }
-                        }
-                        let mut def_type = unsafe { get_cme_def_type(cme) };
-                        while def_type == VM_METHOD_TYPE_ALIAS {
-                            cme = unsafe { rb_aliased_callable_method_entry(cme) };
+                            // Load an overloaded cme if applicable. See vm_search_cc().
+                            // It allows you to use a faster ISEQ if possible.
+                            cme = unsafe { rb_check_overloaded_cme(cme, ci) };
+                            let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
+                            match (visibility, flags & VM_CALL_FCALL != 0) {
+                                (METHOD_VISI_PUBLIC, _) => {}
+                                (METHOD_VISI_PRIVATE, true) => {}
+                                (METHOD_VISI_PROTECTED, true) => {}
+                                _ => {
+                                    self.set_dynamic_send_reason(insn_id, SendNotOptimizedNeedPermission);
+                                    self.push_insn_id(block, insn_id); continue 'insns;
+                                }
+                            }
                             def_type = unsafe { get_cme_def_type(cme) };
+                            while def_type == VM_METHOD_TYPE_ALIAS {
+                                cme = unsafe { rb_aliased_callable_method_entry(cme) };
+                                def_type = unsafe { get_cme_def_type(cme) };
+                            }
+                            if def_type == VM_METHOD_TYPE_OPTIMIZED
+                                && OptimizedMethodType::from(unsafe { get_cme_def_body_optimized_type(cme) }) == OptimizedMethodType::Send {
+                                match self.rewrite_opt_send(block, klass, mid, cme, flags, &args, send_frame_state, state) {
+                                    Ok(rewrite) => {
+                                        cd = rewrite.cd;
+                                        args = rewrite.args;
+                                        send_frame_state = rewrite.send_frame_state;
+                                        // Look up the named method instead
+                                        continue;
+                                    }
+                                    Err(reason) => {
+                                        self.set_dynamic_send_reason(insn_id, reason);
+                                        self.push_insn_id(block, insn_id); continue 'insns;
+                                    }
+                                }
+                            }
+                            break;
                         }
 
                         // Check if we can optimize `foo(&block)` to a direct send: either `block` is
                         // nil (strip it and send without a block) or `block` is monomorphically an
                         // exact-class Proc (pass it through as the callee frame's specval).
-                        // `state` keeps referring to the pre-send frame state (block arg still on the
-                        // stack). Any guard that side-exits before the call re-executes the `send` in
-                        // the interpreter, so it must reconstruct the stack with the block arg present.
-                        // Only the direct-send frame setup uses `send_frame_state`, which has the nil
-                        // or Proc block arg stripped from the stack.
                         let mut send_block = send_block;
-                        let mut send_frame_state = state;
-                        let mut args = match resolved.insn(self) {
-                            Insn::Send { args, .. } => args.to_vec(),
-                            _ => panic!("Expected Send instruction"),
-                        };
                         let mut stripped_block_arg = false;
                         if send_block == Some(BlockHandler::BlockArg) && def_type == VM_METHOD_TYPE_ISEQ {
                             // Reject complex argument passing before emitting any block-arg guard;
@@ -5033,7 +5121,7 @@ impl Function {
                                     stripped_block_arg = true;
                                     // Frame state for the direct send only: the block arg is removed
                                     // from the stack so the callee frame is laid out correctly.
-                                    let new_state = self.frame_state(state).with_replaced_args(&args, original_argc);
+                                    let new_state = self.frame_state(send_frame_state).with_replaced_args(&args, original_argc);
                                     send_frame_state = self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) });
                                 } else if block_arg_profiled_type.is_some_and(|pt| pt.is_proc()) {
                                     // Guard the Proc and pass it through as the callee frame's
@@ -5046,7 +5134,7 @@ impl Function {
                                     _ = args.pop();
                                     send_block = Some(BlockHandler::BlockArgProc(guarded));
                                     stripped_block_arg = true;
-                                    let new_state = self.frame_state(state).with_replaced_args(&args, original_argc);
+                                    let new_state = self.frame_state(send_frame_state).with_replaced_args(&args, original_argc);
                                     send_frame_state = self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) });
                                 } else {
                                     // Can't prove block arg is nil or a Proc
@@ -5311,6 +5399,8 @@ impl Function {
                                 send_block: Option<BlockHandler>,
                                 args: Vec<InsnId>,
                                 state: InsnId,
+                                // Frame state for the callee frame setup; see `send_frame_state`.
+                                frame_state: InsnId,
                                 recv_class: VALUE,
                                 profiled_type: Option<ProfiledType>,
                                 cme: *const rb_callable_method_entry_struct,
@@ -5420,7 +5510,7 @@ impl Function {
                                             args,
                                             cme,
                                             name,
-                                            state,
+                                            state: frame_state,
                                             return_type,
                                             elidable,
                                             block: blockiseq.map(BlockHandler::BlockIseq),
@@ -5487,7 +5577,7 @@ impl Function {
                                             args,
                                             cme,
                                             name: method_id,
-                                            state,
+                                            state: frame_state,
                                             return_type,
                                             elidable,
                                             block: blockiseq.map(BlockHandler::BlockIseq),
@@ -5505,7 +5595,7 @@ impl Function {
                                 }
                             }
 
-                            if reduce_send_to_ccall(self, block, insn_id, recv, cd, send_block, args, state, klass, profiled_type, cme).is_ok() {
+                            if reduce_send_to_ccall(self, block, insn_id, recv, cd, send_block, args, state, send_frame_state, klass, profiled_type, cme).is_ok() {
                                 continue;
                             }
 
@@ -9017,6 +9107,14 @@ fn unhandled_call_type(flags: u32) -> Result<(), CallType> {
 fn unspecializable_c_call_type(flags: u32) -> bool {
     ((flags & VM_CALL_KWARG) != 0) ||
     unspecializable_call_type(flags)
+}
+
+/// The call that `recv.send(:name, args...)` was rewritten into. See `Function::rewrite_opt_send`.
+struct OptSendRewrite {
+    cd: *const rb_call_data,
+    args: Vec<InsnId>,
+    /// Snapshot with the method name removed from the stack
+    send_frame_state: InsnId,
 }
 
 /// If a given call uses overly complex arguments, then we won't specialize.
