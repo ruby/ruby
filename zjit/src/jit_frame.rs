@@ -146,7 +146,7 @@ impl StackMapWriter {
     /// Writes `jit_return[-slot_index]`.
     pub fn vreg(&mut self, slot_index: usize) {
         self.write_op(ZJIT_STACK_MAP_OP_VREG);
-        self.write_varint(slot_index as u64);
+        self.write_varint(slot_index.as_u64());
     }
 
     /// ZJIT_STACK_MAP_OP_NIL writes Qnil. Other immediates use
