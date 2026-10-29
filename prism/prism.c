@@ -9135,12 +9135,18 @@ escape_read_warn(pm_parser_t *parser, uint8_t flags, uint8_t flag, const char *t
 }
 
 /**
- * Read the value of an escape into the buffer.
+ * Read the value of an escape into the buffer. The control and meta forms can
+ * wrap another escape (as in \C-\M-x). Those loop back to the top with the
+ * accumulated flags rather than recursing, so that arbitrarily long chains of
+ * prefixes use constant stack space regardless of whether the compiler
+ * eliminates tail calls.
  */
 static void
 escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expression_buffer, uint8_t flags) {
-    uint8_t peeked = peek(parser);
-    switch (peeked) {
+    uint8_t peeked;
+
+    escape_read_next:
+    switch (peeked = peek(parser)) {
         case '\\': {
             parser->current.end++;
             escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\\', flags));
@@ -9397,8 +9403,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
 
-                    escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_CONTROL);
-                    return;
+                    flags |= PM_ESCAPE_FLAG_CONTROL;
+                    goto escape_read_next;
                 case ' ':
                     parser->current.end++;
                     escape_read_warn(parser, flags, PM_ESCAPE_FLAG_CONTROL, "\\s");
@@ -9455,8 +9461,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
 
-                    escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_CONTROL);
-                    return;
+                    flags |= PM_ESCAPE_FLAG_CONTROL;
+                    goto escape_read_next;
                 case ' ':
                     parser->current.end++;
                     escape_read_warn(parser, flags, PM_ESCAPE_FLAG_CONTROL, "\\s");
@@ -9509,8 +9515,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
 
-                    escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_META);
-                    return;
+                    flags |= PM_ESCAPE_FLAG_META;
+                    goto escape_read_next;
                 case ' ':
                     parser->current.end++;
                     escape_read_warn(parser, flags, PM_ESCAPE_FLAG_META, "\\s");
