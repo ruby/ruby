@@ -111,7 +111,7 @@ pub struct StackMapWriter {
 impl StackMapWriter {
     pub fn new(materialize_block_code: bool) -> Self {
         let mut writer = Self { bytes: vec![], num_bits: 0 };
-        writer.write_bits(materialize_block_code as u64, 1);
+        writer.write_bits(u64::from(materialize_block_code), 1);
         writer
     }
 
