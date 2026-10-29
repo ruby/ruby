@@ -689,6 +689,8 @@ typedef struct gc_function_map {
     bool (*during_global_gc_p)(void *objspace_ptr);
     bool (*during_postmortem_p)(void *objspace_ptr);
     bool (*obj_foreign_p)(void *objspace_ptr, VALUE obj);
+    void (*objspace_set_ractor)(void *objspace_ptr, void *ractor);
+    void *(*obj_ractor)(void *objspace_ptr, VALUE obj);
     bool (*shref_marked_p)(void *objspace_ptr, VALUE obj);
     void (*objspace_zombify)(void *objspace_ptr);
     void (*objspace_absorb)(void *dst_ptr, void *src_ptr);
@@ -885,6 +887,8 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(during_global_gc_p);
     load_modular_gc_func(during_postmortem_p);
     load_modular_gc_func(obj_foreign_p);
+    load_modular_gc_func(objspace_set_ractor);
+    load_modular_gc_func(obj_ractor);
     load_modular_gc_func(shref_marked_p);
     load_modular_gc_func(objspace_zombify);
     load_modular_gc_func(objspace_absorb);
@@ -990,6 +994,8 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_during_global_gc_p rb_gc_functions.during_global_gc_p
 # define rb_gc_impl_during_postmortem_p rb_gc_functions.during_postmortem_p
 # define rb_gc_impl_obj_foreign_p rb_gc_functions.obj_foreign_p
+# define rb_gc_impl_objspace_set_ractor rb_gc_functions.objspace_set_ractor
+# define rb_gc_impl_obj_ractor rb_gc_functions.obj_ractor
 # define rb_gc_impl_shref_marked_p rb_gc_functions.shref_marked_p
 # define rb_gc_impl_objspace_zombify rb_gc_functions.objspace_zombify
 # define rb_gc_impl_objspace_absorb rb_gc_functions.objspace_absorb
@@ -1087,6 +1093,7 @@ rb_gc_init_objspaces(void)
     RUBY_ASSERT(vm->ractor.main_ractor != NULL);
     vm->ractor.main_ractor->objspace = objspace;
     rb_gc_impl_objspace_init(objspace);
+    rb_gc_objspace_set_ractor(objspace, vm->ractor.main_ractor);
     rb_gc_impl_stress_set(objspace, initial_stress);
 
 #ifdef RUBY_ASAN_ENABLED
@@ -4565,6 +4572,7 @@ rb_gc_objspace_retire(void **objspace_slot)
     }
 
     RB_VM_LOCKING() {
+        rb_gc_objspace_set_ractor(*objspace_slot, NULL);
         gc_orphan_merge_pjob_ensure();
         /* owner_slot is always &r->objspace of the retiring Ractor.  owner is recorded so a
          * root scan can still reach the dead Ractor's registered_marks pins and its join
@@ -4585,6 +4593,7 @@ rb_gc_objspace_disown(void *objspace)
     ASSERT_vm_locking();
     rb_vm_t *vm = GET_VM();
     bool found = false;
+    rb_gc_objspace_set_ractor(objspace, NULL);
 
     for (size_t i = 0; i < vm->gc.zombie_objspaces_count; i++) {
         if (vm->gc.zombie_objspaces[i].objspace == objspace) {
@@ -4683,6 +4692,20 @@ bool
 rb_gc_obj_foreign_p(VALUE obj)
 {
     return rb_gc_impl_obj_foreign_p(rb_gc_get_objspace(), obj);
+}
+
+// r runs on objspace; NULL once objspace is a zombie.  Under the VM lock, except at creation.
+void
+rb_gc_objspace_set_ractor(void *objspace, rb_ractor_t *r)
+{
+    rb_gc_impl_objspace_set_ractor(objspace, r);
+}
+
+// the living Ractor whose objspace holds obj, or NULL (a zombie's, or a single objspace); under the VM lock
+rb_ractor_t *
+rb_gc_obj_ractor(VALUE obj)
+{
+    return rb_gc_impl_obj_ractor(rb_gc_get_objspace(), obj);
 }
 
 bool

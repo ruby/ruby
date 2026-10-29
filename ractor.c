@@ -940,6 +940,7 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     /* Every Ractor has an objspace, and it must exist before its thread runs: the
      * first allocation goes there through rb_gc_get_objspace. */
     r->objspace = rb_gc_objspace_alloc();
+    rb_gc_objspace_set_ractor(r->objspace, r);
 
     rb_thread_create_ractor(r, args, block);
 

@@ -376,6 +376,8 @@ size_t rb_ec_stack_remaining(struct rb_execution_context_struct *ec);
 void rb_gc_obj_became_shareable(VALUE obj);
 bool rb_gc_multi_objspace_p(void);
 bool rb_gc_obj_foreign_p(VALUE obj);
+void rb_gc_objspace_set_ractor(void *objspace, struct rb_ractor_struct *r);
+struct rb_ractor_struct *rb_gc_obj_ractor(VALUE obj);
 void *rb_gc_objspace_alloc(void);
 void rb_gc_objspace_retire_gc(void);
 /* Build an object, or suppress GC, in a named objspace rather than the current
