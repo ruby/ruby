@@ -504,6 +504,15 @@ prepare-vcpkg::
 	@del /a:l *.dll 2> nul
 	$(foreach dll,$(filter-out %/readline.dll,$(wildcard $(VCPKG_INSTALLED)/bin/*.dll)),$(Q) $(call mklink,$(notdir $(dll)),$(dll)))
 
+# configure.bat writes both, and make restarts to read them again.  The
+# nmake in it rejects MAKEFLAGS for GNU make.
+$(MKFILES) &: $(srcdir)/common.mk $(srcdir)/version.h \
+	    $(hdrdir)/ruby/version.h $(ABI_VERSION_HDR) \
+	    $(win_srcdir)/GNUmakefile.sub $(win_srcdir)/configure.bat \
+	    $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak \
+	    $(srcdir)/enc/Makefile.in
+	set MAKEFLAGS=& $(COMSPEC) /C $(call win,$(win_srcdir))\configure.bat $(configure_args)
+
 RUBY_CONFIG_H = $(arch_hdrdir)/ruby/config.h
 CONFIG_H = ./.config.h.time
 
