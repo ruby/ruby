@@ -1904,11 +1904,13 @@ rb_reg_onig_match(VALUE re, VALUE str,
     regex_t *reg = rb_reg_prepare_re(re, str);
 
     bool tmpreg = reg != RREGEXP_PTR(re);
-    if (!tmpreg) RREGEXP(re)->usecnt++;
+    /* usecnt is read only in single-Ractor mode; see rb_reg_prepare_re. */
+    bool need_count = !tmpreg && ruby_single_main_ractor;
+    if (need_count) RREGEXP(re)->usecnt++;
 
     OnigPosition result = match(reg, str, regs, args);
 
-    if (!tmpreg) RREGEXP(re)->usecnt--;
+    if (need_count) RREGEXP(re)->usecnt--;
     if (tmpreg) {
         onig_free(reg);
     }
