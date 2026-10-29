@@ -248,7 +248,27 @@ module Ruby::Prism
       assert_newline_regexp("%r\r\n\r\n", "", 0)
     end
 
+    def test_depth_limit_nested_character_sets
+      assert_depth_limit("[" * 10_000)
+    end
+
+    def test_depth_limit_meta_escapes
+      assert_depth_limit("\\M-" * 10_000 + "a")
+      assert_depth_limit("[" + "\\M-" * 10_000 + "a]")
+    end
+
+    def test_depth_limit_control_escapes
+      assert_depth_limit("\\C-" * 10_000 + "a")
+      assert_depth_limit("\\c" * 10_000 + "a")
+      assert_depth_limit("[" + "\\C-" * 10_000 + "a]")
+    end
+
     private
+
+    def assert_depth_limit(source)
+      messages = Ruby::Prism.parse("/#{source}/ =~ \"\"").errors.map(&:message)
+      assert_equal 1, messages.count("parse depth limit over")
+    end
 
     def assert_newline_regexp(source, content, options)
       node = Ruby::Prism.parse_statement(source)
