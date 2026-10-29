@@ -15,19 +15,15 @@
 #include <string.h>
 
 /**
- * Check if the source touched by the given location is valid UTF-8. The
- * location represents the location of the error, but the slice of the source
- * that will be displayed includes the content of all of the lines that the
- * error touches, so we need to check those parts as well.
+ * Check if the source in the given range of lines is valid UTF-8. The indices
+ * are zero-based indices into the line offsets list, and the range is
+ * inclusive on both ends.
  */
 static bool
-location_is_utf8(const pm_parser_t *parser, const pm_location_t *location) {
+lines_are_utf8(const pm_parser_t *parser, size_t start_index, size_t end_index) {
     const pm_line_offset_list_t *line_offsets = &parser->line_offsets;
-    const size_t start_line = (size_t) pm_line_offset_list_line_column(line_offsets, location->start, 1).line;
-    const size_t end_line = (size_t) pm_line_offset_list_line_column(line_offsets, location->start + location->length, 1).line;
-
-    const uint8_t *cursor = parser->start + line_offsets->offsets[start_line - 1];
-    const uint8_t *end = (end_line == line_offsets->size) ? parser->end : (parser->start + line_offsets->offsets[end_line]);
+    const uint8_t *cursor = parser->start + line_offsets->offsets[start_index];
+    const uint8_t *end = (end_index + 1 == line_offsets->size) ? parser->end : (parser->start + line_offsets->offsets[end_index + 1]);
 
     while (cursor < end) {
         size_t width = pm_encoding_utf_8_char_width(cursor, end - cursor);
@@ -41,7 +37,7 @@ location_is_utf8(const pm_parser_t *parser, const pm_location_t *location) {
 
 typedef struct {
     pm_diagnostic_t *diagnostic;
-    int32_t line;
+    int32_t line_start;
     uint32_t column_start;
     uint32_t column_end;
     size_t idx;
@@ -52,8 +48,8 @@ pm_rich_error_compare(const void *a, const void *b) {
     const pm_rich_error_t *left = (const pm_rich_error_t *) a;
     const pm_rich_error_t *right = (const pm_rich_error_t *) b;
 
-    if (left->line != right->line) {
-        return (left->line < right->line) ? -1 : 1;
+    if (left->line_start != right->line_start) {
+        return (left->line_start < right->line_start) ? -1 : 1;
     }
 
     if (left->column_start != right->column_start) {
@@ -65,6 +61,71 @@ pm_rich_error_compare(const void *a, const void *b) {
     }
 
     return 0;
+}
+
+/**
+ * Return the number of the last line of the source that can be displayed. When
+ * the source ends with a newline, the empty line after it is not displayed.
+ */
+static int32_t
+pm_rich_errors_final_line(const pm_parser_t *parser) {
+    const pm_line_offset_list_t *line_offsets = &parser->line_offsets;
+    int32_t final_line = parser->start_line + ((int32_t) line_offsets->size) - 1;
+
+    if ((parser->start + line_offsets->offsets[line_offsets->size - 1]) == parser->end) {
+        final_line--;
+    }
+
+    return final_line;
+}
+
+/**
+ * Find the range of lines that may be displayed around an error on the given
+ * line: up to two lines of context on either side of it, limited to the lines
+ * in the source. The error's own line is always included, even when it is the
+ * empty line after a trailing newline.
+ */
+static void
+pm_rich_error_context(int32_t line, int32_t start_line, int32_t final_line, int32_t *first, int32_t *last) {
+    *first = (line - start_line > 2) ? (line - 2) : start_line;
+    *last = (final_line - line > 2) ? (line + 2) : final_line;
+    if (*last < line) *last = line;
+}
+
+/**
+ * Check if the source that will be displayed for the given rich errors is
+ * valid UTF-8. That is each error's line and the lines of context around it.
+ * The errors must be sorted by their line. Each line is checked at most once,
+ * so that many errors on the same long line cost time proportional to the
+ * line, not to the line times the number of errors.
+ */
+static bool
+rich_errors_are_utf8(const pm_parser_t *parser, size_t nerrors, const pm_rich_error_t *rich_errors) {
+    int32_t final_line = pm_rich_errors_final_line(parser);
+
+    /* Every line from the first line of context of the most recently visited
+     * error up to (but not including) this index has already been checked.
+     * Because the errors are sorted, the first line of context never
+     * decreases, so any later error only needs the lines from this index
+     * onward. */
+    size_t checked_index = 0;
+
+    for (size_t idx = 0; idx < nerrors; idx++) {
+        int32_t first_line;
+        int32_t last_line;
+        pm_rich_error_context(rich_errors[idx].line_start, parser->start_line, final_line, &first_line, &last_line);
+
+        size_t start_index = (size_t) (first_line - parser->start_line);
+        size_t end_index = (size_t) (last_line - parser->start_line);
+
+        if (start_index < checked_index) start_index = checked_index;
+        if (start_index > end_index) continue;
+
+        if (!lines_are_utf8(parser, start_index, end_index)) return false;
+        checked_index = end_index + 1;
+    }
+
+    return true;
 }
 
 #define COLOR_BOLD "\033[1m"
@@ -242,7 +303,7 @@ pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const char 
 static void
 pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_format_type_t format_type, size_t nerrors, pm_rich_error_t *rich_errors, bool inline_messages) {
     pm_error_line_format_t format;
-    pm_error_line_format_init(&format, format_type, rich_errors[0].line, rich_errors[nerrors - 1].line);
+    pm_error_line_format_init(&format, format_type, rich_errors[0].line_start, rich_errors[nerrors - 1].line_start);
 
     /* We are going to iterate through every error in our error list and display
      * it. While we are iterating, we will display some padding lines of the
@@ -265,18 +326,18 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
 
         /* Here we determine how many lines of padding of the source to display,
          * based on the difference from the last line that was displayed. */
-        if (rich_error->line - last_line > 1) {
-            if (rich_error->line - last_line > 2) {
-                if ((idx != 0) && (rich_error->line - last_line > 3)) {
+        if (rich_error->line_start - last_line > 1) {
+            if (rich_error->line_start - last_line > 2) {
+                if ((idx != 0) && (rich_error->line_start - last_line > 3)) {
                     pm_buffer_append_string(buffer, format.divider, format.divider_length);
                 }
 
                 pm_buffer_append_string(buffer, "  ", 2);
-                pm_error_format_line(parser, buffer, format.number_prefix, rich_error->line - 2, 0, 0);
+                pm_error_format_line(parser, buffer, format.number_prefix, rich_error->line_start - 2, 0, 0);
             }
 
             pm_buffer_append_string(buffer, "  ", 2);
-            pm_error_format_line(parser, buffer, format.number_prefix, rich_error->line - 1, 0, 0);
+            pm_error_format_line(parser, buffer, format.number_prefix, rich_error->line_start - 1, 0, 0);
         }
 
         /* If this error is not in the current window (because it is the first
@@ -305,15 +366,15 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
             window_column_end = rich_error->column_end;
             for (window_end_idx = idx + 1; window_end_idx < nerrors; window_end_idx++) {
                 const pm_rich_error_t *next_error = &rich_errors[window_end_idx];
-                if ((next_error->line != rich_error->line) || (next_error->column_start >= window_limit)) break;
+                if ((next_error->line_start != rich_error->line_start) || (next_error->column_start >= window_limit)) break;
                 if (next_error->column_end > window_column_end) window_column_end = next_error->column_end;
             }
 
             if (window_column_end > window_limit) window_column_end = window_limit;
-            pm_error_format_line(parser, buffer, format.number_prefix, rich_error->line, rich_error->column_start, window_column_end);
+            pm_error_format_line(parser, buffer, format.number_prefix, rich_error->line_start, rich_error->column_start, window_column_end);
         }
 
-        const uint8_t *start = parser->start + parser->line_offsets.offsets[rich_error->line - parser->start_line];
+        const uint8_t *start = parser->start + parser->line_offsets.offsets[rich_error->line_start - parser->start_line];
         if (start == parser->end) pm_buffer_append_byte(buffer, '\n');
 
         /* Now we will display the actual error message. We will do this by
@@ -378,7 +439,7 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
 
         /* Here we determine how many lines of padding to display after the
          * diagnostic, depending on where the next diagnostic is in source. */
-        last_line = rich_error->line;
+        last_line = rich_error->line_start;
         int32_t next_line;
 
         if (idx == nerrors - 1) {
@@ -391,7 +452,7 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
                 next_line--;
             }
         } else {
-            next_line = rich_errors[idx + 1].line;
+            next_line = rich_errors[idx + 1].line_start;
         }
 
         if (next_line - last_line > 1) {
@@ -424,7 +485,7 @@ pm_rich_error_init(const pm_parser_t *parser, pm_rich_error_t *rich_error, pm_di
 
     *rich_error = (pm_rich_error_t) {
         .diagnostic = diagnostic,
-        .line = start_line_column.line,
+        .line_start = start_line_column.line,
         .column_start = start_line_column.column,
         .column_end = column_end
     };
@@ -444,7 +505,6 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
     pm_rich_error_t *rich_errors = xmalloc(rich_errors_size);
     if (rich_errors == NULL) PRISM_OOM();
 
-    bool is_utf8 = true;
     size_t rich_errors_idx = 0;
 
     for (pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) parser->error_list.head; diagnostic != NULL; diagnostic = (pm_diagnostic_t *) diagnostic->node.next) {
@@ -452,10 +512,6 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
 
         switch (pm_diagnostic_error_level(diagnostic)) {
           case PM_ERROR_LEVEL_SYNTAX: {
-            if (is_utf8 && !location_is_utf8(parser, &location)) {
-                is_utf8 = false;
-            }
-
             pm_rich_error_init(parser, &rich_errors[rich_errors_idx], diagnostic, &location);
             rich_errors[rich_errors_idx].idx = rich_errors_idx;
             rich_errors_idx++;
@@ -474,9 +530,10 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
                 pm_diagnostic_message(diagnostic)
             );
 
-            if (location_is_utf8(parser, &location)) {
+            pm_rich_error_init(parser, rich_errors, diagnostic, &location);
+
+            if (rich_errors_are_utf8(parser, 1, rich_errors)) {
                 pm_buffer_append_byte(buffer, '\n');
-                pm_rich_error_init(parser, rich_errors, diagnostic, &location);
                 pm_rich_errors_format(parser, buffer, format_type, 1, rich_errors, false);
             }
 
@@ -504,23 +561,26 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
         "%.*s:%" PRIi32 ": syntax error%s found\n",
         filepath_length,
         filepath,
-        rich_errors[0].line,
+        rich_errors[0].line_start,
         (nerrors > 1) ? "s" : ""
     );
 
-    if (is_utf8) {
+    /* Sort the errors so that they are in the order that they appear in the
+     * source. This is the order they are displayed in, and it also lets the
+     * UTF-8 check visit each line only once. */
+    qsort(rich_errors, nerrors, sizeof(pm_rich_error_t), pm_rich_error_compare);
+
+    if (rich_errors_are_utf8(parser, nerrors, rich_errors)) {
         /* In here, we have all of the rich diagnostic information and we know
-         * the snippets are valid UTF-8. We will sort the errors so that they
-         * are displayed in the order that they appear in the source, and then
-         * format them all together with the source code snippets. */
-        qsort(rich_errors, nerrors, sizeof(pm_rich_error_t), pm_rich_error_compare);
+         * the snippets are valid UTF-8, so we format them all together with
+         * the source code snippets. */
         pm_rich_errors_format(parser, buffer, format_type, nerrors, rich_errors, true);
     } else {
         /* In here, we have content in the source that is not valid UTF-8. In
          * that case, we do not want to attempt to format the source code
          * snippets because we do not know how the terminal will handle it. The
-         * diagnostics are displayed in the order that they were generated,
-         * which is the order of the array before it has been sorted. */
+         * diagnostics are displayed in the order that they appear in the
+         * source, as they are when the snippets are displayed. */
         for (size_t idx = 0; idx < nerrors; idx++) {
             pm_rich_error_t *rich_error = &rich_errors[idx];
 
@@ -530,7 +590,7 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
                 "%.*s:%" PRIi32 ": %s",
                 filepath_length,
                 filepath,
-                rich_error->line,
+                rich_error->line_start,
                 pm_diagnostic_message(rich_error->diagnostic)
             );
         }

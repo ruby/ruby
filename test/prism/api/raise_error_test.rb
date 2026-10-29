@@ -67,6 +67,16 @@ module Ruby::Prism
       assert_equal 2, error.message.scan("> 1 |").size
     end
 
+    def test_syntax_error_not_utf8_in_context
+      # A line of context is displayed, so it must be valid UTF-8 for the
+      # snippet to be displayed, even though it has no error of its own.
+      source = "# caf\xE9\n1 2\n".b.force_encoding(Encoding::UTF_8)
+      error = assert_raise(SyntaxError) { Ruby::Prism.parse(source, raise_error: :plain) }
+
+      assert_predicate error.message, :valid_encoding?
+      assert_not_include error.message, "> 2 |"
+    end
+
     def test_syntax_error_not_utf8
       error = assert_raise(SyntaxError) { Ruby::Prism.parse("foo = 1 + \xFF\xFE\n".b, raise_error: :plain, filepath: "bin.rb") }
       assert_include error.message, "invalid multibyte character"
