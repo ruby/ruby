@@ -81,7 +81,9 @@ module Bundler
         @gemspecs << spec
 
         path path, "glob" => glob, "name" => spec.name, "gemspec" => spec do
-          add_dependency spec.name
+          options = {}
+          normalize_options(spec.name, [], options)
+          add_dependency spec.name, nil, options
         end
 
         spec.development_dependencies.each do |dep|
