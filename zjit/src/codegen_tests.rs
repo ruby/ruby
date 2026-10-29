@@ -1103,6 +1103,7 @@ fn test_yield_single_iseq_and_ifunc_handlers_no_side_exits() {
         def via_enum = to_enum(:invoke).to_a
         add_one; via_enum
         add_one; via_enum
+        add_one; via_enum
     ");
     assert_snapshot!(assert_compiles("[add_one, via_enum, add_one, via_enum]"), @"[11, [10], 11, [10]]");
 }
