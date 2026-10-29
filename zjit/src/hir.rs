@@ -5599,10 +5599,7 @@ impl Function {
                         }
                     }
                     &Insn::NewRange { low, high, flag, state } => {
-                        let low_is_fix  = self.is_a(low,  types::Fixnum);
-                        let high_is_fix = self.is_a(high, types::Fixnum);
-
-                        if low_is_fix || high_is_fix {
+                        if self.likely_a(low, types::Fixnum, state) && self.likely_a(high, types::Fixnum, state) {
                             let low_fix = self.coerce_to(block, low, types::Fixnum, state);
                             let high_fix = self.coerce_to(block, high, types::Fixnum, state);
                             let replacement = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high: high_fix, flag, state });
