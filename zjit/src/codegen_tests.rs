@@ -1751,6 +1751,31 @@ fn test_optimized_method_call_proc_kw_splat() {
 }
 
 #[test]
+fn test_optimized_method_call_method_proc_empty_kw_splat() {
+    eval("
+        def target(*args, **kwargs) = [args, kwargs]
+        def test(p, x, kwargs) = p.call(x, **kwargs)
+        @pr = method(:target).to_proc
+        test(@pr, 1, {})
+    ");
+    assert_snapshot!(assert_compiles("test(@pr, 1, {})"), @"[[1], {}]");
+    assert_snapshot!(assert_compiles("test(@pr, {x: 1}, {})"), @"[[{x: 1}], {}]");
+    assert_snapshot!(assert_compiles("test(@pr, {}, {})"), @"[[{}], {}]");
+    assert_snapshot!(assert_compiles("test(@pr, 1, {z: 2})"), @"[[1], {z: 2}]");
+}
+
+#[test]
+fn test_optimized_method_call_method_proc_empty_kw_splat_required_positional() {
+    eval("
+        def target(x, **kwargs) = [x, kwargs]
+        def test(p, x, kwargs) = p.call(x, **kwargs)
+        @pr = method(:target).to_proc
+        test(@pr, {x: 1}, {})
+    ");
+    assert_snapshot!(assert_compiles("test(@pr, {x: 1}, {})"), @"[{x: 1}, {}]");
+}
+
+#[test]
 fn test_optimized_method_call_proc_call_splat() {
     assert_snapshot!(inspect("
         p = proc { |x| x + 1 }
