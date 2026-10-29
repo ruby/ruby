@@ -73,6 +73,11 @@ pm_rich_error_compare(const void *a, const void *b) {
 #define COLOR_RESET "\033[m"
 #define TRUNCATE 30
 
+/* The maximum number of columns of a line that errors are displayed beneath
+ * before the line is displayed again. This must be at least TRUNCATE so that
+ * every window after the first on a line starts with a truncated line. */
+#define WINDOW 80
+
 typedef struct {
     const char *number_prefix;
     const char *blank_prefix;
@@ -189,15 +194,21 @@ pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const char 
 
     pm_buffer_append_format(buffer, number_prefix, line);
 
+    /* Here we determine if we should truncate the start of the line. The
+     * column is the start of a diagnostic, so it is on a character boundary. */
+    bool truncate_start = column_start >= TRUNCATE;
+    const uint8_t *display_start = truncate_start ? (start + column_start) : start;
+
     /* Here we determine if we should truncate the end of the line. Note that
      * this is written to avoid computing start + column_end, which could be
      * more than one past the end of the source when the error is at the end
-     * of the input. */
+     * of the input. The walk to find a character boundary begins at the
+     * displayed start so that its cost is bounded by the displayed width. */
     bool truncate_end = false;
     if ((column_end != 0) && ((end - start) - ((ptrdiff_t) column_end) >= TRUNCATE)) {
         const uint8_t *end_candidate = start + column_end + TRUNCATE;
 
-        for (const uint8_t *cursor = start; cursor < end_candidate;) {
+        for (const uint8_t *cursor = display_start; cursor < end_candidate;) {
             size_t char_width = pm_parser_encoding_char_width(parser, cursor, parser->end - cursor);
 
             /* If we failed to decode a character, then just bail out and
@@ -218,13 +229,8 @@ pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const char 
         truncate_end = true;
     }
 
-    /* Here we determine if we should truncate the start of the line. */
-    if (column_start >= TRUNCATE) {
-        pm_buffer_append_string(buffer, "... ", 4);
-        start += column_start;
-    }
-
-    pm_buffer_append_string(buffer, (const char *) start, (size_t) (end - start));
+    if (truncate_start) pm_buffer_append_string(buffer, "... ", 4);
+    pm_buffer_append_string(buffer, (const char *) display_start, (size_t) (end - display_start));
 
     if (truncate_end) {
         pm_buffer_append_string(buffer, " ...\n", 5);
@@ -242,9 +248,17 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
      * it. While we are iterating, we will display some padding lines of the
      * source before the error to give some context. We will be careful not to
      * display the same line twice in case the errors are close enough in the
-     * source. */
+     * source.
+     *
+     * The errors on a line are split into windows of at most WINDOW columns.
+     * Each window displays its own slice of the line, and the markers beneath
+     * it are padded relative to the start of that slice and cut off at its
+     * end. This bounds the length of every marker line, so the output grows
+     * linearly with the number of errors no matter how long the line is. */
     int32_t last_line = parser->start_line - 1;
-    uint32_t last_column_start = 0;
+    uint32_t window_column_start = 0;
+    uint32_t window_column_end = 0;
+    size_t window_end_idx = 0;
 
     for (size_t idx = 0; idx < nerrors; idx++) {
         pm_rich_error_t *rich_error = rich_errors + idx;
@@ -265,9 +279,10 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
             pm_error_format_line(parser, buffer, format.number_prefix, rich_error->line - 1, 0, 0);
         }
 
-        /* If this is the first error or we are on a new line, then we will
-         * display the line that has the error in it. */
-        if ((idx == 0) || (rich_error->line != last_line)) {
+        /* If this error is not in the current window (because it is the first
+         * error, it is on a new line, or it is too far to the right), then we
+         * start a new window and display the line that has the error in it. */
+        if (idx == window_end_idx) {
             switch (format_type) {
                 case PM_ERRORS_FORMAT_PLAIN:
                     pm_buffer_append_string(buffer, "> ", 2);
@@ -280,16 +295,22 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
                     break;
             }
 
-            last_column_start = rich_error->column_start;
+            /* The displayed slice of the line starts at this error, unless it
+             * is close enough to the start of the line to show it all. */
+            window_column_start = (rich_error->column_start >= TRUNCATE) ? rich_error->column_start : 0;
+            uint32_t window_limit = window_column_start + WINDOW;
 
-            /* Find the maximum column end of all the errors on this line. */
-            uint32_t column_end = rich_error->column_end;
-            for (size_t next_idx = idx + 1; next_idx < nerrors; next_idx++) {
-                if (rich_errors[next_idx].line != rich_error->line) break;
-                if (rich_errors[next_idx].column_end > column_end) column_end = rich_errors[next_idx].column_end;
+            /* Find the errors on this line that start within the window, and
+             * the maximum column end of all of them, capped at the window. */
+            window_column_end = rich_error->column_end;
+            for (window_end_idx = idx + 1; window_end_idx < nerrors; window_end_idx++) {
+                const pm_rich_error_t *next_error = &rich_errors[window_end_idx];
+                if ((next_error->line != rich_error->line) || (next_error->column_start >= window_limit)) break;
+                if (next_error->column_end > window_column_end) window_column_end = next_error->column_end;
             }
 
-            pm_error_format_line(parser, buffer, format.number_prefix, rich_error->line, rich_error->column_start, column_end);
+            if (window_column_end > window_limit) window_column_end = window_limit;
+            pm_error_format_line(parser, buffer, format.number_prefix, rich_error->line, rich_error->column_start, window_column_end);
         }
 
         const uint8_t *start = parser->start + parser->line_offsets.offsets[rich_error->line - parser->start_line];
@@ -308,9 +329,9 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
         pm_buffer_append_string(buffer, format.blank_prefix, format.blank_prefix_length);
 
         size_t column = 0;
-        if (last_column_start >= TRUNCATE) {
+        if (window_column_start > 0) {
             pm_buffer_append_string(buffer, "    ", 4);
-            column = last_column_start;
+            column = window_column_start;
         }
 
         while (column < rich_error->column_start) {
@@ -335,7 +356,7 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
         size_t char_width = pm_parser_encoding_char_width(parser, start + column, parser->end - (start + column));
         column += (char_width == 0 ? 1 : char_width);
 
-        while (column < rich_error->column_end) {
+        while ((column < rich_error->column_end) && (column < window_column_end)) {
             pm_buffer_append_byte(buffer, '~');
 
             size_t char_width = pm_parser_encoding_char_width(parser, start + column, parser->end - (start + column));

@@ -50,6 +50,23 @@ module Ruby::Prism
       assert_include error.message, "\e[1;31m"
     end
 
+    def test_syntax_error_many_on_one_line
+      # Every comma is its own error. Errors on a line are displayed in windows
+      # of bounded width, so the message grows linearly with the input.
+      source = "," * 4096
+      error = assert_raise(SyntaxError) { Ruby::Prism.parse(source, raise_error: :plain) }
+      assert_operator error.message.bytesize, :<, source.bytesize * 200
+    end
+
+    def test_syntax_error_far_apart_on_one_line
+      # The errors at either end of the line are displayed in separate windows,
+      # so the whitespace between them is not repeated beneath the line.
+      source = "x#{" " * 100_000},,"
+      error = assert_raise(SyntaxError) { Ruby::Prism.parse(source, raise_error: :plain) }
+      assert_operator error.message.bytesize, :<, source.bytesize
+      assert_equal 2, error.message.scan("> 1 |").size
+    end
+
     def test_syntax_error_not_utf8
       error = assert_raise(SyntaxError) { Ruby::Prism.parse("foo = 1 + \xFF\xFE\n".b, raise_error: :plain, filepath: "bin.rb") }
       assert_include error.message, "invalid multibyte character"
