@@ -1916,6 +1916,38 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_dynamic_send_counts_nonlocal_exits
+    {
+      'TARGET.call { 7 }' => 7,
+      'begin; TARGET.call { raise "test" }; rescue RuntimeError; 11; end' => 11,
+      'catch(:done) { TARGET.call { throw :done, 13 } }' => 13,
+      'TARGET.call { break 17 }' => 17,
+    }.each do |expression, expected|
+      stats = assert_compiles(<<~RUBY, call_threshold: 30, exits: :any, result: expected)
+        TARGET = Object.new
+        def TARGET.call
+          yield
+        end
+
+        def operation
+          #{expression}
+        end
+
+        # Warm the operation without compiling the measurement loop below.
+        100.times { operation }
+        RubyVM::YJIT.reset_stats!
+        result = nil
+        10.times { result = operation }
+        result
+      RUBY
+
+      if stats[:all_stats]
+        assert_equal 10, stats[:send_singleton_class], expression
+        assert_equal 10, stats[:num_send_dynamic], expression
+      end
+    end
+  end
+
   def test_runtime_stats_types
     assert_compiles(<<~'RUBY', exits: :any, result: true)
       def test = :ok
