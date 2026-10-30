@@ -3869,11 +3869,13 @@ rb_reg_equal(VALUE re1, VALUE re2)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    hash -> integer
  *
- *  Returns the integer hash value for +self+,
- *  based on the target string, regexp, match, and captures.
+ *  Returns the integer hash value for `self`,
+ *  based on its target string, regexp, match, and captures.
  *
  *  See also Object#hash.
  *
