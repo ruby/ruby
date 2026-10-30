@@ -34,6 +34,7 @@ typedef struct zjit_jit_frame {
 static inline bool
 ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P(const zjit_jit_frame_t *jit_frame)
 {
+    // The 0th bit of the bitstream is this boolean.
     return jit_frame->stack_map && (jit_frame->stack_map[0] & 1);
 }
 
@@ -41,6 +42,7 @@ ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P(const zjit_jit_frame_t *jit_frame)
 // JITFrame stack map bit stream format. See StackMapWriter in zjit/src/jit_frame.rs.
 #define ZJIT_STACK_MAP_VARINT_BITS  4
 #define ZJIT_STACK_MAP_OP_BITS      3
+// Opcodes in the JITFrame stack map bit stream format
 #define ZJIT_STACK_MAP_OP_END       0
 #define ZJIT_STACK_MAP_OP_VREG      1
 #define ZJIT_STACK_MAP_OP_SKIP      2
