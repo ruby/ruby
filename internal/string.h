@@ -192,6 +192,21 @@ is_broken_string(VALUE str)
     return rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN;
 }
 
+NORETURN(void rb_str_invalid_byte_sequence(VALUE str));
+static inline void
+mustnot_broken(VALUE str)
+{
+    if (is_broken_string(str)) rb_str_invalid_byte_sequence(str);
+}
+
+NORETURN(void rb_str_unexpect_wchar(VALUE str));
+static inline void
+mustnot_wchar(VALUE str)
+{
+    rb_encoding *enc = rb_enc_from_index(ENCODING_GET(str));
+    if (rb_enc_mbminlen(enc) > 1) rb_str_unexpect_wchar(str);
+}
+
 static inline bool
 at_char_boundary(const char *s, const char *p, const char *e, rb_encoding *enc)
 {

@@ -368,21 +368,16 @@ get_encoding(VALUE str)
     return rb_enc_from_index(ENCODING_GET(str));
 }
 
-static void
-mustnot_broken(VALUE str)
+void
+rb_str_invalid_byte_sequence(VALUE str)
 {
-    if (is_broken_string(str)) {
-        rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(STR_ENC_GET(str)));
-    }
+    rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(STR_ENC_GET(str)));
 }
 
-static void
-mustnot_wchar(VALUE str)
+void
+rb_str_unexpect_wchar(VALUE str)
 {
-    rb_encoding *enc = STR_ENC_GET(str);
-    if (rb_enc_mbminlen(enc) > 1) {
-        rb_raise(rb_eArgError, "wide char encoding: %s", rb_enc_name(enc));
-    }
+    rb_raise(rb_eArgError, "wide char encoding: %s", rb_enc_name(STR_ENC_GET(str)));
 }
 
 static VALUE register_fstring(VALUE str, bool copy, bool force_precompute_hash);
