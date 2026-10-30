@@ -78,6 +78,54 @@ RSpec.describe "bundle clean" do
     FileUtils.chmod(0o755, stale_gem_path) if stale_gem_path&.exist?
   end
 
+  it "treats an unused gem directory that disappears before removal as removed" do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "foo"
+      gem "myrack"
+    G
+
+    bundle_config "path vendor/bundle"
+    bundle_config "clean false"
+    bundle "install"
+
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack"
+    G
+    bundle "install"
+
+    # Deletes foo-1.0 right before Bundler does, as another process cleaning
+    # the same bundle would after Bundler listed its contents.
+    remove_first = tmp("remove_foo_first.rb")
+    File.write(remove_first, <<~'RUBY')
+      TracePoint.new(:class) do |tp|
+        next unless tp.self.name == "Bundler::FileUtils"
+
+        tp.disable
+        tp.self.singleton_class.prepend(Module.new do
+          def rm_r(list, **options)
+            Array(list).each do |path|
+              next unless File.basename(path) == "foo-1.0"
+
+              remove_entry(path)
+              warn "Removed #{path} first"
+            end
+            super
+          end
+        end)
+      end.enable
+    RUBY
+
+    bundle :clean, requires: [remove_first]
+
+    expect(err).to include("Removed #{vendored_gems("gems/foo-1.0")} first")
+    expect(out).to include("Removing foo (1.0)")
+    should_not_have_gems "foo-1.0"
+  end
+
   it "removes unused gems when the bundle path contains glob metacharacters" do
     gemfile <<-G
       source "https://gem.repo1"

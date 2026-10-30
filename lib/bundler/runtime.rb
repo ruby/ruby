@@ -373,6 +373,8 @@ module Bundler
         Bundler.ui.info "Removing #{output}"
         SharedHelpers.filesystem_access(dir) do |path|
           FileUtils.rm_r(path)
+        rescue Errno::ENOENT
+          # Removed by something else since the bundle was scanned
         end
       end
 
