@@ -223,9 +223,7 @@ module Bundler
 
         stale_dirs = stale_git_cache_dirs + stale_extension_dirs
         stale_dirs.each do |stale_dir|
-          SharedHelpers.filesystem_access(stale_dir) do |dir|
-            FileUtils.rm_rf(dir) if File.exist?(dir)
-          end
+          remove_path(stale_dir, failures)
         end
       end
 

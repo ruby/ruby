@@ -307,6 +307,44 @@ RSpec.describe "bundle clean" do
     expect(vendored_gems("bin/myrackup")).to exist
   end
 
+  it "reports an unused git cache directory it cannot remove", :permissions do
+    build_git "foo", path: lib_path("foo")
+    git_path = lib_path("foo")
+    revision = revision_for(git_path)
+
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack", "1.0.0"
+      git "#{git_path}", :ref => "#{revision}" do
+        gem "foo"
+      end
+    G
+
+    bundle_config "path vendor/bundle"
+    bundle "install"
+
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack", "1.0.0"
+    G
+    bundle "install"
+
+    git_cache_path = vendored_gems("cache/bundler/git/foo-#{Digest(:SHA1).hexdigest(git_path.to_s)}")
+    FileUtils.chmod(0o500, git_cache_path)
+
+    bundle :clean, raise_on_error: false
+
+    expect(exitstatus).to eq(44)
+    expect(err).to include(git_cache_path.to_s)
+    expect(out).to include("Removing foo (#{revision[0..11]})")
+    expect(vendored_gems("bundler/gems/foo-#{revision[0..11]}")).not_to exist
+    expect(git_cache_path).to exist
+  ensure
+    FileUtils.chmod(0o755, git_cache_path) if git_cache_path&.exist?
+  end
+
   it "keeps used git gems even if installed to a symlinked location" do
     build_git "foo", path: lib_path("foo")
     git_path = lib_path("foo")
