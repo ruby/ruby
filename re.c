@@ -1550,11 +1550,13 @@ match_byteend(VALUE match, VALUE n)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    begin(n) -> integer
  *    begin(name) -> integer
  *
- *  :include: doc/matchdata/begin.rdoc
+ *  :include: doc/matchdata/begin.md
  *
  */
 

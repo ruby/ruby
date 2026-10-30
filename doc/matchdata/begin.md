@@ -1,0 +1,35 @@
+Returns the offset (in characters) of the beginning of the specified match.
+
+With non-negative integer argument `n` given,
+returns the character offset of the beginning of the `n`th match:
+
+```ruby
+regexp = /(\d{4})-(\d{2})-(\d{2})/
+match = '2026-12-25'.match(regexp)
+# => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+match[0]         # => "2026-12-25"
+match.begin(0)   # => 0
+match[3]         # => "25"
+match.begin(3)   # => 8
+match.begin(10)  # Raises IndexError: index 10 out of matches.
+
+match = /(ん)(に)(ち)/.match('こんにちは')
+# => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+match[2]           # => "に"
+match.begin(2)     # => 2  # Character offset.
+match.bytebegin(2) # => 6  # Byte offset.
+```
+
+With string or symbol argument `name` given,
+returns the offset of the beginning for the named match:
+
+```ruby
+regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+match = '2026-12-25'.match(regexp)
+# => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+match[:year]         # => "2026"
+match.begin(:year)   # => 0
+match.begin('month') # => 5
+```
+
+Related: MatchData#bytebegin.
