@@ -76,6 +76,13 @@ int flock(int, int);
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef HAVE_SYS_ATTR_H
+# include <sys/attr.h>
+#endif
+#ifdef __APPLE__
+# include <sys/vnode.h>
+#endif
+
 #ifdef HAVE_SYS_MKDEV_H
 # include <sys/mkdev.h>
 #endif
@@ -8071,6 +8078,41 @@ ruby_is_fd_loadable(int fd)
 }
 
 #ifndef _WIN32
+#ifdef HAVE_GETATTRLIST
+/*
+  On macOS opening an existing file costs about ten times a
+  getattrlist(2), which returns the mode bits and whether an ACL could
+  override them.  Returns 1 when the mode bits prove a readable regular
+  file, 0 when only opening it can tell, and -1 with errno on failure.
+*/
+static int
+loadable_by_mode(const char *path)
+{
+    const attrgroup_t mode_attrs =
+        ATTR_CMN_OBJTYPE | ATTR_CMN_OWNERID | ATTR_CMN_ACCESSMASK;
+    struct attrlist al = {
+        ATTR_BIT_MAP_COUNT, 0,
+        ATTR_CMN_RETURNED_ATTRS | mode_attrs | ATTR_CMN_EXTENDED_SECURITY,
+    };
+    struct {
+        u_int32_t length;
+        attribute_set_t returned;
+        fsobj_type_t objtype;
+        uid_t uid;
+        u_int32_t mode;
+        attrreference_t acl; /* the ACL itself is truncated away */
+    } __attribute__((aligned(4), packed)) buf;
+
+    if (getattrlist(path, &al, &buf, sizeof(buf), 0)) return -1;
+    /* an attribute the file system lacks is not packed, shifting the rest */
+    if ((buf.returned.commonattr & mode_attrs) != mode_attrs) return 0;
+    if (buf.returned.commonattr & ATTR_CMN_EXTENDED_SECURITY) return 0;
+    if (buf.objtype != VREG) return 0;
+    if (buf.uid == geteuid()) return (buf.mode & S_IRUSR) != 0;
+    return (buf.mode & (S_IRGRP | S_IROTH)) == (S_IRGRP | S_IROTH);
+}
+#endif
+
 int
 rb_file_load_ok(const char *path)
 {
@@ -8086,6 +8128,15 @@ rb_file_load_ok(const char *path)
                 O_NDELAY |
 #endif
                 0);
+#ifdef HAVE_GETATTRLIST
+    switch (loadable_by_mode(path)) {
+      case 1:
+        return 1;
+      case -1:
+        if (errno == ENOENT || errno == ENOTDIR) return 0;
+        break;
+    }
+#endif
     int fd = rb_cloexec_open(path, mode, 0);
     if (fd < 0) {
         if (!rb_gc_for_fd(errno)) return 0;
