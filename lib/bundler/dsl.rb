@@ -87,7 +87,9 @@ module Bundler
         end
 
         spec.development_dependencies.each do |dep|
-          add_dependency dep.name, dep.requirement.as_list, "gemspec_dev_dep" => true, "group" => development_group
+          options = {}
+          normalize_options(dep.name, dep.requirement.as_list, options)
+          add_dependency dep.name, dep.requirement.as_list, options.merge("gemspec_dev_dep" => true, "group" => development_group)
         end
       when 0
         raise InvalidOption, "There are no gemspecs at #{expanded_path}"
