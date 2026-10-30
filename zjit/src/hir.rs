@@ -662,6 +662,7 @@ pub enum SideExitReason {
     DirectiveInduced,
     SendWhileTracing,
     NoProfileSend,
+    SendPolymorphicMiss,
     NoProfileGetIvar,
     NoProfileSetIvar,
     InvokeBlockNotIfunc,
@@ -3785,8 +3786,7 @@ impl Function {
             | InvokeSuperForward { reason, .. }
             | InvokeBlock { reason, .. }
             => {
-                // Ignore the case where the instruction is intentionally a fallback for a
-                // polymorphic send. We already know that case is a lost cause.
+                // Preserve polymorphic dispatch fallbacks for the later reprofiling policy.
                 if *reason != SendFallbackReason::SendPolymorphicFallback {
                     *reason = dynamic_send_reason;
                 }
@@ -6622,11 +6622,9 @@ impl Function {
         self.send_counters.insert(counter, send);
     }
 
-    /// Convert `Send` instructions with no profile data into `SideExit` with recompile info.
+    /// Convert sends with missing or incomplete profiles into recompiling side exits.
     /// This runs after strength reduction passes (type_specialize, inline) so
     /// that sends that can be optimized without profiling (e.g. known CFUNCs) are already handled.
-    /// The remaining no-profile sends are turned into side exits that trigger recompilation with
-    /// fresh profile data.
     fn convert_no_profile_sends(&mut self) {
         // On the final version, recompilation is not possible, so converting sends to
         // SideExits would just add overhead (the exit fires every time without benefit).
@@ -6644,6 +6642,22 @@ impl Function {
                         self.push_insn(block, Insn::SideExit { state, reason: Box::new(SideExitReason::NoProfileSend), recompile: Some(Recompile) });
                         // SideExit is a terminator; don't add remaining instructions
                         break;
+                    }
+                    &Insn::Send { recv, cd, state, reason: SendFallbackReason::SendPolymorphicFallback, .. } => {
+                        let summary = self.profile_summary(self.profiles.as_ref().unwrap(), recv, state);
+                        let expected = Type::from_profiled_type(summary.bucket(0));
+                        // Multiple shapes of one receiver type need only one dispatch arm.
+                        // Learn a new receiver type on a miss, as a monomorphic guard does.
+                        // Expanding already-polymorphic receiver chains can instead overflow
+                        // the profile and make the entire send megamorphic.
+                        // Splat-length misses share this fallback, so keep it for splat calls.
+                        if unsafe { rb_vm_ci_flag((*cd).ci) } & VM_CALL_ARGS_SPLAT == 0
+                            && summary.buckets().iter().filter(|ty| !ty.is_empty())
+                            .all(|&ty| Type::from_profiled_type(ty).bit_equal(expected)) {
+                            self.push_insn(block, Insn::SideExit { state, reason: Box::new(SideExitReason::SendPolymorphicMiss), recompile: Some(Recompile) });
+                            break;
+                        }
+                        self.push_insn_id(block, insn_id);
                     }
                     _ => {
                         self.push_insn_id(block, insn_id);

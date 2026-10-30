@@ -11917,14 +11917,11 @@ mod hir_opt_tests {
           v23:ObjectSubclass[class_exact:C] = RefineType v10, ObjectSubclass[class_exact:C]
           PatchPoint MethodRedefined(C@0x1008, foo=@0x1010, cme:0x1018)
           SetIvar v23, :@foo, v17
-          Jump bb4(v17)
-        bb5():
-          v26:BasicObject = Send v10, :foo=, v17 # SendFallbackReason: Send: polymorphic fallback
-          Jump bb4(v26)
-        bb4(v20:BasicObject):
           PatchPoint NoEPEscape(write)
           CheckInterrupts
           Return v17
+        bb5():
+          SideExit SendPolymorphicMiss recompile
         ");
     }
 
@@ -12584,14 +12581,11 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
           v32:BasicObject = GetIvar v18, :@foo
-          Jump bb4(v32)
-        bb5():
-          v21:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
-          Jump bb4(v21)
-        bb4(v15:BasicObject):
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v15
+          Return v32
+        bb5():
+          SideExit SendPolymorphicMiss recompile
         ");
     }
 
@@ -23592,14 +23586,11 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
           v32:Fixnum[3] = Const Value(3)
-          Jump bb4(v32)
-        bb5():
-          v21:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
-          Jump bb4(v21)
-        bb4(v15:BasicObject):
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v15
+          Return v32
+        bb5():
+          SideExit SendPolymorphicMiss recompile
         ");
     }
 
