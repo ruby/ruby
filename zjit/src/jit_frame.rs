@@ -108,21 +108,22 @@ const _: () = assert!(ZJIT_STACK_MAP_OP_END == 0);
 ///
 /// zjit_materialize_frames() decodes the opcodes in order while moving a write cursor down the VM
 /// stack.
-///
-/// ```
-/// # use zjit::jit_frame::StackMapWriter;
-/// let mut writer = StackMapWriter::new(true);
-/// writer.vreg(5);  // one varint chunk
-/// writer.skip(17); // two varint chunks
-/// // Fields are packed LSB first, so the literal reads right to left from bit 0. In each varint
-/// // chunk the continuation bit sits above the 4 payload bits, so 17 is lo=1_0001 then hi=0_0001.
-/// //                  END 17(hi) 17(lo) SKIP 5      VREG materialize_block_code
-/// let stream: u32 = 0b000_0_0001_1_0001_010__0_0101_001__1;
-/// assert_eq!(writer.finish(), stream.to_le_bytes());
-/// ```
 pub struct StackMapWriter {
     bytes: Vec<u8>,
     num_bits: usize,
+}
+
+#[cfg(test)]
+#[test]
+fn test_bit_stream_example() {
+    let mut writer = StackMapWriter::new(true);
+    writer.vreg(5);  // one varint chunk
+    writer.skip(17); // two varint chunks
+    // Fields are packed LSB first, so the literal reads right to left from bit 0. In each varint
+    // chunk the continuation bit sits above the 4 payload bits, so 17 is lo=1_0001 then hi=0_0001.
+    //                  END 17(hi) 17(lo) SKIP 5      VREG materialize_block_code
+    let stream: u32 = 0b000_0_0001_1_0001_010__0_0101_001__1;
+    assert_eq!(writer.finish(), stream.to_le_bytes());
 }
 
 impl StackMapWriter {

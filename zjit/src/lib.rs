@@ -34,7 +34,7 @@ mod profile;
 mod invariants;
 mod bitset;
 mod gc;
-pub mod jit_frame;
+mod jit_frame;
 mod payload;
 mod json;
 mod ttycolors;
