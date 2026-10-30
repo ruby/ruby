@@ -2870,22 +2870,25 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    inspect -> string
  *
- *  Returns a string representation of +self+:
+ *  Returns a string representation of `self`:
  *
- *    m = /.$/.match("foo")
- *    # => #<MatchData "o">
- *    m.inspect # => "#<MatchData \"o\">"
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  match.inspect # => "#<MatchData \"2026-12-25\" 1:\"2026\" 2:\"12\" 3:\"25\">"
  *
- *    m = /(.)(.)(.)/.match("foo")
- *    # => #<MatchData "foo" 1:"f" 2:"o" 3:"o">
- *    m.inspect # => "#<MatchData \"foo\" 1:\"f\" 2:\"o\
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  match.inspect # => "#<MatchData \"んにち\" 1:\"ん\" 2:\"に\" 3:\"ち\">"
  *
- *    m = /(.)(.)?(.)/.match("fo")
- *    # => #<MatchData "fo" 1:"f" 2:nil 3:"o">
- *    m.inspect # => "#<MatchData \"fo\" 1:\"f\" 2:nil 3:\"o\">"
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  match.inspect # => "#<MatchData \"2026-12-25\" year:\"2026\" month:\"12\" day:\"25\">"
+ *  ```
  *
  *  Related: MatchData#to_s.
  */
