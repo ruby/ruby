@@ -2858,6 +2858,27 @@ class TestModule < Test::Unit::TestCase
     assert_equal([m, c], c.ancestors[0, 2], "should never duplicate")
   end
 
+  def test_prepend_to_included_module_multiple_times
+    m = labeled_module("M")
+    c = labeled_class("C") {include m}
+    m0 = labeled_module("M0")
+    m1 = labeled_module("M1")
+    m2 = labeled_module("M2")
+    m.prepend m0
+    m.prepend m1
+    m.prepend m2
+    assert_equal([c, m2, m1, m0, m, Object], c.ancestors[0, 6], "should never duplicate")
+
+    base = Module.new {def m; [:base] end}
+    h = Module.new {include base}
+    view = Class.new {include h}
+    p1 = Module.new {def m; [:p1] + super end}
+    p2 = Module.new {def m; [:p2] + super end}
+    h.prepend p1
+    h.prepend p2
+    assert_equal([:p2, :p1, :base], view.new.m)
+  end
+
   def test_prepend_in_superclass
     m = labeled_module("M")
     c1 = labeled_class("C1")
