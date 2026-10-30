@@ -449,5 +449,8 @@ class TestDateStrftime < Test::Unit::TestCase
     assert_raise(ArgumentError, Errno::ERANGE) {
       DateTime.new(2000,1,1).strftime("%2147483647c")
     }
+    assert_raise(ArgumentError, Errno::ERANGE) {
+      Date.new(2000,1,1).strftime("%99Y%924Y%1024Y%2048Y%4096Y%8192Y%16384Y%32768Y%Y")
+    }
   end
 end
