@@ -5544,6 +5544,66 @@ fn test_array_fixnum_aref_array_subclass() {
 }
 
 #[test]
+fn test_array_fixnum_fetch_with_default() {
+    eval("
+        def test(x) = [1,2,3].fetch(x, :none)
+        test(2)
+    ");
+    assert_snapshot!(assert_compiles("test(2)"), @"3");
+}
+
+#[test]
+fn test_array_fixnum_fetch_with_default_negative_index() {
+    eval("
+        def test(x) = [1,2,3].fetch(x, :none)
+        test(-1)
+    ");
+    assert_snapshot!(assert_compiles("test(-1)"), @"3");
+}
+
+#[test]
+fn test_array_fixnum_fetch_with_default_out_of_bounds_positive() {
+    eval("
+        def test(x) = [1,2,3].fetch(x, :none)
+        test(10)
+    ");
+    assert_snapshot!(assert_compiles("test(10)"), @":none");
+}
+
+#[test]
+fn test_array_fixnum_fetch_with_default_out_of_bounds_negative() {
+    eval("
+        def test(x) = [1,2,3].fetch(x, :none)
+        test(-10)
+    ");
+    assert_snapshot!(assert_compiles("test(-10)"), @":none");
+}
+
+#[test]
+fn test_array_fixnum_fetch_with_default_and_block() {
+    assert_snapshot!(inspect(r#"
+        $VERBOSE = nil
+        def test(x) = [1,2,3].fetch(x, :none) { |i| i * 2 }
+        test(10)
+        [test(10), test(1)]
+    "#), @"[20, 2]");
+}
+
+#[test]
+fn test_array_fixnum_fetch_without_default_raises() {
+    assert_snapshot!(inspect(r#"
+        def test(x) = [1,2,3].fetch(x)
+        test(1)
+        test(1)
+        begin
+          test(10)
+        rescue => e
+          e.class
+        end
+    "#), @"IndexError");
+}
+
+#[test]
 fn test_array_aref_non_fixnum_index() {
     assert_snapshot!(inspect(r#"
         def test(arr, idx) = arr[idx]
