@@ -57,27 +57,29 @@ describe "Struct#deconstruct_keys" do
     s.deconstruct_keys([0, :x]).should == {0 => 1, :x => 1}
   end
 
-  it "returns an empty hash when there are more keys than attributes" do
-    struct = Struct.new(:x, :y)
-    s = struct.new(1, 2)
+  ruby_bug "[Bug #21805]", ""..."4.1" do
+    it "returns all present keys even when there are more keys than attributes" do
+      struct = Struct.new(:x, :y)
+      s = struct.new(1, 2)
 
-    s.deconstruct_keys([:x, :y, :a]).should == {}
-  end
+      s.deconstruct_keys([:x, :y, :a]).should == {x: 1, y: 2}
+    end
 
-  it "returns at first not existing attribute name" do
-    struct = Struct.new(:x, :y)
-    s = struct.new(1, 2)
+    it "returns all present keys" do
+      struct = Struct.new(:x, :y)
+      s = struct.new(1, 2)
 
-    s.deconstruct_keys([:a, :x]).should == {}
-    s.deconstruct_keys([:x, :a]).should == {x: 1}
-  end
+      s.deconstruct_keys([:a, :x]).should == {x: 1}
+      s.deconstruct_keys([:x, :a]).should == {x: 1}
+    end
 
-  it "returns at first not existing argument position number" do
-    struct = Struct.new(:x, :y)
-    s = struct.new(1, 2)
+    it "returns all present argument position numbers" do
+      struct = Struct.new(:x, :y)
+      s = struct.new(1, 2)
 
-    s.deconstruct_keys([3, 0]).should == {}
-    s.deconstruct_keys([0, 3]).should == {0 => 1}
+      s.deconstruct_keys([3, 0]).should == {0 => 1}
+      s.deconstruct_keys([0, 3]).should == {0 => 1}
+    end
   end
 
   it "accepts nil argument and return all the attributes" do
