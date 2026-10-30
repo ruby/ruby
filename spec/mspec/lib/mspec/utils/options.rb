@@ -489,14 +489,6 @@ class MSpecOptions
     end
   end
 
-  def launchable
-    on("--launchable-test-reports", "DIR",
-       "DIR The directory for reporting test results in Launchable JSON format") do |o|
-      require 'mspec/runner/formatters/launchable'
-      config[:launchable] = LaunchableFormatter.setDir(o)
-    end
-  end
-
   def all
     configure {}
     env
@@ -516,6 +508,5 @@ class MSpecOptions
     action_filters
     actions
     debug
-    launchable
   end
 end
