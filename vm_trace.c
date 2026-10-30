@@ -1570,16 +1570,23 @@ tracepoint_enable_m(rb_execution_context_t *ec, VALUE tpval, VALUE target, VALUE
     }
 
     /* check target_thread */
+    /* While the trace point is already enabled, rb_tracepoint_enable() below
+     * does nothing, so the installed hook keeps its target.  Retargeting (or
+     * untargeting) tp->target_th here would make a later disable() remove a
+     * hook that was never added, and leave the existing hook firing.
+     * [Bug #20299] */
     if (RTEST(target_thread)) {
         if (tp->target_th) {
             rb_raise(rb_eArgError, "can not override target_thread filter");
         }
-        tp->target_th = rb_thread_ptr(target_thread);
+        else if (!previous_tracing) {
+            tp->target_th = rb_thread_ptr(target_thread);
 
-        RUBY_ASSERT(tp->target_th->self == target_thread);
-        RB_OBJ_WRITTEN(tpval, Qundef, target_thread);
+            RUBY_ASSERT(tp->target_th->self == target_thread);
+            RB_OBJ_WRITTEN(tpval, Qundef, target_thread);
+        }
     }
-    else {
+    else if (!previous_tracing) {
         tp->target_th = NULL;
     }
 

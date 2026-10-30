@@ -892,6 +892,46 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal(false, trace.enabled?)
   end
 
+  def test_tracepoint_enable_with_block
+    events = 0
+    measuring = false
+    trace = TracePoint.new(:line){ events += 1 if measuring }
+    # Only the measuring window counts events, so that a hook left behind by the
+    # bug below does not slow down the rest of the test process.
+    count_events = ->{
+      events = 0
+      measuring = true
+      10.times { 1 }
+      measuring = false
+      events
+    }
+
+    trace.enable
+    trace.enable{
+      assert_equal(true, trace.enabled?)
+    }
+    trace.disable
+    assert_equal(false, trace.enabled?)
+    assert_equal(0, count_events.call, "trace point should not fire after disable")
+
+    trace.enable
+    trace.enable(target_thread: @target_thread){
+      assert_equal(true, trace.enabled?)
+    }
+    trace.disable
+    assert_equal(false, trace.enabled?)
+    assert_equal(0, count_events.call, "trace point should not fire after disable")
+
+    trace.enable(target_thread: @target_thread)
+    trace.enable
+    trace.disable
+    assert_equal(false, trace.enabled?)
+    assert_equal(0, count_events.call, "trace point should not fire after disable")
+  ensure
+    measuring = false
+    trace.disable
+  end
+
   def parameter_test(a, b, c)
     yield
   end
