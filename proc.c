@@ -2529,11 +2529,35 @@ find_refined_target_ancestor(VALUE start, VALUE refined_target)
 }
 
 static VALUE
+find_ancestor(VALUE start, VALUE ancestor)
+{
+    VALUE klass;
+    for (klass = start; klass; klass = RCLASS_SUPER(klass)) {
+        if (klass == ancestor) return klass;
+    }
+    return 0;
+}
+
+static VALUE
 find_refinement_iclass(VALUE owner, VALUE klass, VALUE iclass)
 {
     VALUE refined_target = rb_refinement_module_get_refined_class(owner);
 
     if (RB_TYPE_P(refined_target, T_MODULE)) {
+        /* If the iclass given is already the refinement iclass we want,
+         * return it instead of generating a new refinement iclass, so that
+         * Method/UnboundMethod equality works as expected.
+         */
+        VALUE refinement_iclass = RCLASS_SUPER(iclass);
+        while (RICLASS_FOR_REFINEMENT_P(refinement_iclass)) {
+            refinement_iclass = RCLASS_SUPER(refinement_iclass);
+        }
+        if (RB_TYPE_P(refinement_iclass, T_ICLASS) &&
+                RBASIC(refinement_iclass)->klass == refined_target &&
+                find_ancestor(klass, refinement_iclass)) {
+            return iclass;
+        }
+
         VALUE refined_ancestor = find_refined_target_ancestor(klass, refined_target);
         if (refined_ancestor) {
             iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
@@ -3487,7 +3511,7 @@ static void
 convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALUE *methclass_out, VALUE *klass_out, VALUE *iclass_out, const rb_method_entry_t **me_out, const bool clone)
 {
     VALUE methclass = data->owner;
-    VALUE iclass = data->me->defined_class;
+    VALUE iclass = data->iclass;
     VALUE klass = CLASS_OF(recv);
 
     if (RB_TYPE_P(methclass, T_MODULE)) {
@@ -3519,12 +3543,13 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
             // because this branch manipulates it in rb_method_entry_complement_defined_class
             me = rb_method_entry_clone(me);
         }
-        if (refinement_module_p(me->owner) && RICLASS_FOR_REFINEMENT_P(data->iclass)) {
-            iclass = find_refinement_iclass(me->owner, klass, data->iclass);
+        if (refinement_module_p(me->owner) && RICLASS_FOR_REFINEMENT_P(iclass)) {
+            iclass = find_refinement_iclass(me->owner, klass, iclass);
             klass = iclass;
         }
         else {
-            VALUE ic = rb_class_search_ancestor(klass, me->owner);
+            VALUE ic = RB_TYPE_P(iclass, T_ICLASS) ? find_ancestor(klass, iclass) : 0;
+            if (!ic) ic = rb_class_search_ancestor(klass, me->owner);
             if (ic) {
                 klass = ic;
                 iclass = ic;
@@ -4433,7 +4458,8 @@ method_super_method(VALUE method)
         klass = RCLASS_SUPER(cme->defined_class);
     }
     if (!me) return Qnil;
-    return mnew_internal(me, me->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
+    VALUE mklass = (RB_TYPE_P(me->owner, T_MODULE) || UNDEF_P(data->recv)) ? iclass : CLASS_OF(data->recv);
+    return mnew_internal(me, mklass, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
 }
 
 /*
