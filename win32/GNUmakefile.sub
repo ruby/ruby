@@ -1004,10 +1004,10 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res $(RUST_LIB
 		$(LIBRUBY_DLDFLAGS)
 	@$(RM) dummy.lib dummy.exp
 
-$(RUBYDEF):	$(LIBRUBY_A) $(DLDOBJS) $(RBCONFIG)
+$(RUBYDEF):	$(LIBRUBY_A) $(DLDOBJS) $(RBCONFIG) $(RUST_LIB)
 	$(ECHO) generating $@
 	$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/mkexports.rb \
-	  -output=$@ -arch=$(ARCH) $(LIBRUBY_A) -- $(DLDOBJS)
+	  -output=$@ -arch=$(ARCH) $(if $(RUST_LIB),-rustlib=$(RUST_LIB)) $(LIBRUBY_A) -- $(DLDOBJS)
 
 ifeq ($(YJIT_SUPPORT),yes)
 # No `+` unlike defs/jit.mk, since it would run rustc under `make -n`,
