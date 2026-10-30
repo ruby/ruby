@@ -4537,6 +4537,7 @@ str_lower_case_match(OnigEncoding enc, int case_fold_flag,
   UChar *q, lowbuf[ONIGENC_MBC_CASE_FOLD_MAXLEN];
 
   while (t < tend) {
+    if (p >= end) return 0;
     lowlen = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &p, end, lowbuf);
     if (tend - t < lowlen) return 0;
     q = lowbuf;
