@@ -103,6 +103,7 @@ module SyncDefaultGems
       ["lib/net/http", "lib/net/http"],
       ["test/net/http", "test/net/http"],
       ["net-http.gemspec", "lib/net/http/net-http.gemspec"],
+      ["sig", "sig/net-http"],
     ]),
     "net-protocol": repo("ruby/net-protocol", [
       ["lib/net/protocol.rb", "lib/net/protocol.rb"],
