@@ -22,5 +22,9 @@ class Test_StringModifyExpand < Test::Unit::TestCase
     assert_raise(ArgumentError, bug12390) {
       s.modify_expand!(2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 1)
     }
+    s = Bug::String.new("\0\0\0\0".force_encoding(Encoding::UTF_32BE))
+    assert_raise(ArgumentError) {
+      s.modify_expand!(2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 6)
+    }
   end
 end
