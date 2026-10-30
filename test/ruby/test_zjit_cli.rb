@@ -392,6 +392,35 @@ class TestZJITCLI < Test::Unit::TestCase
     RUBY
   end
 
+  def test_compile_size_tracing
+    assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-compiles'], call_threshold: 2)
+      def test(object) = object.itself
+
+      100.times { test(42) }
+
+      fxt_files = Dir.glob("/tmp/perfetto-\#{Process.pid}.fxt")
+      result = fxt_files.length == 1 &&
+        (dump = File.binread(fxt_files.first)).include?("size") &&
+        dump.include?("total")
+      File.unlink(*fxt_files)
+      result
+    RUBY
+  end
+
+  def test_compile_size_counter_tracing
+    assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-compiles'], call_threshold: 2)
+      def test(object) = object.itself
+
+      100.times { test(42) }
+
+      fxt_files = Dir.glob("/tmp/perfetto-\#{Process.pid}.fxt")
+      result = fxt_files.length == 1 &&
+        (dump = File.binread(fxt_files.first)).include?("code size")
+      File.unlink(*fxt_files)
+      result
+    RUBY
+  end
+
   def test_send_forwarded_block_arg_nil_then_non_nil
     # Regression test: when a forwarded &block arg is profiled as nil, the nil
     # block optimization must update the frame state to match the stripped args.
