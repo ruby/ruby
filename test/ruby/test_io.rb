@@ -1306,6 +1306,32 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_copy_stream_write_tries_to_modify_buffer
+    IO.pipe do |r, w|
+      buffers = Thread::Queue.new
+      chunks = []
+      dst = Object.new
+      dst.define_singleton_method(:write) do |data|
+        chunks << data.dup
+        buffers << data
+        data.bytesize
+      end
+      th = Thread.new { IO.copy_stream(r, dst) }
+      w.write("a" * 6)
+      buf = buffers.pop
+      Thread.pass until th.stop?
+      begin
+        buf.replace("c" * 100_000)
+      rescue RuntimeError
+        # buf may be STR_TMPLOCK
+      end
+      w.write("b" * 6)
+      w.close
+      assert_equal(12, th.value)
+      assert_equal("a" * 6, chunks[0])
+    end
+  end
+
   def test_copy_stream_write_in_binmode
     bug8767 = '[ruby-core:56518] [Bug #8767]'
     mkcdtmpdir {
