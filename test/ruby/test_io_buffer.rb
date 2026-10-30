@@ -929,6 +929,15 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 0, buffer1 <=> buffer3
   end
 
+  def test_equal
+    buffer = IO::Buffer.for("abc")
+
+    assert_equal buffer, IO::Buffer.for("abc")
+    assert_not_equal buffer, IO::Buffer.for("abd")
+    assert_not_equal buffer, IO::Buffer.for("ab")
+    assert_not_equal buffer, "abc"
+  end
+
   def test_slice
     buffer = IO::Buffer.new(128)
     slice = buffer.slice(8, 32)
