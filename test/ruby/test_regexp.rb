@@ -1544,6 +1544,12 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_backref_ignorecase_at_end_of_string
+    assert_no_match(/(k\0)\1/i, "k\0\u212a")
+    assert_match(/(k)\1/i, "k\u212a")
+    assert_match(/(k\0)\1/i, "k\0\u212a\0")
+  end
+
   def test_unicode_age
     assert_unicode_age("\u261c", matches: %w"6.0 1.1", unmatches: [])
 
