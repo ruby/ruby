@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 #![allow(static_mut_refs)]
 
+#![deny(clippy::useless_conversion)]
 #![allow(clippy::enum_variant_names)]
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::needless_bool)]

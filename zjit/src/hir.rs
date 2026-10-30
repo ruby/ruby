@@ -5360,7 +5360,7 @@ impl Function {
                                     self.make_equal_to(insn_id, replacement);
                                 },
                                 _ => {
-                                    self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodTypeOptimized(OptimizedMethodType::from(opt_type)));
+                                    self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodTypeOptimized(opt_type));
                                     self.push_insn_id(block, insn_id); continue;
                                 },
                             };

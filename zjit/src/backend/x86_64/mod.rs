@@ -660,7 +660,7 @@ impl Assembler {
                                 asm.mov(SCRATCH0_OPND, src);
                                 SCRATCH0_OPND
                             } else {
-                                src.into()
+                                src
                             }
                         }
                         Opnd::Value(_) => {
