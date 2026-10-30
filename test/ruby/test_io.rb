@@ -10,6 +10,7 @@ require 'stringio'
 require 'timeout'
 require 'tempfile'
 require 'weakref'
+require "rbconfig/sizeof"
 
 class TestIO < Test::Unit::TestCase
   module Feature
@@ -1726,6 +1727,17 @@ class TestIO < Test::Unit::TestCase
       assert_empty(r.readpartial(0, s = "01234567"))
       assert_empty(s)
     end
+  end
+
+  def test_read_with_too_big_length
+    pipe(proc do |w|
+      w.write "foo\n" + "bar" * 100
+      w.close
+    end, proc do |r|
+      r.gets
+      max = 2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 1
+      assert_raise(ArgumentError) {r.read(max - 1, String.new(encoding: Encoding::UTF_16LE))}
+    end)
   end
 
   def test_readpartial_buffer_error
