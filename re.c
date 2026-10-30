@@ -1472,20 +1472,12 @@ match_offset(VALUE match, VALUE n)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     mtch.byteoffset(n)   -> array
+ *     byteoffset(n) -> [bytebegin, byteend]
  *
- *  Returns a two-element array containing the beginning and ending byte-based offsets of
- *  the <em>n</em>th match.
- *  <em>n</em> can be a string or symbol to reference a named capture.
- *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.byteoffset(0)      #=> [1, 7]
- *     m.byteoffset(4)      #=> [6, 7]
- *
- *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
- *     p m.byteoffset(:foo) #=> [0, 1]
- *     p m.byteoffset(:bar) #=> [2, 3]
+ *  :include: doc/matchdata/byteoffset.md
  *
  */
 
