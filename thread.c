@@ -741,7 +741,15 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 
     if (!fiber_scheduler_closed) {
         fiber_scheduler_closed = 1;
-        rb_fiber_scheduler_set(Qnil);
+
+        if (state == TAG_FATAL && th->ec->errinfo == INT2FIX(TAG_FATAL)) {
+            th->ec->errinfo = th->vm->special_exceptions[ruby_error_thread_killed];
+            rb_fiber_scheduler_set(Qnil);
+            th->ec->errinfo = INT2FIX(TAG_FATAL);
+        }
+        else {
+            rb_fiber_scheduler_set(Qnil);
+        }
     }
 
     if (!event_thread_end_hooked) {
