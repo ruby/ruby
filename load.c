@@ -23,6 +23,7 @@
 #include "ruby/util.h"
 #include "ractor_core.h"
 #include "vm_core.h"
+#include "vm_sync.h"
 
 #define IS_RBEXT(e) (strcmp((e), ".rb") == 0)
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
@@ -49,6 +50,30 @@ enum expand_type {
     EXPAND_HOME,
     EXPAND_NON_CACHE
 };
+
+/* Bracket a rebuild that cannot run under the VM lock because it calls Ruby code
+ * or blocks on the filesystem.  rb_feature_provided_ractor_safe() reads the depth
+ * under the lock and declines to answer while it is non-zero, which both keeps it
+ * out of a half-rebuilt index and pairs the lock release here with its acquire. */
+static void
+load_unstable_begin(const rb_box_t *box)
+{
+    RB_VM_LOCKING() {
+        ((rb_box_t *)box)->load_unstable_depth++;
+    }
+}
+
+static VALUE
+load_unstable_end(VALUE boxp)
+{
+    const rb_box_t *box = (const rb_box_t *)boxp;
+
+    RB_VM_LOCKING() {
+        RUBY_ASSERT(box->load_unstable_depth > 0);
+        ((rb_box_t *)box)->load_unstable_depth--;
+    }
+    return Qnil;
+}
 
 /* Construct expanded load path and store it to cache.
    We rebuild load path partially if the cache is invalid.
@@ -111,9 +136,17 @@ rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_r
     rb_ary_replace(snapshot, load_path);
 }
 
-static VALUE
-get_expanded_load_path(rb_box_t *box)
+static bool
+expanded_load_path_current_p(const rb_box_t *box)
 {
+    return RTEST(rb_ary_shared_with_p(box->load_path_snapshot, box->load_path)) &&
+           box->load_path_check_cache == 0;
+}
+
+static VALUE
+rebuild_expanded_load_path(VALUE boxp)
+{
+    rb_box_t *box = (rb_box_t *)boxp;
     VALUE check_cache;
     const VALUE non_cache = Qtrue;
     const VALUE load_path_snapshot = box->load_path_snapshot;
@@ -159,6 +192,16 @@ get_expanded_load_path(rb_box_t *box)
     }
     if (maxlen) {
         box->expanded_load_path_maxlen = maxlen;
+    }
+    return Qnil;
+}
+
+static VALUE
+get_expanded_load_path(rb_box_t *box)
+{
+    if (!expanded_load_path_current_p(box)) {
+        load_unstable_begin(box);
+        rb_ensure(rebuild_expanded_load_path, (VALUE)box, load_unstable_end, (VALUE)box);
     }
     return box->expanded_load_path;
 }
@@ -364,56 +407,64 @@ loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
     return ST_DELETE;
 }
 
+static VALUE
+rebuild_loaded_features_index(VALUE boxp)
+{
+    const rb_box_t *box = (const rb_box_t *)boxp;
+    int i;
+    VALUE features = box->loaded_features;
+
+    st_foreach(box->loaded_features_index, loaded_features_index_clear_i, 0);
+
+    VALUE realpaths = box->loaded_features_realpaths;
+    VALUE realpath_map = box->loaded_features_realpath_map;
+    VALUE previous_realpath_map = rb_hash_dup(realpath_map);
+    rb_hash_clear(realpaths);
+    rb_hash_clear(realpath_map);
+
+    /* We have to make a copy of features here because the StringValue call
+     * below could call a Ruby method, which could modify $LOADED_FEATURES
+     * and cause it to be corrupt. */
+    features = rb_ary_resurrect(features);
+    for (i = 0; i < RARRAY_LEN(features); i++) {
+        VALUE entry, as_str;
+        as_str = entry = rb_ary_entry(features, i);
+        StringValue(as_str);
+        as_str = rb_fstring(as_str);
+        if (as_str != entry)
+            rb_ary_store(features, i, as_str);
+        features_index_add(box, as_str, INT2FIX(i));
+    }
+    /* The user modified $LOADED_FEATURES, so we should restore the changes. */
+    if (!rb_ary_shared_with_p(features, box->loaded_features)) {
+        rb_ary_replace(box->loaded_features, features);
+    }
+    reset_loaded_features_snapshot(box);
+
+    features = box->loaded_features_snapshot;
+    rb_len_t j = RARRAY_LEN(features);
+    for (i = 0; i < j; i++) {
+        VALUE as_str = rb_ary_entry(features, i);
+        VALUE realpath = rb_hash_aref(previous_realpath_map, as_str);
+        if (NIL_P(realpath)) {
+            realpath = rb_check_realpath(Qnil, as_str, NULL);
+            if (NIL_P(realpath)) realpath = as_str;
+            realpath = rb_fstring(realpath);
+        }
+        rb_hash_aset(realpaths, realpath, Qtrue);
+        rb_hash_aset(realpath_map, as_str, realpath);
+    }
+    return Qnil;
+}
+
 static st_table *
 get_loaded_features_index(const rb_box_t *box)
 {
-    int i;
-    VALUE features = box->loaded_features;
-    const VALUE snapshot = box->loaded_features_snapshot;
-
-    if (!rb_ary_shared_with_p(snapshot, features)) {
+    if (!rb_ary_shared_with_p(box->loaded_features_snapshot, box->loaded_features)) {
         /* The sharing was broken; something (other than us in rb_provide_feature())
            modified loaded_features.  Rebuild the index. */
-        st_foreach(box->loaded_features_index, loaded_features_index_clear_i, 0);
-
-        VALUE realpaths = box->loaded_features_realpaths;
-        VALUE realpath_map = box->loaded_features_realpath_map;
-        VALUE previous_realpath_map = rb_hash_dup(realpath_map);
-        rb_hash_clear(realpaths);
-        rb_hash_clear(realpath_map);
-
-        /* We have to make a copy of features here because the StringValue call
-         * below could call a Ruby method, which could modify $LOADED_FEATURES
-         * and cause it to be corrupt. */
-        features = rb_ary_resurrect(features);
-        for (i = 0; i < RARRAY_LEN(features); i++) {
-            VALUE entry, as_str;
-            as_str = entry = rb_ary_entry(features, i);
-            StringValue(as_str);
-            as_str = rb_fstring(as_str);
-            if (as_str != entry)
-                rb_ary_store(features, i, as_str);
-            features_index_add(box, as_str, INT2FIX(i));
-        }
-        /* The user modified $LOADED_FEATURES, so we should restore the changes. */
-        if (!rb_ary_shared_with_p(features, box->loaded_features)) {
-            rb_ary_replace(box->loaded_features, features);
-        }
-        reset_loaded_features_snapshot(box);
-
-        features = box->loaded_features_snapshot;
-        rb_len_t j = RARRAY_LEN(features);
-        for (i = 0; i < j; i++) {
-            VALUE as_str = rb_ary_entry(features, i);
-            VALUE realpath = rb_hash_aref(previous_realpath_map, as_str);
-            if (NIL_P(realpath)) {
-                realpath = rb_check_realpath(Qnil, as_str, NULL);
-                if (NIL_P(realpath)) realpath = as_str;
-                realpath = rb_fstring(realpath);
-            }
-            rb_hash_aset(realpaths, realpath, Qtrue);
-            rb_hash_aset(realpath_map, as_str, realpath);
-        }
+        load_unstable_begin(box);
+        rb_ensure(rebuild_loaded_features_index, (VALUE)box, load_unstable_end, (VALUE)box);
     }
     return box->loaded_features_index;
 }
@@ -493,6 +544,117 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
     return ST_STOP;
 }
 
+struct features_index_search {
+    const rb_box_t *box;
+    st_table *features_index;
+    VALUE features;
+    VALUE load_path;            /* 0 to expand $LOAD_PATH on demand, or to decline if no_dispatch */
+    const char *feature;
+    const char *ext;
+    rb_len_t len;
+    int type;
+    int rb;
+    int expanded;
+    bool no_dispatch;           /* stop rather than run Ruby code */
+};
+
+/* We search `features` for an entry such that either
+     "#{features[i]}" == "#{load_path[j]}/#{feature}#{e}"
+   for some j, or
+     "#{features[i]}" == "#{feature}#{e}"
+   Here `e` is an "allowed" extension -- either empty or one
+   of the extensions accepted by IS_RBEXT, IS_SOEXT, or
+   IS_DLEXT.  Further, if `ext && rb` then `IS_RBEXT(e)`,
+   and if `ext && !rb` then `IS_SOEXT(e) || IS_DLEXT(e)`.
+
+   If `expanded`, then only the latter form (without load_path[j])
+   is accepted.  Otherwise either form is accepted, *unless* `ext`
+   is false and an otherwise-matching entry of the first form is
+   preceded by an entry of the form
+     "#{features[i2]}" == "#{load_path[j2]}/#{feature}#{e2}"
+   where `e2` matches %r{^\.[^./]*$} but is not an allowed extension.
+   After a "distractor" entry of this form, only entries of the
+   form "#{feature}#{e}" are accepted.
+
+   In `rb_provide_feature()` and `get_loaded_features_index()` we
+   maintain an invariant that the array `this_feature_index` will
+   point to every entry in `features` which has the form
+     "#{prefix}#{feature}#{e}"
+   where `e` is empty or matches %r{^\.[^./]*$}, and `prefix` is empty
+   or ends in '/'.  This includes both match forms above, as well
+   as any distractors, so we may ignore all other entries in `features`.
+
+   Returns the type of the first entry that matches -- 'u', 's' or 'r', as
+   documented on rb_feature_p() -- or 0 if none does, or -1 if `no_dispatch`
+   stopped the search.  `expanded` and `load_path` are in/out: the caller sees
+   whatever the search expanded.
+ */
+static int
+features_index_match(struct features_index_search *search)
+{
+    const char *const feature = search->feature;
+    const rb_len_t len = search->len;
+    VALUE this_feature_index;
+    st_data_t data;
+
+    if (!st_lookup(search->features_index, feature_key(feature, strlen(feature)), &data)) return 0;
+    if (NIL_P(this_feature_index = (VALUE)data)) return 0;
+
+    for (size_t i = 0; ; i++) {
+        long index;
+        VALUE v, p;
+        const char *f, *e;
+        rb_len_t n;
+
+        if (FIXNUM_P(this_feature_index)) {
+            if (i > 0) break;
+            index = FIX2LONG(this_feature_index);
+        }
+        else {
+            feature_indexes_t feature_indexes = (feature_indexes_t)this_feature_index;
+            if (i >= rb_darray_size(feature_indexes)) break;
+            index = rb_darray_get(feature_indexes, i);
+        }
+
+        if (index >= RARRAY_LEN(search->features)) continue;
+        v = RARRAY_AREF(search->features, index);
+        if (search->no_dispatch) {
+            /* StringValue() here could dispatch to_str. */
+            if (!RB_TYPE_P(v, T_STRING)) return -1;
+            f = RSTRING_PTR(v);
+        }
+        else {
+            f = StringValuePtr(v);
+        }
+        if ((n = RSTRING_LEN(v)) < len) continue;
+        if (strncmp(f, feature, len) != 0) {
+            if (search->expanded) continue;
+            if (!search->load_path) {
+                /* Expanding dispatches to_path and hits the filesystem. */
+                if (search->no_dispatch) return -1;
+                search->load_path = get_expanded_load_path((rb_box_t *)search->box);
+            }
+            if (!(p = loaded_feature_path(f, n, feature, len, search->type, search->load_path)))
+                continue;
+            search->expanded = 1;
+            f += RSTRING_LEN(p) + 1;
+        }
+        if (!*(e = f + len)) {
+            if (search->ext) continue;
+            return 'u';
+        }
+        if (*e != '.') continue;
+        if ((!search->rb || !search->ext) && (IS_SOEXT(e) || IS_DLEXT(e))) {
+            return 's';
+        }
+        if ((search->rb || !search->ext) && (IS_RBEXT(e))) {
+            return 'r';
+        }
+    }
+
+    return 0;
+}
+
 /*
  * Returns the type of already provided feature.
  * 'r': ruby script (".rb")
@@ -502,102 +664,47 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
 static int
 rb_feature_p(const rb_box_t *box, const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
-    VALUE features, this_feature_index = Qnil, v, p, load_path = 0;
     const char *f, *e;
-    rb_len_t i, len, elen, n;
-    st_table *loading_tbl, *features_index;
+    rb_len_t i, len;
+    st_table *loading_tbl;
     st_data_t data;
-    st_data_t key;
-    int type;
+    int type, found;
 
     if (fn) *fn = 0;
     if (ext) {
-        elen = strlen(ext);
-        len = strlen(feature) - elen;
+        len = strlen(feature) - strlen(ext);
         type = rb ? 'r' : 's';
     }
     else {
         len = strlen(feature);
-        elen = 0;
         type = 0;
     }
-    features = box->loaded_features;
-    features_index = get_loaded_features_index(box);
 
-    key = feature_key(feature, strlen(feature));
-    /* We search `features` for an entry such that either
-         "#{features[i]}" == "#{load_path[j]}/#{feature}#{e}"
-       for some j, or
-         "#{features[i]}" == "#{feature}#{e}"
-       Here `e` is an "allowed" extension -- either empty or one
-       of the extensions accepted by IS_RBEXT, IS_SOEXT, or
-       IS_DLEXT.  Further, if `ext && rb` then `IS_RBEXT(e)`,
-       and if `ext && !rb` then `IS_SOEXT(e) || IS_DLEXT(e)`.
-
-       If `expanded`, then only the latter form (without load_path[j])
-       is accepted.  Otherwise either form is accepted, *unless* `ext`
-       is false and an otherwise-matching entry of the first form is
-       preceded by an entry of the form
-         "#{features[i2]}" == "#{load_path[j2]}/#{feature}#{e2}"
-       where `e2` matches %r{^\.[^./]*$} but is not an allowed extension.
-       After a "distractor" entry of this form, only entries of the
-       form "#{feature}#{e}" are accepted.
-
-       In `rb_provide_feature()` and `get_loaded_features_index()` we
-       maintain an invariant that the array `this_feature_index` will
-       point to every entry in `features` which has the form
-         "#{prefix}#{feature}#{e}"
-       where `e` is empty or matches %r{^\.[^./]*$}, and `prefix` is empty
-       or ends in '/'.  This includes both match forms above, as well
-       as any distractors, so we may ignore all other entries in `features`.
-     */
-    if (st_lookup(features_index, key, &data) && !NIL_P(this_feature_index = (VALUE)data)) {
-        for (size_t i = 0; ; i++) {
-            long index;
-            if (FIXNUM_P(this_feature_index)) {
-                if (i > 0) break;
-                index = FIX2LONG(this_feature_index);
-            }
-            else {
-                feature_indexes_t feature_indexes = (feature_indexes_t)this_feature_index;
-                if (i >= rb_darray_size(feature_indexes)) break;
-                index = rb_darray_get(feature_indexes, i);
-            }
-
-            if (index >= RARRAY_LEN(features)) continue;
-            v = RARRAY_AREF(features, index);
-            f = StringValuePtr(v);
-            if ((n = RSTRING_LEN(v)) < len) continue;
-            if (strncmp(f, feature, len) != 0) {
-                if (expanded) continue;
-                if (!load_path) load_path = get_expanded_load_path((rb_box_t *)box);
-                if (!(p = loaded_feature_path(f, n, feature, len, type, load_path)))
-                    continue;
-                expanded = 1;
-                f += RSTRING_LEN(p) + 1;
-            }
-            if (!*(e = f + len)) {
-                if (ext) continue;
-                return 'u';
-            }
-            if (*e != '.') continue;
-            if ((!rb || !ext) && (IS_SOEXT(e) || IS_DLEXT(e))) {
-                return 's';
-            }
-            if ((rb || !ext) && (IS_RBEXT(e))) {
-                return 'r';
-            }
-        }
-    }
+    VALUE features = box->loaded_features;
+    st_table *features_index = get_loaded_features_index(box);
+    struct features_index_search search = {
+        .box = box,
+        .features_index = features_index,
+        .features = features,
+        .load_path = 0,
+        .feature = feature,
+        .ext = ext,
+        .len = len,
+        .type = type,
+        .rb = rb,
+        .expanded = expanded,
+        .no_dispatch = false,
+    };
+    if ((found = features_index_match(&search)) != 0) return found;
 
     loading_tbl = box->loading_table;
     f = 0;
-    if (!expanded && !rb_is_absolute_path(feature)) {
+    if (!search.expanded && !rb_is_absolute_path(feature)) {
         struct loaded_feature_searching fs;
         fs.name = feature;
         fs.len = len;
         fs.type = type;
-        fs.load_path = load_path ? load_path : get_expanded_load_path((rb_box_t *)box);
+        fs.load_path = search.load_path ? search.load_path : get_expanded_load_path((rb_box_t *)box);
         fs.result = 0;
         st_foreach(loading_tbl, loaded_feature_path_i, (st_data_t)&fs);
         if ((f = fs.result) != 0) {
@@ -685,6 +792,151 @@ rb_feature_provided(const char *feature, const char **loading)
     return feature_provided(box, feature, loading);
 }
 
+/* Read-only fast path for a non-main Ractor `require`.  True only if the feature is
+ * already loaded and that could be established from this Ractor; false means hand the
+ * require to the main Ractor as usual.  The two reasons for false -- known not loaded,
+ * and cannot tell -- are deliberately not distinguished: loading happens on the main
+ * Ractor either way, so no caller can act on the difference.
+ *
+ * The question to answer is search_required()'s, not feature_provided()'s: only
+ * the matches that make search_required() short-circuit may return 1 here, since
+ * the others go on to consult the filesystem and may still load a file.
+ *
+ * It walks loaded_features_snapshot, not loaded_features: the latter is
+ * $LOADED_FEATURES, which main-Ractor Ruby code can mutate at any time with no lock.
+ * While the two share a backing array the snapshot's reference holds the shared
+ * root's refcnt above one, which rules out rb_ary_cancel_sharing()'s in-place branch
+ * and forces any mutation to copy $LOADED_FEATURES onto a fresh buffer, leaving the
+ * one walked here intact.  Sharing is only ever established straight after the index
+ * is brought in step, so sharing intact also means the index is valid.
+ *
+ * loading_table is deliberately not consulted: a load already in flight misses
+ * the index and takes the slow path, where the main Ractor blocks on the thread
+ * shield as it does today.
+ */
+static bool
+feature_p_ractor_safe(const rb_box_t *box, VALUE features, VALUE load_path,
+                      const char *feature, const char *ext, int rb)
+{
+    struct features_index_search search = {
+        .box = box,
+        .features_index = get_loaded_features_index_raw(box),
+        .features = features,
+        .load_path = load_path,
+        .feature = feature,
+        .ext = ext,
+        .len = ext ? strlen(feature) - strlen(ext) : strlen(feature),
+        .type = ext ? (rb ? 'r' : 's') : 0,
+        .rb = rb,
+        .expanded = 0,
+        .no_dispatch = true,
+    };
+
+    switch (features_index_match(&search)) {
+      case 'r':
+        return true;
+      case 's':
+        /* With a requested extension, search_required() stops at any match.  With
+         * none it stops only at an .rb one and otherwise retries through
+         * rb_find_file_ext(), which can still load a shadowing .rb -- as it does
+         * for Init_pathname()'s rb_provide("pathname.so") plus lib/pathname.rb.
+         * Decline those rather than reporting the feature as loaded. */
+        return ext != NULL;
+      case 'u':
+      case 0:
+      default:
+        return false;
+    }
+}
+
+/* See feature_p_ractor_safe() for the contract and what makes this safe. */
+bool
+rb_feature_provided_ractor_safe(VALUE fname)
+{
+    const rb_box_t *box = rb_current_box();
+
+    // The hand-off runs on a fresh main-Ractor thread, so require_internal() there
+    // resolves rb_loading_box() to the main box, not to this one.
+    // TODO: figure out box cross-ractor box require
+    if (rb_box_available() && box != rb_main_box()) return false;
+
+    /* require_internal() converts before search_required(), and it is the converted
+     * name that lands in $LOADED_FEATURES, so compare against that.  Convert here
+     * rather than under the VM lock below: loading a transcoder would require(). */
+    fname = rb_str_encode_ospath(fname);
+
+    const char *feature = RSTRING_PTR(fname);
+    rb_len_t flen = RSTRING_LEN(fname);
+    const char *ext;
+    bool provided = false;
+
+    if (flen == 0 || strlen(feature) != (size_t)flen) return false;
+    if (feature[0] == '.' &&
+        (feature[1] == '/' || strncmp(feature + 1, "./", 2) == 0)) {
+        /* feature_provided() expands these against Dir.pwd. */
+        return false;
+    }
+
+    ext = strrchr(feature, '.');
+    if (ext && (strchr(ext, '/') ||
+                (!IS_RBEXT(ext) && !IS_SOEXT(ext) && !IS_DLEXT(ext)))) {
+        ext = NULL;
+    }
+
+    RB_VM_LOCKING() {
+        /* Non-atomic reads of possibly mutating objects: main-Ractor Ruby code can
+         * mutate $LOADED_FEATURES and $LOAD_PATH with no lock.  Only header words are
+         * read -- flags, shared root, length -- never the live buffer, so a torn read
+         * costs at worst the fast path or a stale answer, never memory safety. */
+        if (box->load_unstable_depth == 0 &&
+            RTEST(rb_ary_shared_with_p(box->loaded_features_snapshot, box->loaded_features))) {
+            /* A stale expanded load path only rules out the matches that need one.
+             * Pass 0 and let features_index_match() decline if it has to expand. */
+            VALUE load_path = expanded_load_path_current_p(box) ?
+                              box->expanded_load_path : 0;
+            provided = feature_p_ractor_safe(box, box->loaded_features_snapshot,
+                                             load_path, feature, ext,
+                                             ext ? IS_RBEXT(ext) : TRUE);
+        }
+    }
+
+    RB_GC_GUARD(fname);
+    return provided;
+}
+
+struct provide_feature_args {
+    const rb_box_t *box;
+    VALUE features;
+    VALUE feature;
+    unsigned int lev;
+};
+
+static VALUE
+provide_feature_locked(VALUE argp)
+{
+    const struct provide_feature_args *args = (struct provide_feature_args *)argp;
+    const rb_box_t *box = args->box;
+    VALUE features = args->features;
+
+    // If loaded_features and loaded_features_snapshot share the same backing
+    // array, pushing into it would cause the whole array to be copied.
+    // To avoid this we first clear loaded_features_snapshot.
+    rb_ary_clear(box->loaded_features_snapshot);
+    rb_ary_push(features, args->feature);
+    features_index_add(box, args->feature, INT2FIX(RARRAY_LEN(features)-1));
+    reset_loaded_features_snapshot(box);
+    return Qnil;
+}
+
+static VALUE
+provide_feature_unlock(VALUE argp)
+{
+    struct provide_feature_args *args = (struct provide_feature_args *)argp;
+
+    RB_VM_LOCK_LEAVE_LEV(&args->lev);
+    return Qnil;
+}
+
 static void
 rb_provide_feature(const rb_box_t *box, VALUE feature)
 {
@@ -698,13 +950,20 @@ rb_provide_feature(const rb_box_t *box, VALUE feature)
     feature = rb_fstring(feature);
 
     get_loaded_features_index(box);
-    // If loaded_features and loaded_features_snapshot share the same backing
-    // array, pushing into it would cause the whole array to be copied.
-    // To avoid this we first clear loaded_features_snapshot.
-    rb_ary_clear(box->loaded_features_snapshot);
-    rb_ary_push(features, feature);
-    features_index_add(box, feature, INT2FIX(RARRAY_LEN(features)-1));
-    reset_loaded_features_snapshot(box);
+
+    /* rb_ary_push() still raises FrozenError if $LOADED_FEATURES was frozen after
+     * the check above, and every call here can raise NoMemoryError.  Leave the
+     * lock from an ensure rather than with RB_VM_LOCKING(), whose leave sits in a
+     * for-increment that a longjmp skips.  Enter before rb_ensure() so the tag it
+     * pushes records the level with the lock held, otherwise unwinding would
+     * release it and provide_feature_unlock() would release it again. */
+    struct provide_feature_args args = {
+        .box = box,
+        .features = features,
+        .feature = feature,
+    };
+    RB_VM_LOCK_ENTER_LEV(&args.lev);
+    rb_ensure(provide_feature_locked, (VALUE)&args, provide_feature_unlock, (VALUE)&args);
 }
 
 void
