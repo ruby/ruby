@@ -2915,6 +2915,8 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
     return ruby_num_interval_step_size(from, to, step, FALSE);
 }
 
+static VALUE num_step_kw(int kw_flag, int argc, VALUE *argv, VALUE from);
+
 /*
  *  call-seq:
  *    step(to = nil, by = 1) {|n| ... } ->  self
@@ -3012,6 +3014,12 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  */
 
 static VALUE
+num_step(int argc, VALUE *argv, VALUE from)
+{
+    return num_step_kw(RB_SCAN_ARGS_PASS_CALLED_KEYWORDS, argc, argv, from);
+}
+
+static VALUE
 num_step_kw(int kw_flag, int argc, VALUE *argv, VALUE from)
 {
     VALUE to, step;
@@ -3086,12 +3094,6 @@ num_step_kw(int kw_flag, int argc, VALUE *argv, VALUE from)
         }
     }
     return from;
-}
-
-static VALUE
-num_step(int argc, VALUE *argv, VALUE from)
-{
-    return num_step_kw(RB_SCAN_ARGS_PASS_CALLED_KEYWORDS, argc, argv, from);
 }
 
 /* The general case of the Ruby Numeric#step defined when a JIT is enabled */
