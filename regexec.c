@@ -1911,6 +1911,7 @@ static int string_cmp_ic(OnigEncoding enc, int case_fold_flag,
   s2   = *ps2;
   end1 = s1 + mblen;
   while (s1 < end1) {
+    if (s2 >= text_end) return 0;
     len1 = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &s1, text_end, buf1);
     len2 = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &s2, text_end, buf2);
     if (len1 != len2) return 0;
