@@ -2321,16 +2321,22 @@ match_to_a(VALUE match)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    captures -> array
  *
- *  Returns the array of captures,
- *  which are all matches except <tt>m[0]</tt>:
+ *  Returns an array of the captured substrings,
+ *  including all except the entire matched substring:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m[0]       # => "HX1138"
- *    m.captures # => ["H", "X", "113", "8"]
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.captures # => ["2026", "12", "25"]
+ *  match[1..]     # => ["2026", "12", "25"]  # Included in array.
+ *  match[0]       # => "2026-12-25"          # Not included in array.
+ *  ```
  *
  *  Related: MatchData.to_a.
  *
