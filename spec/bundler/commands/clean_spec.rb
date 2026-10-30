@@ -687,6 +687,61 @@ RSpec.describe "bundle clean" do
     should_have_gems "foo-1.0", "foo-1.0.1"
   end
 
+  it "only warns when bundle install cannot clean an unused gem", :permissions do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "foo"
+      gem "myrack"
+    G
+    bundle_config "path vendor/bundle"
+    bundle_config "clean true"
+    bundle "install"
+
+    stale_gem_path = vendored_gems("gems/foo-1.0")
+    FileUtils.chmod(0o500, stale_gem_path)
+
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack"
+    G
+    bundle "install"
+
+    expect(err).to include(stale_gem_path.to_s)
+    expect(stale_gem_path).to exist
+  ensure
+    FileUtils.chmod(0o755, stale_gem_path) if stale_gem_path&.exist?
+  end
+
+  it "only warns when bundle update cannot clean an unused gem", :permissions do
+    build_repo2
+
+    gemfile <<-G
+      source "https://gem.repo2"
+
+      gem "foo"
+    G
+    bundle_config "path vendor/bundle"
+    bundle_config "clean true"
+    bundle "install"
+
+    update_repo2 do
+      build_gem "foo", "1.0.1"
+    end
+
+    stale_gem_path = vendored_gems("gems/foo-1.0")
+    FileUtils.chmod(0o500, stale_gem_path)
+
+    bundle :update, all: true
+
+    expect(err).to include(stale_gem_path.to_s)
+    expect(vendored_gems("gems/foo-1.0.1")).to exist
+    expect(stale_gem_path).to exist
+  ensure
+    FileUtils.chmod(0o755, stale_gem_path) if stale_gem_path&.exist?
+  end
+
   it "does not clean on bundle update when installing to system gems" do
     bundle_config "path.system true"
 

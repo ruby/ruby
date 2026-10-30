@@ -18,6 +18,14 @@ module Bundler
       Bundler::CLI::Common.prune(options)
     end
 
+    # Cleaning is incidental to install and update, so leftovers must not fail
+    # a command that installed everything it was asked to.
+    def run_after_install
+      run
+    rescue CleanError => e
+      Bundler.ui.warn e.message
+    end
+
     protected
 
     def require_path_or_force
