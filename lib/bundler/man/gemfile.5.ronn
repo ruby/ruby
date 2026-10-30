@@ -555,6 +555,11 @@ files in your test code as you would if the project were installed as a gem; you
 need not manipulate the load path manually or require project files via relative
 paths.
 
+When `gemspec` is called inside a `group` block, the gem requirement on your
+project goes into that group instead of the default group. Development
+dependencies stay in the `development` group. An enclosing `platforms` or
+`install_if` block applies to the project and its development dependencies alike.
+
 The `gemspec` method supports optional `:path`, `:glob`, `:name`, and `:development_group`
 options, which control where bundler looks for the `.gemspec`, the glob it uses to look
 for the gemspec (defaults to: `{,*,*/*}.gemspec`), what named `.gemspec` it uses
