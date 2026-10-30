@@ -131,7 +131,11 @@ Init_enc_set_filesystem_encoding(void)
 #elif defined __CYGWIN__
     idx = ENCINDEX_UTF_8;
 #else
-    idx = rb_enc_to_index(rb_default_external_encoding());
+    rb_encoding *enc = rb_default_external_encoding();
+    /* File paths are byte strings. An ASCII-incompatible encoding such as
+     * UTF-16 can't describe them, so fall back to the locale. */
+    if (!rb_enc_asciicompat(enc)) enc = rb_locale_encoding();
+    idx = rb_enc_asciicompat(enc) ? rb_enc_to_index(enc) : ENCINDEX_ASCII_8BIT;
 #endif
     return idx;
 }
