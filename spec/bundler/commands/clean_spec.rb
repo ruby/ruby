@@ -46,12 +46,14 @@ RSpec.describe "bundle clean" do
     expect(vendored_gems("bin/myrackup")).to exist
   end
 
-  it "reports an error when an unused gem directory cannot be removed", :permissions do
+  it "removes what it can and reports every unused gem directory it cannot remove", :permissions do
     gemfile <<-G
       source "https://gem.repo1"
 
       gem "foo"
       gem "myrack"
+      gem "thin"
+      gem "weakling"
     G
 
     bundle_config "path vendor/bundle"
@@ -65,17 +67,21 @@ RSpec.describe "bundle clean" do
     G
     bundle "install"
 
-    stale_gem_path = vendored_gems("gems/foo-1.0")
-    FileUtils.chmod(0o500, stale_gem_path)
+    stale_gem_paths = [vendored_gems("gems/foo-1.0"), vendored_gems("gems/weakling-0.0.3")]
+    FileUtils.chmod(0o500, stale_gem_paths)
 
     bundle :clean, raise_on_error: false
 
-    expect(exitstatus).to eq(23)
-    expect(err).to include(stale_gem_path.to_s)
+    expect(exitstatus).to eq(44)
+    expect(err).to include(stale_gem_paths[0].to_s).and include(stale_gem_paths[1].to_s)
     expect(err).to include("grant write permissions")
-    expect(stale_gem_path).to exist
+    expect(out).to include("Removing thin (1.0)")
+    expect(out).not_to include("Removing foo")
+    expect(out).not_to include("Removing weakling")
+    should_not_have_gems "thin-1.0"
+    expect(stale_gem_paths).to all(exist)
   ensure
-    FileUtils.chmod(0o755, stale_gem_path) if stale_gem_path&.exist?
+    FileUtils.chmod(0o755, stale_gem_paths.select(&:exist?)) if stale_gem_paths
   end
 
   it "treats an unused gem directory that disappears before removal as removed" do
@@ -715,11 +721,11 @@ RSpec.describe "bundle clean" do
 
       bundle :clean, force: true, raise_on_error: false
 
-      expect(err).to include(system_gem_path.to_s)
+      expect(err).to include(system_cache_path.to_s)
       expect(err).to include("grant write permissions")
 
       installed_gems_list
-      expect(out).to include("foo (1.0)")
+      expect(out).not_to include("foo (1.0)")
       expect(out).to include("myrack (1.0.0)")
     end
   end
