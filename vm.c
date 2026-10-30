@@ -3078,6 +3078,9 @@ zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cf
                         stack = base_ptr + stack_size;
                         break;
                       }
+                      default:
+                        rb_bug("unknown ZJIT stackmap opcode: %u", op);
+                        break;
                     }
                 }
 #undef WRITE_ONE
