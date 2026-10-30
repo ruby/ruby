@@ -258,8 +258,6 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_object_inspect_external
-    omit "https://bugs.ruby-lang.org/issues/18338"
-
     o = Object.new
 
     EnvUtil.with_default_external(Encoding::UTF_16BE) do
