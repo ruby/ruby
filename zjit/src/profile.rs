@@ -251,7 +251,7 @@ fn profile_invokesuper(profiler: &mut Profiler, profile: &mut IseqProfile) {
     let argc = num_arguments_on_stack(cd);
 
     // Profile all the arguments and self (+1).
-    profile_operands(profiler, profile, (argc + 1) as usize);
+    profile_operands(profiler, profile, argc + 1);
     profile_splat_length(profiler, profile, unsafe { (*cd).ci });
 }
 
