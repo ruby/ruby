@@ -195,7 +195,7 @@ impl BasicBlock {
     pub fn successors(&self) -> impl DoubleEndedIterator<Item = BlockId> + '_ {
         // Stub blocks (from new_block_without_id) have no real CFG structure.
         if self.rpo_index == DUMMY_RPO_INDEX {
-            return None.into_iter().chain(None.into_iter());
+            return None.into_iter().chain(None);
         }
         assert!(self.insns.last().unwrap().is_terminator());
         let extract_target = |insn: &Insn| -> Option<BlockId> {
@@ -215,7 +215,7 @@ impl BasicBlock {
                 (extract_target(last), None)
             }
         };
-        succ1.into_iter().chain(succ2.into_iter())
+        succ1.into_iter().chain(succ2)
     }
 
     /// Sort key for scheduling blocks in code layout order
@@ -2646,7 +2646,7 @@ impl Assembler
             let mut new_insns = Vec::with_capacity(old_insns.len());
             let mut new_ids = Vec::with_capacity(old_ids.len());
 
-            for (insn, insn_id) in old_insns.into_iter().zip(old_ids.into_iter()) {
+            for (insn, insn_id) in old_insns.into_iter().zip(old_ids) {
                 if let Insn::CCall { data } = insn {
                     let CCallData { opnds, stack_map, out, start_marker, end_marker, fptr } = *data;
                     let insn_number = insn_id.map(|id| id.0).unwrap_or(0);
