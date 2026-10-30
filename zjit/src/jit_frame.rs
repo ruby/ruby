@@ -238,6 +238,10 @@ impl JITFrame {
     /// Install a stack map built from [Self::stack_map_writer].
     pub fn set_stack_map(&mut self, writer: StackMapWriter) {
         debug_assert_eq!(writer.bytes.first().map(|byte| byte & 1 != 0), Some(self.materialize_block_code()));
+        // Avoid allocating memory more than once for the same stack map
+        if EMPTY_STACK_MAPS.iter().all(|empty| !ptr::eq(self.stack_map, empty)) {
+            return;
+        }
         let bytes = writer.finish();
         let stack_map = alloc_jit_frame_memory(Layout::array::<u8>(bytes.len()).unwrap());
         unsafe { ptr::copy_nonoverlapping(bytes.as_ptr(), stack_map, bytes.len()); }

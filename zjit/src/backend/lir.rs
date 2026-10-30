@@ -3178,6 +3178,7 @@ impl Assembler
                         }
                     }
 
+                    // TODO(alan): change this to not compile_exit() on the same exit twice.
                     if should_record_exit {
                         compile_exit(self, &exit, Some(reason));
                     } else {
