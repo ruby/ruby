@@ -321,7 +321,8 @@ struct rb_calling_info {
 #define VM_ARGC_STACK_MAX 128
 #endif
 
-#define VM_KW_SPECIFIED_BITS_MAX (32-1) /* TODO: 32 -> Fixnum's max bits */
+/* the bits of a Fixnum that is not negative */
+#define VM_KW_SPECIFIED_BITS_MAX (SIZEOF_LONG * CHAR_BIT - 2)
 
 # define CALLING_ARGC(calling) ((calling)->heap_argv ? RARRAY_LENINT((calling)->heap_argv) : (calling)->argc)
 

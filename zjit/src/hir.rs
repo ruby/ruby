@@ -2776,6 +2776,11 @@ pub enum ValidationError {
 }
 
 /// Set of flags incompatible with direct sends to forwardable callees.
+/// The number of keywords up to which `kw_bits` is used. The interpreter keeps
+/// the unspecified bits in a Fixnum for more keywords than this, up to
+/// VM_KW_SPECIFIED_BITS_MAX, but `kw_bits` is a u32.
+const KW_SPECIFIED_BITS_MAX: u32 = 31;
+
 const FORWARDABLE_CALLEE_BLOCKERS: u32 =
     // `gen_send_iseq_direct` currently handles only the interpreter's `vm_call_iseq_forwardable`
     // fastpath case on forwardable ISEQs: pass non-`...` arguments to a `...` callee, which sets
@@ -4464,9 +4469,9 @@ impl Function {
         let caller_kw_count = if kwarg.is_null() { 0 } else { (unsafe { get_cikw_keyword_len(kwarg) }) as usize };
         let callee_kw_count = unsafe { (*callee_keyword).num } as usize;
 
-        // When there are 31+ keywords, CRuby uses a hash instead of a fixnum bitmask
-        // for kw_bits. Fall back to VM dispatch for this rare case.
-        if callee_kw_count >= VM_KW_SPECIFIED_BITS_MAX as usize {
+        // When there are 31+ keywords, kw_bits does not fit in u32, or CRuby uses a set
+        // instead of a fixnum bitmask. Fall back to VM dispatch for this rare case.
+        if callee_kw_count >= KW_SPECIFIED_BITS_MAX as usize {
             return Err(SendDirectTooManyKeywords);
         }
 
@@ -9797,10 +9802,10 @@ fn add_iseq_to_hir(
                     }
                 }
                 YARVINSN_checkkeyword => {
-                    // When a keyword is unspecified past index 32, a hash will be used instead.
-                    // This can only happen in iseqs taking more than 32 keywords.
-                    // In this case, we side exit to the interpreter.
-                    if unsafe {(*rb_get_iseq_body_param_keyword(iseq)).num >= VM_KW_SPECIFIED_BITS_MAX.try_into().unwrap()} {
+                    // When a keyword is unspecified past index 32, the bits do not fit in u32,
+                    // or a set will be used instead. This can only happen in iseqs taking more
+                    // than 32 keywords. In this case, we side exit to the interpreter.
+                    if unsafe {(*rb_get_iseq_body_param_keyword(iseq)).num >= KW_SPECIFIED_BITS_MAX.try_into().unwrap()} {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::TooManyKeywordParameters), recompile: None });
                         break;
                     }
