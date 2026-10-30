@@ -200,6 +200,10 @@ pub struct Options {
     /// cap exists to bound compile time when something pathological prevents the
     /// loop from reaching a fixed point.
     pub inline_max_iterations: InlineDepth,
+
+    /// When true, put no code in exit trampolines to increment [`Counter::side_exit_count`].
+    /// Ignored when `--zjit-stats` so full set of counters are available.
+    pub no_exit_counting: bool,
 }
 
 impl Default for Options {
@@ -237,6 +241,7 @@ impl Default for Options {
             inline_budget: DEFAULT_INLINE_BUDGET as InlineBudget,
             inline_deny: HashSet::new(),
             inline_max_iterations: DEFAULT_INLINE_MAX_ITERATIONS,
+            no_exit_counting: false,
         }
     }
 }
@@ -667,6 +672,10 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 .ok();
             let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
             options.log_compiled_iseqs = Some(opt_val);
+        }
+
+        ("no-exit-counting", "") => {
+            options.no_exit_counting = true;
         }
 
         _ => return None, // Option name not recognized
