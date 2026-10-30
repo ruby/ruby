@@ -60,6 +60,16 @@ class TestArray < Test::Unit::TestCase
     assert_equal(20, x.pop)
   end
 
+  def test_add
+    a = @cls[1, 2, 3]
+    assert_equal(4, a.add(4))
+    assert_equal(@cls[1, 2, 3, 4], a)
+    assert_equal(nil, a.add(nil))
+    assert_equal(@cls[1, 2, 3, 4, nil], a)
+    assert_equal(@cls[1, 2], a.add(@cls[1, 2]))
+    assert_equal(@cls[1, 2, 3, 4, nil, @cls[1, 2]], a)
+  end
+
   def test_array_andor_0
     assert_equal([2], ([1,2,3]&[2,4,6]))
     assert_equal([1,2,3,4,6], ([1,2,3]|[2,4,6]))
