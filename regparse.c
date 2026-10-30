@@ -1156,6 +1156,7 @@ scan_env_clear(ScanEnv* env)
   env->has_recursion       = 0;
 #endif
   env->parse_depth         = 0;
+  env->cclass_size         = 0;
   env->warnings_flag       = 0;
 }
 
@@ -4523,6 +4524,20 @@ fetch_char_property_to_ctype(UChar** src, UChar* end, ScanEnv* env)
 
 static int cclass_case_fold(Node** np, CClassNode* cc, CClassNode* asc_cc, ScanEnv* env);
 
+/* The multi-byte ranges of a character class are copied into the compiled
+   program, so give up once their total alone exceeds the program size limit,
+   instead of building a huge tree only to fail in the compiler. */
+static int
+count_cclass_size(CClassNode* cc, ScanEnv* env)
+{
+  if (IS_NOT_NULL(cc->mbuf)) {
+    env->cclass_size += cc->mbuf->used;
+    if (env->cclass_size > MAX_COMPILED_PROGRAM_SIZE)
+      return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+  }
+  return 0;
+}
+
 static int
 parse_char_property(Node** np, OnigToken* tok, UChar** src, UChar* end,
                     ScanEnv* env)
@@ -4543,8 +4558,9 @@ parse_char_property(Node** np, OnigToken* tok, UChar** src, UChar* end,
   if (IS_IGNORECASE(env->option)) {
     if (ctype != ONIGENC_CTYPE_ASCII)
       r = cclass_case_fold(np, cc, cc, env);
+    if (r != 0) return r;
   }
-  return r;
+  return count_cclass_size(cc, env);
 }
 
 
@@ -6542,6 +6558,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
               IS_ASCII_RANGE(env->option), env);
           if (r != 0) return r;
           if (tok->u.prop.not != 0) NCCLASS_SET_NOT(cc);
+          r = count_cclass_size(cc, env);
+          if (r != 0) return r;
         }
         break;
 
@@ -6587,6 +6605,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
         }
       }
       onig_node_free(asc_node);
+      r = count_cclass_size(cc, env);
+      if (r != 0) return r;
     }
     break;
 

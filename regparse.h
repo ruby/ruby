@@ -319,6 +319,7 @@ typedef struct {
   int has_recursion;
 #endif
   unsigned int parse_depth;
+  OnigDistance cclass_size; /* total size of the multi-byte ranges in classes */
   int warnings_flag;
 #ifdef RUBY
   const char* sourcefile;
