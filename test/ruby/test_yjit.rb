@@ -1046,6 +1046,82 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_super_class_receiver
+    assert_compiles(<<~'RUBY', insns: %i[invokesuper], result: [22, 37], no_send_fallbacks: true)
+      class Parent
+        def self.foo(n) = n * 7 + marker
+      end
+
+      class Child < Parent
+        def self.marker = 5
+        def self.foo(n) = super(n) + 3
+      end
+
+      class Grandchild < Child
+        def self.marker = 13
+      end
+
+      [Child.foo(2), Grandchild.foo(3)]
+    RUBY
+  end
+
+  def test_super_module_receiver
+    assert_compiles(<<~'RUBY', insns: %i[invokesuper], result: [17, 38], no_send_fallbacks: true)
+      module Base
+        def foo(n) = n * 7
+      end
+
+      module Copied
+        include Base
+        extend Base
+        def foo(n) = super(n) + 3
+        module_function :foo
+      end
+
+      module Wrapper
+        def foo(n) = super(n) + 7
+      end
+      Copied.singleton_class.prepend(Wrapper)
+
+      [Copied.foo(1), Copied.foo(4)]
+    RUBY
+  end
+
+  def test_super_class_receiver_rebound_block
+    assert_compiles(<<~'RUBY', result: [7, 7, :wrong_type], exits: :any)
+      class Parent
+        def self.foo = 7
+      end
+
+      class Child < Parent
+        def self.foo = proc { super() }
+      end
+
+      block = Child.foo
+      results = Array.new(2) { Child.instance_exec(&block) }
+      begin
+        Class.new.instance_exec(&block)
+      rescue TypeError
+        results << :wrong_type
+      end
+      results
+    RUBY
+  end
+
+  def test_super_singleton_object_receiver
+    stats = assert_compiles(<<~'RUBY', result: 17)
+      class Parent
+        def foo(n) = n * 7
+      end
+
+      obj = Parent.new
+      def obj.foo(n) = super(n) + 3
+      obj.foo(2)
+    RUBY
+
+    assert_equal(1, stats[:invokesuper_singleton_class]) if stats[:all_stats]
+  end
+
   def test_super_bmethod
     # Bmethod defined at class scope
     assert_compiles(<<~'RUBY', insns: %i[invokesuper], result: true, exits: {})

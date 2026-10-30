@@ -10135,8 +10135,13 @@ fn gen_invokesuper_specialized(
         return None;
     }
 
-    // Don't compile `super` on objects with singleton class to avoid retaining the receiver.
-    if VALUE(0) != unsafe { FL_TEST(comptime_recv.class_of(), VALUE(RUBY_FL_SINGLETON as usize)) } {
+    // Avoid retaining singleton receivers, with the same Class/Module exemption
+    // as ordinary sends. Restrict the exemption to method ISEQs because blocks
+    // can rebind self without changing the current method entry.
+    if VALUE(0) != unsafe { FL_TEST(comptime_recv.class_of(), VALUE(RUBY_FL_SINGLETON as usize)) }
+        && !(unsafe { rb_get_iseq_body_type(jit.iseq) } == ISEQ_TYPE_METHOD
+            && (unsafe { RB_TYPE_P(comptime_recv, RUBY_T_CLASS) }
+                || unsafe { RB_TYPE_P(comptime_recv, RUBY_T_MODULE) })) {
         gen_counter_incr(jit, asm, Counter::invokesuper_singleton_class);
         return None;
     }
