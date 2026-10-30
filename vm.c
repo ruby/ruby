@@ -727,6 +727,7 @@ bool ruby_vm_keep_script_lines;
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
 RB_THREAD_LOCAL_SPECIFIER rb_execution_context_t *ruby_current_ec;
+RUBY_DEBUG_EXPORT_TLS(ruby_debug_current_ec, ruby_current_ec)
 
 #ifdef RUBY_NT_SERIAL
 RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
@@ -2972,6 +2973,7 @@ vm_exec(rb_execution_context_t *ec)
     EC_POP_TAG();
     return result;
 }
+RUBY_DEBUG_EXPORT(ruby_debug_vm_exec, vm_exec)
 
 static inline VALUE
 vm_exec_loop(rb_execution_context_t *ec, enum ruby_tag_type state,
