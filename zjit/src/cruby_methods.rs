@@ -1029,10 +1029,6 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
     //     Embeddedness depends only on the member count. See struct_embedded_p and struct_alloc.
     if !unsafe { rb_zjit_struct_embedded_p(num_members) } { return None; }
 
-    // We know it's going to fit into an i32 since we checked that the total number of fields was
-    // in [0, MEMBER_LIMIT).
-    let base_offset: i32 = RUBY_OFFSET_RSTRUCT_AS_ARY.try_into().ok()?;
-
     // #initialize calls rb_struct_modify
     fun.guard_not_frozen(block, recv, state);
 
@@ -1044,7 +1040,7 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
             // Name the slots after their members so these stores line up with the LoadFields that
             // the struct reader methods compile to.
             let id = unsafe { rb_zjit_struct_member_id(class, index) }.into();
-            let offset = base_offset + SIZEOF_VALUE_I32 * index as i32;
+            let offset = RUBY_OFFSET_RSTRUCT_AS_ARY + SIZEOF_VALUE_I32 * index as i32;
             match args.get(index as usize) {
                 Some(&val) => {
                     fun.push_insn(block, hir::Insn::StoreField { recv, id, offset, val, num_bits });

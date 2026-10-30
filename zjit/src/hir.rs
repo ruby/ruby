@@ -2500,7 +2500,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 // op_type (enum defined_type) printing logic from iseq.c.
                 // Not sure why rb_iseq_defined_string() isn't exhaustive.
                 write!(f, "Defined ")?;
-                let op_type = *op_type as u32;
+                let op_type = *op_type;
                 if op_type == DEFINED_FUNC {
                     write!(f, "func")?;
                 } else if op_type == DEFINED_REF {
@@ -5360,7 +5360,7 @@ impl Function {
                                     self.make_equal_to(insn_id, replacement);
                                 },
                                 _ => {
-                                    self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodTypeOptimized(OptimizedMethodType::from(opt_type)));
+                                    self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodTypeOptimized(opt_type));
                                     self.push_insn_id(block, insn_id); continue;
                                 },
                             };
@@ -6289,7 +6289,7 @@ impl Function {
     }
 
     fn load_shape(&mut self, block: BlockId, recv: InsnId) -> InsnId {
-        self.load_field(block, recv, FieldName::shape_id, unsafe { rb_shape_id_offset() } as i32, types::CShape)
+        self.load_field(block, recv, FieldName::shape_id, unsafe { rb_shape_id_offset() }, types::CShape)
     }
 
     fn guard_shape(&mut self, block: BlockId, val: InsnId, expected: ShapeId, state: InsnId, recompile: Option<Recompile>) -> InsnId {
@@ -7054,7 +7054,7 @@ impl Function {
                         let recv_type = self.type_of(recv);
                         match recv_type.ruby_object() {
                             Some(recv_obj) if recv_obj.is_frozen() => {
-                                let recv_ptr = recv_obj.as_ptr() as *const u32;
+                                let recv_ptr: *const u32 = recv_obj.as_ptr();
                                 let val = unsafe { recv_ptr.byte_add(offset).read() };
                                 self.new_insn(Insn::Const { val: Const::CShape(ShapeId(val)) })
                             }
@@ -10352,7 +10352,7 @@ fn add_iseq_to_hir(
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SendWhileTracing), recompile: None });
                         break;
                     }
-                    let args = state.stack_pop_n(argc as usize)?;
+                    let args = state.stack_pop_n(argc)?;
                     let recv = state.stack_pop()?;
                     let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args, caller_splat_length: None, state: exit_id, reason: Uncategorized(opcode.into()) });
                     state.stack_push(send);
@@ -10481,7 +10481,7 @@ fn add_iseq_to_hir(
                         break;
                     }
 
-                    let args = state.stack_pop_n(argc as usize)?;
+                    let args = state.stack_pop_n(argc)?;
                     let recv = state.stack_pop()?;
                     let lengths = fun.caller_splat_lengths(call_info, recv, exit_id, &profiles);
                     let caller_splat_length = if lengths.len() == 1 { Some(lengths[0]) } else { None };

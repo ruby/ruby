@@ -1532,7 +1532,7 @@ fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: O
         if wb_offset >= 0 {
             let flags = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS));
             let old_or_shareable = asm.and(flags, Opnd::UImm((RUBY_FL_PROMOTED | RUBY_FL_SHAREABLE) as u64));
-            let thread = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR as i32));
+            let thread = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR));
             let ractor = asm.load(Opnd::mem(64, thread, RUBY_OFFSET_THREAD_RACTOR as i32));
             let objspace = asm.load(Opnd::mem(64, ractor, unsafe { rb_zjit_runtime_offsets.ractor_objspace }));
             let marking = asm.load(Opnd::mem(8, objspace, wb_offset));
@@ -1805,7 +1805,7 @@ fn gen_push_inline_frame(
     asm_comment!(asm, "switch to inlined callee CFP");
     let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, new_cfp);
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 }
 
 /// Pop the interpreter frame for an inlined callee, restoring the caller's SP and CFP.
@@ -1823,7 +1823,7 @@ fn gen_pop_inline_frame(
 
     asm_comment!(asm, "restore caller CFP after inline");
     asm.add_into(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 }
 
 /// Compile a direct call to an ISEQ method.
