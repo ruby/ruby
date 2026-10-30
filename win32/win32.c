@@ -511,7 +511,7 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
 /*
   Return user's home directory using environment variables combinations.
   Memory allocated by this function should be manually freed
-  afterwards with xfree.
+  afterwards with free.
 
   Try:
   HOME, USERPROFILE, HOMEDRIVE + HOMEPATH environment variables
