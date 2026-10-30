@@ -415,6 +415,13 @@ class TestString < Test::Unit::TestCase
     r = S("").force_encoding(Encoding::UTF_16BE).center(1000, "a")
     assert_equal(Encoding::UTF_8, r.encoding)
     assert_equal("a" * 1000, r.b)
+    assert_equal(S("  こんにちは   "), S("こんにちは").center(10))
+    assert_equal(S("hello"), S("hello").center(-10))
+
+    str = S("hello")
+    assert_not_same(str, str.center(5))
+
+    assert_raise(ArgumentError) { S("hello").center(10, "") }
   end
 
   def test_chomp
@@ -1928,6 +1935,14 @@ class TestString < Test::Unit::TestCase
     r = S("").force_encoding(Encoding::UTF_16BE).ljust(1000, "a")
     assert_equal(Encoding::UTF_8, r.encoding)
     assert_equal("a" * 1000, r.b)
+    assert_equal(S("helloababa"), S("hello").ljust(10, "ab"))
+    assert_equal(S("こんにちは     "), S("こんにちは").ljust(10))
+    assert_equal(S("hello"), S("hello").ljust(-10))
+
+    str = S("hello")
+    assert_not_same(str, str.ljust(5))
+
+    assert_raise(ArgumentError) { S("hello").ljust(10, "") }
   end
 
   def test_next
@@ -2121,6 +2136,14 @@ class TestString < Test::Unit::TestCase
     r = S("").force_encoding(Encoding::UTF_16BE).rjust(1000, "a")
     assert_equal(Encoding::UTF_8, r.encoding)
     assert_equal("a" * 1000, r.b)
+    assert_equal(S("ababahello"), S("hello").rjust(10, "ab"))
+    assert_equal(S("     こんにちは"), S("こんにちは").rjust(10))
+    assert_equal(S("hello"), S("hello").rjust(-10))
+
+    str = S("hello")
+    assert_not_same(str, str.rjust(5))
+
+    assert_raise(ArgumentError) { S("hello").rjust(10, "") }
   end
 
   def test_scan
