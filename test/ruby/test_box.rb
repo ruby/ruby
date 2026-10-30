@@ -526,6 +526,15 @@ class TestBox < Test::Unit::TestCase
       assert_equal d, Ractor.new(d) {|x| x }.value
     end;
   end
+
+  def test_require_in_ractor_in_main_box
+    # --enable=gems because the require reaches RubyGems' require without the delegation,
+    # and assert_separately runs with --disable=gems.
+    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems", "-W:no-experimental"], "#{<<~"begin;"}\n#{<<~'end;'}", [":ok"], [])
+    begin;
+      p Ractor.new { require "json"; :ok }.value
+    end;
+  end
 end
 
 class TestBoxDescendantsMain
