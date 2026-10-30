@@ -2952,10 +2952,6 @@ fiber_store(rb_fiber_t *next_fiber, rb_thread_t *th)
 {
     rb_fiber_t *fiber = th->ec->fiber_ptr;
 
-    if (FIBER_CREATED_P(next_fiber)) {
-        fiber_prepare_stack(next_fiber);
-    }
-
     VM_ASSERT(FIBER_RESUMED_P(fiber) || FIBER_TERMINATED_P(fiber));
     VM_ASSERT(FIBER_RUNNABLE_P(next_fiber));
 
@@ -3037,6 +3033,16 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
 
     VM_ASSERT(!current_fiber->resuming_fiber);
 
+    VALUE passing = make_passing_arg(argc, argv);
+
+    if (FIBER_CREATED_P(fiber)) {
+        fiber_prepare_stack(fiber);
+    }
+
+    cont->argc = argc;
+    cont->kw_splat = kw_splat;
+    cont->value = passing;
+
     if (resuming_fiber) {
         current_fiber->resuming_fiber = resuming_fiber;
         fiber->prev = fiber_current();
@@ -3051,10 +3057,6 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
     if (current_fiber->blocking) {
         th->blocking -= 1;
     }
-
-    cont->argc = argc;
-    cont->kw_splat = kw_splat;
-    cont->value = make_passing_arg(argc, argv);
 
     fiber_store(fiber, th);
 
