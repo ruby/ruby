@@ -499,16 +499,16 @@ fnmatch(
 VALUE rb_cDir;
 static VALUE sym_directory, sym_link, sym_file, sym_unknown;
 
-#if defined(DT_BLK) || defined(S_IFBLK)
+#if defined(DT_BLK) || (defined(HAVE_DIRFD) && defined(S_IFBLK))
 static VALUE sym_block_device;
 #endif
-#if defined(DT_CHR) || defined(S_IFCHR)
+#if defined(DT_CHR) || (defined(HAVE_DIRFD) && defined(S_IFCHR))
 static VALUE sym_character_device;
 #endif
-#if defined(DT_FIFO) || defined(S_IFIFO)
+#if defined(DT_FIFO) || (defined(HAVE_DIRFD) && defined(S_IFIFO))
 static VALUE sym_fifo;
 #endif
-#if defined(DT_SOCK) || defined(S_IFSOCK)
+#if defined(DT_SOCK) || (defined(HAVE_DIRFD) && defined(S_IFSOCK))
 static VALUE sym_socket;
 #endif
 
@@ -4121,16 +4121,16 @@ Init_Dir(void)
     sym_file = ID2SYM(rb_intern("file"));
     sym_unknown = ID2SYM(rb_intern("unknown"));
 
-#if defined(DT_BLK) || defined(S_IFBLK)
+#if defined(DT_BLK) || (defined(HAVE_DIRFD) && defined(S_IFBLK))
     sym_block_device = ID2SYM(rb_intern("blockSpecial"));
 #endif
-#if defined(DT_CHR) || defined(S_IFCHR)
+#if defined(DT_CHR) || (defined(HAVE_DIRFD) && defined(S_IFCHR))
     sym_character_device = ID2SYM(rb_intern("characterSpecial"));
 #endif
-#if defined(DT_FIFO) || defined(S_IFIFO)
+#if defined(DT_FIFO) || (defined(HAVE_DIRFD) && defined(S_IFIFO))
     sym_fifo = ID2SYM(rb_intern("fifo"));
 #endif
-#if defined(DT_SOCK) || defined(S_IFSOCK)
+#if defined(DT_SOCK) || (defined(HAVE_DIRFD) && defined(S_IFSOCK))
     sym_socket = ID2SYM(rb_intern("socket"));
 #endif
 

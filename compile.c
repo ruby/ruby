@@ -2626,14 +2626,16 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
 #ifdef USE_ISEQ_NODE_ID
 static void
-add_node_id(uint8_t *node_ids, unsigned int *node_ids_size, int node_id)
+add_node_id(uint8_t *node_ids, unsigned int *node_ids_size, int node_id, int *prev_node_id)
 {
-    uint32_t v = (uint32_t)node_id + 1;
+    int delta = node_id - *prev_node_id;
+    uint32_t zz = ((uint32_t)delta << 1) ^ (uint32_t)(delta >> 31);
+    *prev_node_id = node_id;
     do {
-        uint8_t byte = v & 0x7f;
-        v >>= 7;
-        node_ids[(*node_ids_size)++] = v ? (byte | 0x80) : byte;
-    } while (v);
+        uint8_t byte = zz & 0x7f;
+        zz >>= 7;
+        node_ids[(*node_ids_size)++] = zz ? (byte | 0x80) : byte;
+    } while (zz);
 }
 #endif
 
@@ -2786,6 +2788,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 #ifdef USE_ISEQ_NODE_ID
     uint8_t *node_ids = ALLOC_N(uint8_t, (size_t)insn_num * 5);
     unsigned int node_ids_size = 0;
+    int prev_node_id = 0;
 #endif
     if (ISEQ_IS_SIZE(body)) {
         body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(body));
@@ -2965,7 +2968,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                 }
                 if (add_insn_info(insns_info, positions, insns_info_index, code_index, iobj)) insns_info_index++;
 #ifdef USE_ISEQ_NODE_ID
-                add_node_id(node_ids, &node_ids_size, iobj->insn_info.node_id);
+                add_node_id(node_ids, &node_ids_size, iobj->insn_info.node_id, &prev_node_id);
 #endif
                 code_index += len;
                 break;
@@ -3003,7 +3006,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                         }
                         if (add_adjust_info(insns_info, positions, insns_info_index, code_index, adjust)) insns_info_index++;
 #ifdef USE_ISEQ_NODE_ID
-                        add_node_id(node_ids, &node_ids_size, -1);
+                        add_node_id(node_ids, &node_ids_size, -1, &prev_node_id);
 #endif
                     }
                     if (diff > 1) {
@@ -3115,7 +3118,11 @@ iseq_set_exception_table(rb_iseq_t *iseq)
             int end = label_get_position((LABEL *)(ptr[2] & ~1));
             int cont = 0;
             int sp = 0;
-            if (start < 0 || end < 0) continue;
+            if (start < 0 || end < 0) {
+                if ((ptr[0] & 0xffff) != CATCH_TYPE_ENSURE) continue;
+                if (start < 0) start = 0;
+                if (end < 0) end = 0;
+            }
             if (ptr[4]) {
                 LABEL *lobj = (LABEL *)(ptr[4] & ~1);
                 cont = label_get_position(lobj);
@@ -12814,7 +12821,7 @@ typedef uint32_t ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #ifdef RUBY_DEVEL
-#define IBF_DEVEL_VERSION 11
+#define IBF_DEVEL_VERSION 12
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION

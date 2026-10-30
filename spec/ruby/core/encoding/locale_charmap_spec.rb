@@ -16,7 +16,7 @@ describe "Encoding.locale_charmap" do
 
     # FIXME: Get this working on Windows
     platform_is :linux do
-      platform_is_not :android do
+      platform_is_not :android, :musl do
         it "returns a value based on the LC_ALL environment variable" do
           ENV['LC_ALL'] = 'C'
           ruby_exe("print Encoding.locale_charmap").should == 'ANSI_X3.4-1968'

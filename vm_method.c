@@ -781,12 +781,12 @@ cc_refinement_set_compact(void *ptr)
 }
 
 static void
-cc_refinement_set_handle_weak_references(void *ptr)
+cc_refinement_set_handle_weak_references(void *ptr, void *objspace)
 {
     struct cc_refinement_entries *e = ptr;
     size_t write = 0;
     for (size_t read = 0; read < e->len; read++) {
-        if (rb_gc_handle_weak_references_alive_p(e->entries[read])) {
+        if (rb_gc_handle_weak_references_alive_p(objspace, e->entries[read])) {
             e->entries[write++] = e->entries[read];
         }
     }
@@ -3774,6 +3774,32 @@ static VALUE
 obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
 {
     return Qfalse;
+}
+
+static void
+method_uncached(VALUE klass, const char *name)
+{
+    rb_method_entry_t *me = lookup_method_table(klass, rb_intern(name));
+
+    VM_ASSERT(me != NULL);
+    me->def->uncached = 1;
+}
+
+/* Called a fixed number of times per class, from a class body, so a cc would be
+ * a permanent cost per class for no reuse. */
+void
+Init_uncached_methods(void)
+{
+    static const char *const names[] = {
+        "public", "protected", "private", "module_function", "ruby2_keywords",
+        "alias_method", "undef_method", "remove_method",
+        "attr_reader", "attr_writer", "attr_accessor",
+        "include", "prepend",
+    };
+
+    for (int i = 0; i < numberof(names); i++) {
+        method_uncached(rb_cModule, names[i]);
+    }
 }
 
 void

@@ -647,6 +647,19 @@ if defined? Zlib
       assert_equal(true, z.sync("\0" * 100 + s))
     end
 
+    def test_sync_in_progress
+      src = "x" * 100_000
+      z = Zlib::Inflate.new
+      inflated = "".dup
+      z.inflate(Zlib.deflate(src)) do |chunk|
+        if inflated.empty?
+          assert_raise(Zlib::InProgressError) { z.sync("\0\0\xff\xff".b) }
+        end
+        inflated << chunk
+      end
+      assert_equal src, inflated
+    end
+
     def test_set_dictionary
       z = Zlib::Inflate.new
       assert_raise(Zlib::StreamError) { z.set_dictionary("foo") }

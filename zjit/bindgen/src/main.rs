@@ -255,6 +255,10 @@ fn main() {
         .allowlist_var("ONIG_OPTION_EXTEND")
         .allowlist_var("ONIG_OPTION_MULTILINE")
 
+        .allowlist_function("rb_nil_to_s")
+        .allowlist_function("rb_true_to_s")
+        .allowlist_function("rb_false_to_s")
+
         // `ruby_value_type` is a C enum and this stops it from
         // prefixing all the members with the name of the type
         .prepend_enum_name(false)
@@ -267,6 +271,7 @@ fn main() {
         .allowlist_type("method_optimized_type")
         .allowlist_type("rb_callable_method_entry_t")
         .allowlist_type("rb_callable_method_entry_struct")
+        .allowlist_function("rb_zjit_callable_method_entry_is_undefined")
         .allowlist_function("rb_method_entry_at")
         .allowlist_type("rb_method_entry_t")
         .blocklist_type("rb_method_cfunc_t")

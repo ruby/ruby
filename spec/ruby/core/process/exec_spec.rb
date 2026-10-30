@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Process.exec" do
   it "raises Errno::ENOENT for an empty string" do
@@ -44,6 +45,16 @@ describe "Process.exec" do
     end
     platform_is :windows do
       ruby_exe("Process.exec(\"cd\", chdir: #{tmpdir.inspect})").tr('\\', '/').should == "#{tmpdir}\n"
+    end
+  end
+
+  platform_is_not :windows do
+    it "sets the umask when given the :umask option" do
+      ruby_exe("File.umask(0022); Process.exec(#{ruby_cmd("print File.umask.to_s(8)").inspect}, umask: 0077)").should == "77"
+    end
+
+    it "masks all permission bits when given umask: -1" do
+      ruby_exe("File.umask(0022); Process.exec(#{ruby_cmd("print((File.umask & 0777).to_s(8))").inspect}, umask: -1)").should == "777"
     end
   end
 
@@ -152,21 +163,23 @@ describe "Process.exec" do
   end
 
   describe "with a command array" do
-    it "uses the first element as the command name and the second as the argv[0] value" do
-      platform_is_not :windows do
-        ruby_exe('Process.exec(["/bin/sh", "argv_zero"], "-c", "echo $0")').should == "argv_zero\n"
+    guard_not -> { ProcessSpecs.busybox_sh? } do
+      it "uses the first element as the command name and the second as the argv[0] value" do
+        platform_is_not :windows do
+          ruby_exe('Process.exec(["/bin/sh", "argv_zero"], "-c", "echo $0")').should == "argv_zero\n"
+        end
+        platform_is :windows do
+          ruby_exe('Process.exec(["cmd.exe", "/C"], "/C", "echo", "argv_zero")').should == "argv_zero\n"
+        end
       end
-      platform_is :windows do
-        ruby_exe('Process.exec(["cmd.exe", "/C"], "/C", "echo", "argv_zero")').should == "argv_zero\n"
-      end
-    end
 
-    it "coerces the argument using to_ary" do
-      platform_is_not :windows do
-        ruby_exe('o = Object.new; def o.to_ary; ["/bin/sh", "argv_zero"]; end; Process.exec(o, "-c", "echo $0")').should == "argv_zero\n"
-      end
-      platform_is :windows do
-        ruby_exe('o = Object.new; def o.to_ary; ["cmd.exe", "/C"]; end; Process.exec(o, "/C", "echo", "argv_zero")').should == "argv_zero\n"
+      it "coerces the argument using to_ary" do
+        platform_is_not :windows do
+          ruby_exe('o = Object.new; def o.to_ary; ["/bin/sh", "argv_zero"]; end; Process.exec(o, "-c", "echo $0")').should == "argv_zero\n"
+        end
+        platform_is :windows do
+          ruby_exe('o = Object.new; def o.to_ary; ["cmd.exe", "/C"]; end; Process.exec(o, "/C", "echo", "argv_zero")').should == "argv_zero\n"
+        end
       end
     end
 
@@ -251,6 +264,28 @@ describe "Process.exec" do
     it "raises an ArgumentError if :close_others option is not a boolean or nil" do
       -> { Process.exec("should_raise_before_and_not_run", close_others: 1) }.should.raise(ArgumentError, /expected true or false/)
       -> { Process.exec("should_raise_before_and_not_run", close_others: "true") }.should.raise(ArgumentError, /expected true or false/)
+    end
+
+    platform_is_not :windows do
+      it "raises a TypeError if :umask option is not an Integer" do
+        -> { Process.exec("should_raise_before_and_not_run", umask: "0077") }.should.raise(TypeError)
+        -> { Process.exec("should_raise_before_and_not_run", umask: nil) }.should.raise(TypeError)
+      end
+
+      it "raises a RangeError if :umask option is NaN without changing the current umask" do
+        previous = File.umask
+        -> { Process.exec("should_raise_before_and_not_run", umask: Float::NAN) }.should.raise(RangeError, "float NaN out of range of integer")
+        File.umask.should == previous
+      ensure
+        File.umask(previous)
+      end
+
+      it "raises a RangeError if :umask option is out of range" do
+        -> { Process.exec("should_raise_before_and_not_run", umask: 2**32) }.should.raise(RangeError)
+        -> { Process.exec("should_raise_before_and_not_run", umask: 2**64 - 1) }.should.raise(RangeError)
+        -> { Process.exec("should_raise_before_and_not_run", umask: 2**64) }.should.raise(RangeError)
+        -> { Process.exec("should_raise_before_and_not_run", umask: -2**63 - 1) }.should.raise(RangeError)
+      end
     end
 
     platform_is :windows do

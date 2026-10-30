@@ -21,7 +21,7 @@ describe "Net::HTTPHeader#content_length" do
     @headers.content_length.should.eql?(123)
   end
 
-  ruby_version_is ""..."4.1" do
+  version_is Net::HTTP::VERSION, ""..."0.10.0" do
     it "ignores the parts of the 'Content-Length' header entry around the digits" do
       @headers["Content-Length"] = "123valid"
       @headers.content_length.should.eql?(123)
@@ -31,7 +31,7 @@ describe "Net::HTTPHeader#content_length" do
     end
   end
 
-  ruby_version_is "4.1" do
+  version_is Net::HTTP::VERSION, "0.10.0" do
     it "raises a Net::HTTPHeaderSyntaxError if the 'Content-Length' header entry is not entirely digits" do
       @headers["Content-Length"] = "123valid"
       -> { @headers.content_length }.should.raise(Net::HTTPHeaderSyntaxError)

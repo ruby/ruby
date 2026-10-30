@@ -771,7 +771,7 @@ rb_serial_t ruby_vm_constant_cache_invalidations = 0;
 rb_serial_t ruby_vm_constant_cache_misses = 0;
 rb_serial_t ruby_vm_global_cvar_state = 1;
 
-static const struct rb_callcache vm_empty_cc = {
+const struct rb_callcache rb_vm_empty_cc = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
     .klass = Qundef,
     .cme_  = NULL,
@@ -781,7 +781,20 @@ static const struct rb_callcache vm_empty_cc = {
     }
 };
 
-static const struct rb_callcache vm_empty_cc_for_super = {
+/* Installed instead of a real cc at call sites of methods that opted out of
+ * call caching: dispatch resolves the cme on every call rather than leaving a
+ * cc behind on the receiver's class. */
+const struct rb_callcache rb_vm_uncached_cc = {
+    .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
+    .klass = Qundef,
+    .cme_  = NULL,
+    .call_ = vm_call_uncached,
+    .aux_  = {
+        .v = Qfalse,
+    }
+};
+
+const struct rb_callcache rb_vm_empty_cc_for_super = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
     .klass = Qundef,
     .cme_  = NULL,
@@ -1117,8 +1130,9 @@ vm_block_handler_escape(const rb_execution_context_t *ec, VALUE block_handler)
     return Qnil;
 }
 
+// child_ep is the on-stack ep of a frame whose prev ep is cfp->ep, or NULL.
 static VALUE
-vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp)
+vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp, const VALUE *const child_ep)
 {
     const VALUE * const ep = cfp->ep;
     VALUE *env_body, *env_ep;
@@ -1138,8 +1152,9 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
                 VM_ASSERT(prev_cfp->ep != NULL);
             }
 
-            vm_make_env_each(ec, prev_cfp);
-            VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(prev_cfp->ep));
+            // Updates ep[VM_ENV_DATA_INDEX_SPECVAL] to point to the heap ep of prev_cfp
+            vm_make_env_each(ec, prev_cfp, ep);
+            VM_ASSERT(VM_ENV_PREV_EP(ep) == prev_cfp->ep);
         }
     }
     else {
@@ -1207,9 +1222,29 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     env->ep = env_ep;
     env->env = env_body;
     env->env_size = env_size;
+    VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
+
+    // Ensure the heap ep is fully initialized before cfp->ep and child_ep point to it,
+    // as rb_profile_frames() might read it from a signal handler.
+#if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
 
     cfp->ep = env_ep;
-    VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
+
+    // The child frame must point to the heap ep before the on-stack ep flags are
+    // overwritten below, otherwise rb_profile_frames() called from a signal handler
+    // could walk from the child frame to the overwritten on-stack ep and crash.
+    if (child_ep) {
+        VM_FORCE_WRITE_SPECIAL_CONST(&child_ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(env_ep));
+    }
+
+    // Ensure the stores to cfp->ep and child_ep above are not reordered after the
+    // overwrite of the on-stack ep flags below.
+#if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
+
     VM_STACK_ENV_WRITE(ep, 0, (VALUE)env);		/* GC mark */
 
 #if 0
@@ -1227,7 +1262,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 static VALUE
 vm_make_env_object(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
-    VALUE envval = vm_make_env_each(ec, cfp);
+    VALUE envval = vm_make_env_each(ec, cfp, NULL);
 
     if (PROCDEBUG) {
         check_env_value((const rb_env_t *)envval);
@@ -2493,7 +2528,7 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
                 );
                 rb_yjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 rb_zjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
-                ruby_vm_redefined_flag[bop] |= flag;
+                ruby_vm_redefined_flag[bop] |= (flag | ANY_REDEFINED_OP_FLAG);
             }
         }
     }
@@ -2528,6 +2563,9 @@ add_opt_method_entry_bop(const rb_method_entry_t *me, ID mid, enum ruby_basic_op
 static void
 add_opt_method(VALUE klass, ID mid, enum ruby_basic_operators bop)
 {
+    if (bop == BOP_NEW) {
+        klass = rb_singleton_class(klass);
+    }
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
     if (me && vm_redefinition_check_method_type(me)) {
@@ -2560,12 +2598,13 @@ vm_init_redefined_flag(void)
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
+    OP(New, NEW), (C(Hash));
     OP(PLUS, PLUS), (C(Integer), C(Float), C(String), C(Array));
     OP(MINUS, MINUS), (C(Integer), C(Float));
     OP(MULT, MULT), (C(Integer), C(Float));
     OP(DIV, DIV), (C(Integer), C(Float));
     OP(MOD, MOD), (C(Integer), C(Float));
-    OP(Eq, EQ), (C(Integer), C(Float), C(String), C(Symbol));
+    OP(Eq, EQ), (C(Integer), C(Float), C(String), C(Symbol), C(NilClass), C(FalseClass), C(TrueClass));
     OP(Eqq, EQQ), (C(Integer), C(Float), C(Symbol), C(String),
                    C(NilClass), C(TrueClass), C(FalseClass));
     OP(LT, LT), (C(Integer), C(Float));
@@ -4199,6 +4238,12 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
     // set cfp to NULL before clearing the stack in case `thread_profile_frames`
     // gets called in this middle of `rb_ec_set_vm_stack` via signal handler.
     ec->cfp = NULL;
+
+    // Ensure the store to ec->cfp above is not reordered after the stores below.
+#if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
+
     rb_ec_set_vm_stack(ec, NULL, 0);
 }
 
@@ -5450,17 +5495,5 @@ vm_collect_usage_register(int reg, int isset)
         (*ruby_vm_collect_usage_func_register)(reg, isset);
 }
 #endif
-
-const struct rb_callcache *
-rb_vm_empty_cc(void)
-{
-    return &vm_empty_cc;
-}
-
-const struct rb_callcache *
-rb_vm_empty_cc_for_super(void)
-{
-    return &vm_empty_cc_for_super;
-}
 
 #include "vm_call_iseq_optimized.inc" /* required from vm_insnhelper.c */

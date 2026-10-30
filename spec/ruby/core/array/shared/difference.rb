@@ -70,6 +70,23 @@ describe :array_binary_difference, shared: true do
     [x].send(@method, [x]).should == []
   end
 
+  it "does not call #hash for small arrays" do
+    a = Object.new
+    b = Object.new
+    [a, b].each { |object| object.define_singleton_method(:hash) { raise "#hash called" } }
+
+    [a, b].send(@method, [b]).should == [a]
+  end
+
+  it "uses #hash when both arrays exceed the small array limit" do
+    poison = Object.new
+    poison.define_singleton_method(:hash) { raise "#hash called" }
+    array = Array.new(17) { Object.new }
+
+    array.send(@method, Array.new(16, poison)).should == array
+    -> { array.send(@method, Array.new(17, poison)) }.should.raise(RuntimeError, "#hash called")
+  end
+
   it "is not destructive" do
     a = [1, 2, 3]
     a.send(@method, [1])

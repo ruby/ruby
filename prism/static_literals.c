@@ -7,13 +7,14 @@
 #include "prism/internal/buffer.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/isinf.h"
+#include "prism/internal/oom.h"
 #include "prism/internal/parser.h"
 #include "prism/internal/stringy.h"
 #include "prism/internal/xxh3.h"
 
 #include <assert.h>
+#include <inttypes.h>
 #include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -308,7 +309,7 @@ pm_static_literals_place(pm_static_literals_entry_t *entries, uint32_t mask, pm_
 static void
 pm_static_literals_resize(const pm_parser_t *parser, pm_static_literals_t *literals, uint32_t capacity) {
     pm_static_literals_entry_t *entries = xcalloc(capacity, sizeof(pm_static_literals_entry_t));
-    if (entries == NULL) abort();
+    if (entries == NULL) PRISM_OOM();
 
     /* It turns out to be more efficient to mask the hash value than to use the
      * modulo operator. Because our capacities are always powers of two, we can
@@ -534,7 +535,7 @@ pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const 
             break;
         }
         case PM_SOURCE_LINE_NODE:
-            pm_buffer_append_format(buffer, "%d", pm_line_offset_list_line_column(&parser->line_offsets, node->location.start, parser->start_line).line);
+            pm_buffer_append_format(buffer, "%" PRIi32, pm_line_offset_list_line_column(&parser->line_offsets, node->location.start, parser->start_line).line);
             break;
         case PM_STRING_NODE: {
             const pm_string_t *unescaped = &((const pm_string_node_t *) node)->unescaped;

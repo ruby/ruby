@@ -424,6 +424,36 @@ RSpec.describe "bundle install with the cooldown setting" do
       expect(the_bundle).to include_gems("ripe_gem 1.0.0", "child 1.0.0")
     end
 
+    it "does not list gems kept at their locked version in the skip summary" do
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+        gem "child"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "install", artifice: "compact_index_v2"
+
+      expect(out).to include("* child 2.0.0 (available in 6 days), resolved 1.0.0 instead")
+      expect(out).not_to include("ripe_gem 2.0.0")
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0", "child 1.0.0")
+    end
+
     it "warns when the same source is declared again with a different cooldown and keeps the first value" do
       # https://github.com/rubygems/rubygems/issues/9723: a second declaration
       # of the same URL is deduped into the first one, so its cooldown cannot

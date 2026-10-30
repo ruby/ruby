@@ -6,7 +6,6 @@ require "json"
 
 class TestGemCredentialStoreLinuxBackend < Gem::TestCase
   FAKE_COMMAND = <<~'RUBY'
-    #!/usr/bin/env ruby
     require "json"
     stdin_content = $stdin.read
     if record_path = ENV["RUBYGEMS_FAKE_CMD_RECORD"]
@@ -33,7 +32,11 @@ class TestGemCredentialStoreLinuxBackend < Gem::TestCase
     @fake_bin_dir = File.join(@tempdir, "fake-bin")
     FileUtils.mkdir_p(@fake_bin_dir)
     fake_path = File.join(@fake_bin_dir, "secret-tool")
-    File.write(fake_path, FAKE_COMMAND)
+    File.write(fake_path, <<~SH + FAKE_COMMAND)
+      #!/bin/sh
+      exec #{Gem.ruby} -x "$0" "$@"
+      #!ruby
+    SH
     File.chmod(0o755, fake_path)
 
     @record_path = File.join(@tempdir, "record.json")
@@ -71,6 +74,16 @@ class TestGemCredentialStoreLinuxBackend < Gem::TestCase
   def test_get_returns_nil_when_not_found
     with_fake_env(stdout: "", exit: 1) do
       assert_nil Gem::CredentialStore::LinuxBackend.get("rubygems", "example.org")
+    end
+  end
+
+  def test_get_without_ruby_on_path
+    pend "isolating PATH requires a native Ruby executable" unless RUBY_ENGINE == "ruby"
+
+    with_env(ENV.to_h.merge("PATH" => @fake_bin_dir)) do
+      with_fake_env(stdout: "s3cr3t\n", exit: 0) do
+        assert_equal "s3cr3t", Gem::CredentialStore::LinuxBackend.get("rubygems", "example.org")
+      end
     end
   end
 

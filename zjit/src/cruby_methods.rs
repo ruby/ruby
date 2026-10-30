@@ -237,6 +237,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "empty?", inline_string_empty_p, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cString, "<<", inline_string_append);
     annotate!(rb_cString, "==", inline_string_eq);
+    annotate!(rb_cString, "%", types::StringExact);
     // Not elidable; has a side effect of setting the encoding if ENC_CODERANGE_UNKNOWN.
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", inline_module_eqq, types::BoolExact, no_gc, leaf);
@@ -249,11 +250,13 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "<<", inline_array_push);
     annotate!(rb_cArray, "push", inline_array_push);
     annotate!(rb_cArray, "pop", inline_array_pop);
+    annotate!(rb_cArray, "==", inline_array_eq);
     annotate!(rb_cHash, "[]", inline_hash_aref);
     annotate!(rb_cHash, "[]=", inline_hash_aset);
     annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
+    annotate!(rb_cNilClass, "to_s", inline_nilclass_to_s);
     annotate!(rb_mKernel, "nil?", inline_kernel_nil_p);
     annotate!(rb_mKernel, "respond_to?", inline_kernel_respond_to_p);
     annotate!(rb_mKernel, "dup", inline_kernel_dup);
@@ -297,7 +300,9 @@ pub fn init() -> Annotations {
     annotate!(rb_cFloat, "finite?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cFloat, "infinite?", types::Fixnum.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cFalseClass, "&", inline_falseclass_and);
+    annotate!(rb_cFalseClass, "to_s", inline_falseclass_to_s);
     annotate!(rb_cTrueClass, "&", inline_trueclass_and);
+    annotate!(rb_cTrueClass, "to_s", inline_trueclass_to_s);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
     annotate!(thread_singleton, "current", inline_thread_current, types::BasicObject, no_gc, leaf);
 
@@ -390,11 +395,23 @@ fn inline_falseclass_and(fun: &mut hir::Function, block: hir::BlockId, _recv: hi
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }))
 }
 
+fn inline_falseclass_to_s(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    // Just returns static constant rb_cFalseClass_to_s
+    Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(unsafe { rb_false_to_s(Qfalse) }) }))
+}
+
 fn inline_trueclass_and(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     // TrueClass#& does RBOOL(RTEST(arg))
     let &[val] = args else { return None; };
     let test = fun.push_insn(block, hir::Insn::Test { val });
     Some(fun.push_insn(block, hir::Insn::BoxBool { val: test }))
+}
+
+fn inline_trueclass_to_s(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    // Just returns static constant rb_cTrueClass_to_s
+    Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(unsafe { rb_true_to_s(Qtrue) }) }))
 }
 
 fn inline_thread_current(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
@@ -474,7 +491,7 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state });
 
             let _ = fun.push_insn(block, hir::Insn::ArrayAset { array: recv, index, val });
-            fun.push_insn(block, hir::Insn::WriteBarrier { recv, val });
+            fun.write_barrier(block, recv, val);
             return Some(val);
         }
     }
@@ -501,6 +518,18 @@ fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     fun.guard_not_frozen(block, recv, state);
     fun.guard_not_shared(block, recv, state);
     Some(fun.push_insn(block, hir::Insn::ArrayPop { array: recv, state }))
+}
+
+fn inline_array_eq(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    // Heuristic: Objects get compared to nil a lot, so we can optimize that case:
+    // * `Array#==` (`rb_ary_equal`) checks if the other object is not `Array` but responds to
+    //   `to_ary`, and, if neither, returns `Qfalse`
+    if fun.is_a(other, types::NilClass)
+        && fun.assume_method_not_defined(block, unsafe { rb_cNilClass }, ID!(to_ary), state) {
+        return Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }));
+    }
+    None
 }
 
 fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
@@ -658,19 +687,22 @@ fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
     None
 }
 
-fn try_inline_string_equal(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
     if fun.likely_a(recv, types::String, state) && fun.likely_a(other, types::String, state) {
         let recv = fun.coerce_to(block, recv, types::String, state);
         let other = fun.coerce_to(block, other, types::String, state);
         let result = fun.push_insn(block, hir::Insn::StringEqual { left: recv, right: other });
         return Some(result);
     }
+    // Heuristic: Objects get compared to nil a lot, so we can optimize that case:
+    // * `String#==` (`rb_str_equal`) checks if the other object is not `String` but responds to
+    //   `to_str`, and, if neither, returns `Qfalse`
+    if fun.is_a(other, types::NilClass)
+        && fun.assume_method_not_defined(block, unsafe { rb_cNilClass }, ID!(to_str), state) {
+        return Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }));
+    }
     None
-}
-
-fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    let &[other] = args else { return None; };
-    try_inline_string_equal(fun, block, recv, other, state)
 }
 
 fn inline_module_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
@@ -799,7 +831,18 @@ fn try_inline_fixnum_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn
 
 fn inline_integer_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
-    try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumEq { left, right }, BOP_EQ, recv, other, state)
+    if let Some(result) = try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumEq { left, right }, BOP_EQ, recv, other, state) {
+        return Some(result);
+    }
+    // Heuristic: Objects get compared to nil a lot, so we can optimize that case:
+    // * `Integer#==` (`num_equal`) checks if the other object is not `Integer`/`Float`, and, if not,
+    //   dispatches to `#==` on the other object. If the other object is `nil` and `NilClass#==`
+    //   (`rb_obj_equal`, pointer equality) has not been redefined, it returns `Qfalse`
+    if fun.is_a(other, types::NilClass)
+        && fun.assume_expected_cfunc(block, unsafe { rb_cNilClass }, ID!(eq), rb_obj_equal as _, state) {
+        return Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }));
+    }
+    None
 }
 
 fn inline_integer_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
@@ -1005,7 +1048,7 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
             match args.get(index as usize) {
                 Some(&val) => {
                     fun.push_insn(block, hir::Insn::StoreField { recv, id, offset, val, num_bits });
-                    fun.push_insn(block, hir::Insn::WriteBarrier { recv, val });
+                    fun.write_barrier(block, recv, val);
                 }
                 // nil is an immediate, so the tail needs no write barrier.
                 None => {
@@ -1021,6 +1064,12 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
 fn inline_nilclass_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qtrue) }))
+}
+
+fn inline_nilclass_to_s(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    if !args.is_empty() { return None; }
+    // Just returns static constant rb_cNilClass_to_s
+    Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(unsafe { rb_nil_to_s(Qnil) }) }))
 }
 
 fn inline_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {

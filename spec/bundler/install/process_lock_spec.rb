@@ -21,6 +21,52 @@ RSpec.describe "process lock spec" do
       expect(the_bundle).to include_gems "myrack 1.0"
     end
 
+    it "keeps excluding late arrivals after the lock is handed over to a waiting process" do
+      events = Queue.new
+      release_waiter = Queue.new
+
+      # The warning printed while blocking on the lock is the only observable
+      # sign that a contender has opened the lock file and is waiting on it
+      allow(Gem).to receive(:warn) do |message|
+        events << [Thread.current.name, :waiting] if message.include?("Waiting for another process")
+      end
+
+      next_event = lambda do
+        events.pop(timeout: 10) || raise("Timed out waiting for a lock event")
+      end
+
+      contender = lambda do |name, &block|
+        Thread.new do
+          Thread.current.name = name
+          Thread.current.abort_on_exception = true
+          Bundler::ProcessLock.lock(default_bundle_path) do
+            events << [name, :locked]
+            block&.call
+          end
+        end
+      end
+
+      waiter = nil
+      Bundler::ProcessLock.lock(default_bundle_path) do
+        waiter = contender.call("waiter") { release_waiter.pop }
+        expect(next_event.call).to eq(["waiter", :waiting])
+      end
+      expect(next_event.call).to eq(["waiter", :locked])
+
+      # Arrives only after the original holder is gone, while the waiter is
+      # still inside its critical section
+      late_arrival = contender.call("late_arrival")
+      expect(next_event.call).to eq(["late_arrival", :waiting])
+
+      release_waiter << true
+      [waiter, late_arrival].each(&:join)
+      expect(next_event.call).to eq(["late_arrival", :locked])
+      expect(default_bundle_path("bundler.lock")).not_to exist
+    ensure
+      # Never leave the waiter blocked while holding the lock
+      release_waiter << true
+    end
+
     context "when creating a lock raises Errno::ENOTSUP" do
       before { allow(File).to receive(:open).and_raise(Errno::ENOTSUP) }
 

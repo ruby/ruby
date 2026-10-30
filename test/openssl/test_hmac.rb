@@ -24,6 +24,12 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
     assert_equal "iW+xEoq73xloMhB81J3zP0e0sRaZErpPU2hLIg==", hmac.base64digest
   end
 
+  def test_initialize
+    hmac = OpenSSL::HMAC.new("a"*32, "SHA256")
+    assert_raise(TypeError) { hmac.__send__(:initialize, "b"*32, "SHA512") }
+    assert_raise(RuntimeError) { OpenSSL::HMAC.allocate.reset }
+  end
+
   def test_dup
     h1 = OpenSSL::HMAC.new("KEY"*32, "SHA256")
     h1.update("DATA")

@@ -81,6 +81,7 @@ fn profile_insn_sample(
         YARVINSN_opt_or    => profile_operands(profiler, profile, 2),
         YARVINSN_opt_empty_p => profile_operands(profiler, profile, 1),
         YARVINSN_opt_aref  => profile_operands(profiler, profile, 2),
+        YARVINSN_newrange  => profile_operands(profiler, profile, 2),
         YARVINSN_opt_ltlt  => profile_operands(profiler, profile, 2),
         YARVINSN_opt_aset  => profile_operands(profiler, profile, 3),
         YARVINSN_opt_not   => profile_operands(profiler, profile, 1),
@@ -169,9 +170,26 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
         // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
         // drop them or something
         let ty = ProfiledType::new(obj);
-        VALUE::from(profiler.iseq).write_barrier(ty.class());
-        profile_type.observe(ty);
+        observe_profiled_type(profiler, profile_type, obj, ty);
     }
+}
+
+/// Record the ProfiledType of `obj` unless its class is the singleton class of a non-Module object that may be collected.
+fn observe_profiled_type(profiler: &Profiler, distribution: &mut TypeDistribution, obj: VALUE, ty: ProfiledType) {
+    let class = ty.class();
+
+    // A singleton class belongs to one object, so specializing on it doesn't help other objects.
+    if class.is_singleton_class()
+        && obj != unsafe { rb_vm_top_self() }
+        && obj != unsafe { rb_block_param_proxy }
+        && !unsafe { RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE) }
+    {
+        distribution.observe_other();
+        return;
+    }
+
+    VALUE::from(profiler.iseq).write_barrier(class);
+    distribution.observe(ty);
 }
 
 fn profile_splat_length(profiler: &mut Profiler, profile: &mut IseqProfile, ci: *const rb_callinfo) {
@@ -207,8 +225,7 @@ fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
     // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
     // drop them or something
     let ty = ProfiledType::new(obj);
-    VALUE::from(profiler.iseq).write_barrier(ty.class());
-    entry.opnd_types[0].observe(ty);
+    observe_profiled_type(profiler, &mut entry.opnd_types[0], obj, ty);
 }
 
 fn profile_block_handler(profiler: &mut Profiler, profile: &mut IseqProfile) {

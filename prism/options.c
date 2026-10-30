@@ -4,6 +4,7 @@
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/char.h"
+#include "prism/internal/oom.h"
 #include "prism/internal/stringy.h"
 
 #include <stdlib.h>
@@ -16,7 +17,7 @@
 pm_options_t *
 pm_options_new(void) {
     pm_options_t *options = xcalloc(1, sizeof(pm_options_t));
-    if (options == NULL) abort();
+    if (options == NULL) PRISM_OOM();
 
     options->line = 1;
     return options;
@@ -312,7 +313,7 @@ pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
     scope->locals_count = locals_count;
     scope->locals = xcalloc(locals_count, sizeof(pm_string_t));
     scope->forwarding = PM_OPTIONS_SCOPE_FORWARDING_NONE;
-    if (scope->locals == NULL) abort();
+    if (scope->locals == NULL) PRISM_OOM();
 }
 
 /**

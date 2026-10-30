@@ -306,7 +306,7 @@ int rb_objspace_garbage_object_p(VALUE obj);
 int rb_objspace_foreign_object_p(VALUE obj);
 int rb_objspace_live_object_p(VALUE obj);
 void rb_gc_declare_weak_references(VALUE obj);
-bool rb_gc_handle_weak_references_alive_p(VALUE obj);
+bool rb_gc_handle_weak_references_alive_p(void *objspace, VALUE obj);
 
 void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),

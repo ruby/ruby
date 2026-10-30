@@ -108,6 +108,10 @@ describe "StringIO#readlines when passed [limit]" do
     @io.readlines(4).should == ["a b ", "c d ", "e\n", "1 2 ", "3 4 ", "5"]
   end
 
+  it "does not split a multi-byte character" do
+    StringIO.new("ééé").readlines(3).should == ["éé", "é"]
+  end
+
   it "raises ArgumentError when limit is 0" do
     -> { @io.readlines(0) }.should.raise(ArgumentError)
   end

@@ -1083,15 +1083,14 @@ rb_gc_init_objspaces(void)
 #endif
 }
 
-/* Stays true once the process has gone multi-Ractor (rb_multi_ractor_p goes back to
- * false when the other Ractors finish).  Used by verification that spans generation
- * state built while multiple Ractors ran. */
+/* Stays true once a second objspace has existed (rb_multi_ractor_p goes back to false
+ * when the other Ractors finish, and is false for the whole window in which the creator
+ * builds the child objspace). */
 static bool gc_ever_multi_ractor = false;
 
 bool
 rb_gc_ever_multi_ractor_p(void)
 {
-    if (!gc_ever_multi_ractor && rb_multi_ractor_p()) gc_ever_multi_ractor = true;
     return gc_ever_multi_ractor;
 }
 
@@ -1100,7 +1099,9 @@ rb_gc_ever_multi_ractor_p(void)
 void *
 rb_gc_objspace_alloc(void)
 {
-    gc_ever_multi_ractor = true;
+    /* The one store that ever runs is the first Ractor creation, which is by definition
+     * single-Ractor and so races no reader. */
+    if (!gc_ever_multi_ractor) gc_ever_multi_ractor = true;
     if (!rb_gc_impl_multi_objspace_p()) {
         /* One objspace shared by every Ractor. */
         return rb_gc_get_objspace();
@@ -1500,16 +1501,22 @@ rb_gc_declare_weak_references(VALUE obj)
     rb_gc_impl_declare_weak_references(rb_gc_get_objspace(), obj);
 }
 
-bool
-rb_gc_handle_weak_references_alive_p(VALUE obj)
+static inline bool
+gc_weak_reference_alive_p(void *objspace, VALUE obj)
 {
     if (SPECIAL_CONST_P(obj)) return true;
 
-    return rb_gc_impl_handle_weak_references_alive_p(rb_gc_get_objspace(), obj);
+    return rb_gc_impl_handle_weak_references_alive_p(objspace, obj);
+}
+
+bool
+rb_gc_handle_weak_references_alive_p(void *objspace, VALUE obj)
+{
+    return gc_weak_reference_alive_p(objspace, obj);
 }
 
 void
-rb_gc_handle_weak_references(VALUE obj)
+rb_gc_handle_weak_references(void *objspace, VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
       case T_DATA:
@@ -1517,7 +1524,7 @@ rb_gc_handle_weak_references(VALUE obj)
             const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
 
             if (type->function.handle_weak_references) {
-                (type->function.handle_weak_references)(RTYPEDDATA_GET_DATA(obj));
+                (type->function.handle_weak_references)(RTYPEDDATA_GET_DATA(obj), objspace);
             }
             else {
                 rb_bug(
@@ -1533,8 +1540,8 @@ rb_gc_handle_weak_references(VALUE obj)
           case imemo_callcache: {
             struct rb_callcache *cc = (struct rb_callcache *)obj;
             if (cc->klass != Qundef &&
-                (!rb_gc_handle_weak_references_alive_p(cc->klass) ||
-                 !rb_gc_handle_weak_references_alive_p((VALUE)cc->cme_))) {
+                (!gc_weak_reference_alive_p(objspace, cc->klass) ||
+                 !gc_weak_reference_alive_p(objspace, (VALUE)cc->cme_))) {
                 vm_cc_invalidate(cc);
             }
             break;
@@ -1543,7 +1550,7 @@ rb_gc_handle_weak_references(VALUE obj)
             struct rb_subclasses *subs = (struct rb_subclasses *)obj;
             VALUE *entries = rb_imemo_subclasses_entries(obj);
             for (uint32_t i = 0; i < subs->count; i++) {
-                if (entries[i] && !rb_gc_handle_weak_references_alive_p(entries[i])) {
+                if (entries[i] && !gc_weak_reference_alive_p(objspace, entries[i])) {
                     entries[i] = 0;
                 }
             }

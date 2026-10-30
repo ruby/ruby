@@ -1136,7 +1136,10 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
             const rb_cref_t *cref = vm_env_cref(reg_cfp->ep);
             if (cref && !NIL_P(cref->refinements)) {
                 VALUE ref = cref->refinements;
-                VALUE func = rb_hash_lookup(ref, block_code);
+                /* the table caches funcs only for the Ractor that owns it: a func
+                 * stored from another Ractor lives in that Ractor's objspace, whose
+                 * GC does not see the table's reference to it */
+                VALUE func = rb_gc_obj_foreign_p(ref) ? Qnil : rb_hash_lookup(ref, block_code);
                 if (NIL_P(func)) {
                     /* TODO: limit cached funcs */
                     VALUE callback_arg = rb_ary_hidden_new(2);
@@ -1145,7 +1148,7 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
                     OBJ_FREEZE(callback_arg);
                     func = rb_func_lambda_new(refine_sym_proc_call, callback_arg, 1, UNLIMITED_ARGUMENTS);
                     /* the table is frozen when it belongs to a Proc#refined memo; skip the cache then */
-                    if (!OBJ_FROZEN(ref)) {
+                    if (!OBJ_FROZEN(ref) && !rb_gc_obj_foreign_p(ref)) {
                         rb_hash_aset(ref, block_code, func);
                     }
                 }

@@ -307,6 +307,56 @@ mod snapshot_tests {
           Return v59
         ");
     }
+
+    #[test]
+    fn test_no_ep_escape_patch_point_snapshot_points_after_send() {
+        // Send's snapshot is at pc 0x1028. The NoEPEscape snapshot must be at 0x1030,
+        // the instruction after the send, with the send result on the stack.
+        eval("
+            def test(o)
+              y = 1
+              o.foo
+              y
+            end
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb0():
+          Entries bb1, bb2
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :o@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          v14:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [o=v12, y=v13] }
+          v15:Any = Snapshot FrameState { pc: 0x1010, stack: [], locals: [o=v12, y=v13] }
+          PatchPoint NoTracePoint, v15
+          v17:Fixnum[1] = Const Value(1)
+          v18:Any = Snapshot FrameState { pc: 0x1018, stack: [v17], locals: [o=v12, y=v13] }
+          v19:Any = Snapshot FrameState { pc: 0x1020, stack: [], locals: [o=v12, y=v17] }
+          PatchPoint NoTracePoint, v19
+          v21:Any = Snapshot FrameState { pc: 0x1028, stack: [v12], locals: [o=v12, y=v17] }
+          v22:BasicObject = Send v12, :foo # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v23:Any = Snapshot FrameState { pc: 0x1030, stack: [v22], locals: [] }
+          PatchPoint NoEPEscape(test), v23
+          v25:Any = Snapshot FrameState { pc: 0x1030, stack: [v22], locals: [o=v12, y=v17] }
+          v26:Any = Snapshot FrameState { pc: 0x1038, stack: [], locals: [o=v12, y=v17] }
+          PatchPoint NoTracePoint, v26
+          v28:Any = Snapshot FrameState { pc: 0x1040, stack: [v17], locals: [o=v12, y=v17] }
+          PatchPoint NoTracePoint, v28
+          CheckInterrupts
+          Return v17
+        ");
+    }
 }
 
 #[cfg(test)]
@@ -5471,15 +5521,28 @@ pub(crate) mod hir_build_tests {
           CondBranch v69, bb16(), bb4(v18, v19, v20, v21, v34, v27)
         bb16():
           v72:Truthy = RefineType v33, Truthy
-          v76:BasicObject = InvokeBlock v27 # SendFallbackReason: InvokeBlock: not yet specialized
+          v76:CPtr = GetEP 0
+          v77:CInt64 = LoadField v76, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
+          v78:CInt64[3] = Const CInt64(3)
+          v79:CInt64 = IntAnd v77, v78
+          v80:CInt64[3] = Const CInt64(3)
+          v81:CBool = IsBitEqual v79, v80
+          CondBranch v81, bb18(), bb19()
+        bb18():
+          v84:BasicObject = InvokeBlockIfunc v77, v27
+          Jump bb17(v84)
+        bb19():
+          v86:BasicObject = InvokeBlock v27 # SendFallbackReason: InvokeBlock: not yet specialized
+          Jump bb17(v86)
+        bb17(v82:BasicObject):
           PatchPoint NoEPEscape(open)
-          v81:BasicObject = InvokeBuiltin dir_s_close, v18, v27
+          v92:BasicObject = InvokeBuiltin dir_s_close, v18, v27
           PatchPoint NoEPEscape(open)
           CheckInterrupts
-          Return v76
-        bb4(v89:BasicObject, v90:BasicObject, v91:BasicObject, v92:BasicObject, v93:BasicObject, v94:BasicObject):
+          Return v82
+        bb4(v100:BasicObject, v101:BasicObject, v102:BasicObject, v103:BasicObject, v104:BasicObject, v105:BasicObject):
           CheckInterrupts
-          Return v94
+          Return v105
         ");
     }
 
@@ -5982,9 +6045,22 @@ pub(crate) mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:BasicObject = InvokeBlock # SendFallbackReason: InvokeBlock: not yet specialized
+          v10:CPtr = GetEP 0
+          v11:CInt64 = LoadField v10, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
+          v12:CInt64[3] = Const CInt64(3)
+          v13:CInt64 = IntAnd v11, v12
+          v14:CInt64[3] = Const CInt64(3)
+          v15:CBool = IsBitEqual v13, v14
+          CondBranch v15, bb5(), bb6()
+        bb5():
+          v18:BasicObject = InvokeBlockIfunc v11
+          Jump bb4(v18)
+        bb6():
+          v20:BasicObject = InvokeBlock # SendFallbackReason: InvokeBlock: not yet specialized
+          Jump bb4(v20)
+        bb4(v16:BasicObject):
           CheckInterrupts
-          Return v10
+          Return v16
         ");
     }
 
@@ -6011,10 +6087,23 @@ pub(crate) mod hir_build_tests {
           v9:BasicObject = LoadArg :y@2
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v19:BasicObject = InvokeBlock v12, v13 # SendFallbackReason: InvokeBlock: not yet specialized
+          v19:CPtr = GetEP 0
+          v20:CInt64 = LoadField v19, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
+          v21:CInt64[3] = Const CInt64(3)
+          v22:CInt64 = IntAnd v20, v21
+          v23:CInt64[3] = Const CInt64(3)
+          v24:CBool = IsBitEqual v22, v23
+          CondBranch v24, bb5(), bb6()
+        bb5():
+          v27:BasicObject = InvokeBlockIfunc v20, v12, v13
+          Jump bb4(v27)
+        bb6():
+          v29:BasicObject = InvokeBlock v12, v13 # SendFallbackReason: InvokeBlock: not yet specialized
+          Jump bb4(v29)
+        bb4(v25:BasicObject):
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v19
+          Return v25
         ");
     }
 
@@ -6082,7 +6171,26 @@ pub(crate) mod hir_build_tests {
           v11:NilClass = Const Value(nil)
           Jump bb3(v8, v9, v10, v11)
         bb3(v13:BasicObject, v14:BasicObject, v15:NilClass, v16:NilClass):
-          SideExit UnhandledYARVInsn(expandarray)
+          v22:ArrayExact = GuardType v14, ArrayExact
+          v23:CInt64 = ArrayLength v22
+          v24:ArrayExact = NewArray
+          v25:CInt64[1] = Const CInt64(1)
+          v26:CInt64[1] = Const CInt64(1)
+          Jump bb4(v25)
+        bb4(v28:CInt64):
+          v29:CBool = IntLt v28, v23
+          CondBranch v29, bb5(), bb6()
+        bb5():
+          v31:BasicObject = ArrayAref v22, v28
+          ArrayPush v24, v31
+          v33:CInt64 = IntAdd v28, v26
+          Jump bb4(v33)
+        bb6():
+          v35:CInt64[0] = Const CInt64(0)
+          v36:BasicObject = ArrayArefChecked v22, v35, v23
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v14
         ");
     }
 
@@ -6114,6 +6222,24 @@ pub(crate) mod hir_build_tests {
           v13:NilClass = Const Value(nil)
           Jump bb3(v9, v10, v11, v12, v13)
         bb3(v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass, v19:NilClass):
+          v25:ArrayExact = GuardType v16, ArrayExact
+          v26:CInt64 = ArrayLength v25
+          v27:ArrayExact = NewArray
+          v28:CInt64[1] = Const CInt64(1)
+          v29:CInt64[1] = Const CInt64(1)
+          Jump bb4(v28)
+        bb4(v31:CInt64):
+          v32:CBool = IntLt v31, v26
+          CondBranch v32, bb5(), bb6()
+        bb5():
+          v34:BasicObject = ArrayAref v25, v31
+          ArrayPush v27, v34
+          v36:CInt64 = IntAdd v31, v29
+          Jump bb4(v36)
+        bb6():
+          v38:CInt64[0] = Const CInt64(0)
+          v39:BasicObject = ArrayArefChecked v25, v38, v26
+          PatchPoint NoEPEscape(test)
           SideExit UnhandledYARVInsn(expandarray)
         ");
     }
@@ -6299,12 +6425,25 @@ pub(crate) mod hir_build_tests {
           v80:CInt64 = UnboxFixnum v75
           v81:BasicObject = ArrayAref v79, v80
           PatchPoint NoEPEscape(each)
-          v85:BasicObject = InvokeBlock v81 # SendFallbackReason: InvokeBlock: not yet specialized
+          v85:CPtr = GetEP 0
+          v86:CInt64 = LoadField v85, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
+          v87:CInt64[3] = Const CInt64(3)
+          v88:CInt64 = IntAnd v86, v87
+          v89:CInt64[3] = Const CInt64(3)
+          v90:CBool = IsBitEqual v88, v89
+          CondBranch v90, bb13(), bb14()
+        bb13():
+          v93:BasicObject = InvokeBlockIfunc v86, v81
+          Jump bb12(v93)
+        bb14():
+          v95:BasicObject = InvokeBlock v81 # SendFallbackReason: InvokeBlock: not yet specialized
+          Jump bb12(v95)
+        bb12(v91:BasicObject):
           PatchPoint NoEPEscape(each)
-          v91:Fixnum[1] = Const Value(1)
-          v92:Fixnum = FixnumAdd v75, v91
+          v102:Fixnum[1] = Const Value(1)
+          v103:Fixnum = FixnumAdd v75, v102
           PatchPoint NoEPEscape(each)
-          Jump bb8(v74, v92)
+          Jump bb8(v74, v103)
         bb4(v23:BasicObject, v24:NilClass):
           v28:BasicObject = InvokeBuiltin <inline_expr>, v23
           PatchPoint NoEPEscape(each)

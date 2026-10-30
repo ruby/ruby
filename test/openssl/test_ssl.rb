@@ -1500,6 +1500,39 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_socket_minmax_version
+    start_server { |port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.sync_close = true
+      ssl.min_version = ssl.max_version = :TLS1_2
+      ssl.connect
+      assert_equal("TLSv1.2", ssl.ssl_version)
+      ssl.close
+    }
+
+    # Invalid
+    IO.pipe { |r, _w|
+      ssl = OpenSSL::SSL::SSLSocket.new(r)
+      assert_raise(ArgumentError) { ssl.min_version = :bogus }
+      assert_raise(ArgumentError) { ssl.max_version = :bogus }
+    }
+  end
+
+  def test_socket_minmax_version_server
+    sctx = make_server_context
+    server_proc = -> sock {
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, sctx)
+      ssl.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      ssl.accept
+    }
+    start_server_proc(server_proc) { |port|
+      server_connect(port) { |ssl|
+        assert_equal("TLSv1.2", ssl.ssl_version)
+      }
+    }
+  end
+
   def test_minmax_version_system_default
     omit "LibreSSL and AWS-LC do not support OPENSSL_CONF" if libressl? || aws_lc?
 
@@ -2154,13 +2187,14 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     # PQC algorithm ML-DSA (FIPS 204) is supported on OpenSSL 3.5 or later.
     return unless openssl?(3, 5, 0)
 
-    mldsa = Fixtures.pkey("mldsa65-1")
-    mldsa_ca_key  = Fixtures.pkey("mldsa65-2")
+    mldsa_ca_key  = Fixtures.pkey("mldsa65-1")
     mldsa_ca_cert = issue_cert(@ca, mldsa_ca_key, 1, @ca_exts, nil, nil,
                                digest: nil)
+    mldsa = Fixtures.pkey("mldsa65-2")
     mldsa_cert = issue_cert(@svr, mldsa, 60, [], mldsa_ca_cert, mldsa_ca_key,
                             digest: nil)
-    rsa = Fixtures.pkey("rsa-1")
+    # rsa-1 is used for @ca_key
+    rsa = Fixtures.pkey("rsa-2")
     rsa_cert = issue_cert(@svr, rsa, 61, [], @ca_cert, @ca_key)
 
     sctx = OpenSSL::SSL::SSLContext.new

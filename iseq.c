@@ -433,7 +433,8 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
                 if (cds[i].ci) rb_gc_mark_and_move_ptr_ctx(ctx, &cds[i].ci);
 
                 const struct rb_callcache *cc = cds[i].cc;
-                if (!cc || cc == rb_vm_empty_cc() || cc == rb_vm_empty_cc_for_super()) {
+                if (!cc || cc == &rb_vm_empty_cc || cc == &rb_vm_empty_cc_for_super ||
+                    cc == &rb_vm_uncached_cc) {
                     // No need for marking, reference updating, or clearing
                     // We also want to avoid reassigning to improve CoW
                     continue;
@@ -449,7 +450,7 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
                     else {
                         // Either the CC or CME has been invalidated. Replace
                         // it with the empty CC so that it can be GC'd.
-                        cds[i].cc = rb_vm_empty_cc();
+                        cds[i].cc = &rb_vm_empty_cc;
                     }
                 }
             }
@@ -2581,16 +2582,16 @@ rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
 static int
 node_id_stream_read(const uint8_t **ptr, const uint8_t *end)
 {
-    uint32_t v = 0;
+    uint32_t zz = 0;
     unsigned int shift = 0;
     while (*ptr < end) {
         uint8_t byte = **ptr;
         (*ptr)++;
-        v |= (uint32_t)(byte & 0x7f) << shift;
+        zz |= (uint32_t)(byte & 0x7f) << shift;
         if (!(byte & 0x80)) break;
         shift += 7;
     }
-    return (int)v - 1;
+    return (int)(zz >> 1) ^ -(int)(zz & 1);
 }
 
 int
@@ -2605,10 +2606,11 @@ rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
     const uint8_t *ptr = body->insns_info.node_ids;
     const uint8_t *end = ptr + body->insns_info.node_ids_size;
     size_t code_pos = 0;
+    int node_id = 0;
 
     while (ptr < end && code_pos < body->iseq_size) {
         size_t len = (size_t)insn_len(code[code_pos]);
-        int node_id = node_id_stream_read(&ptr, end);
+        node_id += node_id_stream_read(&ptr, end);
         if (pos < code_pos + len) {
             return node_id;
         }
@@ -3798,10 +3800,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     prev_insn_info = NULL;
 #ifdef USE_ISEQ_NODE_ID
     VALUE node_ids = rb_ary_new();
-    /* The node id stream holds one varint per instruction, in the same
-     * order as the instructions in nbody. */
     const uint8_t *nid_ptr = iseq_body->insns_info.node_ids;
     const uint8_t *nid_end = nid_ptr ? nid_ptr + iseq_body->insns_info.node_ids_size : NULL;
+    int node_id = 0;
 #endif
 
     for (l=0, pos=0; l<RARRAY_LEN(nbody); l++) {
@@ -3816,8 +3817,10 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
         info = get_insn_info(iseq, pos);
 #ifdef USE_ISEQ_NODE_ID
         VM_ASSERT(nid_ptr && nid_ptr < nid_end);
-        rb_ary_push(node_ids, INT2FIX(nid_ptr && nid_ptr < nid_end ?
-                                      node_id_stream_read(&nid_ptr, nid_end) : -1));
+        if (nid_ptr && nid_ptr < nid_end) {
+            node_id += node_id_stream_read(&nid_ptr, nid_end);
+        }
+        rb_ary_push(node_ids, INT2FIX(node_id));
 #endif
 
         if (prev_insn_info != info) {

@@ -52,7 +52,7 @@ struct_ivar_get(VALUE c, ID id)
         RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
         ivar = rb_attr_get(c, id);
         if (!NIL_P(ivar)) {
-            if (!OBJ_FROZEN(orig)) rb_ivar_set(orig, id, ivar);
+            if (!OBJ_FROZEN(orig) && rb_class_owned_p(orig)) rb_ivar_set(orig, id, ivar);
             return ivar;
         }
     }
@@ -749,7 +749,7 @@ rb_zjit_struct_num_members(VALUE klass)
 struct struct_hash_set_arg {
     VALUE self;
     VALUE unknown_keywords;
-    VALUE missing_keywords;
+    bool *found; // Data#initialize: which members were given
     rb_len_t missing_count;
 };
 
@@ -762,7 +762,7 @@ struct_hash_aset(VALUE key, VALUE val, struct struct_hash_set_arg *args, bool na
 {
     int i = rb_struct_pos(args->self, &key, name_only);
     if (i < 0) {
-        if (NIL_P(args->unknown_keywords)) {
+        if (!args->unknown_keywords) {
             args->unknown_keywords = rb_ary_new();
         }
         rb_ary_push(args->unknown_keywords, key);
@@ -813,11 +813,10 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
     if (keyword_init) {
         struct struct_hash_set_arg arg = {
             .self = self,
-            .unknown_keywords = Qnil,
         };
         rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
         rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
-        if (UNLIKELY(!NIL_P(arg.unknown_keywords))) {
+        if (UNLIKELY(arg.unknown_keywords)) {
             rb_raise(rb_eArgError, "unknown keywords: %"PRIsVALUE,
                      rb_ary_join(arg.unknown_keywords, rb_str_new2(", ")));
         }
@@ -1806,12 +1805,9 @@ data_hash_set_i(VALUE key, VALUE val, VALUE arg)
 {
     struct struct_hash_set_arg *args = (struct struct_hash_set_arg *)arg;
     int i = struct_hash_aset(key, val, args, true);
-    if (i >= 0 && args->missing_count > 0) {
-        VALUE k = RARRAY_AREF(args->missing_keywords, i);
-        if (!NIL_P(k)) {
-            RARRAY_ASET(args->missing_keywords, i, Qnil);
-            args->missing_count--;
-        }
+    if (i >= 0 && !args->found[i]) {
+        args->found[i] = true;
+        args->missing_count--;
     }
     return ST_CONTINUE;
 }
@@ -1883,14 +1879,12 @@ data_hash_set_i(VALUE key, VALUE val, VALUE arg)
 static VALUE
 rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
-    VALUE klass = rb_obj_class(self);
     rb_struct_modify(self);
-    VALUE members = struct_ivar_get(klass, id_members);
-    size_t num_members = RARRAY_LEN(members);
+    rb_len_t num_members = RSTRUCT_LEN_RAW(self);
 
     if (argc == 0) {
         if (num_members > 0) {
-            rb_exc_raise(rb_keyword_error_new("missing", members));
+            rb_exc_raise(rb_keyword_error_new("missing", struct_ivar_get(rb_obj_class(self), id_members)));
         }
         OBJ_FREEZE(self);
         return Qnil;
@@ -1899,29 +1893,37 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
         rb_error_arity(argc, 0, 0);
     }
 
-    VALUE missing = rb_ary_dup(members);
-    RBASIC_CLEAR_CLASS(missing);
+    VALUE found_buffer = 0;
+    bool *found = NULL;
+    if (num_members > 0) {
+        found = ALLOCV_N(bool, found_buffer, num_members);
+        MEMZERO(found, bool, num_members);
+    }
     struct struct_hash_set_arg arg = {
         .self = self,
-        .unknown_keywords = Qnil,
-        .missing_keywords = missing,
-        .missing_count = (rb_len_t)num_members,
+        .found = found,
+        .missing_count = num_members,
     };
     rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), num_members);
     rb_hash_foreach(argv[0], data_hash_set_i, (VALUE)&arg);
+
     // Freeze early before potentially raising, so that we don't leave an
     // unfrozen copy on the heap, which could get exposed via ObjectSpace.
     OBJ_FREEZE(self);
     if (UNLIKELY(arg.missing_count > 0)) {
-        rb_ary_compact_bang(missing);
+        VALUE members = struct_ivar_get(rb_obj_class(self), id_members);
+        RUBY_ASSERT(RARRAY_LEN(members) == num_members);
+        VALUE missing = rb_ary_new_capa(arg.missing_count);
+        for (rb_len_t i = 0; i < num_members; i++) {
+            if (!found[i]) rb_ary_push(missing, RARRAY_AREF(members, i));
+        }
         RUBY_ASSERT(RARRAY_LEN(missing) == arg.missing_count, "missing_count=%"PRIdLEN" but %"PRIdLEN, arg.missing_count, RARRAY_LEN(missing));
-        RBASIC_SET_CLASS_RAW(missing, rb_cArray);
         rb_exc_raise(rb_keyword_error_new("missing", missing));
     }
-    VALUE unknown_keywords = arg.unknown_keywords;
-    if (UNLIKELY(!NIL_P(unknown_keywords))) {
-        RBASIC_SET_CLASS_RAW(unknown_keywords, rb_cArray);
-        rb_exc_raise(rb_keyword_error_new("unknown", unknown_keywords));
+
+    ALLOCV_END(found_buffer);
+    if (UNLIKELY(arg.unknown_keywords)) {
+        rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
     }
 
     return Qnil;

@@ -304,8 +304,21 @@ class TestProcess < Test::Unit::TestCase
   ENVCOMMAND = [RUBY].concat(PREENVARG).concat(ENVARG)
 
   def test_execopts_env
+    assert_raise(TypeError) {
+      system({nil=>"BAR"}, *TRUECOMMAND)
+    }
+    assert_raise(TypeError) {
+      system({0=>"BAR"}, *TRUECOMMAND)
+    }
+    assert_raise(TypeError) {
+      system({"FOO"=>0}, *TRUECOMMAND)
+    }
+
     assert_raise(ArgumentError) {
       system({"F=O"=>"BAR"}, *TRUECOMMAND)
+    }
+    assert_raise(ArgumentError) {
+      system({"F\0O"=>"BAR"}, *TRUECOMMAND)
     }
 
     with_tmpchdir {|d|
@@ -1164,6 +1177,25 @@ class TestProcess < Test::Unit::TestCase
       r = IO.popen([RUBY, "s", :close_others=>false], "r") {|f| f.read}
       assert_equal("Errno::ENOENT success", r)
     }
+  end
+
+  def test_exec_arguments_reject_null_bytes_in_wide_encodings
+    [Encoding::UTF_16LE, Encoding::UTF_16BE, Encoding::UTF_32LE, Encoding::UTF_32BE].each do |name|
+      arg = "10\0--inject=1\0z\0".b.force_encoding(Encoding.find(name))
+
+      assert_raise(ArgumentError, name) { system(*TRUECOMMAND, arg) }
+      assert_raise(ArgumentError, name) {
+        Process.wait Process.spawn(*TRUECOMMAND, arg)
+      }
+      assert_raise(ArgumentError, name) {
+        IO.popen([*TRUECOMMAND, arg]) { |io| io.read }
+      }
+    end
+
+    if windows?
+      arg = "\xFF".b.force_encoding(Encoding::UTF_8)
+      assert_raise(ArgumentError) { system(*TRUECOMMAND, arg) }
+    end
   end
 
   def test_exec_relative_path_after_multibyte_dir

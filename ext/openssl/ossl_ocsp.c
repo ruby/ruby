@@ -652,6 +652,7 @@ ossl_ocspbres_initialize(int argc, VALUE *argv, VALUE self)
     const unsigned char *p;
 
     rb_scan_args(argc, argv, "01", &arg);
+    ossl_want_uninitialized(self, &ossl_ocsp_basicresp_type);
     if (NIL_P(arg)) {
         bs_new = OCSP_BASICRESP_new();
         if (!bs_new)

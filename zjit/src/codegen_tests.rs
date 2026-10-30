@@ -1094,6 +1094,31 @@ fn test_yield_polymorphic_ifunc_handler_falls_back() {
 }
 
 #[test]
+fn test_yield_single_iseq_and_ifunc_handlers_no_side_exits() {
+    set_call_threshold(4);
+    eval("
+        def invoke = yield(10)
+        def add_one = invoke { |x| x + 1 }
+        def via_enum = to_enum(:invoke).to_a
+        add_one; via_enum
+        add_one; via_enum
+    ");
+    assert_snapshot!(assert_compiles("[add_one, via_enum, add_one, via_enum]"), @"[11, [10], 11, [10]]");
+}
+
+#[test]
+fn test_yield_non_direct_iseq_profile_then_ifunc() {
+    set_call_threshold(2);
+    eval("
+        def invoke = yield(10)
+        def two = invoke { |a, b| [a, b] }
+        def via_enum = to_enum(:invoke).to_a
+        two; two
+    ");
+    assert_snapshot!(assert_compiles("[two, via_enum, via_enum]"), @"[[10, nil], [10], [10]]");
+}
+
+#[test]
 fn test_yield_megamorphic_mixed_block_handlers() {
     // A yield site that sees ISEQ, proc, symbol, and ifunc handlers mixed together goes
     // megamorphic (each to_enum call profiles a distinct ifunc), so it compiles to the
@@ -6481,7 +6506,32 @@ fn test_expandarray_splat() {
         test [3, 4]
     ");
     assert_contains_opcode("test", YARVINSN_expandarray);
-    assert_snapshot!(assert_compiles_allowing_exits("test [3, 4]"), @"[3, [4]]");
+    assert_snapshot!(assert_compiles("test [3, 4]"), @"[3, [4]]");
+}
+
+#[test]
+fn test_expandarray_splat_short() {
+    eval("
+        def test(o)
+          a, b, *rest = o
+          [a, b, rest]
+        end
+        test [1, 2, 3]
+    ");
+    assert_snapshot!(assert_compiles("test([1])"), @"[1, nil, []]");
+}
+
+#[test]
+fn test_expandarray_splat_only() {
+    eval("
+        def test(o)
+          *rest = o
+          rest
+        end
+        test [1, 2]
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("test([1, 2])"), @"[1, 2]");
 }
 
 #[test]
@@ -7153,6 +7203,39 @@ fn test_profiled_proc_block_handler_does_not_retain_proc() {
 }
 
 #[test]
+fn test_profiled_singleton_class_does_not_retain_young_object() {
+    assert_snapshot!(inspect("
+        def profiled_singleton_send(obj) = obj.profiled_singleton_method
+
+        PROFILED_SINGLETON_OBJECTS = ObjectSpace::WeakMap.new
+        def profiled_singleton_make(i)
+          obj = Object.new
+          obj.define_singleton_method(:profiled_singleton_method) { i }
+          PROFILED_SINGLETON_OBJECTS[i] = obj
+          profiled_singleton_send(obj)
+          nil
+        end
+
+        100.times { |i| profiled_singleton_make(i) }
+        4.times { GC.start(full_mark: true, immediate_sweep: true) }
+        # Allow one object kept alive by conservative stack scanning
+        PROFILED_SINGLETON_OBJECTS.keys.size <= 1
+    "), @"true");
+}
+
+#[test]
+fn test_profiled_block_param_proxy_in_ractor() {
+    // rb_block_param_proxy is unshareable and belongs to the main Ractor, so
+    // rb_class_attached_object() on its singleton class raises in other Ractors.
+    // Profiling it must not raise while holding the VM lock.
+    assert_snapshot!(inspect("
+        def profiled_proxy_callee = yield
+        def profiled_proxy_caller(&block) = profiled_proxy_callee(&block)
+        Ractor.new { profiled_proxy_caller { 1 } }.value
+    "), @"1");
+}
+
+#[test]
 fn test_profile_under_nested_jit_call() {
     assert_snapshot!(inspect("
         def profile
@@ -7222,6 +7305,63 @@ fn test_method_redefined_with_module() {
         result2 = test
         [result1, result2]
     "#), @r#"["original", "redefined"]"#);
+}
+
+#[test]
+fn test_module_alias_redefined() {
+    assert_eq!(assert_compiles("
+        module M
+          def original = 1
+          def another = 2
+          alias via original
+        end
+        class Subject
+          include M
+        end
+        def test(o) = o.via
+
+        o = Subject.new
+        i = 0
+        while i < 10
+          test(o)
+          i += 1
+        end
+        before = test(o)
+        module M
+          alias via another
+        end
+        [before, test(o)]
+    "), "[1, 2]");
+}
+
+#[test]
+fn test_module_alias_redefined_with_super() {
+    assert_eq!(assert_compiles("
+        module M
+          def original = 1
+          def another = 2
+          alias via original
+        end
+        class Subject
+          include M
+        end
+        class SuperSubject < Subject
+          def via = super
+        end
+        def test(o) = o.via
+
+        o = SuperSubject.new
+        i = 0
+        while i < 10
+          test(o)
+          i += 1
+        end
+        before = test(o)
+        module M
+          alias via another
+        end
+        [before, test(o)]
+    "), "[1, 2]");
 }
 
 #[test]
@@ -8708,6 +8848,22 @@ fn test_local_write_through_call_in_branch_reaches_merge_point() {
         3.times { test("1") }
         test("y = 2")
     "#), @"2");
+}
+
+#[test]
+fn test_no_ep_escape_patch_point_resumes_after_call() {
+    // Call eval via Method#call so warmup doesn't escape the EP and suppress the patch point.
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        $n = 0
+        def test(m, s)
+          y = 1
+          method(m).call(s)
+          [y, $n]
+        end
+        test(:Integer, "1"); test(:Integer, "1")
+        test(:eval, "$n += 1; y = 2")
+    "#), @"[2, 1]");
 }
 
 #[test]
