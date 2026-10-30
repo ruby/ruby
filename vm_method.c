@@ -8,7 +8,9 @@
 #define METHOD_DEBUG 0
 
 static int vm_redefinition_check_flag(VALUE klass);
-static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass);
+struct method_entry_warnings;
+static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass,
+                                                struct method_entry_warnings *warnings);
 static inline rb_method_entry_t *lookup_method_table(VALUE klass, ID id);
 
 #define object_id           idObject_id
@@ -1345,7 +1347,7 @@ rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src)
 }
 
 static void
-make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
+make_method_entry_refined(VALUE owner, rb_method_entry_t *me, struct method_entry_warnings *warnings)
 {
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
         return;
@@ -1353,7 +1355,7 @@ make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
     else {
         rb_method_definition_t *def;
 
-        rb_vm_check_redefinition_opt_method(me, me->owner);
+        rb_vm_check_redefinition_opt_method(me, me->owner, warnings);
 
         struct rb_method_entry_struct *orig_me =
             rb_method_entry_alloc(me->called_id,
@@ -1383,7 +1385,6 @@ lookup_method_table(VALUE klass, ID id)
     }
 }
 
-struct method_entry_warnings;
 static rb_method_entry_t *rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibility_t visi,
                                                rb_method_type_t type, rb_method_definition_t *def, ID original_id, void *opts,
                                                struct method_entry_warnings *warnings);
@@ -1396,7 +1397,7 @@ add_refined_method_entry(VALUE refined_class, ID mid, struct method_entry_warnin
     rb_method_entry_t *me = lookup_method_table(refined_class, mid);
 
     if (me) {
-        make_method_entry_refined(refined_class, me);
+        make_method_entry_refined(refined_class, me, warnings);
         rb_clear_method_cache(refined_class, mid);
     }
     else if (warnings) {
@@ -1416,6 +1417,11 @@ rb_add_refined_method_entry(VALUE refined_class, ID mid)
     add_refined_method_entry(refined_class, mid, NULL);
 }
 
+struct check_override_opt_method_data {
+    ID mid;
+    struct method_entry_warnings *warnings;
+};
+
 static void
 check_override_opt_method_i(VALUE klass, VALUE arg)
 {
@@ -1429,24 +1435,25 @@ check_override_opt_method_i(VALUE klass, VALUE arg)
         return;
     }
 
-    ID mid = (ID)arg;
+    const struct check_override_opt_method_data *data = (const struct check_override_opt_method_data *)arg;
     const rb_method_entry_t *me, *newme;
 
     if (vm_redefinition_check_flag(klass)) {
-        me = lookup_method_table(RCLASS_ORIGIN(klass), mid);
+        me = lookup_method_table(RCLASS_ORIGIN(klass), data->mid);
         if (me) {
-            newme = rb_method_entry(klass, mid);
-            if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner);
+            newme = rb_method_entry(klass, data->mid);
+            if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner, data->warnings);
         }
     }
-    rb_class_foreach_subclass(klass, check_override_opt_method_i, (VALUE)mid);
+    rb_class_foreach_subclass(klass, check_override_opt_method_i, arg);
 }
 
 static void
-check_override_opt_method(VALUE klass, VALUE mid)
+check_override_opt_method(VALUE klass, ID mid, struct method_entry_warnings *warnings)
 {
     if (rb_vm_check_optimizable_mid(mid)) {
-        check_override_opt_method_i(klass, mid);
+        struct check_override_opt_method_data data = {mid, warnings};
+        check_override_opt_method_i(klass, (VALUE)&data);
     }
 }
 
@@ -1473,11 +1480,39 @@ method_entry_modify_check(VALUE klass, rb_method_type_t type)
 struct method_entry_warnings {
     VALUE redefined; /* $VERBOSE only */
     VALUE problem;
+    VALUE performance; /* Array of messages, only if the category is enabled */
 };
+
+/* Warn in the performance category, or, if `warnings` is given, because the VM lock is
+ * held, remember the message for method_entry_warnings_emit(). */
+PRINTF_ARGS(static void method_entry_warn_performance(struct method_entry_warnings *warnings, const char *fmt, ...), 2, 3);
+static void
+method_entry_warn_performance(struct method_entry_warnings *warnings, const char *fmt, ...)
+{
+    if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_PERFORMANCE)) return;
+
+    va_list args;
+    va_start(args, fmt);
+    VALUE msg = rb_vsprintf(fmt, args);
+    va_end(args);
+
+    if (warnings) {
+        if (!warnings->performance) warnings->performance = rb_ary_new();
+        rb_ary_push(warnings->performance, msg);
+    }
+    else {
+        rb_category_warn(RB_WARN_CATEGORY_PERFORMANCE, "%"PRIsVALUE, msg);
+    }
+}
 
 static void
 method_entry_warnings_emit(const struct method_entry_warnings *warnings)
 {
+    if (warnings->performance) {
+        for (long i = 0; i < RARRAY_LEN(warnings->performance); i++) {
+            rb_category_warn(RB_WARN_CATEGORY_PERFORMANCE, "%"PRIsVALUE, RARRAY_AREF(warnings->performance, i));
+        }
+    }
     if (warnings->redefined) rb_warning("%"PRIsVALUE, warnings->redefined);
     if (warnings->problem) rb_warn("%"PRIsVALUE, warnings->problem);
 }
@@ -1527,7 +1562,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     }
     if (type == VM_METHOD_TYPE_REFINED) {
         rb_method_entry_t *old_me = lookup_method_table(RCLASS_ORIGIN(klass), mid);
-        if (old_me) rb_vm_check_redefinition_opt_method(old_me, klass);
+        if (old_me) rb_vm_check_redefinition_opt_method(old_me, klass, warnings);
     }
     else {
         klass = RCLASS_ORIGIN(klass);
@@ -1543,7 +1578,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
         rb_method_definition_t *old_def = old_me->def;
 
         if (rb_method_definition_eq(old_def, def)) return old_me;
-        rb_vm_check_redefinition_opt_method(old_me, klass);
+        rb_vm_check_redefinition_opt_method(old_me, klass, warnings);
 
         if (old_def->type == VM_METHOD_TYPE_REFINED) make_refined = 1;
 
@@ -1616,7 +1651,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     }
 
     if (make_refined) {
-        make_method_entry_refined(klass, me);
+        make_method_entry_refined(klass, me, warnings);
     }
 
     rb_method_table_insert(klass, mtbl, mid, me);
@@ -1625,7 +1660,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 
     /* check optimized method override by a prepended module */
     if (RB_TYPE_P(orig_klass, T_MODULE)) {
-        check_override_opt_method(klass, (VALUE)mid);
+        check_override_opt_method(klass, mid, warnings);
     }
 
     return me;
@@ -2356,7 +2391,7 @@ remove_method(VALUE klass, ID mid)
     rb_clear_method_cache(klass, mid);
     rb_id_table_delete(RCLASS_WRITABLE_M_TBL(klass), mid);
 
-    rb_vm_check_redefinition_opt_method(me, klass);
+    rb_vm_check_redefinition_opt_method(me, klass, NULL);
 
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
         rb_add_refined_method_entry(klass, mid);
@@ -2423,7 +2458,7 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
     }
 
     if (METHOD_ENTRY_VISI(me) != visi) {
-        rb_vm_check_redefinition_opt_method(me, klass);
+        rb_vm_check_redefinition_opt_method(me, klass, NULL);
 
         if (klass == defined_class || origin_class == defined_class) {
             if (me->def->type == VM_METHOD_TYPE_REFINED) {
