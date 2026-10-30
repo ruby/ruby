@@ -289,6 +289,30 @@ fn test_reprofile_polymorphic_send_miss() {
 }
 
 #[test]
+fn test_polymorphic_splat_length_miss_keeps_fallback() {
+    ensure_rubyvm();
+    set_call_threshold(30);
+    set_inline_threshold(0);
+    crate::options::enable_zjit_stats();
+    eval("
+        class A
+          def foo(a = 0, b = 0, c = 0) = a + b + c
+        end
+        A_OBJ, B_OBJ = A.new, A.new
+        B_OBJ.instance_variable_set(:@extra, true)
+        def dispatch(obj, args) = obj.foo(*args)
+        100.times { |i| dispatch(i.even? ? A_OBJ : B_OBJ, i.even? ? [1] : [1, 2]) }
+    ");
+
+    // A new splat length takes the shared fallback; it is not a receiver miss.
+    let iseq = get_method_iseq("self", "dispatch");
+    let misses = crate::state::ZJITState::get_counters().exit_send_polymorphic_miss;
+    assert_snapshot!(inspect("100.times.map { dispatch(A_OBJ, [1, 2, 3]) }.uniq"), @"[6]");
+    assert_eq!(misses, crate::state::ZJITState::get_counters().exit_send_polymorphic_miss);
+    assert_eq!(1, get_or_create_iseq_payload(iseq).versions.len());
+}
+
+#[test]
 fn test_function_stub_reprofiles_after_invalidation() {
     rb_zjit_prepare_options();
     set_inline_threshold(0);

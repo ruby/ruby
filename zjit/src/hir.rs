@@ -6505,14 +6505,16 @@ impl Function {
                         // SideExit is a terminator; don't add remaining instructions
                         break;
                     }
-                    &Insn::Send { recv, state, reason: SendFallbackReason::SendPolymorphicFallback, .. } => {
+                    &Insn::Send { recv, cd, state, reason: SendFallbackReason::SendPolymorphicFallback, .. } => {
                         let summary = self.profile_summary(self.profiles.as_ref().unwrap(), recv, state);
                         let expected = Type::from_profiled_type(summary.bucket(0));
                         // Multiple shapes of one receiver type need only one dispatch arm.
                         // Learn a new receiver type on a miss, as a monomorphic guard does.
                         // Expanding already-polymorphic receiver chains can instead overflow
                         // the profile and make the entire send megamorphic.
-                        if summary.buckets().iter().filter(|ty| !ty.is_empty())
+                        // Splat-length misses share this fallback, so keep it for splat calls.
+                        if unsafe { rb_vm_ci_flag((*cd).ci) } & VM_CALL_ARGS_SPLAT == 0
+                            && summary.buckets().iter().filter(|ty| !ty.is_empty())
                             .all(|&ty| Type::from_profiled_type(ty).bit_equal(expected)) {
                             self.push_insn(block, Insn::SideExit { state, reason: Box::new(SideExitReason::SendPolymorphicMiss), recompile: Some(Recompile) });
                             break;
