@@ -8,7 +8,7 @@ returns self:
   s.encoding                # => #<Encoding:UTF-8>
   s.force_encoding('ascii') # => "\xC5\x82a\xC5\x82"
   s.encoding                # => #<Encoding:US-ASCII>
-  s.valid_encoding?         # => true
+  s.valid_encoding?         # => false
   s.bytes                   # => [197, 130, 97, 197, 130]
 
 Makes the change even if the given +encoding+ is invalid
