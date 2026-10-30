@@ -89,6 +89,45 @@ class Numeric
   def +@
     self
   end
+
+  with_jit do
+    if Primitive.rb_builtin_basic_definition_p(:step)
+      undef :step
+
+      def step(limit = (no_limit = true; nil), step = (no_step = true; 1), by: (no_by = true; nil), to: (no_to = true; nil)) # :nodoc:
+        Primitive.attr! :inline_block, :c_trace
+
+        # Iterate over Integers here so that the block can be called directly.
+        # Defer every other case, including the Enumerator, to the C implementation.
+        if defined?(yield) && no_by && no_to &&
+            Primitive.cexpr!('RBOOL(FIXNUM_P(self) && FIXNUM_P(limit) && FIXNUM_P(step))') && step != 0
+          i = self
+          if step > 0
+            while i <= limit
+              yield i
+              i += step
+            end
+          else
+            while i >= limit
+              yield i
+              i += step
+            end
+          end
+          return self
+        end
+
+        # Hash literals do not call Hash#[]=, which may be redefined.
+        kw = if no_by
+          {to: to} unless no_to
+        elsif no_to
+          {by: by}
+        else
+          {by: by, to: to}
+        end
+        Primitive.num_step_general(no_limit ? 0 : no_step ? 1 : 2, limit, step, kw)
+      end
+    end
+  end
 end
 
 class Integer

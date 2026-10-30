@@ -15,7 +15,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* enumerator.c (export) */
 VALUE rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
                        rb_enumerator_size_func *size_fn,
-                       VALUE beg, VALUE end, VALUE step, int excl);
+                       VALUE beg, VALUE end, VALUE step, int excl, int kw_splat);
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* INTERNAL_ENUMERATOR_H */

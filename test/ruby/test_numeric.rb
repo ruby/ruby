@@ -293,6 +293,7 @@ class TestNumeric < Test::Unit::TestCase
     assert_kind_of(Enumerator::ArithmeticSequence, 1.step(by: 2, to: nil))
     assert_kind_of(Enumerator::ArithmeticSequence, 1.step(by: 2, to: 10))
     assert_kind_of(Enumerator::ArithmeticSequence, 1.step(by: -1))
+    assert_equal([[1, 0], [3, 1]], 1.step(by: 2, to: 3).with_index.to_a)
 
     bug9811 = '[ruby-dev:48177] [Bug #9811]'
     assert_raise(ArgumentError, bug9811) { 1.step(10, foo: nil) {} }
