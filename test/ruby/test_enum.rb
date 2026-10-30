@@ -102,6 +102,10 @@ class TestEnumerable < Test::Unit::TestCase
     end
   end
 
+  def test_eager
+    assert_equal(@obj, @obj.eager)
+  end
+
   def test_find
     assert_equal(2, @obj.find {|x| x % 2 == 0 })
     assert_equal(nil, @obj.find {|x| false })
