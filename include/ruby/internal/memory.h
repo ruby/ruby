@@ -42,7 +42,9 @@
 # include <intrin.h>
 # if defined(_M_AMD64)
 # pragma intrinsic(_umul128)
+# if !defined(__clang__) /* clang-cl defines it as an inline function */
 # pragma intrinsic(_addcarry_u64)
+# endif
 # endif
 # if defined(_M_ARM64)
 # pragma intrinsic(__umulh)
