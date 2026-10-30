@@ -2680,7 +2680,7 @@ impl Assembler
                             match *stack_entry {
                                 // TODO: Investigate using a constant pool to track any value reference in the stack map
                                 StackMapEntry::Opnd(Opnd::Value(value)) => writer.imm(value),
-                                StackMapEntry::Opnd(Opnd::UImm(value)) => writer.imm(VALUE(value as usize)),
+                                StackMapEntry::Opnd(Opnd::UImm(value)) => writer.imm(VALUE(value.to_usize())),
                                 StackMapEntry::Skip(size) => writer.skip(size),
                                 StackMapEntry::BasePtr { slot_index, stack_size } => writer.base_ptr(slot_index, stack_size),
                                 StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) => {

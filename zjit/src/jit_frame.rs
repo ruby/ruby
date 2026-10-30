@@ -152,9 +152,9 @@ impl StackMapWriter {
         loop {
             let chunk = value & payload_mask;
             value >>= ZJIT_STACK_MAP_VARINT_BITS;
-            let more = u64::from(value != 0);
-            self.write_bits(chunk | more << ZJIT_STACK_MAP_VARINT_BITS, ZJIT_STACK_MAP_VARINT_BITS + 1);
-            if more == 0 {
+            let cont_bit = u64::from(value != 0);
+            self.write_bits(chunk | cont_bit << ZJIT_STACK_MAP_VARINT_BITS, ZJIT_STACK_MAP_VARINT_BITS + 1);
+            if cont_bit == 0 {
                 break;
             }
         }
