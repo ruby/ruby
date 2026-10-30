@@ -1040,6 +1040,7 @@ pub enum Insn {
     /// NewHash contains a vec of (key, value) pairs
     NewHash { elements: Vec<InsnId>, state: InsnId },
     NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
+    /// Allocate a Range whose low and high are a Fixnum or nil, which skips `<=>` in `range_init`
     NewRangeFixnum { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
     ArrayHash { elements: Vec<InsnId>, state: InsnId },
@@ -5599,9 +5600,19 @@ impl Function {
                         }
                     }
                     &Insn::NewRange { low, high, flag, state } => {
-                        if self.likely_a(low, types::Fixnum, state) && self.likely_a(high, types::Fixnum, state) {
-                            let low_fix = self.coerce_to(block, low, types::Fixnum, state);
-                            let high_fix = self.coerce_to(block, high, types::Fixnum, state);
+                        // range_init skips the `<=>` check when both low and high are Fixnum or nil
+                        let fixnum_or_nil = |fun: &Self, val: InsnId| {
+                            if fun.likely_a(val, types::Fixnum, state) {
+                                Some(types::Fixnum)
+                            } else if fun.likely_a(val, types::NilClass, state) {
+                                Some(types::NilClass)
+                            } else {
+                                None
+                            }
+                        };
+                        if let (Some(low_type), Some(high_type)) = (fixnum_or_nil(self, low), fixnum_or_nil(self, high)) {
+                            let low_fix = self.coerce_to(block, low, low_type, state);
+                            let high_fix = self.coerce_to(block, high, high_type, state);
                             let replacement = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high: high_fix, flag, state });
                             self.make_equal_to(insn_id, replacement);
                             self.insn_types[replacement] = self.infer_type(replacement);
@@ -8450,10 +8461,14 @@ impl Function {
             | Insn::FixnumAnd { left, right }
             | Insn::FixnumOr { left, right }
             | Insn::FixnumXor { left, right }
-            | Insn::NewRangeFixnum { low: left, high: right, .. }
             => {
                 self.assert_subtype(insn_id, left, types::Fixnum)?;
                 self.assert_subtype(insn_id, right, types::Fixnum)
+            }
+            Insn::NewRangeFixnum { low, high, .. } => {
+                let fixnum_or_nil = types::Fixnum.union(types::NilClass);
+                self.assert_subtype(insn_id, low, fixnum_or_nil)?;
+                self.assert_subtype(insn_id, high, fixnum_or_nil)
             }
             Insn::FloatAdd { recv, other, .. }
             | Insn::FloatSub { recv, other, .. }

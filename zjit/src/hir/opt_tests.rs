@@ -3413,8 +3413,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_no_optimize_new_range_fixnum_endless() {
-        // The nil upper bound must not be guarded as a Fixnum.
+    fn test_optimize_new_range_fixnum_endless() {
         eval("
             def test(a)
               (a..)
@@ -3436,10 +3435,73 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v15:NilClass = Const Value(nil)
-          v17:RangeExact = NewRange v10 NewRangeInclusive v15
+          v25:Fixnum = GuardType v10, Fixnum recompile
+          v26:RangeExact = NewRangeFixnum v25 NewRangeInclusive v15
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v17
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_optimize_new_range_fixnum_beginless() {
+        eval("
+            def test(a)
+              (..a)
+            end
+            test(1); test(2)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:NilClass = Const Value(nil)
+          v25:Fixnum = GuardType v10, Fixnum recompile
+          v26:RangeExact = NewRangeFixnum v14 NewRangeInclusive v25
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_optimize_new_range_fixnum_profiled_nil() {
+        eval("
+            def test(a)
+              (a..10)
+            end
+            test(nil); test(nil)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[10] = Const Value(10)
+          v25:NilClass = GuardType v10, NilClass recompile
+          v26:RangeExact = NewRangeFixnum v25 NewRangeInclusive v15
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v26
         ");
     }
 
