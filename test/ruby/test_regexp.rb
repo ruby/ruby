@@ -1317,6 +1317,19 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(RegexpError) { Regexp.new(cc.encode("UTF-16LE"), Regexp::IGNORECASE) }
   end
 
+  def test_char_class_intersection_error_no_memory_leak
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true, samples: 2..100)
+      chars = (0...3000).map {|i| (0x4e00 + 2 * i).chr("UTF-8") }.join
+      pat = "[x&&[^#{chars}]\\p{Foo}]"
+      code = proc do
+        Regexp.new(pat) rescue nil
+      end
+
+    begin;
+      20.times(&code)
+    end;
+  end
+
   def test_cclass_R
     assert_match(/\A\R\z/, "\r")
     assert_match(/\A\R\z/, "\n")
