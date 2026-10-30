@@ -2556,6 +2556,113 @@ EOT
     end
   end
 
+  def test_binmode_widechar_separator_after_split_character
+    ["\n", "\u{3042}"].each do |sep|
+      [Encoding::UTF_32BE, Encoding::UTF_32LE,
+       Encoding::UTF_16BE, Encoding::UTF_16LE].each do |e|
+        separator = sep.encode(e)
+        data = "\0" + "x#{sep}ab#{sep}cd".encode(e).b
+        # every split inside "x" or inside the first separator
+        (2...1 + "x".encode(e).bytesize + separator.bytesize).each do |split|
+          widechar_pipe(e, data, split) do |f|
+            assert_equal(["x#{sep}".encode(e), "ab#{sep}".encode(e), "cd".encode(e)],
+                         [f.gets(separator), f.gets(separator), f.gets(separator)],
+                         "[Bug #20819] #{e} separator #{sep.dump} split #{split}")
+          end
+        end
+      end
+    end
+  end
+
+  def test_binmode_widechar_separator_after_split_surrogate
+    [Encoding::UTF_16BE, Encoding::UTF_16LE].each do |e|
+      separator = "\n".encode(e)
+      data = "\0" + "x\u{1F600}\nab\ncd".encode(e).b
+      # every split inside the surrogate pair
+      (4..6).each do |split|
+        widechar_pipe(e, data, split) do |f|
+          assert_equal(["x\u{1F600}\n".encode(e), "ab\n".encode(e), "cd".encode(e)],
+                       [f.gets(separator), f.gets(separator), f.gets(separator)],
+                       "[Bug #20819] #{e} split #{split}")
+        end
+      end
+    end
+  end
+
+  def widechar_invalid_units
+    [[Encoding::UTF_16BE, "\xD8\x00"], [Encoding::UTF_16LE, "\x00\xD8"],
+     [Encoding::UTF_16BE, "\xDC\x00"], [Encoding::UTF_16LE, "\x00\xDC"],
+     [Encoding::UTF_32BE, "\x00\x11\x00\x00"], [Encoding::UTF_32LE, "\x00\x00\x11\x00"]]
+  end
+
+  def widechar_pipe(e, data, split)
+    IO.pipe do |r, w|
+      r.binmode; r.set_encoding(e); w.binmode
+      w.write(data.byteslice(0, split))
+      r.getbyte # the first fill holds only this chunk
+      w.write(data.byteslice(split..)); w.close
+      yield r
+    end
+  end
+
+  def test_binmode_widechar_invalid_unit_keeps_boundary
+    widechar_invalid_units.each do |e, bad|
+      bad = bad.b
+      separator = "\n".encode(e)
+      rest = "ab\n\ncd\n".encode(e)
+      data = "\0" + bad + rest.b
+      [1, 2].each do |split|
+        msg = "[Bug #20819] #{e} #{bad.dump} split #{split}"
+        widechar_pipe(e, data, split) do |f|
+          c = f.getc
+          assert_equal(bad, c.b, "#{msg} getc")
+          assert_equal(e, c.encoding)
+          assert_not_predicate(c, :valid_encoding?)
+          assert_equal("a".encode(e), f.getc, "#{msg} getc")
+          assert_equal("b\n".encode(e), f.gets(separator), "#{msg} gets")
+          assert_equal("\ncd".encode(e), f.readchar + f.readchar + f.readchar,
+                       "#{msg} readchar")
+          assert_equal(separator, f.getc)
+          assert_nil(f.getc)
+        end
+        widechar_pipe(e, data, split) do |f|
+          assert_equal([bad + "ab\n".encode(e).b, separator.b, "cd\n".encode(e).b],
+                       f.readlines(separator).map(&:b), "#{msg} readlines")
+        end
+        widechar_pipe(e, data, split) do |f|
+          assert_equal([bad] + rest.chars.map(&:b), f.each_char.map(&:b),
+                       "#{msg} each_char")
+        end
+        widechar_pipe(e, data, split) do |f|
+          assert_equal(bad + "a".encode(e).b, f.gets(separator, bad.bytesize + 1).b,
+                       "#{msg} gets with limit")
+          assert_equal("b\n".encode(e), f.gets(separator), "#{msg} gets after limit")
+        end
+        widechar_pipe(e, data, split) do |f|
+          assert_equal([bad + "ab\n\n".encode(e).b, "cd\n".encode(e).b],
+                       f.readlines("").map(&:b), "#{msg} paragraph mode")
+        end
+      end
+    end
+  end
+
+  def test_binmode_widechar_truncated_unit_after_high_surrogate
+    with_tmpdir do
+      [Encoding::UTF_16BE, Encoding::UTF_16LE].each do |e|
+        lone = (e == Encoding::UTF_16BE ? "\xD8\x00" : "\x00\xD8").b
+        File.binwrite("widechar", lone + "\xDC".b)
+        File.open("widechar", "rb", encoding: e) do |f|
+          assert_equal([lone, "\xDC".b, nil], [f.getc&.b, f.getc&.b, f.getc],
+                       "[Bug #20819] #{e} getc")
+        end
+        File.open("widechar", "rb", encoding: e) do |f|
+          assert_equal([lone, "\xDC".b], f.each_char.map(&:b),
+                       "[Bug #20819] #{e} each_char")
+        end
+      end
+    end
+  end
+
   def test_binmode_widechar_separator_at_limit
     with_tmpdir do
       [Encoding::UTF_32BE, Encoding::UTF_32LE,
