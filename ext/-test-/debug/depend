@@ -322,6 +322,7 @@ inspector.o: inspector.c
 profile_frames.o: $(RUBY_EXTCONF_H)
 profile_frames.o: $(arch_hdrdir)/ruby/config.h
 profile_frames.o: $(hdrdir)/ruby/assert.h
+profile_frames.o: $(hdrdir)/ruby/atomic.h
 profile_frames.o: $(hdrdir)/ruby/backward.h
 profile_frames.o: $(hdrdir)/ruby/backward/2/assume.h
 profile_frames.o: $(hdrdir)/ruby/backward/2/attributes.h
