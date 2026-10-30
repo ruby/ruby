@@ -241,6 +241,35 @@ pm_error_line_format_divider(const pm_error_line_format_t *format, pm_buffer_t *
     pm_buffer_append_byte(buffer, '\n');
 }
 
+/**
+ * Advance the given column of the line that begins at start by whole
+ * characters until it reaches the given limit, and return the number of
+ * characters passed over. Each character is displayed in one column. A byte
+ * that does not begin a valid character, or that is past the end of the
+ * source, counts as one character.
+ */
+static size_t
+pm_error_advance_columns(const pm_parser_t *parser, const uint8_t *start, size_t *column, size_t limit) {
+    size_t count = 0;
+
+    while (*column < limit) {
+        const uint8_t *cursor = start + *column;
+        size_t char_width = 1;
+
+        /* Every supported encoding is ASCII-compatible, so a byte below 0x80
+         * at the start of a character is a character by itself. */
+        if ((cursor < parser->end) && (*cursor >= 0x80)) {
+            char_width = pm_parser_encoding_char_width(parser, cursor, parser->end - cursor);
+            if (char_width == 0) char_width = 1;
+        }
+
+        *column += char_width;
+        count++;
+    }
+
+    return count;
+}
+
 static void
 pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const pm_error_line_format_t *format, int32_t line, uint32_t column_start, uint32_t column_end) {
     int32_t line_delta = line - parser->start_line;
@@ -295,11 +324,11 @@ pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const pm_er
         truncate_end = true;
     }
 
-    if (truncate_start) pm_buffer_append_string(buffer, "... ", 4);
+    if (truncate_start) PM_BUFFER_APPEND_LITERAL(buffer, "... ");
     pm_buffer_append_string(buffer, (const char *) display_start, (size_t) (end - display_start));
 
     if (truncate_end) {
-        pm_buffer_append_string(buffer, " ...\n", 5);
+        PM_BUFFER_APPEND_LITERAL(buffer, " ...\n");
     } else if (end == parser->end && end > parser->start && end[-1] != '\n') {
         pm_buffer_append_byte(buffer, '\n');
     }
@@ -329,7 +358,6 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
 
     pm_error_line_format_t format;
     pm_error_line_format_init(&format, format_type, first_displayed_line, last_displayed_line);
-
 
     /* We are going to iterate through every error in our error list and display
      * it. While we are iterating, we will display some padding lines of the
@@ -370,13 +398,13 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
         if (idx == window_end_idx) {
             switch (format_type) {
                 case PM_ERRORS_FORMAT_PLAIN:
-                    pm_buffer_append_string(buffer, "> ", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "> ");
                     break;
                 case PM_ERRORS_FORMAT_STYLE:
-                    pm_buffer_append_format(buffer, "%s", COLOR_BOLD "> " COLOR_RESET);
+                    PM_BUFFER_APPEND_LITERAL(buffer, COLOR_BOLD "> " COLOR_RESET);
                     break;
                 case PM_ERRORS_FORMAT_COLOR:
-                    pm_buffer_append_format(buffer, "%s", COLOR_RED "> " COLOR_RESET);
+                    PM_BUFFER_APPEND_LITERAL(buffer, COLOR_RED "> " COLOR_RESET);
                     break;
             }
 
@@ -410,46 +438,37 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
          * character when displayed in the terminal. For some east-asian
          * languages or emoji, this means it can be thrown off pretty badly. We
          * will need to solve this eventually. */
-        pm_buffer_append_string(buffer, "  ", 2);
+        PM_BUFFER_APPEND_LITERAL(buffer, "  ");
         pm_error_line_format_blank(&format, buffer);
 
         size_t column = 0;
         if (window_column_start > 0) {
-            pm_buffer_append_string(buffer, "    ", 4);
+            PM_BUFFER_APPEND_LITERAL(buffer, "    ");
             column = window_column_start;
         }
 
-        while (column < rich_error->column_start) {
-            pm_buffer_append_byte(buffer, ' ');
-
-            size_t char_width = pm_parser_encoding_char_width(parser, start + column, parser->end - (start + column));
-            column += (char_width == 0 ? 1 : char_width);
-        }
+        pm_buffer_append_repeated(buffer, ' ', pm_error_advance_columns(parser, start, &column, rich_error->column_start));
 
         switch (format_type) {
             case PM_ERRORS_FORMAT_PLAIN:
                 pm_buffer_append_byte(buffer, '^');
                 break;
             case PM_ERRORS_FORMAT_STYLE:
-                pm_buffer_append_format(buffer, "%s^", COLOR_BOLD);
+                PM_BUFFER_APPEND_LITERAL(buffer, COLOR_BOLD "^");
                 break;
             case PM_ERRORS_FORMAT_COLOR:
-                pm_buffer_append_format(buffer, "%s^", COLOR_RED);
+                PM_BUFFER_APPEND_LITERAL(buffer, COLOR_RED "^");
                 break;
         }
 
-        size_t char_width = pm_parser_encoding_char_width(parser, start + column, parser->end - (start + column));
-        column += (char_width == 0 ? 1 : char_width);
-
-        while ((column < rich_error->column_end) && (column < window_column_end)) {
-            pm_buffer_append_byte(buffer, '~');
-
-            size_t char_width = pm_parser_encoding_char_width(parser, start + column, parser->end - (start + column));
-            column += (char_width == 0 ? 1 : char_width);
-        }
+        /* The caret marks the first character of the error, and the tildes
+         * mark the rest of it, up to the end of the window. */
+        pm_error_advance_columns(parser, start, &column, column + 1);
+        size_t tilde_limit = (rich_error->column_end < window_column_end) ? rich_error->column_end : window_column_end;
+        pm_buffer_append_repeated(buffer, '~', pm_error_advance_columns(parser, start, &column, tilde_limit));
 
         if (format_type != PM_ERRORS_FORMAT_PLAIN) {
-            pm_buffer_append_format(buffer, "%s", COLOR_RESET);
+            PM_BUFFER_APPEND_LITERAL(buffer, COLOR_RESET);
         }
 
         if (inline_messages) {
@@ -502,13 +521,23 @@ pm_rich_error_init(const pm_parser_t *parser, pm_rich_error_t *rich_error, pm_di
     };
 }
 
+/**
+ * Append a line that names the file and line of an error along with its
+ * message, which is how an error is displayed without a source snippet.
+ */
+static void
+pm_error_append_summary(const pm_parser_t *parser, pm_buffer_t *buffer, int32_t line, const char *message) {
+    pm_buffer_append_string(buffer, (const char *) pm_string_source(&parser->filepath), pm_string_length(&parser->filepath));
+    pm_buffer_append_byte(buffer, ':');
+    pm_error_append_line_number(buffer, line, 0);
+    PM_BUFFER_APPEND_LITERAL(buffer, ": ");
+    pm_buffer_append_string(buffer, message, strlen(message));
+}
+
 pm_error_level_t
 pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_format_type_t format_type) {
     size_t nerrors = parser->error_list.size;
     assert(nerrors > 0);
-
-    int filepath_length = (int) pm_string_length(&parser->filepath);
-    const char *filepath = (const char *) pm_string_source(&parser->filepath);
 
     size_t rich_errors_size = nerrors * sizeof(pm_rich_error_t);
     if (rich_errors_size / sizeof(pm_rich_error_t) != nerrors) abort();
@@ -532,16 +561,8 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
             /* If we get an argument error, we want to format it and return it
              * immediately. They should include a snippet of the source if
              * possible. */
-            pm_buffer_append_format(
-                buffer,
-                "%.*s:%" PRIi32 ": %s",
-                filepath_length,
-                filepath,
-                pm_line_offset_list_line(&parser->line_offsets, location.start, parser->start_line),
-                pm_diagnostic_message(diagnostic)
-            );
-
             pm_rich_error_init(parser, rich_errors, diagnostic, &location);
+            pm_error_append_summary(parser, buffer, rich_errors[0].line_start, pm_diagnostic_message(diagnostic));
 
             if (rich_errors_are_utf8(parser, 1, rich_errors)) {
                 pm_buffer_append_byte(buffer, '\n');
@@ -567,14 +588,7 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
 
     /* The header displays the line of the first error in parse order, which
      * is the first entry in the array because it has not been sorted yet. */
-    pm_buffer_append_format(
-        buffer,
-        "%.*s:%" PRIi32 ": syntax error%s found\n",
-        filepath_length,
-        filepath,
-        rich_errors[0].line_start,
-        (nerrors > 1) ? "s" : ""
-    );
+    pm_error_append_summary(parser, buffer, rich_errors[0].line_start, (nerrors > 1) ? "syntax errors found\n" : "syntax error found\n");
 
     /* Sort the errors so that they are in the order that they appear in the
      * source. This is the order they are displayed in, and it also lets the
@@ -593,17 +607,8 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
          * diagnostics are displayed in the order that they appear in the
          * source, as they are when the snippets are displayed. */
         for (size_t idx = 0; idx < nerrors; idx++) {
-            pm_rich_error_t *rich_error = &rich_errors[idx];
-
             if (idx > 0) pm_buffer_append_byte(buffer, '\n');
-            pm_buffer_append_format(
-                buffer,
-                "%.*s:%" PRIi32 ": %s",
-                filepath_length,
-                filepath,
-                rich_error->line_start,
-                pm_diagnostic_message(rich_error->diagnostic)
-            );
+            pm_error_append_summary(parser, buffer, rich_errors[idx].line_start, pm_diagnostic_message(rich_errors[idx].diagnostic));
         }
     }
 
