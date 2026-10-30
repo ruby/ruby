@@ -446,6 +446,7 @@ make_counters! {
     invokeblock_iseq_arg0_wrong_len,
     invokeblock_iseq_not_inlined,
     invokeblock_ifunc_args_splat,
+    invokeblock_ifunc_kwarg,
     invokeblock_ifunc_kw_splat,
     invokeblock_proc,
     invokeblock_symbol,
