@@ -1786,6 +1786,72 @@ class TestIO < Test::Unit::TestCase
     RUBY
   end
 
+  def test_write_gc_compact
+    # [Bug #20169]
+    omit "fork is not supported" unless Process.respond_to?(:fork)
+    omit "compaction not supported" unless GC.respond_to?(:compact)
+
+    assert_separately(["-rsocket"], <<~RUBY, timeout: 60)
+      begin
+        socket, peer = UNIXSocket.pair
+        delays, delays_in = IO.pipe
+        # The data must be read by another process: no thread in this one runs
+        # while it compacts.
+        reader = fork do
+          socket.close
+          delays_in.close
+          while (delay = delays.read(1))
+            sleep(delay.ord / 1000.0)
+            peer.read(4096)
+          end
+        end
+        peer.close
+
+        targets = Queue.new
+        writer = Thread.new do
+          strings = targets.pop
+          loop do
+            strings = targets.pop until targets.empty?
+            strings.each {|s| socket.write(s) }
+          end
+        end
+        writer.report_on_exception = false
+
+        assert_nothing_raised do
+          50.times do
+            strings = Array.new(200_000) { 'y' * 500 }
+            pinned = {}.compare_by_identity
+            _movable = strings.each_slice(20).map {|slice| pinned[slice[0]] = true; slice[10] }
+            targets << [
+              # Shares a heap root, and is short enough to embed
+              ('x' * 10_000)[-400..],
+              # Frozen, and shares an embedded root
+              strings[100_000].freeze[-400..].freeze,
+            ]
+            strings = nil
+            sleep 0.01
+            delays_in.write(rand(12).chr)
+            GC.compact
+            writer.join(0)
+          end
+        end
+      ensure
+        if reader
+          begin
+            Process.kill(:KILL, reader)
+            Process.waitpid(reader)
+          rescue Errno::ESRCH, Errno::ECHILD
+          end
+        end
+        # Joining would re-raise the writer's error from the reader exiting.
+        writer&.kill
+        socket&.close
+        delays&.close
+        delays_in&.close
+      end
+    RUBY
+  end
+
   def test_read_interrupted_by_wakeup
     with_pipe do |r, w|
       t = Thread.new { r.read }

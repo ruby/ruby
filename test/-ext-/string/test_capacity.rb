@@ -87,6 +87,20 @@ class Test_StringCapacity < Test::Unit::TestCase
     assert_equal(capacity, capa(s))
   end
 
+  def test_no_gvl_safe_acquire_shared_heap_root
+    root = String.new("a" * 50, capacity: 1000).freeze
+    refute(Bug::String.no_gvl_safe_acquire_in_gc_slot?(root.dup))
+    assert(Bug::String.no_gvl_safe_acquire_terminated?(root.dup))
+  end
+
+  def test_no_gvl_safe_acquire_shared_embedded_root
+    root = ("a" * pool_slot_size(0)).freeze
+    refute(Bug::String.no_gvl_safe_acquire_in_gc_slot?(String.new.replace(root)))
+    refute(Bug::String.no_gvl_safe_acquire_in_gc_slot?(String.new.replace(root).freeze))
+    assert(Bug::String.no_gvl_safe_acquire_terminated?(String.new.replace(root)))
+    assert(Bug::String.no_gvl_safe_acquire_terminated?(String.new.replace(root).freeze))
+  end
+
   def test_encode_bang_capacity_with_multibyte_terminator
     s = smallest_slot_utf16le_string
     assert(Bug::String.cstr_embedded?(s))
