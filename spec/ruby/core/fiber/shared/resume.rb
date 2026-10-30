@@ -4,16 +4,11 @@ describe :fiber_resume, shared: true do
     fiber.send(@method).should == :fiber
   end
 
-  it "raises a FiberError if invoked from a different Thread" do
-    fiber = Fiber.new { 42 }
-    Thread.new do
-      -> {
-        fiber.send(@method)
-      }.should.raise(FiberError)
-    end.join
+  it "can be invoked from a different Thread" do
+    fiber = Fiber.new { Thread.current }
+    thread = Thread.new { fiber.send(@method) }
 
-    # Check the Fiber can still be used
-    fiber.send(@method).should == 42
+    thread.value.should.equal? thread
   end
 
   it "passes control to the beginning of the block on first invocation" do
