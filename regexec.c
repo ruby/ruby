@@ -4152,7 +4152,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  msa->match_cache_status = MATCH_CACHE_STATUS_ENABLED;
 	  OnigCacheOpcode* cache_opcodes = (OnigCacheOpcode*)xmalloc(msa->num_cache_opcodes * sizeof(OnigCacheOpcode));
 	  if (cache_opcodes == NULL) {
-	    return ONIGERR_MEMORY;
+	    goto memory_error;
 	  }
 	  OnigPosition r = init_cache_opcodes(reg, cache_opcodes, &msa->num_cache_points);
 	  if (r < 0) {
@@ -4177,15 +4177,15 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #endif
 	  /* Overflow check */
 	  if (num_match_cache_points / length != (size_t)msa->num_cache_points) {
-	    return ONIGERR_MEMORY;
+	    goto memory_error;
 	  }
 	  if (num_match_cache_points >= LONG_MAX_LIMIT) {
-	    return ONIGERR_MEMORY;
+	    goto memory_error;
 	  }
 	  size_t match_cache_buf_length = (num_match_cache_points >> 3) + (num_match_cache_points & 7 ? 1 : 0) + 1;
 	  uint8_t* match_cache_buf = (uint8_t*)xmalloc(match_cache_buf_length * sizeof(uint8_t));
 	  if (match_cache_buf == NULL) {
-	    return ONIGERR_MEMORY;
+	    goto memory_error;
 	  }
 	  xmemset(match_cache_buf, 0, match_cache_buf_length * sizeof(uint8_t));
 	  msa->match_cache_buf = match_cache_buf;
@@ -4235,6 +4235,13 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   STACK_SAVE;
   xfree(xmalloc_base);
   return ONIGERR_TIMEOUT;
+
+#ifdef USE_MATCH_CACHE
+ memory_error:
+  STACK_SAVE;
+  xfree(xmalloc_base);
+  return ONIGERR_MEMORY;
+#endif
 }
 
 
