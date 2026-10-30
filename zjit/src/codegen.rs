@@ -258,7 +258,7 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
 /// Invalidate an ISEQ version and allow it to be recompiled on the next call.
 /// Both PatchPoint invalidation and exit-profiling recompilation go through this
 /// function, serving as the central point for all invalidation/recompile decisions.
-/// See [`IseqPayload::grant_patch_point_version`] for the one extra version a PatchPoint
+/// See [`crate::payload::IseqPayload::grant_patch_point_version`] for the one extra version a PatchPoint
 /// may allow beyond --zjit-max-versions.
 ///
 /// TODO: evolve this into a general `handle_event(iseq, event)` state machine that
