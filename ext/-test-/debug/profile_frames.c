@@ -68,6 +68,7 @@ static pthread_t sampler_target_thread;
 static pthread_t sampler_thread;
 static rb_atomic_t sampler_running;
 static rb_atomic_t sampler_samples;
+static struct sigaction sampler_old_sigaction;
 
 /* Like sampling profilers, call rb_profile_frames() directly in the signal handler */
 static void
@@ -87,8 +88,12 @@ sampler_loop(void *arg)
 {
     const struct timespec ts = {0, 10 * 1000};
     while (RUBY_ATOMIC_LOAD(sampler_running)) {
+        rb_atomic_t samples = RUBY_ATOMIC_LOAD(sampler_samples);
         pthread_kill(sampler_target_thread, SIGPROF);
-        nanosleep(&ts, NULL);
+        /* Wait for the signal to be handled, so no SIGPROF is pending once this thread exits */
+        while (RUBY_ATOMIC_LOAD(sampler_samples) == samples) {
+            nanosleep(&ts, NULL);
+        }
     }
     return NULL;
 }
@@ -102,17 +107,17 @@ start_profile_frames_sampler(VALUE self)
 
     if (RUBY_ATOMIC_LOAD(sampler_running)) rb_raise(rb_eRuntimeError, "sampler already running");
 
-    /* The handler stays installed after stop, as a SIGPROF might still be pending */
     sa.sa_handler = sampler_signal_handler;
     sa.sa_flags = SA_RESTART;
     sigemptyset(&sa.sa_mask);
-    if (sigaction(SIGPROF, &sa, NULL) != 0) rb_sys_fail("sigaction");
+    if (sigaction(SIGPROF, &sa, &sampler_old_sigaction) != 0) rb_sys_fail("sigaction");
 
     sampler_target_thread = pthread_self();
     RUBY_ATOMIC_SET(sampler_samples, 0);
     RUBY_ATOMIC_SET(sampler_running, 1);
     if ((err = pthread_create(&sampler_thread, NULL, sampler_loop, NULL)) != 0) {
         RUBY_ATOMIC_SET(sampler_running, 0);
+        sigaction(SIGPROF, &sampler_old_sigaction, NULL);
         rb_syserr_fail(err, "pthread_create");
     }
     return Qnil;
@@ -126,6 +131,7 @@ stop_profile_frames_sampler(VALUE self)
 
     RUBY_ATOMIC_SET(sampler_running, 0);
     pthread_join(sampler_thread, NULL);
+    sigaction(SIGPROF, &sampler_old_sigaction, NULL);
     return UINT2NUM(RUBY_ATOMIC_LOAD(sampler_samples));
 }
 #endif
