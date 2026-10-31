@@ -38,8 +38,10 @@
 
 #include COROUTINE_H
 
-// Thread event hooks are not implemented on this platform.
-#define RB_INTERNAL_THREAD_HOOK(event, th) ((void)0)
+static rb_internal_thread_event_hook_t *rb_internal_thread_event_hooks = NULL;
+static void rb_thread_execute_hooks(rb_event_flag_t event, rb_thread_t *th);
+
+#define RB_INTERNAL_THREAD_HOOK(event, th) if (UNLIKELY(rb_internal_thread_event_hooks)) { rb_thread_execute_hooks(event, th); }
 
 // No fork(), so this never advances; it only keeps TIMER_THREAD_CREATED_P()
 // spelled the same way on both platforms.
@@ -56,24 +58,95 @@ static void native_thread_destroy(struct rb_native_thread *nt);
 static void timer_thread_wakeup_force(void);
 static void ubf_select(void *ptr); // thread_sched.c
 
+// thread internal event hooks
+//
+// A hook fires on every GVL transition, so the list is read far more often
+// than it is written.  An SRW lock, the Win32 counterpart of the pthread
+// rwlock the POSIX side uses, keeps those reads from serialising each other.
+
+struct rb_internal_thread_event_hook {
+    rb_internal_thread_event_callback callback;
+    rb_event_flag_t event;
+    void *user_data;
+
+    struct rb_internal_thread_event_hook *next;
+};
+
+static SRWLOCK rb_internal_thread_event_hooks_rw_lock = SRWLOCK_INIT;
+
 rb_internal_thread_event_hook_t *
 rb_internal_thread_add_event_hook(rb_internal_thread_event_callback callback, rb_event_flag_t internal_event, void *user_data)
 {
-    // not implemented
-    return NULL;
+    rb_internal_thread_event_hook_t *hook = ALLOC_N(rb_internal_thread_event_hook_t, 1);
+    hook->callback = callback;
+    hook->user_data = user_data;
+    hook->event = internal_event;
+
+    AcquireSRWLockExclusive(&rb_internal_thread_event_hooks_rw_lock);
+    hook->next = rb_internal_thread_event_hooks;
+    ATOMIC_PTR_EXCHANGE(rb_internal_thread_event_hooks, hook);
+    ReleaseSRWLockExclusive(&rb_internal_thread_event_hooks_rw_lock);
+
+    return hook;
 }
 
 bool
 rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
 {
-    // not implemented
-    return false;
+    bool success = false;
+
+    AcquireSRWLockExclusive(&rb_internal_thread_event_hooks_rw_lock);
+
+    if (rb_internal_thread_event_hooks == hook) {
+        ATOMIC_PTR_EXCHANGE(rb_internal_thread_event_hooks, hook->next);
+        success = true;
+    }
+    else {
+        for (rb_internal_thread_event_hook_t *h = rb_internal_thread_event_hooks; h; h = h->next) {
+            if (h->next == hook) {
+                h->next = hook->next;
+                success = true;
+                break;
+            }
+        }
+    }
+
+    ReleaseSRWLockExclusive(&rb_internal_thread_event_hooks_rw_lock);
+
+    if (success) {
+        SIZED_FREE(hook);
+    }
+    return success;
 }
 
+// See the pthread implementation for what the GC asks this and why the lock
+// makes the answer good enough.
 bool
 rb_thread_event_hooks_registered_p(void)
 {
-    return false; // hooks are not implemented on this platform
+    AcquireSRWLockShared(&rb_internal_thread_event_hooks_rw_lock);
+    const bool registered = (rb_internal_thread_event_hooks != NULL);
+    ReleaseSRWLockShared(&rb_internal_thread_event_hooks_rw_lock);
+    return registered;
+}
+
+static void
+rb_thread_execute_hooks(rb_event_flag_t event, rb_thread_t *th)
+{
+    if (th->self == 0) return;
+
+    AcquireSRWLockShared(&rb_internal_thread_event_hooks_rw_lock);
+
+    for (rb_internal_thread_event_hook_t *h = rb_internal_thread_event_hooks; h; h = h->next) {
+        if (h->event & event) {
+            rb_internal_thread_event_data_t event_data = {
+                .thread = th->self,
+            };
+            (*h->callback)(event, &event_data, h->user_data);
+        }
+    }
+
+    ReleaseSRWLockShared(&rb_internal_thread_event_hooks_rw_lock);
 }
 
 RBIMPL_ATTR_NORETURN()
@@ -334,6 +407,7 @@ native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mute
 
     rb_hrtime_t rel = *abs - now;
     HANDLE timer = ruby_thread_from_native()->nt->wait_timer;
+    int r;
 
     if (timer) {
         // a negative due time is relative, in 100ns units
@@ -342,15 +416,20 @@ native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mute
         if (!SetWaitableTimer(timer, &due, 0, NULL, NULL, FALSE)) {
             w32_error("native_cond_timedwait");
         }
-        return native_cond_timedwait_ms(cond, mutex, timer, INFINITE);
+        r = native_cond_timedwait_ms(cond, mutex, timer, INFINITE);
+    }
+    else {
+        // unsigned long is 32 bits here, and INFINITE would never time out.
+        rb_hrtime_t ms = roomof(rel, RB_HRTIME_PER_MSEC);
+        unsigned long msec = ms < INFINITE ? (unsigned long)ms : INFINITE - 1;
+        r = native_cond_timedwait_ms(cond, mutex, NULL, msec);
     }
 
-    unsigned long msec = (unsigned long)(rel / RB_HRTIME_PER_MSEC);
+    // The wait runs on another clock than rb_hrtime_now() and can end early.
+    // Report that as spurious, the way pthread_cond_timedwait would.
+    if (r == ETIMEDOUT && rb_hrtime_now() < *abs) return 0;
 
-    // do not busy loop on a sub-millisecond deadline
-    if (msec == 0) msec = 1;
-
-    return native_cond_timedwait_ms(cond, mutex, NULL, msec);
+    return r;
 }
 
 void
