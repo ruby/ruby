@@ -141,6 +141,7 @@ DEBUGFLAGS ?= -Z7
 ifeq ($(RUBY_DEVEL),yes)
 XCFLAGS += -DRUBY_DEVEL=1
 endif
+XCFLAGS += -DPRISM_XALLOCATOR
 ifneq ($(CLANG_VER),)
 # clang-cl takes -O2sy- as -Os
 OPTFLAGS ?= -O2 -Oy-
