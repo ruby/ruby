@@ -286,6 +286,7 @@ void rb_gc_after_fork(rb_pid_t pid);
 } while (0)
 
 void rb_objspace_reachable_objects_from_local(VALUE obj, void (func)(VALUE, void *), void *data);
+void rb_objspace_reachable_objects_from_locked(VALUE obj, void (func)(VALUE, void *), void *data);
 
 #if USE_MODULAR_GC
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -375,6 +376,11 @@ int rb_ec_stack_check(struct rb_execution_context_struct *ec);
 void rb_gc_obj_became_shareable(VALUE obj);
 bool rb_gc_multi_objspace_p(void);
 bool rb_gc_obj_foreign_p(VALUE obj);
+void rb_gc_objspace_set_ractor(void *objspace, struct rb_ractor_struct *r);
+struct rb_ractor_struct *rb_gc_obj_ractor(VALUE obj);
+bool rb_gc_obj_in_zombie_objspace_p(VALUE obj); // under the VM lock
+bool rb_gc_obj_live_in_zombie_objspace_p(VALUE obj); // under the VM lock
+bool rb_gc_obj_in_objspace_p(void *objspace, VALUE obj);
 void *rb_gc_objspace_alloc(void);
 void rb_gc_objspace_retire_gc(void);
 /* Build an object, or suppress GC, in a named objspace rather than the current
