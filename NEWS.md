@@ -461,6 +461,11 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 * Socket
 
+    * `BasicSocket#recvmsg` now raises `IO::TimeoutError` when `recvmsg(2)`
+      fails with `ETIMEDOUT`, as `BasicSocket#recv` does. It used to raise
+      `Errno::ETIMEDOUT`. Code rescuing `Errno::ETIMEDOUT` from `recvmsg` has
+      to rescue `IO::TimeoutError` instead. [[Bug #22286]]
+
     * On Windows, a connection that is refused or unreachable now raises the
       matching `Errno` class as soon as Winsock reports it, instead of
       `Errno::ETIMEDOUT` once the whole `connect_timeout` has passed. Code
@@ -718,6 +723,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
 [Bug #22273]: https://bugs.ruby-lang.org/issues/22273
 [Bug #22276]: https://bugs.ruby-lang.org/issues/22276
+[Bug #22286]: https://bugs.ruby-lang.org/issues/22286
 [Bug #22379]: https://bugs.ruby-lang.org/issues/22379
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779

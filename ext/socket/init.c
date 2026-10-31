@@ -718,6 +718,13 @@ accept_blocking(void *data)
     return (VALUE)cloexec_accept(arg->fd, arg->sockaddr, arg->len);
 }
 
+static void
+accept_release(VALUE result, void *data)
+{
+    int fd = (int)result;
+    if (fd >= 0) close(fd);
+}
+
 VALUE
 rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
 {
@@ -736,7 +743,7 @@ rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
 #ifdef RSOCK_WAIT_BEFORE_BLOCKING
     rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
 #endif
-    peer = (int)rb_io_blocking_region(fptr, accept_blocking, &accept_arg);
+    peer = (int)rb_io_blocking_region_release(fptr, accept_blocking, &accept_arg, accept_release);
     if (peer < 0) {
         int error = errno;
 

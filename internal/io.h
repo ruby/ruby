@@ -162,6 +162,7 @@ void rb_write_error_str(VALUE mesg);
 
 VALUE rb_io_blocking_region_wait(struct rb_io *io, rb_blocking_function_t *function, void *argument, enum rb_io_event events);
 VALUE rb_io_blocking_region(struct rb_io *io, rb_blocking_function_t *function, void *argument);
+VALUE rb_io_blocking_region_release(struct rb_io *io, rb_blocking_function_t *function, void *argument, void (*release)(VALUE result, void *argument));
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* INTERNAL_IO_H */

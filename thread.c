@@ -2203,8 +2203,9 @@ rb_thread_mn_schedulable(VALUE thval)
     return th->mn_schedulable;
 }
 
-VALUE
-rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void *data1, int events)
+static VALUE
+thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void *data1, int events,
+                        void (*release)(VALUE result, void *data1))
 {
     rb_execution_context_t * volatile ec = GET_EC();
     rb_thread_t * volatile th = rb_ec_thread_ptr(ec);
@@ -2212,6 +2213,7 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
     RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), io->fd, events);
 
     volatile VALUE val = Qundef; /* shouldn't be used */
+    volatile bool returned = false;
     volatile int saved_errno = 0;
     enum ruby_tag_type state;
     volatile bool prev_mn_schedulable = th->mn_schedulable;
@@ -2230,6 +2232,7 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
             volatile enum ruby_tag_type saved_state = state; /* for BLOCKING_REGION */
           retry:
+            returned = false;
             BLOCKING_REGION(th, {
                 // `errno` is only valid when there is an actual error - but we can't
                 // extract that from the return value of `func` alone, so we clear any
@@ -2238,6 +2241,7 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
                 errno = 0;
                 val = func(data1);
                 saved_errno = errno;
+                returned = true;
             }, ubf_select, th, FALSE);
 
             RUBY_ASSERT(th == rb_ec_thread_ptr(ec));
@@ -2267,6 +2271,8 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
         th->mn_schedulable = prev_mn_schedulable;
     }
 
+    if (state && release && returned) release(val, data1);
+
     rb_io_blocking_operation_exit(io, &blocking_operation);
 
     if (state) {
@@ -2281,6 +2287,19 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
     errno = saved_errno;
 
     return val;
+}
+
+VALUE
+rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void *data1, int events)
+{
+    return thread_io_blocking_call(io, func, data1, events, NULL);
+}
+
+VALUE
+rb_thread_io_blocking_call_release(struct rb_io* io, rb_blocking_function_t *func, void *data1, int events,
+                                   void (*release)(VALUE result, void *data1))
+{
+    return thread_io_blocking_call(io, func, data1, events, release);
 }
 
 VALUE

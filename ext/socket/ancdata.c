@@ -1372,22 +1372,32 @@ rsock_recvmsg(int socket, struct msghdr *message, int flags)
     return ret;
 }
 
-static void *
+static VALUE
 nogvl_recvmsg_func(void *ptr)
 {
     struct recvmsg_args_struct *args = ptr;
     int flags = args->flags;
-    return (void *)rsock_recvmsg(args->fd, args->msg, flags);
+    return (VALUE)rsock_recvmsg(args->fd, args->msg, flags);
+}
+
+static void
+recvmsg_release(VALUE result, void *ptr)
+{
+#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
+    struct recvmsg_args_struct *args = ptr;
+    if ((ssize_t)result >= 0)
+        rsock_discard_cmsg_resource(args->msg, (args->flags & MSG_PEEK) != 0);
+#endif
 }
 
 static ssize_t
-rb_recvmsg(int fd, struct msghdr *msg, int flags)
+rb_recvmsg(rb_io_t *fptr, struct msghdr *msg, int flags)
 {
     struct recvmsg_args_struct args;
-    args.fd = fd;
+    args.fd = fptr->fd;
     args.msg = msg;
     args.flags = flags;
-    return (ssize_t)rb_thread_call_without_gvl(nogvl_recvmsg_func, &args, RUBY_UBF_IO, 0);
+    return (ssize_t)rb_io_blocking_region_release(fptr, nogvl_recvmsg_func, &args, recvmsg_release);
 }
 
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
@@ -1574,7 +1584,7 @@ bsock_recvmsg_internal(VALUE sock,
     if (nonblock && !MSG_DONTWAIT_RELIABLE)
         rb_io_set_nonblock(fptr);
 
-    ss = rb_recvmsg(fptr->fd, &mh, flags);
+    ss = rb_recvmsg(fptr, &mh, flags);
 
     if (ss == 0 && !rsock_is_dgram(fptr)) {
         return Qnil;
