@@ -2845,11 +2845,11 @@ num_step_negative_p(VALUE num)
 }
 
 static int
-num_step_extract_args(int argc, const VALUE *argv, VALUE *to, VALUE *step, VALUE *by)
+num_step_extract_args(int kw_flag, int argc, const VALUE *argv, VALUE *to, VALUE *step, VALUE *by)
 {
     VALUE hash;
 
-    argc = rb_scan_args(argc, argv, "02:", to, step, &hash);
+    argc = rb_scan_args_kw(kw_flag, argc, argv, "02:", to, step, &hash);
     if (!NIL_P(hash)) {
         ID keys[2];
         VALUE values[2];
@@ -2896,10 +2896,10 @@ num_step_check_fix_args(int argc, VALUE *to, VALUE *step, VALUE by, int fix_nil,
 }
 
 static int
-num_step_scan_args(int argc, const VALUE *argv, VALUE *to, VALUE *step, int fix_nil, int allow_zero_step)
+num_step_scan_args(int kw_flag, int argc, const VALUE *argv, VALUE *to, VALUE *step, int fix_nil, int allow_zero_step)
 {
     VALUE by = Qundef;
-    argc = num_step_extract_args(argc, argv, to, step, &by);
+    argc = num_step_extract_args(kw_flag, argc, argv, to, step, &by);
     return num_step_check_fix_args(argc, to, step, by, fix_nil, allow_zero_step);
 }
 
@@ -2910,10 +2910,12 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
     int argc = args ? RARRAY_LENINT(args) : 0;
     const VALUE *argv = args ? RARRAY_CONST_PTR(args) : 0;
 
-    num_step_scan_args(argc, argv, &to, &step, TRUE, FALSE);
+    num_step_scan_args(RB_SCAN_ARGS_PASS_CALLED_KEYWORDS, argc, argv, &to, &step, TRUE, FALSE);
 
     return ruby_num_interval_step_size(from, to, step, FALSE);
 }
+
+static VALUE num_step_kw(int kw_flag, int argc, VALUE *argv, VALUE from);
 
 /*
  *  call-seq:
@@ -3014,13 +3016,19 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
 static VALUE
 num_step(int argc, VALUE *argv, VALUE from)
 {
+    return num_step_kw(RB_SCAN_ARGS_PASS_CALLED_KEYWORDS, argc, argv, from);
+}
+
+static VALUE
+num_step_kw(int kw_flag, int argc, VALUE *argv, VALUE from)
+{
     VALUE to, step;
     int desc, inf;
 
     if (!rb_block_given_p()) {
         VALUE by = Qundef;
 
-        num_step_extract_args(argc, argv, &to, &step, &by);
+        num_step_extract_args(kw_flag, argc, argv, &to, &step, &by);
         if (!UNDEF_P(by)) {
             step = by;
         }
@@ -3032,14 +3040,15 @@ num_step(int argc, VALUE *argv, VALUE from)
         }
         if ((NIL_P(to) || rb_obj_is_kind_of(to, rb_cNumeric)) &&
             rb_obj_is_kind_of(step, rb_cNumeric)) {
+            int kw_splat = kw_flag == RB_SCAN_ARGS_KEYWORDS || rb_keyword_given_p();
             return rb_arith_seq_new(from, ID2SYM(rb_frame_this_func()), argc, argv,
-                                    num_step_size, from, to, step, FALSE);
+                                    num_step_size, from, to, step, FALSE, kw_splat);
         }
 
         return SIZED_ENUMERATOR_KW(from, 2, ((VALUE [2]){to, step}), num_step_size, FALSE);
     }
 
-    desc = num_step_scan_args(argc, argv, &to, &step, TRUE, FALSE);
+    desc = num_step_scan_args(kw_flag, argc, argv, &to, &step, TRUE, FALSE);
     if (rb_equal(step, INT2FIX(0))) {
         inf = 1;
     }
@@ -3085,6 +3094,16 @@ num_step(int argc, VALUE *argv, VALUE from)
         }
     }
     return from;
+}
+
+/* The general case of the Ruby Numeric#step defined when a JIT is enabled */
+static VALUE
+num_step_general(rb_execution_context_t *ec, VALUE from, VALUE argc, VALUE to, VALUE step, VALUE kw)
+{
+    VALUE argv[3] = {to, step};
+    int n = FIX2INT(argc);
+    if (!NIL_P(kw)) argv[n++] = kw;
+    return num_step_kw(NIL_P(kw) ? RB_SCAN_ARGS_PASS_CALLED_KEYWORDS : RB_SCAN_ARGS_KEYWORDS, n, argv, from);
 }
 
 static char *

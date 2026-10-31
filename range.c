@@ -555,7 +555,7 @@ range_step(int argc, VALUE *argv, VALUE range)
         //   ary[(..-1) % 3]
         if (step_num_p && ((b_num_p && (NIL_P(e) || e_num_p)) || (NIL_P(b) && e_num_p))) {
             return rb_arith_seq_new(range, ID2SYM(rb_frame_this_func()), argc, argv,
-                    range_step_size, b, e, step, EXCL(range));
+                    range_step_size, b, e, step, EXCL(range), rb_keyword_given_p());
         }
 
         // ...but generic Enumerator from beginless range is useless and probably an error.

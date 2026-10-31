@@ -3910,10 +3910,10 @@ arith_seq_allocate(VALUE klass)
 VALUE
 rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
                  rb_enumerator_size_func *size_fn,
-                 VALUE beg, VALUE end, VALUE step, int excl)
+                 VALUE beg, VALUE end, VALUE step, int excl, int kw_splat)
 {
     VALUE aseq = enumerator_init(arith_seq_allocate(rb_cArithSeq),
-                                 obj, meth, argc, argv, size_fn, Qnil, rb_keyword_given_p());
+                                 obj, meth, argc, argv, size_fn, Qnil, kw_splat);
     struct arith_seq *ptr;
     TypedData_Get_Struct(aseq, struct arith_seq, &enumerator_data_type, ptr);
 
