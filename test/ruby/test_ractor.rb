@@ -774,6 +774,23 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # A shared native thread that comes back from a blocking region to a full
+  # pool retires, and must not leave the count again if it blocks once more
+  # before it gets back to its loop: the pool would look a thread short, the
+  # timer thread would make another, and the extra would never end.
+  def test_shared_native_threads_stay_capped_across_blocking_io
+    omit "needs /proc/self/status" unless File.exist?("/proc/self/status")
+    assert_ractor(<<~'RUBY', args: [{ "RUBY_MAX_CPU" => "4" }], timeout: 60)
+      200.times do
+        # Dir.children releases the GVL around opendir and readdir
+        8.times.map { Ractor.new { 4.times { Dir.children("/") } } }.each(&:value)
+      end
+      threads = File.read("/proc/self/status")[/^Threads:\s+(\d+)/, 1].to_i
+      # max_cpu shared threads, the main and timer threads, and some slack
+      assert_operator threads, :<=, 4 + 2 + 4
+    RUBY
+  end
+
   def test_symbol_proc_is_shareable
     pr = :symbol.to_proc
     assert_make_shareable(pr)
