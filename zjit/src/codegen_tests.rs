@@ -6548,6 +6548,83 @@ fn test_expandarray_splat_post() {
 }
 
 #[test]
+fn test_expandarray_nil() {
+    eval("
+        def test
+          a, b = nil
+          [a, b]
+        end
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("test"), @"[nil, nil]");
+}
+
+#[test]
+fn test_expandarray_nil_splat() {
+    eval("
+        def test
+          a, *b = nil
+          [a, b]
+        end
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("test"), @"[nil, []]");
+}
+
+#[test]
+fn test_expandarray_nil_splat_only() {
+    eval("
+        def test
+          *rest = nil
+          rest
+        end
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("test"), @"[nil]");
+}
+
+#[test]
+fn test_expandarray_nil_to_ary_defined() {
+    eval("
+        def test
+          a, b = nil
+          [a, b]
+        end
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("
+        result = [test]
+        class NilClass
+          def to_ary = [1, 2]
+        end
+        result << test
+    "), @"[[nil, nil], [1, 2]]");
+}
+
+#[test]
+fn test_expandarray_nil_method_missing_defined() {
+    eval("
+        def test
+          a, b = nil
+          [a, b]
+        end
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("
+        result = [test]
+        class NilClass
+          def method_missing(name, *) = name == :to_ary ? [3, 4] : super
+        end
+        result << test
+    "), @"[[nil, nil], [3, 4]]");
+}
+
+#[test]
 fn test_constant_invalidation() {
     eval("
         class C; end

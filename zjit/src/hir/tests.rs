@@ -6245,6 +6245,75 @@ pub(crate) mod hir_build_tests {
     }
 
     #[test]
+    fn test_expandarray_nil() {
+        eval(r#"
+            def test
+              a, b = nil
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_expandarray);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb3(v1, v2, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb3(v6, v7, v8)
+        bb3(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(NilClass@0x1000, to_ary@0x1008, cme:0x1010)
+          PatchPoint MethodRedefined(NilClass@0x1000, respond_to?@0x1038, cme:0x1040)
+          PatchPoint MethodRedefined(NilClass@0x1000, respond_to_missing?@0x1068, cme:0x1070)
+          PatchPoint MethodRedefined(NilClass@0x1000, method_missing@0x1098, cme:0x10a0)
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn test_expandarray_nil_splat() {
+        eval(r#"
+            def test
+              a, *b = nil
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_expandarray);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb3(v1, v2, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:NilClass = Const Value(nil)
+          v8:NilClass = Const Value(nil)
+          Jump bb3(v6, v7, v8)
+        bb3(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(NilClass@0x1000, to_ary@0x1008, cme:0x1010)
+          PatchPoint MethodRedefined(NilClass@0x1000, respond_to?@0x1038, cme:0x1040)
+          PatchPoint MethodRedefined(NilClass@0x1000, respond_to_missing?@0x1068, cme:0x1070)
+          PatchPoint MethodRedefined(NilClass@0x1000, method_missing@0x1098, cme:0x10a0)
+          v23:ArrayExact = NewArray
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
     fn test_checkkeyword_tests_fixnum_bit() {
         eval(r#"
             def test(kw: 1 + 1) = kw
