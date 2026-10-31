@@ -1,0 +1,44 @@
+# The results of a single run vary a lot on a machine that is not idle.
+# Take the best of several runs, as:
+#
+#   make benchmark ITEM=enum_sort_by_patterns OPTS="--repeat-count 6"
+prelude: |
+  srand(42)
+  sizes = [10, 1_000, 100_000]
+  # Each benchmark sorts many distinct arrays, since sorting one small
+  # array repeatedly lets the branch predictor learn the comparisons.
+  pools = ->(&gen) { sizes.to_h { |n| [n, Array.new(100_000 / n) { gen.(n) }] } }
+
+  int_random = pools.() { |n| Array.new(n) { rand(-(1 << 40)..(1 << 40)) } }
+  int_few_distinct = pools.() { |n| Array.new(n) { rand(8) } }
+  int_sorted = pools.() { |n| Array.new(n) { |i| i } }
+  int_organ_pipe = pools.() { |n| Array.new(n) { |i| i < n / 2 ? i : n - i } }
+  float_random = pools.() { |n| Array.new(n) { rand * 2000 - 1000 } }
+  # most are too large or too small to be flonums
+  float_wide = pools.() { |n| Array.new(n) { (rand - 0.5) * 10.0**rand(-300..300) } }
+  int_and_float = pools.() { |n| Array.new(n) { |i| i.even? ? rand(1000) : rand * 1000 } }
+
+benchmark:
+  int_random_10: int_random[10].each { |a| a.sort_by { |x| x } }
+  int_random_1000: int_random[1_000].each { |a| a.sort_by { |x| x } }
+  int_random_100000: int_random[100_000].each { |a| a.sort_by { |x| x } }
+  int_few_distinct_10: int_few_distinct[10].each { |a| a.sort_by { |x| x } }
+  int_few_distinct_1000: int_few_distinct[1_000].each { |a| a.sort_by { |x| x } }
+  int_few_distinct_100000: int_few_distinct[100_000].each { |a| a.sort_by { |x| x } }
+  int_sorted_10: int_sorted[10].each { |a| a.sort_by { |x| x } }
+  int_sorted_1000: int_sorted[1_000].each { |a| a.sort_by { |x| x } }
+  int_sorted_100000: int_sorted[100_000].each { |a| a.sort_by { |x| x } }
+  int_organ_pipe_10: int_organ_pipe[10].each { |a| a.sort_by { |x| x } }
+  int_organ_pipe_1000: int_organ_pipe[1_000].each { |a| a.sort_by { |x| x } }
+  int_organ_pipe_100000: int_organ_pipe[100_000].each { |a| a.sort_by { |x| x } }
+  float_random_10: float_random[10].each { |a| a.sort_by { |x| x } }
+  float_random_1000: float_random[1_000].each { |a| a.sort_by { |x| x } }
+  float_random_100000: float_random[100_000].each { |a| a.sort_by { |x| x } }
+  float_wide_10: float_wide[10].each { |a| a.sort_by { |x| x } }
+  float_wide_1000: float_wide[1_000].each { |a| a.sort_by { |x| x } }
+  float_wide_100000: float_wide[100_000].each { |a| a.sort_by { |x| x } }
+  int_and_float_10: int_and_float[10].each { |a| a.sort_by { |x| x } }
+  int_and_float_1000: int_and_float[1_000].each { |a| a.sort_by { |x| x } }
+  int_and_float_100000: int_and_float[100_000].each { |a| a.sort_by { |x| x } }
+
+loop_count: 20

@@ -23,6 +23,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/rational.h"
+#include "internal/sort.h"
 #include "internal/set.h"
 #include "internal/string.h"
 #include "internal/vm.h"
@@ -3673,6 +3674,55 @@ sort_2(const void *ap, const void *bp, void *dummy)
 }
 
 /*
+ * An array that consists solely of Fixnums, or solely of flonums, is
+ * sorted without calling <=>.  Two such elements that compare equal are
+ * the identical VALUE, so the result does not depend on the algorithm.
+ */
+
+static void
+sort_fixnums(VALUE *ptr, rb_len_t len)
+{
+    rb_numsort(ptr, len, RB_NUMSORT_FIXNUM, 1);
+}
+
+static void
+sort_flonums(VALUE *ptr, rb_len_t len)
+{
+    rb_numsort(ptr, len, RB_NUMSORT_FLONUM, 1);
+}
+
+/*
+ * Sorts +len+ elements at +ptr+ and returns true, if they are all
+ * Fixnums or all flonums and <=> of the class is not redefined.
+ * Otherwise returns false, leaving the elements untouched.  +len+ must
+ * be 2 or more.
+ */
+static bool
+ary_sort_numeric(VALUE *ptr, rb_len_t len)
+{
+    rb_len_t i;
+
+    if (FIXNUM_P(ptr[0])) {
+        if (!CMP_OPTIMIZABLE(INTEGER)) return false;
+        for (i = 1; i < len; i++) {
+            if (!FIXNUM_P(ptr[i])) return false;
+        }
+        sort_fixnums(ptr, len);
+        return true;
+    }
+    if (FLONUM_P(ptr[0])) {
+        /* NaN is never a flonum */
+        if (!CMP_OPTIMIZABLE(FLOAT)) return false;
+        for (i = 1; i < len; i++) {
+            if (!FLONUM_P(ptr[i])) return false;
+        }
+        sort_flonums(ptr, len);
+        return true;
+    }
+    return false;
+}
+
+/*
  *  call-seq:
  *    sort! -> self
  *    sort! {|a, b| ... } -> self
@@ -3695,8 +3745,12 @@ rb_ary_sort_bang(VALUE ary)
         data.ary = tmp;
         data.receiver = ary;
         RARRAY_PTR_USE(tmp, ptr, {
-            ruby_qsort(ptr, len, sizeof(VALUE),
-                       rb_block_given_p()?sort_1:sort_2, &data);
+            if (rb_block_given_p()) {
+                ruby_qsort(ptr, len, sizeof(VALUE), sort_1, &data);
+            }
+            else if (!ary_sort_numeric(ptr, len)) {
+                ruby_qsort(ptr, len, sizeof(VALUE), sort_2, &data);
+            }
         }); /* WB: no new reference */
         rb_ary_modify(ary);
         if (ARY_EMBED_P(tmp)) {
