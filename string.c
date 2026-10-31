@@ -5596,6 +5596,16 @@ all_digits_p(const char *s, rb_len_t len)
     return 1;
 }
 
+/* Compares two strings of digits as numbers. */
+static int
+digits_cmp(const char *p1, rb_len_t len1, const char *p2, rb_len_t len2)
+{
+    while (len1 > 1 && *p1 == '0') p1++, len1--;
+    while (len2 > 1 && *p2 == '0') p2++, len2--;
+    if (len1 != len2) return len1 < len2 ? -1 : 1;
+    return memcmp(p1, p2, len1);
+}
+
 static int
 str_upto_i(VALUE str, VALUE arg)
 {
@@ -5788,14 +5798,25 @@ rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive)
                 }
             }
         }
-#if 0
         /* both edges are all digits */
         if (ISDIGIT(*bp) && ISDIGIT(*ep) &&
             all_digits_p(bp, RSTRING_LEN(beg)) &&
             all_digits_p(ep, RSTRING_LEN(end))) {
-            /* TODO */
+            /*
+             * rb_str_upto_each() yields the numbers from beg to end, each
+             * in as many digits as beg has, or more if it does not fit.
+             */
+            const rb_len_t len = RSTRING_LEN(val), width = RSTRING_LEN(beg);
+            rb_len_t digits = len;
+            int c;
+
+            if (len == 0 || !all_digits_p(vp, len)) return Qfalse;
+            while (digits > 1 && vp[len - digits] == '0') digits--;
+            if (len != (digits > width ? digits : width)) return Qfalse;
+            if (digits_cmp(bp, width, vp, len) > 0) return Qfalse;
+            c = digits_cmp(vp, len, ep, RSTRING_LEN(end));
+            return RBOOL(RTEST(exclusive) ? c < 0 : c <= 0);
         }
-#endif
     }
     rb_str_upto_each(beg, end, RTEST(exclusive), include_range_i, (VALUE)&val);
 
