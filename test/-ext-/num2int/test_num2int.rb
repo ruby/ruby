@@ -222,6 +222,20 @@ class TestNum2int < Test::Unit::TestCase
     end
   end
 
+  def test_num2i_boolean_with_to_int
+    assert_separately(%w[-r-test-/num2int], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class TrueClass; def to_int; 1; end; end
+      class FalseClass; def to_int; 0; end; end
+      %w[short ushort int uint long ulong ll ull].each do |type|
+        func = "NUM2#{type}".upcase
+        next unless Num2int.respond_to?(func)
+        assert_equal("1", Num2int.send(func, true), func)
+        assert_equal("0", Num2int.send(func, false), func)
+      end
+    end;
+  end
+
   def test_fix2short
     assert_fix2i_success(:short, 0)
     assert_fix2i_success(:short, SHRT_MAX)
