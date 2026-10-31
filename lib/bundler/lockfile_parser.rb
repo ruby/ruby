@@ -118,6 +118,7 @@ module Bundler
       end
       @pos = Position.new(1, 1)
       @strict = strict
+      @spec_names_by_source = {}.compare_by_identity
 
       if lockfile.match?(/<<<<<<<|=======|>>>>>>>|\|\|\|\|\|\|\|/)
         raise LockfileError, "Your #{@lockfile_path} contains merge conflicts.\n" \
@@ -167,6 +168,8 @@ module Bundler
         end
         @pos.advance!(line)
       end
+
+      @spec_names_by_source.each {|source, names| source.add_dependency_names(names) }
 
       if @platforms.include?(Gem::Platform::X64_MINGW_LEGACY)
         SharedHelpers.feature_deprecated!("Found x64-mingw32 in lockfile, which is deprecated and will be removed in the future.")
@@ -354,7 +357,7 @@ module Bundler
         version = Gem::Version.new(version)
         platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
         @current_spec = LazySpecification.new(name, version, platform, @current_source, strict: @strict)
-        @current_source.add_dependency_names(name)
+        (@spec_names_by_source[@current_source] ||= []) << name
 
         @specs[@current_spec.full_name] = @current_spec
       elsif spaces.size == 6

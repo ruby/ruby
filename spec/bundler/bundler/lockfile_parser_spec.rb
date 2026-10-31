@@ -154,6 +154,10 @@ RSpec.describe Bundler::LockfileParser do
 
     include_examples "parsing"
 
+    it "records each source's spec names as its dependency names" do
+      expect(subject.sources.map(&:dependency_names)).to eq([["peiji-san"], ["rake"]])
+    end
+
     context "when a spec has a content address" do
       let(:lockfile_contents) do
         <<~L
