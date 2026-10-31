@@ -25,6 +25,20 @@ class TestBundlerGem < Gem::TestCase
     assert_nil Gem::BUNDLED_GEMS.find_gem("some/nested/gem")
   end
 
+  def test_find_gem_returns_nil_for_paths_outside_standard_library
+    assert_nil Gem::BUNDLED_GEMS.find_gem("/path/to/gems/csv-3.3.0/lib/csv.rb")
+    assert_nil Gem::BUNDLED_GEMS.find_gem("/path/to/app/lib/csv/parser.rb")
+  end
+
+  def test_find_gem_every_bundled_gem
+    libdir = ::RbConfig::CONFIG.fetch("rubylibdir")
+    Gem::BUNDLED_GEMS::SINCE.each_key do |gem|
+      [gem, "#{gem}.rb", "#{gem}/sub", gem.tr("-", "/"), File.join(libdir, "#{gem}.rb")].each do |feature|
+        assert_equal gem, Gem::BUNDLED_GEMS.find_gem(feature)&.at(1), feature
+      end
+    end
+  end
+
   def test_find_gem_exact_mapping
     # kconv is provided by the nkf gem; the feature keeps its original name
     assert_equal ["kconv", "nkf", false], Gem::BUNDLED_GEMS.find_gem("kconv")
