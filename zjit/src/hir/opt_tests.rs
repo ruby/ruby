@@ -25260,6 +25260,77 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_array_last() {
+        eval(r"
+            def test(a) = a.last
+            test([1,2,3])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, last@0x1010, cme:0x1018)
+          v25:ArrayExact = GuardType v10, ArrayExact recompile
+          v27:CInt64 = ArrayLength v25
+          v28:CInt64[-1] = Const CInt64(-1)
+          v29:CInt64 = AdjustBounds v28, v27
+          v30:BasicObject = ArrayArefChecked v25, v29, v27
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_array_last_n_not_specialized() {
+        eval(r"
+            def test(a) = a.last(2)
+            test([1,2,3])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[2] = Const Value(2)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, last@0x1010, cme:0x1018)
+          v27:ArrayExact = GuardType v10, ArrayExact recompile
+          v75:NilClass = Const Value(nil)
+          PushInlineFrame :last, v27 (0x1040), num_args=1
+          v59:CPtr = LoadSP
+          StoreField v59, :n@0x1060, v15
+          StoreField v59, :unspecified@0x1000, v75
+          v63:BasicObject = InvokeBuiltin <inline_expr>, v27
+          PatchPoint NoEPEscape(last)
+          PopInlineFrame
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v63
+        ");
+    }
+
+    #[test]
     fn test_delete_duplicate_store() {
         eval("
             class C
