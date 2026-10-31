@@ -3906,6 +3906,25 @@ str2big_poweroftwo(
     return z;
 }
 
+/* zds = zds * mul + add; returns the new length */
+static inline size_t
+str2big_muladd(BDIGIT *zds, size_t blen, size_t num_bdigits, BDIGIT_DBL mul, BDIGIT_DBL add)
+{
+    size_t i;
+    BDIGIT_DBL num = add;
+
+    for (i = 0; i < blen; i++) {
+        num += (BDIGIT_DBL)zds[i]*mul;
+        zds[i] = BIGLO(num);
+        num = BIGDN(num);
+    }
+    if (num) {
+        RUBY_ASSERT(blen < num_bdigits);
+        zds[blen++] = (BDIGIT)num;
+    }
+    return blen;
+}
+
 static VALUE
 str2big_normal(
     int sign,
@@ -3916,9 +3935,9 @@ str2big_normal(
 {
     size_t blen = 1;
     BDIGIT *zds;
-    BDIGIT_DBL num;
+    BDIGIT_DBL dd;
+    BDIGIT_DBL current_base;
 
-    size_t i;
     const char *p;
     int c;
     VALUE z;
@@ -3927,25 +3946,21 @@ str2big_normal(
     zds = BDIGITS(z);
     BDIGITS_ZERO(zds, num_bdigits);
 
+    /* multiply by as many digits at once as fit in a BDIGIT */
+    dd = 0;
+    current_base = 1;
     for (p = digits_start; p < digits_end; p++) {
         if ((c = conv_digit(*p)) < 0)
             continue;
-        num = c;
-        i = 0;
-        for (;;) {
-            while (i<blen) {
-                num += (BDIGIT_DBL)zds[i]*base;
-                zds[i++] = BIGLO(num);
-                num = BIGDN(num);
-            }
-            if (num) {
-                blen++;
-                continue;
-            }
-            break;
+        if (current_base > BDIGMAX / base) {
+            blen = str2big_muladd(zds, blen, num_bdigits, current_base, dd);
+            dd = 0;
+            current_base = 1;
         }
-        RUBY_ASSERT(blen <= num_bdigits);
+        dd = dd * base + c;
+        current_base *= base;
     }
+    str2big_muladd(zds, blen, num_bdigits, current_base, dd);
 
     return z;
 }
@@ -4134,6 +4149,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
 
     unsigned long val;
     int ov;
+    ssize_t scan_len;
 
     const char *digits_start, *digits_end;
     size_t num_digits = 0;
@@ -4251,7 +4267,11 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     }
 
     if (ndigits) *ndigits = num_digits;
-    val = ruby_scan_digits(str, len, base, &num_digits, &ov);
+    /* more digits than the bits of val always overflow */
+    scan_len = len;
+    if (len < 0 || len > (ssize_t)(sizeof(val) * CHAR_BIT))
+        scan_len = (ssize_t)(sizeof(val) * CHAR_BIT) + 1;
+    val = ruby_scan_digits(str, scan_len, base, &num_digits, &ov);
     if (!ov) {
         const char *end = &str[num_digits];
         if (num_digits > 0 && *end == '_' && (flags & RB_INT_PARSE_UNDERSCORE))
