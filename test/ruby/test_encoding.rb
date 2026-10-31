@@ -160,6 +160,17 @@ class TestEncoding < Test::Unit::TestCase
     end;
   end
 
+  def test_ractor_filesystem_encoding_fallback
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Ractor.new{}.join
+      $-w = nil
+      # Falling back to the locale encoding must not look it up under the VM lock
+      Encoding.default_external = Encoding::UTF_16BE
+      assert_predicate(Encoding.find("filesystem"), :ascii_compatible?, "[Bug #18338]")
+    end;
+  end
+
   def test_ractor_lazy_load_encoding_concurrently
     assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
     begin;
