@@ -25,6 +25,7 @@
 #include "internal/ractor.h"
 #include "internal/rational.h"
 #include "internal/re.h"
+#include "internal/set.h"
 #include "internal/struct.h"
 #include "internal/st.h"
 #include "internal/thread.h"
@@ -1636,6 +1637,7 @@ struct obj_traverse_data {
 struct obj_traverse_callback_data {
     bool stop;
     struct obj_traverse_data *data;
+    VALUE klass;
 };
 
 static int obj_traverse_i(VALUE obj, struct obj_traverse_data *data);
@@ -1658,6 +1660,19 @@ obj_hash_traverse_i(VALUE key, VALUE val, VALUE ptr)
     return ST_CONTINUE;
 }
 
+static int
+obj_set_traverse_i(VALUE element, VALUE ptr)
+{
+    struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
+
+    if (obj_traverse_i(element, d->data)) {
+        d->stop = true;
+        return ST_STOP;
+    }
+
+    return ST_CONTINUE;
+}
+
 static void
 obj_traverse_reachable_i(VALUE obj, void *ptr)
 {
@@ -1672,6 +1687,12 @@ obj_traverse_reachable_i(VALUE obj, void *ptr)
     // If the object is "garbage" (unmarked during lazy sweeping), it's okay
     // to traverse it.
 
+    // The GC also reports the class of the object being traversed. It is not
+    // a reference held by the object's contents, so skip it.
+    if (obj == d->klass) {
+        return;
+    }
+
     if (obj_traverse_i(obj, d->data)) {
         d->stop = true;
     }
@@ -1684,6 +1705,7 @@ obj_traverse_reachable(VALUE obj, struct obj_traverse_data *data)
     struct obj_traverse_callback_data d = {
         .stop = false,
         .data = data,
+        .klass = RBASIC_CLASS(obj),
     };
     rb_objspace_reachable_objects_from_local(obj, obj_traverse_reachable_i, &d);
     return d.stop;
@@ -1735,7 +1757,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
             .stop = false,
             .data = data,
         };
-        rb_ivar_foreach(obj, obj_traverse_ivar_foreach_i, (st_data_t)&d);
+        rb_ivar_foreach_buffered(obj, obj_traverse_ivar_foreach_i, (st_data_t)&d);
         if (d.stop) return 1;
     }
 
@@ -1799,7 +1821,17 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         break;
 
       case T_DATA:
-        {
+        if (rb_set_p(obj)) {
+            // Visit the elements directly, like Hash keys, rather than through
+            // the mark function.
+            struct obj_traverse_callback_data d = {
+                .stop = false,
+                .data = data,
+            };
+            rb_set_foreach(obj, obj_set_traverse_i, (VALUE)&d);
+            if (d.stop) return 1;
+        }
+        else {
             void *const ptr = RTYPEDDATA_GET_DATA(obj);
             const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
 
@@ -1899,8 +1931,10 @@ allow_frozen_shareable_p(VALUE obj)
     return false;
 }
 
+// Call obj.freeze, with fast paths for the core collection types when #freeze
+// is not redefined. Used by both Ractor.make_shareable and Kernel#deep_freeze.
 static void
-make_shareable_freeze(VALUE obj)
+traverse_call_freeze(VALUE obj)
 {
     VALUE klass = RBASIC_CLASS(obj);
     if (klass == rb_cString && BASIC_OP_UNREDEFINED_P(BOP_FREEZE, STRING_REDEFINED_OP_FLAG)) {
@@ -1917,19 +1951,30 @@ make_shareable_freeze(VALUE obj)
     }
 }
 
+// Freeze obj if it is not frozen yet, by calling its #freeze method (which may
+// be user-defined), and check that it actually did freeze the object.
+// Returns true if #freeze was called.
+static bool
+traverse_ensure_frozen(VALUE obj, VALUE exc_class)
+{
+    if (RB_OBJ_FROZEN_RAW(obj)) {
+        return false;
+    }
+
+    traverse_call_freeze(obj);
+
+    if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
+        rb_raise(exc_class, "#freeze does not freeze object correctly");
+    }
+
+    return true;
+}
+
 static enum obj_traverse_iterator_result
 make_shareable_check_shareable_freeze(VALUE obj, enum obj_traverse_iterator_result result)
 {
-    if (!RB_OBJ_FROZEN_RAW(obj)) {
-        make_shareable_freeze(obj);
-
-        if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
-            rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
-        }
-
-        if (RB_OBJ_SHAREABLE_P(obj)) {
-            return traverse_skip;
-        }
+    if (traverse_ensure_frozen(obj, rb_eRactorError) && RB_OBJ_SHAREABLE_P(obj)) {
+        return traverse_skip;
     }
 
     return result;
@@ -2014,6 +2059,96 @@ rb_ractor_make_shareable(VALUE obj)
     rb_obj_traverse(obj,
                     make_shareable_check_shareable,
                     null_leave, mark_shareable);
+    return obj;
+}
+
+// Kernel#deep_freeze
+
+static enum obj_traverse_iterator_result
+deep_freeze_enter(VALUE obj)
+{
+    VM_ASSERT(!SPECIAL_CONST_P(obj));
+
+    switch (BUILTIN_TYPE(obj)) {
+      case T_IMEMO:
+      case T_ICLASS:
+        // internal objects, never exposed to Ruby code
+        return traverse_skip;
+
+      case T_CLASS:
+      case T_MODULE:
+        // Freeze the class or module itself, like Module#freeze does, but do not
+        // traverse its constants, class variables, ancestors, etc.
+        traverse_ensure_frozen(obj, rb_eRuntimeError);
+        return traverse_skip;
+
+      default:
+        break;
+    }
+
+    traverse_ensure_frozen(obj, rb_eRuntimeError);
+
+    if (!allow_frozen_shareable_p(obj)) {
+        // T_FILE and T_DATA objects which are not RUBY_TYPED_FROZEN_SHAREABLE, like
+        // Thread, Fiber, Proc, IO, Mutex, etc. Their references are not reachable
+        // through Ruby-level APIs and freezing them would be unexpected, so these
+        // objects are frozen but not traversed, same as Ractor.make_shareable.
+        return traverse_skip;
+    }
+
+    return traverse_cont;
+}
+
+/*
+ *  call-seq:
+ *     obj.deep_freeze -> self
+ *
+ *  Recursively freezes +self+ and all objects reachable from it, by calling
+ *  #freeze on each of them.
+ *  See {Frozen Objects}[rdoc-ref:frozen_objects.md].
+ *
+ *    config = { db: { host: "localhost", ports: [5432] } }.deep_freeze
+ *    config.frozen?              # => true
+ *    config[:db].frozen?         # => true
+ *    config[:db][:host].frozen?  # => true
+ *    config[:db][:ports].frozen? # => true
+ *
+ *  The traversal reaches the instance variables of each object, as well as
+ *  the contents of core collections (Array elements, Hash keys and values,
+ *  Set elements, Struct and Data members, etc).
+ *
+ *  Classes and modules are frozen when reached, like with #freeze, but their
+ *  constants, class variables, ancestors, etc are not traversed:
+ *
+ *    class Foo; end
+ *    Foo.new.deep_freeze # does not freeze Foo
+ *    Foo.deep_freeze     # freezes Foo but not Object, Kernel, etc
+ *
+ *  Objects whose internal state is not reachable from Ruby, such as Thread,
+ *  Fiber, Proc or IO, are frozen but not traversed:
+ *
+ *    th = Thread.new {}
+ *    th.deep_freeze # same as th.freeze
+ *
+ *  Each object is frozen by calling its #freeze method, so a class can
+ *  prepare its instances before they are frozen (for example by computing
+ *  cached values eagerly) by overriding #freeze. If a #freeze method does not
+ *  freeze the object, a RuntimeError is raised.
+ *
+ *  Cyclic references are supported:
+ *
+ *    a = []
+ *    a << a
+ *    a.deep_freeze
+ *    a.frozen? # => true
+ *
+ *  Already frozen objects are still traversed, as they may refer to
+ *  unfrozen objects.
+ */
+VALUE
+rb_obj_deep_freeze(VALUE obj)
+{
+    rb_obj_traverse(obj, deep_freeze_enter, null_leave, NULL);
     return obj;
 }
 

@@ -1204,15 +1204,11 @@ class TestRactor < Test::Unit::TestCase
   # Ractor.make_shareable reaches a T_DATA's references through its GC mark function
   # (rb_objspace_reachable_objects_from_local), and the walk's callback runs #freeze on
   # every child it is handed.  So arbitrary Ruby -- allocation, a GC, a compaction, a
-  # raise -- runs while the parent's dmark is still on the stack.  Set is the vector: a
-  # T_DATA with a non-declarative dmark and RUBY_TYPED_FROZEN_SHAREABLE, so its elements
-  # are reachable only through that walk.
+  # raise -- runs while the parent's dmark is still on the stack.  Bug::GC::WriteBarrier::Box
+  # is the vector: a T_DATA with a non-declarative dmark and RUBY_TYPED_FROZEN_SHAREABLE,
+  # so its child is reachable only through that walk.
   def test_make_shareable_data_child_freeze_runs_gc
-    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
-      require 'objspace'
-      # If Set stops being a T_DATA, this no longer covers the mark function walk.
-      assert_include ObjectSpace.dump(Set.new), '"type":"DATA"'
-
+    assert_separately(%w[-r-test-/gc/writebarrier], __FILE__, __LINE__, <<-'RUBY')
       frozen = 0
       klass = Class.new do
         define_method(:freeze) do
@@ -1223,12 +1219,14 @@ class TestRactor < Test::Unit::TestCase
       end
 
       5.times do
-        set = Set.new(Array.new(10) { klass.new })
-        Ractor.make_shareable(set)
-        assert Ractor.shareable?(set), "the Set should have become shareable"
-        set.each { |e| assert Ractor.shareable?(e), "an element should have become shareable" }
+        boxes = Array.new(10) { Bug::GC::WriteBarrier::Box.new.tap { |box| box.store(klass.new) } }
+        Ractor.make_shareable(boxes)
+        boxes.each do |box|
+          assert Ractor.shareable?(box), "the Box should have become shareable"
+          assert Ractor.shareable?(box.child), "the child should have become shareable"
+        end
       end
-      assert_equal 5 * 10, frozen, "not all elements were not reached through the mark function"
+      assert_equal 5 * 10, frozen, "not all children were reached through the mark function"
       GC.start
     RUBY
   end
@@ -1236,7 +1234,7 @@ class TestRactor < Test::Unit::TestCase
   def test_make_shareable_data_child_freeze_runs_compaction
     omit "GC compaction not supported on this platform" unless GC.respond_to?(:compact)
 
-    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+    assert_separately(%w[-r-test-/gc/writebarrier], __FILE__, __LINE__, <<-'RUBY')
       compactor = Class.new do
         def freeze
           GC.compact
@@ -1244,9 +1242,9 @@ class TestRactor < Test::Unit::TestCase
         end
       end
 
-      set = Set.new(Array.new(10) { compactor.new })
-      Ractor.make_shareable(set)
-      assert Ractor.shareable?(set)
+      boxes = Array.new(10) { Bug::GC::WriteBarrier::Box.new.tap { |box| box.store(compactor.new) } }
+      Ractor.make_shareable(boxes)
+      boxes.each { |box| assert Ractor.shareable?(box) }
     RUBY
   end
 
@@ -1254,17 +1252,61 @@ class TestRactor < Test::Unit::TestCase
   # redirect has to be restored on the way out: if it leaks, the next real GC hands its
   # marking to obj_traverse instead of marking, and the heap is corrupted.
   def test_make_shareable_data_child_freeze_can_raise
+    require '-test-/gc/writebarrier'
     raiser = Class.new do
       def freeze
         raise "boom"
       end
     end
     10.times do
-      set = Set.new([raiser.new])
-      assert_raise_with_message(RuntimeError, "boom") { Ractor.make_shareable(set) }
-      refute Ractor.shareable?(set), "despite raising, the Set became shareable"
+      box = Bug::GC::WriteBarrier::Box.new
+      box.store(raiser.new)
+      assert_raise_with_message(RuntimeError, "boom") { Ractor.make_shareable(box) }
+      refute Ractor.shareable?(box), "despite raising, the Box became shareable"
     end
     GC.start
+  end
+
+  # The GC mark function also reports the object's class, which must not be made part of
+  # the traversal (it would be frozen by Kernel#deep_freeze).
+  def test_make_shareable_data_does_not_traverse_class
+    require '-test-/gc/writebarrier'
+    box_class = Class.new(Bug::GC::WriteBarrier::Box)
+    box = box_class.new
+    box.store(Object.new)
+    Ractor.make_shareable(box)
+    assert Ractor.shareable?(box)
+    assert_predicate box.child, :frozen?
+    refute_predicate box_class, :frozen?
+  end
+
+  # A child's #freeze may transition the shape of the parent whose ivars are being
+  # iterated (e.g. via object_id); the iteration must tolerate that.
+  def test_make_shareable_shape_change_during_traversal
+    parent = nil
+    klass = Class.new do
+      define_method(:freeze) do
+        parent.object_id
+        super()
+      end
+    end
+
+    parent = Object.new
+    parent.instance_variable_set(:@a, klass.new)
+    Ractor.make_shareable(parent)
+    assert_predicate(parent.instance_variable_get(:@a), :frozen?)
+  end
+
+  # Set elements are traversed directly, not through the mark function.
+  def test_make_shareable_set
+    set_class = Class.new(Set)
+    elem = Object.new
+    set = set_class[elem]
+    Ractor.make_shareable(set)
+    assert Ractor.shareable?(set)
+    assert Ractor.shareable?(elem)
+    assert_predicate elem, :frozen?
+    refute_predicate set_class, :frozen?
   end
 
   def assert_make_shareable(obj)
