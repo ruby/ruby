@@ -2796,19 +2796,44 @@ match_named_captures(int argc, VALUE *argv, VALUE match)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    deconstruct_keys(array_of_names) -> hash
+ *    deconstruct_keys(array) -> hash
+ *    deconstruct_keys(nil) -> hash
  *
- *  Returns a hash of the named captures for the given names.
+ *  With an array of symbol capture names given,
+ *  returns a hash of the names and values for the given names:
  *
- *    m = /(?<hours>\d{2}):(?<minutes>\d{2}):(?<seconds>\d{2})/.match("18:37:22")
- *    m.deconstruct_keys([:hours, :minutes]) # => {:hours => "18", :minutes => "37"}
- *    m.deconstruct_keys(nil) # => {:hours => "18", :minutes => "37", :seconds => "22"}
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.deconstruct_keys([:day, :month]) # => {day: "25", month: "12"}
+ *  match.deconstruct_keys(['foo'])        # Raises TypeError: wrong argument type String (expected Symbol).
+ *  ```
+ *
+ *  Ignores symbols that are not capture names:
+ *
+ *  ```ruby
+ *  match.deconstruct_keys([:foo]) # => {}
+ *  ```
+ *
+ *  With `nil` given,
+ *  returns a hash of all capture names and values:
+ *
+ *  ```ruby
+ *  match.deconstruct_keys(nil) # => {year: "2026", month: "12", day: "25"}
+ *  ```
  *
  *  Returns an empty hash if no named captures were defined:
  *
- *    m = /(\d{2}):(\d{2}):(\d{2})/.match("18:37:22")
- *    m.deconstruct_keys(nil) # => {}
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match.deconstruct_keys(nil) # => {}
+ *  ```
  *
  */
 static VALUE
