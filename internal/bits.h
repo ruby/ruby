@@ -129,6 +129,14 @@
 # define MUL_OVERFLOW_LONG_P(a, b)      MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
 # define MUL_OVERFLOW_INT_P(a, b)       MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
 #endif
+
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+# define MUL_OVERFLOW_LEN_P(a, b)       MUL_OVERFLOW_LONG_LONG_P(a, b)
+#elif SIZEOF_RB_LEN_T > SIZEOF_INT
+# define MUL_OVERFLOW_LEN_P(a, b)       MUL_OVERFLOW_LONG_P(a, b)
+#else
+# define MUL_OVERFLOW_LEN_P(a, b)       MUL_OVERFLOW_INT_P(a, b)
+#endif
 #endif
 
 #ifndef ADD_OVERFLOW_SIGNED_INTEGER_P
@@ -169,6 +177,14 @@
 # define ADD_OVERFLOW_LONG_P(a, b)      ADD_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
 # define ADD_OVERFLOW_INT_P(a, b)       ADD_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
 #endif
+
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+# define ADD_OVERFLOW_LEN_P(a, b)       ADD_OVERFLOW_LONG_LONG_P(a, b)
+#elif SIZEOF_RB_LEN_T > SIZEOF_INT
+# define ADD_OVERFLOW_LEN_P(a, b)       ADD_OVERFLOW_LONG_P(a, b)
+#else
+# define ADD_OVERFLOW_LEN_P(a, b)       ADD_OVERFLOW_INT_P(a, b)
+#endif
 #endif
 
 #ifndef SUB_OVERFLOW_SIGNED_INTEGER_P
@@ -208,6 +224,14 @@
 #else
 # define SUB_OVERFLOW_LONG_P(a, b)      SUB_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
 # define SUB_OVERFLOW_INT_P(a, b)       SUB_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
+#endif
+
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+# define SUB_OVERFLOW_LEN_P(a, b)       SUB_OVERFLOW_LONG_LONG_P(a, b)
+#elif SIZEOF_RB_LEN_T > SIZEOF_INT
+# define SUB_OVERFLOW_LEN_P(a, b)       SUB_OVERFLOW_LONG_P(a, b)
+#else
+# define SUB_OVERFLOW_LEN_P(a, b)       SUB_OVERFLOW_INT_P(a, b)
 #endif
 #endif
 
