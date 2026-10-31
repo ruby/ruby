@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../vendored_fileutils"
-
 module Bundler
   class Source
     class Git < Path
