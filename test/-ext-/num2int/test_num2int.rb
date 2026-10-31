@@ -213,6 +213,15 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:ull, FIXNUM_MAX+1)
   end if defined?(Num2int.NUM2ULL)
 
+  def test_num2i_string_with_to_int
+    str = Class.new(String) { def to_int; 1; end }.new
+    %w[short ushort int uint long ulong ll ull].each do |type|
+      func = "NUM2#{type}".upcase
+      next unless Num2int.respond_to?(func)
+      assert_num2i_success_internal("1", func, str)
+    end
+  end
+
   def test_fix2short
     assert_fix2i_success(:short, 0)
     assert_fix2i_success(:short, SHRT_MAX)
