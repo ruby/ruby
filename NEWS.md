@@ -449,6 +449,11 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   Integer index within the range of Array indices.  An index past the `int`
   range used to raise `RangeError`. [[Feature #22400]]
 
+* `File::Stat#dev` and `File::Stat#rdev` on Windows now hold the volume
+  serial number instead of the drive letter index, so two paths to one file
+  through `subst` or a UNC share get the same `dev` and `ino`, and
+  `File#stat` agrees with `File.stat`.
+
 ## Stdlib compatibility issues
 
 * prism is now a bundled gem.  Under Bundler, `require "prism"` needs prism
