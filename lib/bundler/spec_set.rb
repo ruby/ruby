@@ -88,11 +88,11 @@ module Bundler
       Override.rewrite_dependencies(overrides, s.name, s.runtime_dependencies).each do |dep|
         next if dep.name == "bundler"
 
-        return :missing unless names.include?(dep.name)
+        return :missing unless lookup.key?(dep.name)
 
         override = Override.find_for(overrides, dep.name, :version)
         dep = Gem::Dependency.new(dep.name, override.apply_to(dep.requirement)) if override
-        return :invalid if none? {|spec| dep.matches_spec?(spec) }
+        return :invalid if Array(lookup[dep.name]).none? {|spec| dep.matches_spec?(spec) }
       end
 
       :valid
