@@ -40,13 +40,6 @@ struct rb_classext_struct {
     const rb_box_t *box;
     VALUE super;
     VALUE fields_obj; // Fields are either ivar or other internal properties stored inline
-    /**
-     * For class/module: name of class/module
-     * For refinement iclass: hidden hash with refinement module keys and module refinement
-     *                        iclass values
-     * TODO: move into as union below
-     */
-    VALUE classpath;
     struct rb_id_table *m_tbl;
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
@@ -64,12 +57,15 @@ struct rb_classext_struct {
     union {
         struct {
             rb_alloc_func_t allocator;
+            VALUE classpath;
         } class;
         struct {
             VALUE attached_object;
+            VALUE reserved;
         } singleton_class;
         struct {
             const VALUE includer;
+            VALUE refinement_iclasses;
         } iclass;
     } as;
     /* Id of the Ractor that created this class/module; only that Ractor may modify
@@ -185,8 +181,8 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 #define RCLASSEXT_ICLASS_IS_ORIGIN(ext) (ext->iclass_is_origin)
 #define RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) (ext->iclass_origin_shared_mtbl)
 #define RCLASSEXT_SUPERCLASSES_WITH_SELF(ext) (ext->superclasses_with_self)
-#define RCLASSEXT_CLASSPATH(ext) (ext->classpath)
-#define RCLASSEXT_MODULE_REFINEMENT_ICLASSES(ext) (ext->classpath)
+#define RCLASSEXT_CLASSPATH(ext) (ext->as.class.classpath)
+#define RCLASSEXT_MODULE_REFINEMENT_ICLASSES(ext) (ext->as.iclass.refinement_iclasses)
 
 static inline void RCLASSEXT_SET_ORIGIN(rb_classext_t *ext, VALUE klass, VALUE origin);
 static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE includer);
@@ -217,7 +213,7 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_ORIGIN(c) (RCLASS_EXT_READABLE(c)->origin_)
 #define RICLASS_IS_ORIGIN_P(c) (RCLASS_EXT_READABLE(c)->iclass_is_origin)
 #define RCLASS_PERMANENT_CLASSPATH_P(c) (RCLASS_EXT_READABLE(c)->permanent_classpath)
-#define RCLASS_CLASSPATH(c) (RCLASS_EXT_READABLE(c)->classpath)
+#define RCLASS_CLASSPATH(c) (RCLASS_EXT_READABLE(c)->as.class.classpath)
 
 // Superclasses can't be changed after initialization
 #define RCLASS_SUPERCLASS_DEPTH(c) (RCLASS_EXT_PRIME(c)->superclass_depth)
@@ -228,7 +224,7 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT_PRIME(c)->refined_class)
 #define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT_PRIME(c)->as.singleton_class.attached_object)
 #define RCLASS_INCLUDER(c) (RCLASS_EXT_PRIME(c)->as.iclass.includer)
-#define RCLASS_MODULE_REFINEMENT_ICLASSES(c) (RCLASS_EXT_PRIME(c)->classpath)
+#define RCLASS_MODULE_REFINEMENT_ICLASSES(c) (RCLASS_EXT_PRIME(c)->as.iclass.refinement_iclasses)
 
 // max IV count and variation count are just hints, so they don't need to be per-box
 #define RCLASS_MAX_IV_COUNT(ext) (RCLASS_EXT_PRIME(ext)->max_iv_count)
