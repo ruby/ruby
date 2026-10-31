@@ -4756,6 +4756,26 @@ impl Function {
         true
     }
 
+    /// Assume that `rb_check_array_type(nil)` returns nil without calling any Ruby method:
+    /// `NilClass#to_ary` is not defined, and `respond_to?`, `respond_to_missing?`, and
+    /// `method_missing`, which `rb_check_funcall()` consults instead, are the default ones.
+    pub fn assume_nil_not_array_convertible(&mut self, block: BlockId, state: InsnId) -> bool {
+        let klass = unsafe { rb_cNilClass };
+        let hooks = [ID!(respond_to), ID!(respond_to_missing), ID!(method_missing)];
+        // Check every hook before emitting any PatchPoint
+        if !hooks.iter().all(|&mid| unsafe { rb_method_basic_definition_p(klass, mid) } != 0) {
+            return false;
+        }
+        if !self.assume_method_not_defined(block, klass, ID!(to_ary), state) {
+            return false;
+        }
+        for method in hooks {
+            let cme = unsafe { rb_callable_method_entry(klass, method) };
+            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method, cme }, state });
+        }
+        true
+    }
+
     pub fn likely_a(&self, val: InsnId, ty: Type, state: InsnId) -> bool {
         if self.type_of(val).is_subtype(ty) {
             return true;
@@ -11098,42 +11118,58 @@ fn add_iseq_to_hir(
                         break;  // End the block
                     }
                     let val = state.stack_pop()?;
-                    let array = fun.push_insn(block, Insn::GuardType { val, guard_type: types::ArrayExact, state: exit_id, recompile: None });
-                    let length = fun.push_insn(block, Insn::ArrayLength { array });
                     let is_splat = flag & 0x01 != 0;
-                    // Build the rest Array as in vm_expandarray's normal-path is_splat branch:
-                    // rb_ary_new() when num > len, otherwise rb_ary_new4(len - num, ptr + num).
-                    if is_splat {
-                        let rest = fun.push_insn(block, Insn::NewArray { elements: vec![], state: exit_id });
-                        let start = fun.push_insn(block, Insn::Const { val: Const::CInt64(num.try_into().unwrap()) });
-                        let one = fun.push_insn(block, Insn::Const { val: Const::CInt64(1) });
-                        let loop_block = fun.new_block(insn_idx);
-                        let body_block = fun.new_block(insn_idx);
-                        let join_block = fun.new_block(insn_idx);
-                        fun.push_insn(block, Insn::Jump(BranchEdge { target: loop_block, args: vec![start] }));
+                    // Types are not inferred yet while building HIR, so match the instruction itself.
+                    let is_nil = matches!(fun.find(val), Insn::Const { val: Const::Value(v) } if v == Qnil);
+                    if is_nil && fun.assume_nil_not_array_convertible(block, exit_id) {
+                        // vm_expandarray treats a non-Array that rb_check_array_type() can't convert
+                        // as the one-element array [val]. `a, b = nil` is common in Ragel-generated
+                        // parsers, and the ArrayExact guard below would always side-exit there.
+                        if is_splat {
+                            let elements = if num == 0 { vec![val] } else { vec![] };
+                            let rest = fun.push_insn(block, Insn::NewArray { elements, state: exit_id });
+                            state.stack_push(rest);
+                        }
+                        for _ in 0..num {
+                            state.stack_push(val);
+                        }
+                    } else {
+                        let array = fun.push_insn(block, Insn::GuardType { val, guard_type: types::ArrayExact, state: exit_id, recompile: None });
+                        let length = fun.push_insn(block, Insn::ArrayLength { array });
+                        // Build the rest Array as in vm_expandarray's normal-path is_splat branch:
+                        // rb_ary_new() when num > len, otherwise rb_ary_new4(len - num, ptr + num).
+                        if is_splat {
+                            let rest = fun.push_insn(block, Insn::NewArray { elements: vec![], state: exit_id });
+                            let start = fun.push_insn(block, Insn::Const { val: Const::CInt64(num.try_into().unwrap()) });
+                            let one = fun.push_insn(block, Insn::Const { val: Const::CInt64(1) });
+                            let loop_block = fun.new_block(insn_idx);
+                            let body_block = fun.new_block(insn_idx);
+                            let join_block = fun.new_block(insn_idx);
+                            fun.push_insn(block, Insn::Jump(BranchEdge { target: loop_block, args: vec![start] }));
 
-                        let index = fun.push_insn(loop_block, Insn::Param);
-                        let in_bounds = fun.push_insn(loop_block, Insn::IntLt { left: index, right: length });
-                        // Continue copying into the rest Array while source elements remain.
-                        fun.push_insn(loop_block, Insn::CondBranch {
-                            val: in_bounds,
-                            if_true: BranchEdge { target: body_block, args: vec![] },
-                            if_false: BranchEdge { target: join_block, args: vec![] },
-                        });
+                            let index = fun.push_insn(loop_block, Insn::Param);
+                            let in_bounds = fun.push_insn(loop_block, Insn::IntLt { left: index, right: length });
+                            // Continue copying into the rest Array while source elements remain.
+                            fun.push_insn(loop_block, Insn::CondBranch {
+                                val: in_bounds,
+                                if_true: BranchEdge { target: body_block, args: vec![] },
+                                if_false: BranchEdge { target: join_block, args: vec![] },
+                            });
 
-                        let element = fun.push_insn(body_block, Insn::ArrayAref { array, index });
-                        fun.push_insn(body_block, Insn::ArrayPush { array: rest, val: element, state: exit_id });
-                        // index < array length <= ARY_MAX_SIZE < i64::MAX, so this cannot overflow.
-                        let next_index = fun.push_insn(body_block, Insn::IntAdd { left: index, right: one });
-                        fun.push_insn(body_block, Insn::Jump(BranchEdge { target: loop_block, args: vec![next_index] }));
+                            let element = fun.push_insn(body_block, Insn::ArrayAref { array, index });
+                            fun.push_insn(body_block, Insn::ArrayPush { array: rest, val: element, state: exit_id });
+                            // index < array length <= ARY_MAX_SIZE < i64::MAX, so this cannot overflow.
+                            let next_index = fun.push_insn(body_block, Insn::IntAdd { left: index, right: one });
+                            fun.push_insn(body_block, Insn::Jump(BranchEdge { target: loop_block, args: vec![next_index] }));
 
-                        block = join_block;
-                        state.stack_push(rest);
-                    }
-                    for i in (0..num).rev() {
-                        let index = fun.push_insn(block, Insn::Const { val: Const::CInt64(i.try_into().unwrap()) });
-                        let element = fun.push_insn(block, Insn::ArrayArefChecked { array, index, length });
-                        state.stack_push(element);
+                            block = join_block;
+                            state.stack_push(rest);
+                        }
+                        for i in (0..num).rev() {
+                            let index = fun.push_insn(block, Insn::Const { val: Const::CInt64(i.try_into().unwrap()) });
+                            let element = fun.push_insn(block, Insn::ArrayArefChecked { array, index, length });
+                            state.stack_push(element);
+                        }
                     }
                 }
                 _ => {
