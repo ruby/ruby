@@ -1,6 +1,7 @@
 #include "prism/internal/integer.h"
 
 #include "prism/compiler/align.h"
+#include "prism/compiler/inline.h"
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/arena.h"
@@ -76,7 +77,7 @@ pm_integer_separator(uint8_t character) {
  * the unused ones are.
  */
 static void
-pm_integer_from_bignum(pm_arena_t *arena, pm_integer_t *integer, const pm_bignum_t *bignum, size_t capacity) {
+pm_integer_from_bignum(pm_arena_t *arena, pm_integer_t *integer, const pm_bignum_t *bignum, uint32_t capacity) {
     if (bignum->length <= 2) {
         uint64_t value = (bignum->length > 0 ? (uint64_t) bignum->words[0] : 0) | (bignum->length > 1 ? (uint64_t) bignum->words[1] << 32 : 0);
         pm_arena_shrink(arena, bignum->words, sizeof(uint32_t) * capacity, 0);
@@ -94,23 +95,23 @@ pm_integer_from_bignum(pm_arena_t *arena, pm_integer_t *integer, const pm_bignum
  * are packed directly into words allocated from the arena.
  */
 static void
-pm_integer_parse_powof2(pm_arena_t *arena, pm_integer_t *integer, uint32_t base, size_t digits, const uint8_t *start, const uint8_t *end) {
+pm_integer_parse_powof2(pm_arena_t *arena, pm_integer_t *integer, uint32_t base, uint32_t digits, const uint8_t *start, const uint8_t *end) {
     static const uint8_t digit_bits[16] = { 0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4 };
-    size_t leading_bits = digit_bits[pm_integer_parse_digit(*start)];
+    uint32_t leading_bits = digit_bits[pm_integer_parse_digit(*start)];
 
-    size_t bit = pm_ctzll(base);
-    uint32_t length = (uint32_t) (((digits - 1) * bit + leading_bits + 31) / 32);
+    uint32_t bit = (uint32_t) pm_ctzll(base);
+    uint32_t length = (uint32_t) (((uint64_t) (digits - 1) * bit + leading_bits + 31) / 32);
     assert(length > 2);
 
     uint32_t *words = pm_arena_zalloc(arena, sizeof(uint32_t) * length, PRISM_ALIGNOF(uint32_t));
-    size_t bit_position = 0;
+    uint64_t bit_position = 0;
 
     for (const uint8_t *cursor = end; cursor > start;) {
         if (pm_integer_separator(*--cursor)) continue;
         uint32_t value = pm_integer_parse_digit(*cursor);
 
-        size_t index = bit_position / 32;
-        size_t shift = bit_position % 32;
+        uint32_t index = (uint32_t) (bit_position / 32);
+        uint32_t shift = (uint32_t) (bit_position % 32);
 
         words[index] |= value << shift;
         if (32 - shift < bit && index + 1 < length) words[index + 1] |= value >> (32 - shift);
@@ -121,6 +122,142 @@ pm_integer_parse_powof2(pm_arena_t *arena, pm_integer_t *integer, uint32_t base,
     *integer = (pm_integer_t) { .length = length, .words = { .values = words } };
 }
 
+/*
+ * When parsing long decimal digits, we switch to a divide-and-conquer approach
+ * once it gets really long because we start to see the impact of an O(n^1.58)
+ * vs an O(n^2) algorithm.
+ */
+#define PM_INTEGER_DIVIDE_THRESHOLD 224
+
+/*
+ * The number of words needed to hold a decimal integer with the given number
+ * of digits. A number with d digits is below 10**d, so it needs at most:
+ *
+ *     d * log2(10) + 1
+ *
+ * bits, which rounds up to at most one word more than the whole words below
+ * that count. To find log2(10), we approximate it as 3402/1024, which is
+ * slightly greater than the actual value so it does not undercount.
+ */
+static PRISM_INLINE uint32_t
+pm_integer_decimal_words(uint64_t digits) {
+    return (uint32_t) ((digits * 3402 / 1024) / 32 + 1);
+}
+
+/*
+ * The number of words of storage needed to convert nchunks chunks of nine
+ * decimal digits, which is one word more than the value needs. The conversion
+ * multiplies the high half by a power of ten into this storage, and
+ * pm_bignum_multiply writes the sum of its factors' lengths before it trims a
+ * zero top word. Each factor's length rounds its bits up to a whole word, so
+ * that sum can be one word more than the product needs.
+ */
+static PRISM_INLINE uint32_t
+pm_integer_chunks_words(uint32_t nchunks) {
+    return pm_integer_decimal_words((uint64_t) nchunks * 9) + 1;
+}
+
+/*
+ * Convert nchunks of nine decimal digits into a bignum. Do this by effectively
+ * converting the base of the number from 10**9 to 2**32. The result's storage
+ * must have room for pm_integer_chunks_words(nchunks) words.
+ */
+static void
+pm_integer_parse_decimal_divide_chunks(pm_bignum_t *result, uint32_t nchunks, const uint32_t *chunks, const pm_bignum_t *powers, pm_bignum_scratch_t *scratch) {
+    if (nchunks <= PM_INTEGER_DIVIDE_THRESHOLD) {
+        result->length = 0;
+        for (uint32_t index = nchunks; index > 0; index--) pm_bignum_mul_add(result, 1000000000, chunks[index - 1]);
+    } else {
+        uint32_t level = pm_bsrll((uint64_t) nchunks - 1);
+        uint32_t split = (uint32_t) 1 << level;
+
+        uint32_t *saved = scratch->cursor;
+        pm_bignum_t high = { .length = 0, .words = pm_bignum_scratch_take(scratch, pm_integer_chunks_words(nchunks - split)) };
+        pm_integer_parse_decimal_divide_chunks(&high, nchunks - split, chunks + split, powers, scratch);
+
+        assert(high.length + powers[level].length <= pm_integer_chunks_words(nchunks));
+        pm_bignum_multiply(result, &high, &powers[level], scratch);
+        scratch->cursor = saved;
+
+        pm_bignum_t low = { .length = 0, .words = pm_bignum_scratch_take(scratch, pm_integer_chunks_words(split)) };
+        pm_integer_parse_decimal_divide_chunks(&low, split, chunks, powers, scratch);
+        pm_bignum_add(result, &low);
+        scratch->cursor = saved;
+    }
+}
+
+/*
+ * Parse the digits of a decimal integer of more than
+ * PM_INTEGER_DIVIDE_THRESHOLD chunks of nine digits by divide and conquer. The
+ * digits are packed into chunks, the powers of ten that the splits need are
+ * computed by repeated squaring, and the result is converted straight into
+ * words allocated from the arena. Everything else lives in one block of
+ * scratch space from the heap, sized for the worst case: the chunks, the
+ * powers, and the halves and products of the deepest chain of splits, with
+ * Karatsuba's temporaries bounded by 12 times the longer factor's length.
+ */
+static void
+pm_integer_parse_decimal_divide(pm_arena_t *arena, pm_integer_t *integer, uint32_t digits, const uint8_t *start, const uint8_t *end) {
+    uint32_t nchunks = (uint32_t) (((uint64_t) digits + 8) / 9);
+    uint32_t capacity = pm_integer_chunks_words(nchunks);
+
+    pm_bignum_t result = {
+        .length = 0,
+        .words = (uint32_t *) pm_arena_alloc(arena, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t))
+    };
+
+    /* The scratch space is about 12 times the number of chunks, which can
+     * exceed 32 bits, and on a 32-bit platform its size in bytes can exceed
+     * size_t. */
+    uint64_t scratch_size = (uint64_t) nchunks + 12 * (uint64_t) capacity + 1024;
+    if (scratch_size > SIZE_MAX / sizeof(uint32_t)) PRISM_OOM();
+
+    uint32_t *allocation = (uint32_t *) xmalloc(sizeof(uint32_t) * (size_t) scratch_size);
+    if (allocation == NULL) PRISM_OOM();
+    pm_bignum_scratch_t scratch = { .cursor = allocation, .end = allocation + (size_t) scratch_size };
+
+    /* Pack the digits into chunks of nine, least significant first. The most
+     * significant chunk takes the leftover digits so the rest are exactly
+     * nine. */
+    uint32_t *chunks = pm_bignum_scratch_take(&scratch, nchunks);
+    uint32_t chunk_size = digits % 9 == 0 ? 9 : digits % 9;
+    uint32_t chunk_digits = 0;
+    uint32_t chunk_index = nchunks;
+    uint32_t chunk = 0;
+
+    for (const uint8_t *cursor = start; cursor < end; cursor++) {
+        if (pm_integer_separator(*cursor)) continue;
+        chunk = chunk * 10 + pm_integer_parse_digit(*cursor);
+
+        if (++chunk_digits == chunk_size) {
+            chunks[--chunk_index] = chunk;
+            chunk_size = 9;
+            chunk_digits = 0;
+            chunk = 0;
+        }
+    }
+    assert(chunk_index == 0);
+
+    /* powers[level] is 10**(9 * 2**level), for every level a split uses. */
+    pm_bignum_t powers[64];
+    uint32_t level = 0;
+    powers[level].words = pm_bignum_scratch_take(&scratch, 1);
+    powers[level].words[0] = 1000000000;
+    powers[level].length = 1;
+
+    for (uint32_t split = 2; split < nchunks; split *= 2) {
+        const pm_bignum_t *previous = &powers[level++];
+        powers[level].words = pm_bignum_scratch_take(&scratch, 2 * previous->length);
+        pm_bignum_multiply(&powers[level], previous, previous, &scratch);
+    }
+
+    pm_integer_parse_decimal_divide_chunks(&result, nchunks, chunks, powers, &scratch);
+    xfree_sized(allocation, sizeof(uint32_t) * (size_t) scratch_size);
+
+    assert(result.length > 2 && result.length <= capacity);
+    pm_integer_from_bignum(arena, integer, &result, capacity);
+}
+
 /**
  * Parse the digits of a decimal integer that does not fit in two words. The
  * words are built in place in the arena: starting from zero, the number is
@@ -129,21 +266,19 @@ pm_integer_parse_powof2(pm_arena_t *arena, pm_integer_t *integer, uint32_t base,
  * nine.
  */
 static void
-pm_integer_parse_decimal(pm_arena_t *arena, pm_integer_t *integer, size_t digits, const uint8_t *start, const uint8_t *end) {
+pm_integer_parse_decimal_schoolbook(pm_arena_t *arena, pm_integer_t *integer, uint32_t digits, const uint8_t *start, const uint8_t *end) {
     static const uint32_t powof10[10] = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
 
-    /* A number with d digits is below 10**d, so it needs at most
-     * d * log2(10) + 1 bits. 3402/1024 is just above log2(10), so this never
-     * undercounts, and the words that turn out to be unneeded are given back to
-     * the arena below. */
-    size_t capacity = (digits * 3402 / 1024 + 32) / 32;
+    /* The words that turn out to be unneeded are given back to the arena
+     * below. */
+    uint32_t capacity = pm_integer_decimal_words(digits);
     pm_bignum_t bignum = {
         .length = 0,
         .words = (uint32_t *) pm_arena_alloc(arena, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t))
     };
 
-    size_t chunk_size = digits % 9 == 0 ? 9 : digits % 9;
-    size_t chunk_digits = 0;
+    uint32_t chunk_size = digits % 9 == 0 ? 9 : digits % 9;
+    uint32_t chunk_digits = 0;
     uint32_t chunk = 0;
 
     for (const uint8_t *cursor = start; cursor < end; cursor++) {
@@ -193,15 +328,17 @@ pm_integer_parse_digits(pm_arena_t *arena, pm_integer_t *integer, uint32_t base,
         uint64_t digit = (uint64_t) pm_integer_parse_digit(*cursor);
 
         if (value > limit || (value == limit && digit > limit_digit)) {
-            size_t digits = 0;
+            uint32_t digits = 0;
             for (const uint8_t *scan = start; scan < end; scan++) {
                 if (!pm_integer_separator(*scan)) digits++;
             }
 
-            if (base == 10) {
-                pm_integer_parse_decimal(arena, integer, digits, start, end);
-            } else {
+            if (base != 10) {
                 pm_integer_parse_powof2(arena, integer, base, digits, start, end);
+            } else if (((uint64_t) digits + 8) / 9 > PM_INTEGER_DIVIDE_THRESHOLD) {
+                pm_integer_parse_decimal_divide(arena, integer, digits, start, end);
+            } else {
+                pm_integer_parse_decimal_schoolbook(arena, integer, digits, start, end);
             }
 
             return;
@@ -264,14 +401,14 @@ pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer
      * drop them before parsing. */
     while (end > point + 1 && (end[-1] == '0' || end[-1] == '_')) end--;
 
-    size_t exponent = 0;
+    uint32_t exponent = 0;
     for (const uint8_t *cursor = point + 1; cursor < end; cursor++) {
         if (*cursor != '_') exponent++;
     }
 
     pm_integer_parse_digits(arena, numerator, 10, start, end);
-    size_t twos = 0;
-    size_t fives = 0;
+    uint32_t twos = 0;
+    uint32_t fives = 0;
 
     if (numerator->length > 0 && exponent > 0) {
         uint32_t length = numerator->length;
@@ -280,8 +417,8 @@ pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer
             .words = length <= 2 ? numerator->words.value : numerator->words.values
         };
 
-        twos = pm_bignum_trailing_zeros(&bignum);
-        if (twos > exponent) twos = exponent;
+        uint64_t trailing = pm_bignum_trailing_zeros(&bignum);
+        twos = trailing > exponent ? exponent : (uint32_t) trailing;
         pm_bignum_shift_right(&bignum, twos);
 
         /* 5**13 is the largest power of five that fits in a word, so divide by
@@ -299,9 +436,9 @@ pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer
 
     /* The denominator is what is left of 10**exponent. 2378/1024 is just above
      * log2(5), so this capacity never undercounts. */
-    size_t remaining_fives = exponent - fives;
-    size_t remaining_twos = exponent - twos;
-    size_t capacity = (remaining_fives * 2378 / 1024 + remaining_twos + 32) / 32;
+    uint32_t remaining_fives = exponent - fives;
+    uint32_t remaining_twos = exponent - twos;
+    uint32_t capacity = (uint32_t) (((uint64_t) remaining_fives * 2378 / 1024 + remaining_twos + 32) / 32);
 
     pm_bignum_t bignum = {
         .length = 1,
