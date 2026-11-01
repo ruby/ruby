@@ -5787,7 +5787,11 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
                     heap_allocatable_bytes_expand(objspace, heap, swept_slots, heap->total_slots, heap->slot_size);
                 }
             }
-            else if (swept_slots < min_free_slots * 7 / 8 &&
+            // A heap smaller than its initial size gets new pages without a GC (see heap_prepare()), so it doesn't need a major GC to
+            // free slots. Otherwise a rarely used heap, e.g. one with 1024-byte slots and a couple of pages, can't reach min_free_slots,
+            // which comes from the initial size, and forces a major GC every RVALUE_OLD_AGE minor GCs once allocatable_bytes runs low.
+            else if (total_slots >= init_slots &&
+                     swept_slots < min_free_slots * 7 / 8 &&
                      objspace->heap_pages.allocatable_bytes < (min_free_slots * 7 / 8 - swept_slots) * heap->slot_size) {
                 gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_NOFREE;
                 heap->force_major_gc_count++;
