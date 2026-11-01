@@ -139,13 +139,13 @@ pm_bignum_shift_right(pm_bignum_t *bignum, size_t count) {
  * Return the number of trailing zero bits in a nonzero number. Its top word is
  * nonzero, so the scan for the first nonzero word stops within its length.
  */
-static PRISM_INLINE size_t
+static PRISM_INLINE uint64_t
 pm_bignum_trailing_zeros(const pm_bignum_t *bignum) {
     assert(bignum->length > 0 && bignum->words[bignum->length - 1] != 0);
 
-    size_t index = 0;
+    uint32_t index = 0;
     while (bignum->words[index] == 0) index++;
-    return index * 32 + pm_ctzll(bignum->words[index]);
+    return (uint64_t) index * 32 + pm_ctzll(bignum->words[index]);
 }
 
 /*
@@ -164,5 +164,42 @@ pm_bignum_compare(const pm_bignum_t *left, const pm_bignum_t *right) {
 
     return 0;
 }
+
+/*
+ * Temporary words for the operations that need them, taken and given back in
+ * stack order: an operation saves the cursor, takes what it needs, and
+ * restores the cursor before it returns.
+ */
+typedef struct {
+    /* The next free word. */
+    uint32_t *cursor;
+
+    /* One past the last word. */
+    uint32_t *end;
+} pm_bignum_scratch_t;
+
+/*
+ * Take count words from the scratch space.
+ */
+static PRISM_INLINE uint32_t *
+pm_bignum_scratch_take(pm_bignum_scratch_t *scratch, uint32_t count) {
+    assert((size_t) (scratch->end - scratch->cursor) >= count);
+    uint32_t *words = scratch->cursor;
+    scratch->cursor += count;
+    return words;
+}
+
+/*
+ * Add right into left, in place. The storage must have room for the sum, which
+ * is at most one word longer than the longer of the two.
+ */
+void pm_bignum_add(pm_bignum_t *left, const pm_bignum_t *right);
+
+/*
+ * Multiply left by right into result, whose storage has room for
+ * left->length + right->length words and overlaps neither. Long numbers use
+ * Karatsuba's method, which takes its temporaries from scratch.
+ */
+void pm_bignum_multiply(pm_bignum_t *result, const pm_bignum_t *left, const pm_bignum_t *right, pm_bignum_scratch_t *scratch);
 
 #endif
