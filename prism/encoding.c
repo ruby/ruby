@@ -655,14 +655,9 @@ pm_cesu_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
         return (pm_unicode_codepoint_t) (0x10000 + (((b[1] & 0xF) << 16) | ((b[2] & 0x3F) << 10) | ((b[4] & 0xF) << 6) | (b[5] & 0x3F)));
     }
 
-    if (n > 2 && b[0] == 0xED && b[1] >= 0xA0 && b[1] <= 0xBF) {
-        *width = 3;
-
-        // 11101101 1010xxxx 10xxxxx
-        return (pm_unicode_codepoint_t) (0x10000 + (((b[0] & 0x03) << 16) | ((b[1] & 0x3F) << 10) | (b[2] & 0x3F)));
-    }
-
-    if (n > 2 && ((b[0] == 0xE0 && b[1] >= 0xA0) || (b[0] >= 0xE1 && b[0] <= 0xEF && b[1] >= 0x80)) && b[1] <= 0xBF && b[2] >= 0x80 && b[2] <= 0xBF) {
+    /* A surrogate (11101101 101xxxxx) is only a character as half of the pair
+     * above, so 0xED is followed by at most 0x9F here. */
+    if (n > 2 && ((b[0] == 0xE0 && b[1] >= 0xA0) || (b[0] == 0xED && b[1] >= 0x80 && b[1] <= 0x9F) || (b[0] >= 0xE1 && b[0] <= 0xEF && b[0] != 0xED && b[1] >= 0x80)) && b[1] <= 0xBF && b[2] >= 0x80 && b[2] <= 0xBF) {
         *width = 3;
 
         // 1110xxxx 10xxxxxx 10xxxxx

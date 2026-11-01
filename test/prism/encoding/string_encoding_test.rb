@@ -72,6 +72,14 @@ module Ruby::Prism
         assert_equal Encoding::SHIFT_JIS, slice.encoding
       end
 
+      # In CESU-8, a character beyond U+FFFF is a pair of surrogates, and a
+      # surrogate on its own is not a character.
+      def test_cesu_8_surrogates
+        assert Ruby::Prism.parse_success?("# encoding: CESU-8\n\"\xED\xA0\x80\xED\xB0\x80\"")
+        assert Ruby::Prism.parse_failure?("# encoding: CESU-8\n\"\xED\xA0\x80\"")
+        assert Ruby::Prism.parse_failure?("# encoding: CESU-8\n\"\xED\xB0\x80\"")
+      end
+
       def test_multibyte_escapes
         [
           ["'", "'"],
