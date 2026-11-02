@@ -4249,6 +4249,13 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   xfree(xmalloc_base);
   return ONIGERR_MEMORY;
 #endif
+
+#ifdef RUBY
+ interrupted:
+  STACK_SAVE;
+  xfree(xmalloc_base);
+  return ONIGERR_INTERRUPTED;
+#endif
 }
 
 
