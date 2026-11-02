@@ -2349,6 +2349,7 @@ unsafe extern "C" {
         id: ID,
         valp: *mut VALUE,
     ) -> ::std::os::raw::c_int;
+    pub static mut rb_cArray_empty_frozen: VALUE;
     pub fn rb_ary_tmp_new_from_values(arg1: VALUE, arg2: rb_len_t, arg3: *const VALUE) -> VALUE;
     pub fn rb_ec_ary_new_from_values(
         ec: *mut rb_execution_context_struct,

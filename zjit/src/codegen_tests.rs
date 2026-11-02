@@ -1978,6 +1978,48 @@ fn test_send_rest_arguments() {
 }
 
 #[test]
+fn test_send_empty_anonymous_rest_arguments() {
+    // The interpreter allocates for opt_anon_rest(1) because args_copy copies the
+    // optional argument before filling it; an empty anonymous rest can share the array.
+    // For splat callers it allocates the rest array, so ZJIT does too.
+    eval("
+        def anon_rest(*) = itself
+        def opt_anon_rest(opt = nil, *) = itself
+        def forward_anon_rest(*) = rest(*)
+        def forward_empty_rest(opt = nil, *) = [opt, rest(*)]
+        def forward_one_rest(opt = nil, *) = [opt, rest(*)]
+        def rest(*args) = args
+
+        def allocations
+          allocated = GC.stat(:total_allocated_objects)
+          yield
+          GC.stat(:total_allocated_objects) - allocated
+        end
+
+        def entry
+          empty = []
+          one = [1]
+          named1 = rest
+          named2 = rest
+          named1 << 1
+          [
+            allocations { anon_rest },
+            allocations { opt_anon_rest },
+            allocations { opt_anon_rest(1) },
+            allocations { opt_anon_rest(*empty) },
+            allocations { opt_anon_rest(*one) },
+            forward_anon_rest,
+            forward_empty_rest, forward_empty_rest(1), forward_empty_rest(*empty), forward_empty_rest(*one),
+            forward_one_rest(1, 2), forward_one_rest(*[1, 2]),
+            [named1, named2, named2.frozen?],
+          ]
+        end
+        entry
+    ");
+    assert_snapshot!(assert_compiles("entry"), @"[0, 0, 0, 1, 1, [], [nil, []], [1, []], [nil, []], [1, []], [1, [2]], [1, [2]], [[1], [], false]]");
+}
+
+#[test]
 fn test_send_many_rest_arguments() {
     eval("
         def test(*args) = args.length

@@ -199,6 +199,7 @@ fn main() {
         .allowlist_var("rb_cProc")
         .allowlist_var("rb_cThread")
         .allowlist_var("rb_cArray")
+        .allowlist_var("rb_cArray_empty_frozen")
         .allowlist_var("rb_cHash")
         .allowlist_var("rb_cSet")
         .allowlist_var("rb_cStruct")

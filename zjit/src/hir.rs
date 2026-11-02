@@ -4204,10 +4204,11 @@ impl Function {
                 jit_entry_idx: 0,
             });
         }
+        let has_caller_splat = caller_splat.is_some();
         let args = Self::expand_caller_splat_args(caller_args, caller_splat);
         let (args, kw_bits) = Self::plan_send_direct_keyword_arguments(args, caller_args, iseq)
             .map_err(SendDirectFailure::new)?;
-        let (args, jit_entry_idx) = Self::plan_send_direct_rest_parameter(args, iseq)
+        let (args, jit_entry_idx) = Self::plan_send_direct_rest_parameter(args, iseq, has_caller_splat)
             .map_err(SendDirectFailure::new)?;
 
         Ok(SendDirectCall {
@@ -4574,6 +4575,7 @@ impl Function {
     fn plan_send_direct_rest_parameter(
         args: Vec<SendDirectArg>,
         iseq: IseqPtr,
+        has_caller_splat: bool,
     ) -> Result<(Vec<SendDirectArg>, u16), SendFallbackReason> {
         let params = unsafe { iseq.params() };
         let lead_num = params.lead_num as usize;
@@ -4606,7 +4608,14 @@ impl Function {
         let mut packed_args = args;
         let mut rest_elements = packed_args.split_off(rest_start);
         let suffix = rest_elements.split_off(rest_end - rest_start);
-        packed_args.push(SendDirectArg::RestArray(rest_elements));
+        if rest_elements.is_empty() && params.flags.anon_rest() != 0 && post_num == 0 && !has_caller_splat {
+            // An empty anonymous rest parameter can only be passed on as a splat, so
+            // like vm_args.c, share a frozen empty array instead of allocating one.
+            // vm_args.c only does this when the caller doesn't splat.
+            packed_args.push(SendDirectArg::Constant(unsafe { rb_cArray_empty_frozen }));
+        } else {
+            packed_args.push(SendDirectArg::RestArray(rest_elements));
+        }
         packed_args.extend(suffix);
 
         Ok((packed_args, jit_entry_idx))
