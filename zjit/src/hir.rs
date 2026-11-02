@@ -4742,36 +4742,27 @@ impl Function {
         true
     }
 
-    /// Look up the method `method` on class `klass`.
+    /// Assume that instances of `klass` don't respond to `method`, so that probing for it with
+    /// `rb_respond_to()` or `rb_check_funcall()` calls no Ruby method.
     /// * If the method is defined, return `false`.
-    /// * If the method is *not* defined and the class has no singleton class descendants, cache
-    ///   the negative lookup in a CME and emit a MethodRedefined PatchPoint.
+    /// * If `respond_to?`, `respond_to_missing?`, or `method_missing`, which those probes consult
+    ///   for an undefined method, is not the default definition, return `false`.
+    /// * Otherwise, if the class has no singleton class descendants, cache the negative lookup in
+    ///   a CME and emit MethodRedefined PatchPoints for it and for those hooks.
     pub fn assume_method_not_defined(&mut self, block: BlockId, klass: VALUE, method: ID, state: InsnId) -> bool {
         let cme = unsafe { rb_callable_method_entry_or_negative(klass, method) };
         if cme.is_null() { return false; }
         if !unsafe { rb_zjit_callable_method_entry_is_undefined(cme) } { return false; }
+        let hooks = [ID!(respond_to), ID!(respond_to_missing), ID!(method_missing)];
+        if !hooks.iter().all(|&hook| unsafe { rb_method_basic_definition_p(klass, hook) } != 0) {
+            return false;
+        }
         if !self.assume_no_singleton_classes(block, klass, state) { return false; }
         // Cache the negative lookup
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method, cme }, state });
-        true
-    }
-
-    /// Assume that `rb_check_array_type(nil)` returns nil without calling any Ruby method:
-    /// `NilClass#to_ary` is not defined, and `respond_to?`, `respond_to_missing?`, and
-    /// `method_missing`, which `rb_check_funcall()` consults instead, are the default ones.
-    pub fn assume_nil_not_array_convertible(&mut self, block: BlockId, state: InsnId) -> bool {
-        let klass = unsafe { rb_cNilClass };
-        let hooks = [ID!(respond_to), ID!(respond_to_missing), ID!(method_missing)];
-        // Check every hook before emitting any PatchPoint
-        if !hooks.iter().all(|&mid| unsafe { rb_method_basic_definition_p(klass, mid) } != 0) {
-            return false;
-        }
-        if !self.assume_method_not_defined(block, klass, ID!(to_ary), state) {
-            return false;
-        }
-        for method in hooks {
-            let cme = unsafe { rb_callable_method_entry(klass, method) };
-            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method, cme }, state });
+        for hook in hooks {
+            let cme = unsafe { rb_callable_method_entry(klass, hook) };
+            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: hook, cme }, state });
         }
         true
     }
@@ -11121,7 +11112,7 @@ fn add_iseq_to_hir(
                     let is_splat = flag & 0x01 != 0;
                     // Types are not inferred yet while building HIR, so match the instruction itself.
                     let is_nil = matches!(fun.find(val), Insn::Const { val: Const::Value(v) } if v == Qnil);
-                    if is_nil && fun.assume_nil_not_array_convertible(block, exit_id) {
+                    if is_nil && fun.assume_method_not_defined(block, unsafe { rb_cNilClass }, ID!(to_ary), exit_id) {
                         // vm_expandarray treats a non-Array that rb_check_array_type() can't convert
                         // as the one-element array [val]. `a, b = nil` is common in Ragel-generated
                         // parsers, and the ArrayExact guard below would always side-exit there.

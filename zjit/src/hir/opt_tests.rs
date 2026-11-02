@@ -1622,9 +1622,12 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1008, ==@0x1010, cme:0x1018)
           v27:ArrayExact = GuardType v10, ArrayExact recompile
           PatchPoint MethodRedefined(NilClass@0x1040, to_ary@0x1048, cme:0x1050)
-          v29:FalseClass = Const Value(false)
+          PatchPoint MethodRedefined(NilClass@0x1040, respond_to?@0x1078, cme:0x1080)
+          PatchPoint MethodRedefined(NilClass@0x1040, respond_to_missing?@0x10a8, cme:0x10b0)
+          PatchPoint MethodRedefined(NilClass@0x1040, method_missing@0x10d8, cme:0x10e0)
+          v32:FalseClass = Const Value(false)
           CheckInterrupts
-          Return v29
+          Return v32
         ");
     }
 
@@ -1686,9 +1689,12 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
           v27:StringExact = GuardType v10, StringExact recompile
           PatchPoint MethodRedefined(NilClass@0x1040, to_str@0x1048, cme:0x1050)
-          v29:FalseClass = Const Value(false)
+          PatchPoint MethodRedefined(NilClass@0x1040, respond_to?@0x1078, cme:0x1080)
+          PatchPoint MethodRedefined(NilClass@0x1040, respond_to_missing?@0x10a8, cme:0x10b0)
+          PatchPoint MethodRedefined(NilClass@0x1040, method_missing@0x10d8, cme:0x10e0)
+          v32:FalseClass = Const Value(false)
           CheckInterrupts
-          Return v29
+          Return v32
         ");
     }
 
@@ -19725,11 +19731,14 @@ mod hir_opt_tests {
           PushInlineFrame :!=, v26 (0x1040), num_args=1
           PatchPoint MethodRedefined(String@0x1008, ==@0x1060, cme:0x1068)
           PatchPoint MethodRedefined(NilClass@0x1090, to_str@0x1098, cme:0x10a0)
-          v55:TrueClass = Const Value(true)
+          PatchPoint MethodRedefined(NilClass@0x1090, respond_to?@0x10c8, cme:0x10d0)
+          PatchPoint MethodRedefined(NilClass@0x1090, respond_to_missing?@0x10f8, cme:0x1100)
+          PatchPoint MethodRedefined(NilClass@0x1090, method_missing@0x1128, cme:0x1130)
+          v58:TrueClass = Const Value(true)
           PatchPoint NoEPEscape(!=)
           PopInlineFrame
           CheckInterrupts
-          Return v55
+          Return v58
         ");
     }
 
