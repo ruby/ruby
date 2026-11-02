@@ -381,7 +381,6 @@ mbc_case_fold(OnigCaseFoldType flag,
     OnigCodePoint code;
     int len;
 
-    len = mbc_enc_len(p, end, enc);
     code = get_lower_case(mbc_to_code(p, end, enc));
     len = code_to_mbc(code, lower, enc);
     if (len == ONIGERR_INVALID_CODE_POINT_VALUE) len = 1;
@@ -403,7 +402,7 @@ left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, Onig
   p = s;
 
   while (!eucjp_islead(*p) && p > start) p--;
-  len = mbc_enc_len(p, end, enc);
+  len = enclen(enc, p, end); /* the precise length is negative if broken */
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));

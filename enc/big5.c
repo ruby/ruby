@@ -241,6 +241,7 @@ static const char BIG5_CAN_BE_TRAIL_TABLE[256] = {
 
 #define BIG5_ISMB_FIRST(byte)  ( \
 	BIG5_HKSCS_P(enc) ? EncLen_BIG5_HKSCS[byte] > 1 : \
+	BIG5_UAO_P(enc) ? EncLen_BIG5_UAO[byte] > 1 : \
 	EncLen_BIG5[byte] > 1 \
 	)
 #define BIG5_ISMB_TRAIL(byte)  BIG5_CAN_BE_TRAIL_TABLE[(byte)]
