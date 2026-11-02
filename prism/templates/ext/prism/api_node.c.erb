@@ -54,7 +54,7 @@ pm_integer_new(const pm_integer_t *integer) {
     /* An integer whose words are inline fits in an unsigned long long, so it
      * converts directly unless it is negative and too large to negate. */
     if (length <= 2) {
-        unsigned long long value = ((unsigned long long) integer->words.value[1] << 32) | integer->words.value[0];
+        unsigned long long value = pm_integer_uint64_value(integer);
         if (!integer->negative) return ULL2NUM(value);
         if (value <= LLONG_MAX) return LL2NUM(-(long long) value);
     }

@@ -29,8 +29,8 @@ typedef struct {
     bool negative;
 
     /**
-     * The words of the magnitude. Read them through pm_integer_words rather
-     * than directly.
+     * The words of the magnitude. Read them through pm_integer_words or
+     * pm_integer_uint64_value rather than directly.
      */
     union {
         /**
@@ -62,6 +62,18 @@ pm_integer_words(const pm_integer_t *integer, uint32_t *length) {
     } else {
         return integer->words.values;
     }
+}
+
+/**
+ * Return the magnitude of an integer whose length is at most 2, which always
+ * fits in a uint64_t.
+ *
+ * @param integer The integer to read, whose length must be at most 2.
+ * @returns The magnitude of the integer.
+ */
+static PRISM_INLINE uint64_t
+pm_integer_uint64_value(const pm_integer_t *integer) {
+    return ((uint64_t) integer->words.value[1] << 32) | integer->words.value[0];
 }
 
 #endif

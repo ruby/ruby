@@ -6,13 +6,13 @@
 #include <stdint.h>
 #include <string.h>
 
-/*
+/**
  * Multiplications where the shorter number has fewer words than this use the
  * schoolbook method, which is faster than Karatsuba's at small sizes.
  */
 #define PM_BIGNUM_KARATSUBA_THRESHOLD 24
 
-/*
+/**
  * Add right into left, in place, in the given base, where left is at least as
  * long. Returns the carry out of left's length words. Two words plus a carry
  * are below twice the base, so each sum fits in a uint64_t and carries at most
@@ -38,7 +38,7 @@ pm_bignum_base_words_add(uint64_t base, uint32_t *left, uint32_t left_length, co
     return carry;
 }
 
-/*
+/**
  * Subtract right from left, in place, in the given base. Left must be at least
  * right. A word plus the base fits in a uint64_t, so borrowing does too.
  */
@@ -60,7 +60,7 @@ pm_bignum_base_words_subtract(uint64_t base, uint32_t *left, uint32_t left_lengt
     }
 }
 
-/*
+/**
  * Add right into left, in place, in base 2**32, where left is at least as
  * long. Returns the carry out of left's length words.
  */
@@ -69,7 +69,7 @@ pm_bignum_words_add(uint32_t *left, uint32_t left_length, const uint32_t *right,
     return pm_bignum_base_words_add(PM_BIGNUM_BINARY_BASE, left, left_length, right, right_length);
 }
 
-/*
+/**
  * Add right into left, in place, in base 10**9, where left is at least as
  * long. Returns the carry out of left's length words.
  */
@@ -78,7 +78,7 @@ pm_bignum_decimal_words_add(uint32_t *left, uint32_t left_length, const uint32_t
     return pm_bignum_base_words_add(PM_BIGNUM_DECIMAL_BASE, left, left_length, right, right_length);
 }
 
-/*
+/**
  * Subtract right from left, in place, in base 2**32. Left must be at least
  * right.
  */
@@ -87,7 +87,7 @@ pm_bignum_words_subtract(uint32_t *left, uint32_t left_length, const uint32_t *r
     pm_bignum_base_words_subtract(PM_BIGNUM_BINARY_BASE, left, left_length, right, right_length);
 }
 
-/*
+/**
  * Subtract right from left, in place, in base 10**9. Left must be at least
  * right.
  */
@@ -96,7 +96,7 @@ pm_bignum_decimal_words_subtract(uint32_t *left, uint32_t left_length, const uin
     pm_bignum_base_words_subtract(PM_BIGNUM_DECIMAL_BASE, left, left_length, right, right_length);
 }
 
-/*
+/**
  * Multiply left by right into result, which has room for left_length +
  * right_length words and overlaps neither, using the schoolbook method. A word
  * times a word plus two words is at most 2**64 - 1, so each step fits in a
@@ -119,7 +119,7 @@ pm_bignum_words_multiply_schoolbook(uint32_t *result, const uint32_t *left, uint
     }
 }
 
-/*
+/**
  * The number of products of two words in base 10**9 that can be added to a
  * word before the sum could overflow a uint64_t: 18 * (10**9 - 1)**2 plus
  * 10**9 - 1 is just below 1.8 * 10**19, while 2**64 is just above
@@ -127,7 +127,7 @@ pm_bignum_words_multiply_schoolbook(uint32_t *result, const uint32_t *left, uint
  */
 #define PM_BIGNUM_DECIMAL_PRODUCTS 18
 
-/*
+/**
  * Multiply left by right into result, in base 10**9, which has room for
  * left_length + right_length words and overlaps neither, using the schoolbook
  * method. Dividing by 10**9 is what costs the most here, so each word of the
@@ -182,13 +182,13 @@ pm_bignum_decimal_words_multiply_schoolbook(uint32_t *result, const uint32_t *le
 static void pm_bignum_words_multiply(uint32_t *result, const uint32_t *left, uint32_t left_length, const uint32_t *right, uint32_t right_length, pm_bignum_scratch_t *scratch);
 static void pm_bignum_decimal_words_multiply(uint32_t *result, const uint32_t *left, uint32_t left_length, const uint32_t *right, uint32_t right_length, pm_bignum_scratch_t *scratch);
 
-/*
+/**
  * The helpers below take the base of the words, 2**32 or 10**9, as a
  * parameter, but are always inlined into callers that pass a constant, so the
  * choice is made at compile time and every call they make is direct.
  */
 
-/*
+/**
  * Add right into left in the given base. Returns the carry out of left's
  * length words.
  */
@@ -197,7 +197,7 @@ pm_bignum_radix_add(uint64_t base, uint32_t *left, uint32_t left_length, const u
     return base == PM_BIGNUM_DECIMAL_BASE ? pm_bignum_decimal_words_add(left, left_length, right, right_length) : pm_bignum_words_add(left, left_length, right, right_length);
 }
 
-/*
+/**
  * Subtract right from left in the given base.
  */
 static PRISM_FORCE_INLINE void
@@ -209,7 +209,7 @@ pm_bignum_radix_subtract(uint64_t base, uint32_t *left, uint32_t left_length, co
     }
 }
 
-/*
+/**
  * Multiply left by right with the schoolbook method in the given base.
  */
 static PRISM_FORCE_INLINE void
@@ -221,7 +221,7 @@ pm_bignum_radix_multiply_schoolbook(uint64_t base, uint32_t *result, const uint3
     }
 }
 
-/*
+/**
  * Multiply left by right in the given base.
  */
 static PRISM_FORCE_INLINE void
@@ -233,7 +233,7 @@ pm_bignum_radix_multiply(uint64_t base, uint32_t *result, const uint32_t *left, 
     }
 }
 
-/*
+/**
  * Multiply left by right into result, which has room for left_length +
  * right_length words and overlaps neither, in the given base. Above
  * PM_BIGNUM_KARATSUBA_THRESHOLD this uses Karatsuba's method: splitting each
@@ -311,7 +311,7 @@ pm_bignum_radix_karatsuba(uint64_t base, uint32_t *result, const uint32_t *left,
     scratch->cursor = saved;
 }
 
-/*
+/**
  * Multiply left by right into result in base 2**32, which has room for
  * left_length + right_length words and overlaps neither.
  */
@@ -320,7 +320,7 @@ pm_bignum_words_multiply(uint32_t *result, const uint32_t *left, uint32_t left_l
     pm_bignum_radix_karatsuba(PM_BIGNUM_BINARY_BASE, result, left, left_length, right, right_length, scratch);
 }
 
-/*
+/**
  * Multiply left by right into result in base 10**9, which has room for
  * left_length + right_length words and overlaps neither.
  */
@@ -329,7 +329,7 @@ pm_bignum_decimal_words_multiply(uint32_t *result, const uint32_t *left, uint32_
     pm_bignum_radix_karatsuba(PM_BIGNUM_DECIMAL_BASE, result, left, left_length, right, right_length, scratch);
 }
 
-/*
+/**
  * Add right into left, in place, in the given base. Left is zero-extended to
  * the length of right if it is shorter, and a carry out of the top becomes a
  * new top word.
@@ -345,7 +345,7 @@ pm_bignum_radix_add_bignum(uint64_t base, pm_bignum_t *left, const pm_bignum_t *
     if (carry != 0) left->words[left->length++] = carry;
 }
 
-/*
+/**
  * Multiply left by right into result, in the given base, and trim the zero
  * words off the top of the product.
  */
@@ -358,7 +358,7 @@ pm_bignum_radix_multiply_bignum(uint64_t base, pm_bignum_t *result, const pm_big
     result->length = length;
 }
 
-/*
+/**
  * Add right into left, in place. The storage must have room for the sum, which
  * is at most one word longer than the longer of the two.
  */
@@ -367,7 +367,7 @@ pm_bignum_add(pm_bignum_t *left, const pm_bignum_t *right) {
     pm_bignum_radix_add_bignum(PM_BIGNUM_BINARY_BASE, left, right);
 }
 
-/*
+/**
  * Multiply left by right into result, whose storage has room for
  * left->length + right->length words and overlaps neither. Long numbers use
  * Karatsuba's method, which takes its temporaries from scratch.
@@ -377,7 +377,7 @@ pm_bignum_multiply(pm_bignum_t *result, const pm_bignum_t *left, const pm_bignum
     pm_bignum_radix_multiply_bignum(PM_BIGNUM_BINARY_BASE, result, left, right, scratch);
 }
 
-/*
+/**
  * Add right into left, in place, in base 10**9. The storage must have room for
  * the sum, which is at most one word longer than the longer of the two.
  */
@@ -386,7 +386,7 @@ pm_bignum_decimal_add(pm_bignum_t *left, const pm_bignum_t *right) {
     pm_bignum_radix_add_bignum(PM_BIGNUM_DECIMAL_BASE, left, right);
 }
 
-/*
+/**
  * Multiply left by right into result, in base 10**9, whose storage has room
  * for left->length + right->length words and overlaps neither. Long numbers
  * use Karatsuba's method, which takes its temporaries from scratch.

@@ -814,10 +814,11 @@ struct pm_parser_t {
         pm_node_flags_t base;
 
         /*
-         * When lexing a decimal integer that fits in a uint64_t, or a plain 0,
-         * we compute the value during lexing to avoid re-scanning the digits
-         * during parsing. If start is set, this holds the result for the
-         * token that begins there and pm_integer_parse can be skipped.
+         * When lexing a decimal integer of at most 19 digits, which always
+         * fits in a uint64_t, or a plain 0, we compute the value during
+         * lexing to avoid re-scanning the digits during parsing. If start is
+         * set, this holds the result for the token that begins there and
+         * pm_integer_parse can be skipped.
          */
         uint64_t value;
 
