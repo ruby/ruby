@@ -235,7 +235,7 @@ check_compiled_program_size(regex_t* reg, OnigDistance add_len)
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_opcode(regex_t* reg, int opcode)
 {
   int r = check_compiled_program_size(reg, 1);
@@ -245,7 +245,7 @@ add_opcode(regex_t* reg, int opcode)
 }
 
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
-static int
+ONIG_NODISCARD static int
 add_state_check_num(regex_t* reg, int num)
 {
   StateCheckNumType n = (StateCheckNumType )num;
@@ -255,7 +255,7 @@ add_state_check_num(regex_t* reg, int num)
 }
 #endif
 
-static int
+ONIG_NODISCARD static int
 add_rel_addr(regex_t* reg, int addr)
 {
   RelAddrType ra = (RelAddrType )addr;
@@ -264,7 +264,7 @@ add_rel_addr(regex_t* reg, int addr)
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_abs_addr(regex_t* reg, int addr)
 {
   AbsAddrType ra = (AbsAddrType )addr;
@@ -273,7 +273,7 @@ add_abs_addr(regex_t* reg, int addr)
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_length(regex_t* reg, OnigDistance len)
 {
   LengthType l = (LengthType )len;
@@ -282,7 +282,7 @@ add_length(regex_t* reg, OnigDistance len)
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_mem_num(regex_t* reg, int num)
 {
   MemNumType n = (MemNumType )num;
@@ -292,7 +292,7 @@ add_mem_num(regex_t* reg, int num)
 }
 
 #if 0
-static int
+ONIG_NODISCARD static int
 add_pointer(regex_t* reg, void* addr)
 {
   PointerType ptr = (PointerType )addr;
@@ -302,14 +302,14 @@ add_pointer(regex_t* reg, void* addr)
 }
 #endif
 
-static int
+ONIG_NODISCARD static int
 add_option(regex_t* reg, OnigOptionType option)
 {
   BBUF_ADD(reg, &option, SIZE_OPTION);
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_opcode_rel_addr(regex_t* reg, int opcode, int addr)
 {
   int r;
@@ -320,7 +320,7 @@ add_opcode_rel_addr(regex_t* reg, int opcode, int addr)
   return r;
 }
 
-static int
+ONIG_NODISCARD static int
 add_bytes(regex_t* reg, UChar* bytes, OnigDistance len)
 {
   int r = check_compiled_program_size(reg, len);
@@ -329,7 +329,7 @@ add_bytes(regex_t* reg, UChar* bytes, OnigDistance len)
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_bitset(regex_t* reg, BitSetRef bs)
 {
   int r = check_compiled_program_size(reg, SIZE_BITSET);
@@ -338,7 +338,7 @@ add_bitset(regex_t* reg, BitSetRef bs)
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_opcode_option(regex_t* reg, int opcode, OnigOptionType option)
 {
   int r;
@@ -484,7 +484,7 @@ add_compile_string_length(UChar* s ARG_UNUSED, int mb_len, OnigDistance byte_len
   return len;
 }
 
-static int
+ONIG_NODISCARD static int
 add_compile_string(UChar* s, int mb_len, OnigDistance byte_len,
                    regex_t* reg, int ignore_case)
 {
@@ -494,7 +494,7 @@ add_compile_string(UChar* s, int mb_len, OnigDistance byte_len,
   if (r) return r;
 
   if (op == OP_EXACTMBN) {
-    r = add_length(reg, mb_len);
+    r = add_length(reg, (OnigDistance )mb_len);
     if (r) return r;
   }
 
@@ -502,7 +502,7 @@ add_compile_string(UChar* s, int mb_len, OnigDistance byte_len,
     if (op == OP_EXACTN_IC)
       r = add_length(reg, byte_len);
     else
-      r = add_length(reg, byte_len / mb_len);
+      r = add_length(reg, byte_len / (OnigDistance )mb_len);
     if (r) return r;
   }
 
@@ -614,7 +614,7 @@ compile_string_raw_node(StrNode* sn, regex_t* reg)
   return add_compile_string(sn->s, 1 /* sb */, sn->end - sn->s, reg, 0);
 }
 
-static int
+ONIG_NODISCARD static int
 add_multi_byte_cclass(BBuf* mbuf, regex_t* reg)
 {
 #ifdef PLATFORM_UNALIGNED_WORD_ACCESS

@@ -882,7 +882,8 @@ extern int
 onig_check_linear_time(OnigRegexType* reg)
 {
   long num_cache_opcodes = 0;
-  count_num_cache_opcodes(reg, &num_cache_opcodes);
+  if (count_num_cache_opcodes(reg, &num_cache_opcodes) < 0)
+    return 0;
   return num_cache_opcodes != NUM_CACHE_OPCODES_IMPOSSIBLE;
 }
 
