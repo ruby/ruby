@@ -1817,6 +1817,15 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(0x1_0000, /\w+/.match("0x1_0000").integer_at(0, 0))
   end
 
+  def test_match_integer_at_empty_capture
+    # An empty capture must not parse bytes after it, even when those bytes
+    # form a 0x/0b/0o/0d prefix for the requested base. [Bug #NNNNN]
+    assert_nil(/(?<h>[g-z]*)/.match("0xff").integer_at(:h, 16))
+    assert_nil(/(?<b>[2-9]*)/.match("0b11").integer_at(:b, 2))
+    assert_nil(/(?<o>[89]*)/.match("0o17").integer_at(:o, 8))
+    assert_nil(/x(?<d>[a-z]*)/.match("x0d42").integer_at(:d))
+  end
+
   def test_regexp_popped
     EnvUtil.suppress_warning do
       assert_nothing_raised { eval("a = 1; /\#{ a }/; a") }
