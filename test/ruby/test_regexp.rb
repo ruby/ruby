@@ -1132,6 +1132,15 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(3, assert_warning(/binary regexp/) {"foobarbaz\u3042".rindex(pat, 5)})
   end
 
+  def test_rindex_with_leading_anychar_star_multiline
+    s = "0\n" + " " * 5
+    assert_equal(0, s.rindex(/.*\S\R/m))
+    assert_equal(0, s.rindex(/.*\S\R/m, 4))
+    assert_equal(2, "ab0\n   ".rindex(/.*0\n/m))
+    assert_equal(0, "abc".rindex(/.*/m, 0))
+    assert_equal(3, "abc".rindex(/.*/m))
+  end
+
   def assert_regexp(re, ss, fs = [], msg = nil)
     re = EnvUtil.suppress_warning {Regexp.new(re)} unless re.is_a?(Regexp)
     ss = [ss] unless ss.is_a?(Array)

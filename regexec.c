@@ -5184,7 +5184,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
         goto end_buf;
       }
     }
-    else if ((reg->anchor & ANCHOR_ANYCHAR_STAR_ML)) {
+    else if ((reg->anchor & ANCHOR_ANYCHAR_STAR_ML) && range > start) {
       goto begin_position;
     }
   }
