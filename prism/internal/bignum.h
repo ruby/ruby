@@ -16,6 +16,16 @@
 #include <string.h>
 
 /*
+ * The base of the words of a number.
+ */
+#define PM_BIGNUM_BINARY_BASE ((uint64_t) 1 << 32)
+
+/*
+ * The base of the words of a decimal number, each of which is nine digits.
+ */
+#define PM_BIGNUM_DECIMAL_BASE 1000000000
+
+/*
  * An arbitrary-precision unsigned integer.
  */
 typedef struct {
@@ -201,5 +211,18 @@ void pm_bignum_add(pm_bignum_t *left, const pm_bignum_t *right);
  * Karatsuba's method, which takes its temporaries from scratch.
  */
 void pm_bignum_multiply(pm_bignum_t *result, const pm_bignum_t *left, const pm_bignum_t *right, pm_bignum_scratch_t *scratch);
+
+/*
+ * Add right into left, in place, in base 10**9. The storage must have room for
+ * the sum, which is at most one word longer than the longer of the two.
+ */
+void pm_bignum_decimal_add(pm_bignum_t *left, const pm_bignum_t *right);
+
+/*
+ * Multiply left by right into result, in base 10**9, whose storage has room
+ * for left->length + right->length words and overlaps neither. Long numbers
+ * use Karatsuba's method, which takes its temporaries from scratch.
+ */
+void pm_bignum_decimal_multiply(pm_bignum_t *result, const pm_bignum_t *left, const pm_bignum_t *right, pm_bignum_scratch_t *scratch);
 
 #endif

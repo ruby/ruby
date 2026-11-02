@@ -30,6 +30,12 @@ module Ruby::Prism
     def test_integer
       assert_equal "1000", static_inspect("1_0_0_0")
       assert_equal "10000000000000000000000000000", static_inspect("1_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0")
+
+      num = 7 ** 30_000
+      assert_equal num.to_s, static_inspect("0x#{num.to_s(16)}")
+
+      num = 10 ** 5_000 - 1
+      assert_equal num.to_s, static_inspect("0x#{num.to_s(16)}")
     end
 
     def test_nil
