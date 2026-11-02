@@ -22,14 +22,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-/*
+/**
  * When parsing long decimal digits, we switch to a divide-and-conquer approach
  * once it gets really long because we start to see the impact of an O(n^1.58)
  * vs an O(n^2) algorithm.
  */
 #define PM_INTEGER_DIVIDE_THRESHOLD 224
 
-/*
+/**
  * When printing integers of many words, we switch to a divide-and-conquer
  * approach for the same reason as parsing: the repeated division by 10**9 is
  * O(n^2), while the divide and conquer is O(n^1.58). Below this many words, the
@@ -38,7 +38,7 @@
  */
 #define PM_INTEGER_STRING_THRESHOLD 48
 
-/*
+/**
  * Within the divide and conquer, pieces of at most this many words are
  * converted by repeated division by 10**9. This is lower than
  * PM_INTEGER_STRING_THRESHOLD because the pieces share the scratch space and
@@ -48,10 +48,6 @@
 
 /**
  * The values of a hexadecimal digit, where the index is the ASCII character.
- * Note that there's an odd exception here where _ is mapped to 0. This is
- * because it's possible for us to end up trying to parse a number that has
- * already had an error attached to it, and we want to provide _something_ to
- * the user.
  */
 static const int8_t pm_integer_parse_digit_values[256] = {
 /*   0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F */
@@ -60,7 +56,7 @@ static const int8_t pm_integer_parse_digit_values[256] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, /* 2x */
      0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1, /* 3x */
     -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, /* 4x */
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, /* 5x */
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, /* 5x */
     -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, /* 6x */
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, /* 7x */
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, /* 8x */
@@ -103,7 +99,7 @@ pm_integer_separator(uint8_t character) {
 static void
 pm_integer_from_bignum(pm_arena_t *arena, pm_integer_t *integer, const pm_bignum_t *bignum, uint32_t capacity) {
     if (bignum->length <= 2) {
-        uint64_t value = (bignum->length > 0 ? (uint64_t) bignum->words[0] : 0) | (bignum->length > 1 ? (uint64_t) bignum->words[1] << 32 : 0);
+        uint64_t value = pm_bignum_uint64(bignum);
         pm_arena_shrink(arena, bignum->words, sizeof(uint32_t) * capacity, 0);
         *integer = pm_integer_uint64(value);
     } else {
@@ -146,7 +142,7 @@ pm_integer_parse_powof2(pm_arena_t *arena, pm_integer_t *integer, uint32_t base,
     *integer = (pm_integer_t) { .length = length, .words = { .values = words } };
 }
 
-/*
+/**
  * The number of words needed to hold a decimal integer with the given number
  * of digits. A number with d digits is below 10**d, so it needs at most:
  *
@@ -161,7 +157,7 @@ pm_integer_decimal_words(uint64_t digits) {
     return (uint32_t) ((digits * 3402 / 1024) / 32 + 1);
 }
 
-/*
+/**
  * The number of words of storage needed to convert nchunks chunks of nine
  * decimal digits, which is one word more than the value needs. The conversion
  * multiplies the high half by a power of ten into this storage, and
@@ -174,7 +170,7 @@ pm_integer_chunks_words(uint32_t nchunks) {
     return pm_integer_decimal_words((uint64_t) nchunks * 9) + 1;
 }
 
-/*
+/**
  * Convert nchunks of nine decimal digits into a bignum. Do this by effectively
  * converting the base of the number from 10**9 to 2**32. The result's storage
  * must have room for pm_integer_chunks_words(nchunks) words.
@@ -203,7 +199,7 @@ pm_integer_parse_decimal_divide_chunks(pm_bignum_t *result, uint32_t nchunks, co
     }
 }
 
-/*
+/**
  * Parse the digits of a decimal integer of more than
  * PM_INTEGER_DIVIDE_THRESHOLD chunks of nine digits by divide and conquer. The
  * digits are packed into chunks, the powers of ten that the splits need are
@@ -444,8 +440,7 @@ pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer
         while (fives < exponent && pm_bignum_div_exact(&bignum, 5)) fives++;
 
         if (length <= 2) {
-            uint64_t value = (bignum.length > 0 ? (uint64_t) bignum.words[0] : 0) | (bignum.length > 1 ? (uint64_t) bignum.words[1] << 32 : 0);
-            *numerator = pm_integer_uint64(value);
+            *numerator = pm_integer_uint64(pm_bignum_uint64(&bignum));
         } else {
             pm_integer_from_bignum(arena, numerator, &bignum, length);
         }
@@ -497,7 +492,7 @@ pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right) {
     return pm_bignum_compare(&left_bignum, &right_bignum) * negative;
 }
 
-/*
+/**
  * The number of words of storage needed to convert an integer of length words
  * into base 10**9. The integer is below 2**(32 * length), so it needs at most:
  *
@@ -515,7 +510,7 @@ pm_integer_string_words(uint32_t length) {
     return (uint32_t) ((uint64_t) length * 1097 / 1024 + 2);
 }
 
-/*
+/**
  * Convert length words of a bignum into base 10**9. The result's storage must
  * have room for pm_integer_string_words(length) words. Up to
  * PM_INTEGER_STRING_LEAF words, a copy of the words is divided by 10**9
@@ -556,7 +551,7 @@ pm_integer_string_convert(pm_bignum_t *result, const uint32_t *words, uint32_t l
     scratch->cursor = saved;
 }
 
-/*
+/**
  * Convert the words of an integer of more than PM_INTEGER_STRING_THRESHOLD
  * words to a decimal string by divide and conquer. The powers of two that the
  * splits need are computed in base 10**9 by repeated squaring, and the integer
@@ -631,8 +626,7 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
     /* An integer whose words are inline fits in a uint64_t, so it can be
      * appended directly. */
     if (integer->length <= 2) {
-        const uint64_t value = ((uint64_t) integer->words.value[0]) | ((uint64_t) integer->words.value[1] << 32);
-        pm_buffer_append_format(buffer, "%" PRIu64, value);
+        pm_buffer_append_format(buffer, "%" PRIu64, pm_integer_uint64_value(integer));
         return;
     }
 

@@ -176,6 +176,17 @@ pm_bignum_compare(const pm_bignum_t *left, const pm_bignum_t *right) {
 }
 
 /*
+ * Return the value of a number of at most two words. Words past the length may
+ * hold stale values after an in-place operation, so only the words in use are
+ * read.
+ */
+static PRISM_INLINE uint64_t
+pm_bignum_uint64(const pm_bignum_t *bignum) {
+    assert(bignum->length <= 2);
+    return (bignum->length > 0 ? (uint64_t) bignum->words[0] : 0) | (bignum->length > 1 ? (uint64_t) bignum->words[1] << 32 : 0);
+}
+
+/*
  * Temporary words for the operations that need them, taken and given back in
  * stack order: an operation saves the cursor, takes what it needs, and
  * restores the cursor before it returns.

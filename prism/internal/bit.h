@@ -7,8 +7,8 @@
  * Count trailing zero bits in a 64-bit value, and find the index of the
  * highest set bit in one (the result of the x86 bsr instruction). pm_ctzll is
  * used by SWAR identifier scanning to find the first non-matching byte in a
- * word, and pm_bsrll by integer parsing to find the largest power of two below
- * a count.
+ * word, and pm_bsrll by integer parsing and printing to find the largest power
+ * of two below a count.
  *
  * Precondition: v must be nonzero. The results are undefined when v == 0
  * (matching the behavior of __builtin_ctzll, __builtin_clzll,
