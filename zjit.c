@@ -64,7 +64,7 @@ const struct rb_zjit_runtime_offsets rb_zjit_runtime_offsets = {
 const zjit_jit_frame_t rb_zjit_c_frame = (zjit_jit_frame_t) {
     .pc = 0,
     .iseq = 0,
-    .materialize_block_code = false,
+    .stack_map = NULL,
 };
 
 #if !defined(_WIN32) && defined(MAP_ANONYMOUS)
