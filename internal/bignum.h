@@ -143,6 +143,25 @@ ruby_convert_to_decimals(char *dest, BDIGIT_DBL num)
     return (size_t)(dest - b);
 }
 
+/* Stores the string for num using base as the radix, backward from
+ * dest.  base must be 2..36.  Returns the stored size. */
+static inline size_t
+ruby_convert_to_digits(char *dest, BDIGIT_DBL num, unsigned int base)
+{
+    RBIMPL_ASSERT_OR_ASSUME(base >= 2);
+    RBIMPL_ASSERT_OR_ASSUME(base <= 36);
+    if (base == 10) {
+        return ruby_convert_to_decimals(dest, num);
+    }
+    char *b = dest;
+    do {
+        unsigned int idx = (unsigned int)(num % base);
+        num /= base;
+        *--b = ruby_digitmap[idx];
+    } while (num);
+    return (size_t)(dest - b);
+}
+
 double rb_big_fdiv_double(VALUE x, VALUE y);
 VALUE rb_big_uminus(VALUE x);
 VALUE rb_big_hash(VALUE);

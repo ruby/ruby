@@ -4822,7 +4822,6 @@ big2str_2bdigits(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t tail
 {
     size_t j;
     BDIGIT_DBL num;
-    char buf[SIZEOF_BDIGIT_DBL*CHAR_BIT], *p;
     int beginning = !b2s->ptr;
     size_t len = 0;
 
@@ -4830,45 +4829,24 @@ big2str_2bdigits(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t tail
     num = bary2bdigitdbl(xds, xn);
 
     if (beginning) {
+        char buf[SIZEOF_BDIGIT_DBL*CHAR_BIT], *p = buf;
         if (num == 0)
             return;
-        p = buf;
         j = sizeof(buf);
-        if (b2s->base == 10) {
-            /* Emit two decimal digits per iteration from ruby_decimal_digit_pairs.
-             * See the comment on the table in bignum.c near ruby_digitmap. */
-            j -= ruby_convert_to_decimals(&p[j], num);
-        }
-        else {
-            do {
-                unsigned int idx = (unsigned int)(num % b2s->base);
-                num /= b2s->base;
-                p[--j] = ruby_digitmap[idx];
-            } while (num);
-        }
+        j -= ruby_convert_to_digits(&p[j], num, b2s->base);
         len = sizeof(buf) - j;
         big2str_alloc(b2s, len + taillen);
         MEMCPY(b2s->ptr, buf + j, char, len);
     }
     else {
-        p = b2s->ptr;
+        char *p = b2s->ptr;
         j = b2s->hbase2_numdigits;
-        if (b2s->base == 10) {
-            /* Non-beginning chunks must emit EXACTLY hbase2_numdigits,
-             * zero-padded on the left.  Consume num in 2-digit groups,
-             * handle the odd trailing digit, then memset remaining
-             * positions with '0'. */
-            j -= ruby_convert_to_decimals(&p[j], num);
-            if (j > 0) {
-                memset(p, '0', j);
-            }
-        }
-        else {
-            do {
-                unsigned int idx = (unsigned int)(num % b2s->base);
-                num /= b2s->base;
-                p[--j] = ruby_digitmap[idx];
-            } while (j);
+        j -= ruby_convert_to_digits(&p[j], num, b2s->base);
+        /* Non-beginning chunks must emit EXACTLY hbase2_numdigits,
+         * zero-padded on the left.  Consume num, then memset
+         * remaining positions with '0'. */
+        if (j > 0) {
+            memset(p, '0', j);
         }
         len = b2s->hbase2_numdigits;
     }

@@ -4092,14 +4092,7 @@ rb_fix2str(VALUE x, int base)
     else {
         u = val;
     }
-    if (base == 10) {
-        b -= ruby_convert_to_decimals(b, u);
-    }
-    else {
-        do {
-            *--b = ruby_digitmap[(unsigned int)(u % base)];
-        } while (u /= base);
-    }
+    b -= ruby_convert_to_digits(b, u, base);
     if (neg) {
         *--b = '-';
     }
