@@ -27,6 +27,29 @@ describe "Integer#to_s" do
         0.to_s.should == '0'
         -9002.to_s.should == '-9002'
       end
+
+      it "handles powers-of-ten boundaries across the fixnum range" do
+        1.upto(18) do |digits|
+          power = 10 ** digits
+          break if power > fixnum_max
+
+          (power - 1).to_s.should == "9" * digits
+          power.to_s.should == "1" + "0" * digits
+          (-power).to_s.should == "-1" + "0" * digits
+        end
+
+        fixnum_max.to_s.to_i.should == fixnum_max
+        fixnum_min.to_s.to_i.should == fixnum_min
+      end
+
+      it "returns a fresh mutable String" do
+        first = 12345.to_s
+        second = 12345.to_s
+        first << "6"
+
+        first.should == "123456"
+        second.should == "12345"
+      end
     end
 
     before :each do
@@ -45,6 +68,11 @@ describe "Integer#to_s" do
     it "returns a String in US-ASCII encoding when Encoding.default_internal is not nil" do
       Encoding.default_internal = Encoding::IBM437
       1.to_s.encoding.should.equal?(Encoding::US_ASCII)
+    end
+
+    it "returns an ASCII-only String" do
+      1_234_567_890.to_s.ascii_only?.should == true
+      (-1_234_567_890).to_s.ascii_only?.should == true
     end
   end
 
