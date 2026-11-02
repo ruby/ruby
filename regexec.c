@@ -2588,7 +2588,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 # define NEXT sprev = sbegin; JUMP
 # define JUMP pbegin = p; RB_GNUC_EXTENSION_BLOCK(goto *oplabels[*p++])
 
-  RB_GNUC_EXTENSION static const void *oplabels[] = {
+  /* Indexed by a raw bytecode byte, so cover every byte value. */
+  RB_GNUC_EXTENSION static const void *oplabels[256] = {
     &&L_OP_FINISH,               /* matching process terminator (no more alternative) */
     &&L_OP_END,                  /* pattern code terminator (success end) */
 
@@ -2753,8 +2754,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     &&L_OP_SET_OPTION          /* set option */
 # else
     &&L_DEFAULT,
-    &&L_DEFAULT
+    &&L_DEFAULT,
 # endif
+    [OP_SET_OPTION + 1 ... 255] = &&L_DEFAULT
   };
 #else /* USE_TOKEN_THREADED_VM */
 
