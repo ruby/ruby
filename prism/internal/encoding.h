@@ -8,55 +8,63 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* A form that the characters of a multibyte encoding take beyond ASCII. */
+typedef struct pm_encoding_form pm_encoding_form_t;
+
+/* The ways in which an encoding answers questions about its characters. */
+typedef enum {
+    /* Every byte is a character, with the properties in its table. */
+    PM_ENCODING_KIND_SINGLE_BYTE,
+
+    /* Every byte below 0x80 is a character, and every other byte is invalid. */
+    PM_ENCODING_KIND_ASCII,
+
+    /* UTF-8, whose characters have the properties of their code points. */
+    PM_ENCODING_KIND_UTF_8,
+
+    /* CESU-8, which takes its forms and whose characters have the properties
+     * of their code points. */
+    PM_ENCODING_KIND_CESU_8,
+
+    /* Every byte below 0x80 is ASCII, and other characters take its forms. */
+    PM_ENCODING_KIND_FORMS
+} pm_encoding_kind_t;
+
 /*
- * This struct defines the functions necessary to implement the encoding
- * interface so we can determine how many bytes the subsequent character takes.
- * Each callback should return the number of bytes, or 0 if the next bytes are
- * invalid for the encoding and type.
+ * An encoding that prism can parse source in. It holds what the answers to the
+ * questions about its characters come from, which pm_encoding_char_width and
+ * the functions after it read.
  */
 typedef struct {
-    /*
-     * Return the number of bytes that the next character takes if it is valid
-     * in the encoding. Does not read more than n bytes. It is assumed that n is
-     * at least 1.
-     */
-    size_t (*char_width)(const uint8_t *b, ptrdiff_t n);
-
-    /*
-     * Return the number of bytes that the next character takes if it is valid
-     * in the encoding and is alphabetical. Does not read more than n bytes. It
-     * is assumed that n is at least 1.
-     */
-    size_t (*alpha_char)(const uint8_t *b, ptrdiff_t n);
-
-    /*
-     * Return the number of bytes that the next character takes if it is valid
-     * in the encoding and is alphanumeric. Does not read more than n bytes. It
-     * is assumed that n is at least 1.
-     */
-    size_t (*alnum_char)(const uint8_t *b, ptrdiff_t n);
-
-    /*
-     * Return true if the next character is valid in the encoding and is an
-     * uppercase character. Does not read more than n bytes. It is assumed that
-     * n is at least 1.
-     */
-    bool (*isupper_char)(const uint8_t *b, ptrdiff_t n);
-
     /*
      * The name of the encoding. This should correspond to a value that can be
      * passed to Encoding.find in Ruby.
      */
     const char *name;
 
-    /* Return true if the encoding is a multibyte encoding. */
-    bool multibyte;
+    /* The PRISM_ENCODING_*_BIT properties of each byte as a character. */
+    const uint8_t *table;
+
+    /* The forms that the characters take beyond ASCII, or NULL. */
+    const pm_encoding_form_t *forms;
+
+    /* The number of forms. */
+    uint8_t forms_size;
+
+    /*
+     * How the encoding answers questions about its characters, as a
+     * pm_encoding_kind_t stored in a byte to keep the table of encodings small.
+     */
+    uint8_t kind;
 } pm_encoding_t;
 
-/* Return true if the encoding is a multibyte encoding. */
+/*
+ * Return true if the encoding is a multibyte encoding. Every kind other than
+ * single-byte and ASCII has characters that span more than one byte.
+ */
 static PRISM_INLINE bool
 pm_encoding_multibyte_p(const pm_encoding_t *encoding) {
-    return encoding->multibyte;
+    return encoding->kind != PM_ENCODING_KIND_SINGLE_BYTE && encoding->kind != PM_ENCODING_KIND_ASCII;
 }
 
 /*
@@ -81,10 +89,13 @@ pm_encoding_multibyte_p(const pm_encoding_t *encoding) {
  * Return the number of bytes in the next character in the given encoding, or 0
  * if the bytes do not form one.
  */
-static PRISM_INLINE size_t
-pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
-    return encoding->char_width(b, n);
-}
+size_t pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n);
+
+/*
+ * Return the number of bytes in the next character in the given encoding if it
+ * has the given PRISM_ENCODING_*_BIT property, or 0 otherwise.
+ */
+size_t pm_encoding_property_char(const pm_encoding_t *encoding, uint8_t property, const uint8_t *b, ptrdiff_t n);
 
 /*
  * Return the number of bytes in the next character in the given encoding if it
@@ -92,7 +103,7 @@ pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_
  */
 static PRISM_INLINE size_t
 pm_encoding_alpha_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
-    return encoding->alpha_char(b, n);
+    return pm_encoding_property_char(encoding, PRISM_ENCODING_ALPHABETIC_BIT, b, n);
 }
 
 /*
@@ -101,7 +112,7 @@ pm_encoding_alpha_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_
  */
 static PRISM_INLINE size_t
 pm_encoding_alnum_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
-    return encoding->alnum_char(b, n);
+    return pm_encoding_property_char(encoding, PRISM_ENCODING_ALPHANUMERIC_BIT, b, n);
 }
 
 /*
@@ -109,7 +120,7 @@ pm_encoding_alnum_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_
  */
 static PRISM_INLINE bool
 pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
-    return encoding->isupper_char(b, n);
+    return pm_encoding_property_char(encoding, PRISM_ENCODING_UPPERCASE_BIT, b, n) != 0;
 }
 
 /* Return the size of the next character in the UTF-8 encoding. */
