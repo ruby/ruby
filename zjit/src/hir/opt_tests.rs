@@ -22431,6 +22431,38 @@ mod hir_opt_tests {
     // Test that when a singleton class has been seen for a class, we skip the
     // NoSingletonClass optimization to avoid an invalidation loop.
     #[test]
+    fn test_no_singleton_class_assumption_in_final_version() {
+        set_max_versions(2);
+        eval(r#"
+            class FinalVersionTarget
+              def foo = 1
+            end
+            FINAL_VERSION_CONST = 1
+            def test(o) = o.foo + FINAL_VERSION_CONST
+
+            special = FinalVersionTarget.new
+            def special.bar = nil # FinalVersionTarget has had a singleton class
+
+            o = FinalVersionTarget.new
+            test(o); test(o) # compile the first version
+        "#);
+        // An ISEQ that wasn't invalidated for singleton class creation still assumes no singleton class
+        let hir = hir_string("test");
+        assert!(hir.contains("NoSingletonClass(FinalVersionTarget"), "{hir}");
+
+        // Invalidate the first version for a reason other than singleton class creation
+        eval(r#"
+            Object.send(:remove_const, :FINAL_VERSION_CONST)
+            FINAL_VERSION_CONST = 2
+        "#);
+
+        // The next version is the last one. A PatchPoint there can't make it recompile, so
+        // it shouldn't assume no singleton class for a class that has had one.
+        let hir = hir_string("test");
+        assert!(!hir.contains("NoSingletonClass(FinalVersionTarget"), "{hir}");
+    }
+
+    #[test]
     fn test_skip_optimization_after_singleton_class_seen() {
         // First, compile a function that uses the NoSingletonClass assumption
         eval(r#"

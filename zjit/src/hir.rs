@@ -3664,6 +3664,12 @@ impl Function {
             // creation. Avoid repeating the invalidation.
             return false;
         }
+        if self.policy.no_side_exits && invariants::has_singleton_class_of(klass) {
+            // This is the last version of the ISEQ, so invalidating it doesn't make the ISEQ
+            // recompile, and the patched code would side-exit on every call. Don't assume no
+            // singleton class for a class that has already had one.
+            return false;
+        }
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
         true
     }
