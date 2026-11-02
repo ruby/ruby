@@ -3000,10 +3000,8 @@ onig_syntax_warn(ScanEnv *env, const char *fmt, ...)
                 fmt, args);
     va_end(args);
 #ifdef RUBY
-    if (env->sourcefile == NULL)
-      rb_warn("%s", (char *)buf);
-    else
-      rb_compile_warn(env->sourcefile, env->sourceline, "%s", (char *)buf);
+    /* may be kept until the compilation returns (Warning.warn may raise) */
+    rb_reg_warn(env->sourcefile, env->sourceline, (char *)buf);
 #else
     (*onig_warn)((char* )buf);
 #endif

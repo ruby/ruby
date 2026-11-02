@@ -2515,6 +2515,67 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_match_interrupted_no_memory_leak
+    # An exception from the interrupts (Thread#raise, which Timeout.timeout
+    # uses) jumped out of the matcher and leaked the match stack.
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 2..6)
+      Thread.report_on_exception = false
+      regex = /(a|a)*(a*)*\\1(?!a)(?<!a)/ # a back reference: no match cache
+      str = "a" * 20_000
+
+      code = proc do
+        q = Thread::Queue.new
+        th = Thread.new { q << 1; regex.match?(str) }
+        q.pop # the thread keeps the GVL into the match
+        th.raise(IOError)
+        begin
+          th.join
+        rescue IOError
+        else
+          raise "the match was not interrupted"
+        end
+      end
+
+      2.times(&code)
+    begin;
+      5.times(&code)
+    end;
+  end
+
+  def test_warning_raise_no_memory_leak
+    # An exception from Warning.warn jumped out of the parser and leaked the
+    # parse tree built so far.
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 2..10)
+      $VERBOSE = true
+      def Warning.warn(*) = raise("warned")
+      src = "(?:abc|def)" * 1_000 + "[aa]"
+
+      code = proc do
+        Regexp.new(src)
+      rescue RuntimeError
+      end
+
+      10.times(&code)
+    begin;
+      100.times(&code)
+    end;
+  end
+
+  def test_warning_raise
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = true
+      def Warning.warn(msg, **) = raise(ArgumentError, msg)
+      e = assert_raise(ArgumentError) { Regexp.new("[aa]") }
+      assert_match(/character class has duplicated range: \/\[aa\]\//, e.message)
+      # the warning still comes before the error
+      e = assert_raise(ArgumentError) { Regexp.new("[aa](") }
+      assert_match(/character class has duplicated range/, e.message)
+      e = assert_raise(ArgumentError) { eval("/[bb]/", nil, "lit.rb", 3) }
+      assert_match(/\Alit\.rb:3: warning: character class has duplicated range/, e.message)
+    end;
+  end
+
   def test_bug_20453
     re = Regexp.new("^(a*)x$", timeout: 0.001)
 

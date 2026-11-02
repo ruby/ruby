@@ -599,6 +599,158 @@ rb_reg_to_s(VALUE re)
     return rb_reg_str_with_term(re, '/');
 }
 
+/*
+ * Onigmo must not be left by a non-local exit (an exception, a throw or
+ * Thread#kill): that leaks what it has allocated (the parse tree, the match
+ * stack, the match cache).  While re.c runs Onigmo (between reg_onig_begin()
+ * and reg_onig_end()), what the interrupts raise in the matcher is caught and
+ * raised again after Onigmo has returned, and the warnings of the parser
+ * (Warning.warn may raise) are kept and emitted after the compilation.  The
+ * other users of Onigmo (C extensions) and the platforms without thread-local
+ * variables get the former behavior.
+ */
+#ifdef ONIG_THREAD_LOCAL
+static ONIG_THREAD_LOCAL int reg_onig_depth;
+static ONIG_THREAD_LOCAL int reg_onig_interrupt_state;
+static ONIG_THREAD_LOCAL struct {
+    char *buf; /* the messages, each terminated by NUL */
+    size_t len, capa;
+    const char *sourcefile;
+    int sourceline;
+} reg_onig_warnings;
+#endif
+
+static inline void
+reg_onig_begin(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    reg_onig_depth++;
+#endif
+}
+
+static inline void
+reg_onig_end(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    reg_onig_depth--;
+#endif
+}
+
+static VALUE
+reg_check_ints_i(VALUE _)
+{
+    rb_thread_check_ints();
+    return Qnil;
+}
+
+/* Called periodically by the matcher (CHECK_INTERRUPT_IN_MATCH_AT).  Returns
+ * nonzero when an interrupt raised; the matcher then frees what it holds and
+ * returns ONIGERR_INTERRUPTED, and reg_onig_raise_interrupt() raises again. */
+int
+rb_reg_check_ints(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    if (reg_onig_depth > 0) {
+        int depth = reg_onig_depth, state;
+
+        if (!RUBY_VM_INTERRUPTED_ANY(GET_EC())) return 0;
+        /* The interrupts may run Ruby code (e.g. a trap handler), which may
+         * use Onigmo in turn. */
+        reg_onig_depth = 0;
+        rb_protect(reg_check_ints_i, Qnil, &state);
+        reg_onig_depth = depth;
+        if (state) {
+            reg_onig_interrupt_state = state;
+            return 1;
+        }
+        return 0;
+    }
+#endif
+    rb_thread_check_ints();
+    return 0;
+}
+
+NORETURN(static void reg_onig_raise_interrupt(void));
+static void
+reg_onig_raise_interrupt(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    int state = reg_onig_interrupt_state;
+    reg_onig_interrupt_state = 0;
+    rb_jump_tag(state);
+#else
+    UNREACHABLE;
+#endif
+}
+
+static void
+reg_warn_now(const char *sourcefile, int sourceline, const char *msg)
+{
+    if (sourcefile == NULL)
+        rb_warn("%s", msg);
+    else
+        rb_compile_warn(sourcefile, sourceline, "%s", msg);
+}
+
+/* Called by the parser for each warning. */
+void
+rb_reg_warn(const char *sourcefile, int sourceline, const char *msg)
+{
+#ifdef ONIG_THREAD_LOCAL
+    if (reg_onig_depth > 0) {
+        size_t n = strlen(msg) + 1;
+
+        if (reg_onig_warnings.capa - reg_onig_warnings.len < n) {
+            size_t capa = reg_onig_warnings.capa * 2 + n;
+            /* not ruby_xrealloc(), which raises */
+            char *buf = realloc(reg_onig_warnings.buf, capa);
+            if (!buf) return;
+            reg_onig_warnings.buf = buf;
+            reg_onig_warnings.capa = capa;
+        }
+        memcpy(reg_onig_warnings.buf + reg_onig_warnings.len, msg, n);
+        reg_onig_warnings.len += n;
+        reg_onig_warnings.sourcefile = sourcefile;
+        reg_onig_warnings.sourceline = sourceline;
+        return;
+    }
+#endif
+    reg_warn_now(sourcefile, sourceline, msg);
+}
+
+/* Emits the warnings kept while compiling. */
+static void
+reg_warn_kept(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    if (reg_onig_warnings.len == 0) return;
+
+    const char *sourcefile = reg_onig_warnings.sourcefile;
+    int sourceline = reg_onig_warnings.sourceline;
+    VALUE msgs = rb_ary_new();
+    const char *p = reg_onig_warnings.buf, *e = p + reg_onig_warnings.len;
+
+    for (; p < e; p += strlen(p) + 1) {
+        rb_ary_push(msgs, rb_str_new_cstr(p));
+    }
+    free(reg_onig_warnings.buf);
+    reg_onig_warnings.buf = NULL;
+    reg_onig_warnings.len = reg_onig_warnings.capa = 0;
+
+    for (long i = 0; i < RARRAY_LEN(msgs); i++) {
+        reg_warn_now(sourcefile, sourceline, RSTRING_PTR(RARRAY_AREF(msgs, i)));
+    }
+    RB_GC_GUARD(msgs);
+#endif
+}
+
+static VALUE
+reg_warn_kept_i(VALUE _)
+{
+    reg_warn_kept();
+    return Qnil;
+}
+
 static VALUE
 rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
         rb_encoding **fixed_enc, onig_errmsg_buffer err, int options);
@@ -667,11 +819,14 @@ rb_reg_str_with_term(VALUE re, int term)
                                           enc, &fixed_enc, errmsg, options);
             if (!NIL_P(unescaped) && (!fixed_enc || fixed_enc == enc)) {
                 ruby_verbose = Qnil;
+                reg_onig_begin();
                 err = onig_new(&rp, (UChar *)RSTRING_PTR(unescaped),
                                (UChar *)RSTRING_END(unescaped), options,
                                enc, OnigDefaultSyntax, NULL);
+                reg_onig_end();
                 onig_free(rp);
                 ruby_verbose = verbose;
+                reg_warn_kept();
                 RB_GC_GUARD(unescaped);
             }
         }
@@ -947,8 +1102,11 @@ make_regexp(Regexp *rp, const char *s, rb_len_t len, rb_encoding *enc, int flags
        from that.
     */
 
+    /* the caller emits the warnings (reg_warn_kept()) */
+    reg_onig_begin();
     r = onig_new_with_source(rp, (UChar*)s, (UChar*)(s + len), flags,
                  enc, OnigDefaultSyntax, &einfo, sourcefile, sourceline);
+    reg_onig_end();
     if (r) {
         onig_error_code_to_str((UChar*)err, r, &einfo);
         return false;
@@ -2212,12 +2370,15 @@ reg_prepare_re(VALUE re, VALUE str, bool caller_owned)
     RSTRING_GETMEM(unescaped, ptr, len);
 
     struct rb_regexp_variant *variant = ALLOC(struct rb_regexp_variant);
+    reg_onig_begin();
     r = onig_new_without_alloc(&variant->reg, (UChar *)ptr, (UChar *)(ptr + len),
                                reg->options, enc, OnigDefaultSyntax, &einfo);
+    reg_onig_end();
 
     if (r) {
         onig_free_body(&variant->reg);
         SIZED_FREE(variant);
+        reg_warn_kept();
         onig_error_code_to_str((UChar*)err, r, &einfo);
         rb_reg_raise(err, re);
     }
@@ -2226,6 +2387,17 @@ reg_prepare_re(VALUE re, VALUE str, bool caller_owned)
     reg->timelimit = timelimit;
     if (reg->num_mem != RREGEXP_PTR(re)->num_mem) {
         rb_bug("group count mismatch in the recompiled regexp: %d != %d", reg->num_mem, RREGEXP_PTR(re)->num_mem);
+    }
+
+    {
+        /* the new pattern is only ours: free it if a warning raises */
+        int state;
+        rb_protect(reg_warn_kept_i, Qnil, &state);
+        if (state) {
+            onig_free_body(&variant->reg);
+            SIZED_FREE(variant);
+            rb_jump_tag(state);
+        }
     }
 
     if (caller_owned) {
@@ -2281,7 +2453,9 @@ rb_reg_onig_match(VALUE re, VALUE str,
 {
     regex_t *reg = reg_prepare_re(re, str, false);
 
+    reg_onig_begin();
     OnigPosition result = match(reg, str, regs, args);
+    reg_onig_end();
 
     RB_GC_GUARD(re);
 
@@ -2289,6 +2463,8 @@ rb_reg_onig_match(VALUE re, VALUE str,
         switch (result) {
           case ONIG_MISMATCH:
             break;
+          case ONIGERR_INTERRUPTED:
+            reg_onig_raise_interrupt();
           case ONIGERR_TIMEOUT:
             rb_raise(rb_eRegexpTimeoutError, "regexp match timeout");
           default: {
@@ -4112,7 +4288,10 @@ rb_reg_initialize(VALUE obj, const char *s, rb_len_t len, rb_encoding *enc,
     bool success = make_regexp(&reg, RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
                           options & ARG_REG_OPTION_MASK, err,
                           sourcefile, sourceline);
-    if (!success) return -1;
+    if (!success) {
+        reg_warn_kept();
+        return -1;
+    }
     if (OBJ_FROZEN(obj) || FL_TEST_RAW(obj, RREGEXP_INITIALIZED)) {
         onig_free_body(&reg);
         rb_reg_initialize_check(obj);
@@ -4127,6 +4306,8 @@ rb_reg_initialize(VALUE obj, const char *s, rb_len_t len, rb_encoding *enc,
         re->basic.flags |= REG_ENCODING_NONE;
     }
     FL_SET_RAW(obj, RREGEXP_INITIALIZED);
+    /* after the flag, so that GC frees the pattern if a warning raises */
+    reg_warn_kept();
 
     if (RBASIC_CLASS(obj) == rb_cRegexp) {
         OBJ_FREEZE(obj);

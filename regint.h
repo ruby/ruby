@@ -160,6 +160,9 @@
 
 #ifdef RUBY
 
+/* The interrupts may raise (e.g. Thread#raise).  rb_reg_check_ints() keeps
+   that from jumping out of the matcher, which would leak what it holds; the
+   matcher frees it and returns ONIGERR_INTERRUPTED, and re.c raises again. */
 # define CHECK_INTERRUPT_IN_MATCH_AT do { \
   msa->counter++; \
   if (msa->counter >= 128) { \
@@ -167,9 +170,13 @@
     if (rb_reg_timeout_p(reg, &msa->end_time)) { \
       goto timeout; \
     } \
-    rb_thread_check_ints(); \
+    if (rb_reg_check_ints()) { \
+      goto interrupted; \
+    } \
   } \
 } while(0)
+/* Internal to Ruby: never returned to the users of the Onigmo API. */
+# define ONIGERR_INTERRUPTED                               -1100
 # define onig_st_init_table                  st_init_table
 # define onig_st_init_table_with_size        st_init_table_with_size
 # define onig_st_init_numtable               st_init_numtable
@@ -1002,6 +1009,8 @@ extern int onig_st_insert_strend(hash_table_type* table, const UChar* str_key, c
 extern size_t onig_memsize(const regex_t *reg);
 extern size_t onig_region_memsize(const struct re_registers *regs);
 bool rb_reg_timeout_p(regex_t *reg, void *end_time);
+int rb_reg_check_ints(void);
+void rb_reg_warn(const char *sourcefile, int sourceline, const char *msg);
 #endif
 
 RUBY_SYMBOL_EXPORT_END
