@@ -258,20 +258,82 @@ We encode a match cache point to an integer value by the following equation:
 A bit-array for memoizing (recording) match cache points once backtracked.
 */
 
-static OnigPosition count_num_cache_opcodes_inner(
-    const regex_t* reg,
-    MemNumType current_repeat_mem, int lookaround_nesting,
-    UChar** pp, long* num_cache_opcodes_ptr
-)
+/*
+The analyses below walk the program once.  A repeat (OP_REPEAT ...
+OP_REPEAT_INC), a look-around (e.g. OP_PUSH_POS ... OP_POP_POS) or an atomic
+group (OP_PUSH_STOP_BT ... OP_POP_STOP_BT) is entered at its first opcode and
+left at its last one.  The enclosing levels are kept in a stack on the heap,
+not by recursion, so that how deep they nest does not depend on the machine
+stack, which is small in threads and fibers.
+*/
+
+enum {
+  MATCH_CACHE_LEVEL_REPEAT,
+  MATCH_CACHE_LEVEL_LOOKAROUND,
+  MATCH_CACHE_LEVEL_ATOMIC
+};
+
+typedef struct {
+  int kind;
+  /* the state of the enclosing level, restored on leaving */
+  MemNumType current_repeat_mem;
+  int lookaround_nesting;
+  /* a repeat: its memory number and its opcode */
+  MemNumType repeat_mem;
+  UChar* addr;
+  /* a repeat in init_cache_opcodes(): the cache points before it */
+  long count;
+  /* the first cache opcode in the level */
+  OnigCacheOpcode* cache_opcodes;
+} MatchCacheLevel;
+
+typedef struct {
+  MatchCacheLevel* levels;
+  int num;
+  int alloc;
+} MatchCacheLevels;
+
+static MatchCacheLevel*
+push_match_cache_level(MatchCacheLevels* s, int kind,
+                       MemNumType current_repeat_mem, int lookaround_nesting)
 {
-  UChar* p = *pp;
+  MatchCacheLevel* level;
+
+  if (s->num == s->alloc) {
+    int alloc;
+    MatchCacheLevel* levels;
+
+    if (s->alloc > INT_MAX / 2) return NULL;
+    alloc = s->alloc == 0 ? 16 : s->alloc * 2;
+    levels = (MatchCacheLevel* )xrealloc(s->levels, sizeof(MatchCacheLevel) * (size_t )alloc);
+    if (IS_NULL(levels)) return NULL;
+    s->levels = levels;
+    s->alloc = alloc;
+  }
+  level = &s->levels[s->num++];
+  level->kind = kind;
+  level->current_repeat_mem = current_repeat_mem;
+  level->lookaround_nesting = lookaround_nesting;
+  return level;
+}
+
+/* count the total number of cache opcodes for allocating a match cache buffer. */
+static OnigPosition
+count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
+{
+  UChar* p = reg->p;
   UChar* pend = reg->p + reg->used;
   LengthType len;
   MemNumType repeat_mem;
   OnigEncoding enc = reg->enc;
-  long num_cache_opcodes = *num_cache_opcodes_ptr;
-  OnigPosition result;
+  MemNumType current_repeat_mem = -1;
+  int lookaround_nesting = 0;
+  long num_cache_opcodes = 0;
+  MatchCacheLevels levels = { NULL, 0, 0 };
+  MatchCacheLevel* level;
+  OnigPosition result = 0;
 
+  *num_cache_opcodes_ptr = 0;
   while (p < pend) {
     switch (*p++) {
       case OP_FINISH:
@@ -400,16 +462,14 @@ static OnigPosition count_num_cache_opcodes_inner(
         }
         GET_MEMNUM_INC(repeat_mem, p);
         p += SIZE_RELADDR;
+        level = push_match_cache_level(&levels, MATCH_CACHE_LEVEL_REPEAT,
+                                       current_repeat_mem, lookaround_nesting);
+        if (IS_NULL(level)) goto memory_error;
+        level->repeat_mem = repeat_mem;
         if (reg->repeat_range[repeat_mem].lower == 0) {
           num_cache_opcodes++;
         }
-        result = count_num_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &p, &num_cache_opcodes);
-        if (result < 0 || num_cache_opcodes < 0) {
-          goto fail;
-        }
-        if (reg->repeat_range[repeat_mem].lower < reg->repeat_range[repeat_mem].upper) {
-          num_cache_opcodes++;
-        }
+        current_repeat_mem = repeat_mem;
         break;
       case OP_REPEAT_INC:
       case OP_REPEAT_INC_NG:
@@ -418,7 +478,7 @@ static OnigPosition count_num_cache_opcodes_inner(
           // A lone or invalid OP_REPEAT_INC is found.
           goto impossible;
         }
-        goto exit;
+        goto leave;
       case OP_REPEAT_INC_SG:
       case OP_REPEAT_INC_NG_SG:
         goto impossible;
@@ -434,53 +494,38 @@ static OnigPosition count_num_cache_opcodes_inner(
         break;
 
       case OP_PUSH_POS:
+      lookaround:
         if (lookaround_nesting < 0) {
           // A look-around nested in a atomic grouping is found.
           goto impossible;
         }
-        result = count_num_cache_opcodes_inner(reg, current_repeat_mem, lookaround_nesting + 1, &p, &num_cache_opcodes);
-        if (result < 0 || num_cache_opcodes < 0) {
-          goto fail;
-        }
+        level = push_match_cache_level(&levels, MATCH_CACHE_LEVEL_LOOKAROUND,
+                                       current_repeat_mem, lookaround_nesting);
+        if (IS_NULL(level)) goto memory_error;
+        lookaround_nesting++;
         break;
       case OP_PUSH_POS_NOT:
-        if (lookaround_nesting < 0) {
-          // A look-around nested in a atomic grouping is found.
-          goto impossible;
-        }
         p += SIZE_RELADDR;
-        result = count_num_cache_opcodes_inner(reg, current_repeat_mem, lookaround_nesting + 1, &p, &num_cache_opcodes);
-        if (result < 0 || num_cache_opcodes < 0) {
-          goto fail;
-        }
-        break;
+        goto lookaround;
       case OP_PUSH_LOOK_BEHIND_NOT:
-        if (lookaround_nesting < 0) {
-          // A look-around nested in a atomic grouping is found.
-          goto impossible;
-        }
         p += SIZE_RELADDR;
         p += SIZE_LENGTH;
-        result = count_num_cache_opcodes_inner(reg, current_repeat_mem, lookaround_nesting + 1, &p, &num_cache_opcodes);
-        if (result < 0 || num_cache_opcodes < 0) {
-          goto fail;
-        }
-        break;
+        goto lookaround;
       case OP_PUSH_STOP_BT:
         if (lookaround_nesting != 0) {
           // A nested atomic grouping is found.
           goto impossible;
         }
-        result = count_num_cache_opcodes_inner(reg, current_repeat_mem, -1, &p, &num_cache_opcodes);
-        if (result < 0 || num_cache_opcodes < 0) {
-          goto fail;
-        }
+        level = push_match_cache_level(&levels, MATCH_CACHE_LEVEL_ATOMIC,
+                                       current_repeat_mem, lookaround_nesting);
+        if (IS_NULL(level)) goto memory_error;
+        lookaround_nesting = -1;
         break;
       case OP_POP_POS:
       case OP_FAIL_POS:
       case OP_FAIL_LOOK_BEHIND_NOT:
       case OP_POP_STOP_BT:
-        goto exit;
+        goto leave;
       case OP_LOOK_BEHIND:
         p += SIZE_LENGTH;
         break;
@@ -512,55 +557,57 @@ static OnigPosition count_num_cache_opcodes_inner(
       default:
         goto bytecode_error;
     }
+    continue;
+
+  leave:
+    if (levels.num == 0) break; /* the end of the whole program */
+    level = &levels.levels[--levels.num];
+    current_repeat_mem = level->current_repeat_mem;
+    lookaround_nesting = level->lookaround_nesting;
+    if (level->kind == MATCH_CACHE_LEVEL_REPEAT) {
+      OnigRepeatRange *repeat_range = &reg->repeat_range[level->repeat_mem];
+      if (repeat_range->lower < repeat_range->upper) {
+        num_cache_opcodes++;
+      }
+    }
   }
 
-exit:
-  *pp = p;
+  if (levels.num != 0 || p != pend) goto bytecode_error;
   *num_cache_opcodes_ptr = num_cache_opcodes;
-  return 0;
-
-fail:
-  *num_cache_opcodes_ptr = num_cache_opcodes;
-  return result;
+  goto out;
 
 impossible:
   *num_cache_opcodes_ptr = NUM_CACHE_OPCODES_IMPOSSIBLE;
-  return 0;
+  goto out;
 
 bytecode_error:
-  return ONIGERR_UNDEFINED_BYTECODE;
-}
+  result = ONIGERR_UNDEFINED_BYTECODE;
+  goto out;
 
-/* count the total number of cache opcodes for allocating a match cache buffer. */
-static OnigPosition
-count_num_cache_opcodes(const regex_t* reg, long* num_cache_opcodes_ptr)
-{
-  UChar* p = reg->p;
-  *num_cache_opcodes_ptr = 0;
-  OnigPosition result = count_num_cache_opcodes_inner(reg, -1, 0, &p, num_cache_opcodes_ptr);
-  if (result == 0 && *num_cache_opcodes_ptr >= 0 && p != reg->p + reg->used) {
-    return ONIGERR_UNDEFINED_BYTECODE;
-  }
+memory_error:
+  result = ONIGERR_MEMORY;
 
+out:
+  xfree(levels.levels);
   return result;
 }
 
+/* collect cache opcodes from the given regex program, and compute the total number of cache points. */
 static OnigPosition
-init_cache_opcodes_inner(
-    const regex_t* reg,
-    MemNumType current_repeat_mem, int lookaround_nesting,
-    OnigCacheOpcode** cache_opcodes_ptr, UChar** pp, long* num_cache_points_ptr
-)
+init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num_cache_points_ptr)
 {
-  UChar* p = *pp;
+  UChar* p = reg->p;
   UChar* pend = reg->p + reg->used;
   UChar* pbegin;
   LengthType len;
   MemNumType repeat_mem;
   OnigEncoding enc = reg->enc;
-  long cache_point = *num_cache_points_ptr;
-  OnigCacheOpcode *cache_opcodes = *cache_opcodes_ptr;
-  OnigPosition result;
+  MemNumType current_repeat_mem = -1;
+  int lookaround_nesting = 0;
+  long cache_point = 0;
+  MatchCacheLevels levels = { NULL, 0, 0 };
+  MatchCacheLevel* level;
+  OnigPosition result = 0;
 
 # define INC_CACHE_OPCODES if (cache_opcodes != NULL) {\
     cache_opcodes->addr = pbegin;\
@@ -575,6 +622,7 @@ init_cache_opcodes_inner(
     cache_opcodes++;\
   }
 
+  *num_cache_points_ptr = 0;
   while (p < pend) {
     pbegin = p;
     switch (*p++) {
@@ -707,50 +755,21 @@ init_cache_opcodes_inner(
         if (reg->repeat_range[repeat_mem].lower == 0) {
           INC_CACHE_OPCODES;
         }
-        {
-          long num_cache_points_in_repeat = 0;
-          long num_cache_points_at_repeat = cache_point;
-          OnigCacheOpcode* cache_opcodes_in_repeat = cache_opcodes;
-          result = init_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &cache_opcodes, &p, &num_cache_points_in_repeat);
-          if (result != 0) {
-            goto fail;
-          }
-          OnigRepeatRange *repeat_range = &reg->repeat_range[repeat_mem];
-          if (repeat_range->lower < repeat_range->upper) {
-            MemNumType outer_repeat_mem = current_repeat_mem;
-            long outer_cache_point = cache_point;
-            pbegin = p - SIZE_OP_REPEAT_INC;
-            current_repeat_mem = repeat_mem;
-            cache_point = num_cache_points_in_repeat;
-            INC_CACHE_OPCODES;
-            current_repeat_mem = outer_repeat_mem;
-            cache_point = outer_cache_point;
-          }
-          int repeat_bounds = repeat_range->upper == 0x7fffffff ? 1 : repeat_range->upper - repeat_range->lower;
-          long step = num_cache_points_in_repeat + (lookaround_nesting != 0 ? 2 : 1);
-          long rest = LONG_MAX / 2 - cache_point;
-          if (rest < 0) {
-            return MATCH_CACHE_TOO_MANY_POINTS;
-          }
-          if (repeat_range->lower > 0 && num_cache_points_in_repeat > rest / repeat_range->lower) {
-            return MATCH_CACHE_TOO_MANY_POINTS;
-          }
-          rest -= num_cache_points_in_repeat * repeat_range->lower;
-          if (repeat_bounds > 0 && step > rest / repeat_bounds) {
-            return MATCH_CACHE_TOO_MANY_POINTS;
-          }
-          cache_point += num_cache_points_in_repeat * repeat_range->lower + step * repeat_bounds;
-          for (; cache_opcodes_in_repeat < cache_opcodes; cache_opcodes_in_repeat++) {
-            cache_opcodes_in_repeat->num_cache_points_at_outer_repeat = num_cache_points_at_repeat;
-            cache_opcodes_in_repeat->num_cache_points_in_outer_repeat = num_cache_points_in_repeat;
-            cache_opcodes_in_repeat->num_cache_points_of_outer_repeat_inc = lookaround_nesting != 0 ? 2 : 1;
-          }
-        }
+        level = push_match_cache_level(&levels, MATCH_CACHE_LEVEL_REPEAT,
+                                       current_repeat_mem, lookaround_nesting);
+        if (IS_NULL(level)) goto memory_error;
+        level->repeat_mem = repeat_mem;
+        level->addr = pbegin;
+        level->count = cache_point;
+        level->cache_opcodes = cache_opcodes;
+        /* the cache points in the body count from 0 */
+        cache_point = 0;
+        current_repeat_mem = repeat_mem;
         break;
       case OP_REPEAT_INC:
       case OP_REPEAT_INC_NG:
         p += SIZE_MEMNUM;
-        goto exit;
+        goto leave;
       case OP_REPEAT_INC_SG:
       case OP_REPEAT_INC_NG_SG:
         goto unexpected_bytecode_error;
@@ -766,20 +785,12 @@ init_cache_opcodes_inner(
         break;
 
       case OP_PUSH_POS:
-        lookaround:
-        {
-          OnigCacheOpcode* cache_opcodes_in_lookaround = cache_opcodes;
-          result = init_cache_opcodes_inner(reg, current_repeat_mem, lookaround_nesting + 1, &cache_opcodes, &p, &cache_point);
-          if (result != 0) {
-            goto fail;
-          }
-          UChar* match_addr = p - 1;
-          for (; cache_opcodes_in_lookaround < cache_opcodes; cache_opcodes_in_lookaround++) {
-            if (cache_opcodes_in_lookaround->match_addr == NULL) {
-              cache_opcodes_in_lookaround->match_addr = match_addr;
-            }
-          }
-        }
+      lookaround:
+        level = push_match_cache_level(&levels, MATCH_CACHE_LEVEL_LOOKAROUND,
+                                       current_repeat_mem, lookaround_nesting);
+        if (IS_NULL(level)) goto memory_error;
+        level->cache_opcodes = cache_opcodes;
+        lookaround_nesting++;
         break;
       case OP_PUSH_POS_NOT:
         p += SIZE_RELADDR;
@@ -789,25 +800,17 @@ init_cache_opcodes_inner(
         p += SIZE_LENGTH;
         goto lookaround;
       case OP_PUSH_STOP_BT:
-        {
-          OnigCacheOpcode* cache_opcodes_in_atomic = cache_opcodes;
-          result = init_cache_opcodes_inner(reg, current_repeat_mem, -1, &cache_opcodes, &p, &cache_point);
-          if (result != 0) {
-            goto fail;
-          }
-          UChar* match_addr = p - 1;
-          for (; cache_opcodes_in_atomic < cache_opcodes; cache_opcodes_in_atomic++) {
-            if (cache_opcodes_in_atomic->match_addr == NULL) {
-              cache_opcodes_in_atomic->match_addr = match_addr;
-            }
-          }
-        }
+        level = push_match_cache_level(&levels, MATCH_CACHE_LEVEL_ATOMIC,
+                                       current_repeat_mem, lookaround_nesting);
+        if (IS_NULL(level)) goto memory_error;
+        level->cache_opcodes = cache_opcodes;
+        lookaround_nesting = -1;
         break;
       case OP_POP_POS:
       case OP_FAIL_POS:
       case OP_FAIL_LOOK_BEHIND_NOT:
       case OP_POP_STOP_BT:
-        goto exit;
+        goto leave;
       case OP_LOOK_BEHIND:
         p += SIZE_LENGTH;
         break;
@@ -838,36 +841,89 @@ init_cache_opcodes_inner(
       default:
         goto bytecode_error;
     }
+    continue;
+
+  leave:
+    if (levels.num == 0) break; /* the end of the whole program */
+    level = &levels.levels[--levels.num];
+    current_repeat_mem = level->current_repeat_mem;
+    lookaround_nesting = level->lookaround_nesting;
+    if (level->kind == MATCH_CACHE_LEVEL_REPEAT) {
+      OnigRepeatRange *repeat_range = &reg->repeat_range[level->repeat_mem];
+      {
+        long num_cache_points_in_repeat = cache_point;
+        long num_cache_points_at_repeat = level->count;
+        OnigCacheOpcode* cache_opcodes_in_repeat = level->cache_opcodes;
+        if (repeat_range->lower < repeat_range->upper) {
+          /* OP_REPEAT_INC (pbegin), where match_at() looks the cache up: an
+             opcode of this repeat, in the slot after the body's points */
+          MemNumType outer_repeat_mem = current_repeat_mem;
+          current_repeat_mem = level->repeat_mem;
+          cache_point = num_cache_points_in_repeat;
+          INC_CACHE_OPCODES;
+          current_repeat_mem = outer_repeat_mem;
+        }
+        cache_point = num_cache_points_at_repeat;
+        int repeat_bounds = repeat_range->upper == 0x7fffffff ? 1 : repeat_range->upper - repeat_range->lower;
+        long step = num_cache_points_in_repeat + (lookaround_nesting != 0 ? 2 : 1);
+        /* long is 32-bit on some platforms; give up the cache rather
+           than let the number of cache points overflow.  Half of
+           LONG_MAX leaves room for the points of the opcodes after
+           this, which are bounded by the program size. */
+        long rest = LONG_MAX / 2 - cache_point;
+        if (rest < 0) {
+          result = MATCH_CACHE_TOO_MANY_POINTS;
+          goto out;
+        }
+        if (repeat_range->lower > 0 && num_cache_points_in_repeat > rest / repeat_range->lower) {
+          result = MATCH_CACHE_TOO_MANY_POINTS;
+          goto out;
+        }
+        rest -= num_cache_points_in_repeat * repeat_range->lower;
+        if (repeat_bounds > 0 && step > rest / repeat_bounds) {
+          result = MATCH_CACHE_TOO_MANY_POINTS;
+          goto out;
+        }
+        cache_point += num_cache_points_in_repeat * repeat_range->lower + step * repeat_bounds;
+        for (; cache_opcodes_in_repeat < cache_opcodes; cache_opcodes_in_repeat++) {
+          cache_opcodes_in_repeat->num_cache_points_at_outer_repeat = num_cache_points_at_repeat;
+          cache_opcodes_in_repeat->num_cache_points_in_outer_repeat = num_cache_points_in_repeat;
+          cache_opcodes_in_repeat->num_cache_points_of_outer_repeat_inc = lookaround_nesting != 0 ? 2 : 1;
+        }
+      }
+    }
+    else {
+      /* a look-around or an atomic group: its last opcode is the match
+         address of the cache opcodes in it */
+      UChar* match_addr = p - 1;
+      OnigCacheOpcode* c;
+      for (c = level->cache_opcodes; c < cache_opcodes; c++) {
+        if (c->match_addr == NULL) {
+          c->match_addr = match_addr;
+        }
+      }
+    }
   }
 
-exit:
-  *cache_opcodes_ptr = cache_opcodes;
-  *pp = p;
+  if (levels.num != 0 || p != pend) goto bytecode_error;
   *num_cache_points_ptr = cache_point;
-  return 0;
-
-fail:
-  return result;
+  goto out;
 
 unexpected_bytecode_error:
-  return ONIGERR_UNEXPECTED_BYTECODE;
+  result = ONIGERR_UNEXPECTED_BYTECODE;
+  goto out;
 
 bytecode_error:
-  return ONIGERR_UNDEFINED_BYTECODE;
-}
+  result = ONIGERR_UNDEFINED_BYTECODE;
+  goto out;
 
-/* collect cache opcodes from the given regex program, and compute the total number of cache points. */
-static OnigPosition
-init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes_ptr, long* num_cache_points_ptr)
-{
-  UChar* p = reg->p;
-  *num_cache_points_ptr = 0;
-  OnigPosition result = init_cache_opcodes_inner(reg, -1, 0, &cache_opcodes_ptr, &p, num_cache_points_ptr);
-  if (result == 0 && p != reg->p + reg->used) {
-    return ONIGERR_UNDEFINED_BYTECODE;
-  }
+memory_error:
+  result = ONIGERR_MEMORY;
 
+out:
+  xfree(levels.levels);
   return result;
+# undef INC_CACHE_OPCODES
 }
 #else
 static OnigPosition
@@ -4140,6 +4196,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
         if (msa->match_cache_status == MATCH_CACHE_STATUS_UNINIT) {
           msa->match_cache_status = MATCH_CACHE_STATUS_INIT;
           OnigPosition r = count_num_cache_opcodes(reg, &msa->num_cache_opcodes);
+          if (r == ONIGERR_MEMORY) goto memory_error;
           if (r < 0) goto bytecode_error;
         }
         if (msa->num_cache_opcodes == NUM_CACHE_OPCODES_IMPOSSIBLE || msa->num_cache_opcodes == 0) {
@@ -4157,6 +4214,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
           }
           OnigPosition r = init_cache_opcodes(reg, cache_opcodes, &msa->num_cache_points);
           if (r < 0) {
+            if (r == ONIGERR_MEMORY) goto memory_error;
             if (r == ONIGERR_UNEXPECTED_BYTECODE) goto unexpected_bytecode_error;
             else goto bytecode_error;
           }

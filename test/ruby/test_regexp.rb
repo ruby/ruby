@@ -2366,6 +2366,20 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_match_cache_on_small_stack
+    # The match cache analysis walks nested look-arounds without recursion,
+    # so the small stack of a fiber does not keep the cache from being used.
+    # The pattern is compiled in a thread with a large stack, as the main
+    # thread's can be too small for it (2 MB on Windows).
+    assert_separately([{"RUBY_THREAD_MACHINE_STACK_SIZE" => (16 << 20).to_s}], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      Regexp.timeout = 10
+      re = Thread.new { Regexp.new("(?=" * 4000 + "(?:a|a)*[bc]?\\z" + ")" * 4000) }.value
+      assert_send([Regexp, :linear_time?, re])
+      assert_equal(true, Fiber.new { re.match?("a" * 28 + "!") }.resume)
+    end;
+  end
+
   def test_match_cache_with_range_repeat
     pre = ->(n) {"a" * n + "!"}
     [
