@@ -82,6 +82,7 @@ typedef struct {
  * * `PM_ERROR_LEVEL_SYNTAX` - Errors that should raise SyntaxError.
  * * `PM_ERROR_LEVEL_ARGUMENT` - Errors that should raise ArgumentError.
  * * `PM_ERROR_LEVEL_LOAD` - Errors that should raise LoadError.
+ * * `PM_ERROR_LEVEL_STACK` - Errors that should raise SystemStackError.
  *
  * For warnings, they are:
  *
@@ -97,6 +98,9 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
 
     /* Errors that should raise load errors */
     [PM_ERR_SCRIPT_NOT_FOUND]                   = { "no Ruby script found in input", PM_ERROR_LEVEL_LOAD },
+
+    /* Errors that should raise system stack errors */
+    [PM_ERR_STACK_EXHAUSTED]                    = { "stack level too deep", PM_ERROR_LEVEL_STACK },
 
     /* Errors that should raise syntax errors */
     [PM_ERR_ALIAS_ARGUMENT]                     = { "invalid argument being passed to `alias`; expected a bare word, symbol, constant, or global variable", PM_ERROR_LEVEL_SYNTAX },

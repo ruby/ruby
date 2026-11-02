@@ -48,9 +48,10 @@ typedef enum {
  * @param buffer The buffer to format the errors into.
  * @param format_type The type of formatting to use when formatting the errors.
  * @returns The error level of the error with the highest precedence that was
- *   formatted. In practice this means it will be the argument or load error
- *   level if any were found, otherwise it will be the syntax error level.
- *   Callers should raise appropriate error types based on the returned level.
+ *   formatted. In practice this means it will be the level of the first
+ *   argument, load, or stack error if any were found, otherwise it will be the
+ *   syntax error level. Callers should raise appropriate error types based on
+ *   the returned level.
  */
 PRISM_EXPORTED_FUNCTION pm_error_level_t pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_format_type_t format_type) PRISM_NONNULL(1, 2);
 

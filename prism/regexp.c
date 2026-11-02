@@ -140,6 +140,25 @@ pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, c
 }
 
 /**
+ * Report that the stack budget was used up while parsing the regular
+ * expression. Unlike other errors, this is reported even when report_errors is
+ * not set, because giving up early there would silently drop the named
+ * captures that the rest of the regular expression defines. In that case start
+ * and end do not point into the original source, so the error is reported at
+ * the token that the parser is on instead.
+ */
+static void
+pm_regexp_parse_stack_exhausted(pm_regexp_parser_t *regexp_parser) {
+    pm_parser_t *parser = regexp_parser->parser;
+
+    if (regexp_parser->report_errors) {
+        pm_parser_err_stack_exhausted(parser, (uint32_t) (regexp_parser->start - parser->start), (uint32_t) (regexp_parser->end - regexp_parser->start));
+    } else {
+        pm_parser_err_stack_exhausted(parser, (uint32_t) (parser->current.start - parser->start), (uint32_t) (parser->current.end - parser->current.start));
+    }
+}
+
+/**
  * Append a formatted syntax error to the parser's error list, following the
  * same rules as pm_regexp_parse_error. This is a macro because we need
  * variadic args for the format string.
@@ -714,8 +733,13 @@ pm_regexp_parse_hex_escape(pm_regexp_parser_t *parser) {
  */
 static bool
 pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser, uint16_t depth) {
-    if (depth >= PM_REGEXP_PARSE_DEPTH_MAX || pm_parser_stack_exhausted(parser->parser)) {
+    if (depth >= PM_REGEXP_PARSE_DEPTH_MAX) {
         pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
+        return false;
+    }
+
+    if (pm_parser_stack_exhausted(parser->parser)) {
+        pm_regexp_parse_stack_exhausted(parser);
         return false;
     }
 
@@ -846,8 +870,13 @@ pm_regexp_parse_character_set(pm_regexp_parser_t *parser, uint16_t depth) {
  */
 static bool
 pm_regexp_parse_lbracket(pm_regexp_parser_t *parser, uint16_t depth) {
-    if (depth >= PM_REGEXP_PARSE_DEPTH_MAX || pm_parser_stack_exhausted(parser->parser)) {
+    if (depth >= PM_REGEXP_PARSE_DEPTH_MAX) {
         pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
+        return false;
+    }
+
+    if (pm_parser_stack_exhausted(parser->parser)) {
+        pm_regexp_parse_stack_exhausted(parser);
         return false;
     }
 
@@ -1011,7 +1040,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
      * stops that function from being inlined, which adds a frame to every
      * level of nesting. */
     if (pm_parser_stack_exhausted(parser->parser)) {
-        pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
+        pm_regexp_parse_stack_exhausted(parser);
         return false;
     }
 

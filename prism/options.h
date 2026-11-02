@@ -291,14 +291,16 @@ PRISM_EXPORTED_FUNCTION void pm_options_raise_error_set(pm_options_t *options, u
 /**
  * Set the stack_budget option on the given options struct. This is the number
  * of bytes of C stack that the parser may use, measured from where pm_parse is
- * called. Deeply nested input that would go past it is reported as nested too
- * deeply instead of overflowing the stack. Callers should pass less than the
- * stack they actually have left, since the parser checks the budget between
- * frames rather than inside every one, and anything that walks the tree
- * afterward recurses on the same stack. A budget of 0 leaves no room for any
- * expression, so every one is reported as nested too deeply. A budget of
- * SIZE_MAX (the default) disables the check, leaving PRISM_DEPTH_MAXIMUM as the
- * only bound, which assumes a stack of roughly 8MB.
+ * called. Deeply nested input that would go past it produces a
+ * PM_ERR_STACK_EXHAUSTED error instead of overflowing the stack. That error
+ * has PM_ERROR_LEVEL_STACK rather than PM_ERROR_LEVEL_SYNTAX, since the same
+ * source may parse with a larger budget, and it is reported once per parse.
+ * Callers should pass less than the stack they actually have left, since the
+ * parser checks the budget between frames rather than inside every one, and
+ * anything that walks the tree afterward recurses on the same stack. A budget
+ * of 0 leaves no room for any expression. A budget of SIZE_MAX (the default)
+ * disables the check, leaving PRISM_DEPTH_MAXIMUM as the only bound, which
+ * assumes a stack of roughly 8MB.
  *
  * @param options The options struct to set the stack_budget value on.
  * @param stack_budget The stack_budget value to set, in bytes, or SIZE_MAX for

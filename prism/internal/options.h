@@ -78,9 +78,9 @@ struct pm_options_t {
     /*
      * The number of bytes of C stack that the parser may use, measured from
      * where pm_parse is called. When the recursive descent goes past it, the
-     * parser reports that the input is nested too deeply instead of
-     * overflowing the stack. SIZE_MAX means no budget was given, in which case
-     * only PRISM_DEPTH_MAXIMUM bounds the recursion.
+     * parser reports that the stack is exhausted instead of overflowing it.
+     * SIZE_MAX means no budget was given, in which case only
+     * PRISM_DEPTH_MAXIMUM bounds the recursion.
      */
     size_t stack_budget;
 

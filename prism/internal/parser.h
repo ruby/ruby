@@ -889,8 +889,8 @@ struct pm_parser_t {
 
     /*
      * The number of bytes of C stack below stack_base that the recursive
-     * descent may use before it reports that the input is nested too deeply.
-     * SIZE_MAX when no budget was given, so the check never fires.
+     * descent may use before it reports that the stack is exhausted. SIZE_MAX
+     * when no budget was given, so the check never fires.
      */
     size_t stack_budget;
 
@@ -986,6 +986,13 @@ struct pm_parser_t {
      */
     bool warn_mismatched_indentation;
 
+    /*
+     * Whether the stack exhausted error has been reported. Once the budget is
+     * used up, every recursion that unwinds past it would report the error
+     * again, so it is only reported the first time.
+     */
+    bool stack_exhausted_reported;
+
 #if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSE2) || defined(PRISM_HAS_SWAR)
     /*
      * Cached lookup tables for pm_strpbrk's SIMD fast path. Avoids rebuilding
@@ -1040,5 +1047,13 @@ pm_parser_stack_exhausted(const pm_parser_t *parser) {
     uintptr_t used = current < parser->stack_base ? parser->stack_base - current : current - parser->stack_base;
     return used > parser->stack_budget;
 }
+
+/*
+ * Reports that the stack budget has been used up, at the given location. This
+ * is a separate error from the nesting depth limit, with its own error level,
+ * because the source may be valid and parse with more stack. It is reported
+ * once per parse.
+ */
+void pm_parser_err_stack_exhausted(pm_parser_t *parser, uint32_t start, uint32_t length);
 
 #endif

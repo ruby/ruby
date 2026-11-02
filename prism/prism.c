@@ -551,6 +551,16 @@ pm_parser_err_current(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
 }
 
 /**
+ * Reports that the stack budget has been used up, at the given location.
+ */
+void
+pm_parser_err_stack_exhausted(pm_parser_t *parser, uint32_t start, uint32_t length) {
+    if (parser->stack_exhausted_reported) return;
+    parser->stack_exhausted_reported = true;
+    pm_parser_err(parser, start, length, PM_ERR_STACK_EXHAUSTED);
+}
+
+/**
  * Append an error to the list of errors on the parser using the location of the
  * previous token.
  */
@@ -17850,7 +17860,12 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_set_t *captures, uint8_t flags
     /* Nested patterns recurse back into parse_pattern without passing through
      * parse_expression, so this cycle needs its own depth check. */
     if (PRISM_UNLIKELY(depth >= PRISM_DEPTH_MAXIMUM || pm_parser_stack_exhausted(parser))) {
-        pm_parser_err_current(parser, PM_ERR_NESTING_TOO_DEEP);
+        if (depth >= PRISM_DEPTH_MAXIMUM) {
+            pm_parser_err_current(parser, PM_ERR_NESTING_TOO_DEEP);
+        } else {
+            pm_parser_err_stack_exhausted(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current));
+        }
+
         return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
     }
 
@@ -22819,7 +22834,12 @@ parse_expression_terminator(pm_parser_t *parser, pm_node_t *node) {
 static pm_node_t *
 parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
     if (PRISM_UNLIKELY(depth >= PRISM_DEPTH_MAXIMUM || pm_parser_stack_exhausted(parser))) {
-        pm_parser_err_current(parser, PM_ERR_NESTING_TOO_DEEP);
+        if (depth >= PRISM_DEPTH_MAXIMUM) {
+            pm_parser_err_current(parser, PM_ERR_NESTING_TOO_DEEP);
+        } else {
+            pm_parser_err_stack_exhausted(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current));
+        }
+
         return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
     }
 
@@ -23519,6 +23539,7 @@ pm_parse_err_is_fatal(pm_diagnostic_id_t diag_id) {
         case PM_ERR_INVALID_NUMBER_UNDERSCORE_TRAILING:
         case PM_ERR_NO_LOCAL_VARIABLE:
         case PM_ERR_PARAMETER_ORDER:
+        case PM_ERR_STACK_EXHAUSTED:
         case PM_ERR_STATEMENT_UNDEF:
         case PM_ERR_VOID_EXPRESSION:
             return true;

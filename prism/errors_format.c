@@ -581,6 +581,23 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
             xfree_sized(rich_errors, rich_errors_size);
             return PM_ERROR_LEVEL_LOAD;
           }
+          case PM_ERROR_LEVEL_STACK: {
+            /* If we get a stack error, we want to format it and return it
+             * immediately. Once the stack is exhausted, the syntax errors
+             * around it come from recovering from that point rather than from
+             * the source, so they are left out. It should include a snippet of
+             * the source if possible. */
+            pm_rich_error_init(parser, rich_errors, diagnostic, &location);
+            pm_error_append_summary(parser, buffer, rich_errors[0].line_start, pm_diagnostic_message(diagnostic));
+
+            if (rich_errors_are_utf8(parser, 1, rich_errors)) {
+                pm_buffer_append_byte(buffer, '\n');
+                pm_rich_errors_format(parser, buffer, format_type, 1, rich_errors, false);
+            }
+
+            xfree_sized(rich_errors, rich_errors_size);
+            return PM_ERROR_LEVEL_STACK;
+          }
         }
     }
 
