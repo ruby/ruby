@@ -420,7 +420,7 @@ left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, Onig
       }
     }
   }
-  len = mbc_enc_len(p, end, enc);
+  len = enclen(enc, p, end); /* the precise length is negative if broken */
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));
