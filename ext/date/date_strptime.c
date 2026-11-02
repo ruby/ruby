@@ -63,7 +63,7 @@ num_pattern_p(const char *s)
 
 #define NUM_PATTERN_P() num_pattern_p(&fmt[fi + 1])
 
-static long
+static size_t
 read_digits(const char *s, size_t slen, VALUE *n, size_t width)
 {
     size_t l;
@@ -127,7 +127,7 @@ do { \
     si += l; \
 } while (0)
 
-#define READ_DIGITS_MAX(n) READ_DIGITS(n, LONG_MAX)
+#define READ_DIGITS_MAX(n) READ_DIGITS(n, SIZE_MAX)
 
 static int
 valid_range_p(VALUE v, int a, int b)

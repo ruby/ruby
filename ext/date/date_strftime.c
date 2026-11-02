@@ -11,12 +11,33 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 
 #if defined(HAVE_SYS_TIME_H)
 #include <sys/time.h>
 #endif
 
 #undef strchr	/* avoid AIX weirdness */
+
+#ifndef HAVE_RB_LEN_T
+typedef long rb_len_t;
+typedef unsigned long rb_ulen_t;
+# define SIZEOF_RB_LEN_T SIZEOF_LONG
+# define RB_LEN_MAX LONG_MAX
+# define RB_LEN_MIN LONG_MIN
+# define RB_ULEN_MAX ULONG_MAX
+# define PRI_LEN_PREFIX "l"
+# define PRIdLEN PRI_LEN_PREFIX"d"
+# define PRIiLEN PRI_LEN_PREFIX"i"
+# define PRIoLEN PRI_LEN_PREFIX"o"
+# define PRIuLEN PRI_LEN_PREFIX"u"
+# define PRIxLEN PRI_LEN_PREFIX"x"
+# define PRIXLEN PRI_LEN_PREFIX"X"
+# define FIX2LEN FIX2LONG
+# define LEN2FIX LONG2FIX
+# define NUM2LEN NUM2LONG
+# define NUM2ULEN NUM2ULONG
+#endif
 
 #define range(low, item, hi)	(item)
 
@@ -135,7 +156,7 @@ date_strftime_with_tmx(char *s, const size_t maxsize, const char *format,
 	do {								\
 	    VALUE tmp = (val);						\
 	    if (FIXNUM_P(tmp)) {					\
-		FMT((def_pad), (def_prec), "l"fmt, FIX2LONG(tmp));	\
+		FMT((def_pad), (def_prec), PRI_LEN_PREFIX fmt, FIX2LEN(tmp)); \
 	    }								\
 	    else {							\
 		VALUE args[2], result;					\
@@ -237,8 +258,8 @@ date_strftime_with_tmx(char *s, const size_t maxsize, const char *format,
 	    {
 		VALUE year = (*format == 'G') ? tmx_cwyear : tmx_year;
 		if (FIXNUM_P(year)) {
-		    long y = FIX2LONG(year);
-		    FMT('0', 0 <= y ? 4 : 5, "ld", y);
+		    rb_len_t y = FIX2LEN(year);
+		    FMT('0', 0 <= y ? 4 : 5, PRIdLEN, y);
 		}
 		else {
 		    FMTV('0', 4, "d", year);
@@ -301,8 +322,8 @@ date_strftime_with_tmx(char *s, const size_t maxsize, const char *format,
 		subsec = div(subsec, INT2FIX(1));
 
 		if (FIXNUM_P(subsec)) {
-		    (void)snprintf(s, endp - s, "%0*ld",
-				   precision, FIX2LONG(subsec));
+		    (void)snprintf(s, endp - s, "%0*" PRIdLEN,
+				   precision, FIX2LEN(subsec));
 		    s += precision;
 		}
 		else {

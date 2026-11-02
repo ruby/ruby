@@ -8,6 +8,14 @@
 
 #ifndef HAVE_RB_LEN_T
 typedef long rb_len_t;
+# define RB_LEN_MAX LONG_MAX
+# define FIX2LEN FIX2LONG
+# define LEN2FIX LONG2FIX
+# define LEN2NUM LONG2NUM
+# define NUM2LEN NUM2LONG
+# define NUM2ULEN NUM2ULONG
+# define NUM2ST(num) ((st_data_t)NUM2LEN(num))
+# define PRIdLEN "ld"
 #endif
 
 #include <math.h>
@@ -80,7 +88,7 @@ inline static int
 f_cmp(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
-	long c = FIX2LONG(x) - FIX2LONG(y);
+	rb_len_t c = FIX2LEN(x) - FIX2LEN(y);
 	if (c > 0)
 	    return 1;
 	else if (c < 0)
@@ -94,7 +102,7 @@ inline static VALUE
 f_lt_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(FIX2LONG(x) < FIX2LONG(y));
+	return f_boolcast(FIX2LEN(x) < FIX2LEN(y));
     return rb_funcall(x, '<', 1, y);
 }
 
@@ -102,7 +110,7 @@ inline static VALUE
 f_gt_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(FIX2LONG(x) > FIX2LONG(y));
+	return f_boolcast(FIX2LEN(x) > FIX2LEN(y));
     return rb_funcall(x, '>', 1, y);
 }
 
@@ -110,7 +118,7 @@ inline static VALUE
 f_le_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(FIX2LONG(x) <= FIX2LONG(y));
+	return f_boolcast(FIX2LEN(x) <= FIX2LEN(y));
     return rb_funcall(x, id_le_p, 1, y);
 }
 
@@ -118,7 +126,7 @@ inline static VALUE
 f_ge_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(FIX2LONG(x) >= FIX2LONG(y));
+	return f_boolcast(FIX2LEN(x) >= FIX2LEN(y));
     return rb_funcall(x, id_ge_p, 1, y);
 }
 
@@ -126,7 +134,7 @@ inline static VALUE
 f_eqeq_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(FIX2LONG(x) == FIX2LONG(y));
+	return f_boolcast(FIX2LEN(x) == FIX2LEN(y));
     return rb_funcall(x, id_eqeq_p, 1, y);
 }
 
@@ -135,13 +143,13 @@ f_zero_p(VALUE x)
 {
     switch (TYPE(x)) {
       case T_FIXNUM:
-	return f_boolcast(FIX2LONG(x) == 0);
+	return f_boolcast(FIX2LEN(x) == 0);
       case T_BIGNUM:
 	return Qfalse;
       case T_RATIONAL:
 	{
 	    VALUE num = rb_rational_num(x);
-	    return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 0);
+	    return f_boolcast(FIXNUM_P(num) && FIX2LEN(num) == 0);
 	}
     }
     return rb_funcall(x, id_eqeq_p, 1, INT2FIX(0));
@@ -153,7 +161,7 @@ inline static VALUE
 f_negative_p(VALUE x)
 {
     if (FIXNUM_P(x))
-	return f_boolcast(FIX2LONG(x) < 0);
+	return f_boolcast(FIX2LEN(x) < 0);
     return rb_funcall(x, '<', 1, INT2FIX(0));
 }
 
@@ -334,7 +342,7 @@ canon(VALUE x)
 {
     if (RB_TYPE_P(x, T_RATIONAL)) {
 	VALUE den = rb_rational_den(x);
-	if (FIXNUM_P(den) && FIX2LONG(den) == 1)
+	if (FIXNUM_P(den) && FIX2LEN(den) == 1)
 	    return rb_rational_num(x);
     }
     return x;
@@ -1215,7 +1223,7 @@ safe_mul_p(VALUE x, long m)
 
     if (!FIXNUM_P(x))
 	return 0;
-    ix = FIX2LONG(x);
+    ix = FIX2LEN(x);
     if (ix < 0) {
 	if (ix <= (FIXNUM_MIN / m))
 	    return 0;
@@ -1231,7 +1239,7 @@ static VALUE
 day_to_sec(VALUE d)
 {
     if (safe_mul_p(d, DAY_IN_SECONDS))
-	return LONG2FIX(FIX2LONG(d) * DAY_IN_SECONDS);
+	return LEN2FIX(FIX2LEN(d) * DAY_IN_SECONDS);
     return f_mul(d, INT2FIX(DAY_IN_SECONDS));
 }
 
@@ -1248,7 +1256,7 @@ static VALUE
 sec_to_ms(VALUE s)
 {
     if (safe_mul_p(s, SECOND_IN_MILLISECONDS))
-	return LONG2FIX(FIX2LONG(s) * SECOND_IN_MILLISECONDS);
+	return LEN2FIX(FIX2LEN(s) * SECOND_IN_MILLISECONDS);
     return f_mul(s, INT2FIX(SECOND_IN_MILLISECONDS));
 }
 
@@ -1256,7 +1264,7 @@ static VALUE
 sec_to_ns(VALUE s)
 {
     if (safe_mul_p(s, SECOND_IN_NANOSECONDS))
-	return LONG2FIX(FIX2LONG(s) * SECOND_IN_NANOSECONDS);
+	return LEN2FIX(FIX2LEN(s) * SECOND_IN_NANOSECONDS);
     return f_mul(s, INT2FIX(SECOND_IN_NANOSECONDS));
 }
 
@@ -1552,14 +1560,14 @@ decode_year(VALUE y, double style,
 	CM_PERIOD_GCY :
 	CM_PERIOD_JCY;
     if (FIXNUM_P(y)) {
-	long iy, it, inth;
+	rb_len_t iy, it, inth;
 
-	iy = FIX2LONG(y);
+	iy = FIX2LEN(y);
 	if (iy >= (FIXNUM_MAX - 4712))
 	    goto big;
 	it = iy + 4712; /* shift */
 	inth = DIV(it, ((long)period));
-	*nth = LONG2FIX(inth);
+	*nth = LEN2FIX(inth);
 	if (inth)
 	    it = MOD(it, ((long)period));
 	*ry = (int)it - 4712; /* unshift */
@@ -1623,7 +1631,7 @@ guess_style(VALUE y, double sg) /* -/+oo or zero */
     else if (!FIXNUM_P(y))
 	style = f_positive_p(y) ? negative_inf : positive_inf;
     else {
-	long iy = FIX2LONG(y);
+	rb_len_t iy = FIX2LEN(y);
 
 	assert(FIXNUM_P(y));
 	if (iy < REFORM_BEGIN_YEAR)
@@ -1801,10 +1809,10 @@ m_ajd(union DateData *x)
 
     if (simple_dat_p(x)) {
 	r = m_real_jd(x);
-	if (FIXNUM_P(r) && FIX2LONG(r) <= (FIXNUM_MAX / 2) && FIX2LONG(r) >= (FIXNUM_MIN + 1) / 2) {
-	    long ir = FIX2LONG(r);
+	if (FIXNUM_P(r) && FIX2LEN(r) <= (FIXNUM_MAX / 2) && FIX2LEN(r) >= (FIXNUM_MIN + 1) / 2) {
+	    rb_len_t ir = FIX2LEN(r);
 	    ir = ir * 2 - 1;
-	    return rb_rational_new2(LONG2FIX(ir), INT2FIX(2));
+	    return rb_rational_new2(LEN2FIX(ir), INT2FIX(2));
 	}
 	else
 	    return rb_rational_new2(f_sub(f_mul(r,
@@ -1832,10 +1840,10 @@ m_amjd(union DateData *x)
     int df;
 
     r = m_real_jd(x);
-    if (FIXNUM_P(r) && FIX2LONG(r) >= (FIXNUM_MIN + 2400001)) {
-	long ir = FIX2LONG(r);
+    if (FIXNUM_P(r) && FIX2LEN(r) >= (FIXNUM_MIN + 2400001)) {
+	rb_len_t ir = FIX2LEN(r);
 	ir -= 2400001;
-	r = rb_rational_new1(LONG2FIX(ir));
+	r = rb_rational_new1(LEN2FIX(ir));
     }
     else
 	r = rb_rational_new1(f_sub(m_real_jd(x),
@@ -2577,9 +2585,9 @@ offset_to_sec(VALUE vof, int *rof)
     switch (TYPE(vof)) {
       case T_FIXNUM:
 	{
-	    long n;
+	    rb_len_t n;
 
-	    n = FIX2LONG(vof);
+	    n = FIX2LEN(vof);
 	    if (n != -1 && n != 0 && n != 1)
 		return 0;
 	    *rof = (int)n * DAY_IN_SECONDS;
@@ -2609,7 +2617,7 @@ offset_to_sec(VALUE vof, int *rof)
       case T_RATIONAL:
 	{
 	    VALUE vs, vn, vd;
-	    long n;
+	    rb_len_t n;
 
 	    vs = day_to_sec(vof);
 
@@ -2620,8 +2628,8 @@ offset_to_sec(VALUE vof, int *rof)
 	    vn = rb_rational_num(vs);
 	    vd = rb_rational_den(vs);
 
-	    if (FIXNUM_P(vn) && FIXNUM_P(vd) && (FIX2LONG(vd) == 1))
-		n = FIX2LONG(vn);
+	    if (FIXNUM_P(vn) && FIXNUM_P(vd) && (FIX2LEN(vd) == 1))
+		n = FIX2LEN(vn);
 	    else {
 		vn = f_round(vs);
 		if (!f_eqeq_p(vn, vs))
@@ -2629,7 +2637,7 @@ offset_to_sec(VALUE vof, int *rof)
 	      rounded:
 		if (!FIXNUM_P(vn))
 		    return 0;
-		n = FIX2LONG(vn);
+		n = FIX2LEN(vn);
 	    }
 	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
 		return 0;
@@ -2639,11 +2647,11 @@ offset_to_sec(VALUE vof, int *rof)
       case T_STRING:
 	{
 	    VALUE vs = date_zone_to_diff(vof);
-	    long n;
+	    rb_len_t n;
 
 	    if (!FIXNUM_P(vs))
 		return 0;
-	    n = FIX2LONG(vs);
+	    n = FIX2LEN(vs);
 	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
 		return 0;
 	    *rof = (int)n;
@@ -3434,7 +3442,7 @@ wholenum_p(VALUE x)
       case T_RATIONAL:
 	{
 	    VALUE den = rb_rational_den(x);
-	    return FIXNUM_P(den) && FIX2LONG(den) == 1;
+	    return FIXNUM_P(den) && FIX2LEN(den) == 1;
 	}
 	break;
     }
@@ -6182,13 +6190,13 @@ d_lite_plus(VALUE self, VALUE other)
       case T_FIXNUM:
 	{
 	    VALUE nth;
-	    long t;
+	    rb_len_t t;
 	    int jd;
 
 	    nth = m_nth(dat);
-	    t = FIX2LONG(other);
+	    t = FIX2LEN(other);
 	    if (DIV(t, CM_PERIOD)) {
-		nth = f_add(nth, INT2FIX(DIV(t, CM_PERIOD)));
+		nth = f_add(nth, LEN2FIX(DIV(t, CM_PERIOD)));
 		t = MOD(t, CM_PERIOD);
 	    }
 
@@ -6570,7 +6578,7 @@ d_lite_minus(VALUE self, VALUE other)
 
     switch (TYPE(other)) {
       case T_FIXNUM:
-	return d_lite_plus(self, LONG2NUM(-FIX2LONG(other)));
+	return d_lite_plus(self, LEN2NUM(-FIX2LEN(other)));
       case T_FLOAT:
 	return d_lite_plus(self, DBL2NUM(-RFLOAT_VALUE(other)));
       default:
@@ -6672,8 +6680,8 @@ d_lite_rshift(VALUE self, VALUE other)
 	       INT2FIX(m_mon(dat) - 1),
 	       other);
     if (FIXNUM_P(t)) {
-	long it = FIX2LONG(t);
-	y = LONG2NUM(DIV(it, 12));
+	rb_len_t it = FIX2LEN(t);
+	y = LEN2NUM(DIV(it, 12));
 	it = MOD(it, 12);
 	m = (int)it + 1;
     }
@@ -7169,7 +7177,7 @@ d_lite_hash(VALUE self)
         h[1] = (st_index_t)nth;
     } else {
         h[0] = 1;
-        h[1] = (st_index_t)FIX2LONG(rb_hash(nth));
+        h[1] = (st_index_t)NUM2ST(rb_hash(nth));
     }
 
     h[2] = m_jd(dat);
@@ -7584,15 +7592,15 @@ d_lite_httpdate(VALUE self)
 }
 
 enum {
-    DECIMAL_SIZE_OF_LONG = DECIMAL_SIZE_OF_BITS(CHAR_BIT*sizeof(long)),
-    JISX0301_DATE_SIZE = DECIMAL_SIZE_OF_LONG+8
+    DECIMAL_SIZE_OF_LEN = DECIMAL_SIZE_OF_BITS(CHAR_BIT*sizeof(rb_len_t)),
+    JISX0301_DATE_SIZE = DECIMAL_SIZE_OF_LEN+8
 };
 
 static const char *
 jisx0301_date_format(char *fmt, size_t size, VALUE jd, VALUE y)
 {
     if (FIXNUM_P(jd)) {
-	long d = FIX2INT(jd);
+	rb_len_t d = FIX2LEN(jd);
 	long s;
 	char c;
 	if (d < 2405160)
@@ -8446,7 +8454,7 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
 
     ret = d_complex_new_internal(klass,
 				 nth, 0,
-				 0, LONG2NUM(sf),
+				 0, LEN2NUM(sf),
 				 (int)of, GREGORIAN,
 				 ry, m, d,
 				 h, min, s,
@@ -8949,17 +8957,17 @@ dt_lite_strftime(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-iso8601_timediv(VALUE self, long n)
+iso8601_timediv(VALUE self, rb_len_t n)
 {
     static const char timefmt[] = "T%H:%M:%S";
     static const char zone[] = "%:z";
     char fmt[sizeof(timefmt) + sizeof(zone) + rb_strlen_lit(".%N") +
-	     DECIMAL_SIZE_OF_LONG];
+	     DECIMAL_SIZE_OF_LEN];
     char *p = fmt;
 
     memcpy(p, timefmt, sizeof(timefmt)-1);
     p += sizeof(timefmt)-1;
-    if (n > 0) p += snprintf(p, fmt+sizeof(fmt)-p, ".%%%ldN", n);
+    if (n > 0) p += snprintf(p, fmt+sizeof(fmt)-p, ".%%" "%" PRIdLEN "N", n);
     memcpy(p, zone, sizeof(zone));
     return strftimev(fmt, self, set_tmx);
 }
@@ -8978,11 +8986,11 @@ iso8601_timediv(VALUE self, long n)
 static VALUE
 dt_lite_iso8601(int argc, VALUE *argv, VALUE self)
 {
-    long n = 0;
+    rb_len_t n = 0;
 
     rb_check_arity(argc, 0, 1);
     if (argc >= 1)
-	n = NUM2LONG(argv[0]);
+	n = NUM2LEN(argv[0]);
 
     return rb_str_append(strftimev("%Y-%m-%d", self, set_tmx),
 			 iso8601_timediv(self, n));
@@ -9017,11 +9025,11 @@ dt_lite_rfc3339(int argc, VALUE *argv, VALUE self)
 static VALUE
 dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 {
-    long n = 0;
+    rb_len_t n = 0;
 
     rb_check_arity(argc, 0, 1);
     if (argc >= 1)
-	n = NUM2LONG(argv[0]);
+	n = NUM2LEN(argv[0]);
 
     return rb_str_append(d_lite_jisx0301(self),
 			 iso8601_timediv(self, n));
@@ -9666,10 +9674,10 @@ static const char *abbr_daynames[] = {
 };
 
 static VALUE
-mk_ary_of_str(long len, const char *a[])
+mk_ary_of_str(int len, const char *a[])
 {
     VALUE o;
-    long i;
+    int i;
 
     o = rb_ary_new2(len);
     for (i = 0; i < len; i++) {
@@ -9719,8 +9727,8 @@ Init_date_core(void)
     half_days_in_day = rb_rational_new2(INT2FIX(1), INT2FIX(2));
     rb_gc_register_mark_object(half_days_in_day);
 
-#if (LONG_MAX / DAY_IN_SECONDS) > SECOND_IN_NANOSECONDS
-    day_in_nanoseconds = LONG2NUM((long)DAY_IN_SECONDS *
+#if (RB_LEN_MAX / DAY_IN_SECONDS) > SECOND_IN_NANOSECONDS
+    day_in_nanoseconds = LEN2NUM((rb_len_t)DAY_IN_SECONDS *
 				  SECOND_IN_NANOSECONDS);
 #elif defined HAVE_LONG_LONG
     day_in_nanoseconds = LL2NUM((LONG_LONG)DAY_IN_SECONDS *
