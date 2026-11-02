@@ -166,6 +166,13 @@ module Ruby::Prism
 
     def test_float_out_of_range
       assert_warning("_ = 1.0e100000", "out of range")
+      assert_warning("_ = 1.7976931348623159e308", "out of range")
+      assert_warning("_ = 1e-400", "out of range")
+      assert_warning("_ = 2.4703282292062327e-324", "out of range")
+
+      refute_warning("_ = 1e-310")
+      refute_warning("_ = 2.4703282292062328e-324")
+      refute_warning("_ = 0e99999")
     end
 
     def test_indentation_mismatch
