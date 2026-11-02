@@ -58,7 +58,34 @@ static inline int trailing_zeros(int input)
 
 #ifdef JSON_ENABLE_SIMD
 
-#define SIMD_MINIMUM_THRESHOLD 6
+#define SIMD_MINIMUM_THRESHOLD 4
+
+ALWAYS_INLINE(static) void json_fast_memcpy16(char *dst, const char *src, size_t len)
+{
+    RBIMPL_ASSERT_OR_ASSUME(len < 16);
+    RBIMPL_ASSERT_OR_ASSUME(len >= SIMD_MINIMUM_THRESHOLD); // 4
+#if defined(__has_builtin) && __has_builtin(__builtin_memcpy)
+    // If __builtin_memcpy is available, use it to copy between SIMD_MINIMUM_THRESHOLD (4) and vec_len-1 (15) bytes.
+    // These copies overlap. The first copy will copy the first 8 (or 4) bytes. The second copy will copy
+    // the last 8 (or 4) bytes but overlap with the first copy. The overlapping bytes will be in the correct
+    // position in both copies.
+
+    // Please do not attempt to replace __builtin_memcpy with memcpy without profiling and/or looking at the
+    // generated assembly. On clang-specifically (tested on Apple clang version 17.0.0 (clang-1700.0.13.3)),
+    // when using memcpy, the compiler will notice the only difference is a 4 or 8 and generate a conditional
+    // select instruction instead of direct loads and stores with a branch. This ends up slower than the branch
+    // plus two loads and stores generated when using __builtin_memcpy.
+    if (len >= 8) {
+        __builtin_memcpy(dst, src, 8);
+        __builtin_memcpy(dst + len - 8, src + len - 8, 8);
+    } else {
+        __builtin_memcpy(dst, src, 4);
+        __builtin_memcpy(dst + len - 4, src + len - 4, 4);
+    }
+#else
+    MEMCPY(dst, src, char, len);
+#endif
+}
 
 #if defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(__aarch64__) || defined(_M_ARM64)
 #include <arm_neon.h>
