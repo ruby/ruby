@@ -4919,8 +4919,14 @@ fn gen_opt_new(
         Counter::guard_send_klass_megamorphic,
     ));
 
+    extern "C" {
+        fn rb_hash_s_new(argc: c_int, argv: *const VALUE, klass: VALUE) -> VALUE;
+    }
+
     // We now know that it's always comptime_recv_klass
-    if jit.assume_expected_cfunc(asm, comptime_recv_klass, mid, rb_class_new_instance_pass_kw as _) {
+    if jit.assume_expected_cfunc(asm, comptime_recv_klass, mid, rb_class_new_instance_pass_kw as _)
+        // Hash.new is Class#new for subclasses of Hash
+        || (comptime_recv != unsafe { rb_cHash } && jit.assume_expected_cfunc(asm, comptime_recv_klass, mid, rb_hash_s_new as _)) {
         // Fast path
         // call rb_class_alloc to actually allocate
         jit_prepare_non_leaf_call(jit, asm);

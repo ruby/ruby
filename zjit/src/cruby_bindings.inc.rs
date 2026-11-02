@@ -2494,6 +2494,13 @@ unsafe extern "C" {
         cd: *mut rb_call_data,
         recv: VALUE,
     ) -> *const rb_callable_method_entry_struct;
+    pub fn rb_zjit_cme_is_default_new(cme: *const rb_callable_method_entry_t, klass: VALUE)
+        -> bool;
+    pub fn rb_zjit_method_is_default_new(
+        iseq: *const rb_iseq_t,
+        cd: *mut rb_call_data,
+        klass: VALUE,
+    ) -> bool;
     pub fn rb_zjit_class_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
     pub fn rb_zjit_class_has_struct_allocator(klass: VALUE) -> bool;
     pub fn rb_zjit_struct_num_members(klass: VALUE) -> rb_len_t;

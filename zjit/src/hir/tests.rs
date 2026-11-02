@@ -3193,7 +3193,7 @@ pub(crate) mod hir_build_tests {
         bb3(v6:BasicObject):
           v10:NilClass = Const Value(nil)
           v12:BasicObject = GetConstantPath 0x1000
-          v14:CBool = IsMethodCFunc v12, :new
+          v14:CBool = IsDefaultNew v12, :new
           CondBranch v14, bb6(), bb4(v6, v10, v12)
         bb6():
           v16:HeapBasicObject = ObjectAlloc v12

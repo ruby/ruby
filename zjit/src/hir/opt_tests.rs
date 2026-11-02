@@ -7308,7 +7308,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:NilClass = Const Value(nil)
           v12:BasicObject = GetConstantPath 0x1000
-          v14:CBool = IsMethodCFunc v12, :new
+          v14:CBool = IsDefaultNew v12, :new
           CondBranch v14, bb6(), bb4()
         bb6():
           v16:HeapBasicObject = ObjectAlloc v12
@@ -7385,6 +7385,59 @@ mod hir_opt_tests {
           v51:BasicObject = CCallVariadic v13, :Hash.new@0x1040
           CheckInterrupts
           Return v51
+        ");
+        assert_snapshot!(inspect("test"), @"{}");
+    }
+
+    #[test]
+    fn test_opt_new_hash_subclass() {
+        eval("
+            class H < Hash; end
+            def test = H.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, H)
+          v13:ClassSubclass[H@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(H@0x1008, new@0x1009, cme:0x1010)
+          v17:HeapBasicObject = ObjectAlloc v13
+          PatchPoint NoSingletonClass(H@0x1008)
+          PatchPoint MethodRedefined(H@0x1008, initialize@0x1038, cme:0x1040)
+          v44:HashSubclass[class_exact:H] = GuardType v17, HashSubclass[class_exact:H] recompile
+          v45:Fixnum[0] = Const Value(0)
+          v94:NilClass = Const Value(nil)
+          v95:Fixnum[0] = Const Value(0)
+          v96:NilClass = Const Value(nil)
+          v97:NilClass = Const Value(nil)
+          PushInlineFrame :initialize, v44 (0x1068), num_args=1
+          v61:TrueClass = Const Value(true)
+          v79:CPtr = GetEP 0
+          v80:CUInt64 = LoadField v79, :VM_ENV_DATA_INDEX_FLAGS@0x1088
+          v81:CBool = IsBlockParamModified v80
+          CondBranch v81, bb11(), bb12()
+        bb11():
+          v83:BasicObject = LoadField v79, :block@0x1089
+          Jump bb13(v83)
+        bb12():
+          v85:BasicObject = GetBlockParam :block, l0, EP@4
+          Jump bb13(v85)
+        bb13(v78:BasicObject):
+          v88:BasicObject = InvokeBuiltin rb_hash_init, v44, v45, v61, v61, v78
+          PatchPoint NoEPEscape(initialize)
+          PopInlineFrame
+          CheckInterrupts
+          Return v44
         ");
         assert_snapshot!(inspect("test"), @"{}");
     }
