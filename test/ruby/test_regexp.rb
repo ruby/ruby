@@ -1028,6 +1028,20 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_extended_comment_compiled_again_for_string
+    e = Encoding::EMACS_MULE
+    c = "\x8E\xDA".dup.force_encoding(e)
+    re = Regexp.new("()()#\x8E\xDA()()".dup.force_encoding(e), Regexp::EXTENDED)
+    assert_equal(3, re.match("ab").size)
+    assert_equal(3, re.match(c).size)
+    assert_send([c, :start_with?, re])
+    assert_equal(3, $~.size)
+    re = Regexp.new("a#\x8E\xDAb\nc".dup.force_encoding(e), Regexp::EXTENDED)
+    assert_match(re, "ac")
+    assert_match(re, c + "ac")
+    assert_no_match(re, c + "ab")
+  end
+
   def test_ignorecase
     v = assert_deprecated_warning(/variable \$= is no longer effective/) { $= }
     assert_equal(false, v)

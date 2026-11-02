@@ -1648,7 +1648,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     onig_errmsg_buffer err = "";
     unescaped = rb_reg_preprocess(
         pattern, pattern + RSTRING_LEN(src_str), enc,
-        &fixed_enc, err, 0);
+        &fixed_enc, err, reg->options);
 
     if (NIL_P(unescaped)) {
         rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
