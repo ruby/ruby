@@ -127,6 +127,11 @@ class TestInteger < Test::Unit::TestCase
     assert_raise(ArgumentError) { Integer("4611686018427387904  :") }
     assert_equal(0x4000000000000000, Integer("46_11_686_0184273_87904"))
     assert_raise(ArgumentError) { Integer("\0") }
+    assert_raise(ArgumentError) { Integer("99999999999999999999\0abc") }
+    assert_raise(ArgumentError) { Integer("1_0\0abc") }
+    assert_raise(ArgumentError) { Integer("0x1_f\0zz") }
+    assert_raise(ArgumentError) { Integer("99999999999999999999 \0") }
+    assert_equal(99999999999999999999, Integer("99999999999999999999 "))
     assert_nothing_raised(ArgumentError, "[ruby-core:13873]") {
       assert_equal(0, Integer("0 "))
     }
