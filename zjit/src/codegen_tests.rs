@@ -8151,6 +8151,45 @@ fn test_singleton_class_invalidation_optimized_variadic_ccall() {
     "), @"[1, 1000]");
 }
 
+// Once a singleton class has invalidated an ISEQ, recompiling that ISEQ should stop assuming
+// that the class has no singleton class. This has to hold even after another ISEQ, compiled
+// for the first time, adds a fresh NoSingletonClass patch point for the same class.
+// Otherwise code that creates a singleton class repeatedly (like `def env.foo` per request)
+// invalidates the same ISEQ until it reaches the version limit.
+#[test]
+fn test_singleton_class_invalidation_is_not_repeated() {
+    set_call_threshold(2);
+    eval("
+        class SingletonTarget
+          def foo = 1
+        end
+        def first_caller(obj) = obj.foo
+        def later_caller(obj) = obj.foo
+
+        target = SingletonTarget.new
+        first_caller(target); first_caller(target)  # compile, assuming no singleton class
+
+        singleton = SingletonTarget.new
+        def singleton.bar = nil                     # invalidate first_caller
+
+        later_caller(target); later_caller(target)  # compile a fresh ISEQ assuming no singleton class
+        first_caller(target); first_caller(target)  # recompile first_caller
+    ");
+    let iseq = get_method_iseq("self", "first_caller");
+    let payload = get_or_create_iseq_payload(iseq);
+    assert_eq!(2, payload.versions.len());
+    assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+
+    // Another singleton class must not invalidate the recompiled first_caller
+    eval("
+        another = SingletonTarget.new
+        def another.bar = nil
+    ");
+    let payload = get_or_create_iseq_payload(iseq);
+    assert_eq!(2, payload.versions.len());
+    assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+}
+
 #[test]
 fn test_is_a_string_special_case() {
     assert_snapshot!(inspect(r#"

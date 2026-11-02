@@ -95,6 +95,10 @@ pub struct Invariants {
     /// will have no singleton class.
     no_singleton_class_patch_points: HashMap<VALUE, HashSet<PatchPoint>>,
 
+    /// Set of classes that an instance has had a singleton class created for since boot.
+    /// Unlike no_singleton_class_patch_points, entries never go away while the class lives.
+    seen_singleton_class_of: HashSet<VALUE>,
+
     /// Set of patch points that assume only the root box is active
     root_box_patch_points: HashSet<PatchPoint>,
 
@@ -128,6 +132,7 @@ impl Invariants {
     /// Forget a class when freeing it. See [Self::forget_iseq] for reasoning.
     pub fn forget_klass(&mut self, klass: VALUE) {
         self.no_singleton_class_patch_points.remove(&klass);
+        self.seen_singleton_class_of.remove(&klass);
     }
 
     /// Update ISEQ references in Invariants::no_ep_escape_iseq_patch_points
@@ -162,6 +167,10 @@ impl Invariants {
             })
             .collect();
         self.no_singleton_class_patch_points = updated_no_singleton_class_patch_points;
+        self.seen_singleton_class_of = std::mem::take(&mut self.seen_singleton_class_of)
+            .into_iter()
+            .map(|klass| unsafe { rb_gc_location(klass) })
+            .collect();
     }
 }
 
@@ -553,10 +562,7 @@ pub extern "C" fn rb_zjit_invalidate_root_box() {
 /// This is used to avoid an invalidation loop where we repeatedly compile code
 /// that assumes no singleton class, only to have it invalidated.
 pub fn has_singleton_class_of(klass: VALUE) -> bool {
-    ZJITState::get_invariants()
-        .no_singleton_class_patch_points
-        .get(&klass)
-        .map_or(false, |patch_points| patch_points.is_empty())
+    ZJITState::get_invariants().seen_singleton_class_of.contains(&klass)
 }
 
 #[unsafe(no_mangle)]
@@ -567,21 +573,19 @@ pub extern "C" fn rb_zjit_invalidate_no_singleton_class(klass: VALUE) {
 
     with_vm_lock(src_loc!(), || {
         let invariants = ZJITState::get_invariants();
-        match invariants.no_singleton_class_patch_points.get_mut(&klass) {
-            Some(patch_points) => {
-                // Invalidate existing patch points and let has_singleton_class_of()
-                // return true when they are compiled again
-                let patch_points = mem::take(patch_points);
-                if !patch_points.is_empty() {
-                    let cb = ZJITState::get_code_block();
-                    debug!("Singleton class created for {:?}", klass);
-                    compile_patch_points!(cb, patch_points, NoSingletonClass, "Singleton class created for {:?}", klass);
-                    cb.mark_all_executable();
-                }
-            }
-            None => {
-                // Let has_singleton_class_of() return true for this class
-                invariants.no_singleton_class_patch_points.insert(klass, HashSet::new());
+        // Let has_singleton_class_of() return true for this class from now on, even after
+        // ISEQs that were never invalidated add new patch points for it. Otherwise a program
+        // that keeps creating singleton classes (e.g. `def obj.foo` on every request) would
+        // invalidate the same ISEQs again and again until they reach max_versions.
+        invariants.seen_singleton_class_of.insert(klass);
+
+        // Invalidate existing patch points
+        if let Some(patch_points) = invariants.no_singleton_class_patch_points.remove(&klass) {
+            if !patch_points.is_empty() {
+                let cb = ZJITState::get_code_block();
+                debug!("Singleton class created for {:?}", klass);
+                compile_patch_points!(cb, patch_points, NoSingletonClass, "Singleton class created for {:?}", klass);
+                cb.mark_all_executable();
             }
         }
     });
