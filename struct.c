@@ -768,7 +768,8 @@ struct_hash_aset(VALUE key, VALUE val, struct struct_hash_set_arg *args, bool na
         rb_ary_push(args->unknown_keywords, key);
     }
     else {
-        rb_struct_modify(args->self);
+        // Data#initialize has already frozen self.
+        if (!name_only) rb_struct_modify(args->self);
         RSTRUCT_SET_RAW(args->self, i, val);
     }
     return i;
@@ -1880,13 +1881,16 @@ static VALUE
 rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
     rb_struct_modify(self);
+    // Freeze before anything can raise, so that we don't leave an unfrozen
+    // copy on the heap, which could get exposed via ObjectSpace. The members
+    // are stored below without checking for frozen.
+    OBJ_FREEZE(self);
     rb_len_t num_members = RSTRUCT_LEN_RAW(self);
 
     if (argc == 0) {
         if (num_members > 0) {
             rb_exc_raise(rb_keyword_error_new("missing", struct_ivar_get(rb_obj_class(self), id_members)));
         }
-        OBJ_FREEZE(self);
         return Qnil;
     }
     if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
@@ -1907,9 +1911,6 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
     rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), num_members);
     rb_hash_foreach(argv[0], data_hash_set_i, (VALUE)&arg);
 
-    // Freeze early before potentially raising, so that we don't leave an
-    // unfrozen copy on the heap, which could get exposed via ObjectSpace.
-    OBJ_FREEZE(self);
     if (UNLIKELY(arg.missing_count > 0)) {
         VALUE members = struct_ivar_get(rb_obj_class(self), id_members);
         RUBY_ASSERT(RARRAY_LEN(members) == num_members);
