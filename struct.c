@@ -251,30 +251,9 @@ rb_struct_modify(VALUE s)
 static VALUE
 anonymous_struct(VALUE klass)
 {
-    VALUE nstr;
-
-    nstr = rb_class_new(klass);
+    VALUE nstr = rb_class_new(klass);
     rb_make_metaclass(nstr, RBASIC(klass)->klass);
-    rb_class_inherited(klass, nstr);
     return nstr;
-}
-
-static VALUE
-new_struct(VALUE name, VALUE super)
-{
-    /* old style: should we warn? */
-    ID id;
-    name = rb_str_to_str(name);
-    if (!rb_is_const_name(name)) {
-        rb_name_err_raise("identifier %1$s needs to be constant",
-                          super, name);
-    }
-    id = rb_to_id(name);
-    if (rb_const_defined_at(super, id)) {
-        rb_warn("redefining constant %"PRIsVALUE"::%"PRIsVALUE, super, name);
-        rb_mod_remove_const(super, ID2SYM(id));
-    }
-    return rb_define_class_id_under_no_pin(super, id, super);
 }
 
 NORETURN(static void invalid_struct_pos(VALUE s, VALUE idx));
@@ -454,23 +433,32 @@ struct_make_members_list(va_list ar)
     return ary;
 }
 
+static void
+struct_register_under(VALUE outer, VALUE name, VALUE klass)
+{
+    if (!outer) outer = rb_cObject;
+
+    name = rb_str_to_str(name);
+
+    if (!rb_is_const_name(name)) {
+        rb_name_err_raise("identifier %1$s needs to be constant",
+                          outer, name);
+    }
+
+    ID id = rb_to_id(name);
+    if (rb_const_defined_at(outer, id)) {
+        rb_warn("redefining constant %"PRIsVALUE"::%"PRIsVALUE, outer, name);
+        rb_mod_remove_const(outer, ID2SYM(id));
+    }
+
+    rb_set_class_path_string(klass, outer, name);
+    rb_const_set(outer, id, klass);
+}
+
 static VALUE
 struct_define_without_accessor(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, VALUE members)
 {
-    VALUE klass;
-
-    if (class_name) {
-        if (outer) {
-            klass = rb_define_class_under(outer, class_name, super);
-        }
-        else {
-            klass = rb_define_class(class_name, super);
-        }
-    }
-    else {
-        klass = anonymous_struct(super);
-    }
-
+    VALUE klass = anonymous_struct(super);
     struct_set_members(klass, members);
 
     if (alloc) {
@@ -479,6 +467,14 @@ struct_define_without_accessor(VALUE outer, const char *class_name, VALUE super,
     else {
         rb_define_alloc_func(klass, struct_alloc);
     }
+
+    if (class_name) {
+        VALUE name = rb_enc_interned_str_cstr(class_name, rb_usascii_encoding());
+        struct_register_under(outer, name, klass);
+        rb_vm_register_global_object(klass);
+    }
+
+    rb_class_inherited(klass, super);
 
     return klass;
 }
@@ -510,23 +506,26 @@ rb_struct_define_without_accessor(const char *class_name, VALUE super, rb_alloc_
 }
 
 VALUE
-rb_struct_define(const char *name, ...)
+rb_struct_define(const char *class_name, ...)
 {
     va_list ar;
-    VALUE st, ary;
 
-    va_start(ar, name);
-    ary = struct_make_members_list(ar);
+    va_start(ar, class_name);
+    VALUE ary = struct_make_members_list(ar);
     va_end(ar);
 
-    if (!name) {
-        st = anonymous_struct(rb_cStruct);
+    VALUE klass = anonymous_struct(rb_cStruct);
+    setup_struct(klass, ary);
+
+    if (class_name) {
+        VALUE name = rb_enc_interned_str_cstr(class_name, rb_usascii_encoding());
+        struct_register_under(rb_cStruct, name, klass);
+        rb_vm_register_global_object(klass);
     }
-    else {
-        st = new_struct(rb_str_new2(name), rb_cStruct);
-        rb_vm_register_global_object(st);
-    }
-    return setup_struct(st, ary);
+
+    rb_class_inherited(klass, rb_cStruct);
+
+    return klass;
 }
 
 VALUE
@@ -667,11 +666,9 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  */
 
 static VALUE
-rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
+rb_struct_s_def(int argc, VALUE *argv, VALUE super)
 {
-    VALUE name = Qnil, rest, keyword_init = Qnil;
-    rb_len_t i;
-    VALUE st;
+    VALUE name = Qnil, keyword_init = Qnil;
     VALUE opt;
 
     argc = rb_scan_args(argc, argv, "0*:", NULL, &opt);
@@ -696,9 +693,9 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
         }
     }
 
-    rest = rb_ident_hash_new();
+    VALUE rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
-    for (i=0; i<argc; i++) {
+    for (int i = 0; i < argc; i++) {
         VALUE mem = rb_to_symbol(argv[i]);
         if (rb_is_attrset_sym(mem)) {
             rb_raise(rb_eArgError, "invalid struct member: %"PRIsVALUE, mem);
@@ -711,19 +708,22 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     rest = rb_hash_keys(rest);
     RBASIC_CLEAR_CLASS(rest);
     OBJ_FREEZE(rest);
-    if (NIL_P(name)) {
-        st = anonymous_struct(klass);
-    }
-    else {
-        st = new_struct(name, klass);
-    }
-    setup_struct(st, rest);
-    rb_ivar_set(st, id_keyword_init, keyword_init);
-    if (rb_block_given_p()) {
-        rb_mod_module_eval(0, 0, st);
+
+    VALUE klass = anonymous_struct(super);
+    setup_struct(klass, rest);
+    rb_ivar_set(klass, id_keyword_init, keyword_init);
+
+    if (!NIL_P(name)) {
+        struct_register_under(super, rb_str_to_str(name), klass);
     }
 
-    return st;
+    rb_class_inherited(klass, super);
+
+    if (rb_block_given_p()) {
+        rb_mod_module_eval(0, 0, klass);
+    }
+
+    return klass;
 }
 
 static rb_len_t
