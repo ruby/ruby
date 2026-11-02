@@ -1847,7 +1847,7 @@ char_is_identifier_start(const pm_parser_t *parser, const uint8_t *b, ptrdiff_t 
             return 0;
         }
     } else if (*b < 0x80) {
-        return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT ? 1 : 0) || (*b == '_');
+        return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT ? 1 : 0) || (*b == '_');
     } else {
         return pm_encoding_utf_8_char_width(b, n);
     }
@@ -1862,7 +1862,7 @@ char_is_identifier_utf8(const uint8_t *b, ptrdiff_t n) {
     if (n <= 0) {
         return 0;
     } else if (*b < 0x80) {
-        return (*b == '_') || (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT ? 1 : 0);
+        return (*b == '_') || (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT ? 1 : 0);
     } else {
         return pm_encoding_utf_8_char_width(b, n);
     }
