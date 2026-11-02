@@ -2462,6 +2462,10 @@ rb_free_vm_opt_tables(void)
 static int
 vm_redefinition_check_flag(VALUE klass)
 {
+    if (RCLASS_SINGLETON_P(klass)) {
+        // BOP_NEW is registered on the singleton class of Hash
+        return RCLASS_ATTACHED_OBJECT(klass) == rb_cHash ? HASH_REDEFINED_OP_FLAG : 0;
+    }
     if (klass == rb_cInteger) return INTEGER_REDEFINED_OP_FLAG;
     if (klass == rb_cFloat)  return FLOAT_REDEFINED_OP_FLAG;
     if (klass == rb_cString) return STRING_REDEFINED_OP_FLAG;
