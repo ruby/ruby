@@ -92,7 +92,12 @@ module Ruby::Prism
         Encoding::UTF_8
       end
 
+      # The builder calls this after it reports an error. The parser gem's
+      # grammar recovers from it and keeps reporting diagnostics, but never
+      # produces the complete tree, so the tree is built to the end to collect
+      # every diagnostic and then discarded.
       def yyerror # :nodoc:
+        @yyerror = true
       end
 
       # Parses a source buffer and returns the AST.
@@ -103,7 +108,7 @@ module Ruby::Prism
         offset_cache = build_offset_cache(source)
         result = unwrap(@parser.parse(source, **prism_options), offset_cache)
 
-        build_ast(result.value, offset_cache)
+        build_ast(result.value, offset_cache) if result.success?
       ensure
         @source_buffer = nil
       end
@@ -117,7 +122,7 @@ module Ruby::Prism
         result = unwrap(@parser.parse(source, **prism_options), offset_cache)
 
         [
-          build_ast(result.value, offset_cache),
+          (build_ast(result.value, offset_cache) if result.success?),
           build_comments(result.comments, offset_cache)
         ]
       ensure
@@ -139,10 +144,9 @@ module Ruby::Prism
           end
 
         program, tokens = result.value
-        ast = build_ast(program, offset_cache) if result.success?
 
         [
-          ast,
+          (build_ast(program, offset_cache) if result.success?),
           build_comments(result.comments, offset_cache),
           build_tokens(tokens, offset_cache)
         ]
@@ -309,9 +313,12 @@ module Ruby::Prism
         end
       end
 
-      # Build the parser gem AST from the prism AST.
+      # Build the parser gem AST from the prism AST. Returns nil if the builder
+      # reported an error along the way.
       def build_ast(program, offset_cache)
-        program.accept(Compiler.new(self, offset_cache))
+        @yyerror = false
+        ast = program.accept(Compiler.new(self, offset_cache))
+        ast unless @yyerror
       end
 
       # Build the parser gem comments from the prism comments.

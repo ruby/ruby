@@ -2,9 +2,9 @@
 @setlocal EnableExtensions DisableDelayedExpansion || exit /b -1
 
 set "components=VC.Tools.x86.x64 VC.Redist.14.Latest CoreBuildTools"
-set "components=%components% Windows11SDK.26100"
+set "components=%components% Windows11SDK.26100 VC.Llvm.Clang"
 if /i "%PROCESSOR_ARCHITECTURE%" == "ARM64" (
-    set components=%components% VC.Tools.ARM64 VC.Tools.ARM64EC
+    set components=%components% VC.Tools.ARM64 VC.Tools.ARM64EC VC.14.44.17.14.ARM64
 )
 set override=--passive
 for %%I in (%components%) do (

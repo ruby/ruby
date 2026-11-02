@@ -172,7 +172,7 @@ fn emit_default_new_obj_fastpath(
     let slot_size: u64 = fastpath.slot_size.try_into().ok()?;
     let total_allocated_objects_offset: i32 = fastpath.total_allocated_objects_offset.try_into().ok()?;
 
-    let thread = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR as i32));
+    let thread = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR));
     let ractor = asm.load(Opnd::mem(64, thread, RUBY_OFFSET_THREAD_RACTOR as i32));
     let ractor_objspace_offset = unsafe { rb_zjit_runtime_offsets.ractor_objspace };
     let gc_cache = asm.load(Opnd::mem(64, ractor, ractor_objspace_offset));
@@ -249,7 +249,7 @@ fn emit_mmtk_new_obj_fastpath(
     asm.jnz(jit, miss.clone());
 
     let objspace = asm.load(objspace_const);
-    let thread = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR as i32));
+    let thread = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR));
     let ractor = asm.load(Opnd::mem(64, thread, RUBY_OFFSET_THREAD_RACTOR as i32));
     let ractor_newobj_cache_offset = unsafe { rb_zjit_runtime_offsets.ractor_newobj_cache };
     let ractor_cache = asm.load(Opnd::mem(64, ractor, ractor_newobj_cache_offset));

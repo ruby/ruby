@@ -25,6 +25,10 @@ if exist "%builddir%\." rmdir /s /q "%builddir%"
 
 where cl.exe >nul 2>&1 || call "%~dp0vssetup.cmd" >nul || exit /b 1
 pushd "%builddir%" || exit /b 1
+:: config.h.W32 defines intmax_t as a macro unless HAVE_STDINT_H, which
+:: breaks <stdint.h> that windows.h includes through intrin.h on ARM64.
+(echo #define HAVE_STDINT_H 1& type src\config.h.W32) > src\config.h.new || exit /b 1
+move /y src\config.h.new src\config.h.W32 >nul || exit /b 1
 call "%builddir%\build_w32.bat" --without-guile
 popd
 if not exist "%builddir%\WinRel\gnumake.exe" (

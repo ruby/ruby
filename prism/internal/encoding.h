@@ -1,6 +1,8 @@
 #ifndef PRISM_INTERNAL_ENCODING_H
 #define PRISM_INTERNAL_ENCODING_H
 
+#include "prism/excludes.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -90,12 +92,13 @@ size_t pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n);
 bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n);
 
 /*
- * This lookup table is referenced in both the UTF-8 encoding file and the
- * parser directly in order to speed up the default encoding processing. It is
- * used to indicate whether a character is alphabetical, alphanumeric, or
- * uppercase in unicode mappings.
+ * This lookup table indicates whether a US-ASCII character is alphabetical,
+ * alphanumeric, or uppercase. It is referenced in both the UTF-8 encoding
+ * functions and the parser directly in order to speed up processing ASCII
+ * bytes in the default encoding, since every ASCII character is encoded as
+ * itself in UTF-8.
  */
-extern const uint8_t pm_encoding_unicode_table[256];
+extern const uint8_t pm_encoding_ascii_table[256];
 
 /* These are all of the encodings that prism supports. */
 typedef enum {
