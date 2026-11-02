@@ -1655,7 +1655,7 @@ compile_anchor_node(AnchorNode* node, regex_t* reg)
     {
       int n;
       len = compile_length_tree(node->target, reg);
-      if (len < 0) return ONIGERR_PARSER_BUG;
+      if (len < 0) return len;
       r = add_opcode_rel_addr(reg, OP_PUSH_LOOK_BEHIND_NOT,
                            len + SIZE_OP_FAIL_LOOK_BEHIND_NOT);
       if (r) return r;
@@ -1685,6 +1685,8 @@ static int
 compile_length_tree(Node* node, regex_t* reg)
 {
   int len, type, r;
+
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
 
   type = NTYPE(node);
   switch (type) {
@@ -1784,6 +1786,8 @@ compile_tree(Node* node, regex_t* reg)
 {
   int n, type, len, pos, r = 0;
 
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
+
   type = NTYPE(node);
   switch (type) {
   case NT_LIST:
@@ -1810,7 +1814,7 @@ compile_tree(Node* node, regex_t* reg)
 
       do {
         len = compile_length_tree(NCAR(node), reg);
-        if (len < 0) return ONIGERR_PARSER_BUG;
+        if (len < 0) return len;
         if (IS_NOT_NULL(NCDR(node))) {
           r = add_opcode_rel_addr(reg, OP_PUSH, len + SIZE_OP_JUMP);
           if (r) break;
@@ -1965,6 +1969,8 @@ noname_disable_map(Node** plink, GroupNumRemap* map, int* counter)
   int r = 0;
   Node* node = *plink;
 
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
+
   switch (NTYPE(node)) {
   case NT_LIST:
   case NT_ALT:
@@ -2051,6 +2057,8 @@ renumber_by_map(Node* node, GroupNumRemap* map, const int num_mem)
 {
   int r = 0;
 
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
+
   switch (NTYPE(node)) {
   case NT_LIST:
   case NT_ALT:
@@ -2092,6 +2100,8 @@ static int
 numbered_ref_check(Node* node)
 {
   int r = 0;
+
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
 
   switch (NTYPE(node)) {
   case NT_LIST:
@@ -2191,6 +2201,8 @@ quantifiers_memory_node_info(Node* node)
 {
   int r = 0;
 
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
+
   switch (NTYPE(node)) {
   case NT_LIST:
   case NT_ALT:
@@ -2198,6 +2210,7 @@ quantifiers_memory_node_info(Node* node)
       int v;
       do {
         v = quantifiers_memory_node_info(NCAR(node));
+        if (v < 0) return v;
         if (v > r) r = v;
       } while (v >= 0 && IS_NOT_NULL(node = NCDR(node)));
     }
@@ -2261,6 +2274,8 @@ get_min_match_length(Node* node, OnigDistance *min, ScanEnv* env)
 {
   OnigDistance tmin;
   int r = 0;
+
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
 
   *min = 0;
   switch (NTYPE(node)) {
@@ -2394,6 +2409,8 @@ get_max_match_length(Node* node, OnigDistance *max, ScanEnv* env)
   OnigDistance tmax;
   int r = 0;
 
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
+
   *max = 0;
   switch (NTYPE(node)) {
   case NT_LIST:
@@ -2523,6 +2540,8 @@ get_char_length_tree1(Node* node, regex_t* reg, int* len, int level)
 {
   int tlen;
   int r = 0;
+
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
 
   level++;
   *len = 0;
@@ -2850,6 +2869,8 @@ get_head_value_node(Node* node, int exact, regex_t* reg)
 {
   Node* n = NULL_NODE;
 
+  CHECK_STACK_NODE_RETURN(node, NULL_NODE);
+
   switch (NTYPE(node)) {
   case NT_BREF:
   case NT_ALT:
@@ -2940,6 +2961,8 @@ check_type_tree(Node* node, int type_mask, int enclose_mask, int anchor_mask)
 {
   int type, r = 0;
 
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
+
   type = NTYPE(node);
   if ((NTYPE2BIT(type) & type_mask) == 0)
     return 1;
@@ -2994,6 +3017,8 @@ subexp_inf_recursive_check(Node* node, ScanEnv* env, int head)
 {
   int type;
   int r = 0;
+
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
 
   type = NTYPE(node);
   switch (type) {
@@ -3079,6 +3104,8 @@ subexp_inf_recursive_check_trav(Node* node, ScanEnv* env)
   int type;
   int r = 0;
 
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
+
   type = NTYPE(node);
   switch (type) {
   case NT_LIST:
@@ -3113,6 +3140,7 @@ subexp_inf_recursive_check_trav(Node* node, ScanEnv* env)
       if (IS_ENCLOSE_RECURSION(en)) {
         SET_ENCLOSE_STATUS(node, NST_MARK1);
         r = subexp_inf_recursive_check(en->target, env, 1);
+        if (r < 0) return r;
         if (r > 0) return ONIGERR_NEVER_ENDING_RECURSION;
         CLEAR_ENCLOSE_STATUS(node, NST_MARK1);
       }
@@ -3133,11 +3161,15 @@ subexp_recursive_check(Node* node)
 {
   int r = 0;
 
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
+
   switch (NTYPE(node)) {
   case NT_LIST:
   case NT_ALT:
     do {
-      r |= subexp_recursive_check(NCAR(node));
+      int ret = subexp_recursive_check(NCAR(node));
+      if (ret < 0) return ret;
+      r |= ret;
     } while (IS_NOT_NULL(node = NCDR(node)));
     break;
 
@@ -3161,7 +3193,7 @@ subexp_recursive_check(Node* node)
 
   case NT_CALL:
     r = subexp_recursive_check(NCALL(node)->target);
-    if (r != 0) SET_CALL_RECURSION(node);
+    if (r > 0) SET_CALL_RECURSION(node);
     break;
 
   case NT_ENCLOSE:
@@ -3191,6 +3223,8 @@ subexp_recursive_check_trav(Node* node, ScanEnv* env)
 
   int type;
   int r = 0;
+
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
 
   type = NTYPE(node);
   switch (type) {
@@ -3236,11 +3270,13 @@ subexp_recursive_check_trav(Node* node, ScanEnv* env)
         if (IS_ENCLOSE_CALLED(en)) {
           SET_ENCLOSE_STATUS(node, NST_MARK1);
           r = subexp_recursive_check(en->target);
-          if (r != 0) SET_ENCLOSE_STATUS(node, NST_RECURSION);
           CLEAR_ENCLOSE_STATUS(node, NST_MARK1);
+          if (r < 0) return r;
+          if (r != 0) SET_ENCLOSE_STATUS(node, NST_RECURSION);
         }
       }
       r = subexp_recursive_check_trav(en->target, env);
+      if (r < 0) return r;
       if (IS_ENCLOSE_CALLED(en))
         r |= FOUND_CALLED_NODE;
     }
@@ -3258,6 +3294,8 @@ setup_subexp_call(Node* node, ScanEnv* env)
 {
   int type;
   int r = 0;
+
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
 
   type = NTYPE(node);
   switch (type) {
@@ -3982,6 +4020,8 @@ setup_tree(Node* node, regex_t* reg, int state, ScanEnv* env)
 {
   int type;
   int r = 0;
+
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
 
 restart:
   type = NTYPE(node);
@@ -4981,6 +5021,8 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
 {
   int type;
   int r = 0;
+
+  CHECK_STACK_NODE_RETURN(node, ONIGERR_PARSE_DEPTH_LIMIT_OVER);
 
   clear_node_opt_info(opt);
   set_bound_node_opt_info(opt, &env->mmd);

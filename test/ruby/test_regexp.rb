@@ -2349,6 +2349,23 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_deep_nesting_on_small_stack
+    # The parser and the compiler recurse as deep as the pattern nests, and
+    # along chains of subexpression calls.  On the small machine stack of a
+    # fiber, they should give up with RegexpError instead of overflowing it.
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      nested = "(" * 4000 + "a" + ")" * 4000
+      calls = (1...3000).map {|i| "(?<g#{i}>\\g<g#{i + 1}>)"}.join + "(?<g3000>a)"
+      [nested, calls].each do |src|
+        3.times do
+          result = Fiber.new { Regexp.new(src) rescue $! }.resume
+          assert_include([Regexp, RegexpError], result.class)
+        end
+      end
+    end;
+  end
+
   def test_match_cache_with_range_repeat
     pre = ->(n) {"a" * n + "!"}
     [

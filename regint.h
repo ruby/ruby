@@ -182,6 +182,12 @@
 # define onig_st_is_member                   st_is_member
 
 # define USE_UPPER_CASE_TABLE
+
+/* Threads and fibers run on small machine stacks (1 MB and 512 KB by
+   default).  Ruby turns a stack overflow into SystemStackError by jumping
+   out of its signal handler, which leaks what Onigmo has allocated and can
+   leave a lock held (e.g. in malloc), so stop the recursions before that. */
+# define USE_STACK_CHECK
 #else /* RUBY */
 
 # define CHECK_INTERRUPT_IN_MATCH_AT
@@ -207,6 +213,19 @@
 # define onig_st_is_member              st_is_member
 
 #endif /* RUBY */
+
+/* The parser and the compiler recurse as deep as the pattern nests (and as
+   long as chains of subexpression calls run).  Each recursive function
+   checks the machine stack on entry.  (The matcher does not recurse.) */
+#ifdef USE_STACK_CHECK
+# define STACK_EXHAUSTED_P()  ruby_stack_check()
+# define CHECK_STACK_RETURN(err) do {\
+  if (STACK_EXHAUSTED_P()) return (err);\
+} while (0)
+#else
+# define STACK_EXHAUSTED_P()  0
+# define CHECK_STACK_RETURN(err) do { } while (0)
+#endif
 
 #define STATE_CHECK_STRING_THRESHOLD_LEN             7
 #define STATE_CHECK_BUFF_MAX_SIZE               0x4000
