@@ -124,6 +124,8 @@
 # endif
 #endif /* RUBY */
 
+/* A thread-local variable (the parse tree arena).  Ruby's configure checks
+   RB_THREAD_LOCAL_SPECIFIER only for pthread, so Windows gets its own. */
 #if defined(RB_THREAD_LOCAL_SPECIFIER)
 # define ONIG_THREAD_LOCAL RB_THREAD_LOCAL_SPECIFIER
 #elif defined(_MSC_VER)

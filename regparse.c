@@ -139,9 +139,56 @@ onig_set_parse_depth_limit(unsigned int depth)
 }
 
 
+/* ONIG_DISABLE_NODE_ARENA turns the arena off, e.g. for fuzzing: with it,
+   ASan can see a node or a BBuf freed twice, or used after being freed. */
+#if defined(ONIG_THREAD_LOCAL) && !defined(ONIG_DISABLE_NODE_ARENA)
+# define USE_NODE_ARENA
+/* the arena of the parse tree being built by this thread, if any */
+static ONIG_THREAD_LOCAL OnigNodeArena* current_node_arena;
+#endif
+
+/* a BBuf taken while an arena is active, on the list of that arena */
+struct ArenaBBuf {
+  struct ArenaBBuf* next;
+  BBuf bbuf;
+};
+
+/* Allocate a BBuf, but not its buffer: p is still allocated and grown by
+   the BBUF_* macros as usual. */
+static BBuf*
+bbuf_new(void)
+{
+#ifdef USE_NODE_ARENA
+  OnigNodeArena* arena = current_node_arena;
+  if (IS_NOT_NULL(arena)) {
+    ArenaBBuf* ab = (ArenaBBuf* )xmalloc(sizeof(ArenaBBuf));
+    if (IS_NULL(ab)) return NULL;
+    ab->bbuf.p = NULL;
+    ab->bbuf.used = ab->bbuf.alloc = 0;
+    ab->next = arena->bbufs;
+    arena->bbufs = ab;
+    return &ab->bbuf;
+  }
+#endif
+  return (BBuf* )xmalloc(sizeof(BBuf));
+}
+
 static void
 bbuf_free(BBuf* bbuf)
 {
+#ifdef USE_NODE_ARENA
+  if (IS_NOT_NULL(current_node_arena)) {
+    /* The BBuf stays on the arena until onig_node_arena_end(), but its buffer
+       goes now so that discarded ranges do not pile up.  Freeing it again
+       is then harmless, and a later use finds an empty buffer. */
+    if (IS_NOT_NULL(bbuf)) {
+      xfree(bbuf->p);
+      bbuf->p = NULL;
+      bbuf->used = bbuf->alloc = 0;
+    }
+    return ;
+  }
+#endif
   if (IS_NOT_NULL(bbuf)) {
     xfree(bbuf->p);
     xfree(bbuf);
@@ -154,7 +201,7 @@ bbuf_clone(BBuf** rto, BBuf* from)
   int r;
   BBuf *to;
 
-  *rto = to = (BBuf* )xmalloc(sizeof(BBuf));
+  *rto = to = bbuf_new();
   CHECK_NULL_RETURN_MEMERR(to);
   r = BBUF_INIT(to, from->alloc);
   if (r != 0) return r;
@@ -1206,12 +1253,21 @@ scan_env_set_mem_node(ScanEnv* env, int num, Node* node)
 }
 
 
-extern void
-onig_node_free(Node* node)
-{
- start:
-  if (IS_NULL(node)) return ;
+/* chunks start small for short patterns and double up to the maximum */
+#define NODE_ARENA_FIRST_CHUNK_SIZE   16
+#define NODE_ARENA_MAX_CHUNK_SIZE    256
 
+struct NodeArenaChunk {
+  struct NodeArenaChunk* next;
+  int used;
+  int size;
+  Node nodes[1]; /* actually size */
+};
+
+/* Free what a node owns, but not the node itself nor its children. */
+static void
+node_free_body(Node* node)
+{
   switch (NTYPE(node)) {
   case NT_STR:
     if (NSTR(node)->capa != 0 &&
@@ -1220,6 +1276,100 @@ onig_node_free(Node* node)
     }
     break;
 
+  case NT_CCLASS:
+    bbuf_free(NCCLASS(node)->mbuf);
+    break;
+
+  case NT_BREF:
+    xfree(NBREF(node)->back_dynamic);
+    break;
+  }
+}
+
+#ifdef USE_NODE_ARENA
+/* Like node_free_body(), but leaves the node valid (and empty), so that
+   freeing it again or using it later is harmless. */
+static void
+node_clear_body(Node* node)
+{
+  switch (NTYPE(node)) {
+  case NT_STR:
+    node_free_body(node);
+    NSTR(node)->s = NSTR(node)->end = NSTR(node)->buf;
+    NSTR(node)->capa = 0;
+    break;
+
+  case NT_CCLASS:
+    node_free_body(node);
+    NCCLASS(node)->mbuf = NULL;
+    break;
+
+  case NT_BREF:
+    node_free_body(node);
+    NBREF(node)->back_dynamic = NULL;
+    NBREF(node)->back_num = 0;
+    break;
+  }
+}
+#endif
+
+extern void
+onig_node_arena_begin(OnigNodeArena* arena)
+{
+  arena->chunks = NULL;
+  arena->bbufs = NULL;
+#ifdef USE_NODE_ARENA
+  arena->prev = current_node_arena;
+  current_node_arena = arena;
+#else
+  arena->prev = NULL;
+#endif
+}
+
+extern void
+onig_node_arena_end(OnigNodeArena* arena)
+{
+  NodeArenaChunk* chunk = arena->chunks;
+  while (IS_NOT_NULL(chunk)) {
+    NodeArenaChunk* next = chunk->next;
+    int i;
+    for (i = 0; i < chunk->used; i++)
+      node_free_body(&chunk->nodes[i]);
+    xfree(chunk);
+    chunk = next;
+  }
+  arena->chunks = NULL;
+
+  /* node_free_body() above did not free them: the arena is still active */
+  while (IS_NOT_NULL(arena->bbufs)) {
+    ArenaBBuf* ab = arena->bbufs;
+    arena->bbufs = ab->next;
+    xfree(ab->bbuf.p);
+    xfree(ab);
+  }
+#ifdef USE_NODE_ARENA
+  current_node_arena = arena->prev;
+#endif
+}
+
+extern void
+onig_node_free(Node* node)
+{
+#ifdef USE_NODE_ARENA
+  if (IS_NOT_NULL(current_node_arena)) {
+    /* The node stays on the arena until onig_node_arena_end(); only what it
+       owns itself goes now, so that discarded nodes do not pile up.  Its
+       children are left alone: a mistake in who owns them must not make
+       us walk into a subtree still in use. */
+    if (IS_NOT_NULL(node)) node_clear_body(node);
+    return ;
+  }
+#endif
+
+ start:
+  if (IS_NULL(node)) return ;
+
+  switch (NTYPE(node)) {
   case NT_LIST:
   case NT_ALT:
     onig_node_free(NCAR(node));
@@ -1232,14 +1382,6 @@ onig_node_free(Node* node)
     }
     break;
 
-  case NT_CCLASS:
-    {
-      CClassNode* cc = NCCLASS(node);
-
-      bbuf_free(cc->mbuf);
-    }
-    break;
-
   case NT_QTFR:
     onig_node_free(NQTFR(node)->target);
     break;
@@ -1248,12 +1390,12 @@ onig_node_free(Node* node)
     onig_node_free(NENCLOSE(node)->target);
     break;
 
-  case NT_BREF:
-    xfree(NBREF(node)->back_dynamic);
-    break;
-
   case NT_ANCHOR:
     onig_node_free(NANCHOR(node)->target);
+    break;
+
+  default:
+    node_free_body(node);
     break;
   }
 
@@ -1264,6 +1406,30 @@ static Node*
 node_new(void)
 {
   Node* node;
+
+#ifdef USE_NODE_ARENA
+  OnigNodeArena* arena = current_node_arena;
+  if (IS_NOT_NULL(arena)) {
+    NodeArenaChunk* chunk = arena->chunks;
+    if (IS_NULL(chunk) || chunk->used == chunk->size) {
+      int size = IS_NULL(chunk) ? NODE_ARENA_FIRST_CHUNK_SIZE
+                 : chunk->size < NODE_ARENA_MAX_CHUNK_SIZE ? chunk->size * 2
+                 : chunk->size;
+      chunk = (NodeArenaChunk* )xmalloc(offsetof(NodeArenaChunk, nodes)
+                                        + sizeof(Node) * (size_t )size);
+      if (IS_NULL(chunk)) return NULL_NODE;
+      chunk->next = arena->chunks;
+      chunk->used = 0;
+      chunk->size = size;
+      arena->chunks = chunk;
+    }
+    node = &chunk->nodes[chunk->used++];
+    /* zeroed so that onig_node_arena_end() can look at a node even if its
+       constructor failed halfway (type 0 is NT_STR, which then owns nothing) */
+    xmemset(node, 0, sizeof(Node));
+    return node;
+  }
+#endif
 
   node = (Node* )xmalloc(sizeof(Node));
   /* xmemset(node, 0, sizeof(Node)); */
@@ -1808,7 +1974,7 @@ new_code_range(BBuf** pbuf)
   OnigCodePoint n;
   BBuf* bbuf;
 
-  bbuf = *pbuf = (BBuf* )xmalloc(sizeof(BBuf));
+  bbuf = *pbuf = bbuf_new();
   CHECK_NULL_RETURN_MEMERR(*pbuf);
   r = BBUF_INIT(*pbuf, INIT_MULTI_BYTE_RANGE_SIZE);
   if (r) return r;
