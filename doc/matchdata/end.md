@@ -20,7 +20,7 @@ match.end(2)     # => 3  # Character offset.
 match.byteend(2) # => 9  # Byte offset.
 ```
 
-With string or symbol argument name given, returns the offset of the end for the named match:
+With string or symbol argument `name` given, returns the offset of the end for the named match:
 
 ```ruby
 regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
