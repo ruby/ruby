@@ -4198,7 +4198,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
             base = 10;
         }
     }
-    else if (len == 1 || !(flags & RB_INT_PARSE_PREFIX)) {
+    else if (len == 0 || len == 1 || !(flags & RB_INT_PARSE_PREFIX)) {
         /* no prefix */
     }
     else if (base == 2) {
