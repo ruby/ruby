@@ -431,6 +431,24 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_performance_warning('Hash', '[]=')
   end
 
+  def test_hash_new
+    assert_equal({}, Hash.new)
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      class << Hash
+        undef new
+        def new(*) = :redefined
+      end
+      assert_equal(:redefined, Hash.new)
+      assert_equal(:redefined, Hash.new(capacity: 3))
+    end;
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      Hash.singleton_class.prepend(Module.new { def new(*) = :prepended })
+      assert_equal(:prepended, Hash.new)
+    end;
+  end
+
   class MyObj
     def ==(other)
       true
