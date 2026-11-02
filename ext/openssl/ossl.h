@@ -102,9 +102,11 @@ void ossl_want_uninitialized(VALUE self, const rb_data_type_t *type);
  */
 #ifndef HAVE_RB_LEN_T /* Ruby 4.1 */
 typedef long rb_len_t;
+typedef unsigned long rb_ulen_t;
 # define SIZEOF_RB_LEN_T SIZEOF_LONG
 # define RB_LEN_MAX LONG_MAX
 # define PRIdLEN "ld"
+# define FIX2LEN FIX2LONG
 # define NUM2LEN NUM2LONG
 # define LEN2NUM LONG2NUM
 static inline long
