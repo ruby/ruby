@@ -1897,6 +1897,50 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_splat_to_lead_and_rest
+    # Taking leading parameters from a splat allocates only the rest array, as in the interpreter
+    result = [
+      [1, 1, 1],
+      [1, [2, 3]], [1, 2, [3]], [1, 2, []], [1, :opt, []],
+      [1, [2, 3], Array],
+      [[1, 2, 3], [2, 3, 4]],
+      [(1..20).to_a, (2..20).to_a + [4]],
+    ]
+    assert_compiles(<<~RUBY, result:, no_send_fallbacks: true)
+      class SubArray < Array; end
+      def take_rest(a, *r) = r
+      def take_opt_rest(a, b = :opt, *r) = r
+      def lead_rest(a, *r) = [a, r]
+      def lead_opt_rest(a, b = :opt, *r) = [a, b, r]
+      def lead_rest_class(a, *r) = [a, r, r.class]
+      def push_rest(a, *r) = r << 4
+
+      def allocations
+        allocated = GC.stat(:total_allocated_objects)
+        yield
+        GC.stat(:total_allocated_objects) - allocated
+      end
+
+      def calls
+        args = [1, 2, 3]
+        two = [1, 2]
+        one = [1]
+        big = (1..20).to_a
+        sub = SubArray[1, 2, 3]
+        [
+          [allocations { take_rest(*args) }, allocations { take_opt_rest(*args) }, allocations { take_opt_rest(*one) }],
+          lead_rest(*args), lead_opt_rest(*args), lead_opt_rest(*two), lead_opt_rest(*one),
+          lead_rest_class(*sub),
+          [args, push_rest(*args)],
+          [big, push_rest(*big)],
+        ]
+      end
+
+      calls # compile everything first
+      calls
+    RUBY
+  end
+
   def test_byteslice_sp_invalidation
     assert_compiles(<<~'RUBY', result: 'ok', no_send_fallbacks: true)
       "okng".itself.byteslice(0, 2)

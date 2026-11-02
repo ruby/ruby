@@ -8070,13 +8070,19 @@ fn gen_send_iseq(
 
         let rest_param_array = if splat_call {
             let non_rest_arg_count = argc - 1;
-            // We start by dupping the array because someone else might have
-            // a reference to it. This also normalizes to an ::Array instance.
             let array = asm.stack_opnd(0);
-            let array = asm.ccall(
-                rb_ary_dup as *const u8,
-                vec![array],
-            );
+            let array = if non_rest_arg_count < required_num + opt_num {
+                // The slice taken below is a new ::Array, so the splat array
+                // needs no dup.
+                asm.load(array)
+            } else {
+                // We start by dupping the array because someone else might have
+                // a reference to it. This also normalizes to an ::Array instance.
+                asm.ccall(
+                    rb_ary_dup as *const u8,
+                    vec![array],
+                )
+            };
             asm.stack_pop(1); // Pop array after ccall to use a register for passing it.
 
             // This is the end stack state of all `non_rest_arg_count` situations below
