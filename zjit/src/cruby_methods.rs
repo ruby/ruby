@@ -26,6 +26,8 @@ unsafe extern "C" {
 pub struct Annotations {
     cfuncs: HashMap<*mut c_void, FnProperties>,
     builtin_funcs: HashMap<*mut c_void, FnProperties>,
+    /// Builtin function called by the stock `Hash#initialize`
+    hash_initialize: *mut c_void,
 }
 
 /// Runtime behaviors of C functions that implement a Ruby method
@@ -73,6 +75,14 @@ impl Annotations {
         self.builtin_funcs.get(&func_ptr).copied()
     }
 
+    /// Whether the method is the stock `Hash#initialize`
+    pub fn is_stock_hash_initialize(&self, cme: *const rb_callable_method_entry_t) -> bool {
+        unsafe {
+            get_cme_def_type(cme) == VM_METHOD_TYPE_ISEQ
+                && iseq_builtin_func_ptr(get_def_iseq_ptr((*cme).def)) == Some(self.hash_initialize)
+        }
+    }
+
     pub fn get_builtin_return_type(&self, bf: *const rb_builtin_function) -> Type {
         self.get_builtin_properties(bf).map(|p| p.return_type).unwrap_or(types::BasicObject)
     }
@@ -97,6 +107,11 @@ fn annotate_c_method(props_map: &mut HashMap<*mut c_void, FnProperties>, class: 
 /// Look up a method and find its builtin function pointer by parsing its ISEQ
 /// We currently only support methods with exactly one invokebuiltin instruction
 fn annotate_builtin_method(props_map: &mut HashMap<*mut c_void, FnProperties>, class: VALUE, method_name: &'static str, props: FnProperties) {
+    props_map.insert(builtin_method_func_ptr(class, method_name), props);
+}
+
+/// Find the builtin function pointer of a stock ISEQ method
+fn builtin_method_func_ptr(class: VALUE, method_name: &'static str) -> *mut c_void {
     unsafe {
         let method_id = rb_intern2(method_name.as_ptr().cast(), method_name.len().try_into().unwrap());
         let method = rb_method_entry_at(class, method_id);
@@ -122,12 +137,23 @@ fn annotate_builtin_method(props_map: &mut HashMap<*mut c_void, FnProperties>, c
                 method_name);
         }
 
+        iseq_builtin_func_ptr(iseq).unwrap_or_else(|| {
+            panic!("Expected exactly one invokebuiltin instruction in ISEQ for {}#{}",
+                std::ffi::CStr::from_ptr(rb_class2name(class)).to_str().unwrap_or("?"),
+                method_name)
+        })
+    }
+}
+
+/// Return the builtin function pointer of an ISEQ if it has exactly one invokebuiltin instruction
+fn iseq_builtin_func_ptr(iseq: IseqPtr) -> Option<*mut c_void> {
+    unsafe {
         // Get the size of the ISEQ in instruction units
         let encoded_size = rb_iseq_encoded_size(iseq);
 
         // Scan through the ISEQ to find invokebuiltin instructions
         let mut insn_idx: u32 = 0;
-        let mut func_ptr = std::ptr::null_mut::<c_void>();
+        let mut func_ptr = None;
 
         while insn_idx < encoded_size {
             // Get the PC for this instruction index
@@ -143,21 +169,17 @@ fn annotate_builtin_method(props_map: &mut HashMap<*mut c_void, FnProperties>, c
                 let bf_value = *pc.add(1);
                 let bf_ptr: *const rb_builtin_function = bf_value.as_ptr();
 
-                if func_ptr.is_null() {
-                    func_ptr = (*bf_ptr).func_ptr as *mut c_void;
-                } else {
-                    panic!("Multiple invokebuiltin instructions found in ISEQ for {}#{}",
-                        std::ffi::CStr::from_ptr(rb_class2name(class)).to_str().unwrap_or("?"),
-                        method_name);
+                if func_ptr.is_some() {
+                    return None;
                 }
+                func_ptr = Some((*bf_ptr).func_ptr as *mut c_void);
             }
 
             // Move to the next instruction using the proper length
             insn_idx = insn_idx.saturating_add(rb_insn_len(VALUE(opcode as usize)).try_into().unwrap());
         }
 
-        // Only insert the properties if its iseq has exactly one invokebuiltin instruction
-        props_map.insert(func_ptr, props);
+        func_ptr
     }
 }
 
@@ -333,6 +355,7 @@ pub fn init() -> Annotations {
     Annotations {
         cfuncs: std::mem::take(cfuncs),
         builtin_funcs: std::mem::take(builtin_funcs),
+        hash_initialize: builtin_method_func_ptr(unsafe { rb_cHash }, "initialize"),
     }
 }
 

@@ -670,8 +670,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         }
         Insn::ArrayPop { array, state } => gen_array_pop(asm, opnd!(array), &function.frame_state(*state)),
         Insn::ArrayLength { array } => gen_array_length(asm, opnd!(array)),
-        Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, function, opnd!(val), &function.frame_state(*state)),
+        Insn::ObjectAlloc { val, state, .. } => gen_object_alloc(jit, asm, function, opnd!(val), &function.frame_state(*state)),
         &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(jit, asm, function, class, &function.frame_state(state)),
+        &Insn::HashAlloc { capa, state } => gen_hash_alloc(jit, asm, function, capa, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(jit, asm, function, *val, opnd!(val), *chilled, &function.frame_state(*state)),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, function, opnds!(strings), &function.frame_state(*state)),
         Insn::StringCoderange { string, cached } => gen_string_coderange(jit, asm, opnd!(string), opnd!(cached)),
@@ -2691,20 +2692,7 @@ fn gen_new_hash(
     state: &FrameState,
 ) -> lir::Opnd {
     if elements.is_empty() {
-        gen_prepare_leaf_call_with_gc(asm, state);
-
-        let mut flags = VALUE(0);
-        let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags, 0) };
-        let klass = unsafe { rb_cHash };
-
-        gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.into(), klass,
-            |asm, hash| {
-                asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
-                asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_AR_HINT), Opnd::UImm(0));
-            },
-            |asm| {
-                asm_ccall!(asm, rb_hash_new,)
-            })
+        gen_hash_alloc(jit, asm, function, 0, state)
     // TODO: we should use effects_of for this (we would need to add it).
     } else if sym_keys {
         // Symbols hash and compare without running Ruby and those operations never raise so
@@ -2738,6 +2726,24 @@ fn gen_new_hash(
         let argv = gen_push_opnds(jit, asm, &elements);
         asm_ccall!(asm, rb_hash_new_with_bulk_insert, elements.len().into(), argv)
     }
+}
+
+/// Allocate an empty Hash with room for `capa` entries, which must fit an AR table
+fn gen_hash_alloc(jit: &mut JITState, asm: &mut Assembler, function: &Function, capa: usize, state: &FrameState) -> lir::Opnd {
+    gen_prepare_leaf_call_with_gc(asm, state);
+
+    let mut flags = VALUE(0);
+    let alloc_size = unsafe { rb_zjit_hash_new_size(&mut flags, capa) };
+    let klass = unsafe { rb_cHash };
+
+    gc_fastpath::gc_fastpath_new_obj(jit, asm, function, state, alloc_size, flags.into(), klass,
+        |asm, hash| {
+            asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_IFNONE), Qnil.into());
+            asm.store(Opnd::mem(VALUE_BITS, hash, RUBY_OFFSET_RHASH_AR_HINT), Opnd::UImm(0));
+        },
+        |asm| {
+            asm_ccall!(asm, rb_hash_new_capa, capa.into())
+        })
 }
 
 /// Compile a new range instruction

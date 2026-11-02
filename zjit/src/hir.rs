@@ -337,6 +337,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                     BOP_DEFAULT  => write!(f, "BOP_DEFAULT")?,
                     BOP_PACK     => write!(f, "BOP_PACK")?,
                     BOP_INCLUDE_P => write!(f, "BOP_INCLUDE_P")?,
+                    BOP_NEW      => write!(f, "BOP_NEW")?,
                     _ => write!(f, "{bop}")?,
                 }
                 write!(f, ")")
@@ -1078,11 +1079,15 @@ pub enum Insn {
     /// This can:
     /// * raise an exception if `val` is not a class
     /// * run arbitrary code if `val` is a class with a custom allocator
-    ObjectAlloc { val: InsnId, state: InsnId },
+    /// `cd` is the call data of the `new` call that `opt_new` specializes.
+    ObjectAlloc { val: InsnId, cd: *const rb_call_data, state: InsnId },
     /// Allocate an instance of the `val` class without calling `#initialize` on it.
     /// This requires that `class` has the default allocator (for example via `IsDefaultNew`).
     /// This won't raise or run arbitrary code because `class` has the default allocator.
     ObjectAllocClass { class: VALUE, state: InsnId },
+    /// Allocate an empty `Hash` with room for `capa` entries without calling `#initialize` on it,
+    /// like `rb_hash_alloc_capa`. `capa` is at most `RHASH_AR_TABLE_MAX_SIZE`.
+    HashAlloc { capa: usize, state: InsnId },
 
     /// Check if the value is truthy and "return" a C boolean. In reality, we will likely fuse this
     /// with IfTrue/IfFalse in the backend to generate jcc.
@@ -1509,7 +1514,7 @@ macro_rules! for_each_operand_impl {
             | Insn::Defined { v: val, state, .. }
             | Insn::StringIntern { val, state }
             | Insn::StringCopy { val, state, .. }
-            | Insn::ObjectAlloc { val, state }
+            | Insn::ObjectAlloc { val, state, .. }
             | Insn::GuardType { val, state, .. }
             | Insn::GuardBitEquals { val, state, .. }
             | Insn::GuardAnyBitSet { val, state, .. }
@@ -1732,6 +1737,7 @@ macro_rules! for_each_operand_impl {
             | Insn::GetSpecialSymbol { state, .. }
             | Insn::GetSpecialNumber { state, .. }
             | Insn::ObjectAllocClass { state, .. }
+            | Insn::HashAlloc { state, .. }
             | Insn::SideExit { state, .. } => {
                 $visit_one!(*state);
             }
@@ -1872,6 +1878,7 @@ impl Insn {
             Insn::HashDup { .. } => allocates,
             Insn::ObjectAlloc { .. } => effects::Any,
             Insn::ObjectAllocClass { .. } => allocates,
+            Insn::HashAlloc { .. } => allocates,
             Insn::Test { .. } => effects::Empty,
             Insn::IsDefaultNew { .. } => effects::Any,
             Insn::IsBitEqual { .. } => effects::Empty,
@@ -2239,6 +2246,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 let class_name = get_class_name(class);
                 write!(f, "ObjectAllocClass {class_name}:{}", class.print(self.ptr_map))
             }
+            Insn::HashAlloc { capa, .. } => { write!(f, "HashAlloc {capa}") }
             Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
             Insn::StringConcat { strings, .. } => {
                 write!(f, "StringConcat")?;
@@ -3886,6 +3894,7 @@ impl Function {
             Insn::NewRangeFixnum { .. } => types::RangeExact,
             Insn::ObjectAlloc { .. } => types::HeapBasicObject,
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
+            Insn::HashAlloc { .. } => types::HashExact,
             Insn::CCallWithFrame(insn) => insn.return_type,
             Insn::CCall { return_type, .. } => *return_type,
             Insn::CCallVariadic(insn) => insn.return_type,
@@ -4812,6 +4821,70 @@ impl Function {
         self.count_send(block, send, counter);
     }
 
+    /// Like the Hash branch of opt_new in the interpreter, return the capacity to allocate for
+    /// `Hash.new` at this opt_new: a Fixnum `capacity:` keyword, otherwise 0. Return None when the
+    /// capacity is not known at compile time or the arguments are not simple keywords.
+    fn hash_new_capacity(&self, cd: *const rb_call_data, state: InsnId) -> Option<i64> {
+        let ci = unsafe { (*cd).ci };
+        let flags = unsafe { rb_vm_ci_flag(ci) };
+        if flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_FORWARDING) != 0 {
+            return None;
+        }
+        let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
+        let kw_len = if kwarg.is_null() { 0 } else { (unsafe { get_cikw_keyword_len(kwarg) }) as usize };
+        let capacity = unsafe { rb_id2sym(ID!(capacity)) };
+        let Some(idx) = (0..kw_len).find(|&idx| unsafe { get_cikw_keywords_idx(kwarg, idx as i32) } == capacity) else {
+            return Some(0);
+        };
+        // Keyword values are on top of the stack, in the order of the keywords.
+        let value_type = self.type_of(self.frame_state(state).stack_topn(kw_len - 1 - idx).ok()?);
+        match value_type.fixnum_value() {
+            Some(capa) => Some(capa),
+            None if !value_type.could_be(types::Fixnum) => Some(0),
+            None => None,
+        }
+    }
+
+    /// Remove the `#initialize` send that `opt_new` made for `Hash.new` when the stock `Hash#initialize`
+    /// would leave the new hash unchanged: no positional arguments, no block, and no keyword other than
+    /// a `capacity:` that the allocated hash already has room for. `cme` is the visible lookup result.
+    fn try_remove_hash_initialize(&mut self, block: BlockId, send: InsnId, recv: InsnId, cme: *const rb_callable_method_entry_t, has_block: bool, state: InsnId) -> bool {
+        let &Insn::HashAlloc { capa: alloc_capa, state: alloc_state } = self.find_ref(recv) else { return false };
+        let Insn::Send { cd, args, .. } = self.find(send) else { return false };
+        // Only the send right after the opt_new that made this hash is its `#initialize` call.
+        // Any other send, such as `Hash.new.initialize` or a later reinitialization, stays.
+        let (send_frame, alloc_frame) = (self.frame_state(state), self.frame_state(alloc_state));
+        let opt_new_len = unsafe { rb_insn_len(VALUE(YARVINSN_opt_new as usize)) } as YarvInsnIdx;
+        if send_frame.iseq != alloc_frame.iseq || send_frame.caller != alloc_frame.caller
+            || send_frame.insn_idx != alloc_frame.insn_idx + opt_new_len || has_block {
+            return false;
+        }
+        let ci = unsafe { (*cd).ci };
+        let flags = unsafe { rb_vm_ci_flag(ci) };
+        if unsafe { rb_vm_ci_mid(ci) } != ID!(initialize)
+            || flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_FORWARDING) != 0 {
+            return false;
+        }
+        let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
+        let kw_len = if kwarg.is_null() { 0 } else { (unsafe { get_cikw_keyword_len(kwarg) }) as usize };
+        match (args.len(), kw_len) {
+            (0, 0) => {}
+            (1, 1) => {
+                let capacity = unsafe { rb_id2sym(ID!(capacity)) };
+                let Some(capa) = self.type_of(args[0]).fixnum_value() else { return false };
+                if unsafe { get_cikw_keywords_idx(kwarg, 0) } != capacity || capa > alloc_capa as i64 {
+                    return false;
+                }
+            }
+            _ => return false,
+        }
+        if !ZJITState::get_method_annotations().is_stock_hash_initialize(cme) {
+            return false;
+        }
+        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: unsafe { rb_cHash }, method: ID!(initialize), cme }, state });
+        true
+    }
+
     pub fn try_inline_object_alloc(&mut self, block: BlockId, recv: InsnId, state: InsnId) -> Option<InsnId> {
         let recv_type = self.type_of(recv);
         if recv_type.is_subtype(types::Class) {
@@ -5037,6 +5110,10 @@ impl Function {
                         }
                         // Guard the lookup entry: re-aliasing invalidates it, not the resolved target.
                         let lookup_cme = cme;
+                        if self.try_remove_hash_initialize(block, insn_id, recv, lookup_cme, has_block, state) {
+                            self.make_equal_to(insn_id, recv);
+                            continue;
+                        }
                         let mut def_type = unsafe { get_cme_def_type(cme) };
                         while def_type == VM_METHOD_TYPE_ALIAS {
                             cme = unsafe { rb_aliased_callable_method_entry(cme) };
@@ -5583,6 +5660,16 @@ impl Function {
                     }
                     &Insn::IsDefaultNew { val, cd, state } if self.type_of(val).ruby_object_known() => {
                         let class = self.type_of(val).ruby_object().unwrap();
+                        // Like opt_new in the interpreter, take the fast path for an unredefined Hash.new.
+                        // The fast path then allocates the Hash with HashAlloc instead of calling Hash.new.
+                        if class == unsafe { rb_cHash }
+                            && self.hash_new_capacity(cd, state).is_some()
+                            && self.assume_bop_not_redefined(block, HASH_REDEFINED_OP_FLAG, BOP_NEW, state) {
+                            let replacement = self.push_insn(block, Insn::Const { val: Const::CBool(true) });
+                            self.insn_types[replacement] = self.infer_type(replacement);
+                            self.make_equal_to(insn_id, replacement);
+                            continue;
+                        }
                         let cd_owner = self.frame_state_iseq(state);
                         let cme = unsafe { rb_zjit_vm_search_method(cd_owner.into(), cd as *mut rb_call_data, class) };
                         let is_default_new = unsafe { rb_zjit_cme_is_default_new(cme, class) };
@@ -5592,8 +5679,18 @@ impl Function {
                         self.insn_types[replacement] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
-                    &Insn::ObjectAlloc { val, state } => {
-                        if let Some(replacement) = self.try_inline_object_alloc(block, val, state) {
+                    &Insn::ObjectAlloc { val, cd, state } => {
+                        let hash_capa = (self.type_of(val).ruby_object() == Some(unsafe { rb_cHash }))
+                            .then(|| self.hash_new_capacity(cd, state)).flatten()
+                            .filter(|_| unsafe { rb_BASIC_OP_UNREDEFINED_P(BOP_NEW, HASH_REDEFINED_OP_FLAG) });
+                        if let Some(capa) = hash_capa {
+                            // IsDefaultNew has already assumed BOP_NEW. rb_hash_alloc_capa allocates
+                            // the same slot for any capacity outside 1..=RHASH_AR_TABLE_MAX_SIZE as for 0.
+                            let capa = usize::try_from(capa).ok().filter(|&capa| capa <= RUBY_RHASH_AR_TABLE_MAX_SIZE as usize).unwrap_or(0);
+                            let replacement = self.push_insn(block, Insn::HashAlloc { capa, state });
+                            self.insn_types[replacement] = self.infer_type(replacement);
+                            self.make_equal_to(insn_id, replacement);
+                        } else if let Some(replacement) = self.try_inline_object_alloc(block, val, state) {
                             self.insn_types[replacement] = self.infer_type(replacement);
                             self.make_equal_to(insn_id, replacement);
                         } else {
@@ -8205,6 +8302,7 @@ impl Function {
             | Insn::GetConstantPath { .. }
             | Insn::IsBlockGiven { .. }
             | Insn::GetGlobal { .. }
+            | Insn::HashAlloc { .. }
             | Insn::LoadPC
             | Insn::LoadSP
             | Insn::LoadEC
@@ -10051,7 +10149,7 @@ fn add_iseq_to_hir(
                     queue.push_back((state.clone(), target, target_idx));
 
                     // Move on to the fast path
-                    let insn_id = fun.push_insn(block, Insn::ObjectAlloc { val, state: exit_id });
+                    let insn_id = fun.push_insn(block, Insn::ObjectAlloc { val, cd, state: exit_id });
                     state.stack_setn(argc, insn_id);
                     state.stack_setn(argc + 1, insn_id);
                 }

@@ -1748,6 +1748,8 @@ pub(crate) mod ids {
         name: freeze
         name: minusat            content: b"-@"
         name: aref               content: b"[]"
+        name: capacity
+        name: initialize
         name: rb_ivar_get_at_no_ractor_check
         name: rb_jit_ruby2_keywords_splat_p
         name: RUBY_FL_FREEZE

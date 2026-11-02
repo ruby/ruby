@@ -7380,13 +7380,478 @@ mod hir_opt_tests {
           v10:NilClass = Const Value(nil)
           PatchPoint StableConstantNames(0x1000, Hash)
           v13:ClassSubclass[Hash@0x1008] = Const Value(VALUE(0x1008))
-          PatchPoint MethodRedefined(Hash@0x1008, new@0x1009, cme:0x1010)
-          PatchPoint MethodRedefined(Class@0x1038, new@0x1009, cme:0x1010)
-          v51:BasicObject = CCallVariadic v13, :Hash.new@0x1040
+          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_NEW)
+          v42:HashExact = HashAlloc 0
+          PatchPoint MethodRedefined(Hash@0x1008, initialize@0x1009, cme:0x1010)
           CheckInterrupts
-          Return v51
+          Return v42
         ");
         assert_snapshot!(inspect("test"), @"{}");
+    }
+
+    #[test]
+    fn test_opt_new_hash_with_capacity() {
+        eval("
+            def test = Hash.new(capacity: 3)
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, Hash)
+          v13:ClassSubclass[Hash@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[3] = Const Value(3)
+          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_NEW)
+          v45:HashExact = HashAlloc 3
+          PatchPoint MethodRedefined(Hash@0x1008, initialize@0x1009, cme:0x1010)
+          CheckInterrupts
+          Return v45
+        ");
+        assert_snapshot!(inspect("test"), @"{}");
+    }
+
+    #[test]
+    fn test_opt_new_hash_with_large_capacity() {
+        eval("
+            def test = Hash.new(capacity: 100)
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, Hash)
+          v13:ClassSubclass[Hash@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[100] = Const Value(100)
+          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_NEW)
+          v45:HashExact = HashAlloc 0
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, initialize@0x1009, cme:0x1010)
+          v94:Fixnum[0] = Const Value(0)
+          v95:NilClass = Const Value(nil)
+          PushInlineFrame :initialize, v45 (0x1038), num_args=1
+          v60:TrueClass = Const Value(true)
+          v78:CPtr = GetEP 0
+          v79:CUInt64 = LoadField v78, :VM_ENV_DATA_INDEX_FLAGS@0x1058
+          v80:CBool = IsBlockParamModified v79
+          CondBranch v80, bb10(), bb11()
+        bb10():
+          v82:BasicObject = LoadField v78, :block@0x1059
+          Jump bb12(v82)
+        bb11():
+          v84:BasicObject = GetBlockParam :block, l0, EP@4
+          Jump bb12(v84)
+        bb12(v77:BasicObject):
+          v87:BasicObject = InvokeBuiltin rb_hash_init, v45, v15, v60, v60, v77
+          PatchPoint NoEPEscape(initialize)
+          PopInlineFrame
+          CheckInterrupts
+          Return v45
+        ");
+        assert_snapshot!(inspect("test"), @"{}");
+    }
+
+    #[test]
+    fn test_opt_new_hash_with_default() {
+        eval("
+            def test = Hash.new(1)
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, Hash)
+          v13:ClassSubclass[Hash@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_NEW)
+          v45:HashExact = HashAlloc 0
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, initialize@0x1009, cme:0x1010)
+          v49:Fixnum[0] = Const Value(0)
+          v84:Fixnum[0] = Const Value(0)
+          v85:NilClass = Const Value(nil)
+          v86:NilClass = Const Value(nil)
+          PushInlineFrame :initialize, v45 (0x1038), num_args=2
+          v69:CPtr = GetEP 0
+          v70:CUInt64 = LoadField v69, :VM_ENV_DATA_INDEX_FLAGS@0x1058
+          v71:CBool = IsBlockParamModified v70
+          CondBranch v71, bb10(), bb11()
+        bb10():
+          v73:BasicObject = LoadField v69, :block@0x1059
+          Jump bb12(v73)
+        bb11():
+          v75:BasicObject = GetBlockParam :block, l0, EP@4
+          Jump bb12(v75)
+        bb12(v68:BasicObject):
+          v78:BasicObject = InvokeBuiltin rb_hash_init, v45, v49, v86, v15, v68
+          PatchPoint NoEPEscape(initialize)
+          PopInlineFrame
+          CheckInterrupts
+          Return v45
+        ");
+        assert_snapshot!(inspect("test[2]"), @"1");
+    }
+
+    #[test]
+    fn test_opt_new_hash_with_unknown_capacity() {
+        eval("
+            def test(n) = Hash.new(capacity: n)
+            test(3)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1008, Hash)
+          v17:ClassSubclass[Hash@0x1010] = Const Value(VALUE(0x1010))
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(Hash@0x1010, new@0x1011, cme:0x1018)
+          v40:BasicObject = Send v17, :new, v10 # SendFallbackReason: Complex argument passing
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v40
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_opt_new_hash_if_new_redefined() {
+        eval("
+            def Hash.new = 1
+            def test = Hash.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, Hash)
+          v13:ClassSubclass[Hash@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Hash@0x1008, new@0x1009, cme:0x1010)
+          PatchPoint MethodRedefined(Class@0x1038, new@0x1009, cme:0x1010)
+          v102:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          Return v102
+        ");
+        assert_snapshot!(inspect("test"), @"1");
+    }
+
+    #[test]
+    fn test_opt_new_hash_with_redefined_initialize() {
+        eval("
+            class Hash
+              def initialize(*) = super
+            end
+            def test = Hash.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, Hash)
+          v13:ClassSubclass[Hash@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_NEW)
+          v42:HashExact = HashAlloc 0
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, initialize@0x1009, cme:0x1010)
+          v46:ArrayExact = NewArray
+          PushInlineFrame :initialize, v42 (0x1038), num_args=1
+          v60:ArrayExact = ToArray v46
+          PatchPoint NoEPEscape(initialize)
+          v64:BasicObject = InvokeSuper v42, 0x1058, v60 # SendFallbackReason: super: complex argument passing to `super` call
+          PatchPoint NoEPEscape(initialize)
+          PopInlineFrame
+          CheckInterrupts
+          Return v42
+        ");
+        assert_snapshot!(inspect("test"), @"{}");
+    }
+
+    #[test]
+    fn test_dont_remove_explicit_hash_initialize() {
+        eval("
+            def test = Hash.new(1).initialize
+            begin; test; rescue NoMethodError; end
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, Hash)
+          v13:ClassSubclass[Hash@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_NEW)
+          v47:HashExact = HashAlloc 0
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, initialize@0x1009, cme:0x1010)
+          v51:Fixnum[0] = Const Value(0)
+          v86:Fixnum[0] = Const Value(0)
+          v87:NilClass = Const Value(nil)
+          v88:NilClass = Const Value(nil)
+          PushInlineFrame :initialize, v47 (0x1038), num_args=2
+          v71:CPtr = GetEP 0
+          v72:CUInt64 = LoadField v71, :VM_ENV_DATA_INDEX_FLAGS@0x1058
+          v73:CBool = IsBlockParamModified v72
+          CondBranch v73, bb10(), bb11()
+        bb10():
+          v75:BasicObject = LoadField v71, :block@0x1059
+          Jump bb12(v75)
+        bb11():
+          v77:BasicObject = GetBlockParam :block, l0, EP@4
+          Jump bb12(v77)
+        bb12(v70:BasicObject):
+          v80:BasicObject = InvokeBuiltin rb_hash_init, v47, v51, v88, v15, v70
+          PatchPoint NoEPEscape(initialize)
+          PopInlineFrame
+          v39:BasicObject = Send v47, :initialize # SendFallbackReason: Send: method private or protected and no FCALL
+          CheckInterrupts
+          Return v39
+        ");
+    }
+
+    #[test]
+    fn test_dont_remove_hash_reinitialize() {
+        eval("
+            class Hash
+              public :initialize
+            end
+            def test
+              h = Hash.new
+              h.initialize
+              h
+            end
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v127:NilClass = Const Value(nil)
+          v13:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, Hash)
+          v16:ClassSubclass[Hash@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint NoEPEscape(test)
+          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_NEW)
+          v65:HashExact = HashAlloc 0
+          PatchPoint MethodRedefined(Hash@0x1008, initialize@0x1009, cme:0x1010)
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          v73:Fixnum[0] = Const Value(0)
+          v120:Fixnum[0] = Const Value(0)
+          v121:NilClass = Const Value(nil)
+          PushInlineFrame :initialize, v65 (0x1038), num_args=1
+          v86:TrueClass = Const Value(true)
+          v104:CPtr = GetEP 0
+          v105:CUInt64 = LoadField v104, :VM_ENV_DATA_INDEX_FLAGS@0x1058
+          v106:CBool = IsBlockParamModified v105
+          CondBranch v106, bb11(), bb12()
+        bb11():
+          v108:BasicObject = LoadField v104, :block@0x1059
+          Jump bb13(v108)
+        bb12():
+          v110:BasicObject = GetBlockParam :block, l0, EP@4
+          Jump bb13(v110)
+        bb13(v103:BasicObject):
+          v113:BasicObject = InvokeBuiltin rb_hash_init, v65, v73, v86, v86, v103
+          PatchPoint NoEPEscape(initialize)
+          PopInlineFrame
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v65
+        ");
+    }
+
+    #[test]
+    fn test_dont_remove_hash_initialize_from_inlined_method() {
+        // The inlined `initialize` send in `reinit` has the same instruction index as the one
+        // opt_new emits in `test`, but it is not opt_new's, so it must stay.
+        eval("
+            class Hash
+              def reinit
+                a = 1; b = 1
+                initialize
+                self
+              end
+            end
+            def test = Hash.new(1).reinit
+            test
+        ");
+        assert_snapshot!(hir_string_with_inlining("test"), @"
+        fn test@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, Hash)
+          v13:ClassSubclass[Hash@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_NEW)
+          v47:HashExact = HashAlloc 0
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, initialize@0x1009, cme:0x1010)
+          v51:Fixnum[0] = Const Value(0)
+          v90:Fixnum[0] = Const Value(0)
+          v91:NilClass = Const Value(nil)
+          v92:NilClass = Const Value(nil)
+          PushInlineFrame :initialize, v47 (0x1038), num_args=2
+          v75:CPtr = GetEP 0
+          v76:CUInt64 = LoadField v75, :VM_ENV_DATA_INDEX_FLAGS@0x1058
+          v77:CBool = IsBlockParamModified v76
+          CondBranch v77, bb10(), bb11()
+        bb10():
+          v79:BasicObject = LoadField v75, :block@0x1059
+          Jump bb12(v79)
+        bb11():
+          v81:BasicObject = GetBlockParam :block, l0, EP@4
+          Jump bb12(v81)
+        bb12(v74:BasicObject):
+          v84:BasicObject = InvokeBuiltin rb_hash_init, v47, v51, v92, v15, v74
+          PatchPoint NoEPEscape(initialize)
+          PopInlineFrame
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, reinit@0x105a, cme:0x1060)
+          PushInlineFrame :reinit, v47 (0x1088), num_args=0
+          v104:Fixnum[1] = Const Value(1)
+          v107:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Hash@0x1008, initialize@0x1009, cme:0x1010)
+          v131:Fixnum[0] = Const Value(0)
+          v178:Fixnum[0] = Const Value(0)
+          v179:NilClass = Const Value(nil)
+          PushInlineFrame :initialize, v47 (0x1038), num_args=1
+          v144:TrueClass = Const Value(true)
+          v162:CPtr = GetEP 0
+          v163:CUInt64 = LoadField v162, :VM_ENV_DATA_INDEX_FLAGS@0x1058
+          v164:CBool = IsBlockParamModified v163
+          CondBranch v164, bb19(), bb20()
+        bb19():
+          v166:BasicObject = LoadField v162, :block@0x1059
+          Jump bb21(v166)
+        bb20():
+          v168:BasicObject = GetBlockParam :block, l0, EP@4
+          Jump bb21(v168)
+        bb21(v161:BasicObject):
+          v171:BasicObject = InvokeBuiltin rb_hash_init, v47, v131, v144, v144, v161
+          PatchPoint NoEPEscape(initialize)
+          PopInlineFrame
+          PatchPoint NoEPEscape(reinit)
+          PopInlineFrame
+          CheckInterrupts
+          Return v47
+        ");
+    }
+
+    #[test]
+    fn test_remove_hash_initialize_in_method_inlined_twice() {
+        eval("
+            def make = Hash.new(capacity: 3)
+            def test = [make, make]
+            test
+        ");
+        assert_snapshot!(hir_string_with_inlining("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, make@0x1008, cme:0x1010)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame :make, v23 (0x1038), num_args=0
+          v33:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1058, Hash)
+          v36:ClassSubclass[Hash@0x1060] = Const Value(VALUE(0x1060))
+          v38:Fixnum[3] = Const Value(3)
+          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_NEW)
+          v110:HashExact = HashAlloc 3
+          PatchPoint MethodRedefined(Hash@0x1060, initialize@0x1061, cme:0x1068)
+          PopInlineFrame
+          PushInlineFrame :make, v23 (0x1038), num_args=0
+          v73:NilClass = Const Value(nil)
+          v76:ClassSubclass[Hash@0x1060] = Const Value(VALUE(0x1060))
+          v78:Fixnum[3] = Const Value(3)
+          v114:HashExact = HashAlloc 3
+          PopInlineFrame
+          v16:ArrayExact = NewArray v110, v114
+          CheckInterrupts
+          Return v16
+        ");
     }
 
     #[test]

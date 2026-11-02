@@ -4459,6 +4459,128 @@ fn test_opt_new_hash_subclass_dynamic_receiver() {
 }
 
 #[test]
+fn test_opt_new_hash() {
+    eval(r#"
+        def test_new = Hash.new
+        def test_capa = Hash.new(capacity: 3)
+        def test_large_capa = Hash.new(capacity: 100)
+        def test_negative_capa = Hash.new(capacity: -1)
+        def test_float_capa = Hash.new(capacity: 1.5)
+        def test_default = Hash.new(1, capacity: 3)
+        def test_string_capa = Hash.new(capacity: "3")
+        def test_unknown_keyword = Hash.new(foo: 1)
+        def test_bignum_capa = Hash.new(capacity: 2**64)
+        def test_huge_capa = Hash.new(capacity: 2**62)
+        class Capacity; def to_int = 5; end
+        def test_to_int_capa = Hash.new(capacity: Capacity.new)
+        def test_capa_block = Hash.new(capacity: 3) { |h, k| k * 2 }
+        def test
+          [test_new, test_capa, test_large_capa, test_negative_capa, test_float_capa, test_default[0],
+           (test_string_capa rescue $!.class), (test_unknown_keyword rescue $!.message),
+           (test_bignum_capa rescue $!.class), (test_huge_capa rescue $!.message), test_to_int_capa,
+           test_capa_block[4]]
+        end
+        test
+    "#);
+    assert_contains_opcode("test_capa", YARVINSN_opt_new);
+    assert_snapshot!(assert_compiles("test"), @r#"[{}, {}, {}, {}, {}, 1, TypeError, "unknown keyword: :foo", RangeError, "st_table too big", {}, 8]"#);
+}
+
+#[test]
+fn test_opt_new_hash_explicit_initialize() {
+    eval(r#"
+        def test_new = Hash.new.initialize
+        def test_default = Hash.new(1).initialize
+        def test = [(test_new rescue $!.class), (test_default rescue $!.class)]
+        test
+    "#);
+    assert_snapshot!(inspect("test"), @"[NoMethodError, NoMethodError]");
+}
+
+#[test]
+fn test_opt_new_hash_reinitialize() {
+    eval(r#"
+        class Hash
+          public :initialize
+        end
+        def test
+          h = Hash.new
+          h.default = 1
+          h.initialize
+          h.default
+        end
+        test
+    "#);
+    assert_snapshot!(inspect("test"), @"nil");
+}
+
+#[test]
+fn test_opt_new_hash_reinitialize_in_inlined_method() {
+    // `reinit` is inlined into `test`, and its `initialize` send is at instruction index 7 like
+    // the `initialize` send that opt_new emits in `test`. Only the latter belongs to the
+    // allocation, so `reinit` must still reset the default.
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            class Hash
+              def reinit
+                a = 1; b = 1
+                initialize
+                self
+              end
+            end
+            def test = Hash.new(1).reinit
+            test
+            [test.default, test.default]
+        "), @"[nil, nil]");
+    });
+}
+
+#[test]
+fn test_opt_new_hash_same_method_inlined_twice() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def make = Hash.new(capacity: 3)
+            def test = [make, make]
+            test
+            a, b = test
+            a[1] = 2
+            [a, b, a.equal?(b)]
+        "), @"[{1 => 2}, {}, false]");
+    });
+}
+
+#[test]
+fn test_opt_new_hash_invalidate_new() {
+    eval(r#"
+        def test = Hash.new(capacity: 3)
+        test
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_new);
+    assert_snapshot!(assert_compiles(r#"
+        result = [test]
+        class << Hash
+          undef new
+          def new(*) = "new"
+        end
+        result << test
+    "#), @r#"[{}, "new"]"#);
+}
+
+#[test]
+fn test_opt_new_hash_invalidate_initialize() {
+    eval(r#"
+        def test = Hash.new
+        test
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_new);
+    assert_snapshot!(assert_compiles(r#"
+        result = [test[0]]
+        Hash.prepend(Module.new { def initialize(*) = super(:prepended) })
+        result << test[0]
+    "#), @"[nil, :prepended]");
+}
+
+#[test]
 fn test_opt_new_hash_subclass_invalidate_new() {
     eval(r#"
         class H < Hash
