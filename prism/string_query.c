@@ -38,12 +38,12 @@ pm_slice_type(const uint8_t *source, size_t length, const char *encoding_name) {
     if (length == 0) return PM_SLICE_TYPE_NONE;
 
     size_t width;
-    if ((width = encoding->alpha_char(source, (ptrdiff_t) length)) != 0) {
+    if ((width = pm_encoding_alpha_char(encoding, source, (ptrdiff_t) length)) != 0) {
         // valid because alphabetical
     } else if (*source == '_') {
         // valid because underscore
         width = 1;
-    } else if ((*source >= 0x80) && ((width = encoding->char_width(source, (ptrdiff_t) length)) > 0)) {
+    } else if ((*source >= 0x80) && ((width = pm_encoding_char_width(encoding, source, (ptrdiff_t) length)) > 0)) {
         // valid because multibyte
     } else {
         // invalid because no match
@@ -52,20 +52,20 @@ pm_slice_type(const uint8_t *source, size_t length, const char *encoding_name) {
 
     // determine the type of the slice based on the first character
     const uint8_t *end = source + length;
-    pm_slice_type_t result = encoding->isupper_char(source, end - source) ? PM_SLICE_TYPE_CONSTANT : PM_SLICE_TYPE_LOCAL;
+    pm_slice_type_t result = pm_encoding_isupper_char(encoding, source, end - source) ? PM_SLICE_TYPE_CONSTANT : PM_SLICE_TYPE_LOCAL;
 
     // next, iterate through all of the bytes of the string to ensure that they
     // are all valid identifier characters
     source += width;
 
     while (source < end) {
-        if ((width = encoding->alnum_char(source, end - source)) != 0) {
+        if ((width = pm_encoding_alnum_char(encoding, source, end - source)) != 0) {
             // valid because alphanumeric
             source += width;
         } else if (*source == '_') {
             // valid because underscore
             source++;
-        } else if ((*source >= 0x80) && ((width = encoding->char_width(source, end - source)) > 0)) {
+        } else if ((*source >= 0x80) && ((width = pm_encoding_char_width(encoding, source, end - source)) > 0)) {
             // valid because multibyte
             source += width;
         } else {

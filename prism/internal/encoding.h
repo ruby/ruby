@@ -1,6 +1,7 @@
 #ifndef PRISM_INTERNAL_ENCODING_H
 #define PRISM_INTERNAL_ENCODING_H
 
+#include "prism/compiler/inline.h"
 #include "prism/excludes.h"
 
 #include <stdbool.h>
@@ -52,6 +53,12 @@ typedef struct {
     bool multibyte;
 } pm_encoding_t;
 
+/* Return true if the encoding is a multibyte encoding. */
+static PRISM_INLINE bool
+pm_encoding_multibyte_p(const pm_encoding_t *encoding) {
+    return encoding->multibyte;
+}
+
 /*
  * All of the lookup tables use the first bit of each embedded byte to indicate
  * whether the codepoint is alphabetical.
@@ -69,6 +76,41 @@ typedef struct {
  * whether the codepoint is uppercase.
  */
 #define PRISM_ENCODING_UPPERCASE_BIT 1 << 2
+
+/*
+ * Return the number of bytes in the next character in the given encoding, or 0
+ * if the bytes do not form one.
+ */
+static PRISM_INLINE size_t
+pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
+    return encoding->char_width(b, n);
+}
+
+/*
+ * Return the number of bytes in the next character in the given encoding if it
+ * is alphabetical, or 0 otherwise.
+ */
+static PRISM_INLINE size_t
+pm_encoding_alpha_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
+    return encoding->alpha_char(b, n);
+}
+
+/*
+ * Return the number of bytes in the next character in the given encoding if it
+ * is alphanumeric, or 0 otherwise.
+ */
+static PRISM_INLINE size_t
+pm_encoding_alnum_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
+    return encoding->alnum_char(b, n);
+}
+
+/*
+ * Return true if the next character in the given encoding is uppercase.
+ */
+static PRISM_INLINE bool
+pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
+    return encoding->isupper_char(b, n);
+}
 
 /* Return the size of the next character in the UTF-8 encoding. */
 size_t pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n);

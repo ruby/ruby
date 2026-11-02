@@ -823,8 +823,8 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser, uint16_t depth) {
 static void
 pm_regexp_parse_invalid_multibyte(pm_regexp_parser_t *parser, const uint8_t *cursor) {
     uint8_t byte = *cursor;
-    if (byte >= 0x80 && parser->encoding_changed && parser->encoding->multibyte) {
-        size_t width = parser->encoding->char_width(cursor, (ptrdiff_t) (parser->end - cursor));
+    if (byte >= 0x80 && parser->encoding_changed && pm_encoding_multibyte_p(parser->encoding)) {
+        size_t width = pm_encoding_char_width(parser->encoding, cursor, (ptrdiff_t) (parser->end - cursor));
         if (width > 1) {
             parser->cursor += width - 1;
         } else if (width == 0) {
@@ -1064,7 +1064,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                     return false;
                 }
 
-                if (parser->encoding_changed && parser->encoding->multibyte) {
+                if (parser->encoding_changed && pm_encoding_multibyte_p(parser->encoding)) {
                     bool escaped = false;
 
                     // Here we're going to take a slow path and iterate through
@@ -1076,7 +1076,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                             return true;
                         }
 
-                        size_t width = parser->encoding->char_width(parser->cursor, (ptrdiff_t) (parser->end - parser->cursor));
+                        size_t width = pm_encoding_char_width(parser->encoding, parser->cursor, (ptrdiff_t) (parser->end - parser->cursor));
                         if (width == 0) {
                             if (*parser->cursor >= 0x80) {
                                 parser->has_invalid_multibyte = true;
@@ -1301,12 +1301,12 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
             if (!parser->encoding_changed) {
                 width = pm_encoding_utf_8_char_width(parser->cursor, (ptrdiff_t) (parser->end - parser->cursor));
             } else {
-                width = parser->encoding->char_width(parser->cursor, (ptrdiff_t) (parser->end - parser->cursor));
+                width = pm_encoding_char_width(parser->encoding, parser->cursor, (ptrdiff_t) (parser->end - parser->cursor));
             }
 
             if (width == 0) {
                 if (*parser->cursor >= 0x80 && parser->encoding_changed) {
-                    if (parser->encoding->multibyte) {
+                    if (pm_encoding_multibyte_p(parser->encoding)) {
                         // Invalid multibyte character in a multibyte encoding.
                         // Emit the error at the byte location immediately.
                         parser->has_invalid_multibyte = true;
@@ -1392,7 +1392,7 @@ pm_regexp_validate_hex_escapes(const pm_encoding_t *encoding, const pm_buffer_t 
         while (i < len && data[i] != 0x00) i++;
 
         for (size_t j = group_start; j < i; ) {
-            size_t width = encoding->char_width(data + j, (ptrdiff_t) (i - j));
+            size_t width = pm_encoding_char_width(encoding, data + j, (ptrdiff_t) (i - j));
             if (width == 0) return false;
             j += width;
         }
@@ -1420,8 +1420,8 @@ pm_regexp_format_for_error(pm_buffer_t *buffer, const pm_encoding_t *encoding, c
         if (source[index] < 0x80) {
             pm_buffer_append_byte(buffer, source[index]);
             index++;
-        } else if (encoding->multibyte) {
-            size_t width = encoding->char_width(source + index, (ptrdiff_t) (length - index));
+        } else if (pm_encoding_multibyte_p(encoding)) {
+            size_t width = pm_encoding_char_width(encoding, source + index, (ptrdiff_t) (length - index));
 
             if (width > 1) {
                 pm_buffer_append_string(buffer, "\\x{", 3);

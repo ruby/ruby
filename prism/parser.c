@@ -78,7 +78,7 @@ pm_parser_encoding_name(const pm_parser_t *parser) {
  */
 size_t
 pm_parser_encoding_char_width(const pm_parser_t *parser, const uint8_t *start, ptrdiff_t remaining) {
-    return parser->encoding->char_width(start, remaining);
+    return pm_encoding_char_width(parser->encoding, start, remaining);
 }
 
 /**
