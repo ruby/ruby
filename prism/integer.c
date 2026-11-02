@@ -91,20 +91,19 @@ pm_integer_separator(uint8_t character) {
 }
 
 /**
- * Store a bignum whose words are the most recent allocation in the arena, with
- * room for capacity words, into an integer. An integer with at most two words
- * stores them inline, so all of the arena words are given back; otherwise only
- * the unused ones are.
+ * Store a bignum whose words are allocated in the arena, with room for capacity
+ * words, into an integer. An integer with at most two words stores them inline,
+ * so all of the arena words are given back; otherwise only the unused ones are.
  */
 static void
 pm_integer_from_bignum(pm_arena_t *arena, pm_integer_t *integer, const pm_bignum_t *bignum, uint32_t capacity) {
     if (bignum->length <= 2) {
         uint64_t value = pm_bignum_uint64(bignum);
-        pm_arena_shrink(arena, bignum->words, sizeof(uint32_t) * capacity, 0);
+        pm_arena_realloc(arena, bignum->words, 0, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t));
         *integer = pm_integer_uint64(value);
     } else {
-        pm_arena_shrink(arena, bignum->words, sizeof(uint32_t) * capacity, sizeof(uint32_t) * bignum->length);
-        *integer = (pm_integer_t) { .length = bignum->length, .words = { .values = bignum->words } };
+        uint32_t *words = (uint32_t *) pm_arena_realloc(arena, bignum->words, sizeof(uint32_t) * bignum->length, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t));
+        *integer = (pm_integer_t) { .length = bignum->length, .words = { .values = words } };
     }
 }
 
