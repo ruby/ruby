@@ -4312,6 +4312,7 @@ typedef struct {
 typedef struct {
   int left_anchor;
   int right_anchor;
+  int head_asserts;
 } OptAncInfo;
 
 typedef struct {
@@ -4475,6 +4476,7 @@ clear_opt_anc_info(OptAncInfo* anc)
 {
   anc->left_anchor  = 0;
   anc->right_anchor = 0;
+  anc->head_asserts = 0;
 }
 
 static void
@@ -4489,9 +4491,18 @@ concat_opt_anc_info(OptAncInfo* to, OptAncInfo* left, OptAncInfo* right,
 {
   clear_opt_anc_info(to);
 
-  to->left_anchor = left->left_anchor;
+  to->left_anchor  = left->left_anchor;
+  to->head_asserts = left->head_asserts;
   if (left_len == 0) {
-    to->left_anchor |= right->left_anchor;
+    int right_left = right->left_anchor;
+
+    if ((left->head_asserts & ~ANCHOR_BEGIN_LINE) != 0)
+      right_left &= ~ANCHOR_ANYCHAR_STAR_MASK;
+    else if ((left->head_asserts & ANCHOR_BEGIN_LINE) != 0)
+      right_left &= ~ANCHOR_ANYCHAR_STAR_ML;
+
+    to->left_anchor  |= right_left;
+    to->head_asserts |= right->head_asserts;
   }
 
   to->right_anchor = right->right_anchor;
@@ -4545,6 +4556,7 @@ alt_merge_opt_anc_info(OptAncInfo* to, OptAncInfo* add)
 {
   to->left_anchor  &= add->left_anchor;
   to->right_anchor &= add->right_anchor;
+  to->head_asserts |= add->head_asserts;
 }
 
 static int
@@ -5067,6 +5079,10 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
     break;
 
   case NT_ANCHOR:
+    if ((NANCHOR(node)->type &
+         ~(ANCHOR_BEGIN_BUF | ANCHOR_BEGIN_POSITION | ANCHOR_KEEP)) != 0)
+      opt->anc.head_asserts |= NANCHOR(node)->type;
+
     switch (NANCHOR(node)->type) {
     case ANCHOR_BEGIN_BUF:
     case ANCHOR_BEGIN_POSITION:
