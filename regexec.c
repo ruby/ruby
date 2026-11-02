@@ -1079,6 +1079,232 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
 #define STK_MASK_MEM_END_OR_MARK     0x8000  /* MEM_END or MEM_END_MARK */
 
 #ifdef USE_MATCH_CACHE
+/*
+ * The match cache table has a bit for each pair of a position and a cache
+ * point, num_cache_points * position + point; a point inside a look-around
+ * or an atomic group uses the next bit too.  A table of up to
+ * MATCH_CACHE_FLAT_MAX_BITS bits is a flat bit array.  A larger one could be
+ * far too large to allocate (a large pattern and a long subject can ask for
+ * terabytes, which malloc may grant and memset then runs out of), so it is a
+ * sparse table, like a roaring bitmap: chunks of 2^16 bits found by a hash
+ * on bit >> 16, each a sorted array of the bits set until it has
+ * MATCH_CACHE_CHUNK_ARRAY_MAX of them, then a bit array of 8 KB.  Its memory
+ * follows the bits set, which the work of the match bounds.
+ */
+#ifndef MATCH_CACHE_FLAT_MAX_BITS
+# define MATCH_CACHE_FLAT_MAX_BITS ((size_t )1 << 29) /* 64 MB */
+#endif
+#define MATCH_CACHE_CHUNK_BITS      16
+/* an array of 2 bytes a bit up to this many bits, then a bit array of 8 KB:
+   smaller than the 4096 of roaring bitmaps, for the inserts into the array */
+#define MATCH_CACHE_CHUNK_ARRAY_MAX 512
+#define MATCH_CACHE_CHUNK_BIT_ARRAY (-1)
+
+typedef struct {
+  OnigPosition key;  /* bit >> MATCH_CACHE_CHUNK_BITS, or -1 for a free slot */
+  int n;             /* the bits set, in an array */
+  int capa;          /* capacity of the array, or MATCH_CACHE_CHUNK_BIT_ARRAY */
+  void* data;        /* uint16_t[capa] in order, or uint8_t[8192] */
+} MatchCacheChunk;
+
+struct OnigMatchCacheSparse {
+  MatchCacheChunk* slots;
+  size_t num_slots;  /* a power of 2 */
+  size_t num_used;
+  MatchCacheChunk* last; /* the chunk found last: the match mostly stays in one */
+};
+
+static size_t
+match_cache_slot(OnigPosition key, size_t num_slots)
+{
+  uint64_t h = (uint64_t )key * 0x9E3779B97F4A7C15ULL;
+  return (size_t )(h ^ (h >> 32)) & (num_slots - 1);
+}
+
+static int
+match_cache_sparse_new(OnigMatchArg* msa)
+{
+  struct OnigMatchCacheSparse* t;
+  size_t i;
+
+  t = (struct OnigMatchCacheSparse* )xmalloc(sizeof(*t));
+  if (IS_NULL(t)) return ONIGERR_MEMORY;
+  t->num_slots = 64;
+  t->num_used = 0;
+  t->last = NULL;
+  t->slots = (MatchCacheChunk* )xmalloc(sizeof(MatchCacheChunk) * t->num_slots);
+  if (IS_NULL(t->slots)) {
+    xfree(t);
+    return ONIGERR_MEMORY;
+  }
+  for (i = 0; i < t->num_slots; i++) t->slots[i].key = -1;
+  msa->match_cache_sparse = t;
+  return 0;
+}
+
+static void
+match_cache_sparse_free(struct OnigMatchCacheSparse* t)
+{
+  size_t i;
+
+  if (IS_NULL(t)) return;
+  for (i = 0; i < t->num_slots; i++) {
+    if (t->slots[i].key >= 0) xfree(t->slots[i].data);
+  }
+  xfree(t->slots);
+  xfree(t);
+}
+
+/* The chunk of key, or NULL; with create, a new empty one (NULL if it cannot
+   be allocated). */
+static MatchCacheChunk*
+match_cache_chunk(struct OnigMatchCacheSparse* t, OnigPosition key, int create)
+{
+  size_t i;
+
+  if (IS_NOT_NULL(t->last) && t->last->key == key) return t->last;
+  i = match_cache_slot(key, t->num_slots);
+  while (t->slots[i].key >= 0) {
+    if (t->slots[i].key == key) return t->last = &t->slots[i];
+    i = (i + 1) & (t->num_slots - 1);
+  }
+  if (!create) return NULL;
+  if ((t->num_used + 1) * 2 > t->num_slots) {
+    /* keep the load under half */
+    size_t n = t->num_slots * 2, j;
+    MatchCacheChunk* slots;
+
+    if (n > SIZE_MAX / sizeof(MatchCacheChunk)) return NULL;
+    slots = (MatchCacheChunk* )xmalloc(sizeof(MatchCacheChunk) * n);
+    if (IS_NULL(slots)) return NULL;
+    for (j = 0; j < n; j++) slots[j].key = -1;
+    for (j = 0; j < t->num_slots; j++) {
+      if (t->slots[j].key >= 0) {
+        size_t k = match_cache_slot(t->slots[j].key, n);
+        while (slots[k].key >= 0) k = (k + 1) & (n - 1);
+        slots[k] = t->slots[j];
+      }
+    }
+    xfree(t->slots);
+    t->slots = slots;
+    t->num_slots = n;
+    t->last = NULL;
+    i = match_cache_slot(key, n);
+    while (t->slots[i].key >= 0) i = (i + 1) & (n - 1);
+  }
+  t->slots[i].key = key;
+  t->slots[i].n = 0;
+  t->slots[i].capa = 0;
+  t->slots[i].data = NULL;
+  t->num_used++;
+  return t->last = &t->slots[i];
+}
+
+/* The place of low in the array of c, or where it goes. */
+static int
+match_cache_chunk_find(const MatchCacheChunk* c, unsigned int low)
+{
+  const uint16_t* a = (const uint16_t* )c->data;
+  int lo = 0, hi = c->n;
+
+  while (lo < hi) {
+    int mid = (lo + hi) / 2;
+    if (a[mid] < low) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+static int
+match_cache_sparse_test(struct OnigMatchCacheSparse* t, OnigPosition bit)
+{
+  MatchCacheChunk* c = match_cache_chunk(t, bit >> MATCH_CACHE_CHUNK_BITS, 0);
+  unsigned int low = (unsigned int )(bit & ((1 << MATCH_CACHE_CHUNK_BITS) - 1));
+  int i;
+
+  if (IS_NULL(c)) return 0;
+  if (c->capa == MATCH_CACHE_CHUNK_BIT_ARRAY) return (((uint8_t* )c->data)[low >> 3] >> (low & 7)) & 1;
+  i = match_cache_chunk_find(c, low);
+  return i < c->n && ((uint16_t* )c->data)[i] == low;
+}
+
+/* Returns 0, or ONIGERR_MEMORY. */
+static int
+match_cache_sparse_set(struct OnigMatchCacheSparse* t, OnigPosition bit)
+{
+  MatchCacheChunk* c = match_cache_chunk(t, bit >> MATCH_CACHE_CHUNK_BITS, 1);
+  unsigned int low = (unsigned int )(bit & ((1 << MATCH_CACHE_CHUNK_BITS) - 1));
+  uint16_t* a;
+  int i;
+
+  if (IS_NULL(c)) return ONIGERR_MEMORY;
+  if (c->capa == MATCH_CACHE_CHUNK_BIT_ARRAY) {
+    ((uint8_t* )c->data)[low >> 3] |= (uint8_t )(1 << (low & 7));
+    return 0;
+  }
+  i = match_cache_chunk_find(c, low);
+  a = (uint16_t* )c->data;
+  if (i < c->n && a[i] == low) return 0;
+  if (c->n == c->capa) {
+    if (c->n == MATCH_CACHE_CHUNK_ARRAY_MAX) {
+      /* to a bit array */
+      uint8_t* b = (uint8_t* )xmalloc((1 << MATCH_CACHE_CHUNK_BITS) / 8);
+      int j;
+
+      if (IS_NULL(b)) return ONIGERR_MEMORY;
+      xmemset(b, 0, (1 << MATCH_CACHE_CHUNK_BITS) / 8);
+      for (j = 0; j < c->n; j++) b[a[j] >> 3] |= (uint8_t )(1 << (a[j] & 7));
+      b[low >> 3] |= (uint8_t )(1 << (low & 7));
+      xfree(a);
+      c->data = b;
+      c->capa = MATCH_CACHE_CHUNK_BIT_ARRAY;
+      return 0;
+    }
+    else {
+      int capa = c->capa == 0 ? 4 : c->capa * 2;
+      if (capa > MATCH_CACHE_CHUNK_ARRAY_MAX) capa = MATCH_CACHE_CHUNK_ARRAY_MAX;
+      a = (uint16_t* )xrealloc(c->data, sizeof(uint16_t) * (size_t )capa);
+      if (IS_NULL(a)) return ONIGERR_MEMORY;
+      c->data = a;
+      c->capa = capa;
+    }
+  }
+  xmemmove(a + i + 1, a + i, sizeof(uint16_t) * (size_t )(c->n - i));
+  a[i] = (uint16_t )low;
+  c->n++;
+  return 0;
+}
+
+/* The table for num_bits bits (and one more, for the second bit of the last
+   point).  Returns 0, or ONIGERR_MEMORY. */
+static int
+match_cache_table_new(OnigMatchArg* msa, size_t num_bits)
+{
+  if (num_bits <= MATCH_CACHE_FLAT_MAX_BITS) {
+    size_t len = (num_bits >> 3) + (num_bits & 7 ? 1 : 0) + 1;
+    uint8_t* buf = (uint8_t* )xmalloc(len);
+
+    if (IS_NULL(buf)) return ONIGERR_MEMORY;
+    xmemset(buf, 0, len);
+    msa->match_cache_buf = buf;
+    return 0;
+  }
+  return match_cache_sparse_new(msa);
+}
+
+#define MATCH_CACHE_TEST(msa, bit) \
+  (IS_NOT_NULL((msa)->match_cache_buf) ? \
+   (((msa)->match_cache_buf[(bit) >> 3] >> ((bit) & 7)) & 1) : \
+   match_cache_sparse_test((msa)->match_cache_sparse, (bit)))
+/* A failure leaves the bit unset, which only costs time, and is reported
+   by the next CHECK_MATCH_CACHE. */
+#define MATCH_CACHE_SET(msa, bit) do {\
+  if (IS_NOT_NULL((msa)->match_cache_buf))\
+    (msa)->match_cache_buf[(bit) >> 3] |= (uint8_t )(1 << ((bit) & 7));\
+  else if (match_cache_sparse_set((msa)->match_cache_sparse, (bit)) != 0)\
+    (msa)->match_cache_error = 1;\
+} while(0)
+
 #define MATCH_ARG_INIT_MATCH_CACHE(msa) do {\
   (msa).match_cache_status = MATCH_CACHE_STATUS_UNINIT;\
   (msa).num_fails = 0;\
@@ -1086,12 +1312,16 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   (msa).cache_opcodes = (OnigCacheOpcode*)NULL;\
   (msa).num_cache_points = 0;\
   (msa).match_cache_buf = (uint8_t*)NULL;\
+  (msa).match_cache_sparse = NULL;\
+  (msa).match_cache_error = 0;\
 } while(0)
 #define MATCH_ARG_FREE_MATCH_CACHE(msa) do {\
   xfree((msa).cache_opcodes);\
   xfree((msa).match_cache_buf);\
+  match_cache_sparse_free((msa).match_cache_sparse);\
   (msa).cache_opcodes = (OnigCacheOpcode*)NULL;\
   (msa).match_cache_buf = (uint8_t*)NULL;\
+  (msa).match_cache_sparse = NULL;\
 } while(0)
 #else
 #define MATCH_ARG_INIT_MATCH_CACHE(msa)
@@ -1508,12 +1738,11 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
   STACK_INC;\
 } while(0)
 
-#define STACK_PUSH_MATCH_CACHE_POINT(match_cache_point_index, match_cache_point_mask) do {\
+#define STACK_PUSH_MATCH_CACHE_POINT(match_cache_point) do {\
   STACK_ENSURE(1);\
   stk->type = STK_MATCH_CACHE_POINT;\
   stk->null_check = stk == stk_base ? 0 : (stk-1)->null_check;\
-  stk->u.match_cache_point.index = (match_cache_point_index);\
-  stk->u.match_cache_point.mask = (match_cache_point_mask);\
+  stk->u.match_cache_point.bit = (match_cache_point);\
   STACK_INC;\
 } while(0)
 
@@ -1529,7 +1758,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #endif
 
 #ifdef ONIG_DEBUG_MATCH_CACHE
-# define MATCH_CACHE_DEBUG_MEMOIZE(stkp) fprintf(stderr, "MATCH CACHE: memoize (index=%td mask=%d)\n", stkp->u.match_cache_point.index, stkp->u.match_cache_point.mask);
+# define MATCH_CACHE_DEBUG_MEMOIZE(stkp) fprintf(stderr, "MATCH CACHE: memoize (bit=%td)\n", stkp->u.match_cache_point.bit);
 #else
 # define MATCH_CACHE_DEBUG_MEMOIZE(stkp) ((void) 0)
 #endif
@@ -1538,24 +1767,24 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 # define INC_NUM_FAILS msa->num_fails++
 # define MEMOIZE_MATCH_CACHE_POINT do {\
     if (stk->type == STK_MATCH_CACHE_POINT) {\
-      msa->match_cache_buf[stk->u.match_cache_point.index] |= stk->u.match_cache_point.mask;\
+      MATCH_CACHE_SET(msa, stk->u.match_cache_point.bit);\
       MATCH_CACHE_DEBUG_MEMOIZE(stk);\
     }\
     else if (stk->type == STK_ATOMIC_MATCH_CACHE_POINT) {\
-      memoize_extended_match_cache_point(msa->match_cache_buf, stk->u.match_cache_point.index, stk->u.match_cache_point.mask);\
+      memoize_extended_match_cache_point(msa, stk->u.match_cache_point.bit);\
       MATCH_CACHE_DEBUG_MEMOIZE(stkp);\
     }\
   } while(0)
 # define MEMOIZE_LOOKAROUND_MATCH_CACHE_POINT(stkp) do {\
     if (stkp->type == STK_MATCH_CACHE_POINT) {\
       stkp->type = STK_VOID;\
-      memoize_extended_match_cache_point(msa->match_cache_buf, stkp->u.match_cache_point.index, stkp->u.match_cache_point.mask);\
+      memoize_extended_match_cache_point(msa, stkp->u.match_cache_point.bit);\
       MATCH_CACHE_DEBUG_MEMOIZE(stkp);\
     }\
   } while(0)
 # define MEMOIZE_ATOMIC_MATCH_CACHE_POINT do {\
     if (stk->type == STK_MATCH_CACHE_POINT) {\
-      memoize_extended_match_cache_point(msa->match_cache_buf, stk->u.match_cache_point.index, stk->u.match_cache_point.mask);\
+      memoize_extended_match_cache_point(msa, stk->u.match_cache_point.bit);\
       MATCH_CACHE_DEBUG_MEMOIZE(stkp);\
     }\
   } while(0)
@@ -2289,27 +2518,18 @@ find_cache_point(regex_t* reg, const OnigCacheOpcode* cache_opcodes, long num_ca
     cache_point;
 }
 
+/* the second bit of a point inside a look-around or an atomic group */
 static int
-check_extended_match_cache_point(uint8_t *match_cache_buf, OnigPosition match_cache_point_index, uint8_t match_cache_point_mask)
+check_extended_match_cache_point(OnigMatchArg* msa, OnigPosition match_cache_point)
 {
-  if (match_cache_point_mask & 0x80) {
-    return (match_cache_buf[match_cache_point_index + 1] & 0x01) > 0;
-  }
-  else {
-    return (match_cache_buf[match_cache_point_index] & (match_cache_point_mask << 1)) > 0;
-  }
+  return MATCH_CACHE_TEST(msa, match_cache_point + 1);
 }
 
 static void
-memoize_extended_match_cache_point(uint8_t *match_cache_buf, OnigPosition match_cache_point_index, uint8_t match_cache_point_mask)
+memoize_extended_match_cache_point(OnigMatchArg* msa, OnigPosition match_cache_point)
 {
-  match_cache_buf[match_cache_point_index] |= match_cache_point_mask;
-  if (match_cache_point_mask & 0x80) {
-    match_cache_buf[match_cache_point_index + 1] |= 0x01;
-  }
-  else {
-    match_cache_buf[match_cache_point_index] |= match_cache_point_mask << 1;
-  }
+  MATCH_CACHE_SET(msa, match_cache_point);
+  MATCH_CACHE_SET(msa, match_cache_point + 1);
 }
 
 #endif /* USE_MATCH_CACHE */
@@ -2623,7 +2843,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
 #ifdef USE_MATCH_CACHE
 #ifdef ONIG_DEBUG_MATCH_CACHE
-#define MATCH_CACHE_DEBUG fprintf(stderr, "MATCH CACHE: cache %td (p=%p index=%td mask=%d)\n", match_cache_point, pbegin, match_cache_point_index, match_cache_point_mask)
+#define MATCH_CACHE_DEBUG fprintf(stderr, "MATCH CACHE: cache %td (p=%p)\n", match_cache_point, pbegin)
 #define MATCH_CACHE_DEBUG_HIT fprintf(stderr, "MATCH CACHE: cache hit\n")
 #else
 #define MATCH_CACHE_DEBUG ((void) 0)
@@ -2638,21 +2858,20 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     long cache_point = find_cache_point(reg, msa->cache_opcodes, msa->num_cache_opcodes, pbegin, stk_base, repeat_stk, &cache_opcode);\
     if (cache_point >= 0) {\
       OnigPosition match_cache_point = msa->num_cache_points * (OnigPosition)(s - str) + cache_point;\
-      OnigPosition match_cache_point_index = match_cache_point >> 3;\
-      uint8_t match_cache_point_mask = 1 << (match_cache_point & 7);\
+      if (msa->match_cache_error) goto memory_error;\
       MATCH_CACHE_DEBUG;\
-      if (msa->match_cache_buf[match_cache_point_index] & match_cache_point_mask) {\
+      if (MATCH_CACHE_TEST(msa, match_cache_point)) {\
         MATCH_CACHE_DEBUG_HIT; MATCH_CACHE_HIT;\
         if (cache_opcode->lookaround_nesting == 0) goto fail;\
         else if (cache_opcode->lookaround_nesting < 0) {\
-          if (check_extended_match_cache_point(msa->match_cache_buf, match_cache_point_index, match_cache_point_mask)) {\
+          if (check_extended_match_cache_point(msa, match_cache_point)) {\
             STACK_STOP_BT_FAIL;\
             goto fail;\
           }\
           else goto fail;\
         }\
         else {\
-          if (check_extended_match_cache_point(msa->match_cache_buf, match_cache_point_index, match_cache_point_mask)) {\
+          if (check_extended_match_cache_point(msa, match_cache_point)) {\
             p = cache_opcode->match_addr;\
             MOP_OUT;\
             JUMP;\
@@ -2660,7 +2879,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
           else goto fail;\
         }\
       }\
-      STACK_PUSH_MATCH_CACHE_POINT(match_cache_point_index, match_cache_point_mask);\
+      STACK_PUSH_MATCH_CACHE_POINT(match_cache_point);\
     }\
   }\
 } while (0)
@@ -4176,7 +4395,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
           }
 #endif
         }
-        if (msa->match_cache_buf == NULL) {
+        if (msa->match_cache_buf == NULL && msa->match_cache_sparse == NULL) {
           size_t length = (end - str) + 1;
           size_t num_match_cache_points = (size_t)msa->num_cache_points * length;
 #ifdef ONIG_DEBUG_MATCH_CACHE
@@ -4189,13 +4408,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
           if (num_match_cache_points >= (size_t)PTRDIFF_MAX) {
             goto memory_error;
           }
-          size_t match_cache_buf_length = (num_match_cache_points >> 3) + (num_match_cache_points & 7 ? 1 : 0) + 1;
-          uint8_t* match_cache_buf = (uint8_t*)xmalloc(match_cache_buf_length * sizeof(uint8_t));
-          if (match_cache_buf == NULL) {
+          if (match_cache_table_new(msa, num_match_cache_points) != 0) {
             goto memory_error;
           }
-          xmemset(match_cache_buf, 0, match_cache_buf_length * sizeof(uint8_t));
-          msa->match_cache_buf = match_cache_buf;
         }
       }
       fail_match_cache:
