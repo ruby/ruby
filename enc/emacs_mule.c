@@ -309,8 +309,10 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSE
 {
   if (code < 128)
     return ONIGENC_IS_ASCII_CODE_CTYPE(code, ctype);
-  else
+  else if (CTYPE_IS_WORD_GRAPH_PRINT(ctype))
     return (code_to_mbclen(code, enc) > 1 ? TRUE : FALSE);
+  else
+    return FALSE;
 }
 
 /*
