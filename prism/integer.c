@@ -22,6 +22,30 @@
 #include <stdlib.h>
 #include <string.h>
 
+/*
+ * When parsing long decimal digits, we switch to a divide-and-conquer approach
+ * once it gets really long because we start to see the impact of an O(n^1.58)
+ * vs an O(n^2) algorithm.
+ */
+#define PM_INTEGER_DIVIDE_THRESHOLD 224
+
+/*
+ * When printing integers of many words, we switch to a divide-and-conquer
+ * approach for the same reason as parsing: the repeated division by 10**9 is
+ * O(n^2), while the divide and conquer is O(n^1.58). Below this many words, the
+ * scratch space and the powers of two that the divide and conquer needs cost
+ * more than it saves.
+ */
+#define PM_INTEGER_STRING_THRESHOLD 48
+
+/*
+ * Within the divide and conquer, pieces of at most this many words are
+ * converted by repeated division by 10**9. This is lower than
+ * PM_INTEGER_STRING_THRESHOLD because the pieces share the scratch space and
+ * the powers of two, so they do not pay for them again.
+ */
+#define PM_INTEGER_STRING_LEAF 8
+
 /**
  * The values of a hexadecimal digit, where the index is the ASCII character.
  * Note that there's an odd exception here where _ is mapped to 0. This is
@@ -123,13 +147,6 @@ pm_integer_parse_powof2(pm_arena_t *arena, pm_integer_t *integer, uint32_t base,
 }
 
 /*
- * When parsing long decimal digits, we switch to a divide-and-conquer approach
- * once it gets really long because we start to see the impact of an O(n^1.58)
- * vs an O(n^2) algorithm.
- */
-#define PM_INTEGER_DIVIDE_THRESHOLD 224
-
-/*
  * The number of words needed to hold a decimal integer with the given number
  * of digits. A number with d digits is below 10**d, so it needs at most:
  *
@@ -166,7 +183,7 @@ static void
 pm_integer_parse_decimal_divide_chunks(pm_bignum_t *result, uint32_t nchunks, const uint32_t *chunks, const pm_bignum_t *powers, pm_bignum_scratch_t *scratch) {
     if (nchunks <= PM_INTEGER_DIVIDE_THRESHOLD) {
         result->length = 0;
-        for (uint32_t index = nchunks; index > 0; index--) pm_bignum_mul_add(result, 1000000000, chunks[index - 1]);
+        for (uint32_t index = nchunks; index > 0; index--) pm_bignum_mul_add(result, PM_BIGNUM_DECIMAL_BASE, chunks[index - 1]);
     } else {
         uint32_t level = pm_bsrll((uint64_t) nchunks - 1);
         uint32_t split = (uint32_t) 1 << level;
@@ -242,7 +259,7 @@ pm_integer_parse_decimal_divide(pm_arena_t *arena, pm_integer_t *integer, uint32
     pm_bignum_t powers[64];
     uint32_t level = 0;
     powers[level].words = pm_bignum_scratch_take(&scratch, 1);
-    powers[level].words[0] = 1000000000;
+    powers[level].words[0] = PM_BIGNUM_DECIMAL_BASE;
     powers[level].length = 1;
 
     for (uint32_t split = 2; split < nchunks; split *= 2) {
@@ -480,6 +497,128 @@ pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right) {
     return pm_bignum_compare(&left_bignum, &right_bignum) * negative;
 }
 
+/*
+ * The number of words of storage needed to convert an integer of length words
+ * into base 10**9. The integer is below 2**(32 * length), so it needs at most:
+ *
+ *     32 * length * log10(2) / 9
+ *
+ * words in base 10**9, rounded up. To find 32 * log10(2) / 9, we approximate it
+ * as 1097/1024, which is slightly greater than the actual value so it does not
+ * undercount. As in pm_integer_chunks_words, the conversion multiplies the
+ * high half by a power of two into this storage, which writes the sum of its
+ * factors' lengths, and each factor's length rounds up on its own, so this is
+ * one word more than the value needs.
+ */
+static PRISM_INLINE uint32_t
+pm_integer_string_words(uint32_t length) {
+    return (uint32_t) ((uint64_t) length * 1097 / 1024 + 2);
+}
+
+/*
+ * Convert length words of a bignum into base 10**9. The result's storage must
+ * have room for pm_integer_string_words(length) words. Up to
+ * PM_INTEGER_STRING_LEAF words, a copy of the words is divided by 10**9
+ * until nothing is left, and each remainder is the next word of the result.
+ * Past it, the words split below the largest power of two less than length, at
+ * 2**level words, so the value is high * 2**(32 * 2**level) + low with that
+ * power of two already in base 10**9 in powers[level], and both halves convert
+ * the same way.
+ */
+static void
+pm_integer_string_convert(pm_bignum_t *result, const uint32_t *words, uint32_t length, const pm_bignum_t *powers, pm_bignum_scratch_t *scratch) {
+    /* The low half of a split can have leading zero words. */
+    while (length > 0 && words[length - 1] == 0) length--;
+    uint32_t *saved = scratch->cursor;
+
+    if (length <= PM_INTEGER_STRING_LEAF) {
+        pm_bignum_t bignum = { .length = length, .words = pm_bignum_scratch_take(scratch, length) };
+        memcpy(bignum.words, words, sizeof(uint32_t) * length);
+
+        result->length = 0;
+        while (bignum.length > 0) result->words[result->length++] = pm_bignum_div(&bignum, PM_BIGNUM_DECIMAL_BASE);
+    } else {
+        uint32_t level = pm_bsrll((uint64_t) length - 1);
+        uint32_t split = (uint32_t) 1 << level;
+
+        pm_bignum_t high = { .length = 0, .words = pm_bignum_scratch_take(scratch, pm_integer_string_words(length - split)) };
+        pm_integer_string_convert(&high, words + split, length - split, powers, scratch);
+
+        assert(high.length + powers[level].length <= pm_integer_string_words(length));
+        pm_bignum_decimal_multiply(result, &high, &powers[level], scratch);
+        scratch->cursor = saved;
+
+        pm_bignum_t low = { .length = 0, .words = pm_bignum_scratch_take(scratch, pm_integer_string_words(split)) };
+        pm_integer_string_convert(&low, words, split, powers, scratch);
+        pm_bignum_decimal_add(result, &low);
+    }
+
+    scratch->cursor = saved;
+}
+
+/*
+ * Convert the words of an integer of more than PM_INTEGER_STRING_THRESHOLD
+ * words to a decimal string by divide and conquer. The powers of two that the
+ * splits need are computed in base 10**9 by repeated squaring, and the integer
+ * is converted into base 10**9, each word of which is nine digits. Everything
+ * lives in one block of scratch space from the heap, sized for the worst case:
+ * the result, the powers, and the halves and products of the deepest chain of
+ * splits, with Karatsuba's temporaries bounded by 12 times the longer factor's
+ * length.
+ */
+static void
+pm_integer_string_divide(pm_buffer_t *buffer, const uint32_t *words, uint32_t length) {
+    uint32_t capacity = pm_integer_string_words(length);
+
+    /* The scratch space is about 13 times the number of words, which can
+     * exceed 32 bits, and on a 32-bit platform its size in bytes can exceed
+     * size_t. */
+    uint64_t scratch_size = 12 * (uint64_t) capacity + 1024;
+    if (scratch_size > SIZE_MAX / sizeof(uint32_t)) PRISM_OOM();
+
+    uint32_t *allocation = (uint32_t *) xmalloc(sizeof(uint32_t) * (size_t) scratch_size);
+    if (allocation == NULL) PRISM_OOM();
+    pm_bignum_scratch_t scratch = { .cursor = allocation, .end = allocation + (size_t) scratch_size };
+
+    pm_bignum_t result = { .length = 0, .words = pm_bignum_scratch_take(&scratch, capacity) };
+
+    /* powers[level] is 2**(32 * 2**level) in base 10**9, for every level a
+     * split uses. */
+    pm_bignum_t powers[64];
+    uint32_t level = 0;
+    powers[level].words = pm_bignum_scratch_take(&scratch, 2);
+    powers[level].words[0] = (uint32_t) (PM_BIGNUM_BINARY_BASE % PM_BIGNUM_DECIMAL_BASE);
+    powers[level].words[1] = (uint32_t) (PM_BIGNUM_BINARY_BASE / PM_BIGNUM_DECIMAL_BASE);
+    powers[level].length = 2;
+
+    for (uint32_t split = 2; split < length; split *= 2) {
+        const pm_bignum_t *previous = &powers[level++];
+        powers[level].words = pm_bignum_scratch_take(&scratch, 2 * previous->length);
+        pm_bignum_decimal_multiply(&powers[level], previous, previous, &scratch);
+    }
+
+    pm_integer_string_convert(&result, words, length, powers, &scratch);
+    assert(result.length > 0 && result.length < capacity);
+
+    /* Every word but the most significant is exactly nine digits, padded with
+     * zeros. */
+    pm_buffer_append_format(buffer, "%" PRIu32, result.words[result.length - 1]);
+
+    for (uint32_t index = result.length - 1; index > 0; index--) {
+        uint32_t word = result.words[index - 1];
+        char digits[9];
+
+        for (size_t digit = 9; digit > 0; digit--) {
+            digits[digit - 1] = (char) ('0' + word % 10);
+            word /= 10;
+        }
+
+        pm_buffer_append_string(buffer, digits, 9);
+    }
+
+    xfree_sized(allocation, sizeof(uint32_t) * (size_t) scratch_size);
+}
+
 /**
  * Convert an integer to a decimal string.
  */
@@ -494,6 +633,11 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
     if (integer->length <= 2) {
         const uint64_t value = ((uint64_t) integer->words.value[0]) | ((uint64_t) integer->words.value[1] << 32);
         pm_buffer_append_format(buffer, "%" PRIu64, value);
+        return;
+    }
+
+    if (integer->length > PM_INTEGER_STRING_THRESHOLD) {
+        pm_integer_string_divide(buffer, integer->words.values, integer->length);
         return;
     }
 
@@ -518,7 +662,7 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
     size_t offset = capacity;
 
     while (bignum.length > 0) {
-        uint32_t remainder = pm_bignum_div(&bignum, 1000000000);
+        uint32_t remainder = pm_bignum_div(&bignum, PM_BIGNUM_DECIMAL_BASE);
 
         /* Every chunk but the most significant is exactly nine digits, padded
          * with zeros. The most significant chunk is nonzero and stops at its
