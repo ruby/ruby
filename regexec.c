@@ -727,7 +727,19 @@ init_cache_opcodes_inner(
             cache_point = outer_cache_point;
           }
           int repeat_bounds = repeat_range->upper == 0x7fffffff ? 1 : repeat_range->upper - repeat_range->lower;
-          cache_point += num_cache_points_in_repeat * repeat_range->lower + (num_cache_points_in_repeat + (lookaround_nesting != 0 ? 2 : 1)) * repeat_bounds;
+          long step = num_cache_points_in_repeat + (lookaround_nesting != 0 ? 2 : 1);
+          long rest = LONG_MAX / 2 - cache_point;
+          if (rest < 0) {
+            return MATCH_CACHE_TOO_MANY_POINTS;
+          }
+          if (repeat_range->lower > 0 && num_cache_points_in_repeat > rest / repeat_range->lower) {
+            return MATCH_CACHE_TOO_MANY_POINTS;
+          }
+          rest -= num_cache_points_in_repeat * repeat_range->lower;
+          if (repeat_bounds > 0 && step > rest / repeat_bounds) {
+            return MATCH_CACHE_TOO_MANY_POINTS;
+          }
+          cache_point += num_cache_points_in_repeat * repeat_range->lower + step * repeat_bounds;
           for (; cache_opcodes_in_repeat < cache_opcodes; cache_opcodes_in_repeat++) {
             cache_opcodes_in_repeat->num_cache_points_at_outer_repeat = num_cache_points_at_repeat;
             cache_opcodes_in_repeat->num_cache_points_in_outer_repeat = num_cache_points_in_repeat;
@@ -4147,6 +4159,11 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
           if (r < 0) {
             if (r == ONIGERR_UNEXPECTED_BYTECODE) goto unexpected_bytecode_error;
             else goto bytecode_error;
+          }
+          if (r == MATCH_CACHE_TOO_MANY_POINTS) {
+            xfree(cache_opcodes);
+            msa->match_cache_status = MATCH_CACHE_STATUS_DISABLED;
+            goto fail_match_cache;
           }
           msa->cache_opcodes = cache_opcodes;
 #ifdef ONIG_DEBUG_MATCH_CACHE
