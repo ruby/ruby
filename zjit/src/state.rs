@@ -168,13 +168,9 @@ impl ZJITState {
         let mut cb = {
             use crate::options::*;
             use crate::virtualmem::*;
-            use std::rc::Rc;
-            use std::cell::RefCell;
 
             let mem_block = VirtualMem::alloc(get_option!(exec_mem_bytes), Some(get_option!(mem_bytes)));
-            let mem_block = Rc::new(RefCell::new(mem_block));
-
-            CodeBlock::new(mem_block.clone(), get_option_ref!(dump_disasm).is_some())
+            CodeBlock::new(mem_block, get_option_ref!(dump_disasm).is_some())
         };
 
         let entry_trampoline = gen_entry_trampoline(&mut cb).unwrap().raw_ptr(&cb);

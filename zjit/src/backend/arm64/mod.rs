@@ -1626,7 +1626,7 @@ impl Assembler {
         if cb.has_dropped_bytes() {
             Err(CompileError::OutOfMemory)
         } else {
-            // No bytes dropped, so the pos markers point to valid code
+            // No bytes dropped, so the pos markers point to valid code.
             for (insn_idx, pos) in pos_markers {
                 if let Insn::PosMarker(callback) = insns.get(insn_idx).unwrap() {
                     callback(pos, cb);
@@ -1634,7 +1634,6 @@ impl Assembler {
                     panic!("non-PosMarker in pos_markers insn_idx={insn_idx} {self:?}");
                 }
             }
-
             Ok(gc_offsets)
         }
     }
@@ -1765,6 +1764,9 @@ impl Assembler {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::Cell;
+    use std::rc::Rc;
+
     #[cfg(feature = "disasm")]
     use crate::disasms_with;
     use crate::{assert_disasm_snapshot, hexdumps};
@@ -1786,6 +1788,76 @@ mod tests {
         let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
         asm.new_block_without_id("test");
         (asm, CodeBlock::new_dummy(), scratch_reg)
+    }
+
+    #[test]
+    fn padding_stops_at_required_space() {
+        for (size, expected) in [(1024 * 1024, 4), (128 * 1024 * 1024 + 4, 20)] {
+            let mut cb = CodeBlock::new_dummy_sized(size);
+            cb.write_bytes(&[0; 4]);
+
+            let start = cb.get_write_pos();
+            while !cb.has_dropped_bytes() && cb.get_write_pos().saturating_sub(start) < cb.jmp_ptr_bytes() {
+                nop(&mut cb);
+                assert!(cb.get_write_pos() <= start + expected);
+            }
+
+            assert_eq!(cb.get_write_pos(), start + expected);
+            assert!(!cb.has_dropped_bytes());
+        }
+    }
+
+    #[test]
+    fn padding_stops_on_failure() {
+        let page = unsafe { rb_jit_get_page_size() } as usize;
+        // The strict mapping limit makes a one-page block fail on its first write.
+        let mut cb = CodeBlock::new_dummy_sized(page);
+
+        let mut attempts = 0;
+        while !cb.has_dropped_bytes() && cb.get_write_pos() < cb.jmp_ptr_bytes() {
+            nop(&mut cb);
+            attempts += 1;
+            assert_eq!(attempts, 1);
+        }
+        assert!(cb.has_dropped_bytes());
+        assert_eq!(cb.get_write_pos(), 0);
+    }
+
+    #[test]
+    fn position_callbacks_run_after_emission() {
+        let (mut asm, mut cb) = setup_asm();
+        let end = asm.new_label("end");
+        let label = end.unwrap_label();
+        let called = Rc::new(Cell::new(false));
+        let seen = called.clone();
+
+        asm.mov(Opnd::Reg(X0_REG), Opnd::UImm(7));
+        asm.pos_marker(move |pos, cb| {
+            assert_eq!(pos, cb.get_write_ptr());
+            assert_eq!(cb.resolve_label(label), pos);
+            assert!(pos.raw_addr(cb) > cb.get_ptr(0).raw_addr(cb));
+            seen.set(true);
+        });
+        asm.write_label(end);
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert!(called.get());
+    }
+
+    #[test]
+    fn oom_skips_callbacks() {
+        let (mut asm, _) = setup_asm();
+        let page = unsafe { rb_jit_get_page_size() } as usize;
+        let mut cb = CodeBlock::new_dummy_sized(2 * page);
+        cb.set_write_ptr(cb.get_ptr(page - 4));
+
+        asm.pos_marker(|_, _| panic!("must not publish failed emission"));
+        asm.bake_string("abcdefgh");
+        for name in &asm.label_names { cb.new_label(*name); }
+        assert!(matches!(asm.arm64_emit(&mut cb), Err(CompileError::OutOfMemory)));
+
+        assert!(cb.has_dropped_bytes());
+        assert_eq!(cb.get_write_pos(), page);
     }
 
     #[test]
