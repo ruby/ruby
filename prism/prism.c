@@ -1866,26 +1866,18 @@ pm_arguments_validate_block(pm_parser_t *parser, pm_arguments_t *arguments, pm_b
 
 /**
  * This function is used extremely frequently to lex all of the identifiers in a
- * source file, so it's important that it be as fast as possible. For this
- * reason we have the encoding_changed boolean to check if we need to go through
- * the function pointer or can just directly use the UTF-8 functions.
+ * source file, so it's important that it be as fast as possible. Every encoding
+ * that prism supports is ASCII-compatible, so a byte below 0x80 is the same
+ * character in all of them and is checked against the Unicode table. Only the
+ * bytes above it go through the parser's encoding, and only when the encoding
+ * has changed; otherwise they use the UTF-8 functions directly.
  */
 static PRISM_INLINE size_t
 char_is_identifier_start(const pm_parser_t *parser, const uint8_t *b, ptrdiff_t n) {
     if (n <= 0) return 0;
 
-    if (parser->encoding_changed) {
-        size_t width;
-
-        if ((width = pm_encoding_alpha_char(parser->encoding, b, n)) != 0) {
-            return width;
-        } else if (*b == '_') {
-            return 1;
-        } else if (*b >= 0x80) {
-            return pm_encoding_char_width(parser->encoding, b, n);
-        } else {
-            return 0;
-        }
+    if (parser->encoding_changed && *b >= 0x80) {
+        return pm_encoding_char_width(parser->encoding, b, n);
     } else if (*b < 0x80) {
         return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT ? 1 : 0) || (*b == '_');
     } else {
@@ -1895,7 +1887,8 @@ char_is_identifier_start(const pm_parser_t *parser, const uint8_t *b, ptrdiff_t 
 
 /**
  * Similar to char_is_identifier but this function assumes that the encoding
- * has not been changed.
+ * has not been changed, or that the byte is below 0x80 and so is the same
+ * character in every encoding.
  */
 static PRISM_INLINE size_t
 char_is_identifier_utf8(const uint8_t *b, ptrdiff_t n) {
@@ -2095,18 +2088,8 @@ static PRISM_INLINE size_t
 char_is_identifier(const pm_parser_t *parser, const uint8_t *b, ptrdiff_t n) {
     if (n <= 0) {
         return 0;
-    } else if (parser->encoding_changed) {
-        size_t width;
-
-        if ((width = pm_encoding_alnum_char(parser->encoding, b, n)) != 0) {
-            return width;
-        } else if (*b == '_') {
-            return 1;
-        } else if (*b >= 0x80) {
-            return pm_encoding_char_width(parser->encoding, b, n);
-        } else {
-            return 0;
-        }
+    } else if (parser->encoding_changed && *b >= 0x80) {
+        return pm_encoding_char_width(parser->encoding, b, n);
     } else {
         return char_is_identifier_utf8(b, n);
     }
@@ -8626,17 +8609,18 @@ lex_identifier(pm_parser_t *parser, bool previous_command_start) {
     const uint8_t *current_end = parser->current.end;
     bool encoding_changed = parser->encoding_changed;
 
+    /* Fast path: scan ASCII identifier bytes using wide operations. Every
+     * encoding that prism supports is ASCII-compatible, so this holds whether
+     * or not the encoding has been changed. */
+    current_end += scan_identifier_ascii(current_end, end);
+
+    /* Byte-at-a-time fallback for the tail and any multibyte characters. */
+    size_t width;
     if (encoding_changed) {
-        size_t width;
         while ((width = char_is_identifier(parser, current_end, end - current_end)) > 0) {
             current_end += width;
         }
     } else {
-        /* Fast path: scan ASCII identifier bytes using wide operations. */
-        current_end += scan_identifier_ascii(current_end, end);
-
-        /* Byte-at-a-time fallback for the tail and any UTF-8 sequences. */
-        size_t width;
         while ((width = char_is_identifier_utf8(current_end, end - current_end)) > 0) {
             current_end += width;
         }
