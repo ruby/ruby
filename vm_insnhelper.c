@@ -4294,20 +4294,35 @@ static const rb_callable_method_entry_t *
 aliased_callable_method_entry(const rb_callable_method_entry_t *me)
 {
     const rb_method_entry_t *orig_me = me->def->body.alias.original_me;
-    const rb_callable_method_entry_t *cme;
+    const rb_callable_method_entry_t *cme = NULL;
 
     if (orig_me->defined_class == 0) {
-        VALUE defined_class = rb_find_defined_class_by_owner(me->defined_class, orig_me->owner);
-        VM_ASSERT_TYPE(orig_me->owner, T_MODULE);
-        cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
+        // Resolving the alias mutates `me` (and may replace me->def, dropping a
+        // reference to the shared definition), so it has to be serialized: two
+        // ractors calling the same aliased method would otherwise both release
+        // the same definition, underflowing its reference_count.
+        RB_VM_LOCKING() {
+            // Another ractor may have resolved it while we waited for the lock,
+            // and it may have swapped me->def out from under us, so re-read.
+            orig_me = me->def->body.alias.original_me;
 
-        if (me->def->reference_count == 1) {
-            RB_OBJ_WRITE(me, &me->def->body.alias.original_me, cme);
-        }
-        else {
-            rb_method_definition_t *def =
-                rb_method_definition_create(VM_METHOD_TYPE_ALIAS, me->def->original_id);
-            rb_method_definition_set((rb_method_entry_t *)me, def, (void *)cme);
+            if (orig_me->defined_class == 0) {
+                VALUE defined_class = rb_find_defined_class_by_owner(me->defined_class, orig_me->owner);
+                VM_ASSERT_TYPE(orig_me->owner, T_MODULE);
+                cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
+
+                if (me->def->reference_count == 1) {
+                    RB_OBJ_WRITE(me, &me->def->body.alias.original_me, cme);
+                }
+                else {
+                    rb_method_definition_t *def =
+                        rb_method_definition_create(VM_METHOD_TYPE_ALIAS, me->def->original_id);
+                    rb_method_definition_set((rb_method_entry_t *)me, def, (void *)cme);
+                }
+            }
+            else {
+                cme = (const rb_callable_method_entry_t *)orig_me;
+            }
         }
     }
     else {

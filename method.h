@@ -188,8 +188,8 @@ struct rb_method_definition_struct {
     BITFIELD(rb_method_type_t, type, VM_METHOD_TYPE_MINIMUM_BITS);
     unsigned int iseq_overload: 1;
     unsigned int no_redef_warning: 1;
-    unsigned int aliased : 1;
     unsigned int uncached : 1;
+    bool aliased; // set without the VM lock while bitfields could be read
 
     rb_atomic_t reference_count;
 
