@@ -577,6 +577,7 @@ init_cache_opcodes_inner(
     cache_opcodes->outer_repeat_mem = current_repeat_mem;\
     cache_opcodes->num_cache_points_at_outer_repeat = 0;\
     cache_opcodes->num_cache_points_in_outer_repeat = 0;\
+    cache_opcodes->num_cache_points_of_outer_repeat_inc = 0;\
     cache_opcodes->lookaround_nesting = lookaround_nesting;\
     cache_opcodes->match_addr = NULL;\
     cache_point += lookaround_nesting != 0 ? 2 : 1;\
@@ -733,14 +734,21 @@ init_cache_opcodes_inner(
             }
             OnigRepeatRange *repeat_range = &reg->repeat_range[repeat_mem];
             if (repeat_range->lower < repeat_range->upper) {
+              MemNumType outer_repeat_mem = current_repeat_mem;
+              long outer_cache_point = cache_point;
+              pbegin = p - SIZE_OP_REPEAT_INC;
+              current_repeat_mem = repeat_mem;
+              cache_point = num_cache_points_in_repeat;
               INC_CACHE_OPCODES;
-              cache_point -= lookaround_nesting != 0 ? 2 : 1;
+              current_repeat_mem = outer_repeat_mem;
+              cache_point = outer_cache_point;
             }
             int repeat_bounds = repeat_range->upper == 0x7fffffff ? 1 : repeat_range->upper - repeat_range->lower;
             cache_point += num_cache_points_in_repeat * repeat_range->lower + (num_cache_points_in_repeat + (lookaround_nesting != 0 ? 2 : 1)) * repeat_bounds;
             for (; cache_opcodes_in_repeat < cache_opcodes; cache_opcodes_in_repeat++) {
               cache_opcodes_in_repeat->num_cache_points_at_outer_repeat = num_cache_points_at_repeat;
               cache_opcodes_in_repeat->num_cache_points_in_outer_repeat = num_cache_points_in_repeat;
+              cache_opcodes_in_repeat->num_cache_points_of_outer_repeat_inc = lookaround_nesting != 0 ? 2 : 1;
             }
           }
         }
@@ -2240,6 +2248,7 @@ find_cache_point(regex_t* reg, const OnigCacheOpcode* cache_opcodes, long num_ca
   long cache_point;
   long num_cache_points_at_outer_repeat;
   long num_cache_points_in_outer_repeat;
+  long num_cache_points_of_outer_repeat_inc;
 
   m = bsearch_cache_opcodes(cache_opcodes, num_cache_opcodes, p);
 
@@ -2256,6 +2265,7 @@ find_cache_point(regex_t* reg, const OnigCacheOpcode* cache_opcodes, long num_ca
 
   num_cache_points_at_outer_repeat = cache_opcode->num_cache_points_at_outer_repeat;
   num_cache_points_in_outer_repeat = cache_opcode->num_cache_points_in_outer_repeat;
+  num_cache_points_of_outer_repeat_inc = cache_opcode->num_cache_points_of_outer_repeat_inc;
 
   range = &reg->repeat_range[cache_opcode->outer_repeat_mem];
 
@@ -2270,13 +2280,13 @@ find_cache_point(regex_t* reg, const OnigCacheOpcode* cache_opcodes, long num_ca
 
   if (range->upper == 0x7fffffff) {
     return num_cache_points_at_outer_repeat +
-      num_cache_points_in_outer_repeat * (range->lower - (is_inc ? 1 : 0)) + (is_inc ? 0 : 1) +
+      num_cache_points_in_outer_repeat * (range->lower - (is_inc ? 1 : 0)) + (is_inc ? 0 : num_cache_points_of_outer_repeat_inc) +
       cache_point;
   }
 
   return num_cache_points_at_outer_repeat +
     num_cache_points_in_outer_repeat * (range->lower - 1) +
-    (num_cache_points_in_outer_repeat + 1) * (count - range->lower + 1) +
+    (num_cache_points_in_outer_repeat + num_cache_points_of_outer_repeat_inc) * (count - range->lower + 1) +
     cache_point;
 }
 

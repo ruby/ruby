@@ -2044,6 +2044,27 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_match_cache_with_range_repeat
+    pre = ->(n) {"a" * n + "!"}
+    [
+      /(?:a|a){4,}[bc]?\z/,
+      /(?:a+){4,}[bc]?\z/,
+      /(?:a|a){2,100}[bc]?\z/,
+      /(?:a|a){4,}?[bc]?\z/,
+    ].each do |re|
+      assert_linear_performance([10, 29], pre: pre) do |s|
+        assert_no_match(re, s)
+      end
+    end
+  end
+
+  def test_match_cache_with_range_repeat_in_lookaround
+    re = /(?!(?:[^#]+?){3,}\0c?.)/n
+    assert_equal(0, "ab\0c!" =~ re)
+    assert_equal(6, "\0" * 10 =~ re)
+    assert_equal(36, "\0" * 40 =~ re)
+  end
+
   def test_absent
     assert_equal(0, /(?~(a|c)c)/ =~ "abb")
     assert_equal("abb", $&)
