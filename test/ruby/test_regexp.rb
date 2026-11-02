@@ -1153,6 +1153,17 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("baz", $+)
   end
 
+  def test_index_with_assertion_before_leading_anychar_star
+    assert_equal(4, "xxx\n\0".index(/^.*\0/m, 1))
+    assert_equal(4, "aaaa \0".index(/\b.*\0/m, 1))
+    assert_equal(4, "aaaa bx".index(/\b.*x/, 1))
+    assert_equal(3, "aa\nb\0".index(/(?=b).*\0/m))
+    assert_equal(2, "ab\n\0".index(/$.*\0/m))
+    assert_equal(2, "aa\0".index(/(?!a).*\0/m))
+    assert_equal(3, "xxx \0".index(/(?:^|\b).*\0/m, 1))
+    assert_equal(2, "x\nyx".index(/^.*x/, 1))
+  end
+
   def test_rindex_regexp
     # use eval because only one warning is shown for the same regexp literal
     pat = eval('/b../n')
