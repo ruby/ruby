@@ -1277,13 +1277,16 @@ pub enum Insn {
     /// inline and jump straight to its JIT entry. `iseq` is the comptime-known block iseq; the
     /// tag + iseq-identity guards live in preceding HIR instructions, and `captured` is the
     /// guarded, untagged `struct rb_captured_block *` codegen reads self/ep from. Args are the
-    /// positional arguments (lead-only, exact arity).
+    /// positional arguments the block receives (lead-only, exact arity).
     InvokeBlockIseqDirect {
         iseq: IseqPtr,
         /// Guarded `struct rb_captured_block *` (block handler with the ISEQ tag masked off).
         captured: InsnId,
         args: Vec<InsnId>,
+        /// Frame state with the block's normalized arguments; don't exit with it
         state: InsnId,
+        /// Snapshot of the original `yield`, for exits that re-execute it in the interpreter
+        exit_state: InsnId,
     },
 
     /// Optimized ISEQ call
@@ -1705,10 +1708,11 @@ macro_rules! for_each_operand_impl {
                 $visit_many!(args);
                 $visit_one!(*state);
             }
-            Insn::InvokeBlockIseqDirect { captured, args, state, .. } => {
+            Insn::InvokeBlockIseqDirect { captured, args, state, exit_state, .. } => {
                 $visit_one!(*captured);
                 $visit_many!(args);
                 $visit_one!(*state);
+                $visit_one!(*exit_state);
             }
             Insn::InvokeBlockIfunc { block_handler, args, state, .. } => {
                 $visit_one!(*block_handler);
@@ -3272,19 +3276,21 @@ fn can_direct_invoke_block(flags: u32) -> bool {
 }
 
 /// Ok if `yield` with `argc` positional args can dispatch by inlining the block ISEQ
-/// frame. The block must take the simple callee-setup path (`rb_simple_iseq_p`)
-/// with an exact arity match, avoid arg0 auto-splat, and contain no `throw` (break /
-/// non-local return). Anything else falls back to the generic `invokeblock` dispatch,
-/// with the returned reason attached to the fallback instruction.
+/// frame. The block must take the simple callee-setup path (`rb_simple_iseq_p`),
+/// avoid arg0 auto-splat, receive at least `lead_num` args, and contain no `throw`
+/// (break / non-local return). Like vm_callee_setup_block_arg, surplus args are
+/// dropped. Anything else falls back to the generic `invokeblock` dispatch, with the
+/// returned reason attached to the fallback instruction.
 fn can_direct_invoke_block_iseq(iseq: IseqPtr, argc: usize) -> Result<(), SendFallbackReason> {
     if !unsafe { rb_simple_iseq_p(iseq) } {
         return Err(InvokeBlockNotSpecialized);
     }
     let lead_num = unsafe { rb_get_iseq_body_param_lead_num(iseq) } as usize;
-    if argc != lead_num {
+    if argc < lead_num {
         return Err(InvokeBlockNotSpecialized);
     }
-    if argc == 1 && !unsafe { rb_get_iseq_flags_ambiguous_param0(iseq) } {
+    // A single arg may be auto-splatted when the block has lead params, unless it is `|a|`.
+    if argc == 1 && lead_num > 0 && !unsafe { rb_get_iseq_flags_ambiguous_param0(iseq) } {
         return Err(InvokeBlockNotSpecialized);
     }
     if crate::codegen::block_iseq_may_throw(iseq) {
@@ -3401,6 +3407,12 @@ impl Function {
         self.push_insn(block, Insn::IntAnd { left: block_handler, right: untag_mask })
     }
 
+    fn push_invoke_block_iseq_direct_insn(&mut self, block: BlockId, block_iseq: IseqPtr, captured: InsnId, args: &[InsnId], state: InsnId) -> InsnId {
+        let call = Self::plan_block_iseq_direct_args(args, block_iseq);
+        let SendDirectArgs { state: call_state, args, .. } = self.emit_send_direct_args(block, call, args, state, state);
+        self.push_insn(block, Insn::InvokeBlockIseqDirect { iseq: block_iseq, captured, args, state: call_state, exit_state: state })
+    }
+
     /// Dispatch `yield` to a known ISEQ block without guarding tag or ISEQ. When the enclosing method is
     /// inlined and the caller passed a literal block, [`Insn::PushInlineFrame`] wrote that exact
     /// block into this frame's EP from a compile-time constant, so both guards are unnecessary.
@@ -3408,7 +3420,7 @@ impl Function {
         let ep = self.get_ep(block, level);
         let block_handler = self.load_ep_env_field(block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
         let captured = self.untag_block_handler(block, block_handler);
-        self.push_insn(block, Insn::InvokeBlockIseqDirect { iseq: block_iseq, captured, args, state })
+        self.push_invoke_block_iseq_direct_insn(block, block_iseq, captured, &args, state)
     }
 
     /// Dispatch `yield` to the profiled ISEQ blocks. If `monomorphic_iseq`, it guards on a single ISEQ
@@ -3446,7 +3458,7 @@ impl Function {
             let captured_iseq = self.load_captured_code_iseq(block, captured);
             self.push_insn(block, Insn::GuardBitEquals { val: captured_iseq, expected: Const::Value(VALUE::from(block_iseq)), reason: Box::new(SideExitReason::InvokeBlockIseqChanged), state, recompile: Some(Recompile) });
 
-            let result = self.push_insn(block, Insn::InvokeBlockIseqDirect { iseq: block_iseq, captured, args, state });
+            let result = self.push_invoke_block_iseq_direct_insn(block, block_iseq, captured, &args, state);
             return (block, result);
         }
 
@@ -3479,7 +3491,7 @@ impl Function {
                 if_true: BranchEdge { target: direct_block, args: vec![] },
                 if_false: BranchEdge { target: miss_block, args: vec![] },
             });
-            let direct_result = self.push_insn(direct_block, Insn::InvokeBlockIseqDirect { iseq: block_iseq, captured, args: args.clone(), state });
+            let direct_result = self.push_invoke_block_iseq_direct_insn(direct_block, block_iseq, captured, &args, state);
             self.push_insn(direct_block, Insn::Jump(BranchEdge { target: join_block, args: vec![direct_result] }));
             compare_block = miss_block;
         }
@@ -4458,6 +4470,16 @@ impl Function {
                 state,
                 recompile: None,
             });
+        }
+    }
+
+    /// Requires can_direct_invoke_block_iseq to have accepted this call.
+    fn plan_block_iseq_direct_args(args: &[InsnId], iseq: IseqPtr) -> SendDirectCall {
+        let lead_num = unsafe { rb_get_iseq_body_param_lead_num(iseq) } as usize;
+        SendDirectCall {
+            args: args[..lead_num].iter().copied().map(SendDirectArg::Existing).collect(),
+            kw_bits: 0,
+            jit_entry_idx: 0,
         }
     }
 
@@ -6185,9 +6207,9 @@ impl Function {
                         (InlineCall::Send { recv }, cme, iseq, kw_bits, jit_entry_idx, block, state, exit_state, data.args.len())
                     }
                     // `can_direct_invoke_block_iseq` only accepts blocks with lead parameters, so it has 0 kw_bits and
-                    // uses JIT entry 0 (no optional arguments). A stack overflow exists with `state` to rerun the `yield`.
-                    &Insn::InvokeBlockIseqDirect { iseq, captured, ref args, state } =>
-                        (InlineCall::InvokeBlock { captured }, ptr::null(), iseq, 0, 0, None, state, state, args.len()),
+                    // uses JIT entry 0 (no optional arguments).
+                    &Insn::InvokeBlockIseqDirect { iseq, captured, ref args, state, exit_state } =>
+                        (InlineCall::InvokeBlock { captured }, ptr::null(), iseq, 0, 0, None, state, exit_state, args.len()),
                     _ => unreachable!("position {send_insn_id} is not a SendDirect or InvokeBlockIseqDirect"),
                 };
                 // TODO(max): If we accept BlockArg here, we need to change the folding of Defined
