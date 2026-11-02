@@ -289,6 +289,24 @@ PRISM_EXPORTED_FUNCTION uint8_t pm_options_raise_error(const pm_options_t *optio
 PRISM_EXPORTED_FUNCTION void pm_options_raise_error_set(pm_options_t *options, uint8_t raise_error) PRISM_NONNULL(1);
 
 /**
+ * Set the stack_budget option on the given options struct. This is the number
+ * of bytes of C stack that the parser may use, measured from where pm_parse is
+ * called. Deeply nested input that would go past it is reported as nested too
+ * deeply instead of overflowing the stack. Callers should pass less than the
+ * stack they actually have left, since the parser checks the budget between
+ * frames rather than inside every one, and anything that walks the tree
+ * afterward recurses on the same stack. A budget of 0 leaves no room for any
+ * expression, so every one is reported as nested too deeply. A budget of
+ * SIZE_MAX (the default) disables the check, leaving PRISM_DEPTH_MAXIMUM as the
+ * only bound, which assumes a stack of roughly 8MB.
+ *
+ * @param options The options struct to set the stack_budget value on.
+ * @param stack_budget The stack_budget value to set, in bytes, or SIZE_MAX for
+ *     no budget.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_stack_budget_set(pm_options_t *options, size_t stack_budget) PRISM_NONNULL(1);
+
+/**
  * Allocate and zero out the scopes array on the given options struct.
  *
  * @param options The options struct to initialize the scopes array on.

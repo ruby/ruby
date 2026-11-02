@@ -2,6 +2,8 @@
 #define PRISM_INTERNAL_PARSER_H
 
 #include "prism/compiler/accel.h"
+#include "prism/compiler/inline.h"
+#include "prism/compiler/stack.h"
 
 #include "prism/internal/arena.h"
 #include "prism/internal/comments.h"
@@ -879,6 +881,19 @@ struct pm_parser_t {
      */
     pm_node_list_t *current_block_exits;
 
+    /*
+     * The address of the C stack when pm_parse was entered. The stack budget
+     * is measured as the distance from this address.
+     */
+    uintptr_t stack_base;
+
+    /*
+     * The number of bytes of C stack below stack_base that the recursive
+     * descent may use before it reports that the input is nested too deeply.
+     * SIZE_MAX when no budget was given, so the check never fires.
+     */
+    size_t stack_budget;
+
     /* The version of prism that we should use to parse. */
     pm_options_version_t version;
 
@@ -1011,5 +1026,19 @@ void pm_parser_cleanup(pm_parser_t *parser);
  * same lookup that the lexer does.
  */
 bool pm_keyword_p(const uint8_t *start, const uint8_t *end);
+
+/*
+ * Returns true if parsing has used more C stack since pm_parse was entered than
+ * the stack budget allows. Every recursion that runs inside pm_parse checks
+ * this alongside its own depth limit, so that the budget bounds all of them.
+ * The distance is taken without assuming which direction the stack grows. With
+ * no budget the limit is SIZE_MAX, so this never fires.
+ */
+static PRISM_INLINE bool
+pm_parser_stack_exhausted(const pm_parser_t *parser) {
+    uintptr_t current = pm_stack_address();
+    uintptr_t used = current < parser->stack_base ? parser->stack_base - current : current - parser->stack_base;
+    return used > parser->stack_budget;
+}
 
 #endif

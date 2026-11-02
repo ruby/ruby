@@ -1506,11 +1506,13 @@ match_byteoffset(VALUE match, VALUE n)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    bytebegin(n) -> integer
  *    bytebegin(name) -> integer
  *
- *  :include: doc/matchdata/bytebegin.rdoc
+ *  :include: doc/matchdata/bytebegin.md
  *
  */
 
@@ -1529,11 +1531,13 @@ match_bytebegin(VALUE match, VALUE n)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    byteend(n) -> integer
  *    byteend(name) -> integer
  *
- *  :include: doc/matchdata/byteend.rdoc
+ *  :include: doc/matchdata/byteend.md
  *
  */
 
@@ -1552,11 +1556,13 @@ match_byteend(VALUE match, VALUE n)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    begin(n) -> integer
  *    begin(name) -> integer
  *
- *  :include: doc/matchdata/begin.rdoc
+ *  :include: doc/matchdata/begin.md
  *
  */
 
@@ -1861,7 +1867,7 @@ reg_prepare_re(VALUE re, VALUE str, bool caller_owned)
     onig_errmsg_buffer err = "";
     unescaped = rb_reg_preprocess(
         pattern, pattern + RSTRING_LEN(src_str), enc,
-        &fixed_enc, err, 0);
+        &fixed_enc, err, reg->options);
 
     if (NIL_P(unescaped)) {
         rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
@@ -2353,16 +2359,22 @@ match_to_a(VALUE match)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    captures -> array
  *
- *  Returns the array of captures,
- *  which are all matches except <tt>m[0]</tt>:
+ *  Returns an array of the captured substrings,
+ *  including all except the entire matched substring:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m[0]       # => "HX1138"
- *    m.captures # => ["H", "X", "113", "8"]
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.captures # => ["2026", "12", "25"]
+ *  match[1..]     # => ["2026", "12", "25"]  # Included in array.
+ *  match[0]       # => "2026-12-25"          # Not included in array.
+ *  ```
  *
  *  Related: MatchData.to_a.
  *
@@ -2902,22 +2914,25 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    inspect -> string
  *
- *  Returns a string representation of +self+:
+ *  Returns a string representation of `self`:
  *
- *    m = /.$/.match("foo")
- *    # => #<MatchData "o">
- *    m.inspect # => "#<MatchData \"o\">"
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  match.inspect # => "#<MatchData \"2026-12-25\" 1:\"2026\" 2:\"12\" 3:\"25\">"
  *
- *    m = /(.)(.)(.)/.match("foo")
- *    # => #<MatchData "foo" 1:"f" 2:"o" 3:"o">
- *    m.inspect # => "#<MatchData \"foo\" 1:\"f\" 2:\"o\
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  match.inspect # => "#<MatchData \"んにち\" 1:\"ん\" 2:\"に\" 3:\"ち\">"
  *
- *    m = /(.)(.)?(.)/.match("fo")
- *    # => #<MatchData "fo" 1:"f" 2:nil 3:"o">
- *    m.inspect # => "#<MatchData \"fo\" 1:\"f\" 2:nil 3:\"o\">"
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  match.inspect # => "#<MatchData \"2026-12-25\" year:\"2026\" month:\"12\" day:\"25\">"
+ *  ```
  *
  *  Related: MatchData#to_s.
  */
@@ -3901,11 +3916,13 @@ rb_reg_equal(VALUE re1, VALUE re2)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    hash -> integer
  *
- *  Returns the integer hash value for +self+,
- *  based on the target string, regexp, match, and captures.
+ *  Returns the integer hash value for `self`,
+ *  based on its target string, regexp, match, and captures.
  *
  *  See also Object#hash.
  *
@@ -3967,53 +3984,56 @@ match_equal(VALUE match1, VALUE match2)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    integer_at(n, radix = 10) -> integer or nil
  *    integer_at(name, radix = 10) -> integer or nil
  *
  *  Returns a captured substring converted to an integer;
- *  the substring is interpreted as a numeric string in the given +radix+,
- *  which defaults to +10+.
+ *  the substring is interpreted as a numeric string in the given `radix`.
  *
- *  With integer index +n+ given,
- *  returns the <tt>n</tt>th capture converted to an integer:
+ *  With integer index `n` given,
+ *  returns the `n`th capture converted to an integer:
  *
- *    re = /(\d+{4})(\d+{2})(\d+{2})/  # Capture year, month, day.
- *    m = re.match("20260308")
- *    # => #<MatchData "20260308" 1:"2026" 2:"03" 3:"08">
- *    m.integer_at(0)  # => 20260308
- *    m.integer_at(1)  # => 2026
- *    m.integer_at(2)  # => 3
- *    m.integer_at(3)  # => 8
- *    m.integer_at(4)  # => nil
- *    m.integer_at(-1) # => 8  # For negative index, counts backward in the captures.
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[0]             # => "2026-12-25"
+ *  match.integer_at(0)  # => 2026  # Stops interpreting at the hyphen.
+ *  match.integer_at(1)  # => 2026
+ *  match.integer_at(2)  # => 12
+ *  match.integer_at(3)  # => 25
+ *  match.integer_at(-1) # => 25    # For negative n, counts backwards in the captures.
+ *  match.integer_at(4) # => nil
+ *  ```
  *
- *  With string +name+ given,
+ *  With string or symbol `name` given,
  *  returns the named capture converted to an integer:
  *
- *    re = /(?<y>\d+{4})(?<m>\d+{2})(?<d>\d+{2})/
- *    m = re.match("20260308")
- *    # => #<MatchData "20260308" y:"2026" m:"03" d:"08">
- *    m.integer_at('y')      # => 2026
- *    m.integer_at('m')      # => 3
- *    m.integer_at('d')      # => 8
- *    m.integer_at('nosuch') # Raises IndexError: undefined group name reference: nosuch.
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.integer_at(:year)   # => 2026
+ *  match.integer_at('month') # => 12
+ *  match.integer_at(:nosuch) # Raises IndexError: undefined group name reference: nosuch.
+ *  ```
  *
- *  Returns +nil+ if there were no captures:
+ *  Returns `nil` if there were no captures.
  *
- *    re = /(\d+)?/
- *    m = re.match('abc')
- *    m.integer_at(0) # => nil
+ *  For both forms above, the string is converted in the given `radix`:
  *
- *  The string is converted in the given +radix+:
- *
- *    re = /\d+/
- *    m = re.match('11')
- *    m.integer_at(0)     # => 11
- *    m.integer_at(0, 2)  # => 3
- *    m.integer_at(0, 8)  # => 9
- *    m.integer_at(0, 16) # => 17
- *    m.integer_at(0, 1)  # Raises ArgumentError: invalid radix 1.
+ *  ```ruby
+ *  match = /\d+/.match('11')
+ *  # => #<MatchData "11">
+ *  match.integer_at(0)     # => 11
+ *  match.integer_at(0, 2)  # => 3
+ *  match.integer_at(0, 8)  # => 9
+ *  match.integer_at(0, 16) # => 17
+ *  match.integer_at(0, 1)  # Raises ArgumentError: invalid radix 1.
+ *  ```
  *
  *  Related: MatchData#[], String#to_i.
  */

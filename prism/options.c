@@ -20,6 +20,7 @@ pm_options_new(void) {
     if (options == NULL) PRISM_OOM();
 
     options->line = 1;
+    options->stack_budget = SIZE_MAX;
     return options;
 }
 
@@ -268,6 +269,14 @@ void pm_options_raise_error_set(pm_options_t *options, uint8_t raise_error) {
     options->raise_error = raise_error;
 }
 
+/**
+ * Set the stack_budget option on the given options struct.
+ */
+void
+pm_options_stack_budget_set(pm_options_t *options, size_t stack_budget) {
+    options->stack_budget = stack_budget;
+}
+
 // For some reason, GCC analyzer thinks we're leaking allocated scopes and
 // locals here, even though we definitely aren't. This is a false positive.
 // Ideally we wouldn't need to suppress this.
@@ -384,6 +393,7 @@ pm_options_read_s32(const char *data) {
 void
 pm_options_read(pm_options_t *options, const char *data) {
     options->line = 1; // default
+    options->stack_budget = SIZE_MAX; // default
     if (data == NULL) return;
 
     uint32_t filepath_length = pm_options_read_u32(data);

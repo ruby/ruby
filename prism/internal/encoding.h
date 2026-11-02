@@ -1,6 +1,8 @@
 #ifndef PRISM_INTERNAL_ENCODING_H
 #define PRISM_INTERNAL_ENCODING_H
 
+#include "prism/excludes.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

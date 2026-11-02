@@ -710,11 +710,11 @@ pm_regexp_parse_hex_escape(pm_regexp_parser_t *parser) {
  * \p/\P (property), \x (hex), and other single-character escapes. Also
  * tracks encoding state for \M-x and \C-\M-x escapes. The meta and control
  * forms can wrap another escape, so this recurses and is bounded by the same
- * depth limit as groups and character sets.
+ * depth limit and stack budget as groups and character sets.
  */
 static bool
 pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser, uint16_t depth) {
-    if (depth >= PM_REGEXP_PARSE_DEPTH_MAX) {
+    if (depth >= PM_REGEXP_PARSE_DEPTH_MAX || pm_parser_stack_exhausted(parser->parser)) {
         pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
         return false;
     }
@@ -846,7 +846,7 @@ pm_regexp_parse_character_set(pm_regexp_parser_t *parser, uint16_t depth) {
  */
 static bool
 pm_regexp_parse_lbracket(pm_regexp_parser_t *parser, uint16_t depth) {
-    if (depth >= PM_REGEXP_PARSE_DEPTH_MAX) {
+    if (depth >= PM_REGEXP_PARSE_DEPTH_MAX || pm_parser_stack_exhausted(parser->parser)) {
         pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
         return false;
     }
@@ -1005,6 +1005,16 @@ pm_regexp_options_state(pm_regexp_options_t *options, uint8_t key) {
  */
 static bool
 pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
+    /* Every level of nested groups passes through here, so this bounds the
+     * group recursion by the stack budget. The check lives here rather than
+     * beside the depth check in pm_regexp_parse_expression because there it
+     * stops that function from being inlined, which adds a frame to every
+     * level of nesting. */
+    if (pm_parser_stack_exhausted(parser->parser)) {
+        pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
+        return false;
+    }
+
     const uint8_t *group_start = parser->cursor;
 
     pm_regexp_options_t options;

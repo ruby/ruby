@@ -41,6 +41,7 @@
 #include "internal/sanitizers.h"
 #include "internal/variable.h"
 #include "internal/warnings.h"
+#include "ruby/internal/attr/nonstring.h"
 #include "ruby/atomic.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
@@ -64,22 +65,23 @@ static const bool debug_integer_pack = (
 #endif
     ) != 0;
 
-const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+RBIMPL_ATTR_NONSTRING() const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
-/* Two-digit decimal lookup table.  Offset 2*n holds the ASCII pair for
+/* Two-digit decimal lookup table.  Offset n holds the ASCII pair for
  * n in the range 0..99.  Used by both rb_fix2str in numeric.c and
  * big2str_2bdigits below to emit two base-10 digits per iteration. */
-const char ruby_decimal_digit_pairs[201] =
-    "00010203040506070809"
-    "10111213141516171819"
-    "20212223242526272829"
-    "30313233343536373839"
-    "40414243444546474849"
-    "50515253545556575859"
-    "60616263646566676869"
-    "70717273747576777879"
-    "80818283848586878889"
-    "90919293949596979899";
+RBIMPL_ATTR_NONSTRING_ARRAY() const char ruby_decimal_digit_pairs[100][2] = {
+    "00", "01", "02", "03", "04", "05", "06", "07", "08", "09",
+    "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+    "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+    "30", "31", "32", "33", "34", "35", "36", "37", "38", "39",
+    "40", "41", "42", "43", "44", "45", "46", "47", "48", "49",
+    "50", "51", "52", "53", "54", "55", "56", "57", "58", "59",
+    "60", "61", "62", "63", "64", "65", "66", "67", "68", "69",
+    "70", "71", "72", "73", "74", "75", "76", "77", "78", "79",
+    "80", "81", "82", "83", "84", "85", "86", "87", "88", "89",
+    "90", "91", "92", "93", "94", "95", "96", "97", "98", "99",
+};
 
 #ifndef SIZEOF_BDIGIT_DBL
 # if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
@@ -4797,7 +4799,7 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
 
 struct big2str_struct {
     int negative;
-    int base;
+    unsigned int base;
     BDIGIT_DBL hbase2;
     int hbase2_numdigits;
     VALUE result;
@@ -4820,7 +4822,6 @@ big2str_2bdigits(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t tail
 {
     size_t j;
     BDIGIT_DBL num;
-    char buf[SIZEOF_BDIGIT_DBL*CHAR_BIT], *p;
     int beginning = !b2s->ptr;
     size_t len = 0;
 
@@ -4828,77 +4829,24 @@ big2str_2bdigits(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t tail
     num = bary2bdigitdbl(xds, xn);
 
     if (beginning) {
+        char buf[SIZEOF_BDIGIT_DBL*CHAR_BIT], *p = buf;
         if (num == 0)
             return;
-        p = buf;
         j = sizeof(buf);
-        if (b2s->base == 10) {
-            /* Emit two decimal digits per iteration from ruby_decimal_digit_pairs.
-             * See the comment on the table in bignum.c near ruby_digitmap. */
-            while (num >= 100) {
-                BDIGIT_DBL idx = (num % 100) * 2;
-                num /= 100;
-                j -= 2;
-                p[j]     = ruby_decimal_digit_pairs[idx];
-                p[j + 1] = ruby_decimal_digit_pairs[idx + 1];
-            }
-            if (num >= 10) {
-                BDIGIT_DBL idx = num * 2;
-                j -= 2;
-                p[j]     = ruby_decimal_digit_pairs[idx];
-                p[j + 1] = ruby_decimal_digit_pairs[idx + 1];
-            }
-            else {
-                /* num is 1..9 here (0 was handled above) */
-                p[--j] = (char)('0' + num);
-            }
-        }
-        else {
-            do {
-                BDIGIT_DBL idx = num % b2s->base;
-                num /= b2s->base;
-                p[--j] = ruby_digitmap[idx];
-            } while (num);
-        }
+        j -= ruby_convert_to_digits(&p[j], num, b2s->base);
         len = sizeof(buf) - j;
         big2str_alloc(b2s, len + taillen);
         MEMCPY(b2s->ptr, buf + j, char, len);
     }
     else {
-        p = b2s->ptr;
+        char *p = b2s->ptr;
         j = b2s->hbase2_numdigits;
-        if (b2s->base == 10) {
-            /* Non-beginning chunks must emit EXACTLY hbase2_numdigits,
-             * zero-padded on the left.  Consume num in 2-digit groups,
-             * handle the odd trailing digit, then memset remaining
-             * positions with '0'. */
-            while (num >= 100) {
-                BDIGIT_DBL idx = (num % 100) * 2;
-                num /= 100;
-                j -= 2;
-                p[j]     = ruby_decimal_digit_pairs[idx];
-                p[j + 1] = ruby_decimal_digit_pairs[idx + 1];
-            }
-            if (num >= 10) {
-                BDIGIT_DBL idx = num * 2;
-                j -= 2;
-                p[j]     = ruby_decimal_digit_pairs[idx];
-                p[j + 1] = ruby_decimal_digit_pairs[idx + 1];
-            }
-            else if (num > 0) {
-                p[--j] = (char)('0' + num);
-            }
-            if (j > 0) {
-                memset(p, '0', j);
-                j = 0;
-            }
-        }
-        else {
-            do {
-                BDIGIT_DBL idx = num % b2s->base;
-                num /= b2s->base;
-                p[--j] = ruby_digitmap[idx];
-            } while (j);
+        j -= ruby_convert_to_digits(&p[j], num, b2s->base);
+        /* Non-beginning chunks must emit EXACTLY hbase2_numdigits,
+         * zero-padded on the left.  Consume num, then memset
+         * remaining positions with '0'. */
+        if (j > 0) {
+            memset(p, '0', j);
         }
         len = b2s->hbase2_numdigits;
     }
@@ -5052,7 +5000,7 @@ big2str_base_poweroftwo(VALUE x, int base)
     rb_integer_pack(x, ptr, numwords, 1, CHAR_BIT-word_numbits,
                     INTEGER_PACK_BIG_ENDIAN);
     while (0 < numwords) {
-        *ptr = ruby_digitmap[*(unsigned char *)ptr];
+        *ptr = ruby_digitmap[(unsigned char)*ptr];
         ptr++;
         numwords--;
     }
@@ -5113,7 +5061,7 @@ big2str_generic(VALUE x, int base)
     }
 
     b2s_data.negative = BIGNUM_NEGATIVE_P(x);
-    b2s_data.base = base;
+    b2s_data.base = (unsigned int)base;
     b2s_data.hbase2 = maxpow_in_bdigit_dbl(base, &b2s_data.hbase2_numdigits);
 
     b2s_data.result = Qnil;
@@ -6893,7 +6841,7 @@ rb_big_aref2(VALUE x, VALUE beg, VALUE len)
         v = bignew(copy_end - copy_begin, 1);
         vds = BDIGITS(v);
         MEMCPY(vds, xds + copy_begin, BDIGIT, copy_end - copy_begin);
-        negative_add_one = (vds[0] & ((1 << shift_bits) - 1)) == 0;
+        negative_add_one = (vds[0] & (((BDIGIT)1 << shift_bits) - 1)) == 0;
         v = bignorm(v);
         if (shift_bits) v = rb_int_rshift(v, SIZET2NUM(shift_bits));
     }
