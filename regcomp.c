@@ -115,6 +115,12 @@ distance_multiply(OnigDistance d, int m)
 }
 
 static int
+distance_to_int(OnigDistance d)
+{
+  return d > INT_MAX_LIMIT ? (int )INT_MAX_LIMIT : (int )d;
+}
+
+static int
 bitset_is_empty(BitSetRef bs)
 {
   int i;
@@ -2530,8 +2536,13 @@ get_char_length_tree1(Node* node, regex_t* reg, int* len, int level)
   case NT_LIST:
     do {
       r = get_char_length_tree1(NCAR(node), reg, &tlen, level);
-      if (r == 0)
-        *len = (int )distance_add(*len, tlen);
+      if (r == 0) {
+        OnigDistance d = distance_add((OnigDistance )*len, (OnigDistance )tlen);
+        if (d > INT_MAX_LIMIT)
+          r = GET_CHAR_LEN_VARLEN;
+        else
+          *len = (int )d;
+      }
     } while (r == 0 && IS_NOT_NULL(node = NCDR(node)));
     break;
 
@@ -2577,8 +2588,13 @@ get_char_length_tree1(Node* node, regex_t* reg, int* len, int level)
       QtfrNode* qn = NQTFR(node);
       if (qn->lower == qn->upper) {
         r = get_char_length_tree1(qn->target, reg, &tlen, level);
-        if (r == 0)
-          *len = (int )distance_multiply(tlen, qn->lower);
+        if (r == 0) {
+          OnigDistance d = distance_multiply((OnigDistance )tlen, qn->lower);
+          if (d > INT_MAX_LIMIT)
+            r = GET_CHAR_LEN_VARLEN;
+          else
+            *len = (int )d;
+        }
       }
       else
         r = GET_CHAR_LEN_VARLEN;
@@ -4943,7 +4959,7 @@ concat_left_node_opt_info(OnigEncoding enc, NodeOptInfo* to, NodeOptInfo* add)
 
   if (to->expr.len > 0) {
     if (add->len.max > 0) {
-      if (to->expr.len > (int )add->len.max)
+      if ((OnigDistance )to->expr.len > add->len.max)
         to->expr.len = (int )add->len.max;
 
       if (to->expr.mmd.max == 0)
@@ -5389,7 +5405,8 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
   reg->dmax = e->mmd.max;
 
   if (reg->dmin != ONIG_INFINITE_DISTANCE) {
-    reg->threshold_len = (int )(reg->dmin + (reg->exact_end - reg->exact));
+    reg->threshold_len = distance_to_int(distance_add(reg->dmin,
+                       (OnigDistance )(reg->exact_end - reg->exact)));
   }
 
   return 0;
@@ -5408,7 +5425,7 @@ set_optimize_map_info(regex_t* reg, OptMapInfo* m)
   reg->dmax       = m->mmd.max;
 
   if (reg->dmin != ONIG_INFINITE_DISTANCE) {
-    reg->threshold_len = (int )(reg->dmin + 1);
+    reg->threshold_len = distance_to_int(distance_add(reg->dmin, 1));
   }
 }
 
