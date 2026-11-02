@@ -2469,6 +2469,10 @@ rb_reg_onig_match(VALUE re, VALUE str,
 
     RB_GC_GUARD(re);
 
+    if (result == ONIGERR_MEMORY) {
+        /* e.g. for the match stack or the match cache table */
+        rb_memerror();
+    }
     if (result < 0) {
         switch (result) {
           case ONIG_MISMATCH:

@@ -892,8 +892,7 @@ typedef struct _OnigStackType {
     } absent_pos;
 #ifdef USE_MATCH_CACHE
     struct {
-      OnigPosition index; /* index of the match cache buffer */
-      uint8_t mask;       /* bit-mask for the match cache buffer */
+      OnigPosition bit;   /* of the match cache table */
     } match_cache_point;
 #endif
   } u;
@@ -940,7 +939,10 @@ typedef struct {
   long             num_cache_opcodes;
   OnigCacheOpcode* cache_opcodes;
   long             num_cache_points;
+  /* the match cache table: a flat bit array, or a sparse table (regexec.c) */
   uint8_t*         match_cache_buf;
+  struct OnigMatchCacheSparse* match_cache_sparse;
+  int              match_cache_error; /* a chunk of the sparse table could not be allocated */
 #endif
 } OnigMatchArg;
 

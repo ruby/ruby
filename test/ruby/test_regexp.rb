@@ -2405,6 +2405,20 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/(k\0)\1/i, "k\0\u212a\0")
   end
 
+  def test_match_cache_large_table
+    # The match cache table has a bit for each point (about 200,000 here) at
+    # each position; past 64 MB it is sparse.  It had no bound: a large pattern
+    # and a long subject could ask for terabytes.
+    re = /(?:a|a){0,100000}(?:a|a)*[bc]?\z/
+    assert_send([Regexp, :linear_time?, re])
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
+    begin;
+      Regexp.timeout = 30
+      re = /(?:a|a){0,100000}(?:a|a)*[bc]?\z/
+      assert_equal(3001, re =~ "a" * 3000 + "!")
+    end;
+  end
+
   def test_backref_overrun
     assert_raise_with_message(SyntaxError, /invalid backref number/) do
       eval(%["".match(/(())(?<X>)((?(90000)))/)])
