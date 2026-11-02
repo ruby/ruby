@@ -106,6 +106,14 @@
 # define ARG_UNUSED
 #endif
 
+/* For functions whose error must not be dropped, e.g. those emitting into
+   the compiled program: ignoring one leaves a broken program. */
+#if defined(__GNUC__)
+# define ONIG_NODISCARD  __attribute__ ((warn_unused_result))
+#else
+# define ONIG_NODISCARD
+#endif
+
 #if !defined(RUBY) && defined(RUBY_EXPORT)
 # define RUBY
 #endif
