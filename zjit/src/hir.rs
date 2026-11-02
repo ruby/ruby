@@ -1080,15 +1080,16 @@ pub enum Insn {
     /// * run arbitrary code if `val` is a class with a custom allocator
     ObjectAlloc { val: InsnId, state: InsnId },
     /// Allocate an instance of the `val` class without calling `#initialize` on it.
-    /// This requires that `class` has the default allocator (for example via `IsMethodCfunc`).
+    /// This requires that `class` has the default allocator (for example via `IsDefaultNew`).
     /// This won't raise or run arbitrary code because `class` has the default allocator.
     ObjectAllocClass { class: VALUE, state: InsnId },
 
     /// Check if the value is truthy and "return" a C boolean. In reality, we will likely fuse this
     /// with IfTrue/IfFalse in the backend to generate jcc.
     Test { val: InsnId },
-    /// Return C `true` if `val`'s method on cd resolves to the cfunc.
-    IsMethodCfunc { val: InsnId, cd: *const rb_call_data, cfunc: *const u8, state: InsnId },
+    /// Return C `true` if `new` on the class `val`, called with cd, allocates and calls `#initialize`
+    /// like `Class#new`, so `opt_new` can do that inline. See `rb_zjit_cme_is_default_new`.
+    IsDefaultNew { val: InsnId, cd: *const rb_call_data, state: InsnId },
     /// Return C `true` if left == right
     IsBitEqual { left: InsnId, right: InsnId },
     /// Return C `true` if left != right
@@ -1514,7 +1515,7 @@ macro_rules! for_each_operand_impl {
             | Insn::GuardAnyBitSet { val, state, .. }
             | Insn::GuardNoBitsSet { val, state, .. }
             | Insn::ToArray { val, state }
-            | Insn::IsMethodCfunc { val, state, .. }
+            | Insn::IsDefaultNew { val, state, .. }
             | Insn::ToNewArray { val, state }
             | Insn::SetLocal { val, state, .. }
             | Insn::BoxFixnum { val, state } => {
@@ -1872,7 +1873,7 @@ impl Insn {
             Insn::ObjectAlloc { .. } => effects::Any,
             Insn::ObjectAllocClass { .. } => allocates,
             Insn::Test { .. } => effects::Empty,
-            Insn::IsMethodCfunc { .. } => effects::Any,
+            Insn::IsDefaultNew { .. } => effects::Any,
             Insn::IsBitEqual { .. } => effects::Empty,
             Insn::IsBitNotEqual { .. } => effects::Empty,
             Insn::BoxBool { .. } => effects::Empty,
@@ -2284,7 +2285,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::Test { val } => { write!(f, "Test {val}") }
-            Insn::IsMethodCfunc { val, cd, .. } => { write!(f, "IsMethodCFunc {val}, :{}", ruby_call_method_name(*cd)) }
+            Insn::IsDefaultNew { val, cd, .. } => { write!(f, "IsDefaultNew {val}, :{}", ruby_call_method_name(*cd)) }
             Insn::IsBitEqual { left, right } => write!(f, "IsBitEqual {left}, {right}"),
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
@@ -3847,7 +3848,7 @@ impl Function {
             Insn::Test { val } if self.type_of(*val).is_known_falsy() => Type::from_cbool(false),
             Insn::Test { val } if self.type_of(*val).is_known_truthy() => Type::from_cbool(true),
             Insn::Test { .. } => types::CBool,
-            Insn::IsMethodCfunc { .. } => types::CBool,
+            Insn::IsDefaultNew { .. } => types::CBool,
             Insn::IsBitEqual { .. } => types::CBool,
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
@@ -5580,14 +5581,14 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                     }
-                    &Insn::IsMethodCfunc { val, cd, cfunc, state } if self.type_of(val).ruby_object_known() => {
+                    &Insn::IsDefaultNew { val, cd, state } if self.type_of(val).ruby_object_known() => {
                         let class = self.type_of(val).ruby_object().unwrap();
                         let cd_owner = self.frame_state_iseq(state);
                         let cme = unsafe { rb_zjit_vm_search_method(cd_owner.into(), cd as *mut rb_call_data, class) };
-                        let is_expected_cfunc = unsafe { rb_zjit_cme_is_cfunc(cme, cfunc as *const c_void) };
+                        let is_default_new = unsafe { rb_zjit_cme_is_default_new(cme, class) };
                         let method = unsafe { rb_vm_ci_mid((*cd).ci) };
                         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: class, method, cme }, state });
-                        let replacement = self.push_insn(block, Insn::Const { val: Const::CBool(is_expected_cfunc) });
+                        let replacement = self.push_insn(block, Insn::Const { val: Const::CBool(is_default_new) });
                         self.insn_types[replacement] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
@@ -8230,7 +8231,7 @@ impl Function {
             // Instructions with 1 Ruby object operand
             Insn::Test { val }
             | Insn::BoolNegate { val }
-            | Insn::IsMethodCfunc { val, .. }
+            | Insn::IsDefaultNew { val, .. }
             | Insn::SetGlobal { val, .. }
             | Insn::SetLocal { val, .. }
             | Insn::SetClassVar { val, .. }
@@ -10027,14 +10028,14 @@ fn add_iseq_to_hir(
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let dst = get_arg(pc, 1).as_i64();
 
-                    // Check if #new resolves to rb_class_new_instance_pass_kw.
+                    // Check if #new allocates and calls #initialize like Class#new.
                     // TODO: Guard on a profiled class and add a patch point for #new redefinition
                     let argc = crate::profile::num_arguments_on_stack(cd);
                     let ci = unsafe { (*cd).ci };
                     let flags = unsafe { rb_vm_ci_flag(ci) };
                     assert_eq!(flags & VM_CALL_ARGS_BLOCKARG, 0);
                     let val = state.stack_topn(argc)?;
-                    let test_id = fun.push_insn(block, Insn::IsMethodCfunc { val, cd, cfunc: rb_class_new_instance_pass_kw as *const u8, state: exit_id });
+                    let test_id = fun.push_insn(block, Insn::IsDefaultNew { val, cd, state: exit_id });
 
                     // Jump to the fallback block if it's not the expected function.
                     // Skip CheckInterrupts since the #new call will do it very soon anyway.

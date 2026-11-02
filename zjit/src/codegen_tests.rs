@@ -4445,6 +4445,38 @@ fn test_opt_new_invalidate_new() {
 }
 
 #[test]
+fn test_opt_new_hash_subclass_dynamic_receiver() {
+    eval(r#"
+        class H < Hash
+          attr_reader :caller_label
+          def initialize = @caller_label = caller_locations(1, 1).first.base_label
+        end
+        def build(klass) = klass.new
+        build(H)
+    "#);
+    assert_contains_opcode("build", YARVINSN_opt_new);
+    assert_snapshot!(assert_compiles("[build(H).caller_label, build(H).class]"), @r#"["build", H]"#);
+}
+
+#[test]
+fn test_opt_new_hash_subclass_invalidate_new() {
+    eval(r#"
+        class H < Hash
+          attr_reader :x
+          def initialize(x) = @x = x
+        end
+        def test = H.new(1)
+        test
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_new);
+    assert_snapshot!(assert_compiles(r#"
+        result = [test.x]
+        def H.new(*) = "new"
+        result << test
+    "#), @r#"[1, "new"]"#);
+}
+
+#[test]
 fn test_opt_newarray_send_include_p() {
     eval("
         def test(x)

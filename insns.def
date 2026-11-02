@@ -944,7 +944,9 @@ opt_new
         TOPN(argc) = val;
         TOPN(argc + 1) = val;
     }
-    else if (vm_method_cfunc_is(GET_CFP(), cd, val, rb_class_new_instance_pass_kw)) {
+    else if (vm_method_cfunc_is(GET_CFP(), cd, val, rb_class_new_instance_pass_kw) ||
+             // Hash.new is Class#new for subclasses of Hash
+             (val != rb_cHash && vm_method_cfunc_is(GET_CFP(), cd, val, rb_hash_s_new))) {
         RB_DEBUG_COUNTER_INC(opt_new_hit);
         val = rb_obj_alloc(val);
         TOPN(argc) = val;

@@ -2509,13 +2509,6 @@ rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const cfunc_type func
     return check_cfunc(me, func);
 }
 
-int
-rb_vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
-{
-    const struct rb_callable_method_entry_struct *cme = rb_zjit_vm_search_method((VALUE)iseq, cd, recv);
-    return check_cfunc(cme, func);
-}
-
 #define check_cfunc(me, func) check_cfunc(me, make_cfunc_type(func))
 #define vm_method_cfunc_is(reg_cfp, cd, recv, func) vm_method_cfunc_is(reg_cfp, cd, recv, make_cfunc_type(func))
 

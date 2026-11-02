@@ -266,6 +266,23 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles('{ 1 + 1 => :two }', insns: %i[newhash], result: { 2 => :two })
   end
 
+  def test_compile_opt_new_hash_subclass
+    assert_compiles(<<~RUBY, insns: %i[opt_new], result: [1, "test", "new"])
+      class H < Hash
+        attr_reader :x, :caller_label
+        def initialize(x)
+          @x = x
+          @caller_label = caller_locations(1, 1).first.base_label
+        end
+      end
+      def test = H.new(1)
+      h = test
+      result = [h.x, h.caller_label]
+      def H.new(*) = "new"
+      result << test
+    RUBY
+  end
+
   def test_compile_opt_nil_p
     assert_compiles('nil.nil?', insns: %i[opt_nil_p], result: true)
     assert_compiles('false.nil?', insns: %i[opt_nil_p], result: false)

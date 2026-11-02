@@ -431,6 +431,14 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_performance_warning('Hash', '[]=')
   end
 
+  def test_hash_subclass_new
+    klass = Class.new(Hash) do
+      attr_reader :caller_label
+      def initialize = @caller_label = caller_locations(1, 1).first.base_label
+    end
+    assert_equal(__method__.to_s, klass.new.caller_label, "opt_new should not call Hash.new")
+  end
+
   class MyObj
     def ==(other)
       true

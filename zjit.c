@@ -360,6 +360,24 @@ bool rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const void *func
 const struct rb_callable_method_entry_struct *
 rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv);
 
+// Whether `new` on klass, resolved to cme, allocates and calls #initialize like Class#new.
+// Hash.new does that for subclasses of Hash.
+bool
+rb_zjit_cme_is_default_new(const rb_callable_method_entry_t *cme, VALUE klass)
+{
+    if (!cme || cme->def->type != VM_METHOD_TYPE_CFUNC) return false;
+    VALUE (*func)(ANYARGS) = cme->def->body.cfunc.func;
+    return func == (VALUE (*)(ANYARGS))rb_class_new_instance_pass_kw ||
+        (klass != rb_cHash && func == (VALUE (*)(ANYARGS))rb_hash_s_new);
+}
+
+// Runtime version of rb_zjit_cme_is_default_new() for opt_new on klass
+bool
+rb_zjit_method_is_default_new(const rb_iseq_t *iseq, struct rb_call_data *cd, VALUE klass)
+{
+    return rb_zjit_cme_is_default_new(rb_zjit_vm_search_method((VALUE)iseq, cd, klass), klass);
+}
+
 rb_alloc_func_t rb_zjit_class_get_alloc_func(VALUE klass);
 
 // Defined in struct.c, where struct_alloc and the members ivar are visible.

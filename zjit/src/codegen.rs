@@ -752,7 +752,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         }
         &Insn::FixnumMod { left, right, state } => gen_fixnum_mod(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::FixnumAref { recv, index } => gen_fixnum_aref(asm, opnd!(recv), opnd!(index)),
-        &Insn::IsMethodCfunc { val, cd, cfunc, state } => gen_is_method_cfunc(asm, opnd!(val), cd, cfunc, &function.frame_state(state)),
+        &Insn::IsDefaultNew { val, cd, state } => gen_is_default_new(asm, opnd!(val), cd, &function.frame_state(state)),
         &Insn::IsBitEqual { left, right } => gen_is_bit_equal(asm, opnd!(left), opnd!(right)),
         &Insn::IsBitNotEqual { left, right } => gen_is_bit_not_equal(asm, opnd!(left), opnd!(right)),
         &Insn::BoxBool { val } => gen_box_bool(asm, opnd!(val)),
@@ -3089,11 +3089,8 @@ fn gen_fixnum_aref(asm: &mut Assembler, recv: lir::Opnd, index: lir::Opnd) -> li
     asm_ccall!(asm, rb_fix_aref, recv, index)
 }
 
-fn gen_is_method_cfunc(asm: &mut Assembler, val: lir::Opnd, cd: *const rb_call_data, cfunc: *const u8, state: &FrameState) -> lir::Opnd {
-    unsafe extern "C" {
-        fn rb_vm_method_cfunc_is(iseq: IseqPtr, cd: *const rb_call_data, recv: VALUE, cfunc: *const u8) -> VALUE;
-    }
-    asm_ccall!(asm, rb_vm_method_cfunc_is, VALUE::from(state.iseq).into(), Opnd::const_ptr(cd), val, Opnd::const_ptr(cfunc))
+fn gen_is_default_new(asm: &mut Assembler, val: lir::Opnd, cd: *const rb_call_data, state: &FrameState) -> lir::Opnd {
+    asm_ccall!(asm, rb_zjit_method_is_default_new, VALUE::from(state.iseq).into(), Opnd::const_ptr(cd), val)
 }
 
 fn gen_is_bit_equal(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
