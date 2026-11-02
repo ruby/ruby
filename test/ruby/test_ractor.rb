@@ -13,6 +13,37 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # Resolving an aliased, complemented method entry used to run unserialized.
+  # The alias definition is shared between the module's own entry and the
+  # complemented entry created for the includer, so every Ractor read
+  # reference_count != 1 and called rb_method_definition_set(), which releases
+  # me->def.  That released the shared definition once per Ractor instead of
+  # once: it was freed while the module's own entry still pointed at it, giving
+  # a use-after-free on `def`.
+  def test_concurrent_aliased_method_entry_resolution
+    assert_ractor(<<~'RUBY', timeout: 120)
+      ROUNDS = 1000
+      N_RACT = 8
+
+      src = +""
+      ROUNDS.times do |i|
+        src << "module M#{i}; def foo#{i}; #{i}; end; alias bar#{i} foo#{i}; end\n"
+        src << "class C#{i}; include M#{i}; end\n"
+      end
+      eval(src)
+
+      targets = Ractor.make_shareable(ROUNDS.times.map { |i| [Object.const_get(:"C#{i}"), :"bar#{i}"] })
+
+      rs = N_RACT.times.map do
+        Ractor.new(targets) do |targets|
+          targets.each { |klass, mid| klass.new.__send__(mid) }
+          :ok
+        end
+      end
+      assert_equal [:ok] * N_RACT, rs.map(&:value)
+    RUBY
+  end
+
   def test_alive_p
     assert_ractor(<<~'RUBY')
       r = Ractor.new { Ractor.receive }

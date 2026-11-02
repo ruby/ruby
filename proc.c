@@ -3665,7 +3665,7 @@ method_def_min_max_arity(const rb_method_definition_t *def, int *max)
       case VM_METHOD_TYPE_IVAR:
         return *max = 0;
       case VM_METHOD_TYPE_ALIAS:
-        def = def->body.alias.original_me->def;
+        def = rb_method_entry_def_acquire(rb_method_alias_original_me(def));
         goto again;
       case VM_METHOD_TYPE_BMETHOD:
         return rb_proc_min_max_arity(def->body.bmethod.proc, max);
@@ -3717,7 +3717,7 @@ method_def_arity(const rb_method_definition_t *def)
 int
 rb_method_entry_arity(const rb_method_entry_t *me)
 {
-    return method_def_arity(me->def);
+    return method_def_arity(rb_method_entry_def_acquire(me));
 }
 
 /*
@@ -3803,7 +3803,7 @@ method_min_max_arity(VALUE method, int *max)
     const struct METHOD *data;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return method_def_min_max_arity(data->me->def, max);
+    return method_def_min_max_arity(rb_method_entry_def_acquire(data->me), max);
 }
 
 int
@@ -3841,7 +3841,7 @@ rb_method_def(VALUE method)
     const struct METHOD *data;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return data->me->def;
+    return rb_method_entry_def_acquire(data->me);
 }
 
 static const rb_iseq_t *
@@ -3853,7 +3853,7 @@ method_def_iseq(const rb_method_definition_t *def)
       case VM_METHOD_TYPE_BMETHOD:
         return rb_proc_get_iseq(def->body.bmethod.proc, 0);
       case VM_METHOD_TYPE_ALIAS:
-        return method_def_iseq(def->body.alias.original_me->def);
+        return method_def_iseq(rb_method_entry_def_acquire(rb_method_alias_original_me(def)));
       case VM_METHOD_TYPE_CFUNC:
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
@@ -3884,7 +3884,7 @@ method_cref(VALUE method)
       case VM_METHOD_TYPE_ISEQ:
         return def->body.iseq.cref;
       case VM_METHOD_TYPE_ALIAS:
-        def = def->body.alias.original_me->def;
+        def = rb_method_entry_def_acquire(rb_method_alias_original_me(def));
         goto again;
       default:
         return NULL;
@@ -3906,7 +3906,7 @@ VALUE
 rb_method_entry_location(const rb_method_entry_t *me)
 {
     if (!me) return Qnil;
-    return method_def_location(me->def);
+    return method_def_location(rb_method_entry_def_acquire(me));
 }
 
 /*
@@ -3995,7 +3995,7 @@ method_def_parameters(const rb_method_definition_t *def)
         break;
 
       case VM_METHOD_TYPE_ALIAS:
-        return method_def_parameters(def->body.alias.original_me->def);
+        return method_def_parameters(rb_method_entry_def_acquire(rb_method_alias_original_me(def)));
 
       case VM_METHOD_TYPE_OPTIMIZED:
         if (def->body.optimized.type == OPTIMIZED_METHOD_TYPE_STRUCT_ASET) {
@@ -4112,8 +4112,9 @@ method_inspect(VALUE method)
         mklass = RBASIC_CLASS(mklass);
     }
 
-    if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
-        defined_class = data->me->def->body.alias.original_me->owner;
+    const rb_method_definition_t *def = rb_method_entry_def_acquire(data->me);
+    if (def->type == VM_METHOD_TYPE_ALIAS) {
+        defined_class = rb_method_alias_original_me(def)->owner;
     }
     else {
         defined_class = method_entry_defined_class(data->me);
@@ -4165,11 +4166,11 @@ method_inspect(VALUE method)
     }
     rb_str_buf_cat2(str, sharp);
     rb_str_append(str, rb_id2str(data->me->called_id));
-    if (data->me->called_id != data->me->def->original_id) {
+    if (data->me->called_id != def->original_id) {
         rb_str_catf(str, "(%"PRIsVALUE")",
-                    rb_id2str(data->me->def->original_id));
+                    rb_id2str(def->original_id));
     }
-    if (data->me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
+    if (def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
         rb_str_buf_cat2(str, " (not-implemented)");
     }
 
@@ -4346,10 +4347,12 @@ method_super_method(VALUE method)
     iclass = data->iclass;
     if (!iclass) return Qnil;
     bool is_refinement_method = refinement_module_p(data->me->owner);
-    if (data->me->def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
+    const rb_method_definition_t *def = rb_method_entry_def_acquire(data->me);
+    if (def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
+        const rb_method_entry_t *orig_me = rb_method_alias_original_me(def);
         super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
-            data->me->def->body.alias.original_me->owner));
-        mid = data->me->def->body.alias.original_me->def->original_id;
+            orig_me->owner));
+        mid = rb_method_entry_def_acquire(orig_me)->original_id;
     }
     else if (is_refinement_method) {
         if (RICLASS_FOR_REFINEMENT_P(iclass)) {
@@ -4364,7 +4367,7 @@ method_super_method(VALUE method)
                 super_class = RCLASS_SUPER(data->me->owner);
             }
         }
-        mid = data->me->def->original_id;
+        mid = def->original_id;
     }
     else {
         VALUE klass = iclass;
@@ -4373,25 +4376,25 @@ method_super_method(VALUE method)
             klass = RBASIC(klass)->klass;
         }
         super_class = RCLASS_SUPER(RCLASS_ORIGIN(klass));
-        mid = data->me->def->original_id;
+        mid = def->original_id;
     }
     if (!super_class) return Qnil;
 
     // For refined methods, skip refinements for the same definition, but consider
     // refinements for superclass methods
-    const rb_method_definition_t *skip_def = is_refinement_method ? data->me->def : NULL;
+    const rb_method_definition_t *skip_def = is_refinement_method ? def : NULL;
 
     // Use the CREF of the Method/UnboundMethod, not the CREF of the caller of super_method.
     // We must avoid the use of rb_callable_method_entry_with_refinements, as that will
     // implicitly use the refinements activated in of the caller of super_method.
     const rb_cref_t *cref = NULL;
-    switch (data->me->def->type) {
+    switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-        cref = data->me->def->body.iseq.cref;
+        cref = def->body.iseq.cref;
         break;
       case VM_METHOD_TYPE_BMETHOD: {
         const rb_proc_t *proc;
-        GetProcPtr(data->me->def->body.bmethod.proc, proc);
+        GetProcPtr(def->body.bmethod.proc, proc);
         const struct rb_block *block = &proc->block;
         if (vm_block_type(block) == block_type_iseq)
             cref = rb_vm_get_cref(block->as.captured.ep);
