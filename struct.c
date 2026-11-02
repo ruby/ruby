@@ -1756,15 +1756,11 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  */
 
 static VALUE
-rb_data_s_def(int argc, VALUE *argv, VALUE klass)
+rb_data_s_def(int argc, VALUE *argv, VALUE super)
 {
-    VALUE rest;
-    rb_len_t i;
-    VALUE data_class;
-
-    rest = rb_ident_hash_new();
+    VALUE rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
-    for (i=0; i<argc; i++) {
+    for (int i = 0; i < argc; i++) {
         VALUE mem = rb_to_symbol(argv[i]);
         if (rb_is_attrset_sym(mem)) {
             rb_raise(rb_eArgError, "invalid data member: %"PRIsVALUE, mem);
@@ -1777,13 +1773,17 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
     rest = rb_hash_keys(rest);
     RBASIC_CLEAR_CLASS(rest);
     OBJ_FREEZE(rest);
-    data_class = anonymous_struct(klass);
-    setup_data(data_class, rest);
+
+    VALUE klass = anonymous_struct(super);
+    setup_data(klass, rest);
+
+    rb_class_inherited(klass, super);
+
     if (rb_block_given_p()) {
-        rb_mod_module_eval(0, 0, data_class);
+        rb_mod_module_eval(0, 0, klass);
     }
 
-    return data_class;
+    return klass;
 }
 
 VALUE
@@ -1796,6 +1796,7 @@ rb_data_define(VALUE super, ...)
     va_end(ar);
     if (!super) super = rb_cData;
     VALUE klass = setup_data(anonymous_struct(super), ary);
+    rb_class_inherited(klass, super);
     rb_vm_register_global_object(klass);
     return klass;
 }
