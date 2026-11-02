@@ -2934,6 +2934,25 @@ ruby_stack_check(void)
     return stack_check(GET_EC(), STACKFRAME_FOR_CALL_CFUNC);
 }
 
+/*
+ * Returns the number of bytes of machine stack that can be used from here
+ * before rb_ec_stack_check starts reporting an overflow, or SIZE_MAX if the size
+ * of the stack is not known.
+ */
+size_t
+rb_ec_stack_remaining(rb_execution_context_t *ec)
+{
+#if PREVENT_STACK_OVERFLOW && !defined(__EMSCRIPTEN__)
+    if (STACK_LEVEL_MAX == 0) return SIZE_MAX;
+    if (rb_ec_stack_check(ec)) return 0;
+
+    /* rb_ec_stack_check has just updated the end of the stack. */
+    return (STACK_LEVEL_MAX - STACKFRAME_FOR_CALL_CFUNC - STACK_LENGTH) * sizeof(VALUE);
+#else
+    return SIZE_MAX;
+#endif
+}
+
 /* ==================== Marking ==================== */
 
 /* The traversal mark redirect is per-Ractor so a real GC never observes a
