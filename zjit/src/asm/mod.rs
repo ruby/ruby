@@ -1161,7 +1161,12 @@ mod tests
 
     #[test]
     fn global_compilation_state_update_requires_the_owner() {
-        let mut cb = CodeBlock::new_dummy();
+        // CI uses RUST_BACKTRACE=1; the expected panic's backtrace allocations can
+        // exceed the default memory limit, preventing the owner from clearing
+        // dropped_bytes. Use an unlimited budget so this test checks ownership,
+        // not memory limits.
+        let mem = VirtualMem::alloc(1024 * 1024, Some(usize::MAX));
+        let mut cb = CodeBlock::new(Rc::new(RefCell::new(mem)), false);
         cb.dropped_bytes = true;
 
         assert!(catch_unwind(AssertUnwindSafe(|| cb.with_write_scope(|cb| {
