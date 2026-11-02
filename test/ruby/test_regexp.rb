@@ -2497,4 +2497,11 @@ class TestRegexp < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_look_behind_length_overflow
+    ["(?<=(?:a{65536}){65536})b", "(?<=(?:a{32768}){65536})b", "(?<!(?:a{65536}){65536})b"].each do |src|
+      assert_raise(RegexpError, src) { Regexp.new(src) }
+    end
+    assert_match(Regexp.new("(?<=(?:a{100}){100})b"), "a" * 10000 + "b")
+  end
 end

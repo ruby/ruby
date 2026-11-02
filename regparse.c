@@ -1850,8 +1850,8 @@ add_code_range_to_buf0(BBuf** pbuf, ScanEnv* env, OnigCodePoint from, OnigCodePo
    * data[(high-1)*2+1] <= to << data[high*2]
    */
 
-  inc_n = low + 1 - high;
-  if (n + inc_n > ONIG_MAX_MULTI_BYTE_RANGES_NUM)
+  inc_n = (int )low + 1 - (int )high;
+  if ((int )n + inc_n > ONIG_MAX_MULTI_BYTE_RANGES_NUM)
     return ONIGERR_TOO_MANY_MULTI_BYTE_RANGES;
 
   if (inc_n != 1) {
@@ -1883,7 +1883,7 @@ add_code_range_to_buf0(BBuf** pbuf, ScanEnv* env, OnigCodePoint from, OnigCodePo
   BBUF_ENSURE_SIZE(bbuf, pos + SIZE_CODE_POINT * 2);
   BBUF_WRITE_CODE_POINT(bbuf, pos, from);
   BBUF_WRITE_CODE_POINT(bbuf, pos + SIZE_CODE_POINT, to);
-  n += inc_n;
+  n = (OnigCodePoint )((int )n + inc_n);
   BBUF_WRITE_CODE_POINT(bbuf, 0, n);
 
   return 0;
@@ -6584,6 +6584,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
       int gnum = tok->u.call.gnum;
 
       if (gnum < 0 || tok->u.call.rel != 0) {
+        if (gnum > ONIG_MAX_CAPTURE_GROUP_NUM)
+          return ONIGERR_INVALID_BACKREF;
         if (gnum > 0) gnum--;
         gnum = BACKREF_REL_TO_ABS(gnum, env);
         if (gnum <= 0)

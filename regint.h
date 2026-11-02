@@ -352,14 +352,14 @@ typedef unsigned int  BitStatusType;
 
 #define BIT_STATUS_ON_AT(stats,n) do {\
   if ((n) < (int )BIT_STATUS_BITS_NUM)\
-    (stats) |= (1 << (n));\
+    (stats) |= ((BitStatusType )1 << (n));\
   else\
     (stats) |= 1;\
 } while (0)
 
 #define BIT_STATUS_ON_AT_SIMPLE(stats,n) do {\
   if ((n) < (int )BIT_STATUS_BITS_NUM)\
-    (stats) |= (1 << (n));\
+    (stats) |= ((BitStatusType )1 << (n));\
 } while (0)
 
 
