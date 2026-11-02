@@ -4312,21 +4312,42 @@ rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
 static const rb_callable_method_entry_t *
 aliased_callable_method_entry(const rb_callable_method_entry_t *me)
 {
-    const rb_method_entry_t *orig_me = me->def->body.alias.original_me;
-    const rb_callable_method_entry_t *cme;
+    const rb_method_entry_t *orig_me =
+        rb_method_alias_original_me(rb_method_entry_def_acquire((const rb_method_entry_t *)me));
+    const rb_callable_method_entry_t *cme = NULL;
 
-    if (orig_me->defined_class == 0) {
-        VALUE defined_class = rb_find_defined_class_by_owner(me->defined_class, orig_me->owner);
-        VM_ASSERT_TYPE(orig_me->owner, T_MODULE);
-        cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
+    if (orig_me->defined_class == 0) { // only true on first resolution
+        // Resolving the alias mutates `me` (and may replace me->def, dropping a
+        // reference to the shared definition), so it has to be serialized. Two
+        // ractors calling the same aliased method would otherwise both release
+        // the same definition which could result in a UAF.
+        RB_VM_LOCKING() {
+            orig_me = me->def->body.alias.original_me;
+            // me is the ALIAS me. It has a def that's different from orig_me->def.
+            if (orig_me->defined_class == 0) {
+                // orig_me is the unresolved me clone that rb_add_alias stored.
+                VALUE defined_class = rb_find_defined_class_by_owner(me->defined_class, orig_me->owner);
+                VM_ASSERT_TYPE(orig_me->owner, T_MODULE);
+                cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
 
-        if (me->def->reference_count == 1) {
-            RB_OBJ_WRITE(me, &me->def->body.alias.original_me, cme);
-        }
-        else {
-            rb_method_definition_t *def =
-                rb_method_definition_create(VM_METHOD_TYPE_ALIAS, me->def->original_id);
-            rb_method_definition_set((rb_method_entry_t *)me, def, (void *)cme);
+                if (me->def->reference_count == 1) {
+                    rbimpl_atomic_ptr_store((volatile void **)&me->def->body.alias.original_me,
+                                            (void *)cme, RBIMPL_ATOMIC_RELEASE);
+                    RB_OBJ_WRITTEN(me, Qundef, cme);
+                }
+                else {
+                    rb_method_definition_t *def =
+                        rb_method_definition_create(VM_METHOD_TYPE_ALIAS, me->def->original_id);
+                    def->body.alias.original_me = (rb_method_entry_t *)cme;
+                    def->original_module = cme->def->original_module;
+                    rb_method_definition_set((rb_method_entry_t *)me, def, NULL);
+                    RB_OBJ_WRITTEN(me, Qundef, cme);
+                    RB_OBJ_WRITTEN(me, Qundef, def->original_module);
+                }
+            }
+            else {
+                cme = (const rb_callable_method_entry_t *)orig_me;
+            }
         }
     }
     else {
