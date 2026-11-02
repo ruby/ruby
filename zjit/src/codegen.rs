@@ -2156,10 +2156,14 @@ fn gen_invoke_block_iseq_direct(
     asm.mov(CFP, new_cfp); // will be published at `ec->cfp` after callee's entrypoint
 
     // JIT-to-JIT convention: self as c_args[0], then positional args. The block is
-    // gated to simple + lead-only + exact arity, so there are no optionals/kw/block.
+    // gated to simple + lead-only with at least lead_num args, so there are no
+    // optionals/kw/block. Like vm_callee_setup_block_arg, drop surplus args; the
+    // callee frame overwrites their stack slots.
+    let lead_num = unsafe { rb_get_iseq_body_param_lead_num(block_iseq) } as usize;
+    let args = &args[..lead_num];
     let mut c_args = Vec::with_capacity(1 + args.len());
     c_args.push(captured_self);
-    c_args.extend(&args);
+    c_args.extend(args);
 
     let iseq_call = IseqCall::new(block_iseq, 0, args.len().try_into().expect("checked in HIR"));
     let dummy_ptr = cb.get_write_ptr().raw_ptr(cb);
