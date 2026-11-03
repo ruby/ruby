@@ -56,11 +56,11 @@ end
 
 RSpec.describe Bundler::LazySpecification do
   describe "#to_lock" do
-    it "locks a content-addressable spec as an ordinary platform pin" do
-      spec = Bundler::LazySpecification.new("mygem", v("1.0"), "x86_64-linux", nil, content_address: "abcdef1234")
+    it "locks a platform row with content addresses as an ordinary platform pin" do
+      spec = Bundler::LazySpecification.new("mygem", v("1.0"), "x86_64-linux", nil, content_addresses: ["abcdef1234"])
 
       expect(spec.to_lock).to eq("    mygem (1.0-x86_64-linux)\n")
-      expect(spec.full_name).to eq("mygem-1.0-abcdef1234")
+      expect(spec.full_name).to eq("mygem-1.0-x86_64-linux")
     end
   end
 end

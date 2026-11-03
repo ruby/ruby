@@ -206,13 +206,19 @@ module Bundler
       end
 
       def missing?(spec)
-        @store[spec.full_name].nil?
+        return false unless @store[spec.full_name].nil?
+
+        if spec.is_a?(LazySpecification)
+          spec.content_addressed_full_names.all? {|full_name| @store[full_name].nil? }
+        else
+          true
+        end
       end
 
       def empty?(spec)
         return false unless spec.source.is_a?(Bundler::Source::Rubygems)
 
-        @store[spec.full_name].empty?
+        @store[spec.full_name]&.empty? || false
       end
 
       def register(spec, checksum)

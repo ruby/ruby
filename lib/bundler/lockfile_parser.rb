@@ -333,14 +333,15 @@ module Bundler
       spec = @specs[Gem::NameTuple.new(name, version, platform).full_name]
       return unless spec
 
-      spec.content_address = content_address
+      spec.add_content_address(content_address)
 
       return unless checksums
 
+      gem = Gem::NameTuple.new(name, version, platform, content_address: content_address)
       checksums.split(",") do |lock_checksum|
         column = line.index(lock_checksum) + 1
         checksum = Checksum.from_lock(lock_checksum, "#{@lockfile_path}:#{@pos.line}:#{column}")
-        spec.source.checksum_store.register(spec, checksum)
+        spec.source.checksum_store.register(gem, checksum)
       end
     end
 
