@@ -119,6 +119,8 @@ pm_integer_parse_powof2(pm_arena_t *arena, pm_integer_t *integer, uint32_t base,
     uint32_t leading_bits = digit_bits[pm_integer_parse_digit(*start)];
 
     uint32_t bit = (uint32_t) pm_ctzll(base);
+    assert(bit >= 1 && bit <= 4);
+
     uint32_t length = (uint32_t) (((uint64_t) (digits - 1) * bit + leading_bits + 31) / 32);
     assert(length > 2);
 
@@ -587,7 +589,7 @@ pm_integer_string_divide(pm_buffer_t *buffer, const uint32_t *words, uint32_t le
 
     for (uint32_t split = 2; split < length; split *= 2) {
         const pm_bignum_t *previous = &powers[level++];
-        powers[level].words = pm_bignum_scratch_take(&scratch, 2 * previous->length);
+        powers[level] = (pm_bignum_t) { .length = 0, .words = pm_bignum_scratch_take(&scratch, 2 * previous->length) };
         pm_bignum_decimal_multiply(&powers[level], previous, previous, &scratch);
     }
 
