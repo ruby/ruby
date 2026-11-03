@@ -98,11 +98,13 @@ PRISM_BUILD_DIR = prism
 
 LIBPRISM_OBJS = \
 		prism/arena.$(OBJEXT) \
+		prism/bignum.$(OBJEXT) \
 		prism/buffer.$(OBJEXT) \
 		prism/char.$(OBJEXT) \
 		prism/comments.$(OBJEXT) \
 		prism/constant_pool.$(OBJEXT) \
 		prism/diagnostic.$(OBJEXT) \
+		prism/double.$(OBJEXT) \
 		prism/encoding.$(OBJEXT) \
 		prism/errors_format.$(OBJEXT) \
 		prism/integer.$(OBJEXT) \

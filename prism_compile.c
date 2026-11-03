@@ -272,27 +272,22 @@ pm_location_line_number_cached(const pm_location_t *location, pm_scope_node_t *s
 static VALUE
 parse_integer_value(const pm_integer_t *integer)
 {
+    uint32_t length;
+    const uint32_t *words = pm_integer_words(integer, &length);
+
     VALUE result;
 
-    if (integer->values == NULL) {
-        result = UINT2NUM(integer->value);
+    // An integer whose words are inline fits in an unsigned long long, so it
+    // converts directly unless it is negative and too large to negate.
+    if (length <= 2 && !integer->negative) {
+        result = ULL2NUM(pm_integer_uint64_value(integer));
+    }
+    else if (length <= 2 && pm_integer_uint64_value(integer) <= LLONG_MAX) {
+        result = LL2NUM(-(long long) pm_integer_uint64_value(integer));
     }
     else {
-        // The pm_integer_t stores values as an array of uint32_t in
-        // least-significant-word-first order (base 2^32). We can convert
-        // directly to a Ruby Integer using rb_integer_unpack, avoiding the
-        // overhead of constructing a hex string and calling rb_funcall.
-        result = rb_integer_unpack(
-            integer->values,
-            integer->length,
-            sizeof(uint32_t),
-            0,
-            INTEGER_PACK_LSWORD_FIRST | INTEGER_PACK_NATIVE_BYTE_ORDER
-        );
-    }
-
-    if (integer->negative) {
-        result = rb_int_uminus(result);
+        int flags = INTEGER_PACK_LSWORD_FIRST | INTEGER_PACK_NATIVE_BYTE_ORDER | (integer->negative ? INTEGER_PACK_NEGATIVE : 0);
+        result = rb_integer_unpack(words, length, sizeof(uint32_t), 0, flags);
     }
 
     if (!SPECIAL_CONST_P(result)) {
@@ -335,7 +330,6 @@ parse_rational(const pm_rational_node_t *node)
 {
     VALUE numerator = parse_integer_value(&node->numerator);
     VALUE denominator = parse_integer_value(&node->denominator);
-
     return rb_ractor_make_shareable(rb_rational_new(numerator, denominator));
 }
 
