@@ -3399,8 +3399,14 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
 /// Check if an ISEQ contains instructions that may write to block_code
 /// (send, sendforward, invokesuper, invokesuperforward, invokeblock).
 /// These instructions call vm_caller_setup_arg_block which writes to cfp->block_code.
-#[allow(non_upper_case_globals)]
+/// Cached per ISEQ: profiling and tracing rewrites keep the bare opcodes this scan reads.
 pub(crate) fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
+    let payload = get_or_create_iseq_payload(iseq);
+    *payload.may_write_block_code.get_or_insert_with(|| scan_may_write_block_code(iseq))
+}
+
+#[allow(non_upper_case_globals)]
+fn scan_may_write_block_code(iseq: IseqPtr) -> bool {
     let encoded_size = unsafe { rb_iseq_encoded_size(iseq) };
     let mut insn_idx: u32 = 0;
 

@@ -9756,6 +9756,21 @@ fn test_regression_stub_frame_sp_published_for_gc() {
 }
 
 #[test]
+fn test_iseq_may_write_block_code_per_iseq() {
+    eval(r#"
+        def zjit_wbc_yield = yield
+        def zjit_wbc_leaf(x) = x + 1
+    "#);
+    let yield_iseq = get_method_iseq("self", "zjit_wbc_yield");
+    let leaf_iseq = get_method_iseq("self", "zjit_wbc_leaf");
+    // Ask twice so the second round reads the cached answers.
+    for _ in 0..2 {
+        assert!(super::iseq_may_write_block_code(yield_iseq));
+        assert!(!super::iseq_may_write_block_code(leaf_iseq));
+    }
+}
+
+#[test]
 fn test_regression_stub_frame_block_code_cleared_for_gc() {
     rb_zjit_prepare_options();
     set_inline_threshold(0); // don't inline the callee; we need a function stub
