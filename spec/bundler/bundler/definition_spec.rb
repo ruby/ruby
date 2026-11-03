@@ -412,4 +412,48 @@ Using the above gem servers may result in installing unexpected gems. To resolve
       end
     end.new
   end
+
+  describe "#ruby_abis", rubygems: ">= 4.1.0.a" do
+    before do
+      skip_unless_content_addressing_available!
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile) { bundled_app_gemfile }
+      lockfile_with_content_addresses("0a1b2c3d", "1b2c3d4e", "2c3d4e5f", ruby_abis: ["4.0", "3.3", "3.4"])
+    end
+
+    def ruby_abis_with(directive)
+      ruby_version = directive && Bundler::RubyVersion.new(directive, nil, nil, nil)
+      Bundler.settings.temporary(frozen: true) do
+        Bundler::Definition.new(bundled_app_lock, [], Bundler::SourceList.new, {}, ruby_version).ruby_abis
+      end
+    end
+
+    it "sorts the locked Ruby ABIs by version" do
+      expect(ruby_abis_with(nil)).to eq(["3.3", "3.4", "4.0"])
+    end
+
+    {
+      ["3.4.2"] => ["3.4"],
+      ["~> 3.4.0"] => ["3.4"],
+      ["~> 3.3"] => ["3.3", "3.4"],
+      [">= 3.4.0", "< 4.0"] => ["3.4"],
+      [">= 3.4.0", "< 4.0.1"] => ["3.4", "4.0"],
+      [">= 3.4.0", "<= 4.0"] => ["3.4", "4.0"],
+      ["> 3.4"] => ["3.4", "4.0"],
+      ["> 3.4.99"] => ["3.4", "4.0"],
+      ["< 3.4.0"] => ["3.3"],
+      ["<= 3.4.0"] => ["3.3", "3.4"],
+      [">= 3.0"] => ["3.3", "3.4", "4.0"],
+      ["!= 3.4.0"] => ["3.3", "3.4", "4.0"],
+      ["!= 3.4.0", ">= 3.5"] => ["4.0"],
+      [">= 3.4.0", "<= 3.4.0"] => ["3.4"],
+      ["> 3.4.0", "<= 3.4.0"] => [],
+      [">= 3.5", "< 3.5"] => [],
+      ["4.1.0.preview1"] => [],
+      [">= 4.1.0.dev"] => [],
+    }.each do |directive, expected|
+      it "keeps #{expected.inspect} for `ruby #{directive.map(&:inspect).join(", ")}`" do
+        expect(ruby_abis_with(directive)).to eq(expected)
+      end
+    end
+  end
 end

@@ -32,6 +32,7 @@ require "rubygems/indexer"
 
 require_relative "support/builders"
 require_relative "support/checksums"
+require_relative "support/content_addressable"
 require_relative "support/filters"
 require_relative "support/helpers"
 require_relative "support/indexes"
@@ -79,6 +80,7 @@ end
 RSpec.configure do |config|
   config.include Spec::Builders
   config.include Spec::Checksums
+  config.include Spec::ContentAddressable
   config.include Spec::Helpers
   config.include Spec::Indexes
   config.include Spec::Matchers

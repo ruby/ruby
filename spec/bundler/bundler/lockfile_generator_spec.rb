@@ -2,8 +2,8 @@
 
 require "bundler/lockfile_generator"
 
-# Unit tests for the section writer that handles content-addressed gems. It
-# calls the private writer directly: driving LockfileGenerator.generate needs a
+# Unit tests for the section writers that handle content-addressed gems. It
+# call the private writers directly: driving LockfileGenerator.generate needs a
 # full Definition, and the end-to-end lockfile round trips live in
 # spec/install/gemfile/content_addressable_spec.rb.
 RSpec.describe Bundler::LockfileGenerator do
@@ -97,6 +97,26 @@ RSpec.describe Bundler::LockfileGenerator do
 
     it "does not write a row for a spec without an address" do
       expect(content_addresses_section([lazy_spec])).to be_empty
+    end
+  end
+
+  describe "#add_ruby_abis" do
+    def ruby_abis_section(specs, ruby_abis)
+      write_section(:add_ruby_abis, specs, ruby_abis: ruby_abis)
+    end
+
+    it "writes the Ruby ABIs in the order the definition gives them, without sorting" do
+      expect(ruby_abis_section([lazy_spec(content_addresses: ["abcdef12"])], ["4.0", "3.3", "3.4"])).to eq("\nRUBY ABIS\n  4.0\n  3.3\n  3.4\n")
+    end
+
+    # Keeps SpecSet#content_addresses_cover? harmless when no row has addresses:
+    # every ABI counts as covered there, and nothing is written here.
+    it "writes nothing when no row lists content addresses" do
+      expect(ruby_abis_section([lazy_spec], ["3.4"])).to be_empty
+    end
+
+    it "writes nothing when no Ruby ABI is recorded" do
+      expect(ruby_abis_section([lazy_spec(content_addresses: ["abcdef12"])], [])).to be_empty
     end
   end
 end

@@ -22,6 +22,7 @@ module Bundler
       add_overrides
       add_content_addresses
       add_checksums
+      add_ruby_abis
       add_locked_ruby_version
       add_bundled_with
 
@@ -103,6 +104,14 @@ module Bundler
       end
 
       add_section("CHECKSUMS", checksums + bundler_checksum)
+    end
+
+    def add_ruby_abis
+      ruby_abis = definition.ruby_abis
+      return if ruby_abis.empty? || definition.resolve.none? {|spec| spec.content_addresses.any? }
+
+      out << "\nRUBY ABIS\n"
+      ruby_abis.each {|ruby_abi| out << "  #{ruby_abi}\n" }
     end
 
     def add_locked_ruby_version

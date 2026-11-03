@@ -72,7 +72,7 @@ RSpec.describe Bundler::LockfileParser do
 
       it "returns the same as > 1.0" do
         expect(subject).to contain_exactly(
-          described_class::BUNDLED, described_class::CHECKSUMS, described_class::CONTENT_ADDRESSES, described_class::RUBY, described_class::PLUGIN
+          described_class::BUNDLED, described_class::CHECKSUMS, described_class::CONTENT_ADDRESSES, described_class::RUBY_ABIS, described_class::RUBY, described_class::PLUGIN
         )
       end
     end
@@ -82,7 +82,7 @@ RSpec.describe Bundler::LockfileParser do
 
       it "returns the same as for the release version" do
         expect(subject).to contain_exactly(
-          described_class::CHECKSUMS, described_class::CONTENT_ADDRESSES, described_class::RUBY, described_class::PLUGIN
+          described_class::CHECKSUMS, described_class::CONTENT_ADDRESSES, described_class::RUBY_ABIS, described_class::RUBY, described_class::PLUGIN
         )
       end
     end
@@ -266,6 +266,10 @@ RSpec.describe Bundler::LockfileParser do
             mygem (1.0-x86_64-linux) 0123456789
             othergem (2.0-x86_64-linux) 9876543210
 
+          RUBY ABIS
+            3.4
+            4.0
+
           BUNDLED WITH
              4.1.0
         L
@@ -280,6 +284,10 @@ RSpec.describe Bundler::LockfileParser do
 
       it "ignores a row for a gem that is not in the specs" do
         expect(subject.specs.map(&:name)).to eq(["mygem"])
+      end
+
+      it "parses the Ruby ABIs" do
+        expect(subject.ruby_abis).to eq(["3.4", "4.0"])
       end
     end
 

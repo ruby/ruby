@@ -84,21 +84,28 @@ module Bundler
       platforms.delete(Bundler.local_platform) if less_specific_platform
     end
 
-    def prune_content_addresses!(ruby_requirement)
-      require_relative "vendored_pub_grub"
-      allowed = Gem::PubGrub::RubyGems.requirement_to_range(ruby_requirement)
+    # Returns the subset of +ruby_abis+ for which every row that lists content
+    # addresses found a gem, so an offline resolution knows which Rubies it
+    # could fully serve from installed gems.
+    def assign_content_addresses!(ruby_abis, keep_locked: false)
+      covered = ruby_abis.dup
 
       @specs.each do |spec|
-        next if spec.content_addresses.empty? || !spec.source.is_a?(Source::Rubygems)
+        next unless spec.source.is_a?(Source::Rubygems)
+        next unless Gem::ContentAddress.platform_eligible?(spec.platform)
 
-        excluded = spec.source.specs.search([spec.name, spec.version]).filter_map do |gem|
-          next unless spec.content_addresses.include?(gem.content_address)
+        found = spec.source.specs.search([spec.name, spec.version]).filter_map do |gem|
+          next unless gem.platform.to_s == spec.platform.to_s && Gem::ContentAddress.content_addressed?(gem)
 
-          gem.content_address unless allowed.intersects?(Gem::PubGrub::RubyGems.requirement_to_range(gem.required_ruby_version))
+          ruby_abi = Gem::ContentAddress.ruby_abi_for(gem.required_ruby_version)
+          [ruby_abi, gem.content_address] if ruby_abis.include?(ruby_abi)
         end
 
-        spec.content_addresses -= excluded
+        spec.content_addresses = keep_locked ? spec.content_addresses | found.map(&:last) : found.map(&:last)
+        covered &= found.map(&:first) if spec.content_addresses.any?
       end
+
+      covered
     end
 
     def validate_deps(s, overrides = s.is_a?(LazySpecification) ? Array(s.overrides) : [])
@@ -151,11 +158,9 @@ module Bundler
     # Materialize for all the specs in the spec set, regardless of what platform they're for
     # @return [Array<Gem::Specification>]
     def materialized_for_all_platforms
-      @specs.map do |s|
-        next s unless s.is_a?(LazySpecification)
-        spec = s.materialize_for_cache
-        raise GemNotFound, "Could not find #{s.full_name} in any of the sources" unless spec
-        spec
+      @specs.flat_map do |s|
+        next [s] unless s.is_a?(LazySpecification)
+        s.materialize_for_cache
       end
     end
 

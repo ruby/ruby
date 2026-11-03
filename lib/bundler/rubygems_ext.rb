@@ -42,6 +42,29 @@ module Gem
       def self.content_addressed_row?(suffix, platform, required_ruby_version = nil, validate_ruby_abi: true)
         false
       end
+
+      def self.platform_eligible?(platform)
+        false
+      end
+
+      def self.ruby_abi_for(required_ruby_version)
+        nil
+      end
+
+      def self.valid_ruby_abi?(value)
+        false
+      end
+
+      def self.ruby_abi_requirement(ruby_abi)
+        Gem::Requirement.new("~> #{ruby_abi}.0")
+      end
+    end
+  end
+
+  # Can be removed once RubyGems 4.0.0 support is dropped
+  unless respond_to?(:ruby_abi)
+    def self.ruby_abi
+      ruby_version.segments.first(2).join(".")
     end
   end
 

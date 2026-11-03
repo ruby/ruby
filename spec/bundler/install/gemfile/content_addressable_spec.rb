@@ -1,13 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle install with content-addressable gems", :compact_index, rubygems: ">= 4.1.0.a" do
-  before do
-    skip "Gem::ContentAddress not available" if ruby_core?
-    skip "A prerelease Ruby does not satisfy the ~> X.Y.0 ABI pin of content-addressed gems" if Gem.ruby_version.prerelease?
-  end
-
-  let(:current_abi) { "#{Gem.ruby_version.segments[0]}.#{Gem.ruby_version.segments[1]}" }
-  let(:mismatched_abi) { "#{Gem.ruby_version.segments[0] + 1}.0" }
+  before { skip_unless_content_addressing_available! }
 
   it "installs the content-addressed gem when the Ruby ABI matches" do
     simulate_platform "x86_64-linux" do
@@ -373,72 +367,6 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
     end
   end
 
-  it "installs the multi-ABI gem in frozen mode when the only locked content-addressed gem is for another Ruby ABI" do
-    simulate_platform "x86_64-linux" do
-      build_repo2 do
-        build_gem "mygem", "1.0" do |s|
-          s.platform = Gem::Platform.new("x86_64-linux")
-          s.write "lib/mygem.rb", "MYGEM = '1.0 not_content_addressed'"
-        end
-      end
-
-      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
-        s.platform = Gem::Platform.new("x86_64-linux")
-        s.required_ruby_version = "~> #{current_abi}.0"
-        s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
-      end
-
-      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
-        s.platform = Gem::Platform.new("x86_64-linux")
-        s.required_ruby_version = "~> #{mismatched_abi}.0"
-        s.write "lib/mygem.rb", "MYGEM = '1.0 mismatched'"
-      end
-
-      mismatched_file = Dir[gem_repo2("gems", "mygem-1.0-*.gem").to_s].find do |file|
-        Gem::Package.new(file).spec.required_ruby_version.to_s == "~> #{mismatched_abi}.0"
-      end
-      mismatched_address = File.basename(mismatched_file, ".gem").rpartition("-").last
-      mismatched_checksum = Digest::SHA256.file(mismatched_file).hexdigest
-
-      gemfile <<~G
-        source "https://gem.repo2"
-
-        gem "mygem"
-      G
-
-      fat_checksum = Digest::SHA256.file(gem_repo2("gems", "mygem-1.0-x86_64-linux.gem")).hexdigest
-
-      lockfile <<~L
-        GEM
-          remote: https://gem.repo2/
-          specs:
-            mygem (1.0-x86_64-linux)
-
-        PLATFORMS
-          x86_64-linux
-
-        DEPENDENCIES
-          mygem
-
-        CONTENT ADDRESSES
-          mygem (1.0-x86_64-linux) #{mismatched_address} sha256=#{mismatched_checksum}
-
-        CHECKSUMS
-          mygem (1.0-x86_64-linux) sha256=#{fat_checksum}
-
-        BUNDLED WITH
-           #{Bundler::VERSION}
-      L
-
-      original_lockfile = lockfile
-      bundle_config "frozen true"
-      bundle "install", artifice: "compact_index_v2", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
-
-      expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
-      expect(lockfile).to eq(original_lockfile)
-    end
-  end
-
   it "omits the CHECKSUMS entry when only a content addressable build exists" do
     simulate_platform "x86_64-linux" do
       build_repo2 do
@@ -508,25 +436,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
   context "when several content-addressed gems exist for the locked platform" do
     before do
-      build_repo2 do
-        build_gem "mygem", "1.0"
-        build_gem "mygem", "1.0" do |s|
-          s.platform = Gem::Platform.new("x86_64-linux")
-          s.write "lib/mygem.rb", "MYGEM = '1.0 not_content_addressed'"
-        end
-      end
-
-      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
-        s.platform = Gem::Platform.new("x86_64-linux")
-        s.required_ruby_version = "~> #{current_abi}.0"
-        s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
-      end
-
-      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
-        s.platform = Gem::Platform.new("x86_64-linux")
-        s.required_ruby_version = "~> #{mismatched_abi}.0"
-        s.write "lib/mygem.rb", "MYGEM = '1.0 mismatched'"
-      end
+      build_repo2_with_content_addressed_gems
 
       gemfile <<~G
         source "https://gem.repo2"
@@ -535,116 +445,229 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
       G
     end
 
-    def content_address_for(abi)
-      file = Dir[gem_repo2("gems", "mygem-1.0-*.gem").to_s].find do |path|
-        Gem::Package.new(path).spec.required_ruby_version.to_s == "~> #{abi}.0"
+    it "records the resolving Ruby's ABI and locks only its content-addressed gems" do
+      simulate_platform "x86_64-linux" do
+        bundle_with_content_addressed_gems "install"
+
+        expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+        expect(locked_addresses).to eq([current_address])
+
+        original_lockfile = lockfile
+        pristine_system_gems
+        bundle_config "frozen true"
+        bundle_with_content_addressed_gems "install"
+
+        expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+        expect(lockfile).to eq(original_lockfile)
       end
-      File.basename(file, ".gem").rpartition("-").last
-    end
-
-    def rows_for(*abis)
-      abis.map {|abi| "  mygem (1.0-x86_64-linux) #{content_address_for(abi)}" }.sort
-    end
-
-    def content_address_rows
-      lockfile.scan(/^  mygem \(1\.0-x86_64-linux\) [0-9a-f]+/)
-    end
-
-    def lockfile_with_content_addresses(*content_addresses)
-      lockfile <<~L
-        GEM
-          remote: https://gem.repo2/
-          specs:
-            mygem (1.0-x86_64-linux)
-
-        PLATFORMS
-          x86_64-linux
-
-        DEPENDENCIES
-          mygem
-
-        CONTENT ADDRESSES
-        #{content_addresses.map {|address| "  mygem (1.0-x86_64-linux) #{address}" }.join("\n")}
-
-        BUNDLED WITH
-           #{Bundler::VERSION}
-      L
     end
 
     it "installs the content-addressed gem for the running Ruby among those a platform row lists, keeping the lockfile" do
       simulate_platform "x86_64-linux" do
-        lockfile_with_content_addresses(content_address_for(current_abi), content_address_for(mismatched_abi))
+        lockfile_with_content_addresses(current_address, mismatched_address, ruby_abis: [current_abi, mismatched_abi].sort)
         original_lockfile = lockfile
 
-        bundle "install", artifice: "compact_index_v2", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+        bundle_with_content_addressed_gems "install"
         expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
         expect(lockfile).to eq(original_lockfile)
 
         pristine_system_gems
         bundle_config "frozen true"
-        bundle "install", artifice: "compact_index_v2", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+        bundle_with_content_addressed_gems "install"
         expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
         expect(lockfile).to eq(original_lockfile)
       end
     end
 
-    it "installs the multi-ABI gem when the only locked content-addressed gem is for another Ruby ABI, keeping the lockfile" do
+    it "fails in frozen mode under a Ruby ABI the lockfile does not cover, like an unlocked platform" do
       simulate_platform "x86_64-linux" do
-        lockfile_with_content_addresses(content_address_for(mismatched_abi))
+        lockfile_with_content_addresses(mismatched_address, ruby_abis: [mismatched_abi])
         original_lockfile = lockfile
+        message = "Your lockfile locks content-addressed gems for Ruby #{mismatched_abi} but you are running Ruby #{current_abi}"
 
-        2.times do
-          bundle "install", artifice: "compact_index_v2", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+        bundle_config "frozen true"
+        bundle_with_content_addressed_gems "install", raise_on_error: false
+
+        expect(last_command).to be_failure
+        expect(err).to include(message)
+        expect(err).to include("Run `bundle install` under Ruby #{current_abi} outside of frozen mode")
+        expect(Dir[default_bundle_path("gems", "mygem-1.0-*").to_s]).to be_empty
+        expect(lockfile).to eq(original_lockfile)
+
+        # The check is a runtime validation, so booting the bundle fails the same way.
+        ruby "require 'bundler/setup'", raise_on_error: false
+        expect(last_command).to be_failure
+        expect(err).to include(message)
+
+        bundle_config "frozen false"
+        bundle_with_content_addressed_gems "install"
+        expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+      end
+    end
+
+    context "when the lockfile predates the RUBY ABIS section" do
+      ["4.0.0", "4.1.0.beta1"].each do |bundled_with|
+        it "locks the content-addressed gem when `bundle update --bundler` upgrades a lockfile without content addresses from Bundler #{bundled_with}" do
+          simulate_platform "x86_64-linux" do
+            update_repo2 { build_gem "bundler", Bundler::VERSION }
+            lockfile_with_content_addresses(bundled_with: bundled_with)
+
+            bundle_with_content_addressed_gems "update --bundler"
+
+            expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+            expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+            expect(locked_addresses).to eq([current_address])
+          end
+        end
+      end
+
+      it "installs the content-addressed gem a beta locked for the running Ruby in frozen mode, keeping the lockfile" do
+        simulate_platform "x86_64-linux" do
+          lockfile_with_content_addresses(current_address)
+          original_lockfile = lockfile
+
+          bundle_config "frozen true"
+          bundle_with_content_addressed_gems "install"
+
+          expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+          expect(lockfile).to eq(original_lockfile)
+        end
+      end
+
+      it "installs the multi-ABI gem in frozen mode when a beta locked only another Ruby's content-addressed gem" do
+        simulate_platform "x86_64-linux" do
+          lockfile_with_content_addresses(mismatched_address, checksums: true)
+          original_lockfile = lockfile
+
+          bundle_config "frozen true"
+          bundle_with_content_addressed_gems "install"
 
           expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
           expect(lockfile).to eq(original_lockfile)
         end
       end
-    end
 
-    def install_with_ruby_directive(directive)
-      lockfile_with_content_addresses(content_address_for(current_abi), content_address_for(mismatched_abi))
+      it "re-resolves once to record the running Ruby's ABI and its content-addressed gem, then finds no changes" do
+        simulate_platform "x86_64-linux" do
+          lockfile_with_content_addresses(mismatched_address)
 
-      gemfile <<~G
-        source "https://gem.repo2"
+          bundle_with_content_addressed_gems "install"
 
-        #{directive}
-        gem "mygem"
-      G
+          expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+          expect(lockfile.scan(/^    mygem \(1\.0-x86_64-linux\)$/).size).to eq(1)
+          expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+          expect(locked_addresses).to eq([current_address])
 
-      bundle "install", artifice: "compact_index_v2", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
-      expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
-    end
+          original_lockfile = lockfile
+          bundle_with_content_addressed_gems "install --verbose"
 
-    it "drops the content addresses for Ruby ABIs an exact version in the Gemfile's ruby directive rules out" do
-      simulate_platform "x86_64-linux" do
-        install_with_ruby_directive %(ruby "#{RUBY_VERSION}")
+          expect(out).to include("Found no changes, using resolution from the lockfile")
+          expect(lockfile).to eq(original_lockfile)
+        end
+      end
 
-        expect(content_address_rows).to eq(rows_for(current_abi))
+      it "records the running Ruby's ABI instead of falling back to the ruby gem" do
+        simulate_platform "x86_64-linux" do
+          lockfile_with_content_addresses(mismatched_address, ruby_gem: true)
+
+          bundle_with_content_addressed_gems "install"
+
+          expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+          expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+          expect(locked_addresses).to eq([current_address])
+        end
       end
     end
 
-    it "drops the content addresses for Ruby ABIs a pessimistic patch constraint in the Gemfile's ruby directive rules out" do
-      simulate_platform "x86_64-linux" do
-        install_with_ruby_directive %(ruby "~> #{current_abi}.0")
+    context "when resolving locally" do
+      it "fails under an uncovered Ruby ABI without touching the lockfile, until an online install locks its gems" do
+        simulate_platform "x86_64-linux" do
+          lockfile_with_content_addresses(mismatched_address, ruby_abis: [mismatched_abi])
+          original_lockfile = lockfile
 
-        expect(content_address_rows).to eq(rows_for(current_abi))
+          bundle_with_content_addressed_gems "install --local", raise_on_error: false
+
+          expect(last_command).to be_failure
+          expect(err).to include("Could not find mygem-1.0-x86_64-linux in locally installed gems")
+          expect(lockfile).to eq(original_lockfile)
+
+          bundle_with_content_addressed_gems "install"
+
+          expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+          expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n  #{mismatched_abi}\n")
+          expect(locked_addresses).to eq([current_address, mismatched_address].sort)
+        end
+      end
+
+      it "records the running Ruby's ABI and its already installed content-addressed gem" do
+        simulate_platform "x86_64-linux" do
+          lockfile_with_content_addresses(current_address, ruby_abis: [current_abi])
+          bundle_with_content_addressed_gems "install"
+
+          lockfile_with_content_addresses(mismatched_address, ruby_abis: [mismatched_abi])
+          bundle_with_content_addressed_gems "install --local"
+
+          expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+          expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n  #{mismatched_abi}\n")
+          expect(locked_addresses).to eq([current_address, mismatched_address].sort)
+
+          original_lockfile = lockfile
+          bundle_with_content_addressed_gems "install --local --verbose"
+
+          expect(out).to include("Found no changes, using resolution from the lockfile")
+          expect(lockfile).to eq(original_lockfile)
+        end
       end
     end
 
-    it "drops the content addresses for Ruby ABIs a range in the Gemfile's ruby directive rules out" do
-      simulate_platform "x86_64-linux" do
-        install_with_ruby_directive %(ruby ">= #{current_abi}.0", "< #{mismatched_abi}")
+    context "when the Gemfile has a ruby directive" do
+      def install_with_ruby_directive(directive)
+        lockfile_with_content_addresses(current_address, mismatched_address, ruby_abis: [current_abi, mismatched_abi].sort, ruby_version: Bundler::RubyVersion.system.to_s)
 
-        expect(content_address_rows).to eq(rows_for(current_abi))
+        gemfile <<~G
+          source "https://gem.repo2"
+
+          #{directive}
+          gem "mygem"
+        G
+
+        bundle_with_content_addressed_gems "install"
       end
-    end
 
-    it "keeps the content addresses for every Ruby ABI the Gemfile's ruby directive allows" do
-      simulate_platform "x86_64-linux" do
-        install_with_ruby_directive %(ruby ">= #{current_abi}.0", "< #{mismatched_abi}.1")
+      {
+        "an exact version" => -> { %(ruby "#{RUBY_VERSION}") },
+        "a pessimistic patch constraint" => -> { %(ruby "~> #{current_abi}.0") },
+        "a range ending before the next Ruby" => -> { %(ruby ">= #{current_abi}.0", "< #{mismatched_abi}") },
+      }.each do |kind, directive|
+        it "drops the content addresses for the Ruby ABIs #{kind} rules out" do
+          simulate_platform "x86_64-linux" do
+            install_with_ruby_directive instance_exec(&directive)
 
-        expect(content_address_rows).to eq(rows_for(current_abi, mismatched_abi))
+            expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+            expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+            expect(locked_addresses).to eq([current_address])
+          end
+        end
+      end
+
+      it "keeps the content addresses for every Ruby ABI the directive allows" do
+        simulate_platform "x86_64-linux" do
+          install_with_ruby_directive %(ruby ">= #{current_abi}.0", "< #{mismatched_abi}.1")
+
+          expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+          expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n  #{mismatched_abi}\n")
+          expect(locked_addresses).to eq([current_address, mismatched_address].sort)
+        end
+      end
+
+      it "checks the directive against the locked Ruby ABIs at boot without loading the resolver" do
+        simulate_platform "x86_64-linux" do
+          install_with_ruby_directive %(ruby "#{RUBY_VERSION}")
+
+          ruby "require 'bundler/setup'; puts defined?(Gem::PubGrub).inspect"
+          expect(out).to eq("nil")
+        end
       end
     end
   end
@@ -654,8 +677,6 @@ RSpec.describe "bundle install with content-addressable gems invisible to pre-4.
   before do
     skip "A prerelease Ruby does not satisfy the ~> X.Y.0 ABI pin of content-addressed gems" if Gem.ruby_version.prerelease?
   end
-
-  let(:current_abi) { "#{Gem.ruby_version.segments[0]}.#{Gem.ruby_version.segments[1]}" }
 
   it "installs content-addressed gems constrained so older clients refuse them" do
     simulate_platform "x86_64-linux" do

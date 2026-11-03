@@ -138,10 +138,14 @@ module Bundler
       out
     end
 
+    # Every gem this row may install: the platform gem and each content-addressed
+    # gem it lists, so a cache serves all the Rubies the lockfile covers. Rows
+    # the index does not know (git, path) are cached as themselves.
     def materialize_for_cache
       source.remote!
 
-      materialize(self) {|specs| specs.reverse.find(&:matches_current_metadata?) || specs.first }
+      specs = source.specs.search(self)
+      specs.empty? ? [self] : specs
     end
 
     def materialized_for_installation(locked_platforms = nil)

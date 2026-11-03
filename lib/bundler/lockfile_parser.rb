@@ -37,6 +37,7 @@ module Bundler
       :ruby_version,
       :checksums,
       :overrides,
+      :ruby_abis,
     )
 
     BUNDLED      = "BUNDLED WITH"
@@ -46,6 +47,7 @@ module Bundler
     OVERRIDES    = "OVERRIDES"
     PLATFORMS    = "PLATFORMS"
     RUBY         = "RUBY VERSION"
+    RUBY_ABIS    = "RUBY ABIS"
     GIT          = "GIT"
     GEM          = "GEM"
     PATH         = "PATH"
@@ -60,7 +62,7 @@ module Bundler
       Gem::Version.create("1.12") => [RUBY].freeze,
       Gem::Version.create("1.13") => [PLUGIN].freeze,
       Gem::Version.create("2.5.0") => [CHECKSUMS].freeze,
-      Gem::Version.create("4.1.0") => [CONTENT_ADDRESSES].freeze,
+      Gem::Version.create("4.1.0") => [CONTENT_ADDRESSES, RUBY_ABIS].freeze,
     }.freeze
 
     # OVERRIDES is deliberately not in SECTIONS_BY_VERSION_INTRODUCED. Sections
@@ -107,6 +109,7 @@ module Bundler
       @platforms    = []
       @sources      = []
       @metadata_source = Source::Metadata.new
+      @ruby_abis    = []
       @dependencies = {}
       @parse_method = nil
       @specs        = {}
@@ -159,6 +162,8 @@ module Bundler
           @parse_method = :parse_platform
         elsif line == RUBY
           @parse_method = :parse_ruby
+        elsif line == RUBY_ABIS
+          @parse_method = :parse_ruby_abi
         elsif line == BUNDLED
           @parse_method = :parse_bundled_with
         elsif /^[^\s]/.match?(line)
@@ -370,6 +375,11 @@ module Bundler
 
     def parse_platform(line)
       @platforms << Gem::Platform.new($1.strip) if line =~ /^  (.*)$/
+    end
+
+    def parse_ruby_abi(line)
+      ruby_abi = line.strip
+      @ruby_abis << ruby_abi if Gem::ContentAddress.valid_ruby_abi?(ruby_abi)
     end
 
     def parse_bundled_with(line)
