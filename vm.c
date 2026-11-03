@@ -2593,8 +2593,8 @@ add_opt_method_entry(const rb_method_entry_t *me)
     }
 }
 
-static void
-vm_init_redefined_flag(void)
+void
+rb_vm_init_redefined_flag(void)
 {
     ID mid;
     enum ruby_basic_operators bop;
@@ -5052,7 +5052,6 @@ Init_VM(void)
         rb_objspace_gc_enable(vm->ractor.main_ractor->objspace);
 #endif
     }
-    vm_init_redefined_flag();
 
     rb_block_param_proxy = rb_obj_alloc(rb_cObject);
     VALUE proxy_singleton = rb_singleton_class(rb_block_param_proxy);

@@ -1826,6 +1826,7 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     GET_VM()->running = 0;
     rb_call_builtin_inits();
+    rb_vm_init_redefined_flag();
     GET_VM()->running = 1;
     memset(ruby_vm_redefined_flag, 0, sizeof(ruby_vm_redefined_flag));
 
