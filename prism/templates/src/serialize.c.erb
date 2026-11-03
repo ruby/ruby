@@ -21,6 +21,7 @@ typedef int pm_serialize_unused_t;
 #include "prism/internal/encoding.h"
 #include "prism/internal/list.h"
 #include "prism/internal/magic_comments.h"
+#include "prism/internal/oom.h"
 #include "prism/internal/options.h"
 #include "prism/internal/parser.h"
 
@@ -30,7 +31,6 @@ typedef int pm_serialize_unused_t;
 
 #include <assert.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -135,10 +135,7 @@ pm_serialize_stack_push(pm_serialize_stack_t *stack, pm_serialize_entry_kind_t k
         size_t capacity = stack->capacity == 0 ? 64 : stack->capacity * 2;
         pm_serialize_entry_t *entries = (pm_serialize_entry_t *) xrealloc_sized(stack->entries, capacity * sizeof(pm_serialize_entry_t), stack->capacity * sizeof(pm_serialize_entry_t));
 
-        if (PRISM_UNLIKELY(entries == NULL)) {
-            fprintf(stderr, "prism: out of memory; aborting\n");
-            abort();
-        }
+        if (PRISM_UNLIKELY(entries == NULL)) PRISM_OOM();
 
         stack->entries = entries;
         stack->capacity = capacity;

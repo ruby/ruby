@@ -2,7 +2,8 @@
 #define PRISM_INTERNAL_OOM_H
 
 /**
- * Called when an allocation that prism cannot recover from fails. By default
+ * Called when prism needs memory that it cannot get, either because an
+ * allocation failed or because the requested size overflows size_t. By default
  * it writes a message to stderr and aborts. A consumer can define PRISM_OOM
  * before building prism to handle the failure itself.
  */

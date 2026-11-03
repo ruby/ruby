@@ -540,7 +540,7 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
     assert(nerrors > 0);
 
     size_t rich_errors_size = nerrors * sizeof(pm_rich_error_t);
-    if (rich_errors_size / sizeof(pm_rich_error_t) != nerrors) abort();
+    if (rich_errors_size / sizeof(pm_rich_error_t) != nerrors) PRISM_OOM();
 
     pm_rich_error_t *rich_errors = xmalloc(rich_errors_size);
     if (rich_errors == NULL) PRISM_OOM();
