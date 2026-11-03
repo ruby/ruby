@@ -50,6 +50,7 @@ module Ruby::Prism
       "patterns.txt",
       "percent_array_newline_delimiter.txt",
       "regex.txt",
+      "regex_escaped_crlf.txt",
       "seattlerb/and_multi.txt",
       "seattlerb/heredoc__backslash_dos_format.txt",
       "seattlerb/heredoc_bad_hex_escape.txt",

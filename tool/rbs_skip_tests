@@ -87,3 +87,7 @@ test_method_alias_decl_2(RDocPluginParserTest)
 test_enable(GCSingletonTest) leaves GC disabled for the rest of the process (GC.enable return value misread); every later stdlib test then runs with GC off and the process peaks multi-GB (NoMemoryError on Windows CI)
 test_stress_and_stress=(GCSingletonTest) runs assert_send_type with GC.stress enabled; the type check allocates heavily and cannot finish in CI time (was hidden while test_enable left GC disabled)
 test_reachable_objects_from_root(ObjectSpaceTest) assert_send_type eagerly builds trace.inspect of the whole roots hash; with per-Ractor GC roots the inspect is huge and the process peaks multi-GB (NoMemoryError on Windows CI)
+
+## Descriptor leak in the test itself (fixed in ruby/rbs#3191, not in rbs 4.2.0)
+
+test_for_fd(DirSingletonTest) passes the same fd to Dir.for_fd twice and never closes the returned Dirs; once their finalizers run, closedir closes whatever file reused that fd, and a later test fails with Errno::EBADF (e.g. FileTestSingletonTest)

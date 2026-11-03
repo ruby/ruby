@@ -98,6 +98,24 @@ class TestData < Test::Unit::TestCase
     end
   end
 
+  def test_initialize_missing_keywords_with_many_members
+    # Past 10 members, member names are looked up by hash
+    names = (1..12).map { :"m#{_1}" }
+    klass = Data.define(*names)
+    given = names.each_slice(2).map(&:first).to_h { [_1, 1] }
+    assert_raise_with_message(ArgumentError, "missing keywords: #{names.each_slice(2).map { _1[1].inspect }.join(", ")}") do
+      klass.new(**given)
+    end
+
+    # Enough members to track them in a heap buffer instead of on the stack
+    names = (1..1100).map { :"m#{_1}" }
+    klass = Data.define(*names)
+    assert_equal(names.size, klass.new(**names.to_h { [_1, 1] }).to_h.size)
+    assert_raise_with_message(ArgumentError, "missing keywords: :m1, :m1100") do
+      klass.new(**names[1..-2].to_h { [_1, 1] })
+    end
+  end
+
   def test_initialize_redefine
     klass = Data.define(:foo, :bar) do
       attr_reader :passed

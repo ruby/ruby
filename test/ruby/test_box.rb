@@ -1215,7 +1215,7 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_calling_root_box_methods_does_not_change_user_boxes_newly_created
-    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;
       assert_not_include Object.constants.sort, :Find # required by Pathname#find
       assert_not_include Ruby::Box.root.eval("Object.constants.sort"), :Find
@@ -1223,13 +1223,13 @@ class TestBox < Test::Unit::TestCase
       assert_not_include b1.eval("Object.constants.sort"), :Find
 
       require 'pathname'
-      Pathname.new('.').find{|path| path.directory?}
+      Pathname.new(here).find{|path| path.directory?}
       assert_include Object.constants.sort, :Find # required by Pathname#find
 
       assert_not_include Ruby::Box.root.eval("Object.constants.sort"), :Find
       assert_not_include b1.eval("Object.constants.sort"), :Find
 
-      Ruby::Box.root.eval("require 'pathname'; Pathname.new('.').find{|path| path.directory? }")
+      Ruby::Box.root.eval("require 'pathname'; Pathname.new('#{here}').find{|path| path.directory? }")
       assert_include Ruby::Box.root.eval("Object.constants.sort"), :Find
 
       assert_not_include b1.eval("Object.constants.sort"), :Find

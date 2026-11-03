@@ -202,6 +202,13 @@ describe "CApiNumericSpecs" do
       @s.NUM2ULONG(4.2).should == 4
     end
 
+    it "raises a RangeError if passed a Float out of range" do
+      -> { @s.NUM2ULONG(Float::NAN) }.should.raise(RangeError, "float NaN out of range of integer")
+      -> { @s.NUM2ULONG(Float::INFINITY) }.should.raise(RangeError, "float Inf out of range of integer")
+      -> { @s.NUM2ULONG(-Float::INFINITY) }.should.raise(RangeError, "float -Inf out of range of integer")
+      -> { @s.NUM2ULONG(2.0**64) }.should.raise(RangeError, "float 1.844674407e+19 out of range of integer")
+    end
+
     it "converts a Bignum" do
       @s.NUM2ULONG(0xffff_ffff).should == 0xffff_ffff
     end

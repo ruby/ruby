@@ -956,6 +956,30 @@ ossl_sslctx_set_min_version(VALUE self, VALUE v)
 
 /*
  * call-seq:
+ *    ssl.min_version = OpenSSL::SSL::TLS1_2_VERSION
+ *    ssl.min_version = :TLS1_2
+ *    ssl.min_version = 0
+ *    ssl.min_version = nil
+ *
+ * Sets the lower bound of the supported SSL/TLS protocol version range for
+ * this connection only. See SSLContext#min_version= for the possible values.
+ */
+static VALUE
+ossl_ssl_set_min_version(VALUE self, VALUE v)
+{
+    SSL *ssl;
+    int version;
+
+    GetSSL(self, ssl);
+    version = parse_proto_version(v);
+
+    if (!SSL_set_min_proto_version(ssl, version))
+        ossl_raise(eSSLError, "SSL_set_min_proto_version");
+    return v;
+}
+
+/*
+ * call-seq:
  *    ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
  *    ctx.max_version = :TLS1_2
  *    ctx.max_version = 0
@@ -976,6 +1000,30 @@ ossl_sslctx_set_max_version(VALUE self, VALUE v)
 
     if (!SSL_CTX_set_max_proto_version(ctx, version))
         ossl_raise(eSSLError, "SSL_CTX_set_max_proto_version");
+    return v;
+}
+
+/*
+ * call-seq:
+ *    ssl.max_version = OpenSSL::SSL::TLS1_2_VERSION
+ *    ssl.max_version = :TLS1_2
+ *    ssl.max_version = 0
+ *    ssl.max_version = nil
+ *
+ * Sets the upper bound of the supported SSL/TLS protocol version range for
+ * this connection only. See #min_version= for details.
+ */
+static VALUE
+ossl_ssl_set_max_version(VALUE self, VALUE v)
+{
+    SSL *ssl;
+    int version;
+
+    GetSSL(self, ssl);
+    version = parse_proto_version(v);
+
+    if (!SSL_set_max_proto_version(ssl, version))
+        ossl_raise(eSSLError, "SSL_set_max_proto_version");
     return v;
 }
 
@@ -2973,6 +3021,8 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
     /* #hostname is defined in lib/openssl/ssl.rb */
     rb_define_method(cSSLSocket, "hostname=", ossl_ssl_set_hostname, 1);
+    rb_define_method(cSSLSocket, "min_version=", ossl_ssl_set_min_version, 1);
+    rb_define_method(cSSLSocket, "max_version=", ossl_ssl_set_max_version, 1);
     rb_define_method(cSSLSocket, "finished_message", ossl_ssl_get_finished, 0);
     rb_define_method(cSSLSocket, "peer_finished_message", ossl_ssl_get_peer_finished, 0);
     rb_define_method(cSSLSocket, "tmp_key", ossl_ssl_tmp_key, 0);

@@ -23,7 +23,7 @@ $extout_prefix = "$(extout)$(target_prefix)/"
 
 class TestMkmf < Test::Unit::TestCase
   module Base
-    MKMFLOG = proc {File.read("mkmf.log") rescue ""}
+    MKMFLOG = proc {File.binread("mkmf.log") rescue ""}
 
     class Capture
       attr_accessor :origin

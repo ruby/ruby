@@ -285,6 +285,16 @@ typedef unsigned int rb_atomic_t;
     rbimpl_atomic_size_cas(&(var), (oldval), (newval), RBIMPL_ATOMIC_SEQ_CST, RBIMPL_ATOMIC_SEQ_CST)
 
 /**
+ * Identical to #RUBY_ATOMIC_LOAD, except it expects its argument is `size_t`.
+ * There are cases where ::rb_atomic_t is 32bit while `size_t` is 64bit.  This
+ * should be used for size related operations to support such platforms.
+ *
+ * @param   var  A variable of `size_t`.
+ * @return  What was stored in `var`.
+ */
+#define RUBY_ATOMIC_SIZE_LOAD(var) rbimpl_atomic_size_load(&(var), RBIMPL_ATOMIC_SEQ_CST)
+
+/**
  * Identical to #RUBY_ATOMIC_ADD, except it expects its arguments are `size_t`.
  * There are cases where ::rb_atomic_t is 32bit while `size_t` is 64bit.  This
  * should be used for size related operations to support such platforms.
@@ -1065,6 +1075,26 @@ rbimpl_atomic_size_cas(volatile size_t *ptr, size_t oldval, size_t newval, int s
 
 #else
 # error Unsupported platform.
+#endif
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
+static inline size_t
+rbimpl_atomic_size_load(volatile size_t *ptr, int memory_order)
+{
+    (void)memory_order;
+#if 0
+
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS)
+    return __atomic_load_n(ptr, memory_order);
+#elif defined(_M_X64) && !defined(_M_ARM64EC)
+    /* A plain load is seq_cst on x64 because the stores here use xchg. */
+    return *ptr;
+#else
+    size_t val = *ptr;
+    return rbimpl_atomic_size_cas(ptr, val, val, memory_order, memory_order);
 #endif
 }
 

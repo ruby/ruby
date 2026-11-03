@@ -131,12 +131,14 @@ describe "Process.spawn" do
   end
 
   describe "with a command array" do
-    it "uses the first element as the command name and the second as the argv[0] value" do
-      platform_is_not :windows do
-        -> { Process.wait Process.spawn(["/bin/sh", "argv_zero"], "-c", "echo $0") }.should output_to_fd("argv_zero\n")
-      end
-      platform_is :windows do
-        -> { Process.wait Process.spawn(["cmd.exe", "/C"], "/C", "echo", "argv_zero") }.should output_to_fd("argv_zero\n")
+    guard_not -> { ProcessSpecs.busybox_sh? } do
+      it "uses the first element as the command name and the second as the argv[0] value" do
+        platform_is_not :windows do
+          -> { Process.wait Process.spawn(["/bin/sh", "argv_zero"], "-c", "echo $0") }.should output_to_fd("argv_zero\n")
+        end
+        platform_is :windows do
+          -> { Process.wait Process.spawn(["cmd.exe", "/C"], "/C", "echo", "argv_zero") }.should output_to_fd("argv_zero\n")
+        end
       end
     end
 
@@ -153,15 +155,17 @@ describe "Process.spawn" do
       -> { Process.wait Process.spawn(["echo", "echo"], "a b  c   d") }.should output_to_fd(out)
     end
 
-    it "calls #to_ary to convert the argument to an Array" do
-      o = mock("to_ary")
-      platform_is_not :windows do
-        o.should_receive(:to_ary).and_return(["/bin/sh", "argv_zero"])
-        -> { Process.wait Process.spawn(o, "-c", "echo $0") }.should output_to_fd("argv_zero\n")
-      end
-      platform_is :windows do
-        o.should_receive(:to_ary).and_return(["cmd.exe", "/C"])
-        -> { Process.wait Process.spawn(o, "/C", "echo", "argv_zero") }.should output_to_fd("argv_zero\n")
+    guard_not -> { ProcessSpecs.busybox_sh? } do
+      it "calls #to_ary to convert the argument to an Array" do
+        o = mock("to_ary")
+        platform_is_not :windows do
+          o.should_receive(:to_ary).and_return(["/bin/sh", "argv_zero"])
+          -> { Process.wait Process.spawn(o, "-c", "echo $0") }.should output_to_fd("argv_zero\n")
+        end
+        platform_is :windows do
+          o.should_receive(:to_ary).and_return(["cmd.exe", "/C"])
+          -> { Process.wait Process.spawn(o, "/C", "echo", "argv_zero") }.should output_to_fd("argv_zero\n")
+        end
       end
     end
 

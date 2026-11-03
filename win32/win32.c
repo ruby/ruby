@@ -74,6 +74,7 @@ static int w32_stati128(const char *path, struct stati128 *st, UINT cp, BOOL lst
 static char *w32_getenv(const char *name, UINT cp);
 
 #undef getenv
+#undef strdup
 /*
  * Do not remove the macros to substitute functions in dln_find.c.
  */
@@ -110,7 +111,6 @@ static char *w32_getenv(const char *name, UINT cp);
 #undef close
 #undef setsockopt
 #undef dup2
-#undef strdup
 
 #define _filbuf _fgetc_nolock
 #define _flsbuf _fputc_nolock
@@ -511,7 +511,7 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
 /*
   Return user's home directory using environment variables combinations.
   Memory allocated by this function should be manually freed
-  afterwards with xfree.
+  afterwards with free.
 
   Try:
   HOME, USERPROFILE, HOMEDRIVE + HOMEPATH environment variables
@@ -4526,18 +4526,18 @@ rb_w32_set_nonblock2(int fd, int nonblock)
         return setfl(sock, nonblock ? O_NONBLOCK : 0);
     }
     else if (is_pipe(sock)) {
-        DWORD state;
+        DWORD state, mode;
         if (!GetNamedPipeHandleState((HANDLE)sock, &state, NULL, NULL, NULL, NULL, 0)) {
             errno = map_errno(GetLastError());
             return -1;
         }
         if (nonblock) {
-            state |= PIPE_NOWAIT;
+            mode = state | PIPE_NOWAIT;
         }
         else {
-            state &= ~PIPE_NOWAIT;
+            mode = state & ~PIPE_NOWAIT;
         }
-        if (!SetNamedPipeHandleState((HANDLE)sock, &state, NULL, NULL)) {
+        if (mode != state && !SetNamedPipeHandleState((HANDLE)sock, &mode, NULL, NULL)) {
             errno = map_errno(GetLastError());
             return -1;
         }
@@ -7433,6 +7433,7 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
         err = GetLastError();
         if (err == ERROR_NO_DATA && (_osfile(fd) & FPIPE)) {
             DWORD state;
+            CloseHandle(ol.hEvent);
             if (GetNamedPipeHandleState((HANDLE)_osfhnd(fd), &state, NULL, NULL, NULL, NULL, 0) && (state & PIPE_NOWAIT)) {
                 errno = EWOULDBLOCK;
             }
@@ -7463,13 +7464,17 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
                 errno = EINTR;
             else
                 errno = map_errno(GetLastError());
-            CloseHandle(ol.hEvent);
             CancelIo((HANDLE)_osfhnd(fd));
-            rb_acrt_lowio_unlock_fh(fd);
-            return -1;
+            /* the read may have completed before the cancel, and the kernel
+             * writes ol and buf until it ends either way */
+            GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE);
+            if (!read) {
+                CloseHandle(ol.hEvent);
+                rb_acrt_lowio_unlock_fh(fd);
+                return -1;
+            }
         }
-
-        if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
+        else if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
             (err = GetLastError()) != ERROR_HANDLE_EOF) {
             int ret = 0;
             if (err != ERROR_BROKEN_PIPE) {
@@ -7576,13 +7581,15 @@ rb_w32_write_internal(int fd, const void *buf, size_t size, rb_off_t *offset)
                 errno = EINTR;
             else
                 errno = map_errno(GetLastError());
-            CloseHandle(ol.hEvent);
             CancelIo((HANDLE)_osfhnd(fd));
-            rb_acrt_lowio_unlock_fh(fd);
-            return -1;
+            GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written, TRUE);
+            if (!written) {
+                CloseHandle(ol.hEvent);
+                rb_acrt_lowio_unlock_fh(fd);
+                return -1;
+            }
         }
-
-        if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written, TRUE)) {
+        else if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written, TRUE)) {
             errno = map_errno(GetLastError());
             CloseHandle(ol.hEvent);
             CancelIo((HANDLE)_osfhnd(fd));

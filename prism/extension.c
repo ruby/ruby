@@ -493,6 +493,10 @@ check_raise_error_option(pm_parser_t *parser, const pm_options_t *options, rb_en
             rb_ivar_set(error, rb_intern_const("@path"), Qnil);
             break;
         }
+        case PM_ERROR_LEVEL_STACK: {
+            error = rb_exc_new_str(rb_eSysStackError, message);
+            break;
+        }
     }
 
     return result_err(error);
@@ -715,6 +719,9 @@ parser_error(const pm_diagnostic_t *diagnostic, rb_encoding *encoding, VALUE sou
             break;
         case PM_ERROR_LEVEL_LOAD:
             level = ID2SYM(rb_intern("load"));
+            break;
+        case PM_ERROR_LEVEL_STACK:
+            level = ID2SYM(rb_intern("stack"));
             break;
         default:
             rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, error_level);

@@ -214,7 +214,6 @@ class TestGemCommandsYankCommand < Gem::TestCase
   end
 
   def test_with_webauthn_enabled_failure
-    pend "Flaky on TruffleRuby" if RUBY_ENGINE == "truffleruby"
     server = Gem::MockTCPServer.new
     error = Gem::WebauthnVerificationError.new("Something went wrong")
 
@@ -236,7 +235,8 @@ class TestGemCommandsYankCommand < Gem::TestCase
     end
     assert_equal 1, error.exit_code
 
-    assert_match @fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
+    webauthn_verification_request = @fetcher.requests.find {|req| req.path == "/api/v1/webauthn_verification" }
+    assert_match webauthn_verification_request["Authorization"], Gem.configuration.rubygems_api_key
     assert_match %r{Yanking gem from http://example}, @ui.output
     assert_match "You have enabled multi-factor authentication. Please visit the following URL " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \

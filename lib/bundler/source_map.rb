@@ -8,7 +8,7 @@ module Bundler
       @sources = sources
       @dependencies = dependencies
       @locked_specs = locked_specs
-      # No gemspec names a gem that a `from:`/`to:` override substitutes, so
+      # No gemspec names a gem that a `with:`/`in:` override substitutes, so
       # the dependency API never fetches it unless asked.
       @replacement_names = replacement_names
     end

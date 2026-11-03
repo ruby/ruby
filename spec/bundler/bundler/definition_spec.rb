@@ -21,6 +21,45 @@ RSpec.describe Bundler::Definition do
     end
   end
 
+  describe "#preload_git_sources" do
+    before do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile) { bundled_app_gemfile }
+      allow(Bundler.settings).to receive(:installation_parallelization).and_return(4)
+    end
+
+    subject { Bundler::Definition.new(bundled_app_lock, [], Bundler::SourceList.new, {}) }
+
+    it "never preloads two sources sharing a git cache at the same time" do
+      skip "git sources are preloaded one by one before Ruby 3.3" if Gem.ruby_version < Gem::Version.new("3.3")
+
+      lock = Mutex.new
+      running = Hash.new(0)
+      max_running = Hash.new(0)
+      max_total = 0
+
+      sources = %w[monorepo monorepo monorepo other].map do |repo|
+        source = double("git source #{repo}", cache_path: Pathname.new("/cache/git/#{repo}"))
+        allow(source).to receive(:specs) do
+          lock.synchronize do
+            running[repo] += 1
+            max_running[repo] = [max_running[repo], running[repo]].max
+            max_total = [max_total, running.values.sum].max
+          end
+          sleep 0.1
+          lock.synchronize { running[repo] -= 1 }
+        end
+        source
+      end
+      allow(subject).to receive(:needed_git_sources).and_return(sources)
+
+      subject.send(:preload_git_sources)
+
+      sources.each {|source| expect(source).to have_received(:specs).once }
+      expect(max_running["monorepo"]).to eq(1)
+      expect(max_total).to eq(2)
+    end
+  end
+
   describe "#lock" do
     before do
       allow(Bundler::SharedHelpers).to receive(:find_gemfile) { bundled_app_gemfile }

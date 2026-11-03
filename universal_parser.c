@@ -187,8 +187,6 @@
 
 #define rb_make_backtrace p->config->make_backtrace
 
-#define ruby_scan_hex    p->config->scan_hex
-#define ruby_scan_oct    p->config->scan_oct
 #define ruby_scan_digits p->config->scan_digits
 #define strtod           p->config->strtod
 

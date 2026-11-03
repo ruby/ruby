@@ -623,36 +623,49 @@ Declaring the same `target` and `field` twice is an error.
     gem "rails", "~> 7.0"
 
 The override only affects resolution and the install-time Ruby/RubyGems
-compatibility checks; `Gemfile.lock` continues to reflect the resolved
-versions, not the rewritten requirements. When resolution still fails,
+compatibility checks; the gems in `Gemfile.lock` continue to reflect the
+resolved versions, not the rewritten requirements. The overrides themselves are
+recorded in the lockfile's `OVERRIDES` section, one line per field, sorted:
+
+    OVERRIDES
+      "rails", version: ">= 8.0"
+      :all, required_ruby_version: :ignore_upper
+
+Requirements are recorded in normalized form, so `">=8.0"` and `">= 8.0"` are
+the same override. A frozen install fails when the Gemfile's overrides differ
+from the recorded ones. Adding or removing a `:all` or metadata override
+rewrites the section and keeps the locked versions. The exception is a locked
+gem that is not installed and whose metadata rejects the current Ruby. Bundler
+re-resolves it, as it does without the override. Run `bundle update` to
+re-resolve under the override. When resolution still fails,
 Bundler appends the active overrides (with their Gemfile location) to the
 error message so it is clear which override shaped the constraint set.
 
 ### DROPPING OR REPLACING A DEPENDENCY
 
-`from:` and `to:` rewrite a single dependency of a single gem:
+`with:` and `in:` rewrite a single dependency of a single gem:
 
-    override <target>, from: <gem>, to: nil
-    override <target>, from: <gem>, to: <replacement>, version: <requirement>
+    override <target>, with: nil, in: <gem>
+    override <target>, with: <replacement>, in: <gem>, version: <requirement>
 
-`to: nil` removes the dependency of `<gem>` on `<target>`, so `<target>` is
-not installed unless something else still requires it. `to: <replacement>`
+`with: nil` removes the dependency of `<gem>` on `<target>`, so `<target>` is
+not installed unless something else still requires it. `with: <replacement>`
 makes `<gem>` depend on `<replacement>` instead of `<target>`. The requirement
 `<gem>` put on `<target>` is discarded, and the optional `version:` gives the
 replacement its own. Both forms apply whether `<gem>` is a direct or a
 transitive dependency.
 
-`from:` is required, and so is `to:` once `from:` is given. To rewrite the
+`in:` is required, and so is `with:` once `in:` is given. To rewrite the
 same dependency of several gems, write one `override` per gem. It is an error
-to declare the same `<target>` and `from:` twice, to drop a gem that the
+to declare the same `<target>` and `in:` twice, to drop a gem that the
 Gemfile requires directly, or to replace a gem that another gem still
 requires, since both would then be in the bundle.
 
     # jekyll only loads em-websocket for `jekyll serve --livereload`.
-    override "em-websocket", from: "jekyll", to: nil
+    override "em-websocket", with: nil, in: "jekyll"
 
     # Use an API-compatible gem that provides the same files.
-    override "foo", from: "bar", to: "foo-lite"
+    override "foo", with: "foo-lite", in: "bar"
 
 Bundler does not check what a gem loads at runtime. If `<gem>` requires
 `<target>` unconditionally, dropping it makes that require raise `LoadError`,
@@ -662,9 +675,10 @@ files `<gem>` requires, and it does not take over the name of `<target>`:
 `Gem.loaded_specs` has no entry for `<target>`, and `gem "<target>"` fails.
 
 `Gemfile.lock` keeps listing `<target>` under `<gem>` as the gem publishes it,
-while the locked gems leave `<target>` out or include `<replacement>`. A
-frozen install accepts that lockfile as long as the Gemfile still has the
-override. Removing the override makes Bundler resolve `<target>` again.
+while the locked gems leave `<target>` out or include `<replacement>`, and the
+`OVERRIDES` section records the rewrite so tools that read the lockfile can
+apply it. A frozen install accepts that lockfile as long as the Gemfile still
+has the override. Removing the override makes Bundler resolve `<target>` again.
 
 ## SOURCE PRIORITY
 

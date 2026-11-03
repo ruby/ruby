@@ -20,7 +20,7 @@ jobs:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@824c0e29fdfc7d689c191c27acc969d2d04b7dd8 # v1.331.0
+      - uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
         with:
           ruby-version: head
 
@@ -80,10 +80,15 @@ jobs:
       - name: Check for __has_builtin functions
         run: |
           missing=()
-          for check in $(git grep -h --no-line-number -o '__has_builtin(__[_a-zA-Z0-9]*)' | sort -u); do
+          for check in $(git grep -h --no-line-number -o '__has_builtin(__[_a-zA-Z0-9]*)' :^prism/ | sort -u); do
               func="${check#__has_builtin(}"
               func="${func%)}"
               git -P grep -w "RBIMPL_HAS_BUILTIN_$func" > /dev/null || missing+=("-e" "$check")
+          done
+          for check in $(git grep -h --no-line-number -o '__has_builtin(__[_a-zA-Z0-9]*)' prism/ | sort -u); do
+              func="${check#__has_builtin(__}"
+              func="${func%)}"
+              git -P grep -w "PRISM_HAS_${func^^}" > /dev/null || missing+=("-e" "$check")
           done
           [ ${#missing[@]} = 0 ] || {
               echo "::error::Missing __has_builtin fallbacks:"

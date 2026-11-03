@@ -2,6 +2,8 @@
 #define PRISM_INTERNAL_PARSER_H
 
 #include "prism/compiler/accel.h"
+#include "prism/compiler/inline.h"
+#include "prism/compiler/stack.h"
 
 #include "prism/internal/arena.h"
 #include "prism/internal/comments.h"
@@ -271,13 +273,6 @@ typedef struct pm_lex_mode {
     /* The previous lex state so that it knows how to pop. */
     struct pm_lex_mode *prev;
 } pm_lex_mode_t;
-
-/*
- * We pre-allocate a certain number of lex states in order to avoid having to
- * call malloc too many times while parsing. You really shouldn't need more than
- * this because you only really nest deeply when doing string interpolation.
- */
-#define PM_LEX_STACK_SIZE 4
 
 /*
  * While parsing, we keep track of a stack of contexts. This is helpful for
@@ -596,8 +591,19 @@ struct pm_parser_t {
     /* The arena used for all AST-lifetime allocations. Caller-owned. */
     pm_arena_t *arena;
 
-    /* The arena used for parser metadata (comments, diagnostics, etc.). */
+    /*
+     * The arena used for parser metadata (comments, diagnostics, etc.), which
+     * lives as long as the parser.
+     */
     pm_arena_t metadata_arena;
+
+    /*
+     * The arena used for state that is only needed while parsing, such as
+     * scopes, locals, and contexts. It is released when pm_parse returns, so
+     * nothing allocated in it can be reachable from the tree or from the
+     * parser's metadata.
+     */
+    pm_arena_t scratch_arena;
 
     /*
      * The next node identifier that will be assigned. This is a unique
@@ -648,16 +654,23 @@ struct pm_parser_t {
      */
     pm_state_stack_t accepts_block_stack;
 
-    /* A stack of lex modes. */
+    /* A stack of lex modes, linked through their prev pointers. */
     struct {
         /* The current mode of the lexer. */
         pm_lex_mode_t *current;
 
-        /* The stack of lexer modes. */
-        pm_lex_mode_t stack[PM_LEX_STACK_SIZE];
+        /*
+         * The mode at the bottom of the stack, which is never popped. Every
+         * other mode is allocated from the scratch arena.
+         */
+        pm_lex_mode_t base;
 
-        /* The current index into the lexer mode stack. */
-        size_t index;
+        /*
+         * Lex modes that have been popped, kept for reuse by the next push.
+         * They are allocated from the scratch arena, so they are never freed
+         * individually.
+         */
+        pm_lex_mode_t *free;
     } lex_modes;
 
     /* The pointer to the start of the source. */
@@ -717,7 +730,7 @@ struct pm_parser_t {
 
     /*
      * Scopes that have been popped, kept for reuse by the next push. Scopes
-     * are allocated from the metadata arena, so they are never freed
+     * are allocated from the scratch arena, so they are never freed
      * individually.
      */
     pm_scope_t *free_scopes;
@@ -727,7 +740,7 @@ struct pm_parser_t {
 
     /*
      * Context nodes that have been popped, kept for reuse by the next push.
-     * Context nodes are allocated from the metadata arena, so they are never
+     * Context nodes are allocated from the scratch arena, so they are never
      * freed individually.
      */
     pm_context_node_t *free_contexts;
@@ -868,6 +881,19 @@ struct pm_parser_t {
      */
     pm_node_list_t *current_block_exits;
 
+    /*
+     * The address of the C stack when pm_parse was entered. The stack budget
+     * is measured as the distance from this address.
+     */
+    uintptr_t stack_base;
+
+    /*
+     * The number of bytes of C stack below stack_base that the recursive
+     * descent may use before it reports that the stack is exhausted. SIZE_MAX
+     * when no budget was given, so the check never fires.
+     */
+    size_t stack_budget;
+
     /* The version of prism that we should use to parse. */
     pm_options_version_t version;
 
@@ -960,6 +986,13 @@ struct pm_parser_t {
      */
     bool warn_mismatched_indentation;
 
+    /*
+     * Whether the stack exhausted error has been reported. Once the budget is
+     * used up, every recursion that unwinds past it would report the error
+     * again, so it is only reported the first time.
+     */
+    bool stack_exhausted_reported;
+
 #if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSE2) || defined(PRISM_HAS_SWAR)
     /*
      * Cached lookup tables for pm_strpbrk's SIMD fast path. Avoids rebuilding
@@ -1000,5 +1033,27 @@ void pm_parser_cleanup(pm_parser_t *parser);
  * same lookup that the lexer does.
  */
 bool pm_keyword_p(const uint8_t *start, const uint8_t *end);
+
+/*
+ * Returns true if parsing has used more C stack since pm_parse was entered than
+ * the stack budget allows. Every recursion that runs inside pm_parse checks
+ * this alongside its own depth limit, so that the budget bounds all of them.
+ * The distance is taken without assuming which direction the stack grows. With
+ * no budget the limit is SIZE_MAX, so this never fires.
+ */
+static PRISM_INLINE bool
+pm_parser_stack_exhausted(const pm_parser_t *parser) {
+    uintptr_t current = pm_stack_address();
+    uintptr_t used = current < parser->stack_base ? parser->stack_base - current : current - parser->stack_base;
+    return used > parser->stack_budget;
+}
+
+/*
+ * Reports that the stack budget has been used up, at the given location. This
+ * is a separate error from the nesting depth limit, with its own error level,
+ * because the source may be valid and parse with more stack. It is reported
+ * once per parse.
+ */
+void pm_parser_err_stack_exhausted(pm_parser_t *parser, uint32_t start, uint32_t length);
 
 #endif

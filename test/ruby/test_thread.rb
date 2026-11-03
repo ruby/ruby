@@ -1423,6 +1423,57 @@ q.pop
     t.join
   end
 
+  def test_thread_name_native
+    omit "requires /proc/self/task" unless File.directory?("/proc/self/task")
+    assert_separately([{'RUBY_MN_THREADS' => '0'}], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      t = Thread.start {sleep}
+      sleep 0.001 until t.stop?
+      t.name = "foo"
+      assert_equal "foo", File.read("/proc/self/task/#{t.native_thread_id}/comm").chomp
+      t.kill.join
+    end;
+  end
+
+  def test_thread_name_after_join
+    omit "requires /proc/self/task" unless File.directory?("/proc/self/task")
+    assert_separately([{'RUBY_MN_THREADS' => '0'}], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      tid = nil
+      t1 = Thread.new { tid = Thread.current.native_thread_id }
+      t1.join
+      # Wait for the native thread to exit so that t2 reuses its stack
+      sleep 0.001 while File.exist?("/proc/self/task/#{tid}")
+      q = Thread::Queue.new
+      t2 = Thread.new { q.pop }
+      sleep 0.001 until t2.stop?
+      t1.name = "foo"
+      assert_equal "foo", t1.name
+      assert_not_equal "foo", File.read("/proc/self/task/#{t2.native_thread_id}/comm").chomp, "[Bug #22471]"
+      q << nil
+      t2.join
+    end;
+  end
+
+  def test_thread_name_set_before_start
+    omit "needs /proc/self/task" unless File.directory?("/proc/self/task")
+    # Thread#name= may run before the new thread has recorded its own id;
+    # the native name must still be applied, by whichever side gets there.
+    assert_separately([{'RUBY_MN_THREADS' => '0'}], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
+      10.times do |i|
+        q = Thread::Queue.new
+        t = Thread.new do
+          q.pop
+          File.read("/proc/self/task/#{Thread.current.native_thread_id}/comm").chomp
+        end
+        t.name = "name#{i}"
+        q << true
+        assert_equal "name#{i}", t.value
+      end
+    end;
+  end
+
   def test_thread_invalid_name
     bug11756 = '[ruby-core:71774] [Bug #11756]'
     t = Thread.start {}

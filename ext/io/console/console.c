@@ -4,7 +4,7 @@
  */
 
 static const char *const
-IO_CONSOLE_VERSION = "0.9.4";
+IO_CONSOLE_VERSION = "0.9.5";
 
 #include "ruby.h"
 #include "ruby/io.h"

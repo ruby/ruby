@@ -83,6 +83,21 @@ module Ruby::Prism
       assert_empty result.errors
     end
 
+    def test_long_formatted_messages
+      # Messages are formatted into a fixed-size buffer first, so check lengths
+      # on either side of its size to cover both the copy and the reformat.
+      template = "unterminated heredoc; can't find string \"%s\" anywhere before EOF"
+
+      (254..258).each do |length|
+        identifier = "E" * (length - template.length + 2)
+        expected = format(template, identifier)
+        assert_equal length, expected.bytesize
+
+        messages = Ruby::Prism.parse("<<#{identifier}\n").errors.map(&:message)
+        assert_includes messages, expected
+      end
+    end
+
     def test_incomplete_def_closing_loc
       statement = Ruby::Prism.parse_statement("def f; 123")
       assert_nil(statement.end_keyword)

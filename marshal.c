@@ -2012,7 +2012,11 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
                 hash_new_capa = rb_ident_hash_new_capa;
                 goto type_hash;
             }
-            v = r_object_for(arg, partial, 0, c, extmod, type);
+            /* Load as a partial and run r_leave() only after the class is set
+             * below: interning a bare frozen String returns the shared global
+             * fstring, and retagging that shared object would corrupt every
+             * other reference to it. */
+            v = r_object_for(arg, true, 0, c, extmod, type);
             if (RB_SPECIAL_CONST_P(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE)) {
                 goto format_error;
             }
@@ -2027,6 +2031,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
                          rb_class_name(c));
             }
             RBASIC_SET_CLASS(v, c);
+            v = r_leave(v, arg, partial);
         }
         break;
 

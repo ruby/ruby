@@ -335,7 +335,7 @@ module OpenSSL
       parts = san_component.split("*", -1)
 
       return false if parts.size > 2
-      return san_component == domain_component if parts.size == 1
+      return san_component == domain_component if parts.size <= 1
 
       # RFC 6125, section 6.4.3, subitem 3.
       # The client SHOULD NOT attempt to match a presented identifier

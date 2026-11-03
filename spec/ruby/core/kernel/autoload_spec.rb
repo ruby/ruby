@@ -168,6 +168,39 @@ describe "Kernel.autoload" do
       KernelSpecs::AutoloadMethod2::AutoloadFromIncludedModule2.loaded.should == :autoload_from_included_module2
     end
   end
+
+  describe "after the autoload was satisfied by requiring the file directly" do
+    before :each do
+      @path = fixture(__FILE__, "autoload_satisfied_by_require.rb")
+      Kernel.autoload :KSAutoloadSatisfiedByRequire, @path
+      ScratchPad.record []
+    end
+
+    after :each do
+      if Object.const_defined?(:KSAutoloadSatisfiedByRequire, false)
+        Object.send(:remove_const, :KSAutoloadSatisfiedByRequire)
+      end
+    end
+
+    it "defines a regular constant that no longer depends on $LOADED_FEATURES" do
+      require @path
+      ScratchPad.recorded.should == [:loaded]
+      Kernel.autoload?(:KSAutoloadSatisfiedByRequire).should == nil
+      klass = KSAutoloadSatisfiedByRequire
+      data = Marshal.dump(klass.new)
+
+      $LOADED_FEATURES.replace(@loaded_features)
+      Thread.new { Marshal.load(data).class }.value.should.equal?(klass)
+      ScratchPad.recorded.should == [:loaded]
+    end
+
+    it "returns the constant from remove_const" do
+      require @path
+      klass = KSAutoloadSatisfiedByRequire
+
+      Object.send(:remove_const, :KSAutoloadSatisfiedByRequire).should.equal?(klass)
+    end
+  end
 end
 
 describe "Kernel.autoload?" do

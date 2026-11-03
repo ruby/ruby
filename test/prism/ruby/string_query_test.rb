@@ -102,5 +102,19 @@ module Ruby::Prism
         StringQuery.new("end".encode("UTF-16LE")).keyword?
       end
     end
+
+    if BACKEND == :FFI
+      # Ruby strings always have a readable byte after their contents, so call
+      # the C functions directly with a slice that is immediately followed by a
+      # method name suffix. That byte is outside the slice and must be ignored.
+      def test_does_not_read_past_slice
+        local = FFI::MemoryPointer.from_string("foo?")
+        assert_equal :PM_STRING_QUERY_TRUE, LibRubyParser.pm_string_query_local(local, 3, "UTF-8")
+        assert_equal :PM_STRING_QUERY_TRUE, LibRubyParser.pm_string_query_method_name(local, 3, "UTF-8")
+
+        constant = FFI::MemoryPointer.from_string("Foo=")
+        assert_equal :PM_STRING_QUERY_TRUE, LibRubyParser.pm_string_query_constant(constant, 3, "UTF-8")
+      end
+    end
   end
 end

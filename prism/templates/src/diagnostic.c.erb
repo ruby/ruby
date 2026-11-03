@@ -12,6 +12,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define PM_DIAGNOSTIC_ID_MAX <%= errors.length + warnings.length %>
 
@@ -81,6 +82,7 @@ typedef struct {
  * * `PM_ERROR_LEVEL_SYNTAX` - Errors that should raise SyntaxError.
  * * `PM_ERROR_LEVEL_ARGUMENT` - Errors that should raise ArgumentError.
  * * `PM_ERROR_LEVEL_LOAD` - Errors that should raise LoadError.
+ * * `PM_ERROR_LEVEL_STACK` - Errors that should raise SystemStackError.
  *
  * For warnings, they are:
  *
@@ -96,6 +98,9 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
 
     /* Errors that should raise load errors */
     [PM_ERR_SCRIPT_NOT_FOUND]                   = { "no Ruby script found in input", PM_ERROR_LEVEL_LOAD },
+
+    /* Errors that should raise system stack errors */
+    [PM_ERR_STACK_EXHAUSTED]                    = { "stack level too deep", PM_ERROR_LEVEL_STACK },
 
     /* Errors that should raise syntax errors */
     [PM_ERR_ALIAS_ARGUMENT]                     = { "invalid argument being passed to `alias`; expected a bare word, symbol, constant, or global variable", PM_ERROR_LEVEL_SYNTAX },
@@ -534,11 +539,16 @@ pm_diagnostic_list_append(pm_arena_t *arena, pm_list_t *list, uint32_t start, ui
  */
 void
 pm_diagnostic_list_append_format(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, ...) {
+    /* Format the message into a buffer on the stack, which nearly every message
+     * fits in. The result is the length of the whole message whether or not it
+     * fit, so a single pass both formats the message and sizes it. */
+    char stack[256];
+
     va_list arguments;
     va_start(arguments, diag_id);
 
     const char *format = pm_diagnostic_id_message(diag_id);
-    int result = vsnprintf(NULL, 0, format, arguments);
+    int result = vsnprintf(stack, sizeof(stack), format, arguments);
     va_end(arguments);
 
     if (result < 0) {
@@ -550,9 +560,15 @@ pm_diagnostic_list_append_format(pm_arena_t *arena, pm_list_t *list, uint32_t st
     size_t message_length = (size_t) (result + 1);
     char *message = (char *) pm_arena_alloc(arena, message_length, 1);
 
-    va_start(arguments, diag_id);
-    vsnprintf(message, message_length, format, arguments);
-    va_end(arguments);
+    if (message_length <= sizeof(stack)) {
+        memcpy(message, stack, message_length);
+    } else {
+        /* The message was cut off on the stack, so format it again into an
+         * allocation of the right size. */
+        va_start(arguments, diag_id);
+        vsnprintf(message, message_length, format, arguments);
+        va_end(arguments);
+    }
 
     *diagnostic = (pm_diagnostic_t) {
         .location = { .start = start, .length = length },

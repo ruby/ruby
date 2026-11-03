@@ -31,11 +31,21 @@ void pm_buffer_cleanup(pm_buffer_t *buffer);
 /* Append the given amount of space as zeroes to the buffer. */
 void pm_buffer_append_zeroes(pm_buffer_t *buffer, size_t length);
 
+/* Append the given byte to the buffer the given number of times. */
+void pm_buffer_append_repeated(pm_buffer_t *buffer, uint8_t value, size_t length);
+
 /* Append a formatted string to the buffer. */
 void pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) PRISM_ATTRIBUTE_FORMAT(2, 3);
 
 /* Append a string to the buffer. */
 void pm_buffer_append_string(pm_buffer_t *buffer, const char *value, size_t length);
+
+/*
+ * Append a string literal to the buffer, with its length computed at compile
+ * time. Concatenating with "" means anything other than a string literal fails
+ * to compile, instead of having its pointer size taken as its length.
+ */
+#define PM_BUFFER_APPEND_LITERAL(buffer, literal) pm_buffer_append_string((buffer), "" literal, sizeof(literal) - 1)
 
 /* Append a list of bytes to the buffer. */
 void pm_buffer_append_bytes(pm_buffer_t *buffer, const uint8_t *value, size_t length);

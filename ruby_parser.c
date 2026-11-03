@@ -425,8 +425,6 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .make_backtrace = rb_make_backtrace,
 
-    .scan_hex = ruby_scan_hex,
-    .scan_oct = ruby_scan_oct,
     .scan_digits = ruby_scan_digits,
     .strtod = ruby_strtod,
 

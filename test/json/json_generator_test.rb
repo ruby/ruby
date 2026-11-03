@@ -1490,12 +1490,12 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   fixtures_path = File.expand_path('../fixtures/rfc8785/', __FILE__)
-  Dir[File.join(fixtures_path, "input/*.json", __FILE__)].each do |input|
+  Dir[File.join(fixtures_path, "input/*.json")].each do |input|
     filename = File.basename(input)
     name, _ = File.basename(filename, ".json")
     expected = File.join(fixtures_path, 'output', filename)
     define_method("test_rfc8785_#{name}") do
-      assert_rfc8785(File.read(output), JSON.load_file(input))
+      assert_rfc8785(File.read(expected), JSON.load_file(input))
     end
   end
 

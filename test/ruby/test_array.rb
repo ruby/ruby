@@ -3963,6 +3963,20 @@ class TestArray < Test::Unit::TestCase
     assert_equal(2, ary.find {|x| x % 2 == 0 })
     assert_equal(nil, ary.find {|x| false })
     assert_equal(:foo, ary.find(proc { :foo }) {|x| false })
+    assert_raise(ArgumentError) { ary.find(1, 2) }
+  end
+
+  def test_find_with_proc
+    if_none_proc = -> { 5 }
+    assert_equal(5, [].find(if_none_proc) { |_| false } )
+
+    if_none_proc = -> {}
+    if_none_proc.singleton_class.send(:private, :call)
+    [].find(if_none_proc) { |_| false }
+
+    if_none_proc = BasicObject.new
+    def if_none_proc.call = 7
+    assert_equal(7, [].find(if_none_proc) { } )
   end
 
   def test_rfind
@@ -3973,6 +3987,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(nil, ary.rfind {|x| false })
     assert_equal(:foo, ary.rfind(proc { :foo }) {|x| false })
     assert_equal(nil, ary.rfind {|x| ary.clear; false })
+    assert_raise(ArgumentError) { ary.rfind(1, 2) }
   end
 
   private

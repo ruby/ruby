@@ -217,6 +217,8 @@ class TestString < Test::Unit::TestCase
     s[/([A-Z]..)([A-Z]..)/, -2] = S("Bar")
     assert_equal(S("BarFoo"), s)
     assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, -3] = "None" }
+    assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, RbConfig::LIMITS["INT_MIN"]] = "None" }
+    assert_equal(S("BarFoo"), s)
 
     s = S("FooBar")
     s[S("Foo")] = S("Bar")
@@ -1618,7 +1620,6 @@ class TestString < Test::Unit::TestCase
 
   def test_each_line_modified_separator
     sep = S("x" * 1_000_000)
-    res = []
     assert_raise_with_message(RuntimeError, /string modified/) do
       S("a#{sep}b#{sep}c").each_line(sep) do |x|
         sep.clear

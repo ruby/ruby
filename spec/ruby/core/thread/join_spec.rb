@@ -68,3 +68,53 @@ describe "Thread#join" do
     -> { t.join }.should.raise(NotImplementedError)
   end
 end
+
+describe "Thread#join with Fiber scheduler" do
+  require_relative '../fiber/fixtures/scheduler'
+
+  before :each do
+    @queue = Queue.new
+    @thread = Thread.new { @queue.pop }
+    Thread.pass until @thread.stop?
+
+    @scheduler = Class.new(FiberSpecs::LoggingScheduler) do
+      # the finishing thread calls this outside our fibers, so it must not yield
+      def unblock(*args)
+        @events << { event: :unblock, args: args }
+      end
+    end.new
+    Fiber.set_scheduler(@scheduler)
+  end
+
+  after :each do
+    Fiber.set_scheduler(nil)
+    @queue << :done
+    @thread.join
+  end
+
+  it "blocks the fiber through the scheduler until the thread finishes" do
+    joiner = Fiber.new(blocking: false) { @thread.join }
+    joiner.resume
+    @scheduler.events.should == [{ event: :block, fiber: joiner, args: [@thread, nil] }]
+
+    @queue << :done
+    Thread.pass until @scheduler.events.size == 2
+    @scheduler.events.last.should == { event: :unblock, args: [Thread.current, joiner] }
+
+    joiner.resume.should.equal?(@thread)
+  end
+
+  it "passes the time left of the timeout to the scheduler" do
+    joiner = Fiber.new(blocking: false) { @thread.join(10) }
+    joiner.resume
+
+    event = @scheduler.events.last
+    event[:event].should == :block
+    blocker, timeout = event[:args]
+    blocker.should.equal?(@thread)
+    ruby_version_is "4.0" do
+      timeout.should.is_a?(Float)
+    end
+    timeout.should <= 10
+  end
+end

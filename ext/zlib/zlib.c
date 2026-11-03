@@ -815,6 +815,7 @@ zstream_detach_buffer(struct zstream *z)
     }
 
     z->buf = Qnil;
+    z->flags &= ~ZSTREAM_REUSE_BUFFER;
     z->stream.next_out = 0;
     z->stream.avail_out = 0;
 
@@ -1154,6 +1155,12 @@ zstream_run_try(VALUE value_arg)
     }
     z->flags |= ZSTREAM_IN_PROGRESS;
 
+    if (ZSTREAM_REUSE_BUFFER_P(z)) {
+	/* always re-derive next_out; the user may have modified z->buf */
+	z->stream.next_out = NULL;
+	z->stream.avail_out = 0;
+    }
+
     if (NIL_P(z->input) && len == 0) {
 	z->stream.next_in = (Bytef*)"";
 	z->stream.avail_in = 0;
@@ -1252,19 +1259,39 @@ zstream_run(struct zstream *z, Bytef *src, rb_len_t len, int flush)
 	rb_jump_tag(args.jump_state);
 }
 
+static int
+zstream_inflate_sync(struct zstream *z, Bytef *src, rb_len_t len)
+{
+    int err;
+
+    z->stream.next_in = src;
+    do {
+	z->stream.avail_in = MAX_UINT(len);
+	len -= z->stream.avail_in;
+	err = inflateSync(&z->stream);
+    } while (err == Z_DATA_ERROR && len > 0);
+    /* do_inflate() looks at avail_in for the input left after the sync point */
+    z->stream.avail_in = MAX_UINT(z->stream.avail_in + len);
+
+    return err;
+}
+
 static VALUE
 zstream_sync(struct zstream *z, Bytef *src, rb_len_t len)
 {
     /* VALUE rest; */
     int err;
 
+    if (z->flags & ZSTREAM_IN_PROGRESS) {
+	rb_raise(cInProgressError, "zlib stream is in progress");
+    }
+
     if (!NIL_P(z->input)) {
-	z->stream.next_in = (Bytef*)RSTRING_PTR(z->input);
-	z->stream.avail_in = MAX_UINT(RSTRING_LEN(z->input));
-	err = inflateSync(&z->stream);
+	err = zstream_inflate_sync(z, (Bytef*)RSTRING_PTR(z->input),
+				   RSTRING_LEN(z->input));
 	if (err == Z_OK) {
-	    zstream_discard_input(z,
-				  RSTRING_LEN(z->input) - z->stream.avail_in);
+	    zstream_discard_input(z, z->stream.next_in -
+				  (Bytef*)RSTRING_PTR(z->input));
 	    zstream_append_input(z, src, len);
 	    return Qtrue;
 	}
@@ -1277,11 +1304,9 @@ zstream_sync(struct zstream *z, Bytef *src, rb_len_t len)
 
     if (len <= 0) return Qfalse;
 
-    z->stream.next_in = src;
-    z->stream.avail_in = MAX_UINT(len);
-    err = inflateSync(&z->stream);
+    err = zstream_inflate_sync(z, src, len);
     if (err == Z_OK) {
-	zstream_append_input(z, z->stream.next_in, z->stream.avail_in);
+	zstream_append_input(z, z->stream.next_in, src + len - z->stream.next_in);
 	return Qtrue;
     }
     if (err != Z_DATA_ERROR) {
@@ -2195,12 +2220,24 @@ rb_inflate_inflate_body(VALUE _arguments)
                 rb_str_modify_expand(buffer, len);
             }
             rb_str_set_len(buffer, 0);
+            if (ZSTREAM_REUSE_BUFFER_P(z) && !NIL_P(z->buf) && RSTRING_LEN(z->buf) > 0) {
+                /* carry over the output pending in the previous buffer */
+                rb_str_buf_cat(buffer, RSTRING_PTR(z->buf), RSTRING_LEN(z->buf));
+            }
             z->flags |= ZSTREAM_REUSE_BUFFER;
             z->buf = buffer;
         }
     } else if (ZSTREAM_REUSE_BUFFER_P(z)) {
+        VALUE pending = z->buf;
         z->flags &= ~ZSTREAM_REUSE_BUFFER;
         z->buf = Qnil;
+        z->stream.next_out = NULL;
+        z->stream.avail_out = 0;
+        if (RSTRING_LEN(pending) > 0) {
+            /* carry over the output pending in the previous buffer */
+            zstream_append_buffer2(z, pending);
+        }
+        RB_GC_GUARD(pending);
     }
     rb_scan_args(argc, argv, "10", &src);
 
@@ -2252,6 +2289,12 @@ rb_inflate_inflate_body(VALUE _arguments)
  *   :buffer keyword argument.
  * * When passing a block, the yielded chunks will be the same value as the
  *   :buffer keyword argument.
+ * * When using the :buffer keyword argument, pass the same String object in
+ *   every call to this method on the stream, from the first call until the
+ *   stream is finished, and do not modify it other than through this method
+ *   until then.  Also, do not mix it with other methods that produce output,
+ *   such as #<< and Zlib::ZStream#finish.  Otherwise, the behavior is
+ *   undefined.
  *
  * Raises a Zlib::NeedDict exception if a preset dictionary is needed to
  * decompress.  Set the dictionary by Zlib::Inflate#set_dictionary and then
@@ -2316,8 +2359,11 @@ rb_inflate_addstr(VALUE obj, VALUE src)
  *
  * Inputs +string+ into the end of input buffer and skips data until a full
  * flush point can be found.  If the point is found in the buffer, this method
- * flushes the buffer and returns false.  Otherwise it returns +true+ and the
- * following data of full flush point is preserved in the buffer.
+ * returns +true+ and the following data of full flush point is preserved in
+ * the buffer.  Otherwise it flushes the buffer and returns +false+.
+ *
+ * Raises a Zlib::InProgressError exception if called while the stream is
+ * being inflated.
  */
 static VALUE
 rb_inflate_sync(VALUE obj, VALUE src)
@@ -2654,6 +2700,9 @@ gzfile_read_raw_until_zero(struct gzfile *gz, rb_len_t offset)
 	p = memchr(RSTRING_PTR(gz->z.input) + offset, '\0',
 		   RSTRING_LEN(gz->z.input) - offset);
 	if (p) break;
+	if (gz->io == Qundef) {
+	    rb_raise(cGzError, "unexpected end of string");
+	}
 	str = gzfile_read_raw(gz, Qnil);
 	if (NIL_P(str)) {
 	    rb_raise(cGzError, "unexpected end of file");

@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative '../../core/fiber/fixtures/scheduler'
 
 describe "IO#wait_readable" do
   before :each do
@@ -38,5 +39,46 @@ describe "IO#wait_readable" do
   ensure
     rd.close
     wr.close
+  end
+
+  context "with a Fiber scheduler" do
+    before :each do
+      @read, @write = IO.pipe
+      Fiber.set_scheduler(FiberSpecs::LoggingScheduler.new)
+    end
+
+    # An IO cannot be closed while a fiber is waiting on it, and the scheduler
+    # leaves the fiber parked inside #io_wait, so run it out before closing.
+    after :each do
+      @fiber.resume while @fiber&.alive?
+      Fiber.set_scheduler(nil)
+      @read.close unless @read.closed?
+      @write.close unless @write.closed?
+    end
+
+    it "calls the scheduler's #io_wait with IO::READABLE and no timeout" do
+      @fiber = Fiber.new(blocking: false) { @read.wait_readable }
+      @fiber.resume
+
+      Fiber.scheduler.events.should == [
+        { event: :io_wait, fiber: @fiber, args: [@read, IO::READABLE, nil] }
+      ]
+    end
+
+    it "passes the given timeout to the scheduler" do
+      @fiber = Fiber.new(blocking: false) { @read.wait_readable(1) }
+      @fiber.resume
+
+      Fiber.scheduler.events.should == [
+        { event: :io_wait, fiber: @fiber, args: [@read, IO::READABLE, 1] }
+      ]
+    end
+
+    it "does not call the scheduler if the fiber is blocking" do
+      @fiber = Fiber.new(blocking: true) { @read.wait_readable(0) }
+      @fiber.resume
+
+      Fiber.scheduler.events.should == []
+    end
   end
 end

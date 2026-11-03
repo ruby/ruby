@@ -7794,7 +7794,7 @@ tok_hex(struct parser_params *p, size_t *numlen)
 {
     int c;
 
-    c = (int)ruby_scan_hex(p->lex.pcur, 2, numlen);
+    c = (int)ruby_scan_digits(p->lex.pcur, 2, 16, numlen, &c);
     if (!*numlen) {
         flush_string_content(p, p->enc, rb_strlen_lit("\\x"));
         yyerror0("invalid hex escape");
@@ -7842,8 +7842,8 @@ tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
                  int regexp_literal, const char *begin)
 {
     const int wide = !begin;
-    size_t numlen;
-    int codepoint = (int)ruby_scan_hex(p->lex.pcur, wide ? p->lex.pend - p->lex.pcur : 4, &numlen);
+    size_t numlen = wide ? p->lex.pend - p->lex.pcur : 4;
+    int ov, codepoint = (int)ruby_scan_digits(p->lex.pcur, numlen, 16, &numlen, &ov);
 
     p->lex.pcur += numlen;
     if (p->lex.strterm == NULL ||
@@ -7926,7 +7926,8 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
              * does its own validation and will catch any issues.
              */
             tokadd(p, open_brace);
-            while (!lex_eol_ptr_p(p, ++p->lex.pcur)) {
+            ++p->lex.pcur;
+            while (!lex_eol_p(p)) {
                 int c = peekc(p);
                 if (c == close_brace) {
                     tokadd(p, c);
@@ -7940,6 +7941,7 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
                     tokadd(p, c);
                     c = *++p->lex.pcur;
                 }
+                ++p->lex.pcur;
                 tokadd_mbchar(p, c);
             }
         }
@@ -8030,7 +8032,8 @@ read_escape(struct parser_params *p, int flags, const char *begin)
       case '0': case '1': case '2': case '3': /* octal constant */
       case '4': case '5': case '6': case '7':
         pushback(p, c);
-        c = (int)ruby_scan_oct(p->lex.pcur, 3, &numlen);
+        int ov;
+        c = (int)ruby_scan_digits(p->lex.pcur, 3, 8, &numlen, &ov);
         p->lex.pcur += numlen;
         return c;
 
@@ -8159,7 +8162,8 @@ tokadd_escape(struct parser_params *p)
       case '0': case '1': case '2': case '3': /* octal constant */
       case '4': case '5': case '6': case '7':
         {
-            ruby_scan_oct(--p->lex.pcur, 3, &numlen);
+            int ov;
+            ruby_scan_digits(--p->lex.pcur, 3, 8, &numlen, &ov);
             if (numlen == 0) goto eof;
             p->lex.pcur += numlen;
             tokcopy(p, (int)numlen + 1);
@@ -10978,6 +10982,7 @@ parser_yylex(struct parser_params *p)
             else {
                 yyerror0("no .<digit> floating literal anymore; put 0 before dot");
             }
+            set_yylval_id(idNULL);
             SET_LEX_STATE(EXPR_END);
             p->lex.ptok = p->lex.pcur;
             goto retry;

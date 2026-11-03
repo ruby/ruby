@@ -89,6 +89,7 @@ VALUE rb_str_include(VALUE str, VALUE arg);
 VALUE rb_str_byte_substr(VALUE str, VALUE beg, VALUE len);
 VALUE rb_str_substr_two_fixnums(VALUE str, VALUE beg, VALUE len, int empty);
 void rb_str_make_embedded(VALUE);
+void rb_str_make_heap(VALUE str);
 VALUE rb_str_upto_each(VALUE, VALUE, int, int (*each)(VALUE, VALUE), VALUE);
 size_t rb_str_size_as_embedded(VALUE);
 bool rb_str_reembeddable_p(VALUE);
@@ -189,6 +190,21 @@ static inline bool
 is_broken_string(VALUE str)
 {
     return rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN;
+}
+
+NORETURN(void rb_str_invalid_byte_sequence(VALUE str));
+static inline void
+mustnot_broken(VALUE str)
+{
+    if (is_broken_string(str)) rb_str_invalid_byte_sequence(str);
+}
+
+NORETURN(void rb_str_unexpect_wchar(VALUE str));
+static inline void
+mustnot_wchar(VALUE str)
+{
+    rb_encoding *enc = rb_enc_from_index(ENCODING_GET(str));
+    if (rb_enc_mbminlen(enc) > 1) rb_str_unexpect_wchar(str);
 }
 
 static inline bool

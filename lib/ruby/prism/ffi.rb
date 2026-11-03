@@ -537,6 +537,8 @@ module Ruby::Prism # :nodoc:
           error = LoadError.new(message.force_encoding(Encoding.find("locale")))
           error.instance_variable_set(:@path, nil)
           raise error
+        when 3 # stack
+          raise SystemStackError, message.force_encoding(encoding_name)
         else
           raise "Unknown error level: #{level}"
         end

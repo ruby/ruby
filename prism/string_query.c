@@ -75,7 +75,7 @@ pm_slice_type(const uint8_t *source, size_t length, const char *encoding_name) {
     }
 
     // accept a ! or ? at the end of the slice as a method name
-    if (*source == '!' || *source == '?' || *source == '=') {
+    if (source < end && (*source == '!' || *source == '?' || *source == '=')) {
         source++;
         result = PM_SLICE_TYPE_METHOD_NAME;
     }

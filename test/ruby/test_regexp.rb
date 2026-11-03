@@ -143,6 +143,16 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(SyntaxError) {eval "/# \\users/"}
   end
 
+  def test_extended_comment_invalid_unicode_escape_with_multibyte_characters
+    ["\u3042", "\u00e9z", "\u{1f600}"].each do |content|
+      source = "a # \\u{#{content}}\n"
+      re = eval("/#{source}/x")
+      assert_equal(source, re.source)
+      assert_predicate(re.source, :valid_encoding?)
+      assert_match(re, "a")
+    end
+  end
+
   def test_nonextended_section_of_extended_regexp_bug_19379
     assert_separately([], <<-'RUBY')
       re = /(?-x:#)/x
@@ -943,6 +953,23 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(/^[0-9]/, Bug::Regexp.new_binary("^[0-9]"))
   end
 
+  def test_match_encodings
+    re = Regexp.new('(?<letter>.)a', Regexp::IGNORECASE)
+    strings = [Encoding::UTF_8, Encoding::EUC_JP, Encoding::Windows_31J].map do |enc|
+      "\u3042A".encode(enc)
+    end
+    strings.each do |str|
+      assert_equal str[0], re.match(str)[:letter]
+    end
+
+    GC.start
+    strings.reverse_each do |str|
+      assert_equal str[0], re.match(str)[:letter]
+    end
+    assert_equal Encoding::US_ASCII, re.encoding
+    assert_equal "b", re.match("bA")[:letter]
+  end
+
   def test_quote
     assert_equal("\xff", Regexp.quote([0xff].pack("C")))
     assert_equal("\\ ", Regexp.quote("\ "))
@@ -1040,6 +1067,20 @@ class TestRegexp < Test::Unit::TestCase
     begin;
       1_000.times(&code)
     end;
+  end
+
+  def test_extended_comment_compiled_again_for_string
+    e = Encoding::EMACS_MULE
+    c = "\x8E\xDA".dup.force_encoding(e)
+    re = Regexp.new("()()#\x8E\xDA()()".dup.force_encoding(e), Regexp::EXTENDED)
+    assert_equal(3, re.match("ab").size)
+    assert_equal(3, re.match(c).size)
+    assert_send([c, :start_with?, re])
+    assert_equal(3, $~.size)
+    re = Regexp.new("a#\x8E\xDAb\nc".dup.force_encoding(e), Regexp::EXTENDED)
+    assert_match(re, "ac")
+    assert_match(re, c + "ac")
+    assert_no_match(re, c + "ab")
   end
 
   def test_ignorecase
@@ -1456,6 +1497,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/^\u00df$/i, "ss")
     #assert_match(/^(\u00df)\1$/i, "\u00dfss") # this must be bug...
     assert_match(/^\u00df{2}$/i, "\u00dfss")
+    assert_no_match(/s/i, "\u00df")
+    assert_no_match(/is/i, "i\u00df")
+    assert_no_match(/f/i, "\ufb03")
+    assert_match(/ss/i, "\u00df")
     assert_match(/^\u00c5$/i, "\u00c5")
     assert_match(/^\u00c5$/i, "\u00e5")
     assert_match(/^\u00c5$/i, "\u212b")
@@ -2023,6 +2068,15 @@ class TestRegexp < Test::Unit::TestCase
         Regexp.new("((?(1)x|x|)x)+")
       end
     end;
+  end
+
+  def test_invalid_condition_in_alternation_and_call
+    assert_raise_with_message(RegexpError, /invalid conditional pattern/) do
+      Regexp.new("(x)|(?(1)x|x|)")
+    end
+    assert_raise_with_message(RegexpError, /invalid conditional pattern/) do
+      Regexp.new("(?<b>x)(?<a>(?(<b>)x|x|))\\g<a>")
+    end
   end
 
   def test_too_big_number_for_repeat_range

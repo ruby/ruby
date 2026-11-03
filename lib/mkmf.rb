@@ -538,6 +538,11 @@ MSG
     end
   end
 
+  # Compiling and linking in one step with debug info makes clang on
+  # macOS run dsymutil, which reads the DWARF of every object pulled in
+  # from a static libruby.  The conftest does not need debug info.
+  LINK_CHECK_CFLAGS = /darwin/ =~ RUBY_PLATFORM ? " -g0" : ""
+
   def link_config(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
     conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
                                   'src' => "#{conftest_source}",
@@ -545,7 +550,7 @@ MSG
                                   'top_srcdir' => $top_srcdir.quote,
                                   'INCFLAGS' => "#$INCFLAGS",
                                   'CPPFLAGS' => "#$CPPFLAGS",
-                                  'CFLAGS' => "#$CFLAGS",
+                                  'CFLAGS' => "#$CFLAGS#{LINK_CHECK_CFLAGS}",
                                   'ARCH_FLAG' => "#$ARCH_FLAG",
                                   'LDFLAGS' => "#$LDFLAGS #{ldflags}",
                                   'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",

@@ -1222,9 +1222,12 @@ in the second argument for Regexp.new:
 
 == Timeouts
 
-When either a regexp source or a target string comes from untrusted input,
-malicious values could become a denial-of-service attack;
-to prevent such an attack, it is wise to set a timeout.
+When using a regexp to match untrusted input, you should set a timeout
+to avoid excessive backtracking;
+otherwise, a malicious user can provide a target string
+that causes a denial-of-service attack.
+Note that the timeout is not set by default
+because an appropriate limit highly depends on an application requirement and context.
 
 \Regexp has two timeout values:
 

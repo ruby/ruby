@@ -211,23 +211,23 @@ duplicate_classext_m_tbl_i(ID key, VALUE value, void *data)
     return ID_TABLE_CONTINUE;
 }
 
-static struct rb_id_table *
-duplicate_classext_m_tbl(struct rb_id_table *orig, VALUE klass, bool init_missing)
+/* Fills ext's m_tbl with a copy of orig.  The table is stored on ext before it is filled
+ * so the GC, which can run at any allocation here, always sees the entries through klass.
+ * For an ICLASS it only marks the m_tbl when ICLASS_IS_ORIGIN is set, so set that first. */
+static void
+duplicate_classext_m_tbl(rb_classext_t *ext, struct rb_id_table *orig, VALUE klass, bool init_missing)
 {
-    struct rb_id_table *tbl;
     if (!orig) {
-        if (init_missing)
-            return rb_id_table_create(0);
-        else
-            return NULL;
+        RCLASSEXT_M_TBL(ext) = init_missing ? rb_id_table_create(0) : NULL;
+        return;
     }
-    tbl = rb_id_table_create(rb_id_table_size(orig));
+    struct rb_id_table *tbl = rb_id_table_create(rb_id_table_size(orig));
+    RCLASSEXT_M_TBL(ext) = tbl;
     struct duplicate_id_tbl_data data = {
         .tbl = tbl,
         .klass = klass,
     };
     rb_id_table_foreach(orig, duplicate_classext_m_tbl_i, &data);
-    return tbl;
 }
 
 static rb_const_entry_t *
@@ -297,9 +297,12 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_b
 
     RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(src);
 
+    RCLASSEXT_ICLASS_IS_ORIGIN(ext) = RCLASSEXT_ICLASS_IS_ORIGIN(src);
+    RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) = RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(src);
+
     // See also: rb_include_class_new()
     if (RCLASSEXT_ICLASS_IS_ORIGIN(src) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(src)) {
-        RCLASSEXT_M_TBL(ext) = duplicate_classext_m_tbl(RCLASSEXT_M_TBL(src), iclass, true);
+        duplicate_classext_m_tbl(ext, RCLASSEXT_M_TBL(src), iclass, true);
     }
     else {
         RCLASSEXT_M_TBL(ext) = RCLASSEXT_M_TBL(mod_ext);
@@ -315,9 +318,6 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_b
     // Subclasses/back-pointers are only in the prime classext.
 
     RCLASSEXT_SET_ORIGIN(ext, iclass, RCLASSEXT_ORIGIN(src));
-    RCLASSEXT_ICLASS_IS_ORIGIN(ext) = RCLASSEXT_ICLASS_IS_ORIGIN(src);
-    RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) = RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(src);
-
     RCLASSEXT_SET_INCLUDER(ext, iclass, RCLASSEXT_INCLUDER(src));
 
     if (first_set) {
@@ -341,8 +341,8 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *bo
 
     RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(orig);
 
-    RCLASSEXT_M_TBL(ext) = duplicate_classext_m_tbl(RCLASSEXT_M_TBL(orig), klass, dup_iclass);
     RCLASSEXT_ICLASS_IS_ORIGIN(ext) = true;
+    duplicate_classext_m_tbl(ext, RCLASSEXT_M_TBL(orig), klass, dup_iclass);
     RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) = false;
 
     if (orig->fields_obj) {
@@ -1005,30 +1005,6 @@ rb_module_check_initializable(VALUE mod)
 }
 
 static enum rb_id_table_iterator_result
-init_copy_check_const_i(ID id, VALUE v, void *data)
-{
-    const rb_const_entry_t *ce = (const rb_const_entry_t *)v;
-    if (!UNDEF_P(ce->value) && !RB_SPECIAL_CONST_P(ce->value) && !RB_OBJ_SHAREABLE_P(ce->value)) {
-        // checked after the walk, as rb_ractor_shareable_p may allocate or raise
-        rb_ary_push((VALUE)data, ID2SYM(id));
-    }
-    return ID_TABLE_CONTINUE;
-}
-
-static int
-init_copy_check_field_i(ID id, VALUE val, st_data_t arg)
-{
-    if ((rb_is_instance_id(id) || rb_is_class_id(id)) && !rb_ractor_shareable_p(val)) {
-        rb_raise(rb_eRactorIsolationError,
-                 "can not copy a class/module created by another Ractor because "
-                 "variable %"PRIsVALUE" refers to an unshareable object", rb_id2str(id));
-    }
-    return ST_CONTINUE;
-}
-
-// The copy belongs to the copying Ractor, so it must not carry over unshareable
-// objects owned by the source's Ractor.
-static enum rb_id_table_iterator_result
 move_check_const_i(ID id, VALUE v, void *data)
 {
     const rb_const_entry_t *ce = (const rb_const_entry_t *)v;
@@ -1064,39 +1040,13 @@ rb_class_check_singleton_movable(VALUE klass)
     } while ((klass = class_own_metaclass(klass)) != 0);
 }
 
-static void
-init_copy_check_tables(VALUE klass)
-{
-    if (RCLASS_CONST_TBL(klass)) {
-        const VALUE ids = rb_ary_hidden_new(0);
-        RB_VM_LOCKING() { // see rb_const_lookup_copy
-            rb_id_table_foreach(RCLASS_CONST_TBL(klass), init_copy_check_const_i, (void *)ids);
-        }
-        for (long i = 0; i < RARRAY_LEN(ids); i++) {
-            const ID id = SYM2ID(RARRAY_AREF(ids, i));
-            rb_const_entry_t entry;
-            if (rb_const_lookup_copy(klass, id, &entry) && !UNDEF_P(entry.value) &&
-                !rb_ractor_shareable_p(entry.value)) {
-                rb_raise(rb_eRactorIsolationError,
-                         "can not copy a class/module created by another Ractor because "
-                         "constant %"PRIsVALUE" refers to an unshareable object", rb_id2str(id));
-            }
-        }
-    }
-    rb_ivar_foreach_buffered(klass, init_copy_check_field_i, 0);
-}
-
+// the copy would carry the owner's field values, which only the owner may read
 static void
 init_copy_owner_check(VALUE orig)
 {
-    if (!rb_class_owned_p(orig)) {
-        init_copy_check_tables(orig);
-
-        // rb_singleton_class_clone_and_attach copies the metaclass's tables too
-        VALUE meta = METACLASS_OF(orig);
-        if (RCLASS_SINGLETON_P(meta)) {
-            init_copy_check_tables(meta);
-        }
+    VALUE meta = METACLASS_OF(orig);
+    if (!rb_class_owned_p(orig) || (RCLASS_SINGLETON_P(meta) && !rb_class_owned_p(meta))) {
+        rb_raise(rb_eRactorIsolationError, "can not copy a class/module created by another Ractor");
     }
 }
 

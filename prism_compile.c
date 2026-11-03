@@ -10798,6 +10798,9 @@ pm_parse_process_error(const pm_parse_result_t *result)
             error = rb_exc_new_str(rb_eLoadError, message);
             rb_ivar_set(error, rb_intern_const("@path"), Qnil);
             break;
+        case PM_ERROR_LEVEL_STACK:
+            error = rb_exc_new_str(rb_eSysStackError, message);
+            break;
     }
 
     return error;
@@ -11068,6 +11071,19 @@ error_generic:
 }
 
 /**
+ * Limit the parser to the machine stack that is left at this point. Threads and
+ * fibers have far less stack than the parser's nesting limit assumes, and may
+ * already be deep into it, so this has to be measured for each parse. The
+ * parser stops where the VM's own stack check would start to fail, which leaves
+ * enough stack for anything it calls between checks, including the GC.
+ */
+static void
+pm_options_stack_budget_init(pm_options_t *options)
+{
+    pm_options_stack_budget_set(options, rb_ec_stack_remaining(GET_EC()));
+}
+
+/**
  * Parse the given filepath and store the resulting scope node in the given
  * parse result struct. It returns a Ruby error if the file cannot be read or
  * if it cannot be parsed properly. It is assumed that the parse result object
@@ -11081,6 +11097,7 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines)
     RB_GC_GUARD(filepath);
 
     pm_options_version_for_current_ruby_set(result->options);
+    pm_options_stack_budget_init(result->options);
 
     result->parser = pm_parser_new(result->arena, pm_source_source(result->source), pm_source_length(result->source), result->options);
     pm_node_t *node = pm_parse(result->parser);
@@ -11140,6 +11157,7 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
     pm_options_filepath_set(result->options, RSTRING_PTR(filepath));
 
     pm_options_version_for_current_ruby_set(result->options);
+    pm_options_stack_budget_init(result->options);
 
     result->parser = pm_parser_new(result->arena, pm_source_source(result->source), pm_source_length(result->source), result->options);
     pm_node_t *node = pm_parse(result->parser);
@@ -11310,6 +11328,7 @@ VALUE
 pm_parse_stdin(pm_parse_result_t *result)
 {
     pm_options_frozen_string_literal_init(result->options);
+    pm_options_stack_budget_init(result->options);
 
     result->source = pm_source_stream_new((void *) rb_stdin, pm_parse_stdin_fgets, pm_parse_stdin_eof);
     pm_node_t *node = pm_parse_stream(&result->parser, result->arena, result->source, result->options);

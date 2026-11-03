@@ -85,8 +85,9 @@ fn main() {
         .allowlist_type("ruby_preserved_encindex")
         .allowlist_function("rb_class2name")
 
-        // Coderange constants (ENC_CODERANGE_*) for inlining String predicates
+        // Coderange constants (ENC_CODERANGE_*) and the scan routine for inlining String predicates
         .allowlist_type("ruby_coderange_type")
+        .allowlist_function("rbimpl_enc_str_coderange_scan")
 
         // This struct is public to Ruby C extensions
         .allowlist_type("RBasic")
@@ -254,6 +255,10 @@ fn main() {
         .allowlist_var("ONIG_OPTION_EXTEND")
         .allowlist_var("ONIG_OPTION_MULTILINE")
 
+        .allowlist_function("rb_nil_to_s")
+        .allowlist_function("rb_true_to_s")
+        .allowlist_function("rb_false_to_s")
+
         // `ruby_value_type` is a C enum and this stops it from
         // prefixing all the members with the name of the type
         .prepend_enum_name(false)
@@ -266,6 +271,7 @@ fn main() {
         .allowlist_type("method_optimized_type")
         .allowlist_type("rb_callable_method_entry_t")
         .allowlist_type("rb_callable_method_entry_struct")
+        .allowlist_function("rb_zjit_callable_method_entry_is_undefined")
         .allowlist_function("rb_method_entry_at")
         .allowlist_type("rb_method_entry_t")
         .blocklist_type("rb_method_cfunc_t")
@@ -352,12 +358,7 @@ fn main() {
         .allowlist_type("jit_bindgen_constants")
         .allowlist_type("zjit_struct_offsets")
         .allowlist_var("rb_zjit_runtime_offsets")
-        .allowlist_var("ZJIT_STACK_MAP_SHIFT")
-        .allowlist_var("ZJIT_STACK_MAP_VREG_TAG")
-        .allowlist_var("ZJIT_STACK_MAP_SKIP_TAG")
-        .allowlist_var("ZJIT_STACK_MAP_BASE_PTR_TAG")
-        .allowlist_var("ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT")
-        .allowlist_var("ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK")
+        .allowlist_var("ZJIT_STACK_MAP_.*")
         .allowlist_var("ZJIT_JIT_RETURN_C_FRAME")
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_complex_p")

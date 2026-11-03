@@ -2307,6 +2307,28 @@ EOT
     }
   end
 
+  def test_read_utf16le_invalid_surrogate_split_across_reads
+    # The converter may hold readagain bytes from the previous fill;
+    # fill_cbuf must not put those back into rbuf.
+    with_pipe("UTF-16LE:UTF-8") {|r, w|
+      w.write("\x00\xD8\x41".b)
+      t = Thread.new {
+        sleep 0.1
+        w.write("\x00\x42\x00\x0a\x00".b)
+        w.close
+      }
+      begin
+        e = assert_raise(Encoding::InvalidByteSequenceError) { r.gets }
+        assert_equal("\x00\xD8".b, e.error_bytes)
+        assert_equal("\x41\x00".b, e.readagain_bytes)
+        assert_equal("AB\n", r.gets)
+        assert_nil(r.gets)
+      ensure
+        t.join
+      end
+    }
+  end
+
   def test_cbuf
     with_tmpdir {
       fn = "tst"

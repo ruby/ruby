@@ -2630,6 +2630,24 @@ rb_io_buffer_compare(VALUE self, VALUE other)
     return RB_INT2NUM(memcmp(ptr1, ptr2, size1));
 }
 
+/*
+ * call-seq: ==(other) -> true or false
+ *
+ * Returns whether +other+ is an IO::Buffer with the same contents as the
+ * receiver.
+ *
+ *   IO::Buffer.for("abc") == IO::Buffer.for("abc") # => true
+ *   IO::Buffer.for("abc") == IO::Buffer.for("ab")  # => false
+ *   IO::Buffer.for("abc") == "abc"                 # => false
+ */
+static VALUE
+io_buffer_equal(VALUE self, VALUE other)
+{
+    if (!rb_io_buffer_p(other)) return Qfalse;
+
+    return RBOOL(rb_io_buffer_compare(self, other) == INT2FIX(0));
+}
+
 static void
 io_buffer_validate_type(size_t size, size_t offset, size_t extend)
 {
@@ -4982,6 +5000,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "source", io_buffer_source, 0);
     rb_define_method(rb_cIOBuffer, "slice", io_buffer_slice, -1);
     rb_define_method(rb_cIOBuffer, "<=>", rb_io_buffer_compare, 1);
+    rb_define_method(rb_cIOBuffer, "==", io_buffer_equal, 1);
     rb_define_method(rb_cIOBufferStorage, "resize", io_buffer_resize, 1);
     rb_define_method(rb_cIOBufferSlice, "resize", io_buffer_resize, 1);
     rb_define_method(rb_cIOBuffer, "advance", io_buffer_advance, 1);

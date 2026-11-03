@@ -1123,5 +1123,25 @@ class TestMarshal < Test::Unit::TestCase
       assert_same objects[1], objects[1].instance_variable_get(:@self)
       assert_same objects[0].instance_variable_get(:@self), objects[1].instance_variable_get(:@self)
     end
+
+    class StringSubclass < String
+    end
+
+    def test_uclass_fstring
+      interned = -("fstring".b)
+      assert_instance_of(String, interned)
+
+      # TYPE_UCLASS ('C') wrapping a bare (binary, no ivar) String.
+      payload = "\x04\x08C".b +
+                Marshal.dump(StringSubclass.name.to_sym)[2..] +
+                Marshal.dump("fstring".b)[2..]
+      loaded = Marshal.load(payload, freeze: true)
+
+      assert_instance_of(StringSubclass, loaded)
+      assert_predicate(loaded, :frozen?)
+      assert_not_same(interned, loaded)
+      assert_instance_of(String, interned)
+      assert_instance_of(String, -("fstring".b))
+    end
   end
 end

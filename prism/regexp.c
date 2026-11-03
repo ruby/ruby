@@ -140,6 +140,25 @@ pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, c
 }
 
 /**
+ * Report that the stack budget was used up while parsing the regular
+ * expression. Unlike other errors, this is reported even when report_errors is
+ * not set, because giving up early there would silently drop the named
+ * captures that the rest of the regular expression defines. In that case start
+ * and end do not point into the original source, so the error is reported at
+ * the token that the parser is on instead.
+ */
+static void
+pm_regexp_parse_stack_exhausted(pm_regexp_parser_t *regexp_parser) {
+    pm_parser_t *parser = regexp_parser->parser;
+
+    if (regexp_parser->report_errors) {
+        pm_parser_err_stack_exhausted(parser, (uint32_t) (regexp_parser->start - parser->start), (uint32_t) (regexp_parser->end - regexp_parser->start));
+    } else {
+        pm_parser_err_stack_exhausted(parser, (uint32_t) (parser->current.start - parser->start), (uint32_t) (parser->current.end - parser->current.start));
+    }
+}
+
+/**
  * Append a formatted syntax error to the parser's error list, following the
  * same rules as pm_regexp_parse_error. This is a macro because we need
  * variadic args for the format string.
@@ -708,11 +727,23 @@ pm_regexp_parse_hex_escape(pm_regexp_parser_t *parser) {
 /**
  * Parse a backslash escape sequence in a regexp, handling \u (unicode),
  * \p/\P (property), \x (hex), and other single-character escapes. Also
- * tracks encoding state for \M-x and \C-\M-x escapes.
+ * tracks encoding state for \M-x and \C-\M-x escapes. The meta and control
+ * forms can wrap another escape, so this recurses and is bounded by the same
+ * depth limit and stack budget as groups and character sets.
  */
-static void
-pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
-    if (pm_regexp_char_is_eof(parser)) return;
+static bool
+pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser, uint16_t depth) {
+    if (depth >= PM_REGEXP_PARSE_DEPTH_MAX) {
+        pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
+        return false;
+    }
+
+    if (pm_parser_stack_exhausted(parser->parser)) {
+        pm_regexp_parse_stack_exhausted(parser);
+        return false;
+    }
+
+    if (pm_regexp_char_is_eof(parser)) return true;
 
     switch (*parser->cursor) {
         case 'u':
@@ -736,7 +767,7 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
                         parser->cursor++;
                         // \M-\C-x or \M-\cx — the resulting byte is always >= 0x80
                         // We just need to track it as a hex escape >= 0x80.
-                        pm_regexp_parse_backslash_escape(parser);
+                        if (!pm_regexp_parse_backslash_escape(parser, (uint16_t) (depth + 1))) return false;
                     } else {
                         parser->cursor++;
                     }
@@ -754,7 +785,7 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
                 if (!pm_regexp_char_is_eof(parser)) {
                     if (*parser->cursor == '\\') {
                         parser->cursor++;
-                        pm_regexp_parse_backslash_escape(parser);
+                        if (!pm_regexp_parse_backslash_escape(parser, (uint16_t) (depth + 1))) return false;
                     } else {
                         parser->cursor++;
                     }
@@ -769,7 +800,7 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
             if (!pm_regexp_char_is_eof(parser)) {
                 if (*parser->cursor == '\\') {
                     parser->cursor++;
-                    pm_regexp_parse_backslash_escape(parser);
+                    if (!pm_regexp_parse_backslash_escape(parser, (uint16_t) (depth + 1))) return false;
                 } else {
                     parser->cursor++;
                 }
@@ -780,6 +811,8 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
             parser->cursor++;
             break;
     }
+
+    return true;
 }
 
 /**
@@ -812,10 +845,10 @@ pm_regexp_parse_character_set(pm_regexp_parser_t *parser, uint16_t depth) {
     while (!pm_regexp_char_is_eof(parser) && *parser->cursor != ']') {
         switch (*parser->cursor++) {
             case '[':
-                pm_regexp_parse_lbracket(parser, (uint16_t) (depth + 1));
+                if (!pm_regexp_parse_lbracket(parser, (uint16_t) (depth + 1))) return false;
                 break;
             case '\\':
-                pm_regexp_parse_backslash_escape(parser);
+                if (!pm_regexp_parse_backslash_escape(parser, depth)) return false;
                 break;
             default:
                 // We've already advanced the cursor by one byte. If the byte
@@ -839,6 +872,11 @@ static bool
 pm_regexp_parse_lbracket(pm_regexp_parser_t *parser, uint16_t depth) {
     if (depth >= PM_REGEXP_PARSE_DEPTH_MAX) {
         pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
+        return false;
+    }
+
+    if (pm_parser_stack_exhausted(parser->parser)) {
+        pm_regexp_parse_stack_exhausted(parser);
         return false;
     }
 
@@ -996,6 +1034,16 @@ pm_regexp_options_state(pm_regexp_options_t *options, uint8_t key) {
  */
 static bool
 pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
+    /* Every level of nested groups passes through here, so this bounds the
+     * group recursion by the stack budget. The check lives here rather than
+     * beside the depth check in pm_regexp_parse_expression because there it
+     * stops that function from being inlined, which adds a frame to every
+     * level of nesting. */
+    if (pm_parser_stack_exhausted(parser->parser)) {
+        pm_regexp_parse_stack_exhausted(parser);
+        return false;
+    }
+
     const uint8_t *group_start = parser->cursor;
 
     pm_regexp_options_t options;
@@ -1225,8 +1273,7 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
             return pm_regexp_parse_quantifier(parser);
         case '\\':
             parser->cursor++;
-            pm_regexp_parse_backslash_escape(parser);
-            return pm_regexp_parse_quantifier(parser);
+            return pm_regexp_parse_backslash_escape(parser, depth) && pm_regexp_parse_quantifier(parser);
         case '(':
             parser->cursor++;
             return pm_regexp_parse_group(parser, depth) && pm_regexp_parse_quantifier(parser);

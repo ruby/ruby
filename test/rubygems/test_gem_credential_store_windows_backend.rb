@@ -6,7 +6,6 @@ require "json"
 
 class TestGemCredentialStoreWindowsBackend < Gem::TestCase
   FAKE_COMMAND = <<~'RUBY'
-    #!/usr/bin/env ruby
     require "json"
     stdin_content = $stdin.read
     if record_path = ENV["RUBYGEMS_FAKE_CMD_RECORD"]
@@ -36,7 +35,15 @@ class TestGemCredentialStoreWindowsBackend < Gem::TestCase
     @fake_bin_dir = File.join(@tempdir, "fake-bin")
     FileUtils.mkdir_p(@fake_bin_dir)
     fake_path = File.join(@fake_bin_dir, "powershell")
-    File.write(fake_path, FAKE_COMMAND)
+    command = FAKE_COMMAND
+    unless Gem.win_platform?
+      command = <<~SH + command
+        #!/bin/sh
+        exec #{Gem.ruby} -x "$0" "$@"
+        #!ruby
+      SH
+    end
+    File.write(fake_path, command)
     File.chmod(0o755, fake_path)
 
     # A shebang does not make a file executable on Windows. PATHEXT finds the
@@ -61,6 +68,16 @@ class TestGemCredentialStoreWindowsBackend < Gem::TestCase
   def test_get_returns_nil_when_credential_missing
     with_fake_env(stderr: "Element not found. (Exception from HRESULT: 0x80070490)", exit: 1) do
       assert_nil Gem::CredentialStore::WindowsBackend.get("rubygems", "example.org")
+    end
+  end
+
+  def test_get_without_ruby_on_path
+    pend "shebang executables require a native Unix Ruby" if Gem.win_platform? || RUBY_ENGINE != "ruby"
+
+    with_env(ENV.to_h.merge("PATH" => @fake_bin_dir)) do
+      with_fake_env(stdout: "s3cr3t\n", exit: 0) do
+        assert_equal "s3cr3t", Gem::CredentialStore::WindowsBackend.get("rubygems", "example.org")
+      end
     end
   end
 

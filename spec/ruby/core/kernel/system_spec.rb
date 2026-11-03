@@ -128,6 +128,33 @@ describe "Kernel#system" do
   end
 end
 
+platform_is_not :windows do
+  describe "Kernel#system with Fiber scheduler" do
+    require_relative '../fiber/fixtures/scheduler'
+
+    before :each do
+      @scheduler = Class.new(FiberSpecs::LoggingScheduler) do
+        def process_wait(pid, flags)
+          Fiber.blocking { Process::Status.wait(pid, flags) }
+          nil
+        end
+      end.new
+      Fiber.set_scheduler(@scheduler)
+    end
+
+    after :each do
+      Fiber.set_scheduler(nil)
+    end
+
+    it "raises TypeError when the scheduler's process_wait does not return a Process::Status" do
+      waiter = Fiber.new(blocking: false) do
+        -> { system(ruby_cmd('exit 0')) }.should.raise(TypeError, "wrong argument type nil (expected Process::Status)")
+      end
+      waiter.resume
+    end
+  end
+end
+
 describe "Kernel.system" do
   it "is a public method" do
     Kernel.public_methods(false).should.include?(:system)

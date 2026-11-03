@@ -42,7 +42,6 @@ module Bundler
 
       Bundler.settings.temporary(frozen: false) do
         definition = Bundler.definition(update, Bundler.default_lockfile)
-        definition.add_checksums if options["add-checksums"]
 
         Bundler::CLI::Common.configure_gem_version_promoter(definition, options) if options[:update]
 
@@ -63,6 +62,11 @@ module Bundler
         if definition.platforms.empty?
           raise InvalidOption, "Removing all platforms from the bundle is not allowed"
         end
+
+        # Adding checksums resolves the bundle to fetch them, so it has to
+        # run after every platform change above has been recorded, or the
+        # new platforms are listed in the lockfile without their specs.
+        definition.add_checksums if options["add-checksums"]
 
         definition.remotely! unless options[:local]
 
