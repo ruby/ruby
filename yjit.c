@@ -224,6 +224,12 @@ invokebuiltin_delegate_leave_p(const rb_iseq_t *iseq)
             insn2 == BIN(leave);
 }
 
+bool
+rb_get_iseq_flags_anon_rest(const rb_iseq_t *iseq)
+{
+    return ISEQ_BODY(iseq)->param.flags.anon_rest;
+}
+
 // Return an rb_builtin_function if the iseq contains only that builtin function.
 const struct rb_builtin_function *
 rb_yjit_builtin_function(const rb_iseq_t *iseq)

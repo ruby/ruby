@@ -740,6 +740,7 @@ mod manual_defs {
     // From vm_callinfo.h - uses calculation that seems to confuse bindgen
     pub const VM_CALL_ARGS_SIMPLE: u32 = 1 << VM_CALL_ARGS_SIMPLE_bit;
     pub const VM_CALL_ARGS_SPLAT: u32 = 1 << VM_CALL_ARGS_SPLAT_bit;
+    pub const VM_CALL_ARGS_SPLAT_MUT: u32 = 1 << VM_CALL_ARGS_SPLAT_MUT_bit;
     pub const VM_CALL_ARGS_BLOCKARG: u32 = 1 << VM_CALL_ARGS_BLOCKARG_bit;
     pub const VM_CALL_FORWARDING: u32 = 1 << VM_CALL_FORWARDING_bit;
     pub const VM_CALL_FCALL: u32 = 1 << VM_CALL_FCALL_bit;

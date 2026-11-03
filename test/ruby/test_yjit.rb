@@ -1878,6 +1878,98 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_splat_to_rest_without_dup
+    # Like vm_args.c's rest_dupped, a rest parameter takes the splat array without a copy when the
+    # caller built it for the call or an anonymous rest receives exactly the splat elements
+    result = [
+      [0, 0, 0, 0, 1, 1, 1, 1, 2, 2],
+      [[1, 2, 4], [1, 2, 3, 4], [0, 1, 2, 3, 4], [1, 2]],
+      [[1, 2], false, true, [1, 2, 4], [1, 2], [2]],
+      ["Array", [1, 2]],
+      true,
+    ]
+    assert_compiles(<<~RUBY, result:, no_send_fallbacks: true)
+      class SubArray < Array; end
+      def anon(*) = itself
+      def rest(*r) = r
+      def push_rest(*r) = r << 4
+      def forward(*) = rest(*)
+      def lead_forward(a, *) = rest(*)
+      def opt_forward(a = 1, *) = rest(*)
+      def no_kwargs(*, **nil) = itself
+      def r2k_forward(*) = rest(*)
+      ruby2_keywords :r2k_forward
+
+      # No block here: one yield site would go megamorphic and use the fallback
+      def allocated = GC.stat(:total_allocated_objects)
+
+      def calls
+        args = [1, 2]
+        frozen = [1, 2].freeze
+        sub = SubArray[1, 2]
+        hash = {k: 1}
+        [
+          [
+            allocated,
+            # reused: anonymous rest with exactly the splat, also frozen or with **nil
+            (anon(*args); allocated), (anon(*frozen); allocated), (anon(*args, **nil); allocated),
+            (no_kwargs(*args, **nil); allocated),
+            # one array: a fresh splat array, a named rest, or a copy into it
+            (rest(*args, 3); allocated), (forward(*args); allocated), (lead_forward(0, *args); allocated),
+            # copied like the interpreter: **nil rest without kwsplat, optional parameter, ruby2_keywords
+            (no_kwargs(*args); allocated), (opt_forward(0, *args); allocated), (r2k_forward(*args); allocated),
+          ].each_cons(2).map { |before, after| after - before },
+          [push_rest(*args), push_rest(*args, 3), push_rest(0, *args, 3), args],
+          [rest(*frozen), rest(*frozen).frozen?, frozen.frozen?, push_rest(*frozen), lead_forward(0, *frozen), opt_forward(*frozen)],
+          [forward(*sub).class.name, forward(*sub)],
+          r2k_forward(1, hash).last.equal?(hash),
+        ]
+      end
+
+      calls # compile everything first
+      calls
+    RUBY
+  end
+
+  def test_splat_to_rest_with_block_or_flagged_hash
+    # YJIT falls back when a splat call passes a block to a rest parameter (iseq_has_rest_and_captured,
+    # iseq_block_arg_gc_unsafe) or the splat ends in a ruby2_keywords hash, so these cases only check
+    # that results and allocations match the interpreter.
+    result = [
+      [1, 2, 2],
+      [[[1, 2], :block], [1, 2]],
+      [:k, false, false],
+    ]
+    assert_compiles(<<~RUBY, result:, exits: :any)
+      def anon(*) = itself
+      def rest(*r) = r
+      def last(*r) = r.last
+      def block_forward(*, &b) = [rest(*), b.call]
+      def yield_forward(*) = yield(*)
+
+      def allocations
+        allocated = GC.stat(:total_allocated_objects)
+        yield
+        GC.stat(:total_allocated_objects) - allocated
+      end
+
+      def calls
+        args = [1, 2]
+        block = proc { :block }
+        splat_block = proc { |*a| a }
+        flagged = [1, Hash.ruby2_keywords_hash({k: 1})]
+        [
+          [allocations { yield_forward(*args, &splat_block) }, allocations { anon(*flagged) }, allocations { last(*flagged) }],
+          [block_forward(*args, &block), yield_forward(*args, &splat_block)],
+          [last(*flagged).keys.first, last(*flagged).equal?(flagged.last), Hash.ruby2_keywords_hash?(last(*flagged))],
+        ]
+      end
+
+      calls # compile everything first
+      calls
+    RUBY
+  end
+
   def test_kw_splat_nil
     assert_compiles(<<~'RUBY', result: %i[ok ok], no_send_fallbacks: true)
       def id(x) = x

@@ -353,6 +353,7 @@ fn main() {
         .allowlist_function("rb_get_iseq_flags_has_opt")
         .allowlist_function("rb_get_iseq_flags_has_kw")
         .allowlist_function("rb_get_iseq_flags_has_rest")
+        .allowlist_function("rb_get_iseq_flags_anon_rest")
         .allowlist_function("rb_get_iseq_flags_has_post")
         .allowlist_function("rb_get_iseq_flags_has_kwrest")
         .allowlist_function("rb_get_iseq_flags_anon_kwrest")

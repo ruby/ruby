@@ -8070,13 +8070,29 @@ fn gen_send_iseq(
 
         let rest_param_array = if splat_call {
             let non_rest_arg_count = argc - 1;
-            // We start by dupping the array because someone else might have
-            // a reference to it. This also normalizes to an ::Array instance.
-            let array = asm.stack_opnd(0);
-            let array = asm.ccall(
-                rb_ary_dup as *const u8,
-                vec![array],
+            // Like vm_args.c's rest_dupped, use the splat array as is when nothing
+            // else can reference it: the caller built it for this call, or an
+            // anonymous rest parameter receives exactly the splat elements and
+            // can only pass them on as a splat. A kw_splat here is `**nil`, which
+            // was popped above (exit_if_kwsplat_non_nil()).
+            let reuse_array = flags & VM_CALL_ARGS_SPLAT_MUT != 0 || (
+                unsafe { rb_get_iseq_flags_anon_rest(iseq) }
+                    && opt_num == 0
+                    && non_rest_arg_count == required_num
+                    && !unsafe { rb_get_iseq_flags_ruby2_keywords(iseq) }
+                    && (kw_splat || !unsafe { get_iseq_flags_accepts_no_kwarg(iseq) })
             );
+            let array = asm.stack_opnd(0);
+            let array = if reuse_array {
+                asm.load(array)
+            } else {
+                // We start by dupping the array because someone else might have
+                // a reference to it. This also normalizes to an ::Array instance.
+                asm.ccall(
+                    rb_ary_dup as *const u8,
+                    vec![array],
+                )
+            };
             asm.stack_pop(1); // Pop array after ccall to use a register for passing it.
 
             // This is the end stack state of all `non_rest_arg_count` situations below
