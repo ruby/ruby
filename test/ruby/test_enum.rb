@@ -869,7 +869,7 @@ class TestEnumerable < Test::Unit::TestCase
   end
 
   def test_callcc
-    omit 'requires callcc support' unless respond_to?(:callcc)
+    omit 'requires callcc support' unless respond_to?(:callcc, true)
 
     assert_raise(RuntimeError) do
       c = nil
