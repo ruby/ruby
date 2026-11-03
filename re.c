@@ -2708,8 +2708,7 @@ match_named_captures(int argc, VALUE *argv, VALUE match)
  *  :markup: markdown
  *
  *  call-seq:
- *    deconstruct_keys(array) -> hash
- *    deconstruct_keys(nil) -> hash
+ *    deconstruct_keys(object) -> hash
  *
  *  With an array of symbol capture names given,
  *  returns a hash of the names and values for the given names:
