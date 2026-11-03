@@ -2712,6 +2712,7 @@ rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy)
     if (has_any) {
         wakeup_mutex = rb_mutex_new();
         RBASIC_CLEAR_CLASS(wakeup_mutex); /* hide from ObjectSpace */
+        rb_mutex_allow_trap(wakeup_mutex, 1);
     }
     busy->wakeup_mutex = wakeup_mutex;
 
