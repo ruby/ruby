@@ -1,9 +1,9 @@
 #line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
 #include "prism/extension.h"
+
 #include "prism/internal/allocator.h"
 #include "prism/internal/arena.h"
-
-#include <assert.h>
+#include "prism/internal/assert.h"
 
 extern VALUE rb_cPrism;
 extern VALUE rb_cPrismNode;
@@ -224,7 +224,7 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
                     argv[<%= index %>] = pm_string_new(&cast-><%= field.name %>, encoding);
                     <%- when Ruby::Prism::Template::ConstantField -%>
 #line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
-                    assert(cast-><%= field.name %> != 0);
+                    PRISM_ASSERT(cast-><%= field.name %> != 0);
                     argv[<%= index %>] = RARRAY_AREF(constants, pm_constant_id_index(cast-><%= field.name %>));
                     <%- when Ruby::Prism::Template::OptionalConstantField -%>
                     argv[<%= index %>] = cast-><%= field.name %> == 0 ? Qnil : RARRAY_AREF(constants, pm_constant_id_index(cast-><%= field.name %>));
@@ -232,7 +232,7 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
 #line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = rb_ary_new_capa(cast-><%= field.name %>.size);
                     for (size_t index = 0; index < cast-><%= field.name %>.size; index++) {
-                        assert(cast-><%= field.name %>.ids[index] != 0);
+                        PRISM_ASSERT(cast-><%= field.name %>.ids[index] != 0);
                         rb_ary_push(argv[<%= index %>], RARRAY_AREF(constants, pm_constant_id_index(cast-><%= field.name %>.ids[index])));
                     }
                     if (freeze) rb_obj_freeze(argv[<%= index %>]);

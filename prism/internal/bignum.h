@@ -7,9 +7,9 @@
 
 #include "prism/compiler/inline.h"
 
+#include "prism/internal/assert.h"
 #include "prism/internal/bit.h"
 
-#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -44,7 +44,7 @@ typedef struct {
  */
 static PRISM_INLINE void
 pm_bignum_mul_add(pm_bignum_t *bignum, uint32_t multiplier, uint32_t addend) {
-    assert(multiplier != 0);
+    PRISM_ASSERT(multiplier != 0);
     uint64_t carry = addend;
 
     for (uint32_t index = 0; index < bignum->length; index++) {
@@ -65,7 +65,7 @@ pm_bignum_mul_add(pm_bignum_t *bignum, uint32_t multiplier, uint32_t addend) {
  */
 static PRISM_INLINE uint32_t
 pm_bignum_div(pm_bignum_t *bignum, uint32_t divisor) {
-    assert(divisor != 0);
+    PRISM_ASSERT(divisor != 0);
     uint64_t remainder = 0;
 
     for (uint32_t index = bignum->length; index > 0; index--) {
@@ -151,7 +151,7 @@ pm_bignum_shift_right(pm_bignum_t *bignum, size_t count) {
  */
 static PRISM_INLINE uint64_t
 pm_bignum_trailing_zeros(const pm_bignum_t *bignum) {
-    assert(bignum->length > 0 && bignum->words[bignum->length - 1] != 0);
+    PRISM_ASSERT(bignum->length > 0 && bignum->words[bignum->length - 1] != 0);
 
     uint32_t index = 0;
     while (bignum->words[index] == 0) index++;
@@ -182,7 +182,7 @@ pm_bignum_compare(const pm_bignum_t *left, const pm_bignum_t *right) {
  */
 static PRISM_INLINE uint64_t
 pm_bignum_uint64(const pm_bignum_t *bignum) {
-    assert(bignum->length <= 2);
+    PRISM_ASSERT(bignum->length <= 2);
     return (bignum->length > 0 ? (uint64_t) bignum->words[0] : 0) | (bignum->length > 1 ? (uint64_t) bignum->words[1] << 32 : 0);
 }
 
@@ -204,7 +204,7 @@ typedef struct {
  */
 static PRISM_INLINE uint32_t *
 pm_bignum_scratch_take(pm_bignum_scratch_t *scratch, uint32_t count) {
-    assert((size_t) (scratch->end - scratch->cursor) >= count);
+    PRISM_ASSERT((size_t) (scratch->end - scratch->cursor) >= count);
     uint32_t *words = scratch->cursor;
     scratch->cursor += count;
     return words;

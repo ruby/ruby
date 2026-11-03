@@ -4,6 +4,7 @@
 #include "prism/compiler/unused.h"
 
 #include "prism/internal/allocator.h"
+#include "prism/internal/assert.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/isinf.h"
@@ -12,7 +13,6 @@
 #include "prism/internal/stringy.h"
 #include "prism/internal/xxh3.h"
 
-#include <assert.h>
 #include <inttypes.h>
 #include <math.h>
 #include <stdlib.h>
@@ -105,7 +105,7 @@ node_hash(const pm_parser_t *parser, const pm_node_t *node) {
         case PM_TRUE_NODE:
             return key_hash(PM_NODE_TYPE(node), 0, 0);
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return 0;
     }
 }
@@ -131,7 +131,7 @@ int64_value(const pm_parser_t *parser, const pm_node_t *node) {
         case PM_SOURCE_LINE_NODE:
             return (int64_t) pm_line_offset_list_line_column(&parser->line_offsets, node->location.start, parser->start_line).line;
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return 0;
     }
 }
@@ -172,7 +172,7 @@ string_value(const pm_node_t *node) {
         case PM_SYMBOL_NODE:
             return &((const pm_symbol_node_t *) node)->unescaped;
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return NULL;
     }
 }
@@ -283,7 +283,7 @@ compare_nodes(const pm_parser_t *parser, const pm_node_t *left, const pm_node_t 
         case PM_TRUE_NODE:
             return 0;
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return 0;
     }
 }
@@ -445,7 +445,7 @@ pm_static_literal_positive_p(const pm_node_t *node) {
         case PM_IMAGINARY_NODE:
             return pm_static_literal_positive_p(((const pm_imaginary_node_t *) node)->numeric);
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return false;
     }
 }
@@ -556,7 +556,7 @@ pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const 
             pm_buffer_append_string(buffer, "true", 4);
             break;
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             break;
     }
 }

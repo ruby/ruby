@@ -1,9 +1,8 @@
 #include "prism/internal/encoding.h"
 
 #include "prism/compiler/unused.h"
+#include "prism/internal/assert.h"
 #include "prism/internal/strncasecmp.h"
-
-#include <assert.h>
 
 typedef uint32_t pm_unicode_codepoint_t;
 
@@ -529,7 +528,7 @@ static const uint8_t pm_utf_8_dfa[] = {
  */
 static pm_unicode_codepoint_t
 pm_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
-    assert(n >= 0);
+    PRISM_ASSERT(n >= 0);
 
     size_t maximum = (n > 4) ? 4 : ((size_t) n);
     uint32_t codepoint;
@@ -559,7 +558,7 @@ pm_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
  */
 size_t
 pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n) {
-    assert(n >= 0);
+    PRISM_ASSERT(n >= 0);
 
     size_t maximum = (n > 4) ? 4 : ((size_t) n);
     uint32_t state = 0;

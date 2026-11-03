@@ -1,7 +1,8 @@
-#include "prism/compiler/force_inline.h"
 #include "prism/internal/bignum.h"
 
-#include <assert.h>
+#include "prism/compiler/force_inline.h"
+#include "prism/internal/assert.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -55,7 +56,7 @@ pm_bignum_base_words_subtract(uint64_t base, uint32_t *left, uint32_t left_lengt
     }
 
     for (; borrow != 0; index++) {
-        assert(index < left_length);
+        PRISM_ASSERT(index < left_length);
         borrow = left[index] == 0;
         left[index] = (uint32_t) (borrow ? base - 1 : left[index] - 1);
     }
@@ -176,7 +177,7 @@ pm_bignum_decimal_words_multiply_schoolbook(uint32_t *result, const uint32_t *le
 
     /* The product is below 10**(9 * (left_length + right_length)), so what is
      * left over is the top word. */
-    assert(carry < PM_BIGNUM_DECIMAL_BASE);
+    PRISM_ASSERT(carry < PM_BIGNUM_DECIMAL_BASE);
     result[left_length + right_length - 1] = (uint32_t) carry;
 }
 

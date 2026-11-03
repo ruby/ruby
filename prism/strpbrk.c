@@ -4,12 +4,12 @@
 #include "prism/compiler/inline.h"
 #include "prism/compiler/unused.h"
 
+#include "prism/internal/assert.h"
 #include "prism/internal/bit.h"
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/parser.h"
 
-#include <assert.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -35,7 +35,7 @@ pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, uint32_t start, uint32_t l
             pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, start, length, PM_ERR_MIXED_ENCODING, parser->encoding->name);
         } else {
             // Should not be anything else.
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
         }
     }
 

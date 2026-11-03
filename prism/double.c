@@ -1,9 +1,9 @@
 #include "prism/internal/double.h"
 
+#include "prism/internal/assert.h"
 #include "prism/internal/bignum.h"
 #include "prism/internal/bit.h"
 
-#include <assert.h>
 #include <float.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -56,7 +56,7 @@ static const double pm_double_powers[] = {
  */
 static uint64_t
 pm_double_bit_length(const pm_bignum_t *bignum) {
-    assert(bignum->length > 0);
+    PRISM_ASSERT(bignum->length > 0);
     return (uint64_t) (bignum->length - 1) * 32 + pm_bsrll(bignum->words[bignum->length - 1]) + 1;
 }
 
@@ -87,7 +87,7 @@ pm_double_divide(pm_bignum_t *numerator, const pm_bignum_t *divisor, bool *inexa
     uint32_t numerator_length = numerator->length;
     uint32_t divisor_length = divisor->length;
 
-    assert(divisor_length >= 2 && numerator_length >= divisor_length && (divisor_words[divisor_length - 1] >> 31) == 1);
+    PRISM_ASSERT(divisor_length >= 2 && numerator_length >= divisor_length && (divisor_words[divisor_length - 1] >> 31) == 1);
 
     uint64_t top = divisor_words[divisor_length - 1];
     uint64_t next = divisor_words[divisor_length - 2];
@@ -135,7 +135,7 @@ pm_double_divide(pm_bignum_t *numerator, const pm_bignum_t *divisor, bool *inexa
             window[divisor_length] += (uint32_t) carry;
         }
 
-        assert((quotient >> 32) == 0);
+        PRISM_ASSERT((quotient >> 32) == 0);
         quotient = (quotient << 32) | estimate;
     }
 
@@ -157,7 +157,7 @@ pm_double_divide(pm_bignum_t *numerator, const pm_bignum_t *divisor, bool *inexa
  */
 static uint64_t
 pm_double_round(uint64_t mantissa, int64_t exponent, bool inexact) {
-    assert(mantissa != 0);
+    PRISM_ASSERT(mantissa != 0);
 
     /* Drop the bits below the 53 that a double keeps, or below the smallest
      * subnormal if the value is that small. */
@@ -166,7 +166,7 @@ pm_double_round(uint64_t mantissa, int64_t exponent, bool inexact) {
 
     uint64_t bits;
     if (shift <= 0) {
-        assert(!inexact);
+        PRISM_ASSERT(!inexact);
         bits = mantissa << -shift;
     } else if (shift > 64) {
         return 0;
@@ -276,7 +276,7 @@ pm_double_exact(const uint8_t *start, uint32_t digits, int64_t exponent, uint64_
 
         pm_bignum_shift_left(&numerator, (size_t) numerator_shift);
         pm_bignum_shift_left(&denominator, (size_t) denominator_shift);
-        assert(numerator.length < PM_DOUBLE_WORDS && denominator.length <= PM_DOUBLE_WORDS);
+        PRISM_ASSERT(numerator.length < PM_DOUBLE_WORDS && denominator.length <= PM_DOUBLE_WORDS);
 
         mantissa = pm_double_divide(&numerator, &denominator, &inexact);
         binary = exponent + denominator_shift - numerator_shift;
@@ -333,7 +333,7 @@ pm_double_parse(const uint8_t *start, const uint8_t *end, bool *out_of_range) {
                 }
                 break;
             default:
-                assert(false && "unreachable");
+                PRISM_ASSERT(false && "unreachable");
                 break;
         }
     }

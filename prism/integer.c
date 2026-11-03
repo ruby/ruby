@@ -5,6 +5,7 @@
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/arena.h"
+#include "prism/internal/assert.h"
 #include "prism/internal/bignum.h"
 #include "prism/internal/bit.h"
 #include "prism/internal/buffer.h"
@@ -16,7 +17,6 @@
 #include <sys/types.h>
 #include <inttypes.h>
 
-#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -75,7 +75,7 @@ static const int8_t pm_integer_parse_digit_values[256] = {
 static uint8_t
 pm_integer_parse_digit(const uint8_t character) {
     int8_t value = pm_integer_parse_digit_values[character];
-    assert(value != -1 && "invalid digit");
+    PRISM_ASSERT(value != -1 && "invalid digit");
 
     return (uint8_t) value;
 }
@@ -119,10 +119,10 @@ pm_integer_parse_powof2(pm_arena_t *arena, pm_integer_t *integer, uint32_t base,
     uint32_t leading_bits = digit_bits[pm_integer_parse_digit(*start)];
 
     uint32_t bit = (uint32_t) pm_ctzll(base);
-    assert(bit >= 1 && bit <= 4);
+    PRISM_ASSERT(bit >= 1 && bit <= 4);
 
     uint32_t length = (uint32_t) (((uint64_t) (digits - 1) * bit + leading_bits + 31) / 32);
-    assert(length > 2);
+    PRISM_ASSERT(length > 2);
 
     uint32_t *words = pm_arena_zalloc(arena, sizeof(uint32_t) * length, PRISM_ALIGNOF(uint32_t));
     uint64_t bit_position = 0;
@@ -189,7 +189,7 @@ pm_integer_parse_decimal_divide_chunks(pm_bignum_t *result, uint32_t nchunks, co
         pm_bignum_t high = { .length = 0, .words = pm_bignum_scratch_take(scratch, pm_integer_chunks_words(nchunks - split)) };
         pm_integer_parse_decimal_divide_chunks(&high, nchunks - split, chunks + split, powers, scratch);
 
-        assert(high.length + powers[level].length <= pm_integer_chunks_words(nchunks));
+        PRISM_ASSERT(high.length + powers[level].length <= pm_integer_chunks_words(nchunks));
         pm_bignum_multiply(result, &high, &powers[level], scratch);
         scratch->cursor = saved;
 
@@ -250,7 +250,7 @@ pm_integer_parse_decimal_divide(pm_arena_t *arena, pm_integer_t *integer, uint32
             chunk = 0;
         }
     }
-    assert(chunk_index == 0);
+    PRISM_ASSERT(chunk_index == 0);
 
     /* powers[level] is 10**(9 * 2**level), for every level a split uses. */
     pm_bignum_t powers[64];
@@ -268,7 +268,7 @@ pm_integer_parse_decimal_divide(pm_arena_t *arena, pm_integer_t *integer, uint32
     pm_integer_parse_decimal_divide_chunks(&result, nchunks, chunks, powers, &scratch);
     xfree_sized(allocation, sizeof(uint32_t) * (size_t) scratch_size);
 
-    assert(result.length > 2 && result.length <= capacity);
+    PRISM_ASSERT(result.length > 2 && result.length <= capacity);
     pm_integer_from_bignum(arena, integer, &result, capacity);
 }
 
@@ -308,7 +308,7 @@ pm_integer_parse_decimal_schoolbook(pm_arena_t *arena, pm_integer_t *integer, ui
         }
     }
 
-    assert(bignum.length > 2 && bignum.length <= capacity);
+    PRISM_ASSERT(bignum.length > 2 && bignum.length <= capacity);
     pm_integer_from_bignum(arena, integer, &bignum, capacity);
 }
 
@@ -411,7 +411,7 @@ pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer
     if (*start == '+') start++;
 
     const uint8_t *point = memchr(start, '.', (size_t) (end - start));
-    assert(point != NULL);
+    PRISM_ASSERT(point != NULL);
 
     /* Each trailing zero after the decimal point divides both sides by 10, so
      * drop them before parsing. */
@@ -465,7 +465,7 @@ pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer
     if (remaining_fives > 0) pm_bignum_mul_add(&bignum, powof5[remaining_fives], 0);
     pm_bignum_shift_left(&bignum, remaining_twos);
 
-    assert(bignum.length <= capacity);
+    PRISM_ASSERT(bignum.length <= capacity);
     pm_integer_from_bignum(arena, denominator, &bignum, capacity);
 }
 
@@ -542,7 +542,7 @@ pm_integer_string_convert(pm_bignum_t *result, const uint32_t *words, uint32_t l
         pm_bignum_t high = { .length = 0, .words = pm_bignum_scratch_take(scratch, pm_integer_string_words(length - split)) };
         pm_integer_string_convert(&high, words + split, length - split, powers, scratch);
 
-        assert(high.length + powers[level].length <= pm_integer_string_words(length));
+        PRISM_ASSERT(high.length + powers[level].length <= pm_integer_string_words(length));
         pm_bignum_decimal_multiply(result, &high, &powers[level], scratch);
         scratch->cursor = saved;
 
@@ -596,7 +596,7 @@ pm_integer_string_divide(pm_buffer_t *buffer, const uint32_t *words, uint32_t le
     }
 
     pm_integer_string_convert(&result, words, length, powers, &scratch);
-    assert(result.length > 0 && result.length < capacity);
+    PRISM_ASSERT(result.length > 0 && result.length < capacity);
 
     /* Every word but the most significant is exactly nine digits, padded with
      * zeros. */

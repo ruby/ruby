@@ -15,6 +15,7 @@ typedef int pm_serialize_unused_t;
 #include "prism/compiler/inline.h"
 
 #include "prism/internal/allocator.h"
+#include "prism/internal/assert.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/comments.h"
 #include "prism/internal/diagnostic.h"
@@ -29,20 +30,19 @@ typedef int pm_serialize_unused_t;
 #include "prism/ast.h"
 #include "prism/line_offset_list.h"
 
-#include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
 static PRISM_INLINE uint32_t
 pm_ptrdifft_to_u32(ptrdiff_t value) {
-    assert(value >= 0 && ((unsigned long) value) < UINT32_MAX);
+    PRISM_ASSERT(value >= 0 && ((unsigned long) value) < UINT32_MAX);
     return (uint32_t) value;
 }
 
 static PRISM_INLINE uint32_t
 pm_sizet_to_u32(size_t value) {
-    assert(value < UINT32_MAX);
+    PRISM_ASSERT(value < UINT32_MAX);
     return (uint32_t) value;
 }
 

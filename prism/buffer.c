@@ -3,10 +3,10 @@
 #include "prism/compiler/inline.h"
 
 #include "prism/internal/allocator.h"
+#include "prism/internal/assert.h"
 #include "prism/internal/char.h"
 #include "prism/internal/oom.h"
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -371,7 +371,7 @@ pm_buffer_index(const pm_buffer_t *buffer, char value) {
  */
 void
 pm_buffer_insert(pm_buffer_t *buffer, size_t index, const char *value, size_t length) {
-    assert(index <= buffer->length);
+    PRISM_ASSERT(index <= buffer->length);
 
     if (index == buffer->length) {
         pm_buffer_append_string(buffer, value, length);

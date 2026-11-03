@@ -1,13 +1,13 @@
 #include "prism/internal/parser.h"
 
 #include "prism/internal/allocator.h"
+#include "prism/internal/assert.h"
 #include "prism/internal/comments.h"
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/magic_comments.h"
 #include "prism/internal/xxh3.h"
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -357,7 +357,7 @@ pm_parser_constants_size(const pm_parser_t *parser) {
  */
 const pm_constant_t *
 pm_parser_constant_at(const pm_parser_t *parser, size_t index) {
-    assert(index < parser->constant_pool.size);
+    PRISM_ASSERT(index < parser->constant_pool.size);
     return &parser->constant_pool.constants[index];
 }
 
