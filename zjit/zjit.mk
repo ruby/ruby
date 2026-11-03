@@ -146,5 +146,10 @@ libminiruby.a: miniruby$(EXEEXT)
 
 libminiruby: libminiruby.a
 
+clean-libminiruby:
+	$(Q) $(RM) libminiruby.*
+
+clean-local:: clean-libminiruby
+
 endif # ifneq ($(strip $(CARGO)),
 endif # ifneq ($(ZJIT_SUPPORT),no)
