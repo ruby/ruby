@@ -508,6 +508,7 @@ expandarray
 // attr bool handles_sp = true;
 // attr bool leaf = false; /* has rb_check_array_type() */
 // attr rb_snum_t sp_inc = (rb_snum_t)num - 1 + (flag & 1 ? 1 : 0);
+// attr bool zjit_profile = true;
 {
     vm_expandarray(GET_CFP(), ary, num, (int)flag);
 }

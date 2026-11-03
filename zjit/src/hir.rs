@@ -11110,12 +11110,20 @@ fn add_iseq_to_hir(
                     }
                     let val = state.stack_pop()?;
                     let is_splat = flag & 0x01 != 0;
-                    // Types are not inferred yet while building HIR, so match the instruction itself.
-                    let is_nil = matches!(fun.find(val), Insn::Const { val: Const::Value(v) } if v == Qnil);
-                    if is_nil && fun.assume_method_not_defined(block, unsafe { rb_cNilClass }, ID!(to_ary), exit_id) {
+                    // `a, b = nil` is common in Ragel-generated parsers, and the ArrayExact guard
+                    // below would always side-exit there, so specialize on a profiled nil.
+                    let profiled_nil = payload.profile.get_operand_types(exit_state.insn_idx).is_some_and(|types| {
+                        if let [distribution] = types {
+                            let summary = TypeDistributionSummary::new(distribution);
+                            summary.is_monomorphic() && summary.bucket(0).is_nil()
+                        } else {
+                            false
+                        }
+                    });
+                    if profiled_nil && fun.assume_method_not_defined(block, unsafe { rb_cNilClass }, ID!(to_ary), exit_id) {
                         // vm_expandarray treats a non-Array that rb_check_array_type() can't convert
-                        // as the one-element array [val]. `a, b = nil` is common in Ragel-generated
-                        // parsers, and the ArrayExact guard below would always side-exit there.
+                        // as the one-element array [val].
+                        let val = fun.push_insn(block, Insn::GuardType { val, guard_type: types::NilClass, state: exit_id, recompile: Some(Recompile) });
                         if is_splat {
                             let elements = if num == 0 { vec![val] } else { vec![] };
                             let rest = fun.push_insn(block, Insn::NewArray { elements, state: exit_id });

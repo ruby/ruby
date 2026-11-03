@@ -6661,6 +6661,33 @@ fn test_expandarray_nil_method_missing_defined() {
 }
 
 #[test]
+fn test_expandarray_profiled_nil_param() {
+    eval("
+        def test(x)
+          a, b = x
+          [a, b]
+        end
+        test(nil)
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("test(nil)"), @"[nil, nil]");
+}
+
+#[test]
+fn test_expandarray_profiled_nil_then_array() {
+    eval("
+        def test(x)
+          a, b = x
+          [a, b]
+        end
+        test(nil)
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    // The NilClass guard fails for an Array and falls back to the interpreter.
+    assert_snapshot!(assert_compiles_allowing_exits("[test(nil), test([1, 2]), test(nil)]"), @"[[nil, nil], [1, 2], [nil, nil]]");
+}
+
+#[test]
 fn test_constant_invalidation() {
     eval("
         class C; end

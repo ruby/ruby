@@ -93,6 +93,7 @@ fn profile_insn_sample(
         YARVINSN_opt_length    => profile_operands(profiler, profile, 1),
         YARVINSN_opt_size      => profile_operands(profiler, profile, 1),
         YARVINSN_opt_succ      => profile_operands(profiler, profile, 1),
+        YARVINSN_expandarray   => profile_operands(profiler, profile, 1),
         YARVINSN_invokeblock   => profile_block_handler(profiler, profile),
         YARVINSN_invokesuper   => profile_invokesuper(profiler, profile),
         YARVINSN_opt_send_without_block | YARVINSN_send => {
