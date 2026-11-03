@@ -55,17 +55,23 @@ impl Scanning<Ruby> for VMScanning {
                 "Destination is not an MMTk object. Src: {object} dst: {target_object}"
             );
 
-            debug_assert!(
-                // If we are in a moving GC, all objects should be pinned by PinningRegistry.
-                // If it is requested that target_object be pinned but it is not pinned, then
-                // it is a bug because it could be moved.
-                if crate::mmtk().get_plan().current_gc_may_move_object() && pin {
-                    memory_manager::is_pinned(target_object)
-                } else {
-                    true
-                },
-                "Object {object} is trying to pin {target_object}"
-            );
+            // It's possible that a value on the machine stack appears to point into the MMTk heap.
+            // When this value is first marked during the pinning phase, it does not pin it if the
+            // object is not live. If later on, an object is evacuated into the value, then it will
+            // appear to not be pinned. Therefore, we cannot assert that target_object is actually
+            // pinned.
+            if pin
+                && crate::mmtk().get_plan().current_gc_may_move_object()
+                && !memory_manager::is_pinned(target_object)
+            {
+                debug_assert!(
+                    target_object.get_forwarded_object().is_none(),
+                    "Object {object} is trying to pin {target_object}, but it has already moved"
+                );
+                crate::binding()
+                    .pinning_registry
+                    .register_pinned_obj(target_object);
+            }
 
             let forwarded_target = object_tracer.trace_object(target_object);
             if forwarded_target != target_object {
