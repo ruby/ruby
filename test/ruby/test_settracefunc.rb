@@ -1280,7 +1280,7 @@ CODE
       end
     }
     assert_normal_exit src % %q{obj.zip({}) {}}, bug7774
-    if respond_to?(:callcc)
+    if respond_to?(:callcc, true)
       assert_normal_exit src % %q{
         require 'continuation'
         begin
