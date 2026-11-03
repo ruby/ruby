@@ -1241,6 +1241,19 @@ class TestRegexp < Test::Unit::TestCase
     failcheck('(?#')
   end
 
+  def test_invalid_raw_byte_escape_in_utf16
+    {"UTF-16LE" => ['\x00\xD8', '\x00\xD8\x00\xDC'],
+     "UTF-16BE" => ['\xD8\x00', '\xD8\x00\xDC\x00']}.each do |enc, (lone, pair)|
+      assert_raise(RegexpError) { Regexp.new(lone.encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("(?i)#{lone}".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("[#{lone}]".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("[#{lone}a]".encode(enc)) }
+      s = "\u{10000}".encode(enc)
+      assert_match(Regexp.new(pair.encode(enc)), s)
+      assert_match(Regexp.new("[#{pair}]".encode(enc)), s)
+    end
+  end
+
   def test_char_type
     check(/\u3042\d/, ["\u30421", "\u30422"])
 
