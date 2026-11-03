@@ -104,6 +104,8 @@ module Bundler
       @new_platforms = []
       @removed_platforms = []
       @originally_invalid_platforms = []
+      @new_ruby_abis = []
+      @removed_ruby_abis = []
 
       if lockfile_exists?
         @lockfile_contents = Bundler.read_file(lockfile)
@@ -378,7 +380,7 @@ module Bundler
         start_resolution
       end
       warn_inert_overrides(@resolve)
-
+      @resolve.assign_content_addresses!(@ruby_abis) if @removed_ruby_abis.any?
       @resolve
     end
 
@@ -554,17 +556,38 @@ module Bundler
 
       raise ProductionError, "Your lockfile locks content-addressed gems for Ruby #{ruby_abis.join(", ")} " \
         "but you are running Ruby #{Gem.ruby_abi}. " \
-        "Run `bundle install` under Ruby #{Gem.ruby_abi} outside of frozen mode to lock its content-addressed gems and try again."
+        "Add the current Ruby ABI to the lockfile with\n`bundle lock --add-ruby-abi #{Gem.ruby_abi}` and try again."
     end
 
     def normalize_platforms
       resolve.normalize_platforms!(current_dependencies, platforms)
 
       @resolve = SpecSet.new(resolve.for(current_dependencies, @platforms))
+      @resolve.assign_content_addresses!(@ruby_abis, keep_locked: sources.local_mode?)
     end
 
     def ruby_abis
       @ruby_abis.sort_by {|ruby_abi| Gem::Version.new(ruby_abi) }
+    end
+
+    def add_ruby_abi(ruby_abi)
+      # Before the early return: a locked ABI the ruby directive rules out is
+      # about to be pruned, so adding it back must be refused, not ignored.
+      if @ruby_version && ruby_abi_excluded?(ruby_abi)
+        raise InvalidOption, "Unable to add the Ruby ABI `#{ruby_abi}` since your Gemfile requires #{@ruby_version}"
+      end
+
+      return if @ruby_abis.include?(ruby_abi) || @new_ruby_abis.include?(ruby_abi)
+
+      @new_ruby_abis << ruby_abi
+      @ruby_abis << ruby_abi
+    end
+
+    def remove_ruby_abi(ruby_abi)
+      raise InvalidOption, "Unable to remove the Ruby ABI `#{ruby_abi}` since the only Ruby ABIs are #{ruby_abis.join(", ")}" unless @ruby_abis.include?(ruby_abi)
+
+      @removed_ruby_abis << ruby_abi
+      @ruby_abis.delete(ruby_abi)
     end
 
     def add_platform(platform)
@@ -623,6 +646,8 @@ module Bundler
 
       added.concat @new_platforms.map {|p| "* platform: #{p}" }
       deleted.concat @removed_platforms.map {|p| "* platform: #{p}" }
+      added.concat @new_ruby_abis.map {|abi| "* ruby abi: #{abi}" }
+      deleted.concat @removed_ruby_abis.map {|abi| "* ruby abi: #{abi}" }
 
       added.concat new_deps.map {|d| "* #{pretty_dep(d)}" } if new_deps.any?
       deleted.concat deleted_deps.map {|d| "* #{pretty_dep(d)}" } if deleted_deps.any?
@@ -683,6 +708,7 @@ module Bundler
         @current_platform_missing ||
         @new_platforms.any? ||
         @current_ruby_abi_missing ||
+        @new_ruby_abis.any? ||
         @excluded_ruby_abis.any? ||
         @path_changes ||
         @local_changes ||
@@ -1012,6 +1038,7 @@ module Bundler
         [@dependency_changes, "the dependencies in your gemfile changed"],
         [@current_platform_missing, "your lockfile is missing the current platform"],
         [@new_platforms.any?, "you are adding a new platform to your lockfile"],
+        [@new_ruby_abis.any?, "you are adding a new Ruby ABI to your lockfile"],
         [@current_ruby_abi_missing, "your lockfile does not cover the current Ruby ABI"],
         [@excluded_ruby_abis.any?, "your Gemfile's ruby directive rules out Ruby ABIs in your lockfile"],
         [@path_changes, "the gemspecs for path gems changed"],

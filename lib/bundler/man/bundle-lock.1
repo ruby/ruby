@@ -4,7 +4,7 @@
 .SH "NAME"
 \fBbundle\-lock\fR \- Creates / Updates a lockfile without installing
 .SH "SYNOPSIS"
-\fBbundle lock\fR [\-\-update] [\-\-bundler[=BUNDLER]] [\-\-local] [\-\-print] [\-\-lockfile=PATH] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-add\-checksums] [\-\-add\-platform] [\-\-remove\-platform] [\-\-normalize\-platforms] [\-\-patch] [\-\-minor] [\-\-major] [\-\-pre] [\-\-strict] [\-\-conservative] [\-\-cooldown=NUMBER]
+\fBbundle lock\fR [\-\-update] [\-\-bundler[=BUNDLER]] [\-\-local] [\-\-print] [\-\-lockfile=PATH] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-add\-checksums] [\-\-add\-platform] [\-\-remove\-platform] [\-\-normalize\-platforms] [\-\-add\-ruby\-abi] [\-\-remove\-ruby\-abi] [\-\-patch] [\-\-minor] [\-\-major] [\-\-pre] [\-\-strict] [\-\-conservative] [\-\-cooldown=NUMBER]
 .SH "DESCRIPTION"
 Lock the gems specified in Gemfile\.
 .SH "OPTIONS"
@@ -41,6 +41,12 @@ Remove a platform from the lockfile\.
 .TP
 \fB\-\-normalize\-platforms\fR
 Normalize lockfile platforms\.
+.TP
+\fB\-\-add\-ruby\-abi=<list>\fR
+Lock the content\-addressed gems of the bundle for a Ruby ABI (a major and minor version, like \fB3\.4\fR), re\-resolving to record them\. Running \fBbundle install\fR under that Ruby does the same\.
+.TP
+\fB\-\-remove\-ruby\-abi=<list>\fR
+Drop the content\-addressed gems for a Ruby ABI from the lockfile\.
 .TP
 \fB\-\-patch\fR
 If updating, prefer updating only to next patch version\.

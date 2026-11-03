@@ -63,6 +63,16 @@ module Bundler
           raise InvalidOption, "Removing all platforms from the bundle is not allowed"
         end
 
+        options["remove-ruby-abi"].flatten.each do |ruby_abi|
+          definition.remove_ruby_abi(ruby_abi)
+        end
+
+        options["add-ruby-abi"].flatten.each do |ruby_abi|
+          raise InvalidOption, "Expected `--add-ruby-abi` to be a Ruby ABI like `X.Y`, got #{ruby_abi.inspect}" unless Gem::ContentAddress.valid_ruby_abi?(ruby_abi)
+
+          definition.add_ruby_abi(ruby_abi)
+        end
+
         # Adding checksums resolves the bundle to fetch them, so it has to
         # run after every platform change above has been recorded, or the
         # new platforms are listed in the lockfile without their specs.
@@ -110,6 +120,10 @@ module Bundler
 
       if options["normalize-platforms"] && options["remove-platform"].any?
         raise InvalidOption, "--normalize-platforms can't be used with --remove-platform"
+      end
+
+      if options[:local] && (options["add-ruby-abi"].any? || options["remove-ruby-abi"].any?)
+        raise InvalidOption, "--add-ruby-abi and --remove-ruby-abi can't be used with --local"
       end
     end
   end

@@ -491,7 +491,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
         expect(last_command).to be_failure
         expect(err).to include(message)
-        expect(err).to include("Run `bundle install` under Ruby #{current_abi} outside of frozen mode")
+        expect(err).to include("bundle lock --add-ruby-abi #{current_abi}")
         expect(Dir[default_bundle_path("gems", "mygem-1.0-*").to_s]).to be_empty
         expect(lockfile).to eq(original_lockfile)
 
@@ -500,7 +500,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         expect(last_command).to be_failure
         expect(err).to include(message)
 
-        bundle_config "frozen false"
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{current_abi}"
         bundle_with_content_addressed_gems "install"
         expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
       end
