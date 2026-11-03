@@ -47,7 +47,7 @@ i686-mswin32: -prologue- -i686- -epilogue-
 x64-mswin64: -prologue- -x64- -epilogue-
 arm64-mswin64: -prologue- -arm64- -epilogue-
 
--prologue-: -basic-vars- -baseruby- -dependencies- -gmp-
+-prologue-: -basic-vars- -baseruby- -dependencies- -gmp- -mimalloc-
 -generic-: -osname-
 
 -basic-vars-: nul
@@ -84,6 +84,15 @@ prefix = $(prefix:\=/)
 #include <gmp.h>
 mpz_t x;
 int main(void) {mpz_init(x); return 0;}
+<<
+	@$(WIN32DIR:/=\)\rm.bat conftest.*
+!endif
+
+-mimalloc-:
+!if "$(WITH_MIMALLOC)" == "yes"
+	@$(CC) $(XINCFLAGS) <<conftest.c -link $(XLDFLAGS) mimalloc.dll.lib > nul || ($(WIN32DIR:/=\)\rm.bat conftest.* & echo mimalloc requested but not found 1>&2 & exit /b 1)
+#include <mimalloc.h>
+int main(void) {mi_free(mi_malloc(1)); return 0;}
 <<
 	@$(WIN32DIR:/=\)\rm.bat conftest.*
 !endif

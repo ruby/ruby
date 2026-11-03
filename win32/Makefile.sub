@@ -332,6 +332,9 @@ LIBS = $(LIBS) iphlpapi.lib
 !if defined(USE_GMP)
 LIBS = $(LIBS) gmp.lib
 !endif
+!if "$(WITH_MIMALLOC)" == "yes"
+LIBS = $(LIBS) mimalloc.dll.lib
+!endif
 LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
@@ -675,12 +678,15 @@ update-src::
 VCPKG_DEFAULT_TRIPLET = $(MACHINE)-windows
 !endif
 TRIPLET_OPTION = --triplet $(VCPKG_DEFAULT_TRIPLET)
+!if "$(WITH_MIMALLOC)" == "yes"
+FEATURE_OPTION = --x-feature=mimalloc
+!endif
 
 update-vcpkg::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg x-update-baseline $(TRIPLET_OPTION)
 
 install-vcpkg::
-	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg install $(TRIPLET_OPTION)
+	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg install $(TRIPLET_OPTION) $(FEATURE_OPTION)
 
 prepare-vcpkg::
 	@del /a:l *.dll 2> nul
@@ -989,6 +995,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 !endif
 !if "$(USE_GMP)" != ""
 #define USE_GMP 1
+!endif
+!if "$(WITH_MIMALLOC)" == "yes"
+#define USE_MIMALLOC 1
 !endif
 !if "$(YJIT_SUPPORT)" == "yes"
 #define USE_YJIT 1
