@@ -1,7 +1,6 @@
 # -*- coding: us-ascii -*-
 # frozen_string_literal: false
 require 'test/unit'
-EnvUtil.suppress_warning {require 'continuation'}
 
 class TestHash < Test::Unit::TestCase
   def test_hash
@@ -1405,83 +1404,6 @@ class TestHash < Test::Unit::TestCase
   def test_flatten_arity
     a =  @cls[1=> "one", 2 => [2,"two"], 3 => [3, ["three"]]]
     assert_raise(ArgumentError){ a.flatten(1, 2) }
-  end
-
-  def test_callcc
-    omit 'requires callcc support' unless respond_to?(:callcc)
-
-    h = @cls[1=>2]
-    c = nil
-    f = false
-    h.each { callcc {|c2| c = c2 } }
-    unless f
-      f = true
-      c.call
-    end
-    assert_raise(RuntimeError) { h.each { h.rehash } }
-
-    h = @cls[1=>2]
-    c = nil
-    assert_raise(RuntimeError) do
-      h.each { callcc {|c2| c = c2 } }
-      h.clear
-      c.call
-    end
-  end
-
-  def test_callcc_iter_level
-    omit 'requires callcc support' unless respond_to?(:callcc)
-
-    bug9105 = '[ruby-dev:47803] [Bug #9105]'
-    h = @cls[1=>2, 3=>4]
-    c = nil
-    f = false
-    h.each {callcc {|c2| c = c2}}
-    unless f
-      f = true
-      c.call
-    end
-    assert_nothing_raised(RuntimeError, bug9105) do
-      h.each {|i, j|
-        h.delete(i);
-        assert_not_equal(false, i, bug9105)
-      }
-    end
-  end
-
-  def test_callcc_escape
-    omit 'requires callcc support' unless respond_to?(:callcc)
-
-    bug9105 = '[ruby-dev:47803] [Bug #9105]'
-    assert_nothing_raised(RuntimeError, bug9105) do
-      h=@cls[]
-      cnt=0
-      c = callcc {|cc|cc}
-      h[cnt] = true
-      h.each{|i|
-        cnt+=1
-        c.call if cnt == 1
-      }
-    end
-  end
-
-  def test_callcc_reenter
-    omit 'requires callcc support' unless respond_to?(:callcc)
-
-    bug9105 = '[ruby-dev:47803] [Bug #9105]'
-    assert_nothing_raised(RuntimeError, bug9105) do
-      h = @cls[1=>2,3=>4]
-      c = nil
-      f = false
-      h.each { |i|
-        callcc {|c2| c = c2 } unless c
-        h.delete(1) if f
-      }
-      unless f
-        f = true
-        c.call
-      end
-    end
   end
 
   def test_threaded_iter_level
