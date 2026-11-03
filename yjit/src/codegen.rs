@@ -10338,9 +10338,51 @@ fn gen_objtostring(
         asm.mov(stack_ret, str);
 
         Some(KeepCompiling)
+    } else if let Some(to_s_cfunc) = objtostring_cfunc(comptime_recv)
+        .filter(|&cfunc| jit.assume_expected_cfunc(asm, comptime_recv.class_of(), ID!(to_s), cfunc)) {
+        jit_guard_known_klass(
+            jit,
+            asm,
+            recv,
+            recv.into(),
+            comptime_recv,
+            SEND_MAX_DEPTH,
+            Counter::objtostring_not_string,
+        );
+
+        // Same optimization done in the interpreter: Integer#to_s and Module#to_s
+        // allocate a mutable string, but for interpolation the shared frozen
+        // string for 0..9 or the module's name is fine.
+        let str = if to_s_cfunc == rb_int_to_s as *mut c_void {
+            jit_prepare_call_with_gc(jit, asm);
+            asm.ccall(rb_fix_to_s as *const u8, vec![asm.stack_opnd(0)])
+        } else {
+            // Module#to_s of a singleton class may call #inspect
+            jit_prepare_non_leaf_call(jit, asm);
+            asm.ccall(rb_yjit_mod_objtostring as *const u8, vec![asm.stack_opnd(0)])
+        };
+        asm.stack_pop(1);
+
+        // Push the return value
+        let stack_ret = asm.stack_push(Type::TString);
+        asm.mov(stack_ret, str);
+
+        Some(KeepCompiling)
     } else {
         let cd = jit.get_arg(0).as_ptr();
         perf_call! { gen_send_general(jit, asm, cd, None) }
+    }
+}
+
+/// The original `to_s` that vm_objtostring() replaces for interpolation, like its check_cfunc():
+/// a refined or redefined `to_s` is a different method entry and takes the send path.
+fn objtostring_cfunc(recv: VALUE) -> Option<*mut c_void> {
+    if recv.fixnum_p() {
+        Some(rb_int_to_s as *mut c_void)
+    } else if unsafe { RB_TYPE_P(recv, RUBY_T_CLASS) || RB_TYPE_P(recv, RUBY_T_MODULE) } {
+        Some(rb_mod_to_s as *mut c_void)
+    } else {
+        None
     }
 }
 

@@ -640,6 +640,60 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_string_interpolation_integer_and_module
+    # Like the interpreter, interpolate 0..9 and named modules without allocating
+    result = [
+      [1, 2, 1, 1],
+      "t3_r4", "t-12_r345", "Foo Update", "Mod Update", "custom! Update", true, true,
+      "tx_rx",
+    ]
+    assert_compiles(<<~'RUBY', result:)
+      class Foo; end
+      module Mod; end
+      module Custom; def self.to_s = "custom!"; end
+      def int_interp(i, j) = "t#{i}_r#{j}"
+      def mod_interp(mod) = "#{mod} Update"
+
+      def allocations
+        allocated = GC.stat(:total_allocated_objects)
+        yield
+        GC.stat(:total_allocated_objects) - allocated
+      end
+
+      def calls
+        [
+          [allocations { int_interp(3, 4) }, allocations { int_interp(12, 4) }, allocations { mod_interp(Foo) }, allocations { mod_interp(Mod) }],
+          int_interp(3, 4), int_interp(-12, 345), mod_interp(Foo), mod_interp(Mod), mod_interp(Custom),
+          mod_interp(Class.new).match?(/\A#<Class:0x\h+> Update\z/),
+          mod_interp(Object.new.singleton_class).match?(/\A#<Class:#<Object:0x\h+>> Update\z/),
+        ]
+      end
+
+      calls # compile everything first
+      result = calls
+      class Integer; def to_s = "x"; end
+      result << int_interp(3, 4)
+    RUBY
+  end
+
+  def test_string_interpolation_refined_to_s
+    # A refined Integer#to_s or Module#to_s is a different method, so interpolation calls it
+    assert_compiles(<<~'RUBY', result: ["int!", "mod!", "mod!", "7", "M"], exits: :any)
+      module R
+        refine(Integer) { def to_s = "int!" }
+        refine(Module) { def to_s = "mod!" }
+      end
+      module M; end
+      def plain(x) = "#{x}"
+      using R
+      def refined(x) = "#{x}"
+
+      calls = -> { [refined(7), refined(M), refined(Class.new), plain(7), plain(M)] }
+      calls.() # compile everything first
+      calls.()
+    RUBY
+  end
+
   def test_checkkeyword
     assert_compiles(<<~'RUBY', insns: %i[checkkeyword], result: [2, 5])
       def foo(foo: 1+1)

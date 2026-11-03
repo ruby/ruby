@@ -246,6 +246,18 @@ rb_str_neq_internal(VALUE str1, VALUE str2)
 
 extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 
+VALUE rb_int_to_s(int argc, VALUE *argv, VALUE x);
+VALUE rb_fix_to_s(VALUE);
+VALUE rb_mod_to_s(VALUE);
+
+// The string vm_objtostring() interpolates for a Module whose #to_s is Module#to_s
+VALUE
+rb_yjit_mod_objtostring(VALUE mod)
+{
+    VALUE name = rb_mod_name(mod);
+    return NIL_P(name) ? rb_mod_to_s(mod) : name;
+}
+
 VALUE
 rb_yjit_rb_ary_subseq_length(VALUE ary, rb_len_t beg)
 {

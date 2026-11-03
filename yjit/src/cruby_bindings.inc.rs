@@ -1266,6 +1266,10 @@ extern "C" {
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_str_neq_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_ary_unshift_m(argc: ::std::os::raw::c_int, argv: *mut VALUE, ary: VALUE) -> VALUE;
+    pub fn rb_int_to_s(argc: ::std::os::raw::c_int, argv: *mut VALUE, x: VALUE) -> VALUE;
+    pub fn rb_fix_to_s(arg1: VALUE) -> VALUE;
+    pub fn rb_mod_to_s(arg1: VALUE) -> VALUE;
+    pub fn rb_yjit_mod_objtostring(mod_: VALUE) -> VALUE;
     pub fn rb_yjit_rb_ary_subseq_length(ary: VALUE, beg: rb_len_t) -> VALUE;
     pub fn rb_yjit_splat_varg_checks(
         sp: *mut VALUE,
