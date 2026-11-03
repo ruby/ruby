@@ -1725,4 +1725,31 @@ class TestRactor < Test::Unit::TestCase
       GC.verify_internal_consistency
     RUBY
   end
+
+  def test_local_shareable_parent_does_not_retain_overwritten_unshareables
+    omit 'shareable -> unshareable records live in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%w[-W0], <<~'RUBY', timeout: 120)
+      keeper = Ractor.new { Ractor.receive }  # a second Ractor makes local GCs pin shareables
+
+      klass = Class.new
+      store = ->(n) { n.times { klass.instance_variable_set(:@x, Array.new(500) { |j| "payload #{j}" }) } }
+
+      # The shareable parent of these edges is the class's fields imemo. Let it age into
+      # the old generation first, that's what lets the barrier record the edge in the
+      # rememberset rather than in a shref bit.
+      store.call(50)
+      5.times { GC.start(full_mark: true, immediate_sweep: true, global: false) }
+      base = GC.stat(:heap_live_slots)
+
+      store.call(1000)
+      grown = GC.stat(:heap_live_slots)
+
+      # ~500k slots of garbage, overwritten one graph at a time. Nothing here asks for a
+      # global GC, the shareable retention population should never grow.
+      assert_operator grown - base, :<, 200_000,
+        "overwritten local shareable -> unshareable edges were retained"
+
+      keeper.send(nil)
+    RUBY
+  end
 end

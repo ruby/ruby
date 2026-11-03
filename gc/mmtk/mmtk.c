@@ -1861,7 +1861,7 @@ rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj)
 }
 
 bool
-rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
+rb_gc_impl_shref_recorded_p(void *objspace_ptr, VALUE parent, VALUE child)
 {
     /* With a single objspace there is no cross-objspace pinning to track. */
     return true;
