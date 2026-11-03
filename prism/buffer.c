@@ -269,35 +269,35 @@ pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t lengt
             switch (byte) {
                 case '\a':
                     if (escaping == PM_BUFFER_ESCAPING_RUBY) {
-                        pm_buffer_append_string(buffer, "\\a", 2);
+                        PM_BUFFER_APPEND_LITERAL(buffer, "\\a");
                     } else {
                         pm_buffer_append_format(buffer, "\\u%04X", byte);
                     }
                     break;
                 case '\b':
-                    pm_buffer_append_string(buffer, "\\b", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\b");
                     break;
                 case '\t':
-                    pm_buffer_append_string(buffer, "\\t", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\t");
                     break;
                 case '\n':
-                    pm_buffer_append_string(buffer, "\\n", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\n");
                     break;
                 case '\v':
                     if (escaping == PM_BUFFER_ESCAPING_RUBY) {
-                        pm_buffer_append_string(buffer, "\\v", 2);
+                        PM_BUFFER_APPEND_LITERAL(buffer, "\\v");
                     } else {
                         pm_buffer_append_format(buffer, "\\u%04X", byte);
                     }
                     break;
                 case '\f':
-                    pm_buffer_append_string(buffer, "\\f", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\f");
                     break;
                 case '\r':
-                    pm_buffer_append_string(buffer, "\\r", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\r");
                     break;
                 case '"':
-                    pm_buffer_append_string(buffer, "\\\"", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\\"");
                     break;
                 case '#': {
                     if (escaping == PM_BUFFER_ESCAPING_RUBY && index + 1 < length) {
@@ -311,7 +311,7 @@ pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t lengt
                     break;
                 }
                 case '\\':
-                    pm_buffer_append_string(buffer, "\\\\", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\\\");
                     break;
                 default:
                     pm_buffer_append_byte(buffer, byte);

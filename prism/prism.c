@@ -21546,7 +21546,7 @@ pm_named_capture_escape_hex(pm_buffer_t *unescaped, const uint8_t *cursor, const
 
         pm_buffer_append_byte(unescaped, value);
     } else {
-        pm_buffer_append_string(unescaped, "\\x", 2);
+        PM_BUFFER_APPEND_LITERAL(unescaped, "\\x");
     }
 
     return cursor;
@@ -21577,7 +21577,7 @@ pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, con
     cursor++;
 
     if (cursor >= end) {
-        pm_buffer_append_string(unescaped, "\\u", 2);
+        PM_BUFFER_APPEND_LITERAL(unescaped, "\\u");
         return cursor;
     }
 
@@ -23758,7 +23758,7 @@ pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_source_t *source, co
 
 static PRISM_INLINE void
 pm_serialize_header(pm_buffer_t *buffer) {
-    pm_buffer_append_string(buffer, "PRISM", 5);
+    PM_BUFFER_APPEND_LITERAL(buffer, "PRISM");
     pm_buffer_append_byte(buffer, PRISM_VERSION_MAJOR);
     pm_buffer_append_byte(buffer, PRISM_VERSION_MINOR);
     pm_buffer_append_byte(buffer, PRISM_VERSION_PATCH);

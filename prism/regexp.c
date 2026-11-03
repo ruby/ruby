@@ -1424,7 +1424,7 @@ pm_regexp_format_for_error(pm_buffer_t *buffer, const pm_encoding_t *encoding, c
             size_t width = pm_encoding_char_width(encoding, source + index, (ptrdiff_t) (length - index));
 
             if (width > 1) {
-                pm_buffer_append_string(buffer, "\\x{", 3);
+                PM_BUFFER_APPEND_LITERAL(buffer, "\\x{");
                 for (size_t i = 0; i < width; i++) {
                     pm_buffer_append_format(buffer, "%02X", source[index + i]);
                 }

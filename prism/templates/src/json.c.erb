@@ -33,18 +33,18 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
     switch (PM_NODE_TYPE(node)) {
         <%- nodes.each do |node| -%>
         case <%= node.type %>: {
-            pm_buffer_append_string(buffer, "{\"type\":\"<%= node.name %>\",\"location\":", <%= node.name.bytesize + 22 %>);
+            PM_BUFFER_APPEND_LITERAL(buffer, "{\"type\":\"<%= node.name %>\",\"location\":");
 
             const pm_<%= node.human %>_t *cast = (const pm_<%= node.human %>_t *) node;
             pm_dump_json_location(buffer, &cast->base.location);
             <%- [*node.flags, *node.fields].each_with_index do |field, index| -%>
 
             // Dump the <%= field.name %> field
-            pm_buffer_append_byte(buffer, ',');
+            PM_BUFFER_APPEND_LITERAL(buffer, ",");
             <%- if field.is_a?(Ruby::Prism::Template::Flags) -%>
-            pm_buffer_append_string(buffer, "\"flags\":", 8);
+            PM_BUFFER_APPEND_LITERAL(buffer, "\"flags\":");
             <%- else -%>
-            pm_buffer_append_string(buffer, "\"<%= field.name %>\":", <%= field.name.bytesize + 3 %>);
+            PM_BUFFER_APPEND_LITERAL(buffer, "\"<%= field.name %>\":");
             <%- end -%>
             <%- case field -%>
             <%- when Ruby::Prism::Template::NodeField -%>
@@ -53,7 +53,7 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
             if (cast-><%= field.name %> != NULL) {
                 pm_dump_json(buffer, parser, (const pm_node_t *) cast-><%= field.name %>);
             } else {
-                pm_buffer_append_string(buffer, "null", 4);
+                PM_BUFFER_APPEND_LITERAL(buffer, "null");
             }
             <%- when Ruby::Prism::Template::NodeListField -%>
             const pm_node_list_t *<%= field.name %> = &cast-><%= field.name %>;
@@ -75,7 +75,7 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
             if (cast-><%= field.name %> != PM_CONSTANT_ID_UNSET) {
                 pm_dump_json_constant(buffer, parser, cast-><%= field.name %>);
             } else {
-                pm_buffer_append_string(buffer, "null", 4);
+                PM_BUFFER_APPEND_LITERAL(buffer, "null");
             }
             <%- when Ruby::Prism::Template::ConstantListField -%>
             const pm_constant_id_list_t *<%= field.name %> = &cast-><%= field.name %>;
@@ -92,7 +92,7 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
             if (cast-><%= field.name %>.length != 0) {
                 pm_dump_json_location(buffer, &cast-><%= field.name %>);
             } else {
-                pm_buffer_append_string(buffer, "null", 4);
+                PM_BUFFER_APPEND_LITERAL(buffer, "null");
             }
             <%- when Ruby::Prism::Template::UInt8Field -%>
             pm_buffer_append_format(buffer, "%" PRIu8, cast-><%= field.name %>);
@@ -104,7 +104,7 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
             <%- node.flags.values.each_with_index do |value, index| -%>
             if (PM_NODE_FLAG_P(cast, PM_<%= node.flags.human.upcase %>_<%= value.name %>)) {
                 if (flags != 0) pm_buffer_append_byte(buffer, ',');
-                pm_buffer_append_string(buffer, "\"<%= value.name %>\"", <%= value.name.bytesize + 2 %>);
+                PM_BUFFER_APPEND_LITERAL(buffer, "\"<%= value.name %>\"");
                 flags++;
             }
             <%- end -%>
