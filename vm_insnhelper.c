@@ -19,15 +19,18 @@
 #include "constant.h"
 #include "debug_counter.h"
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/class.h"
 #include "internal/compar.h"
 #include "internal/hash.h"
+#include "internal/jit.h"
 #include "internal/numeric.h"
 #include "internal/proc.h"
 #include "internal/random.h"
 #include "internal/variable.h"
 #include "internal/set.h"
 #include "internal/set_table.h"
+#include "internal/string.h"
 #include "internal/struct.h"
 #include "ruby/thread.h"
 #include "variable.h"
@@ -2511,6 +2514,18 @@ rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const cfunc_type func
 
 #define check_cfunc(me, func) check_cfunc(me, make_cfunc_type(func))
 #define vm_method_cfunc_is(reg_cfp, cd, recv, func) vm_method_cfunc_is(reg_cfp, cd, recv, make_cfunc_type(func))
+
+// Whether `klass.new` resolving to `cme` only allocates and calls #initialize, as Class#new
+// does, so opt_new can do that inline. String, Array and Hash define a singleton `new` that
+// calls Class#new for their subclasses.
+bool
+rb_vm_cme_is_default_new(const rb_callable_method_entry_t *cme, VALUE klass)
+{
+    return check_cfunc(cme, rb_class_new_instance_pass_kw) ||
+        (klass != rb_cString && check_cfunc(cme, rb_str_s_new)) ||
+        (klass != rb_cArray && check_cfunc(cme, rb_ary_s_new)) ||
+        (klass != rb_cHash && check_cfunc(cme, rb_hash_s_new));
+}
 
 #define OP_UNREDEFINED_P(op, t) BASIC_OP_UNREDEFINED_P(BOP_##op, t##_REDEFINED_OP_FLAG)
 #define EQ_UNREDEFINED_P(t) OP_UNREDEFINED_P(EQ, t)

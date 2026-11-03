@@ -1141,11 +1141,6 @@ extern "C" {
     pub fn rb_intern2(name: *const ::std::os::raw::c_char, len: rb_len_t) -> ID;
     pub fn rb_id2name(id: ID) -> *const ::std::os::raw::c_char;
     pub fn rb_class2name(klass: VALUE) -> *const ::std::os::raw::c_char;
-    pub fn rb_class_new_instance_pass_kw(
-        argc: ::std::os::raw::c_int,
-        argv: *const VALUE,
-        klass: VALUE,
-    ) -> VALUE;
     pub fn rb_obj_is_kind_of(obj: VALUE, klass: VALUE) -> VALUE;
     pub fn rb_obj_alloc(klass: VALUE) -> VALUE;
     pub fn rb_obj_frozen_p(obj: VALUE) -> VALUE;
@@ -1254,6 +1249,7 @@ extern "C" {
     pub fn rb_jit_for_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
     pub fn rb_jit_get_page_size() -> u32;
     pub fn rb_jit_reserve_addr_space(mem_size: u32) -> *mut u8;
+    pub fn rb_vm_cme_is_default_new(cme: *const rb_callable_method_entry_t, klass: VALUE) -> bool;
     pub fn rb_yjit_exit_locations_dict(
         yjit_raw_samples: *mut VALUE,
         yjit_line_samples: *mut ::std::os::raw::c_int,

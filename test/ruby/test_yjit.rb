@@ -283,6 +283,21 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_compile_opt_new_string_and_array_subclass
+    assert_compiles(<<~RUBY, insns: %i[opt_new], result: [["x", "test"], [[1], "test"], "new"])
+      module CallerLabel
+        attr_reader :caller_label
+        def initialize(*) = (super; @caller_label = caller_locations(1, 1).first.base_label)
+      end
+      class S < String; include CallerLabel; end
+      class A < Array; include CallerLabel; end
+      def test(klass, arg) = klass.new(arg)
+      result = [S, A].map { |k| o = test(k, k == S ? "x" : [1]); [k == S ? o.to_s : o.to_a, o.caller_label] }
+      def S.new(*) = "new"
+      result << test(S, "x")
+    RUBY
+  end
+
   def test_compile_opt_nil_p
     assert_compiles('nil.nil?', insns: %i[opt_nil_p], result: true)
     assert_compiles('false.nil?', insns: %i[opt_nil_p], result: false)

@@ -2463,6 +2463,7 @@ unsafe extern "C" {
     pub fn rb_jit_for_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
     pub fn rb_jit_get_page_size() -> u32;
     pub fn rb_jit_reserve_addr_space(mem_size: u32) -> *mut u8;
+    pub fn rb_vm_cme_is_default_new(cme: *const rb_callable_method_entry_t, klass: VALUE) -> bool;
     pub static rb_zjit_runtime_offsets: rb_zjit_runtime_offsets;
     pub fn rb_zjit_reserve_low_addr_space(size: usize) -> *mut ::std::os::raw::c_void;
     pub fn rb_zjit_profile_disable(iseq: *const rb_iseq_t);
@@ -2494,8 +2495,6 @@ unsafe extern "C" {
         cd: *mut rb_call_data,
         recv: VALUE,
     ) -> *const rb_callable_method_entry_struct;
-    pub fn rb_zjit_cme_is_default_new(cme: *const rb_callable_method_entry_t, klass: VALUE)
-        -> bool;
     pub fn rb_zjit_method_is_default_new(
         iseq: *const rb_iseq_t,
         cd: *mut rb_call_data,

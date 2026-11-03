@@ -7443,6 +7443,41 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_opt_new_string_subclass() {
+        eval(r#"
+            class S < String; end
+            def test = S.new("x")
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, S)
+          v13:ClassSubclass[S@0x1008] = Const Value(VALUE(0x1008))
+          v15:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v16:StringExact = StringCopy v15
+          PatchPoint MethodRedefined(S@0x1008, new@0x1018, cme:0x1020)
+          v20:HeapBasicObject = ObjectAlloc v13
+          PatchPoint NoSingletonClass(S@0x1008)
+          PatchPoint MethodRedefined(S@0x1008, initialize@0x1048, cme:0x1050)
+          v49:StringSubclass[class_exact:S] = GuardType v20, StringSubclass[class_exact:S] recompile
+          v50:BasicObject = CCallVariadic v49, :String#initialize@0x1078, v16
+          CheckInterrupts
+          Return v49
+        ");
+        assert_snapshot!(inspect("test"), @r#""x""#);
+    }
+
+    #[test]
     fn test_opt_new_array() {
         eval("
             def test = Array.new 1

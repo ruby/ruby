@@ -2234,7 +2234,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 }
 
 /* :nodoc: */
-static VALUE
+VALUE
 rb_str_s_new(int argc, VALUE *argv, VALUE klass)
 {
     if (klass != rb_cString) {

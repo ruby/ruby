@@ -1073,7 +1073,7 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
 }
 
 /* :nodoc: */
-static VALUE
+VALUE
 rb_ary_s_new(int argc, VALUE *argv, VALUE klass)
 {
     VALUE ary;

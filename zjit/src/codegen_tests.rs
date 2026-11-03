@@ -4477,6 +4477,29 @@ fn test_opt_new_hash_subclass_invalidate_new() {
 }
 
 #[test]
+fn test_opt_new_string_and_array_subclass() {
+    eval(r#"
+        module CallerLabel
+          attr_reader :caller_label
+          def initialize(*) = (super; @caller_label = caller_locations(1, 1).first.base_label)
+        end
+        class S < String; include CallerLabel; end
+        class A < Array; include CallerLabel; end
+        def make_s = S.new("x")
+        def build_s(klass) = klass.new("y")
+        def build_a(klass) = klass.new([1])
+        [make_s, build_s(S), build_a(A)]
+    "#);
+    assert_contains_opcode("make_s", YARVINSN_opt_new);
+    assert_contains_opcode("build_s", YARVINSN_opt_new);
+    assert_contains_opcode("build_a", YARVINSN_opt_new);
+    assert_snapshot!(assert_compiles(r#"
+        s, ys, a = make_s, build_s(S), build_a(A)
+        [s, s.caller_label, ys, ys.caller_label, a, a.caller_label]
+    "#), @r#"["x", "make_s", "y", "build_s", [1], "build_a"]"#);
+}
+
+#[test]
 fn test_opt_newarray_send_include_p() {
     eval("
         def test(x)

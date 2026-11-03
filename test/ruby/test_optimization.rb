@@ -439,6 +439,101 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal(__method__.to_s, klass.new.caller_label, "opt_new should not call Hash.new")
   end
 
+  # Runs src in the interpreter and, when available, with YJIT and ZJIT compiling
+  # every method on its first call, so loops over call sites hit the JIT code.
+  def assert_subclass_new_in_each_mode(src)
+    modes = [[]]
+    modes << %w[--yjit --yjit-call-threshold=1] if defined?(RubyVM::YJIT)
+    modes << %w[--zjit --zjit-call-threshold=1] if defined?(RubyVM::ZJIT)
+    modes.each do |args|
+      assert_separately(args, <<~PRELUDE + src)
+        module CallerLabel
+          attr_reader :caller_label
+          def initialize(*, **) = (super; @caller_label = caller_locations(1, 1).first.base_label)
+        end
+        class S < String; include CallerLabel; end
+        class A < Array; include CallerLabel; end
+        # Calls the block often enough that ZJIT runs both its unprofiled code (runtime
+        # check) and its profiled code (check folded for the class), and returns the
+        # result after checking that every call agreed.
+        def warm
+          results = 30.times.map { yield }
+          results.each_cons(2) { |a, b| assert_equal(a, b) }
+          results.last
+        end
+        def try = (yield rescue [$!.class, $!.message])
+      PRELUDE
+    end
+  end
+
+  def test_string_and_array_subclass_new
+    assert_subclass_new_in_each_mode(<<~'RUBY')
+      # Each call site without a block is a literal `klass.new(...)` that uses opt_new, and the
+      # caller label shows that #initialize was called from it, not from String.new/Array.new.
+      def make_s = S.new("x")
+      def make_a = A.new([1])
+      def s_plain(k) = k.new("y")
+      def s_kw(k) = k.new("\u00e9", capacity: 100, encoding: "ASCII-8BIT")
+      def s_kw_only(k) = k.new(encoding: "UTF-16LE", capacity: 3)
+      def s_type_error(k) = try { k.new(1) }
+      def s_unknown_kw(k) = try { k.new("x", bogus: 1) }
+      def a_plain(k) = k.new
+      def a_size(k) = k.new(2)
+      def a_default(k) = k.new(2, :z)
+      def a_block(k) = k.new(3) { _1 * 2 }
+      def a_negative(k) = try { k.new(-1) }
+      desc = ->(o) { [o.class, o.dup.to_s, o.encoding, o.caller_label] }
+      adesc = ->(o) { [o.class, o.to_a, o.caller_label] }
+
+      assert_equal([S, "x", Encoding::UTF_8, "make_s"], warm { desc[make_s] })
+      assert_equal([A, [1], "make_a"], warm { adesc[make_a] })
+      assert_equal([S, "y", Encoding::UTF_8, "s_plain"], warm { desc[s_plain(S)] })
+      assert_equal([A, [], "a_plain"], warm { adesc[a_plain(A)] })
+
+      # String#initialize still handles the keywords of String.new
+      assert_equal([S, "\xC3\xA9".b, Encoding::BINARY, "s_kw"], warm { desc[s_kw(S)] })
+      assert_equal([S, "".encode("UTF-16LE"), Encoding::UTF_16LE, "s_kw_only"], warm { desc[s_kw_only(S)] })
+      assert_equal([TypeError, "no implicit conversion of Integer into String"], warm { s_type_error(S) })
+      assert_equal([ArgumentError, "unknown keyword: :bogus"], warm { s_unknown_kw(S) })
+
+      # Array#initialize still handles size, default and block
+      assert_equal([A, [nil, nil], "a_size"], warm { adesc[a_size(A)] })
+      assert_equal([A, [:z, :z], "a_default"], warm { adesc[a_default(A)] })
+      # A call with a block does not use opt_new, so only check the result
+      assert_equal([A, [0, 2, 4]], warm { adesc[a_block(A)].first(2) })
+      assert_equal([ArgumentError, "negative array size"], warm { a_negative(A) })
+    RUBY
+  end
+
+  def test_string_and_array_subclass_new_visibility_and_refinement
+    assert_subclass_new_in_each_mode(<<~'RUBY')
+      def mk(base) = Class.new(base) { attr_reader :how; def initialize(*) = (super; @how = :orig) }
+      aliased = [Object, String, Array].map { mk(_1) }
+      aliased.each { |k| k.singleton_class.class_eval { alias_method :new, :new; private :new } }
+      refined = [Object, String, Array].map { mk(_1) }
+      Module.new { refined.each { |k| refine(k) { def initialize(*) = (super; @how = :refined) } } }.then { using _1 }
+      def build(klass) = (klass.new.how rescue $!.class)
+      # String and Array subclasses behave like a plain class: opt_new does not check the
+      # visibility of an aliased `new` and calls a caller-local refinement of #initialize.
+      assert_equal([:orig] * 3, warm { aliased.map { build(_1) } })
+      assert_equal([:refined] * 3, warm { refined.map { build(_1) } })
+    RUBY
+  end
+
+  def test_string_and_array_subclass_new_redefined_on_base
+    assert_subclass_new_in_each_mode(<<~'RUBY')
+      def make_s = S.new("x")
+      def make_a = A.new([1])
+      def build(klass) = klass.new
+      assert_equal([S, A, S, A], warm { [make_s.class, make_a.class, build(S).class, build(A).class] })
+      verbose, $VERBOSE = $VERBOSE, nil
+      def String.new(*) = :string_new
+      def Array.new(*) = :array_new
+      $VERBOSE = verbose
+      assert_equal([:string_new, :array_new, :string_new, :array_new], warm { [make_s, make_a, build(S), build(A)] })
+    RUBY
+  end
+
   class MyObj
     def ==(other)
       true

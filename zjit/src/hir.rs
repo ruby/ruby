@@ -1088,7 +1088,7 @@ pub enum Insn {
     /// with IfTrue/IfFalse in the backend to generate jcc.
     Test { val: InsnId },
     /// Return C `true` if `new` on the class `val`, called with cd, allocates and calls `#initialize`
-    /// like `Class#new`, so `opt_new` can do that inline. See `rb_zjit_cme_is_default_new`.
+    /// like `Class#new`, so `opt_new` can do that inline. See `rb_vm_cme_is_default_new`.
     IsDefaultNew { val: InsnId, cd: *const rb_call_data, state: InsnId },
     /// Return C `true` if left == right
     IsBitEqual { left: InsnId, right: InsnId },
@@ -5585,7 +5585,7 @@ impl Function {
                         let class = self.type_of(val).ruby_object().unwrap();
                         let cd_owner = self.frame_state_iseq(state);
                         let cme = unsafe { rb_zjit_vm_search_method(cd_owner.into(), cd as *mut rb_call_data, class) };
-                        let is_default_new = unsafe { rb_zjit_cme_is_default_new(cme, class) };
+                        let is_default_new = unsafe { rb_vm_cme_is_default_new(cme, class) };
                         let method = unsafe { rb_vm_ci_mid((*cd).ci) };
                         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: class, method, cme }, state });
                         let replacement = self.push_insn(block, Insn::Const { val: Const::CBool(is_default_new) });

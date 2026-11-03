@@ -26,6 +26,7 @@
 /* array.c */
 VALUE rb_ary_hash_values(rb_len_t len, const VALUE *elements);
 VALUE rb_ary_last(int, const VALUE *, VALUE);
+VALUE rb_ary_s_new(int argc, VALUE *argv, VALUE klass);
 void rb_ary_set_len(VALUE, rb_len_t);
 void rb_ary_delete_same(VALUE, VALUE);
 VALUE rb_ary_hidden_new_fill(rb_len_t capa);
