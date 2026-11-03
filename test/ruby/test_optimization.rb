@@ -449,6 +449,19 @@ class TestRubyOptimization < Test::Unit::TestCase
     end;
   end
 
+  def test_hash_subclass_new
+    if (defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?) ||
+        (defined?(RubyVM::ZJIT) && RubyVM::ZJIT.enabled?)
+      omit "JIT opt_new fast paths still call Hash.new for Hash subclasses"
+    end
+
+    klass = Class.new(Hash) do
+      attr_reader :caller_label
+      def initialize = @caller_label = caller_locations(1, 1).first.base_label
+    end
+    assert_equal(__method__.to_s, klass.new.caller_label, "opt_new should not call Hash.new")
+  end
+
   class MyObj
     def ==(other)
       true

@@ -1978,7 +1978,7 @@ rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifn
 }
 
 /* :nodoc: */
-static VALUE
+VALUE
 rb_hash_s_new(int argc, VALUE *argv, VALUE klass)
 {
     if (klass != rb_cHash) {
