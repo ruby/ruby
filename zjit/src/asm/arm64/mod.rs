@@ -394,6 +394,22 @@ pub fn eor(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// STADD - atomically add rs to the value at [rn], discarding the old value, with
+/// no ordering constraints (relaxed). Requires FEAT_LSE. This is an alias of
+/// LDADD with the zero register as the destination.
+pub fn stadd(cb: &mut CodeBlock, rs: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rs, rn) {
+        (A64Opnd::Reg(rs), A64Opnd::Reg(rn)) => {
+            assert!(rs.num_bits == rn.num_bits, "All operands must be of the same size.");
+
+            Atomic::ldadd(rs.reg_no, XZR_REG.reg_no, rn.reg_no, rs.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to stadd instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// LDADDAL - atomic add with acquire and release semantics
 pub fn ldaddal(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rs, rt, rn) {
@@ -1537,6 +1553,13 @@ mod tests {
         let cb = compile(|cb| eor(cb, W9, W1, A64Opnd::new_uimm(0x80000001)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: eor w9, w1, #0x80000001");
         assert_snapshot!(cb.hexdump(), @"29040152");
+    }
+
+    #[test]
+    fn test_stadd() {
+        let cb = compile(|cb| stadd(cb, X10, X12));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: stadd x10, [x12]");
+        assert_snapshot!(cb.hexdump(), @"9f012af8");
     }
 
     #[test]
