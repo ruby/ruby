@@ -113,7 +113,10 @@ rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
 
 /* MALLOC_HEADERS_BEGIN */
 #ifndef HAVE_MALLOC_USABLE_SIZE
-# ifdef _WIN32
+# ifdef USE_MIMALLOC
+#  define HAVE_MALLOC_USABLE_SIZE
+#  define malloc_usable_size(a) mi_usable_size(a)
+# elif defined _WIN32
 #  define HAVE_MALLOC_USABLE_SIZE
 #  define malloc_usable_size(a) _msize(a)
 # elif defined HAVE_MALLOC_SIZE
@@ -125,6 +128,11 @@ rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
 #ifdef HAVE_MALLOC_USABLE_SIZE
 # ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
 /* Alternative malloc header is included in ruby/missing.h */
+# elif defined(USE_MIMALLOC)
+#  pragma push_macro("restrict")
+#  undef restrict
+#  include <mimalloc.h>
+#  pragma pop_macro("restrict")
 # elif defined(HAVE_MALLOC_H)
 #  include <malloc.h>
 # elif defined(HAVE_MALLOC_NP_H)
@@ -147,6 +155,15 @@ rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
 # include <mach/task.h>
 # include <mach/mach_init.h>
 # include <mach/mach_port.h>
+#endif
+
+#ifdef USE_MIMALLOC
+/* The allocations of this file go to mimalloc.  gc.c includes this file and
+ * keeps the CRT heap for its own, so these are undefined at the end. */
+# define malloc(n) mi_malloc(n)
+# define calloc(n, s) mi_calloc(n, s)
+# define realloc(p, n) mi_realloc(p, n)
+# define free(p) mi_free(p)
 #endif
 
 #ifndef RUBY_DEBUG_LOG
@@ -13729,3 +13746,10 @@ rb_gc_impl_init(void)
         OBJ_FREEZE(opts);
     }
 }
+
+#ifdef USE_MIMALLOC
+# undef malloc
+# undef calloc
+# undef realloc
+# undef free
+#endif
