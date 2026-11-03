@@ -54,9 +54,8 @@ module Bundler
       @materialization = nil
     end
 
-    def add_content_address(address)
-      @content_addresses |= [address]
-      @content_addresses.sort!
+    def content_addresses=(addresses)
+      @content_addresses = addresses.sort
     end
 
     def content_addressed_full_names

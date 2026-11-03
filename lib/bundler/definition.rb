@@ -855,6 +855,8 @@ module Bundler
         result.add_originally_invalid_platforms!(platforms, @originally_invalid_platforms)
       end
 
+      result.prune_content_addresses!(Gem::Requirement.new(@ruby_version.versions)) if @unlocking_ruby && @ruby_version
+
       SpecSet.new(result.for(dependencies, @platforms | [Gem::Platform::RUBY]))
     end
 

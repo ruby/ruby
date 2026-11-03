@@ -333,7 +333,7 @@ module Bundler
       spec = @specs[Gem::NameTuple.new(name, version, platform).full_name]
       return unless spec
 
-      spec.add_content_address(content_address)
+      spec.content_addresses |= [content_address]
 
       return unless checksums
 

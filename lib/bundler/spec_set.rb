@@ -84,6 +84,23 @@ module Bundler
       platforms.delete(Bundler.local_platform) if less_specific_platform
     end
 
+    def prune_content_addresses!(ruby_requirement)
+      require_relative "vendored_pub_grub"
+      allowed = Gem::PubGrub::RubyGems.requirement_to_range(ruby_requirement)
+
+      @specs.each do |spec|
+        next if spec.content_addresses.empty? || !spec.source.is_a?(Source::Rubygems)
+
+        excluded = spec.source.specs.search([spec.name, spec.version]).filter_map do |gem|
+          next unless spec.content_addresses.include?(gem.content_address)
+
+          gem.content_address unless allowed.intersects?(Gem::PubGrub::RubyGems.requirement_to_range(gem.required_ruby_version))
+        end
+
+        spec.content_addresses -= excluded
+      end
+    end
+
     def validate_deps(s, overrides = s.is_a?(LazySpecification) ? Array(s.overrides) : [])
       Override.rewrite_dependencies(overrides, s.name, s.runtime_dependencies).each do |dep|
         next if dep.name == "bundler"

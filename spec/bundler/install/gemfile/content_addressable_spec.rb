@@ -601,6 +601,52 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         end
       end
     end
+
+    def install_with_ruby_directive(directive)
+      lockfile_with_content_addresses(content_address_for(current_abi), content_address_for(mismatched_abi))
+
+      gemfile <<~G
+        source "https://gem.repo2"
+
+        #{directive}
+        gem "mygem"
+      G
+
+      bundle "install", artifice: "compact_index_v2", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+      expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+    end
+
+    it "drops the content addresses for Ruby ABIs an exact version in the Gemfile's ruby directive rules out" do
+      simulate_platform "x86_64-linux" do
+        install_with_ruby_directive %(ruby "#{RUBY_VERSION}")
+
+        expect(content_address_rows).to eq(rows_for(current_abi))
+      end
+    end
+
+    it "drops the content addresses for Ruby ABIs a pessimistic patch constraint in the Gemfile's ruby directive rules out" do
+      simulate_platform "x86_64-linux" do
+        install_with_ruby_directive %(ruby "~> #{current_abi}.0")
+
+        expect(content_address_rows).to eq(rows_for(current_abi))
+      end
+    end
+
+    it "drops the content addresses for Ruby ABIs a range in the Gemfile's ruby directive rules out" do
+      simulate_platform "x86_64-linux" do
+        install_with_ruby_directive %(ruby ">= #{current_abi}.0", "< #{mismatched_abi}")
+
+        expect(content_address_rows).to eq(rows_for(current_abi))
+      end
+    end
+
+    it "keeps the content addresses for every Ruby ABI the Gemfile's ruby directive allows" do
+      simulate_platform "x86_64-linux" do
+        install_with_ruby_directive %(ruby ">= #{current_abi}.0", "< #{mismatched_abi}.1")
+
+        expect(content_address_rows).to eq(rows_for(current_abi, mismatched_abi))
+      end
+    end
   end
 end
 
