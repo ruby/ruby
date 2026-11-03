@@ -229,7 +229,7 @@ EXTLIBS ?=
 EXTSOLIBS ?=
 ifeq ($(origin LIBS),undefined)
 LIBS = user32.lib advapi32.lib shell32.lib ws2_32.lib iphlpapi.lib \
-	$(if $(USE_GMP),gmp.lib) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
+	$(if $(USE_GMP),gmp.lib)$(if $(filter yes,$(WITH_MIMALLOC)), mimalloc.dll.lib) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 endif
 ifeq ($(origin MISSING),undefined)
 MISSING = crypt.obj ffs.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj \
@@ -496,7 +496,7 @@ update-vcpkg::
 	@cd "$(call win,$(srcdir))" && set LC_TIME=C && vcpkg x-update-baseline $(TRIPLET_OPTION)
 
 install-vcpkg::
-	@cd "$(call win,$(srcdir))" && set LC_TIME=C && vcpkg install $(TRIPLET_OPTION)
+	@cd "$(call win,$(srcdir))" && set LC_TIME=C && vcpkg install $(TRIPLET_OPTION)$(if $(filter yes,$(WITH_MIMALLOC)), --x-feature=mimalloc)
 
 # mklink is a cmd builtin that GNU make does not know to pass to cmd.
 mklink = cmd /c mklink "$(call win,$(1))" "$(call win,$(2))"$(newline)
@@ -729,7 +729,7 @@ $(sharp)define THREAD_IMPL_H "$(THREAD_IMPL_H)"
 $(sharp)define THREAD_IMPL_SRC "$(THREAD_IMPL_SRC)"
 $(sharp)define LOAD_RELATIVE 1
 $(sharp)define DLEXT ".$(DLEXT)"
-$(if $(filter-out lib,$(libdir_basename)),$(sharp)define LIBDIR_BASENAME "$(libdir_basename)"$(newline))$(if $(filter static,$(EXTSTATIC)),$(sharp)define EXTSTATIC 1$(newline))$(if $(USE_GMP),$(sharp)define USE_GMP 1$(newline))$(if $(filter yes,$(YJIT_SUPPORT)),$(sharp)define USE_YJIT 1$(newline))$(sharp)define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
+$(if $(filter-out lib,$(libdir_basename)),$(sharp)define LIBDIR_BASENAME "$(libdir_basename)"$(newline))$(if $(filter static,$(EXTSTATIC)),$(sharp)define EXTSTATIC 1$(newline))$(if $(USE_GMP),$(sharp)define USE_GMP 1$(newline))$(if $(filter yes,$(WITH_MIMALLOC)),$(sharp)define USE_MIMALLOC 1$(newline))$(if $(filter yes,$(YJIT_SUPPORT)),$(sharp)define USE_YJIT 1$(newline))$(sharp)define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 $(sharp)define RUBY_COREDLL "$(RT)"
 $(sharp)define RUBY_PLATFORM "$(arch)"
 $(sharp)define RUBY_SITEARCH "$(sitearch)"

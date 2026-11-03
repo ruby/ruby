@@ -173,6 +173,17 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\setup.exe" modify --installPath "%ProgramFiles(x86)%\Microsoft Visual Studio\18\BuildTools" --add Microsoft.VisualStudio.Component.VC.Llvm.Clang --passive
     ```
 
+10. If you want the GC to allocate memory with
+    [mimalloc](https://github.com/microsoft/mimalloc), install it with
+    the `mimalloc` feature of vcpkg, and specify `--with-mimalloc` of
+    `win32\configure.bat`.  Only `ruby_xmalloc` and its family use
+    mimalloc, so a C extension that frees their memory with `free`, or
+    frees memory from `malloc` with `ruby_xfree`, crashes.
+
+    ```batch
+    vcpkg --triplet x64-windows install --x-feature=mimalloc
+    ```
+
 ### How to compile and install
 
 1.  Execute `win32\configure.bat` on your build directory.
