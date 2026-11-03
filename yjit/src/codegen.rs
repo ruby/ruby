@@ -4920,33 +4920,52 @@ fn gen_opt_new(
     ));
 
     // We now know that it's always comptime_recv_klass
-    if jit.assume_expected_cfunc(asm, comptime_recv_klass, mid, rb_class_new_instance_pass_kw as _) {
+    let flags = unsafe { vm_ci_flag(ci) };
+    let simple_args = flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_FORWARDING) == 0;
+    let (obj, obj_type) = if comptime_recv == unsafe { rb_cHash }
+        && assume_bop_not_redefined(jit, asm, HASH_REDEFINED_OP_FLAG, BOP_NEW) {
+        // Like the interpreter, allocate the Hash for a Fixnum capacity: keyword, then call #initialize
+        let kwarg = unsafe { vm_ci_kwarg(ci) };
+        let kw_len = if kwarg.is_null() || !simple_args { 0 } else { unsafe { get_cikw_keyword_len(kwarg) } };
+        let capacity = rust_str_to_sym("capacity");
+        let capa = match (0..kw_len).find(|&idx| unsafe { get_cikw_keywords_idx(kwarg, idx) } == capacity) {
+            Some(idx) => {
+                let capacity = asm.load(asm.stack_opnd(kw_len - 1 - idx));
+                let capa = asm.rshift(capacity, Opnd::UImm(1));
+                asm.test(capacity, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+                asm.csel_nz(capa, Opnd::Imm(0))
+            }
+            None => Opnd::Imm(0),
+        };
+        jit_prepare_call_with_gc(jit, asm);
+        (asm.ccall(rb_hash_alloc_capa as _, vec![capa]), Type::CHash)
+    } else if jit.assume_expected_cfunc(asm, comptime_recv_klass, mid, rb_class_new_instance_pass_kw as _) {
         // Fast path
         // call rb_class_alloc to actually allocate
         jit_prepare_non_leaf_call(jit, asm);
-        let obj = asm.ccall(rb_obj_alloc as _, vec![comptime_recv.into()]);
-
-        // Get a reference to the stack location where we need to save the
-        // return instance.
-        let result = asm.stack_opnd(recv_idx + 1);
-        let recv = asm.stack_opnd(recv_idx);
-
-        // Replace the receiver for the upcoming initialize call
-        asm.ctx.set_opnd_mapping(recv.into(), TempMapping::MapToStack(Type::UnknownHeap));
-        asm.mov(recv, obj);
-
-        // Save the allocated object for return
-        asm.ctx.set_opnd_mapping(result.into(), TempMapping::MapToStack(Type::UnknownHeap));
-        asm.mov(result, obj);
-
-        jump_to_next_insn(jit, asm)
+        (asm.ccall(rb_obj_alloc as _, vec![comptime_recv.into()]), Type::UnknownHeap)
     } else {
         // general case
 
         // Get the branch target instruction offsets
         let jump_idx = jit.next_insn_idx() as i32 + jump_offset;
         return end_block_with_jump(jit, asm, jump_idx as u16);
-    }
+    };
+
+    // Get a reference to the stack location where we need to save the
+    // return instance.
+    let result = asm.stack_opnd(recv_idx + 1);
+    let recv = asm.stack_opnd(recv_idx);
+
+    // Replace the receiver for the upcoming initialize call
+    asm.ctx.set_opnd_mapping(recv.into(), TempMapping::MapToStack(obj_type));
+    asm.mov(recv, obj);
+
+    // Save the allocated object for return
+    asm.ctx.set_opnd_mapping(result.into(), TempMapping::MapToStack(obj_type));
+    asm.mov(result, obj);
+
+    jump_to_next_insn(jit, asm)
 }
 
 fn gen_jump(

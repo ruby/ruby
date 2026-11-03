@@ -266,6 +266,65 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles('{ 1 + 1 => :two }', insns: %i[newhash], result: { 2 => :two })
   end
 
+  def test_compile_opt_new_hash
+    assert_compiles('Hash.new', insns: %i[opt_new], result: {})
+    assert_compiles('Hash.new(capacity: 3)', insns: %i[opt_new], result: {})
+    assert_compiles('Hash.new(1, capacity: 3)[0]', insns: %i[opt_new], result: 1)
+    assert_compiles('n = -1; Hash.new(capacity: n)', insns: %i[opt_new], result: {})
+    assert_compiles('n = nil; Hash.new(capacity: n) rescue $!.class', insns: %i[opt_new], result: TypeError)
+    assert_compiles('Hash.new(foo: 1) rescue $!.message', insns: %i[opt_new], result: "unknown keyword: :foo")
+    assert_compiles(<<~RUBY, insns: %i[opt_new], result: [{}, :redefined])
+      def test = Hash.new(capacity: 3)
+      result = [test]
+      class << Hash
+        undef new
+        def new(*) = :redefined
+      end
+      result << test
+    RUBY
+    assert_compiles(<<~RUBY, insns: %i[opt_new], result: [{}, 5])
+      class Capacity
+        def to_int = 5
+      end
+      def test = [Hash.new(capacity: Capacity.new), Hash.new(5, capacity: Capacity.new)[0]]
+      test
+    RUBY
+    assert_compiles(<<~RUBY, insns: %i[opt_new], result: [{}, 1, "unknown keyword: :foo"])
+      def test(**kw) = Hash.new(**kw)
+      def test_default(default, **kw) = Hash.new(default, **kw)
+      [test(capacity: 3), test_default(1, capacity: 3)[0], (test(foo: 1) rescue $!.message)]
+    RUBY
+  end
+
+  def test_compile_opt_new_hash_and_subclass_at_one_call_site
+    assert_compiles(<<~RUBY, insns: %i[opt_new], verify_ctx: true, result: [%w[Hash H Hash H], [nil, 1, nil, 1]])
+      class H < Hash
+        def initialize(x = nil) = (super(); @x = x)
+        attr_reader :x
+      end
+      def build(klass, x) = klass.new(x)
+      hashes = [build(Hash, 1), build(H, 1), build(Hash, 2), build(H, 1)]
+      [hashes.map { _1.class.name }, hashes.map { _1.instance_variable_get(:@x) }]
+    RUBY
+  end
+
+  def test_compile_opt_new_hash_refined_initialize
+    assert_compiles(<<~RUBY, insns: %i[opt_new], result: [[true, nil], [true, 0], [true, nil], [true, 0]])
+      module R
+        refine Hash do
+          def initialize(*, **, &) = (super; self[:refined] = true)
+        end
+      end
+      using R
+      def test = Hash.new
+      def test_splat(*args) = Hash.new(*args)
+      def test_kw_splat(**kw) = Hash.new(**kw)
+      def test_forwarding(...) = Hash.new(...)
+      hashes = 2.times.map { [test, test_splat(0), test_kw_splat(capacity: 3), test_forwarding(0, capacity: 3)] }.last
+      hashes.map { [_1.key?(:refined), _1.default] }
+    RUBY
+  end
+
   def test_compile_opt_nil_p
     assert_compiles('nil.nil?', insns: %i[opt_nil_p], result: true)
     assert_compiles('false.nil?', insns: %i[opt_nil_p], result: false)

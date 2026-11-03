@@ -100,6 +100,7 @@ fn main() {
         .allowlist_type("ruby_encoding_consts")
         .allowlist_function("rb_hash_new")
         .allowlist_function("rb_hash_new_capa")
+        .allowlist_function("rb_hash_alloc_capa")
         .allowlist_function("rb_hash_resurrect")
         .allowlist_function("rb_to_hash_type")
         .allowlist_type("st_retval")

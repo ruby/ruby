@@ -1227,6 +1227,7 @@ extern "C" {
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
     pub fn rb_vm_barrier();
     pub fn rb_to_hash_type(obj: VALUE) -> VALUE;
+    pub fn rb_hash_alloc_capa(capa: rb_len_t) -> VALUE;
     pub fn rb_hash_resurrect(hash: VALUE) -> VALUE;
     pub fn rb_hash_stlike_lookup(
         hash: VALUE,
