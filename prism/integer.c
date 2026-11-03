@@ -408,6 +408,8 @@ void
 pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer_t *denominator, const uint8_t *start, const uint8_t *end) {
     static const uint32_t powof5[14] = { 1, 5, 25, 125, 625, 3125, 15625, 78125, 390625, 1953125, 9765625, 48828125, 244140625, 1220703125 };
 
+    if (*start == '+') start++;
+
     const uint8_t *point = memchr(start, '.', (size_t) (end - start));
     assert(point != NULL);
 

@@ -28,5 +28,18 @@ module Ruby::Prism
       assert_equal 0xFFri, Ruby::Prism.parse_statement("0xFFri").value
       assert_equal 0xFFri, Ruby::Prism.parse_statement("0xF_Fri").value
     end
+
+    def test_unary_plus
+      assert_equal 123, Ruby::Prism.parse_statement("+123").value
+      assert_equal 3.14, Ruby::Prism.parse_statement("+3.14").value
+      assert_equal 42i, Ruby::Prism.parse_statement("+42i").value
+      assert_equal 3.14i, Ruby::Prism.parse_statement("+3.14i").value
+      assert_equal 42r, Ruby::Prism.parse_statement("+42r").value
+      assert_equal 1.2r, Ruby::Prism.parse_statement("+1.2r").value
+      assert_equal 1.2r, Ruby::Prism.parse_statement("+1.2_0r").value
+      assert_equal 0r, Ruby::Prism.parse_statement("+0.0r").value
+      assert_equal 42ri, Ruby::Prism.parse_statement("+42ri").value
+      assert_equal 1.2ri, Ruby::Prism.parse_statement("+1.2ri").value
+    end
   end
 end
