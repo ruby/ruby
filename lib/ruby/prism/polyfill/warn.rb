@@ -16,6 +16,8 @@ if (method = Kernel.instance_method(:warn)).respond_to?(:parameters) ? method.pa
           super(*msgs, uplevel: uplevel.to_int + 1)
         end
       end
+
+      private :warn
     }
   )
 
@@ -31,6 +33,8 @@ if (method = Kernel.instance_method(:warn)).respond_to?(:parameters) ? method.pa
           super(*msgs, uplevel: uplevel.to_int + 1)
         end
       end
+
+      private :warn
     }
   )
 end
