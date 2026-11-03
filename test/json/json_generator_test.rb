@@ -1495,7 +1495,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     name, _ = File.basename(filename, ".json")
     expected = File.join(fixtures_path, 'output', filename)
     define_method("test_rfc8785_#{name}") do
-      assert_rfc8785(File.read(expected), JSON.load_file(input))
+      assert_rfc8785(File.read(expected, encoding: Encoding::UTF_8), JSON.load_file(input))
     end
   end
 
