@@ -2521,6 +2521,7 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
             RB_TYPE_P(RBASIC_CLASS(klass), T_CLASS)) {
        klass = RBASIC_CLASS(klass);
     }
+
     if (vm_redefinition_check_method_type(me)) {
         if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
             int flag = vm_redefinition_check_flag(klass);
@@ -2568,9 +2569,6 @@ add_opt_method_entry_bop(const rb_method_entry_t *me, ID mid, enum ruby_basic_op
 static void
 add_opt_method(VALUE klass, ID mid, enum ruby_basic_operators bop)
 {
-    if (bop == BOP_NEW) {
-        klass = rb_singleton_class(klass);
-    }
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
     if (me && vm_redefinition_check_method_type(me)) {
@@ -2603,7 +2601,8 @@ vm_init_redefined_flag(void)
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
-    OP(New, NEW), (C(Hash));
+#define S(k) add_opt_method(rb_singleton_class(rb_c##k), mid, bop)
+    OP(New, NEW), (S(Hash));
     OP(PLUS, PLUS), (C(Integer), C(Float), C(String), C(Array));
     OP(MINUS, MINUS), (C(Integer), C(Float));
     OP(MULT, MULT), (C(Integer), C(Float));
