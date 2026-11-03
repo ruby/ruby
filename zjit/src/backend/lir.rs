@@ -2612,6 +2612,53 @@ impl Assembler
         use crate::backend::parcopy;
         use crate::backend::current::{C_RET_OPND, SCRATCH_REG, NATIVE_STACK_PTR};
 
+        let is_register = |interval: &Interval| {
+            interval.assigned.get().and_then(|alloc| alloc.alloc_pool_index(alloc_regs)).is_some()
+        };
+
+        // For each distinct CCall position, find the register intervals that cover
+        // it, in ascending VRegId order. Each live range is mapped onto the sorted
+        // positions with a binary search instead of scanning every interval for
+        // every CCall. The intervals covering ccall_positions[i] are stored in
+        // covering_regs[covering_start[i]..covering_start[i + 1]].
+        let mut ccall_positions: Vec<usize> = self.basic_blocks.iter()
+            .flat_map(|block| block.insns.iter().zip(block.insn_ids.iter()))
+            .filter(|(insn, _)| matches!(insn, Insn::CCall { .. }))
+            .map(|(_, insn_id)| insn_id.map(|id| id.0).unwrap_or(0))
+            .collect();
+        ccall_positions.sort_unstable();
+        ccall_positions.dedup();
+        let covered_spans: Vec<(VRegId, std::ops::Range<usize>)> = intervals.iter()
+            .filter(|interval| is_register(interval))
+            .flat_map(|interval| interval.ranges.iter().map(|range| {
+                let first = ccall_positions.partition_point(|&pos| pos < range.from);
+                let last = ccall_positions.partition_point(|&pos| pos < range.to);
+                (interval.vreg_id, first..last)
+            }))
+            .filter(|(_, span)| !span.is_empty())
+            .collect();
+        let mut covering_start = vec![0; ccall_positions.len() + 1];
+        for (_, span) in &covered_spans {
+            for idx in span.clone() {
+                covering_start[idx + 1] += 1;
+            }
+        }
+        for idx in 1..covering_start.len() {
+            covering_start[idx] += covering_start[idx - 1];
+        }
+        let mut covering_regs = vec![VRegId(0); covering_start[ccall_positions.len()]];
+        let mut next_slot = covering_start.clone();
+        for (vreg_id, span) in covered_spans {
+            for idx in span {
+                covering_regs[next_slot[idx]] = vreg_id;
+                next_slot[idx] += 1;
+            }
+        }
+
+        // Reused for every CCall
+        let mut survivors: Vec<VRegId> = vec![];
+        let mut survivor_regs: Vec<Opnd> = vec![];
+
         for block_id in self.block_order() {
             let block = &mut self.basic_blocks[block_id.0];
             let old_insns = take(&mut block.insns);
@@ -2649,26 +2696,29 @@ impl Assembler
                         out_vreg_id.is_none_or(|id| !intervals[id].has_bounds() || intervals[id].born_at(insn_number)),
                         "a CCall's output interval must start at the CCall"
                     );
-                    let survivors: Vec<VRegId> = intervals.iter()
-                        .filter(|interval| {
-                            // We need to spill register intervals on this CCall in two cases:
-                            // 1) The VReg is live across the CCall. The VReg this CCall
-                            //    defines is not one of them: its range starts here, so it
-                            //    holds no value yet and there is nothing to preserve.
-                            let live_across_call = Some(interval.vreg_id) != out_vreg_id
-                                && interval.covers(insn_number);
+                    // We need to spill register intervals on this CCall in two cases:
+                    // 1) The VReg is live across the CCall. The VReg this CCall
+                    //    defines is not one of them: its range starts here, so it
+                    //    holds no value yet and there is nothing to preserve.
+                    // 2) The VReg is referenced by the stack map for the CCall.
+                    // Survivors are sorted by VRegId so the push order is stable.
+                    let position_idx = ccall_positions.binary_search(&insn_number).unwrap();
+                    let covering = &covering_regs[covering_start[position_idx]..covering_start[position_idx + 1]];
+                    survivors.clear();
+                    survivors.extend(covering.iter().copied().filter(|&vreg_id| Some(vreg_id) != out_vreg_id));
+                    let num_live_across = survivors.len();
+                    for &vreg_id in &stack_vreg_ids {
+                        if is_register(&intervals[vreg_id]) && survivors[..num_live_across].binary_search(&vreg_id).is_err() {
+                            survivors.push(vreg_id);
+                        }
+                    }
+                    if survivors.len() > num_live_across {
+                        survivors.sort_unstable();
+                    }
 
-                            // 2) The VReg is referenced by the stack map for the CCall
-                            let stack_map_reg = stack_vreg_ids.contains(&interval.vreg_id);
-                            let is_register = interval.assigned.get().and_then(|alloc| alloc.alloc_pool_index(alloc_regs)).is_some();
-                            is_register && (live_across_call || stack_map_reg)
-                        })
-                        .map(|interval| interval.vreg_id)
-                        .collect();
-
-                    let survivor_regs: Vec<Opnd> = survivors.iter()
-                        .map(|&s| Opnd::Reg(intervals[s].assigned.get().unwrap().assigned_reg(alloc_regs).unwrap()))
-                        .collect();
+                    survivor_regs.clear();
+                    survivor_regs.extend(survivors.iter()
+                        .map(|&s| Opnd::Reg(intervals[s].assigned.get().unwrap().assigned_reg(alloc_regs).unwrap())));
 
                     // Push all survivors on the stack, pairing adjacent pushes when possible.
                     for group in survivor_regs.chunks(2) {
@@ -5319,5 +5369,52 @@ mod tests {
             }
         });
         assert!(has_stack_opnd, "v0 should be rewritten to a Stack memory operand");
+    }
+
+    #[test]
+    fn test_caller_saved_regs_per_call() {
+        let mut asm = Assembler::new();
+        let b1 = asm.new_block(hir::BlockId(0), true, 0);
+        asm.set_current_block(b1);
+        let label = asm.new_label("bb0");
+        asm.write_label(label);
+        let ccall = |out| Insn::CCall {
+            data: Box::new(CCallData {
+                opnds: vec![], stack_map: None, fptr: Opnd::UImm(0xF00),
+                start_marker: None, end_marker: None, out,
+            }),
+        };
+
+        // v1 is live across the first CCall only, v2 across both.
+        let v1 = asm.new_vreg(64);
+        asm.basic_blocks[b1.0].push_insn(Insn::Load { opnd: Opnd::UImm(5), out: v1 });
+        let v2 = asm.new_vreg(64);
+        asm.basic_blocks[b1.0].push_insn(Insn::Load { opnd: Opnd::UImm(6), out: v2 });
+        let v3 = asm.new_vreg(64);
+        asm.basic_blocks[b1.0].push_insn(ccall(v3));
+        let v4 = asm.new_vreg(64);
+        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: v1, right: v3, out: v4 });
+        let v5 = asm.new_vreg(64);
+        asm.basic_blocks[b1.0].push_insn(ccall(v5));
+        let v6 = asm.new_vreg(64);
+        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: v2, right: v5, out: v6 });
+        let v7 = asm.new_vreg(64);
+        asm.basic_blocks[b1.0].push_insn(Insn::Add { left: v4, right: v6, out: v7 });
+        asm.basic_blocks[b1.0].push_insn(Insn::CRet(v7));
+
+        let live_in = asm.analyze_liveness();
+        asm.number_instructions(0);
+        let mut intervals = asm.build_intervals(live_in);
+        let mut regs = alloc_reg_pool(4);
+        asm.preferred_register_assignments(&mut intervals, &mut regs);
+        asm.stack_state.num_spill_slots = asm.linear_scan(&intervals, &regs);
+        asm.handle_caller_saved_regs(&intervals, &regs, &[]);
+
+        let reg = |v: Opnd| Opnd::Reg(intervals[v.vreg_idx()].assigned.get().unwrap().assigned_reg(&regs).unwrap());
+        let pushes: Vec<(Option<Opnd>, Opnd)> = asm.basic_blocks[b1.0].insns.iter()
+            .filter_map(|insn| match *insn { Insn::CPushPair(first, second) => Some((first, second)), _ => None })
+            .collect();
+        // v4 is defined between the calls and live across the second one.
+        assert_eq!(pushes, vec![(Some(reg(v1)), reg(v2)), (Some(reg(v2)), reg(v4))]);
     }
 }
