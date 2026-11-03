@@ -4295,6 +4295,23 @@ class TestKeywordArguments < Test::Unit::TestCase
     RUBY
   end
 
+  def test_many_kwargs_with_gc_while_tracking_unspecified
+    assert_separately([], <<~'RUBY', timeout: 60)
+      # k32 has a non-static default and is past the keyword bitmask limit,
+      # so leaving it unspecified allocates a set during argument setup.
+      params = (0...32).map { |i| "k#{i}: nil" }
+      eval "def victim(#{params.join(', ')}, k32: Object.new) [k1, k32]; end"
+
+      GC.stress = true
+      # Run twice to cover the first call and the cached fast path. The
+      # string passed as k1 has no other reference.
+      results = 2.times.map { victim(k1: "k" + "1")[0] }
+      GC.stress = false
+
+      assert_equal(["k1", "k1"], results, "[Bug #22500]")
+    RUBY
+  end
+
   def test_splat_empty_hash_with_block_passing
     assert_valid_syntax("bug15087(**{}, &nil)")
   end
