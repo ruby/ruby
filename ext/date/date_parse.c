@@ -5,6 +5,7 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
+#include "ruby/util.h"
 
 #ifndef HAVE_RB_LEN_T
 typedef long rb_len_t;
@@ -17,8 +18,12 @@ typedef long rb_len_t;
 #undef strncasecmp
 #define strncasecmp STRNCASECMP
 
+#ifndef HAVE_RB_INT_POSITIVE_POW
 RUBY_EXTERN VALUE rb_int_positive_pow(long x, unsigned long y);
+#endif
+#ifndef HAVE_RUBY_SCAN_DIGITS
 RUBY_EXTERN unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
+#endif
 
 /* #define TIGHT_PARSER */
 
