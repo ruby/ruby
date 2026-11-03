@@ -185,6 +185,15 @@ if defined? Zlib
       assert_equal(true, z.closed?)
     end
 
+    def test_params_with_buf_error_and_pending_output
+      data = Random.new(0).bytes(1000)
+      z = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, Zlib::MAX_WBITS, 1)
+      z << data
+      z.avail_out = 10
+      EnvUtil.suppress_warning {z.params(Zlib::BEST_SPEED, Zlib::DEFAULT_STRATEGY)}
+      assert_equal(data, Zlib::Inflate.inflate(z.finish))
+    end
+
     def test_params
       z = Zlib::Deflate.new
       z << "foo"
