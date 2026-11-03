@@ -81,7 +81,7 @@ class TestFiber < Test::Unit::TestCase
       f.resume
       f.resume
     }
-    if respond_to?(:callcc)
+    if respond_to?(:callcc, true)
       assert_raise(RuntimeError){
         Fiber.new{
           @c = callcc{|c| @c = c}
