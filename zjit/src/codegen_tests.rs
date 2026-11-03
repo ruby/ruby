@@ -2237,6 +2237,27 @@ fn test_send_proc_block_arg_rest_optional_keyword_callee() {
 }
 
 #[test]
+fn test_send_proc_block_arg_to_block_param_callee() {
+    // A guarded Proc reaches `&block` callees through SendDirect, or through an inlined
+    // frame. The callee must see the same Proc, and reassigning `block` must not affect
+    // the block.
+    let program = "
+        def foo(opt = 10, *rest, kw: 20, &block) = [block, block.lambda?, yield(opt + rest.sum + kw)]
+        def bar(&block) = (block = nil; [block, block_given?, yield(3)])
+        def test(blk) = [foo(1, 2, &blk), bar(&blk)]
+        blk = lambda { |x| x + 1 }
+        test(blk)
+        (value, reassigned) = test(blk)
+        [value[0].equal?(blk), value[1], value[2], reassigned]
+    ";
+    set_inline_threshold(0);
+    assert_snapshot!(assert_compiles(program), @"[true, true, 24, [nil, true, 4]]");
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines(program), @"[true, true, 24, [nil, true, 4]]");
+    });
+}
+
+#[test]
 fn test_send_proc_subclass_block_arg_falls_back() {
     // A Proc subclass instance is not an exact-class Proc, so the block arg's
     // profiled type should not match `is_proc` (which requires class_exact:Proc),
