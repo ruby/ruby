@@ -1583,11 +1583,13 @@ match_begin(VALUE match, VALUE n)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    end(n) -> integer
  *    end(name) -> integer
  *
- *  :include: doc/matchdata/end.rdoc
+ *  :include: doc/matchdata/end.md
  *
  */
 
