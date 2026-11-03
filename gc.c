@@ -27,7 +27,10 @@
 
 /* MALLOC_HEADERS_BEGIN */
 #ifndef HAVE_MALLOC_USABLE_SIZE
-# ifdef _WIN32
+# ifdef USE_MIMALLOC
+#  define HAVE_MALLOC_USABLE_SIZE
+#  define malloc_usable_size(a) mi_usable_size(a)
+# elif defined _WIN32
 #  define HAVE_MALLOC_USABLE_SIZE
 #  define malloc_usable_size(a) _msize(a)
 # elif defined HAVE_MALLOC_SIZE
@@ -39,6 +42,12 @@
 #ifdef HAVE_MALLOC_USABLE_SIZE
 # ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
 /* Alternative malloc header is included in ruby/missing.h */
+# elif defined(USE_MIMALLOC)
+/* config.h defines restrict, which spoils __declspec(restrict) in mimalloc.h for clang-cl */
+#  pragma push_macro("restrict")
+#  undef restrict
+#  include <mimalloc.h>
+#  pragma pop_macro("restrict")
 # elif defined(HAVE_MALLOC_H)
 #  include <malloc.h>
 # elif defined(HAVE_MALLOC_NP_H)
@@ -468,7 +477,9 @@ int ruby_gc_debug_indent = 0;
 VALUE rb_mGC;
 
 static size_t malloc_offset = 0;
-#if defined(HAVE_MALLOC_USABLE_SIZE)
+/* With mimalloc, malloc() below is not what xmalloc uses, and mimalloc
+ * blocks have no header to make room for. */
+#if defined(HAVE_MALLOC_USABLE_SIZE) && !defined(USE_MIMALLOC)
 static size_t
 gc_compute_malloc_offset(void)
 {
@@ -6836,6 +6847,12 @@ rb_xcalloc_mul_add_mul(size_t x, size_t y, size_t z, size_t w) /* x * y + z * w 
     return ruby_xcalloc(u, 1);
 }
 
+#ifdef USE_MIMALLOC
+# define malloc(n) mi_malloc(n)
+# define calloc(n, s) mi_calloc(n, s)
+# define free(p) mi_free(p)
+#endif
+
 /* Mimic ruby_xmalloc, but need not rb_objspace.
  * should return pointer suitable for ruby_xfree
  */
@@ -6898,6 +6915,12 @@ ruby_mimfree(void *ptr)
 #endif
     free(ptr);
 }
+
+#ifdef USE_MIMALLOC
+# undef malloc
+# undef calloc
+# undef free
+#endif
 
 void
 rb_gc_adjust_memory_usage(ssize_t diff)
