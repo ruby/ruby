@@ -194,7 +194,7 @@ pm_double_round(uint64_t mantissa, int64_t exponent, bool inexact) {
  */
 static uint64_t
 pm_double_exact(const uint8_t *start, uint32_t digits, int64_t exponent, uint64_t value) {
-    uint32_t numerator_words[PM_DOUBLE_WORDS];
+    uint32_t numerator_words[PM_DOUBLE_WORDS] = { 0 };
     pm_bignum_t numerator = { .length = 0, .words = numerator_words };
 
     if (digits <= 19) {
@@ -245,7 +245,7 @@ pm_double_exact(const uint8_t *start, uint32_t digits, int64_t exponent, uint64_
         if (length > 64) {
             uint64_t dropped = length - 64;
             inexact = pm_bignum_trailing_zeros(&numerator) < dropped;
-            pm_bignum_shift_right(&numerator, dropped);
+            pm_bignum_shift_right(&numerator, (size_t) dropped);
             binary += (int64_t) dropped;
         }
 

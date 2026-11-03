@@ -44,6 +44,7 @@ pm_bignum_base_words_add(uint64_t base, uint32_t *left, uint32_t left_length, co
  */
 static PRISM_FORCE_INLINE void
 pm_bignum_base_words_subtract(uint64_t base, uint32_t *left, uint32_t left_length, const uint32_t *right, uint32_t right_length) {
+    (void) left_length;
     uint32_t borrow = 0;
     uint32_t index = 0;
 
