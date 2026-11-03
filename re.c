@@ -1475,7 +1475,7 @@ match_offset(VALUE match, VALUE n)
  *  :markup: markdown
  *
  *  call-seq:
- *     byteoffset(n) -> [bytebegin, byteend]
+ *     byteoffset(object) -> [bytebegin, byteend]
  *
  *  :include: doc/matchdata/byteoffset.md
  *

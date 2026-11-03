@@ -1,6 +1,6 @@
 Returns the offsets (in bytes) of the beginning and end of the specified match.
 
-With non-negative integer argument `n` given,
+With argument `object` given as a non-negative integer argument `n` given,
 returns the offsets of the `n`th match:
 
 ```ruby
@@ -20,7 +20,7 @@ match.byteoffset(1) # => [3, 6] # Byte offsets.
 match.offset(1)     # => [1, 2] # Character offsets.
 ```
 
-With string or symbol argument `name` given,
+With argument `object` given as a string or symbol argument `name`,
 returns the offsets of the named match:
 
 ```ruby
