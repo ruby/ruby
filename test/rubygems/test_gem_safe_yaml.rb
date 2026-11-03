@@ -5,6 +5,11 @@ require_relative "helper"
 Gem.load_yaml
 
 class TestGemSafeYAML < Gem::TestCase
+  unless method_defined?(:assert_linear_performance)
+    require "core_assertions"
+    include Test::Unit::CoreAssertions
+  end
+
   def yaml_load(input, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES,
     permitted_symbols: Gem::SafeYAML::PERMITTED_SYMBOLS,
     aliases: true)
@@ -1021,6 +1026,38 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "a\\\\b", result["val"]
   end
 
+  def test_load_double_quoted_unicode_escapes
+    yaml = <<~'YAML'
+      ---
+      nel: "x\Ny"
+      nbsp: "x\_y"
+      line_separator: "x\Ly"
+      paragraph_separator: "x\Py"
+      bom: "\uFEFFx"
+      astral: "x\U0001F600y"
+    YAML
+
+    expected = {
+      "nel" => "x\u0085y",
+      "nbsp" => "x\u00A0y",
+      "line_separator" => "x\u2028y",
+      "paragraph_separator" => "x\u2029y",
+      "bom" => "\uFEFFx",
+      "astral" => "x\u{1F600}y",
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_double_quoted_unicode_escape_in_binary_metadata
+    yaml = "description: \"\xE3\x81\x82\\N\"\n".b
+
+    assert_equal({ "description" => "\xE3\x81\x82\xC2\x85".b }, Gem::YAMLSerializer.load(yaml))
+  end
+
+  def test_load_double_quoted_invalid_code_point_escape_kept
+    assert_equal({ "a" => "x\\uD800y" }, Gem::YAMLSerializer.load(%(a: "x\\uD800y")))
+  end
+
   def test_load_single_quoted_escape
     result = yaml_load("key: 'it''s'")
     assert_equal "it's", result["key"]
@@ -1092,9 +1129,74 @@ class TestGemSafeYAML < Gem::TestCase
     refute result["text"].end_with?("\n")
   end
 
+  def test_load_block_scalar_keeps_spaces_beyond_indentation_on_blank_lines
+    yaml = "text: |\n  x\n     \n  \n  y\n"
+    assert_equal({ "text" => "x\n   \n\ny\n" }, yaml_load(yaml))
+  end
+
+  def test_roundtrip_block_scalar_with_whitespace_only_lines
+    obj = { "inner" => "x\n   \ny\n", "last" => "x\n  " }
+    assert_equal obj, yaml_load(yaml_dump(obj))
+  end
+
+  def test_load_block_scalar_strip_indicator_removes_every_trailing_newline
+    yaml = <<~YAML
+      ---
+      message: |2-
+
+        Thanks!
+      reversed: |-2
+          indented
+      trailing: |-
+        text
+
+
+      other: value
+    YAML
+
+    expected = {
+      "message" => "\nThanks!",
+      "reversed" => "  indented",
+      "trailing" => "text",
+      "other" => "value",
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_block_scalar_strip_indicator_in_linear_time
+    pre = ->(n) { "text: |-\n  a\n#{"\n" * n}  b\n" }
+    assert_linear_performance([1_000, 10_000, 100_000], rehearsal: 10, pre: pre) do |yaml|
+      Gem::YAMLSerializer.load(yaml)
+    end
+  end
+
+  def test_load_block_scalar_indentation_indicator
+    yaml = <<~YAML
+      ---
+      description: |2
+          Indented first line
+        second line
+      list:
+      - |2
+          indented item
+        next line
+    YAML
+
+    expected = {
+      "description" => "  Indented first line\nsecond line\n",
+      "list" => ["  indented item\nnext line\n"],
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
   def test_load_flow_array
     result = yaml_load("items: [a, b, c]")
     assert_equal ["a", "b", "c"], result["items"]
+  end
+
+  def test_load_flow_array_with_quoted_commas
+    result = yaml_load(%(items: ["x, y", 'a, b', z]))
+    assert_equal ["x, y", "a, b", "z"], result["items"]
   end
 
   def test_load_flow_empty_array
@@ -1131,6 +1233,97 @@ class TestGemSafeYAML < Gem::TestCase
 
     result = yaml_load("key: 'value # not a comment'")
     assert_equal "value # not a comment", result["key"]
+  end
+
+  def test_load_indented_comment_line_after_plain_scalar
+    yaml = <<~YAML
+      ---
+      ssl_ca_cert: /etc/ssl/ca.pem
+        # the corporate bundle
+      plain:
+        value
+          # trailing note
+      folded: first
+        second
+        # trailing note
+    YAML
+
+    expected = {
+      "ssl_ca_cert" => "/etc/ssl/ca.pem",
+      "plain" => "value",
+      "folded" => "first second",
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_open_quoted_scalar_keeps_continuation_line_starting_with_hash
+    yaml = <<~YAML
+      ---
+      summary: 'first part of a summary Psych folded
+        #tag and the rest'
+      other: 1
+    YAML
+
+    result = yaml_load(yaml)
+    # Gem::YAMLSerializer does not fold multi-line quoted scalars, so only check that no text is lost.
+    assert_include result["summary"], "#tag and the rest"
+    assert_equal 1, result["other"]
+  end
+
+  def test_skipping_blank_and_comment_lines_does_not_allocate
+    omit "GC.stat(:total_allocated_objects) is CRuby only" unless RUBY_ENGINE == "ruby"
+
+    parser = Gem::YAMLSerializer::Parser.new("- item\n")
+    parser.send(:skip_blank_and_comments)
+    calls = 100
+    before = GC.stat(:total_allocated_objects)
+    calls.times { parser.send(:skip_blank_and_comments) }
+    allocated = GC.stat(:total_allocated_objects) - before
+
+    assert_operator allocated, :<, calls
+  end
+
+  def test_load_comment_and_blank_lines_inside_nested_collections
+    yaml = <<~YAML
+      ---
+      sources:
+      - https://rubygems.org/
+      # - https://old.example/
+
+      - https://gems.example.com/
+      nested:
+        a: 1
+        # note
+
+        b: 2
+      backtrace: true
+    YAML
+
+    expected = {
+      "sources" => ["https://rubygems.org/", "https://gems.example.com/"],
+      "nested" => { "a" => 1, "b" => 2 },
+      "backtrace" => true,
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_comment_before_first_entry_of_nested_collection
+    yaml = <<~YAML
+      ---
+      sources:
+      # first
+      - https://rubygems.org/
+      items:
+      -
+      # note
+        name: foo
+    YAML
+
+    expected = {
+      "sources" => ["https://rubygems.org/"],
+      "items" => [{ "name" => "foo" }],
+    }
+    assert_equal expected, yaml_load(yaml)
   end
 
   def test_load_crlf_line_endings

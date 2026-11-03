@@ -933,6 +933,20 @@ class TestISeq < Test::Unit::TestCase
     RUBY
   end
 
+  def test_short_circuited_return_in_ensure
+    assert_in_out_err(["--parser=parse.y"], <<~'RUBY', ["ensure", "#<RuntimeError: boom>"], success: true)
+      def m
+        begin
+          if false && (return if foo); end
+          raise 'boom'
+        ensure
+          puts 'ensure'
+        end
+      end
+      m rescue p $!
+    RUBY
+  end
+
   def test_unreachable_syntax_error
     mesg = /Invalid break/
     assert_syntax_error("false and break", mesg)

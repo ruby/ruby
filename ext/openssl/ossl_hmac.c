@@ -9,8 +9,6 @@
  */
 #include "ossl.h"
 
-#define NewHMAC(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_hmac_type, 0)
 #define GetHMAC(obj, ctx) do { \
     TypedData_Get_Struct((obj), EVP_MD_CTX, &ossl_hmac_type, (ctx)); \
     if (!(ctx)) { \
@@ -49,16 +47,7 @@ static const rb_data_type_t ossl_hmac_type = {
 static VALUE
 ossl_hmac_alloc(VALUE klass)
 {
-    VALUE obj;
-    EVP_MD_CTX *ctx;
-
-    obj = NewHMAC(klass);
-    ctx = EVP_MD_CTX_new();
-    if (!ctx)
-        ossl_raise(eHMACError, "EVP_MD_CTX");
-    RTYPEDDATA_DATA(obj) = ctx;
-
-    return obj;
+    return TypedData_Wrap_Struct(klass, &ossl_hmac_type, NULL);
 }
 
 
@@ -98,7 +87,7 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
     const EVP_MD *md;
     VALUE md_holder;
 
-    GetHMAC(self, ctx);
+    ossl_want_uninitialized(self, &ossl_hmac_type);
     StringValue(key);
     md = ossl_evp_md_fetch(digest, &md_holder);
     pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_HMAC, NULL,
@@ -106,10 +95,17 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
                                         RSTRING_LENINT(key));
     if (!pkey)
         ossl_raise(eHMACError, "EVP_PKEY_new_raw_private_key");
+    ctx = EVP_MD_CTX_new();
+    if (!ctx) {
+        EVP_PKEY_free(pkey);
+        ossl_raise(eHMACError, "EVP_MD_CTX_new");
+    }
     if (EVP_DigestSignInit(ctx, NULL, md, NULL, pkey) != 1) {
+        EVP_MD_CTX_free(ctx);
         EVP_PKEY_free(pkey);
         ossl_raise(eHMACError, "EVP_DigestSignInit");
     }
+    RTYPEDDATA_DATA(self) = ctx;
     rb_ivar_set(self, id_md_holder, md_holder);
     /* Decrement reference counter; EVP_MD_CTX still keeps it */
     EVP_PKEY_free(pkey);
@@ -123,13 +119,18 @@ ossl_hmac_copy(VALUE self, VALUE other)
 {
     EVP_MD_CTX *ctx1, *ctx2;
 
-    rb_check_frozen(self);
-    if (self == other) return self;
-
-    GetHMAC(self, ctx1);
+    ossl_want_uninitialized(self, &ossl_hmac_type);
     GetHMAC(other, ctx2);
-    if (EVP_MD_CTX_copy(ctx1, ctx2) != 1)
+
+    ctx1 = EVP_MD_CTX_new();
+    if (!ctx1)
+        ossl_raise(eHMACError, "EVP_MD_CTX_new");
+    if (EVP_MD_CTX_copy(ctx1, ctx2) != 1) {
+        EVP_MD_CTX_free(ctx1);
         ossl_raise(eHMACError, "EVP_MD_CTX_copy");
+    }
+    RTYPEDDATA_DATA(self) = ctx1;
+
     return self;
 }
 

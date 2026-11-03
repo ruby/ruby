@@ -175,7 +175,7 @@ RSpec.describe Bundler::Override do
 
     context "when the override rewrites a dependency" do
       it "raises ArgumentError instead of reading the replacement as a requirement" do
-        override = described_class.new("grpc", :to, "grpc-lite", from: "a")
+        override = described_class.new("grpc", :with, "grpc-lite", from: "a")
         expect { override.apply_to(Gem::Requirement.default) }.to raise_error(ArgumentError, /rewrites a dependency/)
       end
     end
@@ -186,9 +186,9 @@ RSpec.describe Bundler::Override do
       expect(described_class.new(:all, :required_ruby_version, :ignore_upper).to_s).to eq("override :all, required_ruby_version: :ignore_upper")
     end
 
-    it "renders a from:/to: override with its version:" do
-      override = described_class.new("grpc", :to, "grpc-lite", from: "a", requirement: ">= 2")
-      expect(override.to_s).to eq(%(override "grpc", from: "a", to: "grpc-lite", version: ">= 2"))
+    it "renders a with:/in: override with its version:" do
+      override = described_class.new("grpc", :with, "grpc-lite", from: "a", requirement: ">= 2")
+      expect(override.to_s).to eq(%(override "grpc", with: "grpc-lite", in: "a", version: ">= 2"))
     end
   end
 
@@ -201,12 +201,12 @@ RSpec.describe Bundler::Override do
     it "normalizes requirements" do
       expect(described_class.new("rails", :version, ">=8").to_lock).to eq(%("rails", version: ">= 8"))
       expect(described_class.new("rails", :version, "8.0").to_lock).to eq(%("rails", version: "= 8.0"))
-      expect(described_class.new("b", :to, "c", from: "a", requirement: ">=2").to_lock).to eq(%("b", from: "a", to: "c", version: ">= 2"))
+      expect(described_class.new("b", :with, "c", from: "a", requirement: ">=2").to_lock).to eq(%("b", with: "c", in: "a", version: ">= 2"))
     end
 
     it "keeps dropping a dependency distinct from replacing it with a gem named nil" do
-      expect(described_class.new("b", :to, nil, from: "a").to_lock).to eq(%("b", from: "a", to: nil))
-      expect(described_class.new("b", :to, "nil", from: "a").to_lock).to eq(%("b", from: "a", to: "nil"))
+      expect(described_class.new("b", :with, nil, from: "a").to_lock).to eq(%("b", with: nil, in: "a"))
+      expect(described_class.new("b", :with, "nil", from: "a").to_lock).to eq(%("b", with: "nil", in: "a"))
     end
   end
 
@@ -216,9 +216,9 @@ RSpec.describe Bundler::Override do
       %("rails", version: ">= 8.0"),
       %("rails", version: nil),
       %("rails", required_rubygems_version: :ignore_upper),
-      %("b", from: "a", to: nil),
-      %("b", from: "a", to: "nil"),
-      %("b", from: "a", to: "c", version: ">= 2"),
+      %("b", with: nil, in: "a"),
+      %("b", with: "nil", in: "a"),
+      %("b", with: "c", in: "a", version: ">= 2"),
     ].each do |line|
       it "round-trips #{line}" do
         expect(described_class.from_lock(line).to_lock).to eq(line)
@@ -227,8 +227,8 @@ RSpec.describe Bundler::Override do
 
     it "reads the operation back with its type" do
       expect(described_class.from_lock(%(:all, required_ruby_version: :ignore_upper)).operation).to eq(:ignore_upper)
-      expect(described_class.from_lock(%("b", from: "a", to: nil)).operation).to be_nil
-      expect(described_class.from_lock(%("b", from: "a", to: "nil")).operation).to eq("nil")
+      expect(described_class.from_lock(%("b", with: nil, in: "a")).operation).to be_nil
+      expect(described_class.from_lock(%("b", with: "nil", in: "a")).operation).to eq("nil")
     end
 
     [
@@ -236,10 +236,11 @@ RSpec.describe Bundler::Override do
       %("rails"),
       %("rails", version: ">= 8.0", required_ruby_version: nil),
       %("rails", as: "y"),
-      %("b", from: "a"),
-      %("b", from: nil, to: "c"),
-      %("b", from: "a", to: "c", as: "d"),
-      %("b", to: "c"),
+      %("b", in: "a"),
+      %("b", with: "c", in: nil),
+      %("b", with: "c", in: "a", as: "d"),
+      %("b", from: "a", to: nil),
+      %("b", with: "c"),
       %("foo bar", version: nil),
       %("rails", version: ">= 8.0") + "\n",
     ].each do |line|
@@ -250,7 +251,7 @@ RSpec.describe Bundler::Override do
 
     [
       %("rails", version: "garbage"),
-      %("b", from: "a", to: "c", version: "garbage"),
+      %("b", with: "c", in: "a", version: "garbage"),
     ].each do |line|
       it "rejects the ill-formed requirement in #{line}" do
         expect { described_class.from_lock(line) }.to raise_error(Gem::Requirement::BadRequirementError)
@@ -261,27 +262,27 @@ RSpec.describe Bundler::Override do
   describe ".rewrite_dependencies" do
     let(:deps) { [Gem::Dependency.new("grpc", "~> 1.0"), Gem::Dependency.new("json", ">= 2")] }
 
-    it "drops a dependency when to: is nil" do
-      override = described_class.new("grpc", :to, nil, from: "a")
+    it "drops a dependency when with: is nil" do
+      override = described_class.new("grpc", :with, nil, from: "a")
       expect(described_class.rewrite_dependencies([override], "a", deps)).to eq([deps.last])
     end
 
     it "replaces a dependency and discards the parent's requirement" do
-      override = described_class.new("grpc", :to, "grpc-lite", from: "a")
+      override = described_class.new("grpc", :with, "grpc-lite", from: "a")
       expect(described_class.rewrite_dependencies([override], "a", deps)).to eq([Gem::Dependency.new("grpc-lite"), deps.last])
     end
 
     it "gives the replacement the override's version requirement" do
-      override = described_class.new("grpc", :to, "grpc-lite", from: "a", requirement: ">= 2")
+      override = described_class.new("grpc", :with, "grpc-lite", from: "a", requirement: ">= 2")
       expect(described_class.rewrite_dependencies([override], "a", deps).first).to eq(Gem::Dependency.new("grpc-lite", ">= 2"))
     end
 
     it "leaves the dependencies of other gems untouched" do
-      override = described_class.new("grpc", :to, nil, from: "a")
+      override = described_class.new("grpc", :with, nil, from: "a")
       expect(described_class.rewrite_dependencies([override], "b", deps)).to eq(deps)
     end
 
-    it "ignores overrides without from:" do
+    it "ignores overrides without in:" do
       override = described_class.new("grpc", :version, nil)
       expect(described_class.rewrite_dependencies([override], "a", deps)).to eq(deps)
     end

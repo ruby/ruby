@@ -20,7 +20,7 @@ extern "C" {
 /**
  * The minor version of the Prism library as an int.
  */
-#define PRISM_VERSION_MINOR 0
+#define PRISM_VERSION_MINOR 1
 
 /**
  * The patch version of the Prism library as an int.
@@ -30,7 +30,7 @@ extern "C" {
 /**
  * The version of the Prism library as a constant string.
  */
-#define PRISM_VERSION "2.0.0"
+#define PRISM_VERSION "2.1.0"
 
 /**
  * The prism version and the serialization format.

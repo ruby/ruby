@@ -14,6 +14,11 @@
 
 #define RREGEXP_INITIALIZED FL_USER5
 
+struct rb_regexp_variant {
+    struct rb_regexp_variant *next;
+    struct re_pattern_buffer reg;
+};
+
 #define RMATCH_ONIG FL_USER1
 #define RMATCH_OFFSETS_EXTERNAL FL_USER2
 

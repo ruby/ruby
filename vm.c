@@ -1130,8 +1130,9 @@ vm_block_handler_escape(const rb_execution_context_t *ec, VALUE block_handler)
     return Qnil;
 }
 
+// child_ep is the on-stack ep of a frame whose prev ep is cfp->ep, or NULL.
 static VALUE
-vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp)
+vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp, const VALUE *const child_ep)
 {
     const VALUE * const ep = cfp->ep;
     VALUE *env_body, *env_ep;
@@ -1151,8 +1152,9 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
                 VM_ASSERT(prev_cfp->ep != NULL);
             }
 
-            vm_make_env_each(ec, prev_cfp);
-            VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(prev_cfp->ep));
+            // Updates ep[VM_ENV_DATA_INDEX_SPECVAL] to point to the heap ep of prev_cfp
+            vm_make_env_each(ec, prev_cfp, ep);
+            VM_ASSERT(VM_ENV_PREV_EP(ep) == prev_cfp->ep);
         }
     }
     else {
@@ -1220,9 +1222,29 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     env->ep = env_ep;
     env->env = env_body;
     env->env_size = env_size;
+    VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
+
+    // Ensure the heap ep is fully initialized before cfp->ep and child_ep point to it,
+    // as rb_profile_frames() might read it from a signal handler.
+#if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
 
     cfp->ep = env_ep;
-    VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
+
+    // The child frame must point to the heap ep before the on-stack ep flags are
+    // overwritten below, otherwise rb_profile_frames() called from a signal handler
+    // could walk from the child frame to the overwritten on-stack ep and crash.
+    if (child_ep) {
+        VM_FORCE_WRITE_SPECIAL_CONST(&child_ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(env_ep));
+    }
+
+    // Ensure the stores to cfp->ep and child_ep above are not reordered after the
+    // overwrite of the on-stack ep flags below.
+#if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
+
     VM_STACK_ENV_WRITE(ep, 0, (VALUE)env);		/* GC mark */
 
 #if 0
@@ -1240,7 +1262,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 static VALUE
 vm_make_env_object(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
-    VALUE envval = vm_make_env_each(ec, cfp);
+    VALUE envval = vm_make_env_each(ec, cfp, NULL);
 
     if (PROCDEBUG) {
         check_env_value((const rb_env_t *)envval);
@@ -2506,7 +2528,7 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
                 );
                 rb_yjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 rb_zjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
-                ruby_vm_redefined_flag[bop] |= flag;
+                ruby_vm_redefined_flag[bop] |= (flag | ANY_REDEFINED_OP_FLAG);
             }
         }
     }
@@ -2541,6 +2563,9 @@ add_opt_method_entry_bop(const rb_method_entry_t *me, ID mid, enum ruby_basic_op
 static void
 add_opt_method(VALUE klass, ID mid, enum ruby_basic_operators bop)
 {
+    if (bop == BOP_NEW) {
+        klass = rb_singleton_class(klass);
+    }
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
     if (me && vm_redefinition_check_method_type(me)) {
@@ -2573,12 +2598,13 @@ vm_init_redefined_flag(void)
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
+    OP(New, NEW), (C(Hash));
     OP(PLUS, PLUS), (C(Integer), C(Float), C(String), C(Array));
     OP(MINUS, MINUS), (C(Integer), C(Float));
     OP(MULT, MULT), (C(Integer), C(Float));
     OP(DIV, DIV), (C(Integer), C(Float));
     OP(MOD, MOD), (C(Integer), C(Float));
-    OP(Eq, EQ), (C(Integer), C(Float), C(String), C(Symbol));
+    OP(Eq, EQ), (C(Integer), C(Float), C(String), C(Symbol), C(NilClass), C(FalseClass), C(TrueClass));
     OP(Eqq, EQQ), (C(Integer), C(Float), C(Symbol), C(String),
                    C(NilClass), C(TrueClass), C(FalseClass));
     OP(LT, LT), (C(Integer), C(Float));
@@ -2973,6 +2999,39 @@ vm_exec_loop(rb_execution_context_t *ec, enum ruby_tag_type state,
 }
 
 #if USE_ZJIT
+typedef struct {
+    const uint8_t *bytes;
+    size_t pos; // in bits
+} zjit_stack_map_reader_t;
+
+// Read n <= 8 bits. Touches the next byte only when the bits straddle it.
+static inline unsigned int
+zjit_stack_map_read_bits(zjit_stack_map_reader_t *r, int n)
+{
+    size_t byte = r->pos / 8;
+    int shift = r->pos % 8;
+    unsigned int bits = r->bytes[byte] >> shift;
+    if (shift + n > 8) bits |= (unsigned int)r->bytes[byte + 1] << (8 - shift);
+    r->pos += n;
+    return bits & ((1u << n) - 1);
+}
+
+static inline int64_t
+zjit_stack_map_read_varint(zjit_stack_map_reader_t *r)
+{
+    const int chunk_bits = ZJIT_STACK_MAP_VARINT_BITS + 1; // payload, then continuation bit
+    const unsigned int payload_mask = (1u << ZJIT_STACK_MAP_VARINT_BITS) - 1;
+    uint64_t value = 0;
+    unsigned int chunk;
+    int shift = 0;
+    do {
+        chunk = zjit_stack_map_read_bits(r, chunk_bits);
+        value |= (uint64_t)(chunk & payload_mask) << shift;
+        shift += ZJIT_STACK_MAP_VARINT_BITS;
+    } while (chunk >> ZJIT_STACK_MAP_VARINT_BITS);
+    return (int64_t)value;
+}
+
 // Materialize JITFrame-enabled CFP into interpreter-compatible CFP
 static void
 zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp, bool materialize_target)
@@ -2998,7 +3057,7 @@ zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cf
             const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
             cfp->pc = jit_frame->pc;
             cfp->_iseq = (rb_iseq_t *)jit_frame->iseq;
-            if (jit_frame->materialize_block_code) {
+            if (ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P(jit_frame)) {
                 cfp->block_code = NULL;
             }
 
@@ -3006,32 +3065,47 @@ zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cf
             // the exiting frame is already written by compile_exit_save_state()
             // and skipped here after materialize_exit_trampoline clears its
             // jit_return, so this restores older ZJIT frames from stack maps.
-            int32_t stack_size = (int32_t)jit_frame->stack_size;
-            if (stack_size > 0) {
+            if (jit_frame->stack_map) {
                 VALUE *stack = cfp->sp;
-                for (int32_t i = 0; i < stack_size; i++) {
-                    VALUE entry = jit_frame->stack[i];
-                    if (ZJIT_STACK_MAP_VREG_P(entry)) {
+                zjit_stack_map_reader_t reader = { jit_frame->stack_map, 1 }; // bit 0 is materialize_block_code
+#define WRITE_ONE(value) do { --stack; *stack = (value); } while (0)
+                for (int32_t i = 0;; i++) {
+                    unsigned int op = zjit_stack_map_read_bits(&reader, ZJIT_STACK_MAP_OP_BITS);
+                    if (op == ZJIT_STACK_MAP_OP_END) break;
+                    switch (op) {
+                      case ZJIT_STACK_MAP_OP_VREG:
                         // Decode a native stack slot offset generated by ZJIT's backend.
                         // It's an offset from NATIVE_BASE_PTR, which is copied into
-                        // cfp->jit_return, to the encoded stack slot.
-                        stack--;
-                        *stack = ((VALUE *)cfp->jit_return)[-(ssize_t)ZJIT_STACK_MAP_VREG_INDEX(entry)];
-                    }
-                    else if (ZJIT_STACK_MAP_SKIP_P(entry)) {
-                        stack -= ZJIT_STACK_MAP_SKIP_SIZE(entry);
-                    }
-                    else if (ZJIT_STACK_MAP_BASE_PTR_P(entry)) {
+                        // cfp->jit_return, to the native stack slot holding the value.
+                        WRITE_ONE(((VALUE *)cfp->jit_return)[-zjit_stack_map_read_varint(&reader)]);
+                        break;
+                      case ZJIT_STACK_MAP_OP_IMM: {
+                        VALUE value = (VALUE)zjit_stack_map_read_varint(&reader);
+                        RUBY_ASSERT(RB_SPECIAL_CONST_P(value)); // We don't GC mark stack map entries.
+                        WRITE_ONE(value);
+                        break;
+                      }
+                      case ZJIT_STACK_MAP_OP_NIL:
+                        WRITE_ONE(Qnil);
+                        break;
+                      case ZJIT_STACK_MAP_OP_SKIP:
+                        stack -= zjit_stack_map_read_varint(&reader);
+                        break;
+                      case ZJIT_STACK_MAP_OP_BASE_PTR: {
                         // This has to be the first code to align the write cursor for other entries
                         RUBY_ASSERT_ALWAYS(0 == i, "base_ptr stack map code only makes sense at 0");
-                        VALUE *base_ptr = (VALUE *)((VALUE *)cfp->jit_return)[-(ssize_t)ZJIT_STACK_MAP_BASE_PTR_SLOT_INDEX(entry)];
-                        stack = base_ptr + ZJIT_STACK_MAP_BASE_PTR_STACK_SIZE(entry);
-                    }
-                    else {
-                        stack--;
-                        *stack = entry;
+                        int64_t slot_index = zjit_stack_map_read_varint(&reader);
+                        int64_t stack_size = zjit_stack_map_read_varint(&reader);
+                        VALUE *base_ptr = (VALUE *)((VALUE *)cfp->jit_return)[-slot_index];
+                        stack = base_ptr + stack_size;
+                        break;
+                      }
+                      default:
+                        rb_bug("unknown ZJIT stackmap opcode: %u", op);
+                        break;
                     }
                 }
+#undef WRITE_ONE
             }
             cfp->jit_return = 0;
         }
@@ -3893,7 +3967,7 @@ rb_execution_context_update(rb_execution_context_t *ec)
                 // still contain stale data from a previous frame. Otherwise it
                 // was initialized by ZJIT and may have been written later by
                 // vm_caller_setup_arg_block (ISEQ frames) or rb_iterate0 (C frames).
-                if (!jit_frame->materialize_block_code) {
+                if (!ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P(jit_frame)) {
                     rb_gc_update_moved_ptr(&cfp->block_code);
                 }
             }
@@ -3965,7 +4039,7 @@ rb_execution_context_mark_ctx(const struct rb_gc_mark_ctx *ctx, const rb_executi
                 // still contain stale data from a previous frame. Otherwise it
                 // was initialized by ZJIT and may have been written later by
                 // vm_caller_setup_arg_block (ISEQ frames) or rb_iterate0 (C frames).
-                if (!jit_frame->materialize_block_code) {
+                if (!ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P(jit_frame)) {
                     rb_gc_mark_movable_ctx(ctx, (VALUE)cfp->block_code);
                 }
             }
@@ -4212,6 +4286,12 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
     // set cfp to NULL before clearing the stack in case `thread_profile_frames`
     // gets called in this middle of `rb_ec_set_vm_stack` via signal handler.
     ec->cfp = NULL;
+
+    // Ensure the store to ec->cfp above is not reordered after the stores below.
+#if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
+
     rb_ec_set_vm_stack(ec, NULL, 0);
 }
 

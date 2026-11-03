@@ -19,6 +19,7 @@
 #include "prism/internal/magic_comments.h"
 #include "prism/internal/memchr.h"
 #include "prism/internal/node.h"
+#include "prism/internal/oom.h"
 #include "prism/internal/options.h"
 #include "prism/internal/parser.h"
 #include "prism/internal/regexp.h"
@@ -547,6 +548,16 @@ pm_parser_err_token(pm_parser_t *parser, const pm_token_t *token, pm_diagnostic_
 static PRISM_INLINE void
 pm_parser_err_current(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
     pm_parser_err_token(parser, &parser->current, diag_id);
+}
+
+/**
+ * Reports that the stack budget has been used up, at the given location.
+ */
+void
+pm_parser_err_stack_exhausted(pm_parser_t *parser, uint32_t start, uint32_t length) {
+    if (parser->stack_exhausted_reported) return;
+    parser->stack_exhausted_reported = true;
+    pm_parser_err(parser, start, length, PM_ERR_STACK_EXHAUSTED);
 }
 
 /**
@@ -1846,7 +1857,7 @@ char_is_identifier_start(const pm_parser_t *parser, const uint8_t *b, ptrdiff_t 
             return 0;
         }
     } else if (*b < 0x80) {
-        return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT ? 1 : 0) || (*b == '_');
+        return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT ? 1 : 0) || (*b == '_');
     } else {
         return pm_encoding_utf_8_char_width(b, n);
     }
@@ -1861,7 +1872,7 @@ char_is_identifier_utf8(const uint8_t *b, ptrdiff_t n) {
     if (n <= 0) {
         return 0;
     } else if (*b < 0x80) {
-        return (*b == '_') || (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT ? 1 : 0);
+        return (*b == '_') || (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT ? 1 : 0);
     } else {
         return pm_encoding_utf_8_char_width(b, n);
     }
@@ -4122,6 +4133,8 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
     size_t length = (size_t) diff;
     const size_t buffer_size = sizeof(char) * (length + 1);
     char *buffer = xmalloc(buffer_size);
+    if (buffer == NULL) PRISM_OOM();
+
     memcpy((void *) buffer, token->start, length);
 
     // Next, determine if we need to replace the decimal point because of
@@ -4255,10 +4268,7 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
     assert(point && "should have a decimal point");
 
     uint8_t *digits = xmalloc(length);
-    if (digits == NULL) {
-        fputs("[pm_float_node_rational_create] Failed to allocate memory", stderr);
-        abort();
-    }
+    if (digits == NULL) PRISM_OOM();
 
     memcpy(digits, start, (unsigned long) (point - start));
     memcpy(digits + (point - start), point + 1, (unsigned long) (end - point - 1));
@@ -5853,53 +5863,40 @@ pm_numbered_parameters_node_create(pm_parser_t *parser, const pm_token_t *openin
 }
 
 /**
- * The maximum numbered reference value is defined as the maximum value that an
- * integer can hold minus 1 bit for CRuby instruction sequence operand tagging.
- */
-#define NTH_REF_MAX ((uint32_t) (INT_MAX >> 1))
-
-/**
  * Parse the decimal number represented by the range of bytes. Returns
- * 0 if the number fails to parse or if the number is greater than the maximum
- * value representable by a numbered reference. This function assumes that the
- * range of bytes has already been validated to contain only decimal digits.
+ * 0 if the number is greater than the maximum value representable by a numbered
+ * reference. This function assumes that the range of bytes has already been
+ * validated to contain only decimal digits.
  */
 static uint32_t
 pm_numbered_reference_read_node_number(pm_parser_t *parser, const pm_token_t *token) {
+/**
+ * The maximum numbered reference value is defined as the maximum value that an
+ * integer can hold minus 1 bit for CRuby instruction sequence operand tagging.
+ */
+#define NTH_REF_MAX ((uint64_t) (uint32_t) (INT_MAX >> 1))
+
     const uint8_t *start = token->start + 1;
-    const uint8_t *end = token->end;
-
-    ptrdiff_t diff = end - start;
+    ptrdiff_t diff = token->end - start;
     assert(diff > 0);
-#if PTRDIFF_MAX > SIZE_MAX
-    assert(diff < (ptrdiff_t) SIZE_MAX);
-#endif
+
     size_t length = (size_t) diff;
+    uint64_t value = 0;
 
-    char *digits = xcalloc(length + 1, sizeof(char));
-    memcpy(digits, start, length);
-    digits[length] = '\0';
+    for (size_t idx = 0; idx < length; ++idx) {
+        value = value * 10 + (uint64_t) (start[idx] - '0');
 
-    char *endptr;
-    errno = 0;
-    unsigned long value = strtoul(digits, &endptr, 10);
-
-    if ((digits == endptr) || (*endptr != '\0')) {
-        pm_parser_err(parser, U32(start - parser->start), U32(length), PM_ERR_INVALID_NUMBER_DECIMAL);
-        value = 0;
-    }
-
-    xfree_sized(digits, sizeof(char) * (length + 1));
-
-    if ((errno == ERANGE) || (value > NTH_REF_MAX)) {
-        PM_PARSER_WARN_FORMAT(parser, U32(start - parser->start), U32(length), PM_WARN_INVALID_NUMBERED_REFERENCE, (int) (length + 1), (const char *) token->start);
-        value = 0;
+        if (value > NTH_REF_MAX) {
+            PM_PARSER_WARN_FORMAT(parser, U32(start - parser->start), U32(length), PM_WARN_INVALID_NUMBERED_REFERENCE, (int) (length + 1), (const char *) token->start);
+            value = 0;
+            break;
+        }
     }
 
     return (uint32_t) value;
-}
 
 #undef NTH_REF_MAX
+}
 
 /**
  * Allocate and initialize a new NthReferenceReadNode node.
@@ -9038,14 +9035,8 @@ escape_write_unicode(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_t fla
         parser->explicit_encoding = PM_ENCODING_UTF_8_ENTRY;
     }
 
-    if (!pm_buffer_append_unicode_codepoint(buffer, value)) {
-        if (flags & PM_ESCAPE_FLAG_REGEXP) {
-            // In regexp context, defer the error to the regexp encoding
-            // validation which produces a regexp-specific message.
-        } else {
-            pm_parser_err(parser, U32(start - parser->start), U32(end - start), PM_ERR_ESCAPE_INVALID_UNICODE);
-        }
-
+    if (!(flags & PM_ESCAPE_FLAG_REGEXP) && !pm_buffer_append_unicode_codepoint(buffer, value)) {
+        pm_parser_err(parser, U32(start - parser->start), U32(end - start), PM_ERR_ESCAPE_INVALID_UNICODE);
         pm_buffer_append_byte(buffer, 0xEF);
         pm_buffer_append_byte(buffer, 0xBF);
         pm_buffer_append_byte(buffer, 0xBD);
@@ -9054,7 +9045,9 @@ escape_write_unicode(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_t fla
 
 /**
  * When you're writing a byte to the unescape buffer, if the byte is non-ASCII
- * (i.e., the top bit is set) then it locks in the encoding.
+ * (i.e., the top bit is set) then it locks in the encoding. A regexp still
+ * locks in the encoding, but writes nothing since it keeps the escape's source
+ * text rather than its value.
  */
 static PRISM_INLINE void
 escape_write_byte_encoded(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_t flags, uint8_t byte) {
@@ -9071,7 +9064,7 @@ escape_write_byte_encoded(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_
         parser->explicit_encoding = parser->encoding;
     }
 
-    pm_buffer_append_byte(buffer, byte);
+    if (!(flags & PM_ESCAPE_FLAG_REGEXP)) pm_buffer_append_byte(buffer, byte);
 }
 
 /**
@@ -9090,9 +9083,9 @@ escape_write_byte_encoded(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_
  * source so that the regular expression engine will perform its own unescaping.
  */
 static PRISM_INLINE void
-escape_write_byte(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expression_buffer, uint8_t flags, uint8_t byte) {
+escape_write_byte(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags, uint8_t byte) {
     if (flags & PM_ESCAPE_FLAG_REGEXP) {
-        pm_buffer_append_format(regular_expression_buffer, "\\x%02X", byte);
+        pm_buffer_append_format(buffer, "\\x%02X", byte);
     }
 
     escape_write_byte_encoded(parser, buffer, flags, byte);
@@ -9102,7 +9095,7 @@ escape_write_byte(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular
  * Write each byte of the given escaped character into the buffer.
  */
 static PRISM_INLINE void
-escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expression_buffer, uint8_t flags) {
+escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
     size_t width;
     if (parser->encoding_changed) {
         width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
@@ -9112,11 +9105,10 @@ escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_
 
     if (width == 1) {
         if (parser->heredoc_end == NULL && *parser->current.end == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
-        escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(*parser->current.end++, flags));
+        escape_write_byte(parser, buffer, flags, escape_byte(*parser->current.end++, flags));
     } else if (width > 1) {
-        // Valid multibyte character.  Just ignore escape.
-        pm_buffer_t *b = (flags & PM_ESCAPE_FLAG_REGEXP) ? regular_expression_buffer : buffer;
-        pm_buffer_append_bytes(b, parser->current.end, width);
+        // Valid multibyte character. Just ignore the escape.
+        pm_buffer_append_bytes(buffer, parser->current.end, width);
         parser->current.end += width;
     } else {
         // Assume the next character wasn't meant to be part of this escape
@@ -9148,65 +9140,74 @@ escape_read_warn(pm_parser_t *parser, uint8_t flags, uint8_t flag, const char *t
 }
 
 /**
- * Read the value of an escape into the buffer.
+ * Read the value of an escape into the buffer. With PM_ESCAPE_FLAG_REGEXP, the
+ * escape is written in a form the regexp engine understands rather than as its
+ * value, since the regexp engine performs its own unescaping.
+ *
+ * The control and meta forms can wrap another escape (as in \C-\M-x). Those
+ * loop back to the top with the accumulated flags rather than recursing, so
+ * that arbitrarily long chains of prefixes use constant stack space regardless
+ * of whether the compiler eliminates tail calls.
  */
 static void
-escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expression_buffer, uint8_t flags) {
-    uint8_t peeked = peek(parser);
-    switch (peeked) {
+escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
+    uint8_t peeked;
+
+    escape_read_next:
+    switch (peeked = peek(parser)) {
         case '\\': {
             parser->current.end++;
-            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\\', flags));
+            escape_write_byte(parser, buffer, flags, escape_byte('\\', flags));
             return;
         }
         case '\'': {
             parser->current.end++;
-            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\'', flags));
+            escape_write_byte(parser, buffer, flags, escape_byte('\'', flags));
             return;
         }
         case 'a': {
             parser->current.end++;
-            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\a', flags));
+            escape_write_byte(parser, buffer, flags, escape_byte('\a', flags));
             return;
         }
         case 'b': {
             parser->current.end++;
-            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\b', flags));
+            escape_write_byte(parser, buffer, flags, escape_byte('\b', flags));
             return;
         }
         case 'e': {
             parser->current.end++;
-            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\033', flags));
+            escape_write_byte(parser, buffer, flags, escape_byte('\033', flags));
             return;
         }
         case 'f': {
             parser->current.end++;
-            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\f', flags));
+            escape_write_byte(parser, buffer, flags, escape_byte('\f', flags));
             return;
         }
         case 'n': {
             parser->current.end++;
-            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\n', flags));
+            escape_write_byte(parser, buffer, flags, escape_byte('\n', flags));
             return;
         }
         case 'r': {
             parser->current.end++;
-            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\r', flags));
+            escape_write_byte(parser, buffer, flags, escape_byte('\r', flags));
             return;
         }
         case 's': {
             parser->current.end++;
-            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(' ', flags));
+            escape_write_byte(parser, buffer, flags, escape_byte(' ', flags));
             return;
         }
         case 't': {
             parser->current.end++;
-            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\t', flags));
+            escape_write_byte(parser, buffer, flags, escape_byte('\t', flags));
             return;
         }
         case 'v': {
             parser->current.end++;
-            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte('\v', flags));
+            escape_write_byte(parser, buffer, flags, escape_byte('\v', flags));
             return;
         }
         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
@@ -9224,7 +9225,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
             }
 
             value = escape_byte(value, flags);
-            escape_write_byte(parser, buffer, regular_expression_buffer, flags, value);
+            escape_write_byte(parser, buffer, flags, value);
             return;
         }
         case 'x': {
@@ -9246,9 +9247,9 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                 value = escape_byte(value, flags);
                 if (flags & PM_ESCAPE_FLAG_REGEXP) {
                     if (flags & (PM_ESCAPE_FLAG_CONTROL | PM_ESCAPE_FLAG_META)) {
-                        pm_buffer_append_format(regular_expression_buffer, "\\x%02X", value);
+                        pm_buffer_append_format(buffer, "\\x%02X", value);
                     } else {
-                        pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end - start));
+                        pm_buffer_append_bytes(buffer, start, (size_t) (parser->current.end - start));
                     }
                 }
 
@@ -9303,7 +9304,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                             // let the regular expression engine handle this
                             // error instead of us because we don't know at this
                             // point if we're inside a comment in /x mode.
-                            pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end - start));
+                            pm_buffer_append_bytes(buffer, start, (size_t) (parser->current.end - start));
                         } else {
                             pm_parser_err(parser, PM_TOKEN_END(parser, &parser->current), 0, PM_ERR_ESCAPE_INVALID_UNICODE);
                             pm_parser_err(parser, PM_TOKEN_END(parser, &parser->current), 0, PM_ERR_ESCAPE_INVALID_UNICODE_TERM);
@@ -9340,21 +9341,21 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         // the regular expression engine handle this error
                         // instead of us because we don't know at this point if
                         // we're inside a comment in /x mode.
-                        pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end - start));
+                        pm_buffer_append_bytes(buffer, start, (size_t) (parser->current.end - start));
                     } else {
                         pm_parser_err(parser, U32(unicode_codepoints_start - parser->start), U32(parser->current.end - unicode_codepoints_start), PM_ERR_ESCAPE_INVALID_UNICODE_TERM);
                     }
                 }
 
                 if (flags & PM_ESCAPE_FLAG_REGEXP) {
-                    pm_buffer_append_bytes(regular_expression_buffer, unicode_codepoints_start, (size_t) (parser->current.end - unicode_codepoints_start));
+                    pm_buffer_append_bytes(buffer, unicode_codepoints_start, (size_t) (parser->current.end - unicode_codepoints_start));
                 }
             } else {
                 size_t length = pm_strspn_hexadecimal_digit(parser->current.end, MIN(parser->end - parser->current.end, 4));
 
                 if (length == 0) {
                     if (flags & PM_ESCAPE_FLAG_REGEXP) {
-                        pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end - start));
+                        pm_buffer_append_bytes(buffer, start, (size_t) (parser->current.end - start));
                     } else {
                         const uint8_t *start = parser->current.end - 2;
                         PM_PARSER_ERR_FORMAT(parser, U32(start - parser->start), U32(parser->current.end - start), PM_ERR_ESCAPE_INVALID_UNICODE_SHORT, 2, start);
@@ -9363,7 +9364,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     uint32_t value = escape_unicode(parser, parser->current.end, 4, NULL, flags);
 
                     if (flags & PM_ESCAPE_FLAG_REGEXP) {
-                        pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end + 4 - start));
+                        pm_buffer_append_bytes(buffer, start, (size_t) (parser->current.end + 4 - start));
                     }
 
                     escape_write_unicode(parser, buffer, flags, start, parser->current.end + 4, value);
@@ -9375,7 +9376,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         // If this is a regular expression, we are going to let
                         // the regular expression engine handle this error
                         // instead of us.
-                        pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end - start));
+                        pm_buffer_append_bytes(buffer, start, (size_t) (parser->current.end - start));
                     } else {
                         pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_UNICODE);
                     }
@@ -9399,7 +9400,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
             switch (peeked) {
                 case '?': {
                     parser->current.end++;
-                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(0x7f, flags));
+                    escape_write_byte(parser, buffer, flags, escape_byte(0x7f, flags));
                     return;
                 }
                 case '\\':
@@ -9410,17 +9411,17 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
 
-                    escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_CONTROL);
-                    return;
+                    flags |= PM_ESCAPE_FLAG_CONTROL;
+                    goto escape_read_next;
                 case ' ':
                     parser->current.end++;
                     escape_read_warn(parser, flags, PM_ESCAPE_FLAG_CONTROL, "\\s");
-                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
                 case '\t':
                     parser->current.end++;
                     escape_read_warn(parser, flags, 0, "\\t");
-                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
                 default: {
                     if (!char_is_ascii_printable(peeked)) {
@@ -9430,7 +9431,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
 
                     if (parser->heredoc_end == NULL && peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
                     parser->current.end++;
-                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
                 }
             }
@@ -9457,7 +9458,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
             switch (peeked) {
                 case '?': {
                     parser->current.end++;
-                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(0x7f, flags));
+                    escape_write_byte(parser, buffer, flags, escape_byte(0x7f, flags));
                     return;
                 }
                 case '\\':
@@ -9468,17 +9469,17 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
 
-                    escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_CONTROL);
-                    return;
+                    flags |= PM_ESCAPE_FLAG_CONTROL;
+                    goto escape_read_next;
                 case ' ':
                     parser->current.end++;
                     escape_read_warn(parser, flags, PM_ESCAPE_FLAG_CONTROL, "\\s");
-                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
                 case '\t':
                     parser->current.end++;
                     escape_read_warn(parser, flags, 0, "\\t");
-                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
                 default: {
                     if (!char_is_ascii_printable(peeked)) {
@@ -9489,7 +9490,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
 
                     if (parser->heredoc_end == NULL && peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
                     parser->current.end++;
-                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
                 }
             }
@@ -9522,17 +9523,17 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
 
-                    escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_META);
-                    return;
+                    flags |= PM_ESCAPE_FLAG_META;
+                    goto escape_read_next;
                 case ' ':
                     parser->current.end++;
                     escape_read_warn(parser, flags, PM_ESCAPE_FLAG_META, "\\s");
-                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
+                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
                     return;
                 case '\t':
                     parser->current.end++;
                     escape_read_warn(parser, flags & ((uint8_t) ~PM_ESCAPE_FLAG_CONTROL), PM_ESCAPE_FLAG_META, "\\t");
-                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
+                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
                     return;
                 default:
                     if (!char_is_ascii_printable(peeked)) {
@@ -9543,7 +9544,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
 
                     if (parser->heredoc_end == NULL && peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
                     parser->current.end++;
-                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
+                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
                     return;
             }
         }
@@ -9551,7 +9552,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
             if (peek_offset(parser, 1) == '\n') {
                 if (parser->heredoc_end == NULL) pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 2);
                 parser->current.end += 2;
-                escape_write_byte_encoded(parser, buffer, flags, escape_byte('\n', flags));
+                escape_write_byte(parser, buffer, flags, escape_byte('\n', flags));
                 return;
             }
             PRISM_FALLTHROUGH
@@ -9563,7 +9564,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                 return;
             }
             if (parser->current.end < parser->end) {
-                escape_write_escape_encoded(parser, buffer, regular_expression_buffer, flags);
+                escape_write_escape_encoded(parser, buffer, flags);
             } else {
                 pm_parser_err_current(parser, PM_ERR_INVALID_ESCAPE_CHARACTER);
             }
@@ -9630,7 +9631,7 @@ lex_question_mark(pm_parser_t *parser) {
         pm_buffer_t buffer;
         pm_buffer_init(&buffer, 3);
 
-        escape_read(parser, &buffer, NULL, PM_ESCAPE_FLAG_SINGLE);
+        escape_read(parser, &buffer, PM_ESCAPE_FLAG_SINGLE);
 
         // Copy buffer data into the arena and free the heap buffer.
         void *arena_data = pm_arena_memdup(parser->arena, buffer.value, buffer.length, PRISM_ALIGNOF(uint8_t));
@@ -9879,36 +9880,11 @@ typedef struct {
 } pm_token_buffer_t;
 
 /**
- * In order to properly set a regular expression's encoding and to validate
- * the byte sequence for the underlying encoding we must process any escape
- * sequences. The unescaped byte sequence will be stored in `buffer` just like
- * for other string-like types. However, we also need to store the regular
- * expression's source string. That string may be different from what we see
- * during lexing because some escape sequences rewrite the source.
- *
- * This value will only be initialized for regular expressions and only if we
- * receive an escape sequence. It will contain the regular expression's source
- * string's byte sequence.
- */
-typedef struct {
-    /** The embedded base buffer. */
-    pm_token_buffer_t base;
-
-    /** The buffer holding the regexp source. */
-    pm_buffer_t regexp_buffer;
-} pm_regexp_token_buffer_t;
-
-/**
  * Push the given byte into the token buffer.
  */
 static PRISM_INLINE void
 pm_token_buffer_push_byte(pm_token_buffer_t *token_buffer, uint8_t byte) {
     pm_buffer_append_byte(&token_buffer->buffer, byte);
-}
-
-static PRISM_INLINE void
-pm_regexp_token_buffer_push_byte(pm_regexp_token_buffer_t *token_buffer, uint8_t byte) {
-    pm_buffer_append_byte(&token_buffer->regexp_buffer, byte);
 }
 
 /**
@@ -9938,15 +9914,6 @@ pm_token_buffer_push_escaped(pm_token_buffer_t *token_buffer, pm_parser_t *parse
     parser->current.end += width;
 }
 
-static void
-pm_regexp_token_buffer_push_escaped(pm_regexp_token_buffer_t *token_buffer, pm_parser_t *parser) {
-    size_t width = parser_char_width(parser);
-    const uint8_t *start = parser->current.end;
-    pm_buffer_append_bytes(&token_buffer->base.buffer, start, width);
-    pm_buffer_append_bytes(&token_buffer->regexp_buffer, start, width);
-    parser->current.end += width;
-}
-
 /**
  * When we're about to return from lexing the current token and we know for sure
  * that we have found an escape sequence, this function is called to copy the
@@ -9960,12 +9927,6 @@ pm_token_buffer_copy(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
     void *arena_data = pm_arena_memdup(parser->arena, pm_buffer_value(&token_buffer->buffer), len, PRISM_ALIGNOF(uint8_t));
     pm_string_init(&parser->current_string, (const uint8_t *) arena_data, len);
     pm_buffer_cleanup(&token_buffer->buffer);
-}
-
-static PRISM_INLINE void
-pm_regexp_token_buffer_copy(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer) {
-    pm_token_buffer_copy(parser, &token_buffer->base);
-    pm_buffer_cleanup(&token_buffer->regexp_buffer);
 }
 
 /**
@@ -9984,19 +9945,6 @@ pm_token_buffer_flush(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
     } else {
         pm_buffer_append_bytes(&token_buffer->buffer, token_buffer->cursor, (size_t) (parser->current.end - token_buffer->cursor));
         pm_token_buffer_copy(parser, token_buffer);
-    }
-}
-
-static void
-pm_regexp_token_buffer_flush(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer) {
-    if (token_buffer->base.cursor == NULL) {
-        pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
-    } else {
-        const uint8_t *cursor = token_buffer->base.cursor;
-        size_t length = (size_t) (parser->current.end - cursor);
-        pm_buffer_append_bytes(&token_buffer->base.buffer, cursor, length);
-        pm_buffer_append_bytes(&token_buffer->regexp_buffer, cursor, length);
-        pm_regexp_token_buffer_copy(parser, token_buffer);
     }
 }
 
@@ -10025,24 +9973,6 @@ pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
     pm_buffer_append_bytes(&token_buffer->buffer, start, (size_t) (end - start));
 
     token_buffer->cursor = end;
-}
-
-static void
-pm_regexp_token_buffer_escape(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer) {
-    const uint8_t *start;
-    if (token_buffer->base.cursor == NULL) {
-        pm_buffer_init(&token_buffer->base.buffer, PM_TOKEN_BUFFER_DEFAULT_SIZE);
-        pm_buffer_init(&token_buffer->regexp_buffer, PM_TOKEN_BUFFER_DEFAULT_SIZE);
-        start = parser->current.start;
-    } else {
-        start = token_buffer->base.cursor;
-    }
-
-    const uint8_t *end = parser->current.end - 1;
-    pm_buffer_append_bytes(&token_buffer->base.buffer, start, (size_t) (end - start));
-    pm_buffer_append_bytes(&token_buffer->regexp_buffer, start, (size_t) (end - start));
-
-    token_buffer->base.cursor = end;
 }
 
 #undef PM_TOKEN_BUFFER_DEFAULT_SIZE
@@ -11752,7 +11682,7 @@ parser_lex(pm_parser_t *parser) {
                                 pm_token_buffer_push_byte(&token_buffer, peeked);
                                 parser->current.end++;
                             } else if (lex_mode->as.list.interpolation) {
-                                escape_read(parser, &token_buffer.buffer, NULL, PM_ESCAPE_FLAG_NONE);
+                                escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
                             } else {
                                 pm_token_buffer_push_byte(&token_buffer, '\\');
                                 pm_token_buffer_push_escaped(&token_buffer, parser);
@@ -11831,7 +11761,7 @@ parser_lex(pm_parser_t *parser) {
             // characters.
             const uint8_t *breakpoints = lex_mode->as.regexp.breakpoints;
             const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
-            pm_regexp_token_buffer_t token_buffer = { 0 };
+            pm_token_buffer_t token_buffer = { 0 };
 
             while (breakpoint != NULL) {
                 uint8_t term = lex_mode->as.regexp.terminator;
@@ -11868,7 +11798,7 @@ parser_lex(pm_parser_t *parser) {
                     // first.
                     if (breakpoint > parser->current.start) {
                         parser->current.end = breakpoint;
-                        pm_regexp_token_buffer_flush(parser, &token_buffer);
+                        pm_token_buffer_flush(parser, &token_buffer);
                         LEX(PM_TOKEN_STRING_CONTENT);
                     }
 
@@ -11920,8 +11850,8 @@ parser_lex(pm_parser_t *parser) {
 
                         breakpoint++;
                         parser->current.end = breakpoint;
-                        pm_regexp_token_buffer_escape(parser, &token_buffer);
-                        token_buffer.base.cursor = breakpoint;
+                        pm_token_buffer_escape(parser, &token_buffer);
+                        token_buffer.cursor = breakpoint;
 
                         PRISM_FALLTHROUGH
                     case '\n':
@@ -11936,7 +11866,7 @@ parser_lex(pm_parser_t *parser) {
 
                         parser->current.end = breakpoint + 1;
                         parser_flush_heredoc_end(parser);
-                        pm_regexp_token_buffer_flush(parser, &token_buffer);
+                        pm_token_buffer_flush(parser, &token_buffer);
                         LEX(PM_TOKEN_STRING_CONTENT);
                     case '\\': {
                         // If we hit escapes, then we need to treat the next
@@ -11951,7 +11881,7 @@ parser_lex(pm_parser_t *parser) {
                             break;
                         }
 
-                        pm_regexp_token_buffer_escape(parser, &token_buffer);
+                        pm_token_buffer_escape(parser, &token_buffer);
                         uint8_t peeked = peek(parser);
 
                         switch (peeked) {
@@ -11959,10 +11889,9 @@ parser_lex(pm_parser_t *parser) {
                                 parser->current.end++;
                                 if (peek(parser) != '\n') {
                                     if (lex_mode->as.regexp.terminator != '\r') {
-                                        pm_token_buffer_push_byte(&token_buffer.base, '\\');
+                                        pm_token_buffer_push_byte(&token_buffer, '\\');
                                     }
-                                    pm_regexp_token_buffer_push_byte(&token_buffer, '\r');
-                                    pm_token_buffer_push_byte(&token_buffer.base, '\r');
+                                    pm_token_buffer_push_byte(&token_buffer, '\r');
                                     break;
                                 }
                             PRISM_FALLTHROUGH
@@ -11972,7 +11901,7 @@ parser_lex(pm_parser_t *parser) {
                                     // flush the heredoc and continue parsing after
                                     // heredoc_end.
                                     parser_flush_heredoc_end(parser);
-                                    pm_regexp_token_buffer_copy(parser, &token_buffer);
+                                    pm_token_buffer_copy(parser, &token_buffer);
                                     LEX(PM_TOKEN_STRING_CONTENT);
                                 } else {
                                     // ... else track the newline.
@@ -11986,7 +11915,7 @@ parser_lex(pm_parser_t *parser) {
                             case 'M':
                             case 'u':
                             case 'x':
-                                escape_read(parser, &token_buffer.regexp_buffer, &token_buffer.base.buffer, PM_ESCAPE_FLAG_REGEXP);
+                                escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_REGEXP);
                                 break;
                             default:
                                 if (lex_mode->as.regexp.terminator == peeked) {
@@ -11997,24 +11926,23 @@ parser_lex(pm_parser_t *parser) {
                                         case '$': case ')': case '*': case '+':
                                         case '.': case '>': case '?': case ']':
                                         case '^': case '|': case '}':
-                                            pm_token_buffer_push_byte(&token_buffer.base, '\\');
+                                            pm_token_buffer_push_byte(&token_buffer, '\\');
                                             break;
                                         default:
                                             break;
                                     }
 
-                                    pm_regexp_token_buffer_push_byte(&token_buffer, peeked);
-                                    pm_token_buffer_push_byte(&token_buffer.base, peeked);
+                                    pm_token_buffer_push_byte(&token_buffer, peeked);
                                     parser->current.end++;
                                     break;
                                 }
 
-                                if (peeked < 0x80) pm_token_buffer_push_byte(&token_buffer.base, '\\');
-                                pm_regexp_token_buffer_push_escaped(&token_buffer, parser);
+                                if (peeked < 0x80) pm_token_buffer_push_byte(&token_buffer, '\\');
+                                pm_token_buffer_push_escaped(&token_buffer, parser);
                                 break;
                         }
 
-                        token_buffer.base.cursor = parser->current.end;
+                        token_buffer.cursor = parser->current.end;
                         breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
                         break;
                     }
@@ -12033,7 +11961,7 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         if (type == PM_TOKEN_STRING_CONTENT) {
-                            pm_regexp_token_buffer_flush(parser, &token_buffer);
+                            pm_token_buffer_flush(parser, &token_buffer);
                         }
 
                         LEX(type);
@@ -12045,14 +11973,14 @@ parser_lex(pm_parser_t *parser) {
             }
 
             if (parser->current.end > parser->current.start) {
-                pm_regexp_token_buffer_flush(parser, &token_buffer);
+                pm_token_buffer_flush(parser, &token_buffer);
                 LEX(PM_TOKEN_STRING_CONTENT);
             }
 
             // If we were unable to find a breakpoint, then this token hits the
             // end of the file.
             parser->current.end = parser->end;
-            pm_regexp_token_buffer_flush(parser, &token_buffer);
+            pm_token_buffer_flush(parser, &token_buffer);
             LEX(PM_TOKEN_STRING_CONTENT);
         }
         case PM_LEX_STRING: {
@@ -12260,7 +12188,7 @@ parser_lex(pm_parser_t *parser) {
                                     pm_token_buffer_push_byte(&token_buffer, peeked);
                                     parser->current.end++;
                                 } else if (lex_mode->as.string.interpolation) {
-                                    escape_read(parser, &token_buffer.buffer, NULL, PM_ESCAPE_FLAG_NONE);
+                                    escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
                                 } else {
                                     pm_token_buffer_push_byte(&token_buffer, '\\');
                                     pm_token_buffer_push_escaped(&token_buffer, parser);
@@ -12607,7 +12535,7 @@ parser_lex(pm_parser_t *parser) {
                                     breakpoint = parser->current.end;
                                     continue;
                                 default:
-                                    escape_read(parser, &token_buffer.buffer, NULL, PM_ESCAPE_FLAG_NONE);
+                                    escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
                                     break;
                             }
                         }
@@ -17931,8 +17859,13 @@ static pm_node_t *
 parse_pattern(pm_parser_t *parser, pm_constant_id_set_t *captures, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
     /* Nested patterns recurse back into parse_pattern without passing through
      * parse_expression, so this cycle needs its own depth check. */
-    if (PRISM_UNLIKELY(depth >= PRISM_DEPTH_MAXIMUM)) {
-        pm_parser_err_current(parser, PM_ERR_NESTING_TOO_DEEP);
+    if (PRISM_UNLIKELY(depth >= PRISM_DEPTH_MAXIMUM || pm_parser_stack_exhausted(parser))) {
+        if (depth >= PRISM_DEPTH_MAXIMUM) {
+            pm_parser_err_current(parser, PM_ERR_NESTING_TOO_DEEP);
+        } else {
+            pm_parser_err_stack_exhausted(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current));
+        }
+
         return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
     }
 
@@ -22900,8 +22833,13 @@ parse_expression_terminator(pm_parser_t *parser, pm_node_t *node) {
  */
 static pm_node_t *
 parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
-    if (PRISM_UNLIKELY(depth >= PRISM_DEPTH_MAXIMUM)) {
-        pm_parser_err_current(parser, PM_ERR_NESTING_TOO_DEEP);
+    if (PRISM_UNLIKELY(depth >= PRISM_DEPTH_MAXIMUM || pm_parser_stack_exhausted(parser))) {
+        if (depth >= PRISM_DEPTH_MAXIMUM) {
+            pm_parser_err_current(parser, PM_ERR_NESTING_TOO_DEEP);
+        } else {
+            pm_parser_err_stack_exhausted(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current));
+        }
+
         return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
     }
 
@@ -23322,6 +23260,8 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .pattern_matching_newlines = false,
         .in_keyword_arg = false,
         .current_block_exits = NULL,
+        .stack_base = 0,
+        .stack_budget = SIZE_MAX,
         .semantic_token_seen = false,
         .frozen_string_literal = PM_OPTIONS_FROZEN_STRING_LITERAL_UNSET,
         .warn_mismatched_indentation = true
@@ -23384,6 +23324,9 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
 
         // attach_comments
         parser->attach_comments = options->attach_comments;
+
+        // stack_budget
+        parser->stack_budget = options->stack_budget;
 
         // scopes option
         parser->parsing_eval = options->scopes_count > 0;
@@ -23540,7 +23483,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
 pm_parser_t *
 pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_options_t *options) {
     pm_parser_t *parser = (pm_parser_t *) xmalloc(sizeof(pm_parser_t));
-    if (parser == NULL) abort();
+    if (parser == NULL) PRISM_OOM();
 
     pm_parser_init(arena, parser, source, size, options);
     return parser;
@@ -23596,6 +23539,7 @@ pm_parse_err_is_fatal(pm_diagnostic_id_t diag_id) {
         case PM_ERR_INVALID_NUMBER_UNDERSCORE_TRAILING:
         case PM_ERR_NO_LOCAL_VARIABLE:
         case PM_ERR_PARAMETER_ORDER:
+        case PM_ERR_STACK_EXHAUSTED:
         case PM_ERR_STATEMENT_UNDEF:
         case PM_ERR_VOID_EXPRESSION:
             return true;
@@ -23731,6 +23675,7 @@ pm_parse_continuable(pm_parser_t *parser) {
  */
 pm_node_t *
 pm_parse(pm_parser_t *parser) {
+    parser->stack_base = pm_stack_address();
     pm_node_t *node = parse_program(parser);
     pm_parse_continuable(parser);
     if (parser->attach_comments) pm_comments_attach(parser, node);

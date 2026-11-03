@@ -34,6 +34,56 @@ describe "Module#name" do
     ModuleSpecs::Anonymous.send(:remove_const, :WasAnnon)
   end
 
+  it "changes when a class is reachable through a constant path" do
+    m = Module.new
+    m::C = Class.new
+    m::C.name.should =~ /\A#<Module:0x\h+>::C\z/
+    ModuleSpecs::Anonymous::WasAnonClass = m::C
+    m::C.name.should == "ModuleSpecs::Anonymous::WasAnonClass"
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :WasAnonClass)
+  end
+
+  it "changes when the module is reachable through a constant path set with const_set" do
+    m = Module.new
+    klass = Class.new
+    m.const_set(:T, klass)
+    ModuleSpecs::Anonymous.const_set(:ViaConstSet, klass)
+    klass.name.should == "ModuleSpecs::Anonymous::ViaConstSet"
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :ViaConstSet)
+  end
+
+  it "changes for a nested module when the module is reachable through a constant path" do
+    m = Module.new
+    module m::N; module Inner; end; end
+    ModuleSpecs::Anonymous::WasAnonOuter = m::N
+    m::N::Inner.name.should == "ModuleSpecs::Anonymous::WasAnonOuter::Inner"
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :WasAnonOuter)
+  end
+
+  it "changes when a module in a cycle of anonymous modules is reachable through a constant path" do
+    m = Module.new
+    m::N = Module.new
+    m::N::Back = m
+    ModuleSpecs::Anonymous::FromCycle = m::N
+    m::N.name.should == "ModuleSpecs::Anonymous::FromCycle"
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :FromCycle)
+  end
+
+  it "changes when a module nested in a cycle of anonymous modules is reachable through a constant path" do
+    m = Module.new
+    m::N = Module.new
+    m::N::Back = m
+    m::N::O = Module.new
+    ModuleSpecs::Anonymous::FromCycleNested = m::N::O
+    m::N::O.name.should == "ModuleSpecs::Anonymous::FromCycleNested"
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :FromCycleNested)
+  end
+
   it "may be the repeated in different module objects" do
     m = Module.new
     n = Module.new

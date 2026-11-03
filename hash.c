@@ -1591,6 +1591,12 @@ hash_alloc_capa(VALUE klass, size_t size)
 }
 
 VALUE
+rb_hash_alloc_capa(rb_len_t capa)
+{
+    return hash_alloc_capa(rb_cHash, capa);
+}
+
+VALUE
 rb_hash_alloc_copy(VALUE klass, VALUE src)
 {
     return hash_alloc_capa(klass, RHASH_SIZE(src));
@@ -1946,6 +1952,7 @@ rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifn
 {
     rb_hash_modify(hash);
 
+
     if (capa_value != INT2FIX(0)) {
         rb_len_t capa = NUM2LEN(capa_value);
         if (capa > 0 && RHASH_AR_TABLE_P(hash) && RHASH_SIZE(hash) == 0 &&
@@ -1967,6 +1974,37 @@ rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifn
     }
 
     hash_verify(hash);
+    return hash;
+}
+
+/* :nodoc: */
+static VALUE
+rb_hash_s_new(int argc, VALUE *argv, VALUE klass)
+{
+    if (klass != rb_cHash) {
+        return rb_class_new_instance_pass_kw(argc, argv, klass);
+    }
+
+    static ID keyword_ids[1];
+    VALUE orig, opt, capacity = Qnil;
+    VALUE kwargs[2];
+
+    rb_scan_args(argc, argv, "01:", &orig, &opt);
+    if (NIL_P(opt)) {
+        return rb_class_new_instance_pass_kw(argc, argv, klass);
+    }
+
+    CONST_ID(keyword_ids[0], "capacity");
+    rb_get_kwargs(opt, keyword_ids, 0, 1, kwargs);
+    capacity = kwargs[0];
+
+    if (UNDEF_P(capacity) || !RB_TYPE_P(capacity, T_FIXNUM)) {
+        return rb_class_new_instance_pass_kw(argc, argv, klass);
+    }
+
+    rb_len_t capa = NUM2LEN(capacity);
+    VALUE hash = hash_alloc_capa(klass, capa);
+    rb_obj_call_init_kw(hash, argc, argv, RB_PASS_CALLED_KEYWORDS);
     return hash;
 }
 
@@ -7677,6 +7715,7 @@ Init_Hash(void)
     rb_include_module(rb_cHash, rb_mEnumerable);
 
     rb_define_alloc_func(rb_cHash, empty_hash_alloc);
+    rb_define_singleton_method(rb_cHash, "new", rb_hash_s_new, -1);
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
     rb_define_singleton_method(rb_cHash, "try_convert", rb_hash_s_try_convert, 1);
     rb_define_method(rb_cHash, "initialize_copy", rb_hash_replace, 1);

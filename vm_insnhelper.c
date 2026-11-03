@@ -2551,39 +2551,21 @@ FLONUM_2_P(VALUE a, VALUE b)
 #endif
 }
 
-static VALUE
+static inline VALUE
 opt_equality_specialized(VALUE recv, VALUE obj)
 {
-    if (FIXNUM_2_P(recv, obj) && EQ_UNREDEFINED_P(INTEGER)) {
-        goto compare_by_identity;
-    }
-    else if (FLONUM_2_P(recv, obj) && EQ_UNREDEFINED_P(FLOAT)) {
-        goto compare_by_identity;
-    }
-    else if (STATIC_SYM_P(recv) && STATIC_SYM_P(obj) && EQ_UNREDEFINED_P(SYMBOL)) {
-        goto compare_by_identity;
-    }
-    else if (SPECIAL_CONST_P(recv)) {
-        //
-    }
-    else if (RBASIC_CLASS(recv) == rb_cFloat && RB_FLOAT_TYPE_P(obj) && EQ_UNREDEFINED_P(FLOAT)) {
-        double a = RFLOAT_VALUE(recv);
-        double b = RFLOAT_VALUE(obj);
-
-        return RBOOL(a == b);
-    }
-    else if (RBASIC_CLASS(recv) == rb_cString && EQ_UNREDEFINED_P(STRING)) {
-        if (recv == obj) {
-            return Qtrue;
+    if (recv == obj) {
+        if (OP_UNREDEFINED_P(EQ, ANY)) {
+            // Two identical immediate VALUE are always equal
+            if (SPECIAL_CONST_P(recv)) {
+                return Qtrue;
+            }
+            return Qundef;
         }
-        else if (RB_TYPE_P(obj, T_STRING)) {
-            return rb_str_eql_internal(obj, recv);
-        }
+        return Qundef;
     }
-    return Qundef;
 
-  compare_by_identity:
-    return RBOOL(recv == obj);
+    return opt_equality_specialized_miss(recv, obj);
 }
 
 static VALUE
@@ -2603,10 +2585,9 @@ opt_equality(struct rb_control_frame_struct *reg_cfp, VALUE recv, VALUE obj, CAL
 }
 
 static inline const struct rb_callcache *gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct rb_callinfo *ci); // vm_eval.c
-NOINLINE(static VALUE opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid));
 
-static VALUE
-opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid)
+static inline VALUE
+opt_equality_by_mid(VALUE recv, VALUE obj, ID mid)
 {
     const struct rb_callcache *cc = gccct_method_search(GET_EC(), recv, mid, &VM_CI_ON_STACK(mid, 0, 1, NULL));
 
@@ -2614,19 +2595,7 @@ opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid)
         return RBOOL(recv == obj);
     }
     else {
-        return Qundef;
-    }
-}
-
-static VALUE
-opt_equality_by_mid(VALUE recv, VALUE obj, ID mid)
-{
-    VALUE val = opt_equality_specialized(recv, obj);
-    if (!UNDEF_P(val)) {
-        return val;
-    }
-    else {
-        return opt_equality_by_mid_slowpath(recv, obj, mid);
+        return RBOOL(RTEST(rb_funcall(recv, mid, 1, obj)));
     }
 }
 
@@ -3982,6 +3951,31 @@ bool
 rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci)
 {
     return IS_ARGS_SPLAT(ci) || IS_ARGS_KW_OR_KW_SPLAT(ci);
+}
+
+static VALUE
+vm_call_get_kwarg(rb_control_frame_t *reg_cfp, CALL_DATA cd, ID kw)
+{
+
+    VALUE sym = ID2SYM(kw);
+    if (vm_ci_flag(cd->ci) & VM_CALL_KW_SPLAT) {
+        VALUE keywords = TOPN(0);
+        if (UNLIKELY(!RB_TYPE_P(keywords, T_HASH))) {
+            TOPN(0) = keywords = rb_to_hash_type(keywords);
+        }
+        return rb_hash_lookup2(keywords, sym, Qundef);
+    }
+    else {
+        const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(cd->ci);
+        if (kwarg) {
+            for (int index = 0; index < kwarg->keyword_len; index++) {
+                if (kwarg->keywords[index] == sym) {
+                    return TOPN(kwarg->keyword_len - index - 1);
+                }
+            }
+        }
+    }
+    return Qundef;
 }
 
 static VALUE

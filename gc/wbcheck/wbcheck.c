@@ -981,7 +981,7 @@ wbcheck_process_weak_references(rb_wbcheck_objspace_t *objspace)
 
     for (size_t i = 0; i < objspace->weak_references->count; i++) {
         VALUE obj = objspace->weak_references->items[i];
-        rb_gc_handle_weak_references(obj);
+        rb_gc_handle_weak_references(objspace, obj);
     }
 
     objspace->weak_references->count = 0;

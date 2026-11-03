@@ -137,6 +137,37 @@ describe "Module#alias_method" do
     ModuleSpecs::AliasingSuper::RedefineAfterAlias.new.alias_super_call(1).should == 1
   end
 
+  it "does not warn when overwriting an alias of a method that was later redefined" do
+    -> {
+      Class.new do
+        def foo; end
+        alias_method :bar, :foo
+        def foo; end
+        alias_method :bar, :foo
+      end
+    }.should_not complain(verbose: true)
+  end
+
+  it "does not warn when overwriting an existing method with an alias of it" do
+    -> {
+      Class.new do
+        def foo; end
+        alias_method :bar, :foo
+        alias_method :bar, :foo
+      end
+    }.should_not complain(verbose: true)
+  end
+
+  it "warns when overwriting an unrelated existing method" do
+    -> {
+      Class.new do
+        def foo; end
+        def bar; end
+        alias_method :bar, :foo
+      end
+    }.should complain(/discarding old bar/, verbose: true)
+  end
+
   describe "aliasing special methods" do
     before :all do
       @class = ModuleSpecs::Aliasing

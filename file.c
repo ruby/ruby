@@ -5607,6 +5607,7 @@ realpath_rec(rb_len_t *prefixlenp, VALUE *resolvedp, const char *unresolved, VAL
                                      loopcheck, mode, !*unresolved_firstsep))
                         return -1;
                     RB_GC_GUARD(link_orig);
+                    RB_GC_GUARD(link);
                     rb_hash_aset(loopcheck, testpath, rb_str_dup_frozen(*resolvedp));
                 }
                 else

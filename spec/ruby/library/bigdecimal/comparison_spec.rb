@@ -43,6 +43,12 @@ describe "BigDecimal#<=>" do
     (@infinity_neg <=> @infinity_neg).should == 0
   end
 
+  it "compares Float values using at most 16 significant decimal digits" do
+    (BigDecimal("8.03") <=> 8.03).should == 0
+    (BigDecimal("0.84551240822557006") <=> 0.84551240822557006).should == -1
+    (BigDecimal("1.2345678901234567") <=> 1.2345678901234567).should == 1
+  end
+
   it "returns 1 if a > b" do
     (@pos_int <=> @neg_int).should == 1
     (@pos_frac <=> @neg_frac).should == 1

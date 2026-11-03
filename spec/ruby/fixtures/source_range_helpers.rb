@@ -23,6 +23,10 @@ def keep_source(value = true)
   end
 end
 
+def parse_y?
+  RUBY_ENGINE == "ruby" && (ENV["RUBYOPT"]&.include?("--parser=parse.y") || !RUBY_DESCRIPTION.include?("+PRISM"))
+end
+
 # #syntax_tree on CRuby currently returns RubyVM::AbstractSyntaxTree::Node with --parser=parse.y.
 # We must not refer to RubyVM in ruby/spec as it only exists on CRuby.
 def syntax_tree_returns_prism_node

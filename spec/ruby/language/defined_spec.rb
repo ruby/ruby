@@ -135,6 +135,60 @@ describe "The defined? keyword when called with a method name" do
       obj.should_receive(:respond_to_missing?).and_return(true)
       defined?(obj.something_undefined).should == "method"
     end
+
+    it "does not call #respond_to_missing? if #respond_to?(:respond_to_missing?) returns false" do
+      obj = DefinedSpecs::RespondToFalse.new
+      defined?(obj.an_undefined_method).should == nil
+      ScratchPad.recorded.should == nil
+    end
+
+    it "calls #respond_to_missing? if #respond_to?(:respond_to_missing?) returns true" do
+      obj = DefinedSpecs::RespondToTrue.new
+      defined?(obj.an_undefined_method).should == "method"
+      ScratchPad.recorded.should == :defined_specs_respond_to_missing
+    end
+
+    it "warns if #respond_to? takes one parameter" do
+      obj = DefinedSpecs::RespondToOneParameter.new
+
+      deprecated = Warning[:deprecated]
+      begin
+        Warning[:deprecated] = true
+        -> { defined?(obj.an_undefined_method) }.should complain(
+          /respond_to\?\(:respond_to_missing\?\) uses the deprecated method signature.*\n.*respond_to\? is defined here/)
+      ensure
+        Warning[:deprecated] = deprecated
+      end
+    end
+
+    it "does not call the receiver's #to_s for a one parameter #respond_to? if Warning[:deprecated] is false" do
+      obj = DefinedSpecs::RespondToRecordingToS.new
+      def obj.respond_to?(name)
+        false
+      end
+
+      deprecated = Warning[:deprecated]
+      begin
+        Warning[:deprecated] = false
+        defined?(obj.an_undefined_method).should == nil
+      ensure
+        Warning[:deprecated] = deprecated
+      end
+
+      ScratchPad.recorded.should == nil
+    end
+
+    it "does not warn about a one parameter #respond_to? if Warning[:deprecated] is false" do
+      obj = DefinedSpecs::RespondToOneParameter.new
+
+      deprecated = Warning[:deprecated]
+      begin
+        Warning[:deprecated] = false
+        -> { defined?(obj.an_undefined_method) }.should_not complain
+      ensure
+        Warning[:deprecated] = deprecated
+      end
+    end
   end
 
   describe "having an instance variable as receiver" do

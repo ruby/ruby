@@ -1070,6 +1070,22 @@ assert_equal 'r', %q{
   Ractor.new(&rp).value
 }
 
+# a Ractor's &:sym under refinements stays alive across its own GCs: it must not be
+# cached in the main Ractor's refinements table, which that GC does not see
+assert_equal 'ok', %q{
+  module M
+    refine(Object) { def zzz = 1 }
+  end
+  using M
+
+  def f = [[1], []].reject(&:empty?)
+
+  Ractor.new do
+    100_000.times { f; Object.new; "x" * 100 }
+    :ok
+  end.value.to_s
+}
+
 # a Proc made shareable by Ractor.new can not be given ivars afterwards
 assert_equal "can't modify instance variables of a shareable Proc", %q{
   HAX = -> { }

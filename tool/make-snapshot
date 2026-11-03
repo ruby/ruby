@@ -194,6 +194,7 @@ def tar_create(tarball, dir)
         f.write("\0" * (-size % 512))
       end
     end
+    w.close
   end
   true
 rescue => e

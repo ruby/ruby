@@ -2,6 +2,7 @@
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/buffer.h"
+#include "prism/internal/oom.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -26,7 +27,7 @@ static const uint8_t empty_source[] = "";
 static pm_source_t *
 pm_source_alloc(const uint8_t *source, size_t length, pm_source_type_t type) {
     pm_source_t *result = xmalloc(sizeof(pm_source_t));
-    if (result == NULL) abort();
+    if (result == NULL) PRISM_OOM();
 
     *result = (struct pm_source_t) {
         .source = source,

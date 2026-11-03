@@ -113,8 +113,10 @@ wmap_compact(void *ptr)
 static int
 rb_wmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    if (rb_gc_handle_weak_references_alive_p(key) &&
-            rb_gc_handle_weak_references_alive_p(val)) {
+    void *objspace = (void *)arg;
+
+    if (rb_gc_handle_weak_references_alive_p(objspace, key) &&
+            rb_gc_handle_weak_references_alive_p(objspace, val)) {
         return ST_CONTINUE;
     }
     else {
@@ -123,11 +125,11 @@ rb_wmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
 }
 
 static void
-wmap_handle_weak_references(void *ptr)
+wmap_handle_weak_references(void *ptr, void *objspace)
 {
     struct weakmap *w = ptr;
 
-    st_foreach(w->table, rb_wmap_handle_weak_references_i, (st_data_t)0);
+    st_foreach(w->table, rb_wmap_handle_weak_references_i, (st_data_t)objspace);
 }
 
 static const rb_data_type_t rb_weakmap_type = {
@@ -616,7 +618,7 @@ wkmap_compact(void *ptr)
 static int
 rb_wkmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    if (rb_gc_handle_weak_references_alive_p(key)) {
+    if (rb_gc_handle_weak_references_alive_p((void *)arg, key)) {
         return ST_CONTINUE;
     }
     else {
@@ -625,11 +627,11 @@ rb_wkmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
 }
 
 static void
-wkmap_handle_weak_references(void *ptr)
+wkmap_handle_weak_references(void *ptr, void *objspace)
 {
     struct weakkeymap *w = ptr;
 
-    st_foreach(w->table, rb_wkmap_handle_weak_references_i, (st_data_t)0);
+    st_foreach(w->table, rb_wkmap_handle_weak_references_i, (st_data_t)objspace);
 }
 
 static const rb_data_type_t rb_weakkeymap_type = {

@@ -3966,6 +3966,19 @@ class TestArray < Test::Unit::TestCase
     assert_raise(ArgumentError) { ary.find(1, 2) }
   end
 
+  def test_find_with_proc
+    if_none_proc = -> { 5 }
+    assert_equal(5, [].find(if_none_proc) { |_| false } )
+
+    if_none_proc = -> {}
+    if_none_proc.singleton_class.send(:private, :call)
+    [].find(if_none_proc) { |_| false }
+
+    if_none_proc = BasicObject.new
+    def if_none_proc.call = 7
+    assert_equal(7, [].find(if_none_proc) { } )
+  end
+
   def test_rfind
     ary = [1, 2, 3, 4, 5]
     assert_equal(4, ary.rfind {|x| x % 2 == 0 })

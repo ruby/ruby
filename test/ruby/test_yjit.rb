@@ -1526,6 +1526,22 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_invokeblock_ifunc_keywords
+    assert_compiles(<<~'RUBY', result: [[[[], {key: 1}], [[], {key: 2}]], [[[], {key: 3}]]])
+      class Items
+        include Enumerable
+        def each
+          i = 1
+          while i <= 3
+            yield [], key: i
+            i += 1
+          end
+        end
+      end
+      Items.new.each_slice(2).to_a
+    RUBY
+  end
+
   def test_bug_19316
     n = 2 ** 64
     # foo's extra param and the splats are relevant

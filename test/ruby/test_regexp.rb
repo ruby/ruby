@@ -953,6 +953,23 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(/^[0-9]/, Bug::Regexp.new_binary("^[0-9]"))
   end
 
+  def test_match_encodings
+    re = Regexp.new('(?<letter>.)a', Regexp::IGNORECASE)
+    strings = [Encoding::UTF_8, Encoding::EUC_JP, Encoding::Windows_31J].map do |enc|
+      "\u3042A".encode(enc)
+    end
+    strings.each do |str|
+      assert_equal str[0], re.match(str)[:letter]
+    end
+
+    GC.start
+    strings.reverse_each do |str|
+      assert_equal str[0], re.match(str)[:letter]
+    end
+    assert_equal Encoding::US_ASCII, re.encoding
+    assert_equal "b", re.match("bA")[:letter]
+  end
+
   def test_quote
     assert_equal("\xff", Regexp.quote([0xff].pack("C")))
     assert_equal("\\ ", Regexp.quote("\ "))
@@ -1050,6 +1067,20 @@ class TestRegexp < Test::Unit::TestCase
     begin;
       1_000.times(&code)
     end;
+  end
+
+  def test_extended_comment_compiled_again_for_string
+    e = Encoding::EMACS_MULE
+    c = "\x8E\xDA".dup.force_encoding(e)
+    re = Regexp.new("()()#\x8E\xDA()()".dup.force_encoding(e), Regexp::EXTENDED)
+    assert_equal(3, re.match("ab").size)
+    assert_equal(3, re.match(c).size)
+    assert_send([c, :start_with?, re])
+    assert_equal(3, $~.size)
+    re = Regexp.new("a#\x8E\xDAb\nc".dup.force_encoding(e), Regexp::EXTENDED)
+    assert_match(re, "ac")
+    assert_match(re, c + "ac")
+    assert_no_match(re, c + "ab")
   end
 
   def test_ignorecase

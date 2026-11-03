@@ -114,6 +114,17 @@ describe "Socket.getaddrinfo" do
         [Socket::EAI_FAMILY, Socket::EAI_FAIL].should.include?(e.error_code)
       }
     end
+
+    it "does not resolve a host name with AI_NUMERICHOST" do
+      -> {
+        Socket.getaddrinfo("localhost", nil, Socket::AF_UNSPEC, Socket::SOCK_STREAM, 0, Socket::AI_NUMERICHOST)
+      }.should.raise(SocketError)
+    end
+
+    it "accepts an address literal with AI_NUMERICHOST" do
+      res = Socket.getaddrinfo("127.0.0.1", nil, Socket::AF_UNSPEC, Socket::SOCK_STREAM, 0, Socket::AI_NUMERICHOST)
+      res.map { |a| a[3] }.should == ["127.0.0.1"]
+    end
   end
 end
 
@@ -377,5 +388,30 @@ describe 'Socket.getaddrinfo' do
 
       addr[3].should == '127.0.0.1'
     end
+  end
+end
+
+describe "Socket.getaddrinfo with a Fiber scheduler" do
+  require_relative '../../../core/fiber/fixtures/scheduler'
+
+  before :each do
+    @scheduler = Class.new(FiberSpecs::LoggingScheduler) do
+      def address_resolve(hostname)
+        @events << { event: :address_resolve, fiber: Fiber.current, args: [hostname] }
+        ["127.0.0.1"]
+      end
+    end.new
+    Fiber.set_scheduler(@scheduler)
+  end
+
+  after :each do
+    Fiber.set_scheduler(nil)
+  end
+
+  it "calls the scheduler's #address_resolve with the host name and uses the addresses it returns" do
+    addrs = Fiber.new(blocking: false) { Socket.getaddrinfo("example.invalid", 80, :INET, :STREAM) }.resume
+
+    addrs.map { |addr| addr[3] }.should == ["127.0.0.1"]
+    @scheduler.events.map { |e| [e[:event], e[:args]] }.should == [[:address_resolve, ["example.invalid"]]]
   end
 end

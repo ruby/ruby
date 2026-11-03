@@ -1738,20 +1738,29 @@ static const rb_data_type_t exec_arg_data_type = {
 #ifdef _WIN32
 # define DEFAULT_PROCESS_ENCODING rb_utf8_encoding()
 #endif
+#define EXPORT_STR(str) export_str(str)
+#define EXPORT_DUP(str) export_dup(str)
+
+WARN_UNUSED_RESULT(static VALUE)
+export_str(VALUE str)
+{
+    StringValue(str);
+    mustnot_wchar(str);
 #ifdef DEFAULT_PROCESS_ENCODING
-# define EXPORT_STR(str) rb_str_export_to_enc((str), DEFAULT_PROCESS_ENCODING)
-# define EXPORT_DUP(str) export_dup(str)
-static VALUE
+    str = rb_str_export_to_enc(str, DEFAULT_PROCESS_ENCODING);
+    mustnot_broken(str);
+#endif
+    rb_str_null_check(str);
+    return str;
+}
+
+WARN_UNUSED_RESULT(static VALUE)
 export_dup(VALUE str)
 {
     VALUE newstr = EXPORT_STR(str);
     if (newstr == str) newstr = rb_str_dup(str);
     return newstr;
 }
-#else
-# define EXPORT_STR(str) (str)
-# define EXPORT_DUP(str) rb_str_dup(str)
-#endif
 
 #if !defined(HAVE_WORKING_FORK) && defined(HAVE_SPAWNV)
 # define USE_SPAWNV 1
@@ -2279,16 +2288,11 @@ check_exec_env_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     VALUE val = (VALUE)st_val;
     VALUE env = ((VALUE *)arg)[0];
     VALUE *path = &((VALUE *)arg)[1];
-    char *k;
 
-    k = StringValueCStr(key);
+    const char *k = RSTRING_PTR(key = EXPORT_STR(key));
     if (strchr(k, '='))
         rb_raise(rb_eArgError, "environment name contains a equal : %"PRIsVALUE, key);
 
-    if (!NIL_P(val))
-        StringValueCStr(val);
-
-    key = EXPORT_STR(key);
     if (!NIL_P(val)) val = EXPORT_STR(val);
 
     if (ENVMATCH(k, PATH_ENV)) {
@@ -2328,14 +2332,10 @@ rb_check_argv(int argc, VALUE *argv)
         }
         prog = RARRAY_AREF(tmp, 0);
         argv[0] = RARRAY_AREF(tmp, 1);
-        StringValue(prog);
-        StringValueCStr(prog);
-        prog = rb_str_new_frozen(prog);
+        prog = rb_str_new_frozen(EXPORT_STR(prog));
     }
     for (i = 0; i < argc; i++) {
-        StringValue(argv[i]);
-        argv[i] = rb_str_new_frozen(argv[i]);
-        StringValueCStr(argv[i]);
+        argv[i] = rb_str_new_frozen(EXPORT_STR(argv[i]));
     }
     return prog;
 }
@@ -2565,11 +2565,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
         hide_obj(argv_buf);
         for (i = 0; i < argc; i++) {
             VALUE arg = argv[i];
-            const char *s = StringValueCStr(arg);
-#ifdef DEFAULT_PROCESS_ENCODING
-            arg = EXPORT_STR(arg);
-            s = RSTRING_PTR(arg);
-#endif
+            const char *s = RSTRING_PTR(arg); /* exported */
             rb_str_buf_cat(argv_buf, s, RSTRING_LEN(arg));
             append_terminator(argv_buf);
         }
@@ -2648,9 +2644,9 @@ fill_envp_buf_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     VALUE val = (VALUE)st_val;
     VALUE envp_buf = (VALUE)arg;
 
-    rb_str_buf_cat2(envp_buf, StringValueCStr(key));
+    rb_str_buf_cat2(envp_buf, RSTRING_PTR(key)); /* exported */
     rb_str_buf_cat2(envp_buf, "=");
-    rb_str_buf_cat2(envp_buf, StringValueCStr(val));
+    rb_str_buf_cat2(envp_buf, RSTRING_PTR(val)); /* exported */
     append_terminator(envp_buf);
 
     return ST_CONTINUE;
@@ -2754,13 +2750,13 @@ rb_execarg_parent_start1(VALUE execarg_obj)
             rb_len_t i;
             for (i = 0; i < RARRAY_LEN(envopts); i++) {
                 VALUE pair = RARRAY_AREF(envopts, i);
-                VALUE key = RARRAY_AREF(pair, 0);
+                VALUE key = EXPORT_STR(RARRAY_AREF(pair, 0));
                 VALUE val = RARRAY_AREF(pair, 1);
                 if (NIL_P(val)) {
                     rb_hash_delete(envtbl, key);
                 }
                 else {
-                    rb_hash_aset(envtbl, key, val);
+                    rb_hash_aset(envtbl, key, EXPORT_STR(val));
                 }
             }
         }
@@ -3439,10 +3435,8 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
             VALUE pair = RARRAY_AREF(obj, i);
             VALUE key = RARRAY_AREF(pair, 0);
             VALUE val = RARRAY_AREF(pair, 1);
-            if (NIL_P(val))
-                ruby_setenv(StringValueCStr(key), 0);
-            else
-                ruby_setenv(StringValueCStr(key), StringValueCStr(val));
+            const char *name = RSTRING_PTR(key);
+            ruby_setenv(name, NIL_P(val) ? 0 : RSTRING_PTR(val));
         }
     }
 #endif
@@ -4454,7 +4448,7 @@ rb_syswait(rb_pid_t pid)
 }
 
 #if !defined HAVE_WORKING_FORK && !defined HAVE_SPAWNV && !defined __EMSCRIPTEN__
-char *
+const char *
 rb_execarg_commandline(const struct rb_execarg *eargp, VALUE *prog)
 {
     VALUE cmd = *prog;
@@ -4472,7 +4466,7 @@ rb_execarg_commandline(const struct rb_execarg *eargp, VALUE *prog)
         *prog = cmd;
         return p;
     }
-    return StringValueCStr(*prog);
+    return RSTRING_PTR(*prog);
 }
 #endif
 
@@ -7445,6 +7439,7 @@ p_uid_exchange(VALUE obj)
     if (setreuid(euid,uid) < 0) rb_sys_fail(0);
     SAVED_USER_ID = uid;
 #else
+    (void)SAVED_USER_ID;
     rb_notimplement();
 #endif
     return UIDT2NUM(uid);
@@ -7507,6 +7502,7 @@ p_gid_exchange(VALUE obj)
     if (setregid(egid,gid) < 0) rb_sys_fail(0);
     SAVED_GROUP_ID = gid;
 #else
+    (void)SAVED_GROUP_ID;
     rb_notimplement();
 #endif
     return GIDT2NUM(gid);

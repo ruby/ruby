@@ -2,12 +2,12 @@
 
 #include "prism/compiler/inline.h"
 
-#include "prism/internal/char.h"
 #include "prism/internal/allocator.h"
+#include "prism/internal/char.h"
+#include "prism/internal/oom.h"
 
 #include <assert.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -20,7 +20,7 @@ pm_buffer_init(pm_buffer_t *buffer, size_t capacity) {
     buffer->capacity = capacity;
 
     buffer->value = (char *) xmalloc(capacity);
-    if (buffer->value == NULL) abort();
+    if (buffer->value == NULL) PRISM_OOM();
 }
 
 /**
@@ -29,7 +29,7 @@ pm_buffer_init(pm_buffer_t *buffer, size_t capacity) {
 pm_buffer_t *
 pm_buffer_new(void) {
     pm_buffer_t *buffer = (pm_buffer_t *) xmalloc(sizeof(pm_buffer_t));
-    if (buffer == NULL) abort();
+    if (buffer == NULL) PRISM_OOM();
 
     pm_buffer_init(buffer, 1024);
     return buffer;
@@ -101,6 +101,17 @@ pm_buffer_append_zeroes(pm_buffer_t *buffer, size_t length) {
     size_t cursor = buffer->length;
     if (pm_buffer_append_length(buffer, length)) {
         memset(buffer->value + cursor, 0, length);
+    }
+}
+
+/**
+ * Append the given byte to the buffer the given number of times.
+ */
+void
+pm_buffer_append_repeated(pm_buffer_t *buffer, uint8_t value, size_t length) {
+    size_t cursor = buffer->length;
+    if (pm_buffer_append_length(buffer, length)) {
+        memset(buffer->value + cursor, value, length);
     }
 }
 

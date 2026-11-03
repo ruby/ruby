@@ -1,0 +1,1 @@
+require_relative "autoload_satisfied_by_require"

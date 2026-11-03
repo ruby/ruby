@@ -155,6 +155,29 @@ describe 'TracePoint#enable' do
     end
   end
 
+  describe "with multiple enabled TracePoints for the same event" do
+    it "calls the most recently enabled TracePoint first" do
+      order = []
+      first = TracePoint.new(:class) do |tp|
+        next unless TracePointSpec.target_thread?
+        order << :first
+      end
+      second = TracePoint.new(:class) do |tp|
+        next unless TracePointSpec.target_thread?
+        order << :second
+      end
+
+      first.enable do
+        second.enable do
+          class TracePointSpec::C
+          end
+        end
+      end
+
+      order.should == [:second, :first]
+    end
+  end
+
   describe 'target: option' do
     before :each do
       ScratchPad.record []

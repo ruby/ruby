@@ -160,13 +160,19 @@ allocation_info_tracer_memsize(const void *ptr)
     return size;
 }
 
+struct allocation_info_weak_reference_arg {
+    struct traceobj_arg *arg;
+    void *objspace;
+};
+
 static int
 allocation_info_tracer_weak_reference_i(st_data_t key, st_data_t value, st_data_t data)
 {
-    struct traceobj_arg *arg = (struct traceobj_arg *)data;
+    struct allocation_info_weak_reference_arg *wrarg = (struct allocation_info_weak_reference_arg *)data;
+    struct traceobj_arg *arg = wrarg->arg;
     struct allocation_info *info = (struct allocation_info *)value;
 
-    if (rb_gc_handle_weak_references_alive_p((VALUE)key)) {
+    if (rb_gc_handle_weak_references_alive_p(wrarg->objspace, (VALUE)key)) {
         return ST_CONTINUE;
     }
 
@@ -184,11 +190,12 @@ allocation_info_tracer_weak_reference_i(st_data_t key, st_data_t value, st_data_
 }
 
 static void
-allocation_info_tracer_weak_reference(void *ptr)
+allocation_info_tracer_weak_reference(void *ptr, void *objspace)
 {
     struct traceobj_arg *arg = (struct traceobj_arg *)ptr;
+    struct allocation_info_weak_reference_arg wrarg = {arg, objspace};
 
-    st_foreach(arg->object_table, allocation_info_tracer_weak_reference_i, (st_data_t)arg);
+    st_foreach(arg->object_table, allocation_info_tracer_weak_reference_i, (st_data_t)&wrarg);
 }
 
 static int

@@ -1982,11 +1982,6 @@ nt_start(void *ptr)
 
     native_thread_setup_on_thread(nt);
 
-    // init tid
-#ifdef RB_THREAD_T_HAS_NATIVE_ID
-    nt->tid = get_native_thread_id();
-#endif
-
 #if USE_RUBY_DEBUG_LOG && defined(RUBY_NT_SERIAL)
     ruby_nt_serial = nt->serial;
 #endif

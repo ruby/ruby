@@ -9869,6 +9869,11 @@ fn gen_invokeblock_specialized(
             gen_counter_incr(jit, asm, Counter::invokeblock_ifunc_args_splat);
             return None;
         }
+        // Keyword values need to be packed into a Hash before calling the IFUNC.
+        if flags & VM_CALL_KWARG != 0 {
+            gen_counter_incr(jit, asm, Counter::invokeblock_ifunc_kwarg);
+            return None;
+        }
         if flags & VM_CALL_KW_SPLAT != 0 {
             gen_counter_incr(jit, asm, Counter::invokeblock_ifunc_kw_splat);
             return None;

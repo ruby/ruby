@@ -64,6 +64,19 @@ module Ruby::Prism
         def blocknilarg(amper_t, nil_t)
           n0(:blocknilarg, arg_prefix_map(amper_t, nil_t))
         end
+
+        private
+
+        # The parser gem compiles a regular expression literal again when it is
+        # the receiver of `=~`. If it doesn't compile, `regexp_compose` has
+        # already reported the error, so build a plain `=~` call instead of
+        # letting `Regexp.new` raise. The tree is discarded either way, but
+        # building it to the end reports any later errors in the source.
+        def static_regexp_node(node)
+          super
+        rescue RegexpError, Encoding::UndefinedConversionError
+          nil
+        end
       end
     end
   end

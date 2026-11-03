@@ -295,7 +295,7 @@ struct rb_data_type_struct {
         /**
          * @internal
          */
-        void (*handle_weak_references)(void *);
+        void (*handle_weak_references)(void *, void *objspace);
 
          /**
           * This field  is reserved for future  extension.  For now, it  must be

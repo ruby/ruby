@@ -1501,16 +1501,22 @@ rb_gc_declare_weak_references(VALUE obj)
     rb_gc_impl_declare_weak_references(rb_gc_get_objspace(), obj);
 }
 
-bool
-rb_gc_handle_weak_references_alive_p(VALUE obj)
+static inline bool
+gc_weak_reference_alive_p(void *objspace, VALUE obj)
 {
     if (SPECIAL_CONST_P(obj)) return true;
 
-    return rb_gc_impl_handle_weak_references_alive_p(rb_gc_get_objspace(), obj);
+    return rb_gc_impl_handle_weak_references_alive_p(objspace, obj);
+}
+
+bool
+rb_gc_handle_weak_references_alive_p(void *objspace, VALUE obj)
+{
+    return gc_weak_reference_alive_p(objspace, obj);
 }
 
 void
-rb_gc_handle_weak_references(VALUE obj)
+rb_gc_handle_weak_references(void *objspace, VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
       case T_DATA:
@@ -1518,7 +1524,7 @@ rb_gc_handle_weak_references(VALUE obj)
             const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
 
             if (type->function.handle_weak_references) {
-                (type->function.handle_weak_references)(RTYPEDDATA_GET_DATA(obj));
+                (type->function.handle_weak_references)(RTYPEDDATA_GET_DATA(obj), objspace);
             }
             else {
                 rb_bug(
@@ -1534,8 +1540,8 @@ rb_gc_handle_weak_references(VALUE obj)
           case imemo_callcache: {
             struct rb_callcache *cc = (struct rb_callcache *)obj;
             if (cc->klass != Qundef &&
-                (!rb_gc_handle_weak_references_alive_p(cc->klass) ||
-                 !rb_gc_handle_weak_references_alive_p((VALUE)cc->cme_))) {
+                (!gc_weak_reference_alive_p(objspace, cc->klass) ||
+                 !gc_weak_reference_alive_p(objspace, (VALUE)cc->cme_))) {
                 vm_cc_invalidate(cc);
             }
             break;
@@ -1544,7 +1550,7 @@ rb_gc_handle_weak_references(VALUE obj)
             struct rb_subclasses *subs = (struct rb_subclasses *)obj;
             VALUE *entries = rb_imemo_subclasses_entries(obj);
             for (uint32_t i = 0; i < subs->count; i++) {
-                if (entries[i] && !rb_gc_handle_weak_references_alive_p(entries[i])) {
+                if (entries[i] && !gc_weak_reference_alive_p(objspace, entries[i])) {
                     entries[i] = 0;
                 }
             }
@@ -1845,6 +1851,13 @@ rb_gc_obj_free(void *objspace, VALUE obj)
       case T_REGEXP:
         if (FL_TEST_RAW(obj, RREGEXP_INITIALIZED)) {
             onig_free_body(RREGEXP_PTR(obj));
+            struct rb_regexp_variant *variant = RREGEXP(obj)->variants;
+            while (variant) {
+                struct rb_regexp_variant *next = variant->next;
+                onig_free_body(&variant->reg);
+                SIZED_FREE(variant);
+                variant = next;
+            }
             RB_DEBUG_COUNTER_INC(obj_regexp_ptr);
         }
         break;
@@ -2665,6 +2678,10 @@ rb_obj_memsize_of(VALUE obj)
       case T_REGEXP:
         if (RREGEXP_PTR(obj)) {
             size += onig_memsize(RREGEXP_PTR(obj));
+            for (struct rb_regexp_variant *variant = RUBY_ATOMIC_PTR_LOAD(RREGEXP(obj)->variants);
+                 variant; variant = variant->next) {
+                size += sizeof(*variant) - sizeof(variant->reg) + onig_memsize(&variant->reg);
+            }
         }
         break;
       case T_DATA:
@@ -2915,6 +2932,25 @@ int
 ruby_stack_check(void)
 {
     return stack_check(GET_EC(), STACKFRAME_FOR_CALL_CFUNC);
+}
+
+/*
+ * Returns the number of bytes of machine stack that can be used from here
+ * before rb_ec_stack_check starts reporting an overflow, or SIZE_MAX if the size
+ * of the stack is not known.
+ */
+size_t
+rb_ec_stack_remaining(rb_execution_context_t *ec)
+{
+#if PREVENT_STACK_OVERFLOW && !defined(__EMSCRIPTEN__)
+    if (STACK_LEVEL_MAX == 0) return SIZE_MAX;
+    if (rb_ec_stack_check(ec)) return 0;
+
+    /* rb_ec_stack_check has just updated the end of the stack. */
+    return (STACK_LEVEL_MAX - STACKFRAME_FOR_CALL_CFUNC - STACK_LENGTH) * sizeof(VALUE);
+#else
+    return SIZE_MAX;
+#endif
 }
 
 /* ==================== Marking ==================== */
