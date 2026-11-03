@@ -2,7 +2,7 @@ use std::alloc::{handle_alloc_error, Layout};
 use std::ptr;
 
 use crate::cast::IntoU64;
-use crate::cruby::{IseqPtr, VALUE, Qnil, rb_gc_mark_movable, rb_gc_location};
+use crate::cruby::{IseqPtr, VALUE, Qnil, rb_gc_location};
 use crate::cruby::{ZJIT_STACK_MAP_OP_BITS, ZJIT_STACK_MAP_VARINT_BITS, ZJIT_STACK_MAP_OP_END, ZJIT_STACK_MAP_OP_VREG, ZJIT_STACK_MAP_OP_SKIP, ZJIT_STACK_MAP_OP_BASE_PTR, ZJIT_STACK_MAP_OP_IMM, ZJIT_STACK_MAP_OP_NIL};
 use crate::cruby::zjit_jit_frame;
 use crate::codegen::iseq_may_write_block_code;
@@ -222,6 +222,9 @@ impl JITFrame {
             });
         }
         ZJITState::get_jit_frames().push(raw_ptr);
+        if !iseq.is_null() {
+            ZJITState::get_jit_frame_iseqs().insert(iseq);
+        }
         raw_ptr.cast_const()
     }
 
@@ -253,13 +256,6 @@ impl JITFrame {
     pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr) -> *const Self {
         let materialize_block_code = !iseq_may_write_block_code(iseq);
         Self::alloc(pc, iseq, materialize_block_code)
-    }
-
-    /// Mark the iseq pointer for GC. Called from rb_zjit_root_mark.
-    pub fn mark(&self) {
-        if !self.iseq.is_null() {
-            unsafe { rb_gc_mark_movable(VALUE::from(self.iseq)); }
-        }
     }
 
     /// Update the iseq pointer after GC compaction.

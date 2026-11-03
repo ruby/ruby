@@ -3,7 +3,7 @@
 use crate::codegen::{gen_entry_trampoline, gen_exit_trampoline, gen_function_stub_hit_trampoline, gen_materialize_exit_trampoline, gen_materialize_exit_trampoline_with_counter};
 use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, src_loc, EcPtr, Qnil, Qtrue, rb_profile_frames, rb_profile_frame_full_label, rb_profile_frame_absolute_path, rb_profile_frame_path, VALUE, VM_INSTRUCTION_SIZE, with_vm_lock, rust_str_to_id, rb_funcallv, rb_const_get, rb_cRubyVM};
 use crate::cruby_methods;
-use cruby::{ID, rb_callable_method_entry, get_def_method_serial, rb_gc_register_mark_object, ruby_str_to_rust_string_result};
+use cruby::{ID, IseqPtr, rb_callable_method_entry, get_def_method_serial, rb_gc_register_mark_object, ruby_str_to_rust_string_result};
 use std::sync::atomic::Ordering;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
@@ -12,7 +12,7 @@ use crate::jit_frame::{JITFrame, JITFrameAllocator};
 use crate::stats::{Counters, InsnCounters, PerfettoTracer};
 use crate::virtualmem::CodePtr;
 use std::sync::atomic::AtomicUsize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ptr::null;
 
 /// Shared trampoline to enter ZJIT. Not null when ZJIT is enabled.
@@ -123,6 +123,9 @@ pub struct ZJITState {
     /// Frame metadata for ISEQ and C calls that are known at compile time
     jit_frames: Vec<*mut JITFrame>,
 
+    /// Distinct ISEQs of [Self::jit_frames], marked as GC roots
+    jit_frame_iseqs: HashSet<IseqPtr>,
+
     /// Bump allocator that serves JITFrame allocations from address space below
     /// INT32_MAX, so that call sites can store frame pointers as 32-bit immediates.
     /// None when the platform cannot provide low memory.
@@ -207,6 +210,7 @@ impl ZJITState {
             iseq_calls_count_pointers: HashMap::new(),
             perfetto_tracer,
             jit_frames: vec![],
+            jit_frame_iseqs: HashSet::new(),
             jit_frame_allocator: JITFrameAllocator::new(),
         };
         unsafe { ZJIT_STATE = Enabled(zjit_state); }
@@ -249,6 +253,10 @@ impl ZJITState {
 
     pub fn get_jit_frames() -> &'static mut Vec<*mut JITFrame> {
         &mut ZJITState::get_instance().jit_frames
+    }
+
+    pub fn get_jit_frame_iseqs() -> &'static mut HashSet<IseqPtr> {
+        &mut ZJITState::get_instance().jit_frame_iseqs
     }
 
     /// Get a mutable reference to the JITFrame allocator

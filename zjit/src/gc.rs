@@ -109,6 +109,10 @@ pub extern "C" fn rb_zjit_root_update_references() {
     for &jit_frame in ZJITState::get_jit_frames().iter() {
         unsafe { &mut *jit_frame }.update_references();
     }
+    let iseqs = ZJITState::get_jit_frame_iseqs();
+    *iseqs = std::mem::take(iseqs).into_iter()
+        .map(|iseq| unsafe { rb_gc_location(VALUE::from(iseq)) }.as_iseq())
+        .collect();
 }
 
 fn iseq_mark(payload: &IseqPayload) {
@@ -244,21 +248,79 @@ pub extern "C" fn rb_zjit_mark_all_executable() {
 /// Callback for marking GC objects inside [crate::invariants::Invariants].
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_root_mark() {
-    // Mark iseq pointers in all JITFrames. JITFrames that are currently on the
+    // Mark the iseqs of all JITFrames. JITFrames that are currently on the
     // stack are also marked via rb_execution_context_mark_ctx, but JITFrames not on
     // the stack still need their iseqs kept alive because JIT code will reuse them.
     if !ZJITState::has_instance() {
         return;
     }
-    for &jit_frame in ZJITState::get_jit_frames().iter() {
-        unsafe { &*jit_frame }.mark();
+    for &iseq in ZJITState::get_jit_frame_iseqs().iter() {
+        unsafe { rb_gc_mark_movable(VALUE::from(iseq)); }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::cruby::test_utils::{eval, with_rubyvm};
+    use crate::cruby::test_utils::{eval, inspect, with_rubyvm};
+    use insta::assert_snapshot;
     use crate::options::set_call_threshold;
+
+    fn assert_jit_frame_iseqs_are_live_roots() {
+        let jit_frames = crate::state::ZJITState::get_jit_frames();
+        assert!(!jit_frames.is_empty(), "no JITFrames to check");
+        let frame_iseqs: std::collections::HashSet<_> = jit_frames.iter()
+            .map(|&jit_frame| unsafe { (*jit_frame).iseq })
+            .filter(|iseq| !iseq.is_null())
+            .collect();
+        for &iseq in &frame_iseqs {
+            assert!(crate::cruby::VALUE::from(iseq).iseq_p(), "JITFrame points to a freed ISEQ");
+        }
+        assert_eq!(&frame_iseqs, crate::state::ZJITState::get_jit_frame_iseqs());
+    }
+
+    #[test]
+    fn test_jit_frame_iseqs_survive_minor_gc() {
+        with_rubyvm(|| {
+            eval(r#"
+                eval("o = Class.new { def callee = 1; def caller = callee }.new
+                      i = 0; while i < 3; o.caller; i += 1; end")
+                GC.start(full_mark: false)
+            "#);
+            assert_jit_frame_iseqs_are_live_roots();
+        });
+    }
+
+    #[test]
+    fn test_jit_frame_iseqs_follow_compaction() {
+        with_rubyvm(|| {
+            eval(r#"
+                eval("def zjit_jit_frame_moved(x) = x + 1")
+                3.times { zjit_jit_frame_moved(1) }
+                GC.verify_compaction_references(expand_heap: true, toward: :empty)
+                GC.start
+                zjit_jit_frame_moved(1)
+            "#);
+            assert_jit_frame_iseqs_are_live_roots();
+        });
+    }
+
+    #[test]
+    fn test_jit_frame_iseqs_under_gc_stress_and_compaction() {
+        with_rubyvm(|| {
+            assert_snapshot!(inspect(r#"
+                def zjit_stress_callee(x) = x * 2
+                def zjit_stress_caller(x) = zjit_stress_callee(x) + 1
+                GC.auto_compact = true
+                GC.stress = true
+                result = 4.times.map { zjit_stress_caller(_1) }
+                GC.stress = false
+                GC.compact
+                GC.auto_compact = false
+                result + [zjit_stress_caller(10)]
+            "#), @"[1, 3, 5, 7, 21]");
+            assert_jit_frame_iseqs_are_live_roots();
+        });
+    }
 
     /// Regression test that freeing an ISEQ must not leave an `IseqPayload` behind.
     #[test]
