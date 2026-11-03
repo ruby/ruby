@@ -154,6 +154,14 @@ pm_arena_alloc_aligned(pm_arena_t *arena, size_t size, size_t alignment) {
 }
 
 /**
+ * Report an array allocation whose total size does not fit in a size_t.
+ */
+void
+pm_arena_alloc_overflow(void) {
+    PRISM_OOM();
+}
+
+/**
  * Returns a newly allocated and initialized arena.
  */
 pm_arena_t *

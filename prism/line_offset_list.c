@@ -10,7 +10,7 @@
  */
 void
 pm_line_offset_list_init(pm_arena_t *arena, pm_line_offset_list_t *list, size_t capacity) {
-    list->offsets = (uint32_t *) pm_arena_alloc(arena, capacity * sizeof(uint32_t), PRISM_ALIGNOF(uint32_t));
+    list->offsets = PM_ARENA_ALLOC_ARRAY(arena, uint32_t, capacity);
 
     // The first line always has offset 0.
     list->offsets[0] = 0;
@@ -32,7 +32,7 @@ pm_line_offset_list_clear(pm_line_offset_list_t *list) {
 void
 pm_line_offset_list_append_slow(pm_arena_t *arena, pm_line_offset_list_t *list, uint32_t cursor) {
     size_t new_capacity = (list->capacity * 3) / 2;
-    uint32_t *new_offsets = (uint32_t *) pm_arena_alloc(arena, new_capacity * sizeof(uint32_t), PRISM_ALIGNOF(uint32_t));
+    uint32_t *new_offsets = PM_ARENA_ALLOC_ARRAY(arena, uint32_t, new_capacity);
 
     memcpy(new_offsets, list->offsets, list->size * sizeof(uint32_t));
 

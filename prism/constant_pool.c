@@ -13,7 +13,7 @@
 void
 pm_constant_id_list_init(pm_arena_t *arena, pm_constant_id_list_t *list, uint32_t size) {
     if (size) {
-        list->ids = (pm_constant_id_t *) pm_arena_zalloc(arena, size * sizeof(pm_constant_id_t), PRISM_ALIGNOF(pm_constant_id_t));
+        list->ids = PM_ARENA_ZALLOC_ARRAY(arena, pm_constant_id_t, size);
     } else {
         list->ids = NULL;
     }
@@ -29,10 +29,10 @@ pm_constant_id_list_init(pm_arena_t *arena, pm_constant_id_list_t *list, uint32_
 void
 pm_constant_id_list_append(pm_arena_t *arena, pm_constant_id_list_t *list, pm_constant_id_t id) {
     if (list->size == 0) {
-        list->ids = (pm_constant_id_t *) pm_arena_alloc(arena, sizeof(pm_constant_id_t), PRISM_ALIGNOF(pm_constant_id_t));
+        list->ids = PM_ARENA_ALLOC(arena, pm_constant_id_t);
         list->ids[list->size++] = id;
     } else {
-        list->ids =(pm_constant_id_t *) pm_arena_realloc(arena, list->ids, sizeof(pm_constant_id_t) * (list->size + 1), sizeof(pm_constant_id_t) * list->size, PRISM_ALIGNOF(pm_constant_id_t));
+        list->ids = PM_ARENA_REALLOC(arena, list->ids, sizeof(pm_constant_id_t) * (list->size + 1), sizeof(pm_constant_id_t) * list->size, pm_constant_id_t);
         list->ids[list->size++] = id;
     }
 }
@@ -84,7 +84,7 @@ pm_constant_id_set_insert(pm_arena_t *arena, pm_constant_id_set_t *set, pm_const
         pm_constant_id_set_t grown = {
             .size = set->size,
             .capacity = capacity,
-            .ids = (pm_constant_id_t *) pm_arena_zalloc(arena, capacity * sizeof(pm_constant_id_t), PRISM_ALIGNOF(pm_constant_id_t))
+            .ids = PM_ARENA_ZALLOC_ARRAY(arena, pm_constant_id_t, capacity)
         };
 
         for (size_t index = 0; index < set->capacity; index++) {
@@ -223,9 +223,9 @@ pm_constant_pool_resize(pm_arena_t *arena, pm_constant_pool_t *pool) {
      * in the arena. */
     size_t constants_size = pm_constant_pool_constants_capacity(pool->capacity) * sizeof(pm_constant_t);
     size_t next_constants_size = pm_constant_pool_constants_capacity(next_capacity) * sizeof(pm_constant_t);
-    pool->constants = (pm_constant_t *) pm_arena_realloc(arena, pool->constants, next_constants_size, constants_size, PRISM_ALIGNOF(pm_constant_t));
+    pool->constants = PM_ARENA_REALLOC(arena, pool->constants, next_constants_size, constants_size, pm_constant_t);
 
-    pm_constant_pool_bucket_t *next_buckets = (pm_constant_pool_bucket_t *) pm_arena_zalloc(arena, next_capacity * sizeof(pm_constant_pool_bucket_t), PRISM_ALIGNOF(pm_constant_pool_bucket_t));
+    pm_constant_pool_bucket_t *next_buckets = PM_ARENA_ZALLOC_ARRAY(arena, pm_constant_pool_bucket_t, next_capacity);
 
     // For each bucket in the current constant pool, find the index in the
     // next constant pool, and insert it.
@@ -260,8 +260,9 @@ pm_constant_pool_resize(pm_arena_t *arena, pm_constant_pool_t *pool) {
 void
 pm_constant_pool_init(pm_arena_t *arena, pm_constant_pool_t *pool, uint32_t capacity) {
     capacity = next_power_of_two(capacity);
-    pool->buckets = (pm_constant_pool_bucket_t *) pm_arena_zalloc(arena, capacity * sizeof(pm_constant_pool_bucket_t), PRISM_ALIGNOF(pm_constant_pool_bucket_t));
-    pool->constants = (pm_constant_t *) pm_arena_alloc(arena, pm_constant_pool_constants_capacity(capacity) * sizeof(pm_constant_t), PRISM_ALIGNOF(pm_constant_t));
+
+    pool->buckets = PM_ARENA_ZALLOC_ARRAY(arena, pm_constant_pool_bucket_t, capacity);
+    pool->constants = PM_ARENA_ALLOC_ARRAY(arena, pm_constant_t, pm_constant_pool_constants_capacity(capacity));
     pool->size = 0;
     pool->capacity = capacity;
 }

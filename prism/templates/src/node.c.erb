@@ -30,7 +30,7 @@ pm_scratch_node_list_grow(pm_arena_t *arena, pm_scratch_node_list_t *list, uint3
     }
 
     // Allocate a new array from the arena (old array is abandoned).
-    pm_node_t **nodes = (pm_node_t **) pm_arena_alloc(arena, sizeof(pm_node_t *) * next_capacity, PRISM_ALIGNOF(pm_node_t *));
+    pm_node_t **nodes = PM_ARENA_ALLOC_ARRAY(arena, pm_node_t *, next_capacity);
 
     // Copy old data into the new array.
     if (list->size > 0) {
@@ -135,7 +135,7 @@ void
 pm_node_list_finalize(pm_node_chunks_t *chunks, pm_arena_t *arena, pm_node_list_t *list) {
     if (list->size == 0) return;
 
-    pm_node_t **nodes = (pm_node_t **) pm_arena_alloc(arena, sizeof(pm_node_t *) * list->size, PRISM_ALIGNOF(pm_node_t *));
+    pm_node_t **nodes = PM_ARENA_ALLOC_ARRAY(arena, pm_node_t *, list->size);
     pm_node_chunk_t *last = PM_NODE_CHUNK_OF(list->nodes - 1);
     pm_node_chunk_t *chunk = last;
 
@@ -162,7 +162,7 @@ pm_node_list_finalize(pm_node_chunks_t *chunks, pm_arena_t *arena, pm_node_list_
  */
 pm_node_list_t
 pm_node_list_single(pm_arena_t *arena, pm_node_t *node) {
-    pm_node_t **nodes = (pm_node_t **) pm_arena_alloc(arena, sizeof(pm_node_t *), PRISM_ALIGNOF(pm_node_t *));
+    pm_node_t **nodes = PM_ARENA_ALLOC_ARRAY(arena, pm_node_t *, 1);
     nodes[0] = node;
     return (pm_node_list_t) { .size = 1, .nodes = nodes };
 }
@@ -173,7 +173,7 @@ pm_node_list_single(pm_arena_t *arena, pm_node_t *node) {
  */
 void
 pm_node_list_prepend_finalized(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
-    pm_node_t **nodes = (pm_node_t **) pm_arena_alloc(arena, sizeof(pm_node_t *) * (list->size + 1), PRISM_ALIGNOF(pm_node_t *));
+    pm_node_t **nodes = PM_ARENA_ALLOC_ARRAY(arena, pm_node_t *, list->size + 1);
     nodes[0] = node;
 
     if (list->size > 0) {
@@ -263,7 +263,7 @@ pm_visit_child_nodes(const pm_node_t *node, pm_visit_callback_t visitor, void *d
  */
 pm_<%= node.human %>_t *
 pm_<%= node.human %>_new(pm_arena_t *arena, uint32_t node_id, pm_node_flags_t flags, pm_location_t location<%= params.empty? ? "" : ", #{params.join(", ")}" %>) {
-    pm_<%= node.human %>_t *node = (pm_<%= node.human %>_t *) pm_arena_alloc(arena, sizeof(pm_<%= node.human %>_t), PRISM_ALIGNOF(pm_<%= node.human %>_t));
+    pm_<%= node.human %>_t *node = PM_ARENA_ALLOC(arena, pm_<%= node.human %>_t);
 
     *node = (pm_<%= node.human %>_t) {
         .base = { .type = <%= node.type %>, .flags = flags, .node_id = node_id, .location = location }<%= node.fields.empty? ? "" : "," %>

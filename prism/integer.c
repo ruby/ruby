@@ -124,7 +124,7 @@ pm_integer_parse_powof2(pm_arena_t *arena, pm_integer_t *integer, uint32_t base,
     uint32_t length = (uint32_t) (((uint64_t) (digits - 1) * bit + leading_bits + 31) / 32);
     PRISM_ASSERT(length > 2);
 
-    uint32_t *words = pm_arena_zalloc(arena, sizeof(uint32_t) * length, PRISM_ALIGNOF(uint32_t));
+    uint32_t *words = PM_ARENA_ZALLOC_ARRAY(arena, uint32_t, length);
     uint64_t bit_position = 0;
 
     for (const uint8_t *cursor = end; cursor > start;) {
@@ -217,7 +217,7 @@ pm_integer_parse_decimal_divide(pm_arena_t *arena, pm_integer_t *integer, uint32
 
     pm_bignum_t result = {
         .length = 0,
-        .words = (uint32_t *) pm_arena_alloc(arena, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t))
+        .words = PM_ARENA_ALLOC_ARRAY(arena, uint32_t, capacity)
     };
 
     /* The scratch space is about 12 times the number of chunks, which can
@@ -288,7 +288,7 @@ pm_integer_parse_decimal_schoolbook(pm_arena_t *arena, pm_integer_t *integer, ui
     uint32_t capacity = pm_integer_decimal_words(digits);
     pm_bignum_t bignum = {
         .length = 0,
-        .words = (uint32_t *) pm_arena_alloc(arena, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t))
+        .words = PM_ARENA_ALLOC_ARRAY(arena, uint32_t, capacity)
     };
 
     uint32_t chunk_size = digits % 9 == 0 ? 9 : digits % 9;
@@ -457,7 +457,7 @@ pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer
 
     pm_bignum_t bignum = {
         .length = 1,
-        .words = (uint32_t *) pm_arena_alloc(arena, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t))
+        .words = PM_ARENA_ALLOC_ARRAY(arena, uint32_t, capacity)
     };
     bignum.words[0] = 1;
 

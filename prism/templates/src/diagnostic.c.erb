@@ -520,7 +520,7 @@ pm_diagnostic_next(const pm_diagnostic_t *diagnostic) {
  */
 void
 pm_diagnostic_list_append(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id) {
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) pm_arena_zalloc(arena, sizeof(pm_diagnostic_t), PRISM_ALIGNOF(pm_diagnostic_t));
+    pm_diagnostic_t *diagnostic = PM_ARENA_ZALLOC(arena, pm_diagnostic_t);
 
     *diagnostic = (pm_diagnostic_t) {
         .location = { .start = start, .length = length },
@@ -554,10 +554,10 @@ pm_diagnostic_list_append_format(pm_arena_t *arena, pm_list_t *list, uint32_t st
         return;
     }
 
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) pm_arena_zalloc(arena, sizeof(pm_diagnostic_t), PRISM_ALIGNOF(pm_diagnostic_t));
+    pm_diagnostic_t *diagnostic = PM_ARENA_ZALLOC(arena, pm_diagnostic_t);
 
     size_t message_length = (size_t) (result + 1);
-    char *message = (char *) pm_arena_alloc(arena, message_length, 1);
+    char *message = PM_ARENA_ALLOC_ARRAY(arena, char, message_length);
 
     if (message_length <= sizeof(stack)) {
         memcpy(message, stack, message_length);

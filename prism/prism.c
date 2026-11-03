@@ -193,7 +193,7 @@ lex_mode_push(pm_parser_t *parser, pm_lex_mode_t lex_mode) {
     if (next != NULL) {
         parser->lex_modes.free = next->prev;
     } else {
-        next = (pm_lex_mode_t *) pm_arena_alloc(&parser->scratch_arena, sizeof(pm_lex_mode_t), PRISM_ALIGNOF(pm_lex_mode_t));
+        next = PM_ARENA_ALLOC(&parser->scratch_arena, pm_lex_mode_t);
     }
 
     lex_mode.prev = parser->lex_modes.current;
@@ -711,7 +711,7 @@ pm_parser_scope_push(pm_parser_t *parser, bool closed) {
             memset(locals.locals, 0, locals.capacity * sizeof(pm_local_t));
         }
     } else {
-        scope = (pm_scope_t *) pm_arena_alloc(&parser->scratch_arena, sizeof(pm_scope_t), PRISM_ALIGNOF(pm_scope_t));
+        scope = PM_ARENA_ALLOC(&parser->scratch_arena, pm_scope_t);
     }
 
     *scope = (pm_scope_t) {
@@ -890,7 +890,7 @@ pm_locals_resize(pm_arena_t *arena, pm_locals_t *locals) {
     uint32_t next_capacity = locals->capacity == 0 ? 4 : (locals->capacity * 2);
     PRISM_ASSERT(next_capacity > locals->capacity);
 
-    pm_local_t *next_locals = (pm_local_t *) pm_arena_zalloc(arena, next_capacity * sizeof(pm_local_t), PRISM_ALIGNOF(pm_local_t));
+    pm_local_t *next_locals = PM_ARENA_ZALLOC_ARRAY(arena, pm_local_t, next_capacity);
 
     if (next_capacity < PM_LOCALS_HASH_THRESHOLD) {
         if (locals->size > 0) {
@@ -3232,7 +3232,7 @@ pm_call_write_read_name_init(pm_parser_t *parser, pm_constant_id_t *read_name, p
     if (write_constant->length > 0) {
         size_t length = write_constant->length - 1;
 
-        uint8_t *memory = (uint8_t *) pm_arena_alloc(parser->arena, length, 1);
+        uint8_t *memory = PM_ARENA_ALLOC_ARRAY(parser->arena, uint8_t, length);
         memcpy(memory, write_constant->start, length);
 
         *read_name = pm_constant_pool_insert_owned(&parser->metadata_arena, &parser->constant_pool, memory, length);
@@ -7775,7 +7775,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         }
 
         // Allocate a new magic comment node to append to the parser's list.
-        pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) pm_arena_alloc(&parser->metadata_arena, sizeof(pm_magic_comment_t), PRISM_ALIGNOF(pm_magic_comment_t));
+        pm_magic_comment_t *magic_comment = PM_ARENA_ALLOC(&parser->metadata_arena, pm_magic_comment_t);
         magic_comment->node.next = NULL;
         magic_comment->key = (pm_location_t) { .start = U32(key_start - parser->start), .length = U32(key_length) };
         magic_comment->value = (pm_location_t) { .start = U32(value_start - parser->start), .length = value_length };
@@ -7876,7 +7876,7 @@ context_push(pm_parser_t *parser, pm_context_t context) {
     if (context_node != NULL) {
         parser->free_contexts = context_node->prev;
     } else {
-        context_node = (pm_context_node_t *) pm_arena_alloc(&parser->scratch_arena, sizeof(pm_context_node_t), PRISM_ALIGNOF(pm_context_node_t));
+        context_node = PM_ARENA_ALLOC(&parser->scratch_arena, pm_context_node_t);
     }
 
     pm_context_node_t *previous = parser->current_context;
@@ -9682,7 +9682,7 @@ parser_lex_callback(pm_parser_t *parser) {
  */
 static PRISM_INLINE pm_comment_t *
 parser_comment(pm_parser_t *parser, pm_comment_type_t type) {
-    pm_comment_t *comment = (pm_comment_t *) pm_arena_alloc(&parser->metadata_arena, sizeof(pm_comment_t), PRISM_ALIGNOF(pm_comment_t));
+    pm_comment_t *comment = PM_ARENA_ALLOC(&parser->metadata_arena, pm_comment_t);
 
     *comment = (pm_comment_t) {
         .type = type,
@@ -13267,7 +13267,7 @@ parse_write_name(pm_parser_t *parser, pm_constant_id_t *name_field) {
     // append an =.
     pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, *name_field);
     size_t length = constant->length;
-    uint8_t *name = (uint8_t *) pm_arena_alloc(parser->arena, length + 1, 1);
+    uint8_t *name = PM_ARENA_ALLOC_ARRAY(parser->arena, uint8_t, length + 1);
 
     memcpy(name, constant->start, length);
     name[length] = '=';
@@ -21733,7 +21733,7 @@ parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *c
         start = parser->start + PM_NODE_START(call->receiver);
         end = parser->start + PM_NODE_END(call->receiver);
 
-        uint8_t *memory = (uint8_t *) pm_arena_alloc(parser->arena, length, 1);
+        uint8_t *memory = PM_ARENA_ALLOC_ARRAY(parser->arena, uint8_t, length);
         memcpy(memory, source, length);
         name = pm_parser_constant_id_owned(parser, memory, length);
     }
@@ -21932,7 +21932,7 @@ parse_match(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_pow
         }
 
         if (!interpolated && total_length > 0) {
-            uint8_t *memory = (uint8_t *) pm_arena_alloc(&parser->scratch_arena, total_length, PRISM_ALIGNOF(uint8_t));
+            uint8_t *memory = PM_ARENA_ALLOC_ARRAY(&parser->scratch_arena, uint8_t, total_length);
             uint8_t *cursor = memory;
             PM_NODE_LIST_FOREACH(parts, index, part) {
                 pm_string_t *unescaped = &((pm_string_node_t *) part)->unescaped;
@@ -23384,7 +23384,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
                 const uint8_t *source = pm_string_source(local);
                 size_t length = pm_string_length(local);
 
-                uint8_t *allocated = (uint8_t *) pm_arena_alloc(&parser->metadata_arena, length, 1);
+                uint8_t *allocated = PM_ARENA_ALLOC_ARRAY(&parser->metadata_arena, uint8_t, length);
                 memcpy(allocated, source, length);
                 pm_parser_local_add_owned(parser, allocated, length);
             }
