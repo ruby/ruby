@@ -337,6 +337,7 @@ make_counters! {
     // Method calls that fallback to dynamic dispatch
     send_singleton_class,
     send_forwarding,
+    send_forwarding_caller_args,
     send_ivar_set_method,
     send_zsuper_method,
     send_undef_method,

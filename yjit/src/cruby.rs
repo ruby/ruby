@@ -743,6 +743,7 @@ mod manual_defs {
     pub const VM_CALL_ARGS_BLOCKARG: u32 = 1 << VM_CALL_ARGS_BLOCKARG_bit;
     pub const VM_CALL_FORWARDING: u32 = 1 << VM_CALL_FORWARDING_bit;
     pub const VM_CALL_FCALL: u32 = 1 << VM_CALL_FCALL_bit;
+    pub const VM_CALL_VCALL: u32 = 1 << VM_CALL_VCALL_bit;
     pub const VM_CALL_KWARG: u32 = 1 << VM_CALL_KWARG_bit;
     pub const VM_CALL_KW_SPLAT: u32 = 1 << VM_CALL_KW_SPLAT_bit;
     pub const VM_CALL_TAILCALL: u32 = 1 << VM_CALL_TAILCALL_bit;

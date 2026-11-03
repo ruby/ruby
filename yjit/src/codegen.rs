@@ -303,6 +303,9 @@ impl<'a> JITState<'a> {
         // this is only available when hitting a stub, and while
         // hitting a stub, cfp->sp needs to be up to date in case
         // codegen functions trigger GC. See :stub-sp-flush:.
+        // cfp->sp is the stack at the start of the instruction, so
+        // account for values popped since then.
+        let n = n + (self.stack_size_for_pc as isize - ctx.get_stack_size() as isize);
         return unsafe {
             let sp: *mut VALUE = get_cfp_sp(self.get_cfp());
 
@@ -9204,6 +9207,65 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
     jump_to_next_insn(jit, asm)
 }
 
+/// Prepare a `sendforward` for gen_send_general(). The arguments forwarded by `...`
+/// are copied from the frame of the method at runtime, so the stack layout depends
+/// on the callinfo of the caller. Specialize on a caller that passed no arguments,
+/// in which case the call site's own arguments are already in place. Return the
+/// block handler to pass, which is the method's block.
+fn jit_forward_args(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    flags: u32,
+    block: Option<BlockHandler>,
+) -> Option<Option<BlockHandler>> {
+    // `...` is the only parameter of the method, so the caller's arguments and block
+    // are in the frame of the method.
+    if flags & !(VM_CALL_FCALL | VM_CALL_FORWARDING) != 0 || block.is_some() ||
+        unsafe { get_iseq_body_type(jit.iseq) } != ISEQ_TYPE_METHOD {
+        gen_counter_incr(jit, asm, Counter::send_forwarding);
+        return None;
+    }
+
+    // If megamorphic, let the caller fallback to dynamic dispatch
+    if asm.ctx.get_chain_depth() >= SEND_MAX_DEPTH {
+        gen_counter_incr(jit, asm, Counter::send_megamorphic);
+        return None;
+    }
+
+    // The callinfo of the caller is on top of the stack
+    let caller_ci = jit.peek_at_stack(&asm.ctx, 0);
+    let caller_ci_ptr = caller_ci.as_ptr::<rb_callinfo>();
+    let caller_flags = unsafe { vm_ci_flag(caller_ci_ptr) };
+    if unsafe { vm_ci_argc(caller_ci_ptr) } != 0 || !unsafe { vm_ci_kwarg(caller_ci_ptr) }.is_null() ||
+        caller_flags & !(VM_CALL_ARGS_SIMPLE | VM_CALL_FCALL | VM_CALL_VCALL | VM_CALL_FORWARDING) != 0 {
+        gen_counter_incr(jit, asm, Counter::send_forwarding_caller_args);
+        return None;
+    }
+    asm_comment!(asm, "guard caller callinfo");
+    asm.cmp(asm.stack_opnd(0), caller_ci.into());
+    jit_chain_guard(JCC_JNE, jit, asm, SEND_MAX_DEPTH, Counter::guard_send_klass_megamorphic);
+
+    let block = if jit.peek_at_block_handler(0).as_u64() == VM_BLOCK_HANDLER_NONE as u64 {
+        asm_comment!(asm, "guard no block given");
+        let ep_opnd = gen_get_ep(asm, 0);
+        let block_handler = Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL);
+        asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
+        jit_chain_guard(JCC_JNE, jit, asm, SEND_MAX_DEPTH, Counter::guard_send_klass_megamorphic);
+        None
+    } else {
+        Some(BlockHandler::FindFromCurrentFrame)
+    };
+
+    // Pop the callinfo. Side exits and chain guards rewind the stack to the start of
+    // the instruction, so keep the callinfo in memory for them.
+    if asm.ctx.get_reg_mapping().get_reg(asm.stack_opnd(0).reg_opnd()).is_some() {
+        asm.spill_reg(asm.stack_opnd(0));
+    }
+    asm.stack_pop(1);
+
+    Some(block)
+}
+
 fn gen_send_general(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -9230,13 +9292,14 @@ fn gen_send_general(
         return jit.defer_compilation(asm);
     }
 
-    let ci_flags = unsafe { vm_ci_flag(ci) };
-
-    // Dynamic stack layout. No good way to support without inlining.
-    if ci_flags & VM_CALL_FORWARDING != 0 {
-        gen_counter_incr(jit, asm, Counter::send_forwarding);
-        return None;
-    }
+    // Calls passing `...` take the forwarded arguments from the caller's callinfo
+    let block = if flags & VM_CALL_FORWARDING != 0 {
+        let block = jit_forward_args(jit, asm, flags, block)?;
+        flags &= !VM_CALL_FORWARDING;
+        block
+    } else {
+        block
+    };
 
     let recv_idx = argc + if flags & VM_CALL_ARGS_BLOCKARG != 0 { 1 } else { 0 };
     let comptime_recv = jit.peek_at_stack(&asm.ctx, recv_idx as isize);

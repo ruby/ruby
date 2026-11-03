@@ -893,6 +893,99 @@ class TestYJIT < Test::Unit::TestCase
     )
   end
 
+  def test_send_forwarding_without_caller_args
+    assert_compiles(<<~'RUBY', result: [1, 1, 1, 2, true, false, true], no_send_fallbacks: true)
+      class ForwardingTarget
+        attr_reader :one
+        def initialize = @one = 1
+        def two = 2
+        def given? = block_given?
+      end
+
+      class Forwarder
+        def initialize = @target = ForwardingTarget.new
+        def one(...) = @target.one(...)
+        def two(...) = @target.two(...)
+        def given?(...) = @target.given?(...)
+        def empty?(...) = [].empty?(...)
+        def calls = [one, self.one]
+      end
+
+      forwarder = Forwarder.new
+      [forwarder.one, *forwarder.calls, forwarder.two, forwarder.empty?, forwarder.given?, forwarder.given? {}]
+    RUBY
+  end
+
+  def test_send_forwarding_leading_args_blocks_and_nesting
+    assert_compiles(<<~'RUBY', result: [[7, 0], [7, 0], 2, 6, [false, true, false], [true, false, true], [0, 0]], no_send_fallbacks: true)
+      class ForwardingLeadTarget
+        def initialize = @lead = 7
+        def lead(a = 0, b = 0) = [a, b]
+        def forward(...) = lead(@lead, ...)
+      end
+
+      def lead(a = 0, b = 0) = [a, b]
+      def forward_lead(...) = lead(7, ...)
+      def yielder = yield(1)
+      def forward_yield(...) = yielder(...)
+      def materialize(&block) = block.call(2)
+      def forward_materialize(...) = materialize(...)
+      def given = block_given?
+      def forward_given(...) = given(...)
+      def forward_given_first_block(...) = given(...)
+      def inner(...) = lead(...)
+      def middle(...) = inner(...)
+      def outer(...) = middle(...)
+
+      [
+        forward_lead,
+        ForwardingLeadTarget.new.forward,
+        forward_yield { it + 1 },
+        forward_materialize { it * 3 },
+        [forward_given, forward_given {}, forward_given],
+        [forward_given_first_block {}, forward_given_first_block, forward_given_first_block {}],
+        outer,
+      ]
+    RUBY
+  end
+
+  def test_send_forwarding_with_caller_args
+    assert_compiles(<<~'RUBY', result: [[0, 0], [5, 0], [0, 2], [3, 0], [0, 0], [8, 0]])
+      def target(a = 0, k: 0) = [a, k]
+      def forward(...) = target(...)
+      def forward_lead(...) = forward(8, ...)
+
+      [forward, forward(5), forward(k: 2), forward(*[3]), forward, forward_lead]
+    RUBY
+  end
+
+  def test_send_forwarding_side_exits
+    assert_compiles(<<~'RUBY', result: [[0, 1, 2, 3, 4, 5, 6, 7], NoMethodError, :stack_overflow], exits: :any)
+      class MegamorphicForwarder
+        def initialize(obj) = @obj = obj
+        def id(...) = @obj.id(...)
+      end
+
+      def missing(...) = undefined_method_for_forwarding(...)
+      def recurse(...) = recurse(...)
+
+      forwarders = 8.times.map do |i|
+        MegamorphicForwarder.new(Class.new { class_eval("def id = #{i}") }.new)
+      end
+      missing_error = begin
+        missing
+      rescue NoMethodError => e
+        e.class
+      end
+      stack_overflow = begin
+        recurse
+      rescue SystemStackError
+        :stack_overflow
+      end
+      [forwarders.map(&:id), missing_error, stack_overflow]
+    RUBY
+  end
+
   def test_send_block
     # Setlocal_wc_0 sometimes side-exits on write barrier
     assert_compiles(<<~'RUBY', result: "b:n/b:y/b:y/b:n")
