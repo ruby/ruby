@@ -6,6 +6,7 @@
 #include "prism/compiler/flex_array.h"
 #include "prism/compiler/force_inline.h"
 #include "prism/compiler/inline.h"
+#include "prism/compiler/noreturn.h"
 
 #include "prism/arena.h"
 
@@ -77,7 +78,7 @@ void * pm_arena_alloc_slow(pm_arena_t *arena, size_t size);
  * goes through PRISM_OOM like any other allocation failure, and lives out of
  * line so this header does not need the headers PRISM_OOM depends on.
  */
-void pm_arena_alloc_overflow(void);
+PRISM_NORETURN void pm_arena_alloc_overflow(void);
 
 /*
  * Allocate memory from the arena. The returned memory is NOT zeroed. This

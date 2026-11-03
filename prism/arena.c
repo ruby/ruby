@@ -154,11 +154,14 @@ pm_arena_alloc_aligned(pm_arena_t *arena, size_t size, size_t alignment) {
 }
 
 /**
- * Report an array allocation whose total size does not fit in a size_t.
+ * Report an array allocation whose total size does not fit in a size_t. A
+ * consumer's PRISM_OOM is not required to stop execution, so this aborts after
+ * it to keep the promise that it never returns.
  */
 void
 pm_arena_alloc_overflow(void) {
     PRISM_OOM();
+    abort();
 }
 
 /**
