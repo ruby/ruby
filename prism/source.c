@@ -427,21 +427,21 @@ pm_source_stream_read(pm_source_t *source) {
          */
         switch (length) {
             case 7:
-                if (strncmp(line, "__END__", 7) == 0) {
+                if (memcmp(line, "__END__", 7) == 0) {
                     source->source = (const uint8_t *) pm_buffer_value(buffer);
                     source->length = pm_buffer_length(buffer);
                     return false;
                 }
                 break;
             case 8:
-                if (strncmp(line, "__END__\n", 8) == 0) {
+                if (memcmp(line, "__END__\n", 8) == 0) {
                     source->source = (const uint8_t *) pm_buffer_value(buffer);
                     source->length = pm_buffer_length(buffer);
                     return false;
                 }
                 break;
             case 9:
-                if (strncmp(line, "__END__\r\n", 9) == 0) {
+                if (memcmp(line, "__END__\r\n", 9) == 0) {
                     source->source = (const uint8_t *) pm_buffer_value(buffer);
                     source->length = pm_buffer_length(buffer);
                     return false;
