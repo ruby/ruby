@@ -2795,25 +2795,19 @@ fn can_direct_send(iseq: *const rb_iseq_t, caller_args: &CallerArguments, has_bl
     let mut count_failure = |counter| complex_arg_counters.push(counter);
     let params = unsafe { iseq.params() };
 
-    let callee_has_block_param = 0 != params.flags.has_block();
-    let caller_passes_block_arg = has_block && (caller_args.flags & VM_CALL_ARGS_BLOCKARG) != 0;
-
     use Counter::*;
     let forwardable = 0 != params.flags.forwardable();
     if forwardable && caller_args.flags & FORWARDABLE_CALLEE_BLOCKERS != 0
                                        { count_failure(complex_arg_pass_param_forwardable) }
-    if callee_has_block_param && caller_passes_block_arg
-                                       { count_failure(complex_arg_pass_param_block) }
     if 0 != params.flags.has_kwrest()  { count_failure(complex_arg_pass_param_kwrest) }
 
     // If the caller passes a block (literal or &block), we need to fall back to the
     // interpreter for two cases it handles that we don't:
     // 1. Methods with &nil reject blocks with ArgumentError
     // 2. Methods that don't use blocks emit "unused block" warnings
-    let caller_passes_block = has_block || caller_passes_block_arg;
-    if caller_passes_block && 0 != params.flags.accepts_no_block()
+    if has_block && 0 != params.flags.accepts_no_block()
                                        { count_failure(complex_arg_pass_accepts_no_block) }
-    if caller_passes_block && 0 == params.flags.use_block()
+    if has_block && 0 == params.flags.use_block()
                                        { count_failure(complex_arg_pass_does_not_use_block) }
 
     if !complex_arg_counters.is_empty() {

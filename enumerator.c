@@ -2770,6 +2770,9 @@ lazy_with_index_from(VALUE obj, VALUE memo)
 static VALUE
 lazy_each_with_index(VALUE obj)
 {
+    if (rb_block_given_p()) {
+        return rb_call_super(0, 0);
+    }
     return lazy_with_index_from(obj, LONG2NUM(0));
 }
 
