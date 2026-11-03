@@ -5,7 +5,7 @@ require 'fiber'
 
 class TestContinuation < Test::Unit::TestCase
   def setup
-    omit 'requires callcc support' unless respond_to?(:callcc)
+    omit 'requires callcc support' unless respond_to?(:callcc, true)
   end
 
   def test_create
