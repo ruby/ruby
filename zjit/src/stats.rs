@@ -221,6 +221,7 @@ make_counters! {
         exit_guard_less_failure,
         exit_guard_greater_eq_failure,
         exit_guard_super_method_entry,
+        exit_guard_no_singleton_class,
         exit_patchpoint_bop_redefined,
         exit_patchpoint_method_redefined,
         exit_patchpoint_stable_constant_names,
@@ -463,6 +464,7 @@ make_counters! {
     // The number of times we ran a dynamic check
     guard_type_count,
     guard_shape_count,
+    singleton_class_seen_guard_count,
 
     load_field_count,
     store_field_count,
@@ -618,6 +620,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         GuardLess                     => exit_guard_less_failure,
         GuardGreaterEq                => exit_guard_greater_eq_failure,
         GuardSuperMethodEntry         => exit_guard_super_method_entry,
+        GuardNoSingletonClass         => exit_guard_no_singleton_class,
         CalleeSideExit                => exit_callee_side_exit,
         Interrupt                     => exit_interrupt,
         StackOverflow                 => exit_stackoverflow,

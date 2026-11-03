@@ -647,6 +647,7 @@ pub enum SideExitReason {
     GuardLess,
     GuardGreaterEq,
     GuardSuperMethodEntry,
+    GuardNoSingletonClass,
     PatchPoint(Invariant),
     CalleeSideExit,
     Interrupt,
@@ -909,6 +910,7 @@ pub enum FieldName {
     VM_ENV_DATA_INDEX_SPECVAL,
     VM_ENV_DATA_INDEX_FLAGS,
     RBASIC_FLAGS,
+    klass,
     code_iseq,
     shape_id,
     as_heap,
@@ -3680,6 +3682,24 @@ impl Function {
         true
     }
 
+    /// Guard that `recv`, already known or guarded to be an instance of `klass`, has `klass` as
+    /// its class pointer, i.e. it has no singleton class. Call sites use this instead of falling
+    /// back to a dynamic send when [`Self::assume_no_singleton_classes`] declines, so that only
+    /// the receivers that do have a singleton class leave the optimized path. Unlike a
+    /// `GuardType`, this isn't removed when the type of `recv` is already known, because a
+    /// singleton class can be created after that type was established.
+    fn guard_no_singleton_class(&mut self, block: BlockId, recv: InsnId, klass: VALUE, state: InsnId) {
+        let recv_class = self.load_field(block, recv, FieldName::klass, RUBY_OFFSET_RBASIC_KLASS, types::Class);
+        self.push_insn(block, Insn::GuardBitEquals {
+            val: recv_class,
+            expected: Const::Value(klass),
+            reason: Box::new(SideExitReason::GuardNoSingletonClass),
+            state,
+            recompile: Some(Recompile),
+        });
+        self.count(block, Counter::singleton_class_seen_guard_count);
+    }
+
     pub fn assume_bop_not_redefined(&mut self, block: BlockId, klass: RedefinitionFlag, bop: ruby_basic_operators, state: InsnId) -> bool {
         if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
             return false;
@@ -5172,10 +5192,7 @@ impl Function {
                             };
 
                             // Check singleton class assumption first, before emitting other patchpoints
-                            if !self.assume_no_singleton_classes(block, klass, state) {
-                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
+                            let no_singleton_assumed = self.assume_no_singleton_classes(block, klass, state);
 
                             if let Some(caller_splat) = caller_splat {
                                 self.emit_caller_splat(block, caller_splat, state);
@@ -5191,6 +5208,9 @@ impl Function {
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
                                 self.insn_types[recv] = self.infer_type(recv);
+                            }
+                            if !no_singleton_assumed {
+                                self.guard_no_singleton_class(block, recv, klass, state);
                             }
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
@@ -5224,14 +5244,14 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Check singleton class assumption first, before emitting other patchpoints
-                            if !self.assume_no_singleton_classes(block, klass, state) {
-                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
+                            let no_singleton_assumed = self.assume_no_singleton_classes(block, klass, state);
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme: lookup_cme }, state });
 
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
+                            }
+                            if !no_singleton_assumed {
+                                self.guard_no_singleton_class(block, recv, klass, state);
                             }
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
@@ -5240,16 +5260,16 @@ impl Function {
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             // Check singleton class assumption first, before emitting other patchpoints
-                            if !self.assume_no_singleton_classes(block, klass, state) {
-                                self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
+                            let no_singleton_assumed = self.assume_no_singleton_classes(block, klass, state);
 
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme: lookup_cme }, state });
 
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
+                                if !no_singleton_assumed {
+                                    self.guard_no_singleton_class(block, recv, klass, state);
+                                }
 
                                 let replacement = self.try_emit_optimized_getivar(block, recv, id, profiled_type, state).unwrap_or_else(|counter| {
                                     self.count(block, counter);
@@ -5258,6 +5278,9 @@ impl Function {
                                 self.make_equal_to(insn_id, replacement);
                             } else {
                                 // No shape information, just static class information
+                                if !no_singleton_assumed {
+                                    self.guard_no_singleton_class(block, recv, klass, state);
+                                }
                                 let resolution = self.resolve_receiver_type_from_profile(recv, state);
                                 let counter = Self::getivar_fallback_reason(resolution, std::ptr::null());
                                 self.count(block, counter);
@@ -5292,13 +5315,13 @@ impl Function {
                                         self.push_insn_id(block, insn_id); continue;
                                     }
                                     // Check singleton class assumption first, before emitting other patchpoints
-                                    if !self.assume_no_singleton_classes(block, klass, state) {
-                                        self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                        self.push_insn_id(block, insn_id); continue;
-                                    }
+                                    let no_singleton_assumed = self.assume_no_singleton_classes(block, klass, state);
                                     self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme: lookup_cme }, state });
                                     if let Some(profiled_type) = profiled_type {
                                         recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
+                                    }
+                                    if !no_singleton_assumed {
+                                        self.guard_no_singleton_class(block, recv, klass, state);
                                     }
                                     let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
                                     let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args: args.clone(), state, kw_splat });
@@ -5329,13 +5352,13 @@ impl Function {
                                         self.push_insn_id(block, insn_id); continue;
                                     };
                                     // Check singleton class assumption first, before emitting other patchpoints
-                                    if !self.assume_no_singleton_classes(block, klass, state) {
-                                        self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
-                                        self.push_insn_id(block, insn_id); continue;
-                                    }
+                                    let no_singleton_assumed = self.assume_no_singleton_classes(block, klass, state);
                                     self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme: lookup_cme }, state });
                                     if let Some(profiled_type) = profiled_type {
                                         recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
+                                    }
+                                    if !no_singleton_assumed {
+                                        self.guard_no_singleton_class(block, recv, klass, state);
                                     }
                                     // All structs from the same Struct class should have the same
                                     // length. So if our recv is embedded all runtime
@@ -5438,10 +5461,7 @@ impl Function {
                                         }
 
                                         // Check singleton class assumption first, before emitting other patchpoints
-                                        if !fun.assume_no_singleton_classes(block, recv_class, state) {
-                                            fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
-                                            return Err(());
-                                        }
+                                        let no_singleton_assumed = fun.assume_no_singleton_classes(block, recv_class, state);
 
                                         // Commit to the replacement. Put PatchPoint.
                                         fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, lookup_cme, state);
@@ -5449,6 +5469,9 @@ impl Function {
                                         if let Some(profiled_type) = profiled_type {
                                             // Guard receiver class
                                             recv = fun.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
+                                        }
+                                        if !no_singleton_assumed {
+                                            fun.guard_no_singleton_class(block, recv, recv_class, state);
                                         }
 
                                         // Try inlining the cfunc into HIR. Only inline if we don't have a block argument
@@ -5506,16 +5529,16 @@ impl Function {
                                         // func(int argc, VALUE *argv, VALUE recv)
 
                                         // Check singleton class assumption first, before emitting other patchpoints
-                                        if !fun.assume_no_singleton_classes(block, recv_class, state) {
-                                            fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
-                                            return Err(());
-                                        }
+                                        let no_singleton_assumed = fun.assume_no_singleton_classes(block, recv_class, state);
 
                                         fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, lookup_cme, state);
 
                                         if let Some(profiled_type) = profiled_type {
                                             // Guard receiver class
                                             recv = fun.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
+                                        }
+                                        if !no_singleton_assumed {
+                                            fun.guard_no_singleton_class(block, recv, recv_class, state);
                                         }
 
                                         // Try inlining the cfunc into HIR. Only inline if we don't have a block argument

@@ -22432,8 +22432,9 @@ mod hir_opt_tests {
             test(special_string, -> { def special_string.length = -1 })
         "#);
 
-        // The output should NOT have NoSingletonClass patchpoint for String, and should
-        // fall back to SendWithoutBlock instead of the optimized CCall path.
+        // The output should NOT have NoSingletonClass patchpoint for String. Instead, each call
+        // checks the receiver's class pointer, including the second one, whose receiver is
+        // already known to be a String but may have gotten a singleton class in `proc.call`.
         let hir = hir_string("test");
         assert!(! hir.contains("NoSingletonClass(String"), "{hir}");
         assert_snapshot!(hir, @"
@@ -22452,15 +22453,21 @@ mod hir_opt_tests {
           v9:BasicObject = LoadArg :proc@2
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v19:BasicObject = Send v12, :length # SendFallbackReason: Singleton class previously created for receiver class
-          PatchPoint NoSingletonClass(Proc@0x1008)
-          PatchPoint MethodRedefined(Proc@0x1008, call@0x1010, cme:0x1018)
-          v40:ObjectSubclass[class_exact:Proc] = GuardType v13, ObjectSubclass[class_exact:Proc] recompile
-          v41:BasicObject = InvokeProc v40
+          PatchPoint MethodRedefined(String@0x1008, length@0x1010, cme:0x1018)
+          v40:StringExact = GuardType v12, StringExact recompile
+          v41:Class = LoadField v40, :klass@0x1040
+          v42:ClassSubclass[String@0x1008] = GuardBitEquals v41, Value(VALUE(0x1008)) recompile
+          PatchPoint NoSingletonClass(Proc@0x1048)
+          PatchPoint MethodRedefined(Proc@0x1048, call@0x1050, cme:0x1058)
+          v46:ObjectSubclass[class_exact:Proc] = GuardType v13, ObjectSubclass[class_exact:Proc] recompile
+          v47:BasicObject = InvokeProc v46
           PatchPoint NoEPEscape(test)
-          v32:BasicObject = Send v12, :length # SendFallbackReason: Singleton class previously created for receiver class
+          PatchPoint MethodRedefined(String@0x1008, length@0x1010, cme:0x1018)
+          v51:Class = LoadField v40, :klass@0x1040
+          v52:ClassSubclass[String@0x1008] = GuardBitEquals v51, Value(VALUE(0x1008)) recompile
+          v53:Fixnum = CCall v40, :String#length@0x1080
           CheckInterrupts
-          Return v32
+          Return v53
         ");
     }
 

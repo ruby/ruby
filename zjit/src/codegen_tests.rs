@@ -8169,6 +8169,33 @@ fn test_singleton_class_invalidation_is_not_repeated() {
     assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
 }
 
+// After a singleton class invalidated an ISEQ, the recompiled ISEQ checks each receiver's class
+// instead of assuming no singleton class. Receivers without a singleton class stay on the
+// optimized path, and ones with a singleton class still call their singleton methods, including
+// when the singleton class is created after the receiver's type was checked.
+#[test]
+fn test_singleton_class_guard_after_singleton_class_seen() {
+    set_call_threshold(2);
+    assert_snapshot!(inspect("
+        def test(s, make_singleton)
+          a = s.length
+          if make_singleton
+            def s.length = -1
+          end
+          [a, s.length]
+        end
+        test(+'ab', false); test(+'ab', false)  # compile, assuming no singleton class
+        special = +'x'
+        def special.length = -2                 # invalidate test
+        test(+'ab', false); test(+'ab', false)  # recompile, checking the receiver's class
+        result = []
+        result << test(+'abc', false)
+        result << test(special, false)
+        result << test(+'abcd', true)
+        result
+    "), @"[[3, 3], [-2, -2], [4, -1]]");
+}
+
 #[test]
 fn test_is_a_string_special_case() {
     assert_snapshot!(inspect(r#"
