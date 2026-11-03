@@ -6018,7 +6018,7 @@ impl Function {
 
     /// Decide whether an inlinable callee ISEQ is worth inlining into this
     /// function based on heuristics.
-    fn should_inline(&self, callee_iseq: IseqPtr, cme: *const rb_callable_method_entry_t) -> bool {
+    fn should_inline(&self, callee_iseq: IseqPtr, cme: *const rb_callable_method_entry_t, insns_at_pass_start: usize) -> bool {
         let threshold = get_option!(inline_threshold);
         if threshold == 0 {
             return false;
@@ -6057,7 +6057,7 @@ impl Function {
         // is rejected and the optimization fixed-point loop reaches its terminal iteration. See
         // `Options::inline_budget` for the full unit/semantics caveat.
         let budget = get_option!(inline_budget);
-        if budget != INLINE_BUDGET_UNLIMITED && self.num_instructions > budget {
+        if budget != INLINE_BUDGET_UNLIMITED && (insns_at_pass_start > budget || self.num_instructions > budget) {
             incr_counter!(inline_reject_budget_exceeded);
             return false;
         }
@@ -6080,6 +6080,13 @@ impl Function {
             return false;
         }
 
+        // Sample `self.insns()` at the beginning of the pass for `should_inline`.
+        //
+        // We used to fail-fast with it here, but we stopped doing it for :always_inline.
+        // Checking the budget only against `num_instructions` relaxed the decision too
+        // much, compiling so much code that it slowed down 30k_ifelse, so we kept the
+        // self.insns()-based check. TODO: Consider lowering the budget and remove this.
+        let insns_at_pass_start = self.insns.len();
 
         let mut did_inline = false;
 
@@ -6132,7 +6139,7 @@ impl Function {
                 // Apply the cheap optimization heuristics (size, budget, denylist)
                 // before can_inline's more expensive elibility checks. This allows
                 // oversized callees to bail out early. Both guards must pass.
-                if !self.should_inline(iseq, cme) || !Self::can_inline(iseq) {
+                if !self.should_inline(iseq, cme, insns_at_pass_start) || !Self::can_inline(iseq) {
                     search_start = send_pos + 1;
                     continue;
                 }
