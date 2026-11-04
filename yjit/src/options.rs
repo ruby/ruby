@@ -79,6 +79,10 @@ pub struct Options {
     pub perf_map: bool,
 }
 
+/// Maximum value for --yjit-exec-mem-size in MiB. rb_yjit_reserve_addr_space() takes the size
+/// in bytes as u32, and 4095 MiB is the largest MiB value below u32::MAX (4096 MiB is 2^32 bytes).
+pub const MAX_EXEC_MEM_MIB: usize = 4095;
+
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
     exec_mem_size: 48 * 1024 * 1024,
@@ -167,7 +171,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("exec-mem-size", _) => match opt_val.parse::<usize>() {
             Ok(n) => {
-                if n == 0 || n > 2 * 1024 * 1024 {
+                if n == 0 || n > MAX_EXEC_MEM_MIB {
                     return None
                 }
 
