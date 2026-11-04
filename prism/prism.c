@@ -2304,10 +2304,7 @@ pm_regular_expression_flags_create(pm_parser_t *parser, const pm_token_t *closin
 #undef PM_REGULAR_EXPRESSION_ENCODING_MASK
 
 static pm_statements_node_t *
-pm_statements_node_create(pm_parser_t *parser);
-
-static void
-pm_statements_node_body_append(pm_parser_t *parser, pm_statements_node_t *node, pm_node_t *statement, bool newline);
+pm_statements_node_single_create(pm_parser_t *parser, pm_node_t *statement, bool newline);
 
 static size_t
 pm_statements_node_body_length(pm_statements_node_t *node);
@@ -4506,8 +4503,7 @@ static pm_if_node_t *
 pm_if_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_token_t *if_keyword, pm_node_t *predicate) {
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
 
-    pm_statements_node_t *statements = pm_statements_node_create(parser);
-    pm_statements_node_body_append(parser, statements, statement, true);
+    pm_statements_node_t *statements = pm_statements_node_single_create(parser, statement, true);
 
     return pm_if_node_new(
         parser->arena,
@@ -4531,11 +4527,8 @@ pm_if_node_ternary_create(pm_parser_t *parser, pm_node_t *predicate, const pm_to
     pm_assert_value_expression(parser, predicate);
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
 
-    pm_statements_node_t *if_statements = pm_statements_node_create(parser);
-    pm_statements_node_body_append(parser, if_statements, true_expression, true);
-
-    pm_statements_node_t *else_statements = pm_statements_node_create(parser);
-    pm_statements_node_body_append(parser, else_statements, false_expression, true);
+    pm_statements_node_t *if_statements = pm_statements_node_single_create(parser, true_expression, true);
+    pm_statements_node_t *else_statements = pm_statements_node_single_create(parser, false_expression, true);
 
     pm_else_node_t *else_node = pm_else_node_create(parser, colon, else_statements, NULL);
     return pm_if_node_new(
@@ -6310,16 +6303,86 @@ pm_splat_node_create(pm_parser_t *parser, const pm_token_t *operator, pm_node_t 
 }
 
 /**
- * Allocate and initialize a new StatementsNode node.
+ * Warn about a statement that follows a jump, since it can never be reached.
+ */
+static void
+pm_statements_unreachable_check(pm_parser_t *parser, const pm_node_t *previous, pm_node_t *statement) {
+    switch (PM_NODE_TYPE(previous)) {
+        case PM_BREAK_NODE:
+        case PM_NEXT_NODE:
+        case PM_REDO_NODE:
+        case PM_RETRY_NODE:
+        case PM_RETURN_NODE:
+            pm_parser_warn_node(parser, statement, PM_WARN_UNREACHABLE_STATEMENT);
+            break;
+        default:
+            break;
+    }
+}
+
+/**
+ * The body of a StatementsNode node that is still being parsed.
+ */
+typedef struct {
+    /** The open list of statements. */
+    pm_node_list_t nodes;
+
+    /**
+     * The location covering the statements. Statements are usually in source
+     * order, but error recovery inside a heredoc can resume parsing before an
+     * earlier statement, so this takes the earliest start and the latest end.
+     */
+    pm_location_t location;
+} pm_statements_t;
+
+/**
+ * Append a statement to the body of a StatementsNode node that is still being
+ * parsed.
+ */
+static void
+pm_statements_body_append(pm_parser_t *parser, pm_statements_t *body, pm_node_t *statement, bool newline) {
+    if (body->nodes.size == 0 || PM_NODE_START(statement) < body->location.start) {
+        body->location.start = PM_NODE_START(statement);
+    }
+
+    if (PM_NODE_END(statement) > PM_LOCATION_END(&body->location)) {
+        body->location.length = PM_NODE_END(statement) - body->location.start;
+    }
+
+    if (body->nodes.size > 0) pm_statements_unreachable_check(parser, pm_node_list_open_last(&body->nodes), statement);
+    pm_node_list_open_append(&parser->node_chunks, &body->nodes, statement);
+    if (newline) pm_node_flag_set(statement, PM_NODE_FLAG_NEWLINE);
+}
+
+/**
+ * Allocate and initialize a new StatementsNode node from its body.
  */
 static pm_statements_node_t *
-pm_statements_node_create(pm_parser_t *parser) {
+pm_statements_node_create(pm_parser_t *parser, pm_statements_t *body) {
+    pm_node_list_finalize(&parser->node_chunks, parser->arena, &body->nodes);
+
     return pm_statements_node_new(
         parser->arena,
         ++parser->node_id,
         0,
-        PM_LOCATION_INIT_UNSET,
-        ((pm_node_list_t) { 0 })
+        body->location,
+        body->nodes
+    );
+}
+
+/**
+ * Allocate and initialize a new StatementsNode node holding a single statement.
+ */
+static pm_statements_node_t *
+pm_statements_node_single_create(pm_parser_t *parser, pm_node_t *statement, bool newline) {
+    if (newline) pm_node_flag_set(statement, PM_NODE_FLAG_NEWLINE);
+
+    return pm_statements_node_new(
+        parser->arena,
+        ++parser->node_id,
+        0,
+        PM_LOCATION_INIT_NODE(statement),
+        pm_node_list_single(parser->arena, statement)
     );
 }
 
@@ -6332,8 +6395,8 @@ pm_statements_node_body_length(pm_statements_node_t *node) {
 }
 
 /**
- * Update the location of the statements node based on the statement that is
- * being added to the list.
+ * Update the location of a StatementsNode node that has already been created
+ * to cover a statement that is being added to it.
  */
 static PRISM_INLINE void
 pm_statements_node_body_update(pm_statements_node_t *node, pm_node_t *statement) {
@@ -6343,39 +6406,24 @@ pm_statements_node_body_update(pm_statements_node_t *node, pm_node_t *statement)
 }
 
 /**
- * Append a new node to the given StatementsNode node's body.
+ * Append a statement to a StatementsNode node that has already been created.
  */
 static void
-pm_statements_node_body_append(pm_parser_t *parser, pm_statements_node_t *node, pm_node_t *statement, bool newline) {
+pm_statements_node_body_append(pm_parser_t *parser, pm_statements_node_t *node, pm_node_t *statement) {
     pm_statements_node_body_update(node, statement);
+    if (node->body.size > 0) pm_statements_unreachable_check(parser, node->body.nodes[node->body.size - 1], statement);
 
-    if (node->body.size > 0) {
-        const pm_node_t *previous = node->body.nodes[node->body.size - 1];
-
-        switch (PM_NODE_TYPE(previous)) {
-            case PM_BREAK_NODE:
-            case PM_NEXT_NODE:
-            case PM_REDO_NODE:
-            case PM_RETRY_NODE:
-            case PM_RETURN_NODE:
-                pm_parser_warn_node(parser, statement, PM_WARN_UNREACHABLE_STATEMENT);
-                break;
-            default:
-                break;
-        }
-    }
-
-    pm_node_list_append_inline(parser->arena, &node->body, statement);
-    if (newline) pm_node_flag_set(statement, PM_NODE_FLAG_NEWLINE);
+    pm_node_list_append_finalized(parser->arena, &node->body, statement);
+    pm_node_flag_set(statement, PM_NODE_FLAG_NEWLINE);
 }
 
 /**
- * Prepend a new node to the given StatementsNode node's body.
+ * Prepend a statement to a StatementsNode node that has already been created.
  */
 static void
 pm_statements_node_body_prepend(pm_arena_t *arena, pm_statements_node_t *node, pm_node_t *statement) {
     pm_statements_node_body_update(node, statement);
-    pm_node_list_prepend(arena, &node->body, statement);
+    pm_node_list_prepend_finalized(arena, &node->body, statement);
     pm_node_flag_set(statement, PM_NODE_FLAG_NEWLINE);
 }
 
@@ -6779,8 +6827,7 @@ static pm_unless_node_t *
 pm_unless_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_token_t *unless_keyword, pm_node_t *predicate) {
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
 
-    pm_statements_node_t *statements = pm_statements_node_create(parser);
-    pm_statements_node_body_append(parser, statements, statement, true);
+    pm_statements_node_t *statements = pm_statements_node_single_create(parser, statement, true);
 
     return pm_unless_node_new(
         parser->arena,
@@ -13730,7 +13777,7 @@ parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
     // If we have a terminator, then we can just return NULL.
     if (context_terminator(context, &parser->current)) return NULL;
 
-    pm_statements_node_t *statements = pm_statements_node_create(parser);
+    pm_statements_t body = { 0 };
 
     // At this point we know we have at least one statement, and that it
     // immediately follows the current token.
@@ -13738,7 +13785,7 @@ parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
 
     while (true) {
         pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, (uint16_t) (depth + 1));
-        pm_statements_node_body_append(parser, statements, node, true);
+        pm_statements_body_append(parser, &body, node, true);
 
         // If we're recovering from a syntax error, then we need to stop parsing
         // the statements now.
@@ -13812,6 +13859,8 @@ parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
         default:
             break;
     }
+
+    pm_statements_node_t *statements = pm_statements_node_create(parser, &body);
     pm_void_statements_check(parser, statements, last_value);
 
     return statements;
@@ -18859,7 +18908,6 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 
         context_push(parser, PM_CONTEXT_DEF);
         pm_do_loop_stack_push(parser, false);
-        statements = UP(pm_statements_node_create(parser));
 
         /* The body accepts a command call (`def f = foo 1`) only where the
          * caller accepts an endless method with a command body. */
@@ -18914,7 +18962,7 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
             PM_PARSER_ERR_NODE_FORMAT(parser, statement, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(parser->current.type));
         }
 
-        pm_statements_node_body_append(parser, (pm_statements_node_t *) statements, statement, false);
+        statements = UP(pm_statements_node_single_create(parser, statement, false));
         pm_do_loop_stack_pop(parser);
         context_pop(parser);
     } else {
@@ -19181,9 +19229,7 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
         /* If we have a single statement and are ending on a right parenthesis
          * and we didn't return a multiple assignment node, then we can return a
          * regular parentheses node now. */
-        pm_statements_node_t *statements = pm_statements_node_create(parser);
-        pm_statements_node_body_append(parser, statements, statement, true);
-
+        pm_statements_node_t *statements = pm_statements_node_single_create(parser, statement, true);
         return UP(pm_parentheses_node_create(parser, &opening, UP(statements), &parser->previous, paren_flags));
     }
 
@@ -19193,8 +19239,8 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
     context_push(parser, PM_CONTEXT_PARENS);
     paren_flags |= PM_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS;
 
-    pm_statements_node_t *statements = pm_statements_node_create(parser);
-    pm_statements_node_body_append(parser, statements, statement, true);
+    pm_statements_t body = { 0 };
+    pm_statements_body_append(parser, &body, statement, true);
 
     /* If we didn't find a terminator and we didn't find a right parenthesis,
      * then this is a syntax error. */
@@ -19205,7 +19251,7 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
     /* Parse each statement within the parentheses. */
     while (true) {
         pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, (uint16_t) (depth + 1));
-        pm_statements_node_body_append(parser, statements, node, true);
+        pm_statements_body_append(parser, &body, node, true);
 
         /* If we're recovering from a syntax error, then we need to stop parsing
          * the statements now. */
@@ -19236,6 +19282,7 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
 
     context_pop(parser);
     expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
+    pm_statements_node_t *statements = pm_statements_node_create(parser, &body);
 
     /* When we're parsing multi targets, we allow them to be followed by a right
      * parenthesis if they are at the statement level. This is only possible if
@@ -22687,16 +22734,14 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
         }
         case PM_TOKEN_KEYWORD_UNTIL_MODIFIER: {
             parser_lex(parser);
-            pm_statements_node_t *statements = pm_statements_node_create(parser);
-            pm_statements_node_body_append(parser, statements, node, true);
+            pm_statements_node_t *statements = pm_statements_node_single_create(parser, node, true);
 
             pm_node_t *predicate = parse_value_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_CONDITIONAL_UNTIL_PREDICATE, (uint16_t) (depth + 1));
             return UP(pm_until_node_modifier_create(parser, &token, predicate, statements, PM_NODE_TYPE_P(node, PM_BEGIN_NODE) ? PM_LOOP_FLAGS_BEGIN_MODIFIER : 0));
         }
         case PM_TOKEN_KEYWORD_WHILE_MODIFIER: {
             parser_lex(parser);
-            pm_statements_node_t *statements = pm_statements_node_create(parser);
-            pm_statements_node_body_append(parser, statements, node, true);
+            pm_statements_node_t *statements = pm_statements_node_single_create(parser, node, true);
 
             pm_node_t *predicate = parse_value_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_CONDITIONAL_WHILE_PREDICATE, (uint16_t) (depth + 1));
             return UP(pm_while_node_modifier_create(parser, &token, predicate, statements, PM_NODE_TYPE_P(node, PM_BEGIN_NODE) ? PM_LOOP_FLAGS_BEGIN_MODIFIER : 0));
@@ -23010,7 +23055,7 @@ static pm_statements_node_t *
 wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
     if (PM_PARSER_COMMAND_LINE_OPTION_P(parser)) {
         if (statements == NULL) {
-            statements = pm_statements_node_create(parser);
+            statements = pm_statements_node_create(parser, &((pm_statements_t) { 0 }));
         }
 
         pm_arguments_node_t *arguments = pm_arguments_node_single_create(
@@ -23022,13 +23067,13 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
             parser,
             arguments,
             pm_parser_constant_id_constant(parser, "print", 5)
-        )), true);
+        )));
     }
 
     if (PM_PARSER_COMMAND_LINE_OPTION_N(parser)) {
         if (PM_PARSER_COMMAND_LINE_OPTION_A(parser)) {
             if (statements == NULL) {
-                statements = pm_statements_node_create(parser);
+                statements = pm_statements_node_create(parser, &((pm_statements_t) { 0 }));
             }
 
             pm_arguments_node_t *arguments = pm_arguments_node_single_create(
@@ -23072,8 +23117,7 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
 
         pm_arguments_node_t *arguments = pm_arguments_node_create(parser, &gets_arguments);
 
-        pm_statements_node_t *wrapped_statements = pm_statements_node_create(parser);
-        pm_statements_node_body_append(parser, wrapped_statements, UP(pm_while_node_synthesized_create(
+        pm_statements_node_t *wrapped_statements = pm_statements_node_single_create(parser, UP(pm_while_node_synthesized_create(
             parser,
             UP(pm_call_node_fcall_synthesized_create(parser, arguments, pm_parser_constant_id_constant(parser, "gets", 4))),
             statements
@@ -23127,8 +23171,7 @@ parse_program(pm_parser_t *parser) {
     // statements in order to gather up all of the comments and such. Here we'll
     // correct the location information.
     if (statements == NULL) {
-        statements = pm_statements_node_create(parser);
-        statements->base.location = (pm_location_t) { 0 };
+        statements = pm_statements_node_create(parser, &((pm_statements_t) { 0 }));
     }
 
     return UP(pm_program_node_create(parser, &locals, statements));

@@ -159,6 +159,12 @@ pm_node_list_t pm_node_list_single(pm_arena_t *arena, pm_node_t *node);
 void pm_node_list_append_finalized(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node);
 
 /*
+ * Prepend a node onto the beginning of a finalized list, copying it into a new
+ * array in the given arena of exactly the new size.
+ */
+void pm_node_list_prepend_finalized(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node);
+
+/*
  * A finalized list of the size nodes starting at the given index of another
  * finalized list. It shares that list's array instead of copying it.
  */

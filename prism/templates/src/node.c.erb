@@ -190,6 +190,23 @@ pm_node_list_append_finalized(pm_arena_t *arena, pm_node_list_t *list, pm_node_t
 }
 
 /**
+ * Prepend a node onto the beginning of a finalized list. Every existing node
+ * moves over by one, so the list is copied into a new array.
+ */
+void
+pm_node_list_prepend_finalized(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
+    pm_node_t **nodes = (pm_node_t **) pm_arena_alloc(arena, sizeof(pm_node_t *) * (list->size + 1), PRISM_ALIGNOF(pm_node_t *));
+    nodes[0] = node;
+
+    if (list->size > 0) {
+        memcpy(nodes + 1, list->nodes, sizeof(pm_node_t *) * list->size);
+    }
+
+    list->nodes = nodes;
+    list->size++;
+}
+
+/**
  * Returns a string representation of the given node type.
  */
 const char *
