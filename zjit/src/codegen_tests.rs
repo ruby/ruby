@@ -1689,6 +1689,26 @@ fn test_getblockparam() {
 }
 
 #[test]
+fn test_getblockparam_in_inlined_callee_escapes_caller_locals() {
+    // GetBlockParam in the inlined callee makes a Proc from the caller's block, which
+    // escapes the caller's EP while its locals only live in the stack map.
+    assert_snapshot!(inspect("
+        def escaper(gate)
+          a = 1
+          b = 2
+          captor(gate) { }
+        end
+
+        def captor(gate, &blk) = gate ? blk : nil
+
+        escaper(false)
+        escaper(false)
+        bnd = escaper(true).binding
+        [bnd.local_variable_get(:a), bnd.local_variable_get(:b)]
+    "), @"[1, 2]");
+}
+
+#[test]
 fn test_setblockparam() {
     eval("
         def test(&block)

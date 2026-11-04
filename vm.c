@@ -3140,16 +3140,32 @@ rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb_cont
     zjit_materialize_frames(ec, cfp, !ec->tag->zjit_frame_active);
 }
 
-// Spill a single ZJIT frame's off-stack Ruby slots (operands and locals) into
+// Spill a single control frame's off-stack Ruby slots (operands and locals) into
 // VM-stack memory, leaving jit_return intact. Used for doing environment escape
 // (vm_make_env_each()).
 void
 rb_zjit_spill_frame(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
     if (!rb_zjit_enabled_p) return;
-    if (CFP_ZJIT_FRAME_P(cfp)) {
-        zjit_write_frame_stack(ec, cfp, CFP_ZJIT_FRAME(cfp));
+    if (!CFP_ZJIT_FRAME_P(cfp)) return;
+
+    // Find the innermost inlined jit_frame which describes the locals of cfp.
+    // When cfp is the caller of an inlined callee, its locals are described by
+    // the stack map of the innermost frame in the inline chain, which
+    // continues into caller frames by PREV_FRAME. Frames inlined into the same
+    // JIT function keep their JITFrame slots next to each other, one VALUE
+    // apart per inlining depth (see cfp_jit_return_for_depth()), so walk
+    // towards top-of-stack while each one is the inlined callee of the
+    // previous one. The adjacency check also stops at interpreter frames (NULL)
+    // and C frames (ZJIT_JIT_RETURN_C_FRAME).
+    // TODO(alan): Remove when inlined frames don't each get a control frame.
+    rb_control_frame_t *innermost = cfp;
+    while (innermost != ec->cfp) {
+        rb_control_frame_t *callee = RUBY_VM_NEXT_CONTROL_FRAME(innermost);
+        if ((VALUE)callee->jit_return + SIZEOF_VALUE != (VALUE)innermost->jit_return) break;
+        innermost = callee;
     }
+    zjit_write_frame_stack(ec, innermost, CFP_ZJIT_FRAME(innermost));
 }
 #endif
 
