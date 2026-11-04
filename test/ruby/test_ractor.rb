@@ -135,6 +135,140 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # A cref created by instance_exec on an unshareable receiver is published to other
+  # Ractors through a method defined under it.  Another Ractor's cref may point at it
+  # after the method is gone, so the owner's local GC must not free it.
+  def test_cref_published_by_method_outlives_method
+    assert_ractor(<<~'RUBY', timeout: 60)
+      eval <<~'SETUP'
+        CrefPublishedByMethod = Class.new
+        Object.new.instance_exec do
+          CrefPublishedByMethod.class_eval do
+            def foo
+              x = Object.new
+              x.instance_exec { def self.bar = Module.nesting }
+              x
+            end
+          end
+        end
+        $inst = Ractor.make_shareable(CrefPublishedByMethod.new.freeze)
+      SETUP
+
+      port = Ractor::Port.new
+      r = Ractor.new(port) do |pt|
+        obj = eval('Ractor.receive.__send__(:foo)')
+        pt << :ready
+        Ractor.receive
+        2000.times.map { obj.bar }.last
+      end
+      r << $inst
+      $inst = nil
+      port.receive
+
+      eval('CrefPublishedByMethod.remove_method(:foo)')
+      3.times { GC.start }
+      keep = []
+      400.times { keep << Array.new(20_000) { "aaaaaaaa".dup }; keep.shift if keep.size > 40 }
+      r << :go
+      assert_equal [], r.value
+    RUBY
+  end
+
+  # Same as above, with the cref published through an isolated Proc's env.
+  def test_cref_published_by_shareable_proc_outlives_proc
+    assert_ractor(<<~'RUBY', timeout: 60)
+      $pr = eval(<<~'SETUP')
+        Object.new.instance_exec do
+          Ractor.shareable_proc(self: nil) do
+            x = Object.new
+            x.instance_exec { def self.bar = Module.nesting }
+            x
+          end
+        end
+      SETUP
+
+      port = Ractor::Port.new
+      r = Ractor.new(port) do |pt|
+        obj = eval('Ractor.receive.call')
+        pt << :ready
+        Ractor.receive
+        2000.times.map { obj.bar }.last
+      end
+      r << $pr
+      $pr = nil
+      port.receive
+
+      3.times { GC.start }
+      keep = []
+      400.times { keep << Array.new(20_000) { "aaaaaaaa".dup }; keep.shift if keep.size > 40 }
+      r << :go
+      assert_equal [], r.value
+    RUBY
+  end
+
+  # Proc#refined memoizes its recipe, which holds the crefs, in a VM-wide map.  When the
+  # map lives in another objspace, only the recipe keeps the crefs alive.
+  def test_cref_held_by_proc_refined_recipe_outlives_local_gc
+    assert_ractor(<<~'RUBY', timeout: 60)
+      module RefinedInRactor
+        refine(String) { def hi = :hi }
+      end
+      Ractor.make_shareable(RefinedInRactor)
+
+      assert_equal :hi, Object.new.instance_exec { proc { "y".hi } }.refined(RefinedInRactor).call
+
+      r = Ractor.new do
+        once = eval('-> { Object.new.instance_exec { proc { "x".hi } }.refined(RefinedInRactor).call }')
+        first = once.()
+        keep = []
+        200.times { keep << Array.new(20_000) { "aaaaaaaa".dup }; keep.shift if keep.size > 20 }
+        keep = nil
+        Ractor.receive
+        3.times { GC.start }
+        [first, once.()]
+      end
+      r << :go
+      assert_equal [:hi, :hi], r.value
+    RUBY
+  end
+
+  # `using` inside a shareable Proc replaces the cref in its shared env.  Another Ractor's
+  # cref may point at the replaced one, so its owner's local GC must not free it.
+  def test_cref_replaced_by_using_in_shareable_proc_outlives_local_gc
+    assert_ractor(<<~'RUBY', timeout: 60)
+      module UsingInRactor
+        refine(String) { def hi = :hi }
+      end
+      Ractor.make_shareable(UsingInRactor)
+      module UsingHolder; end
+
+      PR = eval(<<~'SETUP')
+        Object.new.instance_exec do
+          Ractor.shareable_proc(self: UsingHolder) do |u|
+            using UsingInRactor if u
+            Object.new.instance_exec { proc { Module.nesting } }
+          end
+        end
+      SETUP
+
+      eval('PR.(true)')
+      port = Ractor::Port.new
+      r = Ractor.new(port) do |pt|
+        q = eval('PR.(false)')
+        pt << :ready
+        Ractor.receive
+        2000.times.map { q.call }.last
+      end
+      port.receive
+      eval('PR.(true)')
+      3.times { GC.start }
+      keep = []
+      400.times { keep << Array.new(20_000) { "aaaaaaaa".dup }; keep.shift if keep.size > 40 }
+      r << :go
+      assert_equal [], r.value
+    RUBY
+  end
+
   def test_shareability_error_uses_inspect
     x = (+"").instance_exec { method(:to_s) }
     def x.to_s

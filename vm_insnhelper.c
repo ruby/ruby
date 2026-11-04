@@ -942,6 +942,7 @@ cref_replace_with_duplicated_cref_each_frame(const VALUE *vptr, int can_be_svar,
           case imemo_cref:
             cref = (rb_cref_t *)v;
             new_cref = rb_vm_cref_dup(cref);
+            if (parent && RB_OBJ_SHAREABLE_P(parent)) rb_vm_cref_make_shareable(new_cref);
             if (parent) {
                 RB_OBJ_WRITE(parent, vptr, new_cref);
             }

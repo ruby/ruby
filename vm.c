@@ -351,11 +351,23 @@ vm_cref_new0(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_
 
     VM_ASSERT(singleton || klass);
 
-    rb_cref_t *cref = SHAREABLE_IMEMO_NEW(rb_cref_t, imemo_cref, refinements);
-    /* A cref is born shareable, so possibly-unshareable children (a singleton cref's
-     * self, `using`'s refinements hash) go through the write barrier to record a shref;
-     * a plain store would let the owner's local GC collect the child under the pinned
-     * cref.  next is always a cref (shareable): plain store. */
+    bool cref_shareable = true;
+    if (singleton && klass && !SPECIAL_CONST_P(klass) && !RB_OBJ_SHAREABLE_P(klass)) {
+        cref_shareable = false;
+    }
+    else if (prev_cref != NULL && prev_cref != (void *)1 &&
+             !RB_OBJ_SHAREABLE_P((VALUE)prev_cref)) {
+        cref_shareable = false;
+    }
+
+    rb_cref_t *cref = cref_shareable
+        ? SHAREABLE_IMEMO_NEW(rb_cref_t, imemo_cref, refinements)
+        : IMEMO_NEW(rb_cref_t, imemo_cref, refinements);
+
+    /* A shareable cref's possibly-unshareable children (a singleton cref's self, `using`'s
+     * refinements hash) go through the write barrier to record a shref; a plain store
+     * would let the owner's local GC collect the child under the pinned cref.  A cref is
+     * born shareable only if next is shareable, so next is a plain store. */
     if (!SPECIAL_CONST_P(refinements)) RB_OBJ_WRITTEN(cref, Qundef, refinements);
     if (klass) {
         RB_OBJ_WRITE(cref, &cref->klass_or_self, klass);
@@ -440,6 +452,30 @@ rb_cref_t *
 rb_vm_cref_new_toplevel(void)
 {
     return vm_cref_new_toplevel(GET_EC());
+}
+
+/* Promote an unshareable cref chain before it is published through a shareable object
+ * (a method entry, an isolated env, a Proc#refined recipe), where another Ractor can
+ * reach it.  The chain's unshareable crefs are all this Ractor's own, and a shareable
+ * cref's next is shareable, so the walk stops at the first shareable one. */
+void
+rb_vm_cref_make_shareable(const rb_cref_t *cref)
+{
+    while (cref && cref != (void *)1 && !RB_OBJ_SHAREABLE_P((VALUE)cref)) {
+        VM_ASSERT(!rb_gc_obj_foreign_p((VALUE)cref));
+
+        FL_SET_RAW((VALUE)cref, FL_SHAREABLE);
+        rb_gc_obj_became_shareable((VALUE)cref);
+
+        if (!SPECIAL_CONST_P(cref->klass_or_self) && !RB_OBJ_SHAREABLE_P(cref->klass_or_self)) {
+            rb_gc_writebarrier((VALUE)cref, cref->klass_or_self);
+        }
+        if (!SPECIAL_CONST_P(cref->refinements) && !RB_OBJ_SHAREABLE_P(cref->refinements)) {
+            rb_gc_writebarrier((VALUE)cref, cref->refinements);
+        }
+
+        cref = cref->next;
+    }
 }
 
 static void
@@ -1547,6 +1583,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
             svar_val = Qfalse;
         }
     }
+    if (imemo_type_p(svar_val, imemo_cref)) rb_vm_cref_make_shareable((const rb_cref_t *)svar_val);
     RB_OBJ_WRITE(copied_env, &ep[VM_ENV_DATA_INDEX_ME_CREF], svar_val);
 
     ep[VM_ENV_DATA_INDEX_FLAGS] = src_ep[VM_ENV_DATA_INDEX_FLAGS] | VM_ENV_FLAG_ISOLATED;

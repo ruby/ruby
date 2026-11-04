@@ -498,6 +498,9 @@ refinement_recipe_new(const rb_cref_t *base_cref, const rb_cref_t *cref,
                       long argc, const VALUE *mods)
 {
     rb_len_t inherited = refinement_recipe_modc(src_recipe);
+    /* the recipe is memoized VM-wide, so its crefs must outlive this Ractor's local GC */
+    rb_vm_cref_make_shareable(base_cref);
+    rb_vm_cref_make_shareable(cref);
     VALUE recipe = rb_ary_hidden_new(REFINEMENT_RECIPE_MODS + inherited + argc);
     rb_ary_push(recipe, (VALUE)base_cref);
     rb_ary_push(recipe, (VALUE)cref);

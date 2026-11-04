@@ -1117,6 +1117,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
                     method_cref = vm_cref_new_toplevel(GET_EC()); /* TODO: can we reuse? */
                 }
 
+                rb_vm_cref_make_shareable(method_cref);
                 RB_OBJ_WRITE(me, &def->body.iseq.cref, method_cref);
                 return;
             }
