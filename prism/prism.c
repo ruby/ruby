@@ -6803,26 +6803,18 @@ pm_true_node_synthesized_create(pm_parser_t *parser) {
  * Allocate and initialize a new UndefNode node.
  */
 static pm_undef_node_t *
-pm_undef_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    PRISM_ASSERT(token->type == PM_TOKEN_KEYWORD_UNDEF);
+pm_undef_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_list_t *names) {
+    PRISM_ASSERT(keyword->type == PM_TOKEN_KEYWORD_UNDEF);
+    pm_node_list_finalize(&parser->node_chunks, parser->arena, names);
 
     return pm_undef_node_new(
         parser->arena,
         ++parser->node_id,
         0,
-        PM_LOCATION_INIT_TOKEN(parser, token),
-        ((pm_node_list_t) { 0 }),
-        TOK2LOC(parser, token)
+        names->size == 0 ? PM_LOCATION_INIT_TOKEN(parser, keyword) : PM_LOCATION_INIT_TOKEN_NODE(parser, keyword, names->nodes[names->size - 1]),
+        *names,
+        TOK2LOC(parser, keyword)
     );
-}
-
-/**
- * Append a name to an undef node.
- */
-static void
-pm_undef_node_append(pm_arena_t *arena, pm_undef_node_t *node, pm_node_t *name) {
-    PM_NODE_LENGTH_SET_NODE(node, name);
-    pm_node_list_append_inline(arena, &node->names, name);
 }
 
 /**
@@ -20860,11 +20852,13 @@ parse_undef(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags
     }
 
     parser_lex(parser);
-    pm_undef_node_t *undef = pm_undef_node_create(parser, &parser->previous);
+    pm_token_t keyword = parser->previous;
+
+    pm_node_list_t names = { 0 };
     pm_node_t *name = parse_undef_argument(parser, (uint16_t) (depth + 1));
 
     if (!PM_NODE_TYPE_P(name, PM_ERROR_RECOVERY_NODE)) {
-        pm_undef_node_append(parser->arena, undef, name);
+        pm_node_list_open_append(&parser->node_chunks, &names, name);
 
         while (match1(parser, PM_TOKEN_COMMA)) {
             lex_state_set(parser, PM_LEX_STATE_FNAME | PM_LEX_STATE_FITEM);
@@ -20875,11 +20869,11 @@ parse_undef(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags
                 break;
             }
 
-            pm_undef_node_append(parser->arena, undef, name);
+            pm_node_list_open_append(&parser->node_chunks, &names, name);
         }
     }
 
-    return undef;
+    return pm_undef_node_create(parser, &keyword, &names);
 }
 
 static pm_yield_node_t *
