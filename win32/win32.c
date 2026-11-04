@@ -5433,12 +5433,11 @@ wait(int *status)
 static char *
 w32_getenv(const char *name, UINT cp)
 {
-    WCHAR *wenvarea, *wenv;
-    int len = strlen(name);
-    char *uenvarea, *env, *found = NULL;
-    int wlen;
+    WCHAR *wname, wbuf[256], *wval = wbuf;
+    DWORD wlen, size = numberof(wbuf);
+    char *uenvarea = NULL;
 
-    if (len == 0) return NULL;
+    if (!*name) return NULL;
 
     if (!NTLoginName) {
         /* initialized in init_env, uenvarea_key should have been
@@ -5446,29 +5445,25 @@ w32_getenv(const char *name, UINT cp)
         return getenv(name);
     }
 
+    if (!(wname = mbstr_to_wstr(cp, name, -1, NULL))) return NULL;
+    for (;;) {
+        /* 0 is also the length of an empty value, which leaves the last
+         * error as it was */
+        SetLastError(NO_ERROR);
+        wlen = GetEnvironmentVariableW(wname, wval, size);
+        if (wlen < size) break;
+        if (wval != wbuf) free(wval);
+        size = wlen;
+        if (!(wval = malloc(size * sizeof(WCHAR)))) break;
+    }
+    if (wval && (wlen || GetLastError() == NO_ERROR))
+        uenvarea = wstr_to_mbstr(cp, wval, wlen + 1, NULL);
+    if (wval != wbuf) free(wval);
+    free(wname);
+
     free(FlsGetValue(uenvarea_key));
-    FlsSetValue(uenvarea_key, NULL);
-    wenvarea = GetEnvironmentStringsW();
-    if (!wenvarea) {
-        map_errno(GetLastError());
-        return NULL;
-    }
-    for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
-        wlen += lstrlenW(wenv) + 1;
-    uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
-    FreeEnvironmentStringsW(wenvarea);
-    if (!uenvarea)
-        return NULL;
     FlsSetValue(uenvarea_key, uenvarea);
-
-    for (env = uenvarea; *env; env += strlen(env) + 1) {
-        if (strncasecmp(env, name, len) == 0 && *(env + len) == '=') {
-            found = env + len + 1;
-            break;
-        }
-    }
-
-    return found;
+    return uenvarea;
 }
 
 /* License: Ruby's */
