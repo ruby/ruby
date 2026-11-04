@@ -574,4 +574,16 @@ class TestSprintf < Test::Unit::TestCase
       assert_equal i, str.bytesize
     end
   end
+
+  def test_dangling_pointer_after_encoding_set
+    str = "\u0141" * 61
+    wide_encodings = [
+      Encoding::UTF_16BE, Encoding::UTF_16LE,
+      Encoding::UTF_32BE, Encoding::UTF_32LE,
+    ]
+    all_assertions_foreach(nil, *wide_encodings) do |enc|
+      s = str.encode(enc)
+      assert_equal(s, ("%s" % s), enc.name)
+    end
+  end
 end

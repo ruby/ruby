@@ -22,6 +22,10 @@
 #include "prism/source.h"
 #include "prism/stream.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Serialize the AST represented by the given node to the given buffer.
  *
@@ -109,6 +113,10 @@ PRISM_EXPORTED_FUNCTION bool pm_serialize_parse_success_p(const uint8_t *source,
  *   the source parsed without errors.
  */
 PRISM_EXPORTED_FUNCTION int8_t pm_serialize_parse_errors_format(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data, pm_errors_format_type_t format_type) PRISM_NONNULL(1, 2);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

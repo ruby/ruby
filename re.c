@@ -19,6 +19,7 @@
 #include "internal/bignum.h"
 #include "internal/encoding.h"
 #include "internal/error.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/re.h"
@@ -27,6 +28,7 @@
 #include "internal/ractor.h"
 #include "internal/variable.h"
 #include "regint.h"
+#include "ruby/atomic.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
 #include "ruby/util.h"
@@ -125,7 +127,7 @@ static const char casetable[] = {
 rb_hrtime_t rb_reg_match_time_limit = 0;
 
 int
-rb_memcicmp(const void *x, const void *y, long len)
+rb_memcicmp(const void *x, const void *y, rb_len_t len)
 {
     const unsigned char *p1 = x, *p2 = y;
     int tmp;
@@ -138,8 +140,8 @@ rb_memcicmp(const void *x, const void *y, long len)
 }
 
 #if defined(HAVE_MEMMEM) && !defined(__APPLE__)
-static inline long
-rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n)
+static inline rb_len_t
+rb_memsearch_ss(const unsigned char *xs, rb_len_t m, const unsigned char *ys, rb_len_t n)
 {
     const unsigned char *y;
 
@@ -149,8 +151,8 @@ rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n
         return -1;
 }
 #else
-static inline long
-rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n)
+static inline rb_len_t
+rb_memsearch_ss(const unsigned char *xs, rb_len_t m, const unsigned char *ys, rb_len_t n)
 {
     const unsigned char *x = xs, *xe = xs + m;
     const unsigned char *y = ys, *ye = ys + n;
@@ -183,8 +185,8 @@ rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n
 }
 #endif
 
-static inline long
-rb_memsearch_qs(const unsigned char *xs, long m, const unsigned char *ys, long n)
+static inline rb_len_t
+rb_memsearch_qs(const unsigned char *xs, rb_len_t m, const unsigned char *ys, rb_len_t n)
 {
     const unsigned char *x = xs, *xe = xs + m;
     const unsigned char *y = ys;
@@ -204,11 +206,14 @@ rb_memsearch_qs(const unsigned char *xs, long m, const unsigned char *ys, long n
 }
 
 static inline unsigned int
-rb_memsearch_qs_utf8_hash(const unsigned char *x)
+rb_memsearch_qs_utf8_hash(const unsigned char *x, const unsigned char *e)
 {
     register const unsigned int mix = 8353;
     register unsigned int h = *x;
     if (h < 0xC0) {
+        return h + 256;
+    }
+    else if (e - x < (h < 0xE0 ? 2 : h < 0xF0 ? 3 : 4)) {
         return h + 256;
     }
     else if (h < 0xE0) {
@@ -235,8 +240,8 @@ rb_memsearch_qs_utf8_hash(const unsigned char *x)
     return (unsigned char)h;
 }
 
-static inline long
-rb_memsearch_qs_utf8(const unsigned char *xs, long m, const unsigned char *ys, long n)
+static inline rb_len_t
+rb_memsearch_qs_utf8(const unsigned char *xs, rb_len_t m, const unsigned char *ys, rb_len_t n)
 {
     const unsigned char *x = xs, *xe = xs + m;
     const unsigned char *y = ys;
@@ -247,18 +252,18 @@ rb_memsearch_qs_utf8(const unsigned char *xs, long m, const unsigned char *ys, l
         qstable[i] = m + 1;
     }
     for (; x < xe; ++x) {
-        qstable[rb_memsearch_qs_utf8_hash(x)] = xe - x;
+        qstable[rb_memsearch_qs_utf8_hash(x, xe)] = xe - x;
     }
     /* Searching */
-    for (; y + m <= ys + n; y += qstable[rb_memsearch_qs_utf8_hash(y+m)]) {
+    for (; y + m <= ys + n; y += qstable[rb_memsearch_qs_utf8_hash(y+m, ys+n)]) {
         if (*xs == *y && memcmp(xs, y, m) == 0)
             return y - ys;
     }
     return -1;
 }
 
-static inline long
-rb_memsearch_with_char_size(const unsigned char *xs, long m, const unsigned char *ys, long n, int char_size)
+static inline rb_len_t
+rb_memsearch_with_char_size(const unsigned char *xs, rb_len_t m, const unsigned char *ys, rb_len_t n, int char_size)
 {
     const unsigned char *x = xs, x0 = *xs, *y = ys;
 
@@ -269,20 +274,20 @@ rb_memsearch_with_char_size(const unsigned char *xs, long m, const unsigned char
     return -1;
 }
 
-static inline long
-rb_memsearch_wchar(const unsigned char *xs, long m, const unsigned char *ys, long n)
+static inline rb_len_t
+rb_memsearch_wchar(const unsigned char *xs, rb_len_t m, const unsigned char *ys, rb_len_t n)
 {
     return rb_memsearch_with_char_size(xs, m, ys, n, 2);
 }
 
-static inline long
-rb_memsearch_qchar(const unsigned char *xs, long m, const unsigned char *ys, long n)
+static inline rb_len_t
+rb_memsearch_qchar(const unsigned char *xs, rb_len_t m, const unsigned char *ys, rb_len_t n)
 {
     return rb_memsearch_with_char_size(xs, m, ys, n, 4);
 }
 
-long
-rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
+rb_len_t
+rb_memsearch(const void *x0, rb_len_t m, const void *y0, rb_len_t n, rb_encoding *enc)
 {
     const unsigned char *x = x0, *y = y0;
 
@@ -394,7 +399,7 @@ rb_reg_check(VALUE re)
 }
 
 static void
-rb_reg_expr_str(VALUE str, const char *s, long len,
+rb_reg_expr_str(VALUE str, const char *s, rb_len_t len,
                 rb_encoding *enc, rb_encoding *resenc, int term)
 {
     const char *p, *pend;
@@ -612,7 +617,7 @@ rb_reg_str_with_term(VALUE re, int term)
     options = RREGEXP_PTR(re)->options;
     VALUE src_str = RREGEXP_SRC(re);
     const UChar *ptr = (UChar *)RSTRING_PTR(src_str);
-    long len = RSTRING_LEN(src_str);
+    rb_len_t len = RSTRING_LEN(src_str);
   again:
     if (len >= 4 && ptr[0] == '(' && ptr[1] == '?') {
         int err = 1;
@@ -718,7 +723,7 @@ rb_reg_raise(const char *err, VALUE re)
 }
 
 static VALUE
-rb_enc_reg_error_desc(const char *s, long len, rb_encoding *enc, int options, const char *err)
+rb_enc_reg_error_desc(const char *s, rb_len_t len, rb_encoding *enc, int options, const char *err)
 {
     char opts[OPTBUF_SIZE + 1];	/* for '/' */
     VALUE desc = rb_str_buf_new2(err);
@@ -734,10 +739,10 @@ rb_enc_reg_error_desc(const char *s, long len, rb_encoding *enc, int options, co
     return rb_exc_new3(rb_eRegexpError, desc);
 }
 
-NORETURN(static void rb_enc_reg_raise(const char *s, long len, rb_encoding *enc, int options, const char *err));
+NORETURN(static void rb_enc_reg_raise(const char *s, rb_len_t len, rb_encoding *enc, int options, const char *err));
 
 static void
-rb_enc_reg_raise(const char *s, long len, rb_encoding *enc, int options, const char *err)
+rb_enc_reg_raise(const char *s, rb_len_t len, rb_encoding *enc, int options, const char *err)
 {
     rb_exc_raise(rb_enc_reg_error_desc(s, len, enc, options, err));
 }
@@ -919,8 +924,8 @@ onig_new_with_source(regex_t* reg, const UChar* pattern, const UChar* pattern_en
 }
 
 static bool
-make_regexp(Regexp *rp, const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_buffer err,
-        const char *sourcefile, int sourceline)
+make_regexp(Regexp *rp, const char *s, rb_len_t len, rb_encoding *enc, int flags, onig_errmsg_buffer err,
+            const char *sourcefile, int sourceline)
 {
     int r;
     OnigErrorInfo einfo;
@@ -943,52 +948,109 @@ make_regexp(Regexp *rp, const char *s, long len, rb_encoding *enc, int flags, on
 
 
 /*
- *  Document-class: MatchData
+ * Document-class: MatchData
  *
- *  MatchData encapsulates the result of matching a Regexp against
- *  string. It is returned by Regexp#match and String#match, and also
- *  stored in a global variable returned by Regexp.last_match.
+ * :markup: markdown
  *
- *  Usage:
+ * Ruby [matcher methods][matcher methods] create \MatchData objects.
  *
- *      url = 'https://docs.ruby-lang.org/en/2.5.0/MatchData.html'
- *      m = url.match(/(\d\.?)+/)   # => #<MatchData "2.5.0" 1:"0">
- *      m.string                    # => "https://docs.ruby-lang.org/en/2.5.0/MatchData.html"
- *      m.regexp                    # => /(\d\.?)+/
- *      # entire matched substring:
- *      m[0]                        # => "2.5.0"
+ * A \MatchData object contains the detailed result of a match, including:
  *
- *      # Working with unnamed captures
- *      m = url.match(%r{([^/]+)/([^/]+)\.html$})
- *      m.captures                  # => ["2.5.0", "MatchData"]
- *      m[1]                        # => "2.5.0"
- *      m.values_at(1, 2)           # => ["2.5.0", "MatchData"]
+ * - The target string used for the match.
+ * - The Regexp used for the match.
+ * - The matched substring.
+ * - The substring preceding the matched substring.
+ * - The substring following the matched substring.
+ * - Captured substrings.
  *
- *      # Working with named captures
- *      m = url.match(%r{(?<version>[^/]+)/(?<module>[^/]+)\.html$})
- *      m.captures                  # => ["2.5.0", "MatchData"]
- *      m.named_captures            # => {"version"=>"2.5.0", "module"=>"MatchData"}
- *      m[:version]                 # => "2.5.0"
- *      m.values_at(:version, :module)
- *                                  # => ["2.5.0", "MatchData"]
- *      # Numerical indexes are working, too
- *      m[1]                        # => "2.5.0"
- *      m.values_at(1, 2)           # => ["2.5.0", "MatchData"]
+ * ## In Brief
  *
- *  == Global variables equivalence
+ * ```ruby
+ * # Basics.
+ * s = 'https://docs.ruby-lang.org/en/2.5.0/MatchData.html'
+ * m = s.match(/(\d\.?)+/) # => #<MatchData "2.5.0" 1:"0">
+ * m.string                # => "https://docs.ruby-lang.org/en/2.5.0/MatchData.html"
+ * m.regexp                # => /(\d\.?)+/
+ * m[0]                    # => "2.5.0"  # Matched substring.
+ * m.pre_match             # => "https://docs.ruby-lang.org/en/"
+ * m.post_match            # => "/MatchData.html"
  *
- *  Parts of last MatchData (returned by Regexp.last_match) are also
- *  aliased as global variables:
+ * # Unnamed (numbered) captures.
+ * m = "2025-12-25".match(/(\d{4})-(\d{2})-(\d{2})/)
+ * # => #<MatchData "2025-12-25" 1:"2025" 2:"12" 3:"25">
+ * m[0] # => "2025-12-25"  # Entire matched substring.
+ * m[1] # => "2025"        # First captured substring.
+ * m[2] # => "12"          # Second captured substring.
+ * m[3] # => "25"          # Third captured substring.
+ * m[4] # => nil           # No more captured substrings.
  *
- *  * <code>$~</code> is Regexp.last_match;
- *  * <code>$&</code> is Regexp.last_match<code>[ 0 ]</code>;
- *  * <code>$1</code>, <code>$2</code>, and so on are
- *    Regexp.last_match<code>[ i ]</code> (captures by number);
- *  * <code>$`</code> is Regexp.last_match<code>.pre_match</code>;
- *  * <code>$'</code> is Regexp.last_match<code>.post_match</code>;
- *  * <code>$+</code> is Regexp.last_match<code>[ -1 ]</code> (the last capture).
+ * # Named captures.
+ * m = "2025-12-25".match(/(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/)
+ * m[:year]   # "2025"
+ * m[:month]  # "12"
+ * m[:day]    # "25"
+ * # Also available by numbers.
+ * m[0]       # => "2025-12-25"
+ * m[1]       # => "2025"
+ * m[:nosuch] # Raises IndexError: undefined group name reference: nosuch.
+ * ```
  *
- *  See also Regexp@Global+Variables.
+ * ## Matcher Methods
+ *
+ * Each of these methods creates a \MatchData object,
+ * updates the [matcher global variables][matcher global variables],
+ * and returns the \MatchData object:
+ *
+ * - Regexp#match.
+ * - String#match.
+ * - Symbol#match.
+ *
+ * Each of these methods creates a \MatchData object,
+ * updates the [matcher global variables][matcher global variables],
+ * but _does not_ return the \MatchData object;
+ * the \MatchData object is available in global variable `$~`:
+ *
+ * - Regexp#=~
+ * - String#=~
+ * - String#gsub
+ * - String#gsub!
+ * - String#scan
+ * - String#sub
+ * - String#sub!
+ * - Symbol#=~
+ *
+ * Each of these methods, when called with a Regexp argument,
+ * creates a \MatchData object,
+ * updates the [matcher global variables][matcher global variables],
+ * but _does not_ return the \MatchData object;
+ * the \MatchData object is available in global variable `$~`:
+ *
+ * - String#index
+ * - String#partition
+ * - String#rindex
+ * - String#rpartition
+ * - String#slice
+ * - String#slice!
+ * - String#split
+ *
+ * ## Match-Related Methods
+ *
+ * Each of these predicate methods performs a "fast match,"
+ * returning whether a match was found,
+ * but _not_ creating a \MatchData object,
+ * and _not_ setting [matcher global variables][matcher global variables]:
+ *
+ * - Regexp#match?
+ * - String#match?
+ * - Symbol#match?
+ *
+ * This method return the \MatchData object resulting from the most recent match:
+ *
+ * - Regexp::last_match.
+ *
+ * [matcher methods]:          rdoc-ref:MatchData@Matcher+Methods
+ * [matcher global variables]: rdoc-ref:Regexp@Global+Variables
+ *
  */
 
 VALUE rb_cMatch;
@@ -1148,15 +1210,15 @@ rb_match_blob_free(void *blob)
 }
 
 typedef struct {
-    long byte_pos;
-    long char_pos;
+    rb_len_t byte_pos;
+    rb_len_t char_pos;
 } pair_t;
 
 static int
 pair_byte_cmp(const void *pair1, const void *pair2)
 {
-    long diff = ((pair_t*)pair1)->byte_pos - ((pair_t*)pair2)->byte_pos;
-#if SIZEOF_LONG > SIZEOF_INT
+    rb_len_t diff = ((pair_t*)pair1)->byte_pos - ((pair_t*)pair2)->byte_pos;
+#if SIZEOF_RB_LEN_T > SIZEOF_INT
     return diff ? diff > 0 ? 1 : -1 : 0;
 #else
     return (int)diff;
@@ -1168,7 +1230,7 @@ update_char_offset(VALUE match)
 {
     struct RMatch *rm = RMATCH(match);
     int i, num_regs, num_pos;
-    long c;
+    rb_len_t c;
     char *s, *p, *q;
     rb_encoding *enc;
     pair_t *pairs;
@@ -1410,25 +1472,17 @@ match_offset(VALUE match, VALUE n)
         return rb_assoc_new(Qnil, Qnil);
 
     update_char_offset(match);
-    return rb_assoc_new(LONG2NUM(RMATCH(match)->char_offset[i].beg),
-                        LONG2NUM(RMATCH(match)->char_offset[i].end));
+    return rb_assoc_new(LEN2NUM(RMATCH(match)->char_offset[i].beg),
+                        LEN2NUM(RMATCH(match)->char_offset[i].end));
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     mtch.byteoffset(n)   -> array
+ *     byteoffset(object) -> [bytebegin, byteend]
  *
- *  Returns a two-element array containing the beginning and ending byte-based offsets of
- *  the <em>n</em>th match.
- *  <em>n</em> can be a string or symbol to reference a named capture.
- *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.byteoffset(0)      #=> [1, 7]
- *     m.byteoffset(4)      #=> [6, 7]
- *
- *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
- *     p m.byteoffset(:foo) #=> [0, 1]
- *     p m.byteoffset(:bar) #=> [2, 3]
+ *  :include: doc/matchdata/byteoffset.md
  *
  */
 
@@ -1442,16 +1496,18 @@ match_byteoffset(VALUE match, VALUE n)
 
     if (RMATCH_BEG(match, i) < 0)
         return rb_assoc_new(Qnil, Qnil);
-    return rb_assoc_new(LONG2NUM(RMATCH_BEG(match, i)), LONG2NUM(RMATCH_END(match, i)));
+    return rb_assoc_new(LEN2NUM(RMATCH_BEG(match, i)), LEN2NUM(RMATCH_END(match, i)));
 }
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    bytebegin(n) -> integer
  *    bytebegin(name) -> integer
  *
- *  :include: doc/matchdata/bytebegin.rdoc
+ *  :include: doc/matchdata/bytebegin.md
  *
  */
 
@@ -1465,16 +1521,18 @@ match_bytebegin(VALUE match, VALUE n)
 
     if (RMATCH_BEG(match, i) < 0)
         return Qnil;
-    return LONG2NUM(RMATCH_BEG(match, i));
+    return LEN2NUM(RMATCH_BEG(match, i));
 }
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    byteend(n) -> integer
  *    byteend(name) -> integer
  *
- *  :include: doc/matchdata/byteend.rdoc
+ *  :include: doc/matchdata/byteend.md
  *
  */
 
@@ -1488,16 +1546,18 @@ match_byteend(VALUE match, VALUE n)
 
     if (RMATCH_BEG(match, i) < 0)
         return Qnil;
-    return LONG2NUM(RMATCH_END(match, i));
+    return LEN2NUM(RMATCH_END(match, i));
 }
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    begin(n) -> integer
  *    begin(name) -> integer
  *
- *  :include: doc/matchdata/begin.rdoc
+ *  :include: doc/matchdata/begin.md
  *
  */
 
@@ -1513,16 +1573,18 @@ match_begin(VALUE match, VALUE n)
         return Qnil;
 
     update_char_offset(match);
-    return LONG2NUM(RMATCH(match)->char_offset[i].beg);
+    return LEN2NUM(RMATCH(match)->char_offset[i].beg);
 }
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    end(n) -> integer
  *    end(name) -> integer
  *
- *  :include: doc/matchdata/end.rdoc
+ *  :include: doc/matchdata/end.md
  *
  */
 
@@ -1538,7 +1600,7 @@ match_end(VALUE match, VALUE n)
         return Qnil;
 
     update_char_offset(match);
-    return LONG2NUM(RMATCH(match)->char_offset[i].end);
+    return LEN2NUM(RMATCH(match)->char_offset[i].end);
 }
 
 /*
@@ -1574,7 +1636,7 @@ match_nth(VALUE match, VALUE n)
 
     backref_number_check(match, i);
 
-    long start = RMATCH_BEG(match, i), end = RMATCH_END(match, i);
+    rb_len_t start = RMATCH_BEG(match, i), end = RMATCH_END(match, i);
     if (start < 0)
         return Qnil;
 
@@ -1624,7 +1686,7 @@ match_nth_length(VALUE match, VALUE n)
     update_char_offset(match);
     const struct rmatch_offset *const ofs =
         &RMATCH(match)->char_offset[i];
-    return LONG2NUM(ofs->end - ofs->beg);
+    return LEN2NUM(ofs->end - ofs->beg);
 }
 
 void
@@ -1663,7 +1725,7 @@ match_alloc_or_reuse(VALUE existing, int num_regs)
 }
 
 static void
-match_set_string(VALUE m, VALUE string, long pos, long len)
+match_set_string(VALUE m, VALUE string, rb_len_t pos, rb_len_t len)
 {
     struct RMatch *match = (struct RMatch *)m;
 
@@ -1674,7 +1736,7 @@ match_set_string(VALUE m, VALUE string, long pos, long len)
 }
 
 VALUE
-rb_backref_set_string(VALUE string, long pos, long len)
+rb_backref_set_string(VALUE string, rb_len_t pos, rb_len_t len)
 {
     VALUE match = match_alloc_or_reuse(rb_backref_get(), 1);
     match_set_string(match, string, pos, len);
@@ -1771,8 +1833,17 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
     return enc;
 }
 
-regex_t *
-rb_reg_prepare_re(VALUE re, VALUE str)
+static regex_t *
+reg_find_encoding(struct rb_regexp_variant *variant, rb_encoding *enc)
+{
+    for (; variant; variant = variant->next) {
+        if (variant->reg.enc == enc) return &variant->reg;
+    }
+    return NULL;
+}
+
+static regex_t *
+reg_prepare_re(VALUE re, VALUE str, bool caller_owned)
 {
     int r;
     OnigErrorInfo einfo;
@@ -1783,7 +1854,9 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     regex_t *reg = RREGEXP_PTR(re);
     if (reg->enc == enc) return reg;
 
-    rb_reg_check(re);
+    struct rb_regexp_variant *head = RUBY_ATOMIC_PTR_LOAD(RREGEXP(re)->variants);
+    regex_t *cached = reg_find_encoding(head, enc);
+    if (cached && !caller_owned) return cached;
 
     VALUE src_str = RREGEXP_SRC(re);
     const char *pattern = RSTRING_PTR(src_str);
@@ -1791,7 +1864,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     onig_errmsg_buffer err = "";
     unescaped = rb_reg_preprocess(
         pattern, pattern + RSTRING_LEN(src_str), enc,
-        &fixed_enc, err, 0);
+        &fixed_enc, err, reg->options);
 
     if (NIL_P(unescaped)) {
         rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
@@ -1801,42 +1874,67 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     rb_hrtime_t timelimit = reg->timelimit;
 
     const char *ptr;
-    long len;
+    rb_len_t len;
     RSTRING_GETMEM(unescaped, ptr, len);
 
-    /* If there are no other users of this regex, then we can directly overwrite it. */
-    if (ruby_single_main_ractor && RREGEXP(re)->usecnt == 0) {
-        regex_t tmp_reg;
-        r = onig_new_without_alloc(&tmp_reg, (UChar *)ptr, (UChar *)(ptr + len),
-                                   reg->options, enc,
-                                   OnigDefaultSyntax, &einfo);
-
-        if (r) {
-            /* There was an error so perform cleanups. */
-            onig_free_body(&tmp_reg);
-        }
-        else {
-            onig_free_body(reg);
-            /* There are no errors so set reg to tmp_reg. */
-            *reg = tmp_reg;
-        }
-    }
-    else {
-        r = onig_new(&reg, (UChar *)ptr, (UChar *)(ptr + len),
-                     reg->options, enc,
-                     OnigDefaultSyntax, &einfo);
-    }
+    struct rb_regexp_variant *variant = ALLOC(struct rb_regexp_variant);
+    r = onig_new_without_alloc(&variant->reg, (UChar *)ptr, (UChar *)(ptr + len),
+                               reg->options, enc, OnigDefaultSyntax, &einfo);
 
     if (r) {
+        onig_free_body(&variant->reg);
+        SIZED_FREE(variant);
         onig_error_code_to_str((UChar*)err, r, &einfo);
         rb_reg_raise(err, re);
     }
 
+    reg = &variant->reg;
     reg->timelimit = timelimit;
+
+    if (caller_owned) {
+        /* onig_free() releases with libc free(), so don't use ALLOC here. */
+        reg = malloc(sizeof(regex_t));
+        if (!reg) {
+            onig_free_body(&variant->reg);
+            SIZED_FREE(variant);
+            rb_memerror();
+        }
+        *reg = variant->reg;
+        SIZED_FREE(variant);
+        RB_GC_GUARD(unescaped);
+        return reg;
+    }
+
+    /* Published variants are immutable and stay alive with re. Only the head
+     * changes; a failed CAS may mean another Ractor compiled this encoding. */
+    for (;;) {
+        variant->next = head;
+        struct rb_regexp_variant *previous = RUBY_ATOMIC_PTR_CAS(RREGEXP(re)->variants, head, variant);
+        if (previous == head) break;
+
+        head = previous;
+        cached = reg_find_encoding(head, enc);
+        if (cached) {
+            /* Discard our reg and use the cached version */
+            onig_free_body(&variant->reg);
+            SIZED_FREE(variant);
+            reg = cached;
+            break;
+        }
+    }
 
     RB_GC_GUARD(unescaped);
     RB_GC_GUARD(src_str);
+    RB_GC_GUARD(re);
     return reg;
+}
+
+/* Callers of this public API free the result with onig_free() if it is not
+ * RREGEXP_PTR(re), so return a copy and keep variants private. */
+regex_t *
+rb_reg_prepare_re(VALUE re, VALUE str)
+{
+    return reg_prepare_re(re, str, true);
 }
 
 OnigPosition
@@ -1844,17 +1942,11 @@ rb_reg_onig_match(VALUE re, VALUE str,
                   OnigPosition (*match)(regex_t *reg, VALUE str, struct re_registers *regs, void *args),
                   void *args, struct re_registers *regs)
 {
-    regex_t *reg = rb_reg_prepare_re(re, str);
-
-    bool tmpreg = reg != RREGEXP_PTR(re);
-    if (!tmpreg) RREGEXP(re)->usecnt++;
+    regex_t *reg = reg_prepare_re(re, str, false);
 
     OnigPosition result = match(reg, str, regs, args);
 
-    if (!tmpreg) RREGEXP(re)->usecnt--;
-    if (tmpreg) {
-        onig_free(reg);
-    }
+    RB_GC_GUARD(re);
 
     if (result < 0) {
         switch (result) {
@@ -1873,10 +1965,10 @@ rb_reg_onig_match(VALUE re, VALUE str,
     return result;
 }
 
-long
-rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
+rb_len_t
+rb_reg_adjust_startpos(VALUE re, VALUE str, rb_len_t pos, int reverse)
 {
-    long range;
+    rb_len_t range;
     rb_encoding *enc;
     UChar *p, *string;
 
@@ -1905,8 +1997,8 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
 }
 
 struct reg_onig_search_args {
-    long pos;
-    long range;
+    rb_len_t pos;
+    rb_len_t range;
 };
 
 static OnigPosition
@@ -1914,7 +2006,7 @@ reg_onig_search(regex_t *reg, VALUE str, struct re_registers *regs, void *args_p
 {
     struct reg_onig_search_args *args = (struct reg_onig_search_args *)args_ptr;
     const char *ptr;
-    long len;
+    rb_len_t len;
     RSTRING_GETMEM(str, ptr, len);
 
     return onig_search(
@@ -1928,10 +2020,10 @@ reg_onig_search(regex_t *reg, VALUE str, struct re_registers *regs, void *args_p
 }
 
 /* returns byte offset */
-static long
-rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_backref_str, VALUE *set_match)
+static rb_len_t
+rb_reg_search_set_match(VALUE re, VALUE str, rb_len_t pos, int reverse, int set_backref_str, VALUE *set_match)
 {
-    long len = RSTRING_LEN(str);
+    rb_len_t len = RSTRING_LEN(str);
     if (pos > len || pos < 0) {
         rb_backref_set(Qnil);
         return -1;
@@ -1990,14 +2082,14 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
     return result;
 }
 
-long
-rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str, VALUE *match)
+rb_len_t
+rb_reg_search0(VALUE re, VALUE str, rb_len_t pos, int reverse, int set_backref_str, VALUE *match)
 {
     return rb_reg_search_set_match(re, str, pos, reverse, set_backref_str, match);
 }
 
-long
-rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
+rb_len_t
+rb_reg_search(VALUE re, VALUE str, rb_len_t pos, int reverse)
 {
     return rb_reg_search_set_match(re, str, pos, reverse, 1, NULL);
 }
@@ -2006,7 +2098,7 @@ static OnigPosition
 reg_onig_match(regex_t *reg, VALUE str, struct re_registers *regs, void *_)
 {
     const char *ptr;
-    long len;
+    rb_len_t len;
     RSTRING_GETMEM(str, ptr, len);
 
     return onig_match(
@@ -2071,7 +2163,7 @@ VALUE
 rb_reg_nth_match(int nth, VALUE match)
 {
     VALUE str;
-    long start, end, len;
+    rb_len_t start, end, len;
 
     if (NIL_P(match)) return Qnil;
     match_check(match);
@@ -2150,7 +2242,7 @@ VALUE
 rb_reg_match_post(VALUE match)
 {
     VALUE str;
-    long pos;
+    rb_len_t pos;
 
     if (NIL_P(match)) return Qnil;
     match_check(match);
@@ -2180,7 +2272,7 @@ rb_reg_match_last(VALUE match)
 {
     int i = match_last_index(match);
     if (i <= 0) return Qnil;
-    long start = RMATCH_BEG(match, i);
+    rb_len_t start = RMATCH_BEG(match, i);
     return rb_str_subseq(RMATCH(match)->str, start, RMATCH_END(match, i) - start);
 }
 
@@ -2229,7 +2321,7 @@ match_array(VALUE match, int start)
     target = RMATCH(match)->str;
 
     for (i = start; i < num_regs; i++) {
-        long beg = RMATCH_BEG(match, i);
+        rb_len_t beg = RMATCH_BEG(match, i);
         if (beg == -1) {
             rb_ary_push(ary, Qnil);
         }
@@ -2264,16 +2356,22 @@ match_to_a(VALUE match)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    captures -> array
  *
- *  Returns the array of captures,
- *  which are all matches except <tt>m[0]</tt>:
+ *  Returns an array of the captured substrings,
+ *  including all except the entire matched substring:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m[0]       # => "HX1138"
- *    m.captures # => ["H", "X", "113", "8"]
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.captures # => ["2026", "12", "25"]
+ *  match[1..]     # => ["2026", "12", "25"]  # Included in array.
+ *  match[0]       # => "2026-12-25"          # Not included in array.
+ *  ```
  *
  *  Related: MatchData.to_a.
  *
@@ -2343,10 +2441,10 @@ namev_to_backref_number(VALUE match, VALUE name)
 }
 
 static VALUE
-match_ary_subseq(VALUE match, long beg, long len, VALUE result)
+match_ary_subseq(VALUE match, rb_len_t beg, rb_len_t len, VALUE result)
 {
-    long olen = RMATCH_NREGS(match);
-    long j, end = olen < beg+len ? olen : beg+len;
+    rb_len_t olen = RMATCH_NREGS(match);
+    rb_len_t j, end = olen < beg+len ? olen : beg+len;
     if (NIL_P(result)) result = rb_ary_new_capa(len);
     if (len == 0) return result;
 
@@ -2362,11 +2460,11 @@ match_ary_subseq(VALUE match, long beg, long len, VALUE result)
 static VALUE
 match_ary_aref(VALUE match, VALUE idx, VALUE result)
 {
-    long beg, len;
+    rb_len_t beg, len;
     int num_regs = RMATCH_NREGS(match);
 
     /* check if idx is Range */
-    switch (rb_range_beg_len(idx, &beg, &len, (long)num_regs, !NIL_P(result))) {
+    switch (rb_range_beg_len(idx, &beg, &len, (rb_len_t)num_regs, !NIL_P(result))) {
       case Qfalse:
         if (NIL_P(result)) return rb_reg_nth_match(NUM2INT(idx), match);
         rb_ary_push(result, rb_reg_nth_match(NUM2INT(idx), match));
@@ -2379,40 +2477,99 @@ match_ary_aref(VALUE match, VALUE idx, VALUE result)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    self[offset] -> string or nil
- *    self[offset, size] -> array
- *    self[range] -> array
+ *    self[n] -> string or nil
+ *    self[n, size] -> string or array
  *    self[name] -> string or nil
+ *    self[range] -> array or nil
  *
- *  When arguments +offset+, +offset+ and +size+, or +range+ are given,
- *  returns match and captures in the style of Array#[]:
+ *  With only integer argument `n` given,
+ *  returns the matched substring at offset `n`:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m[0] # => "HX1138"
- *    m[1, 2]  # => ["H", "X"]
- *    m[1..3]  # => ["H", "X", "113"]
- *    m[-3, 2] # => ["X", "113"]
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0]  # => "2026-12-25"  # Entire matched string.
+ *  match[1]  # => "2026"        # First matched substring.
+ *  match[2]  # => "12"          # Second matched substring.
+ *  match[3]  # => "25"          # Third matched substring.
+ *  match[4]  # => nil           # No more matches.
+ *  match[-1] # => "25"          # For negative offset, counts backwards.
+ *  ```
  *
- *  When string or symbol argument +name+ is given,
- *  returns the matched substring for the given name:
+ *  With integer arguments `n` and `size` given,
+ *  returns `size` matched substrings beginning at offset `n`:
  *
- *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *    # => #<MatchData "hoge" foo:"h" bar:"ge">
- *    m['foo'] # => "h"
- *    m[:bar]  # => "ge"
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0, 1]  # => ["2026-12-25"]
+ *  match[0, 4]  # => ["2026-12-25", "2026", "12", "25"]
+ *  match[0, 10] # => ["2026-12-25", "2026", "12", "25"]
+ *  match[-3, 2] # => ["2026", "12"]
+ *  match[0, 0]  # => []
+ *  ```
  *
- *  If multiple captures have the same name, returns the last matched
- *  substring.
+ *  With string or symbol argument `name` given,
+ *  returns the named matched substring:
  *
- *    m = /(?<foo>.)(?<foo>.+)/.match("hoge")
- *    # => #<MatchData "hoge" foo:"h" foo:"oge">
- *    m[:foo] #=> "oge"
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = regexp.match('2026-10-27')
+ *  # => #<MatchData "2026-10-27" year:"2026" month:"10" day:"27">
+ *  match[:year]    # => "2026"
+ *  match['day']    # => "27"
+ *  match[:nosuch]  # Raises IndexError : undefined group name reference: nosuch.
+ *  ```
  *
- *    m = /\W(?<foo>.+)|\w(?<foo>.+)|(?<foo>.+)/.match("hoge")
- *    #<MatchData "hoge" foo:nil foo:"oge" foo:nil>
- *    m[:foo] #=> "oge"
+ *  If multiple captures have the same name, returns matched substring for the last one.
+ *
+ *  With [bounded range][bounded range] argument `range` given,
+ *  returns an array of matched substrings:
+ *
+ *  ```
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0..2]  # => ["2026-12-25", "2026", "12"]
+ *  match[0..10] # => ["2026-12-25", "2026", "12", "25"]
+ *  match[0..-3] # => ["2026-12-25", "2026"]
+ *  match[-3..2] # => ["2026", "12"]
+ *  ```
+ *
+ *  With [beginless range][beginless range] argument `range` given,
+ *  returns an array of matched substrings:
+ *
+ *  ```ruby
+ *  match[..0]  # => ["2026-12-25"]
+ *  match[..1]  # => ["2026-12-25", "2026"]
+ *  match[..10] # => ["2026-12-25", "2026", "12", "25"]
+ *  ```
+ *
+ *  With [endless range][endless range] argument `range` given,
+ *  returns an array of matched substrings:
+ *
+ *  ```ruby
+ *  match[0..]  # => ["2026-12-25", "2026", "12", "25"]
+ *  match[2..]  # => ["12", "25"]
+ *  match[10..] # => nil
+ *  ```
+ *
+ *  With [unbounded range][unbounded range] argument `range` given,
+ *  returns an array of all matched substrings:
+ *
+ *  ```ruby
+ *  match[nil..nil] # => ["2026-12-25", "2026", "12", "25"]
+ *  ```
+ *
+ *  [bounded range]: rdoc-ref:Range@Bounded+Ranges
+ *  [beginless range]: rdoc-ref:Range@Beginless+Ranges
+ *  [endless range]: rdoc-ref:Range@Endless+Ranges
+ *  [unbounded range]: rdoc-ref:Range@Unbounded+Ranges
  *
  */
 
@@ -2439,9 +2596,9 @@ match_aref(int argc, VALUE *argv, VALUE match)
         }
     }
     else {
-        long beg = NUM2LONG(idx);
-        long len = NUM2LONG(length);
-        long num_regs = RMATCH_NREGS(match);
+        rb_len_t beg = NUM2LEN(idx);
+        rb_len_t len = NUM2LEN(length);
+        rb_len_t num_regs = RMATCH_NREGS(match);
         if (len < 0) {
             return Qnil;
         }
@@ -2648,26 +2805,50 @@ match_named_captures(int argc, VALUE *argv, VALUE match)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    deconstruct_keys(array_of_names) -> hash
+ *    deconstruct_keys(object) -> hash
  *
- *  Returns a hash of the named captures for the given names.
+ *  With an array of symbol capture names given,
+ *  returns a hash of the names and values for the given names:
  *
- *    m = /(?<hours>\d{2}):(?<minutes>\d{2}):(?<seconds>\d{2})/.match("18:37:22")
- *    m.deconstruct_keys([:hours, :minutes]) # => {:hours => "18", :minutes => "37"}
- *    m.deconstruct_keys(nil) # => {:hours => "18", :minutes => "37", :seconds => "22"}
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.deconstruct_keys([:day, :month]) # => {day: "25", month: "12"}
+ *  match.deconstruct_keys(['foo'])        # Raises TypeError: wrong argument type String (expected Symbol).
+ *  ```
+ *
+ *  Ignores symbols that are not capture names:
+ *
+ *  ```ruby
+ *  match.deconstruct_keys([:foo]) # => {}
+ *  ```
+ *
+ *  With `nil` given,
+ *  returns a hash of all capture names and values:
+ *
+ *  ```ruby
+ *  match.deconstruct_keys(nil) # => {year: "2026", month: "12", day: "25"}
+ *  ```
  *
  *  Returns an empty hash if no named captures were defined:
  *
- *    m = /(\d{2}):(\d{2}):(\d{2})/.match("18:37:22")
- *    m.deconstruct_keys(nil) # => {}
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match.deconstruct_keys(nil) # => {}
+ *  ```
  *
  */
 static VALUE
 match_deconstruct_keys(VALUE match, VALUE keys)
 {
     VALUE h;
-    long i;
+    rb_len_t i;
 
     match_check(match);
 
@@ -2736,7 +2917,7 @@ match_string(VALUE match)
 
 struct backref_name_tag {
     const UChar *name;
-    long len;
+    rb_len_t len;
 };
 
 static int
@@ -2754,22 +2935,25 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    inspect -> string
  *
- *  Returns a string representation of +self+:
+ *  Returns a string representation of `self`:
  *
- *    m = /.$/.match("foo")
- *    # => #<MatchData "o">
- *    m.inspect # => "#<MatchData \"o\">"
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  match.inspect # => "#<MatchData \"2026-12-25\" 1:\"2026\" 2:\"12\" 3:\"25\">"
  *
- *    m = /(.)(.)(.)/.match("foo")
- *    # => #<MatchData "foo" 1:"f" 2:"o" 3:"o">
- *    m.inspect # => "#<MatchData \"foo\" 1:\"f\" 2:\"o\
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  match.inspect # => "#<MatchData \"んにち\" 1:\"ん\" 2:\"に\" 3:\"ち\">"
  *
- *    m = /(.)(.)?(.)/.match("fo")
- *    # => #<MatchData "fo" 1:"f" 2:nil 3:"o">
- *    m.inspect # => "#<MatchData \"fo\" 1:\"f\" 2:nil 3:\"o\">"
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  match.inspect # => "#<MatchData \"2026-12-25\" year:\"2026\" month:\"12\" day:\"25\">"
+ *  ```
  *
  *  Related: MatchData#to_s.
  */
@@ -3485,7 +3669,7 @@ rb_reg_initialize_check(VALUE obj)
 }
 
 static int
-rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
+rb_reg_initialize(VALUE obj, const char *s, rb_len_t len, rb_encoding *enc,
                   int options, onig_errmsg_buffer err,
                   const char *sourcefile, int sourceline)
 {
@@ -3583,7 +3767,7 @@ rb_reg_s_alloc(VALUE klass)
 
     MEMZERO(RREGEXP_PTR((VALUE)re), struct re_pattern_buffer, 1);
     RB_OBJ_WRITE((VALUE)re, &re->src, 0);
-    re->usecnt = 0;
+    re->variants = NULL;
 
     return (VALUE)re;
 }
@@ -3627,7 +3811,7 @@ rb_reg_init_str_enc(VALUE re, VALUE s, rb_encoding *enc, int options)
 }
 
 VALUE
-rb_reg_new_from_values(long cnt, const VALUE *elements, int opt)
+rb_reg_new_from_values(rb_len_t cnt, const VALUE *elements, int opt)
 {
     const VALUE ary = rb_ary_tmp_new_from_values(0, cnt, elements);
     VALUE val = rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
@@ -3636,7 +3820,7 @@ rb_reg_new_from_values(long cnt, const VALUE *elements, int opt)
 }
 
 VALUE
-rb_enc_reg_new(const char *s, long len, rb_encoding *enc, int options)
+rb_enc_reg_new(const char *s, rb_len_t len, rb_encoding *enc, int options)
 {
     VALUE re = rb_reg_alloc();
     onig_errmsg_buffer err = "";
@@ -3650,7 +3834,7 @@ rb_enc_reg_new(const char *s, long len, rb_encoding *enc, int options)
 }
 
 VALUE
-rb_reg_new(const char *s, long len, int options)
+rb_reg_new(const char *s, rb_len_t len, int options)
 {
     return rb_enc_reg_new(s, len, rb_ascii8bit_encoding(), options);
 }
@@ -3753,11 +3937,13 @@ rb_reg_equal(VALUE re1, VALUE re2)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    hash -> integer
  *
- *  Returns the integer hash value for +self+,
- *  based on the target string, regexp, match, and captures.
+ *  Returns the integer hash value for `self`,
+ *  based on its target string, regexp, match, and captures.
  *
  *  See also Object#hash.
  *
@@ -3780,12 +3966,27 @@ match_hash(VALUE match)
 }
 
 /*
- *  call-seq:
- *    self == other -> true or false
+ *  :markup: markdown
  *
- *  Returns whether +other+ is another \MatchData object
- *  whose target string, regexp, match, and captures
- *  are the same as +self+.
+ *  call-seq:
+ *    self == object -> true or false
+ *
+ *  Returns whether `object` is a \MatchData object
+ *  whose #string, #regexp, and #begin values are the same as those of `self`:
+ *
+ *  ```ruby
+ *  regexp = /a/
+ *  s = 'aba'
+ *  match0 = regexp.match(s)
+ *  match1 = regexp.match(s, 2)
+ *  match0[0]        # => "a"
+ *  match1[0]        # => "a"
+ *  match0.begin(0)  # => 0
+ *  match1.begin(0)  # => 2
+ *  match0 == match0 # => true
+ *  match0 == match1 # => false
+ *  ```
+ *
  */
 
 static VALUE
@@ -3804,38 +4005,58 @@ match_equal(VALUE match1, VALUE match2)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    integer_at(index, base = 10) -> integer or nil
- *    integer_at(name, base = 10) -> integer or nil
+ *    integer_at(n, radix = 10) -> integer or nil
+ *    integer_at(name, radix = 10) -> integer or nil
  *
- *  Converts the matched substring to integer and return the result.
- *  +$~.integer_at(N)+ is equivalent to +$N&.to_i+.
+ *  Returns a captured substring converted to an integer;
+ *  the substring is interpreted as a numeric string in the given `radix`.
  *
- *    m = /(\d+{4})(\d+{2})(\d+{2})/.match("20260308")
- *    # => #<MatchData "20260308" 1:"2026" 2:"03" 3:"08">
- *    m.integer_at(0)     # => 20260308
- *    m.integer_at(1)     # => 2026
- *    m.integer_at(2)     # => 3
- *    m.integer_at(3)     # => 8
+ *  With integer index `n` given,
+ *  returns the `n`th capture converted to an integer:
  *
- *    m = /(?<y>\d+{4})(?<m>\d+{2})(?<d>\d+{2})/.match("20260308")
- *    m.integer_at("y")   # => 2026
- *    m.integer_at("m")   # => 3
- *    m.integer_at("d")   # => 8
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[0]             # => "2026-12-25"
+ *  match.integer_at(0)  # => 2026  # Stops interpreting at the hyphen.
+ *  match.integer_at(1)  # => 2026
+ *  match.integer_at(2)  # => 12
+ *  match.integer_at(3)  # => 25
+ *  match.integer_at(-1) # => 25    # For negative n, counts backwards in the captures.
+ *  match.integer_at(4) # => nil
+ *  ```
  *
- *  If the substring does not match, returns +nil+.
+ *  With string or symbol `name` given,
+ *  returns the named capture converted to an integer:
  *
- *    re = /(\d+)?/
- *    re.match("123").integer_at(1) #=> 123
- *    re.match("abc").integer_at(1) #=> nil
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.integer_at(:year)   # => 2026
+ *  match.integer_at('month') # => 12
+ *  match.integer_at(:nosuch) # Raises IndexError: undefined group name reference: nosuch.
+ *  ```
  *
- *  The string is converted in decimal by default.
+ *  Returns `nil` if there were no captures.
  *
- *    /\d+/.match("011").integer_at(0)     #=> 10
- *    /\d+/.match("011").integer_at(0, 12) #=> 13
- *    /\d+/.match("011").integer_at(0, 0)  #=> 9
+ *  For both forms above, the string is converted in the given `radix`:
  *
- *  See also MatchData#[], String#to_i.
+ *  ```ruby
+ *  match = /\d+/.match('11')
+ *  # => #<MatchData "11">
+ *  match.integer_at(0)     # => 11
+ *  match.integer_at(0, 2)  # => 3
+ *  match.integer_at(0, 8)  # => 9
+ *  match.integer_at(0, 16) # => 17
+ *  match.integer_at(0, 1)  # Raises ArgumentError: invalid radix 1.
+ *  ```
+ *
+ *  Related: MatchData#[], String#to_i.
  */
 static VALUE
 match_integer_at(int argc, VALUE *argv, VALUE match)
@@ -3861,12 +4082,12 @@ match_integer_at(int argc, VALUE *argv, VALUE match)
     if (nth >= RMATCH_NREGS(match)) return Qnil;
     if (nth < 0 && (nth += RMATCH_NREGS(match)) <= 0) return Qnil;
 
-    long start = RMATCH_BEG(match, nth), end = RMATCH_END(match, nth);
+    rb_len_t start = RMATCH_BEG(match, nth), end = RMATCH_END(match, nth);
     if (start < 0) return Qnil;
-    RUBY_ASSERT(start <= end, "%ld > %ld", start, end);
+    RUBY_ASSERT(start <= end, "%"PRIdLEN" > %"PRIdLEN, start, end);
 
     VALUE str = RMATCH(match)->str;
-    RUBY_ASSERT(end <= RSTRING_LEN(str), "%ld > %ld", end, RSTRING_LEN(str));
+    RUBY_ASSERT(end <= RSTRING_LEN(str), "%"PRIdLEN" > %"PRIdLEN, end, RSTRING_LEN(str));
 
     char *endp;
     return rb_int_parse_cstr(RSTRING_PTR(str) + start, end - start, &endp, NULL,
@@ -3887,8 +4108,8 @@ reg_operand(VALUE s, int check)
     }
 }
 
-static long
-reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
+static rb_len_t
+reg_match_pos(VALUE re, VALUE *strp, rb_len_t pos, VALUE* set_match)
 {
     VALUE str = *strp;
 
@@ -3969,10 +4190,10 @@ reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
 VALUE
 rb_reg_match(VALUE re, VALUE str)
 {
-    long pos = reg_match_pos(re, &str, 0, NULL);
+    rb_len_t pos = reg_match_pos(re, &str, 0, NULL);
     if (pos < 0) return Qnil;
     pos = rb_str_sublen(str, pos);
-    return LONG2FIX(pos);
+    return LEN2NUM(pos);
 }
 
 /*
@@ -3998,7 +4219,7 @@ rb_reg_match(VALUE re, VALUE str)
 static VALUE
 rb_reg_eqq(VALUE re, VALUE str)
 {
-    long start;
+    rb_len_t start;
 
     str = reg_operand(str, FALSE);
     if (NIL_P(str)) {
@@ -4024,7 +4245,7 @@ rb_reg_eqq(VALUE re, VALUE str)
 VALUE
 rb_reg_match2(VALUE re)
 {
-    long start;
+    rb_len_t start;
     VALUE line = rb_lastline_get();
 
     if (!RB_TYPE_P(line, T_STRING)) {
@@ -4037,7 +4258,7 @@ rb_reg_match2(VALUE re)
         return Qnil;
     }
     start = rb_str_sublen(line, start);
-    return LONG2FIX(start);
+    return LEN2NUM(start);
 }
 
 
@@ -4086,10 +4307,10 @@ static VALUE
 rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 {
     VALUE result = Qnil, str, initpos;
-    long pos;
+    rb_len_t pos;
 
     if (rb_scan_args(argc, argv, "11", &str, &initpos) == 2) {
-        pos = NUM2LONG(initpos);
+        pos = NUM2LEN(initpos);
     }
     else {
         pos = 0;
@@ -4125,22 +4346,22 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 static VALUE
 rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
 {
-    long pos = rb_check_arity(argc, 1, 2) > 1 ? NUM2LONG(argv[1]) : 0;
+    rb_len_t pos = rb_check_arity(argc, 1, 2) > 1 ? NUM2LEN(argv[1]) : 0;
     return rb_reg_match_p(re, argv[0], pos);
 }
 
 VALUE
-rb_reg_match_p(VALUE re, VALUE str, long pos)
+rb_reg_match_p(VALUE re, VALUE str, rb_len_t pos)
 {
     if (NIL_P(str)) return Qfalse;
     str = SYMBOL_P(str) ? rb_sym2str(str) : StringValue(str);
     if (pos) {
         if (pos < 0) {
-            pos += NUM2LONG(rb_str_length(str));
+            pos += NUM2LEN(rb_str_length(str));
             if (pos < 0) return Qfalse;
         }
         if (pos > 0) {
-            long len = 1;
+            rb_len_t len = 1;
             const char *beg = rb_str_subpos(str, pos, &len);
             if (!beg) return Qfalse;
             pos = beg - RSTRING_PTR(str);
@@ -4166,11 +4387,11 @@ str_to_option(VALUE str)
 {
     int flag = 0;
     const char *ptr;
-    long len;
+    rb_len_t len;
     str = rb_check_string_type(str);
     if (NIL_P(str)) return -1;
     RSTRING_GETMEM(str, ptr, len);
-    for (long i = 0; i < len; ++i) {
+    for (rb_len_t i = 0; i < len; ++i) {
         int f = char_to_option(ptr[i]);
         if (!f) {
             rb_raise(rb_eArgError, "unknown regexp option: %"PRIsVALUE, str);
@@ -4517,7 +4738,7 @@ rb_reg_s_try_convert(VALUE dummy, VALUE re)
 static VALUE
 rb_reg_s_union(VALUE self, VALUE args0)
 {
-    long argc = RARRAY_LEN(args0);
+    rb_len_t argc = RARRAY_LEN(args0);
 
     if (argc == 0) {
         VALUE args[1];
@@ -4725,7 +4946,7 @@ do_regsub(VALUE str, VALUE src, VALUE regexp, int num_regs, const OnigPosition *
     rb_encoding *str_enc = rb_enc_get(str);
     rb_encoding *src_enc = rb_enc_get(src);
     int acompat = rb_enc_asciicompat(str_enc);
-    long n;
+    rb_len_t n;
 #define ASCGET(s,e,cl) (acompat ? (*(cl)=1,ISASCII((s)[0])?(s)[0]:-1) : rb_enc_ascget((s), (e), (cl), str_enc))
 
     RSTRING_GETMEM(str, s, n);
@@ -4782,8 +5003,8 @@ do_regsub(VALUE str, VALUE src, VALUE regexp, int num_regs, const OnigPosition *
                     name_end += c == -1 ? mbclen(name_end, e, str_enc) : clen;
                 }
                 if (name_end < e) {
-                    VALUE n = rb_str_subseq(str, (long)(name - RSTRING_PTR(str)),
-                                            (long)(name_end - name));
+                    VALUE n = rb_str_subseq(str, (rb_len_t)(name - RSTRING_PTR(str)),
+                                            (rb_len_t)(name_end - name));
                     struct re_registers tmp = {
                         .allocated = num_regs,
                         .num_regs = num_regs,
@@ -4895,6 +5116,7 @@ match_setter(VALUE val, ID _x, VALUE *_y)
 {
     if (!NIL_P(val)) {
         Check_Type(val, T_MATCH);
+        rb_match_busy(val);
     }
     rb_backref_set(val);
 }

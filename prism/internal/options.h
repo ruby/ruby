@@ -75,6 +75,15 @@ struct pm_options_t {
      */
     pm_string_t encoding;
 
+    /*
+     * The number of bytes of C stack that the parser may use, measured from
+     * where pm_parse is called. When the recursive descent goes past it, the
+     * parser reports that the stack is exhausted instead of overflowing it.
+     * SIZE_MAX means no budget was given, in which case only
+     * PRISM_DEPTH_MAXIMUM bounds the recursion.
+     */
+    size_t stack_budget;
+
     /* The number of scopes surrounding the code that is being parsed. */
     size_t scopes_count;
 
@@ -147,6 +156,13 @@ struct pm_options_t {
      * between concurrency primitives.
      */
     bool freeze;
+
+    /*
+     * Whether or not the parser should attach comments to the nodes that own
+     * them after parsing. When this is set, the parser's comment list is
+     * sorted by start offset and every comment is assigned an owning node.
+     */
+    bool attach_comments;
 };
 
 /* Free the internal memory associated with the options. */
@@ -179,6 +195,7 @@ void pm_options_cleanup(pm_options_t *options);
  * | `1`     | main script                |
  * | `1`     | partial script             |
  * | `1`     | freeze                     |
+ * | `1`     | attach comments            |
  * | `4`     | the number of scopes       |
  * | ...     | the scopes                 |
  *

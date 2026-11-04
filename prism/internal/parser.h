@@ -2,8 +2,11 @@
 #define PRISM_INTERNAL_PARSER_H
 
 #include "prism/compiler/accel.h"
+#include "prism/compiler/inline.h"
+#include "prism/compiler/stack.h"
 
 #include "prism/internal/arena.h"
+#include "prism/internal/comments.h"
 #include "prism/internal/constant_pool.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/list.h"
@@ -157,6 +160,22 @@ typedef struct pm_lex_mode {
             bool interpolation;
 
             /*
+             * Whether any token has been emitted from this list. A word
+             * separator delimits the opener from the first word, so one
+             * without source characters is emitted when the list does not
+             * start with whitespace.
+             */
+            bool started;
+
+            /*
+             * Whether the previously emitted token was a word separator. A
+             * word separator delimits the last word from the terminator, so
+             * one without source characters is emitted when the list does
+             * not end with whitespace.
+             */
+            bool separated;
+
+            /*
              * When lexing a list, it takes into account balancing the
              * terminator if the terminator is one of (), [], {}, or <>.
              */
@@ -254,13 +273,6 @@ typedef struct pm_lex_mode {
     /* The previous lex state so that it knows how to pop. */
     struct pm_lex_mode *prev;
 } pm_lex_mode_t;
-
-/*
- * We pre-allocate a certain number of lex states in order to avoid having to
- * call malloc too many times while parsing. You really shouldn't need more than
- * this because you only really nest deeply when doing string interpolation.
- */
-#define PM_LEX_STACK_SIZE 4
 
 /*
  * While parsing, we keep track of a stack of contexts. This is helpful for
@@ -432,6 +444,9 @@ typedef enum {
 
     /* a while statement */
     PM_CONTEXT_WHILE,
+
+    /* the number of contexts, which is not itself a context */
+    PM_CONTEXT_MAXIMUM,
 } pm_context_t;
 
 /* This is a node in a linked list of contexts. */
@@ -441,6 +456,9 @@ typedef struct pm_context_node {
 
     /* A pointer to the previous context in the linked list. */
     struct pm_context_node *prev;
+
+    /* One bit set per context in this list, including one for this node. */
+    uint64_t mask;
 } pm_context_node_t;
 
 /* The type of shareable constant value that can be set. */
@@ -573,8 +591,19 @@ struct pm_parser_t {
     /* The arena used for all AST-lifetime allocations. Caller-owned. */
     pm_arena_t *arena;
 
-    /* The arena used for parser metadata (comments, diagnostics, etc.). */
+    /*
+     * The arena used for parser metadata (comments, diagnostics, etc.), which
+     * lives as long as the parser.
+     */
     pm_arena_t metadata_arena;
+
+    /*
+     * The arena used for state that is only needed while parsing, such as
+     * scopes, locals, and contexts. It is released when pm_parse returns, so
+     * nothing allocated in it can be reachable from the tree or from the
+     * parser's metadata.
+     */
+    pm_arena_t scratch_arena;
 
     /*
      * The next node identifier that will be assigned. This is a unique
@@ -625,16 +654,23 @@ struct pm_parser_t {
      */
     pm_state_stack_t accepts_block_stack;
 
-    /* A stack of lex modes. */
+    /* A stack of lex modes, linked through their prev pointers. */
     struct {
         /* The current mode of the lexer. */
         pm_lex_mode_t *current;
 
-        /* The stack of lexer modes. */
-        pm_lex_mode_t stack[PM_LEX_STACK_SIZE];
+        /*
+         * The mode at the bottom of the stack, which is never popped. Every
+         * other mode is allocated from the scratch arena.
+         */
+        pm_lex_mode_t base;
 
-        /* The current index into the lexer mode stack. */
-        size_t index;
+        /*
+         * Lex modes that have been popped, kept for reuse by the next push.
+         * They are allocated from the scratch arena, so they are never freed
+         * individually.
+         */
+        pm_lex_mode_t *free;
     } lex_modes;
 
     /* The pointer to the start of the source. */
@@ -667,6 +703,12 @@ struct pm_parser_t {
     /* The list of comments that have been found while parsing. */
     pm_list_t comment_list;
 
+    /*
+     * The attachments of comments to the nodes that own them, populated after
+     * parsing when the attach_comments option is set.
+     */
+    pm_comment_attachments_t comment_attachments;
+
     /* The list of magic comments that have been found while parsing. */
     pm_list_t magic_comment_list;
 
@@ -686,8 +728,22 @@ struct pm_parser_t {
     /* The current local scope. */
     pm_scope_t *current_scope;
 
+    /*
+     * Scopes that have been popped, kept for reuse by the next push. Scopes
+     * are allocated from the scratch arena, so they are never freed
+     * individually.
+     */
+    pm_scope_t *free_scopes;
+
     /* The current parsing context. */
     pm_context_node_t *current_context;
+
+    /*
+     * Context nodes that have been popped, kept for reuse by the next push.
+     * Context nodes are allocated from the scratch arena, so they are never
+     * freed individually.
+     */
+    pm_context_node_t *free_contexts;
 
     /*
      * The encoding functions for the current file is attached to the parser as
@@ -758,15 +814,21 @@ struct pm_parser_t {
         pm_node_flags_t base;
 
         /*
-         * When lexing a decimal integer that fits in a uint32_t, we compute
-         * the value during lexing to avoid re-scanning the digits during
-         * parsing. If lexed is true, this holds the result and
+         * When lexing a decimal integer of at most 19 digits, which always
+         * fits in a uint64_t, or a plain 0, we compute the value during
+         * lexing to avoid re-scanning the digits during parsing. If start is
+         * set, this holds the result for the token that begins there and
          * pm_integer_parse can be skipped.
          */
-        uint32_t value;
+        uint64_t value;
 
-        /* Whether value holds a valid pre-computed integer. */
-        bool lexed;
+        /*
+         * The start of the token whose value is held in value, or NULL before
+         * any has been. The parser creates the node for a token only after
+         * lexing the next one, which may be another integer that replaces the
+         * value, so node creation checks that it belongs to the token at hand.
+         */
+        const uint8_t *start;
     } integer;
 
     /*
@@ -825,6 +887,19 @@ struct pm_parser_t {
      */
     pm_node_list_t *current_block_exits;
 
+    /*
+     * The address of the C stack when pm_parse was entered. The stack budget
+     * is measured as the distance from this address.
+     */
+    uintptr_t stack_base;
+
+    /*
+     * The number of bytes of C stack below stack_base that the recursive
+     * descent may use before it reports that the stack is exhausted. SIZE_MAX
+     * when no budget was given, so the check never fires.
+     */
+    size_t stack_budget;
+
     /* The version of prism that we should use to parse. */
     pm_options_version_t version;
 
@@ -853,6 +928,12 @@ struct pm_parser_t {
      * check jumps (next/break/etc.) for validity.
      */
     bool partial_script;
+
+    /*
+     * Whether or not comments should be attached to their owning nodes once
+     * parsing has finished.
+     */
+    bool attach_comments;
 
     /* Whether or not we're at the beginning of a command. */
     bool command_start;
@@ -911,7 +992,14 @@ struct pm_parser_t {
      */
     bool warn_mismatched_indentation;
 
-#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSSE3) || defined(PRISM_HAS_SWAR)
+    /*
+     * Whether the stack exhausted error has been reported. Once the budget is
+     * used up, every recursion that unwinds past it would report the error
+     * again, so it is only reported the first time.
+     */
+    bool stack_exhausted_reported;
+
+#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSE2) || defined(PRISM_HAS_SWAR)
     /*
      * Cached lookup tables for pm_strpbrk's SIMD fast path. Avoids rebuilding
      * the nibble-based tables on every call when the charset hasn't changed
@@ -945,5 +1033,33 @@ void pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *sourc
  * parser.
  */
 void pm_parser_cleanup(pm_parser_t *parser);
+
+/*
+ * Returns true if the bytes between start and end spell a keyword, using the
+ * same lookup that the lexer does.
+ */
+bool pm_keyword_p(const uint8_t *start, const uint8_t *end);
+
+/*
+ * Returns true if parsing has used more C stack since pm_parse was entered than
+ * the stack budget allows. Every recursion that runs inside pm_parse checks
+ * this alongside its own depth limit, so that the budget bounds all of them.
+ * The distance is taken without assuming which direction the stack grows. With
+ * no budget the limit is SIZE_MAX, so this never fires.
+ */
+static PRISM_INLINE bool
+pm_parser_stack_exhausted(const pm_parser_t *parser) {
+    uintptr_t current = pm_stack_address();
+    uintptr_t used = current < parser->stack_base ? parser->stack_base - current : current - parser->stack_base;
+    return used > parser->stack_budget;
+}
+
+/*
+ * Reports that the stack budget has been used up, at the given location. This
+ * is a separate error from the nesting depth limit, with its own error level,
+ * because the source may be valid and parse with more stack. It is reported
+ * once per parse.
+ */
+void pm_parser_err_stack_exhausted(pm_parser_t *parser, uint32_t start, uint32_t length);
 
 #endif

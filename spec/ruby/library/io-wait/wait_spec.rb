@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative '../../fixtures/io'
+require_relative '../../core/fiber/fixtures/scheduler'
 
 describe "IO#wait" do
   before :each do
@@ -43,6 +44,11 @@ describe "IO#wait" do
 
       @r.read(written_bytes)
       @w.wait(IO::WRITABLE, 0).should_not == nil
+    end
+
+    it "does not report READABLE when there is nothing to read" do
+      events = @r.wait(IO::READABLE | IO::WRITABLE, 0) || 0
+      (events & IO::READABLE).should == 0
     end
 
     it "returns nil when the READABLE event is not ready during the timeout" do
@@ -157,6 +163,54 @@ describe "IO#wait" do
     it "raises IOError when io is closed (closed stream (IOError))" do
       @io.close
       -> { @io.wait(0, :r) }.should.raise(IOError, "closed stream")
+    end
+  end
+
+  context "with a Fiber scheduler" do
+    before :each do
+      Fiber.set_scheduler(FiberSpecs::LoggingScheduler.new)
+    end
+
+    # An IO cannot be closed while a fiber is waiting on it, and the scheduler
+    # leaves the fiber parked inside #io_wait, so run it out before the outer
+    # after hook closes the pipe.
+    after :each do
+      @fiber.resume while @fiber&.alive?
+      Fiber.set_scheduler(nil)
+    end
+
+    it "calls the scheduler's #io_wait with the events and timeout given" do
+      @fiber = Fiber.new(blocking: false) { @r.wait(IO::READABLE, 2) }
+      @fiber.resume
+
+      Fiber.scheduler.events.should == [
+        { event: :io_wait, fiber: @fiber, args: [@r, IO::READABLE, 2] }
+      ]
+    end
+
+    it "calls the scheduler's #io_wait with IO::READABLE when no events are given" do
+      @fiber = Fiber.new(blocking: false) { @r.wait }
+      @fiber.resume
+
+      Fiber.scheduler.events.should == [
+        { event: :io_wait, fiber: @fiber, args: [@r, IO::READABLE, nil] }
+      ]
+    end
+
+    it "translates a mode Symbol into the matching events mask" do
+      @fiber = Fiber.new(blocking: false) { @r.wait(0.5, :readable_writable) }
+      @fiber.resume
+
+      Fiber.scheduler.events.should == [
+        { event: :io_wait, fiber: @fiber, args: [@r, IO::READABLE | IO::WRITABLE, 0.5] }
+      ]
+    end
+
+    it "does not call the scheduler if the fiber is blocking" do
+      @fiber = Fiber.new(blocking: true) { @r.wait(IO::READABLE, 0) }
+      @fiber.resume
+
+      Fiber.scheduler.events.should == []
     end
   end
 end

@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Mutex#lock" do
   it "returns self" do
@@ -88,5 +89,73 @@ describe "Mutex#lock" do
 
     t1.join
     t2.join
+  end
+end
+
+describe "Mutex#lock with a Fiber scheduler" do
+  before :each do
+    @scheduler = MutexSpecs::UnblockScheduler.new
+  end
+
+  after :each do
+    Fiber.set_scheduler(nil)
+  end
+
+  it "unblocks a waiting fiber when the thread holding the lock dies" do
+    m = Mutex.new
+    locked = Thread::Queue.new
+    finish = Thread::Queue.new
+    holder = Thread.new do
+      m.lock
+      locked << true
+      finish.pop
+    end
+    locked.pop
+
+    Fiber.set_scheduler(@scheduler)
+    waiter = Fiber.new(blocking: false) do
+      m.lock
+      :locked
+    end
+    waiter.resume
+
+    finish << true
+    holder.join
+
+    @scheduler.unblocked.pop.should.equal?(waiter)
+    waiter.resume.should == :locked
+  end
+
+  it "releases every lock of a dying thread when the scheduler locks a mutex in unblock" do
+    scheduler_lock = Mutex.new
+    @scheduler.define_singleton_method(:unblock) do |blocker, fiber|
+      scheduler_lock.synchronize { super(blocker, fiber) }
+    end
+
+    m1 = Mutex.new
+    m2 = Mutex.new
+    locked = Thread::Queue.new
+    finish = Thread::Queue.new
+    holder = Thread.new do
+      m1.lock
+      m2.lock
+      locked << true
+      finish.pop
+    end
+    locked.pop
+
+    Fiber.set_scheduler(@scheduler)
+    waiter = Fiber.new(blocking: false) do
+      m1.lock
+      :locked
+    end
+    waiter.resume
+
+    finish << true
+    holder.join
+
+    m2.locked?.should == false
+    @scheduler.unblocked.pop.should.equal?(waiter)
+    waiter.resume.should == :locked
   end
 end

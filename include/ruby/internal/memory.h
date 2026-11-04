@@ -42,6 +42,9 @@
 # include <intrin.h>
 # if defined(_M_AMD64)
 # pragma intrinsic(_umul128)
+# if !defined(__clang__) /* clang-cl defines it as an inline function */
+# pragma intrinsic(_addcarry_u64)
+# endif
 # endif
 # if defined(_M_ARM64)
 # pragma intrinsic(__umulh)
@@ -438,7 +441,7 @@ RBIMPL_ATTR_NONNULL(())
  * @return      Allocated `len` bytes array.
  * @post        `store` holds the corresponding tmp buffer object.
  */
-void *rb_alloc_tmp_buffer(volatile VALUE *store, long len, bool mark);
+void *rb_alloc_tmp_buffer(volatile VALUE *store, rb_len_t len, bool mark);
 
 /**
  * @private
@@ -664,6 +667,12 @@ rbimpl_size_add_overflow(size_t x, size_t y)
     ret.overflowed = dz > SIZE_MAX;
     ret.result = (size_t)dz;
 
+#elif defined(_MSC_VER) && defined(_M_AMD64)
+    unsigned __int64 dz = 0;
+    unsigned char carry = _addcarry_u64(0, x, y, &dz);
+    ret.overflowed = RBIMPL_CAST((bool)carry);
+    ret.result = RBIMPL_CAST((size_t)dz);
+
 #else
     ret.result = x + y;
     ret.overflowed = ret.result < y;
@@ -715,10 +724,10 @@ rbimpl_size_add_or_raise(size_t x, size_t y)
  * We might want to deprecate this function and make a `rbimpl_` counterpart.
  */
 static inline void *
-rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
+rb_alloc_tmp_buffer2(volatile VALUE *store, rb_len_t count, size_t elsize)
 {
     const size_t total_size = rbimpl_size_mul_or_raise(RBIMPL_CAST((size_t)count), elsize);
-    return rb_alloc_tmp_buffer(store, (long)total_size, elsize >= sizeof(VALUE));
+    return rb_alloc_tmp_buffer(store, (rb_len_t)total_size, elsize >= sizeof(VALUE));
 }
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()

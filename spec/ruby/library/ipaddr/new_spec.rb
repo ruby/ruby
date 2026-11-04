@@ -89,4 +89,20 @@ describe "IPAddr#new" do
       }.should.raise(ArgumentError)
     }
   end
+
+  describe("bracketed IPv6 address with a prefix length") do
+    version_is(IPAddr::VERSION, "1.3"..."1.4") do # ruby_version_is "4.1"..."4.2"
+      it "is warned" do
+        -> {
+          a = IPAddr.new("[2001:200:300::]/48")
+        }.should output(nil, /is an invalid address/)
+      end
+    end
+
+    version_is(IPAddr::VERSION, "1.4") do # ruby_version_is "4.2"
+      it "is an invalid address" do
+        -> { IPAddr.new("[2001:200:300::]/48") }.should.raise(IPAddr::InvalidAddressError)
+      end
+    end
+  end
 end

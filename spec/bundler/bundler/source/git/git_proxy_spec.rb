@@ -220,6 +220,16 @@ RSpec.describe Bundler::Source::Git::GitProxy do
       end
     end
 
+    context "with sparse_checkout option" do
+      let(:options) { { "sparse_checkout" => ["packages/foo"] } }
+
+      it "clones the working copy from the local cache" do
+        expect(git_proxy).to receive(:capture).with(["clone", "--no-checkout", "--quiet", path.to_s, destination.to_s], nil).and_return(["", "", clone_result])
+        expect(git_proxy).not_to receive(:capture).with(array_including("--filter=blob:none"), anything)
+        git_proxy.copy_to(destination)
+      end
+    end
+
     context "when the remote URI embeds credentials" do
       let(:uri) { "https://user:secret@github.com/ruby/rubygems.git" }
 
@@ -513,6 +523,79 @@ RSpec.describe Bundler::Source::Git::GitProxy do
           subject.checkout
         end
       end
+    end
+  end
+
+  describe "#supports_sparse_checkout?" do
+    it "returns true for git 2.25+" do
+      allow(described_class).to receive(:full_version).and_return("2.25.0")
+      expect(git_proxy.send(:supports_sparse_checkout?)).to be true
+    end
+
+    it "returns true for git 2.30+" do
+      allow(described_class).to receive(:full_version).and_return("2.30.0")
+      expect(git_proxy.send(:supports_sparse_checkout?)).to be true
+    end
+
+    it "returns false for git < 2.25" do
+      allow(described_class).to receive(:full_version).and_return("2.24.0")
+      expect(git_proxy.send(:supports_sparse_checkout?)).to be false
+    end
+
+    it "returns false for git 2.20" do
+      allow(described_class).to receive(:full_version).and_return("2.20.0")
+      expect(git_proxy.send(:supports_sparse_checkout?)).to be false
+    end
+  end
+
+  describe "#setup_sparse_checkout" do
+    let(:destination) { Pathname("destination") }
+
+    context "with sparse_checkout option" do
+      let(:options) { { "sparse_checkout" => ["packages/foo"] } }
+
+      context "with git 2.35+" do
+        it "runs sparse-checkout set with cone mode" do
+          allow(described_class).to receive(:full_version).and_return("2.35.0")
+          expect(git_proxy).to receive(:git).with("sparse-checkout", "set", "--cone", "packages/foo", dir: destination)
+          git_proxy.send(:setup_sparse_checkout, destination)
+        end
+      end
+
+      context "with git 2.25 through 2.34" do
+        it "initializes cone mode before setting the directory" do
+          allow(described_class).to receive(:full_version).and_return("2.34.1")
+          expect(git_proxy).to receive(:git).with("sparse-checkout", "init", "--cone", dir: destination).ordered
+          expect(git_proxy).to receive(:git).with("sparse-checkout", "set", "packages/foo", dir: destination).ordered
+          git_proxy.send(:setup_sparse_checkout, destination)
+        end
+      end
+
+      context "with git < 2.25" do
+        it "skips sparse checkout and warns" do
+          allow(described_class).to receive(:full_version).and_return("2.20.0")
+          expect(Bundler.ui).to receive(:warn).with(/doesn't support sparse-checkout/)
+          expect(git_proxy).not_to receive(:git).with("sparse-checkout", any_args)
+          git_proxy.send(:setup_sparse_checkout, destination)
+        end
+      end
+    end
+
+    context "without sparse_checkout option" do
+      let(:options) { {} }
+
+      it "does nothing" do
+        expect(git_proxy).not_to receive(:git)
+        git_proxy.send(:setup_sparse_checkout, destination)
+      end
+    end
+  end
+
+  context "with sparse_checkout option" do
+    let(:options) { { "sparse_checkout" => ["packages/foo"] } }
+
+    it "stores sparse_checkout from options" do
+      expect(git_proxy.sparse_checkout).to eq(["packages/foo"])
     end
   end
 end

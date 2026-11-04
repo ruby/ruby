@@ -14,7 +14,6 @@
 #include "internal/gc.h"
 #include "shape.h"
 #include "vm_core.h"
-#include "prism_compile.h"
 
 RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])
@@ -46,10 +45,6 @@ iseq_lvar_state_set(uint8_t *buf, unsigned int i, enum lvar_state state)
     const unsigned int shift = (i % ISEQ_LVAR_STATES_PER_BYTE) * ISEQ_LVAR_STATE_BITS;
     *byte = (*byte & ~(((1 << ISEQ_LVAR_STATE_BITS) - 1) << shift)) | ((uint8_t)state << shift);
 }
-
-#ifndef USE_ISEQ_NODE_ID
-#define USE_ISEQ_NODE_ID 1
-#endif
 
 #ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
@@ -172,6 +167,7 @@ ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
 
 #define ISEQ_NOT_LOADED_YET   IMEMO_FL_USER1
 #define ISEQ_USE_COMPILE_DATA IMEMO_FL_USER2
+/* set once iseq_encoded is in its executable form, with or without threaded code */
 #define ISEQ_TRANSLATED       IMEMO_FL_USER3
 /* set on every iseq of a subtree copied for Proc#refined */
 #define ISEQ_REFINED_COPY     IMEMO_FL_USER4
@@ -337,9 +333,6 @@ struct rb_compile_option_struct {
 
 struct iseq_insn_info_entry {
     int line_no;
-#ifdef USE_ISEQ_NODE_ID
-    int node_id;
-#endif
     rb_event_flag_t events;
 };
 

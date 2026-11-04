@@ -121,6 +121,9 @@ pub struct Options {
     /// Dump High-level IR in Iongraph JSON format after optimization to /tmp/zjit-iongraph-{$PID}
     pub dump_hir_iongraph: bool,
 
+    /// Add line number mappings to HIR.
+    pub dump_hir_map: bool,
+
     /// Dump low-level IR
     pub dump_lir: Option<HashSet<DumpLIR>>,
 
@@ -197,6 +200,10 @@ pub struct Options {
     /// cap exists to bound compile time when something pathological prevents the
     /// loop from reaching a fixed point.
     pub inline_max_iterations: InlineDepth,
+
+    /// When true, put no code in exit trampolines to increment [`Counter::side_exit_count`].
+    /// Ignored when `--zjit-stats` so full set of counters are available.
+    pub no_exit_counting: bool,
 }
 
 impl Default for Options {
@@ -217,6 +224,7 @@ impl Default for Options {
             dump_hir_file: None,
             dump_hir_graphviz: None,
             dump_hir_iongraph: false,
+            dump_hir_map: false,
             dump_lir: None,
             dump_disasm: None,
             trace_side_exits: None,
@@ -233,6 +241,7 @@ impl Default for Options {
             inline_budget: DEFAULT_INLINE_BUDGET as InlineBudget,
             inline_deny: HashSet::new(),
             inline_max_iterations: DEFAULT_INLINE_MAX_ITERATIONS,
+            no_exit_counting: false,
         }
     }
 }
@@ -579,6 +588,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-hir-init", "all") => options.dump_hir_init = Some(DumpHIR::All),
         ("dump-hir-init", "debug") => options.dump_hir_init = Some(DumpHIR::Debug),
 
+        ("dump-hir-map", "") => options.dump_hir_map = true,
+
         ("dump-hir-graphviz", "") => options.dump_hir_graphviz = Some("/dev/stderr".into()),
         ("dump-hir-graphviz", _) => {
             // Truncate the file if it exists
@@ -663,6 +674,10 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             options.log_compiled_iseqs = Some(opt_val);
         }
 
+        ("no-exit-counting", "") => {
+            options.no_exit_counting = true;
+        }
+
         _ => return None, // Option name not recognized
     }
 
@@ -709,6 +724,14 @@ pub fn set_max_versions(max_versions: usize) {
 pub fn set_inline_threshold(inline_threshold: InlineThreshold) {
     rb_zjit_prepare_options();
     unsafe { OPTIONS.as_mut().unwrap().inline_threshold = inline_threshold; }
+}
+
+/// Update --zjit-num-profiles for testing
+#[cfg(test)]
+pub fn set_num_profiles(num_profiles: NumProfiles) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().num_profiles = num_profiles; }
+    update_profile_threshold();
 }
 
 /// Set --zjit-mem-size for testing. It's used to force OOM in tests.

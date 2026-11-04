@@ -2,8 +2,11 @@
 
 require "test/unit"
 require "envutil"
+require "core_assertions"
 
 class TestEnvUtil < Test::Unit::TestCase
+  include Test::Unit::CoreAssertions
+
   def test_rubybin_points_to_a_ruby_executable
     assert(File.executable?(EnvUtil.rubybin))
   end
@@ -17,6 +20,10 @@ class TestEnvUtil < Test::Unit::TestCase
     EnvUtil.timeout_scale = original_scale
   end
 
+  def test_timeout_scale_from_env
+    assert_separately([{"RUBY_TEST_TIMEOUT_SCALE" => "2.5"}], "assert_equal(2.5, EnvUtil.timeout_scale)")
+  end
+
   def test_invoke_ruby_captures_output_and_status
     stdout, stderr, status = EnvUtil.invoke_ruby(
       ["-e", "STDOUT.print('out'); STDERR.print('err')"],
@@ -26,5 +33,15 @@ class TestEnvUtil < Test::Unit::TestCase
     assert_equal("out", stdout)
     assert_equal("err", stderr)
     assert_predicate(status, :success?)
+  end
+
+  def test_terminate_reaps_exited_child
+    r, w = IO.pipe
+    pid = spawn(EnvUtil.rubybin, "-e", "", out: w)
+    w.close
+    r.read
+    r.close
+
+    assert_equal(pid, EnvUtil.terminate(pid).pid)
   end
 end

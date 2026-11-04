@@ -124,6 +124,19 @@ describe :queue_deq, shared: true do
       q.close
       q.send(@method, timeout: 0).should == nil
     end
+
+    it "returns nil for an empty queue that is closed before the timeout" do
+      q = @object.call
+
+      t = Thread.new {
+        q.send(@method, timeout: TIME_TOLERANCE * 2).should == nil
+      }
+      Thread.pass until t.status == "sleep" && q.num_waiting == 1
+      q.close
+      t.join(TIME_TOLERANCE).should == t
+    ensure
+      t&.kill
+    end
   end
 
   describe "in non-blocking mode" do

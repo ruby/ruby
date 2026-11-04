@@ -89,15 +89,15 @@ r.name #=> 'my-first-ractor'
 ### Block isolation
 
 The Ractor executes `expr` in the given block.
-The given block will be isolated from its outer scope. To prevent sharing objects between ractors, outer variables, `self` and other information is isolated from the block.
+The given block will be isolated from its outer scope. To prevent sharing unshareable objects between ractors, `self` and other information is isolated from the block, and the block may only read outer variables which are never reassigned and refer to shareable objects.
 
-This isolation occurs at Ractor creation time (when `Ractor.new` is called). If the given block is not able to be isolated because of outer variables or `self`, an error will be raised.
+This isolation occurs at Ractor creation time (when `Ractor.new` is called). If the given block is not able to be isolated because of outer variables, an error will be raised.
 
 ```ruby
 begin
-  a = true
+  a = []
   r = Ractor.new do
-    a #=> Ractor::IsolationError because this block accesses outer variable `a`.
+    a #=> Ractor::IsolationError because this block accesses outer variable `a`, which refers to an unshareable object.
   end
   r.join # wait for ractor to finish
 rescue Ractor::IsolationError
@@ -575,7 +575,7 @@ See [syntax/comments.rdoc](../syntax/comments.rdoc) for more details.
 
 ### Shareable procs
 
-Procs and lambdas are unshareable objects, even when they are frozen. To create a shareable Proc, you must use `Ractor.shareable_proc { expr }`. Much like during Ractor creation, the proc's block is isolated from its outer environment, so it cannot access variables from the outside scope. `self` is also changed within the Proc to be `nil` by default, although a `self:` keyword can be provided if you want to customize the value to a different shareable object.
+Procs and lambdas are unshareable objects, even when they are frozen. To create a shareable Proc, you must use `Ractor.shareable_proc { expr }`. Much like during Ractor creation, the proc's block is isolated from its outer environment, so it may only read outer variables which are never reassigned and refer to shareable objects. `self` is also changed within the Proc to be `nil` by default, although a `self:` keyword can be provided if you want to customize the value to a different shareable object.
 
 ```ruby
 p = Ractor.shareable_proc { p self }
@@ -584,7 +584,7 @@ p.call #=> nil
 
 ```ruby
 begin
-  a = 1
+  a = []
   pr = Ractor.shareable_proc { p a }
   pr.call # never gets here
 rescue Ractor::IsolationError

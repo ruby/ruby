@@ -20,6 +20,8 @@ mflags = $(MFLAGS)
 gnumake_recursive =
 sequential = $(gnumake:yes=-sequential)
 enable_shared = $(ENABLE_SHARED:no=)
+yes_git = $(HAVE_GIT:no=)
+no_git = $(HAVE_GIT:yes=)
 
 UNICODE_VERSION = 17.0.0
 UNICODE_EMOJI_VERSION_0 = $(UNICODE_VERSION)///
@@ -94,20 +96,15 @@ MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 
 PRISM_BUILD_DIR = prism
 
-COROUTINE_TEST = coroutine-test$(EXEEXT)
-COROUTINE_TEST_OBJS = coroutine-main.$(OBJEXT) \
-		coroutine-stack.$(OBJEXT) \
-		coroutine-test_initialize_destroy.$(OBJEXT) \
-		coroutine-test_pthread_resume.$(OBJEXT) \
-		coroutine-test_transfer_repeat.$(OBJEXT) \
-		coroutine-test_transfer_return.$(OBJEXT)
-
 LIBPRISM_OBJS = \
 		prism/arena.$(OBJEXT) \
+		prism/bignum.$(OBJEXT) \
 		prism/buffer.$(OBJEXT) \
 		prism/char.$(OBJEXT) \
+		prism/comments.$(OBJEXT) \
 		prism/constant_pool.$(OBJEXT) \
 		prism/diagnostic.$(OBJEXT) \
+		prism/double.$(OBJEXT) \
 		prism/encoding.$(OBJEXT) \
 		prism/errors_format.$(OBJEXT) \
 		prism/integer.$(OBJEXT) \
@@ -128,7 +125,8 @@ LIBPRISM_OBJS = \
 		prism/stringy.$(OBJEXT) \
 		prism/strncasecmp.$(OBJEXT) \
 		prism/strpbrk.$(OBJEXT) \
-		prism/tokens.$(OBJEXT)
+		prism/tokens.$(OBJEXT) \
+		prism/xxh3.$(OBJEXT)
 
 EXTPRISM_OBJS = prism/api_node.$(OBJEXT) \
 		prism/extension.$(OBJEXT) \
@@ -431,7 +429,7 @@ $(LIBRUBY_EXTS):
 
 $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	$(Q)$(RM) $@
-	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
+	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
 
 ruby.imp: $(COMMONOBJS)
 	$(Q){ \
@@ -699,7 +697,6 @@ noarch_config_h = tmp/include/noarch/ruby/config.h
 clean: clean-ext clean-enc clean-golf clean-docs clean-extout clean-modular-gc clean-local clean-platform clean-spec
 clean-local:: clean-runnable
 	$(Q)$(RM) $(ALLOBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
-	$(Q)$(RM) $(COROUTINE_TEST) $(COROUTINE_TEST_OBJS)
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) dmyenc.$(OBJEXT) $(ARCHFILE) .*.time
 	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h config.log rbconfig.rb $(ruby_pc) $(COROUTINE_H:/Context.h=/.time)
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
@@ -940,13 +937,6 @@ yes-test-tool: prog PHONY
 	$(ACTIONS_ENDGROUP)
 no-test-tool: PHONY
 
-test-coroutine: $(TEST_RUNNABLE)-test-coroutine
-yes-test-coroutine: $(COROUTINE_TEST) PHONY
-	$(ACTIONS_GROUP)
-	$(Q)$(exec) $(COROUTINE_TEST_RUN)
-	$(ACTIONS_ENDGROUP)
-no-test-coroutine: PHONY
-
 test-sample: test-basic # backward compatibility for mswin-build
 test-short: test-coroutine $(DOT_WAIT) btest-ruby $(DOT_WAIT) test-knownbug $(DOT_WAIT) test-basic
 test: test-short
@@ -1153,34 +1143,6 @@ $(COROUTINE_H:/Context.h=/.time):
 	$(Q) $(MAKEDIRS) $(@D)
 	@$(NULLCMD) > $@
 
-$(COROUTINE_TEST): $(COROUTINE_TEST_OBJS) $(COROUTINE_OBJ)
-	$(ECHO) linking $@
-	$(Q) $(COROUTINE_TEST_LINK)
-
-coroutine-main.$(OBJEXT): {$(VPATH)}coroutine/test/main.c
-	$(ECHO) compiling $(srcdir)/coroutine/test/main.c
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/coroutine/test/main.c
-
-coroutine-stack.$(OBJEXT): {$(VPATH)}coroutine/test/stack.c
-	$(ECHO) compiling $(srcdir)/coroutine/test/stack.c
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/coroutine/test/stack.c
-
-coroutine-test_initialize_destroy.$(OBJEXT): {$(VPATH)}coroutine/test/test_initialize_destroy.c
-	$(ECHO) compiling $(srcdir)/coroutine/test/test_initialize_destroy.c
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/coroutine/test/test_initialize_destroy.c
-
-coroutine-test_pthread_resume.$(OBJEXT): {$(VPATH)}coroutine/test/test_pthread_resume.c
-	$(ECHO) compiling $(srcdir)/coroutine/test/test_pthread_resume.c
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/coroutine/test/test_pthread_resume.c
-
-coroutine-test_transfer_repeat.$(OBJEXT): {$(VPATH)}coroutine/test/test_transfer_repeat.c
-	$(ECHO) compiling $(srcdir)/coroutine/test/test_transfer_repeat.c
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/coroutine/test/test_transfer_repeat.c
-
-coroutine-test_transfer_return.$(OBJEXT): {$(VPATH)}coroutine/test/test_transfer_return.c
-	$(ECHO) compiling $(srcdir)/coroutine/test/test_transfer_return.c
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/coroutine/test/test_transfer_return.c
-
 ###
 
 # dependencies for generated C sources.
@@ -1230,6 +1192,7 @@ $(srcs_vpath)vm.inc: $(tooldir)/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
 
 BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
+		$(srcdir)/basic_object.rb \
 		$(srcdir)/dir.rb \
 		$(srcdir)/gc.rb \
 		$(srcdir)/numeric.rb \
@@ -1398,14 +1361,14 @@ clean-build-tool:
 	- cd build-tool 2> $(NULL) && $(MAKE) clean 2> $(NULL) || $(NULLCMD)
 	- $(RMDIR) build-tool 2> $(NULL) || $(NULLCMD)
 
-$(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
+$(srcdir)/revision.h$(no_git:no=~disabled~): $(REVISION_H)
 
-REVISION_H_CMD = $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h \
-	--srcdir="$(srcdir)" --output=revision.h --timestamp=$(REVISION_H)
+REVISION_H_CMD = $(LASTREV) $(srcdir) | $(IFCHANGE) --empty --timestamp=.revision.time revision.h -
 
-$(REVISION_H)$(no_baseruby:no=~disabled~):
+$(REVISION_H)$(no_git:no=~disabled~):
 	$(Q) $(REVISION_H_CMD)
-$(REVISION_H)$(yes_baseruby:yes=~disabled~):
+$(REVISION_H)$(yes_git:yes=~disabled~):
+	$(Q) exit >> revision.h
 	$(Q) exit > $@
 
 # uncommon.mk: $(REVISION_H)
@@ -2029,9 +1992,14 @@ sudo-precheck: PHONY
 
 update-man-date: PHONY
 	$(Q) $(BASERUBY) -I"$(tooldir)/lib" -rvcs -i -p \
-	-e 'BEGIN{@vcs=VCS.detect(ARGV.shift)}' \
-	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.author_date(@vcs.relative_to(ARGF.path)).strftime("%B %d, %Y")}' \
-	"$(srcdir)" "$(srcdir)"/man/*.1
+	-C "$(srcdir)" \
+	-e 'BEGIN{@vcs=VCS.detect; ARGV.replace(Dir.glob(ARGV))}' \
+	-e '$$_.sub!(/^\.Dd \K.*/){' \
+	-e   'STDOUT.puts "Updating #{ARGF.path}"' \
+	-e   '@vcs.author_date(@vcs.relative_to(ARGF.path)).strftime("%B %d, %Y")' \
+	-e '}' \
+	$(MANPAGES_TO_UPDATE)
+MANPAGES_TO_UPDATE = man/*.1
 
 .PHONY: ChangeLog
 ChangeLog:
@@ -2147,3 +2115,4 @@ $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}miniprelude.c
 
 !include $(srcdir)/prism/srcs.mk
 !include $(DEPENDENCIES_DIR)/depend
+!include $(srcdir)/coroutine/test.mk

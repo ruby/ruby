@@ -19,6 +19,7 @@ module Bundler
       add_sources
       add_platforms
       add_dependencies
+      add_overrides
       add_content_addresses
       add_checksums
       add_locked_ruby_version
@@ -65,6 +66,11 @@ module Bundler
         out << dep.to_lock << "\n"
         handled << dep.name
       end
+    end
+
+    def add_overrides
+      overrides = definition.overrides_to_lock
+      add_section("OVERRIDES", overrides) unless overrides.empty?
     end
 
     def add_content_addresses

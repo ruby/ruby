@@ -62,6 +62,13 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_performance_warning('Integer', '%')
   end
 
+  def test_fixnum_eq
+    assert_equal true, 1 == 1
+    assert_equal true, 1 == 1.0
+    assert_redefine_method('Integer', '==', 'assert_equal 2, 1 == 2')
+    assert_performance_warning('Integer', '==')
+  end
+
   def test_fixnum_lt
     assert_equal true, 1 < 2
     assert_redefine_method('Integer', '<', 'assert_equal 2, 1 < 2')
@@ -110,6 +117,14 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_performance_warning('Float', '/')
   end
 
+  def test_float_eq
+    assert_equal true, 1 == 1.0
+    assert_equal true, 1.0 == 1
+    assert_equal false, Float::NAN == Float::NAN
+    assert_redefine_method('Float', '==', 'assert_equal 2.2, 1.1 == 2.2')
+    assert_performance_warning('Float', '==')
+  end
+
   def test_float_lt
     assert_equal true, 1.1 < 2.2
     assert_redefine_method('Float', '<', 'assert_equal 2.2, 1.1 < 2.2')
@@ -132,6 +147,13 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal false, 1.1 >= 2.2
     assert_redefine_method('Float', '>=', 'assert_equal 2.2, 1.1 >= 2.2')
     assert_performance_warning('Float', '>=')
+  end
+
+  def test_string_eq
+    assert_equal true, "a" == "a"
+    assert_equal true, "a".freeze == "a".freeze
+    assert_redefine_method('String', '==', 'assert_equal "b", "a".freeze == "b".freeze')
+    assert_performance_warning('String', '==')
   end
 
   def test_string_length
@@ -187,6 +209,12 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_performance_warning('String', '-@')
   end
 
+  def test_sym_eq
+    assert_equal true, :a == :a
+    assert_redefine_method('Symbol', '==', 'assert_equal :b, :a == :b')
+    assert_performance_warning('Symbol', '==')
+  end
+
   def test_array_min
     assert_equal 1, [1, 2, 4].min
     assert_redefine_method('Array', 'min', 'assert_nil([1, 2, 4].min)')
@@ -203,6 +231,24 @@ class TestRubyOptimization < Test::Unit::TestCase
 
   def test_array_hash
     assert_performance_warning('Array', 'hash')
+  end
+
+  def test_nil_eq
+    assert_equal true, nil == nil
+    assert_redefine_method('NilClass', '==', 'assert_equal 1, nil == 1')
+    assert_performance_warning('NilClass', '==')
+  end
+
+  def test_true_eq
+    assert_equal true, true == true
+    assert_redefine_method('TrueClass', '==', 'assert_equal 1, true == 1')
+    assert_performance_warning('TrueClass', '==')
+  end
+
+  def test_false_eq
+    assert_equal true, false == false
+    assert_redefine_method('FalseClass', '==', 'assert_equal 1, false == 1')
+    assert_performance_warning('FalseClass', '==')
   end
 
   def test_trace_optimized_methods
@@ -242,13 +288,32 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_equal(expected, methods, bug14870)
     end
 
-    methods = []
-    tp = TracePoint.new(:c_call, :c_return) { |tp| methods << tp.method_id if tp.path == __FILE__ }
+    # ZJIT replaces != with a Ruby definition that has a source location;
+    # the C definition has none.
+    method_path = BasicObject.instance_method(:!=).source_location&.first
+    events = []
+    tp = TracePoint.new(:call, :return, :c_call, :c_return) do |tp|
+      if [:!=, :==].include?(tp.method_id) && [__FILE__, method_path].include?(tp.path)
+        events << [tp.event, tp.method_id, tp.path]
+      end
+    end
     tp.enable do
       x = 1
       x != 42
     end
-    assert_equal([:!=, :==, :==, :!=], methods, bug14870)
+
+    if method_path
+      # With ZJIT enabled, != is defined in Ruby. Its call/return events and
+      # the C events from == use the built-in Ruby source location.
+      expected = [[:call, :!=, method_path], [:c_call, :==, method_path],
+                  [:c_return, :==, method_path], [:return, :!=, method_path]]
+    else
+      # The C definition of != calls the C == method, so all events use the
+      # Ruby caller's source location.
+      expected = [[:c_call, :!=, __FILE__], [:c_call, :==, __FILE__],
+                  [:c_return, :==, __FILE__], [:c_return, :!=, __FILE__]]
+    end
+    assert_equal(expected, events, bug14870)
   end
 
   def test_string_freeze_saves_memory
@@ -364,6 +429,24 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_nil h["foo"]
     end;
     assert_performance_warning('Hash', '[]=')
+  end
+
+  def test_hash_new
+    assert_equal({}, Hash.new)
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      class << Hash
+        undef new
+        def new(*) = :redefined
+      end
+      assert_equal(:redefined, Hash.new)
+      assert_equal(:redefined, Hash.new(capacity: 3))
+    end;
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      Hash.singleton_class.prepend(Module.new { def new(*) = :prepended })
+      assert_equal(:prepended, Hash.new)
+    end;
   end
 
   class MyObj
@@ -838,6 +921,17 @@ class TestRubyOptimization < Test::Unit::TestCase
       end
       p({}.freeze)
     RUBY
+  end
+
+  def test_peephole_static_swap
+    code = <<~'RUBY'
+      outer = nil
+      m = Module.new
+      outer::M = m
+    RUBY
+    iseq = RubyVM::InstructionSequence.compile(code)
+    insn = iseq.disasm
+    assert_no_match(/ getlocal\s/, insn, '[Bug #22377]') # unoptimized getlocal
   end
 
   def test_branch_condition_backquote

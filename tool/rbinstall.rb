@@ -902,6 +902,12 @@ module RbInstall
   end
 end
 
+# Gemspecs are evaluated in this binding, so that they cannot overwrite the
+# local variables of `load_gemspec`.
+def gemspec_binding
+  binding
+end
+
 def load_gemspec(file, base = nil, files: nil)
   file = File.realpath(file)
   code = File.read(file, encoding: "utf-8:-")
@@ -916,16 +922,18 @@ def load_gemspec(file, base = nil, files: nil)
     "[" + spec_files + "] || itself"
   end
 
-  spec = eval(code, binding, file)
-  # for out-of-place build
-  collected_files = files ? spec.files.concat(files).uniq : spec.files
-  spec.files = collected_files.map do |f|
-    if !File.exist?(File.join(base || ".", f)) && f.end_with?(".rb")
+  spec = eval(code, gemspec_binding, file)
+  # Files collected for a default gem are relative to its lib directory,
+  # while the files listed by the gemspec itself are relative to the gem
+  # root.
+  files ||= []
+  spec.files = (spec.files + files).map do |f|
+    if base ? f.end_with?(".rb") && !File.exist?(File.join(base, f)) : files.include?(f)
       "lib/#{f}"
     else
       f
     end
-  end
+  end.uniq
   unless Gem::Specification === spec
     raise TypeError, "[#{file}] isn't a Gem::Specification (#{spec.class} instead)."
   end
@@ -1126,7 +1134,7 @@ install?(:local, :comm, :hdr, :'comm-hdr') do
   prepare "common headers", rubyhdrdir
 
   noinst = []
-  unless RUBY_PLATFORM =~ /mswin|mingw|bccwin/
+  unless RUBY_PLATFORM =~ /mswin|mingw/
     noinst << "win32.h"
   end
   noinst = nil if noinst.empty?

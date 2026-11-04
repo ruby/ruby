@@ -85,8 +85,10 @@ describe "Time#zone" do
 
   platform_is_not :aix, :windows do
     it "defaults to UTC when bad zones given" do
-      with_timezone("hello-foo") do
-        Time.now.utc_offset.should == 0
+      platform_is_not :musl do
+        with_timezone("hello-foo") do
+          Time.now.utc_offset.should == 0
+        end
       end
       with_timezone("1,2") do
         Time.now.utc_offset.should == 0

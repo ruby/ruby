@@ -32,6 +32,7 @@ enum thread_sched_wait_result {
     thread_sched_wait_event,       // an event the caller asked for fired
     thread_sched_wait_timeout,     // the timeout expired before any event
     thread_sched_wait_unavailable, // not registered; the caller must fall back
+    thread_sched_wait_interrupted, // stopped for an interrupt; handle it and wait again
 };
 
 // this data should be protected by timer_th.waiting_lock
@@ -131,6 +132,9 @@ struct rb_native_thread {
     // signalled by native_thread_interrupt() to break this thread out of a
     // blocking w32_wait_events()
     HANDLE interrupt_event;
+    // a high-resolution timer that ends a timed wait on readyq at its
+    // deadline rather than at the next timer tick (NULL if unavailable)
+    HANDLE wait_timer;
 #endif
 
     struct rb_thread_struct *running_thread;

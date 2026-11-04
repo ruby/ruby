@@ -47,7 +47,7 @@ printf_test_call(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "2:", &type, &num, &opt);
     Check_Type(type, T_STRING);
-    if (RSTRING_LEN(type) != 1) rb_raise(rb_eArgError, "wrong length(%ld)", RSTRING_LEN(type));
+    if (RSTRING_LEN(type) != 1) rb_raise(rb_eArgError, "wrong length(%"PRIdLEN")", RSTRING_LEN(type));
     switch (cnv = RSTRING_PTR(type)[0]) {
       case 'd': case 'x': case 'o': case 'X':
         n = NUM2INT(num);

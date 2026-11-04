@@ -200,6 +200,7 @@ module Spec
         "spec/bundler/plugin/unloaded_source_spec.rb",
         "spec/bundler/cli/open_spec.rb",
         "spec/commands/prune_spec.rb",
+        "spec/install/gemfile/git_sparse_checkout_spec.rb",
       ],
     }.freeze
   end

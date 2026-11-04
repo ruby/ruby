@@ -1,4 +1,5 @@
 #include "prism.h"
+#include "prism_compile.h"
 #include "ruby/version.h"
 
 #include <fcntl.h>
@@ -271,27 +272,22 @@ pm_location_line_number_cached(const pm_location_t *location, pm_scope_node_t *s
 static VALUE
 parse_integer_value(const pm_integer_t *integer)
 {
+    uint32_t length;
+    const uint32_t *words = pm_integer_words(integer, &length);
+
     VALUE result;
 
-    if (integer->values == NULL) {
-        result = UINT2NUM(integer->value);
+    // An integer whose words are inline fits in an unsigned long long, so it
+    // converts directly unless it is negative and too large to negate.
+    if (length <= 2 && !integer->negative) {
+        result = ULL2NUM(pm_integer_uint64_value(integer));
+    }
+    else if (length <= 2 && pm_integer_uint64_value(integer) <= LLONG_MAX) {
+        result = LL2NUM(-(long long) pm_integer_uint64_value(integer));
     }
     else {
-        // The pm_integer_t stores values as an array of uint32_t in
-        // least-significant-word-first order (base 2^32). We can convert
-        // directly to a Ruby Integer using rb_integer_unpack, avoiding the
-        // overhead of constructing a hex string and calling rb_funcall.
-        result = rb_integer_unpack(
-            integer->values,
-            integer->length,
-            sizeof(uint32_t),
-            0,
-            INTEGER_PACK_LSWORD_FIRST | INTEGER_PACK_NATIVE_BYTE_ORDER
-        );
-    }
-
-    if (integer->negative) {
-        result = rb_int_uminus(result);
+        int flags = INTEGER_PACK_LSWORD_FIRST | INTEGER_PACK_NATIVE_BYTE_ORDER | (integer->negative ? INTEGER_PACK_NEGATIVE : 0);
+        result = rb_integer_unpack(words, length, sizeof(uint32_t), 0, flags);
     }
 
     if (!SPECIAL_CONST_P(result)) {
@@ -334,7 +330,6 @@ parse_rational(const pm_rational_node_t *node)
 {
     VALUE numerator = parse_integer_value(&node->numerator);
     VALUE denominator = parse_integer_value(&node->denominator);
-
     return rb_ractor_make_shareable(rb_rational_new(numerator, denominator));
 }
 
@@ -801,21 +796,6 @@ pm_compile_regexp_dynamic(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_
 
     int length = pm_interpolated_node_compile(iseq, parts, node_location, ret, popped, scope_node, implicit_regexp_encoding, explicit_regexp_encoding, false, false);
     PUSH_INSN2(ret, *node_location, toregexp, INT2FIX(parse_regexp_flags(node) & 0xFF), INT2FIX(length));
-}
-
-static VALUE
-pm_source_file_value(const pm_source_file_node_t *node, const pm_scope_node_t *scope_node)
-{
-    const pm_string_t *filepath = &node->filepath;
-    size_t length = pm_string_length(filepath);
-
-    if (length > 0) {
-        rb_encoding *filepath_encoding = scope_node->filepath_encoding != NULL ? scope_node->filepath_encoding : rb_utf8_encoding();
-        return rb_enc_interned_str((const char *) pm_string_source(filepath), length, filepath_encoding);
-    }
-    else {
-        return rb_fstring_lit("<compiled>");
-    }
 }
 
 /**
@@ -1344,15 +1324,17 @@ pm_lookup_local_index(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, pm_con
 
 // This returns the CRuby ID which maps to the pm_constant_id_t
 //
-// Constant_ids in prism are indexes of the constants in prism's constant pool.
-// We add a constants mapping on the scope_node which is a mapping from
-// these constant_id indexes to the CRuby IDs that they represent.
+// We add a constants mapping on the scope_node which holds one CRuby ID per
+// constant in prism's constant pool, filled in pool order. pm_constant_id_index
+// maps a constant_id to its position in that mapping.
 // This helper method allows easy access to those IDs
 static inline ID
 pm_constant_id_lookup(const pm_scope_node_t *scope_node, pm_constant_id_t constant_id)
 {
-    RUBY_ASSERT(constant_id >= 1 && constant_id <= pm_parser_constants_size(scope_node->parser));
-    return scope_node->constants[constant_id - 1];
+    RUBY_ASSERT(constant_id != 0);
+    size_t index = pm_constant_id_index(constant_id);
+    RUBY_ASSERT(index < pm_parser_constants_size(scope_node->parser));
+    return scope_node->constants[index];
 }
 
 static rb_iseq_t *
@@ -1775,7 +1757,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             // then mark the array at that index as false and
                             // decrement the keyword size.
                             if (!NIL_P(stored_index)) {
-                                rb_ary_store(keyword_indices, NUM2LONG(stored_index), Qfalse);
+                                rb_ary_store(keyword_indices, NUM2LEN(stored_index), Qfalse);
                                 size--;
                             }
 
@@ -1783,7 +1765,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             // keyword in the hash, mark the array at that index
                             // as true, and increment the keyword size.
                             rb_hash_aset(stored_indices, keyword, ULONG2NUM(element_index));
-                            rb_ary_store(keyword_indices, (long) element_index, Qtrue);
+                            rb_ary_store(keyword_indices, (rb_len_t) element_index, Qtrue);
                             size++;
                         }
 
@@ -1804,7 +1786,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[element_index];
                             bool popped = true;
 
-                            if (rb_ary_entry(keyword_indices, (long) element_index) == Qtrue) {
+                            if (rb_ary_entry(keyword_indices, (rb_len_t) element_index) == Qtrue) {
                                 keywords[keyword_index++] = pm_static_literal_value(iseq, assoc->key, scope_node);
                                 popped = false;
                             }
@@ -3693,6 +3675,18 @@ retry:;
 
             PUSH_INSN1(ret, *node_location, putobject, Qfalse);
             return pm_compile_builtin_mandatory_only_method(iseq, scope_node, call_node, node_location);
+        }
+        else if (strcmp("local_self!", builtin_func) == 0) {
+            // Push the local named "self" (e.g. the `self:` keyword parameter
+            // of Ractor.shareable_proc) onto the stack.
+            pm_constant_id_t self_id = pm_parser_constant_find(scope_node->parser, (const uint8_t *) "self", 4);
+            if (self_id == 0) {
+                COMPILE_ERROR(iseq, node_location->line, "local_self! called but 'self' not found in local table");
+                return COMPILE_NG;
+            }
+            pm_local_index_t self_index = pm_lookup_local_index(iseq, scope_node, self_id, /*start_depth=*/0);
+            PUSH_GETLOCAL(ret, *node_location, self_index.index, self_index.level);
+            return COMPILE_OK;
         }
         else if (1) {
             rb_bug("can't find builtin function:%s", builtin_func);
@@ -5752,8 +5746,6 @@ pm_compile_shareable_constant_literal(rb_iseq_t *iseq, const pm_node_t *node, pm
         return pm_static_literal_value(iseq, node, scope_node);
       case PM_STRING_NODE:
         return parse_static_literal_string(iseq, scope_node, node, &((const pm_string_node_t *) node)->unescaped);
-      case PM_SOURCE_FILE_NODE:
-        return pm_source_file_value((const pm_source_file_node_t *) node, scope_node);
       case PM_ARRAY_NODE: {
         const pm_array_node_t *cast = (const pm_array_node_t *) node;
         VALUE result = rb_ary_new_capa(cast->elements.size);
@@ -6929,6 +6921,9 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         keyword->table = (ID *)&ISEQ_BODY(iseq)->local_table[keyword_start_index];
     }
 
+    local_table_for_iseq = NULL;
+    if (idtmp) ALLOCV_END(idtmp);
+
     //********STEP 5************
     // Goal: compile anything that needed to be compiled
     if (optionals_list && optionals_list->size) {
@@ -7200,18 +7195,78 @@ pm_compile_alias_method_node(rb_iseq_t *iseq, const pm_alias_method_node_t *node
     if (popped) PUSH_INSN(ret, *location, pop);
 }
 
-static inline void
-pm_compile_and_node(rb_iseq_t *iseq, const pm_and_node_t *node, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+/**
+ * Compile a chain of and nodes or a chain of or nodes that has been flattened
+ * into source order, so that `a && b && c` is passed as the nodes
+ * `[a, a && b, b, a && b && c, c]`. Even indices hold the operands, and odd
+ * indices hold the operator nodes between them. Prism parses `a && b && c` as
+ * `(a && b) && c`, so pm_compile_and_node and pm_compile_or_node flatten the
+ * chain by walking left operands iteratively, which keeps the C stack depth
+ * independent of the length of the chain.
+ *
+ * Every operator in the chain branches to one shared end label. The peephole
+ * optimizer threads a branch to a label that is followed by another branch one
+ * link at a time, so a label per operator makes compilation quadratic in the
+ * length of the chain.
+ */
+static void
+pm_compile_logical_chain(rb_iseq_t *iseq, size_t size, const pm_node_t **nodes, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
+    const pm_node_type_t type = PM_NODE_TYPE(nodes[1]);
     LABEL *end_label = NEW_LABEL(location->line);
 
-    PM_COMPILE_NOT_POPPED(node->left);
-    if (!popped) PUSH_INSN(ret, *location, dup);
-    PUSH_INSNL(ret, *location, branchunless, end_label);
+    for (size_t index = 0; index + 1 < size; index += 2) {
+        PM_COMPILE_NOT_POPPED(nodes[index]);
 
-    if (!popped) PUSH_INSN(ret, *location, pop);
-    PM_COMPILE(node->right);
+        /* Each operator node starts where its left operand does, so every
+         * operator node in the chain is on the same line. */
+        const pm_node_location_t operator_location = {
+            .line = location->line,
+            .node_id = nodes[index + 1]->node_id
+        };
+
+        if (!popped) PUSH_INSN(ret, operator_location, dup);
+        if (type == PM_AND_NODE)
+        {
+            PUSH_INSNL(ret, operator_location, branchunless, end_label);
+        }
+        else {
+            PUSH_INSNL(ret, operator_location, branchif, end_label);
+        }
+        if (!popped) PUSH_INSN(ret, operator_location, pop);
+    }
+
+    PM_COMPILE(nodes[size - 1]);
     PUSH_LABEL(ret, end_label);
+}
+
+static void
+pm_compile_and_node(rb_iseq_t *iseq, const pm_and_node_t *node, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_node_t *cursor = (const pm_node_t *) node;
+    size_t size = 1;
+
+    while (PM_NODE_TYPE_P(cursor, PM_AND_NODE)) {
+        cursor = ((const pm_and_node_t *) cursor)->left;
+        size += 2;
+    }
+
+    VALUE handle = 0;
+    const pm_node_t **nodes = ALLOCV_N(const pm_node_t *, handle, size);
+
+    cursor = (const pm_node_t *) node;
+    size_t index = size;
+
+    while (PM_NODE_TYPE_P(cursor, PM_AND_NODE)) {
+        const pm_and_node_t *cast = (const pm_and_node_t *) cursor;
+        nodes[--index] = cast->right;
+        nodes[--index] = cursor;
+        cursor = cast->left;
+    }
+
+    nodes[0] = cursor;
+    pm_compile_logical_chain(iseq, size, nodes, location, ret, popped, scope_node);
+    ALLOCV_END(handle);
 }
 
 static inline void
@@ -8400,6 +8455,35 @@ pm_compile_next_node(rb_iseq_t *iseq, const pm_next_node_t *node, const pm_node_
             COMPILE_ERROR(iseq, location->line, "Invalid next");
         }
     }
+}
+
+static void
+pm_compile_or_node(rb_iseq_t *iseq, const pm_or_node_t *node, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_node_t *cursor = (const pm_node_t *) node;
+    size_t size = 1;
+
+    while (PM_NODE_TYPE_P(cursor, PM_OR_NODE)) {
+        cursor = ((const pm_or_node_t *) cursor)->left;
+        size += 2;
+    }
+
+    VALUE handle = 0;
+    const pm_node_t **nodes = ALLOCV_N(const pm_node_t *, handle, size);
+
+    cursor = (const pm_node_t *) node;
+    size_t index = size;
+
+    while (PM_NODE_TYPE_P(cursor, PM_OR_NODE)) {
+        const pm_or_node_t *cast = (const pm_or_node_t *) cursor;
+        nodes[--index] = cast->right;
+        nodes[--index] = cursor;
+        cursor = cast->left;
+    }
+
+    nodes[0] = cursor;
+    pm_compile_logical_chain(iseq, size, nodes, location, ret, popped, scope_node);
+    ALLOCV_END(handle);
 }
 
 static inline void
@@ -10078,23 +10162,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         return;
       }
-      case PM_OR_NODE: {
+      case PM_OR_NODE:
         // a or b
         // ^^^^^^
-        const pm_or_node_t *cast = (const pm_or_node_t *) node;
-
-        LABEL *end_label = NEW_LABEL(location.line);
-        PM_COMPILE_NOT_POPPED(cast->left);
-
-        if (!popped) PUSH_INSN(ret, location, dup);
-        PUSH_INSNL(ret, location, branchif, end_label);
-
-        if (!popped) PUSH_INSN(ret, location, pop);
-        PM_COMPILE(cast->right);
-        PUSH_LABEL(ret, end_label);
-
+        pm_compile_or_node(iseq, (const pm_or_node_t *) node, &location, ret, popped, scope_node);
         return;
-      }
       case PM_OPTIONAL_PARAMETER_NODE: {
         // def foo(bar = 1); end
         //         ^^^^^^^
@@ -10405,17 +10477,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // ^^^^^^^^
         if (!popped) {
             const pm_source_file_node_t *cast = (const pm_source_file_node_t *) node;
-            VALUE string = pm_source_file_value(cast, scope_node);
 
+            int string_type;
             if (PM_NODE_FLAG_P(cast, PM_STRING_FLAGS_FROZEN)) {
-                PUSH_INSN1(ret, location, putobject, string);
+                string_type = ISEQ_FROZEN_STRING_LITERAL_ENABLED;
             }
             else if (PM_NODE_FLAG_P(cast, PM_STRING_FLAGS_MUTABLE)) {
-                PUSH_INSN1(ret, location, dupstring, string);
+                string_type = ISEQ_FROZEN_STRING_LITERAL_DISABLED;
             }
             else {
-                PUSH_INSN1(ret, location, dupchilledstring, string);
+                string_type = ISEQ_FROZEN_STRING_LITERAL_UNSET;
             }
+
+            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            PUSH_INSN1(ret, location, putobject, INT2FIX(string_type));
+            PUSH_SEND(ret, location, id_core_iseq_path, INT2FIX(1));
         }
         return;
       }
@@ -10694,7 +10770,7 @@ pm_parse_process_error(const pm_parse_result_t *result)
     pm_error_level_t error_level = pm_errors_format(parser, buffer, format_type);
 
     rb_encoding *message_encoding = (error_level == PM_ERROR_LEVEL_LOAD) ? rb_locale_encoding() : rb_enc_find(pm_parser_encoding_name(parser));
-    VALUE message = rb_enc_str_new(pm_buffer_value(buffer), (long) pm_buffer_length(buffer), message_encoding);
+    VALUE message = rb_enc_str_new(pm_buffer_value(buffer), (rb_len_t) pm_buffer_length(buffer), message_encoding);
     pm_buffer_free(buffer);
 
     VALUE error = Qnil;
@@ -10716,44 +10792,26 @@ pm_parse_process_error(const pm_parse_result_t *result)
             error = rb_exc_new_str(rb_eLoadError, message);
             rb_ivar_set(error, rb_intern_const("@path"), Qnil);
             break;
+        case PM_ERROR_LEVEL_STACK:
+            error = rb_exc_new_str(rb_eSysStackError, message);
+            break;
     }
 
     return error;
 }
 
-/** Context for interning constants via callback. */
-typedef struct {
-    ID *constants;
-    rb_encoding *encoding;
-    size_t index;
-} pm_intern_constants_ctx_t;
-
-static void
-pm_intern_constants_callback(const pm_constant_t *constant, void *data)
+/**
+ * Returns the source hash of the source that was parsed, as stored on
+ * instruction sequences. A source hash of 0 means that there is no source hash,
+ * so the checksum is remapped to another value in that case.
+ * Prism::Source#checksum is compared against this value in ast.rb, which
+ * applies the same remapping.
+ */
+static uint64_t
+pm_source_hash(const pm_parser_t *parser)
 {
-    pm_intern_constants_ctx_t *ctx = (pm_intern_constants_ctx_t *) data;
-    ctx->constants[ctx->index++] = rb_intern3((const char *) pm_constant_start(constant), pm_constant_length(constant), ctx->encoding);
-}
-
-/** Context for emitting warnings via callback. */
-typedef struct {
-    const pm_parser_t *parser;
-    rb_encoding *encoding;
-    const char *filepath;
-} pm_warning_emit_ctx_t;
-
-static void
-pm_warning_emit_callback(const pm_diagnostic_t *diagnostic, void *data) {
-    pm_warning_emit_ctx_t *ctx = (pm_warning_emit_ctx_t *) data;
-    pm_location_t loc = pm_diagnostic_location(diagnostic);
-    int line = pm_location_line_number(ctx->parser, &loc);
-
-    if (pm_diagnostic_warning_level(diagnostic) == PM_WARNING_LEVEL_VERBOSE) {
-        rb_enc_compile_warning(ctx->encoding, ctx->filepath, line, "%s", pm_diagnostic_message(diagnostic));
-    }
-    else {
-        rb_enc_compile_warn(ctx->encoding, ctx->filepath, line, "%s", pm_diagnostic_message(diagnostic));
-    }
+    uint64_t checksum = pm_parser_checksum(parser);
+    return checksum == 0 ? 1 : checksum;
 }
 
 /**
@@ -10761,32 +10819,6 @@ pm_warning_emit_callback(const pm_diagnostic_t *diagnostic, void *data) {
  * It returns an error if one should be raised. It is assumed that the parse
  * result object is zeroed out.
  */
-/**
- * Compute the hash of the source code that was parsed. The data section after
- * an __END__ marker is not part of the code, so the hash covers the source
- * only up to the end of the __END__ line, which also matches the range that
- * parse.y hashes.
- */
-static uint64_t
-pm_source_hash(const pm_parser_t *parser)
-{
-    const uint8_t *start = pm_parser_start(parser);
-    const uint8_t *end = pm_parser_end(parser);
-    const pm_location_t *data_loc = pm_parser_data_loc(parser);
-
-    if (data_loc->length != 0) {
-        const uint8_t *cursor = start + data_loc->start;
-        while (cursor < end && *cursor != '\n') cursor++;
-        if (cursor < end) cursor++;
-        end = cursor;
-    }
-
-    rb_source_hash_state_t state;
-    rb_source_hash_init(&state);
-    rb_source_hash_update(&state, start, (size_t) (end - start));
-    return rb_source_hash_finalize(&state);
-}
-
 static VALUE
 pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines)
 {
@@ -10802,8 +10834,9 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
     scope_node->filepath_encoding = filepath_encoding;
 
     const char *encoding_name = pm_parser_encoding_name(parser);
-    scope_node->encoding = rb_enc_find(encoding_name);
-    if (!scope_node->encoding) rb_bug("Encoding not found %s!", encoding_name);
+    rb_encoding *encoding = rb_enc_find(encoding_name);
+    if (!encoding) rb_bug("Encoding not found %s!", encoding_name);
+    scope_node->encoding = encoding;
 
     scope_node->coverage_enabled = coverage_enabled;
 
@@ -10816,19 +10849,29 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
         for (size_t index = 0; index < line_offsets->size; index++) {
             size_t offset = line_offsets->offsets[index];
             size_t length = index == line_offsets->size - 1 ? ((size_t) (pm_parser_end(parser) - (pm_parser_start(parser) + offset))) : (line_offsets->offsets[index + 1] - offset);
-            rb_ary_push(*script_lines, rb_enc_str_new((const char *) pm_parser_start(parser) + offset, length, scope_node->encoding));
+            rb_ary_push(*script_lines, rb_enc_str_new((const char *) pm_parser_start(parser) + offset, length, encoding));
         }
 
         scope_node->script_lines = script_lines;
     }
 
-    // Emit all of the various warnings from the parse.
-    pm_warning_emit_ctx_t warning_ctx = {
-        .parser = parser,
-        .encoding = scope_node->encoding,
-        .filepath = (const char *) pm_string_source(pm_parser_filepath(parser))
-    };
-    pm_parser_warnings_each(parser, pm_warning_emit_callback, &warning_ctx);
+    const char *filepath = (const char *) pm_string_source(pm_parser_filepath(parser));
+
+    for (
+        const pm_diagnostic_t *diagnostic = pm_parser_warnings_first(parser);
+        diagnostic != NULL;
+        diagnostic = pm_diagnostic_next(diagnostic)
+    ) {
+        pm_location_t loc = pm_diagnostic_location(diagnostic);
+        int line = pm_location_line_number(parser, &loc);
+
+        if (pm_diagnostic_warning_level(diagnostic) == PM_WARNING_LEVEL_VERBOSE) {
+            rb_enc_compile_warning(encoding, filepath, line, "%s", pm_diagnostic_message(diagnostic));
+        }
+        else {
+            rb_enc_compile_warn(encoding, filepath, line, "%s", pm_diagnostic_message(diagnostic));
+        }
+    }
 
     // If there are errors, raise an appropriate error and free the result.
     if (pm_parser_errors_size(parser) > 0) {
@@ -10846,11 +10889,15 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
     scope_node->options = result->options;
     scope_node->line_offsets = pm_parser_line_offsets(parser);
     scope_node->start_line = pm_parser_start_line(parser);
-    size_t constants_size = pm_parser_constants_size(parser);
-    scope_node->constants = constants_size ? xmalloc(constants_size * sizeof(ID)) : NULL;
 
-    pm_intern_constants_ctx_t intern_ctx = { .constants = scope_node->constants, .encoding = scope_node->encoding, .index = 0 };
-    pm_parser_constants_each(parser, pm_intern_constants_callback, &intern_ctx);
+    size_t constants_size = pm_parser_constants_size(parser);
+    ID *constants = constants_size ? xmalloc(constants_size * sizeof(ID)) : NULL;
+    scope_node->constants = constants;
+
+    for (size_t index = 0; index < constants_size; index++) {
+        const pm_constant_t *constant = pm_parser_constant_at(parser, index);
+        constants[index] = rb_intern3((const char *) pm_constant_start(constant), pm_constant_length(constant), encoding);
+    }
 
     // If we got here, this is a success and we can return Qnil to indicate that
     // no error should be raised.
@@ -10979,7 +11026,7 @@ pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error)
 
         if (!RB_TYPE_P(contents, T_STRING)) goto error_generic;
 
-        long len = RSTRING_LEN(contents);
+        rb_len_t len = RSTRING_LEN(contents);
         if (len < 0) goto error_generic;
 
         size_t length = (size_t) len;
@@ -11018,6 +11065,19 @@ error_generic:
 }
 
 /**
+ * Limit the parser to the machine stack that is left at this point. Threads and
+ * fibers have far less stack than the parser's nesting limit assumes, and may
+ * already be deep into it, so this has to be measured for each parse. The
+ * parser stops where the VM's own stack check would start to fail, which leaves
+ * enough stack for anything it calls between checks, including the GC.
+ */
+static void
+pm_options_stack_budget_init(pm_options_t *options)
+{
+    pm_options_stack_budget_set(options, rb_ec_stack_remaining(GET_EC()));
+}
+
+/**
  * Parse the given filepath and store the resulting scope node in the given
  * parse result struct. It returns a Ruby error if the file cannot be read or
  * if it cannot be parsed properly. It is assumed that the parse result object
@@ -11031,6 +11091,7 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines)
     RB_GC_GUARD(filepath);
 
     pm_options_version_for_current_ruby_set(result->options);
+    pm_options_stack_budget_init(result->options);
 
     result->parser = pm_parser_new(result->arena, pm_source_source(result->source), pm_source_length(result->source), result->options);
     pm_node_t *node = pm_parse(result->parser);
@@ -11090,6 +11151,7 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
     pm_options_filepath_set(result->options, RSTRING_PTR(filepath));
 
     pm_options_version_for_current_ruby_set(result->options);
+    pm_options_stack_budget_init(result->options);
 
     result->parser = pm_parser_new(result->arena, pm_source_source(result->source), pm_source_length(result->source), result->options);
     pm_node_t *node = pm_parse(result->parser);
@@ -11106,28 +11168,57 @@ typedef struct {
     const pm_node_t *node;
 } pm_node_find_context_t;
 
-static bool
+static pm_visit_result_t
 pm_node_find(const pm_node_t *node, void *data)
 {
     pm_node_find_context_t *context = data;
 
-    if (context->node == NULL && node->node_id == context->node_id) {
+    if (node->node_id == context->node_id) {
         context->node = node;
-        return false;
+        return PM_VISIT_STOP;
     }
 
-    return context->node == NULL;
+    return PM_VISIT_DESCEND;
 }
 
+/**
+ * Returns whether parsing the given source produces the given source hash.
+ */
+bool
+pm_source_hash_matches(VALUE source, VALUE filepath, uint64_t source_hash)
+{
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
+    pm_parse_string(&result, source, filepath, NULL);
+
+    bool matches = result.parser != NULL && pm_source_hash(result.parser) == source_hash;
+    pm_parse_result_free(&result);
+
+    RB_GC_GUARD(source);
+    RB_GC_GUARD(filepath);
+    return matches;
+}
+
+/**
+ * Find the location of the node with the given node ID in the given source.
+ * Raises if the source does not have the given source hash, which is checked
+ * before any syntax error is raised so that source modified into invalid Ruby
+ * is reported as modified.
+ */
 bool
 pm_node_source_location(VALUE source, VALUE filepath, int start_line,
-                        int node_id, rb_code_location_t *location)
+                        int node_id, uint64_t source_hash, rb_code_location_t *location)
 {
     pm_parse_result_t result;
     pm_parse_result_init(&result);
 
     pm_options_line_set(result.options, start_line);
     VALUE error = pm_parse_string(&result, source, filepath, NULL);
+
+    if (result.parser != NULL && pm_source_hash(result.parser) != source_hash) {
+        pm_parse_result_free(&result);
+        rb_raise(rb_eRuntimeError, "source has been modified");
+    }
 
     if (!NIL_P(error)) {
         pm_parse_result_free(&result);
@@ -11152,7 +11243,7 @@ pm_node_source_location(VALUE source, VALUE filepath, int start_line,
     return found;
 }
 
-VALUE rb_io_gets_limit_internal(VALUE io, long limit);
+VALUE rb_io_gets_limit_internal(VALUE io, rb_len_t limit);
 
 /**
  * Report whether the stream has reached EOF. The stream reader uses this to
@@ -11199,7 +11290,7 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
     }
 
     const char *cstr = RSTRING_PTR(line);
-    long length = RSTRING_LEN(line);
+    rb_len_t length = RSTRING_LEN(line);
 
     /*
      * Defensively clamp the copy. The line reader relaxes the limit to avoid
@@ -11207,8 +11298,8 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
      * than requested; we must never write past the caller's buffer. One byte
      * is reserved for the NUL terminator.
      */
-    if (length > (long) (size - 1)) {
-        length = (long) (size - 1);
+    if (length > (rb_len_t) (size - 1)) {
+        length = (rb_len_t) (size - 1);
     }
 
     memcpy(string, cstr, (size_t) length);
@@ -11231,6 +11322,7 @@ VALUE
 pm_parse_stdin(pm_parse_result_t *result)
 {
     pm_options_frozen_string_literal_init(result->options);
+    pm_options_stack_budget_init(result->options);
 
     result->source = pm_source_stream_new((void *) rb_stdin, pm_parse_stdin_fgets, pm_parse_stdin_eof);
     pm_node_t *node = pm_parse_stream(&result->parser, result->arena, result->source, result->options);

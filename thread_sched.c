@@ -1859,7 +1859,10 @@ native_thread_dedicated_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_threa
 {
     RUBY_DEBUG_LOG("nt:%d %d->%d", nt->serial, nt->dedicated, nt->dedicated + 1);
 
-    if (nt->dedicated == 0) {
+    // A retiring nt left snt_cnt when it last came back (see
+    // native_thread_dedicated_dec); taking it out again would leave the pool
+    // looking a thread short, and the timer thread would make another.
+    if (nt->dedicated == 0 && !nt->retiring) {
         // Lock-free; pairs with ractor_sched_enq (enq: grq_cnt up then read
         // snt_cnt / here: snt_cnt down then read grq_cnt) against lost wakeups.
         if (RUBY_ATOMIC_FETCH_SUB(vm->ractor.sched.snt_cnt, 1) == 1) {
@@ -1872,10 +1875,10 @@ native_thread_dedicated_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_threa
             }
             ractor_sched_unlock(vm, cr);
         }
-#if USE_RUBY_DEBUG_LOG
-        vm->ractor.sched.dnt_cnt++;
-#endif
     }
+#if USE_RUBY_DEBUG_LOG
+    if (nt->dedicated == 0) vm->ractor.sched.dnt_cnt++; // _dec takes every nt out
+#endif
 
     nt->dedicated++;
 }
@@ -1896,7 +1899,10 @@ native_thread_dedicated_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_threa
         while (1) {
             rb_atomic_t snt = RUBY_ATOMIC_LOAD(vm->ractor.sched.snt_cnt);
             if (!can_retire || snt < vm->ractor.sched.max_cpu || (int)snt <= MINIMUM_SNT) {
-                if (RUBY_ATOMIC_CAS(vm->ractor.sched.snt_cnt, snt, snt + 1) == snt) break;
+                if (RUBY_ATOMIC_CAS(vm->ractor.sched.snt_cnt, snt, snt + 1) == snt) {
+                    nt->retiring = false;   // room now, after having none before
+                    break;
+                }
             }
             else {
                 nt->retiring = true;
@@ -1981,11 +1987,6 @@ nt_start(void *ptr)
     rb_vm_t *vm = nt->vm;
 
     native_thread_setup_on_thread(nt);
-
-    // init tid
-#ifdef RB_THREAD_T_HAS_NATIVE_ID
-    nt->tid = get_native_thread_id();
-#endif
 
 #if USE_RUBY_DEBUG_LOG && defined(RUBY_NT_SERIAL)
     ruby_nt_serial = nt->serial;

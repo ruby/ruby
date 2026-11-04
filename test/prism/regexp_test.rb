@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   class RegexpTest < TestCase
     ############################################################################
     # These tests test the actual use case of extracting named capture groups
@@ -227,12 +227,12 @@ module Prism
 
     def test_last_encoding_option_wins
       regex = "/foo/nu"
-      option = Prism.parse_statement(regex).options
+      option = Ruby::Prism.parse_statement(regex).options
 
       assert_equal Regexp::FIXEDENCODING, option
 
       regex = "/foo/un"
-      option = Prism.parse_statement(regex).options
+      option = Ruby::Prism.parse_statement(regex).options
 
       assert_equal Regexp::NOENCODING, option
     end
@@ -248,10 +248,30 @@ module Prism
       assert_newline_regexp("%r\r\n\r\n", "", 0)
     end
 
+    def test_depth_limit_nested_character_sets
+      assert_depth_limit("[" * 10_000)
+    end
+
+    def test_depth_limit_meta_escapes
+      assert_depth_limit("\\M-" * 10_000 + "a")
+      assert_depth_limit("[" + "\\M-" * 10_000 + "a]")
+    end
+
+    def test_depth_limit_control_escapes
+      assert_depth_limit("\\C-" * 10_000 + "a")
+      assert_depth_limit("\\c" * 10_000 + "a")
+      assert_depth_limit("[" + "\\C-" * 10_000 + "a]")
+    end
+
     private
 
+    def assert_depth_limit(source)
+      messages = Ruby::Prism.parse("/#{source}/ =~ \"\"").errors.map(&:message)
+      assert_equal 1, messages.count("parse depth limit over")
+    end
+
     def assert_newline_regexp(source, content, options)
-      node = Prism.parse_statement(source)
+      node = Ruby::Prism.parse_statement(source)
 
       assert_kind_of RegularExpressionNode, node
       assert_equal content, node.content
@@ -259,17 +279,17 @@ module Prism
     end
 
     def assert_valid_regexp(source)
-      assert Prism.parse_success?("/#{source}/ =~ \"\"")
+      assert Ruby::Prism.parse_success?("/#{source}/ =~ \"\"")
     end
 
     def named_captures(source)
-      Prism.parse("/#{source}/ =~ \"\"").value.locals
+      Ruby::Prism.parse("/#{source}/ =~ \"\"").value.locals
     end
 
     def options(flags)
       options =
         ["/foo/#{flags}", "/foo\#{1}/#{flags}"].map do |source|
-          Prism.parse_statement(source).options
+          Ruby::Prism.parse_statement(source).options
         end
 
       # Check that we get the same set of options from both regular expressions

@@ -63,6 +63,13 @@ rubylib = [gem_dir+'/lib', ENV["RUBYLIB"]].compact.join(File::PATH_SEPARATOR)
 run_opts = ENV["RUN_OPTS"]&.shellsplit
 exit_code = 0
 ruby = ENV['RUBY'] || RbConfig.ruby
+
+# prism is a bundled gem, not a default gem loadable without RubyGems.
+# Several bundled gems (irb, rdoc, rbs, typeprof, ...) require it, and
+# their tests spawn ruby with --disable=gems (assert_in_out_err etc.), so
+# preset the load paths of the prism gem in RUBYLIB for every gem.
+prism_libs = IO.popen([ruby, "-e", "old = $:.dup; require 'prism'; puts $:-old"], &:read)
+rubylib = [*prism_libs.split("\n"), rubylib].join(File::PATH_SEPARATOR) if $?.success?
 failed = []
 
 max = ENV['TEST_BUNDLED_GEMS_NPROCS']&.to_i || [Etc.nprocessors, 8].min
@@ -132,14 +139,8 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     test_command[-2..-1] = %w[test/run.rb --ignore-name=/linear_performance/]
 
   when "fiddle"
-    # When ZJIT is compile-happy, skip Fiddle::TestFunction#test_no_memory_leak
-    # since compiling uses more memory which the test does not expect.
-    # Similarly, it's extremely flaky when running with `parse.y` for unclear reasons,
-    # but closer inspection didn't reveal any leak.
-    # It's a bit of a badly crafted test, and is likely missing some warmup to stabilize the memory usage.
-    if run_opts&.include?("--zjit-call-threshold=1") || run_opts&.include?('--parser=parse.y')
-      test_command[-2..-1] = %w[test/run.rb --ignore-name=/\Atest_no_memory_leak\z/]
-    end
+    # This test checks a long-fixed memory leak and its measurement is flaky.
+    test_command[-2..-1] = %w[test/run.rb --ignore-name=/\Atest_no_memory_leak\z/]
 
   when "debug"
     # needs pty

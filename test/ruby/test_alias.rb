@@ -208,9 +208,10 @@ class TestAlias < Test::Unit::TestCase
     begin;
       bug = ARGV[0]
 
-      Warning[:deprecated] = false # the Object fallback warns since [Bug #22276]
-      m = Module.new do
-        alias orig_to_s to_s
+      m = EnvUtil.suppress_warning do
+        Module.new do
+          alias orig_to_s to_s
+        end
       end
 
       o = Object.new.extend(m)
@@ -351,6 +352,22 @@ class TestAlias < Test::Unit::TestCase
           define_method :foo, original_foo
         end
       }
+    end;
+  end
+
+  def test_alias_bmethod_in_multi_ractor_mode
+    # rb_method_definition_eq() used to dispatch Proc#== for bmethods, but
+    # rb_method_entry_make() calls it under the VM lock, where rb_vm_check_ints()
+    # must not run.
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $-w = nil
+      Ractor.new {}.join # leave single-ractor mode so the VM lock is taken
+      obj = Object.new
+      obj.define_singleton_method(:a) { 1 }
+      obj.define_singleton_method(:b) { 2 }
+      obj.singleton_class.alias_method :a, :b
+      assert_equal 2, obj.a
     end;
   end
 

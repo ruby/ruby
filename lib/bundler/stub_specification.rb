@@ -114,6 +114,10 @@ module Bundler
       stub.matches_for_glob(glob)
     end
 
+    def contains_requirable_file?(file)
+      stub.contains_requirable_file?(file)
+    end
+
     def raw_require_paths
       stub.raw_require_paths
     end

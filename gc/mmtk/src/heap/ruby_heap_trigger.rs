@@ -1,10 +1,10 @@
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
+use mmtk::MMTK;
+use mmtk::Plan;
 use mmtk::util::heap::GCTriggerPolicy;
 use mmtk::util::heap::SpaceStats;
-use mmtk::Plan;
-use mmtk::MMTK;
 use once_cell::sync::OnceCell;
 
 use crate::Ruby;
@@ -50,12 +50,11 @@ impl GCTriggerPolicy<Ruby> for RubyHeapTrigger {
 
         // Nursery GCs don't resize the heap, unless a failed allocation is
         // waiting on us to make room for it.
-        if pending_pages == 0 {
-            if let Some(plan) = mmtk.get_plan().generational() {
-                if plan.is_current_gc_nursery() {
-                    return;
-                }
-            }
+        if pending_pages == 0
+            && let Some(plan) = mmtk.get_plan().generational()
+            && plan.is_current_gc_nursery()
+        {
+            return;
         }
 
         let used_pages = mmtk.get_plan().get_used_pages();

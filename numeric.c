@@ -980,7 +980,7 @@ flo_to_s(VALUE flt)
             rb_str_cat(s, buf, digs + 1);
         }
         else if (decpt <= DBL_DIG) {
-            long len;
+            rb_len_t len;
             char *ptr;
             rb_str_cat(s, buf, digs);
             rb_str_resize(s, (len = RSTRING_LEN(s)) + decpt - digs + 2);
@@ -996,7 +996,7 @@ flo_to_s(VALUE flt)
         }
     }
     else if (decpt > -4) {
-        long len;
+        rb_len_t len;
         char *ptr;
         rb_str_cat(s, "0.", 2);
         rb_str_resize(s, (len = RSTRING_LEN(s)) - decpt + digs);
@@ -3194,6 +3194,13 @@ rb_out_of_int(SIGNED_VALUE num)
              num, num < 0 ? "small" : "big");
 }
 
+void
+rb_out_of_long(SIGNED_VALUE num)
+{
+    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to 'long'",
+             num, num < 0 ? "small" : "big");
+}
+
 #if SIZEOF_INT < SIZEOF_LONG
 static void
 check_int(long num)
@@ -4085,34 +4092,7 @@ rb_fix2str(VALUE x, int base)
     else {
         u = val;
     }
-    if (base == 10) {
-        /* Emit two digits per iteration from a precomputed table.  The
-         * compiler lowers `u % 100` and `u / 100` to a single multiply +
-         * shift, so each iteration costs roughly one multiply, one shift,
-         * and two stores.  About 2x fewer iterations than the classic
-         * per-digit loop for multi-digit inputs. */
-        while (u >= 100) {
-            unsigned long idx = (u % 100) * 2;
-            u /= 100;
-            b -= 2;
-            b[0] = ruby_decimal_digit_pairs[idx];
-            b[1] = ruby_decimal_digit_pairs[idx + 1];
-        }
-        if (u >= 10) {
-            unsigned long idx = u * 2;
-            b -= 2;
-            b[0] = ruby_decimal_digit_pairs[idx];
-            b[1] = ruby_decimal_digit_pairs[idx + 1];
-        }
-        else {
-            *--b = (char)('0' + u);
-        }
-    }
-    else {
-        do {
-            *--b = ruby_digitmap[(int)(u % base)];
-        } while (u /= base);
-    }
+    b -= ruby_convert_to_digits(b, u, base);
     if (neg) {
         *--b = '-';
     }
@@ -5744,24 +5724,22 @@ rb_fix_bit_count(VALUE fix)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    bit_count -> integer
  *
- *  Returns the number of set bits (bits equal to 1) in the binary
- *  representation of +self+, also known as the population count or
- *  Hamming weight.
+ *  Returns the number of set bits in the binary value of `self`;
+ *  also known as the population count
+ *  or [Hamming weight](https://en.wikipedia.org/wiki/Hamming_weight):
  *
- *    0.bit_count            # => 0
- *    1.bit_count            # => 1
- *    7.bit_count            # => 3
- *    0b10101.bit_count      # => 3
- *    255.bit_count          # => 8
- *    (2**1000).bit_count    # => 1
- *    (2**1000-1).bit_count  # => 1000
- *
- *  Raises an exception if +self+ is negative.
- *
- *    (-1).bit_count # Raises ArgumentError
+ *  ```ruby
+ *  0b0.bit_count                # => 0
+ *  0b101010.bit_count           # => 3
+ *  0b010101.bit_count           # => 3
+ *  0b1111111111111111.bit_count # => 16
+ *  (-1).bit_count # Raises ArgumentError: 'Integer#bit_count': bit_count is undefined for negative integers.
+ *  ```
  *
  */
 
@@ -5840,7 +5818,7 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
     digits = rb_ary_new_from_args(1, num);
     while (RARRAY_LEN(bases)) {
         VALUE b = rb_ary_pop(bases);
-        long i, last_idx = RARRAY_LEN(digits) - 1;
+        rb_len_t i, last_idx = RARRAY_LEN(digits) - 1;
         for(i = last_idx; i >= 0; i--) {
             VALUE n = RARRAY_AREF(digits, i);
             VALUE divmod = rb_int_divmod(n, b);
@@ -6559,10 +6537,6 @@ int_s_try_convert(VALUE self, VALUE num)
 void
 Init_Numeric(void)
 {
-#ifdef _UNICOSMP
-    /* Turn off floating point exceptions for divide by zero, etc. */
-    _set_Creg(0, 0);
-#endif
     id_coerce = rb_intern_const("coerce");
     id_to = rb_intern_const("to");
     id_by = rb_intern_const("by");

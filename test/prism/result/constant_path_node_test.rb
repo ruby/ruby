@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class ConstantPathNodeTest < TestCase
     def test_full_name_for_constant_path
       source = <<~RUBY
@@ -11,7 +11,7 @@ module Prism
             Qux
       RUBY
 
-      constant_path = Prism.parse_statement(source)
+      constant_path = Ruby::Prism.parse_statement(source)
       assert_equal("Foo::Bar::Baz::Qux", constant_path.full_name)
     end
 
@@ -22,7 +22,7 @@ module Prism
             Qux
       RUBY
 
-      constant_path = Prism.parse_statement(source)
+      constant_path = Ruby::Prism.parse_statement(source)
       assert_raise(ConstantPathNode::DynamicPartsInConstantPathError) do
         constant_path.full_name
       end
@@ -35,7 +35,7 @@ module Prism
             Qux
       RUBY
 
-      constant_path = Prism.parse_statement(source)
+      constant_path = Ruby::Prism.parse_statement(source)
 
       assert_raise(ConstantPathNode::DynamicPartsInConstantPathError) do
         constant_path.full_name
@@ -49,7 +49,7 @@ module Prism
             Qux, Something = [1, 2]
       RUBY
 
-      node = Prism.parse_statement(source)
+      node = Ruby::Prism.parse_statement(source)
       assert_equal("Foo::Bar::Baz::Qux", node.lefts.first.full_name)
     end
 
@@ -60,7 +60,7 @@ module Prism
             Qux, Something = [1, 2]
       RUBY
 
-      node = Prism.parse_statement(source)
+      node = Ruby::Prism.parse_statement(source)
       assert_equal("::Foo::Bar::Baz::Qux", node.lefts.first.full_name)
     end
 
@@ -69,7 +69,7 @@ module Prism
         self::Foo, Bar = [1, 2]
       RUBY
 
-      constant_target = Prism.parse_statement(source)
+      constant_target = Ruby::Prism.parse_statement(source)
       dynamic, static = constant_target.lefts
 
       assert_raise(ConstantPathNode::DynamicPartsInConstantPathError) do
@@ -84,7 +84,7 @@ module Prism
         Bar
       RUBY
 
-      constant = Prism.parse_statement(source)
+      constant = Ruby::Prism.parse_statement(source)
       assert_equal("Bar", constant.full_name)
     end
   end

@@ -2547,7 +2547,7 @@ Gem::Specification.new do |s|
 
   s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
-  s.add_runtime_dependency(%q<b>.freeze, [\"= 1\".freeze])
+  s.add_runtime_dependency(\"b\".freeze, [\"= 1\".freeze])
 end
     SPEC
 
@@ -2646,7 +2646,7 @@ Gem::Specification.new do |s|
 
   s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
-  s.add_runtime_dependency(%q<b>.freeze, ["= 1".freeze])
+  s.add_runtime_dependency("b".freeze, ["= 1".freeze])
 end
     SPEC
 
@@ -2699,9 +2699,9 @@ Gem::Specification.new do |s|
 
   s.specification_version = 4
 
-  s.add_runtime_dependency(%q<rake>.freeze, [\"> 0.4\".freeze])
-  s.add_runtime_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\".freeze])
-  s.add_runtime_dependency(%q<pqa>.freeze, [\"> 0.4\".freeze, \"<= 0.6\".freeze])
+  s.add_runtime_dependency(\"rake\".freeze, [\"> 0.4\".freeze])
+  s.add_runtime_dependency(\"jabber4r\".freeze, [\"> 0.0.0\".freeze])
+  s.add_runtime_dependency(\"pqa\".freeze, [\"> 0.4\".freeze, \"<= 0.6\".freeze])
 end
     SPEC
 
@@ -2718,6 +2718,51 @@ end
     end
 
     assert_includes spec.to_ruby, '"~> 1.0".freeze, ">= 1.0.0".freeze'
+  end
+
+  def test_to_ruby_dependency_name
+    name = "b\\>\n\#{raise}"
+    @a2.add_dependency name, "1"
+
+    same_spec = eval @a2.to_ruby
+
+    assert_equal [name], same_spec.dependencies.map(&:name)
+  end
+
+  def test_to_ruby_invalid_dependency_type
+    @a2.add_dependency "b", "1"
+    @a2.dependencies.first.instance_variable_set :@type, :foo
+
+    e = assert_raise Gem::Exception do
+      @a2.to_ruby
+    end
+    assert_equal "invalid dependency type: :foo", e.message
+  end
+
+  def test_to_ruby_invalid_specification_version
+    @a2.add_dependency "b", "1"
+    @a2.specification_version = "4\n``"
+
+    e = assert_raise Gem::Exception do
+      @a2.to_ruby
+    end
+    assert_equal 'invalid specification_version: "4\n``"', e.message
+  end
+
+  def test_to_ruby_newline_in_stub_line
+    [
+      proc {|s| s.name = "a\n``" },
+      proc {|s| s.require_paths = ["lib\n``"] },
+      proc {|s| s.extensions = ["ext\n``"] },
+    ].each do |setup|
+      spec = @a2.dup
+      setup.call spec
+
+      e = assert_raise Gem::Exception do
+        spec.to_ruby
+      end
+      assert_match(/\Astub line .* contains a newline\z/, e.message)
+    end
   end
 
   def test_to_ruby_legacy
@@ -3133,6 +3178,25 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     end
   end
 
+  def test_validate_extension_without_builder
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["build.sh"]
+      File.write File.join(@tempdir, "build.sh"), ""
+      gem_make_out = File.join @a1.build_info_dir, "#{@a1.full_name}.gem_make.out"
+
+      e = assert_raise Gem::Ext::BuildError do
+        use_ui @ui do
+          @a1.validate
+        end
+      end
+
+      assert_equal "No builder for extension 'build.sh'", e.message
+      assert_path_not_exist gem_make_out
+    end
+  end
+
   def test_validate_extension_require_relative_warning
     util_setup_validate
 
@@ -3149,6 +3213,64 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       assert_match(%r{require_relative "a/a"}, @ui.error)
       assert_match(/will break in RubyGems 4\.2/, @ui.error)
       assert_match(/Use `require` instead of `require_relative`/, @ui.error)
+    end
+  end
+
+  def test_validate_extension_require_relative_with_non_ascii_source_under_ascii_locale
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["ext/a/extconf.rb"]
+      @a1.files = %w[lib/code.rb lib/a.rb ext/a/extconf.rb]
+
+      File.binwrite File.join("lib", "a.rb"), "# Copyright \u00A9\nrequire_relative \"a/a\"\n"
+
+      with_default_external(Encoding::US_ASCII) do
+        use_ui @ui do
+          @a1.validate
+        end
+      end
+
+      assert_match(%r{lib/a\.rb:2 uses `require_relative "a/a"`}, @ui.error)
+    end
+  end
+
+  def test_validate_extension_require_relative_with_invalid_utf8_source
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["ext/a/extconf.rb"]
+      @a1.files = %w[lib/code.rb lib/a.rb ext/a/extconf.rb]
+
+      File.binwrite File.join("lib", "a.rb"), "# \xFF\xFE\nrequire_relative \"a/a\"\n".b
+
+      with_default_external(Encoding::UTF_8) do
+        use_ui @ui do
+          @a1.validate
+        end
+      end
+
+      assert_match(%r{lib/a\.rb:2 uses `require_relative "a/a"`}, @ui.error)
+    end
+  end
+
+  def test_validate_extension_require_relative_with_non_ascii_path
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["ext/a/extconf.rb"]
+      @a1.files = %w[lib/code.rb lib/a.rb lib/ü/b.rb lib/ü/é.rb ext/a/extconf.rb]
+
+      FileUtils.mkdir_p File.join("lib", "ü")
+      File.write File.join("lib", "a.rb"), "require_relative \"ü/b\"\n"
+      File.write File.join("lib", "ü", "b.rb"), "require_relative \"é\"\n"
+      File.write File.join("lib", "ü", "é.rb"), ""
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      refute_match(/require_relative/, @ui.error)
     end
   end
 
@@ -4474,5 +4596,16 @@ end
         File.umask(umask_orig)
       end
     end
+  end
+
+  def with_default_external(encoding)
+    verbose = $VERBOSE
+    $VERBOSE = nil
+    original = Encoding.default_external
+    Encoding.default_external = encoding
+    yield
+  ensure
+    Encoding.default_external = original
+    $VERBOSE = verbose
   end
 end

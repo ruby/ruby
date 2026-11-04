@@ -241,6 +241,10 @@ gems:
       client.print "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n<h1>NOT FOUND</h1>"
     end
   ensure
-    client.close
+    begin
+      client.close
+    rescue Errno::EBADF
+      # JRuby before 10.1.2 raises this when teardown's kill interrupts a socket read or write, because NIO has already closed the channel
+    end
   end
 end

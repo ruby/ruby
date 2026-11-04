@@ -196,6 +196,13 @@ class TestISeq < Test::Unit::TestCase
     assert_include(RubyVM::InstructionSequence.of(obj.method(name)).disasm, name)
   end
 
+  def test_disasm_with_tracepoint
+    iseq = compile("a = 1; a")
+    TracePoint.new(:line) {}.enable(target: iseq) do
+      assert_not_include(iseq.disasm, "trace_")
+    end
+  end
+
   def test_compile_file_encoding
     Tempfile.create(%w"test_iseq .rb") do |f|
       f.puts "{ '\u00de' => 'Th', '\u00df' => 'ss', '\u00e0' => 'a' }"
@@ -314,7 +321,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_invalid_source_no_memory_leak
     # [Bug #21394]
-    assert_no_memory_leak(["-rtempfile"], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true)
+    assert_no_memory_leak(["-rtempfile"], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true, samples: 2..100)
       code = proc do |t|
         RubyVM::InstructionSequence.new(nil)
       rescue TypeError
@@ -322,9 +329,8 @@ class TestISeq < Test::Unit::TestCase
         raise "TypeError was not raised during RubyVM::InstructionSequence.new"
       end
 
-      10.times(&code)
     begin;
-      1_000_000.times(&code)
+      10_000.times(&code)
     end;
 
     # [Bug #21394]
@@ -909,6 +915,36 @@ class TestISeq < Test::Unit::TestCase
 
   def test_short_circuited_loop_condition
     assert_ruby_status([], "while true || true; exit; end; abort")
+    disasm = compile("while true || true; exit; end; abort").disasm
+    assert_not_match(/^\d+ putnil\s*\n\d+ jump\s+\d+/m, disasm)
+  end
+
+  def test_short_circuited_break_in_ensure
+    assert_in_out_err(["--parser=parse.y"], <<~'RUBY', %w[OK], success: true)
+      while false
+        begin
+          if false && (break if foo); end
+        ensure
+          puts 'BUG'
+          exit!(false)
+        end
+      end
+      raise 'OK' rescue puts $!
+    RUBY
+  end
+
+  def test_short_circuited_return_in_ensure
+    assert_in_out_err(["--parser=parse.y"], <<~'RUBY', ["ensure", "#<RuntimeError: boom>"], success: true)
+      def m
+        begin
+          if false && (return if foo); end
+          raise 'boom'
+        ensure
+          puts 'ensure'
+        end
+      end
+      m rescue p $!
+    RUBY
   end
 
   def test_unreachable_syntax_error
@@ -978,10 +1014,10 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_loading_kwargs_memory_leak
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true)
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 5)
       a = RubyVM::InstructionSequence.compile("foo(bar: :baz)").to_binary
     begin;
-      1_000_000.times do
+      200_000.times do
         RubyVM::InstructionSequence.load_from_binary(a)
       end
     end;

@@ -8,7 +8,7 @@ describe :method_syntax_tree, shared: true do
 
     node = @object.call(method(:def_method)).syntax_tree
     node.start_line.should == def_method_line
-    node.should.is_a?(Prism::DefNode)
+    node.should.is_a?(Ruby::Prism::DefNode)
   end
 
   it "currently returns a CallNode for a define_method method" do
@@ -18,7 +18,7 @@ describe :method_syntax_tree, shared: true do
 
     node = @object.call(method(:define_method_method)).syntax_tree
     node.start_line.should == define_method_method_line
-    node.should.is_a?(Prism::CallNode)
+    node.should.is_a?(Ruby::Prism::CallNode)
   end
 
   it "currently returns a CallNode for a define_method(name, &proc) method" do
@@ -31,6 +31,6 @@ describe :method_syntax_tree, shared: true do
 
     node = @object.call(method(:define_method_method_proc)).syntax_tree
     node.start_line.should == define_method_method_proc_line
-    node.should.is_a?(Prism::CallNode)
+    node.should.is_a?(Ruby::Prism::CallNode)
   end
 end

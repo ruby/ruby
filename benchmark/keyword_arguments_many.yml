@@ -1,0 +1,28 @@
+# 31 keywords use the bitmask; 32 and 128 exercise the overflow container.
+# Sparse defaults are dynamic only for the last two keywords; dense defaults
+# are all dynamic. Reuse an object to avoid allocating default values.
+prelude: |
+  DEFAULT = Object.new
+  kwargs = {k0: 0}
+  [31, 32, 128].each do |n|
+    [:sparse, :dense].each do |kind|
+      params = n.times.map do |i|
+        default = kind == :dense || i >= n - 2 ? "DEFAULT" : "0"
+        "k#{i}: #{default}"
+      end
+      eval "def many_#{n}_#{kind}(#{params.join(", ")}); end"
+    end
+  end
+benchmark:
+  kw_31_sparse: "many_31_sparse(k0: 0)"
+  kwsplat_31_sparse: "many_31_sparse(**kwargs)"
+  kw_31_dense: "many_31_dense(k0: 0)"
+  kwsplat_31_dense: "many_31_dense(**kwargs)"
+  kw_32_sparse: "many_32_sparse(k0: 0)"
+  kwsplat_32_sparse: "many_32_sparse(**kwargs)"
+  kw_32_dense: "many_32_dense(k0: 0)"
+  kwsplat_32_dense: "many_32_dense(**kwargs)"
+  kw_128_sparse: "many_128_sparse(k0: 0)"
+  kwsplat_128_sparse: "many_128_sparse(**kwargs)"
+  kw_128_dense: "many_128_dense(k0: 0)"
+  kwsplat_128_dense: "many_128_dense(**kwargs)"

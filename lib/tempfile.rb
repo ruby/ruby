@@ -157,7 +157,7 @@ require 'tmpdir'
 class Tempfile < DelegateClass(File)
 
   # The version
-  VERSION = "0.3.1"
+  VERSION = "0.3.2"
 
   # Creates a file in the underlying file system;
   # returns a new \Tempfile object based on that file.
@@ -390,7 +390,7 @@ class Tempfile < DelegateClass(File)
         $stderr.puts "removing #{@path}..." if $DEBUG
         begin
           File.unlink(@path)
-        rescue Errno::ENOENT
+        rescue Errno::ENOENT, Errno::EACCES
         end
         $stderr.puts "done" if $DEBUG
       end

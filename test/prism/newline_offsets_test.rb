@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   class NewlineOffsetsTest < TestCase
     Fixture.each do |fixture|
       define_method(fixture.test_name) { assert_newline_offsets(fixture) }
@@ -39,7 +39,7 @@ module Prism
       expected = [0]
       source.b.scan("\n") { expected << $~.offset(0)[0] + 1 }
 
-      assert_equal expected, Prism.parse(source).source.offsets, message
+      assert_equal expected, Ruby::Prism.parse(source).source.offsets, message
     end
   end
 end

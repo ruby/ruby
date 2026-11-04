@@ -53,7 +53,7 @@ describe "IO::Buffer.string" do
   end
 
   it "raises RangeError if size is too large" do
-    -> { IO::Buffer.string(2 ** 232) {} }.should.raise(RangeError, /\Abignum too big to convert into [`']long'\z/)
+    -> { IO::Buffer.string(2 ** 232) {} }.should.raise(RangeError, /\Abignum too big to convert into [`']long( long)?'\z/)
   end
 
   it "raises LocalJumpError if no block is given" do

@@ -43,6 +43,14 @@ RSpec.describe "bundle help" do
     expect(out).to eq("--help")
   end
 
+  it "does not execute a bundler-<task> binary that is only in the current directory" do
+    create_file(bundled_app("bundler-testtasks"), "#!/usr/bin/env ruby\nputs ARGV.join(' ')\n")
+
+    bundle "help testtasks", raise_on_error: false
+
+    expect(err).to include('Could not find command "testtasks".')
+  end
+
   it "is called when the --help flag is used after the command" do
     with_fake_man do
       bundle "install --help"

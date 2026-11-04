@@ -64,7 +64,7 @@ const struct rb_zjit_runtime_offsets rb_zjit_runtime_offsets = {
 const zjit_jit_frame_t rb_zjit_c_frame = (zjit_jit_frame_t) {
     .pc = 0,
     .iseq = 0,
-    .materialize_block_code = false,
+    .stack_map = NULL,
 };
 
 #if !defined(_WIN32) && defined(MAP_ANONYMOUS)
@@ -126,6 +126,27 @@ rb_zjit_reserve_low_addr_space(size_t size)
 void *rb_zjit_reserve_low_addr_space(size_t size) { return NULL; }
 
 #endif
+
+static VALUE
+rb_zjit_total_compile_time_ns_get(rb_execution_context_t *ec, VALUE self)
+{
+    return ULL2NUM(rb_zjit_total_compile_time_ns);
+}
+
+static VALUE
+rb_zjit_max_compile_time_ns_get(rb_execution_context_t *ec, VALUE self)
+{
+    return ULL2NUM(rb_zjit_max_compile_time_ns);
+}
+
+void rb_zjit_update_max_compile_time_ns(uint64_t max_compile_time_ns);
+
+static VALUE
+rb_zjit_max_compile_time_ns_set(rb_execution_context_t *ec, VALUE self, VALUE max_compile_time_ns)
+{
+    rb_zjit_update_max_compile_time_ns(NUM2ULL(max_compile_time_ns));
+    return max_compile_time_ns;
+}
 
 void rb_zjit_profile_disable(const rb_iseq_t *iseq);
 int rb_zjit_insn_to_bare_insn(int insn);
@@ -339,25 +360,14 @@ bool rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const void *func
 const struct rb_callable_method_entry_struct *
 rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv);
 
-bool
-rb_zjit_class_initialized_p(VALUE klass)
-{
-    return RCLASS_INITIALIZED_P(klass);
-}
-
-// Whether rb_class_superclass can be called on the class without raising: it raises
-// TypeError when the superclasses array is unbuilt (an uninitialized class, e.g.
-// Class.allocate), except for BasicObject, which it special-cases to return nil.
-bool
-rb_zjit_can_load_superclass_p(VALUE klass)
-{
-    return klass == rb_cBasicObject || RCLASS_SUPERCLASSES(klass) != NULL;
-}
-
 rb_alloc_func_t rb_zjit_class_get_alloc_func(VALUE klass);
 
-// Defined in struct.c, where struct_alloc is visible.
+// Defined in struct.c, where struct_alloc and the members ivar are visible.
 bool rb_zjit_class_has_struct_allocator(VALUE klass);
+rb_len_t rb_zjit_struct_num_members(VALUE klass);
+ID rb_zjit_struct_member_id(VALUE klass, rb_len_t index);
+bool rb_zjit_struct_embedded_p(rb_len_t num_members);
+VALUE rb_struct_s_keyword_init(VALUE klass);
 
 VALUE rb_class_allocate_instance(VALUE klass);
 
@@ -370,9 +380,31 @@ rb_zjit_class_has_default_allocator(VALUE klass)
     return alloc == rb_class_allocate_instance;
 }
 
+bool
+rb_zjit_callable_method_entry_is_undefined(const rb_callable_method_entry_t *cme)
+{
+    return UNDEFINED_METHOD_ENTRY_P(cme);
+}
 
 VALUE rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp);
 bool rb_vm_once_done_value(ISE is, VALUE *result);
+
+bool
+rb_zjit_array_aref_with_adjusted_index(VALUE ary, rb_len_t index, VALUE *out)
+{
+    RUBY_ASSERT(RB_TYPE_P(ary, T_ARRAY));
+    if (index >= 0 && index < RARRAY_LEN(ary)) {
+        *out = RARRAY_AREF(ary, index);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+VALUE rb_nil_to_s(VALUE obj);
+VALUE rb_true_to_s(VALUE obj);
+VALUE rb_false_to_s(VALUE obj);
 
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_enable(rb_execution_context_t *ec, VALUE self);

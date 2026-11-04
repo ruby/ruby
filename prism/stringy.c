@@ -1,9 +1,6 @@
 #include "prism/internal/stringy.h"
 
-#include "prism/internal/allocator.h"
-
 #include <assert.h>
-#include <stdlib.h>
 #include <string.h>
 
 /**
@@ -14,34 +11,17 @@ pm_string_shared_init(pm_string_t *string, const uint8_t *start, const uint8_t *
     assert(start <= end);
 
     *string = (pm_string_t) {
-        .type = PM_STRING_SHARED,
         .source = start,
         .length = (size_t) (end - start)
     };
 }
 
 /**
- * Initialize an owned string that is responsible for freeing allocated memory.
+ * Initialize a string that views the given bytes.
  */
 void
-pm_string_owned_init(pm_string_t *string, uint8_t *source, size_t length) {
-    *string = (pm_string_t) {
-        .type = PM_STRING_OWNED,
-        .source = source,
-        .length = length
-    };
-}
-
-/**
- * Initialize a constant string that doesn't own its memory source.
- */
-void
-pm_string_constant_init(pm_string_t *string, const char *source, size_t length) {
-    *string = (pm_string_t) {
-        .type = PM_STRING_CONSTANT,
-        .source = (const uint8_t *) source,
-        .length = length
-    };
+pm_string_init(pm_string_t *string, const uint8_t *source, size_t length) {
+    *string = (pm_string_t) { .source = source, .length = length };
 }
 
 /**
@@ -78,14 +58,4 @@ pm_string_length(const pm_string_t *string) {
 const uint8_t *
 pm_string_source(const pm_string_t *string) {
     return string->source;
-}
-
-/**
- * Free the associated memory of the given string.
- */
-void
-pm_string_cleanup(pm_string_t *string) {
-    if (string->type == PM_STRING_OWNED) {
-        xfree_sized((void *) string->source, string->length);
-    }
 }

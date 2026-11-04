@@ -18,6 +18,18 @@ ruby_version_is "4.1" do
       DirSpecs.delete_mock_dirs
     end
 
+    # Dir.scan trusts readdir's d_type, which is DT_REG for a bind-mounted device
+    # (e.g. /dev/null in a container) even though lstat says it's a device.
+    def scan_type_of(path)
+      name = File.basename(path)
+      type = Dir.scan(File.dirname(path)).assoc(name)&.last
+      expected = File.lstat(path).ftype.to_sym
+      if type == :file && expected != :file
+        skip "readdir reports a regular file for #{path} (likely a bind mount), but lstat says #{expected}"
+      end
+      type
+    end
+
     before :each do
       @internal = Encoding.default_internal
     end
@@ -111,7 +123,7 @@ ruby_version_is "4.1" do
 
       it "handles character devices" do
         FileSpecs.character_device do |path|
-          Dir.scan(File.dirname(path)).map(&:last).should.include?(:characterSpecial)
+          scan_type_of(path).should == :characterSpecial
         end
       end
     end
@@ -120,7 +132,7 @@ ruby_version_is "4.1" do
       with_block_device do
         it "handles block devices" do
           FileSpecs.block_device do |path|
-            Dir.scan(File.dirname(path)).map(&:last).should.include?(:blockSpecial)
+            scan_type_of(path).should == :blockSpecial
           end
         end
       end

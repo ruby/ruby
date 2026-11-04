@@ -1,0 +1,3 @@
+if def f = not foo 1; end
+                   ^ expected `then` or `;` or '\n'
+

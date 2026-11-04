@@ -508,6 +508,7 @@ expandarray
 // attr bool handles_sp = true;
 // attr bool leaf = false; /* has rb_check_array_type() */
 // attr rb_snum_t sp_inc = (rb_snum_t)num - 1 + (flag & 1 ? 1 : 0);
+// attr bool zjit_profile = true;
 {
     vm_expandarray(GET_CFP(), ary, num, (int)flag);
 }
@@ -569,7 +570,6 @@ splatkw
 (VALUE hash, VALUE block)
 (VALUE obj, VALUE block)
 // attr bool leaf = false; /* has rb_to_hash_type() */
-// attr bool zjit_profile = true;
 {
     if (NIL_P(hash)) {
         obj = Qnil;
@@ -606,6 +606,7 @@ newrange
 (VALUE val)
 /* rb_range_new() exercises "bad value for range" check. */
 // attr bool leaf = false; /* see also: range.c:range_init() */
+// attr bool zjit_profile = true;
 {
     val = rb_range_new(low, high, (int)flag);
 }
@@ -925,15 +926,30 @@ opt_new
 ()
 // attr bool leaf = false;
 {
-    VALUE argc = vm_ci_argc(cd->ci);
+    int argc = vm_ci_argc(cd->ci);
     VALUE val = TOPN(argc);
 
     // The bookkeeping slot should be empty.
     RUBY_ASSERT(TOPN(argc + 1) == Qnil);
 
-    if (vm_method_cfunc_is(GET_CFP(), cd, val, rb_class_new_instance_pass_kw)) {
+    const struct rb_callable_method_entry_struct *cme = vm_search_method(GET_CFP(), cd, val);
+    bool is_cfunc = cfunc_p(cme);
+    if (is_cfunc && cfunc_equal(cme, rb_class_new_instance_pass_kw)) {
         RB_DEBUG_COUNTER_INC(opt_new_hit);
         val = rb_obj_alloc(val);
+        TOPN(argc) = val;
+        TOPN(argc + 1) = val;
+    }
+    else if (is_cfunc && cfunc_equal(cme, rb_hash_s_new)) {
+        RB_DEBUG_COUNTER_INC(opt_new_hit);
+
+        rb_len_t capa = 0;
+        VALUE capacity = vm_call_get_kwarg(reg_cfp, cd, idCapacity);
+        if (FIXNUM_P(capacity)) {
+            capa = NUM2LEN(capacity);
+        }
+
+        val = rb_hash_alloc_capa(val, capa);
         TOPN(argc) = val;
         TOPN(argc + 1) = val;
     }
@@ -1357,6 +1373,7 @@ opt_case_dispatch
 (..., VALUE key)
 ()
 // attr rb_snum_t sp_inc = -1;
+// attr bool zjit_profile = true;
 {
     OFFSET dst = vm_case_dispatch(hash, else_offset, key);
 

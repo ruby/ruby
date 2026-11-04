@@ -420,7 +420,7 @@ rb_fiber_pool_lock_atfork(void)
  * if MAP_STACK is passed.
  * https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=158755
  */
-#if defined(MAP_STACK) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+#if defined(MAP_STACK) && !defined(__FreeBSD__)
 #define FIBER_STACK_FLAGS (MAP_PRIVATE | MAP_ANON | MAP_STACK)
 #define FIBER_PROT_FLAGS (PROT_READ | PROT_WRITE)
 #else
@@ -1268,42 +1268,48 @@ cont_compact(void *ptr)
 }
 
 static void
-cont_mark(void *ptr)
+cont_mark_ctx(const struct rb_gc_mark_ctx *ctx, rb_context_t *cont)
 {
-    rb_context_t *cont = ptr;
-
     RUBY_MARK_ENTER("cont");
     if (cont->self) {
-        rb_gc_mark_movable(cont->self);
+        rb_gc_mark_movable_ctx(ctx, cont->self);
     }
-    rb_gc_mark_movable(cont->value);
+    rb_gc_mark_movable_ctx(ctx, cont->value);
 
-    rb_execution_context_mark(&cont->saved_ec);
-    rb_gc_mark(cont_thread_value(cont));
+    rb_execution_context_mark_ctx(ctx, &cont->saved_ec);
+    rb_gc_mark_ctx(ctx, cont_thread_value(cont));
 
     if (cont->saved_vm_stack.ptr) {
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-        rb_gc_mark_locations(cont->saved_vm_stack.ptr,
-                             cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen + cont->saved_vm_stack.clen);
+        rb_gc_mark_locations_ctx(ctx, cont->saved_vm_stack.ptr,
+                                 cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen + cont->saved_vm_stack.clen);
 #else
-        rb_gc_mark_locations(cont->saved_vm_stack.ptr,
-                             cont->saved_vm_stack.ptr, cont->saved_ec.stack_size);
+        rb_gc_mark_locations_ctx(ctx, cont->saved_vm_stack.ptr,
+                                 cont->saved_vm_stack.ptr, cont->saved_ec.stack_size);
 #endif
     }
 
     if (cont->machine.stack) {
         if (cont->type == CONTINUATION_CONTEXT) {
             /* cont */
-            rb_gc_mark_locations(cont->machine.stack,
-                                 cont->machine.stack + cont->machine.stack_size);
+            rb_gc_mark_locations_ctx(ctx, cont->machine.stack,
+                                     cont->machine.stack + cont->machine.stack_size);
         }
         else {
-            /* fiber machine context is marked as part of rb_execution_context_mark, no need to
-             * do anything here. */
+            /* fiber machine context is marked as part of rb_execution_context_mark_ctx, no need
+             * to do anything here. */
         }
     }
 
     RUBY_MARK_LEAVE("cont");
+}
+
+static void
+cont_mark(void *ptr)
+{
+    const struct rb_gc_mark_ctx ctx = rb_gc_current_mark_ctx();
+
+    cont_mark_ctx(&ctx, (rb_context_t *)ptr);
 }
 
 #if 0
@@ -1382,9 +1388,9 @@ rb_fiber_update_self(rb_fiber_t *fiber)
 }
 
 void
-rb_fiber_mark_self(const rb_fiber_t *fiber)
+rb_fiber_mark_self(const struct rb_gc_mark_ctx *ctx, const rb_fiber_t *fiber)
 {
-    rb_gc_mark_movable(fiber->cont.self);
+    rb_gc_mark_movable_ctx(ctx, fiber->cont.self);
 }
 
 static void
@@ -1403,11 +1409,13 @@ static void
 fiber_mark(void *ptr)
 {
     rb_fiber_t *fiber = ptr;
+    const struct rb_gc_mark_ctx ctx = rb_gc_current_mark_ctx();
+
     RUBY_MARK_ENTER("cont");
     fiber_verify(fiber);
-    rb_gc_mark_movable(fiber->first_proc);
-    if (fiber->prev) rb_fiber_mark_self(fiber->prev);
-    cont_mark(&fiber->cont);
+    rb_gc_mark_movable_ctx(&ctx, fiber->first_proc);
+    if (fiber->prev) rb_fiber_mark_self(&ctx, fiber->prev);
+    cont_mark_ctx(&ctx, &fiber->cont);
     RUBY_MARK_LEAVE("cont");
 }
 
@@ -1498,14 +1506,14 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 }
 
 static void
-cont_handle_weak_references(void *ptr)
+cont_handle_weak_references(void *ptr, void *objspace)
 {
     rb_context_t *cont = ptr;
 
     if (!cont) return;
 
-    if (!rb_gc_handle_weak_references_alive_p(cont->saved_ec.gen_fields_cache.obj) ||
-            !rb_gc_handle_weak_references_alive_p(cont->saved_ec.gen_fields_cache.fields_obj)) {
+    if (!rb_gc_handle_weak_references_alive_p(objspace, cont->saved_ec.gen_fields_cache.obj) ||
+            !rb_gc_handle_weak_references_alive_p(objspace, cont->saved_ec.gen_fields_cache.fields_obj)) {
         cont->saved_ec.gen_fields_cache.obj = Qundef;
         cont->saved_ec.gen_fields_cache.fields_obj = Qundef;
     }
@@ -1901,7 +1909,7 @@ fiber_setcontext(rb_fiber_t *new_fiber, rb_fiber_t *old_fiber)
         }
     }
 
-    /* these values are used in rb_gc_mark_machine_context to mark the fiber's stack. */
+    /* these values are used in rb_gc_mark_machine_context_ctx to mark the fiber's stack. */
     old_fiber->cont.saved_ec.machine.stack_start = th->ec->machine.stack_start;
     old_fiber->cont.saved_ec.machine.stack_end = FIBER_TERMINATED_P(old_fiber) ? NULL : th->ec->machine.stack_end;
 
@@ -2259,14 +2267,14 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  */
 
 static void
-fiber_handle_weak_references(void *ptr)
+fiber_handle_weak_references(void *ptr, void *objspace)
 {
     rb_fiber_t *fiber = ptr;
 
     if (!fiber) return;
 
-    if (!rb_gc_handle_weak_references_alive_p(fiber->cont.saved_ec.gen_fields_cache.obj) ||
-            !rb_gc_handle_weak_references_alive_p(fiber->cont.saved_ec.gen_fields_cache.fields_obj)) {
+    if (!rb_gc_handle_weak_references_alive_p(objspace, fiber->cont.saved_ec.gen_fields_cache.obj) ||
+            !rb_gc_handle_weak_references_alive_p(objspace, fiber->cont.saved_ec.gen_fields_cache.fields_obj)) {
         fiber->cont.saved_ec.gen_fields_cache.obj = Qundef;
         fiber->cont.saved_ec.gen_fields_cache.fields_obj = Qundef;
     }

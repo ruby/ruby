@@ -199,10 +199,59 @@ io_buffer_new_locked(VALUE self, VALUE size)
     return rb_io_buffer_new_locked(NULL, NUM2SIZET(size), RB_IO_BUFFER_INTERNAL);
 }
 
+static char io_buffer_borrowed_bytes[] = "test";
+
+static VALUE
+io_buffer_new_borrowed(VALUE self)
+{
+    return rb_io_buffer_new(io_buffer_borrowed_bytes, sizeof(io_buffer_borrowed_bytes) - 1, RB_IO_BUFFER_EXTERNAL);
+}
+
 static VALUE
 io_buffer_free_locked(VALUE self, VALUE buffer)
 {
     return rb_io_buffer_free_locked(buffer);
+}
+
+static VALUE
+io_buffer_readonly(VALUE self, VALUE buffer)
+{
+    return rb_io_buffer_readonly_p(buffer) ? Qtrue : Qfalse;
+}
+
+static VALUE
+io_buffer_native_p(VALUE self, VALUE buffer)
+{
+    return rb_io_buffer_p(buffer) ? Qtrue : Qfalse;
+}
+
+static VALUE
+io_buffer_free(VALUE self, VALUE buffer)
+{
+    return rb_io_buffer_free(buffer);
+}
+
+static VALUE
+io_buffer_transfer(VALUE self, VALUE buffer)
+{
+    return rb_io_buffer_transfer(buffer);
+}
+
+static VALUE
+io_buffer_get_bytes_flags(VALUE self, VALUE buffer)
+{
+    void *base;
+    size_t size;
+    return UINT2NUM(rb_io_buffer_get_bytes(buffer, &base, &size));
+}
+
+static VALUE
+io_buffer_get_bytes_address(VALUE self, VALUE buffer)
+{
+    void *base;
+    size_t size;
+    rb_io_buffer_get_bytes(buffer, &base, &size);
+    return PTR2NUM(base);
 }
 
 void
@@ -228,5 +277,12 @@ Init_io_buffer(void)
     rb_define_singleton_method(mIOBuffer, "lock", io_buffer_lock, 1);
     rb_define_singleton_method(mIOBuffer, "unlock", io_buffer_unlock, 1);
     rb_define_singleton_method(mIOBuffer, "new_locked", io_buffer_new_locked, 1);
+    rb_define_singleton_method(mIOBuffer, "new_borrowed", io_buffer_new_borrowed, 0);
     rb_define_singleton_method(mIOBuffer, "free_locked", io_buffer_free_locked, 1);
+    rb_define_singleton_method(mIOBuffer, "readonly?", io_buffer_readonly, 1);
+    rb_define_singleton_method(mIOBuffer, "buffer?", io_buffer_native_p, 1);
+    rb_define_singleton_method(mIOBuffer, "free", io_buffer_free, 1);
+    rb_define_singleton_method(mIOBuffer, "transfer", io_buffer_transfer, 1);
+    rb_define_singleton_method(mIOBuffer, "get_bytes_flags", io_buffer_get_bytes_flags, 1);
+    rb_define_singleton_method(mIOBuffer, "get_bytes_address", io_buffer_get_bytes_address, 1);
 }

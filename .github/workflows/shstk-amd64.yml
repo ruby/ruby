@@ -41,7 +41,7 @@ jobs:
       )}}
 
     container:
-      image: fedora:44
+      image: ghcr.io/ruby/fedora:44
 
     env:
       CONFIGURE_TTY: never

@@ -66,6 +66,10 @@ class Gem::PackageTask < Rake::PackageTask
   attr_accessor :gem_spec
 
   ##
+  # Indicates whether this package should be built as a content-addressable gem.
+  attr_accessor :content_addressable
+
+  ##
   # Create a Gem Package task library.  Automatically define the gem if a
   # block is given.  If no block is supplied, then #define needs to be called
   # to define the task.
@@ -82,6 +86,7 @@ class Gem::PackageTask < Rake::PackageTask
   def init(gem)
     super gem.full_name, :noversion
     @gem_spec = gem
+    @content_addressable = false
     @package_files += gem_spec.files if gem_spec.files
     @fileutils_output = $stdout
   end
@@ -91,33 +96,97 @@ class Gem::PackageTask < Rake::PackageTask
   # (+define+ is automatically called if a block is given to +new+).
 
   def define
+    Gem::ContentAddress.eligible!(gem_spec) if content_addressable
+
     super
 
     gem_file = File.basename gem_spec.cache_file
     gem_path = File.join package_dir, gem_file
-    gem_dir  = File.join package_dir, gem_spec.full_name
+    gem_dir = package_dir_path
+
+    if content_addressable
+      build_target = stamp_file
+      gem_description = "content-addressable gem #{gem_spec.name}-#{gem_spec.version} " \
+        "(Platform: #{gem_spec.platform}, Ruby ABI: #{content_addressable_ruby_abi})"
+
+      discard_stale_stamp_file
+    else
+      build_target = gem_path
+      gem_description = "gem file #{gem_file}"
+    end
 
     task package: [:gem]
 
     directory package_dir
     directory gem_dir
 
-    desc "Build the gem file #{gem_file}"
-    task gem: [gem_path]
+    desc "Build the #{gem_description}"
+    task gem: [build_target]
 
     trace = Rake.application.options.trace
     Gem.configuration.verbose = trace
 
-    file gem_path => [package_dir, gem_dir] + @gem_spec.files do
+    file build_target => [package_dir, gem_dir] + @gem_spec.files do
+      previous_gem = recorded_gem_path if content_addressable
+      built_gem_path = nil
+
       chdir(gem_dir) do
-        when_writing "Creating #{gem_spec.file_name}" do
-          built_gem_file = Gem::Package.build gem_spec
+        when_writing "Creating #{gem_description}" do
+          built_gem_file = Gem::Package.build gem_spec, content_addressable: content_addressable
 
           verbose trace do
             mv built_gem_file, ".."
           end
+
+          if content_addressable
+            built_gem_path = File.join(package_dir, built_gem_file)
+            File.write File.join("..", File.basename(stamp_file)), built_gem_path
+          end
+        end
+      end
+
+      if previous_gem && built_gem_path && previous_gem != built_gem_path
+        verbose trace do
+          rm_f previous_gem
         end
       end
     end
+  end
+
+  ##
+  # The name of this package. Content-addressable builds append the Ruby ABI
+  # so per-ABI builds of the same +full_name+ do not share a staging
+  # directory.
+
+  def package_name
+    name = super
+    ruby_abi = content_addressable_ruby_abi
+    ruby_abi ? "#{name}-#{ruby_abi}" : name
+  end
+
+  private
+
+  def content_addressable_ruby_abi
+    return unless content_addressable
+
+    Gem::ContentAddress.ruby_abi_for(gem_spec.required_ruby_version)
+  end
+
+  def stamp_file
+    File.join package_dir, "#{package_name}.gem-built"
+  end
+
+  def recorded_gem_path
+    return unless File.file?(stamp_file)
+
+    path = File.read(stamp_file).strip
+    path unless path.empty?
+  end
+
+  def discard_stale_stamp_file
+    return unless File.file?(stamp_file)
+
+    path = recorded_gem_path
+    File.delete(stamp_file) unless path && File.file?(path)
   end
 end

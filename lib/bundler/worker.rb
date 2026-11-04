@@ -93,6 +93,10 @@ module Bundler
     end
 
     def create_threads
+      # Jobs use FileUtils, and TruffleRuby shows other threads an autoloaded
+      # constant while its file is still loading.
+      require_relative "vendored_fileutils"
+
       creation_errors = []
 
       @threads = Array.new(@size) do |i|

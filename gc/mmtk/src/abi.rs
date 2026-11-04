@@ -1,11 +1,8 @@
-use crate::api::RubyMutator;
-use crate::extra_assert;
 use crate::Ruby;
-use libc::c_int;
+use crate::extra_assert;
 use mmtk::scheduler::GCWorker;
 use mmtk::util::Address;
 use mmtk::util::ObjectReference;
-use mmtk::util::VMMutatorThread;
 use mmtk::util::VMWorkerThread;
 
 // For the C binding
@@ -47,7 +44,6 @@ impl HiddenHeader {
 }
 
 /// Provide convenient methods for accessing Ruby objects.
-/// TODO: Wrap C functions in `RubyUpcalls` as Rust-friendly methods.
 pub struct RubyObjectAccess {
     objref: ObjectReference,
 }
@@ -161,10 +157,23 @@ impl ObjectClosure {
             std::ptr::fn_addr_eq(self.c_function, THE_UNREGISTERED_CLOSURE_FUNC),
             "set_temporarily_and_run_code is recursively called."
         );
-        self.c_function = Self::c_function_registered::<F1>;
-        self.rust_closure = &mut visit_object as *mut F1 as *mut libc::c_void;
+        // The C code reads these fields through a thread-local pointer that is
+        // invisible to the Rust compiler, and this function's callers are C
+        // functions whose bodies the optimizer cannot see either.  Plain
+        // stores could therefore be eliminated as dead (the reset store below
+        // overwrites them without any Rust-visible read in between).  Use
+        // volatile writes, which the optimizer must not eliminate or reorder.
+        unsafe {
+            std::ptr::write_volatile(&mut self.c_function, Self::c_function_registered::<F1>);
+            std::ptr::write_volatile(
+                &mut self.rust_closure,
+                &mut visit_object as *mut F1 as *mut libc::c_void,
+            );
+        }
         let result = f();
-        *self = Default::default();
+        unsafe {
+            std::ptr::write_volatile(&mut *self, ObjectClosure::default());
+        }
         result
     }
 
@@ -293,39 +302,6 @@ impl From<Vec<ObjectReference>> for RawVecOfObjRef {
 pub struct RubyBindingOptions {
     pub suffix_size: usize,
 }
-
-#[repr(C)]
-#[derive(Clone)]
-pub struct RubyUpcalls {
-    pub init_gc_worker_thread: extern "C" fn(gc_worker_tls: *mut GCThreadTLS),
-    pub is_mutator: extern "C" fn() -> bool,
-    pub stop_the_world: extern "C" fn(),
-    pub resume_mutators: extern "C" fn(gc_may_move: bool),
-    pub block_for_gc: extern "C" fn(tls: VMMutatorThread),
-    pub before_updating_jit_code: extern "C" fn(),
-    pub after_updating_jit_code: extern "C" fn(),
-    pub number_of_mutators: extern "C" fn() -> usize,
-    pub get_mutators: extern "C" fn(
-        visit_mutator: extern "C" fn(*mut RubyMutator, *mut libc::c_void),
-        data: *mut libc::c_void,
-    ),
-    pub scan_gc_roots: extern "C" fn(),
-    pub scan_objspace: extern "C" fn(),
-    pub move_obj_during_marking: extern "C" fn(from: ObjectReference, to: ObjectReference),
-    pub update_object_references: extern "C" fn(object: ObjectReference),
-    pub call_gc_mark_children: extern "C" fn(object: ObjectReference),
-    pub handle_weak_references: extern "C" fn(object: ObjectReference, moving: bool),
-    pub call_obj_free: extern "C" fn(object: ObjectReference),
-    pub vm_live_bytes: extern "C" fn() -> usize,
-    pub update_global_tables: extern "C" fn(tbl_idx: c_int, moving: bool),
-    pub global_tables_count: extern "C" fn() -> c_int,
-    pub update_finalizer_table: extern "C" fn(),
-    pub special_const_p: extern "C" fn(object: ObjectReference) -> bool,
-    pub mutator_thread_panic_handler: extern "C" fn(),
-    pub gc_thread_panic_handler: extern "C" fn(),
-}
-
-unsafe impl Sync for RubyUpcalls {}
 
 #[repr(C)]
 #[derive(Clone)]

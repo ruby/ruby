@@ -302,6 +302,24 @@ module StringScannerTests
     assert_equal("", s.scan(//))
   end
 
+  def test_scan_at_non_character_boundary
+    omit("not supported on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+
+    dot = Regexp.new(".".encode(Encoding::UTF_16BE))
+    empty = Regexp.new("".encode(Encoding::UTF_16BE))
+    b = "b".encode(Encoding::UTF_16BE)
+    scanner = create_string_scanner("ab".encode(Encoding::UTF_16BE))
+
+    scanner.pos = 1 # in the middle of "a"
+    assert_nil(scanner.scan(dot))
+    assert_nil(scanner.scan(empty))
+    assert_nil(scanner.scan(b))
+
+    scanner.pos = 2 # on a character boundary
+    assert_equal("", scanner.scan(empty).encode(Encoding::UTF_8))
+    assert_equal("b", scanner.scan(b).encode(Encoding::UTF_8))
+  end
+
   def test_scan_string
     s = create_string_scanner("stra strb\0strc")
     assert_equal('str', s.scan('str'))
@@ -1005,6 +1023,27 @@ module StringScannerTests
     s = create_string_scanner("Fri Dec 12 1975 14:39")
     s.scan(/(\w+) (\w+) (\d+) /)
     assert_equal(4, s.size)
+  end
+
+  def test_size_after_string_match
+    s = create_string_scanner("abc")
+    s.scan(/(a)(b)/)
+    s.scan("c")
+    assert_equal([1, []], [s.size, s.captures])
+  end
+
+  def test_size_after_getch
+    s = create_string_scanner("abc")
+    s.scan(/(a)(b)/)
+    s.getch
+    assert_equal([1, []], [s.size, s.captures])
+  end
+
+  def test_size_after_get_byte
+    s = create_string_scanner("abc")
+    s.scan(/(a)(b)/)
+    s.get_byte
+    assert_equal([1, []], [s.size, s.captures])
   end
 
   def test_captures

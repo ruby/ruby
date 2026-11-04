@@ -11,11 +11,12 @@ Lint/DuplicateCaseCondition:
   Exclude:
     - 'language/case_spec.rb'
 
-# Offense count: 20
+# Offense count: 24
 Lint/DuplicateMethods:
   Exclude:
     - 'core/array/fixtures/encoded_strings.rb'
     - 'core/method/fixtures/classes.rb'
+    - 'core/module/alias_method_spec.rb'
     - 'core/module/const_added_spec.rb'
     - 'core/module/define_method_spec.rb'
     - 'core/module/fixtures/classes.rb'

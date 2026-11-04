@@ -187,8 +187,6 @@
 
 #define rb_make_backtrace p->config->make_backtrace
 
-#define ruby_scan_hex    p->config->scan_hex
-#define ruby_scan_oct    p->config->scan_oct
 #define ruby_scan_digits p->config->scan_digits
 #define strtod           p->config->strtod
 
@@ -201,8 +199,8 @@
 #undef Qfalse
 #define Qfalse p->config->qfalse
 #define rb_eArgError p->config->eArgError()
-#undef rb_long2int
-#define rb_long2int p->config->long2int
+#undef rb_len2int
+#define rb_len2int p->config->long2int
 #define rb_enc_mbminlen p->config->enc_mbminlen
 #define rb_enc_isascii p->config->enc_isascii
 #define rb_enc_mbc_to_codepoint p->config->enc_mbc_to_codepoint

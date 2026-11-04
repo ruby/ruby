@@ -169,6 +169,7 @@ ruby_debug_breakpoint(void)
 
 #if defined _WIN32
 extern int ruby_w32_rtc_error;
+extern int ruby_w32_wer;
 #endif
 #if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
@@ -232,6 +233,7 @@ ruby_env_debug_option(const char *str, int len, void *arg)
     SET_WHEN_UINT("rgengc", &ruby_rgengc_debug, 1, ruby_rgengc_debug = 1);
 #if defined _WIN32
     SET_WHEN("rtc_error", ruby_w32_rtc_error, 1);
+    SET_WHEN("wer", ruby_w32_wer, 1);
 #endif
 #if defined _WIN32 || defined __CYGWIN__
     SET_WHEN_UINT("codepage", ruby_w32_codepage, numberof(ruby_w32_codepage),

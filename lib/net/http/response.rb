@@ -188,11 +188,14 @@ class Net::HTTPResponse
         line = read_line(sock, MAX_RESPONSE_HEADER_LENGTH, true)
         remaining -= line.bytesize
         raise Net::HTTPBadResponse, 'response header too large' if remaining < 0
-        line = line.sub(/\s+\z/, '')
+        line = line.chomp
         break if line.empty?
         if line[0] == ?\s or line[0] == ?\t and value
-          value << ' ' unless value.empty?
-          value << line.strip
+          folded = line.strip
+          unless folded.empty?
+            value << ' ' unless value.empty?
+            value << folded
+          end
         else
           yield key, value if key
           key, value = line.strip.split(/\s*:\s*/, 2)

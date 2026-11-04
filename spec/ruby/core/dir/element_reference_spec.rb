@@ -10,6 +10,12 @@ describe "Dir.[]" do
   it_behaves_like :dir_glob_recursive, :[]
 end
 
+ruby_version_is "4.1" do
+  describe "Dir.[]" do
+    it_behaves_like :dir_glob_recursive_symlinks, :[]
+  end
+end
+
 describe "Dir.[]" do
   before :all do
     DirSpecs.create_mock_dirs

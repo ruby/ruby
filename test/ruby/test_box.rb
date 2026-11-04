@@ -255,6 +255,45 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_autoload_of_the_same_name_registered_in_two_boxes
+    # Each box has its own autoload table, as it has its own constant table.
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      require "tmpdir"
+      Dir.mktmpdir do |dir|
+        %w[1 2].each do |n|
+          File.write("#{dir}/foo#{n}.rb", "module Ruby; BoxAutoloadTest = [#{n}, Ruby::Box.current]; end")
+        end
+        b1 = Ruby::Box.new
+        b2 = Ruby::Box.new
+        b1.eval("Ruby.autoload(:BoxAutoloadTest, #{"#{dir}/foo1.rb".dump})")
+        b2.eval("Ruby.autoload(:BoxAutoloadTest, #{"#{dir}/foo2.rb".dump})")
+        assert_equal("#{dir}/foo1.rb", b1.eval("Ruby.autoload?(:BoxAutoloadTest)"))
+        assert_equal([1, b1], b1.eval("Ruby::BoxAutoloadTest"))
+        assert_equal([2, b2], b2.eval("Ruby::BoxAutoloadTest"))
+      end
+    end;
+  end
+
+  def test_autoload_registered_in_master_box
+    # Ruby::Prism is autoloaded in the master box, and shared by all boxes like
+    # builtin classes, regardless of which box triggers it.
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      omit "Ruby::Prism is not autoloaded" unless Ruby.autoload?(:Prism)
+      module Ruby; BOX_TEST = 1; end # the main box has its own copy of Ruby
+      b1 = Ruby::Box.new
+      b2 = Ruby::Box.new
+      node = b1.eval("Ruby::Prism::Node")
+      assert_equal("constant", defined?(Ruby::Prism))
+      assert_same(node, b2.eval("Ruby::Prism::Node"))
+      assert_same(node, Ruby::Prism::Node)
+      assert_same(node, Ruby::Box.root.eval("Ruby::Prism::Node"))
+      assert_same(node, Ruby::Box.new.eval("Ruby::Prism::Node"))
+      assert_nil(Ruby.autoload?(:Prism))
+    end;
+  end
+
   def test_continuous_top_level_method_in_a_box
     setup_box
 
@@ -476,6 +515,15 @@ class TestBox < Test::Unit::TestCase
       # the proc runs in the root box, where BoxMarshalBaz is invisible
       loader = Ruby::Box.root.eval("->(dump) { Marshal.load(dump) }")
       assert_instance_of BoxMarshalBaz, loader.call(Marshal.dump(BoxMarshalBaz.new))
+    end;
+  end
+
+  def test_ractor_argument_copy_in_main_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      require "date"
+      d = Date.parse("Aug 23:55")
+      assert_equal d, Ractor.new(d) {|x| x }.value
     end;
   end
 end
@@ -717,6 +765,44 @@ class TestBox < Test::Unit::TestCase
       CODE
       assert_equal ["global-variable", nil, nil, "global-variable"], in_box
       assert_nil defined?($assigned_in_inner_box)
+    end;
+  end
+
+  def test_global_variable_alias_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      $aliased_original = 1
+      alias $aliased_alias $aliased_original
+      assert_equal [1, 1], [$aliased_original, $aliased_alias]
+      $aliased_alias = 2
+      assert_equal [2, 2], [$aliased_original, $aliased_alias]
+      assert_equal "global-variable", defined?($aliased_alias)
+
+      in_box = Ruby::Box.new.eval(<<~'CODE')
+        $aliased_original = 3
+        seen_through_alias = $aliased_alias
+        $aliased_alias = 4
+        alias $aliased_in_box $aliased_original
+        $aliased_in_box = 5
+        [seen_through_alias, $aliased_original, $aliased_in_box]
+      CODE
+      assert_equal [3, 5, 5], in_box
+      assert_equal [2, 2], [$aliased_original, $aliased_alias]
+    end;
+  end
+
+  def test_trace_var_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      traced = []
+      trace_var(:$traced_in_box) {|v| traced << v}
+      $traced_in_box = 1
+      assert_equal [1], traced
+      Ruby::Box.new.eval("$traced_in_box = 2")
+      assert_equal [1, 2], traced
+
+      trace_var(:$raise_in_trace) { raise "traced" }
+      assert_raise_with_message(RuntimeError, "traced") { $raise_in_trace = 1 }
     end;
   end
 
@@ -1129,7 +1215,7 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_calling_root_box_methods_does_not_change_user_boxes_newly_created
-    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;
       assert_not_include Object.constants.sort, :Find # required by Pathname#find
       assert_not_include Ruby::Box.root.eval("Object.constants.sort"), :Find
@@ -1137,13 +1223,13 @@ class TestBox < Test::Unit::TestCase
       assert_not_include b1.eval("Object.constants.sort"), :Find
 
       require 'pathname'
-      Pathname.new('.').find{|path| path.directory?}
+      Pathname.new(here).find{|path| path.directory?}
       assert_include Object.constants.sort, :Find # required by Pathname#find
 
       assert_not_include Ruby::Box.root.eval("Object.constants.sort"), :Find
       assert_not_include b1.eval("Object.constants.sort"), :Find
 
-      Ruby::Box.root.eval("require 'pathname'; Pathname.new('.').find{|path| path.directory? }")
+      Ruby::Box.root.eval("require 'pathname'; Pathname.new('#{here}').find{|path| path.directory? }")
       assert_include Ruby::Box.root.eval("Object.constants.sort"), :Find
 
       assert_not_include b1.eval("Object.constants.sort"), :Find
@@ -1166,6 +1252,10 @@ class TestBox < Test::Unit::TestCase
       assert_not_equal result[:box], result[:root]
       assert_not_equal result[:main], result[:box]
     end
+  end
+
+  def test_free_at_exit_in_a_box
+    assert_ruby_status([ENV_ENABLE_BOX.merge("RUBY_FREE_AT_EXIT" => "1"), "-e;"], timeout: 30)
   end
 
   def test_bundler_setup_not_loaded_while_decorator_gems_are_autoloaded
@@ -1423,7 +1513,7 @@ class TestBox < Test::Unit::TestCase
   def test_loading_extension_libs_in_main_box_1
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;
-      require "prism"
+      require "ruby/prism"
       require "optparse"
       require "date"
       require "time"
@@ -1606,5 +1696,21 @@ class TestBox < Test::Unit::TestCase
       end
       assert_equal "42", BoxIsolatedProcTest::PROC.call(42)
     end;
+  end
+
+  def test_builtin_module_copied_into_box_survives_gc_stress
+    # Not assert_separately, since loading test/unit copies Kernel into the main box first.
+    assert_in_out_err([ENV_ENABLE_BOX, "--disable-gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        GC.stress = true
+        module Kernel
+          def _test_defined_in_main_box; end
+        end
+        GC.start
+        GC.stress = false
+        p Kernel.instance_methods(false).include?(:_test_defined_in_main_box)
+      end;
+      assert_equal ["true"], output
+    end
   end
 end

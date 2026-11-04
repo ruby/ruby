@@ -98,6 +98,24 @@ class TestData < Test::Unit::TestCase
     end
   end
 
+  def test_initialize_missing_keywords_with_many_members
+    # Past 10 members, member names are looked up by hash
+    names = (1..12).map { :"m#{_1}" }
+    klass = Data.define(*names)
+    given = names.each_slice(2).map(&:first).to_h { [_1, 1] }
+    assert_raise_with_message(ArgumentError, "missing keywords: #{names.each_slice(2).map { _1[1].inspect }.join(", ")}") do
+      klass.new(**given)
+    end
+
+    # Enough members to track them in a heap buffer instead of on the stack
+    names = (1..1100).map { :"m#{_1}" }
+    klass = Data.define(*names)
+    assert_equal(names.size, klass.new(**names.to_h { [_1, 1] }).to_h.size)
+    assert_raise_with_message(ArgumentError, "missing keywords: :m1, :m1100") do
+      klass.new(**names[1..-2].to_h { [_1, 1] })
+    end
+  end
+
   def test_initialize_redefine
     klass = Data.define(:foo, :bar) do
       attr_reader :passed
@@ -119,6 +137,28 @@ class TestData < Test::Unit::TestCase
 
     # Extra keyword arguments can be dropped in initialize
     assert_equal([[], {foo: 1, bar: 2, baz: 3}], klass.new(foo: 1, bar: 2, baz: 3).passed)
+  end
+
+  def test_new_with_all_positional_arguments_calls_initialize
+    klass = Data.define(:foo, :bar)
+    assert_equal([1, 2], klass.new(1, 2).to_h.values)
+
+    # initialize redefined after instances were already created
+    klass.class_eval { def initialize(foo:, bar:) = super(foo: bar, bar: foo) }
+    assert_equal([2, 1], klass.new(1, 2).to_h.values)
+
+    prepended = Data.define(:foo, :bar)
+    prepended.prepend(Module.new { def initialize(foo:, bar:) = super(foo: foo * 10, bar:) })
+    assert_equal([10, 2], prepended.new(1, 2).to_h.values)
+  end
+
+  def test_new_with_all_positional_arguments_without_data_initialize
+    assert_separately([], <<~'RUBY')
+      klass = Data.define(:foo, :bar)
+      $VERBOSE = nil # removing 'initialize' warns
+      Data.send(:remove_method, :initialize)
+      assert_raise(ArgumentError) { klass.new(1, 2) }
+    RUBY
   end
 
   def test_instance_behavior

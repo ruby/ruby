@@ -20,7 +20,7 @@ ossl_##name##_ary2sk0(VALUE ary)                                \
     STACK_OF(type) *sk;                                         \
     VALUE val;                                                  \
     type *x;                                                    \
-    int i;                                                      \
+    rb_len_t i;                                                 \
                                                                 \
     Check_Type(ary, T_ARRAY);                                   \
     sk = sk_##type##_new_null();                                \
@@ -90,11 +90,11 @@ OSSL_IMPL_SK2ARY(x509name, X509_NAME)
 static VALUE
 ossl_str_new_i(VALUE size)
 {
-    return rb_str_new(NULL, (long)size);
+    return rb_str_new(NULL, (rb_len_t)size);
 }
 
 VALUE
-ossl_str_new(const char *ptr, long len, int *pstate)
+ossl_str_new(const char *ptr, rb_len_t len, int *pstate)
 {
     VALUE str;
     int state;
@@ -113,12 +113,17 @@ ossl_str_new(const char *ptr, long len, int *pstate)
 }
 
 VALUE
-ossl_buf2str(char *buf, int len)
+ossl_buf2str(char *buf)
 {
+    size_t len = strlen(buf);
     VALUE str;
     int state;
 
-    str = ossl_str_new(buf, len, &state);
+    if (len > RB_LEN_MAX) {
+        OPENSSL_free(buf);
+        rb_raise(rb_eRangeError, "string too large: %zu bytes", len);
+    }
+    str = ossl_str_new(buf, (rb_len_t)len, &state);
     OPENSSL_free(buf);
     if (state)
         rb_jump_tag(state);
@@ -131,7 +136,7 @@ ossl_bin2hex(const unsigned char *in, char *out, size_t inlen)
     const char *hex = "0123456789abcdef";
     size_t i;
 
-    assert(inlen <= LONG_MAX / 2);
+    RUBY_ASSERT(inlen <= RB_LEN_MAX / 2);
     for (i = 0; i < inlen; i++) {
         unsigned char p = in[i];
 
@@ -172,7 +177,7 @@ ossl_pem_passwd_cb0(VALUE flag)
 int
 ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
 {
-    long len;
+    rb_len_t len;
     int status;
     VALUE rflag, pass = (VALUE)pwd_;
 
@@ -389,9 +394,9 @@ osslerror_detailed_message(int argc, VALUE *argv, VALUE self)
         return str;
 
     str = rb_str_resurrect(str);
-    rb_str_catf(str, "\nOpenSSL error queue reported %ld errors:",
+    rb_str_catf(str, "\nOpenSSL error queue reported %"PRIdLEN" errors:",
                 RARRAY_LEN(errors));
-    for (long i = 0; i < RARRAY_LEN(errors); i++) {
+    for (rb_len_t i = 0; i < RARRAY_LEN(errors); i++) {
         VALUE err = RARRAY_AREF(errors, i);
         rb_str_catf(str, "\n%"PRIsVALUE, err);
     }
@@ -539,8 +544,8 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
 {
     const unsigned char *p1;
     const unsigned char *p2;
-    long len1;
-    long len2;
+    rb_len_t len1;
+    rb_len_t len2;
 
     StringValue(str1);
     StringValue(str2);
@@ -941,8 +946,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * An \SSL server requires the certificate and private key to communicate
  * securely with its clients:
  *
- *   context.cert = cert
- *   context.key = key
+ *   context.add_certificate(cert, key)
  *
  * After establishing a TCP connection, the socket is wrapped in an
  * OpenSSL::SSL::SSLSocket with the context. OpenSSL::SSL::SSLSocket#accept

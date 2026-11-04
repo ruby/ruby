@@ -223,6 +223,10 @@ unset_addr_list_add(UnsetAddrList* uslist, int offset, struct _Node* node)
 static int
 add_opcode(regex_t* reg, int opcode)
 {
+  /* Every instruction passes here, so this is where a program that would
+     outgrow its offset type is stopped, while it is still being emitted. */
+  if (reg->used > MAX_COMPILED_PROGRAM_SIZE)
+    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
   BBUF_ADD1(reg, opcode);
   return 0;
 }
@@ -741,6 +745,10 @@ is_anychar_star_quantifier(QtfrNode* qn)
 }
 
 #define QUANTIFIER_EXPAND_LIMIT_SIZE   50
+/* (tlen * n <= QUANTIFIER_EXPAND_LIMIT_SIZE) without overflowing int: tlen
+   and n are each bounded by ONIG_MAX_REPEAT_NUM, but their product is not. */
+#define IS_EXPAND_LIMIT_OK(tlen, n) \
+  ((n) <= 0 || (tlen) <= QUANTIFIER_EXPAND_LIMIT_SIZE / (n))
 #define CKN_ON   (ckn > 0)
 
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
@@ -1005,7 +1013,7 @@ compile_length_quantifier_node(QtfrNode* qn, regex_t* reg)
     mod_tlen = tlen;
 
   if (infinite &&
-      (qn->lower <= 1 || tlen * qn->lower <= QUANTIFIER_EXPAND_LIMIT_SIZE)) {
+      (qn->lower <= 1 || IS_EXPAND_LIMIT_OK(tlen, qn->lower))) {
     if (qn->lower == 1 && tlen > QUANTIFIER_EXPAND_LIMIT_SIZE) {
       len = SIZE_OP_JUMP;
     }
@@ -1031,8 +1039,8 @@ compile_length_quantifier_node(QtfrNode* qn, regex_t* reg)
     len = SIZE_OP_JUMP + tlen;
   }
   else if (!infinite && qn->greedy &&
-           (qn->upper == 1 || (tlen + SIZE_OP_PUSH) * qn->upper
-                                      <= QUANTIFIER_EXPAND_LIMIT_SIZE)) {
+           (qn->upper == 1 ||
+            IS_EXPAND_LIMIT_OK(tlen + SIZE_OP_PUSH, qn->upper))) {
     len = tlen * qn->lower;
     len += (SIZE_OP_PUSH + tlen) * (qn->upper - qn->lower);
   }
@@ -1082,7 +1090,7 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
     mod_tlen = tlen;
 
   if (infinite &&
-      (qn->lower <= 1 || tlen * qn->lower <= QUANTIFIER_EXPAND_LIMIT_SIZE)) {
+      (qn->lower <= 1 || IS_EXPAND_LIMIT_OK(tlen, qn->lower))) {
     if (qn->lower == 1 && tlen > QUANTIFIER_EXPAND_LIMIT_SIZE) {
       if (qn->greedy) {
 #ifdef USE_OP_PUSH_OR_JUMP_EXACT
@@ -1152,8 +1160,8 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
     r = compile_tree(qn->target, reg);
   }
   else if (!infinite && qn->greedy &&
-           (qn->upper == 1 || (tlen + SIZE_OP_PUSH) * qn->upper
-                                  <= QUANTIFIER_EXPAND_LIMIT_SIZE)) {
+           (qn->upper == 1 ||
+            IS_EXPAND_LIMIT_OK(tlen + SIZE_OP_PUSH, qn->upper))) {
     int n = qn->upper - qn->lower;
 
     r = compile_tree_n_times(qn->target, qn->lower, reg);
@@ -1348,6 +1356,7 @@ compile_enclose_node(EncloseNode* node, regex_t* reg)
       r = add_abs_addr(reg, (int )node->call_addr);
       if (r) return r;
       len = compile_length_tree(node->target, reg);
+      if (len < 0) return len;
       len += (SIZE_OP_MEMORY_START_PUSH + SIZE_OP_RETURN);
       if (BIT_STATUS_AT(reg->bt_mem_end, node->regnum))
         len += (IS_ENCLOSE_RECURSION(node)
@@ -1596,6 +1605,7 @@ compile_anchor_node(AnchorNode* node, regex_t* reg)
     {
       int n;
       len = compile_length_tree(node->target, reg);
+      if (len < 0) return ONIGERR_PARSER_BUG;
       r = add_opcode_rel_addr(reg, OP_PUSH_LOOK_BEHIND_NOT,
                            len + SIZE_OP_FAIL_LOOK_BEHIND_NOT);
       if (r) return r;
@@ -1734,7 +1744,9 @@ compile_tree(Node* node, regex_t* reg)
       Node* x = node;
       len = 0;
       do {
-        len += compile_length_tree(NCAR(x), reg);
+        r = compile_length_tree(NCAR(x), reg);
+        if (r < 0) return r;
+        len += r;
         if (NCDR(x) != NULL) {
           len += SIZE_OP_PUSH + SIZE_OP_JUMP;
         }
@@ -1743,6 +1755,7 @@ compile_tree(Node* node, regex_t* reg)
 
       do {
         len = compile_length_tree(NCAR(node), reg);
+        if (len < 0) return ONIGERR_PARSER_BUG;
         if (IS_NOT_NULL(NCDR(node))) {
           r = add_opcode_rel_addr(reg, OP_PUSH, len + SIZE_OP_JUMP);
           if (r) break;
@@ -5867,6 +5880,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   r = compile_tree(root, reg);
   if (r == 0) {
     r = add_opcode(reg, OP_END);
+    if (r != 0) goto err_unset;
 #ifdef USE_SUBEXP_CALL
     if (scan_env.num_call > 0) {
       r = unset_addr_list_fix(&uslist, reg);

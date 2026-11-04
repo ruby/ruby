@@ -4,6 +4,26 @@ module ProcessSpecs
     ENV["CODEX_CI"] == "1"
   end
 
+  # busybox is a multi-call binary which dispatches on argv[0],
+  # so it cannot run as /bin/sh with an arbitrary argv[0].
+  def self.busybox_sh?
+    File.basename(File.realpath("/bin/sh")) == "busybox"
+  rescue SystemCallError
+    false
+  end
+
+  # Whether the command line of the process as seen from outside of Ruby
+  # includes str. Reads /proc directly if available since ps(1) may not
+  # support -o/-p, e.g. busybox.
+  def self.command_line_include?(str, pid = Process.pid)
+    cmdline = "/proc/#{pid}/cmdline"
+    if File.exist?(cmdline)
+      File.read(cmdline).include?(str)
+    else
+      `ps -ocommand= -p#{pid}`.include?(str)
+    end
+  end
+
   def self.use_system_ruby(context)
     if defined?(MSpecScript::SYSTEM_RUBY)
       context.send(:before, :all) do

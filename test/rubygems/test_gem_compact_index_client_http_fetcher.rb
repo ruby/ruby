@@ -252,6 +252,28 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     assert_nil remote.requests.last.first.userinfo
   end
 
+  def test_call_drops_credentials_on_a_redirect_to_another_port
+    remote = FakeRemoteFetcher.new(
+      "https://user:s3cr3t@index.example/versions" => FakeRedirect.new("https://index.example:8443/versions"),
+      "https://index.example:8443/versions" => FakeResponse.new("data")
+    )
+    fetcher = Gem::CompactIndexClient::HTTPFetcher.new("https://user:s3cr3t@index.example", remote)
+
+    assert_equal "data", fetcher.call("versions").body
+    assert_nil remote.requests.last.first.userinfo
+  end
+
+  def test_call_drops_credentials_on_a_redirect_to_another_scheme
+    remote = FakeRemoteFetcher.new(
+      "http://user:s3cr3t@index.example:8080/versions" => FakeRedirect.new("https://index.example:8080/versions"),
+      "https://index.example:8080/versions" => FakeResponse.new("data")
+    )
+    fetcher = Gem::CompactIndexClient::HTTPFetcher.new("http://user:s3cr3t@index.example:8080", remote)
+
+    assert_equal "data", fetcher.call("versions").body
+    assert_nil remote.requests.last.first.userinfo
+  end
+
   def test_call_raises_after_too_many_redirects
     fetcher, _remote = fetcher_for(
       "https://index.example/versions" => FakeRedirect.new("https://index.example/versions")

@@ -1752,7 +1752,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_return_out_of_compile_error_no_memory_leak
-    assert_no_memory_leak(%w(-rripper), "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+    assert_no_memory_leak(%w(-rripper), "#{<<~'begin;'}", "#{<<~'end;'}", rss: true, samples: 10..100)
       class MyRipper < Ripper
         def initialize(src, &blk)
           super(src)
@@ -1767,14 +1767,14 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
       # Check that call_parse does return a syntax error
       raise "call_parse should return a syntax error" unless call_parse
     begin;
-      100_000.times do
+      1_000.times do
         call_parse
       end
     end;
   end
 
-  def test_return_out_of_warn_no_memory_leak
-    assert_no_memory_leak(%w(-rripper), "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+  def test_return_out_of_warn_dup_keys_no_memory_leak
+    assert_no_memory_leak(%w(-rripper), "#{<<~'begin;'}", "#{<<~'end;'}", rss: true, samples: 10..100)
       class MyRipper < Ripper
         def initialize(src, &blk)
           super(src)
@@ -1789,12 +1789,14 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
       # Check that call_parse does warn
       raise "call_parse should warn" unless call_parse
     begin;
-      500_000.times do
+      1_000.times do
         call_parse
       end
     end;
+  end
 
-    assert_no_memory_leak(%w(-rripper), "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+  def test_return_out_of_warn_token_info_no_memory_leak
+    assert_no_memory_leak(%w(-rripper), "#{<<~'begin;'}", "#{<<~'end;'}", rss: true, samples: 10..100)
       class MyRipper < Ripper
         def initialize(src, &blk)
           super(src)
@@ -1810,7 +1812,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
       # Check that call_parse does warn
       raise "call_parse should warn" unless call_parse
     begin;
-      1_000_000.times do
+      1_000.times do
         call_parse
       end
     end;

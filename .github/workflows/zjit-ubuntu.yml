@@ -147,12 +147,12 @@ jobs:
 
       - uses: ./.github/actions/setup/ubuntu
 
-      - uses: ruby/setup-ruby@a0102e0972be65f351c307e2d64b9314a57c8073 # v1.324.0
+      - uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
         with:
           ruby-version: '3.1'
           bundler: none
 
-      - uses: taiki-e/install-action@9114bf4d891761788c546334fd37538eae1bf8b3 # v2.87.16
+      - uses: taiki-e/install-action@1919c4a95903d2c33e4a221102edca87309fc14b # v2.89.0
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
@@ -216,10 +216,16 @@ jobs:
         continue-on-error: true
         timeout-minutes: 3
 
+      - name: Set up crash dumps
+        run: |
+          mkdir "${GITHUB_WORKSPACE}/crashdumps"
+          echo "${GITHUB_WORKSPACE}/crashdumps/core.%p" | sudo tee /proc/sys/kernel/core_pattern
+
       - name: make ${{ matrix.test_task }}
         run: |
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
           test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
+          ulimit -c unlimited
 
           set -x
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"} \
@@ -238,6 +244,7 @@ jobs:
           CLANG_PATH: ${{ matrix.clang_path }}
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
           LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
+          LAUNCHABLE_TOKEN: '' # see .github/actions/crashdumps
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: Dump crash logs
@@ -246,6 +253,12 @@ jobs:
         run: |
           tail --verbose --lines=+1 rb_crash_*.txt
           exit 1
+
+      - name: Upload crash dumps
+        uses: ./.github/actions/crashdumps
+        with:
+          name: crashdumps-${{ github.job }}-${{ strategy.job-index }}
+        if: ${{ always() && hashFiles('crashdumps/core.*') != '' }}
 
       - uses: ./.github/actions/slack
         with:
@@ -317,8 +330,6 @@ jobs:
       - name: Run ruby-bench
         run: ruby run_benchmarks.rb -e "zjit::../build/install/bin/ruby ${{ matrix.ruby_opts }}" ${{ matrix.bench_opts }}
         working-directory: ruby-bench
-        env:
-          BUNDLER_VERSION: 0
 
       - uses: ./.github/actions/slack
         with:

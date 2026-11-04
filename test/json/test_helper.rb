@@ -31,6 +31,7 @@ require 'json'
 require 'test/unit'
 require 'stringio'
 require 'tempfile'
+require 'zlib'
 begin
   require 'bigdecimal'
 rescue LoadError

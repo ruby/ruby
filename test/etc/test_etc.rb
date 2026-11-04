@@ -131,6 +131,11 @@ class TestEtc < Test::Unit::TestCase
     }
   end
 
+  def test_uname_release_on_windows
+    release = IO.popen(%w[cmd.exe /c ver], "rb", &:read)[/\d+\.\d+\.\d+/]
+    assert_equal(release, Etc.uname[:release])
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_sysconf
     begin
       Etc.sysconf
@@ -167,6 +172,9 @@ class TestEtc < Test::Unit::TestCase
   def test_nprocessors
     n = Etc.nprocessors
     assert_operator(1, :<=, n)
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_operator(Integer(ENV.fetch("NUMBER_OF_PROCESSORS")), :<=, n)
+    end
   end
 
   def test_sysconfdir

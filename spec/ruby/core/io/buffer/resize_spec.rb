@@ -165,6 +165,50 @@ describe "IO::Buffer#resize" do
 
   ruby_version_is "4.1" do
     context "with a slice of a buffer" do
+      it "keeps an empty view valid when its source is null" do
+        @buffer = IO::Buffer.new(0)
+        slice = @buffer.slice(0, 0)
+
+        slice.resize(0)
+        slice.should.valid?
+        slice.should.null?
+        slice.should.empty?
+
+        @buffer.resize(4)
+        slice.resize(4)
+        slice.get_string.should == "\0" * 4
+      end
+
+      it "restores validity by resizing an offset-zero slice to zero" do
+        @buffer = IO::Buffer.new(8)
+        slice = @buffer.slice(0, 4)
+        @buffer.free
+
+        slice.should_not.valid?
+        -> { slice.resize(1) }.should.raise(ArgumentError)
+        slice.resize(0).should.equal?(slice)
+        slice.should.valid?
+        slice.should.null?
+
+        @buffer.resize(8)
+        @buffer.set_string("abcdefgh")
+        slice.resize(4)
+        slice.get_string.should == "abcd"
+      end
+
+      it "rejects resizing a slice whose offset is beyond a null source" do
+        @buffer = IO::Buffer.new(8)
+        slice = @buffer.slice(2, 4)
+        @buffer.free
+
+        -> { slice.resize(0) }.should.raise(IO::Buffer::InvalidatedError)
+        slice.should_not.valid?
+
+        @buffer.resize(8)
+        @buffer.set_string("abcdefgh")
+        slice.get_string.should == "cdef"
+      end
+
       it "changes the size of the view without modifying the source" do
         @buffer = IO::Buffer.for("abcdef").dup
         slice = @buffer.slice(2, 2)
@@ -221,11 +265,14 @@ describe "IO::Buffer#resize" do
         slice.get_string.should == "cdef"
       end
 
-      it "uses the retained root buffer as the boundary for nested slices" do
+      it "uses the immediate parent as the boundary for nested slices" do
         @buffer = IO::Buffer.for("abcdef").dup
         parent = @buffer.slice(1, 2)
         slice = parent.slice(1, 1)
 
+        -> { slice.resize(4) }.should.raise(ArgumentError, "Resized slice exceeds its source buffer!")
+
+        parent.resize(5)
         slice.resize(4)
         slice.get_string.should == "cdef"
       end

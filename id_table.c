@@ -458,7 +458,11 @@ rb_managed_id_table_lookup(VALUE table, ID id, VALUE *valp)
 int
 rb_managed_id_table_insert(VALUE table, ID id, VALUE val)
 {
-    return rb_id_table_insert(managed_id_table_ptr(table), id, val);
+    int result = rb_id_table_insert(managed_id_table_ptr(table), id, val);
+    /* The table body is embedded (RUBY_TYPED_EMBEDDABLE), so the pointer above
+     * is interior.  Keep table live in case the insert grows the buffer. */
+    RB_GC_GUARD(table);
+    return result;
 }
 
 size_t

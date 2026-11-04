@@ -63,6 +63,14 @@ consensus on ruby-core/ruby-dev.
 
 * Martin J. Dürst ([duerst])
 
+#### lib/ruby/prism.rb, lib/ruby/prism/*, prism/*
+
+* Kevin Newton ([kddnewton])
+* Eileen Uchitelle ([eileencodes])
+* Aaron Patterson ([tenderlove])
+* Earlopain ([earlopain])
+* https://github.com/ruby/prism
+
 ### Standard Library(Extensions) Maintainers
 
 #### set.c
@@ -180,6 +188,7 @@ consensus on ruby-core/ruby-dev.
 #### lib/ipaddr.rb
 
 * Akinori MUSHA ([knu])
+* Taketo Takashima ([taketo1113])
 * https://github.com/ruby/ipaddr
 * https://rubygems.org/gems/ipaddr
 
@@ -224,15 +233,6 @@ consensus on ruby-core/ruby-dev.
 * Tanaka Akira ([akr])
 * https://github.com/ruby/prettyprint
 * https://rubygems.org/gems/prettyprint
-
-#### lib/prism.rb
-
-* Kevin Newton ([kddnewton])
-* Eileen Uchitelle ([eileencodes])
-* Aaron Patterson ([tenderlove])
-* Earlopain ([earlopain])
-* https://github.com/ruby/prism
-* https://rubygems.org/gems/prism
 
 #### lib/resolv.rb
 
@@ -630,6 +630,15 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 * Nakamura Usaku ([unak])
 * https://github.com/ruby/win32-registry
 * https://rubygems.org/gems/win32-registry
+
+#### prism
+
+* Kevin Newton ([kddnewton])
+* Eileen Uchitelle ([eileencodes])
+* Aaron Patterson ([tenderlove])
+* Earlopain ([earlopain])
+* https://github.com/ruby/prism
+* https://rubygems.org/gems/prism
 
 ## Platform Maintainers
 

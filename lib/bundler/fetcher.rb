@@ -157,7 +157,10 @@ module Bundler
       elsif cached_spec_path = gemspec_cached_path(spec_file_name)
         Bundler.load_gemspec(cached_spec_path)
       else
-        Bundler.safe_load_marshal Bundler.rubygems.inflate(downloader.fetch(uri).body)
+        body = Bundler::Retry.new("fetcher", FAIL_ERRORS).attempts do
+          downloader.fetch(uri).body
+        end
+        Bundler.safe_load_marshal Bundler.rubygems.inflate(body)
       end
       raise MarshalError, "is #{spec.inspect}" unless spec.is_a?(Gem::Specification)
       spec

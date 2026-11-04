@@ -27,9 +27,18 @@ module Bundler
     end
 
     def self.prefer_content_addressable(matching)
-      addressable, non_addressable = matching.partition {|s| Gem::ContentAddress.content_addressed?(s, validate_ruby_abi: false) }
-      return matching if addressable.empty?
+      first = matching.index {|s| Gem::ContentAddress.content_addressed?(s, validate_ruby_abi: false) }
+      return matching unless first
 
+      addressable = [matching[first]]
+      non_addressable = matching.take(first)
+      matching.drop(first + 1).each do |s|
+        if Gem::ContentAddress.content_addressed?(s, validate_ruby_abi: false)
+          addressable << s
+        else
+          non_addressable << s
+        end
+      end
       compatible = addressable.select(&:matches_current_metadata?)
       return compatible if compatible.any?
 

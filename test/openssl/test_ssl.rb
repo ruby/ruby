@@ -186,6 +186,47 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_connect_timeout
+    timeout_error = defined?(IO::TimeoutError) ? IO::TimeoutError : IOError
+    start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    server_proc = proc do |sock|
+      # TLS 1.2 handshake takes 2 round trips
+      ctx = make_server_context
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+
+      sleep 0.05
+      assert_equal(:wait_readable, ssl.accept_nonblock(exception: false))
+      sleep 0.15
+      assert_same(ssl, ssl.accept_nonblock(exception: false))
+
+      readwrite_loop(ssl)
+    rescue OpenSSL::SSL::SSLError, SystemCallError
+    end
+    start_server_proc(server_proc) do |port|
+      th = []
+      th << Thread.new do
+        sock = TCPSocket.new("127.0.0.1", port)
+        sock.setsockopt(:TCP, :NODELAY, 1)
+        ssl = OpenSSL::SSL::SSLSocket.new(sock)
+        assert_raise(timeout_error) { ssl.connect(timeout: 0.1) }
+      ensure
+        sock.close
+      end
+      th << Thread.new do
+        sock = TCPSocket.new("127.0.0.1", port)
+        sock.setsockopt(:TCP, :NODELAY, 1)
+        ssl = OpenSSL::SSL::SSLSocket.new(sock)
+        ssl.connect(timeout: 1)
+        taken = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+        assert_operator(taken, :>=, 0.2)
+      ensure
+        sock.close
+      end
+      assert_join_threads(th)
+    end
+  end
+
   def test_low_level_socket
     start_server do |port|
       sock = Socket.tcp("127.0.0.1", port)
@@ -857,6 +898,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_verify_hostname
     assert_equal(true,  OpenSSL::SSL.verify_hostname("www.example.com", "*.example.com"))
     assert_equal(false, OpenSSL::SSL.verify_hostname("www.subdomain.example.com", "*.example.com"))
+    assert_equal(false, OpenSSL::SSL.verify_hostname("www.example.com", ".example.com"))
   end
 
   def test_verify_wildcard
@@ -1255,6 +1297,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       assert_raise(Errno::ECONNRESET, Errno::EPIPE) {
         ssl.connect
       }
+      assert_empty(OpenSSL.errors)
     ensure
       sock&.close
     end
@@ -1453,6 +1496,39 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ctx = OpenSSL::SSL::SSLContext.new
       assert_raise(ArgumentError) {
         ctx.min_version = :bogus
+      }
+    }
+  end
+
+  def test_socket_minmax_version
+    start_server { |port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.sync_close = true
+      ssl.min_version = ssl.max_version = :TLS1_2
+      ssl.connect
+      assert_equal("TLSv1.2", ssl.ssl_version)
+      ssl.close
+    }
+
+    # Invalid
+    IO.pipe { |r, _w|
+      ssl = OpenSSL::SSL::SSLSocket.new(r)
+      assert_raise(ArgumentError) { ssl.min_version = :bogus }
+      assert_raise(ArgumentError) { ssl.max_version = :bogus }
+    }
+  end
+
+  def test_socket_minmax_version_server
+    sctx = make_server_context
+    server_proc = -> sock {
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, sctx)
+      ssl.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      ssl.accept
+    }
+    start_server_proc(server_proc) { |port|
+      server_connect(port) { |ssl|
+        assert_equal("TLSv1.2", ssl.ssl_version)
       }
     }
   end
@@ -2111,13 +2187,14 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     # PQC algorithm ML-DSA (FIPS 204) is supported on OpenSSL 3.5 or later.
     return unless openssl?(3, 5, 0)
 
-    mldsa = Fixtures.pkey("mldsa65-1")
-    mldsa_ca_key  = Fixtures.pkey("mldsa65-2")
+    mldsa_ca_key  = Fixtures.pkey("mldsa65-1")
     mldsa_ca_cert = issue_cert(@ca, mldsa_ca_key, 1, @ca_exts, nil, nil,
                                digest: nil)
+    mldsa = Fixtures.pkey("mldsa65-2")
     mldsa_cert = issue_cert(@svr, mldsa, 60, [], mldsa_ca_cert, mldsa_ca_key,
                             digest: nil)
-    rsa = Fixtures.pkey("rsa-1")
+    # rsa-1 is used for @ca_key
+    rsa = Fixtures.pkey("rsa-2")
     rsa_cert = issue_cert(@svr, rsa, 61, [], @ca_cert, @ca_key)
 
     sctx = OpenSSL::SSL::SSLContext.new

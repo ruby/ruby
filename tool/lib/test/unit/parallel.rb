@@ -20,6 +20,7 @@ module Test
       end
 
       def _run_suites(suites, type) # :nodoc:
+        GC.start
         suites.map do |suite|
           _run_suite(suite, type)
         end
@@ -100,7 +101,7 @@ module Test
           exit 2 unless @stdout && @stdin
 
           @stdout.sync = true
-          _report "ready!"
+          _report "ready! #{$$}"
           while buf = @stdin.gets
             case buf.chomp
             when /^loadpath (.+?)$/

@@ -4755,6 +4755,25 @@ assert_equal '[0, -4611686018427387905]', %q{
   [1.pred, -4611686018427387904.pred]
 }
 
+# Integer results just out of the Fixnum range where long is 32-bit
+assert_equal '[true, true, true, true, true, true]', %q{
+  def plus(a) = a + 1
+  def minus(a) = a - 1
+  def mult(a) = a * a
+  def succ(a) = a.succ
+  def pred(a) = a.pred
+  def lshift(a) = a << 30
+
+  [
+    plus(1073741823) == 1073741824,
+    minus(-1073741824) == -1073741825,
+    mult(32768) == 1073741824,
+    succ(1073741823) == 1073741824,
+    pred(-1073741824) == -1073741825,
+    lshift(1) == 1073741824,
+  ]
+}
+
 # Integer right shift
 assert_equal '[0, 1, -4]', %q{
   [0 >> 1, 2 >> 1, -7 >> 1]

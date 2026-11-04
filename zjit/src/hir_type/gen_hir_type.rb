@@ -51,6 +51,7 @@ imemo = value.subtype "IMemo"
 undef_ = value.subtype "Undef"
 # TODO(max): Figure out if CME should be a subtype of IMemo
 value.subtype "CallableMethodEntry"  # rb_callable_method_entry_t*
+value.subtype "Iseq"  # rb_iseq_t*
 basic_object = value.subtype "BasicObject"
 basic_object_exact = basic_object.subtype "BasicObjectExact"
 basic_object_subclass = basic_object.subtype "BasicObjectSubclass"

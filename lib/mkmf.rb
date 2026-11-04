@@ -538,6 +538,11 @@ MSG
     end
   end
 
+  # Compiling and linking in one step with debug info makes clang on
+  # macOS run dsymutil, which reads the DWARF of every object pulled in
+  # from a static libruby.  The conftest does not need debug info.
+  LINK_CHECK_CFLAGS = /darwin/ =~ RUBY_PLATFORM ? " -g0" : ""
+
   def link_config(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
     conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
                                   'src' => "#{conftest_source}",
@@ -545,7 +550,7 @@ MSG
                                   'top_srcdir' => $top_srcdir.quote,
                                   'INCFLAGS' => "#$INCFLAGS",
                                   'CPPFLAGS' => "#$CPPFLAGS",
-                                  'CFLAGS' => "#$CFLAGS",
+                                  'CFLAGS' => "#$CFLAGS#{LINK_CHECK_CFLAGS}",
                                   'ARCH_FLAG' => "#$ARCH_FLAG",
                                   'LDFLAGS' => "#$LDFLAGS #{ldflags}",
                                   'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
@@ -2085,7 +2090,7 @@ SRC
       warn "mkmf: nmake cannot handle spaces in paths: #{dir}"
     end
     mk << %{
-SHELL = /bin/sh
+SHELL = #{$mswin ? 'cmd.exe' : '/bin/sh'}
 
 # V=0 quiet, V=1 verbose.  other values don't work.
 V = #{verbose}
@@ -2636,11 +2641,11 @@ static: #{$extmk && !$static ? "all" : %[$(STATIC_LIB)#{$extout ? " install-rb" 
       end
     end
     if target and !dirs.include?(sodir)
-      mfile.print "$(TARGET_SO_DIR_TIMESTAMP):\n\t$(Q) $(MAKEDIRS) $(@D) #{sodir}\n\t$(Q) $(TOUCH) $@\n"
+      mfile.print "$(TARGET_SO_DIR_TIMESTAMP):\n\t$(Q) $(MAKEDIRS) $(@D) #{sodir}\n\t-$(Q) $(TOUCH) $@\n"
     end
     dirs.each do |d|
       t = timestamp_file(d, target_prefix)
-      mfile.print "#{t}:\n\t$(Q) $(MAKEDIRS) $(@D) #{d}\n\t$(Q) $(TOUCH) $@\n"
+      mfile.print "#{t}:\n\t$(Q) $(MAKEDIRS) $(@D) #{d}\n\t-$(Q) $(TOUCH) $@\n"
     end
 
     mfile.print <<-SITEINSTALL
@@ -2748,6 +2753,12 @@ site-install-rb: install-rb
     $makefile_created = true
   ensure
     mfile.close if mfile
+    if $makefile_created and $mswin and !$nmake
+      # GNU make substitution references replace suffixes only.
+      mk = File.binread("Makefile")
+      mk.gsub!(/\$[({]([@<*?^]|\w+):([\/\\])=([\/\\])[)}]/) {"$(subst #$2,#$3,$(#$1))"}
+      File.binwrite("Makefile", mk)
+    end
   end
 
   # :stopdoc:

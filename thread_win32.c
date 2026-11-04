@@ -267,8 +267,9 @@ rb_native_cond_broadcast(rb_nativethread_cond_t *cond)
     }
 }
 
+// An armed timer, if given, ends the wait the way msec running out does.
 static int
-native_cond_timedwait_ms(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, unsigned long msec)
+native_cond_timedwait_ms(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, HANDLE timer, unsigned long msec)
 {
     DWORD r;
     struct cond_event_entry entry;
@@ -284,9 +285,11 @@ native_cond_timedwait_ms(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *m
 
     rb_native_mutex_unlock(mutex);
     {
-        r = WaitForSingleObject(entry.event, msec);
+        HANDLE events[2] = {entry.event, timer};
+        r = WaitForMultipleObjects(timer ? 2 : 1, events, FALSE, msec);
+        if (r == WAIT_OBJECT_0 + 1) r = WAIT_TIMEOUT;
         if ((r != WAIT_OBJECT_0) && (r != WAIT_TIMEOUT)) {
-            rb_bug("rb_native_cond_wait: WaitForSingleObject returns %lu", r);
+            rb_bug("rb_native_cond_wait: WaitForMultipleObjects returns %lu", r);
         }
     }
     rb_native_mutex_lock(mutex);
@@ -301,13 +304,13 @@ native_cond_timedwait_ms(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *m
 void
 rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex)
 {
-    native_cond_timedwait_ms(cond, mutex, INFINITE);
+    native_cond_timedwait_ms(cond, mutex, NULL, INFINITE);
 }
 
 void
 rb_native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, unsigned long msec)
 {
-    native_cond_timedwait_ms(cond, mutex, msec);
+    native_cond_timedwait_ms(cond, mutex, NULL, msec);
 }
 
 // The scheduler parks threads with an absolute deadline; on this platform the
@@ -330,12 +333,24 @@ native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mute
     if (*abs <= now) return ETIMEDOUT;
 
     rb_hrtime_t rel = *abs - now;
+    HANDLE timer = ruby_thread_from_native()->nt->wait_timer;
+
+    if (timer) {
+        // a negative due time is relative, in 100ns units
+        LARGE_INTEGER due;
+        due.QuadPart = -(LONGLONG)roomof(rel, 100);
+        if (!SetWaitableTimer(timer, &due, 0, NULL, NULL, FALSE)) {
+            w32_error("native_cond_timedwait");
+        }
+        return native_cond_timedwait_ms(cond, mutex, timer, INFINITE);
+    }
+
     unsigned long msec = (unsigned long)(rel / RB_HRTIME_PER_MSEC);
 
     // do not busy loop on a sub-millisecond deadline
     if (msec == 0) msec = 1;
 
-    return native_cond_timedwait_ms(cond, mutex, msec);
+    return native_cond_timedwait_ms(cond, mutex, NULL, msec);
 }
 
 void
@@ -494,10 +509,12 @@ w32_resume_thread(HANDLE handle)
 #ifdef HAVE__BEGINTHREADEX
 #define start_thread (HANDLE)_beginthreadex
 #define thread_errno errno
-typedef unsigned long (__stdcall *w32_thread_start_func)(void*);
+typedef unsigned w32_thread_start_ret;
+typedef w32_thread_start_ret (__stdcall *w32_thread_start_func)(void*);
 #else
 #define start_thread CreateThread
 #define thread_errno rb_w32_map_errno(GetLastError())
+typedef DWORD w32_thread_start_ret;
 typedef LPTHREAD_START_ROUTINE w32_thread_start_func;
 #endif
 
@@ -549,6 +566,14 @@ native_thread_setup(struct rb_native_thread *nt)
     if (nt->interrupt_event == NULL) {
         w32_error("native_thread_setup");
     }
+
+#if _WIN32_WINNT >= 0x0A00 && defined(CREATE_WAITABLE_TIMER_HIGH_RESOLUTION)
+    // The headers define the flag for any target version, but only Windows
+    // 10 1803 and later accept it.  Failing to create the timer only leaves
+    // timed waits on the millisecond timeout.
+    nt->wait_timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+                                            TIMER_MODIFY_STATE | SYNCHRONIZE);
+#endif
 }
 
 static void
@@ -588,6 +613,7 @@ native_thread_destroy(struct rb_native_thread *nt)
         HANDLE intr = InterlockedExchangePointer(&nt->interrupt_event, 0);
         RUBY_DEBUG_LOG("close handle intr:%p, thid:%p\n", intr, nt->thread_id);
         if (intr) w32_close_handle(intr);
+        if (nt->wait_timer) w32_close_handle(nt->wait_timer);
 
         rb_native_cond_destroy(&nt->readyq);
         rb_native_mutex_destroy(&nt->running_th_lock);
@@ -602,7 +628,7 @@ native_thread_destroy_self(struct rb_native_thread *nt)
     native_thread_destroy(nt);
 }
 
-static unsigned long __stdcall
+static w32_thread_start_ret __stdcall
 nt_start_trampoline(void *nt_ptr)
 {
     struct rb_native_thread *nt = (struct rb_native_thread *)nt_ptr;
@@ -815,7 +841,7 @@ timer_thread_polling(rb_vm_t *vm)
     }
 }
 
-static unsigned long __stdcall
+static w32_thread_start_ret __stdcall
 timer_thread_trampoline(void *vm_ptr)
 {
     rb_w32_set_thread_description(GetCurrentThread(), L"ruby-timer-thread");
@@ -975,6 +1001,12 @@ void *
 rb_thread_prevent_fork(void *(*func)(void *), void *data)
 {
     return func(data);
+}
+
+void
+rb_thread_register_exiting(void)
+{
+    // nothing to do: there is no fork
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

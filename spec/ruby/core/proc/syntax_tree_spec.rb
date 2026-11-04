@@ -14,47 +14,49 @@ ruby_version_is "4.1" do
     it "currently returns a CallNode and not a BlockNode for a block" do
       node = proc { 42 }.syntax_tree
       node.start_line.should == __LINE__ - 1
-      node.should.is_a?(Prism::CallNode)
+      node.should.is_a?(Ruby::Prism::CallNode)
 
       node = lambda { 42 }.syntax_tree # rubocop:disable Style/Lambda
       node.start_line.should == __LINE__ - 1
-      node.should.is_a?(Prism::CallNode)
+      node.should.is_a?(Ruby::Prism::CallNode)
 
       node = return_block { 42 }.syntax_tree
       node.start_line.should == __LINE__ - 1
-      node.should.is_a?(Prism::CallNode)
+      node.should.is_a?(Ruby::Prism::CallNode)
     end
 
     it "currently returns a CallNode and not a BlockNode for a block with rescue" do
       # Interesting because the BlockNode and the BeginNode are fully overlapping
       node = proc do; rescue; end.syntax_tree
       node.start_line.should == __LINE__ - 1
-      node.should.is_a?(Prism::CallNode)
+      node.should.is_a?(Ruby::Prism::CallNode)
     end
 
     it "returns a LambdaNode for a stabby lambda" do
       node = -> { 42 }.syntax_tree
       node.start_line.should == __LINE__ - 1
-      node.should.is_a?(Prism::LambdaNode)
+      node.should.is_a?(Ruby::Prism::LambdaNode)
     end
 
+    quarantine! do # NoMethodError: undefined method 'start_line' for nil
     it "does not return implicit parameter nodes" do
       # Interesting because the BlockNode and the ItParametersNode/NumberedParametersNode are fully overlapping
-      node = -> { it }.syntax_tree
+      node = eval('-> { it }.syntax_tree') # emits a warning on Ruby 3.3
       node.start_line.should == __LINE__ - 1
-      node.should.is_a?(Prism::LambdaNode)
+      node.should.is_a?(Ruby::Prism::LambdaNode)
 
       node = -> { _1 }.syntax_tree
       node.start_line.should == __LINE__ - 1
-      node.should.is_a?(Prism::LambdaNode)
+      node.should.is_a?(Ruby::Prism::LambdaNode)
 
-      node = proc { it }.syntax_tree
+      node = eval('proc { it }.syntax_tree') # emits a warning on Ruby 3.3
       node.start_line.should == __LINE__ - 1
-      node.should.is_a?(Prism::CallNode)
+      node.should.is_a?(Ruby::Prism::CallNode)
 
       node = proc { _1 }.syntax_tree
       node.start_line.should == __LINE__ - 1
-      node.should.is_a?(Prism::CallNode)
+      node.should.is_a?(Ruby::Prism::CallNode)
+    end
     end
 
     it "returns a ForNode for a for-loop block" do
@@ -67,7 +69,7 @@ ruby_version_is "4.1" do
       end
 
       node.start_line.should == __LINE__ - 4
-      node.should.is_a?(Prism::ForNode)
+      node.should.is_a?(Ruby::Prism::ForNode)
     end
   end
 end

@@ -1,0 +1,3 @@
+foo def f = bar 1 rescue z, y
+                          ^ invalid comma
+

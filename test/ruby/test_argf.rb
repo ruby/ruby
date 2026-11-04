@@ -38,7 +38,7 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def no_safe_rename
-    /cygwin|mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+    /cygwin|mswin|mingw/ =~ RUBY_PLATFORM
   end
 
   def assert_src_expected(src, args = nil, line: caller_locations(1, 1)[0].lineno+1)
@@ -1091,6 +1091,14 @@ class TestArgf < Test::Unit::TestCase
       f.close_write
       assert_equal "done with eof\n", f.gets
     end
+  end
+
+  def test_read_nonblock_file
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    assert_equal("foo", argf.read_nonblock(3))
+  ensure
+    argf.close
   end
 
   def test_wrong_type

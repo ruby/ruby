@@ -644,6 +644,23 @@ pub fn and(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
     );
 }
 
+/// bswap - Reverse the byte order of a register
+pub fn bswap(cb: &mut CodeBlock, opnd: X86Opnd) {
+    match opnd {
+        X86Opnd::Reg(reg) => {
+            assert!(reg.num_bits == 32 || reg.num_bits == 64, "bswap takes a 32-bit or 64-bit register");
+
+            if reg.num_bits == 64 || opnd.rex_needed() {
+                write_rex(cb, reg.num_bits == 64, 0, 0, reg.reg_no);
+            }
+
+            cb.write_byte(0x0f);
+            write_opcode(cb, 0xc8, reg);
+        },
+        _ => unreachable!("bswap only takes a register")
+    }
+}
+
 /// call - Call to a pointer with a 32-bit displacement offset
 pub fn call_rel32(cb: &mut CodeBlock, rel32: i32) {
     // Write the opcode
@@ -1194,6 +1211,19 @@ fn write_shift(cb: &mut CodeBlock, op_mem_one_pref: u8, op_mem_cl_pref: u8, op_m
             unreachable!("unsupported operands: {:?}, {:?}", opnd0, opnd1);
         }
     }
+}
+
+/// rol - Rotate left
+pub fn rol(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
+    write_shift(
+        cb,
+        0xD1, // opMemOnePref,
+        0xD3, // opMemClPref,
+        0xC1, // opMemImmPref,
+        0x00,
+        opnd0,
+        opnd1
+    );
 }
 
 // sal - Shift arithmetic left

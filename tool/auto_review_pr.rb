@@ -115,7 +115,9 @@ class AutoReviewPR
 
     upstream_repos = SyncDefaultGems::Repository.group(changed_files)
     upstream_repos.delete(nil)
-    upstream_repos.delete('prism') if changed_files.include?('prism_compile.c')
+    # Onigmo fixes land in ruby/ruby directly since the two copies have diverged.
+    upstream_repos.delete('k-takata/Onigmo')
+    upstream_repos.delete('ruby/prism') if changed_files.include?('prism_compile.c')
     if upstream_repos.empty?
       puts "Skipped: The PR ##{pr_number} doesn't have upstream repositories."
       return

@@ -181,7 +181,7 @@ ossl_ocspreq_initialize(int argc, VALUE *argv, VALUE self)
         arg = ossl_to_der_if_possible(arg);
         StringValue(arg);
         p = (unsigned char *)RSTRING_PTR(arg);
-        req_new = d2i_OCSP_REQUEST(NULL, &p, RSTRING_LEN(arg));
+        req_new = d2i_OCSP_REQUEST(NULL, &p, rb_len2long(RSTRING_LEN(arg)));
         if (!req_new)
             ossl_raise(eOCSPError, "d2i_OCSP_REQUEST");
     }
@@ -511,7 +511,7 @@ ossl_ocspres_initialize(int argc, VALUE *argv, VALUE self)
         arg = ossl_to_der_if_possible(arg);
         StringValue(arg);
         p = (unsigned char *)RSTRING_PTR(arg);
-        res_new = d2i_OCSP_RESPONSE(NULL, &p, RSTRING_LEN(arg));
+        res_new = d2i_OCSP_RESPONSE(NULL, &p, rb_len2long(RSTRING_LEN(arg)));
         if (!res_new)
             ossl_raise(eOCSPError, "d2i_OCSP_RESPONSE");
     }
@@ -652,6 +652,7 @@ ossl_ocspbres_initialize(int argc, VALUE *argv, VALUE self)
     const unsigned char *p;
 
     rb_scan_args(argc, argv, "01", &arg);
+    ossl_want_uninitialized(self, &ossl_ocsp_basicresp_type);
     if (NIL_P(arg)) {
         bs_new = OCSP_BASICRESP_new();
         if (!bs_new)
@@ -661,7 +662,7 @@ ossl_ocspbres_initialize(int argc, VALUE *argv, VALUE self)
         arg = ossl_to_der_if_possible(arg);
         StringValue(arg);
         p = (unsigned char *)RSTRING_PTR(arg);
-        bs_new = d2i_OCSP_BASICRESP(NULL, &p, RSTRING_LEN(arg));
+        bs_new = d2i_OCSP_BASICRESP(NULL, &p, rb_len2long(RSTRING_LEN(arg)));
         if (!bs_new)
             ossl_raise(eOCSPError, "d2i_OCSP_BASICRESP");
     }
@@ -774,7 +775,7 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
     OCSP_CERTID *id;
     ASN1_TIME *ths = NULL, *nxt = NULL, *rev = NULL;
     int st, rsn = 0, error = 0, rstatus = 0;
-    long i;
+    rb_len_t i;
     VALUE tmp;
 
     GetOCSPBasicRes(self, bs);
@@ -1072,7 +1073,7 @@ ossl_ocspsres_initialize(VALUE self, VALUE arg)
     StringValue(arg);
 
     p = (unsigned char*)RSTRING_PTR(arg);
-    sres_new = d2i_OCSP_SINGLERESP(NULL, &p, RSTRING_LEN(arg));
+    sres_new = d2i_OCSP_SINGLERESP(NULL, &p, rb_len2long(RSTRING_LEN(arg)));
     if (!sres_new)
         ossl_raise(eOCSPError, "d2i_OCSP_SINGLERESP");
     RTYPEDDATA_DATA(self) = sres_new;
@@ -1373,7 +1374,7 @@ ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
         arg = ossl_to_der_if_possible(subject);
         StringValue(arg);
         p = (unsigned char *)RSTRING_PTR(arg);
-        newid = d2i_OCSP_CERTID(NULL, &p, RSTRING_LEN(arg));
+        newid = d2i_OCSP_CERTID(NULL, &p, rb_len2long(RSTRING_LEN(arg)));
         if (!newid)
             ossl_raise(eOCSPError, "d2i_OCSP_CERTID");
     }

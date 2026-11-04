@@ -16,7 +16,7 @@ describe "Time#utc_offset" do
   platform_is_not :windows do
     it "returns the correct offset for US Eastern time zone around daylight savings time change" do
       # "2010-03-14 01:59:59 -0500" + 1 ==> "2010-03-14 03:00:00 -0400"
-      with_timezone("EST5EDT") do
+      with_timezone("America/New_York") do
         t = Time.local(2010,3,14,1,59,59)
         t.utc_offset.should == -5*60*60
         (t + 1).utc_offset.should == -4*60*60

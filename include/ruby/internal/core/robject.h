@@ -41,11 +41,6 @@
  * @return  The passed object casted to ::RObject.
  */
 #define ROBJECT(obj)          RBIMPL_CAST((struct RObject *)(obj))
-/** @cond INTERNAL_MACRO */
-#define ROBJECT_EMBED_LEN_MAX       ROBJECT_EMBED_LEN_MAX
-#define ROBJECT_FIELDS_CAPACITY     ROBJECT_FIELDS_CAPACITY
-#define ROBJECT_FIELDS              ROBJECT_FIELDS
-/** @endcond */
 
 struct st_table;
 

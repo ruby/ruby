@@ -24,8 +24,6 @@
 
 #ifdef __CYGWIN__
 # include <windows.h>
-# include <sys/cygwin.h>
-# include <wchar.h>
 #endif
 
 #ifdef __APPLE__
@@ -97,29 +95,16 @@ int flock(int, int);
 /* define system APIs */
 #ifdef _WIN32
 # include "win32/file.h"
-# define STAT(p, s)      rb_w32_ustati128((p), (s))
-# undef lstat
-# define lstat(p, s)     rb_w32_ulstati128((p), (s))
-# undef access
-# define access(p, m)    rb_w32_uaccess((p), (m))
-# undef truncate
-# define truncate(p, n)  rb_w32_utruncate((p), (n))
 # undef chmod
 # define chmod(p, m)     rb_w32_uchmod((p), (m))
 # undef chown
 # define chown(p, o, g)  rb_w32_uchown((p), (o), (g))
 # undef lchown
 # define lchown(p, o, g) rb_w32_ulchown((p), (o), (g))
-# undef utimensat
-# define utimensat(s, p, t, f)   rb_w32_uutimensat((s), (p), (t), (f))
 # undef link
 # define link(f, t)      rb_w32_ulink((f), (t))
-# undef unlink
-# define unlink(p)       rb_w32_uunlink(p)
 # undef readlink
 # define readlink(f, t, l)    rb_w32_ureadlink((f), (t), (l))
-# undef rename
-# define rename(f, t)    rb_w32_urename((f), (t))
 # undef symlink
 # define symlink(s, l)   rb_w32_usymlink((s), (l))
 
@@ -128,8 +113,6 @@ int flock(int, int);
    absolute paths does not work for drive letters. */
 #  undef HAVE_REALPATH
 # endif
-#else
-# define STAT(p, s)      stat((p), (s))
 #endif /* _WIN32 */
 
 #ifdef HAVE_STRUCT_STATX_STX_BTIME
@@ -291,11 +274,6 @@ rb_str_encode_ospath(VALUE path)
 {
 #if USE_OSPATH
     int encidx = ENCODING_GET(path);
-#if 0 && defined _WIN32
-    if (encidx == ENCINDEX_ASCII_8BIT) {
-        encidx = rb_filesystem_encindex();
-    }
-#endif
     if (encidx != ENCINDEX_ASCII_8BIT && encidx != ENCINDEX_UTF_8) {
         rb_encoding *enc = rb_enc_from_index(encidx);
         rb_encoding *utf8 = rb_utf8_encoding();
@@ -310,7 +288,7 @@ rb_str_encode_ospath(VALUE path)
 
 # ifdef HAVE_WORKING_FORK
 static CFMutableStringRef
-mutable_CFString_new(CFStringRef *s, const char *ptr, long len)
+mutable_CFString_new(CFStringRef *s, const char *ptr, rb_len_t len)
 {
     const CFAllocatorRef alloc = kCFAllocatorDefault;
     *s = CFStringCreateWithBytesNoCopy(alloc, (const UInt8 *)ptr, len,
@@ -346,7 +324,7 @@ rb_CFString_class_initialize_before_fork(void)
 
     /* Enough small but non-empty ASCII string to fit in NSTaggedPointerString. */
     const char small_str[] = "/";
-    long len = sizeof(small_str) - 1;
+    rb_len_t len = sizeof(small_str) - 1;
     CFStringRef s;
     /*
      * Touch `CFStringCreateWithBytesNoCopy` *twice* because the implementation
@@ -362,13 +340,13 @@ rb_CFString_class_initialize_before_fork(void)
 # endif /* HAVE_WORKING_FORK */
 
 static VALUE
-rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
+rb_str_append_normalized_ospath(VALUE str, const char *ptr, rb_len_t len)
 {
     CFIndex buflen = 0;
     CFRange all;
     CFStringRef s;
     CFMutableStringRef m = mutable_CFString_new(&s, ptr, len);
-    long oldlen = RSTRING_LEN(str);
+    rb_len_t oldlen = RSTRING_LEN(str);
 
     CFStringNormalize(m, kCFStringNormalizationFormC);
     all = CFRangeMake(0, CFStringGetLength(m));
@@ -382,7 +360,7 @@ rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
 }
 
 VALUE
-rb_str_normalize_ospath(const char *ptr, long len)
+rb_str_normalize_ospath(const char *ptr, rb_len_t len)
 {
     const char *p = ptr;
     const char *e = ptr + len;
@@ -506,7 +484,7 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
 {
     VALUE v;
     const size_t size = sizeof(struct apply_filename);
-    const long len = (long)(offsetof(struct apply_arg, fn) + (size * argc));
+    const rb_len_t len = (rb_len_t)(offsetof(struct apply_arg, fn) + (size * argc));
     struct apply_arg *aa = ALLOCV(v, len);
 
     aa->errnum = 0;
@@ -632,32 +610,37 @@ statx_mtimespec(const rb_io_stat_data *st)
 #endif
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    self <=> other -> -1, 0, 1, or nil
  *
- *  Compares +self+ and +other+, by comparing their modification times;
- *  that is, by comparing <tt>self.mtime</tt> and <tt>other.mtime</tt>.
+ *  Compares the [snapshots](rdoc-ref:File::Stat@Snapshot)
+ *  in `self` and `other`, by comparing their modification times
+ *  `self.mtime` and `other.mtime`.
  *
  *  Returns:
  *
- *  - +-1+, if <tt>self.mtime</tt> is earlier.
- *  - +0+, if the two values are equal.
- *  - +1+, if <tt>self.mtime</tt> is later.
- *  - +nil+, if +other+ is not a File::Stat object.
+ *  - `-1`, if `self.mtime` is earlier.
+ *  - `0`, if the two values are equal.
+ *  - `1`, if `self.mtime` is later.
+ *  - `nil`, if `other` is not a \File::Stat object.
  *
  *  Examples:
  *
- *    stat0 = File.stat('README.md')
- *    stat1 = File.stat('NEWS.md')
- *    stat0.mtime         # => 2025-12-20 15:33:05.6972341 -0600
- *    stat1.mtime         # => 2025-12-20 16:02:08.2672945 -0600
- *    stat0 <=> stat1     # => -1
- *    stat0 <=> stat0.dup # => 0
- *    stat1 <=> stat0     # => 1
- *    stat0 <=> :foo      # => nil
+ *  ```ruby
+ *  stat0 = File.stat('/etc')
+ *  stat1 = File.stat('/tmp')
+ *  stat0.mtime         # => 2026-10-02 07:52:03.151556038 -0500
+ *  stat1.mtime         # => 2026-10-03 12:22:25.719215899 -0500
+ *  stat0 <=> stat1     # => -1
+ *  stat0 <=> stat0.dup # => 0
+ *  stat1 <=> stat0     # => 1
+ *  stat0 <=> :foo      # => nil
+ *  ```
  *
  *  \Class \File::Stat includes module Comparable,
- *  each of whose methods uses File::Stat#<=> for comparison.
+ *  each of whose methods uses \File::Stat#<=> for comparison.
  */
 
 static VALUE
@@ -690,13 +673,18 @@ rb_stat_cmp(VALUE self, VALUE other)
 #endif
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.dev    -> integer
+ *    dev -> integer
  *
- *  Returns an integer representing the device on which <i>stat</i>
- *  resides.
+ *  Returns the device number for the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").dev   #=> 774
+ *  ```ruby
+ *  File.stat('/etc').dev # => 66306
+ *  File.stat('/dev').dev # => 5
+ *  ```
+ *
  */
 
 static VALUE
@@ -716,13 +704,21 @@ rb_stat_dev(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.dev_major   -> integer
+ *    dev_major -> integer
  *
- *  Returns the major part of File::Stat#dev or +nil+.
+ *  Returns `nil` on Windows.
  *
- *     File.stat("/dev/fd1").dev_major   #=> 2
- *     File.stat("/dev/tty").dev_major   #=> 5
+ *  On other systems, returns the major part of the device number
+ *  for the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
+ *
+ *  ```ruby
+ *  File.stat('/etc').dev_major # => 259
+ *  File.stat('/dev').dev_major # => 0
+ *  ```
+ *
  */
 
 static VALUE
@@ -738,13 +734,21 @@ rb_stat_dev_major(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.dev_minor   -> integer
+ *    dev_minor -> integer
  *
- *  Returns the minor part of File::Stat#dev or +nil+.
+ *  Returns `nil` on Windows.
  *
- *     File.stat("/dev/fd1").dev_minor   #=> 1
- *     File.stat("/dev/tty").dev_minor   #=> 0
+ *  On other systems, returns the minor part of the device number
+ *  for the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
+ *
+ *  ```ruby
+ *  File.stat('/etc').dev_minor # => 2
+ *  File.stat('/dev').dev_minor # => 5
+ *  ```
+ *
  */
 
 static VALUE
@@ -760,12 +764,18 @@ rb_stat_dev_minor(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.ino   -> integer
+ *    ino -> integer
  *
- *  Returns the inode number for <i>stat</i>.
+ *  Returns the inode value for the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").ino   #=> 1083669
+ *  ```ruby
+ *  File.stat('/etc').ino        # => 11141121
+ *  File.stat('/etc/passwd').ino # => 11141413
+ *  ```
  *
  */
 
@@ -785,16 +795,22 @@ rb_stat_ino(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.mode   -> integer
+ *    mode -> integer
  *
- *  Returns an integer representing the permission bits of
- *  <i>stat</i>. The meaning of the bits is platform dependent; on
- *  Unix systems, see <code>stat(2)</code>.
+ *  Returns an integer representing the permissions of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`;
+ *  see [Filesystem Modes](rdoc-ref:file/filesystem_modes.md).
  *
- *     File.chmod(0644, "testfile")   #=> 1
- *     s = File.stat("testfile")
- *     sprintf("%o", s.mode)          #=> "100644"
+ *  The integer is most usefully formatted as six octal digits:
+ *
+ *  ```ruby
+ *  '%06o' % File.stat('/etc').mode        # => "040755"
+ *  '%06o' % File.stat('/etc/passwd').mode # => "100644"
+ *  ```
+ *
  */
 
 static VALUE
@@ -804,14 +820,30 @@ rb_stat_mode(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.nlink   -> integer
+ *    nlink -> integer
  *
- *  Returns the number of hard links to <i>stat</i>.
+ *  Returns the number of [hard links](rdoc-ref:file/hard_links.md) to the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").nlink             #=> 1
- *     File.link("testfile", "testfile.bak")   #=> 0
- *     File.stat("testfile").nlink             #=> 2
+ *  ```ruby
+ *  filepath = '/tmp/t.txt'
+ *  File.write(filepath, 'foo')    # Creates hard link.
+ *  stat0 = File.stat(filepath)    # Take snapshot.
+ *  stat0.nlink # => 1             # One hard link.
+ *  linkpath = '/tmp/t.bak'
+ *  File.link(filepath, linkpath)  # Creates another hard link.
+ *  stat0.nlink # => 1             # Snapshot not updated.
+ *  stat1 = File.stat(filepath)    # Take new snapshot.
+ *  stat1.nlink # => 2             # Updated nlink count.
+ *  File.unlink(linkpath)          # Remove one hard link.
+ *  stat1.nlink # => 2             # Snapshot not updated.
+ *  stat2 = File.stat(filepath)    # Take new shapshot.
+ *  stat2.nlink # => 1             # Updated nlink count.
+ *  File.unlink(filepath)          # Clean up.
+ *  ```
  *
  */
 
@@ -825,12 +857,26 @@ rb_stat_nlink(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.uid    -> integer
+ *    uid -> integer
  *
- *  Returns the numeric user id of the owner of <i>stat</i>.
+ *  Returns the integer id of the owner of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").uid   #=> 501
+ *  ```ruby
+ *  Process.uid # => 0                # Superuser; can change owner.
+ *  filepath = '/tmp/t.tmp'
+ *  File.write(filepath, 'foo')       # Create file.
+ *  stat0 = File.stat(filepath)       # Take snapshot.
+ *  stat0.uid   # => 0                # Snapshot has uid.
+ *  File.chown(1000, 1000, filepath)  # Change owner.
+ *  stat0.uid   # => 0                # Snapshot not updated.
+ *  stat1 = File.stat(filepath)       # Take new snapshot.
+ *  stat1.uid   # => 1000             # Snapshot has new uid.
+ *  File.delete(filepath)             # Clean up.
+ *  ```
  *
  */
 
@@ -841,12 +887,23 @@ rb_stat_uid(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.gid   -> integer
+ *    gid -> integer
  *
- *  Returns the numeric group id of the owner of <i>stat</i>.
+ *  On Windows, returns `0`.
  *
- *     File.stat("testfile").gid   #=> 500
+ *  On other systems, returns the group identifier of the owner of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
+ *
+ *  ```ruby
+ *  File.stat('/etc').gid   # => 0
+ *  filepath = '/tmp/t.tmp'
+ *  File.write(filepath, 'foo')
+ *  File.stat(filepath).gid # => 1000
+ *  File.delete(filepath)   # Clean up.
+ *  ```
  *
  */
 
@@ -857,15 +914,49 @@ rb_stat_gid(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.rdev   ->  integer or nil
+ *    rdev -> integer or nil
  *
- *  Returns an integer representing the device type on which
- *  <i>stat</i> resides. Returns +nil+ if the operating system doesn't
- *  support this feature.
+ *  Returns the integer device type of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`.
  *
- *     File.stat("/dev/fd1").rdev   #=> 513
- *     File.stat("/dev/tty").rdev   #=> 1280
+ *  On a non-Windows system, returns a filesystem-dependent device type;
+ *  the returned value is non-zero only for character-special
+ *  and block-special devices.
+ *
+ *  In these hexadecimal-formatted examples:
+ *
+ *  - The two-low order digits contain the device-type minor value,
+ *    which identifies a specific instance, port, or partition managed by a device driver;
+ *    see #rdev_minor.
+ *  - The higher-order digits contain the device-type major value,
+ *    which identifies the device driver;
+ *    see #rdev_major.
+ *
+ *  ```ruby
+ *  # Character-special devices.
+ *  '%08x' % File.stat('/dev/null').rdev      # => "00000103"
+ *  '%08x' % File.stat('/dev/zero').rdev      # => "00000105"
+ *  '%08x' % File.stat('/dev/random').rdev    # => "00000108"
+ *  '%08x' % File.stat('/dev/tty').rdev       # => "00000500"
+ *  '%08x' % File.stat('/dev/tty0').rdev      # => "00000400"
+ *  '%08x' % File.stat('/dev/tty1').rdev      # => "00000401"
+ *  # Block-special devices.
+ *  '%08x' % File.stat('/dev/nvme0n1').rdev   # => "00010300"
+ *  '%08x' % File.stat('/dev/nvme0n1p1').rdev # => "00010301"
+ *  '%08x' % File.stat('/dev/nvme0n1p2').rdev # => "00010302"
+ *  ```
+ *
+ *  On Windows, returns a number corresponding to the given device:
+ *
+ *  ```ruby
+ *  File.stat('C:/').rdev      # => 2
+ *  File.stat('C:/Users').rdev # => 2
+ *  File.stat('D:/').rdev      # => 3
+ *  ```
+ *
  */
 
 static VALUE
@@ -887,13 +978,35 @@ rb_stat_rdev(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.rdev_major   -> integer
+ *    rdev_major -> integer
  *
- *  Returns the major part of File::Stat#rdev or +nil+.
+ *  Returns the integer major portion of the device type of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`;
+ *  see also #rdev, which returns the entire device type (major and minor).
  *
- *     File.stat("/dev/fd1").rdev_major   #=> 2
- *     File.stat("/dev/tty").rdev_major   #=> 5
+ *  On a non-Windows system, returns a filesystem-dependent major device type,
+ *  which identifies the device driver;
+ *  the returned value is non-zero only for character-special
+ *  and block-special devices:
+ *
+ *  ```ruby
+ *  # Character-special devices.
+ *  '%04x' % File.stat('/dev/null').rdev_major      # => "0001"
+ *  '%04x' % File.stat('/dev/zero').rdev_major      # => "0001"
+ *  '%04x' % File.stat('/dev/random').rdev_major    # => "0001"
+ *  '%04x' % File.stat('/dev/tty').rdev_major       # => "0005"
+ *  '%04x' % File.stat('/dev/tty0').rdev_major      # => "0004"
+ *  '%04x' % File.stat('/dev/tty1').rdev_major      # => "0004"
+ *  # Block-special devices.
+ *  '%04x' % File.stat('/dev/nvme0n1').rdev_major   # => "0103"
+ *  '%04x' % File.stat('/dev/nvme0n1p1').rdev_major # => "0103"
+ *  '%04x' % File.stat('/dev/nvme0n1p2').rdev_major # => "0103"
+ *  ```
+ *
+ *  On Windows, returns `nil`.
  */
 
 static VALUE
@@ -909,13 +1022,35 @@ rb_stat_rdev_major(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.rdev_minor   -> integer
+ *    rdev_minor -> integer
  *
- *  Returns the minor part of File::Stat#rdev or +nil+.
+ *  Returns the integer minor portion of the device type of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`;
+ *  see also #rdev, which returns the entire device type (major and minor).
  *
- *     File.stat("/dev/fd1").rdev_minor   #=> 1
- *     File.stat("/dev/tty").rdev_minor   #=> 0
+ *  On a non-Windows system, returns a filesystem-dependent minor device type,
+ *  which identifies a specific instance, port, or partition on its device;
+ *  the returned value is non-zero only for character-special
+ *  and block-special devices:
+ *
+ *  ```ruby
+ *  # Character-special devices.
+ *  '%02x' % File.stat('/dev/null').rdev_minor      # => "03"
+ *  '%02x' % File.stat('/dev/zero').rdev_minor      # => "05"
+ *  '%02x' % File.stat('/dev/random').rdev_minor    # => "08"
+ *  '%02x' % File.stat('/dev/tty').rdev_minor       # => "00"
+ *  '%02x' % File.stat('/dev/tty0').rdev_minor      # => "00"
+ *  '%02x' % File.stat('/dev/tty1').rdev_minor      # => "01"
+ *  # Block-special devices.
+ *  '%02x' % File.stat('/dev/nvme0n1').rdev_minor   # => "00"
+ *  '%02x' % File.stat('/dev/nvme0n1p1').rdev_minor # => "01"
+ *  '%02x' % File.stat('/dev/nvme0n1p2').rdev_minor # => "02"
+ *  ```
+ *
+ *  On Windows, returns `nil`.
  */
 
 static VALUE
@@ -931,12 +1066,32 @@ rb_stat_rdev_minor(VALUE self)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
- *     stat.size    -> integer
+ *    size -> integer
  *
- *  Returns the size of <i>stat</i> in bytes.
+ *  Returns the size (in bytes) of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").size   #=> 66
+ *  ```ruby
+ *  File.stat('/etc/passwd').size # => 3092   # Regular file.
+ *  File.stat('/etc').size        # => 12288  # Directory.
+ *  # When the file size changes.
+ *  filepath = '/tmp/t.tmp'
+ *  file = File.new(filepath, 'w+')
+ *  file.write('foo')
+ *  file.size                     # => 3
+ *  stat0 = File.stat(filepath)               # Take snapshot.
+ *  stat0.size                    # => 3
+ *  file.write('bar')                         # Change file size.
+ *  file.size                     # => 6
+ *  stat0.size                    # => 3      # Snapshot not updated.
+ *  stat1 = File.stat(filepath)               # Take new snapshot.
+ *  stat1.size                    # => 6      # Snapshot has updated size.
+ *  File.delete(filepath)                     # Clean up.
+ *  ```
+ *
  */
 
 static VALUE
@@ -946,13 +1101,20 @@ rb_stat_size(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.blksize   -> integer or nil
+ *    blksize -> integer or nil
  *
- *  Returns the native file system's block size. Will return +nil+ on
- *  platforms that don't support this information.
+ *  Returns the block size of the filesystem
+ *  of the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`,
+ *  or `nil` on Windows:
  *
- *     File.stat("testfile").blksize   #=> 4096
+ *  ```ruby
+ *  File.stat('/etc').blksize        # => 4096
+ *  File.stat('/etc/passwd').blksize # => 4096
+ *  File.stat('nosuch').blksize      # Raises Errno::ENOENT: No such file or directory.
+ *  ```
  *
  */
 
@@ -967,14 +1129,20 @@ rb_stat_blksize(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.blocks    -> integer or nil
+ *    blocks -> integer or nil
  *
- *  Returns the number of native file system blocks allocated for this
- *  file, or +nil+ if the operating system doesn't support this
- *  feature.
+ *  Returns the number of filesystem blocks allocated for the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").blocks   #=> 2
+ *  ```ruby
+ *  File.stat('/etc').blocks        # => 24
+ *  File.stat('/etc/passwd').blocks # => 8
+ *  ```
+ *
+ *  Returns `nil` on Windows.
  */
 
 static VALUE
@@ -1103,45 +1271,47 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
 #endif /* defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) */
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
  *    atime -> time
  *
  * Returns a new Time object containing the access time
- * of the object represented by +self+
- * at the time +self+ was created;
- * see {Snapshot}[rdoc-ref:File::Stat@Snapshot].
+ * of the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`.
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  *
  * Access time for a file is established when it is created,
  * and may be updated when the file content is read:
  *
- *   filepath = 't.tmp'
- *   File.exist?(filepath)            # => false
- *   file = File.open(filepath, 'w+') # Create by writing; establishes access time.
- *   file.atime                       # => 2026-08-14 11:55:55.436283939 -0500
- *   stat0 = File::Stat.new(filepath) # Take snapshot.
- *   stat0.atime                      # => 2026-08-14 11:55:55.436283939 -0500
- *   file.read                        # Read file content; updates file access time.
- *   file.atime                       # => 2026-08-14 11:56:22.74241085 -0500
- *   stat0.atime                      # => 2026-08-14 11:55:55.436283939 -0500  # Not updated.
- *   stat1 = File::Stat.new(filepath) # Take new snapshot.
- *   stat1.atime                      # => 2026-08-14 11:56:22.74241085 -0500   # Updated.
- *   # Clean up.
- *   file.close
- *   File.delete(filepath)
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.atime(filepath)        # => 2026-10-04 14:58:58.805179514 -0500
+ * stat0 = File.stat(filepath) # Take snapshot.
+ * stat0.atime                 # => 2026-10-04 14:58:58.805179514 -0500
+ * File.read(filepath)         # Updates file atime.
+ * File.atime(filepath)        # => 2026-10-04 14:59:47.707059351 -0500
+ * stat0.atime                 # => 2026-10-04 14:58:58.805179514 -0500 # Not updated.
+ * stat1 = File.stat(filepath) # Take new snapshot.
+ * stat1.atime                 # => 2026-10-04 14:59:47.707059351 -0500 # Updated.
+ * File.delete(filepath)       # Clean up.
+ * ```
  *
  * Access time for a directory is established when it is created,
  * and may be updated when its entries are read:
  *
- *   dirpath = 'foo'
- *   File.exist?(dirpath)         # => false
- *   FileUtils.cp_r('doc', 'foo') # Create directory by copying.
- *   File.atime(dirpath)          # => 2026-08-15 14:10:04.832180372 -0500
- *   stat = File::Stat.new(dirpath)
- *   stat.atime                   # => 2026-08-15 14:10:04.832180372 -0500
- *   # Clean up.
- *   FileUtils.rm_rf(dirpath)
- *   dir.close
+ * ```ruby
+ * dirpath = '/tmp/dir'
+ * Dir.mkdir(dirpath)
+ * File.atime(dirpath)        # => 2026-10-04 15:07:26.194548647 -0500
+ * stat0 = File.stat(dirpath) # Take snapshot.
+ * stat0.atime                # => 2026-10-04 15:07:26.194548647 -0500
+ * Dir.entries(dirpath)       # Updates directory atime.
+ * File.atime(dirpath)        # => 2026-10-04 15:08:14.818746815 -0500 # Updated.
+ * stat0.atime                # => 2026-10-04 15:07:26.194548647 -0500 # Not updated.
+ * stat1 = File.stat(dirpath) # Take new shapshot.
+ * stat1.atime                # => 2026-10-04 15:08:14.818746815 -0500 # Updated.
+ * Dir.rmdir(dirpath)         # Clean up.
  *
  */
 
@@ -1157,23 +1327,22 @@ rb_stat_atime(VALUE self)
  *  call-seq:
  *    mtime -> time
  *
- *  Returns a new Time object containing the modification time
- *  of the object represented by `self`
- *  at the time `self` was created;
- *  see [Snapshot](rdoc-ref:File::Stat@Snapshot):
+ *  Returns a new Time object containing
+ *  the [modification time](rdoc-ref:file/timestamps.md@Modification+Time)
+ *  of the object in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
  *  ```ruby
- *  path = 't.tmp'
- *  file = File.new(path, 'w+')
- *  stat = File.stat(path)
- *  stat.mtime        # => 2026-09-19 08:49:08.846933858 -0500
- *  file.write('foo')
- *  file.flush
- *  File.mtime(path)  # => 2026-09-19 08:50:14.381365572 -0500
- *  stat.mtime        # => 2026-09-19 08:49:08.846933858 -0500
- *  stat = File.stat(path)
- *  stat.mtime        # => 2026-09-19 08:50:14.381365572 -0500
- *  File.unlink(path) # Clean up.
+ *  filepath = '/tmp/t.tmp'
+ *  File.write(filepath, 'foo')                                    # Create file.
+ *  File.mtime(filepath) # => 2026-10-13 10:48:10.477675435 -0500  # File mtime.
+ *  stat0 = File.stat(filepath)                                    # Take snapshot.
+ *  stat0.mtime          # => 2026-10-13 10:48:10.477675435 -0500  # Snapshot mtime.
+ *  File.write(filepath, 'bar')                                    # Modify file.
+ *  File.mtime(filepath) # => 2026-10-13 10:48:37.584264035 -0500  # File mtime updated.
+ *  stat0.mtime          # => 2026-10-13 10:48:10.477675435 -0500  # Snapshot mtime not updated.
+ *  stat1 = File.stat(filepath)                                    # Take new snapshot.
+ *  stat1.mtime          # => 2026-10-13 10:48:37.584264035 -0500  # New snapshot mtime.
+ *  File.delete(filepath)                                          # Clean up.
  *  ```
  *
  */
@@ -1185,17 +1354,36 @@ rb_stat_mtime(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.ctime  ->  time
+ *    ctime -> time
  *
- *  Returns the change time for <i>stat</i> (that is, the time
- *  directory information about the file was changed, not the file
- *  itself).
+ *  On Windows, returns the birthtime for the entry in `self`.
  *
- *  Note that on Windows (NTFS), returns creation time (birth time).
+ *  On other systems, returns the time of the most recent metadata change
+ *  to the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").ctime   #=> Wed Apr 09 08:53:14 CDT 2003
+ *  ```ruby
+ *  dirpath = '/tmp/dir'
+ *  Dir.mkdir(dirpath)                     # Establishes directory ctime.
+ *  dirstat0 = File.stat(dirpath)          # Take directory snapshot.
+ *  dirstat0.ctime     # => 2026-10-06 11:07:18.073533542 -0500 # Initial directory ctime.
+ *  filepath = File.join(dirpath, 't.tmp') # => "/tmp/dir/t.tmp"
+ *  File.write(filepath, 'foo')            # Establishes file ctime; upates directory ctime.
+ *  filestat0 = File.stat(filepath)        # Take file snapshot.
+ *  filestat0.ctime    # => 2026-10-06 11:07:52.555027213 -0500 # Initial file ctime.
+ *  dirstat0.ctime     # => 2026-10-06 11:07:18.073533542 -0500 # Directory snapshot unchanged.
+ *  dirstat1 = File.stat(dirpath)          # Take new directory snapshot.
+ *  dirstat1.ctime     # => 2026-10-06 11:07:52.555027213 -0500 # Snapshot has new ctime.
+ *  File.write(filepath, 'bar')            # Updates file ctime.
+ *  filestat0.ctime    # => 2026-10-06 11:07:52.555027213 -0500 # Old file snapshot unchanged.
+ *  filestat1 = File.stat(filepath)        # Take new file snapshot.
+ *  filestat1.ctime    # => 2026-10-06 11:14:11.19290223 -0500  # Snapshot shows change.
+ *  FileUtils.rmtree(dirpath)              # Clean up.
+ *  ```
  *
+ *  See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -1206,23 +1394,24 @@ rb_stat_ctime(VALUE self)
 
 #if defined(HAVE_STAT_BIRTHTIME)
 /*
+ * :markup: markdown
+ *
  *  call-seq:
  *    birthtime -> new_time
  *
- * Returns a new Time object containing the create time
- * of the object represented by +self+
- * at the time +self+ was created;
- * see {Snapshot}[rdoc-ref:File::Stat@Snapshot]:
+ * Returns a new Time object containing the creation time
+ * of the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`.
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md]:
  *
- *   filename = 't.tmp'
- *   stat = File::Stat.new(filename) # Raises Errno::ENOENT: No such file or directory
- *   File.write(filename, 'foo')
- *   stat = File::Stat.new(filename)
- *   stat.birthtime # => 2026-04-14 10:41:55.5146554 -0500
- *   File.delete(filename)
- *   stat.birthtime # => 2026-04-14 10:41:55.5146554 -0500
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * stat = File.stat(filepath) # Take shapshot.
+ * stat.birthtime             # => 2026-10-05 13:14:24.844158315 -0500
+ * File.delete(filepath)
+ * stat.birthtime             # => 2026-10-05 13:14:24.844158315 -0500  # Unchanged.
+ * ```
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -1235,18 +1424,59 @@ rb_stat_birthtime(VALUE self)
 #endif
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   stat.inspect  ->  string
+ *   inspect ->  string
  *
- * Produce a nicely formatted description of <i>stat</i>.
+ * Returns a string representation of the entry
+ * in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`;
+ * here we split the returned strings for readability:
  *
- *   File.stat("/etc/passwd").inspect
- *      #=> "#<File::Stat dev=0xe000005, ino=1078078, mode=0100644,
- *      #    nlink=1, uid=0, gid=0, rdev=0x0, size=1374, blksize=4096,
- *      #    blocks=8, atime=Wed Dec 10 10:16:12 CST 2003,
- *      #    mtime=Fri Sep 12 15:41:41 CDT 2003,
- *      #    ctime=Mon Oct 27 11:20:27 CST 2003,
- *      #    birthtime=Mon Aug 04 08:13:49 CDT 2003>"
+ * ```ruby
+ *  puts File.stat('/etc/passwd').inspect.split(', ')
+ * ```
+ *
+ * Output:
+ *
+ * ```text
+ * #<File::Stat dev=0x10302
+ * ino=11141413
+ * mode=0100644
+ * nlink=1
+ * uid=0
+ * gid=0
+ * rdev=0x0
+ * size=3092
+ * blksize=4096
+ * blocks=8
+ * atime=2026-10-07 11:25:01.307589569 -0500
+ * mtime=2025-06-10 11:10:47.358999941 -0500
+ * ctime=2025-06-10 11:10:47.38899994 -0500>
+ * ```
+ *
+ * ```ruby
+ * puts File.stat('/etc').inspect.split(', ')
+ * ```
+ *
+ * Output:
+ *
+ * ```text
+ * #<File::Stat dev=0x10302
+ * ino=11141121
+ * mode=040755
+ * nlink=143
+ * uid=0
+ * gid=0
+ * rdev=0x0
+ * size=12288
+ * blksize=4096
+ * blocks=24
+ * atime=2026-10-04 14:29:46.907775905 -0500
+ * mtime=2026-10-07 06:13:35.116915307 -0500
+ * ctime=2026-10-07 06:13:35.116915307 -0500>
+ * ```
+ *
  */
 
 static VALUE
@@ -1340,7 +1570,7 @@ static void *
 no_gvl_stat(void * data)
 {
     no_gvl_stat_data *arg = data;
-    return (void *)(VALUE)STAT(arg->file.path, arg->st);
+    return (void *)(VALUE)stat(arg->file.path, arg->st);
 }
 
 static int
@@ -1479,7 +1709,7 @@ statx_birthtime(const rb_io_stat_data *stx)
 # define fstatx_without_gvl(fptr, st, mask) fstat_without_gvl(fptr, st)
 # define lstatx_without_gvl(path, st, mask) lstat_without_gvl(path, st)
 # define rb_statx(file, stx, mask) rb_stat(file, stx)
-# define STATX(path, st, mask) STAT(path, st)
+# define STATX(path, st, mask) stat(path, st)
 
 #if defined(HAVE_STAT_BIRTHTIME)
 # define statx_has_birthtime(st) 1
@@ -1521,24 +1751,24 @@ rb_stat(VALUE file, struct stat *st)
  *  :markup: markdown
  *
  *  call-seq:
- *    File.stat(path) -> file_stat
+ *    File.stat(path) -> stat
  *
  *  Returns a new File::Stat object for the entry at `path`.
- *  Follows [symbolic links](file/symbolic_links.md);
+ *  Unlike File.lstat, _does follow_ [symbolic links](file/symbolic_links.md);
  *  therefore if the entry is a symbolic link,
  *  the returned object contains information for the target entry, not the symbolic link:
  *
  *  ```ruby
- *  filepath = 'README.md'
- *  linkpath = 'foo'
+ *  filepath = '/etc/passwd'
+ *  linkpath = '/tmp/foo'
  *  File.symlink(filepath, linkpath)
  *  # Method File.stat follows the symlink, so the birthtimes are the same.
- *  File.stat(filepath).birthtime  # => 2026-09-01 09:09:28.378987388 -0500
- *  File.stat(linkpath).birthtime  # => 2026-09-01 09:09:28.378987388 -0500
+ *  File.stat(filepath).birthtime  # => 2025-06-10 11:10:47.358999941 -0500
+ *  File.stat(linkpath).birthtime  # => 2025-06-10 11:10:47.358999941 -0500
  *  # Method File.lstat does not follow the symlink, so the birthtimes are different.
- *  File.lstat(filepath).birthtime # => 2026-09-01 09:09:28.378987388 -0500
- *  File.lstat(linkpath).birthtime # => 2026-09-04 10:29:45.884317953 -0500
- *  File.unlink(linkpath)          # Clean up.
+ *  File.lstat(filepath).birthtime # => 2025-06-10 11:10:47.358999941 -0500
+ *  File.lstat(linkpath).birthtime # => 2026-09-23 14:01:18.248754979 -0500
+ *  File.delete(linkpath)          # Clean up.
  *  ```
  *
  */
@@ -1557,17 +1787,30 @@ rb_file_s_stat(VALUE klass, VALUE fname)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     ios.stat    -> stat
+ *    stat -> stat
  *
- *  Returns status information for <em>ios</em> as an object of type
- *  File::Stat.
+ *  Returns a new File::Stat object for `self`.
+ *  Unlike File#lstat, _does follow_ symbolic links;
+ *  therefore if `self` is a symbolic link,
+ *  the returned object contains information for the target entry, not `self`:
  *
- *     f = File.new("testfile")
- *     s = f.stat
- *     "%o" % s.mode   #=> "100644"
- *     s.blksize       #=> 4096
- *     s.atime         #=> Wed Apr 09 08:53:54 CDT 2003
+ *  ```ruby
+ *  file_path = '/etc/passwd'
+ *  link_path = '/tmp/foo'
+ *  File.symlink(file_path, link_path)
+ *  file = File.new(file_path) # => #<File:/etc/passwd>
+ *  link = File.new(link_path) # => #<File:/tmp/foo>
+ *  # Method stat does follow the symlink, so the birthtimes are the same.
+ *  file.stat.birthtime        # => 2025-06-10 11:10:47.358999941 -0500
+ *  link.stat.birthtime        # => 2025-06-10 11:10:47.358999941 -0500
+ *  # Method lstat does not follow the symlink, so the birthtimes are different.
+ *  file.lstat.birthtime       # => 2025-06-10 11:10:47.358999941 -0500
+ *  link.lstat.birthtime       # => 2026-09-23 16:35:59.321566598 -0500
+ *  File.delete(link_path)     # Clean up.
+ *  ```
  *
  */
 
@@ -1608,24 +1851,24 @@ lstat_without_gvl(const char *path, struct stat *st)
  *  :markup: markdown
  *
  *  call-seq:
- *    File.lstat(path) -> file_stat
+ *    File.lstat(path) -> stat
  *
  *  Returns a new File::Stat object for the entry at `path`.
- *  Does not follow [symbolic links](file/symbolic_links.md);
+ *  Unline File.stat, _does not follow_ [symbolic links](file/symbolic_links.md);
  *  therefore the returned object contains information for the entry at `path`,
  *  regardless of whether is a symbolic link:
  *
  *  ```ruby
- *  filepath = 'README.md'
- *  linkpath = 'foo'
+ *  filepath = '/etc/passwd'
+ *  linkpath = '/tmp/foo'
  *  File.symlink(filepath, linkpath)
- *  # Method File.stat follows the symlink, so the birthtimes are the same.
- *  File.stat(filepath).birthtime  # => 2026-09-01 09:09:28.378987388 -0500
- *  File.stat(linkpath).birthtime  # => 2026-09-01 09:09:28.378987388 -0500
  *  # Method File.lstat does not follow the symlink, so the birthtimes are different.
- *  File.lstat(filepath).birthtime # => 2026-09-01 09:09:28.378987388 -0500
- *  File.lstat(linkpath).birthtime # => 2026-09-04 10:29:45.884317953 -0500
- *  File.unlink(linkpath)          # Clean up.
+ *  File.lstat(filepath).birthtime # => 2025-06-10 11:10:47.358999941 -0500
+ *  File.lstat(linkpath).birthtime # => 2026-09-23 14:01:18.248754979 -0500
+ *  # Method File.stat follows the symlink, so the birthtimes are the same.
+ *  File.stat(filepath).birthtime  # => 2025-06-10 11:10:47.358999941 -0500
+ *  File.stat(linkpath).birthtime  # => 2025-06-10 11:10:47.358999941 -0500
+ *  File.delete(linkpath)          # Clean up.
  *  ```
  *
  */
@@ -1648,16 +1891,30 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
 }
 
 /*
+ *  :markup: markdown
+
  *  call-seq:
  *    lstat -> stat
  *
- *  Like File#stat, but does not follow the last symbolic link;
- *  instead, returns a File::Stat object for the link itself:
+ *  Returns a new File::Stat object for `self`.
+ *  Unlike File#stat, _does not follow_ symbolic links;
+ *  therefore if `self` is a symbolic link,
+ *  the returned object contains information for `self`, not the target entry:
  *
- *    File.symlink('t.txt', 'symlink')
- *    f = File.new('symlink')
- *    f.stat.size  # => 47
- *    f.lstat.size # => 11
+ *  ```ruby
+ *  file_path = '/etc/passwd'
+ *  link_path = '/tmp/foo'
+ *  File.symlink(file_path, link_path)
+ *  file = File.new(file_path) # => #<File:/etc/passwd>
+ *  link = File.new(link_path) # => #<File:/tmp/foo>
+ *  # Method lstat does not follow the symlink, so the birthtimes are different.
+ *  file.lstat.birthtime       # => 2025-06-10 11:10:47.358999941 -0500
+ *  link.lstat.birthtime       # => 2026-09-23 16:35:59.321566598 -0500
+ *  # Method stat does follow the symlink, so the birthtimes are the same.
+ *  file.stat.birthtime        # => 2025-06-10 11:10:47.358999941 -0500
+ *  link.stat.birthtime        # => 2025-06-10 11:10:47.358999941 -0500
+ *  File.delete(link_path)     # Clean up.
+ *  ```
  *
  */
 
@@ -1684,7 +1941,7 @@ rb_file_lstat(VALUE obj)
 static int
 rb_group_member(GETGROUPS_T gid)
 {
-#if defined(_WIN32) || !defined(HAVE_GETGROUPS)
+#if !defined(HAVE_GETGROUPS)
     return FALSE;
 #else
     int rv = FALSE;
@@ -1709,7 +1966,7 @@ rb_group_member(GETGROUPS_T gid)
         ALLOCV_END(v);
 
     return rv;
-#endif /* defined(_WIN32) || !defined(HAVE_GETGROUPS) */
+#endif /* !defined(HAVE_GETGROUPS) */
 }
 
 #ifndef S_IXUGO
@@ -1734,7 +1991,7 @@ eaccess(const char *path, int mode)
     if (getuid() == euid && getgid() == getegid())
         return access(path, mode);
 
-    if (STAT(path, &st) < 0)
+    if (stat(path, &st) < 0)
         return -1;
 
     if (euid == 0) {
@@ -1822,28 +2079,20 @@ rb_access(VALUE fname, int mode)
  */
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
  *   File.directory?(object) -> true or false
  *
- * Returns whether the given +object+ represents a directory;
- * +object+ may be a string path or an IO object:
+ * Returns whether the given `object` represents a directory;
+ * `object` may be a string path or an IO object:
  *
- *   File.directory?('/etc')      # => true
- *   File.directory?('lib')       # => true
- *   File.directory?('README.md') # => false
- *   File.directory?('nosuch')    # => false
- *   File.directory?($stdin)      # => false
- *
- * Follows symbolic links:
- *
- *   dirpath = 'doc/dirname'
- *   File.symlink('.', dirpath)
- *   File.directory?(dirpath)     # => true
- *   File.unlink(dirpath)
- *   filepath = 't.tmp'
- *   File.symlink('README.md', filepath)
- *   File.directory?(filepath)    # => false
- *   File.unlink(filepath)
+ * ```ruby
+ * File.directory?('/etc')        # => true
+ * File.directory?('/etc/passwd') # => false
+ * File.directory?($stdin)        # => false
+ * File.directory?('nosuch')      # => false
+ * ```
  *
  */
 
@@ -1870,13 +2119,13 @@ rb_file_directory_p(VALUE obj, VALUE fname)
  * Returns whether the entry at the given `path` is a pipe:
  *
  * ```ruby
- * File.pipe?('doc/syntax/')        # => false  # Directory.
- * File.pipe?('doc/maintainers.md') # => false  # Regular file.
- * File.pipe?('nosuch')             # => false  # Non-existent.
- * path = '/tmp/foo'
- * File.mkfifo(path)
- * File.pipe?(path)                 # => true
- * File.delete(path)                # Clean up.
+ * pipepath = '/tmp/pipe'
+ * File.pipe?(pipepath)      # => false
+ * File.mkfifo(pipepath)
+ * File.pipe?(pipepath)      # => true
+ * File.pipe?('/etc')        # => false
+ * File.pipe?('/etc/passwd') # => false
+ * File.delete(pipepath)     # Clean up.
  * ```
  *
  */
@@ -1908,12 +2157,13 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
  * is a [symbolic link](rdoc-ref:file/symbolic_links.md):
  *
  * ```ruby
- * filepath = 'README.md'
- * linkpath = 'foo'
+ * filepath = '/etc/passwd'
+ * linkpath = '/tmp/foo'
  * File.symlink(filepath, linkpath)
  * File.symlink?(filepath) # => false
  * File.symlink?(linkpath) # => true
- * File.unlink(linkpath)   # Clean up.
+ * File.symlink?('.')      # => false
+ * File.delete(linkpath)   # Clean up.
  * ```
  *
  */
@@ -1948,14 +2198,27 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   File.socket?(filepath)   ->  true or false
+ *   File.socket?(object) -> true or false
  *
- * Returns +true+ if +filepath+ points to a socket, +false+ otherwise:
+ * Returns whether the given `object` represents a socket;
+ * the `object` may be a path or an IO object:
  *
- *   require 'socket'
- *   File.socket?(Socket.new(:INET, :STREAM)) # => true
- *   File.socket?(File.new('t.txt'))          # => false
+ * ```ruby
+ * require 'socket'
+ * socket_path = '/tmp/socket'
+ * server = UNIXServer.new(socket_path)
+ * File.socket?(socket_path) # => true
+ * server.close              # Clean up.
+ * File.delete(socket_path)  # Clean up.
+ * file_path = '/etc/passwd'
+ * File.file?(file_path)     # => true
+ * File.socket?(file_path)   # => false
+ * File.socket?($stdin)      # => false
+ * File.socket?('nosuch')    # => false
+ * ```
  *
  */
 
@@ -1987,20 +2250,24 @@ rb_file_socket_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
  *   File.blockdev?(object) -> true or false
  *
- * Returns whether +object+ (a path or IO object)
+ * Returns whether `object` (a path or IO object)
  * represents a block device (i.e., a direct-access device):
  *
- *   File.blockdev?('/dev/nvme0n1') # => true
- *   File.blockdev?('/dev/loop0')   # => true
- *   File.blockdev?('/dev/tty')     # => false
- *   File.blockdev?('/dev/null')    # => false
- *   File.blockdev?('nosuch')       # => false
- *   File.blockdev?($stdin)         # => false
+ * ```ruby
+ * File.blockdev?('/dev/nvme0n1') # => true
+ * File.blockdev?('/dev/loop0')   # => true
+ * File.blockdev?('/dev/tty')     # => false
+ * File.blockdev?('/dev/null')    # => false
+ * File.blockdev?('nosuch')       # => false
+ * File.blockdev?($stdin)         # => false
+ * ```
  *
- * The returned value is filesystem-dependent; on Windows, always +false+.
+ * The returned value is filesystem-dependent; returns `false` on Windows or MacOS.
  */
 
 static VALUE
@@ -2130,7 +2397,7 @@ rb_file_readable_p(VALUE obj, VALUE fname)
  * call-seq:
  *    File.readable_real?(path) -> true or false
  *
- * Like File.readable?, but checks against the real user and group ids
+ * Like File.readable?, but checks against the real owner and group ids
  * instead of the effective ids.
  */
 
@@ -2149,19 +2416,28 @@ rb_file_readable_real_p(VALUE obj, VALUE fname)
 #endif
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.world_readable?(file_name)   -> integer or nil
+ *   File.world_readable?(object) -> integer or nil
  *
- * If <i>file_name</i> is readable by others, returns an integer
- * representing the file permission bits of <i>file_name</i>. Returns
- * +nil+ otherwise. The meaning of the bits is platform dependent; on
- * Unix systems, see <code>stat(2)</code>.
+ * Returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+ * for the given `object`
+ * if it exists and is readable by others;
+ * otherwise, returns `nil`:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.world_readable?(filepath)         # => nil   # Non-existent.
+ * File.write(filepath, 'foo')                       # Create file.
+ * File.world_readable?(filepath).to_s(8) # => "664" # World-readable.
+ * File.chmod(0o000, filepath)                       # Change to unreadable.
+ * File.world_readable?(filepath)         # => nil   # Not world-readable.
+ * File.delete(filepath)                             # Clean up.
+ * File.world_readable?('.').to_s(8)      # => "775" # Directory.
+ * File.world_readable?($stdin)           # => nil   # IO object.
+ * ```
  *
- *    File.world_readable?("/etc/passwd")	    #=> 420
- *    m = File.world_readable?("/etc/passwd")
- *    sprintf("%o", m)				    #=> "644"
  */
 
 static VALUE
@@ -2179,14 +2455,28 @@ rb_file_world_readable_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.writable?(file_name)   -> true or false
+ *   File.writable?(object) -> true or false
  *
- * Returns +true+ if the named file is writable by the effective user and
- * group id of this process. See <code>eaccess(3)</code>.
+ * Returns whether given `object` exists and is writable by the owner and group
+ * in the current process:
  *
- * Note that some OS-level security features may cause this to return true
- * even though the file is not writable by the effective user/group.
+ * ```ruby
+ * filepath = '/tmp/secret.txt'
+ * File.writable?(filepath)   # => false  # Non-existent.
+ * File.write(filepath, 'foo')            # Create file.
+ * File.writable?(filepath)   # => true   # Writable.
+ * File.chmod(0o000, filepath)            # Make non-writable.
+ * File.writable?(filepath)   # => false  # Not writable.
+ * File.delete(filepath)                  # Clean up.
+ * File.writable?('/etc')     # => false  # Directory.
+ * File.writable?($stdin)     # => false  # IO object.
+ * ```
+ *
+ * Note that filesystem security features may cause this method to return `true`
+ * even when the file is not writable by the owner and group.
  */
 
 static VALUE
@@ -2196,14 +2486,16 @@ rb_file_writable_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.writable_real?(file_name)   -> true or false
+ *   File.writable_real?(object) -> true or false
  *
- * Returns +true+ if the named file is writable by the real user and group id
- * of this process. See <code>access(3)</code>.
+ * Like File.writable?, but checks against the real owner and group
+ * instead of the effective owner and group.
  *
- * Note that some OS-level security features may cause this to return true
- * even though the file is not writable by the real user/group.
+ * Note that filesystem security features may cause this method to return `true`
+ * even when the object is not writable by the real owner and group.
  */
 
 static VALUE
@@ -2213,19 +2505,28 @@ rb_file_writable_real_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.world_writable?(file_name)   -> integer or nil
+ *   File.world_writable?(object) -> integer or nil
  *
- * If <i>file_name</i> is writable by others, returns an integer
- * representing the file permission bits of <i>file_name</i>. Returns
- * +nil+ otherwise. The meaning of the bits is platform dependent; on
- * Unix systems, see <code>stat(2)</code>.
+ * If the given `object` exists and is writable by others,
+ * returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+ * for the entry;
+ * otherwise, returns `nil`:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.world_writable?(filepath)         # => nil    # Non-existent.
+ * File.write(filepath, 'foo')                        # Create file.
+ * File.world_writable?(filepath)         # => nil    # Not world-writable.
+ * File.chmod(0o777, filepath)                        # Make world-writable.
+ * File.world_writable?(filepath).to_s(8) # => "777"  # World-writable.
+ * File.delete(filepath)                              # Clean up.
+ * File.world_writable?('/tmp').to_s(8)   # => "777"  # Directory.
+ * File.world_writable?($stdin)           # => nil    # IO object.
+ * ```
  *
- *    File.world_writable?("/tmp")		    #=> 511
- *    m = File.world_writable?("/tmp")
- *    sprintf("%o", m)				    #=> "777"
  */
 
 static VALUE
@@ -2243,37 +2544,24 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
  *   File.executable?(path) -> true or false
  *
- * Returns whether the filesystem entry at the given string +path+
- * exists and is executable.
+ * Returns whether the filesystem entry at the given `path`
+ * is [executable](rdoc-ref:file/filesystem_modes.md@Executable+Files)
+ * by the effective owner/group of the current process:
  *
- * On Windows, the entry is executable if its path has file extension
- * +.bat+, +.cmd+, +.com+, or +.exe+:
+ * ```ruby
+ * File.executable?('/bin/ruby')   # => true
+ * File.executable?('/etc')        # => true
+ * File.executable?('/etc/passwd') # => false
+ * File.executable?('nosuch')      # => false
+ * ```
  *
- *   File.executable?('win32/rtname.cmd') # => true
- *   File.executable?('win32/rtname')     # => false
- *   File.executable?('win32/nosuch.cmd') # => false
- *
- * On other systems, the entry is executable if it has the execute/search
- * permission for the effective user and group id of the current process;
- * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
- *
- * These examples use
- * a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
- * that displays a mode both in octal digits and in characters:
- *
- *   File.executable?('.')           # => true
- *   mode('.')                       # => "040775 drwxrwxr-x"
- *   File.executable?('bin/gem')     # => true
- *   mode('bin/gem')                 # => "100775 -rwxrwxr-x"
- *   File.executable?('/etc/passwd') # => false
- *   mode('/etc/passwd')             # => "100644 -rw-r--r--"
- *   File.executable?('nosuch')      # => false
- *
- * Note that some filesystem settings may cause this method to return +true+
- * even though the entry is not executable by the effective user/group.
+ * Note that some filesystem settings may cause this method to return `true`
+ * even though the entry is not executable by the effective owner/group.
  */
 
 static VALUE
@@ -2283,18 +2571,13 @@ rb_file_executable_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.executable_real?(file_name)   -> true or false
+ *    File.executable_real?(path) -> true or false
  *
- * Returns +true+ if the named file is executable by the real user and group
- * id of this process. See <code>access(3)</code>.
- *
- * Windows does not support execute permissions separately from read
- * permissions. On Windows, a file is only considered executable if it ends in
- * .bat, .cmd, .com, or .exe.
- *
- * Note that some OS-level security features may cause this to return true
- * even though the file is not executable by the real user/group.
+ * Like File.executable?, but checks against the real owner/group
+ * instead of the effective owner/group.
  */
 
 static VALUE
@@ -2308,25 +2591,21 @@ rb_file_executable_real_p(VALUE obj, VALUE fname)
 #endif
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
  *   File.file?(object) -> true or false
  *
- * Returns whether the given +object+, a string path or IO object,
+ * Returns whether the given `object`, a string path or IO object,
  * represents a filesystem entry that exists and is a regular file;
  * see File.ftype:
  *
- *   # Paths.
- *   File.file?('README.md')     # => true
- *   File.file?('doc/')     # => false
- *   File.file?('nosuch')     # => false
- *   # IO objects.
- *   file = File.new('README.md')
- *   File.file?(file)     # => true
- *   dir = Dir.new('doc/')
- *   File.file?(dir)     # => false
- *   # Clean up.
- *   file.close
- *   dir.close
+ * ```ruby
+ * File.file?('/etc/passwd') # => true
+ * File.file?('/etc')        # => false
+ * File.file?($stdin)        # => false
+ * File.file?('nosuch')      # => false
+ * ```
  *
  */
 
@@ -2340,39 +2619,53 @@ rb_file_file_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+
  * call-seq:
- *   File.empty?(object) -> true or false
  *   File.zero?(object) -> true or false
+ *   File.empty?(object) -> true or false
  *
- * Returns whether the given +object+ exists and has size zero.
+ * Returns whether the given `object` exists and has size zero.
  *
- * The given +object+ may be the path to a directory (possibly non-existent):
+ * The given `object` may be the path to a file:
  *
- *    dirpath = 'foo'
- *    File.empty?(dirpath)       # => false  # Directory does not exist.
- *    dir = Dir.mkdir(dirpath)
- *    # The directory size is filesystem-dependent;
- *    # for a directory with no children, may or may not be zero.
- *    File.size?(dirpath)        # => 4096
- *    File.empty?(dirpath)       # => false
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo') # File has non-zero size.
+ * File.zero?(filepath)        # => false
+ * File.truncate(filepath, 0)  # File has zero size.
+ * File.zero?(filepath)        # => true
+ * File.delete(filepath)       # Clean up.
+ * ```
  *
- * The given +object+ may be the path to a file (possibly non-existent):
+ * The given `object` may be the path to a directory:
  *
- *    filepath = File.join(dirpath, 't.tmp')
- *    File.empty?(filepath)      # => false  # File does not exist.
- *    File.write(filepath, '')
- *    File.size(filepath)        # => 0
- *    File.empty?(filepath)      # => true   # File exists; size zero.
- *    File.size?(dirpath)        # => 4096
- *    File.empty?(dirpath)       # => false
- *    File.write(filepath, 'bar')
- *    File.size(filepath)        # => 3
- *    File.empty?(filepath)      # => false  # File exists; size non-zero.
- *    FileUtils.rm_rf(dirpath)   # Clean up.
+ * ```ruby
+ * dirpath = '/tmp/foo'
+ * Dir.mkdir(dirpath)
+ * Dir.new(dirpath).children.size # => 0
+ * # Size is filesystem-dependent; may or may not be zero.
+ * File.size(dirpath)             # => 4096
+ * File.zero?(dirpath)            # => false
+ * filepath = '/tmp/foo/t.tmp'    # => "/tmp/foo/t.tmp"
+ * File.write(filepath, 'foo')    # Add a child.
+ * Dir.new(dirpath).children.size # => 1
+ * File.size(dirpath)             # => 4096
+ * File.zero?(dirpath)            # => false
+ * FileUtils.rm_rf(dirpath)       # Clean up.
+ * ```
  *
- * The given +object+ may be an IO object:
+ * The given `object` may be an IO object:
  *
- *   File.empty?($stdin)         # => true
+ * ```ruby
+ * File.zero?($stdin) # => true
+ * ```
+ *
+ * The given object may be none of the above:
+ *
+ * ```ruby
+ * File.zero?('nosuch') # => false
+ * ```
  *
  */
 
@@ -2386,13 +2679,32 @@ rb_file_zero_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.size?(file_name)   -> Integer or nil
+ *   File.size?(object) -> integer or nil
  *
- * Returns +nil+ if +file_name+ doesn't exist or has zero size, the size of the
- * file otherwise.
+ * Returns the size in bytes of the given `object`
+ * if the entry exists and has non-zero size, `nil` otherwise;
+ * the `object` may be a string path or an IO object:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * # Regular file.
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.size?(filepath)   # => 3    # Non-zero size.
+ * File.write(filepath, '')
+ * File.size?(filepath)   # => nil  # Zero size.
+ * File.delete(filepath)            # Clean up.
+ * File.size?(filepath)   # => nil  # Non-existent.
+ * # Directory.
+ * dirpath = '/tmp/dir'
+ * Dir.mkdir(dirpath)
+ * File.size?(dirpath)   # => 4096 # Non-zero size.
+ * Dir.rmdir(dirpath)              # Clean up.
+ * File.size?(dirpath)   # => nil  # Non-existent.
+ * ```
+ *
  */
 
 static VALUE
@@ -2412,19 +2724,20 @@ rb_file_size_p(VALUE obj, VALUE fname)
  *   File.owned?(object) -> true or false
  *
  * Returns whether the given `object` represents a filesystem entry or IO object
- * that exists and is owned by the user of the current process:
+ * that exists and is owned by the owner of the current process:
  *
  * ```ruby
- * filepath = 'doc/t.tmp'
- * File.write(filepath, 'foo')
- * File.owned?(filepath) # => true
- * File.delete(filepath) # Clean up.
- * dirpath = 'doc/tmp'
+ * dirpath = '/tmp/dir'
  * Dir.mkdir(dirpath)
- * File.owned?(dirpath)  # => true
- * Dir.rmdir(dirpath)    # Clean up.
- * File.owned?($stdin)   # => true
- * File.owned?('/etc')   # => false
+ * File.owned?(dirpath)     # => true
+ * filepath = File.join(dirpath, 't.tmp')
+ * File.write(filepath, 'foo')
+ * File.owned?(filepath)    # => true
+ * File.owned?($stdin)      # => true
+ * File.owned?('/tmp')      # => false
+ * File.owned?('nosuch')    # => false
+ * FileUtils.rm_rf(dirpath) # Clean up.
+ *
  * ```
  *
  */
@@ -2448,25 +2761,29 @@ rb_file_rowned_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+
  * call-seq:
  *   File.grpowned?(object) -> true or false
  *
- * Returns whether the filesystem entry for the given +object+ exists,
- * and the effective group id of the calling process is the owner of the entry.
+ * Returns `false` on Windows.
  *
- * The given +object+ may be the string path to a file or directory entry:
+ * On other systems returns whether the effective group id of the calling process
+ * is the owner of the given `object`.
  *
- *   File.grpowned?('lib')         # => true
- *   File.grpowned?('README.md')   # => true
- *   File.grpowned?('/etc/passwd') # => false
- *   File.grpowned?('nosuch')      # => false
+ * The given +object+ may be the string path or an IO object:
  *
- * Or an open IO stream:
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.grpowned?(filepath)       # => true
+ * File.grpowned?('/etc')         # => false
+ * File.grpowned?('/etc/passwd')  # => false
+ * File.grpowned?($stdin)         # => false
+ * File.grpowned?('nosuch')       # => false
+ * File.delete(filepath)          # Clean up.
+ * ```
  *
- *   File.open('README.md', 'r') {|file| File.grpowned?(file) }   # => true
- *   File.open('/etc/passwd', 'r') {|file| File.grpowned?(file) } # => false
- *
- * Returns +false+ on Windows.
  */
 
 static VALUE
@@ -2493,12 +2810,28 @@ check3rdbyte(VALUE fname, int mode)
 #endif
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   File.setuid?(file_name)   ->  true or false
+ *   File.setuid?(object) -> true or false
  *
- * Returns +true+ if the named file has the setuid bit set.
+ * Returns whether the setuid bit is set
+ * in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+ * for the given `object`, which may be a path or an IO object:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * path = '/tmp/t.tmp'
+ * File.write(path, 'foo')
+ * mode = File.stat(path).mode.to_s(8) # => "100664"
+ * File.setuid?(path)                  # => false
+ * File.chmod(0o4644, path)            # Set the bit.
+ * mode = File.stat(path).mode.to_s(8) # => "104644"
+ * File.setuid?(path)                  # => true
+ * File.delete(path)                   # Clean up.
+ * File.setuid?($stdin)                # => false
+ * ```
+ *
+ * On Windows, the bit is never set; the method always returns `false`.
  */
 
 static VALUE
@@ -2512,12 +2845,28 @@ rb_file_suid_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   File.setgid?(file_name)   ->  true or false
+ *   File.setgid?(object) -> true or false
  *
- * Returns +true+ if the named file has the setgid bit set.
+ * Returns whether the setgid bit is set
+ * in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+ * for the given `object`, which may be a path or an IO object:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * path = '/tmp/t.tmp'
+ * File.write(path, 'foo')
+ * mode = File.stat(path).mode.to_s(8) # => "100664"
+ * File.setgid?(path)                  # => false
+ * File.chmod(0o2644, path)            # Set the bit.
+ * mode = File.stat(path).mode.to_s(8) # => "102644"
+ * File.setgid?(path)                  # => true
+ * File.delete(path)                   # Clean up.
+ * File.setgid?($stdin)                # => false
+ * ```
+ *
+ * On Windows, the bit is never set; the method always returns `false`.
  */
 
 static VALUE
@@ -2531,12 +2880,29 @@ rb_file_sgid_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+
  * call-seq:
- *   File.sticky?(file_name)   ->  true or false
+ *   File.sticky?(object) -> true or false
  *
- * Returns +true+ if the named file has the sticky bit set.
+ * Returns whether the sticky bit is set
+ * in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+ * for the given `object`, which may be a path or an IO object:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * mode = File.stat(filepath).mode.to_s(8) # => "100664"
+ * File.sticky?(filepath)                  # => false
+ * File.chmod(01644, filepath)             # Set sticky bit.
+ * mode = File.stat(filepath).mode.to_s(8) # => "101644"
+ * File.sticky?(filepath)                  # => true
+ * File.delete(filepath)                   # Clean up.
+ * File.sticky?($stdin)                    # => false
+ * File.sticky?('nosuch')                  # => false
+ * ```
+ *
+ * Returns `false` on Windows.
  */
 
 static VALUE
@@ -2594,12 +2960,20 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.size(file_name)   -> integer
+ *   File.size(object) -> integer
  *
- * Returns the size of <code>file_name</code>.
+ * Returns the size in bytes of the given `object`,
+ * which may be a string path or an IO object:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * File.size('/etc/passwd') # => 3092   # Regular file.
+ * File.size('/etc')        # => 12288  # Directory.
+ * File.size($stdin)        # => 0      # IO object.
+ * ```
+ *
  */
 
 static VALUE
@@ -2657,36 +3031,43 @@ rb_file_ftype(mode_t mode)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    File.ftype(path) -> string
  *
- *  Returns the string type of the object at +path+, one of:
+ *  Returns the string type of the object at `path`, one of:
  *
- *  - <tt>'file'</tt>.
- *  - <tt>'directory'</tt>.
- *  - <tt>'characterSpecial'</tt>.
- *  - <tt>'blockSpecial'</tt>.
- *  - <tt>'fifo'</tt>.
- *  - <tt>'link'</tt>.
- *  - <tt>'socket'</tt>.
+ *  - `'file'`.
+ *  - `'directory'`.
+ *  - `'characterSpecial'`.
+ *  - `'blockSpecial'`.
+ *  - `'fifo'`.
+ *  - `'link'`.
+ *  - `'socket'`.
  *
  *  Examples:
  *
- *    File.ftype('README.md')   # => "file"
- *    File.ftype('lib')         # => "directory"
- *    File.ftype("/dev/null")   # => "characterSpecial"
- *    File.ftype("/dev/loop0")  # => "blockSpecial"
+ *  ```ruby
+ *  File.ftype('/etc/passwd') # => "file"
+ *  File.ftype('/etc')        # => "directory"
+ *  File.ftype("/dev/null")   # => "characterSpecial"
+ *  File.ftype("/dev/loop0")  # => "blockSpecial"
  *
- *    File.mkfifo('/tmp/pipe', 0666)
- *    File.ftype('/tmp/pipe')   # => "fifo"
+ *  File.mkfifo('/tmp/pipe', 0o666)
+ *  File.ftype('/tmp/pipe')   # => "fifo"
  *
- *    File.symlink('lib', 'lib_link')
- *    File.ftype('lib_link')    # => "link"
+ *  File.symlink('/etc/passwd', '/tmp/link')
+ *  File.ftype('/tmp/link')   # => "link"
  *
- *    UNIXServer.new('/tmp/socket')
- *    File.ftype('/tmp/socket') # => "socket"
+ *  require 'socket'
+ *  UNIXServer.new('/tmp/socket')
+ *  File.ftype('/tmp/socket') # => "socket"
  *
- *  Returns <tt>'unknown'</tt> if the type cannot be determined.
+ *  File.delete('/tmp/link', '/tmp/pipe', '/tmp/socket') # Clean up.
+ *  ```
+ *
+ *  Returns `'unknown'` if the type cannot be determined.
  */
 
 static VALUE
@@ -2704,42 +3085,50 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
 }
 
 /*
- *  call-seq:
- *    File.atime(object) -> time
+ * :markup: markdown
+
+ * call-seq:
+ *   File.atime(object) -> time
  *
  * Returns a new Time object containing the time of the most recent
- * access to the given +object+.
+ * access to the given `object`.
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  *
  * Access time for a file is established when it is created,
  * and may be updated when the file content is read:
  *
- *   filepath = 't.tmp'
- *   File.exist?(filepath)       # => false
- *   File.atime(filepath)        # Raises Errno::ENOENT.
- *   File.write(filepath, 'foo') # Create by writing; establishes access time.
- *   File.atime(filepath)        # => 2026-08-14 10:02:39.721407762 -0500
- *   File.read(filepath)         # Read file content; updates access time.
- *   File.atime(filepath)        # => 2026-08-14 10:03:02.520494995 -0500
- *   File.delete(filepath)       # Clean up.
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.exist?(filepath)       # => false
+ * File.atime(filepath)        # Raises Errno::ENOENT: No such file or directory.
+ * File.write(filepath, 'foo') # Establishes access time.
+ * File.atime(filepath)        # => 2026-10-04 14:23:12.421395099 -0500
+ * File.read(filepath)         # Updates access time.
+ * File.atime(filepath)        # => 2026-10-04 14:23:21.848886816 -0500
+ * File.delete(filepath)       # Clean up.
+ * ```
  *
  * Access time for a directory is established when it is created,
  * and may updated when its entries are read:
  *
- *   dirpath = 'foo'
- *   File.exist?(dirpath)         # => false
- *   File.atime(dirpath)          # Raises Errno::ENOENT.
- *   FileUtils.cp_r('doc', 'foo') # Create by copying; establishes access time.
- *   File.atime(dirpath)          # => 2026-08-14 10:32:59.229951125 -0500
- *   Dir.entries(dirpath)         # Read directory entries; updates access time.
- *   File.atime(dirpath)          # => 2026-08-14 10:33:05.679978581 -0500
- *   FileUtils.rm_rf(dirpath)     # Clean up.
+ * ```ruby
+ * dirpath = '/tmp/foo'
+ * File.exist?(dirpath) # => false
+ * File.atime(dirpath)  # Raises Errno::ENOENT: No such file or directory.
+ * Dir.mkdir(dirpath)   # Establishes access time.
+ * File.atime(dirpath)  # => 2026-10-04 14:35:53.940716253 -0500
+ * Dir.entries(dirpath) # Updates access time.
+ * File.atime(dirpath)  # => 2026-10-04 14:36:24.316018872 -0500
+ * Dir.rmdir(dirpath)   # Clean up.
+ * ```
  *
- * Argument +object+ may be a string path (as above),
+ * Argument `object` may be a string path (as above),
  * a File object, or a Dir object:
  *
- *   File.atime(File.new('README.md')) # => 2026-03-31 11:15:27.8215934 -0500
- *   File.atime(Dir.new('.'))          # => 2026-03-31 12:39:45.5910591 -0500
+ * ```ruby
+ * File.atime(File.new('/etc/passwd')) # => 2026-10-04 11:25:01.259278928 -0500
+ * File.atime('.')                     # => 2026-10-04 14:40:42.141637825 -0500
+ * ```
  *
  */
 
@@ -2757,25 +3146,30 @@ rb_file_s_atime(VALUE klass, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
  *    atime -> time
  *
  * Returns a new Time object containing the time of the most recent
- * access to +self+.
+ * access to `self`.
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  *
  * Access time for a file is established when it is created,
  * and may be updated when the file content is read:
  *
- *   filepath = 't.tmp'
- *   File.exist?(filepath)            # => false
- *   file = File.open(filepath, 'w+') # Create by opening; establishes access time.
- *   file.atime                       # => 2026-08-14 11:15:48.422773736 -0500
- *   file.read                        # Read file content; updates access time.
- *   file.atime                       # => 2026-08-14 11:16:10.697861103 -0500
- *   # Clean up.
- *   file.close
- *   File.delete(filepath)
+ * ```
+ * filepath = '/tmp/t.tmp'
+ * File.exist?(filepath)       # => false
+ * File.write(filepath, 'foo') # Establishes access time.
+ * file = File.new(filepath)
+ * file.atime                  # => 2026-10-04 14:48:30.323100327 -0500
+ * file.read                   # Updates access time.
+ * file.atime                  # => 2026-10-04 14:49:01.104340829 -0500
+ * # Clean up.
+ * file.close
+ * File.delete(filepath)
+ * ```
  *
  */
 
@@ -2798,28 +3192,28 @@ rb_file_atime(VALUE obj)
  *  call-seq:
  *    File.mtime(object) -> time
  *
- *  Returns a new Time object containing the modification time for the given object,
- *  which may be a string path or an IO object;
- *  see [Modification Time](rdoc-ref:file/timestamps.md@Modification+Time):
+ *  Returns a new Time object containing
+ *  the [modification time](rdoc-ref:file/timestamps.md@Modification+Time)
+ *  of the given `object`, which may be a string path or an IO object;
  *
  *  ```ruby
- *  # Create directory; directory mtime established.
- *  dirpath = 'doc/foo'                    # => "doc/foo"
+ *  # Create directory; establishes directory mtime.
+ *  dirpath = '/tmp/dir'
  *  Dir.mkdir(dirpath)
- *  File.mtime(dirpath)                    # => 2026-09-19 09:01:30.045928322 -0500
- *  # Create file therein; file mtime established, directory mtime updated.
- *  filepath = File.join(dirpath, 't.tmp') # => "doc/foo/t.tmp"
+ *  File.mtime(dirpath)                    # => 2026-10-12 12:24:08.542476612 -0500
+ *  # Create file therein; establishes file mtime, updates directory mtime.
+ *  filepath = File.join(dirpath, 't.tmp') # => "/tmp/dir/t.tmp"
  *  File.write(filepath, 'foo')
- *  File.mtime(filepath)                   # => 2026-09-19 09:02:32.860803131 -0500
- *  File.mtime(dirpath)                    # => 2026-09-19 09:02:32.860803131 -0500
- *  # Modify file; file mtime updated, directory mtime unchanged.
+ *  File.mtime(filepath)                   # => 2026-10-12 12:28:41.261675035 -0500
+ *  File.mtime(dirpath)                    # => 2026-10-12 12:28:41.261675035 -0500
+ *  # Modify file; updates file mtime, does not update directory mtime.
  *  File.write(filepath, 'bar')
- *  File.mtime(filepath)                   # => 2026-09-19 09:03:29.875611413 -0500
- *  File.mtime(dirpath)                    # => 2026-09-19 09:02:32.860803131 -0500
- *  FileUtils.rm_rf(dirpath)               # Clean up.
- *  File.mtime($stdout)                    # => 2026-09-19 09:27:52 -0500
+ *  File.mtime(filepath)                   # => 2026-10-12 12:30:09.113910789 -0500
+ *  File.mtime(dirpath)                    # => 2026-10-12 12:28:41.261675035 -0500
+ *  FileUtils.rm_rf(dirpath) # Clean up.
+ *  File.mtime($stdout)                    # => 2026-10-12 12:31:28 -0500
  *  $stdout.flush
- *  File.mtime($stdout)                    # => 2026-09-19 09:28:08 -0500
+ *  File.mtime($stdout)                    # => 2026-10-12 12:31:36 -0500
  *  ```
  *
  */
@@ -2843,17 +3237,20 @@ rb_file_s_mtime(VALUE klass, VALUE fname)
  *  call-seq:
  *    mtime -> time
  *
- *  Returns a new Time object containing the modification time for `self`;
- *  see [Modification Time](rdoc-ref:file/timestamps.md@Modification+Time):
+ *  Returns a new Time object containing
+ *  the [modification time](rdoc-ref:file/timestamps.md@Modification+Time)
+ *  for `self`:
  *
  *  ```ruby
- *  path = 't.tmp'
- *  file = File.new(path, 'w+')
- *  file.mtime # => 2026-09-19 08:41:29.357110007 -0500
+ *  filepath = '/tmp/t.tmp'
+ *  file = File.new(filepath, 'w+')
+ *  file.mtime # => 2026-10-13 10:27:02.446070725 -0500
  *  file.write('foo')
  *  file.flush
- *  file.mtime # => 2026-09-19 08:41:46.321965574 -0500
- *  File.unlink(path)
+ *  file.mtime # => 2026-10-13 10:27:49.252424006 -0500
+ *  # Clean up.
+ *  file.close
+ *  File.delete(filepath)
  *  ```
  *
  */
@@ -2872,37 +3269,38 @@ rb_file_mtime(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.ctime(object) -> time
+ *    File.ctime(object) -> time
  *
- *  Returns a Time object, based on the given +object+,
- *  which is a string path or an IO object.
+ *  On Windows, returns the birthtime for `object`.
  *
- *  On Windows, returns the #birthtime for +object+.
+ * On other systems,
+ * returns a new Time object containing the time of the most recent
+ * metadata change to the entry represented by `object`,
+ * which is a string path or an IO object;
+ * see [File System Timestamps](rdoc-ref:file/timestamps.md):
  *
- *  On other systems,
- *  returns a new Time object containing the time of the most recent
- *  metadata change to the entry represented by +object+;
- *  see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
- *
- *    # Create directory; directory ctime established.
- *    dirpath = 'doc/foo'
- *    Dir.mkdir(dirpath)
- *    File.ctime(dirpath)                     # => 2026-08-23 10:43:05.473815913 -0500
- *    # Create file therein; file ctime established; directory ctime updated.
- *    filepath = File.join(dirpath, 't.tmp')  # => "doc/foo/t.tmp"
- *    File.write(filepath, 'foo')
- *    File.ctime(filepath)                    # => 2026-08-23 10:43:37.560429379 -0500
- *    File.ctime(dirpath)                     # => 2026-08-23 10:43:37.560429379 -0500
- *    # Write file; file ctime updated; directory ctime not updated.
- *    File.write(filepath, 'bar')
- *    File.ctime(filepath)                    # => 2026-08-23 10:46:49.299180833 -0500
- *    File.ctime(dirpath)                     # => 2026-08-23 10:43:37.560429379 -0500
- *    # Read file; neither ctime updated.
- *    File.read(filepath)
- *    File.ctime(filepath)                    # => 2026-08-23 10:46:49.299180833 -0500
- *    File.ctime(dirpath)                     # => 2026-08-23 10:43:37.560429379 -0500
- *    FileUtils.rm_rf(dirpath)                # Clean up.
+ * ```ruby
+ * dirpath = '/tmp/dir'
+ * Dir.mkdir(dirpath)
+ * File.ctime(dirpath)                    # => 2026-10-05 16:24:40.347201215 -0500
+ * # Create file therein; file ctime established; directory ctime updated.
+ * filepath = File.join(dirpath, 't.tmp') # => "/tmp/dir/t.tmp"
+ * File.write(filepath, 'foo')
+ * File.ctime(dirpath)                    # => 2026-10-05 16:25:34.790762181 -0500
+ * File.ctime(filepath)                   # => 2026-10-05 16:25:34.790762181 -0500
+ * # Write file; file ctime updated; directory ctime not updated.
+ * File.write(filepath, 'bar')
+ * File.ctime(dirpath)                    # => 2026-10-05 16:25:34.790762181 -0500
+ * File.ctime(filepath)                   # => 2026-10-05 16:26:23.030432041 -0500
+ * # Read file; neither ctime updated.
+ * File.read(filepath)
+ * File.ctime(dirpath)                    # => 2026-10-05 16:25:34.790762181 -0500
+ * File.ctime(filepath)                   # => 2026-10-05 16:26:23.030432041 -0500
+ * FileUtils.rm_rf(dirpath)               # Clean up.
+ * ```
  *
  */
 
@@ -2920,15 +3318,35 @@ rb_file_s_ctime(VALUE klass, VALUE fname)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     file.ctime  ->  time
+ *    ctime -> time
  *
- *  Returns the change time for <i>file</i> (that is, the time directory
- *  information about the file was changed, not the file itself).
+ *  On Windows, returns the birthtime for the entry in `self`.
  *
- *  Note that on Windows (NTFS), returns creation time (birth time).
+ *  On other systems,
+ *  returns a new Time object containing the time of the most recent
+ *  metadata change to the entry in `self`;
+ *  see [File System Timestamps](rdoc-ref:file/timestamps.md):
  *
- *     File.new("testfile").ctime   #=> Wed Apr 09 08:53:14 CDT 2003
+ *  ```ruby
+ *  # A directory.
+ *  dirpath = '/tmp/dir'
+ *  Dir.mkdir(dirpath)                     # Establishes directory ctime.
+ *  dir = File.new(dirpath) # (Dir does not have method ctime; we use File.)
+ *  dir.ctime                              # => 2026-10-05 17:23:49.406452569 -0500
+ *  # A file therein.
+ *  filepath = File.join(dirpath, 't.tmp') # => "/tmp/dir/t.tmp"
+ *  File.write(filepath, 'foo')            # Establishes file ctime.
+ *  file = File.new(filepath)
+ *  file.ctime                             # => 2026-10-05 17:26:26.467758515 -0500
+ *  dir.ctime                              # => 2026-10-05 17:26:26.467758515 -0500
+ *  File.write(filepath, 'bar')            # Updates file ctime; not directory ctime.
+ *  file.ctime                             # => 2026-10-05 17:28:26.307497599 -0500
+ *  dir.ctime                              # => 2026-10-05 17:26:26.467758515 -0500
+ *  FileUtils.rm_rf(dirpath)               # Clean up.
+ *  ```
  *
  */
 
@@ -2947,27 +3365,22 @@ rb_file_ctime(VALUE obj)
 
 #if defined(HAVE_STAT_BIRTHTIME)
 /*
- *  call-seq:
- *    File.birthtime(path) -> time
+ * :markup: markdown
  *
- * Returns a new Time object containing the create time
- * of the entry at the given +path+;
- * see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
+ * call-seq:
+ *   File.birthtime(path) -> time
  *
- *   filepath = 't.tmp'
- *   File.birthtime(filepath) # Raises Errno::ENOENT: No such file or directory
- *   File.write(filepath, 'foo')
- *   File.birthtime(filepath) # => 2026-04-14 11:10:43.2891695 -0500
- *   File.write(filepath, 'bar')
- *   File.birthtime(filepath) # => 2026-04-14 11:10:43.2891695 -0500
- *   File.delete(filepath)
- *   File.birthtime(filepath) # Raises Errno::ENOENT: No such file or directory.
+ * Returns a new Time object containing the creation time
+ * of the entry at the given `path`;
+ * see [File System Timestamps](rdoc-ref:file/timestamps.md):
  *
- *   dirpath = 'tmp'
- *   Dir.mkdir(dirpath)
- *   File.birthtime(dirpath) # => 2026-08-21 13:42:19.389324172 -0500
- *   Dir.rmdir(dirpath)
- *   File.birthtime(dirpath) # Raises Errno::ENOENT: No such file or directory.
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.birthtime(filepath) # Raises Errno::ENOENT: No such file or directory.
+ * File.write(filepath, 'foo')
+ * File.birthtime(filepath) # => 2026-10-05 13:41:02.330337383 -0500
+ * File.delete(filepath)    # Clean up.
+ * ```
  *
  */
 
@@ -3047,12 +3460,17 @@ rb_file_size(VALUE file)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     file.size    -> integer
+ *    size -> integer
  *
- *  Returns the size of <i>file</i> in bytes.
+ *  Returns the size of `self` in bytes:
  *
- *     File.new("testfile").size   #=> 66
+ *  ```ruby
+ *  File.new('/etc/passwd').size # => 3092   # Regular file.
+ *  File.new('/etc').size        # => 12288  # Directory.
+ *  ```
  *
  */
 
@@ -3100,21 +3518,16 @@ chmod_internal(const char *path, void *mode)
  *  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
  *  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
  *
- *  These examples use
- *  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
- *  that displays a mode both in octal digits and in characters:
- *
- *    dirpath = 'doc/foo'
- *    filepath = File.join(dirpath, 't.tmp')
- *    Dir.mkdir(dirpath)          # Create directory.
- *    mode(dirpath)               # => "040775 drwxrwxr-x"
- *    File.write(filepath, 'bar') # Create file.
- *    mode(filepath)              # => "100664 -rw-rw-r--"
- *    File.chmod(0755, filepath)  # Change file mode.
- *    mode(filepath)              # => "100755 -rwxr-xr-x"
- *    File.chmod(0664, dirpath)   # Change directory mode.
- *    mode(dirpath)               # => "040664 drw-rw-r--"
- *    FileUtils.rm_rf(dirpath)    # Clean up.
+ *    file0path = '/tmp/t0.tmp'
+ *    file1path = '/tmp/t1.tmp'
+ *    File.write(file0path, 'foo')
+ *    File.write(file1path, 'bar')
+ *    '%06o' % File.stat(file0path).mode # => "100664"
+ *    '%06o' % File.stat(file1path).mode # => "100664"
+ *    File.chmod(0o755, file0path, file1path)
+ *    '%06o' % File.stat(file0path).mode # => "100755"
+ *    '%06o' % File.stat(file1path).mode # => "100755"
+ *    File.delete(file0path, file1path)  # Clean up.
  *
  */
 
@@ -3160,16 +3573,13 @@ rb_fchmod(struct rb_io* io, mode_t mode)
  *  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
  *  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
  *
- *  These examples use
- *  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
- *  that displays a mode both in octal digits and in characters:
- *
- *    filepath = 'doc/t.tmp'
+ *    filepath = '/tmp/t.tmp'
  *    File.write(filepath, 'foo')
+ *    '%06o' % File.stat(filepath).mode      # => "100664"
  *    file = File.new(filepath)
- *    mode(filepath)      # => "100664 -rw-rw-r--"
- *    file.chmod(0775)
- *    mode(filepath)      # => "100775 -rwxrwxr-x"
+ *    file.chmod(0o755)
+ *    '%06o' % File.stat(filepath).mode      # => "100755"
+ *    # Clean up.
  *    file.close
  *    File.delete(filepath)
  *
@@ -3677,14 +4087,43 @@ utime_internal_i(int argc, VALUE *argv, int follow)
 }
 
 /*
- * call-seq:
- *  File.utime(atime, mtime, file_name, ...)   ->  integer
+ * :markup: markdown
  *
- * Sets the access and modification times of each named file to the
- * first two arguments. If a file is a symlink, this method acts upon
- * its referent rather than the link itself; for the inverse
- * behavior see File.lutime. Returns the number of file
- * names in the argument list.
+ * call-seq:
+ *  File.utime(atime, mtime, *paths) -> integer
+ *
+ * For the entry at the paths in `paths`,
+ * updates its access time to the given `atime`
+ * and its modification time to the given `mtime`;
+ * see [Filesystem Timestamps](rdoc-ref:file/timestamps.md).
+ * Returns the number of entries updated.
+ * Each path points to a file or directory.
+ *
+ * Each given time may be a Time object, an integer representing a time,
+ * or `nil` (meaning Time.now):
+ *
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.atime(filepath)  # => 2026-09-29 12:38:29.889703781 -0500
+ * File.mtime(filepath)  # => 2026-09-29 12:38:29.889703781 -0500
+ * time = Time.now
+ * File.utime(time, time, filepath)
+ * File.atime(filepath)  # => 2026-09-29 12:38:52.533160634 -0500
+ * File.mtime(filepath)  # => 2026-09-29 12:38:52.533160634 -0500
+ * File.utime(0, 0, filepath)
+ * File.atime(filepath)  # => 1969-12-31 18:00:00 -0600
+ * File.mtime(filepath)  # => 1969-12-31 18:00:00 -0600
+ * File.utime(nil, nil, filepath)
+ * File.atime(filepath)  # => 2026-09-29 12:39:50.859421265 -0500
+ * File.mtime(filepath)  # => 2026-09-29 12:39:50.859421265 -0500
+ * File.delete(filepath) # Clean up.
+ * ```
+ *
+ * Raises an exception if any entry cannot be updated;
+ * some entries may have already been updated.
+ *
+ * Follows symbolic links; use File.lutime to update the times for symbolic links.
  */
 
 static VALUE
@@ -3845,20 +4284,24 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
  *  at `link_path` to the entry at `target_path`:
  *
  *  ```ruby
- *  # Create paths.
- *  file_path = 'doc/extension.rdoc'             # => "doc/extension.rdoc"
- *  target_path = File.join('..', file_path)     # => "../doc/extension.rdoc"
- *  link_path = 'lib/u.tmp'                      # => "lib/u.tmp"
- *  # Create link and verify.
- *  File.symlink(target_path, link_path)
- *  File.read(file_path) == File.read(link_path) # => true
- *  File.delete(link_path)                       # Clean up.
+ *  filepath = '/etc/passwd'                   # Regular file.
+ *  linkpath = '/tmp/foo'
+ *  File.symlink(filepath, linkpath)
+ *  File.readlink(linkpath)                    # => "/etc/passwd"
+ *  File.read(filepath) == File.read(linkpath) # => true
  *  ```
  *
- *  If the entry at `target_path` is itself a symlink, that link is _not_ followed;
- *  thus the created symlink always points to `target_path`.
+ *  If the entry at `target_path` is itself a symbolic link,
+ *  that link is _not_ followed:
  *
- *  See also: ::read, ::readlink, ::symlink?.
+ *  ```ruby
+ *  link2path = '/tmp/bar'
+ *  File.symlink(linkpath, link2path)
+ *  File.readlink(link2path)                    # => "/tmp/foo"
+ *  File.read(filepath) == File.read(link2path) # => true
+ *  File.delete(linkpath, link2path)            # Clean up.
+ *  ```
+ *
  */
 
 static VALUE
@@ -3977,22 +4420,36 @@ unlink_internal(const char *path, void *arg)
  *    File.delete(*paths) -> integer
  *    File.unlink(*paths) -> integer
  *
- *  Removes the entry at each path in `paths`;
- *  returns the count of removed entries.
- *
- *  Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
- *  if an entry is a symlink, the link itself is removed.
+ *  Removes the entry ([hard link](rdoc-ref:file/hard_links.md)) at each path in `paths`;
+ *  returns the count of removed entries:
  *
  *  ```ruby
- *  File.write('t.tmp', 'foo')
- *  File.write('u.tmp', 'bar')
- *  File.delete('t.tmp', 'u.tmp') # => 2
- *  File.symlink('README.md', 'foo')
- *  File.unlink('foo')            # => 1
+ *  filepath0 = '/tmp/t0.tmp'
+ *  filepath1 = '/tmp/t1.tmp'
+ *  File.write(filepath0, 'foo')
+ *  File.write(filepath1, 'bar')
+ *  File.unlink(filepath0, filepath1) # => 2
+ *  ```
+ *
+ *  If the removed hard link is the last one associated with the inode,
+ *  also removes the inode; otherwise, not.
+ *  See [Unlinking](rdoc-ref:file/hard_links.md@Unlinking).
+ *
+ *  Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+ *  if the entry is a symbolic link, removes the entry itself (not the link target).
+ *
+ *  ```ruby
+ *  filepath = '/tmp/t.tmp'
+ *  linkpath = '/tmp/link'
+ *  File.write(filepath, 'foo')
+ *  File.symlink(filepath, linkpath)
+ *  File.unlink(linkpath) # => 1
+ *  File.exist?(filepath) # => true
+ *  File.unlink(filepath) # => 1
  *  ```
  *
  *  Raises an exception on any error;
- *  some entries may have been deleted before the path causing the error.
+ *  some entries may have been deleted before the error occurs.
  */
 
 static VALUE
@@ -4171,24 +4628,11 @@ static const char file_alt_separator[] = {FILE_ALT_SEPARATOR, '\0'};
 #  endif
 #endif
 
-#ifndef USE_NTFS_ADS
-# if USE_NTFS
-#   define USE_NTFS_ADS 1
-# else
-#   define USE_NTFS_ADS 0
-# endif
-#endif
-
 #if USE_NTFS
 #define istrailinggarbage(x) ((x) == '.' || (x) == ' ')
+#define isADS(x) ((x) == ':')
 #else
 #define istrailinggarbage(x) 0
-#endif
-
-#if USE_NTFS_ADS
-# define isADS(x) ((x) == ':')
-#else
-# define isADS(x) 0
 #endif
 
 #define enc_mbclen_needed(enc) (!rb_str_encindex_fastpath(rb_enc_to_index(enc)))
@@ -4368,7 +4812,7 @@ strrdirsep(const char *path, const char *end, bool mb_enc, rb_encoding *enc)
 
     const char *cursor = end - 1;
 
-    while (isdirsep(cursor[0])) {
+    while (cursor >= path && isdirsep(cursor[0])) {
         cursor--;
     }
 
@@ -4423,9 +4867,8 @@ fs_enc_check(VALUE path1, VALUE path2)
 
 #if USE_NTFS
 static char *
-ntfs_tail(const char *path, const char *end, rb_encoding *enc)
+ntfs_tail(const char *path, const char *end, bool mb_enc, rb_encoding *enc)
 {
-    bool mb_enc = enc_mbclen_needed(enc);
     while (path < end && *path == '.') path++;
     while (path < end && !isADS(*path)) {
         if (istrailinggarbage(*path)) {
@@ -4481,7 +4924,7 @@ ntfs_tail(const char *path, const char *end, rb_encoding *enc)
 } while (0)
 
 #define WITH_ROOTDIFF(stmt) do { \
-    long rootdiff = root - buf; \
+    rb_len_t rootdiff = root - buf;  \
     stmt; \
     root = buf + rootdiff; \
 } while (0)
@@ -4490,7 +4933,7 @@ static VALUE
 copy_home_path(VALUE result, const char *dir)
 {
     char *buf;
-    long dirlen;
+    rb_len_t dirlen;
     int encidx;
 
     dirlen = strlen(dir);
@@ -4598,7 +5041,7 @@ rb_default_home_dir(VALUE result)
 }
 
 static VALUE
-ospath_new(const char *ptr, long len, rb_encoding *fsenc)
+ospath_new(const char *ptr, rb_len_t len, rb_encoding *fsenc)
 {
 #if NORMALIZE_UTF8PATH
     VALUE path = rb_str_normalize_ospath(ptr, len);
@@ -4663,7 +5106,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     if (s < fend && s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
         BUFINIT(result, buf, p, pend); // TOOD: right size the buffer
 
-        long userlen = 0;
+        rb_len_t userlen = 0;
         if (s + 1 == fend || isdirsep(s[1])) {
             buf = 0;
             b = 0;
@@ -4826,11 +5269,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                         }
                         b = ++s;
                     }
-#if USE_NTFS
-                    else {
-                        do ++s; while (s < fend && istrailinggarbage(*s));
-                    }
-#endif /* USE_NTFS */
                     break;
                   case '/':
 #if defined FILE_ALT_SEPARATOR
@@ -4843,19 +5281,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                     break;
                 }
             }
-#if USE_NTFS
-            else {
-                --s;
-              case ' ': {
-                const char *e = s;
-                while (s < fend && istrailinggarbage(*s)) s++;
-                if (s >= fend) {
-                    s = e;
-                    goto endpath;
-                }
-              }
-            }
-#endif /* USE_NTFS */
             break;
           case '/':
 #if defined FILE_ALT_SEPARATOR
@@ -4887,135 +5312,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     }
 
     if (s > b) {
-#if USE_NTFS
-# if USE_NTFS_ADS
-        static const char prime[] = ":$DATA";
-        enum {prime_len = sizeof(prime) -1};
-# endif
-      endpath:
-# if USE_NTFS_ADS
-        if (s > b + prime_len && strncasecmp(s - prime_len, prime, prime_len) == 0) {
-            /* alias of stream */
-            /* get rid of a bug of x64 VC++ */
-            if (isADS(*(s - (prime_len+1)))) {
-                s -= prime_len + 1; /* prime */
-            }
-            else if (memchr(b, ':', s - prime_len - b)) {
-                s -= prime_len;	/* alternative */
-            }
-        }
-# endif /* USE_NTFS_ADS */
-#endif /* USE_NTFS */
         BUFCOPY(b, s-b);
         rb_str_set_len(result, p-buf);
     }
     if (p == skiproot(buf, p + !!*p) - 1) p++;
-
-#if USE_NTFS
-    *p = '\0';
-    if ((s = strrdirsep(b = buf, p, enc)) != 0 && !strpbrk(s, "*?")) {
-        VALUE tmp, v;
-        size_t len;
-        int encidx;
-        WCHAR *wstr;
-        WIN32_FIND_DATAW wfd;
-        HANDLE h;
-#ifdef __CYGWIN__
-#ifdef HAVE_CYGWIN_CONV_PATH
-        char *w32buf = NULL;
-        const int flags = CCP_POSIX_TO_WIN_A | CCP_RELATIVE;
-#else
-        char w32buf[MAXPATHLEN];
-#endif /* HAVE_CYGWIN_CONV_PATH */
-        const char *path;
-        ssize_t bufsize;
-        int lnk_added = 0, is_symlink = 0;
-        struct stat st;
-        p = (char *)s;
-        len = strlen(p);
-        if (lstat_without_gvl(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
-            is_symlink = 1;
-            if (len > 4 && STRCASECMP(p + len - 4, ".lnk") != 0) {
-                lnk_added = 1;
-            }
-        }
-        path = *buf ? buf : "/";
-#ifdef HAVE_CYGWIN_CONV_PATH
-        bufsize = cygwin_conv_path(flags, path, NULL, 0);
-        if (bufsize > 0) {
-            bufsize += len;
-            if (lnk_added) bufsize += 4;
-            w32buf = ALLOCA_N(char, bufsize);
-            if (cygwin_conv_path(flags, path, w32buf, bufsize) == 0) {
-                b = w32buf;
-            }
-        }
-#else /* !HAVE_CYGWIN_CONV_PATH */
-        bufsize = MAXPATHLEN;
-        if (cygwin_conv_to_win32_path(path, w32buf) == 0) {
-            b = w32buf;
-        }
-#endif /* !HAVE_CYGWIN_CONV_PATH */
-        if (is_symlink && b == w32buf) {
-            *p = '\\';
-            strlcat(w32buf, p, bufsize);
-            if (lnk_added) {
-                strlcat(w32buf, ".lnk", bufsize);
-            }
-        }
-        else {
-            lnk_added = 0;
-        }
-        *p = '/';
-#endif /* __CYGWIN__ */
-        rb_str_set_len(result, p - buf + strlen(p));
-        encidx = ENCODING_GET(result);
-        tmp = result;
-        if (encidx != ENCINDEX_UTF_8 && !is_ascii_string(result)) {
-            tmp = rb_str_encode_ospath(result);
-        }
-        len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, NULL, 0);
-        wstr = ALLOCV_N(WCHAR, v, len);
-        MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, wstr, len);
-        if (tmp != result) rb_str_set_len(tmp, 0);
-        h = FindFirstFileW(wstr, &wfd);
-        ALLOCV_END(v);
-        if (h != INVALID_HANDLE_VALUE) {
-            size_t wlen;
-            FindClose(h);
-            len = lstrlenW(wfd.cFileName);
-#ifdef __CYGWIN__
-            if (lnk_added && len > 4 &&
-                wcscasecmp(wfd.cFileName + len - 4, L".lnk") == 0) {
-                wfd.cFileName[len -= 4] = L'\0';
-            }
-#else
-            p = (char *)s;
-#endif
-            ++p;
-            wlen = (int)len;
-            len = WideCharToMultiByte(CP_UTF8, 0, wfd.cFileName, wlen, NULL, 0, NULL, NULL);
-            if (tmp == result) {
-                BUFCHECK(bdiff + len >= buflen);
-                WideCharToMultiByte(CP_UTF8, 0, wfd.cFileName, wlen, p, len + 1, NULL, NULL);
-            }
-            else {
-                rb_str_modify_expand(tmp, len);
-                WideCharToMultiByte(CP_UTF8, 0, wfd.cFileName, wlen, RSTRING_PTR(tmp), len + 1, NULL, NULL);
-                rb_str_cat_conv_enc_opts(result, bdiff, RSTRING_PTR(tmp), len,
-                                         rb_utf8_encoding(), 0, Qnil);
-                BUFINIT(result, buf, p, pend);
-                rb_str_resize(tmp, 0);
-            }
-            p += len;
-        }
-#ifdef __CYGWIN__
-        else {
-            p += strlen(p);
-        }
-#endif
-    }
-#endif /* USE_NTFS */
 
     rb_str_set_len(result, p - buf);
     rb_enc_check(fname, result);
@@ -5039,7 +5339,7 @@ str_shrink(VALUE str)
      (void)(NIL_P(dname) ? (dname) : ((dname) = rb_get_path(dname))))
 
 static VALUE
-file_expand_path_1(VALUE fname, long extra_capa)
+file_expand_path_1(VALUE fname, rb_len_t extra_capa)
 {
     VALUE buffer = rb_usascii_str_new(0, RSTRING_LEN(fname) + extra_capa);
     return rb_file_expand_path_internal(fname, Qnil, 0, 0, buffer);
@@ -5207,7 +5507,7 @@ enum rb_realpath_mode {
 };
 
 static int
-realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE fallback,
+realpath_rec(rb_len_t *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE fallback,
              VALUE loopcheck, enum rb_realpath_mode mode, int last)
 {
     const char *pend = unresolved + strlen(unresolved);
@@ -5217,7 +5517,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
     while (unresolved < pend) {
         const char *testname = unresolved;
         const char *unresolved_firstsep = rb_enc_path_next(unresolved, pend, enc);
-        long testnamelen = unresolved_firstsep - unresolved;
+        rb_len_t testnamelen = unresolved_firstsep - unresolved;
         const char *unresolved_nextname = unresolved_firstsep;
         while (unresolved_nextname < pend && isdirsep(*unresolved_nextname))
             unresolved_nextname++;
@@ -5230,7 +5530,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
                 const char *resolved_str = RSTRING_PTR(*resolvedp);
                 const char *resolved_names = resolved_str + *prefixlenp;
                 const char *lastsep = strrdirsep(resolved_names, resolved_str + RSTRING_LEN(*resolvedp), mb_enc, enc);
-                long len = lastsep ? lastsep - resolved_names : 0;
+                rb_len_t len = lastsep ? lastsep - resolved_names : 0;
                 rb_str_resize(*resolvedp, *prefixlenp + len);
             }
         }
@@ -5288,7 +5588,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
                     VALUE link;
                     VALUE link_orig = Qnil;
                     const char *link_prefix, *link_names;
-                    long link_prefixlen;
+                    rb_len_t link_prefixlen;
                     rb_hash_aset(loopcheck, testpath, ID2SYM(resolving));
                     link = rb_readlink(testpath, enc);
                     link_prefix = RSTRING_PTR(link);
@@ -5307,6 +5607,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
                                      loopcheck, mode, !*unresolved_firstsep))
                         return -1;
                     RB_GC_GUARD(link_orig);
+                    RB_GC_GUARD(link);
                     rb_hash_aset(loopcheck, testpath, rb_str_dup_frozen(*resolvedp));
                 }
                 else
@@ -5322,10 +5623,25 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
     return 0;
 }
 
+#ifdef DOSISH_DRIVE_LETTER
+/* expand_path on Windows builds the result in the code page of the
+ * argument encoding, which may not represent the current directory */
+static VALUE
+ospath_for_expand(VALUE path)
+{
+    switch (ENCODING_GET(path)) {
+      case ENCINDEX_ASCII_8BIT:
+      case ENCINDEX_US_ASCII:
+        return rb_enc_associate_index(rb_str_dup(path), rb_filesystem_encindex());
+    }
+    return TO_OSPATH(path);
+}
+#endif
+
 static VALUE
 rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum rb_realpath_mode mode)
 {
-    long prefixlen;
+    rb_len_t prefixlen;
     VALUE resolved;
     VALUE unresolved_path;
     VALUE loopcheck;
@@ -5334,7 +5650,24 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
     rb_encoding *enc;
     char *path_names = NULL, *basedir_names = NULL, *curdir_names = NULL;
     char *ptr, *prefixptr = NULL, *pend;
-    long len;
+    rb_len_t len;
+
+#ifdef DOSISH_DRIVE_LETTER
+    VALUE rootdir = path;
+    RSTRING_GETMEM(path, ptr, len);
+    if (!NIL_P(basedir) && skipprefixroot(ptr, ptr + len, rb_enc_get(path)) == ptr) {
+        FilePathValue(basedir);
+        rootdir = basedir;
+    }
+    RSTRING_GETMEM(rootdir, ptr, len);
+    if (len >= 2 && has_drive_letter(ptr) && (len == 2 || !isdirsep(ptr[2]))) {
+        /* Expand a drive-relative path or basedir against the current
+         * directory of the drive, as File.absolute_path does */
+        if (!NIL_P(basedir)) basedir = ospath_for_expand(rb_get_path(basedir));
+        path = rb_file_absolute_path(ospath_for_expand(path), basedir);
+        basedir = Qnil;
+    }
+#endif
 
     unresolved_path = rb_str_dup_frozen(path);
 
@@ -5416,7 +5749,7 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
     return resolved;
 }
 
-static VALUE rb_file_join(long argc, VALUE *args);
+static VALUE rb_file_join(rb_len_t argc, VALUE *args);
 
 #ifndef HAVE_REALPATH
 static VALUE
@@ -5431,11 +5764,6 @@ rb_check_realpath_emulate_rescue(VALUE arg, VALUE exc)
 {
     return Qnil;
 }
-#elif !defined(NEEDS_REALPATH_BUFFER) && defined(__APPLE__) && \
-    (!defined(MAC_OS_X_VERSION_10_6) || (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6))
-/* realpath() on OSX < 10.6 doesn't implement automatic allocation */
-# include <sys/syslimits.h>
-# define NEEDS_REALPATH_BUFFER 1
 #endif /* HAVE_REALPATH */
 
 static VALUE
@@ -5445,11 +5773,6 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     VALUE unresolved_path;
     char *resolved_ptr = NULL;
     VALUE resolved;
-# if defined(NEEDS_REALPATH_BUFFER) && NEEDS_REALPATH_BUFFER
-    char resolved_buffer[PATH_MAX];
-# else
-    char *const resolved_buffer = NULL;
-# endif
 
     if (mode == RB_REALPATH_DIR) {
         return rb_check_realpath_emulate(basedir, path, origenc, mode);
@@ -5462,7 +5785,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     }
     if (origenc) unresolved_path = TO_OSPATH(unresolved_path);
 
-    if ((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), resolved_buffer)) == NULL) {
+    if ((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), NULL)) == NULL) {
         /*
            wasi-libc 22 and later support realpath(3) but return ENOTSUP
            when the underlying host syscall returns it.
@@ -5483,9 +5806,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
         rb_sys_fail_path(unresolved_path);
     }
     resolved = ospath_new(resolved_ptr, strlen(resolved_ptr), rb_filesystem_encoding());
-# if !(defined(NEEDS_REALPATH_BUFFER) && NEEDS_REALPATH_BUFFER)
     free(resolved_ptr);
-# endif
 
 # if !defined(__linux__) && !defined(__APPLE__)
     /* As `resolved` is a String in the filesystem encoding, no
@@ -5589,7 +5910,7 @@ rb_file_s_realdirpath(int argc, VALUE *argv, VALUE klass)
 }
 
 static size_t
-rmext(const char *p, long l0, long l1, const char *e, long l2, rb_encoding *enc)
+rmext(const char *p, rb_len_t l0, rb_len_t l1, const char *e, rb_len_t l2, rb_encoding *enc)
 {
     int len1, len2;
     unsigned int c;
@@ -5625,12 +5946,12 @@ rmext(const char *p, long l0, long l1, const char *e, long l2, rb_encoding *enc)
 }
 
 static inline const char *
-enc_find_basename(const char *name, long *baselen, long *alllen, bool mb_enc, rb_encoding *enc)
+enc_find_basename(const char *name, rb_len_t *baselen, rb_len_t *alllen, bool mb_enc, rb_encoding *enc)
 {
     const char *p, *q, *e, *end;
-    long f = 0, n = -1;
+    rb_len_t f = 0, n = -1;
 
-    long len = (alllen ? (size_t)*alllen : strlen(name));
+    rb_len_t len = (alllen ? (size_t)*alllen : strlen(name));
 
     if (len <= 0) {
         return name;
@@ -5677,7 +5998,7 @@ enc_find_basename(const char *name, long *baselen, long *alllen, bool mb_enc, rb
             }
         }
 #if USE_NTFS
-        n = ntfs_tail(p, end, enc) - p;
+        n = ntfs_tail(p, end, mb_enc, enc) - p;
 #else
         n = chompdirsep(p, end, mb_enc, enc) - p;
 #endif
@@ -5703,7 +6024,7 @@ enc_find_basename(const char *name, long *baselen, long *alllen, bool mb_enc, rb
 }
 
 const char *
-ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encoding *enc)
+ruby_enc_find_basename(const char *name, rb_len_t *baselen, rb_len_t *alllen, rb_encoding *enc)
 {
     return enc_find_basename(name, baselen, alllen, enc_mbclen_needed(enc), enc);
 }
@@ -5750,7 +6071,7 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, fext = Qnil;
     const char *name, *p, *fp = 0;
-    long f = 0, n;
+    rb_len_t f = 0, n;
     rb_encoding *enc;
 
     argc = rb_check_arity(argc, 1, 2);
@@ -5883,9 +6204,9 @@ rb_file_dirname_n(VALUE fname, int n)
 }
 
 static inline const char *
-enc_find_extname(const char *name, long *len, bool mb_enc, rb_encoding *enc)
+enc_find_extname(const char *name, rb_len_t *len, bool mb_enc, rb_encoding *enc)
 {
-    const char *p, *e, *end = name + (len ? *len : (long)strlen(name));
+    const char *p, *e, *end = name + (len ? *len : (rb_len_t)strlen(name));
 
     p = strrdirsep(name, end, mb_enc, enc);	/* get the last path component */
     if (!p)
@@ -5948,7 +6269,7 @@ enc_find_extname(const char *name, long *len, bool mb_enc, rb_encoding *enc)
  *
  */
 const char *
-ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
+ruby_enc_find_extname(const char *name, rb_len_t *len, rb_encoding *enc)
 {
     return enc_find_extname(name, len, enc_mbclen_needed(enc), enc);
 }
@@ -5998,7 +6319,7 @@ rb_file_s_extname(VALUE klass, VALUE fname)
 {
     const char *name;
     CheckPath(fname, name);
-    long len = RSTRING_LEN(fname);
+    rb_len_t len = RSTRING_LEN(fname);
 
     if (len < 1) {
         return rb_enc_str_new(0, 0, rb_str_enc_get(fname));
@@ -6036,14 +6357,22 @@ rb_file_s_path(VALUE klass, VALUE fname)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.split(file_name)   -> array
+ *    File.split(string) -> array_of_strings
  *
- *  Splits the given string into a directory and a file component and
- *  returns them in a two-element array. See also File::dirname and
- *  File::basename.
+ *  Returns a 2-element array of strings containing the ::dirname and ::basename
+ *  of the the given `string`:
  *
- *     File.split("/home/gumby/.profile")   #=> ["/home/gumby", ".profile"]
+ *  ```ruby
+ *  File.split('doc/maintainers.md') # => ["doc", "maintainers.md"]
+ *  File.split('doc/')               # => [".", "doc"]
+ *  File.split('README.md')          # => [".", "README.md"]
+ *  File.split('/tmp/nosuch')        # => ["/tmp", "nosuch"]
+ *  File.split('@@##$$/%%^^&&')      # => ["@@#\#$$", "%%^^&&"]
+ *  ```
+ *
  */
 
 static VALUE
@@ -6065,7 +6394,7 @@ file_inspect_join(VALUE ary, VALUE arg, int recur)
 static VALUE
 rb_file_join_ary(VALUE ary)
 {
-    long len, i;
+    rb_len_t len, i;
     VALUE result, tmp;
     const char *name, *tail;
     int checked = TRUE;
@@ -6129,11 +6458,11 @@ rb_file_join_ary(VALUE ary)
 }
 
 static inline VALUE
-rb_file_join_fastpath(long argc, VALUE *args)
+rb_file_join_fastpath(rb_len_t argc, VALUE *args)
 {
-    long size = argc;
+    rb_len_t size = argc;
 
-    long i;
+    rb_len_t i;
     for (i = 0; i < argc; i++) {
         VALUE tmp = args[i];
         if (RB_LIKELY(RB_TYPE_P(tmp, T_STRING) && rb_str_enc_fastpath(tmp))) {
@@ -6153,15 +6482,15 @@ rb_file_join_fastpath(long argc, VALUE *args)
     const char *name = RSTRING_PTR(result);
     for (i = 1; i < argc; i++) {
         VALUE tmp = args[i];
-        long len = RSTRING_LEN(result);
+        rb_len_t len = RSTRING_LEN(result);
 
         const char *tmp_s;
-        long tmp_len;
+        rb_len_t tmp_len;
         RSTRING_GETMEM(tmp, tmp_s, tmp_len);
 
         if (tmp_len > 0 && isdirsep(tmp_s[0])) {
             // right side has a leading separator, remove left side separators.
-            long chomp = len;
+            rb_len_t chomp = len;
             while (chomp > 0 && isdirsep(name[chomp - 1])) {
                 --chomp;
             }
@@ -6186,7 +6515,7 @@ rb_file_join_fastpath(long argc, VALUE *args)
 }
 
 static inline VALUE
-rb_file_join(long argc, VALUE *args)
+rb_file_join(rb_len_t argc, VALUE *args)
 {
     if (RB_UNLIKELY(argc == 0)) {
         return rb_str_new(0, 0);
@@ -6232,23 +6561,28 @@ nogvl_truncate(void *ptr)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.truncate(filepath, size) -> 0
+ *    File.truncate(filepath, size) -> 0
  *
- *  Adjusts the size of file +filepath+ to the given size; returns 0:
+ *  Adjusts the size of file `filepath` to the given `size`:
  *
- *    file = File.new('t.tmp', 'w+')
- *    file.write('0123456789')
- *    file.truncate(5)
- *    file.rewind
- *    file.read # => "01234"
+ *  ```ruby
+ *  filepath = '/tmp/t.tmp'
+ *  File.write(filepath, '0123456789')
+ *  File.read(filepath)   # => "0123456789"
+ *  File.truncate(filepath, 5)
+ *  File.read(filepath)   # => "01234"
+ *  ```
  *
- *  Pads on the right with null characters if necessary:
+ *  Pads with null characters if necessary:
  *
- *    file.truncate(10)
- *    file.rewind
- *    file.read # => "01234\u0000\u0000\u0000\u0000\u0000"
- *    file.close
+ *  ```ruby
+ *  File.truncate(filepath, 10)
+ *  File.read(filepath)   # => "01234\u0000\u0000\u0000\u0000\u0000"
+ *  File.delete(filepath) # Clean up.
+ *  ```
  *
  */
 
@@ -6287,17 +6621,37 @@ nogvl_ftruncate(void *ptr)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     file.truncate(integer)    -> 0
+ *    truncate(size) -> 0
  *
- *  Truncates <i>file</i> to at most <i>integer</i> bytes. The file
- *  must be opened for writing. Not available on all platforms.
+ *  Adjusts the size of `self` to the given `size`,
+ *  regardless of the current [position](rdoc-ref:IO@Position);
+ *  does not adjust the position:
  *
- *     f = File.new("out", "w")
- *     f.syswrite("1234567890")   #=> 10
- *     f.truncate(5)              #=> 0
- *     f.close()                  #=> nil
- *     File.size("out")           #=> 5
+ *  ```ruby
+ *  filepath = '/tmp/t.tmp'
+ *  file = File.new(filepath, 'w+')
+ *  file.write('0123456789')
+ *  file.truncate(5)
+ *  file.pos  # => 10
+ *  file.rewind
+ *  file.read # => "01234"
+ *  ```
+ *
+ *  Pads with null characters if necessary:
+ *
+ *  ```ruby
+ *  file.truncate(10)
+ *  file.pos  # => 5
+ *  file.rewind
+ *  file.read # => "01234\u0000\u0000\u0000\u0000\u0000"
+ *  # Clean up.
+ *  file.close
+ *  File.delete(filepath)
+ *  ```
+ *
  */
 
 static VALUE
@@ -6687,46 +7041,41 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
 /*
  *  Document-class: File::Stat
  *
- *  A \File::Stat object contains information about an entry in the file system.
+ *  :markup: markdown
  *
- *  Each of these methods returns a new \File::Stat object:
+ *  A \File::Stat object contains information about an entry in the filesystem.
  *
- *  - File#lstat.
- *  - File::Stat.new.
- *  - File::lstat.
- *  - File::stat.
- *  - IO#stat.
+ *  Each of these methods returns a new \File::Stat object.
+ *  the first three follow symbolic links; the others don't:
  *
- *  === Snapshot
+ *  - File::Stat.new
+ *  - File::stat
+ *  - IO#stat
+ *  - File#lstat
+ *  - File::lstat
  *
- *  A new \File::Stat object takes an immediate "snapshot" of the entry's information;
- *  the captured information is never updated,
- *  regardless of changes in the actual entry:
+ *  ## Snapshot
  *
- *  The entry must exist when File::Stat.new is called:
+ *  A new \File::Stat object takes an immediate "snapshot" of the filesystem entry
+ *  at the given 'path';
+ *  the snapshot is never updated, regardless of changes in the entry (even its deletion):
  *
- *    filepath = 't.tmp'
- *    File.exist?(filepath)           # => false
- *    File::Stat.new(filepath)        # Raises Errno::ENOENT: No such file or directory.
- *    File.write(filepath, 'foo')     # Create the file.
- *    stat = File::Stat.new(filepath) # Okay.
+ *  ```ruby
+ *  filepath = '/tmp/t.tmp'
+ *  File.stat(filepath) # Raises Errno::ENOENT: No such file or directory.
+ *  File.write(filepath, 'foo')
+ *  stat = File.stat(filepath)
+ *  stat.birthtime # => 2026-10-03 12:19:23.723062465 -0500
+ *  File.delete(filepath)
+ *  stat.birthtime # => 2026-10-03 12:19:23.723062465 -0500
+ *  ```
  *
- *  Later changes to the actual entry do not change the \File::Stat object:
+ *  ## Filesystem Dependencies
  *
- *    File.atime(filepath) # => 2026-04-01 11:51:38.0014518 -0500
- *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
- *    File.write(filepath, 'bar')
- *    File.atime(filepath) # => 2026-04-01 11:58:11.922614 -0500
- *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
- *    File.delete(filepath)
- *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
- *
- *  === OS-Dependencies
- *
- *  Methods in a \File::Stat object may return platform-dependents values,
- *  and not all values are meaningful on all systems;
- *  for example, File::Stat#blocks returns +nil+ on Windows,
- *  but returns an integer on Linux.
+ *  Methods in a \File::Stat object may return filesystem-dependent values,
+ *  and not all values are meaningful on all filesystems;
+ *  for example, File::Stat#blocks returns `nil` on a Windows filesystem,
+ *  but returns an integer on others.
  *
  *  See also Kernel#test.
  */
@@ -6735,16 +7084,24 @@ static VALUE
 rb_stat_s_alloc(VALUE klass)
 {
     VALUE obj;
-    stat_alloc(rb_cStat, &obj);
+    stat_alloc(klass, &obj);
     return obj;
 }
 
 /*
- * call-seq:
- *   File::Stat.new(file_name)  -> stat
+ * :markup: markdown
  *
- * Create a File::Stat object for the given file name (raising an
- * exception if the file doesn't exist).
+ * call-seq:
+ *   File::Stat.new(path) -> stat
+ *
+ * Returns a new \File::Stat object containing a [snapshot](rdoc-ref:File::Stat@Snapshot)
+ * of the filesystem entry at the given `path`:
+ *
+ * ```ruby
+ * File::Stat.new('/etc/passwd')
+ * File::Stat.new('/tmp')
+ * File::Stat.new('nosuch') # Raises Errno::ENOENT: No such file or directory.
+ * ```
  */
 
 static VALUE
@@ -6784,40 +7141,44 @@ rb_stat_init_copy(VALUE copy, VALUE orig)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.ftype -> string
+ *    ftype -> string
  *
- *  Returns the string type of the object at +path+, one of:
+ *  Returns the string type of the path in the [snapshot](rdoc-ref:File::Stat@Snapshot)
+ *  in `self`, one of:
  *
- *  - <tt>'file'</tt>.
- *  - <tt>'directory'</tt>.
- *  - <tt>'characterSpecial'</tt>.
- *  - <tt>'blockSpecial'</tt>.
- *  - <tt>'fifo'</tt>.
- *  - <tt>'link'</tt>.
- *  - <tt>'socket'</tt>.
+ *  - `'file'`.
+ *  - `'directory'`.
+ *  - `'characterSpecial'`.
+ *  - `'blockSpecial'`.
+ *  - `'fifo'`.
+ *  - `'link'`.
+ *  - `'socket'`.
  *
  *  Examples:
  *
- *    File.stat('README.md').ftype  # => "file"
- *    File.stat('lib').ftype        # => "directory"
- *    File.stat('/dev/null').ftype  # => "characterSpecial"
- *    File.stat('/dev/loop0').ftype # => "blockSpecial"
+ *  ```ruby
+ *  File.stat('/etc/passwd').ftype   # => "file"
+ *  File.stat('/etc').ftype          # => "directory"
+ *  File.stat('/dev/null').ftype     # => "characterSpecial"
+ *  File.stat('/dev/loop0').ftype    # => "blockSpecial"
  *
- *    File.mkfifo('/tmp/pipe', 0666)
- *    File.stat('/tmp/pipe').ftype  # => "fifo"
+ *  File.mkfifo('/tmp/pipe', 0o666)
+ *  File.stat('/tmp/pipe').ftype     # => "fifo"
  *
- *    # Follows symbolic link.
- *    File.symlink('lib', 'lib_link')
- *    File.stat('lib_link').ftype   # => "directory"
- *    # Does not follow symbolic link.
- *    File.lstat('lib_link').ftype  # => "link"
+ *  File.symlink('/etc/passwd', '/tmp/link')
+ *  File.lstat('/tmp/link').ftype    # => "link"
  *
- *    require 'socket'
- *    UNIXServer.new('/tmp/socket')
- *    File.stat('/tmp/socket').ftype # => "socket"
+ *  require 'socket'
+ *  UNIXServer.new('/tmp/socket')
+ *  File.stat('/tmp/socket').ftype   # => "socket"
  *
- *  Returns <tt>'unknown'</tt> if the type cannot be determined.
+ *  File.delete('/tmp/link', '/tmp/pipe', '/tmp/socket') # Clean up.
+ *  ```
+ *
+ *  Returns `'unknown'` if the type cannot be determined.
  */
 
 static VALUE
@@ -6827,13 +7188,19 @@ rb_stat_ftype(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.directory?   -> true or false
+ *    directory? -> true or false
  *
- *  Returns +true+ if <i>stat</i> is a directory, +false+ otherwise.
+ *  Returns whether the entry in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`
+ *  is a directory:
  *
- *     File.stat("testfile").directory?   #=> false
- *     File.stat(".").directory?          #=> true
+ *  ```ruby
+ *  File.stat('/etc').directory?        # => true
+ *  File.stat('/etc/passwd').directory? # => false
+ *  ```
+ *
  */
 
 static VALUE
@@ -6847,17 +7214,19 @@ rb_stat_d(VALUE obj)
  * :markup: markdown
  *
  *  call-seq:
- *    stat.pipe? -> true or false
+ *    pipe? -> true or false
  *
  * Returns whether the entry at the path in `self` is a pipe:
  *
  * ```ruby
- * File.stat('doc/syntax/').pipe?        # => false  # Directory .
- * File.stat('doc/maintainers.md').pipe? # => false  # Regular file.
- * path = '/tmp/foo'
- * File.mkfifo(path)
- * File.stat(path).pipe?                 # => true
- * File.delete(path)                     # Clean up.
+ * pipepath = '/tmp/pipe'
+ * File.mkfifo(pipepath)                       # Make pipe.
+ * stat = File.stat(pipepath)                  # Take snapshot.
+ * stat.pipe?                       # => true  # In snapshot.
+ * File.delete(pipepath)                       # Clean up.
+ * stat.pipe?                       # => true  # Snapshot not updated.
+ * File.stat('/etc').pipe?          # => false
+ * File.stat('/etc/passwd').pipe?   # => false
  * ```
  *
  */
@@ -6878,17 +7247,23 @@ rb_stat_p(VALUE obj)
  *  call-seq:
  *    symlink? -> true or false
  *
- *  Returns whether the entry in `self`
+ *  Returns whether the entry in `self` (see [Snapshot](rdoc-ref:File::Stat@Snapshot))
  *  is a [symbolic link](rdoc-ref:file/symbolic_links.md):
  *
  *  ```ruby
- *  filepath = 'README.md'
- *  linkpath = 'foo'
+ *  filepath = '/etc/passwd'
+ *  linkpath = '/tmp/foo'
  *  File.symlink(filepath, linkpath)
  *  File.stat(filepath).symlink?  # => false
- *  File.stat(linkpath).symlink?  # => false  # stat followed symlink.
- *  File.lstat(linkpath).symlink? # => true   # lstat did not follow symlink.
- *  File.unlink(linkpath)         # Clean up.
+ *  File.lstat(filepath).symlink? # => false
+ *  stat = File.stat(linkpath)    # Snapshot with stat follows link.
+ *  stat.symlink?                 # => false
+ *  lstat = File.lstat(linkpath)  # Snapshot with lstat does not follow link.
+ *  lstat.symlink?                # => true
+ *  File.delete(linkpath)         # Clean up.
+ *  # Snapshots are unchanged, even when link deleted.
+ *  stat.symlink?                 # => false
+ *  lstat.symlink?                # => true
  *  ```
  *
  */
@@ -6903,13 +7278,25 @@ rb_stat_l(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
- *     stat.socket?    -> true or false
+ *    socket? -> true or false
  *
- *  Returns +true+ if <i>stat</i> is a socket, +false+ if it isn't or if the
- *  operating system doesn't support this feature.
+ *  Returns whether entry in the [snapshot](rdoc-ref:File::Stat@Snapshot)
+ *  in `self` is a socket:
  *
- *     File.stat("testfile").socket?   #=> false
+ *  ```ruby
+ *  require 'socket'
+ *  socket_path = '/tmp/socket'
+ *  server = UNIXServer.new(socket_path)
+ *  stat = File.stat(socket_path)         # Take snapshot.
+ *  stat.socket?              # => true
+ *  server.close                          # Clean up.
+ *  File.delete(socket_path)              # Clean up.
+ *  stat.socket?              # => true   # Snapshot not updated.
+ *  File.stat('/tmp').socket? # => false  # Not a socket.
+ *  ```
  *
  */
 
@@ -6924,14 +7311,22 @@ rb_stat_S(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.blockdev?   -> true or false
+ *    blockdev? -> true or false
  *
- *  Returns +true+ if the file is a block device, +false+ if it isn't or if
- *  the operating system doesn't support this feature.
+ *  Returns whether the entry in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`
+ *  is a block device (i.e., a direct-access device):
  *
- *     File.stat("testfile").blockdev?    #=> false
- *     File.stat("/dev/hda1").blockdev?   #=> true
+ *  ```ruby
+ *  File.stat('/dev/nvme0n1').blockdev? # => true
+ *  File.stat('/dev/loop0').blockdev?   # => true
+ *  File.stat('/dev/tty').blockdev?     # => false
+ *  File.stat('/dev/null').blockdev?    # => false
+ *  ```
+ *
+ *  The returned value is filesystem-dependent; returns `false` on Windows or MacOS.
  *
  */
 
@@ -6946,14 +7341,22 @@ rb_stat_b(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.chardev?    -> true or false
+ *    chardev? -> true or false
  *
- *  Returns +true+ if the file is a character device, +false+ if it isn't or
- *  if the operating system doesn't support this feature.
+ *  Returns whether the entry in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`
+ *  is a character device (i.e., a sequential-access device):
  *
- *     File.stat("/dev/tty").chardev?   #=> true
+ *  ```ruby
+ *  File.stat('/dev/tty').chardev?     # => true
+ *  File.stat('/dev/null').chardev?    # => true
+ *  File.stat('/dev/nvme0n1').chardev? # => false
+ *  File.stat('/dev/loop0').chardev?   # => false
+ *  ```
  *
+ *  The returned value is filesystem-dependent; on Windows, always `false`.
  */
 
 static VALUE
@@ -6970,25 +7373,21 @@ rb_stat_c(VALUE obj)
  *  call-seq:
  *    owned? -> true or false
  *
- * Returns whether `self` represents a filesystem entry that,
- * at the time `self` was created,
- * existed and was owned by the user of the current process;
- * see [Snapshot](rdoc-ref:File::Stat@Snapshot):
+ * Returns whether the owner in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`
+ * is the owner of the current process:
  *
  * ```ruby
- * filepath = 'doc/t.tmp'
- * File.write(filepath, 'foo')
- * filestat = File.stat(filepath)
- * filestat.owned?          # => true
- * File.delete(filepath)
- * filestat.owned?          # => true  # Snapshot unchanged.
- * dirpath = 'doc/tmp'
+ * dirpath = '/tmp/dir'
  * Dir.mkdir(dirpath)
- * dirstat = File.stat(dirpath)
- * dirstat.owned?           # => true
- * Dir.rmdir(dirpath)
- * dirstat.owned?           # => true  # Snapshot unchanged.
- * File.stat('/etc').owned? # => false
+ * filepath = File.join(dirpath, 't.tmp') # => "/tmp/dir/t.tmp"
+ * File.write(filepath, 'foo')
+ * dirstat = File.stat(dirpath)           # Snapshot of directory.
+ * filestat = File.stat(filepath)         # Snapshot of file.
+ * dirstat.owned?                         # => true
+ * filestat.owned?                        # => true
+ * FileUtils.rm_rf(dirpath)               # Clean up.
+ * dirstat.owned?                         # => true  # Snapshot not updated.
+ * filestat.owned?                        # => true  # Snapshot not updated.
  * ```
  *
  */
@@ -7008,19 +7407,25 @@ rb_stat_rowned(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   stat.grpowned?(path) -> true or false
+ *   grpowned?(path) -> true or false
  *
- * Returns whether the filesystem entry for the given string +path+ exists,
- * and the effective group id of the calling process is the owner of the entry:
+ * Returns `false` on Windows.
  *
- *   File.stat('README.md').grpowned?   # => true
- *   File.stat('lib').grpowned?         # => true
- *   File.stat('/etc/passwd').grpowned? # => false
+ * On other systems, returns whether the effective group id of the calling process
+ * is the owner of the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- * Raises an exception if there is no entry at the given +path+.
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.stat(filepath).grpowned?      # => true
+ * File.stat('/etc').grpowned?        # => false
+ * File.stat('/etc/passwd').grpowned? # => false
+ * File.delete(filepath)              # Clean up.
+ * ```
  *
- * Returns +false+ on Windows.
  */
 
 static VALUE
@@ -7081,7 +7486,7 @@ rb_stat_r(VALUE obj)
  *  call-seq:
  *     stat.readable_real?  ->  true or false
  *
- *  Like #readable?, but checks against the real user and group ids
+ *  Like #readable?, but checks against the real owner and group ids
  *  instead of the effective ids.
  */
 
@@ -7108,16 +7513,29 @@ rb_stat_R(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    stat.world_readable? -> integer or nil
+ *   world_readable? -> integer or nil
  *
- * If <i>stat</i> is readable by others, returns an integer
- * representing the file permission bits of <i>stat</i>. Returns +nil+
- * otherwise. The meaning of the bits is platform dependent; on Unix
- * systems, see <code>stat(2)</code>.
+ * Returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+ * for the entry in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`
+ * if those permissions allow reading by others;
+ * otherwise, returns `nil`:
  *
- *    m = File.stat("/etc/passwd").world_readable?  #=> 420
- *    sprintf("%o", m)				    #=> "644"
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')               # Create file.
+ * File.chmod(0o000, filepath)               # Make file unreadable.
+ * stat0 = File.stat(filepath)               # Take snapshot.
+ * stat0.world_readable?         # => nil    # Snapshot shows not world-readable.
+ * File.chmod(0o644, filepath)               # Make file world-readable.
+ * stat0.world_readable?         # => nil    # Snapshot not updated.
+ * stat1 = File.stat(filepath)               # Take new snapshot.
+ * stat1.world_readable?.to_s(8) # => "644"  # Snapshot shows world-readable.
+ * File.delete(filepath)                     # Clean up.
+ * stat1.world_readable?.to_s(8) # => "644"  # Snapshot not updated.
+ * ```
  */
 
 static VALUE
@@ -7133,14 +7551,26 @@ rb_stat_wr(VALUE obj)
 }
 
 /*
- *  call-seq:
- *     stat.writable?  ->  true or false
+ * :markup: markdown
+
+ * call-seq:
+ *   writable? -> true or false
  *
- *  Returns +true+ if <i>stat</i> is writable by the effective user id of this
- *  process.
+ * Returns whether the entry at the path in `self` exists and is writable
+ * by the effective owner and group in the current process:
  *
- *     File.stat("testfile").writable?   #=> true
+ * ```ruby
+ * filepath = '/tmp/secret.txt'
+ * File.write(filepath, 'foo')
+ * File.stat(filepath).writable? # => true   # Writable.
+ * File.chmod(0o000, filepath)               # Make non-writable.
+ * File.stat(filepath).writable? # => false  # Not writable.
+ * File.delete(filepath)                     # Clean up.
+ * File.stat('/etc').writable?   # => false  # Directory.
+ * ```
  *
+ * Note that filesystem security features may cause this method to return `true`
+ * even when the file is not writable by the effective owner and group.
  */
 
 static VALUE
@@ -7166,14 +7596,16 @@ rb_stat_w(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
- *     stat.writable_real?  ->  true or false
+ *    writable_real? -> true or false
  *
- *  Returns +true+ if <i>stat</i> is writable by the real user id of this
- *  process.
+ *  Like File::Stat.writable?, but checks against the real owner and group
+ *  instead of the effective owner and group.
  *
- *     File.stat("testfile").writable_real?   #=> true
- *
+ * Note that filesystem security features may cause this method to return `true`
+ * even when the entry in `self` is not writable by the real owner and group.
  */
 
 static VALUE
@@ -7199,16 +7631,26 @@ rb_stat_W(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+
  * call-seq:
- *    stat.world_writable?  ->  integer or nil
+ *   world_writable? -> integer or nil
  *
- * If <i>stat</i> is writable by others, returns an integer
- * representing the file permission bits of <i>stat</i>. Returns +nil+
- * otherwise. The meaning of the bits is platform dependent; on Unix
- * systems, see <code>stat(2)</code>.
+ * If the entry in `self` exists and is writable by others,
+ * returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+ * for the entry;
+ * otherwise, returns `nil`:
  *
- *    m = File.stat("/tmp").world_writable?	    #=> 511
- *    sprintf("%o", m)				    #=> "777"
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.stat(filepath).world_writable?         # => nil   # Not world-writable.
+ * File.chmod(0o777, filepath)                            # Make world-writable.
+ * File.stat(filepath).world_writable?.to_s(8) # => "777" # World-writable.
+ * File.delete(filepath)                                  # Clean up.
+ * File.stat('/tmp').world_writable?.to_s(8)   # => "777" # Directory.
+ * ```
+ *
  */
 
 static VALUE
@@ -7224,36 +7666,25 @@ rb_stat_ww(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
  *   executable? -> true or false
  *
- * Returns whether the filesystem entry represented by +self+
- * exists and is executable;
- * raises Errno::ENOENT if the entry does not exist.
+ * Returns whether the filesystem entry represented by `self`
+ * is [executable](rdoc-ref:file/filesystem_modes.md@Executable+Files)
+ * by the effective owner/group of the current process:
  *
- * On Windows, the entry is executable if its path has file extension
- * +.bat+, +.cmd+, +.com+, or +.exe+:
+ * ```ruby
+ * File.stat('/bin/ruby').executable?   # => true
+ * File.stat('/etc').executable?        # => true
+ * File.stat('/etc/passwd').executable? # => false
+ * ```
  *
- *   File.stat('win32/rtname.cmd').executable? # => true
- *   File.stat('win32/file.c').executable?     # => false
+ * Raises Errno::ENOENT if the entry does not exist.
  *
- * On other systems, the entry is executable if it has the execute/search
- * permission for the effective user and group id of the current process;
- * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
- *
- * These examples use
- * a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
- * that displays a mode both in octal digits and in characters:
- *
- *   File.stat('.').executable?           # => true
- *   mode('.')                            # => "040775 drwxrwxr-x"
- *   File.stat('bin/gem').executable?     # => true
- *   mode('bin/gem')                      # => "100775 -rwxrwxr-x"
- *   File.stat('/etc/passwd').executable? # => false
- *   mode('/etc/passwd')                  # => "100644 -rw-r--r--"
- *
- * Note that some filesystem settings may cause this method to return +true+
- * even though the entry is not executable by the effective user/group.
+ * Note that some filesystem settings may cause this method to return `true`
+ * even though the entry is not executable by the effective owner/group.
  */
 
 static VALUE
@@ -7281,11 +7712,12 @@ rb_stat_x(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
  *  call-seq:
- *     stat.executable_real?    -> true or false
+ *    executable_real? -> true or false
  *
- *  Same as <code>executable?</code>, but tests using the real owner of
- *  the process.
+ *  Like Pathname#executable?, but checks against the real owner/group
+ *  instead of the effective owner/group.
  */
 
 static VALUE
@@ -7313,17 +7745,18 @@ rb_stat_X(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
  *    file? -> true or false
  *
- * Returns whether +self+ represents a filesystem entry that exists and is a regular file;
+ * Returns whether `self` represents a filesystem entry that exists and is a regular file;
  * see File::Stat.ftype:
  *
- *   # Paths.
- *   File.stat('README.md').file?     # => true
- *   File.stat('doc/').file?     # => false
- *   File.stat('nosuch').file? # Raises Errno::ENOENT: No such file or directory.
- *
+ * ```ruby
+ * File.stat('/etc/passwd').file? # => true
+ * File.stat('/etc').file?        # => false
+ * ```
  *
  */
 
@@ -7335,12 +7768,40 @@ rb_stat_f(VALUE obj)
 }
 
 /*
- *  call-seq:
- *     stat.zero?    -> true or false
+ * :markup: markdown
  *
- *  Returns +true+ if <i>stat</i> is a zero-length file; +false+ otherwise.
+ * call-seq:
+ *   zero? -> true or false
  *
- *     File.stat("testfile").zero?   #=> false
+ * Returns whether the entry at the path in `self` has size zero.
+ *
+ * The entry may be a file:
+ *
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.stat(filepath).zero? # => false
+ * File.truncate(filepath, 0)
+ * File.stat(filepath).zero? # => true
+ * File.delete(filepath)     # Clean up.
+ * ```
+ *
+ * The entry may be a directory:
+ *
+ * ```ruby
+ * dirpath = '/tmp/foo'
+ * Dir.mkdir(dirpath)
+ * stat = File.stat(dirpath)
+ * # Size is filesystem-dependent; may or may not be zero.
+ * stat.size                              # => 4096
+ * stat.zero?                             # => false
+ * filepath = File.join(dirpath, 't.tmp') # => "/tmp/foo/t.tmp"
+ * File.write(filepath, 'foo')
+ * stat = File.stat(dirpath)
+ * stat.size                              # => 4096
+ * stat.zero?                             # => false
+ * FileUtils.rm_rf(dirpath)               # Clean up.
+ * ```
  *
  */
 
@@ -7352,14 +7813,27 @@ rb_stat_z(VALUE obj)
 }
 
 /*
- *  call-seq:
- *     stat.size?    -> Integer or nil
+ * :markup: markdown
  *
- *  Returns +nil+ if <i>stat</i> is a zero-length file, the size of
- *  the file otherwise.
+ * call-seq:
+ *    size? -> integer or nil
  *
- *     File.stat("testfile").size?   #=> 66
- *     File.stat(File::NULL).size?   #=> nil
+ * Returns the size in bytes of the entry in `self`
+ * if the entry exists and has non-zero size, `nil` otherwise:
+ *
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.size(filepath) # => 3
+ * stat = File.stat(filepath)    # Take snapshot.
+ * stat.size?          # => 3    # Non-zero size.
+ * File.write(filepath, '')
+ * File.size(filepath) # => 0
+ * stat.size?          # => 3    # Snapshot unchanged.
+ * stat = File.stat(filepath)    # Take new snapshot.
+ * stat.size?          # => nil  # Zero size
+ * File.delete(filepath)         # Clean up.
+ * ```
  *
  */
 
@@ -7373,14 +7847,31 @@ rb_stat_s(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
- *     stat.setuid?    -> true or false
+ *    setuid? -> true or false
  *
- *  Returns +true+ if <i>stat</i> has the set-user-id permission bit set,
- *  +false+ if it doesn't or if the operating system doesn't support this
- *  feature.
+ *  Returns whether the setuid bit is set
+ *  in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+ *  for the entry represented in `self`:
  *
- *     File.stat("/bin/su").setuid?   #=> true
+ *  ```ruby
+ *  path = '/tmp/t.tmp'
+ *  File.write(path, 'foo')
+ *  stat = File.stat(path)   # Take snapshot; bit not set.
+ *  stat.setuid?             # => false
+ *  stat.mode.to_s(8)        # => "100664"
+ *  File.chmod(0o4644, path) # Set the bit; snapshot not updated.
+ *  stat.setuid?             # => false
+ *  stat.mode.to_s(8)        # => "100664"
+ *  stat = File.stat(path)   # Fresh snapshot.
+ *  stat.setuid?             # => true
+ *  stat.mode.to_s(8)        # => "104644"
+ *  File.delete(path)        # Clean up.
+ *  ```
+ *
+ *  On Windows, the bit is never set; the method always returns `false`.
  */
 
 static VALUE
@@ -7393,15 +7884,31 @@ rb_stat_suid(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.setgid?   -> true or false
+ *    setgid? -> true or false
  *
- *  Returns +true+ if <i>stat</i> has the set-group-id permission bit set,
- *  +false+ if it doesn't or if the operating system doesn't support this
- *  feature.
+ *  Returns whether the setgid bit is set
+ *  in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+ *  for the entry represented in `self`:
  *
- *     File.stat("/usr/sbin/lpc").setgid?   #=> true
+ *  ```ruby
+ *  path = '/tmp/t.tmp'
+ *  File.write(path, 'foo')
+ *  stat = File.stat(path)   # Take a snapshot.
+ *  stat.setgid?             # => false
+ *  stat.mode.to_s(8)        # => "100664"
+ *  File.chmod(0o2644, path) # Set the bit; stat snapshot unchanged.
+ *  stat.setgid?             # => false
+ *  stat.mode.to_s(8)        # => "100664"
+ *  stat = File.stat(path)   # Fresh stat; snapshot changed.
+ *  stat.setgid?             # => true
+ *  stat.mode.to_s(8)        # => "102644"
+ *  File.delete(path)        # Clean up.
+ *  ```
  *
+ *  On Windows, the bit is never set; the method always returns `false`.
  */
 
 static VALUE
@@ -7414,14 +7921,31 @@ rb_stat_sgid(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+
  *  call-seq:
- *     stat.sticky?    -> true or false
+ *    sticky? -> true or false
  *
- *  Returns +true+ if <i>stat</i> has its sticky bit set, +false+ if it
- *  doesn't or if the operating system doesn't support this feature.
+ * Returns whether the sticky bit is set
+ * in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+ * for `self`:
  *
- *     File.stat("testfile").sticky?   #=> false
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * stat = File.stat(filepath)
+ * stat.sticky?                # => false
+ * stat.mode.to_s(8)           # => "100664"
+ * File.chmod(01644, filepath) # => 1        # Stat unchanged.
+ * stat.sticky?                # => false
+ * stat.mode.to_s(8)           # => "100664"
+ * stat = File.stat(filepath)                # Fresh stat.
+ * stat.sticky?                # => true
+ * stat.mode.to_s(8)           # => "101644"
+ * File.delete(filepath)                     # Clean up.
+ * ```
  *
+ * Returns `false` on Windows.
  */
 
 static VALUE
@@ -7609,7 +8133,7 @@ static bool
 fname_need_expansion_p(VALUE fname)
 {
     const char *s = RSTRING_PTR(fname);
-    const long len = RSTRING_LEN(fname);
+    const rb_len_t len = RSTRING_LEN(fname);
     const char *send = s + len;
 
     if (nav_component_p(s, send)) {
@@ -7633,7 +8157,7 @@ fname_need_expansion_p(VALUE fname)
 static bool
 expand_feature(VALUE fname, VALUE dname, VALUE buffer, bool need_expansion)
 {
-    long dname_len = RSTRING_LEN(dname);
+    rb_len_t dname_len = RSTRING_LEN(dname);
     const char *dname_ptr = RSTRING_PTR(dname);
 
     RUBY_ASSERT(dname_len > 0);
@@ -7657,7 +8181,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
     const char *f = StringValueCStr(*filep);
     VALUE fname = *filep;
-    long i, j, fnlen;
+    rb_len_t i, j, fnlen;
     int expanded = 0;
 
     if (!ext[0]) return 0;
@@ -7683,7 +8207,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
         return 0;
     }
 
-    long expanded_load_path_maxlen;
+    rb_len_t expanded_load_path_maxlen;
     VALUE load_path = rb_get_expanded_load_path(&expanded_load_path_maxlen);
     if (!load_path) return 0;
 
@@ -7734,14 +8258,14 @@ rb_find_file(VALUE path)
         return path;
     }
 
-    long expanded_load_path_maxlen;
+    rb_len_t expanded_load_path_maxlen;
     VALUE load_path = rb_get_expanded_load_path(&expanded_load_path_maxlen);
 
     if (load_path) {
         bool need_expansion = fname_need_expansion_p(path);
         VALUE tmp = rb_str_tmp_new(expanded_load_path_maxlen + RSTRING_LEN(path) + 2);
         rb_enc_associate_index(tmp, rb_usascii_encindex());
-        for (long i = 0; i < RARRAY_LEN(load_path); i++) {
+        for (rb_len_t i = 0; i < RARRAY_LEN(load_path); i++) {
             VALUE dname = rb_get_path(RARRAY_AREF(load_path, i));
             if (!RSTRING_LEN(dname)) continue;
             expand_feature(path, dname, tmp, need_expansion);
@@ -7766,10 +8290,6 @@ rb_find_file(VALUE path)
 const char ruby_null_device[] =
 #if defined DOSISH
     "NUL"
-#elif defined AMIGA || defined __amigaos__
-    "NIL"
-#elif defined __VMS
-    "NL:"
 #else
     "/dev/null"
 #endif

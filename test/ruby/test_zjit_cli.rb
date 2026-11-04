@@ -102,9 +102,65 @@ class TestZJITCLI < Test::Unit::TestCase
     }
   end
 
+  def test_side_exit_count_without_stats
+    script = <<~RUBY
+      def test = ::RubyVM::ZJIT.induce_side_exit!
+      test
+      test
+      stats = RubyVM::ZJIT.stats
+      summed_exits = stats.select { |key, _| key.start_with?("exit_") }.values.sum
+      p([
+           RubyVM::ZJIT.stats_enabled?,
+           stats[:side_exit_count] > 0,
+           RubyVM::ZJIT.stats(:side_exit_count) == stats[:side_exit_count],
+           summed_exits == 0 || summed_exits == stats[:side_exit_count],
+      ])
+    RUBY
+
+    out, err, status = eval_with_jit(script, call_threshold: 2, stats: false)
+    assert_success(out, err, status)
+    assert_equal("[false, true, true, true]\n", out, "side_exit_count should count without --zjit-stats")
+
+    out, err, status = eval_with_jit(script, call_threshold: 2, stats: :quiet)
+    assert_success(out, err, status)
+    assert_equal("[true, true, true, true]\n", out, "side_exit_count should match the sum of per-reason exit counters")
+  end
+
+  def test_no_exit_counting
+    assert_compiles('0', <<~RUBY, call_threshold: 2, extra_args: ['--zjit-no-exit-counting'])
+      def test = ::RubyVM::ZJIT.induce_side_exit!
+      test
+      test
+      RubyVM::ZJIT.stats(:side_exit_count)
+    RUBY
+  end
+
   def test_enable_through_env
     child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
     assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
+      assert_include(stdout.first, '+ZJIT')
+      assert_equal([], stderr)
+    end
+  end
+
+  def test_enable_through_feature_flag
+    child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => nil, 'RUBYOPT' => nil}
+    args_list = [
+      %w[--enable=zjit],
+      %w[--enable-zjit],
+      %w[--disable=zjit --enable=zjit],
+      %w[--zjit --zjit-disable --enable=zjit],
+    ]
+    args_list += [%w[--jit], %w[--enable=jit]] unless JITSupport.yjit_supported?
+    args_list.each do |args|
+      assert_in_out_err([child_env, '--disable-all', *args, '-e', 'p RubyVM::ZJIT.enabled?']) do |stdout, stderr|
+        expected = args.include?('--zjit-disable') ? 'false' : 'true'
+        assert_equal([expected], stdout, args.inspect)
+        assert_equal([], stderr, args.inspect)
+      end
+    end
+
+    assert_in_out_err([child_env.merge('RUBYOPT' => '--enable=zjit'), '--disable=gems,yjit', '-v']) do |stdout, stderr|
       assert_include(stdout.first, '+ZJIT')
       assert_equal([], stderr)
     end
@@ -135,6 +191,46 @@ class TestZJITCLI < Test::Unit::TestCase
 
       assert_predicate RubyVM::ZJIT, :enabled?
       assert_include RUBY_DESCRIPTION, "+ZJIT"
+    RUBY
+  end
+
+  def test_zjit_max_compile_time
+    assert_runs ':ok', <<~'RUBY'
+      def compiled_iseq?
+        count = RubyVM::ZJIT.stats(:compiled_iseq_count)
+        yield
+        RubyVM::ZJIT.stats(:compiled_iseq_count) > count
+      end
+
+      def compile_for(ns)
+        total = RubyVM::ZJIT.total_compile_time_ns
+        target = total + ns
+        while true
+          return unless eval("compiled_iseq? { nil.to_i }")
+          return if RubyVM::ZJIT.total_compile_time_ns > target
+        end
+      end
+
+      return :not_compiled1 unless eval('compiled_iseq? { nil.to_i }')
+
+      RubyVM::ZJIT.max_compile_time_ns = RubyVM::ZJIT.total_compile_time_ns + 1_000_000
+      compile_for(50_000_000)
+
+      unless RubyVM::ZJIT.total_compile_time_ns >= RubyVM::ZJIT.max_compile_time_ns
+        return :not_over
+      end
+
+      return :did_compile1 if eval('compiled_iseq? { nil.to_i }')
+
+      :ok
+    RUBY
+  end
+
+  def test_zjit_max_compile_time_when_disabled
+    assert_separately(["--zjit", "--zjit-disable"], <<~'RUBY')
+      refute_predicate RubyVM::ZJIT, :enabled?
+      RubyVM::ZJIT.max_compile_time_ns = 42
+      assert_equal 42, RubyVM::ZJIT.max_compile_time_ns
     RUBY
   end
 
@@ -303,6 +399,13 @@ class TestZJITCLI < Test::Unit::TestCase
     }, stats: true
   end
 
+  def test_reset_stats_with_zjit_off
+    # [Bug #22327]
+    assert_runs 'nil', <<~RUBY, zjit: false
+      RubyVM::ZJIT.reset_stats!
+    RUBY
+  end
+
   def test_exit_tracing
     # Smoke test: --zjit-trace-exits writes a Fuchsia trace (.fxt) file to /tmp
     assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-exits'])
@@ -317,6 +420,35 @@ class TestZJITCLI < Test::Unit::TestCase
 
       fxt_files = Dir.glob("/tmp/perfetto-\#{Process.pid}.fxt")
       result = fxt_files.length == 1 && !File.empty?(fxt_files.first)
+      File.unlink(*fxt_files)
+      result
+    RUBY
+  end
+
+  def test_compile_size_tracing
+    assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-compiles'], call_threshold: 2)
+      def test(object) = object.itself
+
+      100.times { test(42) }
+
+      fxt_files = Dir.glob("/tmp/perfetto-\#{Process.pid}.fxt")
+      result = fxt_files.length == 1 &&
+        (dump = File.binread(fxt_files.first)).include?("size") &&
+        dump.include?("total")
+      File.unlink(*fxt_files)
+      result
+    RUBY
+  end
+
+  def test_compile_size_counter_tracing
+    assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-compiles'], call_threshold: 2)
+      def test(object) = object.itself
+
+      100.times { test(42) }
+
+      fxt_files = Dir.glob("/tmp/perfetto-\#{Process.pid}.fxt")
+      result = fxt_files.length == 1 &&
+        (dump = File.binread(fxt_files.first)).include?("code size")
       File.unlink(*fxt_files)
       result
     RUBY
@@ -340,6 +472,43 @@ class TestZJITCLI < Test::Unit::TestCase
       result = outer { |x| x }
       result.is_a?(Proc) ? :ok : :fail
     RUBY
+  end
+
+  def test_stack_overflow_exit_from_send_with_normalized_keywords
+    # When the VM stack overflows at a SendDirect or an inlined frame, the side
+    # exit re-executes the send in the interpreter. It must restore the caller's
+    # operands, not the callee's arguments with the keywords reordered or the
+    # defaults filled in. The pad methods shift the stack layout so that some
+    # overflow hits the send in entry.
+    [
+      ['def target(x: 0, a: 0, b: 0, c: 0) = x', 'target(x: 1)', '--zjit-inline-max-iterations=0'],
+      ['def target(a: 0, b: 0, c: 0, x: 0) = [x].sum', 'target(x: 1)', '--zjit-inline-max-iterations=0'],
+      ['def target(a: 0, b: 0, c: 0, x: 0) = [x].sum', 'target(x: 1)', nil],
+      ['def target(x:, a:) = x', 'target(a: 0, x: 1)', '--zjit-inline-max-iterations=0'],
+    ].each do |target, call, inline|
+      args = [{'RUBY_THREAD_VM_STACK_SIZE' => '32768'}, '--disable-gems', '--zjit',
+              '--zjit-call-threshold=2', '--zjit-num-profiles=1', *inline]
+      assert_in_out_err(args, <<~RUBY, ['ok'], [], "#{target}; #{call} #{inline}")
+        #{target}
+        def entry = #{call}
+        def recur(n) = n == 0 ? entry : recur(n - 1)
+        16.times do |k|
+          eval "def pad\#{k}(n)\n\#{(0...k).map { "_l\#{_1} = 0\n" }.join}recur(n)\nend"
+        end
+        20.times { 16.times { |k| __send__(:"pad\#{k}", 3) } }
+
+        overflows = 0
+        16.times do |k|
+          (1..400).each do |n|
+            __send__(:"pad\#{k}", n) == 1 or raise 'wrong result'
+          rescue SystemStackError
+            overflows += 1
+          end
+        end
+        raise 'stack overflow not exercised' if overflows == 0
+        puts 'ok'
+      RUBY
+    end
   end
 
   def test_send_forwarded_nil_block_arg_with_polymorphic_receiver

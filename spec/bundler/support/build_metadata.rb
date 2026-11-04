@@ -40,7 +40,7 @@ module Spec
     end
 
     def git_commit_sha
-      ruby_core_tarball? ? "unknown" : git("rev-parse --short HEAD", source_root).strip
+      git_repository? ? git("rev-parse --short HEAD", source_root).strip : "unknown"
     end
 
     # Required lazily because ruby/ruby ships this helper without tool/changelog.rb.

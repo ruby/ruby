@@ -12,6 +12,10 @@
 
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * A wrapper around a contiguous block of allocated memory.
  */
@@ -48,5 +52,9 @@ PRISM_EXPORTED_FUNCTION char * pm_buffer_value(const pm_buffer_t *buffer) PRISM_
  * @returns The length of the buffer.
  */
 PRISM_EXPORTED_FUNCTION size_t pm_buffer_length(const pm_buffer_t *buffer) PRISM_NONNULL(1);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -595,6 +595,13 @@ EOS
     end
   end
 
+  def test_frozen_string_literal_after_encoding_comment
+    [nil, '%'].each do |trim_mode|
+      erb = @erb.new("<%# coding: utf-8 %><%# frozen_string_literal: true %><%= ''.frozen? %>", trim_mode: trim_mode)
+      assert_equal("true", erb.result)
+    end
+  end
+
   def test_result_with_hash
     erb = @erb.new("<%= foo %>")
     assert_equal("1", erb.result_with_hash(foo: "1"))

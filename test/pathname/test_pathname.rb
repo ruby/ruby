@@ -587,6 +587,15 @@ class TestPathname < Test::Unit::TestCase
   defassert(:pathsubext, 'd.e/aa.o', 'd.e/aa', '.o')
   defassert(:pathsubext, 'long_enough.bug-3664', 'long_enough.not_to_be_embedded[ruby-core:31640]', '.bug-3664')
 
+  def test_sub_ext_separator_only
+    # sub_ext skips the length check File.extname does first, so it can hand
+    # the backward scan in strrdirsep an empty range.  See test_extname in
+    # test/ruby/test_file_exhaustive.rb for what that scan must not do.
+    assert_equal(".txt", Pathname.new("").sub_ext(".txt").to_s)
+    assert_equal("/.txt", Pathname.new("/").sub_ext(".txt").to_s)
+    assert_equal("#{"/" * 4096}.txt", Pathname.new("/" * 4096).sub_ext(".txt").to_s)
+  end
+
   def test_sub_matchdata
     result = Pathname("abc.gif").sub(/\..*/) {
       assert_not_nil($~)

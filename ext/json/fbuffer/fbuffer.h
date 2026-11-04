@@ -169,6 +169,10 @@ static inline void fbuffer_append_reserved_char(FBuffer *fb, char chr)
 
 static void fbuffer_append_str(FBuffer *fb, VALUE str)
 {
+    if (RB_UNLIKELY(fb->io)) {
+        // Growing the buffer may flush it and invoke arbitrary Ruby code.
+        str = rb_str_new_frozen(str);
+    }
     const char *ptr;
     size_t len;
     RSTRING_GETMEM(str, ptr, len);

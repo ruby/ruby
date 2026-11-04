@@ -447,6 +447,18 @@ class TestProc < Test::Unit::TestCase
     assert_raise(ArgumentError) { ->(a, b=42){}.curry(3) }
   end
 
+  def test_curry_arity_to_int
+    bug22284 = '[Bug #22284]'
+    assert_equal(42, proc {|x, *y| x }.curry(1r)[42], bug22284)
+    assert_equal(42, lambda {|x, *y| x }.curry(1r)[42], bug22284)
+
+    called = 0
+    arity = Object.new
+    arity.define_singleton_method(:to_int) { called += 1; 2 }
+    assert_equal(3, proc {|x, y| x + y }.curry(arity)[1][2], bug22284)
+    assert_equal(1, called, bug22284)
+  end
+
   def test_dup_clone
     # iseq backed proc
     b = proc {|x| x + "bar" }
@@ -498,6 +510,12 @@ class TestProc < Test::Unit::TestCase
       rescue ArgumentError
       end
     RUBY
+  end
+
+  def test_dup_curry_proc
+    pr = proc {|a, b| a + b }.curry.dup
+    assert_equal(3, pr.call(1).call(2))
+    assert_equal(3, pr.call(1, 2))
   end
 
   module RefinementsModule

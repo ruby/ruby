@@ -62,7 +62,7 @@ rsock_init_unixsock(VALUE self, VALUE path, int server)
 
     INIT_SOCKADDR_UN(&sockaddr, sizeof(struct sockaddr_un));
     if (sizeof(sockaddr.sun_path) < (size_t)RSTRING_LEN(path)) {
-        rb_raise(rb_eArgError, "too long unix socket path (%ldbytes given but %dbytes max)",
+        rb_raise(rb_eArgError, "too long unix socket path (%"PRIdLEN"bytes given but %dbytes max)",
             RSTRING_LEN(path), (int)sizeof(sockaddr.sun_path));
     }
     memcpy(sockaddr.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));

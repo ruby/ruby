@@ -31,6 +31,17 @@ RSpec.describe Bundler::Source::Rubygems do
     end
   end
 
+  describe "#hash" do
+    it "is the same for sources that differ only in credentials" do
+      with_credentials = described_class.new("remotes" => ["https://user:pass@gems.example.com/"])
+      without_credentials = described_class.new("remotes" => ["https://gems.example.com/"])
+
+      expect(with_credentials).to eql(without_credentials)
+      expect(with_credentials.hash).to eq(without_credentials.hash)
+      expect([with_credentials, without_credentials].uniq.size).to eq(1)
+    end
+  end
+
   describe "#no_remotes?" do
     context "when no remote provided" do
       it "returns a truthy value" do
@@ -42,6 +53,15 @@ RSpec.describe Bundler::Source::Rubygems do
       it "returns a falsey value" do
         expect(described_class.new("remotes" => ["https://rubygems.org"]).no_remotes?).to be_falsey
       end
+    end
+  end
+
+  describe "#eql?" do
+    it "compares a source with itself without building its remotes" do
+      source = described_class.new("remotes" => ["https://user:pass@gems.example.com/"])
+
+      expect(source).not_to receive(:credless_remotes)
+      expect(source.eql?(source)).to be true
     end
   end
 

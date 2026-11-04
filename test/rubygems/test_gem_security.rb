@@ -86,7 +86,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_create_cert_email_ml_dsa_65_without_cert_support
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
     omit_if_support_ml_dsa_cert
 
     e = assert_raise Gem::Security::Exception do
@@ -219,9 +219,9 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_digest_required_ml_dsa_65
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
 
-    refute Gem::Security.digest_required?(Gem::Security.create_key("ml-dsa-65"))
+    refute Gem::Security.digest_required?(ML_DSA_65_PRIVATE_KEY)
   end
 
   def test_class_get_public_key_rsa
@@ -237,7 +237,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_get_public_key_ml_dsa_65
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
 
     pkey = Gem::Security.get_public_key(ML_DSA_65_PRIVATE_KEY)
 
@@ -360,7 +360,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write_private_key
-    key = Gem::Security.create_key "rsa"
+    key = PRIVATE_KEY
 
     path = File.join @tempdir, "test-private_key.pem"
 
@@ -374,9 +374,9 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write_private_key_ml_dsa_65
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
 
-    key = Gem::Security.create_key "ml-dsa-65"
+    key = ML_DSA_65_PRIVATE_KEY
 
     path = File.join @tempdir, "test-ml-dsa-private_key.pem"
 
@@ -390,7 +390,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write_private_key_encrypted
-    key = Gem::Security.create_key "rsa"
+    key = PRIVATE_KEY
 
     path = File.join @tempdir, "test-private_encrypted_key.pem"
 
@@ -406,9 +406,9 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write_private_key_encrypted_ml_dsa_65
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
 
-    key = Gem::Security.create_key "ml-dsa-65"
+    key = ML_DSA_65_PRIVATE_KEY
 
     path = File.join @tempdir, "test-ml-dsa-private_encrypted_key.pem"
 
@@ -424,7 +424,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write_private_key_encrypted_cipher
-    key = Gem::Security.create_key "rsa"
+    key = PRIVATE_KEY
 
     path = File.join @tempdir, "test-private_encrypted__with_non_default_cipher_key.pem"
 
@@ -445,9 +445,9 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write_private_key_encrypted_cipher_ml_dsa_65
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
 
-    key = Gem::Security.create_key "ml-dsa-65"
+    key = ML_DSA_65_PRIVATE_KEY
 
     path = File.join @tempdir,
       "test-ml-dsa-private_encrypted_with_non_default_cipher_key.pem"

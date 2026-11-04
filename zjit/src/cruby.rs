@@ -756,6 +756,12 @@ impl VALUE {
         unsafe { rb_IMEMO_TYPE_P(self, imemo_ment) == 1 }
     }
 
+    /// Return true if `self` is an ISEQ (`imemo_iseq`)
+    pub fn iseq_p(self) -> bool {
+        if self == VALUE(0) { return false; }
+        unsafe { rb_IMEMO_TYPE_P(self, imemo_iseq) == 1 }
+    }
+
     /// Assert that `self` is a method entry in debug builds
     pub fn as_cme(self) -> *const rb_callable_method_entry_t {
         let ptr: *const rb_callable_method_entry_t = self.as_ptr();
@@ -1401,7 +1407,17 @@ pub mod test_utils {
         ZJITState::enable_assert_compiles();
         let result = inspect(program);
         ZJITState::disable_assert_compiles();
+        assert_side_exit_count_matches_exit_counters();
         result
+    }
+
+    /// Assert that side_exit_count, which is counted by materialize_exit_trampoline, increased
+    /// by the same amount as the per-reason exit counters.
+    #[track_caller]
+    pub fn assert_side_exit_count_matches_exit_counters() {
+        let exits = crate::stats::total_exit_count();
+        let side_exit_count = crate::state::ZJITState::get_counters().side_exit_count;
+        assert_eq!(exits, side_exit_count, "side_exit_count should match the sum of exit counters");
     }
 
     /// Like inspect, but also asserts that all compilations triggered by this program succeed and
@@ -1409,12 +1425,16 @@ pub mod test_utils {
     #[track_caller]
     pub fn assert_compiles(program: &str) -> String {
         use crate::state::ZJITState;
+        fn non_entry_point_side_exit_count() -> u64 {
+            let counters = ZJITState::get_counters();
+            counters.side_exit_count
+        }
         ensure_rubyvm(); // ZJITState is not available until the VM is booted
-        let exits_before = crate::stats::total_exit_count();
+        let side_exit_count_before = ZJITState::get_counters().side_exit_count;
         ZJITState::enable_assert_compiles();
         let result = inspect(program);
         ZJITState::disable_assert_compiles();
-        assert_eq!(exits_before, crate::stats::total_exit_count(), "Program side-exited");
+        assert_eq!(side_exit_count_before, ZJITState::get_counters().side_exit_count, "Program side-exited");
         result
     }
 
@@ -1634,10 +1654,7 @@ mod class_name_tests {
 }
 
 pub fn class_has_leaf_allocator(class: VALUE) -> bool {
-    // We need to check if the class is initialized and not a singleton before
-    // trying to read the allocator, otherwise it will raise.
-    // Because of this they should be considered non-leaf anyways.
-    if !unsafe { rb_zjit_class_initialized_p(class) } { return false; }
+    // Reading a singleton class's allocator raises, which makes it non-leaf.
     if unsafe { rb_zjit_singleton_class_p(class) } { return false; }
 
     // empty_hash_alloc
@@ -1675,10 +1692,9 @@ pub fn class_has_leaf_allocator(class: VALUE) -> bool {
 pub fn iseq_self_is_heap_object(iseq: IseqPtr, owner: VALUE) -> bool {
     if unsafe { rb_get_iseq_body_type(iseq) } != ISEQ_TYPE_METHOD { return false; }
     if !unsafe { RB_TYPE_P(owner, RUBY_T_CLASS) } { return false; }
-    // Check initialized + non-singleton before reading the allocator (reading it otherwise
+    // Check non-singleton before reading the allocator (reading it otherwise
     // aborts).
     // TODO(max): Determine if we can loosen this to allow methods defined on singleton classes.
-    if !unsafe { rb_zjit_class_initialized_p(owner) } { return false; }
     if unsafe { rb_zjit_singleton_class_p(owner) } { return false; }
     if !unsafe { rb_zjit_class_has_default_allocator(owner) } { return false; }
     // Exclude Object/BasicObject/Numeric and friends: classes that use the default
@@ -1722,11 +1738,14 @@ pub(crate) mod ids {
     def_ids! {
         name: NULL               content: b""
         name: respond_to_missing content: b"respond_to_missing?"
+        name: respond_to         content: b"respond_to?"
+        name: method_missing
         name: eq                 content: b"=="
         name: string_eq          content: b"String#=="
         name: include_p          content: b"include?"
         name: to_ary
         name: to_s
+        name: to_str
         name: compile
         name: eval
         name: plus               content: b"+"
@@ -1746,9 +1765,15 @@ pub(crate) mod ids {
         name: minusat            content: b"-@"
         name: aref               content: b"[]"
         name: rb_ivar_get_at_no_ractor_check
+        name: rb_jit_io_buffer_readable_ptr
         name: rb_jit_ruby2_keywords_splat_p
         name: RUBY_FL_FREEZE
         name: RUBY_ELTS_SHARED
+        name: U8
+        name: u16
+        name: U16
+        name: u32
+        name: U32
         name: RubyVM
         name: ZJIT
         name: induce_side_exit_bang       content: b"induce_side_exit!"

@@ -167,6 +167,7 @@ module Bundler
 
       @dependency_changes = converge_dependencies
       @local_changes = converge_locals
+      @override_changes = converge_overrides
 
       check_lockfile
     end
@@ -346,7 +347,9 @@ module Bundler
     #
     # @return [SpecSet] resolved dependencies
     def resolve
-      @resolve ||= if Bundler.frozen_bundle?
+      return @resolve if @resolve
+
+      @resolve = if Bundler.frozen_bundle?
         Bundler.ui.debug "Frozen, using resolution from the lockfile"
         @locked_specs
       elsif no_resolve_needed?
@@ -366,6 +369,8 @@ module Bundler
 
         start_resolution
       end
+      warn_inert_overrides(@resolve)
+      @resolve
     end
 
     def spec_git_paths
@@ -471,6 +476,11 @@ module Bundler
 
     def bundler_version_to_lock
       @resolved_bundler_version || Bundler.gem_version
+    end
+
+    # The lines for the OVERRIDES section of Gemfile.lock.
+    def overrides_to_lock
+      @overrides.map(&:to_lock).uniq
     end
 
     def to_lock
@@ -594,6 +604,11 @@ module Bundler
 
       added.concat new_deps.map {|d| "* #{pretty_dep(d)}" } if new_deps.any?
       deleted.concat deleted_deps.map {|d| "* #{pretty_dep(d)}" } if deleted_deps.any?
+
+      if @override_changes
+        added.concat((overrides_to_lock - locked_overrides_to_lock).sort.map {|o| "* override #{o}" })
+        deleted.concat((locked_overrides_to_lock - overrides_to_lock).sort.map {|o| "* override #{o}" })
+      end
 
       both_sources = Hash.new {|h, k| h[k] = [] }
       current_dependencies.each {|d| both_sources[d.name][0] = d }
@@ -772,7 +787,9 @@ module Bundler
       loop do
         break if incomplete_specs.empty?
 
-        Bundler.ui.debug("The lockfile does not have all gems needed for the current platform though, Bundler will still re-resolve dependencies")
+        Bundler.ui.debug("The lockfile does not have all gems needed for the current platform (#{Bundler.local_platform}) though, " \
+                         "Bundler will still re-resolve dependencies. The following locked gems could not be materialized for it: " \
+                         "#{incomplete_specs.map(&:full_name).join(", ")}")
         sources.remote!
         reresolve_without(incomplete_specs)
         specs = resolve.materialize(dependencies)
@@ -904,6 +921,8 @@ module Bundler
         else
           lockfile_changed_reason
         end
+      elsif @override_changes
+        "the overrides in your gemfile changed"
       else
         "some dependencies were deleted from your gemfile"
       end
@@ -939,6 +958,7 @@ module Bundler
         [@locked_spec_with_empty_checksums, "your lockfile has an empty CHECKSUMS entry for \"#{@locked_spec_with_empty_checksums}\""],
         [@locked_spec_with_missing_deps, "your lockfile includes \"#{@locked_spec_with_missing_deps}\" but not some of its dependencies"],
         [@locked_spec_with_invalid_deps, "your lockfile does not satisfy dependencies of \"#{@locked_spec_with_invalid_deps}\""],
+        [@override_changes, "the overrides in your gemfile changed"],
       ].select(&:first).map(&:last).join(", ")
     end
 
@@ -1105,25 +1125,77 @@ module Bundler
       end
 
       converge_overrides_outside_dependencies
+      converge_rewritten_dependencies
 
       @changed_dependencies.any?
     end
 
-    def converge_overrides_outside_dependencies
+    # The lockfile keeps the upstream dependencies of every gem, so a gem that
+    # a `with:`/`in:` override cut loose stays locked until a resolution drops
+    # it.
+    def converge_rewritten_dependencies
       @overrides.each do |override|
-        # :all overrides are intentionally not pre-unlocked. They take effect on
-        # fresh resolution (no lockfile) or when the user runs `bundle update`.
-        # Forcing a full re-resolve from a single :all directive would surprise
-        # users with unrelated dependency churn.
-        next unless override.target.is_a?(String)
+        next unless override.from
 
         name = override.target
-        next if @changed_dependencies.include?(name)
         next if @originally_locked_specs[name].empty?
-        # version: overrides on direct deps are detected in the per-dep
+        next if @dependencies.any? {|d| d.name == name }
+
+        still_required = @originally_locked_specs.any? do |s|
+          Override.rewrite_dependencies(@overrides, s.name, s.runtime_dependencies).any? {|d| d.name == name }
+        end
+        next if still_required
+
+        @gems_to_unlock << name
+        @changed_dependencies << name
+      end
+    end
+
+    # A misspelled `in:` gem leaves the override with nothing to rewrite.
+    def warn_inert_overrides(specs)
+      @overrides.each do |override|
+        next unless override.from
+        next if specs[override.from].any? {|s| s.dependencies.any? {|d| d.name == override.target } }
+
+        Bundler.ui.warn "#{override} has no effect because the bundle has no #{override.from} that depends on #{override.target}"
+      end
+    end
+
+    # The lockfile records the Gemfile's overrides, so a change to them is a
+    # change to the lockfile even when every locked version still satisfies
+    # them. Rewriting the section needs no resolution, so this stays out of
+    # #something_changed?. #write_lock rewrites it because the generated
+    # contents differ, and the frozen check reports it.
+    def converge_overrides
+      return false unless @locked_gems
+
+      overrides_to_lock.sort != locked_overrides_to_lock.sort
+    end
+
+    def locked_overrides_to_lock
+      Array(@locked_gems&.overrides).map(&:to_lock).uniq
+    end
+
+    def converge_overrides_outside_dependencies
+      @overrides.each do |override|
+        # :all and metadata overrides are intentionally not pre-unlocked.
+        # Unlocking for them would re-resolve gems the user did not ask to
+        # move. Install-time compatibility checks already honor them for locked
+        # specs, and they affect resolution on a fresh lock or when the user
+        # runs `bundle update`. Changing one still rewrites the OVERRIDES
+        # section (see #converge_overrides).
+        next unless override.target.is_a?(String) && override.field == :version
+
+        name = override.target
+        # Overrides on direct deps are detected in the per-dep
         # converge_dependencies loop via apply_override_to + matches_spec?.
-        # Other fields are not visible there, so they always reach here.
-        next if override.field == :version && @dependencies.any? {|d| d.name == name }
+        next if @dependencies.any? {|d| d.name == name }
+
+        locked_specs = @originally_locked_specs[name]
+        next if locked_specs.empty?
+        # Only a version string constrains on its own. :ignore_upper and nil
+        # loosen requirements the lockfile already satisfies.
+        next if override.apply_to(Gem::Requirement.default).satisfied_by?(locked_specs.first.version)
 
         @gems_to_unlock << name
         @changed_dependencies << name
@@ -1226,7 +1298,7 @@ module Bundler
     def preload_git_source_worker
       workers = Bundler.settings.installation_parallelization
 
-      @preload_git_source_worker ||= Bundler::Worker.new(workers, "Git source preloading", ->(source, _) { source.specs })
+      @preload_git_source_worker ||= Bundler::Worker.new(workers, "Git source preloading", ->(sources, _) { sources.each(&:specs) })
     end
 
     def preload_git_sources
@@ -1237,7 +1309,13 @@ module Bundler
       end
 
       begin
-        needed_git_sources.each {|source| preload_git_source_worker.enq(source) }
+        # Sources from the same repository share one cache directory, and
+        # running git in that directory from two workers at once makes the
+        # fetches collide. Preload sources that share a cache in one job, one
+        # after the other, and run the separate caches in parallel.
+        needed_git_sources.group_by(&:cache_path).each_value do |sources|
+          preload_git_source_worker.enq(sources)
+        end
       ensure
         preload_git_source_worker.stop
       end
@@ -1352,7 +1430,7 @@ module Bundler
     end
 
     def source_map
-      @source_map ||= SourceMap.new(sources, dependencies, @locked_specs)
+      @source_map ||= SourceMap.new(sources, dependencies, @locked_specs, @overrides.filter_map {|o| o.operation if o.from })
     end
 
     def new_resolver_for_full_update

@@ -91,6 +91,23 @@ module Gem::ContentAddress
   end
 
   ##
+  # Raises ArgumentError unless +spec+ is eligible for content addressing
+
+  def self.eligible!(spec)
+    unless platform_eligible?(spec.platform)
+      raise ArgumentError,
+        "Cannot build a content-addressable gem as no platform or a Ruby platform has been set"
+    end
+
+    return unless ruby_abi_for(spec.required_ruby_version).nil?
+
+    raise ArgumentError,
+      "Cannot build a content-addressable gem because required_ruby_version is set to " \
+      "#{spec.required_ruby_version}. Please set required_ruby_version to \"~> X.Y.0\" " \
+      "so that it identifies a single Ruby ABI."
+  end
+
+  ##
   # Whether +spec+ is content-addressed: it is eligible for content
   # addressing and has a valid content address set. See eligible? for
   # when to pass <tt>validate_ruby_abi: false</tt>.
@@ -115,20 +132,6 @@ module Gem::ContentAddress
   end
 
   ##
-  # Whether +spec+'s required_ruby_version permits building for +ruby_abi+:
-  # an unset or default requirement can still be pinned to the ABI, and
-  # anything else must already pin exactly that ABI. Used at build time,
-  # before the requirement is injected, where eligible? would be
-  # premature.
-
-  def self.ruby_abi_compatible?(spec, ruby_abi)
-    required_ruby_version = spec.required_ruby_version
-    return true if required_ruby_version.nil? || required_ruby_version.none?
-
-    ruby_abi_for(required_ruby_version) == ruby_abi
-  end
-
-  ##
   # Generates the content address for +bytes+: the first +length+
   # characters of the hexadecimal SHA256 digest of the contents.
 
@@ -140,10 +143,11 @@ module Gem::ContentAddress
   ##
   # The content address claimed by a gem file name, or nil when the name
   # makes no claim. +filename+ is the file's base name without the ".gem"
-  # extension ("name-version[-suffix]"). A name claims an address when its
-  # suffix is address-shaped and is not just +spec+'s own platform: a
-  # platform string that happens to look like hexadecimal (both
-  # normalized and original spellings) is a platform name, not a claim.
+  # extension (<tt>"name-version[-suffix]"</tt>). A name claims an
+  # address when its suffix is address-shaped and is not just +spec+'s
+  # own platform: a platform string that happens to look like
+  # hexadecimal (both normalized and original spellings) is a platform
+  # name, not a claim.
 
   def self.file_name_claim(filename, spec)
     suffix = filename.delete_prefix("#{spec.name}-#{spec.version}-")

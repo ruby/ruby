@@ -3404,6 +3404,23 @@ class TestModule < Test::Unit::TestCase
     assert_not_predicate m.clone(freeze: false), :frozen?
   end
 
+  def test_dup_of_frozen_module_is_not_frozen
+    m = Module.new
+    m.instance_variable_set(:@a, 1)
+    m.freeze
+
+    copy = m.dup
+    assert_not_predicate(copy, :frozen?)
+    copy.instance_variable_set(:@b, 2)
+    assert_equal([1, 2], [copy.instance_variable_get(:@a), copy.instance_variable_get(:@b)])
+  end
+
+  def test_singleton_class_of_frozen_module_is_frozen
+    m = Module.new.freeze
+    assert_predicate(m.singleton_class, :frozen?)
+    assert_raise(FrozenError) {m.singleton_class.instance_variable_set(:@a, 1)}
+  end
+
   def test_module_name_in_singleton_method
     s = Object.new.singleton_class
     mod = s.const_set(:Foo, Module.new)
@@ -3412,23 +3429,20 @@ class TestModule < Test::Unit::TestCase
 
   def test_iclass_memory_leak
     # [Bug #19550]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
-      code = proc do
+    assert_no_memory_leak([], "", <<~CODE, rss: true, samples: 2..30)
+      100_000.times do
         mod = Module.new
         Class.new do
           include mod
         end
       end
-      1_000.times(&code)
-    PREP
-      3_000_000.times(&code)
     CODE
   end
 
   def test_complemented_method_entry_memory_leak
     # [Bug #19894] [Bug #19896]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
-      code = proc do
+    assert_no_memory_leak([], "", <<~CODE, rss: true, samples: 2..30)
+      10_000.times do
         $c = Class.new do
           def foo; end
         end
@@ -3448,21 +3462,15 @@ class TestModule < Test::Unit::TestCase
           end
         end.new
       end
-      1_000.times(&code)
-    PREP
-      300_000.times(&code)
     CODE
   end
 
   def test_module_clone_memory_leak
     # [Bug #19901]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
-      code = proc do
+    assert_no_memory_leak([], "", <<~CODE, rss: true, samples: 2..100)
+      10_000.times do
         Module.new.clone
       end
-      1_000.times(&code)
-    PREP
-      1_000_000.times(&code)
     CODE
   end
 

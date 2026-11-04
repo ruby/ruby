@@ -19,15 +19,11 @@ run_tests(void)
 }
 
 int
-main(void)
-{
-    return run_tests();
-}
-
-#if defined(_WIN32)
-int
+#ifdef _WIN32
 wmain(void)
+#else
+main(void)
+#endif
 {
     return run_tests();
 }
-#endif

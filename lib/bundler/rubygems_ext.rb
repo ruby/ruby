@@ -86,11 +86,22 @@ module Gem
         end
       end
 
-      def open_file_with_lock(path, &block)
+      def open_file_with_lock(path)
         file_lock = "#{path}.lock"
-        open_file_with_flock(file_lock, &block)
-      ensure
-        FileUtils.rm_f file_lock
+
+        loop do
+          open_file_with_flock(file_lock) do |io|
+            # The previous holder removed the file while we were waiting on it,
+            # so leave this block and try again on the file now at the lock path
+            next unless File.identical?(io, file_lock)
+
+            begin
+              return yield io
+            ensure
+              FileUtils.rm_f file_lock
+            end
+          end
+        end
       end
     end
   end

@@ -767,12 +767,13 @@ ossl_asn1data_to_der(VALUE self)
 }
 
 static VALUE ossl_asn1_initialize(int argc, VALUE *argv, VALUE self);
-static VALUE ossl_asn1_decode0(unsigned char **pp, long length, long *offset,
-                               int depth, int yield, long *num_read);
+static VALUE ossl_asn1_decode0(unsigned char **pp, rb_len_t length,
+                               rb_len_t *offset, int depth, int yield,
+                               rb_len_t *num_read);
 
 static VALUE
 int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,
-                           VALUE tc, long *num_read)
+                           VALUE tc, rb_len_t *num_read)
 {
     VALUE value, asn1data;
     unsigned char *p;
@@ -845,20 +846,20 @@ int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,
 }
 
 static VALUE
-int_ossl_asn1_decode0_cons(unsigned char **pp, long max_len, long length,
-                           long *offset, int depth, int yield, int j,
-                           int tag, VALUE tc, long *num_read)
+int_ossl_asn1_decode0_cons(unsigned char **pp, rb_len_t max_len, long length,
+                           rb_len_t *offset, int depth, int yield, int j,
+                           int tag, VALUE tc, rb_len_t *num_read)
 {
     VALUE value, asn1data, ary;
     int indefinite;
-    long available_len, off = *offset;
+    rb_len_t available_len, off = *offset;
 
     indefinite = (j == 0x21);
     ary = rb_ary_new();
 
     available_len = indefinite ? max_len : length;
     while (available_len > 0) {
-        long inner_read = 0;
+        rb_len_t inner_read = 0;
         value = ossl_asn1_decode0(pp, available_len, &off, depth + 1, yield, &inner_read);
         *num_read += inner_read;
         available_len -= inner_read;
@@ -902,12 +903,13 @@ int_ossl_asn1_decode0_cons(unsigned char **pp, long max_len, long length,
 #define MAX_NESTING_DEPTH 200
 
 static VALUE
-ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
-                  int yield, long *num_read)
+ossl_asn1_decode0(unsigned char **pp, rb_len_t length, rb_len_t *offset,
+                  int depth, int yield, rb_len_t *num_read)
 {
     unsigned char *start, *p;
     const unsigned char *p0;
-    long len = 0, inner_read = 0, off = *offset, hlen;
+    long len = 0, hlen;
+    rb_len_t inner_read = 0, off = *offset;
     int tag, tc, j;
     VALUE asn1data, tag_class;
 
@@ -918,7 +920,7 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
     p = *pp;
     start = p;
     p0 = p;
-    j = ASN1_get_object(&p0, &len, &tag, &tc, length);
+    j = ASN1_get_object(&p0, &len, &tag, &tc, rb_len2long(length));
     p = (unsigned char *)p0;
     if(j & 0x80) ossl_raise(eASN1Error, NULL);
     if(len > length) ossl_raise(eASN1Error, "value is too short");
@@ -936,7 +938,7 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
     if(yield) {
         VALUE arg = rb_ary_new();
         rb_ary_push(arg, LONG2NUM(depth));
-        rb_ary_push(arg, LONG2NUM(*offset));
+        rb_ary_push(arg, LEN2NUM(*offset));
         rb_ary_push(arg, LONG2NUM(hlen));
         rb_ary_push(arg, LONG2NUM(len));
         rb_ary_push(arg, (j & V_ASN1_CONSTRUCTED) ? Qtrue : Qfalse);
@@ -961,7 +963,7 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
         *num_read = inner_read;
     if (len != 0 && inner_read != hlen + len) {
         ossl_raise(eASN1Error,
-                   "Type mismatch. Bytes read: %ld Bytes available: %ld",
+                   "Type mismatch. Bytes read: %"PRIdLEN" Bytes available: %ld",
                    inner_read, hlen + len);
     }
 
@@ -970,11 +972,13 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
 }
 
 static void
-int_ossl_decode_sanity_check(long len, long read, long offset)
+int_ossl_decode_sanity_check(rb_len_t len, rb_len_t read, rb_len_t offset)
 {
     if (len != 0 && (read != len || offset != len)) {
-        ossl_raise(eASN1Error,
-                   "Type mismatch. Total bytes read: %ld Bytes available: %ld Offset: %ld",
+        ossl_raise(eASN1Error, "Type mismatch."
+                   " Total bytes read: %"PRIdLEN
+                   " Bytes available: %"PRIdLEN
+                   " Offset: %"PRIdLEN,
                    read, len, offset);
     }
 }
@@ -1005,7 +1009,7 @@ ossl_asn1_traverse(VALUE self, VALUE obj)
 {
     unsigned char *p;
     VALUE tmp;
-    long len, read = 0, offset = 0;
+    rb_len_t len, read = 0, offset = 0;
 
     obj = ossl_to_der_if_possible(obj);
     tmp = rb_str_new4(StringValue(obj));
@@ -1035,7 +1039,7 @@ ossl_asn1_decode(VALUE self, VALUE obj)
     VALUE ret;
     unsigned char *p;
     VALUE tmp;
-    long len, read = 0, offset = 0;
+    rb_len_t len, read = 0, offset = 0;
 
     obj = ossl_to_der_if_possible(obj);
     tmp = rb_str_new4(StringValue(obj));
@@ -1065,7 +1069,7 @@ ossl_asn1_decode_all(VALUE self, VALUE obj)
 {
     VALUE ary, val;
     unsigned char *p;
-    long len, tmp_len = 0, read = 0, offset = 0;
+    rb_len_t len, tmp_len = 0, read = 0, offset = 0;
     VALUE tmp;
 
     obj = ossl_to_der_if_possible(obj);
@@ -1075,7 +1079,7 @@ ossl_asn1_decode_all(VALUE self, VALUE obj)
     tmp_len = len;
     ary = rb_ary_new();
     while (tmp_len > 0) {
-        long tmp_read = 0;
+        rb_len_t tmp_read = 0;
         val = ossl_asn1_decode0(&p, tmp_len, &offset, 0, 0, &tmp_read);
         rb_ary_push(ary, val);
         read += tmp_read;
@@ -1226,7 +1230,7 @@ static VALUE
 ossl_asn1cons_to_der(VALUE self)
 {
     VALUE ary, str;
-    long i;
+    rb_len_t i;
     int indef_len;
 
     indef_len = RTEST(ossl_asn1_get_indefinite_length(self));

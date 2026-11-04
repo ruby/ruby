@@ -31,12 +31,12 @@ class Gem::Ext::Builder
     # try to find make program from Ruby configure arguments first
     target_rbconfig["configure_args"] =~ /with-make-prog\=(\w+)/
     make_program_name = ENV["MAKE"] || ENV["make"] || $1
-    make_program_name ||= RUBY_PLATFORM.include?("mswin") ? "nmake" : "make"
+    make_program_name ||= mswin? ? "nmake" : "make"
     make_program = shellsplit_command(make_program_name)
 
     is_nmake = /\bnmake/i.match?(make_program_name)
-    # The installation of the bundled gems is failed when DESTDIR is empty in mswin platform.
-    destdir = !is_nmake || ENV["DESTDIR"] && ENV["DESTDIR"] != "" ? format("DESTDIR=%s", ENV["DESTDIR"]) : ""
+    # mkmf on mswin moves the drive letter of prefix to DESTDIR, which an empty DESTDIR would drop.
+    destdir = !mswin? || ENV["DESTDIR"] && ENV["DESTDIR"] != "" ? format("DESTDIR=%s", ENV["DESTDIR"]) : ""
 
     # nmake doesn't support parallel build
     unless is_nmake
@@ -68,6 +68,10 @@ class Gem::Ext::Builder
         raise unless target == "clean" # ignore clean failure
       end
     end
+  end
+
+  def self.mswin? # :nodoc:
+    RUBY_PLATFORM.include?("mswin")
   end
 
   def self.ruby
@@ -157,7 +161,7 @@ class Gem::Ext::Builder
   end
 
   ##
-  # Splits a command string such as ENV["MAKE"] into an argument list.
+  # Splits a command string such as <tt>ENV["MAKE"]</tt> into an argument list.
   #
   # On Windows, a value that names an existing file, such as
   # <tt>C:\path\nmake.exe</tt>, is taken as a single word because POSIX
@@ -206,7 +210,8 @@ class Gem::Ext::Builder
     when /Cargo.toml/ then
       Gem::Ext::CargoBuilder.new
     else
-      build_error("No builder for extension '#{extension}'")
+      # Also called to validate a specification, which must not leave a build log.
+      raise Gem::Ext::BuildError, "No builder for extension '#{extension}'"
     end
   end
 
@@ -233,7 +238,11 @@ EOF
   def build_extension(extension, dest_path) # :nodoc:
     results = []
 
-    builder = builder_for(extension)
+    begin
+      builder = builder_for(extension)
+    rescue Gem::Ext::BuildError => e
+      build_error(e.message)
+    end
 
     extension_dir =
       File.expand_path File.join(@gem_dir, File.dirname(extension))

@@ -765,6 +765,41 @@ RSpec.describe "Bundler.setup" do
     expect(out).to eq(bundled_app.to_s)
   end
 
+  it "loads the vendored FileUtils before starting worker threads" do
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
+    G
+
+    run <<-R
+      def Thread.start(*)
+        puts $LOADED_FEATURES.grep(%r{bundler/vendor/fileutils}).any?
+        raise ThreadError, "no thread"
+      end
+
+      begin
+        Bundler::Worker.new(1, "Spec", proc {}).enq(:job)
+      rescue Bundler::ThreadCreationError
+      end
+    R
+
+    expect(out).to eq("true")
+  end
+
+  it "does not load the vendored FileUtils" do
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
+    G
+
+    run <<-R
+      puts $LOADED_FEATURES.grep(%r{bundler/vendor/fileutils}).inspect
+      puts Bundler::FileUtils.respond_to?(:mkdir_p)
+    R
+
+    expect(out).to eq("[]\ntrue")
+  end
+
   it "does not load all gemspecs" do
     install_gemfile <<-G
       source "https://gem.repo1"

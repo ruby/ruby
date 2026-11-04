@@ -105,4 +105,32 @@ pm_arena_memdup(pm_arena_t *arena, const void *src, size_t size, size_t alignmen
     return dst;
 }
 
+/*
+ * Resize an allocation from the arena from old_size to new_size bytes and
+ * return where it now lives. The sizes are in the same order as xrealloc_sized.
+ * The most recent allocation in the current block ends exactly where the
+ * block's used bytes do, so it is resized in place when the block has room. Any
+ * other allocation stays where it is when it shrinks, and is copied into a new
+ * allocation when it grows, leaving the old one behind in the arena.
+ */
+static PRISM_INLINE void *
+pm_arena_realloc(pm_arena_t *arena, void *ptr, size_t new_size, size_t old_size, size_t alignment) {
+    pm_arena_block_t *block = arena->current;
+
+    if (block != NULL && (char *) ptr + old_size == block->data + block->used) {
+        size_t start = block->used - old_size;
+
+        if (new_size <= block->capacity - start) {
+            block->used = start + new_size;
+            return ptr;
+        }
+    }
+
+    if (new_size <= old_size) return ptr;
+
+    void *result = pm_arena_alloc(arena, new_size, alignment);
+    memcpy(result, ptr, old_size);
+    return result;
+}
+
 #endif

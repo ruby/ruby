@@ -29,11 +29,13 @@
 #  /* Conforming C23 situation; e.g. recent clang */
 #  define RBIMPL_HAVE_STDCKDINT_H
 # endif
-#endif
-
-#ifdef HAVE_STDCKDINT_H
-# /* Some OSes (most notably FreeBSD) have this file. */
-# define RBIMPL_HAVE_STDCKDINT_H
+#else
+# ifdef HAVE_STDCKDINT_H
+#  /* Some OSes (most notably FreeBSD) have this file.  This is what
+#   * configure saw when ruby itself was built, so only fall back to it
+#   * when the compiler cannot answer __has_include for itself. */
+#  define RBIMPL_HAVE_STDCKDINT_H
+# endif
 #endif
 
 #ifdef __cplusplus

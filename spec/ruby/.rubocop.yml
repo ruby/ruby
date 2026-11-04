@@ -37,6 +37,10 @@ Lint/AssignmentInCondition:
 Lint/BooleanSymbol:
   Enabled: false
 
+Lint/BigDecimalNew:
+  Exclude:
+    - 'library/bigdecimal/new_spec.rb'
+
 Lint/DeprecatedOpenSSLConstant:
   Exclude:
     - library/openssl/digest/**/*.rb

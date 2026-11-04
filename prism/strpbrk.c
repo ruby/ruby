@@ -54,11 +54,11 @@ pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, uint32_t start, uint32_t l
  * Up to three optimized implementations are selected at compile time, with a
  * no-op fallback for unsupported platforms:
  *   1. NEON — processes 16 bytes per iteration on aarch64.
- *   2. SSSE3 — processes 16 bytes per iteration on x86-64.
+ *   2. SSE2 — processes 16 bytes per iteration on x86-64.
  *   3. SWAR — little-endian fallback, processes 8 bytes per iteration.
  */
 
-#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSSE3) || defined(PRISM_HAS_SWAR)
+#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSE2) || defined(PRISM_HAS_SWAR)
 
 /**
  * Update the cached strpbrk lookup tables if the charset has changed. The
@@ -67,7 +67,7 @@ pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, uint32_t start, uint32_t l
  * skip table construction entirely.
  *
  * Builds three structures:
- *   - low_lut/high_lut: nibble-based lookup tables for SIMD matching (NEON/SSSE3)
+ *   - low_lut/high_lut: nibble-based lookup tables for SIMD matching (NEON)
  *   - table: 256-bit bitmap for scalar fallback matching (all platforms)
  */
 static PRISM_INLINE void
@@ -159,46 +159,54 @@ scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, c
     return false;
 }
 
-#elif defined(PRISM_HAS_SSSE3)
-#include <tmmintrin.h>
+#elif defined(PRISM_HAS_SSE2)
+#include <emmintrin.h>
 
 static PRISM_INLINE bool
 scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, const uint8_t *charset, size_t *index) {
     pm_strpbrk_cache_update(parser, charset);
 
-    __m128i low_lut = _mm_loadu_si128((const __m128i *) parser->strpbrk_cache.low_lut);
-    __m128i high_lut = _mm_loadu_si128((const __m128i *) parser->strpbrk_cache.high_lut);
-    __m128i mask_0f = _mm_set1_epi8(0x0F);
+    /*
+     * SSE2 has no byte shuffle, so the nibble lookup used by NEON is not
+     * available. Instead, each charset byte is broadcast into its own vector
+     * and compared against the input directly. Charsets are short, so this is
+     * a handful of compares per 16 bytes.
+     */
+    __m128i needles[sizeof(parser->strpbrk_cache.charset)];
+    size_t needles_size = 0;
 
+    for (size_t i = 0; i < sizeof(parser->strpbrk_cache.charset) && parser->strpbrk_cache.charset[i] != '\0'; i++) {
+        needles[needles_size++] = _mm_set1_epi8((char) parser->strpbrk_cache.charset[i]);
+    }
+
+    const __m128i zero = _mm_setzero_si128();
     size_t idx = 0;
 
     while (idx + 16 <= maximum) {
         __m128i v = _mm_loadu_si128((const __m128i *) (source + idx));
 
-        // If any byte has the high bit set, stop.
+        /* If any byte has the high bit set, stop. */
         if (_mm_movemask_epi8(v) != 0) break;
 
-        // Nibble-based classification using pshufb (SSSE3), same as NEON
-        // vqtbl1q_u8. A byte matches iff (low_lut[lo_nib] & high_lut[hi_nib]) != 0.
-        __m128i lo_class = _mm_shuffle_epi8(low_lut, _mm_and_si128(v, mask_0f));
-        __m128i hi_class = _mm_shuffle_epi8(high_lut, _mm_and_si128(_mm_srli_epi16(v, 4), mask_0f));
-        __m128i matched = _mm_and_si128(lo_class, hi_class);
+        /* NUL is always a breakpoint, matching pm_strpbrk_cache_update. */
+        __m128i matched = _mm_cmpeq_epi8(v, zero);
+        for (size_t i = 0; i < needles_size; i++) {
+            matched = _mm_or_si128(matched, _mm_cmpeq_epi8(v, needles[i]));
+        }
 
-        // Check if any byte matched.
-        int mask = _mm_movemask_epi8(_mm_cmpeq_epi8(matched, _mm_setzero_si128()));
+        int mask = _mm_movemask_epi8(matched);
 
-        if (mask == 0xFFFF) {
-            // All bytes were zero — no match in this chunk.
+        if (mask == 0) {
             idx += 16;
             continue;
         }
 
-        // Find the first matching byte (first non-zero in matched).
-        *index = idx + pm_ctzll((uint64_t) (~mask & 0xFFFF));
+        /* Find the first matching byte. */
+        *index = idx + pm_ctzll((uint64_t) (mask & 0xFFFF));
         return true;
     }
 
-    // Scalar tail.
+    /* Scalar tail. */
     while (idx < maximum && source[idx] < 0x80) {
         uint8_t byte = source[idx];
         if (parser->strpbrk_cache.table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) {
