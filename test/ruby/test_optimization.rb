@@ -28,6 +28,39 @@ class TestRubyOptimization < Test::Unit::TestCase
     end;
   end
 
+  # Once a second Ractor exists, methods are defined under the VM lock, and the
+  # warning has to wait until it is released: Warning.warn can run Ruby code.
+  def assert_performance_warning_after_ractor(line, code)
+    assert_in_out_err([], "#{<<-"begin;"}\n#{<<~"end;"}", [], ["-:#{line}: warning: Redefining 'Integer#+' disables interpreter and JIT optimizations"])
+    begin;
+      Warning[:experimental] = false
+      Warning[:performance] = true
+      Ractor.new {}.join
+      #{code}
+    end;
+  end
+
+  def test_performance_warning_after_ractor_created
+    assert_performance_warning_after_ractor(6, <<~'RUBY')
+      class Integer
+        undef +
+        def +(other) = other
+      end
+    RUBY
+  end
+
+  def test_performance_warning_after_ractor_created_refinement
+    assert_performance_warning_after_ractor(5, <<~'RUBY')
+      Module.new { refine(Integer) { def +(other) = other } }
+    RUBY
+  end
+
+  def test_performance_warning_after_ractor_created_prepend
+    assert_performance_warning_after_ractor(5, <<~'RUBY')
+      Integer.prepend(Module.new { def +(other) = other })
+    RUBY
+  end
+
   def disasm(name)
     RubyVM::InstructionSequence.of(method(name)).disasm
   end
