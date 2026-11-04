@@ -143,10 +143,11 @@ module Gem::ContentAddress
   ##
   # The content address claimed by a gem file name, or nil when the name
   # makes no claim. +filename+ is the file's base name without the ".gem"
-  # extension ("name-version[-suffix]"). A name claims an address when its
-  # suffix is address-shaped and is not just +spec+'s own platform: a
-  # platform string that happens to look like hexadecimal (both
-  # normalized and original spellings) is a platform name, not a claim.
+  # extension (<tt>"name-version[-suffix]"</tt>). A name claims an
+  # address when its suffix is address-shaped and is not just +spec+'s
+  # own platform: a platform string that happens to look like
+  # hexadecimal (both normalized and original spellings) is a platform
+  # name, not a claim.
 
   def self.file_name_claim(filename, spec)
     suffix = filename.delete_prefix("#{spec.name}-#{spec.version}-")
