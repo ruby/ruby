@@ -391,6 +391,9 @@ module Ruby::Prism
       assert_warning("$foo", "a variable in void")
       assert_warning("$+", "a variable in void")
       assert_warning("$1", "a variable in void")
+      assert_warning("foo { _1; 1 }", "a variable in void")
+      assert_warning("foo { it; 1 }", "a variable in void", compare: RUBY_VERSION >= "3.4", version: "3.4")
+      refute_warning("foo { it; 1 }", compare: false, version: "3.3")
 
       assert_warning("self", "self in void")
       assert_warning("nil", "nil in void")

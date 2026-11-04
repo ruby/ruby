@@ -1388,6 +1388,7 @@ pm_void_statement_check(pm_parser_t *parser, const pm_node_t *node) {
         case PM_CLASS_VARIABLE_READ_NODE:
         case PM_GLOBAL_VARIABLE_READ_NODE:
         case PM_INSTANCE_VARIABLE_READ_NODE:
+        case PM_IT_LOCAL_VARIABLE_READ_NODE:
         case PM_LOCAL_VARIABLE_READ_NODE:
         case PM_NUMBERED_REFERENCE_READ_NODE:
             type = "a variable";
