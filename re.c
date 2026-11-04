@@ -1051,6 +1051,55 @@ make_regexp(Regexp *rp, const char *s, rb_len_t len, rb_encoding *enc, int flags
  * [matcher methods]:          rdoc-ref:MatchData@Matcher+Methods
  * [matcher global variables]: rdoc-ref:Regexp@Global+Variables
  *
+ *
+ * ## What's Here
+ *
+ *  First, what's elsewhere. Class \MatchData:
+ *
+ *  - Inherits from {class Object}[rdoc-ref:Object@Whats-Here].
+ *
+ *  Here, class \MatchData provides methods that are useful for:
+ *
+ * ### General Methods
+ *
+ * - #== (aliased as #eql?: returns whether `self` and another object are equal.
+ * - #hash: returns the integer hash value for `self`.
+ * - #inspect: returns a string representation of `self`.
+ * - #post_match: returns the substring that follows the matched string.
+ * - #pre_match: returns the substring that precedes the matched string.
+ * - #regexp: returns the Regexp used to produce `self`.
+ * - #size (aliased as #length): returns the size of the array of matched substrings.
+ * - #string: returns the string used to produce `self`.
+ * - #to_a: returns the array of matched substrings.
+ * - #to_s: returns a string representation of `self`.
+ *
+ * ### Capture Methods
+ *
+ * Each of these methods returns information about all captures:
+ *
+ * - #captures (aliased as #deconstruct): returns an array of the captured substrings.
+ * - #named_captures: returns a hash of the named captures.
+ * - #names: returns an array of the capture names.
+ *
+ * Each of these methods returns information about one capture,
+ * which may be specified by its integer index or by its name (if it is a named capture):
+ *
+ * - #begin: returns the character offset of the beginning of the capture.
+ * - #bytebegin: returns the byte offset of the beginning of the capture.
+ * - #byteend: returns the byte offset of the end of the capture.
+ * - #byteoffset: returns the byte offsets of the beginning and end of the capture.
+ * - #end: returns the character offset of the end of the capture.
+ * - #integer_at: returns the value of the capture, converted to an integer.
+ * - #match: returns the matched substring for the capture.
+ * - #match_length: returns the length (in characters) of the matched substring for the capture.
+ * - #offset: returns the begin and end offsets for the capture.
+ *
+ * - #deconstruct_keys: returns a hash of the names and values for the given names.
+ * - #[]: returns a matched substring or an array of matched substrings
+ *   for the given arguments.
+ * - #values_at: returns a matched substring or an array of matched substrings
+ *   for the given arguments.
+ *
  */
 
 VALUE rb_cMatch;
