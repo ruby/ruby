@@ -147,6 +147,15 @@ class TestDateArith < Test::Unit::TestCase
 		     DateTime.new(2001,2,3,0,0,0,'+00:00')))
     assert_equal(-1, (DateTime.new(2001,2,3,0,0,0,'+09:00') <=>
 		      DateTime.new(2001,2,2,16,0,0,'+00:00')))
+    n = Class.new(Numeric) {def coerce(x) [self, x] end; def <=>(x) 5 end}.new
+    assert_equal(1, (Date.new(2000,1,1) <=> n))
+  end
+
+  def test__compare_nan
+    [Date.new(2000,1,1), DateTime.new(2000,1,1,12)].each do |d|
+      assert_nil(d <=> Float::NAN)
+      assert_equal(false, d == Float::NAN)
+    end
   end
 
   def test_prev
