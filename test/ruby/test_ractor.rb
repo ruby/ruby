@@ -1752,4 +1752,65 @@ class TestRactor < Test::Unit::TestCase
       keeper.send(nil)
     RUBY
   end
+
+  def test_young_local_shareable_parent_does_not_retain_overwritten_unshareables
+    omit 'shareable -> unshareable records live in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%w[-W0], <<~'RUBY', timeout: 120)
+      keeper = Ractor.new { Ractor.receive }  # a second Ractor makes local GCs pin shareables
+
+      GC.start(full_mark: true, immediate_sweep: true, global: false)
+      base = GC.stat(:heap_live_slots)
+
+      # Each store comes from a fresh, still young class. A shref bit on the payload would
+      # pin it until a global GC, even after the edge is overwritten.
+      1000.times do
+        klass = Class.new
+        klass.instance_variable_set(:@x, Array.new(500) { |j| "payload #{j}" })
+        klass.instance_variable_set(:@x, nil)
+      end
+      GC.start(full_mark: true, immediate_sweep: true, global: false)
+      grown = GC.stat(:heap_live_slots)
+
+      assert_operator grown - base, :<, 200_000,
+        "overwritten young local shareable -> unshareable edges were retained"
+
+      keeper.send(nil)
+    RUBY
+  end
+
+  def test_young_local_shareable_parent_keeps_unshareable_child_alive
+    omit 'shareable -> unshareable records live in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%w[-W0], <<~'RUBY', timeout: 120)
+      # The classes are only reachable from the keeper's objspace, so this Ractor's local
+      # GCs see them as pinned shareables, never through ordinary marking.
+      keeper = Ractor.new do
+        klasses = Ractor.receive
+        Ractor.receive
+        klasses
+      end
+
+      klasses = Array.new(200) do |i|
+        klass = Class.new
+        klass.instance_variable_set(:@x, Array.new(50) { |j| "v#{i}-#{j}" })
+        klass
+      end
+      keeper.send(Ractor.make_shareable(klasses.freeze))
+      klasses = nil
+
+      # Minors age the parents into the old generation while their children are young:
+      # the edges have to survive the promotion.
+      6.times do
+        GC.start(full_mark: false, immediate_sweep: true, global: false)
+        Array.new(10_000) { "garbage" }
+      end
+      2.times { GC.start(full_mark: true, immediate_sweep: true, global: false) }
+      GC.start(full_mark: false, immediate_sweep: true, global: false)
+      GC.verify_internal_consistency
+
+      keeper.send(nil)
+      keeper.value.each_with_index do |klass, i|
+        assert_equal Array.new(50) { |j| "v#{i}-#{j}" }, klass.instance_variable_get(:@x)
+      end
+    RUBY
+  end
 end
