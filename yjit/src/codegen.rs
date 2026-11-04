@@ -11207,8 +11207,9 @@ static mut CODEGEN_GLOBALS: Option<CodegenGlobals> = None;
 impl CodegenGlobals {
     /// Initialize the codegen globals
     pub fn init() {
-        // Executable memory and code page size in bytes
-        let exec_mem_size = get_option!(exec_mem_size).unwrap_or(get_option!(mem_size));
+        // Executable memory and code page size in bytes. Clamp the --yjit-mem-size fallback
+        // because it can exceed MAX_EXEC_MEM_MIB.
+        let exec_mem_size = get_option!(exec_mem_size).unwrap_or(get_option!(mem_size).min(MAX_EXEC_MEM_MIB * 1024 * 1024));
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {

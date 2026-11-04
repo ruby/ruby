@@ -55,6 +55,12 @@ class TestYJIT < Test::Unit::TestCase
     #assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
   end
 
+  def test_exec_mem_size_rejects_sizes_that_overflow_u32
+    # 4095 MiB is the largest size whose byte count fits in u32.
+    assert_in_out_err(%w[--yjit --yjit-exec-mem-size=4095 -e] + ['p RubyVM::YJIT.enabled?'], '', ['true'], [])
+    assert_in_out_err(%w[--yjit-exec-mem-size=4096 -e] + [''], '', [], /invalid YJIT option 'exec-mem-size=4096'/)
+  end
+
   def test_perf_map_on_windows
     warning = ['WARNING: --yjit-perf does not write a perf map on Windows']
     assert_in_out_err(%w[--yjit-perf --yjit-call-threshold=1], 'def foo = 1; foo; p :ok', [':ok'], warning, success: true)
