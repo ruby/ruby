@@ -643,8 +643,16 @@ static st_table *conlist = NULL;
          exclusive_for_##obj; \
          exclusive_for_##obj = (LeaveCriticalSection(&obj##_mutex), false))
 
-static CRITICAL_SECTION uenvarea_mutex;
-static char *uenvarea;
+/* The string w32_getenv returned last in each thread, or in each Win32
+ * fiber, valid until the next call in the same thread or fiber. */
+static DWORD uenvarea_key;
+
+/* License: Ruby's */
+static void WINAPI
+free_uenvarea(void *uenvarea)
+{
+    free(uenvarea);
+}
 
 /* License: Ruby's */
 struct constat {
@@ -685,13 +693,7 @@ exit_handler(void)
     DeleteCriticalSection(&select_mutex);
     DeleteCriticalSection(&socklist_mutex);
     DeleteCriticalSection(&conlist_mutex);
-    thread_exclusive(uenvarea) {
-        if (uenvarea) {
-            free(uenvarea);
-            uenvarea = NULL;
-        }
-    }
-    DeleteCriticalSection(&uenvarea_mutex);
+    FlsFree(uenvarea_key);
 }
 
 /* License: Ruby's */
@@ -895,7 +897,8 @@ rb_w32_sysinit(int *argc, char ***argv)
 
     tzset();
 
-    InitializeCriticalSection(&uenvarea_mutex);
+    if ((uenvarea_key = FlsAlloc(free_uenvarea)) == FLS_OUT_OF_INDEXES)
+        rb_bug("FlsAlloc() for uenvarea_key fails");
     init_env();
 
     init_stdhandle();
@@ -5432,39 +5435,36 @@ w32_getenv(const char *name, UINT cp)
 {
     WCHAR *wenvarea, *wenv;
     int len = strlen(name);
-    char *env, *found = NULL;
+    char *uenvarea, *env, *found = NULL;
     int wlen;
 
     if (len == 0) return NULL;
 
     if (!NTLoginName) {
-        /* initialized in init_env, uenvarea_mutex should have been
-         * initialized before it */
+        /* initialized in init_env, uenvarea_key should have been
+         * allocated before it */
         return getenv(name);
     }
 
-    thread_exclusive(uenvarea) {
-        if (uenvarea) {
-            free(uenvarea);
-            uenvarea = NULL;
-        }
-        wenvarea = GetEnvironmentStringsW();
-        if (!wenvarea) {
-            map_errno(GetLastError());
-            continue;
-        }
-        for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
-            wlen += lstrlenW(wenv) + 1;
-        uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
-        FreeEnvironmentStringsW(wenvarea);
-        if (!uenvarea)
-            continue;
+    free(FlsGetValue(uenvarea_key));
+    FlsSetValue(uenvarea_key, NULL);
+    wenvarea = GetEnvironmentStringsW();
+    if (!wenvarea) {
+        map_errno(GetLastError());
+        return NULL;
+    }
+    for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
+        wlen += lstrlenW(wenv) + 1;
+    uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
+    FreeEnvironmentStringsW(wenvarea);
+    if (!uenvarea)
+        return NULL;
+    FlsSetValue(uenvarea_key, uenvarea);
 
-        for (env = uenvarea; *env; env += strlen(env) + 1) {
-            if (strncasecmp(env, name, len) == 0 && *(env + len) == '=') {
-                found = env + len + 1;
-                break;
-            }
+    for (env = uenvarea; *env; env += strlen(env) + 1) {
+        if (strncasecmp(env, name, len) == 0 && *(env + len) == '=') {
+            found = env + len + 1;
+            break;
         }
     }
 
