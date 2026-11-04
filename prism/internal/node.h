@@ -130,6 +130,15 @@ pm_node_list_open_append(pm_node_chunks_t *chunks, pm_node_list_t *list, pm_node
 }
 
 /*
+ * The last node in an open list, which must not be empty. The cursor is always
+ * just past it, in the same chunk.
+ */
+static PRISM_INLINE pm_node_t *
+pm_node_list_open_last(const pm_node_list_t *list) {
+    return list->nodes[-1];
+}
+
+/*
  * Copy an open list into an array of exactly its size allocated from the given
  * arena, and return its chunks to the freelist. Afterward the list holds that
  * array, and it must not be appended to through pm_node_list_open_append or
@@ -142,6 +151,12 @@ void pm_node_list_finalize(pm_node_chunks_t *chunks, pm_arena_t *arena, pm_node_
  * given arena without going through chunks.
  */
 pm_node_list_t pm_node_list_single(pm_arena_t *arena, pm_node_t *node);
+
+/*
+ * Append a node onto the end of a finalized list, growing its array in the
+ * given arena to exactly the new size.
+ */
+void pm_node_list_append_finalized(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node);
 
 /*
  * A finalized list of the size nodes starting at the given index of another

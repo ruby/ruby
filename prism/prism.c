@@ -1792,8 +1792,14 @@ typedef struct {
     /** The optional location of the opening parenthesis or bracket. */
     pm_location_t opening_loc;
 
-    /** The lazily-allocated optional arguments node. */
-    pm_arguments_node_t *arguments;
+    /** The open list of arguments while they are being parsed. */
+    pm_node_list_t list;
+
+    /** The location covering the arguments in list. */
+    pm_location_t list_loc;
+
+    /** The flags of the arguments node that depend on the arguments in list. */
+    pm_node_flags_t list_flags;
 
     /** The optional location of the closing parenthesis or bracket. */
     pm_location_t closing_loc;
@@ -1824,8 +1830,8 @@ pm_arguments_end(pm_arguments_t *arguments) {
     if (arguments->closing_loc.length > 0) {
         return &arguments->closing_loc;
     }
-    if (arguments->arguments != NULL) {
-        return &arguments->arguments->base.location;
+    if (arguments->list.size > 0) {
+        return &arguments->list_loc;
     }
     if (arguments->opening_loc.length > 0) {
         return &arguments->opening_loc;
@@ -1841,7 +1847,7 @@ static void
 pm_arguments_validate_block(pm_parser_t *parser, pm_arguments_t *arguments, pm_block_node_t *block) {
     // First, check that we have arguments and that we don't have a closing
     // location for them.
-    if (arguments->arguments == NULL || arguments->closing_loc.length > 0) {
+    if (arguments->list.size == 0 || arguments->closing_loc.length > 0) {
         return;
     }
 
@@ -1852,7 +1858,7 @@ pm_arguments_validate_block(pm_parser_t *parser, pm_arguments_t *arguments, pm_b
     //
     // In this case, it's actually okay for the block to be attached to the
     // call, even though it looks like it's attached to the argument.
-    if (arguments->arguments->arguments.size == 1 && PM_NODE_TYPE_P(arguments->arguments->arguments.nodes[0], PM_PARENTHESES_NODE)) {
+    if (arguments->list.size == 1 && PM_NODE_TYPE_P(pm_node_list_open_last(&arguments->list), PM_PARENTHESES_NODE)) {
         return;
     }
 
@@ -2405,49 +2411,66 @@ pm_and_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *opera
 }
 
 /**
- * Allocate an initialize a new arguments node.
+ * Allocate and initialize a new ArgumentsNode node from the arguments that have
+ * been parsed, or return NULL if there are none. The node that takes the
+ * arguments calls this when it is created.
  */
 static pm_arguments_node_t *
-pm_arguments_node_create(pm_parser_t *parser) {
+pm_arguments_node_create(pm_parser_t *parser, pm_arguments_t *arguments) {
+    if (arguments->list.size == 0) return NULL;
+    pm_node_list_finalize(&parser->node_chunks, parser->arena, &arguments->list);
+
     return pm_arguments_node_new(
         parser->arena,
         ++parser->node_id,
-        0,
-        PM_LOCATION_INIT_UNSET,
-        ((pm_node_list_t) { 0 })
+        arguments->list_flags,
+        arguments->list_loc,
+        arguments->list
     );
 }
 
 /**
- * Return the size of the given arguments node.
+ * Update the flags of an ArgumentsNode node for a new argument.
  */
-static size_t
-pm_arguments_node_size(pm_arguments_node_t *node) {
-    return node->arguments.size;
+static void
+pm_arguments_flags_update(pm_node_flags_t *flags, const pm_node_t *argument) {
+    if (PM_NODE_TYPE_P(argument, PM_SPLAT_NODE)) {
+        *flags |= (*flags & PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT) ? PM_ARGUMENTS_NODE_FLAGS_CONTAINS_MULTIPLE_SPLATS : PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT;
+    }
 }
 
 /**
- * Append an argument to an arguments node.
+ * Allocate and initialize a new ArgumentsNode node holding a single argument.
  */
-static void
-pm_arguments_node_arguments_append(pm_arena_t *arena, pm_arguments_node_t *node, pm_node_t *argument) {
-    if (pm_arguments_node_size(node) == 0) {
-        PM_NODE_START_SET_NODE(node, argument);
-    }
+static pm_arguments_node_t *
+pm_arguments_node_single_create(pm_parser_t *parser, pm_node_t *argument) {
+    pm_node_flags_t flags = 0;
+    pm_arguments_flags_update(&flags, argument);
+
+    return pm_arguments_node_new(
+        parser->arena,
+        ++parser->node_id,
+        flags,
+        PM_LOCATION_INIT_NODE(argument),
+        pm_node_list_single(parser->arena, argument)
+    );
+}
+
+/**
+ * Append an argument that is found after the rest of the arguments have been
+ * parsed, creating the ArgumentsNode node if there is not one yet.
+ */
+static pm_arguments_node_t *
+pm_arguments_node_extend(pm_parser_t *parser, pm_arguments_node_t *node, pm_node_t *argument) {
+    if (node == NULL) return pm_arguments_node_single_create(parser, argument);
 
     if (PM_NODE_END(node) < PM_NODE_END(argument)) {
         PM_NODE_LENGTH_SET_NODE(node, argument);
     }
 
-    pm_node_list_append_inline(arena, &node->arguments, argument);
-
-    if (PM_NODE_TYPE_P(argument, PM_SPLAT_NODE)) {
-        if (PM_NODE_FLAG_P(node, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT)) {
-            pm_node_flag_set(UP(node), PM_ARGUMENTS_NODE_FLAGS_CONTAINS_MULTIPLE_SPLATS);
-        } else {
-            pm_node_flag_set(UP(node), PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT);
-        }
-    }
+    pm_arguments_flags_update(&node->base.flags, argument);
+    pm_node_list_append_finalized(parser->arena, &node->arguments, argument);
+    return node;
 }
 
 /**
@@ -2943,7 +2966,7 @@ pm_call_node_aref_create(pm_parser_t *parser, pm_node_t *receiver, pm_arguments_
     node->message_loc.length = (arguments->closing_loc.start + arguments->closing_loc.length) - arguments->opening_loc.start;
 
     node->opening_loc = arguments->opening_loc;
-    node->arguments = arguments->arguments;
+    node->arguments = pm_arguments_node_create(parser, arguments);
     node->closing_loc = arguments->closing_loc;
     node->block = arguments->block;
 
@@ -2967,9 +2990,7 @@ pm_call_node_binary_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t 
     node->receiver = receiver;
     node->message_loc = TOK2LOC(parser, operator);
 
-    pm_arguments_node_t *arguments = pm_arguments_node_create(parser);
-    pm_arguments_node_arguments_append(parser->arena, arguments, argument);
-    node->arguments = arguments;
+    node->arguments = pm_arguments_node_single_create(parser, argument);
 
     node->name = pm_parser_constant_id_token(parser, operator);
     return node;
@@ -2998,7 +3019,7 @@ pm_call_node_call_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *o
     node->call_operator_loc = TOK2LOC(parser, operator);
     node->message_loc = TOK2LOC(parser, message);
     node->opening_loc = arguments->opening_loc;
-    node->arguments = arguments->arguments;
+    node->arguments = pm_arguments_node_create(parser, arguments);
     node->closing_loc = arguments->closing_loc;
     node->block = arguments->block;
 
@@ -3044,7 +3065,7 @@ pm_call_node_fcall_create(pm_parser_t *parser, pm_token_t *message, pm_arguments
 
     node->message_loc = TOK2LOC(parser, message);
     node->opening_loc = arguments->opening_loc;
-    node->arguments = arguments->arguments;
+    node->arguments = pm_arguments_node_create(parser, arguments);
     node->closing_loc = arguments->closing_loc;
     node->block = arguments->block;
 
@@ -3088,7 +3109,7 @@ pm_call_node_not_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *me
     node->receiver = receiver;
     node->message_loc = TOK2LOC(parser, message);
     node->opening_loc = arguments->opening_loc;
-    node->arguments = arguments->arguments;
+    node->arguments = pm_arguments_node_create(parser, arguments);
     node->closing_loc = arguments->closing_loc;
 
     node->name = pm_parser_constant_id_constant(parser, "!", 1);
@@ -3112,7 +3133,7 @@ pm_call_node_shorthand_create(pm_parser_t *parser, pm_node_t *receiver, pm_token
     node->receiver = receiver;
     node->call_operator_loc = TOK2LOC(parser, operator);
     node->opening_loc = arguments->opening_loc;
-    node->arguments = arguments->arguments;
+    node->arguments = pm_arguments_node_create(parser, arguments);
     node->closing_loc = arguments->closing_loc;
     node->block = arguments->block;
 
@@ -6425,7 +6446,7 @@ pm_super_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_argument
         ((pm_location_t) { .start = PM_TOKEN_START(parser, keyword), .length = PM_LOCATION_END(end) - PM_TOKEN_START(parser, keyword) }),
         TOK2LOC(parser, keyword),
         arguments->opening_loc,
-        arguments->arguments,
+        pm_arguments_node_create(parser, arguments),
         arguments->closing_loc,
         arguments->block
     );
@@ -13536,10 +13557,8 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
                     // method call with no arguments. Now we have an =, so we know it's
                     // a method call with an argument. In this case we will create the
                     // arguments node, parse the argument, and add it to the list.
-                    pm_arguments_node_t *arguments = pm_arguments_node_create(parser);
+                    pm_arguments_node_t *arguments = pm_arguments_node_single_create(parser, value);
                     call->arguments = arguments;
-
-                    pm_arguments_node_arguments_append(parser->arena, arguments, value);
                     PM_NODE_LENGTH_SET_NODE(call, arguments);
                     call->equal_loc = TOK2LOC(parser, operator);
 
@@ -13554,11 +13573,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             // an aref expression, and we can transform it into an aset
             // expression.
             if (PM_NODE_FLAG_P(call, PM_CALL_NODE_FLAGS_INDEX)) {
-                if (call->arguments == NULL) {
-                    call->arguments = pm_arguments_node_create(parser);
-                }
-
-                pm_arguments_node_arguments_append(parser->arena, call->arguments, value);
+                call->arguments = pm_arguments_node_extend(parser, call->arguments, value);
                 PM_NODE_LENGTH_SET_NODE(target, value);
 
                 // Replace the name with "[]=".
@@ -14042,11 +14057,16 @@ argument_allowed_for_bare_hash(pm_parser_t *parser, pm_node_t *argument) {
  */
 static PRISM_INLINE void
 parse_arguments_append(pm_parser_t *parser, pm_arguments_t *arguments, pm_node_t *argument) {
-    if (arguments->arguments == NULL) {
-        arguments->arguments = pm_arguments_node_create(parser);
+    if (arguments->list.size == 0) {
+        arguments->list_loc.start = PM_NODE_START(argument);
     }
 
-    pm_arguments_node_arguments_append(parser->arena, arguments->arguments, argument);
+    if (PM_LOCATION_END(&arguments->list_loc) < PM_NODE_END(argument)) {
+        arguments->list_loc.length = PM_NODE_END(argument) - arguments->list_loc.start;
+    }
+
+    pm_arguments_flags_update(&arguments->list_flags, argument);
+    pm_node_list_open_append(&parser->node_chunks, &arguments->list, argument);
 }
 
 /**
@@ -14258,7 +14278,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
 
                 pm_node_flags_t node_flags = PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS;
                 if (contains_keyword_splat) node_flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT;
-                pm_node_flag_set(UP(arguments->arguments), node_flags);
+                arguments->list_flags |= node_flags;
 
                 pm_static_literals_free(&hash_keys);
                 parsed_bare_hash = true;
@@ -14341,7 +14361,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
 
                         argument = UP(pm_forwarding_arguments_node_create(parser, &parser->previous));
                         parse_arguments_append(parser, arguments, argument);
-                        pm_node_flag_set(UP(arguments->arguments), PM_ARGUMENTS_NODE_FLAGS_CONTAINS_FORWARDING);
+                        arguments->list_flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_FORWARDING;
                         arguments->has_forwarding = true;
                         parsed_forwarding_arguments = true;
                         break;
@@ -14419,7 +14439,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 pm_node_flags_t node_flags = 0;
                 if (contains_keywords) node_flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS;
                 if (contains_keyword_splat) node_flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT;
-                pm_node_flag_set(UP(arguments->arguments), node_flags);
+                arguments->list_flags |= node_flags;
 
                 break;
             }
@@ -15764,10 +15784,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
                 pm_parser_err_node(parser, UP(block), PM_ERR_ARGUMENT_BLOCK_MULTI);
 
                 if (arguments->block != NULL) {
-                    if (arguments->arguments == NULL) {
-                        arguments->arguments = pm_arguments_node_create(parser);
-                    }
-                    pm_arguments_node_arguments_append(parser->arena, arguments->arguments, arguments->block);
+                    parse_arguments_append(parser, arguments, arguments->block);
                 }
                 arguments->block = UP(block);
             }
@@ -20060,7 +20077,7 @@ parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
             pm_node_flag_unset(UP(call), PM_CALL_NODE_FLAGS_VARIABLE_CALL);
 
             call->opening_loc = arguments.opening_loc;
-            call->arguments = arguments.arguments;
+            call->arguments = pm_arguments_node_create(parser, &arguments);
             call->closing_loc = arguments.closing_loc;
             call->block = arguments.block;
 
@@ -20551,7 +20568,7 @@ parse_jump(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
             pm_accepts_block_stack_pop(parser);
 
             // Reject `foo && return bar`.
-            if (!(flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && arguments.arguments != NULL) {
+            if (!(flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && arguments.list.size > 0) {
                 PM_PARSER_ERR_TOKEN_FORMAT(parser, &next, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(next.type));
             }
 
@@ -20578,17 +20595,17 @@ parse_jump(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 
     switch (keyword.type) {
         case PM_TOKEN_KEYWORD_BREAK: {
-            pm_node_t *node = UP(pm_break_node_create(parser, &keyword, arguments.arguments));
+            pm_node_t *node = UP(pm_break_node_create(parser, &keyword, pm_arguments_node_create(parser, &arguments)));
             if (!parser->partial_script) ensure_valid_jump(parser, node);
             return node;
         }
         case PM_TOKEN_KEYWORD_NEXT: {
-            pm_node_t *node = UP(pm_next_node_create(parser, &keyword, arguments.arguments));
+            pm_node_t *node = UP(pm_next_node_create(parser, &keyword, pm_arguments_node_create(parser, &arguments)));
             if (!parser->partial_script) ensure_valid_jump(parser, node);
             return node;
         }
         case PM_TOKEN_KEYWORD_RETURN: {
-            pm_node_t *node = UP(pm_return_node_create(parser, &keyword, arguments.arguments));
+            pm_node_t *node = UP(pm_return_node_create(parser, &keyword, pm_arguments_node_create(parser, &arguments)));
             ensure_valid_return(parser, node);
             return node;
         }
@@ -20751,7 +20768,7 @@ parse_yield(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         arguments.block = NULL;
     }
 
-    pm_yield_node_t *node = pm_yield_node_create(parser, &keyword, &arguments.opening_loc, arguments.arguments, &arguments.closing_loc);
+    pm_yield_node_t *node = pm_yield_node_create(parser, &keyword, &arguments.opening_loc, pm_arguments_node_create(parser, &arguments), &arguments.closing_loc);
     if (!parser->parsing_eval && !parser->partial_script) ensure_valid_yield(parser, node);
 
     return node;
@@ -20903,7 +20920,7 @@ parse_super(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 
     if (
         arguments.opening_loc.length == 0 &&
-        arguments.arguments == NULL &&
+        arguments.list.size == 0 &&
         ((arguments.block == NULL) || PM_NODE_TYPE_P(arguments.block, PM_BLOCK_NODE))
     ) {
         return UP(pm_forwarding_super_node_create(parser, &keyword, &arguments));
@@ -22483,7 +22500,7 @@ parse_call(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_bin
 
     if (
         (previous_binding_power == PM_BINDING_POWER_STATEMENT) &&
-        arguments.arguments == NULL &&
+        arguments.list.size == 0 &&
         arguments.opening_loc.length == 0 &&
         match1(parser, PM_TOKEN_COMMA)
     ) {
@@ -22528,10 +22545,7 @@ parse_aref(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_bin
     if (block != NULL) {
         if (arguments.block != NULL) {
             pm_parser_err_node(parser, UP(block), PM_ERR_ARGUMENT_AFTER_BLOCK);
-            if (arguments.arguments == NULL) {
-                arguments.arguments = pm_arguments_node_create(parser);
-            }
-            pm_arguments_node_arguments_append(parser->arena, arguments.arguments, arguments.block);
+            parse_arguments_append(parser, &arguments, arguments.block);
         }
 
         arguments.block = UP(block);
@@ -22999,10 +23013,8 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
             statements = pm_statements_node_create(parser);
         }
 
-        pm_arguments_node_t *arguments = pm_arguments_node_create(parser);
-        pm_arguments_node_arguments_append(
-            parser->arena,
-            arguments,
+        pm_arguments_node_t *arguments = pm_arguments_node_single_create(
+            parser,
             UP(pm_global_variable_read_node_synthesized_create(parser, pm_parser_constant_id_constant(parser, "$_", 2)))
         );
 
@@ -23019,10 +23031,8 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
                 statements = pm_statements_node_create(parser);
             }
 
-            pm_arguments_node_t *arguments = pm_arguments_node_create(parser);
-            pm_arguments_node_arguments_append(
-                parser->arena,
-                arguments,
+            pm_arguments_node_t *arguments = pm_arguments_node_single_create(
+                parser,
                 UP(pm_global_variable_read_node_synthesized_create(parser, pm_parser_constant_id_constant(parser, "$;", 2)))
             );
 
@@ -23038,10 +23048,10 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
             pm_statements_node_body_prepend(parser->arena, statements, UP(write));
         }
 
-        pm_arguments_node_t *arguments = pm_arguments_node_create(parser);
-        pm_arguments_node_arguments_append(
-            parser->arena,
-            arguments,
+        pm_arguments_t gets_arguments = { 0 };
+        parse_arguments_append(
+            parser,
+            &gets_arguments,
             UP(pm_global_variable_read_node_synthesized_create(parser, pm_parser_constant_id_constant(parser, "$/", 2)))
         );
 
@@ -23056,9 +23066,11 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
 
             pm_keyword_hash_node_t *keywords = pm_keyword_hash_node_create(parser, &elements);
 
-            pm_arguments_node_arguments_append(parser->arena, arguments, UP(keywords));
-            pm_node_flag_set(UP(arguments), PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS);
+            parse_arguments_append(parser, &gets_arguments, UP(keywords));
+            gets_arguments.list_flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS;
         }
+
+        pm_arguments_node_t *arguments = pm_arguments_node_create(parser, &gets_arguments);
 
         pm_statements_node_t *wrapped_statements = pm_statements_node_create(parser);
         pm_statements_node_body_append(parser, wrapped_statements, UP(pm_while_node_synthesized_create(
