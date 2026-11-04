@@ -2191,19 +2191,19 @@ rb_reg_last_match(VALUE match)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    pre_match -> string
  *
- *  Returns the substring of the target string from its beginning
- *  up to the first match in +self+ (that is, <tt>self[0]</tt>);
- *  equivalent to regexp global variable <tt>$`</tt>:
+ *  Returns the substring of the target string that precedes the matched substring:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m[0]        # => "HX1138"
- *    m.pre_match # => "T"
- *
- *  Related: MatchData#post_match.
+ *  ```ruby
+ *  match = /\d+/.match('foo 123 bar 456')
+ *  # => #<MatchData "123">
+ *  match.match(0)  # => "123"
+ *  match.pre_match # => "foo "
+ *  ```
  *
  */
 
