@@ -43,6 +43,13 @@ jobs:
           - os: 2025-vs2026
             test_task: check
             yjit: true
+          # Options that speed up ruby with external dependencies go to this job.
+          - os: 2025-vs2026
+            test_task: check
+            make: make
+            cc: clang-cl
+            yjit: true
+            mimalloc: true
           - os: 11-arm
             test_task: check
             target: arm64
@@ -58,7 +65,7 @@ jobs:
       || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/vcpkg'))
       )}}
 
-    name: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }}${{ case(matrix.yjit == true, ' YJIT', '') }}${{ case(matrix.make == 'make', ' GNU make', '') }} (${{ matrix.test_task }})
+    name: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }}${{ case(matrix.yjit == true, ' YJIT', '') }}${{ case(matrix.make == 'make', ' GNU make', '') }}${{ case(matrix.cc == 'clang-cl', ' clang-cl', '') }}${{ case(matrix.mimalloc == true, ' mimalloc', '') }} (${{ matrix.test_task }})
 
     permissions:
       contents: read
@@ -136,7 +143,7 @@ jobs:
         run: |
           git -C "%VCPKG_INSTALLATION_ROOT%" pull --quiet
           call "%VCPKG_INSTALLATION_ROOT%\bootstrap-vcpkg.bat"
-          vcpkg install
+          vcpkg install ${{ matrix.mimalloc && '--x-feature=mimalloc' || '' }}
         working-directory: src
 
       - name: setup env
@@ -180,18 +187,27 @@ jobs:
       - name: compiler version
         run: cl
 
+      - name: clang-cl version
+        run: where clang-cl && clang-cl --version
+        if: ${{ matrix.cc == 'clang-cl' }}
+
       - name: volume info
         run: Get-Volume
         shell: pwsh
 
       # TODO: We should use `../src` instead of `D:/a/ruby/ruby/src`
+      # CC= goes before the options, since `--with-<x>` and `--enable-<x>`
+      # take a following argument without a leading dash as their value.
       - name: Configure
         run: >-
-          ../src/win32/configure.bat --disable-install-doc
+          ../src/win32/configure.bat
+          ${{ matrix.cc && format('CC={0}', matrix.cc) || '' }}
+          --disable-install-doc
           --with-opt-dir=%RUBY_OPT_DIR%
           --with-gmp
           --enable-debug-env
           ${{ matrix.yjit && '--enable-yjit' || '' }}
+          ${{ matrix.mimalloc && '--with-mimalloc' || '' }}
           ${{ matrix.make == 'make' && '--with-gnu-make' || '' }}
 
       - run: ${{ matrix.make || 'nmake' }} prepare-vcpkg
@@ -222,6 +238,16 @@ jobs:
       - name: Check YJIT enabled
         run: .\miniruby.exe -v && .\miniruby.exe -v | findstr /c:"+YJIT" > nul
         if: ${{ matrix.yjit }}
+
+      # The tests pass even if mimalloc.dll redirects malloc of the whole
+      # process, which --with-mimalloc must not do.
+      - name: Check mimalloc without redirection
+        shell: pwsh
+        run: |
+          $dll = Get-Item *-ruby*.dll
+          if (!(dumpbin /dependents $dll | Select-String -SimpleMatch mimalloc.dll)) { throw "$dll does not import mimalloc.dll" }
+          if (dumpbin /dependents mimalloc.dll | Select-String -SimpleMatch mimalloc-redirect) { throw "mimalloc.dll imports mimalloc-redirect.dll" }
+        if: ${{ matrix.mimalloc }}
 
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
@@ -293,7 +319,7 @@ jobs:
       - name: Upload crash dumps
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: crashdumps-${{ matrix.os }}${{ case(matrix.target == 'x86', '-x86', '') }}${{ case(matrix.yjit == true, '-yjit', '') }}${{ case(matrix.make == 'make', '-gnumake', '') }}-${{ matrix.test_task }}
+          name: crashdumps-${{ matrix.os }}${{ case(matrix.target == 'x86', '-x86', '') }}${{ case(matrix.yjit == true, '-yjit', '') }}${{ case(matrix.make == 'make', '-gnumake', '') }}${{ case(matrix.cc == 'clang-cl', '-clang-cl', '') }}${{ case(matrix.mimalloc == true, '-mimalloc', '') }}-${{ matrix.test_task }}
           path: |
             crashdumps
             build/*.exe
@@ -310,7 +336,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }}${{ case(matrix.yjit == true, ' YJIT', '') }}${{ case(matrix.make == 'make', ' GNU make', '') }} / ${{ matrix.test_task || 'check' }}
+          label: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }}${{ case(matrix.yjit == true, ' YJIT', '') }}${{ case(matrix.make == 'make', ' GNU make', '') }}${{ case(matrix.cc == 'clang-cl', ' clang-cl', '') }}${{ case(matrix.mimalloc == true, ' mimalloc', '') }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
