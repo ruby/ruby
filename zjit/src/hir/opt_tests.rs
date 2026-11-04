@@ -24940,7 +24940,7 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1008, anybits?@0x1010, cme:0x1018)
           v29:Fixnum = GuardType v12, Fixnum recompile
-          v30:Fixnum = GuardType v13, Fixnum
+          v30:Fixnum = GuardType v13, Fixnum recompile
           v31:Fixnum = FixnumAnd v29, v30
           v32:Fixnum[0] = Const Value(0)
           v33:CBool = IsBitNotEqual v31, v32
