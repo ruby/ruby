@@ -193,9 +193,13 @@ const DUMP_LIR_ALL: &[DumpLIR] = &[
     DumpLIR::scratch_split,
 ];
 
-/// Maximum value for --zjit-mem-size/--zjit-exec-mem-size in MiB.
+/// Maximum value for --zjit-mem-size in MiB.
 /// We set 1TiB just to avoid overflow. We could make it smaller.
 const MAX_MEM_MIB: usize = 1024 * 1024;
+
+/// Maximum value for --zjit-exec-mem-size in MiB. rb_jit_reserve_addr_space() takes the size
+/// in bytes as u32, and 4095 MiB is the largest MiB value below u32::MAX (4096 MiB is 2^32 bytes).
+const MAX_EXEC_MEM_MIB: usize = 4095;
 
 /// Macro to dump LIR if --zjit-dump-lir is specified
 macro_rules! asm_dump {
@@ -287,7 +291,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         },
 
         ("exec-mem-size", _) => match opt_val.parse::<usize>() {
-            Ok(n) if (1..=MAX_MEM_MIB).contains(&n) => {
+            Ok(n) if (1..=MAX_EXEC_MEM_MIB).contains(&n) => {
                 // Convert from MiB to bytes internally for convenience
                 options.exec_mem_bytes = n * 1024 * 1024;
             }
@@ -520,4 +524,30 @@ pub extern "C" fn rb_zjit_get_stats_file_path_p(_ec: EcPtr, _self: VALUE) -> VAL
         }
     }
     Qnil
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_exec_mem_size_rejects_sizes_that_overflow_u32() {
+        unsafe { OPTIONS = Some(Options::default()); }
+
+        let parse = |option: &str| {
+            let option = CString::new(option).unwrap();
+            parse_option(option.as_ptr()).is_some()
+        };
+
+        // 4095 MiB is the largest size whose byte count fits in u32.
+        assert!(parse("exec-mem-size=4095"));
+        assert_eq!(get_option!(exec_mem_bytes), 4095 * 1024 * 1024);
+
+        // 4096 MiB is 2^32 bytes, which truncates to 0 when cast to u32.
+        assert!(!parse("exec-mem-size=4096"));
+        assert!(!parse("exec-mem-size=4097"));
+
+        // Rejected values must not modify the option.
+        assert_eq!(get_option!(exec_mem_bytes), 4095 * 1024 * 1024);
+    }
 }
