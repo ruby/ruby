@@ -312,6 +312,26 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(:meth, m.bind(Object.new).call, feature4254)
   end
 
+  def test_bind_superclass_method_on_subclass_instance_with_same_prepend
+    m = Module.new do
+      def m = [:m, *super]
+    end
+    c = Class.new do
+      prepend m
+      def m = [:c]
+    end
+    sc = Class.new(c) do
+      prepend m
+      def m = [:sc, *super]
+    end
+
+    expected = [:m, :c]
+    o = sc.new
+    um = c.instance_method(:m)
+    assert_equal(expected, um.bind_call(o))
+    assert_equal(expected, um.bind(o).unbind.bind_call(o))
+  end
+
   def test_define_method
     c = Class.new
     c.class_eval { def foo; :foo; end }
