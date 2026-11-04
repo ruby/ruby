@@ -3962,7 +3962,7 @@ rb_w32_gethostname(char *name, int len)
     /* Winsock reads the DNS settings from the registry on every call, but
      * the host name does not change until the system restarts, except
      * through this variable that Winsock also reads on every call. */
-    if (GetEnvironmentVariableW(L"_CLUSTER_NETWORK_NAME_", NULL, 0)) {
+    if (GetEnvironmentVariableW(L"_CLUSTER_NETWORK_NAME_", NULL, 0) > 1) {
         int r = gethostname(name, len);
         if (r == SOCKET_ERROR)
             errno = map_errno(WSAGetLastError());
