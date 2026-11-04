@@ -1607,8 +1607,8 @@ match_end(VALUE match, VALUE n)
  *  :markup: markdown
  *
  *  call-seq:
- *    match(n) -> string or nil
- *    match(name) -> string or nil
+ *    match(n) -> string
+ *    match(name) -> string
  *
  *  Returns the matched substring corresponding to the given argument.
  *
