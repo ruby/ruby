@@ -127,6 +127,7 @@ pm_location_init(uint32_t start, uint32_t length) {
 }
 
 #define PM_LOCATION_INIT(start_, length_) pm_location_init((start_), (length_))
+#define PM_LOCATION_INIT_BOUNDS(start_, end_) PM_LOCATION_INIT(start_, U32(end_ - start_))
 #define PM_LOCATION_INIT_UNSET PM_LOCATION_INIT(0, 0)
 #define PM_LOCATION_INIT_TOKEN(parser_, token_) PM_LOCATION_INIT(PM_TOKEN_START(parser_, token_), PM_TOKEN_LENGTH(token_))
 #define PM_LOCATION_INIT_NODE(node_) UP(node_)->location
@@ -4753,7 +4754,7 @@ pm_in_node_create(pm_parser_t *parser, pm_node_t *pattern, pm_statements_node_t 
         parser->arena,
         ++parser->node_id,
         0,
-        PM_LOCATION_INIT(start, U32(end - start)),
+        PM_LOCATION_INIT_BOUNDS(start, end),
         pattern,
         statements,
         TOK2LOC(parser, in_keyword),
@@ -6094,45 +6095,29 @@ pm_rescue_modifier_node_create(pm_parser_t *parser, pm_node_t *expression, const
  * Allocate and initialize a new RescueNode node.
  */
 static pm_rescue_node_t *
-pm_rescue_node_create(pm_parser_t *parser, const pm_token_t *keyword) {
+pm_rescue_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_list_t *exceptions, const pm_token_t *operator, pm_node_t *reference, const pm_token_t *then_keyword, pm_statements_node_t *statements) {
+    pm_node_list_finalize(&parser->node_chunks, parser->arena, exceptions);
+
+    uint32_t start = PM_TOKEN_START(parser, keyword);
+    uint32_t end = PM_TOKEN_END(parser, keyword);
+
+    if (exceptions->size > 0) end = PM_NODE_END(exceptions->nodes[exceptions->size - 1]);
+    if (reference != NULL) end = PM_NODE_END(reference);
+    if (statements != NULL && pm_statements_node_body_length(statements) > 0) end = PM_NODE_END(statements);
+
     return pm_rescue_node_new(
         parser->arena,
         ++parser->node_id,
         0,
-        PM_LOCATION_INIT_TOKEN(parser, keyword),
+        PM_LOCATION_INIT_BOUNDS(start, end),
         TOK2LOC(parser, keyword),
-        ((pm_node_list_t) { 0 }),
-        ((pm_location_t) { 0 }),
-        NULL,
-        ((pm_location_t) { 0 }),
-        NULL,
+        *exceptions,
+        NTOK2LOC(parser, operator),
+        reference,
+        NTOK2LOC(parser, then_keyword),
+        statements,
         NULL
     );
-}
-
-static PRISM_INLINE void
-pm_rescue_node_operator_set(const pm_parser_t *parser, pm_rescue_node_t *node, const pm_token_t *operator) {
-    node->operator_loc = TOK2LOC(parser, operator);
-}
-
-/**
- * Set the reference of a rescue node, and update the location of the node.
- */
-static void
-pm_rescue_node_reference_set(pm_rescue_node_t *node, pm_node_t *reference) {
-    node->reference = reference;
-    PM_NODE_LENGTH_SET_NODE(node, reference);
-}
-
-/**
- * Set the statements of a rescue node, and update the location of the node.
- */
-static void
-pm_rescue_node_statements_set(pm_rescue_node_t *node, pm_statements_node_t *statements) {
-    node->statements = statements;
-    if (pm_statements_node_body_length(statements) > 0) {
-        PM_NODE_LENGTH_SET_NODE(node, statements);
-    }
 }
 
 /**
@@ -6142,15 +6127,6 @@ static void
 pm_rescue_node_subsequent_set(pm_rescue_node_t *node, pm_rescue_node_t *subsequent) {
     node->subsequent = subsequent;
     PM_NODE_LENGTH_SET_NODE(node, subsequent);
-}
-
-/**
- * Append an exception node to a rescue node, and update the location.
- */
-static void
-pm_rescue_node_exceptions_append(pm_arena_t *arena, pm_rescue_node_t *node, pm_node_t *exception) {
-    pm_node_list_append_inline(arena, &node->exceptions, exception);
-    PM_NODE_LENGTH_SET_NODE(node, exception);
 }
 
 /**
@@ -6897,7 +6873,7 @@ pm_when_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_list
         parser->arena,
         ++parser->node_id,
         0,
-        PM_LOCATION_INIT(start, U32(end - start)),
+        PM_LOCATION_INIT_BOUNDS(start, end),
         TOK2LOC(parser, keyword),
         *conditions,
         NTOK2LOC(parser, then_keyword),
@@ -15216,7 +15192,12 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
         if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false, false);
         parser_lex(parser);
 
-        pm_rescue_node_t *rescue = pm_rescue_node_create(parser, &parser->previous);
+        pm_token_t rescue_keyword = parser->previous;
+        pm_node_list_t exceptions = { 0 };
+        pm_token_t operator = { 0 };
+        pm_node_t *reference = NULL;
+        pm_token_t then_keyword = { 0 };
+        pm_statements_node_t *statements = NULL;
 
         switch (parser->current.type) {
             case PM_TOKEN_EQUAL_GREATER: {
@@ -15224,12 +15205,10 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
                 // we're going to have an empty list of exceptions to rescue (which
                 // implies StandardError).
                 parser_lex(parser);
-                pm_rescue_node_operator_set(parser, rescue, &parser->previous);
+                operator = parser->previous;
 
-                pm_node_t *reference = parse_expression(parser, PM_BINDING_POWER_INDEX, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_VARIABLE, (uint16_t) (depth + 1));
+                reference = parse_expression(parser, PM_BINDING_POWER_INDEX, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_VARIABLE, (uint16_t) (depth + 1));
                 reference = parse_target(parser, reference, false, false);
-
-                pm_rescue_node_reference_set(rescue, reference);
                 break;
             }
             case PM_TOKEN_NEWLINE:
@@ -15245,7 +15224,7 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
 
                     do {
                         pm_node_t *expression = parse_starred_expression(parser, PM_BINDING_POWER_DEFINED, false, PM_ERR_RESCUE_EXPRESSION, (uint16_t) (depth + 1));
-                        pm_rescue_node_exceptions_append(parser->arena, rescue, expression);
+                        pm_node_list_open_append(&parser->node_chunks, &exceptions, expression);
 
                         // If we hit a newline, then this is the end of the rescue expression. We
                         // can continue on to parse the statements.
@@ -15254,12 +15233,10 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
                         // If we hit a `=>` then we're going to parse the exception variable. Once
                         // we've done that, we'll break out of the loop and parse the statements.
                         if (accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
-                            pm_rescue_node_operator_set(parser, rescue, &parser->previous);
+                            operator = parser->previous;
 
-                            pm_node_t *reference = parse_expression(parser, PM_BINDING_POWER_INDEX, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_VARIABLE, (uint16_t) (depth + 1));
+                            reference = parse_expression(parser, PM_BINDING_POWER_INDEX, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_VARIABLE, (uint16_t) (depth + 1));
                             reference = parse_target(parser, reference, false, false);
-
-                            pm_rescue_node_reference_set(rescue, reference);
                             break;
                         }
                     } while (accept1(parser, PM_TOKEN_COMMA));
@@ -15269,11 +15246,11 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
 
         if (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
             if (accept1(parser, PM_TOKEN_KEYWORD_THEN)) {
-                rescue->then_keyword_loc = TOK2LOC(parser, &parser->previous);
+                then_keyword = parser->previous;
             }
         } else {
             expect1(parser, PM_TOKEN_KEYWORD_THEN, PM_ERR_RESCUE_TERM);
-            rescue->then_keyword_loc = TOK2LOC(parser, &parser->previous);
+            then_keyword = parser->previous;
         }
 
         if (!match3(parser, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_END)) {
@@ -15291,12 +15268,13 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
                 default: PRISM_ASSERT(false && "unreachable"); context = PM_CONTEXT_BEGIN_RESCUE; break;
             }
 
-            pm_statements_node_t *statements = parse_statements(parser, context, (uint16_t) (depth + 1));
-            if (statements != NULL) pm_rescue_node_statements_set(rescue, statements);
+            statements = parse_statements(parser, context, (uint16_t) (depth + 1));
 
             pm_accepts_block_stack_pop(parser);
             accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
         }
+
+        pm_rescue_node_t *rescue = pm_rescue_node_create(parser, &rescue_keyword, &exceptions, NTOK2PTR(operator), reference, NTOK2PTR(then_keyword), statements);
 
         if (current == NULL) {
             pm_begin_node_rescue_clause_set(parent_node, rescue);
