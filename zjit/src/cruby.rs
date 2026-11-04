@@ -1738,6 +1738,8 @@ pub(crate) mod ids {
     def_ids! {
         name: NULL               content: b""
         name: respond_to_missing content: b"respond_to_missing?"
+        name: respond_to         content: b"respond_to?"
+        name: method_missing
         name: eq                 content: b"=="
         name: string_eq          content: b"String#=="
         name: include_p          content: b"include?"
