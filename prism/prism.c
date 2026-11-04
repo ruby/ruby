@@ -4458,24 +4458,57 @@ pm_global_variable_write_node_synthesized_create(pm_parser_t *parser, pm_constan
 }
 
 /**
+ * The elements of a HashNode or KeywordHashNode node that is still being
+ * parsed. The flags that depend on the elements are worked out as each one is
+ * appended, while it is still in cache, and they are kept so that a zeroed
+ * value has no elements.
+ */
+typedef struct {
+    /** The open list of elements. */
+    pm_node_list_t nodes;
+
+    /**
+     * Whether any element keeps a hash from being a static literal. An assoc is
+     * only marked as one when its key and value are, and an assoc splat never
+     * is.
+     */
+    bool dynamic;
+
+    /** Whether any element is not an assoc with a symbol key. */
+    bool non_symbol_keys;
+} pm_hash_elements_t;
+
+/**
+ * Append an element to the elements of a HashNode or KeywordHashNode node that
+ * is still being parsed.
+ */
+static PRISM_INLINE void
+pm_hash_elements_append(pm_parser_t *parser, pm_hash_elements_t *elements, pm_node_t *element) {
+    if (!PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL)) {
+        elements->dynamic = true;
+    }
+
+    if (!PM_NODE_TYPE_P(element, PM_ASSOC_NODE) || !PM_NODE_TYPE_P(((const pm_assoc_node_t *) element)->key, PM_SYMBOL_NODE)) {
+        elements->non_symbol_keys = true;
+    }
+
+    pm_node_list_open_append(&parser->node_chunks, &elements->nodes, element);
+}
+
+/**
  * Allocate a new HashNode node.
  */
 static pm_hash_node_t *
-pm_hash_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_node_list_t *elements, const pm_token_t *closing) {
-    pm_node_list_finalize(&parser->node_chunks, parser->arena, elements);
-
-    pm_node_flags_t flags = PM_NODE_FLAG_STATIC_LITERAL;
-    for (size_t idx = 0; idx < elements->size && flags; ++idx) {
-        if (!PM_NODE_FLAG_P(elements->nodes[idx], PM_NODE_FLAG_STATIC_LITERAL)) flags = 0;
-    }
+pm_hash_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_hash_elements_t *elements, const pm_token_t *closing) {
+    pm_node_list_finalize(&parser->node_chunks, parser->arena, &elements->nodes);
 
     return pm_hash_node_new(
         parser->arena,
         ++parser->node_id,
-        flags,
+        elements->dynamic ? 0 : PM_NODE_FLAG_STATIC_LITERAL,
         PM_LOCATION_INIT_TOKENS(parser, opening, closing),
         TOK2LOC(parser, opening),
-        *elements,
+        elements->nodes,
         TOK2LOC(parser, closing)
     );
 }
@@ -5143,29 +5176,24 @@ pm_it_parameters_node_create(pm_parser_t *parser, const pm_token_t *opening, con
  * Allocate a new KeywordHashNode node.
  */
 static pm_keyword_hash_node_t *
-pm_keyword_hash_node_create(pm_parser_t *parser, pm_node_list_t *elements) {
-    pm_node_list_finalize(&parser->node_chunks, parser->arena, elements);
-
-    pm_node_flags_t flags = PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS;
-    for (size_t idx = 0; idx < elements->size && flags; ++idx) {
-        const pm_node_t *element = elements->nodes[idx];
-        if (!PM_NODE_TYPE_P(element, PM_ASSOC_NODE) || !PM_NODE_TYPE_P(((const pm_assoc_node_t *) element)->key, PM_SYMBOL_NODE)) flags = 0;
-    }
+pm_keyword_hash_node_create(pm_parser_t *parser, pm_hash_elements_t *elements) {
+    pm_node_list_t *nodes = &elements->nodes;
+    pm_node_list_finalize(&parser->node_chunks, parser->arena, nodes);
 
     uint32_t start = 0;
     uint32_t end = 0;
 
-    if (elements->size > 0) {
-        start = PM_NODE_START(elements->nodes[0]);
-        end = PM_NODE_END(elements->nodes[elements->size - 1]);
+    if (nodes->size > 0) {
+        start = PM_NODE_START(nodes->nodes[0]);
+        end = PM_NODE_END(nodes->nodes[nodes->size - 1]);
     }
 
     return pm_keyword_hash_node_new(
         parser->arena,
         ++parser->node_id,
-        flags,
+        elements->non_symbol_keys ? 0 : PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS,
         PM_LOCATION_INIT_BOUNDS(start, end),
-        *elements
+        *nodes
     );
 }
 
@@ -13960,7 +13988,7 @@ pm_when_clause_static_literals_add(pm_parser_t *parser, pm_static_literals_t *li
  * Return true if a double splat was found.
  */
 static bool
-parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_list_t *elements, uint16_t depth) {
+parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_hash_elements_t *elements, uint16_t depth) {
     bool contains_keyword_splat = false;
 
     while (true) {
@@ -14050,7 +14078,7 @@ parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_list_t
             }
         }
 
-        pm_node_list_open_append(&parser->node_chunks, elements, element);
+        pm_hash_elements_append(parser, elements, element);
 
         // If there's no comma after the element, then we're done.
         if (!accept1(parser, PM_TOKEN_COMMA)) break;
@@ -14311,7 +14339,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     pm_parser_err_current(parser, PM_ERR_ARGUMENT_BARE_HASH);
                 }
 
-                pm_node_list_t elements = { 0 };
+                pm_hash_elements_t elements = { 0 };
                 pm_static_literals_t hash_keys = { 0 };
                 bool contains_keyword_splat = parse_assocs(parser, &hash_keys, &elements, (uint16_t) (depth + 1));
                 argument = UP(pm_keyword_hash_node_create(parser, &elements));
@@ -14449,7 +14477,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                         operator = parser->previous;
                     }
 
-                    pm_node_list_t elements = { 0 };
+                    pm_hash_elements_t elements = { 0 };
                     contains_keywords = true;
 
                     // Create the set of static literals for this hash.
@@ -14460,7 +14488,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     pm_node_t *value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_HASH_VALUE, (uint16_t) (depth + 1));
                     argument = UP(pm_assoc_node_create(parser, argument, NTOK2PTR(operator), value));
 
-                    pm_node_list_open_append(&parser->node_chunks, &elements, argument);
+                    pm_hash_elements_append(parser, &elements, argument);
 
                     // Then parse more if we have a comma
                     if (accept1(parser, PM_TOKEN_COMMA) && (
@@ -19327,7 +19355,7 @@ parse_splat(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 
 static pm_keyword_hash_node_t *
 parse_array_keyword_hash(pm_parser_t *parser, pm_node_t *key, uint8_t flags, uint16_t depth) {
-    pm_node_list_t elements = { 0 };
+    pm_hash_elements_t elements = { 0 };
 
     pm_static_literals_t hash_keys = { 0 };
     pm_hash_key_static_literals_add(parser, &hash_keys, key);
@@ -19339,7 +19367,7 @@ parse_array_keyword_hash(pm_parser_t *parser, pm_node_t *key, uint8_t flags, uin
 
     pm_node_t *value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_HASH_VALUE, (uint16_t) (depth + 1));
     pm_node_t *assoc = UP(pm_assoc_node_create(parser, key, NTOK2PTR(operator), value));
-    pm_node_list_open_append(&parser->node_chunks, &elements, assoc);
+    pm_hash_elements_append(parser, &elements, assoc);
 
     if (accept1(parser, PM_TOKEN_COMMA) && !match1(parser, PM_TOKEN_BRACKET_RIGHT)) {
         parse_assocs(parser, &hash_keys, &elements, (uint16_t) (depth + 1));
@@ -19406,7 +19434,7 @@ parse_array(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
                 pm_parser_err_current(parser, PM_ERR_EXPRESSION_BARE_HASH);
             }
 
-            pm_node_list_t hash_elements = { 0 };
+            pm_hash_elements_t hash_elements = { 0 };
             pm_static_literals_t hash_keys = { 0 };
 
             if (!match8(parser, PM_TOKEN_EOF, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_KEYWORD_DO_BLOCK, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_KEYWORD_DO, PM_TOKEN_PARENTHESIS_RIGHT)) {
@@ -19449,7 +19477,7 @@ parse_hash(pm_parser_t *parser, uint16_t depth) {
     pm_token_t opening = parser->current;
     parser_lex(parser);
 
-    pm_node_list_t elements = { 0 };
+    pm_hash_elements_t elements = { 0 };
     if (!match2(parser, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_EOF)) {
         pm_static_literals_t hash_keys = { 0 };
         parse_assocs(parser, &hash_keys, &elements, (uint16_t) (depth + 1));
@@ -23015,8 +23043,8 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
         );
 
         if (PM_PARSER_COMMAND_LINE_OPTION_L(parser)) {
-            pm_node_list_t elements = { 0 };
-            pm_node_list_open_append(&parser->node_chunks, &elements, UP(pm_assoc_node_create(
+            pm_hash_elements_t elements = { 0 };
+            pm_hash_elements_append(parser, &elements, UP(pm_assoc_node_create(
                 parser,
                 UP(pm_symbol_node_synthesized_create(parser, "chomp")),
                 NULL,
