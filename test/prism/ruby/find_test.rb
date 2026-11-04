@@ -6,6 +6,19 @@ return if defined?(RubyVM::InstructionSequence) && RubyVM::InstructionSequence.c
 require_relative "../test_helper"
 require_relative "find_fixtures"
 
+# On CRuby, Ruby::Prism.find looks up the node ids that the running Ruby's own prism
+# assigned in a parse by this prism. Node ids are only stable across parses by
+# the same version of prism, so these tests only run when the versions match.
+if defined?(RubyVM::InstructionSequence)
+  begin
+    require "ruby/prism"
+  rescue LoadError
+    return
+  end
+
+  return if Ruby::Prism::VERSION != Ruby::Prism::VERSION
+end
+
 module Ruby::Prism
   class FindTest < TestCase
     Fixtures = FindFixtures
