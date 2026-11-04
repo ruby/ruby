@@ -2471,27 +2471,52 @@ pm_arguments_node_extend(pm_parser_t *parser, pm_arguments_node_t *node, pm_node
 }
 
 /**
- * Allocate and initialize a new ArrayNode node.
+ * The elements of an ArrayNode node that is still being parsed. Its flags are
+ * worked out as each element is appended, while the element is still in cache,
+ * and they are kept so that a zeroed value is an empty array.
+ */
+typedef struct {
+    /** The open list of elements. */
+    pm_node_list_t nodes;
+
+    /**
+     * Whether any element keeps the array from being a static literal. Nested
+     * arrays, hashes, and ranges never count as static literals here.
+     */
+    bool dynamic;
+
+    /** Whether any element is a splat. */
+    bool contains_splat;
+} pm_array_elements_t;
+
+/**
+ * Append an element to the elements of an ArrayNode node that is still being
+ * parsed.
+ */
+static PRISM_INLINE void
+pm_array_elements_append(pm_parser_t *parser, pm_array_elements_t *elements, pm_node_t *element) {
+    if (PM_NODE_TYPE_P(element, PM_ARRAY_NODE) || PM_NODE_TYPE_P(element, PM_HASH_NODE) || PM_NODE_TYPE_P(element, PM_RANGE_NODE) || !PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL)) {
+        elements->dynamic = true;
+    }
+
+    if (PM_NODE_TYPE_P(element, PM_SPLAT_NODE)) {
+        elements->contains_splat = true;
+    }
+
+    pm_node_list_open_append(&parser->node_chunks, &elements->nodes, element);
+}
+
+/**
+ * Allocate and initialize a new ArrayNode node from its elements.
  */
 static pm_array_node_t *
-pm_array_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_node_list_t *elements, const pm_token_t *closing) {
+pm_array_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_array_elements_t *elements, const pm_token_t *closing) {
     PRISM_ASSERT(closing == NULL || closing->type == PM_TOKEN_BRACKET_RIGHT || closing->type == PM_TOKEN_STRING_END || closing->type == 0);
-    pm_node_list_finalize(&parser->node_chunks, parser->arena, elements);
 
-    pm_node_flags_t flags = PM_NODE_FLAG_STATIC_LITERAL;
-    pm_node_flags_t mask = PM_NODE_FLAG_STATIC_LITERAL | PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT;
+    pm_node_list_t *nodes = &elements->nodes;
+    pm_node_list_finalize(&parser->node_chunks, parser->arena, nodes);
 
-    for (size_t idx = 0; idx < elements->size && ((flags & mask) != PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT); ++idx) {
-        const pm_node_t *element = elements->nodes[idx];
-
-        if (PM_NODE_TYPE_P(element, PM_ARRAY_NODE) || PM_NODE_TYPE_P(element, PM_HASH_NODE) || PM_NODE_TYPE_P(element, PM_RANGE_NODE) || !PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL)) {
-            flags &= (pm_node_flags_t) ~PM_NODE_FLAG_STATIC_LITERAL;
-        }
-
-        if (PM_NODE_TYPE_P(element, PM_SPLAT_NODE)) {
-            flags |= PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT;
-        }
-    }
+    pm_node_flags_t flags = (pm_node_flags_t) ((elements->dynamic ? 0 : PM_NODE_FLAG_STATIC_LITERAL) | (elements->contains_splat ? PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT : 0));
 
     uint32_t start = 0;
     uint32_t end = 0;
@@ -2499,11 +2524,11 @@ pm_array_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_node_lis
     if (opening != NULL) {
         start = PM_TOKEN_START(parser, opening);
         end = PM_TOKEN_END(parser, opening);
-    } else if (elements->size > 0) {
-        start = PM_NODE_START(elements->nodes[0]);
+    } else if (nodes->size > 0) {
+        start = PM_NODE_START(nodes->nodes[0]);
     }
 
-    if (elements->size > 0) end = PM_NODE_END(elements->nodes[elements->size - 1]);
+    if (nodes->size > 0) end = PM_NODE_END(nodes->nodes[nodes->size - 1]);
     if (closing != NULL) end = PM_TOKEN_END(parser, closing);
 
     return pm_array_node_new(
@@ -2511,7 +2536,7 @@ pm_array_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_node_lis
         ++parser->node_id,
         flags,
         PM_LOCATION_INIT_BOUNDS(start, end),
-        *elements,
+        *nodes,
         NTOK2LOC(parser, opening),
         NTOK2LOC(parser, closing)
     );
@@ -19329,7 +19354,7 @@ parse_array(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_token_t opening = parser->current;
     parser_lex(parser);
 
-    pm_node_list_t elements = { 0 };
+    pm_array_elements_t elements = { 0 };
 
     bool parsed_bare_hash = false;
     while (!match2(parser, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_EOF)) {
@@ -19342,7 +19367,7 @@ parse_array(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         }
 
         // Ensure that we have a comma between elements in the array.
-        if (elements.size > 0) {
+        if (elements.nodes.size > 0) {
             if (accept1(parser, PM_TOKEN_COMMA)) {
                 // If there was a comma but we also accepts a newline,
                 // then this is a syntax error.
@@ -19404,7 +19429,7 @@ parse_array(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
             }
         }
 
-        pm_node_list_open_append(&parser->node_chunks, &elements, element);
+        pm_array_elements_append(parser, &elements, element);
         if (PM_NODE_TYPE_P(element, PM_ERROR_RECOVERY_NODE)) break;
     }
 
@@ -20135,7 +20160,7 @@ parse_uninterpolated_symbol_array(pm_parser_t *parser) {
     pm_token_t opening = parser->current;
     parser_lex(parser);
 
-    pm_node_list_t elements = { 0 };
+    pm_array_elements_t elements = { 0 };
 
     /* The element being parsed is either a single symbol node in current, or,
      * once it needs more than one part, the open list of parts of an
@@ -20172,10 +20197,10 @@ parse_uninterpolated_symbol_array(pm_parser_t *parser) {
         }
 
         if (parts.size > 0) {
-            pm_node_list_open_append(&parser->node_chunks, &elements, UP(pm_interpolated_symbol_node_create(parser, NULL, &parts, NULL)));
+            pm_array_elements_append(parser, &elements, UP(pm_interpolated_symbol_node_create(parser, NULL, &parts, NULL)));
             parts = (pm_node_list_t) { 0 };
         } else if (current != NULL) {
-            pm_node_list_open_append(&parser->node_chunks, &elements, current);
+            pm_array_elements_append(parser, &elements, current);
             current = NULL;
         } else {
             expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_I_LOWER_ELEMENT);
@@ -20198,7 +20223,7 @@ parse_uninterpolated_symbol_array(pm_parser_t *parser) {
  * Interpolated symbols are validated at runtime instead.
  */
 static void
-parse_interpolated_symbol_array_element(pm_parser_t *parser, pm_node_list_t *elements, pm_node_t *element) {
+parse_interpolated_symbol_array_element(pm_parser_t *parser, pm_array_elements_t *elements, pm_node_t *element) {
     if (PM_NODE_TYPE_P(element, PM_SYMBOL_NODE) && !PM_NODE_FLAG_P(element, PM_SYMBOL_FLAGS_FORCED_BINARY_ENCODING | PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING)) {
         const pm_symbol_node_t *symbol = (const pm_symbol_node_t *) element;
         pm_token_t content = {
@@ -20214,14 +20239,14 @@ parse_interpolated_symbol_array_element(pm_parser_t *parser, pm_node_list_t *ele
         }
     }
 
-    pm_node_list_open_append(&parser->node_chunks, elements, element);
+    pm_array_elements_append(parser, elements, element);
 }
 
 static pm_array_node_t *
 parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
     parser_lex(parser);
     pm_token_t opening = parser->previous;
-    pm_node_list_t elements = { 0 };
+    pm_array_elements_t elements = { 0 };
 
     /* The element being parsed is either a single symbol node in current, or,
      * once it needs more than one part, the open list of parts of an
@@ -20239,7 +20264,7 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
                 /* If we hit a separator after we've hit content, then we need
                  * to append that content to the list and reset the element. */
                 if (parts.size > 0) {
-                    pm_node_list_open_append(&parser->node_chunks, &elements, UP(pm_interpolated_symbol_node_create(parser, NULL, &parts, NULL)));
+                    pm_array_elements_append(parser, &elements, UP(pm_interpolated_symbol_node_create(parser, NULL, &parts, NULL)));
                     parts = (pm_node_list_t) { 0 };
                 } else if (current != NULL) {
                     parse_interpolated_symbol_array_element(parser, &elements, current);
@@ -20310,7 +20335,7 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
 
     /* If we have an element, then we need to append it to the list. */
     if (parts.size > 0) {
-        pm_node_list_open_append(&parser->node_chunks, &elements, UP(pm_interpolated_symbol_node_create(parser, NULL, &parts, NULL)));
+        pm_array_elements_append(parser, &elements, UP(pm_interpolated_symbol_node_create(parser, NULL, &parts, NULL)));
     } else if (current != NULL) {
         parse_interpolated_symbol_array_element(parser, &elements, current);
     }
@@ -20331,7 +20356,7 @@ parse_uninterpolated_string_array(pm_parser_t *parser) {
     pm_token_t opening = parser->current;
     parser_lex(parser);
 
-    pm_node_list_t elements = { 0 };
+    pm_array_elements_t elements = { 0 };
 
     /* The element being parsed is either a single string node in current, or,
      * once it needs more than one part, the open list of parts of an
@@ -20362,10 +20387,10 @@ parse_uninterpolated_string_array(pm_parser_t *parser) {
         }
 
         if (parts.size > 0) {
-            pm_node_list_open_append(&parser->node_chunks, &elements, UP(pm_interpolated_string_node_create(parser, NULL, &parts, NULL)));
+            pm_array_elements_append(parser, &elements, UP(pm_interpolated_string_node_create(parser, NULL, &parts, NULL)));
             parts = (pm_node_list_t) { 0 };
         } else if (current != NULL) {
-            pm_node_list_open_append(&parser->node_chunks, &elements, current);
+            pm_array_elements_append(parser, &elements, current);
             current = NULL;
         } else {
             expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_W_LOWER_ELEMENT);
@@ -20388,7 +20413,7 @@ parse_interpolated_string_array(pm_parser_t *parser, uint16_t depth) {
     pm_token_t opening = parser->current;
     parser_lex(parser);
 
-    pm_node_list_t elements = { 0 };
+    pm_array_elements_t elements = { 0 };
 
     /* The element being parsed is either a single string node in current, or,
      * once it needs more than one part, the open list of parts of an
@@ -20406,10 +20431,10 @@ parse_interpolated_string_array(pm_parser_t *parser, uint16_t depth) {
                 /* If we hit a separator after we've hit content, then we need
                  * to append that content to the list and reset the element. */
                 if (parts.size > 0) {
-                    pm_node_list_open_append(&parser->node_chunks, &elements, UP(pm_interpolated_string_node_create(parser, NULL, &parts, NULL)));
+                    pm_array_elements_append(parser, &elements, UP(pm_interpolated_string_node_create(parser, NULL, &parts, NULL)));
                     parts = (pm_node_list_t) { 0 };
                 } else if (current != NULL) {
-                    pm_node_list_open_append(&parser->node_chunks, &elements, current);
+                    pm_array_elements_append(parser, &elements, current);
                     current = NULL;
                 }
 
@@ -20466,9 +20491,9 @@ parse_interpolated_string_array(pm_parser_t *parser, uint16_t depth) {
 
     /* If we have an element, then we need to append it to the list. */
     if (parts.size > 0) {
-        pm_node_list_open_append(&parser->node_chunks, &elements, UP(pm_interpolated_string_node_create(parser, NULL, &parts, NULL)));
+        pm_array_elements_append(parser, &elements, UP(pm_interpolated_string_node_create(parser, NULL, &parts, NULL)));
     } else if (current != NULL) {
-        pm_node_list_open_append(&parser->node_chunks, &elements, current);
+        pm_array_elements_append(parser, &elements, current);
     }
 
     pm_token_t closing = parser->current;
@@ -21320,13 +21345,13 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
     if (statement_level && !pm_block_call_p(value) && (PM_NODE_TYPE_P(value, PM_SPLAT_NODE) || match1(parser, PM_TOKEN_COMMA))) {
         single_value = false;
 
-        pm_node_list_t elements = { 0 };
-        pm_node_list_open_append(&parser->node_chunks, &elements, value);
+        pm_array_elements_t elements = { 0 };
+        pm_array_elements_append(parser, &elements, value);
 
         while (accept1(parser, PM_TOKEN_COMMA)) {
             pm_node_t *element = parse_starred_expression(parser, binding_power, false, PM_ERR_ARRAY_ELEMENT, (uint16_t) (depth + 1));
 
-            pm_node_list_open_append(&parser->node_chunks, &elements, element);
+            pm_array_elements_append(parser, &elements, element);
             if (PM_NODE_TYPE_P(element, PM_ERROR_RECOVERY_NODE)) break;
 
             parse_assignment_value_local(parser, element);
