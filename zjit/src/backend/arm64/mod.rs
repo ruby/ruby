@@ -884,11 +884,9 @@ impl Assembler {
                     }
                 }
                 &mut Insn::IncrCounter { mem, value } => {
-                    // Convert Opnd::const_ptr into Opnd::Mem.
                     // It's split here to support IncrCounter in compile_exits.
                     assert!(matches!(mem, Opnd::UImm(_)));
                     asm.load_into(SCRATCH0_OPND, mem);
-                    asm.lea_into(SCRATCH0_OPND, Opnd::mem(64, SCRATCH0_OPND, 0));
 
                     if cpu_has_lse() {
                         // With FEAT_LSE, a single relaxed STADD increments the counter atomically.
@@ -1969,11 +1967,10 @@ mod tests {
 
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x15, #0x1234
-        0x4: add x15, x15, #0
-        0x8: mov x17, #1
-        0xc: stadd x17, [x15]
+        0x4: mov x17, #1
+        0x8: stadd x17, [x15]
         ");
-        assert_snapshot!(cb.hexdump(), @"8f4682d2ef010091310080d2ff0131f8");
+        assert_snapshot!(cb.hexdump(), @"8f4682d2310080d2ff0131f8");
     }
 
     #[test]
@@ -1985,14 +1982,13 @@ mod tests {
 
         assert_disasm_snapshot!(cb.disasm(), @"
         0x0: mov x15, #0x1234
-        0x4: add x15, x15, #0
-        0x8: ldaxr x16, [x15]
-        0xc: add x16, x16, #1
-        0x10: stlxr w17, x16, [x15]
-        0x14: cmp x17, #0
-        0x18: b.ne #8
+        0x4: ldaxr x16, [x15]
+        0x8: add x16, x16, #1
+        0xc: stlxr w17, x16, [x15]
+        0x10: cmp x17, #0
+        0x14: b.ne #4
         ");
-        assert_snapshot!(cb.hexdump(), @"8f4682d2ef010091f0fd5fc810060091f0fd11c83f0200f181ffff54");
+        assert_snapshot!(cb.hexdump(), @"8f4682d2f0fd5fc810060091f0fd11c83f0200f181ffff54");
     }
 
     #[test]
