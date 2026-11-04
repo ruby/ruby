@@ -341,7 +341,10 @@ class Integer
         end
 
         from = self
-        while from <= to
+        until (cmp = from > to)
+          if cmp.nil?
+            Primitive.cstmt! %{ rb_cmperr_reason(from, to, "comparator returned nil"); }
+          end
           yield from
           from = from.succ
         end
