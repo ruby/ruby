@@ -1081,7 +1081,7 @@ rb_ary_s_new(int argc, VALUE *argv, VALUE klass)
     if (klass == rb_cArray) {
         rb_len_t size = 0;
         if (argc > 0 && FIXNUM_P(argv[0])) {
-            size = FIX2LONG(argv[0]);
+            size = FIX2LEN(argv[0]);
             if (size < 0) size = 0;
         }
 
@@ -1981,7 +1981,7 @@ rb_ary_aref1(VALUE ary, VALUE arg)
 
     /* special case - speeding up */
     if (FIXNUM_P(arg)) {
-        return rb_ary_entry(ary, FIX2LONG(arg));
+        return rb_ary_entry(ary, FIX2LEN(arg));
     }
     /* check if idx is Range or ArithmeticSequence */
     switch (rb_arithmetic_sequence_beg_len_step(arg, &beg, &len, &step, RARRAY_LEN(ary), 0)) {
@@ -2682,7 +2682,7 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
         return ary_aset_by_rb_ary_splice(ary, beg, len, argv[2]);
     }
     if (FIXNUM_P(argv[0])) {
-        offset = FIX2LONG(argv[0]);
+        offset = FIX2LEN(argv[0]);
         return ary_aset_by_rb_ary_store(ary, offset, argv[1]);
     }
     if (rb_range_beg_len(argv[0], &beg, &len, RARRAY_LEN(ary), 1)) {
@@ -2765,7 +2765,7 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
 
 // These array primitives enable tight compatibility with the C implementation
 // in terms of what method calls happen. They can use unchecked utilities such as
-// FIX2LONG since unlike userland Ruby code, these methods cannot be traced with
+// FIX2LEN since unlike userland Ruby code, these methods cannot be traced with
 // TracePoint (or ruby/debug.h APIs) and have their local variables changed from
 // underneath them.
 
@@ -2773,21 +2773,21 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
 VALUE
 rb_builtin_ary_at_end(rb_execution_context_t *ec, VALUE self, VALUE index)
 {
-    return FIX2LONG(index) >= RARRAY_LEN(self) ? Qtrue : Qfalse;
+    return FIX2LEN(index) >= RARRAY_LEN(self) ? Qtrue : Qfalse;
 }
 
 // Return the element at the given fixnum index.
 VALUE
 rb_builtin_ary_at(rb_execution_context_t *ec, VALUE self, VALUE index)
 {
-    return RARRAY_AREF(self, FIX2LONG(index));
+    return RARRAY_AREF(self, FIX2LEN(index));
 }
 
 // Increment a fixnum by 1.
 VALUE
 rb_builtin_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
 {
-    return LONG2FIX(FIX2LONG(num) + 1);
+    return LONG2FIX(FIX2LEN(num) + 1);
 }
 
 VALUE
@@ -3945,7 +3945,7 @@ rb_get_values_at(VALUE obj, rb_len_t olen, int argc, const VALUE *argv, VALUE (*
 
     for (i=0; i<argc; i++) {
         if (FIXNUM_P(argv[i])) {
-            rb_ary_push(result, (*func)(obj, FIX2LONG(argv[i])));
+            rb_ary_push(result, (*func)(obj, FIX2LEN(argv[i])));
             continue;
         }
         /* check if idx is Range */
@@ -3968,7 +3968,7 @@ append_values_at_single(VALUE result, VALUE ary, rb_len_t olen, VALUE idx)
 {
     rb_len_t beg, len;
     if (FIXNUM_P(idx)) {
-        beg = FIX2LONG(idx);
+        beg = FIX2LEN(idx);
     }
     /* check if idx is Range */
     else if (rb_range_beg_len(idx, &beg, &len, olen, 1)) {
