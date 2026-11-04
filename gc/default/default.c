@@ -953,7 +953,7 @@ tdata_deferred_free_count_load(void)
 static void objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src);
 
 
-static struct heap_page_body *page_pool_acquire(struct page_arena **arena_out);
+static struct heap_page_body *page_pool_acquire(struct page_arena **arena_out, bool *zeroed_out);
 static void page_pool_release(struct heap_page_body *body, struct page_arena *arena);
 #ifdef HAVE_MMAP
 static void page_pool_release_locked(struct heap_page_body *body, struct page_arena *arena);
@@ -2295,6 +2295,12 @@ objspace_heap_init_bytes(const rb_objspace_t *objspace)
         ? gc_params.heap_init_bytes : gc_params.ractor_heap_init_bytes;
 }
 
+static bool
+heap_gradual_pages_p(rb_objspace_t *objspace)
+{
+    return HEAP_PAGE_ALLOC_USE_MMAP && objspace != global_objspace->main_objspace;
+}
+
 static void
 heap_allocatable_bytes_expand(rb_objspace_t *objspace,
         rb_heap_t *heap, size_t free_slots, size_t total_slots, size_t slot_size)
@@ -2644,6 +2650,17 @@ gc_aligned_malloc(size_t alignment, size_t size)
     (*(struct page_arena **)((char *)(body) + sizeof(struct heap_page_header)))
 #define PAGE_POOL_SCRATCH_SIZE (sizeof(struct heap_page_header) + sizeof(void *))
 
+/* Whether a body advised away by page_pool_reclaim (rb_vm_map_reusable_immediate)
+ * reads back as zero on the next touch.  Only MADV_DONTNEED re-faults zero-filled;
+ * Darwin's MADV_FREE_REUSABLE and Windows' MEM_RESET keep (or leave undefined) the
+ * old contents, so an advised body on those platforms must still be cleared in
+ * full before use. */
+#if defined(MADV_DONTNEED) && !defined(MADV_FREE_REUSABLE)
+# define PAGE_POOL_ADVISED_IS_ZEROED 1
+#else
+# define PAGE_POOL_ADVISED_IS_ZEROED 0
+#endif
+
 #ifdef HAVE_MMAP
 /* mmap a new arena to carve from.  Called with the pool lock held, at which point the
  * previous arena is always fully carved. */
@@ -2716,9 +2733,14 @@ page_pool_add_arena(rb_global_objspace_t *g)
 #endif
 
 static struct heap_page_body *
-page_pool_acquire(struct page_arena **arena_out)
+page_pool_acquire(struct page_arena **arena_out, bool *zeroed_out)
 {
     struct heap_page_body *body = NULL;
+    /* Whether the returned body is guaranteed to read as zero (i.e. every slot
+     * is T_NONE) without the caller clearing it: kernel-fresh memory, or a body
+     * whose advised-away tail re-faults zero-filled.  When true, heap_add_page
+     * skips its full-page memset so untouched OS pages stay uncommitted. */
+    bool zeroed = false;
 
     if (HEAP_PAGE_ALLOC_USE_MMAP) {
 #ifdef HAVE_MMAP
@@ -2759,6 +2781,7 @@ page_pool_acquire(struct page_arena **arena_out)
                 body = (struct heap_page_body *)g->page_pool.arena_cursor;
                 g->page_pool.arena_cursor += HEAP_PAGE_SIZE;
                 *arena_out = g->page_pool.arena_current;
+                zeroed = true;
             }
         }
         rb_native_mutex_unlock(&g->page_pool.lock);
@@ -2769,6 +2792,11 @@ page_pool_acquire(struct page_arena **arena_out)
                                  HEAP_PAGE_SIZE - g->page_pool.os_page_size);
             }
             asan_unpoison_memory_region(body, HEAP_PAGE_SIZE, false);
+            if (need_reuse && PAGE_POOL_ADVISED_IS_ZEROED) {
+                GC_ASSERT(g->page_pool.os_page_size <= HEAP_PAGE_SIZE);
+                memset(body, 0, g->page_pool.os_page_size);
+                zeroed = true;
+            }
         }
 #endif
     }
@@ -2777,6 +2805,7 @@ page_pool_acquire(struct page_arena **arena_out)
         *arena_out = NULL;
     }
 
+    *zeroed_out = zeroed;
     return body;
 }
 
@@ -2949,9 +2978,9 @@ page_pool_reclaim(rb_global_objspace_t *g)
 }
 
 static struct heap_page_body *
-heap_page_body_allocate(struct page_arena **arena_out)
+heap_page_body_allocate(struct page_arena **arena_out, bool *zeroed_out)
 {
-    struct heap_page_body *page_body = page_pool_acquire(arena_out);
+    struct heap_page_body *page_body = page_pool_acquire(arena_out, zeroed_out);
 
     GC_ASSERT(page_body == NULL || (uintptr_t)page_body % HEAP_PAGE_ALIGN == 0);
 
@@ -2980,10 +3009,10 @@ heap_page_resurrect(rb_objspace_t *objspace)
 }
 
 static struct heap_page *
-heap_page_allocate(rb_objspace_t *objspace)
+heap_page_allocate(rb_objspace_t *objspace, bool *zeroed_out)
 {
     struct page_arena *arena;
-    struct heap_page_body *page_body = heap_page_body_allocate(&arena);
+    struct heap_page_body *page_body = heap_page_body_allocate(&arena, zeroed_out);
     if (page_body == 0) {
         rb_memerror();
     }
@@ -3033,7 +3062,7 @@ heap_page_allocate(rb_objspace_t *objspace)
 }
 
 static void
-heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
+heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page, bool zeroed, bool fresh)
 {
     /* Adding to eden heap during incremental sweeping is forbidden */
     GC_ASSERT(!heap->sweeping_page);
@@ -3045,6 +3074,18 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
     if (rem) start += heap->slot_size - rem;
 
     int slot_count = (int)((HEAP_PAGE_SIZE - (start - (uintptr_t)page->body))/heap->slot_size);
+
+    /* Only a freshly allocated page starts small: its tail has never been
+     * touched, so nothing ever commits it until it grows into it.  A
+     * resurrected page's body was already in service (and committed) in its
+     * previous life, so it comes back at full size, cleared in full below. */
+    if (fresh && heap_gradual_pages_p(objspace)) {
+        size_t os_page_size = global_objspace->page_pool.os_page_size;
+        GC_ASSERT(os_page_size > 0);
+        int first_page_slots = (int)(((uintptr_t)page->body + os_page_size - start) / heap->slot_size);
+        if (first_page_slots < 1) first_page_slots = 1;
+        if (slot_count > first_page_slots) slot_count = first_page_slots;
+    }
 
     page->start = start;
     page->total_slots = slot_count;
@@ -3060,7 +3101,11 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 
     uintptr_t slots_end = start + (uintptr_t)slot_count * heap->slot_size;
 
-    memset((void *)start, 0, slots_end - start);
+    /* A newly allocated body already reads as T_NONE, so leave it untouched
+     * to prevent the memory from being committed. */
+    if (!zeroed) {
+        memset((void *)start, 0, slots_end - start);
+    }
 
     struct free_region *region = (struct free_region *)start;
     region->flags = 0;
@@ -3091,17 +3136,18 @@ heap_page_allocate_and_initialize(rb_objspace_t *objspace, rb_heap_t *heap)
                   rb_darray_size(objspace->heap_pages.sorted), objspace->heap_pages.allocatable_bytes, heap->total_pages);
 
     bool allocated = false;
+    bool zeroed = false;
     struct heap_page *page = heap_page_resurrect(objspace);
 
     if (page == NULL && objspace->heap_pages.allocatable_bytes > 0) {
-        page = heap_page_allocate(objspace);
+        page = heap_page_allocate(objspace, &zeroed);
         allocated = true;
 
         GC_ASSERT(page != NULL);
     }
 
     if (page != NULL) {
-        heap_add_page(objspace, heap, page);
+        heap_add_page(objspace, heap, page, zeroed, allocated);
         heap_add_freepage(heap, page);
 
         if (allocated) {
@@ -3432,6 +3478,57 @@ heap_set_alloc_page(rb_objspace_t *objspace, size_t heap_idx, struct heap_page *
     page->free_region = NULL;
 }
 
+static bool
+heap_grow_alloc_page(rb_objspace_t *objspace, rb_heap_t *heap)
+{
+    if (objspace->heap_pages.allocatable_bytes == 0) return false;
+
+    struct heap_page *page = heap->newobj.alloc_using_page;
+    if (page == NULL) return false;
+
+    GC_ASSERT(page->heap == heap);
+    GC_ASSERT(!heap_page_in_global_empty_pages_pool(objspace, page));
+    GC_ASSERT(heap->newobj.alloc_next_region == NULL);
+
+    size_t os_page_size = global_objspace->page_pool.os_page_size;
+    int grow_slots = (int)(os_page_size / page->slot_size);
+
+    uintptr_t grown_start = page->start + (uintptr_t)page->total_slots * page->slot_size;
+    int capacity = (int)((HEAP_PAGE_SIZE - (page->start - (uintptr_t)page->body)) / page->slot_size);
+    if (page->total_slots + grow_slots > capacity) {
+        grow_slots = capacity - page->total_slots;
+    }
+    if (grow_slots <= 0) return false;
+
+    uintptr_t grown_end = grown_start + (uintptr_t)grow_slots * page->slot_size;
+
+    memset((void *)grown_start, 0, grown_end - grown_start);
+
+    size_t grown_bytes = (size_t)grow_slots * page->slot_size;
+    if (objspace->heap_pages.allocatable_bytes > grown_bytes) {
+        objspace->heap_pages.allocatable_bytes -= grown_bytes;
+    }
+    else {
+        objspace->heap_pages.allocatable_bytes = 0;
+    }
+
+    page->total_slots += grow_slots;
+    heap->total_slots += grow_slots;
+
+    struct free_region *region = (struct free_region *)grown_start;
+    region->flags = 0;
+    region->end = grown_end;
+    region->next = NULL;
+
+    for (uintptr_t p = grown_start; p < grown_end; p += page->slot_size) {
+        rb_asan_poison_object((VALUE)p);
+    }
+
+    heap->newobj.alloc_next_region = region;
+
+    return true;
+}
+
 static void
 init_size_to_heap_idx(void)
 {
@@ -3537,6 +3634,16 @@ newobj_refill(rb_objspace_t *objspace, size_t heap_idx)
         }
 
         // Move on to the region the fast path refused to take
+        if (heap_advance_region(heap)) {
+            heap_charge_region(objspace, heap, heap_idx);
+            obj = heap_alloc_slot(objspace, heap_idx);
+        }
+    }
+
+    if (obj == Qfalse && heap_grow_alloc_page(objspace, heap)) {
+        /* The current page grew a chunk of slots instead of the heap taking a
+         * whole new page: the page only commits more of itself once what it
+         * has is full. */
         if (heap_advance_region(heap)) {
             heap_charge_region(objspace, heap, heap_idx);
             obj = heap_alloc_slot(objspace, heap_idx);
@@ -5728,7 +5835,7 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
         struct heap_page *resurrected_page;
         while (swept_slots < min_free_slots &&
                 (resurrected_page = heap_page_resurrect(objspace))) {
-            heap_add_page(objspace, heap, resurrected_page);
+            heap_add_page(objspace, heap, resurrected_page, false, false);
             heap_add_freepage(heap, resurrected_page);
 
             swept_slots += resurrected_page->free_slots;
