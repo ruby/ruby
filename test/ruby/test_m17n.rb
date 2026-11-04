@@ -1275,6 +1275,9 @@ class TestM17N < Test::Unit::TestCase
     each_encoding("abc\0def", "\0", "abc", "def") do |str, sep, *expected|
       assert_equal(expected, str.split(sep, -1))
     end
+
+    str = s("\u{30bd 30d5 30c8}")
+    assert_equal [str], str.split("@")
   end
 
   def test_nonascii_method_name

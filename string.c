@@ -9348,7 +9348,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
             substr_start = ptr;
             if (!NIL_P(limit) && lim <= ++i) break;
         }
-        beg = ptr - str_start;
+        beg = substr_start - str_start;
     }
     else if (split_type == SPLIT_TYPE_CHARS) {
         int n;
