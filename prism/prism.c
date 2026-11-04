@@ -2499,40 +2499,39 @@ pm_array_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_node_lis
 
 /**
  * Allocate and initialize a new array pattern node. The node list given in the
- * nodes parameter is guaranteed to have at least two nodes.
+ * nodes parameter is finalized and guaranteed to have at least two nodes. The
+ * first rest splits it into the requireds and the posts, which share its array.
  */
 static pm_array_pattern_node_t *
-pm_array_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *nodes) {
-    pm_array_pattern_node_t *node = pm_array_pattern_node_new(
+pm_array_pattern_node_node_list_create(pm_parser_t *parser, const pm_node_list_t *nodes) {
+    size_t rest_index = nodes->size;
+    for (size_t idx = 0; idx < nodes->size; ++idx) {
+        if (PM_NODE_TYPE_P(nodes->nodes[idx], PM_SPLAT_NODE) || PM_NODE_TYPE_P(nodes->nodes[idx], PM_IMPLICIT_REST_NODE)) {
+            rest_index = idx;
+            break;
+        }
+    }
+
+    pm_node_t *rest = NULL;
+    pm_node_list_t posts = { 0 };
+
+    if (rest_index < nodes->size) {
+        rest = nodes->nodes[rest_index];
+        posts = pm_node_list_slice(nodes, rest_index + 1, nodes->size - rest_index - 1);
+    }
+
+    return pm_array_pattern_node_new(
         parser->arena,
         ++parser->node_id,
         0,
         PM_LOCATION_INIT_NODES(nodes->nodes[0], nodes->nodes[nodes->size - 1]),
         NULL,
-        ((pm_node_list_t) { 0 }),
-        NULL,
-        ((pm_node_list_t) { 0 }),
+        pm_node_list_slice(nodes, 0, rest_index),
+        rest,
+        posts,
         ((pm_location_t) { 0 }),
         ((pm_location_t) { 0 })
     );
-
-    // For now we're going to just copy over each pointer manually. This could be
-    // much more efficient, as we could instead resize the node list.
-    bool found_rest = false;
-    pm_node_t *child;
-
-    PM_NODE_LIST_FOREACH(nodes, index, child) {
-        if (!found_rest && (PM_NODE_TYPE_P(child, PM_SPLAT_NODE) || PM_NODE_TYPE_P(child, PM_IMPLICIT_REST_NODE))) {
-            node->rest = child;
-            found_rest = true;
-        } else if (found_rest) {
-            pm_node_list_append_inline(parser->arena, &node->posts, child);
-        } else {
-            pm_node_list_append_inline(parser->arena, &node->requireds, child);
-        }
-    }
-
-    return node;
 }
 
 /**
@@ -2555,18 +2554,18 @@ pm_array_pattern_node_rest_create(pm_parser_t *parser, pm_node_t *rest) {
 }
 
 /**
- * Allocate and initialize a new array pattern node from a constant and opening
- * and closing tokens.
+ * Allocate and initialize a new array pattern node from a constant, opening and
+ * closing tokens, and the single required pattern between them, if any.
  */
 static pm_array_pattern_node_t *
-pm_array_pattern_node_constant_create(pm_parser_t *parser, pm_node_t *constant, const pm_token_t *opening, const pm_token_t *closing) {
+pm_array_pattern_node_constant_create(pm_parser_t *parser, pm_node_t *constant, const pm_token_t *opening, pm_node_t *inner, const pm_token_t *closing) {
     return pm_array_pattern_node_new(
         parser->arena,
         ++parser->node_id,
         0,
         PM_LOCATION_INIT_NODE_TOKEN(parser, constant, closing),
         constant,
-        ((pm_node_list_t) { 0 }),
+        inner == NULL ? ((pm_node_list_t) { 0 }) : pm_node_list_single(parser->arena, inner),
         NULL,
         ((pm_node_list_t) { 0 }),
         TOK2LOC(parser, opening),
@@ -2575,28 +2574,23 @@ pm_array_pattern_node_constant_create(pm_parser_t *parser, pm_node_t *constant, 
 }
 
 /**
- * Allocate and initialize a new array pattern node from an opening and closing
- * token.
+ * Allocate and initialize a new array pattern node from opening and closing
+ * tokens and the single required pattern between them, if any.
  */
 static pm_array_pattern_node_t *
-pm_array_pattern_node_empty_create(pm_parser_t *parser, const pm_token_t *opening, const pm_token_t *closing) {
+pm_array_pattern_node_bracket_create(pm_parser_t *parser, const pm_token_t *opening, pm_node_t *inner, const pm_token_t *closing) {
     return pm_array_pattern_node_new(
         parser->arena,
         ++parser->node_id,
         0,
         PM_LOCATION_INIT_TOKENS(parser, opening, closing),
         NULL,
-        ((pm_node_list_t) { 0 }),
+        inner == NULL ? ((pm_node_list_t) { 0 }) : pm_node_list_single(parser->arena, inner),
         NULL,
         ((pm_node_list_t) { 0 }),
         TOK2LOC(parser, opening),
         TOK2LOC(parser, closing)
     );
-}
-
-static PRISM_INLINE void
-pm_array_pattern_node_requireds_append(pm_arena_t *arena, pm_array_pattern_node_t *node, pm_node_t *inner) {
-    pm_node_list_append_inline(arena, &node->requireds, inner);
 }
 
 /**
@@ -4016,7 +4010,7 @@ pm_false_node_create(pm_parser_t *parser, const pm_token_t *token) {
  * nodes parameter is guaranteed to have at least two nodes.
  */
 static pm_find_pattern_node_t *
-pm_find_pattern_node_create(pm_parser_t *parser, pm_node_list_t *nodes) {
+pm_find_pattern_node_create(pm_parser_t *parser, const pm_node_list_t *nodes) {
     PRISM_ASSERT(nodes->size >= 2);
     pm_node_t *left = nodes->nodes[0];
     pm_node_t *right = nodes->nodes[nodes->size - 1];
@@ -4024,27 +4018,18 @@ pm_find_pattern_node_create(pm_parser_t *parser, pm_node_list_t *nodes) {
     PRISM_ASSERT(PM_NODE_TYPE_P(left, PM_SPLAT_NODE));
     PRISM_ASSERT(PM_NODE_TYPE_P(right, PM_SPLAT_NODE));
 
-    pm_find_pattern_node_t *node = pm_find_pattern_node_new(
+    return pm_find_pattern_node_new(
         parser->arena,
         ++parser->node_id,
         0,
         PM_LOCATION_INIT_NODES(left, right),
         NULL,
         (pm_splat_node_t *) left,
-        ((pm_node_list_t) { 0 }),
+        pm_node_list_slice(nodes, 1, nodes->size - 2),
         (pm_splat_node_t *) right,
         ((pm_location_t) { 0 }),
         ((pm_location_t) { 0 })
     );
-
-    // For now we're going to just copy over each pointer manually. This could be
-    // much more efficient, as we could instead resize the node list to only point
-    // to 1...-1.
-    for (size_t index = 1; index < nodes->size - 1; index++) {
-        pm_node_list_append_inline(parser->arena, &node->requireds, nodes->nodes[index]);
-    }
-
-    return node;
 }
 
 /**
@@ -17076,7 +17061,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_constant_id_set_t *captures,
     if (!inner) {
         // If there was no inner pattern, then we have something like Foo() or
         // Foo[]. In that case we'll create an array pattern with no requireds.
-        return UP(pm_array_pattern_node_constant_create(parser, node, &opening, &closing));
+        return UP(pm_array_pattern_node_constant_create(parser, node, &opening, NULL, &closing));
     }
 
     // Now that we have the inner pattern, check to see if it's an array, find,
@@ -17139,9 +17124,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_constant_id_set_t *captures,
     // If we got here, then we didn't return one of the inner patterns by
     // attaching its constant. In this case we'll create an array pattern and
     // attach our constant to it.
-    pm_array_pattern_node_t *pattern_node = pm_array_pattern_node_constant_create(parser, node, &opening, &closing);
-    pm_array_pattern_node_requireds_append(parser->arena, pattern_node, inner);
-    return UP(pattern_node);
+    return UP(pm_array_pattern_node_constant_create(parser, node, &opening, inner, &closing));
 }
 
 /**
@@ -17465,7 +17448,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_
             if (accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
                 // If we have an empty array pattern, then we'll just return a new
                 // array pattern node.
-                return UP(pm_array_pattern_node_empty_create(parser, &opening, &parser->previous));
+                return UP(pm_array_pattern_node_bracket_create(parser, &opening, NULL, &parser->previous));
             }
 
             // Otherwise, we'll parse the inner pattern, then deal with it depending
@@ -17509,9 +17492,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_
                     break;
             }
 
-            pm_array_pattern_node_t *node = pm_array_pattern_node_empty_create(parser, &opening, &closing);
-            pm_array_pattern_node_requireds_append(parser->arena, node, inner);
-            return UP(node);
+            return UP(pm_array_pattern_node_bracket_create(parser, &opening, inner, &closing));
         }
         case PM_TOKEN_BRACE_LEFT_HASH: {
             bool previous_pattern_matching_newlines = parser->pattern_matching_newlines;
@@ -17920,7 +17901,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_set_t *captures, uint8_t flags
         // or a find pattern. We need to parse all of the patterns, put them
         // into a big list, and then determine which type of node we have.
         pm_node_list_t nodes = { 0 };
-        pm_node_list_append_inline(parser->arena, &nodes, node);
+        pm_node_list_open_append(&parser->node_chunks, &nodes, node);
 
         // Gather up all of the patterns into the list.
         while (accept1(parser, PM_TOKEN_COMMA)) {
@@ -17939,7 +17920,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_set_t *captures, uint8_t flags
                 }
 
                 node = UP(pm_implicit_rest_node_create(parser, &parser->previous));
-                pm_node_list_append_inline(parser->arena, &nodes, node);
+                pm_node_list_open_append(&parser->node_chunks, &nodes, node);
                 trailing_rest = true;
                 break;
             }
@@ -17959,8 +17940,10 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_set_t *captures, uint8_t flags
                 node = parse_pattern_primitives(parser, captures, NULL, PM_ERR_PATTERN_EXPRESSION_AFTER_COMMA, (uint16_t) (depth + 1));
             }
 
-            pm_node_list_append_inline(parser->arena, &nodes, node);
+            pm_node_list_open_append(&parser->node_chunks, &nodes, node);
         }
+
+        pm_node_list_finalize(&parser->node_chunks, parser->arena, &nodes);
 
         // If the first pattern and the last pattern are rest patterns, then we
         // will call this a find pattern, regardless of how many rest patterns
@@ -17979,8 +17962,6 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_set_t *captures, uint8_t flags
                 pm_parser_err_node(parser, node, PM_ERR_PATTERN_ARRAY_MULTIPLE_RESTS);
             }
         }
-
-        // nodes.nodes is arena-allocated; no explicit free needed.
     } else if (leading_rest) {
         // Otherwise, if we parsed a single splat pattern, then we know we have
         // an array pattern, so we can go ahead and create that node.

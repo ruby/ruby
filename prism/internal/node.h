@@ -4,6 +4,7 @@
 #include "prism/node.h"
 
 #include "prism/compiler/force_inline.h"
+#include "prism/compiler/inline.h"
 
 #include "prism/arena.h"
 
@@ -135,5 +136,20 @@ pm_node_list_open_append(pm_node_chunks_t *chunks, pm_node_list_t *list, pm_node
  * finalized again.
  */
 void pm_node_list_finalize(pm_node_chunks_t *chunks, pm_arena_t *arena, pm_node_list_t *list);
+
+/*
+ * A finalized list holding just the given node, in an array allocated from the
+ * given arena without going through chunks.
+ */
+pm_node_list_t pm_node_list_single(pm_arena_t *arena, pm_node_t *node);
+
+/*
+ * A finalized list of the size nodes starting at the given index of another
+ * finalized list. It shares that list's array instead of copying it.
+ */
+static PRISM_INLINE pm_node_list_t
+pm_node_list_slice(const pm_node_list_t *list, size_t start, size_t size) {
+    return (pm_node_list_t) { .size = size, .nodes = size == 0 ? NULL : list->nodes + start };
+}
 
 #endif

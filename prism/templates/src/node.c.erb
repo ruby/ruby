@@ -163,6 +163,17 @@ pm_node_list_finalize(pm_node_chunks_t *chunks, pm_arena_t *arena, pm_node_list_
 }
 
 /**
+ * A finalized list holding just the given node. A list with one node is known
+ * to be complete when it is made, so it skips chunks entirely.
+ */
+pm_node_list_t
+pm_node_list_single(pm_arena_t *arena, pm_node_t *node) {
+    pm_node_t **nodes = (pm_node_t **) pm_arena_alloc(arena, sizeof(pm_node_t *), PRISM_ALIGNOF(pm_node_t *));
+    nodes[0] = node;
+    return (pm_node_list_t) { .size = 1, .nodes = nodes };
+}
+
+/**
  * Returns a string representation of the given node type.
  */
 const char *
