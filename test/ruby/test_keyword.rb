@@ -189,6 +189,87 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal({b: 2, c: 3}, kw)
   end
 
+  def test_keyword_splat_after_dynamic_keywords
+    def self.kw(**kw) = kw
+    key = Struct.new(:id) do
+      def hash = id.hash
+      def eql?(other) = id == other.id
+    end
+    v = 1
+    small = {b: 2}
+    large = (1..9).to_h { [:"k#{_1}", _1] }
+
+    [small, large].each do |h|
+      assert_equal({a: 1, **h}, kw(a: v, **h))
+      assert_equal([:a, *h.keys, :c], kw(a: v, **h, c: v, **{}).keys)
+      assert_equal({a: 1, **h}, {a: v, **h})
+
+      src = h.dup
+      r = kw(a: v, **src)
+      src[:z] = 0
+      r[:y] = 0
+      assert_not_include(r, :z)
+      assert_not_include(src, :y)
+
+      d = Hash.new(0).compare_by_identity.merge!(h)
+      [kw(a: v, **d), {a: v, **d}].each do |x|
+        assert_nil(x.default)
+        assert_not_predicate(x, :compare_by_identity?)
+      end
+    end
+
+    r = kw(key.new(1) => v, **{key.new(1) => 2, key.new(2) => 3})
+    assert_equal({key.new(1) => 2, key.new(2) => 3}, r)
+    assert_equal(3, r[key.new(2)])
+    assert_equal({a: 1, b: 2, c: 1, d: 3}, kw(a: v, **small, c: v, **{d: 3}))
+
+    log = []
+    logged = Object.new
+    logged.define_singleton_method(:hash) { log << :hash; 1 }
+    src = {b: 2}
+    splat = Object.new
+    splat.define_singleton_method(:to_hash) { log << :to_hash; src }
+    r = kw(logged => v, **(log << :splat; splat))
+    assert_equal([:hash, :splat, :to_hash], log.first(3))
+    assert_equal(1, log.count(:to_hash))
+    src[:c] = 3
+    assert_equal({logged => 1, b: 2}, r)
+
+    # Keys are hashed once on insertion and at most once more when the
+    # hash outgrows its embedded table (at 9 entries).
+    counts = Hash.new(0)
+    counted = (0..8).map { |i| key.new(i).tap { |k| k.define_singleton_method(:hash) { counts[i] += 1; i } } }
+    eight = counted[1..].to_h { [_1, v] }
+    counts.clear
+    r = kw(counted[0] => v, **eight)
+    assert_equal(9, r.size)
+    assert_operator(counts.values.max, :<=, 2)
+
+    # A nil splat leaves the accumulated keywords as they are.
+    n = nil
+    pair = {b: 2, d: 4}
+    counts.clear
+    r = kw(counted[0] => v, **pair, **n, c: v)
+    with_nil = counts[0]
+    counts.clear
+    kw(counted[0] => v, **pair, c: v)
+    assert_equal(counts[0], with_nil)
+    assert_equal({counted[0] => 1, b: 2, d: 4, c: 1}, r)
+    assert_equal({a: 1, b: 2, d: 4, c: 1}, {a: v, **pair, **n, c: v})
+
+    flagged = Hash.ruby2_keywords_hash({b: 2})
+    assert_not_send([Hash, :ruby2_keywords_hash?, kw(a: v, **flagged)])
+    assert_not_send([Hash, :ruby2_keywords_hash?, {a: v, **flagged}])
+
+    raising = Object.new
+    def raising.to_hash = raise("to_hash")
+    assert_raise_with_message(RuntimeError, "to_hash") { kw(a: v, **raising) }
+    not_hash = Object.new
+    def not_hash.to_hash = 1
+    assert_raise(TypeError) { kw(a: v, **not_hash) }
+    assert_raise(TypeError) { {a: v, **not_hash} }
+  end
+
   def test_keyword_splat_nil
     # cfunc call
     assert_equal(nil, p(**nil))

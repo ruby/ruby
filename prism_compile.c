@@ -1593,6 +1593,25 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
             break;
           }
           case PM_ASSOC_SPLAT_NODE: {
+            if (first_chunk && stack_length && shareability == 0) {
+                // `k: v, **kw`: hash the pairs before evaluating `kw`, in a
+                // hash with room to merge `kw` into it in place. The two VM
+                // core objects receive the two sends below.
+                // (Shareable constant values push the pairs to `ret` directly.)
+                PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                PUSH_SEQ(ret, anchor);
+                PUSH_SEND(ret, location, id_core_hash_new_for_merge, INT2FIX(stack_length));
+                PM_COMPILE_NOT_POPPED(element);
+                PUSH_SEND(ret, location, id_core_hash_merge_bang_kwd, INT2FIX(2));
+                INIT_ANCHOR(anchor);
+                stack_length = 0;
+                first_chunk = false;
+                owned_hash = true;
+                static_literal = false;
+                break;
+            }
+
             FLUSH_CHUNK;
 
             const pm_assoc_splat_node_t *assoc_splat = (const pm_assoc_splat_node_t *) element;
@@ -1725,9 +1744,10 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     else if (*dup_rest & DUP_SINGLE_KW_SPLAT) {
                         *flags |= VM_CALL_KW_SPLAT_MUT;
                         PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                        PUSH_INSN1(ret, location, newhash, INT2FIX(0));
+                        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                        PUSH_SEND(ret, location, id_core_hash_new_for_merge, INT2FIX(0));
                         pm_compile_hash_elements(iseq, argument, elements, 0, Qundef, true, ret, scope_node);
-                        PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
+                        PUSH_SEND(ret, location, id_core_hash_merge_bang_kwd, INT2FIX(2));
                     }
                     else {
                         pm_compile_hash_elements(iseq, argument, elements, 0, Qundef, true, ret, scope_node);
@@ -8192,16 +8212,12 @@ pm_compile_forwarding_super_node(rb_iseq_t *iseq, const pm_forwarding_super_node
         int local_size = local_body->local_table_size;
         argc++;
 
-        PUSH_INSN1(args, *location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-
         if (local_body->param.flags.has_kwrest) {
+            PUSH_INSN1(args, *location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
             int idx = local_body->local_table_size - local_keyword->rest_start;
             PUSH_GETLOCAL(args, *location, idx, depth);
             RUBY_ASSERT(local_keyword->num > 0);
             PUSH_SEND(args, *location, rb_intern("dup"), INT2FIX(0));
-        }
-        else {
-            PUSH_INSN1(args, *location, newhash, INT2FIX(0));
         }
         int i = 0;
         for (; i < local_keyword->num; ++i) {
@@ -8216,7 +8232,13 @@ pm_compile_forwarding_super_node(rb_iseq_t *iseq, const pm_forwarding_super_node
             PUSH_GETLOCAL(args, *location, idx, depth);
         }
 
-        PUSH_SEND(args, *location, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
+        if (local_body->param.flags.has_kwrest) {
+            PUSH_SEND(args, *location, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
+        }
+        else {
+            // Without a keyword rest, `newhash` builds the keywords in one hash.
+            PUSH_INSN1(args, *location, newhash, INT2FIX(i * 2));
+        }
         flag |= VM_CALL_KW_SPLAT| VM_CALL_KW_SPLAT_MUT;
     }
     else if (local_body->param.flags.has_kwrest) {

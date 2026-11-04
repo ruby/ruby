@@ -49,6 +49,8 @@ class TestAllocation < Test::Unit::TestCase
           r2k_empty_array = r2k_empty_array = [Hash.ruby2_keywords_hash({})]
           r2k_empty_array1 = r2k_empty_array1 = [1, Hash.ruby2_keywords_hash({})]
           hash1 = hash1 = {a: 2}
+          hash3 = hash3 = {a: 2, c: 3, d: 4}
+          hash8 = hash8 = {a: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9}
           nill = nill = nil
           block = block = lambda{}
 
@@ -306,6 +308,15 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "keyword_splat(a: 2#{block})")
         check_allocations(0, 1, "keyword_splat(*empty_array, a: 2#{block})")
         check_allocations(0, 1, "keyword_splat(a:2, **empty_hash#{block})")
+        check_allocations(0, 1, "keyword_splat(a: nill, **empty_hash#{block})")
+        # Starts from a frozen literal template, so it merges through hash_merge_ptr (control)
+        check_allocations(0, 1, "keyword_splat(a: 2, b: nill, **hash1, c: nill#{block})")
+        # Dynamic pairs get a hash with room to merge the splat in place:
+        # results of 2, 4 and 9 entries (a new small hash holds 2, the
+        # embedded table at most 8)
+        check_allocations(0, 1, "keyword_splat(b: nill, **hash1#{block})")
+        check_allocations(0, 1, "keyword_splat(b: nill, **hash3#{block})")
+        check_allocations(0, 1, "keyword_splat(b: nill, **hash8#{block})")
         check_allocations(0, 1, "keyword_splat(**empty_hash, a: 2#{block})")
 
         check_allocations(0, 1, "keyword_splat(**nil#{block})")
@@ -334,6 +345,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "keyword_and_keyword_splat(a: 2#{block})")
         check_allocations(0, 1, "keyword_and_keyword_splat(*empty_array, a: 2#{block})")
         check_allocations(0, 1, "keyword_and_keyword_splat(a:2, **empty_hash#{block})")
+        check_allocations(0, 1, "keyword_and_keyword_splat(a: nill, **empty_hash#{block})")
         check_allocations(0, 1, "keyword_and_keyword_splat(**empty_hash, a: 2#{block})")
 
         check_allocations(0, 1, "keyword_and_keyword_splat(**nil#{block})")
@@ -352,6 +364,16 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(0, 1, "keyword_and_keyword_splat(*empty_array, a: 2, **empty_hash#{block})")
         check_allocations(0, 1, "keyword_and_keyword_splat(*empty_array, **hash1, **empty_hash#{block})")
+      RUBY
+    end
+
+    def test_zsuper_keyword_parameters
+      check_allocations(<<~RUBY)
+        extend(Module.new { def zsuper_kw(a: 1, b: 2#{block}) = nil })
+        def self.zsuper_kw(a: 1, b: 2#{block}); super; end
+
+        check_allocations(0, 1, "zsuper_kw(#{only_block})")
+        check_allocations(0, 1, "zsuper_kw(a: nill#{block})")
       RUBY
     end
 
@@ -905,6 +927,9 @@ class TestAllocation < Test::Unit::TestCase
         end
       end.join("\n")
     end
+
+    # zsuper is not available in procs
+    undef_method :test_zsuper_keyword_parameters
 
     # Generic argument forwarding not supported in proc definitions
     undef_method :test_argument_forwarding

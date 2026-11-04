@@ -6840,9 +6840,10 @@ compile_single_keyword_splat_mutable(rb_iseq_t *iseq, LINK_ANCHOR *const args, c
 {
     *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
     ADD_INSN1(args, argn, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-    ADD_INSN1(args, argn, newhash, INT2FIX(0));
+    ADD_INSN1(args, argn, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+    ADD_SEND(args, argn, id_core_hash_new_for_merge, INT2FIX(0));
     compile_hash(iseq, args, kwnode, TRUE, FALSE);
-    ADD_SEND(args, argn, id_core_hash_merge_kwd, INT2FIX(2));
+    ADD_SEND(args, argn, id_core_hash_merge_bang_kwd, INT2FIX(2));
 }
 
 #define SPLATARRAY_FALSE 0
