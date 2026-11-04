@@ -5478,70 +5478,78 @@ pm_module_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const 
 }
 
 /**
- * Allocate and initialize new MultiTargetNode node.
+ * The targets of a MultiTargetNode node that is still being parsed, in source
+ * order. The first rest among them divides the lefts from the rights.
+ */
+typedef struct {
+    /* The open list of every target, including the rests. */
+    pm_node_list_t nodes;
+
+    /* The first splat or implicit rest, or NULL if there has not been one. */
+    pm_node_t *rest;
+
+    /* The index of the first rest in nodes, which is only set with rest. */
+    size_t rest_index;
+} pm_multi_targets_t;
+
+/**
+ * Append a target to the targets of a MultiTargetNode node. Any rest after the
+ * first is an error, and it is kept among the rights.
+ */
+static void
+pm_multi_targets_append(pm_parser_t *parser, pm_multi_targets_t *targets, pm_node_t *target) {
+    if (PM_NODE_TYPE_P(target, PM_SPLAT_NODE) || PM_NODE_TYPE_P(target, PM_IMPLICIT_REST_NODE)) {
+        if (targets->rest == NULL) {
+            targets->rest = target;
+            targets->rest_index = targets->nodes.size;
+        } else if (PM_NODE_TYPE_P(target, PM_SPLAT_NODE)) {
+            pm_parser_err_node(parser, target, PM_ERR_MULTI_ASSIGN_MULTI_SPLATS);
+        } else {
+            PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, &parser->current, PM_ERR_MULTI_ASSIGN_UNEXPECTED_REST);
+        }
+    }
+
+    pm_node_list_open_append(&parser->node_chunks, &targets->nodes, target);
+}
+
+/**
+ * Allocate and initialize new MultiTargetNode node from its targets, of which
+ * there is at least one, and its parentheses, if it has them. The lefts and
+ * rights share the array of targets.
  */
 static pm_multi_target_node_t *
-pm_multi_target_node_create(pm_parser_t *parser) {
+pm_multi_target_node_create(pm_parser_t *parser, pm_multi_targets_t *targets, const pm_token_t *lparen, const pm_token_t *rparen) {
+    pm_node_list_t *nodes = &targets->nodes;
+    pm_node_list_finalize(&parser->node_chunks, parser->arena, nodes);
+    assert(nodes->size > 0);
+
+    pm_node_list_t lefts = *nodes;
+    pm_node_list_t rights = { 0 };
+
+    if (targets->rest != NULL) {
+        lefts = pm_node_list_slice(nodes, 0, targets->rest_index);
+        rights = pm_node_list_slice(nodes, targets->rest_index + 1, nodes->size - targets->rest_index - 1);
+    }
+
+    pm_location_t location;
+    if (lparen != NULL) {
+        assert(rparen != NULL);
+        location = PM_LOCATION_INIT_TOKENS(parser, lparen, rparen);
+    } else {
+        location = PM_LOCATION_INIT_NODES(nodes->nodes[0], nodes->nodes[nodes->size - 1]);
+    }
+
     return pm_multi_target_node_new(
         parser->arena,
         ++parser->node_id,
         0,
-        PM_LOCATION_INIT_UNSET,
-        ((pm_node_list_t) { 0 }),
-        NULL,
-        ((pm_node_list_t) { 0 }),
-        ((pm_location_t) { 0 }),
-        ((pm_location_t) { 0 })
+        location,
+        lefts,
+        targets->rest,
+        rights,
+        NTOK2LOC(parser, lparen),
+        NTOK2LOC(parser, rparen)
     );
-}
-
-/**
- * Append a target to a MultiTargetNode node.
- */
-static void
-pm_multi_target_node_targets_append(pm_parser_t *parser, pm_multi_target_node_t *node, pm_node_t *target) {
-    if (PM_NODE_TYPE_P(target, PM_SPLAT_NODE)) {
-        if (node->rest == NULL) {
-            node->rest = target;
-        } else {
-            pm_parser_err_node(parser, target, PM_ERR_MULTI_ASSIGN_MULTI_SPLATS);
-            pm_node_list_append_inline(parser->arena, &node->rights, target);
-        }
-    } else if (PM_NODE_TYPE_P(target, PM_IMPLICIT_REST_NODE)) {
-        if (node->rest == NULL) {
-            node->rest = target;
-        } else {
-            PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, &parser->current, PM_ERR_MULTI_ASSIGN_UNEXPECTED_REST);
-            pm_node_list_append_inline(parser->arena, &node->rights, target);
-        }
-    } else if (node->rest == NULL) {
-        pm_node_list_append_inline(parser->arena, &node->lefts, target);
-    } else {
-        pm_node_list_append_inline(parser->arena, &node->rights, target);
-    }
-
-    node->base.location = PM_NODE_LENGTH(node) == 0
-        ? target->location
-        : pm_location_join(node->base.location, target->location);
-}
-
-/**
- * Set the opening of a MultiTargetNode node.
- */
-static void
-pm_multi_target_node_opening_set(const pm_parser_t *parser, pm_multi_target_node_t *node, const pm_token_t *lparen) {
-    PM_NODE_START_SET_TOKEN(parser, node, lparen);
-    PM_NODE_LENGTH_SET_TOKEN(parser, node, lparen);
-    node->lparen_loc = TOK2LOC(parser, lparen);
-}
-
-/**
- * Set the closing of a MultiTargetNode node.
- */
-static void
-pm_multi_target_node_closing_set(const pm_parser_t *parser, pm_multi_target_node_t *node, const pm_token_t *rparen) {
-    PM_NODE_LENGTH_SET_TOKEN(parser, node, rparen);
-    node->rparen_loc = TOK2LOC(parser, rparen);
 }
 
 /**
@@ -13439,8 +13447,9 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
                 splat->expression = parse_write(parser, splat->expression, operator, value);
             }
 
-            pm_multi_target_node_t *multi_target = pm_multi_target_node_create(parser);
-            pm_multi_target_node_targets_append(parser, multi_target, UP(splat));
+            pm_multi_targets_t targets = { 0 };
+            pm_multi_targets_append(parser, &targets, UP(splat));
+            pm_multi_target_node_t *multi_target = pm_multi_target_node_create(parser, &targets, NULL, NULL);
 
             return UP(pm_multi_write_node_create(parser, multi_target, operator, value));
         }
@@ -13587,8 +13596,8 @@ static pm_node_t *
 parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t binding_power, uint16_t depth) {
     bool has_rest = PM_NODE_TYPE_P(first_target, PM_SPLAT_NODE);
 
-    pm_multi_target_node_t *result = pm_multi_target_node_create(parser);
-    pm_multi_target_node_targets_append(parser, result, parse_target(parser, first_target, true, false));
+    pm_multi_targets_t targets = { 0 };
+    pm_multi_targets_append(parser, &targets, parse_target(parser, first_target, true, false));
 
     while (accept1(parser, PM_TOKEN_COMMA)) {
         if (accept1(parser, PM_TOKEN_USTAR)) {
@@ -13608,30 +13617,30 @@ parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t b
             }
 
             pm_node_t *splat = UP(pm_splat_node_create(parser, &star_operator, name));
-            pm_multi_target_node_targets_append(parser, result, splat);
+            pm_multi_targets_append(parser, &targets, splat);
             has_rest = true;
         } else if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
             context_push(parser, PM_CONTEXT_MULTI_TARGET);
             pm_node_t *target = parse_expression(parser, binding_power, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_COMMA, (uint16_t) (depth + 1));
             target = parse_target(parser, target, true, false);
 
-            pm_multi_target_node_targets_append(parser, result, target);
+            pm_multi_targets_append(parser, &targets, target);
             context_pop(parser);
         } else if (token_begins_expression_p(parser->current.type)) {
             pm_node_t *target = parse_expression(parser, binding_power, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_COMMA, (uint16_t) (depth + 1));
             target = parse_target(parser, target, true, false);
 
-            pm_multi_target_node_targets_append(parser, result, target);
+            pm_multi_targets_append(parser, &targets, target);
         } else if (!match1(parser, PM_TOKEN_EOF)) {
             // If we get here, then we have a trailing , in a multi target node.
             // We'll add an implicit rest node to represent this.
             pm_node_t *rest = UP(pm_implicit_rest_node_create(parser, &parser->previous));
-            pm_multi_target_node_targets_append(parser, result, rest);
+            pm_multi_targets_append(parser, &targets, rest);
             break;
         }
     }
 
-    return UP(result);
+    return UP(pm_multi_target_node_create(parser, &targets, NULL, NULL));
 }
 
 /**
@@ -14460,8 +14469,8 @@ parse_required_destructured_parameter(pm_parser_t *parser, uint16_t depth) {
 
     expect1(parser, PM_TOKEN_PARENTHESIS_LEFT_GROUPING, PM_ERR_EXPECT_LPAREN_REQ_PARAMETER);
 
-    pm_multi_target_node_t *node = pm_multi_target_node_create(parser);
-    pm_multi_target_node_opening_set(parser, node, &parser->previous);
+    pm_token_t lparen = parser->previous;
+    pm_multi_targets_t targets = { 0 };
 
     do {
         pm_node_t *param;
@@ -14470,9 +14479,9 @@ parse_required_destructured_parameter(pm_parser_t *parser, uint16_t depth) {
         // the grammar. In other places, multi targets _do_ allow trailing
         // commas, so here we'll assume this is a mistake of the user not
         // knowing it's not allowed here.
-        if (node->lefts.size > 0 && match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
+        if ((targets.rest == NULL ? targets.nodes.size : targets.rest_index) > 0 && match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
             param = UP(pm_implicit_rest_node_create(parser, &parser->previous));
-            pm_multi_target_node_targets_append(parser, node, param);
+            pm_multi_targets_append(parser, &targets, param);
             pm_parser_err_current(parser, PM_ERR_PARAMETER_WILD_LOOSE_COMMA);
             break;
         }
@@ -14504,14 +14513,13 @@ parse_required_destructured_parameter(pm_parser_t *parser, uint16_t depth) {
             pm_parser_local_add_token(parser, &name, 1);
         }
 
-        pm_multi_target_node_targets_append(parser, node, param);
+        pm_multi_targets_append(parser, &targets, param);
     } while (accept1(parser, PM_TOKEN_COMMA));
 
     accept1(parser, PM_TOKEN_NEWLINE);
     expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN_REQ_PARAMETER);
-    pm_multi_target_node_closing_set(parser, node, &parser->previous);
 
-    return UP(node);
+    return UP(pm_multi_target_node_create(parser, &targets, &lparen, &parser->previous));
 }
 
 /**
@@ -19072,15 +19080,15 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
 
             if (PM_NODE_TYPE_P(statement, PM_MULTI_TARGET_NODE) && ((pm_multi_target_node_t *) statement)->lparen_loc.length == 0) {
                 multi_target = (pm_multi_target_node_t *) statement;
+                multi_target->lparen_loc = TOK2LOC(parser, &opening);
+                multi_target->rparen_loc = TOK2LOC(parser, &parser->previous);
+                PM_NODE_START_SET_TOKEN(parser, multi_target, &opening);
+                PM_NODE_LENGTH_SET_TOKEN(parser, multi_target, &parser->previous);
             } else {
-                multi_target = pm_multi_target_node_create(parser);
-                pm_multi_target_node_targets_append(parser, multi_target, statement);
+                pm_multi_targets_t targets = { 0 };
+                pm_multi_targets_append(parser, &targets, statement);
+                multi_target = pm_multi_target_node_create(parser, &targets, &opening, &parser->previous);
             }
-
-            multi_target->lparen_loc = TOK2LOC(parser, &opening);
-            multi_target->rparen_loc = TOK2LOC(parser, &parser->previous);
-            PM_NODE_START_SET_TOKEN(parser, multi_target, &opening);
-            PM_NODE_LENGTH_SET_TOKEN(parser, multi_target, &parser->previous);
 
             pm_node_t *result;
             if (match1(parser, PM_TOKEN_COMMA) && (binding_power == PM_BINDING_POWER_STATEMENT)) {
@@ -19183,10 +19191,9 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
         pm_node_t *statement = statements->body.nodes[statements->body.size - 1];
 
         if (PM_NODE_TYPE_P(statement, PM_SPLAT_NODE)) {
-            pm_multi_target_node_t *multi_target = pm_multi_target_node_create(parser);
-            pm_multi_target_node_targets_append(parser, multi_target, statement);
-
-            statement = UP(multi_target);
+            pm_multi_targets_t targets = { 0 };
+            pm_multi_targets_append(parser, &targets, statement);
+            statement = UP(pm_multi_target_node_create(parser, &targets, NULL, NULL));
             statements->body.nodes[statements->body.size - 1] = statement;
         }
 
@@ -21951,8 +21958,9 @@ parse_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_bi
             return parse_write(parser, node, &operator, value);
         }
         case PM_SPLAT_NODE: {
-            pm_multi_target_node_t *multi_target = pm_multi_target_node_create(parser);
-            pm_multi_target_node_targets_append(parser, multi_target, node);
+            pm_multi_targets_t targets = { 0 };
+            pm_multi_targets_append(parser, &targets, node);
+            pm_multi_target_node_t *multi_target = pm_multi_target_node_create(parser, &targets, NULL, NULL);
 
             parser_lex(parser);
             pm_node_t *value = parse_assignment_values(parser, previous_binding_power, PM_BINDING_POWER_MULTI_ASSIGNMENT + 1, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
