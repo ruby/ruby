@@ -65,7 +65,7 @@ zjit-bindgen: zjit.$(OBJEXT)
 	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff $(ZJIT_BINDGEN_DIFF_OPTS) zjit/src/cruby_bindings.inc.rs; fi
 
 # Build env should roughly match what's used for miniruby to help with caching.
-# Setting INSTA_WORKSPACE_ROOT avoids shelling out to `cargo metadata`.
+# Setting INSTA_WORKSPACE_ROOT avoids a slow call to `cargo metadata` when testing.
 ZJIT_NEXTEST_ENV := RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
     RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
     MACOSX_DEPLOYMENT_TARGET=11.0 \
