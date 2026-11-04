@@ -5,14 +5,14 @@
 #include "prism/internal/oom.h"
 
 /**
- * Attempts to grow the node list to the next size. If there is already
+ * Attempts to grow the scratch list to the next size. If there is already
  * capacity in the list, this function does nothing. Otherwise it allocates a
  * new array from the arena (abandon-and-copy strategy) and copies the existing
  * data into it.
  */
 static void
-pm_node_list_grow(pm_arena_t *arena, pm_node_list_t *list, size_t size) {
-    size_t requested_size = list->size + size;
+pm_scratch_node_list_grow(pm_arena_t *arena, pm_scratch_node_list_t *list, uint32_t size) {
+    uint32_t requested_size = list->size + size;
 
     // Guard against overflow on the addition.
     if (requested_size < list->size) PRISM_OOM();
@@ -21,7 +21,7 @@ pm_node_list_grow(pm_arena_t *arena, pm_node_list_t *list, size_t size) {
     if (requested_size <= list->capacity) return;
 
     // Otherwise, compute the next capacity by doubling.
-    size_t next_capacity = list->capacity == 0 ? 4 : list->capacity * 2;
+    uint32_t next_capacity = list->capacity == 0 ? 4 : list->capacity * 2;
 
     // Guard against overflow on the doubling.
     while (requested_size > next_capacity) {
@@ -42,44 +42,41 @@ pm_node_list_grow(pm_arena_t *arena, pm_node_list_t *list, size_t size) {
 }
 
 /**
- * Slow path for pm_node_list_append_inline: grow the list and append the node.
- * Do not call directly - use pm_node_list_append_inline instead.
+ * Slow path for pm_scratch_node_list_append: grow the list and append the
+ * node. Do not call directly - use pm_scratch_node_list_append instead.
  */
 void
-pm_node_list_append_slow(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
-    pm_node_list_grow(arena, list, 1);
+pm_scratch_node_list_append_slow(pm_arena_t *arena, pm_scratch_node_list_t *list, pm_node_t *node) {
+    pm_scratch_node_list_grow(arena, list, 1);
     list->nodes[list->size++] = node;
 }
 
 /**
- * Append a new node onto the end of the node list.
+ * Append every node of the other scratch list onto the end of the list.
  */
 void
-pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
-    pm_node_list_append_inline(arena, list, node);
-}
-
-/**
- * Prepend a new node onto the beginning of the node list.
- */
-void
-pm_node_list_prepend(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
-    pm_node_list_grow(arena, list, 1);
-    memmove(list->nodes + 1, list->nodes, list->size * sizeof(pm_node_t *));
-    list->nodes[0] = node;
-    list->size++;
-}
-
-/**
- * Concatenate the given node list onto the end of the other node list.
- */
-void
-pm_node_list_concat(pm_arena_t *arena, pm_node_list_t *list, pm_node_list_t *other) {
+pm_scratch_node_list_concat(pm_arena_t *arena, pm_scratch_node_list_t *list, const pm_scratch_node_list_t *other) {
     if (other->size > 0) {
-        pm_node_list_grow(arena, list, other->size);
+        pm_scratch_node_list_grow(arena, list, other->size);
         memcpy(list->nodes + list->size, other->nodes, other->size * sizeof(pm_node_t *));
         list->size += other->size;
     }
+}
+
+/**
+ * Append a node onto the end of a node list. A node list's array is always
+ * exactly its size, so it grows to exactly one more node, in place when it is
+ * the most recent allocation in the arena and by copying it otherwise.
+ */
+void
+pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
+    if (list->size == 0) {
+        *list = pm_node_list_single(arena, node);
+        return;
+    }
+
+    list->nodes = (pm_node_t **) pm_arena_realloc(arena, list->nodes, sizeof(pm_node_t *) * (list->size + 1), sizeof(pm_node_t *) * list->size, PRISM_ALIGNOF(pm_node_t *));
+    list->nodes[list->size++] = node;
 }
 
 /**
@@ -171,22 +168,6 @@ pm_node_list_single(pm_arena_t *arena, pm_node_t *node) {
     pm_node_t **nodes = (pm_node_t **) pm_arena_alloc(arena, sizeof(pm_node_t *), PRISM_ALIGNOF(pm_node_t *));
     nodes[0] = node;
     return (pm_node_list_t) { .size = 1, .nodes = nodes };
-}
-
-/**
- * Append a node onto the end of a finalized list. The array grows to exactly
- * one more node, in place when it is the most recent allocation in the arena
- * and by copying it otherwise.
- */
-void
-pm_node_list_append_finalized(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
-    if (list->size == 0) {
-        *list = pm_node_list_single(arena, node);
-        return;
-    }
-
-    list->nodes = (pm_node_t **) pm_arena_realloc(arena, list->nodes, sizeof(pm_node_t *) * (list->size + 1), sizeof(pm_node_t *) * list->size, PRISM_ALIGNOF(pm_node_t *));
-    list->nodes[list->size++] = node;
 }
 
 /**

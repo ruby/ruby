@@ -8,6 +8,7 @@
 
 #include "prism/arena.h"
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -31,30 +32,44 @@ pm_location_join(pm_location_t left, pm_location_t right) {
 }
 
 /*
- * Slow path for pm_node_list_append_inline: grow the list and append the node.
- * Do not call directly — use pm_node_list_append_inline instead.
+ * A growable list of nodes for bookkeeping that never becomes part of the tree,
+ * such as the block exits and implicit parameters that are tracked while
+ * parsing. These lists are read, truncated, and edited in the middle while
+ * they are still being built, so unlike node lists they keep a capacity and
+ * grow by doubling.
  */
-void pm_node_list_append_slow(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node);
+typedef struct {
+    /* The number of nodes in the list. */
+    uint32_t size;
+
+    /* The number of nodes that fit in the list's array. */
+    uint32_t capacity;
+
+    /* The nodes in the list. */
+    pm_node_t **nodes;
+} pm_scratch_node_list_t;
 
 /*
- * Append a new node onto the end of the node list, handling the common case
- * inline and growing the list through pm_node_list_append_slow. This is the
- * version for prism's own code; others call the exported pm_node_list_append.
+ * Slow path for pm_scratch_node_list_append: grow the list and append the
+ * node. Do not call directly — use pm_scratch_node_list_append instead.
+ */
+void pm_scratch_node_list_append_slow(pm_arena_t *arena, pm_scratch_node_list_t *list, pm_node_t *node);
+
+/*
+ * Append a node onto the end of a scratch list, handling the common case inline
+ * and growing the list through pm_scratch_node_list_append_slow.
  */
 static PRISM_FORCE_INLINE void
-pm_node_list_append_inline(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
+pm_scratch_node_list_append(pm_arena_t *arena, pm_scratch_node_list_t *list, pm_node_t *node) {
     if (list->size < list->capacity) {
         list->nodes[list->size++] = node;
     } else {
-        pm_node_list_append_slow(arena, list, node);
+        pm_scratch_node_list_append_slow(arena, list, node);
     }
 }
 
-/* Prepend a new node onto the beginning of the node list. */
-void pm_node_list_prepend(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node);
-
-/* Concatenate the given node list onto the end of the other node list. */
-void pm_node_list_concat(pm_arena_t *arena, pm_node_list_t *list, pm_node_list_t *other);
+/* Append every node of the other scratch list onto the end of the list. */
+void pm_scratch_node_list_concat(pm_arena_t *arena, pm_scratch_node_list_t *list, const pm_scratch_node_list_t *other);
 
 /*
  * A fixed-size piece of a node list that is still being built. It is exactly
@@ -153,12 +168,6 @@ void pm_node_list_finalize(pm_node_chunks_t *chunks, pm_arena_t *arena, pm_node_
 pm_node_list_t pm_node_list_single(pm_arena_t *arena, pm_node_t *node);
 
 /*
- * Append a node onto the end of a finalized list, growing its array in the
- * given arena to exactly the new size.
- */
-void pm_node_list_append_finalized(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node);
-
-/*
  * Prepend a node onto the beginning of a finalized list, copying it into a new
  * array in the given arena of exactly the new size.
  */
@@ -169,7 +178,8 @@ void pm_node_list_prepend_finalized(pm_arena_t *arena, pm_node_list_t *list, pm_
  * finalized list. It shares that list's array instead of copying it.
  */
 static PRISM_INLINE pm_node_list_t
-pm_node_list_slice(const pm_node_list_t *list, size_t start, size_t size) {
+pm_node_list_slice(const pm_node_list_t *list, uint32_t start, uint32_t size) {
+    assert(start + size <= list->size);
     return (pm_node_list_t) { .size = size, .nodes = size == 0 ? NULL : list->nodes + start };
 }
 

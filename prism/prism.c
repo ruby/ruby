@@ -2466,7 +2466,7 @@ pm_arguments_node_extend(pm_parser_t *parser, pm_arguments_node_t *node, pm_node
     }
 
     pm_arguments_flags_update(&node->base.flags, argument);
-    pm_node_list_append_finalized(parser->arena, &node->arguments, argument);
+    pm_node_list_append(parser->arena, &node->arguments, argument);
     return node;
 }
 
@@ -2524,8 +2524,8 @@ pm_array_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_node_lis
  */
 static pm_array_pattern_node_t *
 pm_array_pattern_node_node_list_create(pm_parser_t *parser, const pm_node_list_t *nodes) {
-    size_t rest_index = nodes->size;
-    for (size_t idx = 0; idx < nodes->size; ++idx) {
+    uint32_t rest_index = nodes->size;
+    for (uint32_t idx = 0; idx < nodes->size; ++idx) {
         if (PM_NODE_TYPE_P(nodes->nodes[idx], PM_SPLAT_NODE) || PM_NODE_TYPE_P(nodes->nodes[idx], PM_IMPLICIT_REST_NODE)) {
             rest_index = idx;
             break;
@@ -5471,7 +5471,7 @@ typedef struct {
     pm_node_t *rest;
 
     /* The index of the first rest in nodes, which is only set with rest. */
-    size_t rest_index;
+    uint32_t rest_index;
 } pm_multi_targets_t;
 
 /**
@@ -6381,7 +6381,7 @@ pm_statements_node_body_append(pm_parser_t *parser, pm_statements_node_t *node, 
     pm_statements_node_body_update(node, statement);
     if (node->body.size > 0) pm_statements_unreachable_check(parser, node->body.nodes[node->body.size - 1], statement);
 
-    pm_node_list_append_finalized(parser->arena, &node->body, statement);
+    pm_node_list_append(parser->arena, &node->body, statement);
     pm_node_flag_set(statement, PM_NODE_FLAG_NEWLINE);
 }
 
@@ -13169,7 +13169,7 @@ pm_node_unreference_each(const pm_node_t *node, void *data) {
         case PM_LOCAL_VARIABLE_READ_NODE:
         case PM_IT_LOCAL_VARIABLE_READ_NODE: {
             pm_parser_t *parser = (pm_parser_t *) data;
-            pm_node_list_t *implicit_parameters = &parser->current_scope->implicit_parameters;
+            pm_scratch_node_list_t *implicit_parameters = &parser->current_scope->implicit_parameters;
 
             for (size_t index = 0; index < implicit_parameters->size; index++) {
                 if (implicit_parameters->nodes[index] == node) {
@@ -15522,7 +15522,7 @@ static const char * const pm_numbered_parameter_names[] = {
  */
 static pm_node_t *
 parse_blocklike_parameters(pm_parser_t *parser, pm_node_t *parameters, const pm_token_t *opening, const pm_token_t *closing) {
-    pm_node_list_t *implicit_parameters = &parser->current_scope->implicit_parameters;
+    pm_scratch_node_list_t *implicit_parameters = &parser->current_scope->implicit_parameters;
 
     // If we have ordinary parameters, then we will return them as the set of
     // parameters.
@@ -15953,7 +15953,7 @@ ensure_valid_jump(pm_parser_t *parser, pm_node_t *node) {
                 // block exit to the list of exits for the expression, and
                 // the node parsing will handle validating it instead.
                 PRISM_ASSERT(parser->current_block_exits != NULL);
-                pm_node_list_append_inline(&parser->scratch_arena, parser->current_block_exits, node);
+                pm_scratch_node_list_append(&parser->scratch_arena, parser->current_block_exits, node);
                 return;
             case PM_CONTEXT_BEGIN_ELSE:
             case PM_CONTEXT_BEGIN_ENSURE:
@@ -15997,9 +15997,9 @@ ensure_valid_jump(pm_parser_t *parser, pm_node_t *node) {
  * When we hit an expression that could contain block exits, we need to stash
  * the previous set and create a new one.
  */
-static pm_node_list_t *
-push_block_exits(pm_parser_t *parser, pm_node_list_t *current_block_exits) {
-    pm_node_list_t *previous_block_exits = parser->current_block_exits;
+static pm_scratch_node_list_t *
+push_block_exits(pm_parser_t *parser, pm_scratch_node_list_t *current_block_exits) {
+    pm_scratch_node_list_t *previous_block_exits = parser->current_block_exits;
     parser->current_block_exits = current_block_exits;
     return previous_block_exits;
 }
@@ -16010,7 +16010,7 @@ push_block_exits(pm_parser_t *parser, pm_node_list_t *current_block_exits) {
  * error for each of them.
  */
 static void
-flush_block_exits(pm_parser_t *parser, pm_node_list_t *previous_block_exits) {
+flush_block_exits(pm_parser_t *parser, pm_scratch_node_list_t *previous_block_exits) {
     pm_node_t *block_exit;
     PM_NODE_LIST_FOREACH(parser->current_block_exits, index, block_exit) {
         const char *type;
@@ -16033,7 +16033,7 @@ flush_block_exits(pm_parser_t *parser, pm_node_list_t *previous_block_exits) {
  * parser if any of them are deemed to be invalid.
  */
 static void
-pop_block_exits(pm_parser_t *parser, pm_node_list_t *previous_block_exits) {
+pop_block_exits(pm_parser_t *parser, pm_scratch_node_list_t *previous_block_exits) {
     if (match2(parser, PM_TOKEN_KEYWORD_WHILE_MODIFIER, PM_TOKEN_KEYWORD_UNTIL_MODIFIER)) {
         // If we matched a trailing while/until, then all of the block exits in
         // the contained list are valid. In this case we do not need to do
@@ -16045,7 +16045,7 @@ pop_block_exits(pm_parser_t *parser, pm_node_list_t *previous_block_exits) {
         // However, they could still become valid in a higher level context if
         // there is another list above this one. In this case we'll push all of
         // the block exits up to the previous list.
-        pm_node_list_concat(&parser->scratch_arena, previous_block_exits, parser->current_block_exits);
+        pm_scratch_node_list_concat(&parser->scratch_arena, previous_block_exits, parser->current_block_exits);
         parser->current_block_exits = previous_block_exits;
     } else {
         // If we did not match a trailing while/until and this was the last
@@ -16079,8 +16079,8 @@ parse_predicate(pm_parser_t *parser, pm_binding_power_t binding_power, pm_contex
 
 static PRISM_INLINE pm_node_t *
 parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newline_index, bool if_after_else, uint16_t depth) {
-    pm_node_list_t current_block_exits = { 0 };
-    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+    pm_scratch_node_list_t current_block_exits = { 0 };
+    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
     pm_token_t keyword = parser->previous;
     pm_token_t then_keyword = { 0 };
@@ -16689,12 +16689,12 @@ parse_variable(pm_parser_t *parser) {
             }
 
             pm_node_t *node = UP(pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, 0, false));
-            pm_node_list_append_inline(&parser->scratch_arena, &current_scope->implicit_parameters, node);
+            pm_scratch_node_list_append(&parser->scratch_arena, &current_scope->implicit_parameters, node);
 
             return node;
         } else if ((parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4) && pm_token_is_it(parser->previous.start, parser->previous.end)) {
             pm_node_t *node = UP(pm_it_local_variable_read_node_create(parser, &parser->previous));
-            pm_node_list_append_inline(&parser->scratch_arena, &current_scope->implicit_parameters, node);
+            pm_scratch_node_list_append(&parser->scratch_arena, &current_scope->implicit_parameters, node);
 
             return node;
         }
@@ -16815,7 +16815,7 @@ parse_heredoc_dedent(pm_parser_t *parser, pm_node_list_t *nodes, size_t common_w
 
     // Iterate over all nodes, and trim whitespace accordingly. We're going to
     // keep around two indices: a read and a write.
-    size_t write_index = 0;
+    uint32_t write_index = 0;
 
     pm_node_t *node;
     PM_NODE_LIST_FOREACH(nodes, read_index, node) {
@@ -18325,8 +18325,8 @@ parse_case(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_token_t case_keyword = parser->previous;
     pm_node_t *predicate = NULL;
 
-    pm_node_list_t current_block_exits = { 0 };
-    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+    pm_scratch_node_list_t current_block_exits = { 0 };
+    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
     if (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
         while (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON));
@@ -18520,8 +18520,8 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_token_t class_keyword = parser->previous;
     pm_do_loop_stack_push(parser, false);
 
-    pm_node_list_t current_block_exits = { 0 };
-    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+    pm_scratch_node_list_t current_block_exits = { 0 };
+    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
     if (accept1(parser, PM_TOKEN_LESS_LESS)) {
         pm_token_t operator = parser->previous;
@@ -18629,8 +18629,8 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
  */
 static pm_node_t *
 parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
-    pm_node_list_t current_block_exits = { 0 };
-    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+    pm_scratch_node_list_t current_block_exits = { 0 };
+    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
     pm_token_t def_keyword = parser->current;
     size_t opening_newline_index = token_newline_index(parser);
@@ -18998,8 +18998,8 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
  */
 static pm_node_t *
 parse_module(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
-    pm_node_list_t current_block_exits = { 0 };
-    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+    pm_scratch_node_list_t current_block_exits = { 0 };
+    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
     size_t opening_newline_index = token_newline_index(parser);
     parser_lex(parser);
@@ -19077,8 +19077,8 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
     pm_token_t opening = parser->current;
     pm_node_flags_t paren_flags = 0;
 
-    pm_node_list_t current_block_exits = { 0 };
-    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+    pm_scratch_node_list_t current_block_exits = { 0 };
+    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
     parser_lex(parser);
     while (true) {
@@ -19576,8 +19576,8 @@ parse_begin(pm_parser_t *parser, uint16_t depth) {
 
     accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
 
-    pm_node_list_t current_block_exits = { 0 };
-    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+    pm_scratch_node_list_t current_block_exits = { 0 };
+    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
     pm_statements_node_t *begin_statements = NULL;
 
     if (!match4(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {
@@ -20611,8 +20611,8 @@ parse_not(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
 
 static pm_pre_execution_node_t *
 parse_preexe(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t depth) {
-    pm_node_list_t current_block_exits = { 0 };
-    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+    pm_scratch_node_list_t current_block_exits = { 0 };
+    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
     if (binding_power != PM_BINDING_POWER_STATEMENT) {
         pm_parser_err_current(parser, PM_ERR_STATEMENT_PREEXE_BEGIN);
@@ -21742,8 +21742,8 @@ parse_interpolated_regular_expression_named_captures(pm_parser_t *parser, const 
 static pm_if_node_t *
 parse_ternary(pm_parser_t *parser, pm_node_t *node, uint8_t flags, uint16_t depth) {
     context_push(parser, PM_CONTEXT_TERNARY);
-    pm_node_list_t current_block_exits = { 0 };
-    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+    pm_scratch_node_list_t current_block_exits = { 0 };
+    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
     pm_token_t qmark = parser->current;
     parser_lex(parser);
@@ -23030,8 +23030,8 @@ parse_program(pm_parser_t *parser) {
         pm_parser_scope_push(parser, true);
     }
 
-    pm_node_list_t current_block_exits = { 0 };
-    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+    pm_scratch_node_list_t current_block_exits = { 0 };
+    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
     parser_lex(parser);
     pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_MAIN, 0);

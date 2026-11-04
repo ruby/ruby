@@ -82,11 +82,12 @@ struct pm_node;
  * A list of nodes in the source, most often used for lists of children.
  */
 typedef struct pm_node_list {
-    /** The number of nodes in the list. */
-    size_t size;
-
-    /** The capacity of the list that has been allocated. */
-    size_t capacity;
+    /**
+     * The number of nodes in the list. Source offsets are 32 bits, so the
+     * source is less than 4 GiB, and a list built from it stays far below what
+     * this can count.
+     */
+    uint32_t size;
 
     /** The nodes in the list. */
     struct pm_node **nodes;
