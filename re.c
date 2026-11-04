@@ -1644,31 +1644,49 @@ match_nth(VALUE match, VALUE n)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    match_length(n) -> integer or nil
- *    match_length(name) -> integer or nil
+ *    match_length(n) -> integer
+ *    match_length(name) -> integer
  *
  *  Returns the length (in characters) of the matched substring
  *  corresponding to the given argument.
  *
- *  When non-negative argument +n+ is given,
+ *  With non-negative integer argument `n` given,
  *  returns the length of the matched substring
- *  for the <tt>n</tt>th match:
+ *  for the `n`th match:
  *
- *    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8" 5:nil>
- *    m.match_length(0) # => 6
- *    m.match_length(4) # => 1
- *    m.match_length(5) # => nil
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match.match_length(0) # => 10
+ *  match.match_length(3) # => 2
+ *  match.match_length(4) # Raises IndexError: index 4 out of matches.
  *
- *  When string or symbol argument +name+ is given,
+ *  s = 'こんにちは'        # Four 3-byte characters.
+ *  match = /(こん)(に)(ち)/.match(s)
+ *  # => #<MatchData "こんにち" 1:"こん" 2:"に" 3:"ち">
+ *  match.match_length(0) # => 4
+ *  match.match_length(1) # => 2
+ *  match.match_length(3) # => 1
+ *  match.match_length(4) # Raises IndexError: index 4 out of matches.
+ *  ```
+ *
+ *
+ *  With string or symbol argument `name` given,
  *  returns the length of the matched substring
  *  for the named match:
  *
- *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *    # => #<MatchData "hoge" foo:"h" bar:"ge">
- *    m.match_length('foo') # => 1
- *    m.match_length(:bar)  # => 2
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.match_length(:year)   # => 4
+ *  match.match_length('day')   # => 2
+ *  match.match_length(:nosuch) # Raises IndexError: undefined group name reference: nosuch.
+ *  ```
  *
  */
 
