@@ -253,7 +253,7 @@ class Gem::RemoteFetcher
       fetch_http(location, last_modified, head, depth + 1, headers)
     else
       custom_error = response["X-Error-Message"]
-      error_detail = custom_error || response.message
+      error_detail = clean_text(custom_error || response.message)
       raise FetchError.new("Bad response #{error_detail} #{response.code}", uri)
     end
   end
