@@ -8205,7 +8205,7 @@ pinned_roots_mark(rb_objspace_t *objspace, rb_heap_t *heap)
                             if (sr_bits & 1) {
                                 gc_mark(objspace, obj);          /* shref: root + traverse */
                             }
-                            else if (traverse_shareable) {
+                            else if (traverse_shareable && !rb_gc_shareable_leaf_p(obj)) {
                                 gc_mark(objspace, obj);          /* re-derive this parent's edges */
                                 gc_pin(objspace, obj);
                             }
