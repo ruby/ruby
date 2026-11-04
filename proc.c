@@ -2550,6 +2550,20 @@ find_refinement_iclass(VALUE owner, VALUE klass, VALUE iclass)
     VALUE refined_target = rb_refinement_module_get_refined_class(owner);
 
     if (RB_TYPE_P(refined_target, T_MODULE)) {
+        /* If the iclass given is already the refinement iclass we want,
+         * return it instead of generating a new refinement iclass, so that
+         * Method/UnboundMethod equality works as expected.
+         */
+        VALUE refinement_iclass = RCLASS_SUPER(iclass);
+        while (RICLASS_FOR_REFINEMENT_P(refinement_iclass)) {
+            refinement_iclass = RCLASS_SUPER(refinement_iclass);
+        }
+        if (RB_TYPE_P(refinement_iclass, T_ICLASS) &&
+                RBASIC(refinement_iclass)->klass == refined_target &&
+                find_ancestor(klass, refinement_iclass)) {
+            return iclass;
+        }
+
         VALUE refined_ancestor = find_refined_target_ancestor(klass, refined_target);
         if (refined_ancestor) {
             iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
