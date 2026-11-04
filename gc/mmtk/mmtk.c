@@ -22,7 +22,6 @@
 #endif
 
 struct objspace {
-    bool user_gc_disabled;
     bool measure_gc_time;
     bool gc_stress;
 
@@ -839,23 +838,13 @@ rb_gc_impl_gc_disable(void *objspace_ptr, bool finish_current_gc)
 bool
 rb_gc_impl_user_gc_disabled_set(void *objspace_ptr, bool disable)
 {
-    struct objspace *objspace = objspace_ptr;
-    const bool was = objspace->user_gc_disabled;
-    objspace->user_gc_disabled = disable;
-
-    if (was != disable) {
-        mmtk_set_gc_enabled(!disable);
-        objspace->user_gc_disabled = disable;
-    }
-
-    return was;
+    return mmtk_set_user_gc_disabled(disable);
 }
 
 bool
 rb_gc_impl_user_gc_disabled_p(void *objspace_ptr)
 {
-    struct objspace *objspace = objspace_ptr;
-    return objspace->user_gc_disabled;
+    return mmtk_user_gc_disabled_p();
 }
 
 bool

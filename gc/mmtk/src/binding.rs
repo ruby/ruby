@@ -8,6 +8,7 @@ use mmtk::util::ObjectReference;
 
 use crate::Ruby;
 use crate::abi::RubyBindingOptions;
+use crate::gc_disable::GcDisableState;
 use crate::pinning_registry::PinningRegistry;
 use crate::weak_proc::WeakProcessor;
 
@@ -35,6 +36,7 @@ pub struct RubyBinding {
     pub pinning_registry: PinningRegistry,
     pub gc_thread_join_handles: Mutex<Vec<JoinHandle<()>>>,
     pub wb_unprotected_objects: Mutex<HashSet<ObjectReference>>,
+    pub gc_disable: GcDisableState,
 }
 
 unsafe impl Sync for RubyBinding {}
@@ -54,6 +56,7 @@ impl RubyBinding {
             pinning_registry: PinningRegistry::new(),
             gc_thread_join_handles: Default::default(),
             wb_unprotected_objects: Default::default(),
+            gc_disable: Default::default(),
         }
     }
 

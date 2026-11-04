@@ -88,6 +88,10 @@ void mmtk_set_gc_enabled(bool enable);
 
 bool mmtk_gc_enabled_p(void);
 
+bool mmtk_set_user_gc_disabled(bool disable);
+
+bool mmtk_user_gc_disabled_p(void);
+
 size_t mmtk_max_non_los_default_alloc_bytes(void);
 
 bool mmtk_plan_has_write_barrier(void);

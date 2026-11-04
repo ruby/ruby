@@ -3,6 +3,7 @@ name = "mmtk_ruby"
 version = "0.1.0"
 authors = []
 edition = "2024"
+rust-version = "1.95"
 
 [lib]
 name = "mmtk_ruby"

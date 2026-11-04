@@ -250,7 +250,8 @@ pub extern "C" fn mmtk_get_vo_bit_base_addr() -> usize {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn mmtk_initialize_collection(tls: VMThread) {
-    memory_manager::initialize_collection(mmtk(), tls)
+    memory_manager::initialize_collection(mmtk(), tls);
+    crate::binding().gc_disable.on_collection_initialized();
 }
 
 #[unsafe(no_mangle)]
@@ -292,51 +293,29 @@ pub extern "C" fn mmtk_handle_user_collection_request(
     force: bool,
     exhaustive: bool,
 ) {
-    // GC.start must run even when GC is disabled. However, GC.stress=true does
-    // not run when GC is disabled. force is true when GC.start and false when
-    // GC.stress=true.
-    // TODO: This is not Ractor-safe. Another Ractor could disable GC, which
-    //       would prevent the GC from running. Another Ractor could also enable
-    //       GC, which would be lost.
-    let gc_was_disabled = force && !crate::mmtk().is_collection_enabled();
-    if gc_was_disabled {
-        crate::mmtk().enable_collection();
-    }
-
-    crate::mmtk().handle_user_collection_request(tls, force, exhaustive);
-
-    if gc_was_disabled {
-        // While GC was enabled, another Ractor may have requested a GC that hasn't run yet.
-        // MMTk can't disable GC until that GC runs, and it needs this thread to stop first.
-        // So block for it and try again. Since a GC is already requested, this waits for that
-        // GC instead of starting a new one.
-        while crate::mmtk().disable_collection().is_err() {
-            crate::mmtk().handle_user_collection_request(tls, true, false);
-        }
-    }
+    crate::binding()
+        .gc_disable
+        .handle_user_collection_request(tls, force, exhaustive);
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn mmtk_set_gc_enabled(enable: bool) {
-    if enable {
-        crate::mmtk().enable_collection();
-    } else if crate::mmtk().is_collection_enabled() {
-        // We must not call disable_collection if GC is already disabled because
-        // MMTk keeps track of the depth of disable_collection. This would require
-        // enable_collection calls equal to the number of disable_collection calls
-        // before GC is enabled.
-
-        // We cannot panic on failing to disable GC because
-        // DURING_GC_COULD_MALLOC_REGION_START disables GC during GC. It's
-        // fine to ignore the failure because MMTk's malloc does not trigger
-        // GC.
-        let _ = crate::mmtk().disable_collection();
-    }
+    crate::binding().gc_disable.set_internal_disabled(!enable);
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn mmtk_gc_enabled_p() -> bool {
-    crate::mmtk().is_collection_enabled()
+    !crate::binding().gc_disable.internal_disabled()
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn mmtk_set_user_gc_disabled(disable: bool) -> bool {
+    crate::binding().gc_disable.set_user_disabled(disable)
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn mmtk_user_gc_disabled_p() -> bool {
+    crate::binding().gc_disable.user_disabled()
 }
 
 // =============== Object allocation ===============

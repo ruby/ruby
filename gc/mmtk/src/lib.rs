@@ -26,6 +26,7 @@ pub mod active_plan;
 pub mod api;
 pub mod binding;
 pub mod collection;
+pub mod gc_disable;
 pub mod heap;
 pub mod object_model;
 pub mod pinning_registry;
