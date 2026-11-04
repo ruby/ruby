@@ -2814,7 +2814,9 @@ pm_block_parameter_node_create(pm_parser_t *parser, const pm_token_t *name, cons
  * Allocate and initialize a new BlockParametersNode node.
  */
 static pm_block_parameters_node_t *
-pm_block_parameters_node_create(pm_parser_t *parser, pm_parameters_node_t *parameters, const pm_token_t *opening) {
+pm_block_parameters_node_create(pm_parser_t *parser, pm_parameters_node_t *parameters, const pm_token_t *opening, pm_node_list_t *locals) {
+    pm_node_list_finalize(&parser->node_chunks, parser->arena, locals);
+
     uint32_t start;
     if (opening != NULL) {
         start = PM_TOKEN_START(parser, opening);
@@ -2833,13 +2835,20 @@ pm_block_parameters_node_create(pm_parser_t *parser, pm_parameters_node_t *param
         end = 0;
     }
 
+    /* Locals only follow an opening token, so they always extend the end of
+     * a node that has already started. */
+    if (locals->size > 0) {
+        assert(opening != NULL);
+        end = PM_NODE_END(locals->nodes[locals->size - 1]);
+    }
+
     return pm_block_parameters_node_new(
         parser->arena,
         ++parser->node_id,
         0,
         ((pm_location_t) { .start = start, .length = U32(end - start) }),
         parameters,
-        ((pm_node_list_t) { 0 }),
+        *locals,
         NTOK2LOC(parser, opening),
         ((pm_location_t) { 0 })
     );
@@ -2867,20 +2876,6 @@ pm_block_local_variable_node_create(pm_parser_t *parser, const pm_token_t *name)
         PM_LOCATION_INIT_TOKEN(parser, name),
         pm_parser_constant_id_token(parser, name)
     );
-}
-
-/**
- * Append a new block-local variable to a BlockParametersNode node.
- */
-static void
-pm_block_parameters_node_append_local(pm_arena_t *arena, pm_block_parameters_node_t *node, const pm_block_local_variable_node_t *local) {
-    pm_node_list_append_inline(arena, &node->locals, UP(local));
-
-    if (PM_NODE_LENGTH(node) == 0) {
-        PM_NODE_START_SET_NODE(node, local);
-    }
-
-    PM_NODE_LENGTH_SET_NODE(node, local);
 }
 
 /**
@@ -15430,7 +15425,7 @@ parse_block_parameters(
         }
     }
 
-    pm_block_parameters_node_t *block_parameters = pm_block_parameters_node_create(parser, parameters, opening);
+    pm_node_list_t locals = { 0 };
     if (opening != NULL) {
         accept1(parser, PM_TOKEN_NEWLINE);
 
@@ -15464,12 +15459,12 @@ parse_block_parameters(
                 pm_block_local_variable_node_t *local = pm_block_local_variable_node_create(parser, &parser->previous);
                 if (repeated) pm_node_flag_set_repeated_parameter(UP(local));
 
-                pm_block_parameters_node_append_local(parser->arena, block_parameters, local);
+                pm_node_list_open_append(&parser->node_chunks, &locals, UP(local));
             } while (accept1(parser, PM_TOKEN_COMMA));
         }
     }
 
-    return block_parameters;
+    return pm_block_parameters_node_create(parser, parameters, opening, &locals);
 }
 
 /**
@@ -15595,7 +15590,7 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
     if (accept1(parser, PM_TOKEN_PIPE)) {
         pm_token_t block_parameters_opening = parser->previous;
         if (match1(parser, PM_TOKEN_PIPE)) {
-            block_parameters = pm_block_parameters_node_create(parser, NULL, &block_parameters_opening);
+            block_parameters = pm_block_parameters_node_create(parser, NULL, &block_parameters_opening, &((pm_node_list_t) { 0 }));
             parser->command_start = true;
             parser_lex(parser);
         } else {
@@ -19690,7 +19685,7 @@ parse_lambda(pm_parser_t *parser, uint16_t depth) {
             parser_lex(parser);
 
             if (match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                block_parameters = pm_block_parameters_node_create(parser, NULL, &opening);
+                block_parameters = pm_block_parameters_node_create(parser, NULL, &opening, &((pm_node_list_t) { 0 }));
             } else {
                 block_parameters = parse_block_parameters(parser, false, &opening, true, true, (uint16_t) (depth + 1));
             }
