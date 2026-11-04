@@ -26,6 +26,7 @@ module Ruby::Prism
 
     # https://bugs.ruby-lang.org/issues/21168#note-5
     except << "command_method_call_2.txt"
+    except << "3.4-4.0/command_call_do_block_in_arguments.txt"
     # https://bugs.ruby-lang.org/issues/21669
     except << "4.1/void_value.txt"
     # https://bugs.ruby-lang.org/issues/19107
