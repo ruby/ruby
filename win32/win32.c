@@ -3936,17 +3936,45 @@ rb_w32_gethostbyname(const char *name)
 
 #undef gethostname
 
+static INIT_ONCE hostname_once = INIT_ONCE_STATIC_INIT;
+static char hostname_cache[256];
+
+/* License: Ruby's */
+static BOOL CALLBACK
+init_hostname(PINIT_ONCE once, PVOID param, PVOID *context)
+{
+    if (gethostname(hostname_cache, sizeof(hostname_cache)) == SOCKET_ERROR) {
+        errno = map_errno(WSAGetLastError());
+        return FALSE;
+    }
+    return TRUE;
+}
+
 /* License: Artistic or GPL */
 int WSAAPI
 rb_w32_gethostname(char *name, int len)
 {
-    int r;
-    RUBY_CRITICAL {
-        r = gethostname(name, len);
+    int n;
+
+    /* Winsock reads the DNS settings from the registry on every call, but
+     * the host name does not change until the system restarts, except
+     * through this variable that Winsock also reads on every call. */
+    if (GetEnvironmentVariableW(L"_CLUSTER_NETWORK_NAME_", NULL, 0)) {
+        int r = gethostname(name, len);
         if (r == SOCKET_ERROR)
             errno = map_errno(WSAGetLastError());
+        return r;
     }
-    return r;
+    if (!InitOnceExecuteOnce(&hostname_once, init_hostname, NULL, NULL))
+        return SOCKET_ERROR;
+    n = (int)strlen(hostname_cache);
+    if (!name || n >= len) {
+        WSASetLastError(WSAEFAULT);
+        errno = map_errno(WSAEFAULT);
+        return SOCKET_ERROR;
+    }
+    memcpy(name, hostname_cache, n + 1);
+    return 0;
 }
 
 #undef getprotobyname
