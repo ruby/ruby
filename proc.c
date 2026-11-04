@@ -2027,7 +2027,8 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
  *   self == other -> true or false
  *   eql?(other) -> true or false
  *
- * Returns whether +self+ and +other+ were created from the same code block:
+ * Returns whether +self+ and +other+ were created from the same code
+ * block and the same binding:
  *
  *   def return_block(&block)
  *     block
@@ -2046,6 +2047,11 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
  *
  *   # Another Proc will never be equal, even if the code is the "same"
  *   block1 == proc { puts 'test' }
+ *   #=> false
+ *
+ *   # Proc with the same code block but different binding is not equal:
+ *   def new_proc = proc { 1 }
+ *   new_proc == new_proc
  *   #=> false
  *
  */
