@@ -1384,7 +1384,22 @@ lookup_method_table(VALUE klass, ID id)
     }
 }
 
-struct method_entry_warnings;
+/* rb_method_entry_make() runs under the VM lock, where it must not warn:
+ * rb_warn() and rb_category_warn() dispatch Warning.warn and write to $stderr,
+ * either of which can check for interrupts.  It formats the messages instead,
+ * and the caller emits them once the lock is released.
+ *
+ * The performance warning cannot even be formatted under the lock, because
+ * rb_class2name() names an anonymous class with a "%"PRIsVALUE" that calls
+ * #to_s, so the method entries to warn about are collected as they are found.
+ * There can be more than one: the redefinition check walks the whole subclass
+ * tree. */
+struct method_entry_warnings {
+    VALUE redefined; /* $VERBOSE only */
+    VALUE problem;
+    VALUE performance; /* method entries, RB_WARN_CATEGORY_PERFORMANCE */
+};
+
 static rb_method_entry_t *rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibility_t visi,
                                                rb_method_type_t type, rb_method_definition_t *def, ID original_id, void *opts,
                                                struct method_entry_warnings *warnings);
@@ -1397,7 +1412,7 @@ add_refined_method_entry(VALUE refined_class, ID mid, struct method_entry_warnin
     rb_method_entry_t *me = lookup_method_table(refined_class, mid);
 
     if (me) {
-        make_method_entry_refined(refined_class, me, NULL);
+        make_method_entry_refined(refined_class, me, warnings ? &warnings->performance : NULL);
         rb_clear_method_cache(refined_class, mid);
     }
     else if (warnings) {
@@ -1476,22 +1491,6 @@ method_entry_modify_check(VALUE klass, rb_method_type_t type)
         rb_class_modify_check(NIL_P(klass) ? rb_cObject : klass);
     }
 }
-
-/* rb_method_entry_make() runs under the VM lock, where it must not warn:
- * rb_warn() and rb_category_warn() dispatch Warning.warn and write to $stderr,
- * either of which can check for interrupts.  It formats the messages instead,
- * and the caller emits them once the lock is released.
- *
- * The performance warning cannot even be formatted under the lock, because
- * rb_class2name() names an anonymous class with a "%"PRIsVALUE" that calls
- * #to_s, so the method entries to warn about are collected as they are found.
- * There can be more than one: the redefinition check walks the whole subclass
- * tree. */
-struct method_entry_warnings {
-    VALUE redefined; /* $VERBOSE only */
-    VALUE problem;
-    VALUE performance; /* method entries, RB_WARN_CATEGORY_PERFORMANCE */
-};
 
 static void
 method_entry_warnings_emit(const struct method_entry_warnings *warnings)
