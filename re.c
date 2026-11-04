@@ -2737,34 +2737,37 @@ match_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    named_captures(symbolize_names: false) -> hash
  *
- *  Returns a hash of the named captures;
- *  each key is a capture name; each value is its captured string or +nil+:
+ *  Returns a hash of capture names and values:
  *
- *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *    # => #<MatchData "hoge" foo:"h" bar:"ge">
- *    m.named_captures # => {"foo"=>"h", "bar"=>"ge"}
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.named_captures # => {"year" => "2026", "month" => "12", "day" => "25"}
+ *  ```
  *
- *    m = /(?<a>.)(?<b>.)/.match("01")
- *    # => #<MatchData "01" a:"0" b:"1">
- *    m.named_captures #=> {"a" => "0", "b" => "1"}
+ *  With keyword argument `symbolize_names` given as `true`,
+ *  returns hash keys as symbols:
  *
- *    m = /(?<a>.)(?<b>.)?/.match("0")
- *    # => #<MatchData "0" a:"0" b:nil>
- *    m.named_captures #=> {"a" => "0", "b" => nil}
+ *  ```ruby
+ *  match.named_captures(symbolize_names: true)
+ *  # => {year: "2026", month: "12", day: "25"}
+ *  ```
  *
- *    m = /(?<a>.)(?<a>.)/.match("01")
- *    # => #<MatchData "01" a:"0" a:"1">
- *    m.named_captures #=> {"a" => "1"}
+ *  Returns a `nil` hash value for a name that captured nothing:
  *
- *  If keyword argument +symbolize_names+ is given
- *  a true value, the keys in the resulting hash are Symbols:
- *
- *    m = /(?<a>.)(?<a>.)/.match("01")
- *    # => #<MatchData "01" a:"0" a:"1">
- *    m.named_captures(symbolize_names: true) #=> {:a => "1"}
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})?/
+ *  # => /(?<year>\d{4})-(?<month>\d{2})?/
+ *  match = '2026-'.match(regexp)
+ *  # => #<MatchData "2026-" year:"2026" month:nil>
+ *  match.named_captures # => {"year" => "2026", "month" => nil}
+ *  ```
  *
  */
 
