@@ -2946,7 +2946,8 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_join_recheck_array_length
-    x = Struct.new(:ary).new
+    c = Struct.new(:ary)
+    x = c.new
     def x.to_str
       ary.clear
       ary[0] = "b"
@@ -2954,6 +2955,14 @@ class TestArray < Test::Unit::TestCase
     end
     x.ary = Array.new(1023) {"a"*1} << x
     assert_equal("b", x.ary.join(""))
+
+    x = c.new
+    def x.to_str
+      ary.clear
+      "A"*100
+    end
+    x.ary = Array.new(1023) {"a"}
+    assert_equal("", x.ary.join(x))
   end
 
   def test_join_encoding

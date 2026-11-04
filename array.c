@@ -3137,9 +3137,9 @@ rb_ary_join(VALUE ary, VALUE sep)
     rb_len_t len = 1, i;
     VALUE val, tmp, result;
 
-    if (RARRAY_LEN(ary) == 0) return rb_usascii_str_new(0, 0);
-
     if (!NIL_P(sep)) StringValue(sep);
+
+    if (RARRAY_LEN(ary) == 0) return rb_usascii_str_new(0, 0);
 
     result = ary_join_fast(ary, sep);
     if (!UNDEF_P(result)) return result;
