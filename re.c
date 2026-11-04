@@ -1358,23 +1358,19 @@ match_regexp(VALUE match)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    names -> array_of_names
+ *   names -> array_of_strings
  *
- *  Returns an array of the capture names
- *  (see {Named Captures}[rdoc-ref:Regexp@Named+Captures]):
+ *  Returns an array containing the capture names:
  *
- *    m = /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge")
- *    # => #<MatchData "hog" foo:"h" bar:"o" baz:"g">
- *    m.names # => ["foo", "bar", "baz"]
- *
- *    m = /foo/.match('foo') # => #<MatchData "foo">
- *    m.names # => [] # No named captures.
- *
- *  Equivalent to:
- *
- *    m = /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge")
- *    m.regexp.names # => ["foo", "bar", "baz"]
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.names # => ["year", "month", "day"]
+ *  ```
  *
  */
 
