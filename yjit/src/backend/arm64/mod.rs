@@ -114,7 +114,7 @@ fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
         b(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
         1
     } else {
-        let num_insns = emit_load_value(cb, Assembler::SCRATCH0, dst_addr as u64);
+        let num_insns = emit_load_value(cb, Assembler::SCRATCH0, dst_ptr.raw_addr(cb) as u64);
         br(cb, Assembler::SCRATCH0);
         num_insns + 1
     };
@@ -1454,6 +1454,21 @@ mod tests {
 
         asm.je(Target::CodePtr(target));
         asm.compile_with_num_regs(&mut cb, 0);
+    }
+
+    #[test]
+    fn test_emit_jmp_ptr_out_of_b_range() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let target = cb.get_write_ptr().add_bytes(1 << 28);
+        asm.jmp(Target::SideExitPtr(target));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        // A b can't reach 256MiB away, so the absolute address must be loaded for br.
+        let mut expected = CodeBlock::new_dummy(1024);
+        emit_load_value(&mut expected, Assembler::SCRATCH0, target.raw_addr(&cb) as u64);
+        br(&mut expected, Assembler::SCRATCH0);
+        assert_eq!(format!("{:x}", expected), format!("{:x}", cb));
     }
 
     #[test]
