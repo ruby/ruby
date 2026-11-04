@@ -180,7 +180,7 @@ ossl_asn1obj_to_string_oid(const ASN1_OBJECT *a1obj)
     len = OBJ_obj2txt(RSTRING_PTR(str), RSTRING_LENINT(str), a1obj, 1);
     if (len <= 0 || len == INT_MAX)
         ossl_raise(eOSSLError, "OBJ_obj2txt");
-    if (len > RSTRING_LEN(str)) {
+    if (len >= RSTRING_LEN(str)) {
         /* +1 is for the \0 terminator added by OBJ_obj2txt() */
         rb_str_resize(str, len + 1);
         len = OBJ_obj2txt(RSTRING_PTR(str), len + 1, a1obj, 1);
