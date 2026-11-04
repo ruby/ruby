@@ -168,6 +168,9 @@ module EnvUtil
       # Cache the result even when no debugger is available, not to probe
       # unusable debuggers repeatedly.
       return @debugger if defined?(@debugger)
+      if debugger = ENV["RUBY_TEST_DEBUGGER"]
+        return @debugger = (@list.find {|d| d.name == debugger} unless debugger == "no")
+      end
       @debugger = @list.find(&:usable?)
     end
   end
