@@ -417,7 +417,7 @@ Using the above gem servers may result in installing unexpected gems. To resolve
     before do
       skip_unless_content_addressing_available!
       allow(Bundler::SharedHelpers).to receive(:find_gemfile) { bundled_app_gemfile }
-      lockfile_with_content_addresses("0a1b2c3d", "1b2c3d4e", "2c3d4e5f", ruby_abis: ["4.0", "3.3", "3.4"])
+      lockfile_with_content_addresses({ "0a1b2c3d" => "3.3", "1b2c3d4e" => "3.4", "2c3d4e5f" => "4.0" }, ruby_abis: ["4.0", "3.3", "3.4"])
     end
 
     def ruby_abis_with(directive)

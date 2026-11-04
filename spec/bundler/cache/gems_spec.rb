@@ -480,7 +480,7 @@ RSpec.describe "bundle cache" do
 
     it "caches the platform gem and every content-addressed gem a row lists" do
       simulate_platform "x86_64-linux" do
-        lockfile_with_content_addresses(current_address, mismatched_address, ruby_abis: [current_abi, mismatched_abi].sort)
+        lockfile_with_content_addresses(addresses(current_abi, mismatched_abi), ruby_abis: [current_abi, mismatched_abi].sort)
 
         bundle_with_content_addressed_gems "cache --all-platforms"
 

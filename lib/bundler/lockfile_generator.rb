@@ -78,8 +78,9 @@ module Bundler
       content_addresses = definition.resolve.flat_map do |spec|
         next [] if spec.platform == Gem::Platform::RUBY
 
-        spec.content_addresses.zip(spec.content_addressed_full_names).map do |content_address, full_name|
+        spec.content_addresses.zip(spec.content_addressed_full_names).map do |(content_address, ruby_abi), full_name|
           line = "#{spec.lock_name} #{content_address}"
+          line += " abi=#{ruby_abi}" if ruby_abi
 
           if definition.locked_checksums
             checksums = spec.source.checksum_store.checksums_to_lock(full_name)

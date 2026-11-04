@@ -255,6 +255,7 @@ module Bundler
       #{space}\(([^-]*)                                  # Space, followed by version
       -(.*)\)                                            # Platform, always present for content-addressable gems
       #{space}([0-9a-f]{8,64})                           # Content address
+      (?:#{space}abi=(\d+\.\d+))?                        # Optional Ruby ABI the gem is built for
       (?:#{space}([^ ]+))?                               # Optional checksums
       $                                                  # Line end
     /xo
@@ -333,12 +334,13 @@ module Bundler
       version = Gem::Version.new($2)
       platform = Gem::Platform.new($3)
       content_address = $4
-      checksums = $5
+      ruby_abi = $5
+      checksums = $6
 
       spec = @specs[Gem::NameTuple.new(name, version, platform).full_name]
       return unless spec
 
-      spec.content_addresses |= [content_address]
+      spec.content_addresses = spec.content_addresses.merge(content_address => ruby_abi)
 
       return unless checksums
 

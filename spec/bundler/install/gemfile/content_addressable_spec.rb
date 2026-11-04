@@ -39,7 +39,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
       checksums_enabled = lockfile.match?(/^CHECKSUMS$/)
 
-      expected_content_address_line = +"  mygem (1.0-x86_64-linux) #{content_address}"
+      expected_content_address_line = +"  mygem (1.0-x86_64-linux) #{content_address} abi=#{current_abi}"
       expected_content_address_line << " sha256=#{digest}" if checksums_enabled
       expect(lockfile).to include("CONTENT ADDRESSES\n#{expected_content_address_line}\n")
 
@@ -391,7 +391,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
       content_address = File.basename(cached_file, ".gem").rpartition("-").last
       digest = Digest::SHA256.file(cached_file).hexdigest
 
-      expected_content_address_line = +"  mygem (1.0-x86_64-linux) #{content_address}"
+      expected_content_address_line = +"  mygem (1.0-x86_64-linux) #{content_address} abi=#{current_abi}"
       expected_content_address_line << " sha256=#{digest}" if lockfile.match?(/^CHECKSUMS$/)
       expect(lockfile).to include("CONTENT ADDRESSES\n#{expected_content_address_line}\n")
 
@@ -451,7 +451,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
         expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
         expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
-        expect(locked_addresses).to eq([current_address])
+        expect(locked_addresses).to eq(addresses(current_abi))
 
         original_lockfile = lockfile
         pristine_system_gems
@@ -465,7 +465,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
     it "installs the content-addressed gem for the running Ruby among those a platform row lists, keeping the lockfile" do
       simulate_platform "x86_64-linux" do
-        lockfile_with_content_addresses(current_address, mismatched_address, ruby_abis: [current_abi, mismatched_abi].sort)
+        lockfile_with_content_addresses(addresses(current_abi, mismatched_abi), ruby_abis: [current_abi, mismatched_abi].sort)
         original_lockfile = lockfile
 
         bundle_with_content_addressed_gems "install"
@@ -482,7 +482,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
     it "fails in frozen mode under a Ruby ABI the lockfile does not cover, like an unlocked platform" do
       simulate_platform "x86_64-linux" do
-        lockfile_with_content_addresses(mismatched_address, ruby_abis: [mismatched_abi])
+        lockfile_with_content_addresses(addresses(mismatched_abi), ruby_abis: [mismatched_abi])
         original_lockfile = lockfile
         message = "Your lockfile locks content-addressed gems for Ruby #{mismatched_abi} but you are running Ruby #{current_abi}"
 
@@ -506,6 +506,19 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
       end
     end
 
+    it "drops an untagged locked content address the source no longer offers on an online resolution, but keeps it offline" do
+      simulate_platform "x86_64-linux" do
+        lockfile_with_content_addresses({ "0000000000000000" => nil }.merge(addresses(current_abi)), ruby_abis: [current_abi])
+        bundle_with_content_addressed_gems "install"
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{mismatched_abi} --local", raise_on_error: false
+        expect(locked_addresses).to include("0000000000000000" => nil)
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{mismatched_abi}"
+        expect(locked_addresses).to eq(addresses(current_abi, mismatched_abi))
+      end
+    end
+
     context "when the lockfile predates the RUBY ABIS section" do
       ["4.0.0", "4.1.0.beta1"].each do |bundled_with|
         it "locks the content-addressed gem when `bundle update --bundler` upgrades a lockfile without content addresses from Bundler #{bundled_with}" do
@@ -517,14 +530,14 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
             expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
             expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
-            expect(locked_addresses).to eq([current_address])
+            expect(locked_addresses).to eq(addresses(current_abi))
           end
         end
       end
 
       it "installs the content-addressed gem a beta locked for the running Ruby in frozen mode, keeping the lockfile" do
         simulate_platform "x86_64-linux" do
-          lockfile_with_content_addresses(current_address)
+          lockfile_with_content_addresses({ current_address => nil })
           original_lockfile = lockfile
 
           bundle_config "frozen true"
@@ -537,7 +550,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
       it "installs the multi-ABI gem in frozen mode when a beta locked only another Ruby's content-addressed gem" do
         simulate_platform "x86_64-linux" do
-          lockfile_with_content_addresses(mismatched_address, checksums: true)
+          lockfile_with_content_addresses({ mismatched_address => nil }, checksums: true)
           original_lockfile = lockfile
 
           bundle_config "frozen true"
@@ -550,14 +563,14 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
       it "re-resolves once to record the running Ruby's ABI and its content-addressed gem, then finds no changes" do
         simulate_platform "x86_64-linux" do
-          lockfile_with_content_addresses(mismatched_address)
+          lockfile_with_content_addresses({ mismatched_address => nil })
 
           bundle_with_content_addressed_gems "install"
 
           expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
           expect(lockfile.scan(/^    mygem \(1\.0-x86_64-linux\)$/).size).to eq(1)
           expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
-          expect(locked_addresses).to eq([current_address])
+          expect(locked_addresses).to eq(addresses(current_abi))
 
           original_lockfile = lockfile
           bundle_with_content_addressed_gems "install --verbose"
@@ -569,13 +582,13 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
       it "records the running Ruby's ABI instead of falling back to the ruby gem" do
         simulate_platform "x86_64-linux" do
-          lockfile_with_content_addresses(mismatched_address, ruby_gem: true)
+          lockfile_with_content_addresses({ mismatched_address => nil }, ruby_gem: true)
 
           bundle_with_content_addressed_gems "install"
 
           expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
           expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
-          expect(locked_addresses).to eq([current_address])
+          expect(locked_addresses).to eq(addresses(current_abi))
         end
       end
     end
@@ -583,7 +596,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
     context "when resolving locally" do
       it "fails under an uncovered Ruby ABI without touching the lockfile, until an online install locks its gems" do
         simulate_platform "x86_64-linux" do
-          lockfile_with_content_addresses(mismatched_address, ruby_abis: [mismatched_abi])
+          lockfile_with_content_addresses(addresses(mismatched_abi), ruby_abis: [mismatched_abi])
           original_lockfile = lockfile
 
           bundle_with_content_addressed_gems "install --local", raise_on_error: false
@@ -596,21 +609,21 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
           expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
           expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n  #{mismatched_abi}\n")
-          expect(locked_addresses).to eq([current_address, mismatched_address].sort)
+          expect(locked_addresses).to eq(addresses(current_abi, mismatched_abi))
         end
       end
 
       it "records the running Ruby's ABI and its already installed content-addressed gem" do
         simulate_platform "x86_64-linux" do
-          lockfile_with_content_addresses(current_address, ruby_abis: [current_abi])
+          lockfile_with_content_addresses(addresses(current_abi), ruby_abis: [current_abi])
           bundle_with_content_addressed_gems "install"
 
-          lockfile_with_content_addresses(mismatched_address, ruby_abis: [mismatched_abi])
+          lockfile_with_content_addresses(addresses(mismatched_abi), ruby_abis: [mismatched_abi])
           bundle_with_content_addressed_gems "install --local"
 
           expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
           expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n  #{mismatched_abi}\n")
-          expect(locked_addresses).to eq([current_address, mismatched_address].sort)
+          expect(locked_addresses).to eq(addresses(current_abi, mismatched_abi))
 
           original_lockfile = lockfile
           bundle_with_content_addressed_gems "install --local --verbose"
@@ -623,7 +636,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
     context "when the Gemfile has a ruby directive" do
       def install_with_ruby_directive(directive)
-        lockfile_with_content_addresses(current_address, mismatched_address, ruby_abis: [current_abi, mismatched_abi].sort, ruby_version: Bundler::RubyVersion.system.to_s)
+        lockfile_with_content_addresses(addresses(current_abi, mismatched_abi), ruby_abis: [current_abi, mismatched_abi].sort, ruby_version: Bundler::RubyVersion.system.to_s)
 
         gemfile <<~G
           source "https://gem.repo2"
@@ -646,7 +659,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
             expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
             expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
-            expect(locked_addresses).to eq([current_address])
+            expect(locked_addresses).to eq(addresses(current_abi))
           end
         end
       end
@@ -657,7 +670,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
           expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
           expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n  #{mismatched_abi}\n")
-          expect(locked_addresses).to eq([current_address, mismatched_address].sort)
+          expect(locked_addresses).to eq(addresses(current_abi, mismatched_abi))
         end
       end
 

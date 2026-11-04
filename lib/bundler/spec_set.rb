@@ -84,28 +84,25 @@ module Bundler
       platforms.delete(Bundler.local_platform) if less_specific_platform
     end
 
-    # Returns the subset of +ruby_abis+ for which every row that lists content
-    # addresses found a gem, so an offline resolution knows which Rubies it
-    # could fully serve from installed gems.
-    def assign_content_addresses!(ruby_abis, keep_locked: false)
-      covered = ruby_abis.dup
-
+    def assign_content_addresses!(ruby_abis, normalize: false, local: false)
       @specs.each do |spec|
         next unless spec.source.is_a?(Source::Rubygems)
         next unless Gem::ContentAddress.platform_eligible?(spec.platform)
 
-        found = spec.source.specs.search([spec.name, spec.version]).filter_map do |gem|
+        offered = spec.source.specs.search([spec.name, spec.version]).filter_map do |gem|
           next unless gem.platform.to_s == spec.platform.to_s && Gem::ContentAddress.content_addressed?(gem)
 
-          ruby_abi = Gem::ContentAddress.ruby_abi_for(gem.required_ruby_version)
-          [ruby_abi, gem.content_address] if ruby_abis.include?(ruby_abi)
-        end
+          [gem.content_address, Gem::ContentAddress.ruby_abi_for(gem.required_ruby_version)]
+        end.to_h
 
-        spec.content_addresses = keep_locked ? spec.content_addresses | found.map(&:last) : found.map(&:last)
-        covered &= found.map(&:first) if spec.content_addresses.any?
+        locked = normalize ? {} : spec.content_addresses
+        locked = locked.reject {|_, ruby_abi| ruby_abi.nil? } unless local
+        spec.content_addresses = locked.merge(offered).select {|_, ruby_abi| ruby_abi.nil? || ruby_abis.include?(ruby_abi) }
       end
+    end
 
-      covered
+    def content_addresses_cover?(ruby_abi)
+      @specs.all? {|spec| !spec.is_a?(LazySpecification) || spec.content_addresses.empty? || spec.content_addresses.value?(ruby_abi) }
     end
 
     def validate_deps(s, overrides = s.is_a?(LazySpecification) ? Array(s.overrides) : [])

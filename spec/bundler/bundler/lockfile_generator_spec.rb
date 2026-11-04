@@ -2,15 +2,11 @@
 
 require "bundler/lockfile_generator"
 
-# Unit tests for the section writers that handle content-addressed gems. It
-# call the private writers directly: driving LockfileGenerator.generate needs a
-# full Definition, and the end-to-end lockfile round trips live in
-# spec/install/gemfile/content_addressable_spec.rb.
 RSpec.describe Bundler::LockfileGenerator do
   let(:source) { instance_double(Bundler::Source::Rubygems, checksum_store: Bundler::Checksum::Store.new) }
   let(:x86_64_linux) { Gem::Platform.new("x86_64-linux") }
 
-  def lazy_spec(platform = x86_64_linux, content_addresses: [])
+  def lazy_spec(platform = x86_64_linux, content_addresses: {})
     Bundler::LazySpecification.new("mygem", Gem::Version.new("1.0"), platform, source, content_addresses: content_addresses)
   end
 
@@ -26,7 +22,6 @@ RSpec.describe Bundler::LockfileGenerator do
       write_section(:add_content_addresses, specs, locked_checksums: locked_checksums)
     end
 
-    # Parses a generated row back the way `bundle install` will on the next run.
     def parse_row(row)
       parser = Bundler::LockfileParser.new(<<~L)
         GEM
@@ -50,34 +45,34 @@ RSpec.describe Bundler::LockfileGenerator do
     end
 
     it "writes a row per content address, sorted by address like any lockfile section, that the parser reads back" do
-      spec = lazy_spec(content_addresses: ["ffffffff", "00000000", "abcdef12"])
+      spec = lazy_spec(content_addresses: { "ffffffff" => "3.4", "00000000" => "4.0", "abcdef12" => nil })
 
       output = content_addresses_section([spec])
 
       expect(output).to eq(<<~L)
 
         CONTENT ADDRESSES
-          mygem (1.0-x86_64-linux) 00000000
+          mygem (1.0-x86_64-linux) 00000000 abi=4.0
           mygem (1.0-x86_64-linux) abcdef12
-          mygem (1.0-x86_64-linux) ffffffff
+          mygem (1.0-x86_64-linux) ffffffff abi=3.4
       L
 
-      parsed, = parse_row(output[/^  mygem .*abcdef12$/])
-      expect(parsed.content_addresses).to eq(["abcdef12"])
+      parsed, = parse_row(output[/^  mygem .*abi=4\.0$/])
+      expect(parsed.content_addresses).to eq("00000000" => "4.0")
     end
 
     it "writes each content-addressed gem's checksum under its own full name, leaving rows without one bare" do
       checksum = Bundler::Checksum.new("sha256", "aa" * 32, Bundler::Checksum::Source.new(:lock, "Gemfile.lock:1:1"))
       source.checksum_store.register(Gem::NameTuple.new("mygem", Gem::Version.new("1.0"), x86_64_linux, content_address: "abcdef12"), checksum)
-      spec = lazy_spec(content_addresses: ["abcdef12", "01234567"])
+      spec = lazy_spec(content_addresses: { "abcdef12" => "4.0", "01234567" => "3.4" })
 
       output = content_addresses_section([spec], locked_checksums: true)
 
-      expect(output).to include("  mygem (1.0-x86_64-linux) 01234567\n")
-      expect(output).to include("  mygem (1.0-x86_64-linux) abcdef12 sha256=#{"aa" * 32}\n")
+      expect(output).to include("  mygem (1.0-x86_64-linux) 01234567 abi=3.4\n")
+      expect(output).to include("  mygem (1.0-x86_64-linux) abcdef12 abi=4.0 sha256=#{"aa" * 32}\n")
 
       parsed, store = parse_row(output[/^  mygem .*sha256=.*$/])
-      expect(parsed.content_addresses).to eq(["abcdef12"])
+      expect(parsed.content_addresses).to eq("abcdef12" => "4.0")
       expect(store.checksums_to_lock("mygem-1.0-abcdef12")).to eq("sha256=#{"aa" * 32}")
     end
 
@@ -85,14 +80,14 @@ RSpec.describe Bundler::LockfileGenerator do
       checksum = Bundler::Checksum.new("sha256", "aa" * 32, Bundler::Checksum::Source.new(:lock, "Gemfile.lock:1:1"))
       source.checksum_store.register(Gem::NameTuple.new("mygem", Gem::Version.new("1.0"), x86_64_linux, content_address: "abcdef12"), checksum)
 
-      output = content_addresses_section([lazy_spec(content_addresses: ["abcdef12"])], locked_checksums: false)
+      output = content_addresses_section([lazy_spec(content_addresses: { "abcdef12" => "4.0" })], locked_checksums: false)
 
-      expect(output).to include("  mygem (1.0-x86_64-linux) abcdef12\n")
+      expect(output).to include("  mygem (1.0-x86_64-linux) abcdef12 abi=4.0\n")
       expect(output).not_to include("sha256")
     end
 
     it "does not write a row for a spec with an address on the ruby platform" do
-      expect(content_addresses_section([lazy_spec(Gem::Platform::RUBY, content_addresses: ["abcdef12"])])).to be_empty
+      expect(content_addresses_section([lazy_spec(Gem::Platform::RUBY, content_addresses: { "abcdef12" => "3.4" })])).to be_empty
     end
 
     it "does not write a row for a spec without an address" do
@@ -106,17 +101,15 @@ RSpec.describe Bundler::LockfileGenerator do
     end
 
     it "writes the Ruby ABIs in the order the definition gives them, without sorting" do
-      expect(ruby_abis_section([lazy_spec(content_addresses: ["abcdef12"])], ["4.0", "3.3", "3.4"])).to eq("\nRUBY ABIS\n  4.0\n  3.3\n  3.4\n")
+      expect(ruby_abis_section([lazy_spec(content_addresses: { "abcdef12" => "3.4" })], ["4.0", "3.3", "3.4"])).to eq("\nRUBY ABIS\n  4.0\n  3.3\n  3.4\n")
     end
 
-    # Keeps SpecSet#content_addresses_cover? harmless when no row has addresses:
-    # every ABI counts as covered there, and nothing is written here.
     it "writes nothing when no row lists content addresses" do
       expect(ruby_abis_section([lazy_spec], ["3.4"])).to be_empty
     end
 
     it "writes nothing when no Ruby ABI is recorded" do
-      expect(ruby_abis_section([lazy_spec(content_addresses: ["abcdef12"])], [])).to be_empty
+      expect(ruby_abis_section([lazy_spec(content_addresses: { "abcdef12" => "3.4" })], [])).to be_empty
     end
   end
 end

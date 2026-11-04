@@ -27,7 +27,13 @@ module Bundler
     alias_method :runtime_dependencies, :dependencies
 
     def self.from_spec(s)
-      content_addresses = s.is_a?(LazySpecification) ? s.content_addresses : [s.content_address].compact
+      content_addresses = if s.is_a?(LazySpecification)
+        s.content_addresses
+      elsif s.content_address
+        { s.content_address => Gem::ContentAddress.ruby_abi_for(s.required_ruby_version) }
+      else
+        {}
+      end
       lazy_spec = new(s.name, s.version, s.platform, s.source, content_addresses: content_addresses)
       lazy_spec.dependencies = s.runtime_dependencies
       lazy_spec.required_ruby_version = s.required_ruby_version
@@ -36,14 +42,14 @@ module Bundler
       lazy_spec
     end
 
-    def initialize(name, version, platform, source = nil, content_addresses: [], **materialization_options)
+    def initialize(name, version, platform, source = nil, content_addresses: {}, **materialization_options)
       @name          = name
       @version       = version
       @dependencies  = []
       @required_ruby_version = Gem::Requirement.default
       @required_rubygems_version = Gem::Requirement.default
       @platform = platform || Gem::Platform::RUBY
-      @content_addresses = content_addresses.sort
+      self.content_addresses = content_addresses
 
       @original_source = source
       @source = source
@@ -55,11 +61,11 @@ module Bundler
     end
 
     def content_addresses=(addresses)
-      @content_addresses = addresses.sort
+      @content_addresses = addresses.sort_by {|address, ruby_abi| [ruby_abi.to_s, address] }.to_h
     end
 
     def content_addressed_full_names
-      @content_addresses.map {|address| "#{@name}-#{@version}-#{address}" }
+      @content_addresses.keys.map {|address| "#{@name}-#{@version}-#{address}" }
     end
 
     def missing?
@@ -139,13 +145,11 @@ module Bundler
     end
 
     # Every gem this row may install: the platform gem and each content-addressed
-    # gem it lists, so a cache serves all the Rubies the lockfile covers. Rows
-    # the index does not know (git, path) are cached as themselves.
+    # gem it lists, so a cache serves all the Rubies the lockfile covers.
     def materialize_for_cache
       source.remote!
 
-      specs = source.specs.search(self)
-      specs.empty? ? [self] : specs
+      Array(materialize(self) {|specs| specs })
     end
 
     def materialized_for_installation(locked_platforms = nil)

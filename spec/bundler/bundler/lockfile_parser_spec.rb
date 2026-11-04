@@ -173,7 +173,7 @@ RSpec.describe Bundler::LockfileParser do
             mygem
 
           CONTENT ADDRESSES
-            mygem (1.0-x86_64-linux) abcdef1234 sha256=abcdef1234f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e
+            mygem (1.0-x86_64-linux) abcdef1234 abi=3.4 sha256=abcdef1234f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e
 
           CHECKSUMS
             mygem (1.0-x86_64-linux) sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8
@@ -183,12 +183,12 @@ RSpec.describe Bundler::LockfileParser do
         L
       end
 
-      it "parses the platform and content address, keeping the platform full name" do
+      it "parses the platform, content address and Ruby ABI, keeping the platform full name" do
         spec = subject.specs.find {|s| s.name == "mygem" }
 
         expect(spec.platform).to eq(Gem::Platform.new("x86_64-linux"))
         expect(spec.full_name).to eq("mygem-1.0-x86_64-linux")
-        expect(spec.content_addresses).to eq(["abcdef1234"])
+        expect(spec.content_addresses).to eq("abcdef1234" => "3.4")
         expect(spec.content_addressed_full_names).to eq(["mygem-1.0-abcdef1234"])
       end
 
@@ -202,21 +202,52 @@ RSpec.describe Bundler::LockfileParser do
 
       context "and a second row for the same content address carries a different checksum" do
         let(:bad_checksum) { "sha256=c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11" }
-        let(:lockfile_contents) { super().sub("\nCHECKSUMS", "  mygem (1.0-x86_64-linux) abcdef1234 #{bad_checksum}\n\nCHECKSUMS") }
+        let(:lockfile_contents) { super().sub("\nCHECKSUMS", "  mygem (1.0-x86_64-linux) abcdef1234 abi=3.4 #{bad_checksum}\n\nCHECKSUMS") }
 
-        # Column 39 is where `sha256=` starts. (The message says CHECKSUMS for
-        # every lockfile checksum, including these rows.)
+        # Column 47 is where `sha256=` starts, after the Ruby ABI tag. (The message
+        # says CHECKSUMS for every lockfile checksum, including these rows.)
         it "raises a security error pointing at both checksums" do
           expect { subject }.to raise_error(Bundler::SecurityError) do |e|
             expect(e.message).to include(<<~MESSAGE)
               Bundler found mismatched checksums. This is a potential security risk.
                 mygem (1.0-x86_64-linux) sha256=abcdef1234f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e
-                  from the lockfile CHECKSUMS at #{lockfile_path}:13:39
+                  from the lockfile CHECKSUMS at #{lockfile_path}:13:47
                 mygem (1.0-x86_64-linux) #{bad_checksum}
-                  from the lockfile CHECKSUMS at #{lockfile_path}:14:39
+                  from the lockfile CHECKSUMS at #{lockfile_path}:14:47
             MESSAGE
           end
         end
+      end
+    end
+
+    context "when a content address row has a checksum but no Ruby ABI, as Bundler 4.1.0.beta wrote them" do
+      let(:lockfile_contents) do
+        <<~L
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              mygem (1.0-x86_64-linux)
+
+          PLATFORMS
+            x86_64-linux
+
+          DEPENDENCIES
+            mygem
+
+          CONTENT ADDRESSES
+            mygem (1.0-x86_64-linux) abcdef1234 sha256=abcdef1234f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e
+
+          BUNDLED WITH
+             4.1.0.beta3
+        L
+      end
+
+      it "parses the address without a Ruby ABI and keeps its checksum under its own full name" do
+        spec = subject.specs.find {|s| s.name == "mygem" }
+
+        expect(spec.content_addresses).to eq("abcdef1234" => nil)
+        expect(subject.sources.first.checksum_store.checksums_to_lock("mygem-1.0-abcdef1234")).to eq("sha256=abcdef1234f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e")
+        expect(subject.ruby_abis).to be_empty
       end
     end
 
@@ -235,7 +266,7 @@ RSpec.describe Bundler::LockfileParser do
             mygem
 
           CONTENT ADDRESSES
-            mygem (1.0-x86_64-linux) abcdef1234 sha256=garbage
+            mygem (1.0-x86_64-linux) abcdef1234 abi=3.4 sha256=garbage
 
           BUNDLED WITH
              4.1.0
@@ -262,9 +293,9 @@ RSpec.describe Bundler::LockfileParser do
             mygem
 
           CONTENT ADDRESSES
-            mygem (1.0-x86_64-linux) abcdef1234
+            mygem (1.0-x86_64-linux) abcdef1234 abi=4.0
             mygem (1.0-x86_64-linux) 0123456789
-            othergem (2.0-x86_64-linux) 9876543210
+            othergem (2.0-x86_64-linux) 9876543210 abi=4.0
 
           RUBY ABIS
             3.4
@@ -275,11 +306,11 @@ RSpec.describe Bundler::LockfileParser do
         L
       end
 
-      it "keeps every content address on the single platform row" do
+      it "keeps every content address on the single platform row, with a Ruby ABI only where the row carries one" do
         specs = subject.specs.select {|s| s.name == "mygem" }
 
         expect(specs.size).to eq(1)
-        expect(specs.first.content_addresses).to eq(["0123456789", "abcdef1234"])
+        expect(specs.first.content_addresses).to eq("0123456789" => nil, "abcdef1234" => "4.0")
       end
 
       it "ignores a row for a gem that is not in the specs" do

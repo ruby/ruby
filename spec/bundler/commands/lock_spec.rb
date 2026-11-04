@@ -3074,11 +3074,11 @@ RSpec.describe "bundle lock" do
 
         bundle_with_content_addressed_gems "lock --add-ruby-abi #{mismatched_abi}"
         expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n  #{mismatched_abi}\n")
-        expect(locked_addresses).to eq([current_address, mismatched_address].sort)
+        expect(locked_addresses).to eq(addresses(current_abi, mismatched_abi))
 
         bundle_with_content_addressed_gems "lock --remove-ruby-abi #{mismatched_abi}"
         expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
-        expect(locked_addresses).to eq([current_address])
+        expect(locked_addresses).to eq(addresses(current_abi))
       end
     end
 
@@ -3102,13 +3102,21 @@ RSpec.describe "bundle lock" do
       end
     end
 
-    it "rejects --local, since the content-addressed gems come from the remote index" do
+    it "adds and removes Ruby ABIs with --local from the installed gems" do
       simulate_platform "x86_64-linux" do
         bundle_with_content_addressed_gems "install"
 
         bundle_with_content_addressed_gems "lock --add-ruby-abi #{mismatched_abi} --local", raise_on_error: false
+        expect(err).to include("Could not find content-addressed gems for Ruby ABI #{mismatched_abi} in locally installed gems")
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
 
-        expect(err).to include("--add-ruby-abi and --remove-ruby-abi can't be used with --local")
+        bundle_with_content_addressed_gems "lock --remove-ruby-abi #{current_abi} --local"
+        expect(lockfile).not_to include("RUBY ABIS")
+        expect(locked_addresses).to be_empty
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{current_abi} --local"
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+        expect(locked_addresses).to eq(addresses(current_abi))
       end
     end
 
@@ -3125,13 +3133,13 @@ RSpec.describe "bundle lock" do
         bundle_with_content_addressed_gems "lock --add-ruby-abi #{mismatched_abi}", raise_on_error: false
 
         expect(err).to include("Unable to add the Ruby ABI `#{mismatched_abi}` since your Gemfile requires ruby")
-        expect(locked_addresses).to eq([current_address])
+        expect(locked_addresses).to eq(addresses(current_abi))
       end
     end
 
     it "refuses to add a locked Ruby ABI that a newly added ruby directive rules out instead of silently pruning it" do
       simulate_platform "x86_64-linux" do
-        lockfile_with_content_addresses(current_address, mismatched_address, ruby_abis: [current_abi, mismatched_abi].sort)
+        lockfile_with_content_addresses(addresses(current_abi, mismatched_abi), ruby_abis: [current_abi, mismatched_abi].sort)
         original_lockfile = lockfile
 
         gemfile <<~G
@@ -3164,12 +3172,12 @@ RSpec.describe "bundle lock" do
 
     it "rebuilds the content addresses from the source" do
       simulate_platform "x86_64-linux" do
-        lockfile_with_content_addresses("0000000000000000", current_address, ruby_abis: [current_abi])
+        lockfile_with_content_addresses({ "0000000000000000" => nil }.merge(addresses(current_abi)), ruby_abis: [current_abi])
 
         bundle_with_content_addressed_gems "lock --normalize-platforms"
 
         expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
-        expect(locked_addresses).to eq([current_address])
+        expect(locked_addresses).to eq(addresses(current_abi))
       end
     end
   end

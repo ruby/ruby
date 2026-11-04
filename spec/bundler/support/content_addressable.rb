@@ -52,14 +52,19 @@ module Spec
       addresses_by_abi.fetch(mismatched_abi)
     end
 
-    def locked_addresses(name: "mygem", version: "1.0", platform: "x86_64-linux")
-      lockfile.scan(/^  #{Regexp.escape("#{name} (#{version}-#{platform})")} ([0-9a-f]+)(?: sha\d+=\S+)?$/).flatten.sort
+    def addresses(*ruby_abis)
+      ruby_abis.to_h {|ruby_abi| [addresses_by_abi.fetch(ruby_abi), ruby_abi] }
     end
 
-    def lockfile_with_content_addresses(*content_addresses, name: "mygem", version: "1.0", platform: "x86_64-linux", ruby_gem: false, checksums: false, ruby_abis: nil, ruby_version: nil, bundled_with: Bundler::VERSION)
+    def locked_addresses(name: "mygem", version: "1.0", platform: "x86_64-linux")
+      lockfile.scan(/^  #{Regexp.escape("#{name} (#{version}-#{platform})")} ([0-9a-f]+)(?: abi=(\d+\.\d+))?(?: sha\d+=\S+)?$/).to_h
+    end
+
+    def lockfile_with_content_addresses(content_addresses = {}, name: "mygem", version: "1.0", platform: "x86_64-linux", ruby_gem: false, checksums: false, ruby_abis: nil, ruby_version: nil, bundled_with: Bundler::VERSION)
       lock_name = "#{name} (#{version}-#{platform})"
-      rows = content_addresses.map do |address|
+      rows = content_addresses.map do |address, ruby_abi|
         row = "#{lock_name} #{address}"
+        row += " abi=#{ruby_abi}" if ruby_abi
         row += " sha256=#{checksum_digest(gem_repo2, name, version, address)}" if checksums
         row
       end.sort

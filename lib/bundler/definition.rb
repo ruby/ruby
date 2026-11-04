@@ -380,7 +380,7 @@ module Bundler
         start_resolution
       end
       warn_inert_overrides(@resolve)
-      @resolve.assign_content_addresses!(@ruby_abis) if @removed_ruby_abis.any?
+      @resolve.assign_content_addresses!(@ruby_abis, local: sources.local_mode?) if @removed_ruby_abis.any?
       @resolve
     end
 
@@ -563,7 +563,7 @@ module Bundler
       resolve.normalize_platforms!(current_dependencies, platforms)
 
       @resolve = SpecSet.new(resolve.for(current_dependencies, @platforms))
-      @resolve.assign_content_addresses!(@ruby_abis, keep_locked: sources.local_mode?)
+      @resolve.assign_content_addresses!(@ruby_abis, normalize: true)
     end
 
     def ruby_abis
@@ -571,16 +571,13 @@ module Bundler
     end
 
     def add_ruby_abi(ruby_abi)
-      # Before the early return: a locked ABI the ruby directive rules out is
-      # about to be pruned, so adding it back must be refused, not ignored.
       if @ruby_version && ruby_abi_excluded?(ruby_abi)
         raise InvalidOption, "Unable to add the Ruby ABI `#{ruby_abi}` since your Gemfile requires #{@ruby_version}"
       end
-
-      return if @ruby_abis.include?(ruby_abi) || @new_ruby_abis.include?(ruby_abi)
+      return if @locked_ruby_abis.include?(ruby_abi) || @new_ruby_abis.include?(ruby_abi)
 
       @new_ruby_abis << ruby_abi
-      @ruby_abis << ruby_abi
+      @ruby_abis |= [ruby_abi]
     end
 
     def remove_ruby_abi(ruby_abi)
@@ -906,8 +903,20 @@ module Bundler
       end
 
       specs = SpecSet.new(result.for(dependencies, @platforms | [Gem::Platform::RUBY]))
-      covered = specs.assign_content_addresses!(@ruby_abis, keep_locked: sources.local_mode?)
-      @ruby_abis.delete(Gem.ruby_abi) if @current_ruby_abi_missing && sources.local_mode? && !covered.include?(Gem.ruby_abi)
+      specs.assign_content_addresses!(@ruby_abis, local: sources.local_mode?)
+
+      if sources.local_mode?
+        # Only installed gems are in reach, so a Ruby is recorded once every row
+        # has its gem; the running Ruby otherwise waits for the next online resolution.
+        @ruby_abis.delete(Gem.ruby_abi) if @current_ruby_abi_missing && !specs.content_addresses_cover?(Gem.ruby_abi)
+
+        @new_ruby_abis.each do |ruby_abi|
+          next if specs.content_addresses_cover?(ruby_abi)
+
+          raise GemNotFound, "Could not find content-addressed gems for Ruby ABI #{ruby_abi} in locally installed gems"
+        end
+      end
+
       specs
     end
 

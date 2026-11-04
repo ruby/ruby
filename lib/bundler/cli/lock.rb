@@ -78,6 +78,8 @@ module Bundler
         # new platforms are listed in the lockfile without their specs.
         definition.add_checksums if options["add-checksums"]
 
+        # Adding a Ruby ABI offline takes its content-addressed gems from the installed ones.
+        definition.with_cache! if options[:local] && options["add-ruby-abi"].any?
         definition.remotely! unless options[:local]
 
         if options["normalize-platforms"]
@@ -120,10 +122,6 @@ module Bundler
 
       if options["normalize-platforms"] && options["remove-platform"].any?
         raise InvalidOption, "--normalize-platforms can't be used with --remove-platform"
-      end
-
-      if options[:local] && (options["add-ruby-abi"].any? || options["remove-ruby-abi"].any?)
-        raise InvalidOption, "--add-ruby-abi and --remove-ruby-abi can't be used with --local"
       end
     end
   end
