@@ -5499,14 +5499,16 @@ pm_match_required_node_create(pm_parser_t *parser, pm_node_t *value, pm_node_t *
  * Allocate and initialize a new MatchWriteNode node.
  */
 static pm_match_write_node_t *
-pm_match_write_node_create(pm_parser_t *parser, pm_call_node_t *call) {
+pm_match_write_node_create(pm_parser_t *parser, pm_call_node_t *call, pm_node_list_t *targets) {
+    pm_node_list_finalize(&parser->node_chunks, parser->arena, targets);
+
     return pm_match_write_node_new(
         parser->arena,
         ++parser->node_id,
         0,
         PM_LOCATION_INIT_NODE(call),
         call,
-        ((pm_node_list_t) { 0 })
+        *targets
     );
 }
 
@@ -21671,8 +21673,11 @@ typedef struct {
     /** The call node wrapping the regular expression node (for =~). */
     pm_call_node_t *call;
 
-    /** The match write node being built, or NULL if no captures found yet. */
-    pm_match_write_node_t *match;
+    /**
+     * The open list of targets for the match write node, one for each capture
+     * that becomes a local. The node is only created if this is not empty.
+     */
+    pm_node_list_t targets;
 
     /** The set of capture names found so far. */
     pm_constant_id_set_t names;
@@ -21770,18 +21775,12 @@ parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *c
             pm_parser_local_add(parser, name, start, end, 0);
         }
 
-        // Here we lazily create the MatchWriteNode since we know we're
-        // about to add a target.
-        if (name_data->match == NULL) {
-            name_data->match = pm_match_write_node_create(parser, call);
-        }
-
         // Next, create the local variable target and add it to the list of
         // targets for the match.
         pm_token_t token = { .type = 0, .start = start, .end = end };
         pm_location_t token_loc = TOK2LOC(parser, &token);
         pm_node_t *target = UP(pm_local_variable_target_node_create(parser, &token_loc, name, depth == -1 ? 0 : (uint32_t) depth));
-        pm_node_list_append_inline(parser->arena, &name_data->match->targets, target);
+        pm_node_list_open_append(&parser->node_chunks, &name_data->targets, target);
     }
 
     pm_buffer_cleanup(&unescaped);
@@ -21796,15 +21795,15 @@ static pm_node_t *
 parse_interpolated_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *content, pm_call_node_t *call, bool extended_mode) {
     pm_regexp_name_data_t name_data = {
         .call = call,
-        .match = NULL,
+        .targets = { 0 },
         .names = { 0 },
         .shared = false,
     };
 
     pm_regexp_parse_named_captures(parser, pm_string_source(content), pm_string_length(content), extended_mode, parse_regular_expression_named_capture, &name_data);
 
-    if (name_data.match != NULL) {
-        return UP(name_data.match);
+    if (name_data.targets.size > 0) {
+        return UP(pm_match_write_node_create(parser, call, &name_data.targets));
     } else {
         return UP(call);
     }
@@ -21970,15 +21969,15 @@ parse_match(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_pow
         pm_regular_expression_node_t *regexp = (pm_regular_expression_node_t *) node;
         pm_regexp_name_data_t name_data = {
             .call = call,
-            .match = NULL,
+            .targets = { 0 },
             .names = { 0 },
             .shared = pm_string_source(&regexp->unescaped) == parser->start + regexp->content_loc.start,
         };
 
         pm_node_flag_set(UP(regexp), pm_regexp_parse(parser, regexp, parse_regular_expression_named_capture, &name_data));
 
-        if (name_data.match != NULL) {
-            result = UP(name_data.match);
+        if (name_data.targets.size > 0) {
+            result = UP(pm_match_write_node_create(parser, call, &name_data.targets));
         }
     }
 
