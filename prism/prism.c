@@ -4257,10 +4257,13 @@ pm_hash_pattern_node_empty_create(pm_parser_t *parser, const pm_token_t *opening
 }
 
 /**
- * Allocate and initialize a new hash pattern node.
+ * Allocate and initialize a new hash pattern node from its open list of
+ * elements and its rest, if it has one.
  */
 static pm_hash_pattern_node_t *
 pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *elements, pm_node_t *rest) {
+    pm_node_list_finalize(&parser->node_chunks, parser->arena, elements);
+
     uint32_t start;
     uint32_t end;
 
@@ -4278,20 +4281,17 @@ pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *eleme
         end = PM_NODE_END(rest);
     }
 
-    pm_hash_pattern_node_t *node = pm_hash_pattern_node_new(
+    return pm_hash_pattern_node_new(
         parser->arena,
         ++parser->node_id,
         0,
-        ((pm_location_t) { .start = start, .length = U32(end - start) }),
+        PM_LOCATION_INIT_BOUNDS(start, end),
         NULL,
-        ((pm_node_list_t) { 0 }),
+        *elements,
         rest,
         ((pm_location_t) { 0 }),
         ((pm_location_t) { 0 })
     );
-
-    pm_node_list_concat(parser->arena, &node->elements, elements);
-    return node;
 }
 
 /**
@@ -17396,7 +17396,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_node_
                 }
 
                 pm_node_t *assoc = UP(pm_assoc_node_create(parser, first_node, NULL, value));
-                pm_node_list_append_inline(parser->arena, &assocs, assoc);
+                pm_node_list_open_append(&parser->node_chunks, &assocs, assoc);
                 break;
             }
         }
@@ -17411,7 +17411,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_node_
             pm_node_t *value = UP(pm_error_recovery_node_create(parser, PM_NODE_START(first_node), PM_NODE_LENGTH(first_node)));
             pm_node_t *assoc = UP(pm_assoc_node_create(parser, first_node, NULL, value));
 
-            pm_node_list_append_inline(parser->arena, &assocs, assoc);
+            pm_node_list_open_append(&parser->node_chunks, &assocs, assoc);
             break;
         }
     }
@@ -17439,7 +17439,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_node_
                 rest = assoc;
             } else {
                 pm_parser_err_node(parser, assoc, PM_ERR_PATTERN_EXPRESSION_AFTER_REST);
-                pm_node_list_append_inline(parser->arena, &assocs, assoc);
+                pm_node_list_open_append(&parser->node_chunks, &assocs, assoc);
             }
         } else {
             pm_node_t *key;
@@ -17485,12 +17485,11 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_node_
                 pm_parser_err_node(parser, assoc, PM_ERR_PATTERN_EXPRESSION_AFTER_REST);
             }
 
-            pm_node_list_append_inline(parser->arena, &assocs, assoc);
+            pm_node_list_open_append(&parser->node_chunks, &assocs, assoc);
         }
     }
 
     pm_hash_pattern_node_t *node = pm_hash_pattern_node_node_list_create(parser, &assocs, rest);
-    // assocs.nodes is arena-allocated; no explicit free needed.
 
     pm_static_literals_free(&keys);
     return node;
