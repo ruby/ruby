@@ -932,7 +932,15 @@ opt_new
     // The bookkeeping slot should be empty.
     RUBY_ASSERT(TOPN(argc + 1) == Qnil);
 
-    if (val == rb_cHash && BASIC_OP_UNREDEFINED_P(BOP_NEW, HASH_REDEFINED_OP_FLAG)) {
+    const struct rb_callable_method_entry_struct *cme = vm_search_method(GET_CFP(), cd, val);
+    bool is_cfunc = cfunc_p(cme);
+    if (is_cfunc && cfunc_equal(cme, rb_class_new_instance_pass_kw)) {
+        RB_DEBUG_COUNTER_INC(opt_new_hit);
+        val = rb_obj_alloc(val);
+        TOPN(argc) = val;
+        TOPN(argc + 1) = val;
+    }
+    else if (is_cfunc && cfunc_equal(cme, rb_hash_s_new)) {
         RB_DEBUG_COUNTER_INC(opt_new_hit);
 
         rb_len_t capa = 0;
@@ -941,13 +949,7 @@ opt_new
             capa = NUM2LEN(capacity);
         }
 
-        val = rb_hash_alloc_capa(capa);
-        TOPN(argc) = val;
-        TOPN(argc + 1) = val;
-    }
-    else if (vm_method_cfunc_is(GET_CFP(), cd, val, rb_class_new_instance_pass_kw)) {
-        RB_DEBUG_COUNTER_INC(opt_new_hit);
-        val = rb_obj_alloc(val);
+        val = rb_hash_alloc_capa(val, capa);
         TOPN(argc) = val;
         TOPN(argc + 1) = val;
     }

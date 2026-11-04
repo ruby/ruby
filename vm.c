@@ -2463,11 +2463,6 @@ rb_free_vm_opt_tables(void)
 static int
 vm_redefinition_check_flag(VALUE klass)
 {
-    if (RCLASS_SINGLETON_P(klass)) {
-        // BOP_NEW is registered on the singleton class
-        klass = RCLASS_ATTACHED_OBJECT(klass);
-    }
-
     if (klass == rb_cInteger) return INTEGER_REDEFINED_OP_FLAG;
     if (klass == rb_cFloat)  return FLOAT_REDEFINED_OP_FLAG;
     if (klass == rb_cString) return STRING_REDEFINED_OP_FLAG;
@@ -2602,8 +2597,6 @@ rb_vm_init_redefined_flag(void)
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
-#define S(k) add_opt_method(rb_singleton_class(rb_c##k), mid, bop)
-    OP(New, NEW), (S(Hash));
     OP(PLUS, PLUS), (C(Integer), C(Float), C(String), C(Array));
     OP(MINUS, MINUS), (C(Integer), C(Float));
     OP(MULT, MULT), (C(Integer), C(Float));

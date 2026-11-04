@@ -2466,27 +2466,36 @@ typedef VALUE (*cfunc_type)(ANYARGS);
 # define make_cfunc_type(f) (cfunc_type)(f)
 #endif
 
-static inline int
-check_cfunc(const rb_callable_method_entry_t *me, cfunc_type func)
+static inline bool
+cfunc_p(const rb_callable_method_entry_t *me)
 {
     if (! me) {
         return false;
     }
-    else {
-        VM_ASSERT(IMEMO_TYPE_P(me, imemo_ment));
-        VM_ASSERT(callable_method_entry_p(me));
-        VM_ASSERT(me->def);
-        if (me->def->type != VM_METHOD_TYPE_CFUNC) {
-            return false;
-        }
-        else {
+
+    VM_ASSERT(IMEMO_TYPE_P(me, imemo_ment));
+    VM_ASSERT(callable_method_entry_p(me));
+    VM_ASSERT(me->def);
+
+    return me->def->type == VM_METHOD_TYPE_CFUNC;
+}
+
+static inline bool
+cfunc_equal(const rb_callable_method_entry_t *me, cfunc_type func)
+{
+    VM_ASSERT(cfunc_p(me));
+
 #if __has_attribute(transparent_union)
             return me->def->body.cfunc.func == func.anyargs;
 #else
             return me->def->body.cfunc.func == func;
 #endif
-        }
-    }
+}
+
+static inline bool
+check_cfunc(const rb_callable_method_entry_t *me, cfunc_type func)
+{
+    return cfunc_p(me) && cfunc_equal(me, func);
 }
 
 static inline int
