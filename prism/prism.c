@@ -6937,47 +6937,26 @@ pm_until_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm
  * Allocate and initialize a new WhenNode node.
  */
 static pm_when_node_t *
-pm_when_node_create(pm_parser_t *parser, const pm_token_t *keyword) {
+pm_when_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_list_t *conditions, const pm_token_t *then_keyword, pm_statements_node_t *statements) {
+    assert(conditions->size > 0);
+    pm_node_list_finalize(&parser->node_chunks, parser->arena, conditions);
+
+    uint32_t start = PM_TOKEN_START(parser, keyword);
+    uint32_t end = PM_NODE_END(conditions->nodes[conditions->size - 1]);
+
+    if (then_keyword != NULL) end = PM_TOKEN_END(parser, then_keyword);
+    if (statements != NULL && PM_NODE_END(statements) > end) end = PM_NODE_END(statements);
+
     return pm_when_node_new(
         parser->arena,
         ++parser->node_id,
         0,
-        PM_LOCATION_INIT_TOKEN(parser, keyword),
+        PM_LOCATION_INIT(start, U32(end - start)),
         TOK2LOC(parser, keyword),
-        ((pm_node_list_t) { 0 }),
-        ((pm_location_t) { 0 }),
-        NULL
+        *conditions,
+        NTOK2LOC(parser, then_keyword),
+        statements
     );
-}
-
-/**
- * Append a new condition to a when node.
- */
-static void
-pm_when_node_conditions_append(pm_arena_t *arena, pm_when_node_t *node, pm_node_t *condition) {
-    PM_NODE_LENGTH_SET_NODE(node, condition);
-    pm_node_list_append_inline(arena, &node->conditions, condition);
-}
-
-/**
- * Set the location of the then keyword of a when node.
- */
-static PRISM_INLINE void
-pm_when_node_then_keyword_loc_set(const pm_parser_t *parser, pm_when_node_t *node, const pm_token_t *then_keyword) {
-    PM_NODE_LENGTH_SET_TOKEN(parser, node, then_keyword);
-    node->then_keyword_loc = TOK2LOC(parser, then_keyword);
-}
-
-/**
- * Set the statements list of a when node.
- */
-static void
-pm_when_node_statements_set(pm_when_node_t *node, pm_statements_node_t *statements) {
-    if (PM_NODE_END(statements) > PM_NODE_END(node)) {
-        PM_NODE_LENGTH_SET_NODE(node, statements);
-    }
-
-    node->statements = statements;
 }
 
 /**
@@ -18445,7 +18424,9 @@ parse_case(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
             parser_lex(parser);
 
             pm_token_t when_keyword = parser->previous;
-            pm_when_node_t *when_node = pm_when_node_create(parser, &when_keyword);
+            pm_node_list_t conditions = { 0 };
+            pm_token_t then_keyword = { 0 };
+            pm_statements_node_t *statements = NULL;
 
             do {
                 if (accept1(parser, PM_TOKEN_USTAR)) {
@@ -18453,12 +18434,12 @@ parse_case(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
                     pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_STAR, (uint16_t) (depth + 1));
 
                     pm_splat_node_t *splat_node = pm_splat_node_create(parser, &operator, expression);
-                    pm_when_node_conditions_append(parser->arena, when_node, UP(splat_node));
+                    pm_node_list_open_append(&parser->node_chunks, &conditions, UP(splat_node));
 
                     if (PM_NODE_TYPE_P(expression, PM_ERROR_RECOVERY_NODE)) break;
                 } else {
                     pm_node_t *condition = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CASE_EXPRESSION_AFTER_WHEN, (uint16_t) (depth + 1));
-                    pm_when_node_conditions_append(parser->arena, when_node, condition);
+                    pm_node_list_open_append(&parser->node_chunks, &conditions, condition);
 
                     /* If we found a missing node, then this is a syntax error
                      * and we should stop looping. */
@@ -18478,20 +18459,18 @@ parse_case(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 
             if (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
                 if (accept1(parser, PM_TOKEN_KEYWORD_THEN)) {
-                    pm_when_node_then_keyword_loc_set(parser, when_node, &parser->previous);
+                    then_keyword = parser->previous;
                 }
             } else {
                 expect1(parser, PM_TOKEN_KEYWORD_THEN, PM_ERR_EXPECT_WHEN_DELIMITER);
-                pm_when_node_then_keyword_loc_set(parser, when_node, &parser->previous);
+                then_keyword = parser->previous;
             }
 
             if (!match3(parser, PM_TOKEN_KEYWORD_WHEN, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {
-                pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_CASE_WHEN, (uint16_t) (depth + 1));
-                if (statements != NULL) {
-                    pm_when_node_statements_set(when_node, statements);
-                }
+                statements = parse_statements(parser, PM_CONTEXT_CASE_WHEN, (uint16_t) (depth + 1));
             }
 
+            pm_when_node_t *when_node = pm_when_node_create(parser, &when_keyword, &conditions, NTOK2PTR(then_keyword), statements);
             pm_case_node_condition_append(parser->arena, case_node, UP(when_node));
         }
 
