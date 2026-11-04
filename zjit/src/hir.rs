@@ -5651,7 +5651,7 @@ impl Function {
                                 expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
                                 reason: Box::new(SideExitReason::UnhandledBlockArg),
                                 state,
-                                recompile: None,
+                                recompile: Some(Recompile),
                             });
                         }
 
@@ -5706,6 +5706,12 @@ impl Function {
                             self.set_dynamic_send_reason(insn_id, SuperPolymorphic);
                             continue;
                         };
+
+                        if local_payload.profile.super_saw_block(frame_state_insn_idx) {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperCallWithBlock);
+                            continue;
+                        }
 
                         // Get defined_class and method ID from the profiled CME.
                         let current_defined_class = unsafe { (*current_cme).defined_class };

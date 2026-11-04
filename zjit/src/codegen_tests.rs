@@ -3037,7 +3037,7 @@ fn test_invokesuper_forwards_block_implicitly() {
 
 #[test]
 fn test_invokesuper_forwards_block_implicitly_with_args() {
-    assert_snapshot!(inspect(r#"
+    eval(r#"
         class A
           def foo(x)
             [x, (block_given? ? yield : "no_block")]
@@ -3055,8 +3055,60 @@ fn test_invokesuper_forwards_block_implicitly_with_args() {
         end
 
         test  # profile
-        test  # compile + run compiled code
-    "#), @r#"["B", ["arg_value", "forwarded"]]"#);
+    "#);
+    assert_snapshot!(assert_compiles("test"), @r#"["B", ["arg_value", "forwarded"]]"#);
+}
+
+#[test]
+fn test_invokesuper_recompiles_when_block_appears() {
+    set_call_threshold(2);
+    eval(r#"
+        class A
+          def foo(x) = block_given? ? yield(x) : x
+        end
+
+        class B < A
+          def foo(x) = super(x)
+        end
+
+        B.new.foo(1); B.new.foo(1)
+    "#);
+    let num_profiles = get_option!(num_profiles);
+    for _ in 0..num_profiles + 2 {
+        eval("B.new.foo(1) { _1 + 1 }");
+    }
+    assert_snapshot!(assert_compiles("[B.new.foo(1), B.new.foo(1) { _1 + 1 }]"), @"[1, 2]");
+}
+
+#[test]
+fn test_invokesuper_with_own_block_ignores_frame_block() {
+    set_call_threshold(2);
+    eval(r#"
+        class A
+          def implicit = block_given?
+          def block_arg = block_given?
+          def literal_block = block_given?
+        end
+
+        class B < A
+          def implicit = super
+          def block_arg(&b) = super(&b)
+          def literal_block = super { 1 }
+        end
+    "#);
+    for _ in 0..get_option!(num_profiles) + 2 {
+        eval("b = B.new; b.implicit { 0 }; b.block_arg { 0 }; b.literal_block { 0 }");
+    }
+    let saw_block = |name: &str| {
+        let iseq = get_method_iseq("B.new", name);
+        let payload = get_or_create_iseq_payload(iseq);
+        let size = unsafe { get_iseq_encoded_size(iseq) } as usize;
+        assert!((0..size).any(|idx| payload.profile.get_super_method_entry(idx).is_some()), "{name} was not profiled");
+        (0..size).any(|idx| payload.profile.super_saw_block(idx))
+    };
+    assert!(saw_block("implicit"));
+    assert!(!saw_block("block_arg"));
+    assert!(!saw_block("literal_block"));
 }
 
 #[test]
