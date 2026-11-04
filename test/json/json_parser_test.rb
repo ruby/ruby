@@ -1069,6 +1069,23 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal expected, actual
   end
 
+  def test_mutating_source_string_with_known_coderange_during_parsing
+    expected = ([1] * 100) + [2.3] + ([1] * 100)
+    source = JSON.generate(expected)
+    source.ascii_only? # caches the coderange, which lets JRuby's String#tr! write in place
+    expected.delete_at(100)
+
+    fake_decimal_class = Class.new
+    fake_decimal_class.define_method(:initialize) do |number|
+      source.tr!('1', '0')
+      number.to_f
+    end
+
+    actual = JSON.parse(source, decimal_class: fake_decimal_class)
+    actual.delete_at(100)
+    assert_equal expected, actual
+  end
+
   def test_adversary_encode
     fake_string = Class.new(String) do
       def encode(*)
