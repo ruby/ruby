@@ -23368,6 +23368,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
             .current = &parser->lex_modes.base,
             .base = { .mode = PM_LEX_DEFAULT },
         },
+        .node_chunks = { .arena = &parser->scratch_arena },
         .start = source,
         .end = source + size,
         .previous = { .type = PM_TOKEN_EOF, .start = source, .end = source },

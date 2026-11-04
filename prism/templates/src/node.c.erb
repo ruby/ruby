@@ -83,6 +83,86 @@ pm_node_list_concat(pm_arena_t *arena, pm_node_list_t *list, pm_node_list_t *oth
 }
 
 /**
+ * Carve a new batch of chunks out of the arena and hand out its first one. The
+ * arena only guarantees a new block's own alignment, so this over-allocates by
+ * up to one chunk and rounds the start of the batch up by hand.
+ */
+static pm_node_chunk_t *
+pm_node_chunks_carve(pm_node_chunks_t *chunks) {
+    size_t alignment = PRISM_ALIGNOF(pm_node_chunk_t);
+    size_t size = PM_NODE_CHUNK_BATCH * PM_NODE_CHUNK_SIZE + PM_NODE_CHUNK_SIZE - alignment;
+
+    uintptr_t start = (uintptr_t) pm_arena_alloc(chunks->arena, size, alignment);
+    pm_node_chunk_t *batch = (pm_node_chunk_t *) ((start + PM_NODE_CHUNK_MASK) & ~PM_NODE_CHUNK_MASK);
+
+    chunks->next = batch + 1;
+    chunks->end = batch + PM_NODE_CHUNK_BATCH;
+    return batch;
+}
+
+/**
+ * Get a chunk, preferring the most recently returned one since it is the most
+ * likely to still be in cache, then the current batch, then a new batch.
+ */
+static PRISM_INLINE pm_node_chunk_t *
+pm_node_chunk_acquire(pm_node_chunks_t *chunks) {
+    pm_node_chunk_t *chunk = chunks->free;
+
+    if (chunk != NULL) {
+        chunks->free = chunk->prev;
+        return chunk;
+    }
+
+    if (chunks->next != chunks->end) return chunks->next++;
+    return pm_node_chunks_carve(chunks);
+}
+
+/**
+ * Slow path for pm_node_list_open_append: link a new chunk onto the end of the
+ * list and append the node to it. Do not call directly - use
+ * pm_node_list_open_append instead.
+ */
+void
+pm_node_list_open_append_slow(pm_node_chunks_t *chunks, pm_node_list_t *list, pm_node_t *node) {
+    pm_node_chunk_t *chunk = pm_node_chunk_acquire(chunks);
+    chunk->prev = list->nodes == NULL ? NULL : PM_NODE_CHUNK_OF(list->nodes - 1);
+    chunk->slots[0] = node;
+
+    list->nodes = &chunk->slots[1];
+    list->size++;
+}
+
+/**
+ * Copy an open list into an array of exactly its size allocated from the given
+ * arena. Chunks are linked from the last one backward, so the array is filled
+ * from its end. The whole chain then goes back on the freelist at once.
+ */
+void
+pm_node_list_finalize(pm_node_chunks_t *chunks, pm_arena_t *arena, pm_node_list_t *list) {
+    if (list->size == 0) return;
+
+    pm_node_t **nodes = (pm_node_t **) pm_arena_alloc(arena, sizeof(pm_node_t *) * list->size, PRISM_ALIGNOF(pm_node_t *));
+    pm_node_chunk_t *last = PM_NODE_CHUNK_OF(list->nodes - 1);
+    pm_node_chunk_t *chunk = last;
+
+    size_t count = (size_t) (list->nodes - chunk->slots);
+    size_t offset = list->size;
+
+    for (;;) {
+        offset -= count;
+        memcpy(nodes + offset, chunk->slots, count * sizeof(pm_node_t *));
+
+        if (chunk->prev == NULL) break;
+        chunk = chunk->prev;
+        count = PM_NODE_CHUNK_SLOTS;
+    }
+
+    chunk->prev = chunks->free;
+    chunks->free = last;
+    list->nodes = nodes;
+}
+
+/**
  * Returns a string representation of the given node type.
  */
 const char *
