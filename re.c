@@ -171,11 +171,14 @@ rb_memsearch_qs(const unsigned char *xs, long m, const unsigned char *ys, long n
 }
 
 static inline unsigned int
-rb_memsearch_qs_utf8_hash(const unsigned char *x)
+rb_memsearch_qs_utf8_hash(const unsigned char *x, const unsigned char *e)
 {
     register const unsigned int mix = 8353;
     register unsigned int h = *x;
     if (h < 0xC0) {
+        return h + 256;
+    }
+    else if (e - x < (h < 0xE0 ? 2 : h < 0xF0 ? 3 : 4)) {
         return h + 256;
     }
     else if (h < 0xE0) {
@@ -214,10 +217,10 @@ rb_memsearch_qs_utf8(const unsigned char *xs, long m, const unsigned char *ys, l
         qstable[i] = m + 1;
     }
     for (; x < xe; ++x) {
-        qstable[rb_memsearch_qs_utf8_hash(x)] = xe - x;
+        qstable[rb_memsearch_qs_utf8_hash(x, xe)] = xe - x;
     }
     /* Searching */
-    for (; y + m <= ys + n; y += qstable[rb_memsearch_qs_utf8_hash(y+m)]) {
+    for (; y + m <= ys + n; y += qstable[rb_memsearch_qs_utf8_hash(y+m, ys+n)]) {
         if (*xs == *y && memcmp(xs, y, m) == 0)
             return y - ys;
     }
