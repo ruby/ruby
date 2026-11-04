@@ -1515,6 +1515,38 @@ pm_void_statement_check(pm_parser_t *parser, const pm_node_t *node) {
 }
 
 /**
+ * Like pm_void_statement_check, but also looks inside parentheses with a single
+ * statement and begin blocks without rescue/else/ensure, matching parse.y.
+ */
+static void
+pm_void_statement_check_unwrap(pm_parser_t *parser, const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_BEGIN_NODE: {
+            const pm_begin_node_t *cast = (const pm_begin_node_t *) node;
+            if (cast->statements == NULL || cast->rescue_clause != NULL || cast->else_clause != NULL || cast->ensure_clause != NULL) break;
+
+            // The rest of the body was already checked when it was parsed.
+            const pm_node_list_t *body = &cast->statements->body;
+            pm_void_statement_check_unwrap(parser, body->nodes[body->size - 1]);
+            break;
+        }
+        case PM_PARENTHESES_NODE: {
+            const pm_parentheses_node_t *cast = (const pm_parentheses_node_t *) node;
+            if (cast->body == NULL || !PM_NODE_TYPE_P(cast->body, PM_STATEMENTS_NODE)) break;
+
+            // Unlike begin, parse.y only looks one level into parentheses, so
+            // `((foo))` doesn't warn.
+            const pm_statements_node_t *statements = (const pm_statements_node_t *) cast->body;
+            if (statements->body.size == 1) pm_void_statement_check(parser, statements->body.nodes[0]);
+            break;
+        }
+        default:
+            pm_void_statement_check(parser, node);
+            break;
+    }
+}
+
+/**
  * Warn if any of the statements that are not the last statement in the list are
  * a "void" statement.
  */
@@ -1523,7 +1555,7 @@ pm_void_statements_check(pm_parser_t *parser, const pm_statements_node_t *node, 
     assert(node->body.size > 0);
     const size_t size = node->body.size - (last_value ? 1 : 0);
     for (size_t index = 0; index < size; index++) {
-        pm_void_statement_check(parser, node->body.nodes[index]);
+        pm_void_statement_check_unwrap(parser, node->body.nodes[index]);
     }
 }
 
@@ -22997,7 +23029,7 @@ parse_program(pm_parser_t *parser) {
         // explicitly checked as well. We have to do this here because
         // everywhere else we check all but the last statement.
         assert(statements->body.size > 0);
-        pm_void_statement_check(parser, statements->body.nodes[statements->body.size - 1]);
+        pm_void_statement_check_unwrap(parser, statements->body.nodes[statements->body.size - 1]);
     }
 
     pm_constant_id_list_t locals;

@@ -395,6 +395,18 @@ module Ruby::Prism
       assert_warning("foo { it; 1 }", "a variable in void", compare: RUBY_VERSION >= "3.4", version: "3.4")
       refute_warning("foo { it; 1 }", compare: false, version: "3.3")
 
+      assert_warning("foo = 1; (foo); bar", "a variable in void")
+      assert_warning("foo = 1; begin; foo; end; bar", "a variable in void")
+      assert_warning("foo = 1; begin; (foo); end; bar", "a variable in void")
+      assert_warning("foo = 1; begin; begin; foo; end; end; bar", "a variable in void")
+      assert_warning("foo = 1; (foo)", "a variable in void")
+      assert_warning("foo = 1; begin; foo; end", "a variable in void")
+      # parse.y before 3.4 flattened parentheses fully, so it warns about these.
+      refute_warning("foo = 1; ((foo)); bar", compare: RUBY_VERSION >= "3.4")
+      refute_warning("foo = 1; (bar; foo); bar", compare: RUBY_VERSION >= "3.4")
+      refute_warning("foo = 1; begin; foo; rescue; end; bar")
+      refute_warning("foo = 1; begin; foo; ensure; end; bar")
+
       assert_warning("self", "self in void")
       assert_warning("nil", "nil in void")
       assert_warning("true", "true in void")
