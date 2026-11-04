@@ -84,6 +84,13 @@ class TestZJIT < Test::Unit::TestCase
     end
   end
 
+  def test_exec_mem_size_rejects_sizes_that_overflow_u32
+    child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => nil}
+    # 4095 MiB is the largest size whose byte count fits in u32.
+    assert_in_out_err([child_env, *%w[--zjit --zjit-exec-mem-size=4095 -e], 'p RubyVM::ZJIT.enabled?'], '', ['true'], [])
+    assert_in_out_err(%w[--zjit-exec-mem-size=4096 -e] + [''], '', [], /invalid ZJIT option 'exec-mem-size=4096'/)
+  end
+
   def test_zjit_enable
     # --disable-all is important in case the build/environment has YJIT enabled by
     # default through e.g. -DYJIT_FORCE_ENABLE. Can't enable ZJIT when YJIT is on.
