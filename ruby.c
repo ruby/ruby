@@ -2090,9 +2090,9 @@ show_help(const char *progname, int help)
         const char *pager_env = getenv("RUBY_PAGER");
         if (!pager_env) pager_env = getenv("PAGER");
         if (pager_env && *pager_env && isatty(0)) {
+            VALUE pager = rb_str_new_cstr(pager_env);
             const char *columns_env = getenv("COLUMNS");
             if (columns_env) columns = atoi(columns_env);
-            VALUE pager = rb_str_new_cstr(pager_env);
 #ifdef HAVE_WORKING_FORK
             int fds[2];
             if (rb_pipe(fds) == 0) {
@@ -2474,14 +2474,20 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                 opt->script = "-";
             }
             else if (opt->do_search && !has_dir_sep(opt->script)) {
-                const char *path = getenv("RUBYPATH");
+                /* copied, as dln_find_file_r may call getenv, which can
+                 * invalidate the previous result */
+                char *path = getenv("RUBYPATH");
 
                 opt->script = 0;
                 if (path) {
+                    path = ruby_strdup(path);
                     opt->script = dln_find_file_r(argv[0], path, fbuf, sizeof(fbuf));
+                    xfree(path);
                 }
                 if (!opt->script) {
-                    opt->script = dln_find_file_r(argv[0], getenv(PATH_ENV), fbuf, sizeof(fbuf));
+                    if ((path = getenv(PATH_ENV)) != 0) path = ruby_strdup(path);
+                    opt->script = dln_find_file_r(argv[0], path, fbuf, sizeof(fbuf));
+                    xfree(path);
                 }
                 if (!opt->script)
                     opt->script = argv[0];
