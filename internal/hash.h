@@ -109,7 +109,8 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* hash.c (export) */
 VALUE rb_hash_delete_entry(VALUE hash, VALUE key);
 VALUE rb_ident_hash_new(void);
-VALUE rb_hash_alloc_capa(rb_len_t capa);
+VALUE rb_hash_alloc_capa(VALUE klass, rb_len_t capa);
+VALUE rb_hash_s_new(int argc, VALUE *argv, VALUE klass);
 int rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg);
 int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 RUBY_SYMBOL_EXPORT_END
