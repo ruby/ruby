@@ -1452,11 +1452,50 @@ rb_reg_backref_number(VALUE match, VALUE backref)
 }
 
 /*
- *  call-seq:
- *    offset(n) -> [start_offset, end_offset]
- *    offset(name) -> [start_offset, end_offset]
+ *  :markup: markdown
  *
- *  :include: doc/matchdata/offset.rdoc
+ *  call-seq:
+ *    offset(n) -> [begin, end]
+ *    offset(name) -> [begin, end]
+ *
+ *  Returns the offsets (in characters) of the beginning (#begin value)
+ *  and end (#end value) of the specified match.
+ *
+ *  With non-negative integer argument `n` given,
+ *  returns the character offsets for the `n`th match:
+ *
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0]        # => "2026-12-25"
+ *  match.offset(0) # => [0, 10]
+ *  match[2]        # => "12"
+ *  match.offset(2) # => [5, 7]
+ *  match.offset(4) # Raises IndexError: index 4 out of matches.
+ *
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+ *  match[0]        # => "んにち"
+ *  match.offset(0) # => [1, 4]
+ *  match[2]        # => "に"
+ *  match.offset(2) # => [2, 3]
+ *  match.offset(4) # Raises IndexError: index 4 out of matches.
+ *  ```
+ *
+ *  With string or symbol argument `name` given,
+ *  returns the offsets for the named match:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[:year]          # => "2026"
+ *  match.offset(:year)   # => [0, 4]
+ *  match['day']          # => "25"
+ *  match.offset('day')   # => [8, 10]
+ *  match.offset(:nosuch) # Raises IndexError: undefined group name reference: nosuch.
+ *  ```
  *
  */
 
