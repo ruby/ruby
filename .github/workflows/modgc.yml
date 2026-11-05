@@ -124,11 +124,6 @@ jobs:
           echo 'MSPECOPT=-B../src/spec/mmtk.mspec' >> $GITHUB_ENV
         if: ${{ matrix.gc.name == 'mmtk' || matrix.gc.name == 'wbcheck' }}
 
-      - name: Adjust test timeout
-        run: |
-          echo 'RUBY_TEST_TIMEOUT_SCALE=10' >> $GITHUB_ENV
-        if: ${{ matrix.gc.name == 'wbcheck' }}
-
       - run: ${SETARCH} make
 
       - name: Build Modular  GC
@@ -152,9 +147,9 @@ jobs:
           echo "RUBY_TEST_TIMEOUT_SCALE=$scale" >> "$GITHUB_ENV"
         env:
           # Subprocess assertion timeouts flake on slower or contended macOS
-          # runners and with the slower MMTk GC.
+          # runners and with the slower MMTk and wbcheck GCs.
           os_scale: ${{ contains(matrix.os, 'macos') && 3 || 1 }}
-          gc_scale: ${{ matrix.gc.name == 'mmtk' && 3 || 1 }}
+          gc_scale: ${{ matrix.gc.name == 'mmtk' && 3 || matrix.gc.name == 'wbcheck' && 10 || 1 }}
 
       - name: Set up Launchable
         id: launchable
