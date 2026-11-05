@@ -2235,6 +2235,136 @@ mod tests {
         assert_snapshot!(cb.hexdump(), @"41000054ffff0714");
     }
 
+    /// Disassemble in a form that doesn't depend on where the dummy CodeBlock is mapped or
+    /// on how many instructions it takes to load an address:
+    /// - Each mov/movk sequence is collapsed into an abridged pseudo mov. Additionally, if the loaded
+    ///   value matches `target` exactly, "target" is shown instead of the numeric value.
+    /// - Instruction addresses are left out, and branches to instructions in the listing
+    ///   use labels instead.
+    /// - Each run of nops is collapsed into one `nop sled`.
+    #[cfg(feature = "disasm")]
+    fn stable_disasm(cb: &CodeBlock, target: CodePtr) -> String {
+        fn parse_imm(imm: &str) -> Option<u64> {
+            match imm.strip_prefix("0x") {
+                Some(hex) => u64::from_str_radix(hex, 16).ok(),
+                None => imm.parse().ok(),
+            }
+        }
+        // Split a branch into the instruction up to its target and the target address
+        fn parse_branch(insn: &str) -> Option<(&str, u64)> {
+            let (head, imm) = insn.rsplit_once('#')?;
+            let op = head.split(' ').next()?;
+            if !matches!(op, "b" | "cbz" | "cbnz") && !op.starts_with("b.") {
+                return None;
+            }
+            Some((head, parse_imm(imm)?))
+        }
+
+        let disasm = cb.disasm();
+        let insns: Vec<(Option<u64>, &str)> = disasm.lines().map(|line| {
+            let line = line.trim();
+            match line.split_once(": ") {
+                Some((addr, insn)) if addr.starts_with("0x") => (parse_imm(addr), insn),
+                _ => (None, line),
+            }
+        }).collect();
+        let end_addr = insns.iter().filter_map(|&(addr, _)| addr).last().map_or(0, |addr| addr + 4);
+        let mut labels: Vec<u64> = vec![];
+        for (_, insn) in &insns {
+            if let Some((_, addr)) = parse_branch(insn) {
+                let in_listing = addr == end_addr || insns.iter().any(|&(insn_addr, _)| insn_addr == Some(addr));
+                if in_listing && !labels.contains(&addr) {
+                    labels.push(addr);
+                }
+            }
+        }
+        let label = |addr: u64| labels.iter().position(|&label| label == addr).map(|idx| format!("L{idx}"));
+
+        let target_addr = target.raw_ptr(cb).addr().as_u64();
+        let describe = |(reg, value): (&str, u64)| {
+            if value == target_addr {
+                format!("mov {reg}, target // abridged")
+            } else {
+                format!("mov {reg}, {value:#x} // abridged")
+            }
+        };
+        let mut out: Vec<String> = vec![];
+        // The register being loaded and the value it holds so far
+        let mut loading: Option<(&str, u64)> = None;
+        for &(addr, insn) in &insns {
+            if let Some(label) = addr.and_then(label) {
+                out.extend(loading.take().map(describe));
+                out.push(format!("{label}:"));
+            }
+            let load = insn.split_once(' ').and_then(|(op, rest)| {
+                let (reg, rest) = rest.split_once(", #")?;
+                let (imm, shift) = rest.split_once(", lsl #").unwrap_or((rest, "0"));
+                Some((op, reg, parse_imm(imm)?, shift.parse::<u32>().ok()?))
+            });
+            match (load, loading) {
+                (Some(("mov", reg, imm, shift)), _) => {
+                    out.extend(loading.map(describe));
+                    loading = Some((reg, imm << shift));
+                }
+                (Some(("movk", reg, imm, shift)), Some((loading_reg, value))) if reg == loading_reg => {
+                    loading = Some((reg, (value & !(0xffff << shift)) | (imm << shift)));
+                }
+                _ => {
+                    out.extend(loading.take().map(describe));
+                    if insn == "nop" {
+                        if out.last().map(String::as_str) != Some("nop sled") {
+                            out.push("nop sled".into());
+                        }
+                    } else if let Some(label) = parse_branch(insn).and_then(|(head, addr)| Some(format!("{head}{}", label(addr)?))) {
+                        out.push(label);
+                    } else {
+                        out.push(insn.to_string());
+                    }
+                }
+            }
+        }
+        out.extend(loading.map(describe));
+        out.extend(label(end_addr).map(|label| format!("{label}:")));
+        out.join("\n")
+    }
+
+    #[test]
+    #[cfg(feature = "disasm")]
+    fn test_stable_disasm_names_target() {
+        let mut cb = CodeBlock::new_dummy();
+        let target = cb.get_write_ptr().add_bytes(1 << 28);
+        let target_addr = target.raw_ptr(&cb).addr().as_u64();
+        emit_load_value(&mut cb, A64Opnd::Reg(X0_REG), target_addr);
+
+        assert_snapshot!(stable_disasm(&cb, target), @"mov x0, target // abridged");
+    }
+
+    #[test]
+    #[cfg(feature = "disasm")]
+    fn test_stable_disasm_shows_other_values() {
+        let mut cb = CodeBlock::new_dummy();
+        let target = cb.get_write_ptr().add_bytes(1 << 28);
+        emit_load_value(&mut cb, A64Opnd::Reg(X1_REG), 0x1234_5678_9abc);
+
+        assert_snapshot!(stable_disasm(&cb, target), @"mov x1, 0x123456789abc // abridged");
+    }
+
+    #[test]
+    #[cfg(feature = "disasm")]
+    fn test_stable_disasm_labels_branches_and_collapses_nops() {
+        let mut cb = CodeBlock::new_dummy();
+        let target = cb.get_write_ptr();
+        bcond(&mut cb, Condition::NE, 3.into());
+        nop(&mut cb);
+        nop(&mut cb);
+
+        assert_snapshot!(stable_disasm(&cb, target), @"
+        b.ne L0
+        nop sled
+        L0:
+        ");
+    }
+
     #[test]
     fn test_emit_lea() {
         let (mut asm, mut cb) = setup_asm();
