@@ -1792,6 +1792,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         break;
 
       case T_MATCH:
+        if (obj_traverse_i(RMATCH(obj)->regexp, data)) return 1;
         if (obj_traverse_i(RMATCH(obj)->str, data)) return 1;
         break;
 
@@ -2383,6 +2384,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         break;
 
       case T_MATCH:
+        CHECK_AND_REPLACE(obj, RMATCH(obj)->regexp);
         CHECK_AND_REPLACE(obj, RMATCH(obj)->str);
         break;
 
@@ -3670,8 +3672,21 @@ ractor_native_shallow_copy(VALUE obj)
         copy = rb_obj_alloc(rb_obj_class(obj));
         rb_struct_init_copy(copy, obj);
         break;
+      case T_REGEXP:
+        if (!FL_TEST_RAW(obj, RREGEXP_INITIALIZED)) {
+            return Qundef;
+        }
+        copy = rb_reg_s_alloc(klass);
+        if (UNLIKELY(rb_obj_gen_fields_p(obj))) {
+            rb_copy_generic_ivar(copy, obj);
+        }
+        rb_reg_init_copy(copy, obj);
+        break;
       case T_MATCH:
-        copy = rb_obj_alloc(rb_obj_class(obj));
+        if (!RMATCH(obj)->regexp) {
+            return Qundef;
+        }
+        copy = rb_obj_alloc(klass);
         rb_match_init_copy(copy, obj);
         break;
       case T_DATA:
@@ -3690,7 +3705,7 @@ ractor_native_shallow_copy(VALUE obj)
      * T_HASH is excluded: rb_hash_dup already ran rb_copy_generic_ivar, and a second
      * call asserts in rb_shape_rebuild (the first gave the copy an ivar shape). */
     if (BUILTIN_TYPE(obj) != T_OBJECT && BUILTIN_TYPE(obj) != T_HASH &&
-        UNLIKELY(rb_obj_gen_fields_p(obj))) {
+        BUILTIN_TYPE(obj) != T_REGEXP && UNLIKELY(rb_obj_gen_fields_p(obj))) {
         rb_copy_generic_ivar(copy, obj);
     }
 
@@ -3698,7 +3713,7 @@ ractor_native_shallow_copy(VALUE obj)
      * bit can be set now: by the time leave runs the original is out of sight. The shape
      * has to be transitioned along with the flag, because field writes are refused based
      * on the shape (see rb_check_ivar_modifiable). */
-    if (OBJ_FROZEN(obj)) {
+    if (OBJ_FROZEN(obj) && !OBJ_FROZEN(copy)) {
         RB_FL_SET_RAW(copy, RUBY_FL_FREEZE);
         RBASIC_SET_SHAPE_ID(copy, rb_obj_shape_transition_frozen(copy));
     }

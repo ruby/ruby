@@ -1786,4 +1786,74 @@ class TestRactor < Test::Unit::TestCase
       GC.verify_internal_consistency
     RUBY
   end
+
+  def test_make_shareable_match_data_regexp
+    assert_ractor(<<~'RUBY')
+      class SubRegexp < Regexp; end
+
+      re = SubRegexp.new("f(o+)")
+      re.instance_variable_set(:@tag, +"mutable")
+      m = re.match("foobar")
+
+      assert_equal false, Ractor.shareable?(re)
+      assert_equal false, Ractor.shareable?(m)
+
+      m_copy = Ractor.make_shareable(m, copy: true)
+      assert_not_same m, m_copy
+      assert_not_same re, m_copy.regexp
+      assert_kind_of SubRegexp, m_copy.regexp
+      assert_equal true, Ractor.shareable?(m_copy)
+      assert_equal true, Ractor.shareable?(m_copy.regexp)
+      assert_equal true, Ractor.shareable?(m_copy.regexp.instance_variable_get(:@tag))
+      assert_equal false, Ractor.shareable?(re)
+      assert_equal false, Ractor.shareable?(re.instance_variable_get(:@tag))
+
+      re_copy = Ractor.make_shareable(re, copy: true)
+      assert_not_same re, re_copy
+      assert_kind_of SubRegexp, re_copy
+      assert_equal true, Ractor.shareable?(re_copy)
+      assert_equal "mutable", re_copy.instance_variable_get(:@tag)
+
+      re_base_ivar = Regexp.allocate
+      re_base_ivar.instance_variable_set(:@meta, [+"x"])
+      re_base_ivar.send(:initialize, "a+", timeout: 1.5)
+      re_base_ivar.freeze
+      assert_equal true, re_base_ivar.frozen?
+      assert_equal false, Ractor.shareable?(re_base_ivar)
+      m_timeout = re_base_ivar.match("aaa")
+      m_timeout_copy = Ractor.make_shareable(m_timeout, copy: true)
+      assert_in_delta 1.5, m_timeout_copy.regexp.timeout, 0.001
+      assert_equal true, Ractor.shareable?(m_timeout_copy.regexp)
+      assert_equal ["x"], m_timeout_copy.regexp.instance_variable_get(:@meta)
+      assert_equal false, Ractor.shareable?(re_base_ivar)
+
+      Ractor.make_shareable(m)
+      assert_equal true, Ractor.shareable?(m)
+      assert_equal true, Ractor.shareable?(m.regexp)
+      assert_equal true, Ractor.shareable?(re)
+      assert_equal true, Ractor.shareable?(re.instance_variable_get(:@tag))
+
+      val = Ractor.new(m, m_copy) do |shared_m, shared_copy|
+        [shared_m[1], shared_m.regexp.instance_variable_get(:@tag), shared_copy[1]]
+      end.value
+      assert_equal ["oo", "mutable", "oo"], val
+
+      sub_m = nil
+      "hello".sub("el") { sub_m = $~ }
+      sub_m.instance_variable_set(:@note, [+"sub"])
+      sub_m_copy = Ractor.make_shareable(sub_m, copy: true)
+      assert_equal false, Ractor.shareable?(sub_m)
+      Ractor.make_shareable(sub_m)
+      r_re, r_shareable, r_copy_re, r_copy_note = Ractor.new(sub_m, sub_m_copy) do |sm, smc|
+        reg = sm.regexp
+        creg = smc.regexp
+        [reg, Ractor.shareable?(reg), creg, smc.instance_variable_get(:@note)]
+      end.value
+      assert_equal(/el/, r_re)
+      assert_equal true, r_shareable
+      assert_equal(/el/, r_copy_re)
+      assert_equal ["sub"], r_copy_note
+      GC.verify_internal_consistency
+    RUBY
+  end
 end
