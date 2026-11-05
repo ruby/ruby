@@ -2028,18 +2028,23 @@ rb_gc_impl_active_gc_name(void)
 }
 
 // Miscellaneous
-#define WBCHECK_OBJECT_METADATA_ENTRY_COUNT 2
+#define WBCHECK_OBJECT_METADATA_ENTRY_COUNT 3
 static struct rb_gc_object_metadata_entry object_metadata_entries[WBCHECK_OBJECT_METADATA_ENTRY_COUNT + 1];
 
 struct rb_gc_object_metadata_entry *
 rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 {
-    static ID ID_object_id, ID_shareable;
+    static ID ID_wb_protected, ID_object_id, ID_shareable;
 
     if (!ID_object_id) {
+        ID_wb_protected = rb_intern("wb_protected");
         ID_object_id = rb_intern("object_id");
         ID_shareable = rb_intern("shareable");
     }
+
+    unsigned int lev = RB_GC_VM_LOCK();
+    bool wb_protected = wbcheck_get_object_info(obj)->wb_protected;
+    RB_GC_VM_UNLOCK(lev);
 
     size_t n = 0;
 
@@ -2050,6 +2055,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     n++; \
 } while (0)
 
+    if (wb_protected) SET_ENTRY(wb_protected, Qtrue);
     if (rb_obj_id_p(obj)) SET_ENTRY(object_id, rb_obj_id(obj));
     if (FL_TEST(obj, FL_SHAREABLE)) SET_ENTRY(shareable, Qtrue);
 #undef SET_ENTRY
