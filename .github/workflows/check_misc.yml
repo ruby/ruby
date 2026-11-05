@@ -59,6 +59,10 @@ jobs:
           GITHUB_OLD_SHA: ${{ github.event.pull_request.base.sha }}
         if: ${{ startsWith(github.event_name, 'pull') }}
 
+      - name: Check if C and Assember sources are UTF-8
+        run: |
+          find . \( -name '*.[chyS]' -o -name '*.asm' \) -exec iconv -f utf-8 -t utf-8 {} + >/dev/null
+
       - name: Check for bash specific substitution in configure.ac
         run: |
           git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac | sed "s/^/::error::/"
