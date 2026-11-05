@@ -1758,11 +1758,23 @@ anddot_multiple_assignment_check(struct parser_params* p, const YYLTYPE *loc, ID
 static inline void
 set_line_body(NODE *body, int line)
 {
-    if (!body) return;
-    switch (nd_type(body)) {
-      case NODE_RESCUE:
-      case NODE_ENSURE:
-        nd_set_line(body, line);
+    while (body) {
+        if (nd_type_p(body, RB_STATEMENTS_NODE)) {
+            const rb_node_list2_t *statements = &RB_NODE_STATEMENTS(body)->body;
+            if (statements->size != 1) return;
+            body = statements->nodes[0];
+        }
+        else if (nd_type_p(body, RB_BEGIN_NODE)) {
+            const rb_begin_node_t *begin = RB_NODE_BEGIN(body);
+            if (begin->rescue_clause || begin->ensure_clause) {
+                nd_set_line(body, line);
+                return;
+            }
+            body = (NODE *)begin->statements;
+        }
+        else {
+            return;
+        }
     }
 }
 
@@ -2103,6 +2115,7 @@ node_def_setup(struct parser_params *p, rb_def_node_t *nd_def, rb_def_parameters
     nd_def->rparen_loc = nd_parameters.rparen_loc;
     nd_def->body = nd_body;
     nd_def->locals = local_tbl(p);
+    set_line_body((NODE *)nd_body, nd_def->base.location.beg_pos.lineno);
 }
 
 static rb_node_t *
@@ -6689,7 +6702,10 @@ string_content	: tSTRING_CONTENT[content]
                         p->lex.lpar_beg = $lpar;
                         p->heredoc_indent = $indent;
                         p->heredoc_line_indent = -1;
-                        if ($compstmt) rb_node_unset_fl_newline((rb_node_t *)$compstmt);
+                        if ($compstmt) {
+                            rb_node_unset_fl_newline((rb_node_t *)$compstmt);
+                            if ($compstmt->body.size == 1) rb_node_unset_fl_newline($compstmt->body.nodes[0]);
+                        }
                         $$ = NEW_RB_EMBEDDED_STATEMENTS($compstmt, &@$, &@state, &@string_dend);
                     /*% ripper: string_embexpr!($:compstmt) %*/
                     }
