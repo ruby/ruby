@@ -39,6 +39,15 @@ assert_equal 'true', %q{
 }
 
 assert_equal 'true', %q{
+  begin
+    RubyVM::InstructionSequence.compile_parsey('def f; yield 1 do; end; end')
+    false
+  rescue SyntaxError => error
+    error.message.include?('block given to yield')
+  end
+}
+
+assert_equal 'true', %q{
   ['"s"', '1', '1.0', '1r', '1i', '/a/', ':a', '[]', '__FILE__', '__LINE__', '__ENCODING__', '"#{1}"'].all? do |literal|
     begin
       RubyVM::InstructionSequence.compile_parsey("def (#{literal}).f; end")
