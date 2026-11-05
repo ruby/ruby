@@ -13,6 +13,8 @@
 #define RB_NODE_LIST_EMPTY_P(list) ((list)->size == 0)
 #define RB_NODE_LIST_LEN(list) ((list)->size)
 
+RUBY_SYMBOL_EXPORT_BEGIN
+
 void rb_node_list_init(rb_node_list2_t *list);
 
 /**
@@ -51,5 +53,6 @@ rb_node_t *rb_node_list_pop(rb_node_list2_t *list);
  */
 void rb_node_list_free(rb_node_list2_t *list);
 
+RUBY_SYMBOL_EXPORT_END
 
 #endif

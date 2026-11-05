@@ -15,6 +15,7 @@
   'def parsey_void; value = (case; when true; return; else; return; end); end',
   'def parsey_void; value = (case :value; in :value; return; else; return; end); end',
   'def parsey_void; value = (:value => :value); end',
+  'def parsey_invalid; A = true; end',
 ].each do |source|
   assert_equal 'SyntaxError', <<~RUBY
     begin

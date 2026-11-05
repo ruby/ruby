@@ -76,6 +76,7 @@ rb_ast_t *rb_ast_new(void);
 size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_dispose(rb_ast_t*);
 const char *ruby_node_name(int node);
+const char *rb_node_type_to_str(rb_node_type_t node_type);
 void rb_node_init(NODE *n, enum node_type type);
 void rb_rb_node_init(rb_node_t *n, enum rb_node_type type);
 
@@ -181,7 +182,5 @@ nd_type_p(const NODE *n, enum node_type t)
 {
     return (enum node_type)nd_type(n) == t;
 }
-
-const char *rb_node_type_to_str(rb_node_type_t node_type);
 
 #endif /* RUBY_NODE_H */

@@ -16530,6 +16530,7 @@ static rb_node_t *
 node_assign(struct parser_params *p, rb_node_t *lhs, rb_node_t *rhs, struct lex_context ctxt, const YYLTYPE *loc)
 {
     if (!lhs) return 0;
+    if (p->error_p) return lhs;
 
     switch (RB_NODE_TYPE(lhs)) {
       case RB_CONSTANT_WRITE_NODE:
