@@ -1195,7 +1195,9 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
             CHECK(COMPILE_POPPED(ret, "ensure", node));
             break;
           case ISEQ_TYPE_PLAIN:
-            EXPECT_NODE("ISEQ_TYPE_PLAIN", node, RB_INTERPOLATED_REGULAR_EXPRESSION_NODE, COMPILE_NG);
+            if (!nd_type_p(node, RB_INTERPOLATED_MATCH_LAST_LINE_NODE)) {
+                EXPECT_NODE("ISEQ_TYPE_PLAIN", node, RB_INTERPOLATED_REGULAR_EXPRESSION_NODE, COMPILE_NG);
+            }
             CHECK(compile_dregx(iseq, ret, node, false));
             break;
           default:
@@ -5301,7 +5303,7 @@ compile_flip_flop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
     ADD_INSNL(ret, node, branchif, lend);
 
     /* *flip == 0 */
-    CHECK(COMPILE(ret, "flip2 beg", RNODE_FLIP2(node)->nd_beg));
+    CHECK(COMPILE(ret, "flip2 beg", RB_NODE_FLIP_FLOP(node)->left));
     ADD_INSNL(ret, node, branchunless, else_label);
     ADD_INSN1(ret, node, putobject, Qtrue);
     ADD_INSN1(ret, node, setspecial, key);
@@ -5311,7 +5313,7 @@ compile_flip_flop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
 
     /* *flip == 1 */
     ADD_LABEL(ret, lend);
-    CHECK(COMPILE(ret, "flip2 end", RNODE_FLIP2(node)->nd_end));
+    CHECK(COMPILE(ret, "flip2 end", RB_NODE_FLIP_FLOP(node)->right));
     ADD_INSNL(ret, node, branchunless, then_label);
     ADD_INSN1(ret, node, putobject, Qfalse);
     ADD_INSN1(ret, node, setspecial, key);
@@ -6144,7 +6146,7 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
         return Qnil;
       case RB_TRUE_NODE:
         return Qtrue;
-      case RB_SELF_NODE:
+      case RB_FALSE_NODE:
         return Qfalse;
       case RB_SYMBOL_NODE:
         return rb_node_sym_string_val2(node);
@@ -12933,33 +12935,40 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(compile_evstr(iseq, ret, RB_NODE_EMBEDDED_VARIABLE(node)->variable, popped));
         break;
       }
-      case RB_REGULAR_EXPRESSION_NODE: {
-        if (!popped) {
+      case RB_REGULAR_EXPRESSION_NODE:
+      case RB_MATCH_LAST_LINE_NODE: {
+        if (!popped || type == RB_MATCH_LAST_LINE_NODE) {
             VALUE lit = rb_node_regx_string_val2(node);
             RB_OBJ_SET_SHAREABLE(lit);
             ADD_INSN1(ret, node, putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
         }
+        if (type == RB_MATCH_LAST_LINE_NODE) {
+            ADD_INSN2(ret, node, getspecial, INT2FIX(0), INT2FIX(0));
+            ADD_SEND(ret, node, idEqTilde, INT2FIX(1));
+            if (popped) ADD_INSN(ret, node, pop);
+        }
         break;
       }
-      case RB_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
+      case RB_INTERPOLATED_REGULAR_EXPRESSION_NODE:
+      case RB_INTERPOLATED_MATCH_LAST_LINE_NODE: {
+        const int match = type == RB_INTERPOLATED_MATCH_LAST_LINE_NODE;
         if (rb_node_get_fl(node) & RB_REGULAR_EXPRESSION_FLAGS_ONCE) {
             int ic_index = body->ise_size++;
-            const rb_iseq_t *block_iseq;
-            block_iseq = NEW_CHILD_ISEQ(node, make_name_for_block(iseq), ISEQ_TYPE_PLAIN, line);
-
+            const rb_iseq_t *block_iseq = NEW_CHILD_ISEQ(node, make_name_for_block(iseq), ISEQ_TYPE_PLAIN, line);
             ADD_INSN2(ret, node, once, block_iseq, INT2FIX(ic_index));
             RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block_iseq);
-
-            if (popped) {
-                ADD_INSN(ret, node, pop);
-            }
-            break;
+            if (popped && !match) ADD_INSN(ret, node, pop);
         }
         else {
-            compile_dregx(iseq, ret, node, popped);
-            break;
+            CHECK(compile_dregx(iseq, ret, node, popped && !match));
         }
+        if (match) {
+            ADD_INSN2(ret, node, getspecial, INT2FIX(0), INT2FIX(0));
+            ADD_SEND(ret, node, idEqTilde, INT2FIX(1));
+            if (popped) ADD_INSN(ret, node, pop);
+        }
+        break;
       }
       case RB_DEF_NODE: {
         ID mid = RB_NODE_DEF(node)->name;
@@ -13769,21 +13778,21 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       // case NODE_DOT3:
       //   CHECK(compile_dots(iseq, ret, node, popped, TRUE));
       //   break;
-      // case NODE_FLIP2:
-      // case NODE_FLIP3:{
-      //   LABEL *lend = NEW_LABEL(line);
-      //   LABEL *ltrue = NEW_LABEL(line);
-      //   LABEL *lfalse = NEW_LABEL(line);
-      //   CHECK(compile_flip_flop(iseq, ret, node, type == NODE_FLIP2,
-      //                           ltrue, lfalse));
-      //   ADD_LABEL(ret, ltrue);
-      //   ADD_INSN1(ret, node, putobject, Qtrue);
-      //   ADD_INSNL(ret, node, jump, lend);
-      //   ADD_LABEL(ret, lfalse);
-      //   ADD_INSN1(ret, node, putobject, Qfalse);
-      //   ADD_LABEL(ret, lend);
-      //   break;
-      // }
+      case RB_FLIP_FLOP_NODE:{
+        LABEL *lend = NEW_LABEL(line);
+        LABEL *ltrue = NEW_LABEL(line);
+        LABEL *lfalse = NEW_LABEL(line);
+        CHECK(compile_flip_flop(iseq, ret, node, !(rb_node_get_fl(node) & RB_RANGE_FLAGS_EXCLUDE_END),
+                                ltrue, lfalse));
+        ADD_LABEL(ret, ltrue);
+        ADD_INSN1(ret, node, putobject, Qtrue);
+        ADD_INSNL(ret, node, jump, lend);
+        ADD_LABEL(ret, lfalse);
+        ADD_INSN1(ret, node, putobject, Qfalse);
+        ADD_LABEL(ret, lend);
+        if (popped) ADD_INSN(ret, node, pop);
+        break;
+      }
       // case NODE_SELF:{
       //   if (!popped) {
       //       ADD_INSN(ret, node, putself);
