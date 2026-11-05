@@ -521,7 +521,6 @@ module Bundler
     def validate_runtime!
       validate_ruby!
       validate_platforms!
-      validate_ruby_abis!
     end
 
     def validate_ruby!
@@ -549,14 +548,6 @@ module Bundler
       raise ProductionError, "Your bundle only supports platforms #{@platforms.map(&:to_s)} " \
         "but your local platform is #{Bundler.local_platform}. " \
         "Add the current platform to the lockfile with\n`bundle lock --add-platform #{Bundler.local_platform}` and try again."
-    end
-
-    def validate_ruby_abis!
-      return if @locked_ruby_abis.empty? || @ruby_abis.include?(Gem.ruby_abi)
-
-      raise ProductionError, "Your lockfile locks content-addressed gems for Ruby #{ruby_abis.join(", ")} " \
-        "but you are running Ruby #{Gem.ruby_abi}. " \
-        "Add the current Ruby ABI to the lockfile with\n`bundle lock --add-ruby-abi #{Gem.ruby_abi}` and try again."
     end
 
     def normalize_platforms

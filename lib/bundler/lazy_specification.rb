@@ -162,7 +162,7 @@ module Bundler
       source.local!
 
       if use_exact_resolved_specifications?
-        spec = materialize(self) {|specs| choose_compatible(specs, fallback_to_non_installable: false) }
+        spec = materialize(self, content_addressed_only: content_address_locked_for_running_ruby?) {|specs| choose_compatible(specs, fallback_to_non_installable: false) }
         return spec if spec
 
         # Exact spec is incompatible; in frozen mode, try to find a compatible platform variant
@@ -252,8 +252,16 @@ module Bundler
       (most_specific_locked_platform != generic_platform) || force_ruby_platform || Bundler.settings[:force_ruby_platform]
     end
 
-    def materialize(query)
+    # Once the lockfile pins the running Ruby's content-addressed gem, the
+    # platform gem an earlier frozen fallback installed no longer satisfies the
+    # row, so the pinned gem gets installed instead.
+    def content_address_locked_for_running_ruby?
+      Gem::ContentAddress.platform_eligible?(platform) && content_addresses.value?(Gem.ruby_abi)
+    end
+
+    def materialize(query, content_addressed_only: false)
       matching_specs = source.specs.search(query)
+      matching_specs = matching_specs.select {|spec| Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false) } if content_addressed_only
       return self if matching_specs.empty?
 
       yield matching_specs

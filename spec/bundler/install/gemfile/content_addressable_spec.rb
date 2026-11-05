@@ -480,25 +480,16 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
       end
     end
 
-    it "fails in frozen mode under a Ruby ABI the lockfile does not cover, like an unlocked platform" do
+    it "falls back to the platform gem in frozen mode under a Ruby ABI the lockfile does not cover, like a locked ruby platform, until that Ruby ABI is locked" do
       simulate_platform "x86_64-linux" do
         lockfile_with_content_addresses(addresses(mismatched_abi), ruby_abis: [mismatched_abi])
         original_lockfile = lockfile
-        message = "Your lockfile locks content-addressed gems for Ruby #{mismatched_abi} but you are running Ruby #{current_abi}"
 
         bundle_config "frozen true"
-        bundle_with_content_addressed_gems "install", raise_on_error: false
+        bundle_with_content_addressed_gems "install"
 
-        expect(last_command).to be_failure
-        expect(err).to include(message)
-        expect(err).to include("bundle lock --add-ruby-abi #{current_abi}")
-        expect(Dir[default_bundle_path("gems", "mygem-1.0-*").to_s]).to be_empty
+        expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
         expect(lockfile).to eq(original_lockfile)
-
-        # The check is a runtime validation, so booting the bundle fails the same way.
-        ruby "require 'bundler/setup'", raise_on_error: false
-        expect(last_command).to be_failure
-        expect(err).to include(message)
 
         bundle_with_content_addressed_gems "lock --add-ruby-abi #{current_abi}"
         bundle_with_content_addressed_gems "install"
