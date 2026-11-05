@@ -672,7 +672,7 @@ struct parser_params {
 
     struct lex_context ctxt;
 
-    rb_node_t *eval_tree_begin;
+    rb_statements_node_t *eval_tree_begin;
     rb_node_t *eval_tree;
     const struct rb_iseq_struct *parent_iseq;
 
@@ -1280,7 +1280,9 @@ static rb_undef_node_t *rb_new_node_undef_new(struct parser_params *p, NODE *nd_
 // static rb_node_false_t *rb_node_false_new(struct parser_params *p, const YYLTYPE *loc);
 // static rb_node_errinfo_t *rb_node_errinfo_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_defined_node_t *rb_new_node_defined_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
-static rb_node_postexe_t *rb_node_postexe_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
+static rb_for_node_t *rb_new_node_for_new(struct parser_params *p, rb_node_t *index, rb_node_t *collection, rb_statements_node_t *statements, const YYLTYPE *loc, const YYLTYPE *for_loc, const YYLTYPE *in_loc, const YYLTYPE *do_loc, const YYLTYPE *end_loc);
+static rb_post_execution_node_t *rb_new_node_post_execution_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
+static rb_pre_execution_node_t *rb_new_node_pre_execution_new(struct parser_params *p, rb_statements_node_t *body, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 // static rb_node_sym_t *rb_node_sym_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
 // static rb_node_dsym_t *rb_node_dsym_new(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
 // static rb_node_attrasgn_t *rb_node_attrasgn_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
@@ -1388,7 +1390,8 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 // #define NEW_FALSE(loc) (NODE *)rb_node_false_new(p,loc)
 // #define NEW_ERRINFO(loc) (NODE *)rb_node_errinfo_new(p,loc)
 #define NEW_RB_DEFINED(e,loc,k_loc) (rb_node_t *)rb_new_node_defined_new(p,e,loc,k_loc)
-#define NEW_POSTEXE(b,loc,k_loc,o_loc,c_loc) (NODE *)rb_node_postexe_new(p,b,loc,k_loc,o_loc,c_loc)
+#define NEW_RB_FOR(i,c,s,loc,f_loc,i_loc,d_loc,e_loc) (rb_node_t *)rb_new_node_for_new(p,i,c,s,loc,f_loc,i_loc,d_loc,e_loc)
+#define NEW_RB_POST_EXECUTION(b,loc,k_loc,o_loc,c_loc) (rb_node_t *)rb_new_node_post_execution_new(p,b,loc,k_loc,o_loc,c_loc)
 // #define NEW_SYM(str,loc) (NODE *)rb_node_sym_new(p,str,loc)
 // #define NEW_DSYM(s,l,n,loc) (NODE *)rb_node_dsym_new(p,s,l,n,loc)
 // #define NEW_ATTRASGN(r,m,a,loc) (NODE *)rb_node_attrasgn_new(p,r,m,a,loc)
@@ -3795,7 +3798,11 @@ top_stmt	: stmt
                     }
                 | keyword_BEGIN begin_block
                     {
-                        $$ = $2;
+                        RB_NODE_PRE_EXECUTION($2)->keyword_loc = @1;
+                        rb_nd_set_loc((rb_node_t *)$2, &@$);
+                        if (!p->eval_tree_begin) p->eval_tree_begin = NEW_RB_STATEMENTS0(&@$);
+                        statements_node_body_append(p, p->eval_tree_begin, $2, true);
+                        $$ = (NODE *)NEW_RB_STATEMENTS0(&@2);
                     /*% ripper: $:2 %*/
                     }
                 ;
@@ -3805,9 +3812,7 @@ block_open	: '{' {$$ = init_block_exit(p);};
 begin_block	: block_open compstmt(top_stmts) '}'
                     {
                         restore_block_exit(p, $block_open);
-                        p->eval_tree_begin = block_append(p, p->eval_tree_begin,
-                                                          NEW_BEGIN($compstmt, &@$));
-                        $$ = NEW_BEGIN(0, &@$);
+                        $$ = (NODE *)rb_new_node_pre_execution_new(p, $compstmt, &@$, &@block_open, &@3);
                     /*% ripper: BEGIN!($:compstmt) %*/
                     }
                 ;
@@ -3967,11 +3972,7 @@ stmt		: keyword_alias[kw] fitem[new] {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fit
                         clear_block_exit(p, true);
                         restore_block_exit(p, $block_open);
                         p->ctxt = $k_end;
-                        {
-                            NODE *scope = NEW_SCOPE2(0 /* tbl */, 0 /* args */, $body /* body */, NULL /* parent */, &@$);
-                            $$ = NEW_POSTEXE(scope, &@$, &@k_end, &@lbrace, &@rbrace);
-                            RNODE_SCOPE(scope)->nd_parent = $$;
-                        }
+                        $$ = NEW_RB_POST_EXECUTION($body, &@$, &@k_end, &@lbrace, &@rbrace);
                     /*% ripper: END!($:body) %*/
                     }
                 | command_asgn
@@ -5162,43 +5163,14 @@ primary		: inline_primary
               k_end[k_end]
                 {
                     restore_block_exit(p, $k_for);
-                    /*
-                     *  for a, b, c in e
-                     *  #=>
-                     *  e.each{|*x| a, b, c = x}
-                     *
-                     *  for a in e
-                     *  #=>
-                     *  e.each{|x| a, = x}
-                     */
-                    ID id = internal_id(p);
-                    rb_node_args_aux_t *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
-                    rb_node_args_t *args;
-                    NODE *scope, *internal_var = NEW_DVAR(id, &@for_var);
-                    rb_ast_id_table_t *tbl = rb_ast_new_local_table(p->ast, 1);
-                    tbl->ids[0] = id; /* internal id */
-
-                    switch (nd_type($for_var)) {
-                      // case NODE_LASGN:
-                      case NODE_DASGN: /* e.each {|internal_var| a = internal_var; ... } */
-                        set_nd_value(p, $for_var, internal_var);
-                        id = 0;
-                        m->nd_plen = 1;
-                        m->nd_next = $for_var;
-                        break;
-                      case NODE_MASGN: /* e.each {|*internal_var| a, b, c = (internal_var.length == 1 && Array === (tmp = internal_var[0]) ? tmp : internal_var); ... } */
-                        m->nd_next = node_assign(p, $for_var, NEW_FOR_MASGN(internal_var, &@for_var), NO_LEX_CTXT, &@for_var);
-                        break;
-                      default: /* e.each {|*internal_var| @a, B, c[1], d.attr = internal_val; ... } */
-                        m->nd_next = node_assign(p, (rb_node_t *)NEW_MASGN(NEW_LIST($for_var, &@for_var), 0, &@for_var), internal_var, NO_LEX_CTXT, &@for_var);
+                    rb_node_t *index = $for_var;
+                    if (!p->error_p) {
+                        index = nd_type_p(index, RB_MULTI_WRITE_NODE)
+                            ? (rb_node_t *)multi_write2multi_target(p, RB_NODE_MULTI_WRITE(index))
+                            : write2target(p, index);
                     }
-                    /* {|*internal_id| <m> = internal_id; ... } */
-                    // TODO
-                    // args = new_args2(p, m, 0, id, 0, new_args_tail2(p, 0, 0, 0, &@for_var), &@for_var);
-                    // scope = NEW_SCOPE2(tbl, args, $compstmt, NULL, &@$);
                     YYLTYPE do_keyword_loc = $do == keyword_do_cond ? @do : NULL_LOC;
-                    $$ = NEW_FOR($expr_value, scope, &@$, &@k_for, &@keyword_in, &do_keyword_loc, &@k_end);
-                    RNODE_SCOPE(scope)->nd_parent = $$;
+                    $$ = NEW_RB_FOR(index, $expr_value, $compstmt, &@$, &@k_for, &@keyword_in, &do_keyword_loc, &@k_end);
                     fixpos($$, $for_var);
                 /*% ripper: for!($:for_var, $:expr_value, $:compstmt) %*/
                 }
@@ -8069,7 +8041,7 @@ e_option_supplied(struct parser_params *p)
 }
 
 #ifndef RIPPER
-static NODE *parser_append_options(struct parser_params *p, NODE *node);
+static rb_statements_node_t *parser_append_options(struct parser_params *p, rb_statements_node_t *node);
 
 static VALUE
 yycompile0(VALUE arg)
@@ -8117,10 +8089,13 @@ yycompile0(VALUE arg)
     }
     else {
         rb_parser_ary_t *tokens = p->tokens;
-        NODE *prelude;
-        NODE *body = parser_append_options(p, (NODE *)RB_NODE_PROGRAM(tree)->statements);
-        prelude = block_append(p, p->eval_tree_begin, body);
-        RB_NODE_PROGRAM(tree)->statements = (rb_statements_node_t *)prelude;
+        rb_statements_node_t *body = parser_append_options(p, RB_NODE_PROGRAM(tree)->statements);
+        if (p->eval_tree_begin) {
+            rb_node_list_concat(&p->eval_tree_begin->body, &body->body);
+            p->eval_tree_begin->base.location.end_pos = body->base.location.end_pos;
+            body = p->eval_tree_begin;
+        }
+        RB_NODE_PROGRAM(tree)->statements = body;
         p->ast->body.frozen_string_literal = p->frozen_string_literal;
         p->ast->body.coverage_enabled = cov;
         if (p->keep_tokens) {
@@ -12969,17 +12944,7 @@ rb_node_args_aux_new(struct parser_params *p, ID nd_pid, int nd_plen, const YYLT
 // }
 
 
-static rb_node_postexe_t *
-rb_node_postexe_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
-{
-    rb_node_postexe_t *n = NODE_NEWNODE(NODE_POSTEXE, rb_node_postexe_t, loc);
-    n->nd_body = nd_body;
-    n->keyword_loc = *keyword_loc;
-    n->opening_loc = *opening_loc;
-    n->closing_loc = *closing_loc;
 
-    return n;
-}
 
 // static rb_node_attrasgn_t *
 // rb_node_attrasgn_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc)
@@ -13175,6 +13140,42 @@ rb_node_newnode(struct parser_params *p, enum rb_node_type type, size_t size, si
 }
 
 #define RB_NEW_NODE_NEWNODE(rb_node_type, type, loc) (type *)(rb_node_newnode(p, rb_node_type, sizeof(type), RUBY_ALIGNOF(type), loc))
+
+static rb_for_node_t *
+rb_new_node_for_new(struct parser_params *p, rb_node_t *index, rb_node_t *collection, rb_statements_node_t *statements, const YYLTYPE *loc, const YYLTYPE *for_loc, const YYLTYPE *in_loc, const YYLTYPE *do_loc, const YYLTYPE *end_loc)
+{
+    rb_for_node_t *n = RB_NEW_NODE_NEWNODE(RB_FOR_NODE, rb_for_node_t, loc);
+    n->index = index;
+    n->collection = collection;
+    n->statements = statements;
+    n->for_keyword_loc = *for_loc;
+    n->in_keyword_loc = *in_loc;
+    n->do_keyword_loc = *do_loc;
+    n->end_keyword_loc = *end_loc;
+    return n;
+}
+
+static rb_post_execution_node_t *
+rb_new_node_post_execution_new(struct parser_params *p, NODE *body, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
+{
+    rb_post_execution_node_t *n = RB_NEW_NODE_NEWNODE(RB_POST_EXECUTION_NODE, rb_post_execution_node_t, loc);
+    n->statements = (rb_statements_node_t *)body;
+    n->keyword_loc = *keyword_loc;
+    n->opening_loc = *opening_loc;
+    n->closing_loc = *closing_loc;
+    return n;
+}
+
+static rb_pre_execution_node_t *
+rb_new_node_pre_execution_new(struct parser_params *p, rb_statements_node_t *body, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
+{
+    rb_pre_execution_node_t *n = RB_NEW_NODE_NEWNODE(RB_PRE_EXECUTION_NODE, rb_pre_execution_node_t, loc);
+    n->statements = body;
+    n->keyword_loc = NULL_LOC;
+    n->opening_loc = *opening_loc;
+    n->closing_loc = *closing_loc;
+    return n;
+}
 
 static rb_defined_node_t *
 rb_new_node_defined_new(struct parser_params *p, NODE *value, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
@@ -18677,41 +18678,32 @@ rb_ruby_parser_set_options(struct parser_params *p, int print, int loop, int cho
     p->do_split = split;
 }
 
-static NODE *
-parser_append_options(struct parser_params *p, NODE *node)
+static rb_statements_node_t *
+parser_append_options(struct parser_params *p, rb_statements_node_t *node)
 {
     static const YYLTYPE default_location = {{1, 0}, {1, 0}};
     const YYLTYPE *const LOC = &default_location;
+    if (!node) node = NEW_RB_STATEMENTS0(LOC);
 
     if (p->do_print) {
-        NODE *print = NEW_RB_FCALL(rb_intern("print"),
-                        NEW_LIST(NEW_RB_GLOBAL_VARIABLE_READ(idLASTLINE, LOC), LOC),
-                        LOC);
-        node = block_append(p, node, print);
+        rb_node_t *print = NEW_RB_FCALL(rb_intern("print"),
+            NEW_RB_ARGUMENTS(NEW_RB_GLOBAL_VARIABLE_READ(idLASTLINE, LOC), LOC), LOC);
+        statements_node_body_append(p, node, print, false);
     }
-
     if (p->do_loop) {
-        NODE *irs = NEW_LIST(NEW_RB_GLOBAL_VARIABLE_READ(rb_intern("$/"), LOC), LOC);
-
+        rb_arguments_node_t *args = NEW_RB_ARGUMENTS(NEW_RB_GLOBAL_VARIABLE_READ(rb_intern("$/"), LOC), LOC);
         if (p->do_split) {
-            ID ifs = rb_intern("$;");
-            ID fields = rb_intern("$F");
-            NODE *args = NEW_LIST(NEW_RB_GLOBAL_VARIABLE_READ(ifs, LOC), LOC);
-            NODE *split = NEW_RB_GLOBAL_VARIABLE_WRITE(fields,
-                                    NEW_CALL(NEW_RB_GLOBAL_VARIABLE_READ(idLASTLINE, LOC),
-                                             rb_intern("split"), args, LOC),
-                                    LOC);
-            node = block_append(p, split, node);
+            rb_node_t *split = NEW_RB_CALL(NEW_RB_GLOBAL_VARIABLE_READ(idLASTLINE, LOC), rb_intern("split"),
+                NEW_RB_ARGUMENTS(NEW_RB_GLOBAL_VARIABLE_READ(rb_intern("$;"), LOC), LOC), 0, LOC);
+            rb_node_list_prepend(&node->body, NEW_RB_GLOBAL_VARIABLE_WRITE(rb_intern("$F"), split, LOC));
         }
         if (p->do_chomp) {
-            NODE *chomp = NEW_RB_SYMBOL(rb_str_to_parser_string(p, rb_str_new_cstr("chomp")), LOC, &NULL_LOC, LOC, &NULL_LOC);
-            chomp = list_append(p, NEW_LIST(chomp, LOC), NEW_RB_TRUE(LOC));
-            irs = list_append(p, irs, NEW_HASH(chomp, LOC));
+            rb_node_t *key = NEW_RB_SYMBOL(rb_str_to_parser_string(p, rb_str_new_cstr("chomp")), LOC, &NULL_LOC, LOC, &NULL_LOC);
+            rb_node_t *keyword = new_keyword_hash(p, NEW_RB_ARRAY(NEW_RB_ASSOC(key, NEW_RB_TRUE(LOC), LOC, &NULL_LOC), LOC), LOC);
+            node_arg_append(p, args, keyword, LOC);
         }
-
-        node = NEW_WHILE(NEW_RB_FCALL(idGets, irs, LOC), node, 1, LOC, &NULL_LOC, &NULL_LOC);
+        node = NEW_RB_STATEMENTS(NEW_RB_WHILE(NEW_RB_FCALL(idGets, args, LOC), node, 0, LOC, &NULL_LOC, &NULL_LOC), LOC);
     }
-
     return node;
 }
 
