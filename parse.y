@@ -6589,7 +6589,7 @@ largs_tail	: args_tail_basic(arg_value, none)
                     }
                 ;
 
-%rule tail-only-args(tail) <node_args>
+%rule tail-only-args(tail) <node_params>
                 : tail
                     {
                         $$ = new_args2(p, 0, 0, 0, 0, $tail, &@$);
@@ -13908,7 +13908,7 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
         if (dyna_in_block(p) && dvar_defined_ref(p, id, &vidp)) {
             if (NUMPARAM_ID_P(id) && (numparam_nested_p(p) || it_used_p(p))) return 0;
             if (vidp) *vidp |= LVAR_USED;
-            node = NEW_DVAR(id, loc);
+            node = dvar_curr(p, id) ? NEW_RB_LOCAL_VARIABLE_READ(id, loc) : (rb_node_t *)NEW_DVAR(id, loc);
             return node;
         }
         if (local_id_ref(p, id, &vidp)) {
@@ -14418,11 +14418,11 @@ assignable0(struct parser_params *p, ID id, const char **err)
                               NUMPARAM_ID_TO_IDX(id));
                 return -1;
             }
-            if (dvar_curr(p, id)) return NODE_DASGN;
+            if (dvar_curr(p, id)) return RB_LOCAL_VARIABLE_WRITE_NODE;
             if (dvar_defined(p, id)) return NODE_DASGN;
             if (local_id(p, id)) return RB_LOCAL_VARIABLE_WRITE_NODE;
             dyna_var(p, id);
-            return NODE_DASGN;
+            return RB_LOCAL_VARIABLE_WRITE_NODE;
         }
         else {
             if (!local_id(p, id)) local_var(p, id);
@@ -15586,6 +15586,7 @@ new_args_tail2(struct parser_params *p, rb_array_node_t *kw_args, rb_node_t *kw_
     if (p->error_p) return node;
 
     node->block = block;
+    bool has_block_local = block && block->name != idNil;
     if (kw_args) {
         /*
          * def foo(k1: 1, kr1:, k2: 2, **krest, &b)
@@ -15598,8 +15599,8 @@ new_args_tail2(struct parser_params *p, rb_array_node_t *kw_args, rb_node_t *kw_
         struct vtable *vtargs = p->lvtbl->args;
         rb_array_node_t *kwn = kw_args;
 
-        if (block) block_id = vtargs->tbl[vtargs->pos-1];
-        vtable_pop(vtargs, !!block + !!kw_rest_arg);
+        if (has_block_local) block_id = vtargs->tbl[vtargs->pos-1];
+        vtable_pop(vtargs, has_block_local + !!kw_rest_arg);
         required_kw_vars = kw_vars = &vtargs->tbl[vtargs->pos];
 
         for (size_t i = 0; i < RB_NODE_LIST_LEN(&kwn->elements); i++) {
@@ -15623,7 +15624,7 @@ new_args_tail2(struct parser_params *p, rb_array_node_t *kw_args, rb_node_t *kw_
         rb_node_list_move(&node->keywords, &kw_args->elements);
         arg_var(p, kw_bits);
         if (kw_rest_arg) arg_var(p, get_kw_nd_vid(p, kw_rest_arg));
-        if (block) arg_var(p, block_id);
+        if (has_block_local) arg_var(p, block_id);
 
         // args->kw_rest_arg = NEW_DVAR(kw_rest_arg, kw_rest_loc);
     }
