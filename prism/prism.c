@@ -15563,15 +15563,15 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
  * Returns the flags to parse arguments with inside of the delimiters of a call
  * (`foo(...)`) or an index (`foo[...]`).
  *
- * parse.y does not allow a `do` block on a command call in this position, as in
- * `foo(bar baz do end)` or `foo[bar baz do end]`. Ruby 3.4 and 4.0 use prism as
- * their default parser, and the prism versions they shipped with accept it. So
- * we keep accepting it for those versions only. See
- * https://bugs.ruby-lang.org/issues/21168.
+ * Since Ruby 3.4, a command call with a `do` block is accepted as the only
+ * argument inside the parentheses of a call, as in `foo(bar baz do end)`. Inside
+ * the brackets of an index, as in `foo[bar baz do end]`, it is accepted only by
+ * Ruby 3.4 and 4.0, whose default parser (prism) shipped accepting it. Ruby 3.3
+ * uses parse.y, which rejects both. See https://bugs.ruby-lang.org/issues/21168.
  */
 static uint8_t
-parse_delimited_arguments_flags(const pm_parser_t *parser, uint8_t flags) {
-    if (parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4 && parser->version <= PM_OPTIONS_VERSION_CRUBY_4_0) {
+parse_delimited_arguments_flags(const pm_parser_t *parser, uint8_t flags, bool index) {
+    if (parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4 && (!index || parser->version <= PM_OPTIONS_VERSION_CRUBY_4_0)) {
         return (uint8_t) (flags | PM_PARSE_ACCEPTS_DO_BLOCK);
     }
 
@@ -15611,7 +15611,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
         if (accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
             arguments->closing_loc = TOK2LOC(parser, &parser->previous);
         } else {
-            parse_arguments(parser, arguments, full_arguments, PM_TOKEN_PARENTHESIS_RIGHT, parse_delimited_arguments_flags(parser, flags), (uint16_t) (depth + 1));
+            parse_arguments(parser, arguments, full_arguments, PM_TOKEN_PARENTHESIS_RIGHT, parse_delimited_arguments_flags(parser, flags, false), (uint16_t) (depth + 1));
 
             // `yield` parses its arguments through the restricted `call_args`
             // grammar, which (unlike the `opt_call_args` that method calls and
@@ -22449,7 +22449,7 @@ parse_aref(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_bin
     arguments.opening_loc = TOK2LOC(parser, &parser->previous);
 
     if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
-        parse_arguments(parser, &arguments, false, PM_TOKEN_BRACKET_RIGHT, parse_delimited_arguments_flags(parser, flags), (uint16_t) (depth + 1));
+        parse_arguments(parser, &arguments, false, PM_TOKEN_BRACKET_RIGHT, parse_delimited_arguments_flags(parser, flags, true), (uint16_t) (depth + 1));
         expect1(parser, PM_TOKEN_BRACKET_RIGHT, PM_ERR_EXPECT_RBRACKET);
     }
 

@@ -28,7 +28,3 @@ super(bar baz do end)
 foo(bar baz do end) do end
 
 foo bar(baz qux do end)
-
-a[bar baz do end]
-
-a[bar baz do end] = 1

@@ -1,0 +1,7 @@
+a[bar baz do end]
+
+a[bar baz do end] = 1
+
+a[bar baz do end] += 1
+
+a, foo[bar baz do end] = 1, 2

@@ -27,7 +27,8 @@ module Ruby::Prism
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",
-      "3.4-4.0/command_call_do_block_in_arguments.txt",
+      "3.4/command_call_do_block_in_arguments.txt",
+      "3.4-4.0/command_call_do_block_in_index_arguments.txt",
     ]
 
     if RUBY_VERSION.start_with?("3.3.")
