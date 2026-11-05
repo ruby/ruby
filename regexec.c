@@ -5008,6 +5008,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
             goto mismatch_no_msa;
           else
             range = max_semi_end - reg->anchor_dmin + 1;
+          if (start >= range) goto mismatch_no_msa;
         }
 
         if (start > range) goto mismatch_no_msa;

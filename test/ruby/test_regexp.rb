@@ -915,6 +915,15 @@ class TestRegexp < Test::Unit::TestCase
     $_ = nil; assert_nil(~/./)
   end
 
+  def test_match_end_anchor_start_position
+    s = "text\n\n\n"
+    assert_nil(s.match(/\r?\n\r?\n\Z/, 6))
+    assert_nil(s.match(/\r?\n\r?\n\z/, 6))
+    assert_equal(4, s.match(/\r?\n\r?\n\Z/, 4).begin(0))
+    assert_equal(["\n\n"], s.scan(/\r?\n\r?\n\Z/))
+    assert_equal("text-\n", s.gsub(/\r?\n\r?\n\Z/, "-"))
+  end
+
   def test_match_under_gc_compact_stress
     EnvUtil.under_gc_compact_stress do
       m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
