@@ -14353,7 +14353,7 @@ write2target(struct parser_params *p, rb_node_t *node)
       }
       case RB_CALL_NODE: {
         rb_call_node_t *cast = RB_NODE_CALL(node);
-        if (rb_node_get_fl(node) & RB_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
+        if (cast->name != idASET) {
             // `struct.field =`
             return NEW_RB_CALL_TARGET(cast->receiver, cast->name, rb_node_get_fl(cast), nd_code_loc(cast));
         }
@@ -15344,6 +15344,8 @@ new_bv(struct parser_params *p, ID name)
 static void
 aryset_check(struct parser_params *p, rb_arguments_node_t *args)
 {
+    if (!args) return;
+
     rb_node_t *block = 0, *kwds = 0;
     rb_node_list2_t *list = &args->arguments;
 
@@ -15352,10 +15354,10 @@ aryset_check(struct parser_params *p, rb_arguments_node_t *args)
 
         switch (nd_type(node)) {
           case RB_KEYWORD_HASH_NODE:
-            block = node;
+            kwds = node;
             break;
           case RB_BLOCK_ARGUMENT_NODE:
-            kwds = node;
+            block = node;
             break;
           default:
             break;
@@ -15373,7 +15375,7 @@ static rb_node_t *
 aryset(struct parser_params *p, rb_node_t *recv, rb_arguments_node_t *idx, const YYLTYPE *loc)
 {
     aryset_check(p, idx);
-    return NEW_RB_ATTRASGN(recv, tASET, idx, 0, loc);
+    return NEW_RB_ATTRASGN(recv, tASET, idx ? idx : NEW_RB_ARGUMENTS0(loc), 0, loc);
 }
 
 static rb_node_t *
