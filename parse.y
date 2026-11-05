@@ -128,44 +128,54 @@ static rb_parser_string_t *rb_parser_string_deep_copy(struct parser_params *p, c
 #define FIXNUM_INC(n, i) ((n)+(INT2FIX(i)&~FIXNUM_FLAG))
 
 static int
-node_integer_cmp(rb_node_integer_t *n1, rb_node_integer_t *n2)
+node_integer_cmp(rb_integer_node_t *n1, rb_integer_node_t *n2)
 {
     return (n1->minus != n2->minus ||
-            n1->base != n2->base ||
-            strcmp(n1->val, n2->val));
+            n1->integer_base != n2->integer_base ||
+            strcmp(n1->val->ptr, n2->val->ptr));
 }
 
 static int
-node_float_cmp(rb_node_float_t *n1, rb_node_float_t *n2)
+node_float_cmp(rb_float_node_t *n1, rb_float_node_t *n2)
 {
     return (n1->minus != n2->minus ||
-            strcmp(n1->val, n2->val));
+            strcmp(n1->val->ptr, n2->val->ptr));
 }
 
 static int
-node_rational_cmp(rb_node_rational_t *n1, rb_node_rational_t *n2)
+node_rational_cmp(rb_rational_node_t *n1, rb_rational_node_t *n2)
 {
     return (n1->minus != n2->minus ||
-            n1->base != n2->base ||
+            n1->integer_base != n2->integer_base ||
             n1->seen_point != n2->seen_point ||
-            strcmp(n1->val, n2->val));
+            strcmp(n1->val->ptr, n2->val->ptr));
 }
 
 static int
-node_imaginary_cmp(rb_node_imaginary_t *n1, rb_node_imaginary_t *n2)
+node_imaginary_cmp(rb_imaginary_node_t *n1, rb_imaginary_node_t *n2)
 {
     return (n1->minus != n2->minus ||
-            n1->base != n2->base ||
+            n1->integer_base != n2->integer_base ||
             n1->seen_point != n2->seen_point ||
             n1->type != n2->type ||
-            strcmp(n1->val, n2->val));
+            strcmp(n1->val->ptr, n2->val->ptr));
 }
 
 static int
-rb_parser_regx_hash_cmp(rb_node_regx_t *n1, rb_node_regx_t *n2)
+rb_parser_regx_hash_cmp(rb_regular_expression_node_t *n1, rb_regular_expression_node_t *n2)
 {
-    return (n1->options != n2->options ||
-            rb_parser_string_hash_cmp(n1->string, n2->string));
+    const rb_node_flags_t option_mask =
+        RB_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE |
+        RB_REGULAR_EXPRESSION_FLAGS_EXTENDED |
+        RB_REGULAR_EXPRESSION_FLAGS_MULTI_LINE |
+        RB_REGULAR_EXPRESSION_FLAGS_ONCE |
+        RB_REGULAR_EXPRESSION_FLAGS_EUC_JP |
+        RB_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT |
+        RB_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J |
+        RB_REGULAR_EXPRESSION_FLAGS_UTF_8;
+
+    return (((rb_node_get_fl(n1) ^ rb_node_get_fl(n2)) & option_mask) != 0 ||
+            rb_parser_string_hash_cmp(n1->unescaped, n2->unescaped));
 }
 
 static st_index_t rb_parser_str_hash(rb_parser_string_t *str);
@@ -176,41 +186,41 @@ literal_cmp(st_data_t val, st_data_t lit)
 {
     if (val == lit) return 0;
 
-    NODE *node_val = RNODE(val);
-    NODE *node_lit = RNODE(lit);
-    enum node_type type_val = nd_type(node_val);
-    enum node_type type_lit = nd_type(node_lit);
+    rb_node_t *node_val = (rb_node_t *)val;
+    rb_node_t *node_lit = (rb_node_t *)lit;
+    enum rb_node_type type_val = nd_type(node_val);
+    enum rb_node_type type_lit = nd_type(node_lit);
 
     if (type_val != type_lit) {
         return -1;
     }
 
     switch (type_lit) {
-      case NODE_INTEGER:
-        return node_integer_cmp(RNODE_INTEGER(node_val), RNODE_INTEGER(node_lit));
-      case NODE_FLOAT:
-        return node_float_cmp(RNODE_FLOAT(node_val), RNODE_FLOAT(node_lit));
-      case NODE_RATIONAL:
-        return node_rational_cmp(RNODE_RATIONAL(node_val), RNODE_RATIONAL(node_lit));
-      case NODE_IMAGINARY:
-        return node_imaginary_cmp(RNODE_IMAGINARY(node_val), RNODE_IMAGINARY(node_lit));
-      case NODE_STR:
-        return rb_parser_string_hash_cmp(RNODE_STR(node_val)->string, RNODE_STR(node_lit)->string);
+      case RB_INTEGER_NODE:
+        return node_integer_cmp(RB_NODE_INTEGER(node_val), RB_NODE_INTEGER(node_lit));
+      case RB_FLOAT_NODE:
+        return node_float_cmp(RB_NODE_FLOAT(node_val), RB_NODE_FLOAT(node_lit));
+      case RB_RATIONAL_NODE:
+        return node_rational_cmp(RB_NODE_RATIONAL(node_val), RB_NODE_RATIONAL(node_lit));
+      case RB_IMAGINARY_NODE:
+        return node_imaginary_cmp(RB_NODE_IMAGINARY(node_val), RB_NODE_IMAGINARY(node_lit));
+      case RB_STRING_NODE:
+        return rb_parser_string_hash_cmp(RB_NODE_STRING(node_val)->unescaped, RB_NODE_STRING(node_lit)->unescaped);
       case RB_SYMBOL_NODE:
-        return rb_parser_string_hash_cmp(RNODE_SYM(node_val)->string, RNODE_SYM(node_lit)->string);
-      case NODE_REGX:
-        return rb_parser_regx_hash_cmp(RNODE_REGX(node_val), RNODE_REGX(node_lit));
-      case NODE_LINE:
-        return node_val->nd_loc.beg_pos.lineno != node_lit->nd_loc.beg_pos.lineno;
-      case NODE_FILE:
-        return rb_parser_string_hash_cmp(RNODE_FILE(node_val)->path, RNODE_FILE(node_lit)->path);
-      case NODE_ENCODING:
-        return RNODE_ENCODING(node_val)->enc != RNODE_ENCODING(node_lit)->enc;
+        return rb_parser_string_hash_cmp(RB_NODE_SYMBOL(node_val)->unescaped, RB_NODE_SYMBOL(node_lit)->unescaped);
+      case RB_REGULAR_EXPRESSION_NODE:
+        return rb_parser_regx_hash_cmp(RB_NODE_REGULAR_EXPRESSION(node_val), RB_NODE_REGULAR_EXPRESSION(node_lit));
+      case RB_SOURCE_LINE_NODE:
+        return node_val->location.beg_pos.lineno != node_lit->location.beg_pos.lineno;
+      case RB_SOURCE_FILE_NODE:
+        return rb_parser_string_hash_cmp(RB_NODE_SOURCE_FILE(node_val)->filepath, RB_NODE_SOURCE_FILE(node_lit)->filepath);
+      case RB_SOURCE_ENCODING_NODE:
+        return RB_NODE_SOURCE_ENCODING(node_val)->enc != RB_NODE_SOURCE_ENCODING(node_lit)->enc;
       default:
 #ifdef UNIVERSAL_PARSER
         abort();
 #else
-        rb_bug("unexpected node: %s, %s", ruby_node_name(type_val), ruby_node_name(type_lit));
+        rb_bug("unexpected node: %s, %s", rb_node_type_to_str(type_val), rb_node_type_to_str(type_lit));
 #endif
     }
 }
@@ -219,21 +229,17 @@ static st_index_t
 literal_hash(st_data_t a)
 {
     rb_node_t *node = (rb_node_t *)a;
-    enum node_type type = nd_type(node);
+    enum rb_node_type type = nd_type(node);
 
     switch (type) {
       case RB_INTEGER_NODE:
-        return 0;
-        // return rb_char_p_hash(RB_NODE_INTEGER(node)->value);
+        return rb_char_p_hash(RB_NODE_INTEGER(node)->val->ptr);
       case RB_FLOAT_NODE:
-        return 1;
-        // return rb_char_p_hash(RB_NODE_FLOAT(node)->value);
+        return rb_char_p_hash(RB_NODE_FLOAT(node)->val->ptr);
       case RB_RATIONAL_NODE:
-        return 2;
-        // return rb_char_p_hash(RB_NODE_RATIONAL(node)->numerator);
+        return rb_char_p_hash(RB_NODE_RATIONAL(node)->val->ptr);
       case RB_IMAGINARY_NODE:
-        return 3;
-        // return rb_char_p_hash(RB_NODE_IMAGINARY(node)->numeric);
+        return rb_char_p_hash(RB_NODE_IMAGINARY(node)->val->ptr);
       case RB_STRING_NODE:
         return rb_parser_str_hash(RB_NODE_STRING(node)->unescaped);
       case RB_SYMBOL_NODE:
@@ -250,7 +256,7 @@ literal_hash(st_data_t a)
 #ifdef UNIVERSAL_PARSER
         abort();
 #else
-        rb_bug("unexpected node: %s", ruby_node_name(type));
+        rb_bug("unexpected node: %s", rb_node_type_to_str(type));
 #endif
     }
 }
@@ -1214,7 +1220,7 @@ static rb_node_call_t *rb_node_call_new(struct parser_params *p, NODE *nd_recv, 
 // static rb_node_super_t *rb_node_super_new(struct parser_params *p, NODE *nd_args, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc);
 // static rb_node_zsuper_t * rb_node_zsuper_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_list_t *rb_node_list_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
-// static rb_node_list_t *rb_node_list_new2(struct parser_params *p, NODE *nd_head, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
+static rb_node_list_t *rb_node_list_new2(struct parser_params *p, NODE *nd_head, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
 // static rb_node_zlist_t *rb_node_zlist_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_hash_t *rb_node_hash_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
 // static rb_node_return_t *rb_node_return_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
@@ -1498,7 +1504,6 @@ static rb_nil_node_t *rb_new_node_nil_new(struct parser_params *p, const YYLTYPE
 static rb_true_node_t *rb_new_node_true_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_false_node_t *rb_new_node_false_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_symbol_node_t *rb_new_node_symbol_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *value_loc, const YYLTYPE *closing_loc);
-static rb_string_node_t *rb_new_node_string_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *content_loc, const YYLTYPE *closing_loc);
 static rb_redo_node_t *rb_new_node_redo_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_retry_node_t *rb_new_node_retry_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_break_node_t *rb_new_node_break_new(struct parser_params *p, struct rb_arguments_node *arguments, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
@@ -1629,7 +1634,6 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_TRUE(loc) rb_new_node_true_new(p,loc)
 #define NEW_RB_FALSE(loc) rb_new_node_false_new(p,loc)
 #define NEW_RB_SYMBOL(s,loc,op_loc,v_loc,cl_loc) rb_new_node_symbol_new(p,s,loc,op_loc,v_loc,cl_loc)
-#define NEW_RB_STRING(s,loc,op_loc,c_loc,cl_loc) rb_new_node_string_new(p,s,loc,op_loc,c_loc,cl_loc)
 #define NEW_RB_REDO(loc) rb_new_node_redo_new(p,loc)
 #define NEW_RB_RETRY(loc) rb_new_node_retry_new(p,loc)
 #define NEW_RB_BREAK(a,loc,kw_loc) rb_new_node_break_new(p,a,loc,kw_loc)
@@ -14188,17 +14192,6 @@ rb_new_node_symbol_new(struct parser_params *p, rb_parser_string_t *string, cons
     return n;
 }
 
-static rb_string_node_t *
-rb_new_node_string_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *content_loc, const YYLTYPE *closing_loc)
-{
-    rb_string_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_STRING_NODE, rb_string_node_t, loc);
-    n->opening_loc = *opening_loc;
-    n->content_loc = *content_loc;
-    n->closing_loc = *closing_loc;
-    n->unescaped = string;
-    return n;
-}
-
 static rb_redo_node_t *
 rb_new_node_redo_new(struct parser_params *p, const YYLTYPE *loc)
 {
@@ -16915,31 +16908,31 @@ nd_type_st_key_enable_p(NODE *node)
 }
 
 static VALUE
-nd_value(struct parser_params *p, NODE *node)
+nd_value(struct parser_params *p, rb_node_t *node)
 {
     switch (nd_type(node)) {
-      case NODE_STR:
-        return rb_node_str_string_val(node);
-      case NODE_INTEGER:
-        return rb_node_integer_literal_val(node);
-      case NODE_FLOAT:
-        return rb_node_float_literal_val(node);
-      case NODE_RATIONAL:
-        return rb_node_rational_literal_val(node);
-      case NODE_IMAGINARY:
-        return rb_node_imaginary_literal_val(node);
+      case RB_STRING_NODE:
+        return rb_node_str_string_val2(node);
+      case RB_INTEGER_NODE:
+        return rb_node_integer_literal_val2(node);
+      case RB_FLOAT_NODE:
+        return rb_node_float_literal_val2(node);
+      case RB_RATIONAL_NODE:
+        return rb_node_rational_literal_val2(node);
+      case RB_IMAGINARY_NODE:
+        return rb_node_imaginary_literal_val2(node);
       case RB_SYMBOL_NODE:
-        return rb_node_sym_string_val(node);
-      case NODE_REGX:
-        return rb_node_regx_string_val(node);
-      case NODE_LINE:
-        return rb_node_line_lineno_val(node);
-      case NODE_ENCODING:
-        return rb_node_encoding_val(node);
-      case NODE_FILE:
-        return rb_node_file_path_val(node);
+        return rb_node_sym_string_val2(node);
+      case RB_REGULAR_EXPRESSION_NODE:
+        return rb_node_regx_string_val2(node);
+      case RB_SOURCE_LINE_NODE:
+        return rb_node_line_lineno_val2(node);
+      case RB_SOURCE_ENCODING_NODE:
+        return rb_node_encoding_val2(node);
+      case RB_SOURCE_FILE_NODE:
+        return rb_node_file_path_val2(node);
       default:
-        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+        rb_bug("unexpected node: %s", rb_node_type_to_str(nd_type(node)));
         UNREACHABLE_RETURN(0);
     }
 }
@@ -16951,9 +16944,9 @@ warn_duplicate_keys(struct parser_params *p, rb_array_node_t *hash)
     const rb_node_list2_t *list = &hash->elements;
     p->warn_duplicate_keys_table = st_init_table_with_size(&literal_type, RB_NODE_LIST_LEN(list));
     for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
-        NODE *node = list->nodes[i];
-        NODE *head;
-        NODE *value;
+        rb_node_t *node = list->nodes[i];
+        rb_node_t *head;
+        rb_node_t *value;
         st_data_t key;
         st_data_t data;
 
@@ -16979,11 +16972,11 @@ warn_duplicate_keys(struct parser_params *p, rb_array_node_t *hash)
             key = (st_data_t)head;
 
             if (st_delete(p->warn_duplicate_keys_table, &key, &data)) {
-                rb_warn2L(nd_line((NODE *)data),
+                rb_warn2L(nd_line((rb_node_t *)data),
                           "key %+"PRIsWARN" is duplicated and overwritten on line %d",
                           nd_value(p, head), WARN_I(nd_line(head)));
             }
-            st_insert(p->warn_duplicate_keys_table, (st_data_t)key, (st_data_t)hash);
+            st_insert(p->warn_duplicate_keys_table, (st_data_t)key, (st_data_t)node);
         }
     }
     st_free_table(p->warn_duplicate_keys_table);

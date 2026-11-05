@@ -5572,19 +5572,19 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
       case RB_REGULAR_EXPRESSION_NODE:
         return RB_OBJ_SET_SHAREABLE(rb_node_regx_string_val2(node));
       case RB_SOURCE_LINE_NODE:
-        return rb_node_line_lineno_val(node);
+        return rb_node_line_lineno_val2(node);
       case RB_SOURCE_ENCODING_NODE:
-        return rb_node_encoding_val(node);
+        return rb_node_encoding_val2(node);
       case RB_SOURCE_FILE_NODE:
       case RB_STRING_NODE:
         if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
-            VALUE lit = get_string_value(node);
+            VALUE lit = get_string_value2(node);
             VALUE str = rb_str_with_debug_created_info(lit, rb_iseq_path(iseq), (int)nd_line(node));
             RB_OBJ_SET_SHAREABLE(str);
             return str;
         }
         else {
-            return get_string_value(node);
+            return get_string_value2(node);
         }
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
@@ -11924,7 +11924,6 @@ compile_shareable_constant_value(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pars
     }
 }
 
-static VALUE parse_integer_value(const pm_integer_t *integer);
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -12637,35 +12636,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
-      case RB_STRING_NODE:{
-        if (!popped) {
-            VALUE lit = rb_node_str_string_val2(node);
-            ADD_INSN1(ret, node, putobject, lit);
-            RB_OBJ_WRITTEN(iseq, Qundef, lit);
-        }
-        break;
-      }
-      case RB_INTEGER_NODE: {
-        if (!popped) {
-            rb_integer_node_t *int_node = (rb_integer_node_t *)node;
-            VALUE value = parse_integer_value(&int_node->value);
-
-            ADD_INSN1(ret, node, putobject, value);
-            RB_OBJ_WRITTEN(iseq, Qundef, value);
-        }
-        break;
-      }
-
-      case RB_FLOAT_NODE: {
-        if (!popped) {
-            rb_float_node_t *float_node = (rb_float_node_t *)node;
-            VALUE value = DBL2NUM(float_node->value);
-            ADD_INSN1(ret, node, putobject, value);
-            RB_OBJ_WRITTEN(iseq, Qundef, value);
-        }
-        break;
-      }
-
       case RB_OPTIONAL_PARAMETER_NODE: {
         ID id = RB_NODE_OPTIONAL_PARAMETER(node)->name;
 
