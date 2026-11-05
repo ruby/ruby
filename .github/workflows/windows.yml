@@ -53,6 +53,10 @@ jobs:
           - os: 11-arm
             test_task: check
             target: arm64
+          - os: 11-arm
+            test_task: check
+            target: arm64
+            yjit: true
       fail-fast: false
 
     runs-on: windows-${{ matrix.os }}
