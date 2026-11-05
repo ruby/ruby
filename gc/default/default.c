@@ -9664,6 +9664,8 @@ rb_gc_impl_shref_recorded_p(void *objspace_ptr, VALUE parent, VALUE child)
         if (!RVALUE_OLD_P(objspace, parent)) return true;
         if (RVALUE_OLD_P(objspace, child)) return true;
         if (RVALUE_REMEMBERED(objspace, parent)) return true;
+        /* A demoted WB-unprotected child is marked by every minor until the next major. */
+        if (RVALUE_UNCOLLECTIBLE(objspace, child) && RVALUE_WB_UNPROTECTED(objspace, child)) return true;
         /* A full mark clears the rememberset at gc_marks_start and re-derives the edge when
          * it traverses parent. Until then the entry is legitimately absent, so don't flag it. */
         if (is_marking(objspace)) return true;

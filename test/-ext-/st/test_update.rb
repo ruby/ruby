@@ -47,5 +47,16 @@ class Bug::StTable
         nil
       }
     end
+
+    def test_update_old_table_referenced_from_class_ivar
+      assert_separately(%w[-r-test-/st/update], <<~'RUBY')
+        h = Bug::StTable[a: 1]
+        class C; end
+        C.instance_variable_set(:@x, h)
+        4.times { GC.start }
+        h.st_update(:a) { 1 }
+        GC.verify_internal_consistency
+      RUBY
+    end
   end
 end
