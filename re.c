@@ -1607,8 +1607,8 @@ match_end(VALUE match, VALUE n)
  *  :markup: markdown
  *
  *  call-seq:
- *    match(n) -> string
- *    match(name) -> string
+ *    match(n) -> string or nil
+ *    match(name) -> string or nil
  *
  *  Returns the matched substring corresponding to the given argument.
  *
@@ -1620,8 +1620,31 @@ match_end(VALUE match, VALUE n)
  *  match = '2026-12-25'.match(regexp)
  *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
  *  match.match(0) # => "2026-12-25"
+ *  match.match(1) # => "2026"
+ *  match.match(2) # => "12"
  *  match.match(3) # => "25"
  *  match.match(4) # Raises IndexError: index 4 out of matches.
+ *  ```
+ *
+ *  Except for `n == 0`, these same values are available
+ *  in [Regexp global variables][regexp global variables]:
+ *
+ *  ```ruby
+ *  $0 # Returns the name of the current program.
+ *  $1 # => "2026"
+ *  $2 # => "12"
+ *  $3 # => "25"
+ *  $4 # => nil
+ *  ```
+ *
+ *  Returns `nil` for an optional capture that had no match:
+ *
+ *  ```ruby
+ *  match = /(\d+)(?:-(\d+))?/.match('123')
+ *  # => #<MatchData "123" 1:"123" 2:nil>
+ *  match.match(0) # => "123"
+ *  match.match(1) # => "123"
+ *  match.match(2) # => nil
  *  ```
  *
  *  With string or symbol argument `name` given,
@@ -1636,6 +1659,16 @@ match_end(VALUE match, VALUE n)
  *  match.match(:nosuch) # Raises IndexError: undefined group name reference: nosuch.
  *  ```
  *
+ *  Returns `nil` for a named capture that had no match:
+ *
+ *  ```ruby
+ *  match = /(?<year>\d{4})(?:-(?<month>\d{2}))?/.match('2026')
+ *  # => #<MatchData "2026" year:"2026" month:nil>
+ *  match.match(:year)  # => "2026"
+ *  match.match(:month) # => nil
+ *  ```
+ *
+ *  [regexp global variables]: rdoc-ref:Regexp@Global+Variables
  */
 
 static VALUE
