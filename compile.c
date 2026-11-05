@@ -7178,7 +7178,12 @@ compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const 
 {
     const int line = nd_line(node);
     const NODE *line_node = node;
-    if (!RB_NODE_DEFINED(node)->value) {
+    const NODE *value = (const NODE *)rb_node_defined_value(RB_NODE_DEFINED(node));
+    if (RB_NODE_FLAG_P(node, RB_DEFINED_NODE_FLAGS_FORCE_EXPRESSION)) {
+        VALUE str = needstr == Qfalse ? Qtrue : rb_iseq_defined_string(DEFINED_EXPR);
+        ADD_INSN1(ret, line_node, putobject, str);
+    }
+    else if (!value) {
         VALUE str = rb_iseq_defined_string(DEFINED_NIL);
         ADD_INSN1(ret, line_node, putobject, str);
     }
@@ -7188,7 +7193,7 @@ compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const 
         lfinish[0] = NEW_LABEL(line);
         lfinish[1] = 0;
         lfinish[2] = 0;
-        defined_expr(iseq, ret, RB_NODE_DEFINED(node)->value, lfinish, needstr, ignore);
+        defined_expr(iseq, ret, value, lfinish, needstr, ignore);
         if (lfinish[1]) {
             ELEM_INSERT_NEXT(last, &new_insn_body(iseq, nd_line(line_node), nd_node_id(line_node), BIN(putnil), 0)->link);
             ADD_INSN(ret, line_node, swap);

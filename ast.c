@@ -90,6 +90,7 @@ static VALUE ast_child(const struct ASTNodeData *parent, const rb_node_t *node);
 static VALUE node_children(const struct ASTNodeData *data);
 static VALUE ast_view(const struct ASTNodeData *parent, const rb_node_t *node, enum node_type type);
 static VALUE owned_child(const struct ASTNodeData *, const rb_node_t *, const rb_node_t *);
+static enum node_type call_type(const rb_call_node_t *);
 
 static VALUE rb_ast_parse_str(VALUE str, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens);
 static VALUE rb_ast_parse_file(VALUE path, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens);
@@ -215,6 +216,15 @@ node_find(VALUE self, int node_id)
          search.parent->type == RB_FORWARDING_SUPER_NODE)) {
         return ast_child(&context, search.parent);
     }
+    /* The call and its literal block have separate execution IDs, even though
+     * the public tree nests both under an ITER view. */
+    if (search.found->type == RB_CALL_NODE && RB_NODE_CALL(search.found)->block &&
+        RB_NODE_CALL(search.found)->block->type == RB_BLOCK_NODE) {
+        return ast_view(&context, search.found, call_type(RB_NODE_CALL(search.found)));
+    }
+    if (search.found->type == RB_SUPER_NODE && RB_NODE_SUPER(search.found)->block &&
+        RB_NODE_SUPER(search.found)->block->type == RB_BLOCK_NODE) return ast_view(&context, search.found, NODE_SUPER);
+    if (search.found->type == RB_FORWARDING_SUPER_NODE && RB_NODE_FORWARDING_SUPER(search.found)->block) return ast_view(&context, search.found, NODE_ZSUPER);
     return ast_child(&context, search.found);
 }
 
@@ -396,7 +406,27 @@ ast_view(const struct ASTNodeData *parent, const rb_node_t *node, enum node_type
     }
     switch (RB_NODE_TYPE(node)) {
       case RB_FORWARDING_ARGUMENTS_NODE:
-        if ((type == NODE_ARGSPUSH || type == NODE_BLOCK_PASS) && data->owner != node) data->location = data->owner->location;
+        if (parent->node == node && (type == NODE_ARGSPUSH || type == NODE_ARGSCAT || type == NODE_BLOCK_PASS)) data->location = parent->location;
+        break;
+      case RB_INTERPOLATED_MATCH_LAST_LINE_NODE:
+        if (type == NODE_MATCH2 || type == NODE_GVAR) data->location = RB_NODE_INTERPOLATED_MATCH_LAST_LINE(node)->implicit_call_loc;
+        break;
+      case RB_PRE_EXECUTION_NODE:
+        data->location.beg_pos = RB_NODE_PRE_EXECUTION(node)->opening_loc.beg_pos;
+        break;
+      case RB_CONSTANT_PATH_TARGET_NODE:
+        if (type == NODE_COLON2 || type == NODE_COLON3) {
+            const rb_constant_path_target_node_t *target = RB_NODE_CONSTANT_PATH_TARGET(node);
+            data->location.beg_pos = target->parent ? target->parent->location.beg_pos : target->delimiter_loc.beg_pos;
+            data->location.end_pos = target->name_loc.end_pos;
+        }
+        break;
+      case RB_INDEX_TARGET_NODE:
+        if ((type == NODE_LIST || type == NODE_ARGSCAT) && RB_NODE_INDEX_TARGET(node)->arguments &&
+            RB_NODE_INDEX_TARGET(node)->arguments->arguments.size) data->location.beg_pos = RB_NODE_INDEX_TARGET(node)->arguments->arguments.nodes[0]->location.beg_pos;
+        break;
+      case RB_FOR_NODE:
+        if (type == NODE_ARGS || type == NODE_DVAR || type == NODE_FOR_MASGN || type == NODE_MASGN || type == NODE_LIST) data->location = RB_NODE_FOR(node)->index->location;
         break;
       case RB_BEGIN_NODE:
         if (type == NODE_BLOCK && RB_NODE_BEGIN(node)->statements) data->location.end_pos = RB_NODE_BEGIN(node)->statements->base.location.end_pos;
@@ -423,6 +453,7 @@ ast_view(const struct ASTNodeData *parent, const rb_node_t *node, enum node_type
         if (type == NODE_RESBODY) data->location.beg_pos = RB_NODE_RESCUE_MODIFIER(node)->keyword_loc.beg_pos;
         break;
       case RB_MULTI_TARGET_NODE: case RB_MULTI_WRITE_NODE:
+        if (type == NODE_LVAR || type == NODE_DVAR) data->location.end_pos = data->location.beg_pos;
         if (type == NODE_POSTARG && RB_NODE_MULTI_TARGET(node)->rights.size) {
             const rb_node_list2_t *rights = &RB_NODE_MULTI_TARGET(node)->rights;
             data->location.end_pos = rights->nodes[rights->size - 1]->location.end_pos;
@@ -488,9 +519,14 @@ ast_list(const struct ASTNodeData *parent, const rb_node_t *owner, const rb_node
     data->index = index;
     data->count = count;
     data->location.beg_pos = list->nodes[index]->location.beg_pos;
+    if (list->nodes[index]->type == RB_MULTI_TARGET_NODE && !NULL_LOC_P(&RB_NODE_MULTI_TARGET(list->nodes[index])->lparen_loc)) {
+        data->location.beg_pos = RB_NODE_MULTI_TARGET(list->nodes[index])->lparen_loc.beg_pos;
+    }
+    if (list->nodes[index]->type == RB_PRE_EXECUTION_NODE) data->location.beg_pos = RB_NODE_PRE_EXECUTION(list->nodes[index])->opening_loc.beg_pos;
     data->location.end_pos = list->nodes[index + count - 1]->location.end_pos;
     if (owner->type == RB_INTERPOLATED_STRING_NODE || owner->type == RB_INTERPOLATED_SYMBOL_NODE ||
-        owner->type == RB_INTERPOLATED_X_STRING_NODE || owner->type == RB_INTERPOLATED_REGULAR_EXPRESSION_NODE) {
+        owner->type == RB_INTERPOLATED_X_STRING_NODE || owner->type == RB_INTERPOLATED_REGULAR_EXPRESSION_NODE ||
+        owner->type == RB_INTERPOLATED_MATCH_LAST_LINE_NODE) {
         data->location.end_pos = list->nodes[index]->location.end_pos;
     }
     return object;
@@ -506,6 +542,19 @@ ast_arguments(const struct ASTNodeData *parent, const rb_node_t *owner, const rb
         TypedData_Get_Struct(child, struct ASTNodeData, &rb_node_type, data);
         data->owner = owner;
         data->location = owner->location;
+        const rb_code_location_t *opening = NULL, *closing = NULL;
+        if (parent->node->type == RB_CALL_NODE) {
+            opening = &RB_NODE_CALL(parent->node)->opening_loc;
+            closing = &RB_NODE_CALL(parent->node)->closing_loc;
+        }
+        else if (parent->node->type == RB_SUPER_NODE) {
+            opening = &RB_NODE_SUPER(parent->node)->lparen_loc;
+            closing = &RB_NODE_SUPER(parent->node)->rparen_loc;
+        }
+        if (opening && !NULL_LOC_P(opening) && !NULL_LOC_P(closing)) {
+            data->location.beg_pos = opening->beg_pos;
+            data->location.end_pos = closing->end_pos;
+        }
         return child;
     }
     size_t splat = count;
@@ -523,7 +572,7 @@ call_type(const rb_call_node_t *node)
     if (RB_NODE_FLAG_P(node, RB_CALL_NODE_FLAGS_SAFE_NAVIGATION)) return NODE_QCALL;
     if (RB_NODE_FLAG_P(node, RB_CALL_NODE_FLAGS_VARIABLE_CALL)) return NODE_VCALL;
     if (!node->receiver) return NODE_FCALL;
-    if (NULL_LOC_P(&node->call_operator_loc) && !is_notop_id(node->name)) return NODE_OPCALL;
+    if (NULL_LOC_P(&node->call_operator_loc) && !NULL_LOC_P(&node->message_loc) && !is_notop_id(node->name)) return NODE_OPCALL;
     return NODE_CALL;
 }
 
@@ -541,7 +590,9 @@ ast_child(const struct ASTNodeData *parent, const rb_node_t *node)
       }
       case RB_ELSE_NODE: return ast_child(parent, (const rb_node_t *)RB_NODE_ELSE(node)->statements);
       case RB_BLOCK_PARAMETERS_NODE: return ast_child(parent, (const rb_node_t *)RB_NODE_BLOCK_PARAMETERS(node)->parameters);
-      case RB_PARENTHESES_NODE: return ast_child(parent, (const rb_node_t *)RB_NODE_PARENTHESES(node)->body);
+      case RB_PARENTHESES_NODE:
+        if (RB_NODE_FLAG_P(node, RB_PARENTHESES_NODE_FLAGS_ARGUMENT)) return ast_child(parent, RB_NODE_PARENTHESES(node)->body);
+        return ast_view(parent, node, NODE_BLOCK);
       case RB_IMPLICIT_NODE: return ast_child(parent, RB_NODE_IMPLICIT(node)->value);
       case RB_ASSOC_SPLAT_NODE: return ast_child(parent, RB_NODE_ASSOC_SPLAT(node)->value);
       case RB_PINNED_VARIABLE_NODE: return ast_child(parent, RB_NODE_PINNED_VARIABLE(node)->variable);
@@ -577,7 +628,8 @@ ast_child(const struct ASTNodeData *parent, const rb_node_t *node)
       case RB_REQUIRED_KEYWORD_PARAMETER_NODE: case RB_OPTIONAL_KEYWORD_PARAMETER_NODE:
         type = parent->dynamic ? NODE_DASGN : NODE_LASGN; break;
       case RB_KEYWORD_REST_PARAMETER_NODE: type = NODE_DVAR; break;
-      case RB_CONSTANT_PATH_NODE: case RB_CONSTANT_PATH_TARGET_NODE:
+      case RB_CONSTANT_PATH_TARGET_NODE: type = NODE_CDECL; break;
+      case RB_CONSTANT_PATH_NODE:
         type = RB_NODE_CONSTANT_PATH(node)->parent ? NODE_COLON2 : NODE_COLON3; break;
       case RB_CASE_NODE: type = RB_NODE_CASE(node)->predicate ? NODE_CASE : NODE_CASE2; break;
       case RB_RANGE_NODE: type = RB_NODE_FLAG_P(node, RB_RANGE_FLAGS_EXCLUDE_END) ? NODE_DOT3 : NODE_DOT2; break;
@@ -657,7 +709,7 @@ ast_child(const struct ASTNodeData *parent, const rb_node_t *node)
       case RB_NUMBERED_REFERENCE_READ_NODE: type = NODE_NTH_REF; break;
       case RB_OR_NODE: type = NODE_OR; break;
       case RB_PARAMETERS_NODE: type = NODE_ARGS; break;
-      case RB_PINNED_EXPRESSION_NODE: type = NODE_BEGIN; break;
+      case RB_PINNED_EXPRESSION_NODE: type = NODE_BLOCK; break;
 
       case RB_POST_EXECUTION_NODE: type = NODE_POSTEXE; break;
       case RB_PRE_EXECUTION_NODE: type = NODE_BEGIN; break;
@@ -740,7 +792,16 @@ ast_node_node_id(rb_execution_context_t *ec, VALUE self)
 {
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
-    return INT2NUM(data->node->node_id);
+    const rb_node_t *node = data->node;
+    if (data->type == NODE_ITER) {
+        switch (node->type) {
+          case RB_CALL_NODE: node = RB_NODE_CALL(node)->block; break;
+          case RB_SUPER_NODE: node = RB_NODE_SUPER(node)->block; break;
+          case RB_FORWARDING_SUPER_NODE: node = (const rb_node_t *)RB_NODE_FORWARDING_SUPER(node)->block; break;
+          default: break;
+        }
+    }
+    return INT2NUM(node->node_id);
 }
 
 #define CHILD(node) ast_child(data, (const rb_node_t *)(node))
@@ -750,6 +811,9 @@ ast_node_node_id(rb_execution_context_t *ec, VALUE self)
 static VALUE
 scope_children(const struct ASTNodeData *data)
 {
+    if (data->node->type == RB_POST_EXECUTION_NODE) {
+        return CHILDREN(3, rb_ary_new(), Qnil, CHILD(RB_NODE_POST_EXECUTION(data->node)->statements));
+    }
     if (data->node->type == RB_FOR_NODE) {
         return CHILDREN(3, CHILDREN(1, Qnil), VIEW(data->node, NODE_ARGS), CHILD(RB_NODE_FOR(data->node)->statements));
     }
@@ -792,9 +856,10 @@ scope_children(const struct ASTNodeData *data)
         if (body && body->type == RB_STATEMENTS_NODE && !RB_NODE_STATEMENTS(body)->body.size) body = NULL;
     }
     if (data->node->type == RB_DEF_NODE && body) {
-        if (body->type == RB_NIL_NODE) body = NULL;
+        if (body->type == RB_NIL_NODE && (!NULL_LOC_P(&RB_NODE_DEF(data->node)->equal_loc) || NULL_LOC_P(&body->location))) body = NULL;
         else if (body->type == RB_STATEMENTS_NODE && RB_NODE_STATEMENTS(body)->body.size == 1 &&
-                 RB_NODE_STATEMENTS(body)->body.nodes[0]->type == RB_NIL_NODE) body = NULL;
+                 RB_NODE_STATEMENTS(body)->body.nodes[0]->type == RB_NIL_NODE &&
+                 (!NULL_LOC_P(&RB_NODE_DEF(data->node)->equal_loc) || NULL_LOC_P(&RB_NODE_STATEMENTS(body)->body.nodes[0]->location))) body = NULL;
     }
     return CHILDREN(3, locals, args, ast_child(&context, body));
 }
@@ -813,11 +878,27 @@ parameter_name(const rb_node_t *node)
 }
 
 static VALUE
+parameter_initializers(const struct ASTNodeData *data, const rb_node_list2_t *parameters)
+{
+    size_t first = parameters->size, last = 0, count = 0;
+    for (size_t i = 0; i < parameters->size; i++) {
+        if (parameters->nodes[i]->type != RB_MULTI_TARGET_NODE) continue;
+        if (!count++) first = i;
+        last = i;
+    }
+    if (!count) return Qnil;
+    if (count == 1) return owned_child(data, parameters->nodes[first], data->node);
+    return ast_list(data, data->node, parameters, first, last - first + 1, NODE_BLOCK);
+}
+
+static VALUE
 parameters_children(const struct ASTNodeData *data)
 {
     if (data->node->type == RB_FOR_NODE) {
         const rb_node_t *index = RB_NODE_FOR(data->node)->index;
-        return CHILDREN(10, INT2FIX(index->type == RB_MULTI_TARGET_NODE ? 0 : 1), owned_child(data, index, data->node),
+        bool local = index->type == RB_LOCAL_VARIABLE_WRITE_NODE || index->type == RB_LOCAL_VARIABLE_TARGET_NODE;
+        VALUE initializer = local || index->type == RB_MULTI_TARGET_NODE ? owned_child(data, index, data->node) : VIEW(data->node, NODE_MASGN);
+        return CHILDREN(10, INT2FIX(local ? 1 : 0), initializer,
             Qnil, Qnil, INT2FIX(0), Qnil, Qnil, Qnil, Qnil, Qnil);
     }
     if (data->node->type != RB_PARAMETERS_NODE) {
@@ -837,10 +918,10 @@ parameters_children(const struct ASTNodeData *data)
     }
     if (node->block && parameter_name((const rb_node_t *)node->block) == idNil) block = Qfalse;
     VALUE keywords = ast_list(data, data->node, &node->keywords, 0, node->keywords.size, NODE_KW_ARG);
-    return CHILDREN(10, SIZET2NUM(node->requireds.size), Qnil,
+    return CHILDREN(10, SIZET2NUM(node->requireds.size), parameter_initializers(data, &node->requireds),
         ast_list(data, data->node, &node->optionals, 0, node->optionals.size, NODE_OPT_ARG),
         node->posts.size ? var_name(parameter_name(node->posts.nodes[0])) : Qnil,
-        SIZET2NUM(node->posts.size), Qnil, rest, kwrest == Qfalse ? Qfalse : keywords, kwrest, block);
+        SIZET2NUM(node->posts.size), parameter_initializers(data, &node->posts), rest, kwrest == Qfalse ? Qfalse : keywords, kwrest, block);
 }
 
 static VALUE
@@ -851,6 +932,7 @@ owned_child(const struct ASTNodeData *data, const rb_node_t *node, const rb_node
         struct ASTNodeData *child_data;
         TypedData_Get_Struct(child, struct ASTNodeData, &rb_node_type, child_data);
         child_data->owner = owner;
+        if (owner->type == RB_HASH_PATTERN_NODE) child_data->location = owner->location;
     }
     return child;
 }
@@ -903,6 +985,35 @@ pattern_rest(const struct ASTNodeData *data, const rb_node_t *rest)
 }
 
 static VALUE
+defined_original_child(const struct ASTNodeData *data, const rb_node_t *node)
+{
+    bool argument = false;
+    while (node) {
+        if (node->type == RB_PARENTHESES_NODE && RB_NODE_FLAG_P(node, RB_PARENTHESES_NODE_FLAGS_ARGUMENT)) {
+            argument = true;
+            node = RB_NODE_PARENTHESES(node)->body;
+        }
+        else if (argument && node->type == RB_STATEMENTS_NODE && RB_NODE_STATEMENTS(node)->body.size == 1) {
+            node = RB_NODE_STATEMENTS(node)->body.nodes[0];
+        }
+        else if (argument && node->type == RB_BEGIN_NODE && !RB_NODE_BEGIN(node)->rescue_clause && !RB_NODE_BEGIN(node)->ensure_clause) {
+            node = (const rb_node_t *)RB_NODE_BEGIN(node)->statements;
+        }
+        else break;
+    }
+    if (node && node->type == RB_BEGIN_NODE && !argument) {
+        VALUE child = VIEW(node, NODE_BEGIN);
+        struct ASTNodeData *child_data;
+        TypedData_Get_Struct(child, struct ASTNodeData, &rb_node_type, child_data);
+        child_data->owner = data->node;
+        child_data->location.beg_pos = RB_NODE_BEGIN(node)->begin_keyword_loc.beg_pos;
+        child_data->location.end_pos = RB_NODE_BEGIN(node)->end_keyword_loc.end_pos;
+        return child;
+    }
+    return CHILD(node);
+}
+
+static VALUE
 node_children(const struct ASTNodeData *data)
 {
     const rb_node_t *node = data->node;
@@ -924,7 +1035,10 @@ node_children(const struct ASTNodeData *data)
             CHILD(list->nodes[start]), ast_list(data, node, list, start + 1, count - 1, data->type));
         VALUE array = rb_ary_new_capa(count + 1);
         for (size_t i = start; i < start + count; i++) {
-            rb_ary_push(array, node->type == RB_MATCH_WRITE_NODE ? owned_child(data, list->nodes[i], node) : CHILD(list->nodes[i]));
+            if (node->type == RB_PARAMETERS_NODE && data->type == NODE_BLOCK) {
+                if (list->nodes[i]->type == RB_MULTI_TARGET_NODE) rb_ary_push(array, owned_child(data, list->nodes[i], node));
+            }
+            else rb_ary_push(array, node->type == RB_MATCH_WRITE_NODE ? owned_child(data, list->nodes[i], node) : CHILD(list->nodes[i]));
         }
         if (data->type == NODE_LIST) rb_ary_push(array, Qnil);
         return array;
@@ -984,7 +1098,7 @@ node_children(const struct ASTNodeData *data)
       case RB_HASH_PATTERN_NODE: {
         const rb_hash_pattern_node_t *n = RB_NODE_HASH_PATTERN(node);
         if (data->type == NODE_HSHPTN) return CHILDREN(3, CHILD(n->constant), (n->elements.size || n->rest) ? VIEW(node, NODE_HASH) : Qnil,
-            n->rest && n->rest->type == RB_NO_KEYWORDS_PARAMETER_NODE ? special_name("NODE_SPECIAL_NO_REST_KEYWORD") : CHILD(n->rest));
+            n->rest && n->rest->type == RB_NO_KEYWORDS_PARAMETER_NODE ? special_name("NODE_SPECIAL_NO_REST_KEYWORD") : owned_child(data, n->rest, node));
         if (data->type == NODE_HASH) return CHILDREN(1, n->elements.size ? VIEW(node, NODE_LIST) : Qnil);
         VALUE children = rb_ary_new_capa(n->elements.size * 2 + 1);
         for (size_t i = 0; i < n->elements.size; i++) {
@@ -997,20 +1111,48 @@ node_children(const struct ASTNodeData *data)
       }
       case RB_MULTI_WRITE_NODE: case RB_MULTI_TARGET_NODE: {
         const rb_multi_target_node_t *n = RB_NODE_MULTI_TARGET(node);
+        if (data->type == NODE_LVAR || data->type == NODE_DVAR) return CHILDREN(1, Qnil);
         VALUE rest = Qnil;
         if (n->rights.size) rest = VIEW(node, NODE_POSTARG);
         else if (n->rest && n->rest->type != RB_IMPLICIT_REST_NODE) rest = pattern_rest(data, (const rb_node_t *)n->rest);
         if (data->type == NODE_POSTARG) return CHILDREN(2, pattern_rest(data, (const rb_node_t *)n->rest), ast_list(data, node, &n->rights, 0, n->rights.size, NODE_LIST));
         return CHILDREN(3, node->type == RB_MULTI_WRITE_NODE ? CHILD(RB_NODE_MULTI_WRITE(node)->value) :
-            data->owner->type == RB_FOR_NODE ? VIEW(data->owner, NODE_FOR_MASGN) : Qnil,
+            data->owner->type == RB_FOR_NODE ? VIEW(data->owner, NODE_FOR_MASGN) :
+            data->owner->type == RB_PARAMETERS_NODE ? VIEW(node, data->dynamic ? NODE_DVAR : NODE_LVAR) : Qnil,
             ast_list(data, node, &n->lefts, 0, n->lefts.size, NODE_LIST), rest);
       }
       case RB_ALTERNATION_PATTERN_NODE: return CHILDREN(2, CHILD(RB_NODE_ALTERNATION_PATTERN(node)->left), CHILD(RB_NODE_ALTERNATION_PATTERN(node)->right));
       case RB_CAPTURE_PATTERN_NODE:
         if (data->type == NODE_HASH) return CHILDREN(1, VIEW(node, NODE_LIST));
         return CHILDREN(3, CHILD(RB_NODE_CAPTURE_PATTERN(node)->value), CHILD(RB_NODE_CAPTURE_PATTERN(node)->target), Qnil);
-      case RB_CALL_TARGET_NODE: return CHILDREN(3, CHILD(RB_NODE_CALL_TARGET(node)->receiver), var_name(RB_NODE_CALL_TARGET(node)->name), Qnil);
-      case RB_INDEX_TARGET_NODE: return CHILDREN(3, CHILD(RB_NODE_INDEX_TARGET(node)->receiver), special_name("[]="), CHILD(RB_NODE_INDEX_TARGET(node)->arguments));
+      case RB_CALL_TARGET_NODE:
+        if (data->type == NODE_LIST) return CHILDREN(2, VIEW(node, NODE_ERRINFO), Qnil);
+        return CHILDREN(3, CHILD(RB_NODE_CALL_TARGET(node)->receiver), var_name(RB_NODE_CALL_TARGET(node)->name),
+            data->owner->type == RB_RESCUE_NODE ? VIEW(node, NODE_LIST) : Qnil);
+      case RB_INDEX_TARGET_NODE: {
+        const rb_arguments_node_t *args = RB_NODE_INDEX_TARGET(node)->arguments;
+        const rb_node_list2_t *list = args ? &args->arguments : NULL;
+        size_t count = list ? list->size : 0, split = count;
+        while (split && list->nodes[split - 1]->type != RB_SPLAT_NODE) split--;
+        if (data->type == NODE_ARGSPUSH) return CHILDREN(2, CHILD(args), VIEW(node, NODE_ERRINFO));
+        if (data->type == NODE_ARGSCAT) {
+            VALUE tail = VIEW(node, NODE_LIST);
+            struct ASTNodeData *tail_data;
+            TypedData_Get_Struct(tail, struct ASTNodeData, &rb_node_type, tail_data);
+            tail_data->index = split;
+            tail_data->location.beg_pos = list->nodes[split]->location.beg_pos;
+            return CHILDREN(2, ast_arguments(data, (const rb_node_t *)args, list, split), tail);
+        }
+        if (data->type == NODE_LIST) {
+            VALUE children = rb_ary_new_capa(count - data->index + 2);
+            for (size_t i = data->index; i < count; i++) rb_ary_push(children, CHILD(list->nodes[i]));
+            rb_ary_push(children, VIEW(node, NODE_ERRINFO));
+            rb_ary_push(children, Qnil);
+            return children;
+        }
+        return CHILDREN(3, CHILD(RB_NODE_INDEX_TARGET(node)->receiver), special_name("[]="),
+            data->owner->type == RB_RESCUE_NODE ? VIEW(node, !split ? NODE_LIST : split < count ? NODE_ARGSCAT : NODE_ARGSPUSH) : CHILD(args));
+      }
       case RB_LOCAL_VARIABLE_AND_WRITE_NODE: {
         const rb_local_variable_and_write_node_t *n = RB_NODE_LOCAL_VARIABLE_AND_WRITE(node);
         enum node_type read = data->dynamic ? NODE_DVAR : NODE_LVAR, write = data->dynamic ? NODE_DASGN : NODE_LASGN;
@@ -1127,11 +1269,23 @@ node_children(const struct ASTNodeData *data)
       case RB_FOR_NODE:
         if (data->type == NODE_DVAR) return CHILDREN(1, Qnil);
         if (data->type == NODE_FOR_MASGN) return CHILDREN(1, VIEW(node, NODE_DVAR));
+        if (data->type == NODE_MASGN) return CHILDREN(3, VIEW(node, NODE_DVAR), VIEW(node, NODE_LIST), Qnil);
+        if (data->type == NODE_LIST) return CHILDREN(2, CHILD(RB_NODE_FOR(node)->index), Qnil);
         return CHILDREN(2, CHILD(RB_NODE_FOR(node)->collection), VIEW(node, NODE_SCOPE));
-      case RB_STATEMENTS_NODE: return CHILDREN(1, Qnil);
+      case RB_STATEMENTS_NODE: {
+        if (data->type == NODE_BEGIN) return CHILDREN(1, Qnil);
+        const rb_node_list2_t *body = &RB_NODE_STATEMENTS(node)->body;
+        VALUE children = rb_ary_new_capa(body->size);
+        for (size_t i = 0; i < body->size; i++) rb_ary_push(children, CHILD(body->nodes[i]));
+        return children;
+      }
       case RB_BEGIN_NODE: {
         const rb_begin_node_t *n = RB_NODE_BEGIN(node);
-        if (data->type == NODE_BEGIN) return CHILDREN(1, Qnil);
+        if (data->type == NODE_BEGIN) {
+            if (data->owner->type != RB_DEFINED_NODE) return CHILDREN(1, Qnil);
+            return CHILDREN(1, n->ensure_clause ? VIEW(node, NODE_ENSURE) :
+                n->rescue_clause ? VIEW(node, NODE_RESCUE) : CHILD(n->statements));
+        }
         if (data->type == NODE_ENSURE) return CHILDREN(2,
             n->rescue_clause ? VIEW(node, NODE_RESCUE) : CHILD(n->statements), CHILD(RB_NODE_ENSURE(n->ensure_clause)->statements));
         if (data->type == NODE_RESCUE) return CHILDREN(3, CHILD(n->statements), CHILD(n->rescue_clause), CHILD(n->else_clause));
@@ -1187,7 +1341,11 @@ node_children(const struct ASTNodeData *data)
       case RB_CLASS_NODE: return CHILDREN(3, (RB_NODE_CLASS(node)->constant_path->type == RB_CONSTANT_READ_NODE ? VIEW(RB_NODE_CLASS(node)->constant_path, NODE_COLON2) : CHILD(RB_NODE_CLASS(node)->constant_path)), CHILD(RB_NODE_CLASS(node)->superclass), VIEW(node, NODE_SCOPE));
       case RB_MODULE_NODE: return CHILDREN(2, (RB_NODE_MODULE(node)->constant_path->type == RB_CONSTANT_READ_NODE ? VIEW(RB_NODE_MODULE(node)->constant_path, NODE_COLON2) : CHILD(RB_NODE_MODULE(node)->constant_path)), VIEW(node, NODE_SCOPE));
       case RB_SINGLETON_CLASS_NODE: return CHILDREN(2, CHILD(RB_NODE_SINGLETON_CLASS(node)->expression), VIEW(node, NODE_SCOPE));
-      case RB_CONSTANT_PATH_NODE: case RB_CONSTANT_PATH_TARGET_NODE:
+      case RB_CONSTANT_PATH_TARGET_NODE:
+        if (data->type == NODE_CDECL) return CHILDREN(3, VIEW(node, RB_NODE_CONSTANT_PATH_TARGET(node)->parent ? NODE_COLON2 : NODE_COLON3),
+            var_name(RB_NODE_CONSTANT_PATH_TARGET(node)->name), data->owner->type == RB_RESCUE_NODE ? VIEW(node, NODE_ERRINFO) : Qnil);
+        /* fall through */
+      case RB_CONSTANT_PATH_NODE:
         if (data->type == NODE_COLON3) return CHILDREN(1, var_name(RB_NODE_CONSTANT_PATH(node)->name));
         return CHILDREN(2, CHILD(RB_NODE_CONSTANT_PATH(node)->parent), var_name(RB_NODE_CONSTANT_PATH(node)->name));
       case RB_CONSTANT_PATH_WRITE_NODE: return CHILDREN(3, CHILD(RB_NODE_CONSTANT_PATH_WRITE(node)->target),
@@ -1243,7 +1401,11 @@ node_children(const struct ASTNodeData *data)
         if (args && args->type == RB_ARGUMENTS_NODE && RB_NODE_ARGUMENTS(args)->arguments.size == 1) args = RB_NODE_ARGUMENTS(args)->arguments.nodes[0];
         return CHILDREN(1, CHILD(args));
       }
-      case RB_IF_NODE: return CHILDREN(3, CHILD(RB_NODE_IF(node)->predicate), CHILD(RB_NODE_IF(node)->statements), CHILD(RB_NODE_IF(node)->subsequent));
+      case RB_IF_NODE: {
+        const rb_if_node_t *n = RB_NODE_IF(node);
+        bool empty_error_body = n->predicate && n->predicate->type == RB_MISSING_NODE && n->statements && !n->statements->body.size;
+        return CHILDREN(3, CHILD(n->predicate), empty_error_body ? Qnil : CHILD(n->statements), CHILD(n->subsequent));
+      }
       case RB_UNLESS_NODE: return CHILDREN(3, CHILD(RB_NODE_UNLESS(node)->predicate), CHILD(RB_NODE_UNLESS(node)->statements), CHILD(RB_NODE_UNLESS(node)->else_clause));
       case RB_EMBEDDED_STATEMENTS_NODE: return CHILDREN(1, CHILD(RB_NODE_EMBEDDED_STATEMENTS(node)->statements));
       case RB_EMBEDDED_VARIABLE_NODE: return CHILDREN(1, CHILD(RB_NODE_EMBEDDED_VARIABLE(node)->variable));
@@ -1251,10 +1413,15 @@ node_children(const struct ASTNodeData *data)
       case RB_FLIP_FLOP_NODE: return CHILDREN(2, CHILD(RB_NODE_FLIP_FLOP(node)->left), CHILD(RB_NODE_FLIP_FLOP(node)->right));
       case RB_SPLAT_NODE: return CHILDREN(1, CHILD(RB_NODE_SPLAT(node)->expression));
       case RB_BLOCK_ARGUMENT_NODE: return CHILDREN(2, Qnil, CHILD(RB_NODE_BLOCK_ARGUMENT(node)->expression));
-      case RB_DEFINED_NODE: return CHILDREN(1, CHILD(RB_NODE_DEFINED(node)->value));
+      case RB_DEFINED_NODE: {
+        if (data->type == NODE_BLOCK) return CHILDREN(1, defined_original_child(data, RB_NODE_DEFINED(node)->value));
+        return CHILDREN(1, RB_NODE_FLAG_P(node, RB_DEFINED_NODE_FLAGS_FORCE_EXPRESSION) ? VIEW(node, NODE_BLOCK) :
+            CHILD(rb_node_defined_value(RB_NODE_DEFINED(node))));
+      }
       case RB_YIELD_NODE: return CHILDREN(1, CHILD(RB_NODE_YIELD(node)->arguments));
-      case RB_POST_EXECUTION_NODE: return CHILDREN(1, CHILD(RB_NODE_POST_EXECUTION(node)->statements));
+      case RB_POST_EXECUTION_NODE: return CHILDREN(1, VIEW(node, NODE_SCOPE));
       case RB_PRE_EXECUTION_NODE: return CHILDREN(1, CHILD(RB_NODE_PRE_EXECUTION(node)->statements));
+      case RB_PARENTHESES_NODE: return CHILDREN(1, CHILD(RB_NODE_PARENTHESES(node)->body));
       case RB_PINNED_VARIABLE_NODE: return CHILDREN(1, CHILD(RB_NODE_PINNED_VARIABLE(node)->variable));
       case RB_PINNED_EXPRESSION_NODE: return CHILDREN(1, CHILD(RB_NODE_PINNED_EXPRESSION(node)->expression));
       case RB_ENSURE_NODE: return CHILDREN(2, Qnil, CHILD(RB_NODE_ENSURE(node)->statements));
@@ -1267,7 +1434,8 @@ node_children(const struct ASTNodeData *data)
             data->owner->type == RB_FOR_NODE ? VIEW(data->owner, NODE_DVAR) :
             data->owner->type == RB_MATCH_WRITE_NODE ? VIEW(node, NODE_SYM) :
             data->owner->type == RB_RESCUE_NODE ? VIEW(node, NODE_ERRINFO) : Qnil);
-      case RB_LOCAL_VARIABLE_WRITE_NODE: return CHILDREN(2, var_name(RB_NODE_LOCAL_VARIABLE_WRITE(node)->name), CHILD(RB_NODE_LOCAL_VARIABLE_WRITE(node)->value));
+      case RB_LOCAL_VARIABLE_WRITE_NODE: return CHILDREN(2, var_name(RB_NODE_LOCAL_VARIABLE_WRITE(node)->name),
+          data->owner->type == RB_FOR_NODE ? VIEW(data->owner, NODE_DVAR) : CHILD(RB_NODE_LOCAL_VARIABLE_WRITE(node)->value));
       case RB_CLASS_VARIABLE_READ_NODE: return CHILDREN(1, var_name(RB_NODE_CLASS_VARIABLE_READ(node)->name));
       case RB_CLASS_VARIABLE_TARGET_NODE: return CHILDREN(2, var_name(RB_NODE_CLASS_VARIABLE_TARGET(node)->name), data->owner->type == RB_RESCUE_NODE ? VIEW(node, NODE_ERRINFO) : Qnil);
       case RB_CLASS_VARIABLE_WRITE_NODE: return CHILDREN(2, var_name(RB_NODE_CLASS_VARIABLE_WRITE(node)->name), CHILD(RB_NODE_CLASS_VARIABLE_WRITE(node)->value));
@@ -1290,7 +1458,7 @@ node_children(const struct ASTNodeData *data)
       case RB_REST_PARAMETER_NODE: return CHILDREN(1, var_name(RB_NODE_REST_PARAMETER(node)->name));
       case RB_FORWARDING_PARAMETER_NODE: return CHILDREN(1, special_name("**"));
       case RB_NO_KEYWORDS_PARAMETER_NODE: return rb_ary_new();
-      case RB_IT_LOCAL_VARIABLE_READ_NODE: return CHILDREN(1, special_name("it"));
+      case RB_IT_LOCAL_VARIABLE_READ_NODE: return CHILDREN(1, ID2SYM(idItImplicit));
       case RB_INTEGER_NODE: return CHILDREN(1, rb_node_integer_literal_val2(node));
       case RB_FLOAT_NODE: return CHILDREN(1, rb_node_float_literal_val2(node));
       case RB_RATIONAL_NODE: return CHILDREN(1, rb_node_rational_literal_val2(node));
@@ -1332,6 +1500,10 @@ node_children(const struct ASTNodeData *data)
         return CHILDREN(3, head, index < parts->size ? CHILD(parts->nodes[index]) : Qnil,
             ast_list(data, node, parts, index + 1, parts->size > index ? parts->size - index - 1 : 0, NODE_LIST));
       }
+      case RB_INTERPOLATED_MATCH_LAST_LINE_NODE:
+        if (data->type == NODE_MATCH2) return CHILDREN(2, VIEW(node, NODE_DREGX), VIEW(node, NODE_GVAR));
+        if (data->type == NODE_GVAR) return CHILDREN(1, special_name("$_"));
+        /* fall through */
       case RB_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
         if (data->type == NODE_ONCE) return CHILDREN(1, VIEW(node, NODE_DREGX));
         const rb_node_list2_t *parts = &RB_NODE_INTERPOLATED_REGULAR_EXPRESSION(node)->parts;
