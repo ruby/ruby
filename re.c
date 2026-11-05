@@ -2226,7 +2226,8 @@ rb_reg_match_pre(VALUE match)
  *  call-seq:
  *    post_match -> string
  *
- *  Returns the substring of the target string that follows the matched substring:
+ *  Returns the substring of the target string that follows the matched substring;
+ *  equivalent to [Regexp global variable][regexp global variable] `$'`:
  *
  *  ```ruby
  *  match = /\d+/.match('foo 123 bar 456')
@@ -2235,6 +2236,7 @@ rb_reg_match_pre(VALUE match)
  *  match.post_match # => " bar 456"
  *  ```
  *
+ *  [regexp global variable]: rdoc-ref:Regexp@Global+Variables
  */
 
 VALUE
