@@ -1073,7 +1073,7 @@ pm_locals_reads(pm_locals_t *locals, pm_constant_id_t name) {
  */
 static void
 pm_locals_order(pm_parser_t *parser, pm_locals_t *locals, pm_constant_id_list_t *list, bool toplevel) {
-    pm_constant_id_list_init_capacity(parser->arena, list, locals->size);
+    pm_constant_id_list_init(parser->arena, list, locals->size);
 
     // If we're still below the threshold for switching to a hash, then we only
     // need to loop over the locals until we hit the size because the locals are
@@ -1088,7 +1088,7 @@ pm_locals_order(pm_parser_t *parser, pm_locals_t *locals, pm_constant_id_list_t 
         pm_local_t *local = &locals->locals[index];
 
         if (local->name != PM_CONSTANT_ID_UNSET) {
-            pm_constant_id_list_insert(list, (size_t) local->index, local->name);
+            pm_constant_id_list_insert(list, local->index, local->name);
 
             if (warn_unused && local->reads == 0 && ((parser->start_line >= 0) || (pm_line_offset_list_line(&parser->line_offsets, local->location.start, parser->start_line) >= 0))) {
                 pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, local->name);
@@ -5499,7 +5499,7 @@ pm_match_write_node_create(pm_parser_t *parser, pm_call_node_t *call, pm_node_li
  */
 static pm_module_node_t *
 pm_module_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const pm_token_t *module_keyword, pm_node_t *constant_path, const pm_token_t *name, pm_node_t *body, const pm_token_t *end_keyword) {
-    pm_constant_id_list_t module_locals = { .ids = NULL, .size = 0, .capacity = 0 };
+    pm_constant_id_list_t module_locals = { .ids = NULL, .size = 0 };
     if (locals != NULL) module_locals = *locals;
 
     return pm_module_node_new(
