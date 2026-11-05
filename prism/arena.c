@@ -4,6 +4,7 @@
 #include "prism/internal/assert.h"
 #include "prism/internal/oom.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 
 /**
@@ -118,6 +119,38 @@ pm_arena_alloc_slow(pm_arena_t *arena, size_t size) {
 
     pm_arena_block_t *block = pm_arena_block_new(arena, block_data_size, size);
     return block->data;
+}
+
+/**
+ * Allocate memory whose address is aligned to the given power of two. In the
+ * current block the address is known ahead of time, so this pads by exactly
+ * what it needs. A new block's address is only known once it exists, so that
+ * case asks for the worst case and gives the unused tail back to the block.
+ */
+void *
+pm_arena_alloc_aligned(pm_arena_t *arena, size_t size, size_t alignment) {
+    pm_arena_block_t *block = arena->current;
+
+    if (block != NULL) {
+        uintptr_t next = (uintptr_t) (block->data + block->used);
+        size_t padding = (size_t) (-next & (alignment - 1));
+        size_t available = block->capacity - block->used;
+
+        if (padding <= available && size <= available - padding) {
+            block->used += padding + size;
+            return (void *) (next + padding);
+        }
+    }
+
+    uintptr_t start = (uintptr_t) pm_arena_alloc_slow(arena, size + alignment - 1);
+    uintptr_t aligned = (start + alignment - 1) & ~((uintptr_t) alignment - 1);
+
+    block = arena->current;
+    if (block != NULL && (uintptr_t) block->data == start) {
+        block->used = (size_t) (aligned - start) + size;
+    }
+
+    return (void *) aligned;
 }
 
 /**

@@ -2432,7 +2432,7 @@ pm_arguments_node_create(pm_parser_t *parser, pm_arguments_t *arguments) {
 static void
 pm_arguments_flags_update(pm_node_flags_t *flags, const pm_node_t *argument) {
     if (PM_NODE_TYPE_P(argument, PM_SPLAT_NODE)) {
-        *flags |= (*flags & PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT) ? PM_ARGUMENTS_NODE_FLAGS_CONTAINS_MULTIPLE_SPLATS : PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT;
+        *flags |= (pm_node_flags_t) ((*flags & PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT) ? PM_ARGUMENTS_NODE_FLAGS_CONTAINS_MULTIPLE_SPLATS : PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT);
     }
 }
 
@@ -3979,7 +3979,7 @@ pm_else_node_create(pm_parser_t *parser, const pm_token_t *else_keyword, pm_stat
         parser->arena,
         ++parser->node_id,
         0,
-        ((end_keyword == NULL) && (statements != NULL)) ? PM_LOCATION_INIT_TOKEN_NODE(parser, else_keyword, statements) : PM_LOCATION_INIT_TOKENS(parser, else_keyword, end_keyword),
+        (end_keyword == NULL) ? PM_LOCATION_INIT_TOKEN_NODE(parser, else_keyword, statements) : PM_LOCATION_INIT_TOKENS(parser, else_keyword, end_keyword),
         TOK2LOC(parser, else_keyword),
         statements,
         NTOK2LOC(parser, end_keyword)

@@ -93,6 +93,13 @@ pm_arena_alloc(pm_arena_t *arena, size_t size, size_t alignment) {
 }
 
 /*
+ * Allocate memory from the arena whose address is aligned to the given power of
+ * two. Unlike pm_arena_alloc, the alignment may exceed the alignment of the
+ * arena's blocks, at the cost of a slower path that is not inlined.
+ */
+void * pm_arena_alloc_aligned(pm_arena_t *arena, size_t size, size_t alignment);
+
+/*
  * Allocate zero-initialized memory from the arena. This function is infallible
  * — it aborts on allocation failure.
  */

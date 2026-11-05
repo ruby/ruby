@@ -80,17 +80,13 @@ pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
 }
 
 /**
- * Carve a new batch of chunks out of the arena and hand out its first one. The
- * arena only guarantees a new block's own alignment, so this over-allocates by
- * up to one chunk and rounds the start of the batch up by hand.
+ * Carve a new batch of chunks out of the arena and hand out its first one. Each
+ * chunk is aligned to its own size, which is more than the arena's blocks
+ * guarantee, so the batch goes through pm_arena_alloc_aligned.
  */
 static pm_node_chunk_t *
 pm_node_chunks_carve(pm_node_chunks_t *chunks) {
-    size_t alignment = PRISM_ALIGNOF(pm_node_chunk_t);
-    size_t size = PM_NODE_CHUNK_BATCH * PM_NODE_CHUNK_SIZE + PM_NODE_CHUNK_SIZE - alignment;
-
-    uintptr_t start = (uintptr_t) pm_arena_alloc(chunks->arena, size, alignment);
-    pm_node_chunk_t *batch = (pm_node_chunk_t *) ((start + PM_NODE_CHUNK_MASK) & ~PM_NODE_CHUNK_MASK);
+    pm_node_chunk_t *batch = (pm_node_chunk_t *) pm_arena_alloc_aligned(chunks->arena, PM_NODE_CHUNK_BATCH * PM_NODE_CHUNK_SIZE, PM_NODE_CHUNK_SIZE);
 
     chunks->next = batch + 1;
     chunks->end = batch + PM_NODE_CHUNK_BATCH;
