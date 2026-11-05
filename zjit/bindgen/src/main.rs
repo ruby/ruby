@@ -261,6 +261,9 @@ fn main() {
         .allowlist_function("rb_nil_to_s")
         .allowlist_function("rb_true_to_s")
         .allowlist_function("rb_false_to_s")
+        .allowlist_function("rb_int_to_s")
+        .allowlist_function("rb_fix_to_s")
+        .allowlist_function("rb_mod_to_s")
 
         // `ruby_value_type` is a C enum and this stops it from
         // prefixing all the members with the name of the type

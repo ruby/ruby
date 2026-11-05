@@ -10075,6 +10075,117 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_objtostring_profiled_fixnum() {
+        eval(r##"
+            def test(a)
+              "#{a}"
+            end
+            test(1); test(2)
+        "##);
+
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Integer@0x1010, to_s@0x1018, cme:0x1020)
+          v20:Fixnum = GuardType v10, Fixnum
+          v21:StringExact = FixnumToString v20
+          PatchPoint NoEPEscape(test)
+          v32:StringExact = StringConcat v14, v21
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_optimize_objtostring_profiled_module() {
+        eval(r##"
+            class ObjToStringModule; end
+            def test(a)
+              "#{a}"
+            end
+            test(ObjToStringModule); test(ObjToStringModule)
+        "##);
+
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1010, to_s@0x1018, cme:0x1020)
+          v20:ClassSubclass[class_exact*:Class@VALUE(0x1010)] = GuardType v10, ClassSubclass[class_exact*:Class@VALUE(0x1010)]
+          v21:String|NilClass = CCall v20, :rb_mod_name@0x1048
+          v22:String = GuardType v21, String recompile
+          PatchPoint NoEPEscape(test)
+          v33:StringExact = StringConcat v14, v22
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v33
+        ");
+    }
+
+    #[test]
+    fn test_optimize_objtostring_profiled_module_with_redefined_to_s_falls_back_to_send() {
+        eval(r##"
+            class ObjToStringCustom; def self.to_s = 'custom'; end
+            def test(a)
+              "#{a}"
+            end
+            test(ObjToStringCustom); test(ObjToStringCustom)
+        "##);
+
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v18:ClassSubclass[class_exact*:Class@VALUE(0x1010)] = GuardType v10, ClassSubclass[class_exact*:Class@VALUE(0x1010)]
+          PatchPoint MethodRedefined(Class@0x1010, to_s@0x1018, cme:0x1020)
+          PushInlineFrame :to_s, v18 (0x1048), num_args=0
+          v46:StringExact[VALUE(0x1068)] = Const Value(VALUE(0x1068))
+          v47:StringExact = StringCopy v46
+          PopInlineFrame
+          PatchPoint NoEPEscape(test)
+          v30:StringExact = StringConcat v14, v47
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
     fn test_branchnil_nil() {
         eval("
             def test
@@ -14881,14 +14992,14 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v18:Fixnum = GuardType v10, Fixnum
           PatchPoint MethodRedefined(Integer@0x1010, to_s@0x1018, cme:0x1020)
-          v41:StringExact = CCallVariadic v18, :Integer#to_s@0x1048
+          v20:Fixnum = GuardType v10, Fixnum
+          v21:StringExact = FixnumToString v20
           PatchPoint NoEPEscape(test)
-          v30:StringExact = StringConcat v14, v41
+          v32:StringExact = StringConcat v14, v21
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v30
+          Return v32
         ");
     }
 
