@@ -11991,25 +11991,40 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
 
       case RB_AND_NODE:
-      case RB_OR_NODE: {
+      case RB_OR_NODE:{
         LABEL *end_label = NEW_LABEL(line);
-        CHECK(COMPILE(ret, "nd_1st", RB_NODE_AND(node)->left));
-        if (!popped) {
-            ADD_INSN(ret, node, dup);
+        const NODE *cond = node;
+        /* Compile a chain of the same operator (`a && b && ...`) against one
+         * shared end label, so every branch targets it directly. Compiling
+         * the right child recursively would instead give each operator its own label,
+         * and the peephole optimizer would rewrite that chain in quadratic
+         * time. */
+        while (1) {
+            CHECK(COMPILE(ret, "nd_1st", RB_NODE_AND(cond)->left));
+            if (!popped) {
+                ADD_INSN(ret, cond, dup);
+            }
+            if (type == RB_AND_NODE) {
+                ADD_INSNL(ret, cond, branchunless, end_label);
+            }
+            else {
+                ADD_INSNL(ret, cond, branchif, end_label);
+            }
+            if (!popped) {
+                ADD_INSN(ret, cond, pop);
+            }
+            const NODE *rest = (const NODE *)RB_NODE_AND(cond)->right;
+            if (nd_type_p(rest, type)) {
+                cond = rest;
+                continue;
+            }
+            CHECK(COMPILE_(ret, "nd_2nd", rest, popped));
+            break;
         }
-        if (type == RB_AND_NODE) {
-            ADD_INSNL(ret, node, branchunless, end_label);
-        }
-        else {
-            ADD_INSNL(ret, node, branchif, end_label);
-        }
-        if (!popped) {
-            ADD_INSN(ret, node, pop);
-        }
-        CHECK(COMPILE_(ret, "nd_2nd", RB_NODE_AND(node)->right, popped));
         ADD_LABEL(ret, end_label);
         break;
       }
+
       case RB_MULTI_WRITE_NODE:
       case RB_MULTI_TARGET_NODE: {
         CHECK(compile_massign(iseq, ret, node, popped));

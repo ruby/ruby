@@ -15582,26 +15582,21 @@ splat_array(NODE* node)
 static void
 mark_lvar_used(struct parser_params *p, NODE *rhs)
 {
-    ID *vidp = NULL;
+    ID *vidp = NULL, name;
     if (!rhs) return;
     switch (nd_type(rhs)) {
-      // case NODE_LASGN:
-      //   if (local_id_ref(p, RNODE_LASGN(rhs)->nd_vid, &vidp)) {
-      //       if (vidp) *vidp |= LVAR_USED;
-      //   }
-      //   break;
-      case NODE_DASGN:
-        if (dvar_defined_ref(p, RNODE_DASGN(rhs)->nd_vid, &vidp)) {
-            if (vidp) *vidp |= LVAR_USED;
-        }
+      case RB_LOCAL_VARIABLE_WRITE_NODE:
+        name = RB_NODE_LOCAL_VARIABLE_WRITE(rhs)->name;
         break;
-#if 0
-      case NODE_MASGN:
-        for (rhs = rhs->nd_head; rhs; rhs = rhs->nd_next) {
-            mark_lvar_used(p, rhs->nd_head);
-        }
+      case RB_LOCAL_VARIABLE_TARGET_NODE:
+        name = RB_NODE_LOCAL_VARIABLE_TARGET(rhs)->name;
         break;
-#endif
+      default:
+        return;
+    }
+    if ((dyna_in_block(p) && dvar_defined_ref(p, name, &vidp)) ||
+        local_id_ref(p, name, &vidp)) {
+        if (vidp) *vidp |= LVAR_USED;
     }
 }
 
@@ -15640,149 +15635,102 @@ node_assign(struct parser_params *p, rb_node_t *lhs, rb_node_t *rhs, struct lex_
     return lhs;
 }
 
-static NODE *
-value_expr_check(struct parser_params *p, NODE *node)
+static rb_node_t *
+value_expr_check(struct parser_params *p, rb_node_t *node)
 {
-    NODE *void_node = 0, *vn;
+    rb_node_t *void_node, *vn;
+    if (!node) return NULL;
 
-    if (node && nd_type_p(node, RB_CALL_NODE)) return NULL;
+    switch (RB_NODE_TYPE(node)) {
+      case RB_RETURN_NODE:
+      case RB_BREAK_NODE:
+      case RB_NEXT_NODE:
+      case RB_REDO_NODE:
+      case RB_RETRY_NODE:
+      case RB_MATCH_REQUIRED_NODE:
+        return node;
 
-    if (!node) {
-        rb_warning0("empty expression");
-    }
-    while (node) {
-        switch (nd_type(node)) {
-          case NODE_ENSURE:
-            vn = RNODE_ENSURE(node)->nd_head;
-            node = RNODE_ENSURE(node)->nd_ensr;
-            /* nd_ensr should not be NULL, check it out next */
-            if (vn && (vn = value_expr_check(p, vn))) {
-                goto found;
-            }
-            break;
+      case RB_STATEMENTS_NODE: {
+        rb_node_list2_t *body = &RB_NODE_STATEMENTS(node)->body;
+        for (size_t i = 0; i < RB_NODE_LIST_LEN(body); i++) {
+            vn = value_expr_check(p, body->nodes[i]);
+            if (vn) return vn;
+        }
+        return NULL;
+      }
+      case RB_PARENTHESES_NODE:
+        return value_expr_check(p, (rb_node_t *)RB_NODE_PARENTHESES(node)->body);
+      case RB_ELSE_NODE:
+        return value_expr_check(p, (rb_node_t *)RB_NODE_ELSE(node)->statements);
+      case RB_ENSURE_NODE:
+        return value_expr_check(p, (rb_node_t *)RB_NODE_ENSURE(node)->statements);
 
-          case NODE_RESCUE:
-            /* void only if all children are void */
-            vn = RNODE_RESCUE(node)->nd_head;
-            if (!vn || !(vn = value_expr_check(p, vn))) {
-                if (!RNODE_RESCUE(node)->nd_else) return NULL;
-            }
-            if (!void_node) void_node = vn;
-            for (NODE *r = RNODE_RESCUE(node)->nd_resq; r; r = RNODE_RESBODY(r)->nd_next) {
-                if (!nd_type_p(r, NODE_RESBODY)) {
-                    compile_error(p, "unexpected node");
-                    return NULL;
-                }
-                if (!(vn = value_expr_check(p, RNODE_RESBODY(r)->nd_body))) {
-                    return NULL;
-                }
-                if (!void_node) void_node = vn;
-            }
-            node = RNODE_RESCUE(node)->nd_else;
-            if (!node) return void_node;
-            break;
+      case RB_IF_NODE:
+        void_node = value_expr_check(p, (rb_node_t *)RB_NODE_IF(node)->statements);
+        return void_node && value_expr_check(p, RB_NODE_IF(node)->subsequent) ? void_node : NULL;
+      case RB_UNLESS_NODE:
+        void_node = value_expr_check(p, (rb_node_t *)RB_NODE_UNLESS(node)->statements);
+        return void_node && value_expr_check(p, (rb_node_t *)RB_NODE_UNLESS(node)->else_clause) ? void_node : NULL;
 
-          case NODE_RETURN:
-          case NODE_BREAK:
-          case NODE_NEXT:
-          case NODE_REDO:
-          case NODE_RETRY:
-            goto found;
-
-          case NODE_CASE:
-          case NODE_CASE2:
-            for (node = RNODE_CASE(node)->nd_body;
-                 node && nd_type_p(node, NODE_WHEN);
-                 node = RNODE_WHEN(node)->nd_next) {
-                if (!(vn = value_expr_check(p, RNODE_WHEN(node)->nd_body))) {
-                    return NULL;
+      case RB_BEGIN_NODE: {
+        rb_begin_node_t *begin = RB_NODE_BEGIN(node);
+        void_node = value_expr_check(p, (rb_node_t *)begin->statements);
+        if (begin->rescue_clause && (void_node || begin->else_clause)) {
+            for (rb_rescue_node_t *rescue = begin->rescue_clause; rescue; rescue = rescue->subsequent) {
+                vn = value_expr_check(p, (rb_node_t *)rescue->statements);
+                if (!vn) {
+                    void_node = NULL;
+                    break;
                 }
                 if (!void_node) void_node = vn;
             }
-            break;
-
-          case NODE_CASE3:
-            {
-                NODE *in = RNODE_CASE3(node)->nd_body;
-                if (!in || !nd_type_p(in, NODE_IN)) {
-                    compile_error(p, "unexpected node");
-                    return NULL;
-                }
-                if (!RNODE_IN(in)->nd_body) {
-                    /* single line pattern matching with "=>" operator */
-                    goto found;
-                }
-                do {
-                    vn = value_expr_check(p, RNODE_IN(in)->nd_body);
-                    if (!vn) return NULL;
-                    if (!void_node) void_node = vn;
-                    in = RNODE_IN(in)->nd_next;
-                } while (in && nd_type_p(in, NODE_IN));
-                node = in;  /* else */
+            if (void_node && begin->else_clause && !value_expr_check(p, (rb_node_t *)begin->else_clause)) {
+                void_node = NULL;
             }
-            break;
+        }
+        vn = value_expr_check(p, (rb_node_t *)begin->ensure_clause);
+        return void_node ? void_node : vn;
+      }
+      case RB_RESCUE_MODIFIER_NODE:
+        void_node = value_expr_check(p, RB_NODE_RESCUE_MODIFIER(node)->expression);
+        return void_node && value_expr_check(p, RB_NODE_RESCUE_MODIFIER(node)->rescue_expression) ? void_node : NULL;
 
-          case NODE_BLOCK:
-            while (RNODE_BLOCK(node)->nd_next) {
-                vn = value_expr_check(p, RNODE_BLOCK(node)->nd_head);
-                if (vn) return vn;
-                node = RNODE_BLOCK(node)->nd_next;
-            }
-            node = RNODE_BLOCK(node)->nd_head;
-            break;
-
-          case NODE_BEGIN:
-            node = RNODE_BEGIN(node)->nd_body;
-            break;
-
-          case NODE_IF:
-          case NODE_UNLESS:
-            if (!RNODE_IF(node)->nd_body) {
-                return NULL;
-            }
-            else if (!RNODE_IF(node)->nd_else) {
-                return NULL;
-            }
-            vn = value_expr_check(p, RNODE_IF(node)->nd_body);
+      case RB_CASE_NODE:
+      case RB_CASE_MATCH_NODE: {
+        bool match = RB_NODE_TYPE_P(node, RB_CASE_MATCH_NODE);
+        rb_node_list2_t *conditions = match ? &RB_NODE_CASE_MATCH(node)->conditions : &RB_NODE_CASE(node)->conditions;
+        void_node = NULL;
+        for (size_t i = 0; i < RB_NODE_LIST_LEN(conditions); i++) {
+            rb_node_t *condition = conditions->nodes[i];
+            vn = value_expr_check(p, (rb_node_t *)(match ? RB_NODE_IN(condition)->statements : RB_NODE_WHEN(condition)->statements));
             if (!vn) return NULL;
             if (!void_node) void_node = vn;
-            node = RNODE_IF(node)->nd_else;
-            break;
-
-          case NODE_AND:
-          case NODE_OR:
-            /* The left operand was already checked for a value when logop()
-             * built this node, so stop here instead of re-reporting the same
-             * void value once per operator in a chain. */
-            return NULL;
-
-          case NODE_LASGN:
-          // case NODE_DASGN:
-          case NODE_MASGN:
-            mark_lvar_used(p, node);
-            return NULL;
-
-          default:
-            return NULL;
         }
+        vn = value_expr_check(p, (rb_node_t *)(match ? RB_NODE_CASE_MATCH(node)->else_clause : RB_NODE_CASE(node)->else_clause));
+        return vn ? (void_node ? void_node : vn) : NULL;
+      }
+      case RB_AND_NODE:
+      case RB_OR_NODE:
+        /* logop() checks the left operand once when constructing the chain. */
+        return NULL;
+
+      case RB_LOCAL_VARIABLE_WRITE_NODE:
+      case RB_MULTI_WRITE_NODE:
+        mark_lvar_used(p, (NODE *)node);
+        return NULL;
+      default:
+        return NULL;
     }
-
-    return NULL;
-
-  found:
-    /* return the first found node */
-    return void_node ? void_node : node;
 }
 
 static int
 value_expr(struct parser_params *p, NODE *node)
 {
-    // NODE *void_node = value_expr_check(p, node);
-    // if (void_node) {
-    //     yyerror1(&void_node->nd_loc, "void value expression");
-    //     /* or "control never reach"? */
-    //     return FALSE;
-    // }
+    rb_node_t *void_node = value_expr_check(p, (rb_node_t *)node);
+    if (void_node) {
+        yyerror1(&void_node->location, "void value expression");
+        return FALSE;
+    }
     return TRUE;
 }
 
