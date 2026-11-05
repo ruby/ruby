@@ -6808,6 +6808,21 @@ compile_call_core(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
 static int
 compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, int popped);
 
+static bool
+defined_array_splat_p(const rb_node_list2_t *elements)
+{
+    for (size_t i = 0; i < elements->size; i++) {
+        const NODE *element = elements->nodes[i];
+        if (nd_type_p(element, RB_FORWARDING_ARGUMENTS_NODE)) return true;
+        if (nd_type_p(element, RB_SPLAT_NODE)) {
+            const NODE *value = RB_NODE_SPLAT(element)->expression;
+            if (!value || !nd_type_p(value, RB_ARRAY_NODE) || !RB_NODE_ARRAY(value)->elements.size ||
+                defined_array_splat_p(&RB_NODE_ARRAY(value)->elements)) return true;
+        }
+    }
+    return false;
+}
+
 static void
 defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
               const NODE *const node, LABEL **lfinish, VALUE needstr,
@@ -6821,126 +6836,123 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
     switch (type = nd_type(node)) {
 
         /* easy literals */
-      case NODE_NIL:
+      case RB_NIL_NODE:
         expr_type = DEFINED_NIL;
         break;
-      case NODE_SELF:
+      case RB_SELF_NODE:
         expr_type = DEFINED_SELF;
         break;
-      case NODE_TRUE:
+      case RB_TRUE_NODE:
         expr_type = DEFINED_TRUE;
         break;
-      case NODE_FALSE:
+      case RB_FALSE_NODE:
         expr_type = DEFINED_FALSE;
         break;
 
-      case NODE_HASH:
-      case NODE_LIST:{
-        const NODE *vals = (nd_type(node) == NODE_HASH) ? RNODE_HASH(node)->nd_head : node;
-
-        if (vals) {
-            do {
-                if (RNODE_LIST(vals)->nd_head) {
-                    defined_expr0(iseq, ret, RNODE_LIST(vals)->nd_head, lfinish, Qfalse, false);
-
-                    if (!lfinish[1]) {
-                        lfinish[1] = NEW_LABEL(line);
-                    }
-                    ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
-                }
-            } while ((vals = RNODE_LIST(vals)->nd_next) != NULL);
+#define CHECK_DEFINED(value) do { \
+    if (value) { \
+        defined_expr0(iseq, ret, (const NODE *)(value), lfinish, Qfalse, false); \
+        if (!lfinish[1]) lfinish[1] = NEW_LABEL(line); \
+        ADD_INSNL(ret, line_node, branchunless, lfinish[1]); \
+    } \
+} while (0)
+      case RB_ARRAY_NODE:
+      case RB_ARGUMENTS_NODE:
+      case RB_HASH_NODE:
+      case RB_KEYWORD_HASH_NODE: {
+        const rb_node_list2_t *values;
+        switch (type) {
+          case RB_ARRAY_NODE: values = &RB_NODE_ARRAY(node)->elements; break;
+          case RB_ARGUMENTS_NODE: values = &RB_NODE_ARGUMENTS(node)->arguments; break;
+          case RB_HASH_NODE: values = &RB_NODE_HASH(node)->elements; break;
+          default: values = &RB_NODE_KEYWORD_HASH(node)->elements; break;
         }
+        /* Legacy ARGSCAT/ARGSPUSH nodes describe an expression without inspecting its elements. */
+        if (values->size <= 1 || !defined_array_splat_p(values)) {
+            for (size_t i = 0; i < values->size; i++) CHECK_DEFINED(values->nodes[i]);
+        }
+        expr_type = DEFINED_EXPR;
+        break;
       }
-        /* fall through */
-      case NODE_STR:
-      case NODE_SYM:
-      case NODE_REGX:
-      case NODE_LINE:
-      case NODE_FILE:
-      case NODE_ENCODING:
-      case NODE_INTEGER:
-      case NODE_FLOAT:
-      case NODE_RATIONAL:
-      case NODE_IMAGINARY:
-      case NODE_ZLIST:
-      case NODE_AND:
-      case NODE_OR:
+      case RB_ASSOC_NODE:
+        CHECK_DEFINED(RB_NODE_ASSOC(node)->key);
+        CHECK_DEFINED(RB_NODE_ASSOC(node)->value);
+        expr_type = DEFINED_EXPR;
+        break;
+      case RB_ASSOC_SPLAT_NODE:
+        CHECK_DEFINED(RB_NODE_ASSOC_SPLAT(node)->value);
+        expr_type = DEFINED_EXPR;
+        break;
+      case RB_SPLAT_NODE:
+        CHECK_DEFINED(RB_NODE_SPLAT(node)->expression);
+        expr_type = DEFINED_EXPR;
+        break;
+      case RB_IMPLICIT_NODE:
+        defined_expr0(iseq, ret, RB_NODE_IMPLICIT(node)->value, lfinish, needstr, keep_result);
+        return;
       default:
         expr_type = DEFINED_EXPR;
         break;
-
-      case NODE_SPLAT:
-        defined_expr0(iseq, ret, RNODE_LIST(node)->nd_head, lfinish, Qfalse, false);
-        if (!lfinish[1]) {
-            lfinish[1] = NEW_LABEL(line);
-        }
-        ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
-        expr_type = DEFINED_EXPR;
-        break;
+#undef CHECK_DEFINED
 
         /* variables */
-      case NODE_LVAR:
-      case NODE_DVAR:
+      case RB_LOCAL_VARIABLE_READ_NODE:
+      case RB_IT_LOCAL_VARIABLE_READ_NODE:
         expr_type = DEFINED_LVAR;
         break;
 
 #define PUSH_VAL(type) (needstr == Qfalse ? Qtrue : rb_iseq_defined_string(type))
-      case NODE_IVAR:
+      case RB_INSTANCE_VARIABLE_READ_NODE:
         ADD_INSN3(ret, line_node, definedivar,
-                  ID2SYM(RNODE_IVAR(node)->nd_vid), get_ivar_ic_value(iseq,RNODE_IVAR(node)->nd_vid), PUSH_VAL(DEFINED_IVAR));
+                  ID2SYM(RB_NODE_INSTANCE_VARIABLE_READ(node)->name), get_ivar_ic_value(iseq,RB_NODE_INSTANCE_VARIABLE_READ(node)->name), PUSH_VAL(DEFINED_IVAR));
         return;
 
-      case NODE_GVAR:
+      case RB_GLOBAL_VARIABLE_READ_NODE:
         ADD_INSN(ret, line_node, putnil);
         ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_GVAR),
-                  ID2SYM(RNODE_GVAR(node)->nd_vid), PUSH_VAL(DEFINED_GVAR));
+                  ID2SYM(RB_NODE_GLOBAL_VARIABLE_READ(node)->name), PUSH_VAL(DEFINED_GVAR));
         return;
 
-      case NODE_CVAR:
+      case RB_CLASS_VARIABLE_READ_NODE:
         ADD_INSN(ret, line_node, putnil);
         ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_CVAR),
-                  ID2SYM(RNODE_CVAR(node)->nd_vid), PUSH_VAL(DEFINED_CVAR));
+                  ID2SYM(RB_NODE_CLASS_VARIABLE_READ(node)->name), PUSH_VAL(DEFINED_CVAR));
         return;
 
-      case NODE_CONST:
+      case RB_CONSTANT_READ_NODE:
         ADD_INSN(ret, line_node, putnil);
         ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_CONST),
-                  ID2SYM(RNODE_CONST(node)->nd_vid), PUSH_VAL(DEFINED_CONST));
+                  ID2SYM(RB_NODE_CONSTANT_READ(node)->name), PUSH_VAL(DEFINED_CONST));
         return;
-      case NODE_COLON2:
-        if (!lfinish[1]) {
-            lfinish[1] = NEW_LABEL(line);
-        }
-        defined_expr0(iseq, ret, RNODE_COLON2(node)->nd_head, lfinish, Qfalse, false);
-        ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
-        NO_CHECK(COMPILE(ret, "defined/colon2#nd_head", RNODE_COLON2(node)->nd_head));
-
-        if (rb_is_const_id(RNODE_COLON2(node)->nd_mid)) {
-            ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_CONST_FROM),
-                    ID2SYM(RNODE_COLON2(node)->nd_mid), PUSH_VAL(DEFINED_CONST));
+      case RB_CONSTANT_PATH_NODE: {
+        const rb_constant_path_node_t *path = RB_NODE_CONSTANT_PATH(node);
+        if (path->parent) {
+            if (!lfinish[1]) lfinish[1] = NEW_LABEL(line);
+            defined_expr0(iseq, ret, path->parent, lfinish, Qfalse, false);
+            ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
+            NO_CHECK(COMPILE(ret, "defined/constant parent", path->parent));
         }
         else {
-            ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_METHOD),
-                    ID2SYM(RNODE_COLON2(node)->nd_mid), PUSH_VAL(DEFINED_METHOD));
+            ADD_INSN1(ret, line_node, putobject, rb_cObject);
         }
+        ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_CONST_FROM),
+                  ID2SYM(path->name), PUSH_VAL(DEFINED_CONST));
         return;
-      case NODE_COLON3:
-        ADD_INSN1(ret, line_node, putobject, rb_cObject);
-        ADD_INSN3(ret, line_node, defined,
-                  INT2FIX(DEFINED_CONST_FROM), ID2SYM(RNODE_COLON3(node)->nd_mid), PUSH_VAL(DEFINED_CONST));
-        return;
+      }
 
         /* method dispatch */
-      case NODE_CALL:
-      case NODE_OPCALL:
-      case NODE_VCALL:
-      case NODE_FCALL:
-      case NODE_ATTRASGN:{
-        const int explicit_receiver =
-            (type == NODE_CALL || type == NODE_OPCALL ||
-             (type == NODE_ATTRASGN && !private_recv_p(node)));
+      case RB_CALL_NODE: {
+        const rb_call_node_t *call = RB_NODE_CALL(node);
+        const int attribute_write = rb_node_get_fl(call) & RB_CALL_NODE_FLAGS_ATTRIBUTE_WRITE;
+        if ((!attribute_write && (rb_node_get_fl(call) & RB_CALL_NODE_FLAGS_SAFE_NAVIGATION)) ||
+            (call->block && nd_type_p(call->block, RB_BLOCK_NODE))) {
+            expr_type = DEFINED_EXPR;
+            break;
+        }
+        const rb_arguments_node_t *arguments = call->block ? NULL : call->arguments;
+        const int explicit_receiver = call->receiver && (!attribute_write || !private_recv_p(node));
 
-        if (get_nd_args(node) || explicit_receiver) {
+        if (arguments || explicit_receiver) {
             if (!lfinish[1]) {
                 lfinish[1] = NEW_LABEL(line);
             }
@@ -6948,25 +6960,22 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
                 lfinish[2] = NEW_LABEL(line);
             }
         }
-        if (get_nd_args(node)) {
-            defined_expr0(iseq, ret, get_nd_args(node), lfinish, Qfalse, false);
+        if (arguments) {
+            defined_expr0(iseq, ret, arguments, lfinish, Qfalse, false);
             ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
         }
         if (explicit_receiver) {
             defined_expr0(iseq, ret, get_nd_recv(node), lfinish, Qfalse, true);
-            switch (nd_type(get_nd_recv(node))) {
-              case NODE_CALL:
-              case NODE_OPCALL:
-              case NODE_VCALL:
-              case NODE_FCALL:
-              case NODE_ATTRASGN:
+            const NODE *receiver = get_nd_recv(node);
+            if (nd_type_p(receiver, RB_CALL_NODE) &&
+                !(rb_node_get_fl(receiver) & RB_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
+                !(RB_NODE_CALL(receiver)->block && nd_type_p(RB_NODE_CALL(receiver)->block, RB_BLOCK_NODE))) {
                 ADD_INSNL(ret, line_node, branchunless, lfinish[2]);
-                compile_call_core(iseq, ret, get_nd_recv(node), nd_type(get_nd_recv(node)), line_node, get_node_call_type(RB_NODE_CALL(node)), 0, true);
-                break;
-              default:
+                compile_call_core(iseq, ret, receiver, nd_type(receiver), line_node, get_node_call_type(RB_NODE_CALL(receiver)), 0, true);
+            }
+            else {
                 ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
-                NO_CHECK(COMPILE(ret, "defined/recv", get_nd_recv(node)));
-                break;
+                NO_CHECK(COMPILE(ret, "defined/recv", receiver));
             }
             if (keep_result) {
                 ADD_INSN(ret, line_node, dup);
@@ -6985,41 +6994,63 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         return;
       }
 
-      case NODE_YIELD:
+      case RB_YIELD_NODE:
         ADD_INSN(ret, line_node, putnil);
         ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_YIELD), 0,
                   PUSH_VAL(DEFINED_YIELD));
         iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
         return;
 
-      case NODE_BACK_REF:
-      case NODE_NTH_REF:
+      case RB_BACK_REFERENCE_READ_NODE:
+      case RB_NUMBERED_REFERENCE_READ_NODE: {
+        const int backref = type == RB_BACK_REFERENCE_READ_NODE;
+        long number = backref ? rb_id2name(RB_NODE_BACK_REFERENCE_READ(node)->name)[1] : RB_NODE_NUMBERED_REFERENCE_READ(node)->number;
         ADD_INSN(ret, line_node, putnil);
         ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_REF),
-                  INT2FIX((RNODE_BACK_REF(node)->nd_nth << 1) | (type == NODE_BACK_REF)),
-                  PUSH_VAL(DEFINED_GVAR));
+                  LONG2FIX((number << 1) | backref), PUSH_VAL(DEFINED_GVAR));
         return;
+      }
 
-      case NODE_SUPER:
-      case NODE_ZSUPER:
+      case RB_SUPER_NODE:
+      case RB_FORWARDING_SUPER_NODE:
         ADD_INSN(ret, line_node, putnil);
         ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_ZSUPER), 0,
                   PUSH_VAL(DEFINED_ZSUPER));
         return;
 
 #undef PUSH_VAL
-      case NODE_OP_ASGN1:
-      case NODE_OP_ASGN2:
-      case NODE_OP_ASGN_OR:
-      case NODE_OP_ASGN_AND:
-      case NODE_MASGN:
-      case NODE_LASGN:
-      case NODE_DASGN:
-      case NODE_GASGN:
-      case NODE_IASGN:
-      case NODE_CDECL:
-      case NODE_CVASGN:
-      case NODE_OP_CDECL:
+      case RB_MULTI_WRITE_NODE:
+      case RB_SHAREABLE_CONSTANT_NODE:
+      case RB_LOCAL_VARIABLE_WRITE_NODE:
+      case RB_LOCAL_VARIABLE_OPERATOR_WRITE_NODE:
+      case RB_LOCAL_VARIABLE_AND_WRITE_NODE:
+      case RB_LOCAL_VARIABLE_OR_WRITE_NODE:
+      case RB_GLOBAL_VARIABLE_WRITE_NODE:
+      case RB_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE:
+      case RB_GLOBAL_VARIABLE_AND_WRITE_NODE:
+      case RB_GLOBAL_VARIABLE_OR_WRITE_NODE:
+      case RB_INSTANCE_VARIABLE_WRITE_NODE:
+      case RB_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE:
+      case RB_INSTANCE_VARIABLE_AND_WRITE_NODE:
+      case RB_INSTANCE_VARIABLE_OR_WRITE_NODE:
+      case RB_CLASS_VARIABLE_WRITE_NODE:
+      case RB_CLASS_VARIABLE_OPERATOR_WRITE_NODE:
+      case RB_CLASS_VARIABLE_AND_WRITE_NODE:
+      case RB_CLASS_VARIABLE_OR_WRITE_NODE:
+      case RB_CONSTANT_WRITE_NODE:
+      case RB_CONSTANT_OPERATOR_WRITE_NODE:
+      case RB_CONSTANT_AND_WRITE_NODE:
+      case RB_CONSTANT_OR_WRITE_NODE:
+      case RB_CONSTANT_PATH_WRITE_NODE:
+      case RB_CONSTANT_PATH_OPERATOR_WRITE_NODE:
+      case RB_CONSTANT_PATH_AND_WRITE_NODE:
+      case RB_CONSTANT_PATH_OR_WRITE_NODE:
+      case RB_CALL_OPERATOR_WRITE_NODE:
+      case RB_CALL_AND_WRITE_NODE:
+      case RB_CALL_OR_WRITE_NODE:
+      case RB_INDEX_OPERATOR_WRITE_NODE:
+      case RB_INDEX_AND_WRITE_NODE:
+      case RB_INDEX_OR_WRITE_NODE:
         expr_type = DEFINED_ASGN;
         break;
     }
@@ -7074,7 +7105,7 @@ compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const 
 {
     const int line = nd_line(node);
     const NODE *line_node = node;
-    if (!RNODE_DEFINED(node)->nd_head) {
+    if (!RB_NODE_DEFINED(node)->value) {
         VALUE str = rb_iseq_defined_string(DEFINED_NIL);
         ADD_INSN1(ret, line_node, putobject, str);
     }
@@ -7084,7 +7115,7 @@ compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const 
         lfinish[0] = NEW_LABEL(line);
         lfinish[1] = 0;
         lfinish[2] = 0;
-        defined_expr(iseq, ret, RNODE_DEFINED(node)->nd_head, lfinish, needstr, ignore);
+        defined_expr(iseq, ret, RB_NODE_DEFINED(node)->value, lfinish, needstr, ignore);
         if (lfinish[1]) {
             ELEM_INSERT_NEXT(last, &new_insn_body(iseq, nd_line(line_node), nd_node_id(line_node), BIN(putnil), 0)->link);
             ADD_INSN(ret, line_node, swap);
@@ -13820,11 +13851,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       // case NODE_ERRINFO:
       //   CHECK(compile_errinfo(iseq, ret, node, popped));
       //   break;
-      // case NODE_DEFINED:
-      //   if (!popped) {
-      //       CHECK(compile_defined_expr(iseq, ret, node, Qtrue, false));
-      //   }
-      //   break;
+      case RB_DEFINED_NODE:
+        if (!popped) {
+            CHECK(compile_defined_expr(iseq, ret, node, Qtrue, false));
+        }
+        break;
       // case NODE_POSTEXE:{
       //   /* compiled to:
       //    *   ONCE{ rb_mRubyVMFrozenCore::core#set_postexe{ ... } }

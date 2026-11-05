@@ -1279,7 +1279,7 @@ static rb_undef_node_t *rb_new_node_undef_new(struct parser_params *p, NODE *nd_
 // static rb_node_true_t *rb_node_true_new(struct parser_params *p, const YYLTYPE *loc);
 // static rb_node_false_t *rb_node_false_new(struct parser_params *p, const YYLTYPE *loc);
 // static rb_node_errinfo_t *rb_node_errinfo_new(struct parser_params *p, const YYLTYPE *loc);
-static rb_node_defined_t *rb_node_defined_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
+static rb_defined_node_t *rb_new_node_defined_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_node_postexe_t *rb_node_postexe_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 // static rb_node_sym_t *rb_node_sym_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
 // static rb_node_dsym_t *rb_node_dsym_new(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
@@ -1387,7 +1387,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 // #define NEW_TRUE(loc) (NODE *)rb_node_true_new(p,loc)
 // #define NEW_FALSE(loc) (NODE *)rb_node_false_new(p,loc)
 // #define NEW_ERRINFO(loc) (NODE *)rb_node_errinfo_new(p,loc)
-#define NEW_DEFINED(e,loc,k_loc) (NODE *)rb_node_defined_new(p,e,loc, k_loc)
+#define NEW_RB_DEFINED(e,loc,k_loc) (rb_node_t *)rb_new_node_defined_new(p,e,loc,k_loc)
 #define NEW_POSTEXE(b,loc,k_loc,o_loc,c_loc) (NODE *)rb_node_postexe_new(p,b,loc,k_loc,o_loc,c_loc)
 // #define NEW_SYM(str,loc) (NODE *)rb_node_sym_new(p,str,loc)
 // #define NEW_DSYM(s,l,n,loc) (NODE *)rb_node_dsym_new(p,s,l,n,loc)
@@ -5003,6 +5003,7 @@ primary		: inline_primary
             | tLPAREN_ARG compstmt(stmts)[body] {SET_LEX_STATE(EXPR_ENDARG);} ')'
                 {
                     $$ = (rb_node_t *)rb_new_node_parentheses_new(p, (rb_node_t *)$body, &@$, &@1, &@4);
+                    rb_node_set_fl($$, RB_PARENTHESES_NODE_FLAGS_ARGUMENT);
                 /*% ripper: paren!($:body) %*/
                 }
             | tLPAREN compstmt(stmts)[body] ')'
@@ -5050,10 +5051,12 @@ primary		: inline_primary
                     $$ = NEW_RB_YIELD(0, &@$, &@kw, &NULL_LOC, &NULL_LOC);
                 /*% ripper: yield0! %*/
                 }
-            | keyword_defined[kw] '\n'? '(' begin_defined[ctxt] expr[arg] rparen
+            | keyword_defined[kw] '\n'? '('[lpar] begin_defined[ctxt] expr[arg] rparen[rpar]
                 {
                     p->ctxt.in_defined = $ctxt.in_defined;
                     $$ = new_defined(p, $arg, &@$, &@kw);
+                    RB_NODE_DEFINED($$)->lparen_loc = @lpar;
+                    RB_NODE_DEFINED($$)->rparen_loc = @rpar;
                     p->ctxt.has_trailing_semicolon = $ctxt.has_trailing_semicolon;
                 /*% ripper: defined!($:arg) %*/
                 }
@@ -12965,15 +12968,6 @@ rb_node_args_aux_new(struct parser_params *p, ID nd_pid, int nd_plen, const YYLT
 //     return n;
 // }
 
-static rb_node_defined_t *
-rb_node_defined_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
-{
-    rb_node_defined_t *n = NODE_NEWNODE(NODE_DEFINED, rb_node_defined_t, loc);
-    n->nd_head = nd_head;
-    n->keyword_loc = *keyword_loc;
-
-    return n;
-}
 
 static rb_node_postexe_t *
 rb_node_postexe_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
@@ -13181,6 +13175,17 @@ rb_node_newnode(struct parser_params *p, enum rb_node_type type, size_t size, si
 }
 
 #define RB_NEW_NODE_NEWNODE(rb_node_type, type, loc) (type *)(rb_node_newnode(p, rb_node_type, sizeof(type), RUBY_ALIGNOF(type), loc))
+
+static rb_defined_node_t *
+rb_new_node_defined_new(struct parser_params *p, NODE *value, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
+{
+    rb_defined_node_t *n = RB_NEW_NODE_NEWNODE(RB_DEFINED_NODE, rb_defined_node_t, loc);
+    n->value = value;
+    n->keyword_loc = *keyword_loc;
+    n->lparen_loc = NULL_LOC;
+    n->rparen_loc = NULL_LOC;
+    return n;
+}
 
 static rb_undef_node_t *
 rb_new_node_undef_new(struct parser_params *p, NODE *name, const YYLTYPE *loc)
@@ -15763,26 +15768,35 @@ new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc, const YYLTY
 {
     int had_trailing_semicolon = p->ctxt.has_trailing_semicolon;
     p->ctxt.has_trailing_semicolon = 0;
-
     NODE *n = expr;
     while (n) {
-        if (nd_type_p(n, NODE_BEGIN)) {
-            n = RNODE_BEGIN(n)->nd_body;
+        if (nd_type_p(n, RB_PARENTHESES_NODE)) {
+            n = RB_NODE_PARENTHESES(n)->body;
         }
-        else if (nd_type_p(n, NODE_BLOCK) && RNODE_BLOCK(n)->nd_end == n) {
-            n = RNODE_BLOCK(n)->nd_head;
+        else if (nd_type_p(n, RB_BEGIN_NODE) && !RB_NODE_BEGIN(n)->rescue_clause && !RB_NODE_BEGIN(n)->ensure_clause) {
+            n = (NODE *)RB_NODE_BEGIN(n)->statements;
+        }
+        else if (nd_type_p(n, RB_STATEMENTS_NODE)) {
+            rb_node_list2_t *body = &RB_NODE_STATEMENTS(n)->body;
+            if (body->size > 1) break;
+            n = body->size ? body->nodes[0] : NULL;
         }
         else {
             break;
         }
     }
-
-    if (had_trailing_semicolon && !nd_type_p(expr, NODE_BLOCK)) {
-        NODE *block = NEW_BLOCK(expr, loc);
-        return NEW_DEFINED(block, loc, keyword_loc);
+    NODE *wrapper = expr;
+    while (wrapper && nd_type_p(wrapper, RB_PARENTHESES_NODE) &&
+           (rb_node_get_fl(wrapper) & RB_PARENTHESES_NODE_FLAGS_ARGUMENT)) {
+        wrapper = RB_NODE_PARENTHESES(wrapper)->body;
+        if (wrapper && nd_type_p(wrapper, RB_STATEMENTS_NODE) && RB_NODE_STATEMENTS(wrapper)->body.size == 1) {
+            wrapper = RB_NODE_STATEMENTS(wrapper)->body.nodes[0];
+        }
     }
-
-    return NEW_DEFINED(n, loc, keyword_loc);
+    if (had_trailing_semicolon && wrapper && !nd_type_p(wrapper, RB_STATEMENTS_NODE) && !nd_type_p(wrapper, RB_PARENTHESES_NODE)) {
+        n = (NODE *)NEW_RB_STATEMENTS(expr, loc);
+    }
+    return NEW_RB_DEFINED(n, loc, keyword_loc);
 }
 
 static NODE*
