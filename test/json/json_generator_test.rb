@@ -1469,6 +1469,11 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_rfc8785 '0.30000000000000004', 0.1 + 0.2
   end
 
+  # RFC 8785 numbers are formatted with Float#to_s, which only gives the
+  # shortest round-trip digits on JRuby 10.1.3 and later.
+  SHORTEST_FLOAT_TO_S = RUBY_ENGINE == "ruby" ||
+    (RUBY_ENGINE == "jruby" && Gem::Version.new(JRUBY_VERSION) >= Gem::Version.new("10.1.3"))
+
   # https://www.rfc-editor.org/rfc/rfc8785.html#appendix-B
   {
     '0000000000000000' => '0',
@@ -1499,7 +1504,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     '43143ff3c1cb0959' => '1424953923781206.2',
   }.each do |bits, expected|
     define_method("test_rfc8785_number_#{bits}") do
-      omit "Float#to_s is not always shortest on this engine" unless RUBY_ENGINE == "ruby"
+      omit "Float#to_s is not always shortest on this engine" unless SHORTEST_FLOAT_TO_S
       number = [bits].pack('H*').unpack('G').first
       if expected
         assert_rfc8785 expected, number
