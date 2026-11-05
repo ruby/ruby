@@ -1993,14 +1993,9 @@ mark_shareable(VALUE obj)
         rb_ary_cancel_sharing(obj);
     }
     else if (RB_BUILTIN_TYPE(obj) == T_OBJECT) {
-        // Adding the object_id once obj is shared would either move its fields
-        // out of a full slot or st_insert into its complex table, both under
-        // lock-free readers on other Ractors. Create it while obj is still local.
-        shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-        if (!rb_shape_has_object_id(shape_id) &&
-            (rb_shape_complex_p(shape_id) || RSHAPE_LEN(shape_id) >= RSHAPE_CAPACITY(shape_id))) {
-            rb_obj_id(obj);
-        }
+        // Create the object_id while obj is still local, so a shareable T_OBJECT
+        // never gains a field and object_id() can read the id without the VM lock.
+        rb_obj_id(obj);
     }
 
     rb_obj_set_shareable_no_assert(obj);

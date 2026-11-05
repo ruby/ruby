@@ -803,43 +803,35 @@ class TestRactor < Test::Unit::TestCase
     assert_unshareable(pr, /not supported yet/, exception: RuntimeError)
   end
 
-  # Adding an object_id to a shareable T_OBJECT whose embedded slots are full moves
-  # its fields out, and adding one to a complex T_OBJECT st_inserts into its table,
-  # both under lock-free ivar readers on other Ractors (torn reads, segfaults).
-  # Sharing must create the id up front in those cases.
-  def test_object_id_does_not_move_fields_after_make_shareable
-    assert_object_id_keeps_fields_once_shared { |obj| Ractor.make_shareable(obj) }
+  # A shareable T_OBJECT must get its object_id before it is shared. Adding it later
+  # could move its fields out of full embedded slots or st_insert into its complex
+  # table under lock-free ivar readers on other Ractors (torn reads, segfaults), and
+  # object_id reads the id of a shareable T_OBJECT without the VM lock.
+  def test_object_id_created_before_make_shareable
+    assert_object_id_created_before_sharing { |obj| Ractor.make_shareable(obj) }
   end
 
-  def test_object_id_does_not_move_fields_after_lazy_shareable_check
-    assert_object_id_keeps_fields_once_shared { |obj| assert Ractor.shareable?(obj.freeze) }
+  def test_object_id_created_before_lazy_shareable_check
+    assert_object_id_created_before_sharing { |obj| assert Ractor.shareable?(obj.freeze) }
   end
 
-  private def assert_object_id_keeps_fields_once_shared
+  private def assert_object_id_created_before_sharing
     require "objspace"
-    layout = ->(obj) do
-      dump = ObjectSpace.dump(obj)
-      [dump.include?('"embedded":true'), dump.include?('"complex_shape":true'), dump[/"ivars":(\d+)/, 1].to_i]
-    end
-    saw_full_embedded = saw_complex = false
+    layout = ->(obj) { ObjectSpace.dump(obj).scan(/"(?:shape_id|embedded|ivars|complex_shape)":[^,}]*/) }
+    saw_complex = false
     [*1..10, 300].each do |n|
       klass = Class.new do
         define_method(:initialize) { n.times { instance_variable_set(:"@i#{it}", it) } }
       end
       3.times { klass.new }
       obj = klass.new
-      embedded_before_share, = layout.(obj)
       yield obj
-      embedded, complex, count = layout.(obj)
-      saw_full_embedded ||= embedded_before_share && !embedded
-      saw_complex ||= complex
+      shared = layout.(obj)
+      saw_complex ||= shared.include?('"complex_shape":true')
+      assert_include shared, %("ivars":#{n + 1}), "sharing should add the object_id field (#{n} ivars)"
       obj.object_id
-      embedded_after, complex_after, count_after = layout.(obj)
-      assert_equal embedded, embedded_after, "object_id moved the fields of a shared object with #{n} ivars"
-      assert_equal complex, complex_after, "#{n} ivars"
-      assert_equal count, count_after, "object_id inserted into a shared complex table" if complex
+      assert_equal shared, layout.(obj), "object_id changed a shared object with #{n} ivars"
     end
-    assert saw_full_embedded, "no object had full embedded slots when shared"
     assert saw_complex, "the 300-ivar object should have a complex shape"
   end
 
