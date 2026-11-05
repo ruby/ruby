@@ -5010,7 +5010,7 @@ Init_VM(void)
     rb_add_method_optimized(proxy_singleton, idAREF,  OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
     rb_add_method_optimized(proxy_singleton, idYield, OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
     rb_add_method_optimized(proxy_singleton, idEqq,   OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
-    rb_obj_freeze(rb_block_param_proxy);
+    rb_ractor_make_shareable(rb_block_param_proxy);
     rb_vm_register_global_object(rb_block_param_proxy);
 
     /* vm_backtrace.c */
