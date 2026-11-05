@@ -2282,15 +2282,20 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
         switch (nd_type(node_args)) {
           case RB_IT_PARAMETERS_NODE:
             body->param.lead_num = body->param.size = 1;
+            body->param.flags.has_lead = TRUE;
+            body->param.flags.ambiguous_param0 = TRUE;
             break;
           case RB_NUMBERED_PARAMETERS_NODE:
             body->param.lead_num = body->param.size = RB_NODE_NUMBERED_PARAMETERS(node_args)->maximum;
+            body->param.flags.has_lead = TRUE;
+            body->param.flags.ambiguous_param0 = body->param.lead_num == 1;
             break;
           case RB_PARAMETERS_NODE:
             args = RB_NODE_PARAMETERS(node_args);
             goto parameters;
           case RB_BLOCK_PARAMETERS_NODE:
             args = RB_NODE_BLOCK_PARAMETERS(node_args)->parameters;
+            if (!args) break;
           parameters: {
             // body->param.flags.ruby2_keywords = args->ruby2_keywords;
             body->param.lead_num = arg_size = (int)RB_NODE_LIST_LEN(&args->requireds);
@@ -2439,7 +2444,7 @@ iseq_set_local_table(rb_iseq_t *iseq, const rb_ast_id_table_t *tbl, const NODE *
     unsigned int size = tbl ? tbl->size : 0;
     unsigned int offset = 0;
 
-    if (node_args) {
+    if (node_args && nd_type_p(node_args, RB_PARAMETERS_NODE)) {
         const rb_parameters_node_t *args = RB_NODE_PARAMETERS(node_args);
 
         // If we have a function that only has `...` as the parameter,
@@ -5246,7 +5251,9 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
 static int
 compile_lasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, ID id, const NODE *const valn, int popped)
 {
-    int idx = ISEQ_BODY(iseq)->local_table_size - get_local_var_idx(iseq, id);
+    int level, local_size;
+    int idx = get_dyna_var_idx(iseq, id, &level, &local_size);
+    idx = local_size - idx;
 
     debugs("lvar: %s idx: %d\n", rb_id2name(id), idx);
     CHECK(COMPILE(ret, "rvalue", valn));
@@ -5254,7 +5261,7 @@ compile_lasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, I
     if (!popped) {
         ADD_INSN(ret, node, dup);
     }
-    ADD_SETLOCAL(ret, node, idx, get_lvar_level(iseq));
+    ADD_SETLOCAL(ret, node, idx, level);
     return COMPILE_OK;
 }
 
@@ -6604,8 +6611,8 @@ static inline int
 private_recv_p(const NODE *node)
 {
     NODE *recv = get_nd_recv(node);
-    if (recv && nd_type_p(recv, NODE_SELF)) {
-        return RNODE_SELF(recv)->nd_state != 0;
+    if (recv && nd_type_p(recv, RB_SELF_NODE)) {
+        return 1;
     }
     return 0;
 }
@@ -7272,38 +7279,29 @@ setup_args_splat_mut(unsigned int *flag, int dup_rest, int initial_dup_rest)
 static bool
 setup_args_dup_rest_p(const NODE *argn)
 {
-    switch(nd_type(argn)) {
-      case NODE_LVAR:
-      case NODE_DVAR:
-      case NODE_GVAR:
-      case NODE_IVAR:
-      case NODE_CVAR:
-      case NODE_CONST:
-      case NODE_COLON3:
-      case NODE_INTEGER:
-      case NODE_FLOAT:
-      case NODE_RATIONAL:
-      case NODE_IMAGINARY:
-      case NODE_STR:
-      case NODE_SYM:
-      case NODE_REGX:
-      case NODE_SELF:
-      case NODE_NIL:
-      case NODE_TRUE:
-      case NODE_FALSE:
-      case NODE_LAMBDA:
-      case NODE_NTH_REF:
-      case NODE_BACK_REF:
-        return false;
-      case NODE_COLON2:
-        return setup_args_dup_rest_p(RNODE_COLON2(argn)->nd_head);
-      case NODE_LIST:
-        while (argn) {
-            if (setup_args_dup_rest_p(RNODE_LIST(argn)->nd_head)) {
-                return true;
-            }
-            argn = RNODE_LIST(argn)->nd_next;
-        }
+    if (!argn) return false;
+
+    switch (nd_type(argn)) {
+      case RB_LOCAL_VARIABLE_READ_NODE:
+      case RB_IT_LOCAL_VARIABLE_READ_NODE:
+      case RB_GLOBAL_VARIABLE_READ_NODE:
+      case RB_INSTANCE_VARIABLE_READ_NODE:
+      case RB_CLASS_VARIABLE_READ_NODE:
+      case RB_CONSTANT_READ_NODE:
+      case RB_INTEGER_NODE:
+      case RB_FLOAT_NODE:
+      case RB_RATIONAL_NODE:
+      case RB_IMAGINARY_NODE:
+      case RB_STRING_NODE:
+      case RB_SYMBOL_NODE:
+      case RB_REGULAR_EXPRESSION_NODE:
+      case RB_SELF_NODE:
+      case RB_NIL_NODE:
+      case RB_TRUE_NODE:
+      case RB_FALSE_NODE:
+      case RB_LAMBDA_NODE:
+      case RB_NUMBERED_REFERENCE_READ_NODE:
+      case RB_BACK_REFERENCE_READ_NODE:
         return false;
       default:
         return true;
@@ -7331,7 +7329,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_node_t *
 {
     VALUE ret;
     unsigned int dup_rest = SPLATARRAY_TRUE, initial_dup_rest;
-    rb_node_list2_t *list = &argn->arguments;
+    rb_node_list2_t *list = argn ? &argn->arguments : NULL;
 
     if (argn) {
         size_t splatn = 0;
@@ -7344,8 +7342,29 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_node_t *
 
         if (splatn == 1 && setup_args_splat_last_p(list)) dup_rest = SPLATARRAY_FALSE;
 
-        // TODO: Check kw
-        // TODO: Check &blk
+        if (dup_rest == SPLATARRAY_FALSE && RB_NODE_LIST_LEN(list) > 0) {
+            rb_node_t *last = rb_node_list_last(list);
+            if (nd_type_p(last, RB_KEYWORD_HASH_NODE)) {
+                rb_node_list2_t *elements = &RB_NODE_KEYWORD_HASH(last)->elements;
+                for (size_t i = 0; i < elements->size; i++) {
+                    rb_node_t *element = elements->nodes[i];
+                    if (nd_type_p(element, RB_ASSOC_NODE)) {
+                        rb_assoc_node_t *assoc = RB_NODE_ASSOC(element);
+                        if (setup_args_dup_rest_p((NODE *)assoc->key) || setup_args_dup_rest_p((NODE *)assoc->value)) {
+                            dup_rest = SPLATARRAY_TRUE;
+                            break;
+                        }
+                    }
+                    else if (setup_args_dup_rest_p((NODE *)RB_NODE_ASSOC_SPLAT(element)->value)) {
+                        dup_rest = SPLATARRAY_TRUE;
+                        break;
+                    }
+                }
+            }
+        }
+        if (block && nd_type_p(block, RB_BLOCK_ARGUMENT_NODE) && setup_args_dup_rest_p((NODE *)block->expression)) {
+            dup_rest = SPLATARRAY_TRUE | DUP_SINGLE_KW_SPLAT;
+        }
 
         // const NODE *check_arg = nd_type_p(argn, NODE_BLOCK_PASS) ?
         //     RNODE_BLOCK_PASS(argn)->nd_head : argn;
@@ -11679,14 +11698,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
 
       case RB_IT_LOCAL_VARIABLE_READ_NODE: {
-        if (ISEQ_BODY(iseq)->local_table_size != 1) {
-            COMPILE_ERROR(ERROR_ARGS "local_table_size is %d",
-                          ISEQ_BODY(iseq)->local_table_size);
-            goto ng;
-        }
-
         if (!popped) {
-            ADD_GETLOCAL(ret, node, 1, 0);
+            int level, local_size;
+            int idx = get_dyna_var_idx(iseq, idItImplicit, &level, &local_size);
+            ADD_GETLOCAL(ret, node, local_size - idx, level);
         }
         break;
       }

@@ -1667,7 +1667,7 @@ static void mark_lvar_used(struct parser_params *p, NODE *rhs);
 // static NODE *call_bin_op(struct parser_params*,NODE*,ID,NODE*,const YYLTYPE*,const YYLTYPE*);
 // static NODE *call_uni_op(struct parser_params*,NODE*,ID,const YYLTYPE*,const YYLTYPE*);
 // static NODE *new_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, const YYLTYPE *op_loc, const YYLTYPE *loc);
-static rb_node_t *call_bin_op(struct parser_params *p, rb_node_t *recv, ID id, rb_arguments_node_t *arg1, const YYLTYPE *op_loc, const YYLTYPE *loc);
+static rb_node_t *call_bin_op(struct parser_params *p, rb_node_t *recv, ID id, rb_node_t *arg1, const YYLTYPE *op_loc, const YYLTYPE *loc);
 static rb_node_t *call_uni_op(struct parser_params *p, rb_node_t *recv, ID id, const YYLTYPE *op_loc, const YYLTYPE *loc);
 static rb_call_node_t *new_qcall(struct parser_params* p, ID atype, rb_node_t *recv, ID mid, rb_arguments_node_t *args, const YYLTYPE *op_loc, const YYLTYPE *loc);
 static rb_node_t *new_command_qcall(struct parser_params* p, ID atype, rb_node_t *recv, ID mid, rb_arguments_node_t *args, rb_node_t *block, const YYLTYPE *op_loc, const YYLTYPE *loc);
@@ -13379,13 +13379,13 @@ rb_new_node_self_new(struct parser_params *p, const YYLTYPE *loc)
 static rb_call_node_t *
 rb_new_node_opcall_new(struct parser_params *p, rb_node_t *receiver, ID name, struct rb_arguments_node *arguments, const YYLTYPE *loc)
 {
-    return rb_new_node_call_new(p, receiver, name, arguments, loc);
+    return rb_new_node_call_new(p, receiver, name, arguments, 0, loc);
 }
 
 static rb_call_node_t *
 rb_new_node_fcall_new(struct parser_params *p, ID name, struct rb_arguments_node *arguments, const YYLTYPE *loc)
 {
-    return rb_new_node_call_new(p, NULL, name, arguments, loc);
+    return rb_new_node_call_new(p, NULL, name, arguments, 0, loc);
 }
 
 static rb_symbol_node_t *
@@ -13899,13 +13899,13 @@ new_dstr(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 }
 
 static rb_node_t *
-call_bin_op(struct parser_params *p, rb_node_t *recv, ID id, rb_arguments_node_t *arg1,
+call_bin_op(struct parser_params *p, rb_node_t *recv, ID id, rb_node_t *arg1,
                 const YYLTYPE *op_loc, const YYLTYPE *loc)
 {
     rb_node_t *expr;
     value_expr(p, recv);
     value_expr(p, arg1);
-    expr = NEW_RB_OPCALL(recv, id, NEW_LIST(arg1, rb_nd_code_loc(arg1)), loc);
+    expr = NEW_RB_OPCALL(recv, id, NEW_RB_ARGUMENTS(arg1, rb_nd_code_loc(arg1)), loc);
     nd_set_line(expr, op_loc->beg_pos.lineno);
     return expr;
 }
@@ -13988,7 +13988,7 @@ command_add_block(struct parser_params*p, NODE *m, NODE *b, const YYLTYPE *loc)
         compile_error(p, "command_add_block: unexpected node: NODE_RETRY");
         return m;
       default:
-        block_dup_check(p, get_nd_args(p, m), b);
+        block_dup_check(p, m, b);
         return method_add_block(p, m, b, loc);
     }
     RUBY_ASSERT(*body, "no argument %s with do_block", parser_node_name(type));
@@ -14969,6 +14969,7 @@ node_assign(struct parser_params *p, rb_node_t *lhs, rb_node_t *rhs, struct lex_
     switch (RB_NODE_TYPE(lhs)) {
       // case NODE_CDECL:
       case RB_GLOBAL_VARIABLE_WRITE_NODE:
+      case RB_INSTANCE_VARIABLE_WRITE_NODE:
       case NODE_LASGN:
       // case NODE_DASGN:
       // case NODE_MASGN:
@@ -14994,6 +14995,8 @@ static NODE *
 value_expr_check(struct parser_params *p, NODE *node)
 {
     NODE *void_node = 0, *vn;
+
+    if (node && nd_type_p(node, RB_CALL_NODE)) return NULL;
 
     if (!node) {
         rb_warning0("empty expression");
@@ -16129,10 +16132,8 @@ pattern_has_capture(struct parser_params *p, NODE *node)
 {
     if (!node || node == NODE_SPECIAL_NO_NAME_REST || node == NODE_SPECIAL_NO_REST_KEYWORD) return 0;
     switch (nd_type(node)) {
-      case NODE_LASGN:
-        return !is_private_local_id(p, RNODE_LASGN(node)->nd_vid);
-      case NODE_DASGN:
-        return !is_private_local_id(p, RNODE_DASGN(node)->nd_vid);
+      case RB_LOCAL_VARIABLE_WRITE_NODE:
+        return !is_private_local_id(p, RB_NODE_LOCAL_VARIABLE_WRITE(node)->name);
       case NODE_LIST:
         for (; node; node = RNODE_LIST(node)->nd_next) {
             if (pattern_has_capture(p, RNODE_LIST(node)->nd_head)) return 1;
