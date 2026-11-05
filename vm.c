@@ -1796,7 +1796,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     rb_rb_node_init(&tmp_node.base, RB_PROGRAM_NODE);
     tmp_node.locals = dyns;
 
-    VALUE ast_value = rb_ruby_ast_new(RNODE(&tmp_node));
+    VALUE ast_value = rb_ruby_ast_new(&tmp_node.base);
 
     if (base_iseq) {
         iseq = rb_iseq_new(ast_value, ISEQ_BODY(base_iseq)->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);

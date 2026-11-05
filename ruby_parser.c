@@ -1273,7 +1273,7 @@ rb_source_hash_finalize(const rb_source_hash_state_t *state)
 }
 
 VALUE
-rb_ruby_ast_new(const NODE *const root)
+rb_ruby_ast_new(const rb_node_t *root)
 {
     rb_ast_t *ast;
     VALUE ast_value = TypedData_Make_Struct(0, rb_ast_t, &ast_data_type, ast);
