@@ -218,7 +218,7 @@ module Bundler
     def find_compatible_platform_spec(specs, locked_platforms: nil)
       candidate_platforms(locked_platforms: locked_platforms).each do |plat|
         candidates = MatchPlatform.select_best_platform_match(specs, plat)
-        spec = choose_compatible(candidates, fallback_to_non_installable: false)
+        spec = choose_compatible(candidates, fallback_to_non_installable: false, locked_platforms: locked_platforms)
         return spec if spec
       end
       nil
@@ -272,7 +272,7 @@ module Bundler
     # lockfile, which is not allowed. In that case, we will give a proper error
     # about the mismatch higher up the stack, right before trying to install the
     # bad gem.
-    def choose_compatible(candidates, fallback_to_non_installable: Bundler.frozen_bundle?)
+    def choose_compatible(candidates, fallback_to_non_installable: Bundler.frozen_bundle?, locked_platforms: nil)
       override_list = overrides || []
       search = candidates.reverse.find do |spec|
         spec.is_a?(StubSpecification) || spec.matches_current_metadata_with_overrides?(override_list)
@@ -284,7 +284,11 @@ module Bundler
       if search
         validate_dependencies(search) if search.platform == platform
 
-        search.locked_platform = platform if search.instance_of?(RemoteSpecification) || search.instance_of?(EndpointSpecification)
+        if search.instance_of?(RemoteSpecification) || search.instance_of?(EndpointSpecification)
+          # A frozen fallback onto a variant the lockfile locks too, like the
+          # ruby gem, installs a locked gem rather than an insecure one.
+          search.locked_platform = locked_platforms&.include?(search.platform) ? search.platform : platform
+        end
       end
       search
     end

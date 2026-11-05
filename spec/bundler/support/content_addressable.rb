@@ -19,9 +19,11 @@ module Spec
       "#{Gem.ruby_version.segments[0] + 1}.0"
     end
 
-    def build_repo2_with_content_addressed_gems
+    def build_repo2_with_content_addressed_gems(platform_gem: true)
       build_repo2 do
         build_gem "mygem", "1.0"
+        next unless platform_gem
+
         build_gem "mygem", "1.0" do |s|
           s.platform = Gem::Platform.new("x86_64-linux")
           s.write "lib/mygem.rb", "MYGEM = '1.0 not_content_addressed'"
