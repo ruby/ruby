@@ -1511,7 +1511,7 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
             ROBJECT_SET_EXTENDED(obj, fields_obj);
             break;
           case T_DATA:
-            RB_OBJ_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, fields_obj);
+            RB_OBJ_ATOMIC_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, fields_obj);
             break;
           case T_STRUCT:
             RSTRUCT_SET_FIELDS_OBJ(obj, fields_obj);
@@ -1577,12 +1577,9 @@ rb_obj_replace_fields(VALUE obj, VALUE fields_obj)
 }
 
 VALUE
-rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
+rb_imemo_fields_field_get(VALUE fields_obj, shape_id_t target_shape_id)
 {
-    RUBY_ASSERT(!SPECIAL_CONST_P(obj));
     RUBY_ASSERT(RSHAPE_TYPE_P(target_shape_id, SHAPE_IVAR) || RSHAPE_TYPE_P(target_shape_id, SHAPE_OBJ_ID));
-
-    VALUE fields_obj = rb_obj_fields(obj, RSHAPE_EDGE_NAME(target_shape_id));
 
     if (UNLIKELY(rb_shape_complex_p(target_shape_id))) {
         st_table *fields_hash = rb_imemo_fields_complex_tbl(fields_obj);
@@ -1594,6 +1591,14 @@ rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
 
     attr_index_t index = RSHAPE_INDEX(target_shape_id);
     return rb_imemo_fields_ptr(fields_obj)[index];
+}
+
+VALUE
+rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
+{
+    RUBY_ASSERT(!SPECIAL_CONST_P(obj));
+
+    return rb_imemo_fields_field_get(rb_obj_fields(obj, RSHAPE_EDGE_NAME(target_shape_id)), target_shape_id);
 }
 
 VALUE
@@ -1964,7 +1969,9 @@ generic_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE va
     }
 
     const VALUE original_fields_obj = rb_obj_fields(obj, field_name);
-    VALUE fields_obj = imemo_fields_set(obj, original_fields_obj, target_shape_id, field_name, val, false);
+    // Readers of a shareable object's fields take no lock, so never mutate a published fields_obj.
+    bool concurrent = rb_multi_ractor_p() && RB_OBJ_SHAREABLE_P(obj);
+    VALUE fields_obj = imemo_fields_set(obj, original_fields_obj, target_shape_id, field_name, val, concurrent);
 
     rb_obj_set_fields(obj, fields_obj, field_name, original_fields_obj);
     return rb_shape_complex_p(target_shape_id) ? ATTR_INDEX_NOT_SET : RSHAPE_INDEX(target_shape_id);
