@@ -11270,7 +11270,7 @@ static enum rb_parser_shareability
 const_node_shareability(const rb_shareable_constant_node_t *node)
 {
     if (rb_node_get_fl(node) & RB_SHAREABLE_CONSTANT_NODE_FLAGS_LITERAL) return rb_parser_shareable_literal;
-    if (rb_node_get_fl(node) & RB_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_EVERYTHING) return rb_parser_shareable_copy;
+    if (rb_node_get_fl(node) & RB_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_EVERYTHING) return rb_parser_shareable_everything;
     if (rb_node_get_fl(node) & RB_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_COPY) return rb_parser_shareable_copy;
     return rb_parser_shareable_none;
 }
