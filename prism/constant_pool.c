@@ -11,57 +11,42 @@
  * Initialize a list of constant ids.
  */
 void
-pm_constant_id_list_init(pm_constant_id_list_t *list) {
-    list->ids = NULL;
-    list->size = 0;
-    list->capacity = 0;
-}
-
-/**
- * Initialize a list of constant ids with a given capacity.
- */
-void
-pm_constant_id_list_init_capacity(pm_arena_t *arena, pm_constant_id_list_t *list, size_t capacity) {
-    if (capacity) {
-        list->ids = (pm_constant_id_t *) pm_arena_zalloc(arena, capacity * sizeof(pm_constant_id_t), PRISM_ALIGNOF(pm_constant_id_t));
+pm_constant_id_list_init(pm_arena_t *arena, pm_constant_id_list_t *list, uint32_t size) {
+    if (size) {
+        list->ids = (pm_constant_id_t *) pm_arena_zalloc(arena, size * sizeof(pm_constant_id_t), PRISM_ALIGNOF(pm_constant_id_t));
     } else {
         list->ids = NULL;
     }
 
-    list->size = 0;
-    list->capacity = capacity;
+    list->size = size;
 }
 
 /**
- * Append a constant id to a list of constant ids.
+ * Append a constant id to a list of constant ids. A list's array is always
+ * exactly its size, so it grows to exactly one more id, in place when it is the
+ * most recent allocation in the arena and by copying it otherwise.
  */
 void
 pm_constant_id_list_append(pm_arena_t *arena, pm_constant_id_list_t *list, pm_constant_id_t id) {
-    if (list->size >= list->capacity) {
-        size_t new_capacity = list->capacity == 0 ? 8 : list->capacity * 2;
-        pm_constant_id_t *new_ids = (pm_constant_id_t *) pm_arena_alloc(arena, sizeof(pm_constant_id_t) * new_capacity, PRISM_ALIGNOF(pm_constant_id_t));
-
-        if (list->size > 0) {
-            memcpy(new_ids, list->ids, list->size * sizeof(pm_constant_id_t));
-        }
-
-        list->ids = new_ids;
-        list->capacity = new_capacity;
+    if (list->size == 0) {
+        list->ids = (pm_constant_id_t *) pm_arena_alloc(arena, sizeof(pm_constant_id_t), PRISM_ALIGNOF(pm_constant_id_t));
+        list->ids[list->size++] = id;
+    } else {
+        list->ids =(pm_constant_id_t *) pm_arena_realloc(arena, list->ids, sizeof(pm_constant_id_t) * (list->size + 1), sizeof(pm_constant_id_t) * list->size, PRISM_ALIGNOF(pm_constant_id_t));
+        list->ids[list->size++] = id;
     }
-
-    list->ids[list->size++] = id;
 }
 
 /**
- * Insert a constant id into a list of constant ids at the specified index.
+ * Set the constant id at the specified index of a list of constant ids. The
+ * slot must still be unset.
  */
 void
-pm_constant_id_list_insert(pm_constant_id_list_t *list, size_t index, pm_constant_id_t id) {
-    PRISM_ASSERT(index < list->capacity);
+pm_constant_id_list_insert(pm_constant_id_list_t *list, uint32_t index, pm_constant_id_t id) {
+    PRISM_ASSERT(index < list->size);
     PRISM_ASSERT(list->ids[index] == PM_CONSTANT_ID_UNSET);
 
     list->ids[index] = id;
-    list->size++;
 }
 
 /**
