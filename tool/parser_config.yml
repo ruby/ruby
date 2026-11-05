@@ -731,6 +731,8 @@ flags:
     values:
       - name: MULTIPLE_STATEMENTS
         comment: "parentheses that contain multiple potentially void statements"
+      - name: ARGUMENT
+        comment: "parentheses parsed as an argument without a legacy block wrapper"
     comment: Flags for parentheses nodes.
   - name: RangeFlags
     values:
