@@ -2402,16 +2402,16 @@ class_object_id(VALUE klass)
     return id;
 }
 
+static inline shape_id_t
+object_id_field_shape(shape_id_t shape_id)
+{
+    return rb_shape_complex_p(shape_id) ? ROOT_COMPLEX_WITH_OBJ_ID : rb_shape_object_id(shape_id);
+}
+
 static inline VALUE
 object_id_get(VALUE obj, shape_id_t shape_id)
 {
-    VALUE id;
-    if (rb_shape_complex_p(shape_id)) {
-        id = rb_obj_field_get(obj, ROOT_COMPLEX_WITH_OBJ_ID);
-    }
-    else {
-        id = rb_obj_field_get(obj, rb_shape_object_id(shape_id));
-    }
+    VALUE id = rb_obj_field_get(obj, object_id_field_shape(shape_id));
 
 #if RUBY_DEBUG
     if (!(FIXNUM_P(id) || RB_TYPE_P(id, T_BIGNUM))) {
@@ -2443,6 +2443,20 @@ object_id0(VALUE obj)
     return id;
 }
 
+// generic_field_set never mutates the published fields_obj of a shareable object,
+// and the fields_obj carries its owner's shape, so both are read from the one snapshot.
+static VALUE
+shareable_data_object_id(VALUE obj)
+{
+    VALUE fields_obj = RUBY_ATOMIC_VALUE_LOAD(RTYPEDDATA(obj)->fields_obj);
+    if (!fields_obj) return Qfalse;
+
+    shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
+    if (!rb_shape_has_object_id(shape_id)) return Qfalse;
+
+    return rb_imemo_fields_field_get(fields_obj, object_id_field_shape(shape_id));
+}
+
 static VALUE
 object_id(VALUE obj)
 {
@@ -2461,6 +2475,11 @@ object_id(VALUE obj)
     }
 
     if (UNLIKELY(rb_gc_multi_ractor_p() && rb_ractor_shareable_p(obj))) {
+        if (BUILTIN_TYPE(obj) == T_DATA) {
+            VALUE existing_id = shareable_data_object_id(obj);
+            if (existing_id) return existing_id;
+        }
+
         unsigned int lock_lev = RB_GC_VM_LOCK();
         VALUE id = object_id0(obj);
         RB_GC_VM_UNLOCK(lock_lev);
