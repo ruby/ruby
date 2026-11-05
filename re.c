@@ -1084,19 +1084,18 @@ make_regexp(Regexp *rp, const char *s, rb_len_t len, rb_encoding *enc, int flags
  * Each of these methods returns information about one capture,
  * which may be specified by its integer index or by its name (if it is a named capture):
  *
+ * - #[]: returns a matched substring or an array of matched substrings
+ *   for the given arguments.
  * - #begin: returns the character offset of the beginning of the capture.
  * - #bytebegin: returns the byte offset of the beginning of the capture.
  * - #byteend: returns the byte offset of the end of the capture.
  * - #byteoffset: returns the byte offsets of the beginning and end of the capture.
+ * - #deconstruct_keys: returns a hash of the names and values for the given names.
  * - #end: returns the character offset of the end of the capture.
  * - #integer_at: returns the value of the capture, converted to an integer.
  * - #match: returns the matched substring for the capture.
  * - #match_length: returns the length (in characters) of the matched substring for the capture.
  * - #offset: returns the begin and end offsets for the capture.
- *
- * - #deconstruct_keys: returns a hash of the names and values for the given names.
- * - #[]: returns a matched substring or an array of matched substrings
- *   for the given arguments.
  * - #values_at: returns a matched substring or an array of matched substrings
  *   for the given arguments.
  *
