@@ -32,8 +32,6 @@ class BackTrace:
 
     VM_FRAME_MAGIC_MASK = 0x7fff0001
 
-    ZJIT_JIT_RETURN_C_FRAME = 0x1
-
     VM_FRAME_MAGIC_NAME = {
             VM_FRAME_MAGIC_TOP: "TOP",
             VM_FRAME_MAGIC_METHOD: "METHOD",
@@ -74,8 +72,6 @@ class BackTrace:
     def cfp_iseq_and_pc(self, cfp):
         jit_return = cfp.GetValueForExpressionPath("->jit_return").GetValueAsUnsigned()
         if self.zjit_enabled and jit_return:
-            if jit_return == self.ZJIT_JIT_RETURN_C_FRAME:
-                return None, 0
             jit_frame = self.target.CreateValueFromAddress("jit_frame", lldb.SBAddress(jit_return - SIZEOF_VALUE, self.target), self.tZjitJitFrame)
             return jit_frame.GetValueForExpressionPath("->iseq"), jit_frame.GetValueForExpressionPath("->pc").GetValueAsUnsigned()
         return cfp.GetValueForExpressionPath("->_iseq"), cfp.GetValueForExpressionPath("->pc").GetValueAsUnsigned()

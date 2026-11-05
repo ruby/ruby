@@ -23,7 +23,7 @@ typedef struct zjit_jit_frame {
     // Stack map bit stream, decoded by zjit_materialize_frames(). Bit 0 is
     // materialize_block_code, see ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P().
     // The rest are ZJIT_STACK_MAP_OP_* opcodes, each followed by its operands.
-    // NULL for C frames.
+    // Never NULL. Empty for C frames.
     const uint8_t *stack_map;
 } zjit_jit_frame_t;
 
@@ -35,7 +35,7 @@ static inline bool
 ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P(const zjit_jit_frame_t *jit_frame)
 {
     // The 0th bit of the bitstream is this boolean.
-    return jit_frame->stack_map && (jit_frame->stack_map[0] & 1);
+    return jit_frame->stack_map[0] & 1;
 }
 
 #if USE_ZJIT
@@ -52,7 +52,6 @@ ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P(const zjit_jit_frame_t *jit_frame)
 
 extern void *rb_zjit_entry;
 extern bool rb_zjit_compiling_p;
-extern const zjit_jit_frame_t rb_zjit_c_frame;
 extern unsigned int rb_zjit_call_threshold;
 extern unsigned int rb_zjit_profile_threshold;
 extern uint64_t rb_zjit_max_compile_time_ns;
@@ -90,19 +89,9 @@ void rb_zjit_range_new_fastpath(bool exclude_end, size_t *alloc_size_out, VALUE 
 void rb_zjit_array_new_fastpath(size_t *alloc_size_out, VALUE *flags_out);
 bool rb_zjit_newobj_hook_enabled_p(void);
 
-// Special value for cfp->jit_return that means "this is a C method frame, use
-// rb_zjit_c_frame as the JITFrame". We don't control the native stack layout
-// for C frames, so there's no per-call JITFrame storage; we set this sentinel
-// instead of a heap-allocated JITFrame pointer.
-#define ZJIT_JIT_RETURN_C_FRAME 0x1
-
 static inline const zjit_jit_frame_t *
 CFP_ZJIT_FRAME(const rb_control_frame_t *cfp)
 {
-    if ((VALUE)cfp->jit_return == ZJIT_JIT_RETURN_C_FRAME) {
-        return &rb_zjit_c_frame;
-    }
-    else {
         // Read JITFrame from this frame's stack slot. cfp->jit_return points at
         // the slot reserved for this frame's inlining depth, so distinct frames in
         // the same JIT function read distinct slots. An initial frame describing
@@ -112,8 +101,10 @@ CFP_ZJIT_FRAME(const rb_control_frame_t *cfp)
         // must track where execution currently is, later gen_save_pc_for_gc() calls
         // rewrite the slot with the live PC as execution advances through the frame,
         // before any non-leaf C call.
+        //
+        // C frames don't have a native stack slot. Their cfp->jit_return points
+        // into a static that is laid out like one. See CFrame in zjit/src/jit_frame.rs.
         return (const zjit_jit_frame_t *)((VALUE *)cfp->jit_return)[-1];
-    }
 }
 #else
 #define rb_zjit_entry 0

@@ -96,6 +96,36 @@ fn alloc_jit_frame_memory(layout: Layout) -> *mut u8 {
 static EMPTY_STACK_MAPS: [u8; 2] = [0, 1];
 const _: () = assert!(ZJIT_STACK_MAP_OP_END == 0);
 
+/// The JITFrame shared by all C method frames, laid out like a native stack
+/// slot so that `cfp->jit_return` can point at [Self::jit_frame]. We don't
+/// control the native stack layout for C frames, so there's no per-call storage
+/// for a JITFrame pointer. CFP_ZJIT_FRAME() reads `((VALUE *)cfp->jit_return)[-1]`,
+/// so [Self::slot] holds a pointer to [Self::jit_frame].
+#[repr(C)]
+struct CFrame {
+    slot: *const JITFrame,
+    jit_frame: JITFrame,
+}
+
+// Must be Sync to put into a static.
+// SAFETY: C_FRAME is immutable and only holds pointers to immutable statics.
+unsafe impl Sync for CFrame {}
+
+static C_FRAME: CFrame = CFrame {
+    slot: &raw const C_FRAME.jit_frame,
+    jit_frame: JITFrame {
+        pc: ptr::null(),
+        iseq: ptr::null(),
+        // C frames never materialize block_code
+        stack_map: &EMPTY_STACK_MAPS[0],
+    },
+};
+
+/// The value to store in `cfp->jit_return` for C method frames.
+pub fn c_frame_jit_return() -> *const JITFrame {
+    &raw const C_FRAME.jit_frame
+}
+
 /// Writes a JITFrame stack map bit stream. The bit stream is little endian.
 /// Bit 0 is `materialize_block_code`.
 /// The rest is `opcode, payload` pairs on repeat where:

@@ -243,7 +243,6 @@ pub const ZJIT_STACK_MAP_OP_SKIP: u32 = 2;
 pub const ZJIT_STACK_MAP_OP_BASE_PTR: u32 = 3;
 pub const ZJIT_STACK_MAP_OP_IMM: u32 = 4;
 pub const ZJIT_STACK_MAP_OP_NIL: u32 = 5;
-pub const ZJIT_JIT_RETURN_C_FRAME: u32 = 1;
 pub const RB_GC_ZJIT_FASTPATH_DATA_WORDS: u32 = 19;
 pub type rb_len_t = ::std::os::raw::c_long;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;

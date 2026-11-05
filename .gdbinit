@@ -980,15 +980,9 @@ define cfp_iseq_pc
   python gdb.set_convenience_variable('zjit_built', gdb.lookup_global_symbol('rb_zjit_entry') is not None)
   if $zjit_built
     if rb_zjit_entry && $arg0->jit_return
-      if (VALUE)$arg0->jit_return == 1
-        # ZJIT_JIT_RETURN_C_FRAME
-        set $iseq = 0
-        set $cfp_pc = 0
-      else
-        set $jit_frame = ((zjit_jit_frame_t **)$arg0->jit_return)[-1]
-        set $iseq = $jit_frame->iseq
-        set $cfp_pc = $jit_frame->pc
-      end
+      set $jit_frame = ((zjit_jit_frame_t **)$arg0->jit_return)[-1]
+      set $iseq = $jit_frame->iseq
+      set $cfp_pc = $jit_frame->pc
     end
   end
 end

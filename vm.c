@@ -3020,7 +3020,6 @@ zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cf
             // the exiting frame is already written by compile_exit_save_state()
             // and skipped here after materialize_exit_trampoline clears its
             // jit_return, so this restores older ZJIT frames from stack maps.
-            if (jit_frame->stack_map) {
                 VALUE *stack = cfp->sp;
                 zjit_stack_map_reader_t reader = { jit_frame->stack_map, 1 }; // bit 0 is materialize_block_code
 #define WRITE_ONE(value) do { --stack; *stack = (value); } while (0)
@@ -3061,7 +3060,6 @@ zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cf
                     }
                 }
 #undef WRITE_ONE
-            }
             cfp->jit_return = 0;
         }
         if (end_cfp == cfp) break;

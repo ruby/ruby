@@ -17,6 +17,7 @@ use crate::invariants::{
     track_root_box_assumption, track_no_newobj_hook_assumption
 };
 use crate::gc::append_gc_offsets;
+use crate::jit_frame::c_frame_jit_return;
 use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
 use crate::profile::reset_profiles_remaining;
 use crate::perf;
@@ -3765,11 +3766,9 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
         // Without this, stale data from a previous frame occupying this CFP slot
         // can be used as an ifunc pointer, causing a segfault.
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
-        // C frames share a single static JITFrame (rb_zjit_c_frame). Setting
-        // cfp->jit_return to the ZJIT_JIT_RETURN_C_FRAME sentinel tells
-        // CFP_ZJIT_FRAME() to use that shared frame, so we don't need to
+        // C frames share a single static JITFrame, so we don't need to
         // allocate a per-call JITFrame for C method pushes.
-        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), (ZJIT_JIT_RETURN_C_FRAME as usize).into());
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(c_frame_jit_return()));
     }
 
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);

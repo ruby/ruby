@@ -58,15 +58,6 @@ const struct rb_zjit_runtime_offsets rb_zjit_runtime_offsets = {
     .ractor_objspace = offsetof(rb_ractor_t, objspace),
 };
 
-// Special JITFrame used by all C method calls. We don't control the native
-// stack layout for C frames, so cfp->jit_return points at this static frame
-// via the ZJIT_JIT_RETURN_C_FRAME sentinel instead of a per-call allocation.
-const zjit_jit_frame_t rb_zjit_c_frame = (zjit_jit_frame_t) {
-    .pc = 0,
-    .iseq = 0,
-    .stack_map = NULL,
-};
-
 #if !defined(_WIN32) && defined(MAP_ANONYMOUS)
 uint8_t *rb_jit_align_ptr(uint8_t *ptr, uint32_t multiple); // defined in jit.c
 
