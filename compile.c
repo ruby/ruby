@@ -204,7 +204,7 @@ const ID rb_iseq_shared_exc_local_tbl[] = {idERROR_INFO};
 
 #define debug_node_start(node)  ((void) \
   (compile_debug_print_indent(1) && \
-   (ruby_debug_print_node(1, CPDEBUG, "", (const NODE *)(node)), gl_node_level)), \
+   (ruby_debug_print_node(1, CPDEBUG, "", (const rb_node_t *)(node)), gl_node_level)), \
    gl_node_level++)
 
 #define debug_node_end()  gl_node_level --

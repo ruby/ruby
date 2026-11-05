@@ -63,7 +63,7 @@
 #include "ruby/version.h"
 #include "ruby/internal/error.h"
 
-#include "parser_prettyprint.h"
+#include "node.h"
 
 #define singlebit_only_p(x) !((x) & ((x)-1))
 STATIC_ASSERT(Qnil_1bit_from_Qfalse, singlebit_only_p(Qnil^Qfalse));
@@ -2331,17 +2331,6 @@ prism_dump_tree(pm_parse_result_t *result)
     return tree;
 }
 
-static VALUE
-parser_dump_tree(const rb_node_t *node)
-{
-    pm_buffer_t *output_buffer = pm_buffer_new();
-
-    rb_parser_prettyprint(output_buffer, node);
-    VALUE tree = rb_str_new(pm_buffer_value(output_buffer), pm_buffer_length(output_buffer));
-    pm_buffer_free(output_buffer);
-    return tree;
-}
-
 static void
 process_options_global_setup(const ruby_cmdline_options_t *opt, const rb_iseq_t *iseq)
 {
@@ -2685,7 +2674,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     if (dump & DUMP_BIT(parsetree)) {
         VALUE tree;
         if (result.ast) {
-            tree = parser_dump_tree(result.ast->body.root);
+            tree = rb_parser_dump_tree(result.ast->body.root, 0);
         }
         else {
             tree = prism_dump_tree(&result.prism);

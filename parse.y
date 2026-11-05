@@ -3132,27 +3132,27 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 } <id>
 %printer {
     switch (nd_type(RNODE($$))) {
-      case NODE_INTEGER:
-        rb_parser_printf(p, "%+"PRIsVALUE, rb_node_integer_literal_val($$));
+      case RB_INTEGER_NODE:
+        rb_parser_printf(p, "%+"PRIsVALUE, rb_node_integer_literal_val2($$));
         break;
-      case NODE_FLOAT:
-        rb_parser_printf(p, "%+"PRIsVALUE, rb_node_float_literal_val($$));
+      case RB_FLOAT_NODE:
+        rb_parser_printf(p, "%+"PRIsVALUE, rb_node_float_literal_val2($$));
         break;
-      case NODE_RATIONAL:
-        rb_parser_printf(p, "%+"PRIsVALUE, rb_node_rational_literal_val($$));
+      case RB_RATIONAL_NODE:
+        rb_parser_printf(p, "%+"PRIsVALUE, rb_node_rational_literal_val2($$));
         break;
-      case NODE_IMAGINARY:
-        rb_parser_printf(p, "%+"PRIsVALUE, rb_node_imaginary_literal_val($$));
+      case RB_IMAGINARY_NODE:
+        rb_parser_printf(p, "%+"PRIsVALUE, rb_node_imaginary_literal_val2($$));
         break;
       default:
         break;
     }
 } tINTEGER tFLOAT tRATIONAL tIMAGINARY tSTRING_CONTENT tCHAR
 %printer {
-    rb_parser_printf(p, "$%ld", RNODE_NTH_REF($$)->nd_nth);
+    rb_parser_printf(p, "$%ld", (long)RB_NODE_NUMBERED_REFERENCE_READ($$)->number);
 } tNTH_REF
 %printer {
-    rb_parser_printf(p, "$%c", (int)RNODE_BACK_REF($$)->nd_nth);
+    rb_parser_printf(p, "%s", rb_id2name(RB_NODE_BACK_REFERENCE_READ($$)->name));
 } tBACK_REF
 
 %destructor {

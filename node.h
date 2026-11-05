@@ -88,7 +88,7 @@ void rb_ast_delete_node(rb_ast_t*, NODE *n);
 rb_ast_id_table_t *rb_ast_new_local_table(rb_ast_t*, int);
 rb_ast_id_table_t *rb_ast_resize_latest_local_table(rb_ast_t*, int);
 
-VALUE rb_parser_dump_tree(const NODE *node, int comment);
+VALUE rb_parser_dump_tree(const rb_node_t *node, int comment);
 
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 
