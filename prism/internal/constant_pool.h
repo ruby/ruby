@@ -32,7 +32,12 @@ static const pm_constant_pool_bucket_type_t PM_CONSTANT_POOL_BUCKET_OWNED = 1;
 /* A constant constant is known at compile time. */
 static const pm_constant_pool_bucket_type_t PM_CONSTANT_POOL_BUCKET_CONSTANT = 2;
 
-/* A bucket in the hash map. */
+/*
+ * A bucket in the hash map. It holds no string, so that it stays eight bytes
+ * wide for every slot of a mostly empty table. A probe compares hashes first,
+ * and reads the string through the constants array only when they match, which
+ * is almost always a real hit.
+ */
 typedef struct {
     /* The incremental ID used for indexing back into the pool. */
     unsigned int id: 30;
@@ -42,15 +47,6 @@ typedef struct {
 
     /* The hash of the bucket. */
     uint32_t hash;
-
-    /*
-     * A pointer to the start of the string, stored directly in the bucket to
-     * avoid a pointer chase to the constants array during probing.
-     */
-    const uint8_t *start;
-
-    /* The length of the string. */
-    size_t length;
 } pm_constant_pool_bucket_t;
 
 /* The overall constant pool, which stores constants found while parsing. */
@@ -58,7 +54,11 @@ struct pm_constant_pool_t {
     /* The buckets in the hash map. */
     pm_constant_pool_bucket_t *buckets;
 
-    /* The constants that are stored in the buckets. */
+    /*
+     * The constants that are stored in the buckets, indexed by id minus one.
+     * The pool grows before it is three quarters full, so this has room for
+     * three quarters as many constants as there are buckets, rounded up.
+     */
     pm_constant_t *constants;
 
     /* The number of buckets in the hash map. */
@@ -117,6 +117,12 @@ bool pm_constant_id_set_insert(pm_arena_t *arena, pm_constant_id_set_t *set, pm_
 
 /* Initialize a new constant pool with a given capacity. */
 void pm_constant_pool_init(pm_arena_t *arena, pm_constant_pool_t *pool, uint32_t capacity);
+
+/*
+ * Return the number of bytes that pm_constant_pool_init allocates for the given
+ * capacity.
+ */
+size_t pm_constant_pool_init_size(uint32_t capacity);
 
 /* Return a pointer to the constant indicated by the given constant id. */
 pm_constant_t * pm_constant_pool_id_to_constant(const pm_constant_pool_t *pool, pm_constant_id_t constant_id);
