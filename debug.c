@@ -42,7 +42,7 @@ const union {
     enum ruby_special_consts    special_consts;
     enum ruby_value_type        value_type;
     enum ruby_tag_type          tag_type;
-    enum node_type              node_type;
+    enum rb_node_type           node_type;
     enum ruby_method_ids        method_ids;
     enum ruby_id_types          id_types;
     enum ruby_fl_type           fl_types;
@@ -143,20 +143,20 @@ ruby_debug_print_id(int level, int debug_level, const char *header, ID id)
     return id;
 }
 
-NODE *
-ruby_debug_print_node(int level, int debug_level, const char *header, const NODE *node)
+rb_node_t *
+ruby_debug_print_node(int level, int debug_level, const char *header, const rb_node_t *node)
 {
     if (level < debug_level) {
         fprintf(stderr, "DBG> %s: %s (id: %d, line: %d, location: (%d,%d)-(%d,%d))\n",
-                header, ruby_node_name(nd_type(node)), nd_node_id(node), nd_line(node),
-                nd_first_lineno(node), nd_first_column(node),
-                nd_last_lineno(node), nd_last_column(node));
+                header, rb_node_type_to_str(node->type), node->node_id, node->line,
+                node->location.beg_pos.lineno, node->location.beg_pos.column,
+                node->location.end_pos.lineno, node->location.end_pos.column);
     }
-    return (NODE *)node;
+    return (rb_node_t *)node;
 }
 
 void
-ruby_debug_print_n(const NODE *node)
+ruby_debug_print_n(const rb_node_t *node)
 {
     ruby_debug_print_node(0, 1, "", node);
 }
