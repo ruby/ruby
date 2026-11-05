@@ -2404,6 +2404,16 @@ class TestTranscode < Test::Unit::TestCase
                  s.encode("UTF-16LE", "UTF-16LE", xml: :text, invalid: :replace))
   end
 
+  def test_newline_option_with_invalid_replace
+    s = "\xE1\r\xC3".force_encoding("UTF-8")
+    assert_equal("\uFFFD\n\uFFFD".encode("UTF-16LE"),
+                 s.encode("UTF-16LE", invalid: :replace, universal_newline: true))
+    assert_equal("\uFFFD\n\uFFFD".encode("UTF-32BE"),
+                 s.encode("UTF-32BE", invalid: :replace, lf_newline: true))
+    assert_equal("a\uFFFD\nb\uFFFD".encode("UTF-16LE"),
+                 "a\xE1\r\nb\xC3".force_encoding("UTF-8").encode("UTF-16LE", invalid: :replace, universal_newline: true))
+  end
+
   def test_ractor_lazy_load_encoding
     assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
     begin;
