@@ -710,10 +710,10 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ### YJIT
 
-* YJIT now supports Windows (mswin) on x64 CPUs.  Configure with
+* YJIT now supports Windows (mswin) on x64 and arm64 CPUs.  Configure with
   `win32\configure.bat --enable-yjit`, which requires `rustc` with the
-  `x86_64-pc-windows-msvc` target.  Only the release build is supported,
-  and MinGW is not.  [[Feature #18439]]
+  `x86_64-pc-windows-msvc` or `aarch64-pc-windows-msvc` target.  Only the
+  release build is supported, and MinGW is not.  [[Feature #18439]]
 * Add `RubyVM::YJIT.max_compile_time_ns` and `RubyVM::YJIT.max_compile_time_ns=`
   to give YJIT a compilation time budget. When `RubyVM::YJIT.total_compile_time_ns`
   exceeds it, YJIT pauses compilation until the budget is raised, which
