@@ -1202,11 +1202,32 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_generate_duplicate_keys_disallowed
-    hash = { foo: 1, "foo" => 2 }
+    assert_duplicate_key({ foo: 1, "foo" => 2 })
+    assert_duplicate_key({ "1" => 1, 1 => 2 })
+    assert_duplicate_key({ :"1" => 1, 1 => 2 })
+
+    fake_string = Class.new do
+      def initialize(str)
+        @str = str
+      end
+
+      def to_s
+        @str.dup
+      end
+    end
+
+    assert_duplicate_key({ fake_string.new("a") => 1, fake_string.new("a") => 2 })
+  end
+
+  def assert_duplicate_key(hash)
     error = assert_raise JSON::GeneratorError do
       JSON.generate(hash, allow_duplicate_key: false)
     end
-    assert_equal %(detected duplicate key "foo" in #{hash.inspect}), error.message
+    assert_equal %(detected duplicate key "#{hash.keys.first}" in #{hash.inspect}), error.message
+  end
+
+  def test_generate_mixed_keys_without_duplicates
+    assert_equal %({"1":1,"2":2}), JSON.generate({ "1" => 1, 2 => 2 }, allow_duplicate_key: false)
   end
 
   def test_frozen
