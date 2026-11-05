@@ -32,13 +32,21 @@ typedef struct pm_arena_block {
 /*
  * A bump allocator. Allocations are made by bumping a pointer within the
  * current block. When a block is full, a new block is allocated and linked to
- * the previous one. All blocks are freed at once by walking the chain.
+ * the previous one. An allocation too large to share a block gets one of its
+ * own on a separate chain, so it does not displace the current block. All
+ * blocks are freed at once by walking both chains.
  */
 struct pm_arena_t {
     /* The active block (allocate from here). */
     pm_arena_block_t *current;
 
-    /* The number of blocks allocated. */
+    /* Blocks that each hold a single large allocation, never bumped into. */
+    pm_arena_block_t *large;
+
+    /*
+     * The number of blocks allocated on the current chain, which sets the size
+     * of the next one.
+     */
     size_t block_count;
 };
 
@@ -56,7 +64,8 @@ void pm_arena_cleanup(pm_arena_t *arena);
 void pm_arena_reserve(pm_arena_t *arena, size_t capacity);
 
 /*
- * Slow path for pm_arena_alloc: allocate a new block and return a pointer to
+ * Slow path for pm_arena_alloc: allocate a new block, either the next current
+ * block or a block of its own for a large allocation, and return a pointer to
  * the first `size` bytes. Do not call directly — use pm_arena_alloc instead.
  */
 void * pm_arena_alloc_slow(pm_arena_t *arena, size_t size);
