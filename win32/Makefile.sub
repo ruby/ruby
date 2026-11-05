@@ -344,8 +344,12 @@ MISSING = $(MISSING) explicit_bzero.obj memrchr.obj
 DLNOBJS = dln.obj
 
 !if "$(YJIT_SUPPORT)" == "yes"
-!if "$(ARCH)" != "x64"
-!error YJIT is supported only on x64, not $(ARCH).  Retry without --enable-yjit.
+!if "$(ARCH)" == "x64"
+RUST_TARGET = x86_64-pc-windows-msvc
+!elseif "$(ARCH)" == "arm64"
+RUST_TARGET = aarch64-pc-windows-msvc
+!else
+!error YJIT is supported only on x64 and arm64, not $(ARCH).  Retry without --enable-yjit.
 !endif
 !if !defined(RUSTC)
 RUSTC = rustc
@@ -363,7 +367,7 @@ INSTALL_STATIC_LIBRARY = no
 !error YJIT does not support the static library.  Retry without --enable-install-static-library.
 !endif
 # Explicit, so that a windows-gnu default toolchain does not build libyjit.a.
-JIT_RUST_FLAGS = --crate-type=staticlib --target=x86_64-pc-windows-msvc --cfg feature=\"stats_allocator\"
+JIT_RUST_FLAGS = --crate-type=staticlib --target=$(RUST_TARGET) --cfg feature=\"stats_allocator\"
 !if !defined(RUSTC_FLAGS)
 RUSTC_FLAGS = -g -C lto=thin -C opt-level=3 -C overflow-checks=on
 !endif

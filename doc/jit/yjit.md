@@ -9,7 +9,7 @@ YJIT - Yet Another Ruby JIT
 
 YJIT is a lightweight, minimalistic Ruby JIT built inside CRuby.
 It lazily compiles code using a Basic Block Versioning (BBV) architecture.
-YJIT is currently supported for macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs, and for Windows (mswin) on x64 CPUs.
+YJIT is currently supported for macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs, and for Windows (mswin) on x64 and arm64 CPUs.
 This project is open source and falls under the same license as CRuby.
 
 <p align="center"><b>
@@ -57,7 +57,7 @@ series = {MPLR 2023}
 
 ## Current Limitations
 
-YJIT may not be suitable for certain applications. It currently only supports macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs, and Windows (mswin) on x64 CPUs. YJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state information.
+YJIT may not be suitable for certain applications. It currently only supports macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs, and Windows (mswin) on x64 and arm64 CPUs. YJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state information.
 You can change how much executable memory is allocated using [YJIT's command-line options](#command-line-options).
 
 ## Installation
@@ -133,7 +133,7 @@ brew install openssl libyaml
 make -j && make install
 ```
 
-On Windows (mswin), YJIT can be built only in release mode, with a `rustc` that has the `x86_64-pc-windows-msvc` target.
+On Windows (mswin), YJIT can be built only in release mode, with a `rustc` that has the `x86_64-pc-windows-msvc` target on x64, or the `aarch64-pc-windows-msvc` target on arm64.
 See [Windows](../distribution/windows.md) for the rest of the build steps.
 
 ```batch
