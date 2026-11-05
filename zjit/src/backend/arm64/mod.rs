@@ -103,18 +103,18 @@ impl From<&Opnd> for A64Opnd {
 }
 
 fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr) {
-    let src_addr = cb.get_write_ptr().as_offset();
-    let dst_addr = dst_ptr.as_offset();
+    let src_offset = cb.get_write_ptr().as_offset();
+    let dst_offset = dst_ptr.as_offset();
 
     // If the offset is short enough, then we'll use the
     // branch instruction. Otherwise, we'll move the
     // destination into a register and use the branch
     // register instruction.
-    if b_offset_fits_bits((dst_addr - src_addr) / 4) {
-        b(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
+    if b_offset_fits_bits((dst_offset - src_offset) / 4) {
+        b(cb, InstructionOffset::from_bytes((dst_offset - src_offset) as i32));
         1
     } else {
-        let num_insns = emit_load_value(cb, Assembler::EMIT_OPND, dst_addr as u64);
+        let num_insns = emit_load_value(cb, Assembler::EMIT_OPND, dst_ptr.raw_ptr(cb).addr().as_u64());
         br(cb, Assembler::EMIT_OPND);
         num_insns + 1
     };
@@ -2326,6 +2326,22 @@ mod tests {
         out.extend(loading.map(describe));
         out.extend(label(end_addr).map(|label| format!("{label}:")));
         out.join("\n")
+    }
+
+    #[test]
+    fn test_emit_jmp_ptr_out_of_b_range() {
+        let (mut asm, _) = setup_asm();
+        let mut cb = CodeBlock::new_dummy_sized(512 * 1024 * 1024);
+
+        let target = cb.get_write_ptr().add_bytes(1 << 28);
+        asm.jmp(Target::CodePtr(target));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        // A b can't reach 256MiB away, so the absolute address must be loaded for br.
+        assert_disasm_snapshot!(stable_disasm(&cb, target), @"
+        mov x16, target // abridged
+        br x16
+        ");
     }
 
     #[test]
