@@ -1260,7 +1260,7 @@ static rb_node_args_aux_t *rb_node_args_aux_new(struct parser_params *p, ID nd_p
 // static rb_node_defs_t *rb_node_defs_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_defn, const YYLTYPE *loc);
 // static rb_node_alias_t *rb_node_alias_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 // static rb_node_valias_t *rb_node_valias_new(struct parser_params *p, ID nd_alias, ID nd_orig, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
-static rb_node_undef_t *rb_node_undef_new(struct parser_params *p, NODE *nd_undef, const YYLTYPE *loc);
+static rb_undef_node_t *rb_new_node_undef_new(struct parser_params *p, NODE *nd_undef, const YYLTYPE *loc);
 // static rb_node_class_t *rb_node_class_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, NODE *nd_super, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *inheritance_operator_loc, const YYLTYPE *end_keyword_loc);
 // static rb_node_module_t *rb_node_module_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *module_keyword_loc, const YYLTYPE *end_keyword_loc);
 // static rb_node_sclass_t *rb_node_sclass_new(struct parser_params *p, NODE *nd_recv, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *operator_loc, const YYLTYPE *end_keyword_loc);
@@ -1368,7 +1368,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 // #define NEW_DEFS(r,i,s,loc) (NODE *)rb_node_defs_new(p,r,i,s,loc)
 // #define NEW_ALIAS(n,o,loc,k_loc) (NODE *)rb_node_alias_new(p,n,o,loc,k_loc)
 // #define NEW_VALIAS(n,o,loc,k_loc) (NODE *)rb_node_valias_new(p,n,o,loc,k_loc)
-#define NEW_UNDEF(i,loc) (NODE *)rb_node_undef_new(p,i,loc)
+#define NEW_RB_UNDEF(i,loc) (rb_node_t *)rb_new_node_undef_new(p,i,loc)
 // #define NEW_CLASS(n,b,s,loc,ck_loc,io_loc,ek_loc) (NODE *)rb_node_class_new(p,n,b,s,loc,ck_loc,io_loc,ek_loc)
 // #define NEW_MODULE(n,b,loc,mk_loc,ek_loc) (NODE *)rb_node_module_new(p,n,b,loc,mk_loc,ek_loc)
 // #define NEW_SCLASS(r,b,loc,ck_loc,op_loc,ek_loc) (NODE *)rb_node_sclass_new(p,r,b,loc,ck_loc,op_loc,ek_loc)
@@ -3716,6 +3716,8 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                 : begin ' '+ word_list tSTRING_END
                     {
                         $$ = make_list($word_list, &@$);
+                        RB_NODE_ARRAY($$)->opening_loc = @1;
+                        RB_NODE_ARRAY($$)->closing_loc = @4;
                     /*% ripper: array!($:word_list) %*/
                     }
                 ;
@@ -3897,7 +3899,7 @@ stmt		: keyword_alias[kw] fitem[new] {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fit
                 | keyword_undef[kw] undef_list[list]
                     {
                         nd_set_first_loc($list, @kw.beg_pos);
-                        RNODE_UNDEF($list)->keyword_loc = @kw;
+                        RB_NODE_UNDEF($list)->keyword_loc = @kw;
                         $$ = $list;
                     /*% ripper: undef!($:list) %*/
                     }
@@ -4441,13 +4443,13 @@ fitem		: fname
 
 undef_list	: fitem
                     {
-                        $$ = NEW_UNDEF($1, &@$);
+                        $$ = NEW_RB_UNDEF($1, &@$);
                     /*% ripper: rb_ary_new3(1, $:1) %*/
                     }
                 | undef_list ',' {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     {
-                        nd_set_last_loc($1, @4.end_pos);
-                        rb_parser_ary_push_node(p, RNODE_UNDEF($1)->nd_undefs, $4);
+                        ((rb_node_t *)$1)->location.end_pos = @4.end_pos;
+                        rb_node_list_append(&RB_NODE_UNDEF($1)->names, $4);
                     /*% ripper: rb_ary_push($:1, $:4) %*/
                     }
                 ;
@@ -6577,7 +6579,7 @@ word_list	: /* none */
                     }
                 | word_list word ' '+
                     {
-                        $$ = list_append(p, $1, evstr2dstr(p, $2));
+                        $$ = (NODE *)node_array_append(p, RB_NODE_ARRAY($1), evstr2dstr(p, $2), &@$);
                     /*% ripper: words_add!($:1, $:2) %*/
                     }
                 ;
@@ -6619,7 +6621,7 @@ qword_list	: /* none */
                     }
                 | qword_list tSTRING_CONTENT ' '+
                     {
-                        $$ = list_append(p, $1, $2);
+                        $$ = (NODE *)node_array_append(p, RB_NODE_ARRAY($1), $2, &@$);
                     /*% ripper: qwords_add!($:1, $:2) %*/
                     }
                 ;
@@ -12903,16 +12905,6 @@ rb_node_args_aux_new(struct parser_params *p, ID nd_pid, int nd_plen, const YYLT
 //     return n;
 // }
 
-static rb_node_undef_t *
-rb_node_undef_new(struct parser_params *p, NODE *nd_undef, const YYLTYPE *loc)
-{
-    rb_node_undef_t *n = NODE_NEWNODE(NODE_UNDEF, rb_node_undef_t, loc);
-    n->nd_undefs = rb_parser_ary_new_capa_for_node(p, 1);
-    n->keyword_loc = NULL_LOC;
-    rb_parser_ary_push_node(p, n->nd_undefs, nd_undef);
-
-    return n;
-}
 
 // static rb_node_errinfo_t *
 // rb_node_errinfo_new(struct parser_params *p, const YYLTYPE *loc)
@@ -13138,6 +13130,16 @@ rb_node_newnode(struct parser_params *p, enum rb_node_type type, size_t size, si
 }
 
 #define RB_NEW_NODE_NEWNODE(rb_node_type, type, loc) (type *)(rb_node_newnode(p, rb_node_type, sizeof(type), RUBY_ALIGNOF(type), loc))
+
+static rb_undef_node_t *
+rb_new_node_undef_new(struct parser_params *p, NODE *name, const YYLTYPE *loc)
+{
+    rb_undef_node_t *n = RB_NEW_NODE_NEWNODE(RB_UNDEF_NODE, rb_undef_node_t, loc);
+    rb_node_list_init(&n->names);
+    rb_node_list_append(&n->names, name);
+    n->keyword_loc = NULL_LOC;
+    return n;
+}
 
 static rb_program_node_t *
 rb_new_node_program_new(struct parser_params *p, rb_statements_node_t *statements, const YYLTYPE *loc)
@@ -15337,8 +15339,9 @@ str2regx(struct parser_params *p, rb_node_t *node, rb_regular_expression_flags_t
 static rb_node_t *
 evstr2dstr(struct parser_params *p, rb_node_t *node)
 {
-    if (RB_NODE_TYPE_P(node, RB_EMBEDDED_STATEMENTS_NODE)) {
-        node = NEW_RB_INTERPOLATED_STRING0(node, &node->location);
+    if (RB_NODE_TYPE_P(node, RB_EMBEDDED_STATEMENTS_NODE) || RB_NODE_TYPE_P(node, RB_EMBEDDED_VARIABLE_NODE)) {
+        rb_node_t *empty = NEW_RB_STRING(STRING_NEW0(), &node->location);
+        node = NEW_RB_INTERPOLATED_STRING(empty, node, &node->location);
     }
     return node;
 }
@@ -15733,19 +15736,18 @@ str_to_sym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc, const Y
 static NODE*
 symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
 {
-    enum node_type type = nd_type(symbol);
-    const YYLTYPE *loc = &RNODE(symbol)->nd_loc;
-    switch (type) {
-      case NODE_DSTR:
-        nd_set_type(symbol, NODE_DSYM);
+    const YYLTYPE *loc = nd_code_loc(symbol);
+    switch (nd_type(symbol)) {
+      case RB_INTERPOLATED_STRING_NODE:
+        rb_nd_set_type(symbol, RB_INTERPOLATED_SYMBOL_NODE);
         break;
-      case NODE_STR:
+      case RB_STRING_NODE:
         symbol = str_to_sym_node(p, symbol, loc, &NULL_LOC, loc, &NULL_LOC);
         break;
       default:
-        compile_error(p, "unexpected node as symbol: %s", parser_node_name(type));
+        compile_error(p, "unexpected node as symbol: %s", parser_node_name(nd_type(symbol)));
     }
-    return list_append(p, symbols, symbol);
+    return (NODE *)node_array_append(p, RB_NODE_ARRAY(symbols), symbol, loc);
 }
 
 static void
