@@ -2387,6 +2387,23 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("A\nB\nC", s.encode(usascii, newline: :lf))
   end
 
+  def test_newline_option_with_invalid_non_ascii_compatible
+    s = "\xE1\x0D\xCA\x36\xA9".b
+    assert_equal("\u{E10D CA36 FFFD}".encode("UTF-32BE"),
+                 s.encode("UTF-32BE", "UTF-16BE", invalid: :replace, universal_newline: true))
+    assert_equal("\u{E10D CA36 FFFD}".encode("UTF-16LE"),
+                 s.encode("UTF-16LE", "UTF-16BE", invalid: :replace, lf_newline: true))
+    assert_raise_with_message(Encoding::InvalidByteSequenceError, /UTF-16BE/) {
+      s.encode("UTF-32BE", "UTF-16BE", universal_newline: true)
+    }
+    s = "<\0>\0\0\xD8".b
+    assert_raise_with_message(Encoding::InvalidByteSequenceError, /UTF-16LE/) {
+      s.encode("UTF-16LE", "UTF-16LE", xml: :text)
+    }
+    assert_equal("&lt;&gt;\uFFFD".encode("UTF-16LE"),
+                 s.encode("UTF-16LE", "UTF-16LE", xml: :text, invalid: :replace))
+  end
+
   def test_ractor_lazy_load_encoding
     assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
     begin;
