@@ -6309,7 +6309,7 @@ rb_str_update_1(VALUE str, rb_len_t beg, rb_len_t len, VALUE val, rb_len_t vbeg,
 
     str_modify_keep_cr(str);
     RSTRING_GETMEM(str, sptr, slen);
-    if (len < vlen && str_capacity(str, TERM_LEN(str)) < slen + vlen - len) {
+    if (len < vlen && (rb_len_t)str_capacity(str, TERM_LEN(str)) < slen + vlen - len) {
         /* expand string */
         RESIZE_CAPA(str, slen + vlen - len);
         sptr = RSTRING_PTR(str);
