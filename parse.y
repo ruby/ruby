@@ -568,7 +568,7 @@ struct rb_exits_node {
 };
 
 struct RNode_DEF_TEMP {
-    NODE node;
+    rb_node_t node;
 
     /* for RB_DEF_NODE */
 
@@ -1731,13 +1731,6 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NODE_LASGN RB_LOCAL_VARIABLE_WRITE_NODE
 #define NODE_DASGN RB_LOCAL_VARIABLE_WRITE_NODE
 
-enum internal_node_type {
-    NODE_INTERNAL_ONLY = NODE_LAST,
-    NODE_DEF_TEMP,
-    NODE_EXITS,
-    NODE_INTERNAL_LAST
-};
-
 enum internal_rb_node_type {
     RB_NODE_INTERNAL_ONLY = RB_NODE_LAST,
     RB_NODE_DEF_TEMP,
@@ -1749,10 +1742,10 @@ static const char *
 parser_node_name(int node)
 {
     switch (node) {
-      case NODE_DEF_TEMP:
-        return "NODE_DEF_TEMP";
-      case NODE_EXITS:
-        return "NODE_EXITS";
+      case RB_NODE_DEF_TEMP:
+        return "RB_NODE_DEF_TEMP";
+      case RB_NODE_EXITS:
+        return "RB_NODE_EXITS";
       default:
         return rb_node_type_to_str(node);
     }
@@ -8088,7 +8081,7 @@ yycompile0(VALUE arg)
         p->ast->body.frozen_string_literal = p->frozen_string_literal;
         p->ast->body.coverage_enabled = cov;
         if (p->keep_tokens) {
-            p->ast->node_buffer->tokens = tokens;
+            p->ast->rb_node_buffer->tokens = tokens;
             p->tokens = NULL;
         }
     }
@@ -13064,18 +13057,6 @@ rb_node_args_aux_new(struct parser_params *p, ID nd_pid, int nd_plen, const YYLT
 //     return n;
 // }
 
-static rb_node_def_temp_t *
-rb_node_def_temp_new(struct parser_params *p, const YYLTYPE *loc)
-{
-    rb_node_def_temp_t *n = NODE_NEWNODE((enum node_type)NODE_DEF_TEMP, rb_node_def_temp_t, loc);
-    n->save.numparam_save = 0;
-    n->save.max_numparam = 0;
-    n->save.ctxt = p->ctxt;
-    n->nd_def = 0;
-    n->nd_mid = 0;
-
-    return n;
-}
 
 static rb_node_def_temp_t *
 def_head_save(struct parser_params *p, rb_node_def_temp_t *n)
@@ -13127,6 +13108,19 @@ static rb_missing_node_t *
 rb_new_node_missing_new(struct parser_params *p, const YYLTYPE *loc)
 {
     return RB_NEW_NODE_NEWNODE(RB_MISSING_NODE, rb_missing_node_t, loc);
+}
+
+static rb_node_def_temp_t *
+rb_node_def_temp_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_node_def_temp_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_NODE_DEF_TEMP, rb_node_def_temp_t, loc);
+    n->save.numparam_save = 0;
+    n->save.max_numparam = 0;
+    n->save.ctxt = p->ctxt;
+    n->nd_def = 0;
+    n->nd_mid = 0;
+
+    return n;
 }
 
 static rb_for_node_t *

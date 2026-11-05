@@ -1654,7 +1654,7 @@ ast_node_all_tokens(rb_execution_context_t *ec, VALUE self)
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
     ast = rb_ruby_ast_data_get(data->ast_value);
 
-    parser_tokens = ast->node_buffer->tokens;
+    parser_tokens = ast->rb_node_buffer->tokens;
     if (parser_tokens == NULL) {
         return Qnil;
     }

@@ -66,3 +66,29 @@ free_rb_ast_value(rb_ast_t *ast, void *ctx, rb_node_t *node)
         break;
     }
 }
+
+static size_t
+rb_node_payload_memsize(const rb_node_t *node)
+{
+    size_t size = 0;
+    switch (node->type) {
+<%- nodes.each do |node| -%>
+<%- fields = node.fields.select { |field| field.is_a?(Prism::Template::NodeListField) || field.is_a?(Prism::Template::StringField) } -%>
+<%- next if fields.empty? -%>
+      case <%= node.type %>: {
+        const rb_<%= node.human %>_t *n = (const rb_<%= node.human %>_t *)node;
+<%- fields.each do |field| -%>
+<%- if field.is_a?(Prism::Template::NodeListField) -%>
+        size += n-><%= field.name %>.capacity * sizeof(*n-><%= field.name %>.nodes);
+<%- else -%>
+        size += parser_string_memsize(n-><%= field.name %>);
+<%- end -%>
+<%- end -%>
+        break;
+      }
+<%- end -%>
+      default:
+        break;
+    }
+    return size;
+}
