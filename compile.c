@@ -6441,11 +6441,10 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const 
 }
 
 static int
-compile_massign_opt_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *lhsn)
+compile_massign_opt_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_node_list2_t *lhsn)
 {
-    if (lhsn) {
-        CHECK(compile_massign_opt_lhs(iseq, ret, RNODE_LIST(lhsn)->nd_next));
-        CHECK(compile_massign_lhs(iseq, ret, ret, ret, ret, RNODE_LIST(lhsn)->nd_head, NULL, 0));
+    for (size_t i = lhsn->size; i > 0; i--) {
+        CHECK(compile_massign_lhs(iseq, ret, ret, ret, ret, (NODE *)lhsn->nodes[i - 1], NULL, 0));
     }
     return COMPILE_OK;
 }
@@ -6490,6 +6489,9 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
     }
 
     rlist = &RB_NODE_ARRAY(rhsn)->elements;
+    for (size_t j = 0; j < RB_NODE_LIST_LEN(rlist); j++) {
+        if (nd_type_p(rlist->nodes[j], RB_SPLAT_NODE)) return 0;
+    }
 
     for (size_t j = 0; j < RB_NODE_LIST_LEN(rlist); j++) {
         const NODE *rn = rlist->nodes[j];
@@ -6505,7 +6507,7 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 
     if (llen > rlen) {
         for (i=0; i<llen-rlen; i++) {
-            ADD_INSN(ret, orig_lhsn, putnil);
+            ADD_INSN(ret, orig_lhsn->nodes[rlen + i], putnil);
         }
     }
 
@@ -6520,7 +6522,7 @@ compile_massign0(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const rhs
     const rb_node_list2_t *prel = get_node_multi_lefts(node);
     const NODE *restn = get_node_multi_rest(node);
     const rb_node_list2_t *postl = get_node_multi_rights(node);
-    int lhs_splat = (restn && NODE_NAMED_REST_P2(restn)) ? 1 : 0;
+    int lhs_splat = (restn && (NODE_NAMED_REST_P2(restn) || !RB_NODE_LIST_EMPTY_P(postl))) ? 1 : 0;
 
     int llen = (int)RB_NODE_LIST_LEN(prel);
     int lpos = 0;
@@ -6536,11 +6538,11 @@ compile_massign0(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const rhs
             /* a, b, *r, p1, p2 */
             int plen = (int)RB_NODE_LIST_LEN(postl);
             int ppos = 0;
-            int flag = 0x02 | (NODE_NAMED_REST_P(restn) ? 0x01 : 0x00);
+            int flag = 0x02 | (NODE_NAMED_REST_P2(restn) ? 0x01 : 0x00);
 
             ADD_INSN2(lhs, restn, expandarray, INT2FIX(plen), INT2FIX(flag));
 
-            if (NODE_NAMED_REST_P(restn)) {
+            if (NODE_NAMED_REST_P2(restn)) {
                 CHECK(compile_massign_lhs(iseq, pre, rhs, lhs, post, RB_NODE_SPLAT(restn)->expression, state, 1 + plen + state->lhs_level));
             }
             for (size_t i = 0; i < RB_NODE_LIST_LEN(postl); i++) {
