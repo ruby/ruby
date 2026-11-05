@@ -780,6 +780,7 @@ class TestRactor < Test::Unit::TestCase
   # timer thread would make another, and the extra would never end.
   def test_shared_native_threads_stay_capped_across_blocking_io
     omit "needs /proc/self/status" unless File.exist?("/proc/self/status")
+    omit 'Other GCs can use more threads (ex: MMTk)' unless GC.config[:implementation] == 'default'
     assert_ractor(<<~'RUBY', args: [{ "RUBY_MAX_CPU" => "4" }], timeout: 60)
       200.times do
         # Dir.children releases the GVL around opendir and readdir
