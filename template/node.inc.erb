@@ -15,6 +15,33 @@ rb_node_type_to_str(rb_node_type_t node_type)
     return "";
 }
 
+/* Stop at the first child accepted by the visitor. */
+bool
+rb_node_each_child(const rb_node_t *node, bool (*visit)(const rb_node_t *, void *), void *data)
+{
+    switch (RB_NODE_TYPE(node)) {
+<%- nodes.each do |node| -%>
+<%- fields = node.fields.select { |field| field.is_a?(Prism::Template::NodeField) || field.is_a?(Prism::Template::OptionalNodeField) || field.is_a?(Prism::Template::NodeListField) } -%>
+<%- next if fields.empty? -%>
+      case <%= node.type %>: {
+        const rb_<%= node.human %>_t *n = (const rb_<%= node.human %>_t *)node;
+<%- fields.each do |field| -%>
+<%- if field.is_a?(Prism::Template::NodeListField) -%>
+        for (size_t i = 0; i < n-><%= field.name %>.size; i++) {
+            if (n-><%= field.name %>.nodes[i] && visit(n-><%= field.name %>.nodes[i], data)) return true;
+        }
+<%- else -%>
+        if (n-><%= field.name %> && visit((const rb_node_t *)n-><%= field.name %>, data)) return true;
+<%- end -%>
+<%- end -%>
+        break;
+      }
+<%- end -%>
+      default: break;
+    }
+    return false;
+}
+
 /* Children and local tables belong to the AST arena; free only owned payloads. */
 static void
 free_rb_ast_value(rb_ast_t *ast, void *ctx, rb_node_t *node)

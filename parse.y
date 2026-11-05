@@ -355,6 +355,12 @@ enum rescue_context {
     after_ensure,
 };
 
+typedef struct {
+    rb_parameters_node_t *parameters;
+    rb_code_location_t lparen_loc;
+    rb_code_location_t rparen_loc;
+} rb_def_parameters_t;
+
 struct lex_context {
     unsigned int in_defined: 1;
     unsigned int in_kwarg: 1;
@@ -1415,7 +1421,7 @@ static rb_block_node_t *rb_new_node_block_new(struct parser_params *p, rb_node_t
 static rb_begin_node_t *rb_new_node_begin_new(struct parser_params *p, rb_statements_node_t *nd_stmts, rb_rescue_node_t *nd_rescue, rb_else_node_t *nd_else, rb_ensure_node_t *nd_ensure, const YYLTYPE *loc);
 static rb_rescue_node_t *rb_new_node_rescue_new(struct parser_params *p, rb_array_node_t *exceptions, rb_node_t *nd_exc_var, rb_statements_node_t *nd_body, rb_rescue_node_t *nd_next, const YYLTYPE *loc);
 static rb_ensure_node_t *rb_new_node_ensure_new(struct parser_params *p, rb_statements_node_t *nd_ensr, const YYLTYPE *loc);
-static rb_rescue_modifier_node_t *rb_new_node_rescue_modifier_new(struct parser_params *p, rb_node_t *nd_ex, rb_node_t *nd_rex, const YYLTYPE *loc);
+static rb_rescue_modifier_node_t *rb_new_node_rescue_modifier_new(struct parser_params *p, rb_node_t *nd_ex, rb_node_t *nd_rex, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_and_node_t *rb_new_node_and_new(struct parser_params *p, rb_node_t *nd_1st, rb_node_t *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_or_node_t *rb_new_node_or_new(struct parser_params *p, rb_node_t *nd_1st, rb_node_t *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 
@@ -1569,7 +1575,7 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_BEGIN(s,r,el,en,loc) (rb_node_t *)rb_new_node_begin_new(p,s,r,el,en,loc)
 #define NEW_RB_RESCUE(ex,v,b,n,loc) rb_new_node_rescue_new(p,ex,v,b,n,loc)
 #define NEW_RB_ENSURE(en,loc) rb_new_node_ensure_new(p,en,loc)
-#define NEW_RB_RESCUE_MODIFIER(e,re,loc) (rb_node_t *)rb_new_node_rescue_modifier_new(p,e,re,loc)
+#define NEW_RB_RESCUE_MODIFIER(e,re,loc,kw_loc) (rb_node_t *)rb_new_node_rescue_modifier_new(p,e,re,loc,kw_loc)
 #define NEW_RB_AND(f,s,loc,op_loc) (rb_node_t *)rb_new_node_and_new(p,f,s,loc,op_loc)
 #define NEW_RB_OR(f,s,loc,op_loc) (rb_node_t *)rb_new_node_or_new(p,f,s,loc,op_loc)
 
@@ -1805,8 +1811,9 @@ set_line_body(NODE *body, int line)
 static void
 set_embraced_location(rb_block_node_t *node, const rb_code_location_t *beg, const rb_code_location_t *end)
 {
-    // RNODE_ITER(node)->nd_body->nd_loc = code_loc_gen(beg, end);
-    // nd_set_line(node, beg->end_pos.lineno);
+    node->base.location = code_loc_gen(beg, end);
+    node->opening_loc = *beg;
+    node->closing_loc = *end;
 }
 
 static NODE *
@@ -1893,6 +1900,7 @@ static rb_node_t *new_command_qcall(struct parser_params* p, ID atype, rb_node_t
 static rb_node_t *new_super(struct parser_params *p, rb_arguments_node_t *nd_args, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc);
 static rb_node_t *method_add_block(struct parser_params *p, rb_node_t *m, rb_block_node_t *b, const YYLTYPE *loc);
 static rb_node_t *method_add_arguments(struct parser_params *p, rb_node_t *nd_call, rb_arguments_node_t *nd_args, const YYLTYPE *loc);
+static void set_call_parentheses(rb_node_t *node, const YYLTYPE *loc);
 
 static bool args_info_empty_p(rb_parameters_node_t *args);
 // static rb_node_args_t *new_args(struct parser_params*,rb_node_args_aux_t*,rb_node_opt_arg_t*,ID,rb_node_args_aux_t*,rb_node_args_t*,const YYLTYPE*);
@@ -2126,9 +2134,11 @@ aryptn_pre_args(struct parser_params *p, VALUE pre_arg, VALUE pre_args)
 // }
 
 static void
-node_def_setup(struct parser_params *p, rb_def_node_t *nd_def, rb_parameters_node_t *nd_parameters, rb_node_t *nd_body)
+node_def_setup(struct parser_params *p, rb_def_node_t *nd_def, rb_def_parameters_t nd_parameters, rb_node_t *nd_body)
 {
-    nd_def->parameters = nd_parameters;
+    nd_def->parameters = nd_parameters.parameters;
+    nd_def->lparen_loc = nd_parameters.lparen_loc;
+    nd_def->rparen_loc = nd_parameters.rparen_loc;
     nd_def->body = nd_body;
     nd_def->locals = local_tbl(p);
 }
@@ -2138,7 +2148,7 @@ rescued_expr(struct parser_params *p, rb_node_t *arg, rb_node_t *rescue,
              const YYLTYPE *arg_loc, const YYLTYPE *mod_loc, const YYLTYPE *res_loc)
 {
     YYLTYPE loc = code_loc_gen(arg_loc, res_loc);
-    return NEW_RB_RESCUE_MODIFIER(arg, remove_begin(rescue), &loc);
+    return NEW_RB_RESCUE_MODIFIER(arg, remove_begin(rescue), &loc, mod_loc);
 }
 
 static rb_node_t *add_block_exit(struct parser_params *p, rb_node_t *node);
@@ -3195,6 +3205,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
     rb_array_node_t *node_array;
     rb_call_node_t *node_call;
     rb_parameters_node_t *node_params;
+    rb_def_parameters_t def_params;
     rb_block_parameters_node_t *node_block_params;
     rb_required_parameter_node_t *node_req_param;
     rb_optional_parameter_node_t *node_opt_param;
@@ -3311,7 +3322,8 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> var_ref var_lhs
 %type <node> command_rhs arg_rhs
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
-%type <node_params> f_arglist f_opt_paren_args f_paren_args f_args f_empty_arg
+%type <def_params> f_arglist f_opt_paren_args f_paren_args
+%type <node_params> f_args f_empty_arg
 %type <node_array> f_arg
 %type <node> f_arg_item
 %type <node> f_marg f_rest_marg
@@ -3510,6 +3522,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                         restore_defun(p, $head);
                         ($$ = $head->nd_def)->location = @$;
                         node_def_setup(p, RB_NODE_DEF($$), $args, $bodystmt);
+                        RB_NODE_DEF($$)->equal_loc = @3;
                         // $bodystmt = new_scope_body(p, $args, $bodystmt, $$, &@$);
                         // RNODE_DEFN($$)->nd_defn = $bodystmt;
                     /*% ripper: bodystmt!($:bodystmt, Qnil, Qnil, Qnil) %*/
@@ -3522,6 +3535,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                         restore_defun(p, $head);
                         ($$ = $head->nd_def)->location = @$;
                         node_def_setup(p, RB_NODE_DEF($$), $args, $bodystmt);
+                        RB_NODE_DEF($$)->equal_loc = @3;
                         // $bodystmt = new_scope_body(p, $args, $bodystmt, $$, &@$);
                         // RNODE_DEFS($$)->nd_defn = $bodystmt;
                     /*% ripper: bodystmt!($:bodystmt, Qnil, Qnil, Qnil) %*/
@@ -3766,7 +3780,9 @@ top_stmts	: none
                     }
                 | top_stmts terms top_stmt
                     {
-                        // $$ = block_append(p, $1, newline_node($3));
+                        if ($1->body.size == 0) {
+                            rb_node_list_append(&$1->body, RB_NODE(NEW_RB_STATEMENTS0(&$1->base.location)));
+                        }
                         statements_node_body_append(p, $1, rb_new_node_newline_node($3), false);
                     /*% ripper: stmts_add!($:1, $:3) %*/
                     }
@@ -3843,7 +3859,9 @@ stmts		: none
                     }
                 | stmts terms stmt_or_begin
                     {
-                        // $$ = block_append(p, $1, newline_node($3));
+                        if ($1->body.size == 0) {
+                            rb_node_list_append(&$1->body, RB_NODE(NEW_RB_STATEMENTS0(&$1->base.location)));
+                        }
                         statements_node_body_append(p, $1, rb_new_node_newline_node($3), false);
                     /*% ripper: stmts_add!($:1, $:3) %*/
                     }
@@ -3941,7 +3959,7 @@ stmt		: keyword_alias[kw] fitem[new] {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fit
                     {
                         p->ctxt.in_rescue = $ctxt.in_rescue;
                         NODE *resq;
-                        $$ = NEW_RB_RESCUE_MODIFIER(remove_begin($body), remove_begin($resbody), &@$);
+                        $$ = NEW_RB_RESCUE_MODIFIER(remove_begin($body), remove_begin($resbody), &@$, &@mod);
                     /*% ripper: rescue_mod!($:body, $:resbody) %*/
                     }
                 | k_END[k_end] block_open[lbrace] compstmt(stmts)[body] '}'[rbrace]
@@ -3968,7 +3986,7 @@ stmt		: keyword_alias[kw] fitem[new] {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fit
                     {
                         p->ctxt.in_rescue = $after_rescue.in_rescue;
                         YYLTYPE loc = code_loc_gen(&@mrhs_arg, &@resbody);
-                        $mrhs_arg = NEW_RB_RESCUE_MODIFIER($mrhs_arg, $resbody, &loc);
+                        $mrhs_arg = NEW_RB_RESCUE_MODIFIER($mrhs_arg, $resbody, &loc, &@modifier_rescue);
                         $$ = node_assign(p, (rb_node_t *)$lhs, $mrhs_arg, $lex_ctxt, &@$);
                     /*% ripper: massign!($:lhs, rescue_mod!($:mrhs_arg, $:resbody)) %*/
                     }
@@ -4009,7 +4027,7 @@ command_rhs	: command_call_value   %prec tOP_ASGN
                     {
                         p->ctxt.in_rescue = $3.in_rescue;
                         YYLTYPE loc = code_loc_gen(&@2, &@4);
-                        $$ = NEW_RB_RESCUE_MODIFIER($1, remove_begin($4), &@$);
+                        $$ = NEW_RB_RESCUE_MODIFIER($1, remove_begin($4), &@$, &@2);
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
                 | command_asgn
@@ -4086,6 +4104,8 @@ defn_head	: k_def def_name
                         $$->nd_mid = $def_name;
                         // $$->nd_def = NEW_DEFN($def_name, 0, &@$);
                         $$->nd_def = NEW_RB_DEF(0, $def_name, &@$);
+                        $$->nd_def->def_keyword_loc = @k_def;
+                        $$->nd_def->name_loc = @def_name;
                     /*% ripper: $:def_name %*/
                     }
                 ;
@@ -4101,6 +4121,9 @@ defs_head	: k_def singleton dot_or_colon
                         $$->nd_mid = $def_name;
                         // $$->nd_def = NEW_DEFS($singleton, $def_name, 0, &@$);
                         $$->nd_def = NEW_RB_DEF($singleton, $def_name, &@$);
+                        $$->nd_def->def_keyword_loc = @k_def;
+                        $$->nd_def->operator_loc = @dot_or_colon;
+                        $$->nd_def->name_loc = @def_name;
                     /*% ripper: [$:singleton, $:dot_or_colon, $:def_name] %*/
                     }
                 ;
@@ -4130,6 +4153,7 @@ block_command	: block_call
                 | block_call call_op2 operation2 command_args
                     {
                         $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
                     /*% ripper: method_add_arg!(call!($:1, $:2, $:3), $:4) %*/
                     }
                 ;
@@ -4152,7 +4176,7 @@ fcall		: operation
 command		: fcall command_args       %prec tLOWEST
                     {
                         method_add_arguments(p, $1, $2, &@$);
-                        nd_set_last_loc($1, @2.end_pos);
+                        ((rb_node_t *)$1)->location.end_pos = @2.end_pos;
                         $$ = (NODE *)$1;
                     /*% ripper: command!($:1, $:2) %*/
                     }
@@ -4162,33 +4186,37 @@ command		: fcall command_args       %prec tLOWEST
                         block_dup_check(p, $1, $3);
                         $$ = method_add_block(p, $1, $3, &@$);
                         fixpos($$, RNODE($1));
-                        nd_set_last_loc($1, @2.end_pos);
                     /*% ripper: method_add_block!(command!($:1, $:2), $:3) %*/
                     }
                 | primary_value call_op operation2 command_args	%prec tLOWEST
                     {
                         $$ = new_command_qcall(p, $2, $1, $3, $4, 0, &@3, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
                     /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
                     }
                 | primary_value call_op operation2 command_args cmd_brace_block
                     {
                         $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                     }
                 | primary_value tCOLON2 operation2 command_args	%prec tLOWEST
                     {
                         $$ = new_command_qcall(p, idCOLON2, $1, $3, $4, 0, &@3, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
                     /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
                     }
                 | primary_value tCOLON2 operation2 command_args cmd_brace_block
                     {
                         $$ = new_command_qcall(p, idCOLON2, $1, $3, $4, $5, &@3, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                    }
                 | primary_value tCOLON2 tCONSTANT '{' brace_body '}'
                     {
                         set_embraced_location($5, &@4, &@6);
                         $$ = new_command_qcall(p, idCOLON2, $1, $3, 0, $5, &@3, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, Qnil), $:5) %*/
                    }
                 | keyword_super command_args
@@ -5240,6 +5268,7 @@ primary		: inline_primary
                     restore_defun(p, $head);
                     ($$ = $head->nd_def)->location = @$;
                     node_def_setup(p, RB_NODE_DEF($$), $args, $bodystmt);
+                    RB_NODE_DEF($$)->end_keyword_loc = @k_end;
                     // $bodystmt = new_scope_body(p, $args, $bodystmt, $$, &@$);
                     // RNODE_DEFN($$)->nd_defn = $bodystmt;
                 /*% ripper: def!($:head, $:args, $:bodystmt) %*/
@@ -5256,6 +5285,7 @@ primary		: inline_primary
                     restore_defun(p, $head);
                     ($$ = $head->nd_def)->location = @$;
                     node_def_setup(p, RB_NODE_DEF($$), $args, $bodystmt);
+                    RB_NODE_DEF($$)->end_keyword_loc = @k_end;
                     // $bodystmt = new_scope_body(p, $args, $bodystmt, $$, &@$);
                     // RNODE_DEFS($$)->nd_defn = $bodystmt;
                 /*% ripper: defs!(*$:head[0..2], $:args, $:bodystmt) %*/
@@ -5778,6 +5808,8 @@ block_call	: command do_block
                         bool has_args = $4 != 0;
                         if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
                         $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
+                        if (has_args) set_call_parentheses((rb_node_t *)$$, &@4);
                     /*% ripper: call!($:1, $:2, $:3) %*/
                         if (has_args) {
                         /*% ripper: method_add_arg!($:$, $:4) %*/
@@ -5785,18 +5817,24 @@ block_call	: command do_block
                     }
                 | block_call call_op2 operation2 opt_paren_args brace_block
                     {
+                        bool has_args = $4 != 0;
                         if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
                         $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
+                        if (has_args) set_call_parentheses((rb_node_t *)$$, &@4);
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                     }
                 | block_call call_op2 operation2 command_args do_block
                     {
                         $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                     }
                 | block_call call_op2 paren_args
                     {
                         $$ = new_qcall(p, $2, $1, idCall, $3, &@2, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
+                        set_call_parentheses((rb_node_t *)$$, &@3);
                         nd_set_line($$, @2.end_pos.lineno);
                     /*% ripper: method_add_arg!(call!($:1, $:2, ID2VAL(idCall)), $:3) %*/
                     }
@@ -5805,7 +5843,8 @@ block_call	: command do_block
 method_call	: fcall paren_args
                     {
                         $$ = method_add_arguments(p, $1, $2, &@$);
-                        nd_set_last_loc($1, @2.end_pos);
+                        set_call_parentheses((rb_node_t *)$$, &@2);
+                        ((rb_node_t *)$1)->location.end_pos = @2.end_pos;
                     /*% ripper: method_add_arg!(fcall!($:1), $:2) %*/
                     }
                 | primary_value call_op operation2 opt_paren_args
@@ -5813,6 +5852,8 @@ method_call	: fcall paren_args
                         bool has_args = $4 != 0;
                         if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
                         $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
+                        if (has_args) set_call_parentheses((rb_node_t *)$$, &@4);
                         nd_set_line($$, @3.end_pos.lineno);
                     /*% ripper: call!($:1, $:2, $:3) %*/
                         if (has_args) {
@@ -5822,17 +5863,22 @@ method_call	: fcall paren_args
                 | primary_value tCOLON2 operation2 paren_args
                     {
                         $$ = new_qcall(p, idCOLON2, $1, $3, $4, &@3, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
+                        set_call_parentheses((rb_node_t *)$$, &@4);
                         nd_set_line($$, @3.end_pos.lineno);
                     /*% ripper: method_add_arg!(call!($:1, $:2, $:3), $:4) %*/
                     }
                 | primary_value tCOLON2 operation3
                     {
                         $$ = new_qcall(p, idCOLON2, $1, $3, 0, &@3, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
                     /*% ripper: call!($:1, $:2, $:3) %*/
                     }
                 | primary_value call_op2 paren_args
                     {
                         $$ = new_qcall(p, $2, $1, idCall, $3, &@2, &@$);
+                        RB_NODE_CALL($$)->call_operator_loc = @2;
+                        set_call_parentheses((rb_node_t *)$$, &@3);
                         nd_set_line($$, @2.end_pos.lineno);
                     /*% ripper: method_add_arg!(call!($:1, $:2, ID2VAL(idCall)), $:3) %*/
                     }
@@ -5854,6 +5900,8 @@ method_call	: fcall paren_args
                 | primary_value '[' opt_call_args rbracket
                     {
                         $$ = NEW_RB_CALL($1, tAREF, $3, 0, &@$);
+                        RB_NODE_CALL($$)->opening_loc = @2;
+                        RB_NODE_CALL($$)->closing_loc = @4;
                         fixpos($$, $1);
                     /*% ripper: aref!($:1, $:3) %*/
                     }
@@ -6497,6 +6545,7 @@ exc_list	: arg_value
 exc_var		: tASSOC lhs
                     {
                         $$ = write2target(p, $2);
+                        RB_NODE($$)->location = @$;
                     /*% ripper: $:2 %*/
                     }
                 | none
@@ -6540,7 +6589,7 @@ string		: tCHAR
 string1		: tSTRING_BEG string_contents tSTRING_END
                     {
                         $$ = heredoc_dedent(p, $2);
-                        if ($$) nd_set_loc($$, &@$);
+                        if ($$) rb_nd_set_loc((rb_node_t *)$$, &@$);
                     /*% ripper: $:2 %*/
                         if (p->heredoc_indent > 0) {
                         /*% ripper: heredoc_dedent!($:$, INT2NUM(%{p->heredoc_indent})) %*/
@@ -6849,6 +6898,8 @@ f_opt_paren_args: f_paren_args
                 | f_empty_arg
                     {
                         p->ctxt.in_argdef = 0;
+                        $$ = (rb_def_parameters_t){$1, NULL_LOC, NULL_LOC};
+                    /*% ripper: $:1 %*/
                     }
                 ;
 
@@ -6862,7 +6913,7 @@ f_empty_arg	: /* none */
 
 f_paren_args	: '(' f_args rparen
                     {
-                        $$ = $2;
+                        $$ = (rb_def_parameters_t){$2, @1, @3};
                     /*% ripper: paren!($:2) %*/
                         SET_LEX_STATE(EXPR_BEG);
                         p->command_start = TRUE;
@@ -6881,7 +6932,7 @@ f_arglist	: f_paren_args
                     {
                         p->ctxt.in_kwarg = $1.in_kwarg;
                         p->ctxt.in_argdef = 0;
-                        $$ = $2;
+                        $$ = (rb_def_parameters_t){$2, NULL_LOC, NULL_LOC};
                         SET_LEX_STATE(EXPR_BEG);
                         p->command_start = TRUE;
                     /*% ripper: $:2 %*/
@@ -8064,9 +8115,9 @@ yycompile0(VALUE arg)
     else {
         rb_parser_ary_t *tokens = p->tokens;
         NODE *prelude;
-        NODE *body = parser_append_options(p, RNODE_SCOPE(tree)->nd_body);
+        NODE *body = parser_append_options(p, (NODE *)RB_NODE_PROGRAM(tree)->statements);
         prelude = block_append(p, p->eval_tree_begin, body);
-        RNODE_SCOPE(tree)->nd_body = prelude;
+        RB_NODE_PROGRAM(tree)->statements = (rb_statements_node_t *)prelude;
         p->ast->body.frozen_string_literal = p->frozen_string_literal;
         p->ast->body.coverage_enabled = cov;
         if (p->keep_tokens) {
@@ -8077,7 +8128,7 @@ yycompile0(VALUE arg)
     p->ast->body.root = tree;
     p->ast->body.line_count = p->line_count;
     p->ast->body.encoding= p->enc;
-    p->ast->body.filepath = rb_str_to_parser_string(p, p->ruby_sourcefile_string);
+    p->ast->body.filepath = NIL_P(p->ruby_sourcefile_string) ? NULL : rb_str_to_parser_string(p, p->ruby_sourcefile_string);
     return TRUE;
 }
 
@@ -13735,7 +13786,7 @@ rb_new_node_call_new(struct parser_params *p, rb_node_t *nd_recv, ID nd_mid, rb_
     n->arguments = nd_args;
     n->block = 0;
     n->call_operator_loc = NULL_LOC;
-    n->message_loc = NULL_LOC;
+    n->message_loc = !nd_recv && !nd_args ? *loc : NULL_LOC;
     n->opening_loc = NULL_LOC;
     n->closing_loc = NULL_LOC;
     n->equal_loc = NULL_LOC;
@@ -14062,12 +14113,12 @@ rb_new_node_ensure_new(struct parser_params *p, rb_statements_node_t *nd_ensr, c
 }
 
 static rb_rescue_modifier_node_t *
-rb_new_node_rescue_modifier_new(struct parser_params *p, rb_node_t *nd_ex, rb_node_t *nd_rex, const YYLTYPE *loc)
+rb_new_node_rescue_modifier_new(struct parser_params *p, rb_node_t *nd_ex, rb_node_t *nd_rex, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
 {
     rb_rescue_modifier_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_RESCUE_MODIFIER_NODE, rb_rescue_modifier_node_t, loc);
     n->expression = nd_ex;
     n->rescue_expression = nd_rex;
-    n->keyword_loc = NULL_LOC;
+    n->keyword_loc = *keyword_loc;
 
     return n;
 }
@@ -14744,6 +14795,8 @@ rb_new_node_constant_path(struct parser_params *p, rb_node_t *nd_head, ID nd_mid
     rb_constant_path_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_CONSTANT_PATH_NODE, rb_constant_path_node_t, loc);
     n->parent = nd_head;
     n->name = nd_mid;
+    n->delimiter_loc = *delimiter_loc;
+    n->name_loc = *name_loc;
 
     return n;
 }
@@ -15379,6 +15432,7 @@ call_bin_op(struct parser_params *p, rb_node_t *recv, ID id, rb_node_t *arg1,
     value_expr(p, recv);
     value_expr(p, arg1);
     expr = NEW_RB_OPCALL(recv, id, NEW_RB_ARGUMENTS(arg1, rb_nd_code_loc(arg1)), loc);
+    RB_NODE_CALL(expr)->message_loc = *op_loc;
     nd_set_line(expr, op_loc->beg_pos.lineno);
     return expr;
 }
@@ -15389,8 +15443,19 @@ call_uni_op(struct parser_params *p, rb_node_t *recv, ID id, const YYLTYPE *op_l
     rb_node_t *opcall;
     value_expr(p, recv);
     opcall = NEW_RB_OPCALL(recv, id, 0, loc);
+    RB_NODE_CALL(opcall)->message_loc = *op_loc;
     nd_set_line(opcall, op_loc->beg_pos.lineno);
     return opcall;
+}
+
+static void
+set_call_parentheses(rb_node_t *node, const YYLTYPE *loc)
+{
+    rb_call_node_t *call = RB_NODE_CALL(node);
+    call->opening_loc.beg_pos = call->opening_loc.end_pos = loc->beg_pos;
+    call->opening_loc.end_pos.column++;
+    call->closing_loc.beg_pos = call->closing_loc.end_pos = loc->end_pos;
+    call->closing_loc.beg_pos.column--;
 }
 
 static rb_node_t *
@@ -15398,6 +15463,7 @@ new_qcall(struct parser_params* p, ID atype, rb_node_t *recv, ID mid, rb_argumen
 {
     rb_node_t *qcall = NEW_RB_QCALL(atype, recv, mid, 0, loc);
     method_add_arguments(p, qcall, args, loc);
+    RB_NODE_CALL(qcall)->message_loc = *op_loc;
     nd_set_line(qcall, op_loc->beg_pos.lineno);
     return qcall;
 }
@@ -15442,6 +15508,7 @@ method_add_block(struct parser_params *p, rb_node_t *m, rb_block_node_t *b, cons
         UNREACHABLE_RETURN(0);
     }
 
+    m->location = *loc;
     return m;
 }
 
@@ -16481,7 +16548,7 @@ static rb_array_node_t *
 node_array_concat(struct parser_params *p, rb_array_node_t *head, rb_array_node_t *tail)
 {
     rb_node_list_concat(&head->elements, &tail->elements);
-    nd_set_last_loc(head, nd_last_loc(tail));
+    head->base.location.end_pos = tail->base.location.end_pos;
 
     return head;
 }
@@ -17164,7 +17231,7 @@ negate_lit(struct parser_params *p, NODE* node, const YYLTYPE *loc)
         RB_NODE_IMAGINARY(node)->minus = TRUE;
         break;
     }
-    node->nd_loc = *loc;
+    RB_NODE(node)->location = *loc;
     return node;
 }
 
@@ -17314,7 +17381,7 @@ new_args2(struct parser_params *p, rb_array_node_t *pre_args, rb_array_node_t *o
     tail->rest = rest_arg;
     if (opt_args) rb_node_list_move(&tail->optionals, &opt_args->elements);
 
-//     nd_set_loc(RNODE(tail), loc);
+    rb_nd_set_loc((rb_node_t *)tail, loc);
 
     return tail;
 }
@@ -17472,7 +17539,7 @@ dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc, const YYLTYPE
     switch (nd_type(node)) {
       case RB_INTERPOLATED_STRING_NODE:
         rb_nd_set_type(node, RB_INTERPOLATED_SYMBOL_NODE);
-        nd_set_loc(node, loc);
+        rb_nd_set_loc((rb_node_t *)node, loc);
         break;
       case RB_STRING_NODE:
         node = str_to_sym_node(p, node, loc, opening_loc, value_loc, closing_loc);
@@ -17692,26 +17759,31 @@ new_op_assign(struct parser_params *p, rb_node_t *lhs, ID op, rb_node_t *rhs, st
               case RB_LOCAL_VARIABLE_WRITE_NODE: {
                 rb_local_variable_write_node_t *cast = (rb_local_variable_write_node_t *)lhs;
                 asgn = NEW_RB_LOCAL_VARIABLE_OR_WRITE(cast->name, rhs, cast->depth, loc);
+                RB_NODE_LOCAL_VARIABLE_OR_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_INSTANCE_VARIABLE_WRITE_NODE: {
                 rb_instance_variable_write_node_t *cast = (rb_instance_variable_write_node_t *)lhs;
                 asgn = NEW_RB_INSTANCE_VARIABLE_OR_WRITE(cast->name, rhs, loc);
+                RB_NODE_INSTANCE_VARIABLE_OR_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_CLASS_VARIABLE_WRITE_NODE: {
                 rb_class_variable_write_node_t *cast = (rb_class_variable_write_node_t *)lhs;
                 asgn = NEW_RB_CLASS_VARIABLE_OR_WRITE(cast->name, rhs, loc);
+                RB_NODE_CLASS_VARIABLE_OR_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_GLOBAL_VARIABLE_WRITE_NODE: {
                 rb_global_variable_write_node_t *cast = (rb_global_variable_write_node_t *)lhs;
                 asgn = NEW_RB_GLOBAL_VARIABLE_OR_WRITE(cast->name, rhs, loc);
+                RB_NODE_GLOBAL_VARIABLE_OR_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_CONSTANT_WRITE_NODE: {
                 rb_constant_write_node_t *cast = (rb_constant_write_node_t *)lhs;
                 asgn = NEW_RB_CONSTANT_OR_WRITE(cast->name, rhs, loc);
+                RB_NODE_CONSTANT_OR_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_SHAREABLE_CONSTANT_NODE: {
@@ -17729,26 +17801,31 @@ new_op_assign(struct parser_params *p, rb_node_t *lhs, ID op, rb_node_t *rhs, st
               case RB_LOCAL_VARIABLE_WRITE_NODE: {
                 rb_local_variable_write_node_t *cast = (rb_local_variable_write_node_t *)lhs;
                 asgn = NEW_RB_LOCAL_VARIABLE_AND_WRITE(cast->name, rhs, cast->depth, loc);
+                RB_NODE_LOCAL_VARIABLE_AND_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_INSTANCE_VARIABLE_WRITE_NODE: {
                 rb_instance_variable_write_node_t *cast = (rb_instance_variable_write_node_t *)lhs;
                 asgn = NEW_RB_INSTANCE_VARIABLE_AND_WRITE(cast->name, rhs, loc);
+                RB_NODE_INSTANCE_VARIABLE_AND_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_CLASS_VARIABLE_WRITE_NODE: {
                 rb_class_variable_write_node_t *cast = (rb_class_variable_write_node_t *)lhs;
                 asgn = NEW_RB_CLASS_VARIABLE_AND_WRITE(cast->name, rhs, loc);
+                RB_NODE_CLASS_VARIABLE_AND_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_GLOBAL_VARIABLE_WRITE_NODE: {
                 rb_global_variable_write_node_t *cast = (rb_global_variable_write_node_t *)lhs;
                 asgn = NEW_RB_GLOBAL_VARIABLE_AND_WRITE(cast->name, rhs, loc);
+                RB_NODE_GLOBAL_VARIABLE_AND_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_CONSTANT_WRITE_NODE: {
                 rb_constant_write_node_t *cast = (rb_constant_write_node_t *)lhs;
                 asgn = NEW_RB_CONSTANT_AND_WRITE(cast->name, rhs, loc);
+                RB_NODE_CONSTANT_AND_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_SHAREABLE_CONSTANT_NODE: {
@@ -17766,26 +17843,31 @@ new_op_assign(struct parser_params *p, rb_node_t *lhs, ID op, rb_node_t *rhs, st
               case RB_LOCAL_VARIABLE_WRITE_NODE: {
                 rb_local_variable_write_node_t *cast = (rb_local_variable_write_node_t *)lhs;
                 asgn = NEW_RB_LOCAL_VARIABLE_OPERATOR_WRITE(cast->name, op, rhs, cast->depth, loc);
+                RB_NODE_LOCAL_VARIABLE_OPERATOR_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_INSTANCE_VARIABLE_WRITE_NODE: {
                 rb_instance_variable_write_node_t *cast = (rb_instance_variable_write_node_t *)lhs;
                 asgn = NEW_RB_INSTANCE_VARIABLE_OPERATOR_WRITE(cast->name, op, rhs, loc);
+                RB_NODE_INSTANCE_VARIABLE_OPERATOR_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_CLASS_VARIABLE_WRITE_NODE: {
                 rb_class_variable_write_node_t *cast = (rb_class_variable_write_node_t *)lhs;
                 asgn = NEW_RB_CLASS_VARIABLE_OPERATOR_WRITE(cast->name, op, rhs, loc);
+                RB_NODE_CLASS_VARIABLE_OPERATOR_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_GLOBAL_VARIABLE_WRITE_NODE: {
                 rb_global_variable_write_node_t *cast = (rb_global_variable_write_node_t *)lhs;
                 asgn = NEW_RB_GLOBAL_VARIABLE_OPERATOR_WRITE(cast->name, op, rhs, loc);
+                RB_NODE_GLOBAL_VARIABLE_OPERATOR_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_CONSTANT_WRITE_NODE: {
                 rb_constant_write_node_t *cast = (rb_constant_write_node_t *)lhs;
                 asgn = NEW_RB_CONSTANT_OPERATOR_WRITE(cast->name, op, rhs, loc);
+                RB_NODE_CONSTANT_OPERATOR_WRITE(asgn)->name_loc = lhs->location;
                 break;
               }
               case RB_SHAREABLE_CONSTANT_NODE: {

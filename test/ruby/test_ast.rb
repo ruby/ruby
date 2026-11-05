@@ -576,6 +576,16 @@ class TestAst < Test::Unit::TestCase
     assert_nil(RubyVM::AbstractSyntaxTree.of(c.instance_method(:foo)))
   end
 
+  def test_leading_empty_statement
+    [";a", "if x; y; else;a; end", "begin x; ensure;a; end"].each do |source|
+      body = parse(source).children.last
+      body = body.children.last if body.type == :IF || body.type == :ENSURE
+      assert_equal(:BLOCK, body.type)
+      assert_equal([:BEGIN, :VCALL], body.children.map(&:type))
+      assert_equal([nil], body.children.first.children)
+    end
+  end
+
   def test_scope_local_variables
     node = RubyVM::AbstractSyntaxTree.parse("_x = 0")
     lv, _, body = *node.children
@@ -591,6 +601,15 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:NIL, recv.type)
     assert_equal(:foo, mid)
     assert_nil(args)
+  end
+
+  def test_explicit_regexp_operator_call
+    ["/x/.=~()", "/x/.=~(1, 2)"].each do |source|
+      call = parse(source).children.last
+      assert_equal(:CALL, call.type)
+      assert_equal(:REGX, call.children.first.type)
+      assert_equal(:=~, call.children[1])
+    end
   end
 
   def test_fcall
@@ -745,6 +764,22 @@ class TestAst < Test::Unit::TestCase
     helper = Helper.new(__FILE__, src: "1.times {_1}")
     helper.validate_range
     assert_equal([], helper.errors)
+  end
+
+  def test_operator_assignment_variable_location
+    ["a", "@a", "@@a", "$a"].each do |name|
+      assignment = parse("#{name} += 1").children.last
+      read = assignment.children.last.children.first
+      assert_equal([1, 0, 1, name.bytesize], [read.first_lineno, read.first_column, read.last_lineno, read.last_column])
+    end
+  end
+
+  def test_rescue_assignment_children
+    rescue_body = parse("begin; foo; rescue => error; end").children.last.children[1]
+    assignment = rescue_body.children[1]
+    assert_equal(:LASGN, assignment.type)
+    assert_equal(:error, assignment.children.first)
+    assert_equal(:ERRINFO, assignment.children.last.type)
   end
 
   def test_op_asgn2
