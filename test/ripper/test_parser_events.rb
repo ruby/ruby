@@ -890,6 +890,9 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_hash
     thru_hash = false
+    parse('{}', :on_hash) {thru_hash = true}
+    assert_equal true, thru_hash
+    thru_hash = false
     parse('{1=>2}', :on_hash) {thru_hash = true}
     assert_equal true, thru_hash
     thru_hash = false
