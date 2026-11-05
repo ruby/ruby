@@ -94,6 +94,10 @@ bool rb_zjit_newobj_hook_enabled_p(void);
 // rb_zjit_c_frame as the JITFrame". We don't control the native stack layout
 // for C frames, so there's no per-call JITFrame storage; we set this sentinel
 // instead of a heap-allocated JITFrame pointer.
+//
+// Tradeoff: accessors must check for this sentinel, but in exchange, the many
+// instances of `cfp->jit_return = sentinel` we generate are compact due to
+// this being a small numeric value.
 #define ZJIT_JIT_RETURN_C_FRAME 0x1
 
 static inline const zjit_jit_frame_t *
