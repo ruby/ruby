@@ -1062,7 +1062,7 @@ make_regexp(Regexp *rp, const char *s, rb_len_t len, rb_encoding *enc, int flags
  *
  * ### General Methods
  *
- * - #== (aliased as #eql?: returns whether `self` and another object are equal.
+ * - #== (aliased as #eql?): returns whether `self` and another object are equal.
  * - #hash: returns the integer hash value for `self`.
  * - #inspect: returns a string representation of `self`.
  * - #post_match: returns the substring that follows the matched string.
