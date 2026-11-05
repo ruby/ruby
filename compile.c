@@ -2181,13 +2181,13 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 
             switch (nd_type(val_node)) {
               case RB_SYMBOL_NODE:
-                dv = rb_node_sym_string_val(val_node);
+                dv = rb_node_sym_string_val2(val_node);
                 break;
               case RB_REGULAR_EXPRESSION_NODE:
                 dv = rb_node_regx_string_val(val_node);
                 break;
               case RB_SOURCE_LINE_NODE:
-                dv = rb_node_line_lineno_val(val_node);
+                dv = rb_node_line_lineno_val2(val_node);
                 break;
               case RB_INTEGER_NODE:
                 dv = rb_node_integer_literal_val(val_node);
@@ -2202,7 +2202,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
                 dv = rb_node_imaginary_literal_val(val_node);
                 break;
               case RB_SOURCE_ENCODING_NODE:
-                dv = rb_node_encoding_val(val_node);
+                dv = rb_node_encoding_val2(val_node);
                 break;
               case RB_NIL_NODE:
                 dv = Qnil;
@@ -2431,12 +2431,12 @@ iseq_set_local_table(rb_iseq_t *iseq, const rb_ast_id_table_t *tbl, const NODE *
     unsigned int offset = 0;
 
     if (node_args) {
-        struct rb_args_info *args = &RNODE_ARGS(node_args)->nd_ainfo;
+        const rb_parameters_node_t *args = RB_NODE_PARAMETERS(node_args);
 
         // If we have a function that only has `...` as the parameter,
         // then its local table should only be `...`
         // FIXME: I think this should be fixed in the AST rather than special case here.
-        if (args->forwarding && args->pre_args_num == 0 && !args->opt_args) {
+        if (NODE_ARG_FORWARDING_P(args) && RB_NODE_LIST_EMPTY_P(&args->requireds) && RB_NODE_LIST_EMPTY_P(&args->optionals)) {
             CHECK(size >= 3);
             size -= 3;
             offset += 3;
