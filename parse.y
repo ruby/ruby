@@ -1396,10 +1396,6 @@ static rb_while_node_t *rb_new_node_while_new(struct parser_params *p, rb_node_t
 static rb_until_node_t *rb_new_node_until_new(struct parser_params *p, rb_node_t *nd_cond, rb_statements_node_t *nd_body, rb_loop_flags_t flags, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *closing_loc);
 static rb_block_node_t *rb_new_node_block_new(struct parser_params *p, rb_node_t *nd_args, rb_node_t *nd_body, const YYLTYPE *loc);
 
-static rb_break_node_t *rb_new_node_break_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
-static rb_next_node_t *rb_new_node_next_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
-static rb_redo_node_t *rb_new_node_redo_new(struct parser_params *p, const YYLTYPE *loc);
-static rb_retry_node_t *rb_new_node_retry_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_begin_node_t *rb_new_node_begin_new(struct parser_params *p, rb_statements_node_t *nd_stmts, rb_rescue_node_t *nd_rescue, rb_else_node_t *nd_else, rb_ensure_node_t *nd_ensure, const YYLTYPE *loc);
 static rb_rescue_node_t *rb_new_node_rescue_new(struct parser_params *p, rb_array_node_t *exceptions, rb_node_t *nd_exc_var, rb_statements_node_t *nd_body, rb_rescue_node_t *nd_next, const YYLTYPE *loc);
 static rb_ensure_node_t *rb_new_node_ensure_new(struct parser_params *p, rb_statements_node_t *nd_ensr, const YYLTYPE *loc);
@@ -1497,10 +1493,6 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_WHILE(c,b,n,loc,k_loc,c_loc) (rb_node_t *)rb_new_node_while_new(p,c,b,n,loc,k_loc,c_loc)
 #define NEW_RB_UNTIL(c,b,n,loc,k_loc,c_loc) (rb_node_t *)rb_new_node_until_new(p,c,b,n,loc,k_loc,c_loc)
 #define NEW_RB_BLOCK(a,b,loc) rb_new_node_block_new(p,a,b,loc)
-#define NEW_RB_BREAK(s,loc,k_loc) (rb_node_t *)rb_new_node_break_new(p,s,loc,k_loc)
-#define NEW_RB_NEXT(s,loc,k_loc) (rb_node_t *)rb_new_node_next_new(p,s,loc,k_loc)
-#define NEW_RB_REDO(loc) (rb_node_t *)rb_new_node_redo_new(p,loc)
-#define NEW_RB_RETRY(loc) (rb_node_t *)rb_new_node_retry_new(p,loc)
 #define NEW_RB_BEGIN(s,r,el,en,loc) (rb_node_t *)rb_new_node_begin_new(p,s,r,el,en,loc)
 #define NEW_RB_RESCUE(ex,v,b,n,loc) rb_new_node_rescue_new(p,ex,v,b,n,loc)
 #define NEW_RB_ENSURE(en,loc) rb_new_node_ensure_new(p,en,loc)
@@ -13442,34 +13434,6 @@ rb_new_node_parentheses_new(struct parser_params *p, rb_node_t *body, const YYLT
     return n;
 }
 
-static rb_break_node_t *
-rb_new_node_break_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
-{
-    rb_break_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_BREAK_NODE, rb_break_node_t, loc);
-    n->arguments = nd_stts;
-    n->keyword_loc = *keyword_loc;
-
-    return n;
-}
-
-static rb_next_node_t *
-rb_new_node_next_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
-{
-    rb_next_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_NEXT_NODE, rb_next_node_t, loc);
-    n->arguments = nd_stts;
-    n->keyword_loc = *keyword_loc;
-
-    return n;
-}
-
-static rb_redo_node_t *
-rb_new_node_redo_new(struct parser_params *p, const YYLTYPE *loc)
-{
-    rb_redo_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_REDO_NODE, rb_redo_node_t, loc);
-
-    return n;
-}
-
 static rb_exits_node_t *
 rb_new_node_exits_new(struct parser_params *p)
 {
@@ -13477,14 +13441,6 @@ rb_new_node_exits_new(struct parser_params *p)
     n->nd_head = 0;
     n->nd_end = 0;
     n->nd_next = 0;
-
-    return n;
-}
-
-static rb_retry_node_t *
-rb_new_node_retry_new(struct parser_params *p, const YYLTYPE *loc)
-{
-    rb_retry_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_RETRY_NODE, rb_retry_node_t, loc);
 
     return n;
 }
@@ -14593,39 +14549,6 @@ new_locations_lambda_body(struct parser_params* p, NODE *node, const YYLTYPE *lo
     body->opening_loc = *opening_loc;
     body->closing_loc = *closing_loc;
     return body;
-}
-
-static NODE *
-command_add_block(struct parser_params*p, NODE *m, NODE *b, const YYLTYPE *loc)
-{
-    NODE **body;
-    enum node_type type = nd_type(m);
-    switch (type) {
-      case NODE_YIELD:
-        compile_error(p, "block given to yield");
-        return m;
-      case NODE_RETURN:
-        body = &RNODE_RETURN(m)->nd_stts;
-        break;
-      case NODE_BREAK:
-      case NODE_NEXT:
-        body = &RNODE_EXITS(m)->nd_stts;
-        break;
-      case NODE_REDO:           /* `redo` has no argument */
-        compile_error(p, "command_add_block: unexpected node: NODE_REDO");
-        return m;
-      case NODE_RETRY:          /* `retry` has no argument */
-        compile_error(p, "command_add_block: unexpected node: NODE_RETRY");
-        return m;
-      default:
-        block_dup_check(p, m, b);
-        return method_add_block(p, m, b, loc);
-    }
-    RUBY_ASSERT(*body, "no argument %s with do_block", parser_node_name(type));
-    YYLTYPE b_loc = code_loc_gen(&(*body)->nd_loc, loc);
-    *body = command_add_block(p, *body, b, &b_loc);
-    m->nd_loc.end_pos = loc->end_pos;
-    return m;
 }
 
 #define nd_once_body(node) (nd_type_p((node), NODE_ONCE) ? RNODE_ONCE(node)->nd_body : node)
