@@ -18514,7 +18514,7 @@ rb_parser_assignable(struct parser_params *p, ID id, NODE *val, const YYLTYPE *l
 
 int
 rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, long len,
-                                      rb_encoding *enc, NODE **succ_block, const rb_code_location_t *loc, rb_parser_assignable_func assignable)
+                                      rb_encoding *enc, rb_node_t **succ_block, const rb_code_location_t *loc, rb_parser_assignable_func assignable)
 {
     ID var;
     rb_node_t *node;
@@ -18530,7 +18530,7 @@ rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, lo
     }
     node = assignable_target(p, var, loc);
     succ = *succ_block;
-    if (!succ) succ = NEW_ERROR(loc);
+    if (!succ) succ = NEW_RB_ZARRAY(loc);
     succ = node_array_append(p, succ, node, loc);
     *succ_block = succ;
     return ST_CONTINUE;

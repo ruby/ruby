@@ -183,7 +183,7 @@ enc_symname_type(const char *name, rb_len_t len, parser_encoding *enc, unsigned 
 typedef struct {
     struct parser_params *parser;
     rb_encoding *enc;
-    NODE *succ_block;
+    rb_node_t *succ_block;
     const rb_code_location_t *loc;
     rb_parser_assignable_func assignable;
 } reg_named_capture_assign_t;
@@ -202,7 +202,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     return rb_reg_named_capture_assign_iter_impl(p, s, len, enc, &arg->succ_block, loc, arg->assignable);
 }
 
-static NODE *
+static rb_array_node_t *
 reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc,
                          rb_parser_assignable_func assignable)
 {
@@ -216,7 +216,7 @@ reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_lo
     onig_foreach_name(RREGEXP_PTR(regexp), reg_named_capture_assign_iter, &arg);
 
     if (!arg.succ_block) return 0;
-    return RNODE_BLOCK(arg.succ_block)->nd_next;
+    return (rb_array_node_t *)arg.succ_block;
 }
 
 static int

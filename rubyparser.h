@@ -49,6 +49,8 @@
 /*
  * Parser String
  */
+typedef rb_encoding rb_parser_encoding_t;
+
 enum rb_parser_string_coderange_type {
     /** The object's coderange is unclear yet. */
     RB_PARSER_ENC_CODERANGE_UNKNOWN  = 0,
@@ -1235,7 +1237,7 @@ typedef struct rb_parser_config_struct {
 
     // VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
     VALUE (*compile_callback)(VALUE (*func)(VALUE), VALUE arg);
-    NODE *(*reg_named_capture_assign)(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc, rb_parser_assignable_func assignable);
+    struct rb_array_node *(*reg_named_capture_assign)(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc, rb_parser_assignable_func assignable);
 
     /* Variable */
     VALUE (*attr_get)(VALUE obj, ID id);
