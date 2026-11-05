@@ -3181,6 +3181,18 @@ gc_continue(rb_objspace_t *objspace, rb_heap_t *heap)
     gc_exit(objspace, gc_enter_event_continue, &lock_lev);
 }
 
+static void heap_move_pooled_pages_to_free_pages(rb_heap_t *heap);
+
+static void
+heap_continue_or_take_pool(rb_objspace_t *objspace, rb_heap_t *heap)
+{
+    gc_continue(objspace, heap);
+
+    if (heap->free_pages == NULL && !is_incremental_marking(objspace)) {
+        heap_move_pooled_pages_to_free_pages(heap);
+    }
+}
+
 static void
 heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
 {
@@ -3193,8 +3205,7 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
         return;
     }
 
-    /* Continue incremental marking or lazy sweeping, if in any of those steps. */
-    gc_continue(objspace, heap);
+    heap_continue_or_take_pool(objspace, heap);
 
     if (heap->free_pages == NULL) {
         heap_page_allocate_and_initialize(objspace, heap);
@@ -3217,7 +3228,7 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
                 GC_ASSERT(objspace->heap_pages.allocatable_bytes > 0);
             }
             /* Do steps of incremental marking or lazy sweeping if the GC run permits. */
-            gc_continue(objspace, heap);
+            heap_continue_or_take_pool(objspace, heap);
 
             /* If we're not incremental marking (e.g. a minor GC) or finished
              * sweeping and still don't have a free page, then
@@ -3232,7 +3243,7 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
                     }
                     else {
                         /* Do steps of incremental marking or lazy sweeping. */
-                        gc_continue(objspace, heap);
+                        heap_continue_or_take_pool(objspace, heap);
 
                         if (heap->free_pages == NULL &&
                                 !heap_page_allocate_and_initialize(objspace, heap)) {
