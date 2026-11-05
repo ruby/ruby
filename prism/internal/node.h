@@ -134,7 +134,7 @@ void pm_node_list_open_append_slow(pm_node_chunks_t *chunks, pm_node_list_t *lis
  * field is a cursor to the next free slot of its last chunk, or NULL when the
  * list is empty. A zeroed list is an empty open list.
  */
-static PRISM_FORCE_INLINE void
+static PRISM_INLINE void
 pm_node_list_open_append(pm_node_chunks_t *chunks, pm_node_list_t *list, pm_node_t *node) {
     if (((uintptr_t) list->nodes & PM_NODE_CHUNK_MASK) != 0) {
         *list->nodes++ = node;

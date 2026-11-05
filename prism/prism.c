@@ -2432,7 +2432,11 @@ pm_arguments_node_create(pm_parser_t *parser, pm_arguments_t *arguments) {
 static void
 pm_arguments_flags_update(pm_node_flags_t *flags, const pm_node_t *argument) {
     if (PM_NODE_TYPE_P(argument, PM_SPLAT_NODE)) {
-        *flags |= (pm_node_flags_t) ((*flags & PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT) ? PM_ARGUMENTS_NODE_FLAGS_CONTAINS_MULTIPLE_SPLATS : PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT);
+        if (*flags & PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT) {
+            *flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_MULTIPLE_SPLATS;
+        } else {
+            *flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT;
+        }
     }
 }
 
