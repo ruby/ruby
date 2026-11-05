@@ -5888,50 +5888,6 @@ int_upto_size(VALUE from, VALUE args, VALUE eobj)
     return ruby_num_interval_step_size(from, RARRAY_AREF(args, 0), INT2FIX(1), FALSE);
 }
 
-/*
- *  call-seq:
- *    upto(limit) {|i| ... } -> self
- *    upto(limit)            ->  enumerator
- *
- *  Calls the given block with each integer value from +self+ up to +limit+;
- *  returns +self+:
- *
- *    a = []
- *    5.upto(10) {|i| a << i }              # => 5
- *    a                                     # => [5, 6, 7, 8, 9, 10]
- *    a = []
- *    -5.upto(0) {|i| a << i }              # => -5
- *    a                                     # => [-5, -4, -3, -2, -1, 0]
- *    5.upto(4) {|i| fail 'Cannot happen' } # => 5
- *
- *  With no block given, returns an Enumerator.
- *
- */
-
-static VALUE
-int_upto(VALUE from, VALUE to)
-{
-    RETURN_SIZED_ENUMERATOR(from, 1, &to, int_upto_size);
-    if (FIXNUM_P(from) && FIXNUM_P(to)) {
-        long i, end;
-
-        end = FIX2LONG(to);
-        for (i = FIX2LONG(from); i <= end; i++) {
-            rb_yield(LONG2FIX(i));
-        }
-    }
-    else {
-        VALUE i = from, c;
-
-        while (!(c = rb_funcall(i, '>', 1, to))) {
-            rb_yield(i);
-            i = rb_funcall(i, '+', 1, INT2FIX(1));
-        }
-        ensure_cmp(c, i, to);
-    }
-    return from;
-}
-
 static VALUE
 int_downto_size(VALUE from, VALUE args, VALUE eobj)
 {
@@ -6586,7 +6542,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "allbits?", int_allbits_p, 1);
     rb_define_method(rb_cInteger, "anybits?", int_anybits_p, 1);
     rb_define_method(rb_cInteger, "nobits?", int_nobits_p, 1);
-    rb_define_method(rb_cInteger, "upto", int_upto, 1);
     rb_define_method(rb_cInteger, "downto", int_downto, 1);
     rb_define_method(rb_cInteger, "succ", int_succ, 0);
     rb_define_method(rb_cInteger, "next", int_succ, 0);
