@@ -1135,6 +1135,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
             iseq_set_local_table(iseq, locals, args);
             iseq_set_arguments(iseq, ret, args);
         }
+        iseq_set_parameters_lvar_state(iseq);
 
         switch (ISEQ_BODY(iseq)->type) {
           case ISEQ_TYPE_BLOCK:
@@ -9565,25 +9566,28 @@ compile_iter0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, c
       }
       case RB_CALL_NODE: {
         EXPECT_NODE("compile_iter0", RB_NODE_CALL(node)->block, RB_BLOCK_NODE, COMPILE_NG);
+        const rb_block_node_t *block = RB_NODE_BLOCK(RB_NODE_CALL(node)->block);
         ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
-            NEW_CHILD_ISEQ(RB_NODE_CALL(node)->block, make_name_for_block(iseq),
-                           ISEQ_TYPE_BLOCK, line);
+            NEW_CHILD_ISEQ(block, make_name_for_block(iseq),
+                           ISEQ_TYPE_BLOCK, block->opening_loc.beg_pos.lineno);
         CHECK(compile_call(iseq, ret, node, type, 0));
         break;
       }
       case RB_SUPER_NODE: {
         EXPECT_NODE("compile_iter0", RB_NODE_SUPER(node)->block, RB_BLOCK_NODE, COMPILE_NG);
+        const rb_block_node_t *block = RB_NODE_BLOCK(RB_NODE_SUPER(node)->block);
         ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
-            NEW_CHILD_ISEQ(RB_NODE_SUPER(node)->block, make_name_for_block(iseq),
-                           ISEQ_TYPE_BLOCK, line);
+            NEW_CHILD_ISEQ(block, make_name_for_block(iseq),
+                           ISEQ_TYPE_BLOCK, block->opening_loc.beg_pos.lineno);
         CHECK(compile_super(iseq, ret, node, type, 0));
         break;
       }
       case RB_FORWARDING_SUPER_NODE: {
         EXPECT_NODE("compile_iter0", RB_NODE_FORWARDING_SUPER(node)->block, RB_BLOCK_NODE, COMPILE_NG);
+        const rb_block_node_t *block = RB_NODE_BLOCK(RB_NODE_FORWARDING_SUPER(node)->block);
         ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
-            NEW_CHILD_ISEQ(RB_NODE_FORWARDING_SUPER(node)->block, make_name_for_block(iseq),
-                           ISEQ_TYPE_BLOCK, line);
+            NEW_CHILD_ISEQ(block, make_name_for_block(iseq),
+                           ISEQ_TYPE_BLOCK, block->opening_loc.beg_pos.lineno);
         CHECK(compile_super(iseq, ret, node, type, 0));
         break;
       }
@@ -11388,8 +11392,10 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, c
     ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
 
     if (type == RB_SUPER_NODE) {
-        // TODO: block
-        VALUE vargc = setup_args(iseq, args, RB_NODE_SUPER(node)->arguments, NULL, &flag, &keywords);
+        const rb_node_t *block = RB_NODE_SUPER(node)->block;
+        const rb_block_argument_node_t *block_argument =
+            block && RB_NODE_TYPE_P(block, RB_BLOCK_ARGUMENT_NODE) ? RB_NODE_BLOCK_ARGUMENT(block) : NULL;
+        VALUE vargc = setup_args(iseq, args, RB_NODE_SUPER(node)->arguments, block_argument, &flag, &keywords);
         CHECK(!NIL_P(vargc));
         argc = FIX2INT(vargc);
         if ((flag & VM_CALL_ARGS_BLOCKARG) && (flag & VM_CALL_KW_SPLAT) && !(flag & VM_CALL_KW_SPLAT_MUT)) {

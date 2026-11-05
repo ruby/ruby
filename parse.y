@@ -1901,6 +1901,7 @@ static rb_node_t *new_qcall(struct parser_params* p, ID atype, rb_node_t *recv, 
 static rb_node_t *new_command_qcall(struct parser_params* p, ID atype, rb_node_t *recv, ID mid, rb_arguments_node_t *args, rb_node_t *block, const YYLTYPE *op_loc, const YYLTYPE *loc);
 static rb_node_t *new_super(struct parser_params *p, rb_arguments_node_t *nd_args, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc);
 static rb_node_t *method_add_block(struct parser_params *p, rb_node_t *m, rb_block_node_t *b, const YYLTYPE *loc);
+static rb_node_t *command_add_block(struct parser_params *p, rb_node_t *m, rb_block_node_t *b, const YYLTYPE *loc);
 static rb_node_t *method_add_arguments(struct parser_params *p, rb_node_t *nd_call, rb_arguments_node_t *nd_args, const YYLTYPE *loc);
 static void set_call_parentheses(rb_node_t *node, const YYLTYPE *loc);
 
@@ -5758,13 +5759,7 @@ do_block	: k_do_block do_body k_end
 
 block_call	: command do_block
                     {
-                        if (nd_type_p($1, NODE_YIELD)) {
-                            compile_error(p, "block given to yield");
-                        }
-                        else {
-                            block_dup_check(p, $1, $2);
-                        }
-                        $$ = method_add_block(p, $1, $2, &@$);
+                        $$ = command_add_block(p, $1, $2, &@$);
                         fixpos($$, $1);
                     /*% ripper: method_add_block!($:1, $:2) %*/
                     }
@@ -5864,7 +5859,7 @@ method_call	: fcall paren_args
                     }
                 | primary_value '[' opt_call_args rbracket
                     {
-                        $$ = NEW_RB_CALL($1, tAREF, $3, 0, &@$);
+                        $$ = method_add_arguments(p, NEW_RB_CALL($1, tAREF, 0, 0, &@$), $3, &@$);
                         RB_NODE_CALL($$)->opening_loc = @2;
                         RB_NODE_CALL($$)->closing_loc = @4;
                         fixpos($$, $1);
@@ -7155,7 +7150,7 @@ f_kwrest	: kwrest_mark tIDENTIFIER
                 | kwrest_mark
                     {
                         arg_var(p, idFWD_KWREST);
-                        $$ = NEW_RB_KEYWORD_REST_PARAMETER(0, &@$, &@1, &@2);
+                        $$ = NEW_RB_KEYWORD_REST_PARAMETER(0, &@$, &@1, &NULL_LOC);
                     /*% ripper: kwrest_param!(Qnil) %*/
                     }
                 ;
@@ -13229,6 +13224,7 @@ rb_new_node_return_new(struct parser_params *p, rb_arguments_node_t *nd_argument
 static rb_yield_node_t *
 rb_new_node_yield_new(struct parser_params *p, rb_arguments_node_t *nd_arguments, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc)
 {
+    if (nd_arguments) no_blockarg(p, nd_arguments);
     rb_yield_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_YIELD_NODE, rb_yield_node_t, loc);
     n->arguments = nd_arguments;
     n->keyword_loc = *keyword_loc;
@@ -15510,6 +15506,41 @@ method_add_block(struct parser_params *p, rb_node_t *m, rb_block_node_t *b, cons
 }
 
 static rb_node_t *
+command_add_block(struct parser_params *p, rb_node_t *m, rb_block_node_t *b, const YYLTYPE *loc)
+{
+    rb_arguments_node_t *arguments;
+    switch (RB_NODE_TYPE(m)) {
+      case RB_YIELD_NODE:
+        compile_error(p, "block given to yield");
+        return m;
+      case RB_RETURN_NODE:
+        arguments = RB_NODE_RETURN(m)->arguments;
+        break;
+      case RB_BREAK_NODE:
+        arguments = RB_NODE_BREAK(m)->arguments;
+        break;
+      case RB_NEXT_NODE:
+        arguments = RB_NODE_NEXT(m)->arguments;
+        break;
+      case RB_REDO_NODE:
+      case RB_RETRY_NODE:
+        compile_error(p, "command_add_block: unexpected node: %s", parser_node_name(RB_NODE_TYPE(m)));
+        return m;
+      default:
+        block_dup_check(p, m, (rb_node_t *)b);
+        return method_add_block(p, m, b, loc);
+    }
+
+    RUBY_ASSERT(arguments && arguments->arguments.size == 1);
+    rb_node_t *body = arguments->arguments.nodes[0];
+    YYLTYPE body_loc = code_loc_gen(&body->location, loc);
+    arguments->arguments.nodes[0] = command_add_block(p, body, b, &body_loc);
+    arguments->base.location.end_pos = loc->end_pos;
+    m->location.end_pos = loc->end_pos;
+    return m;
+}
+
+static rb_node_t *
 method_add_arguments(struct parser_params *p, rb_node_t *nd_call, rb_arguments_node_t *nd_args, const YYLTYPE *loc)
 {
     rb_node_t *last;
@@ -16371,26 +16402,32 @@ aryset_target(struct parser_params *p, rb_node_t *recv, rb_arguments_node_t *idx
     return NEW_RB_INDEX_TARGET(recv, idx, 0, loc);
 }
 
-static rb_node_t *
-get_block(struct parser_params *p, rb_node_t *node)
+static bool
+block_argument_given_p(struct parser_params *p, rb_node_t *node)
 {
+    rb_arguments_node_t *arguments = NULL;
     switch (RB_NODE_TYPE(node)) {
       case RB_CALL_NODE:
-        return RB_NODE_CALL(node)->block;
+        if (RB_NODE_CALL(node)->block) return true;
+        arguments = RB_NODE_CALL(node)->arguments;
+        break;
       case RB_SUPER_NODE:
-        return RB_NODE_SUPER(node)->block;
+        if (RB_NODE_SUPER(node)->block) return true;
+        arguments = RB_NODE_SUPER(node)->arguments;
+        break;
       case RB_FORWARDING_SUPER_NODE:
-        return RB_NODE_FORWARDING_SUPER(node)->block;
+        return RB_NODE_FORWARDING_SUPER(node)->block != NULL;
       default:
         rb_bug("unexpected node: %s", rb_node_type_to_str(RB_NODE_TYPE(node)));
-        UNREACHABLE_RETURN(0);
     }
+    rb_node_t *last = arguments ? rb_node_list_last(&arguments->arguments) : NULL;
+    return last && RB_NODE_TYPE_P(last, RB_FORWARDING_ARGUMENTS_NODE);
 }
 
 static void
 block_dup_check(struct parser_params *p, rb_node_t *node1, rb_node_t *node2)
 {
-    if (node2 && node1 && get_block(p, node1)) {
+    if (node2 && node1 && block_argument_given_p(p, node1)) {
         compile_error(p, "both block arg and actual block given");
     }
 }
@@ -17360,13 +17397,10 @@ args_info_empty_p(rb_parameters_node_t *args)
 static rb_parameters_node_t *
 new_args2(struct parser_params *p, rb_array_node_t *pre_args, rb_array_node_t *opt_args, rb_node_t *rest_arg, rb_array_node_t *post_args, rb_parameters_node_t *tail, const YYLTYPE *loc)
 {
-//     if (args->forwarding) {
-//         if (rest_arg) {
-//             yyerror1(&RNODE(tail)->nd_loc, "... after rest argument");
-//             return tail;
-//         }
-//         rest_arg = idFWD_REST;
-//     }
+    if (rest_arg && tail->keyword_rest && RB_NODE_TYPE_P(tail->keyword_rest, RB_FORWARDING_PARAMETER_NODE)) {
+        yyerror1(&tail->keyword_rest->location, "... after rest argument");
+        return tail;
+    }
 
     if (pre_args) rb_node_list_move(&tail->requireds, &pre_args->elements);
     if (post_args) rb_node_list_move(&tail->posts, &post_args->elements);
@@ -17386,8 +17420,10 @@ get_kw_nd_vid(struct parser_params *p, rb_node_t *node)
         return RB_NODE_OPTIONAL_KEYWORD_PARAMETER(node)->name;
       case RB_REQUIRED_KEYWORD_PARAMETER_NODE:
         return RB_NODE_REQUIRED_KEYWORD_PARAMETER(node)->name;
-      case RB_KEYWORD_REST_PARAMETER_NODE:
-        return RB_NODE_KEYWORD_REST_PARAMETER(node)->name;
+      case RB_KEYWORD_REST_PARAMETER_NODE: {
+        ID name = RB_NODE_KEYWORD_REST_PARAMETER(node)->name;
+        return name ? name : idFWD_KWREST;
+      }
       default:
         compile_error(p, "get_kw_nd_vid: unexpected node: %s", parser_node_name(nd_type(node)));
         return 0;
