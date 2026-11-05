@@ -1054,11 +1054,11 @@ make_regexp(Regexp *rp, const char *s, rb_len_t len, rb_encoding *enc, int flags
  *
  * ## What's Here
  *
- *  First, what's elsewhere. Class \MatchData:
+ * First, what's elsewhere. Class \MatchData:
  *
- *  - Inherits from {class Object}[rdoc-ref:Object@Whats-Here].
+ * - Inherits from {class Object}[rdoc-ref:Object@Whats-Here].
  *
- *  Here, class \MatchData provides methods that are useful for:
+ * Here, class \MatchData provides methods that are useful for:
  *
  * ### General Methods
  *
