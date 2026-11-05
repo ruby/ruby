@@ -850,7 +850,8 @@ get_nd_block(const NODE *node)
     switch (nd_type(node)) {
       case RB_CALL_NODE:
         return RB_NODE_CALL(node)->block;
-      case NODE_ATTRASGN:
+      case RB_CALL_TARGET_NODE:
+      case RB_INDEX_TARGET_NODE:
         return NULL;
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
