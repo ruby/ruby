@@ -1781,7 +1781,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     const rb_env_t *env;
     rb_execution_context_t *ec = GET_EC();
     const rb_iseq_t *base_iseq, *iseq;
-    rb_node_scope_t tmp_node;
+    rb_program_node_t tmp_node = {0};
 
     if (dyncount < 0) return 0;
 
@@ -1793,11 +1793,8 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     dyns->size = dyncount;
     MEMCPY(dyns->ids, dynvars, ID, dyncount);
 
-    rb_node_init(RNODE(&tmp_node), NODE_SCOPE);
-    tmp_node.nd_tbl = dyns;
-    tmp_node.nd_body = 0;
-    tmp_node.nd_parent = NULL;
-    tmp_node.nd_args = 0;
+    rb_rb_node_init(&tmp_node.base, RB_PROGRAM_NODE);
+    tmp_node.locals = dyns;
 
     VALUE ast_value = rb_ruby_ast_new(RNODE(&tmp_node));
 
@@ -1808,7 +1805,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
         VALUE tempstr = rb_fstring_lit("<temp>");
         iseq = rb_iseq_new_top(ast_value, tempstr, tempstr, tempstr, NULL);
     }
-    tmp_node.nd_tbl = 0; /* reset table */
+    tmp_node.locals = NULL; /* reset table */
     ALLOCV_END(idtmp);
 
     vm_set_eval_stack(ec, iseq, 0, base_block);

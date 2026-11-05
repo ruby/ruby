@@ -10258,37 +10258,30 @@ iseq_builtin_function_lookup(const rb_iseq_t *iseq, const char *name)
 }
 
 static const char *
-iseq_builtin_function_name(const enum node_type type, const NODE *recv, ID mid)
+iseq_builtin_function_name(const NODE *node)
 {
-    const char *name = rb_id2name(mid);
+    if (!nd_type_p(node, RB_CALL_NODE)) return NULL;
+    const rb_call_node_t *call = RB_NODE_CALL(node);
+    if (rb_node_get_fl(call) & RB_CALL_NODE_FLAGS_SAFE_NAVIGATION) return NULL;
+
+    const char *name = rb_id2name(call->name);
     static const char prefix[] = "__builtin_";
     const size_t prefix_len = sizeof(prefix) - 1;
+    const rb_node_t *recv = call->receiver;
 
-    switch (type) {
-      case NODE_CALL:
-        if (recv) {
-            switch (nd_type(recv)) {
-              case NODE_VCALL:
-                if (RNODE_VCALL(recv)->nd_mid == rb_intern("__builtin")) {
-                    return name;
-                }
-                break;
-              case NODE_CONST:
-                if (RNODE_CONST(recv)->nd_vid == rb_intern("Primitive")) {
-                    return name;
-                }
-                break;
-              default: break;
-            }
+    if (recv) {
+        if (nd_type_p(recv, RB_CALL_NODE) &&
+            (rb_node_get_fl(recv) & RB_CALL_NODE_FLAGS_VARIABLE_CALL) &&
+            RB_NODE_CALL(recv)->name == rb_intern("__builtin")) {
+            return name;
         }
-        break;
-      case NODE_VCALL:
-      case NODE_FCALL:
-        if (UNLIKELY(strncmp(prefix, name, prefix_len) == 0)) {
-            return &name[prefix_len];
+        if (nd_type_p(recv, RB_CONSTANT_READ_NODE) &&
+            RB_NODE_CONSTANT_READ(recv)->name == rb_intern("Primitive")) {
+            return name;
         }
-        break;
-      default: break;
+    }
+    else if (UNLIKELY(strncmp(prefix, name, prefix_len) == 0)) {
+        return &name[prefix_len];
     }
     return NULL;
 }
@@ -10393,23 +10386,15 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
 {
     VALUE symbol;
     if (!node) goto no_arg;
-    while (node) {
-        if (!nd_type_p(node, NODE_LIST)) goto bad_arg;
-        const NODE *next = RNODE_LIST(node)->nd_next;
-
-        node = RNODE_LIST(node)->nd_head;
-        if (!node) goto no_arg;
-        switch (nd_type(node)) {
-          case NODE_SYM:
-            symbol = rb_node_sym_string_val(node);
-            break;
-          default:
-            goto bad_arg;
-        }
-
+    if (!nd_type_p(node, RB_ARGUMENTS_NODE)) goto bad_arg;
+    const rb_node_list2_t *arguments = &RB_NODE_ARGUMENTS(node)->arguments;
+    if (!arguments->size) goto no_arg;
+    for (size_t i = 0; i < arguments->size; i++) {
+        node = (NODE *)arguments->nodes[i];
+        if (!nd_type_p(node, RB_SYMBOL_NODE)) goto bad_arg;
+        symbol = rb_node_sym_string_val2(node);
         if (!SYMBOL_P(symbol)) goto non_symbol_arg;
         if (compile_builtin_attr_symbol(iseq, symbol) != COMPILE_OK) goto unknown_arg;
-        node = next;
     }
     return COMPILE_OK;
   no_arg:
@@ -10431,17 +10416,13 @@ compile_builtin_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, c
     VALUE name;
 
     if (!node) goto no_arg;
-    if (!nd_type_p(node, NODE_LIST)) goto bad_arg;
-    if (RNODE_LIST(node)->nd_next) goto too_many_arg;
-    node = RNODE_LIST(node)->nd_head;
-    if (!node) goto no_arg;
-    switch (nd_type(node)) {
-      case NODE_SYM:
-        name = rb_node_sym_string_val(node);
-        break;
-      default:
-        goto bad_arg;
-    }
+    if (!nd_type_p(node, RB_ARGUMENTS_NODE)) goto bad_arg;
+    const rb_node_list2_t *arguments = &RB_NODE_ARGUMENTS(node)->arguments;
+    if (!arguments->size) goto no_arg;
+    if (arguments->size > 1) goto too_many_arg;
+    node = (NODE *)arguments->nodes[0];
+    if (!nd_type_p(node, RB_SYMBOL_NODE)) goto bad_arg;
+    name = rb_node_sym_string_val2(node);
     if (!SYMBOL_P(name)) goto non_symbol_arg;
     if (!popped) {
         compile_lvar(iseq, ret, line_node, SYM2ID(name));
@@ -10465,24 +10446,48 @@ static NODE *
 mandatory_node(const rb_iseq_t *iseq, const NODE *cond_node)
 {
     const NODE *node = ISEQ_COMPILE_DATA(iseq)->root_node;
-    if (nd_type(node) == NODE_IF && RNODE_IF(node)->nd_cond == cond_node) {
-        return RNODE_IF(node)->nd_body;
+    while (node) {
+        if (nd_type_p(node, RB_BEGIN_NODE)) {
+            const rb_begin_node_t *begin = RB_NODE_BEGIN(node);
+            if (begin->rescue_clause || begin->else_clause || begin->ensure_clause) break;
+            node = (NODE *)begin->statements;
+        }
+        else if (nd_type_p(node, RB_STATEMENTS_NODE)) {
+            const rb_node_list2_t *body = &RB_NODE_STATEMENTS(node)->body;
+            size_t i = 0;
+            /* Leading empty statements are retained for the public AST. */
+            while (i < body->size && nd_type_p(body->nodes[i], RB_STATEMENTS_NODE) &&
+                   !RB_NODE_STATEMENTS(body->nodes[i])->body.size) i++;
+            if (i + 1 != body->size) break;
+            node = (NODE *)body->nodes[i];
+        }
+        else if (nd_type_p(node, RB_IF_NODE) && RB_NODE_IF(node)->predicate == (rb_node_t *)cond_node) {
+            return (NODE *)RB_NODE_IF(node)->statements;
+        }
+        else break;
     }
-    else {
-        rb_bug("mandatory_node: can't find mandatory node");
-    }
+    rb_bug("mandatory_node: can't find mandatory node");
 }
 
 static int
 compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const NODE *line_node)
 {
-    // arguments
-    struct rb_args_info args = {
-        .pre_args_num = ISEQ_BODY(iseq)->param.lead_num,
-    };
-    rb_node_args_t args_node;
-    rb_node_init(RNODE(&args_node), NODE_ARGS);
-    args_node.nd_ainfo = args;
+    rb_parameters_node_t args_node = {0};
+    rb_rb_node_init((rb_node_t *)&args_node, RB_PARAMETERS_NODE);
+    args_node.base.location = RB_NODE(line_node)->location;
+
+    const unsigned int lead_num = ISEQ_BODY(iseq)->param.lead_num;
+    VALUE required_tmp = 0, pointers_tmp = 0;
+    rb_required_parameter_node_t *requireds = ALLOCV_N(rb_required_parameter_node_t, required_tmp, lead_num);
+    rb_node_t **pointers = ALLOCV_N(rb_node_t *, pointers_tmp, lead_num);
+    for (unsigned int i = 0; i < lead_num; i++) {
+        memset(&requireds[i], 0, sizeof(requireds[i]));
+        rb_rb_node_init((rb_node_t *)&requireds[i], RB_REQUIRED_PARAMETER_NODE);
+        requireds[i].base.location = args_node.base.location;
+        requireds[i].name = ISEQ_BODY(iseq)->local_table[i];
+        pointers[i] = (rb_node_t *)&requireds[i];
+    }
+    args_node.requireds = (rb_node_list2_t){.size = lead_num, .capacity = lead_num, .nodes = pointers};
 
     // local table without non-mandatory parameters
     const int skip_local_size = ISEQ_BODY(iseq)->param.size - ISEQ_BODY(iseq)->param.lead_num;
@@ -10503,14 +10508,14 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
         tbl->ids[i] = ISEQ_BODY(iseq)->local_table[i + skip_local_size];
     }
 
-    rb_node_scope_t scope_node;
-    rb_node_init(RNODE(&scope_node), NODE_SCOPE);
-    scope_node.nd_tbl = tbl;
-    scope_node.nd_body = mandatory_node(iseq, node);
-    scope_node.nd_parent = NULL;
-    scope_node.nd_args = &args_node;
+    rb_def_node_t scope_node = {0};
+    rb_rb_node_init((rb_node_t *)&scope_node, RB_DEF_NODE);
+    scope_node.base.location = RB_NODE(line_node)->location;
+    scope_node.locals = tbl;
+    scope_node.body = (rb_node_t *)mandatory_node(iseq, node);
+    scope_node.parameters = &args_node;
 
-    VALUE ast_value = rb_ruby_ast_new(RNODE(&scope_node));
+    VALUE ast_value = rb_ruby_ast_new((NODE *)&scope_node);
 
     const rb_iseq_t *mandatory_only_iseq =
       rb_iseq_new_with_opt(ast_value, rb_iseq_base_label(iseq),
@@ -10521,6 +10526,8 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
     RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
 
     ALLOCV_END(idtmp);
+    ALLOCV_END(pointers_tmp);
+    ALLOCV_END(required_tmp);
     return COMPILE_OK;
 }
 
@@ -10670,7 +10677,7 @@ compile_call_core(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
     INIT_ANCHOR(args);
 
 #if OPT_SUPPORT_JOKE
-    if (nd_type_p(node, NODE_VCALL)) {
+    if (call_type == N_VCALL) {
         ID id_bitblt;
         ID id_answer;
 
@@ -10694,7 +10701,7 @@ compile_call_core(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
         CONST_ID(goto_id, "__goto__");
         CONST_ID(label_id, "__label__");
 
-        if (nd_type_p(node, NODE_FCALL) &&
+        if (call_type == N_FCALL &&
             (mid == goto_id || mid == label_id)) {
             LABEL *label;
             st_data_t data;
@@ -10723,7 +10730,7 @@ compile_call_core(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
 
     const char *builtin_func;
     if (UNLIKELY(iseq_has_builtin_function_table(iseq)) &&
-        (builtin_func = iseq_builtin_function_name(type, get_nd_recv(node), mid)) != NULL) {
+        (builtin_func = iseq_builtin_function_name(node)) != NULL) {
         return compile_builtin_function_call(iseq, ret, node, line_node, popped, parent_block, args, builtin_func);
     }
 
@@ -10733,8 +10740,8 @@ compile_call_core(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
             int idx, level;
 
             if ((mid == idCall || mid == idAREF || mid == idYield || mid == idEqq) &&
-                nd_type_p(get_nd_recv(node), NODE_LVAR) &&
-                iseq_block_param_id_p(iseq, RNODE_LVAR(get_nd_recv(node))->nd_vid, &idx, &level)) {
+                nd_type_p(get_nd_recv(node), RB_LOCAL_VARIABLE_READ_NODE) &&
+                iseq_block_param_id_p(iseq, RB_NODE_LOCAL_VARIABLE_READ(get_nd_recv(node))->name, &idx, &level)) {
                 ADD_INSN2(recv, get_nd_recv(node), getblockparamproxy, INT2FIX(idx + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
             }
             else if (private_recv_p(node)) {
