@@ -239,7 +239,7 @@ typedef struct {
     size_t gc_threshold;     // Trigger GC when object count reaches this
     size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
     size_t missed_write_barrier_children; // Total number of missed write barriers detected
-    size_t simulated_gc_count; // Simulated GC count incremented on each GC.start
+    size_t simulated_gc_count; // Simulated GC count incremented on each full GC
     size_t total_allocated_objects; // Total objects allocated over the process lifetime
     bool measure_total_time;   // Whether to accumulate :time in stats
     struct wbcheck_final_job *finalizer_jobs; // Linked list of finalizer jobs
@@ -569,11 +569,6 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache)
 void
 rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact, bool global)
 {
-    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
-    if (objspace) {
-        objspace->simulated_gc_count++;
-    }
-
     if (!ruby_native_thread_p()) return;
 
     unsigned int lev = RB_GC_VM_LOCK();
@@ -994,6 +989,8 @@ static void
 wbcheck_full_gc(rb_wbcheck_objspace_t *objspace)
 {
     WBCHECK_DEBUG("wbcheck: starting full GC\n");
+
+    objspace->simulated_gc_count++;
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_ENTER);
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_START);
