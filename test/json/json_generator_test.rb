@@ -1054,8 +1054,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
     s = klass.new("test")
     assert_equal '["test"]', JSON.generate([s])
 
-    omit("Can't figure out how to match behavior in java code") if RUBY_PLATFORM == "java"
-
     assert_raise TypeError do
       JSON.generate(s => 1)
     end
