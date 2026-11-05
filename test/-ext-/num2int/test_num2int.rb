@@ -263,6 +263,13 @@ class TestNum2int < Test::Unit::TestCase
     assert_fix2i_success(:ulong, -1, ULONG_MAX)
   end
 
+  def test_len2fix
+    assert_equal(0, Num2int.LEN2FIX(0))
+    assert_equal(-1, Num2int.LEN2FIX(-1))
+    assert_equal(FIXNUM_MAX, Num2int.LEN2FIX(FIXNUM_MAX))
+    assert_equal(FIXNUM_MIN, Num2int.LEN2FIX(FIXNUM_MIN))
+  end
+
   def test_len2long
     assert_equal(LONG_MAX.to_s, Num2int.rb_len2long(LONG_MAX))
     assert_equal(LONG_MIN.to_s, Num2int.rb_len2long(LONG_MIN))

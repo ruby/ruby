@@ -107,6 +107,14 @@ test_fix2ulong(VALUE obj, VALUE num)
 }
 
 static VALUE
+test_len2fix(VALUE obj, VALUE num)
+{
+    rb_len_t len = NUM2LEN(num);
+    if (!FIXABLE(len)) rb_raise(rb_eRangeError, "not fixable");
+    return LEN2FIX(len);
+}
+
+static VALUE
 test_len2long(VALUE obj, VALUE num)
 {
     char buf[128];
@@ -148,6 +156,7 @@ Init_num2int(void)
     rb_define_module_function(mNum2int, "FIX2LONG", test_fix2long, 1);
     rb_define_module_function(mNum2int, "FIX2ULONG", test_fix2ulong, 1);
 
+    rb_define_module_function(mNum2int, "LEN2FIX", test_len2fix, 1);
     rb_define_module_function(mNum2int, "rb_len2long", test_len2long, 1);
     rb_define_module_function(mNum2int, "rb_out_of_long", test_out_of_long, 1);
 }
