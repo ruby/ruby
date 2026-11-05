@@ -6568,6 +6568,21 @@ compile_massign0(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const rhs
     return COMPILE_OK;
 }
 
+static void
+finish_masgn_lhs(rb_iseq_t *iseq, struct masgn_state *state)
+{
+    struct masgn_lhs_node *memo = state->first_memo, *tmp_memo;
+    while (memo) {
+        VALUE topn_arg = INT2FIX((state->num_args - memo->argn) + memo->lhs_pos);
+        for (int i = 0; i < memo->num_args; i++) {
+            INSERT_BEFORE_INSN1(memo->before_insn, nd_line(memo->line_node), nd_node_id(memo->line_node), topn, topn_arg);
+        }
+        tmp_memo = memo->next;
+        free(memo);
+        memo = tmp_memo;
+    }
+}
+
 static int
 compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
@@ -6593,16 +6608,7 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
         INIT_ANCHOR(post);
         int ok = compile_massign0(iseq, pre, rhs, lhs, post, node, &state, popped);
 
-        struct masgn_lhs_node *memo = state.first_memo, *tmp_memo;
-        while (memo) {
-            VALUE topn_arg = INT2FIX((state.num_args - memo->argn) + memo->lhs_pos);
-            for (int i = 0; i < memo->num_args; i++) {
-                INSERT_BEFORE_INSN1(memo->before_insn, nd_line(memo->line_node), nd_node_id(memo->line_node), topn, topn_arg);
-            }
-            tmp_memo = memo->next;
-            free(memo);
-            memo = tmp_memo;
-        }
+        finish_masgn_lhs(iseq, &state);
         CHECK(ok);
 
         ADD_SEQ(ret, pre);
