@@ -1455,8 +1455,8 @@ rb_reg_backref_number(VALUE match, VALUE backref)
  *  :markup: markdown
  *
  *  call-seq:
- *    offset(n) -> [begin, end]
- *    offset(name) -> [begin, end]
+ *    offset(n) -> [begin_offset, end_offset]
+ *    offset(name) -> [begin_offset, end_offset]
  *
  *  Returns the offsets (in characters) of the beginning (#begin value)
  *  and end (#end value) of the specified match.
