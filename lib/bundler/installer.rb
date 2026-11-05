@@ -80,6 +80,7 @@ module Bundler
           ensure_specs_are_compatible!
           load_plugins
         end
+        warn_on_default_gem_downgrades
         install(options)
 
         Gem::Specification.reset # invalidate gem specification cache so that installed gems are immediately available
@@ -256,6 +257,22 @@ module Bundler
       message + "\n\nThe lockfile only includes the #{spec.platform} variant of #{spec.name}. " \
         "If a compatible Ruby variant is available, run `bundle install` outside of frozen/deployment mode " \
         "to add it to the lockfile as a fallback, then commit the updated #{SharedHelpers.relative_lockfile_path}."
+    end
+
+    def warn_on_default_gem_downgrades
+      default_gems = Bundler.rubygems.default_stubs.to_h {|spec| [spec.name, spec] }
+      downgrades = @definition.specs.sort_by(&:name).filter_map do |spec|
+        default_spec = default_gems[spec.name]
+        next unless default_spec && spec.version < default_spec.version
+        [spec, default_spec]
+      end
+      return if downgrades.empty?
+
+      message = "Your bundle downgrades the following default gems shipped with #{Bundler::RubyVersion.system}:\n"
+      downgrades.each do |spec, default_spec|
+        message += "  * #{spec.name} #{spec.version} (default: #{default_spec.version})\n"
+      end
+      Bundler.ui.warn message.chomp
     end
 
     def lock
