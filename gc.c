@@ -2460,7 +2460,7 @@ object_id(VALUE obj)
         break;
     }
 
-    if (UNLIKELY(rb_gc_multi_ractor_p() && rb_ractor_shareable_p(obj))) {
+    if (UNLIKELY(rb_gc_multi_ractor_p() && RB_OBJ_SHAREABLE_P(obj))) {
         unsigned int lock_lev = RB_GC_VM_LOCK();
         VALUE id = object_id0(obj);
         RB_GC_VM_UNLOCK(lock_lev);

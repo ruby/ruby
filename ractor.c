@@ -1976,25 +1976,8 @@ make_shareable_check_shareable(VALUE obj)
         }
     }
 
-    switch (TYPE(obj)) {
-      case T_IMEMO:
+    if (RB_TYPE_P(obj, T_IMEMO)) {
         return traverse_skip;
-      case T_OBJECT:
-        {
-            // If a T_OBJECT is shared and has no free capacity, we can't safely store the object_id inline,
-            // as it would require to move the object content into an external buffer.
-            // This is only a problem for T_OBJECT, given other types have external fields and can do RCU.
-            // To avoid this issue, we proactively create the object_id.
-            shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-            attr_index_t capacity = RSHAPE_CAPACITY(shape_id);
-            attr_index_t free_capacity = capacity - RSHAPE_LEN(shape_id);
-            if (!rb_shape_has_object_id(shape_id) && capacity && !free_capacity) {
-                rb_obj_id(obj);
-            }
-        }
-        break;
-      default:
-        break;
     }
 
     return make_shareable_check_shareable_freeze(obj, traverse_cont);
@@ -2008,6 +1991,16 @@ mark_shareable(VALUE obj)
     }
     else if (RB_BUILTIN_TYPE(obj) == T_ARRAY) {
         rb_ary_cancel_sharing(obj);
+    }
+    else if (RB_BUILTIN_TYPE(obj) == T_OBJECT) {
+        // Adding the object_id once obj is shared would either move its fields
+        // out of a full slot or st_insert into its complex table, both under
+        // lock-free readers on other Ractors. Create it while obj is still local.
+        shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+        if (!rb_shape_has_object_id(shape_id) &&
+            (rb_shape_complex_p(shape_id) || RSHAPE_LEN(shape_id) >= RSHAPE_CAPACITY(shape_id))) {
+            rb_obj_id(obj);
+        }
     }
 
     rb_obj_set_shareable_no_assert(obj);
@@ -2055,6 +2048,12 @@ static enum obj_traverse_iterator_result
 shareable_p_enter(VALUE obj)
 {
     if (RB_OBJ_SHAREABLE_P(obj)) {
+        return traverse_skip;
+    }
+    else if (imemo_type_p(obj, imemo_fields)) {
+        // Reached as a T_DATA's fields_obj when obj_traverse_reachable replays its GC
+        // marking. The fields were already visited via rb_ivar_foreach, and
+        // rb_obj_set_shareable_no_assert marks this imemo shareable with its owner.
         return traverse_skip;
     }
     else if (RB_TYPE_P(obj, T_CLASS)  ||
