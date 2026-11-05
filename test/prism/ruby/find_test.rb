@@ -7,16 +7,19 @@ require_relative "../test_helper"
 require_relative "find_fixtures"
 
 # On CRuby, Ruby::Prism.find looks up the node ids that the running Ruby's own prism
-# assigned in a parse by this prism. Node ids are only stable across parses by
-# the same version of prism, so these tests only run when the versions match.
+# assigned in a parse by this prism. The ids only line up when both prisms
+# number nodes the same way, which a shared version number does not guarantee
+# while prism is in development, so these tests only run when the ids of the
+# fixture methods agree.
 if defined?(RubyVM::InstructionSequence)
-  begin
-    require "ruby/prism"
-  rescue LoadError
-    return
+  defs = Ruby::Prism.parse_file(File.expand_path("find_fixtures.rb", __dir__)).value.breadth_first_search_all { |node| node.is_a?(Ruby::Prism::DefNode) }
+
+  node_ids_match = Ruby::Prism::FindFixtures::Methods.instance_methods(false).all? do |name|
+    node_id = RubyVM::InstructionSequence.of(Ruby::Prism::FindFixtures::Methods.instance_method(name)).to_a[4][:node_id]
+    defs.any? { |node| node.name == name && node.node_id == node_id }
   end
 
-  return if Ruby::Prism::VERSION != Ruby::Prism::VERSION
+  return unless node_ids_match
 end
 
 module Ruby::Prism
