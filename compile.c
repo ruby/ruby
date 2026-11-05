@@ -1785,7 +1785,7 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
                VALUE name, const rb_iseq_t *parent, enum rb_iseq_type type, int line_no)
 {
     rb_iseq_t *ret_iseq;
-    VALUE ast_value = rb_ruby_ast_new(node);
+    VALUE ast_value = rb_ruby_ast_new((const rb_node_t *)node);
 
     // The child AST wrapper does not carry the source hash, so copy it from
     // the enclosing iseq before compiling, for grandchildren to inherit it.
@@ -10575,7 +10575,7 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
     scope_node.body = (rb_node_t *)mandatory_node(iseq, node);
     scope_node.parameters = &args_node;
 
-    VALUE ast_value = rb_ruby_ast_new((NODE *)&scope_node);
+    VALUE ast_value = rb_ruby_ast_new(&scope_node.base);
 
     const rb_iseq_t *mandatory_only_iseq =
       rb_iseq_new_with_opt(ast_value, rb_iseq_base_label(iseq),
