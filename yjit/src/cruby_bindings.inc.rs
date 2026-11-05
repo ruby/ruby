@@ -1093,7 +1093,6 @@ pub type rb_iseq_param_keyword_struct =
     rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword;
 extern "C" {
     pub fn ruby_xfree(ptr: *mut ::std::os::raw::c_void);
-    pub fn rb_class_attached_object(klass: VALUE) -> VALUE;
     pub fn rb_singleton_class(obj: VALUE) -> VALUE;
     pub fn rb_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
     pub fn rb_method_basic_definition_p(klass: VALUE, mid: ID) -> ::std::os::raw::c_int;
@@ -1291,6 +1290,7 @@ extern "C" {
     pub fn rb_yjit_sendish_sp_pops(ci: *const rb_callinfo) -> usize;
     pub fn rb_yjit_invokeblock_sp_pops(ci: *const rb_callinfo) -> usize;
     pub fn rb_yjit_cme_ractor_serial(cme: *const rb_callable_method_entry_t) -> rb_serial_t;
+    pub fn rb_yjit_attached_object_is(klass: VALUE, object: VALUE) -> bool;
     pub fn rb_yjit_set_exception_return(
         cfp: *mut rb_control_frame_t,
         leave_exit: *mut ::std::os::raw::c_void,
