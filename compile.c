@@ -2431,6 +2431,8 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 
             bool optimized_forward = (NODE_ARG_FORWARDING_P(args) && RB_NODE_LIST_EMPTY_P(&args->requireds) && RB_NODE_LIST_EMPTY_P(&args->optionals));
 
+            bool forwarding = NODE_ARG_FORWARDING_P(args) && !optimized_forward;
+
             if (optimized_forward) {
                 rest = 0;
                 block = 0;
@@ -2471,11 +2473,11 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
                 arg_size += i;
             }
 
-            if (rest) {
-                EXPECT_NODE("iseq_set_arguments/rest", rest, RB_REST_PARAMETER_NODE, COMPILE_NG);
+            if (rest || forwarding) {
+                if (rest) EXPECT_NODE("iseq_set_arguments/rest", rest, RB_REST_PARAMETER_NODE, COMPILE_NG);
                 body->param.rest_start = arg_size++;
                 body->param.flags.has_rest = TRUE;
-                if (RB_NODE_REST_PARAMETER(rest)->name == '*') body->param.flags.anon_rest = TRUE;
+                if (forwarding || RB_NODE_REST_PARAMETER(rest)->name == '*') body->param.flags.anon_rest = TRUE;
                 RUBY_ASSERT(body->param.rest_start != -1);
             }
 
@@ -2493,7 +2495,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             if (RB_NODE_LIST_LEN(&args->keywords)) {
                 arg_size = iseq_set_arguments_keywords(iseq, optargs, args, arg_size);
             }
-            else if (args->keyword_rest && nd_type_p(args->keyword_rest, RB_KEYWORD_REST_PARAMETER_NODE) && !optimized_forward) {
+            else if (forwarding || (args->keyword_rest && nd_type_p(args->keyword_rest, RB_KEYWORD_REST_PARAMETER_NODE) && !optimized_forward)) {
                 ID kw_id = ISEQ_BODY(iseq)->local_table[arg_size];
                 struct rb_iseq_param_keyword *keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
                 keyword->rest_start = arg_size++;
@@ -2511,7 +2513,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             if (block && block->name == idNil) {
                 body->param.flags.accepts_no_block = TRUE;
             }
-            else if (block) {
+            else if (block || forwarding) {
                 body->param.block_start = arg_size++;
                 body->param.flags.has_block = TRUE;
                 iseq_set_use_block(iseq);
@@ -5607,7 +5609,20 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *line_node, co
 
     if (popped) {
         for (size_t i = 0; i < list->size; i++) {
-            NO_CHECK(COMPILE_(ret, "array element", list->nodes[i], popped));
+            node = list->nodes[i];
+            if (nd_type_p(node, RB_SPLAT_NODE)) {
+                if (RB_NODE_SPLAT(node)->expression) {
+                    NO_CHECK(COMPILE(ret, "array splat", RB_NODE_SPLAT(node)->expression));
+                }
+                else {
+                    NO_CHECK(compile_lvar(iseq, ret, node, '*'));
+                }
+                ADD_INSN1(ret, node, splatarray, Qfalse);
+                ADD_INSN(ret, node, pop);
+            }
+            else {
+                NO_CHECK(COMPILE_POPPED(ret, "array element", node));
+            }
         }
         return 1;
     }
@@ -7289,8 +7304,23 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_arguments_node_t 
             *kwnode_ptr = (rb_keyword_hash_node_t *)node;
             break;
           case RB_FORWARDING_ARGUMENTS_NODE:
-            // forwarding (`...`) is processed by setup_args
-            // then do nothing here
+            if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) break;
+            if (stack_len) {
+                ADD_INSN1(ret, node, pushtoarray, INT2FIX(stack_len));
+                stack_len = 0;
+            }
+            NO_CHECK(compile_lvar(iseq, ret, node, '*'));
+            if (splatted) {
+                ADD_INSN(ret, node, concattoarray);
+            }
+            else {
+                ADD_INSN1(ret, node, splatarray, Qtrue);
+                len++;
+            }
+            NO_CHECK(compile_lvar(iseq, ret, node, idPow));
+            NO_CHECK(compile_lvar(iseq, ret, node, '&'));
+            len++;
+            if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_SPLAT_MUT | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG;
             break;
           default:
             NO_CHECK(COMPILE_(ret, "array element", node, FALSE));
@@ -7513,7 +7543,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_node_t *
            const rb_block_argument_node_t *block, unsigned int *flag, struct rb_callinfo_kwarg **keywords)
 {
     VALUE ret;
-    unsigned int dup_rest = SPLATARRAY_TRUE, initial_dup_rest, forwarding;
+    unsigned int dup_rest = SPLATARRAY_TRUE, initial_dup_rest, forwarding = 0;
     rb_node_list2_t *list = argn ? &argn->arguments : NULL;
 
     if (argn) {

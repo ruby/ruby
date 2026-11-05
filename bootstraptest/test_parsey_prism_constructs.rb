@@ -370,3 +370,35 @@ assert_equal 'true', %q{
     [{1 => :a, 2 => :b}, {a: 2}, {:"" => 2}, {"key" => 2}, {1 => :b}, {"parsey-literals.rb" => :source, 1 => :line}]
 }
 
+# https://yui-knk.hatenablog.com/entry/2026/02/11/215300
+assert_equal 'true', %q{
+  def parsey_target(*args, **keywords, &block); [args, keywords, block.call]; end
+  RubyVM::InstructionSequence.compile_parsey("def parsey_method(*, **, &); parsey_target(*, **, &); end").eval
+  parsey_method(true, key: false) { nil } == [[true], {key: false}, nil]
+}
+assert_equal 'true', %q{
+  RubyVM::InstructionSequence.compile_parsey("def parsey_method(*, **); [[false, *, true], {before: true, **}, [**]]; end").eval
+  parsey_method(nil, key: false) == [[false, nil, true], {before: true, key: false}, [{key: false}]]
+}
+assert_equal 'true', %q{
+  def parsey_target(*args, **keywords, &block); [args, keywords, block.call]; end
+  RubyVM::InstructionSequence.compile_parsey("def parsey_method(prefix, ...); parsey_target(prefix, ...); end").eval
+  parsey_method(true, nil, key: false) { :block } == [[true, nil], {key: false}, :block]
+}
+
+assert_equal '[:coerced]', %q{
+  $parsey_events = []
+  $parsey_values = Object.new
+  def $parsey_values.to_a; $parsey_events << :coerced; []; end
+  RubyVM::InstructionSequence.compile_parsey("[*$parsey_values]; nil").eval
+  $parsey_events.inspect
+}
+assert_equal 'TypeError', %q{
+  $parsey_values = Object.new
+  def $parsey_values.to_a; false; end
+  begin
+    RubyVM::InstructionSequence.compile_parsey("[*$parsey_values]; nil").eval
+  rescue TypeError => error
+    error.class.name
+  end
+}
