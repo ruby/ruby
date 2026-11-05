@@ -295,48 +295,7 @@ free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
     }
 }
 
-/*
- * Free the memory associated to rb_node.
- * Memory allocated to rb_node is freed when node buffer
- * is freed then do NOT free by this function.
- */
-static void
-free_rb_ast_value(rb_ast_t *ast, void *ctx, rb_node_t *node)
-{
-    switch (node->type) {
-      case RB_PROGRAM_NODE:
-        {
-            rb_program_node_t *n = (rb_program_node_t *)node;
-            break;
-        }
-      case RB_STATEMENTS_NODE:
-        {
-            rb_statements_node_t *n = (rb_statements_node_t *)node;
-            rb_node_list_free(&n->body);
-            break;
-        }
-      case RB_STRING_NODE:
-        {
-            rb_string_node_t *n = (rb_string_node_t *)node;
-            parser_string_free(ast, n->unescaped);
-            break;
-        }
-      case RB_SYMBOL_NODE:
-        {
-            rb_symbol_node_t *n = (rb_symbol_node_t *)node;
-            parser_string_free(ast, n->unescaped);
-            break;
-        }
-      case RB_ARRAY_NODE:
-        {
-            rb_array_node_t *n = (rb_array_node_t *)node;
-            rb_node_list_free(&n->elements);
-            break;
-        }
-      default:
-        break;
-    }
-}
+static void free_rb_ast_value(rb_ast_t *ast, void *ctx, rb_node_t *node);
 
 static void
 rb_node_buffer_free(rb_ast_t *ast, node_buffer_t *nb)

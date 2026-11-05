@@ -14,3 +14,28 @@ rb_node_type_to_str(rb_node_type_t node_type)
     }
     return "";
 }
+
+/* Children and local tables belong to the AST arena; free only owned payloads. */
+static void
+free_rb_ast_value(rb_ast_t *ast, void *ctx, rb_node_t *node)
+{
+    switch (node->type) {
+<%- nodes.each do |node| -%>
+<%- fields = node.fields.select { |field| field.is_a?(Prism::Template::NodeListField) || field.is_a?(Prism::Template::StringField) } -%>
+<%- next if fields.empty? -%>
+      case <%= node.type %>: {
+        rb_<%= node.human %>_t *n = (rb_<%= node.human %>_t *)node;
+<%- fields.each do |field| -%>
+<%- if field.is_a?(Prism::Template::NodeListField) -%>
+        rb_node_list_free(&n-><%= field.name %>);
+<%- else -%>
+        parser_string_free(ast, n-><%= field.name %>);
+<%- end -%>
+<%- end -%>
+        break;
+      }
+<%- end -%>
+      default:
+        break;
+    }
+}
