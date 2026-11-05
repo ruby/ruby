@@ -226,6 +226,12 @@ VALUE rb_io_blocking_region(struct rb_io *io, rb_blocking_function_t *function, 
     return rb_io_blocking_region_wait(io, function, argument, 0);
 }
 
+VALUE
+rb_io_blocking_region_release(struct rb_io *io, rb_blocking_function_t *function, void *argument, void (*release)(VALUE result, void *argument))
+{
+    return rb_thread_io_blocking_call_release(io, function, argument, 0, release);
+}
+
 struct argf {
     VALUE filename, current_file;
     long last_lineno;		/* $. */

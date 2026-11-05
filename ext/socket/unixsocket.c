@@ -311,6 +311,15 @@ recvmsg_blocking(void *data)
     return rsock_recvmsg(arg->fd, &arg->msg, flags);
 }
 
+static void
+recvmsg_release(VALUE result, void *data)
+{
+#if FD_PASSING_BY_MSG_CONTROL
+    struct iomsg_arg *arg = data;
+    if ((int)result >= 0) rsock_discard_cmsg_resource(&arg->msg, 0);
+#endif
+}
+
 /*
  * call-seq:
  *   unixsocket.recv_io([klass [, mode]]) => io
@@ -393,7 +402,7 @@ retry:
 #endif
 
     arg.fd = fptr->fd;
-    while ((int)rb_io_blocking_region(fptr, recvmsg_blocking, &arg) == -1) {
+    while ((int)rb_io_blocking_region_release(fptr, recvmsg_blocking, &arg, recvmsg_release) == -1) {
         int e = errno;
         if (e == EMSGSIZE && !(gc_reason & GC_REASON_EMSGSIZE)) {
             /* FreeBSD gets here when we're out of FDs */
