@@ -962,20 +962,22 @@ impl Assembler {
         /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
         fn emit_conditional_jump<const CONDITION: u8>(asm: &Assembler, cb: &mut CodeBlock, target: Target) {
-            fn generate_branch<const CONDITION: u8>(cb: &mut CodeBlock, src_addr: i64, dst_addr: i64) {
-                let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
+            fn generate_branch<const CONDITION: u8>(cb: &mut CodeBlock, dst_ptr: CodePtr) {
+                let dst_offset = dst_ptr.as_offset();
+                let src_offset = cb.get_write_ptr().as_offset();
+                let num_insns = if bcond_offset_fits_bits((dst_offset - src_offset) / 4) {
                     // If the jump offset fits into the conditional jump as
                     // an immediate value and it's properly aligned, then we
                     // can use the b.cond instruction directly. We're safe
                     // to use as i32 here since we already checked that it
                     // fits.
-                    let bytes = (dst_addr - src_addr) as i32;
+                    let bytes = (dst_offset - src_offset) as i32;
                     bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
 
                     // Here we're going to return 1 because we've only
                     // written out 1 instruction.
                     1
-                } else if b_offset_fits_bits((dst_addr - (src_addr + 4)) / 4) { // + 4 for bcond
+                } else if b_offset_fits_bits((dst_offset - (src_offset + 4)) / 4) { // + 4 for bcond
                     // If the jump offset fits into the unconditional jump as
                     // an immediate value, we can use inverse b.cond + b.
                     //
@@ -983,20 +985,21 @@ impl Assembler {
                     // that if it doesn't match it will skip over the
                     // instruction used for branching.
                     bcond(cb, Condition::inverse(CONDITION), 2.into());
-                    b(cb, InstructionOffset::from_bytes((dst_addr - (src_addr + 4)) as i32)); // + 4 for bcond
+                    b(cb, InstructionOffset::from_bytes((dst_offset - (src_offset + 4)) as i32)); // + 4 for bcond
 
                     // We've only written out 2 instructions.
                     2
                 } else {
                     // Otherwise, we need to load the address into a
                     // register and use the branch register instruction.
-                    let load_insns: i32 = emit_load_size(dst_addr as u64).into();
+                    let dst_addr = dst_ptr.raw_ptr(cb).addr().as_u64();
+                    let load_insns: i32 = emit_load_size(dst_addr).into();
 
                     // We're going to write out the inverse condition so
                     // that if it doesn't match it will skip over the
                     // instructions used for branching.
                     bcond(cb, Condition::inverse(CONDITION), (load_insns + 2).into());
-                    emit_load_value(cb, Assembler::EMIT_OPND, dst_addr as u64);
+                    emit_load_value(cb, Assembler::EMIT_OPND, dst_addr);
                     br(cb, Assembler::EMIT_OPND);
 
                     // Here we'll return the number of instructions that it
@@ -1014,9 +1017,7 @@ impl Assembler {
 
             let label = match target {
                 Target::CodePtr(dst_ptr) => {
-                    let dst_addr = dst_ptr.as_offset();
-                    let src_addr = cb.get_write_ptr().as_offset();
-                    generate_branch::<CONDITION>(cb, src_addr, dst_addr);
+                    generate_branch::<CONDITION>(cb, dst_ptr);
                     return;
                 },
                 Target::Label(l) => l,
@@ -2326,6 +2327,25 @@ mod tests {
         out.extend(loading.map(describe));
         out.extend(label(end_addr).map(|label| format!("{label}:")));
         out.join("\n")
+    }
+
+    #[test]
+    fn test_emit_je_out_of_b_range() {
+        let (mut asm, _) = setup_asm();
+        let mut cb = CodeBlock::new_dummy_sized(512 * 1024 * 1024);
+
+        let target = cb.get_write_ptr().add_bytes(1 << 28);
+        asm.push_insn(Insn::Je(Target::CodePtr(target)));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        // A b can't reach 256MiB away, so the absolute address must be loaded for br.
+        assert_disasm_snapshot!(stable_disasm(&cb, target), @"
+        b.ne L0
+        mov x16, target // abridged
+        br x16
+        L0:
+        nop sled
+        ");
     }
 
     #[test]
