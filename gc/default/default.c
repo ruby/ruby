@@ -8586,12 +8586,19 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
      * as a shref so its owner's local GC roots it. A local parent is left to the
      * generational and incremental barriers below. */
     if (RB_UNLIKELY(RB_FL_TEST_RAW(a, RUBY_FL_SHAREABLE)) &&
-            !RB_FL_TEST_RAW(b, RUBY_FL_SHAREABLE) &&
-            gc_shref_needs_bit_p(a, b)) {
-        struct heap_page *bpage = GET_HEAP_PAGE(b);
-        if (!_MARKED_IN_BITMAP(bpage->shref_bits, bpage, b)) {
-            _MARK_IN_BITMAP(bpage->shref_bits, bpage, b);
-            bpage->flags.has_shref_objects = TRUE;
+            !RB_FL_TEST_RAW(b, RUBY_FL_SHAREABLE)) {
+        if (gc_shref_needs_bit_p(a, b)) {
+            struct heap_page *bpage = GET_HEAP_PAGE(b);
+            if (!_MARKED_IN_BITMAP(bpage->shref_bits, bpage, b)) {
+                _MARK_IN_BITMAP(bpage->shref_bits, bpage, b);
+                bpage->flags.has_shref_objects = TRUE;
+            }
+        }
+        else {
+            /* The barriers below skip foreign objects, which would leave this edge unrecorded. */
+            GC_ASSERT(!gc_foreign_object_p(objspace, b),
+                      "rb_gc_writebarrier: local edge %s -> %s is foreign to the writer",
+                      rb_obj_info(a), rb_obj_info(b));
         }
     }
 
@@ -9642,7 +9649,7 @@ rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj)
  * Whether the shareable -> unshareable edge (parent -> child) carries the record the write
  * barrier owes it. This is either a shref bit on the child, or, for a parent in the child's
  * objspace, a young parent (traversed by every local GC), an old child (uncollectible) or
- * a remembered parent. */
+ * a remembered parent. Edges local to another objspace are left to their owner. */
 bool
 rb_gc_impl_shref_recorded_p(void *objspace_ptr, VALUE parent, VALUE child)
 {
@@ -9651,6 +9658,9 @@ rb_gc_impl_shref_recorded_p(void *objspace_ptr, VALUE parent, VALUE child)
     if (MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(child), child)) return true;
 
     if (GET_HEAP_OBJSPACE(parent) == GET_HEAP_OBJSPACE(child)) {
+        /* Another objspace's generational bits are in flux while its owner collects
+         * (a minor drains the rememberset), so only its owner can check them. */
+        if (GET_HEAP_OBJSPACE(parent) != objspace) return true;
         if (!RVALUE_OLD_P(objspace, parent)) return true;
         if (RVALUE_OLD_P(objspace, child)) return true;
         if (RVALUE_REMEMBERED(objspace, parent)) return true;

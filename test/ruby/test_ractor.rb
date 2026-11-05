@@ -1734,9 +1734,8 @@ class TestRactor < Test::Unit::TestCase
       klass = Class.new
       store = ->(n) { n.times { klass.instance_variable_set(:@x, Array.new(500) { |j| "payload #{j}" }) } }
 
-      # The shareable parent of these edges is the class's fields imemo. Let it age into
-      # the old generation first, that's what lets the barrier record the edge in the
-      # rememberset rather than in a shref bit.
+      # The shareable parent of these edges is the class's fields imemo. Age it into the
+      # old generation first, so the edges go through the rememberset.
       store.call(50)
       5.times { GC.start(full_mark: true, immediate_sweep: true, global: false) }
       base = GC.stat(:heap_live_slots)

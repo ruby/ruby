@@ -6982,9 +6982,9 @@ check_shareable_i(const VALUE child, void *ptr)
     if (!rb_gc_obj_shareable_p(child)) {
         /* A shareable object may reference an unshareable one only if the write barrier
          * recorded the edge, keeping the child alive past its owner's local GC: in the
-         * child's shref bit, or -- for a parent in the child's own objspace -- in the
-         * rememberset. Root-like exceptions (Ractor private fields, cref, JIT) are
-         * hidden while checking_shareable is set. */
+         * child's shref bit, or -- for a parent in the child's own objspace -- by
+         * traversal while it is young and the rememberset once old. Root-like exceptions
+         * (Ractor private fields, cref, JIT) are hidden while checking_shareable is set. */
         if (rb_gc_impl_shref_recorded_p(rb_gc_get_objspace(), data->parent, child)) {
             return;
         }
