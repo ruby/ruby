@@ -5214,94 +5214,19 @@ static int
 compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
                          LABEL *then_label, LABEL *else_label)
 {
-    int ok;
-    DECL_ANCHOR(ignore);
+    DECL_ANCHOR(cond_seq);
+    INIT_ANCHOR(cond_seq);
 
-  again:
-    switch (nd_type(cond)) {
-      case NODE_AND:
-        CHECK(ok = compile_logical(iseq, ret, RNODE_AND(cond)->nd_1st, NULL, else_label));
-        cond = RNODE_AND(cond)->nd_2nd;
-        if (ok == COMPILE_SINGLE) {
-            ADD_INSNL(ret, cond, jump, else_label);
-            INIT_ANCHOR(ignore);
-            ret = ignore;
-            then_label = NEW_LABEL(nd_line(cond));
-        }
-        goto again;
-      case NODE_OR:
-        CHECK(ok = compile_logical(iseq, ret, RNODE_OR(cond)->nd_1st, then_label, NULL));
-        cond = RNODE_OR(cond)->nd_2nd;
-        if (ok == COMPILE_SINGLE) {
-            ADD_INSNL(ret, cond, jump, then_label);
-            INIT_ANCHOR(ignore);
-            ret = ignore;
-            else_label = NEW_LABEL(nd_line(cond));
-        }
-        goto again;
-      case NODE_SYM:
-      case NODE_LINE:
-      case NODE_FILE:
-      case NODE_ENCODING:
-      case NODE_INTEGER:    /* NODE_INTEGER is always true */
-      case NODE_FLOAT:      /* NODE_FLOAT is always true */
-      case NODE_RATIONAL:   /* NODE_RATIONAL is always true */
-      case NODE_IMAGINARY:  /* NODE_IMAGINARY is always true */
-      case NODE_TRUE:
-      case NODE_STR:
-      case NODE_REGX:
-      case NODE_ZLIST:
-      case NODE_LAMBDA:
-        /* printf("useless condition eliminate (%s)\n",  ruby_node_name(nd_type(cond))); */
-        ADD_INSNL(ret, cond, jump, then_label);
-        return COMPILE_OK;
-      case NODE_FALSE:
-      case NODE_NIL:
-        /* printf("useless condition eliminate (%s)\n", ruby_node_name(nd_type(cond))); */
-        ADD_INSNL(ret, cond, jump, else_label);
-        return COMPILE_OK;
-      case NODE_LIST:
-      case NODE_ARGSCAT:
-      case NODE_DREGX:
-      case NODE_DSTR:
-        CHECK(COMPILE_POPPED(ret, "branch condition", cond));
-        ADD_INSNL(ret, cond, jump, then_label);
-        return COMPILE_OK;
-      case NODE_FLIP2:
-        CHECK(compile_flip_flop(iseq, ret, cond, TRUE, then_label, else_label));
-        return COMPILE_OK;
-      case NODE_FLIP3:
-        CHECK(compile_flip_flop(iseq, ret, cond, FALSE, then_label, else_label));
-        return COMPILE_OK;
-      case NODE_DEFINED:
-        CHECK(compile_defined_expr(iseq, ret, cond, Qfalse, ret == ignore));
-        break;
-      default:
-        {
-            DECL_ANCHOR(cond_seq);
-            INIT_ANCHOR(cond_seq);
+    CHECK(COMPILE(cond_seq, "branch condition", cond));
 
-            CHECK(COMPILE(cond_seq, "branch condition", cond));
-
-            if (LIST_INSN_SIZE_ONE(cond_seq)) {
-                INSN *insn = (INSN *)ELEM_FIRST_INSN(FIRST_ELEMENT(cond_seq));
-                if (insn->insn_id == BIN(putobject)) {
-                    if (RTEST(insn->operands[0])) {
-                        ADD_INSNL(ret, cond, jump, then_label);
-                        // maybe unreachable
-                        return COMPILE_OK;
-                    }
-                    else {
-                        ADD_INSNL(ret, cond, jump, else_label);
-                        return COMPILE_OK;
-                    }
-                }
-            }
-            ADD_SEQ(ret, cond_seq);
+    if (LIST_INSN_SIZE_ONE(cond_seq)) {
+        INSN *insn = (INSN *)ELEM_FIRST_INSN(FIRST_ELEMENT(cond_seq));
+        if (insn->insn_id == BIN(putobject)) {
+            ADD_INSNL(ret, cond, jump, RTEST(insn->operands[0]) ? then_label : else_label);
+            return COMPILE_OK;
         }
-        break;
     }
-
+    ADD_SEQ(ret, cond_seq);
     ADD_INSNL(ret, cond, branchunless, else_label);
     ADD_INSNL(ret, cond, jump, then_label);
     return COMPILE_OK;
@@ -11318,7 +11243,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             }
             CHECK(COMPILE_(ret, "statements body", body->nodes[body->size - 1], popped));
         }
-        else {
+        else if (!popped) {
             ADD_INSN(ret, node, putnil);
         }
         break;
@@ -11341,6 +11266,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(compile_if(iseq, ret, node, popped, type));
         break;
       }
+      case RB_PARENTHESES_NODE:
+        CHECK(COMPILE_(ret, "parentheses", RB_NODE_PARENTHESES(node)->body, popped));
+        break;
       case RB_ELSE_NODE: {
         const rb_else_node_t *cast = (const rb_else_node_t *) node;
         CHECK(COMPILE_(ret, "else", (const NODE *) cast->statements, popped));

@@ -1312,6 +1312,7 @@ static rb_statements_node_t *rb_new_node_statements_new(struct parser_params *p,
 static rb_if_node_t *rb_new_node_if_new(struct parser_params *p, rb_node_t *nd_cond, rb_statements_node_t *nd_body, rb_node_t *nd_else, const YYLTYPE *loc, const YYLTYPE *if_keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *end_keyword_loc);
 static rb_unless_node_t *rb_new_node_unless_new(struct parser_params *p, rb_node_t *nd_cond, rb_statements_node_t *nd_body, rb_else_node_t *nd_else, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *end_keyword_loc);
 static rb_else_node_t *rb_new_node_else_new(struct parser_params *p, rb_statements_node_t *nd_body, const YYLTYPE *loc, const YYLTYPE *else_keyword_loc, const YYLTYPE *end_keyword_loc);
+static rb_parentheses_node_t *rb_new_node_parentheses_new(struct parser_params *p, rb_node_t *body, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 
 static rb_return_node_t *rb_new_node_return_new(struct parser_params *p, rb_arguments_node_t *nd_arguments, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 
@@ -3561,13 +3562,13 @@ stmt		: keyword_alias[kw] fitem[new] {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fit
                     }
                 | stmt[body] modifier_if[mod] expr_value[cond]
                     {
-                        $$ = new_if2(p, $cond, remove_begin($body), 0, &@$, &@mod, &NULL_LOC, &NULL_LOC);
+                        $$ = new_if2(p, $cond, new_statements(p, (rb_node_t *)$body), 0, &@$, &@mod, &NULL_LOC, &NULL_LOC);
                         fixpos($$, $cond);
                     /*% ripper: if_mod!($:cond, $:body) %*/
                     }
                 | stmt[body] modifier_unless[mod] expr_value[cond]
                     {
-                        $$ = new_unless2(p, $cond, remove_begin($body), 0, &@$, &@mod, &NULL_LOC, &NULL_LOC);
+                        $$ = new_unless2(p, $cond, new_statements(p, (rb_node_t *)$body), 0, &@$, &@mod, &NULL_LOC, &NULL_LOC);
                         fixpos($$, $cond);
                     /*% ripper: unless_mod!($:cond, $:body) %*/
                     }
@@ -4630,14 +4631,12 @@ primary		: inline_primary
                 }
             | tLPAREN_ARG compstmt(stmts)[body] {SET_LEX_STATE(EXPR_ENDARG);} ')'
                 {
-                    if (nd_type_p($body, NODE_SELF)) RNODE_SELF($body)->nd_state = 0;
-                    $$ = $body;
+                    $$ = (rb_node_t *)rb_new_node_parentheses_new(p, (rb_node_t *)$body, &@$, &@1, &@4);
                 /*% ripper: paren!($:body) %*/
                 }
             | tLPAREN compstmt(stmts)[body] ')'
                 {
-                    if (nd_type_p($body, NODE_SELF)) RNODE_SELF($body)->nd_state = 0;
-                    $$ = NEW_BLOCK($body, &@$);
+                    $$ = (rb_node_t *)rb_new_node_parentheses_new(p, (rb_node_t *)$body, &@$, &@1, &@3);
                 /*% ripper: paren!($:body) %*/
                 }
             | primary_value[recv] tCOLON2[op] tCONSTANT[name]
@@ -12964,6 +12963,19 @@ rb_new_node_else_new(struct parser_params *p, rb_statements_node_t *nd_body, con
 
 // static pm_nil_node_t *
 // pm_nil_node_create(pm_parser_t *parser, const pm_token_t *token)
+static rb_parentheses_node_t *
+rb_new_node_parentheses_new(struct parser_params *p, rb_node_t *body, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
+{
+    rb_parentheses_node_t *n = RB_NEW_NODE_NEWNODE(RB_PARENTHESES_NODE, rb_parentheses_node_t, loc);
+    n->body = body;
+    n->opening_loc = *opening_loc;
+    n->closing_loc = *closing_loc;
+    if (body && RB_NODE_TYPE_P(body, RB_STATEMENTS_NODE) && RB_NODE_STATEMENTS(body)->body.size > 1) {
+        n->base.flags |= RB_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS;
+    }
+    return n;
+}
+
 static rb_nil_node_t *
 rb_new_node_nil_new(struct parser_params *p, const YYLTYPE *loc)
 {
