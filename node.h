@@ -100,6 +100,30 @@ enum node_type rb_node_get_type(const NODE *n);
 
 RUBY_SYMBOL_EXPORT_END
 
+/* Keep the source tree intact while selecting the value inspected by defined?. */
+static inline const rb_node_t *
+rb_node_defined_value(const rb_defined_node_t *node)
+{
+    const rb_node_t *value = node->value;
+    while (value) {
+        if (value->type == RB_PARENTHESES_NODE) {
+            value = RB_NODE_PARENTHESES(value)->body;
+        }
+        else if (value->type == RB_BEGIN_NODE && !RB_NODE_BEGIN(value)->rescue_clause && !RB_NODE_BEGIN(value)->ensure_clause) {
+            value = (const rb_node_t *)RB_NODE_BEGIN(value)->statements;
+        }
+        else if (value->type == RB_STATEMENTS_NODE) {
+            const rb_node_list2_t *body = &RB_NODE_STATEMENTS(value)->body;
+            if (body->size > 1) break;
+            value = body->size ? body->nodes[0] : NULL;
+        }
+        else {
+            break;
+        }
+    }
+    return value;
+}
+
 #define NODE_LSHIFT (NODE_TYPESHIFT+7)
 #define NODE_LMASK  (((SIGNED_VALUE)1<<(sizeof(VALUE)*CHAR_BIT-NODE_LSHIFT))-1)
 
