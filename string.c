@@ -2132,16 +2132,61 @@ rb_str_with_debug_created_info(VALUE str, VALUE path, int line)
 }
 
 /*
- * The documentation block below uses an include (instead of inline text)
- * because the included text has non-ASCII characters (which are not allowed in a C file).
- */
-
-/*
  *
  *  call-seq:
  *    String.new(string = ''.encode(Encoding::ASCII_8BIT) , **options) -> new_string
  *
- *  :include: doc/string/new.rdoc
+ *  Returns a new \String object containing the given +string+.
+ *
+ *  The +options+ are optional keyword options (see below).
+ *
+ *  With no argument given and keyword +encoding+ also not given,
+ *  returns an empty string with the Encoding <tt>ASCII-8BIT</tt>:
+ *
+ *    s = String.new # => ""
+ *    s.encoding     # => #<Encoding:ASCII-8BIT>
+ *
+ *  With argument +string+ given and keyword option +encoding+ not given,
+ *  returns a new string with the same encoding as +string+:
+ *
+ *    s0 = 'foo'.encode(Encoding::UTF_16)
+ *    s1 = String.new(s0)
+ *    s1.encoding # => #<Encoding:UTF-16 (dummy)>
+ *
+ *  (Unlike \String.new,
+ *  a {string literal}[rdoc-ref:syntax/literals.rdoc@String+Literals] like <tt>''</tt> or a
+ *  {here document literal}[rdoc-ref:syntax/literals.rdoc@Here+Document+Literals]
+ *  always has {script encoding}[rdoc-ref:encodings.rdoc@Script+Encoding].)
+ *
+ *  With keyword option +encoding+ given,
+ *  returns a string with the specified encoding;
+ *  the +encoding+ may be an Encoding object, an encoding name,
+ *  or an encoding name alias:
+ *
+ *    String.new(encoding: Encoding::US_ASCII).encoding        # => #<Encoding:US-ASCII>
+ *    String.new('', encoding: Encoding::US_ASCII).encoding    # => #<Encoding:US-ASCII>
+ *    String.new('foo', encoding: Encoding::US_ASCII).encoding # => #<Encoding:US-ASCII>
+ *    String.new('foo', encoding: 'US-ASCII').encoding         # => #<Encoding:US-ASCII>
+ *    String.new('foo', encoding: 'ASCII').encoding            # => #<Encoding:US-ASCII>
+ *
+ *  The given encoding need not be valid for the string's content,
+ *  and its validity is not checked:
+ *
+ *    s = String.new('こんにちは', encoding: 'ascii')
+ *    s.valid_encoding? # => false
+ *
+ *  But the given +encoding+ itself is checked:
+ *
+ *    String.new('foo', encoding: 'bar') # Raises ArgumentError.
+ *
+ *  With keyword option +capacity+ given,
+ *  the given value is advisory only,
+ *  and may or may not set the size of the internal buffer,
+ *  which may in turn affect performance:
+ *
+ *    String.new('foo', capacity: 1)    # Buffer size is at least 4 (includes terminal null byte).
+ *    String.new('foo', capacity: 4096) # Buffer size is at least 4;
+ *                                      # may be equal to, greater than, or less than 4096.
  *
  */
 
@@ -2518,7 +2563,17 @@ rb_str_strlen(VALUE str)
  *  call-seq:
  *    length -> integer
  *
- *  :include: doc/string/length.rdoc
+ *  Returns the count of characters (not bytes) in +self+:
+ *
+ *    'foo'.length        # => 3
+ *    'こんにちは'.length  # => 5
+ *
+ *  Contrast with String#bytesize:
+ *
+ *    'foo'.bytesize        # => 3
+ *    'こんにちは'.bytesize  # => 15
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  *
  */
 
@@ -2532,7 +2587,18 @@ rb_str_length(VALUE str)
  *  call-seq:
  *    bytesize -> integer
  *
- *  :include: doc/string/bytesize.rdoc
+ *  Returns the count of bytes in +self+.
+ *
+ *  Note that the byte count may be different from the character count (returned by #size):
+ *
+ *    s = 'foo'
+ *    s.bytesize # => 3
+ *    s.size     # => 3
+ *    s = 'こんにちは'
+ *    s.bytesize # => 15
+ *    s.size     # => 5
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  *
  */
 
@@ -3970,7 +4036,17 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
  *  call-seq:
  *     concat(*objects) -> string
  *
- *  :include: doc/string/concat.rdoc
+ *  Concatenates each object in +objects+ to +self+; returns +self+:
+ *
+ *    'foo'.concat('bar', 'baz') # => "foobarbaz"
+ *
+ *  For each given object +object+ that is an integer,
+ *  the value is considered a codepoint and converted to a character before concatenation:
+ *
+ *    'foo'.concat(32, 'bar', 32, 'baz') # => "foo bar baz" # Embeds spaces.
+ *    'こん'.concat(12395, 12385, 12399)  # => "こんにちは"
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 static VALUE
 rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
@@ -4310,7 +4386,25 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
  * call-seq:
  *   hash -> integer
  *
- * :include: doc/string/hash.rdoc
+ * Returns the integer hash value for +self+.
+ *
+ * Two \String objects that have identical content and compatible encodings
+ * also have the same hash value;
+ * see Object#hash and {Encodings}[rdoc-ref:encodings.rdoc]:
+ *
+ *   s = 'foo'
+ *   h = s.hash       # => -569050784
+ *   h == 'foo'.hash  # => true
+ *   h == 'food'.hash # => false
+ *   h == 'FOO'.hash  # => false
+ *
+ *   s0 = "äöü"
+ *   s1 = s0.encode(Encoding::ISO_8859_1)
+ *   s0.encoding        # => #<Encoding:UTF-8>
+ *   s1.encoding        # => #<Encoding:ISO-8859-1>
+ *   s0.hash == s1.hash # => false
+ *
+ * Related: see {Querying}[rdoc-ref:String@Querying].
  *
  */
 
@@ -4418,7 +4512,24 @@ rb_str_equal(VALUE str1, VALUE str2)
  * call-seq:
  *   eql?(object) -> true or false
  *
- * :include: doc/string/eql_p.rdoc
+ * Returns whether +self+ and +object+ have the same length and content:
+ *
+ *   s = 'foo'
+ *   s.eql?('foo')  # => true
+ *   s.eql?('food') # => false
+ *   s.eql?('FOO')  # => false
+ *
+ * Returns +false+ if the two strings' encodings are not compatible:
+ *
+ *   s0 = "äöü"                           # => "äöü"
+ *   s1 = s0.encode(Encoding::ISO_8859_1) # => "\xE4\xF6\xFC"
+ *   s0.encoding                          # => #<Encoding:UTF-8>
+ *   s1.encoding                          # => #<Encoding:ISO-8859-1>
+ *   s0.eql?(s1)                          # => false
+ *
+ * See {Encodings}[rdoc-ref:encodings.rdoc].
+ *
+ * Related: see {Querying}[rdoc-ref:String@Querying].
  *
  */
 
@@ -4698,7 +4809,44 @@ rb_strseq_index(VALUE str, VALUE sub, rb_len_t offset, int in_byte)
  *  call-seq:
  *    index(pattern, offset = 0) -> integer or nil
  *
- *  :include: doc/string/index.rdoc
+ *  Returns the integer position of the first substring that matches the given argument +pattern+,
+ *  or +nil+ if none found.
+ *
+ *  When +pattern+ is a string,
+ *  returns the index of the first matching substring in +self+:
+ *
+ *    'foo'.index('f')         # => 0
+ *    'foo'.index('o')         # => 1
+ *    'foo'.index('oo')        # => 1
+ *    'foo'.index('ooo')       # => nil
+ *    'こんにちは'.index('ち')  # => 3
+ *
+ *  When +pattern+ is a Regexp, returns the index of the first match in +self+:
+ *
+ *    'foo'.index(/o./) # => 1
+ *    'foo'.index(/.o/) # => 0
+ *
+ *  When +offset+ is non-negative, begins the search at position +offset+;
+ *  the returned index is relative to the beginning of +self+:
+ *
+ *    'bar'.index('r', 0)        # => 2
+ *    'bar'.index('r', 1)        # => 2
+ *    'bar'.index('r', 2)        # => 2
+ *    'bar'.index('r', 3)        # => nil
+ *    'bar'.index(/[r-z]/, 0)    # => 2
+ *    'こんにちは'.index('ち', 2) # => 3
+ *
+ *  With negative integer argument +offset+, selects the search position by counting backward
+ *  from the end of +self+:
+ *
+ *    'foo'.index('o', -1)  # => 2
+ *    'foo'.index('o', -2)  # => 1
+ *    'foo'.index('o', -3)  # => 1
+ *    'foo'.index('o', -4)  # => nil
+ *    'foo'.index(/o./, -2) # => 1
+ *    'foo'.index(/.o/, -2) # => 1
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  *
  */
 
@@ -4944,7 +5092,57 @@ rb_str_rindex(VALUE str, VALUE sub, rb_len_t pos)
  *  call-seq:
  *    rindex(pattern, offset = self.length) -> integer or nil
  *
- *  :include:doc/string/rindex.rdoc
+ *  Returns the integer position of the _last_ substring that matches the given argument +pattern+,
+ *  or +nil+ if none found.
+ *
+ *  When +pattern+ is a string, returns the index of the last matching substring in self:
+ *
+ *    'foo'.rindex('f')       # => 0
+ *    'foo'.rindex('o')       # => 2
+ *    'foo'.rindex('oo'       # => 1
+ *    'foo'.rindex('ooo')     # => nil
+ *    'こんにちは'.rindex('ち') # => 3
+ *
+ *  When +pattern+ is a Regexp, returns the index of the last match in self:
+ *
+ *    'foo'.rindex(/f/)   # => 0
+ *    'foo'.rindex(/o/)   # => 2
+ *    'foo'.rindex(/oo/)  # => 1
+ *    'foo'.rindex(/ooo/) # => nil
+ *
+ *  When +offset+ is non-negative, it specifies the maximum starting position in the
+ *  string to end the search:
+ *
+ *    'foo'.rindex('o', 0) # => nil
+ *    'foo'.rindex('o', 1) # => 1
+ *    'foo'.rindex('o', 2) # => 2
+ *    'foo'.rindex('o', 3) # => 2
+ *
+ *  With negative integer argument +offset+,
+ *  selects the search position by counting backward from the end of +self+:
+ *
+ *    'foo'.rindex('o', -1) # => 2
+ *    'foo'.rindex('o', -2) # => 1
+ *    'foo'.rindex('o', -3) # => nil
+ *    'foo'.rindex('o', -4) # => nil
+ *
+ *  The last match means starting at the possible last position, not
+ *  the last of longest matches:
+ *
+ *    'foo'.rindex(/o+/) # => 2
+ *    $~                 # => #<MatchData "o">
+ *
+ *  To get the last longest match, combine with negative lookbehind:
+ *
+ *    'foo'.rindex(/(?<!o)o+/) # => 1
+ *    $~                       # => #<MatchData "oo">
+ *
+ *  Or String#index with negative lookforward.
+ *
+ *    'foo'.index(/o+(?!.*o)/) # => 1
+ *    $~                       # => #<MatchData "oo">
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  *
  */
 
@@ -5471,7 +5669,58 @@ static VALUE str_succ(VALUE str);
  *  call-seq:
  *    succ -> new_str
  *
- *  :include: doc/string/succ.rdoc
+ *  Returns the successor to +self+. The successor is calculated by
+ *  incrementing characters.
+ *
+ *  The first character to be incremented is the rightmost alphanumeric:
+ *  or, if no alphanumerics, the rightmost character:
+ *
+ *    'THX1138'.succ   # => "THX1139"
+ *    '<<koala>>'.succ # => "<<koalb>>"
+ *    '***'.succ       # => '**+'
+ *    'こんにちは'.succ  # => "こんにちば"
+ *
+ *  The successor to a digit is another digit, "carrying" to the next-left
+ *  character for a "rollover" from 9 to 0, and prepending another digit
+ *  if necessary:
+ *
+ *    '00'.succ # => "01"
+ *    '09'.succ # => "10"
+ *    '99'.succ # => "100"
+ *
+ *  The successor to a letter is another letter of the same case,
+ *  carrying to the next-left character for a rollover,
+ *  and prepending another same-case letter if necessary:
+ *
+ *    'aa'.succ # => "ab"
+ *    'az'.succ # => "ba"
+ *    'zz'.succ # => "aaa"
+ *    'AA'.succ # => "AB"
+ *    'AZ'.succ # => "BA"
+ *    'ZZ'.succ # => "AAA"
+ *
+ *  The successor to a non-alphanumeric character is the next character
+ *  in the underlying character set's collating sequence,
+ *  carrying to the next-left character for a rollover,
+ *  and prepending another character if necessary:
+ *
+ *    s = 0.chr * 3   # => "\x00\x00\x00"
+ *    s.succ        # => "\x00\x00\x01"
+ *    s = 255.chr * 3 # => "\xFF\xFF\xFF"
+ *    s.succ        # => "\x01\x00\x00\x00"
+ *
+ *  Carrying can occur between and among mixtures of alphanumeric characters:
+ *
+ *    s = 'zz99zz99' # => "zz99zz99"
+ *    s.succ         # => "aaa00aa00"
+ *    s = '99zz99zz' # => "99zz99zz"
+ *    s.succ         # => "100aa00aa"
+ *
+ *  The successor to an empty +String+ is a new empty +String+:
+ *
+ *    ''.succ # => ""
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -5611,7 +5860,44 @@ str_upto_i(VALUE str, VALUE arg)
  *    upto(other_string, exclusive = false) {|string| ... } -> self
  *    upto(other_string, exclusive = false) -> new_enumerator
  *
- *  :include: doc/string/upto.rdoc
+ *  With a block given, calls the block with each +String+ value
+ *  returned by successive calls to String#succ;
+ *  the first value is +self+, the next is <tt>self.succ</tt>, and so on;
+ *  the sequence terminates when value +other_string+ is reached;
+ *  returns +self+:
+ *
+ *    a = []
+ *    'a'.upto('f') {|c| a.push(c) }
+ *    a # => ["a", "b", "c", "d", "e", "f"]
+ *
+ *    a = []
+ *    'Ж'.upto('П') {|c| a.push(c) }
+ *    a # => ["Ж", "З", "И", "Й", "К", "Л", "М", "Н", "О", "П"]
+ *
+ *    a = []
+ *    'よ'.upto('ろ') {|c| a.push(c) }
+ *    a # => ["よ", "ら", "り", "る", "れ", "ろ"]
+ *
+ *    a = []
+ *    'a8'.upto('b6') {|c| a.push(c) }
+ *    a # => ["a8", "a9", "b0", "b1", "b2", "b3", "b4", "b5", "b6"]
+ *
+ *  If argument +exclusive+ is given as a truthy object, the last value is omitted:
+ *
+ *    a = []
+ *    'a'.upto('f', true) {|c| a.push(c) }
+ *    a # => ["a", "b", "c", "d", "e"]
+ *
+ *  If +other_string+ would not be reached, does not call the block:
+ *
+ *    '25'.upto('5') {|s| fail s }
+ *    'aa'.upto('a') {|s| fail s }
+ *
+ *  With no block given, returns a new Enumerator:
+ *
+ *    'a8'.upto('b6') # => #<Enumerator: "a8":upto("b6")>
+ *
+ *  Related: see {Iterating}[rdoc-ref:String@Iterating].
  *
  */
 
@@ -5858,7 +6144,102 @@ rb_str_aref(VALUE str, VALUE indx)
  *    self[regexp, capture = 0] -> new_string or nil
  *    self[substring] -> new_string or nil
  *
- *  :include: doc/string/aref.rdoc
+ *  Returns the substring of +self+ specified by the arguments.
+ *
+ *  <b>Form <tt>self[offset]</tt></b>
+ *
+ *  With non-negative integer argument +offset+ given,
+ *  returns the 1-character substring found in self at character offset +offset+:
+ *
+ *    'hello'[0]    # => "h"
+ *    'hello'[4]    # => "o"
+ *    'hello'[5]    # => nil
+ *    'こんにちは'[4] # => "は"
+ *
+ *  With negative integer argument +offset+ given,
+ *  counts backward from the end of +self+:
+ *
+ *    'hello'[-1] # => "o"
+ *    'hello'[-5] # => "h"
+ *    'hello'[-6] # => nil
+ *
+ *  <b>Form <tt>self[offset, size]</tt></b>
+ *
+ *  With integer arguments +offset+ and +size+ given,
+ *  returns a substring of size +size+ characters (as available)
+ *  beginning at character offset specified by +offset+.
+ *
+ *  If argument +offset+ is non-negative,
+ *  the offset is +offset+:
+ *
+ *    'hello'[0, 1]  # => "h"
+ *    'hello'[0, 5]  # => "hello"
+ *    'hello'[0, 6]  # => "hello"
+ *    'hello'[2, 3]  # => "llo"
+ *    'hello'[2, 0]  # => ""
+ *    'hello'[2, -1] # => nil
+ *
+ *  If argument +offset+ is negative,
+ *  counts backward from the end of +self+:
+ *
+ *    'hello'[-1, 1] # => "o"
+ *    'hello'[-5, 5] # => "hello"
+ *    'hello'[-1, 0] # => ""
+ *    'hello'[-6, 5] # => nil
+ *
+ *  Special case: if +offset+ equals the size of +self+,
+ *  returns a new empty string:
+ *
+ *    'hello'[5, 3]  # => ""
+ *
+ *  <b>Form <tt>self[range]</tt></b>
+ *
+ *  With Range argument +range+ given,
+ *  forms substring <tt>self[range.start, range.size]</tt>:
+ *
+ *    'hello'[0..2]  # => "hel"
+ *    'hello'[0, 3]  # => "hel"
+ *
+ *    'hello'[0...2] # => "he"
+ *    'hello'[0, 2]  # => "he"
+ *
+ *    'hello'[0, 0]  # => ""
+ *    'hello'[0...0] # => ""
+ *
+ *  <b>Form <tt>self[regexp, capture = 0]</tt></b>
+ *
+ *  With Regexp argument +regexp+ given and +capture+ as zero,
+ *  searches for a matching substring in +self+;
+ *  updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
+ *
+ *    'hello'[/ell/]     # => "ell"
+ *    'hello'[/l+/]      # => "ll"
+ *    'hello'[//]        # => ""
+ *    'hello'[/nosuch/]  # => nil
+ *
+ *  With +capture+ as a positive integer +n+,
+ *  returns the +n+th matched group:
+ *
+ *    'hello'[/(h)(e)(l+)(o)/]    # => "hello"
+ *    'hello'[/(h)(e)(l+)(o)/, 1] # => "h"
+ *    $1                          # => "h"
+ *    'hello'[/(h)(e)(l+)(o)/, 2] # => "e"
+ *    $2                          # => "e"
+ *    'hello'[/(h)(e)(l+)(o)/, 3] # => "ll"
+ *    'hello'[/(h)(e)(l+)(o)/, 4] # => "o"
+ *    'hello'[/(h)(e)(l+)(o)/, 5] # => nil
+ *
+ *  <b>Form <tt>self[substring]</tt></b>
+ *
+ *  With string argument +substring+ given,
+ *  returns the matching substring of +self+, if found:
+ *
+ *    'hello'['ell']      # => "ell"
+ *    'hello'['']         # => ""
+ *    'hello'['nosuch']   # => nil
+ *    'こんにちは'['んにち'] # => "んにち"
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -6086,7 +6467,185 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *    self[regexp, capture = 0] = other_string -> new_string
  *    self[substring] = other_string -> new_string
  *
- *  :include: doc/string/aset.rdoc
+ *  Returns +self+ with all, a substring, or none of its contents replaced;
+ *  returns the argument +other_string+.
+ *
+ *  <b>Form <tt>self[index] = other_string</tt></b>
+ *
+ *  With non-negative integer argument +index+ given,
+ *  searches for the 1-character substring found in self at character offset index:
+ *
+ *    s = 'hello'
+ *    s[0] = 'foo' # => "foo"
+ *    s            # => "fooello"
+ *
+ *    s = 'hello'
+ *    s[4] = 'foo' # => "foo"
+ *    s            # => "hellfoo"
+ *
+ *    s = 'hello'
+ *    s[5] = 'foo' # => "foo"
+ *    s            # => "hellofoo"
+ *
+ *    s = 'hello'
+ *    s[6] = 'foo' # Raises IndexError: index 6 out of string.
+ *
+ *  With negative integer argument +index+ given,
+ *  counts backward from the end of +self+:
+ *
+ *    s = 'hello'
+ *    s[-1] = 'foo'  # => "foo"
+ *    s              # => "hellfoo"
+ *
+ *    s = 'hello'
+ *    s[-5] = 'foo'  # => "foo"
+ *    s              # => "fooello"
+ *
+ *    s = 'hello'
+ *    s[-6] = 'foo'  # Raises IndexError: index -6 out of string.
+ *
+ *  <b>Form <tt>self[start, length] = other_string</tt></b>
+ *
+ *  With integer arguments +start+ and +length+ given,
+ *  searches for a substring of size +length+ characters (as available)
+ *  beginning at character offset specified by +start+.
+ *
+ *  If argument +start+ is non-negative,
+ *  the offset is +start+:
+ *
+ *    s = 'hello'
+ *    s[0, 1] = 'foo'  # => "foo"
+ *    s                # => "fooello"
+ *
+ *    s = 'hello'
+ *    s[0, 5] = 'foo'  # => "foo"
+ *    s                # => "foo"
+ *
+ *    s = 'hello'
+ *    s[0, 9] = 'foo'  # => "foo"
+ *    s                # => "foo"
+ *
+ *    s = 'hello'
+ *    s[2, 0] = 'foo'  # => "foo"
+ *    s                # => "hefoollo"
+ *
+ *    s = 'hello'
+ *    s[2, -1] = 'foo' # Raises IndexError: negative length -1.
+ *
+ *  If argument +start+ is negative,
+ *  counts backward from the end of +self+:
+ *
+ *    s = 'hello'
+ *    s[-1, 1] = 'foo' # => "foo"
+ *    s                # => "hellfoo"
+ *
+ *    s = 'hello'
+ *    s[-1, 9] = 'foo' # => "foo"
+ *    s                # => "hellfoo"
+ *
+ *    s = 'hello'
+ *    s[-5, 2] = 'foo' # => "foo"
+ *    s                # => "foollo"
+ *
+ *    s = 'hello'
+ *    s[-3, 0] = 'foo' # => "foo"
+ *    s                # => "hefoollo"
+ *
+ *    s = 'hello'
+ *    s[-6, 2] = 'foo' # Raises IndexError: index -6 out of string.
+ *
+ *  Special case: if +start+ equals the length of +self+,
+ *  the argument is appended to +self+:
+ *
+ *    s = 'hello'
+ *    s[5, 3] = 'foo' # => "foo"
+ *    s               # => "hellofoo"
+ *
+ *  <b>Form <tt>self[range] = other_string</tt></b>
+ *
+ *  With Range argument +range+ given,
+ *  equivalent to <tt>self[range.start, range.size] = other_string</tt>:
+ *
+ *    s0 = 'hello'
+ *    s1 = 'hello'
+ *    s0[0..2] = 'foo' # => "foo"
+ *    s1[0, 3] = 'foo' # => "foo"
+ *    s0               # => "foolo"
+ *    s1               # => "foolo"
+ *
+ *    s = 'hello'
+ *    s[0...2] = 'foo' # => "foo"
+ *    s                # => "foollo"
+ *
+ *    s = 'hello'
+ *    s[0...0] = 'foo' # => "foo"
+ *    s                # => "foohello"
+ *
+ *    s = 'hello'
+ *    s[9..10] = 'foo' # Raises RangeError: 9..10 out of range
+ *
+ *  <b>Form <tt>self[regexp, capture = 0] = other_string</tt></b>
+ *
+ *  With Regexp argument +regexp+ given and +capture+ as zero,
+ *  searches for a matching substring in +self+;
+ *  updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
+ *
+ *    s = 'hello'
+ *    s[/l/] = 'L'       # => "L"
+ *    [$`, $&, $']       # => ["he", "l", "lo"]
+ *    s[/eLlo/] = 'owdy' # => "owdy"
+ *    [$`, $&, $']       # => ["h", "eLlo", ""]
+ *    s[/eLlo/] = 'owdy' # Raises IndexError: regexp not matched.
+ *    [$`, $&, $']       # => [nil, nil, nil]
+ *
+ *  With +capture+ as a positive integer +n+,
+ *  searches for the +n+th matched group:
+ *
+ *    s = 'hello'
+ *    s[/(h)(e)(l+)(o)/] = 'foo'    # => "foo"
+ *    [$`, $&, $']                  # => ["", "hello", ""]
+ *
+ *    s = 'hello'
+ *    s[/(h)(e)(l+)(o)/, 1] = 'foo' # => "foo"
+ *    s                             # => "fooello"
+ *    [$`, $&, $']                  # => ["", "hello", ""]
+ *
+ *    s = 'hello'
+ *    s[/(h)(e)(l+)(o)/, 2] = 'foo' # => "foo"
+ *    s                             # => "hfoollo"
+ *    [$`, $&, $']                  # => ["", "hello", ""]
+ *
+ *    s = 'hello'
+ *    s[/(h)(e)(l+)(o)/, 4] = 'foo' # => "foo"
+ *    s                             # => "hellfoo"
+ *    [$`, $&, $']                  # => ["", "hello", ""]
+ *
+ *    s = 'hello'
+ *    # => "hello"
+ *    s[/(h)(e)(l+)(o)/, 5] = 'foo' # Raises IndexError: index 5 out of regexp.
+ *
+ *    s = 'hello'
+ *    s[/nosuch/] = 'foo'           # Raises IndexError: regexp not matched.
+ *
+ *  <b>Form <tt>self[substring] = other_string</tt></b>
+ *
+ *  With string argument +substring+ given:
+ *
+ *    s = 'hello'
+ *    s['l'] = 'foo'  # => "foo"
+ *    s  # => "hefoolo"
+ *
+ *    s = 'hello'
+ *    s['ll'] = 'foo'  # => "foo"
+ *    s  # => "hefooo"
+ *
+ *    s = 'こんにちは'
+ *    s['んにち'] = 'foo'  # => "foo"
+ *    s  # => "こfooは"
+ *
+ *    s['nosuch'] = 'foo' # Raises IndexError: string not matched.
+ *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  *
  */
 
@@ -6110,7 +6669,21 @@ rb_str_aset_m(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    insert(offset, other_string) -> self
  *
- *  :include: doc/string/insert.rdoc
+ *  Inserts the given +other_string+ into +self+; returns +self+.
+ *
+ *  If the given +index+ is non-negative, inserts +other_string+ at offset +index+:
+ *
+ *    'foo'.insert(0, 'bar')       # => "barfoo"
+ *    'foo'.insert(1, 'bar')       # => "fbaroo"
+ *    'foo'.insert(3, 'bar')       # => "foobar"
+ *    'こんにちは'.insert(2, 'bar') # => "こんbarにちは"
+ *
+ *  If the +index+ is negative, counts backward from the end of +self+
+ *  and inserts +other_string+ _after_ the offset:
+ *
+ *    'foo'.insert(-2, 'bar') # => "fobaro"
+ *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  *
  */
 
@@ -6452,7 +7025,39 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *    sub(pattern, replacement)   -> new_string
  *    sub(pattern) {|match| ... } -> new_string
  *
- *  :include: doc/string/sub.rdoc
+ *  Returns a copy of self, possibly with a substring replaced.
+ *
+ *  Argument +pattern+ may be a string or a Regexp;
+ *  argument +replacement+ may be a string or a Hash.
+ *
+ *  Varying types for the argument values makes this method very versatile.
+ *
+ *  Below are some simple examples; for many more examples,
+ *  see {Substitution Methods}[rdoc-ref:String@Substitution+Methods].
+ *
+ *  With arguments +pattern+ and string +replacement+ given,
+ *  replaces the first matching substring with the given replacement string:
+ *
+ *    s = 'abracadabra'       # => "abracadabra"
+ *    s.sub('bra', 'xyzzy')   # => "axyzzycadabra"
+ *    s.sub(/bra/, 'xyzzy')   # => "axyzzycadabra"
+ *    s.sub('nope', 'xyzzy')  # => "abracadabra"
+ *
+ *  With arguments +pattern+ and hash +replacement+ given,
+ *  replaces the first matching substring with a value from the given replacement hash, or removes it:
+ *
+ *    h = {'a' => 'A', 'b' => 'B', 'c' => 'C'}
+ *    s.sub('b', h)  # => "aBracadabra"
+ *    s.sub(/b/, h)  # => "aBracadabra"
+ *    s.sub(/d/, h)  # => "abracaabra"  # 'd' removed.
+ *
+ *  With argument +pattern+ and a block given,
+ *  calls the block with each matching substring;
+ *  replaces that substring with the block’s return value:
+ *
+ *    s.sub('b') {|match| match.upcase } # => "aBracadabra"
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -6736,7 +7341,13 @@ rb_str_clear(VALUE str)
  *  call-seq:
  *    chr -> string
  *
- *  :include: doc/string/chr.rdoc
+ *  Returns a string containing the first character of +self+:
+ *
+ *    'hello'.chr     # => "h"
+ *    'こんにちは'.chr # => "こ"
+ *    ''.chr          # => ""
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -6750,7 +7361,29 @@ rb_str_chr(VALUE str)
  *  call-seq:
  *    getbyte(index) -> integer or nil
  *
- *  :include: doc/string/getbyte.rdoc
+ *  Returns the byte at zero-based +index+ as an integer:
+ *
+ *    s = 'foo'
+ *    s.getbyte(0)    # => 102
+ *    s.getbyte(1)    # => 111
+ *    s.getbyte(2)    # => 111
+ *
+ *  Counts backward from the end if +index+ is negative:
+ *
+ *    s.getbyte(-3) # => 102
+ *
+ *  Returns +nil+ if +index+ is out of range:
+ *
+ *    s.getbyte(3)  # => nil
+ *    s.getbyte(-4) # => nil
+ *
+ *  More examples:
+ *
+ *    s = 'こんにちは'
+ *    s.bytes      # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
+ *    s.getbyte(2) # => 147
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  *
  */
 VALUE
@@ -7090,7 +7723,26 @@ str_bit_get(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    bit_get(offset, lsb_first: true) -> 0, 1, or nil
  *
- *  :include: doc/string/bit_get.rdoc
+ *  Returns +0+ or +1+ for the bit at zero-based bit +offset+:
+ *
+ *    s = "\xAA" # 0b10101010
+ *    s.bit_get(0) # => 0
+ *    s.bit_get(1) # => 1
+ *
+ *  Returns +nil+ if +offset+ is beyond the end of +self+:
+ *
+ *    s.bit_get(8) # => nil
+ *
+ *  By default, bits within each byte are numbered from least-significant to
+ *  most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
+ *  within each byte are numbered from most-significant to least-significant:
+ *
+ *    s.bit_get(0, lsb_first: false) # => 1
+ *    s.bit_get(1, lsb_first: false) # => 0
+ *
+ *  Raises +IndexError+ if +offset+ is negative.
+ *  Raises +ArgumentError+ if +offset+ is too large to be represented.
+ *  Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.
  *
  */
 static VALUE
@@ -7104,7 +7756,26 @@ rb_str_bit_get(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    bit_set?(offset, lsb_first: true) -> true, false, or nil
  *
- *  :include: doc/string/bit_set_p.rdoc
+ *  Returns +true+ or +false+ for whether the bit at zero-based bit +offset+ is set:
+ *
+ *    s = "\xAA" # 0b10101010
+ *    s.bit_set?(0) # => false
+ *    s.bit_set?(1) # => true
+ *
+ *  Returns +nil+ if +offset+ is beyond the end of +self+:
+ *
+ *    s.bit_set?(8) # => nil
+ *
+ *  By default, bits within each byte are numbered from least-significant to
+ *  most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
+ *  within each byte are numbered from most-significant to least-significant:
+ *
+ *    s.bit_set?(0, lsb_first: false) # => true
+ *    s.bit_set?(1, lsb_first: false) # => false
+ *
+ *  Raises +IndexError+ if +offset+ is negative.
+ *  Raises +ArgumentError+ if +offset+ is too large to be represented.
+ *  Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.
  *
  */
 static VALUE
@@ -7288,7 +7959,40 @@ str_mutate_bit(int argc, VALUE *argv, VALUE str, enum str_bit_mutation mutation)
  *    bit_set(offset, length, lsb_first: true) -> self
  *    bit_set(range, lsb_first: true) -> self
  *
- *  :include: doc/string/bit_set.rdoc
+ *  Sets the bit at zero-based bit +offset+ to 1; returns +self+:
+ *
+ *    s = "\x00"
+ *    s.bit_set(1) # => "\x02"
+ *    s            # => "\x02"
+ *
+ *  With +length+, sets the +length+ consecutive bits beginning at +offset+;
+ *  with a Range, sets the bits covered by +range+:
+ *
+ *    s = "\x00\x00"
+ *    s.bit_set(4, 8)  # => "\xF0\x0F"
+ *    s = "\x00\x00"
+ *    s.bit_set(4..11) # => "\xF0\x0F"
+ *
+ *  The entire region must lie within +self+; a region that extends beyond the
+ *  end raises +IndexError+ rather than being clamped. Writing zero bits is a
+ *  no-op, but even an empty region raises +IndexError+ when it begins beyond
+ *  the end of +self+.
+ *
+ *  By default, bits within each byte are numbered from least-significant to
+ *  most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
+ *  within each byte are numbered from most-significant to least-significant:
+ *
+ *    s = "\x00"
+ *    s.bit_set(1, lsb_first: false) # => "\x40"
+ *    s = "\x00\x00"
+ *    s.bit_set(4, 8, lsb_first: false) # => "\x0F\xF0"
+ *
+ *  Raises +IndexError+ if +offset+ is out of range, or if any part of the
+ *  region lies outside +self+.
+ *  Raises +ArgumentError+ if +length+ is negative.
+ *  Raises +ArgumentError+ if a bit position is too large to be represented.
+ *  Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.
+ *  Raises +FrozenError+ if +self+ is frozen, even when writing zero bits.
  *
  */
 static VALUE
@@ -7303,7 +8007,40 @@ rb_str_bit_set(int argc, VALUE *argv, VALUE str)
  *    bit_clear(offset, length, lsb_first: true) -> self
  *    bit_clear(range, lsb_first: true) -> self
  *
- *  :include: doc/string/bit_clear.rdoc
+ *  Sets the bit at zero-based bit +offset+ to 0; returns +self+:
+ *
+ *    s = "\xFF"
+ *    s.bit_clear(1) # => "\xFD"
+ *    s              # => "\xFD"
+ *
+ *  With +length+, clears the +length+ consecutive bits beginning at +offset+;
+ *  with a Range, clears the bits covered by +range+:
+ *
+ *    s = "\xFF\xFF"
+ *    s.bit_clear(4, 8)  # => "\x0F\xF0"
+ *    s = "\xFF\xFF"
+ *    s.bit_clear(4..11) # => "\x0F\xF0"
+ *
+ *  The entire region must lie within +self+; a region that extends beyond the
+ *  end raises +IndexError+ rather than being clamped. Writing zero bits is a
+ *  no-op, but even an empty region raises +IndexError+ when it begins beyond
+ *  the end of +self+.
+ *
+ *  By default, bits within each byte are numbered from least-significant to
+ *  most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
+ *  within each byte are numbered from most-significant to least-significant:
+ *
+ *    s = "\xFF"
+ *    s.bit_clear(1, lsb_first: false)     # => "\xBF"
+ *    s = "\xFF\xFF"
+ *    s.bit_clear(4, 8, lsb_first: false)  # => "\xF0\x0F"
+ *
+ *  Raises +IndexError+ if +offset+ is out of range, or if any part of the
+ *  region lies outside +self+.
+ *  Raises +ArgumentError+ if +length+ is negative.
+ *  Raises +ArgumentError+ if a bit position is too large to be represented.
+ *  Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.
+ *  Raises +FrozenError+ if +self+ is frozen, even when writing zero bits.
  *
  */
 static VALUE
@@ -7318,7 +8055,40 @@ rb_str_bit_clear(int argc, VALUE *argv, VALUE str)
  *    bit_flip(offset, length, lsb_first: true) -> self
  *    bit_flip(range, lsb_first: true) -> self
  *
- *  :include: doc/string/bit_flip.rdoc
+ *  Flips the bit at zero-based bit +offset+; returns +self+:
+ *
+ *    s = "\x00"
+ *    s.bit_flip(1) # => "\x02"
+ *    s.bit_flip(1) # => "\x00"
+ *
+ *  With +length+, flips the +length+ consecutive bits beginning at +offset+;
+ *  with a Range, flips the bits covered by +range+:
+ *
+ *    s = "\x00\xFF"
+ *    s.bit_flip(4, 8)  # => "\xF0\xF0"
+ *    s = "\x00\xFF"
+ *    s.bit_flip(4..11) # => "\xF0\xF0"
+ *
+ *  The entire region must lie within +self+; a region that extends beyond the
+ *  end raises +IndexError+ rather than being clamped. Writing zero bits is a
+ *  no-op, but even an empty region raises +IndexError+ when it begins beyond
+ *  the end of +self+.
+ *
+ *  By default, bits within each byte are numbered from least-significant to
+ *  most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
+ *  within each byte are numbered from most-significant to least-significant:
+ *
+ *    s = "\x00"
+ *    s.bit_flip(1, lsb_first: false)     # => "\x40"
+ *    s = "\x00\xFF"
+ *    s.bit_flip(4, 8, lsb_first: false)  # => "\x0F\x0F"
+ *
+ *  Raises +IndexError+ if +offset+ is out of range, or if any part of the
+ *  region lies outside +self+.
+ *  Raises +ArgumentError+ if +length+ is negative.
+ *  Raises +ArgumentError+ if a bit position is too large to be represented.
+ *  Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.
+ *  Raises +FrozenError+ if +self+ is frozen, even when writing zero bits.
  *
  */
 static VALUE
@@ -7394,7 +8164,44 @@ str_count_bits_region(const unsigned char *ptr, uint64_t beg, uint64_t len, bool
  *    bit_count(offset, length, lsb_first: true) -> integer
  *    bit_count(range, lsb_first: true) -> integer
  *
- *  :include: doc/string/bit_count.rdoc
+ *  Returns the number of set bits in +self+.
+ *
+ *  With no arguments, counts over all bytes of +self+:
+ *
+ *    "\x00".bit_count # => 0
+ *    "\xFF".bit_count # => 8
+ *    "\xAA".bit_count # => 4
+ *
+ *  With +offset+ and +length+, counts only the +length+ bits beginning at
+ *  zero-based bit +offset+; with a Range, counts the bits covered by +range+:
+ *
+ *    data = "\xFF\x00\xF0"
+ *    data.bit_count(0, 8)   # => 8
+ *    data.bit_count(8, 8)   # => 0
+ *    data.bit_count(0..7)   # => 8
+ *    data.bit_count(8...16) # => 0
+ *    data.bit_count(16..)   # => 4
+ *
+ *  A region that extends beyond the end of +self+ is clamped to the bits that
+ *  exist; a region that begins at or beyond the end counts zero:
+ *
+ *    data.bit_count(16, 100) # => 4
+ *    data.bit_count(100, 8)  # => 0
+ *
+ *  By default, bits within each byte are numbered from least-significant to
+ *  most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
+ *  within each byte are numbered from most-significant to least-significant.
+ *  The numbering matters only when the region is not byte-aligned; the
+ *  no-argument form is independent of it:
+ *
+ *    "\xF0".bit_count(0, 4)                   # => 0
+ *    "\xF0".bit_count(0, 4, lsb_first: false) # => 4
+ *
+ *  The count is over the bytes of +self+ and is independent of string encoding.
+ *  Raises +IndexError+ if +offset+ or a Range endpoint is negative.
+ *  Raises +ArgumentError+ if +length+ is negative.
+ *  Raises +ArgumentError+ if a bit position is too large to be represented.
+ *  Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.
  *
  */
 static VALUE
@@ -7550,7 +8357,11 @@ STR_DEFINE_BINARY_BITWISE_KERNEL(str_bitwise_xor, STR_BITWISE_XOR_WORD, STR_BITW
  *  call-seq:
  *    bitwise_not -> string
  *
- *  :include: doc/string/bitwise_not.rdoc
+ *  Returns a new string whose bytes are the bitwise complement of +self+:
+ *
+ *    "\x00\xAA".bitwise_not # => "\xFF\x55"
+ *
+ *  The returned string has BINARY encoding.
  *
  */
 static VALUE
@@ -7567,7 +8378,13 @@ rb_str_bitwise_not(VALUE str)
  *  call-seq:
  *    bitwise_not! -> self
  *
- *  :include: doc/string/bitwise_not_bang.rdoc
+ *  Replaces each byte in +self+ with its bitwise complement; returns +self+:
+ *
+ *    s = "\x00\xAA"
+ *    s.bitwise_not! # => "\xFF\x55"
+ *    s              # => "\xFF\x55"
+ *
+ *  The encoding of +self+ is not changed.
  *
  */
 static VALUE
@@ -7589,7 +8406,13 @@ rb_str_bitwise_not_bang(VALUE str)
  * call-seq:
  *   bitwise_and -> new_string
  *
- *  :include: doc/string/bitwise_and.rdoc
+ *  Returns a new string whose bytes are the bitwise AND of +self+ and +other+:
+ *
+ *    "\xF0".bitwise_and("\xCC") # => "\xC0"
+ *
+ *  +other+ is converted to a string using +to_str+.
+ *  Raises +ArgumentError+ if the two strings have different byte sizes.
+ *  The returned string has BINARY encoding.
  *
  */
 
@@ -7599,7 +8422,16 @@ rb_str_bitwise_not_bang(VALUE str)
  * call-seq:
  *   bitwise_and! -> self
  *
- *  :include: doc/string/bitwise_and_bang.rdoc
+ *  Replaces each byte in +self+ with the bitwise AND of that byte and the
+ *  corresponding byte in +other+; returns +self+:
+ *
+ *    s = "\xF0"
+ *    s.bitwise_and!("\xCC") # => "\xC0"
+ *    s                      # => "\xC0"
+ *
+ *  +other+ is converted to a string using +to_str+.
+ *  Raises +ArgumentError+ if the two strings have different byte sizes.
+ *  The encoding of +self+ is not changed.
  *
  */
 
@@ -7609,7 +8441,13 @@ rb_str_bitwise_not_bang(VALUE str)
  * call-seq:
  *   bitwise_or -> new_string
  *
- *  :include: doc/string/bitwise_or.rdoc
+ *  Returns a new string whose bytes are the bitwise OR of +self+ and +other+:
+ *
+ *    "\xF0".bitwise_or("\x0C") # => "\xFC"
+ *
+ *  +other+ is converted to a string using +to_str+.
+ *  Raises +ArgumentError+ if the two strings have different byte sizes.
+ *  The returned string has BINARY encoding.
  *
  */
 
@@ -7619,7 +8457,16 @@ rb_str_bitwise_not_bang(VALUE str)
  * call-seq:
  *   bitwise_or! -> self
  *
- *  :include: doc/string/bitwise_or_bang.rdoc
+ *  Replaces each byte in +self+ with the bitwise OR of that byte and the
+ *  corresponding byte in +other+; returns +self+:
+ *
+ *    s = "\xF0"
+ *    s.bitwise_or!("\x0C") # => "\xFC"
+ *    s                     # => "\xFC"
+ *
+ *  +other+ is converted to a string using +to_str+.
+ *  Raises +ArgumentError+ if the two strings have different byte sizes.
+ *  The encoding of +self+ is not changed.
  *
  */
 
@@ -7629,7 +8476,13 @@ rb_str_bitwise_not_bang(VALUE str)
  * call-seq:
  *   bitwise_xor -> new_string
  *
- *  :include: doc/string/bitwise_xor.rdoc
+ *  Returns a new string whose bytes are the bitwise XOR of +self+ and +other+:
+ *
+ *    "\xF0".bitwise_xor("\xCC") # => "\x3C"
+ *
+ *  +other+ is converted to a string using +to_str+.
+ *  Raises +ArgumentError+ if the two strings have different byte sizes.
+ *  The returned string has BINARY encoding.
  *
  */
 
@@ -7639,7 +8492,16 @@ rb_str_bitwise_not_bang(VALUE str)
  * call-seq:
  *   bitwise_xor! -> self
  *
- *  :include: doc/string/bitwise_xor_bang.rdoc
+ *  Replaces each byte in +self+ with the bitwise XOR of that byte and the
+ *  corresponding byte in +other+; returns +self+:
+ *
+ *    s = "\xF0"
+ *    s.bitwise_xor!("\xCC") # => "\x3C"
+ *    s                      # => "\x3C"
+ *
+ *  +other+ is converted to a string using +to_str+.
+ *  Raises +ArgumentError+ if the two strings have different byte sizes.
+ *  The encoding of +self+ is not changed.
  *
  */
 
@@ -7754,7 +8616,60 @@ str_byte_aref(VALUE str, VALUE indx)
  *    byteslice(offset, length = 1) -> string or nil
  *    byteslice(range) -> string or nil
  *
- *  :include: doc/string/byteslice.rdoc
+ *  Returns a substring of +self+, or +nil+ if the substring cannot be constructed.
+ *
+ *  With integer arguments +offset+ and +length+ given,
+ *  returns the substring beginning at the given +offset+
+ *  and of the given +length+ (as available):
+ *
+ *    s = '0123456789'   # => "0123456789"
+ *    s.byteslice(2)     # => "2"
+ *    s.byteslice(200)   # => nil
+ *    s.byteslice(4, 3)  # => "456"
+ *    s.byteslice(4, 30) # => "456789"
+ *
+ *  Returns +nil+ if +length+ is negative or +offset+ falls outside of +self+:
+ *
+ *    s.byteslice(4, -1) # => nil
+ *    s.byteslice(40, 2) # => nil
+ *
+ *  Counts backwards from the end of +self+
+ *  if +offset+ is negative:
+ *
+ *    s = '0123456789'   # => "0123456789"
+ *    s.byteslice(-4)    # => "6"
+ *    s.byteslice(-4, 3) # => "678"
+ *
+ *  With Range argument +range+ given, returns
+ *  <tt>byteslice(range.begin, range.size)</tt>:
+ *
+ *    s = '0123456789'    # => "0123456789"
+ *    s.byteslice(4..6)   # => "456"
+ *    s.byteslice(-6..-4) # => "456"
+ *    s.byteslice(5..2)   # => "" # range.size is zero.
+ *    s.byteslice(40..42) # => nil
+ *
+ *  The starting and ending offsets need not be on character boundaries:
+ *
+ *    s = 'こんにちは'
+ *    s.byteslice(0, 3) # => "こ"
+ *    s.byteslice(1, 3) # => "\x81\x93\xE3"
+ *
+ *  The encodings of +self+ and the returned substring
+ *  are always the same:
+ *
+ *    s.encoding                 # => #<Encoding:UTF-8>
+ *    s.byteslice(0, 3).encoding # => #<Encoding:UTF-8>
+ *    s.byteslice(1, 3).encoding # => #<Encoding:UTF-8>
+ *
+ *  But, depending on the character boundaries,
+ *  the encoding of the returned substring may not be valid:
+ *
+ *    s.valid_encoding?                 # => true
+ *    s.byteslice(0, 3).valid_encoding? # => true
+ *    s.byteslice(1, 3).valid_encoding? # => false
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -7799,7 +8714,71 @@ str_check_beg_len(VALUE str, rb_len_t *beg, rb_len_t *len)
  *    bytesplice(range, str) -> self
  *    bytesplice(range, str, str_range) -> self
  *
- *  :include: doc/string/bytesplice.rdoc
+ *  Replaces <i>target bytes</i> in +self+ with <i>source bytes</i> from the given string +str+;
+ *  returns +self+.
+ *
+ *  In the first form, arguments +offset+ and +length+ determine the target bytes,
+ *  and the source bytes are all of the given +str+:
+ *
+ *    '0123456789'.bytesplice(0, 3, 'abc')  # => "abc3456789"
+ *    '0123456789'.bytesplice(3, 3, 'abc')  # => "012abc6789"
+ *    '0123456789'.bytesplice(0, 50, 'abc') # => "abc"
+ *    '0123456789'.bytesplice(50, 3, 'abc') # Raises IndexError.
+ *
+ *  The counts of the target bytes and source source bytes may be different:
+ *
+ *    '0123456789'.bytesplice(0, 6, 'abc') # => "abc6789"      # Shorter source.
+ *    '0123456789'.bytesplice(0, 1, 'abc') # => "abc123456789" # Shorter target.
+ *
+ *  And either count may be zero (i.e., specifying an empty string):
+ *
+ *    '0123456789'.bytesplice(0, 3, '')    # => "3456789"       # Empty source.
+ *    '0123456789'.bytesplice(0, 0, 'abc') # => "abc0123456789" # Empty target.
+ *
+ *  In the second form, just as in the first,
+ *  arguments +offset+ and +length+ determine the target bytes;
+ *  argument +str+ _contains_ the source bytes,
+ *  and the additional arguments +str_offset+ and +str_length+
+ *  determine the actual source bytes:
+ *
+ *    '0123456789'.bytesplice(0, 3, 'abc', 0, 3) # => "abc3456789"
+ *    '0123456789'.bytesplice(0, 3, 'abc', 1, 1) # => "b3456789"      # Shorter source.
+ *    '0123456789'.bytesplice(0, 1, 'abc', 0, 3) # => "abc123456789"  # Shorter target.
+ *    '0123456789'.bytesplice(0, 3, 'abc', 1, 0) # => "3456789"       # Empty source.
+ *    '0123456789'.bytesplice(0, 0, 'abc', 0, 3) # => "abc0123456789" # Empty target.
+ *
+ *  In the third form, argument +range+ determines the target bytes
+ *  and the source bytes are all of the given +str+:
+ *
+ *    '0123456789'.bytesplice(0..2, 'abc')  # => "abc3456789"
+ *    '0123456789'.bytesplice(3..5, 'abc')  # => "012abc6789"
+ *    '0123456789'.bytesplice(0..5, 'abc')  # => "abc6789"       # Shorter source.
+ *    '0123456789'.bytesplice(0..0, 'abc')  # => "abc123456789"  # Shorter target.
+ *    '0123456789'.bytesplice(0..2, '')     # => "3456789"       # Empty source.
+ *    '0123456789'.bytesplice(0...0, 'abc') # => "abc0123456789" # Empty target.
+ *
+ *  In the fourth form, just as in the third,
+ *  argument +range+ determines the target bytes;
+ *  argument +str+ _contains_ the source bytes,
+ *  and the additional argument +str_range+
+ *  determines the actual source bytes:
+ *
+ *    '0123456789'.bytesplice(0..2, 'abc', 0..2)  # => "abc3456789"
+ *    '0123456789'.bytesplice(3..5, 'abc', 0..2)  # => "012abc6789"
+ *    '0123456789'.bytesplice(0..2, 'abc', 0..1)  # => "ab3456789"     # Shorter source.
+ *    '0123456789'.bytesplice(0..1, 'abc', 0..2)  # => "abc23456789"   # Shorter target.
+ *    '0123456789'.bytesplice(0..2, 'abc', 0...0) # => "3456789"       # Empty source.
+ *    '0123456789'.bytesplice(0...0, 'abc', 0..2) # => "abc0123456789" # Empty target.
+ *
+ *  In any of the forms, the beginnings and endings of both source and target
+ *  must be on character boundaries.
+ *
+ *  In these examples, +self+ has five 3-byte characters,
+ *  and so has character boundaries at offsets 0, 3, 6, 9, 12, and 15.
+ *
+ *    'こんにちは'.bytesplice(0, 3, 'abc') # => "abcんにちは"
+ *    'こんにちは'.bytesplice(1, 3, 'abc') # Raises IndexError.
+ *    'こんにちは'.bytesplice(0, 2, 'abc') # Raises IndexError.
  */
 
 static VALUE
@@ -8227,7 +9206,44 @@ static const bool inspect_no_escape[256] = {
  *  call-seq:
  *    inspect -> string
  *
- *  :include: doc/string/inspect.rdoc
+ *  Returns a printable version of +self+, enclosed in double-quotes.
+ *
+ *  Most printable characters are rendered simply as themselves:
+ *
+ *    'abc'.inspect        # => "\"abc\""
+ *    '012'.inspect        # => "\"012\""
+ *    ''.inspect           # => "\"\""
+ *    "\u000012".inspect   # => "\"\\u000012\""
+ *    'こんにちは'.inspect  # => "\"こんにちは\""
+ *
+ *  But printable characters double-quote (<tt>'"'</tt>) and backslash (<tt>'\\'</tt>) are escaped:
+ *
+ *    '"'.inspect  # => "\"\\\"\""
+ *    '\\'.inspect # => "\"\\\\\""
+ *
+ *  Unprintable characters are the {ASCII characters}[https://en.wikipedia.org/wiki/ASCII]
+ *  whose values are in range <tt>0..31</tt>,
+ *  along with the character whose value is +127+.
+ *
+ *  Most of these characters are rendered thus:
+ *
+ *    0.chr.inspect # => "\"\\x00\""
+ *    1.chr.inspect # => "\"\\x01\""
+ *    2.chr.inspect # => "\"\\x02\""
+ *    # ...
+ *
+ *  A few, however, have special renderings:
+ *
+ *    7.chr.inspect  # => "\"\\a\""  # BEL
+ *    8.chr.inspect  # => "\"\\b\""  # BS
+ *    9.chr.inspect  # => "\"\\t\""  # TAB
+ *    10.chr.inspect # => "\"\\n\""  # LF
+ *    11.chr.inspect # => "\"\\v\""  # VT
+ *    12.chr.inspect # => "\"\\f\""  # FF
+ *    13.chr.inspect # => "\"\\r\""  # CR
+ *    27.chr.inspect # => "\"\\e\""  # ESC
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  *
  */
 
@@ -8344,7 +9360,95 @@ rb_str_inspect(VALUE str)
  *  call-seq:
  *    dump -> new_string
  *
- *  :include: doc/string/dump.rdoc
+ *  For an ordinary string, this method, +String#dump+,
+ *  returns a printable ASCII-only version of +self+, enclosed in double-quotes.
+ *
+ *  For a dumped string, method String#undump is the inverse of +String#dump+;
+ *  it returns a "restored" version of +self+,
+ *  where all the dumping changes have been undone.
+ *
+ *  In the simplest case, the dumped string contains the original string,
+ *  enclosed in double-quotes;
+ *  this example is done in +irb+ (interactive Ruby), which uses method `inspect` to render the results:
+ *
+ *    s = 'hello'   # => "hello"
+ *    s.dump        # => "\"hello\""
+ *    s.dump.undump # => "hello"
+ *
+ *  Keep in mind that in the second line above:
+ *
+ *  - The outer double-quotes are put on by +inspect+,
+ *    and _are_ _not_ part of the output of #dump.
+ *  - The inner double-quotes _are_ part of the output of +dump+,
+ *    and are escaped by +inspect+ because they are within the outer double-quotes.
+ *
+ *  To avoid confusion, we'll use this helper method to omit the outer double-quotes:
+ *
+ *    def dump(s)
+ *      print "String:   ", s, "\n"
+ *      print "Dumped:   ", s.dump, "\n"
+ *      print "Undumped: ", s.dump.undump, "\n"
+ *    end
+ *
+ *  So that for string <tt>'hello'</tt>, we'll see:
+ *
+ *    String:    hello
+ *    Dumped:    "hello"
+ *    Undumped:  hello
+ *
+ *  In a dump, certain special characters are escaped:
+ *
+ *    String:    "
+ *    Dumped:    "\""
+ *    Undumped:  "
+ *
+ *    String:    \
+ *    Dumped:    "\\"
+ *    Undumped:  \
+ *
+ *  In a dump, unprintable characters are replaced by printable ones;
+ *  the unprintable characters are the whitespace characters (other than space itself);
+ *  here we see the ordinals for those characters, together with explanatory text:
+ *
+ *    h = {
+ *       7 => 'Alert (BEL)',
+ *       8 => 'Backspace (BS)',
+ *       9 => 'Horizontal tab (HT)',
+ *      10 => 'Linefeed (LF)',
+ *      11 => 'Vertical tab (VT)',
+ *      12 => 'Formfeed (FF)',
+ *      13 => 'Carriage return (CR)'
+ *    }
+ *
+ *  In this example, the dumped output is printed by method #inspect,
+ *  and so contains both outer double-quotes and escaped inner double-quotes:
+ *
+ *    s = ''
+ *    h.keys.each {|i| s << i } # => [7, 8, 9, 10, 11, 12, 13]
+ *    s                         # => "\a\b\t\n\v\f\r"
+ *    s.dump                    # => "\"\\a\\b\\t\\n\\v\\f\\r\""
+ *
+ *  If +self+ is encoded in UTF-8 and contains Unicode characters,
+ *  each Unicode character is dumped as a Unicode escape sequence:
+ *
+ *    String:    こんにちは
+ *    Dumped:    "\u3053\u3093\u306B\u3061\u306F"
+ *    Undumped:  こんにちは
+ *
+ *  If the encoding of +self+ is not ASCII-compatible
+ *  (i.e., if <tt>self.encoding.ascii_compatible?</tt> returns +false+),
+ *  each ASCII-compatible byte is dumped as an ASCII character,
+ *  and all other bytes are dumped as hexadecimal;
+ *  also appends <tt>.dup.force_encoding(\"encoding\")</tt>,
+ *  where <tt><encoding></tt> is <tt>self.encoding.name</tt>:
+ *
+ *    String:    hello
+ *    Dumped:    "\xFE\xFF\x00h\x00e\x00l\x00l\x00o".dup.force_encoding("UTF-16")
+ *    Undumped:  hello
+ *
+ *    String:    こんにちは
+ *    Dumped:    "\xFE\xFF0S0\x930k0a0o".dup.force_encoding("UTF-16")
+ *    Undumped:  こんにちは
  *
  */
 
@@ -8999,7 +10103,33 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    upcase(mapping) -> new_string
  *
- *  :include: doc/string/upcase.rdoc
+ *  Returns a new string containing the upcased characters in +self+:
+ *
+ *    'hello'.upcase        # => "HELLO"
+ *    'straße'.upcase       # => "STRASSE"
+ *    'привет'.upcase       # => "ПРИВЕТ"
+ *    'RubyGems.org'.upcase # => "RUBYGEMS.ORG"
+ *
+ *  The sizes of +self+ and the upcased result may differ:
+ *
+ *     s = 'Straße'
+ *     s.size        # => 6
+ *     s.upcase      # => "STRASSE"
+ *     s.upcase.size # => 7
+ *
+ *  Some characters (and some character sets) do not have upcase and downcase versions;
+ *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc]:
+ *
+ *     s = '1, 2, 3, ...'
+ *     s.upcase == s # => true
+ *     s = 'こんにちは'
+ *     s.upcase == s # => true
+ *
+ *  The casing is affected by the given +mapping+,
+ *  which may be +:ascii+, +:fold+, or +:turkic+;
+ *  see {Case Mappings}[rdoc-ref:case_mapping.rdoc@Case+Mappings].
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -9085,7 +10215,26 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    downcase(mapping) -> new_string
  *
- *  :include: doc/string/downcase.rdoc
+ *  Returns a new string containing the downcased characters in +self+:
+ *
+ *    'HELLO'.downcase        # => "hello"
+ *    'STRAẞE'.downcase       # => "straße"
+ *    'ПРИВЕТ'.downcase       # => "привет"
+ *    'RubyGems.org'.downcase # => "rubygems.org"
+ *
+ *  Some characters (and some character sets) do not have upcase and downcase versions;
+ *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc]:
+ *
+ *    s = '1, 2, 3, ...'
+ *    s.downcase == s # => true
+ *    s = 'こんにちは'
+ *    s.downcase == s # => true
+ *
+ *  The casing is affected by the given +mapping+,
+ *  which may be +:ascii+, +:fold+, or +:turkic+;
+ *  see {Case Mappings}[rdoc-ref:case_mapping.rdoc@Case+Mappings].
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -9182,7 +10331,32 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    capitalize(mapping) -> new_string
  *
- *  :include: doc/string/capitalize.rdoc
+ *  Returns a string containing the characters in +self+,
+ *  each with possibly changed case:
+ *
+ *  - The first character made uppercase.
+ *  - All other characters are made lowercase.
+ *
+ *  Examples:
+ *
+ *    'hello'.capitalize  # => "Hello"
+ *    'HELLO'.capitalize  # => "Hello"
+ *    'straße'.capitalize # => "Straße"  # Lowercase 'ß' not changed.
+ *    'STRAẞE'.capitalize # => "Straße"  # Uppercase 'ẞ' downcased to 'ß'.
+ *
+ *  Some characters (and some character sets) do not have upcase and downcase versions;
+ *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc]:
+ *
+ *    s = '1, 2, 3, ...'
+ *    s.capitalize == s # => true
+ *    s = 'こんにちは'
+ *    s.capitalize == s # => true
+ *
+ *  The casing is affected by the given +mapping+,
+ *  which may be +:ascii+, +:fold+, or +:turkic+;
+ *  see {Case Mappings}[rdoc-ref:case_mapping.rdoc@Case+Mappings].
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -9247,7 +10421,37 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    swapcase(mapping) -> new_string
  *
- *  :include: doc/string/swapcase.rdoc
+ *  Returns a string containing the characters in +self+, with cases reversed:
+ *
+ *  - Each uppercase character is downcased.
+ *  - Each lowercase character is upcased.
+ *
+ *  Examples:
+ *
+ *    'Hello'.swapcase        # => "hELLO"
+ *    'Straße'.swapcase       # => "sTRASSE"
+ *    'RubyGems.org'.swapcase # => "rUBYgEMS.ORG"
+ *
+ *  The sizes of +self+ and the upcased result may differ:
+ *
+ *    s = 'Straße'
+ *    s.size          # => 6
+ *    s.swapcase      # => "sTRASSE"
+ *    s.swapcase.size # => 7
+ *
+ *  Some characters (and some character sets) do not have upcase and downcase versions;
+ *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc]:
+ *
+ *    s = '1, 2, 3, ...'
+ *    s.swapcase == s # => true
+ *    s = 'こんにちは'
+ *    s.swapcase == s # => true
+ *
+ *  The casing is affected by the given +mapping+,
+ *  which may be +:ascii+, +:fold+, or +:turkic+;
+ *  see {Case Mappings}[rdoc-ref:case_mapping.rdoc@Case+Mappings].
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -10323,7 +11527,81 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    delete(*selectors) -> new_string
  *
- *  :include: doc/string/delete.rdoc
+ *  Returns a new string that is a copy of +self+ with certain characters removed;
+ *  the removed characters are all instances of those specified by the given string +selectors+.
+ *
+ *  For one 1-character selector,
+ *  removes all instances of that character:
+ *
+ *    s = 'abracadabra'
+ *    s.delete('a') # => "brcdbr"
+ *    s.delete('b') # => "aracadara"
+ *    s.delete('x') # => "abracadabra"
+ *    s.delete('')  # => "abracadabra"
+ *
+ *    s = 'よろしくお願いします'
+ *    s.delete('よ') # => "ろしくお願いします"
+ *    s.delete('し') # => "よろくお願います"
+ *
+ *  For one multi-character selector,
+ *  removes all instances of the specified characters:
+ *
+ *    s = 'abracadabra'
+ *    s.delete('ab')     # => "rcdr"
+ *    s.delete('abc')    # => "rdr"
+ *    s.delete('abcd')   # => "rr"
+ *    s.delete('abcdr')  # => ""
+ *    s.delete('abcdrx') # => ""
+ *
+ *  Order and repetition do not matter:
+ *
+ *    s.delete('ba')   == s.delete('ab') # => true
+ *    s.delete('baab') == s.delete('ab') # => true
+ *
+ *  For multiple selectors,
+ *  forms a single selector that is the intersection of characters in all selectors
+ *  and removes all instances of characters specified by that selector:
+ *
+ *    s = 'abcdefg'
+ *    s.delete('abcde', 'dcbfg') == s.delete('bcd') # => true
+ *    s.delete('abc', 'def')     == s.delete('')    # => true
+ *
+ *  In a character selector, three characters get special treatment:
+ *
+ *  - A caret (<tt>'^'</tt>) functions as a _negation_ operator
+ *    for the immediately following characters:
+ *
+ *      s = 'abracadabra'
+ *      s.delete('^bc') # => "bcb"  # Deletes all except 'b' and 'c'.
+ *
+ *  - A hyphen (<tt>'-'</tt>) between two other characters defines a _range_ of characters:
+ *
+ *      s = 'abracadabra'
+ *      s.delete('a-c') # => "rdr"  # Deletes all 'a', 'b', and 'c'.
+ *
+ *  - A backslash (<tt>'\'</tt>) acts as an escape for a caret, a hyphen,
+ *    or another backslash:
+ *
+ *      s = 'abracadabra'
+ *      s.delete('\^bc')           # => "araadara"   # Deletes all '^', 'b', and 'c'.
+ *      s.delete('a\-c')           # => "brdbr"      # Deletes all 'a', '-', and 'c'.
+ *      'foo\bar\baz'.delete('\\') # => "foobarbaz"  # Deletes all '\'.
+ *
+ *  These usages may be mixed:
+ *
+ *    s = 'abracadabra'
+ *    s.delete('a-cq-t') # => "d"         # Multiple ranges.
+ *    s.delete('ac-d')   # => "brbr"      # Range mixed with plain characters.
+ *    s.delete('^a-c')   # => "abacaaba"  # Range mixed with negation.
+ *
+ *  For multiple selectors, all forms may be used, including negations, ranges, and escapes.
+ *
+ *    s = 'abracadabra'
+ *    s.delete('^abc', '^def') == s.delete('^abcdef') # => true
+ *    s.delete('a-e', 'c-g')   == s.delete('cde')     # => true
+ *    s.delete('^abc', 'c-g')  == s.delete('defg')    # => true
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -10428,7 +11706,39 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    squeeze(*selectors) -> new_string
  *
- *  :include: doc/string/squeeze.rdoc
+ *  Returns a copy of +self+ with each tuple (doubling, tripling, etc.) of specified characters
+ *  "squeezed" down to a single character.
+ *
+ *  The tuples to be squeezed are specified by arguments +selectors+,
+ *  each of which is a string;
+ *  see {Character Selectors}[rdoc-ref:character_selectors.rdoc@Character+Selectors].
+ *
+ *  A single argument may be a single character:
+ *
+ *    'Noooooo!'.squeeze('o')      # => "No!"
+ *    'foo  bar  baz'.squeeze(' ') # => "foo bar baz"
+ *    'Mississippi'.squeeze('s')   # => "Misisippi"
+ *    'Mississippi'.squeeze('p')   # => "Mississipi"
+ *    'Mississippi'.squeeze('x')   # => "Mississippi"  # Unused selector character is ignored.
+ *    'бессонница'.squeeze('с')    # => "бесонница"
+ *    'бессонница'.squeeze('н')    # => "бессоница"
+ *
+ *  A single argument may be a string of characters:
+ *
+ *    'Mississippi'.squeeze('sp')       # => "Misisipi"
+ *    'Mississippi'.squeeze('ps')       # => "Misisipi"   # Order doesn't matter.
+ *    'Mississippi'.squeeze('nonsense') # => "Misisippi"  # Unused selector characters are ignored.
+ *
+ *  A single argument may be a range of characters:
+ *
+ *    'Mississippi'.squeeze('a-p') # => "Mississipi"
+ *    'Mississippi'.squeeze('q-z') # => "Misisippi"
+ *    'Mississippi'.squeeze('a-z') # => "Misisipi"
+ *
+ *  Multiple arguments are allowed;
+ *  see {Multiple Character Selectors}[rdoc-ref:character_selectors.rdoc@Multiple+Character+Selectors].
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -10493,7 +11803,80 @@ rb_str_tr_s(VALUE str, VALUE src, VALUE repl)
  *  call-seq:
  *    count(*selectors) -> integer
  *
- *  :include: doc/string/count.rdoc
+ *  Returns the total number of characters in +self+ that are specified by the given selectors.
+ *
+ *  For one 1-character selector,
+ *  returns the count of instances of that character:
+ *
+ *    s = 'abracadabra'
+ *    s.count('a') # => 5
+ *    s.count('b') # => 2
+ *    s.count('x') # => 0
+ *    s.count('')  # => 0
+ *
+ *    s = 'よろしくお願いします'
+ *    s.count('よ')  # => 1
+ *    s.count('し')  # => 2
+ *
+ *  For one multi-character selector,
+ *  returns the count of instances for all specified characters:
+ *
+ *    s = 'abracadabra'
+ *    s.count('ab')     # => 7
+ *    s.count('abc')    # => 8
+ *    s.count('abcd')   # => 9
+ *    s.count('abcdr')  # => 11
+ *    s.count('abcdrx') # => 11
+ *
+ *  Order and repetition do not matter:
+ *
+ *    s.count('ba')   == s.count('ab') # => true
+ *    s.count('baab') == s.count('ab') # => true
+ *
+ *  For multiple selectors,
+ *  forms a single selector that is the intersection of characters in all selectors
+ *  and returns the count of instances for that selector:
+ *
+ *    s = 'abcdefg'
+ *    s.count('abcde', 'dcbfg') == s.count('bcd') # => true
+ *    s.count('abc', 'def')     == s.count('')    # => true
+ *
+ *  In a character selector, three characters get special treatment:
+ *
+ *  - A caret (<tt>'^'</tt>) functions as a _negation_ operator
+ *    for the immediately following characters:
+ *
+ *      s = 'abracadabra'
+ *      s.count('^bc') # => 8  # Count of all except 'b' and 'c'.
+ *
+ *  - A hyphen (<tt>'-'</tt>) between two other characters defines a _range_ of characters:
+ *
+ *      s = 'abracadabra'
+ *      s.count('a-c') # => 8  # Count of all 'a', 'b', and 'c'.
+ *
+ *  - A backslash (<tt>'\'</tt>) acts as an escape for a caret, a hyphen,
+ *    or another backslash:
+ *
+ *      s = 'abracadabra'
+ *      s.count('\^bc')           # => 3  # Count of '^', 'b', and 'c'.
+ *      s.count('a\-c')           # => 6  # Count of 'a', '-', and 'c'.
+ *      'foo\bar\baz'.count('\\') # => 2  # Count of '\'.
+ *
+ *  These usages may be mixed:
+ *
+ *    s = 'abracadabra'
+ *    s.count('a-cq-t') # => 10  # Multiple ranges.
+ *    s.count('ac-d')   # => 7   # Range mixed with plain characters.
+ *    s.count('^a-c')   # => 3   # Range mixed with negation.
+ *
+ *  For multiple selectors, all forms may be used, including negations, ranges, and escapes.
+ *
+ *    s = 'abracadabra'
+ *    s.count('^abc', '^def') == s.count('^abcdef') # => true
+ *    s.count('a-e', 'c-g')   == s.count('cde')     # => true
+ *    s.count('^abc', 'c-g')  == s.count('defg')    # => true
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
@@ -10659,7 +12042,107 @@ literal_split_pattern(VALUE spat, split_type_t default_type)
  *    split(field_sep = $;, limit = 0) -> array_of_substrings
  *    split(field_sep = $;, limit = 0) {|substring| ... } -> self
  *
- *  :include: doc/string/split.rdoc
+ *  Creates an array of substrings by splitting +self+
+ *  at each occurrence of the given field separator +field_sep+.
+ *
+ *  With no arguments given,
+ *  splits using the field separator <tt>$;</tt>,
+ *  whose default value is +nil+.
+ *
+ *  With no block given, returns the array of substrings:
+ *
+ *    'abracadabra'.split('a') # => ["", "br", "c", "d", "br"]
+ *
+ *  When +field_sep+ is +nil+ or <tt>' '</tt> (a single space),
+ *  splits at each sequence of whitespace:
+ *
+ *    'foo bar baz'.split(nil)          # => ["foo", "bar", "baz"]
+ *    'foo bar baz'.split(' ')          # => ["foo", "bar", "baz"]
+ *    "foo \n\tbar\t\n  baz".split(' ') # => ["foo", "bar", "baz"]
+ *    'foo  bar   baz'.split(' ')       # => ["foo", "bar", "baz"]
+ *    ''.split(' ')                     # => []
+ *
+ *  When +field_sep+ is an empty string,
+ *  splits at every character:
+ *
+ *    'abracadabra'.split('') # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a"]
+ *    ''.split('')            # => []
+ *    'こんにちは'.split('')   # => ["こ", "ん", "に", "ち", "は"]
+ *
+ *  When +field_sep+ is a non-empty string and different from <tt>' '</tt> (a single space),
+ *  uses that string as the separator:
+ *
+ *    'abracadabra'.split('a')  # => ["", "br", "c", "d", "br"]
+ *    'abracadabra'.split('ab') # => ["", "racad", "ra"]
+ *    ''.split('a')             # => []
+ *    'こんにちは'.split('に')    # => ["こん", "ちは"]
+ *
+ *  When +field_sep+ is a Regexp,
+ *  splits at each occurrence of a matching substring:
+ *
+ *    'abracadabra'.split(/ab/) # => ["", "racad", "ra"]
+ *    '1 + 1 == 2'.split(/\W+/) # => ["1", "1", "2"]
+ *    'abracadabra'.split(//)   # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a"]
+ *
+ *  If the \Regexp contains groups, their matches are included
+ *  in the returned array:
+ *
+ *    '1:2:3'.split(/(:)()()/, 2) # => ["1", ":", "", "", "2:3"]
+ *
+ *  Argument +limit+ sets a limit on the size of the returned array;
+ *  it also determines whether trailing empty strings are included in the returned array.
+ *
+ *  When +limit+ is zero,
+ *  there is no limit on the size of the array,
+ *  but trailing empty strings are omitted:
+ *
+ *    'abracadabra'.split('', 0)  # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a"]
+ *    'abracadabra'.split('a', 0) # => ["", "br", "c", "d", "br"]  # Empty string after last 'a' omitted.
+ *
+ *  When +limit+ is a positive integer,
+ *  there is a limit on the size of the array (no more than <tt>n - 1</tt> splits occur),
+ *  and trailing empty strings are included:
+ *
+ *    'abracadabra'.split('', 3)   # => ["a", "b", "racadabra"]
+ *    'abracadabra'.split('a', 3)  # => ["", "br", "cadabra"]
+ *    'abracadabra'.split('', 30)  # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a", ""]
+ *    'abracadabra'.split('a', 30) # => ["", "br", "c", "d", "br", ""]
+ *    'abracadabra'.split('', 1)   # => ["abracadabra"]
+ *    'abracadabra'.split('a', 1)  # => ["abracadabra"]
+ *
+ *  When +limit+ is negative,
+ *  there is no limit on the size of the array,
+ *  and trailing empty strings are included:
+ *
+ *    'abracadabra'.split('', -1)  # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a", ""]
+ *    'abracadabra'.split('a', -1) # => ["", "br", "c", "d", "br", ""]
+ *
+ *  If a block is given, it is called with each substring and returns +self+:
+ *
+ *    'foo bar baz'.split(' ') {|substring| p substring }
+ *
+ *  Output :
+ *
+ *    "foo"
+ *    "bar"
+ *    "baz"
+ *
+ *  Note that the above example is functionally equivalent to:
+ *
+ *     'foo bar baz'.split(' ').each {|substring| p substring }
+ *
+ *  Output :
+ *
+ *    "foo"
+ *    "bar"
+ *    "baz"
+ *
+ *  But the latter:
+ *
+ *  - Has poorer performance because it creates an intermediate array.
+ *  - Returns an array (instead of +self+).
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  *
  */
 
@@ -11091,7 +12574,72 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
  *    each_line(record_separator = $/, chomp: false) {|substring| ... } -> self
  *    each_line(record_separator = $/, chomp: false)                    -> enumerator
  *
- *  :include: doc/string/each_line.rdoc
+ *  With a block given, forms the substrings (lines)
+ *  that are the result of splitting +self+
+ *  at each occurrence of the given +record_separator+;
+ *  passes each line to the block;
+ *  returns +self+.
+ *
+ *  With the default +record_separator+:
+ *
+ *    $/ # => "\n"
+ *    s = <<~EOT
+ *    This is the first line.
+ *    This is line two.
+ *
+ *    This is line four.
+ *    This is line five.
+ *    EOT
+ *    s.each_line {|line| p line }
+ *
+ *  Output:
+ *
+ *    "This is the first line.\n"
+ *    "This is line two.\n"
+ *    "\n"
+ *    "This is line four.\n"
+ *    "This is line five.\n"
+ *
+ *  With a different +record_separator+:
+ *
+ *    record_separator = ' is '
+ *    s.each_line(record_separator) {|line| p line }
+ *
+ *  Output:
+ *
+ *    "This is "
+ *    "the first line.\nThis is "
+ *    "line two.\n\nThis is "
+ *    "line four.\nThis is "
+ *    "line five.\n"
+ *
+ *  With +chomp+ as +true+, removes the trailing +record_separator+ from each line:
+ *
+ *    s.each_line(chomp: true) {|line| p line }
+ *
+ *  Output:
+ *
+ *    "This is the first line."
+ *    "This is line two."
+ *    ""
+ *    "This is line four."
+ *    "This is line five."
+ *
+ *  With an empty string as +record_separator+,
+ *  forms and passes "paragraphs" by splitting at each occurrence
+ *  of two or more newlines:
+ *
+ *    record_separator = ''
+ *    s.each_line(record_separator) {|line| p line }
+ *
+ *  Output:
+ *
+ *    "This is the first line.\nThis is line two.\n\n"
+ *    "This is line four.\nThis is line five.\n"
+ *
+ *  With no block given, returns an enumerator.
+ *
+ *  Related: see {Iterating}[rdoc-ref:String@Iterating].
  *
  */
 
@@ -11185,7 +12733,19 @@ rb_str_enumerate_bytes(VALUE str, VALUE ary)
  *    each_byte {|byte| ... } -> self
  *    each_byte               -> enumerator
  *
- *  :include: doc/string/each_byte.rdoc
+ *  With a block given, calls the block with each successive byte from +self+;
+ *  returns +self+:
+ *
+ *    a = []
+ *    'hello'.each_byte {|byte| a.push(byte) }     # Five 1-byte characters.
+ *    a # => [104, 101, 108, 108, 111]
+ *    a = []
+ *    'こんにちは'.each_byte {|byte| a.push(byte) }  # Five 3-byte characters.
+ *    a # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
+ *
+ *  With no block given, returns an enumerator.
+ *
+ *  Related: see {Iterating}[rdoc-ref:String@Iterating].
  *
  */
 
@@ -11200,7 +12760,13 @@ rb_str_each_byte(VALUE str)
  *  call-seq:
  *    bytes -> array_of_bytes
  *
- *  :include: doc/string/bytes.rdoc
+ *  Returns an array of the bytes in +self+:
+ *
+ *    'hello'.bytes  # => [104, 101, 108, 108, 111]
+ *    'こんにちは'.bytes
+ *    # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  *
  */
 
@@ -11254,7 +12820,23 @@ rb_str_enumerate_chars(VALUE str, VALUE ary)
  *    each_char {|char| ... } -> self
  *    each_char            -> enumerator
  *
- *  :include: doc/string/each_char.rdoc
+ *  With a block given, calls the block with each successive character from +self+;
+ *  returns +self+:
+ *
+ *    a = []
+ *    'hello'.each_char do |char|
+ *      a.push(char)
+ *    end
+ *    a # => ["h", "e", "l", "l", "o"]
+ *    a = []
+ *    'こんにちは'.each_char do |char|
+ *      a.push(char)
+ *    end
+ *    a # => ["こ", "ん", "に", "ち", "は"]
+ *
+ *  With no block given, returns an enumerator.
+ *
+ *  Related: see {Iterating}[rdoc-ref:String@Iterating].
  *
  */
 
@@ -11269,7 +12851,13 @@ rb_str_each_char(VALUE str)
  *  call-seq:
  *    chars -> array_of_characters
  *
- *  :include: doc/string/chars.rdoc
+ *  Returns an array of the characters in +self+:
+ *
+ *    'hello'.chars     # => ["h", "e", "l", "l", "o"]
+ *    'こんにちは'.chars # => ["こ", "ん", "に", "ち", "は"]
+ *    ''.chars          # => []
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  *
  */
 
@@ -11321,7 +12909,24 @@ rb_str_enumerate_codepoints(VALUE str, VALUE ary)
  *    each_codepoint {|codepoint| ... } -> self
  *    each_codepoint                  -> enumerator
  *
- *  :include: doc/string/each_codepoint.rdoc
+ *  With a block given, calls the block with each successive codepoint from +self+;
+ *  each {codepoint}[https://en.wikipedia.org/wiki/Code_point] is the integer value for a character;
+ *  returns +self+:
+ *
+ *    a = []
+ *    'hello'.each_codepoint do |codepoint|
+ *      a.push(codepoint)
+ *    end
+ *    a # => [104, 101, 108, 108, 111]
+ *    a = []
+ *    'こんにちは'.each_codepoint do |codepoint|
+ *      a.push(codepoint)
+ *    end
+ *    a # => [12371, 12435, 12395, 12385, 12399]
+ *
+ *  With no block given, returns an enumerator.
+ *
+ *  Related: see {Iterating}[rdoc-ref:String@Iterating].
  *
  */
 
@@ -11336,7 +12941,14 @@ rb_str_each_codepoint(VALUE str)
  *  call-seq:
  *    codepoints -> array_of_integers
  *
- *  :include: doc/string/codepoints.rdoc
+ *  Returns an array of the codepoints in +self+;
+ *  each codepoint is the integer value for a character:
+ *
+ *    'hello'.codepoints     # => [104, 101, 108, 108, 111]
+ *    'こんにちは'.codepoints # => [12371, 12435, 12395, 12385, 12399]
+ *    ''.codepoints          # => []
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  *
  */
 
@@ -11491,7 +13103,25 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
  *    each_grapheme_cluster {|grapheme_cluster| ... } -> self
  *    each_grapheme_cluster             -> enumerator
  *
- *  :include: doc/string/each_grapheme_cluster.rdoc
+ *  With a block given, calls the given block with each successive grapheme cluster from +self+
+ *  (see {Unicode Grapheme Cluster Boundaries}[https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries]);
+ *  returns +self+:
+ *
+ *    a = []
+ *    'hello'.each_grapheme_cluster do |grapheme_cluster|
+ *      a.push(grapheme_cluster)
+ *    end
+ *    a  # => ["h", "e", "l", "l", "o"]
+ *
+ *    a = []
+ *    'こんにちは'.each_grapheme_cluster do |grapheme_cluster|
+ *      a.push(grapheme_cluster)
+ *    end
+ *    a # => ["こ", "ん", "に", "ち", "は"]
+ *
+ *  With no block given, returns an enumerator.
+ *
+ *  Related: see {Iterating}[rdoc-ref:String@Iterating].
  *
  */
 
@@ -11506,7 +13136,25 @@ rb_str_each_grapheme_cluster(VALUE str)
  *  call-seq:
  *    grapheme_clusters -> array_of_grapheme_clusters
  *
- *  :include: doc/string/grapheme_clusters.rdoc
+ *  Returns an array of the grapheme clusters in +self+
+ *  (see {Unicode Grapheme Cluster Boundaries}[https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries]):
+ *
+ *    s = "ä-pqr-b̈-xyz-c̈"
+ *    s.size                   # => 16
+ *    s.bytesize               # => 19
+ *    s.grapheme_clusters.size # => 13
+ *    s.grapheme_clusters
+ *    # => ["ä", "-", "p", "q", "r", "-", "b̈", "-", "x", "y", "z", "-", "c̈"]
+ *
+ *  Details:
+ *
+ *    s = "ä"
+ *    s.grapheme_clusters             # => ["ä"]           # One grapheme cluster.
+ *    s.bytes                         # => [97, 204, 136]  # Three bytes.
+ *    s.chars                         # => ["a", "̈"]       # Two characters.
+ *    s.chars.map {|char| char.ord }  # => [97, 776]       # Their values.
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  *
  */
 
@@ -11569,7 +13217,23 @@ rb_str_chop_bang(VALUE str)
  *  call-seq:
  *    chop -> new_string
  *
- *  :include: doc/string/chop.rdoc
+ *  Returns a new string copied from +self+, with trailing characters possibly removed.
+ *
+ *  Removes <tt>"\r\n"</tt> if those are the last two characters.
+ *
+ *    "abc\r\n".chop      # => "abc"
+ *    "こんにちは\r\n".chop # => "こんにちは"
+ *
+ *  Otherwise removes the last character if it exists.
+ *
+ *    'abcd'.chop     # => "abc"
+ *    'こんにちは'.chop # => "こんにち"
+ *    ''.chop         # => ""
+ *
+ *  If you only need to remove the newline separator at the end of the string,
+ *  String#chomp is a better alternative.
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -11753,7 +13417,37 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    chomp(line_sep = $/) -> new_string
  *
- *  :include: doc/string/chomp.rdoc
+ *  Returns a new string copied from +self+, with trailing characters possibly removed:
+ *
+ *  When +line_sep+ is <tt>"\n"</tt>, removes the last one or two characters
+ *  if they are <tt>"\r"</tt>, <tt>"\n"</tt>, or <tt>"\r\n"</tt>
+ *  (but not <tt>"\n\r"</tt>):
+ *
+ *    $/                    # => "\n"
+ *    "abc\r".chomp         # => "abc"
+ *    "abc\n".chomp         # => "abc"
+ *    "abc\r\n".chomp       # => "abc"
+ *    "abc\n\r".chomp       # => "abc\n"
+ *    "こんにちは\r\n".chomp  # => "こんにちは"
+ *
+ *  When +line_sep+ is <tt>''</tt> (an empty string),
+ *  removes multiple trailing occurrences of <tt>"\n"</tt> or <tt>"\r\n"</tt>
+ *  (but not <tt>"\r"</tt> or <tt>"\n\r"</tt>):
+ *
+ *    "abc\n\n\n".chomp('')           # => "abc"
+ *    "abc\r\n\r\n\r\n".chomp('')     # => "abc"
+ *    "abc\n\n\r\n\r\n\n\n".chomp('') # => "abc"
+ *    "abc\n\r\n\r\n\r".chomp('')     # => "abc\n\r\n\r\n\r"
+ *    "abc\r\r\r".chomp('')           # => "abc\r\r\r"
+ *
+ *  When +line_sep+ is neither <tt>"\n"</tt> nor <tt>''</tt>,
+ *  removes a single trailing line separator if there is one:
+ *
+ *    'abcd'.chomp('cd')   # => "ab"
+ *    'abcdcd'.chomp('cd') # => "abcd"
+ *    'abcd'.chomp('xx')   # => "abcd"
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -12255,7 +13949,41 @@ scan_once(VALUE str, VALUE pat, rb_len_t *start, int set_backref_str)
  *    scan(pattern) -> array_of_results
  *    scan(pattern) {|result| ... } -> self
  *
- *  :include: doc/string/scan.rdoc
+ *  Matches a pattern against +self+:
+ *
+ *  - If +pattern+ is a Regexp, the pattern used is +pattern+ itself.
+ *  - If +pattern+ is a string, the pattern used is <tt>Regexp.quote(pattern)</tt>.
+ *
+ *  Generates a collection of matching results
+ *  and updates {regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
+ *
+ *  - If the pattern contains no groups, each result is a matched substring.
+ *  - If the pattern contains groups, each result is an array
+ *    containing a matched substring for each group.
+ *
+ *  With no block given, returns an array of the results:
+ *
+ *    'cruel world'.scan(/\w+/)      # => ["cruel", "world"]
+ *    'cruel world'.scan(/.../)      # => ["cru", "el ", "wor"]
+ *    'cruel world'.scan(/(...)/)    # => [["cru"], ["el "], ["wor"]]
+ *    'cruel world'.scan(/(..)(..)/) # => [["cr", "ue"], ["l ", "wo"]]
+ *    'こんにちは'.scan(/../)         # => ["こん", "にち"]
+ *    'abracadabra'.scan('ab')       # => ["ab", "ab"]
+ *    'abracadabra'.scan('nosuch')   # => []
+ *
+ *  With a block given, calls the block with each result; returns +self+:
+ *
+ *    'cruel world'.scan(/\w+/) {|w| p w }
+ *    # => "cruel"
+ *    # => "world"
+ *    'cruel world'.scan(/(.)(.)/) {|x, y| p [x, y] }
+ *    # => ["c", "r"]
+ *    # => ["u", "e"]
+ *    # => ["l", " "]
+ *    # => ["w", "o"]
+ *    # => ["r", "l"]
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  *
  */
 
@@ -12573,7 +14301,13 @@ rb_str_crypt(VALUE str, VALUE salt)
  *  call-seq:
  *    ord -> integer
  *
- *  :include: doc/string/ord.rdoc
+ *  Returns the integer ordinal of the first character of +self+:
+ *
+ *    'h'.ord         # => 104
+ *    'hello'.ord     # => 104
+ *    'こんにちは'.ord  # => 12371
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  *
  */
 
@@ -12589,7 +14323,18 @@ rb_str_ord(VALUE s)
  *  call-seq:
  *    sum(n = 16) -> integer
  *
- *  :include: doc/string/sum.rdoc
+ *  Returns a basic +n+-bit {checksum}[https://en.wikipedia.org/wiki/Checksum] of the characters in +self+;
+ *  the checksum is the sum of the binary value of each byte in +self+,
+ *  modulo <tt>2**n - 1</tt>:
+ *
+ *    'hello'.sum     # => 532
+ *    'hello'.sum(4)  # => 4
+ *    'hello'.sum(64) # => 532
+ *    'こんにちは'.sum  # => 2582
+ *
+ *  This is not a particularly strong checksum.
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  *
  */
 
@@ -12743,7 +14488,19 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
  *  call-seq:
  *    ljust(width, pad_string = ' ') -> new_string
  *
- *  :include: doc/string/ljust.rdoc
+ *  Returns a copy of +self+, left-justified and, if necessary, right-padded with the +pad_string+:
+ *
+ *    'hello'.ljust(10)       # => "hello     "
+ *    '  hello'.ljust(10)     # => "  hello   "
+ *    'hello'.ljust(10, 'ab') # => "helloababa"
+ *    'こんにちは'.ljust(10)   # => "こんにちは     "
+ *
+ *  If <tt>width <= self.length</tt>, returns a copy of +self+:
+ *
+ *    'hello'.ljust(5)  # => "hello"
+ *    'hello'.ljust(1)  # => "hello"  # Does not truncate to width.
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -12757,7 +14514,23 @@ rb_str_ljust(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    rjust(width, pad_string = ' ') -> new_string
  *
- *  :include: doc/string/rjust.rdoc
+ *  Returns a right-justified copy of +self+.
+ *
+ *  If integer argument +width+ is greater than the size (in characters) of +self+,
+ *  returns a new string of length +width+ that is a copy of +self+,
+ *  right justified and padded on the left with +pad_string+:
+ *
+ *    'hello'.rjust(10)       # => "     hello"
+ *    'hello  '.rjust(10)     # => "   hello  "
+ *    'hello'.rjust(10, 'ab') # => "ababahello"
+ *    'こんにちは'.rjust(10)    # => "     こんにちは"
+ *
+ *  If <tt>width <= self.size</tt>, returns a copy of +self+:
+ *
+ *    'hello'.rjust(5, 'ab')  # => "hello"
+ *    'hello'.rjust(1, 'ab')  # => "hello"
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -12772,7 +14545,25 @@ rb_str_rjust(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    center(size, pad_string = ' ') -> new_string
  *
- *  :include: doc/string/center.rdoc
+ *  Returns a centered copy of +self+.
+ *
+ *  If integer argument +size+ is greater than the size (in characters) of +self+,
+ *  returns a new string of length +size+ that is a copy of +self+,
+ *  centered and padded on one or both ends with +pad_string+:
+ *
+ *    'hello'.center(6)             # => "hello "               # Padded on one end.
+ *    'hello'.center(10)            # => "  hello   "           # Padded on both ends.
+ *    'hello'.center(20, '-|')      # => "-|-|-|-hello-|-|-|-|" # Some padding repeated.
+ *    'hello'.center(10, 'abcdefg') # => "abhelloabc"           # Some padding not used.
+ *    '  hello  '.center(13)        # => "    hello    "
+ *    'こんにちは'.center(10)         # => "  こんにちは   "      # Multi-byte characters.
+ *
+ *  If +size+ is less than or equal to the size of +self+, returns an unpadded copy of +self+:
+ *
+ *    'hello'.center(5)   # => "hello"
+ *    'hello'.center(-10) # => "hello"
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -12786,7 +14577,49 @@ rb_str_center(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    partition(pattern) -> [pre_match, first_match, post_match]
  *
- *  :include: doc/string/partition.rdoc
+ *  Returns a 3-element array of substrings of +self+.
+ *
+ *  If +pattern+ is matched, returns the array:
+ *
+ *    [pre_match, first_match, post_match]
+ *
+ *  where:
+ *
+ *  - +first_match+ is the first-found matching substring.
+ *  - +pre_match+ and +post_match+ are the preceding and following substrings.
+ *
+ *  If +pattern+ is not matched, returns the array:
+ *
+ *    [self.dup, "", ""]
+ *
+ *  Note that in the examples below, a returned string <tt>'hello'</tt>
+ *  is a copy of +self+, not +self+.
+ *
+ *  If +pattern+ is a Regexp, performs the equivalent of <tt>self.match(pattern)</tt>
+ *  (also setting {matched-data variables}[rdoc-ref:language/globals.md@Matched+Data]):
+ *
+ *    'hello'.partition(/h/)  # => ["", "h", "ello"]
+ *    'hello'.partition(/l/)  # => ["he", "l", "lo"]
+ *    'hello'.partition(/l+/) # => ["he", "ll", "o"]
+ *    'hello'.partition(/o/)  # => ["hell", "o", ""]
+ *    'hello'.partition(/^/)  # => ["", "", "hello"]
+ *    'hello'.partition(//)   # => ["", "", "hello"]
+ *    'hello'.partition(/$/)  # => ["hello", "", ""]
+ *    'hello'.partition(/x/)  # => ["hello", "", ""]
+ *
+ *  If +pattern+ is not a Regexp, converts it to a string (if it is not already one),
+ *  then performs the equivalent of <tt>self.index(pattern)</tt>
+ *  (and does _not_ set {matched-data global variables}[rdoc-ref:language/globals.md@Matched+Data]):
+ *
+ *    'hello'.partition('h')     # => ["", "h", "ello"]
+ *    'hello'.partition('l')     # => ["he", "l", "lo"]
+ *    'hello'.partition('ll')    # => ["he", "ll", "o"]
+ *    'hello'.partition('o')     # => ["hell", "o", ""]
+ *    'hello'.partition('')      # => ["", "", "hello"]
+ *    'hello'.partition('x')     # => ["hello", "", ""]
+ *    'こんにちは'.partition('に') # => ["こん", "に", "ちは"]
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  *
  */
 
@@ -12824,7 +14657,53 @@ rb_str_partition(VALUE str, VALUE sep)
  *  call-seq:
  *    rpartition(pattern) -> [pre_match, last_match, post_match]
  *
- *  :include: doc/string/rpartition.rdoc
+ *  Returns a 3-element array of substrings of +self+.
+ *
+ *  Searches +self+ for a match of +pattern+, seeking the _last_ match.
+ *
+ *  If +pattern+ is not matched, returns the array:
+ *
+ *    ["", "", self.dup]
+ *
+ *  If +pattern+ is matched, returns the array:
+ *
+ *    [pre_match, last_match, post_match]
+ *
+ *  where:
+ *
+ *  - +last_match+ is the last-found matching substring.
+ *  - +pre_match+ and +post_match+ are the preceding and following substrings.
+ *
+ *  The pattern used is:
+ *
+ *  - +pattern+ itself, if it is a Regexp.
+ *  - <tt>Regexp.quote(pattern)</tt>, if +pattern+ is a string.
+ *
+ *  Note that in the examples below, a returned string <tt>'hello'</tt> is a copy of +self+, not +self+.
+ *
+ *  If +pattern+ is a Regexp, searches for the last matching substring
+ *  (also setting {matched-data global variables}[rdoc-ref:language/globals.md@Matched+Data]):
+ *
+ *    'hello'.rpartition(/l/)     # => ["hel", "l", "o"]
+ *    'hello'.rpartition(/ll/)    # => ["he", "ll", "o"]
+ *    'hello'.rpartition(/h/)     # => ["", "h", "ello"]
+ *    'hello'.rpartition(/o/)     # => ["hell", "o", ""]
+ *    'hello'.rpartition(//)      # => ["hello", "", ""]
+ *    'hello'.rpartition(/x/)     # => ["", "", "hello"]
+ *    'こんにちは'.rpartition(/に/) # => ["こん", "に", "ちは"]
+ *
+ *  If +pattern+ is not a Regexp, converts it to a string (if it is not already one),
+ *  then searches for the last matching substring
+ *  (and does _not_ set {matched-data global variables}[rdoc-ref:language/globals.md@Matched+Data]):
+ *
+ *    'hello'.rpartition('l')     # => ["hel", "l", "o"]
+ *    'hello'.rpartition('ll')    # => ["he", "ll", "o"]
+ *    'hello'.rpartition('h')     # => ["", "h", "ello"]
+ *    'hello'.rpartition('o')     # => ["hell", "o", ""]
+ *    'hello'.rpartition('')      # => ["hello", "", ""]
+ *    'こんにちは'.rpartition('に') # => ["こん", "に", "ちは"]
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  *
  */
 
@@ -12866,7 +14745,22 @@ rb_str_rpartition(VALUE str, VALUE sep)
  *  call-seq:
  *    start_with?(*patterns) -> true or false
  *
- *  :include: doc/string/start_with_p.rdoc
+ *  Returns whether +self+ starts with any of the given +patterns+.
+ *
+ *  For each argument, the pattern used is:
+ *
+ *  - The pattern itself, if it is a Regexp.
+ *  - <tt>Regexp.quote(pattern)</tt>, if it is a string.
+ *
+ *  Returns +true+ if any pattern matches the beginning, +false+ otherwise:
+ *
+ *    'hello'.start_with?('hell')               # => true
+ *    'hello'.start_with?(/H/i)                 # => true
+ *    'hello'.start_with?('heaven', 'hell')     # => true
+ *    'hello'.start_with?('heaven', 'paradise') # => false
+ *    'こんにちは'.start_with?('こ')              # => true
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  *
  */
 
@@ -12906,7 +14800,15 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    end_with?(*strings) -> true or false
  *
- *  :include: doc/string/end_with_p.rdoc
+ *  Returns whether +self+ ends with any of the given +strings+:
+ *
+ *    'foo'.end_with?('oo')         # => true
+ *    'foo'.end_with?('bar', 'oo')  # => true
+ *    'foo'.end_with?('bar', 'baz') # => false
+ *    'foo'.end_with?('')           # => true
+ *    'こんにちは'.end_with?('は')   # => true
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  *
  */
 
@@ -13011,7 +14913,15 @@ rb_str_delete_prefix_bang(VALUE str, VALUE prefix)
  *  call-seq:
  *    delete_prefix(prefix) -> new_string
  *
- *  :include: doc/string/delete_prefix.rdoc
+ *  Returns a copy of +self+ with leading substring +prefix+ removed:
+ *
+ *    'oof'.delete_prefix('o')          # => "of"
+ *    'oof'.delete_prefix('oo')         # => "f"
+ *    'oof'.delete_prefix('oof')        # => ""
+ *    'oof'.delete_prefix('x')          # => "oof"
+ *    'こんにちは'.delete_prefix('こん')  # => "にちは"
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -13087,7 +14997,16 @@ rb_str_delete_suffix_bang(VALUE str, VALUE suffix)
  *  call-seq:
  *    delete_suffix(suffix) -> new_string
  *
- *  :include: doc/string/delete_suffix.rdoc
+ *  Returns a copy of +self+ with trailing substring <tt>suffix</tt> removed:
+ *
+ *    'foo'.delete_suffix('o')           # => "fo"
+ *    'foo'.delete_suffix('oo')          # => "f"
+ *    'foo'.delete_suffix('foo')         # => ""
+ *    'foo'.delete_suffix('f')           # => "foo"
+ *    'foo'.delete_suffix('x')           # => "foo"
+ *    'こんにちは'.delete_suffix('ちは')  # => "こんに"
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -13146,7 +15065,27 @@ rb_fs_setter(VALUE val, ID id, VALUE *var)
  *  call-seq:
  *    force_encoding(encoding) -> self
  *
- *  :include: doc/string/force_encoding.rdoc
+ *  Changes the encoding of +self+ to the given +encoding+,
+ *  which may be a string encoding name or an Encoding object;
+ *  does not change the underlying bytes;
+ *  returns self:
+ *
+ *    s = 'łał'
+ *    s.bytes                   # => [197, 130, 97, 197, 130]
+ *    s.encoding                # => #<Encoding:UTF-8>
+ *    s.force_encoding('ascii') # => "\xC5\x82a\xC5\x82"
+ *    s.encoding                # => #<Encoding:US-ASCII>
+ *    s.valid_encoding?         # => true
+ *    s.bytes                   # => [197, 130, 97, 197, 130]
+ *
+ *  Makes the change even if the given +encoding+ is invalid
+ *  for +self+ (as is the change above):
+ *
+ *    s.valid_encoding?         # => false
+ *
+ *  See {Encodings}[rdoc-ref:encodings.rdoc].
+ *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  *
  */
 
@@ -13179,7 +15118,22 @@ rb_str_force_encoding(VALUE str, VALUE enc)
  *  call-seq:
  *    b -> new_string
  *
- *  :include: doc/string/b.rdoc
+ *  Returns a copy of +self+ that has ASCII-8BIT encoding;
+ *  the underlying bytes are not modified:
+ *
+ *    s = "\x99"
+ *    s.encoding   # => #<Encoding:UTF-8>
+ *    t = s.b      # => "\x99"
+ *    t.encoding   # => #<Encoding:ASCII-8BIT>
+ *
+ *    s = "\u4095" # => "䂕"
+ *    s.encoding   # => #<Encoding:UTF-8>
+ *    s.bytes      # => [228, 130, 149]
+ *    t = s.b      # => "\xE4\x82\x95"
+ *    t.encoding   # => #<Encoding:ASCII-8BIT>
+ *    t.bytes      # => [228, 130, 149]
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 
@@ -13564,7 +15518,28 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
  *    scrub(replacement_string = default_replacement_string) -> new_string
  *    scrub{|sequence| ... } -> new_string
  *
- *  :include: doc/string/scrub.rdoc
+ *  Returns a copy of +self+ with each invalid byte sequence replaced
+ *  by the given +replacement_string+.
+ *
+ *  With no block given, replaces each invalid sequence
+ *  with the given +default_replacement_string+
+ *  (by default, <tt>"�"</tt> for a Unicode encoding, <tt>'?'</tt> otherwise):
+ *
+ *    "foo\x81\x81bar".scrub                            # => "foo��bar"
+ *    "foo\x81\x81bar".force_encoding('US-ASCII').scrub # => "foo??bar"
+ *    "foo\x81\x81bar".scrub('xyzzy')                   # => "fooxyzzyxyzzybar"
+ *
+ *  With a block given, calls the block with each invalid sequence,
+ *  and replaces that sequence with the return value of the block:
+ *
+ *    "foo\x81\x81bar".scrub {|sequence| p sequence; 'XYZZY' } # => "fooXYZZYXYZZYbar"
+ *
+ *  Output :
+ *
+ *    "\x81"
+ *    "\x81"
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 static VALUE
@@ -13620,7 +15595,34 @@ unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
  *  call-seq:
  *    unicode_normalize(form = :nfc) -> string
  *
- *  :include: doc/string/unicode_normalize.rdoc
+ *  Returns a copy of +self+ with
+ *  {Unicode normalization}[https://unicode.org/reports/tr15] applied.
+ *
+ *  Argument +form+ must be one of the following symbols
+ *  (see {Unicode normalization forms}[https://unicode.org/reports/tr15/#Norm_Forms]):
+ *
+ *  - +:nfc+: Canonical decomposition, followed by canonical composition.
+ *  - +:nfd+: Canonical decomposition.
+ *  - +:nfkc+: Compatibility decomposition, followed by canonical composition.
+ *  - +:nfkd+: Compatibility decomposition.
+ *
+ *  The encoding of +self+ must be one of:
+ *
+ *  - <tt>Encoding::UTF_8</tt>.
+ *  - <tt>Encoding::UTF_16BE</tt>.
+ *  - <tt>Encoding::UTF_16LE</tt>.
+ *  - <tt>Encoding::UTF_32BE</tt>.
+ *  - <tt>Encoding::UTF_32LE</tt>.
+ *  - <tt>Encoding::GB18030</tt>.
+ *  - <tt>Encoding::UCS_2BE</tt>.
+ *  - <tt>Encoding::UCS_4BE</tt>.
+ *
+ *  Examples:
+ *
+ *    "a\u0300".unicode_normalize       # => "à"  # Lowercase 'a' with grave accens.
+ *    "a\u0300".unicode_normalize(:nfd) # => "à"  # Same.
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  *
  */
 static VALUE
@@ -13991,7 +15993,33 @@ sym_cmp(VALUE sym, VALUE other)
  *  call-seq:
  *    casecmp(object) -> -1, 0, 1, or nil
  *
- *  :include: doc/symbol/casecmp.rdoc
+ *  Like Symbol#<=>, but case-insensitive;
+ *  equivalent to <tt>self.to_s.casecmp(object.to_s)</tt>:
+ *
+ *    lower = :abc
+ *    upper = :ABC
+ *    upper.casecmp(lower) # => 0
+ *    lower.casecmp(lower) # => 0
+ *    lower.casecmp(upper) # => 0
+ *
+ *  Returns nil if +self+ and +object+ have incompatible encodings,
+ *  or if +object+ is not a symbol:
+ *
+ *    sym = 'äöü'.encode("ISO-8859-1").to_sym
+ *    other_sym = 'ÄÖÜ'
+ *    sym.casecmp(other_sym) # => nil
+ *    :foo.casecmp(2)        # => nil
+ *
+ *  Unlike Symbol#casecmp?,
+ *  case-insensitivity does not work for characters outside of 'A'..'Z' and 'a'..'z':
+ *
+ *    lower = :äöü
+ *    upper = :ÄÖÜ
+ *    upper.casecmp(lower) # => -1
+ *    lower.casecmp(lower) # => 0
+ *    lower.casecmp(upper) # => 1
+ *
+ *  Related: Symbol#casecmp?, String#casecmp.
  *
  */
 
@@ -14008,7 +16036,32 @@ sym_casecmp(VALUE sym, VALUE other)
  *  call-seq:
  *    casecmp?(object) -> true, false, or nil
  *
- *  :include: doc/symbol/casecmp_p.rdoc
+ *  Returns +true+ if +self+ and +object+ are equal after Unicode case folding,
+ *  otherwise +false+:
+ *
+ *    lower = :abc
+ *    upper = :ABC
+ *    upper.casecmp?(lower) # => true
+ *    lower.casecmp?(lower) # => true
+ *    lower.casecmp?(upper) # => true
+ *
+ *  Returns nil if +self+ and +object+ have incompatible encodings,
+ *  or if +object+ is not a symbol:
+ *
+ *    sym = 'äöü'.encode("ISO-8859-1").to_sym
+ *    other_sym = 'ÄÖÜ'
+ *    sym.casecmp?(other_sym) # => nil
+ *    :foo.casecmp?(2)        # => nil
+ *
+ *  Unlike Symbol#casecmp, works for characters outside of 'A'..'Z' and 'a'..'z':
+ *
+ *    lower = :äöü
+ *    upper = :ÄÖÜ
+ *    upper.casecmp?(lower) # => true
+ *    lower.casecmp?(lower) # => true
+ *    lower.casecmp?(upper) # => true
+ *
+ *  Related: Symbol#casecmp, String#casecmp?.
  *
  */
 

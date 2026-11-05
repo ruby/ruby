@@ -1452,7 +1452,37 @@ rb_reg_backref_number(VALUE match, VALUE backref)
  *    offset(n) -> [start_offset, end_offset]
  *    offset(name) -> [start_offset, end_offset]
  *
- *  :include: doc/matchdata/offset.rdoc
+ *  Returns a 2-element array containing the beginning and ending
+ *  offsets (in characters) of the specified match.
+ *
+ *  When non-negative integer argument +n+ is given,
+ *  returns the starting and ending offsets of the <tt>n</tt>th match:
+ *
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m[0]        # => "HX1138"
+ *    m.offset(0) # => [1, 7]
+ *    m[3]        # => "113"
+ *    m.offset(3) # => [3, 6]
+ *
+ *    m = /(ん)(に)(ち)/.match('こんにちは')
+ *    # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+ *    m[0]        # => "んにち"
+ *    m.offset(0) # => [1, 4]
+ *    m[3]        # => "ち"
+ *    m.offset(3) # => [3, 4]
+ *
+ *  When string or symbol argument +name+ is given,
+ *  returns the starting and ending offsets for the named match:
+ *
+ *    m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
+ *    # => #<MatchData "hog" foo:"h" bar:"g">
+ *    m[:foo]         # => "h"
+ *    m.offset('foo') # => [0, 1]
+ *    m[:bar]         # => "g"
+ *    m.offset(:bar)  # => [2, 3]
+ *
+ *  Related: MatchData#byteoffset, MatchData#begin, MatchData#end.
  *
  */
 
@@ -1478,7 +1508,42 @@ match_offset(VALUE match, VALUE n)
  *  call-seq:
  *     byteoffset(object) -> [bytebegin, byteend]
  *
- *  :include: doc/matchdata/byteoffset.md
+ *  Returns the offsets (in bytes) of the beginning and end of the specified match.
+ *
+ *  With argument `object` given as a non-negative integer argument `n` given,
+ *  returns the offsets of the `n`th match:
+ *
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[1]             # => "2026"
+ *  match.byteoffset(1)  # => [0, 4]
+ *  match[3]             # => "25"
+ *  match.byteoffset(3)  # => [8, 10]
+ *  match.byteoffset(10) # Raises IndexError: index 10 out of matches.
+ *
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+ *  match[1]            # => "ん"
+ *  match.byteoffset(1) # => [3, 6] # Byte offsets.
+ *  match.offset(1)     # => [1, 2] # Character offsets.
+ *  ```
+ *
+ *  With argument `object` given as a string or symbol argument `name`,
+ *  returns the offsets of the named match:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[:year]            # => "2026"
+ *  match.byteoffset(:year) # => [0, 4]
+ *  match.byteoffset('day') # => [8, 10]
+ *  ```
+ *
+ *
+ *  Related: MatchData#offset.
  *
  */
 
@@ -1503,7 +1568,41 @@ match_byteoffset(VALUE match, VALUE n)
  *    bytebegin(n) -> integer
  *    bytebegin(name) -> integer
  *
- *  :include: doc/matchdata/bytebegin.md
+ *  Returns the offset (in bytes) of the beginning of the specified match.
+ *
+ *  With non-negative integer argument `n` given,
+ *  returns the offset of the beginning of the `n`th match:
+ *
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0]            # => "2026-12-25"
+ *  match.bytebegin(0)  # => 0
+ *  match[2]            # => "12"
+ *  match.bytebegin(2)  # => 5
+ *  match.bytebegin(20) # Raises IndexError: index 20 out of matches.
+ *
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+ *  match[2]           # => "に"
+ *  match.bytebegin(2) # => 6  # Byte offset.
+ *  match.begin(2)     # => 2  # Character offset.
+ *  ```
+ *
+ *  With string or symbol argument `name` given,
+ *  returns the offset of the beginning for the named match:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[:month]           # => "12"
+ *  match.bytebegin(:month) # => 5
+ *  match.bytebegin('day')  # => 8
+ *  ```
+ *
+ *  Related: MatchData#begin.
  *
  */
 
@@ -1528,7 +1627,42 @@ match_bytebegin(VALUE match, VALUE n)
  *    byteend(n) -> integer
  *    byteend(name) -> integer
  *
- *  :include: doc/matchdata/byteend.md
+ *  Returns the offset (in bytes) of the end of the specified match.
+ *
+ *  When non-negative integer argument `n` is given,
+ *  returns the offset of the end of the `n`th match:
+ *
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[1]         # => "2026"
+ *  match.byteend(1) # => 4
+ *  match[3]         # => "25"
+ *  match.byteend(3) # => 10
+ *  match.byteend(4) # Raises IndexError: index 4 out of matches.
+ *
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+ *  match[1]         # => "ん"
+ *  match.byteend(1) # => 6  # Byte offset.
+ *  match.end(1)     # => 2  # Character offset.
+ *  ```
+ *
+ *  When string or symbol argument `name` is given,
+ *  returns the offset of the end for the named match:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[:year]         # => "2026"
+ *  match.byteend(:year) # => 4
+ *  match['day']         # => "25"
+ *  match.byteend('day') # => 10
+ *  ```
+ *
+ *  Related: MatchData#bytebegin.
  *
  */
 
@@ -1553,7 +1687,41 @@ match_byteend(VALUE match, VALUE n)
  *    begin(n) -> integer
  *    begin(name) -> integer
  *
- *  :include: doc/matchdata/begin.md
+ *  Returns the offset (in characters) of the beginning of the specified match.
+ *
+ *  With non-negative integer argument `n` given,
+ *  returns the character offset of the beginning of the `n`th match:
+ *
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0]         # => "2026-12-25"
+ *  match.begin(0)   # => 0
+ *  match[3]         # => "25"
+ *  match.begin(3)   # => 8
+ *  match.begin(10)  # Raises IndexError: index 10 out of matches.
+ *
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+ *  match[2]           # => "に"
+ *  match.begin(2)     # => 2  # Character offset.
+ *  match.bytebegin(2) # => 6  # Byte offset.
+ *  ```
+ *
+ *  With string or symbol argument `name` given,
+ *  returns the offset of the beginning for the named match:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[:year]         # => "2026"
+ *  match.begin(:year)   # => 0
+ *  match.begin('month') # => 5
+ *  ```
+ *
+ *  Related: MatchData#bytebegin.
  *
  */
 
@@ -1580,7 +1748,40 @@ match_begin(VALUE match, VALUE n)
  *    end(n) -> integer
  *    end(name) -> integer
  *
- *  :include: doc/matchdata/end.md
+ *  Returns the offset (in characters) of the end of the specified match.
+ *
+ *  With non-negative integer argument `n` given,
+ *  returns the character offset of the end of the `n`th match:
+ *
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0]       # => "2026-12-25"
+ *  match.end(0)   # => 10
+ *  match[3]       # => "25"
+ *  match.end(3)   # => 10
+ *  match.end(10)  # Raises IndexError: index 10 out of matches.
+ *
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+ *  match[2]         # => "に"
+ *  match.end(2)     # => 3  # Character offset.
+ *  match.byteend(2) # => 9  # Byte offset.
+ *  ```
+ *
+ *  With string or symbol argument `name` given, returns the offset of the end for the named match:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[:year]       # => "2026"
+ *  match.end(:year)   # => 4
+ *  match.end('month') # => 7
+ *  ```
+ *
+ *  Related: MatchData#byteend.
  *
  */
 
