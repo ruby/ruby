@@ -77,6 +77,7 @@ size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_dispose(rb_ast_t*);
 const char *ruby_node_name(int node);
 const char *rb_node_type_to_str(rb_node_type_t node_type);
+bool rb_node_each_child(const rb_node_t *, bool (*)(const rb_node_t *, void *), void *);
 void rb_node_init(NODE *n, enum node_type type);
 void rb_rb_node_init(rb_node_t *n, enum rb_node_type type);
 
