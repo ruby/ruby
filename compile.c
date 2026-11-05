@@ -551,6 +551,7 @@ static int iseq_set_optargs_table(rb_iseq_t *iseq);
 static int iseq_set_parameters_lvar_state(const rb_iseq_t *iseq);
 
 static int compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, VALUE needstr, bool ignore);
+static int compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 static int compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *line_node, const rb_node_list2_t *list, int method_call_keywords, int popped);
 
 /*
@@ -1155,7 +1156,12 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 #undef INVALID_ISEQ_TYPE /* invalid iseq types end */
           case ISEQ_TYPE_RESCUE:
             iseq_set_exception_local_table(iseq);
-            CHECK(COMPILE(ret, "rescue", node));
+            if (nd_type_p(node, RB_RESCUE_MODIFIER_NODE)) {
+                CHECK(compile_rescue(iseq, ret, node, FALSE));
+            }
+            else {
+                CHECK(COMPILE(ret, "rescue", node));
+            }
             break;
           case ISEQ_TYPE_ENSURE:
             iseq_set_exception_local_table(iseq);
@@ -9577,6 +9583,30 @@ compile_lasgn_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
 }
 
 static int
+compile_rescue_reference(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node)
+{
+    struct masgn_state state = {0};
+    DECL_ANCHOR(pre);
+    INIT_ANCHOR(pre);
+    DECL_ANCHOR(rhs);
+    INIT_ANCHOR(rhs);
+    DECL_ANCHOR(lhs);
+    INIT_ANCHOR(lhs);
+    DECL_ANCHOR(post);
+    INIT_ANCHOR(post);
+
+    int ok = compile_massign_lhs(iseq, pre, rhs, lhs, post, node, &state, 1);
+    finish_masgn_lhs(iseq, &state);
+    CHECK(ok);
+
+    ADD_SEQ(ret, pre);
+    ADD_GETLOCAL(ret, node, LVAR_ERRINFO, 0);
+    ADD_SEQ(ret, lhs);
+    ADD_SEQ(ret, post);
+    return COMPILE_OK;
+}
+
+static int
 compile_begin_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     const int line = nd_line(node);
@@ -9594,7 +9624,7 @@ compile_begin_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const 
         break;
       case RB_RESCUE_MODIFIER_NODE:
         nd_stmts = RB_NODE_RESCUE_MODIFIER(node)->expression;
-        nd_rescue = RB_NODE_RESCUE_MODIFIER(node)->rescue_expression;
+        nd_rescue = (NODE *)node;
         nd_else = NULL;
         break;
       default:
@@ -9644,6 +9674,19 @@ compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     const rb_node_list2_t *exlist;
     LABEL *label_miss, *label_hit;
 
+    if (nd_type_p(node, RB_RESCUE_MODIFIER_NODE)) {
+        label_miss = NEW_LABEL(line);
+        ADD_GETLOCAL(ret, node, LVAR_ERRINFO, 0);
+        ADD_INSN1(ret, node, putobject, rb_eStandardError);
+        ADD_INSN1(ret, node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
+        ADD_INSNL(ret, node, branchunless, label_miss);
+        ADD_TRACE(ret, RUBY_EVENT_RESCUE);
+        CHECK(COMPILE(ret, "rescue modifier body", RB_NODE_RESCUE_MODIFIER(node)->rescue_expression));
+        ADD_INSN(ret, node, leave);
+        ADD_LABEL(ret, label_miss);
+        return COMPILE_OK;
+    }
+
     while (resq) {
         label_miss = NEW_LABEL(line);
         label_hit = NEW_LABEL(line);
@@ -9655,7 +9698,8 @@ compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
                 const NODE *nex = exlist->nodes[i];
                 if (nd_type_p(nex, RB_SPLAT_NODE)) {
                     ADD_GETLOCAL(ret, line_node, LVAR_ERRINFO, 0);
-                    CHECK(COMPILE(ret, "rescue/cond splat", nex));
+                    CHECK(COMPILE(ret, "rescue/cond splat", RB_NODE_SPLAT(nex)->expression));
+                    ADD_INSN1(ret, nex, splatarray, Qfalse);
                     ADD_INSN1(ret, line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE | VM_CHECKMATCH_ARRAY));
                     ADD_INSNL(ret, line_node, branchif, label_hit);
                 }
@@ -9678,8 +9722,7 @@ compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
         ADD_TRACE(ret, RUBY_EVENT_RESCUE);
 
         if (RB_NODE_RESCUE(resq)->reference) {
-            ADD_GETLOCAL(ret, node, LVAR_ERRINFO, 0);
-            CHECK(compile_lasgn_lhs(iseq, ret, node, RB_NODE_LOCAL_VARIABLE_TARGET(RB_NODE_RESCUE(resq)->reference)->name));
+            CHECK(compile_rescue_reference(iseq, ret, (NODE *)RB_NODE_RESCUE(resq)->reference));
         }
 
         if (RB_NODE_LIST_EMPTY_P(&RB_NODE_RESCUE(resq)->statements->body) && !RB_NODE_RESCUE(resq)->reference) {
