@@ -23,6 +23,15 @@ assert_equal '[false, true, true]', %q{
   RubyVM::InstructionSequence.compile_parsey('$_ = "a"; [!/a/, (true && /a/) ? true : false, (false || /a/) ? true : false]').eval.inspect
 }
 
+assert_equal 'true', %q{
+  warnings = []
+  Warning.define_singleton_method(:warn) { |message| warnings << message }
+  $VERBOSE = true
+  RubyVM::InstructionSequence.compile_parsey('1; if (a = [1, {x: 2}]); end; if "literal"; end')
+  warnings.any? { |message| message.include?('possibly useless use of a literal in void context') } &&
+    warnings.any? { |message| message.include?("found '= literal' in conditional, should be ==") } &&
+    warnings.any? { |message| message.include?('string literal in condition') }
+}
 
 assert_equal '[]', %q{
   warnings = []

@@ -1292,7 +1292,7 @@ static rb_pre_execution_node_t *rb_new_node_pre_execution_new(struct parser_para
 // static rb_node_fndptn_t *rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc);
 // static rb_node_line_t *rb_node_line_new(struct parser_params *p, const YYLTYPE *loc);
 // static rb_node_file_t *rb_node_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
-static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_missing_node_t *rb_new_node_missing_new(struct parser_params *p, const YYLTYPE *loc);
 
 // #define NEW_SCOPE(a,b,c,loc) (NODE *)rb_node_scope_new(p,a,b,c,loc)
 #define NEW_SCOPE2(t,a,b,c,loc) (NODE *)rb_node_scope_new2(p,t,a,b,c,loc)
@@ -1402,7 +1402,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 // #define NEW_LINE(loc) (NODE *)rb_node_line_new(p,loc)
 // #define NEW_FILE(str,loc) (NODE *)rb_node_file_new(p,str,loc)
 // #define NEW_ENCODING(loc) (NODE *)rb_node_encoding_new(p,loc)
-#define NEW_ERROR(loc) (NODE *)rb_node_error_new(p,loc)
+#define NEW_ERROR(loc) (rb_node_t *)rb_new_node_missing_new(p,loc)
 
 /* prism node */
 static rb_program_node_t *rb_new_node_program_new(struct parser_params *p, rb_statements_node_t *statements, const YYLTYPE *loc);
@@ -1823,11 +1823,17 @@ static NODE *
 last_expr_node(NODE *expr)
 {
     while (expr) {
-        if (nd_type_p(expr, NODE_BLOCK)) {
-            expr = RNODE_BLOCK(RNODE_BLOCK(expr)->nd_end)->nd_head;
+        if (nd_type_p(expr, RB_STATEMENTS_NODE)) {
+            rb_node_list2_t *body = &RB_NODE_STATEMENTS(expr)->body;
+            if (!body->size) break;
+            expr = body->nodes[body->size - 1];
         }
-        else if (nd_type_p(expr, NODE_BEGIN) && RNODE_BEGIN(expr)->nd_body) {
-            expr = RNODE_BEGIN(expr)->nd_body;
+        else if (nd_type_p(expr, RB_PARENTHESES_NODE) && RB_NODE_PARENTHESES(expr)->body) {
+            expr = RB_NODE_PARENTHESES(expr)->body;
+        }
+        else if (nd_type_p(expr, RB_BEGIN_NODE) && RB_NODE_BEGIN(expr)->statements &&
+                 !RB_NODE_BEGIN(expr)->rescue_clause && !RB_NODE_BEGIN(expr)->ensure_clause) {
+            expr = (NODE *)RB_NODE_BEGIN(expr)->statements;
         }
         else {
             break;
@@ -2363,23 +2369,15 @@ static NODE *
 get_nd_value(struct parser_params *p, NODE *node)
 {
     switch (nd_type(node)) {
-      case NODE_GASGN:
-        return RNODE_GASGN(node)->nd_value;
-      case NODE_IASGN:
-        return RNODE_IASGN(node)->nd_value;
-      case NODE_LASGN:
-        return RNODE_LASGN(node)->nd_value;
-      // case NODE_DASGN:
-      //   return RNODE_DASGN(node)->nd_value;
-      case NODE_MASGN:
-        return RNODE_MASGN(node)->nd_value;
-      case NODE_CVASGN:
-        return RNODE_CVASGN(node)->nd_value;
-      case NODE_CDECL:
-        return RNODE_CDECL(node)->nd_value;
-      default:
-        compile_error(p, "get_nd_value: unexpected node: %s", parser_node_name(nd_type(node)));
-        return 0;
+      case RB_LOCAL_VARIABLE_WRITE_NODE: return RB_NODE_LOCAL_VARIABLE_WRITE(node)->value;
+      case RB_GLOBAL_VARIABLE_WRITE_NODE: return RB_NODE_GLOBAL_VARIABLE_WRITE(node)->value;
+      case RB_INSTANCE_VARIABLE_WRITE_NODE: return RB_NODE_INSTANCE_VARIABLE_WRITE(node)->value;
+      case RB_CLASS_VARIABLE_WRITE_NODE: return RB_NODE_CLASS_VARIABLE_WRITE(node)->value;
+      case RB_CONSTANT_WRITE_NODE: return RB_NODE_CONSTANT_WRITE(node)->value;
+      case RB_CONSTANT_PATH_WRITE_NODE: return RB_NODE_CONSTANT_PATH_WRITE(node)->value;
+      case RB_MULTI_WRITE_NODE: return RB_NODE_MULTI_WRITE(node)->value;
+      case RB_SHAREABLE_CONSTANT_NODE: return get_nd_value(p, RB_NODE_SHAREABLE_CONSTANT(node)->write);
+      default: return NULL;
     }
 }
 
@@ -3749,15 +3747,7 @@ program		:  {
                   compstmt(top_stmts)
                     {
                         if ($2 && !compile_for_eval) {
-                            NODE *node = $2;
-                            /* last expression should not be void */
-                            if (nd_type_p(node, NODE_BLOCK)) {
-                                while (RNODE_BLOCK(node)->nd_next) {
-                                    node = RNODE_BLOCK(node)->nd_next;
-                                }
-                                node = RNODE_BLOCK(node)->nd_head;
-                            }
-                            node = remove_begin(node);
+                            NODE *node = last_expr_node((NODE *)$2);
                             void_expr(p, node);
                         }
                         // p->eval_tree = NEW_SCOPE(0, block_append(p, p->eval_tree, $2), NULL, &@$);
@@ -7223,24 +7213,23 @@ singleton	: value_expr(singleton_expr)
                     {
                         NODE *expr = last_expr_node($1);
                         switch (nd_type(expr)) {
-                          case NODE_STR:
-                          case NODE_DSTR:
-                          case NODE_XSTR:
-                          case NODE_DXSTR:
-                          case NODE_REGX:
-                          case NODE_DREGX:
+                          case RB_STRING_NODE:
+                          case RB_INTERPOLATED_STRING_NODE:
+                          case RB_X_STRING_NODE:
+                          case RB_INTERPOLATED_X_STRING_NODE:
+                          case RB_REGULAR_EXPRESSION_NODE:
+                          case RB_INTERPOLATED_REGULAR_EXPRESSION_NODE:
                           case RB_SYMBOL_NODE:
-                          case NODE_LINE:
-                          case NODE_FILE:
-                          case NODE_ENCODING:
-                          case NODE_INTEGER:
-                          case NODE_FLOAT:
-                          case NODE_RATIONAL:
-                          case NODE_IMAGINARY:
-                          case NODE_DSYM:
-                          case NODE_LIST:
-                          case NODE_ZLIST:
-                            yyerror1(&expr->nd_loc, "can't define singleton method for literals");
+                          case RB_SOURCE_LINE_NODE:
+                          case RB_SOURCE_FILE_NODE:
+                          case RB_SOURCE_ENCODING_NODE:
+                          case RB_INTEGER_NODE:
+                          case RB_FLOAT_NODE:
+                          case RB_RATIONAL_NODE:
+                          case RB_IMAGINARY_NODE:
+                          case RB_INTERPOLATED_SYMBOL_NODE:
+                          case RB_ARRAY_NODE:
+                            yyerror1(nd_code_loc(expr), "can't define singleton method for literals");
                             break;
                           default:
                             break;
@@ -13042,13 +13031,6 @@ rb_node_args_aux_new(struct parser_params *p, ID nd_pid, int nd_plen, const YYLT
 //     return n;
 // }
 
-static rb_node_error_t *
-rb_node_error_new(struct parser_params *p, const YYLTYPE *loc)
-{
-    rb_node_error_t *n = NODE_NEWNODE(NODE_ERROR, rb_node_error_t, loc);
-
-    return n;
-}
 
 // static rb_node_break_t *
 // rb_node_break_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
@@ -13140,6 +13122,12 @@ rb_node_newnode(struct parser_params *p, enum rb_node_type type, size_t size, si
 }
 
 #define RB_NEW_NODE_NEWNODE(rb_node_type, type, loc) (type *)(rb_node_newnode(p, rb_node_type, sizeof(type), RUBY_ALIGNOF(type), loc))
+
+static rb_missing_node_t *
+rb_new_node_missing_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    return RB_NEW_NODE_NEWNODE(RB_MISSING_NODE, rb_missing_node_t, loc);
+}
 
 static rb_for_node_t *
 rb_new_node_for_new(struct parser_params *p, rb_node_t *index, rb_node_t *collection, rb_statements_node_t *statements, const YYLTYPE *loc, const YYLTYPE *for_loc, const YYLTYPE *in_loc, const YYLTYPE *do_loc, const YYLTYPE *end_loc)
@@ -14989,7 +14977,7 @@ statements_node_body_append(struct parser_params *p, rb_statements_node_t *node,
             case RB_REDO_NODE:
             case RB_RETRY_NODE:
             case RB_RETURN_NODE:
-                rb_warning0L(rb_nd_line(node), "statement not reached");
+                rb_warning0L(rb_nd_line(statement), "statement not reached");
                 break;
             default:
                 break;
@@ -15358,8 +15346,8 @@ write2target(struct parser_params *p, rb_node_t *node)
             return NEW_RB_INDEX_TARGET(cast->receiver, cast->arguments, rb_node_get_fl(cast), nd_code_loc(cast));
         }
       }
-      // TODO
-      // case NODE_ERROR: {}
+      case RB_MISSING_NODE:
+        return node;
       default:
         rb_bug("unexpected node: %s", rb_node_type_to_str(RB_NODE_TYPE(node)));
         UNREACHABLE_RETURN(0);
@@ -15636,7 +15624,7 @@ numparam_used_p(struct parser_params *p)
         compile_error(p, "'it' is not allowed when a numbered parameter is already used\n"
                       "%s:%d: numbered parameter is already used here",
                       p->ruby_sourcefile, nd_line(numparam));
-        parser_show_error_line(p, &numparam->nd_loc);
+        parser_show_error_line(p, nd_code_loc(numparam));
         return 1;
     }
     return 0;
@@ -16429,10 +16417,10 @@ rb_backref_error(struct parser_params *p, NODE *node)
 # define ERR(...) rb_sprintf(__VA_ARGS__)
 #endif
     switch (nd_type(node)) {
-      case NODE_NTH_REF:
-        return ERR("Can't set variable $%ld", RNODE_NTH_REF(node)->nd_nth);
-      case NODE_BACK_REF:
-        return ERR("Can't set variable $%c", (int)RNODE_BACK_REF(node)->nd_nth);
+      case RB_NUMBERED_REFERENCE_READ_NODE:
+        return ERR("Can't set variable $%ld", (long)RB_NODE_NUMBERED_REFERENCE_READ(node)->number);
+      case RB_BACK_REFERENCE_READ_NODE:
+        return ERR("Can't set variable %s", rb_id2name(RB_NODE_BACK_REFERENCE_READ(node)->name));
     }
 #undef ERR
     UNREACHABLE_RETURN(Qfalse); /* only called on syntax error */
@@ -16750,10 +16738,11 @@ void_expr(struct parser_params *p, NODE *node)
 
     if (!RTEST(ruby_verbose)) return;
 
-    if (!node || !(node = nd_once_body(node))) return;
+    if (!node || !(node = last_expr_node(node))) return;
     switch (nd_type(node)) {
-      case NODE_OPCALL:
-        switch (RNODE_OPCALL(node)->nd_mid) {
+      case RB_CALL_NODE:
+        if (!RB_NODE_CALL(node)->receiver || !NULL_LOC_P(&RB_NODE_CALL(node)->call_operator_loc)) break;
+        switch (RB_NODE_CALL(node)->name) {
           case '+':
           case '-':
           case '*':
@@ -16772,7 +16761,7 @@ void_expr(struct parser_params *p, NODE *node)
           case tLEQ:
           case tEQ:
           case tNEQ:
-            useless = rb_id2name(RNODE_OPCALL(node)->nd_mid);
+            useless = rb_id2name(RB_NODE_CALL(node)->name);
             break;
         }
         break;
@@ -16786,7 +16775,7 @@ void_expr(struct parser_params *p, NODE *node)
       case RB_BACK_REFERENCE_READ_NODE:
         useless = "a variable";
         break;
-      case NODE_CONST:
+      case RB_CONSTANT_READ_NODE:
         useless = "a constant";
         break;
       case RB_SYMBOL_NODE:
@@ -16798,20 +16787,16 @@ void_expr(struct parser_params *p, NODE *node)
       case RB_RATIONAL_NODE:
       case RB_IMAGINARY_NODE:
       case RB_STRING_NODE:
-      case NODE_DSTR:
+      case RB_INTERPOLATED_STRING_NODE:
       case RB_REGULAR_EXPRESSION_NODE:
-      case NODE_DREGX:
+      case RB_INTERPOLATED_REGULAR_EXPRESSION_NODE:
         useless = "a literal";
         break;
-      case NODE_COLON2:
-      case NODE_COLON3:
+      case RB_CONSTANT_PATH_NODE:
         useless = "::";
         break;
-      case NODE_DOT2:
-        useless = "..";
-        break;
-      case NODE_DOT3:
-        useless = "...";
+      case RB_RANGE_NODE:
+        useless = (rb_node_get_fl(node) & RB_RANGE_FLAGS_EXCLUDE_END) ? "..." : "..";
         break;
       case RB_SELF_NODE:
         useless = "self";
@@ -16825,7 +16810,7 @@ void_expr(struct parser_params *p, NODE *node)
       case RB_FALSE_NODE:
         useless = "false";
         break;
-      case NODE_DEFINED:
+      case RB_DEFINED_NODE:
         useless = "defined?";
         break;
     }
@@ -16839,16 +16824,13 @@ void_expr(struct parser_params *p, NODE *node)
 static NODE *
 void_stmts(struct parser_params *p, NODE *node)
 {
-    NODE *const n = node;
-    if (!RTEST(ruby_verbose)) return n;
-    if (!node) return n;
-    if (!nd_type_p(node, NODE_BLOCK)) return n;
-
-    while (RNODE_BLOCK(node)->nd_next) {
-        void_expr(p, RNODE_BLOCK(node)->nd_head);
-        node = RNODE_BLOCK(node)->nd_next;
+    if (!node || !nd_type_p(node, RB_STATEMENTS_NODE)) return node;
+    rb_node_list2_t *body = &RB_NODE_STATEMENTS(node)->body;
+    if (!body->size) return NULL;
+    if (RTEST(ruby_verbose)) {
+        for (size_t i = 0; i + 1 < body->size; i++) void_expr(p, body->nodes[i]);
     }
-    return RNODE_BLOCK(node)->nd_head;
+    return body->nodes[body->size - 1];
 }
 
 static NODE *
@@ -16928,30 +16910,35 @@ static int
 is_static_content(NODE *node)
 {
     if (!node) return 1;
+    const rb_node_list2_t *elements;
     switch (nd_type(node)) {
-      case NODE_HASH:
-        if (!(node = RNODE_HASH(node)->nd_head)) break;
-      case NODE_LIST:
-        do {
-            if (!is_static_content(RNODE_LIST(node)->nd_head)) return 0;
-        } while ((node = RNODE_LIST(node)->nd_next) != 0);
-      case RB_SYMBOL_NODE:
-      case NODE_REGX:
-      case NODE_LINE:
-      case NODE_FILE:
-      case NODE_ENCODING:
-      case NODE_INTEGER:
-      case NODE_FLOAT:
-      case NODE_RATIONAL:
-      case NODE_IMAGINARY:
-      case NODE_STR:
-      case NODE_NIL:
-      case NODE_TRUE:
-      case NODE_FALSE:
-      case NODE_ZLIST:
+      case RB_HASH_NODE:
+        elements = &RB_NODE_HASH(node)->elements;
         break;
+      case RB_ARRAY_NODE:
+        elements = &RB_NODE_ARRAY(node)->elements;
+        break;
+      case RB_ASSOC_NODE:
+        return is_static_content(RB_NODE_ASSOC(node)->key) && is_static_content(RB_NODE_ASSOC(node)->value);
+      case RB_SYMBOL_NODE:
+      case RB_REGULAR_EXPRESSION_NODE:
+      case RB_SOURCE_LINE_NODE:
+      case RB_SOURCE_FILE_NODE:
+      case RB_SOURCE_ENCODING_NODE:
+      case RB_INTEGER_NODE:
+      case RB_FLOAT_NODE:
+      case RB_RATIONAL_NODE:
+      case RB_IMAGINARY_NODE:
+      case RB_STRING_NODE:
+      case RB_NIL_NODE:
+      case RB_TRUE_NODE:
+      case RB_FALSE_NODE:
+        return 1;
       default:
         return 0;
+    }
+    for (size_t i = 0; i < elements->size; i++) {
+        if (!is_static_content(elements->nodes[i])) return 0;
     }
     return 1;
 }
@@ -16959,24 +16946,10 @@ is_static_content(NODE *node)
 static int
 assign_in_cond(struct parser_params *p, NODE *node)
 {
-    switch (nd_type(node)) {
-      case NODE_MASGN:
-      case NODE_LASGN:
-      // case NODE_DASGN:
-      case NODE_GASGN:
-      case NODE_IASGN:
-      case NODE_CVASGN:
-      case NODE_CDECL:
-        break;
-
-      default:
-        return 0;
-    }
-
-    if (!get_nd_value(p, node)) return 1;
-    if (is_static_content(get_nd_value(p, node))) {
-        /* reports always */
-        rb_warn0L(nd_line(get_nd_value(p, node)), "found '= literal' in conditional, should be ==");
+    NODE *value = get_nd_value(p, node);
+    if (!value) return 0;
+    if (is_static_content(value)) {
+        rb_warn0L(nd_line(value), "found '= literal' in conditional, should be ==");
     }
     return 1;
 }
@@ -17617,39 +17590,25 @@ nd_value(struct parser_params *p, rb_node_t *node)
 }
 
 static void
-warn_duplicate_keys(struct parser_params *p, rb_array_node_t *hash)
+warn_duplicate_keys_in_list(struct parser_params *p, const rb_node_list2_t *list)
 {
-    /* See https://bugs.ruby-lang.org/issues/20331 for discussion about what is warned. */
-    const rb_node_list2_t *list = &hash->elements;
-    p->warn_duplicate_keys_table = st_init_table_with_size(&literal_type, RB_NODE_LIST_LEN(list));
     for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
         rb_node_t *node = list->nodes[i];
         rb_node_t *head;
-        rb_node_t *value;
-        st_data_t key;
-        st_data_t data;
+        st_data_t key, data;
 
-        switch (nd_type(node)) {
-          case RB_ASSOC_NODE:
-            head = RB_NODE_ASSOC(node)->key;
-            value = RB_NODE_ASSOC(node)->value;
-            break;
-          case RB_ASSOC_SPLAT_NODE:
-            head = RB_NODE_ASSOC_SPLAT(node)->value;
-            value = RB_NODE_ASSOC_SPLAT(node)->value;
-            break;
-          default:
-            rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
-        }
-
-        /* keyword splat, e.g. {k: 1, **, k: 2} */
-        if (!head) {
+        if (RB_NODE_TYPE_P(node, RB_ASSOC_SPLAT_NODE)) {
+            rb_node_t *value = RB_NODE_ASSOC_SPLAT(node)->value;
+            /* The legacy assoc list expands static hash splats only after
+             * its first association, independently at each nesting level. */
+            if (i > 0 && value && RB_NODE_TYPE_P(value, RB_HASH_NODE)) {
+                warn_duplicate_keys_in_list(p, &RB_NODE_HASH(value)->elements);
+            }
             continue;
         }
-
+        head = RB_NODE_ASSOC(node)->key;
         if (nd_type_st_key_enable_p(head)) {
             key = (st_data_t)head;
-
             if (st_delete(p->warn_duplicate_keys_table, &key, &data)) {
                 rb_warn2L(nd_line((rb_node_t *)data),
                           "key %+"PRIsWARN" is duplicated and overwritten on line %d",
@@ -17658,6 +17617,14 @@ warn_duplicate_keys(struct parser_params *p, rb_array_node_t *hash)
             st_insert(p->warn_duplicate_keys_table, (st_data_t)key, (st_data_t)node);
         }
     }
+}
+
+static void
+warn_duplicate_keys(struct parser_params *p, rb_array_node_t *hash)
+{
+    /* See https://bugs.ruby-lang.org/issues/20331 for discussion about what is warned. */
+    p->warn_duplicate_keys_table = st_init_table_with_size(&literal_type, hash->elements.size);
+    warn_duplicate_keys_in_list(p, &hash->elements);
     st_free_table(p->warn_duplicate_keys_table);
     p->warn_duplicate_keys_table = NULL;
 }
@@ -17765,6 +17732,7 @@ new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
 static rb_node_t *
 new_op_assign(struct parser_params *p, rb_node_t *lhs, ID op, rb_node_t *rhs, struct lex_context ctxt, const YYLTYPE *loc)
 {
+    if (lhs && RB_NODE_TYPE_P(lhs, RB_MISSING_NODE)) return lhs;
     rb_node_t *asgn;
 
     if (lhs) {

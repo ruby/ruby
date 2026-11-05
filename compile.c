@@ -8054,7 +8054,8 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
             }
         }
         else {
-            EXPECT_NODE_NONULL("NODE_CASE", n, NODE_LIST, COMPILE_NG);
+            COMPILE_ERROR(ERROR_ARGS_AT(n) "empty when conditions");
+            return COMPILE_NG;
         }
     }
     /* else */
@@ -8128,7 +8129,8 @@ compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
 
         vals = &RB_NODE_WHEN(n)->conditions;
         if (RB_NODE_LIST_EMPTY_P(vals)) {
-            EXPECT_NODE_NONULL("NODE_WHEN", n, NODE_LIST, COMPILE_NG);
+            COMPILE_ERROR(ERROR_ARGS_AT(n) "empty when conditions");
+            return COMPILE_NG;
         }
         /* when a, b, c */
         for (size_t j = 0; j < RB_NODE_LIST_LEN(vals); j++) {
