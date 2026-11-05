@@ -707,6 +707,21 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_branch_coverage_for_safe_method_invocation_with_block
+    result = {
+      branches: {
+        [:"&.", 0, 1, 0, 1, 10] => {[:then, 1, 1, 0, 1, 10] => 1, [:else, 2, 1, 0, 1, 10] => 0},
+        [:"&.", 3, 2, 0, 2, 9] => {[:then, 4, 2, 0, 2, 9] => 1, [:else, 5, 2, 0, 2, 9] => 0},
+        [:"&.", 6, 3, 0, 3, 10] => {[:then, 7, 3, 0, 3, 10] => 0, [:else, 8, 3, 0, 3, 10] => 1},
+      }
+    }
+    assert_coverage(<<~RUBY, { branches: true }, result)
+      1&.step(1) {}
+      1&.step 1 do end
+      nil&.tap() {}
+    RUBY
+  end
+
   def test_method_coverage_for_redefinition
     # [Bug #22179] A method shadowed by a redefinition (and never called) must
     # not disappear from the result even when GC collects its method entry.
