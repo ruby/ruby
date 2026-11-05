@@ -686,40 +686,29 @@ pm_parser_err_heredoc_term(pm_parser_t *parser, const uint8_t *ident_start, size
 /******************************************************************************/
 
 /**
- * The largest locals table that a popped scope hands to the next pushed scope.
- */
-#define PM_LOCALS_REUSE_CAPACITY 16
-
-/**
  * Allocate and initialize a new scope. Push it onto the scope stack.
  */
 static void
 pm_parser_scope_push(pm_parser_t *parser, bool closed) {
+    pm_scope_t *previous = parser->current_scope;
     pm_scope_t *scope = parser->free_scopes;
-    pm_locals_t locals = { 0 };
 
     if (scope != NULL) {
         parser->free_scopes = scope->previous;
-
-        /* Reuse the locals table of the popped scope when it is small, so that
-         * most scopes allocate no locals storage at all. Large tables are
-         * dropped instead, because every scope that reuses a table pays to
-         * clear it and to scan its full capacity when the locals are ordered. */
-        if (scope->locals.capacity > 0 && scope->locals.capacity <= PM_LOCALS_REUSE_CAPACITY) {
-            locals.capacity = scope->locals.capacity;
-            locals.locals = scope->locals.locals;
-            memset(locals.locals, 0, locals.capacity * sizeof(pm_local_t));
-        }
     } else {
         scope = PM_ARENA_ALLOC(&parser->scratch_arena, pm_scope_t);
     }
 
+    uint32_t locals_start = parser->locals_size;
+
     *scope = (pm_scope_t) {
-        .previous = parser->current_scope,
-        .locals = locals,
+        .previous = previous,
+        .locals_start = locals_start,
+        .level = previous == NULL ? 1 : previous->level + 1,
+        .floor = (closed || previous == NULL) ? locals_start : previous->floor,
         .parameters = PM_SCOPE_PARAMETERS_NONE,
         .implicit_parameters = { 0 },
-        .shareable_constant = parser->current_scope == NULL ? PM_SCOPE_SHAREABLE_CONSTANT_NONE : parser->current_scope->shareable_constant,
+        .shareable_constant = previous == NULL ? PM_SCOPE_SHAREABLE_CONSTANT_NONE : previous->shareable_constant,
         .closed = closed
     };
 
@@ -877,149 +866,127 @@ pm_parser_scope_shareable_constant_set(pm_parser_t *parser, pm_shareable_constan
 /******************************************************************************/
 
 /**
- * The point at which the set of locals switches from being a list to a hash.
+ * Return the index in the locals stack of the innermost live local with the
+ * given name, or 0 if there is none.
  */
-#define PM_LOCALS_HASH_THRESHOLD 5
-
-/**
- * Resize the locals list to be twice its current size. If the next capacity is
- * above the threshold for switching to a hash, then we'll switch to a hash.
- */
-static void
-pm_locals_resize(pm_arena_t *arena, pm_locals_t *locals) {
-    uint32_t next_capacity = locals->capacity == 0 ? 4 : (locals->capacity * 2);
-    PRISM_ASSERT(next_capacity > locals->capacity);
-
-    pm_local_t *next_locals = PM_ARENA_ZALLOC_ARRAY(arena, pm_local_t, next_capacity);
-
-    if (next_capacity < PM_LOCALS_HASH_THRESHOLD) {
-        if (locals->size > 0) {
-            memcpy(next_locals, locals->locals, locals->size * sizeof(pm_local_t));
-        }
-    } else {
-        // If we just switched from a list to a hash, then we need to fill in
-        // the hash values of all of the locals.
-        bool hash_needed = (locals->capacity <= PM_LOCALS_HASH_THRESHOLD);
-        uint32_t mask = next_capacity - 1;
-
-        for (uint32_t index = 0; index < locals->capacity; index++) {
-            pm_local_t *local = &locals->locals[index];
-
-            if (local->name != PM_CONSTANT_ID_UNSET) {
-                if (hash_needed) local->hash = pm_constant_id_hash(local->name);
-
-                uint32_t hash = local->hash;
-                while (next_locals[hash & mask].name != PM_CONSTANT_ID_UNSET) hash++;
-                next_locals[hash & mask] = *local;
-            }
-        }
-    }
-
-    locals->locals = next_locals;
-    locals->capacity = next_capacity;
+static PRISM_INLINE uint32_t
+pm_parser_binding(const pm_parser_t *parser, pm_constant_id_t name) {
+    if (name >= parser->bindings_capacity) return 0;
+    return parser->bindings[name];
 }
 
 /**
- * Add a new local to the set of locals. This will automatically rehash the
- * locals if the size is greater than 3/4 of the capacity.
+ * Check if any of the currently visible scopes contain a local variable
+ * described by the given constant id. The innermost binding of the name is the
+ * one that is visible, as long as no closed scope lies between it and the
+ * current scope.
+ */
+static int
+pm_parser_local_depth_constant_id(pm_parser_t *parser, pm_constant_id_t constant_id) {
+    uint32_t index = pm_parser_binding(parser, constant_id);
+    const pm_scope_t *scope = parser->current_scope;
+
+    /* Every local at or above the floor belongs to a scope that the current
+     * scope can see into. The floor is never 0, so this also rejects names
+     * that are unbound. */
+    if (index < scope->floor) return -1;
+    return (int) (scope->level - parser->locals[index].level);
+}
+
+/**
+ * Grow the bindings to match the capacity of the constant pool. The pool can
+ * gain constants at any point while parsing, so this happens whenever a local
+ * is declared with a name that is newer than the bindings. The pool resizes
+ * before it reaches its capacity, so this leaves a slot for every constant id
+ * it has assigned. Constant ids never change once they are assigned, so the
+ * existing bindings are copied over as they are, and the new slots start out
+ * unbound.
+ */
+static void
+pm_parser_bindings_grow(pm_parser_t *parser) {
+    uint32_t capacity = parser->constant_pool.capacity;
+    uint32_t *bindings = PM_ARENA_ZALLOC_ARRAY(&parser->scratch_arena, uint32_t, capacity);
+
+    if (parser->bindings_capacity > 0) {
+        memcpy(bindings, parser->bindings, parser->bindings_capacity * sizeof(uint32_t));
+    }
+
+    parser->bindings = bindings;
+    parser->bindings_capacity = capacity;
+}
+
+/**
+ * Grow the locals stack so that it has room for one more local. Nothing holds
+ * a pointer into the stack while a local is being declared, so the stack can
+ * move.
+ */
+static void
+pm_parser_locals_grow(pm_parser_t *parser) {
+    uint32_t capacity = parser->locals_capacity == 0 ? 16 : parser->locals_capacity * 2;
+    pm_local_t *locals = PM_ARENA_ALLOC_ARRAY(&parser->scratch_arena, pm_local_t, capacity);
+
+    if (parser->locals_capacity > 0) {
+        memcpy(locals, parser->locals, parser->locals_size * sizeof(pm_local_t));
+    }
+
+    parser->locals = locals;
+    parser->locals_capacity = capacity;
+}
+
+/**
+ * Add a new local to the current scope, which hides any local of the same name
+ * in an enclosing scope until the current scope is popped. If the current scope
+ * already declares the name, then this does nothing.
  *
- * @param locals The set of locals to add to.
+ * @param parser The parser whose current scope the local is added to.
  * @param name The name of the local.
  * @param start The source location that represents the start of the local. This
  *   is used for the location of the warning in case this local is not read.
- * @param end The source location that represents the end of the local. This is
- *   used for the location of the warning in case this local is not read.
+ * @param length The length of the source location of the local. This is used
+ *   for the location of the warning in case this local is not read.
  * @param reads The initial number of reads for this local. Usually this is set
  *   to 0, but for some locals (like parameters) we want to initialize it with
  *   1 so that we never warn on unused parameters.
- * @return True if the local was added, and false if the local already exists.
  */
-static bool
-pm_locals_write(pm_arena_t *arena, pm_locals_t *locals, pm_constant_id_t name, uint32_t start, uint32_t length, uint32_t reads) {
-    if (locals->size >= (locals->capacity / 4 * 3)) {
-        pm_locals_resize(arena, locals);
-    }
+static void
+pm_locals_write(pm_parser_t *parser, pm_constant_id_t name, uint32_t start, uint32_t length, uint32_t reads) {
+    const pm_scope_t *scope = parser->current_scope;
+    uint32_t shadowed = pm_parser_binding(parser, name);
 
-    locals->bloom |= (1u << (name & 31));
+    /* The locals of the current scope are at the top of the stack, so if it
+     * declares the name then that local is the innermost one. */
+    if (shadowed >= scope->locals_start) return;
 
-    if (locals->capacity < PM_LOCALS_HASH_THRESHOLD) {
-        for (uint32_t index = 0; index < locals->capacity; index++) {
-            pm_local_t *local = &locals->locals[index];
+    if (name >= parser->bindings_capacity) pm_parser_bindings_grow(parser);
+    PRISM_ASSERT(name < parser->bindings_capacity);
 
-            if (local->name == PM_CONSTANT_ID_UNSET) {
-                *local = (pm_local_t) {
-                    .name = name,
-                    .location = { .start = start, .length = length },
-                    .index = locals->size++,
-                    .reads = reads,
-                    .hash = 0
-                };
-                return true;
-            } else if (local->name == name) {
-                return false;
-            }
-        }
-    } else {
-        uint32_t mask = locals->capacity - 1;
-        uint32_t hash = pm_constant_id_hash(name);
-        uint32_t initial_hash = hash;
+    if (parser->locals_size >= parser->locals_capacity) pm_parser_locals_grow(parser);
 
-        do {
-            pm_local_t *local = &locals->locals[hash & mask];
+    uint32_t index = parser->locals_size++;
 
-            if (local->name == PM_CONSTANT_ID_UNSET) {
-                *local = (pm_local_t) {
-                    .name = name,
-                    .location = { .start = start, .length = length },
-                    .index = locals->size++,
-                    .reads = reads,
-                    .hash = initial_hash
-                };
-                return true;
-            } else if (local->name == name) {
-                return false;
-            } else {
-                hash++;
-            }
-        } while ((hash & mask) != initial_hash);
-    }
+    parser->locals[index] = (pm_local_t) {
+        .name = name,
+        .location = { .start = start, .length = length },
+        .reads = reads,
+        .level = scope->level,
+        .shadowed = shadowed
+    };
 
-    PRISM_ASSERT(false && "unreachable");
-    return true;
+    parser->bindings[name] = index;
 }
 
 /**
- * Finds the index of a local variable in the locals set. If it is not found,
- * this returns UINT32_MAX.
+ * Return the local variable that the given name refers to, which must be
+ * visible from the current scope. The reads of a local are adjusted while the
+ * node that refers to it is being built, before a later declaration can hide
+ * it, so the innermost binding of the name is always the local that is meant.
  */
-static uint32_t
-pm_locals_find(pm_locals_t *locals, pm_constant_id_t name) {
-    if (!(locals->bloom & (1u << (name & 31)))) return UINT32_MAX;
+static pm_local_t *
+pm_locals_get(const pm_parser_t *parser, pm_constant_id_t name) {
+    uint32_t index = pm_parser_binding(parser, name);
+    PRISM_ASSERT(index >= parser->current_scope->floor);
 
-    if (locals->capacity < PM_LOCALS_HASH_THRESHOLD) {
-        for (uint32_t index = 0; index < locals->size; index++) {
-            pm_local_t *local = &locals->locals[index];
-            if (local->name == name) return index;
-        }
-    } else {
-        uint32_t mask = locals->capacity - 1;
-        uint32_t hash = pm_constant_id_hash(name);
-        uint32_t initial_hash = hash & mask;
-
-        do {
-            pm_local_t *local = &locals->locals[hash & mask];
-
-            if (local->name == PM_CONSTANT_ID_UNSET) {
-                return UINT32_MAX;
-            } else if (local->name == name) {
-                return hash & mask;
-            } else {
-                hash++;
-            }
-        } while ((hash & mask) != initial_hash);
-    }
-
-    return UINT32_MAX;
+    return &parser->locals[index];
 }
 
 /**
@@ -1027,11 +994,8 @@ pm_locals_find(pm_locals_t *locals, pm_constant_id_t name) {
  * by adding to the reads count.
  */
 static void
-pm_locals_read(pm_locals_t *locals, pm_constant_id_t name) {
-    uint32_t index = pm_locals_find(locals, name);
-    PRISM_ASSERT(index != UINT32_MAX);
-
-    pm_local_t *local = &locals->locals[index];
+pm_locals_read(const pm_parser_t *parser, pm_constant_id_t name) {
+    pm_local_t *local = pm_locals_get(parser, name);
     PRISM_ASSERT(local->reads < UINT32_MAX);
 
     local->reads++;
@@ -1042,11 +1006,8 @@ pm_locals_read(pm_locals_t *locals, pm_constant_id_t name) {
  * write operator is found after the variable name.
  */
 static void
-pm_locals_unread(pm_locals_t *locals, pm_constant_id_t name) {
-    uint32_t index = pm_locals_find(locals, name);
-    PRISM_ASSERT(index != UINT32_MAX);
-
-    pm_local_t *local = &locals->locals[index];
+pm_locals_unread(const pm_parser_t *parser, pm_constant_id_t name) {
+    pm_local_t *local = pm_locals_get(parser, name);
     PRISM_ASSERT(local->reads > 0);
 
     local->reads--;
@@ -1056,53 +1017,44 @@ pm_locals_unread(pm_locals_t *locals, pm_constant_id_t name) {
  * Returns the current number of reads for a local variable.
  */
 static uint32_t
-pm_locals_reads(pm_locals_t *locals, pm_constant_id_t name) {
-    uint32_t index = pm_locals_find(locals, name);
-    PRISM_ASSERT(index != UINT32_MAX);
-
-    return locals->locals[index].reads;
+pm_locals_reads(const pm_parser_t *parser, pm_constant_id_t name) {
+    return pm_locals_get(parser, name)->reads;
 }
 
 /**
- * Write out the locals into the given list of constant ids in the correct
- * order. This is used to set the list of locals on the nodes in the tree once
- * we're sure no additional locals will be added to the set.
+ * Write out the locals of the current scope into the given list of constant
+ * ids in the order they were declared. This is used to set the list of locals
+ * on the nodes in the tree once we're sure no additional locals will be added
+ * to the scope.
  *
  * This function is also responsible for warning when a local variable has been
  * written but not read in certain contexts.
  */
 static void
-pm_locals_order(pm_parser_t *parser, pm_locals_t *locals, pm_constant_id_list_t *list, bool toplevel) {
-    pm_constant_id_list_init(parser->arena, list, locals->size);
-
-    // If we're still below the threshold for switching to a hash, then we only
-    // need to loop over the locals until we hit the size because the locals are
-    // stored in a list.
-    uint32_t capacity = locals->capacity < PM_LOCALS_HASH_THRESHOLD ? locals->size : locals->capacity;
+pm_locals_order(pm_parser_t *parser, pm_constant_id_list_t *list, bool toplevel) {
+    uint32_t start = parser->current_scope->locals_start;
+    pm_constant_id_list_init(parser->arena, list, parser->locals_size - start);
 
     // We will only warn for unused variables if we're not at the top level, or
     // if we're parsing a file outside of eval or -e.
     bool warn_unused = !toplevel || (!parser->parsing_eval && !PM_PARSER_COMMAND_LINE_OPTION_E(parser));
 
-    for (uint32_t index = 0; index < capacity; index++) {
-        pm_local_t *local = &locals->locals[index];
+    for (uint32_t index = start; index < parser->locals_size; index++) {
+        pm_local_t *local = &parser->locals[index];
+        pm_constant_id_list_insert(list, index - start, local->name);
 
-        if (local->name != PM_CONSTANT_ID_UNSET) {
-            pm_constant_id_list_insert(list, local->index, local->name);
+        if (warn_unused && local->reads == 0 && ((parser->start_line >= 0) || (pm_line_offset_list_line(&parser->line_offsets, local->location.start, parser->start_line) >= 0))) {
+            pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, local->name);
 
-            if (warn_unused && local->reads == 0 && ((parser->start_line >= 0) || (pm_line_offset_list_line(&parser->line_offsets, local->location.start, parser->start_line) >= 0))) {
-                pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, local->name);
-
-                if (constant->length >= 1 && *constant->start != '_') {
-                    PM_PARSER_WARN_FORMAT(
-                        parser,
-                        local->location.start,
-                        local->location.length,
-                        PM_WARN_UNUSED_LOCAL_VARIABLE,
-                        (int) constant->length,
-                        (const char *) constant->start
-                    );
-                }
+            if (constant->length >= 1 && *constant->start != '_') {
+                PM_PARSER_WARN_FORMAT(
+                    parser,
+                    local->location.start,
+                    local->location.length,
+                    PM_WARN_UNUSED_LOCAL_VARIABLE,
+                    (int) constant->length,
+                    (const char *) constant->start
+                );
             }
         }
     }
@@ -1354,10 +1306,8 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
             case PM_LOCAL_VARIABLE_WRITE_NODE: {
                 pm_local_variable_write_node_t *cast = (pm_local_variable_write_node_t *) node;
 
-                pm_scope_t *scope = parser->current_scope;
-                for (uint32_t depth = 0; depth < cast->depth; depth++) scope = scope->previous;
-
-                pm_locals_read(&scope->locals, cast->name);
+                PRISM_ASSERT(pm_parser_local_depth_constant_id(parser, cast->name) == (int) cast->depth);
+                pm_locals_read(parser, cast->name);
                 return NULL;
             }
             default:
@@ -5341,7 +5291,10 @@ pm_local_variable_or_write_node_create(pm_parser_t *parser, pm_node_t *target, c
  */
 static pm_local_variable_read_node_t *
 pm_local_variable_read_node_create_constant_id(pm_parser_t *parser, const pm_token_t *name, pm_constant_id_t name_id, uint32_t depth, bool missing) {
-    if (!missing) pm_locals_read(&pm_parser_scope_find(parser, depth)->locals, name_id);
+    if (!missing) {
+        PRISM_ASSERT(pm_parser_local_depth_constant_id(parser, name_id) == (int) depth);
+        pm_locals_read(parser, name_id);
+    }
 
     return pm_local_variable_read_node_new(
         parser->arena,
@@ -7077,26 +7030,6 @@ pm_yield_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_lo
 
 /**
  * Check if any of the currently visible scopes contain a local variable
- * described by the given constant id.
- */
-static int
-pm_parser_local_depth_constant_id(pm_parser_t *parser, pm_constant_id_t constant_id) {
-    pm_scope_t *scope = parser->current_scope;
-    int depth = 0;
-
-    while (scope != NULL) {
-        if (pm_locals_find(&scope->locals, constant_id) != UINT32_MAX) return depth;
-        if (scope->closed) break;
-
-        scope = scope->previous;
-        depth++;
-    }
-
-    return -1;
-}
-
-/**
- * Check if any of the currently visible scopes contain a local variable
  * described by the given token. This function implicitly inserts a constant
  * into the constant pool.
  */
@@ -7110,7 +7043,7 @@ pm_parser_local_depth(pm_parser_t *parser, pm_token_t *token) {
  */
 static PRISM_INLINE void
 pm_parser_local_add(pm_parser_t *parser, pm_constant_id_t constant_id, const uint8_t *start, const uint8_t *end, uint32_t reads) {
-    pm_locals_write(&parser->scratch_arena, &parser->current_scope->locals, constant_id, U32(start - parser->start), U32(end - start), reads);
+    pm_locals_write(parser, constant_id, U32(start - parser->start), U32(end - start), reads);
 }
 
 /**
@@ -7176,7 +7109,7 @@ pm_parser_parameter_name_check(pm_parser_t *parser, const pm_token_t *name) {
     // whether it's already in the current scope.
     pm_constant_id_t constant_id = pm_parser_constant_id_token(parser, name);
 
-    if (pm_locals_find(&parser->current_scope->locals, constant_id) != UINT32_MAX) {
+    if (pm_parser_binding(parser, constant_id) >= parser->current_scope->locals_start) {
         // Add an error if the parameter doesn't start with _ and has been seen before
         if ((name->start < name->end) && (*name->start != '_')) {
             pm_parser_err_token(parser, name, PM_ERR_PARAMETER_NAME_DUPLICATED);
@@ -7192,6 +7125,16 @@ pm_parser_parameter_name_check(pm_parser_t *parser, const pm_token_t *name) {
 static void
 pm_parser_scope_pop(pm_parser_t *parser) {
     pm_scope_t *scope = parser->current_scope;
+
+    /* Restore the bindings that the locals of this scope hid, in the reverse of
+     * the order they were declared, then discard the locals. */
+    for (uint32_t index = parser->locals_size; index > scope->locals_start; index--) {
+        const pm_local_t *local = &parser->locals[index - 1];
+        parser->bindings[local->name] = local->shadowed;
+    }
+
+    parser->locals_size = scope->locals_start;
+
     parser->current_scope = scope->previous;
     scope->previous = parser->free_scopes;
     parser->free_scopes = scope;
@@ -13361,9 +13304,8 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
             }
 
             const pm_local_variable_read_node_t *cast = (const pm_local_variable_read_node_t *) target;
-            uint32_t name = cast->name;
-            uint32_t depth = cast->depth;
-            pm_locals_unread(&pm_parser_scope_find(parser, depth)->locals, name);
+            PRISM_ASSERT(pm_parser_local_depth_constant_id(parser, cast->name) == (int) cast->depth);
+            pm_locals_unread(parser, cast->name);
 
             PRISM_ASSERT(sizeof(pm_local_variable_target_node_t) == sizeof(pm_local_variable_read_node_t));
             target->type = PM_LOCAL_VARIABLE_TARGET_NODE;
@@ -13548,7 +13490,8 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
                 pm_node_unreference(parser, target);
             }
 
-            pm_locals_unread(&scope->locals, name);
+            PRISM_ASSERT(pm_parser_local_depth_constant_id(parser, name) == (int) depth);
+            pm_locals_unread(parser, name);
 
             return UP(pm_local_variable_write_node_create(parser, name, depth, value, &location, operator));
         }
@@ -14894,7 +14837,7 @@ parse_parameters(
                     parser_lex(parser);
 
                     pm_constant_id_t name_id = pm_parser_constant_id_token(parser, &name);
-                    uint32_t reads = parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3 ? pm_locals_reads(&parser->current_scope->locals, name_id) : 0;
+                    uint32_t reads = parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3 ? pm_locals_reads(parser, name_id) : 0;
 
                     if (accepts_blocks_in_defaults) pm_accepts_block_stack_push(parser, true);
                     pm_node_t *value = parse_value_expression(parser, binding_power, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_PARAMETER_NO_DEFAULT, (uint16_t) (depth + 1));
@@ -14910,7 +14853,7 @@ parse_parameters(
                     // If the value of the parameter increased the number of
                     // reads of that parameter, then we need to warn that we
                     // have a circular definition.
-                    if ((parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3) && (pm_locals_reads(&parser->current_scope->locals, name_id) != reads)) {
+                    if ((parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3) && (pm_locals_reads(parser, name_id) != reads)) {
                         PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, &name, PM_ERR_PARAMETER_CIRCULAR);
                     }
 
@@ -14995,13 +14938,13 @@ parse_parameters(
 
                         if (token_begins_expression_p(parser->current.type)) {
                             pm_constant_id_t name_id = pm_parser_constant_id_token(parser, &local);
-                            uint32_t reads = parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3 ? pm_locals_reads(&parser->current_scope->locals, name_id) : 0;
+                            uint32_t reads = parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3 ? pm_locals_reads(parser, name_id) : 0;
 
                             if (accepts_blocks_in_defaults) pm_accepts_block_stack_push(parser, true);
                             pm_node_t *value = parse_value_expression(parser, binding_power, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_PARAMETER_NO_DEFAULT_KW, (uint16_t) (depth + 1));
                             if (accepts_blocks_in_defaults) pm_accepts_block_stack_pop(parser);
 
-                            if (parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3 && (pm_locals_reads(&parser->current_scope->locals, name_id) != reads)) {
+                            if (parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3 && (pm_locals_reads(parser, name_id) != reads)) {
                                 PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, &local, PM_ERR_PARAMETER_CIRCULAR);
                             }
 
@@ -15710,7 +15653,7 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
     }
 
     pm_constant_id_list_t locals;
-    pm_locals_order(parser, &parser->current_scope->locals, &locals, pm_parser_scope_toplevel_p(parser));
+    pm_locals_order(parser, &locals, pm_parser_scope_toplevel_p(parser));
     pm_node_t *parameters = parse_blocklike_parameters(parser, UP(block_parameters), &opening, &parser->previous);
 
     pm_parser_scope_pop(parser);
@@ -18602,7 +18545,7 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM, &class_keyword);
 
         pm_constant_id_list_t locals;
-        pm_locals_order(parser, &parser->current_scope->locals, &locals, false);
+        pm_locals_order(parser, &locals, false);
 
         pm_parser_scope_pop(parser);
         pm_do_loop_stack_pop(parser);
@@ -18661,7 +18604,7 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     }
 
     pm_constant_id_list_t locals;
-    pm_locals_order(parser, &parser->current_scope->locals, &locals, false);
+    pm_locals_order(parser, &locals, false);
 
     pm_parser_scope_pop(parser);
     pm_do_loop_stack_pop(parser);
@@ -19019,7 +18962,7 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     }
 
     pm_constant_id_list_t locals;
-    pm_locals_order(parser, &parser->current_scope->locals, &locals, false);
+    pm_locals_order(parser, &locals, false);
     pm_parser_scope_pop(parser);
 
     /* If the final character is `@` as is the case when defining methods to
@@ -19107,7 +19050,7 @@ parse_module(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     }
 
     pm_constant_id_list_t locals;
-    pm_locals_order(parser, &parser->current_scope->locals, &locals, false);
+    pm_locals_order(parser, &locals, false);
 
     pm_parser_scope_pop(parser);
     expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_MODULE_TERM, &module_keyword);
@@ -19834,7 +19777,7 @@ parse_lambda(pm_parser_t *parser, uint16_t depth) {
     }
 
     pm_constant_id_list_t locals;
-    pm_locals_order(parser, &parser->current_scope->locals, &locals, pm_parser_scope_toplevel_p(parser));
+    pm_locals_order(parser, &locals, pm_parser_scope_toplevel_p(parser));
     pm_node_t *parameters = parse_blocklike_parameters(parser, UP(block_parameters), &operator, &parser->previous);
 
     pm_parser_scope_pop(parser);
@@ -20172,7 +20115,8 @@ parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
                     pm_node_unreference(parser, node);
                 } else {
                     pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
-                    pm_locals_unread(&pm_parser_scope_find(parser, cast->depth)->locals, cast->name);
+                    PRISM_ASSERT(pm_parser_local_depth_constant_id(parser, cast->name) == (int) cast->depth);
+                    pm_locals_unread(parser, cast->name);
                 }
             }
 
@@ -21304,7 +21248,8 @@ parse_assignment_value_local(pm_parser_t *parser, const pm_node_t *node) {
         }
         case PM_LOCAL_VARIABLE_WRITE_NODE: {
             const pm_local_variable_write_node_t *cast = (const pm_local_variable_write_node_t *) node;
-            pm_locals_read(&pm_parser_scope_find(parser, cast->depth)->locals, cast->name);
+            PRISM_ASSERT(pm_parser_local_depth_constant_id(parser, cast->name) == (int) cast->depth);
+            pm_locals_read(parser, cast->name);
             break;
         }
         case PM_PARENTHESES_NODE: {
@@ -23098,7 +23043,7 @@ parse_program(pm_parser_t *parser) {
     }
 
     pm_constant_id_list_t locals;
-    pm_locals_order(parser, &parser->current_scope->locals, &locals, true);
+    pm_locals_order(parser, &locals, true);
     pm_parser_scope_pop(parser);
 
     // At the top level, see if we need to wrap the statements in a program
@@ -23257,6 +23202,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .warning_list = { 0 },
         .error_list = { 0 },
         .current_scope = NULL,
+        .locals_size = 1,
         .current_context = NULL,
         .encoding = PM_ENCODING_UTF_8_ENTRY,
         .encoding_changed_callback = NULL,

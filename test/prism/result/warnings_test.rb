@@ -386,6 +386,13 @@ module Ruby::Prism
       refute_warning("def foo; bar = 1; end", line: -2, compare: false)
     end
 
+    def test_unused_local_variables_in_declaration_order
+      names = %w[bufx bufy curx cury wattr maxx maxy]
+      source = "def foo\n#{names.map { |name| "  #{name} = 1\n" }.join}end\n"
+
+      assert_warning(source, *names.map { |name| "assigned but unused variable - #{name}" })
+    end
+
     def test_unused_local_variable_or_assign_with_begin_node
       assert_warning(<<~RUBY, "assigned but unused variable - foo", compare: false)
         var ||= begin

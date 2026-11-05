@@ -76,7 +76,7 @@ pm_constant_id_set_insert(pm_arena_t *arena, pm_constant_id_set_t *set, pm_const
     PRISM_ASSERT(id != PM_CONSTANT_ID_UNSET);
 
     /*
-     * Grow at the same load factor the locals table and the constant pool use.
+     * Grow at the same load factor the constant pool uses.
      * An empty set has no slots at all, so this also builds the first table.
      */
     if (set->size >= (set->capacity / 4 * 3)) {
