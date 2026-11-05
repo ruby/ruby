@@ -435,7 +435,7 @@ rb_ast_t *
 rb_ast_new(const rb_parser_config_t *config)
 {
     node_buffer_t *nb = node_buffer_new(config);
-    rb_node_buffer_t *rb_nb = rb_node_buffer_new();
+    rb_node_buffer_t *rb_nb = rb_node_buffer_new(config);
     rb_ast_t *ast = (rb_ast_t *)config->calloc(1, sizeof(rb_ast_t));
     ast->config = config;
     ast->node_buffer = nb;
