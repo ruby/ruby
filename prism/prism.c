@@ -23197,6 +23197,32 @@ pm_parser_init_shebang(pm_parser_t *parser, const pm_options_t *options, const c
 #endif
 
 /**
+ * Return the integer square root of the given value, rounded down. This finds
+ * the result one bit at a time from the highest, so it takes at most half as
+ * many steps as there are bits in a size_t.
+ */
+static size_t
+pm_size_sqrt(size_t value) {
+    size_t result = 0;
+    size_t bit = ((size_t) 1) << (sizeof(size_t) * 8 - 2);
+
+    while (bit > value) bit >>= 2;
+
+    while (bit != 0) {
+        if (value >= result + bit) {
+            value -= result + bit;
+            result = (result >> 1) + bit;
+        } else {
+            result >>= 1;
+        }
+
+        bit >>= 2;
+    }
+
+    return result;
+}
+
+/**
  * Initialize a parser with the given start and end pointers.
  */
 void
@@ -23262,28 +23288,45 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .warn_mismatched_indentation = true
     };
 
-    /* Pre-size the arenas based on input size to reduce the number of block
-     * allocations (and the kernel page zeroing they trigger). The ratios were
-     * measured empirically: AST arena ~3.3x input, metadata arena ~1.1x input.
-     * The reserve call is a no-op when the capacity is at or below the default
-     * arena block size, so small inputs don't waste an extra allocation. */
+    /* Pre-size the AST arena based on input size to reduce the number of block
+     * allocations (and the kernel page zeroing they trigger). The tree grows
+     * linearly with the source. Measured across 16,460 stdlib and gem files,
+     * it takes about 4.6 bytes per source byte at the median, from about 3.3
+     * at the 25th percentile to about 6 at the 75th, depending on how much of
+     * the source is comments and how much is literals. A source past the
+     * reserve continues in further blocks. The reserve call is a no-op when
+     * the capacity is at or below the default arena block size, so small
+     * inputs don't waste an extra allocation. */
     if (size <= SIZE_MAX / 4) pm_arena_reserve(arena, size * 4);
-    if (size <= SIZE_MAX / 5 * 4) pm_arena_reserve(&parser->metadata_arena, size + size / 4);
 
-    /* Initialize the constant pool. Measured across 1532 Ruby stdlib files, the
-     * bytes/constant ratio has a median of ~56 and a 90th percentile of ~135.
-     * We use 120 as a balance between over-allocation waste and resize
-     * frequency. Resizes are cheap with arena allocation, so we lean toward
-     * under-estimating. */
-    uint32_t constant_size = ((uint32_t) size) / 120;
+    /* The number of distinct names in a source grows with the square root of
+     * its size, not with its size, because longer sources mostly reuse names.
+     * Measured across 16,460 stdlib and gem files, a source holds about
+     * sqrt(size) names at the median and 1.5 * sqrt(size) at the 90th
+     * percentile. Starting the pool at twice that keeps nearly every source
+     * below the load at which the pool grows, and each growth leaves the
+     * outgrown buckets behind in the metadata arena. Ids are 30 bits wide,
+     * which bounds the capacity. */
+    size_t constant_estimate = pm_size_sqrt(size) * 2;
+    if (constant_estimate > ((size_t) 1 << 30)) constant_estimate = (size_t) 1 << 30;
+
+    uint32_t constant_size = (uint32_t) constant_estimate;
     if (constant_size < PM_CONSTANT_POOL_MIN_CAPACITY) constant_size = PM_CONSTANT_POOL_MIN_CAPACITY;
-    pm_constant_pool_init(&parser->metadata_arena, &parser->constant_pool, constant_size);
 
-    /* Initialize the line offset list. Similar to the constant pool, we are
-     * going to estimate the number of newlines that we will need based on the
-     * size of the input. */
+    /* Estimate the number of newlines from the size of the input. */
     size_t newline_size = size / 22;
-    pm_line_offset_list_init(&parser->metadata_arena, &parser->line_offsets, newline_size < 4 ? 4 : newline_size);
+    if (newline_size < 4) newline_size = 4;
+
+    /* Pre-size the metadata arena to hold the constant pool and the line
+     * offsets at the sizes they start with, so that they share its first
+     * block. Half of the input size on top covers what accumulates while
+     * parsing, which is mostly comments. */
+    if (size <= SIZE_MAX / 2) {
+        pm_arena_reserve(&parser->metadata_arena, pm_constant_pool_init_size(constant_size) + newline_size * sizeof(uint32_t) + size / 2);
+    }
+
+    pm_constant_pool_init(&parser->metadata_arena, &parser->constant_pool, constant_size);
+    pm_line_offset_list_init(&parser->metadata_arena, &parser->line_offsets, newline_size);
 
     // If options were provided to this parse, establish them here.
     if (options != NULL) {
