@@ -803,6 +803,38 @@ class TestRactor < Test::Unit::TestCase
     assert_unshareable(pr, /not supported yet/, exception: RuntimeError)
   end
 
+  # A shareable T_OBJECT must get its object_id before it is shared. Adding it later
+  # could move its fields out of full embedded slots or st_insert into its complex
+  # table under lock-free ivar readers on other Ractors (torn reads, segfaults), and
+  # object_id reads the id of a shareable T_OBJECT without the VM lock.
+  def test_object_id_created_before_make_shareable
+    assert_object_id_created_before_sharing { |obj| Ractor.make_shareable(obj) }
+  end
+
+  def test_object_id_created_before_lazy_shareable_check
+    assert_object_id_created_before_sharing { |obj| assert Ractor.shareable?(obj.freeze) }
+  end
+
+  private def assert_object_id_created_before_sharing
+    require "objspace"
+    layout = ->(obj) { ObjectSpace.dump(obj).scan(/"(?:shape_id|embedded|ivars|complex_shape)":[^,}]*/) }
+    saw_complex = false
+    [*1..10, 300].each do |n|
+      klass = Class.new do
+        define_method(:initialize) { n.times { instance_variable_set(:"@i#{it}", it) } }
+      end
+      3.times { klass.new }
+      obj = klass.new
+      yield obj
+      shared = layout.(obj)
+      saw_complex ||= shared.include?('"complex_shape":true')
+      assert_include shared, %("ivars":#{n + 1}), "sharing should add the object_id field (#{n} ivars)"
+      obj.object_id
+      assert_equal shared, layout.(obj), "object_id changed a shared object with #{n} ivars"
+    end
+    assert saw_complex, "the 300-ivar object should have a complex shape"
+  end
+
   def test_copy_unshareable_object_error_message
     assert_ractor(<<~'RUBY')
       pr = proc {}

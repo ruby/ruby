@@ -2460,7 +2460,13 @@ object_id(VALUE obj)
         break;
     }
 
-    if (UNLIKELY(rb_gc_multi_ractor_p() && rb_ractor_shareable_p(obj))) {
+    if (UNLIKELY(rb_gc_multi_ractor_p() && RB_OBJ_SHAREABLE_P(obj))) {
+        // mark_shareable creates a T_OBJECT's id before sharing it.
+        shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+        if (BUILTIN_TYPE(obj) == T_OBJECT && rb_shape_has_object_id(shape_id)) {
+            return object_id_get(obj, shape_id);
+        }
+
         unsigned int lock_lev = RB_GC_VM_LOCK();
         VALUE id = object_id0(obj);
         RB_GC_VM_UNLOCK(lock_lev);

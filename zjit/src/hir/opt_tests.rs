@@ -22234,9 +22234,10 @@ mod hir_opt_tests {
           v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(TestMultiIvars@0x1010)
           PatchPoint MethodRedefined(TestMultiIvars@0x1010, b@0x1018, cme:0x1020)
-          v25:BasicObject = LoadField v11, :@b@0x1048
+          v25:IMemo = LoadField v11, :fields_obj@0x1048
+          v26:BasicObject = LoadField v25, :@b@0x1049
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -22547,17 +22548,19 @@ mod hir_opt_tests {
           v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(TestNestedAccess@0x1010)
           PatchPoint MethodRedefined(TestNestedAccess@0x1010, x@0x1018, cme:0x1020)
-          v33:BasicObject = LoadField v11, :@x@0x1048
+          v33:IMemo = LoadField v11, :fields_obj@0x1048
+          v34:BasicObject = LoadField v33, :@x@0x1048
           PatchPoint StableConstantNames(0x1050, NESTED_FROZEN)
           v16:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(TestNestedAccess@0x1010, y@0x1058, cme:0x1060)
-          v40:BasicObject = LoadField v16, :@y@0x1088
+          v41:IMemo = LoadField v16, :fields_obj@0x1048
+          v42:BasicObject = LoadField v41, :@y@0x1088
           PatchPoint MethodRedefined(Integer@0x1090, +@0x1098, cme:0x10a0)
-          v43:Fixnum = GuardType v33, Fixnum recompile
-          v44:Fixnum = GuardType v40, Fixnum recompile
-          v45:Fixnum = FixnumAdd v43, v44
+          v45:Fixnum = GuardType v34, Fixnum recompile
+          v46:Fixnum = GuardType v42, Fixnum recompile
+          v47:Fixnum = FixnumAdd v45, v46
           CheckInterrupts
-          Return v45
+          Return v47
         ");
     }
 
