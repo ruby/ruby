@@ -541,6 +541,7 @@ mswin64 = $(filter mswin64,$(TARGET_OS))
 # instead of through __has_builtin.
 define CLANG_CONFIG_H_CONTENT
 $(sharp)define HAVE_STMT_AND_DECL_IN_EXPR 1
+$(sharp)define HAVE_VA_ARGS_MACRO 1
 $(sharp)define HAVE_BUILTIN___BUILTIN_CONSTANT_P 1
 $(sharp)define HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR 1
 $(sharp)define HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P 1

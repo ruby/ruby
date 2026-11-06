@@ -849,6 +849,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define HAVE___ASSUME 1
 !if defined(CLANG_VER)
 #define HAVE_STMT_AND_DECL_IN_EXPR 1
+#define HAVE_VA_ARGS_MACRO 1
 #define HAVE_BUILTIN___BUILTIN_CONSTANT_P 1
 #define HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR 1
 #define HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P 1
