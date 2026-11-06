@@ -1849,29 +1849,71 @@ match_end(VALUE match, VALUE n)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    match(n) -> string or nil
  *    match(name) -> string or nil
  *
  *  Returns the matched substring corresponding to the given argument.
  *
- *  When non-negative argument +n+ is given,
- *  returns the matched substring for the <tt>n</tt>th match:
+ *  With non-negative integer argument `n` given,
+ *  returns the matched substring for the `n`th match:
  *
- *    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8" 5:nil>
- *    m.match(0) # => "HX1138"
- *    m.match(4) # => "8"
- *    m.match(5) # => nil
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match.match(0) # => "2026-12-25"
+ *  match.match(1) # => "2026"
+ *  match.match(2) # => "12"
+ *  match.match(3) # => "25"
+ *  match.match(4) # Raises IndexError: index 4 out of matches.
+ *  ```
  *
- *  When string or symbol argument +name+ is given,
+ *  Except for `n == 0`, these same values are available
+ *  in [Regexp global variables][regexp global variables]:
+ *
+ *  ```ruby
+ *  $0 # Returns the name of the current program.
+ *  $1 # => "2026"
+ *  $2 # => "12"
+ *  $3 # => "25"
+ *  $4 # => nil
+ *  ```
+ *
+ *  Returns `nil` for an optional capture that had no match:
+ *
+ *  ```ruby
+ *  match = /(\d+)(?:-(\d+))?/.match('123')
+ *  # => #<MatchData "123" 1:"123" 2:nil>
+ *  match.match(0) # => "123"
+ *  match.match(1) # => "123"
+ *  match.match(2) # => nil
+ *  ```
+ *
+ *  With string or symbol argument `name` given,
  *  returns the matched substring for the given name:
  *
- *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *    # => #<MatchData "hoge" foo:"h" bar:"ge">
- *    m.match('foo') # => "h"
- *    m.match(:bar)  # => "ge"
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.match(:year)   # => "2026"
+ *  match.match('day')   # => "25"
+ *  match.match(:nosuch) # Raises IndexError: undefined group name reference: nosuch.
+ *  ```
  *
+ *  Returns `nil` for a named capture that had no match:
+ *
+ *  ```ruby
+ *  match = /(?<year>\d{4})(?:-(?<month>\d{2}))?/.match('2026')
+ *  # => #<MatchData "2026" year:"2026" month:nil>
+ *  match.match(:year)  # => "2026"
+ *  match.match(:month) # => nil
+ *  ```
+ *
+ *  [regexp global variables]: rdoc-ref:Regexp@Global+Variables
  */
 
 static VALUE
