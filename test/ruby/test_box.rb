@@ -1071,6 +1071,88 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  # [Bug #22282]
+  def test_verbose_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      $VERBOSE = nil
+      assert_equal [nil, nil, nil, 0], [$VERBOSE, $-v, $-w, $-W]
+
+      $VERBOSE = false
+      assert_equal [false, false, false, 1], [$VERBOSE, $-v, $-w, $-W]
+
+      $VERBOSE = true
+      assert_equal [true, true, true, 2], [$VERBOSE, $-v, $-w, $-W]
+    end;
+  end
+
+  def test_debug_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      $DEBUG = true
+      assert_equal [true, true], [$DEBUG, $-d]
+
+      $DEBUG = false
+      assert_equal [false, false], [$DEBUG, $-d]
+    end;
+  end
+
+  def test_verbose_nil_silences_warnings_in_box
+    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems", "-W1", "-W:experimental"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        old, $VERBOSE = $VERBOSE, nil
+        warn "silenced"
+        $VERBOSE = old
+        warn "printed"
+      end;
+      assert_equal [], output
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[0], error[0]
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[1], error[1]
+      assert_equal ["printed"], error[2..]
+    end
+  end
+
+  def test_verbose_from_command_line_option_in_box
+    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems", "-W0"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        p [$VERBOSE, $-v, $-W]
+        warn "silenced"
+      end;
+      assert_equal ["[nil, nil, 0]"], output
+      assert_equal [], error
+    end
+  end
+
+  def test_verbose_shared_between_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      require "stringio"
+      $VERBOSE = false
+      box = Ruby::Box.new
+      box.eval('$VERBOSE = nil')
+      assert_equal [nil, nil, nil, 0], [$VERBOSE, $-v, $-w, $-W]
+
+      $stderr = StringIO.new
+      warn "silenced in main"
+      $VERBOSE = false
+      box.eval('warn "printed in box"')
+      err, $stderr = $stderr.string, STDERR
+      assert_equal "printed in box\n", err
+    end;
+  end
+
+  def test_debug_shared_between_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      $DEBUG = false
+      box = Ruby::Box.new
+      box.eval('$DEBUG = true')
+      assert_equal [true, true], [$DEBUG, $-d]
+      $DEBUG = false
+      assert_equal [false, false], box.eval('[$DEBUG, $-d]')
+    end;
+  end
+
   def test_load_path_and_loaded_features
     setup_box
 

@@ -3214,6 +3214,15 @@ ruby_prog_init(void)
     rb_gvar_ractor_local("$DEBUG");
     rb_gvar_ractor_local("$-d");
 
+    // These flags live in the Ractor and are shared by all boxes, so a copy in
+    // the box gvar table would only drift away from what the interpreter reads.
+    rb_gvar_box_dynamic("$VERBOSE");
+    rb_gvar_box_dynamic("$-v");
+    rb_gvar_box_dynamic("$-w");
+    rb_gvar_box_ready("$-W");
+    rb_gvar_box_dynamic("$DEBUG");
+    rb_gvar_box_dynamic("$-d");
+
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
 

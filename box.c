@@ -1307,7 +1307,7 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
  *
  *  * Add the loaded box on iseq to check if another box tries running the iseq (add a field only when VM_CHECK_MODE?)
  *  * Assign its own TOPLEVEL_BINDING in boxes
- *  * Fix calling `warn` in boxes to refer `$VERBOSE` and `Warning.warn` in the box
+ *  * Fix calling `warn` in boxes to refer `Warning.warn` in the box
  *  * Make an internal data container class `Ruby::Box::Entry` invisible
  *  * More test cases about `$LOAD_PATH` and `$LOADED_FEATURES`
  *
@@ -1513,20 +1513,19 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
  *  ```ruby
  *  # foo.rb
  *  $foo = "foo"
- *  $VERBOSE = nil
  *
  *  puts "This appears: '#{$foo}'"
  *
  *  # main.rb
  *  p $foo      #=> nil
- *  p $VERBOSE  #=> false
  *
  *  box = Ruby::Box.new
  *  box.require_relative('foo')  # "This appears: 'foo'"
  *
  *  p $foo      #=> nil
- *  p $VERBOSE  #=> false
  *  ```
+ *
+ *  `$VERBOSE` and `$DEBUG` are exceptions. They are shared by all boxes in a Ractor, so setting `$VERBOSE = nil` in a box also silences warnings in the other boxes.
  *
  *  ### Top level constants
  *
