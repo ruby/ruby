@@ -2652,16 +2652,20 @@ match_array(VALUE match, int start)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    to_a -> array
  *
- *  Returns the array of matches:
+ *  Returns the array of matched substrings:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m.to_a # => ["HX1138", "H", "X", "113", "8"]
- *
- *  Related: MatchData#captures.
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  # => /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.to_a # => ["2026-12-25", "2026", "12", "25"]
+ *  ```
  *
  */
 
