@@ -499,6 +499,8 @@ You have specified rake based extension, but rake is not added as runtime depend
   def validate_extension_require_relative # :nodoc:
     return unless @specification.extensions.any?
 
+    require "pathname"
+
     require_paths = @specification.require_paths
 
     @specification.files.each do |rb_file|
@@ -511,7 +513,7 @@ You have specified rake based extension, but rake is not added as runtime depend
           next unless line =~ /^\s*require_relative\s+["']([^"']+)["']/
 
           required_path = Regexp.last_match(1).force_encoding(rb_file.encoding)
-          resolved = File.join(File.dirname(rb_file), required_path)
+          resolved = Pathname.new(File.join(File.dirname(rb_file), required_path)).cleanpath.to_s
 
           next if @specification.files.any? {|f| f == "#{resolved}.rb" || f == resolved }
 
