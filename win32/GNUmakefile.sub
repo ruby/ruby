@@ -283,6 +283,11 @@ COROUTINE_TEST_RUN = .\$(call win,$(COROUTINE_TEST))
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
 LDSHARED = $(LD) -LD
+ifneq ($(CLANG_VER),)
+# clang-cl does not link the compiler-rt builtins by default, which
+# define __cpu_model for __builtin_cpu_supports in extensions.
+LDSHARED += -clang:--rtlib=compiler-rt
+endif
 # Splice the old value in place, as nmake does for a self reference,
 # while the other references stay deferred.
 $(eval XCFLAGS = -DRUBY_EXPORT $$(INCFLAGS) $(value XCFLAGS) $$(XINCFLAGS))
