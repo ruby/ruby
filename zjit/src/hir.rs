@@ -9517,16 +9517,18 @@ fn add_iseq_to_hir(
     }
 
     // Iteratively fill out basic blocks using a queue.
+    // Each entry in the queue is a (num_locals, num_stack, block, insn_idx); we use these to fill
+    // out maximal SSA basic blocks.
     // TODO(max): Basic block arguments at edges
     let mut queue = VecDeque::new();
     for &insn_idx in jit_entry_insns.iter() {
-        queue.push_back((new_frame_state(mode, iseq), insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx));
+        queue.push_back((num_locals(iseq), /*num_stack=*/0, insn_idx_to_block[&insn_idx], insn_idx));
     }
 
     // Keep compiling blocks until the queue becomes empty
     let mut visited = HashSet::new();
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    while let Some((incoming_state, mut block, mut insn_idx)) = queue.pop_front() {
+    while let Some((num_incoming_locals, num_incoming_stack, mut block, mut insn_idx)) = queue.pop_front() {
         // Compile each block only once
         if visited.contains(&block) { continue; }
         visited.insert(block);
@@ -9535,11 +9537,10 @@ fn add_iseq_to_hir(
         let mut self_param = fun.push_insn(block, Insn::Param);
         let mut state = {
             let mut result = new_frame_state(mode, iseq);
-            let local_size = if jit_entry_insns.contains(&insn_idx) { num_locals(iseq) } else { incoming_state.locals.len() };
-            for _ in 0..local_size {
+            for _ in 0..num_incoming_locals {
                 result.locals.push(fun.push_insn(block, Insn::Param));
             }
-            for _ in incoming_state.stack {
+            for _ in 0..num_incoming_stack {
                 result.stack.push(fun.push_insn(block, Insn::Param));
             }
             result
@@ -10074,7 +10075,7 @@ fn add_iseq_to_hir(
                     let not_nil_false_type = types::Truthy;
                     let not_nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: not_nil_false_type });
                     state.replace(val, not_nil_false);
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.locals.len(), state.stack_size(), target, target_idx));
                 }
                 YARVINSN_branchif | YARVINSN_branchif_without_ints => {
                     let offset = get_arg(pc, 0).as_i64();
@@ -10103,7 +10104,7 @@ fn add_iseq_to_hir(
                     let nil_false_type = types::Falsy;
                     let nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: nil_false_type });
                     state.replace(val, nil_false);
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.locals.len(), state.stack_size(), target, target_idx));
                 }
                 YARVINSN_branchnil | YARVINSN_branchnil_without_ints => {
                     let offset = get_arg(pc, 0).as_i64();
@@ -10130,7 +10131,7 @@ fn add_iseq_to_hir(
                     let new_type = types::NotNil;
                     let not_nil = fun.push_insn(block, Insn::RefineType { val, new_type });
                     state.replace(val, not_nil);
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.locals.len(), state.stack_size(), target, target_idx));
                 }
                 YARVINSN_opt_case_dispatch => {
                     // TODO: Some keys are visible at compile time, so in the future we can
@@ -10162,7 +10163,7 @@ fn add_iseq_to_hir(
                         if_false: BranchEdge { target, args: state.as_args(self_param) }
                     });
                     block = fall_through;
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.locals.len(), state.stack_size(), target, target_idx));
 
                     // Move on to the fast path
                     let insn_id = fun.push_insn(block, Insn::ObjectAlloc { val, state: exit_id });
@@ -10179,7 +10180,7 @@ fn add_iseq_to_hir(
                     let _branch_id = fun.push_insn(block, Insn::Jump(
                         BranchEdge { target, args: state.as_args(self_param) }
                     ));
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.locals.len(), state.stack_size(), target, target_idx));
                     break;  // Don't enqueue the next block as a successor
                 }
                 opcode @ (YARVINSN_getlocal | YARVINSN_getlocal_WC_0 | YARVINSN_getlocal_WC_1) => {
@@ -11286,7 +11287,7 @@ fn add_iseq_to_hir(
             if insn_idx_to_block.contains_key(&insn_idx) {
                 let target = insn_idx_to_block[&insn_idx];
                 fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
-                queue.push_back((state, target, insn_idx));
+                queue.push_back((state.locals.len(), state.stack_size(), target, insn_idx));
                 break;  // End the block
             }
         }
