@@ -3573,57 +3573,40 @@ sort_reentered(VALUE ary)
     return Qnil;
 }
 
-static void
-sort_returned(struct ary_sort_data *data)
+static int
+sort_cmpint(struct ary_sort_data *data, VALUE cmp, VALUE a, VALUE b)
 {
+    int ret = rb_cmpint(cmp, a, b);
     if (rb_obj_frozen_p(data->receiver)) {
         rb_raise(rb_eFrozenError, "array frozen during sort");
     }
     sort_reentered(data->ary);
+    return ret;
 }
 
 static int
 sort_1(const void *ap, const void *bp, void *dummy)
 {
     struct ary_sort_data *data = dummy;
-    VALUE retval = sort_reentered(data->ary);
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     VALUE args[2];
-    int n;
 
     args[0] = a;
     args[1] = b;
-    retval = rb_yield_values2(2, args);
-    n = rb_cmpint(retval, a, b);
-    sort_returned(data);
-    return n;
+    sort_reentered(data->ary);
+    return sort_cmpint(data, rb_yield_values2(2, args), a, b);
 }
 
 static int
 sort_2(const void *ap, const void *bp, void *dummy)
 {
     struct ary_sort_data *data = dummy;
-    VALUE retval = sort_reentered(data->ary);
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
-    int n;
 
-    if (FIXNUM_P(a) && FIXNUM_P(b) && CMP_OPTIMIZABLE(INTEGER)) {
-        if ((long)a > (long)b) return 1;
-        if ((long)a < (long)b) return -1;
-        return 0;
-    }
-    if (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(STRING)) {
-        return rb_str_cmp(a, b);
-    }
-    if (RB_FLOAT_TYPE_P(a) && CMP_OPTIMIZABLE(FLOAT)) {
-        return rb_float_cmp(a, b);
-    }
-
-    retval = rb_funcallv(a, id_cmp, 1, &b);
-    n = rb_cmpint(retval, a, b);
-    sort_returned(data);
-
-    return n;
+    sort_reentered(data->ary);
+#define rb_cmpint(cmp, a, b) sort_cmpint(data, cmp, a, b)
+    return OPTIMIZED_CMP(a, b);
+#undef rb_cmpint
 }
 
 /*
