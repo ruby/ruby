@@ -6309,10 +6309,15 @@ rb_str_update_1(VALUE str, rb_len_t beg, rb_len_t len, VALUE val, rb_len_t vbeg,
 
     str_modify_keep_cr(str);
     RSTRING_GETMEM(str, sptr, slen);
-    if (len < vlen && (rb_len_t)str_capacity(str, TERM_LEN(str)) < slen + vlen - len) {
-        /* expand string */
-        RESIZE_CAPA(str, slen + vlen - len);
-        sptr = RSTRING_PTR(str);
+    if (len < vlen) {
+        if (RB_UNLIKELY(slen > RB_LEN_MAX - (vlen - len))) {
+            rb_raise(rb_eArgError, "string sizes too big");
+        }
+        if ((rb_len_t)str_capacity(str, TERM_LEN(str)) < slen + vlen - len) {
+            /* expand string */
+            RESIZE_CAPA(str, slen + vlen - len);
+            sptr = RSTRING_PTR(str);
+        }
     }
 
     if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
