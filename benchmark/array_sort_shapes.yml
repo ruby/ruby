@@ -1,0 +1,23 @@
+prelude: |
+  n = 100000
+  random = Array.new(n) {|i| (i * 2654435761) % n }
+  sorted = (0...n).to_a
+  reversed = sorted.reverse
+  two_runs = (0...n/2).to_a + (0...n/2).to_a
+  equal = Array.new(n, 7)
+  strings = random.map(&:to_s)
+  floats = random.map {|i| i / 7.0 }
+
+benchmark:
+  sort_random: random.dup.sort!
+  sort_sorted: sorted.dup.sort!
+  sort_reversed: reversed.dup.sort!
+  sort_two_runs: two_runs.dup.sort!
+  sort_equal: equal.dup.sort!
+  sort_string: strings.dup.sort!
+  sort_float: floats.dup.sort!
+  sort_block: random.dup.sort! {|a, b| a <=> b }
+  sort_by_int: random.sort_by {|a| a }
+  sort_by_string: strings.sort_by {|a| a }
+
+loop_count: 20
