@@ -2486,21 +2486,22 @@ rb_reg_match_pre(VALUE match)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    post_match   -> str
+ *    post_match -> string
  *
- *  Returns the substring of the target string from
- *  the end of the first match in +self+ (that is, <tt>self[0]</tt>)
- *  to the end of the string;
- *  equivalent to regexp global variable <tt>$'</tt>:
+ *  Returns the substring of the target string that follows the matched substring;
+ *  equivalent to [Regexp global variable][regexp global variable] `$'`:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m[0]         # => "HX1138"
- *    m.post_match # => ": The Movie"\
+ *  ```ruby
+ *  match = /\d+/.match('foo 123 bar 456')
+ *  # => #<MatchData "123">
+ *  match.match(0)   # => "123"
+ *  match.post_match # => " bar 456"
+ *  ```
  *
- *  Related: MatchData.pre_match.
- *
+ *  [regexp global variable]: rdoc-ref:Regexp@Global+Variables
  */
 
 VALUE
