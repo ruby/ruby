@@ -325,6 +325,9 @@ ossl_cipher_update_long(EVP_CIPHER_CTX *ctx, unsigned char *out,
     int limit = INT_MAX / 2 + 1;
     rb_len_t out_len = 0;
 
+    if (out == in && in_len > limit)
+        ossl_raise(eCipherError, "input too large for in-place update");
+
     do {
         int in_part_len = in_len > limit ? limit : (int)in_len;
 
@@ -361,19 +364,19 @@ static VALUE
 ossl_cipher_update(int argc, VALUE *argv, VALUE self)
 {
     EVP_CIPHER_CTX *ctx;
-    unsigned char *in;
     rb_len_t in_len, out_len;
     VALUE data, str;
 
     rb_scan_args(argc, argv, "11", &data, &str);
+    GetCipher(self, ctx);
 
     if (!RTEST(rb_attr_get(self, id_key_set)))
         ossl_raise(eCipherError, "key not set");
 
     StringValue(data);
-    in = (unsigned char *)RSTRING_PTR(data);
+    if (!NIL_P(str))
+        StringValue(str);
     in_len = RSTRING_LEN(data);
-    GetCipher(self, ctx);
 
     /*
      * As of OpenSSL 3.2, there is no reliable way to determine the required
@@ -396,15 +399,15 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
     if (NIL_P(str))
         str = rb_str_buf_new(out_len);
     else {
-        StringValue(str);
         if ((rb_len_t)rb_str_capacity(str) >= out_len)
             rb_str_modify(str);
         else
             rb_str_modify_expand(str, out_len - RSTRING_LEN(str));
     }
 
-    if (!ossl_cipher_update_long(ctx, (unsigned char *)RSTRING_PTR(str),
-                                 &out_len, in, in_len))
+    if (!ossl_cipher_update_long(ctx,
+                                 (unsigned char *)RSTRING_PTR(str), &out_len,
+                                 (unsigned char *)RSTRING_PTR(data), in_len))
         ossl_raise(eCipherError, "EVP_CipherUpdate");
     rb_str_set_len(str, out_len);
 

@@ -117,7 +117,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     }
   end
 
-  def test_ctr_if_exists
+  def test_aes_ctr
     # NIST SP 800-38A F.5.1
     key = ["2b7e151628aed2a6abf7158809cf4f3c"].pack("H*")
     iv =  ["f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"].pack("H*")
@@ -125,10 +125,16 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
            "ae2d8a571e03ac9c9eb76fac45af8e51"].pack("H*")
     ct =  ["874d6191b620e3261bef6864990db6ce" \
            "9806f66b7970fdff8617187bb9fffdff"].pack("H*")
-    cipher = new_encryptor("aes-128-ctr", key: key, iv: iv, padding: 0)
+    cipher = new_encryptor("aes-128-ctr", key: key, iv: iv)
     assert_equal ct, cipher.update(pt) << cipher.final
-    cipher = new_decryptor("aes-128-ctr", key: key, iv: iv, padding: 0)
+    cipher = new_decryptor("aes-128-ctr", key: key, iv: iv)
     assert_equal pt, cipher.update(ct) << cipher.final
+
+    # in-place update
+    cipher = new_encryptor("aes-128-ctr", key: key, iv: iv)
+    buf = Marshal.load(Marshal.dump(pt))
+    assert_equal(ct, cipher.update(buf, buf))
+    assert_equal(ct, buf)
   end
 
   def test_update_with_buffer
