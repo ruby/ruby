@@ -1504,7 +1504,6 @@ prepare_getline_args(struct StringIO *ptr, struct getline_arg *arg, int argc, VA
 	    if (rs == rb_rs) {
 		rs = rb_enc_str_new(0, 0, enc_io);
 		rb_str_buf_cat_ascii(rs, "\n");
-		rs = rs;
 	    }
 	    else {
 		rb_raise(rb_eArgError, "encoding mismatch: %s IO with %s RS",
