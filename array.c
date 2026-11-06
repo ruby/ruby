@@ -6108,7 +6108,7 @@ ary_max_opt_fixnum(VALUE ary, rb_len_t i, VALUE vmax)
         v = RARRAY_AREF(ary, i);
 
         if (FIXNUM_P(v)) {
-            if ((long)vmax < (long)v) {
+            if ((SIGNED_VALUE)vmax < (SIGNED_VALUE)v) {
                 vmax = v;
             }
         }
@@ -6285,7 +6285,7 @@ ary_min_opt_fixnum(VALUE ary, rb_len_t i, VALUE vmin)
         a = RARRAY_AREF(ary, i);
 
         if (FIXNUM_P(a)) {
-            if ((long)vmin > (long)a) {
+            if ((SIGNED_VALUE)vmin > (SIGNED_VALUE)a) {
                 vmin = a;
             }
         }
