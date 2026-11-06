@@ -440,6 +440,12 @@ rb_yjit_cme_ractor_serial(const rb_callable_method_entry_t *cme)
     return cme->def->body.bmethod.defined_ractor_id;
 }
 
+bool
+rb_yjit_attached_object_is(VALUE klass, VALUE object)
+{
+    return RCLASS_SINGLETON_P(klass) && RCLASS_ATTACHED_OBJECT(klass) == object;
+}
+
 // Setup jit_return to avoid returning a non-Qundef value on a non-FINISH frame.
 // See [jit_compile_exception] for details.
 void

@@ -5069,8 +5069,7 @@ fn jit_guard_known_klass(
             asm.ctx.upgrade_opnd_type(insn_opnd, Type::Flonum);
         }
     } else if unsafe {
-        FL_TEST(known_klass, VALUE(RUBY_FL_SINGLETON as usize)) != VALUE(0)
-            && sample_instance == rb_class_attached_object(known_klass)
+        rb_yjit_attached_object_is(known_klass, sample_instance)
             && !rb_obj_is_kind_of(sample_instance, rb_cIO).test()
     } {
         // Singleton classes are attached to one specific object, so we can
