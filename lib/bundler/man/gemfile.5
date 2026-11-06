@@ -82,7 +82,7 @@ ruby "2\.6\.8", engine: "jruby", engine_version: "9\.3\.8\.0"
 .fi
 .IP "" 0
 .SS "PATCHLEVEL"
-Each application \fImay\fR specify a Ruby patchlevel\. Specifying the patchlevel has been meaningless since Ruby 2\.1\.0 was released as the patchlevel is now uniquely determined by a combination of major, minor, and teeny version numbers\.
+Each application \fImay\fR specify a Ruby patchlevel\. The option is accepted for compatibility with existing Gemfiles and ignored: the patchlevel has been uniquely determined by the combination of major, minor, and teeny version numbers since Ruby 2\.1\.0 was released, so Bundler does not compare it against the patchlevel of the running Ruby\.
 .P
 This option was implemented in Bundler 1\.4\.0 for Ruby 2\.0 or earlier\.
 .IP "" 4
