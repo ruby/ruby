@@ -2661,7 +2661,6 @@ match_array(VALUE match, int start)
  *
  *  ```ruby
  *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
- *  # => /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
  *  match = '2026-12-25'.match(regexp)
  *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
  *  match.to_a # => ["2026-12-25", "2026", "12", "25"]
