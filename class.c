@@ -676,10 +676,14 @@ rb_class_take_ownership(VALUE klass)
     // keep class_alloc0's "0 means main" encoding
     rb_serial_t id = rb_ractor_main_p() ? 0 : rb_ractor_id(GET_RACTOR());
 
-    // and up the eigenclass chain: each one belongs to the class below it
-    do {
-        RCLASS_SET_OWNER_RACTOR_ID(klass, id);
-    } while ((klass = class_own_metaclass(klass)) != 0);
+    // under the VM lock so it can't land inside the old owner's barrier-free method cache
+    // clear (local_singleton_cache_clear_p)
+    RB_VM_LOCKING() {
+        // and up the eigenclass chain: each one belongs to the class below it
+        do {
+            RCLASS_SET_OWNER_RACTOR_ID(klass, id);
+        } while ((klass = class_own_metaclass(klass)) != 0);
+    }
 }
 
 void
@@ -2507,6 +2511,14 @@ method_entry_i(ID key, VALUE value, void *data)
 static void
 add_instance_method_list(VALUE mod, struct method_entry_arg *me_arg)
 {
+    if (UNLIKELY(rb_class_m_tbl_read_needs_lock_p(mod))) {
+        RB_VM_LOCKING() {
+            struct rb_id_table *m_tbl = RCLASS_M_TBL(mod);
+            if (m_tbl) rb_id_table_foreach(m_tbl, method_entry_i, me_arg);
+        }
+        return;
+    }
+
     struct rb_id_table *m_tbl = RCLASS_M_TBL(mod);
     if (!m_tbl) return;
     rb_id_table_foreach(m_tbl, method_entry_i, me_arg);

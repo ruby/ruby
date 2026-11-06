@@ -515,6 +515,14 @@ RCLASS_SINGLETON_P(VALUE klass)
     return RB_BUILTIN_TYPE(klass) == T_CLASS && FL_TEST_RAW(klass, FL_SINGLETON);
 }
 
+// The owner of a singleton class may write its method table without a VM barrier
+// (see clear_method_cache_by_id_in_class), so any other Ractor must read it under the VM lock.
+static inline bool
+rb_class_m_tbl_read_needs_lock_p(VALUE klass)
+{
+    return RCLASS_SINGLETON_P(klass) && !rb_class_owned_p(klass);
+}
+
 static inline void
 RCLASS_SET_SUPER(VALUE klass, VALUE super)
 {

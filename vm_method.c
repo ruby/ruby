@@ -459,6 +459,33 @@ invalidate_complemented_method_entry_in_callable_m_table(struct rb_id_table *tbl
     }
 }
 
+static bool
+cc_tbl_negative_entry_p(VALUE cc_tbl, ID mid)
+{
+    VALUE ccs_data;
+    return cc_tbl && rb_managed_id_table_lookup(cc_tbl, mid, &ccs_data) &&
+        NIL_P(((struct rb_class_cc_entries *)ccs_data)->cme->owner);
+}
+
+/* Only the owner can reach a singleton class's instance (its unshareable attached
+ * object), and other Ractors read its method table under the VM lock
+ * (rb_class_m_tbl_read_needs_lock_p), so clearing its caches needs no barrier, unless
+ * it drops the negative cme, which every class shares. */
+static bool
+local_singleton_cache_clear_p(VALUE klass, ID mid)
+{
+    if (!RCLASS_SINGLETON_P(klass) ||
+        RB_OBJ_SHAREABLE_P(RCLASS_ATTACHED_OBJECT(klass)) ||
+        !rb_class_owned_p(klass)) {
+        return false;
+    }
+
+    VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
+    if (cc_tbl_negative_entry_p(cc_tbl, mid)) return false;
+    if (RCLASS_CC_TBL_NOT_PRIME_P(klass, cc_tbl) && cc_tbl_negative_entry_p(RCLASS_PRIME_CC_TBL(klass), mid)) return false;
+    return true;
+}
+
 static void
 clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 {
@@ -466,14 +493,18 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     if (rb_objspace_garbage_object_p(klass)) return;
 
     RB_VM_LOCKING() {
-        rb_vm_barrier();
-
-        if (LIKELY(!RCLASS_SUBCLASSES(klass)) &&
+        bool leaf = LIKELY(!RCLASS_SUBCLASSES(klass)) &&
             !FL_TEST_RAW(klass, RCLASS_HAS_SUBCLASSES) &&
             // Non-refinement ICLASSes (from module inclusion) previously had
             // subclasses reparented onto them, so they need the tree path for
             // broader cme-based invalidation even though they now have no subclasses.
-            !(RB_TYPE_P(klass, T_ICLASS) && NIL_P(RCLASS_REFINED_CLASS(klass)))) {
+            !(RB_TYPE_P(klass, T_ICLASS) && NIL_P(RCLASS_REFINED_CLASS(klass)));
+
+        if (!leaf || !local_singleton_cache_clear_p(klass, mid)) {
+            rb_vm_barrier();
+        }
+
+        if (leaf) {
             // no subclasses
             // check only current class
 
@@ -606,9 +637,14 @@ rb_clear_method_cache(VALUE klass_or_module, ID mid)
 
         if (FL_TEST(module, RMODULE_IS_REFINEMENT)) {
             VALUE refined_class = rb_refinement_module_get_refined_class(module);
-            rb_clear_method_cache(refined_class, mid);
-            rb_class_foreach_subclass(refined_class, clear_iclass_method_cache_by_id_for_refinements, mid);
-            rb_clear_all_refinement_method_cache();
+            RB_VM_LOCKING() {
+                // invalidates the refinement call caches of every class, even when
+                // refined_class's own clear skips the barrier
+                rb_vm_barrier();
+                rb_clear_method_cache(refined_class, mid);
+                rb_class_foreach_subclass(refined_class, clear_iclass_method_cache_by_id_for_refinements, mid);
+                rb_clear_all_refinement_method_cache();
+            }
         }
         rb_class_foreach_subclass(module, clear_iclass_method_cache_by_id, mid);
     }

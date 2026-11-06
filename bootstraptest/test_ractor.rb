@@ -2268,6 +2268,62 @@ assert_equal 'true', %q{
   true
 }
 
+# The owner defines methods on a singleton class of an unshareable object without a VM
+# barrier, so another Ractor reflecting on that class must read its method table under
+# the VM lock (the table is resized while it reads).
+assert_equal 'true', %q{
+  ok = 20.times.all? do
+    obj = Object.new
+    sc = obj.singleton_class
+    reader = Ractor.new(sc) do |c|
+      until c.method_defined?(:m999)
+        c.instance_methods(false)
+        c.public_method_defined?(:m0)
+      end
+      c.instance_methods(false).size
+    end
+    1000.times { |i| sc.define_method(:"m#{i}") { i } }
+    reader.value == 1000 && obj.m999 == 999
+  end
+  ok
+}
+
+# A singleton class that cached a negative entry still takes the barrier: the negative
+# cme it invalidates is shared with every class another Ractor is calling through.
+assert_equal 'true', %q{
+  r = Ractor.new do
+    o = Object.new
+    200_000.times { o.respond_to?(:neg) }
+    true
+  end
+
+  objs = 1000.times.map do
+    obj = Object.new
+    sc = obj.singleton_class
+    obj.respond_to?(:neg)
+    sc.define_method(:neg) { 1 }
+    obj
+  end
+
+  r.value && objs.all? { it.neg == 1 }
+}
+
+# After a move the receiver owns the singleton class; the sender still holds it and
+# reflects on it while the receiver defines methods.
+assert_equal 'true', %q{
+  obj = Object.new
+  def obj.first = 1
+  sc = obj.singleton_class
+  r = Ractor.new do
+    o = Ractor.receive
+    1000.times { |i| o.singleton_class.define_method(:"m#{i}") { i } }
+    o.first + o.m999
+  end
+  r.send(obj, move: true)
+  sc.instance_methods(false).size until sc.method_defined?(:m999)
+  r.value == 1000
+}
+
 # check experimental warning
 assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor API is experimental/, %q{
   Warning[:experimental] = $VERBOSE = true
