@@ -7272,33 +7272,73 @@ pm_parser_scope_pop(pm_parser_t *parser) {
 /******************************************************************************/
 
 /**
- * Pushes a value onto the stack.
+ * Moves the full inline word of the stack into the spill array, growing the
+ * array if it is out of room, and leaves the inline word empty.
  */
-static PRISM_INLINE void
-pm_state_stack_push(pm_state_stack_t *stack, bool value) {
-    *stack = (*stack << 1) | (value & 1);
+static void
+pm_state_stack_spill(pm_arena_t *arena, pm_state_stack_t *stack) {
+    uint32_t size = (stack->depth >> 6) - 1;
+
+    if (size == stack->capacity) {
+        uint32_t capacity = stack->capacity == 0 ? 2 : stack->capacity * 2;
+        stack->spill = (uint64_t *) pm_arena_realloc(arena, stack->spill, capacity * sizeof(uint64_t), stack->capacity * sizeof(uint64_t), PRISM_ALIGNOF(uint64_t));
+        stack->capacity = capacity;
+    }
+
+    stack->spill[size] = stack->top;
+    stack->top = 0;
 }
 
 /**
- * Pops a value off the stack.
+ * Pushes a value onto the stack. The inline word is full when the depth is a
+ * nonzero multiple of 64.
+ */
+static PRISM_INLINE void
+pm_state_stack_push(pm_arena_t *arena, pm_state_stack_t *stack, bool value) {
+    if (PRISM_UNLIKELY(stack->depth && !(stack->depth & 63))) {
+        pm_state_stack_spill(arena, stack);
+    }
+
+    stack->top = (stack->top << 1) | value;
+    stack->depth++;
+}
+
+/**
+ * Pops a value off the stack. When that empties the inline word, the newest
+ * spilled word moves back into it, so the inline word is empty only when the
+ * whole stack is.
  */
 static PRISM_INLINE void
 pm_state_stack_pop(pm_state_stack_t *stack) {
-    *stack >>= 1;
+    /* A closing delimiter without a matching opening one is a syntax error that
+     * the parser reports and recovers from, but the lexer still pops for it, so
+     * popping an empty stack has to leave it empty. */
+    if (PRISM_UNLIKELY(stack->depth == 0)) return;
+
+    stack->top >>= 1;
+    stack->depth--;
+
+    if (PRISM_UNLIKELY(stack->depth && !(stack->depth & 63))) {
+        stack->top = stack->spill[(stack->depth >> 6) - 1];
+    }
 }
 
 /**
- * Returns the value at the top of the stack.
+ * Returns the value at the top of the stack. An empty stack reads as false,
+ * because its inline word is 0.
  */
 static PRISM_INLINE bool
 pm_state_stack_p(const pm_state_stack_t *stack) {
-    return *stack & 1;
+    return stack->top & 1;
 }
 
+/**
+ * The accepts-block stack stores the negation of each value, so that an empty
+ * stack (which reads as false) means blocks are accepted.
+ */
 static PRISM_INLINE void
 pm_accepts_block_stack_push(pm_parser_t *parser, bool value) {
-    // Use the negation of the value to prevent stack overflow.
-    pm_state_stack_push(&parser->accepts_block_stack, !value);
+    pm_state_stack_push(&parser->scratch_arena, &parser->accepts_block_stack, !value);
 }
 
 static PRISM_INLINE void
@@ -7313,7 +7353,7 @@ pm_accepts_block_stack_p(pm_parser_t *parser) {
 
 static PRISM_INLINE void
 pm_do_loop_stack_push(pm_parser_t *parser, bool value) {
-    pm_state_stack_push(&parser->do_loop_stack, value);
+    pm_state_stack_push(&parser->scratch_arena, &parser->do_loop_stack, value);
 }
 
 static PRISM_INLINE void
@@ -23167,8 +23207,8 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .enclosure_nesting = 0,
         .lambda_enclosure_nesting = -1,
         .brace_nesting = 0,
-        .do_loop_stack = 0,
-        .accepts_block_stack = 0,
+        .do_loop_stack = { 0 },
+        .accepts_block_stack = { 0 },
         .lex_modes = {
             .current = &parser->lex_modes.base,
             .base = { .mode = PM_LEX_DEFAULT },

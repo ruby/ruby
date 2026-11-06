@@ -577,9 +577,35 @@ typedef struct pm_scope {
 } pm_scope_t;
 
 /*
- * A struct that represents a stack of boolean values.
+ * A stack of boolean values with no fixed depth limit. The newest frames live
+ * in an inline word, so pushing and popping are usually a shift and a compare.
+ * When that word fills, it moves to the spill array and the inline word starts
+ * over empty. The spill array is only allocated once the nesting is more than
+ * 64 frames deep.
  */
-typedef uint32_t pm_state_stack_t;
+typedef struct {
+    /*
+     * The newest frames, with the top of the stack in bit 0. It holds between
+     * 1 and 64 frames while the stack is not empty, and is 0 when it is.
+     */
+    uint64_t top;
+
+    /*
+     * The number of frames on the whole stack. The inline word holds the
+     * frames above the last multiple of 64, so the spill array holds
+     * (depth - 1) / 64 words.
+     */
+    uint32_t depth;
+
+    /* The number of words the spill array has room for. */
+    uint32_t capacity;
+
+    /*
+     * Full words of 64 older frames each, oldest first, allocated from the
+     * scratch arena.
+     */
+    uint64_t *spill;
+} pm_state_stack_t;
 
 /*
  * This struct represents the overall parser. It contains a reference to the
