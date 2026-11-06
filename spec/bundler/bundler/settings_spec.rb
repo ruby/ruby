@@ -68,6 +68,24 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
         expect(loaded).to eq({})
       end
     end
+
+    context "when the config file contains only the document marker" do
+      before { bundled_app("config").write("---\n") }
+
+      it "loads an empty config" do
+        loaded = settings.send(:load_config, bundled_app("config"))
+        expect(loaded).to eq({})
+      end
+    end
+
+    context "when a tab separates a key from its value" do
+      before { bundled_app("config").write("---\nBUNDLE_PATH:\tvendor\n") }
+
+      it "loads the value" do
+        loaded = settings.send(:load_config, bundled_app("config"))
+        expect(loaded).to eq("BUNDLE_PATH" => "vendor")
+      end
+    end
   end
 
   describe "#global_config_file" do
