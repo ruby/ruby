@@ -1020,6 +1020,9 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
                     raise_generator_error(key, "%"PRIsVALUE" not allowed as object key in JSON", CLASS_OF(key));
                 }
             }
+
+            json_inspect_hash_with_mixed_keys(arg);
+
             key_to_s = rb_convert_type(key, T_STRING, "String", "to_s");
             break;
     }

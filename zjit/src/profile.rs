@@ -249,6 +249,12 @@ fn profile_invokesuper(profiler: &mut Profiler, profile: &mut IseqProfile) {
     unsafe { rb_gc_writebarrier(profiler.iseq.into(), cme_value) };
 
     let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
+    // super(&block) and super { } pass their own block, so the frame's block doesn't matter
+    let passes_own_block = unsafe { rb_vm_ci_flag((*cd).ci) } & VM_CALL_ARGS_BLOCKARG != 0
+        || !profiler.insn_opnd(1).as_iseq().is_null();
+    if !passes_own_block && !profiler.peek_at_block_handler().nil_p() {
+        profile.entry_mut(profiler.insn_idx).super_saw_block = true;
+    }
     let argc = num_arguments_on_stack(cd);
 
     // Profile all the arguments and self (+1).
@@ -439,6 +445,8 @@ pub struct ProfileEntry {
     opnd_types: Vec<TypeDistribution>,
     /// Number of profiles remaining before recompilation. Counts down from --zjit-num-profiles.
     profiles_remaining: NumProfiles,
+    /// `super` ran in a frame with a block, which it passes on
+    super_saw_block: bool,
 }
 
 #[derive(Debug)]
@@ -473,6 +481,7 @@ impl IseqProfile {
                     insn_idx: idx,
                     opnd_types: Vec::new(),
                     profiles_remaining: get_option!(num_profiles),
+                    super_saw_block: false,
                 });
                 &mut self.entries[i]
             }
@@ -505,6 +514,10 @@ impl IseqProfile {
         } else {
             None
         }
+    }
+
+    pub fn super_saw_block(&self, insn_idx: YarvInsnIdx) -> bool {
+        self.entry(insn_idx).is_some_and(|e| e.super_saw_block)
     }
 
     /// Run a given callback with every object in IseqProfile

@@ -1339,6 +1339,8 @@ pub enum Insn {
     FloatToInt { recv: InsnId, state: InsnId },
 
     AnyToString { val: InsnId, state: InsnId },
+    /// Convert a Fixnum to a String with rb_fix_to_s(), which shares frozen strings for 0..9
+    FixnumToString { val: InsnId, state: InsnId },
 
     /// Refine the known type information of with additional type information.
     /// Computes the intersection of the existing type and the new type.
@@ -1725,7 +1727,7 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*val);
                 $visit_one!(*state);
             }
-            Insn::AnyToString { val, state, .. } => {
+            Insn::AnyToString { val, state, .. } | Insn::FixnumToString { val, state } => {
                 $visit_one!(*val);
                 $visit_one!(*state);
             }
@@ -2008,6 +2010,7 @@ impl Insn {
             Insn::FixnumLShift { .. } => effects::Empty,
             Insn::FixnumRShift { .. } => effects::Empty,
             Insn::AnyToString { .. } => effects::Any,
+            Insn::FixnumToString { .. } => allocates,
             Insn::GuardType { guard_type, .. }
                 => Effect::read_write(
                     if guard_type.is_subtype(types::Immediate) { abstract_heaps::Empty } else { abstract_heaps::Memory },
@@ -2579,6 +2582,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
             Insn::StringIntern { val, .. } => { write!(f, "StringIntern {val}") },
             Insn::AnyToString { val, .. } => { write!(f, "AnyToString {val}") },
+            Insn::FixnumToString { val, .. } => { write!(f, "FixnumToString {val}") },
             Insn::SideExit { reason, recompile, .. } => {
                 if recompile.is_some() {
                     write!(f, "SideExit {reason} recompile")
@@ -3983,6 +3987,7 @@ impl Function {
             Insn::ToNewArray { .. } => types::ArrayExact,
             Insn::ToArray { .. } => types::ArrayExact,
             Insn::AnyToString { .. } => types::StringExact,
+            Insn::FixnumToString { .. } => types::StringExact,
             Insn::IsBlockParamModified { .. } => types::CBool,
             Insn::GetBlockParam { .. } => types::BasicObject,
             Insn::SymToProc { .. } => types::BasicObject,
@@ -4684,6 +4689,46 @@ impl Function {
             }
         }
         None
+    }
+
+    /// Interpolate an Integer or a Module like vm_objtostring(): when its #to_s is the original
+    /// Integer#to_s or Module#to_s (check_cfunc(), so a refined or redefined #to_s takes the send
+    /// path), use rb_fix_to_s(), which returns a shared frozen string for 0..9, or the module's
+    /// frozen name. Sending #to_s would allocate a new string.
+    fn try_objtostring_cfunc(&mut self, block: BlockId, recv: InsnId, profiled_type: ProfiledType, cd: *const rb_call_data, state: InsnId) -> Option<InsnId> {
+        let klass = profiled_type.class();
+        let method_id = unsafe { rb_vm_ci_mid((*cd).ci) };
+        if profiled_type.is_fixnum() {
+            let cme = unsafe { rb_callable_method_entry(klass, method_id) };
+            if !unsafe { rb_zjit_cme_is_cfunc(cme, rb_int_to_s as *const c_void) } || !self.assume_no_singleton_classes(block, klass, state) {
+                return None;
+            }
+            self.gen_patch_points_for_optimized_ccall(block, klass, method_id, cme, state);
+            let recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: None });
+            Some(self.push_insn(block, Insn::FixnumToString { val: recv, state }))
+        } else if !self.policy.no_side_exits && !profiled_type.flags().is_immediate() && klass.is_subclass_of(unsafe { rb_cModule }) == ClassRelationship::Subclass {
+            let cme = unsafe { rb_callable_method_entry(klass, method_id) };
+            if !unsafe { rb_zjit_cme_is_cfunc(cme, rb_mod_to_s as *const c_void) } || !self.assume_no_singleton_classes(block, klass, state) {
+                return None;
+            }
+            self.gen_patch_points_for_optimized_ccall(block, klass, method_id, cme, state);
+            let recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: None });
+            // rb_mod_name() doesn't allocate. An anonymous module has no name, and its #to_s can
+            // call #inspect, so it side-exits and recompiles, and the last version sends #to_s. A
+            // temporary name can be a String subclass.
+            let name = self.push_insn(block, Insn::CCall {
+                cfunc: rb_mod_name as *const u8,
+                recv,
+                args: vec![],
+                name: ID!(rb_mod_name),
+                owner: Qnil,
+                return_type: types::String.union(types::NilClass),
+                elidable: true,
+            });
+            Some(self.push_insn(block, Insn::GuardType { val: name, guard_type: types::String, state, recompile: Some(Recompile) }))
+        } else {
+            None
+        }
     }
 
     fn monomorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, state: InsnId) -> Option<ProfiledType> {
@@ -5682,7 +5727,7 @@ impl Function {
                                 expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
                                 reason: Box::new(SideExitReason::UnhandledBlockArg),
                                 state,
-                                recompile: None,
+                                recompile: Some(Recompile),
                             });
                         }
 
@@ -5737,6 +5782,12 @@ impl Function {
                             self.set_dynamic_send_reason(insn_id, SuperPolymorphic);
                             continue;
                         };
+
+                        if local_payload.profile.super_saw_block(frame_state_insn_idx) {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperCallWithBlock);
+                            continue;
+                        }
 
                         // Get defined_class and method ID from the profiled CME.
                         let current_defined_class = unsafe { (*current_cme).defined_class };
@@ -8288,6 +8339,9 @@ impl Function {
             }
             Insn::AnyToString { val, .. } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)
+            }
+            Insn::FixnumToString { val, .. } => {
+                self.assert_subtype(insn_id, val, types::Fixnum)
             }
             Insn::PushInlineFrame { recv, block, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
@@ -11046,6 +11100,8 @@ fn add_iseq_to_hir(
                             // TODO(max): Do we need PatchPoint? We are checking T_STRING-ness.
                             fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: profiled_type.class() }, state: exit_id });
                             fun.push_insn(block, Insn::GuardType { val: recv, guard_type: types::String, state: exit_id, recompile: None })
+                        } else if let Some(str) = fun.try_objtostring_cfunc(block, recv, profiled_type, cd, exit_id) {
+                            str
                         } else {
                             let recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state: exit_id, recompile: None });
                             fun.push_insn(block, Insn::Send { recv, cd, block: None, args: vec![], caller_splat_length: None, state: exit_id, reason: ObjToStringNotString })

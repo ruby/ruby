@@ -1322,6 +1322,8 @@ mark_load_arg(void *ptr)
     struct load_arg *p = ptr;
     if (!p->has_symbols)
         return;
+    rb_gc_mark(p->src);
+    rb_gc_mark(p->proc);
     rb_mark_tbl(&p->symbols);
     if (p->has_data) rb_mark_tbl(&p->data);
     if (p->has_partial_objects) rb_mark_tbl(&p->partial_objects);

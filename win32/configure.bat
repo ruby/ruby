@@ -294,7 +294,7 @@ goto :loop ;
   echo   --with-opt-dir="DIR-LIST" add optional headers and libraries directories separated by ';'
   echo   --with-mimalloc         allocate memory for the GC with mimalloc
   echo   --disable-install-doc   do not install rdoc indexes during install
-  echo   --enable-yjit           enable in-process JIT compiler that requires rustc (x64 only)
+  echo   --enable-yjit           enable in-process JIT compiler that requires rustc (x64 and arm64)
   echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
   echo   --with-ntver=_WIN32_WINNT_XXXX
   echo   --with-ntver=XXXX       same as --with-ntver=_WIN32_WINNT_XXXX

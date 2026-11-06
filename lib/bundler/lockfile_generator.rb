@@ -22,6 +22,7 @@ module Bundler
       add_overrides
       add_content_addresses
       add_checksums
+      add_ruby_abis
       add_locked_ruby_version
       add_bundled_with
 
@@ -74,17 +75,20 @@ module Bundler
     end
 
     def add_content_addresses
-      content_addresses = definition.resolve.filter_map do |spec|
-        next unless Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false)
+      content_addresses = definition.resolve.flat_map do |spec|
+        next [] if spec.platform == Gem::Platform::RUBY
 
-        line = "#{spec.lock_name} #{spec.content_address}"
+        spec.content_addresses.zip(spec.content_addressed_full_names).map do |(content_address, ruby_abi), full_name|
+          line = "#{spec.lock_name} #{content_address}"
+          line += " abi=#{ruby_abi}" if ruby_abi
 
-        if definition.locked_checksums
-          checksums = spec.source.checksum_store.checksums_to_lock(spec.full_name)
-          line += " #{checksums}" if checksums
+          if definition.locked_checksums
+            checksums = spec.source.checksum_store.checksums_to_lock(full_name)
+            line += " #{checksums}" if checksums
+          end
+
+          line
         end
-
-        line
       end
 
       add_section("CONTENT ADDRESSES", content_addresses) unless content_addresses.empty?
@@ -95,12 +99,20 @@ module Bundler
       checksums = definition.resolve.filter_map do |spec|
         line = spec.source.checksum_store.to_lock(spec)
 
-        next if line == spec.lock_name && Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false)
+        next if line == spec.lock_name && spec.content_addresses.any?
 
         line
       end
 
       add_section("CHECKSUMS", checksums + bundler_checksum)
+    end
+
+    def add_ruby_abis
+      ruby_abis = definition.ruby_abis
+      return if ruby_abis.empty? || definition.resolve.none? {|spec| spec.content_addresses.any? }
+
+      out << "\nRUBY ABIS\n"
+      ruby_abis.each {|ruby_abi| out << "  #{ruby_abi}\n" }
     end
 
     def add_locked_ruby_version

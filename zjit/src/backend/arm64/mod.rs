@@ -7,6 +7,7 @@ use crate::options::asm_dump;
 use crate::stats::{CompileError, trace_compile_phase};
 use crate::virtualmem::CodePtr;
 use crate::cast::*;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 // Use the arm64 register type for this platform
 pub type Reg = A64Reg;
@@ -188,6 +189,26 @@ pub const ALLOC_REGS: &[Reg] = &[
 /// [`Assembler::arm64_scratch_split`] or [`Assembler::new_with_scratch_reg`].
 const SCRATCH0_OPND: Opnd = Opnd::Reg(X15_REG);
 const SCRATCH1_OPND: Opnd = Opnd::Reg(X17_REG);
+
+/// Cached answer to whether the CPU implements FEAT_LSE (the Armv8.1 Large System Extensions),
+/// which provides single-instruction atomic add. Tests store to it directly to pick a lowering.
+static CPU_HAS_LSE: AtomicU8 = AtomicU8::new(LSE_UNKNOWN);
+const LSE_UNKNOWN: u8 = 0;
+const LSE_ABSENT: u8 = 1;
+const LSE_PRESENT: u8 = 2;
+
+/// Return true if the CPU implements FEAT_LSE, detecting it on first use.
+fn cpu_has_lse() -> bool {
+    // Relaxed is enough: std has a Sync cache anyways.
+    match CPU_HAS_LSE.load(Ordering::Relaxed) {
+        LSE_UNKNOWN => {
+            let has_lse = std::arch::is_aarch64_feature_detected!("lse");
+            CPU_HAS_LSE.store(if has_lse { LSE_PRESENT } else { LSE_ABSENT }, Ordering::Relaxed);
+            has_lse
+        }
+        state => state == LSE_PRESENT,
+    }
+}
 
 /// A scratch register available for use by resolve_ssa to break register copy cycles.
 /// Must not overlap with ALLOC_REGS or other preserved registers.
@@ -869,13 +890,27 @@ impl Assembler {
                     asm.load_into(SCRATCH0_OPND, mem);
                     asm.lea_into(SCRATCH0_OPND, Opnd::mem(64, SCRATCH0_OPND, 0));
 
-                    // Create a local loop to atomically increment a counter using SCRATCH1_OPND to check if it succeeded.
-                    // Note that arm64_emit will peek at the next Cmp to set a status into SCRATCH1_OPND on IncrCounter.
-                    let label = asm.new_label("incr_counter_loop");
-                    asm.write_label(label.clone());
-                    asm.incr_counter(SCRATCH0_OPND, value);
-                    asm.cmp(SCRATCH1_OPND, 0.into());
-                    asm.push_insn(Insn::Jne(label));
+                    if cpu_has_lse() {
+                        // With FEAT_LSE, a single relaxed STADD increments the counter atomically.
+                        // Counters need atomicity only, not ordering. STADD takes the addend in a
+                        // register, so put it in SCRATCH1_OPND unless it already is in one.
+                        let value = match value {
+                            Opnd::Reg(_) => value,
+                            _ => {
+                                asm.load_into(SCRATCH1_OPND, value);
+                                SCRATCH1_OPND
+                            }
+                        };
+                        asm.incr_counter(SCRATCH0_OPND, value);
+                    } else {
+                        // Create a local loop to atomically increment a counter using SCRATCH1_OPND to check if it succeeded.
+                        // Note that arm64_emit will peek at the next Cmp to set a status into SCRATCH1_OPND on IncrCounter.
+                        let label = asm.new_label("incr_counter_loop");
+                        asm.write_label(label.clone());
+                        asm.incr_counter(SCRATCH0_OPND, value);
+                        asm.cmp(SCRATCH1_OPND, 0.into());
+                        asm.push_insn(Insn::Jne(label));
+                    }
                 }
                 Insn::Store { dest, src } => {
                     *dest = split_stack_membase(asm, *dest, SCRATCH0_OPND);
@@ -1581,6 +1616,10 @@ impl Assembler {
                     // from. The last patch point stays that, and the pad just gave it its room.
                     emit_pad_after_patch_point(cb, last_patch_pos);
                 },
+                Insn::IncrCounter { mem, value } if cpu_has_lse() => {
+                    // arm64_scratch_split put the addend in a register; see there.
+                    stadd(cb, value.into(), mem.into());
+                },
                 Insn::IncrCounter { mem, value } => {
                     // Get the status register allocated by arm64_scratch_split
                     let Some(Insn::Cmp {
@@ -1919,6 +1958,41 @@ mod tests {
         0x4: mul x1, x9, x0
         ");
         assert_snapshot!(cb.hexdump(), @"600080d2217d009b");
+    }
+
+    #[test]
+    fn test_incr_counter_with_lse() {
+        let (mut asm, mut cb) = setup_asm();
+        CPU_HAS_LSE.store(LSE_PRESENT, Ordering::Relaxed);
+        asm.incr_counter(Opnd::const_ptr(std::ptr::without_provenance::<u8>(0x1234)), 1.into());
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x15, #0x1234
+        0x4: add x15, x15, #0
+        0x8: mov x17, #1
+        0xc: stadd x17, [x15]
+        ");
+        assert_snapshot!(cb.hexdump(), @"8f4682d2ef010091310080d2ff0131f8");
+    }
+
+    #[test]
+    fn test_incr_counter_without_lse() {
+        let (mut asm, mut cb) = setup_asm();
+        CPU_HAS_LSE.store(LSE_ABSENT, Ordering::Relaxed);
+        asm.incr_counter(Opnd::const_ptr(std::ptr::without_provenance::<u8>(0x1234)), 1.into());
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x15, #0x1234
+        0x4: add x15, x15, #0
+        0x8: ldaxr x16, [x15]
+        0xc: add x16, x16, #1
+        0x10: stlxr w17, x16, [x15]
+        0x14: cmp x17, #0
+        0x18: b.ne #8
+        ");
+        assert_snapshot!(cb.hexdump(), @"8f4682d2ef010091f0fd5fc810060091f0fd11c83f0200f181ffff54");
     }
 
     #[test]

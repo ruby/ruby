@@ -1767,6 +1767,7 @@ pub(crate) mod ids {
         name: rb_ivar_get_at_no_ractor_check
         name: rb_jit_io_buffer_readable_ptr
         name: rb_jit_ruby2_keywords_splat_p
+        name: rb_mod_name
         name: RUBY_FL_FREEZE
         name: RUBY_ELTS_SHARED
         name: U8

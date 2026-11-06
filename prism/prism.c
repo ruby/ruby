@@ -1388,6 +1388,7 @@ pm_void_statement_check(pm_parser_t *parser, const pm_node_t *node) {
         case PM_CLASS_VARIABLE_READ_NODE:
         case PM_GLOBAL_VARIABLE_READ_NODE:
         case PM_INSTANCE_VARIABLE_READ_NODE:
+        case PM_IT_LOCAL_VARIABLE_READ_NODE:
         case PM_LOCAL_VARIABLE_READ_NODE:
         case PM_NUMBERED_REFERENCE_READ_NODE:
             type = "a variable";
@@ -1514,6 +1515,38 @@ pm_void_statement_check(pm_parser_t *parser, const pm_node_t *node) {
 }
 
 /**
+ * Like pm_void_statement_check, but also looks inside parentheses with a single
+ * statement and begin blocks without rescue/else/ensure, matching parse.y.
+ */
+static void
+pm_void_statement_check_unwrap(pm_parser_t *parser, const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_BEGIN_NODE: {
+            const pm_begin_node_t *cast = (const pm_begin_node_t *) node;
+            if (cast->statements == NULL || cast->rescue_clause != NULL || cast->else_clause != NULL || cast->ensure_clause != NULL) break;
+
+            // The rest of the body was already checked when it was parsed.
+            const pm_node_list_t *body = &cast->statements->body;
+            pm_void_statement_check_unwrap(parser, body->nodes[body->size - 1]);
+            break;
+        }
+        case PM_PARENTHESES_NODE: {
+            const pm_parentheses_node_t *cast = (const pm_parentheses_node_t *) node;
+            if (cast->body == NULL || !PM_NODE_TYPE_P(cast->body, PM_STATEMENTS_NODE)) break;
+
+            // Unlike begin, parse.y only looks one level into parentheses, so
+            // `((foo))` doesn't warn.
+            const pm_statements_node_t *statements = (const pm_statements_node_t *) cast->body;
+            if (statements->body.size == 1) pm_void_statement_check(parser, statements->body.nodes[0]);
+            break;
+        }
+        default:
+            pm_void_statement_check(parser, node);
+            break;
+    }
+}
+
+/**
  * Warn if any of the statements that are not the last statement in the list are
  * a "void" statement.
  */
@@ -1522,7 +1555,7 @@ pm_void_statements_check(pm_parser_t *parser, const pm_statements_node_t *node, 
     assert(node->body.size > 0);
     const size_t size = node->body.size - (last_value ? 1 : 0);
     for (size_t index = 0; index < size; index++) {
-        pm_void_statement_check(parser, node->body.nodes[index]);
+        pm_void_statement_check_unwrap(parser, node->body.nodes[index]);
     }
 }
 
@@ -15527,6 +15560,25 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
 }
 
 /**
+ * Returns the flags to parse arguments with inside of the delimiters of a call
+ * (`foo(...)`) or an index (`foo[...]`).
+ *
+ * Since Ruby 3.4, a command call with a `do` block is accepted as the only
+ * argument inside the parentheses of a call, as in `foo(bar baz do end)`. Inside
+ * the brackets of an index, as in `foo[bar baz do end]`, it is accepted only by
+ * Ruby 3.4 and 4.0, whose default parser (prism) shipped accepting it. Ruby 3.3
+ * uses parse.y, which rejects both. See https://bugs.ruby-lang.org/issues/21168.
+ */
+static uint8_t
+parse_delimited_arguments_flags(const pm_parser_t *parser, uint8_t flags, bool index) {
+    if (parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4 && (!index || parser->version <= PM_OPTIONS_VERSION_CRUBY_4_0)) {
+        return (uint8_t) (flags | PM_PARSE_ACCEPTS_DO_BLOCK);
+    }
+
+    return (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK);
+}
+
+/**
  * Parse a list of arguments and their surrounding parentheses if they are
  * present. It returns true if it found any pieces of arguments (parentheses,
  * arguments, or blocks).
@@ -15559,7 +15611,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
         if (accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
             arguments->closing_loc = TOK2LOC(parser, &parser->previous);
         } else {
-            parse_arguments(parser, arguments, full_arguments, PM_TOKEN_PARENTHESIS_RIGHT, (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK), (uint16_t) (depth + 1));
+            parse_arguments(parser, arguments, full_arguments, PM_TOKEN_PARENTHESIS_RIGHT, parse_delimited_arguments_flags(parser, flags, false), (uint16_t) (depth + 1));
 
             // `yield` parses its arguments through the restricted `call_args`
             // grammar, which (unlike the `opt_call_args` that method calls and
@@ -22397,7 +22449,7 @@ parse_aref(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_bin
     arguments.opening_loc = TOK2LOC(parser, &parser->previous);
 
     if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
-        parse_arguments(parser, &arguments, false, PM_TOKEN_BRACKET_RIGHT, (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK), (uint16_t) (depth + 1));
+        parse_arguments(parser, &arguments, false, PM_TOKEN_BRACKET_RIGHT, parse_delimited_arguments_flags(parser, flags, true), (uint16_t) (depth + 1));
         expect1(parser, PM_TOKEN_BRACKET_RIGHT, PM_ERR_EXPECT_RBRACKET);
     }
 
@@ -22996,7 +23048,7 @@ parse_program(pm_parser_t *parser) {
         // explicitly checked as well. We have to do this here because
         // everywhere else we check all but the last statement.
         assert(statements->body.size > 0);
-        pm_void_statement_check(parser, statements->body.nodes[statements->body.size - 1]);
+        pm_void_statement_check_unwrap(parser, statements->body.nodes[statements->body.size - 1]);
     }
 
     pm_constant_id_list_t locals;

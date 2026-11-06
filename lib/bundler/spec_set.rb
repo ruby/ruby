@@ -84,6 +84,27 @@ module Bundler
       platforms.delete(Bundler.local_platform) if less_specific_platform
     end
 
+    def assign_content_addresses!(ruby_abis, normalize: false, local: false)
+      @specs.each do |spec|
+        next unless spec.source.is_a?(Source::Rubygems)
+        next unless Gem::ContentAddress.platform_eligible?(spec.platform)
+
+        offered = spec.source.specs.search([spec.name, spec.version]).filter_map do |gem|
+          next unless gem.platform.to_s == spec.platform.to_s && Gem::ContentAddress.content_addressed?(gem)
+
+          [gem.content_address, Gem::ContentAddress.ruby_abi_for(gem.required_ruby_version)]
+        end.to_h
+
+        locked = normalize ? {} : spec.content_addresses
+        locked = locked.reject {|_, ruby_abi| ruby_abi.nil? } unless local
+        spec.content_addresses = locked.merge(offered).select {|_, ruby_abi| ruby_abi.nil? || ruby_abis.include?(ruby_abi) }
+      end
+    end
+
+    def content_addresses_cover?(ruby_abi)
+      @specs.all? {|spec| !spec.is_a?(LazySpecification) || spec.content_addresses.empty? || spec.content_addresses.value?(ruby_abi) }
+    end
+
     def validate_deps(s, overrides = s.is_a?(LazySpecification) ? Array(s.overrides) : [])
       Override.rewrite_dependencies(overrides, s.name, s.runtime_dependencies).each do |dep|
         next if dep.name == "bundler"
@@ -134,11 +155,9 @@ module Bundler
     # Materialize for all the specs in the spec set, regardless of what platform they're for
     # @return [Array<Gem::Specification>]
     def materialized_for_all_platforms
-      @specs.map do |s|
-        next s unless s.is_a?(LazySpecification)
-        spec = s.materialize_for_cache
-        raise GemNotFound, "Could not find #{s.full_name} in any of the sources" unless spec
-        spec
+      @specs.flat_map do |s|
+        next [s] unless s.is_a?(LazySpecification)
+        s.materialize_for_cache
       end
     end
 

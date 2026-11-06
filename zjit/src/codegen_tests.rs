@@ -2253,10 +2253,14 @@ fn test_send_proc_block_arg_to_block_param_callee() {
         [value[0].equal?(blk), value[1], value[2], reassigned]
     ";
     set_inline_threshold(0);
-    assert_snapshot!(assert_compiles(program), @"[true, true, 24, [nil, true, 4]]");
-    with_inlining(|| {
-        assert_snapshot!(assert_inlines(program), @"[true, true, 24, [nil, true, 4]]");
-    });
+    // Snapshot only after both runs: insta's first snapshot can spawn `cargo metadata`,
+    // and its SIGCHLD would interrupt the JIT code under test.
+    let sent_direct = assert_compiles(program);
+    let inlined = with_inlining(|| assert_inlines(program));
+    assert_snapshot!(format!("{sent_direct}\n{inlined}"), @"
+    [true, true, 24, [nil, true, 4]]
+    [true, true, 24, [nil, true, 4]]
+    ");
 }
 
 #[test]
@@ -3039,7 +3043,7 @@ fn test_invokesuper_forwards_block_implicitly() {
 
 #[test]
 fn test_invokesuper_forwards_block_implicitly_with_args() {
-    assert_snapshot!(inspect(r#"
+    eval(r#"
         class A
           def foo(x)
             [x, (block_given? ? yield : "no_block")]
@@ -3057,8 +3061,60 @@ fn test_invokesuper_forwards_block_implicitly_with_args() {
         end
 
         test  # profile
-        test  # compile + run compiled code
-    "#), @r#"["B", ["arg_value", "forwarded"]]"#);
+    "#);
+    assert_snapshot!(assert_compiles("test"), @r#"["B", ["arg_value", "forwarded"]]"#);
+}
+
+#[test]
+fn test_invokesuper_recompiles_when_block_appears() {
+    set_call_threshold(2);
+    eval(r#"
+        class A
+          def foo(x) = block_given? ? yield(x) : x
+        end
+
+        class B < A
+          def foo(x) = super(x)
+        end
+
+        B.new.foo(1); B.new.foo(1)
+    "#);
+    let num_profiles = get_option!(num_profiles);
+    for _ in 0..num_profiles + 2 {
+        eval("B.new.foo(1) { _1 + 1 }");
+    }
+    assert_snapshot!(assert_compiles("[B.new.foo(1), B.new.foo(1) { _1 + 1 }]"), @"[1, 2]");
+}
+
+#[test]
+fn test_invokesuper_with_own_block_ignores_frame_block() {
+    set_call_threshold(2);
+    eval(r#"
+        class A
+          def implicit = block_given?
+          def block_arg = block_given?
+          def literal_block = block_given?
+        end
+
+        class B < A
+          def implicit = super
+          def block_arg(&b) = super(&b)
+          def literal_block = super { 1 }
+        end
+    "#);
+    for _ in 0..get_option!(num_profiles) + 2 {
+        eval("b = B.new; b.implicit { 0 }; b.block_arg { 0 }; b.literal_block { 0 }");
+    }
+    let saw_block = |name: &str| {
+        let iseq = get_method_iseq("B.new", name);
+        let payload = get_or_create_iseq_payload(iseq);
+        let size = unsafe { get_iseq_encoded_size(iseq) } as usize;
+        assert!((0..size).any(|idx| payload.profile.get_super_method_entry(idx).is_some()), "{name} was not profiled");
+        (0..size).any(|idx| payload.profile.super_saw_block(idx))
+    };
+    assert!(saw_block("implicit"));
+    assert!(!saw_block("block_arg"));
+    assert!(!saw_block("literal_block"));
 }
 
 #[test]
@@ -7589,6 +7645,85 @@ fn test_objtostring_calls_to_s_on_non_strings() {
         results << test(Foo.new)
         results
     "##), @r#"["foo", "foo"]"#);
+}
+
+#[test]
+fn test_objtostring_integer_and_module_allocations() {
+    // Like the interpreter, interpolate 0..9 and named modules without allocating a to_s string
+    assert_snapshot!(inspect(r##"
+        class ObjToStringFoo; end
+        module ObjToStringMod; end
+        def int_interp(i) = "t#{i}"
+        def mod_interp(m) = "#{m} Update"
+        def mod_interp2(m) = "#{m} Update"
+        def allocations
+          allocated = GC.stat(:total_allocated_objects)
+          yield
+          GC.stat(:total_allocated_objects) - allocated
+        end
+        def calls
+          [
+            [allocations { int_interp(3) }, allocations { mod_interp(ObjToStringFoo) }, allocations { mod_interp2(ObjToStringMod) }],
+            int_interp(3), int_interp(-12), int_interp(1 << 40), mod_interp(ObjToStringFoo), mod_interp2(ObjToStringMod),
+          ]
+        end
+        calls
+        calls
+    "##), @r#"[[1, 1, 1], "t3", "t-12", "t1099511627776", "ObjToStringFoo Update", "ObjToStringMod Update"]"#);
+}
+
+#[test]
+fn test_objtostring_anonymous_and_singleton_module() {
+    assert_snapshot!(inspect(r##"
+        def test(m) = "#{m}"
+        test(Class.new); test(Class.new)
+        [
+          test(Class.new).match?(/\A#<Class:0x\h+>\z/),
+          test(Module.new).match?(/\A#<Module:0x\h+>\z/),
+          test(Object.new.singleton_class).match?(/\A#<Class:#<Object:0x\h+>>\z/),
+        ]
+    "##), @"[true, true, true]");
+}
+
+#[test]
+fn test_objtostring_integer_to_s_redefined_after_compile() {
+    assert_snapshot!(inspect(r##"
+        def test(i) = "#{i}"
+        test(1); test(2)
+        result = [test(3)]
+        class Integer; def to_s = "x"; end
+        result << test(3)
+    "##), @r#"["3", "x"]"#);
+}
+
+#[test]
+fn test_objtostring_module_to_s_redefined_after_compile() {
+    assert_snapshot!(inspect(r##"
+        class ObjToStringBar; end
+        def test(m) = "#{m}"
+        test(ObjToStringBar); test(ObjToStringBar)
+        result = [test(ObjToStringBar)]
+        class Module; def to_s = "mod!"; end
+        result << test(ObjToStringBar)
+    "##), @r#"["ObjToStringBar", "mod!"]"#);
+}
+
+#[test]
+fn test_objtostring_refined_to_s() {
+    // A refined Integer#to_s or Module#to_s is a different method, so interpolation calls it
+    assert_snapshot!(inspect(r##"
+        module ObjToStringRefine
+          refine(Integer) { def to_s = "int!" }
+          refine(Module) { def to_s = "mod!" }
+        end
+        module ObjToStringM; end
+        def plain(x) = "#{x}"
+        using ObjToStringRefine
+        def refined(x) = "#{x}"
+        calls = -> { [refined(7), refined(ObjToStringM), plain(7), plain(ObjToStringM)] }
+        calls.()
+        calls.()
+    "##), @r#"["int!", "mod!", "7", "ObjToStringM"]"#);
 }
 
 #[test]

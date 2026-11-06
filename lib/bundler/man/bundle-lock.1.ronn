@@ -14,6 +14,8 @@ bundle-lock(1) -- Creates / Updates a lockfile without installing
               [--add-platform]
               [--remove-platform]
               [--normalize-platforms]
+              [--add-ruby-abi]
+              [--remove-ruby-abi]
               [--patch]
               [--minor]
               [--major]
@@ -67,6 +69,14 @@ Lock the gems specified in Gemfile.
 
 * `--normalize-platforms`:
   Normalize lockfile platforms.
+
+* `--add-ruby-abi=<list>`:
+  Lock the content-addressed gems of the bundle for a Ruby ABI (a
+  major and minor version, like `3.4`), re-resolving to record them. Running
+  `bundle install` under that Ruby does the same.
+
+* `--remove-ruby-abi=<list>`:
+  Drop the content-addressed gems for a Ruby ABI from the lockfile.
 
 * `--patch`:
   If updating, prefer updating only to next patch version.

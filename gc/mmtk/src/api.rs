@@ -306,9 +306,13 @@ pub extern "C" fn mmtk_handle_user_collection_request(
     crate::mmtk().handle_user_collection_request(tls, force, exhaustive);
 
     if gc_was_disabled {
-        crate::mmtk()
-            .disable_collection()
-            .unwrap_or_else(|_| panic!("failed to re-disable GC after GC"));
+        // While GC was enabled, another Ractor may have requested a GC that hasn't run yet.
+        // MMTk can't disable GC until that GC runs, and it needs this thread to stop first.
+        // So block for it and try again. Since a GC is already requested, this waits for that
+        // GC instead of starting a new one.
+        while crate::mmtk().disable_collection().is_err() {
+            crate::mmtk().handle_user_collection_request(tls, true, false);
+        }
     }
 }
 

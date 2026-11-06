@@ -5069,8 +5069,7 @@ fn jit_guard_known_klass(
             asm.ctx.upgrade_opnd_type(insn_opnd, Type::Flonum);
         }
     } else if unsafe {
-        FL_TEST(known_klass, VALUE(RUBY_FL_SINGLETON as usize)) != VALUE(0)
-            && sample_instance == rb_class_attached_object(known_klass)
+        rb_yjit_attached_object_is(known_klass, sample_instance)
             && !rb_obj_is_kind_of(sample_instance, rb_cIO).test()
     } {
         // Singleton classes are attached to one specific object, so we can
@@ -11207,8 +11206,9 @@ static mut CODEGEN_GLOBALS: Option<CodegenGlobals> = None;
 impl CodegenGlobals {
     /// Initialize the codegen globals
     pub fn init() {
-        // Executable memory and code page size in bytes
-        let exec_mem_size = get_option!(exec_mem_size).unwrap_or(get_option!(mem_size));
+        // Executable memory and code page size in bytes. Clamp the --yjit-mem-size fallback
+        // because it can exceed MAX_EXEC_MEM_MIB.
+        let exec_mem_size = get_option!(exec_mem_size).unwrap_or(get_option!(mem_size).min(MAX_EXEC_MEM_MIB * 1024 * 1024));
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
