@@ -1225,6 +1225,18 @@ class TestGemSafeYAML < Gem::TestCase
     assert_nil result["key"]
   end
 
+  def test_load_tab_after_mapping_colon
+    # Psych treats tabs after the ":" as separation whitespace, like spaces.
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, yaml_load("BUNDLE_PATH:\tvendor\n"))
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, yaml_load("BUNDLE_PATH: \tvendor\n"))
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, yaml_load("BUNDLE_PATH:\t\tvendor\n"))
+    assert_equal({ "key" => "quoted" }, yaml_load("key:\t\"quoted\"\n"))
+    assert_equal({ "key" => "a\tb" }, yaml_load("key:\ta\tb\n"))
+    assert_equal({ "key" => { "nested" => 1 } }, yaml_load("key:\t\n  nested: 1\n"))
+    assert_equal([{ "key" => "v" }], yaml_load("- key:\tv\n"))
+    assert_equal({ "q" => "v" }, yaml_load("\"q\":\tv\n"))
+  end
+
   def test_load_sequence_item_as_mapping
     yaml = "items:\n- name: foo\n  ver: 1\n- name: bar\n  ver: 2"
     result = yaml_load(yaml)

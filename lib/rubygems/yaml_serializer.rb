@@ -24,10 +24,11 @@ module Gem
     class Parser
       # A plain (unquoted) mapping key followed by ":". "#" inside a key is
       # literal unless preceded by a space (which would start a comment).
-      MAPPING_KEY_RE = /\G((?:[^#:\s]|:[^ ])(?:[^#:]|:[^ ]|(?<=[^ ])#)*):(?:[ ]+(.*))?$/
+      # Like Psych, spaces and tabs may separate the ":" from the value.
+      MAPPING_KEY_RE = /\G((?:[^#:\s]|:[^ \t])(?:[^#:]|:[^ \t]|(?<=[^ ])#)*):(?:[ \t]+(.*))?$/
       # A quoted mapping key followed by ":". A whole-line quoted scalar
       # cannot match because its closing quote is at the end of the line.
-      QUOTED_KEY_RE = /\G("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'):(?:[ ]+(.*))?$/
+      QUOTED_KEY_RE = /\G("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'):(?:[ \t]+(.*))?$/
       # An entry of a flow sequence. A quoted entry may contain commas.
       FLOW_SEQUENCE_ENTRY_RE = /"(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^,\s](?:[^,]*[^,\s])?/
       SEQUENCE_ENTRY_RE = /\G-(?: |\z)/
