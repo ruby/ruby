@@ -9293,6 +9293,37 @@ impl ProfileOracle {
             self.types.insert(dst, filtered);
         }
     }
+
+    /// Record `summary` as the profile of `insn` at the `snapshot` Snapshot.
+    fn add_entry(&mut self, snapshot: InsnId, insn: InsnId, summary: TypeDistributionSummary) {
+        self.types.entry(snapshot).or_default().push((insn, summary));
+    }
+}
+
+/// The HIR builder splits polymorphic dispatch by receiver Type. Then, in type_specialize, we
+/// optimize each (now Type-monomorphic) branch.
+///
+/// * class C branch
+/// * String branch
+///
+/// This is fine for method sends, which only need the class (+ heap/immediate representation), but
+/// for attr_reader, which is a method for reading ivars, we also need the shape. Even though
+/// overall the shape is polymorphic, it might be monomorphic per branch. That is, we might only
+/// see one C shape and one String shape. Therefore, we also return the `buckets` and use those to
+/// rewrite profile information.
+///
+/// This lets us fully optimize even polymorphic attr_reader.
+fn polymorphic_arms(summary: &TypeDistributionSummary) -> Vec<(Type, Vec<ProfiledType>)> {
+    let mut arms: Vec<(Type, Vec<ProfiledType>)> = Vec::with_capacity(summary.buckets().len());
+    for &profiled_type in summary.buckets() {
+        if profiled_type.is_empty() { break; }
+        let expected = Type::from_profiled_type(profiled_type);
+        match arms.iter_mut().find(|(ty, _)| ty.bit_equal(expected)) {
+            Some((_, buckets)) => buckets.push(profiled_type),
+            None => arms.push((expected, vec![profiled_type])),
+        }
+    }
+    arms
 }
 
 fn invalidates_locals(opcode: u32, operands: *const VALUE) -> bool {
@@ -10574,21 +10605,12 @@ fn add_iseq_to_hir(
                         let join_block = fun.new_block(insn_idx);
                         let join_param = fun.push_insn(join_block, Insn::Param);
                         let fallback_block = fun.new_block(insn_idx);
-                        // Dedup by expected type so immediate/heap variants
-                        // under the same Ruby class can still get separate branches.
-                        let mut receiver_types = Vec::with_capacity(summary.buckets().len());
-                        for &profiled_type in summary.buckets() {
-                            if profiled_type.is_empty() { break; }
-                            let expected = Type::from_profiled_type(profiled_type);
-                            if receiver_types.iter().any(|ty: &Type| ty.bit_equal(expected)) {
-                                continue;
-                            }
-                            receiver_types.push(expected);
-                        }
-                        for (index, &expected) in receiver_types.iter().enumerate() {
+                        let arms = polymorphic_arms(&summary);
+                        for (index, (expected, buckets)) in arms.iter().enumerate() {
+                            let expected = *expected;
                             let iftrue_block = fun.new_block(insn_idx);
                             // The final receiver miss joins length misses at the shared fallback.
-                            let fall_through = if index + 1 == receiver_types.len() { fallback_block } else { fun.new_block(insn_idx) };
+                            let fall_through = if index + 1 == arms.len() { fallback_block } else { fun.new_block(insn_idx) };
                             fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
                                 val: recv,
                                 expected,
@@ -10603,10 +10625,15 @@ fn add_iseq_to_hir(
                             let snapshot = fun.push_insn(iftrue_block, Insn::Snapshot { state: Box::new(exit_state.clone()) });
                             // Keep the other operands' profile entries visible at the fresh
                             // Snapshot so the specialized send can still see argument profiles
-                            // (e.g. Array#[] needs a Fixnum-profiled index to be inlined). Only
-                            // the receiver's entry is dropped: it must resolve from its refined,
-                            // exact type, and resolve_receiver_type prefers profiles over types.
+                            // (e.g. Array#[] needs a Fixnum-profiled index to be inlined). The
+                            // receiver's polymorphic entry is dropped and, when this arm stands
+                            // for exactly one profiled type, replaced by a monomorphic entry for
+                            // it, so type_specialize sees the shape (e.g. for attr_reader).
+                            // TODO(max): Specialize for polymorphic shape within a type
                             profiles.copy_entries_except(exit_id, snapshot, recv, fun);
+                            if let [profiled_type] = buckets[..] {
+                                profiles.add_entry(snapshot, recv, TypeDistributionSummary::monomorphic(profiled_type));
+                            }
                             let refined_recv = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: expected });
                             // Set the refined type now; otherwise length selection sees Any and cannot
                             // identify the ISEQ callee needed for polymorphic splat dispatch.
@@ -10676,16 +10703,7 @@ fn add_iseq_to_hir(
                     if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_id) {
                         let join_block = fun.new_block(insn_idx);
                         let join_param = fun.push_insn(join_block, Insn::Param);
-                        // Dedup by expected type so immediate/heap variants
-                        // under the same Ruby class can still get separate branches.
-                        let mut seen_types = Vec::with_capacity(summary.buckets().len());
-                        for &profiled_type in summary.buckets() {
-                            if profiled_type.is_empty() { break; }
-                            let expected = Type::from_profiled_type(profiled_type);
-                            if seen_types.iter().any(|ty: &Type| ty.bit_equal(expected)) {
-                                continue;
-                            }
-                            seen_types.push(expected);
+                        for (expected, buckets) in polymorphic_arms(&summary) {
                             let iftrue_block = fun.new_block(insn_idx);
                             let fall_through = fun.new_block(insn_idx);
                             fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
@@ -10702,10 +10720,15 @@ fn add_iseq_to_hir(
                             let snapshot = fun.push_insn(iftrue_block, Insn::Snapshot { state: Box::new(exit_state.clone()) });
                             // Keep the other operands' profile entries visible at the fresh
                             // Snapshot so the specialized send can still see argument profiles
-                            // (e.g. Array#[] needs a Fixnum-profiled index to be inlined). Only
-                            // the receiver's entry is dropped: it must resolve from its refined,
-                            // exact type, and resolve_receiver_type prefers profiles over types.
+                            // (e.g. Array#[] needs a Fixnum-profiled index to be inlined). The
+                            // receiver's polymorphic entry is dropped and, when this arm stands
+                            // for exactly one profiled type, replaced by a monomorphic entry for
+                            // it, so type_specialize sees the shape (e.g. for attr_reader).
+                            // TODO(max): Specialize for polymorphic shape within a type
                             profiles.copy_entries_except(exit_id, snapshot, recv, fun);
+                            if let [profiled_type] = buckets[..] {
+                                profiles.add_entry(snapshot, recv, TypeDistributionSummary::monomorphic(profiled_type));
+                            }
                             let refined_recv = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: expected });
                             let send = fun.push_insn(iftrue_block, Insn::Send { recv: refined_recv, cd, block: block_handler, args: args.clone(), caller_splat_length, state: snapshot, reason: Uncategorized(opcode.into()) });
                             fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
