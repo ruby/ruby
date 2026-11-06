@@ -454,6 +454,13 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal({ "a" => "..." }, yaml_load("a: ...\n"))
   end
 
+  def test_load_ignores_leading_utf8_bom
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, yaml_load("\uFEFFBUNDLE_PATH: vendor\n"))
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, Gem::YAMLSerializer.load("\uFEFF---\nBUNDLE_PATH: vendor\n"))
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, Gem::YAMLSerializer.load("\uFEFFBUNDLE_PATH: vendor\n".b))
+    assert_equal({}, Gem::YAMLSerializer.load("\uFEFF"))
+  end
+
   def test_load_returns_hash_for_flow_empty_hash
     # yaml_dump({}) produces "--- {}\n"
     result = yaml_load("--- {}\n")

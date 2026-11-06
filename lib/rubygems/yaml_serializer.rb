@@ -34,6 +34,7 @@ module Gem
       SEQUENCE_ENTRY_RE = /\G-(?: |\z)/
       RUBY_OBJECT_TAG_RE = %r{\G!ruby/object:}
       LSTRIP_BYTES = [0, 9, 10, 11, 12, 13, 32].freeze
+      UTF8_BOM_BYTES = [0xEF, 0xBB, 0xBF].freeze
       MAX_NESTING_DEPTH = 1_000
       NULL_SCALARS = %w[~ null].freeze
       BLANK_RE = /\A[\0\s]*\z/
@@ -61,6 +62,7 @@ module Gem
       def initialize(source)
         raise TypeError, "no implicit conversion of nil into String" if source.nil?
 
+        source = strip_bom(source)
         @lines = source.split(/\r?\n/).each(&:freeze)
         @anchors = {}
         @depth = 0
@@ -87,6 +89,14 @@ module Gem
       end
 
       private
+
+      # Compared byte-wise because metadata may be read as binary, which
+      # cannot be compared with a UTF-8 string containing the BOM character.
+      def strip_bom(source)
+        return source unless UTF8_BOM_BYTES.each_with_index.all? {|byte, i| source.getbyte(i) == byte }
+
+        source.byteslice(UTF8_BOM_BYTES.size..)
+      end
 
       def strip_document_end
         index = @lines.index {|line| DOCUMENT_END_RE.match?(line) }
