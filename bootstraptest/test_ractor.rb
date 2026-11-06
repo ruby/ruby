@@ -3426,3 +3426,26 @@ assert_equal 'false', %q{
   }
   rs.map(&:value).any?
 }
+
+# A missing method's negative cache entry is used without the VM lock and
+# must be dropped once the method is defined
+assert_equal '[[:mm, :mm, :defined], [:mm, :mm, :defined]]', %q{
+  class MMNegCache
+    def method_missing(name, *) = name == :foo ? :mm : super
+  end
+
+  rs = 2.times.map {
+    Ractor.new {
+      obj = MMNegCache.new
+      a = obj.foo
+      b = obj.foo
+      Ractor.main << :ready
+      Ractor.receive
+      [a, b, obj.foo]
+    }
+  }
+  2.times { Ractor.receive }
+  MMNegCache.class_eval { def foo = :defined }
+  rs.each { it << :go }
+  rs.map(&:value)
+}
