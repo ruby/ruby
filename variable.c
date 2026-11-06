@@ -1417,7 +1417,7 @@ rb_obj_fields(VALUE obj, ID field_name)
         return RCLASS_WRITABLE_FIELDS_OBJ(obj);
 
       case T_DATA:
-        return RTYPEDDATA(obj)->fields_obj;
+        return rbimpl_atomic_value_load(&RTYPEDDATA(obj)->fields_obj, RBIMPL_ATOMIC_RELAXED);
 
       case T_STRUCT:
         return RSTRUCT_FIELDS_OBJ(obj);
