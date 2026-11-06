@@ -401,7 +401,13 @@ COROUTINE_TEST_RUN = .\$(COROUTINE_TEST:/=\)
 
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
+!if defined(CLANG_VER)
+# clang-cl does not link the compiler-rt builtins by default, which
+# define __cpu_model for __builtin_cpu_supports in extensions.
+LDSHARED = $(LD) -LD -clang:--rtlib=compiler-rt
+!else
 LDSHARED = $(LD) -LD
+!endif
 XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS) $(XINCFLAGS)
 LDFLAGS = $(LDFLAGS) -manifest:embed,ID=2
 CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
