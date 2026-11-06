@@ -3,7 +3,7 @@ use std::ptr;
 
 use crate::cast::IntoU64;
 use crate::cruby::{IseqPtr, VALUE, Qnil, rb_gc_mark_movable, rb_gc_location};
-use crate::cruby::{ZJIT_STACK_MAP_OP_BITS, ZJIT_STACK_MAP_VARINT_BITS, ZJIT_STACK_MAP_OP_END, ZJIT_STACK_MAP_OP_VREG, ZJIT_STACK_MAP_OP_SKIP, ZJIT_STACK_MAP_OP_BASE_PTR, ZJIT_STACK_MAP_OP_IMM, ZJIT_STACK_MAP_OP_NIL};
+use crate::cruby::{ZJIT_STACK_MAP_OP_BITS, ZJIT_STACK_MAP_VARINT_BITS, ZJIT_STACK_MAP_OP_END, ZJIT_STACK_MAP_OP_VREG, ZJIT_STACK_MAP_OP_SKIP, ZJIT_STACK_MAP_OP_BASE_PTR, ZJIT_STACK_MAP_OP_IMM, ZJIT_STACK_MAP_OP_NIL, ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA, ZJIT_STACK_MAP_OP_PREV_FRAME};
 use crate::cruby::zjit_jit_frame;
 use crate::codegen::iseq_may_write_block_code;
 use crate::options::get_option;
@@ -200,6 +200,20 @@ impl StackMapWriter {
         self.write_op(ZJIT_STACK_MAP_OP_BASE_PTR);
         self.write_varint(slot_index.into());
         self.write_varint(stack_size.into());
+    }
+
+    /// ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA. Moves the cursor past the frame's env
+    /// data (me/cref, specval, flags) and starts the frame's locals area. Writes in
+    /// the locals area are dropped when the frame's env has escaped.
+    pub fn skip_vm_env_data(&mut self) {
+        self.write_op(ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA);
+    }
+
+    /// ZJIT_STACK_MAP_OP_PREV_FRAME. Moves the cursor past an inlined callee's
+    /// receiver slot and continues decoding in the caller's control frame, leaving
+    /// the locals area.
+    pub fn prev_frame(&mut self) {
+        self.write_op(ZJIT_STACK_MAP_OP_PREV_FRAME);
     }
 
     /// Terminate the stream with ZJIT_STACK_MAP_OP_END and return its bytes.
@@ -505,6 +519,20 @@ mod tests {
         "#), @r#""Object#test""#);
     }
 
+    #[test]
+    fn test_define_method_env_escape() {
+        // This is a regression for fallback call into a method which performs env escape.
+        // At the time of writing the call to define_method is a fallback and relies on a
+        // proper stack map to work.
+        assert_snapshot!(inspect(r#"
+            def go(i)
+              Class.new { define_method(:m) { i } }
+            end
+            4.times { |i| go(i) }
+            go(99).new.m
+        "#), @"99");
+    }
+
     // A send fallback may throw (e.g. via method_missing raising). The
     // interpreter must be able to find the correct rescue handler in the
     // caller's ISEQ catch table. This exercises throw through send fallback.
@@ -565,6 +593,32 @@ mod tests {
             test.outer
             test.outer
         "#), @"[1, nil]");
+    }
+
+    // vm_make_env_each() spills through the same decoder, so an escaping env in
+    // an inlined frame decodes a map that spans three control frames and crosses
+    // two StackMapEntry::PrevFrame boundaries. Unlike the raise-based tests in
+    // codegen_tests.rs, nothing unwinds here: `keep` has to survive in the
+    // caller frame that the map also describes.
+    #[test]
+    fn test_stack_map_spill_across_inlined_frames() {
+        assert_snapshot!(inspect("
+            def leaf(escape)
+              proc { } if escape # escapes only this frame's env
+              escape ? 2 : 1
+            end
+
+            def middle(n)
+              keep = n + 40
+              keep + leaf(n > 0)
+            end
+
+            def outer(n) = middle(n)
+
+            outer(0)
+            outer(0)
+            [outer(1), outer(0)]
+        "), @"[43, 41]");
     }
 
     // Proc.new inside a block passed via invokeblock captures the caller's
