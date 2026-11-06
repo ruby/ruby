@@ -3839,7 +3839,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #ifdef USE_OP_PUSH_OR_JUMP_EXACT
     CASE(OP_PUSH_OR_JUMP_EXACT1)  MOP_IN(OP_PUSH_OR_JUMP_EXACT1);
       GET_RELADDR_INC(addr, p);
-      if (*p == *s && DATA_ENSURE_CHECK1) {
+      if (DATA_ENSURE_CHECK1 && *p == *s) {
         p++;
         CHECK_MATCH_CACHE;
         STACK_PUSH_ALT(p + addr, s, sprev, pkeep);
