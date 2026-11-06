@@ -2186,6 +2186,10 @@ retry:
                 }
                 goto retry;
             }
+            else if (UNDEFINED_METHOD_ENTRY_P(ccs->cme)) {
+                // vm_populate_cc would return the empty cc for this too
+                return &rb_vm_empty_cc;
+            }
             else {
                 VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
 
