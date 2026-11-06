@@ -5012,6 +5012,7 @@ enum_compact(VALUE obj)
  * <i>Leading, trailing, or all elements</i>:
  *
  * - #to_a (aliased as #entries): Returns all elements.
+ * - #to_set: Returns a Set containing all elements.
  * - #first: Returns the first element or leading elements.
  * - #take: Returns a specified number of leading elements.
  * - #drop: Returns a specified number of trailing elements.
