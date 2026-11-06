@@ -9300,9 +9300,19 @@ impl ProfileOracle {
     }
 }
 
-/// Group the buckets of a polymorphic receiver profile by the Type each dispatch arm tests for.
-/// Grouping by Type rather than by class keeps immediate/heap variants of the same Ruby class
-/// (Fixnum vs. Bignum) in separate arms, while grouping shapes by Type.
+/// The HIR builder splits polymorphic dispatch by receiver Type. Then, in type_specialize, we
+/// optimize each (now Type-monomorphic) branch.
+///
+/// * class C branch
+/// * String branch
+///
+/// This is fine for method sends, which only need the class (+ heap/immediate representation), but
+/// for attr_reader, which is a method for reading ivars, we also need the shape. Even though
+/// overall the shape is polymorphic, it might be monomorphic per branch. That is, we might only
+/// see one C shape and one String shape. Therefore, we also return the `buckets` and use those to
+/// rewrite profile information.
+///
+/// This lets us fully optimize even polymorphic attr_reader.
 fn polymorphic_arms(summary: &TypeDistributionSummary) -> Vec<(Type, Vec<ProfiledType>)> {
     let mut arms: Vec<(Type, Vec<ProfiledType>)> = Vec::with_capacity(summary.buckets().len());
     for &profiled_type in summary.buckets() {
