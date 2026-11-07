@@ -3188,10 +3188,6 @@ match_deconstruct_keys(VALUE match, VALUE keys)
 
     Check_Type(keys, T_ARRAY);
 
-    if (onig_number_of_names(RREGEXP_PTR(RMATCH(match)->regexp)) < RARRAY_LEN(keys)) {
-        return rb_hash_new();
-    }
-
     h = rb_hash_new_capa(RARRAY_LEN(keys));
 
     for (i=0; i<RARRAY_LEN(keys); i++) {
@@ -3206,9 +3202,6 @@ match_deconstruct_keys(VALUE match, VALUE keys)
 
         if (num >= 0) {
             rb_hash_aset(h, key, rb_reg_nth_match(num, match));
-        }
-        else {
-            return h;
         }
     }
 
