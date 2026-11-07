@@ -28,7 +28,7 @@ test-coroutine-prereq:
 yes-test-coroutine: test-coroutine-prereq PHONY
 	$(ACTIONS_GROUP)
 do-test-coroutine: yes-test-coroutine $(DOT_WAIT) $(COROUTINE_TEST) PHONY
-	$(Q)$(COROUTINE_TEST_RUN)
+	$(Q)$(COROUTINE_TEST_RUN) $(V0:1=-v)
 	$(ACTIONS_ENDGROUP)
 no-test-coroutine: PHONY
 
