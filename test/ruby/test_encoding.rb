@@ -55,6 +55,29 @@ class TestEncoding < Test::Unit::TestCase
     assert_raise(TypeError, bug5150) {Encoding.find(1)}
   end
 
+  def test_filesystem_encoding_ignores_ascii_incompatible_default_external
+    omit "the filesystem encoding doesn't follow default_external" if /(?:ms|dar)win|mingw|cygwin/ =~ RUBY_PLATFORM
+    # [Bug #18338]
+    assert_separately(%w[-EUTF-8], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      locale = Encoding.find("locale")
+      locale = Encoding::ASCII_8BIT unless locale.ascii_compatible?
+
+      EnvUtil.suppress_warning { Encoding.default_external = Encoding::UTF_16BE }
+      assert_equal(locale, Encoding.find("filesystem"))
+
+      features = $LOADED_FEATURES.size
+      "abc".encode(Encoding::UTF_16BE)
+      $LOADED_FEATURES[features..].each do |feature|
+        assert_predicate(feature.encoding, :ascii_compatible?, feature.b)
+        assert_predicate(feature, :valid_encoding?, feature.b)
+      end
+
+      EnvUtil.suppress_warning { Encoding.default_external = Encoding::EUC_JP }
+      assert_equal(Encoding::EUC_JP, Encoding.find("filesystem"))
+    end;
+  end
+
   def test_dummy_p
     assert_equal(true, Encoding::ISO_2022_JP.dummy?)
     assert_equal(false, Encoding::UTF_8.dummy?)
@@ -134,6 +157,17 @@ class TestEncoding < Test::Unit::TestCase
       $-w = nil
       Encoding.default_external = Encoding::ISO8859_2
       assert "[Bug #19562]"
+    end;
+  end
+
+  def test_ractor_filesystem_encoding_fallback
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Ractor.new{}.join
+      $-w = nil
+      # Falling back to the locale encoding must not look it up under the VM lock
+      Encoding.default_external = Encoding::UTF_16BE
+      assert_predicate(Encoding.find("filesystem"), :ascii_compatible?, "[Bug #18338]")
     end;
   end
 
