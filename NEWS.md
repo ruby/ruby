@@ -127,6 +127,10 @@ Note: We're only listing outstanding class updates.
       This makes it easier to autoload constants from files in the same
       directory without hardcoding absolute paths or manipulating `$LOAD_PATH`.
       [[Feature #15330]]
+    * `Kernel#extend` accepts a block. The block is evaluated in a new
+      anonymous module, as with `Module.new`, and the object is extended
+      with it after any modules given, so a method defined in the block can
+      call `super` to reach the one it replaces.  [[Feature #22513]]
 
 * MatchData
 
@@ -765,6 +769,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22400]: https://bugs.ruby-lang.org/issues/22400
 [Feature #22441]: https://bugs.ruby-lang.org/issues/22441
 [Feature #22444]: https://bugs.ruby-lang.org/issues/22444
+[Feature #22513]: https://bugs.ruby-lang.org/issues/22513
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
