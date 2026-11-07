@@ -448,6 +448,18 @@ impl Type {
         self.is_subtype(types::NilClass) || self.is_subtype(types::FalseClass)
     }
 
+    /// Return true if the value can be hashed and compared without invoking arbitrary Ruby code
+    // and those operations never raise.
+    pub fn is_hashed_and_compared_immediately(&self) -> bool {
+        self.is_subtype(types::Symbol) ||
+        self.is_subtype(types::String) ||
+        self.is_subtype(types::Integer) ||
+        self.is_subtype(types::Float) ||
+        self.is_subtype(types::FalseClass) ||
+        self.is_subtype(types::TrueClass) ||
+        self.is_subtype(types::NilClass)
+    }
+
     pub fn has_value(&self, val: Const) -> bool {
         match (self.spec(), val) {
             (Specialization::Object(v1), Const::Value(v2)) => v1 == v2,

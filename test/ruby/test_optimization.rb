@@ -498,6 +498,42 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal true, MyObj.new == nil
   end
 
+  def test_newhash_eq_and_hash_redefinition
+    assert_separately([], <<~'RUBY')
+      $VERBOSE = false
+
+      [NilClass, TrueClass, FalseClass, Integer, Float, Symbol, String].each do |klass|
+        klass.class_eval do
+          def hash
+            raise NotImplementedError, "Unexpected call to #{self.class.name}#hash"
+          end
+
+          def eql?(_other)
+            raise NotImplementedError, "Unexpected call to #{self.class.name}#eql?"
+          end
+        end
+      end
+
+      class StringSubclass < String
+      end
+
+      base = 0
+      hash = { # newhash insns
+        nil => base + 1,
+        true => base + 2,
+        false => base + 3,
+        1 => base + 4,
+        2**80 => base + 5,
+        1.2 => 6,
+        :static_sym => base + 7,
+        "dynamic_sym".to_sym => base + 8,
+        "string" => base + 9,
+        StringSubclass.new("string_subclass") => base + 10,
+      }
+      assert_equal 10, hash.size
+    RUBY
+  end
+
   def self.tailcall(klass, src, file = nil, path = nil, line = nil, tailcall: true)
     unless file
       loc, = caller_locations(1, 1)
