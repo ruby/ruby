@@ -1,0 +1,34 @@
+prelude: |
+  str          = 'haystack contains a needle here'
+  str_no_hit   = 'haystack contains no matches here'
+  exact        = 'needle'
+  exact_wrong  = 'poodle'
+  exact_longer = 'needles'
+
+  re_prefix       = /\Ahaystack/
+  re_prefix_miss  = /\Aneedle/
+  re_suffix       = /here\z/
+  re_suffix_miss  = /haystack\z/
+  re_exact        = /\Aneedle\z/
+  re_unanchored   = /needle/
+
+benchmark:
+  prefix_hit_match_p:      str.match?(re_prefix)
+  prefix_hit_start_with:   str.start_with?('haystack')
+  prefix_miss_match_p:     str.match?(re_prefix_miss)
+  prefix_miss_start_with:  str.start_with?('needle')
+
+  suffix_hit_match_p:      str.match?(re_suffix)
+  suffix_hit_end_with:     str.end_with?('here')
+  suffix_miss_match_p:     str.match?(re_suffix_miss)
+  suffix_miss_end_with:    str.end_with?('haystack')
+
+  exact_hit_match_p:       exact.match?(re_exact)
+  exact_hit_eq:            exact == 'needle'
+  exact_wrong_match_p:     exact_wrong.match?(re_exact)
+  exact_wrong_eq:          exact_wrong == 'needle'
+  exact_longer_match_p:    exact_longer.match?(re_exact)
+  exact_longer_eq:         exact_longer == 'needle'
+
+  unanchored_hit_match_p:  str.match?(re_unanchored)
+  unanchored_miss_match_p: str_no_hit.match?(re_unanchored)
