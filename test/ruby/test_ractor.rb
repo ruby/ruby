@@ -289,6 +289,68 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # [Bug #22419] a deep-frozen class field is made shareable by its owner Ractor
+  def test_read_frozen_class_fields_of_main
+    assert_ractor(<<~'RUBY')
+      class C
+        @iv = Set[1, 2].freeze
+        CONST = ["c".dup.freeze].freeze
+        @@cv = ["v".dup.freeze].freeze
+        def self.cv = @@cv
+      end
+      r = Ractor.new { [C.instance_variable_get(:@iv).include?(1), C::CONST, C.cv] }.value
+      assert_equal [true, ["c"], ["v"]], r
+      assert_predicate C::CONST, :frozen?
+      assert Ractor.shareable?(C::CONST)
+    RUBY
+  end
+
+  def test_read_frozen_class_fields_of_non_main
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      owner = Ractor.new(port) do |pt|
+        c = Class.new
+        c.instance_variable_set(:@iv, ["i".dup.freeze].freeze)
+        c.const_set(:CONST, ["c".dup.freeze].freeze)
+        c.class_variable_set(:@@cv, ["v".dup.freeze].freeze)
+        pt << c
+        Ractor.receive
+      end
+      c = port.receive
+      read = ->(k) { [k.instance_variable_get(:@iv), k::CONST, k.class_variable_get(:@@cv)] }
+      assert_equal [["i"], ["c"], ["v"]], read.(c)
+      assert_equal [["i"], ["c"], ["v"]], Ractor.new(c) { |k| [k.instance_variable_get(:@iv), k::CONST, k.class_variable_get(:@@cv)] }.value
+      owner << :done
+      owner.join
+    RUBY
+  end
+
+  def test_read_frozen_class_fields_of_terminated_owner
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      owner = Ractor.new(port) do |pt|
+        c = Class.new
+        c.instance_variable_set(:@iv, [Set[1].freeze, "i".dup.freeze].freeze)
+        c.const_set(:CONST, ["c".dup.freeze].freeze)
+        # a Set's elements are reached through its T_DATA mark function
+        c.const_set(:SET, Set[["s".dup.freeze].freeze].freeze)
+        c.const_set(:BAD_SET, Set[[+"b"]].freeze)
+        pt << c
+        :done
+      end
+      c = port.receive
+      Thread.pass until owner.inspect.include?("terminated")
+      # nobody has absorbed the owner's objspace yet
+      r = Ractor.new(c) { |k| [k.instance_variable_get(:@iv)[0].include?(1), k::CONST] }.value
+      assert_equal [true, ["c"]], r
+      r = Ractor.new(c) { |k| [Ractor.shareable?(k::SET.first), (k::BAD_SET rescue $!.class)] }.value
+      assert_equal [true, Ractor::IsolationError], r
+      assert_equal :done, owner.value
+      GC.start
+      assert_equal ["c"], c::CONST
+    RUBY
+  end
+
   def test_struct_instance_variables
     assert_ractor(<<~'RUBY')
       StructIvar = Struct.new(:member) do

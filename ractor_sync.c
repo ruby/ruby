@@ -29,6 +29,7 @@ void rb_ractor_courier_mark(const struct rb_gc_mark_ctx *ctx, struct rb_ractor_c
 struct rb_ractor_courier *rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot);
 
 static void ractor_port_note_alive(const struct ractor_port *rp);
+static void ractor_reply_ports_mark(rb_ractor_t *r);
 
 static void
 ractor_port_mark(void *ptr)
@@ -940,6 +941,7 @@ ractor_sync_mark(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r)
             ractor_mark_monitors(ctx, r);
         }
         if (!world_stopped) RACTOR_UNLOCK_SELF(r);
+        ractor_reply_ports_mark(r);
 
         /* The baskets on no queue: one being built to send, one being materialized.
          * Walked in every collection, like the queues.  What they hold is shareable, but
@@ -999,6 +1001,7 @@ ractor_sync_init(rb_ractor_t *r)
     // monitors
     ccan_list_head_init(&r->sync.off_queue_baskets);
     ccan_list_head_init(&r->sync.monitors);
+    ccan_list_head_init(&r->sync.reply_leases);
 
     // waiters
     ccan_list_head_init(&r->sync.waiters);
@@ -1667,6 +1670,135 @@ ractor_send0(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj
     ractor_send_basket(ec, rp, b, raise_on_error);
     RB_GC_GUARD(obj);
     return rp->r->pub.self;
+}
+
+/* Reply ports: a Ractor waiting for an internal request's answer receives it on a port
+ * with no Ractor::Port object.  The replier rebuilds the port from (Ractor, id) and sends
+ * a basket the waiter built beforehand, so the reply cannot fail.  The Ractor's own port
+ * is reused; a thread that finds it busy gets a port of its own.  A wait given up while
+ * its reply may still come closes its port, so the late reply is dropped at the send. */
+
+struct ractor_reply_lease {
+    struct ccan_list_node node; // in sync.reply_leases, which keeps the port from the reap
+    st_data_t id;
+    bool reply_pending; // a reply may still arrive: release closes the port
+};
+
+// false if this Ractor's ports are gone (it is terminating)
+static bool
+ractor_reply_port_acquire(rb_ractor_t *cr, struct ractor_reply_lease *lease)
+{
+    if (!cr->sync.ports) return false;
+
+    if (!cr->sync.reply_port_busy) {
+        if (!cr->sync.reply_port_id) {
+            const st_data_t id = ractor_genid_for_port(cr);
+            ractor_add_port(cr, id);
+            cr->sync.reply_port_id = id;
+        }
+        cr->sync.reply_port_busy = true;
+        lease->id = cr->sync.reply_port_id;
+    }
+    else {
+        const st_data_t id = ractor_genid_for_port(cr);
+        ractor_add_port(cr, id);
+        lease->id = id;
+    }
+    lease->reply_pending = false;
+    ccan_list_add_tail(&cr->sync.reply_leases, &lease->node);
+    return true;
+}
+
+static void
+ractor_reply_port_close(rb_execution_context_t *ec, rb_ractor_t *cr, st_data_t id)
+{
+    const struct ractor_port rp = { cr, id };
+    ractor_close_port(ec, cr, &rp);
+    // close keeps a port while it holds messages: drop a reply that came meanwhile
+    while (ractor_get_queue(cr, id, false) && !UNDEF_P(ractor_try_receive(ec, cr, &rp)));
+}
+
+static void
+ractor_reply_port_release(rb_execution_context_t *ec, rb_ractor_t *cr, struct ractor_reply_lease *lease)
+{
+    ccan_list_del(&lease->node);
+    if (!cr->sync.ports) return;
+
+    if (lease->id == cr->sync.reply_port_id) {
+        if (lease->reply_pending) {
+            cr->sync.reply_port_id = 0;
+            ractor_reply_port_close(ec, cr, lease->id);
+        }
+        cr->sync.reply_port_busy = false;
+    }
+    else {
+        ractor_reply_port_close(ec, cr, lease->id);
+    }
+}
+
+// the leases were held by threads the child does not have
+static void
+ractor_reply_port_atfork(rb_ractor_t *r)
+{
+    if (r->sync.reply_port_busy) r->sync.reply_port_id = 0; // its holder's reply is lost
+    r->sync.reply_port_busy = false;
+    ccan_list_head_init(&r->sync.reply_leases);
+}
+
+// a port has no Ractor::Port to mark: the Ractor marks the ones it holds
+static void
+ractor_reply_port_mark(rb_ractor_t *r, st_data_t id)
+{
+    if (rb_gc_single_objspace_p() || rb_gc_during_global_gc_p()) {
+        const struct ractor_port rp = { r, id };
+        ractor_port_note_alive(&rp);
+    }
+}
+
+static void
+ractor_reply_ports_mark(rb_ractor_t *r)
+{
+    if (r->sync.reply_port_id) ractor_reply_port_mark(r, r->sync.reply_port_id);
+    const struct ractor_reply_lease *lease;
+    ccan_list_for_each(&r->sync.reply_leases, lease, node) {
+        ractor_reply_port_mark(r, lease->id);
+    }
+}
+
+// built by the waiter, as building it may raise; token is shareable
+static struct ractor_basket *
+ractor_reply_basket_new(VALUE token)
+{
+    struct ractor_basket *b = ractor_basket_alloc();
+    b->type = basket_type_ref;
+    b->p.v = token;
+    return b;
+}
+
+// does not raise: dropped if the waiter has gone (closed its port, or its Ractor terminated)
+static void
+ractor_reply_send(rb_execution_context_t *ec, rb_ractor_t *r, st_data_t id, struct ractor_basket *b)
+{
+    const struct ractor_port rp = { r, id };
+    ractor_send_basket(ec, &rp, b, false);
+}
+
+/* Waits for token, skipping replies to waits abandoned before a fork.  Returns false if
+ * this Ractor's ports were freed meanwhile (it is terminating): the reply is dropped. */
+static bool
+ractor_reply_port_receive(rb_execution_context_t *ec, struct ractor_reply_lease *lease, VALUE token)
+{
+    rb_ractor_t *const cr = rb_ec_ractor_ptr(ec);
+    const struct ractor_port rp = { cr, lease->id };
+    while (ractor_get_queue(cr, lease->id, false)) {
+        const VALUE v = ractor_try_receive(ec, cr, &rp);
+        if (v == token) {
+            lease->reply_pending = false;
+            return true;
+        }
+        if (UNDEF_P(v)) ractor_wait_receive(ec, cr, NULL);
+    }
+    return false;
 }
 
 static VALUE

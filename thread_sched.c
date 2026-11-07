@@ -866,6 +866,9 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
     sched->runnable_hot_th = NULL;
     sched->runnable_hot_th_waiting = 0;
 
+    // also on the M:N path and when the waker already made th running
+    rb_ractor_thread_switch(th->ractor, th, false);
+
 
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED, th);
 }
