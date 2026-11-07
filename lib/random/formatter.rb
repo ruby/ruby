@@ -369,4 +369,35 @@ module Random::Formatter
     n = 16 if n.nil?
     choose(chars, n)
   end
+
+  # The default character list for #numeric.
+  NUMERIC = [*'0'..'9']
+
+  # Generate a random numeric string.
+  #
+  # The argument _n_ specifies the length, in characters, of the numeric
+  # string to be generated.
+  # The argument _chars_ specifies the character list which the result is
+  # consist of.
+  #
+  # If _n_ is not specified or is nil, 16 is assumed.
+  # It may be larger in the future.
+  #
+  # The result may contain 0-9, unless _chars_ is specified.
+  #
+  #   require 'random/formatter'
+  #
+  #   Random.numeric     #=> "0115469885704937"
+  #   # or
+  #   prng = Random.new
+  #   prng.numeric(10) #=> "3461790852"
+  #
+  #   Random.numeric(4, chars: [*"0".."5"]) #=> "2152"
+  #   # or
+  #   prng = Random.new
+  #   prng.numeric(10, chars: [*"0".."5"]) #=> "2152"
+  def numeric(n = nil, chars: NUMERIC)
+    n = 16 if n.nil?
+    choose(chars, n)
+  end
 end
