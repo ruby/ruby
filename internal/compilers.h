@@ -101,4 +101,23 @@ rb_obj_builtin_type(VALUE obj)
 # define BITFIELD(type, name, size) unsigned int name : size
 #endif
 
+/*
+ * RUBY_DEBUG_EXPORT(name, target) gives `target`, a function or variable
+ * defined in the same file, the additional exported name `name`, so that
+ * tools outside the process, such as profilers, can still find it after
+ * libruby is stripped.  Ruby itself keeps using `target`, so its generated
+ * code does not change.  These names are best-effort debugging aids, not an
+ * API, and may change or disappear at any time.
+ */
+#if defined(__linux__) && defined(HAVE_ATTRIBUTE_FUNCTION_ALIAS)
+# define RUBY_DEBUG_EXPORT_DECL(decl, target) \
+    extern decl __attribute__((__alias__(STRINGIZE(target)), __visibility__("protected")));
+#else
+# define RUBY_DEBUG_EXPORT_DECL(decl, target) /* not supported */
+#endif
+#define RUBY_DEBUG_EXPORT(name, target) \
+    RUBY_DEBUG_EXPORT_DECL(__typeof__(target) name, target)
+#define RUBY_DEBUG_EXPORT_TLS(name, target) \
+    RUBY_DEBUG_EXPORT_DECL(RB_THREAD_LOCAL_SPECIFIER __typeof__(target) name, target)
+
 #endif /* INTERNAL_COMPILERS_H */
