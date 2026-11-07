@@ -1,0 +1,57 @@
+# The results of a single run vary a lot on a machine that is not idle.
+# Take the best of several runs, as:
+#
+#   make benchmark ITEM=array_search_immediate OPTS="--repeat-count 6"
+prelude: |
+  ints10 = Array.new(10) {|i| i * 2}
+  ints1000 = Array.new(1_000) {|i| i * 2}
+  ints100000 = Array.new(100_000) {|i| i * 2}
+  # symbols in the source are static, unlike the ones made by String#to_sym
+  syms10 = Array.new(10) {|i| eval(":s#{i}")}
+  syms1000 = Array.new(1_000) {|i| eval(":s#{i}")}
+  syms100000 = Array.new(100_000) {|i| eval(":s#{i}")}
+  floats10 = Array.new(10) {|i| i * 0.5}
+  floats1000 = Array.new(1_000) {|i| i * 0.5}
+  floats100000 = Array.new(100_000) {|i| i * 0.5}
+  few10 = Array.new(10) {|i| i % 8}
+  few1000 = Array.new(1_000) {|i| i % 8}
+  few100000 = Array.new(100_000) {|i| i % 8}
+  strs10 = Array.new(10) {|i| "s#{i}"}
+  strs1000 = Array.new(1_000) {|i| "s#{i}"}
+  strs100000 = Array.new(100_000) {|i| "s#{i}"}
+  mixed10 = Array.new(10) {|i| i.even? ? i : "s#{i}"}
+  mixed1000 = Array.new(1_000) {|i| i.even? ? i : "s#{i}"}
+  mixed100000 = Array.new(100_000) {|i| i.even? ? i : "s#{i}"}
+
+benchmark:
+  include_int_miss_10: ints10.include?(-1)
+  include_int_miss_1000: ints1000.include?(-1)
+  include_int_miss_100000: ints100000.include?(-1)
+  include_int_hit_middle_10: ints10.include?(10)
+  include_int_hit_middle_1000: ints1000.include?(1_000)
+  include_int_hit_middle_100000: ints100000.include?(100_000)
+  include_sym_miss_10: syms10.include?(:nope)
+  include_sym_miss_1000: syms1000.include?(:nope)
+  include_sym_miss_100000: syms100000.include?(:nope)
+  include_float_miss_10: floats10.include?(-1.5)
+  include_float_miss_1000: floats1000.include?(-1.5)
+  include_float_miss_100000: floats100000.include?(-1.5)
+  index_int_miss_10: ints10.index(-1)
+  index_int_miss_1000: ints1000.index(-1)
+  index_int_miss_100000: ints100000.index(-1)
+  rindex_int_miss_10: ints10.rindex(-1)
+  rindex_int_miss_1000: ints1000.rindex(-1)
+  rindex_int_miss_100000: ints100000.rindex(-1)
+  count_int_10: few10.count(3)
+  count_int_1000: few1000.count(3)
+  count_int_100000: few100000.count(3)
+  # not specialized
+  include_int_in_strs_10: strs10.include?(5)
+  include_int_in_strs_1000: strs1000.include?(5)
+  include_int_in_strs_100000: strs100000.include?(5)
+  include_str_in_ints_10: ints10.include?("x")
+  include_str_in_ints_1000: ints1000.include?("x")
+  include_str_in_ints_100000: ints100000.include?("x")
+  include_int_in_mixed_10: mixed10.include?(-1)
+  include_int_in_mixed_1000: mixed1000.include?(-1)
+  include_int_in_mixed_100000: mixed100000.include?(-1)
