@@ -3160,6 +3160,8 @@ gc_continue(rb_objspace_t *objspace, rb_heap_t *heap)
     gc_exit(objspace, gc_enter_event_continue, &lock_lev);
 }
 
+static void heap_move_pooled_pages_to_free_pages(rb_heap_t *heap);
+
 static void
 heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
 {
@@ -3212,6 +3214,9 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
                     else {
                         /* Do steps of incremental marking or lazy sweeping. */
                         gc_continue(objspace, heap);
+                        if (heap->free_pages == NULL) {
+                            heap_move_pooled_pages_to_free_pages(heap);
+                        }
 
                         if (heap->free_pages == NULL &&
                                 !heap_page_allocate_and_initialize(objspace, heap)) {
