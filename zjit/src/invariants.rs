@@ -27,7 +27,7 @@ macro_rules! compile_patch_points {
                 let mut version = patch_point.version;
                 let iseq = unsafe { version.as_ref() }.iseq;
                 if !iseq.is_null() {
-                    invalidate_iseq_version($cb, iseq, &mut version);
+                    invalidate_iseq_version($cb, iseq, &mut version, true);
                     // Remember NoSingletonClass busts on the payload
                     if is_no_singleton_class!($cause) {
                         let payload = get_or_create_iseq_payload(iseq);
@@ -220,10 +220,10 @@ pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
             // instead of [] for keyword defaults).
             //
             // We can't rely on the invalidate_iseq_version() calls made by
-            // compile_patch_points! because it skips when at MAX_ISEQ_VERSIONS
+            // compile_patch_points! because it skips at the version limit
             // (to prevent unbounded recompilation). Instead, directly mark the
             // versions as invalidated, reset jit_func, and re-stub incoming
-            // JIT-to-JIT calls so the interpreter takes over permanently.
+            // JIT-to-JIT calls so that new calls go through the interpreter.
             let payload = get_or_create_iseq_payload(iseq);
             patched_versions.extend(payload.versions.last());
             for mut version in patched_versions {
