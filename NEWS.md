@@ -145,6 +145,10 @@ Note: We're only listing outstanding class updates.
       deprecated and will be removed in Ruby 4.4.  [[Feature #22205]]
     * `Module#method_defined?` now accepts a third optional argument to also
       match private methods.  [[Feature #22297]]
+    * `Module#prepend` accepts a block. The block is evaluated in a new
+      anonymous module, as with `Module.new`, and that module is prepended
+      after any modules given, so a method defined in the block can call
+      `super` to reach the one it replaces.  [[Feature #22513]]
 
 * ObjectSpace
 

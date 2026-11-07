@@ -1362,9 +1362,26 @@ rb_mod_prepend_features(VALUE module, VALUE prepend)
 
 /*
  *  call-seq:
- *     prepend(module, ...)    -> self
+ *     prepend(module, ...)                 -> self
+ *     prepend(module, ...) {|mod| block }  -> self
  *
  *  Invokes Module.prepend_features on each parameter in reverse order.
+ *
+ *  If a block is given, it is evaluated in a new anonymous module, as
+ *  with Module.new, and that module is prepended too, after the modules
+ *  given, so its methods take precedence over theirs. The modules are
+ *  then optional. Calling +super+ from a method defined in the block
+ *  calls the method it replaces:
+ *
+ *     class Greeter
+ *       def hello = "hello"
+ *     end
+ *
+ *     Greeter.prepend do
+ *       def hello = super.upcase
+ *     end
+ *
+ *     Greeter.new.hello   #=> "HELLO"
  */
 
 static VALUE
@@ -1372,6 +1389,7 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
 {
     int i;
     ID id_prepend_features, id_prepended;
+    VALUE block_module = Qnil;
 
     if (BUILTIN_TYPE(module) == T_MODULE && FL_TEST(module, RMODULE_IS_REFINEMENT)) {
         rb_raise(rb_eTypeError, "Refinement#prepend has been removed");
@@ -1380,16 +1398,24 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
     CONST_ID(id_prepend_features, "prepend_features");
     CONST_ID(id_prepended, "prepended");
 
-    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    rb_check_arity(argc, rb_block_given_p() ? 0 : 1, UNLIMITED_ARGUMENTS);
     for (i = 0; i < argc; i++) {
         Check_Type(argv[i], T_MODULE);
         if (FL_TEST(argv[i], RMODULE_IS_REFINEMENT)) {
             rb_raise(rb_eTypeError, "Cannot prepend refinement");
         }
     }
+    if (rb_block_given_p()) {
+        block_module = rb_module_new();
+        rb_mod_module_exec(1, &block_module, block_module);
+    }
     while (argc--) {
         rb_funcallv_uncached(argv[argc], id_prepend_features, 1, &module);
         rb_funcallv_uncached(argv[argc], id_prepended, 1, &module);
+    }
+    if (!NIL_P(block_module)) {
+        rb_funcallv_uncached(block_module, id_prepend_features, 1, &module);
+        rb_funcallv_uncached(block_module, id_prepended, 1, &module);
     }
     return module;
 }

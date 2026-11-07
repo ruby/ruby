@@ -2411,6 +2411,63 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
+  def test_prepend_with_no_args
+    assert_raise(ArgumentError) { Class.new.prepend }
+  end
+
+  def test_prepend_with_block
+    klass = Class.new { def hello = "hello" }
+    assert_same(klass, klass.prepend { def hello = super.upcase })
+    assert_equal("HELLO", klass.new.hello)
+  end
+
+  def test_prepend_with_block_evaluates_it_in_a_new_module
+    klass = Class.new
+    self_in_block = arg_in_block = nil
+    klass.prepend { |m| self_in_block = self; arg_in_block = m }
+    assert_instance_of(Module, self_in_block)
+    assert_same(self_in_block, arg_in_block)
+    assert_nil(self_in_block.name)
+    assert_equal([self_in_block, klass], klass.ancestors.first(2))
+  end
+
+  def test_prepend_with_modules_and_block
+    a = Module.new { def foo = [:a, *super] }
+    b = Module.new { def foo = [:b, *super] }
+    klass = Class.new { def foo = [:class] }
+    klass.prepend(b, a) { def foo = [:block, *super] }
+    assert_equal([:block, :b, :a, :class], klass.new.foo)
+    assert_equal([b, a, klass], klass.ancestors[1, 3])
+  end
+
+  def test_prepend_with_block_into_module
+    mod = Module.new { def foo = [:mod] }
+    mod.prepend { def foo = [:block, *super] }
+    klass = Class.new { include mod }
+    assert_equal([:block, :mod], klass.new.foo)
+  end
+
+  def test_prepend_with_block_calls_hooks
+    klass = Class.new
+    klass.prepend do
+      def self.prepended(base) = base.instance_variable_set(:@prepended, self)
+    end
+    assert_same(klass.ancestors.first, klass.instance_variable_get(:@prepended))
+  end
+
+  def test_prepend_with_block_that_raises
+    klass = Class.new
+    a = Module.new
+    assert_raise(RuntimeError) { klass.prepend(a) { raise "oops" } }
+    assert_not_include(klass.ancestors, a)
+  end
+
+  def test_prepend_with_invalid_module_and_block
+    called = false
+    assert_raise(TypeError) { Class.new.prepend(1) { called = true } }
+    assert_equal(false, called)
+  end
+
   def test_prepend_CMP
     bug11878 = '[ruby-core:72493] [Bug #11878]'
     assert_equal(-1, C1 <=> M2)
