@@ -59,6 +59,8 @@ RSpec.describe "bundled_gems.rb" do
       Gem::BUNDLED_GEMS.const_set(:LIBDIR, "#{source_lib_dir}/")
       Gem::BUNDLED_GEMS.const_set(:ARCHDIR, File.expand_path($LOAD_PATH.find{|path| path.include?(".ext/common") }) + "/")
       Gem::BUNDLED_GEMS.const_set(:SINCE, { "openssl" => RUBY_VERSION, "fileutils" => RUBY_VERSION, "csv" => "3.4.0", "net-smtp" => "3.1.0" })
+      Gem::BUNDLED_GEMS.send(:remove_const, :CANDIDATE)
+      Gem::BUNDLED_GEMS.const_set(:CANDIDATE, Gem::BUNDLED_GEMS.candidate_pattern)
     STUB
   }
 
@@ -87,9 +89,9 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/csv used to be loaded from (.*) since Ruby 3.4.0/)
-    expect(err).to include(/-e:15/)
+    expect(err).to include(/-e:17/)
     expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
-    expect(err).to include(/-e:18/)
+    expect(err).to include(/-e:20/)
   end
 
   it "Show warning to contact the author when the require is issued from a gem" do
@@ -149,7 +151,7 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/net\/smtp used to be loaded from (.*) since Ruby 3.1.0/)
-    expect(err).to include(/-e:15/)
+    expect(err).to include(/-e:17/)
     expect(err).to include("You can add net-smtp")
   end
 
@@ -165,7 +167,7 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/openssl\/bn is found in openssl, (.*) part of the default gems since Ruby #{RUBY_VERSION}/)
-    expect(err).to include(/-e:14/)
+    expect(err).to include(/-e:16/)
   end
 
   it "Show warning when bundle exec with ruby and script" do
@@ -179,7 +181,7 @@ RSpec.describe "bundled_gems.rb" do
     bundle "exec ruby script.rb"
 
     expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
-    expect(err).to include(/script\.rb:8/)
+    expect(err).to include(/script\.rb:10/)
   end
 
   it "Show warning when bundle exec with shebang's script" do
@@ -197,7 +199,7 @@ RSpec.describe "bundled_gems.rb" do
     bundle "exec ./script.rb"
 
     expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
-    expect(err).to include(/script\.rb:9/)
+    expect(err).to include(/script\.rb:11/)
   end
 
   it "Show warning when bundle exec with -r option" do
@@ -233,7 +235,7 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
-    expect(err).to include(/-e:19/)
+    expect(err).to include(/-e:21/)
   end
 
   it "Don't show warning when bundled gems called as dependency" do
@@ -344,7 +346,7 @@ RSpec.describe "bundled_gems.rb" do
     bundle "exec ruby script.rb"
 
     expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
-    expect(err).to include(/script\.rb:13/)
+    expect(err).to include(/script\.rb:15/)
   end
 
   it "Don't show warning openssl/bn when openssl on Gemfile" do
