@@ -551,6 +551,8 @@ typedef struct rb_heap_struct {
     /* Sweeping statistics */
     size_t freed_slots;
     size_t empty_slots;
+    /* Minor sweeps since the last major that left this heap short of min_free_slots */
+    size_t deficits_since_major;
 
     /* Bump-pointer allocation state; only this objspace's owner thread writes it. */
     rb_heap_newobj_t newobj;
@@ -800,7 +802,6 @@ typedef struct rb_objspace {
         VALUE parent_object;
 
         int need_major_gc;
-        size_t last_major_gc;
         size_t uncollectible_wb_unprotected_objects;
         size_t uncollectible_wb_unprotected_objects_limit;
         size_t old_objects;
@@ -5724,16 +5725,17 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
     size_t total_slots = heap->total_slots;
     size_t swept_slots = heap->freed_slots + heap->empty_slots;
 
-    size_t init_slots = objspace_heap_init_bytes(objspace) / heap->slot_size;
-    size_t min_free_slots = (size_t)(MAX(total_slots, init_slots) * gc_params.heap_free_slots_min_ratio);
+    if (total_slots == 0) {
+        return;
+    }
 
-    if (swept_slots < min_free_slots &&
-            /* The heap is a growth heap if it freed more slots than had empty slots. */
-            ((heap->empty_slots == 0 && total_slots > 0) || heap->freed_slots > heap->empty_slots)) {
-        /* If we don't have enough slots and we have pages on the tomb heap, move
-        * pages from the tomb heap to the eden heap. This may prevent page
-        * creation thrashing (frequently allocating and deallocting pages) and
-        * GC thrashing (running GC more frequently than required). */
+    size_t min_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_min_ratio);
+
+    bool growth_pressured =
+        (heap->empty_slots == 0) ||
+        (heap->freed_slots > heap->empty_slots);
+
+    if (swept_slots < min_free_slots && growth_pressured) {
         struct heap_page *resurrected_page;
         while (swept_slots < min_free_slots &&
                 (resurrected_page = heap_page_resurrect(objspace))) {
@@ -5744,18 +5746,31 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
         }
 
         if (swept_slots < min_free_slots) {
-            /* Grow this heap if we are in a major GC or if we haven't run at least
-             * RVALUE_OLD_AGE minor GC since the last major GC. */
-            if (is_full_marking(objspace) ||
-                    objspace->profile.count - objspace->rgengc.last_major_gc < RVALUE_OLD_AGE) {
-                if (objspace->heap_pages.allocatable_bytes < min_free_slots * heap->slot_size) {
-                    heap_allocatable_bytes_expand(objspace, heap, swept_slots, heap->total_slots, heap->slot_size);
+            size_t required_allocatable_bytes = min_free_slots * heap->slot_size;
+
+            if (is_full_marking(objspace)) {
+                if (objspace->heap_pages.allocatable_bytes < required_allocatable_bytes) {
+                    heap_allocatable_bytes_expand(objspace, heap, swept_slots,
+                            heap->total_slots, heap->slot_size);
                 }
+                return;
             }
-            else if (swept_slots < min_free_slots * 7 / 8 &&
-                     objspace->heap_pages.allocatable_bytes < (min_free_slots * 7 / 8 - swept_slots) * heap->slot_size) {
+
+            heap->deficits_since_major++;
+
+            size_t shortfall_bytes = (min_free_slots - swept_slots) * heap->slot_size;
+            if (objspace->heap_pages.allocatable_bytes >= shortfall_bytes) {
+                return;
+            }
+
+            if (heap->deficits_since_major >= RVALUE_OLD_AGE) {
                 gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_NOFREE;
                 heap->force_major_gc_count++;
+                heap->deficits_since_major = 0;
+            }
+            else {
+                heap_allocatable_bytes_expand(objspace, heap, swept_slots,
+                        heap->total_slots, heap->slot_size);
             }
         }
     }
@@ -5817,6 +5832,10 @@ gc_sweep_finish(rb_objspace_t *objspace)
 
         heap->freed_slots = 0;
         heap->empty_slots = 0;
+
+        if (is_full_marking(objspace)) {
+            heap->deficits_since_major = 0;
+        }
 
         if (!will_be_incremental_marking(objspace)) {
             struct heap_page *end_page = heap->free_pages;
@@ -7839,12 +7858,6 @@ gc_marks_finish(rb_objspace_t *objspace)
         size_t total_slots = objspace_available_slots(objspace);
         size_t sweep_slots = total_slots - objspace->marked_slots; /* will be swept slots */
         size_t max_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_max_ratio);
-        size_t min_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_min_ratio);
-        if (min_free_slots < gc_params.heap_free_slots * r_mul) {
-            min_free_slots = gc_params.heap_free_slots * r_mul;
-        }
-
-        int full_marking = is_full_marking(objspace);
 
         GC_ASSERT(objspace_available_slots(objspace) >= objspace->marked_slots);
 
@@ -7870,23 +7883,7 @@ gc_marks_finish(rb_objspace_t *objspace)
             heap_pages_freeable_pages = 0;
         }
 
-        if (objspace->heap_pages.allocatable_bytes == 0 && sweep_slots < min_free_slots) {
-            if (!full_marking && sweep_slots < min_free_slots * 7 / 8) {
-                if (objspace->profile.count - objspace->rgengc.last_major_gc < RVALUE_OLD_AGE) {
-                    full_marking = TRUE;
-                }
-                else {
-                    gc_report(1, objspace, "gc_marks_finish: next is full GC!!)\n");
-                    gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_NOFREE;
-                }
-            }
-
-            if (full_marking) {
-                heap_allocatable_bytes_expand(objspace, NULL, sweep_slots, total_slots, heaps[0].slot_size);
-            }
-        }
-
-        if (full_marking) {
+        if (is_full_marking(objspace)) {
             /* See the comment about RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR */
             const double r = gc_params.oldobject_limit_factor;
             objspace->rgengc.uncollectible_wb_unprotected_objects_limit = MAX(
@@ -8250,7 +8247,6 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
         objspace->profile.major_gc_count++;
         objspace->rgengc.uncollectible_wb_unprotected_objects = 0;
         objspace->rgengc.old_objects = 0;
-        objspace->rgengc.last_major_gc = objspace->profile.count;
         objspace->marked_slots = 0;
 
         for (int i = 0; i < HEAP_COUNT; i++) {
@@ -9848,7 +9844,6 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
         objspace->rgengc.old_objects = 0;
         objspace->profile.count++;
         objspace->profile.global_gc_count++;
-        objspace->rgengc.last_major_gc = objspace->profile.count;
         objspace->rgengc.need_major_gc = GPR_FLAG_NONE;
         objspace->marked_slots = 0;
         for (int h = 0; h < HEAP_COUNT; h++) {
