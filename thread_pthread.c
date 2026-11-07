@@ -627,6 +627,18 @@ get_stack(void **addr, size_t *size)
 }
 #endif
 
+// An id not recorded yet is all zero (ZALLOC or a static)
+static bool
+native_thread_id_set_p(rb_nativethread_id_t id)
+{
+#ifdef NON_SCALAR_THREAD_ID
+    static const rb_nativethread_id_t unset;
+    return memcmp(&id, &unset, sizeof(id)) != 0;
+#else
+    return id != 0;
+#endif
+}
+
 static struct {
     rb_nativethread_id_t id;
     size_t stack_maxsize;
@@ -751,7 +763,7 @@ native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
     th->ec->machine.asan_fake_stack_handle = asan_get_thread_fake_stack_handle();
 #endif
 
-    if (!native_main_thread.id) {
+    if (!native_thread_id_set_p(native_main_thread.id)) {
         /* This thread is the first thread, must be the main thread -
          * configure the native_main_thread object */
         native_thread_init_main_thread_stack(local_in_parent_frame);
@@ -1101,6 +1113,8 @@ native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
 #if defined SET_ANOTHER_THREAD_NAME || defined SET_CURRENT_THREAD_NAME
     char buf[THREAD_NAME_MAX];
     const char *s = "";
+    // not recorded until the thread starts; thread_do_start names it then
+    if (!native_thread_id_set_p(thread_id)) return;
 # if !defined SET_ANOTHER_THREAD_NAME
     if (!pthread_equal(pthread_self(), thread_id)) return;
 # endif
@@ -1456,9 +1470,11 @@ ruby_ppoll(struct pollfd *fds, nfds_t nfds,
 // fork read-write lock (only for pthread)
 static pthread_rwlock_t rb_thread_fork_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
 
+#ifndef NON_SCALAR_THREAD_ID
 // the registered thread waiting to be joined, or NULL; no pthread_t is 0
 static void *last_exiting_thread;
 STATIC_ASSERT(pthread_t_fits_in_pointer, sizeof(pthread_t) <= sizeof(void *));
+#endif
 
 void
 rb_thread_release_fork_lock(void)
@@ -1490,6 +1506,7 @@ rb_thread_prevent_fork(void *(*func)(void *), void *data)
     return result;
 }
 
+#ifndef NON_SCALAR_THREAD_ID
 static void
 thread_register_exiting(void *thread)
 {
@@ -1501,13 +1518,19 @@ thread_register_exiting(void *thread)
         }
     }
 }
+#endif
 
 // Called within rb_thread_prevent_fork() by a joinable thread just before it
 // exits.  The thread it replaces in the slot has usually exited by then.
 void
 rb_thread_register_exiting(void)
 {
+#ifdef NON_SCALAR_THREAD_ID
+    // last_exiting_thread cannot hold a non-scalar pthread_t; nobody joins it
+    pthread_detach(pthread_self());
+#else
     thread_register_exiting((void *)(uintptr_t)pthread_self());
+#endif
 }
 
 void
@@ -1521,7 +1544,9 @@ rb_thread_acquire_fork_lock(void)
     // A registered thread may still be exiting, and glibc's thread exit takes
     // the resolver configuration lock, which fork does not reset.  None can
     // register while this lock is held.
+#ifndef NON_SCALAR_THREAD_ID
     thread_register_exiting(NULL);
+#endif
 }
 
 // thread internal event hooks (only for pthread)
