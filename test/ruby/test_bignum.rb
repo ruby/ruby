@@ -201,6 +201,13 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(0_2, '0_2'.to_i)
     assert_equal(00_2, '00_2'.to_i)
     assert_equal(00_02, '00_02'.to_i)
+    [31, 32, 33, 63, 64, 65, 66].each do |n|
+      s = "1" * n
+      assert_equal(2**n - 1, s.to_i(2))
+      assert_equal(2**n - 1, (s + "2").to_i(2))
+      assert_equal(2**n - 1, Integer(s + " ", 2))
+      assert_raise(ArgumentError) { Integer(s + "2", 2) }
+    end
   end
 
   def test_very_big_str_to_inum
