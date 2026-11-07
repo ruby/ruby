@@ -3,8 +3,6 @@
 use std::collections::BTreeMap;
 use std::fmt;
 use std::ops::Range;
-use std::rc::Rc;
-use std::cell::RefCell;
 use std::mem;
 use crate::state::update_zjit_compiling;
 use crate::virtualmem::*;
@@ -66,11 +64,11 @@ pub struct LabelRef {
 
 /// Block of memory into which instructions can be assembled
 pub struct CodeBlock {
-    // Memory for storing the encoded instructions
-    mem_block: Rc<RefCell<VirtualMem>>,
+    // Exclusively owned memory for storing the encoded instructions.
+    mem_block: VirtualMem,
 
-    // Memory block size
-    mem_size: usize,
+    // Always >= write_pos. Seeks and permission changes invalidate this span.
+    writable_end: usize,
 
     // Current writing position
     write_pos: usize,
@@ -98,11 +96,10 @@ pub struct CodeBlock {
 
 impl CodeBlock {
     /// Make a new CodeBlock
-    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, keep_comments: bool) -> Self {
-        let mem_size = mem_block.borrow().virtual_region_size();
+    pub fn new(mem_block: VirtualMem, keep_comments: bool) -> Self {
         Self {
             mem_block,
-            mem_size,
+            writable_end: 0,
             write_pos: 0,
             label_addrs: Vec::new(),
             label_names: Vec::new(),
@@ -113,100 +110,42 @@ impl CodeBlock {
         }
     }
 
-    /// Size of the region in bytes that we have allocated physical memory for.
-    pub fn mapped_region_size(&self) -> usize {
-        self.mem_block.borrow().mapped_region_size()
-    }
-
-    /// Size of the region in bytes where writes could be attempted.
-    pub fn virtual_region_size(&self) -> usize {
-        self.mem_size
-    }
-
-    /// Add an assembly comment if the feature is on.
-    pub fn add_comment(&mut self, comment: &str) {
-        if !self.keep_comments {
-            return;
-        }
-
-        let cur_ptr = self.get_write_ptr().raw_addr(self);
-
-        // If there's no current list of comments for this line number, add one.
-        let this_line_comments = self.asm_comments.entry(cur_ptr).or_default();
-
-        // Unless this comment is the same as the last one at this same line, add it.
-        if this_line_comments.last().map(String::as_str) != Some(comment) {
-            this_line_comments.push(comment.to_string());
-        }
-    }
-
-    pub fn comments_at(&self, pos: usize) -> Option<&Vec<String>> {
-        self.asm_comments.get(&pos)
-    }
-
-    pub fn get_write_pos(&self) -> usize {
-        self.write_pos
-    }
-
-    pub fn write_mem(&self, write_ptr: CodePtr, byte: u8) -> Result<(), WriteError> {
-        self.mem_block.borrow_mut().write_byte(write_ptr, byte)
-    }
-
-    /// Get a (possibly dangling) direct pointer to the current write position
-    pub fn get_write_ptr(&self) -> CodePtr {
-        self.get_ptr(self.write_pos)
-    }
-
-    /// Set the current write position from a pointer
-    pub fn set_write_ptr(&mut self, code_ptr: CodePtr) {
-        let pos = code_ptr.as_offset() - self.mem_block.borrow().start_ptr().as_offset();
-        self.write_pos = pos.try_into().unwrap();
-    }
-
-    /// Invoke a callback with write_ptr temporarily adjusted to a given address
-    pub fn with_write_ptr(&mut self, code_ptr: CodePtr, callback: impl Fn(&mut CodeBlock)) -> Range<CodePtr> {
-        // Temporarily update the write_pos. Ignore the dropped_bytes flag at the old address.
-        let old_write_pos = self.write_pos;
-        let old_dropped_bytes = self.dropped_bytes;
-        self.set_write_ptr(code_ptr);
-        self.dropped_bytes = false;
-
-        // Invoke the callback
-        callback(self);
-
-        // Build a code range modified by the callback
-        let ret = code_ptr..self.get_write_ptr();
-
-        // Restore the original write_pos and dropped_bytes flag.
-        self.dropped_bytes = old_dropped_bytes;
-        self.write_pos = old_write_pos;
-        ret
-    }
-
-    /// Get a (possibly dangling) direct pointer into the executable memory block
-    pub fn get_ptr(&self, offset: usize) -> CodePtr {
-        self.mem_block.borrow().start_ptr().add_bytes(offset)
-    }
-
     /// Write a single byte at the current position.
+    #[inline]
     pub fn write_byte(&mut self, byte: u8) {
-        let write_ptr = self.get_write_ptr();
-        // TODO: check has_capacity()
-        if self.mem_block.borrow_mut().write_byte(write_ptr, byte).is_ok() {
-            self.write_pos += 1;
+        // An empty span takes the slow path, which validates capacity before writing.
+        if self.write_pos == self.writable_end {
+            self.write_bytes_across_pages(&[byte]);
         } else {
-            self.dropped_bytes = true;
+            // The span is validated and the memory exclusively owned. Seeks
+            // and permission changes invalidate the span before another write.
+            unsafe { self.mem_block.base_ptr().as_ptr().add(self.write_pos).write(byte) };
+            self.write_pos += 1;
         }
     }
 
     /// Write multiple bytes starting from the current position.
+    ///
+    /// Stops at the first write failure, keeping the successfully written prefix.
+    #[inline]
     pub fn write_bytes(&mut self, bytes: &[u8]) {
-        for byte in bytes {
-            self.write_byte(*byte);
+        if bytes.is_empty() {
+            return;
+        }
+
+        if bytes.len() <= self.writable_end - self.write_pos {
+            // The entire slice fits in the existing validated span.
+            unsafe { self.copy_in_span(bytes) };
+        } else {
+            self.write_bytes_across_pages(bytes);
         }
     }
 
     /// Write an integer over the given number of bits at the current position.
+    ///
+    /// Write a little-endian integer, maintaining the per-call failure/retry contract:
+    /// 16/32-bit slices, separate byte writes for other widths.
+    #[inline]
     pub fn write_int(&mut self, val: u64, num_bits: u32) {
         assert!(num_bits > 0);
         assert!(num_bits % 8 == 0);
@@ -214,54 +153,70 @@ impl CodeBlock {
         // Switch on the number of bits
         match num_bits {
             8 => self.write_byte(val as u8),
-            16 => self.write_bytes(&[(val & 0xff) as u8, ((val >> 8) & 0xff) as u8]),
-            32 => self.write_bytes(&[
-                (val & 0xff) as u8,
-                ((val >> 8) & 0xff) as u8,
-                ((val >> 16) & 0xff) as u8,
-                ((val >> 24) & 0xff) as u8,
-            ]),
+            16 => self.write_bytes(&val.to_le_bytes()[..2]),
+            32 => self.write_bytes(&val.to_le_bytes()[..4]),
             _ => {
                 let mut cur = val;
 
                 // Write out the bytes
                 for _byte in 0..(num_bits / 8) {
-                    self.write_byte((cur & 0xff) as u8);
+                    self.write_byte(cur as u8);
                     cur >>= 8;
                 }
             }
         }
     }
 
-    /// Check if bytes have been dropped (unwritten because of insufficient space)
-    pub fn has_dropped_bytes(&self) -> bool {
-        self.dropped_bytes
+    /// Copy a nonempty slice that fits in the validated writable span.
+    ///
+    /// # Safety
+    /// The caller must check a nonzero length <= writable_end - write_pos.
+    /// The memory is exclusively owned; seeks and permission changes invalidate
+    /// the span before another write.
+    unsafe fn copy_in_span(&mut self, bytes: &[u8]) {
+        debug_assert!(!bytes.is_empty());
+        debug_assert!(bytes.len() <= self.writable_end - self.write_pos);
+
+        // Use an overlap-safe copy, as VirtualMemory::write_bytes does.
+        unsafe { self.mem_block.base_ptr().as_ptr().add(self.write_pos).copy_from(bytes.as_ptr(), bytes.len()) };
+        self.write_pos += bytes.len();
     }
 
-    /// Set dropped_bytes to false if the current zjit_alloc_bytes() + code_region_size
-    /// + page_size is below --zjit-mem-size.
-    pub fn update_dropped_bytes(&mut self) {
-        if self.mem_block.borrow().can_allocate() {
-            self.dropped_bytes = false;
+    #[inline(never)]
+    fn write_bytes_across_pages(&mut self, mut bytes: &[u8]) {
+        while !bytes.is_empty() {
+            if self.write_pos == self.writable_end && !self.prepare_next_span() {
+                return;
+            }
 
-            // Memory is available again, so let the interpreter resume
-            // triggering compilation.
-            update_zjit_compiling();
+            let count = bytes.len().min(self.writable_end - self.write_pos);
+
+            // A successful preparation gives a nonempty span. Copy only its
+            // available prefix, committing progress before the next preparation.
+            unsafe { self.copy_in_span(&bytes[..count]) };
+            bytes = &bytes[count..];
         }
     }
 
-    /// Allocate a new label with a given name
-    pub fn new_label(&mut self, name: impl Into<LabelName>) -> Label {
-        let name = name.into();
-        if let LabelName::Static(name) = name {
-            assert!(!name.contains(' '), "use underscores in label names, not spaces");
+    /// Lazily validate the next span. Ending a write at the boundary does not
+    /// prepare the next page; failure leaves the cursor at the written prefix.
+    #[inline(never)]
+    fn prepare_next_span(&mut self) -> bool {
+        debug_assert_eq!(self.write_pos, self.writable_end);
+
+        match self.mem_block.prepare_write_span(self.write_pos) {
+            Ok(available) => {
+                debug_assert!(available > 0);
+
+                // Preparation bounds available by region_size - write_pos.
+                self.writable_end = self.write_pos + available;
+                true
+            }
+            Err(_) => {
+                self.dropped_bytes = true;
+                false
+            }
         }
-
-        // This label doesn't have an address yet
-        self.label_addrs.push(0);
-        self.label_names.push(name);
-
-        Label(self.label_addrs.len() - 1)
     }
 
     /// Write a label at the current address
@@ -285,6 +240,114 @@ impl CodeBlock {
         self.write_bytes(&RESERVED[..num_bytes]);
     }
 
+    /// Add an assembly comment if the feature is on.
+    pub fn add_comment(&mut self, comment: &str) {
+        if !self.keep_comments {
+            return;
+        }
+
+        let cur_ptr = self.get_write_ptr().raw_addr(self);
+
+        // If there's no current list of comments for this line number, add one.
+        let this_line_comments = self.asm_comments.entry(cur_ptr).or_default();
+
+        // Unless this comment is the same as the last one at this same line, add it.
+        if this_line_comments.last().map(String::as_str) != Some(comment) {
+            this_line_comments.push(comment.to_string());
+        }
+    }
+
+    fn invalidate_write_span(&mut self) {
+        self.writable_end = self.write_pos;
+    }
+
+    /// Size of the region in bytes that we have allocated physical memory for.
+    pub fn mapped_region_size(&self) -> usize {
+        self.mem_block.mapped_region_size()
+    }
+
+    /// Size of the region in bytes where writes could be attempted.
+    pub fn virtual_region_size(&self) -> usize {
+        self.mem_block.virtual_region_size()
+    }
+
+    pub fn comments_at(&self, pos: usize) -> Option<&Vec<String>> {
+        self.asm_comments.get(&pos)
+    }
+
+    pub fn get_write_pos(&self) -> usize {
+        self.write_pos
+    }
+
+    /// Get a (possibly dangling) direct pointer to the current write position
+    pub fn get_write_ptr(&self) -> CodePtr {
+        self.get_ptr(self.write_pos)
+    }
+
+    /// Set the current write position from a pointer
+    pub fn set_write_ptr(&mut self, code_ptr: CodePtr) {
+        let pos = code_ptr.as_offset() - self.mem_block.start_ptr().as_offset();
+        self.write_pos = pos.try_into().unwrap();
+        self.invalidate_write_span();
+    }
+
+    /// Invoke a callback with write_ptr temporarily adjusted to a given address
+    pub fn with_write_ptr(&mut self, code_ptr: CodePtr, callback: impl Fn(&mut CodeBlock)) -> Range<CodePtr> {
+        // Temporarily update the write_pos. Ignore the dropped_bytes flag at the old address.
+        let old_write_pos = self.write_pos;
+        let old_dropped_bytes = self.dropped_bytes;
+        self.set_write_ptr(code_ptr);
+        self.dropped_bytes = false;
+
+        // Invoke the callback
+        callback(self);
+
+        // Build a code range modified by the callback
+        let ret = code_ptr..self.get_write_ptr();
+
+        // Restore the original write_pos and dropped_bytes flag.
+        self.dropped_bytes = old_dropped_bytes;
+        self.write_pos = old_write_pos;
+        self.invalidate_write_span();
+        ret
+    }
+
+    /// Get a (possibly dangling) direct pointer into the executable memory block
+    pub fn get_ptr(&self, offset: usize) -> CodePtr {
+        self.mem_block.start_ptr().add_bytes(offset)
+    }
+
+    /// Check if bytes have been dropped (unwritten because of insufficient space)
+    pub fn has_dropped_bytes(&self) -> bool {
+        self.dropped_bytes
+    }
+
+    /// Set dropped_bytes to false if the current zjit_alloc_bytes() + code_region_size
+    /// + page_size is below --zjit-mem-size.
+    pub fn update_dropped_bytes(&mut self) {
+        if self.mem_block.can_allocate() {
+            self.dropped_bytes = false;
+
+            // Memory is available again, so let the interpreter resume
+            // triggering compilation.
+            update_zjit_compiling();
+        }
+    }
+
+    /// Allocate a new label with a given name
+    pub fn new_label(&mut self, name: impl Into<LabelName>) -> Label {
+        let name = name.into();
+        if let LabelName::Static(name) = name {
+            assert!(!name.contains(' '), "use underscores in label names, not spaces");
+        }
+
+        // This label doesn't have an address yet
+        self.label_addrs.push(0);
+        self.label_names.push(name);
+
+        Label(self.label_addrs.len() - 1)
+    }
+
     // Link internal label references
     pub fn link_labels(&mut self) -> Result<(), ()> {
         let orig_pos = self.write_pos;
@@ -294,12 +357,12 @@ impl CodeBlock {
         for label_ref in mem::take(&mut self.label_refs) {
             let ref_pos = label_ref.pos;
             let label_idx = label_ref.label.0;
-            assert!(ref_pos < self.mem_size);
+            assert!(ref_pos < self.virtual_region_size());
 
             let label_addr = self.label_addrs[label_idx];
-            assert!(label_addr < self.mem_size);
+            assert!(label_addr < self.virtual_region_size());
 
-            self.write_pos = ref_pos;
+            self.set_write_ptr(self.get_ptr(ref_pos));
             let encode_result = (label_ref.encode.as_ref())(self, (ref_pos + label_ref.num_bytes) as i64, label_addr as i64);
             link_result = link_result.and(encode_result);
 
@@ -311,6 +374,7 @@ impl CodeBlock {
         }
 
         self.write_pos = orig_pos;
+        self.invalidate_write_span();
 
         // Clear the label positions and references
         self.label_addrs.clear();
@@ -333,11 +397,13 @@ impl CodeBlock {
 
     /// Make all the code in the region executable. Call this at the end of a write session.
     pub fn mark_all_writable(&mut self) {
-        self.mem_block.borrow_mut().mark_all_writable();
+        self.invalidate_write_span();
+        self.mem_block.mark_all_writable();
     }
 
     pub fn mark_all_executable(&mut self) {
-        self.mem_block.borrow_mut().mark_all_executable();
+        self.invalidate_write_span();
+        self.mem_block.mark_all_executable();
     }
 
     /// Call a func with the disasm of generated code for testing
@@ -400,8 +466,7 @@ macro_rules! hexdumps {
 impl fmt::LowerHex for CodeBlock {
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
         for pos in 0..self.write_pos {
-            let mem_block = &*self.mem_block.borrow();
-            let byte = unsafe { mem_block.start_ptr().raw_ptr(mem_block).add(pos).read() };
+            let byte = unsafe { self.mem_block.base_ptr().as_ptr().add(pos).read() };
             fmtr.write_fmt(format_args!("{byte:02x}"))?;
         }
         Ok(())
@@ -419,13 +484,13 @@ impl CodeBlock {
     pub fn new_dummy_sized(mem_size: usize) -> Self {
         use crate::virtualmem::*;
         let virt_mem = VirtualMem::alloc(mem_size, None);
-        Self::new(Rc::new(RefCell::new(virt_mem)), false)
+        Self::new(virt_mem, false)
     }
 }
 
 impl crate::virtualmem::CodePtrBase for CodeBlock {
     fn base_ptr(&self) -> std::ptr::NonNull<u8> {
-        self.mem_block.borrow().base_ptr()
+        self.mem_block.base_ptr()
     }
 }
 
@@ -467,6 +532,352 @@ pub fn uimm_num_bits(uimm: u64) -> u8
 mod tests
 {
     use super::*;
+    use std::panic::{catch_unwind, AssertUnwindSafe};
+
+    fn page_size() -> usize {
+        unsafe { crate::cruby::rb_jit_get_page_size() as usize }
+    }
+
+    fn preparations(cb: &CodeBlock) -> usize {
+        cb.mem_block.write_span_preparations()
+    }
+
+    fn one_page_block() -> CodeBlock {
+        let page = page_size();
+        // Reserve two pages, but allow only the first to be mapped.
+        let limit = crate::stats::zjit_alloc_bytes() + page + page / 2;
+        let mem = VirtualMem::alloc(2 * page, Some(limit));
+        CodeBlock::new(mem, true)
+    }
+
+    #[test]
+    fn empty_writes_do_not_prepare_memory() {
+        let mut cb = CodeBlock::new_dummy();
+        cb.write_bytes(&[]);
+
+        assert_eq!(cb.get_write_pos(), 0);
+        assert_eq!(cb.mapped_region_size(), 0);
+        assert!(!cb.has_dropped_bytes());
+        assert_eq!(preparations(&cb), 0);
+    }
+
+    #[test]
+    fn byte_and_integer_helpers_reuse_the_writable_span() {
+        let mut cb = CodeBlock::new_dummy();
+        cb.write_byte(0xaa);
+        for bits in [8, 16, 24, 32, 64, 72] {
+            cb.write_int(0x123456789abcdef0, bits);
+        }
+
+        assert_eq!(cb.get_write_pos(), 28);
+        assert!(!cb.has_dropped_bytes());
+        assert_eq!(cb.hexdump(), "aaf0f0def0debcf0debc9af0debc9a78563412f0debc9a7856341200");
+        assert_eq!(preparations(&cb), 1);
+    }
+
+    #[test]
+    fn integer_byte_fallback_keeps_each_failed_attempt() {
+        let page = page_size();
+        let mut cb = one_page_block();
+        cb.set_write_ptr(cb.get_ptr(page - 3));
+
+        cb.write_int(0x123456789abcdef0, 64);
+        assert_eq!(cb.get_write_pos(), page);
+        assert!(cb.has_dropped_bytes());
+        // Prepare the first page once, then retry each of the five remaining bytes.
+        assert_eq!(preparations(&cb), 6);
+
+        let prefix = cb.get_ptr(page - 3).raw_ptr(&cb);
+        assert_eq!(unsafe { std::slice::from_raw_parts(prefix, 3) }, &[0xf0, 0xde, 0xbc]);
+    }
+
+    #[test]
+    fn many_small_writes_prepare_once_per_page_and_refill_lazily() {
+        let page = page_size();
+        let mut cb = CodeBlock::new_dummy();
+
+        for _ in 0..page / 8 {
+            cb.write_byte(1);
+            cb.write_bytes(&[2, 3, 4, 5, 6, 7, 8]);
+        }
+        assert_eq!(cb.get_write_pos(), page);
+        assert_eq!(cb.writable_end, page);
+        assert_eq!(preparations(&cb), 1);
+        assert_eq!(cb.mapped_region_size(), page);
+
+        cb.write_bytes(&[]);
+        assert_eq!(preparations(&cb), 1);
+
+        cb.write_byte(9);
+        assert_eq!(preparations(&cb), 2);
+        assert_eq!(cb.mapped_region_size(), 2 * page);
+
+        let actual = unsafe { std::slice::from_raw_parts(cb.get_ptr(0).raw_ptr(&cb), page + 1) };
+        for chunk in actual[..page].chunks_exact(8) {
+            assert_eq!(chunk, &[1, 2, 3, 4, 5, 6, 7, 8]);
+        }
+        assert_eq!(actual[page], 9);
+    }
+
+    #[test]
+    fn invalid_start_fails_only_on_nonempty_write() {
+        let mut cb = CodeBlock::new_dummy();
+        let end = cb.virtual_region_size();
+        cb.set_write_ptr(cb.get_ptr(end));
+
+        cb.write_bytes(&[]);
+        assert!(!cb.has_dropped_bytes());
+        assert_eq!(preparations(&cb), 0);
+
+        cb.write_bytes(&[1, 2]);
+        assert!(cb.has_dropped_bytes());
+        assert_eq!(cb.get_write_pos(), end);
+        assert_eq!(preparations(&cb), 1);
+        assert_eq!(cb.mapped_region_size(), 0);
+    }
+
+    #[test]
+    fn partial_progress_and_failures_are_live_and_sticky() {
+        let page = page_size();
+        let padding = vec![0xaa; page - 2];
+
+        let mut cb = one_page_block();
+        cb.write_bytes(&padding);
+        assert!(!cb.has_dropped_bytes());
+
+        cb.write_bytes(&[11, 22, 33, 44]);
+        assert_eq!(cb.get_write_pos(), page);
+        assert!(cb.has_dropped_bytes());
+
+        let count = preparations(&cb);
+        cb.write_byte(55);
+        assert_eq!(preparations(&cb), count + 1);
+
+        cb.write_bytes(&[]);
+        assert_eq!(preparations(&cb), count + 1);
+        let ptr = cb.get_ptr(page - 2).raw_ptr(&cb);
+        assert_eq!(unsafe { std::slice::from_raw_parts(ptr, 2) }, &[11, 22]);
+
+        cb.set_write_ptr(cb.get_ptr(0));
+        cb.write_byte(66);
+        assert_eq!(cb.hexdump(), "42");
+        assert!(cb.has_dropped_bytes());
+    }
+
+    #[test]
+    fn slices_match_vm_bulk_for_unaligned_and_cross_page_writes() {
+        let page = page_size();
+
+        for offset in [0, 1, page - 1, page, page + 1] {
+            for len in [0, 1, 4, page - 1, page, page + 1, 2 * page + 3] {
+                let input: Vec<u8> = (0..len).map(|i| (i % 251) as u8).collect();
+                let mut bulk = CodeBlock::new_dummy_sized(6 * page);
+                let mut cb = CodeBlock::new_dummy_sized(6 * page);
+                bulk.set_write_ptr(bulk.get_ptr(offset));
+                cb.set_write_ptr(cb.get_ptr(offset));
+
+                let ptr = bulk.get_ptr(offset);
+                bulk.mem_block.write_bytes(ptr, &input).unwrap();
+
+                bulk.write_pos += len;
+                cb.write_bytes(&input);
+                let pages = if len == 0 { 0 } else { (offset + len - 1) / page - offset / page + 1 };
+
+                assert_eq!(preparations(&cb), pages);
+
+                assert_eq!(cb.get_write_pos(), offset + len);
+                assert_eq!(cb.mapped_region_size(), bulk.mapped_region_size());
+                assert!(!cb.has_dropped_bytes());
+                if len > 0 { assert_eq!(cb.hexdump(), bulk.hexdump()); }
+            }
+        }
+    }
+
+    #[test]
+    fn live_addresses_comments_and_labels() {
+        let mut cb = CodeBlock::new_dummy();
+        cb.keep_comments = true;
+
+        let label = cb.new_label("target");
+        let start = cb.get_write_ptr();
+        let base = cb.base_ptr();
+        cb.add_comment("first");
+        cb.add_comment("first");
+        cb.write_byte(0xaa);
+        cb.write_bytes(&[0xbb, 0xcc]);
+        cb.write_label(label);
+
+        assert_eq!(cb.base_ptr(), base);
+        assert_eq!(cb.get_write_ptr(), start.add_bytes(3));
+        assert_eq!(cb.get_write_ptr().raw_addr(&cb), base.as_ptr() as usize + 3);
+        assert_eq!(cb.hexdump(), "aabbcc");
+
+        assert_eq!(cb.comments_at(start.raw_addr(&cb)).unwrap(), &["first"]);
+        assert_eq!(cb.resolve_label(label), start.add_bytes(3));
+    }
+
+    #[test]
+    fn unwinding_preserves_progress_labels_and_comments() {
+        let mut cb = CodeBlock::new_dummy();
+        cb.keep_comments = true;
+
+        let label = cb.new_label("target");
+        let start = cb.get_ptr(0);
+
+        assert!(catch_unwind(AssertUnwindSafe(|| {
+            cb.add_comment("before panic");
+            cb.label_ref(label, 4, |cb, _, _| { cb.write_bytes(&[1, 2, 3, 4]); Ok(()) });
+            cb.write_byte(5);
+            cb.write_label(label);
+            panic!("interrupt emission");
+        })).is_err());
+
+        assert_eq!(cb.get_write_pos(), 5);
+        assert_eq!(cb.resolve_label(label), cb.get_ptr(5));
+        assert_eq!(cb.comments_at(start.raw_addr(&cb)).unwrap(), &["before panic"]);
+        cb.link_labels().unwrap();
+        assert_eq!(cb.hexdump(), "0102030405");
+    }
+
+    #[test]
+    fn seeks_and_permission_changes_revalidate() {
+        let page = page_size();
+        let mut cb = CodeBlock::new_dummy();
+
+        cb.write_bytes(&[1, 2, 3, 4]);
+        cb.mark_all_executable();
+        assert_eq!(cb.writable_end, cb.write_pos);
+
+        cb.set_write_ptr(cb.get_ptr(1));
+        cb.write_byte(8);
+        assert_eq!(preparations(&cb), 2);
+
+        cb.mark_all_writable();
+        cb.write_byte(9);
+        assert_eq!(preparations(&cb), 3);
+
+        cb.set_write_ptr(cb.get_ptr(page + 1));
+        cb.write_byte(7);
+        assert_eq!(preparations(&cb), 4);
+
+        cb.set_write_ptr(cb.get_ptr(3));
+        cb.write_byte(6);
+        assert_eq!(preparations(&cb), 5);
+        assert_eq!(cb.hexdump(), "01080906");
+
+        cb.mark_all_executable();
+        cb.write_byte(5);
+        assert_eq!(cb.hexdump(), "0108090605");
+        assert_eq!(preparations(&cb), 6);
+    }
+
+    #[test]
+    fn with_write_ptr_invalidates_both_patch_and_restored_positions() {
+        let mut cb = CodeBlock::new_dummy();
+
+        cb.write_bytes(&[1, 2, 3, 4]);
+        cb.mark_all_executable();
+        let patch = cb.get_ptr(1);
+        let range = cb.with_write_ptr(patch, |cb| cb.write_bytes(&[8, 9]));
+        assert_eq!(range, patch..patch.add_bytes(2));
+
+        assert_eq!(cb.get_write_pos(), 4);
+        assert_eq!(cb.writable_end, 4);
+
+        cb.write_byte(5);
+        assert_eq!(preparations(&cb), 3);
+
+        assert_eq!(cb.hexdump(), "0108090405");
+    }
+
+    #[test]
+    fn moving_code_block_keeps_memory_metadata_and_span_together() {
+        let mut cb = CodeBlock::new_dummy();
+        cb.keep_comments = true;
+        let label = cb.new_label("target");
+        cb.add_comment("before move");
+        cb.write_byte(1);
+        cb.write_label(label);
+        let base = cb.base_ptr();
+
+        let mut boxed = Box::new(cb);
+        boxed.write_byte(2);
+        let mut cb = *boxed;
+        cb.write_byte(3);
+
+        assert_eq!(cb.base_ptr(), base);
+        assert_eq!(cb.resolve_label(label), cb.get_ptr(1));
+        assert_eq!(cb.comments_at(cb.get_ptr(0).raw_addr(&cb)).unwrap(), &["before move"]);
+        assert_eq!(cb.hexdump(), "010203");
+        assert_eq!(preparations(&cb), 1);
+    }
+
+    #[test]
+    fn replacing_code_block_keeps_each_memory_and_span_independent() {
+        let mut cb = CodeBlock::new_dummy();
+        cb.write_byte(1);
+        let mut previous = mem::replace(&mut cb, CodeBlock::new_dummy());
+
+        cb.write_bytes(&[8, 9]);
+        previous.mark_all_executable();
+        cb.write_byte(10);
+        previous.write_byte(2);
+
+        assert_ne!(cb.base_ptr(), previous.base_ptr());
+        assert_eq!(cb.hexdump(), "08090a");
+        assert_eq!(previous.hexdump(), "0102");
+        assert_eq!(preparations(&cb), 1);
+        assert_eq!(preparations(&previous), 2);
+    }
+
+    #[test]
+    fn linking_restores_cursor_and_invalidates_span() {
+        let mut cb = CodeBlock::new_dummy();
+        let label = cb.new_label("end");
+        cb.label_ref(label, 4, |cb, end, dst| {
+            assert_eq!((end, dst), (4, 5));
+            cb.write_bytes(&[1, 2, 3, 4]);
+            Ok(())
+        });
+
+        cb.write_byte(5);
+        cb.write_label(label);
+        cb.link_labels().unwrap();
+        assert_eq!(cb.get_write_pos(), 5);
+        assert_eq!(cb.writable_end, 5);
+
+        cb.write_byte(6);
+        assert_eq!(cb.hexdump(), "010203040506");
+        assert_eq!(preparations(&cb), 3);
+    }
+
+    #[test]
+    fn dropped_bytes_recovery_checks_memory_budget() {
+        for (limit, dropped) in [(0, true), (usize::MAX, false)] {
+            // Explicit budgets make the result independent of Rust heap usage.
+            let mem = VirtualMem::alloc(1024 * 1024, Some(limit));
+            let mut cb = CodeBlock::new(mem, false);
+            cb.dropped_bytes = true;
+            cb.update_dropped_bytes();
+            assert_eq!(cb.has_dropped_bytes(), dropped);
+        }
+    }
+
+    #[test]
+    fn panic_in_patch_preserves_progress() {
+        let mut cb = CodeBlock::new_dummy();
+
+        let label = cb.new_label("end");
+        cb.label_ref(label, 2, |cb, _, _| { cb.write_byte(1); panic!("patch"); });
+        cb.write_label(label);
+
+        assert!(catch_unwind(AssertUnwindSafe(|| cb.link_labels())).is_err());
+        assert_eq!(cb.get_write_pos(), 1);
+        assert_eq!(cb.hexdump(), "01");
+        cb.write_byte(2);
+        assert_eq!(cb.hexdump(), "0102");
+        assert_eq!(preparations(&cb), 2);
+    }
 
     #[test]
     fn test_imm_num_bits()
@@ -500,13 +911,130 @@ mod tests
     }
 
     #[test]
+    fn link_labels_revalidates_each_patch_and_restores_position() {
+        let page_size = unsafe { crate::cruby::rb_jit_get_page_size() } as usize;
+        let mut cb = CodeBlock::new_dummy();
+        let label = cb.new_label("target");
+
+        // Deliberately register patches in nonsequential page order.
+        for offset in [page_size + 8, 4, page_size - 2] {
+            cb.set_write_ptr(cb.get_ptr(offset));
+
+            cb.label_ref(label, 4, move |cb, end, dst| {
+                assert_eq!(cb.get_write_pos(), offset);
+                assert_eq!(end, (offset + 4) as i64);
+                assert_eq!(dst, (page_size + 16) as i64);
+                cb.write_bytes(&[1, 2, 3, 4]);
+                assert_eq!(cb.get_write_pos(), offset + 4);
+                Ok(())
+            });
+        }
+
+        cb.set_write_ptr(cb.get_ptr(page_size + 16));
+        cb.write_label(label);
+        cb.mark_all_executable();
+
+        let count = preparations(&cb);
+        cb.link_labels().unwrap();
+        assert_eq!(cb.get_write_pos(), page_size + 16);
+        assert!(!cb.has_dropped_bytes());
+
+        // One fresh span per patch, plus the crossing patch's second page.
+        assert_eq!(preparations(&cb), count + 4);
+        for offset in [page_size + 8, 4, page_size - 2] {
+            let ptr = cb.get_ptr(offset).raw_ptr(&cb);
+            assert_eq!(unsafe { std::slice::from_raw_parts(ptr, 4) }, &[1, 2, 3, 4]);
+        }
+
+        assert!(cb.label_addrs.is_empty());
+        assert!(cb.label_names.is_empty());
+        assert!(cb.label_refs.is_empty());
+        cb.mark_all_executable();
+    }
+
+    #[test]
+    fn link_labels_keeps_errors_and_continues_patching() {
+        let mut cb = CodeBlock::new_dummy();
+
+        let label = cb.new_label("target");
+        cb.label_ref(label, 4, |cb, _, _| {
+            // Failed encoders can fail before filling their reservations
+            cb.write_byte(0xaa);
+            Err(())
+        });
+
+        cb.label_ref(label, 4, |cb, _, _| {
+            cb.write_bytes(&[1, 2, 3, 4]);
+            Ok(())
+        });
+
+        cb.write_label(label);
+
+        // Seed a pre-existing write failure; encoder Err(()) is a separate error.
+        // Linking must preserve this flag through every patch.
+        cb.dropped_bytes = true;
+        assert_eq!(cb.link_labels(), Err(()));
+        assert_eq!(cb.get_write_pos(), 8);
+        assert!(cb.has_dropped_bytes());
+        assert_eq!(cb.hexdump(), "aa00000001020304");
+
+        assert!(cb.label_refs.is_empty());
+        assert!(cb.label_addrs.is_empty());
+        assert!(cb.label_names.is_empty());
+
+        // Linking labels works since no pending references remain.
+        assert_eq!(cb.link_labels(), Ok(()));
+        // However dropped_bytes are not cleared.
+        assert!(cb.has_dropped_bytes());
+    }
+
+    #[test]
+    #[should_panic(expected = "callback didn't write number of bytes")]
+    fn link_labels_checks_successful_patch_length() {
+        let mut cb = CodeBlock::new_dummy();
+        let label = cb.new_label("target");
+
+        cb.label_ref(label, 4, |cb, _, _| {
+            cb.write_byte(1);
+            Ok(())
+        });
+        cb.link_labels().unwrap();
+    }
+
+    #[test]
+    fn link_labels_commits_patch_failure_and_restores_position() {
+        let page_size = unsafe { crate::cruby::rb_jit_get_page_size() } as usize;
+        let mut cb = CodeBlock::new_dummy_sized(2 * page_size);
+        let label = cb.new_label("target");
+
+        cb.set_write_ptr(cb.get_ptr(page_size - 2));
+
+        // Reserve only the writable prefix, then let the encoder overrun.
+        cb.label_ref(label, 2, |cb, _, _| {
+            cb.write_bytes(&[1, 2, 3, 4]);
+            assert!(cb.has_dropped_bytes());
+            assert_eq!(cb.get_write_pos(), cb.virtual_region_size() / 2);
+            Err(())
+        });
+
+        cb.set_write_ptr(cb.get_ptr(0));
+        assert_eq!(cb.link_labels(), Err(()));
+        assert_eq!(cb.get_write_pos(), 0);
+        assert!(cb.has_dropped_bytes());
+
+        let ptr = cb.get_ptr(page_size - 2).raw_ptr(&cb);
+        assert_eq!(unsafe { std::slice::from_raw_parts(ptr, 2) }, &[1, 2]);
+        assert!(cb.label_refs.is_empty());
+    }
+
+    #[test]
     fn test_label_ref_at_an_unmappable_page_sets_dropped_bytes() {
         // Two pages of address space, but a memory limit that only lets
         // the first page be mapped.
         let page_size = unsafe { crate::cruby::rb_jit_get_page_size() } as usize;
         let limit = crate::stats::zjit_alloc_bytes() + page_size + page_size / 2;
         let virt_mem = VirtualMem::alloc(2 * page_size, Some(limit));
-        let mut cb = CodeBlock::new(Rc::new(RefCell::new(virt_mem)), false);
+        let mut cb = CodeBlock::new(virt_mem, false);
 
         // Fill the mappable page up to 2 bytes below its end, so that
         // a 5-byte jump reservation straddles into the unmappable page.
