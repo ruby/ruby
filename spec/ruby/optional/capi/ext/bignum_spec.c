@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 static VALUE bignum_spec_rb_big2dbl(VALUE self, VALUE num) {
+  Check_Type(num, T_BIGNUM);
   return rb_float_new(rb_big2dbl(num));
 }
 
@@ -16,30 +17,37 @@ static VALUE bignum_spec_rb_dbl2big(VALUE self, VALUE num) {
 }
 
 static VALUE bignum_spec_rb_big2ll(VALUE self, VALUE num) {
+  Check_Type(num, T_BIGNUM);
   return rb_ll2inum(rb_big2ll(num));
 }
 
 static VALUE bignum_spec_rb_big2ull(VALUE self, VALUE num) {
+  Check_Type(num, T_BIGNUM);
   return rb_ull2inum(rb_big2ull(num));
 }
 
 static VALUE bignum_spec_rb_big2long(VALUE self, VALUE num) {
+  Check_Type(num, T_BIGNUM);
   return LONG2NUM(rb_big2long(num));
 }
 
 static VALUE bignum_spec_rb_big2str(VALUE self, VALUE num, VALUE base) {
+  Check_Type(num, T_BIGNUM);
   return rb_big2str(num, FIX2INT(base));
 }
 
 static VALUE bignum_spec_rb_big2ulong(VALUE self, VALUE num) {
+  Check_Type(num, T_BIGNUM);
   return ULONG2NUM(rb_big2ulong(num));
 }
 
 static VALUE bignum_spec_RBIGNUM_SIGN(VALUE self, VALUE val) {
+  Check_Type(val, T_BIGNUM);
   return INT2FIX(RBIGNUM_SIGN(val));
 }
 
 static VALUE bignum_spec_rb_big_cmp(VALUE self, VALUE x, VALUE y) {
+  Check_Type(x, T_BIGNUM);
   return rb_big_cmp(x, y);
 }
 

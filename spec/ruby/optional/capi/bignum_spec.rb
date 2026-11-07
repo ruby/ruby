@@ -26,6 +26,10 @@ describe "CApiBignumSpecs" do
   end
 
   describe "rb_big2long" do
+    it "raises TypeError for a non-Bignum argument" do
+      -> { @s.rb_big2long(0) }.should.raise(TypeError)
+    end
+
     it "handles Bignum values at the long boundary" do
       if @max_long > @max_fixnum
         @s.rb_big2long(@max_long).should == @max_long
