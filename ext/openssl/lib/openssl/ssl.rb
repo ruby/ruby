@@ -15,7 +15,6 @@ require "openssl/buffering"
 if defined?(OpenSSL::SSL)
 
 require "io/wait" if RUBY_VERSION < "3.2"
-require "io/nonblock"
 require "ipaddr"
 require "socket"
 
