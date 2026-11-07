@@ -1447,6 +1447,34 @@ class TestRubyOptimization < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_new_string_initialize
+    assert_in_out_err([], <<~RUBY, ["OK"])
+      $VERBOSE = false
+      class String
+        def initialize foo:
+          super()
+          self << foo
+        end
+      end
+
+      puts String.new(foo: "OK")
+    RUBY
+  end
+
+  def test_opt_new_hash_initialize
+    assert_in_out_err([], <<~RUBY, ["OK"])
+      $VERBOSE = false
+      class Hash
+        def initialize
+          super()
+          self[:redefined] = "OK"
+        end
+      end
+
+      puts Hash.new[:redefined]
+    RUBY
+  end
+
   def test_opt_new_with_safe_navigation
     payload = nil
     assert_nil payload&.new
