@@ -491,6 +491,58 @@ assert_equal %q{[:ok, :ok2, :last]}, %q{
   end
   a
 }
+assert_equal %q{[0, 1, 2, 3, 4]}, %q{
+  a = []
+  for _ in [0]
+    a << 0
+    begin
+      a << 1
+      begin
+        a << 2
+        redo
+      ensure
+        a << 3
+      end
+    ensure
+      a << 4
+      break
+    end
+  end
+  a
+}
+assert_equal %q{[:inner, :outer]}, %q{
+  a = []
+  1.times do
+    begin
+      next
+    ensure
+      a << :inner
+    end
+  ensure
+    a << :outer
+    break
+  end
+  a
+}
+assert_equal %q{[:d3, :d2, :d1]}, %q{
+  a = []
+  1.times do
+    begin
+      begin
+        redo
+      ensure
+        a << :d3
+      end
+    ensure
+      a << :d2
+      break
+    end
+  ensure
+    a << :d1
+  end
+  a
+}
+
 assert_equal %Q{ENSURE\n}, %q{
   def test
     while true
