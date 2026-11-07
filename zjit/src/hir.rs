@@ -3247,19 +3247,21 @@ fn can_direct_invoke_block(flags: u32) -> bool {
 }
 
 /// Ok if `yield` with `argc` positional args can dispatch by inlining the block ISEQ
-/// frame. The block must take the simple callee-setup path (`rb_simple_iseq_p`)
-/// with an exact arity match, avoid arg0 auto-splat, and contain no `throw` (break /
-/// non-local return). Anything else falls back to the generic `invokeblock` dispatch,
-/// with the returned reason attached to the fallback instruction.
+/// frame. The block must take the simple callee-setup path (`rb_simple_iseq_p`),
+/// avoid arg0 auto-splat, receive at least `lead_num` args, and contain no `throw`
+/// (break / non-local return). Like vm_callee_setup_block_arg, surplus args are
+/// dropped. Anything else falls back to the generic `invokeblock` dispatch, with the
+/// returned reason attached to the fallback instruction.
 fn can_direct_invoke_block_iseq(iseq: IseqPtr, argc: usize) -> Result<(), SendFallbackReason> {
     if !unsafe { rb_simple_iseq_p(iseq) } {
         return Err(InvokeBlockNotSpecialized);
     }
     let lead_num = unsafe { rb_get_iseq_body_param_lead_num(iseq) } as usize;
-    if argc != lead_num {
+    if argc < lead_num {
         return Err(InvokeBlockNotSpecialized);
     }
-    if argc == 1 && !unsafe { rb_get_iseq_flags_ambiguous_param0(iseq) } {
+    // A single arg may be auto-splatted when the block has lead params, unless it is `|a|`.
+    if argc == 1 && lead_num > 0 && !unsafe { rb_get_iseq_flags_ambiguous_param0(iseq) } {
         return Err(InvokeBlockNotSpecialized);
     }
     if crate::codegen::block_iseq_may_throw(iseq) {

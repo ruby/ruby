@@ -5082,6 +5082,176 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_yield_surplus_arg_to_block_without_params_inlines_invocation() {
+        // Like vm_callee_setup_block_arg, a non-lambda block drops surplus args, so `yield 1`
+        // into a block without params dispatches directly. The arg is still evaluated.
+        let result = eval("
+            def foo = yield 1
+            def test = foo { 4 }
+            test
+            test
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(4), result);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame :foo, v18 (0x1038), num_args=0, block=0x1058
+          v25:Fixnum[1] = Const Value(1)
+          v27:CPtr = GetEP 0
+          v28:CInt64 = LoadField v27, :VM_ENV_DATA_INDEX_SPECVAL@0x1078
+          v29:CInt64[-4] = Const CInt64(-4)
+          v30:CInt64 = IntAnd v28, v29
+          v31:BasicObject = InvokeBlockIseqDirect (0x1058), v30, v25
+          PopInlineFrame
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn test_yield_surplus_args_dispatches_directly() {
+        // The block's ISEQ is guarded, so passing only its lead_num args is safe. With two args,
+        // `|a|` takes the first one; arg0 auto-splat only applies to a single arg.
+        eval("
+            def foo = yield(1, 2)
+            def test = foo { |a| a }
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("foo"), @"
+        fn foo@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[1] = Const Value(1)
+          v12:Fixnum[2] = Const Value(2)
+          v14:CPtr = GetEP 0
+          v15:CInt64 = LoadField v14, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
+          v16:CInt64[3] = Const CInt64(3)
+          v17:CInt64 = IntAnd v15, v16
+          v18:CInt64[1] = GuardBitEquals v17, CInt64(1) recompile
+          v19:CInt64[-4] = Const CInt64(-4)
+          v20:CInt64 = IntAnd v15, v19
+          v21:Iseq = LoadField v20, :code_iseq@0x1001
+          v22:Iseq[VALUE(0x1008)] = GuardBitEquals v21, Value(VALUE(0x1008)) recompile
+          v23:BasicObject = InvokeBlockIseqDirect (0x1008), v20, v10, v12
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_yield_polymorphic_blocks_with_fewer_params_dispatch_directly() {
+        eval("
+            def foo = yield(1, 2)
+            def no_params = foo { 0 }
+            def one_param = foo { |a| a }
+            no_params; one_param
+            no_params; one_param
+        ");
+        assert_snapshot!(hir_string("foo"), @"
+        fn foo@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[1] = Const Value(1)
+          v12:Fixnum[2] = Const Value(2)
+          v14:CPtr = GetEP 0
+          v15:CInt64 = LoadField v14, :VM_ENV_DATA_INDEX_SPECVAL@0x1000
+          v16:CInt64[3] = Const CInt64(3)
+          v17:CInt64 = IntAnd v15, v16
+          v19:CInt64[1] = Const CInt64(1)
+          v20:CBool = IsBitEqual v17, v19
+          CondBranch v20, bb5(), bb6()
+        bb5():
+          v22:CInt64[-4] = Const CInt64(-4)
+          v23:CInt64 = IntAnd v15, v22
+          v24:Iseq = LoadField v23, :code_iseq@0x1001
+          v25:Iseq[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v26:CBool = IsBitEqual v24, v25
+          CondBranch v26, bb7(), bb8()
+        bb7():
+          v28:BasicObject = InvokeBlockIseqDirect (0x1008), v23, v10, v12
+          Jump bb4(v28)
+        bb8():
+          v30:Iseq[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v31:CBool = IsBitEqual v24, v30
+          CondBranch v31, bb9(), bb10()
+        bb9():
+          v33:BasicObject = InvokeBlockIseqDirect (0x1010), v23, v10, v12
+          Jump bb4(v33)
+        bb10():
+          Jump bb6()
+        bb6():
+          v36:CInt64[3] = Const CInt64(3)
+          v37:CBool = IsBitEqual v17, v36
+          CondBranch v37, bb12(), bb13()
+        bb12():
+          v40:BasicObject = InvokeBlockIfunc v15, v10, v12
+          Jump bb11(v40)
+        bb13():
+          v42:BasicObject = InvokeBlock v10, v12 # SendFallbackReason: InvokeBlock: polymorphic dispatch miss
+          Jump bb11(v42)
+        bb11(v38:BasicObject):
+          Jump bb4(v38)
+        bb4(v18:BasicObject):
+          CheckInterrupts
+          Return v18
+        ");
+    }
+
+    #[test]
+    fn test_integer_times_without_block_param_invokes_block_directly() {
+        // Integer#times does `yield i`; a block without params used to fall back.
+        eval("
+            def test = 3.times { }
+            test
+            test
+        ");
+        let hir = hir_string_proc("3.method(:times)");
+        assert!(hir.contains("InvokeBlockIseqDirect"), "{hir}");
+        assert!(!hir.contains("SendFallbackReason: InvokeBlock"), "{hir}");
+    }
+
+    #[test]
+    fn test_yield_single_arg_to_multiple_params_falls_back() {
+        // A single arg may be auto-splatted into `|a, b|` or `|a,|`, which needs a runtime
+        // check (and possibly a to_ary call), so these keep the generic invokeblock.
+        eval("
+            def foo = yield [1, 2]
+            def two_params = foo { |a, b| a }
+            def trailing_comma = foo { |a,| a }
+            two_params; trailing_comma
+            two_params; trailing_comma
+        ");
+        let hir = hir_string("foo");
+        assert!(!hir.contains("InvokeBlockIseqDirect"), "{hir}");
+        assert!(hir.contains("SendFallbackReason: InvokeBlock: not yet specialized"), "{hir}");
+    }
+
+    #[test]
     fn test_specialize_yield_with_more_args_than_abi_registers() {
         // Captured self plus eight args don't fit in C argument registers (6 on x86_64,
         // 8 on arm64); the profiled invokeblock specialization still emits

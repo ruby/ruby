@@ -903,14 +903,16 @@ fn test_optional_arguments_cyclic() {
 
 #[test]
 fn test_getblockparamproxy() {
+    // Pass the same block ISEQ on every call so the `yield` in Kernel#then doesn't miss its ISEQ guard.
     eval("
         def test(&block)
           0.then(&block)
         end
-        test { 1 }
+        def with_block = test { 1 }
+        with_block
     ");
     assert_contains_opcode("test", YARVINSN_getblockparamproxy);
-    assert_snapshot!(assert_compiles("test { 1 }"), @"1");
+    assert_snapshot!(assert_compiles("with_block"), @"1");
 }
 
 #[test]
@@ -947,11 +949,13 @@ fn test_getblockparamproxy_polymorphic_none_and_iseq() {
         def test(&block)
           0.then(&block)
         end
+        def with_block(n) = test { n }
         test
-        test { 1 }
+        with_block(1)
+        with_block(1)
     ");
     assert_contains_opcode("test", YARVINSN_getblockparamproxy);
-    assert_snapshot!(assert_compiles("test { 2 }"), @"2");
+    assert_snapshot!(assert_compiles("with_block(2)"), @"2");
 }
 
 #[test]
@@ -1215,6 +1219,70 @@ fn test_yield_inline_invocation_live_stack_below_args() {
         test
     ");
     assert_snapshot!(assert_compiles("test"), @"13");
+}
+
+#[test]
+fn test_yield_surplus_args_to_blocks_with_fewer_params() {
+    // Blocks drop surplus args like vm_callee_setup_block_arg. With two args, `|a,|` and
+    // `|a, b|` don't auto-splat the Array in arg0.
+    set_call_threshold(2);
+    eval("
+        def foo = yield([1, 2], 3)
+        def one_param = foo { |a| a }
+        def no_params = foo { :none }
+        def trailing_comma = foo { |a,| a }
+        def two_params = foo { |a, b| [a, b] }
+        def one = yield 1
+        def one_no_params = one { :none }
+        def test = [one_param, no_params, trailing_comma, two_params, one_no_params]
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"[[1, 2], :none, [1, 2], [[1, 2], 3], :none]");
+}
+
+#[test]
+fn test_yield_evaluates_dropped_args() {
+    set_call_threshold(2);
+    eval("
+        def foo(log) = yield(log << :first, log << :dropped)
+        def test
+          log = []
+          [foo(log) { |a| a.size }, foo(log) { log.size }, log]
+        end
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"[2, 4, [:first, :dropped, :first, :dropped]]");
+}
+
+#[test]
+fn test_integer_times_without_block_param() {
+    set_call_threshold(2);
+    eval("
+        def test
+          n = 0
+          3.times { n += 1 }
+          n
+        end
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"3");
+}
+
+#[test]
+fn test_yield_surplus_args_to_lambda_raises() {
+    // A lambda passed with & is a Proc block handler, so it keeps the generic path and
+    // still rejects surplus args.
+    set_call_threshold(2);
+    eval("
+        def foo = yield(1, 2)
+        def test
+          foo(&->(a) { a })
+        rescue ArgumentError => e
+          e.message
+        end
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @r#""wrong number of arguments (given 2, expected 1)""#);
 }
 
 #[test]
@@ -1596,9 +1664,11 @@ fn test_yield_autosplat() {
     eval("
         def via_yield = yield([3, 4])
         def test_yield = via_yield { |a, b| a + b }
-        test_yield; test_yield
+        def via_yield_trailing = yield([3, 4])
+        def test_trailing_comma = via_yield_trailing { |a,| a }
+        test_yield; test_yield; test_trailing_comma; test_trailing_comma
     ");
-    assert_snapshot!(assert_compiles_allowing_exits("test_yield"), @"7");
+    assert_snapshot!(assert_compiles_allowing_exits("[test_yield, test_trailing_comma]"), @"[7, 3]");
 }
 
 #[test]
