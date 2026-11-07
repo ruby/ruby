@@ -1,0 +1,12 @@
+prelude: |
+  range = (1..1000)
+  hash = (1..1000).to_h { |i| [i, i] }
+benchmark:
+  lazy_map: range.lazy.map { |x| x * 2 }.first(1000)
+  lazy_map_select: range.lazy.map { |x| x * 2 }.select { |x| x % 4 == 0 }.first(250)
+  lazy_filter_map: range.lazy.filter_map { |x| x * 2 if x.even? }.first(500)
+  lazy_flat_map: range.lazy.flat_map { |x| [x, x] }.first(2000)
+  lazy_hash_map_packed: hash.lazy.map { |k, v| k + v }.first(1000)
+  lazy_with_index: range.lazy.with_index.first(1000)
+  lazy_uniq: range.lazy.uniq.first(1000)
+loop_count: 1000
