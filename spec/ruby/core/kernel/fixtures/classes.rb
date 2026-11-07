@@ -453,6 +453,63 @@ module KernelSpecs
     def -(other); to_f - other.to_f; end
     def +(other); self.class.new(to_f + other.to_f); end
   end
+
+  class DeepFreezeIvars
+    attr_reader :a, :b
+
+    def initialize(a, b)
+      @a = a
+      @b = b
+    end
+  end
+
+  class DeepFreezeHook
+    class << self
+      attr_accessor :freeze_calls
+    end
+    self.freeze_calls = 0
+
+    def freeze
+      self.class.freeze_calls += 1
+      super
+    end
+  end
+
+  class DeepFreezeCache
+    attr_reader :cache
+
+    def initialize(value)
+      @value = value
+    end
+
+    def freeze
+      @cache = @value.upcase
+      super
+    end
+  end
+
+  class DeepFreezeObjectId
+    def initialize(parent)
+      @parent = parent
+    end
+
+    def freeze
+      @parent.object_id
+      super
+    end
+  end
+
+  class DeepFreezeNoFreeze
+    def freeze
+      self
+    end
+  end
+
+  class DeepFreezeRaise
+    def freeze
+      raise "boom"
+    end
+  end
 end
 
 class EvalSpecs
