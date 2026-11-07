@@ -214,6 +214,47 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(o.method(:foo), o.method(:foo))
     assert_equal(o.method(:foo), o.method(:bar))
     assert_not_equal(o.method(:foo), o.method(:baz))
+
+    m = Module.new { def m = [:M, *super] }
+    n = Module.new { include m }
+    c = Class.new { def m = :C }
+    sc = Class.new(c) do
+      include n
+      prepend m
+      def m = [:SC, *super]
+    end
+
+    expected = [:M, :SC, :M, :C]
+    o = sc.new
+    meth = o.method(:m)
+    umeth = o.class.instance_method(:m)
+    assert_equal(expected, o.m)
+    assert_equal(expected, meth.call)
+    assert_equal(expected, umeth.bind_call(o))
+
+    super_method = ->(m) do
+      sm = m.super_method
+      if m.is_a?(Method)
+        assert_equal(m.unbind.super_method, sm.unbind)
+        v = m.call
+        assert_equal(expected[-v.size...], Array(v))
+      else
+        assert_equal(m.bind(o).super_method, sm.bind(o))
+        v = m.bind_call(o)
+        assert_equal(expected[-v.size...], Array(v))
+      end
+      sm
+    end
+    [meth, umeth].each do |meth|
+      assert_equal(m, meth.owner)
+      meth = super_method.(meth)
+      assert_equal(sc, meth.owner)
+      meth = super_method.(meth)
+      assert_equal(m, meth.owner)
+      meth = super_method.(meth)
+      assert_equal(c, meth.owner)
+      assert_nil(meth.super_method)
+    end
   end
 
   def test_hash
@@ -310,6 +351,42 @@ class TestMethod < Test::Unit::TestCase
     feature4254 = '[ruby-core:34267]'
     m = M.instance_method(:meth)
     assert_equal(:meth, m.bind(Object.new).call, feature4254)
+  end
+
+  def test_bind_superclass_method_on_subclass_instance_with_same_prepend
+    m = Module.new do
+      def m = [:m, *super]
+    end
+    c = Class.new do
+      prepend m
+      def m = [:c]
+    end
+    sc = Class.new(c) do
+      prepend m
+      def m = [:sc, *super]
+    end
+
+    expected = [:m, :c]
+    o = sc.new
+    um = c.instance_method(:m)
+    assert_equal(expected, um.bind_call(o))
+    assert_equal(expected, um.bind(o).unbind.bind_call(o))
+
+    expected = [:m, :sc, :m, :c]
+    assert_equal(expected, o.m)
+
+    m = o.method(:m)
+    um = sc.instance_method(:m)
+    assert_equal(expected, m.call)
+    assert_equal(expected, um.bind_call(o))
+
+    3.times do
+      expected.shift
+      m = m.super_method
+      um = um.super_method
+      assert_equal(expected, m.call)
+      assert_equal(expected, um.bind_call(o))
+    end
   end
 
   def test_define_method
