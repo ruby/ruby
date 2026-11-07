@@ -1,7 +1,13 @@
 prelude: |
   # frozen_string_literal: true
   time = Time.now
+  utc_time = Time.now.utc
 benchmark:
   - time.strftime("%FT%T")     # 19B
   - time.strftime("%FT%T.%3N") # 23B
   - time.strftime("%FT%T.%6N") # 26B
+  - time.strftime("%Y-%m-%d %H:%M:%S")
+  - time.strftime("%Y-%m-%dT%H:%M:%S.%6N")
+  - utc_time.strftime("%Y%m%d%H%M%S%6N")
+  - time.strftime("%a, %d %b %Y %H:%M:%S %z")
+  - time.strftime("%B %-d, %Y")
