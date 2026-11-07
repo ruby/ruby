@@ -15,6 +15,18 @@ class TestRubyVM < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) {RubyVM.stat(:"\u{30eb 30d3 30fc}")}
   end
 
+  def test_disable_shape_redblack_cache
+    code = "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      obj = Object.new
+      20.times { |i| obj.instance_variable_set(:"@a#{i}", i) }
+      assert_equal 19, obj.instance_variable_get(:@a19)
+    end;
+
+    assert_separately([], code + "assert_operator RubyVM.stat(:shape_cache_size), :>, 0")
+    assert_separately([{"RUBY_SHAPE_REDBLACK_CACHE" => "disable"}], code + "assert_equal 0, RubyVM.stat(:shape_cache_size)")
+  end if RUBY_PLATFORM.include?("linux")
+
   def parse_and_compile
     script = <<~RUBY
       _a = 1
