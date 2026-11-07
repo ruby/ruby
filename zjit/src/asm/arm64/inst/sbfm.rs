@@ -43,6 +43,18 @@ impl SBFM {
         Self { rd, rn, immr: shift, imms, n, sf: num_bits.into() }
     }
 
+    /// SXTB
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SXTB--Sign-Extend-Byte--an-alias-of-SBFM-->
+    pub fn sxtb(rd: u8, rn: u8) -> Self {
+        Self { rd, rn, immr: 0, imms: 7, n: true, sf: Sf::Sf64 }
+    }
+
+    /// SXTH
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SXTH--Sign-Extend-Halfword--an-alias-of-SBFM-->
+    pub fn sxth(rd: u8, rn: u8) -> Self {
+        Self { rd, rn, immr: 0, imms: 15, n: true, sf: Sf::Sf64 }
+    }
+
     /// SXTW
     /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SXTW--Sign-Extend-Word--an-alias-of-SBFM-?lang=en>
     pub fn sxtw(rd: u8, rn: u8) -> Self {
@@ -92,6 +104,20 @@ mod tests {
         let inst = SBFM::asr(10, 11, 5, 64);
         let result: u32 = inst.into();
         assert_eq!(0x9345fd6a, result);
+    }
+
+    #[test]
+    fn test_sxtb() {
+        let inst = SBFM::sxtb(0, 1);
+        let result: u32 = inst.into();
+        assert_eq!(0x93401c20, result);
+    }
+
+    #[test]
+    fn test_sxth() {
+        let inst = SBFM::sxth(0, 1);
+        let result: u32 = inst.into();
+        assert_eq!(0x93403c20, result);
     }
 
     #[test]
