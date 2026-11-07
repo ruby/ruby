@@ -23,6 +23,14 @@ def min_long
   -(2**(PlatformGuard::C_LONG_SIZE - 1))
 end
 
+def max_rb_len_t
+  2**(PlatformGuard::RB_LEN_T_SIZE - 1) - 1
+end
+
+def min_rb_len_t
+  -(2**(PlatformGuard::RB_LEN_T_SIZE - 1))
+end
+
 # Larger than the longest String or Array, whose lengths are pointer-sized
 def max_length
   2**(PlatformGuard::POINTER_SIZE - 1) - 1
