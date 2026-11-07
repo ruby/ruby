@@ -8447,6 +8447,29 @@ fn test_singleton_class_invalidation_optimized_variadic_ccall() {
 }
 
 #[test]
+fn test_singleton_class_invalidation_extend() {
+    assert_snapshot!(inspect("
+        PUSH_OVERRIDE = Module.new do
+          def push(x) = super(x * 1000)
+        end
+        def maybe_extend(arr, extend)
+          arr.extend(PUSH_OVERRIDE) if extend
+          1
+        end
+        def test(extend)
+          arr = []
+          val = maybe_extend(arr, extend)
+          arr.push(val)
+          arr[0]
+        end
+        result = []
+        result << test(false)
+        result << test(true)
+        result
+    "), @"[1, 1000]");
+}
+
+#[test]
 fn test_is_a_string_special_case() {
     assert_snapshot!(inspect(r#"
         def test(x)

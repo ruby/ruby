@@ -889,6 +889,81 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  # [Bug #22465] Extending an object that has no singleton class skips method
+  # cache invalidation. Call sites that saw the object before still find the
+  # module's methods, because the object's class changes.
+  def test_extend_without_singleton_class_with_warm_call_sites
+    inner = Module.new { def fetch(*) = [:inner, super] }
+    outer = Module.new do
+      include inner
+      def fetch(*) = [:outer, super]
+      def outer_only = :outer_only
+    end
+    lookup = ->(h) { h.fetch(0, :default) }
+    call_outer_only = ->(o) { o.outer_only rescue :no_method }
+
+    h = {0 => :zero}
+    3.times do
+      assert_equal(:zero, lookup.(h))
+      assert_equal(:no_method, call_outer_only.(h))
+    end
+
+    h.extend(outer)
+    assert_equal([h.singleton_class, outer, inner, Hash], h.singleton_class.ancestors.first(4))
+    assert_equal([:outer, [:inner, :zero]], lookup.(h))
+    assert_equal(:outer_only, call_outer_only.(h))
+    assert_equal(:default, lookup.({}))
+  end
+
+  def test_extend_without_singleton_class_then_modify_module
+    m = Module.new
+    call = ->(o) { o.added_later rescue :no_method }
+    o = Object.new
+    o.extend(m)
+    assert_equal(:no_method, call.(o))
+    m.define_method(:added_later) { :added_later }
+    assert_equal(:added_later, call.(o))
+    m.remove_method(:added_later)
+    assert_equal(:no_method, call.(o))
+  end
+
+  def test_extend_chilled_string_with_warning_hook
+    # Extending a chilled string runs Warning.warn before extend checks for a
+    # singleton class. The hook makes one and caches a lookup through it, so
+    # extend has to take the path that invalidates.
+    assert_separately([], <<~'RUBY')
+      str = "chilled literal"
+      omit "string literals are frozen" if str.frozen?
+      call_upcase = ->(s) { s.upcase }
+      m = Module.new { def upcase = :extended }
+      Warning[:deprecated] = true
+      def Warning.warn(*)
+        $hook.()
+      end
+      $hook = -> do
+        str.singleton_class
+        call_upcase.(str)
+      end
+      str.extend(m)
+      assert_equal(:extended, call_upcase.(str))
+    RUBY
+  end
+
+  def test_extend_multiple_modules_with_extended_hook
+    call = ->(o) { o.which }
+    a = Module.new { def which = :a }
+    b = Module.new do
+      def which = :b
+      def self.extended(obj)
+        @seen = obj.which
+      end
+    end
+    o = Object.new
+    o.extend(a, b) # extends with b first, then a
+    assert_equal(:b, b.instance_variable_get(:@seen))
+    assert_equal(:a, call.(o))
+  end
+
   def test_to_s
     x = eval(<<-EOS)
       class ToS\u{3042}

@@ -1936,12 +1936,6 @@ rb_obj_call_init_kw(VALUE obj, int argc, const VALUE *argv, int kw_splat)
     rb_funcallv_kw(obj, idInitialize, argc, argv, kw_splat);
 }
 
-void
-rb_extend_object(VALUE obj, VALUE module)
-{
-    rb_include_module(rb_singleton_class(obj), module);
-}
-
 /*
  *  call-seq:
  *     extend_object(obj)    -> obj
