@@ -1361,6 +1361,68 @@ class TestString < Test::Unit::TestCase
     assert_raise(ArgumentError) { S("\x00").bit_count(0, 4, lsb_first: nil) }
   end
 
+  def test_bit_get_region
+    data = S("\xF0\xAA")
+    assert_equal(0, data.bit_get(0))
+    assert_equal(1, data.bit_get(4))
+    assert_equal(0xF0, data.bit_get(0, 8))
+    assert_equal(0xAA, data.bit_get(8, 8))
+    assert_equal(0x0, data.bit_get(0, 4))
+    assert_equal(0xF, data.bit_get(4, 4))
+    assert_equal(0xAF, data.bit_get(4, 8))
+    assert_equal(0xAAF0, data.bit_get(0, 16))
+    assert_equal(0xF0, data.bit_get(0..7))
+    assert_equal(0xAA, data.bit_get(8..))
+    assert_equal(0xAAF0, data.bit_get(nil..nil))
+
+    # MSB-first numbering: the first bit of the region is the MSB of the result.
+    hdr = S("\x12\x34\x81\x80")
+    assert_equal(0x1234, hdr.bit_get(0, 16, lsb_first: false))
+    assert_equal(0x3412, hdr.bit_get(0, 16))
+    assert_equal(0x234, hdr.bit_get(4, 12, lsb_first: false))
+    assert_equal(1, hdr.bit_get(16, 1, lsb_first: false))
+
+    # Wider than 64 bits.
+    wide = S("\x01" + "\x00" * 9 + "\x80")
+    assert_equal(1 | (1 << 87), wide.bit_get(0, 88))
+    assert_equal((1 << 80) | (1 << 7), wide.bit_get(0, 88, lsb_first: false))
+    ones = S("\xFF" * 16)
+    assert_equal((1 << 64) - 1, ones.bit_get(5, 64))
+    assert_equal((1 << 65) - 1, ones.bit_get(5, 65))
+
+    # Regions do not clamp: a region that does not fit reads as nil.
+    assert_nil(data.bit_get(8, 9))
+    assert_nil(data.bit_get(8..16))
+    assert_nil(data.bit_get(16, 1))
+    assert_nil(data.bit_get(17, 0))
+    assert_equal(0, data.bit_get(16, 0))
+    assert_equal(0, data.bit_get(5..2))
+    assert_equal(0, S("").bit_get(0, 0))
+    assert_nil(S("").bit_get(0, 1))
+
+    assert_raise(IndexError) { data.bit_get(-1, 4) }
+    assert_raise(ArgumentError) { data.bit_get(0, -1) }
+    assert_raise(ArgumentError) { data.bit_get(0..3, 4) }
+    assert_raise(ArgumentError) { data.bit_get(0, 4, 1) }
+    assert_raise(TypeError) { data.bit_get(0, nil) }
+    assert_raise(ArgumentError) { data.bit_get(0, 4, lsb_first: nil) }
+
+    # Agrees with the one-bit form at every offset and length.
+    s = S("\x5A\xC3\x3C")
+    [true, false].each do |order|
+      (0..23).each do |off|
+        (0..(24 - off)).each do |len|
+          expected = 0
+          len.times do |i|
+            bit = s.bit_get(off + i, lsb_first: order)
+            expected |= bit << (order ? i : len - 1 - i)
+          end
+          assert_equal(expected, s.bit_get(off, len, lsb_first: order), "off=#{off} len=#{len} lsb_first=#{order}")
+        end
+      end
+    end
+  end
+
   def test_bit_region_argument_side_effect
     # Coercing an argument (Integer#to_int, or a Range endpoint) may run user
     # code that resizes the receiver.  The bounds check and the memory access
@@ -1386,6 +1448,12 @@ class TestString < Test::Unit::TestCase
     # Reads clamp to the post-coercion length instead of reading freed memory.
     s = S("\xFF") * 8
     assert_equal(8, s.bit_count(0, shrink.new(s, 64)))
+    assert_equal("\xFF".b, s.b)
+
+    # A bit_get region sees that it no longer fits and returns nil instead of
+    # reading past the end.
+    s = S("\xFF") * 8
+    assert_nil(s.bit_get(0, shrink.new(s, 64)))
     assert_equal("\xFF".b, s.b)
   end
 
