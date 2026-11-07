@@ -106,6 +106,7 @@ pub extern "C" fn rb_zjit_root_update_references() {
     // rb_execution_context_update only updates JITFrames currently on the stack,
     // but JITFrames not on the stack also need their iseq pointers updated
     // because the JIT code will reuse them on the next call.
+    // SAFETY: Only pointers to mutable memory from allocator(s) make it into the list.
     for &jit_frame in ZJITState::get_jit_frames().iter() {
         unsafe { &mut *jit_frame }.update_references();
     }
