@@ -2244,6 +2244,8 @@ more_output_buffer(
         unsigned char **out_stop_ptr)
 {
     size_t len = (*out_pos - *out_start_ptr);
+    if (len > (size_t)(RB_LEN_MAX / 2 - max_output))
+        rb_raise(rb_eArgError, "string size too big");
     size_t new_len = (len + max_output) * 2;
     *out_start_ptr = resize_destination(destination, len, new_len);
     *out_pos = *out_start_ptr + len;
