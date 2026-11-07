@@ -5678,7 +5678,7 @@ rb_int_abs(VALUE num)
 static VALUE
 fix_size(VALUE fix)
 {
-    return INT2FIX(sizeof(long));
+    return INT2FIX(sizeof(rb_len_t));
 }
 
 VALUE
