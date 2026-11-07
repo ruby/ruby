@@ -3013,6 +3013,12 @@ class TestString < Test::Unit::TestCase
     replacements = ("A".."Z").to_h { |k| [k, k.downcase] }
     actual = S(("A".."Z").to_a.join.tr(replacements))
     assert_equal(expected, actual)
+
+    cesu = "\xED\xA0\x80\xED\xB0\x80"
+    (8..40).each do |n|
+      expected = ("BB" * n + cesu).force_encoding("CESU-8")
+      assert_equal(expected, S(("A" * n + cesu).force_encoding("CESU-8")).tr("A" => "BB"))
+    end
   end
 
   def test_tr_hash_modify

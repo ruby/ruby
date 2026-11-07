@@ -10858,7 +10858,7 @@ tr_buffer_append_str(struct tr_buffer *buffer, VALUE str)
 static inline void
 tr_buffer_mbcput(struct tr_buffer *buffer, int codepoint, rb_encoding *enc)
 {
-    tr_buffer_ensure_capa(buffer, 4);
+    tr_buffer_ensure_capa(buffer, rb_enc_mbmaxlen(enc));
     buffer->ptr += rb_enc_mbcput(codepoint, buffer->ptr, enc);
 }
 
