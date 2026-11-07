@@ -1,0 +1,15 @@
+prelude: |
+  r_padded = '08'..'11'
+  r_1k = '1'..'1000'
+  r_200k = '1'..'200000'
+  r_char = '0'..'9'
+  r_alpha = 'aa'..'zz'
+
+benchmark:
+  padded: r_padded.include?('09')
+  '1K': r_1k.include?('500')
+  '1K outside': r_1k.include?('1001')
+  '1K non-numeric': r_1k.include?('abc')
+  '200K': r_200k.include?('199999')
+  'single char': r_char.include?('5')
+  alpha: r_alpha.include?('mm')
