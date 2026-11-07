@@ -1566,6 +1566,64 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_fixnum_eq_true_class() {
+        eval("
+            def test(o) = o == true
+            test(3)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:TrueClass = Const Value(true)
+          PatchPoint MethodRedefined(Integer@0x1008, ==@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum recompile
+          v27:BasicObject = CCallWithFrame v26, :Integer#==@0x1040, v15
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_fold_fixnum_eq_false_class() {
+        eval("
+            def test(o) = o == false
+            test(3)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:FalseClass = Const Value(false)
+          PatchPoint MethodRedefined(Integer@0x1008, ==@0x1010, cme:0x1018)
+          v26:Fixnum = GuardType v10, Fixnum recompile
+          v27:BasicObject = CCallWithFrame v26, :Integer#==@0x1040, v15
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
     fn test_dont_fold_fixnum_eq_nil_if_nilclass_eq_redefined() {
         eval("
             class NilClass
