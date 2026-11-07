@@ -53,6 +53,34 @@ class TestFiberScheduler < Test::Unit::TestCase
     assert scheduler.closed?
   end
 
+  def test_scheduler_close_when_thread_is_killed
+    error = nil
+    ready = Thread::Queue.new
+    scheduler = Object.new
+
+    [:block, :unblock, :io_wait, :kernel_sleep, :fiber_interrupt].each do |method|
+      scheduler.define_singleton_method(method) {}
+    end
+
+    scheduler.define_singleton_method(:scheduler_close) do
+      error = $!
+    end
+
+    thread = Thread.new do
+      Fiber.set_scheduler scheduler
+      ready << true
+      Thread.stop
+    end
+
+    ready.pop
+    thread.kill
+
+    assert_same thread, thread.join
+    assert_kind_of Exception, error
+    assert_equal "fatal", error.class.name
+    assert_equal "thread killed", error.message
+  end
+
   def test_closed_when_set_to_nil
     scheduler = Scheduler.new
 
