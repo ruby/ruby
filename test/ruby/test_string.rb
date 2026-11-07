@@ -1361,6 +1361,67 @@ class TestString < Test::Unit::TestCase
     assert_raise(ArgumentError) { S("\x00").bit_count(0, 4, lsb_first: nil) }
   end
 
+  def test_bit_index
+    data = S("\xF0")
+    assert_equal(4, data.bit_index(1))
+    assert_equal(0, data.bit_index(0))
+    assert_equal(4, data.bit_index(true))
+    assert_equal(0, data.bit_index(false))
+    assert_nil(S("\x00").bit_index(1))
+    assert_nil(S("\xFF").bit_index(0))
+    assert_nil(S("").bit_index(1))
+    assert_equal(4, data.dup.freeze.bit_index(1))
+
+    # offset: the search begins there, the result stays absolute.
+    assert_equal(5, data.bit_index(1, 5))
+    assert_nil(data.bit_index(0, 4))
+    assert_nil(data.bit_index(1, 8))
+
+    # A window clamps to the end of self; an empty window is nil.
+    assert_equal(4, data.bit_index(1, 0..4))
+    assert_nil(data.bit_index(1, 0...4))
+    assert_equal(4, data.bit_index(1, 4..4))
+    assert_nil(data.bit_index(1, 4...4))
+    assert_nil(data.bit_index(1, 5..4))
+    assert_equal(7, data.bit_index(1, 7..100))
+    assert_nil(data.bit_index(1, 8..100))
+    assert_equal(4, data.bit_index(1, 0, 5))
+    assert_nil(data.bit_index(1, 0, 4))
+    assert_nil(data.bit_index(1, 4, 0))
+    assert_equal(7, data.bit_index(1, 7, 100))
+    assert_nil(data.bit_index(1, 8, 100))
+    assert_equal(1, S("\xFD\x03").bit_index(0, 1...10))
+    assert_nil(S("\xFD\x03").bit_index(0, 2...10))
+    assert_equal(10, S("\xFD\x03").bit_index(0, 2..))
+
+    # Bytes with no matching bit are skipped.
+    sparse = S("\x00" * 100 + "\x40" + "\x00" * 100)
+    assert_equal(806, sparse.bit_index(1))
+    assert_equal(806, sparse.bit_index(1, 806))
+    assert_nil(sparse.bit_index(1, 807))
+    assert_equal(801, sparse.bit_index(1, lsb_first: false))
+    dense = S("\xFF" * 100 + "\xBF" + "\xFF" * 100)
+    assert_equal(806, dense.bit_index(0))
+    assert_equal(801, dense.bit_index(0, lsb_first: false))
+
+    # lsb_first: false numbers the bits within each byte from the MSB.
+    assert_equal(0, data.bit_index(1, lsb_first: false))
+    assert_equal(4, data.bit_index(0, lsb_first: false))
+    assert_nil(data.bit_index(0, 0...4, lsb_first: false))
+    assert_equal(4, data.bit_index(0, 0..4, lsb_first: false))
+
+    assert_raise(ArgumentError) { data.bit_index(2) }
+    assert_raise(ArgumentError) { data.bit_index(-1) }
+    assert_raise(TypeError) { data.bit_index(nil) }
+    assert_raise(TypeError) { data.bit_index("1") }
+    assert_raise(IndexError) { data.bit_index(1, -1) }
+    assert_raise(ArgumentError) { data.bit_index(1, 0, -1) }
+    assert_raise(ArgumentError) { data.bit_index(1, 0..4, 1) }
+    assert_raise(ArgumentError) { data.bit_index }
+    assert_raise(ArgumentError) { data.bit_index(1, 0, 0, 0) }
+    assert_raise(ArgumentError) { data.bit_index(1, lsb_first: nil) }
+  end
+
   def test_bit_region_argument_side_effect
     # Coercing an argument (Integer#to_int, or a Range endpoint) may run user
     # code that resizes the receiver.  The bounds check and the memory access
@@ -1386,6 +1447,11 @@ class TestString < Test::Unit::TestCase
     # Reads clamp to the post-coercion length instead of reading freed memory.
     s = S("\xFF") * 8
     assert_equal(8, s.bit_count(0, shrink.new(s, 64)))
+    assert_equal("\xFF".b, s.b)
+
+    # bit_index searches the post-coercion string.
+    s = S("\x00") * 8
+    assert_nil(s.bit_index(0, shrink.new(s, 1)))
     assert_equal("\xFF".b, s.b)
   end
 
