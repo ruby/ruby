@@ -17,7 +17,9 @@ typedef long rb_len_t;
 typedef unsigned long rb_ulen_t;
 # define SIZEOF_RB_LEN_T SIZEOF_LONG
 # define LEN2NUM LONG2NUM
+# define ULEN2NUM ULONG2NUM
 # define NUM2LEN NUM2LONG
+# define NUM2ULEN NUM2ULONG
 # define PRIdLEN "ld"
 #endif
 
@@ -532,8 +534,8 @@ rb_zlib_crc32(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_zlib_crc32_combine(VALUE klass, VALUE crc1, VALUE crc2, VALUE len2)
 {
-    return ULONG2NUM(
-	crc32_combine(NUM2ULONG(crc1), NUM2ULONG(crc2), NUM2LONG(len2)));
+    return ULEN2NUM(
+	crc32_combine(NUM2ULONG(crc1), NUM2ULONG(crc2), NUM2ULEN(len2)));
 }
 #else
 #define rb_zlib_crc32_combine rb_f_notimplement
