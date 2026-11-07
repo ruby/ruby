@@ -21,7 +21,6 @@ etc/etc.c
 fcntl/fcntl.c
 io/console/
 io/nonblock/nonblock.c
-io/wait/wait.c
 json/generator/generator.c
 json/lib
 json/parser/parser.c

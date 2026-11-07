@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require 'test/unit'
-require 'io/wait'
 
 # test uncommon device types to check portability problems
 # We may optimize IO#wait_*able for non-Linux kernels in the future
