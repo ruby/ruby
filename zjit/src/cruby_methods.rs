@@ -910,6 +910,16 @@ fn inline_integer_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
         && fun.assume_expected_cfunc(block, unsafe { rb_cNilClass }, ID!(eq), rb_obj_equal as _, state) {
         return Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }));
     }
+    // Same with TrueClass.
+    if fun.is_a(other, types::TrueClass)
+        && fun.assume_expected_cfunc(block, unsafe { rb_cTrueClass }, ID!(eq), rb_obj_equal as _, state) {
+        return Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }));
+    }
+    // Same with FalseClass.
+    if fun.is_a(other, types::FalseClass)
+        && fun.assume_expected_cfunc(block, unsafe { rb_cFalseClass }, ID!(eq), rb_obj_equal as _, state) {
+        return Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }));
+    }
     None
 }
 
