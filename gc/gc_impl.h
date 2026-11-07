@@ -152,7 +152,10 @@ GC_IMPL_FN bool rb_gc_impl_during_postmortem_p(void *objspace_ptr);
 /* Whether obj is owned by an objspace other than objspace_ptr.  Always false for a single
  * objspace impl. */
 GC_IMPL_FN bool rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj);
-GC_IMPL_FN bool rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj);
+/* Whether the shareable -> unshareable edge parent -> child is recorded, so that a
+ * local GC of child's objspace keeps child alive.  Always true for a single objspace
+ * impl, which has no such edges to track. */
+GC_IMPL_FN bool rb_gc_impl_shref_recorded_p(void *objspace_ptr, VALUE parent, VALUE child);
 /* gc.c parked objspace_ptr in its zombie table: a terminated Ractor's objspace that
  * rb_gc_impl_objspace_absorb later merges.  Called under the VM lock, possibly from
  * inside a global GC sweep (an unjoined Ractor's dfree disowns its objspace), so it
