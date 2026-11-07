@@ -10076,11 +10076,16 @@ io_wait_writable(int argc, VALUE *argv, VALUE io)
  * Waits until IO is priority and returns a truthy value or a falsy
  * value when times out. Priority data is sent and received using
  * the Socket::MSG_OOB flag and is typically limited to streams.
+ *
+ * This method is deprecated; use <tt>io.wait(IO::PRIORITY, timeout)</tt>
+ * instead.
  */
 static VALUE
 io_wait_priority(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr = NULL;
+
+    rb_warn_deprecated("IO#wait_priority", "IO#wait(IO::PRIORITY, timeout)");
 
     RB_IO_POINTER(io, fptr);
     rb_io_check_char_readable(fptr);
