@@ -13404,6 +13404,21 @@ nogvl_copy_stream_func(void *arg)
     return 0;
 }
 
+struct copy_stream_fallback_read_arg {
+    struct copy_stream_struct *stp;
+    VALUE buf;
+    rb_len_t len;
+    rb_off_t offset;
+};
+
+static VALUE
+copy_stream_fallback_read(VALUE arg)
+{
+    struct copy_stream_fallback_read_arg *p = (void *)arg;
+    return (VALUE)maygvl_copy_stream_read(1, p->stp, RSTRING_PTR(p->buf),
+                                          p->len, p->offset);
+}
+
 static VALUE
 copy_stream_fallback_body(VALUE arg)
 {
@@ -13442,9 +13457,11 @@ copy_stream_fallback_body(VALUE arg)
                 break;
         }
         else {
-            ssize_t ss;
             rb_str_resize(buf, buflen);
-            ss = maygvl_copy_stream_read(1, stp, RSTRING_PTR(buf), l, off);
+            struct copy_stream_fallback_read_arg read_arg = {stp, buf, l, off};
+            ssize_t ss =
+                (ssize_t)rb_str_locktmp_ensure(buf, copy_stream_fallback_read,
+                                               (VALUE)&read_arg);
             rb_str_resize(buf, ss > 0 ? ss : 0);
             if (ss < 0)
                 return Qnil;
