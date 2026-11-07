@@ -954,8 +954,16 @@ onig_region_resize_clear(OnigRegion* region, int n)
   return 0;
 }
 
+#undef onig_region_set
+
 extern int
 onig_region_set(OnigRegion* region, int at, int beg, int end)
+{
+  return onig_region_set_position(region, at, beg, end);
+}
+
+extern int
+onig_region_set_position(OnigRegion* region, int at, OnigPosition beg, OnigPosition end)
 {
   if (at < 0) return ONIGERR_INVALID_ARGUMENT;
 
