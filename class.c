@@ -1329,13 +1329,15 @@ make_metaclass(VALUE klass)
 }
 
 /**
- * Creates a singleton class for `obj`.
+ * Creates a singleton class for `obj` without attaching it. The new class
+ * records `obj` as its attached object, but `obj`'s class stays the same until
+ * attach_singleton_class(), so nothing can reach the new class through `obj`.
  * @pre `obj` must not be an immediate nor a special const.
  * @pre `obj` must not be a Class object.
  * @pre `obj` has no singleton class.
  */
 static inline VALUE
-make_singleton_class(VALUE obj)
+make_singleton_class_unattached(VALUE obj)
 {
     VALUE orig_class = METACLASS_OF(obj);
     VALUE klass = class_alloc0(T_CLASS, rb_cClass, FL_TEST_RAW(orig_class, RCLASS_BOXABLE));
@@ -1354,13 +1356,37 @@ make_singleton_class(VALUE obj)
     if (orig_class && !UNDEF_P(orig_class)) {
         rb_class_set_initialized(klass);
     }
+    rb_singleton_class_attached(klass, obj);
+    SET_METACLASS_OF(klass, METACLASS_OF(rb_class_real(orig_class)));
+    return klass;
+}
+
+// Set obj's class to klass, a singleton class from make_singleton_class_unattached().
+static inline void
+attach_singleton_class(VALUE obj, VALUE klass)
+{
+    VALUE orig_class = METACLASS_OF(obj);
+    RUBY_ASSERT(RCLASS_SINGLETON_P(klass) && RCLASS_ATTACHED_OBJECT(klass) == obj);
+    // Nothing gave obj a singleton class in the meantime, e.g. through Ruby
+    // code or an interrupt check. Attaching klass would discard it.
+    RUBY_ASSERT(NIL_P(rb_singleton_class_get(obj)));
 
     RBASIC_SET_CLASS(obj, klass);
-    rb_singleton_class_attached(klass, obj);
     rb_yjit_invalidate_no_singleton_class(orig_class);
     rb_zjit_invalidate_no_singleton_class(orig_class);
+}
 
-    SET_METACLASS_OF(klass, METACLASS_OF(rb_class_real(orig_class)));
+/**
+ * Creates a singleton class for `obj`.
+ * @pre `obj` must not be an immediate nor a special const.
+ * @pre `obj` must not be a Class object.
+ * @pre `obj` has no singleton class.
+ */
+static inline VALUE
+make_singleton_class(VALUE obj)
+{
+    VALUE klass = make_singleton_class_unattached(obj);
+    attach_singleton_class(obj, klass);
     return klass;
 }
 
@@ -1722,6 +1748,7 @@ rb_include_class_new(VALUE module, VALUE super)
 }
 
 static int include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super);
+static int do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super, bool check_cyclic, bool extend_fastpath);
 
 static void
 ensure_includable(VALUE klass, VALUE module)
@@ -1734,14 +1761,14 @@ ensure_includable(VALUE klass, VALUE module)
     }
 }
 
-void
-rb_include_module(VALUE klass, VALUE module)
+static void
+include_module(VALUE klass, VALUE module, bool extend_fastpath)
 {
     int changed = 0;
 
     ensure_includable(klass, module);
 
-    changed = include_modules_at(klass, RCLASS_ORIGIN(klass), module, TRUE);
+    changed = do_include_modules_at(klass, RCLASS_ORIGIN(klass), module, /*search_super=*/TRUE, /*check_cyclic=*/true, extend_fastpath);
     if (changed < 0)
         rb_raise(rb_eArgError, "cyclic include detected");
 
@@ -1776,6 +1803,12 @@ rb_include_module(VALUE klass, VALUE module)
             }
         }
     }
+}
+
+void
+rb_include_module(VALUE klass, VALUE module)
+{
+    include_module(klass, module, /*extend_fastpath=*/false);
 }
 
 static enum rb_id_table_iterator_result
@@ -1817,7 +1850,7 @@ clear_constant_cache_i(ID id, VALUE value, void *data)
 }
 
 static int
-do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super, bool check_cyclic)
+do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super, bool check_cyclic, bool extend_fastpath)
 {
     VALUE p, iclass, origin_stack = 0;
     int method_changed = 0;
@@ -1868,7 +1901,7 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
         tbl = RCLASS_M_TBL(module);
         if (tbl && rb_id_table_size(tbl)) {
             if (search_super) { // include
-                if (super_class && !RB_TYPE_P(super_class, T_MODULE)) {
+                if (!extend_fastpath && super_class && !RB_TYPE_P(super_class, T_MODULE)) {
                     rb_id_table_foreach(tbl, clear_module_cache_i, (void *)super_class);
                 }
             }
@@ -1921,7 +1954,15 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
 static int
 include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 {
-    return do_include_modules_at(klass, c, module, search_super, true);
+    return do_include_modules_at(klass, c, module, search_super, /*check_cyclic=*/true, /*extend_fastpath=*/false);
+}
+
+static VALUE singleton_class_of(const VALUE obj, bool ensure_eigenclass, VALUE extend_with);
+
+void
+rb_extend_object(VALUE obj, VALUE module)
+{
+    singleton_class_of(obj, /*ensure_eigenclass=*/true, /*extend_with=*/module);
 }
 
 static enum rb_id_table_iterator_result
@@ -2004,7 +2045,7 @@ rb_prepend_module(VALUE klass, VALUE module)
         rb_raise(rb_eArgError, "cyclic prepend detected");
 
     klass_had_no_origin = ensure_origin(klass);
-    changed = do_include_modules_at(klass, klass, module, FALSE, false);
+    changed = do_include_modules_at(klass, klass, module, /*search_super=*/FALSE, /*check_cyclic=*/false, /*extend_fastpath=*/false);
     RUBY_ASSERT(changed >= 0); // already checked for cyclic prepend above
     if (changed) {
         rb_vm_check_redefinition_by_prepend(klass);
@@ -2912,6 +2953,7 @@ rb_special_singleton_class(VALUE obj)
 /**
  * @internal
  * Returns the singleton class of `obj`. Creates it if necessary.
+ * If `extend_with` isn't 0, also includes that module into the singleton class.
  *
  * @note DO NOT expose the returned singleton class to
  *       outside of class.c.
@@ -2919,11 +2961,13 @@ rb_special_singleton_class(VALUE obj)
  *       consistency of the metaclass hierarchy.
  */
 static VALUE
-singleton_class_of(VALUE obj, bool ensure_eigenclass)
+singleton_class_of(const VALUE obj, bool ensure_eigenclass, VALUE extend_with)
 {
     VALUE klass;
+    bool extend_fastpath = false;
+    const int obj_type = TYPE(obj);
 
-    switch (TYPE(obj)) {
+    switch (obj_type) {
       case T_FIXNUM:
       case T_BIGNUM:
       case T_FLOAT:
@@ -2936,6 +2980,7 @@ singleton_class_of(VALUE obj, bool ensure_eigenclass)
         klass = special_singleton_class_of(obj);
         if (NIL_P(klass))
             rb_bug("unknown immediate %p", (void *)obj);
+        if (extend_with) rb_include_module(klass, extend_with);
         return klass;
 
       case T_STRING:
@@ -2956,20 +3001,56 @@ singleton_class_of(VALUE obj, bool ensure_eigenclass)
         klass = METACLASS_OF(obj);
         if (!(RCLASS_SINGLETON_P(klass) &&
             RCLASS_ATTACHED_OBJECT(klass) == obj)) {
-            klass = rb_make_metaclass(obj, klass);
+            // Gates for extend_fastpath; see below. Scope down to non-class
+            // objects and avoid ractor race conditions with !needs_lock.
+            if (!needs_lock && extend_with && obj_type != T_CLASS) {
+                klass = make_singleton_class_unattached(obj);
+                extend_fastpath = true;
+            }
+            else {
+                klass = rb_make_metaclass(obj, klass);
+            }
         }
         if (RB_OBJ_FROZEN_RAW(obj)) {
             // Freeze through rb_obj_freeze_inline so the singleton class also
             // gets a frozen shape_id, not just the FL_FREEZE flag.
             rb_obj_freeze_inline(klass);
         }
-        if (ensure_eigenclass && RB_TYPE_P(obj, T_CLASS)) {
+        if (ensure_eigenclass && obj_type == T_CLASS) {
             /* ensures an exposed class belongs to its own eigenclass */
             (void)ENSURE_EIGENCLASS(klass);
         }
     }
     if (needs_lock) {
         RB_VM_LOCK_LEAVE_LEV(&lev);
+    }
+    if (extend_fastpath) {
+        // This is extend_fastpath for [Bug #22465].
+        //
+        // If we implement the include part of extend the same as a plain
+        // include, then we trigger the tree invalidation path for CMEs. It
+        // invalidates, for each overridden method in the module, the method
+        // entry found at a higher point in the ancestry tree than the included
+        // module. For `{}.extend(m)`, that's entries such as Hash#fetch. Call
+        // sites and JIT code that never see the extended object still take a
+        // cache miss or get invalidated.
+        //
+        // In case we (extend) are the ones freshly making a singleton class,
+        // it's correct to avoid any method invalidation by tweaking the order
+        // of operations. We create an unattached singleton class, do the
+        // include on the singleton class, then attach the singleton class to
+        // the object. Before attaching, the singleton class is unreachable, so
+        // no method lookup could've gone through it -- nothing to invalidate.
+        // (Sites cached on the old RBASIC_CLASS of the object will naturally
+        // miss.)
+        //
+        // If the include raises, the singleton class is dropped without ever
+        // being attached.
+        include_module(klass, extend_with, /*extend_fastpath=*/true);
+        attach_singleton_class(obj, klass);
+    }
+    else if (extend_with) {
+        rb_include_module(klass, extend_with);
     }
 
     return klass;
@@ -3018,7 +3099,7 @@ rb_singleton_class_get(VALUE obj)
 VALUE
 rb_singleton_class(VALUE obj)
 {
-    return singleton_class_of(obj, true);
+    return singleton_class_of(obj, /*ensure_eigenclass=*/true, /*extend_with=*/0);
 }
 
 /*!
@@ -3036,7 +3117,7 @@ rb_singleton_class(VALUE obj)
 void
 rb_define_singleton_method(VALUE obj, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_define_method(singleton_class_of(obj, false), name, func, argc);
+    rb_define_method(singleton_class_of(obj, /*ensure_eigenclass=*/false, /*extend_with=*/0), name, func, argc);
 }
 
 #ifdef rb_define_module_function
