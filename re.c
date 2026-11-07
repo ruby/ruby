@@ -2987,20 +2987,20 @@ match_values_at(int argc, VALUE *argv, VALUE match)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    to_s -> string
  *
- *  Returns the matched string:
+ *  Returns the matched substring;
+ *  equivalent to #match(0):
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m.to_s # => "HX1138"
- *
- *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *    # => #<MatchData "hoge" foo:"h" bar:"ge">
- *    m.to_s # => "hoge"
- *
- *  Related: MatchData.inspect.
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.to_s # => "2026-12-25"
+ *  ```
  *
  */
 
