@@ -581,4 +581,31 @@ class TestFiber < Test::Unit::TestCase
       assert_operator fibers.size, :>=, 128
     RUBY
   end
+
+  def test_fiber_pool_stack_acquire_failure_keeps_state
+    environment = {
+      "RUBY_SHARED_FIBER_POOL_MAXIMUM_COUNT" => "1"
+    }
+    reuses_stack = RbConfig::CONFIG["COROUTINE_TYPE"] != "pthread"
+
+    assert_separately([environment], <<~RUBY, timeout: 30)
+      main = Fiber.current
+      holder = Fiber.new { main.transfer; :done }
+      holder.transfer
+
+      unborn = Fiber.new { :born }
+      assert_raise_with_message(FiberError, /can't allocate fiber stack/) { unborn.resume }
+
+      assert_equal 1, Fiber.blocking?
+      assert_raise_with_message(FiberError, /can't allocate fiber stack/) { unborn.resume }
+
+      assert_raise_with_message(FiberError, /can't allocate fiber stack/) { unborn.transfer }
+      assert_equal 1, Fiber.blocking?
+
+      # holder terminates with no resumer: return_fiber walks root->resuming_fiber.
+      assert_equal :done, holder.transfer
+
+      assert_equal :born, unborn.resume if #{reuses_stack}
+    RUBY
+  end
 end
