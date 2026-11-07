@@ -101,8 +101,20 @@ node_integer_cmp(rb_node_integer_t *n1, rb_node_integer_t *n2)
 }
 
 static int
+float_literal_zero_p(const char *val)
+{
+    for (; *val && *val != 'e' && *val != 'E'; val++) {
+        if ('1' <= *val && *val <= '9') return FALSE;
+    }
+    return TRUE;
+}
+
+static int
 node_float_cmp(rb_node_float_t *n1, rb_node_float_t *n2)
 {
+    if (float_literal_zero_p(n1->val) && float_literal_zero_p(n2->val)) {
+        return 0;
+    }
     return (n1->minus != n2->minus ||
             strcmp(n1->val, n2->val));
 }
@@ -190,6 +202,9 @@ literal_hash(st_data_t a)
       case NODE_INTEGER:
         return rb_char_p_hash(RNODE_INTEGER(node)->val);
       case NODE_FLOAT:
+        if (float_literal_zero_p(RNODE_FLOAT(node)->val)) {
+            return rb_char_p_hash("0");
+        }
         return rb_char_p_hash(RNODE_FLOAT(node)->val);
       case NODE_RATIONAL:
         return rb_char_p_hash(RNODE_RATIONAL(node)->val);
