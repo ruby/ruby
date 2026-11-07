@@ -1814,9 +1814,10 @@ mod hir_opt_tests {
           v15:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Float@0x1008, ==@0x1010, cme:0x1018)
           v26:Flonum = GuardType v10, Flonum recompile
-          v27:BasicObject = CCallWithFrame v26, :Float#==@0x1040, v15
+          PatchPoint MethodRedefined(NilClass@0x1040, ==@0x1010, cme:0x1048)
+          v29:FalseClass = Const Value(false)
           CheckInterrupts
-          Return v27
+          Return v29
         ");
     }
 
@@ -1843,9 +1844,10 @@ mod hir_opt_tests {
           v15:TrueClass = Const Value(true)
           PatchPoint MethodRedefined(Float@0x1008, ==@0x1010, cme:0x1018)
           v26:Flonum = GuardType v10, Flonum recompile
-          v27:BasicObject = CCallWithFrame v26, :Float#==@0x1040, v15
+          PatchPoint MethodRedefined(TrueClass@0x1040, ==@0x1010, cme:0x1048)
+          v29:FalseClass = Const Value(false)
           CheckInterrupts
-          Return v27
+          Return v29
         ");
     }
 
@@ -1872,9 +1874,10 @@ mod hir_opt_tests {
           v15:FalseClass = Const Value(false)
           PatchPoint MethodRedefined(Float@0x1008, ==@0x1010, cme:0x1018)
           v26:Flonum = GuardType v10, Flonum recompile
-          v27:BasicObject = CCallWithFrame v26, :Float#==@0x1040, v15
+          PatchPoint MethodRedefined(FalseClass@0x1040, ==@0x1010, cme:0x1048)
+          v29:FalseClass = Const Value(false)
           CheckInterrupts
-          Return v27
+          Return v29
         ");
     }
 
