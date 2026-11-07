@@ -40,6 +40,11 @@ pub struct VirtualMemory<A: Allocator> {
     /// Used for changing protection to implement W^X.
     current_write_page: Option<usize>,
 
+    /// Count preparation attempts, including cache hits and failures. Unlike
+    /// syscall counts, this detects repeated within-page checks in writer tests.
+    #[cfg(test)]
+    write_span_preparations: usize,
+
     /// Zero size member for making syscalls to get physical memory during normal operation.
     /// When testing this owns some memory.
     allocator: A,
@@ -104,6 +109,12 @@ pub enum WriteError {
     FailedPageMapping,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct WriteFailure {
+    pub written: usize,
+    pub error: WriteError,
+}
+
 use WriteError::*;
 
 impl VirtualMem {
@@ -155,6 +166,8 @@ impl<A: Allocator> VirtualMemory<A> {
             page_size_bytes,
             mapped_region_bytes: 0,
             current_write_page: None,
+            #[cfg(test)]
+            write_span_preparations: 0,
             allocator,
         }
     }
@@ -191,9 +204,50 @@ impl<A: Allocator> VirtualMemory<A> {
 
     /// Write a single byte. The first write to a page makes it readable.
     pub fn write_byte(&mut self, write_ptr: CodePtr, byte: u8) -> Result<(), WriteError> {
+        self.write_bytes(write_ptr, &[byte])
+            .map_err(|failure| failure.error)
+    }
+
+    /// Write multiple bytes. The first write to a page makes it readable. A write failure reports
+    /// the number of successfully written bytes so that clients can track positions.
+    pub fn write_bytes(&mut self, write_ptr: CodePtr, bytes: &[u8]) -> Result<(), WriteFailure> {
+        let mut written = 0;
+
+        while written < bytes.len() {
+            let offset = (write_ptr.0 as usize)
+                .checked_add(written)
+                .ok_or(WriteFailure { written, error: OutOfBounds })?;
+            let available = self.prepare_write_span(offset)
+                .map_err(|error| WriteFailure { written, error })?;
+            let chunk_len = (bytes.len() - written).min(available);
+
+            // prepare_write_span validated this range and made it writable.
+            // Nothing changes the mapping/permissions between preparation and copy.
+            let raw = self.region_start.as_ptr().wrapping_add(offset);
+            unsafe { raw.copy_from(bytes.as_ptr().add(written), chunk_len) };
+            written += chunk_len;
+        }
+
+        Ok(())
+    }
+
+    /// Prepare a nonempty writable span starting at a region-relative offset.
+    /// Returns the number of bytes available up to the page- or region-end.
+    ///
+    /// This does not store caller bytes, but may map and initialize new pages.
+    /// A caller caching the span must retain exclusive access to this memory
+    /// and must not free it or change its permissions before writing through it.
+    pub(crate) fn prepare_write_span(&mut self, offset: usize) -> Result<usize, WriteError> {
+        #[cfg(test)]
+        { self.write_span_preparations += 1; }
+
+        if offset >= self.region_size_bytes {
+            return Err(OutOfBounds);
+        }
+        let raw = self.region_start.as_ptr().wrapping_add(offset);
+        let addr = raw as usize;
         let page_size = self.page_size_bytes;
-        let raw: *mut u8 = write_ptr.raw_ptr(self) as *mut u8;
-        let page_addr = (raw as usize / page_size) * page_size;
+        let page_addr = (addr / page_size) * page_size;
 
         if self.current_write_page == Some(page_addr) {
             // Writing within the last written to page, nothing to do
@@ -203,14 +257,16 @@ impl<A: Allocator> VirtualMemory<A> {
             let mapped_region_end = start.wrapping_add(self.mapped_region_bytes);
             let whole_region_end = start.wrapping_add(self.region_size_bytes);
             let alloc = &mut self.allocator;
-
-            // Ignore zjit_alloc_size() if self.memory_limit_bytes is None for testing
-            let mut required_region_bytes = page_addr + page_size - start as usize;
-            if self.memory_limit_bytes.is_some() {
-                required_region_bytes += zjit_alloc_bytes();
-            }
-
             assert!((start..=whole_region_end).contains(&mapped_region_end));
+
+            let page_offset = offset - offset % page_size;
+            let page_end_offset = page_offset.checked_add(page_size).ok_or(OutOfBounds)?;
+            let required_region_bytes = if self.memory_limit_bytes.is_some() {
+                page_end_offset.checked_add(zjit_alloc_bytes()).ok_or(OutOfBounds)?
+            } else {
+                // Ignore zjit_alloc_size() if self.memory_limit_bytes is None for testing
+                page_end_offset
+            };
 
             if (start..mapped_region_end).contains(&raw) {
                 // Writing to a previously written to page.
@@ -222,13 +278,12 @@ impl<A: Allocator> VirtualMemory<A> {
 
                 self.current_write_page = Some(page_addr);
             } else if (start..whole_region_end).contains(&raw) &&
-                    required_region_bytes < self.memory_limit_bytes.unwrap_or(self.region_size_bytes) {
+                required_region_bytes < self.memory_limit_bytes.unwrap_or(self.region_size_bytes) {
                 // Writing to a brand new page
-                let mapped_region_end_addr = mapped_region_end as usize;
-                let alloc_size = page_addr - mapped_region_end_addr + page_size;
+                let alloc_size = page_end_offset - self.mapped_region_bytes;
 
                 assert_eq!(0, alloc_size % page_size, "allocation size should be page aligned");
-                assert_eq!(0, mapped_region_end_addr % page_size, "pointer should be page aligned");
+                assert_eq!(0, mapped_region_end as usize % page_size, "pointer should be page aligned");
 
                 if alloc_size > page_size {
                     // This is unusual for the current setup, so keep track of it.
@@ -252,18 +307,20 @@ impl<A: Allocator> VirtualMemory<A> {
                         unreachable!("unknown arch");
                     }
                 }
-                self.mapped_region_bytes += alloc_size;
 
+                self.mapped_region_bytes += alloc_size;
                 self.current_write_page = Some(page_addr);
             } else {
                 return Err(OutOfBounds);
             }
         }
 
-        // We have permission to write if we get here
-        unsafe { raw.write(byte) };
+        Ok((page_size - addr % page_size).min(self.region_size_bytes - offset))
+    }
 
-        Ok(())
+    #[cfg(test)]
+    pub(crate) fn write_span_preparations(&self) -> usize {
+        self.write_span_preparations
     }
 
     /// Return true if write_byte() can allocate a new page
@@ -370,9 +427,11 @@ pub mod tests {
     pub struct TestingAllocator {
         requests: Vec<AllocRequest>,
         memory: Vec<u8>,
+        // Reject a writable request starting at this offset, when configured.
+        fail_writable_at: Option<usize>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     enum AllocRequest {
         MarkWritable{ start_idx: usize, length: usize },
         MarkExecutable{ start_idx: usize, length: usize },
@@ -382,7 +441,7 @@ pub mod tests {
 
     impl TestingAllocator {
         pub fn new(mem_size: usize) -> Self {
-            Self { requests: Vec::default(), memory: vec![0; mem_size] }
+            Self { requests: Vec::default(), memory: vec![0; mem_size], fail_writable_at: None }
         }
 
         pub fn mem_start(&self) -> *const u8 {
@@ -407,7 +466,7 @@ pub mod tests {
             let index = self.bounds_check_request(ptr, length);
             self.requests.push(MarkWritable { start_idx: index, length: length as usize });
 
-            true
+            self.fail_writable_at != Some(index)
         }
 
         fn mark_executable(&mut self, ptr: *const u8, length: u32) {
@@ -446,6 +505,172 @@ pub mod tests {
             mem_size,
             None,
         )
+    }
+
+    #[test]
+    fn prepare_span_maps_gaps() {
+        let mut virt = new_dummy_virt_mem();
+        let offset = 3 * PAGE_SIZE + 1;
+
+        assert_eq!(Ok(PAGE_SIZE - 1), virt.prepare_write_span(offset));
+        assert_eq!(virt.mapped_region_bytes, 4 * PAGE_SIZE);
+        assert_eq!(virt.allocator.requests, vec![MarkWritable { start_idx: 0, length: 4 * PAGE_SIZE }]);
+
+        let initial = if cfg!(target_arch = "x86_64") { 0x1e } else { 0 };
+        assert!(virt.allocator.memory[..4 * PAGE_SIZE].iter().all(|&byte| byte == initial));
+        assert!(virt.allocator.memory[4 * PAGE_SIZE..].iter().all(|&byte| byte == 0));
+
+        // Reusing this page still validates the address but doesn't map again.
+        assert_eq!(Ok(1), virt.prepare_write_span(4 * PAGE_SIZE - 1));
+        assert_eq!(virt.write_span_preparations(), 2);
+        assert_eq!(virt.allocator.requests.len(), 1);
+    }
+
+    #[test]
+    fn prepare_span_failure_does_not_cache_the_failed_page() {
+        let mut virt = new_dummy_virt_mem();
+
+        // Prepare a successful span but inject a write failure at the start of the next page.
+        assert_eq!(Ok(PAGE_SIZE), virt.prepare_write_span(0));
+        let current = virt.current_write_page;
+        virt.allocator.fail_writable_at = Some(PAGE_SIZE);
+
+        // A failed preparation, keeping the previous writeable page cached.
+        assert_eq!(Err(FailedPageMapping), virt.prepare_write_span(PAGE_SIZE));
+        assert_eq!(virt.current_write_page, current);
+        assert_eq!(virt.mapped_region_bytes, PAGE_SIZE);
+
+        // Remove the injected failuire and verify that mapping is retried.
+        virt.allocator.fail_writable_at = None;
+        assert_eq!(Ok(PAGE_SIZE), virt.prepare_write_span(PAGE_SIZE));
+        assert_ne!(virt.current_write_page, current);
+        assert_eq!(virt.mapped_region_bytes, 2 * PAGE_SIZE);
+        assert_eq!(virt.allocator.requests, vec![
+            MarkWritable { start_idx: 0, length: PAGE_SIZE },
+            MarkWritable { start_idx: PAGE_SIZE, length: PAGE_SIZE },
+            MarkWritable { start_idx: PAGE_SIZE, length: PAGE_SIZE },
+        ]);
+    }
+
+    #[test]
+    fn prepare_span_rejects_invalid_offsets() {
+        let mut virt = new_dummy_virt_mem();
+
+        for offset in [virt.region_size_bytes, usize::MAX] {
+            assert_eq!(Err(OutOfBounds), virt.prepare_write_span(offset));
+        }
+
+        assert_eq!(virt.mapped_region_bytes, 0);
+        assert_eq!(virt.current_write_page, None);
+        assert!(virt.allocator.requests.is_empty());
+    }
+
+    #[test]
+    fn bulk_write_empty_and_invalid_addresses() {
+        let mut virt = new_dummy_virt_mem();
+
+        assert_eq!(Ok(()), virt.write_bytes(CodePtr(u32::MAX), &[]));
+        assert!(virt.allocator.requests.is_empty());
+
+        for offset in [virt.region_size_bytes as u32, u32::MAX] {
+            assert_eq!(
+                Err(WriteFailure { written: 0, error: OutOfBounds }),
+                virt.write_bytes(CodePtr(offset), &[1]),
+            );
+        }
+
+        assert!(virt.allocator.requests.is_empty());
+    }
+
+    #[test]
+    fn bulk_write_preserves_neighbors_and_avoids_redundant_mapping() {
+        let mut virt = new_dummy_virt_mem();
+
+        virt.write_bytes(virt.start_ptr(), &[0xaa; PAGE_SIZE]).unwrap();
+        virt.write_bytes(virt.start_ptr().add_bytes(1), &[11, 22]).unwrap();
+
+        assert_eq!(&virt.allocator.memory[..PAGE_SIZE], &[0xaa, 11, 22, 0xaa]);
+        assert_eq!(virt.mapped_region_bytes, PAGE_SIZE);
+        assert_eq!(virt.allocator.requests, vec![MarkWritable { start_idx: 0, length: PAGE_SIZE }]);
+    }
+
+    #[test]
+    fn bulk_write_matches_byte_writes() {
+        // Includes exact page endings, unaligned starts, multiple pages, and gaps.
+        for offset in 0..PAGE_SIZE * 3 {
+            for len in 0..=PAGE_SIZE * 4 {
+                let mut bulk = new_dummy_virt_mem();
+                let mut single = new_dummy_virt_mem();
+                let bytes: Vec<u8> = (0..len).map(|i| i as u8 + 11).collect();
+
+                bulk.write_bytes(bulk.start_ptr().add_bytes(offset), &bytes).unwrap();
+                for (i, &byte) in bytes.iter().enumerate() {
+                    single.write_byte(single.start_ptr().add_bytes(offset + i), byte).unwrap();
+                }
+
+                assert_eq!(bulk.allocator.memory, single.allocator.memory, "offset={offset}, len={len}");
+                assert_eq!(bulk.mapped_region_bytes, single.mapped_region_bytes);
+                assert_eq!(bulk.allocator.requests, single.allocator.requests);
+            }
+        }
+    }
+
+    #[test]
+    fn bulk_write_reports_memory_limit_prefix() {
+        let mut virt = new_dummy_virt_mem();
+        virt.memory_limit_bytes = Some(zjit_alloc_bytes() + PAGE_SIZE + PAGE_SIZE / 2);
+
+        assert_eq!(
+            Err(WriteFailure { written: 2, error: OutOfBounds }),
+            virt.write_bytes(virt.start_ptr().add_bytes(2), &[11, 22, 33, 44]),
+        );
+        assert_eq!(&virt.allocator.memory[2..6], &[11, 22, 0, 0]);
+        assert_eq!(virt.mapped_region_bytes, PAGE_SIZE);
+    }
+
+    #[test]
+    fn bulk_write_preserves_final_page_limit() {
+        let mut virt = new_dummy_virt_mem();
+        let offset = virt.region_size_bytes - PAGE_SIZE - 2;
+
+        assert_eq!(
+            Err(WriteFailure { written: 2, error: OutOfBounds }),
+            virt.write_bytes(virt.start_ptr().add_bytes(offset), &[11, 22, 33, 44]),
+        );
+        assert_eq!(&virt.allocator.memory[offset..offset + 4], &[11, 22, 0, 0]);
+        assert_eq!(virt.mapped_region_bytes, virt.region_size_bytes - PAGE_SIZE);
+    }
+
+    #[test]
+    fn bulk_write_reports_mapping_failure_prefix() {
+        let mut virt = new_dummy_virt_mem();
+        virt.allocator.fail_writable_at = Some(PAGE_SIZE);
+
+        assert_eq!(
+            Err(WriteFailure { written: 2, error: FailedPageMapping }),
+            virt.write_bytes(virt.start_ptr().add_bytes(2), &[11, 22, 33, 44]),
+        );
+        assert_eq!(&virt.allocator.memory[2..6], &[11, 22, 0, 0]);
+        assert_eq!(virt.mapped_region_bytes, PAGE_SIZE);
+        assert_eq!(virt.allocator.requests, vec![
+            MarkWritable { start_idx: 0, length: PAGE_SIZE },
+            MarkWritable { start_idx: PAGE_SIZE, length: PAGE_SIZE },
+        ]);
+    }
+
+    #[test]
+    fn bulk_write_makes_executable_pages_writable_again() {
+        let mut virt = new_dummy_virt_mem();
+        virt.write_bytes(virt.start_ptr(), &[0xaa; PAGE_SIZE * 2]).unwrap();
+        virt.mark_all_executable();
+        virt.allocator.requests.clear();
+        virt.write_bytes(virt.start_ptr().add_bytes(2), &[11, 22, 33, 44]).unwrap();
+
+        assert_eq!(&virt.allocator.memory[..8], &[0xaa, 0xaa, 11, 22, 33, 44, 0xaa, 0xaa]);
+        assert_eq!(virt.allocator.requests, vec![
+            MarkWritable { start_idx: 0, length: PAGE_SIZE },
+            MarkWritable { start_idx: PAGE_SIZE, length: PAGE_SIZE },
+        ]);
     }
 
     #[test]
