@@ -25,6 +25,25 @@ class TestRipper::Sexp < Test::Unit::TestCase
     assert_nil Ripper.sexp("1 + (1 => [a, a])"), '[Bug #20055]'
   end
 
+  def test_context_dependent_keywords
+    expected = {
+      "break" => [:break, []],
+      "next" => [:next, []],
+      "redo" => [:redo],
+      "retry" => [:retry],
+      "yield" => [:yield0],
+    }
+
+    expected.each do |source, sexp|
+      assert_equal([:program, [sexp]], Ripper.sexp(source), '[Bug #20186]')
+      assert_not_nil(Ripper.sexp_raw(source), '[Bug #20186]')
+    end
+
+    %w[break next redo].each do |keyword|
+      assert_not_nil(Ripper.sexp("def m; #{keyword}; end"), '[Bug #20186]')
+    end
+  end
+
   def test_regexp_content
     sexp = Ripper.sexp('//')
     assert_nil search_sexp(:@tstring_content, search_sexp(:regexp_literal, sexp))
