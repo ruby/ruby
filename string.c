@@ -14005,8 +14005,10 @@ rb_str_scan(VALUE str, VALUE pat)
     mustnot_broken(str);
     if (!rb_block_given_p()) {
         VALUE ary = rb_ary_new();
+        int set_backref_str = 1;
 
-        while (!NIL_P(result = scan_once(str, pat, &start, 0))) {
+        while (!NIL_P(result = scan_once(str, pat, &start, set_backref_str))) {
+            set_backref_str = 0;
             last = prev;
             prev = start;
             rb_ary_push(ary, result);
