@@ -804,6 +804,23 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_argf_state_variables_are_shared_by_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      code = '[$-i, ARGF.inplace_mode, $., ARGF.lineno]'
+      box = Ruby::Box.new
+
+      $-i = ".bak"
+      $. = 42
+      assert_equal [".bak", ".bak", 42, 42], eval(code)
+      assert_equal [".bak", ".bak", 42, 42], box.eval(code)
+
+      box.eval('$-i = ".orig"; $. = 7')
+      assert_equal [".orig", ".orig", 7, 7], box.eval(code)
+      assert_equal [".orig", ".orig", 7, 7], eval(code)
+    end;
+  end
+
   def test_defined_for_global_variables
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
