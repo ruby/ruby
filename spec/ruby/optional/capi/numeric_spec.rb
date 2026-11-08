@@ -229,8 +229,6 @@ describe "CApiNumericSpecs" do
       it "converts positive Bignums if the values is less than 64bits" do
         @s.NUM2ULONG(0xffff_ffff).should == 0xffff_ffff
         @s.NUM2ULONG(2**30).should == 2**30
-        @s.NUM2ULONG(fixnum_max+1).should == fixnum_max+1
-        @s.NUM2ULONG(fixnum_max).should == fixnum_max
       end
 
       it "raises a RangeError if the value is more than 32bits" do
@@ -250,14 +248,19 @@ describe "CApiNumericSpecs" do
       it "converts positive Bignums if the values is less than 64bits" do
         @s.NUM2ULONG(0xffff_ffff_ffff_ffff).should == 0xffff_ffff_ffff_ffff
         @s.NUM2ULONG(2**62).should == 2**62
-        @s.NUM2ULONG(fixnum_max+1).should == fixnum_max+1
-        @s.NUM2ULONG(fixnum_max).should == fixnum_max
       end
 
       it "raises a RangeError if the value is more than 64bits" do
         -> do
           @s.NUM2ULONG(0xffff_ffff_ffff_ffff+1)
         end.should.raise(RangeError)
+      end
+    end
+
+    guard -> { PlatformGuard::C_LONG_SIZE >= PlatformGuard::RB_LEN_T_SIZE } do
+      it "converts positive Bignums if the values is less than 64bits" do
+        @s.NUM2ULONG(fixnum_max+1).should == fixnum_max+1
+        @s.NUM2ULONG(fixnum_max).should == fixnum_max
       end
     end
 
