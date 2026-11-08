@@ -16224,6 +16224,7 @@ Init_IO(void)
     argf = rb_class_new_instance(0, 0, rb_cARGF);
 
     rb_define_readonly_variable("$<", &argf);
+    rb_gvar_box_ready("$<");
     /*
      * ARGF is a stream designed for use in scripts that process files given
      * as command-line arguments or passed in via STDIN.
@@ -16234,12 +16235,14 @@ Init_IO(void)
 
     rb_define_hooked_variable("$.", &argf, argf_lineno_getter, argf_lineno_setter);
     rb_define_hooked_variable("$FILENAME", &argf, argf_filename_getter, rb_gvar_readonly_setter);
+    rb_gvar_box_ready("$FILENAME");
     ARGF_SET(filename, rb_str_new2("-"));
 
     rb_define_hooked_variable("$-i", &argf, opt_i_get, opt_i_set);
     rb_gvar_ractor_local("$-i");
 
     rb_define_hooked_variable("$*", &argf, argf_argv_getter, rb_gvar_readonly_setter);
+    rb_gvar_box_ready("$*");
 
 #if defined (_WIN32) || defined(__CYGWIN__)
     atexit(pipe_atexit);

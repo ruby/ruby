@@ -785,6 +785,25 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_argf_and_argv_variables_are_not_copied_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      require "tmpdir"
+      Dir.mktmpdir do |dir|
+        paths = %w[a b].map {|name| File.join(dir, name).tap {|path| File.write(path, "#{name}\n")}}
+        ARGV.replace(paths)
+        box = Ruby::Box.new
+        code = '[$<.equal?(ARGF), $*.equal?(ARGV), $FILENAME]'
+
+        assert_equal [true, true, paths[0]], eval(code)
+        assert_equal [true, true, paths[0]], box.eval(code)
+        assert_equal ["a\n", "b\n"], [gets, gets]
+        assert_equal [true, true, paths[1]], eval(code)
+        assert_equal [true, true, paths[1]], box.eval(code)
+      end
+    end;
+  end
+
   def test_defined_for_global_variables
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
