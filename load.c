@@ -887,7 +887,7 @@ rb_load_internal(VALUE fname, VALUE wrap)
         if (!RB_TYPE_P(wrap, T_MODULE)) {
             wrap = rb_module_new();
         }
-        state = load_wrapping(ec, fname, rb_obj_clone(rb_vm_top_self()), wrap);
+        state = load_wrapping(ec, fname, rb_obj_clone(box->top_self), wrap);
     }
     else if (BOX_OPTIONAL_P(box)) {
         state = load_wrapping(ec, fname, box->top_self, 0);

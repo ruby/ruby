@@ -1376,6 +1376,25 @@ class TestBox < Test::Unit::TestCase
     assert_ruby_status([ENV_ENABLE_BOX], "freeze; Ruby::Box.new")
   end
 
+  def test_wrapped_load_into_a_box_clones_the_box_main
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      TOP_SELVES = []
+      path = File.join(ENV["TEST_DIR"], "box", "top_self.rb")
+      @ivar = 1
+      box = Ruby::Box.new
+
+      box.load(path)
+      box.load(path, true)
+      loaded, wrapped = TOP_SELVES
+
+      assert_not_same loaded, wrapped
+      assert_empty wrapped.instance_variables
+      assert_empty %i[define_method include private public ruby2_keywords using] -
+                   wrapped.singleton_class.private_instance_methods(false)
+    end;
+  end
+
   def test_require_list_loaded_only_in_main_box
     Tempfile.create(["req_a", ".rb"]) do |t1|
       Tempfile.create(["req_b", ".rb"]) do |t2|
