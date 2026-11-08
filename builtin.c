@@ -3,6 +3,7 @@
 #include "internal/string.h"
 #include "internal/variable.h"
 #include "vm_core.h"
+#include "vm_sync.h"
 #include "iseq.h"
 #include "builtin.h"
 
@@ -68,13 +69,16 @@ load_with_builtin_functions(const char *feature_name, const struct rb_builtin_fu
         rb_bug("builtin_lookup: can not find %s", feature_name);
     }
 
-    // load binary
+    // load binary, under the VM lock since Ruby::Box.new can get here from several Ractors
     rb_vm_t *vm = GET_VM();
-    if (vm->builtin_function_table != NULL) rb_bug("vm->builtin_function_table should be NULL.");
-    vm->builtin_function_table = table;
-    const rb_iseq_t *iseq = rb_iseq_ibf_load_bytes((const char *)bin, size);
+    const rb_iseq_t *iseq = NULL;
+    RB_VM_LOCKING() {
+        if (vm->builtin_function_table != NULL) rb_bug("vm->builtin_function_table should be NULL.");
+        vm->builtin_function_table = table;
+        iseq = rb_iseq_ibf_load_bytes((const char *)bin, size);
+        vm->builtin_function_table = NULL;
+    }
     ASSUME(iseq); // otherwise an exception should have raised
-    vm->builtin_function_table = NULL;
 
     // exec
     rb_iseq_eval(rb_iseq_check(iseq), target_box);

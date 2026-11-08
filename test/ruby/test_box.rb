@@ -1305,6 +1305,25 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_create_boxes_from_ractors_concurrently
+    assert_in_out_err([ENV_ENABLE_BOX, "--disable-gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        rs = 4.times.map do
+          Ractor.new do
+            100.times do
+              Ruby::Box.new
+            rescue Ractor::IsolationError
+            end
+            :ok
+          end
+        end
+        100.times { Ruby::Box.new }
+        p rs.map(&:value)
+      end;
+      assert_equal ["[:ok, :ok, :ok, :ok]"], output
+    end
+  end
+
   def test_calling_root_box_methods_does_not_change_user_boxes_newly_created
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;
