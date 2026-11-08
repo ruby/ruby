@@ -35,6 +35,10 @@ def min_rb_len_t
   -(2**(PlatformGuard::RB_LEN_T_SIZE - 1))
 end
 
+def max_rb_ulen_t
+  2**PlatformGuard::RB_LEN_T_SIZE - 1
+end
+
 # Larger than the longest String or Array, whose lengths are pointer-sized
 def max_length
   2**(PlatformGuard::POINTER_SIZE - 1) - 1
@@ -63,21 +67,13 @@ if PlatformGuard.standard? or PlatformGuard.implementation? :topaz
     def fixnum_min
       RbConfig::LIMITS['FIXNUM_MIN']
     end
-  elsif PlatformGuard.c_long_size? 32
+  else
     def fixnum_max
-      (2**30) - 1
+      2**(PlatformGuard::RB_LEN_T_SIZE-2) - 1
     end
 
     def fixnum_min
-      -(2**30)
-    end
-  elsif PlatformGuard.c_long_size? 64
-    def fixnum_max
-      (2**62) - 1
-    end
-
-    def fixnum_min
-      -(2**62)
+      -(2**(PlatformGuard::RB_LEN_T_SIZE-2))
     end
   end
 elsif PlatformGuard.implementation? :opal
