@@ -1321,6 +1321,32 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_top_self_of_a_file_loaded_into_a_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      TOP_SELVES = []
+      path = File.join(ENV["TEST_DIR"], "box", "top_self.rb")
+      box1 = Ruby::Box.new
+      box2 = Ruby::Box.new
+
+      box1.require(path)
+      box1.load(path)
+      box2.load(path)
+      load(path, true)
+      required, loaded, other_box, wrapped = TOP_SELVES
+
+      assert_same required, loaded
+      assert_not_same self, loaded
+      assert_not_same loaded, other_box
+      assert_not_same self, wrapped
+      assert_not_same loaded, wrapped
+      TOP_SELVES.each do |main|
+        assert_empty %i[define_method include private public ruby2_keywords using] -
+                     main.singleton_class.private_instance_methods(false)
+      end
+    end;
+  end
+
   def test_require_list_loaded_only_in_main_box
     Tempfile.create(["req_a", ".rb"]) do |t1|
       Tempfile.create(["req_b", ".rb"]) do |t2|

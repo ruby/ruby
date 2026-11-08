@@ -1378,6 +1378,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     EC_PUSH_TAG(ec);
     ec->errinfo = Qnil; /* ensure */
     th->top_wrapper = 0;
+    if (BOX_OPTIONAL_P(box)) th->top_self = box->top_self;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         VALUE handle;
         int found;
