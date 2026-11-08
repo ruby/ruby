@@ -3053,6 +3053,527 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("XYC"), S("ABC").tr!("A-AB", "XY"))
   end
 
+  # tr/tr! have a fast path for a few ASCII literals; a backslash escape
+  # forces the generic implementation, which serves as the oracle.
+  def tr_generic(str, src, repl)
+    str.tr(src.gsub(/./m) { "\\#{$&}" }, repl)
+  end
+
+  def tr_generic!(str, src, repl)
+    str.tr!(src.gsub(/./m) { "\\#{$&}" }, repl)
+  end
+
+  def test_tr_ascii_literals
+    # Includes duplicate needles ("aa", "aba": the last mapping wins), a needle
+    # one past the fast path limit of 8 ("abcdefghi") and DEL.
+    srcs = ["-", "_", "ab", "ba", "a-", "-a", "^", "a^", "xyz", "abcdefgh", "\0", "a\0",
+            "aa", "aba", "abab", "abcdefghi", "\x7f", "a\x7f"]
+    # Includes replacements that self-map ("a" for "ab"), swap ("ba"), chain
+    # ("bc"), end or start with "-", start with "^", and exceed the limit.
+    repls = ["_", "-", "xy", "A", "abcdefgh", "\0", "^", "a", "ba", "bc", "x-", "-x", "^x", "abcdefghi"]
+    srcs.each do |src|
+      repls.each do |repl|
+        next if src.size > 1 && src.start_with?("^")
+        [0, 1, 7, 15, 16, 17, 31, 32, 33, 70].each do |len|
+          chars = (src.chars + ["q", "-", "é", "\0"]).uniq
+          [
+            Array.new(len) { |i| chars[i % chars.size] }.join,
+            Array.new(len) { |i| i == len - 1 ? src[0] : "q" }.join,
+            Array.new(len) { |i| i == 0 ? src[0] : "q" }.join,
+            "q" * len,
+          ].each do |str|
+            %w[UTF-8 US-ASCII ASCII-8BIT ISO-8859-1].each do |enc|
+              s = str.dup
+              begin
+                s = s.encode(enc)
+              rescue Encoding::UndefinedConversionError
+                s.force_encoding(enc)
+              end
+              expected = tr_generic(s, src, repl)
+              result = s.tr(src, repl)
+              message = "#{s.inspect}.tr(#{src.inspect}, #{repl.inspect})"
+              assert_equal(expected, result, message)
+              assert_equal(expected.encoding, result.encoding, message)
+              assert_equal(expected.valid_encoding?, result.valid_encoding?, message)
+              assert_equal(expected.ascii_only?, result.ascii_only?, message)
+
+              bang = s.dup
+              ret = bang.tr!(src, repl)
+              expected_bang = s.dup
+              expected_ret = tr_generic!(expected_bang, src, repl)
+              assert_equal(expected_bang, bang, message)
+              assert_equal(expected_ret.nil?, ret.nil?, message)
+              assert_same(bang, ret, message) unless ret.nil?
+            end
+          end
+        end
+      end
+    end
+  end
+
+  def test_tr_ascii_literals_no_match
+    str = S("a" * 100 + "b")
+    assert_nil(str.tr!("x", "y"))
+    assert_equal("a" * 100 + "b", str)
+    assert_equal("a" * 100 + "b", str.tr("x", "y"))
+  end
+
+  def test_tr_ascii_literals_frozen
+    assert_raise(FrozenError) { S("abc").freeze.tr!("x", "y") }
+    assert_raise(FrozenError) { S("abc").freeze.tr!("a", "y") }
+    assert_raise(FrozenError) { S("a" * 40).freeze.tr!("x", "y") }
+    assert_equal("a" * 40, S("a" * 40).freeze.tr("x", "y"))
+    assert_equal("b" * 40, S("a" * 40).freeze.tr("a", "b"))
+  end
+
+  def test_tr_ascii_literals_shared
+    base = S("hello world, hello world, hello world")
+    str = base[1..]
+    str.tr!("o", "0")
+    assert_equal("ell0 w0rld, hell0 w0rld, hell0 w0rld", str)
+    assert_equal("hello world, hello world, hello world", base)
+  end
+
+  def test_tr_ascii_literals_multibyte
+    str = S("日本語-テキスト-" * 5)
+    assert_equal(S("日本語_テキスト_" * 5), str.tr("-", "_"))
+    assert_equal(Encoding::UTF_8, str.tr("-", "_").encoding)
+    assert_predicate(str.tr("-", "_"), :valid_encoding?)
+
+    sjis = S("ab\x83\x40cd".dup.force_encoding(Encoding::Shift_JIS)) * 10
+    assert_equal(("ab\x83\x40cd".dup.force_encoding(Encoding::Shift_JIS) * 10).tr("@", "_"), sjis.tr("@", "_"))
+    assert_equal(sjis.dup.tr("a", "x"), tr_generic(sjis, "a", "x"))
+    assert_equal(sjis.tr("c", "x"), tr_generic(sjis, "c", "x"))
+  end
+
+  def test_tr_ascii_literals_broken
+    str = S("ab\xFFcd" * 10)
+    assert_raise(ArgumentError) { str.tr("a", "b") }
+    assert_raise(ArgumentError) { str.tr("x", "b") }
+    assert_equal("ab\xFFcd" * 10, str)
+  end
+
+  def test_tr_ascii_literals_incompatible
+    utf16 = S("abc".encode("UTF-16LE"))
+    assert_raise(Encoding::CompatibilityError) { utf16.tr("a", "b") }
+    assert_raise(Encoding::CompatibilityError) { S("é" * 20).tr("a".encode("UTF-16LE"), "b") }
+    assert_raise(Encoding::CompatibilityError) { S("é" * 20).tr("a", "é".encode("EUC-JP")) }
+  end
+
+  # Every position of a needle, in strings that are shorter than, equal to and
+  # longer than a vector, so each lane and the scalar tail are exercised.
+  def test_tr_ascii_literals_every_position
+    [1, 2, 15, 16, 17, 31, 32, 33, 47, 48, 49, 255, 256, 257].each do |len|
+      len.times do |pos|
+        str = S("q" * len)
+        str[pos] = "-"
+        expected = S("q" * len)
+        expected[pos] = "_"
+        assert_equal(expected, str.tr("-", "_"), "len=#{len} pos=#{pos}")
+        assert_equal(expected, str.dup.tap { |s| assert_same(s, s.tr!("-", "_")) }, "len=#{len} pos=#{pos}")
+        assert_equal(str.tr("-", "_"), str.tr("-o", "_0"), "len=#{len} pos=#{pos}")
+      end
+
+      str = S(Array.new(len) { |i| "abcdefgh"[i % 8] }.join)
+      assert_equal(str.upcase, str.tr("abcdefgh", "ABCDEFGH"))
+      assert_equal(str.upcase, str.dup.tap { |s| s.tr!("abcdefgh", "ABCDEFGH") })
+    end
+
+    # Every position and a match in every vector at once.
+    str = S("-" * 1000)
+    assert_equal("_" * 1000, str.tr("-", "_"))
+    assert_equal("_" * 1000, str.dup.tap { |s| s.tr!("-", "_") })
+    assert_nil(S("q" * 1000).tr!("-", "_"))
+  end
+
+  # Only a byte that is exactly a needle may match: not one that differs in
+  # the high bit or another bit. Checked for every needle byte against every
+  # byte value in a binary string.
+  def test_tr_ascii_literals_exact_byte_match
+    all = S((0..255).map(&:chr).join.b * 2)
+    (0..127).each do |c|
+      next if c == 0x5c || c == 0x5d # backslash (escape) is never a literal needle
+      r = c ^ 1
+      expected = all.bytes.map { |b| b == c ? r : b }.pack("C*")
+      result = all.tr(c.chr, r.chr)
+      assert_equal(expected.b, result.b, "needle #{c}")
+      assert_equal(Encoding::ASCII_8BIT, result.encoding)
+
+      bang = all.dup
+      assert_same(bang, bang.tr!(c.chr, r.chr))
+      assert_equal(expected.b, bang.b, "needle #{c}")
+    end
+  end
+
+  def test_tr_ascii_literals_mappings
+    # The last of several mappings of the same character wins.
+    assert_equal("y" * 20, S("a" * 20).tr("aa", "xy"))
+    assert_equal("zy" * 10, S("ab" * 10).tr("aba", "xyz"))
+    assert_equal("zy" * 10, S("ab" * 10).tr("abab", "xyzy"))
+
+    # A replacement is never matched again.
+    assert_equal("ba" * 10, S("ab" * 10).tr("ab", "ba"))
+    assert_equal("bc" * 10, S("ab" * 10).tr("ab", "bc"))
+    assert_equal("bcc" * 10, S("abc" * 10).tr("ab", "bc"))
+
+    # A short replacement is padded with its last character.
+    assert_equal("xxx" * 10, S("abc" * 10).tr("abc", "x"))
+    assert_equal("xyy" * 10, S("abc" * 10).tr("abc", "xy"))
+    # and a long one is truncated.
+    assert_equal("x" * 20, S("a" * 20).tr("a", "xyz"))
+
+    # A self-mapping counts as a modification even though nothing changes.
+    str = S("ab" * 10)
+    assert_same(str, str.tr!("a", "a"))
+    assert_equal("ab" * 10, str)
+    assert_same(str, str.tr!("ab", "a"))
+    assert_equal("aa" * 10, str)
+    assert_nil(S("b" * 20).tr!("a", "a"))
+    str = S("b" * 20)
+    assert_same(str, str.tr!("ab", "ab"))
+    assert_equal("ab" * 10, S("ab" * 10).tr("ab", "ab"))
+  end
+
+  def test_tr_ascii_literals_needle_count_limit
+    assert_equal("12345678" * 4, S("abcdefgh" * 4).tr("abcdefgh", "12345678"))
+    assert_equal("123456789" * 4, S("abcdefghi" * 4).tr("abcdefghi", "123456789"))
+    # More replacements than needles, past the limit.
+    assert_equal("12345678" * 4, S("abcdefgh" * 4).tr("abcdefgh", "123456789"))
+    # The ninth needle is the only one that matches.
+    assert_equal("a" * 31 + "9", S("a" * 31 + "i").tr("abcdefghi", "aaaaaaaa9"))
+    str = S("i" * 40)
+    assert_same(str, str.tr!("abcdefghi", "123456789"))
+    assert_equal("9" * 40, str)
+  end
+
+  def test_tr_ascii_literals_empty
+    assert_nil(S("").tr!("a", "b"))
+    assert_equal("", S("").tr("a", "b"))
+    assert_nil(S("").tr!("", ""))
+    # An empty selector matches nothing, an empty replacement deletes.
+    assert_nil(S("abc" * 10).tr!("", "x"))
+    assert_equal("abc" * 10, S("abc" * 10).tr("", "x"))
+    assert_equal("bc" * 10, S("abc" * 10).tr("a", ""))
+    assert_equal("c" * 10, S("abc" * 10).tr("ab", ""))
+    assert_nil(S("bc" * 10).tr!("a", ""))
+    # An empty string is never modified, so it is not an error to freeze it.
+    assert_nil(S("").freeze.tr!("a", "b"))
+  end
+
+  def test_tr_ascii_literals_related_methods
+    # tr_s never takes the fast path and keeps squeezing.
+    assert_equal("a_b" * 10, S("a--b" * 10).tr_s("-", "_"))
+    assert_equal("a_b" * 10, S("a--b" * 10).tap { |s| assert_same(s, s.tr_s!("-", "_")) })
+    assert_equal("a_b" * 10, S("a-b" * 10).tr_s("-", "_"))
+    assert_nil(S("abc" * 10).tr_s!("-", "_"))
+    assert_equal("ab" * 10, S("aabb" * 10).tr_s("ab", "ab"))
+    assert_equal("xy" * 10, S("aabb" * 10).tr_s("ab", "xy"))
+    # The same call with and without squeeze differs when runs exist.
+    assert_equal("a__b", S("a--b").tr("-", "_"))
+    assert_equal("a_b", S("a--b").tr_s("-", "_"))
+
+    # delete and squeeze are untouched by tr's fast path.
+    assert_equal("ab" * 10, S("a-b-" * 10).delete("-"))
+    assert_equal("a-b" * 10, S("a--b" * 10).squeeze("-"))
+    assert_equal(40, S("a-b-c-d-" * 10).count("-"))
+  end
+
+  # Selectors and replacements the fast path must leave to the generic code,
+  # checked against what the generic code is documented to do.
+  def test_tr_ascii_literals_syntax
+    # ranges
+    assert_equal("xxxd-" * 10, S("abcd-" * 10).tr("a-c", "x"))
+    assert_equal("ABC" * 10, S("abc" * 10).tr("a-c", "A-C"))
+    assert_equal("a_" * 20, S("a-" * 20).tr("-", "_"))
+    assert_equal("_b" * 20, S("a-" * 20).tr("a-", "_b"))
+    # negation, and a caret anywhere else is a literal
+    assert_equal("a_" * 20, S("a-" * 20).tr("^a", "_"))
+    assert_equal("a^b" * 10, S("a^b" * 10).tr("^", "^"))
+    assert_equal("a_b" * 10, S("a^b" * 10).tr("^", "_"))
+    assert_equal("_^" * 10, S("a^" * 10).tr("a^", "_^"))
+    assert_equal("x" * 20, S("a^" * 10).tr("a^", "x"))
+    assert_equal("a^" * 10, S("a^" * 10).tr("^a", "^"))
+    # backslash escapes
+    assert_equal("a/b" * 10, S("a\\b" * 10).tr("\\", "/"))
+    assert_equal("a\\b" * 10, S("a/b" * 10).tr("/", "\\"))
+    assert_equal("a-b" * 10, S("a_b" * 10).tr("_", "\\-"))
+    assert_equal("a_b" * 10, S("a-b" * 10).tr("\\-", "_"))
+    # a dash at either end is a literal, inside it is a range
+    assert_equal("a_b" * 10, S("a-b" * 10).tr("-x", "_y"))
+    assert_equal("a_b" * 10, S("a-b" * 10).tr("x-", "y_"))
+    assert_equal("a-b" * 10, S("a_b" * 10).tr("_", "-"))
+    assert_equal("a-b" * 10, S("a_b" * 10).tr("_", "x-").tr("x", "-"))
+    # non-ASCII selector or replacement
+    assert_equal("e-" * 20, S("é-" * 20).tr("é", "e"))
+    assert_equal("é-" * 20, S("a-" * 20).tr("a", "é"))
+    assert_equal("é_" * 20, S("é-" * 20).tr("-", "_"))
+    assert_equal("é-" * 20, S("é-" * 20).tr("é-", "é-"))
+    # the selector is converted with to_str, anything else is an error
+    to_str = Object.new
+    to_str.define_singleton_method(:to_str) { "-" }
+    assert_equal("a_b" * 10, S("a-b" * 10).tr(to_str, "_"))
+    assert_equal("a_b" * 10, S("a-b" * 10).tr("-", Struct.new(:to_str).new("_")))
+    assert_raise(TypeError) { S("a-b" * 10).tr(nil, "_") }
+    assert_raise(TypeError) { S("a-b" * 10).tr("-", 1) }
+    assert_raise(TypeError) { S("a-b" * 10).tr!(1, "_") }
+    assert_raise(ArgumentError) { S("a-b" * 10).tr }
+    assert_raise(ArgumentError) { S("a-b" * 10).tr("-", "_", "x") }
+  end
+
+  def test_tr_ascii_literals_aliasing
+    # The receiver is also the selector or the replacement.
+    str = S("ab")
+    assert_same(str, str.tr!(str, "xy"))
+    assert_equal("xy", str)
+
+    str = S("ab")
+    assert_same(str, str.tr!("ab", str))
+    assert_equal("ab", str)
+
+    str = S("abcdefgh")
+    assert_same(str, str.tr!(str, "12345678"))
+    assert_equal("12345678", str)
+
+    str = S("a" * 20)
+    assert_equal("x" * 20, str.tr(str[0], "x"))
+    assert_equal("a" * 20, str)
+
+    # Both operands are the same object.
+    op = S("a")
+    assert_equal("a" * 20, S("a" * 20).tr(op, op))
+  end
+
+  def test_tr_ascii_literals_result_is_independent
+    orig = S("a-b" * 20)
+    result = orig.tr("-", "_")
+    assert_equal("a_b" * 20, result)
+    assert_equal("a-b" * 20, orig)
+    assert_not_same(orig, result)
+    result << "-"
+    assert_equal("a-b" * 20, orig)
+
+    # Not even a copy that is still sharing its buffer is touched.
+    orig = S("a-b" * 20)
+    copy = orig.dup
+    assert_same(copy, copy.tr!("-", "_"))
+    assert_equal("a-b" * 20, orig)
+    assert_equal("a_b" * 20, copy)
+
+    # A match-less tr! leaves a shared string as it was.
+    base = S("x" * 100)
+    view = base[1..]
+    assert_nil(view.tr!("-", "_"))
+    assert_equal("x" * 99, view)
+    assert_equal("x" * 100, base)
+
+    # A string that has been grown or has had its buffer reused.
+    str = S("a-b")
+    str << "-c" * 20
+    assert_equal("a_b" + "_c" * 20, str.tr("-", "_"))
+    str = S("a-b" * 20)
+    str.slice!(0, 3)
+    assert_equal("a_b" * 19, str.tr("-", "_"))
+    str.replace("-" * 30)
+    assert_equal("_" * 30, str.tr("-", "_"))
+  end
+
+  def test_tr_ascii_literals_subclass
+    klass = Class.new(String)
+    str = klass.new("a-b" * 10)
+    result = str.tr("-", "_")
+    assert_equal("a_b" * 10, result)
+    assert_equal(tr_generic(str, "-", "_").class, result.class)
+    assert_same(str, str.tr!("-", "_"))
+    assert_instance_of(klass, str)
+  end
+
+  def test_tr_ascii_literals_multibyte_encodings
+    # An all-ASCII string takes the fast path in any ASCII-compatible encoding.
+    %w[Shift_JIS Windows-31J EUC-JP GBK Big5 UTF-8].each do |enc|
+      str = S(("abc-" * 10).encode(enc))
+      result = str.tr("-", "_")
+      assert_equal(("abc_" * 10).encode(enc), result, enc)
+      assert_equal(Encoding.find(enc), result.encoding, enc)
+      assert_same(str, str.tr!("-", "_"), enc)
+    end
+
+    # A trail byte that looks like an ASCII character is left alone.
+    sjis = Encoding::Shift_JIS
+    {"@" => "\x83\x40", "[" => "\x81\x5B", "|" => "\x81\x7C", "~" => "\x81\x7E"}.each do |ascii, ch|
+      ch = ch.dup.force_encoding(sjis)
+      underscore = "_".dup.force_encoding(sjis)
+      str = S(ch * 20 + ascii.dup.force_encoding(sjis) + ch * 20)
+      expected = ch * 20 + underscore + ch * 20
+      assert_equal(expected, str.tr(ascii, "_"), ch.inspect)
+      assert_same(str, str.tr!(ascii, "_"), ch.inspect)
+      assert_equal(expected, str, ch.inspect)
+
+      only = S(ch * 20)
+      assert_equal(only, only.tr(ascii, "_"), ch.inspect)
+      assert_nil(only.tr!(ascii, "_"), ch.inspect)
+      assert_equal(ch * 20, only, ch.inspect)
+    end
+    # GBK and Big5 have trail bytes in the ASCII range as well.
+    gbk = S(("\x81\x40".dup.force_encoding(Encoding::GBK)) * 20)
+    assert_equal(gbk, gbk.tr("@", "_"))
+    big5 = S(("\xA4\x40".dup.force_encoding(Encoding::Big5)) * 20)
+    assert_equal(big5, big5.tr("@", "_"))
+
+    # EUC-JP characters are made of non-ASCII bytes only.
+    eucjp = S(("あ-" * 20).encode("EUC-JP"))
+    assert_equal(("あ_" * 20).encode("EUC-JP"), eucjp.tr("-", "_"))
+
+    # Valid UTF-8 and the same with several needles.
+    utf8 = S("日本語-テキスト_é" * 5)
+    assert_equal("日本語+テキスト@é" * 5, utf8.tr("-_", "+@"))
+    assert_equal(Encoding::UTF_8, utf8.tr("-_", "+@").encoding)
+    assert_predicate(utf8.tr("-_", "+@"), :valid_encoding?)
+    assert_not_predicate(utf8.tr("-_", "+@"), :ascii_only?)
+
+    # An ASCII-only selector in a different ASCII-compatible encoding.
+    utf8 = S("é-" * 20)
+    result = utf8.tr("-".encode("Shift_JIS"), "_".encode("Shift_JIS"))
+    assert_equal("é_" * 20, result)
+    assert_equal(Encoding::UTF_8, result.encoding)
+    ascii = S(("a-" * 20).encode("US-ASCII"))
+    result = ascii.tr("-".encode("UTF-8"), "_".encode("UTF-8"))
+    assert_equal("a_" * 20, result)
+    assert_equal(Encoding::US_ASCII, result.encoding)
+  end
+
+  def test_tr_ascii_literals_broken_encodings
+    # Invalid strings are reported the same way with or without a match.
+    ["ab\xFFcd" * 10, "ab\xC3" * 10, "-\xE3\x81" * 10].each do |bytes|
+      str = S(bytes)
+      assert_not_predicate(str, :valid_encoding?)
+      assert_raise(ArgumentError) { str.tr("-", "_") }
+      assert_raise(ArgumentError) { str.tr("x", "_") }
+      assert_raise(ArgumentError) { str.dup.tr!("-", "_") }
+      assert_equal(bytes, str)
+    end
+
+    # A broken single-byte string is not an error.
+    bin = S(("ab\xFF-" * 10).b)
+    assert_equal(("ab\xFF_" * 10).b, bin.tr("-", "_"))
+    # and neither is a string in a single-byte encoding with high bytes.
+    latin1 = S(("ab\xE9-" * 10).force_encoding(Encoding::ISO_8859_1))
+    assert_equal(("ab\xE9_" * 10).force_encoding(Encoding::ISO_8859_1), latin1.tr("-", "_"))
+
+    # The coderange is cached, so also check a string that was validated first.
+    str = S("ab\xFF-" * 10)
+    str.valid_encoding?
+    assert_raise(ArgumentError) { str.tr("-", "_") }
+    str = S("a-é" * 10)
+    str.valid_encoding?
+    assert_equal("a_é" * 10, str.tr("-", "_"))
+  end
+
+  def test_tr_ascii_literals_coderange
+    str = S("a-b" * 20)
+    assert_predicate(str, :ascii_only?)
+    assert_predicate(str.tr("-", "_"), :ascii_only?)
+    assert_predicate(str.tr("-", "_"), :valid_encoding?)
+
+    str = S("é-b" * 20)
+    assert_not_predicate(str, :ascii_only?)
+    result = str.tr("-", "_")
+    assert_not_predicate(result, :ascii_only?)
+    assert_predicate(result, :valid_encoding?)
+    assert_equal(str.length, result.length)
+    assert_equal(str.bytesize, result.bytesize)
+
+    # Replacing a character with another one doesn't change the cached state
+    # and a following operation still sees the new content.
+    str = S("é-" * 20)
+    str.tr!("-", "_")
+    assert_equal("é_" * 20, str)
+    assert_equal(40, str.length)
+    assert_equal(["é", "_"] * 20, str.chars)
+    assert_equal(1, str.index("_") - str.index("é"))
+    assert_nil(str.index("-"))
+    assert_match(/\A(?:é_)+\z/, str)
+    assert_equal(20, str.count("_"))
+    assert_equal(0, str.count("-"))
+    assert_equal(str, ("é_" * 20))
+    assert_equal(("é_" * 20).hash, str.hash)
+    assert_equal(("é_" * 20).b, str.b)
+  end
+
+  def test_tr_ascii_literals_frozen_and_chilled
+    # The error is raised even if nothing matches, as with the generic code.
+    str = S("a-b" * 20).freeze
+    assert_raise(FrozenError) { str.tr!("-", "_") }
+    assert_raise(FrozenError) { str.tr!("x", "_") }
+    assert_raise(FrozenError) { str.tr!("-x", "_y") }
+    assert_equal("a-b" * 20, str)
+    assert_equal("a_b" * 20, str.tr("-", "_"))
+    assert_not_predicate(str.tr("-", "_"), :frozen?)
+    assert_not_predicate(str.tr("x", "_"), :frozen?)
+
+    # Both the fast and the generic paths warn about a chilled string,
+    # whether or not a character is replaced.
+    assert_separately([], "#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      Warning[:deprecated] = true
+      [["-", "_"], ["x", "_"], ["-o", "_0"], ["a-c", "x"], ["\\-", "_"]].each do |src, repl|
+        str = eval('"abc-def-ghi-jkl-mno-pqr-stu-vwx-yz"')
+        assert_not_predicate(str, :frozen?)
+        assert_warning(/literal string will be frozen in the future/) { str.tr!(src, repl) }
+
+        str = eval('"abc-def-ghi-jkl-mno-pqr-stu-vwx-yz"')
+        assert_warning("") { str.tr(src, repl) }
+      end
+    };
+  end
+
+  # The warning for a chilled string runs Ruby code, which may change the
+  # receiver before tr! reads it: the new content must be used consistently.
+  def test_tr_ascii_literals_chilled_string_mutated_by_warning
+    assert_separately([], "#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      Warning[:deprecated] = true
+      module MutatingWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated && $target
+            target, $target = $target, nil
+            target.clear
+            target << ("-" * 1024)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(MutatingWarning)
+
+      $target = eval('"abc-def"')
+      target = $target
+      assert_same(target, target.tr!("-", "_"))
+      assert_equal("_" * 1024, target)
+
+      $target = eval('"abc-def"')
+      target = $target
+      assert_same(target, target.tr!("-x", "_y"))
+      assert_equal("_" * 1024, target)
+
+      # The replaced content shrinks too.
+      module ShrinkingWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated && $target
+            target, $target = $target, nil
+            target.replace("-")
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(ShrinkingWarning)
+      $target = eval('"abc-def-ghi-jkl-mno-pqr-stu"')
+      target = $target
+      assert_same(target, target.tr!("-", "_"))
+      assert_equal("_", target)
+    };
+  end
+
   def test_tr_s
     assert_equal(S("hypo"), S("hello").tr_s(S("el"), S("yp")))
     assert_equal(S("h*o"),  S("hello").tr_s(S("el"), S("*")))

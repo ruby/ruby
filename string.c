@@ -10541,6 +10541,179 @@ trnext(struct tr *t, rb_encoding *enc)
 
 static VALUE rb_str_delete_bang(int,VALUE*,VALUE);
 
+#define TR_ASCII_LITERALS_MAX 8
+
+/* Fast path for tr/tr! when both arguments are a few ASCII literals such as
+ * `tr("-", "_")`: no ranges, no negation, no escapes. Matching bytes are
+ * rewritten in place, a whole vector at a time. */
+struct tr_ascii_literals {
+    unsigned char needles[TR_ASCII_LITERALS_MAX];
+    unsigned char repls[TR_ASCII_LITERALS_MAX];
+};
+
+static inline bool
+tr_ascii_literals_operand_p(const unsigned char *p, long len)
+{
+    for (long i = 0; i < len; i++) {
+        unsigned char c = p[i];
+        /* '\\' escapes and an inner '-' makes a range, '^' is checked by the caller */
+        if (c >= 0x80 || c == '\\' || (c == '-' && i > 0 && i < len - 1)) return false;
+    }
+    return true;
+}
+
+/* Rewrites the matching bytes of +str+ in place. The string is only made
+ * independent (unshared, checked for frozen...) once the first match is found.
+ * Returns whether anything was rewritten. */
+NOINLINE(static bool tr_ascii_literals_apply(VALUE str, const struct tr_ascii_literals *lit, const unsigned int count));
+static bool
+tr_ascii_literals_apply(VALUE str, const struct tr_ascii_literals *lit, const unsigned int count)
+{
+    const long len = RSTRING_LEN(str);
+    unsigned char *ptr = (unsigned char *)RSTRING_PTR(str);
+    long pos = 0;
+    bool modified = false;
+
+#define TR_ASCII_LITERALS_MODIFY() do { \
+        if (!modified) { \
+            str_modify_keep_cr(str); \
+            ptr = (unsigned char *)RSTRING_PTR(str); \
+            modified = true; \
+        } \
+    } while (0)
+
+#if defined(HAVE_SIMD_SSE2)
+    if (len >= (long)sizeof(__m128i)) {
+        __m128i needles[TR_ASCII_LITERALS_MAX], flips[TR_ASCII_LITERALS_MAX];
+        const __m128i zero = _mm_setzero_si128();
+        for (unsigned int i = 0; i < count; i++) {
+            needles[i] = _mm_set1_epi8((char)lit->needles[i]);
+            flips[i] = _mm_set1_epi8((char)(lit->needles[i] ^ lit->repls[i]));
+        }
+
+        for (; pos + (long)sizeof(__m128i) <= len; pos += sizeof(__m128i)) {
+            const __m128i bytes = _mm_loadu_si128((const __m128i *)(ptr + pos));
+            __m128i delta = zero;
+            for (unsigned int i = 0; i < count; i++) {
+                delta = _mm_or_si128(delta, _mm_and_si128(_mm_cmpeq_epi8(bytes, needles[i]), flips[i]));
+            }
+            if (_mm_movemask_epi8(_mm_cmpeq_epi8(delta, zero)) != 0xFFFF) {
+                TR_ASCII_LITERALS_MODIFY();
+                _mm_storeu_si128((__m128i *)(ptr + pos), _mm_xor_si128(bytes, delta));
+            }
+        }
+    }
+#elif defined(HAVE_SIMD_NEON)
+    if (len >= (long)sizeof(uint8x16_t)) {
+        uint8x16_t needles[TR_ASCII_LITERALS_MAX], flips[TR_ASCII_LITERALS_MAX];
+        for (unsigned int i = 0; i < count; i++) {
+            needles[i] = vdupq_n_u8(lit->needles[i]);
+            flips[i] = vdupq_n_u8(lit->needles[i] ^ lit->repls[i]);
+        }
+
+        for (; pos + (long)sizeof(uint8x16_t) <= len; pos += sizeof(uint8x16_t)) {
+            const uint8x16_t bytes = vld1q_u8(ptr + pos);
+            uint8x16_t delta = vdupq_n_u8(0);
+            for (unsigned int i = 0; i < count; i++) {
+                delta = vorrq_u8(delta, vandq_u8(vceqq_u8(bytes, needles[i]), flips[i]));
+            }
+            const uint64x2_t lanes = vreinterpretq_u64_u8(delta);
+            if (vgetq_lane_u64(lanes, 0) | vgetq_lane_u64(lanes, 1)) {
+                TR_ASCII_LITERALS_MODIFY();
+                vst1q_u8(ptr + pos, veorq_u8(bytes, delta));
+            }
+        }
+    }
+#endif
+
+    for (; pos < len; pos++) {
+        for (unsigned int i = 0; i < count; i++) {
+            if (ptr[pos] == lit->needles[i]) {
+                TR_ASCII_LITERALS_MODIFY();
+                ptr[pos] = lit->repls[i];
+                break;
+            }
+        }
+    }
+
+#undef TR_ASCII_LITERALS_MODIFY
+    return modified;
+}
+
+/* Returns Qundef when the arguments don't qualify and the generic code has to
+ * handle them. Otherwise behaves like the generic code: +str+ if it was
+ * modified, nil if not. */
+NOINLINE(static VALUE tr_trans_ascii_literals(VALUE str, VALUE src, VALUE repl));
+static VALUE
+tr_trans_ascii_literals(VALUE str, VALUE src, VALUE repl)
+{
+#ifndef HAVE_SIMD
+    /* The scalar loop is slower than the generic table lookup with several needles. */
+    return Qundef;
+#else
+    const long slen = RSTRING_LEN(src), rlen = RSTRING_LEN(repl);
+    if (slen == 0 || slen > TR_ASCII_LITERALS_MAX || rlen == 0 || rlen > TR_ASCII_LITERALS_MAX) {
+        return Qundef;
+    }
+
+    const unsigned char *sp = (const unsigned char *)RSTRING_PTR(src);
+    const unsigned char *rp = (const unsigned char *)RSTRING_PTR(repl);
+    if ((slen > 1 && sp[0] == '^') ||
+        !tr_ascii_literals_operand_p(sp, slen) ||
+        !tr_ascii_literals_operand_p(rp, rlen)) {
+        return Qundef;
+    }
+
+    struct tr_ascii_literals lit;
+    for (long i = 0; i < slen; i++) {
+        const unsigned char c = sp[i];
+        const unsigned char r = rp[i < rlen ? i : rlen - 1];
+        /* The generic code reports a self-mapping as a modification, and the
+         * last of several mappings of the same char wins. */
+        if (c == r) return Qundef;
+        for (long k = 0; k < i; k++) {
+            if (sp[k] == c) return Qundef;
+        }
+        lit.needles[i] = c;
+        lit.repls[i] = r;
+    }
+
+    rb_encoding *enc = rb_enc_get(str);
+    if (!rb_enc_asciicompat(enc) ||
+        !rb_enc_asciicompat(rb_enc_get(src)) ||
+        !rb_enc_asciicompat(rb_enc_get(repl))) {
+        return Qundef;
+    }
+
+    /* Same compatibility checks (and errors) as the generic code. */
+    rb_encoding *e1 = rb_enc_check(str, src);
+    rb_encoding *e2 = rb_enc_check(str, repl);
+    if ((e1 == e2 ? e1 : rb_enc_check(src, repl)) != enc) {
+        return Qundef;
+    }
+
+    /* Byte-wise replacement is only safe if ASCII bytes are never part of a
+     * multibyte char: true for single-byte, 7-bit, and valid UTF-8 strings. */
+    if (rb_enc_mbmaxlen(enc) != 1) {
+        int cr = rb_enc_str_coderange(str);
+        if (cr != ENC_CODERANGE_7BIT &&
+            !(cr == ENC_CODERANGE_VALID && rb_enc_to_index(enc) == ENCINDEX_UTF_8)) {
+            return Qundef;
+        }
+    }
+
+    /* Like the generic code, raise on a frozen string even if nothing matches. */
+    str_modifiable(str);
+
+    /* The single needle case is by far the most common. If the compiler
+     * inlines the call, the literal lets it specialize the loops for it. */
+    bool modified = slen == 1 ?
+        tr_ascii_literals_apply(str, &lit, 1) :
+        tr_ascii_literals_apply(str, &lit, (unsigned int)slen);
+    return modified ? str : Qnil;
+#endif
+}
+
 static VALUE
 tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 {
@@ -10566,6 +10739,11 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
     if (RSTRING_LEN(repl) == 0) {
         return rb_str_delete_bang(1, &src, str);
+    }
+
+    if (!sflag) {
+        VALUE result = tr_trans_ascii_literals(str, src, repl);
+        if (!UNDEF_P(result)) return result;
     }
 
     cr = ENC_CODERANGE(str);
