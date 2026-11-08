@@ -15990,6 +15990,7 @@ Init_IO(void)
 
     rb_output_fs = Qnil;
     rb_define_hooked_variable("$,", &rb_output_fs, 0, rb_deprecated_str_setter);
+    rb_gvar_box_dynamic("$,");
 
     rb_default_rs = rb_fstring_lit("\n"); /* avoid modifying RS_default */
     rb_vm_register_global_object(rb_default_rs);
@@ -15997,9 +15998,12 @@ Init_IO(void)
     rb_output_rs = Qnil;
     rb_define_hooked_variable("$/", &rb_rs, 0, deprecated_rs_setter);
     rb_gvar_ractor_local("$/"); // not local but ractor safe
+    rb_gvar_box_dynamic("$/");
     rb_define_hooked_variable("$-0", &rb_rs, 0, deprecated_rs_setter);
     rb_gvar_ractor_local("$-0"); // not local but ractor safe
+    rb_gvar_box_dynamic("$-0");
     rb_define_hooked_variable("$\\", &rb_output_rs, 0, rb_deprecated_str_setter);
+    rb_gvar_box_dynamic("$\\");
 
     rb_define_virtual_variable("$_", get_LAST_READ_LINE, set_LAST_READ_LINE);
     rb_gvar_ractor_local("$_");

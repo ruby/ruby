@@ -5661,6 +5661,7 @@ Init_Regexp(void)
     rb_gvar_box_ready("$+");
 
     rb_define_virtual_variable("$=", ignorecase_getter, ignorecase_setter);
+    rb_gvar_box_dynamic("$=");
 
     rb_cRegexp = rb_define_class("Regexp", rb_cObject);
     rb_define_alloc_func(rb_cRegexp, rb_reg_s_alloc);

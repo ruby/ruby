@@ -715,14 +715,14 @@ class TestBox < Test::Unit::TestCase
 
     # read first
     assert_equal "\n", @box::LineSplitter.read
-    @box::LineSplitter.write("\r\n")
+    EnvUtil.suppress_warning { @box::LineSplitter.write("\r\n") }
     assert_equal "\r\n", @box::LineSplitter.read
-    assert_equal "\n", $-0
+    assert_equal "\r\n", $-0
 
     # write first
-    @box::FieldSplitter.write(",")
+    EnvUtil.suppress_warning { @box::FieldSplitter.write(",") }
     assert_equal ",", @box::FieldSplitter.read
-    assert_equal nil, $,
+    assert_equal ",", $,
 
     # used only in box
     assert_not_include global_variables, :$used_only_in_box
@@ -741,6 +741,32 @@ class TestBox < Test::Unit::TestCase
       $-0 = default_l
       $, = default_f
     end
+  end
+
+  def test_separator_variables_are_shared_by_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      results = {
+        '$/ = "!"; ["hello!".chomp, $/, $-0]' => ["hello", "!", "!"],
+        '$-0 = "!"; ["hello!".chomp, $/, $-0]' => ["hello", "!", "!"],
+        '$, = "-"; [["x", "y"].join, $,]' => ["x-y", "-"],
+        'r, w = IO.pipe; $\\ = "<E>"; w.print "p"; w.close; [r.read, $\\]' => ["p<E>", "<E>"],
+        '$; = ","; ["a,b c".split, $;]' => [["a", "b c"], ","],
+        '$-F = ","; ["a,b c".split, $-F]' => [["a", "b c"], ","],
+        '$= = true; [$=]' => [false],
+      }
+      reset = '$/ = "\n"; $, = $\\ = $; = nil'
+      box = Ruby::Box.new
+      results.each do |code, expected|
+        assert_equal expected, eval(code), code
+        eval(reset)
+        assert_equal expected, box.eval(code), "in a box: #{code}"
+        eval(reset)
+      end
+
+      box.eval('$/ = "!"; $, = "-"')
+      assert_equal ["hello", "!", "x-y"], ["hello!".chomp, $-0, ["x", "y"].join]
+    end;
   end
 
   def test_defined_for_global_variables
