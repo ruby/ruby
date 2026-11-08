@@ -222,6 +222,18 @@ rb_f_sprintf(int argc, const VALUE *argv)
     return rb_str_format(argc - 1, argv + 1, GETNTHARG(0));
 }
 
+static char *
+reassoc_enc(VALUE result, rb_encoding *enc)
+{
+    return RSTRING_PTR(rb_enc_associate(result, enc));
+}
+
+static char *
+reassoc_enc_index(VALUE result, int encidx)
+{
+    return RSTRING_PTR(rb_enc_associate_index(result, encidx));
+}
+
 VALUE
 rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
 {
@@ -283,8 +295,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
     blen = 0;
     bsiz = 120;
     result = rb_str_buf_new(bsiz);
-    rb_enc_associate(result, enc);
-    buf = RSTRING_PTR(result);
+    buf = reassoc_enc(result, enc);
     memset(buf, 0, bsiz);
     ENC_CODERANGE_SET(result, coderange);
 
@@ -473,7 +484,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                 int encidx = rb_ascii8bit_appendable_encoding_index(enc, c);
                 if (encidx >= 0 && encidx != rb_enc_to_index(enc)) {
                     /* special case */
-                    rb_enc_associate_index(result, encidx);
+                    buf = reassoc_enc_index(result, encidx);
                     enc = rb_enc_from_index(encidx);
                     coderange = ENC_CODERANGE_VALID;
                 }
@@ -542,13 +553,13 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                         if (flags&FMINUS) {
                             FILL_(' ', width);
                         }
-                        rb_enc_associate(result, enc);
+                        buf = reassoc_enc(result, enc);
                         break;
                     }
                 }
                 PUSH(RSTRING_PTR(str), len);
                 RB_GC_GUARD(str);
-                rb_enc_associate(result, enc);
+                buf = reassoc_enc(result, enc);
             }
             break;
 
