@@ -72,6 +72,11 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_to_s_comment_in_char_class
+    re = EnvUtil.suppress_warning { Regexp.new('(?:[](?#\x{7FFFFFFF})])') }
+    assert_equal('(?-mix:[](?#\x{7FFFFFFF})])', EnvUtil.suppress_warning { re.to_s })
+  end
+
   def test_to_s_under_gc_compact_stress
     EnvUtil.under_gc_compact_stress do
       str = "abcd\u3042"
