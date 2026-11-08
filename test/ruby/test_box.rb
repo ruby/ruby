@@ -785,6 +785,18 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_read_only_option_variables_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      %w[$-p $-l $-a].each do |name|
+        assert_raise(NameError, name) { eval("#{name} = true") }
+        assert_raise(NameError, "#{name} in a box") { box.eval("#{name} = true") }
+        assert_equal [false, false], [eval(name), box.eval(name)], name
+      end
+    end;
+  end
+
   def test_argf_and_argv_variables_are_not_copied_in_box
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;

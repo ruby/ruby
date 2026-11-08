@@ -2350,6 +2350,9 @@ process_options_global_setup(const ruby_cmdline_options_t *opt, const rb_iseq_t 
     rb_gvar_ractor_local("$-p");
     rb_gvar_ractor_local("$-l");
     rb_gvar_ractor_local("$-a");
+    rb_gvar_box_ready("$-p");
+    rb_gvar_box_ready("$-l");
+    rb_gvar_box_ready("$-a");
 
     if ((rb_e_script = opt->e_script) != 0) {
         rb_str_freeze(rb_e_script);
