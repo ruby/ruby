@@ -423,6 +423,7 @@ left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, Onig
 {
   const UChar *p;
 
+  if (s >= end) return (UChar* )s;
   if (s <= start) return (UChar* )s;
   p = s;
 
