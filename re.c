@@ -1381,13 +1381,20 @@ rb_match_init_copy(VALUE obj, VALUE orig)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    regexp -> regexp
  *
- *  Returns the regexp that produced the match:
+ *  Returns the Regexp that produced the match:
  *
- *    m = /a.*b/.match("abc") # => #<MatchData "ab">
- *    m.regexp                # => /a.*b/
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.regexp
+ *  # => /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  ```
  *
  */
 
