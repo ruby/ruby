@@ -1358,6 +1358,24 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_box_main_does_not_copy_changes_to_main
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      TOP_SELVES = []
+      @ivar = 1
+      def self.main_only = nil
+      extend Comparable
+
+      Ruby::Box.new.load(File.join(ENV["TEST_DIR"], "box", "top_self.rb"))
+      main = TOP_SELVES.first
+
+      assert_empty main.instance_variables
+      assert_not_respond_to main, :main_only
+      assert_not_kind_of Comparable, main
+    end;
+    assert_ruby_status([ENV_ENABLE_BOX], "freeze; Ruby::Box.new")
+  end
+
   def test_require_list_loaded_only_in_main_box
     Tempfile.create(["req_a", ".rb"]) do |t1|
       Tempfile.create(["req_b", ".rb"]) do |t2|
