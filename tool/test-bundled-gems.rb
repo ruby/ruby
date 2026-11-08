@@ -143,7 +143,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     test_command[-2..-1] = %w[test/run.rb --ignore-name=/\Atest_no_memory_leak\z/]
 
   when "prism"
-    # The templated files are not in git, see BundledGem.build.
+    # see BundledGem.build, which cannot use this task without rake-compiler
     test_command.insert(-2, "templates")
 
   when "debug"
