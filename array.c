@@ -2787,7 +2787,7 @@ rb_builtin_ary_at(rb_execution_context_t *ec, VALUE self, VALUE index)
 VALUE
 rb_builtin_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
 {
-    return LONG2FIX(FIX2LEN(num) + 1);
+    return LEN2FIX(FIX2LEN(num) + 1);
 }
 
 VALUE
