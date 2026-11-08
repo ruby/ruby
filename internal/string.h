@@ -56,6 +56,7 @@ VALUE rb_str_byte_substr(VALUE str, VALUE beg, VALUE len);
 VALUE rb_str_substr_two_fixnums(VALUE str, VALUE beg, VALUE len, int empty);
 VALUE rb_str_tmp_frozen_no_embed_acquire(VALUE str);
 void rb_str_make_embedded(VALUE);
+void rb_str_make_heap(VALUE str);
 VALUE rb_str_upto_each(VALUE, VALUE, int, int (*each)(VALUE, VALUE), VALUE);
 size_t rb_str_size_as_embedded(VALUE);
 bool rb_str_reembeddable_p(VALUE);
