@@ -3228,15 +3228,20 @@ match_deconstruct_keys(VALUE match, VALUE keys)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    string -> string
  *
  *  Returns the target string if it was frozen;
  *  otherwise, returns a frozen copy of the target string:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m.string # => "THX1138."
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.string # => "2026-12-25"
+ *  ```
  *
  */
 
