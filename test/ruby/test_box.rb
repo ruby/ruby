@@ -812,6 +812,8 @@ class TestBox < Test::Unit::TestCase
         assert_equal ["a\n", "b\n"], [gets, gets]
         assert_equal [true, true, paths[1]], eval(code)
         assert_equal [true, true, paths[1]], box.eval(code)
+      ensure
+        ARGF.close
       end
     end;
   end
