@@ -2,13 +2,9 @@ require_relative 'spec_helper'
 
 load_extension("bignum")
 
-max_ulong = RbConfig::LIMITS['ULONG_MAX']
 max_long_long = RbConfig::LIMITS['LLONG_MAX']
 min_long_long = RbConfig::LIMITS['LLONG_MIN']
 max_ulong_long = RbConfig::LIMITS['ULLONG_MAX']
-# If the system doesn't offer ULONG_MAX, assume 2's complement and derive it
-# from LONG_MAX.
-max_ulong ||= 2 * (max_long + 1) - 1
 
 describe "CApiBignumSpecs" do
   before :each do
