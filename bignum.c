@@ -185,6 +185,10 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #define GMP_STR2BIG_DIGITS 20
 #if USE_GMP
 # define NAIVE_MUL_DIGITS GMP_MUL_DIGITS
+/* GMP counts limbs in mp_size_t and bits in mp_bitcnt_t, which are both
+ * `long`.  Where that is narrower than size_t (LLP64), numbers of LONG_MAX
+ * bits or more overflow the arithmetic inside GMP, so keep them out. */
+# define GMP_MAX_DIGITS ((size_t)LONG_MAX / BITSPERDIG)
 #else
 # define NAIVE_MUL_DIGITS KARATSUBA_MUL_DIGITS
 #endif
@@ -2605,10 +2609,12 @@ bary_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds
     }
 
 #if USE_GMP
-    bary_mul_gmp(zds, zn, xds, xn, yds, yn);
-#else
-    bary_mul_toom3_start(zds, zn, xds, xn, yds, yn, NULL, 0);
+    if (xn + yn <= GMP_MAX_DIGITS) {
+        bary_mul_gmp(zds, zn, xds, xn, yds, yn);
+        return;
+    }
 #endif
+    bary_mul_toom3_start(zds, zn, xds, xn, yds, yn, NULL, 0);
 }
 
 struct big_div_struct {
@@ -2909,7 +2915,7 @@ static void
 bary_divmod_branch(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
 #if USE_GMP
-    if (GMP_DIV_DIGITS < xn) {
+    if (GMP_DIV_DIGITS < xn && xn <= GMP_MAX_DIGITS) {
         bary_divmod_gmp(qds, qn, rds, rn, xds, xn, yds, yn);
         return;
     }
@@ -4304,7 +4310,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
         num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
 
 #if USE_GMP
-        if (GMP_STR2BIG_DIGITS < num_bdigits) {
+        if (GMP_STR2BIG_DIGITS < num_bdigits && num_bdigits <= GMP_MAX_DIGITS) {
             z = str2big_gmp(sign, digits_start, digits_end, num_digits,
                     num_bdigits, base);
         }
@@ -5172,7 +5178,7 @@ rb_big2str1(VALUE x, int base)
     }
 
 #if USE_GMP
-    if (GMP_BIG2STR_DIGITS < xn) {
+    if (GMP_BIG2STR_DIGITS < xn && xn <= GMP_MAX_DIGITS) {
         return big2str_gmp(x, base);
     }
 #endif
