@@ -1439,14 +1439,19 @@ match_names(VALUE match)
 }
 
 /*
+ *  :markup: markdown
+
  *  call-seq:
  *    size -> integer
  *
  *  Returns size of the match array:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m.size # => 5
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.size # => 4
+ *  ```
  *
  */
 
