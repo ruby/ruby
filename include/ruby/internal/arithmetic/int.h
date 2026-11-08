@@ -187,7 +187,7 @@ RB_NUM2UINT(VALUE x)
 {
     unsigned long ret;
 
-    if /* constexpr */ (sizeof(int) < sizeof(long)) {
+    if /* constexpr */ (sizeof(int) < sizeof(rb_len_t)) {
         ret = rb_num2uint(x);
     }
     else {
@@ -213,7 +213,7 @@ RB_FIX2UINT(VALUE x)
 #endif
     unsigned long ret;
 
-    if /* constexpr */ (sizeof(int) < sizeof(long)) {
+    if /* constexpr */ (sizeof(int) < sizeof(rb_len_t)) {
         ret = rb_fix2uint(x);
     }
     else {
