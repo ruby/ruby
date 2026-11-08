@@ -1510,6 +1510,8 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
  *
  *  In boxes, changes on global variables are also isolated in the boxes. Changes on global variables in a box are visible/applied only in the box.
  *
+ *  `$/`, `$-0`, `$,`, `$\`, `$;`, `$-F`, `$=`, `$0`, `$PROGRAM_NAME`, `$<`, `$*`, `$FILENAME`, `$-i` and `$.` are exceptions. They are shared by all boxes in the process, so setting `$/` in a box also changes the separator that `String#chomp` uses in the other boxes.
+ *
  *  ```ruby
  *  # foo.rb
  *  $foo = "foo"
