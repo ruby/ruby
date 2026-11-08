@@ -1347,6 +1347,17 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_load_defines_top_level_methods_in_object
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      box.load(File.join(ENV["TEST_DIR"], "box", "define_toplevel.rb"))
+
+      assert_equal "foooooooooo", box.eval("Object.new.send(:foo)")
+      assert_not_include box.private_instance_methods(false), :foo
+    end;
+  end
+
   def test_require_list_loaded_only_in_main_box
     Tempfile.create(["req_a", ".rb"]) do |t1|
       Tempfile.create(["req_b", ".rb"]) do |t2|

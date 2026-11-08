@@ -832,10 +832,9 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
 }
 
 static inline enum ruby_tag_type
-load_wrapping(rb_execution_context_t *ec, VALUE fname, VALUE load_wrapper)
+load_wrapping(rb_execution_context_t *ec, VALUE fname, VALUE top_self, VALUE load_wrapper)
 {
     enum ruby_tag_type state;
-    rb_box_t *box;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     volatile VALUE wrapper = th->top_wrapper;
     volatile VALUE self = th->top_self;
@@ -846,18 +845,9 @@ load_wrapping(rb_execution_context_t *ec, VALUE fname, VALUE load_wrapper)
     ec->errinfo = Qnil; /* ensure */
 
     /* load in module as toplevel */
-    if (BOX_OBJ_P(load_wrapper)) {
-        box = rb_get_box_t(load_wrapper);
-        if (!box->top_self) {
-            box->top_self = rb_obj_clone(rb_vm_top_self());
-        }
-        th->top_self = box->top_self;
-    }
-    else {
-        th->top_self = rb_obj_clone(rb_vm_top_self());
-    }
+    th->top_self = top_self;
     th->top_wrapper = load_wrapper;
-    rb_extend_object(th->top_self, th->top_wrapper);
+    if (load_wrapper) rb_extend_object(th->top_self, th->top_wrapper);
 
     EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
@@ -890,7 +880,6 @@ raise_load_if_failed(rb_execution_context_t *ec, enum ruby_tag_type state)
 static void
 rb_load_internal(VALUE fname, VALUE wrap)
 {
-    VALUE box_value;
     rb_execution_context_t *ec = GET_EC();
     const rb_box_t *box = rb_loading_box();
     enum ruby_tag_type state = TAG_NONE;
@@ -898,11 +887,10 @@ rb_load_internal(VALUE fname, VALUE wrap)
         if (!RB_TYPE_P(wrap, T_MODULE)) {
             wrap = rb_module_new();
         }
-        state = load_wrapping(ec, fname, wrap);
+        state = load_wrapping(ec, fname, rb_obj_clone(rb_vm_top_self()), wrap);
     }
     else if (BOX_OPTIONAL_P(box)) {
-        box_value = box->box_object;
-        state = load_wrapping(ec, fname, box_value);
+        state = load_wrapping(ec, fname, box->top_self, 0);
     }
     else {
         load_iseq_eval(ec, fname);
