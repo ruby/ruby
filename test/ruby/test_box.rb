@@ -769,6 +769,22 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_program_name_is_shared_by_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      $0 = "renamed"
+      assert_equal ["renamed", "renamed"], [$0, $PROGRAM_NAME]
+      $PROGRAM_NAME = "renamed again"
+      assert_equal ["renamed again", "renamed again"], [$0, $PROGRAM_NAME]
+
+      box = Ruby::Box.new
+      assert_equal ["in a box", "in a box"], box.eval('$0 = "in a box"; [$0, $PROGRAM_NAME]')
+      assert_equal ["in a box", "in a box"], [$0, $PROGRAM_NAME]
+      assert_equal ["again", "again"], box.eval('$PROGRAM_NAME = "again"; [$0, $PROGRAM_NAME]')
+      assert_equal ["again", "again"], [$0, $PROGRAM_NAME]
+    end;
+  end
+
   def test_defined_for_global_variables
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
