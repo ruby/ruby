@@ -105,6 +105,11 @@ class Test_StringCStr < Test::Unit::TestCase
     assert_wchars_long_term {|s| s.reverse}
   end
 
+  # [Bug #22517]
+  def test_wchar_succ
+    assert_wchars_long_term {|s| s.succ}
+  end
+
   def test_wchar_lstrip!
     assert_wchars_term_char(" a") {|s| s.lstrip!}
   end
