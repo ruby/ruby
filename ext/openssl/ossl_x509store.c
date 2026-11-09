@@ -70,11 +70,11 @@ ossl_verify_cb_call(VALUE proc, int ok, X509_STORE_CTX *ctx)
         args.preverify_ok = ok ? Qtrue : Qfalse;
         args.store_ctx = rctx;
         ret = rb_protect(call_verify_cb_proc, (VALUE)&args, &state);
+        RTYPEDDATA_DATA(rctx) = NULL;
         if (state) {
             rb_set_errinfo(Qnil);
             rb_warn("exception in verify_callback is ignored");
         }
-        RTYPEDDATA_DATA(rctx) = NULL;
     }
     if (ret == Qtrue) {
         X509_STORE_CTX_set_error(ctx, X509_V_OK);
