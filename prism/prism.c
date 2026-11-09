@@ -12353,12 +12353,8 @@ parser_lex(pm_parser_t *parser) {
                             }
 
                             parser->current.end = terminator_end;
-                            if (*lex_mode->as.heredoc.next_start == '\\') {
-                                parser->next_start = NULL;
-                            } else {
-                                parser->next_start = lex_mode->as.heredoc.next_start;
-                                parser->heredoc_end = parser->current.end;
-                            }
+                            parser->next_start = lex_mode->as.heredoc.next_start;
+                            parser->heredoc_end = parser->current.end;
 
                             lex_state_set(parser, PM_LEX_STATE_END);
                             lex_mode_pop(parser);
