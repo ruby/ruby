@@ -338,6 +338,15 @@ RSpec.describe Bundler::Settings::TCPSocketProbe do
 end
 
 RSpec.describe Bundler::MirrorSockets do
+  def probed_addresses(uri)
+    addresses = []
+    Bundler::MirrorSockets.new(Bundler::Settings::Mirror.new(uri, 1)).any? do |_socket, address, _timeout|
+      addresses << Addrinfo.new(address).ip_address
+      false
+    end
+    addresses
+  end
+
   it "closes the socket when the block raises" do
     yielded = nil
     expect do
@@ -347,5 +356,9 @@ RSpec.describe Bundler::MirrorSockets do
       end
     end.to raise_error(RuntimeError, "boom")
     expect(yielded).to be_closed
+  end
+
+  it "opens one socket per address" do
+    expect(probed_addresses("http://127.0.0.1:9292")).to eq(["127.0.0.1"])
   end
 end
