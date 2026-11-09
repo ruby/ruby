@@ -964,7 +964,7 @@ tdata_deferred_free_count_load(void)
 static void objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src);
 
 
-static struct heap_page_body *page_pool_acquire(struct arena_descriptor **arena_out);
+static struct heap_page_body *page_pool_acquire(struct arena_descriptor **arena_out, bool *zeroed_out);
 static void page_pool_release(struct heap_page_body *body, struct arena_descriptor *arena);
 #ifdef HAVE_MMAP
 static void page_pool_release_locked(struct heap_page_body *body, struct arena_descriptor *arena);
@@ -1168,6 +1168,7 @@ struct heap_page {
         unsigned int has_uncollectible_wb_unprotected_objects : 1;
         unsigned int has_shref_objects : 1;
         unsigned int has_shareable_objects : 1;
+        unsigned int body_zeroed : 1;
     } flags;
 
     rb_heap_t *heap;
@@ -2658,17 +2659,13 @@ gc_aligned_malloc(size_t alignment, size_t size)
 
 #define PAGE_POOL_ALL_BODIES ((uint32_t)((UINT64_C(1) << PAGE_POOL_ARENA_BODIES) - 1))
 
-/* An arena's descriptor: the mapping, plus two bits per body -- free (the pool may hand
- * it out) and advised (the OS no longer backs it; always a subset of free).  Keeping that
- * state out of the bodies leaves a free body entirely dead memory, so page_pool_reclaim
- * can advise all of it and coalesce neighbours.  Bit i is the body at
- * start + i * HEAP_PAGE_SIZE: both masks are in address order. */
 struct arena_descriptor {
     struct arena_descriptor *next;
     char *start;                  /* usable area, HEAP_PAGE_ALIGN aligned */
     size_t size;                  /* usable bytes (a multiple of HEAP_PAGE_SIZE) */
     uint32_t free_mask;
     uint32_t advised_mask;
+    uint32_t zeroed_mask;
 };
 STATIC_ASSERT(page_pool_bodies_fit_mask, PAGE_POOL_ARENA_BODIES <= 32);
 
@@ -2780,9 +2777,10 @@ page_pool_add_arena(rb_global_objspace_t *g)
 /* Acquire a free page from the page pool. It can give back a warm or "cold" page that will cause
  * a page fault on first access. If there are no free pages, an extra arena is allocated. */
 static struct heap_page_body *
-page_pool_acquire(struct arena_descriptor **arena_out)
+page_pool_acquire(struct arena_descriptor **arena_out, bool *zeroed_out)
 {
     struct heap_page_body *body = NULL;
+    *zeroed_out = false;
 
     if (HEAP_PAGE_ALLOC_USE_MMAP) {
 #ifdef HAVE_MMAP
@@ -2801,8 +2799,10 @@ page_pool_acquire(struct arena_descriptor **arena_out)
             uint32_t bit = (uint32_t)1 << i;
 
             body = page_pool_body_at(a, i);
-            a->free_mask &= ~bit;
             *arena_out = a;
+            *zeroed_out = (a->zeroed_mask & bit) != 0;
+            a->free_mask &= ~bit;
+            a->zeroed_mask &= ~bit;
             need_reuse = (a->advised_mask & bit) != 0;
             if (need_reuse) {
                 a->advised_mask &= ~bit;
@@ -2817,6 +2817,8 @@ page_pool_acquire(struct arena_descriptor **arena_out)
             body = (struct heap_page_body *)g->page_pool.arena_cursor;
             g->page_pool.arena_cursor += HEAP_PAGE_SIZE;
             *arena_out = g->page_pool.arena_current;
+            /* Never handed out since the arena was mapped. */
+            *zeroed_out = true;
         }
         rb_native_mutex_unlock(&g->page_pool.lock);
 
@@ -2848,6 +2850,7 @@ page_pool_release_locked(struct heap_page_body *body, struct arena_descriptor *a
     GC_ASSERT(!(arena->advised_mask & bit)); /* a body in use is never advised */
 
     arena->free_mask |= bit;
+    arena->zeroed_mask &= ~bit;
     asan_poison_memory_region(body, HEAP_PAGE_SIZE);
 }
 #endif
@@ -2887,6 +2890,7 @@ page_pool_reclaim(rb_global_objspace_t *g)
     if (g->page_pool.can_advise) {
         for (struct arena_descriptor *a = g->page_pool.arenas; a; a = a->next) {
             uint32_t advise_mask = a->free_mask & ~a->advised_mask;
+            uint32_t zeroed_mask = 0;
             if (advise_mask == 0) continue; /* steady state */
 
             for (int i = 0; i < PAGE_POOL_ARENA_BODIES; i++) {
@@ -2899,11 +2903,18 @@ page_pool_reclaim(rb_global_objspace_t *g)
                 }
                 int run_len = i - run + 1;
 
+                bool zeroed;
                 rb_vm_map_reusable_immediate(page_pool_body_at(a, run),
-                                             (size_t)run_len * HEAP_PAGE_SIZE, 0);
+                                             (size_t)run_len * HEAP_PAGE_SIZE, 0, &zeroed);
+                if (zeroed) {
+                    for (int j = run; j <= i; j++) {
+                        zeroed_mask |= (uint32_t)1 << j;
+                    }
+                }
+                g->page_pool.advised_count += run_len;
             }
             a->advised_mask |= advise_mask;
-            g->page_pool.advised_count += (int)rb_popcount32(advise_mask);
+            a->zeroed_mask |= zeroed_mask;
         }
     }
 
@@ -2958,9 +2969,9 @@ page_pool_reclaim(rb_global_objspace_t *g)
 }
 
 static struct heap_page_body *
-heap_page_body_allocate(struct arena_descriptor **arena_out)
+heap_page_body_allocate(struct arena_descriptor **arena_out, bool *zeroed_out)
 {
-    struct heap_page_body *page_body = page_pool_acquire(arena_out);
+    struct heap_page_body *page_body = page_pool_acquire(arena_out, zeroed_out);
 
     GC_ASSERT(page_body == NULL || (uintptr_t)page_body % HEAP_PAGE_ALIGN == 0);
 
@@ -2991,8 +3002,9 @@ heap_page_resurrect(rb_objspace_t *objspace)
 static struct heap_page *
 heap_page_allocate(rb_objspace_t *objspace)
 {
+    bool zeroed;
     struct arena_descriptor *arena;
-    struct heap_page_body *page_body = heap_page_body_allocate(&arena);
+    struct heap_page_body *page_body = heap_page_body_allocate(&arena, &zeroed);
     if (page_body == 0) {
         rb_memerror();
     }
@@ -3031,6 +3043,7 @@ heap_page_allocate(rb_objspace_t *objspace)
 
     page->body = page_body;
     page->arena = arena;
+    page->flags.body_zeroed = zeroed;
     page_body->header.page = page;
     page->objspace = objspace;
 
@@ -3069,7 +3082,12 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 
     uintptr_t slots_end = start + (uintptr_t)slot_count * heap->slot_size;
 
-    memset((void *)start, 0, slots_end - start);
+    /* Free slots must read as T_NONE. A page the pool knows is zero already is fine
+     * and writing it anyway would fault in the whole thing */
+    if (!page->flags.body_zeroed) {
+        memset((void *)start, 0, slots_end - start);
+    }
+    page->flags.body_zeroed = FALSE;
 
     struct free_region *region = (struct free_region *)start;
     region->flags = 0;
@@ -5206,7 +5224,9 @@ static inline void
 gc_sweep_register_free_slot(rb_objspace_t *objspace, struct heap_page *page, struct gc_sweep_context *ctx, uintptr_t p, short slot_size)
 {
     rb_asan_unpoison_object(p, false);
-    ((struct RBasic *)p)->flags = 0;
+    /* A slot that was already free reads 0 here. Skipping the store keeps the sweep from
+     * possibly dirtying a page */
+    if (((struct RBasic *)p)->flags) ((struct RBasic *)p)->flags = 0;
 
     /* Keep a freed slot from carrying its old shareable and shref bits into the next
      * object born there; the actual clear happens per bitmap word at the end of
