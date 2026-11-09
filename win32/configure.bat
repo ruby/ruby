@@ -176,12 +176,14 @@ goto :loopend ;
   ::- them here too would duplicate them at each reconfiguration.
   if "%opt%" == "--without-ext" goto :witharg
   if "%opt%" == "--without-extensions" goto :witharg
+  if "%opt%" == "--without-mimalloc" echo>> %config_make% WITH_MIMALLOC = no
   echo>>%confargs%  "%opt%" \
   if "%opt%" == "--without-baseruby" goto :nobaseruby
   if "%opt%" == "--without-git" goto :nogit
 goto :loop ;
 :witharg
   if "%opt%" == "--with-static-linked-ext" goto :extstatic
+  if "%opt%" == "--with-mimalloc" goto :mimalloc
   if "%eq%" == "" call :take_arg
   if not "%arg%" == "" (
     echo>>%confargs%  "%opt%=%arg:$=$$%" \
@@ -246,6 +248,10 @@ goto :loop ;
 :gmp
   echo>> %config_make% WITH_GMP = yes
 goto :loop ;
+:mimalloc
+  if "%eq%" == "" (set "arg=yes")
+  echo>> %config_make% WITH_MIMALLOC = %arg%
+goto :loopend ;
 :destdir
   echo>> %config_make% DESTDIR = %arg%
 goto :loop ;
@@ -286,8 +292,9 @@ goto :loop ;
   echo   --with-ext="a,b,..."    use extensions a, b, ...
   echo   --without-ext="a,b,..." ignore extensions a, b, ...
   echo   --with-opt-dir="DIR-LIST" add optional headers and libraries directories separated by ';'
+  echo   --with-mimalloc         allocate memory for the GC with mimalloc
   echo   --disable-install-doc   do not install rdoc indexes during install
-  echo   --enable-yjit           enable in-process JIT compiler that requires rustc (x64 only)
+  echo   --enable-yjit           enable in-process JIT compiler that requires rustc (x64 and arm64)
   echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
   echo   --with-ntver=_WIN32_WINNT_XXXX
   echo   --with-ntver=XXXX       same as --with-ntver=_WIN32_WINNT_XXXX

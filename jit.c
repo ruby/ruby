@@ -1003,6 +1003,8 @@ rb_jit_icache_invalidate(void *start, void *end)
     // On Darwin it's the same as calling sys_icache_invalidate().
 #ifdef __GNUC__
     __builtin___clear_cache(start, end);
+#elif defined(_M_ARM64)
+    FlushInstructionCache(GetCurrentProcess(), start, (char *)end - (char *)start);
 #elif defined(__aarch64__)
 #error No instruction cache clear available with this compiler on Aarch64!
 #endif
@@ -1035,6 +1037,7 @@ rb_jit_str_simple_append(VALUE str1, VALUE str2)
 }
 
 void rb_jit_str_concat_codepoint(VALUE str, VALUE codepoint);
+const void *rb_jit_io_buffer_readable_ptr(VALUE self, size_t offset, size_t length);
 
 attr_index_t
 rb_jit_shape_capacity(shape_id_t shape_id)

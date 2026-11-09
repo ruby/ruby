@@ -4102,6 +4102,18 @@ assert_equal 'foo', %q{
   foo { "foo" }
 }
 
+# getblockparamproxy in a non-main Ractor, guarding on the proxy's singleton class
+assert_equal 'ok', %q{
+  def instrument(&block)
+    tap { block&.call(1) }
+  end
+
+  Ractor.new do
+    1_000.times { instrument { it + 1 } }
+    :ok
+  end.value
+}
+
 # getblockparam
 assert_equal 'foo', %q{
   def foo(&block)

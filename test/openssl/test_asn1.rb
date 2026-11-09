@@ -331,6 +331,11 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     oid = (0...100).to_a.join(".").b
     obj = OpenSSL::ASN1::ObjectId.new(oid)
     assert_equal oid, obj.oid
+    oid = "1.3.6.1" + ".1" * 60
+    assert_equal 127, oid.length
+    decoded = OpenSSL::ASN1.decode(OpenSSL::ASN1::ObjectId.new(oid).to_der)
+    assert_equal oid, decoded.value
+    assert_equal oid, decoded.oid
   end
 
   def test_object_identifier_equality

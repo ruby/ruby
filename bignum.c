@@ -4198,7 +4198,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
             base = 10;
         }
     }
-    else if (len == 1 || !(flags & RB_INT_PARSE_PREFIX)) {
+    else if (len == 0 || len == 1 || !(flags & RB_INT_PARSE_PREFIX)) {
         /* no prefix */
     }
     else if (base == 2) {
@@ -4229,20 +4229,24 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     if (*str == '0' && len != 1) { /* squeeze preceding 0s */
         int us = 0;
         const char *end = len < 0 ? NULL : str + len;
-        ++num_digits;
-        while ((c = *++str) == '0' ||
-               ((flags & RB_INT_PARSE_UNDERSCORE) && c == '_')) {
-            if (c == '_') {
-                if (++us >= 2)
+        while (str != end) {
+            const char *next = str + 1;
+            c = *str;
+            if (c == '0') {
+                if (next == end || !*next || ISSPACE(*next))
                     break;
-            }
-            else {
                 ++num_digits;
                 us = 0;
             }
-            if (str == end) break;
+            else if ((flags & RB_INT_PARSE_UNDERSCORE) && c == '_') {
+                if (++us >= 2 || next == end || !*next || ISSPACE(*next))
+                    break;
+            }
+            else {
+                break;
+            }
+            str = next;
         }
-        if (!c || ISSPACE(c)) --str;
         if (end) len = end - str;
     }
     c = *str;

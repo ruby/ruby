@@ -24,7 +24,7 @@ module Bundler
           kernel_load(bin_path, *args)
         else
           bin_path = explicit_path(bin_path)
-          kernel_exec(bin_path, *args)
+          kernel_exec([bin_path, bin_path], *args)
         end
       else
         # exec using the given command

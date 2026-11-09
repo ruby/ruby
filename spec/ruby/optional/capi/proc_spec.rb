@@ -96,6 +96,21 @@ describe "C-API Proc function" do
       @p.rb_proc_call_kw(prc, [{b: 2}, {}]).should == [[{b: 2}], {}]
     end
 
+    ruby_version_is "4.1" do
+      it "passes keyword arguments to a Method proc" do
+        def @p.target(*args, **kw)
+          [args, kw]
+        end
+        prc = @p.method(:target).to_proc
+
+        @p.rb_proc_call_kw(prc, [{}]).should == [[], {}]
+        @p.rb_proc_call_kw(prc, [1, {}]).should == [[1], {}]
+        @p.rb_proc_call_kw(prc, [{b: 2}, {}]).should == [[{b: 2}], {}]
+        @p.rb_proc_call_kw(prc, [{a: 1}]).should == [[], {a: 1}]
+        @p.rb_proc_call_kw(prc, [{b: 2}, {a: 1}]).should == [[{b: 2}], {a: 1}]
+      end
+    end
+
     it "raises TypeError if the last argument is not a Hash" do
       -> {
         @p.rb_proc_call_kw(proc {}, [42])
@@ -124,6 +139,22 @@ describe "C-API Proc function" do
       @p.rb_proc_call_with_block_kw(prc, [{a: 1}], block).should == [[], {a: 1}, 42]
       @p.rb_proc_call_with_block_kw(prc, [{b: 2}, {a: 1}], block).should == [[{b: 2}], {a: 1}, 42]
       @p.rb_proc_call_with_block_kw(prc, [{b: 2}, {}], block).should == [[{b: 2}], {}, 42]
+    end
+
+    ruby_version_is "4.1" do
+      it "passes keyword arguments and a block to a Method proc" do
+        def @p.target(*args, **kw, &block)
+          [args, kw, block.call(42)]
+        end
+        prc = @p.method(:target).to_proc
+        block = proc { |n| n }
+
+        @p.rb_proc_call_with_block_kw(prc, [{}], block).should == [[], {}, 42]
+        @p.rb_proc_call_with_block_kw(prc, [1, {}], block).should == [[1], {}, 42]
+        @p.rb_proc_call_with_block_kw(prc, [{b: 2}, {}], block).should == [[{b: 2}], {}, 42]
+        @p.rb_proc_call_with_block_kw(prc, [{a: 1}], block).should == [[], {a: 1}, 42]
+        @p.rb_proc_call_with_block_kw(prc, [{b: 2}, {a: 1}], block).should == [[{b: 2}], {a: 1}, 42]
+      end
     end
 
     it "raises TypeError if the last argument is not a Hash" do

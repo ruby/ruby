@@ -42,6 +42,7 @@ fn main() {
         .clang_args(filtered_clang_args)
         .header("encindex.h")
         .header("internal.h")
+        .header("internal/io_buffer.h")
         .header("internal/object.h")
         .header("internal/re.h")
         .header("include/ruby/ruby.h")
@@ -82,6 +83,7 @@ fn main() {
         .allowlist_function("rb_jit_str_simple_append")
         .allowlist_function("rb_str_dup")
         .allowlist_function("rb_str_getbyte")
+        .allowlist_function("rb_jit_io_buffer_readable_ptr")
         .allowlist_type("ruby_preserved_encindex")
         .allowlist_function("rb_class2name")
 
@@ -191,6 +193,7 @@ fn main() {
         .allowlist_var("rb_cFalseClass")
         .allowlist_var("rb_cInteger")
         .allowlist_var("rb_cIO")
+        .allowlist_var("rb_cIOBuffer")
         .allowlist_var("rb_cSymbol")
         .allowlist_var("rb_cFloat")
         .allowlist_var("rb_cNumeric")
@@ -258,6 +261,9 @@ fn main() {
         .allowlist_function("rb_nil_to_s")
         .allowlist_function("rb_true_to_s")
         .allowlist_function("rb_false_to_s")
+        .allowlist_function("rb_int_to_s")
+        .allowlist_function("rb_fix_to_s")
+        .allowlist_function("rb_mod_to_s")
 
         // `ruby_value_type` is a C enum and this stops it from
         // prefixing all the members with the name of the type

@@ -1006,7 +1006,37 @@ strio_get_sync(VALUE self)
  * call-seq:
  *   each_byte {|byte| ... } -> self
  *
- * :include: stringio/each_byte.rdoc
+ * With a block given, calls the block with each remaining byte in the stream;
+ * positions the stream at end-of-file;
+ * returns +self+:
+ *
+ *   bytes = []
+ *   strio = StringIO.new('hello')     #  Five 1-byte characters.
+ *   strio.each_byte {|byte| bytes.push(byte) }
+ *   strio.eof? # => true
+ *   bytes # => [104, 101, 108, 108, 111]
+ *
+ *   bytes = []
+ *   strio = StringIO.new('こんにちは')  # Five 3-byte characters.
+ *   strio.each_byte {|byte| bytes.push(byte) }
+ *   bytes # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
+ *
+ * The position in the stream matters:
+ *
+ *   bytes = []
+ *   strio = StringIO.new('こんにちは')
+ *   strio.getc # => "こ"
+ *   strio.pos  # => 3  # 3-byte character was read.
+ *   strio.each_byte {|byte| bytes.push(byte) }
+ *   bytes      # => [227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
+ *
+ * If at end-of-file, does not call the block:
+ *
+ *   strio.eof? # => true
+ *   strio.each_byte {|byte| fail 'Boo!' }
+ *   strio.eof? # => true
+ *
+ * With no block given, returns a new {Enumerator}[rdoc-ref:Enumerator].
  *
  * Related: StringIO#each_char, StringIO#each_codepoint, StringIO#each_line.
  */
@@ -1028,7 +1058,36 @@ strio_each_byte(VALUE self)
  * call-seq:
  *   getc -> character, byte, or nil
  *
- * :include: stringio/getc.rdoc
+ * Reads and returns the next character (or byte; see below) from the stream:
+ *
+ *   strio = StringIO.new('foo')
+ *   strio.getc # => "f"
+ *   strio.getc # => "o"
+ *   strio.getc # => "o"
+ *
+ * Returns +nil+ if at end-of-stream:
+ *
+ *   strio.eof? # => true
+ *   strio.getc # => nil
+ *
+ * Returns characters, not bytes:
+ *
+ *   strio = StringIO.new('こんにちは')
+ *   strio.getc # => "こ"
+ *   strio.getc # => "ん"
+ *
+ * In each of the examples above, the stream is positioned at the beginning of a character;
+ * in other cases that need not be true:
+ *
+ *    strio = StringIO.new('こんにちは')  # Five 3-byte characters.
+ *    strio.pos = 3 # => 3     # At beginning of second character; returns character.
+ *    strio.getc    # => "ん"
+ *    strio.pos = 4 # => 4     # At second byte of second character; returns byte.
+ *    strio.getc    # => "\x82"
+ *    strio.pos = 5 # => 5     # At third byte of second character; returns byte.
+ *    strio.getc    # => "\x93"
+ *
+ * Related: #getbyte, #putc, #ungetc.
  *
  */
 static VALUE
@@ -1054,7 +1113,30 @@ strio_getc(VALUE self)
  * call-seq:
  *   getbyte -> integer or nil
  *
- * :include: stringio/getbyte.rdoc
+ * Reads and returns the next integer byte (not character) from the stream:
+ *
+ *   s = 'foo'
+ *   s.bytes       # => [102, 111, 111]
+ *   strio = StringIO.new(s)
+ *   strio.getbyte # => 102
+ *   strio.getbyte # => 111
+ *   strio.getbyte # => 111
+ *
+ * Returns +nil+ if at end-of-stream:
+ *
+ *   strio.eof?    # => true
+ *   strio.getbyte # => nil
+ *
+ * Returns a byte, not a character:
+ *
+ *   s = 'こんにちは'
+ *   s.bytes
+ *   # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
+ *   strio = StringIO.new(s)
+ *   strio.getbyte # => 227
+ *   strio.getbyte # => 129
+ *
+ * Related: #each_byte, #ungetbyte, #getc.
  *
  */
 static VALUE
@@ -1233,7 +1315,37 @@ strio_readbyte(VALUE self)
  * call-seq:
  *   each_char {|char| ... } -> self
  *
- * :include: stringio/each_char.rdoc
+ * With a block given, calls the block with each remaining character in the stream;
+ * positions the stream at end-of-file;
+ * returns +self+:
+ *
+ *   chars = []
+ *   strio = StringIO.new('hello')
+ *   strio.each_char {|char| chars.push(char) }
+ *   strio.eof? # => true
+ *   chars      # => ["h", "e", "l", "l", "o"]
+ *
+ *   chars = []
+ *   strio = StringIO.new('こんにちは')
+ *   strio.each_char {|char| chars.push(char) }
+ *   chars      # => ["こ", "ん", "に", "ち", "は"]
+ *
+ * Stream position matters:
+ *
+ *  chars = []
+ *  strio = StringIO.new('こんにちは')
+ *  strio.getc # => "こ"
+ *  strio.pos  # => 3  # 3-byte character was read.
+ *  strio.each_char {|char| chars.push(char) }
+ *  chars      # => ["ん", "に", "ち", "は"]
+ *
+ * When at end-of-stream does not call the block:
+ *
+ *   strio.eof? # => true
+ *   strio.each_char {|char| fail 'Boo!' }
+ *   strio.eof? # => true
+ *
+ * With no block given, returns a new {Enumerator}[rdoc-ref:Enumerator].
  *
  * Related: StringIO#each_byte, StringIO#each_codepoint, StringIO#each_line.
  */
@@ -1254,7 +1366,39 @@ strio_each_char(VALUE self)
  * call-seq:
  *   each_codepoint {|codepoint| ... } -> self
  *
- * :include: stringio/each_codepoint.rdoc
+ * With a block given, calls the block with each successive codepoint from self;
+ * sets the position to end-of-stream;
+ * returns +self+.
+ *
+ * Each codepoint is the integer value for a character; returns self:
+ *
+ *   codepoints = []
+ *   strio = StringIO.new('hello')
+ *   strio.each_codepoint {|codepoint| codepoints.push(codepoint) }
+ *   strio.eof? # => true
+ *   codepoints # => [104, 101, 108, 108, 111]
+ *
+ *   codepoints = []
+ *   strio = StringIO.new('こんにちは')
+ *   strio.each_codepoint {|codepoint| codepoints.push(codepoint) }
+ *   codepoints # => [12371, 12435, 12395, 12385, 12399]
+ *
+ * Position in the stream matters:
+ *
+ *   codepoints = []
+ *   strio = StringIO.new('こんにちは')
+ *   strio.getc # => "こ"
+ *   strio.pos  # => 3
+ *   strio.each_codepoint {|codepoint| codepoints.push(codepoint) }
+ *   codepoints # => [12435, 12395, 12385, 12399]
+ *
+ * When at end-of-stream, the block is not called:
+ *
+ *   strio.eof? # => true
+ *   strio.each_codepoint {|codepoint| fail 'Boo!' }
+ *   strio.eof? # => true
+ *
+ * With no block given, returns a new {Enumerator}[rdoc-ref:Enumerator].
  *
  * Related: StringIO#each_byte, StringIO#each_char, StringIO#each_line.
  */
@@ -1360,7 +1504,6 @@ prepare_getline_args(struct StringIO *ptr, struct getline_arg *arg, int argc, VA
 	    if (rs == rb_rs) {
 		rs = rb_enc_str_new(0, 0, enc_io);
 		rb_str_buf_cat_ascii(rs, "\n");
-		rs = rs;
 	    }
 	    else {
 		rb_raise(rb_eArgError, "encoding mismatch: %s IO with %s RS",
@@ -1491,7 +1634,105 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
  *   gets(limit, chomp: false) -> string or nil
  *   gets(sep, limit, chomp: false) -> string or nil
  *
- * :include: stringio/gets.rdoc
+ * Reads and returns a line from the stream;
+ * returns +nil+ if at end-of-stream.
+ *
+ * Side effects:
+ *
+ * - Increments stream position by the number of bytes read.
+ * - Assigns the return value to global variable <tt>$_</tt>.
+ *
+ * With no arguments given, reads a line using the default record separator
+ * (global variable <tt>$/</tt>,* whose initial value is <tt>"\n"</tt>):
+ *
+ *   strio = StringIO.new(TEXT)
+ *   strio.pos  # => 0
+ *   strio.gets # => "First line\n"
+ *   strio.pos  # => 11
+ *   $_         # => "First line\n"
+ *   strio.gets # => "Second line\n"
+ *   strio.read # => "\nFourth line\nFifth line\n"
+ *   strio.eof? # => true
+ *   strio.gets # => nil
+ *
+ *   strio = StringIO.new('こんにちは')  # Five 3-byte characters.
+ *   strio.pos  # => 0
+ *   strio.gets # => "こんにちは"
+ *   strio.pos  # => 15
+ *
+ * <b>Argument +sep+</b>
+ *
+ * With only string argument +sep+ given, reads a line using that string as the record separator:
+ *
+ *   strio = StringIO.new(TEXT)
+ *   strio.gets(' ') # => "First "
+ *   strio.gets(' ') # => "line\nSecond "
+ *   strio.gets(' ') # => "line\n\nFourth "
+ *
+ * <b>Argument +limit+</b>
+ *
+ * With only integer argument +limit+ given,
+ * reads a line using the default record separator;
+ * limits the size (in characters) of each line to the given limit:
+ *
+ *   strio = StringIO.new(TEXT)
+ *   strio.gets(10) # => "First line"
+ *   strio.gets(10) # => "\n"
+ *   strio.gets(10) # => "Second lin"
+ *   strio.gets(10) # => "e\n"
+ *
+ * <b>Arguments +sep+ and +limit+</b>
+ *
+ * With arguments +sep+ and +limit+ both given, honors both:
+ *
+ *   strio = StringIO.new(TEXT)
+ *   strio.gets(' ', 10) # => "First "
+ *   strio.gets(' ', 10) # => "line\nSecon"
+ *   strio.gets(' ', 10) # => "d "
+ *
+ * <b>Position</b>
+ *
+ * As stated above, method +gets+ reads and returns the next line in the stream.
+ *
+ * In the examples above each +strio+ object starts with its position at beginning-of-stream;
+ * but in other cases the position may be anywhere:
+ *
+ *   strio = StringIO.new(TEXT)
+ *   strio.pos = 12
+ *   strio.gets # => "econd line\n"
+ *
+ * The position need not be at a character boundary:
+ *
+ *   strio = StringIO.new('こんにちは')  # Five 3-byte characters.
+ *   strio.pos = 3                     # At beginning of second character.
+ *   strio.gets  # => "んにちは"
+ *   strio.pos = 4                     # Within second character.
+ *   strio.gets  # => "\x82\x93にちは"
+ *
+ * <b>Special Record Separators</b>
+ *
+ * Like some methods in class IO, method +gets+ honors two special record separators;
+ * see {Special Line Separators}[rdoc-ref:IO@Special+Line+Separator+Values]:
+ *
+ *   strio = StringIO.new(TEXT)
+ *   strio.gets('')  # Read "paragraph" (up to empty line).
+ *   # => "First line\nSecond line\n\n"
+ *
+ *   strio = StringIO.new(TEXT)
+ *   strio.gets(nil) # "Slurp": read all.
+ *   # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+ *
+ * <b>Keyword Argument +chomp+</b>
+ *
+ * With keyword argument +chomp+ given as +true+ (the default is +false+),
+ * removes the trailing newline (if any) from the returned line:
+ *
+ *   strio = StringIO.new(TEXT)
+ *   strio.gets              # => "First line\n"
+ *   strio.gets(chomp: true) # => "Second line"
+ *
+ * Related: #each_line, #readlines,
+ * {Kernel#puts}[rdoc-ref:Kernel#puts].
  *
  */
 static VALUE
@@ -1536,7 +1777,195 @@ strio_readline(int argc, VALUE *argv, VALUE self)
  *   each_line(limit, chomp: false) {|line| ... }      -> self
  *   each_line(sep, limit, chomp: false) {|line| ... } -> self
  *
- * :include: stringio/each_line.md
+ * With a block given calls the block with each remaining line (see "Position" below) in the stream;
+ * returns `self`.
+ *
+ * Leaves stream position at end-of-stream.
+ *
+ * **No Arguments**
+ *
+ * With no arguments given,
+ * reads lines using the default record separator
+ * (global variable `$/`, whose initial value is `"\n"`).
+ *
+ * ```ruby
+ * strio = StringIO.new(TEXT)
+ * strio.each_line {|line| p line }
+ * strio.eof? # => true
+ * ```
+ *
+ * Output:
+ *
+ * ```
+ * "First line\n"
+ * "Second line\n"
+ * "\n"
+ * "Fourth line\n"
+ * "Fifth line\n"
+ * ```
+ *
+ * **Argument `sep`**
+ *
+ * With only string argument `sep` given,
+ * reads lines using that string as the record separator:
+ *
+ * ```ruby
+ * strio = StringIO.new(TEXT)
+ * strio.each_line(' ') {|line| p line }
+ * ```
+ *
+ * Output:
+ *
+ * ```
+ * "First "
+ * "line\nSecond "
+ * "line\n\nFourth "
+ * "line\nFifth "
+ * "line\n"
+ * ```
+ *
+ * **Argument `limit`**
+ *
+ * With only integer argument `limit` given,
+ * reads lines using the default record separator;
+ * also limits the size (in characters) of each line to the given limit:
+ *
+ * ```ruby
+ * strio = StringIO.new(TEXT)
+ * strio.each_line(10) {|line| p line }
+ * ```
+ *
+ * Output:
+ *
+ * ```
+ * "First line"
+ * "\n"
+ * "Second lin"
+ * "e\n"
+ * "\n"
+ * "Fourth lin"
+ * "e\n"
+ * "Fifth line"
+ * "\n"
+ * ```
+ *
+ * **Arguments `sep` and `limit`**
+ *
+ * With arguments `sep` and `limit` both given,
+ * honors both:
+ *
+ * ```ruby
+ * strio = StringIO.new(TEXT)
+ * strio.each_line(' ', 10) {|line| p line }
+ * ```
+ *
+ * Output:
+ *
+ * ```
+ * "First "
+ * "line\nSecon"
+ * "d "
+ * "line\n\nFour"
+ * "th "
+ * "line\nFifth"
+ * " "
+ * "line\n"
+ * ```
+ *
+ * **Position**
+ *
+ * As stated above, method `each` _remaining_ line in the stream.
+ *
+ * In the examples above each `strio` object starts with its position at beginning-of-stream;
+ * but in other cases the position may be anywhere (see StringIO#pos):
+ *
+ * ```ruby
+ * strio = StringIO.new(TEXT)
+ * strio.pos = 30 # Set stream position to character 30.
+ * strio.each_line {|line| p line }
+ * ```
+ *
+ * Output:
+ *
+ * ```
+ * " line\n"
+ * "Fifth line\n"
+ * ```
+ *
+ * In all the examples above, the stream position is at the beginning of a character;
+ * in other cases, that need not be so:
+ *
+ * ```ruby
+ * s = 'こんにちは'  # Five 3-byte characters.
+ * strio = StringIO.new(s)
+ * strio.pos = 3   # At beginning of second character.
+ * strio.each_line {|line| p line }
+ * strio.pos = 4   # At second byte of second character.
+ * strio.each_line {|line| p line }
+ * strio.pos = 5   # At third byte of second character.
+ * strio.each_line {|line| p line }
+ * ```
+ *
+ * Output:
+ *
+ * ```
+ * "んにちは"
+ * "\x82\x93にちは"
+ * "\x93にちは"
+ * ```
+ *
+ * **Special Record Separators**
+ *
+ * Like some methods in class `IO`, StringIO.each honors two special record separators;
+ * see {Special Line Separators}[https://docs.ruby-lang.org/en/master/IO.html#class-IO-label-Special+Line+Separator+Values].
+ *
+ * ```ruby
+ * strio = StringIO.new(TEXT)
+ * strio.each_line('') {|line| p line } # Read as paragraphs (separated by blank lines).
+ * ```
+ *
+ * Output:
+ *
+ * ```
+ * "First line\nSecond line\n\n"
+ * "Fourth line\nFifth line\n"
+ * ```
+ *
+ * ```ruby
+ * strio = StringIO.new(TEXT)
+ * strio.each_line(nil) {|line| p line } # "Slurp"; read it all.
+ * ```
+ *
+ * Output:
+ *
+ * ```
+ * "First line\nSecond line\n\nFourth line\nFifth line\n"
+ * ```
+ *
+ * **Keyword Argument `chomp`**
+ *
+ * With keyword argument `chomp` given as `true` (the default is `false`),
+ * removes trailing newline (if any) from each line:
+ *
+ * ```ruby
+ * strio = StringIO.new(TEXT)
+ * strio.each_line(chomp: true) {|line| p line }
+ * ```
+ *
+ * Output:
+ *
+ * ```
+ * "First line"
+ * "Second line"
+ * ""
+ * "Fourth line"
+ * "Fifth line"
+ * ```
+ *
+ * With no block given, returns a new {Enumerator}[https://docs.ruby-lang.org/en/master/Enumerator.html].
+ *
+ *
+ * Related: StringIO.each_byte, StringIO.each_char, StringIO.each_codepoint.
  *
  */
 static VALUE
@@ -1680,7 +2109,88 @@ strio_write(VALUE self, VALUE str)
  * call-seq:
  *   putc(object) -> object
  *
- * :include: stringio/putc.rdoc
+ * Replaces one or more bytes at position +pos+
+ * with bytes of the given argument;
+ * advances the position by the count of bytes written;
+ * returns the argument.
+ *
+ * \StringIO object for 1-byte characters.
+ *
+ *   strio = StringIO.new('foo')
+ *   strio.pos # => 0
+ *
+ * With 1-byte argument, replaces one byte:
+ *
+ *   strio.putc('b')
+ *   strio.string    # => "boo"
+ *   strio.pos       # => 1
+ *   strio.putc('a') # => "a"
+ *   strio.string    # => "bao"
+ *   strio.pos       # => 2
+ *   strio.putc('r') # => "r"
+ *   strio.string    # => "bar"
+ *   strio.pos       # => 3
+ *   strio.putc('n') # => "n"
+ *   strio.string    # => "barn"
+ *   strio.pos       # => 4
+ *
+ * Fills with null characters if necessary:
+ *
+ *   strio.pos = 6
+ *   strio.putc('x') # => "x"
+ *   strio.string    # => "barn\u0000\u0000x"
+ *   strio.pos       # => 7
+ *
+ * With integer argument, replaces one byte with the low-order byte of the integer:
+ *
+ *   strio = StringIO.new('foo')
+ *   strio.putc(70)
+ *   strio.string # => "Foo"
+ *   strio.putc(79)
+ *   strio.string # => "FOo"
+ *   strio.putc(79 + 1024)
+ *   strio.string # => "FOO"
+ *
+ * \StringIO object for Multi-byte characters:
+ *
+ *   greek = 'αβγδε' # Five 2-byte characters.
+ *   strio = StringIO.new(greek)
+ *   strio.string# => "αβγδε"
+ *   strio.string.b        # => "\xCE\xB1\xCE\xB2\xCE\xB3\xCE\xB4\xCE\xB5"
+ *   strio.string.bytesize # => 10
+ *   strio.string.chars    # => ["α", "β", "γ", "δ", "ε"]
+ *   strio.string.size     # => 5
+ *
+ * With 1-byte argument, replaces one byte of the string:
+ *
+ *   strio.putc(' ')       # 1-byte ascii space.
+ *   strio.pos             # => 1
+ *   strio.string          # => " \xB1βγδε"
+ *   strio.string.b        # => " \xB1\xCE\xB2\xCE\xB3\xCE\xB4\xCE\xB5"
+ *   strio.string.bytesize # => 10
+ *   strio.string.chars    # => [" ", "\xB1", "β", "γ", "δ", "ε"]
+ *   strio.string.size     # => 6
+ *
+ *   strio.putc(' ')
+ *   strio.pos             # => 2
+ *   strio.string          # => "  βγδε"
+ *   strio.string.b        # => "  \xCE\xB2\xCE\xB3\xCE\xB4\xCE\xB5"
+ *   strio.string.bytesize # => 10
+ *   strio.string.chars    # => [" ", " ", "β", "γ", "δ", "ε"]
+ *   strio.string.size     # => 6
+ *
+ * With 2-byte argument, replaces two bytes of the string:
+ *
+ *   strio.rewind
+ *   strio.putc('α')
+ *   strio.pos             # => 2
+ *   strio.string          # => "αβγδε"
+ *   strio.string.b        # => "\xCE\xB1\xCE\xB2\xCE\xB3\xCE\xB4\xCE\xB5"
+ *   strio.string.bytesize # => 10
+ *   strio.string.chars    # => ["α", "β", "γ", "δ", "ε"]
+ *   strio.string.size     # => 5
+ *
+ * Related: #getc, #ungetc.
  *
  */
 static VALUE
@@ -1715,7 +2225,89 @@ strio_putc(VALUE self, VALUE ch)
  * call-seq:
  *   read(maxlen = nil, out_string = nil) → new_string, out_string, or nil
  *
- * :include: stringio/read.rdoc
+ * Reads and returns a string containing bytes read from the stream,
+ * beginning at the current position;
+ * advances the position by the count of bytes read.
+ *
+ * With no arguments given,
+ * reads all remaining bytes in the stream;
+ * returns a new string containing bytes read:
+ *
+ *   strio = StringIO.new('Hello') # Five 1-byte characters.
+ *   strio.read                    # => "Hello"
+ *   strio.pos                     # => 5
+ *   strio.read                    # => ""
+ *   StringIO.new('').read         # => ""
+ *
+ * With non-negative argument +maxlen+ given,
+ * reads +maxlen+ bytes as available;
+ * returns a new string containing the bytes read, or +nil+ if none:
+ *
+ *   strio.rewind
+ *   strio.read(3) # => "Hel"
+ *   strio.read(3) # => "lo"
+ *   strio.read(3) # => nil
+ *
+ *   russian = 'Привет' # Six 2-byte characters.
+ *   russian.b
+ *   # => "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82"
+ *   strio = StringIO.new(russian)
+ *   strio.read(6) # => "\xD0\x9F\xD1\x80\xD0\xB8"
+ *   strio.read(6) # => "\xD0\xB2\xD0\xB5\xD1\x82"
+ *   strio.read(6) # => nil
+ *
+ *   japanese = 'こんにちは'
+ *   japanese.b
+ *   # => "\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF"
+ *   strio = StringIO.new(japanese)
+ *   strio.read(9) # => "\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB"
+ *   strio.read(9) # => "\xE3\x81\xA1\xE3\x81\xAF"
+ *   strio.read(9) # => nil
+ *
+ * With argument +max_len+ as +nil+ and string argument +out_string+ given,
+ * reads the remaining bytes in the stream;
+ * clears +out_string+ and writes the bytes into it;
+ * returns +out_string+:
+ *
+ *   out_string = 'Will be overwritten'
+ *   strio = StringIO.new('Hello')
+ *   strio.read(nil, out_string) # => "Hello"
+ *   strio.read(nil, out_string) # => ""
+ *
+ * With non-negative argument +maxlen+ and string argument +out_string+ given,
+ * reads the +maxlen bytes from the stream, as availble;
+ * clears +out_string+ and writes the bytes into it;
+ * returns +out_string+ if any bytes were read, or +nil+ if none:
+ *
+ *   out_string = 'Will be overwritten'
+ *   strio = StringIO.new('Hello')
+ *   strio.read(3, out_string) # => "Hel"
+ *   strio.read(3, out_string) # => "lo"
+ *   strio.read(3, out_string) # => nil
+ *
+ *   out_string = 'Will be overwritten'
+ *   strio = StringIO.new(russian)
+ *   strio.read(6, out_string) # => "При"
+ *   strio.read(6, out_string) # => "вет"
+ *   strio.read(6, out_string) # => nil
+ *   strio.rewind
+ *   russian.b
+ *   # => "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82"
+ *   strio.read(3)             # => "\xD0\x9F\xD1"
+ *   strio.read(3)             # => "\x80\xD0\xB8"
+ *
+ *   out_string = 'Will be overwritten'
+ *   strio = StringIO.new(japanese)
+ *   strio.read(9, out_string) # => "こんに"
+ *   strio.read(9, out_string) # => "ちは"
+ *   strio.read(9, out_string) # => nil
+ *   strio.rewind
+ *   japanese.b
+ *   # => "\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF"
+ *   strio.read(4)             # => "\xE3\x81\x93\xE3"
+ *   strio.read(4)             # => "\x82\x93\xE3\x81"
+ *
+ * Related: #gets, #readlines.
  *
  */
 static VALUE
@@ -1786,7 +2378,70 @@ strio_read(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *    pread(maxlen, offset, out_string = nil) -> new_string or out_string
  *
- *  :include: stringio/pread.rdoc
+ *  **Note**: \Method +pread+ is different from other reading methods
+ *  in that it does not modify +self+ in any way;
+ *  thus, multiple threads may read safely from the same stream.
+ *
+ *  Reads up to +maxlen+ bytes from the stream,
+ *  beginning at 0-based byte offset +offset+;
+ *  returns a string containing the read bytes.
+ *
+ *  The returned string:
+ *
+ *  - Contains +maxlen+ bytes from the stream, if available;
+ *    otherwise contains all available bytes.
+ *  - Has encoding +Encoding::ASCII_8BIT+.
+ *
+ *  With only arguments +maxlen+ and +offset+ given,
+ *  returns a new string:
+ *
+ *    english = 'Hello'  # Five 1-byte characters.
+ *    strio = StringIO.new(english)
+ *    strio.pread(3, 0)  # => "Hel"
+ *    strio.pread(3, 2)  # => "llo"
+ *    strio.pread(0, 0)  # => ""
+ *    strio.pread(50, 0) # => "Hello"
+ *    strio.pread(50, 2) # => "llo"
+ *    strio.pread(50, 4) # => "o"
+ *    strio.pread(0, 0).encoding
+ *    # => #<Encoding:BINARY (ASCII-8BIT)>
+ *
+ *    russian = 'Привет' # Six 2-byte characters.
+ *    strio = StringIO.new(russian)
+ *    strio.pread(50, 0) # All 12 bytes.
+ *    # => "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82"
+ *    strio.pread(3, 0)  # => "\xD0\x9F\xD1"
+ *    strio.pread(3, 3)  # => "\x80\xD0\xB8"
+ *    strio.pread(0, 0).encoding
+ *    # => #<Encoding:BINARY (ASCII-8BIT)>
+ *
+ *    japanese = 'こんにちは' # Five 3-byte characters.
+ *    strio = StringIO.new(japanese)
+ *    strio.pread(50, 0)    # All 15 bytes.
+ *    # => "\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF"
+ *    strio.pread(6, 0)     # => "\xE3\x81\x93\xE3\x82\x93"
+ *    strio.pread(1, 2)     # => "\x93"
+ *    strio.pread(0, 0).encoding
+ *    # => #<Encoding:BINARY (ASCII-8BIT)>
+ *
+ *  Raises an exception if +offset+ is out-of-range:
+ *
+ *    strio = StringIO.new(english)
+ *    strio.pread(5, 50) # Raises EOFError: end of file reached
+ *
+ *  With string argument +out_string+ given:
+ *
+ *  - Reads as above.
+ *  - Overwrites the content of +out_string+ with the read bytes.
+ *
+ *  Examples:
+ *
+ *    out_string = 'Will be overwritten'
+ *    out_string.encoding                # => #<Encoding:UTF-8>
+ *    result = StringIO.new(english).pread(50, 0, out_string)
+ *    result.__id__ == out_string.__id__ # => true
+ *    out_string                         # => "Hello"
+ *    out_string.encoding                # => #<Encoding:BINARY (ASCII-8BIT)>
  *
  */
 static VALUE
@@ -1908,7 +2563,10 @@ strio_syswrite_nonblock(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   size -> integer
  *
- * :include: stringio/size.rdoc
+ * Returns the number of bytes in the string in +self+:
+ *
+ *   StringIO.new('hello').size     # => 5  # Five 1-byte characters.
+ *   StringIO.new('こんにちは').size # => 15 # Five 3-byte characters.
  *
  */
 static VALUE
@@ -2045,7 +2703,708 @@ strio_set_encoding_by_bom(VALUE self)
 /*
  * :markup: markdown
  *
- * :include: stringio/stringio.md
+ * \Class \StringIO supports accessing a string as a stream,
+ * similar in some ways to [class IO][io class].
+ *
+ * You can create a \StringIO instance using:
+ *
+ * - StringIO.new: returns a new \StringIO object containing the given string.
+ * - StringIO.open: passes a new \StringIO object to the given block.
+ *
+ * Like an \IO stream, a \StringIO stream has certain properties:
+ *
+ * - **Read/write mode**: whether the stream may be read, written, appended to, etc.;
+ *   see [Read/Write Mode][read/write mode].
+ * - **Data mode**: text-only or binary;
+ *   see [Data Mode][data mode].
+ * - **Encodings**: internal and external encodings;
+ *   see [Encodings][encodings].
+ * - **Position**: where in the stream the next read or write is to occur;
+ *   see [Position][position].
+ * - **Line number**: a special, line-oriented, "position" (different from the position mentioned above);
+ *   see [Line Number][line number].
+ * - **Open/closed**: whether the stream is open or closed, for reading or writing.
+ *   see [Open/Closed Streams][open/closed streams].
+ * - **BOM**: byte mark order;
+ *   see [Byte Order Mark][bom (byte order mark)].
+ *
+ * ## About the Examples
+ *
+ * Examples on this page assume that \StringIO has been required:
+ *
+ * ```ruby
+ * require 'stringio'
+ * ```
+ *
+ * And that this constant has been defined:
+ *
+ * ```ruby
+ * TEXT = <<EOT
+ * First line
+ * Second line
+ *
+ * Fourth line
+ * Fifth line
+ * EOT
+ * ```
+ *
+ * ## Stream Properties
+ *
+ * ### Read/Write Mode
+ *
+ * #### Summary
+ *
+ * |            Mode            | Initial Clear? |   Read   |  Write   |
+ * |:--------------------------:|:--------------:|:--------:|:--------:|
+ * |  <tt>'r'</tt>: read-only   |       No       | Anywhere |  Error   |
+ * |  <tt>'w'</tt>: write-only  |      Yes       |  Error   | Anywhere |
+ * | <tt>'a'</tt>: append-only  |       No       |  Error   | End only |
+ * | <tt>'r+'</tt>: read/write  |       No       | Anywhere | Anywhere |
+ * | <tt>'w+'</tt>: read-write  |      Yes       | Anywhere | Anywhere |
+ * | <tt>'a+'</tt>: read/append |       No       | Anywhere | End only |
+ *
+ * Each section below describes a read/write mode.
+ *
+ * Any of the modes may be given as a string or as file constants;
+ * example:
+ *
+ * ```ruby
+ * strio = StringIO.new('foo', 'a')
+ * strio = StringIO.new('foo', File::WRONLY | File::APPEND)
+ * ```
+ *
+ * #### `'r'`: Read-Only
+ *
+ * Mode specified as one of:
+ *
+ * - String: `'r'`.
+ * - Constant: `File::RDONLY`.
+ *
+ * Initial state:
+ *
+ * ```ruby
+ * strio = StringIO.new('foobarbaz', 'r')
+ * strio.pos    # => 0            # Beginning-of-stream.
+ * strio.string # => "foobarbaz"  # Not cleared.
+ * ```
+ *
+ * May be read anywhere:
+ *
+ * ```ruby
+ * strio.gets(3) # => "foo"
+ * strio.gets(3) # => "bar"
+ * strio.pos = 9
+ * strio.gets(3) # => nil
+ * ```
+ *
+ * May not be written:
+ *
+ * ```ruby
+ * strio.write('foo')  # Raises IOError: not opened for writing
+ * ```
+ *
+ * #### `'w'`: Write-Only
+ *
+ * Mode specified as one of:
+ *
+ * - String: `'w'`.
+ * - Constant: `File::WRONLY`.
+ *
+ * Initial state:
+ *
+ * ```ruby
+ * strio = StringIO.new('foo', 'w')
+ * strio.pos    # => 0   # Beginning of stream.
+ * strio.string # => ""  # Initially cleared.
+ * ```
+ *
+ * May be written anywhere (even past end-of-stream):
+ *
+ * ```ruby
+ * strio.write('foobar')
+ * strio.string # => "foobar"
+ * strio.rewind
+ * strio.write('FOO')
+ * strio.string # => "FOObar"
+ * strio.pos = 3
+ * strio.write('BAR')
+ * strio.string # => "FOOBAR"
+ * strio.pos = 9
+ * strio.write('baz')
+ * strio.string # => "FOOBAR\u0000\u0000\u0000baz"  # Null-padded.
+ * ```
+ *
+ * May not be read:
+ *
+ * ```ruby
+ * strio.read  # Raises IOError: not opened for reading
+ * ```
+ *
+ * #### `'a'`: Append-Only
+ *
+ * Mode specified as one of:
+ *
+ * - String: `'a'`.
+ * - Constant: `File::WRONLY | File::APPEND`.
+ *
+ * Initial state:
+ *
+ * ```ruby
+ * strio = StringIO.new('foo', 'a')
+ * strio.pos    # => 0      # Beginning-of-stream.
+ * strio.string # => "foo"  # Not cleared.
+ * ```
+ *
+ * May be written only at the end; position does not affect writing:
+ *
+ * ```ruby
+ * strio.write('bar')
+ * strio.string # => "foobar"
+ * strio.write('baz')
+ * strio.string # => "foobarbaz"
+ * strio.pos = 400
+ * strio.write('bat')
+ * strio.string # => "foobarbazbat"
+ * ```
+ *
+ * May not be read:
+ *
+ * ```ruby
+ * strio.gets  # Raises IOError: not opened for reading
+ * ```
+ *
+ * #### `'r+'`: Read/Write
+ *
+ * Mode specified as one of:
+ *
+ * - String: `'r+'`.
+ * - Constant: `File::RDWR`.
+ *
+ * Initial state:
+ *
+ * ```ruby
+ * strio = StringIO.new('foobar', 'r+')
+ * strio.pos    # => 0         # Beginning-of-stream.
+ * strio.string # => "foobar"  # Not cleared.
+ * ```
+ *
+ * May be written anywhere (even past end-of-stream):
+ *
+ * ```ruby
+ * strio.write('FOO')
+ * strio.string # => "FOObar"
+ * strio.write('BAR')
+ * strio.string # => "FOOBAR"
+ * strio.write('BAZ')
+ * strio.string # => "FOOBARBAZ"
+ * strio.pos = 12
+ * strio.write('BAT')
+ * strio.string # => "FOOBARBAZ\u0000\u0000\u0000BAT"  # Null padded.
+ * ```
+ *
+ * May be read anywhere:
+ *
+ * ```ruby
+ * strio.pos = 0
+ * strio.gets(3) # => "FOO"
+ * strio.pos = 6
+ * strio.gets(3) # => "BAZ"
+ * strio.pos = 400
+ * strio.gets(3) # => nil
+ * ```
+ *
+ * #### `'w+'`: Read/Write (Initially Clear)
+ *
+ * Mode specified as one of:
+ *
+ * - String: `'w+'`.
+ * - Constant: `File::RDWR | File::TRUNC`.
+ *
+ * Initial state:
+ *
+ * ```ruby
+ * strio = StringIO.new('foo', 'w+')
+ * strio.pos    # => 0   # Beginning-of-stream.
+ * strio.string # => ""  # Truncated.
+ * ```
+ *
+ * May be written anywhere (even past end-of-stream):
+ *
+ * ```ruby
+ * strio.write('foobar')
+ * strio.string # => "foobar"
+ * strio.rewind
+ * strio.write('FOO')
+ * strio.string # => "FOObar"
+ * strio.write('BAR')
+ * strio.string # => "FOOBAR"
+ * strio.write('BAZ')
+ * strio.string # => "FOOBARBAZ"
+ * strio.pos = 12
+ * strio.write('BAT')
+ * strio.string # => "FOOBARBAZ\u0000\u0000\u0000BAT"  # Null-padded.
+ * ```
+ *
+ * May be read anywhere:
+ *
+ * ```ruby
+ * strio.rewind
+ * strio.gets(3) # => "FOO"
+ * strio.gets(3) # => "BAR"
+ * strio.pos = 12
+ * strio.gets(3) # => "BAT"
+ * strio.pos = 400
+ * strio.gets(3) # => nil
+ * ```
+ *
+ * #### `'a+'`: Read/Append
+ *
+ * Mode specified as one of:
+ *
+ * - String: `'a+'`.
+ * - Constant: `File::RDWR | File::APPEND`.
+ *
+ * Initial state:
+ *
+ * ```ruby
+ * strio = StringIO.new('foo', 'a+')
+ * strio.pos    # => 0      # Beginning-of-stream.
+ * strio.string # => "foo"  # Not cleared.
+ * ```
+ *
+ * May be written only at the end; #rewind; position does not affect writing:
+ *
+ * ```ruby
+ * strio.write('bar')
+ * strio.string # => "foobar"
+ * strio.write('baz')
+ * strio.string # => "foobarbaz"
+ * strio.pos = 400
+ * strio.write('bat')
+ * strio.string # => "foobarbazbat"
+ * ```
+ *
+ * May be read anywhere:
+ *
+ * ```ruby
+ * strio.rewind
+ * strio.gets(3) # => "foo"
+ * strio.gets(3) # => "bar"
+ * strio.pos = 9
+ * strio.gets(3) # => "bat"
+ * strio.pos = 400
+ * strio.gets(3) # => nil
+ * ```
+ *
+ * ### Data Mode
+ *
+ * To specify whether the stream is to be treated as text or as binary data,
+ * either of the following may be suffixed to any of the string read/write modes above:
+ *
+ * - `'t'`: Text;
+ *   initializes the encoding as Encoding::UTF_8.
+ * - `'b'`: Binary;
+ *   initializes the encoding as Encoding::ASCII_8BIT.
+ *
+ * If neither is given, the stream defaults to text data.
+ *
+ * Examples:
+ *
+ * ```ruby
+ * strio = StringIO.new('foo', 'rt')
+ * strio.external_encoding # => #<Encoding:UTF-8>
+ * data = "\u9990\u9991\u9992\u9993\u9994"
+ * strio = StringIO.new(data, 'rb')
+ * strio.external_encoding # => #<Encoding:BINARY (ASCII-8BIT)>
+ * ```
+ *
+ * When the data mode is specified, the read/write mode may not be omitted:
+ *
+ * ```ruby
+ * StringIO.new(data, 'b')  # Raises ArgumentError: invalid access mode b
+ * ```
+ *
+ * A text stream may be changed to binary by calling instance method #binmode;
+ * a binary stream may not be changed to text.
+ *
+ * ### Encodings
+ *
+ * A stream has an encoding; see [Encodings][encodings document].
+ *
+ * The initial encoding for a new or re-opened stream depends on its [data mode][data mode]:
+ *
+ * - Text: `Encoding::UTF_8`.
+ * - Binary: `Encoding::ASCII_8BIT`.
+ *
+ * These instance methods are relevant:
+ *
+ * - #external_encoding: returns the current encoding of the stream as an `Encoding` object.
+ * - #internal_encoding: returns +nil+; a stream does not have an internal encoding.
+ * - #set_encoding: sets the encoding for the stream.
+ * - #set_encoding_by_bom: sets the encoding for the stream to the stream's BOM (byte order mark).
+ *
+ * Examples:
+ *
+ * ```ruby
+ * strio = StringIO.new('foo', 'rt')  # Text mode.
+ * strio.external_encoding # => #<Encoding:UTF-8>
+ * data = "\u9990\u9991\u9992\u9993\u9994"
+ * strio = StringIO.new(data, 'rb') # Binary mode.
+ * strio.external_encoding # => #<Encoding:BINARY (ASCII-8BIT)>
+ * strio = StringIO.new('foo')
+ * strio.external_encoding # => #<Encoding:UTF-8>
+ * strio.set_encoding('US-ASCII')
+ * strio.external_encoding # => #<Encoding:US-ASCII>
+ * ```
+ *
+ * ### Position
+ *
+ * A stream has a _position_, and integer offset (in bytes) into the stream.
+ * The initial position of a stream is zero.
+ *
+ * #### Getting and Setting the Position
+ *
+ * Each of these methods initializes (to zero) the position of a new or re-opened stream:
+ *
+ * - ::new: returns a new stream.
+ * - ::open: passes a new stream to the block.
+ * - #reopen: re-initializes the stream.
+ *
+ * Each of these methods queries, gets, or sets the position, without otherwise changing the stream:
+ *
+ * - #eof?: returns whether the position is at end-of-stream.
+ * - #pos: returns the position.
+ * - #pos=: sets the position.
+ * - #rewind: sets the position to zero.
+ * - #seek: sets the position.
+ *
+ * Examples:
+ *
+ * ```ruby
+ * strio = StringIO.new('foobar')
+ * strio.pos  # => 0
+ * strio.pos = 3
+ * strio.pos  # => 3
+ * strio.eof? # => false
+ * strio.rewind
+ * strio.pos  # => 0
+ * strio.seek(0, IO::SEEK_END)
+ * strio.pos  # => 6
+ * strio.eof? # => true
+ * ```
+ *
+ * #### Position Before and After Reading
+ *
+ * Except for #pread, a stream reading method (see [Basic Reading][basic reading])
+ * begins reading at the current position.
+ *
+ * Except for #pread, a read method advances the position past the read substring.
+ *
+ * Examples:
+ *
+ * ```ruby
+ * strio = StringIO.new(TEXT)
+ * strio.string # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+ * strio.pos    # => 0
+ * strio.getc   # => "F"
+ * strio.pos    # => 1
+ * strio.gets   # => "irst line\n"
+ * strio.pos    # => 11
+ * strio.pos = 24
+ * strio.gets   # => "Fourth line\n"
+ * strio.pos    # => 36
+ *
+ * strio = StringIO.new('こんにちは')  # Five 3-byte characters.
+ * strio.pos = 0  # At first byte of first character.
+ * strio.read     # => "こんにちは"
+ * strio.pos = 1  # At second byte of first character.
+ * strio.read     # => "\x81\x93んにちは"
+ * strio.pos = 2  # At third byte of first character.
+ * strio.read     # => "\x93んにちは"
+ * strio.pos = 3  # At first byte of second character.
+ * strio.read     # => "んにちは"
+ *
+ * strio = StringIO.new(TEXT)
+ * strio.pos = 15
+ * a = []
+ * strio.each_line {|line| a.push(line) }
+ * a         # => ["nd line\n", "\n", "Fourth line\n", "Fifth line\n"]
+ * strio.pos # => 47  ## End-of-stream.
+ * ```
+ *
+ * #### Position Before and After Writing
+ *
+ * Each of these methods begins writing at the current position,
+ * and advances the position to the end of the written substring:
+ *
+ * - #putc: writes the given character.
+ * - #write: writes the given objects as strings.
+ * - [Kernel#puts][kernel#puts]: writes given objects as strings, each followed by newline.
+ *
+ * Examples:
+ *
+ * ```ruby
+ * strio = StringIO.new('foo')
+ * strio.pos    # => 0
+ * strio.putc('b')
+ * strio.string # => "boo"
+ * strio.pos    # => 1
+ * strio.write('r')
+ * strio.string # => "bro"
+ * strio.pos    # => 2
+ * strio.puts('ew')
+ * strio.string # => "brew\n"
+ * strio.pos    # => 5
+ * strio.pos = 8
+ * strio.write('foo')
+ * strio.string # => "brew\n\u0000\u0000\u0000foo"
+ * strio.pos    # => 11
+ * ```
+ *
+ * Each of these methods writes _before_ the current position, and decrements the position
+ * so that the written data is next to be read:
+ *
+ * - #ungetbyte: unshifts the given byte.
+ * - #ungetc: unshifts the given character.
+ *
+ * Examples:
+ *
+ * ```ruby
+ * strio = StringIO.new('foo')
+ * strio.pos = 2
+ * strio.ungetc('x')
+ * strio.pos    # => 1
+ * strio.string # => "fxo"
+ * strio.ungetc('x')
+ * strio.pos    # => 0
+ * strio.string # => "xxo"
+ * ```
+ *
+ * This method does not affect the position:
+ *
+ * - #truncate: truncates the stream's string to the given size.
+ *
+ * Examples:
+ *
+ * ```ruby
+ * strio = StringIO.new('foobar')
+ * strio.pos    # => 0
+ * strio.truncate(3)
+ * strio.string # => "foo"
+ * strio.pos    # => 0
+ * strio.pos = 500
+ * strio.truncate(0)
+ * strio.string # => ""
+ * strio.pos    # => 500
+ * ```
+ *
+ * ### Line Number
+ *
+ * A stream has a line number, which initially is zero:
+ *
+ * - Method #lineno returns the line number.
+ * - Method #lineno= sets the line number.
+ *
+ * The line number can be affected by reading (but never by writing);
+ * in general, the line number is incremented each time the record separator (default: `"\n"`) is read.
+ *
+ * Examples:
+ *
+ * ```ruby
+ * strio = StringIO.new(TEXT)
+ * strio.string # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+ * strio.lineno # => 0
+ * strio.gets   # => "First line\n"
+ * strio.lineno # => 1
+ * strio.getc   # => "S"
+ * strio.lineno # => 1
+ * strio.gets   # => "econd line\n"
+ * strio.lineno # => 2
+ * strio.gets   # => "\n"
+ * strio.lineno # => 3
+ * strio.gets   # => "Fourth line\n"
+ * strio.lineno # => 4
+ * ```
+ *
+ * Setting the position does not affect the line number:
+ *
+ * ```ruby
+ * strio.pos = 0
+ * strio.lineno # => 4
+ * strio.gets   # => "First line\n"
+ * strio.pos    # => 11
+ * strio.lineno # => 5
+ * ```
+ *
+ * And setting the line number does not affect the position:
+ *
+ * ```ruby
+ * strio.lineno = 10
+ * strio.pos    # => 11
+ * strio.gets   # => "Second line\n"
+ * strio.lineno # => 11
+ * strio.pos    # => 23
+ * ```
+ *
+ * ### Open/Closed Streams
+ *
+ * A new stream is open for either reading or writing, and may be open for both;
+ * see [Read/Write Mode][read/write mode].
+ *
+ * Each of these methods initializes the read/write mode for a new or re-opened stream:
+ *
+ * - ::new: returns a new stream.
+ * - ::open: passes a new stream to the block.
+ * - #reopen: re-initializes the stream.
+ *
+ * Other relevant methods:
+ *
+ * - #close: closes the stream for both reading and writing.
+ * - #close_read: closes the stream for reading.
+ * - #close_write: closes the stream for writing.
+ * - #closed?: returns whether the stream is closed for both reading and writing.
+ * - #closed_read?: returns whether the stream is closed for reading.
+ * - #closed_write?: returns whether the stream is closed for writing.
+ *
+ * ### BOM (Byte Order Mark)
+ *
+ * The string provided for ::new, ::open, or #reopen
+ * may contain an optional [BOM][bom] (byte order mark) at the beginning of the string;
+ * the BOM can affect the stream's encoding.
+ *
+ * The BOM (if provided):
+ *
+ * - Is stored as part of the stream's string.
+ * - Does _not_ immediately affect the encoding.
+ * - Is _initially_ considered part of the stream.
+ *
+ * ```ruby
+ * utf8_bom = "\xEF\xBB\xBF"
+ * string = utf8_bom + 'foo'
+ * string.bytes               # => [239, 187, 191, 102, 111, 111]
+ * strio.string.bytes.take(3) # => [239, 187, 191]                  # The BOM.
+ * strio = StringIO.new(string, 'rb')
+ * strio.string.bytes         # => [239, 187, 191, 102, 111, 111]   # BOM is part of the stored string.
+ * strio.external_encoding    # => #<Encoding:BINARY (ASCII-8BIT)>  # Default for a binary stream.
+ * strio.gets                 # => "\xEF\xBB\xBFfoo"                # BOM is part of the stream.
+ * ```
+ *
+ * You can call instance method #set_encoding_by_bom to "activate" the stored BOM;
+ * after doing so the BOM:
+ *
+ * - Is _still_ stored as part of the stream's string.
+ * - _Determines_ (and may have changed) the stream's encoding.
+ * - Is _no longer_ considered part of the stream.
+ *
+ * ```ruby
+ * strio.set_encoding_by_bom
+ * strio.string.bytes      # => [239, 187, 191, 102, 111, 111]  # BOM is still part of the stored string.
+ * strio.external_encoding # => #<Encoding:UTF-8>               # The new encoding.
+ * strio.rewind            # => 0
+ * strio.gets              # => "foo"                           # BOM is not part of the stream.
+ * ```
+ *
+ * ## Basic Stream \IO
+ *
+ * ### Basic Reading
+ *
+ * You can read from the stream using these instance methods:
+ *
+ * - #getbyte: reads and returns the next byte.
+ * - #getc: reads and returns the next character.
+ * - #gets: reads and returns all or part of the next line.
+ * - #read: reads and returns all or part of the remaining data in the stream.
+ * - #readlines: reads the remaining data the stream and returns an array of its lines.
+ * - [Kernel#readline][kernel#readline]: like #gets, but raises an exception if at end-of-stream.
+ *
+ * You can iterate over the stream using these instance methods:
+ *
+ * - #each_byte: reads each remaining byte, passing it to the block.
+ * - #each_char: reads each remaining character, passing it to the block.
+ * - #each_codepoint: reads each remaining codepoint, passing it to the block.
+ * - #each_line: reads all or part of each remaining line, passing the read string to the block
+ *
+ * This instance method is useful in a multi-threaded application:
+ *
+ * - #pread: reads and returns all or part of the stream.
+ *
+ * ### Basic Writing
+ *
+ * You can write to the stream, advancing the position, using these instance methods:
+ *
+ * - #putc: writes a given character.
+ * - #write: writes the given objects as strings.
+ * - [Kernel#puts][kernel#puts] writes given objects as strings, each followed by newline.
+ *
+ * You can "unshift" to the stream using these instance methods;
+ * each  writes _before_ the current position, and decrements the position
+ * so that the written data is next to be read.
+ *
+ * - #ungetbyte: unshifts the given byte.
+ * - #ungetc: unshifts the given character.
+ *
+ * One more writing method:
+ *
+ * - #truncate: truncates the stream's string to the given size.
+ *
+ * ## Line \IO
+ *
+ * Reading:
+ *
+ * - #gets: reads and returns the next line.
+ * - [Kernel#readline][kernel#readline]: like #gets, but raises an exception if at end-of-stream.
+ * - #readlines: reads the remaining data the stream and returns an array of its lines.
+ * - #each_line: reads each remaining line, passing it to the block
+ *
+ * Writing:
+ *
+ * - [Kernel#puts][kernel#puts]: writes given objects, each followed by newline.
+ *
+ * ## Character \IO
+ *
+ * Reading:
+ *
+ * - #each_char: reads each remaining character, passing it to the block.
+ * - #getc: reads and returns the next character.
+ *
+ * Writing:
+ *
+ * - #putc: writes the given character.
+ * - #ungetc.: unshifts the given character.
+ *
+ * ## Byte \IO
+ *
+ * Reading:
+ *
+ * - #each_byte: reads each remaining byte, passing it to the block.
+ * - #getbyte: reads and returns the next byte.
+ *
+ * Writing:
+ *
+ * - #ungetbyte: unshifts the given byte.
+ *
+ * ## Codepoint \IO
+ *
+ * Reading:
+ *
+ * - #each_codepoint: reads each remaining codepoint, passing it to the block.
+ *
+ * [bom]:                https://en.wikipedia.org/wiki/Byte_order_mark
+ * [encodings document]: https://docs.ruby-lang.org/en/master/language/encodings_rdoc.html
+ * [io class]:           https://docs.ruby-lang.org/en/master/IO.html
+ * [kernel#puts]:        https://docs.ruby-lang.org/en/master/Kernel.html#method-i-puts
+ * [kernel#readline]:    https://docs.ruby-lang.org/en/master/Kernel.html#method-i-readline
+ *
+ * [basic reading]:         rdoc-ref:StringIO@Basic+Reading
+ * [basic writing]:         rdoc-ref:StringIO@Basic+Writing
+ * [bom (byte order mark)]: rdoc-ref:StringIO@BOM+Byte+Order+Mark
+ * [data mode]:             rdoc-ref:StringIO@Data+Mode
+ * [encodings]:             rdoc-ref:StringIO@Encodings
+ * [end-of-stream]:         rdoc-ref:StringIO@End-of-Stream
+ * [line number]:           rdoc-ref:StringIO@Line+Number
+ * [open/closed streams]:   rdoc-ref:StringIO@OpenClosed+Streams
+ * [position]:              rdoc-ref:StringIO@Position
+ * [read/write mode]:       rdoc-ref:StringIO@ReadWrite+Mode
  */
 void
 Init_stringio(void)

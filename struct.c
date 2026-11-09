@@ -474,7 +474,7 @@ struct_define_without_accessor(VALUE outer, const char *class_name, VALUE super,
         rb_vm_register_global_object(klass);
     }
 
-    rb_class_inherited(klass, super);
+    rb_class_inherited(super, klass);
 
     return klass;
 }
@@ -523,7 +523,7 @@ rb_struct_define(const char *class_name, ...)
         rb_vm_register_global_object(klass);
     }
 
-    rb_class_inherited(klass, rb_cStruct);
+    rb_class_inherited(rb_cStruct, klass);
 
     return klass;
 }
@@ -717,7 +717,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE super)
         struct_register_under(super, rb_str_to_str(name), klass);
     }
 
-    rb_class_inherited(klass, super);
+    rb_class_inherited(super, klass);
 
     if (rb_block_given_p()) {
         rb_mod_module_eval(0, 0, klass);
@@ -1777,7 +1777,7 @@ rb_data_s_def(int argc, VALUE *argv, VALUE super)
     VALUE klass = anonymous_struct(super);
     setup_data(klass, rest);
 
-    rb_class_inherited(klass, super);
+    rb_class_inherited(super, klass);
 
     if (rb_block_given_p()) {
         rb_mod_module_eval(0, 0, klass);
@@ -1796,8 +1796,8 @@ rb_data_define(VALUE super, ...)
     va_end(ar);
     if (!super) super = rb_cData;
     VALUE klass = setup_data(anonymous_struct(super), ary);
-    rb_class_inherited(klass, super);
     rb_vm_register_global_object(klass);
+    rb_class_inherited(super, klass);
     return klass;
 }
 

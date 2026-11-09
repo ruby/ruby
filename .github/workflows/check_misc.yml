@@ -20,7 +20,7 @@ jobs:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: head
 
@@ -58,6 +58,10 @@ jobs:
         env:
           GITHUB_OLD_SHA: ${{ github.event.pull_request.base.sha }}
         if: ${{ startsWith(github.event_name, 'pull') }}
+
+      - name: Check if C and Assember sources are UTF-8
+        run: |
+          find . \( -name '*.[chyS]' -o -name '*.asm' \) -exec iconv -f utf-8 -t utf-8 {} + >/dev/null
 
       - name: Check for bash specific substitution in configure.ac
         run: |

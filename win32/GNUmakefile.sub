@@ -229,7 +229,7 @@ EXTLIBS ?=
 EXTSOLIBS ?=
 ifeq ($(origin LIBS),undefined)
 LIBS = user32.lib advapi32.lib shell32.lib ws2_32.lib iphlpapi.lib \
-	$(if $(USE_GMP),gmp.lib) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
+	$(if $(USE_GMP),gmp.lib)$(if $(filter yes,$(WITH_MIMALLOC)), mimalloc.dll.lib) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 endif
 ifeq ($(origin MISSING),undefined)
 MISSING = crypt.obj ffs.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj \
@@ -238,8 +238,12 @@ endif
 DLNOBJS = dln.obj
 
 ifeq ($(YJIT_SUPPORT),yes)
-ifneq ($(ARCH),x64)
-$(error YJIT is supported only on x64, not $(ARCH).  Retry without --enable-yjit.)
+ifeq ($(ARCH),x64)
+RUST_TARGET = x86_64-pc-windows-msvc
+else ifeq ($(ARCH),arm64)
+RUST_TARGET = aarch64-pc-windows-msvc
+else
+$(error YJIT is supported only on x64 and arm64, not $(ARCH).  Retry without --enable-yjit.)
 endif
 RUSTC ?= rustc
 YJIT_OBJ = yjit.$(OBJEXT)
@@ -251,7 +255,7 @@ INSTALL_STATIC_LIBRARY ?= no
 ifneq ($(INSTALL_STATIC_LIBRARY),no)
 $(error YJIT does not support the static library.  Retry without --enable-install-static-library.)
 endif
-JIT_RUST_FLAGS = --crate-type=staticlib --target=x86_64-pc-windows-msvc --cfg feature=\"stats_allocator\"
+JIT_RUST_FLAGS = --crate-type=staticlib --target=$(RUST_TARGET) --cfg feature=\"stats_allocator\"
 RUSTC_FLAGS ?= -g -C lto=thin -C opt-level=3 -C overflow-checks=on
 else ifneq ($(filter-out no,$(YJIT_SUPPORT)),)
 $(error YJIT_SUPPORT accepts only yes or no, not $(YJIT_SUPPORT).  Retry without YJIT_SUPPORT=$(YJIT_SUPPORT).)
@@ -279,6 +283,11 @@ COROUTINE_TEST_RUN = .\$(call win,$(COROUTINE_TEST))
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
 LDSHARED = $(LD) -LD
+ifneq ($(CLANG_VER),)
+# clang-cl does not link the compiler-rt builtins by default, which
+# define __cpu_model for __builtin_cpu_supports in extensions.
+LDSHARED += -clang:--rtlib=compiler-rt
+endif
 # Splice the old value in place, as nmake does for a self reference,
 # while the other references stay deferred.
 $(eval XCFLAGS = -DRUBY_EXPORT $$(INCFLAGS) $(value XCFLAGS) $$(XINCFLAGS))
@@ -496,7 +505,7 @@ update-vcpkg::
 	@cd "$(call win,$(srcdir))" && set LC_TIME=C && vcpkg x-update-baseline $(TRIPLET_OPTION)
 
 install-vcpkg::
-	@cd "$(call win,$(srcdir))" && set LC_TIME=C && vcpkg install $(TRIPLET_OPTION)
+	@cd "$(call win,$(srcdir))" && set LC_TIME=C && vcpkg install $(TRIPLET_OPTION)$(if $(filter yes,$(WITH_MIMALLOC)), --x-feature=mimalloc)
 
 # mklink is a cmd builtin that GNU make does not know to pass to cmd.
 mklink = cmd /c mklink "$(call win,$(1))" "$(call win,$(2))"$(newline)
@@ -527,6 +536,21 @@ config.h: $(CONFIG_H)
 
 guard = INCLUDE_RUBY_CONFIG_H
 mswin64 = $(filter mswin64,$(TARGET_OS))
+
+# configure.ac finds these on clang.  The headers test them directly
+# instead of through __has_builtin.
+define CLANG_CONFIG_H_CONTENT
+$(sharp)define HAVE_STMT_AND_DECL_IN_EXPR 1
+$(sharp)define HAVE_VA_ARGS_MACRO 1
+$(sharp)define HAVE_BUILTIN___BUILTIN_CONSTANT_P 1
+$(sharp)define HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR 1
+$(sharp)define HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P 1
+$(sharp)define HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P 1
+$(sharp)define HAVE_BUILTIN___BUILTIN_ASSUME_ALIGNED 1
+$(sharp)define HAVE_BUILTIN___BUILTIN_POPCOUNT 1
+$(sharp)define HAVE_BUILTIN___BUILTIN_CLZLL 1
+$(sharp)define HAVE_BUILTIN___BUILTIN_TRAP 1
+endef
 
 define CONFIG_H_CONTENT
 $(sharp)ifndef $(guard)
@@ -584,7 +608,7 @@ $(sharp)define ALWAYS_INLINE(x) __forceinline x
 $(sharp)define WARN_UNUSED_RESULT(x) x
 $(sharp)define MAYBE_UNUSED(x) x
 $(sharp)define HAVE___ASSUME 1
-$(sharp)define FUNC_STDCALL(x) __stdcall x
+$(if $(CLANG_VER),$(CLANG_CONFIG_H_CONTENT)$(newline))$(sharp)define FUNC_STDCALL(x) __stdcall x
 $(sharp)define FUNC_CDECL(x) __cdecl x
 $(sharp)define FUNC_FASTCALL(x) __fastcall x
 $(sharp)define RUBY_FUNCTION_NAME_STRING __FUNCTION__
@@ -729,7 +753,7 @@ $(sharp)define THREAD_IMPL_H "$(THREAD_IMPL_H)"
 $(sharp)define THREAD_IMPL_SRC "$(THREAD_IMPL_SRC)"
 $(sharp)define LOAD_RELATIVE 1
 $(sharp)define DLEXT ".$(DLEXT)"
-$(if $(filter-out lib,$(libdir_basename)),$(sharp)define LIBDIR_BASENAME "$(libdir_basename)"$(newline))$(if $(filter static,$(EXTSTATIC)),$(sharp)define EXTSTATIC 1$(newline))$(if $(USE_GMP),$(sharp)define USE_GMP 1$(newline))$(if $(filter yes,$(YJIT_SUPPORT)),$(sharp)define USE_YJIT 1$(newline))$(sharp)define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
+$(if $(filter-out lib,$(libdir_basename)),$(sharp)define LIBDIR_BASENAME "$(libdir_basename)"$(newline))$(if $(filter static,$(EXTSTATIC)),$(sharp)define EXTSTATIC 1$(newline))$(if $(USE_GMP),$(sharp)define USE_GMP 1$(newline))$(if $(filter yes,$(WITH_MIMALLOC)),$(sharp)define USE_MIMALLOC 1$(newline))$(if $(filter yes,$(YJIT_SUPPORT)),$(sharp)define USE_YJIT 1$(newline))$(sharp)define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 $(sharp)define RUBY_COREDLL "$(RT)"
 $(sharp)define RUBY_PLATFORM "$(arch)"
 $(sharp)define RUBY_SITEARCH "$(sitearch)"

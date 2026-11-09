@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "bundler/rubygems_ext"
-require_relative "bundler/vendored_fileutils"
 autoload :Pathname, "pathname" unless defined?(Pathname)
 require "rbconfig"
 
@@ -43,6 +42,7 @@ module Bundler
   autoload :CIDetector,             File.expand_path("bundler/ci_detector", __dir__)
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
+  autoload :FileUtils,              File.expand_path("bundler/vendored_fileutils", __dir__)
   autoload :Deprecate,              File.expand_path("bundler/deprecate", __dir__)
   autoload :Digest,                 File.expand_path("bundler/digest", __dir__)
   autoload :Dsl,                    File.expand_path("bundler/dsl", __dir__)

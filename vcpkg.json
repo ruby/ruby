@@ -7,8 +7,17 @@
     "openssl",
     "zlib"
   ],
+  "features": {
+    "mimalloc": {
+      "description": "Allocate memory for the GC with mimalloc",
+      "dependencies": [
+        "mimalloc"
+      ]
+    }
+  },
   "builtin-baseline": "e456309491fd875487bf02b8a0dca76c1b1b00cc",
   "vcpkg-configuration": {
+    "overlay-ports": ["win32/vcpkg-ports"],
     "overlay-triplets": [".github/vcpkg-triplets"]
   }
 }

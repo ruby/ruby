@@ -1,10 +1,10 @@
 #include "prism/string_query.h"
 
+#include "prism/internal/assert.h"
 #include "prism/internal/char.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/parser.h"
 
-#include <assert.h>
 #include <string.h>
 
 /** The category of slice returned from pm_slice_type. */
@@ -100,7 +100,7 @@ pm_string_query_local(const uint8_t *source, size_t length, const char *encoding
             return PM_STRING_QUERY_TRUE;
     }
 
-    assert(false && "unreachable");
+    PRISM_ASSERT(false && "unreachable");
     return PM_STRING_QUERY_FALSE;
 }
 
@@ -120,7 +120,7 @@ pm_string_query_constant(const uint8_t *source, size_t length, const char *encod
             return PM_STRING_QUERY_TRUE;
     }
 
-    assert(false && "unreachable");
+    PRISM_ASSERT(false && "unreachable");
     return PM_STRING_QUERY_FALSE;
 }
 

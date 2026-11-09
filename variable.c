@@ -1417,7 +1417,7 @@ rb_obj_fields(VALUE obj, ID field_name)
         return RCLASS_WRITABLE_FIELDS_OBJ(obj);
 
       case T_DATA:
-        return RTYPEDDATA(obj)->fields_obj;
+        return rbimpl_atomic_value_load(&RTYPEDDATA(obj)->fields_obj, RBIMPL_ATOMIC_RELAXED);
 
       case T_STRUCT:
         return RSTRUCT_FIELDS_OBJ(obj);
@@ -1511,7 +1511,7 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
             ROBJECT_SET_EXTENDED(obj, fields_obj);
             break;
           case T_DATA:
-            RB_OBJ_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, fields_obj);
+            RB_OBJ_ATOMIC_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, fields_obj);
             break;
           case T_STRUCT:
             RSTRUCT_SET_FIELDS_OBJ(obj, fields_obj);
@@ -1577,12 +1577,9 @@ rb_obj_replace_fields(VALUE obj, VALUE fields_obj)
 }
 
 VALUE
-rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
+rb_imemo_fields_field_get(VALUE fields_obj, shape_id_t target_shape_id)
 {
-    RUBY_ASSERT(!SPECIAL_CONST_P(obj));
     RUBY_ASSERT(RSHAPE_TYPE_P(target_shape_id, SHAPE_IVAR) || RSHAPE_TYPE_P(target_shape_id, SHAPE_OBJ_ID));
-
-    VALUE fields_obj = rb_obj_fields(obj, RSHAPE_EDGE_NAME(target_shape_id));
 
     if (UNLIKELY(rb_shape_complex_p(target_shape_id))) {
         st_table *fields_hash = rb_imemo_fields_complex_tbl(fields_obj);
@@ -1594,6 +1591,14 @@ rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
 
     attr_index_t index = RSHAPE_INDEX(target_shape_id);
     return rb_imemo_fields_ptr(fields_obj)[index];
+}
+
+VALUE
+rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
+{
+    RUBY_ASSERT(!SPECIAL_CONST_P(obj));
+
+    return rb_imemo_fields_field_get(rb_obj_fields(obj, RSHAPE_EDGE_NAME(target_shape_id)), target_shape_id);
 }
 
 VALUE
@@ -1964,7 +1969,9 @@ generic_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE va
     }
 
     const VALUE original_fields_obj = rb_obj_fields(obj, field_name);
-    VALUE fields_obj = imemo_fields_set(obj, original_fields_obj, target_shape_id, field_name, val, false);
+    // Readers of a shareable object's fields take no lock, so never mutate a published fields_obj.
+    bool concurrent = rb_multi_ractor_p() && RB_OBJ_SHAREABLE_P(obj);
+    VALUE fields_obj = imemo_fields_set(obj, original_fields_obj, target_shape_id, field_name, val, concurrent);
 
     rb_obj_set_fields(obj, fields_obj, field_name, original_fields_obj);
     return rb_shape_complex_p(target_shape_id) ? ATTR_INDEX_NOT_SET : RSHAPE_INDEX(target_shape_id);
@@ -3068,7 +3075,40 @@ autoload_defined_p(VALUE mod, ID id)
     return !rb_autoloading_value(mod, id, NULL, NULL);
 }
 
-static void const_tbl_update(struct autoload_const *, int);
+/* const_tbl_update() runs under the VM lock, where it can neither warn nor
+ * build the message: rb_warn() dispatches Warning.warn and writes to $stderr,
+ * and formatting a "%"PRIsVALUE" calls #to_s.  It records what to warn about
+ * instead, and the caller warns once the lock is released. */
+struct const_warning {
+    ID id; /* 0 when there is nothing to warn about */
+    VALUE module;
+    VALUE file;
+    int line;
+};
+
+static void const_tbl_update(struct autoload_const *, int, struct const_warning *);
+
+static void
+const_warning_emit(const struct const_warning *warning)
+{
+    if (!warning->id) return;
+
+    VALUE name = QUOTE_ID(warning->id);
+    VALUE previous = Qnil;
+
+    if (!NIL_P(warning->file) && warning->line) {
+        previous = rb_sprintf("\n%"PRIsVALUE":%d: warning: previous definition of %"PRIsVALUE" was here",
+                              warning->file, warning->line, name);
+    }
+
+    if (warning->module == rb_cObject) {
+        rb_warn("already initialized constant %"PRIsVALUE"%"PRIsVALUE"", name, previous);
+    }
+    else {
+        rb_warn("already initialized constant %"PRIsVALUE"::%"PRIsVALUE"%"PRIsVALUE"",
+                rb_class_name(warning->module), name, previous);
+    }
+}
 
 struct autoload_load_arguments {
     VALUE module;
@@ -3089,9 +3129,11 @@ autoload_const_set(struct autoload_const *ac)
 {
     check_before_mod_set(ac->module, ac->name, ac->value, "constant");
 
+    struct const_warning warning = {0};
     RB_VM_LOCKING() {
-        const_tbl_update(ac, true);
+        const_tbl_update(ac, true, &warning);
     }
+    const_warning_emit(&warning);
 
     return 0; /* ignored */
 }
@@ -3899,6 +3941,7 @@ const_set(VALUE klass, ID id, VALUE val)
 
     check_before_mod_set(klass, id, val, "constant");
 
+    struct const_warning warning = {0};
     RB_VM_LOCKING() {
         struct rb_id_table *tbl = RCLASS_WRITABLE_CONST_TBL(klass);
         if (!tbl) {
@@ -3916,9 +3959,10 @@ const_set(VALUE klass, ID id, VALUE val)
                 /* fill the rest with 0 */
             };
             ac.file = rb_source_location(&ac.line);
-            const_tbl_update(&ac, false);
+            const_tbl_update(&ac, false, &warning);
         }
     }
+    const_warning_emit(&warning);
 
     /*
      * Resolve and cache class name immediately to resolve ambiguity
@@ -3974,9 +4018,11 @@ autoload_const_value_for_named_constant(VALUE module, ID name, struct autoload_c
     return Qfalse;
 }
 
+/* Records into *warning rather than warning itself; see struct const_warning. */
 static void
-const_tbl_update(struct autoload_const *ac, int autoload_force)
+const_tbl_update(struct autoload_const *ac, int autoload_force, struct const_warning *warning)
 {
+    ASSERT_vm_locking();
     VALUE value;
     VALUE klass = ac->module;
     VALUE val = ac->value;
@@ -4011,19 +4057,12 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
             return;
         }
         else {
-            VALUE name = QUOTE_ID(id);
             visibility = ce->flag;
 
-            VALUE previous = Qnil;
-            if (!NIL_P(ce->u.file) && ce->line) {
-                previous = rb_sprintf("\n%"PRIsVALUE":%d: warning: previous definition of %"PRIsVALUE" was here", ce->u.file, ce->line, name);
-            }
-
-            if (klass == rb_cObject)
-                rb_warn("already initialized constant %"PRIsVALUE"%"PRIsVALUE"", name, previous);
-            else
-                rb_warn("already initialized constant %"PRIsVALUE"::%"PRIsVALUE"%"PRIsVALUE"",
-                        rb_class_name(klass), name, previous);
+            warning->id = id;
+            warning->module = klass;
+            warning->file = ce->u.file;
+            warning->line = ce->line;
         }
         rb_clear_constant_cache_for_id(id);
         setup_const_entry(ce, klass, val, visibility);

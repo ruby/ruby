@@ -577,9 +577,35 @@ typedef struct pm_scope {
 } pm_scope_t;
 
 /*
- * A struct that represents a stack of boolean values.
+ * A stack of boolean values with no fixed depth limit. The newest frames live
+ * in an inline word, so pushing and popping are usually a shift and a compare.
+ * When that word fills, it moves to the spill array and the inline word starts
+ * over empty. The spill array is only allocated once the nesting is more than
+ * 64 frames deep.
  */
-typedef uint32_t pm_state_stack_t;
+typedef struct {
+    /*
+     * The newest frames, with the top of the stack in bit 0. It holds between
+     * 1 and 64 frames while the stack is not empty, and is 0 when it is.
+     */
+    uint64_t top;
+
+    /*
+     * The number of frames on the whole stack. The inline word holds the
+     * frames above the last multiple of 64, so the spill array holds
+     * (depth - 1) / 64 words.
+     */
+    uint32_t depth;
+
+    /* The number of words the spill array has room for. */
+    uint32_t capacity;
+
+    /*
+     * Full words of 64 older frames each, oldest first, allocated from the
+     * scratch arena.
+     */
+    uint64_t *spill;
+} pm_state_stack_t;
 
 /*
  * This struct represents the overall parser. It contains a reference to the
@@ -814,15 +840,21 @@ struct pm_parser_t {
         pm_node_flags_t base;
 
         /*
-         * When lexing a decimal integer that fits in a uint32_t, we compute
-         * the value during lexing to avoid re-scanning the digits during
-         * parsing. If lexed is true, this holds the result and
+         * When lexing a decimal integer of at most 19 digits, which always
+         * fits in a uint64_t, or a plain 0, we compute the value during
+         * lexing to avoid re-scanning the digits during parsing. If start is
+         * set, this holds the result for the token that begins there and
          * pm_integer_parse can be skipped.
          */
-        uint32_t value;
+        uint64_t value;
 
-        /* Whether value holds a valid pre-computed integer. */
-        bool lexed;
+        /*
+         * The start of the token whose value is held in value, or NULL before
+         * any has been. The parser creates the node for a token only after
+         * lexing the next one, which may be another integer that replaces the
+         * value, so node creation checks that it belongs to the token at hand.
+         */
+        const uint8_t *start;
     } integer;
 
     /*

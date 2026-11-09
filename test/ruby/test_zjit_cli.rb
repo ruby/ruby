@@ -102,12 +102,52 @@ class TestZJITCLI < Test::Unit::TestCase
     }
   end
 
+  def test_side_exit_count_without_stats
+    script = <<~RUBY
+      def test = ::RubyVM::ZJIT.induce_side_exit!
+      test
+      test
+      stats = RubyVM::ZJIT.stats
+      summed_exits = stats.select { |key, _| key.start_with?("exit_") }.values.sum
+      p([
+           RubyVM::ZJIT.stats_enabled?,
+           stats[:side_exit_count] > 0,
+           RubyVM::ZJIT.stats(:side_exit_count) == stats[:side_exit_count],
+           summed_exits == 0 || summed_exits == stats[:side_exit_count],
+      ])
+    RUBY
+
+    out, err, status = eval_with_jit(script, call_threshold: 2, stats: false)
+    assert_success(out, err, status)
+    assert_equal("[false, true, true, true]\n", out, "side_exit_count should count without --zjit-stats")
+
+    out, err, status = eval_with_jit(script, call_threshold: 2, stats: :quiet)
+    assert_success(out, err, status)
+    assert_equal("[true, true, true, true]\n", out, "side_exit_count should match the sum of per-reason exit counters")
+  end
+
+  def test_no_exit_counting
+    assert_compiles('0', <<~RUBY, call_threshold: 2, extra_args: ['--zjit-no-exit-counting'])
+      def test = ::RubyVM::ZJIT.induce_side_exit!
+      test
+      test
+      RubyVM::ZJIT.stats(:side_exit_count)
+    RUBY
+  end
+
   def test_enable_through_env
     child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
     assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
       assert_include(stdout.first, '+ZJIT')
       assert_equal([], stderr)
     end
+  end
+
+  def test_exec_mem_size_rejects_sizes_that_overflow_u32
+    child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => nil}
+    # 4095 MiB is the largest size whose byte count fits in u32.
+    assert_in_out_err([child_env, *%w[--zjit --zjit-exec-mem-size=4095 -e], 'p RubyVM::ZJIT.enabled?'], '', ['true'], [])
+    assert_in_out_err(%w[--zjit-exec-mem-size=4096 -e] + [''], '', [], /invalid ZJIT option 'exec-mem-size=4096'/)
   end
 
   def test_enable_through_feature_flag
@@ -387,6 +427,35 @@ class TestZJITCLI < Test::Unit::TestCase
 
       fxt_files = Dir.glob("/tmp/perfetto-\#{Process.pid}.fxt")
       result = fxt_files.length == 1 && !File.empty?(fxt_files.first)
+      File.unlink(*fxt_files)
+      result
+    RUBY
+  end
+
+  def test_compile_size_tracing
+    assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-compiles'], call_threshold: 2)
+      def test(object) = object.itself
+
+      100.times { test(42) }
+
+      fxt_files = Dir.glob("/tmp/perfetto-\#{Process.pid}.fxt")
+      result = fxt_files.length == 1 &&
+        (dump = File.binread(fxt_files.first)).include?("size") &&
+        dump.include?("total")
+      File.unlink(*fxt_files)
+      result
+    RUBY
+  end
+
+  def test_compile_size_counter_tracing
+    assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-compiles'], call_threshold: 2)
+      def test(object) = object.itself
+
+      100.times { test(42) }
+
+      fxt_files = Dir.glob("/tmp/perfetto-\#{Process.pid}.fxt")
+      result = fxt_files.length == 1 &&
+        (dump = File.binread(fxt_files.first)).include?("code size")
       File.unlink(*fxt_files)
       result
     RUBY

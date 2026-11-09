@@ -1,0 +1,99 @@
+foo(bar baz do end)
+            ^~ unexpected 'do'; expected a `)` to close the arguments
+            ^~ unexpected 'do', expecting end-of-input
+            ^~ unexpected 'do', ignoring it
+               ^~~ unexpected 'end', ignoring it
+                  ^ unexpected ')', ignoring it
+
+foo(
+  bar baz do
+          ^~ unexpected 'do'; expected a `)` to close the arguments
+          ^~ unexpected 'do', expecting end-of-input
+          ^~ unexpected 'do', ignoring it
+  end
+  ^~~ unexpected 'end', ignoring it
+)
+^ unexpected ')', ignoring it
+
+foo(m [] do end)
+         ^~ unexpected 'do'; expected a `)` to close the arguments
+         ^~ unexpected 'do', expecting end-of-input
+         ^~ unexpected 'do', ignoring it
+            ^~~ unexpected 'end', ignoring it
+               ^ unexpected ')', ignoring it
+
+foo(m -> {} do end)
+            ^~ unexpected 'do'; expected a `)` to close the arguments
+            ^~ unexpected 'do', expecting end-of-input
+            ^~ unexpected 'do', ignoring it
+               ^~~ unexpected 'end', ignoring it
+                  ^ unexpected ')', ignoring it
+
+foo(m (1) do end)
+          ^~ unexpected 'do'; expected a `)` to close the arguments
+          ^~ unexpected 'do', expecting end-of-input
+          ^~ unexpected 'do', ignoring it
+             ^~~ unexpected 'end', ignoring it
+                ^ unexpected ')', ignoring it
+
+foo(m a { } do end)
+            ^~ unexpected 'do'; expected a `)` to close the arguments
+            ^~ unexpected 'do', expecting end-of-input
+            ^~ unexpected 'do', ignoring it
+               ^~~ unexpected 'end', ignoring it
+                  ^ unexpected ')', ignoring it
+
+foo(m a.b { } do end)
+              ^~ unexpected 'do'; expected a `)` to close the arguments
+              ^~ unexpected 'do', expecting end-of-input
+              ^~ unexpected 'do', ignoring it
+                 ^~~ unexpected 'end', ignoring it
+                    ^ unexpected ')', ignoring it
+
+foo(m a(1) do end)
+           ^~ unexpected 'do'; expected a `)` to close the arguments
+           ^~ unexpected 'do', expecting end-of-input
+           ^~ unexpected 'do', ignoring it
+              ^~~ unexpected 'end', ignoring it
+                 ^ unexpected ')', ignoring it
+
+foo(m a.b(1) do end)
+             ^~ unexpected 'do'; expected a `)` to close the arguments
+             ^~ unexpected 'do', expecting end-of-input
+             ^~ unexpected 'do', ignoring it
+                ^~~ unexpected 'end', ignoring it
+                   ^ unexpected ')', ignoring it
+
+a[bar baz do end]
+         ^ expected a matching `]`
+          ^~ unexpected 'do', expecting end-of-input
+          ^~ unexpected 'do', ignoring it
+             ^~~ unexpected 'end', ignoring it
+                ^ unexpected ']', ignoring it
+
+foo(bar 1 do end, 2)
+          ^~ unexpected 'do'; expected a `)` to close the arguments
+          ^~ unexpected 'do', expecting end-of-input
+          ^~ unexpected 'do', ignoring it
+             ^~~ unexpected 'end', ignoring it
+                ^ unexpected ',', ignoring it
+                   ^ unexpected ')', expecting end-of-input
+                   ^ unexpected ')', ignoring it
+
+foo(bar 1 do end,)
+          ^~ unexpected 'do'; expected a `)` to close the arguments
+          ^~ unexpected 'do', expecting end-of-input
+          ^~ unexpected 'do', ignoring it
+             ^~~ unexpected 'end', ignoring it
+                ^ unexpected ',', ignoring it
+                 ^ unexpected ')', ignoring it
+
+p(p a do end => value)
+      ^~ unexpected 'do'; expected a `)` to close the arguments
+      ^~ unexpected 'do', expecting end-of-input
+      ^~ unexpected 'do', ignoring it
+         ^~~ unexpected 'end', ignoring it
+             ^~ unexpected '=>', ignoring it
+                     ^ unexpected ')', expecting end-of-input
+                     ^ unexpected ')', ignoring it
+

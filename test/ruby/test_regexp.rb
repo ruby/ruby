@@ -1167,10 +1167,30 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("baz", $+)
   end
 
+  def test_index_with_assertion_before_leading_anychar_star
+    assert_equal(4, "xxx\n\0".index(/^.*\0/m, 1))
+    assert_equal(4, "aaaa \0".index(/\b.*\0/m, 1))
+    assert_equal(4, "aaaa bx".index(/\b.*x/, 1))
+    assert_equal(3, "aa\nb\0".index(/(?=b).*\0/m))
+    assert_equal(2, "ab\n\0".index(/$.*\0/m))
+    assert_equal(2, "aa\0".index(/(?!a).*\0/m))
+    assert_equal(3, "xxx \0".index(/(?:^|\b).*\0/m, 1))
+    assert_equal(2, "x\nyx".index(/^.*x/, 1))
+  end
+
   def test_rindex_regexp
     # use eval because only one warning is shown for the same regexp literal
     pat = eval('/b../n')
     assert_equal(3, assert_warning(/binary regexp/) {"foobarbaz\u3042".rindex(pat, 5)})
+  end
+
+  def test_rindex_with_leading_anychar_star_multiline
+    s = "0\n" + " " * 5
+    assert_equal(0, s.rindex(/.*\S\R/m))
+    assert_equal(0, s.rindex(/.*\S\R/m, 4))
+    assert_equal(2, "ab0\n   ".rindex(/.*0\n/m))
+    assert_equal(0, "abc".rindex(/.*/m, 0))
+    assert_equal(3, "abc".rindex(/.*/m))
   end
 
   def assert_regexp(re, ss, fs = [], msg = nil)
@@ -1815,6 +1835,15 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(0o1_0000, /\w+/.match("0o1_0000").integer_at(0, 0))
     assert_equal(0d1_0000, /\w+/.match("0d1_0000").integer_at(0, 0))
     assert_equal(0x1_0000, /\w+/.match("0x1_0000").integer_at(0, 0))
+  end
+
+  def test_match_integer_at_empty_capture
+    # An empty capture must not parse bytes after it, even when those bytes
+    # form a 0x/0b/0o/0d prefix for the requested base. [Bug #NNNNN]
+    assert_nil(/(?<h>[g-z]*)/.match("0xff").integer_at(:h, 16))
+    assert_nil(/(?<b>[2-9]*)/.match("0b11").integer_at(:b, 2))
+    assert_nil(/(?<o>[89]*)/.match("0o17").integer_at(:o, 8))
+    assert_nil(/x(?<d>[a-z]*)/.match("x0d42").integer_at(:d))
   end
 
   def test_regexp_popped

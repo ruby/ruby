@@ -104,6 +104,8 @@ module Bundler
       @new_platforms = []
       @removed_platforms = []
       @originally_invalid_platforms = []
+      @new_ruby_abis = []
+      @removed_ruby_abis = []
 
       if lockfile_exists?
         @lockfile_contents = Bundler.read_file(lockfile)
@@ -111,6 +113,8 @@ module Bundler
         @locked_platforms = @locked_gems.platforms
         @most_specific_locked_platform = @locked_gems.most_specific_locked_platform
         @platforms = @locked_platforms.dup
+        @locked_ruby_abis = @locked_gems.ruby_abis
+        @ruby_abis = @locked_ruby_abis.dup
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
         @locked_deps = @locked_gems.dependencies
@@ -139,7 +143,9 @@ module Bundler
         @locked_gems = nil
         @locked_platforms = []
         @most_specific_locked_platform = nil
-        @platforms      = []
+        @platforms = []
+        @locked_ruby_abis = []
+        @ruby_abis = []
         @locked_deps    = {}
         @locked_specs   = SpecSet.new([])
         @locked_sources = []
@@ -153,7 +159,11 @@ module Bundler
       end
       @unlocking ||= @unlocking_ruby ||= (!@locked_ruby_version ^ !@ruby_version)
 
+      @excluded_ruby_abis = @ruby_version ? @ruby_abis.select {|ruby_abi| ruby_abi_excluded?(ruby_abi) } : []
+      @ruby_abis -= @excluded_ruby_abis
+
       @current_platform_missing = add_current_platform unless Bundler.frozen_bundle?
+      @current_ruby_abi_missing = add_current_ruby_abi unless Bundler.frozen_bundle?
 
       @source_changes = converge_sources
       @path_changes = converge_paths
@@ -370,6 +380,7 @@ module Bundler
         start_resolution
       end
       warn_inert_overrides(@resolve)
+      @resolve.assign_content_addresses!(@ruby_abis, local: sources.local_mode?) if @removed_ruby_abis.any?
       @resolve
     end
 
@@ -543,6 +554,28 @@ module Bundler
       resolve.normalize_platforms!(current_dependencies, platforms)
 
       @resolve = SpecSet.new(resolve.for(current_dependencies, @platforms))
+      @resolve.assign_content_addresses!(@ruby_abis, normalize: true)
+    end
+
+    def ruby_abis
+      @ruby_abis.sort_by {|ruby_abi| Gem::Version.new(ruby_abi) }
+    end
+
+    def add_ruby_abi(ruby_abi)
+      if @ruby_version && ruby_abi_excluded?(ruby_abi)
+        raise InvalidOption, "Unable to add the Ruby ABI `#{ruby_abi}` since your Gemfile requires #{@ruby_version}"
+      end
+      return if @locked_ruby_abis.include?(ruby_abi) || @new_ruby_abis.include?(ruby_abi)
+
+      @new_ruby_abis << ruby_abi
+      @ruby_abis |= [ruby_abi]
+    end
+
+    def remove_ruby_abi(ruby_abi)
+      raise InvalidOption, "Unable to remove the Ruby ABI `#{ruby_abi}` since the only Ruby ABIs are #{ruby_abis.join(", ")}" unless @ruby_abis.include?(ruby_abi)
+
+      @removed_ruby_abis << ruby_abi
+      @ruby_abis.delete(ruby_abi)
     end
 
     def add_platform(platform)
@@ -601,6 +634,8 @@ module Bundler
 
       added.concat @new_platforms.map {|p| "* platform: #{p}" }
       deleted.concat @removed_platforms.map {|p| "* platform: #{p}" }
+      added.concat @new_ruby_abis.map {|abi| "* ruby abi: #{abi}" }
+      deleted.concat @removed_ruby_abis.map {|abi| "* ruby abi: #{abi}" }
 
       added.concat new_deps.map {|d| "* #{pretty_dep(d)}" } if new_deps.any?
       deleted.concat deleted_deps.map {|d| "* #{pretty_dep(d)}" } if deleted_deps.any?
@@ -660,6 +695,9 @@ module Bundler
         @dependency_changes ||
         @current_platform_missing ||
         @new_platforms.any? ||
+        @current_ruby_abi_missing ||
+        @new_ruby_abis.any? ||
+        @excluded_ruby_abis.any? ||
         @path_changes ||
         @local_changes ||
         @missing_lockfile_dep ||
@@ -787,7 +825,9 @@ module Bundler
       loop do
         break if incomplete_specs.empty?
 
-        Bundler.ui.debug("The lockfile does not have all gems needed for the current platform though, Bundler will still re-resolve dependencies")
+        Bundler.ui.debug("The lockfile does not have all gems needed for the current platform (#{Bundler.local_platform}) though, " \
+                         "Bundler will still re-resolve dependencies. The following locked gems could not be materialized for it: " \
+                         "#{incomplete_specs.map(&:full_name).join(", ")}")
         sources.remote!
         reresolve_without(incomplete_specs)
         specs = resolve.materialize(dependencies)
@@ -853,7 +893,22 @@ module Bundler
         result.add_originally_invalid_platforms!(platforms, @originally_invalid_platforms)
       end
 
-      SpecSet.new(result.for(dependencies, @platforms | [Gem::Platform::RUBY]))
+      specs = SpecSet.new(result.for(dependencies, @platforms | [Gem::Platform::RUBY]))
+      specs.assign_content_addresses!(@ruby_abis, local: sources.local_mode?)
+
+      if sources.local_mode?
+        # Only installed gems are in reach, so a Ruby is recorded once every row
+        # has its gem; the running Ruby otherwise waits for the next online resolution.
+        @ruby_abis.delete(Gem.ruby_abi) if @current_ruby_abi_missing && !specs.content_addresses_cover?(Gem.ruby_abi)
+
+        @new_ruby_abis.each do |ruby_abi|
+          next if specs.content_addresses_cover?(ruby_abi)
+
+          raise GemNotFound, "Could not find content-addressed gems for Ruby ABI #{ruby_abi} in locally installed gems"
+        end
+      end
+
+      specs
     end
 
     def precompute_source_requirements_for_indirect_dependencies?
@@ -892,6 +947,41 @@ module Bundler
 
       @platforms << Bundler.local_platform
       true
+    end
+
+    def add_current_ruby_abi
+      return if @ruby_abis.include?(Gem.ruby_abi)
+
+      @ruby_abis << Gem.ruby_abi
+      @locked_specs.any? {|spec| spec.content_addresses.any? }
+    end
+
+    def ruby_abi_excluded?(ruby_abi)
+      comparators = Gem::Requirement.new(@ruby_version.versions).requirements +
+                    Gem::ContentAddress.ruby_abi_requirement(ruby_abi).requirements
+
+      lower = []
+      upper = []
+      comparators.each do |op, version|
+        case op
+        when ">=" then lower << [version, true]
+        when ">" then lower << [version, false]
+        when "<=" then upper << [version, true]
+        when "<" then upper << [version, false]
+        when "="
+          lower << [version, true]
+          upper << [version, true]
+        when "~>"
+          lower << [version, true]
+          upper << [Gem::Version.new("#{version.bump}.A"), false]
+        end
+      end
+      return false if lower.empty? || upper.empty?
+
+      min, min_inclusive = lower.max_by {|version, inclusive| [version, inclusive ? 0 : 1] }
+      max, max_inclusive = upper.min_by {|version, inclusive| [version, inclusive ? 1 : 0] }
+
+      min > max || (min == max && !(min_inclusive && max_inclusive))
     end
 
     def find_most_specific_locked_platform
@@ -948,6 +1038,9 @@ module Bundler
         [@dependency_changes, "the dependencies in your gemfile changed"],
         [@current_platform_missing, "your lockfile is missing the current platform"],
         [@new_platforms.any?, "you are adding a new platform to your lockfile"],
+        [@new_ruby_abis.any?, "you are adding a new Ruby ABI to your lockfile"],
+        [@current_ruby_abi_missing, "your lockfile does not cover the current Ruby ABI"],
+        [@excluded_ruby_abis.any?, "your Gemfile's ruby directive rules out Ruby ABIs in your lockfile"],
         [@path_changes, "the gemspecs for path gems changed"],
         [@local_changes, "the gemspecs for git local gems changed"],
         [@missing_lockfile_dep, "your lockfile is missing \"#{@missing_lockfile_dep}\""],

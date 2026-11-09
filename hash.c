@@ -1591,9 +1591,9 @@ hash_alloc_capa(VALUE klass, size_t size)
 }
 
 VALUE
-rb_hash_alloc_capa(rb_len_t capa)
+rb_hash_alloc_capa(VALUE klass, rb_len_t capa)
 {
-    return hash_alloc_capa(rb_cHash, capa);
+    return hash_alloc_capa(klass, capa);
 }
 
 VALUE
@@ -1978,7 +1978,7 @@ rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifn
 }
 
 /* :nodoc: */
-static VALUE
+VALUE
 rb_hash_s_new(int argc, VALUE *argv, VALUE klass)
 {
     if (klass != rb_cHash) {

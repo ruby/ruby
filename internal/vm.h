@@ -59,6 +59,7 @@ int rb_vm_check_optimizable_mid(VALUE mid);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
 struct rb_cref_struct *rb_vm_cref_dup(const struct rb_cref_struct *cref);
 VALUE ruby_vm_special_exception_copy(VALUE);
+void rb_vm_init_redefined_flag(void);
 
 void rb_lastline_set_up(VALUE val, unsigned int up);
 

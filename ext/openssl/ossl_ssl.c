@@ -1634,12 +1634,16 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
     if (NIL_P(arg1)) {
         tm = time(0);
     } else if (rb_obj_is_instance_of(arg1, rb_cTime)) {
-        tm = NUM2LONG(rb_funcall(arg1, rb_intern("to_i"), 0));
+        tm = NUM2TIMET(rb_funcall(arg1, rb_intern("to_i"), 0));
     } else {
         ossl_raise(rb_eArgError, "arg must be Time or nil");
     }
 
+#ifdef HAVE_SSL_CTX_FLUSH_SESSIONS_EX
+    SSL_CTX_flush_sessions_ex(ctx, tm);
+#else
     SSL_CTX_flush_sessions(ctx, (long)tm);
+#endif
 
     return self;
 }
@@ -1766,8 +1770,6 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     rb_ivar_set(self, id_original_context, v_ctx);
     ossl_sslctx_setup(v_ctx);
 
-    if (rb_respond_to(io, rb_intern("nonblock=")))
-        rb_funcall(io, rb_intern("nonblock="), 1, Qtrue);
     Check_Type(io, T_FILE);
     rb_ivar_set(self, id_i_io, io);
 
@@ -1811,6 +1813,7 @@ ossl_ssl_setup(VALUE self)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     rb_io_check_writable(fptr);
+    rb_io_set_nonblock(fptr);
     if (!SSL_set_fd(ssl, TO_SOCKET(rb_io_descriptor(io))))
         ossl_raise(eSSLError, "SSL_set_fd");
 

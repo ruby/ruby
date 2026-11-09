@@ -1956,9 +1956,10 @@ struct nmin_data {
     int by: 1; /* min_by if 1 */
 };
 
-static VALUE
-cmpint_reenter_check(struct nmin_data *data, VALUE val)
+static int
+cmpint_reenter_check(struct nmin_data *data, VALUE cmp, VALUE a, VALUE b)
 {
+    int val = rb_cmpint(cmp, a, b);
     if (RBASIC(data->buf)->klass) {
         rb_raise(rb_eRuntimeError, "%s%s reentered",
                  data->rev ? "max" : "min",
@@ -1972,7 +1973,7 @@ nmin_cmp(const void *ap, const void *bp, void *_data)
 {
     struct nmin_data *data = (struct nmin_data *)_data;
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
-#define rb_cmpint(cmp, a, b) rb_cmpint(cmpint_reenter_check(data, (cmp)), a, b)
+#define rb_cmpint(cmp, a, b) cmpint_reenter_check(data, cmp, a, b)
     return OPTIMIZED_CMP(a, b);
 #undef rb_cmpint
 }
@@ -1983,8 +1984,7 @@ nmin_block_cmp(const void *ap, const void *bp, void *_data)
     struct nmin_data *data = (struct nmin_data *)_data;
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     VALUE cmp = rb_yield_values(2, a, b);
-    cmpint_reenter_check(data, cmp);
-    return rb_cmpint(cmp, a, b);
+    return cmpint_reenter_check(data, cmp, a, b);
 }
 
 static void
@@ -5012,6 +5012,7 @@ enum_compact(VALUE obj)
  * <i>Leading, trailing, or all elements</i>:
  *
  * - #to_a (aliased as #entries): Returns all elements.
+ * - #to_set: Returns a Set containing all elements.
  * - #first: Returns the first element or leading elements.
  * - #take: Returns a specified number of leading elements.
  * - #drop: Returns a specified number of trailing elements.

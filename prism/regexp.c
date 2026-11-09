@@ -2,6 +2,7 @@
 
 #include "prism/compiler/inline.h"
 #include "prism/compiler/fallthrough.h"
+#include "prism/internal/assert.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/char.h"
 #include "prism/internal/diagnostic.h"
@@ -11,7 +12,6 @@
 #include "prism/internal/stringy.h"
 #include "prism/internal/strncasecmp.h"
 
-#include <assert.h>
 #include <string.h>
 
 /** The maximum depth of nested groups allowed in a regular expression. */
@@ -536,7 +536,7 @@ pm_regexp_classify_property(const uint8_t *name, size_t length) {
  */
 static bool
 pm_regexp_parse_property_escape(pm_regexp_parser_t *parser) {
-    assert(*parser->cursor == 'p' || *parser->cursor == 'P');
+    PRISM_ASSERT(*parser->cursor == 'p' || *parser->cursor == 'P');
 
     if (parser->cursor + 1 < parser->end && parser->cursor[1] == '{') {
         const uint8_t *name_start = parser->cursor + 2;

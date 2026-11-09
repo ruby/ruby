@@ -1,0 +1,30 @@
+foo(bar baz do end)
+
+foo(bar baz do |x| x end)
+
+foo(
+  bar baz do
+  end
+)
+
+foo(m [] do end)
+
+foo(m (1) do end)
+
+foo(m a(1) do end)
+
+foo(m a.b(1) do end)
+
+foo(m a { } do end)
+
+foo(m a.b { } do end)
+
+foo(m -> {} do end)
+
+foo.(bar baz do end)
+
+super(bar baz do end)
+
+foo(bar baz do end) do end
+
+foo bar(baz qux do end)

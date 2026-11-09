@@ -13,12 +13,28 @@ module Bundler
       Bundler.load.clean(options[:"dry-run"])
       return if options[:"dry-run"]
 
-      # Pruning last, because cleaning decides which cached .gem files are
-      # stale by reading them.
-      Bundler::CLI::Common.prune(options)
+      prune
+    rescue CleanError
+      # Everything that could be removed is gone, so the cache can be pruned
+      prune
+      raise
+    end
+
+    # Cleaning is incidental to install and update, so leftovers must not fail
+    # a command that installed everything it was asked to.
+    def run_after_install
+      run
+    rescue CleanError => e
+      Bundler.ui.warn e.message
     end
 
     protected
+
+    # Pruning last, because cleaning decides which cached .gem files are
+    # stale by reading them.
+    def prune
+      Bundler::CLI::Common.prune(options)
+    end
 
     def require_path_or_force
       return unless Bundler.use_system_gems? && !options[:force]

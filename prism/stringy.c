@@ -1,6 +1,7 @@
 #include "prism/internal/stringy.h"
 
-#include <assert.h>
+#include "prism/internal/assert.h"
+
 #include <string.h>
 
 /**
@@ -8,7 +9,7 @@
  */
 void
 pm_string_shared_init(pm_string_t *string, const uint8_t *start, const uint8_t *end) {
-    assert(start <= end);
+    PRISM_ASSERT(start <= end);
 
     *string = (pm_string_t) {
         .source = start,

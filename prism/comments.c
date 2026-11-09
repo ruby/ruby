@@ -1,11 +1,11 @@
 #include "prism/internal/comments.h"
 
 #include "prism/internal/arena.h"
+#include "prism/internal/assert.h"
 #include "prism/internal/char.h"
 #include "prism/internal/node.h"
 #include "prism/internal/parser.h"
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -387,7 +387,7 @@ pm_comments_visit(pm_comments_walk_t *walk, const pm_node_t *node) {
  */
 void
 pm_comments_attach(pm_parser_t *parser, const pm_node_t *root) {
-    assert(PM_NODE_TYPE_P(root, PM_PROGRAM_NODE));
+    PRISM_ASSERT(PM_NODE_TYPE_P(root, PM_PROGRAM_NODE));
 
     uint32_t size = (uint32_t) parser->comment_list.size;
     if (size == 0) return;
@@ -421,7 +421,7 @@ pm_comments_attach(pm_parser_t *parser, const pm_node_t *root) {
         if (walk.attached[index] == NULL) walk.attached[index] = statements;
 
         uint32_t node_id = walk.attached[index]->node_id;
-        assert(node_id <= parser->node_id);
+        PRISM_ASSERT(node_id <= parser->node_id);
         if (node_id >= ranges_size) ranges_size = node_id + 1;
     }
 

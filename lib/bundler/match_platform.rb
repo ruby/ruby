@@ -20,10 +20,10 @@ module Bundler
       Gem::Platform.sort_and_filter_best_platform_match(matching, platform)
     end
 
-    def self.select_all_content_address_match(specs, content_address)
-      return specs unless Gem::ContentAddress.match?(content_address)
+    def self.select_all_content_address_match(specs, content_addresses)
+      return specs if content_addresses.empty?
 
-      specs.select {|spec| spec.content_address == content_address }
+      specs.reject {|spec| Gem::ContentAddress.match?(spec.content_address) && !content_addresses.include?(spec.content_address) }
     end
 
     def self.prefer_content_addressable(matching)

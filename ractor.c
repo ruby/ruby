@@ -918,6 +918,12 @@ rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *r, rb_thread_t *th)
 static VALUE
 ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VALUE args, VALUE block)
 {
+    /* Same semantics as Ractor.shareable_proc: the block is duplicated (the caller's
+     * Proc is never mutated), may read outer variables which are never reassigned and
+     * whose values are shareable, and `self` is replaced by the new Ractor when run.
+     * Do it before anything is allocated, since it may raise Ractor::IsolationError. */
+    block = rb_proc_ractor_make_shareable(rb_proc_dup(block), Qnil);
+
     VALUE rv = ractor_alloc(self);
     rb_ractor_t *r = RACTOR_PTR(rv);
     ractor_init(r, name, loc);

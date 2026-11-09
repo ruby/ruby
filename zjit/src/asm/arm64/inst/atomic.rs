@@ -23,8 +23,8 @@ impl From<u8> for Size {
 ///
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 /// | 31 30 29 28 | 27 26 25 24 | 23 22 21 20 | 19 18 17 16 | 15 14 13 12 | 11 10 09 08 | 07 06 05 04 | 03 02 01 00 |
-/// |        1  1    1  0  0  0    1  1  1                     0  0  0  0    0  0                                   |
-/// | size                                 rs..............                       rn.............. rt.............. |
+/// |        1  1    1  0  0  0          1                     0  0  0  0    0  0                                   |
+/// | size                         A  R    rs..............                       rn.............. rt.............. |
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
 pub struct Atomic {
@@ -38,14 +38,26 @@ pub struct Atomic {
     rs: u8,
 
     /// The size of the registers used in this instruction.
-    size: Size
+    size: Size,
+
+    /// Whether the load has acquire semantics (the A bit).
+    acquire: bool,
+
+    /// Whether the store has release semantics (the R bit).
+    release: bool,
 }
 
 impl Atomic {
-    /// LDADDAL
-    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDADD--LDADDA--LDADDAL--LDADDL--Atomic-add-on-word-or-doubleword-in-memory-?lang=en>
+    /// LDADD, with no ordering constraints (relaxed)
+    /// <https://support.arm.com/documentation/ddi0602/2026-09/Base-Instructions/LDADD--LDADDA--LDADDAL--LDADDL--Atomic-add-on-word-or-doubleword-?lang=en>
+    pub fn ldadd(rs: u8, rt: u8, rn: u8, num_bits: u8) -> Self {
+        Self { rt, rn, rs, size: num_bits.into(), acquire: false, release: false }
+    }
+
+    /// LDADDAL, with acquire and release semantics
+    /// <https://support.arm.com/documentation/ddi0602/2026-09/Base-Instructions/LDADD--LDADDA--LDADDAL--LDADDL--Atomic-add-on-word-or-doubleword-?lang=en>
     pub fn ldaddal(rs: u8, rt: u8, rn: u8, num_bits: u8) -> Self {
-        Self { rt, rn, rs, size: num_bits.into() }
+        Self { rt, rn, rs, size: num_bits.into(), acquire: true, release: true }
     }
 }
 
@@ -59,7 +71,9 @@ impl From<Atomic> for u32 {
         | ((inst.size as u32) << 30)
         | (0b11 << 28)
         | (FAMILY << 25)
-        | (0b111 << 21)
+        | ((inst.acquire as u32) << 23)
+        | ((inst.release as u32) << 22)
+        | (1 << 21)
         | ((inst.rs as u32) << 16)
         | ((inst.rn as u32) << 5)
         | (inst.rt as u32)
@@ -77,6 +91,12 @@ impl From<Atomic> for [u8; 4] {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_ldadd() {
+        let result: u32 = Atomic::ldadd(20, 21, 22, 64).into();
+        assert_eq!(0xf83402d5, result);
+    }
 
     #[test]
     fn test_ldaddal() {

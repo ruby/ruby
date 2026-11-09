@@ -238,6 +238,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "<<", inline_string_append);
     annotate!(rb_cString, "==", inline_string_eq);
     annotate!(rb_cString, "%", types::StringExact);
+    annotate!(rb_cIOBuffer, "get_value", inline_io_buffer_get_value, types::Integer.union(types::Float));
     // Not elidable; has a side effect of setting the encoding if ENC_CODERANGE_UNKNOWN.
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", inline_module_eqq, types::BoolExact, no_gc, leaf);
@@ -276,6 +277,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, "%", inline_integer_mod);
     annotate!(rb_cInteger, "&", inline_integer_and);
     annotate!(rb_cInteger, "|", inline_integer_or);
+    annotate!(rb_cInteger, "anybits?", inline_integer_anybits_p);
     annotate!(rb_cInteger, ">", inline_integer_gt);
     annotate!(rb_cInteger, ">=", inline_integer_ge);
     annotate!(rb_cInteger, "<", inline_integer_lt);
@@ -597,6 +599,72 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     None
 }
 
+/// The IO::Buffer data types ZJIT loads inline.
+///
+/// TODO(himura467): add the signed types, which need sign-extending loads.
+/// TODO(himura467): add the 64-bit types, whose values do not always fit in a
+/// Fixnum.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum IOBufferValueType {
+    U8,
+    U16Le,
+    U16Be,
+    U32Le,
+    U32Be,
+}
+
+impl IOBufferValueType {
+    /// Map an IO::Buffer data type symbol to the load it becomes, or None for the
+    /// types that still go through the C function
+    fn from_symbol(symbol: VALUE) -> Option<Self> {
+        if !symbol.static_sym_p() { return None; }
+        let id = unsafe { rb_sym2id(symbol) };
+        if id == ID!(U8) { Some(Self::U8) }
+        else if id == ID!(u16) { Some(Self::U16Le) }
+        else if id == ID!(U16) { Some(Self::U16Be) }
+        else if id == ID!(u32) { Some(Self::U32Le) }
+        else if id == ID!(U32) { Some(Self::U32Be) }
+        else { None }
+    }
+
+    /// Width of the load, in bytes
+    fn num_bytes(self) -> usize {
+        match self {
+            Self::U8 => 1,
+            Self::U16Le | Self::U16Be => 2,
+            Self::U32Le | Self::U32Be => 4,
+        }
+    }
+
+    fn byteswap(self) -> bool {
+        matches!(self, Self::U16Be | Self::U32Be)
+    }
+}
+
+fn inline_io_buffer_get_value(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    use crate::hir::SideExitReason;
+    let &[buffer_type, offset] = args else { return None; };
+    let value_type = IOBufferValueType::from_symbol(fun.type_of(buffer_type).ruby_object()?)?;
+    if !fun.likely_a(offset, types::Fixnum, state) { return None; }
+    let num_bytes = value_type.num_bytes();
+    let offset = fun.coerce_to(block, offset, types::Fixnum, state);
+    let offset = fun.push_insn(block, hir::Insn::UnboxFixnum { val: offset });
+    let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
+    let offset = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: offset, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state });
+    let length = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CUInt64(num_bytes as u64) });
+    let ptr = fun.push_insn(block, hir::Insn::CCall {
+        cfunc: rb_jit_io_buffer_readable_ptr as *const u8,
+        recv,
+        args: vec![offset, length],
+        name: ID!(rb_jit_io_buffer_readable_ptr),
+        owner: Qnil,
+        return_type: types::CPtr,
+        elidable: true,
+    });
+    let ptr = fun.push_insn(block, hir::Insn::GuardNotNull { val: ptr, reason: Box::new(SideExitReason::GuardIOBufferReadable), state });
+    Some(fun.push_insn(block, hir::Insn::LoadFixnum { ptr, num_bytes, byteswap: value_type.byteswap() }))
+}
+
 fn inline_string_byteslice(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[beg, len] = args else { return None; };
     if fun.likely_a(beg, types::Fixnum, state) && fun.likely_a(len, types::Fixnum, state) {
@@ -878,6 +946,21 @@ fn inline_integer_and(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
 fn inline_integer_or(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumOr { left, right, }, BOP_OR, recv, other, state)
+}
+
+fn inline_integer_anybits_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[mask] = args else { return None; };
+    if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(mask, types::Fixnum, state) {
+        let recv = fun.coerce_to(block, recv, types::Fixnum, state);
+        let mask = fun.coerce_to(block, mask, types::Fixnum, state);
+        // Like int_anybits_p, test for overlapping bits. FixnumAnd returns a
+        // tagged Fixnum, so compare against tagged Fixnum zero.
+        let bits = fun.push_insn(block, hir::Insn::FixnumAnd { left: recv, right: mask });
+        let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(0)) });
+        let any_bits = fun.push_insn(block, hir::Insn::IsBitNotEqual { left: bits, right: zero });
+        return Some(fun.push_insn(block, hir::Insn::BoxBool { val: any_bits }));
+    }
+    None
 }
 
 fn inline_integer_gt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {

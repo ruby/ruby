@@ -1081,7 +1081,7 @@ rb_ary_s_new(int argc, VALUE *argv, VALUE klass)
     if (klass == rb_cArray) {
         rb_len_t size = 0;
         if (argc > 0 && FIXNUM_P(argv[0])) {
-            size = FIX2LONG(argv[0]);
+            size = FIX2LEN(argv[0]);
             if (size < 0) size = 0;
         }
 
@@ -1981,7 +1981,7 @@ rb_ary_aref1(VALUE ary, VALUE arg)
 
     /* special case - speeding up */
     if (FIXNUM_P(arg)) {
-        return rb_ary_entry(ary, FIX2LONG(arg));
+        return rb_ary_entry(ary, FIX2LEN(arg));
     }
     /* check if idx is Range or ArithmeticSequence */
     switch (rb_arithmetic_sequence_beg_len_step(arg, &beg, &len, &step, RARRAY_LEN(ary), 0)) {
@@ -2682,7 +2682,7 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
         return ary_aset_by_rb_ary_splice(ary, beg, len, argv[2]);
     }
     if (FIXNUM_P(argv[0])) {
-        offset = FIX2LONG(argv[0]);
+        offset = FIX2LEN(argv[0]);
         return ary_aset_by_rb_ary_store(ary, offset, argv[1]);
     }
     if (rb_range_beg_len(argv[0], &beg, &len, RARRAY_LEN(ary), 1)) {
@@ -2765,7 +2765,7 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
 
 // These array primitives enable tight compatibility with the C implementation
 // in terms of what method calls happen. They can use unchecked utilities such as
-// FIX2LONG since unlike userland Ruby code, these methods cannot be traced with
+// FIX2LEN since unlike userland Ruby code, these methods cannot be traced with
 // TracePoint (or ruby/debug.h APIs) and have their local variables changed from
 // underneath them.
 
@@ -2773,21 +2773,21 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
 VALUE
 rb_builtin_ary_at_end(rb_execution_context_t *ec, VALUE self, VALUE index)
 {
-    return FIX2LONG(index) >= RARRAY_LEN(self) ? Qtrue : Qfalse;
+    return FIX2LEN(index) >= RARRAY_LEN(self) ? Qtrue : Qfalse;
 }
 
 // Return the element at the given fixnum index.
 VALUE
 rb_builtin_ary_at(rb_execution_context_t *ec, VALUE self, VALUE index)
 {
-    return RARRAY_AREF(self, FIX2LONG(index));
+    return RARRAY_AREF(self, FIX2LEN(index));
 }
 
 // Increment a fixnum by 1.
 VALUE
 rb_builtin_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
 {
-    return LONG2FIX(FIX2LONG(num) + 1);
+    return LONG2FIX(FIX2LEN(num) + 1);
 }
 
 VALUE
@@ -2846,52 +2846,6 @@ rb_ary_each(VALUE ary)
     rb_execution_context_t *ec = GET_EC();
     for (i=0; i<RARRAY_LEN(ary); i++) {
         rb_ec_yield(ec, RARRAY_AREF(ary, i));
-    }
-    return ary;
-}
-
-/*
- *  call-seq:
- *    each_index {|index| ... } -> self
- *    each_index -> new_enumerator
- *
- *  With a block given, iterates over the elements of +self+,
- *  passing each <i>array index</i> to the block;
- *  returns +self+:
- *
- *    a = [:foo, 'bar', 2]
- *    a.each_index {|index|  puts "#{index} #{a[index]}" }
- *
- *  Output:
- *
- *    0 foo
- *    1 bar
- *    2 2
- *
- *  Allows the array to be modified during iteration:
- *
- *    a = [:foo, 'bar', 2]
- *    a.each_index {|index| puts index; a.clear if index > 0 }
- *    a # => []
- *
- *  Output:
- *
- *    0
- *    1
- *
- *  With no block given, returns a new Enumerator.
- *
- *  Related: see {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
- */
-
-static VALUE
-rb_ary_each_index(VALUE ary)
-{
-    rb_len_t i;
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
-
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-        rb_yield(LEN2NUM(i));
     }
     return ary;
 }
@@ -3148,10 +3102,12 @@ ary_join_fast(VALUE ary, VALUE sep)
     }
 
     /* One pass: confirm the shared encoding, measure the length, merge code ranges. */
+    if (sep_len > 0 && n - 1 > (RB_LEN_MAX - 1) / sep_len) return Qundef;
     rb_len_t len = 1 + sep_len * (n - 1);
     for (rb_len_t i = 0; i < n; i++) {
         VALUE s = RARRAY_AREF(ary, i);
         if (!RB_TYPE_P(s, T_STRING) || ENCODING_GET(s) != encidx) return Qundef;
+        if (RSTRING_LEN(s) > RB_LEN_MAX - len) return Qundef;
         len += RSTRING_LEN(s);
         cr = ENC_CODERANGE_AND(cr, rb_enc_str_coderange(s));
     }
@@ -3183,9 +3139,9 @@ rb_ary_join(VALUE ary, VALUE sep)
     rb_len_t len = 1, i;
     VALUE val, tmp, result;
 
-    if (RARRAY_LEN(ary) == 0) return rb_usascii_str_new(0, 0);
-
     if (!NIL_P(sep)) StringValue(sep);
+
+    if (RARRAY_LEN(ary) == 0) return rb_usascii_str_new(0, 0);
 
     result = ary_join_fast(ary, sep);
     if (!UNDEF_P(result)) return result;
@@ -3619,57 +3575,40 @@ sort_reentered(VALUE ary)
     return Qnil;
 }
 
-static void
-sort_returned(struct ary_sort_data *data)
+static int
+sort_cmpint(struct ary_sort_data *data, VALUE cmp, VALUE a, VALUE b)
 {
+    int ret = rb_cmpint(cmp, a, b);
     if (rb_obj_frozen_p(data->receiver)) {
         rb_raise(rb_eFrozenError, "array frozen during sort");
     }
     sort_reentered(data->ary);
+    return ret;
 }
 
 static int
 sort_1(const void *ap, const void *bp, void *dummy)
 {
     struct ary_sort_data *data = dummy;
-    VALUE retval = sort_reentered(data->ary);
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     VALUE args[2];
-    int n;
 
     args[0] = a;
     args[1] = b;
-    retval = rb_yield_values2(2, args);
-    n = rb_cmpint(retval, a, b);
-    sort_returned(data);
-    return n;
+    sort_reentered(data->ary);
+    return sort_cmpint(data, rb_yield_values2(2, args), a, b);
 }
 
 static int
 sort_2(const void *ap, const void *bp, void *dummy)
 {
     struct ary_sort_data *data = dummy;
-    VALUE retval = sort_reentered(data->ary);
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
-    int n;
 
-    if (FIXNUM_P(a) && FIXNUM_P(b) && CMP_OPTIMIZABLE(INTEGER)) {
-        if ((long)a > (long)b) return 1;
-        if ((long)a < (long)b) return -1;
-        return 0;
-    }
-    if (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(STRING)) {
-        return rb_str_cmp(a, b);
-    }
-    if (RB_FLOAT_TYPE_P(a) && CMP_OPTIMIZABLE(FLOAT)) {
-        return rb_float_cmp(a, b);
-    }
-
-    retval = rb_funcallv(a, id_cmp, 1, &b);
-    n = rb_cmpint(retval, a, b);
-    sort_returned(data);
-
-    return n;
+    sort_reentered(data->ary);
+#define rb_cmpint(cmp, a, b) sort_cmpint(data, cmp, a, b)
+    return OPTIMIZED_CMP(a, b);
+#undef rb_cmpint
 }
 
 /*
@@ -3991,7 +3930,7 @@ rb_get_values_at(VALUE obj, rb_len_t olen, int argc, const VALUE *argv, VALUE (*
 
     for (i=0; i<argc; i++) {
         if (FIXNUM_P(argv[i])) {
-            rb_ary_push(result, (*func)(obj, FIX2LONG(argv[i])));
+            rb_ary_push(result, (*func)(obj, FIX2LEN(argv[i])));
             continue;
         }
         /* check if idx is Range */
@@ -4014,7 +3953,7 @@ append_values_at_single(VALUE result, VALUE ary, rb_len_t olen, VALUE idx)
 {
     rb_len_t beg, len;
     if (FIXNUM_P(idx)) {
-        beg = FIX2LONG(idx);
+        beg = FIX2LEN(idx);
     }
     /* check if idx is Range */
     else if (rb_range_beg_len(idx, &beg, &len, olen, 1)) {
@@ -7094,6 +7033,7 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv)
     if (n < 0) rb_raise(rb_eArgError, "negative sample number");
     len = RARRAY_LEN(ary);
     if (n > len) n = len;
+    if (n <= 0) return rb_ary_new_capa(0);
     if (n <= numberof(idx)) {
         rb_len_t rnds[numberof(idx)], sorted[numberof(idx)];
 
@@ -9116,7 +9056,6 @@ Init_Array(void)
     rb_define_alias(rb_cArray,  "prepend", "unshift");
     rb_define_method(rb_cArray, "insert", rb_ary_insert, -1);
     rb_define_method(rb_cArray, "each", rb_ary_each, 0);
-    rb_define_method(rb_cArray, "each_index", rb_ary_each_index, 0);
     rb_define_method(rb_cArray, "reverse_each", rb_ary_reverse_each, 0);
     rb_define_method(rb_cArray, "length", rb_ary_length, 0);
     rb_define_method(rb_cArray, "size", rb_ary_length, 0);

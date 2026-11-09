@@ -102,6 +102,38 @@ if defined? Zlib
       assert_equal input, original
     end
 
+    def test_params_after_chunked_break
+      chunks = []
+      r = Random.new 0
+
+      # small enough that params can flush what zlib holds without Z_BUF_ERROR
+      z = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, 9, 1)
+
+      input = r.bytes(20000)
+      z.deflate(input) do |chunk|
+        chunks << chunk
+        break
+      end
+
+      assert_operator 0, :<, z.avail_in
+
+      z.params(Zlib::BEST_SPEED, Zlib::FILTERED)
+      chunks << z.finish
+
+      assert_equal input, Zlib.inflate(chunks.join)
+    end
+
+    def test_params_after_failed_deflate
+      z = Zlib::Deflate.new
+      z << "foo"
+      assert_raise(Zlib::StreamError) { z.deflate("bar", 10000) }
+      assert_equal "bar", z.flush_next_in
+
+      z.params(Zlib::BEST_SPEED, Zlib::FILTERED)
+
+      assert_equal "foo", Zlib::Inflate.inflate(z.finish)
+    end
+
     def test_addstr
       z = Zlib::Deflate.new
       z << "foo"
@@ -119,6 +151,16 @@ if defined? Zlib
       s << z.flush_next_out
       s << z.deflate("qux", Zlib::FINISH)
       assert_equal("foobarbazqux", Zlib::Inflate.inflate(s))
+    end
+
+    def test_flush_twice
+      z = Zlib::Deflate.new
+      s = z.deflate("foo", Zlib::SYNC_FLUSH)
+      s << z.flush << z.flush
+      s << z.flush(Zlib::FULL_FLUSH) << z.flush(Zlib::SYNC_FLUSH)
+      s << z.deflate("", Zlib::SYNC_FLUSH)
+      s << z.finish
+      assert_equal("foo", Zlib::Inflate.inflate(s))
     end
 
     def test_avail
@@ -183,6 +225,15 @@ if defined? Zlib
       assert_equal(false, z.closed?)
       z.close
       assert_equal(true, z.closed?)
+    end
+
+    def test_params_with_buf_error_and_pending_output
+      data = Random.new(0).bytes(1000)
+      z = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, Zlib::MAX_WBITS, 1)
+      z << data
+      z.avail_out = 10
+      EnvUtil.suppress_warning {z.params(Zlib::BEST_SPEED, Zlib::DEFAULT_STRATEGY)}
+      assert_equal(data, Zlib::Inflate.inflate(z.finish))
     end
 
     def test_params
@@ -618,6 +669,24 @@ if defined? Zlib
       end
 
       assert_equal "foofoofoo", out
+    end
+
+    def test_inflate_empty_after_chunked_break
+      chunks = []
+      input = Random.new(0).bytes(20000)
+
+      z = Zlib::Inflate.new
+
+      z.inflate(Zlib.deflate(input)) do |chunk|
+        chunks << chunk
+        break
+      end
+
+      assert_operator 0, :<, z.avail_in
+
+      chunks << z.inflate("")
+
+      assert_equal input, chunks.join
     end
 
     def test_sync
@@ -1533,6 +1602,22 @@ if defined? Zlib
         Zlib::GzipWriter.open(t.path) {|gz| gz.puts("foo") }
         assert_equal("foo\n", Zlib::GzipReader.open(t.path) {|gz| gz.read })
       }
+    end
+
+    def test_flush_twice
+      io = StringIO.new("".b)
+      Zlib::GzipWriter.wrap(io) do |gz|
+        gz.write("a")
+        gz.flush
+        gz.flush
+        gz.flush(Zlib::FULL_FLUSH)
+        gz.flush(Zlib::SYNC_FLUSH)
+        gz.sync = true
+        gz.write("")
+        gz.write("")
+        gz.write("b")
+      end
+      assert_equal("ab", Zlib.gunzip(io.string))
     end
 
     def test_writer_wrap

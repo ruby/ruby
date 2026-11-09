@@ -394,6 +394,22 @@ pub fn eor(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// STADD - atomically add rs to the value at [rn], discarding the old value, with
+/// no ordering constraints (relaxed). Requires FEAT_LSE. This is an alias of
+/// LDADD with the zero register as the destination.
+pub fn stadd(cb: &mut CodeBlock, rs: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rs, rn) {
+        (A64Opnd::Reg(rs), A64Opnd::Reg(rn)) => {
+            assert!(rs.num_bits == rn.num_bits, "All operands must be of the same size.");
+
+            Atomic::ldadd(rs.reg_no, XZR_REG.reg_no, rn.reg_no, rs.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to stadd instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// LDADDAL - atomic add with acquire and release semantics
 pub fn ldaddal(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rs, rt, rn) {
@@ -1138,6 +1154,34 @@ pub fn sxtw(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// REV - reverse the bytes of a register
+pub fn rev(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn)) => {
+            assert!(rd.num_bits == rn.num_bits, "Expected registers to be the same size");
+
+            Rev::rev(rd.reg_no, rn.reg_no, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to rev instruction")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// REV16 - reverse the bytes within each halfword of a register
+pub fn rev16(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn)) => {
+            assert!(rd.num_bits == rn.num_bits, "Expected registers to be the same size");
+
+            Rev::rev16(rd.reg_no, rn.reg_no, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to rev16 instruction")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// RET - unconditionally return to a location in a register, defaults to X30
 pub fn ret(cb: &mut CodeBlock, rn: A64Opnd) {
     let bytes: [u8; 4] = match rn {
@@ -1540,6 +1584,13 @@ mod tests {
     }
 
     #[test]
+    fn test_stadd() {
+        let cb = compile(|cb| stadd(cb, X10, X12));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: stadd x10, [x12]");
+        assert_snapshot!(cb.hexdump(), @"9f012af8");
+    }
+
+    #[test]
     fn test_ldaddal() {
         let cb = compile(|cb| ldaddal(cb, X10, X11, X12));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldaddal x10, x11, [x12]");
@@ -1787,6 +1838,27 @@ mod tests {
         let cb = compile(|cb| orr(cb, W10, W11, A64Opnd::new_uimm(1)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: orr w10, w11, #1");
         assert_snapshot!(cb.hexdump(), @"6a010032");
+    }
+
+    #[test]
+    fn test_rev() {
+        let cb = compile(|cb| rev(cb, X10, X11));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: rev x10, x11");
+        assert_snapshot!(cb.hexdump(), @"6a0dc0da");
+    }
+
+    #[test]
+    fn test_rev_32b() {
+        let cb = compile(|cb| rev(cb, W10, W11));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: rev w10, w11");
+        assert_snapshot!(cb.hexdump(), @"6a09c05a");
+    }
+
+    #[test]
+    fn test_rev16() {
+        let cb = compile(|cb| rev16(cb, W10, W11));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: rev16 w10, w11");
+        assert_snapshot!(cb.hexdump(), @"6a05c05a");
     }
 
     #[test]

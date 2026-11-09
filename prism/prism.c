@@ -5,15 +5,16 @@
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/arena.h"
+#include "prism/internal/assert.h"
 #include "prism/internal/bit.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/char.h"
 #include "prism/internal/comments.h"
 #include "prism/internal/constant_pool.h"
 #include "prism/internal/diagnostic.h"
+#include "prism/internal/double.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/integer.h"
-#include "prism/internal/isinf.h"
 #include "prism/internal/line_offset_list.h"
 #include "prism/internal/list.h"
 #include "prism/internal/magic_comments.h"
@@ -36,11 +37,7 @@
 #include "prism/stream.h"
 #include "prism/version.h"
 
-#include <assert.h>
-#include <errno.h>
 #include <limits.h>
-#include <locale.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -741,7 +738,7 @@ pm_parser_scope_toplevel_p(pm_parser_t *parser) {
         if (scope->closed) return false;
     } while ((scope = scope->previous) != NULL);
 
-    assert(false && "unreachable");
+    PRISM_ASSERT(false && "unreachable");
     return true;
 }
 
@@ -753,7 +750,7 @@ pm_parser_scope_find(pm_parser_t *parser, uint32_t depth) {
     pm_scope_t *scope = parser->current_scope;
 
     while (depth-- > 0) {
-        assert(scope != NULL);
+        PRISM_ASSERT(scope != NULL);
         scope = scope->previous;
     }
 
@@ -890,7 +887,7 @@ pm_parser_scope_shareable_constant_set(pm_parser_t *parser, pm_shareable_constan
 static void
 pm_locals_resize(pm_arena_t *arena, pm_locals_t *locals) {
     uint32_t next_capacity = locals->capacity == 0 ? 4 : (locals->capacity * 2);
-    assert(next_capacity > locals->capacity);
+    PRISM_ASSERT(next_capacity > locals->capacity);
 
     pm_local_t *next_locals = (pm_local_t *) pm_arena_zalloc(arena, next_capacity * sizeof(pm_local_t), PRISM_ALIGNOF(pm_local_t));
 
@@ -986,7 +983,7 @@ pm_locals_write(pm_arena_t *arena, pm_locals_t *locals, pm_constant_id_t name, u
         } while ((hash & mask) != initial_hash);
     }
 
-    assert(false && "unreachable");
+    PRISM_ASSERT(false && "unreachable");
     return true;
 }
 
@@ -1031,10 +1028,10 @@ pm_locals_find(pm_locals_t *locals, pm_constant_id_t name) {
 static void
 pm_locals_read(pm_locals_t *locals, pm_constant_id_t name) {
     uint32_t index = pm_locals_find(locals, name);
-    assert(index != UINT32_MAX);
+    PRISM_ASSERT(index != UINT32_MAX);
 
     pm_local_t *local = &locals->locals[index];
-    assert(local->reads < UINT32_MAX);
+    PRISM_ASSERT(local->reads < UINT32_MAX);
 
     local->reads++;
 }
@@ -1046,10 +1043,10 @@ pm_locals_read(pm_locals_t *locals, pm_constant_id_t name) {
 static void
 pm_locals_unread(pm_locals_t *locals, pm_constant_id_t name) {
     uint32_t index = pm_locals_find(locals, name);
-    assert(index != UINT32_MAX);
+    PRISM_ASSERT(index != UINT32_MAX);
 
     pm_local_t *local = &locals->locals[index];
-    assert(local->reads > 0);
+    PRISM_ASSERT(local->reads > 0);
 
     local->reads--;
 }
@@ -1060,7 +1057,7 @@ pm_locals_unread(pm_locals_t *locals, pm_constant_id_t name) {
 static uint32_t
 pm_locals_reads(pm_locals_t *locals, pm_constant_id_t name) {
     uint32_t index = pm_locals_find(locals, name);
-    assert(index != UINT32_MAX);
+    PRISM_ASSERT(index != UINT32_MAX);
 
     return locals->locals[index].reads;
 }
@@ -1246,7 +1243,7 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
 
                 pm_node_t *condition;
                 PM_NODE_LIST_FOREACH(&cast->conditions, index, condition) {
-                    assert(PM_NODE_TYPE_P(condition, PM_WHEN_NODE));
+                    PRISM_ASSERT(PM_NODE_TYPE_P(condition, PM_WHEN_NODE));
 
                     pm_when_node_t *cast = (pm_when_node_t *) condition;
                     pm_node_t  *vn = pm_check_value_expression(parser, UP(cast->statements));
@@ -1268,7 +1265,7 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
 
                 pm_node_t *condition;
                 PM_NODE_LIST_FOREACH(&cast->conditions, index, condition) {
-                    assert(PM_NODE_TYPE_P(condition, PM_IN_NODE));
+                    PRISM_ASSERT(PM_NODE_TYPE_P(condition, PM_IN_NODE));
 
                     pm_in_node_t *cast = (pm_in_node_t *) condition;
                     pm_node_t  *vn = pm_check_value_expression(parser, UP(cast->statements));
@@ -1391,6 +1388,7 @@ pm_void_statement_check(pm_parser_t *parser, const pm_node_t *node) {
         case PM_CLASS_VARIABLE_READ_NODE:
         case PM_GLOBAL_VARIABLE_READ_NODE:
         case PM_INSTANCE_VARIABLE_READ_NODE:
+        case PM_IT_LOCAL_VARIABLE_READ_NODE:
         case PM_LOCAL_VARIABLE_READ_NODE:
         case PM_NUMBERED_REFERENCE_READ_NODE:
             type = "a variable";
@@ -1517,15 +1515,47 @@ pm_void_statement_check(pm_parser_t *parser, const pm_node_t *node) {
 }
 
 /**
+ * Like pm_void_statement_check, but also looks inside parentheses with a single
+ * statement and begin blocks without rescue/else/ensure, matching parse.y.
+ */
+static void
+pm_void_statement_check_unwrap(pm_parser_t *parser, const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_BEGIN_NODE: {
+            const pm_begin_node_t *cast = (const pm_begin_node_t *) node;
+            if (cast->statements == NULL || cast->rescue_clause != NULL || cast->else_clause != NULL || cast->ensure_clause != NULL) break;
+
+            // The rest of the body was already checked when it was parsed.
+            const pm_node_list_t *body = &cast->statements->body;
+            pm_void_statement_check_unwrap(parser, body->nodes[body->size - 1]);
+            break;
+        }
+        case PM_PARENTHESES_NODE: {
+            const pm_parentheses_node_t *cast = (const pm_parentheses_node_t *) node;
+            if (cast->body == NULL || !PM_NODE_TYPE_P(cast->body, PM_STATEMENTS_NODE)) break;
+
+            // Unlike begin, parse.y only looks one level into parentheses, so
+            // `((foo))` doesn't warn.
+            const pm_statements_node_t *statements = (const pm_statements_node_t *) cast->body;
+            if (statements->body.size == 1) pm_void_statement_check(parser, statements->body.nodes[0]);
+            break;
+        }
+        default:
+            pm_void_statement_check(parser, node);
+            break;
+    }
+}
+
+/**
  * Warn if any of the statements that are not the last statement in the list are
  * a "void" statement.
  */
 static void
 pm_void_statements_check(pm_parser_t *parser, const pm_statements_node_t *node, bool last_value) {
-    assert(node->body.size > 0);
+    PRISM_ASSERT(node->body.size > 0);
     const size_t size = node->body.size - (last_value ? 1 : 0);
     for (size_t index = 0; index < size; index++) {
-        pm_void_statement_check(parser, node->body.nodes[index]);
+        pm_void_statement_check_unwrap(parser, node->body.nodes[index]);
     }
 }
 
@@ -1674,7 +1704,7 @@ pm_conditional_predicate(pm_parser_t *parser, pm_node_t *node, pm_conditional_pr
             // We're only asserting against the size when we should probably
             // assert against the entire layout, but we'll assume tests will
             // catch this.
-            assert(sizeof(pm_range_node_t) == sizeof(pm_flip_flop_node_t));
+            PRISM_ASSERT(sizeof(pm_range_node_t) == sizeof(pm_flip_flop_node_t));
             node->type = PM_FLIP_FLOP_NODE;
 
             break;
@@ -1683,7 +1713,7 @@ pm_conditional_predicate(pm_parser_t *parser, pm_node_t *node, pm_conditional_pr
             // Here we change the regular expression node into a match last line
             // node. We can do this since the nodes are exactly the same except
             // for the type.
-            assert(sizeof(pm_regular_expression_node_t) == sizeof(pm_match_last_line_node_t));
+            PRISM_ASSERT(sizeof(pm_regular_expression_node_t) == sizeof(pm_match_last_line_node_t));
             node->type = PM_MATCH_LAST_LINE_NODE;
 
             if (!PM_PARSER_COMMAND_LINE_OPTION_E(parser)) {
@@ -1695,7 +1725,7 @@ pm_conditional_predicate(pm_parser_t *parser, pm_node_t *node, pm_conditional_pr
             // Here we change the interpolated regular expression node into an
             // interpolated match last line node. We can do this since the nodes
             // are exactly the same except for the type.
-            assert(sizeof(pm_interpolated_regular_expression_node_t) == sizeof(pm_interpolated_match_last_line_node_t));
+            PRISM_ASSERT(sizeof(pm_interpolated_regular_expression_node_t) == sizeof(pm_interpolated_match_last_line_node_t));
             node->type = PM_INTERPOLATED_MATCH_LAST_LINE_NODE;
 
             if (!PM_PARSER_COMMAND_LINE_OPTION_E(parser)) {
@@ -2213,7 +2243,7 @@ pm_node_flag_unset(pm_node_t *node, pm_node_flags_t flag) {
  */
 static PRISM_INLINE void
 pm_node_flag_set_repeated_parameter(pm_node_t *node) {
-    assert(PM_NODE_TYPE(node) == PM_BLOCK_LOCAL_VARIABLE_NODE ||
+    PRISM_ASSERT(PM_NODE_TYPE(node) == PM_BLOCK_LOCAL_VARIABLE_NODE ||
             PM_NODE_TYPE(node) == PM_BLOCK_PARAMETER_NODE ||
             PM_NODE_TYPE(node) == PM_KEYWORD_REST_PARAMETER_NODE ||
             PM_NODE_TYPE(node) == PM_OPTIONAL_KEYWORD_PARAMETER_NODE ||
@@ -2293,20 +2323,6 @@ static size_t
 pm_statements_node_body_length(pm_statements_node_t *node);
 
 /**
- * Move an integer's values array into the arena. If the integer has heap-
- * allocated values, copy them to the arena and free the original.
- */
-static PRISM_INLINE void
-pm_integer_arena_move(pm_arena_t *arena, pm_integer_t *integer) {
-    if (integer->values != NULL) {
-        size_t byte_size = integer->length * sizeof(uint32_t);
-        uint32_t *old_values = integer->values;
-        integer->values = (uint32_t *) pm_arena_memdup(arena, old_values, byte_size, PRISM_ALIGNOF(uint32_t));
-        xfree(old_values);
-    }
-}
-
-/**
  * Allocate a new ErrorRecoveryNode node with no unexpected child.
  */
 static pm_error_recovery_node_t *
@@ -2339,7 +2355,7 @@ pm_error_recovery_node_create_unexpected(pm_parser_t *parser, pm_node_t *unexpec
  */
 static pm_alias_global_variable_node_t *
 pm_alias_global_variable_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *new_name, pm_node_t *old_name) {
-    assert(keyword->type == PM_TOKEN_KEYWORD_ALIAS);
+    PRISM_ASSERT(keyword->type == PM_TOKEN_KEYWORD_ALIAS);
 
     return pm_alias_global_variable_node_new(
         parser->arena,
@@ -2357,7 +2373,7 @@ pm_alias_global_variable_node_create(pm_parser_t *parser, const pm_token_t *keyw
  */
 static pm_alias_method_node_t *
 pm_alias_method_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *new_name, pm_node_t *old_name) {
-    assert(keyword->type == PM_TOKEN_KEYWORD_ALIAS);
+    PRISM_ASSERT(keyword->type == PM_TOKEN_KEYWORD_ALIAS);
 
     return pm_alias_method_node_new(
         parser->arena,
@@ -2506,7 +2522,7 @@ pm_array_node_elements_append(pm_arena_t *arena, pm_array_node_t *node, pm_node_
  */
 static void
 pm_array_node_close_set(const pm_parser_t *parser, pm_array_node_t *node, const pm_token_t *closing) {
-    assert(closing->type == PM_TOKEN_BRACKET_RIGHT || closing->type == PM_TOKEN_STRING_END || closing->type == 0);
+    PRISM_ASSERT(closing->type == PM_TOKEN_BRACKET_RIGHT || closing->type == PM_TOKEN_STRING_END || closing->type == 0);
     PM_NODE_LENGTH_SET_TOKEN(parser, node, closing);
     node->closing_loc = TOK2LOC(parser, closing);
 }
@@ -2661,7 +2677,7 @@ pm_assoc_node_create(pm_parser_t *parser, pm_node_t *key, const pm_token_t *oper
  */
 static pm_assoc_splat_node_t *
 pm_assoc_splat_node_create(pm_parser_t *parser, pm_node_t *value, const pm_token_t *operator) {
-    assert(operator->type == PM_TOKEN_USTAR_STAR);
+    PRISM_ASSERT(operator->type == PM_TOKEN_USTAR_STAR);
 
     return pm_assoc_splat_node_new(
         parser->arena,
@@ -2678,7 +2694,7 @@ pm_assoc_splat_node_create(pm_parser_t *parser, pm_node_t *value, const pm_token
  */
 static pm_back_reference_read_node_t *
 pm_back_reference_read_node_create(pm_parser_t *parser, const pm_token_t *name) {
-    assert(name->type == PM_TOKEN_BACK_REFERENCE);
+    PRISM_ASSERT(name->type == PM_TOKEN_BACK_REFERENCE);
 
     return pm_back_reference_read_node_new(
         parser->arena,
@@ -2752,7 +2768,7 @@ pm_begin_node_ensure_clause_set(pm_begin_node_t *node, pm_ensure_node_t *ensure_
  */
 static void
 pm_begin_node_end_keyword_set(const pm_parser_t *parser, pm_begin_node_t *node, const pm_token_t *end_keyword) {
-    assert(end_keyword->type == PM_TOKEN_KEYWORD_END || end_keyword->type == 0);
+    PRISM_ASSERT(end_keyword->type == PM_TOKEN_KEYWORD_END || end_keyword->type == 0);
     PM_NODE_LENGTH_SET_TOKEN(parser, node, end_keyword);
     node->end_keyword_loc = TOK2LOC(parser, end_keyword);
 }
@@ -2762,7 +2778,7 @@ pm_begin_node_end_keyword_set(const pm_parser_t *parser, pm_begin_node_t *node, 
  */
 static pm_block_argument_node_t *
 pm_block_argument_node_create(pm_parser_t *parser, const pm_token_t *operator, pm_node_t *expression) {
-    assert(operator->type == PM_TOKEN_UAMPERSAND);
+    PRISM_ASSERT(operator->type == PM_TOKEN_UAMPERSAND);
 
     return pm_block_argument_node_new(
         parser->arena,
@@ -2797,7 +2813,7 @@ pm_block_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const p
  */
 static pm_block_parameter_node_t *
 pm_block_parameter_node_create(pm_parser_t *parser, const pm_token_t *name, const pm_token_t *operator) {
-    assert(operator->type == PM_TOKEN_UAMPERSAND || operator->type == PM_TOKEN_AMPERSAND);
+    PRISM_ASSERT(operator->type == PM_TOKEN_UAMPERSAND || operator->type == PM_TOKEN_AMPERSAND);
 
     return pm_block_parameter_node_new(
         parser->arena,
@@ -2850,7 +2866,7 @@ pm_block_parameters_node_create(pm_parser_t *parser, pm_parameters_node_t *param
  */
 static void
 pm_block_parameters_node_closing_set(const pm_parser_t *parser, pm_block_parameters_node_t *node, const pm_token_t *closing) {
-    assert(closing->type == PM_TOKEN_PIPE || closing->type == PM_TOKEN_PARENTHESIS_RIGHT || closing->type == 0);
+    PRISM_ASSERT(closing->type == PM_TOKEN_PIPE || closing->type == PM_TOKEN_PARENTHESIS_RIGHT || closing->type == 0);
     PM_NODE_LENGTH_SET_TOKEN(parser, node, closing);
     node->closing_loc = TOK2LOC(parser, closing);
 }
@@ -2888,7 +2904,7 @@ pm_block_parameters_node_append_local(pm_arena_t *arena, pm_block_parameters_nod
  */
 static pm_break_node_t *
 pm_break_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_arguments_node_t *arguments) {
-    assert(keyword->type == PM_TOKEN_KEYWORD_BREAK);
+    PRISM_ASSERT(keyword->type == PM_TOKEN_KEYWORD_BREAK);
 
     return pm_break_node_new(
         parser->arena,
@@ -2960,7 +2976,7 @@ pm_call_node_aref_create(pm_parser_t *parser, pm_node_t *receiver, pm_arguments_
     PM_NODE_START_SET_NODE(node, receiver);
 
     const pm_location_t *end = pm_arguments_end(arguments);
-    assert(end != NULL && "unreachable");
+    PRISM_ASSERT(end != NULL && "unreachable");
     PM_NODE_LENGTH_SET_LOCATION(node, end);
 
     node->receiver = receiver;
@@ -3064,7 +3080,7 @@ pm_call_node_fcall_create(pm_parser_t *parser, pm_token_t *message, pm_arguments
 
     PM_NODE_START_SET_TOKEN(parser, node, message);
     const pm_location_t *end = pm_arguments_end(arguments);
-    assert(end != NULL && "unreachable");
+    PRISM_ASSERT(end != NULL && "unreachable");
     PM_NODE_LENGTH_SET_LOCATION(node, end);
 
     node->message_loc = TOK2LOC(parser, message);
@@ -3106,7 +3122,7 @@ pm_call_node_not_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *me
     if (arguments->closing_loc.length > 0) {
         PM_NODE_LENGTH_SET_LOCATION(node, &arguments->closing_loc);
     } else {
-        assert(receiver != NULL);
+        PRISM_ASSERT(receiver != NULL);
         PM_NODE_LENGTH_SET_NODE(node, receiver);
     }
 
@@ -3131,7 +3147,7 @@ pm_call_node_shorthand_create(pm_parser_t *parser, pm_node_t *receiver, pm_token
 
     PM_NODE_START_SET_NODE(node, receiver);
     const pm_location_t *end = pm_arguments_end(arguments);
-    assert(end != NULL && "unreachable");
+    PRISM_ASSERT(end != NULL && "unreachable");
     PM_NODE_LENGTH_SET_LOCATION(node, end);
 
     node->receiver = receiver;
@@ -3225,8 +3241,8 @@ pm_call_write_read_name_init(pm_parser_t *parser, pm_constant_id_t *read_name, p
  */
 static pm_call_and_write_node_t *
 pm_call_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(target->block == NULL);
-    assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
+    PRISM_ASSERT(target->block == NULL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
 
     pm_call_and_write_node_t *node = pm_call_and_write_node_new(
         parser->arena,
@@ -3278,11 +3294,11 @@ pm_index_arguments_check(pm_parser_t *parser, const pm_arguments_node_t *argumen
  */
 static pm_index_and_write_node_t *
 pm_index_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
 
     pm_index_arguments_check(parser, target->arguments, target->block);
 
-    assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
+    PRISM_ASSERT(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
 
     pm_index_and_write_node_t *node = pm_index_and_write_node_new(
         parser->arena,
@@ -3310,7 +3326,7 @@ pm_index_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, cons
  */
 static pm_call_operator_write_node_t *
 pm_call_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(target->block == NULL);
+    PRISM_ASSERT(target->block == NULL);
 
     pm_call_operator_write_node_t *node = pm_call_operator_write_node_new(
         parser->arena,
@@ -3342,7 +3358,7 @@ static pm_index_operator_write_node_t *
 pm_index_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
     pm_index_arguments_check(parser, target->arguments, target->block);
 
-    assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
+    PRISM_ASSERT(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
 
     pm_index_operator_write_node_t *node = pm_index_operator_write_node_new(
         parser->arena,
@@ -3371,8 +3387,8 @@ pm_index_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target,
  */
 static pm_call_or_write_node_t *
 pm_call_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(target->block == NULL);
-    assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
+    PRISM_ASSERT(target->block == NULL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
 
     pm_call_or_write_node_t *node = pm_call_or_write_node_new(
         parser->arena,
@@ -3401,11 +3417,11 @@ pm_call_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const 
  */
 static pm_index_or_write_node_t *
 pm_index_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
 
     pm_index_arguments_check(parser, target->arguments, target->block);
 
-    assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
+    PRISM_ASSERT(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
 
     pm_index_or_write_node_t *node = pm_index_or_write_node_new(
         parser->arena,
@@ -3466,7 +3482,7 @@ pm_call_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
 static pm_index_target_node_t *
 pm_index_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
     pm_index_arguments_check(parser, target->arguments, target->block);
-    assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
+    PRISM_ASSERT(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
 
     pm_index_target_node_t *node = pm_index_target_node_new(
         parser->arena,
@@ -3525,7 +3541,7 @@ pm_case_node_create(pm_parser_t *parser, const pm_token_t *case_keyword, pm_node
  */
 static void
 pm_case_node_condition_append(pm_arena_t *arena, pm_case_node_t *node, pm_node_t *condition) {
-    assert(PM_NODE_TYPE_P(condition, PM_WHEN_NODE));
+    PRISM_ASSERT(PM_NODE_TYPE_P(condition, PM_WHEN_NODE));
 
     pm_node_list_append_inline(arena, &node->conditions, condition);
     PM_NODE_LENGTH_SET_NODE(node, condition);
@@ -3572,7 +3588,7 @@ pm_case_match_node_create(pm_parser_t *parser, const pm_token_t *case_keyword, p
  */
 static void
 pm_case_match_node_condition_append(pm_arena_t *arena, pm_case_match_node_t *node, pm_node_t *condition) {
-    assert(PM_NODE_TYPE_P(condition, PM_IN_NODE));
+    PRISM_ASSERT(PM_NODE_TYPE_P(condition, PM_IN_NODE));
 
     pm_node_list_append_inline(arena, &node->conditions, condition);
     PM_NODE_LENGTH_SET_NODE(node, condition);
@@ -3622,7 +3638,7 @@ pm_class_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const p
  */
 static pm_class_variable_and_write_node_t *
 pm_class_variable_and_write_node_create(pm_parser_t *parser, pm_class_variable_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
 
     return pm_class_variable_and_write_node_new(
         parser->arena,
@@ -3659,7 +3675,7 @@ pm_class_variable_operator_write_node_create(pm_parser_t *parser, pm_class_varia
  */
 static pm_class_variable_or_write_node_t *
 pm_class_variable_or_write_node_create(pm_parser_t *parser, pm_class_variable_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
 
     return pm_class_variable_or_write_node_new(
         parser->arena,
@@ -3678,7 +3694,7 @@ pm_class_variable_or_write_node_create(pm_parser_t *parser, pm_class_variable_re
  */
 static pm_class_variable_read_node_t *
 pm_class_variable_read_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_CLASS_VARIABLE);
+    PRISM_ASSERT(token->type == PM_TOKEN_CLASS_VARIABLE);
 
     return pm_class_variable_read_node_new(
         parser->arena,
@@ -3725,7 +3741,7 @@ pm_class_variable_write_node_create(pm_parser_t *parser, pm_class_variable_read_
  */
 static pm_constant_path_and_write_node_t *
 pm_constant_path_and_write_node_create(pm_parser_t *parser, pm_constant_path_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
 
     return pm_constant_path_and_write_node_new(
         parser->arena,
@@ -3760,7 +3776,7 @@ pm_constant_path_operator_write_node_create(pm_parser_t *parser, pm_constant_pat
  */
 static pm_constant_path_or_write_node_t *
 pm_constant_path_or_write_node_create(pm_parser_t *parser, pm_constant_path_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
 
     return pm_constant_path_or_write_node_new(
         parser->arena,
@@ -3818,7 +3834,7 @@ pm_constant_path_write_node_create(pm_parser_t *parser, pm_constant_path_node_t 
  */
 static pm_constant_and_write_node_t *
 pm_constant_and_write_node_create(pm_parser_t *parser, pm_constant_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
 
     return pm_constant_and_write_node_new(
         parser->arena,
@@ -3855,7 +3871,7 @@ pm_constant_operator_write_node_create(pm_parser_t *parser, pm_constant_read_nod
  */
 static pm_constant_or_write_node_t *
 pm_constant_or_write_node_create(pm_parser_t *parser, pm_constant_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
 
     return pm_constant_or_write_node_new(
         parser->arena,
@@ -3874,7 +3890,7 @@ pm_constant_or_write_node_create(pm_parser_t *parser, pm_constant_read_node_t *t
  */
 static pm_constant_read_node_t *
 pm_constant_read_node_create(pm_parser_t *parser, const pm_token_t *name) {
-    assert(name->type == PM_TOKEN_CONSTANT || name->type == 0);
+    PRISM_ASSERT(name->type == PM_TOKEN_CONSTANT || name->type == 0);
 
     return pm_constant_read_node_new(
         parser->arena,
@@ -4074,7 +4090,7 @@ pm_ensure_node_create(pm_parser_t *parser, const pm_token_t *ensure_keyword, pm_
  */
 static pm_false_node_t *
 pm_false_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_KEYWORD_FALSE);
+    PRISM_ASSERT(token->type == PM_TOKEN_KEYWORD_FALSE);
 
     return pm_false_node_new(
         parser->arena,
@@ -4090,12 +4106,12 @@ pm_false_node_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_find_pattern_node_t *
 pm_find_pattern_node_create(pm_parser_t *parser, pm_node_list_t *nodes) {
-    assert(nodes->size >= 2);
+    PRISM_ASSERT(nodes->size >= 2);
     pm_node_t *left = nodes->nodes[0];
     pm_node_t *right = nodes->nodes[nodes->size - 1];
 
-    assert(PM_NODE_TYPE_P(left, PM_SPLAT_NODE));
-    assert(PM_NODE_TYPE_P(right, PM_SPLAT_NODE));
+    PRISM_ASSERT(PM_NODE_TYPE_P(left, PM_SPLAT_NODE));
+    PRISM_ASSERT(PM_NODE_TYPE_P(right, PM_SPLAT_NODE));
 
     pm_find_pattern_node_t *node = pm_find_pattern_node_new(
         parser->arena,
@@ -4121,65 +4137,16 @@ pm_find_pattern_node_create(pm_parser_t *parser, pm_node_list_t *nodes) {
 }
 
 /**
- * Parse the value of a double, add appropriate errors if there is an issue, and
- * return the value that should be saved on the PM_FLOAT_NODE node.
+ * Parse the value of a double, add a warning if it is out of range, and return
+ * the value that should be saved on the PM_FLOAT_NODE node.
  */
 static double
-pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
-    ptrdiff_t diff = token->end - token->start;
-    if (diff <= 0) return 0.0;
+pm_float_node_value(pm_parser_t *parser, const pm_token_t *token) {
+    bool out_of_range;
+    double value = pm_double_parse(token->start, token->end, &out_of_range);
 
-    // First, get a buffer of the content.
-    size_t length = (size_t) diff;
-    const size_t buffer_size = sizeof(char) * (length + 1);
-    char *buffer = xmalloc(buffer_size);
-    if (buffer == NULL) PRISM_OOM();
-
-    memcpy((void *) buffer, token->start, length);
-
-    // Next, determine if we need to replace the decimal point because of
-    // locale-specific options, and then normalize them if we have to.
-    char decimal_point = *localeconv()->decimal_point;
-    if (decimal_point != '.') {
-        for (size_t index = 0; index < length; index++) {
-            if (buffer[index] == '.') buffer[index] = decimal_point;
-        }
-    }
-
-    /*
-     * Next, handle underscores by removing them from the buffer in a single
-     * pass to avoid quadratic-time copies.
-     */
-    {
-        size_t write = 0;
-        for (size_t read = 0; read < length; read++) {
-            if (buffer[read] != '_') buffer[write++] = buffer[read];
-        }
-        length = write;
-    }
-
-    // Null-terminate the buffer so that strtod cannot read off the end.
-    buffer[length] = '\0';
-
-    // Now, call strtod to parse the value. Note that CRuby has their own
-    // version of strtod which avoids locales. We're okay using the locale-aware
-    // version because we've already validated through the parser that the token
-    // is in a valid format.
-    errno = 0;
-    char *eptr;
-    double value = strtod(buffer, &eptr);
-
-    // This should never happen, because we've already checked that the token
-    // is in a valid format. However it's good to be safe.
-    if ((eptr != buffer + length) || (errno != 0 && errno != ERANGE)) {
-        PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, token, PM_ERR_FLOAT_PARSE);
-        xfree_sized(buffer, buffer_size);
-        return 0.0;
-    }
-
-    // If errno is set, then it should only be ERANGE. At this point we need to
-    // check if it's infinity (it should be).
-    if (errno == ERANGE && PRISM_ISINF(value)) {
+    if (out_of_range) {
+        size_t length = PM_TOKEN_LENGTH(token);
         int warn_width;
         const char *ellipsis;
 
@@ -4192,11 +4159,8 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
         }
 
         pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->warning_list, PM_TOKEN_START(parser, token), PM_TOKEN_LENGTH(token), PM_WARN_FLOAT_OUT_OF_RANGE, warn_width, (const char *) token->start, ellipsis);
-        value = (value < 0.0) ? -HUGE_VAL : HUGE_VAL;
     }
 
-    // Finally we can free the buffer and return the value.
-    xfree_sized(buffer, buffer_size);
     return value;
 }
 
@@ -4205,14 +4169,14 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_float_node_t *
 pm_float_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_FLOAT);
+    PRISM_ASSERT(token->type == PM_TOKEN_FLOAT);
 
     return pm_float_node_new(
         parser->arena,
         ++parser->node_id,
         PM_NODE_FLAG_STATIC_LITERAL,
         PM_LOCATION_INIT_TOKEN(parser, token),
-        pm_double_parse(parser, token)
+        pm_float_node_value(parser, token)
     );
 }
 
@@ -4221,7 +4185,7 @@ pm_float_node_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_imaginary_node_t *
 pm_float_node_imaginary_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_FLOAT_IMAGINARY);
+    PRISM_ASSERT(token->type == PM_TOKEN_FLOAT_IMAGINARY);
 
     return pm_imaginary_node_new(
         parser->arena,
@@ -4241,7 +4205,7 @@ pm_float_node_imaginary_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_rational_node_t *
 pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_FLOAT_RATIONAL);
+    PRISM_ASSERT(token->type == PM_TOKEN_FLOAT_RATIONAL);
 
     pm_rational_node_t *node = pm_rational_node_new(
         parser->arena,
@@ -4252,40 +4216,7 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
         ((pm_integer_t) { 0 })
     );
 
-    const uint8_t *start = token->start;
-    const uint8_t *end = token->end - 1; // r
-
-    while (start < end && *start == '0') start++; // 0.1 -> .1
-    while (end > start && end[-1] == '0') end--; // 1.0 -> 1.
-
-    size_t length = (size_t) (end - start);
-    if (length == 1) {
-        node->denominator.value = 1;
-        return node;
-    }
-
-    const uint8_t *point = memchr(start, '.', length);
-    assert(point && "should have a decimal point");
-
-    uint8_t *digits = xmalloc(length);
-    if (digits == NULL) PRISM_OOM();
-
-    memcpy(digits, start, (unsigned long) (point - start));
-    memcpy(digits + (point - start), point + 1, (unsigned long) (end - point - 1));
-    pm_integer_parse(&node->numerator, PM_INTEGER_BASE_DEFAULT, digits, digits + length - 1);
-
-    size_t fract_length = 0;
-    for (const uint8_t *fract = point; fract < end; ++fract) {
-        if (*fract != '_') ++fract_length;
-    }
-    digits[0] = '1';
-    if (fract_length > 1) memset(digits + 1, '0', fract_length - 1);
-    pm_integer_parse(&node->denominator, PM_INTEGER_BASE_DEFAULT, digits, digits + fract_length);
-    xfree_sized(digits, length);
-
-    pm_integers_reduce(&node->numerator, &node->denominator);
-    pm_integer_arena_move(parser->arena, &node->numerator);
-    pm_integer_arena_move(parser->arena, &node->denominator);
+    pm_integer_parse_rational(parser->arena, &node->numerator, &node->denominator, token->start, token->end - 1);
     return node;
 }
 
@@ -4295,7 +4226,7 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_imaginary_node_t *
 pm_float_node_rational_imaginary_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_FLOAT_RATIONAL_IMAGINARY);
+    PRISM_ASSERT(token->type == PM_TOKEN_FLOAT_RATIONAL_IMAGINARY);
 
     return pm_imaginary_node_new(
         parser->arena,
@@ -4344,7 +4275,7 @@ pm_for_node_create(
  */
 static pm_forwarding_arguments_node_t *
 pm_forwarding_arguments_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_UDOT_DOT_DOT);
+    PRISM_ASSERT(token->type == PM_TOKEN_UDOT_DOT_DOT);
 
     return pm_forwarding_arguments_node_new(
         parser->arena,
@@ -4359,7 +4290,7 @@ pm_forwarding_arguments_node_create(pm_parser_t *parser, const pm_token_t *token
  */
 static pm_forwarding_parameter_node_t *
 pm_forwarding_parameter_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_UDOT_DOT_DOT);
+    PRISM_ASSERT(token->type == PM_TOKEN_UDOT_DOT_DOT);
 
     return pm_forwarding_parameter_node_new(
         parser->arena,
@@ -4374,8 +4305,8 @@ pm_forwarding_parameter_node_create(pm_parser_t *parser, const pm_token_t *token
  */
 static pm_forwarding_super_node_t *
 pm_forwarding_super_node_create(pm_parser_t *parser, const pm_token_t *token, pm_arguments_t *arguments) {
-    assert(arguments->block == NULL || PM_NODE_TYPE_P(arguments->block, PM_BLOCK_NODE));
-    assert(token->type == PM_TOKEN_KEYWORD_SUPER);
+    PRISM_ASSERT(arguments->block == NULL || PM_NODE_TYPE_P(arguments->block, PM_BLOCK_NODE));
+    PRISM_ASSERT(token->type == PM_TOKEN_KEYWORD_SUPER);
 
     pm_block_node_t *block = NULL;
     if (arguments->block != NULL) {
@@ -4428,7 +4359,7 @@ pm_hash_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *eleme
             end = PM_NODE_END(elements->nodes[elements->size - 1]);
         }
     } else {
-        assert(rest != NULL);
+        PRISM_ASSERT(rest != NULL);
         start = PM_NODE_START(rest);
         end = PM_NODE_END(rest);
     }
@@ -4464,7 +4395,7 @@ pm_global_variable_write_name(pm_parser_t *parser, const pm_node_t *target) {
             // still need to provide something for the node.
             return pm_parser_constant_id_raw(parser, parser->start + PM_NODE_START(target), parser->start + PM_NODE_END(target));
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return (pm_constant_id_t) -1;
     }
 }
@@ -4474,7 +4405,7 @@ pm_global_variable_write_name(pm_parser_t *parser, const pm_node_t *target) {
  */
 static pm_global_variable_and_write_node_t *
 pm_global_variable_and_write_node_create(pm_parser_t *parser, pm_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
 
     return pm_global_variable_and_write_node_new(
         parser->arena,
@@ -4511,7 +4442,7 @@ pm_global_variable_operator_write_node_create(pm_parser_t *parser, pm_node_t *ta
  */
 static pm_global_variable_or_write_node_t *
 pm_global_variable_or_write_node_create(pm_parser_t *parser, pm_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
 
     return pm_global_variable_or_write_node_new(
         parser->arena,
@@ -4592,7 +4523,7 @@ pm_global_variable_write_node_synthesized_create(pm_parser_t *parser, pm_constan
  */
 static pm_hash_node_t *
 pm_hash_node_create(pm_parser_t *parser, const pm_token_t *opening) {
-    assert(opening != NULL);
+    PRISM_ASSERT(opening != NULL);
 
     return pm_hash_node_new(
         parser->arena,
@@ -4756,7 +4687,7 @@ pm_implicit_node_create(pm_parser_t *parser, pm_node_t *value) {
  */
 static pm_implicit_rest_node_t *
 pm_implicit_rest_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_COMMA);
+    PRISM_ASSERT(token->type == PM_TOKEN_COMMA);
 
     return pm_implicit_rest_node_new(
         parser->arena,
@@ -4771,7 +4702,7 @@ pm_implicit_rest_node_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_integer_node_t *
 pm_integer_node_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_INTEGER);
+    PRISM_ASSERT(token->type == PM_TOKEN_INTEGER);
 
     pm_integer_node_t *node = pm_integer_node_new(
         parser->arena,
@@ -4781,10 +4712,9 @@ pm_integer_node_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token
         ((pm_integer_t) { 0 })
     );
 
-    if (parser->integer.lexed) {
+    if (parser->integer.start == token->start) {
         // The value was already computed during lexing.
-        node->value.value = parser->integer.value;
-        parser->integer.lexed = false;
+        node->value = pm_integer_uint64(parser->integer.value);
     } else {
         pm_integer_base_t integer_base = PM_INTEGER_BASE_DECIMAL;
         switch (base) {
@@ -4792,11 +4722,10 @@ pm_integer_node_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token
             case PM_INTEGER_BASE_FLAGS_OCTAL: integer_base = PM_INTEGER_BASE_OCTAL; break;
             case PM_INTEGER_BASE_FLAGS_DECIMAL: break;
             case PM_INTEGER_BASE_FLAGS_HEXADECIMAL: integer_base = PM_INTEGER_BASE_HEXADECIMAL; break;
-            default: assert(false && "unreachable"); break;
+            default: PRISM_ASSERT(false && "unreachable"); break;
         }
 
-        pm_integer_parse(&node->value, integer_base, token->start, token->end);
-        pm_integer_arena_move(parser->arena, &node->value);
+        pm_integer_parse(parser->arena, &node->value, integer_base, token->start, token->end);
     }
 
     return node;
@@ -4808,7 +4737,7 @@ pm_integer_node_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token
  */
 static pm_imaginary_node_t *
 pm_integer_node_imaginary_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_INTEGER_IMAGINARY);
+    PRISM_ASSERT(token->type == PM_TOKEN_INTEGER_IMAGINARY);
 
     return pm_imaginary_node_new(
         parser->arena,
@@ -4829,7 +4758,7 @@ pm_integer_node_imaginary_create(pm_parser_t *parser, pm_node_flags_t base, cons
  */
 static pm_rational_node_t *
 pm_integer_node_rational_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_INTEGER_RATIONAL);
+    PRISM_ASSERT(token->type == PM_TOKEN_INTEGER_RATIONAL);
 
     pm_rational_node_t *node = pm_rational_node_new(
         parser->arena,
@@ -4837,7 +4766,7 @@ pm_integer_node_rational_create(pm_parser_t *parser, pm_node_flags_t base, const
         base | PM_NODE_FLAG_STATIC_LITERAL,
         PM_LOCATION_INIT_TOKEN(parser, token),
         ((pm_integer_t) { 0 }),
-        ((pm_integer_t) { .value = 1 })
+        pm_integer_uint64(1)
     );
 
     pm_integer_base_t integer_base = PM_INTEGER_BASE_DECIMAL;
@@ -4846,11 +4775,10 @@ pm_integer_node_rational_create(pm_parser_t *parser, pm_node_flags_t base, const
         case PM_INTEGER_BASE_FLAGS_OCTAL: integer_base = PM_INTEGER_BASE_OCTAL; break;
         case PM_INTEGER_BASE_FLAGS_DECIMAL: break;
         case PM_INTEGER_BASE_FLAGS_HEXADECIMAL: integer_base = PM_INTEGER_BASE_HEXADECIMAL; break;
-        default: assert(false && "unreachable"); break;
+        default: PRISM_ASSERT(false && "unreachable"); break;
     }
 
-    pm_integer_parse(&node->numerator, integer_base, token->start, token->end - 1);
-    pm_integer_arena_move(parser->arena, &node->numerator);
+    pm_integer_parse(parser->arena, &node->numerator, integer_base, token->start, token->end - 1);
 
     return node;
 }
@@ -4861,7 +4789,7 @@ pm_integer_node_rational_create(pm_parser_t *parser, pm_node_flags_t base, const
  */
 static pm_imaginary_node_t *
 pm_integer_node_rational_imaginary_create(pm_parser_t *parser, pm_node_flags_t base, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_INTEGER_RATIONAL_IMAGINARY);
+    PRISM_ASSERT(token->type == PM_TOKEN_INTEGER_RATIONAL_IMAGINARY);
 
     return pm_imaginary_node_new(
         parser->arena,
@@ -4909,7 +4837,7 @@ pm_in_node_create(pm_parser_t *parser, pm_node_t *pattern, pm_statements_node_t 
  */
 static pm_instance_variable_and_write_node_t *
 pm_instance_variable_and_write_node_create(pm_parser_t *parser, pm_instance_variable_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
 
     return pm_instance_variable_and_write_node_new(
         parser->arena,
@@ -4946,7 +4874,7 @@ pm_instance_variable_operator_write_node_create(pm_parser_t *parser, pm_instance
  */
 static pm_instance_variable_or_write_node_t *
 pm_instance_variable_or_write_node_create(pm_parser_t *parser, pm_instance_variable_read_node_t *target, const pm_token_t *operator, pm_node_t *value) {
-    assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
 
     return pm_instance_variable_or_write_node_new(
         parser->arena,
@@ -4965,7 +4893,7 @@ pm_instance_variable_or_write_node_create(pm_parser_t *parser, pm_instance_varia
  */
 static pm_instance_variable_read_node_t *
 pm_instance_variable_read_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_INSTANCE_VARIABLE);
+    PRISM_ASSERT(token->type == PM_TOKEN_INSTANCE_VARIABLE);
 
     return pm_instance_variable_read_node_new(
         parser->arena,
@@ -5031,7 +4959,7 @@ pm_interpolated_node_append(pm_arena_t *arena, pm_node_t *node, pm_node_list_t *
             pm_node_flag_unset(UP(node), PM_NODE_FLAG_STATIC_LITERAL);
             break;
         default:
-            assert(false && "unexpected node type");
+            PRISM_ASSERT(false && "unexpected node type");
             break;
     }
 
@@ -5183,7 +5111,7 @@ pm_interpolated_string_node_append(pm_parser_t *parser, pm_interpolated_string_n
             CLEAR_FLAGS(node);
             break;
         default:
-            assert(false && "unexpected node type");
+            PRISM_ASSERT(false && "unexpected node type");
             break;
     }
 
@@ -5453,8 +5381,8 @@ pm_lambda_node_create(
  */
 static pm_local_variable_and_write_node_t *
 pm_local_variable_and_write_node_create(pm_parser_t *parser, pm_node_t *target, const pm_token_t *operator, pm_node_t *value, pm_constant_id_t name, uint32_t depth) {
-    assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_READ_NODE) || PM_NODE_TYPE_P(target, PM_IT_LOCAL_VARIABLE_READ_NODE) || PM_NODE_TYPE_P(target, PM_CALL_NODE));
-    assert(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
+    PRISM_ASSERT(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_READ_NODE) || PM_NODE_TYPE_P(target, PM_IT_LOCAL_VARIABLE_READ_NODE) || PM_NODE_TYPE_P(target, PM_CALL_NODE));
+    PRISM_ASSERT(operator->type == PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
 
     return pm_local_variable_and_write_node_new(
         parser->arena,
@@ -5493,8 +5421,8 @@ pm_local_variable_operator_write_node_create(pm_parser_t *parser, pm_node_t *tar
  */
 static pm_local_variable_or_write_node_t *
 pm_local_variable_or_write_node_create(pm_parser_t *parser, pm_node_t *target, const pm_token_t *operator, pm_node_t *value, pm_constant_id_t name, uint32_t depth) {
-    assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_READ_NODE) || PM_NODE_TYPE_P(target, PM_IT_LOCAL_VARIABLE_READ_NODE) || PM_NODE_TYPE_P(target, PM_CALL_NODE));
-    assert(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
+    PRISM_ASSERT(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_READ_NODE) || PM_NODE_TYPE_P(target, PM_IT_LOCAL_VARIABLE_READ_NODE) || PM_NODE_TYPE_P(target, PM_CALL_NODE));
+    PRISM_ASSERT(operator->type == PM_TOKEN_PIPE_PIPE_EQUAL);
 
     return pm_local_variable_or_write_node_new(
         parser->arena,
@@ -5785,7 +5713,7 @@ pm_multi_write_node_create(pm_parser_t *parser, pm_multi_target_node_t *target, 
  */
 static pm_next_node_t *
 pm_next_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_arguments_node_t *arguments) {
-    assert(keyword->type == PM_TOKEN_KEYWORD_NEXT);
+    PRISM_ASSERT(keyword->type == PM_TOKEN_KEYWORD_NEXT);
 
     return pm_next_node_new(
         parser->arena,
@@ -5802,7 +5730,7 @@ pm_next_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_arguments
  */
 static pm_nil_node_t *
 pm_nil_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_KEYWORD_NIL);
+    PRISM_ASSERT(token->type == PM_TOKEN_KEYWORD_NIL);
 
     return pm_nil_node_new(
         parser->arena,
@@ -5817,8 +5745,8 @@ pm_nil_node_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_no_block_parameter_node_t *
 pm_no_block_parameter_node_create(pm_parser_t *parser, const pm_token_t *operator, const pm_token_t *keyword) {
-    assert(operator->type == PM_TOKEN_AMPERSAND || operator->type == PM_TOKEN_UAMPERSAND);
-    assert(keyword->type == PM_TOKEN_KEYWORD_NIL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_AMPERSAND || operator->type == PM_TOKEN_UAMPERSAND);
+    PRISM_ASSERT(keyword->type == PM_TOKEN_KEYWORD_NIL);
 
     return pm_no_block_parameter_node_new(
         parser->arena,
@@ -5835,8 +5763,8 @@ pm_no_block_parameter_node_create(pm_parser_t *parser, const pm_token_t *operato
  */
 static pm_no_keywords_parameter_node_t *
 pm_no_keywords_parameter_node_create(pm_parser_t *parser, const pm_token_t *operator, const pm_token_t *keyword) {
-    assert(operator->type == PM_TOKEN_USTAR_STAR || operator->type == PM_TOKEN_STAR_STAR);
-    assert(keyword->type == PM_TOKEN_KEYWORD_NIL);
+    PRISM_ASSERT(operator->type == PM_TOKEN_USTAR_STAR || operator->type == PM_TOKEN_STAR_STAR);
+    PRISM_ASSERT(keyword->type == PM_TOKEN_KEYWORD_NIL);
 
     return pm_no_keywords_parameter_node_new(
         parser->arena,
@@ -5878,7 +5806,7 @@ pm_numbered_reference_read_node_number(pm_parser_t *parser, const pm_token_t *to
 
     const uint8_t *start = token->start + 1;
     ptrdiff_t diff = token->end - start;
-    assert(diff > 0);
+    PRISM_ASSERT(diff > 0);
 
     size_t length = (size_t) diff;
     uint64_t value = 0;
@@ -5903,7 +5831,7 @@ pm_numbered_reference_read_node_number(pm_parser_t *parser, const pm_token_t *to
  */
 static pm_numbered_reference_read_node_t *
 pm_numbered_reference_read_node_create(pm_parser_t *parser, const pm_token_t *name) {
-    assert(name->type == PM_TOKEN_NUMBERED_REFERENCE);
+    PRISM_ASSERT(name->type == PM_TOKEN_NUMBERED_REFERENCE);
 
     return pm_numbered_reference_read_node_new(
         parser->arena,
@@ -6033,7 +5961,7 @@ pm_parameters_node_keywords_append(pm_arena_t *arena, pm_parameters_node_t *para
  */
 static void
 pm_parameters_node_keyword_rest_set(pm_parameters_node_t *params, pm_node_t *param) {
-    assert(params->keyword_rest == NULL);
+    PRISM_ASSERT(params->keyword_rest == NULL);
     pm_parameters_node_location_set(params, param);
     params->keyword_rest = param;
 }
@@ -6043,7 +5971,7 @@ pm_parameters_node_keyword_rest_set(pm_parameters_node_t *params, pm_node_t *par
  */
 static void
 pm_parameters_node_block_set(pm_parameters_node_t *params, pm_node_t *param) {
-    assert(params->block == NULL);
+    PRISM_ASSERT(params->block == NULL);
     pm_parameters_node_location_set(params, param);
     params->block = param;
 }
@@ -6188,7 +6116,7 @@ pm_range_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *ope
  */
 static pm_redo_node_t *
 pm_redo_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_KEYWORD_REDO);
+    PRISM_ASSERT(token->type == PM_TOKEN_KEYWORD_REDO);
 
     return pm_redo_node_new(
         parser->arena,
@@ -6338,7 +6266,7 @@ pm_rest_parameter_node_create(pm_parser_t *parser, const pm_token_t *operator, c
  */
 static pm_retry_node_t *
 pm_retry_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_KEYWORD_RETRY);
+    PRISM_ASSERT(token->type == PM_TOKEN_KEYWORD_RETRY);
 
     return pm_retry_node_new(
         parser->arena,
@@ -6368,7 +6296,7 @@ pm_return_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_argumen
  */
 static pm_self_node_t *
 pm_self_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_KEYWORD_SELF);
+    PRISM_ASSERT(token->type == PM_TOKEN_KEYWORD_SELF);
 
     return pm_self_node_new(
         parser->arena,
@@ -6416,7 +6344,7 @@ pm_singleton_class_node_create(pm_parser_t *parser, pm_constant_id_list_t *local
  */
 static pm_source_encoding_node_t *
 pm_source_encoding_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_KEYWORD___ENCODING__);
+    PRISM_ASSERT(token->type == PM_TOKEN_KEYWORD___ENCODING__);
 
     return pm_source_encoding_node_new(
         parser->arena,
@@ -6431,7 +6359,7 @@ pm_source_encoding_node_create(pm_parser_t *parser, const pm_token_t *token) {
  */
 static pm_source_file_node_t*
 pm_source_file_node_create(pm_parser_t *parser, const pm_token_t *file_keyword) {
-    assert(file_keyword->type == PM_TOKEN_KEYWORD___FILE__);
+    PRISM_ASSERT(file_keyword->type == PM_TOKEN_KEYWORD___FILE__);
 
     pm_node_flags_t flags = 0;
 
@@ -6461,7 +6389,7 @@ pm_source_file_node_create(pm_parser_t *parser, const pm_token_t *file_keyword) 
  */
 static pm_source_line_node_t *
 pm_source_line_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_KEYWORD___LINE__);
+    PRISM_ASSERT(token->type == PM_TOKEN_KEYWORD___LINE__);
 
     return pm_source_line_node_new(
         parser->arena,
@@ -6615,10 +6543,10 @@ pm_string_node_create_current_string(pm_parser_t *parser, const pm_token_t *open
  */
 static pm_super_node_t *
 pm_super_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_arguments_t *arguments) {
-    assert(keyword->type == PM_TOKEN_KEYWORD_SUPER);
+    PRISM_ASSERT(keyword->type == PM_TOKEN_KEYWORD_SUPER);
 
     const pm_location_t *end = pm_arguments_end(arguments);
-    assert(end != NULL && "unreachable");
+    PRISM_ASSERT(end != NULL && "unreachable");
 
     return pm_super_node_new(
         parser->arena,
@@ -6764,13 +6692,13 @@ pm_symbol_node_create_current_string(pm_parser_t *parser, const pm_token_t *open
  */
 static pm_symbol_node_t *
 pm_symbol_node_label_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_LABEL);
+    PRISM_ASSERT(token->type == PM_TOKEN_LABEL);
 
     pm_token_t closing = { .type = PM_TOKEN_LABEL_END, .start = token->end - 1, .end = token->end };
     pm_token_t label = { .type = PM_TOKEN_LABEL, .start = token->start, .end = token->end - 1 };
     pm_symbol_node_t *node = pm_symbol_node_create(parser, NULL, &label, &closing);
 
-    assert((label.end - label.start) >= 0);
+    PRISM_ASSERT((label.end - label.start) >= 0);
     pm_string_shared_init(&node->unescaped, label.start, label.end);
     pm_node_flag_set(UP(node), parse_symbol_encoding(parser, parser->explicit_encoding, &label, &node->unescaped, false));
 
@@ -6890,7 +6818,7 @@ pm_symbol_node_to_string_node(pm_parser_t *parser, pm_symbol_node_t *node) {
  */
 static pm_true_node_t *
 pm_true_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_KEYWORD_TRUE);
+    PRISM_ASSERT(token->type == PM_TOKEN_KEYWORD_TRUE);
 
     return pm_true_node_new(
         parser->arena,
@@ -6918,7 +6846,7 @@ pm_true_node_synthesized_create(pm_parser_t *parser) {
  */
 static pm_undef_node_t *
 pm_undef_node_create(pm_parser_t *parser, const pm_token_t *token) {
-    assert(token->type == PM_TOKEN_KEYWORD_UNDEF);
+    PRISM_ASSERT(token->type == PM_TOKEN_KEYWORD_UNDEF);
 
     return pm_undef_node_new(
         parser->arena,
@@ -6998,7 +6926,7 @@ pm_unless_node_end_keyword_loc_set(const pm_parser_t *parser, pm_unless_node_t *
  */
 static void
 pm_loop_modifier_block_exits(pm_parser_t *parser, pm_statements_node_t *statements) {
-    assert(parser->current_block_exits != NULL);
+    PRISM_ASSERT(parser->current_block_exits != NULL);
 
     // All of the block exits that we want to remove should be within the
     // statements, and since we are modifying the statements, we shouldn't have
@@ -7344,33 +7272,73 @@ pm_parser_scope_pop(pm_parser_t *parser) {
 /******************************************************************************/
 
 /**
- * Pushes a value onto the stack.
+ * Moves the full inline word of the stack into the spill array, growing the
+ * array if it is out of room, and leaves the inline word empty.
  */
-static PRISM_INLINE void
-pm_state_stack_push(pm_state_stack_t *stack, bool value) {
-    *stack = (*stack << 1) | (value & 1);
+static void
+pm_state_stack_spill(pm_arena_t *arena, pm_state_stack_t *stack) {
+    uint32_t size = (stack->depth >> 6) - 1;
+
+    if (size == stack->capacity) {
+        uint32_t capacity = stack->capacity == 0 ? 2 : stack->capacity * 2;
+        stack->spill = (uint64_t *) pm_arena_realloc(arena, stack->spill, capacity * sizeof(uint64_t), stack->capacity * sizeof(uint64_t), PRISM_ALIGNOF(uint64_t));
+        stack->capacity = capacity;
+    }
+
+    stack->spill[size] = stack->top;
+    stack->top = 0;
 }
 
 /**
- * Pops a value off the stack.
+ * Pushes a value onto the stack. The inline word is full when the depth is a
+ * nonzero multiple of 64.
+ */
+static PRISM_INLINE void
+pm_state_stack_push(pm_arena_t *arena, pm_state_stack_t *stack, bool value) {
+    if (PRISM_UNLIKELY(stack->depth && !(stack->depth & 63))) {
+        pm_state_stack_spill(arena, stack);
+    }
+
+    stack->top = (stack->top << 1) | value;
+    stack->depth++;
+}
+
+/**
+ * Pops a value off the stack. When that empties the inline word, the newest
+ * spilled word moves back into it, so the inline word is empty only when the
+ * whole stack is.
  */
 static PRISM_INLINE void
 pm_state_stack_pop(pm_state_stack_t *stack) {
-    *stack >>= 1;
+    /* A closing delimiter without a matching opening one is a syntax error that
+     * the parser reports and recovers from, but the lexer still pops for it, so
+     * popping an empty stack has to leave it empty. */
+    if (PRISM_UNLIKELY(stack->depth == 0)) return;
+
+    stack->top >>= 1;
+    stack->depth--;
+
+    if (PRISM_UNLIKELY(stack->depth && !(stack->depth & 63))) {
+        stack->top = stack->spill[(stack->depth >> 6) - 1];
+    }
 }
 
 /**
- * Returns the value at the top of the stack.
+ * Returns the value at the top of the stack. An empty stack reads as false,
+ * because its inline word is 0.
  */
 static PRISM_INLINE bool
 pm_state_stack_p(const pm_state_stack_t *stack) {
-    return *stack & 1;
+    return stack->top & 1;
 }
 
+/**
+ * The accepts-block stack stores the negation of each value, so that an empty
+ * stack (which reads as false) means blocks are accepted.
+ */
 static PRISM_INLINE void
 pm_accepts_block_stack_push(pm_parser_t *parser, bool value) {
-    // Use the negation of the value to prevent stack overflow.
-    pm_state_stack_push(&parser->accepts_block_stack, !value);
+    pm_state_stack_push(&parser->scratch_arena, &parser->accepts_block_stack, !value);
 }
 
 static PRISM_INLINE void
@@ -7385,7 +7353,7 @@ pm_accepts_block_stack_p(pm_parser_t *parser) {
 
 static PRISM_INLINE void
 pm_do_loop_stack_push(pm_parser_t *parser, bool value) {
-    pm_state_stack_push(&parser->do_loop_stack, value);
+    pm_state_stack_push(&parser->scratch_arena, &parser->do_loop_stack, value);
 }
 
 static PRISM_INLINE void
@@ -7528,7 +7496,7 @@ match_eol(pm_parser_t *parser) {
  */
 static PRISM_INLINE const uint8_t *
 next_newline(const uint8_t *cursor, ptrdiff_t length) {
-    assert(length >= 0);
+    PRISM_ASSERT(length >= 0);
 
     // Note that it's okay for us to use memchr here to look for \n because none
     // of the encodings that we support have \n as a component of a multi-byte
@@ -7674,7 +7642,7 @@ parser_lex_magic_comment_emacs_marker(pm_parser_t *parser, const uint8_t *cursor
  */
 static bool
 parser_magic_comment_key_p(const uint8_t *key, size_t key_length, const char *name) {
-    assert(name[key_length] == '\0');
+    PRISM_ASSERT(name[key_length] == '\0');
 
     for (size_t index = 0; index < key_length; index++) {
         uint8_t byte = key[index];
@@ -8056,7 +8024,7 @@ context_human(pm_context_t context) {
     switch (context) {
         case PM_CONTEXT_NONE:
         case PM_CONTEXT_MAXIMUM:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return "";
         case PM_CONTEXT_BEGIN: return "begin statement";
         case PM_CONTEXT_BLOCK_BRACES: return "'{'..'}' block";
@@ -8114,7 +8082,7 @@ context_human(pm_context_t context) {
         case PM_CONTEXT_WHILE: return "while statement";
     }
 
-    assert(false && "unreachable");
+    PRISM_ASSERT(false && "unreachable");
     return "";
 }
 
@@ -8294,6 +8262,12 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                 type = lex_optional_float_suffix(parser, seen_e);
                 break;
             }
+
+            /* Anything else ends the literal, which is just 0. */
+            default:
+                parser->integer.value = 0;
+                parser->integer.start = parser->current.start;
+                break;
         }
     } else {
         // If it didn't start with a 0, then we'll lex as far as we can into a
@@ -8304,18 +8278,18 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
             const uint8_t *end = parser->end;
             uint64_t value = (uint64_t) (cursor[-1] - '0');
 
-            bool has_underscore = false;
+            size_t underscores = 0;
             bool prev_underscore = false;
             const uint8_t *invalid = NULL;
 
             while (cursor < end) {
                 uint8_t c = *cursor;
                 if (c >= '0' && c <= '9') {
-                    if (value <= UINT32_MAX) value = value * 10 + (uint64_t) (c - '0');
+                    value = value * 10 + (uint64_t) (c - '0');
                     prev_underscore = false;
                     cursor++;
                 } else if (c == '_') {
-                    has_underscore = true;
+                    underscores++;
                     if (prev_underscore && invalid == NULL) invalid = cursor;
                     prev_underscore = true;
                     cursor++;
@@ -8324,14 +8298,17 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
                 }
             }
 
-            if (has_underscore) {
+            if (underscores > 0) {
                 if (prev_underscore && invalid == NULL) invalid = cursor - 1;
                 pm_strspn_number_validate(parser, parser->current.end, (size_t) (cursor - parser->current.end), invalid);
             }
 
-            if (value <= UINT32_MAX) {
-                parser->integer.value = (uint32_t) value;
-                parser->integer.lexed = true;
+            /* This literal does not start with 0, so at most 19 digits means
+             * it is below 10**19 and value has not wrapped. */
+            size_t digits = (size_t) (cursor - parser->current.end) + 1 - underscores;
+            if (digits <= 19) {
+                parser->integer.value = value;
+                parser->integer.start = parser->current.start;
             }
 
             parser->current.end = cursor;
@@ -8345,12 +8322,6 @@ lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
             uint8_t next = peek(parser);
             if (next == '.' || next == 'e' || next == 'E') {
                 type = lex_optional_float_suffix(parser, seen_e);
-
-                // If it turned out to be a float, the cached integer value is
-                // invalid.
-                if (type != PM_TOKEN_INTEGER) {
-                    parser->integer.lexed = false;
-                }
             }
         }
     }
@@ -8372,7 +8343,6 @@ static pm_token_type_t
 lex_numeric(pm_parser_t *parser) {
     pm_token_type_t type = PM_TOKEN_INTEGER;
     parser->integer.base = PM_INTEGER_BASE_FLAGS_DECIMAL;
-    parser->integer.lexed = false;
 
     if (parser->current.end < parser->end) {
         bool seen_e = false;
@@ -9828,7 +9798,7 @@ parser_lex_ignored_newline(pm_parser_t *parser) {
  */
 static PRISM_INLINE void
 parser_flush_heredoc_end(pm_parser_t *parser) {
-    assert(parser->heredoc_end <= parser->end);
+    PRISM_ASSERT(parser->heredoc_end <= parser->end);
     parser->next_start = parser->heredoc_end;
     parser->heredoc_end = NULL;
 }
@@ -9969,7 +9939,7 @@ pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
     }
 
     const uint8_t *end = parser->current.end - 1;
-    assert(end >= start);
+    PRISM_ASSERT(end >= start);
     pm_buffer_append_bytes(&token_buffer->buffer, start, (size_t) (end - start));
 
     token_buffer->cursor = end;
@@ -10061,7 +10031,7 @@ pm_lex_percent_delimiter(pm_parser_t *parser) {
  */
 static void
 parser_lex(pm_parser_t *parser) {
-    assert(parser->current.end <= parser->end);
+    PRISM_ASSERT(parser->current.end <= parser->end);
     parser->previous = parser->current;
 
     // This value mirrors cmd_state from CRuby.
@@ -11719,7 +11689,7 @@ parser_lex(pm_parser_t *parser) {
 
                 // If we've hit the incrementor, then we need to skip past it
                 // and find the next breakpoint.
-                assert(*breakpoint == lex_mode->as.list.incrementor);
+                PRISM_ASSERT(*breakpoint == lex_mode->as.list.incrementor);
                 parser->current.end = breakpoint + 1;
                 breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                 lex_mode->as.list.nesting++;
@@ -11967,7 +11937,7 @@ parser_lex(pm_parser_t *parser) {
                         LEX(type);
                     }
                     default:
-                        assert(false && "unreachable");
+                        PRISM_ASSERT(false && "unreachable");
                         break;
                 }
             }
@@ -12220,7 +12190,7 @@ parser_lex(pm_parser_t *parser) {
                         LEX(type);
                     }
                     default:
-                        assert(false && "unreachable");
+                        PRISM_ASSERT(false && "unreachable");
                 }
             }
 
@@ -12564,7 +12534,7 @@ parser_lex(pm_parser_t *parser) {
                         LEX(type);
                     }
                     default:
-                        assert(false && "unreachable");
+                        PRISM_ASSERT(false && "unreachable");
                 }
 
                 was_line_continuation = false;
@@ -12584,7 +12554,7 @@ parser_lex(pm_parser_t *parser) {
         }
     }
 
-    assert(false && "unreachable");
+    PRISM_ASSERT(false && "unreachable");
 }
 
 #undef LEX
@@ -13018,7 +12988,7 @@ token_begins_expression_p(pm_token_type_t type) {
             // potentially be the start of an expression. If there _is_ a binding
             // power for one of these tokens, then we should remove it from this list
             // and let it be handled by the default case below.
-            assert(pm_binding_powers[type].left == PM_BINDING_POWER_UNSET);
+            PRISM_ASSERT(pm_binding_powers[type].left == PM_BINDING_POWER_UNSET);
             return false;
         case PM_TOKEN_UAMPERSAND:
             // This is a special case because this unary operator cannot appear
@@ -13244,7 +13214,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
             return parse_unwriteable_target(parser, target);
         }
         case PM_CLASS_VARIABLE_READ_NODE:
-            assert(sizeof(pm_class_variable_target_node_t) == sizeof(pm_class_variable_read_node_t));
+            PRISM_ASSERT(sizeof(pm_class_variable_target_node_t) == sizeof(pm_class_variable_read_node_t));
             target->type = PM_CLASS_VARIABLE_TARGET_NODE;
             return target;
         case PM_CONSTANT_PATH_NODE:
@@ -13252,7 +13222,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
                 pm_parser_err_node(parser, target, PM_ERR_WRITE_TARGET_IN_METHOD);
             }
 
-            assert(sizeof(pm_constant_path_target_node_t) == sizeof(pm_constant_path_node_t));
+            PRISM_ASSERT(sizeof(pm_constant_path_target_node_t) == sizeof(pm_constant_path_node_t));
             target->type = PM_CONSTANT_PATH_TARGET_NODE;
 
             return target;
@@ -13261,7 +13231,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
                 pm_parser_err_node(parser, target, PM_ERR_WRITE_TARGET_IN_METHOD);
             }
 
-            assert(sizeof(pm_constant_target_node_t) == sizeof(pm_constant_read_node_t));
+            PRISM_ASSERT(sizeof(pm_constant_target_node_t) == sizeof(pm_constant_read_node_t));
             target->type = PM_CONSTANT_TARGET_NODE;
 
             return target;
@@ -13270,7 +13240,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
             PM_PARSER_ERR_NODE_FORMAT_CONTENT(parser, target, PM_ERR_WRITE_TARGET_READONLY);
             return UP(pm_error_recovery_node_create_unexpected(parser, target));
         case PM_GLOBAL_VARIABLE_READ_NODE:
-            assert(sizeof(pm_global_variable_target_node_t) == sizeof(pm_global_variable_read_node_t));
+            PRISM_ASSERT(sizeof(pm_global_variable_target_node_t) == sizeof(pm_global_variable_read_node_t));
             target->type = PM_GLOBAL_VARIABLE_TARGET_NODE;
             return target;
         case PM_LOCAL_VARIABLE_READ_NODE: {
@@ -13284,7 +13254,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
             uint32_t depth = cast->depth;
             pm_locals_unread(&pm_parser_scope_find(parser, depth)->locals, name);
 
-            assert(sizeof(pm_local_variable_target_node_t) == sizeof(pm_local_variable_read_node_t));
+            PRISM_ASSERT(sizeof(pm_local_variable_target_node_t) == sizeof(pm_local_variable_read_node_t));
             target->type = PM_LOCAL_VARIABLE_TARGET_NODE;
 
             return target;
@@ -13298,7 +13268,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
             return node;
         }
         case PM_INSTANCE_VARIABLE_READ_NODE:
-            assert(sizeof(pm_instance_variable_target_node_t) == sizeof(pm_instance_variable_read_node_t));
+            PRISM_ASSERT(sizeof(pm_instance_variable_target_node_t) == sizeof(pm_instance_variable_read_node_t));
             target->type = PM_INSTANCE_VARIABLE_TARGET_NODE;
             return target;
         case PM_MULTI_TARGET_NODE:
@@ -13906,7 +13876,7 @@ pm_when_clause_static_literals_add(pm_parser_t *parser, pm_static_literals_t *li
  */
 static bool
 parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *node, uint16_t depth) {
-    assert(PM_NODE_TYPE_P(node, PM_HASH_NODE) || PM_NODE_TYPE_P(node, PM_KEYWORD_HASH_NODE));
+    PRISM_ASSERT(PM_NODE_TYPE_P(node, PM_HASH_NODE) || PM_NODE_TYPE_P(node, PM_KEYWORD_HASH_NODE));
     bool contains_keyword_splat = false;
 
     while (true) {
@@ -15254,7 +15224,7 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
                 case PM_RESCUES_LAMBDA: context = PM_CONTEXT_LAMBDA_RESCUE; break;
                 case PM_RESCUES_MODULE: context = PM_CONTEXT_MODULE_RESCUE; break;
                 case PM_RESCUES_SCLASS: context = PM_CONTEXT_SCLASS_RESCUE; break;
-                default: assert(false && "unreachable"); context = PM_CONTEXT_BEGIN_RESCUE; break;
+                default: PRISM_ASSERT(false && "unreachable"); context = PM_CONTEXT_BEGIN_RESCUE; break;
             }
 
             pm_statements_node_t *statements = parse_statements(parser, context, (uint16_t) (depth + 1));
@@ -15309,7 +15279,7 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
                 case PM_RESCUES_LAMBDA: context = PM_CONTEXT_LAMBDA_ELSE; break;
                 case PM_RESCUES_MODULE: context = PM_CONTEXT_MODULE_ELSE; break;
                 case PM_RESCUES_SCLASS: context = PM_CONTEXT_SCLASS_ELSE; break;
-                default: assert(false && "unreachable"); context = PM_CONTEXT_BEGIN_ELSE; break;
+                default: PRISM_ASSERT(false && "unreachable"); context = PM_CONTEXT_BEGIN_ELSE; break;
             }
 
             else_statements = parse_statements(parser, context, (uint16_t) (depth + 1));
@@ -15346,7 +15316,7 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
                 case PM_RESCUES_LAMBDA: context = PM_CONTEXT_LAMBDA_ENSURE; break;
                 case PM_RESCUES_MODULE: context = PM_CONTEXT_MODULE_ENSURE; break;
                 case PM_RESCUES_SCLASS: context = PM_CONTEXT_SCLASS_ENSURE; break;
-                default: assert(false && "unreachable"); context = PM_CONTEXT_BEGIN_RESCUE; break;
+                default: PRISM_ASSERT(false && "unreachable"); context = PM_CONTEXT_BEGIN_RESCUE; break;
             }
 
             ensure_statements = parse_statements(parser, context, (uint16_t) (depth + 1));
@@ -15501,7 +15471,7 @@ parse_blocklike_parameters(pm_parser_t *parser, pm_node_t *parameters, const pm_
             } else if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
                 pm_parser_err_node(parser, node, PM_ERR_IT_NOT_ALLOWED_ORDINARY);
             } else {
-                assert(false && "unreachable");
+                PRISM_ASSERT(false && "unreachable");
             }
         }
 
@@ -15533,7 +15503,7 @@ parse_blocklike_parameters(pm_parser_t *parser, pm_node_t *parameters, const pm_
             } else if (pm_token_is_numbered_parameter(parser, PM_NODE_START(node), PM_NODE_LENGTH(node))) {
                 numbered_parameter = MAX(numbered_parameter, (uint8_t) (parser->start[node->location.start + 1] - '0'));
             } else {
-                assert(false && "unreachable");
+                PRISM_ASSERT(false && "unreachable");
             }
         } else if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
             if (numbered_parameter > 0) {
@@ -15610,7 +15580,7 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
             }
 
             if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
-                assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
+                PRISM_ASSERT(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
                 statements = UP(parse_rescues_implicit_begin(parser, 0, NULL, opening.start, (pm_statements_node_t *) statements, PM_RESCUES_BLOCK, (uint16_t) (depth + 1)));
             }
         }
@@ -15627,6 +15597,25 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
 
     pm_parser_scope_pop(parser);
     return pm_block_node_create(parser, &locals, &opening, parameters, statements, &parser->previous);
+}
+
+/**
+ * Returns the flags to parse arguments with inside of the delimiters of a call
+ * (`foo(...)`) or an index (`foo[...]`).
+ *
+ * Since Ruby 3.4, a command call with a `do` block is accepted as the only
+ * argument inside the parentheses of a call, as in `foo(bar baz do end)`. Inside
+ * the brackets of an index, as in `foo[bar baz do end]`, it is accepted only by
+ * Ruby 3.4 and 4.0, whose default parser (prism) shipped accepting it. Ruby 3.3
+ * uses parse.y, which rejects both. See https://bugs.ruby-lang.org/issues/21168.
+ */
+static uint8_t
+parse_delimited_arguments_flags(const pm_parser_t *parser, uint8_t flags, bool index) {
+    if (parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4 && (!index || parser->version <= PM_OPTIONS_VERSION_CRUBY_4_0)) {
+        return (uint8_t) (flags | PM_PARSE_ACCEPTS_DO_BLOCK);
+    }
+
+    return (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK);
 }
 
 /**
@@ -15662,7 +15651,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
         if (accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
             arguments->closing_loc = TOK2LOC(parser, &parser->previous);
         } else {
-            parse_arguments(parser, arguments, full_arguments, PM_TOKEN_PARENTHESIS_RIGHT, (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK), (uint16_t) (depth + 1));
+            parse_arguments(parser, arguments, full_arguments, PM_TOKEN_PARENTHESIS_RIGHT, parse_delimited_arguments_flags(parser, flags, false), (uint16_t) (depth + 1));
 
             // `yield` parses its arguments through the restricted `call_args`
             // grammar, which (unlike the `opt_call_args` that method calls and
@@ -15837,7 +15826,7 @@ ensure_valid_return(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_NONE:
             case PM_CONTEXT_MAXIMUM:
                 // This case should never happen.
-                assert(false && "unreachable");
+                PRISM_ASSERT(false && "unreachable");
                 break;
         }
     }
@@ -15901,7 +15890,7 @@ ensure_valid_jump(pm_parser_t *parser, pm_node_t *node) {
                 // case instead of adding the error here, we'll add the
                 // block exit to the list of exits for the expression, and
                 // the node parsing will handle validating it instead.
-                assert(parser->current_block_exits != NULL);
+                PRISM_ASSERT(parser->current_block_exits != NULL);
                 pm_node_list_append_inline(&parser->scratch_arena, parser->current_block_exits, node);
                 return;
             case PM_CONTEXT_BEGIN_ELSE:
@@ -15936,7 +15925,7 @@ ensure_valid_jump(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_NONE:
             case PM_CONTEXT_MAXIMUM:
                 // This case should never happen.
-                assert(false && "unreachable");
+                PRISM_ASSERT(false && "unreachable");
                 break;
         }
     }
@@ -15968,7 +15957,7 @@ flush_block_exits(pm_parser_t *parser, pm_node_list_t *previous_block_exits) {
             case PM_BREAK_NODE: type = "break"; break;
             case PM_NEXT_NODE: type = "next"; break;
             case PM_REDO_NODE: type = "redo"; break;
-            default: assert(false && "unreachable"); type = ""; break;
+            default: PRISM_ASSERT(false && "unreachable"); type = ""; break;
         }
 
         PM_PARSER_ERR_NODE_FORMAT(parser, block_exit, PM_ERR_INVALID_BLOCK_EXIT, type);
@@ -16054,7 +16043,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
             parent = UP(pm_unless_node_create(parser, &keyword, predicate, NTOK2PTR(then_keyword), statements));
             break;
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             break;
     }
 
@@ -16110,7 +16099,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
                 ((pm_unless_node_t *) parent)->else_clause = else_node;
                 break;
             default:
-                assert(false && "unreachable");
+                PRISM_ASSERT(false && "unreachable");
                 break;
         }
     } else {
@@ -16147,7 +16136,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
             pm_unless_node_end_keyword_loc_set(parser, (pm_unless_node_t *) parent, &parser->previous);
             break;
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             break;
     }
 
@@ -16809,7 +16798,7 @@ parse_strings_empty_content(const uint8_t *location) {
  */
 static PRISM_INLINE pm_node_t *
 parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint16_t depth) {
-    assert(parser->current.type == PM_TOKEN_STRING_BEGIN);
+    PRISM_ASSERT(parser->current.type == PM_TOKEN_STRING_BEGIN);
     bool concating = false;
 
     while (match1(parser, PM_TOKEN_STRING_BEGIN)) {
@@ -16818,7 +16807,7 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
         // Here we have found a string literal. We'll parse it and add it to
         // the list of strings.
         const pm_lex_mode_t *lex_mode = parser->lex_modes.current;
-        assert(lex_mode->mode == PM_LEX_STRING);
+        PRISM_ASSERT(lex_mode->mode == PM_LEX_STRING);
         bool lex_interpolation = lex_mode->as.string.interpolation;
         bool label_allowed = lex_mode->as.string.label_allowed && accepts_label;
 
@@ -17162,7 +17151,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_constant_id_set_t *captures,
  */
 static pm_splat_node_t *
 parse_pattern_rest(pm_parser_t *parser, pm_constant_id_set_t *captures) {
-    assert(parser->previous.type == PM_TOKEN_USTAR);
+    PRISM_ASSERT(parser->previous.type == PM_TOKEN_USTAR);
     pm_token_t operator = parser->previous;
     pm_node_t *name = NULL;
 
@@ -17196,7 +17185,7 @@ parse_pattern_rest(pm_parser_t *parser, pm_constant_id_set_t *captures) {
  */
 static pm_node_t *
 parse_pattern_keyword_rest(pm_parser_t *parser, pm_constant_id_set_t *captures) {
-    assert(parser->current.type == PM_TOKEN_USTAR_STAR);
+    PRISM_ASSERT(parser->current.type == PM_TOKEN_USTAR_STAR);
     parser_lex(parser);
 
     pm_token_t operator = parser->previous;
@@ -18044,7 +18033,7 @@ parse_negative_numeric(pm_node_t *node) {
             parse_negative_numeric(((pm_imaginary_node_t *) node)->numeric);
             break;
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             break;
     }
 }
@@ -18149,7 +18138,7 @@ ensure_valid_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_NONE:
             case PM_CONTEXT_MAXIMUM:
                 // This case should never happen.
-                assert(false && "unreachable");
+                PRISM_ASSERT(false && "unreachable");
                 break;
             case PM_CONTEXT_BEGIN:
             case PM_CONTEXT_BLOCK_BRACES:
@@ -18226,7 +18215,7 @@ ensure_valid_yield(pm_parser_t *parser, const pm_yield_node_t *node) {
             case PM_CONTEXT_NONE:
             case PM_CONTEXT_MAXIMUM:
                 // This case should never happen.
-                assert(false && "unreachable");
+                PRISM_ASSERT(false && "unreachable");
                 break;
             case PM_CONTEXT_BEGIN:
             case PM_CONTEXT_BEGIN_ELSE:
@@ -18522,7 +18511,7 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         }
 
         if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
-            assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
+            PRISM_ASSERT(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
             statements = UP(parse_rescues_implicit_begin(parser, opening_newline_index, &class_keyword, class_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_SCLASS, (uint16_t) (depth + 1)));
         } else {
             parser_warn_indentation_mismatch(parser, opening_newline_index, &class_keyword, false, false);
@@ -18577,7 +18566,7 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     }
 
     if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
-        assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
+        PRISM_ASSERT(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
         statements = UP(parse_rescues_implicit_begin(parser, opening_newline_index, &class_keyword, class_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_CLASS, (uint16_t) (depth + 1)));
     } else {
         parser_warn_indentation_mismatch(parser, opening_newline_index, &class_keyword, false, false);
@@ -18935,7 +18924,7 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         }
 
         if (match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE)) {
-            assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
+            PRISM_ASSERT(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
             statements = UP(parse_rescues_implicit_begin(parser, opening_newline_index, &def_keyword, def_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_DEF, (uint16_t) (depth + 1)));
         } else {
             parser_warn_indentation_mismatch(parser, opening_newline_index, &def_keyword, false, false);
@@ -19030,7 +19019,7 @@ parse_module(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     }
 
     if (match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE)) {
-        assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
+        PRISM_ASSERT(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
         statements = UP(parse_rescues_implicit_begin(parser, opening_newline_index, &module_keyword, module_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_MODULE, (uint16_t) (depth + 1)));
     } else {
         parser_warn_indentation_mismatch(parser, opening_newline_index, &module_keyword, false, false);
@@ -19423,7 +19412,7 @@ parse_hash(pm_parser_t *parser, uint16_t depth) {
 
 static pm_node_t *
 parse_heredoc(pm_parser_t *parser, uint16_t depth) {
-    assert(parser->lex_modes.current->mode == PM_LEX_HEREDOC);
+    PRISM_ASSERT(parser->lex_modes.current->mode == PM_LEX_HEREDOC);
     pm_heredoc_lex_mode_t lex_mode = parser->lex_modes.current->as.heredoc.base;
 
     size_t common_whitespace = (size_t) -1;
@@ -19469,7 +19458,7 @@ parse_heredoc(pm_parser_t *parser, uint16_t depth) {
         cast->base.location = cast->opening_loc;
 
         if (lex_mode.quote == PM_HEREDOC_QUOTE_BACKTICK) {
-            assert(sizeof(pm_string_node_t) == sizeof(pm_x_string_node_t));
+            PRISM_ASSERT(sizeof(pm_string_node_t) == sizeof(pm_x_string_node_t));
             cast->base.type = PM_X_STRING_NODE;
         }
 
@@ -19744,7 +19733,7 @@ parse_lambda(pm_parser_t *parser, uint16_t depth) {
         }
 
         if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
-            assert(body == NULL || PM_NODE_TYPE_P(body, PM_STATEMENTS_NODE));
+            PRISM_ASSERT(body == NULL || PM_NODE_TYPE_P(body, PM_STATEMENTS_NODE));
             body = UP(parse_rescues_implicit_begin(parser, opening_newline_index, &operator, opening.start, (pm_statements_node_t *) body, PM_RESCUES_LAMBDA, (uint16_t) (depth + 1)));
         } else {
             parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false, false);
@@ -20107,7 +20096,7 @@ parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
                 // variable read into a method call, in which case we
                 // need to indicate that this was not a read for the
                 // purposes of warnings.
-                assert(PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_READ_NODE));
+                PRISM_ASSERT(PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_READ_NODE));
 
                 if (pm_token_is_numbered_parameter(parser, PM_TOKEN_START(parser, &identifier), PM_TOKEN_LENGTH(&identifier))) {
                     pm_node_unreference(parser, node);
@@ -20161,7 +20150,7 @@ parse_uninterpolated_symbol_array(pm_parser_t *parser) {
                 // current is arena-allocated so no explicit free is needed.
                 current = UP(interpolated);
             } else {
-                assert(false && "unreachable");
+                PRISM_ASSERT(false && "unreachable");
             }
         }
 
@@ -20254,7 +20243,7 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
 
                     current = UP(interpolated);
                 } else {
-                    assert(false && "unreachable");
+                    PRISM_ASSERT(false && "unreachable");
                 }
 
                 break;
@@ -20314,7 +20303,7 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
                     /* If we hit an embedded expression and the current node is
                      * an interpolated string, then we'll just continue on. */
                 } else {
-                    assert(false && "unreachable");
+                    PRISM_ASSERT(false && "unreachable");
                 }
 
                 pm_node_t *part = parse_string_part(parser, (uint16_t) (depth + 1));
@@ -20376,7 +20365,7 @@ parse_uninterpolated_string_array(pm_parser_t *parser) {
                 pm_interpolated_string_node_append(parser, interpolated, string);
                 current = UP(interpolated);
             } else {
-                assert(false && "unreachable");
+                PRISM_ASSERT(false && "unreachable");
             }
             parser_lex(parser);
         }
@@ -20456,7 +20445,7 @@ parse_interpolated_string_array(pm_parser_t *parser, uint16_t depth) {
                     pm_interpolated_string_node_append(parser, interpolated, string);
                     current = UP(interpolated);
                 } else {
-                    assert(false && "unreachable");
+                    PRISM_ASSERT(false && "unreachable");
                 }
 
                 break;
@@ -20503,7 +20492,7 @@ parse_interpolated_string_array(pm_parser_t *parser, uint16_t depth) {
                     /* If we hit an embedded expression and the current node is
                      * an interpolated string, then we'll just continue on. */
                 } else {
-                    assert(false && "unreachable");
+                    PRISM_ASSERT(false && "unreachable");
                 }
 
                 pm_node_t *part = parse_string_part(parser, (uint16_t) (depth + 1));
@@ -20598,7 +20587,7 @@ parse_jump(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
             return node;
         }
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous)));
     }
 }
@@ -22500,7 +22489,7 @@ parse_aref(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_bin
     arguments.opening_loc = TOK2LOC(parser, &parser->previous);
 
     if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
-        parse_arguments(parser, &arguments, false, PM_TOKEN_BRACKET_RIGHT, (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK), (uint16_t) (depth + 1));
+        parse_arguments(parser, &arguments, false, PM_TOKEN_BRACKET_RIGHT, parse_delimited_arguments_flags(parser, flags, true), (uint16_t) (depth + 1));
         expect1(parser, PM_TOKEN_BRACKET_RIGHT, PM_ERR_EXPECT_RBRACKET);
     }
 
@@ -22735,7 +22724,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             return UP(pm_match_required_node_create(parser, node, pattern, &operator));
         }
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return NULL;
     }
 }
@@ -23098,8 +23087,8 @@ parse_program(pm_parser_t *parser) {
         // If we have statements, then the top-level statement should be
         // explicitly checked as well. We have to do this here because
         // everywhere else we check all but the last statement.
-        assert(statements->body.size > 0);
-        pm_void_statement_check(parser, statements->body.nodes[statements->body.size - 1]);
+        PRISM_ASSERT(statements->body.size > 0);
+        pm_void_statement_check_unwrap(parser, statements->body.nodes[statements->body.size - 1]);
     }
 
     pm_constant_id_list_t locals;
@@ -23207,8 +23196,8 @@ pm_parser_init_shebang(pm_parser_t *parser, const pm_options_t *options, const c
  */
 void
 pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, size_t size, const pm_options_t *options) {
-    assert(arena != NULL);
-    assert(source != NULL);
+    PRISM_ASSERT(arena != NULL);
+    PRISM_ASSERT(source != NULL);
 
     *parser = (pm_parser_t) {
         .arena = arena,
@@ -23218,8 +23207,8 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .enclosure_nesting = 0,
         .lambda_enclosure_nesting = -1,
         .brace_nesting = 0,
-        .do_loop_stack = 0,
-        .accepts_block_stack = 0,
+        .do_loop_stack = { 0 },
+        .accepts_block_stack = { 0 },
         .lex_modes = {
             .current = &parser->lex_modes.base,
             .base = { .mode = PM_LEX_DEFAULT },
@@ -23524,7 +23513,6 @@ pm_parse_err_is_fatal(pm_diagnostic_id_t diag_id) {
         case PM_ERR_ESCAPE_INVALID_UNICODE_SHORT:
         case PM_ERR_EXPRESSION_NOT_WRITABLE:
         case PM_ERR_EXPRESSION_NOT_WRITABLE_SELF:
-        case PM_ERR_FLOAT_PARSE:
         case PM_ERR_GLOBAL_VARIABLE_BARE:
         case PM_ERR_HASH_KEY:
         case PM_ERR_HEREDOC_IDENTIFIER:

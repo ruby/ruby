@@ -61,10 +61,8 @@ impl WeakProcessor {
             let num_buckets = self.parallel_obj_free_candidates.len();
             for idx in 0..num_buckets {
                 let mut bucket = self.parallel_obj_free_candidates[idx].lock().unwrap();
-                for (i, &obj) in objects.iter().enumerate() {
-                    if i % num_buckets == idx {
-                        bucket.push(obj);
-                    }
+                for &obj in objects.iter().skip(idx).step_by(num_buckets) {
+                    bucket.push(obj);
                 }
             }
         } else {
@@ -133,21 +131,17 @@ impl WeakProcessor {
 }
 
 fn process_obj_free_candidates(obj_free_candidates: &mut Vec<ObjectReference>) {
-    // Process obj_free
-    let mut new_candidates = Vec::new();
-
-    for object in obj_free_candidates.iter().copied() {
+    obj_free_candidates.retain_mut(|object| {
         if object.is_reachable() {
-            // Forward and add back to the candidate list.
             let new_object = object.forward();
             trace!("Forwarding obj_free candidate: {object} -> {new_object}");
-            new_candidates.push(new_object);
+            *object = new_object;
+            true
         } else {
-            upcalls::call_obj_free(object);
+            upcalls::call_obj_free(*object);
+            false
         }
-    }
-
-    *obj_free_candidates = new_candidates;
+    });
 }
 
 struct ProcessParallelObjFreeCandidates {

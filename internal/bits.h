@@ -103,6 +103,8 @@
       ((b) > 0 ? (max) / (a) < (b) : (min) / (a) > (b)) : \
       ((b) > 0 ? (min) / (a) < (b) : (max) / (a) > (b)))
 
+#define MUL_OVERFLOW_UNSIGNED_INTEGER_P(a, b, max) ((a) > 0 && ((b) > (max) / (a)))
+
 #if __has_builtin(__builtin_mul_overflow_p)
 /* __builtin_mul_overflow_p can take bitfield */
 /* and GCC permits bitfields for integers other than int */
@@ -129,6 +131,16 @@
 # define MUL_OVERFLOW_LONG_P(a, b)      MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
 # define MUL_OVERFLOW_INT_P(a, b)       MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
 #endif
+
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+# define MUL_OVERFLOW_LEN_P(a, b)       MUL_OVERFLOW_LONG_LONG_P(a, b)
+#elif SIZEOF_RB_LEN_T > SIZEOF_INT
+# define MUL_OVERFLOW_LEN_P(a, b)       MUL_OVERFLOW_LONG_P(a, b)
+#else
+# define MUL_OVERFLOW_LEN_P(a, b)       MUL_OVERFLOW_INT_P(a, b)
+#endif
+
+#define MUL_OVERFLOW_SIZE_P(a, b)      MUL_OVERFLOW_UNSIGNED_INTEGER_P(a, b, SIZE_MAX)
 #endif
 
 #ifndef ADD_OVERFLOW_SIGNED_INTEGER_P
@@ -142,6 +154,8 @@
 
 #define ADD_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) ( \
     (a) > 0 ? (b) > (max) - (a) : (b) < (min) - (a))
+
+#define ADD_OVERFLOW_UNSIGNED_INTEGER_P(a, b, max) ((b) > (max) - (a))
 
 #if __has_builtin(__builtin_add_overflow_p)
 /* __builtin_add_overflow_p can take bitfield */
@@ -169,6 +183,16 @@
 # define ADD_OVERFLOW_LONG_P(a, b)      ADD_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
 # define ADD_OVERFLOW_INT_P(a, b)       ADD_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
 #endif
+
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+# define ADD_OVERFLOW_LEN_P(a, b)       ADD_OVERFLOW_LONG_LONG_P(a, b)
+#elif SIZEOF_RB_LEN_T > SIZEOF_INT
+# define ADD_OVERFLOW_LEN_P(a, b)       ADD_OVERFLOW_LONG_P(a, b)
+#else
+# define ADD_OVERFLOW_LEN_P(a, b)       ADD_OVERFLOW_INT_P(a, b)
+#endif
+
+#define ADD_OVERFLOW_SIZE_P(a, b)       ADD_OVERFLOW_UNSIGNED_INTEGER_P(a, b SIZE_MAX)
 #endif
 
 #ifndef SUB_OVERFLOW_SIGNED_INTEGER_P
@@ -182,6 +206,8 @@
 
 #define SUB_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) ( \
         (b) > 0 ? (a) < (min) + (b) : (a) > (max) + (b))
+
+#define SUB_OVERFLOW_UNSIGNED_INTEGER_P(a, b) ((a) < (b))
 
 #if __has_builtin(__builtin_sub_overflow_p)
 /* __builtin_sub_overflow_p can take bitfield */
@@ -209,6 +235,16 @@
 # define SUB_OVERFLOW_LONG_P(a, b)      SUB_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
 # define SUB_OVERFLOW_INT_P(a, b)       SUB_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
 #endif
+
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+# define SUB_OVERFLOW_LEN_P(a, b)       SUB_OVERFLOW_LONG_LONG_P(a, b)
+#elif SIZEOF_RB_LEN_T > SIZEOF_INT
+# define SUB_OVERFLOW_LEN_P(a, b)       SUB_OVERFLOW_LONG_P(a, b)
+#else
+# define SUB_OVERFLOW_LEN_P(a, b)       SUB_OVERFLOW_INT_P(a, b)
+#endif
+
+#define SUB_OVERFLOW_SIZE_P(a, b)       SUB_OVERFLOW_UNSIGNED_INTEGER_P(a, b SIZE_MAX)
 #endif
 
 #ifdef HAVE_UINT128_T

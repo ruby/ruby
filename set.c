@@ -692,6 +692,23 @@ set_i_to_a(VALUE set)
 /*
  *  call-seq:
  *    to_set {|element| ... } -> new_set
+ *    to_set -> new_set
+ *
+ *  Returns a new set containing the elements of +self+;
+ *  with a block given, the set contains the block's return values instead:
+ *
+ *    [3, 1, 2, 1].to_set           # => Set[3, 1, 2]
+ *    [3, 1, 2, 1].to_set {|i| -i } # => Set[-3, -1, -2]
+ */
+static VALUE
+enum_to_set(VALUE obj)
+{
+    return rb_funcall_passing_block(rb_cSet, id_new, 1, &obj);
+}
+
+/*
+ *  call-seq:
+ *    to_set {|element| ... } -> new_set
  *    to_set -> self or new_set
  *
  *  With a block given, creates and returns a new set;
@@ -724,7 +741,7 @@ set_i_to_set(VALUE set)
         return set;
     }
 
-    return rb_funcall_passing_block(rb_cSet, id_new, 1, &set);
+    return enum_to_set(set);
 }
 
 /*
@@ -2413,7 +2430,7 @@ rb_set_size(VALUE set)
  *
  * \Set includes module Enumerable, and is easy to use with other enumerable objects.
  * Many of its methods accept enumerable objects as arguments;
- * any enumerable object may be converted to a set via #to_set.
+ * any enumerable object may be converted to a set via {#to_set}[rdoc-ref:Enumerable#to_set].
  *
  * == Contact
  *
@@ -2663,6 +2680,8 @@ Init_Set(void)
     rb_define_alias(rb_cSet, ">=", "superset?");
     rb_define_method(rb_cSet, "to_a", set_i_to_a, 0);
     rb_define_method(rb_cSet, "to_set", set_i_to_set, 0);
+
+    rb_define_method(rb_mEnumerable, "to_set", enum_to_set, 0);
 
     /* :nodoc: */
     VALUE compat = rb_define_class_under(rb_cSet, "compatible", rb_cObject);

@@ -289,11 +289,9 @@ module Bundler
       end
 
       Bundler.rubygems.default_stubs.each do |stub|
-        default_spec = stub.to_spec
-        default_spec_name = default_spec.name
-        next if specs_by_name.key?(default_spec_name)
+        next if specs_by_name.key?(stub.name)
 
-        specs_by_name[default_spec_name] = default_spec
+        specs_by_name[stub.name] = stub.to_spec
       end
 
       specs_by_name

@@ -1,0 +1,7 @@
+a[bar baz do end, 1]
+                ^ invalid comma
+                 ^ expected a matching `]`
+                  ^ unexpected integer, expecting end-of-input
+                   ^ unexpected ']', expecting end-of-input
+                   ^ unexpected ']', ignoring it
+

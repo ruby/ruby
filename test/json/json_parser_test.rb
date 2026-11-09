@@ -481,11 +481,9 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(ParserError) { parse('{"a": 1, "a": 2}', allow_duplicate_key: false) }
     assert_raise(ParserError) { parse('{"a": 1, "a": 2}', allow_duplicate_key: false, symbolize_names: true) }
 
-    unless RUBY_ENGINE == 'jruby'
-      assert_raise(ParserError) do
-        fake_key = Object.new
-        JSON.load('{"a": 1, "a": 2}', -> (obj) { obj == "a" ? fake_key : obj }, allow_duplicate_key: false)
-      end
+    assert_raise(ParserError) do
+      fake_key = Object.new
+      JSON.load('{"a": 1, "a": 2}', -> (obj) { obj == "a" ? fake_key : obj }, allow_duplicate_key: false)
     end
   end
 
@@ -1056,6 +1054,23 @@ class JSONParserTest < Test::Unit::TestCase
   def test_mutating_source_string_during_parsing
     expected = ([1] * 100) + [2.3] + ([1] * 100)
     source = JSON.generate(expected)
+    expected.delete_at(100)
+
+    fake_decimal_class = Class.new
+    fake_decimal_class.define_method(:initialize) do |number|
+      source.tr!('1', '0')
+      number.to_f
+    end
+
+    actual = JSON.parse(source, decimal_class: fake_decimal_class)
+    actual.delete_at(100)
+    assert_equal expected, actual
+  end
+
+  def test_mutating_source_string_with_known_coderange_during_parsing
+    expected = ([1] * 100) + [2.3] + ([1] * 100)
+    source = JSON.generate(expected)
+    source.ascii_only? # caches the coderange, which lets JRuby's String#tr! write in place
     expected.delete_at(100)
 
     fake_decimal_class = Class.new

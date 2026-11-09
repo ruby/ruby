@@ -22,7 +22,6 @@
 #endif
 
 struct objspace {
-    bool user_gc_disabled;
     bool measure_gc_time;
     bool gc_stress;
 
@@ -59,6 +58,7 @@ struct objspace {
     uintptr_t vo_bit_log_region_size;
     uintptr_t vo_bit_base_addr;
     size_t max_non_los_default_alloc_bytes;
+    bool write_barrier_required;
 };
 
 #define OBJ_FREE_BUF_CAPACITY 128
@@ -619,6 +619,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     objspace->vo_bit_log_region_size = mmtk_get_vo_bit_log_region_size();
     objspace->vo_bit_base_addr = mmtk_get_vo_bit_base_addr();
     objspace->max_non_los_default_alloc_bytes = mmtk_max_non_los_default_alloc_bytes();
+    objspace->write_barrier_required = mmtk_plan_has_write_barrier();
 }
 
 void
@@ -837,23 +838,13 @@ rb_gc_impl_gc_disable(void *objspace_ptr, bool finish_current_gc)
 bool
 rb_gc_impl_user_gc_disabled_set(void *objspace_ptr, bool disable)
 {
-    struct objspace *objspace = objspace_ptr;
-    const bool was = objspace->user_gc_disabled;
-    objspace->user_gc_disabled = disable;
-
-    if (was != disable) {
-        mmtk_set_gc_enabled(!disable);
-        objspace->user_gc_disabled = disable;
-    }
-
-    return was;
+    return mmtk_set_user_gc_disabled(disable);
 }
 
 bool
 rb_gc_impl_user_gc_disabled_p(void *objspace_ptr)
 {
-    struct objspace *objspace = objspace_ptr;
-    return objspace->user_gc_disabled;
+    return mmtk_user_gc_disabled_p();
 }
 
 bool
@@ -1235,7 +1226,7 @@ rb_gc_impl_location(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 {
-    struct MMTk_ractor_cache *cache = rb_gc_get_ractor_newobj_cache();
+    struct objspace *objspace = objspace_ptr;
 
     if (SPECIAL_CONST_P(b)) return;
 
@@ -1254,6 +1245,9 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     MMTK_ASSERT(BUILTIN_TYPE(a) != T_NONE);
     MMTK_ASSERT(BUILTIN_TYPE(b) != T_NONE);
 
+    if (!objspace->write_barrier_required) return;
+
+    struct MMTk_ractor_cache *cache = rb_gc_get_ractor_newobj_cache();
     mmtk_object_reference_write_post(cache->mutator, (MMTk_ObjectReference)a);
 }
 
@@ -1272,6 +1266,10 @@ rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
+    struct objspace *objspace = objspace_ptr;
+
+    if (!objspace->write_barrier_required) return;
+
     if (!ruby_native_thread_p()) {
         /* Called from an MMTk GC worker thread (via gc_ref_update_object's
          * re-embedding path during reference updating).  There is no mutator

@@ -70,11 +70,11 @@ ossl_verify_cb_call(VALUE proc, int ok, X509_STORE_CTX *ctx)
         args.preverify_ok = ok ? Qtrue : Qfalse;
         args.store_ctx = rctx;
         ret = rb_protect(call_verify_cb_proc, (VALUE)&args, &state);
+        RTYPEDDATA_DATA(rctx) = NULL;
         if (state) {
             rb_set_errinfo(Qnil);
             rb_warn("exception in verify_callback is ignored");
         }
-        RTYPEDDATA_DATA(rctx) = NULL;
     }
     if (ret == Qtrue) {
         X509_STORE_CTX_set_error(ctx, X509_V_OK);
@@ -391,7 +391,7 @@ ossl_x509store_set_time(VALUE self, VALUE time)
 
     GetX509Store(self, store);
     param = X509_STORE_get0_param(store);
-    X509_VERIFY_PARAM_set_time(param, NUM2LONG(rb_Integer(time)));
+    X509_VERIFY_PARAM_set_time(param, NUM2TIMET(rb_Integer(time)));
     return time;
 }
 
@@ -952,9 +952,9 @@ static VALUE
 ossl_x509stctx_set_time(VALUE self, VALUE time)
 {
     X509_STORE_CTX *store;
-    long t;
+    time_t t;
 
-    t = NUM2LONG(rb_Integer(time));
+    t = NUM2TIMET(rb_Integer(time));
     GetX509StCtx(self, store);
     X509_STORE_CTX_set_time(store, 0, t);
 

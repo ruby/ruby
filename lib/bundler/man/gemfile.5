@@ -468,6 +468,8 @@ The \fBgemspec\fR method adds any runtime dependencies as gem requirements in th
 .P
 The \fBgemspec\fR method supports optional \fB:path\fR, \fB:glob\fR, \fB:name\fR, and \fB:development_group\fR options, which control where bundler looks for the \fB\.gemspec\fR, the glob it uses to look for the gemspec (defaults to: \fB{,*,*/*}\.gemspec\fR), what named \fB\.gemspec\fR it uses (if more than one is present), and which group development dependencies are included in\.
 .P
+When \fBgemspec\fR is called inside a \fBgroup\fR block, the gem requirement on your project goes into that group instead of the default group, and so do its runtime dependencies\. Development dependencies stay in the \fBdevelopment\fR group, or the group given by \fB:development_group\fR\. An enclosing \fBplatforms\fR or \fBinstall_if\fR block applies to the project and its development dependencies alike\.
+.P
 When a \fBgemspec\fR dependency encounters version conflicts during resolution, the local version under development will always be selected \-\- even if there are remote versions that better match other requirements for the \fBgemspec\fR gem\.
 .SH "EVAL_GEMFILE"
 A Gemfile \fBMAY\fR be split across multiple files\. The \fBeval_gemfile\fR method reads the contents of another file as if they appeared in the current Gemfile\. A relative path is resolved against the directory of the file containing the call\.

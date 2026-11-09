@@ -560,6 +560,12 @@ options, which control where bundler looks for the `.gemspec`, the glob it uses 
 for the gemspec (defaults to: `{,*,*/*}.gemspec`), what named `.gemspec` it uses
 (if more than one is present), and which group development dependencies are included in.
 
+When `gemspec` is called inside a `group` block, the gem requirement on your
+project goes into that group instead of the default group, and so do its runtime
+dependencies. Development dependencies stay in the `development` group, or the
+group given by `:development_group`. An enclosing `platforms` or `install_if`
+block applies to the project and its development dependencies alike.
+
 When a `gemspec` dependency encounters version conflicts during resolution, the
 local version under development will always be selected -- even if there are
 remote versions that better match other requirements for the `gemspec` gem.

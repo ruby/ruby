@@ -332,6 +332,9 @@ LIBS = $(LIBS) iphlpapi.lib
 !if defined(USE_GMP)
 LIBS = $(LIBS) gmp.lib
 !endif
+!if "$(WITH_MIMALLOC)" == "yes"
+LIBS = $(LIBS) mimalloc.dll.lib
+!endif
 LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
@@ -341,8 +344,12 @@ MISSING = $(MISSING) explicit_bzero.obj memrchr.obj
 DLNOBJS = dln.obj
 
 !if "$(YJIT_SUPPORT)" == "yes"
-!if "$(ARCH)" != "x64"
-!error YJIT is supported only on x64, not $(ARCH).  Retry without --enable-yjit.
+!if "$(ARCH)" == "x64"
+RUST_TARGET = x86_64-pc-windows-msvc
+!elseif "$(ARCH)" == "arm64"
+RUST_TARGET = aarch64-pc-windows-msvc
+!else
+!error YJIT is supported only on x64 and arm64, not $(ARCH).  Retry without --enable-yjit.
 !endif
 !if !defined(RUSTC)
 RUSTC = rustc
@@ -360,7 +367,7 @@ INSTALL_STATIC_LIBRARY = no
 !error YJIT does not support the static library.  Retry without --enable-install-static-library.
 !endif
 # Explicit, so that a windows-gnu default toolchain does not build libyjit.a.
-JIT_RUST_FLAGS = --crate-type=staticlib --target=x86_64-pc-windows-msvc --cfg feature=\"stats_allocator\"
+JIT_RUST_FLAGS = --crate-type=staticlib --target=$(RUST_TARGET) --cfg feature=\"stats_allocator\"
 !if !defined(RUSTC_FLAGS)
 RUSTC_FLAGS = -g -C lto=thin -C opt-level=3 -C overflow-checks=on
 !endif
@@ -394,7 +401,13 @@ COROUTINE_TEST_RUN = .\$(COROUTINE_TEST:/=\)
 
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
+!if defined(CLANG_VER)
+# clang-cl does not link the compiler-rt builtins by default, which
+# define __cpu_model for __builtin_cpu_supports in extensions.
+LDSHARED = $(LD) -LD -clang:--rtlib=compiler-rt
+!else
 LDSHARED = $(LD) -LD
+!endif
 XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS) $(XINCFLAGS)
 LDFLAGS = $(LDFLAGS) -manifest:embed,ID=2
 CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
@@ -675,12 +688,15 @@ update-src::
 VCPKG_DEFAULT_TRIPLET = $(MACHINE)-windows
 !endif
 TRIPLET_OPTION = --triplet $(VCPKG_DEFAULT_TRIPLET)
+!if "$(WITH_MIMALLOC)" == "yes"
+FEATURE_OPTION = --x-feature=mimalloc
+!endif
 
 update-vcpkg::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg x-update-baseline $(TRIPLET_OPTION)
 
 install-vcpkg::
-	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg install $(TRIPLET_OPTION)
+	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg install $(TRIPLET_OPTION) $(FEATURE_OPTION)
 
 prepare-vcpkg::
 	@del /a:l *.dll 2> nul
@@ -831,6 +847,18 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define WARN_UNUSED_RESULT(x) x
 #define MAYBE_UNUSED(x) x
 #define HAVE___ASSUME 1
+!if defined(CLANG_VER)
+#define HAVE_STMT_AND_DECL_IN_EXPR 1
+#define HAVE_VA_ARGS_MACRO 1
+#define HAVE_BUILTIN___BUILTIN_CONSTANT_P 1
+#define HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR 1
+#define HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P 1
+#define HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P 1
+#define HAVE_BUILTIN___BUILTIN_ASSUME_ALIGNED 1
+#define HAVE_BUILTIN___BUILTIN_POPCOUNT 1
+#define HAVE_BUILTIN___BUILTIN_CLZLL 1
+#define HAVE_BUILTIN___BUILTIN_TRAP 1
+!endif
 #define FUNC_STDCALL(x) __stdcall x
 #define FUNC_CDECL(x) __cdecl x
 #define FUNC_FASTCALL(x) __fastcall x
@@ -989,6 +1017,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 !endif
 !if "$(USE_GMP)" != ""
 #define USE_GMP 1
+!endif
+!if "$(WITH_MIMALLOC)" == "yes"
+#define USE_MIMALLOC 1
 !endif
 !if "$(YJIT_SUPPORT)" == "yes"
 #define USE_YJIT 1

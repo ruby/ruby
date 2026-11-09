@@ -30,6 +30,7 @@ impl Collection<Ruby> for VMCollection {
         F: FnMut(&'static mut mmtk::Mutator<Ruby>),
     {
         upcalls::stop_the_world();
+        crate::binding().gc_disable.on_pause_start();
 
         if crate::mmtk().get_plan().current_gc_may_move_object() {
             CURRENT_GC_MAY_MOVE.store(true, Ordering::Relaxed);
@@ -47,6 +48,8 @@ impl Collection<Ruby> for VMCollection {
     }
 
     fn resume_mutators(_tls: VMWorkerThread) {
+        crate::binding().gc_disable.on_pause_end();
+
         let current_gc_may_move = CURRENT_GC_MAY_MOVE.load(Ordering::Relaxed);
 
         if current_gc_may_move {

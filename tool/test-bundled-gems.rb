@@ -142,6 +142,10 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     # This test checks a long-fixed memory leak and its measurement is flaky.
     test_command[-2..-1] = %w[test/run.rb --ignore-name=/\Atest_no_memory_leak\z/]
 
+  when "prism"
+    # see BundledGem.build, which cannot use this task without rake-compiler
+    test_command.insert(-2, "templates")
+
   when "debug"
     # needs pty
     next unless /mswin|mingw/ =~ RUBY_PLATFORM

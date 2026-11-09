@@ -1,9 +1,9 @@
 #include "prism/internal/arena.h"
 
 #include "prism/internal/allocator.h"
+#include "prism/internal/assert.h"
 #include "prism/internal/oom.h"
 
-#include <assert.h>
 #include <stdlib.h>
 
 /**
@@ -46,7 +46,7 @@ pm_arena_next_block_size(const pm_arena_t *arena, size_t min_size) {
  */
 static pm_arena_block_t *
 pm_arena_block_new(pm_arena_t *arena, size_t data_size, size_t initial_used) {
-    assert(initial_used <= data_size);
+    PRISM_ASSERT(initial_used <= data_size);
     pm_arena_block_t *block = (pm_arena_block_t *) xmalloc(PM_ARENA_BLOCK_SIZE(data_size));
     if (block == NULL) PRISM_OOM();
 

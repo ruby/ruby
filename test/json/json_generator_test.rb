@@ -1054,8 +1054,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
     s = klass.new("test")
     assert_equal '["test"]', JSON.generate([s])
 
-    omit("Can't figure out how to match behavior in java code") if RUBY_PLATFORM == "java"
-
     assert_raise TypeError do
       JSON.generate(s => 1)
     end
@@ -1202,11 +1200,32 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_generate_duplicate_keys_disallowed
-    hash = { foo: 1, "foo" => 2 }
+    assert_duplicate_key({ foo: 1, "foo" => 2 })
+    assert_duplicate_key({ "1" => 1, 1 => 2 })
+    assert_duplicate_key({ :"1" => 1, 1 => 2 })
+
+    fake_string = Class.new do
+      def initialize(str)
+        @str = str
+      end
+
+      def to_s
+        @str.dup
+      end
+    end
+
+    assert_duplicate_key({ fake_string.new("a") => 1, fake_string.new("a") => 2 })
+  end
+
+  def assert_duplicate_key(hash)
     error = assert_raise JSON::GeneratorError do
       JSON.generate(hash, allow_duplicate_key: false)
     end
-    assert_equal %(detected duplicate key "foo" in #{hash.inspect}), error.message
+    assert_equal %(detected duplicate key "#{hash.keys.first}" in #{hash.inspect}), error.message
+  end
+
+  def test_generate_mixed_keys_without_duplicates
+    assert_equal %({"1":1,"2":2}), JSON.generate({ "1" => 1, 2 => 2 }, allow_duplicate_key: false)
   end
 
   def test_frozen
@@ -1448,6 +1467,11 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_rfc8785 '0.30000000000000004', 0.1 + 0.2
   end
 
+  # RFC 8785 numbers are formatted with Float#to_s, which only gives the
+  # shortest round-trip digits on JRuby 10.1.3 and later.
+  SHORTEST_FLOAT_TO_S = RUBY_ENGINE == "ruby" ||
+    (RUBY_ENGINE == "jruby" && Gem::Version.new(JRUBY_VERSION) >= Gem::Version.new("10.1.3"))
+
   # https://www.rfc-editor.org/rfc/rfc8785.html#appendix-B
   {
     '0000000000000000' => '0',
@@ -1478,7 +1502,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     '43143ff3c1cb0959' => '1424953923781206.2',
   }.each do |bits, expected|
     define_method("test_rfc8785_number_#{bits}") do
-      omit "Float#to_s is not always shortest on this engine" unless RUBY_ENGINE == "ruby"
+      omit "Float#to_s is not always shortest on this engine" unless SHORTEST_FLOAT_TO_S
       number = [bits].pack('H*').unpack('G').first
       if expected
         assert_rfc8785 expected, number
@@ -1495,7 +1519,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     name, _ = File.basename(filename, ".json")
     expected = File.join(fixtures_path, 'output', filename)
     define_method("test_rfc8785_#{name}") do
-      assert_rfc8785(File.read(expected), JSON.load_file(input))
+      assert_rfc8785(File.read(expected, encoding: Encoding::UTF_8), JSON.load_file(input))
     end
   end
 

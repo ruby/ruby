@@ -653,6 +653,8 @@ module Bundler
     method_option "add-platform", type: :array, default: [], repeatable: true, banner: "Add a new platform to the lockfile"
     method_option "remove-platform", type: :array, default: [], repeatable: true, banner: "Remove a platform from the lockfile"
     method_option "normalize-platforms", type: :boolean, default: false, banner: "Normalize lockfile platforms"
+    method_option "add-ruby-abi", type: :array, default: [], repeatable: true, banner: "Lock the content-addressed gems for a Ruby ABI (X.Y)"
+    method_option "remove-ruby-abi", type: :array, default: [], repeatable: true, banner: "Drop the content-addressed gems for a Ruby ABI (X.Y) from the lockfile"
     method_option "patch", type: :boolean, banner: "If updating, prefer updating only to next patch version"
     method_option "minor", type: :boolean, banner: "If updating, prefer updating only to next minor version"
     method_option "major", type: :boolean, banner: "If updating, prefer updating to latest major version (default)"

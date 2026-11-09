@@ -27,7 +27,10 @@
 
 /* MALLOC_HEADERS_BEGIN */
 #ifndef HAVE_MALLOC_USABLE_SIZE
-# ifdef _WIN32
+# ifdef USE_MIMALLOC
+#  define HAVE_MALLOC_USABLE_SIZE
+#  define malloc_usable_size(a) mi_usable_size(a)
+# elif defined _WIN32
 #  define HAVE_MALLOC_USABLE_SIZE
 #  define malloc_usable_size(a) _msize(a)
 # elif defined HAVE_MALLOC_SIZE
@@ -39,6 +42,12 @@
 #ifdef HAVE_MALLOC_USABLE_SIZE
 # ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
 /* Alternative malloc header is included in ruby/missing.h */
+# elif defined(USE_MIMALLOC)
+/* config.h defines restrict, which spoils __declspec(restrict) in mimalloc.h for clang-cl */
+#  pragma push_macro("restrict")
+#  undef restrict
+#  include <mimalloc.h>
+#  pragma pop_macro("restrict")
 # elif defined(HAVE_MALLOC_H)
 #  include <malloc.h>
 # elif defined(HAVE_MALLOC_NP_H)
@@ -468,7 +477,9 @@ int ruby_gc_debug_indent = 0;
 VALUE rb_mGC;
 
 static size_t malloc_offset = 0;
-#if defined(HAVE_MALLOC_USABLE_SIZE)
+/* With mimalloc, malloc() below is not what xmalloc uses, and mimalloc
+ * blocks have no header to make room for. */
+#if defined(HAVE_MALLOC_USABLE_SIZE) && !defined(USE_MIMALLOC)
 static size_t
 gc_compute_malloc_offset(void)
 {
@@ -2391,16 +2402,16 @@ class_object_id(VALUE klass)
     return id;
 }
 
+static inline shape_id_t
+object_id_field_shape(shape_id_t shape_id)
+{
+    return rb_shape_complex_p(shape_id) ? ROOT_COMPLEX_WITH_OBJ_ID : rb_shape_object_id(shape_id);
+}
+
 static inline VALUE
 object_id_get(VALUE obj, shape_id_t shape_id)
 {
-    VALUE id;
-    if (rb_shape_complex_p(shape_id)) {
-        id = rb_obj_field_get(obj, ROOT_COMPLEX_WITH_OBJ_ID);
-    }
-    else {
-        id = rb_obj_field_get(obj, rb_shape_object_id(shape_id));
-    }
+    VALUE id = rb_obj_field_get(obj, object_id_field_shape(shape_id));
 
 #if RUBY_DEBUG
     if (!(FIXNUM_P(id) || RB_TYPE_P(id, T_BIGNUM))) {
@@ -2432,6 +2443,20 @@ object_id0(VALUE obj)
     return id;
 }
 
+// generic_field_set never mutates the published fields_obj of a shareable object,
+// and the fields_obj carries its owner's shape, so both are read from the one snapshot.
+static VALUE
+shareable_data_object_id(VALUE obj)
+{
+    VALUE fields_obj = RUBY_ATOMIC_VALUE_LOAD(RTYPEDDATA(obj)->fields_obj);
+    if (!fields_obj) return Qfalse;
+
+    shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
+    if (!rb_shape_has_object_id(shape_id)) return Qfalse;
+
+    return rb_imemo_fields_field_get(fields_obj, object_id_field_shape(shape_id));
+}
+
 static VALUE
 object_id(VALUE obj)
 {
@@ -2450,6 +2475,11 @@ object_id(VALUE obj)
     }
 
     if (UNLIKELY(rb_gc_multi_ractor_p() && rb_ractor_shareable_p(obj))) {
+        if (BUILTIN_TYPE(obj) == T_DATA) {
+            VALUE existing_id = shareable_data_object_id(obj);
+            if (existing_id) return existing_id;
+        }
+
         unsigned int lock_lev = RB_GC_VM_LOCK();
         VALUE id = object_id0(obj);
         RB_GC_VM_UNLOCK(lock_lev);
@@ -6836,6 +6866,12 @@ rb_xcalloc_mul_add_mul(size_t x, size_t y, size_t z, size_t w) /* x * y + z * w 
     return ruby_xcalloc(u, 1);
 }
 
+#ifdef USE_MIMALLOC
+# define malloc(n) mi_malloc(n)
+# define calloc(n, s) mi_calloc(n, s)
+# define free(p) mi_free(p)
+#endif
+
 /* Mimic ruby_xmalloc, but need not rb_objspace.
  * should return pointer suitable for ruby_xfree
  */
@@ -6898,6 +6934,12 @@ ruby_mimfree(void *ptr)
 #endif
     free(ptr);
 }
+
+#ifdef USE_MIMALLOC
+# undef malloc
+# undef calloc
+# undef free
+#endif
 
 void
 rb_gc_adjust_memory_usage(ssize_t diff)

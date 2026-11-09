@@ -127,6 +127,22 @@ RSpec.describe "bundle install from an existing gemspec" do
     expect(the_bundle).to include_gems "foo 1.0", groups: :foo
   end
 
+  it "should keep development dependencies out of the enclosing group" do
+    build_lib("foo", path: tmp("foo")) do |s|
+      s.add_development_dependency "myrack", "=1.0.0"
+    end
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+      group :foo do
+        gemspec :path => '#{tmp("foo")}'
+      end
+    G
+
+    expect(the_bundle).to include_gems "myrack 1.0.0", groups: :development
+    expect(the_bundle).not_to include_gems "myrack 1.0.0", groups: :foo
+  end
+
   it "should respect the enclosing platforms" do
     build_lib("foo", path: tmp("foo"))
 
@@ -138,6 +154,38 @@ RSpec.describe "bundle install from an existing gemspec" do
     G
 
     expect(the_bundle).not_to include_gems "foo 1.0"
+  end
+
+  it "should respect the enclosing platforms for development dependencies" do
+    build_lib("foo", path: tmp("foo")) do |s|
+      s.add_development_dependency "myrack", "=1.0.0"
+    end
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+      platforms :#{not_local_tag} do
+        gemspec :path => '#{tmp("foo")}'
+      end
+    G
+
+    expect(the_bundle).not_to include_gems "foo 1.0"
+    expect(the_bundle).not_to include_gems "myrack 1.0.0", groups: :development
+  end
+
+  it "should respect the enclosing install_if for development dependencies" do
+    build_lib("foo", path: tmp("foo")) do |s|
+      s.add_development_dependency "myrack", "=1.0.0"
+    end
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+      install_if(lambda { false }) do
+        gemspec :path => '#{tmp("foo")}'
+      end
+    G
+
+    expect(the_bundle).not_to include_gems "foo 1.0"
+    expect(the_bundle).not_to include_gems "myrack 1.0.0", groups: :development
   end
 
   it "should match a lockfile even if the gemspec defines development dependencies" do

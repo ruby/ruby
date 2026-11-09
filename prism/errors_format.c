@@ -1,6 +1,7 @@
 #include "prism/errors_format.h"
 
 #include "prism/internal/allocator.h"
+#include "prism/internal/assert.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
@@ -8,7 +9,6 @@
 #include "prism/internal/oom.h"
 #include "prism/internal/parser.h"
 
-#include <assert.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -273,10 +273,10 @@ pm_error_advance_columns(const pm_parser_t *parser, const uint8_t *start, size_t
 static void
 pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const pm_error_line_format_t *format, int32_t line, uint32_t column_start, uint32_t column_end) {
     int32_t line_delta = line - parser->start_line;
-    assert(line_delta >= 0);
+    PRISM_ASSERT(line_delta >= 0);
 
     size_t index = (size_t) line_delta;
-    assert(index < parser->line_offsets.size);
+    PRISM_ASSERT(index < parser->line_offsets.size);
 
     const uint8_t *start = parser->start + parser->line_offsets.offsets[index];
     const uint8_t *end;
@@ -537,10 +537,10 @@ pm_error_append_summary(const pm_parser_t *parser, pm_buffer_t *buffer, int32_t 
 pm_error_level_t
 pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_format_type_t format_type) {
     size_t nerrors = parser->error_list.size;
-    assert(nerrors > 0);
+    PRISM_ASSERT(nerrors > 0);
 
     size_t rich_errors_size = nerrors * sizeof(pm_rich_error_t);
-    if (rich_errors_size / sizeof(pm_rich_error_t) != nerrors) abort();
+    if (rich_errors_size / sizeof(pm_rich_error_t) != nerrors) PRISM_OOM();
 
     pm_rich_error_t *rich_errors = xmalloc(rich_errors_size);
     if (rich_errors == NULL) PRISM_OOM();
@@ -601,7 +601,7 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
         }
     }
 
-    assert(rich_errors_idx == nerrors);
+    PRISM_ASSERT(rich_errors_idx == nerrors);
 
     /* The header displays the line of the first error in parse order, which
      * is the first entry in the array because it has not been sorted yet. */

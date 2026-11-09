@@ -4,6 +4,7 @@
 #include "prism/compiler/unused.h"
 
 #include "prism/internal/allocator.h"
+#include "prism/internal/assert.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/isinf.h"
@@ -12,7 +13,6 @@
 #include "prism/internal/stringy.h"
 #include "prism/internal/xxh3.h"
 
-#include <assert.h>
 #include <inttypes.h>
 #include <math.h>
 #include <stdlib.h>
@@ -32,13 +32,15 @@ key_hash(uint64_t type, uint64_t a, uint64_t b) {
 }
 
 /**
- * Return the hash of the value of an integer. An integer that fits into a
- * uint32_t keys on its value directly, and a larger one keys on the digest of
- * its words.
+ * Return the hash of the value of an integer. An integer whose words are stored
+ * inline keys on its value directly, and a larger one keys on the digest of its
+ * words.
  */
 static uint64_t
 integer_hash(const pm_integer_t *integer) {
-    uint64_t magnitude = integer->values ? pm_xxh3((const uint8_t *) integer->values, sizeof(uint32_t) * integer->length) : integer->value;
+    uint64_t magnitude = (integer->length > 2)
+        ? pm_xxh3((const uint8_t *) integer->words.values, sizeof(uint32_t) * integer->length)
+        : pm_integer_uint64_value(integer);
     return key_hash(PM_INTEGER_NODE, integer->negative, magnitude);
 }
 
@@ -103,7 +105,7 @@ node_hash(const pm_parser_t *parser, const pm_node_t *node) {
         case PM_TRUE_NODE:
             return key_hash(PM_NODE_TYPE(node), 0, 0);
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return 0;
     }
 }
@@ -121,15 +123,15 @@ int64_value(const pm_parser_t *parser, const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_INTEGER_NODE: {
             const pm_integer_t *integer = &((const pm_integer_node_t *) node)->value;
-            if (integer->values) return integer->negative ? INT64_MIN : INT64_MAX;
+            if (integer->length > 1) return integer->negative ? INT64_MIN : INT64_MAX;
 
-            int64_t value = (int64_t) integer->value;
+            int64_t value = (int64_t) pm_integer_uint64_value(integer);
             return integer->negative ? -value : value;
         }
         case PM_SOURCE_LINE_NODE:
             return (int64_t) pm_line_offset_list_line_column(&parser->line_offsets, node->location.start, parser->start_line).line;
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return 0;
     }
 }
@@ -170,7 +172,7 @@ string_value(const pm_node_t *node) {
         case PM_SYMBOL_NODE:
             return &((const pm_symbol_node_t *) node)->unescaped;
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return NULL;
     }
 }
@@ -281,7 +283,7 @@ compare_nodes(const pm_parser_t *parser, const pm_node_t *left, const pm_node_t 
         case PM_TRUE_NODE:
             return 0;
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return 0;
     }
 }
@@ -443,7 +445,7 @@ pm_static_literal_positive_p(const pm_node_t *node) {
         case PM_IMAGINARY_NODE:
             return pm_static_literal_positive_p(((const pm_imaginary_node_t *) node)->numeric);
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             return false;
     }
 }
@@ -554,7 +556,7 @@ pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const 
             pm_buffer_append_string(buffer, "true", 4);
             break;
         default:
-            assert(false && "unreachable");
+            PRISM_ASSERT(false && "unreachable");
             break;
     }
 }

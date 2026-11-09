@@ -1483,7 +1483,6 @@ struct collect_outer_variable_name_data {
     VALUE ary;
     VALUE read_only;
     bool yield;
-    bool isolate;
 };
 
 static VALUE
@@ -1514,8 +1513,7 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
     }
     else {
         VALUE *store;
-        if (data->isolate ||
-            val == Qtrue /* write */) {
+        if (val == Qtrue /* write */) {
             store = &data->ary;
         }
         else {
@@ -1622,21 +1620,10 @@ proc_isolate_env(VALUE self, rb_proc_t *proc, VALUE read_only_variables)
     RB_OBJ_WRITTEN(self, Qundef, env);
 }
 
-static int
-proc_has_ivar_i(ID name, VALUE val, st_data_t arg)
-{
-    if (rb_is_instance_id(name)) {
-        *(bool *)arg = true;
-        return ST_STOP;
-    }
-    return ST_CONTINUE;
-}
-
 static VALUE
-proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, const char *message)
+proc_shared_outer_variables(struct rb_id_table *outer_variables, const char *message)
 {
     struct collect_outer_variable_name_data data = {
-        .isolate = isolate,
         .ary = Qfalse,
         .read_only = Qfalse,
         .yield = false,
@@ -1666,52 +1653,6 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, c
 }
 
 VALUE
-rb_proc_isolate_bang(VALUE self, VALUE replace_self)
-{
-    const rb_iseq_t *iseq = vm_proc_iseq(self);
-
-    if (iseq) {
-        rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
-
-        if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
-
-        if (!UNDEF_P(replace_self)) {
-            VM_ASSERT(rb_ractor_shareable_p(replace_self));
-            RB_OBJ_WRITE(self, &proc->block.as.captured.self, replace_self);
-        }
-
-        if (ISEQ_BODY(iseq)->outer_variables) {
-            proc_shared_outer_variables(ISEQ_BODY(iseq)->outer_variables, true, "isolate a Proc");
-        }
-
-        proc_isolate_env(self, proc, Qfalse);
-        proc->header.is_isolated = TRUE;
-        RB_OBJ_WRITE(self, &proc->block.as.captured.self, Qnil);
-    }
-
-    /* ivars are not traversed here, so their values may be unshareable */
-    if (UNLIKELY(rb_obj_shape_has_ivars(self))) {
-        bool has_ivar = false;
-        rb_ivar_foreach(self, proc_has_ivar_i, (st_data_t)&has_ivar);
-
-        if (has_ivar) {
-            rb_raise(rb_eRactorIsolationError, "can not isolate a Proc because it has instance variables");
-        }
-    }
-
-    RB_OBJ_SET_SHAREABLE(self);
-    return self;
-}
-
-VALUE
-rb_proc_isolate(VALUE self)
-{
-    VALUE dst = rb_proc_dup(self);
-    rb_proc_isolate_bang(dst, Qundef);
-    return dst;
-}
-
-VALUE
 rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 {
     const rb_iseq_t *iseq = vm_proc_iseq(self);
@@ -1735,7 +1676,7 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 
         if (ISEQ_BODY(iseq)->outer_variables) {
             read_only_variables =
-                proc_shared_outer_variables(ISEQ_BODY(iseq)->outer_variables, false, "make a Proc shareable");
+                proc_shared_outer_variables(ISEQ_BODY(iseq)->outer_variables, "make a Proc shareable");
         }
 
         proc_isolate_env(self, proc, read_only_variables);
@@ -2074,6 +2015,7 @@ invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
             }
             if (RHASH_EMPTY_P(keyword_hash)) {
                 argc--;
+                kw_splat = 0;
             }
             else {
                 ((VALUE *)argv)[argc-1] = rb_hash_dup(keyword_hash);
@@ -2509,23 +2451,40 @@ vm_redefinition_check_method_type(const rb_method_entry_t *me)
 }
 
 static void
-rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
+vm_warn_redefinition_opt_method(const rb_method_entry_t *me)
+{
+    rb_category_warn(RB_WARN_CATEGORY_PERFORMANCE,
+                     "Redefining '%s#%s' disables interpreter and JIT optimizations",
+                     rb_class2name(me->owner),
+                     rb_id2name(me->called_id));
+}
+
+/* When perf_warnings is non-NULL the caller holds the VM lock, where neither
+ * warning nor formatting the message is allowed, so the method entry is
+ * appended there for it to warn about after releasing the lock.
+ * See method_entry_warnings_emit(). */
+static void
+rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass, VALUE *perf_warnings)
 {
     st_data_t bop;
     if (RB_TYPE_P(klass, T_ICLASS) && RICLASS_IS_ORIGIN_P(klass) &&
             RB_TYPE_P(RBASIC_CLASS(klass), T_CLASS)) {
        klass = RBASIC_CLASS(klass);
     }
+
     if (vm_redefinition_check_method_type(me)) {
         if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
             int flag = vm_redefinition_check_flag(klass);
             if (flag != 0) {
-                rb_category_warn(
-                    RB_WARN_CATEGORY_PERFORMANCE,
-                    "Redefining '%s#%s' disables interpreter and JIT optimizations",
-                    rb_class2name(me->owner),
-                    rb_id2name(me->called_id)
-                );
+                if (!NIL_P(ruby_verbose) && rb_warning_category_enabled_p(RB_WARN_CATEGORY_PERFORMANCE)) {
+                    if (perf_warnings) {
+                        if (!*perf_warnings) *perf_warnings = rb_ary_hidden_new(1);
+                        rb_ary_push(*perf_warnings, (VALUE)me);
+                    }
+                    else {
+                        vm_warn_redefinition_opt_method(me);
+                    }
+                }
                 rb_yjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 rb_zjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 ruby_vm_redefined_flag[bop] |= (flag | ANY_REDEFINED_OP_FLAG);
@@ -2541,7 +2500,7 @@ check_redefined_method(ID mid, VALUE value, void *data)
     const rb_method_entry_t *me = (rb_method_entry_t *)value;
     const rb_method_entry_t *newme = rb_method_entry(klass, mid);
 
-    if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner);
+    if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner, NULL);
 
     return ID_TABLE_CONTINUE;
 }
@@ -2563,9 +2522,6 @@ add_opt_method_entry_bop(const rb_method_entry_t *me, ID mid, enum ruby_basic_op
 static void
 add_opt_method(VALUE klass, ID mid, enum ruby_basic_operators bop)
 {
-    if (bop == BOP_NEW) {
-        klass = rb_singleton_class(klass);
-    }
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
     if (me && vm_redefinition_check_method_type(me)) {
@@ -2590,15 +2546,14 @@ add_opt_method_entry(const rb_method_entry_t *me)
     }
 }
 
-static void
-vm_init_redefined_flag(void)
+void
+rb_vm_init_redefined_flag(void)
 {
     ID mid;
     enum ruby_basic_operators bop;
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
-    OP(New, NEW), (C(Hash));
     OP(PLUS, PLUS), (C(Integer), C(Float), C(String), C(Array));
     OP(MINUS, MINUS), (C(Integer), C(Float));
     OP(MULT, MULT), (C(Integer), C(Float));
@@ -5048,7 +5003,6 @@ Init_VM(void)
         rb_objspace_gc_enable(vm->ractor.main_ractor->objspace);
 #endif
     }
-    vm_init_redefined_flag();
 
     rb_block_param_proxy = rb_obj_alloc(rb_cObject);
     VALUE proxy_singleton = rb_singleton_class(rb_block_param_proxy);
@@ -5056,7 +5010,7 @@ Init_VM(void)
     rb_add_method_optimized(proxy_singleton, idAREF,  OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
     rb_add_method_optimized(proxy_singleton, idYield, OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
     rb_add_method_optimized(proxy_singleton, idEqq,   OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
-    rb_obj_freeze(rb_block_param_proxy);
+    rb_ractor_make_shareable(rb_block_param_proxy);
     rb_vm_register_global_object(rb_block_param_proxy);
 
     /* vm_backtrace.c */

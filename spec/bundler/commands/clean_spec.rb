@@ -46,6 +46,92 @@ RSpec.describe "bundle clean" do
     expect(vendored_gems("bin/myrackup")).to exist
   end
 
+  it "removes what it can and reports every unused gem directory it cannot remove", :permissions do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "foo"
+      gem "myrack"
+      gem "thin"
+      gem "weakling"
+    G
+
+    bundle_config "path vendor/bundle"
+    bundle_config "clean false"
+    bundle "install"
+
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack"
+    G
+    bundle "install"
+
+    stale_gem_paths = [vendored_gems("gems/foo-1.0"), vendored_gems("gems/weakling-0.0.3")]
+    FileUtils.chmod(0o500, stale_gem_paths)
+
+    bundle :clean, raise_on_error: false
+
+    expect(exitstatus).to eq(44)
+    expect(err).to include(stale_gem_paths[0].to_s).and include(stale_gem_paths[1].to_s)
+    expect(err).to include("grant write permissions")
+    expect(out).to include("Removing thin (1.0)")
+    expect(out).not_to include("Removing foo")
+    expect(out).not_to include("Removing weakling")
+    should_not_have_gems "thin-1.0"
+    expect(stale_gem_paths).to all(exist)
+  ensure
+    FileUtils.chmod(0o755, stale_gem_paths.select(&:exist?)) if stale_gem_paths
+  end
+
+  it "treats an unused gem directory that disappears before removal as removed" do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "foo"
+      gem "myrack"
+    G
+
+    bundle_config "path vendor/bundle"
+    bundle_config "clean false"
+    bundle "install"
+
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack"
+    G
+    bundle "install"
+
+    # Deletes foo-1.0 right before Bundler does, as another process cleaning
+    # the same bundle would after Bundler listed its contents.
+    remove_first = tmp("remove_foo_first.rb")
+    File.write(remove_first, <<~'RUBY')
+      TracePoint.new(:class) do |tp|
+        next unless tp.self.name == "Bundler::FileUtils"
+
+        tp.disable
+        tp.self.singleton_class.prepend(Module.new do
+          def rm_r(list, **options)
+            Array(list).each do |path|
+              next unless File.basename(path) == "foo-1.0"
+
+              remove_entry(path)
+              warn "Removed #{path} first"
+            end
+            super
+          end
+        end)
+      end.enable
+    RUBY
+
+    bundle :clean, requires: [remove_first]
+
+    expect(err).to include("Removed #{vendored_gems("gems/foo-1.0")} first")
+    expect(out).to include("Removing foo (1.0)")
+    should_not_have_gems "foo-1.0"
+  end
+
   it "removes unused gems when the bundle path contains glob metacharacters" do
     gemfile <<-G
       source "https://gem.repo1"
@@ -219,6 +305,44 @@ RSpec.describe "bundle clean" do
     expect(vendored_gems("specifications/myrack-1.0.0.gemspec")).to exist
 
     expect(vendored_gems("bin/myrackup")).to exist
+  end
+
+  it "reports an unused git cache directory it cannot remove", :permissions do
+    build_git "foo", path: lib_path("foo")
+    git_path = lib_path("foo")
+    revision = revision_for(git_path)
+
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack", "1.0.0"
+      git "#{git_path}", :ref => "#{revision}" do
+        gem "foo"
+      end
+    G
+
+    bundle_config "path vendor/bundle"
+    bundle "install"
+
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack", "1.0.0"
+    G
+    bundle "install"
+
+    git_cache_path = vendored_gems("cache/bundler/git/foo-#{Digest(:SHA1).hexdigest(git_path.to_s)}")
+    FileUtils.chmod(0o500, git_cache_path)
+
+    bundle :clean, raise_on_error: false
+
+    expect(exitstatus).to eq(44)
+    expect(err).to include(git_cache_path.to_s)
+    expect(out).to include("Removing foo (#{revision[0..11]})")
+    expect(vendored_gems("bundler/gems/foo-#{revision[0..11]}")).not_to exist
+    expect(git_cache_path).to exist
+  ensure
+    FileUtils.chmod(0o755, git_cache_path) if git_cache_path&.exist?
   end
 
   it "keeps used git gems even if installed to a symlinked location" do
@@ -563,6 +687,61 @@ RSpec.describe "bundle clean" do
     should_have_gems "foo-1.0", "foo-1.0.1"
   end
 
+  it "only warns when bundle install cannot clean an unused gem", :permissions do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "foo"
+      gem "myrack"
+    G
+    bundle_config "path vendor/bundle"
+    bundle_config "clean true"
+    bundle "install"
+
+    stale_gem_path = vendored_gems("gems/foo-1.0")
+    FileUtils.chmod(0o500, stale_gem_path)
+
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack"
+    G
+    bundle "install"
+
+    expect(err).to include(stale_gem_path.to_s)
+    expect(stale_gem_path).to exist
+  ensure
+    FileUtils.chmod(0o755, stale_gem_path) if stale_gem_path&.exist?
+  end
+
+  it "only warns when bundle update cannot clean an unused gem", :permissions do
+    build_repo2
+
+    gemfile <<-G
+      source "https://gem.repo2"
+
+      gem "foo"
+    G
+    bundle_config "path vendor/bundle"
+    bundle_config "clean true"
+    bundle "install"
+
+    update_repo2 do
+      build_gem "foo", "1.0.1"
+    end
+
+    stale_gem_path = vendored_gems("gems/foo-1.0")
+    FileUtils.chmod(0o500, stale_gem_path)
+
+    bundle :update, all: true
+
+    expect(err).to include(stale_gem_path.to_s)
+    expect(vendored_gems("gems/foo-1.0.1")).to exist
+    expect(stale_gem_path).to exist
+  ensure
+    FileUtils.chmod(0o755, stale_gem_path) if stale_gem_path&.exist?
+  end
+
   it "does not clean on bundle update when installing to system gems" do
     bundle_config "path.system true"
 
@@ -635,11 +814,11 @@ RSpec.describe "bundle clean" do
 
       bundle :clean, force: true, raise_on_error: false
 
-      expect(err).to include(system_gem_path.to_s)
+      expect(err).to include(system_cache_path.to_s)
       expect(err).to include("grant write permissions")
 
       installed_gems_list
-      expect(out).to include("foo (1.0)")
+      expect(out).not_to include("foo (1.0)")
       expect(out).to include("myrack (1.0.0)")
     end
   end

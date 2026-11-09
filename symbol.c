@@ -1077,7 +1077,13 @@ rb_gc_free_dsymbol(VALUE sym)
  *  call-seq:
  *    intern   -> symbol
  *
- *  :include: doc/string/intern.rdoc
+ *  Returns the Symbol object derived from +self+,
+ *  creating it if it did not already exist:
+ *
+ *    'foo'.intern       # => :foo
+ *    'こんにちは'.intern # => :こんにちは
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
  *
  */
 

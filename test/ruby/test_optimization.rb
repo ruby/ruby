@@ -28,6 +28,39 @@ class TestRubyOptimization < Test::Unit::TestCase
     end;
   end
 
+  # Once a second Ractor exists, methods are defined under the VM lock, and the
+  # warning has to wait until it is released: Warning.warn can run Ruby code.
+  def assert_performance_warning_after_ractor(line, code)
+    assert_in_out_err([], "#{<<-"begin;"}\n#{<<~"end;"}", [], ["-:#{line}: warning: Redefining 'Integer#+' disables interpreter and JIT optimizations"])
+    begin;
+      Warning[:experimental] = false
+      Warning[:performance] = true
+      Ractor.new {}.join
+      #{code}
+    end;
+  end
+
+  def test_performance_warning_after_ractor_created
+    assert_performance_warning_after_ractor(6, <<~'RUBY')
+      class Integer
+        undef +
+        def +(other) = other
+      end
+    RUBY
+  end
+
+  def test_performance_warning_after_ractor_created_refinement
+    assert_performance_warning_after_ractor(5, <<~'RUBY')
+      Module.new { refine(Integer) { def +(other) = other } }
+    RUBY
+  end
+
+  def test_performance_warning_after_ractor_created_prepend
+    assert_performance_warning_after_ractor(5, <<~'RUBY')
+      Integer.prepend(Module.new { def +(other) = other })
+    RUBY
+  end
+
   def disasm(name)
     RubyVM::InstructionSequence.of(method(name)).disasm
   end
@@ -429,6 +462,24 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_nil h["foo"]
     end;
     assert_performance_warning('Hash', '[]=')
+  end
+
+  def test_hash_new
+    assert_equal({}, Hash.new)
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      class << Hash
+        undef new
+        def new(*) = :redefined
+      end
+      assert_equal(:redefined, Hash.new)
+      assert_equal(:redefined, Hash.new(capacity: 3))
+    end;
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      Hash.singleton_class.prepend(Module.new { def new(*) = :prepended })
+      assert_equal(:prepended, Hash.new)
+    end;
   end
 
   class MyObj

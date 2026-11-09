@@ -206,11 +206,14 @@ rb_memsearch_qs(const unsigned char *xs, rb_len_t m, const unsigned char *ys, rb
 }
 
 static inline unsigned int
-rb_memsearch_qs_utf8_hash(const unsigned char *x)
+rb_memsearch_qs_utf8_hash(const unsigned char *x, const unsigned char *e)
 {
     register const unsigned int mix = 8353;
     register unsigned int h = *x;
     if (h < 0xC0) {
+        return h + 256;
+    }
+    else if (e - x < (h < 0xE0 ? 2 : h < 0xF0 ? 3 : 4)) {
         return h + 256;
     }
     else if (h < 0xE0) {
@@ -249,10 +252,10 @@ rb_memsearch_qs_utf8(const unsigned char *xs, rb_len_t m, const unsigned char *y
         qstable[i] = m + 1;
     }
     for (; x < xe; ++x) {
-        qstable[rb_memsearch_qs_utf8_hash(x)] = xe - x;
+        qstable[rb_memsearch_qs_utf8_hash(x, xe)] = xe - x;
     }
     /* Searching */
-    for (; y + m <= ys + n; y += qstable[rb_memsearch_qs_utf8_hash(y+m)]) {
+    for (; y + m <= ys + n; y += qstable[rb_memsearch_qs_utf8_hash(y+m, ys+n)]) {
         if (*xs == *y && memcmp(xs, y, m) == 0)
             return y - ys;
     }
@@ -1048,6 +1051,54 @@ make_regexp(Regexp *rp, const char *s, rb_len_t len, rb_encoding *enc, int flags
  * [matcher methods]:          rdoc-ref:MatchData@Matcher+Methods
  * [matcher global variables]: rdoc-ref:Regexp@Global+Variables
  *
+ *
+ * ## What's Here
+ *
+ * First, what's elsewhere. Class \MatchData:
+ *
+ * - Inherits from {class Object}[rdoc-ref:Object@Whats-Here].
+ *
+ * Here, class \MatchData provides methods that are useful for:
+ *
+ * ### General Methods
+ *
+ * - #== (aliased as #eql?): returns whether `self` and another object are equal.
+ * - #hash: returns the integer hash value for `self`.
+ * - #inspect: returns a string representation of `self`.
+ * - #post_match: returns the substring that follows the matched string.
+ * - #pre_match: returns the substring that precedes the matched string.
+ * - #regexp: returns the Regexp used to produce `self`.
+ * - #size (aliased as #length): returns the size of the array of matched substrings.
+ * - #string: returns the string used to produce `self`.
+ * - #to_a: returns the array of matched substrings.
+ * - #to_s: returns a string representation of `self`.
+ *
+ * ### Capture Methods
+ *
+ * Each of these methods returns information about all captures:
+ *
+ * - #captures (aliased as #deconstruct): returns an array of the captured substrings.
+ * - #named_captures: returns a hash of the named captures.
+ * - #names: returns an array of the capture names.
+ *
+ * Each of these methods returns information about one capture,
+ * which may be specified by its integer index or by its name (if it is a named capture):
+ *
+ * - #[]: returns a matched substring or an array of matched substrings
+ *   for the given arguments.
+ * - #begin: returns the character offset of the beginning of the capture.
+ * - #bytebegin: returns the byte offset of the beginning of the capture.
+ * - #byteend: returns the byte offset of the end of the capture.
+ * - #byteoffset: returns the byte offsets of the beginning and end of the capture.
+ * - #deconstruct_keys: returns a hash of the names and values for the given names.
+ * - #end: returns the character offset of the end of the capture.
+ * - #integer_at: returns the value of the capture, converted to an integer.
+ * - #match: returns the matched substring for the capture.
+ * - #match_length: returns the length (in characters) of the matched substring for the capture.
+ * - #offset: returns the begin and end offsets for the capture.
+ * - #values_at: returns a matched substring or an array of matched substrings
+ *   for the given arguments.
+ *
  */
 
 VALUE rb_cMatch;
@@ -1330,13 +1381,20 @@ rb_match_init_copy(VALUE obj, VALUE orig)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    regexp -> regexp
  *
- *  Returns the regexp that produced the match:
+ *  Returns the Regexp that produced the match:
  *
- *    m = /a.*b/.match("abc") # => #<MatchData "ab">
- *    m.regexp                # => /a.*b/
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.regexp
+ *  # => /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  ```
  *
  */
 
@@ -1355,23 +1413,19 @@ match_regexp(VALUE match)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    names -> array_of_names
+ *   names -> array_of_strings
  *
- *  Returns an array of the capture names
- *  (see {Named Captures}[rdoc-ref:Regexp@Named+Captures]):
+ *  Returns an array containing the capture names:
  *
- *    m = /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge")
- *    # => #<MatchData "hog" foo:"h" bar:"o" baz:"g">
- *    m.names # => ["foo", "bar", "baz"]
- *
- *    m = /foo/.match('foo') # => #<MatchData "foo">
- *    m.names # => [] # No named captures.
- *
- *  Equivalent to:
- *
- *    m = /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge")
- *    m.regexp.names # => ["foo", "bar", "baz"]
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.names # => ["year", "month", "day"]
+ *  ```
  *
  */
 
@@ -1385,14 +1439,19 @@ match_names(VALUE match)
 }
 
 /*
+ *  :markup: markdown
+
  *  call-seq:
  *    size -> integer
  *
  *  Returns size of the match array:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m.size # => 5
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.size # => 4
+ *  ```
  *
  */
 
@@ -1449,11 +1508,50 @@ rb_reg_backref_number(VALUE match, VALUE backref)
 }
 
 /*
- *  call-seq:
- *    offset(n) -> [start_offset, end_offset]
- *    offset(name) -> [start_offset, end_offset]
+ *  :markup: markdown
  *
- *  :include: doc/matchdata/offset.rdoc
+ *  call-seq:
+ *    offset(n) -> [begin_offset, end_offset]
+ *    offset(name) -> [begin_offset, end_offset]
+ *
+ *  Returns the offsets (in characters) of the beginning (#begin value)
+ *  and end (#end value) of the specified match.
+ *
+ *  With non-negative integer argument `n` given,
+ *  returns the character offsets for the `n`th match:
+ *
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0]        # => "2026-12-25"
+ *  match.offset(0) # => [0, 10]
+ *  match[2]        # => "12"
+ *  match.offset(2) # => [5, 7]
+ *  match.offset(4) # Raises IndexError: index 4 out of matches.
+ *
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+ *  match[0]        # => "んにち"
+ *  match.offset(0) # => [1, 4]
+ *  match[2]        # => "に"
+ *  match.offset(2) # => [2, 3]
+ *  match.offset(4) # Raises IndexError: index 4 out of matches.
+ *  ```
+ *
+ *  With string or symbol argument `name` given,
+ *  returns the offsets for the named match:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[:year]          # => "2026"
+ *  match.offset(:year)   # => [0, 4]
+ *  match['day']          # => "25"
+ *  match.offset('day')   # => [8, 10]
+ *  match.offset(:nosuch) # Raises IndexError: undefined group name reference: nosuch.
+ *  ```
  *
  */
 
@@ -1474,20 +1572,47 @@ match_offset(VALUE match, VALUE n)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     mtch.byteoffset(n)   -> array
+ *     byteoffset(object) -> [bytebegin, byteend]
  *
- *  Returns a two-element array containing the beginning and ending byte-based offsets of
- *  the <em>n</em>th match.
- *  <em>n</em> can be a string or symbol to reference a named capture.
+ *  Returns the offsets (in bytes) of the beginning and end of the specified match.
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.byteoffset(0)      #=> [1, 7]
- *     m.byteoffset(4)      #=> [6, 7]
+ *  With argument `object` given as a non-negative integer argument `n` given,
+ *  returns the offsets of the `n`th match:
  *
- *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
- *     p m.byteoffset(:foo) #=> [0, 1]
- *     p m.byteoffset(:bar) #=> [2, 3]
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[1]             # => "2026"
+ *  match.byteoffset(1)  # => [0, 4]
+ *  match[3]             # => "25"
+ *  match.byteoffset(3)  # => [8, 10]
+ *  match.byteoffset(10) # Raises IndexError: index 10 out of matches.
+ *
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+ *  match[1]            # => "ん"
+ *  match.byteoffset(1) # => [3, 6] # Byte offsets.
+ *  match.offset(1)     # => [1, 2] # Character offsets.
+ *  ```
+ *
+ *  With argument `object` given as a string or symbol argument `name`,
+ *  returns the offsets of the named match:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[:year]            # => "2026"
+ *  match.byteoffset(:year) # => [0, 4]
+ *  match.byteoffset('day') # => [8, 10]
+ *  ```
+ *
+ *
+ *  Related: MatchData#offset.
  *
  */
 
@@ -1512,7 +1637,41 @@ match_byteoffset(VALUE match, VALUE n)
  *    bytebegin(n) -> integer
  *    bytebegin(name) -> integer
  *
- *  :include: doc/matchdata/bytebegin.md
+ *  Returns the offset (in bytes) of the beginning of the specified match.
+ *
+ *  With non-negative integer argument `n` given,
+ *  returns the offset of the beginning of the `n`th match:
+ *
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0]            # => "2026-12-25"
+ *  match.bytebegin(0)  # => 0
+ *  match[2]            # => "12"
+ *  match.bytebegin(2)  # => 5
+ *  match.bytebegin(20) # Raises IndexError: index 20 out of matches.
+ *
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+ *  match[2]           # => "に"
+ *  match.bytebegin(2) # => 6  # Byte offset.
+ *  match.begin(2)     # => 2  # Character offset.
+ *  ```
+ *
+ *  With string or symbol argument `name` given,
+ *  returns the offset of the beginning for the named match:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[:month]           # => "12"
+ *  match.bytebegin(:month) # => 5
+ *  match.bytebegin('day')  # => 8
+ *  ```
+ *
+ *  Related: MatchData#begin.
  *
  */
 
@@ -1537,7 +1696,42 @@ match_bytebegin(VALUE match, VALUE n)
  *    byteend(n) -> integer
  *    byteend(name) -> integer
  *
- *  :include: doc/matchdata/byteend.md
+ *  Returns the offset (in bytes) of the end of the specified match.
+ *
+ *  When non-negative integer argument `n` is given,
+ *  returns the offset of the end of the `n`th match:
+ *
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[1]         # => "2026"
+ *  match.byteend(1) # => 4
+ *  match[3]         # => "25"
+ *  match.byteend(3) # => 10
+ *  match.byteend(4) # Raises IndexError: index 4 out of matches.
+ *
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+ *  match[1]         # => "ん"
+ *  match.byteend(1) # => 6  # Byte offset.
+ *  match.end(1)     # => 2  # Character offset.
+ *  ```
+ *
+ *  When string or symbol argument `name` is given,
+ *  returns the offset of the end for the named match:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[:year]         # => "2026"
+ *  match.byteend(:year) # => 4
+ *  match['day']         # => "25"
+ *  match.byteend('day') # => 10
+ *  ```
+ *
+ *  Related: MatchData#bytebegin.
  *
  */
 
@@ -1562,7 +1756,41 @@ match_byteend(VALUE match, VALUE n)
  *    begin(n) -> integer
  *    begin(name) -> integer
  *
- *  :include: doc/matchdata/begin.md
+ *  Returns the offset (in characters) of the beginning of the specified match.
+ *
+ *  With non-negative integer argument `n` given,
+ *  returns the character offset of the beginning of the `n`th match:
+ *
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0]         # => "2026-12-25"
+ *  match.begin(0)   # => 0
+ *  match[3]         # => "25"
+ *  match.begin(3)   # => 8
+ *  match.begin(10)  # Raises IndexError: index 10 out of matches.
+ *
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+ *  match[2]           # => "に"
+ *  match.begin(2)     # => 2  # Character offset.
+ *  match.bytebegin(2) # => 6  # Byte offset.
+ *  ```
+ *
+ *  With string or symbol argument `name` given,
+ *  returns the offset of the beginning for the named match:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[:year]         # => "2026"
+ *  match.begin(:year)   # => 0
+ *  match.begin('month') # => 5
+ *  ```
+ *
+ *  Related: MatchData#bytebegin.
  *
  */
 
@@ -1583,11 +1811,46 @@ match_begin(VALUE match, VALUE n)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    end(n) -> integer
  *    end(name) -> integer
  *
- *  :include: doc/matchdata/end.rdoc
+ *  Returns the offset (in characters) of the end of the specified match.
+ *
+ *  With non-negative integer argument `n` given,
+ *  returns the character offset of the end of the `n`th match:
+ *
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match[0]       # => "2026-12-25"
+ *  match.end(0)   # => 10
+ *  match[3]       # => "25"
+ *  match.end(3)   # => 10
+ *  match.end(10)  # Raises IndexError: index 10 out of matches.
+ *
+ *  match = /(ん)(に)(ち)/.match('こんにちは')
+ *  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+ *  match[2]         # => "に"
+ *  match.end(2)     # => 3  # Character offset.
+ *  match.byteend(2) # => 9  # Byte offset.
+ *  ```
+ *
+ *  With string or symbol argument `name` given, returns the offset of the end for the named match:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match[:year]       # => "2026"
+ *  match.end(:year)   # => 4
+ *  match.end('month') # => 7
+ *  ```
+ *
+ *  Related: MatchData#byteend.
  *
  */
 
@@ -1607,29 +1870,71 @@ match_end(VALUE match, VALUE n)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    match(n) -> string or nil
  *    match(name) -> string or nil
  *
  *  Returns the matched substring corresponding to the given argument.
  *
- *  When non-negative argument +n+ is given,
- *  returns the matched substring for the <tt>n</tt>th match:
+ *  With non-negative integer argument `n` given,
+ *  returns the matched substring for the `n`th match:
  *
- *    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8" 5:nil>
- *    m.match(0) # => "HX1138"
- *    m.match(4) # => "8"
- *    m.match(5) # => nil
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match.match(0) # => "2026-12-25"
+ *  match.match(1) # => "2026"
+ *  match.match(2) # => "12"
+ *  match.match(3) # => "25"
+ *  match.match(4) # Raises IndexError: index 4 out of matches.
+ *  ```
  *
- *  When string or symbol argument +name+ is given,
+ *  Except for `n == 0`, these same values are available
+ *  in [Regexp global variables][regexp global variables]:
+ *
+ *  ```ruby
+ *  $0 # Returns the name of the current program.
+ *  $1 # => "2026"
+ *  $2 # => "12"
+ *  $3 # => "25"
+ *  $4 # => nil
+ *  ```
+ *
+ *  Returns `nil` for an optional capture that had no match:
+ *
+ *  ```ruby
+ *  match = /(\d+)(?:-(\d+))?/.match('123')
+ *  # => #<MatchData "123" 1:"123" 2:nil>
+ *  match.match(0) # => "123"
+ *  match.match(1) # => "123"
+ *  match.match(2) # => nil
+ *  ```
+ *
+ *  With string or symbol argument `name` given,
  *  returns the matched substring for the given name:
  *
- *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *    # => #<MatchData "hoge" foo:"h" bar:"ge">
- *    m.match('foo') # => "h"
- *    m.match(:bar)  # => "ge"
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.match(:year)   # => "2026"
+ *  match.match('day')   # => "25"
+ *  match.match(:nosuch) # Raises IndexError: undefined group name reference: nosuch.
+ *  ```
  *
+ *  Returns `nil` for a named capture that had no match:
+ *
+ *  ```ruby
+ *  match = /(?<year>\d{4})(?:-(?<month>\d{2}))?/.match('2026')
+ *  # => #<MatchData "2026" year:"2026" month:nil>
+ *  match.match(:year)  # => "2026"
+ *  match.match(:month) # => nil
+ *  ```
+ *
+ *  [regexp global variables]: rdoc-ref:Regexp@Global+Variables
  */
 
 static VALUE
@@ -1647,31 +1952,49 @@ match_nth(VALUE match, VALUE n)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    match_length(n) -> integer or nil
- *    match_length(name) -> integer or nil
+ *    match_length(n) -> integer
+ *    match_length(name) -> integer
  *
  *  Returns the length (in characters) of the matched substring
  *  corresponding to the given argument.
  *
- *  When non-negative argument +n+ is given,
+ *  With non-negative integer argument `n` given,
  *  returns the length of the matched substring
- *  for the <tt>n</tt>th match:
+ *  for the `n`th match:
  *
- *    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8" 5:nil>
- *    m.match_length(0) # => 6
- *    m.match_length(4) # => 1
- *    m.match_length(5) # => nil
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match.match_length(0) # => 10
+ *  match.match_length(3) # => 2
+ *  match.match_length(4) # Raises IndexError: index 4 out of matches.
  *
- *  When string or symbol argument +name+ is given,
+ *  s = 'こんにちは'        # Four 3-byte characters.
+ *  match = /(こん)(に)(ち)/.match(s)
+ *  # => #<MatchData "こんにち" 1:"こん" 2:"に" 3:"ち">
+ *  match.match_length(0) # => 4
+ *  match.match_length(1) # => 2
+ *  match.match_length(3) # => 1
+ *  match.match_length(4) # Raises IndexError: index 4 out of matches.
+ *  ```
+ *
+ *
+ *  With string or symbol argument `name` given,
  *  returns the length of the matched substring
  *  for the named match:
  *
- *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *    # => #<MatchData "hoge" foo:"h" bar:"ge">
- *    m.match_length('foo') # => 1
- *    m.match_length(:bar)  # => 2
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.match_length(:year)   # => 4
+ *  match.match_length('day')   # => 2
+ *  match.match_length(:nosuch) # Raises IndexError: undefined group name reference: nosuch.
+ *  ```
  *
  */
 
@@ -2194,20 +2517,22 @@ rb_reg_last_match(VALUE match)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    pre_match -> string
  *
- *  Returns the substring of the target string from its beginning
- *  up to the first match in +self+ (that is, <tt>self[0]</tt>);
- *  equivalent to regexp global variable <tt>$`</tt>:
+ *  Returns the substring of the target string that precedes the matched substring;
+ *  equivalent to [Regexp global variable][regexp global variable] <tt>$`</tt>:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m[0]        # => "HX1138"
- *    m.pre_match # => "T"
+ *  ```ruby
+ *  match = /\d+/.match('foo 123 bar 456')
+ *  # => #<MatchData "123">
+ *  match.match(0)  # => "123"
+ *  match.pre_match # => "foo "
+ *  ```
  *
- *  Related: MatchData#post_match.
- *
+ *  [regexp global variable]: rdoc-ref:Regexp@Global+Variables
  */
 
 VALUE
@@ -2224,21 +2549,22 @@ rb_reg_match_pre(VALUE match)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    post_match   -> str
+ *    post_match -> string
  *
- *  Returns the substring of the target string from
- *  the end of the first match in +self+ (that is, <tt>self[0]</tt>)
- *  to the end of the string;
- *  equivalent to regexp global variable <tt>$'</tt>:
+ *  Returns the substring of the target string that follows the matched substring;
+ *  equivalent to [Regexp global variable][regexp global variable] `$'`:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m[0]         # => "HX1138"
- *    m.post_match # => ": The Movie"\
+ *  ```ruby
+ *  match = /\d+/.match('foo 123 bar 456')
+ *  # => #<MatchData "123">
+ *  match.match(0)   # => "123"
+ *  match.post_match # => " bar 456"
+ *  ```
  *
- *  Related: MatchData.pre_match.
- *
+ *  [regexp global variable]: rdoc-ref:Regexp@Global+Variables
  */
 
 VALUE
@@ -2338,16 +2664,19 @@ match_array(VALUE match, int start)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    to_a -> array
  *
- *  Returns the array of matches:
+ *  Returns the array of matched substrings:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m.to_a # => ["HX1138", "H", "X", "113", "8"]
- *
- *  Related: MatchData#captures.
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.to_a # => ["2026-12-25", "2026", "12", "25"]
+ *  ```
  *
  */
 
@@ -2620,28 +2949,77 @@ match_aref(int argc, VALUE *argv, VALUE match)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    values_at(*indexes) -> array
  *
- *  Returns match and captures at the given +indexes+,
- *  which may include any mixture of:
+ *  Returns an array of matched substrings as specified by the given `indexes`,
+ *  which may be any mixture of integers, names, and ranges.
  *
- *  - Integers.
- *  - Ranges.
- *  - Names (strings and symbols).
+ *  For each integer index `n`,
+ *  includes the `n`th matched substring:
  *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.values_at(3, 1, 2, 0) # => ["25", "2026", "12", "2026-12-25"]
+ *  ```
  *
- *  Examples:
+ *  For negative `n`, counts backwards in the array of matched substrings:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m.values_at(0, 2, -2) # => ["HX1138", "X", "113"]
- *    m.values_at(1..2, -1) # => ["H", "X", "8"]
+ *  ```ruby
+ *  match.values_at(3, -1) # => ["25", "25"]
+ *  ```
  *
- *    m = /(?<a>\d+) *(?<op>[+\-*\/]) *(?<b>\d+)/.match("1 + 2")
- *    # => #<MatchData "1 + 2" a:"1" op:"+" b:"2">
- *    m.values_at(0, 1..2, :a, :b, :op)
- *    # => ["1 + 2", "1", "+", "1", "2", "+"]
+ *  For `n` out of range, returns `nil`:
+ *
+ *  ```ruby
+ *  match.values_at(4, -4) # => [nil, nil]
+ *  ```
+ *
+ *  For each string or symbol index `name`,
+ *  includes the matched substring for that `name`:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.values_at(:day, 'year') # => ["25", "2026"]
+ *  match.values_at(:nosuch)      # Raises IndexError: undefined group name reference: nosuch.
+ *  ```
+ *
+ *  For a Range index `range`,
+ *  returns the matched substrings for the indexes covered by that `range`:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.values_at(1..2)  # => ["2026", "12"]
+ *  match.values_at(1...3) # => ["2026", "12"]
+ *  ```
+ *
+ *  For positive range value out-of-range, fills with `nil`:
+ *
+ *  ```ruby
+ *  match.values_at(1..5) # => ["2026", "12", "25", nil, nil]
+ *  ```
+ *
+ *  For negative range value, counts backwards in the array of matched substrings:
+ *
+ *  ```ruby
+ *  match.values_at(-3..-1) # => ["2026", "12", "25"]
+ *  match.values_at(-5..-1) # Raises RangeError: -5..-1 out of range.
+ *  ```
+ *
+ *  Mixed-type indexes:
+ *
+ *  ```ruby
+ *  match.values_at(:year, 1, :month, 2, :day, 3, 0..3)
+ *  # => ["2026", "2026", "12", "12", "25", "25", "2026-12-25", "2026", "12", "25"]
+ *  ```
  *
  */
 
@@ -2673,20 +3051,20 @@ match_values_at(int argc, VALUE *argv, VALUE match)
 
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    to_s -> string
  *
- *  Returns the matched string:
+ *  Returns the matched substring;
+ *  equivalent to #match(0):
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m.to_s # => "HX1138"
- *
- *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *    # => #<MatchData "hoge" foo:"h" bar:"ge">
- *    m.to_s # => "hoge"
- *
- *  Related: MatchData.inspect.
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.to_s # => "2026-12-25"
+ *  ```
  *
  */
 
@@ -2740,34 +3118,37 @@ match_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    named_captures(symbolize_names: false) -> hash
  *
- *  Returns a hash of the named captures;
- *  each key is a capture name; each value is its captured string or +nil+:
+ *  Returns a hash of capture names and values:
  *
- *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *    # => #<MatchData "hoge" foo:"h" bar:"ge">
- *    m.named_captures # => {"foo"=>"h", "bar"=>"ge"}
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.named_captures # => {"year" => "2026", "month" => "12", "day" => "25"}
+ *  ```
  *
- *    m = /(?<a>.)(?<b>.)/.match("01")
- *    # => #<MatchData "01" a:"0" b:"1">
- *    m.named_captures #=> {"a" => "0", "b" => "1"}
+ *  With keyword argument `symbolize_names` given as `true`,
+ *  returns hash keys as symbols:
  *
- *    m = /(?<a>.)(?<b>.)?/.match("0")
- *    # => #<MatchData "0" a:"0" b:nil>
- *    m.named_captures #=> {"a" => "0", "b" => nil}
+ *  ```ruby
+ *  match.named_captures(symbolize_names: true)
+ *  # => {year: "2026", month: "12", day: "25"}
+ *  ```
  *
- *    m = /(?<a>.)(?<a>.)/.match("01")
- *    # => #<MatchData "01" a:"0" a:"1">
- *    m.named_captures #=> {"a" => "1"}
+ *  Returns a `nil` hash value for a name that captured nothing:
  *
- *  If keyword argument +symbolize_names+ is given
- *  a true value, the keys in the resulting hash are Symbols:
- *
- *    m = /(?<a>.)(?<a>.)/.match("01")
- *    # => #<MatchData "01" a:"0" a:"1">
- *    m.named_captures(symbolize_names: true) #=> {:a => "1"}
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})?/
+ *  # => /(?<year>\d{4})-(?<month>\d{2})?/
+ *  match = '2026-'.match(regexp)
+ *  # => #<MatchData "2026-" year:"2026" month:nil>
+ *  match.named_captures # => {"year" => "2026", "month" => nil}
+ *  ```
  *
  */
 
@@ -2808,19 +3189,43 @@ match_named_captures(int argc, VALUE *argv, VALUE match)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    deconstruct_keys(array_of_names) -> hash
+ *    deconstruct_keys(object) -> hash
  *
- *  Returns a hash of the named captures for the given names.
+ *  With an array of symbol capture names given,
+ *  returns a hash of the names and values for the given names:
  *
- *    m = /(?<hours>\d{2}):(?<minutes>\d{2}):(?<seconds>\d{2})/.match("18:37:22")
- *    m.deconstruct_keys([:hours, :minutes]) # => {:hours => "18", :minutes => "37"}
- *    m.deconstruct_keys(nil) # => {:hours => "18", :minutes => "37", :seconds => "22"}
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.deconstruct_keys([:day, :month]) # => {day: "25", month: "12"}
+ *  match.deconstruct_keys(['foo'])        # Raises TypeError: wrong argument type String (expected Symbol).
+ *  ```
+ *
+ *  Ignores symbols that are not capture names:
+ *
+ *  ```ruby
+ *  match.deconstruct_keys([:foo]) # => {}
+ *  ```
+ *
+ *  With `nil` given,
+ *  returns a hash of all capture names and values:
+ *
+ *  ```ruby
+ *  match.deconstruct_keys(nil) # => {year: "2026", month: "12", day: "25"}
+ *  ```
  *
  *  Returns an empty hash if no named captures were defined:
  *
- *    m = /(\d{2}):(\d{2}):(\d{2})/.match("18:37:22")
- *    m.deconstruct_keys(nil) # => {}
+ *  ```ruby
+ *  regexp = /(\d{4})-(\d{2})-(\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" 1:"2026" 2:"12" 3:"25">
+ *  match.deconstruct_keys(nil) # => {}
+ *  ```
  *
  */
 static VALUE
@@ -2875,15 +3280,20 @@ match_deconstruct_keys(VALUE match, VALUE keys)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    string -> string
  *
  *  Returns the target string if it was frozen;
  *  otherwise, returns a frozen copy of the target string:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m.string # => "THX1138."
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.string # => "2026-12-25"
+ *  ```
  *
  */
 

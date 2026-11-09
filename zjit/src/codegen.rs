@@ -356,6 +356,7 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
     // Compile the ISEQ. When function is None, this is a lazy compile
     // from a stub hit -- wrap in a trace event covering the full compile.
     let mut version = IseqVersion::new(iseq);
+    let start_pos = cb.get_write_pos();
     let code_ptrs = if function.is_none() {
         trace_compile_phase(&iseq_get_location(iseq, 0), || gen_iseq_body(cb, iseq, version, function))
     } else {
@@ -367,6 +368,7 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
             incr_counter!(compiled_iseq_count);
             // Give the new version a fresh budget of recompile exits. See exit_recompile().
             payload.num_exits_until_invalidate = get_option!(num_exits_until_invalidate);
+            trace_compile_size(cb, &iseq_get_location(iseq, 0), start_pos);
         }
         Err(err) => {
             unsafe { version.as_mut() }.status = IseqStatus::CantCompile(err.clone());
@@ -375,6 +377,22 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
     }
     payload.versions.push(version);
     code_ptrs
+}
+
+/// Report how many bytes of machine code were generated since `start_pos`.
+/// Writes the size to the Perfetto trace as a one-off event (labeled with
+/// `name`) and as a point on the running "code size" graph. We call this for
+/// method compiles and the startup trampolines, so the code-size graph is
+/// attributable from the moment ZJIT starts up.
+pub fn trace_compile_size(cb: &CodeBlock, name: &str, start_pos: usize) {
+    if get_option!(trace_compiles, false) {
+        if let Some(tracer) = ZJITState::get_tracer() {
+            let end_pos = cb.get_write_pos();
+            let size = end_pos.saturating_sub(start_pos) as u64;
+            tracer.write_compile_size(name, size, end_pos as u64);
+            tracer.write_code_size_counter(size, end_pos as u64);
+        }
+    }
 }
 
 /// Compile an ISEQ into machine code
@@ -681,6 +699,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringAppend { recv, other, recv_flags, other_flags, state } => gen_string_append(jit, asm, function, opnd!(recv), opnd!(other), opnd!(recv_flags), opnd!(other_flags), &function.frame_state(*state)),
         Insn::StringAppendCodepoint { recv, other, state } => gen_string_append_codepoint(jit, asm, function, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::StringEqual { left, right } => gen_string_equal(asm, opnd!(left), opnd!(right)),
+        &Insn::LoadFixnum { ptr, num_bytes, byteswap } => gen_load_fixnum(asm, opnd!(ptr), num_bytes, byteswap),
         Insn::StringIntern { val, state } => gen_intern(jit, asm, function, opnd!(val), &function.frame_state(*state)),
         Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, function, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param => unreachable!("block.insns should not have Insn::Param"),
@@ -768,6 +787,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardBitEquals { val, expected, ref reason, state, recompile } => gen_guard_bit_equals(jit, asm, function, opnd!(val), expected, **reason, recompile, &function.frame_state(state)),
         &Insn::GuardAnyBitSet { val, mask, ref reason, state, recompile, .. } => gen_guard_any_bit_set(jit, asm, function, opnd!(val), mask, **reason, recompile, &function.frame_state(state)),
         &Insn::GuardNoBitsSet { val, mask, ref reason, state, .. } => gen_guard_no_bits_set(jit, asm, function, opnd!(val), mask, **reason, &function.frame_state(state)),
+        &Insn::GuardNotNull { val, ref reason, state } => gen_guard_not_null(jit, asm, function, opnd!(val), **reason, &function.frame_state(state)),
         &Insn::GuardLess { left, right, ref reason, state } => gen_guard_less(jit, asm, function, opnd!(left), opnd!(right), **reason, &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state, .. } => gen_guard_greater_eq(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, function, invariant, &function.frame_state(*state))),
@@ -796,6 +816,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SideExit { state, reason, recompile } => no_output!(gen_side_exit(jit, asm, function, reason, *recompile, &function.frame_state(*state))),
         Insn::PutSpecialObject { value_type, state } => gen_putspecialobject(jit, asm, function, *value_type, &function.frame_state(*state)),
         Insn::AnyToString { val, state } => gen_anytostring(asm, opnd!(val), &function.frame_state(*state)),
+        Insn::FixnumToString { val, state } => gen_fixnum_to_string(asm, opnd!(val), &function.frame_state(*state)),
         Insn::Defined { op_type, obj, pushval, v, lep_level, state } => gen_defined(jit, asm, function, *op_type, *obj, *pushval, opnd!(v), *lep_level, &function.frame_state(*state)),
         Insn::CheckMatch { target, pattern, flag, state } => gen_checkmatch(jit, asm, function, opnd!(target), opnd!(pattern), *flag, &function.frame_state(*state)),
         Insn::GetSpecialSymbol { symbol_type, state } => gen_getspecial_symbol(asm, *symbol_type, &function.frame_state(*state)),
@@ -3125,6 +3146,12 @@ fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> l
     asm_ccall!(asm, rb_any_to_s, val)
 }
 
+fn gen_fixnum_to_string(asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
+    gen_prepare_leaf_call_with_gc(asm, state);
+
+    asm_ccall!(asm, rb_fix_to_s, val)
+}
+
 /// Evaluate if a value is truthy
 /// Produces a CBool type (0 or 1)
 /// In Ruby, only nil and false are falsy
@@ -3358,6 +3385,12 @@ fn gen_guard_no_bits_set(jit: &mut JITState, asm: &mut Assembler, function: &Fun
     val
 }
 
+fn gen_guard_not_null(jit: &mut JITState, asm: &mut Assembler, function: &Function, ptr: lir::Opnd, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
+    asm.cmp(ptr, 0.into());
+    asm.jz(jit, side_exit(jit, function, state, reason));
+    ptr
+}
+
 /// Generate code that records unoptimized C functions if --zjit-stats is enabled
 fn gen_incr_counter_ptr(asm: &mut Assembler, counter_ptr: *mut u64) {
     if get_option!(stats) {
@@ -3370,6 +3403,28 @@ fn gen_incr_counter(asm: &mut Assembler, counter: Counter) {
     if get_option!(stats) {
         let ptr = counter_ptr(counter);
         gen_incr_counter_ptr(asm, ptr);
+    }
+}
+
+/// Generate code to increment an exit counter when `--zjit-stats` or testing for a breakdown of
+/// exit reasons.
+fn gen_incr_exit_counter(asm: &mut Assembler, counter: Counter) {
+    if get_option!(stats) || cfg!(test) {
+        asm.incr_counter(Opnd::const_ptr(counter_ptr(counter)), 1.into());
+    }
+}
+
+/// Increment an exit counter when `--zjit-stats` or testing for a breakdown of exit reasons.
+fn incr_exit_counter(counter: Counter) {
+    if get_option!(stats) || cfg!(test) {
+        unsafe { *(counter_ptr(counter)) += 1 }
+    }
+}
+
+/// Generate code to increment [`Counter::side_exit_count`].
+fn gen_count_side_exit(asm: &mut Assembler) {
+    if get_option!(stats) || !get_option!(no_exit_counting) {
+        asm.incr_counter(Opnd::const_ptr(counter_ptr(Counter::side_exit_count)), 1.into());
     }
 }
 
@@ -4027,6 +4082,7 @@ c_callable! {
                 // Preserve the reference owned by the stub when iseq_call is dropped.
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
                 prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, None);
+                incr_exit_counter(Counter::exit_function_stub_not_profiled);
                 return ZJITState::get_materialize_exit_trampoline().raw_ptr(cb);
             }
 
@@ -4225,6 +4281,8 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
     let mut asm = Assembler::new();
     asm.new_block_without_id("materialize_exit_trampoline");
 
+    gen_count_side_exit(&mut asm);
+
     asm_comment!(asm, "clear JITFrame materialized by exit code");
     asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
     // Clear cfp->block_code since it may have been left uninitialized by JITFrame mechanisms.
@@ -4243,13 +4301,14 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
     })
 }
 
-/// Generate a trampoline that increments exit_compilation_failure and jumps to materialize_exit_trampoline.
+/// Generate a trampoline for function stub exits on compile errors. It increments
+/// exit_compile_error with --zjit-stats and jumps to materialize_exit_trampoline.
 pub fn gen_materialize_exit_trampoline_with_counter(cb: &mut CodeBlock, materialize_exit_trampoline: CodePtr) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
     asm.new_block_without_id("materialize_exit_trampoline_with_counter");
 
     asm_comment!(asm, "function stub exit trampoline");
-    gen_incr_counter(&mut asm, exit_compile_error);
+    gen_incr_exit_counter(&mut asm, exit_compile_error);
     asm.jmp(Target::CodePtr(materialize_exit_trampoline));
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
@@ -4408,12 +4467,39 @@ fn gen_string_append_codepoint(jit: &mut JITState, asm: &mut Assembler, function
     asm_ccall!(asm, rb_jit_str_concat_codepoint, string, val)
 }
 
+fn gen_load_fixnum(asm: &mut Assembler, ptr: Opnd, num_bytes: usize, byteswap: bool) -> Opnd {
+    let num_bits = (num_bytes * 8) as u8;
+    let value = asm.load(Opnd::mem(num_bits, ptr, 0));
+
+    let value = if byteswap {
+        asm.byteswap(value.with_num_bits(num_bits))
+    } else {
+        value
+    };
+
+    // x86 loads and swaps narrower than 32 bits leave the rest of the register
+    // alone, so mask before tagging.
+    let value = value.with_num_bits(64);
+    let value = match num_bits {
+        8 => asm.and(value, 0xFF.into()),
+        16 => asm.and(value, 0xFFFF.into()),
+        32 => value,
+        bits => unreachable!("Invalid number of bits. {}", bits)
+    };
+
+    // Tag the value
+    let value = asm.lshift(value, Opnd::UImm(1));
+    asm.or(value, Opnd::UImm(RUBY_FIXNUM_FLAG as u64))
+}
+
 /// Generate a JIT entry that just increments exit_compilation_failure and exits
 fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
     asm.new_block_without_id("compile_error_counter");
-    gen_incr_counter(&mut asm, exit_compile_error);
-    gen_incr_counter(&mut asm, exit_counter_for_compile_error(compile_error));
+    // This entry returns to the interpreter without materialize_exit_trampoline
+    gen_count_side_exit(&mut asm);
+    gen_incr_exit_counter(&mut asm, exit_compile_error);
+    gen_incr_exit_counter(&mut asm, exit_counter_for_compile_error(compile_error));
     asm.cret(Qundef.into());
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
@@ -4422,11 +4508,12 @@ fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -
     })
 }
 
-/// Generate a JIT entry that just increments exit_exception_handler and exits
+/// Generate a JIT entry that just increments side_exit_count and exit_exception_handler and exits
 fn gen_exception_handler_counter(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
     asm.new_block_without_id("exception_handler_counter");
-    gen_incr_counter(&mut asm, Counter::exit_exception_handler);
+    gen_count_side_exit(&mut asm);
+    gen_incr_exit_counter(&mut asm, Counter::exit_exception_handler);
     asm.cret(Qundef.into());
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {

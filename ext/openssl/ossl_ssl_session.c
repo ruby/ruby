@@ -132,14 +132,20 @@ static VALUE
 ossl_ssl_session_get_time(VALUE self)
 {
     SSL_SESSION *ctx;
-    long t;
+    time_t t;
 
     GetSSLSession(self, ctx);
+#ifdef HAVE_SSL_SESSION_GET_TIME_EX
+    t = SSL_SESSION_get_time_ex(ctx);
+#elif SIZEOF_TIME_T < SIZEOF_LONG
+# error OpenSSL assumes time_t is wide enough for long
+#else
     t = SSL_SESSION_get_time(ctx);
+#endif
     if (t == 0)
         return Qnil;
 
-    return rb_funcall(rb_cTime, rb_intern("at"), 1, LONG2NUM(t));
+    return rb_funcall(rb_cTime, rb_intern("at"), 1, TIMET2NUM(t));
 }
 
 /*
@@ -173,14 +179,16 @@ ossl_ssl_session_get_timeout(VALUE self)
 static VALUE ossl_ssl_session_set_time(VALUE self, VALUE time_v)
 {
     SSL_SESSION *ctx;
-    long t;
 
     GetSSLSession(self, ctx);
     if (rb_obj_is_instance_of(time_v, rb_cTime)) {
         time_v = rb_funcall(time_v, rb_intern("to_i"), 0);
     }
-    t = NUM2LONG(time_v);
-    SSL_SESSION_set_time(ctx, t);
+#ifdef HAVE_SSL_SESSION_GET_TIME_EX
+    SSL_SESSION_set_time_ex(ctx, NUM2TIMET(time_v));
+#else
+    SSL_SESSION_set_time(ctx, NUM2LONG(time_v));
+#endif
     return ossl_ssl_session_get_time(self);
 }
 

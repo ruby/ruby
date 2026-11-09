@@ -80,6 +80,24 @@ class TestConst < Test::Unit::TestCase
 WARNING
   end
 
+  def test_redefinition_warning_in_multi_ractor_mode
+    # Warning.warn can run arbitrary Ruby code, so the "already initialized
+    # constant" warning must be emitted after const_set releases the VM lock.
+    # Here Warning.warn waits on another Ractor that needs the VM lock to set
+    # a constant.
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Ractor.new {}.join # leave single-ractor mode so the VM lock is taken
+      def Warning.warn(msg, **)
+        $warned = Ractor.new(msg) { |m| Class.new.const_set(:Y, 1); m }.value
+      end
+      c = Class.new
+      c.const_set(:X, 1)
+      c.const_set(:X, 2)
+      assert_match(/already initialized constant/, $warned)
+    end;
+  end
+
   def test_redefinition_memory_leak
     code = <<-PRE
 350000.times { FOO = :BAR }
