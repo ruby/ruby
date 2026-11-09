@@ -751,6 +751,41 @@ rb_gc_impl_zjit_writebarrier_required_offset(void)
     return -1;
 }
 
+/*
+ *  call-seq:
+ *      GC::MMTk.harness_begin
+ *
+ *  A hook to be called before a benchmark begins.
+ *
+ *  MMTk will do necessary preparations (such as triggering a full-heap GC)
+ *  and start collecting statistic data, such as the number of GC triggered,
+ *  time spent in GC, time spent in mutator, etc.
+ */
+static VALUE
+rb_mmtk_harness_begin(VALUE _)
+{
+    mmtk_harness_begin(rb_gc_get_ractor_newobj_cache());
+
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *      GC::MMTk.harness_end
+ *
+ *  A hook to be called after a benchmark ends.
+ *
+ *  When this method is called, MMTk will stop collecting statistic data and
+ *  print out the data already collected.
+ */
+VALUE
+rb_mmtk_harness_end(VALUE _)
+{
+    mmtk_harness_end();
+
+    return Qnil;
+}
+
 void
 rb_gc_impl_init(void)
 {
@@ -771,6 +806,10 @@ rb_gc_impl_init(void)
     rb_define_singleton_method(rb_mGC, "auto_compact=", rb_f_notimplement, 1);
     rb_define_singleton_method(rb_mGC, "latest_compact_info", rb_f_notimplement, 0);
     rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
+
+    VALUE rb_mMMTk = rb_define_module_under(rb_mGC, "MMTk");
+    rb_define_singleton_method(rb_mMMTk, "harness_begin", rb_mmtk_harness_begin, 0);
+    rb_define_singleton_method(rb_mMMTk, "harness_end", rb_mmtk_harness_end, 0);
 }
 
 int

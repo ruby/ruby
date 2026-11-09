@@ -577,6 +577,18 @@ pub extern "C" fn mmtk_heap_max() -> usize {
     }
 }
 
+// =============== Measurement ===============
+
+#[unsafe(no_mangle)]
+pub extern "C" fn mmtk_harness_begin(tls: VMMutatorThread) {
+    memory_manager::harness_begin::<Ruby>(crate::BINDING.get().unwrap().mmtk, tls);
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn mmtk_harness_end() {
+    memory_manager::harness_end::<Ruby>(crate::BINDING.get().unwrap().mmtk);
+}
+
 // =============== Miscellaneous ===============
 
 #[unsafe(no_mangle)]

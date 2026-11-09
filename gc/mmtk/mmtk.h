@@ -157,6 +157,10 @@ size_t mmtk_heap_min(void);
 
 size_t mmtk_heap_max(void);
 
+void mmtk_harness_begin(MMTk_VMMutatorThread tls);
+
+void mmtk_harness_end(void);
+
 bool mmtk_is_mmtk_object(MMTk_Address addr);
 
 extern void rb_mmtk_init_gc_worker_thread(struct MMTk_GCThreadTLS *gc_worker_tls);
