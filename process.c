@@ -4094,7 +4094,7 @@ rb_fork_ruby(int *status)
         after_fork_ruby(pid);
 
         /* repeat while fork failed but retryable */
-    } while (pid < 0 && handle_fork_error(err, &child, NULL, &try_gc) == 0);
+    } while (pid < 0 && handle_fork_error(err, status ? &child : NULL, NULL, &try_gc) == 0);
 
     if (status) *status = child.status;
 
