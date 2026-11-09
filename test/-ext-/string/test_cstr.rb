@@ -120,6 +120,11 @@ class Test_StringCStr < Test::Unit::TestCase
     assert_wchars_long_term {|s| -Ractor.make_shareable(Bug::String.new(s))}
   end
 
+  # [Bug #22517]
+  def test_wchar_slice!
+    assert_wchars_long_term {|s| s.slice!(0, 900)}
+  end
+
   def test_wchar_lstrip!
     assert_wchars_term_char(" a") {|s| s.lstrip!}
   end
