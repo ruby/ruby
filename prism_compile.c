@@ -1489,6 +1489,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
             PUSH_SEQ(ret, anchor);                                                                \
             PUSH_INSN1(ret, location, newhash, INT2FIX(stack_length));                            \
             first_chunk = false;                                                                  \
+            owned_hash = true;                                                                    \
         }                                                                                         \
         else {                                                                                    \
             PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));       \
@@ -1565,7 +1566,13 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                         PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
                         PUSH_INSN(ret, location, swap);
                         PUSH_INSN1(ret, location, putobject, hash);
-                        PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
+                        if (owned_hash) {
+                            PUSH_SEND(ret, location, id_core_hash_merge_bang_kwd, INT2FIX(2));
+                        }
+                        else {
+                            PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
+                            owned_hash = true;
+                        }
                     }
 
                     break;
@@ -1623,7 +1630,11 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                     }
                 }
             }
-            else {
+            else if (empty_hash && first_element) {
+                PUSH_INSN1(ret, location, newhash, INT2FIX(0));
+                owned_hash = true;
+            }
+            else if (!empty_hash || !owned_hash) {
                 // Each splat is converted as soon as it is evaluated. A leading
                 // splat is merged into a new hash so that the result never
                 // takes on the class, default, or comparison mode of the
@@ -1636,7 +1647,12 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                     PUSH_INSN(ret, location, swap);
                 }
 
-                if (shareability == 0) {
+                if (empty_hash) {
+                    // Only a shared literal reaches here with an empty splat,
+                    // and merging nil copies it.
+                    PUSH_INSN(ret, location, putnil);
+                }
+                else if (shareability == 0) {
                     PM_COMPILE_NOT_POPPED(element);
                 }
                 else {
