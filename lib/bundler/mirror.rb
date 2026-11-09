@@ -185,7 +185,7 @@ module Bundler
   class MirrorSockets
     def initialize(mirror)
       @timeout = mirror.fallback_timeout
-      @addresses = Socket.getaddrinfo(mirror.uri.host, mirror.uri.port, nil, Socket::SOCK_STREAM).map do |address|
+      @addresses = Socket.getaddrinfo(mirror.uri.hostname, mirror.uri.port, nil, Socket::SOCK_STREAM).map do |address|
         SocketAddress.new(address[0], address[3], address[1])
       end
     end

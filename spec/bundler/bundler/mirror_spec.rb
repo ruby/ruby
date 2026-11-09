@@ -361,4 +361,8 @@ RSpec.describe Bundler::MirrorSockets do
   it "opens one socket per address" do
     expect(probed_addresses("http://127.0.0.1:9292")).to eq(["127.0.0.1"])
   end
+
+  it "resolves an IPv6 literal host" do
+    expect(probed_addresses("http://[::1]:9292")).to eq(["::1"])
+  end
 end
