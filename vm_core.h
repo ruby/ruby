@@ -1119,6 +1119,7 @@ struct rb_execution_context_struct {
     /* eval env */
     const VALUE *root_lep;
     VALUE root_svar;
+    VALUE isolated_svar; /* special variables of shareable (isolated) Procs */
 
     /* trace information */
     struct rb_trace_arg_struct *trace_arg;

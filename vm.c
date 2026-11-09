@@ -4079,6 +4079,7 @@ rb_execution_context_mark_ctx(const struct rb_gc_mark_ctx *ctx, const rb_executi
 
     rb_gc_mark_ctx(ctx, ec->errinfo);
     rb_gc_mark_ctx(ctx, ec->root_svar);
+    rb_gc_mark_ctx(ctx, ec->isolated_svar);
     if (ec->local_storage) {
         rb_id_table_foreach_values(ec->local_storage, mark_local_storage_i, (void *)ctx);
     }
@@ -4345,6 +4346,7 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 
     th->ec->errinfo = Qnil;
     th->ec->root_svar = Qfalse;
+    th->ec->isolated_svar = Qfalse;
     th->ec->local_storage_recursive_hash = Qnil;
     th->ec->local_storage_recursive_hash_for_trace = Qnil;
 
