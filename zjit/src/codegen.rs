@@ -386,12 +386,12 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
 /// attributable from the moment ZJIT starts up.
 pub fn trace_compile_size(cb: &CodeBlock, name: &str, start_pos: usize) {
     if get_option!(trace_compiles, false) {
-        if let Some(tracer) = ZJITState::get_tracer() {
+        ZJITState::with_tracer(|tracer| {
             let end_pos = cb.get_write_pos();
             let size = end_pos.saturating_sub(start_pos) as u64;
             tracer.write_compile_size(name, size, end_pos as u64);
             tracer.write_code_size_counter(size, end_pos as u64);
-        }
+        });
     }
 }
 

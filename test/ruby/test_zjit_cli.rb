@@ -461,6 +461,30 @@ class TestZJITCLI < Test::Unit::TestCase
     RUBY
   end
 
+  def test_fallback_tracing_is_ractor_safe
+    assert_runs 'true', <<~RUBY, extra_args: ['--zjit-trace-fallbacks']
+      Warning[:experimental] = false
+
+      def idx(array, index) = array[index]
+
+      trace_file = "/tmp/perfetto-\#{Process.pid}.fxt"
+      begin
+        initial_trace_size = File.size(trace_file)
+        ractors = 2.times.map do
+          Ractor.new do
+            array = [1]
+            50_000.times { idx(array, 99) }
+          end
+        end
+        ractors.each { |ractor| ractor.respond_to?(:value) ? ractor.value : ractor.take }
+
+        File.size(trace_file) > initial_trace_size
+      ensure
+        File.unlink(trace_file) if File.exist?(trace_file)
+      end
+    RUBY
+  end
+
   def test_send_forwarded_block_arg_nil_then_non_nil
     # Regression test: when a forwarded &block arg is profiled as nil, the nil
     # block optimization must update the frame state to match the stripped args.

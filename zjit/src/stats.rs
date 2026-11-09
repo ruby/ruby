@@ -1006,15 +1006,15 @@ pub fn trace_compile_phase<F, R>(name: &str, func: F) -> R where F: FnOnce() -> 
     if !get_option!(trace_compiles, /*default=*/false) {
         return func();
     }
-    if let Some(tracer) = ZJITState::get_tracer() {
+    ZJITState::with_tracer(|tracer| {
         let ts = tracer.elapsed_ns();
         tracer.write_duration_begin("compile", name, ts, &[]);
-    }
+    });
     let result = func();
-    if let Some(tracer) = ZJITState::get_tracer() {
+    ZJITState::with_tracer(|tracer| {
         let ts = tracer.elapsed_ns();
         tracer.write_duration_end("compile", name, ts);
-    }
+    });
     result
 }
 
