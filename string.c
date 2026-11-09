@@ -7941,7 +7941,7 @@ rb_str_ascii_casemap(VALUE source, VALUE target, OnigCaseFoldType *flags, rb_enc
                  "; old_length=%ld, new_length=%d\n", old_length, length_or_invalid);
     }
 
-    str_enc_copy(target, source);
+    rb_enc_associate_index(target, ENCODING_GET(source));
 
     return target;
 }

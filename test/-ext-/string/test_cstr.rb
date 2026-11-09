@@ -84,7 +84,9 @@ class Test_StringCStr < Test::Unit::TestCase
   # [Bug #22517]
   def test_wchar_casemap
     [:upcase, :downcase, :swapcase, :capitalize].each do |m|
-      assert_wchars_long_term {|s| s.__send__(m)}
+      [[], [:ascii]].each do |opts|
+        assert_wchars_long_term {|s| s.__send__(m, *opts)}
+      end
     end
   end
 
