@@ -89,6 +89,16 @@ class Test_StringCStr < Test::Unit::TestCase
   end
 
   # [Bug #22517]
+  def test_wchar_interpolation
+    assert_wchars_long_term {|s| "#{s}#{s}"}
+    assert_wchars_long_term do |s|
+      a = s.b.force_encoding("US-ASCII")
+      b = s[0, 0]
+      eval(%{# coding: us-ascii\n"\#{a}\#{b}"})
+    end
+  end
+
+  # [Bug #22517]
   def test_wchar_reverse
     assert_wchars_long_term {|s| s.reverse}
   end
