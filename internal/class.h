@@ -483,6 +483,7 @@ VALUE rb_make_metaclass(VALUE, VALUE);
 VALUE rb_include_class_new(VALUE, VALUE);
 VALUE rb_define_class_id_under_no_pin(VALUE outer, ID id, VALUE super);
 VALUE rb_obj_methods(int argc, const VALUE *argv, VALUE obj);
+VALUE rb_mod_descendants_m(int argc, VALUE *argv, VALUE mod);
 VALUE rb_obj_protected_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_obj_private_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj);

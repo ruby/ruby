@@ -137,6 +137,8 @@ Note: We're only listing outstanding class updates.
 
     * `Module#descendants` is added.  It returns an array of classes and
       modules that have the receiver in their ancestors.  [[Feature #9779]]
+    * `Module#descendants` takes an optional depth, to return only the
+      descendants that many steps away or fewer.  [[Feature #22514]]
     * `Module#ruby2_keywords` and top-level `ruby2_keywords` are
       deprecated and will be removed in Ruby 4.4.  [[Feature #22205]]
     * `Module#method_defined?` now accepts a third optional argument to also
@@ -765,6 +767,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22400]: https://bugs.ruby-lang.org/issues/22400
 [Feature #22441]: https://bugs.ruby-lang.org/issues/22441
 [Feature #22444]: https://bugs.ruby-lang.org/issues/22444
+[Feature #22514]: https://bugs.ruby-lang.org/issues/22514
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0

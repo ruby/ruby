@@ -23,6 +23,22 @@ ruby_version_is "4.1" do
       assert_descendants(including_mod, [klass, subclass])
     end
 
+    it "returns only the descendants within the given depth" do
+      mod = Module.new
+      including_mod = Module.new { include mod }
+      klass = Class.new { include including_mod }
+      subclass = Class.new(klass)
+
+      assert_descendants(mod, [including_mod, klass], 1)
+      assert_descendants(mod, [including_mod, klass, subclass], 2)
+      klass.descendants(1).should == klass.subclasses
+      mod.descendants(0).should == []
+    end
+
+    it "raises ArgumentError for a negative depth" do
+      -> { Module.new.descendants(-1) }.should raise_error(ArgumentError)
+    end
+
     it "returns modules and classes prepending self" do
       mod = Module.new
       prepending_mod = Module.new { prepend mod }
@@ -130,8 +146,8 @@ ruby_version_is "4.1" do
       end
     end
 
-    def assert_descendants(mod, descendants)
-      mod.descendants.sort_by(&:object_id).should == descendants.sort_by(&:object_id)
+    def assert_descendants(mod, descendants, *depth)
+      mod.descendants(*depth).sort_by(&:object_id).should == descendants.sort_by(&:object_id)
     end
   end
 end

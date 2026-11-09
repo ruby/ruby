@@ -270,6 +270,42 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
+  def test_descendants_depth
+    a = Module.new
+    b = Module.new { include a }
+    c = Class.new { include b }
+    d = Class.new(c)
+    e = Class.new(d)
+
+    order = [a, b, c, d, e]
+    sorted = ->(list) { list.sort_by {|m| order.index(m)} }
+    # c includes a through b, so it is one step from a, as b is
+    assert_equal([b, c], sorted[a.descendants(1)])
+    assert_equal([b, c, d], sorted[a.descendants(2)])
+    assert_equal([b, c, d, e], sorted[a.descendants(3)])
+    assert_equal(a.descendants, a.descendants(nil))
+    assert_equal([], a.descendants(0))
+
+    # for a class, one step is its subclasses
+    assert_equal(c.subclasses, c.descendants(1))
+    assert_equal([d, e], sorted[c.descendants(2)])
+
+    assert_raise(ArgumentError) { a.descendants(-1) }
+    assert_raise(ArgumentError) { a.descendants(1, 2) }
+    assert_raise(TypeError) { a.descendants("1") }
+  end
+
+  def test_descendants_depth_shortest_path
+    # w is three steps from m through x, but two through y, which prepends m
+    # itself; whichever path is walked first, the shorter one counts
+    m = Module.new
+    x = Class.new { include m }
+    y = Class.new(x) { prepend m }
+    w = Class.new(y)
+    assert_equal([x, y], m.descendants(1).sort_by {|k| [x, y].index(k)})
+    assert_include(m.descendants(2), w)
+  end
+
   def test_descendants_gc
     a = Module.new
     Class.new { include a }

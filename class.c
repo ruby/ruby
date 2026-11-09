@@ -2269,6 +2269,8 @@ struct descendants_traverse_data
     long count;
     long maxcount;
     st_table *visited;
+    long depth;    // how far the entries being visited are from the receiver
+    long maxdepth; // 0 for no limit
 };
 
 static void module_descendants_recursive(VALUE entry, VALUE v);
@@ -2279,14 +2281,26 @@ module_descendants_add(VALUE klass, struct descendants_traverse_data *data)
     // skip entries beyond the estimation to keep the enumeration pass allocation-free
     if (data->buffer && data->count >= data->maxcount) return;
 
-    if (st_insert(data->visited, (st_data_t)klass, 1)) return; // already visited
-
-    if (data->buffer) {
-        // assumes that this does not cause GC as long as the length does not exceed the capacity
-        rb_ary_push(data->buffer, klass);
+    st_data_t seen;
+    if (st_lookup(data->visited, (st_data_t)klass, &seen)) {
+        // already listed; with a depth limit, walk it again if this path is
+        // shorter, since descendants beyond the limit before may be within it now
+        if (!data->maxdepth || (long)seen <= data->depth) return;
+        st_insert(data->visited, (st_data_t)klass, (st_data_t)data->depth);
     }
-    data->count++;
+    else {
+        st_insert(data->visited, (st_data_t)klass, (st_data_t)data->depth);
+        if (data->buffer) {
+            // assumes that this does not cause GC as long as the length does not exceed the capacity
+            rb_ary_push(data->buffer, klass);
+        }
+        data->count++;
+    }
+
+    if (data->maxdepth && data->depth >= data->maxdepth) return;
+    data->depth++;
     rb_class_foreach_subclass(klass, module_descendants_recursive, (VALUE)data);
+    data->depth--;
 }
 
 // an include done in another box is not in the ancestors here if the includer
@@ -2326,9 +2340,48 @@ module_descendants_recursive(VALUE entry, VALUE v)
     }
 }
 
+static VALUE
+mod_descendants(VALUE mod, long maxdepth)
+{
+    struct descendants_traverse_data data = { Qfalse, 0, -1, NULL, 1, maxdepth };
+
+    // estimate the count of descendants
+    data.visited = st_init_numtable();
+    st_insert(data.visited, (st_data_t)mod, 0); // exclude the receiver
+    rb_class_foreach_subclass(mod, module_descendants_recursive, (VALUE)&data);
+    st_free_table(data.visited);
+
+    // the following allocation may cause GC which may change the number of descendants
+    data.buffer = rb_ary_new_capa(data.count);
+    data.maxcount = data.count;
+    data.count = 0;
+    data.depth = 1;
+    // pre-sized so that st_insert() does not cause GC during the enumeration
+    data.visited = st_init_numtable_with_size(data.maxcount + 1);
+    st_insert(data.visited, (st_data_t)mod, 0); // exclude the receiver
+
+    size_t gc_count = rb_gc_count();
+
+    rb_class_foreach_subclass(mod, module_descendants_recursive, (VALUE)&data);
+
+    if (gc_count != rb_gc_count()) {
+        rb_bug("GC must not occur during the subclass iteration of Module#descendants");
+    }
+    st_free_table(data.visited);
+
+    return data.buffer;
+}
+
+VALUE
+rb_mod_descendants(VALUE mod)
+{
+    return mod_descendants(mod, 0);
+}
+
 /*
  *  call-seq:
- *     descendants -> array
+ *     descendants        -> array
+ *     descendants(depth) -> array
  *
  *  Returns an array of classes and modules that have +self+ as an ancestor.
  *  Singleton classes and refinements are not included.
@@ -2343,40 +2396,37 @@ module_descendants_recursive(VALUE entry, VALUE v)
  *     B.descendants    #=> [C, D]
  *     C.descendants    #=> [D]
  *
+ *  With +depth+, returns only the descendants at most +depth+ steps from
+ *  +self+. The first step reaches the subclasses of +self+, and the classes
+ *  and modules that include or prepend it, whether directly or through
+ *  another module they include. Each further step reaches the subclasses of
+ *  the descendants already found, and their includers:
+ *
+ *     A.descendants(1) #=> [B, C]
+ *     A.descendants(2) #=> [B, C, D]
+ *     C.descendants(1) #=> [D]
+ *
+ *  For a class, <tt>descendants(1)</tt> returns the same classes as
+ *  Class#subclasses.
+ *
  *  Note that +self+ does not hold references to its descendants;
  *  Thus even though all references to a module are dropped,
  *  the module may be reported as a descendant, depending on garbage collection.
  */
 
 VALUE
-rb_mod_descendants(VALUE mod)
+rb_mod_descendants_m(int argc, VALUE *argv, VALUE mod)
 {
-    struct descendants_traverse_data data = { Qfalse, 0, -1, NULL };
+    long depth = 0;
 
-    // estimate the count of descendants
-    data.visited = st_init_numtable();
-    st_insert(data.visited, (st_data_t)mod, 1); // exclude the receiver
-    rb_class_foreach_subclass(mod, module_descendants_recursive, (VALUE)&data);
-    st_free_table(data.visited);
-
-    // the following allocation may cause GC which may change the number of descendants
-    data.buffer = rb_ary_new_capa(data.count);
-    data.maxcount = data.count;
-    data.count = 0;
-    // pre-sized so that st_insert() does not cause GC during the enumeration
-    data.visited = st_init_numtable_with_size(data.maxcount + 1);
-    st_insert(data.visited, (st_data_t)mod, 1); // exclude the receiver
-
-    size_t gc_count = rb_gc_count();
-
-    rb_class_foreach_subclass(mod, module_descendants_recursive, (VALUE)&data);
-
-    if (gc_count != rb_gc_count()) {
-        rb_bug("GC must not occur during the subclass iteration of Module#descendants");
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(argv[0])) {
+        depth = NUM2LONG(argv[0]);
+        if (depth < 0) {
+            rb_raise(rb_eArgError, "negative depth (%ld)", depth);
+        }
+        if (depth == 0) return rb_ary_new();
     }
-    st_free_table(data.visited);
-
-    return data.buffer;
+    return mod_descendants(mod, depth);
 }
 
 /*
