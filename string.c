@@ -9985,12 +9985,12 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     }
 
     if (buffer_count==1) {
-        target = rb_str_new((const char*)current_buffer->space, target_length);
+        target = str_enc_new(rb_cString, (const char*)current_buffer->space, target_length, enc);
     }
     else {
         char *target_current;
 
-        target = rb_str_new(0, target_length);
+        target = str_enc_new(rb_cString, 0, target_length, enc);
         target_current = RSTRING_PTR(target);
         current_buffer = DATA_PTR(buffer_anchor);
         while (current_buffer) {
@@ -10005,8 +10005,6 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 
     RB_GC_GUARD(buffer_anchor);
 
-    /* TODO: check about string terminator character */
-    str_enc_copy_direct(target, source);
     /*ENC_CODERANGE_SET(mapped, cr);*/
 
     return target;
