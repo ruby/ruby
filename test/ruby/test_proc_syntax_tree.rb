@@ -33,10 +33,11 @@ class TestProcSyntaxTree < Test::Unit::TestCase
     with_loaded_file("PROC_AST_TEST_PROC = proc { :ok }\n") do
       node = PROC_AST_TEST_PROC.syntax_tree
       if PRISM
-        assert_equal :call_node, node.type
-        assert_equal "proc { :ok }", node.slice
+        assert_equal :block_node, node.type
+        assert_equal "{ :ok }", node.slice
       else
-        assert_equal :ITER, node.type
+        assert_equal :SCOPE, node.type
+        assert_equal "{ :ok }", node.source
       end
     ensure
       Object.send(:remove_const, :PROC_AST_TEST_PROC)
@@ -123,12 +124,27 @@ class TestProcSyntaxTree < Test::Unit::TestCase
       require "tmpdir"
       Dir.mktmpdir do |dir|
         path = File.join(dir, "target.rb")
-        File.write(path, "def proc_ast_test_parse_y = :ok\n")
+        File.write(path, "def proc_ast_test_parse_y = :ok\nPROC_AST_TEST_PARSE_Y = proc { :ok }\n")
         load path
 
         node = method(:proc_ast_test_parse_y).syntax_tree
         assert_equal RubyVM::AbstractSyntaxTree::Node, node.class
         assert_equal :DEFN, node.type
+
+        node = PROC_AST_TEST_PARSE_Y.syntax_tree
+        assert_equal :SCOPE, node.type
+        assert_equal "{ :ok }", node.source
+        range = PROC_AST_TEST_PARSE_Y.source_range
+        assert_equal [range.start_line, range.start_column, range.end_line, range.end_column],
+                     [node.first_lineno, node.first_column, node.last_lineno, node.last_column]
+
+        # The location of an ArgumentError for a lambda is the lambda itself
+        File.write(path, "PROC_AST_TEST_PARSE_Y_LAMBDA = lambda { |x, y| }\n")
+        load path
+        e = assert_raise(ArgumentError) { PROC_AST_TEST_PARSE_Y_LAMBDA.call(1) }
+        node = e.backtrace_locations[0].syntax_tree
+        assert_equal :SCOPE, node.type
+        assert_equal "{ |x, y| }", node.source
 
         File.write(path, "def proc_ast_test_parse_y = :changed\n")
         assert_nil method(:proc_ast_test_parse_y).syntax_tree
