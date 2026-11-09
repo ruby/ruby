@@ -899,6 +899,9 @@ str_enc_copy(VALUE str1, VALUE str2)
 static inline void
 str_enc_copy_direct(VALUE str1, VALUE str2)
 {
+    RUBY_ASSERT(TERM_LEN(str2) <= TERM_LEN(str1) || str_dependent_p(str1) ||
+                (STR_EMBED_P(str1) &&
+                 str_embed_capa(str1) >= RSTRING_LEN(str1) + TERM_LEN(str2)));
     int inlined_encoding = RB_ENCODING_GET_INLINED(str2);
     if (inlined_encoding == ENCODING_INLINE_MAX) {
         rb_enc_set_index(str1, rb_enc_get_index(str2));
