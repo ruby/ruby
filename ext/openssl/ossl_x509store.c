@@ -56,37 +56,34 @@ ossl_verify_cb_call(VALUE proc, int ok, X509_STORE_CTX *ctx)
     struct ossl_verify_cb_args args;
     int state;
 
+    if (ossl_cb_state_get())
+        goto err;
     if (NIL_P(proc))
         return ok;
 
-    ret = Qfalse;
     rctx = rb_protect(ossl_x509stctx_new_i, (VALUE)ctx, &state);
     if (state) {
-        rb_set_errinfo(Qnil);
-        rb_warn("StoreContext initialization failure");
+        ossl_cb_state_set(state);
+        goto err;
     }
-    else {
-        args.proc = proc;
-        args.preverify_ok = ok ? Qtrue : Qfalse;
-        args.store_ctx = rctx;
-        ret = rb_protect(call_verify_cb_proc, (VALUE)&args, &state);
-        RTYPEDDATA_DATA(rctx) = NULL;
-        if (state) {
-            rb_set_errinfo(Qnil);
-            rb_warn("exception in verify_callback is ignored");
-        }
+    args.proc = proc;
+    args.preverify_ok = ok ? Qtrue : Qfalse;
+    args.store_ctx = rctx;
+    ret = rb_protect(call_verify_cb_proc, (VALUE)&args, &state);
+    RTYPEDDATA_DATA(rctx) = NULL;
+    if (state) {
+        ossl_cb_state_set(state);
+        goto err;
     }
     if (ret == Qtrue) {
         X509_STORE_CTX_set_error(ctx, X509_V_OK);
-        ok = 1;
-    }
-    else {
-        if (X509_STORE_CTX_get_error(ctx) == X509_V_OK)
-            X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
-        ok = 0;
+        return 1;
     }
 
-    return ok;
+  err:
+    if (X509_STORE_CTX_get_error(ctx) == X509_V_OK)
+        X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
+    return 0;
 }
 
 /*
@@ -677,6 +674,7 @@ static VALUE
 ossl_x509stctx_verify(VALUE self)
 {
     X509_STORE_CTX *ctx;
+    int ret, state;
 
     GetX509StCtx(self, ctx);
     VALUE cb = rb_iv_get(self, "@verify_callback");
@@ -684,7 +682,14 @@ ossl_x509stctx_verify(VALUE self)
         ossl_raise(eX509StoreError, "X509_STORE_CTX_set_ex_data");
     RB_OBJ_WRITTEN(self, Qundef, cb);
 
-    switch (X509_verify_cert(ctx)) {
+    ossl_cb_state_begin();
+    ret = X509_verify_cert(ctx);
+    state = ossl_cb_state_end();
+    if (state) {
+        ossl_clear_error();
+        rb_jump_tag(state);
+    }
+    switch (ret) {
       case 1:
         return Qtrue;
       case 0:
@@ -1034,7 +1039,8 @@ Init_ossl_x509store(void)
      * The callback can use StoreContext#error= to change the error code as
      * needed. The callback must return either true or false.
      *
-     * NOTE: any exception raised within the callback will be ignored.
+     * Exceptions raised within the callback propagate to the caller of the
+     * verification method.
      *
      * See also the man page X509_STORE_CTX_set_verify_cb(3).
      */

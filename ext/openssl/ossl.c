@@ -145,6 +145,51 @@ ossl_bin2hex(const unsigned char *in, char *out, size_t inlen)
     }
 }
 
+static ID id_cb_state;
+
+int
+ossl_cb_state_get(void)
+{
+    VALUE val = rb_thread_local_aref(rb_thread_current(), id_cb_state);
+    return FIXNUM_P(val) ? FIX2INT(val) : 0;
+}
+
+static VALUE
+cb_state_set_i(VALUE vstate)
+{
+    rb_thread_local_aset(rb_thread_current(), id_cb_state, vstate);
+    return Qnil;
+}
+
+void
+ossl_cb_state_set(int state)
+{
+    int s;
+    rb_protect(cb_state_set_i, state ? INT2FIX(state) : Qnil, &s);
+    if (s) {
+        /* Thread frozen or malloc failure? As a last resort */
+        rb_set_errinfo(Qnil);
+    }
+}
+
+void
+ossl_cb_state_begin(void)
+{
+    if (ossl_cb_state_get()) {
+        rb_raise(rb_eRuntimeError,
+                 "BUG: ossl_cb_state_begin() called while jump is pending");
+    }
+}
+
+int
+ossl_cb_state_end(void)
+{
+    int state = ossl_cb_state_get();
+    if (state)
+        ossl_cb_state_set(0);
+    return state;
+}
+
 /*
  * our default PEM callback
  */
@@ -1155,6 +1200,7 @@ Init_openssl(void)
      */
     ossl_s_to_der = rb_intern("to_der");
     id_i_errors = rb_intern("@errors");
+    id_cb_state = rb_intern("__ossl_cb_state__");
 
     /*
      * Init components

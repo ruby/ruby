@@ -215,7 +215,7 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 {
     VALUE cb, ssl_obj, sslctx_obj, verify_hostname, ret;
     SSL *ssl;
-    int status;
+    int state, ok;
 
     ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
     ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
@@ -225,9 +225,9 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 
     if (preverify_ok && RTEST(verify_hostname) && !SSL_is_server(ssl) &&
         !X509_STORE_CTX_get_error_depth(ctx)) {
-        ret = rb_protect(call_verify_certificate_identity, (VALUE)ctx, &status);
-        if (status) {
-            rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(status));
+        ret = rb_protect(call_verify_certificate_identity, (VALUE)ctx, &state);
+        if (state) {
+            rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
             return 0;
         }
         if (ret != Qtrue) {
@@ -236,7 +236,14 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
         }
     }
 
-    return ossl_verify_cb_call(cb, preverify_ok, ctx);
+    ossl_cb_state_begin();
+    ok = ossl_verify_cb_call(cb, preverify_ok, ctx);
+    state = ossl_cb_state_end();
+    if (state) {
+        rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
+        return 0;
+    }
+    return ok;
 }
 
 static VALUE

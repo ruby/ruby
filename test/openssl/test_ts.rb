@@ -407,6 +407,13 @@ class OpenSSL::TestTimestamp < OpenSSL::TestCase
     assert_raise(TypeError) { ts.verify(req, [ca_cert], 123) }
   end
 
+  def test_verify_with_verify_callback
+    ts, req = timestamp_ee
+    store = ca_store
+    store.verify_callback = proc { raise "verify callback" }
+    assert_raise(RuntimeError) { ts.verify(req, store) }
+  end
+
   def test_verify_ee_def_policy
     req = OpenSSL::Timestamp::Request.new
     req.algorithm = "SHA1"

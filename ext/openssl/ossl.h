@@ -156,6 +156,14 @@ do{\
 void ossl_bin2hex(const unsigned char *in, char *out, size_t len);
 
 /*
+ * Use Fiber-local storage for rb_protect() states. This is fragile!
+ */
+void ossl_cb_state_begin(void);
+int ossl_cb_state_end(void);
+int ossl_cb_state_get(void);
+void ossl_cb_state_set(int state);
+
+/*
  * Our default PEM callback
  */
 /* Convert the argument to String and validate the length. Note this may raise. */

@@ -150,16 +150,22 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_equal(false, store.verify(ee1_cert, [ca2_cert]))
     assert_equal(OpenSSL::X509::V_ERR_APPLICATION_VERIFICATION, store.error)
 
-    # Exception raised by verify_callback is currently suppressed, and is
-    # treated as a non-truthy return (with warning)
+    # Exceptions raised in verify_callback are re-raised
     store = OpenSSL::X509::Store.new
     store.verify_callback = -> (preverify_ok, sctx) {
-      raise "suppressed"
+      raise "in verify_callback"
     }
     store.add_cert(ca1_cert)
-    assert_warning(/exception in verify_callback/) {
-      assert_equal(false, store.verify(ee1_cert, [ca2_cert]))
+    assert_raise_with_message(RuntimeError, "in verify_callback") {
+      store.verify(ee1_cert, [ca2_cert])
     }
+
+    # verify_callback is nested
+    ret = store.verify(ca1_cert) do |preverify_ok, sctx|
+      assert_raise(RuntimeError) { store.verify(ca1_cert) }
+      preverify_ok
+    end
+    assert_true(ret)
 
     # The block given to X509::Store#verify replaces it
     called = nil

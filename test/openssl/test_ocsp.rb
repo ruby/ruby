@@ -116,6 +116,13 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     req.sign(@cert, @cert_key, [])
     assert_equal true, req.verify([], store)
 
+    # Exceptions in verify_callback are re-raised
+    s = OpenSSL::X509::Store.new.tap { |s|
+      s.add_cert(@ca_cert)
+      s.verify_callback = proc { raise "verify_callback" }
+    }
+    assert_raise(RuntimeError) { req.verify([], s) }
+
     # without signer cert
     req = OpenSSL::OCSP::Request.new.add_certid(cid)
     req.sign(@cert, @cert_key, nil)
@@ -194,6 +201,13 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal true, bres.verify([@ca_cert], store)
     bres.sign(@ca_cert, @ca_key, [], 0, "SHA256")
     assert_equal true, bres.verify([], store)
+
+    # Exceptions in verify_callback are re-raised
+    s = OpenSSL::X509::Store.new.tap { |s|
+      s.add_cert(@ca_cert)
+      s.verify_callback = proc { raise "verify_callback" }
+    }
+    assert_raise(RuntimeError) { bres.verify([], s) }
 
     # signed by OCSP signer
     bres = OpenSSL::OCSP::BasicResponse.new

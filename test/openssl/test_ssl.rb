@@ -748,22 +748,25 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
-  def test_exception_in_verify_callback_is_ignored
+  def test_exception_in_verify_callback
     start_server(ignore_listener_error: true) { |port|
       sock = TCPSocket.new("127.0.0.1", port)
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      ctx.cert_store = OpenSSL::X509::Store.new.add_cert(@ca_cert)
+      called = []
       ctx.verify_callback = Proc.new do |preverify_ok, store_ctx|
         store_ctx.error = OpenSSL::X509::V_OK
-        raise RuntimeError
+        called << store_ctx.current_cert
+        raise "in verify_callback"
       end
       ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
       ssl.sync_close = true
       begin
-        EnvUtil.suppress_warning do
-          # SSLError, not RuntimeError
-          assert_raise(OpenSSL::SSL::SSLError) { ssl.connect }
-        end
+        assert_raise_with_message(RuntimeError, "in verify_callback") {
+          ssl.connect
+        }
+        assert_equal([@ca_cert], called)
         assert_equal(OpenSSL::X509::V_ERR_CERT_REJECTED, ssl.verify_result)
       ensure
         ssl.close

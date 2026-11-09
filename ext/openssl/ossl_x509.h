@@ -90,6 +90,8 @@ void Init_ossl_x509store(void);
 /*
  * Calls the verify callback Proc (the first parameter) with given pre-verify
  * result and the X509_STORE_CTX.
+ *
+ * Assumes ossl_cb_state_*() is active.
  */
 int ossl_verify_cb_call(VALUE, int, X509_STORE_CTX *);
 
