@@ -748,9 +748,18 @@ ractor_free_all_ports(rb_ractor_t *cr)
 }
 
 #if defined(HAVE_WORKING_FORK)
+// Only the forking thread survives a fork, and the waiters of the other
+// threads are on their (now dead) machine stacks, so drop them.
+static void
+ractor_sync_atfork(rb_ractor_t *r)
+{
+    ccan_list_head_init(&r->sync.waiters);
+}
+
 static void
 ractor_sync_terminate_atfork(rb_vm_t *vm, rb_ractor_t *r)
 {
+    ractor_sync_atfork(r);
     ractor_free_all_ports(r);
     r->sync.legacy = Qnil;
 }
