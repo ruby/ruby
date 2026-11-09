@@ -6080,12 +6080,11 @@ impl Function {
             return false;
         }
 
-        // Sample `self.insns()` at the beginning of the pass for `should_inline`.
-        //
-        // We used to fail-fast with it here, but we stopped doing it for :always_inline.
-        // Checking the budget only against `num_instructions` relaxed the decision too
-        // much, compiling so much code that it slowed down 30k_ifelse, so we kept the
-        // self.insns()-based check. TODO: Consider lowering the budget and remove this.
+        // Make sure we sample `self.insns.len()` at the beginning of the pass. `should_inline`
+        // checks it against the inlining budget so that every SendDirect that exists at the start
+        // of the pass is judged by the size of the caller. If we checked only `num_instructions`,
+        // callers would inline several times more and could exhaust the code region (e.g. 30k_ifelse).
+        // TODO: Check only `num_instructions` with a lower `inline_budget` and remove this.
         let insns_at_pass_start = self.insns.len();
 
         let mut did_inline = false;
