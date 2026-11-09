@@ -82,6 +82,13 @@ class Test_StringCStr < Test::Unit::TestCase
   end
 
   # [Bug #22517]
+  def test_wchar_casemap
+    [:upcase, :downcase, :swapcase, :capitalize].each do |m|
+      assert_wchars_long_term {|s| s.__send__(m)}
+    end
+  end
+
+  # [Bug #22517]
   def test_wchar_reverse
     assert_wchars_long_term {|s| s.reverse}
   end
