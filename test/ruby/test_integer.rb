@@ -50,6 +50,19 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(1, 0x400000001[big_zero], "[ruby-dev:31271]")
   end
 
+  def test_aref_with_length_wider_than_value
+    huge = 2**64
+    assert_equal(123, 123[0, huge])
+    assert_equal(61, 123[1, huge])
+    assert_equal(123 << 3, 123[-3, huge])
+    assert_equal(123, 123[0..huge])
+    assert_equal(0, 0[..huge])
+    assert_equal(0, 0[...huge])
+    assert_raise(ArgumentError) { 1[..huge] }
+    assert_raise(ArgumentError) { -8[...huge] }
+    assert_raise(ArgumentError) { (2**100)[..huge] }
+  end
+
   def test_pow
     assert_not_equal(0, begin
                           0**-1

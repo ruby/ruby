@@ -5514,6 +5514,11 @@ int_aref2(VALUE num, VALUE beg, VALUE len)
     }
     else {
         num = rb_int_rshift(num, beg);
+        /* A mask wider than a non-negative value keeps every bit, so skip building it. */
+        if (RB_INTEGER_TYPE_P(num) && RB_INTEGER_TYPE_P(len) && !int_neg_p(num) &&
+            RTEST(rb_int_ge(len, rb_int_bit_length(num)))) {
+            return num;
+        }
         VALUE mask = generate_mask(len);
         return rb_int_and(num, mask);
     }
@@ -5530,8 +5535,11 @@ int_aref1(VALUE num, VALUE arg)
             /* beginless range */
             if (!RTEST(num_negative_p(end))) {
                 if (!excl) end = rb_int_plus(end, INT2FIX(1));
-                VALUE mask = generate_mask(end);
-                if (int_zero_p(rb_int_and(num, mask))) {
+                /* Past bit_length, any non-zero value (of either sign) has a set bit under the mask. */
+                bool all_bits_masked = RB_INTEGER_TYPE_P(end) &&
+                    RTEST(rb_int_gt(end, rb_int_bit_length(num)));
+                if (all_bits_masked ? int_zero_p(num)
+                                    : int_zero_p(rb_int_and(num, generate_mask(end)))) {
                     return INT2FIX(0);
                 }
                 else {
