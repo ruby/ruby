@@ -547,6 +547,62 @@ RSpec.describe "bundle install with git sources" do
     expect(err).to include("git submodule update --init --recursive")
   end
 
+  it "fails when a locked install over an interrupted checkout cannot clone a submodule" do
+    # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
+    system(*%W[git config --global protocol.file.allow always])
+
+    build_git "submodule", "1.0"
+    build_git "has_submodule", "1.0"
+    git "submodule add #{lib_path("submodule-1.0")} submodule-1.0", lib_path("has_submodule-1.0")
+    git "commit -m \"submodulator\"", lib_path("has_submodule-1.0")
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      git "#{lib_path("has_submodule-1.0")}", :submodules => true do
+        gem "has_submodule"
+      end
+    G
+
+    FileUtils.mv(lib_path("submodule-1.0"), lib_path("submodule-gone"))
+    # Leave only what the clone step writes, as when copy_to is interrupted before the reset
+    checkout = Pathname.glob(default_bundle_path("bundler/gems/has_submodule-1.0-*")).first
+    (checkout.children - [checkout.join(".git")]).each {|child| FileUtils.rm_rf(child) }
+    FileUtils.rm_rf(checkout.join(".git/modules"))
+
+    bundle :install, retry: 0, raise_on_error: false
+
+    expect(exitstatus).not_to eq(0)
+    expect(err).to include("git submodule update --init --recursive")
+  end
+
+  it "keeps a local override checkout when its submodule update fails" do
+    # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
+    system(*%W[git config --global protocol.file.allow always])
+
+    build_git "submodule", "1.0"
+    build_git "has_submodule", "1.0"
+    git "submodule add #{lib_path("submodule-1.0")} submodule-1.0", lib_path("has_submodule-1.0")
+    git "commit -m \"submodulator\"", lib_path("has_submodule-1.0")
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      git "#{lib_path("has_submodule-1.0")}", :submodules => true, :branch => "main" do
+        gem "has_submodule"
+      end
+    G
+
+    git "clone --quiet #{lib_path("has_submodule-1.0")} #{lib_path("local-has_submodule")}", lib_path
+    File.write(lib_path("local-has_submodule/WIP.txt"), "work in progress")
+    FileUtils.mv(lib_path("submodule-1.0"), lib_path("submodule-gone"))
+
+    bundle %(config set local.has_submodule #{lib_path("local-has_submodule")})
+    bundle :install, redownload: true, retry: 0, raise_on_error: false
+
+    expect(exitstatus).not_to eq(0)
+    expect(err).to include("git submodule update --init --recursive")
+    expect(lib_path("local-has_submodule/WIP.txt")).to exist
+  end
+
   it "does not warn when deiniting submodules" do
     # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
     system(*%W[git config --global protocol.file.allow always])
