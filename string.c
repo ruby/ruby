@@ -1745,7 +1745,7 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
         }
         else {
             if (RB_OBJ_SHAREABLE_P(orig)) {
-                str = str_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig));
+                str = str_enc_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig), enc);
             }
             else {
                 str = heap_str_make_shared(klass, orig, termlen);
