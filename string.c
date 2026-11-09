@@ -6098,7 +6098,7 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
     beg = p - RSTRING_PTR(str);
 
   subseq:
-    result = rb_str_new(RSTRING_PTR(str)+beg, len);
+    result = str_enc_new(rb_cString, RSTRING_PTR(str)+beg, len, STR_ENC_GET(str));
     rb_enc_cr_str_copy_for_substr(result, str);
 
   squash:
