@@ -141,6 +141,10 @@ Note: We're only listing outstanding class updates.
       deprecated and will be removed in Ruby 4.4.  [[Feature #22205]]
     * `Module#method_defined?` now accepts a third optional argument to also
       match private methods.  [[Feature #22297]]
+    * `Module#define_method` and `Kernel#define_singleton_method` now make
+      the method body shareable, as if by `Ractor.shareable_proc`, when that
+      is possible.  Such methods can then be called from any Ractor.  When it
+      is not possible the body is used as before.
 
 * ObjectSpace
 

@@ -4259,8 +4259,9 @@ assert_equal '1', %q{
 
 # unshareable bmethod call through Method#to_proc#call
 assert_equal '1000', %q{
+  unshareable = Object.new
   define_method(:bmethod) do
-    self
+    unshareable
   end
 
   Ractor.new do

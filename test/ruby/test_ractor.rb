@@ -182,6 +182,78 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_define_method_body_is_shareable_if_possible
+    assert_ractor(<<~'RUBY')
+      class DefineMethodShareable
+        CONST = :const
+        sym = :sym
+        frozen = "frozen".freeze
+
+        define_method(:no_capture) { |x = 1| [self.class, x] }
+        define_method(:capture) { [sym, frozen, CONST] }
+        define_method(:explicit, &proc { sym })
+        define_singleton_method(:singleton) { sym }
+      end
+
+      obj = DefineMethodShareable.new
+      expected = [[DefineMethodShareable, 2], [:sym, "frozen", :const], :sym, :sym]
+      assert_equal expected, [obj.no_capture(2), obj.capture, obj.explicit, DefineMethodShareable.singleton]
+      assert_equal expected, Ractor.new(obj) { |o|
+        [o.no_capture(2), o.capture, o.explicit, DefineMethodShareable.singleton]
+      }.value
+
+      # The given Proc is not modified
+      local = :local
+      pr = proc { local }
+      DefineMethodShareable.define_method(:from_proc, &pr)
+      assert_not_predicate pr, :frozen?
+      assert_not_send [Ractor, :shareable?, pr]
+      assert_equal :local, Ractor.new(obj) { |o| o.from_proc }.value
+    RUBY
+  end
+
+  def test_define_method_body_is_kept_if_not_shareable
+    assert_ractor(<<~'RUBY')
+      class DefineMethodNotShareable
+        str = +"str"
+        reassigned = 1
+        reassigned = 2
+        writes = 1
+        define_method(:unshareable) { str }
+        define_method(:reassigned) { reassigned }
+        define_method(:writes) { writes += 1 }
+
+        # The block parameter of the method defining the method
+        def self.define_calling(name, &block) = define_method(name) { |x| block.call(x) }
+        def self.define_instance_eval(name, &block) = define_method(name) { instance_eval(&block) }
+        define_calling(:block_param) { |x| x * 2 }
+        define_instance_eval(:block_param_instance_eval) { self.class }
+        define_calling(:shareable_block_param, &Ractor.shareable_proc { |x| x + 1 })
+      end
+
+      # The body reads the variable before its assignment, like ActionView::Base.with_empty_template_cache
+      subclass = Class.new(DefineMethodNotShareable) do
+        define_method(:container) { subclass }
+        define_singleton_method(:container) { subclass }
+      end
+      assert_equal [subclass, subclass], [subclass.new.container, subclass.container]
+
+      obj = DefineMethodNotShareable.new
+      assert_equal ["str", 2, 2, 3], [obj.unshareable, obj.reassigned, obj.writes, obj.writes]
+      assert_equal [4, DefineMethodNotShareable], [obj.block_param(2), obj.block_param_instance_eval]
+      assert_equal 3, Ractor.new(obj) { |o| o.shareable_block_param(2) }.value
+      %i[unshareable reassigned writes block_param block_param_instance_eval].each do |m|
+        e = assert_raise(Ractor::RemoteError) do
+          Ractor.new(obj, m) do |o, m|
+            Thread.current.report_on_exception = false
+            o.public_send(m, *([2] if m == :block_param))
+          end.value
+        end
+        assert_equal "defined with an un-shareable Proc in a different Ractor", e.cause.message
+      end
+    RUBY
+  end
+
   def test_shareability_of_block_using_the_block_of_the_method
     assert_ractor(<<~'RUBY')
       obj = Object.new
@@ -205,6 +277,44 @@ class TestRactor < Test::Unit::TestCase
       # There is no block of a method outside a method
       assert_equal false, Ractor.shareable_proc { block_given? }.call
       assert_equal false, Ractor.new { block_given? }.value
+    RUBY
+  end
+
+  def test_define_method_keeps_the_block_of_the_method
+    assert_ractor(<<~'RUBY')
+      class DefineMethodBlockOfTheMethod
+        def self.define_block_given(name, &) = define_method(name) { block_given? }
+        def self.define_super(name) = define_method(name) { super() }
+      end
+
+      DefineMethodBlockOfTheMethod.define_block_given(:without_block)
+      DefineMethodBlockOfTheMethod.define_block_given(:with_block) {}
+      # super() passes the block given to define_super to Kernel#then
+      DefineMethodBlockOfTheMethod.define_super(:then) { :from_define_super }
+
+      obj = DefineMethodBlockOfTheMethod.new
+      assert_equal [false, true], [obj.without_block, obj.with_block]
+      assert_equal :from_define_super, obj.then { :ignored }
+    RUBY
+  end
+
+  def test_define_method_in_loops_keeps_block_semantics
+    assert_ractor(<<~'RUBY')
+      class DefineMethodInLoops
+        for name in %i[a b]
+          define_method(name) { name }
+        end
+
+        i = 0
+        while i < 2
+          value = :"w#{i}"
+          define_method(value) { value }
+          i += 1
+        end
+      end
+
+      obj = DefineMethodInLoops.new
+      assert_equal [:b, :b, :w1, :w1], [obj.a, obj.b, obj.w0, obj.w1]
     RUBY
   end
 
