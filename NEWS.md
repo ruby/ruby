@@ -248,7 +248,7 @@ releases.
 ### The following bundled gems are promoted from default gems.
 
 * prism 2.1.0
-  * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
+  * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0], [v2.0.0.rc1][prism-v2.0.0.rc1], [v2.0.0.rc2][prism-v2.0.0.rc2], [v2.0.0][prism-v2.0.0], [v2.1.0][prism-v2.1.0]
 * tsort 0.2.0
 * win32-registry 0.1.2
 
@@ -359,7 +359,7 @@ They are still available on rubygems.org and can be installed with
 * win32ole 1.9.3
   * 1.9.2 to [v1.9.3][win32ole-v1.9.3]
 * irb 1.19.0
-  * 1.16.0 to [v1.17.0][irb-v1.17.0], [v1.18.0][irb-v1.18.0]
+  * 1.16.0 to [v1.17.0][irb-v1.17.0], [v1.18.0][irb-v1.18.0], [v1.19.0][irb-v1.19.0]
 * reline 0.7.0
   * 0.6.3 to [v0.7.0][reline-v0.7.0]
 
@@ -770,6 +770,10 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
 [prism-v1.8.1]: https://github.com/ruby/prism/releases/tag/v1.8.1
 [prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
+[prism-v2.0.0.rc1]: https://github.com/ruby/prism/releases/tag/v2.0.0.rc1
+[prism-v2.0.0.rc2]: https://github.com/ruby/prism/releases/tag/v2.0.0.rc2
+[prism-v2.0.0]: https://github.com/ruby/prism/releases/tag/v2.0.0
+[prism-v2.1.0]: https://github.com/ruby/prism/releases/tag/v2.1.0
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
 [RubyGems-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/v4.0.5
 [RubyGems-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/v4.0.6
@@ -928,4 +932,5 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [win32ole-v1.9.3]: https://github.com/ruby/win32ole/releases/tag/v1.9.3
 [irb-v1.17.0]: https://github.com/ruby/irb/releases/tag/v1.17.0
 [irb-v1.18.0]: https://github.com/ruby/irb/releases/tag/v1.18.0
+[irb-v1.19.0]: https://github.com/ruby/irb/releases/tag/v1.19.0
 [reline-v0.7.0]: https://github.com/ruby/reline/releases/tag/v0.7.0
