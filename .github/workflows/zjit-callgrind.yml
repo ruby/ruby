@@ -1,0 +1,110 @@
+name: ZJIT Callgrind
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'zjit/**'
+      - 'zjit.*'
+      - 'jit/**'
+      - 'jit.c'
+      - 'defs/jit.mk'
+      - '.github/workflows/zjit-callgrind*'
+      - '.github/scripts/zjit_callgrind*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zjit-callgrind-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      # Pin PR #576's tip until the Callgrind harness is merged upstream.
+      RUBY_BENCH_REV: 01e54d3307d4bf4687fbef3538258dad46bccabd
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      # A bounded mix of macro- and microbenchmarks for PR feedback.
+      BENCHMARKS: 'railsbench liquid-render optcarrot fib getivar setivar'
+      WARMUP_ITRS: 10
+      MIN_BENCH_ITRS: 1
+      MIN_BENCH_TIME: 0
+      # Generated code can reuse addresses; Valgrind must recheck translations.
+      VALGRIND_OPTS: '--smc-check=all'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - uses: ./.github/actions/setup/ubuntu
+      - run: sudo apt-get install -y valgrind libsqlite3-dev
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
+        with:
+          ruby-version: '3.4'
+          bundler: none
+
+      - name: Test report parser
+        run: ruby .github/scripts/zjit_callgrind_test.rb --verbose
+
+      - name: Fetch exact base and PR revisions
+        run: |
+          git fetch --no-tags origin "$BASE_SHA" "$HEAD_SHA"
+          git worktree add --detach "$RUNNER_TEMP/base-src" "$BASE_SHA"
+          git worktree add --detach "$RUNNER_TEMP/pr-src" "$HEAD_SHA"
+
+      - name: Build both Rubies with identical release options
+        run: |
+          for revision in base pr; do
+            source="$RUNNER_TEMP/$revision-src"
+            build="$RUNNER_TEMP/$revision-build"
+            mkdir -p "$build"
+            (cd "$source" && ./autogen.sh)
+            ruby -e 'dir = ARGV.shift; exit(system(*ARGV, chdir: dir) ? 0 : 1)' \
+              "$build" "$source/configure" \
+              --prefix="$RUNNER_TEMP/$revision-install" \
+              --with-baseruby="$(command -v ruby)" \
+              --disable-install-doc --enable-zjit --disable-yjit
+            make -C "$build" -sj install
+            "$RUNNER_TEMP/$revision-install/bin/ruby" --zjit -v | grep +ZJIT
+            "$RUNNER_TEMP/$revision-install/bin/gem" install --no-document valgrind
+          done
+
+      - name: Checkout ruby-bench Callgrind harness
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ruby/ruby-bench
+          ref: ${{ env.RUBY_BENCH_REV }}
+          path: ruby-bench
+          persist-credentials: false
+
+      - name: Compare base and PR with ZJIT enabled
+        working-directory: ruby-bench
+        run: |
+          for revision in base pr; do
+            ruby run_benchmarks.rb \
+              --harness=callgrind --no-sudo --no-pinning \
+              --out_path="$GITHUB_WORKSPACE/results/$revision" \
+              --out-name="$GITHUB_WORKSPACE/results/$revision/results" \
+              -e "$revision::$RUNNER_TEMP/$revision-install/bin/ruby --zjit" \
+              $BENCHMARKS
+          done
+
+      - name: Format instruction-count comparison
+        run: |
+          ruby .github/scripts/zjit_callgrind.rb results \
+            --base "$BASE_SHA" --head "$HEAD_SHA" --bench-rev "$RUBY_BENCH_REV" \
+            > results/comment.md
+          cat results/comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save report and raw profiles
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: zjit-callgrind
+          path: results/
+          retention-days: 14
