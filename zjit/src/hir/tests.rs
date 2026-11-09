@@ -5757,63 +5757,64 @@ pub(crate) mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:Fixnum[1] = Const Value(1)
-          CondBranchHasType v10, String, bb4(), bb5()
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:Fixnum[1] = Const Value(1)
+          CondBranchHasType v12, String, bb4(), bb5()
         bb4():
-          v14 = RefineType v10, String
-          Jump bb6(v14)
+          v16 = RefineType v12, String
+          Jump bb6(v16)
         bb5():
-          v16:Fixnum[1] = RefineType v10, NotString
-          v17:BasicObject = Send v16, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb6(v17)
-        bb6(v19:BasicObject):
-          CondBranchHasType v19, String, bb7(), bb8()
+          v18:Fixnum[1] = RefineType v12, NotString
+          v19:BasicObject = Send v18, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb6(v19)
+        bb6(v21:BasicObject):
+          CondBranchHasType v21, String, bb7(), bb8()
         bb7():
-          v22:String = RefineType v19, String
-          Jump bb9(v22)
-        bb8():
-          v24:StringExact = AnyToString v10
+          v24:String = RefineType v21, String
           Jump bb9(v24)
-        bb9(v26:String):
-          v28:Fixnum[2] = Const Value(2)
-          CondBranchHasType v28, String, bb10(), bb11()
+        bb8():
+          v26:StringExact = AnyToString v12
+          Jump bb9(v26)
+        bb9(v28:String):
+          v30:Fixnum[2] = Const Value(2)
+          CondBranchHasType v30, String, bb10(), bb11()
         bb10():
-          v32 = RefineType v28, String
-          Jump bb12(v32)
+          v34 = RefineType v30, String
+          Jump bb12(v34)
         bb11():
-          v34:Fixnum[2] = RefineType v28, NotString
-          v35:BasicObject = Send v34, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb12(v35)
-        bb12(v37:BasicObject):
-          CondBranchHasType v37, String, bb13(), bb14()
+          v36:Fixnum[2] = RefineType v30, NotString
+          v37:BasicObject = Send v36, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb12(v37)
+        bb12(v39:BasicObject):
+          CondBranchHasType v39, String, bb13(), bb14()
         bb13():
-          v40:String = RefineType v37, String
-          Jump bb15(v40)
-        bb14():
-          v42:StringExact = AnyToString v28
+          v42:String = RefineType v39, String
           Jump bb15(v42)
-        bb15(v44:String):
-          v46:Fixnum[3] = Const Value(3)
-          CondBranchHasType v46, String, bb16(), bb17()
+        bb14():
+          v44:StringExact = AnyToString v30
+          Jump bb15(v44)
+        bb15(v46:String):
+          v48:Fixnum[3] = Const Value(3)
+          CondBranchHasType v48, String, bb16(), bb17()
         bb16():
-          v50 = RefineType v46, String
-          Jump bb18(v50)
+          v52 = RefineType v48, String
+          Jump bb18(v52)
         bb17():
-          v52:Fixnum[3] = RefineType v46, NotString
-          v53:BasicObject = Send v52, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb18(v53)
-        bb18(v55:BasicObject):
-          CondBranchHasType v55, String, bb19(), bb20()
+          v54:Fixnum[3] = RefineType v48, NotString
+          v55:BasicObject = Send v54, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb18(v55)
+        bb18(v57:BasicObject):
+          CondBranchHasType v57, String, bb19(), bb20()
         bb19():
-          v58:String = RefineType v55, String
-          Jump bb21(v58)
-        bb20():
-          v60:StringExact = AnyToString v46
+          v60:String = RefineType v57, String
           Jump bb21(v60)
-        bb21(v62:String):
-          v64:StringExact = StringConcat v26, v44, v62
+        bb20():
+          v62:StringExact = AnyToString v48
+          Jump bb21(v62)
+        bb21(v64:String):
+          v66:StringExact = StringConcat v10, v28, v46, v64
           CheckInterrupts
-          Return v64
+          Return v66
         ");
     }
 

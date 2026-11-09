@@ -733,8 +733,19 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                             encoding = scope_node->encoding;
                         }
 
-                        if (parts_size == 1) {
+                        // concatstrings takes the encoding of its result from
+                        // its first operand, so a string starting with an
+                        // interpolation needs a leading empty string to start
+                        // from the source encoding. toregexp only needs one
+                        // when the interpolation is the sole part, where it
+                        // carries the encoding from the regexp's flags.
+                        if (index == 0 && (implicit_regexp_encoding == NULL || parts_size == 1)) {
                             current_string = rb_enc_str_new(NULL, 0, encoding);
+
+                            // The line event lands on the first instruction,
+                            // so this string takes the line of the code it
+                            // precedes rather than that of a heredoc opener.
+                            current_location = PM_NODE_START_LOCATION(part);
                         }
                     }
 
