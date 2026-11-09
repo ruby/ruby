@@ -326,4 +326,13 @@ RSpec.describe Bundler::Settings::TCPSocketProbe do
       expect(probe.replies?(mirror)).to be_falsey
     end
   end
+
+  context "when connect fails immediately" do
+    let(:mirror) { Bundler::Settings::Mirror.new("http://127.0.0.1:9292", 1) }
+
+    it "probes falsey instead of raising" do
+      allow_any_instance_of(Socket).to receive(:connect_nonblock).and_raise(Errno::EHOSTUNREACH)
+      expect(probe.replies?(mirror)).to be_falsey
+    end
+  end
 end
