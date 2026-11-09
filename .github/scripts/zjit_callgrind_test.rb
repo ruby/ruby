@@ -69,6 +69,7 @@ class ZJITCallgrindTest < Minitest::Test
   def test_change_direction_and_count_formatting
     text = ZJITCallgrind.report({'fib' => 1000, 'getivar' => 100},
                               {'getivar' => 120, 'fib' => 900}, 'base', 'head', 'bench')
+    assert_includes text, '40 warmup iterations, then 1 measured iteration'
     assert_includes text, '| fib | 1,000 | 900 | -10.00% |'
     assert_includes text, '| getivar | 100 | 120 | +20.00% |'
   end

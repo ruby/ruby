@@ -28,9 +28,7 @@ jobs:
       RUBY_BENCH_REV: 01e54d3307d4bf4687fbef3538258dad46bccabd
       BASE_SHA: ${{ github.event.pull_request.base.sha }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-      # A bounded mix of macro- and microbenchmarks for PR feedback.
-      BENCHMARKS: 'railsbench liquid-render optcarrot fib getivar setivar'
-      WARMUP_ITRS: 10
+      WARMUP_ITRS: 40
       MIN_BENCH_ITRS: 1
       MIN_BENCH_TIME: 0
       # Generated code can reuse addresses; Valgrind must recheck translations.
@@ -85,13 +83,20 @@ jobs:
       - name: Compare base and PR with ZJIT enabled
         working-directory: ruby-bench
         run: |
+          # Category and name filters intersect, so select their union explicitly.
+          ruby -ryaml -e '
+            metadata = YAML.load_file("benchmarks.yml")
+            headline = metadata.select { |_, info| info["category"] == "headline" }.keys
+            puts (headline + ["optcarrot"]).uniq
+          ' > "$RUNNER_TEMP/callgrind-benchmarks"
+          mapfile -t benchmarks < "$RUNNER_TEMP/callgrind-benchmarks"
           for revision in base pr; do
             ruby run_benchmarks.rb \
               --harness=callgrind --no-sudo --no-pinning \
               --out_path="$GITHUB_WORKSPACE/results/$revision" \
               --out-name="$GITHUB_WORKSPACE/results/$revision/results" \
               -e "$revision::$RUNNER_TEMP/$revision-install/bin/ruby --zjit" \
-              $BENCHMARKS
+              "${benchmarks[@]}"
           done
 
       - name: Format instruction-count comparison

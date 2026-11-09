@@ -12,9 +12,10 @@ The workflow pins ruby/ruby-bench PR #576's tip to
 
 ## Measurement
 
-The bounded suite is configured in `BENCHMARKS` in the workflow. ruby-bench
-interprets these as name filters (so `getivar` also selects `getivar-module`).
-Each process runs 10 uninstrumented warmup iterations followed by one measured
+The workflow selects all headline benchmarks from ruby-bench's `benchmarks.yml`
+and adds optcarrot. It passes their names explicitly because ruby-bench's
+category and name filters intersect rather than selecting a union.
+Each process runs 40 uninstrumented warmup iterations followed by one measured
 iteration. Callgrind's `Ir` event counts executed native instructions, including
 JIT code and C code. `--smc-check=all` handles generated code at reused addresses.
 

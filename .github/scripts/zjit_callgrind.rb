@@ -65,7 +65,7 @@ module ZJITCallgrind
         "Base: `#{base_sha}` → PR: `#{head_sha}`",
         "ruby-bench: `#{bench_rev}` (PR #576 Callgrind harness).",
         '',
-        '10 warmup iterations, then 1 measured iteration; both Rubies use `--zjit`.',
+        '40 warmup iterations, then 1 measured iteration; both Rubies use `--zjit`.',
         'Instruction counts (Ir), not elapsed time. Negative change means fewer instructions.',
         'Setup and warmup are excluded; compilation and GC during measurement are included.',
         '',
