@@ -11819,11 +11819,21 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     /* Since we've hit the terminator of the regular expression,
-                     * we now need to parse the options. They have to be part of
-                     * this token, so they cannot be read from past a heredoc
-                     * body. */
+                     * we now need to parse the options. */
                     if (parser->next_start == NULL) {
                         parser->current.end += pm_strspn_regexp_option(parser->current.end, parser->end - parser->current.end);
+                    } else {
+                        /* A newline terminator with a heredoc body pending
+                         * leaves the options on the line after that body. The
+                         * token then starts on the newline ending the body, so
+                         * that it is still a newline followed by the options. */
+                        size_t options = pm_strspn_regexp_option(parser->next_start, parser->end - parser->next_start);
+
+                        if (options > 0) {
+                            parser->current.start = parser->next_start - 1;
+                            parser->current.end = parser->next_start + options;
+                            parser->next_start = NULL;
+                        }
                     }
 
                     lex_mode_pop(parser);

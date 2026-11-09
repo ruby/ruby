@@ -69,6 +69,8 @@ module Ruby::Prism
     snippet "control escape consuming newline after heredoc in interpolation", "%\n\#{<<e}\\c\n\n"
     snippet "newline delimited regexp followed by embdoc after heredoc", "%r\n\#{<<A}\n=begin\n"
     snippet "newline delimited regexp followed by data marker after heredoc", "%r\n\#{<<A}\n__END__\n"
+    snippet "newline delimited regexp with options after heredoc body", "%r\n\#{<<A}\nA\ni"
+    snippet "newline delimited regexp with options after unterminated heredoc", "%r\n\#{<<A}\ni"
     snippet "control escape consuming newline with nested unterminated heredocs", "<<\"\#{0}\n\#{<<0}\\C-\n\#{0}\n\n"
     snippet "control escape consuming last newline with nested unterminated heredocs", "<<\"\#{0}\n\#{<<0}\\C-\n\#{0}\n"
     snippet "repeated control escapes consuming newlines after nested heredocs", "\n<<\"\n" + "\#{<<\"\#{0}\"}\n\#{<<0}\\C-\n\#{0}\n" * 32 + "\n\n"
