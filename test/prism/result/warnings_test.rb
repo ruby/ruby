@@ -530,6 +530,29 @@ module Ruby::Prism
       assert_equal :verbose, warning.level
     end
 
+    def test_invalid_character_syntax
+      { "\n" => "\\n", "\r\n" => "\\n", "\t" => "\\t", "\v" => "\\v", "\f" => "\\f", "\r" => "\\r" }.each do |whitespace, name|
+        assert_warning("foo(\"\\C-#{whitespace}\")", "invalid character syntax; use #{name}")
+        assert_warning("foo(\"\\c#{whitespace}\")", "invalid character syntax; use #{name}")
+        assert_warning("foo(\"\\M-#{whitespace}\")", "invalid character syntax; use \\M-#{name}")
+        assert_warning("foo(\"\\M-\\C-#{whitespace}\")", "invalid character syntax; use \\M-#{name}")
+        assert_warning("foo(\"\\C-\\M-#{whitespace}\")", "invalid character syntax; use \\M-#{name}")
+        assert_warning("foo(/\\C-#{whitespace}/)", "invalid character syntax; use #{name}")
+        assert_warning("foo(?\\C-#{whitespace})", "invalid character syntax; use #{name}")
+      end
+    end
+
+    def test_invalid_character_syntax_space
+      assert_warning("foo(\"\\C- \")", "invalid character syntax; use \\C-\\s")
+      assert_warning("foo(\"\\M- \")", "invalid character syntax; use \\M-\\s")
+      assert_warning("foo(\"\\M-\\C- \")", "invalid character syntax; use \\M-\\C-\\s")
+      assert_warning("foo(\"\\C-\\M- \")", "invalid character syntax; use \\C-\\M-\\s")
+    end
+
+    def test_invalid_character_syntax_with_pending_heredoc
+      assert_warning("foo(\"\#{<<A}\\C-\nA\n\")", "invalid character syntax; use \\n")
+    end
+
     private
 
     def assert_warning(source, *messages, compare: true, **options)

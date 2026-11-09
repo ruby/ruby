@@ -9096,24 +9096,6 @@ escape_consume_newline(pm_parser_t *parser, uint32_t width) {
 }
 
 /**
- * Consume the byte that a control or meta escape applies to, and return the
- * byte to apply it to. A line ending of either form reads as a single newline.
- */
-static PRISM_INLINE uint8_t
-escape_consume_modified_byte(pm_parser_t *parser, uint8_t byte) {
-    size_t eol_length = match_eol(parser);
-
-    if (eol_length > 0) {
-        escape_consume_newline(parser, U32(eol_length));
-        parser->current.end += eol_length;
-        return '\n';
-    }
-
-    parser->current.end++;
-    return byte;
-}
-
-/**
  * Write each byte of the given escaped character into the buffer.
  */
 static PRISM_INLINE void
@@ -9141,8 +9123,8 @@ escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t fl
 }
 
 /**
- * Warn about using a space or a tab character in an escape, as opposed to using
- * \\s or \\t. Note that we can quite copy the source because the warning
+ * Warn about using a whitespace character in an escape, as opposed to using
+ * its escaped form. Note that we can quite copy the source because the warning
  * message replaces \\c with \\C.
  */
 static void
@@ -9159,6 +9141,36 @@ escape_read_warn(pm_parser_t *parser, uint8_t flags, uint8_t flag, const char *t
     );
 
 #undef FLAG
+}
+
+/**
+ * Consume the byte that a control or meta escape applies to, and return the
+ * byte to apply it to. A line ending of either form reads as a single newline.
+ * Whitespace other than a space has an escaped form to warn about, and flags
+ * and flag select the prefixes of that warning.
+ */
+static PRISM_INLINE uint8_t
+escape_consume_modified_byte(pm_parser_t *parser, uint8_t byte, uint8_t flags, uint8_t flag) {
+    size_t eol_length = match_eol(parser);
+
+    if (eol_length > 0) {
+        escape_consume_newline(parser, U32(eol_length));
+        parser->current.end += eol_length;
+        byte = '\n';
+    } else {
+        parser->current.end++;
+    }
+
+    switch (byte) {
+        case '\n': escape_read_warn(parser, flags, flag, "\\n"); break;
+        case '\t': escape_read_warn(parser, flags, flag, "\\t"); break;
+        case '\v': escape_read_warn(parser, flags, flag, "\\v"); break;
+        case '\f': escape_read_warn(parser, flags, flag, "\\f"); break;
+        case '\r': escape_read_warn(parser, flags, flag, "\\r"); break;
+        default: break;
+    }
+
+    return byte;
 }
 
 /**
@@ -9440,18 +9452,13 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                     escape_read_warn(parser, flags, PM_ESCAPE_FLAG_CONTROL, "\\s");
                     escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
-                case '\t':
-                    parser->current.end++;
-                    escape_read_warn(parser, flags, 0, "\\t");
-                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
-                    return;
                 default: {
                     if (!char_is_ascii_printable(peeked)) {
                         pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
                         return;
                     }
 
-                    escape_write_byte(parser, buffer, flags, escape_byte(escape_consume_modified_byte(parser, peeked), flags | PM_ESCAPE_FLAG_CONTROL));
+                    escape_write_byte(parser, buffer, flags, escape_byte(escape_consume_modified_byte(parser, peeked, flags, 0), flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
                 }
             }
@@ -9496,11 +9503,6 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                     escape_read_warn(parser, flags, PM_ESCAPE_FLAG_CONTROL, "\\s");
                     escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
-                case '\t':
-                    parser->current.end++;
-                    escape_read_warn(parser, flags, 0, "\\t");
-                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
-                    return;
                 default: {
                     if (!char_is_ascii_printable(peeked)) {
                         size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
@@ -9508,7 +9510,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                         return;
                     }
 
-                    escape_write_byte(parser, buffer, flags, escape_byte(escape_consume_modified_byte(parser, peeked), flags | PM_ESCAPE_FLAG_CONTROL));
+                    escape_write_byte(parser, buffer, flags, escape_byte(escape_consume_modified_byte(parser, peeked, flags, 0), flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
                 }
             }
@@ -9548,11 +9550,6 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                     escape_read_warn(parser, flags, PM_ESCAPE_FLAG_META, "\\s");
                     escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
                     return;
-                case '\t':
-                    parser->current.end++;
-                    escape_read_warn(parser, flags & ((uint8_t) ~PM_ESCAPE_FLAG_CONTROL), PM_ESCAPE_FLAG_META, "\\t");
-                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
-                    return;
                 default:
                     if (!char_is_ascii_printable(peeked)) {
                         size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
@@ -9560,7 +9557,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                         return;
                     }
 
-                    escape_write_byte(parser, buffer, flags, escape_byte(escape_consume_modified_byte(parser, peeked), flags | PM_ESCAPE_FLAG_META));
+                    escape_write_byte(parser, buffer, flags, escape_byte(escape_consume_modified_byte(parser, peeked, flags & ((uint8_t) ~PM_ESCAPE_FLAG_CONTROL), PM_ESCAPE_FLAG_META), flags | PM_ESCAPE_FLAG_META));
                     return;
             }
         }
