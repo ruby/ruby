@@ -86,11 +86,13 @@ class TestMemoryView < Test::Unit::TestCase
   end
 
   def test_rb_memory_view_parse_item_format_with_spaces
-    # Spaces are ignored, as in item_size_from_format. The member list must be
-    # identical to the same format without spaces; a space must not produce an
-    # extra member. (Formerly the fill pass did not skip spaces, so each space
-    # wrote one rb_memory_view_item_component_t past the allocation.)
-    spaced, spaced_members, spaced_err = MemoryViewTestUtils.parse_item_format("c c 2 f3 x2 d")
+    # Spaces between components are ignored, as in item_size_from_format. A
+    # repeat count still binds to the type char immediately preceding it, so the
+    # spaces only separate whole "cNN" tokens. The member list must be identical
+    # to the same format without spaces; a space must not produce an extra
+    # member. (Formerly the fill pass did not skip spaces, so each space wrote
+    # one rb_memory_view_item_component_t past the allocation.)
+    spaced, spaced_members, spaced_err = MemoryViewTestUtils.parse_item_format("c c2 f3 x2 d")
     plain,  plain_members,  plain_err  = MemoryViewTestUtils.parse_item_format("cc2f3x2d")
 
     assert_nil(spaced_err)
