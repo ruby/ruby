@@ -162,6 +162,12 @@ Note: We're only listing outstanding class updates.
       and refer to shareable objects, instead of raising
       `Ractor::IsolationError` for any outer variable.  [[Feature #22444]]
 
+    * `Ractor.shareable_proc` and `Ractor.new` now also raise
+      `Ractor::IsolationError` when the block reads an outer variable assigned
+      in a `while`/`until`/`for` loop, in a `begin` body which is retried, in
+      a block using `redo` or from another block.  Such a variable can be
+      reassigned, which the shareable Proc could not honor.  [[Bug #22521]]
+
     * `Ractor::Port#receive`, `Ractor.receive` and `Ractor.select` accept a
       `timeout:` keyword argument (in seconds) and return `nil` once it passes.
       `timeout: 0` never blocks: it takes a message if one is already queued
@@ -745,6 +751,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Bug #22273]: https://bugs.ruby-lang.org/issues/22273
 [Bug #22276]: https://bugs.ruby-lang.org/issues/22276
 [Bug #22379]: https://bugs.ruby-lang.org/issues/22379
+[Bug #22521]: https://bugs.ruby-lang.org/issues/22521
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330

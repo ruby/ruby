@@ -1928,12 +1928,24 @@ iseq_lvar_id(const rb_iseq_t *iseq, int idx, int level)
 static void
 update_lvar_state(const rb_iseq_t *iseq, int level, int idx)
 {
+    /* An assignment from a block, which may be called many times, in a loop or
+     * in a block using redo may be executed more than once for the same
+     * variable. Assignments from rescue/ensure clauses (also level > 0) are
+     * conservatively treated the same way. */
+    bool repeated = level > 0 ||
+        ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth > 0 ||
+        ISEQ_COMPILE_DATA(iseq)->lvar_redo;
+
     for (int i=0; i<level; i++) {
         iseq = ISEQ_BODY(iseq)->parent_iseq;
     }
 
     uint8_t *states = iseq_lvar_states(ISEQ_BODY(iseq));
     int table_idx = ISEQ_BODY(iseq)->local_table_size - idx;
+    if (repeated) {
+        iseq_lvar_state_set(states, table_idx, lvar_reassigned);
+        return;
+    }
     switch (iseq_lvar_state_get(states, table_idx)) {
       case lvar_uninitialized:
         iseq_lvar_state_set(states, table_idx, lvar_initialized);
@@ -1947,6 +1959,29 @@ update_lvar_state(const rb_iseq_t *iseq, int level, int idx)
       default:
         rb_bug("unreachable");
     }
+}
+
+/* redo in a block reruns its body in the same frame, so every assignment in
+ * the block, before or after the redo, may be executed repeatedly. */
+static void
+iseq_set_lvar_redo(const rb_iseq_t *block_iseq)
+{
+    if (ISEQ_COMPILE_DATA(block_iseq)->lvar_redo) return;
+    ISEQ_COMPILE_DATA(block_iseq)->lvar_redo = true;
+
+    uint8_t *states = iseq_lvar_states(ISEQ_BODY(block_iseq));
+    for (unsigned int i=0; i<ISEQ_BODY(block_iseq)->local_table_size; i++) {
+        if (iseq_lvar_state_get(states, i) == lvar_initialized) {
+            iseq_lvar_state_set(states, i, lvar_reassigned);
+        }
+    }
+}
+
+/* retry in a rescue iseq reruns the begin body of its parent iseq. */
+static void
+iseq_set_rescue_has_retry(const rb_iseq_t *rescue_iseq)
+{
+    ISEQ_COMPILE_DATA(ISEQ_BODY(rescue_iseq)->parent_iseq)->rescue_has_retry = true;
 }
 
 static int
@@ -8637,6 +8672,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     LABEL *tmp_label = NULL;
 
     ISEQ_COMPILE_DATA(iseq)->loopval_popped = 0;
+    ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth++;
     push_ensure_entry(iseq, &enl, NULL, NULL);
 
     if (RNODE_WHILE(node)->nd_state == 1) {
@@ -8708,6 +8744,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
     ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
     ISEQ_COMPILE_DATA(iseq)->loopval_popped = prev_loopval_popped;
+    ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth--;
     ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->prev;
     return COMPILE_OK;
 }
@@ -8956,6 +8993,7 @@ compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         LABEL *splabel = NEW_LABEL(0);
 
         debugs("redo in block");
+        iseq_set_lvar_redo(iseq);
         ADD_LABEL(ret, splabel);
         add_ensure_iseq(ret, iseq, 0);
         ADD_ADJUST(ret, line_node, ISEQ_COMPILE_DATA(iseq)->start_label);
@@ -8989,6 +9027,7 @@ compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
             ip = ISEQ_BODY(ip)->parent_iseq;
         }
         if (ip != 0) {
+            if (ISEQ_COMPILE_DATA(ip)->redo_label == 0) iseq_set_lvar_redo(ip);
             ADD_INSN(ret, line_node, putnil);
             ADD_INSN1(ret, line_node, throw, INT2FIX(VM_THROW_NO_ESCAPE_FLAG | TAG_REDO));
 
@@ -9010,6 +9049,7 @@ compile_retry(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     const NODE *line_node = node;
 
     if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_RESCUE) {
+        iseq_set_rescue_has_retry(iseq);
         ADD_INSN(ret, line_node, putnil);
         ADD_INSN1(ret, line_node, throw, INT2FIX(TAG_RETRY));
 
@@ -9032,10 +9072,14 @@ compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     LABEL *lstart = NEW_LABEL(line);
     LABEL *lend = NEW_LABEL(line);
     LABEL *lcont = NEW_LABEL(line);
+    bool prev_rescue_has_retry = ISEQ_COMPILE_DATA(iseq)->rescue_has_retry;
+    ISEQ_COMPILE_DATA(iseq)->rescue_has_retry = false;
     const rb_iseq_t *rescue = NEW_CHILD_ISEQ(RNODE_RESCUE(node)->nd_resq,
                                              rb_str_concat(rb_str_new2("rescue in "),
                                                            ISEQ_BODY(iseq)->location.label),
                                              ISEQ_TYPE_RESCUE, line);
+    bool retried = ISEQ_COMPILE_DATA(iseq)->rescue_has_retry;
+    ISEQ_COMPILE_DATA(iseq)->rescue_has_retry = prev_rescue_has_retry;
 
     lstart->rescued = LABEL_RESCUE_BEG;
     lend->rescued = LABEL_RESCUE_END;
@@ -9043,9 +9087,11 @@ compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 
     bool prev_in_rescue = ISEQ_COMPILE_DATA(iseq)->in_rescue;
     ISEQ_COMPILE_DATA(iseq)->in_rescue = true;
+    if (retried) ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth++;
     {
         CHECK(COMPILE(ret, "rescue head", RNODE_RESCUE(node)->nd_head));
     }
+    if (retried) ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth--;
     ISEQ_COMPILE_DATA(iseq)->in_rescue = prev_in_rescue;
 
     ADD_LABEL(ret, lend);

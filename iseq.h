@@ -204,6 +204,11 @@ struct iseq_compile_data {
       struct iseq_compile_data_storage *storage_current;
     } insn;
     bool in_rescue;
+    /* Local variable assignments compiled while lvar_loop_depth > 0 or in a
+     * block using redo may be executed repeatedly in the same frame. */
+    int lvar_loop_depth;
+    bool lvar_redo;
+    bool rescue_has_retry; /* set by retry in a child rescue iseq */
     int loopval_popped;	/* used by NODE_BREAK */
     int last_line;
     int label_no;

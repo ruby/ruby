@@ -82,6 +82,54 @@ class TestRactor < Test::Unit::TestCase
 =end
   end
 
+  def test_shareability_of_outer_variables_assigned_in_loops
+    assert_ractor(<<~'RUBY')
+      # Each of these assigns the captured variable more than once
+      for a in [1, 2]
+        assert_raise(Ractor::IsolationError) { Ractor.shareable_proc { a } }
+      end
+
+      i = 0
+      while i < 2
+        b = i
+        assert_raise(Ractor::IsolationError) { Ractor.shareable_proc { b } }
+        i += 1
+      end
+
+      i = 0
+      begin
+        c = i
+        assert_raise(Ractor::IsolationError) { Ractor.shareable_proc { c } }
+        raise if (i += 1) < 2
+      rescue
+        retry
+      end
+
+      i = 0
+      [1].each do
+        d = i
+        assert_raise(Ractor::IsolationError) { Ractor.shareable_proc { d } }
+        redo if (i += 1) < 2
+      end
+
+      # A new frame per iteration, so each variable is assigned once
+      [1, 2].each do |e|
+        f = e * 2
+        assert_equal [e, f], Ractor.shareable_proc { [e, f] }.call
+      end
+
+      g = 1
+      i = 0
+      i += 1 while i < 2
+      begin
+        h = 2
+      rescue
+        nil
+      end
+      assert_equal [1, 2], Ractor.shareable_proc { [g, h] }.call
+    RUBY
+  end
+
   def test_shareable_proc_define_method_super_method_missing
     assert_ractor(<<~'RUBY', timeout: 30)
       iterations = 1_000_000

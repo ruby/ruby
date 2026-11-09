@@ -1242,6 +1242,7 @@ pm_compile_loop(rb_iseq_t *iseq, const pm_node_location_t *node_location, pm_nod
     // lexical scope.
     struct iseq_compile_data_ensure_node_stack enl;
     push_ensure_entry(iseq, &enl, NULL, NULL);
+    ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth++;
 
     // begin; end while true
     if (flags & PM_LOOP_FLAGS_BEGIN_MODIFIER) {
@@ -1295,6 +1296,7 @@ pm_compile_loop(rb_iseq_t *iseq, const pm_node_location_t *node_location, pm_nod
     ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
     ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
     ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
+    ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth--;
     ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->prev;
 
     return;
@@ -5511,12 +5513,16 @@ pm_compile_rescue(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_node_lo
     pm_scope_node_t rescue_scope_node;
     pm_scope_node_init((const pm_node_t *) cast->rescue_clause, &rescue_scope_node, scope_node);
 
+    bool prev_rescue_has_retry = ISEQ_COMPILE_DATA(iseq)->rescue_has_retry;
+    ISEQ_COMPILE_DATA(iseq)->rescue_has_retry = false;
     rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(
         &rescue_scope_node,
         rb_str_concat(rb_str_new2("rescue in "), ISEQ_BODY(iseq)->location.label),
         ISEQ_TYPE_RESCUE,
         pm_node_line_number_cached((const pm_node_t *) cast->rescue_clause, scope_node)
     );
+    bool retried = ISEQ_COMPILE_DATA(iseq)->rescue_has_retry;
+    ISEQ_COMPILE_DATA(iseq)->rescue_has_retry = prev_rescue_has_retry;
 
     pm_scope_node_destroy(&rescue_scope_node);
 
@@ -5526,6 +5532,7 @@ pm_compile_rescue(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_node_lo
 
     bool prev_in_rescue = ISEQ_COMPILE_DATA(iseq)->in_rescue;
     ISEQ_COMPILE_DATA(iseq)->in_rescue = true;
+    if (retried) ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth++;
 
     if (cast->statements != NULL) {
         PM_COMPILE_NOT_POPPED((const pm_node_t *) cast->statements);
@@ -5535,6 +5542,7 @@ pm_compile_rescue(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_node_lo
         PUSH_INSN(ret, location, putnil);
     }
 
+    if (retried) ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth--;
     ISEQ_COMPILE_DATA(iseq)->in_rescue = prev_in_rescue;
     PUSH_LABEL(ret, lend);
 
@@ -8521,6 +8529,7 @@ pm_compile_redo_node(rb_iseq_t *iseq, const pm_node_location_t *location, LINK_A
     else if (ISEQ_BODY(iseq)->type != ISEQ_TYPE_EVAL && ISEQ_COMPILE_DATA(iseq)->start_label && can_add_ensure_iseq(iseq)) {
         LABEL *splabel = NEW_LABEL(0);
 
+        iseq_set_lvar_redo(iseq);
         PUSH_LABEL(ret, splabel);
         pm_add_ensure_iseq(ret, iseq, 0, scope_node);
         PUSH_ADJUST(ret, *location, ISEQ_COMPILE_DATA(iseq)->start_label);
@@ -8553,6 +8562,7 @@ pm_compile_redo_node(rb_iseq_t *iseq, const pm_node_location_t *location, LINK_A
         }
 
         if (ip != 0) {
+            if (ISEQ_COMPILE_DATA(ip)->redo_label == 0) iseq_set_lvar_redo(ip);
             PUSH_INSN(ret, *location, putnil);
             PUSH_INSN1(ret, *location, throw, INT2FIX(VM_THROW_NO_ESCAPE_FLAG | TAG_REDO));
             if (popped) PUSH_INSN(ret, *location, pop);
@@ -10350,12 +10360,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_scope_node_t rescue_scope_node;
         pm_scope_node_init((const pm_node_t *) cast, &rescue_scope_node, scope_node);
 
+        bool prev_rescue_has_retry = ISEQ_COMPILE_DATA(iseq)->rescue_has_retry;
+        ISEQ_COMPILE_DATA(iseq)->rescue_has_retry = false;
         rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(
             &rescue_scope_node,
             rb_str_concat(rb_str_new2("rescue in "), ISEQ_BODY(iseq)->location.label),
             ISEQ_TYPE_RESCUE,
             pm_node_line_number_cached(cast->rescue_expression, scope_node)
         );
+        bool retried = ISEQ_COMPILE_DATA(iseq)->rescue_has_retry;
+        ISEQ_COMPILE_DATA(iseq)->rescue_has_retry = prev_rescue_has_retry;
 
         pm_scope_node_destroy(&rescue_scope_node);
 
@@ -10367,7 +10381,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         lend->rescued = LABEL_RESCUE_END;
 
         PUSH_LABEL(ret, lstart);
+        if (retried) ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth++;
         PM_COMPILE_NOT_POPPED(cast->expression);
+        if (retried) ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth--;
         PUSH_LABEL(ret, lend);
 
         PUSH_INSN(ret, location, nop);
@@ -10390,6 +10406,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // retry
         // ^^^^^
         if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_RESCUE) {
+            iseq_set_rescue_has_retry(iseq);
             PUSH_INSN(ret, location, putnil);
             PUSH_INSN1(ret, location, throw, INT2FIX(TAG_RETRY));
             if (popped) PUSH_INSN(ret, location, pop);
