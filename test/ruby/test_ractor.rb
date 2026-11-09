@@ -49,6 +49,24 @@ class TestRactor < Test::Unit::TestCase
     end
   end
 
+  def test_shareable_proc_special_variables_do_not_overwrite_root_frame
+    assert_ractor(<<~'RUBY')
+      set = Ractor.shareable_proc { |s| s =~ /(.)/; $_ = s; nil }
+      get = Ractor.shareable_proc { [$~ && $~[1], $_] }
+
+      # Special variables of shareable Procs are per Fiber
+      set.("a")
+      assert_equal ["a", "a"], get.()
+      assert_equal [[nil, nil], ["b", "b"]], Fiber.new { [get.(), (set.("b"); get.())] }.resume
+      assert_equal ["a", "a"], get.()
+
+      # and do not overwrite the special variables of the root frame of the Fiber/Thread
+      assert_equal ["z", "line"], Fiber.new { $_ = "line"; "z" =~ /(z)/; set.("c"); [$~[1], $_] }.resume
+      assert_equal ["z", "line"], Thread.new { $_ = "line"; "z" =~ /(z)/; set.("d"); [$~[1], $_] }.value
+      assert_equal [nil, nil], Fiber.new { set.("e"); [$~, $_] }.resume
+    RUBY
+  end
+
   def test_shareability_of_method_proc
     # TODO: fix with Ractor.shareable_proc/lambda
 =begin

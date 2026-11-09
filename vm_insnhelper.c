@@ -594,24 +594,31 @@ vm_svar_valid_p(VALUE svar)
 }
 #endif
 
-/* Should this frame's special variables live in the env's svar slot?  A SHAREABLE env
- * (isolated proc) can run in several Ractors at once, making svar shared mutable state
- * leaking $~/$_ across Ractors: keep them per-EC instead. */
-static inline bool
-lep_svar_in_env_p(const rb_execution_context_t *ec, const VALUE *lep)
+enum lep_svar_location {
+    LEP_SVAR_ENV,
+    LEP_SVAR_ROOT,
+    LEP_SVAR_ISOLATED,
+};
+
+/* Where do this frame's special variables live?  A SHAREABLE env (isolated proc) can
+ * run in several Ractors at once, making svar shared mutable state leaking $~/$_ across
+ * Ractors: keep them per-EC instead, separately from the root frame's ones, so that
+ * calling an isolated proc does not overwrite $~/$_ of the root frame of the Fiber. */
+static inline enum lep_svar_location
+lep_svar_location(const rb_execution_context_t *ec, const VALUE *lep)
 {
-    if (!lep) return false;
-    if (ec == NULL) return true;
-    if (ec->root_lep == lep) return false;
+    if (!lep) return LEP_SVAR_ROOT;
+    if (ec == NULL) return LEP_SVAR_ENV;
+    if (ec->root_lep == lep) return LEP_SVAR_ROOT;
     /* lep may be a stale on-stack ep of a frame whose env already escaped: lep[0]
      * still holds the imemo_env, so flags is not a FIXNUM and VM_ENV_ESCAPED_P
      * asserts.  That is not a live shareable proc's env, so fall back to in-env. */
     if (FIXNUM_P(lep[VM_ENV_DATA_INDEX_FLAGS]) &&
             VM_ENV_ESCAPED_P(lep) &&
             RB_FL_TEST_RAW(VM_ENV_ENVVAL(lep), RUBY_FL_SHAREABLE)) {
-        return false;
+        return LEP_SVAR_ISOLATED;
     }
-    return true;
+    return LEP_SVAR_ENV;
 }
 
 static inline struct vm_svar *
@@ -619,11 +626,18 @@ lep_svar(const rb_execution_context_t *ec, const VALUE *lep)
 {
     VALUE svar;
 
-    if (lep_svar_in_env_p(ec, lep)) {
+    switch (lep_svar_location(ec, lep)) {
+      case LEP_SVAR_ENV:
         svar = lep[VM_ENV_DATA_INDEX_ME_CREF];
-    }
-    else {
+        break;
+      case LEP_SVAR_ROOT:
         svar = ec->root_svar;
+        break;
+      case LEP_SVAR_ISOLATED:
+        svar = ec->isolated_svar;
+        break;
+      default:
+        UNREACHABLE_RETURN(NULL);
     }
 
     VM_ASSERT(svar == Qfalse || vm_svar_valid_p(svar));
@@ -636,11 +650,16 @@ lep_svar_write(const rb_execution_context_t *ec, const VALUE *lep, const struct 
 {
     VM_ASSERT(vm_svar_valid_p((VALUE)svar));
 
-    if (lep_svar_in_env_p(ec, lep)) {
+    switch (lep_svar_location(ec, lep)) {
+      case LEP_SVAR_ENV:
         vm_env_write(lep, VM_ENV_DATA_INDEX_ME_CREF, (VALUE)svar);
-    }
-    else {
+        break;
+      case LEP_SVAR_ROOT:
         RB_OBJ_WRITE(rb_ec_thread_ptr(ec)->self, &ec->root_svar, svar);
+        break;
+      case LEP_SVAR_ISOLATED:
+        RB_OBJ_WRITE(rb_ec_thread_ptr(ec)->self, &ec->isolated_svar, svar);
+        break;
     }
 }
 
