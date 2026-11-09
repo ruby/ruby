@@ -192,7 +192,7 @@
 # define ADD_OVERFLOW_LEN_P(a, b)       ADD_OVERFLOW_INT_P(a, b)
 #endif
 
-#define ADD_OVERFLOW_SIZE_P(a, b)       ADD_OVERFLOW_UNSIGNED_INTEGER_P(a, b SIZE_MAX)
+#define ADD_OVERFLOW_SIZE_P(a, b)       ADD_OVERFLOW_UNSIGNED_INTEGER_P(a, b, SIZE_MAX)
 #endif
 
 #ifndef SUB_OVERFLOW_SIGNED_INTEGER_P
@@ -244,7 +244,7 @@
 # define SUB_OVERFLOW_LEN_P(a, b)       SUB_OVERFLOW_INT_P(a, b)
 #endif
 
-#define SUB_OVERFLOW_SIZE_P(a, b)       SUB_OVERFLOW_UNSIGNED_INTEGER_P(a, b SIZE_MAX)
+#define SUB_OVERFLOW_SIZE_P(a, b)       SUB_OVERFLOW_UNSIGNED_INTEGER_P(a, b)
 #endif
 
 #ifdef HAVE_UINT128_T
