@@ -1605,42 +1605,34 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
             bool last_element = index == elements->size - 1;
             bool only_element = first_element && last_element;
 
-            if (only_element) {
-                if (argument) {
-                    if (empty_hash) {
-                        // **{} appears at the only keyword argument in method call
-                        // We can substitute it for `**nil`.
-                        PUSH_INSN(ret, location, putnil);
-                    }
-                    else {
-                        // ** is the only element.
-                        // Since we're in a method call, we can use it directly.
-                        // This will be not be flagged as mutable.
-                        if (shareability == 0) {
-                            PM_COMPILE_NOT_POPPED(element);
-                        }
-                        else {
-                            pm_compile_shareable_constant_value(iseq, element, shareability, path, ret, scope_node, false);
-                        }
-                    }
+            if (only_element && argument) {
+                if (empty_hash) {
+                    // **{} appears at the only keyword argument in method call
+                    // We can substitute it for `**nil`.
+                    PUSH_INSN(ret, location, putnil);
                 }
                 else {
-                    // {**something}
-                    // We can simply call `core_hash_coerce(something)` to ensure it is coerced
-                    // into a mutable Hash.
-                    PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                    // ** is the only element.
+                    // Since we're in a method call, we can use it directly.
+                    // This will be not be flagged as mutable.
                     if (shareability == 0) {
                         PM_COMPILE_NOT_POPPED(element);
                     }
                     else {
                         pm_compile_shareable_constant_value(iseq, element, shareability, path, ret, scope_node, false);
                     }
-                    PUSH_SEND(ret, location, id_core_hash_coerce, INT2FIX(1));
                 }
             }
             else {
-                if (!first_element) {
-                    PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                // Each splat is converted as soon as it is evaluated. A leading
+                // splat is merged into a new hash so that the result never
+                // takes on the class, default, or comparison mode of the
+                // splatted object.
+                PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                if (first_element) {
+                    PUSH_INSN1(ret, location, newhash, INT2FIX(0));
+                }
+                else {
                     PUSH_INSN(ret, location, swap);
                 }
 
@@ -1651,15 +1643,13 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                     pm_compile_shareable_constant_value(iseq, element, shareability, path, ret, scope_node, false);
                 }
 
-                if (!first_element) {
-                    if (owned_hash) {
-                        PUSH_SEND(ret, location, id_core_hash_merge_bang_kwd, INT2FIX(2));
-                    }
-                    else {
-                        PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
-                        owned_hash = true;
-                    }
+                if (first_element || owned_hash) {
+                    PUSH_SEND(ret, location, id_core_hash_merge_bang_kwd, INT2FIX(2));
                 }
+                else {
+                    PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
+                }
+                owned_hash = true;
             }
 
             first_chunk = false;
