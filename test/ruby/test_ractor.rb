@@ -1058,6 +1058,16 @@ class TestRactor < Test::Unit::TestCase
       assert_equal 4, ports.size
     RUBY
   end
+
+  def test_gc_stress_pooled_pages_no_crash
+    assert_separately([{"RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "0.1"}, "-W0"], __FILE__, __LINE__, <<-'RUBY')
+      r = Ractor.new do
+        GC.stress = true
+        +""
+      end
+      assert_equal "", r.value
+    RUBY
+  end
   def test_port_receive_timeout
     assert_separately([], __FILE__, __LINE__, <<-'RUBY')
       Warning[:experimental] = false
