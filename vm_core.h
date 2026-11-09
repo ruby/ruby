@@ -1404,6 +1404,7 @@ const rb_cref_t *rb_proc_refinements_cref_for_call(VALUE procval);
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_proc_ractor_make_shareable(VALUE proc, VALUE replace_self);
 RUBY_SYMBOL_EXPORT_END
+VALUE rb_proc_ractor_try_make_shareable(VALUE proc, VALUE replace_self);
 
 typedef struct {
     VALUE flags; /* imemo header */

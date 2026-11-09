@@ -1654,6 +1654,32 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
     return copied_env;
 }
 
+/* Same checks as env_copy(), without raising or allocating the copy */
+static bool
+env_shareable_p(const VALUE *src_ep, VALUE read_only_variables)
+{
+    if (!read_only_variables) return true;
+
+    for (long i = 0; i < RARRAY_LEN(read_only_variables); i++) {
+        ID id = NUM2ID(RARRAY_AREF(read_only_variables, i));
+
+        for (const VALUE *ep = src_ep; ep; ep = VM_ENV_LOCAL_P(ep) ? NULL : VM_ENV_PREV_EP(ep)) {
+            const rb_env_t *env = (rb_env_t *)VM_ENV_ENVVAL(ep);
+            const struct rb_iseq_constant_body *body = ISEQ_BODY(env->iseq);
+            unsigned int j;
+            for (j=0; j<body->local_table_size; j++) {
+                if (id == body->local_table[j]) break;
+            }
+            if (j < body->local_table_size) {
+                if (iseq_lvar_state_get(iseq_lvar_states(body), j) == lvar_reassigned) return false;
+                if (!rb_ractor_shareable_p(env_local_value(env, j))) return false;
+                break;
+            }
+        }
+    }
+    return true;
+}
+
 static void
 proc_isolate_env(VALUE self, rb_proc_t *proc, VALUE read_only_variables)
 {
@@ -1663,8 +1689,10 @@ proc_isolate_env(VALUE self, rb_proc_t *proc, VALUE read_only_variables)
     RB_OBJ_WRITTEN(self, Qundef, env);
 }
 
+// Returns Qundef instead of raising if !raise and some outer variable is written
+// or the block of the method is used.
 static VALUE
-proc_shared_outer_variables(struct rb_id_table *outer_variables, const char *message)
+proc_shared_outer_variables(struct rb_id_table *outer_variables, bool raise, const char *message)
 {
     struct collect_outer_variable_name_data data = {
         .ary = Qfalse,
@@ -1672,6 +1700,10 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, const char *mes
         .block_use = NULL,
     };
     rb_id_table_foreach(outer_variables, collect_outer_variable_names, (void *)&data);
+
+    if (!raise && (data.ary != Qfalse || data.block_use)) {
+        return Qundef;
+    }
 
     if (data.ary != Qfalse) {
         VALUE str = rb_sprintf("can not %s because it accesses outer variables", message);
@@ -1696,21 +1728,24 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, const char *mes
     return data.read_only;
 }
 
-VALUE
-rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
+// Returns Qfalse instead of raising if !raise and the Proc cannot be made shareable.
+// The Proc is only modified on success.
+static VALUE
+proc_ractor_make_shareable(VALUE self, VALUE replace_self, bool raise)
 {
     const rb_iseq_t *iseq = vm_proc_iseq(self);
 
     if (iseq) {
         rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
 
-        if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
-
-        if (!UNDEF_P(replace_self)) {
-            RB_OBJ_WRITE(self, &proc->block.as.captured.self, replace_self);
+        if (proc->block.type != block_type_iseq) {
+            if (!raise) return Qfalse;
+            rb_raise(rb_eRuntimeError, "not supported yet");
         }
 
-        if (!rb_ractor_shareable_p(vm_block_self(&proc->block))) {
+        VALUE new_self = UNDEF_P(replace_self) ? vm_block_self(&proc->block) : replace_self;
+        if (!rb_ractor_shareable_p(new_self)) {
+            if (!raise) return Qfalse;
             rb_raise(rb_eRactorIsolationError,
                      "Proc's self is not shareable: %" PRIsVALUE,
                      self);
@@ -1720,18 +1755,28 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 
         if (ISEQ_BODY(iseq)->outer_variables) {
             read_only_variables =
-                proc_shared_outer_variables(ISEQ_BODY(iseq)->outer_variables, "make a Proc shareable");
+                proc_shared_outer_variables(ISEQ_BODY(iseq)->outer_variables, raise, "make a Proc shareable");
+            if (UNDEF_P(read_only_variables)) return Qfalse;
         }
 
+        if (!raise && !env_shareable_p(proc->block.as.captured.ep, read_only_variables)) {
+            return Qfalse;
+        }
+
+        RB_OBJ_WRITE(self, &proc->block.as.captured.self, new_self);
         proc_isolate_env(self, proc, read_only_variables);
         proc->header.is_isolated = TRUE;
     }
     else {
         const struct rb_block *block = vm_proc_block(self);
-        if (block->type != block_type_symbol) rb_raise(rb_eRuntimeError, "not supported yet");
+        if (block->type != block_type_symbol) {
+            if (!raise) return Qfalse;
+            rb_raise(rb_eRuntimeError, "not supported yet");
+        }
 
         VALUE proc_self = vm_block_self(block);
         if (!rb_ractor_shareable_p(proc_self)) {
+            if (!raise) return Qfalse;
             rb_raise(rb_eRactorIsolationError,
                      "Proc's self is not shareable: %" PRIsVALUE,
                      self);
@@ -1740,6 +1785,20 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 
     RB_OBJ_SET_FROZEN_SHAREABLE(self);
     return self;
+}
+
+VALUE
+rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
+{
+    return proc_ractor_make_shareable(self, replace_self, true);
+}
+
+// Like rb_proc_ractor_make_shareable(), but returns Qfalse and leaves the Proc
+// unchanged instead of raising if it cannot be made shareable.
+VALUE
+rb_proc_ractor_try_make_shareable(VALUE self, VALUE replace_self)
+{
+    return proc_ractor_make_shareable(self, replace_self, false);
 }
 
 VALUE
