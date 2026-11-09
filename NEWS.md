@@ -247,7 +247,7 @@ releases.
 
 ### The following bundled gems are promoted from default gems.
 
-* prism 1.9.0
+* prism 2.1.0
   * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
 * tsort 0.2.0
 * win32-registry 0.1.2
@@ -265,7 +265,7 @@ They are still available on rubygems.org and can be installed with
 ### The following default gems are updated.
 
 * RubyGems 4.1.0.beta3
-  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18], [v4.0.19][RubyGems-v4.0.19], [v4.0.20][RubyGems-v4.0.20], [v4.0.21][RubyGems-v4.0.21], [v4.0.22][RubyGems-v4.0.22], [v4.0.23][RubyGems-v4.0.23], [v4.1.0.beta1][RubyGems-v4.1.0.beta1], [v4.1.0.beta2][RubyGems-v4.1.0.beta2]
+  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18], [v4.0.19][RubyGems-v4.0.19], [v4.0.20][RubyGems-v4.0.20], [v4.0.21][RubyGems-v4.0.21], [v4.0.22][RubyGems-v4.0.22], [v4.0.23][RubyGems-v4.0.23], [v4.0.24][RubyGems-v4.0.24], [v4.1.0.beta1][RubyGems-v4.1.0.beta1], [v4.1.0.beta2][RubyGems-v4.1.0.beta2], [v4.1.0.beta3][RubyGems-v4.1.0.beta3]
 * bundler 4.1.0.beta3
   * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10], [v4.0.11][bundler-v4.0.11], [v4.0.12][bundler-v4.0.12], [v4.0.13][bundler-v4.0.13], [v4.0.14][bundler-v4.0.14], [v4.0.15][bundler-v4.0.15], [v4.0.16][bundler-v4.0.16], [v4.0.17][bundler-v4.0.17]
 * date 3.6.0
@@ -282,7 +282,7 @@ They are still available on rubygems.org and can be installed with
 * fileutils 1.8.1
   * 1.8.0 to [v1.8.1][fileutils-v1.8.1]
 * io-console 0.9.5
-  * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2], [v0.9.3][io-console-v0.9.3], [v0.9.4][io-console-v0.9.4]
+  * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2], [v0.9.3][io-console-v0.9.3], [v0.9.4][io-console-v0.9.4], [v0.9.5][io-console-v0.9.5]
 * io-wait 999.999.999
 * ipaddr 1.3.0
   * 1.2.8 to [v1.2.9][ipaddr-v1.2.9], [v1.3.0][ipaddr-v1.3.0]
@@ -323,7 +323,7 @@ They are still available on rubygems.org and can be installed with
 
 ### The following bundled gems are updated.
 
-* minitest 6.0.6
+* minitest 6.1.0
 * power_assert 3.1.0
   * 3.0.1 to [v3.1.0][power_assert-v3.1.0]
 * rake 13.4.2
@@ -348,17 +348,17 @@ They are still available on rubygems.org and can be installed with
   * 0.2.0 to [v0.3.0][nkf-v0.3.0]
 * syslog 0.4.0
   * 0.3.0 to [v0.4.0][syslog-v0.4.0]
-* csv 3.3.6
+* csv 3.3.7
   * 3.3.5 to [v3.3.6][csv-v3.3.6]
-* repl_type_completor 0.1.16
+* repl_type_completor 0.1.17
   * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14], [v0.1.15][repl_type_completor-v0.1.15], [v0.1.16][repl_type_completor-v0.1.16]
-* pstore 0.2.1
+* pstore 0.3.0
   * 0.2.0 to [v0.2.1][pstore-v0.2.1]
 * rdoc 8.1.0
   * 7.0.3 to [v7.0.4][rdoc-v7.0.4], [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0], [v8.0.0][rdoc-v8.0.0], [v8.1.0][rdoc-v8.1.0]
 * win32ole 1.9.3
   * 1.9.2 to [v1.9.3][win32ole-v1.9.3]
-* irb 1.18.0
+* irb 1.19.0
   * 1.16.0 to [v1.17.0][irb-v1.17.0], [v1.18.0][irb-v1.18.0]
 * reline 0.7.0
   * 0.6.3 to [v0.7.0][reline-v0.7.0]
@@ -790,8 +790,10 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [RubyGems-v4.0.21]: https://github.com/rubygems/rubygems/releases/tag/v4.0.21
 [RubyGems-v4.0.22]: https://github.com/rubygems/rubygems/releases/tag/v4.0.22
 [RubyGems-v4.0.23]: https://github.com/rubygems/rubygems/releases/tag/v4.0.23
+[RubyGems-v4.0.24]: https://github.com/rubygems/rubygems/releases/tag/v4.0.24
 [RubyGems-v4.1.0.beta1]: https://github.com/rubygems/rubygems/releases/tag/v4.1.0.beta1
 [RubyGems-v4.1.0.beta2]: https://github.com/rubygems/rubygems/releases/tag/v4.1.0.beta2
+[RubyGems-v4.1.0.beta3]: https://github.com/rubygems/rubygems/releases/tag/v4.1.0.beta3
 [bundler-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.4
 [bundler-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.5
 [bundler-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.6
@@ -823,6 +825,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [io-console-v0.9.2]: https://github.com/ruby/io-console/releases/tag/v0.9.2
 [io-console-v0.9.3]: https://github.com/ruby/io-console/releases/tag/v0.9.3
 [io-console-v0.9.4]: https://github.com/ruby/io-console/releases/tag/v0.9.4
+[io-console-v0.9.5]: https://github.com/ruby/io-console/releases/tag/v0.9.5
 [ipaddr-v1.2.9]: https://github.com/ruby/ipaddr/releases/tag/v1.2.9
 [ipaddr-v1.3.0]: https://github.com/ruby/ipaddr/releases/tag/v1.3.0
 [json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
