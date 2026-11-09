@@ -1879,19 +1879,8 @@ iseq_block_param_id_p(const rb_iseq_t *iseq, ID id, int *pidx, int *plevel)
 }
 
 static void
-access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
+record_outer_variable(const rb_iseq_t *iseq, int level, ID id, bool write)
 {
-    int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
-
-    if (isolated_depth && level >= isolated_depth) {
-        if (id == rb_intern("yield")) {
-            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not yield from isolated Proc");
-        }
-        else {
-            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not access variable '%s' from isolated Proc", rb_id2name(id));
-        }
-    }
-
     for (int i=0; i<level; i++) {
         VALUE val;
         struct rb_id_table *ovs = ISEQ_BODY(iseq)->outer_variables;
@@ -1910,6 +1899,60 @@ access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
         }
 
         iseq = ISEQ_BODY(iseq)->parent_iseq;
+    }
+}
+
+static void
+access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
+{
+    int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
+
+    if (isolated_depth && level >= isolated_depth) {
+        if (id == rb_intern("yield")) {
+            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not yield from isolated Proc");
+        }
+        else {
+            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not access variable '%s' from isolated Proc", rb_id2name(id));
+        }
+    }
+
+    record_outer_variable(iseq, level, id, write);
+}
+
+static int
+iseq_local_level(const rb_iseq_t *iseq)
+{
+    int level = 0;
+    for (; iseq != ISEQ_BODY(iseq)->local_iseq; level++) {
+        iseq = ISEQ_BODY(iseq)->parent_iseq;
+    }
+    return level;
+}
+
+/* block_given?, defined?(yield) and super passing the block implicitly in a
+ * block use the block of the method, like yield, so the block cannot be made
+ * shareable either. Outside a method there is no block. */
+static void
+access_outer_block(const rb_iseq_t *iseq, const char *use)
+{
+    if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->type != ISEQ_TYPE_METHOD) return;
+
+    int level = iseq_local_level(iseq);
+    if (level > 0) record_outer_variable(iseq, level, rb_intern(use), false);
+}
+
+static void
+access_outer_block_by_call(const rb_iseq_t *iseq, ID mid)
+{
+    ID id_block_given_p, id_iterator_p;
+    CONST_ID(id_block_given_p, "block_given?");
+    CONST_ID(id_iterator_p, "iterator?");
+
+    if (mid == id_block_given_p) {
+        access_outer_block(iseq, "block_given?");
+    }
+    else if (mid == id_iterator_p) {
+        access_outer_block(iseq, "iterator?");
     }
 }
 
@@ -6652,6 +6695,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_YIELD), 0,
                   PUSH_VAL(DEFINED_YIELD));
         iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        access_outer_block(iseq, "defined?(yield)");
         return;
 
       case NODE_BACK_REF:
@@ -9824,6 +9868,10 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
     INIT_ANCHOR(recv);
     INIT_ANCHOR(args);
 
+    if (type == NODE_FCALL || type == NODE_VCALL) {
+        access_outer_block_by_call(iseq, mid);
+    }
+
 #if OPT_SUPPORT_JOKE
     if (nd_type_p(node, NODE_VCALL)) {
         ID id_bitblt;
@@ -10488,6 +10536,7 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
 
     if (use_block && parent_block == NULL) {
         iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        access_outer_block(iseq, "super");
     }
 
     flag |= VM_CALL_SUPER | VM_CALL_FCALL;
@@ -10545,11 +10594,7 @@ compile_yield(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
         ADD_INSN(ret, node, pop);
     }
 
-    int level = 0;
-    const rb_iseq_t *tmp_iseq = iseq;
-    for (; tmp_iseq != ISEQ_BODY(iseq)->local_iseq; level++ ) {
-        tmp_iseq = ISEQ_BODY(tmp_iseq)->parent_iseq;
-    }
+    int level = iseq_local_level(iseq);
     if (level > 0) access_outer_variables(iseq, level, rb_intern("yield"), true);
 
     return COMPILE_OK;

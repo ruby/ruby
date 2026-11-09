@@ -1482,8 +1482,25 @@ rb_proc_dup_with_iseq_and_recipe(VALUE self, const rb_iseq_t *iseq, VALUE recipe
 struct collect_outer_variable_name_data {
     VALUE ary;
     VALUE read_only;
-    bool yield;
+    const char *block_use; /* how the block of the method is used, if it is */
 };
+
+/* Pseudo outer variables recorded by compile.c for uses of the block of the method */
+static const char *const outer_block_uses[] = {
+    "yield", "block_given?", "iterator?", "defined?(yield)", "super",
+};
+
+static int
+outer_block_use_index(ID id)
+{
+    static ID ids[numberof(outer_block_uses)];
+
+    for (int i = 0; i < (int)numberof(outer_block_uses); i++) {
+        if (!ids[i]) ids[i] = rb_intern(outer_block_uses[i]);
+        if (id == ids[i]) return i;
+    }
+    return -1;
+}
 
 static VALUE
 ID2NUM(ID id)
@@ -1508,20 +1525,22 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
 {
     struct collect_outer_variable_name_data *data = (struct collect_outer_variable_name_data *)ptr;
 
-    if (id == rb_intern("yield")) {
-        data->yield = true;
+    int block_use = outer_block_use_index(id);
+    if (block_use >= 0) {
+        /* prefer yield, the first one, if used */
+        if (!data->block_use || block_use == 0) data->block_use = outer_block_uses[block_use];
+        return ID_TABLE_CONTINUE;
+    }
+
+    VALUE *store;
+    if (val == Qtrue /* write */) {
+        store = &data->ary;
     }
     else {
-        VALUE *store;
-        if (val == Qtrue /* write */) {
-            store = &data->ary;
-        }
-        else {
-            store = &data->read_only;
-        }
-        if (*store == Qfalse) *store = rb_ary_new();
-        rb_ary_push(*store, ID2NUM(id));
+        store = &data->read_only;
     }
+    if (*store == Qfalse) *store = rb_ary_new();
+    rb_ary_push(*store, ID2NUM(id));
     return ID_TABLE_CONTINUE;
 }
 
@@ -1626,7 +1645,7 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, const char *mes
     struct collect_outer_variable_name_data data = {
         .ary = Qfalse,
         .read_only = Qfalse,
-        .yield = false,
+        .block_use = NULL,
     };
     rb_id_table_foreach(outer_variables, collect_outer_variable_names, (void *)&data);
 
@@ -1642,11 +1661,12 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, const char *mes
             rb_str_append(str, name);
         }
         if (*sep == ',') rb_str_cat_cstr(str, ")");
-        rb_str_cat_cstr(str, data.yield ? " and uses 'yield'." : ".");
+        if (data.block_use) rb_str_catf(str, " and uses '%s'", data.block_use);
+        rb_str_cat_cstr(str, ".");
         rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, str));
     }
-    else if (data.yield) {
-        rb_raise(rb_eRactorIsolationError, "can not %s because it uses 'yield'.", message);
+    else if (data.block_use) {
+        rb_raise(rb_eRactorIsolationError, "can not %s because it uses '%s'.", message, data.block_use);
     }
 
     return data.read_only;

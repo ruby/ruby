@@ -3777,6 +3777,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     rb_code_location_t code_location = { 0 };
     int node_id = location.node_id;
 
+    if (call_node->receiver == NULL) access_outer_block_by_call(iseq, method_id);
+
     if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
         if (PM_BRANCH_COVERAGE_P(iseq)) {
             uint32_t end_cursor = 0;
@@ -4053,6 +4055,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
         // defined?(yield)
         //          ^^^^^
         iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        access_outer_block(iseq, "defined?(yield)");
 
         PUSH_INSN(ret, location, putnil);
         PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_YIELD), 0, PUSH_VAL(DEFINED_YIELD));
@@ -8128,6 +8131,7 @@ pm_compile_forwarding_super_node(rb_iseq_t *iseq, const pm_forwarding_super_node
     }
     else {
         iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        access_outer_block(iseq, "super");
     }
 
     PUSH_INSN(ret, *location, putself);
@@ -8756,6 +8760,7 @@ pm_compile_super_node(rb_iseq_t *iseq, const pm_super_node_t *node, const pm_nod
 
     if (!node->block) {
         iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        access_outer_block(iseq, "super");
     }
 
     if ((flags & VM_CALL_ARGS_BLOCKARG) && (flags & VM_CALL_KW_SPLAT) && !(flags & VM_CALL_KW_SPLAT_MUT)) {
@@ -8812,11 +8817,7 @@ pm_compile_yield_node(rb_iseq_t *iseq, const pm_yield_node_t *node, const pm_nod
     iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
     if (popped) PUSH_INSN(ret, *location, pop);
 
-    int level = 0;
-    for (const rb_iseq_t *tmp_iseq = iseq; tmp_iseq != ISEQ_BODY(iseq)->local_iseq; level++) {
-        tmp_iseq = ISEQ_BODY(tmp_iseq)->parent_iseq;
-    }
-
+    int level = iseq_local_level(iseq);
     if (level > 0) access_outer_variables(iseq, level, rb_intern("yield"), true);
 }
 
