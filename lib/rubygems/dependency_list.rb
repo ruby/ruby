@@ -174,6 +174,32 @@ class Gem::DependencyList
     @specs.delete_if {|spec| spec.full_name == full_name }
   end
 
+  ##
+  # Return a hash of predecessors.  <tt>result[spec]</tt> is an Array of
+  # gemspecs that have a dependency satisfied by the named gemspec.
+  #--
+  # Unused within RubyGems but kept for contrast-agent, which still calls it.
+
+  def spec_predecessors
+    result = Hash.new {|h,k| h[k] = [] }
+
+    specs = @specs.sort.reverse
+
+    specs.each do |spec|
+      specs.each do |other|
+        next if spec == other
+
+        other.dependencies.each do |dep|
+          if spec.satisfies_requirement? dep
+            result[spec] << other
+          end
+        end
+      end
+    end
+
+    result
+  end
+
   def tsort_each_node(&block)
     @specs.each(&block)
   end
