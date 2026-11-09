@@ -3102,10 +3102,12 @@ ary_join_fast(VALUE ary, VALUE sep)
     }
 
     /* One pass: confirm the shared encoding, measure the length, merge code ranges. */
+    if (sep_len > 0 && n - 1 > (RB_LEN_MAX - 1) / sep_len) return Qundef;
     rb_len_t len = 1 + sep_len * (n - 1);
     for (rb_len_t i = 0; i < n; i++) {
         VALUE s = RARRAY_AREF(ary, i);
         if (!RB_TYPE_P(s, T_STRING) || ENCODING_GET(s) != encidx) return Qundef;
+        if (RSTRING_LEN(s) > RB_LEN_MAX - len) return Qundef;
         len += RSTRING_LEN(s);
         cr = ENC_CODERANGE_AND(cr, rb_enc_str_coderange(s));
     }
