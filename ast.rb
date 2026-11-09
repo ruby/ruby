@@ -342,6 +342,11 @@ class RubyVM::InstructionSequence
   #  Ruby::Prism::Node if it was compiled by prism, or a
   #  RubyVM::AbstractSyntaxTree::Node if it was compiled by parse.y.
   #
+  #  For a block, the block node is returned (a Ruby::Prism::BlockNode, or a
+  #  +SCOPE+ node with parse.y), not the method call the block is passed to.
+  #  That is, the node covers the code from <tt>{</tt> or +do+, consistently
+  #  with Proc#source_range.
+  #
   #  Returns +nil+ whenever the node cannot be retrieved reliably. For
   #  example: the source is not available (such as eval'ed code without
   #  RubyVM.keep_script_lines enabled), or the source file has been modified
@@ -391,7 +396,11 @@ class RubyVM::InstructionSequence
       end
       return nil unless Primitive.ast_node_source_hash(root) == source_hash
 
-      return Primitive.ast_node_find(root, node_id)
+      node = Primitive.ast_node_find(root, node_id)
+      # A block iseq refers to the ITER node, which also covers the method call.
+      # Return the SCOPE node of the block instead, like BlockNode for prism.
+      node = node.children[1] if node&.type == :ITER
+      return node
     end
 
     return root if root.node_id == node_id
@@ -399,12 +408,7 @@ class RubyVM::InstructionSequence
     queue = [root]
     while (node = queue.shift)
       node.compact_child_nodes.each do |child|
-        if child.node_id == node_id
-          # A block iseq refers to the block node itself. Return the outer
-          # node that owns the block (a CallNode, SuperNode, or
-          # ForwardingSuperNode) instead.
-          return child.type == :block_node ? node : child
-        end
+        return child if child.node_id == node_id
         queue << child
       end
     end
@@ -475,11 +479,14 @@ class Thread::Backtrace::Location
     scope = iseq.syntax_tree
     return nil unless scope
 
+    # The location is the iseq itself, e.g., for an ArgumentError raised when
+    # calling a lambda. With parse.y, the node_id is then the one of the ITER
+    # node, which is not inside the SCOPE node returned for a block.
+    return scope if node_id == iseq.node_id
+
     if scope.is_a?(RubyVM::AbstractSyntaxTree::Node)
       return Primitive.ast_node_find(scope, node_id)
     end
-
-    return scope if scope.node_id == node_id
 
     queue = [scope]
     while (node = queue.shift)

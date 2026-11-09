@@ -637,6 +637,30 @@ ruby_version_is "4.1" do
       RUBY
     end
 
+    it "returns only the block for a keyword arity error in a proc captured with &block" do
+      capture_backtrace_location_source_range(<<-RUBY, :BlockNode)
+      def return_block(&block)
+        block
+      end
+      value = return_block ${ |keyword:| keyword }$
+      value.call
+      RUBY
+    end
+
+    it "returns only the block for an arity error in a define_method(name, &proc)" do
+      capture_backtrace_location_source_range(<<-RUBY, :BlockNode)
+      def return_block(&block)
+        block
+      end
+      target = Class.new do
+        define_method(:source_range_target, &return_block $do |first, second|
+          first + second
+        end$)
+      end.new
+      target.source_range_target(1)
+      RUBY
+    end
+
     it "propagates an error when the absolute source file no longer exists" do
       keep_source(false) do
         location, path = capture_backtrace_location_from_source("nil.foo\n")
