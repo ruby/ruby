@@ -831,6 +831,7 @@ rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
     ruby_single_main_ractor = th->ractor;
     th->ractor->status_ = ractor_created;
 
+    ractor_sync_atfork(th->ractor);
     rb_ractor_living_threads_init(th->ractor);
     rb_ractor_living_threads_insert(th->ractor, th);
 
