@@ -2423,7 +2423,7 @@ impl Assembler
     /// registers/stack slots, we lower block parameter passing to explicit moves.
     pub fn resolve_ssa(&mut self, intervals: &[Interval], regs: &RegPool) {
         use crate::backend::parcopy;
-        use crate::backend::current::SCRATCH_REG;
+        use crate::backend::current::PARCOPY_SCRATCH_REG;
 
         // Count predecessors for each block
         let mut num_predecessors: HashMap<BlockId, usize> = HashMap::new();
@@ -2467,7 +2467,10 @@ impl Assembler
                 // parcopy algorithm can detect physical register conflicts.
                 debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
                     "parcopy must operate on physical registers, not VRegs");
-                let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
+                let sequentialized = parcopy::sequentialize_register(
+                    &reg_copies,
+                    Opnd::Reg(PARCOPY_SCRATCH_REG),
+                );
                 let moves: Vec<Insn> = sequentialized
                     .iter()
                     .map(|copy| match copy.source {
@@ -2547,7 +2550,10 @@ impl Assembler
 
             debug_assert!(copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
                 "parcopy must operate on physical locations, not VRegs");
-            let sequentialized = parcopy::sequentialize_register(&copies, Opnd::Reg(SCRATCH_REG));
+            let sequentialized = parcopy::sequentialize_register(
+                &copies,
+                Opnd::Reg(PARCOPY_SCRATCH_REG),
+            );
             let moves: Vec<Insn> = sequentialized
                 .iter()
                 .map(|copy| match copy.source {
@@ -2610,7 +2616,9 @@ impl Assembler
         c_arg_regs: &[Reg],
     ) {
         use crate::backend::parcopy;
-        use crate::backend::current::{C_RET_OPND, SCRATCH_REG, NATIVE_STACK_PTR};
+        use crate::backend::current::{
+            C_RET_OPND, NATIVE_STACK_PTR, PARCOPY_SCRATCH_REG, SCRATCH_REG,
+        };
 
         for block_id in self.block_order() {
             let block = &mut self.basic_blocks[block_id.0];
@@ -2750,7 +2758,10 @@ impl Assembler
 
                     debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
                         "parcopy must operate on physical registers, not VRegs");
-                    let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
+                    let sequentialized = parcopy::sequentialize_register(
+                        &reg_copies,
+                        Opnd::Reg(PARCOPY_SCRATCH_REG),
+                    );
 
                     for copy in sequentialized {
                         new_insns.push(match copy.source {
