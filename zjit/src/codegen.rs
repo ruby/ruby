@@ -686,6 +686,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ArrayAset { array, index, val } => {
             no_output!(gen_array_aset(asm, opnd!(array), opnd!(index), opnd!(val)))
         }
+        Insn::ArrayAsetMayRaise { array, index, val } => {
+            no_output!(gen_array_aset_may_raise(asm, opnd!(array), opnd!(index), opnd!(val)))
+        }
         Insn::ArrayPop { array, state } => gen_array_pop(asm, opnd!(array), &function.frame_state(*state)),
         Insn::ArrayLength { array } => gen_array_length(asm, opnd!(array)),
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, function, opnd!(val), &function.frame_state(*state)),
@@ -2464,6 +2467,17 @@ fn gen_array_aset(
     let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
     let elem_ptr = asm.add(array_ptr, elem_offset);
     asm.store(Opnd::mem(VALUE_BITS, elem_ptr, 0), val);
+}
+
+fn gen_array_aset_may_raise(
+    asm: &mut Assembler,
+    array: Opnd,
+    index: Opnd,
+    val: Opnd,
+) {
+    let unboxed_idx = asm.load_mem(index);
+    let array = asm.load_mem(array);
+    asm_ccall!(asm, rb_ary_store, array, unboxed_idx, val);
 }
 
 fn gen_array_pop(asm: &mut Assembler, array: Opnd, state: &FrameState) -> lir::Opnd {
