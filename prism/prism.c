@@ -11495,7 +11495,7 @@ parser_lex(pm_parser_t *parser) {
             // going to trim it off the beginning and create a new token.
             size_t whitespace;
 
-            if (parser->heredoc_end) {
+            if (lex_mode->as.list.terminator != '\n' && parser->heredoc_end) {
                 whitespace = pm_strspn_inline_whitespace(parser->current.end, parser->end - parser->current.end);
                 if (peek_offset(parser, (ptrdiff_t)whitespace) == '\n') {
                     whitespace += 1;
@@ -11602,7 +11602,11 @@ parser_lex(pm_parser_t *parser) {
                     // was a newline), then we need to record it so that line
                     // numbers after the list remain accurate.
                     if (*breakpoint == '\n') {
-                        pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
+                        if (parser->heredoc_end == NULL) {
+                            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
+                        } else {
+                            parser_flush_heredoc_end(parser);
+                        }
                     }
 
                     lex_mode_pop(parser);
@@ -11807,14 +11811,20 @@ parser_lex(pm_parser_t *parser) {
                         // list.
                         if (parser->heredoc_end == NULL) {
                             pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
+                        } else {
+                            parser_flush_heredoc_end(parser);
                         }
                     } else {
                         parser->current.end = breakpoint + 1;
                     }
 
-                    // Since we've hit the terminator of the regular expression,
-                    // we now need to parse the options.
-                    parser->current.end += pm_strspn_regexp_option(parser->current.end, parser->end - parser->current.end);
+                    /* Since we've hit the terminator of the regular expression,
+                     * we now need to parse the options. They have to be part of
+                     * this token, so they cannot be read from past a heredoc
+                     * body. */
+                    if (parser->next_start == NULL) {
+                        parser->current.end += pm_strspn_regexp_option(parser->current.end, parser->end - parser->current.end);
+                    }
 
                     lex_mode_pop(parser);
                     lex_state_set(parser, PM_LEX_STATE_END);

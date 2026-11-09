@@ -29,6 +29,15 @@ module Ruby::Prism
       assert_newline_offsets_for("\"\\C-\r\n\"", "\\C- with \\r\\n")
     end
 
+    def test_newline_delimiter_with_pending_heredoc
+      # A newline delimiter closing a literal on a line whose heredoc body has
+      # been lexed resumes after that body, so each line is recorded once.
+      %w[%W %I %r %Q %].each do |literal|
+        assert_newline_offsets_for("#{literal}\n\#{<<A}\nb\nA\n", literal)
+        assert_newline_offsets_for("#{literal}\r\n\#{<<A}\r\nb\r\nA\r\n", "#{literal} with \\r\\n")
+      end
+    end
+
     def test_escaped_newline_with_pending_heredoc
       # An escape consuming the newline of a line whose heredoc body has been
       # lexed resumes after that body, so each line is recorded exactly once.

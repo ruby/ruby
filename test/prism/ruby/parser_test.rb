@@ -62,6 +62,7 @@ module Ruby::Prism
 
       # %Q with newline delimiter and heredoc interpolation
       "heredoc_percent_q_newline_delimiter.txt",
+      "heredoc_percent_newline_delimiter.txt",
 
       # 1.. && 2
       "ranges.txt",

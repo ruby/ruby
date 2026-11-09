@@ -40,6 +40,7 @@ module Ruby::Prism
       "endless_method_not.txt",
       "endless_method_rescue_modifier.txt",
       "heredoc_dedent_line_continuation.txt",
+      "heredoc_percent_newline_delimiter.txt",
       "heredoc_percent_q_newline_delimiter.txt",
       "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
