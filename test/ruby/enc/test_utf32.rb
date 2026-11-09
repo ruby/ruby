@@ -71,6 +71,35 @@ EOT
     assert_equal("a".ord, sb.ord)
   end
 
+  def test_mbc_to_code_with_high_bytes
+    # A byte >= 0x80 in the highest position makes the assembled code
+    # point exceed 0x7FFFFFFF.  Such sequences are always invalid Unicode
+    # code points, but utf32{le,be}_mbc_to_code assembled them with int
+    # arithmetic, which UBSan reports as a signed integer overflow.
+    [
+      "\x00\x00\x00\x80",
+      "\x00\x00\x00\xff",
+      "\xff\xff\xff\x80",
+    ].each do |b|
+      s = b.dup.force_encoding("utf-32le")
+      assert_not_predicate(s, :valid_encoding?, "#{encdump s}.valid_encoding?")
+    end
+    [
+      "\x80\x00\x00\x00",
+      "\xff\x00\x00\x00",
+      "\x80\xff\xff\xff",
+    ].each do |b|
+      s = b.dup.force_encoding("utf-32be")
+      assert_not_predicate(s, :valid_encoding?, "#{encdump s}.valid_encoding?")
+    end
+
+    # The assembly itself must stay correct.
+    assert_equal(0x1F600, "\x00\xF6\x01\x00".force_encoding("utf-32le").ord)
+    assert_equal(0x1F600, "\x00\x01\xF6\x00".force_encoding("utf-32be").ord)
+    assert_equal(0x10FFFF, "\xFF\xFF\x10\x00".force_encoding("utf-32le").ord)
+    assert_equal(0x10FFFF, "\x00\x10\xFF\xFF".force_encoding("utf-32be").ord)
+  end
+
   def utf8_to_utf32(s, e)
     s.chars.map {|c| c.ord.chr(e) }.join
   end
