@@ -110,6 +110,11 @@ class Test_StringCStr < Test::Unit::TestCase
     assert_wchars_long_term {|s| s.succ}
   end
 
+  # [Bug #22517]
+  def test_wchar_scrub
+    assert_wchars_long_term {|s| s.b.tr("\0", "\xDC".b).force_encoding(s.encoding).scrub}
+  end
+
   def test_wchar_lstrip!
     assert_wchars_term_char(" a") {|s| s.lstrip!}
   end
