@@ -238,13 +238,11 @@ class JSONCoderTest < Test::Unit::TestCase
     coder = JSON::Coder.new { |object, is_key| Object.new }
     assert_raise(JSON::GeneratorError) { coder.dump([symbol]) }
 
-    if RUBY_ENGINE == "ruby"
-      coder = JSON::Coder.new { |object, is_key| symbol }
-      error = assert_raise JSON::GeneratorError do
-        coder.dump([symbol])
-      end
-      assert_equal "source sequence is illegal/malformed utf-8", error.message
+    coder = JSON::Coder.new { |object, is_key| symbol }
+    error = assert_raise JSON::GeneratorError do
+      coder.dump([symbol])
     end
+    assert_equal "source sequence is illegal/malformed utf-8", error.message
   end
 
   def test_depth
