@@ -889,6 +889,64 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_extend_with_block
+    obj = Object.new
+    assert_same(obj, obj.extend { def foo = :foo })
+    assert_equal(:foo, obj.foo)
+    assert_not_respond_to(Object.new, :foo)
+  end
+
+  def test_extend_with_block_evaluates_it_in_a_new_module
+    obj = Object.new
+    self_in_block = arg_in_block = nil
+    obj.extend { |m| self_in_block = self; arg_in_block = m }
+    assert_instance_of(Module, self_in_block)
+    assert_same(self_in_block, arg_in_block)
+    assert_nil(self_in_block.name)
+    assert_same(self_in_block, obj.singleton_class.ancestors[1])
+  end
+
+  def test_extend_with_modules_and_block
+    a = Module.new { def foo = [:a] }
+    b = Module.new { def foo = [:b, *super] }
+    obj = Object.new
+    obj.extend(a) { def foo = [:block, *super] }
+    assert_equal([:block, :a], obj.foo)
+    obj = Object.new
+    obj.extend(b, a) { def foo = [:block, *super] }
+    assert_equal([:block, :b, :a], obj.foo)
+    assert_equal([b, a], obj.singleton_class.ancestors[2, 2])
+  end
+
+  def test_extend_with_block_super_calls_the_replaced_method
+    klass = Class.new { def hello = "hello" }
+    obj = klass.new
+    obj.extend { def hello = super.upcase }
+    assert_equal("HELLO", obj.hello)
+    assert_equal("hello", klass.new.hello)
+  end
+
+  def test_extend_with_block_calls_hooks
+    obj = Object.new
+    obj.extend do
+      def self.extended(o) = o.instance_variable_set(:@extended, self)
+    end
+    assert_same(obj.singleton_class.ancestors[1], obj.instance_variable_get(:@extended))
+  end
+
+  def test_extend_with_block_that_raises
+    obj = Object.new
+    a = Module.new
+    assert_raise(RuntimeError) { obj.extend(a) { raise "oops" } }
+    assert_not_include(obj.singleton_class.ancestors, a)
+  end
+
+  def test_extend_with_invalid_module_and_block
+    called = false
+    assert_raise(TypeError) { Object.new.extend(1) { called = true } }
+    assert_equal(false, called)
+  end
+
   def test_to_s
     x = eval(<<-EOS)
       class ToS\u{3042}

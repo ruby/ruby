@@ -1362,9 +1362,26 @@ rb_mod_prepend_features(VALUE module, VALUE prepend)
 
 /*
  *  call-seq:
- *     prepend(module, ...)    -> self
+ *     prepend(module, ...)                 -> self
+ *     prepend(module, ...) {|mod| block }  -> self
  *
  *  Invokes Module.prepend_features on each parameter in reverse order.
+ *
+ *  If a block is given, it is evaluated in a new anonymous module, as
+ *  with Module.new, and that module is prepended too, after the modules
+ *  given, so its methods take precedence over theirs. The modules are
+ *  then optional. Calling +super+ from a method defined in the block
+ *  calls the method it replaces:
+ *
+ *     class Greeter
+ *       def hello = "hello"
+ *     end
+ *
+ *     Greeter.prepend do
+ *       def hello = super.upcase
+ *     end
+ *
+ *     Greeter.new.hello   #=> "HELLO"
  */
 
 static VALUE
@@ -1372,6 +1389,7 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
 {
     int i;
     ID id_prepend_features, id_prepended;
+    VALUE block_module = Qnil;
 
     if (BUILTIN_TYPE(module) == T_MODULE && FL_TEST(module, RMODULE_IS_REFINEMENT)) {
         rb_raise(rb_eTypeError, "Refinement#prepend has been removed");
@@ -1380,16 +1398,24 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
     CONST_ID(id_prepend_features, "prepend_features");
     CONST_ID(id_prepended, "prepended");
 
-    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    rb_check_arity(argc, rb_block_given_p() ? 0 : 1, UNLIMITED_ARGUMENTS);
     for (i = 0; i < argc; i++) {
         Check_Type(argv[i], T_MODULE);
         if (FL_TEST(argv[i], RMODULE_IS_REFINEMENT)) {
             rb_raise(rb_eTypeError, "Cannot prepend refinement");
         }
     }
+    if (rb_block_given_p()) {
+        block_module = rb_module_new();
+        rb_mod_module_exec(1, &block_module, block_module);
+    }
     while (argc--) {
         rb_funcallv_uncached(argv[argc], id_prepend_features, 1, &module);
         rb_funcallv_uncached(argv[argc], id_prepended, 1, &module);
+    }
+    if (!NIL_P(block_module)) {
+        rb_funcallv_uncached(block_module, id_prepend_features, 1, &module);
+        rb_funcallv_uncached(block_module, id_prepended, 1, &module);
     }
     return module;
 }
@@ -1978,7 +2004,8 @@ rb_mod_extend_object(VALUE mod, VALUE obj)
 
 /*
  *  call-seq:
- *     obj.extend(module, ...)    -> obj
+ *     obj.extend(module, ...)                 -> obj
+ *     obj.extend(module, ...) {|mod| block }  -> obj
  *
  *  Adds to _obj_ the instance methods from each module given as a
  *  parameter.
@@ -1999,6 +2026,20 @@ rb_mod_extend_object(VALUE mod, VALUE obj)
  *     k.hello         #=> "Hello from Klass.\n"
  *     k.extend(Mod)   #=> #<Klass:0x401b3bc8>
  *     k.hello         #=> "Hello from Mod.\n"
+ *
+ *  If a block is given, it is evaluated in a new anonymous module, as
+ *  with Module.new, and _obj_ is extended with that module too, after
+ *  the modules given, so its methods take precedence over theirs. The
+ *  modules are then optional. Calling +super+ from a method defined in
+ *  the block calls the method it replaces:
+ *
+ *     k = Klass.new
+ *     k.extend do
+ *       def hello
+ *         super.upcase
+ *       end
+ *     end
+ *     k.hello         #=> "HELLO FROM KLASS.\n"
  */
 
 static VALUE
@@ -2006,20 +2047,29 @@ rb_obj_extend(int argc, VALUE *argv, VALUE obj)
 {
     int i;
     ID id_extend_object, id_extended;
+    VALUE block_module = Qnil;
 
     CONST_ID(id_extend_object, "extend_object");
     CONST_ID(id_extended, "extended");
 
-    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    rb_check_arity(argc, rb_block_given_p() ? 0 : 1, UNLIMITED_ARGUMENTS);
     for (i = 0; i < argc; i++) {
         Check_Type(argv[i], T_MODULE);
         if (FL_TEST(argv[i], RMODULE_IS_REFINEMENT)) {
             rb_raise(rb_eTypeError, "Cannot extend object with refinement");
         }
     }
+    if (rb_block_given_p()) {
+        block_module = rb_module_new();
+        rb_mod_module_exec(1, &block_module, block_module);
+    }
     while (argc--) {
         rb_funcallv_uncached(argv[argc], id_extend_object, 1, &obj);
         rb_funcallv_uncached(argv[argc], id_extended, 1, &obj);
+    }
+    if (!NIL_P(block_module)) {
+        rb_funcallv_uncached(block_module, id_extend_object, 1, &obj);
+        rb_funcallv_uncached(block_module, id_extended, 1, &obj);
     }
     return obj;
 }
