@@ -105,7 +105,11 @@ class TC_IPAddr < Test::Unit::TestCase
     }
     assert_equal("1:2:3:4:5:6:7:0", IPAddr.new("1:2:3:4:5:6:7::").to_s)
     assert_equal("0:2:3:4:5:6:7:8", IPAddr.new("::2:3:4:5:6:7:8").to_s)
+    assert_equal("0:1:2:3:4:5:102:304", IPAddr.new("::1:2:3:4:5:1.2.3.4").to_s)
+    assert_equal("1:0:2:3:4:5:102:304", IPAddr.new("1::2:3:4:5:1.2.3.4").to_s)
 
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("::1:2:3:4:5:6:1.2.3.4") }
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("1:2:3:4:5:6::1.2.3.4") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.256") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.011") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("fe80::1%") }
