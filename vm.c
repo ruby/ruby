@@ -1525,6 +1525,24 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
     return ID_TABLE_CONTINUE;
 }
 
+/* Returns the value of the i-th local variable of env.  The block parameter of a
+ * method is only set when it is first read (see getblockparam), so set it if needed. */
+static VALUE
+env_local_value(const rb_env_t *env, unsigned int i)
+{
+    const rb_iseq_t *iseq = env->iseq;
+    const VALUE *ep = env->ep;
+
+    if (ISEQ_BODY(iseq)->local_iseq == iseq &&
+            ISEQ_BODY(iseq)->param.flags.has_block &&
+            (unsigned int)ISEQ_BODY(iseq)->param.block_start == i &&
+            !VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
+        RB_OBJ_WRITE(env, &env->env[i], rb_vm_bh_to_procval(GET_EC(), VM_ENV_BLOCK_HANDLER(ep)));
+        VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
+    }
+    return env->env[i];
+}
+
 static const rb_env_t *
 env_copy(const VALUE *src_ep, VALUE read_only_variables)
 {
@@ -1570,7 +1588,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                     }
 
                     // check shareable
-                    VALUE v = src_env->env[j];
+                    VALUE v = env_local_value(src_env, j);
                     if (!rb_ractor_shareable_p(v)) {
                         VALUE name = rb_id2str(id);
                         VALUE msg = rb_sprintf("cannot make a shareable Proc because it can refer"
@@ -1587,6 +1605,12 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                 }
             }
         }
+    }
+
+    // The block parameter, if read, was copied above: read it from there, not from the
+    // block handler of the copy, which has none.
+    if (VM_ENV_FLAGS(src_ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
+        VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
     }
 
     if (!VM_ENV_LOCAL_P(src_ep)) {

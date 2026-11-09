@@ -42,6 +42,23 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_shareable_proc_reading_block_parameter
+    assert_ractor(<<~'RUBY')
+      def read_block(&b) = Ractor.shareable_proc { b }
+      def call_block(&b) = Ractor.shareable_proc { b.call }
+
+      # The block parameter is only set when first read, check its actual value
+      assert_raise(Ractor::IsolationError) { read_block { 1 } }
+      assert_raise(Ractor::IsolationError) { call_block { 1 } }
+
+      assert_nil read_block.call
+      shareable = Ractor.shareable_proc { 2 }
+      assert_same shareable, read_block(&shareable).call
+      assert_equal 2, call_block(&shareable).call
+      assert_equal 2, Ractor.new(call_block(&shareable)) { |pr| pr.call }.value
+    RUBY
+  end
+
   def test_shareability_of_iseq_proc
     assert_raise Ractor::IsolationError do
       foo = []
