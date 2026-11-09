@@ -1690,6 +1690,9 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     }
 
     reg->timelimit = timelimit;
+    if (reg->num_mem != RREGEXP_PTR(re)->num_mem) {
+        rb_bug("group count mismatch in the recompiled regexp: %d != %d", reg->num_mem, RREGEXP_PTR(re)->num_mem);
+    }
 
     RB_GC_GUARD(unescaped);
     RB_GC_GUARD(src_str);
