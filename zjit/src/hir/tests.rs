@@ -3016,14 +3016,19 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v15:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
-          v18:StaticSymbol[:b] = Const Value(VALUE(0x1010))
-          v20:Fixnum[1] = Const Value(1)
-          v22:BasicObject = Send v15, :core#hash_merge_ptr, v10, v18, v20 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v17:HashExact = NewHash
           PatchPoint NoEPEscape(test)
-          v26:BasicObject = Send v9, :foo, v22 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v22:BasicObject = Send v15, :core#hash_merge_bang_kwd, v17, v10 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          PatchPoint NoEPEscape(test)
+          v26:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
+          v29:StaticSymbol[:b] = Const Value(VALUE(0x1010))
+          v31:Fixnum[1] = Const Value(1)
+          v33:BasicObject = Send v26, :core#hash_merge_bang_ptr, v22, v29, v31 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          PatchPoint NoEPEscape(test)
+          v37:BasicObject = Send v9, :foo, v33 # SendFallbackReason: Uncategorized(opt_send_without_block)
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v26
+          Return v37
         ");
     }
 
