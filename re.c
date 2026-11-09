@@ -2949,28 +2949,77 @@ match_aref(int argc, VALUE *argv, VALUE match)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    values_at(*indexes) -> array
  *
- *  Returns match and captures at the given +indexes+,
- *  which may include any mixture of:
+ *  Returns an array of matched substrings as specified by the given `indexes`,
+ *  which may be any mixture of integers, names, and ranges.
  *
- *  - Integers.
- *  - Ranges.
- *  - Names (strings and symbols).
+ *  For each integer index `n`,
+ *  includes the `n`th matched substring:
  *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.values_at(3, 1, 2, 0) # => ["25", "2026", "12", "2026-12-25"]
+ *  ```
  *
- *  Examples:
+ *  For negative `n`, counts backwards in the array of matched substrings:
  *
- *    m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
- *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *    m.values_at(0, 2, -2) # => ["HX1138", "X", "113"]
- *    m.values_at(1..2, -1) # => ["H", "X", "8"]
+ *  ```ruby
+ *  match.values_at(3, -1) # => ["25", "25"]
+ *  ```
  *
- *    m = /(?<a>\d+) *(?<op>[+\-*\/]) *(?<b>\d+)/.match("1 + 2")
- *    # => #<MatchData "1 + 2" a:"1" op:"+" b:"2">
- *    m.values_at(0, 1..2, :a, :b, :op)
- *    # => ["1 + 2", "1", "+", "1", "2", "+"]
+ *  For `n` out of range, returns `nil`:
+ *
+ *  ```ruby
+ *  match.values_at(4, -4) # => [nil, nil]
+ *  ```
+ *
+ *  For each string or symbol index `name`,
+ *  includes the matched substring for that `name`:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.values_at(:day, 'year') # => ["25", "2026"]
+ *  match.values_at(:nosuch)      # Raises IndexError: undefined group name reference: nosuch.
+ *  ```
+ *
+ *  For a Range index `range`,
+ *  returns the matched substrings for the indexes covered by that `range`:
+ *
+ *  ```ruby
+ *  regexp = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+ *  match = '2026-12-25'.match(regexp)
+ *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
+ *  match.values_at(1..2)  # => ["2026", "12"]
+ *  match.values_at(1...3) # => ["2026", "12"]
+ *  ```
+ *
+ *  For positive range value out-of-range, fills with `nil`:
+ *
+ *  ```ruby
+ *  match.values_at(1..5) # => ["2026", "12", "25", nil, nil]
+ *  ```
+ *
+ *  For negative range value, counts backwards in the array of matched substrings:
+ *
+ *  ```ruby
+ *  match.values_at(-3..-1) # => ["2026", "12", "25"]
+ *  match.values_at(-5..-1) # Raises RangeError: -5..-1 out of range.
+ *  ```
+ *
+ *  Mixed-type indexes:
+ *
+ *  ```ruby
+ *  match.values_at(:year, 1, :month, 2, :day, 3, 0..3)
+ *  # => ["2026", "2026", "12", "12", "25", "25", "2026-12-25", "2026", "12", "25"]
+ *  ```
  *
  */
 
