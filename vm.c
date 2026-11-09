@@ -4505,27 +4505,6 @@ m_core_hash_merge_bang_kwd(VALUE recv, VALUE hash, VALUE kw)
 }
 
 static VALUE
-core_hash_coerce(VALUE hash)
-{
-    if (NIL_P(hash)) {
-        return rb_hash_new();
-    }
-    VALUE new_hash = rb_to_hash_type(hash);
-    if (new_hash == hash) {
-        new_hash = rb_hash_dup(new_hash);
-    }
-    return new_hash;
-}
-
-static VALUE
-m_core_hash_coerce(VALUE recv, VALUE hash)
-{
-    REWIND_CFP(hash = core_hash_coerce(hash));
-    VM_ASSERT(CLASS_OF(hash));
-    return hash;
-}
-
-static VALUE
 m_core_make_shareable(VALUE recv, VALUE obj)
 {
     return rb_ractor_make_shareable(obj);
@@ -4715,7 +4694,6 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_hash_merge_bang_ptr, m_core_hash_merge_bang_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
     rb_define_method_id(klass, id_core_hash_merge_bang_kwd, m_core_hash_merge_bang_kwd, 2);
-    rb_define_method_id(klass, id_core_hash_coerce, m_core_hash_coerce, 1);
     rb_define_method_id(klass, id_core_raise, f_raise, -1);
     rb_define_method_id(klass, id_core_sprintf, f_sprintf, -1);
     rb_define_method_id(klass, idProc, f_proc, 0);
