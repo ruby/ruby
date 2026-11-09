@@ -53,29 +53,34 @@ pm_buffer_length(const pm_buffer_t *buffer) {
 
 /**
  * Append the given amount of space to the buffer. Returns false when there is
- * nothing to write: either the allocation failed or the length is zero. A
- * zero-initialized buffer has a NULL value until its first allocation, and
- * passing NULL to memcpy/memset/memmove is undefined behavior even for zero
- * bytes, so callers must not write in the zero case.
+ * nothing to write because the length is zero. A zero-initialized buffer has a
+ * NULL value until its first allocation, and passing NULL to
+ * memcpy/memset/memmove is undefined behavior even for zero bytes, so callers
+ * must not write in the zero case.
+ *
+ * The value and capacity are only updated together once the allocation has
+ * succeeded, so the buffer remains valid to free if PRISM_OOM unwinds.
  */
 static PRISM_INLINE bool
 pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
     if (length == 0) return false;
 
     size_t next_length = buffer->length + length;
-    const size_t original_capacity = buffer->capacity;
+    if (next_length < buffer->length) PRISM_OOM();
 
     if (next_length > buffer->capacity) {
-        if (buffer->capacity == 0) {
-            buffer->capacity = 1;
+        size_t next_capacity = buffer->capacity == 0 ? 1 : buffer->capacity;
+
+        while (next_length > next_capacity) {
+            if (next_capacity > SIZE_MAX / 2) PRISM_OOM();
+            next_capacity *= 2;
         }
 
-        while (next_length > buffer->capacity) {
-            buffer->capacity *= 2;
-        }
+        char *next_value = xrealloc_sized(buffer->value, next_capacity, buffer->capacity);
+        if (next_value == NULL) PRISM_OOM();
 
-        buffer->value = xrealloc_sized(buffer->value, buffer->capacity, original_capacity);
-        if (buffer->value == NULL) return false;
+        buffer->value = next_value;
+        buffer->capacity = next_capacity;
     }
 
     buffer->length = next_length;
