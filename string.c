@@ -5367,7 +5367,7 @@ VALUE
 rb_str_succ(VALUE orig)
 {
     VALUE str;
-    str = rb_str_new(RSTRING_PTR(orig), RSTRING_LEN(orig));
+    str = str_enc_new(rb_cString, RSTRING_PTR(orig), RSTRING_LEN(orig), STR_ENC_GET(orig));
     rb_enc_cr_str_copy_for_substr(str, orig);
     return str_succ(str);
 }
