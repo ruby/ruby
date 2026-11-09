@@ -713,6 +713,19 @@ end.join
     end;
   end
 
+  def test_stackoverflow_by_funcall
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      a, b = [], []
+      100_000.times { a, b = [a], [b] }
+      th = Thread.new do
+        Thread.current.report_on_exception = false
+        a == b
+      end
+      assert_raise(SystemStackError) { th.join }
+    end;
+  end
+
   def test_machine_stackoverflow
     bug9109 = '[ruby-dev:47804] [Bug #9109]'
     assert_separately([], <<-SRC)

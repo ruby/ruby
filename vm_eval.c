@@ -1092,6 +1092,7 @@ rb_funcallv_scope(VALUE recv, ID mid, int argc, const VALUE *argv, call_type sco
     if (LIKELY(cc) &&
         LIKELY(rb_method_call_status(ec, vm_cc_cme(cc), scope, self) == MISSING_NONE)) {
         // fastpath
+        stack_check(ec);
         return vm_call0_cc(ec, recv, mid, argc, argv, cc, false);
     }
     else {
