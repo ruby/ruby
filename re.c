@@ -2984,7 +2984,6 @@ match_aref(int argc, VALUE *argv, VALUE match)
  *  # => #<MatchData "2026-12-25" year:"2026" month:"12" day:"25">
  *  match.values_at(1..2)  # => ["2026", "12"]
  *  match.values_at(1...3) # => ["2026", "12"]
- *  match.values_at(1..4)
  *  ```
  *
  *  For positive range value out-of-range, fills with `nil`:
