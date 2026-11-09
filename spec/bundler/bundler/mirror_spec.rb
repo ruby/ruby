@@ -335,6 +335,15 @@ RSpec.describe Bundler::Settings::TCPSocketProbe do
       expect(probe.replies?(mirror)).to be_falsey
     end
   end
+
+  context "when the mirror host does not resolve" do
+    let(:mirror) { Bundler::Settings::Mirror.new("http://mirror.example:9292", 1) }
+
+    it "probes falsey instead of raising" do
+      allow(Socket).to receive(:getaddrinfo).and_raise(SocketError, "getaddrinfo: nodename nor servname provided, or not known")
+      expect(probe.replies?(mirror)).to be_falsey
+    end
+  end
 end
 
 RSpec.describe Bundler::MirrorSockets do

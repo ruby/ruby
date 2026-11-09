@@ -154,6 +154,8 @@ module Bundler
         rescue SystemCallError # Connection failed somehow, again
           false
         end
+      rescue SocketError # The mirror host does not resolve
+        false
       end
 
       private
