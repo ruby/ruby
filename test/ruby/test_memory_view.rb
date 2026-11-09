@@ -85,6 +85,28 @@ class TestMemoryView < Test::Unit::TestCase
                  members)
   end
 
+  def test_rb_memory_view_parse_item_format_with_spaces
+    # Spaces are ignored, as in item_size_from_format. The member list must be
+    # identical to the same format without spaces; a space must not produce an
+    # extra member. (Formerly the fill pass did not skip spaces, so each space
+    # wrote one rb_memory_view_item_component_t past the allocation.)
+    spaced, spaced_members, spaced_err = MemoryViewTestUtils.parse_item_format("c c 2 f3 x2 d")
+    plain,  plain_members,  plain_err  = MemoryViewTestUtils.parse_item_format("cc2f3x2d")
+
+    assert_nil(spaced_err)
+    assert_nil(plain_err)
+    assert_equal(plain, spaced)
+    assert_equal(plain_members, spaced_members)
+
+    # A lone trailing space must not add a member either.
+    total_size, members, err = MemoryViewTestUtils.parse_item_format("c ")
+    assert_nil(err)
+    assert_equal(1, total_size)
+    assert_equal(
+      [{format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN, offset: 0, size: 1, repeat: 1}],
+      members)
+  end
+
   def test_rb_memory_view_parse_item_format_with_alignment_signle
     [
       ["c",  false, NATIVE_ENDIAN,  1,               1,              1],

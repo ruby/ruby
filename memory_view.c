@@ -478,6 +478,12 @@ rb_memory_view_parse_item_format(const char *format,
         ssize_t i = 0, offset = 0;
         const char *p = format;
         while (*p) {
+            // ignore spaces
+            if (ISSPACE(*p)) {
+                while (ISSPACE(*p)) ++p;
+                continue;
+            }
+
             const int type_char = *p;
 
             bool native_size_p;
