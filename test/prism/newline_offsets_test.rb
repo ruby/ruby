@@ -26,7 +26,13 @@ module Ruby::Prism
       assert_newline_offsets_for("\"\\M-\\c\n\"", "\\M-\\c in string")
 
       # \r\n consumed inside escape context
-      assert_newline_offsets_for("\"\\C-\r\n\"", "\\C- with \\r\\n")
+      %w[\\C- \\c \\M- \\M-\\C-].each do |escape|
+        assert_newline_offsets_for("\"#{escape}\r\n\"", "#{escape} with \\r\\n in string")
+        assert_newline_offsets_for("/#{escape}\r\n/", "#{escape} with \\r\\n in regexp")
+        assert_newline_offsets_for("%W[#{escape}\r\n]", "#{escape} with \\r\\n in %W")
+        assert_newline_offsets_for("<<H\r\n#{escape}\r\n\r\nH\r\n", "#{escape} with \\r\\n in heredoc")
+        assert_newline_offsets_for("?#{escape}\r\n", "#{escape} with \\r\\n in char literal")
+      end
     end
 
     def test_newline_delimiter_with_pending_heredoc

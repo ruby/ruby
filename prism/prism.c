@@ -9096,6 +9096,24 @@ escape_consume_newline(pm_parser_t *parser, uint32_t width) {
 }
 
 /**
+ * Consume the byte that a control or meta escape applies to, and return the
+ * byte to apply it to. A line ending of either form reads as a single newline.
+ */
+static PRISM_INLINE uint8_t
+escape_consume_modified_byte(pm_parser_t *parser, uint8_t byte) {
+    size_t eol_length = match_eol(parser);
+
+    if (eol_length > 0) {
+        escape_consume_newline(parser, U32(eol_length));
+        parser->current.end += eol_length;
+        return '\n';
+    }
+
+    parser->current.end++;
+    return byte;
+}
+
+/**
  * Write each byte of the given escaped character into the buffer.
  */
 static PRISM_INLINE void
@@ -9433,9 +9451,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                         return;
                     }
 
-                    if (peeked == '\n') escape_consume_newline(parser, 1);
-                    parser->current.end++;
-                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    escape_write_byte(parser, buffer, flags, escape_byte(escape_consume_modified_byte(parser, peeked), flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
                 }
             }
@@ -9492,9 +9508,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                         return;
                     }
 
-                    if (peeked == '\n') escape_consume_newline(parser, 1);
-                    parser->current.end++;
-                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    escape_write_byte(parser, buffer, flags, escape_byte(escape_consume_modified_byte(parser, peeked), flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
                 }
             }
@@ -9546,9 +9560,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                         return;
                     }
 
-                    if (peeked == '\n') escape_consume_newline(parser, 1);
-                    parser->current.end++;
-                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
+                    escape_write_byte(parser, buffer, flags, escape_byte(escape_consume_modified_byte(parser, peeked), flags | PM_ESCAPE_FLAG_META));
                     return;
             }
         }

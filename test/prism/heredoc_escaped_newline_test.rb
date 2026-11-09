@@ -6,7 +6,7 @@ module Ruby::Prism
   # When an escape sequence consumes the newline of a line whose heredoc body
   # has already been lexed, the content continues after that body.
   class HeredocEscapedNewlineTest < TestCase
-    ESCAPES = { "\\\n" => "", "\\c\n" => "\n", "\\C-\n" => "\n", "\\M-\n" => "\x8A".b, "\\M-\\C-\n" => "\x8A".b }
+    ESCAPES = { "\\\n" => "", "\\c\n" => "\n", "\\C-\n" => "\n", "\\M-\n" => "\x8A".b, "\\M-\\C-\n" => "\x8A".b, "\\c\r\n" => "\n", "\\C-\r\n" => "\n", "\\M-\r\n" => "\x8A".b }
 
     # Lists and character literals keep an escaped newline as a newline.
     LITERAL_ESCAPES = ESCAPES.merge("\\\n" => "\n")
