@@ -336,3 +336,16 @@ RSpec.describe Bundler::Settings::TCPSocketProbe do
     end
   end
 end
+
+RSpec.describe Bundler::MirrorSockets do
+  it "closes the socket when the block raises" do
+    yielded = nil
+    expect do
+      Bundler::MirrorSockets.new(Bundler::Settings::Mirror.new("http://127.0.0.1:9292", 1)).any? do |socket, _address, _timeout|
+        yielded = socket
+        raise "boom"
+      end
+    end.to raise_error(RuntimeError, "boom")
+    expect(yielded).to be_closed
+  end
+end

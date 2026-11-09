@@ -194,9 +194,9 @@ module Bundler
       @addresses.any? do |address|
         socket = Socket.new(Socket.const_get(address.type), Socket::SOCK_STREAM, 0)
         socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
-        value = yield socket, address.to_socket_address, @timeout
-        socket.close unless socket.closed?
-        value
+        yield socket, address.to_socket_address, @timeout
+      ensure
+        socket&.close
       end
     end
   end
