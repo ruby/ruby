@@ -151,7 +151,7 @@ module Bundler
           socket.connect_nonblock(address)
         rescue Errno::EINPROGRESS
           wait_for_writtable_socket(socket, address, timeout)
-        rescue RuntimeError # Connection failed somehow, again
+        rescue SystemCallError # Connection failed somehow, again
           false
         end
       end
