@@ -81,6 +81,11 @@ class Test_StringCStr < Test::Unit::TestCase
     end
   end
 
+  # [Bug #22517]
+  def test_wchar_reverse
+    assert_wchars_long_term {|s| s.reverse}
+  end
+
   def test_wchar_lstrip!
     assert_wchars_term_char(" a") {|s| s.lstrip!}
   end
@@ -153,6 +158,16 @@ class Test_StringCStr < Test::Unit::TestCase
       result[enc] = c if c
     end
     assert_empty(result, gh821)
+  end
+
+  def assert_wchars_long_term
+    result = {}
+    WCHARS.each do |enc|
+      s = yield(("a" * 1000).encode(enc))
+      c = Bug::String.cstr_term(s)
+      result[enc] = c unless c == 0
+    end
+    assert_empty(result)
   end
 
   def assert_wchars_term_char(str)

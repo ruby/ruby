@@ -6921,7 +6921,7 @@ rb_str_reverse(VALUE str)
 
     if (RSTRING_LEN(str) <= 1) return str_duplicate(rb_cString, str);
     enc = STR_ENC_GET(str);
-    rev = rb_str_new(0, RSTRING_LEN(str));
+    rev = str_enc_new(rb_cString, 0, RSTRING_LEN(str), enc);
     s = RSTRING_PTR(str); e = RSTRING_END(str);
     p = RSTRING_END(rev);
     cr = ENC_CODERANGE(str);
@@ -6955,7 +6955,6 @@ rb_str_reverse(VALUE str)
         }
     }
     STR_SET_LEN(rev, RSTRING_LEN(str));
-    str_enc_copy_direct(rev, str);
     ENC_CODERANGE_SET(rev, cr);
 
     return rev;
