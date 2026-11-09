@@ -82,6 +82,32 @@ class TestRactor < Test::Unit::TestCase
 =end
   end
 
+  def test_shareability_of_block_using_the_block_of_the_method
+    assert_ractor(<<~'RUBY')
+      obj = Object.new
+      def obj.block_given = Ractor.shareable_proc { block_given? }
+      def obj.iterator = Ractor.shareable_proc { iterator? }
+      def obj.defined_yield = Ractor.shareable_proc { defined?(yield) }
+      def obj.zsuper = Ractor.shareable_proc { super }
+      def obj.super_call = Ractor.shareable_proc { super() }
+      %i[block_given iterator defined_yield zsuper super_call].each do |m|
+        assert_raise(Ractor::IsolationError, m.to_s) { obj.public_send(m) }
+      end
+      assert_raise_with_message(Ractor::IsolationError, /uses 'block_given\?'/) { obj.block_given }
+      assert_raise_with_message(Ractor::IsolationError, /uses 'super'/) { obj.super_call }
+
+      # The block is passed explicitly
+      def obj.super_block_pass = Ractor.shareable_proc { super(&nil) }
+      def obj.super_literal_block = Ractor.shareable_proc { super() {} }
+      assert_kind_of Proc, obj.super_block_pass
+      assert_kind_of Proc, obj.super_literal_block
+
+      # There is no block of a method outside a method
+      assert_equal false, Ractor.shareable_proc { block_given? }.call
+      assert_equal false, Ractor.new { block_given? }.value
+    RUBY
+  end
+
   def test_shareable_proc_define_method_super_method_missing
     assert_ractor(<<~'RUBY', timeout: 30)
       iterations = 1_000_000
