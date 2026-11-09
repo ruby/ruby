@@ -115,6 +115,11 @@ class Test_StringCStr < Test::Unit::TestCase
     assert_wchars_long_term {|s| s.b.tr("\0", "\xDC".b).force_encoding(s.encoding).scrub}
   end
 
+  # [Bug #22517]
+  def test_wchar_fstring
+    assert_wchars_long_term {|s| -Ractor.make_shareable(Bug::String.new(s))}
+  end
+
   def test_wchar_lstrip!
     assert_wchars_term_char(" a") {|s| s.lstrip!}
   end
