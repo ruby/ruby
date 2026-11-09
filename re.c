@@ -2216,6 +2216,9 @@ reg_prepare_re(VALUE re, VALUE str, bool caller_owned)
 
     reg = &variant->reg;
     reg->timelimit = timelimit;
+    if (reg->num_mem != RREGEXP_PTR(re)->num_mem) {
+        rb_bug("group count mismatch in the recompiled regexp: %d != %d", reg->num_mem, RREGEXP_PTR(re)->num_mem);
+    }
 
     if (caller_owned) {
         /* onig_free() releases with libc free(), so don't use ALLOC here. */
