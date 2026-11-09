@@ -11999,7 +11999,8 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
         }
         cr = ENC_CODERANGE_VALID;
     }
-    ENCODING_CODERANGE_SET(buf, rb_enc_to_index(enc), cr);
+    rb_enc_associate(buf, enc);
+    ENC_CODERANGE_SET(buf, cr);
     return buf;
 }
 
