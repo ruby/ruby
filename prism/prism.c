@@ -9062,6 +9062,40 @@ escape_write_byte(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags, uint8
 }
 
 /**
+ * This function will be called when a newline is encountered. In some newlines,
+ * we need to check if there is a heredoc or heredocs that we have already lexed
+ * the body of that we need to now skip past. That will be indicated by the
+ * heredoc_end field on the parser.
+ *
+ * If it is set, then we need to skip past the heredoc body and then clear the
+ * heredoc_end field.
+ */
+static PRISM_INLINE void
+parser_flush_heredoc_end(pm_parser_t *parser) {
+    PRISM_ASSERT(parser->heredoc_end <= parser->end);
+    parser->next_start = parser->heredoc_end;
+    parser->heredoc_end = NULL;
+}
+
+/**
+ * Account for a newline consumed by an escape sequence, where width is the
+ * distance from the end of the current token to the start of the next line.
+ *
+ * When the body of a heredoc opened on this line has already been lexed, its
+ * lines are already tracked and the next line of source is the one after that
+ * body. In that case next_start is set, and whoever is reading the escape must
+ * stop consuming bytes so that the next token begins there.
+ */
+static PRISM_INLINE void
+escape_consume_newline(pm_parser_t *parser, uint32_t width) {
+    if (parser->heredoc_end == NULL) {
+        pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + width);
+    } else {
+        parser_flush_heredoc_end(parser);
+    }
+}
+
+/**
  * Write each byte of the given escaped character into the buffer.
  */
 static PRISM_INLINE void
@@ -9074,7 +9108,7 @@ escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t fl
     }
 
     if (width == 1) {
-        if (parser->heredoc_end == NULL && *parser->current.end == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+        if (*parser->current.end == '\n') escape_consume_newline(parser, 1);
         escape_write_byte(parser, buffer, flags, escape_byte(*parser->current.end++, flags));
     } else if (width > 1) {
         // Valid multibyte character. Just ignore the escape.
@@ -9399,7 +9433,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                         return;
                     }
 
-                    if (parser->heredoc_end == NULL && peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+                    if (peeked == '\n') escape_consume_newline(parser, 1);
                     parser->current.end++;
                     escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
@@ -9458,7 +9492,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                         return;
                     }
 
-                    if (parser->heredoc_end == NULL && peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+                    if (peeked == '\n') escape_consume_newline(parser, 1);
                     parser->current.end++;
                     escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
@@ -9512,7 +9546,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                         return;
                     }
 
-                    if (parser->heredoc_end == NULL && peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+                    if (peeked == '\n') escape_consume_newline(parser, 1);
                     parser->current.end++;
                     escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
                     return;
@@ -9520,7 +9554,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
         }
         case '\r': {
             if (peek_offset(parser, 1) == '\n') {
-                if (parser->heredoc_end == NULL) pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 2);
+                escape_consume_newline(parser, 2);
                 parser->current.end += 2;
                 escape_write_byte(parser, buffer, flags, escape_byte('\n', flags));
                 return;
@@ -9785,22 +9819,6 @@ static PRISM_INLINE void
 parser_lex_ignored_newline(pm_parser_t *parser) {
     parser->current.type = PM_TOKEN_IGNORED_NEWLINE;
     parser_lex_callback(parser);
-}
-
-/**
- * This function will be called when a newline is encountered. In some newlines,
- * we need to check if there is a heredoc or heredocs that we have already lexed
- * the body of that we need to now skip past. That will be indicated by the
- * heredoc_end field on the parser.
- *
- * If it is set, then we need to skip past the heredoc body and then clear the
- * heredoc_end field.
- */
-static PRISM_INLINE void
-parser_flush_heredoc_end(pm_parser_t *parser) {
-    PRISM_ASSERT(parser->heredoc_end <= parser->end);
-    parser->next_start = parser->heredoc_end;
-    parser->heredoc_end = NULL;
 }
 
 /**
@@ -11653,6 +11671,13 @@ parser_lex(pm_parser_t *parser) {
                                 parser->current.end++;
                             } else if (lex_mode->as.list.interpolation) {
                                 escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
+
+                                /* The escape consumed a newline with a heredoc body pending. */
+                                if (parser->next_start != NULL) {
+                                    pm_token_buffer_copy(parser, &token_buffer);
+                                    lex_mode->as.list.separated = false;
+                                    LEX(PM_TOKEN_STRING_CONTENT);
+                                }
                             } else {
                                 pm_token_buffer_push_byte(&token_buffer, '\\');
                                 pm_token_buffer_push_escaped(&token_buffer, parser);
@@ -11886,6 +11911,13 @@ parser_lex(pm_parser_t *parser) {
                             case 'u':
                             case 'x':
                                 escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_REGEXP);
+
+                                /* The escape consumed a newline with a heredoc body pending. */
+                                if (parser->next_start != NULL) {
+                                    pm_token_buffer_copy(parser, &token_buffer);
+                                    LEX(PM_TOKEN_STRING_CONTENT);
+                                }
+
                                 break;
                             default:
                                 if (lex_mode->as.regexp.terminator == peeked) {
@@ -12159,6 +12191,12 @@ parser_lex(pm_parser_t *parser) {
                                     parser->current.end++;
                                 } else if (lex_mode->as.string.interpolation) {
                                     escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
+
+                                    /* The escape consumed a newline with a heredoc body pending. */
+                                    if (parser->next_start != NULL) {
+                                        pm_token_buffer_copy(parser, &token_buffer);
+                                        LEX(PM_TOKEN_STRING_CONTENT);
+                                    }
                                 } else {
                                     pm_token_buffer_push_byte(&token_buffer, '\\');
                                     pm_token_buffer_push_escaped(&token_buffer, parser);
@@ -12352,6 +12390,8 @@ parser_lex(pm_parser_t *parser) {
                             parser_flush_heredoc_end(parser);
                             parser->current.end = breakpoint + 1;
                             pm_token_buffer_flush(parser, &token_buffer);
+                            /* A continued line cannot hold this heredoc's terminator. */
+                            lex_mode->as.heredoc.line_continuation = was_line_continuation;
                             LEX(PM_TOKEN_STRING_CONTENT);
                         }
 
@@ -12486,6 +12526,8 @@ parser_lex(pm_parser_t *parser) {
 
                                         if (parser->heredoc_end == NULL) {
                                             pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(end - parser->start + 1));
+                                        } else {
+                                            parser_flush_heredoc_end(parser);
                                         }
 
                                         // Here we want the buffer to only
@@ -12506,6 +12548,16 @@ parser_lex(pm_parser_t *parser) {
                                     continue;
                                 default:
                                     escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
+
+                                    /* The escape consumed a newline with a heredoc
+                                     * body pending, and the line it continues onto
+                                     * cannot hold this heredoc's terminator. */
+                                    if (parser->next_start != NULL) {
+                                        pm_token_buffer_copy(parser, &token_buffer);
+                                        lex_mode->as.heredoc.line_continuation = true;
+                                        LEX(PM_TOKEN_STRING_CONTENT);
+                                    }
+
                                     break;
                             }
                         }

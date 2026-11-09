@@ -29,6 +29,21 @@ module Ruby::Prism
       assert_newline_offsets_for("\"\\C-\r\n\"", "\\C- with \\r\\n")
     end
 
+    def test_escaped_newline_with_pending_heredoc
+      # An escape consuming the newline of a line whose heredoc body has been
+      # lexed resumes after that body, so each line is recorded exactly once.
+      ["\\\n", "\\c\n", "\\C-\n", "\\M-\n", "\\M-\\C-\n", "\\C-\\\r\n"].each do |escape|
+        assert_newline_offsets_for("\"\#{<<A}#{escape}b\nA\nc\"\n", "#{escape.inspect} in string")
+        assert_newline_offsets_for("`\#{<<A}#{escape}b\nA\nc`\n", "#{escape.inspect} in xstring")
+        assert_newline_offsets_for("/\#{<<A}#{escape}b\nA\nc/\n", "#{escape.inspect} in regexp")
+        assert_newline_offsets_for("%Q{\#{<<A}#{escape}b\nA\nc}\n", "#{escape.inspect} in %Q")
+        assert_newline_offsets_for("%W[\#{<<A}#{escape}b\nA\nc]\n", "#{escape.inspect} in %W")
+        assert_newline_offsets_for("<<B\n\#{<<A}#{escape}b\nA\nc\nB\n", "#{escape.inspect} in heredoc")
+        assert_newline_offsets_for("<<~B\n\#{<<A}#{escape}b\nA\nc\nB\n", "#{escape.inspect} in dedenting heredoc")
+        assert_newline_offsets_for("[<<A, ?#{escape}b\nA\n]\n", "#{escape.inspect} in char literal")
+      end
+    end
+
     private
 
     def assert_newline_offsets(fixture)
