@@ -12585,6 +12585,15 @@ parser_lex(pm_parser_t *parser) {
                                      * body pending, and the line it continues onto
                                      * cannot hold this heredoc's terminator. */
                                     if (parser->next_start != NULL) {
+                                        /* Dedenting applies at the start of each
+                                         * token, and the continued line is not
+                                         * dedented, so it stays in this token. */
+                                        if (heredoc_lex_mode->indent == PM_HEREDOC_INDENT_TILDE) {
+                                            parser->current.end = parser->next_start;
+                                            parser->next_start = NULL;
+                                            break;
+                                        }
+
                                         pm_token_buffer_copy(parser, &token_buffer);
                                         lex_mode->as.heredoc.line_continuation = true;
                                         LEX(PM_TOKEN_STRING_CONTENT);

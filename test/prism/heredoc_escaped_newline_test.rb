@@ -11,6 +11,9 @@ module Ruby::Prism
     # Lists and character literals keep an escaped newline as a newline.
     LITERAL_ESCAPES = ESCAPES.merge("\\\n" => "\n")
 
+    # Control and meta escapes continue the line, unlike a backslash newline.
+    MODIFIER_ESCAPES = ESCAPES.reject { |escape, _| escape == "\\\n" }
+
     def test_string
       ESCAPES.each do |escape, value|
         assert_content("body\n#{value}rest".b, "\"\#{<<A}#{escape}body\nA\nrest\"\n")
@@ -44,6 +47,18 @@ module Ruby::Prism
     def test_dedenting_heredoc_continued_line_is_not_terminator
       ESCAPES.each do |escape, value|
         assert_content("  body\n#{value}B\nrest\n".b, "<<~B\n  \#{<<A}#{escape}body\nA\nB\nrest\nB\n")
+      end
+    end
+
+    def test_dedenting_heredoc_continued_line_keeps_indentation
+      MODIFIER_ESCAPES.each do |escape, value|
+        assert_content("body\n#{value}    rest\nmore\n".b, "<<~B\n  \#{<<A}#{escape}body\nA\n    rest\n  more\nB\n")
+      end
+    end
+
+    def test_dedenting_heredoc_continued_line_does_not_count_indentation
+      MODIFIER_ESCAPES.each do |escape, value|
+        assert_content("body\n#{value} rest\nmore\n".b, "<<~B\n    \#{<<A}#{escape}body\nA\n rest\n    more\nB\n")
       end
     end
 
