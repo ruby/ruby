@@ -1634,12 +1634,16 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
     if (NIL_P(arg1)) {
         tm = time(0);
     } else if (rb_obj_is_instance_of(arg1, rb_cTime)) {
-        tm = NUM2LONG(rb_funcall(arg1, rb_intern("to_i"), 0));
+        tm = NUM2TIMET(rb_funcall(arg1, rb_intern("to_i"), 0));
     } else {
         ossl_raise(rb_eArgError, "arg must be Time or nil");
     }
 
+#ifdef HAVE_SSL_CTX_FLUSH_SESSIONS_EX
+    SSL_CTX_flush_sessions_ex(ctx, tm);
+#else
     SSL_CTX_flush_sessions(ctx, (long)tm);
+#endif
 
     return self;
 }

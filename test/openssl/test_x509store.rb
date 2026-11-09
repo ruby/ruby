@@ -171,6 +171,37 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_equal(:block, called)
   end
 
+  def test_verify_callback_warning_raises
+    # StoreContext must be detached even if the warning raises
+    assert_separately(["-ropenssl"], <<~"end;")
+      module Warning
+        def self.warn(message, *)
+          raise "warn raised" if message.include?("verify_callback")
+        end
+      end
+
+      key = OpenSSL::PKey::EC.generate("prime256v1")
+      cert = OpenSSL::X509::Certificate.new
+      cert.version = 2
+      cert.serial = 1
+      cert.subject = cert.issuer = OpenSSL::X509::Name.parse("/CN=x")
+      cert.public_key = key
+      cert.not_before = Time.now - 10
+      cert.not_after = Time.now + 1000
+      cert.sign(key, "sha256")
+
+      saved = nil
+      store = OpenSSL::X509::Store.new
+      store.verify_callback = proc { |_, sctx| saved = sctx; raise "callback raised" }
+      ctx = OpenSSL::X509::StoreContext.new(store, cert)
+      begin
+        ctx.verify
+      rescue RuntimeError
+      end
+      assert_raise_with_message(RuntimeError, /out of scope/) { saved.error }
+    end;
+  end
+
   def test_verify_purpose
     ca_exts = [
       ["basicConstraints", "CA:TRUE", true],
