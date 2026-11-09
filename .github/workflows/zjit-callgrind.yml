@@ -83,13 +83,7 @@ jobs:
       - name: Compare base and PR with ZJIT enabled
         working-directory: ruby-bench
         run: |
-          # Category and name filters intersect, so select their union explicitly.
-          ruby -ryaml -e '
-            metadata = YAML.load_file("benchmarks.yml")
-            headline = metadata.select { |_, info| info["category"] == "headline" }.keys
-            puts (headline + ["optcarrot"]).uniq
-          ' > "$RUNNER_TEMP/callgrind-benchmarks"
-          mapfile -t benchmarks < "$RUNNER_TEMP/callgrind-benchmarks"
+          benchmarks=(railsbench lobsters liquid-render ruby-lsp activerecord liquid-il)
           for revision in base pr; do
             ruby run_benchmarks.rb \
               --harness=callgrind --no-sudo --no-pinning \
