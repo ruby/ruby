@@ -4017,7 +4017,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 
     for (i = 0; i < num; ++i) { len += RSTRING_LEN(strary[i]); }
     str = rb_str_buf_new(len);
-    str_enc_copy_direct(str, strary[0]);
+    rb_enc_associate_index(str, ENCODING_GET(strary[0]));
 
     for (i = s; i < num; ++i) {
         const VALUE v = strary[i];
@@ -4026,7 +4026,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
         rb_str_buf_append(str, v);
         if (encidx != ENCINDEX_US_ASCII) {
             if (ENCODING_GET_INLINED(str) == ENCINDEX_US_ASCII)
-                rb_enc_set_index(str, encidx);
+                rb_enc_associate_index(str, encidx);
         }
     }
     return str;
