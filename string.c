@@ -7854,7 +7854,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     VALUE target;
 
     const OnigUChar *source_current, *source_end;
-    int target_length = 0;
+    long target_length = 0;
     VALUE buffer_anchor;
     mapping_buffer *current_buffer = 0;
     mapping_buffer **pre_buffer;
@@ -7862,6 +7862,8 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     int buffer_length_or_invalid;
 
     if (RSTRING_LEN(source) == 0) return str_duplicate(rb_cString, source);
+    if (RSTRING_LEN(source) > INT_MAX - CASE_MAPPING_ADDITIONAL_LENGTH)
+        rb_raise(rb_eArgError, "string size too big");
 
     source_current = (OnigUChar*)RSTRING_PTR(source);
     source_end = (OnigUChar*)RSTRING_END(source);
@@ -7870,7 +7872,11 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     pre_buffer = (mapping_buffer **)&DATA_PTR(buffer_anchor);
     while (source_current < source_end) {
         /* increase multiplier using buffer count to converge quickly */
-        size_t capa = (size_t)(source_end-source_current)*++buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
+        size_t capa = (size_t)(source_end-source_current);
+        if (capa > (INT_MAX - CASE_MAPPING_ADDITIONAL_LENGTH) / ++buffer_count)
+            capa = INT_MAX;
+        else
+            capa = capa * buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
         if (CASEMAP_DEBUG) {
             fprintf(stderr, "Buffer allocation, capa is %"PRIuSIZE"\n", capa); /* for tuning */
         }
@@ -7884,11 +7890,13 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
                                    current_buffer->space,
                                    current_buffer->space+current_buffer->capa,
                                    enc);
-        if (buffer_length_or_invalid < 0) {
+        if (buffer_length_or_invalid < 0 || buffer_length_or_invalid > LONG_MAX - target_length) {
             current_buffer = DATA_PTR(buffer_anchor);
             DATA_PTR(buffer_anchor) = 0;
             mapping_buffer_free(current_buffer);
+            if (buffer_length_or_invalid < 0)
             rb_raise(rb_eArgError, "input string invalid");
+            rb_raise(rb_eArgError, "string size too big");
         }
         target_length  += current_buffer->used = buffer_length_or_invalid;
     }
