@@ -31,13 +31,6 @@ RSpec.describe "bundle gem" do
     matched[:ignored]&.split(" ")
   end
 
-  def installed_go?
-    sys_exec("go version", raise_on_error: true)
-    true
-  rescue StandardError
-    false
-  end
-
   let(:generated_gemspec) { Bundler.load_gemspec_uncached(bundled_app(gem_name).join("#{gem_name}.gemspec")) }
 
   let(:gem_name) { "mygem" }
