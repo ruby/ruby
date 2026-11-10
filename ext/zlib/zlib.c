@@ -15,11 +15,23 @@
 #ifndef HAVE_RB_LEN_T
 typedef long rb_len_t;
 typedef unsigned long rb_ulen_t;
+#endif
+#ifndef SIZEOF_RB_LEN_T
 # define SIZEOF_RB_LEN_T SIZEOF_LONG
+#endif
+#ifndef LEN2NUM
 # define LEN2NUM LONG2NUM
+#endif
+#ifndef ULEN2NUM
 # define ULEN2NUM ULONG2NUM
+#endif
+#ifndef NUM2LEN
 # define NUM2LEN NUM2LONG
+#endif
+#ifndef NUM2LEN
 # define NUM2ULEN NUM2ULONG
+#endif
+#ifndef PRIdLEN
 # define PRIdLEN "ld"
 #endif
 
