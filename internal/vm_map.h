@@ -10,6 +10,7 @@
  */
 #include "ruby/internal/config.h"
 #include <stddef.h>             /* for size_t */
+#include "ruby/internal/stdbool.h" /* for bool */
 
 #ifdef HAVE_SYS_MMAN_H
 # include <sys/mman.h>
@@ -25,15 +26,28 @@
 extern int madvise(caddr_t, size_t, int);
 #endif
 
+/* zeroed_out (optional) reports whether the range now reads as all zero.  That needs an
+ * advice which discards the pages outright -- only Linux's MADV_DONTNEED, and only on a
+ * private anonymous mapping, which the caller must know: a private file mapping reverts
+ * to the file's contents instead.  MADV_FREE may or may not drop the old contents, and
+ * MADV_FREE_REUSABLE, the BSD MADV_DONTNEED and MEM_RESET keep them, so those all report
+ * false, as does a failed call. */
+
 // Reduces RSS lazily if possible, otherwise does it immediately. Keeps the mapping.
 static inline void
-rb_vm_map_reusable_lazy(void *addr, size_t len, int advice)
+rb_vm_map_reusable_lazy(void *addr, size_t len, int advice, bool *zeroed_out)
 {
+    if (zeroed_out) *zeroed_out = false;
 #ifdef __wasi__
     /* WebAssembly doesn't support madvise. */
 #elif defined(VM_CHECK_MODE) && VM_CHECK_MODE > 0 && defined(MADV_DONTNEED)
     if (!advice) advice = MADV_DONTNEED;
-    madvise(addr, len, advice);
+    int err = madvise(addr, len, advice);
+# ifdef __linux__
+    if (zeroed_out) *zeroed_out = (err == 0 && advice == MADV_DONTNEED);
+# else
+    (void)err;
+# endif
 #elif defined(MADV_FREE_REUSABLE)
     /* Darwin / macOS / iOS.  Drops phys_footprint; pages stay in resident_size
      * until the kernel reclaims them.  Retry on EAGAIN. */
@@ -57,9 +71,11 @@ rb_vm_map_reusable_lazy(void *addr, size_t len, int advice)
 }
 
 // Reduces RSS immediately if possible, otherwise does it lazily. Keeps the mapping.
+// See rb_vm_map_reusable_lazy for zeroed_out.
 static inline void
-rb_vm_map_reusable_immediate(void *addr, size_t len, int advice)
+rb_vm_map_reusable_immediate(void *addr, size_t len, int advice, bool *zeroed_out)
 {
+    if (zeroed_out) *zeroed_out = false;
 #ifdef __wasi__
     /* WebAssembly doesn't support madvise. */
 #elif defined(MADV_FREE_REUSABLE)
@@ -71,7 +87,12 @@ rb_vm_map_reusable_immediate(void *addr, size_t len, int advice)
     /* Linux: kernel discards physical pages immediately; next touch
      * zero-faults and RSS drops at once. */
     if (!advice) advice = MADV_DONTNEED;
-    madvise(addr, len, advice);
+    int err = madvise(addr, len, advice);
+# ifdef __linux__
+    if (zeroed_out) *zeroed_out = (err == 0 && advice == MADV_DONTNEED);
+# else
+    (void)err;
+# endif
 #elif defined(POSIX_MADV_DONTNEED)
     if (!advice) advice = POSIX_MADV_DONTNEED;
     posix_madvise(addr, len, advice);

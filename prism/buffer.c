@@ -2,12 +2,12 @@
 
 #include "prism/compiler/inline.h"
 
-#include "prism/internal/char.h"
 #include "prism/internal/allocator.h"
+#include "prism/internal/assert.h"
+#include "prism/internal/char.h"
+#include "prism/internal/oom.h"
 
-#include <assert.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -20,7 +20,7 @@ pm_buffer_init(pm_buffer_t *buffer, size_t capacity) {
     buffer->capacity = capacity;
 
     buffer->value = (char *) xmalloc(capacity);
-    if (buffer->value == NULL) abort();
+    if (buffer->value == NULL) PRISM_OOM();
 }
 
 /**
@@ -29,7 +29,7 @@ pm_buffer_init(pm_buffer_t *buffer, size_t capacity) {
 pm_buffer_t *
 pm_buffer_new(void) {
     pm_buffer_t *buffer = (pm_buffer_t *) xmalloc(sizeof(pm_buffer_t));
-    if (buffer == NULL) abort();
+    if (buffer == NULL) PRISM_OOM();
 
     pm_buffer_init(buffer, 1024);
     return buffer;
@@ -52,24 +52,35 @@ pm_buffer_length(const pm_buffer_t *buffer) {
 }
 
 /**
- * Append the given amount of space to the buffer.
+ * Append the given amount of space to the buffer. Returns false when there is
+ * nothing to write because the length is zero. A zero-initialized buffer has a
+ * NULL value until its first allocation, and passing NULL to
+ * memcpy/memset/memmove is undefined behavior even for zero bytes, so callers
+ * must not write in the zero case.
+ *
+ * The value and capacity are only updated together once the allocation has
+ * succeeded, so the buffer remains valid to free if PRISM_OOM unwinds.
  */
 static PRISM_INLINE bool
 pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
+    if (length == 0) return false;
+
     size_t next_length = buffer->length + length;
-    const size_t original_capacity = buffer->capacity;
+    if (next_length < buffer->length) PRISM_OOM();
 
     if (next_length > buffer->capacity) {
-        if (buffer->capacity == 0) {
-            buffer->capacity = 1;
+        size_t next_capacity = buffer->capacity == 0 ? 1 : buffer->capacity;
+
+        while (next_length > next_capacity) {
+            if (next_capacity > SIZE_MAX / 2) PRISM_OOM();
+            next_capacity *= 2;
         }
 
-        while (next_length > buffer->capacity) {
-            buffer->capacity *= 2;
-        }
+        char *next_value = xrealloc_sized(buffer->value, next_capacity, buffer->capacity);
+        if (next_value == NULL) PRISM_OOM();
 
-        buffer->value = xrealloc_sized(buffer->value, buffer->capacity, original_capacity);
-        if (buffer->value == NULL) return false;
+        buffer->value = next_value;
+        buffer->capacity = next_capacity;
     }
 
     buffer->length = next_length;
@@ -95,6 +106,17 @@ pm_buffer_append_zeroes(pm_buffer_t *buffer, size_t length) {
     size_t cursor = buffer->length;
     if (pm_buffer_append_length(buffer, length)) {
         memset(buffer->value + cursor, 0, length);
+    }
+}
+
+/**
+ * Append the given byte to the buffer the given number of times.
+ */
+void
+pm_buffer_append_repeated(pm_buffer_t *buffer, uint8_t value, size_t length) {
+    size_t cursor = buffer->length;
+    if (pm_buffer_append_length(buffer, length)) {
+        memset(buffer->value + cursor, value, length);
     }
 }
 
@@ -178,6 +200,15 @@ void
 pm_buffer_append_double(pm_buffer_t *buffer, double value) {
     const void *source = &value;
     pm_buffer_append(buffer, source, sizeof(double));
+}
+
+/**
+ * Append a 64-bit unsigned integer to the buffer in native endian order.
+ */
+void
+pm_buffer_append_uint64(pm_buffer_t *buffer, uint64_t value) {
+    const void *source = &value;
+    pm_buffer_append(buffer, source, sizeof(uint64_t));
 }
 
 /**
@@ -345,7 +376,7 @@ pm_buffer_index(const pm_buffer_t *buffer, char value) {
  */
 void
 pm_buffer_insert(pm_buffer_t *buffer, size_t index, const char *value, size_t length) {
-    assert(index <= buffer->length);
+    PRISM_ASSERT(index <= buffer->length);
 
     if (index == buffer->length) {
         pm_buffer_append_string(buffer, value, length);

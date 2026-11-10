@@ -240,6 +240,33 @@ RSpec.describe Bundler::Fetcher do
       end
     end
 
+    context "when the download fails transiently" do
+      let(:spec) { Gem::Specification.new(name, version) }
+      let(:downloaded_data) { Zlib::Deflate.deflate(Marshal.dump(spec)) }
+
+      it "retries the download and returns the spec" do
+        expect(Bundler::Fetcher::Downloader).to receive(:new).and_return(downloader)
+        expect(downloader).to receive(:fetch).twice do
+          @attempts = (@attempts || 0) + 1
+          raise Bundler::HTTPError, "transient network failure" if @attempts == 1
+          body
+        end
+
+        result = fetcher.fetch_spec([name, version, platform])
+        expect(result).to eq(spec)
+      end
+
+      it "does not retry an error that bypasses retries" do
+        expect(Bundler::Fetcher::Downloader).to receive(:new).and_return(downloader)
+        expect(downloader).to receive(:fetch).once.and_raise(
+          Bundler::Fetcher::AuthenticationRequiredError.new("http://example.org")
+        )
+
+        expect { fetcher.fetch_spec([name, version, platform]) }.
+          to raise_error(Bundler::Fetcher::AuthenticationRequiredError)
+      end
+    end
+
     context "when attempting to load an unexpected class" do
       let(:downloaded_data) { Zlib::Deflate.deflate(Marshal.dump(3)) }
 

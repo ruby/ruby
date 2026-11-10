@@ -266,6 +266,13 @@ class TestNetHTTP < Test::Unit::TestCase
     Net::HTTP.default_configuration = nil
   end
 
+  def test_require_does_not_load_resolv
+    assert_separately([], <<~'RUBY')
+      require 'net/http'
+      assert_nil defined?(Resolv)
+    RUBY
+  end
+
 end
 
 module TestNetHTTP_version_1_1_methods

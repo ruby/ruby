@@ -7,6 +7,7 @@ use crate::options::asm_dump;
 use crate::stats::{CompileError, trace_compile_phase};
 use crate::virtualmem::CodePtr;
 use crate::cast::*;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 // Use the arm64 register type for this platform
 pub type Reg = A64Reg;
@@ -102,18 +103,18 @@ impl From<&Opnd> for A64Opnd {
 }
 
 fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr) {
-    let src_addr = cb.get_write_ptr().as_offset();
-    let dst_addr = dst_ptr.as_offset();
+    let src_offset = cb.get_write_ptr().as_offset();
+    let dst_offset = dst_ptr.as_offset();
 
     // If the offset is short enough, then we'll use the
     // branch instruction. Otherwise, we'll move the
     // destination into a register and use the branch
     // register instruction.
-    if b_offset_fits_bits((dst_addr - src_addr) / 4) {
-        b(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
+    if b_offset_fits_bits((dst_offset - src_offset) / 4) {
+        b(cb, InstructionOffset::from_bytes((dst_offset - src_offset) as i32));
         1
     } else {
-        let num_insns = emit_load_value(cb, Assembler::EMIT_OPND, dst_addr as u64);
+        let num_insns = emit_load_value(cb, Assembler::EMIT_OPND, dst_ptr.raw_ptr(cb).addr().as_u64());
         br(cb, Assembler::EMIT_OPND);
         num_insns + 1
     };
@@ -188,6 +189,26 @@ pub const ALLOC_REGS: &[Reg] = &[
 /// [`Assembler::arm64_scratch_split`] or [`Assembler::new_with_scratch_reg`].
 const SCRATCH0_OPND: Opnd = Opnd::Reg(X15_REG);
 const SCRATCH1_OPND: Opnd = Opnd::Reg(X17_REG);
+
+/// Cached answer to whether the CPU implements FEAT_LSE (the Armv8.1 Large System Extensions),
+/// which provides single-instruction atomic add. Tests store to it directly to pick a lowering.
+static CPU_HAS_LSE: AtomicU8 = AtomicU8::new(LSE_UNKNOWN);
+const LSE_UNKNOWN: u8 = 0;
+const LSE_ABSENT: u8 = 1;
+const LSE_PRESENT: u8 = 2;
+
+/// Return true if the CPU implements FEAT_LSE, detecting it on first use.
+fn cpu_has_lse() -> bool {
+    // Relaxed is enough: std has a Sync cache anyways.
+    match CPU_HAS_LSE.load(Ordering::Relaxed) {
+        LSE_UNKNOWN => {
+            let has_lse = std::arch::is_aarch64_feature_detected!("lse");
+            CPU_HAS_LSE.store(if has_lse { LSE_PRESENT } else { LSE_ABSENT }, Ordering::Relaxed);
+            has_lse
+        }
+        state => state == LSE_PRESENT,
+    }
+}
 
 /// A scratch register available for use by resolve_ssa to break register copy cycles.
 /// Must not overlap with ALLOC_REGS or other preserved registers.
@@ -603,7 +624,8 @@ impl Assembler {
                 },
                 Insn::LShift { opnd, .. } |
                 Insn::RShift { opnd, .. } |
-                Insn::URShift { opnd, .. } => {
+                Insn::URShift { opnd, .. } |
+                Insn::ByteSwap { opnd, .. } => {
                     // The operand must be in a register, so
                     // if we get anything else we need to load it first.
                     *opnd = split_load_operand(asm, *opnd);
@@ -862,19 +884,31 @@ impl Assembler {
                     }
                 }
                 &mut Insn::IncrCounter { mem, value } => {
-                    // Convert Opnd::const_ptr into Opnd::Mem.
                     // It's split here to support IncrCounter in compile_exits.
                     assert!(matches!(mem, Opnd::UImm(_)));
                     asm.load_into(SCRATCH0_OPND, mem);
-                    asm.lea_into(SCRATCH0_OPND, Opnd::mem(64, SCRATCH0_OPND, 0));
 
-                    // Create a local loop to atomically increment a counter using SCRATCH1_OPND to check if it succeeded.
-                    // Note that arm64_emit will peek at the next Cmp to set a status into SCRATCH1_OPND on IncrCounter.
-                    let label = asm.new_label("incr_counter_loop");
-                    asm.write_label(label.clone());
-                    asm.incr_counter(SCRATCH0_OPND, value);
-                    asm.cmp(SCRATCH1_OPND, 0.into());
-                    asm.push_insn(Insn::Jne(label));
+                    if cpu_has_lse() {
+                        // With FEAT_LSE, a single relaxed STADD increments the counter atomically.
+                        // Counters need atomicity only, not ordering. STADD takes the addend in a
+                        // register, so put it in SCRATCH1_OPND unless it already is in one.
+                        let value = match value {
+                            Opnd::Reg(_) => value,
+                            _ => {
+                                asm.load_into(SCRATCH1_OPND, value);
+                                SCRATCH1_OPND
+                            }
+                        };
+                        asm.incr_counter(SCRATCH0_OPND, value);
+                    } else {
+                        // Create a local loop to atomically increment a counter using SCRATCH1_OPND to check if it succeeded.
+                        // Note that arm64_emit will peek at the next Cmp to set a status into SCRATCH1_OPND on IncrCounter.
+                        let label = asm.new_label("incr_counter_loop");
+                        asm.write_label(label.clone());
+                        asm.incr_counter(SCRATCH0_OPND, value);
+                        asm.cmp(SCRATCH1_OPND, 0.into());
+                        asm.push_insn(Insn::Jne(label));
+                    }
                 }
                 Insn::Store { dest, src } => {
                     *dest = split_stack_membase(asm, *dest, SCRATCH0_OPND);
@@ -928,20 +962,22 @@ impl Assembler {
         /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
         fn emit_conditional_jump<const CONDITION: u8>(asm: &Assembler, cb: &mut CodeBlock, target: Target) {
-            fn generate_branch<const CONDITION: u8>(cb: &mut CodeBlock, src_addr: i64, dst_addr: i64) {
-                let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
+            fn generate_branch<const CONDITION: u8>(cb: &mut CodeBlock, dst_ptr: CodePtr) {
+                let dst_offset = dst_ptr.as_offset();
+                let src_offset = cb.get_write_ptr().as_offset();
+                let num_insns = if bcond_offset_fits_bits((dst_offset - src_offset) / 4) {
                     // If the jump offset fits into the conditional jump as
                     // an immediate value and it's properly aligned, then we
                     // can use the b.cond instruction directly. We're safe
                     // to use as i32 here since we already checked that it
                     // fits.
-                    let bytes = (dst_addr - src_addr) as i32;
+                    let bytes = (dst_offset - src_offset) as i32;
                     bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
 
                     // Here we're going to return 1 because we've only
                     // written out 1 instruction.
                     1
-                } else if b_offset_fits_bits((dst_addr - (src_addr + 4)) / 4) { // + 4 for bcond
+                } else if b_offset_fits_bits((dst_offset - (src_offset + 4)) / 4) { // + 4 for bcond
                     // If the jump offset fits into the unconditional jump as
                     // an immediate value, we can use inverse b.cond + b.
                     //
@@ -949,20 +985,21 @@ impl Assembler {
                     // that if it doesn't match it will skip over the
                     // instruction used for branching.
                     bcond(cb, Condition::inverse(CONDITION), 2.into());
-                    b(cb, InstructionOffset::from_bytes((dst_addr - (src_addr + 4)) as i32)); // + 4 for bcond
+                    b(cb, InstructionOffset::from_bytes((dst_offset - (src_offset + 4)) as i32)); // + 4 for bcond
 
                     // We've only written out 2 instructions.
                     2
                 } else {
                     // Otherwise, we need to load the address into a
                     // register and use the branch register instruction.
-                    let load_insns: i32 = emit_load_size(dst_addr as u64).into();
+                    let dst_addr = dst_ptr.raw_ptr(cb).addr().as_u64();
+                    let load_insns: i32 = emit_load_size(dst_addr).into();
 
                     // We're going to write out the inverse condition so
                     // that if it doesn't match it will skip over the
                     // instructions used for branching.
                     bcond(cb, Condition::inverse(CONDITION), (load_insns + 2).into());
-                    emit_load_value(cb, Assembler::EMIT_OPND, dst_addr as u64);
+                    emit_load_value(cb, Assembler::EMIT_OPND, dst_addr);
                     br(cb, Assembler::EMIT_OPND);
 
                     // Here we'll return the number of instructions that it
@@ -980,9 +1017,7 @@ impl Assembler {
 
             let label = match target {
                 Target::CodePtr(dst_ptr) => {
-                    let dst_addr = dst_ptr.as_offset();
-                    let src_addr = cb.get_write_ptr().as_offset();
-                    generate_branch::<CONDITION>(cb, src_addr, dst_addr);
+                    generate_branch::<CONDITION>(cb, dst_ptr);
                     return;
                 },
                 Target::Label(l) => l,
@@ -1265,6 +1300,15 @@ impl Assembler {
                 },
                 Insn::Not { opnd, out } => {
                     mvn(cb, out.into(), opnd.into());
+                },
+                Insn::ByteSwap { opnd, out } => {
+                    // Arm has no 16-bit operands, so a halfword swap runs on the
+                    // 32-bit register and leaves the upper halfword unused.
+                    if opnd.rm_num_bits() == 16 {
+                        rev16(cb, out.with_num_bits(32).into(), opnd.with_num_bits(32).into());
+                    } else {
+                        rev(cb, out.into(), opnd.into());
+                    }
                 },
                 Insn::RShift { opnd, shift, out } => {
                     asr(cb, out.into(), opnd.into(), shift.into());
@@ -1570,6 +1614,10 @@ impl Assembler {
                     // A boundary is never patched, so it doesn't become a position to keep away
                     // from. The last patch point stays that, and the pad just gave it its room.
                     emit_pad_after_patch_point(cb, last_patch_pos);
+                },
+                Insn::IncrCounter { mem, value } if cpu_has_lse() => {
+                    // arm64_scratch_split put the addend in a register; see there.
+                    stadd(cb, value.into(), mem.into());
                 },
                 Insn::IncrCounter { mem, value } => {
                     // Get the status register allocated by arm64_scratch_split
@@ -1912,6 +1960,39 @@ mod tests {
     }
 
     #[test]
+    fn test_incr_counter_with_lse() {
+        let (mut asm, mut cb) = setup_asm();
+        CPU_HAS_LSE.store(LSE_PRESENT, Ordering::Relaxed);
+        asm.incr_counter(Opnd::const_ptr(std::ptr::without_provenance::<u8>(0x1234)), 1.into());
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x15, #0x1234
+        0x4: mov x17, #1
+        0x8: stadd x17, [x15]
+        ");
+        assert_snapshot!(cb.hexdump(), @"8f4682d2310080d2ff0131f8");
+    }
+
+    #[test]
+    fn test_incr_counter_without_lse() {
+        let (mut asm, mut cb) = setup_asm();
+        CPU_HAS_LSE.store(LSE_ABSENT, Ordering::Relaxed);
+        asm.incr_counter(Opnd::const_ptr(std::ptr::without_provenance::<u8>(0x1234)), 1.into());
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov x15, #0x1234
+        0x4: ldaxr x16, [x15]
+        0x8: add x16, x16, #1
+        0xc: stlxr w17, x16, [x15]
+        0x10: cmp x17, #0
+        0x14: b.ne #4
+        ");
+        assert_snapshot!(cb.hexdump(), @"8f4682d2f0fd5fc810060091f0fd11c83f0200f181ffff54");
+    }
+
+    #[test]
     fn test_conditional_branch_to_label() {
         let (mut asm, mut cb) = setup_asm();
         let start = asm.new_label("start");
@@ -2153,6 +2234,171 @@ mod tests {
         0x4: b #0x200000
         ");
         assert_snapshot!(cb.hexdump(), @"41000054ffff0714");
+    }
+
+    /// Disassemble in a form that doesn't depend on where the dummy CodeBlock is mapped or
+    /// on how many instructions it takes to load an address:
+    /// - Each mov/movk sequence is collapsed into an abridged pseudo mov. Additionally, if the loaded
+    ///   value matches `target` exactly, "target" is shown instead of the numeric value.
+    /// - Instruction addresses are left out, and branches to instructions in the listing
+    ///   use labels instead.
+    /// - Each run of nops is collapsed into one `nop sled`.
+    #[cfg(feature = "disasm")]
+    fn stable_disasm(cb: &CodeBlock, target: CodePtr) -> String {
+        fn parse_imm(imm: &str) -> Option<u64> {
+            match imm.strip_prefix("0x") {
+                Some(hex) => u64::from_str_radix(hex, 16).ok(),
+                None => imm.parse().ok(),
+            }
+        }
+        // Split a branch into the instruction up to its target and the target address
+        fn parse_branch(insn: &str) -> Option<(&str, u64)> {
+            let (head, imm) = insn.rsplit_once('#')?;
+            let op = head.split(' ').next()?;
+            if !matches!(op, "b" | "cbz" | "cbnz") && !op.starts_with("b.") {
+                return None;
+            }
+            Some((head, parse_imm(imm)?))
+        }
+
+        let disasm = cb.disasm();
+        let insns: Vec<(Option<u64>, &str)> = disasm.lines().map(|line| {
+            let line = line.trim();
+            match line.split_once(": ") {
+                Some((addr, insn)) if addr.starts_with("0x") => (parse_imm(addr), insn),
+                _ => (None, line),
+            }
+        }).collect();
+        let end_addr = insns.iter().filter_map(|&(addr, _)| addr).last().map_or(0, |addr| addr + 4);
+        let mut labels: Vec<u64> = vec![];
+        for (_, insn) in &insns {
+            if let Some((_, addr)) = parse_branch(insn) {
+                let in_listing = addr == end_addr || insns.iter().any(|&(insn_addr, _)| insn_addr == Some(addr));
+                if in_listing && !labels.contains(&addr) {
+                    labels.push(addr);
+                }
+            }
+        }
+        let label = |addr: u64| labels.iter().position(|&label| label == addr).map(|idx| format!("L{idx}"));
+
+        let target_addr = target.raw_ptr(cb).addr().as_u64();
+        let describe = |(reg, value): (&str, u64)| {
+            if value == target_addr {
+                format!("mov {reg}, target // abridged")
+            } else {
+                format!("mov {reg}, {value:#x} // abridged")
+            }
+        };
+        let mut out: Vec<String> = vec![];
+        // The register being loaded and the value it holds so far
+        let mut loading: Option<(&str, u64)> = None;
+        for &(addr, insn) in &insns {
+            if let Some(label) = addr.and_then(label) {
+                out.extend(loading.take().map(describe));
+                out.push(format!("{label}:"));
+            }
+            let load = insn.split_once(' ').and_then(|(op, rest)| {
+                let (reg, rest) = rest.split_once(", #")?;
+                let (imm, shift) = rest.split_once(", lsl #").unwrap_or((rest, "0"));
+                Some((op, reg, parse_imm(imm)?, shift.parse::<u32>().ok()?))
+            });
+            match (load, loading) {
+                (Some(("mov", reg, imm, shift)), _) => {
+                    out.extend(loading.map(describe));
+                    loading = Some((reg, imm << shift));
+                }
+                (Some(("movk", reg, imm, shift)), Some((loading_reg, value))) if reg == loading_reg => {
+                    loading = Some((reg, (value & !(0xffff << shift)) | (imm << shift)));
+                }
+                _ => {
+                    out.extend(loading.take().map(describe));
+                    if insn == "nop" {
+                        if out.last().map(String::as_str) != Some("nop sled") {
+                            out.push("nop sled".into());
+                        }
+                    } else if let Some(label) = parse_branch(insn).and_then(|(head, addr)| Some(format!("{head}{}", label(addr)?))) {
+                        out.push(label);
+                    } else {
+                        out.push(insn.to_string());
+                    }
+                }
+            }
+        }
+        out.extend(loading.map(describe));
+        out.extend(label(end_addr).map(|label| format!("{label}:")));
+        out.join("\n")
+    }
+
+    #[test]
+    fn test_emit_je_out_of_b_range() {
+        let (mut asm, _) = setup_asm();
+        let mut cb = CodeBlock::new_dummy_sized(512 * 1024 * 1024);
+
+        let target = cb.get_write_ptr().add_bytes(1 << 28);
+        asm.push_insn(Insn::Je(Target::CodePtr(target)));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        // A b can't reach 256MiB away, so the absolute address must be loaded for br.
+        assert_disasm_snapshot!(stable_disasm(&cb, target), @"
+        b.ne L0
+        mov x16, target // abridged
+        br x16
+        L0:
+        nop sled
+        ");
+    }
+
+    #[test]
+    fn test_emit_jmp_ptr_out_of_b_range() {
+        let (mut asm, _) = setup_asm();
+        let mut cb = CodeBlock::new_dummy_sized(512 * 1024 * 1024);
+
+        let target = cb.get_write_ptr().add_bytes(1 << 28);
+        asm.jmp(Target::CodePtr(target));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        // A b can't reach 256MiB away, so the absolute address must be loaded for br.
+        assert_disasm_snapshot!(stable_disasm(&cb, target), @"
+        mov x16, target // abridged
+        br x16
+        ");
+    }
+
+    #[test]
+    #[cfg(feature = "disasm")]
+    fn test_stable_disasm_names_target() {
+        let mut cb = CodeBlock::new_dummy();
+        let target = cb.get_write_ptr().add_bytes(1 << 28);
+        let target_addr = target.raw_ptr(&cb).addr().as_u64();
+        emit_load_value(&mut cb, A64Opnd::Reg(X0_REG), target_addr);
+
+        assert_snapshot!(stable_disasm(&cb, target), @"mov x0, target // abridged");
+    }
+
+    #[test]
+    #[cfg(feature = "disasm")]
+    fn test_stable_disasm_shows_other_values() {
+        let mut cb = CodeBlock::new_dummy();
+        let target = cb.get_write_ptr().add_bytes(1 << 28);
+        emit_load_value(&mut cb, A64Opnd::Reg(X1_REG), 0x1234_5678_9abc);
+
+        assert_snapshot!(stable_disasm(&cb, target), @"mov x1, 0x123456789abc // abridged");
+    }
+
+    #[test]
+    #[cfg(feature = "disasm")]
+    fn test_stable_disasm_labels_branches_and_collapses_nops() {
+        let mut cb = CodeBlock::new_dummy();
+        let target = cb.get_write_ptr();
+        bcond(&mut cb, Condition::NE, 3.into());
+        nop(&mut cb);
+        nop(&mut cb);
+
+        assert_snapshot!(stable_disasm(&cb, target), @"
+        b.ne L0
+        nop sled
+        L0:
+        ");
     }
 
     #[test]
@@ -3114,6 +3360,54 @@ mod tests {
         0xc: lsl x0, x15, #1
         ");
         assert_snapshot!(cb.hexdump(), @"300080d2b0831ff8af835ff8e0f97fd3");
+    }
+
+    #[test]
+    fn test_byteswap_16() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(16, SP, 0));
+        let out = asm.byteswap(opnd.with_num_bits(16));
+        asm.mov(C_RET_OPND, out.with_num_bits(64));
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: ldurh w0, [x21]
+        0x4: rev16 w0, w0
+        ");
+        assert_snapshot!(cb.hexdump(), @"a00240780004c05a");
+    }
+
+    #[test]
+    fn test_byteswap_32() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(32, SP, 0));
+        let out = asm.byteswap(opnd.with_num_bits(32));
+        asm.mov(C_RET_OPND, out.with_num_bits(64));
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: ldur w0, [x21]
+        0x4: rev w0, w0
+        ");
+        assert_snapshot!(cb.hexdump(), @"a00240b80008c05a");
+    }
+
+    #[test]
+    fn test_byteswap_64() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(64, SP, 0));
+        let out = asm.byteswap(opnd);
+        asm.mov(C_RET_OPND, out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: ldur x0, [x21]
+        0x4: rev x0, x0
+        ");
+        assert_snapshot!(cb.hexdump(), @"a00240f8000cc0da");
     }
 
     #[test]

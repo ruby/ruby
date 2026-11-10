@@ -135,7 +135,7 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     stringio.rewind
     assert_equal @hash, JSON.load(stringio)
 
-    tempfile = Tempfile.open('@json.gzip')
+    tempfile = Tempfile.open('@json.gzip', mode: File::BINARY)
     gzw = Zlib::GzipWriter.new(tempfile)
     gzw.write(@json)
     gzw.close

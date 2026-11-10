@@ -52,9 +52,6 @@ void *xcalloc();
 void *xrealloc();
 #endif
 
-#undef free
-#define free(x) xfree(x)
-
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>

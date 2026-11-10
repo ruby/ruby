@@ -25,7 +25,7 @@ static void emit(yaml_emitter_t * emitter, yaml_event_t * event)
 static int writer(void *ctx, unsigned char *buffer, size_t size)
 {
     VALUE self = (VALUE)ctx, io = rb_attr_get(self, id_io);
-    VALUE str = rb_enc_str_new((const char *)buffer, (long)size, rb_utf8_encoding());
+    VALUE str = rb_enc_str_new((const char *)buffer, (rb_len_t)size, rb_utf8_encoding());
     VALUE wrote = rb_funcall(io, id_write, 1, str);
     return (int)NUM2INT(wrote);
 }
@@ -172,8 +172,8 @@ static VALUE start_document_try(VALUE d)
     }
 
     if(RTEST(tags)) {
-        long i = 0;
-        long len;
+        rb_len_t i = 0;
+        rb_len_t len;
         rb_encoding * encoding = rb_utf8_encoding();
 
         Check_Type(tags, T_ARRAY);

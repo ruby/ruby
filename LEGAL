@@ -462,6 +462,15 @@ mentioned below.
     You may distribute under the terms of either the GNU General Public
     License or the Artistic License, as specified in the perl README file.
 
+[win32/vcpkg-ports/mimalloc]
+
+  This port is adapted from vcpkg, under the following license.
+
+  >>>
+    Copyright (c) Microsoft Corporation
+
+    {MIT License}[rdoc-ref:@MIT+License]
+
 [missing/mt19937.c]
 
   This file is under the new-style BSD license.

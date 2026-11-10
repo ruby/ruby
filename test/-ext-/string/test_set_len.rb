@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require "-test-/string"
+require "rbconfig/sizeof"
 
 class Test_StrSetLen < Test::Unit::TestCase
   def setup
@@ -79,5 +80,13 @@ class Test_StrSetLen < Test::Unit::TestCase
     assert_predicate str, :valid_encoding?
     str.resize(2)
     assert_not_predicate str, :valid_encoding?
+  end
+
+  def test_resize_too_big
+    max = 2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 1
+    str = Bug::String.new("a")
+    assert_raise(ArgumentError) {str.resize(max)}
+    str = Bug::String.new("\0\0\0\0".force_encoding(Encoding::UTF_32BE))
+    assert_raise(ArgumentError) {str.resize(max - 3)}
   end
 end

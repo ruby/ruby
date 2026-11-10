@@ -45,6 +45,9 @@ set pathlist=
 set config_make=confargs~%RANDOM%.mak
 set confargs=%config_make:.mak=.sub%
 set debug_configure=
+set MAKEFILE=Makefile
+set make_command=nmake
+set cc_arg=
 echo>%config_make% # CONFIGURE
 type nul > %confargs%
 :loop
@@ -129,6 +132,7 @@ goto :loop ;
 goto :unknown_opt
 :name
   if "%eq%" == "" call :take_arg
+  if "%var%" == "CC" set "cc_arg=yes"
   echo>> %config_make% %var% = %arg%
 goto :loopend ;
 :dir
@@ -159,18 +163,27 @@ goto :loopend ;
   if "%feature%" == "rubygems" (
      echo>> %config_make% USE_RUBYGEMS = %enable%
   )
+  if "%feature%" == "yjit" if not "%enable%" == "yes" if not "%enable%" == "no" (
+    echo 1>&2 %configure%: --enable-yjit accepts only yes or no, not %enable%
+    exit /b 1
+  )
+  if "%feature%" == "yjit" (
+     echo>> %config_make% YJIT_SUPPORT = %enable%
+  )
 goto :loopend ;
 :withoutarg
   ::- These take an argument and are recorded in :witharg.  Recording
   ::- them here too would duplicate them at each reconfiguration.
   if "%opt%" == "--without-ext" goto :witharg
   if "%opt%" == "--without-extensions" goto :witharg
+  if "%opt%" == "--without-mimalloc" echo>> %config_make% WITH_MIMALLOC = no
   echo>>%confargs%  "%opt%" \
   if "%opt%" == "--without-baseruby" goto :nobaseruby
   if "%opt%" == "--without-git" goto :nogit
 goto :loop ;
 :witharg
   if "%opt%" == "--with-static-linked-ext" goto :extstatic
+  if "%opt%" == "--with-mimalloc" goto :mimalloc
   if "%eq%" == "" call :take_arg
   if not "%arg%" == "" (
     echo>>%confargs%  "%opt%=%arg:$=$$%" \
@@ -186,6 +199,9 @@ goto :loop ;
   if "%opt%" == "--with-gmp" goto :gmp
   if "%opt%" == "--with-destdir" goto :destdir
   if "%opt%" == "--with-dump-ast" goto :dump-ast
+  if "%opt%" == "--with-gnu-make" goto :gnu-make
+  if "%opt%" == "--with-gnumake" goto :gnu-make
+  if "%opt%" == "--with-gmake" goto :gnu-make
 goto :loop ;
 :ntver
   ::- For version constants, see
@@ -232,11 +248,19 @@ goto :loop ;
 :gmp
   echo>> %config_make% WITH_GMP = yes
 goto :loop ;
+:mimalloc
+  if "%eq%" == "" (set "arg=yes")
+  echo>> %config_make% WITH_MIMALLOC = %arg%
+goto :loopend ;
 :destdir
   echo>> %config_make% DESTDIR = %arg%
 goto :loop ;
 :dump-ast
   echo>> %config_make% DUMP_AST = %arg%
+goto :loop ;
+:gnu-make
+  set "MAKEFILE=GNUmakefile"
+  if defined arg (set "make_command=%arg%") else (set "make_command=make")
 goto :loop ;
 :opt-dir
   if "%arg%" == "" (
@@ -263,11 +287,14 @@ goto :loop ;
   echo   --target=TARGET         configure for TARGET [i386-mswin32]
   echo Optional Package:
   echo   --with-baseruby=RUBY    use RUBY as baseruby [ruby]
+  echo   --with-gnu-make[=MAKE]  generate GNUmakefile for GNU make [make]
   echo   --with-static-linked-ext link external modules statically
   echo   --with-ext="a,b,..."    use extensions a, b, ...
   echo   --without-ext="a,b,..." ignore extensions a, b, ...
   echo   --with-opt-dir="DIR-LIST" add optional headers and libraries directories separated by ';'
+  echo   --with-mimalloc         allocate memory for the GC with mimalloc
   echo   --disable-install-doc   do not install rdoc indexes during install
+  echo   --enable-yjit           enable in-process JIT compiler that requires rustc (x64 and arm64)
   echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
   echo   --with-ntver=_WIN32_WINNT_XXXX
   echo   --with-ntver=XXXX       same as --with-ntver=_WIN32_WINNT_XXXX
@@ -281,6 +308,10 @@ goto :EOF
   ) 1>&2
   exit /b 1
 :end
+::- Record CC from the environment as if given as an argument, so that
+::- the reconfiguration by make keeps it even from a shell without CC.
+if not defined cc_arg if defined CC echo>> %config_make% CC = %CC%
+if not defined cc_arg if defined CC echo>>%confargs%  "CC=%CC:$=$$%" \
 if "%debug_configure%" == "yes" (type %confargs%)
 if defined optdirs (echo>>%config_make% optdirs = %optdirs:~1%)
 (
@@ -289,12 +320,14 @@ if defined optdirs (echo>>%config_make% optdirs = %optdirs:~1%)
   type %confargs%
   echo # configure_args
 
-  echo.
-  echo !if "$(optdirs)" != ""
-  for %%I in ("$(optdirs:\=/)" "$(optdirs:/;=;)") do @echo optdirs = %%~I
-  echo XINCFLAGS = -I"$(optdirs:;=/include" -I")/include"
-  echo XLDFLAGS = -libpath:"$(optdirs:;=/lib" -libpath:")/lib"
-  echo !endif
+  if not "%MAKEFILE%" == "GNUmakefile" (
+    echo.
+    echo !if "$(optdirs)" != ""
+    for %%I in ("$(optdirs:\=/)" "$(optdirs:/;=;)") do @echo optdirs = %%~I
+    echo XINCFLAGS = -I"$(optdirs:;=/include" -I")/include"
+    echo XLDFLAGS = -libpath:"$(optdirs:;=/lib" -libpath:")/lib"
+    echo !endif
+  )
 
   if not "%pathlist%" == "" (
     echo.
@@ -309,7 +342,9 @@ if "%debug_configure%" == "yes" (type %config_make%)
 
 nmake -al -f %WIN32DIR%/setup.mak "WIN32DIR=%WIN32DIR%" ^
     config_make=%config_make% ^
-    MAKEFILE=Makefile.new MAKEFILE_BACK=Makefile.old MAKEFILE_NEW=Makefile ^
+    MAKEFILE=%MAKEFILE%.new MAKEFILE_BACK=%MAKEFILE%.old MAKEFILE_NEW=%MAKEFILE% ^
+    make_command=%make_command% ^
     %target%
 set error=%ERRORLEVEL%
 if exist %config_make% del /q %config_make%
+exit /b %error%

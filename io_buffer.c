@@ -606,7 +606,7 @@ io_buffer_slice_allocate(VALUE klass)
 {
     struct rb_io_buffer_view *buffer;
     VALUE instance = TypedData_Make_Struct(klass, struct rb_io_buffer_view, &rb_io_buffer_type, buffer);
-    buffer->flags = IO_BUFFER_SLICE;
+    buffer->flags = (enum rb_io_buffer_flags)IO_BUFFER_SLICE;
     buffer->source = Qnil;
     return instance;
 }
@@ -898,7 +898,7 @@ VALUE
 rb_io_buffer_type_string(VALUE klass, VALUE length)
 {
     klass = io_buffer_storage_class(klass);
-    VALUE string = rb_str_new(NULL, RB_NUM2LONG(length));
+    VALUE string = rb_str_new(NULL, RB_NUM2LEN(length));
 
     struct io_buffer_for_yield_instance_arguments arguments = {
         .klass = klass,
@@ -2630,6 +2630,24 @@ rb_io_buffer_compare(VALUE self, VALUE other)
     return RB_INT2NUM(memcmp(ptr1, ptr2, size1));
 }
 
+/*
+ * call-seq: ==(other) -> true or false
+ *
+ * Returns whether +other+ is an IO::Buffer with the same contents as the
+ * receiver.
+ *
+ *   IO::Buffer.for("abc") == IO::Buffer.for("abc") # => true
+ *   IO::Buffer.for("abc") == IO::Buffer.for("ab")  # => false
+ *   IO::Buffer.for("abc") == "abc"                 # => false
+ */
+static VALUE
+io_buffer_equal(VALUE self, VALUE other)
+{
+    if (!rb_io_buffer_p(other)) return Qfalse;
+
+    return RBOOL(rb_io_buffer_compare(self, other) == INT2FIX(0));
+}
+
 static void
 io_buffer_validate_type(size_t size, size_t offset, size_t extend)
 {
@@ -2845,7 +2863,7 @@ io_buffer_size_of(VALUE klass, VALUE buffer_type)
 {
     if (RB_TYPE_P(buffer_type, T_ARRAY)) {
         size_t total = 0;
-        for (long i = 0; i < RARRAY_LEN(buffer_type); i++) {
+        for (rb_len_t i = 0; i < RARRAY_LEN(buffer_type); i++) {
             total += io_buffer_buffer_type_size(TYPE_ID(RARRAY_AREF(buffer_type, i)));
         }
         return SIZET2NUM(total);
@@ -2854,6 +2872,23 @@ io_buffer_size_of(VALUE klass, VALUE buffer_type)
         return SIZET2NUM(io_buffer_buffer_type_size(TYPE_ID(buffer_type)));
     }
 }
+
+#if USE_ZJIT
+// ZJIT needs this function to never allocate and never raise, so a range it
+// cannot serve is reported as NULL.
+const void *
+rb_jit_io_buffer_readable_ptr(VALUE self, size_t offset, size_t length)
+{
+    void *base;
+    size_t size;
+
+    if (!io_buffer_try_get_bytes(get_io_buffer_view(self), &base, &size)) return NULL;
+    if (!base) return NULL;
+    if (size_sum_is_bigger_than(offset, length, size)) return NULL;
+
+    return (const char *)base + offset;
+}
+#endif
 
 static inline VALUE
 rb_io_buffer_get_value(const void* base, size_t size, ID buffer_type, size_t *offset)
@@ -2966,7 +3001,7 @@ io_buffer_get_values(VALUE self, VALUE buffer_types, VALUE _offset)
 
     VALUE array = rb_ary_new_capa(RARRAY_LEN(buffer_types));
 
-    for (long i = 0; i < RARRAY_LEN(buffer_types); i++) {
+    for (rb_len_t i = 0; i < RARRAY_LEN(buffer_types); i++) {
         VALUE type = rb_ary_entry(buffer_types, i);
         VALUE value = rb_io_buffer_get_value(base, size, TYPE_ID(type), &offset);
         rb_ary_push(array, value);
@@ -3294,7 +3329,7 @@ io_buffer_set_values(VALUE self, VALUE buffer_types, VALUE _offset, VALUE values
         rb_raise(rb_eArgError, "Argument buffer_types and values should have the same length!");
     }
 
-    for (long i = 0; i < RARRAY_LEN(buffer_types); i++) {
+    for (rb_len_t i = 0; i < RARRAY_LEN(buffer_types); i++) {
         VALUE type = rb_ary_entry(buffer_types, i);
         VALUE value = rb_ary_entry(values, i);
         rb_io_buffer_set_value(buffer, type, &offset, value);
@@ -3907,7 +3942,7 @@ struct io_buffer_pread_internal_argument {
     // The maximum number of bytes to read:
     size_t length;
     // The position to read from:
-    off_t from;
+    rb_off_t from;
 };
 
 static VALUE
@@ -4090,7 +4125,7 @@ struct io_buffer_pwrite_internal_argument {
     // The maximum number of bytes to write:
     size_t length;
     // The position to write to:
-    off_t from;
+    rb_off_t from;
 };
 
 static VALUE
@@ -4982,6 +5017,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "source", io_buffer_source, 0);
     rb_define_method(rb_cIOBuffer, "slice", io_buffer_slice, -1);
     rb_define_method(rb_cIOBuffer, "<=>", rb_io_buffer_compare, 1);
+    rb_define_method(rb_cIOBuffer, "==", io_buffer_equal, 1);
     rb_define_method(rb_cIOBufferStorage, "resize", io_buffer_resize, 1);
     rb_define_method(rb_cIOBufferSlice, "resize", io_buffer_resize, 1);
     rb_define_method(rb_cIOBuffer, "advance", io_buffer_advance, 1);

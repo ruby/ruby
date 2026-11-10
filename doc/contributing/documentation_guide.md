@@ -58,8 +58,6 @@ Use your judgment about what the user needs to know.
     - Excessive comma-separated phrases; consider a [list][lists].
     - Idioms and culture-specific references.
     - Overuse of headings.
-    - Using US-ASCII-incompatible characters in C source files;
-      see [Characters](#label-Characters) below.
 
 ### Examples
 
@@ -109,55 +107,6 @@ Objects that may need to be closed:
 - Dir
 - IO
 - Tempfile
-
-### Characters
-
-Use only US-ASCII-compatible characters in a C source file.
-(If you use other characters, the Ruby CI will gently let you know.)
-
-If you want to put ASCII-incompatible characters into the documentation
-for a C-coded class, module, or method, there are workarounds
-involving new files `doc/*.rdoc`:
-
-- For class `Foo` (defined in file `foo.c`),
-  create file `doc/foo.rdoc`, declare `class Foo; end`,
-  and place the class documentation above that declaration:
-
-    ```ruby
-    # Documentation for class Foo goes here.
-    class Foo; end
-    ```
-
-- Similarly, for module `Bar` (defined in file `bar.c`),
-  create file `doc/bar.rdoc`, declare `module Bar; end`,
-  and place the module documentation above that declaration:
-
-    ```ruby
-    # Documentation for module Bar goes here.
-    module Bar; end
-    ```
-
-- For a method, things are different.
-  Documenting a method as above disables the "click to toggle source" feature
-  in the rendered documentation.
-
-    Therefore it's best to use file inclusion:
-
-    - Retain the `call-seq` in the C code.
-    - Use file inclusion (`:include:`) to include text from an .rdoc file.
-
-    Example:
-
-    ```c
-    /*
-     *  call-seq:
-     *    each_byte {|byte| ... } -> self
-     *    each_byte               -> enumerator
-     *
-     *  :include: doc/string/each_byte.rdoc
-     *
-     */
-    ```
 
 ### RDoc
 
@@ -562,6 +511,19 @@ The synopsis comes next, and is a short description of what the
 method does and why you would want to use it.  Ideally, this
 is a single sentence, but for more complex methods it may require
 an entire paragraph.
+
+Consider mentioning the return value first,
+especially if there are associated conditionals:
+
+> Returns the integer permissions for the entry at the path in `self`
+> if the entry exists and is readable by others;
+> otherwise, returns `nil`:
+
+Not:
+
+> If the entry at the path in `self` exists and is readable by others,
+> returns the integer permissions for the entry;
+> otherwise, returns `nil`:
 
 For `Array#count`, the synopsis is:
 

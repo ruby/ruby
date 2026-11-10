@@ -15,6 +15,8 @@
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
+struct rb_gc_mark_ctx;          /* internal/gc.h */
+
 #define IMEMO_MASK   (FL_USER0 | FL_USER1 | FL_USER2 | FL_USER3 | FL_USER4)
 
 /* FL_USER0 to FL_USER4 is for type */
@@ -106,7 +108,7 @@ struct rb_imemo_cdhash {
 };
 
 /* Set on imemo_memo when u3 holds a VALUE that GC must mark.
- * When unset, u3 is a non-VALUE (cnt/state). */
+ * When unset, u3 is a non-VALUE (cnt/ucnt/state). */
 #define MEMO_U3_IS_VALUE IMEMO_FL_USER0
 
 /*! MEMO
@@ -118,7 +120,8 @@ struct MEMO {
     const VALUE v1;
     const VALUE v2;
     union {
-        long cnt;
+        rb_len_t cnt;
+        rb_ulen_t ucnt;
         long state;
         const VALUE value;
     } u3;
@@ -143,7 +146,7 @@ struct MEMO {
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 #endif
 VALUE rb_imemo_new(enum imemo_type type, VALUE v0, size_t size, bool is_shareable);
-struct MEMO *rb_imemo_memo_new(VALUE a, VALUE b, long c);
+struct MEMO *rb_imemo_memo_new(VALUE a, VALUE b, rb_len_t c);
 struct MEMO *rb_imemo_memo_new_value(VALUE a, VALUE b, VALUE c);
 struct vm_ifunc *rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc);
 static inline enum imemo_type imemo_type(VALUE imemo);
@@ -155,7 +158,7 @@ static inline void MEMO_V1_SET(struct MEMO *m, VALUE v);
 static inline void MEMO_V2_SET(struct MEMO *m, VALUE v);
 
 size_t rb_imemo_memsize(VALUE obj);
-void rb_imemo_mark_and_move(VALUE obj, bool reference_updating);
+void rb_imemo_mark_and_move(const struct rb_gc_mark_ctx *ctx, VALUE obj, bool reference_updating);
 void rb_imemo_free(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN

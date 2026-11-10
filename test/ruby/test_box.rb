@@ -255,6 +255,45 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_autoload_of_the_same_name_registered_in_two_boxes
+    # Each box has its own autoload table, as it has its own constant table.
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      require "tmpdir"
+      Dir.mktmpdir do |dir|
+        %w[1 2].each do |n|
+          File.write("#{dir}/foo#{n}.rb", "module Ruby; BoxAutoloadTest = [#{n}, Ruby::Box.current]; end")
+        end
+        b1 = Ruby::Box.new
+        b2 = Ruby::Box.new
+        b1.eval("Ruby.autoload(:BoxAutoloadTest, #{"#{dir}/foo1.rb".dump})")
+        b2.eval("Ruby.autoload(:BoxAutoloadTest, #{"#{dir}/foo2.rb".dump})")
+        assert_equal("#{dir}/foo1.rb", b1.eval("Ruby.autoload?(:BoxAutoloadTest)"))
+        assert_equal([1, b1], b1.eval("Ruby::BoxAutoloadTest"))
+        assert_equal([2, b2], b2.eval("Ruby::BoxAutoloadTest"))
+      end
+    end;
+  end
+
+  def test_autoload_registered_in_master_box
+    # Ruby::Prism is autoloaded in the master box, and shared by all boxes like
+    # builtin classes, regardless of which box triggers it.
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      omit "Ruby::Prism is not autoloaded" unless Ruby.autoload?(:Prism)
+      module Ruby; BOX_TEST = 1; end # the main box has its own copy of Ruby
+      b1 = Ruby::Box.new
+      b2 = Ruby::Box.new
+      node = b1.eval("Ruby::Prism::Node")
+      assert_equal("constant", defined?(Ruby::Prism))
+      assert_same(node, b2.eval("Ruby::Prism::Node"))
+      assert_same(node, Ruby::Prism::Node)
+      assert_same(node, Ruby::Box.root.eval("Ruby::Prism::Node"))
+      assert_same(node, Ruby::Box.new.eval("Ruby::Prism::Node"))
+      assert_nil(Ruby.autoload?(:Prism))
+    end;
+  end
+
   def test_continuous_top_level_method_in_a_box
     setup_box
 
@@ -767,6 +806,16 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_frozen_loaded_features_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      assert_raise_with_message(RuntimeError, /\$LOADED_FEATURES is frozen; cannot append feature/) do
+        box.eval('$LOADED_FEATURES.freeze; require "erb"')
+      end
+    end;
+  end
+
   def test_match_variables_are_not_cached_in_box
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
@@ -1176,7 +1225,7 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_calling_root_box_methods_does_not_change_user_boxes_newly_created
-    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;
       assert_not_include Object.constants.sort, :Find # required by Pathname#find
       assert_not_include Ruby::Box.root.eval("Object.constants.sort"), :Find
@@ -1184,13 +1233,13 @@ class TestBox < Test::Unit::TestCase
       assert_not_include b1.eval("Object.constants.sort"), :Find
 
       require 'pathname'
-      Pathname.new('.').find{|path| path.directory?}
+      Pathname.new(here).find{|path| path.directory?}
       assert_include Object.constants.sort, :Find # required by Pathname#find
 
       assert_not_include Ruby::Box.root.eval("Object.constants.sort"), :Find
       assert_not_include b1.eval("Object.constants.sort"), :Find
 
-      Ruby::Box.root.eval("require 'pathname'; Pathname.new('.').find{|path| path.directory? }")
+      Ruby::Box.root.eval("require 'pathname'; Pathname.new('#{here}').find{|path| path.directory? }")
       assert_include Ruby::Box.root.eval("Object.constants.sort"), :Find
 
       assert_not_include b1.eval("Object.constants.sort"), :Find
@@ -1474,7 +1523,7 @@ class TestBox < Test::Unit::TestCase
   def test_loading_extension_libs_in_main_box_1
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;
-      require "prism"
+      require "ruby/prism"
       require "optparse"
       require "date"
       require "time"

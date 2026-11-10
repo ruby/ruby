@@ -12,9 +12,6 @@ jobs:
   checks:
     name: Miscellaneous checks
 
-    permissions:
-      contents: write # for Git to git push
-
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +20,7 @@ jobs:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: head
 
@@ -62,6 +59,10 @@ jobs:
           GITHUB_OLD_SHA: ${{ github.event.pull_request.base.sha }}
         if: ${{ startsWith(github.event_name, 'pull') }}
 
+      - name: Check if C and Assember sources are UTF-8
+        run: |
+          find . \( -name '*.[chyS]' -o -name '*.asm' \) -exec iconv -f utf-8 -t utf-8 {} + >/dev/null
+
       - name: Check for bash specific substitution in configure.ac
         run: |
           git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac | sed "s/^/::error::/"
@@ -83,10 +84,15 @@ jobs:
       - name: Check for __has_builtin functions
         run: |
           missing=()
-          for check in $(git grep -h --no-line-number -o '__has_builtin(__[_a-zA-Z0-9]*)' | sort -u); do
+          for check in $(git grep -h --no-line-number -o '__has_builtin(__[_a-zA-Z0-9]*)' :^prism/ | sort -u); do
               func="${check#__has_builtin(}"
               func="${func%)}"
               git -P grep -w "RBIMPL_HAS_BUILTIN_$func" > /dev/null || missing+=("-e" "$check")
+          done
+          for check in $(git grep -h --no-line-number -o '__has_builtin(__[_a-zA-Z0-9]*)' prism/ | sort -u); do
+              func="${check#__has_builtin(__}"
+              func="${func%)}"
+              git -P grep -w "PRISM_HAS_${func^^}" > /dev/null || missing+=("-e" "$check")
           done
           [ ${#missing[@]} = 0 ] || {
               echo "::error::Missing __has_builtin fallbacks:"
@@ -164,7 +170,7 @@ jobs:
           )}}
 
       - name: Upload docs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: html
           name: ${{ steps.docs.outputs.htmlout }}

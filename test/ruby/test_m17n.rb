@@ -1234,6 +1234,11 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::ASCII_8BIT, "".force_encoding("US-ASCII").concat(0xA2).encoding)
     assert_equal("A\x84\x31\xA4\x39".force_encoding("GB18030"),
                  "A".force_encoding("GB18030") << 0x8431A439)
+
+    s = "\x81\x30".force_encoding("GB18030")
+    assert_not_predicate(s, :valid_encoding?)
+    s << s
+    assert_predicate(s, :valid_encoding?)
   end
 
   def test_regexp_match
@@ -1252,6 +1257,9 @@ class TestM17N < Test::Unit::TestCase
     each_encoding("abc\0def", "\0", "abc", "def") do |str, sep, *expected|
       assert_equal(expected, str.split(sep, -1))
     end
+
+    str = s("\u{30bd 30d5 30c8}")
+    assert_equal [str], str.split("@")
   end
 
   def test_nonascii_method_name

@@ -16,6 +16,11 @@
 #define RB_DIGEST_WRAP_METADATA_LINKAGE RUBY_FUNC_EXPORTED
 #include "digest.h"
 
+#ifndef HAVE_RB_LEN_T
+# define RB_LEN_MAX LONG_MAX
+# define LEN2NUM LONG2NUM
+#endif
+
 static VALUE rb_mDigest;
 static VALUE rb_mDigest_Instance;
 static VALUE rb_cDigest_Class;
@@ -112,7 +117,7 @@ hexencode_str_new(VALUE str_digest)
     digest = RSTRING_PTR(str_digest);
     digest_len = RSTRING_LEN(str_digest);
 
-    if (LONG_MAX / 2 < digest_len) {
+    if (RB_LEN_MAX / 2 < digest_len) {
         rb_raise(rb_eRuntimeError, "digest string too long");
     }
 
@@ -407,7 +412,7 @@ rb_digest_instance_digest_length(VALUE self)
 
     /* never blindly assume that #digest() returns a string */
     StringValue(digest);
-    return LONG2NUM(RSTRING_LEN(digest));
+    return LEN2NUM(RSTRING_LEN(digest));
 }
 
 /*

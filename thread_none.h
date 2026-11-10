@@ -21,5 +21,6 @@
 
 RUBY_EXTERN struct rb_execution_context_struct *ruby_current_ec;
 NOINLINE(struct rb_execution_context_struct *rb_current_ec_noinline(void)); // for assertions
+struct rb_execution_context_struct *rb_current_ec(void);
 
 #endif /* RUBY_THREAD_NONE_H */

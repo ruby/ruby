@@ -50,6 +50,10 @@ STATIC_ASSERT(size_t_no_padding_bits, sizeof(size_t) == sizeof(uint64_t));
 // support one scheme for simplicity.
 STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 
+// The bindings declare rb_len_t as i64, and codegen reads String and Array
+// lengths at that width.
+STATIC_ASSERT(rb_len_t_matches_bindings, sizeof(rb_len_t) == sizeof(int64_t));
+
 enum yjit_bindgen_constants {
     // ISEQ_TRANSLATED expands to an enum value through a chain of macros,
     // which bindgen cannot evaluate, so it needs to be re-exposed here.
@@ -243,9 +247,9 @@ rb_str_neq_internal(VALUE str1, VALUE str2)
 extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 
 VALUE
-rb_yjit_rb_ary_subseq_length(VALUE ary, long beg)
+rb_yjit_rb_ary_subseq_length(VALUE ary, rb_len_t beg)
 {
-    long len = RARRAY_LEN(ary);
+    rb_len_t len = RARRAY_LEN(ary);
     return rb_ary_subseq(ary, beg, len);
 }
 
@@ -254,7 +258,7 @@ VALUE
 rb_yjit_splat_varg_checks(VALUE *sp, VALUE splat_array, rb_control_frame_t *cfp)
 {
     // We inserted a T_ARRAY guard before this call
-    long len = RARRAY_LEN(splat_array);
+    rb_len_t len = RARRAY_LEN(splat_array);
 
     // Large splat arrays need a separate allocation
     if (len < 0 || len > VM_ARGC_STACK_MAX) return Qfalse;
@@ -297,7 +301,7 @@ void
 rb_yjit_dump_iseq_loc(const rb_iseq_t *iseq, uint32_t insn_idx)
 {
     char *ptr;
-    long len;
+    rb_len_t len;
     VALUE path = rb_iseq_path(iseq);
     RSTRING_GETMEM(path, ptr, len);
     fprintf(stderr, "%s %.*s:%u\n", __func__, (int)len, ptr, rb_iseq_line_no(iseq, insn_idx));
@@ -436,6 +440,12 @@ rb_yjit_cme_ractor_serial(const rb_callable_method_entry_t *cme)
     return cme->def->body.bmethod.defined_ractor_id;
 }
 
+bool
+rb_yjit_attached_object_is(VALUE klass, VALUE object)
+{
+    return RCLASS_SINGLETON_P(klass) && RCLASS_ATTACHED_OBJECT(klass) == object;
+}
+
 // Setup jit_return to avoid returning a non-Qundef value on a non-FINISH frame.
 // See [jit_compile_exception] for details.
 void
@@ -464,6 +474,133 @@ rb_yjit_set_exception_return(rb_control_frame_t *cfp, void *leave_exit, void *le
         cfp->jit_return = leave_exception;
     }
 }
+
+#if defined(_WIN32) && defined(_M_X64)
+// RtlUnwindEx(), which longjmp() and C++ exceptions use, needs unwind info for
+// every frame. JIT code calls out only inside the frame gen_entry_prologue()
+// sets up with frame_pointer, so a single UNWIND_INFO based on RBP is right at
+// every call in the code region. It is wrong within the few instructions that
+// set up and tear down the frame, which make no calls, so only an asynchronous
+// exception there, such as a stack overflow on the push, would unwind wrongly:
+//
+//   [RBP]       caller's RBP
+//   [RBP - 8]   copy of RBP
+//   [RBP - 16]  R13
+//   [RBP - 24]  R12
+//   [RBP - 32]  RBX
+static const uint8_t yjit_unwind_info[] = {
+    1,              // Version 1, no handler
+    0,              // No prologue, since every call happens after it
+    9,              // Count of unwind code slots
+    0x25,           // Frame register RBP at 2 * 16 bytes above RBX
+    0, 0x34, 0, 0,  // UWOP_SAVE_NONVOL RBX at [RBP - 32]
+    0, 0xc4, 1, 0,  // UWOP_SAVE_NONVOL R12 at [RBP - 24]
+    0, 0xd4, 2, 0,  // UWOP_SAVE_NONVOL R13 at [RBP - 16]
+    0, 0x03,        // UWOP_SET_FPREG
+    0, 0x32,        // UWOP_ALLOC_SMALL 32 bytes from [RBP - 8] down to RBX
+    0, 0x50,        // UWOP_PUSH_NONVOL RBP
+    0, 0,           // Padding to an even count
+};
+
+static RUNTIME_FUNCTION yjit_runtime_function;
+
+// Reserve the JIT region after a page holding the unwind info, which has to be
+// within 4GiB above the base address of the registered function table.
+uint8_t *
+rb_yjit_reserve_addr_space(uint32_t mem_size)
+{
+    uint32_t page_size = rb_jit_get_page_size();
+    uint8_t *base = rb_jit_reserve_addr_space(page_size + mem_size);
+    DWORD old_protect;
+
+    if (!VirtualAlloc(base, page_size, MEM_COMMIT, PAGE_READWRITE)) {
+        rb_bug("yjit: failed to commit the unwind info page, error: %lu", GetLastError());
+    }
+    memcpy(base, yjit_unwind_info, sizeof(yjit_unwind_info));
+    VirtualProtect(base, page_size, PAGE_READONLY, &old_protect);
+
+    // RtlVirtualUnwind() takes a call followed by a jmp to the start of the
+    // function for an epilogue, so start it at the unwind info no code jumps to.
+    yjit_runtime_function.BeginAddress = 0;
+    yjit_runtime_function.EndAddress = page_size + mem_size;
+    yjit_runtime_function.UnwindData = 0;
+    if (!RtlAddFunctionTable(&yjit_runtime_function, 1, (DWORD64)base)) {
+        rb_bug("yjit: failed to register unwind info for JIT code");
+    }
+
+    return base + page_size;
+}
+#elif defined(_WIN32) && defined(_M_ARM64)
+// The same as on x64. X29 stays at the saved pair while the code moves SP:
+//
+//   [X29 + 8]   LR
+//   [X29]       caller's X29
+//   [X29 - 16]  X19
+//   [X29 - 32]  X20
+//   [X29 - 48]  X21
+//
+// The codes undo a prolog that builds the same frame but sets X29 last, so
+// that the unwinder restores SP from X29 first. An .xdata record covers at
+// most 1MiB, so the region is split into fragments, and the leading end_c
+// gives each fragment an empty prolog, where every PC unwinds as in the body.
+static const uint8_t yjit_unwind_codes[] = {
+    0xe5,       // end_c
+    0xe2, 0x06, // add_fp: X29 = SP + 48
+    0xd0, 0x80, // save_reg X21 at [SP]
+    0xd0, 0x42, // save_reg X20 at [SP + 16]
+    0xd0, 0x04, // save_reg X19 at [SP + 32]
+    0x03,       // alloc_s 48
+    0x81,       // save_fplr_x <X29, LR> at [SP - 16]!
+    0xe4,       // end
+};
+
+#define YJIT_UNWIND_FRAGMENT_SIZE (512 * 1024)
+
+// Write an .xdata record for a fragment of `length` bytes with no epilog.
+static uint8_t *
+yjit_write_xdata(uint8_t *xdata, uint32_t length)
+{
+    uint32_t header = length / 4 | (uint32_t)(sizeof(yjit_unwind_codes) / 4) << 27;
+    memcpy(xdata, &header, sizeof(header));
+    memcpy(xdata + sizeof(header), yjit_unwind_codes, sizeof(yjit_unwind_codes));
+    return xdata + sizeof(header) + sizeof(yjit_unwind_codes);
+}
+
+// Reserve the JIT region after a page holding the unwind info, which has to be
+// above the base address of the registered function table.
+uint8_t *
+rb_yjit_reserve_addr_space(uint32_t mem_size)
+{
+    uint32_t page_size = rb_jit_get_page_size();
+    uint32_t region_size = page_size + mem_size;
+    uint32_t count = (region_size + YJIT_UNWIND_FRAGMENT_SIZE - 1) / YJIT_UNWIND_FRAGMENT_SIZE;
+    uint8_t *base = rb_jit_reserve_addr_space(region_size);
+    DWORD old_protect;
+
+    if (!VirtualAlloc(base, page_size, MEM_COMMIT, PAGE_READWRITE)) {
+        rb_bug("yjit: failed to commit the unwind info page, error: %lu", GetLastError());
+    }
+    // One record for the full fragments and one for the last, which may be shorter
+    uint8_t *last_xdata = yjit_write_xdata(base, YJIT_UNWIND_FRAGMENT_SIZE);
+    yjit_write_xdata(last_xdata, region_size - (count - 1) * YJIT_UNWIND_FRAGMENT_SIZE);
+    VirtualProtect(base, page_size, PAGE_READONLY, &old_protect);
+
+    // Not ZALLOC_N, whose NoMemoryError would longjmp across Rust frames
+    RUNTIME_FUNCTION *table = calloc(count, sizeof(RUNTIME_FUNCTION));
+    if (!table) {
+        rb_bug("yjit: failed to allocate the function table for unwind info");
+    }
+    for (uint32_t i = 0; i < count; i++) {
+        table[i].BeginAddress = i * YJIT_UNWIND_FRAGMENT_SIZE;
+        table[i].UnwindData = i + 1 < count ? 0 : (DWORD)(last_xdata - base);
+    }
+    if (!RtlAddFunctionTable(table, count, (DWORD64)base)) {
+        rb_bug("yjit: failed to register unwind info for JIT code");
+    }
+
+    return base + page_size;
+}
+#endif
 
 // VM_INSTRUCTION_SIZE changes depending on if ZJIT is in the build. Since
 // bindgen can only grab one version of the constant and copy that to rust,

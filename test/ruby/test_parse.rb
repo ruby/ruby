@@ -1394,6 +1394,10 @@ x = __ENCODING__
     assert_syntax_error('1e', /expecting end-of-input/)
   end
 
+  def test_broken_numeric
+    assert_syntax_error('undef.0when', /0when/)
+  end
+
   def test_truncated_source_line
     lineno = __LINE__ + 1
     e = assert_syntax_error("'0123456789012345678901234567890123456789' abcdefghijklmnopqrstuvwxyz0123456789 123456789012345678901234567890123456789",
@@ -1515,6 +1519,24 @@ x = __ENCODING__
 
   def test_cdmarg_after_command_args_and_tlbrace_arg
     assert_valid_syntax('let () { m(a) do; end }')
+  end
+
+  def test_do_block_in_return_argument_inside_command_arguments
+    omit if ParserSupport.prism_enabled?
+
+    nodes = ->(node) do
+      return [] unless node.is_a?(RubyVM::AbstractSyntaxTree::Node)
+      [node] + node.children.flat_map {|child| nodes.call(child) }
+    end
+
+    {return: :RETURN, break: :BREAK, next: :NEXT}.each do |keyword, exit_type|
+      ast = RubyVM::AbstractSyntaxTree.parse("def f; 1.times { check 1, if true then #{keyword} foo + bar do end end }; end")
+      exit_node = nodes.call(ast).find {|node| node.type == exit_type }
+      exit_value = exit_node.children.find {|child| child.is_a?(RubyVM::AbstractSyntaxTree::Node) }
+      assert_equal(:OPCALL, exit_value.type, keyword)
+      block = nodes.call(exit_value).find {|node| node.type == :ITER }
+      assert_equal(:FCALL, block.children.first.type, keyword)
+    end
   end
 
   def test_void_value_in_rhs

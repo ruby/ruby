@@ -35,10 +35,12 @@ end
 
 # :nodoc:
 def setup(options = "", *long_options)
-  caller = caller_locations(1, 1)[0].label
+  caller = caller_locations(1, 1)[0].base_label
   opt_hash = {}
   argv = []
   OptionParser.new do |o|
+    # defined first so that a command's own -v, such as mkmf's, overrides it
+    o.on("-v") do opt_hash[:verbose] = true end
     options.scan(/.:?/) do |s|
       opt_name = s.delete(":").intern
       o.on("-" + s.tr(":", " ")) do |val|
@@ -55,7 +57,6 @@ def setup(options = "", *long_options)
         opt_hash[opt_name] = val
       end
     end
-    o.on("-v") do opt_hash[:verbose] = true end
     o.on("--help") do
       UN.help([caller])
       exit
@@ -249,7 +250,7 @@ end
 #
 
 def wait_writable
-  setup("n:w:v") do |argv, options|
+  setup("n:w:") do |argv, options|
     verbose = options[:verbose]
     n = options[:n] and n = Integer(n)
     wait = (wait = options[:w]) ? Float(wait) : 0.2
@@ -290,14 +291,14 @@ end
 def mkmf
   setup("d:h:l:f:v:t:m:c:", "vendor") do |argv, options|
     require 'mkmf'
-    opt = options[:d] and opt.split(/:/).each {|n| dir_config(*n.split(/,/))}
-    opt = options[:h] and opt.split(/:/).each {|n| have_header(*n.split(/,/))}
-    opt = options[:l] and opt.split(/:/).each {|n| have_library(*n.split(/,/))}
-    opt = options[:f] and opt.split(/:/).each {|n| have_func(*n.split(/,/))}
-    opt = options[:v] and opt.split(/:/).each {|n| have_var(*n.split(/,/))}
-    opt = options[:t] and opt.split(/:/).each {|n| have_type(*n.split(/,/))}
-    opt = options[:m] and opt.split(/:/).each {|n| have_macro(*n.split(/,/))}
-    opt = options[:c] and opt.split(/:/).each {|n| have_const(*n.split(/,/))}
+    options[:d]&.split(/:/) {|n| dir_config(*n.split(/,/))}
+    options[:h]&.split(/:/) {|n| have_header(*n.split(/,/))}
+    options[:l]&.split(/:/) {|n| have_library(*n.split(/,/))}
+    options[:f]&.split(/:/) {|n| have_func(*n.split(/,/))}
+    options[:v]&.split(/:/) {|n| have_var(*n.split(/,/))}
+    options[:t]&.split(/:/) {|n| have_type(*n.split(/,/))}
+    options[:m]&.split(/:/) {|n| have_macro(*n.split(/,/))}
+    options[:c]&.split(/:/) {|n| have_const(*n.split(/,/))}
     $configure_args["--vendor"] = true if options[:vendor]
     create_makefile(*argv)
   end

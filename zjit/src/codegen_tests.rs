@@ -341,7 +341,7 @@ fn test_getglobal_with_warning() {
         test
     "#);
     assert_contains_opcode("test", YARVINSN_getglobal);
-    assert_snapshot!(assert_compiles(r#"test"#), @r#""rescued""#);
+    assert_snapshot!(assert_compiles_allowing_exits(r#"test"#), @r#""rescued""#);
 }
 
 #[test]
@@ -506,7 +506,7 @@ fn test_setglobal_with_trace_var_exception() {
         test
     "#);
     assert_contains_opcode("test", YARVINSN_setglobal);
-    assert_snapshot!(assert_compiles(r#"test"#), @r#""rescued""#);
+    assert_snapshot!(assert_compiles_allowing_exits(r#"test"#), @r#""rescued""#);
 }
 
 #[test]
@@ -1090,7 +1090,34 @@ fn test_yield_polymorphic_ifunc_handler_falls_back() {
         add_one; double
         add_one; double
     ");
-    assert_snapshot!(assert_compiles("[add_one, double, via_enum]"), @"[11, 20, [10]]");
+    // Function stubs side-exit until callees are profiled enough (exit_function_stub_not_profiled)
+    assert_snapshot!(assert_compiles_allowing_exits("[add_one, double, via_enum]"), @"[11, 20, [10]]");
+}
+
+#[test]
+fn test_yield_single_iseq_and_ifunc_handlers_no_side_exits() {
+    set_call_threshold(4);
+    eval("
+        def invoke = yield(10)
+        def add_one = invoke { |x| x + 1 }
+        def via_enum = to_enum(:invoke).to_a
+        add_one; via_enum
+        add_one; via_enum
+        add_one; via_enum
+    ");
+    assert_snapshot!(assert_compiles("[add_one, via_enum, add_one, via_enum]"), @"[11, [10], 11, [10]]");
+}
+
+#[test]
+fn test_yield_non_direct_iseq_profile_then_ifunc() {
+    set_call_threshold(2);
+    eval("
+        def invoke = yield(10)
+        def two = invoke { |a, b| [a, b] }
+        def via_enum = to_enum(:invoke).to_a
+        two; two
+    ");
+    assert_snapshot!(assert_compiles("[two, via_enum, via_enum]"), @"[[10, nil], [10], [10]]");
 }
 
 #[test]
@@ -1203,6 +1230,107 @@ fn test_yield_inlined_caller_block_dispatches_without_guards() {
             test
             test
         "), @"30");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_yield() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def sum2 = (yield 1) + (yield 2)
+            def test(pr) = sum2(&pr)
+            pr = proc { |x| x * 10 }
+            test(pr)
+            test(pr)
+        "), @"30");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_block_given() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def maybe_yield = block_given? ? yield(10) : :no_block
+            def test(pr) = maybe_yield(&pr)
+            pr = proc { |x| x * 2 }
+            test(pr)
+            test(pr)
+        "), @"20");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_lambda_strict_arity() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
+            def call_it = yield(1, 2)
+            def test(l) = call_it(&l)
+            lam = ->(x) { x }
+            def run(l) = begin; test(l); rescue ArgumentError; :arg_error; end
+            run(lam)
+            run(lam)
+        "#), @":arg_error");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_side_exit() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def compute(x) = yield(x + 1)
+            def test(pr, x) = compute(x, &pr)
+            pr = proc { |v| v * 10 }
+            test(pr, 1)
+            test(pr, 1)
+            test(pr, 1.5)
+        "), @"25.0");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_forwarded_block_param_inlines_inner() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def inner = yield(3)
+            def outer(&b) = inner(&b)
+            def test(pr) = outer(&pr)
+            pr = proc { |x| x * 7 }
+            test(pr)
+            test(pr)
+        "), @"21");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_non_local_return() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def run = yield
+            def test
+              pr = proc { return :returned }
+              run(&pr)
+              :not_returned
+            end
+            test
+            test
+        "), @":returned");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_break() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def run = yield
+            def test
+              pr = proc { break :broke }
+              run(&pr)
+            rescue LocalJumpError
+              :local_jump_error
+            end
+            test
+            test
+        "), @":local_jump_error");
     });
 }
 
@@ -2012,7 +2140,7 @@ fn test_send_no_kwarg_to_positional_hash_fallback() {
         end
         entry
     ");
-    assert_snapshot!(assert_compiles("entry"), @":argument_error");
+    assert_snapshot!(assert_compiles_allowing_exits("entry"), @":argument_error");
 }
 
 #[test]
@@ -2108,6 +2236,31 @@ fn test_send_proc_block_arg_rest_optional_keyword_callee() {
         test
         test
     "), @"24");
+}
+
+#[test]
+fn test_send_proc_block_arg_to_block_param_callee() {
+    // A guarded Proc reaches `&block` callees through SendDirect, or through an inlined
+    // frame. The callee must see the same Proc, and reassigning `block` must not affect
+    // the block.
+    let program = "
+        def foo(opt = 10, *rest, kw: 20, &block) = [block, block.lambda?, yield(opt + rest.sum + kw)]
+        def bar(&block) = (block = nil; [block, block_given?, yield(3)])
+        def test(blk) = [foo(1, 2, &blk), bar(&blk)]
+        blk = lambda { |x| x + 1 }
+        test(blk)
+        (value, reassigned) = test(blk)
+        [value[0].equal?(blk), value[1], value[2], reassigned]
+    ";
+    set_inline_threshold(0);
+    // Snapshot only after both runs: insta's first snapshot can spawn `cargo metadata`,
+    // and its SIGCHLD would interrupt the JIT code under test.
+    let sent_direct = assert_compiles(program);
+    let inlined = with_inlining(|| assert_inlines(program));
+    assert_snapshot!(format!("{sent_direct}\n{inlined}"), @"
+    [true, true, 24, [nil, true, 4]]
+    [true, true, 24, [nil, true, 4]]
+    ");
 }
 
 #[test]
@@ -2890,7 +3043,7 @@ fn test_invokesuper_forwards_block_implicitly() {
 
 #[test]
 fn test_invokesuper_forwards_block_implicitly_with_args() {
-    assert_snapshot!(inspect(r#"
+    eval(r#"
         class A
           def foo(x)
             [x, (block_given? ? yield : "no_block")]
@@ -2908,8 +3061,60 @@ fn test_invokesuper_forwards_block_implicitly_with_args() {
         end
 
         test  # profile
-        test  # compile + run compiled code
-    "#), @r#"["B", ["arg_value", "forwarded"]]"#);
+    "#);
+    assert_snapshot!(assert_compiles("test"), @r#"["B", ["arg_value", "forwarded"]]"#);
+}
+
+#[test]
+fn test_invokesuper_recompiles_when_block_appears() {
+    set_call_threshold(2);
+    eval(r#"
+        class A
+          def foo(x) = block_given? ? yield(x) : x
+        end
+
+        class B < A
+          def foo(x) = super(x)
+        end
+
+        B.new.foo(1); B.new.foo(1)
+    "#);
+    let num_profiles = get_option!(num_profiles);
+    for _ in 0..num_profiles + 2 {
+        eval("B.new.foo(1) { _1 + 1 }");
+    }
+    assert_snapshot!(assert_compiles("[B.new.foo(1), B.new.foo(1) { _1 + 1 }]"), @"[1, 2]");
+}
+
+#[test]
+fn test_invokesuper_with_own_block_ignores_frame_block() {
+    set_call_threshold(2);
+    eval(r#"
+        class A
+          def implicit = block_given?
+          def block_arg = block_given?
+          def literal_block = block_given?
+        end
+
+        class B < A
+          def implicit = super
+          def block_arg(&b) = super(&b)
+          def literal_block = super { 1 }
+        end
+    "#);
+    for _ in 0..get_option!(num_profiles) + 2 {
+        eval("b = B.new; b.implicit { 0 }; b.block_arg { 0 }; b.literal_block { 0 }");
+    }
+    let saw_block = |name: &str| {
+        let iseq = get_method_iseq("B.new", name);
+        let payload = get_or_create_iseq_payload(iseq);
+        let size = unsafe { get_iseq_encoded_size(iseq) } as usize;
+        assert!((0..size).any(|idx| payload.profile.get_super_method_entry(idx).is_some()), "{name} was not profiled");
+        (0..size).any(|idx| payload.profile.super_saw_block(idx))
+    };
+    assert!(saw_block("implicit"));
+    assert!(!saw_block("block_arg"));
+    assert!(!saw_block("literal_block"));
 }
 
 #[test]
@@ -3616,6 +3821,24 @@ fn test_opt_plus_overflow() {
 }
 
 #[test]
+fn test_side_exit_count_without_stats() {
+    // side_exit_count is incremented by materialize_exit_trampoline, not by --zjit-stats code.
+    ensure_rubyvm(); // ZJITState and options are not available until the VM is booted
+    assert!(!get_option!(stats));
+    let exits_before = crate::stats::total_exit_count();
+    let side_exit_count_before = crate::state::ZJITState::get_counters().side_exit_count;
+    assert_snapshot!(assert_compiles_allowing_exits("
+        def test(a, b) = a + b
+        test(1, 2) # profile opt_plus
+        test(1, 2) # compile
+        [test(4611686018427387903, 1), test(-4611686018427387904, -1)] # overflow twice
+    "), @"[4611686018427387904, -4611686018427387905]");
+    let side_exit_count = crate::state::ZJITState::get_counters().side_exit_count - side_exit_count_before;
+    assert_eq!(2, crate::stats::total_exit_count() - exits_before);
+    assert_eq!(2, side_exit_count);
+}
+
+#[test]
 fn test_opt_minus_overflow() {
     assert_snapshot!(inspect("
         def test(a, b)
@@ -3700,6 +3923,126 @@ fn test_opt_neq_string_nil() {
         test("x") # profile opt_neq
         [test("x"), test(nil)]
     "#), @"[true, false]");
+}
+
+#[test]
+fn test_array_eq_nil_respond_to_missing_defined() {
+    eval("
+        $calls = 0
+        def test(ary) = ary == nil
+        test([])
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_eq);
+    // Array#== asks nil whether it responds to to_ary, which calls respond_to_missing?
+    assert_snapshot!(assert_compiles("
+        result = [test([])]
+        class NilClass
+          def respond_to_missing?(name, include_private) = name == :to_ary ? ($calls += 1; false) : super
+        end
+        result << test([]) << $calls
+    "), @"[false, false, 1]");
+}
+
+#[test]
+fn test_string_eq_nil_respond_to_missing_defined() {
+    eval(r#"
+        $calls = 0
+        def test(str) = str == nil
+        test("x")
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_eq);
+    // String#== asks nil whether it responds to to_str, which calls respond_to_missing?
+    assert_snapshot!(assert_compiles(r#"
+        result = [test("x")]
+        class NilClass
+          def respond_to_missing?(name, include_private) = name == :to_str ? ($calls += 1; false) : super
+        end
+        result << test("x") << $calls
+    "#), @"[false, false, 1]");
+}
+
+#[test]
+fn test_opt_neq_truthy_result_with_overridden_not() {
+    eval(r#"
+        class TruthyResult
+          def ! = :overridden
+        end
+        class CustomEq
+          def ==(other) = TruthyResult.new
+        end
+        def test(obj) = obj != nil
+        obj = CustomEq.new
+        test(obj)
+        test(obj)
+    "#);
+    assert_snapshot!(assert_compiles("test(CustomEq.new)"), @"false");
+}
+
+#[test]
+fn test_opt_neq_truthiness() {
+    with_inlining(|| {
+        eval(r#"
+            class CustomEq
+              def initialize(result) = @result = result
+              def ==(other) = @result
+            end
+            def test(obj) = obj != nil
+            test(CustomEq.new(nil))
+            test(CustomEq.new(false))
+            test(CustomEq.new(true))
+            test(CustomEq.new(0))
+            test(CustomEq.new(Object.new))
+        "#);
+        assert_snapshot!(assert_compiles(r#"
+            [test(CustomEq.new(nil)), test(CustomEq.new(false)),
+             test(CustomEq.new(true)), test(CustomEq.new(0)),
+             test(CustomEq.new(Object.new))]
+        "#), @"[true, true, false, false, false]");
+    });
+}
+
+#[test]
+fn test_opt_neq_unused_result_preserves_eq_side_effect() {
+    with_inlining(|| {
+        eval(r#"
+            class CustomEq
+              attr_reader :calls
+              def initialize = @calls = 0
+              def ==(other)
+                @calls += 1
+                nil
+              end
+            end
+            def test(obj)
+              obj != nil
+              5
+            end
+            $obj = CustomEq.new
+            test($obj)
+            test($obj)
+        "#);
+        assert_snapshot!(assert_compiles("[test($obj), $obj.calls]"), @"[5, 3]");
+    });
+}
+
+#[test]
+fn test_opt_neq_inlined_eq_side_exit_preserves_negation() {
+    with_inlining(|| {
+        eval(r#"
+            class CustomEq
+              def initialize = @value = true
+              def ==(other) = @value
+            end
+            def test(obj) = obj != nil
+            $obj = CustomEq.new
+            test($obj)
+            test($obj)
+        "#);
+        assert_snapshot!(assert_compiles_allowing_exits(r#"
+            $obj.instance_variable_set(:@extra, 1)
+            test($obj)
+        "#), @"false");
+    });
 }
 
 #[test]
@@ -4693,6 +5036,71 @@ fn test_string_copy_chilled_gc_stress() {
     "#), @r#"[String, "hello world!", false, "UTF-8", 12, "hello world"]"#);
 }
 
+// Runs both `StringCoderange` paths: the first five strings are built at runtime so their code range
+// is UNKNOWN. `valid_encoding?` will force a code range scan since UNKNOWN is never returned in Ruby.
+// The String literals will have a precomputed code range so we can use the flag bits directly.
+#[test]
+fn test_string_valid_encoding_unknown_coderange() {
+    eval(r#"
+        def test(s) = s.valid_encoding?
+        test("iron")
+    "#);
+    assert_snapshot!(assert_compiles(r#"
+        [
+          test(["ascii"].pack("a*").force_encoding(Encoding::UTF_8).freeze),
+          test(String.new("", encoding: Encoding::UTF_8).freeze),
+          test("\xC3\xA9".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xE2\x82".b.force_encoding(Encoding::UTF_8).freeze),
+          test("ascii".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.freeze)
+        ]
+    "#), @"[true, true, true, false, false, true, true]");
+}
+
+// Same inputs and rationale as `test_string_valid_encoding_unknown_coderange`. Here, we're
+// testing the `ascii_only?` path handles the code range (scanned or already cached) properly.
+#[test]
+fn test_string_ascii_only_unknown_coderange() {
+    eval(r#"
+        def test(s) = s.ascii_only?
+        test("iron")
+    "#);
+    assert_snapshot!(assert_compiles(r#"
+        [
+          test(["ascii"].pack("a*").force_encoding(Encoding::UTF_8).freeze),
+          test(String.new("", encoding: Encoding::UTF_8).freeze),
+          test("\xC3\xA9".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xE2\x82".b.force_encoding(Encoding::UTF_8).freeze),
+          test("ascii".b.force_encoding(Encoding::UTF_8).freeze),
+          test("\xFF".b.freeze)
+        ]
+    "#), @"[true, true, false, false, false, true, false]");
+}
+
+// `ascii_only?` and `valid_encoding?` will force a code range scan if necessary and the code range
+// will be stored in the object header. This test intermingles operations that would invalidate the
+// code range so we ensure we aren't reporting stale values on subsequent calls.
+#[test]
+fn test_string_coderange_after_mutation() {
+    eval(r#"
+        def test(s)
+          original = [s.valid_encoding?, s.ascii_only?]
+          s.setbyte(0, 0xFF)
+          broken = [s.valid_encoding?, s.ascii_only?]
+          s.force_encoding(Encoding::BINARY)
+          binary = [s.valid_encoding?, s.ascii_only?]
+          s.force_encoding(Encoding::UTF_8)
+          utf8 = [s.valid_encoding?, s.ascii_only?]
+          [original, broken, binary, utf8]
+        end
+        test(+"abc")
+    "#);
+    assert_snapshot!(assert_compiles(r#"test(+"abc")"#),
+        @"[[true, true], [false, false], [true, false], [false, false]]");
+}
+
 #[test]
 fn test_string_append_same_encoding() {
     eval(r#"
@@ -5068,6 +5476,23 @@ fn test_opt_str_uminus() {
         end
         result << test
     "#), @r#"["", 5]"#);
+}
+
+#[test]
+fn test_send_uminus_fstring_identity() {
+    eval("
+        FSTR = -'abc'.dup
+        NON_FSTR = 'xyz'.dup.freeze
+        def test = [(-FSTR).equal?(FSTR), (-NON_FSTR).equal?(NON_FSTR), (-NON_FSTR).equal?(-'xyz')]
+        test
+    ");
+    assert_snapshot!(assert_compiles(r#"
+        result = [test]
+        class String
+          def -@ = 5
+        end
+        result << test
+    "#), @"[[true, false, true], [false, false, true]]");
 }
 
 #[test]
@@ -6214,7 +6639,32 @@ fn test_expandarray_splat() {
         test [3, 4]
     ");
     assert_contains_opcode("test", YARVINSN_expandarray);
-    assert_snapshot!(assert_compiles_allowing_exits("test [3, 4]"), @"[3, [4]]");
+    assert_snapshot!(assert_compiles("test [3, 4]"), @"[3, [4]]");
+}
+
+#[test]
+fn test_expandarray_splat_short() {
+    eval("
+        def test(o)
+          a, b, *rest = o
+          [a, b, rest]
+        end
+        test [1, 2, 3]
+    ");
+    assert_snapshot!(assert_compiles("test([1])"), @"[1, nil, []]");
+}
+
+#[test]
+fn test_expandarray_splat_only() {
+    eval("
+        def test(o)
+          *rest = o
+          rest
+        end
+        test [1, 2]
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("test([1, 2])"), @"[1, 2]");
 }
 
 #[test]
@@ -6228,6 +6678,110 @@ fn test_expandarray_splat_post() {
     ");
     assert_contains_opcode("test", YARVINSN_expandarray);
     assert_snapshot!(assert_compiles_allowing_exits("test [3, 4, 5]"), @"[3, [4], 5]");
+}
+
+#[test]
+fn test_expandarray_nil() {
+    eval("
+        def test
+          a, b = nil
+          [a, b]
+        end
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("test"), @"[nil, nil]");
+}
+
+#[test]
+fn test_expandarray_nil_splat() {
+    eval("
+        def test
+          a, *b = nil
+          [a, b]
+        end
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("test"), @"[nil, []]");
+}
+
+#[test]
+fn test_expandarray_nil_splat_only() {
+    eval("
+        def test
+          *rest = nil
+          rest
+        end
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("test"), @"[nil]");
+}
+
+#[test]
+fn test_expandarray_nil_to_ary_defined() {
+    eval("
+        def test
+          a, b = nil
+          [a, b]
+        end
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("
+        result = [test]
+        class NilClass
+          def to_ary = [1, 2]
+        end
+        result << test
+    "), @"[[nil, nil], [1, 2]]");
+}
+
+#[test]
+fn test_expandarray_nil_method_missing_defined() {
+    eval("
+        def test
+          a, b = nil
+          [a, b]
+        end
+        test
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("
+        result = [test]
+        class NilClass
+          def method_missing(name, *) = name == :to_ary ? [3, 4] : super
+        end
+        result << test
+    "), @"[[nil, nil], [3, 4]]");
+}
+
+#[test]
+fn test_expandarray_profiled_nil_param() {
+    eval("
+        def test(x)
+          a, b = x
+          [a, b]
+        end
+        test(nil)
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    assert_snapshot!(assert_compiles("test(nil)"), @"[nil, nil]");
+}
+
+#[test]
+fn test_expandarray_profiled_nil_then_array() {
+    eval("
+        def test(x)
+          a, b = x
+          [a, b]
+        end
+        test(nil)
+    ");
+    assert_contains_opcode("test", YARVINSN_expandarray);
+    // The NilClass guard fails for an Array and falls back to the interpreter.
+    assert_snapshot!(assert_compiles_allowing_exits("[test(nil), test([1, 2]), test(nil)]"), @"[[nil, nil], [1, 2], [nil, nil]]");
 }
 
 #[test]
@@ -6333,7 +6887,7 @@ fn test_defined_with_method_call() {
         test
     "#);
     assert_contains_opcode("test", YARVINSN_defined);
-    assert_snapshot!(assert_compiles(r#"test"#), @r#"["method", nil]"#);
+    assert_snapshot!(assert_compiles_allowing_exits(r#"test"#), @r#"["method", nil]"#);
 }
 
 #[test]
@@ -6853,7 +7407,7 @@ fn test_profile_frames_during_direct_block_entry() {
         "#);
 
         let profiler = signal_profiler::Profiler::start(10);
-        assert_snapshot!(assert_compiles("profiled_yield_loop(1_000_000)"), @"1000000");
+        assert_snapshot!(assert_compiles_allowing_exits("profiled_yield_loop(1_000_000)"), @"1000000");
         assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
     });
 }
@@ -6883,6 +7437,39 @@ fn test_profiled_proc_block_handler_does_not_retain_proc() {
         # Allow one object kept alive by conservative stack scanning
         PROFILED_PROC_OBJECTS.keys.size <= 1
     "), @"true");
+}
+
+#[test]
+fn test_profiled_singleton_class_does_not_retain_young_object() {
+    assert_snapshot!(inspect("
+        def profiled_singleton_send(obj) = obj.profiled_singleton_method
+
+        PROFILED_SINGLETON_OBJECTS = ObjectSpace::WeakMap.new
+        def profiled_singleton_make(i)
+          obj = Object.new
+          obj.define_singleton_method(:profiled_singleton_method) { i }
+          PROFILED_SINGLETON_OBJECTS[i] = obj
+          profiled_singleton_send(obj)
+          nil
+        end
+
+        100.times { |i| profiled_singleton_make(i) }
+        4.times { GC.start(full_mark: true, immediate_sweep: true) }
+        # Allow one object kept alive by conservative stack scanning
+        PROFILED_SINGLETON_OBJECTS.keys.size <= 1
+    "), @"true");
+}
+
+#[test]
+fn test_profiled_block_param_proxy_in_ractor() {
+    // rb_block_param_proxy is unshareable and belongs to the main Ractor, so
+    // rb_class_attached_object() on its singleton class raises in other Ractors.
+    // Profiling it must not raise while holding the VM lock.
+    assert_snapshot!(inspect("
+        def profiled_proxy_callee = yield
+        def profiled_proxy_caller(&block) = profiled_proxy_callee(&block)
+        Ractor.new { profiled_proxy_caller { 1 } }.value
+    "), @"1");
 }
 
 #[test]
@@ -6958,6 +7545,63 @@ fn test_method_redefined_with_module() {
 }
 
 #[test]
+fn test_module_alias_redefined() {
+    assert_eq!(assert_compiles("
+        module M
+          def original = 1
+          def another = 2
+          alias via original
+        end
+        class Subject
+          include M
+        end
+        def test(o) = o.via
+
+        o = Subject.new
+        i = 0
+        while i < 10
+          test(o)
+          i += 1
+        end
+        before = test(o)
+        module M
+          alias via another
+        end
+        [before, test(o)]
+    "), "[1, 2]");
+}
+
+#[test]
+fn test_module_alias_redefined_with_super() {
+    assert_eq!(assert_compiles("
+        module M
+          def original = 1
+          def another = 2
+          alias via original
+        end
+        class Subject
+          include M
+        end
+        class SuperSubject < Subject
+          def via = super
+        end
+        def test(o) = o.via
+
+        o = SuperSubject.new
+        i = 0
+        while i < 10
+          test(o)
+          i += 1
+        end
+        before = test(o)
+        module M
+          alias via another
+        end
+        [before, test(o)]
+    "), "[1, 2]");
+}
+
+#[test]
 fn test_module_name_with_guard_passes() {
     assert_snapshot!(inspect(r#"
         def test(mod)
@@ -7001,6 +7645,85 @@ fn test_objtostring_calls_to_s_on_non_strings() {
         results << test(Foo.new)
         results
     "##), @r#"["foo", "foo"]"#);
+}
+
+#[test]
+fn test_objtostring_integer_and_module_allocations() {
+    // Like the interpreter, interpolate 0..9 and named modules without allocating a to_s string
+    assert_snapshot!(inspect(r##"
+        class ObjToStringFoo; end
+        module ObjToStringMod; end
+        def int_interp(i) = "t#{i}"
+        def mod_interp(m) = "#{m} Update"
+        def mod_interp2(m) = "#{m} Update"
+        def allocations
+          allocated = GC.stat(:total_allocated_objects)
+          yield
+          GC.stat(:total_allocated_objects) - allocated
+        end
+        def calls
+          [
+            [allocations { int_interp(3) }, allocations { mod_interp(ObjToStringFoo) }, allocations { mod_interp2(ObjToStringMod) }],
+            int_interp(3), int_interp(-12), int_interp(1 << 40), mod_interp(ObjToStringFoo), mod_interp2(ObjToStringMod),
+          ]
+        end
+        calls
+        calls
+    "##), @r#"[[1, 1, 1], "t3", "t-12", "t1099511627776", "ObjToStringFoo Update", "ObjToStringMod Update"]"#);
+}
+
+#[test]
+fn test_objtostring_anonymous_and_singleton_module() {
+    assert_snapshot!(inspect(r##"
+        def test(m) = "#{m}"
+        test(Class.new); test(Class.new)
+        [
+          test(Class.new).match?(/\A#<Class:0x\h+>\z/),
+          test(Module.new).match?(/\A#<Module:0x\h+>\z/),
+          test(Object.new.singleton_class).match?(/\A#<Class:#<Object:0x\h+>>\z/),
+        ]
+    "##), @"[true, true, true]");
+}
+
+#[test]
+fn test_objtostring_integer_to_s_redefined_after_compile() {
+    assert_snapshot!(inspect(r##"
+        def test(i) = "#{i}"
+        test(1); test(2)
+        result = [test(3)]
+        class Integer; def to_s = "x"; end
+        result << test(3)
+    "##), @r#"["3", "x"]"#);
+}
+
+#[test]
+fn test_objtostring_module_to_s_redefined_after_compile() {
+    assert_snapshot!(inspect(r##"
+        class ObjToStringBar; end
+        def test(m) = "#{m}"
+        test(ObjToStringBar); test(ObjToStringBar)
+        result = [test(ObjToStringBar)]
+        class Module; def to_s = "mod!"; end
+        result << test(ObjToStringBar)
+    "##), @r#"["ObjToStringBar", "mod!"]"#);
+}
+
+#[test]
+fn test_objtostring_refined_to_s() {
+    // A refined Integer#to_s or Module#to_s is a different method, so interpolation calls it
+    assert_snapshot!(inspect(r##"
+        module ObjToStringRefine
+          refine(Integer) { def to_s = "int!" }
+          refine(Module) { def to_s = "mod!" }
+        end
+        module ObjToStringM; end
+        def plain(x) = "#{x}"
+        using ObjToStringRefine
+        def refined(x) = "#{x}"
+        calls = -> { [refined(7), refined(ObjToStringM), plain(7), plain(ObjToStringM)] }
+        calls.()
+        calls.()
+    "##), @r#"["int!", "mod!", "7", "ObjToStringM"]"#);
 }
 
 #[test]
@@ -7484,7 +8207,7 @@ fn test_checkmatch_rescue() {
           end
         end
     "#);
-    assert_snapshot!(assert_compiles("[test, test]"), @"[1, 1]");
+    assert_snapshot!(assert_compiles_allowing_exits("[test, test]"), @"[1, 1]");
 }
 
 #[test]
@@ -7498,7 +8221,7 @@ fn test_checkmatch_rescue_splat_array() {
           end
         end
     "#);
-    assert_snapshot!(assert_compiles("[test, test]"), @"[1, 1]");
+    assert_snapshot!(assert_compiles_allowing_exits("[test, test]"), @"[1, 1]");
 }
 
 #[test]
@@ -7648,7 +8371,7 @@ fn test_ccall_variadic_with_no_args_causing_argument_error() {
         test
     ");
     assert_contains_opcode("test", YARVINSN_opt_send_without_block);
-    assert_snapshot!(assert_compiles("test"), @":error");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @":error");
 }
 
 #[test]
@@ -8420,6 +9143,46 @@ fn test_ep_escape_preserves_keyword_default() {
 }
 
 #[test]
+fn test_local_write_through_binding_in_branch_reaches_merge_point() {
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        def test(s)
+          y = 1
+          binding.local_variable_set(:y, s) if s
+          y
+        end
+        3.times { test(1) }
+        test(2)
+    "#), @"2");
+}
+
+#[test]
+fn test_local_write_through_call_in_branch_reaches_merge_point() {
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        def test(s) = (y = 1; eval(s) if s; y)
+        3.times { test("1") }
+        test("y = 2")
+    "#), @"2");
+}
+
+#[test]
+fn test_no_ep_escape_patch_point_resumes_after_call() {
+    // Call eval via Method#call so warmup doesn't escape the EP and suppress the patch point.
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        $n = 0
+        def test(m, s)
+          y = 1
+          method(m).call(s)
+          [y, $n]
+        end
+        test(:Integer, "1"); test(:Integer, "1")
+        test(:eval, "$n += 1; y = 2")
+    "#), @"[2, 1]");
+}
+
+#[test]
 fn test_send_block_to_accepts_no_block() {
     // Methods with &nil should raise ArgumentError when called with a block
     assert_snapshot!(inspect("
@@ -8737,7 +9500,7 @@ fn test_inlined_method_with_rescue_caught_in_callee() {
     // callee. The runtime exception walker must find the rescue clause via the
     // inlined callee's CFP.
     with_inlining(|| {
-        assert_snapshot!(assert_inlines(r#"
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
             def callee(x)
               begin
                 raise "boom" if x.negative?
@@ -8759,7 +9522,7 @@ fn test_inlined_method_with_rescue_caught_in_caller() {
     // The callee re-raises and the caller catches the exception after unwinding
     // the inlined callee frame.
     with_inlining(|| {
-        assert_snapshot!(assert_inlines(r#"
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
             def callee(x)
               raise "boom" if x.negative?
               0
@@ -8781,7 +9544,7 @@ fn test_inlined_method_with_rescue_caught_in_caller() {
 #[test]
 fn test_inlined_method_with_ensure_runs_on_propagation() {
     with_inlining(|| {
-        assert_snapshot!(assert_inlines(r##"
+        assert_snapshot!(assert_inlines_allowing_exits(r##"
             $log = []
             def callee(x)
               begin
@@ -8812,7 +9575,7 @@ fn test_inlined_method_with_retry_resumes_begin_block() {
     // The begin/rescue/retry callee is larger than the default test inline budget,
     // so raise the threshold enough for it to be inlined.
     with_inlining_threshold(100, || {
-        assert_snapshot!(assert_inlines(r#"
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
             def callee(counter)
               begin
                 counter[0] += 1

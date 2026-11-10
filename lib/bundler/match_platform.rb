@@ -20,16 +20,25 @@ module Bundler
       Gem::Platform.sort_and_filter_best_platform_match(matching, platform)
     end
 
-    def self.select_all_content_address_match(specs, content_address)
-      return specs unless Gem::ContentAddress.match?(content_address)
+    def self.select_all_content_address_match(specs, content_addresses)
+      return specs if content_addresses.empty?
 
-      specs.select {|spec| spec.content_address == content_address }
+      specs.reject {|spec| Gem::ContentAddress.match?(spec.content_address) && !content_addresses.include?(spec.content_address) }
     end
 
     def self.prefer_content_addressable(matching)
-      addressable, non_addressable = matching.partition {|s| Gem::ContentAddress.content_addressed?(s, validate_ruby_abi: false) }
-      return matching if addressable.empty?
+      first = matching.index {|s| Gem::ContentAddress.content_addressed?(s, validate_ruby_abi: false) }
+      return matching unless first
 
+      addressable = [matching[first]]
+      non_addressable = matching.take(first)
+      matching.drop(first + 1).each do |s|
+        if Gem::ContentAddress.content_addressed?(s, validate_ruby_abi: false)
+          addressable << s
+        else
+          non_addressable << s
+        end
+      end
       compatible = addressable.select(&:matches_current_metadata?)
       return compatible if compatible.any?
 

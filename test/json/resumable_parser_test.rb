@@ -179,6 +179,12 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_resumed_parsing('"te\\u2028st"')
     assert_resumed_parsing(JSON.generate("te\u2028st"))
     assert_resumed_parsing(JSON.generate("te \u2028 st"))
+
+    parser = JSON::ResumableParser.new
+    parser << '"\u12"'
+    assert_raise JSON::ParserError do
+      parser.parse
+    end
   end
 
   def test_parse_byte_by_byte_numbers

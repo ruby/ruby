@@ -513,6 +513,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(Errno::EINVAL) { f.seek(-1) }
     f.seek(-1, 2)
     assert_equal("4", f.getc)
+    f.seek(-2, 2.0)
+    assert_equal("3", f.getc)
     assert_raise(Errno::EINVAL) { f.seek(1, 3) }
     f.close
     assert_raise(IOError) { f.seek(0) }

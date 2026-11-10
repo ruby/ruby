@@ -36,14 +36,18 @@ module Bundler
       :bundler_version,
       :ruby_version,
       :checksums,
+      :overrides,
+      :ruby_abis,
     )
 
     BUNDLED      = "BUNDLED WITH"
     DEPENDENCIES = "DEPENDENCIES"
     CHECKSUMS    = "CHECKSUMS"
     CONTENT_ADDRESSES = "CONTENT ADDRESSES"
+    OVERRIDES    = "OVERRIDES"
     PLATFORMS    = "PLATFORMS"
     RUBY         = "RUBY VERSION"
+    RUBY_ABIS    = "RUBY ABIS"
     GIT          = "GIT"
     GEM          = "GEM"
     PATH         = "PATH"
@@ -58,10 +62,14 @@ module Bundler
       Gem::Version.create("1.12") => [RUBY].freeze,
       Gem::Version.create("1.13") => [PLUGIN].freeze,
       Gem::Version.create("2.5.0") => [CHECKSUMS].freeze,
-      Gem::Version.create("4.1.0") => [CONTENT_ADDRESSES].freeze,
+      Gem::Version.create("4.1.0") => [CONTENT_ADDRESSES, RUBY_ABIS].freeze,
     }.freeze
 
-    KNOWN_SECTIONS = SECTIONS_BY_VERSION_INTRODUCED.values.flatten!.freeze
+    # OVERRIDES is deliberately not in SECTIONS_BY_VERSION_INTRODUCED. Sections
+    # listed there are ignored when comparing a lockfile bundled with an older
+    # Bundler, so a lockfile still BUNDLED WITH 4.0 would never get its
+    # overrides recorded while the resolution stays the same.
+    KNOWN_SECTIONS = (SECTIONS_BY_VERSION_INTRODUCED.values.flatten + [OVERRIDES]).freeze
 
     ENVIRONMENT_VERSION_SECTIONS = [BUNDLED, RUBY].freeze
     deprecate_constant(:ENVIRONMENT_VERSION_SECTIONS)
@@ -101,9 +109,11 @@ module Bundler
       @platforms    = []
       @sources      = []
       @metadata_source = Source::Metadata.new
+      @ruby_abis    = []
       @dependencies = {}
       @parse_method = nil
       @specs        = {}
+      @overrides    = nil
       @lockfile_path = lockfile_path || begin
         SharedHelpers.relative_lockfile_path
       rescue GemfileNotFound
@@ -111,6 +121,7 @@ module Bundler
       end
       @pos = Position.new(1, 1)
       @strict = strict
+      @spec_names_by_source = {}.compare_by_identity
 
       if lockfile.match?(/<<<<<<<|=======|>>>>>>>|\|\|\|\|\|\|\|/)
         raise LockfileError, "Your #{@lockfile_path} contains merge conflicts.\n" \
@@ -144,10 +155,15 @@ module Bundler
           @parse_method = :parse_checksum
         elsif line == CONTENT_ADDRESSES
           @parse_method = :parse_content_address
+        elsif line == OVERRIDES
+          @overrides = []
+          @parse_method = :parse_override
         elsif line == PLATFORMS
           @parse_method = :parse_platform
         elsif line == RUBY
           @parse_method = :parse_ruby
+        elsif line == RUBY_ABIS
+          @parse_method = :parse_ruby_abi
         elsif line == BUNDLED
           @parse_method = :parse_bundled_with
         elsif /^[^\s]/.match?(line)
@@ -157,6 +173,8 @@ module Bundler
         end
         @pos.advance!(line)
       end
+
+      @spec_names_by_source.each {|source, names| source.add_dependency_names(names) }
 
       if @platforms.include?(Gem::Platform::X64_MINGW_LEGACY)
         SharedHelpers.feature_deprecated!("Found x64-mingw32 in lockfile, which is deprecated and will be removed in the future.")
@@ -237,6 +255,7 @@ module Bundler
       #{space}\(([^-]*)                                  # Space, followed by version
       -(.*)\)                                            # Platform, always present for content-addressable gems
       #{space}([0-9a-f]{8,64})                           # Content address
+      (?:#{space}abi=(\d+\.\d+))?                        # Optional Ruby ABI the gem is built for
       (?:#{space}([^ ]+))?                               # Optional checksums
       $                                                  # Line end
     /xo
@@ -268,6 +287,12 @@ module Bundler
       end
 
       @dependencies[dep.name] = dep
+    end
+
+    def parse_override(line)
+      raise ArgumentError, "invalid override in lockfile: #{line.inspect}" unless line.start_with?("  ") && line[2] != " "
+
+      @overrides << Override.from_lock(line[2..])
     end
 
     def parse_checksum(line)
@@ -309,19 +334,21 @@ module Bundler
       version = Gem::Version.new($2)
       platform = Gem::Platform.new($3)
       content_address = $4
-      checksums = $5
+      ruby_abi = $5
+      checksums = $6
 
       spec = @specs[Gem::NameTuple.new(name, version, platform).full_name]
       return unless spec
 
-      spec.content_address = content_address
+      spec.content_addresses = spec.content_addresses.merge(content_address => ruby_abi)
 
       return unless checksums
 
+      gem = Gem::NameTuple.new(name, version, platform, content_address: content_address)
       checksums.split(",") do |lock_checksum|
         column = line.index(lock_checksum) + 1
         checksum = Checksum.from_lock(lock_checksum, "#{@lockfile_path}:#{@pos.line}:#{column}")
-        spec.source.checksum_store.register(spec, checksum)
+        spec.source.checksum_store.register(gem, checksum)
       end
     end
 
@@ -338,7 +365,7 @@ module Bundler
         version = Gem::Version.new(version)
         platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
         @current_spec = LazySpecification.new(name, version, platform, @current_source, strict: @strict)
-        @current_source.add_dependency_names(name)
+        (@spec_names_by_source[@current_source] ||= []) << name
 
         @specs[@current_spec.full_name] = @current_spec
       elsif spaces.size == 6
@@ -350,6 +377,11 @@ module Bundler
 
     def parse_platform(line)
       @platforms << Gem::Platform.new($1.strip) if line =~ /^  (.*)$/
+    end
+
+    def parse_ruby_abi(line)
+      ruby_abi = line.strip
+      @ruby_abis << ruby_abi if Gem::ContentAddress.valid_ruby_abi?(ruby_abi)
     end
 
     def parse_bundled_with(line)

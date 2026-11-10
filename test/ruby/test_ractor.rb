@@ -2,6 +2,46 @@
 require 'test/unit'
 
 class TestRactor < Test::Unit::TestCase
+  # Spawning from a Ractor must not block on the main Ractor's $stdout
+  def test_spawn_does_not_contend_on_main_ractors_stdout
+    assert_separately([], <<~'RUBY', timeout: 60)
+      $stdout = File.open(File::NULL, "w")
+      writer = Thread.new { loop { $stdout.write("x" * 100 + "\n"); $stdout.flush } }
+      r = Ractor.new { 20.times { system(EnvUtil.rubybin, "-e", "") }; :done }
+      assert_equal :done, r.value
+      writer.kill.join
+    RUBY
+  end
+
+  def test_alive_p
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive }
+      assert_predicate r, :alive?
+      r << :done
+      r.join
+      assert_not_predicate r, :alive?
+
+      r = Ractor.new do
+        Thread.current.report_on_exception = false
+        raise "boom"
+      end
+      assert_raise(Ractor::RemoteError) { r.join }
+      assert_not_predicate r, :alive?
+    RUBY
+  end
+
+  def test_alive_p_after_fork
+    omit "fork not supported" unless Process.respond_to?(:fork)
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive }
+      assert_predicate r, :alive?
+      pid = fork { exit!(r.alive? ? 1 : 0) }
+      _, st = Process.wait2(pid)
+      assert_predicate st, :success?
+      assert_predicate r, :alive?
+    RUBY
+  end
+
   def test_shareability_of_iseq_proc
     assert_raise Ractor::IsolationError do
       foo = []
@@ -354,6 +394,25 @@ class TestRactor < Test::Unit::TestCase
       # A frozen one is shareable again, however its class.
       re = MyRegexp.new("a").freeze
       assert_same re, echo(re)
+    RUBY
+  end
+
+  def test_regexp_match_encodings
+    assert_ractor(<<~'RUBY')
+      re = Regexp.new('(?<letter>.)a', Regexp::IGNORECASE)
+      ractors = Array.new(4) do
+        Ractor.new(re) do |re|
+          strings = ["\u3042A", "\u3042A".encode("EUC-JP")]
+          Ractor.receive
+          20.times do
+            strings.each do |str|
+              raise "incorrect capture" unless re.match(str)[:letter] == str[0]
+            end
+          end
+        end
+      end
+      ractors.each {|r| r.send(true)}
+      ractors.each(&:value)
     RUBY
   end
 
@@ -715,6 +774,24 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # A shared native thread that comes back from a blocking region to a full
+  # pool retires, and must not leave the count again if it blocks once more
+  # before it gets back to its loop: the pool would look a thread short, the
+  # timer thread would make another, and the extra would never end.
+  def test_shared_native_threads_stay_capped_across_blocking_io
+    omit "needs /proc/self/status" unless File.exist?("/proc/self/status")
+    omit 'Other GCs can use more threads (ex: MMTk)' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY', args: [{ "RUBY_MAX_CPU" => "4" }], timeout: 60)
+      200.times do
+        # Dir.children releases the GVL around opendir and readdir
+        8.times.map { Ractor.new { 4.times { Dir.children("/") } } }.each(&:value)
+      end
+      threads = File.read("/proc/self/status")[/^Threads:\s+(\d+)/, 1].to_i
+      # max_cpu shared threads, the main and timer threads, and some slack
+      assert_operator threads, :<=, 4 + 2 + 4
+    RUBY
+  end
+
   def test_symbol_proc_is_shareable
     pr = :symbol.to_proc
     assert_make_shareable(pr)
@@ -737,22 +814,65 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
-  def test_ractor_new_raises_isolation_error_if_outer_variables_are_accessed
-    assert_raise(Ractor::IsolationError) do
+  def test_ractor_new_allows_reading_shareable_outer_variables
+    assert_ractor(<<~'RUBY')
       channel = Ractor::Port.new
-      Ractor.new(channel) do
+      r = Ractor.new(channel) do
         inbound_work = Ractor::Port.new
         channel << inbound_work
       end
-    end
+      assert_kind_of Ractor::Port, channel.receive
+      r.join
+    RUBY
+  end
+
+  def test_ractor_new_raises_isolation_error_if_unshareable_outer_variables_are_accessed
+    assert_ractor(<<~'RUBY')
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object \[\]/) do
+        list = []
+        Ractor.new { list }
+      end
+    RUBY
+  end
+
+  def test_ractor_new_raises_isolation_error_if_outer_variables_are_reassigned
+    assert_ractor(<<~'RUBY')
+      assert_raise_with_message(Ractor::IsolationError, /'n' may be reassigned/) do
+        n = 1
+        Ractor.new { n }
+        n = 2
+      end
+    RUBY
+  end
+
+  def test_ractor_new_does_not_modify_the_block
+    assert_ractor(<<~'RUBY')
+      pr = proc { 42 }
+      assert_equal 42, Ractor.new(&pr).value
+      assert_not_predicate pr, :frozen?
+      assert_not_operator Ractor, :shareable?, pr
+      assert_equal 42, Ractor.new(&pr).value
+    RUBY
   end
 
   def test_ractor_new_raises_isolation_error_if_proc_uses_yield
-    assert_raise(Ractor::IsolationError) do
-      Ractor.new do
-        yield
+    assert_ractor(<<~'RUBY')
+      def ractor_with_yield
+        Ractor.new do
+          yield
+        end
       end
-    end
+      assert_raise(Ractor::IsolationError) { ractor_with_yield }
+    RUBY
+  end
+
+  def test_ractor_new_with_method_proc_is_not_supported
+    assert_ractor(<<~'RUBY')
+      def ractor_body = :ok
+      assert_raise_with_message(RuntimeError, /not supported yet/) do
+        Ractor.new(&method(:ractor_body))
+      end
+    RUBY
   end
 
   def test_ractor_does_not_inherit_fiber_storage
@@ -843,19 +963,20 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
-  # A Ractor.new that fails with IsolationError (stillborn) must still clean up the
-  # half-created objspace (regression guard for double enumeration / use-after-free).
+  # A Ractor.new that fails with an uncopyable argument (stillborn) must still clean
+  # up the half-created objspace (regression guard for double enumeration /
+  # use-after-free).
   def test_stillborn_ractor_gc
     assert_ractor(<<~'RUBY', timeout: 60)
-      x = 42 # capturing an outer local makes Ractor.new raise IsolationError
+      x = Thread.current # an uncopyable argument makes Ractor.new raise Ractor::Error
       worker = Ractor.new { loop { break if Ractor.receive == :quit } }
-      assert_raise(Ractor::IsolationError) { Ractor.new { x } }
+      assert_raise(Ractor::Error) { Ractor.new(x) { } }
       10.times { GC.start; 500.times { Object.new } }
       GC.verify_internal_consistency
       worker.send(:quit)
       worker.value
       100.times do |i|
-        assert_raise(Ractor::IsolationError) { Ractor.new { x } }
+        assert_raise(Ractor::Error) { Ractor.new(x) { } }
         if (i % 20).zero?
           Ractor.new { :ok }.value
           GC.start
@@ -871,7 +992,7 @@ class TestRactor < Test::Unit::TestCase
   # built by another thread of the same Ractor: a stillborn child frees that objspace.
   def test_stillborn_ractor_with_free_off_gvl
     assert_ractor(<<~'RUBY', require: '-test-/gvl/call_without_gvl', timeout: 60)
-      x = 42 # capturing an outer local makes Ractor.new raise IsolationError
+      x = Thread.current # an uncopyable argument makes Ractor.new raise Ractor::Error
       stop = false
       ready = Queue.new
       freers = 4.times.map do
@@ -883,8 +1004,8 @@ class TestRactor < Test::Unit::TestCase
       freers.size.times { ready.pop } # all of them are churning before we start
       2_000.times do
         begin
-          Ractor.new { x }
-        rescue Ractor::IsolationError
+          Ractor.new(x) { }
+        rescue Ractor::Error
         end
       end
       stop = true
@@ -912,6 +1033,19 @@ class TestRactor < Test::Unit::TestCase
         assert_equal "x" * 4096, g
         assert_equal "x" * 3000, h
       end
+    RUBY
+  end
+
+  # [Bug #22460] Ractor.shareable? must not replace the buffer of a frozen shared array.
+  def test_shareable_p_keeps_frozen_shared_array_buffer
+    assert_ractor(<<~'RUBY')
+      o = Object.new
+      a = Array.new(200) { it }
+      a[50] = o
+      b = a.pop(150)
+      o.define_singleton_method(:to_s) { Ractor.shareable?(b); "x" }
+      b.freeze
+      assert_nothing_raised { assert_equal "x 51", "%1$s %2$s" % b }
     RUBY
   end
 
@@ -975,7 +1109,7 @@ class TestRactor < Test::Unit::TestCase
       Warning[:experimental] = false
       # the timeout and a send aim at the same instant: both wake the waiter
       results = []
-      300.times do
+      100.times do
         port = Ractor::Port.new
         th = Thread.new(port) {|p| sleep 0.001; p << :msg }
         results << port.receive(timeout: 0.001)
@@ -1127,6 +1261,72 @@ class TestRactor < Test::Unit::TestCase
     ensure
       io.close
     end
+  end
+
+  # Ractor.make_shareable reaches a T_DATA's references through its GC mark function
+  # (rb_objspace_reachable_objects_from_local), and the walk's callback runs #freeze on
+  # every child it is handed.  So arbitrary Ruby -- allocation, a GC, a compaction, a
+  # raise -- runs while the parent's dmark is still on the stack.  Set is the vector: a
+  # T_DATA with a non-declarative dmark and RUBY_TYPED_FROZEN_SHAREABLE, so its elements
+  # are reachable only through that walk.
+  def test_make_shareable_data_child_freeze_runs_gc
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      require 'objspace'
+      # If Set stops being a T_DATA, this no longer covers the mark function walk.
+      assert_include ObjectSpace.dump(Set.new), '"type":"DATA"'
+
+      frozen = 0
+      klass = Class.new do
+        define_method(:freeze) do
+          frozen += 1
+          GC.start
+          super()
+        end
+      end
+
+      5.times do
+        set = Set.new(Array.new(10) { klass.new })
+        Ractor.make_shareable(set)
+        assert Ractor.shareable?(set), "the Set should have become shareable"
+        set.each { |e| assert Ractor.shareable?(e), "an element should have become shareable" }
+      end
+      assert_equal 5 * 10, frozen, "not all elements were not reached through the mark function"
+      GC.start
+    RUBY
+  end
+
+  def test_make_shareable_data_child_freeze_runs_compaction
+    omit "GC compaction not supported on this platform" unless GC.respond_to?(:compact)
+
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      compactor = Class.new do
+        def freeze
+          GC.compact
+          super
+        end
+      end
+
+      set = Set.new(Array.new(10) { compactor.new })
+      Ractor.make_shareable(set)
+      assert Ractor.shareable?(set)
+    RUBY
+  end
+
+  # An exception out of the walk's callback longjmps through the mark function.  The mark
+  # redirect has to be restored on the way out: if it leaks, the next real GC hands its
+  # marking to obj_traverse instead of marking, and the heap is corrupted.
+  def test_make_shareable_data_child_freeze_can_raise
+    raiser = Class.new do
+      def freeze
+        raise "boom"
+      end
+    end
+    10.times do
+      set = Set.new([raiser.new])
+      assert_raise_with_message(RuntimeError, "boom") { Ractor.make_shareable(set) }
+      refute Ractor.shareable?(set), "despite raising, the Set became shareable"
+    end
+    GC.start
   end
 
   def assert_make_shareable(obj)

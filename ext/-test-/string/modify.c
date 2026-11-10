@@ -10,7 +10,7 @@ bug_str_modify(VALUE str)
 VALUE
 bug_str_modify_expand(VALUE str, VALUE expand)
 {
-    rb_str_modify_expand(str, NUM2LONG(expand));
+    rb_str_modify_expand(str, NUM2LEN(expand));
     return str;
 }
 

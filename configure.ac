@@ -440,9 +440,9 @@ AS_CASE(["$target_os"],
 [darwin*], [
     AC_MSG_CHECKING(if minimum required OS X version is supported)
     AC_PREPROC_IFELSE([AC_LANG_SOURCE([[@%:@include <AvailabilityMacros.h>
-	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
-	@%:@error pre OS X 10.5
-	[!<===== pre OS X 10.5 =====>]
+	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_6
+	@%:@error pre OS X 10.6
+	[!<===== pre OS X 10.6 =====>]
 	@%:@endif
 	]])],
 	[AC_MSG_RESULT(yes)],
@@ -1631,8 +1631,8 @@ AS_IF([test "$cross_compiling" = yes],
     X_BUILTIN_BINARY=no
 ],
 [
-    AS_CASE([ac_cv_sizeof_voidp],
-    [[1-9]*], [dnl fixed value
+    AS_CASE(["$ac_cv_sizeof_voidp"],
+    [@<:@1-9@:>@*], [dnl fixed value
     ],
     [
         AC_CACHE_CHECK([word size], [rb_cv_word_size],
@@ -2079,22 +2079,7 @@ AS_IF([test $rb_cv_stack_end_address != no], [
 
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
-AS_CASE(["${target_cpu}-${target_os}:${target_archs}"],
-[powerpc*-darwin*], [
-  AC_LIBSOURCES(alloca.c)
-  AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
-  AC_DEFINE(C_ALLOCA)
-  AC_DEFINE_UNQUOTED(alloca, alloca)
-  ],
-[universal-darwin*:*ppc*], [
-  AC_LIBSOURCES(alloca.c)
-  AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
-  RUBY_DEFINE_IF([defined __POWERPC__], C_ALLOCA, 1) # Darwin defines __POWERPC__ for ppc and ppc64 both
-  RUBY_DEFINE_IF([defined __POWERPC__], alloca, alloca)
-  ],
-[
-  AC_FUNC_ALLOCA
-  ])
+AC_FUNC_ALLOCA
 AS_IF([test "x$ALLOCA" = "x"], [
     AC_CACHE_CHECK([for dynamic size alloca], rb_cv_dynamic_alloca, [
     for chk in ok __chkstk; do
@@ -2748,15 +2733,6 @@ AS_CASE([$coroutine_type], [yes|''], [
         [arm64-darwin*], [
             coroutine_type=arm64
         ],
-        # Correct target name is powerpc*-, but Ruby seems to prefer ppc*-.
-        # Notice that Darwin PPC ABI differs from AIX and ELF.
-        # Adding PPC targets for AIX, *BSD and *Linux will require separate implementations.
-        [powerpc-darwin*|ppc-darwin*], [
-            coroutine_type=ppc
-        ],
-        [powerpc64-darwin*|ppc64-darwin*], [
-            coroutine_type=ppc64
-        ],
         [x*64-linux*], [
             AS_CASE(["$ac_cv_sizeof_voidp"],
                 [8], [ coroutine_type=amd64 ],
@@ -3304,7 +3280,10 @@ AS_CASE(["$target_os"],
     AS_IF([test "x$ac_cv_lib_procstat_procstat_open_sysctl" = xyes], [
 	AC_CHECK_FUNCS(procstat_getvmmap)
     ])
-    ])
+],
+[openbsd*], [
+    AC_CHECK_FUNCS([getexecpath])
+])
 AS_CASE(["$target_cpu-$target_os"],
 [*-darwin*], [
     AC_CHECK_HEADERS([libproc.h])
@@ -3713,6 +3692,12 @@ AS_CASE("$enable_shared", [yes], [
   AC_ARG_ENABLE(pie,
           AS_HELP_STRING([--disable-pie], [disable PIE feature]),
           [pie=$enableval], [pie=])
+  AS_CASE(["$target_os:$pie"], [haiku*:], [
+    # Haiku links every executable as a shared object, which rejects
+    # the local-exec TLS relocations in -fPIE objects.  The compiler
+    # generates PIC there by default.
+    pie=no
+  ])
   AS_IF([test "$GCC" = yes -a -z "$EXTSTATIC" -a "x$pie" != xno], [
     RUBY_TRY_CFLAGS(-fPIE, [pie=yes], [pie=no])
     AS_IF([test "$pie" = yes], [
@@ -3976,6 +3961,9 @@ YJIT_LIBS=
 JIT_CARGO_SUPPORT=no
 AS_CASE(["${YJIT_SUPPORT}"],
 [yes|dev|stats|dev_nodebug], [
+    AS_CASE(["$target_os"], [mingw*], [
+        AC_MSG_ERROR([YJIT is not supported on mingw. Use win32\configure.bat --enable-yjit on mswin instead])
+    ])
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
@@ -4312,6 +4300,7 @@ AS_IF([test -n "${LIBS}"], [
     MAINFLAGS=`echo " $MAINLIBS " | sed "s|$libspat"'||;s/^ *//;s/ *$//'`
 ])
 LIBRUBYARG_STATIC="${LIBRUBYARG_STATIC} \$(MAINLIBS)"
+AS_CASE(["$LIBRUBYARG"], ['$(LIBRUBYARG_STATIC)'], [PROGRAM_LIBS=], [PROGRAM_LIBS='$(MAINLIBS)'])
 CPPFLAGS="$CPPFLAGS "'$(DEFS) ${cppflags}'
 AS_IF([test -n "${cflags+set}"], [
     cflagspat=`eval echo '"'"${cflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^  */ /;s/^  *$/ /'`
@@ -4378,6 +4367,7 @@ AC_SUBST(DLDLIBS)
 AC_SUBST(DLDSHARED)
 AC_SUBST(ENABLE_SHARED)
 AC_SUBST(MAINLIBS)
+AC_SUBST(PROGRAM_LIBS)
 AC_SUBST(COMMON_LIBS)
 AC_SUBST(COMMON_MACROS)
 AC_SUBST(COMMON_HEADERS)
@@ -4703,11 +4693,13 @@ AC_SUBST(XCC_WRAPPER)
 
 AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s/^ *//;s/  *$//'`])
 
-AS_IF([test ! -f "$srcdir/revision.h"], [
+# Generate revision.h in the build directory, as make does; one in
+# $srcdir would shadow it, since version.h includes "revision.h".
+AS_IF([test ! -f "$srcdir/revision.h" -a ! -f revision.h], [
     AS_IF([test "x$HAVE_BASERUBY" = xyes], [
-	${BASERUBY} -C "$srcdir" tool/file2lastrev.rb -q --revision.h > "$srcdir/revision.h"
+	${BASERUBY} -C "$srcdir" tool/file2lastrev.rb -q --revision.h > revision.h
     ], [
-	touch "$srcdir/revision.h"
+	touch revision.h
     ])
 ])
 
@@ -4734,7 +4726,7 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	AS_CASE("$VCS",
 		['$(GIT)'|git], [VCSUP='$(VCS) pull --rebase $(GITPULLOPTIONS)'],
 		[VCSUP='$(VCS)'])
-	for f in "$srcdir/version.h" "$srcdir/revision.h"; do
+	for f in "$srcdir/version.h" "$srcdir/revision.h" revision.h; do
             test -f "$f" || continue
 	    sed -n \
 	        -e '[/^@%:@define \(RUBY_RELEASE_[A-Z]*\) \([0-9][0-9]*\)/]{' \

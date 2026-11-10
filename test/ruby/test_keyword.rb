@@ -4195,6 +4195,42 @@ class TestKeywordArguments < Test::Unit::TestCase
     end
   end
 
+  def test_kwrest_overwritten_zsuper_with_keyword
+    bug22527 = '[Bug #22527]'
+
+    base = Class.new do
+      def m(*a, **k) = k
+    end
+
+    klass = Class.new(base) do
+      def m(k: 1, **r)
+        r = yield
+        super
+      end
+    end
+
+    obj = klass.new
+    assert_equal({k: 1}, obj.m { nil }, bug22527)
+    assert_equal({k: 1}, obj.m { nil }, bug22527)
+
+    assert_equal({a: 2, k: 1}, obj.m { {a: 2}.freeze })
+    assert_equal({k: 1}, obj.m { {k: 2} })
+
+    result = obj.m { Class.new(Hash)[a: 2].tap { _1.default = 5 } }
+    assert_instance_of(Hash, result)
+    assert_nil(result.default)
+
+    shared = {a: 2}
+    to_hash = Object.new
+    to_hash.define_singleton_method(:to_hash) { shared }
+    assert_equal({a: 2, k: 1}, obj.m { to_hash })
+    assert_equal({a: 2}, shared)
+
+    assert_raise_with_message(TypeError, /no implicit conversion of Integer into Hash/) do
+      obj.m { 1 }
+    end
+  end
+
   def test_non_keyword_hash_subclass
     bug12884 = '[ruby-core:77813] [Bug #12884]'
     klass = EnvUtil.labeled_class("Child", Hash)
@@ -4295,6 +4331,23 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_equal(expected, victim(k0: 0), '[Bug #22335]')
       kwargs = {k0: 0}
       assert_equal(expected, victim(**kwargs), '[Bug #22335]')
+    RUBY
+  end
+
+  def test_many_kwargs_with_gc_while_tracking_unspecified
+    assert_separately([], <<~'RUBY', timeout: 60)
+      # k32 has a non-static default and is past the keyword bitmask limit,
+      # so leaving it unspecified allocates a set during argument setup.
+      params = (0...32).map { |i| "k#{i}: nil" }
+      eval "def victim(#{params.join(', ')}, k32: Object.new) [k1, k32]; end"
+
+      GC.stress = true
+      # Run twice to cover the first call and the cached fast path. The
+      # string passed as k1 has no other reference.
+      results = 2.times.map { victim(k1: "k" + "1")[0] }
+      GC.stress = false
+
+      assert_equal(["k1", "k1"], results, "[Bug #22500]")
     RUBY
   end
 

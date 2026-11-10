@@ -4,6 +4,7 @@
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/char.h"
+#include "prism/internal/oom.h"
 #include "prism/internal/stringy.h"
 
 #include <stdlib.h>
@@ -16,7 +17,10 @@
 pm_options_t *
 pm_options_new(void) {
     pm_options_t *options = xcalloc(1, sizeof(pm_options_t));
-    if (options == NULL) abort();
+    if (options == NULL) PRISM_OOM();
+
+    options->line = 1;
+    options->stack_budget = SIZE_MAX;
     return options;
 }
 
@@ -25,16 +29,8 @@ pm_options_new(void) {
  */
 void
 pm_options_cleanup(pm_options_t *options) {
-    pm_string_cleanup(&options->filepath);
-    pm_string_cleanup(&options->encoding);
-
     for (size_t scope_index = 0; scope_index < options->scopes_count; scope_index++) {
         pm_options_scope_t *scope = &options->scopes[scope_index];
-
-        for (size_t local_index = 0; local_index < scope->locals_count; local_index++) {
-            pm_string_cleanup(&scope->locals[local_index]);
-        }
-
         xfree_sized(scope->locals, scope->locals_count * sizeof(pm_string_t));
     }
 
@@ -74,7 +70,7 @@ pm_options_filepath(const pm_options_t *options) {
  */
 void
 pm_options_filepath_set(pm_options_t *options, const char *filepath) {
-    pm_string_constant_init(&options->filepath, filepath, strlen(filepath));
+    pm_string_init(&options->filepath, (const uint8_t *) filepath, strlen(filepath));
 }
 
 /**
@@ -82,7 +78,7 @@ pm_options_filepath_set(pm_options_t *options, const char *filepath) {
  */
 void
 pm_options_encoding_set(pm_options_t *options, const char *encoding) {
-    pm_string_constant_init(&options->encoding, encoding, strlen(encoding));
+    pm_string_init(&options->encoding, (const uint8_t *) encoding, strlen(encoding));
 }
 
 /**
@@ -138,22 +134,22 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
     }
 
     if (length == 3) {
-        if (strncmp(version, "3.3", 3) == 0) {
+        if (memcmp(version, "3.3", 3) == 0) {
             options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
             return true;
         }
 
-        if (strncmp(version, "3.4", 3) == 0) {
+        if (memcmp(version, "3.4", 3) == 0) {
             options->version = PM_OPTIONS_VERSION_CRUBY_3_4;
             return true;
         }
 
-        if (strncmp(version, "3.5", 3) == 0 || strncmp(version, "4.0", 3) == 0) {
+        if (memcmp(version, "3.5", 3) == 0 || memcmp(version, "4.0", 3) == 0) {
             options->version = PM_OPTIONS_VERSION_CRUBY_4_0;
             return true;
         }
 
-        if (strncmp(version, "4.1", 3) == 0) {
+        if (memcmp(version, "4.1", 3) == 0) {
             options->version = PM_OPTIONS_VERSION_CRUBY_4_1;
             return true;
         }
@@ -162,29 +158,29 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
     }
 
     if (length >= 4 && is_number(version + 4, length - 4)) {
-        if (strncmp(version, "3.3.", 4) == 0) {
+        if (memcmp(version, "3.3.", 4) == 0) {
             options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
             return true;
         }
 
-        if (strncmp(version, "3.4.", 4) == 0) {
+        if (memcmp(version, "3.4.", 4) == 0) {
             options->version = PM_OPTIONS_VERSION_CRUBY_3_4;
             return true;
         }
 
-        if (strncmp(version, "3.5.", 4) == 0 || strncmp(version, "4.0.", 4) == 0) {
+        if (memcmp(version, "3.5.", 4) == 0 || memcmp(version, "4.0.", 4) == 0) {
             options->version = PM_OPTIONS_VERSION_CRUBY_4_0;
             return true;
         }
 
-        if (strncmp(version, "4.1.", 4) == 0) {
+        if (memcmp(version, "4.1.", 4) == 0) {
             options->version = PM_OPTIONS_VERSION_CRUBY_4_1;
             return true;
         }
     }
 
     if (length == 6) {
-        if (strncmp(version, "latest", 6) == 0) {
+        if (memcmp(version, "latest", 6) == 0) {
             options->version = PM_OPTIONS_VERSION_LATEST;
             return true;
         }
@@ -244,6 +240,22 @@ pm_options_freeze_set(pm_options_t *options, bool freeze) {
 }
 
 /**
+ * Get the attach_comments option on the given options struct.
+ */
+bool
+pm_options_attach_comments(const pm_options_t *options) {
+    return options->attach_comments;
+}
+
+/**
+ * Set the attach_comments option on the given options struct.
+ */
+void
+pm_options_attach_comments_set(pm_options_t *options, bool attach_comments) {
+    options->attach_comments = attach_comments;
+}
+
+/**
  * Get the raise_error option on the given options struct.
  */
 uint8_t pm_options_raise_error(const pm_options_t *options) {
@@ -255,6 +267,14 @@ uint8_t pm_options_raise_error(const pm_options_t *options) {
  */
 void pm_options_raise_error_set(pm_options_t *options, uint8_t raise_error) {
     options->raise_error = raise_error;
+}
+
+/**
+ * Set the stack_budget option on the given options struct.
+ */
+void
+pm_options_stack_budget_set(pm_options_t *options, size_t stack_budget) {
+    options->stack_budget = stack_budget;
 }
 
 // For some reason, GCC analyzer thinks we're leaking allocated scopes and
@@ -302,7 +322,7 @@ pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
     scope->locals_count = locals_count;
     scope->locals = xcalloc(locals_count, sizeof(pm_string_t));
     scope->forwarding = PM_OPTIONS_SCOPE_FORWARDING_NONE;
-    if (scope->locals == NULL) abort();
+    if (scope->locals == NULL) PRISM_OOM();
 }
 
 /**
@@ -373,13 +393,14 @@ pm_options_read_s32(const char *data) {
 void
 pm_options_read(pm_options_t *options, const char *data) {
     options->line = 1; // default
+    options->stack_budget = SIZE_MAX; // default
     if (data == NULL) return;
 
     uint32_t filepath_length = pm_options_read_u32(data);
     data += 4;
 
     if (filepath_length > 0) {
-        pm_string_constant_init(&options->filepath, data, filepath_length);
+        pm_string_init(&options->filepath, (const uint8_t *) data, filepath_length);
         data += filepath_length;
     }
 
@@ -390,7 +411,7 @@ pm_options_read(pm_options_t *options, const char *data) {
     data += 4;
 
     if (encoding_length > 0) {
-        pm_string_constant_init(&options->encoding, data, encoding_length);
+        pm_string_init(&options->encoding, (const uint8_t *) data, encoding_length);
         data += encoding_length;
     }
 
@@ -401,6 +422,7 @@ pm_options_read(pm_options_t *options, const char *data) {
     options->main_script = ((uint8_t) *data++) > 0;
     options->partial_script = ((uint8_t) *data++) > 0;
     options->freeze = ((uint8_t) *data++) > 0;
+    options->attach_comments = ((uint8_t) *data++) > 0;
 
     uint32_t scopes_count = pm_options_read_u32(data);
     data += 4;
@@ -422,7 +444,7 @@ pm_options_read(pm_options_t *options, const char *data) {
                 uint32_t local_length = pm_options_read_u32(data);
                 data += 4;
 
-                pm_string_constant_init(&scope->locals[local_index], data, local_length);
+                pm_string_init(&scope->locals[local_index], (const uint8_t *) data, local_length);
                 data += local_length;
             }
         }

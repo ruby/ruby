@@ -186,7 +186,8 @@ struct rb_ractor_struct {
 }; // rb_ractor_t is defined in vm_core.h
 
 /* Mark the GC roots held in Ractor r's C structs (from the root scan in gc.c). */
-void rb_ractor_mark_local_roots(rb_ractor_t *r);
+struct rb_gc_mark_ctx;
+void rb_ractor_mark_local_roots(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r);
 void rb_ractor_mark_terminated_join_value(rb_ractor_t *r);
 void rb_ractor_reap_dead_ports(rb_ractor_t *r);
 

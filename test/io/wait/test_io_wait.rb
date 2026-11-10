@@ -92,6 +92,20 @@ class TestIOWait < Test::Unit::TestCase
     th.join
   end
 
+  # A probe skipped for a pending interrupt (another thread asks for the GVL) was reported as not ready.
+  def test_wait_readable_zero_at_eof_with_another_thread
+    @w.close
+    th = Thread.new { loop { Thread.pass } }
+    miss = 0
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 1
+    while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+      miss += 1 unless @r.wait_readable(0)
+    end
+    assert_equal 0, miss
+  ensure
+    th&.kill&.join
+  end
+
   def test_wait_writable
     assert_equal @w, @w.wait_writable
   end

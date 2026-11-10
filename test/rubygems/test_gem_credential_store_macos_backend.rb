@@ -7,7 +7,6 @@ require "json"
 
 class TestGemCredentialStoreMacosBackend < Gem::TestCase
   FAKE_COMMAND = <<~'RUBY'
-    #!/usr/bin/env ruby
     require "json"
     stdin_content = $stdin.read
     if record_path = ENV["RUBYGEMS_FAKE_CMD_RECORD"]
@@ -25,7 +24,11 @@ class TestGemCredentialStoreMacosBackend < Gem::TestCase
     @fake_bin_dir = File.join(@tempdir, "fake-bin")
     FileUtils.mkdir_p(@fake_bin_dir)
     fake_path = File.join(@fake_bin_dir, "security")
-    File.write(fake_path, FAKE_COMMAND)
+    File.write(fake_path, <<~SH + FAKE_COMMAND)
+      #!/bin/sh
+      exec #{Gem.ruby} -x "$0" "$@"
+      #!ruby
+    SH
     File.chmod(0o755, fake_path)
 
     @record_path = File.join(@tempdir, "record.json")
@@ -40,6 +43,16 @@ class TestGemCredentialStoreMacosBackend < Gem::TestCase
   def test_get_returns_nil_when_not_found
     with_fake_env(stdout: "", exit: 44) do
       assert_nil Gem::CredentialStore::MacOSBackend.get("rubygems", "example.org")
+    end
+  end
+
+  def test_get_without_ruby_on_path
+    pend "isolating PATH requires a native Ruby executable" unless RUBY_ENGINE == "ruby"
+
+    with_env(ENV.to_h.merge("PATH" => @fake_bin_dir)) do
+      with_fake_env(stdout: "s3cr3t\n", exit: 0) do
+        assert_equal "s3cr3t", Gem::CredentialStore::MacOSBackend.get("rubygems", "example.org")
+      end
     end
   end
 
@@ -160,7 +173,9 @@ class TestGemCredentialStoreMacosBackend < Gem::TestCase
     counter = File.join(@tempdir, "counter")
     File.write(counter, "0")
     script = <<~RUBY
-      #!/usr/bin/env ruby
+      #!/bin/sh
+      exec #{Gem.ruby} -x "$0" "$@"
+      #!ruby
       c = File.read(#{counter.inspect}).to_i
       File.write(#{counter.inspect}, (c + 1).to_s)
       exit(c < 2 ? 0 : 44)
@@ -168,7 +183,8 @@ class TestGemCredentialStoreMacosBackend < Gem::TestCase
     File.write(File.join(@fake_bin_dir, "security"), script)
     File.chmod(0o755, File.join(@fake_bin_dir, "security"))
 
-    with_env(ENV.to_h.merge("PATH" => [@fake_bin_dir, ENV["PATH"]].join(File::PATH_SEPARATOR))) do
+    path = RUBY_ENGINE == "ruby" ? @fake_bin_dir : [@fake_bin_dir, ENV["PATH"]].join(File::PATH_SEPARATOR)
+    with_env(ENV.to_h.merge("PATH" => path)) do
       assert Gem::CredentialStore::MacOSBackend.delete_all("rubygems")
     end
 

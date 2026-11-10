@@ -1,6 +1,30 @@
 # frozen_string_literal: true
 
 RSpec.describe Bundler::RubygemsIntegration do
+  context "#add_default_gems_to" do
+    let(:bundled) { Gem::Specification.new("in-bundle", "2.0") }
+    let(:default_spec) { Gem::Specification.new("not-in-bundle", "1.0") }
+    let(:bundled_default_spec) { Gem::Specification.new("in-bundle", "1.0") }
+    let(:bundled_stub) { double("stub", name: "in-bundle", to_spec: bundled_default_spec) }
+    let(:default_stub) { double("stub", name: "not-in-bundle", to_spec: default_spec) }
+
+    before do
+      allow(Bundler.rubygems).to receive(:default_stubs).and_return([bundled_stub, default_stub])
+    end
+
+    it "keeps the bundle's spec and adds default gems the bundle does not have" do
+      expect(Bundler.rubygems.add_default_gems_to([bundled])).to eq(
+        "in-bundle" => bundled,
+        "not-in-bundle" => default_spec
+      )
+    end
+
+    it "does not load the full gemspec of a default gem the bundle already has" do
+      expect(bundled_stub).not_to receive(:to_spec)
+      Bundler.rubygems.add_default_gems_to([bundled])
+    end
+  end
+
   context "#validate" do
     let(:spec) do
       Gem::Specification.new do |s|

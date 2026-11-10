@@ -147,6 +147,12 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(ParserError) { parse('-Infinity') }
     assert_equal(-1.0/0, parse('-Infinity', allow_nan: true))
     capture_output { assert_equal(Float::INFINITY, parse("23456789012E666")) }
+
+    assert_parse_float "1.5e-99999999999999999999"
+    assert_parse_float "1.5e-9223372036854775808"
+    assert_parse_float "0.0e-99999999999999999999"
+    assert_parse_float "-1.5e-99999999999999999999"
+    assert_parse_float "123.456e-18446744073709551615"
   end
 
   INTEGER_FAST_PATH_BOUNDARIES = [
@@ -239,6 +245,8 @@ class JSONParserTest < Test::Unit::TestCase
     end
 
     JSON.parse(%("#{'a' * 30}#{backslash_and_control_char}"), allow_control_characters: true, allow_invalid_escape: true)
+
+    assert_equal ["a\u0000b", 2], JSON.parse("[\"a\\\x00b\", 2]", allow_control_characters: true, allow_invalid_escape: true)
   end
 
   def test_parse_invalid_escape
@@ -473,11 +481,9 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(ParserError) { parse('{"a": 1, "a": 2}', allow_duplicate_key: false) }
     assert_raise(ParserError) { parse('{"a": 1, "a": 2}', allow_duplicate_key: false, symbolize_names: true) }
 
-    unless RUBY_ENGINE == 'jruby'
-      assert_raise(ParserError) do
-        fake_key = Object.new
-        JSON.load('{"a": 1, "a": 2}', -> (obj) { obj == "a" ? fake_key : obj }, allow_duplicate_key: false)
-      end
+    assert_raise(ParserError) do
+      fake_key = Object.new
+      JSON.load('{"a": 1, "a": 2}', -> (obj) { obj == "a" ? fake_key : obj }, allow_duplicate_key: false)
     end
   end
 
@@ -923,6 +929,10 @@ class JSONParserTest < Test::Unit::TestCase
     assert_parse_error_at "$[4]", '[1,2,3,4,5'
     assert_parse_error_at "$[5]", '[1,2,3,4,5,'
     assert_parse_error_at "$[5]", '[1,2,3,4,5,]'
+
+    if RUBY_ENGINE != "jruby"
+      assert_parse_error_at %($["\xff"][1]), %({"\xff":[1,x]})
+    end
   end
 
   def test_parse_error_position
@@ -992,6 +1002,18 @@ class JSONParserTest < Test::Unit::TestCase
     assert_parse_error_at '$.foo["1x"]', '{"foo": {"1x": xyz}}'
   end
 
+  def test_parse_error_json_path_symbolize_names
+    assert_parse_error_at "$.a[1].b" do
+      JSON.parse('{"a": [1, {"b": xyz}]}', symbolize_names: true)
+    end
+    assert_parse_error_at '$["hello world"]' do
+      JSON.parse('{"hello world": xyz}', symbolize_names: true)
+    end
+    assert_parse_error_at "$.x.a" do
+      JSON.parse('{"x": {"a": 1, "a": 2}}', symbolize_names: true)
+    end
+  end
+
   def test_parse_error_json_path_duplicate_key
     assert_parse_error_at "$.a", '{"a": 1, "a": 2}'
     assert_parse_error_at "$.x.a", '{"x": {"a": 1, "b": 2, "a": 3}}'
@@ -1045,7 +1067,63 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal expected, actual
   end
 
+  def test_mutating_source_string_with_known_coderange_during_parsing
+    expected = ([1] * 100) + [2.3] + ([1] * 100)
+    source = JSON.generate(expected)
+    source.ascii_only? # caches the coderange, which lets JRuby's String#tr! write in place
+    expected.delete_at(100)
+
+    fake_decimal_class = Class.new
+    fake_decimal_class.define_method(:initialize) do |number|
+      source.tr!('1', '0')
+      number.to_f
+    end
+
+    actual = JSON.parse(source, decimal_class: fake_decimal_class)
+    actual.delete_at(100)
+    assert_equal expected, actual
+  end
+
+  def test_adversary_encode
+    fake_string = Class.new(String) do
+      def encode(*)
+        42
+      end
+    end
+
+    assert_raise TypeError, Encoding::InvalidByteSequenceError do
+      JSON.parse(fake_string.new("\xff".b, encoding: Encoding::UTF_16))
+    end
+
+    if RUBY_ENGINE != "jruby"
+      fake_string = Class.new(String) do
+        attr_reader :encoded_str
+
+        def initialize(...)
+          super
+          @encoded_str = JSON.dump(1000.times.to_a)
+        end
+
+        def encode(*)
+          @encoded_str
+        end
+      end
+
+      fake = fake_string.new("blah", encoding: Encoding::UTF_16)
+      assert_equal 1000.times.to_a, JSON.parse(fake, on_load: ->(v) {
+        if v == 20
+          fake.encoded_str.clear
+        end
+        v
+      })
+    end
+  end
+
   private
+
+  def assert_parse_float(float_str)
+    assert_equal Float(float_str), JSON.parse(float_str)
+  end
 
   def assert_equal_float(expected, actual, delta = 1e-2)
     Array === expected and expected = expected.first

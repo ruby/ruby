@@ -1356,6 +1356,7 @@ compile_enclose_node(EncloseNode* node, regex_t* reg)
       r = add_abs_addr(reg, (int )node->call_addr);
       if (r) return r;
       len = compile_length_tree(node->target, reg);
+      if (len < 0) return len;
       len += (SIZE_OP_MEMORY_START_PUSH + SIZE_OP_RETURN);
       if (BIT_STATUS_AT(reg->bt_mem_end, node->regnum))
         len += (IS_ENCLOSE_RECURSION(node)
@@ -1604,6 +1605,7 @@ compile_anchor_node(AnchorNode* node, regex_t* reg)
     {
       int n;
       len = compile_length_tree(node->target, reg);
+      if (len < 0) return ONIGERR_PARSER_BUG;
       r = add_opcode_rel_addr(reg, OP_PUSH_LOOK_BEHIND_NOT,
                            len + SIZE_OP_FAIL_LOOK_BEHIND_NOT);
       if (r) return r;
@@ -1742,7 +1744,9 @@ compile_tree(Node* node, regex_t* reg)
       Node* x = node;
       len = 0;
       do {
-        len += compile_length_tree(NCAR(x), reg);
+        r = compile_length_tree(NCAR(x), reg);
+        if (r < 0) return r;
+        len += r;
         if (NCDR(x) != NULL) {
           len += SIZE_OP_PUSH + SIZE_OP_JUMP;
         }
@@ -1751,6 +1755,7 @@ compile_tree(Node* node, regex_t* reg)
 
       do {
         len = compile_length_tree(NCAR(node), reg);
+        if (len < 0) return ONIGERR_PARSER_BUG;
         if (IS_NOT_NULL(NCDR(node))) {
           r = add_opcode_rel_addr(reg, OP_PUSH, len + SIZE_OP_JUMP);
           if (r) break;
@@ -4307,6 +4312,7 @@ typedef struct {
 typedef struct {
   int left_anchor;
   int right_anchor;
+  int head_asserts;
 } OptAncInfo;
 
 typedef struct {
@@ -4470,6 +4476,7 @@ clear_opt_anc_info(OptAncInfo* anc)
 {
   anc->left_anchor  = 0;
   anc->right_anchor = 0;
+  anc->head_asserts = 0;
 }
 
 static void
@@ -4484,9 +4491,18 @@ concat_opt_anc_info(OptAncInfo* to, OptAncInfo* left, OptAncInfo* right,
 {
   clear_opt_anc_info(to);
 
-  to->left_anchor = left->left_anchor;
+  to->left_anchor  = left->left_anchor;
+  to->head_asserts = left->head_asserts;
   if (left_len == 0) {
-    to->left_anchor |= right->left_anchor;
+    int right_left = right->left_anchor;
+
+    if ((left->head_asserts & ~ANCHOR_BEGIN_LINE) != 0)
+      right_left &= ~ANCHOR_ANYCHAR_STAR_MASK;
+    else if ((left->head_asserts & ANCHOR_BEGIN_LINE) != 0)
+      right_left &= ~ANCHOR_ANYCHAR_STAR_ML;
+
+    to->left_anchor  |= right_left;
+    to->head_asserts |= right->head_asserts;
   }
 
   to->right_anchor = right->right_anchor;
@@ -4540,6 +4556,7 @@ alt_merge_opt_anc_info(OptAncInfo* to, OptAncInfo* add)
 {
   to->left_anchor  &= add->left_anchor;
   to->right_anchor &= add->right_anchor;
+  to->head_asserts |= add->head_asserts;
 }
 
 static int
@@ -5062,6 +5079,10 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
     break;
 
   case NT_ANCHOR:
+    if ((NANCHOR(node)->type &
+         ~(ANCHOR_BEGIN_BUF | ANCHOR_BEGIN_POSITION | ANCHOR_KEEP)) != 0)
+      opt->anc.head_asserts |= NANCHOR(node)->type;
+
     switch (NANCHOR(node)->type) {
     case ANCHOR_BEGIN_BUF:
     case ANCHOR_BEGIN_POSITION:
@@ -5875,6 +5896,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   r = compile_tree(root, reg);
   if (r == 0) {
     r = add_opcode(reg, OP_END);
+    if (r != 0) goto err_unset;
 #ifdef USE_SUBEXP_CALL
     if (scan_env.num_call > 0) {
       r = unset_addr_list_fix(&uslist, reg);

@@ -157,10 +157,11 @@ class CGIEscapeTest < Test::Unit::TestCase
 
   def test_cgi_escape_html_large
     return if RUBY_ENGINE == 'jruby'
-    ulong_max, size_max = RbConfig::LIMITS.values_at("ULONG_MAX", "SIZE_MAX")
-    return unless ulong_max < size_max # Platforms not concerned
+    ulen_max = 2 ** (RbConfig::SIZEOF.fetch("rb_len_t") { RbConfig::SIZEOF["long"] } * 8) - 1
+    size_max = RbConfig::LIMITS["SIZE_MAX"]
+    return unless ulen_max < size_max # Platforms not concerned
 
-    size = (ulong_max / 6 + 1)
+    size = (ulen_max / 6 + 1)
     begin
       str = '"' * size
       escaped = CGI.escapeHTML(str)

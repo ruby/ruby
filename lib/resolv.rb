@@ -35,7 +35,7 @@ require 'rbconfig'
 class Resolv
 
   # The version string
-  VERSION = "0.8.0"
+  VERSION = "0.8.1"
 
   ##
   # Looks up the first IP address for +name+.
@@ -690,6 +690,19 @@ class Resolv
     ] then
       def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
         udpsock.bind(bind_host, 0)
+      end
+    when /mswin|mingw/
+      # Sequential port assignment
+      def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
+        # SO_EXCLUSIVEADDRUSE: make bind fail if another socket already uses the port
+        udpsock.setsockopt(Socket::SOL_SOCKET, ~Socket::SO_REUSEADDR, 1)
+        begin
+          # Ephemeral port number range recommended by RFC 6056
+          port = random(1024..65535)
+          udpsock.bind(bind_host, port)
+        rescue Errno::EADDRINUSE, Errno::EACCES
+          retry
+        end
       end
     else
       # Sequential port assignment

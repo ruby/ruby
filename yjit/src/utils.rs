@@ -134,7 +134,8 @@ yjit_print_iseq(const rb_iseq_t *iseq)
 }
 */
 
-#[cfg(target_arch = "aarch64")]
+// The x86_64 backend emits Win64 calls on Windows, which is what "C" means there.
+#[cfg(any(target_arch = "aarch64", windows))]
 macro_rules! c_callable {
     ($(#[$outer:meta])*
     fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => {
@@ -143,7 +144,7 @@ macro_rules! c_callable {
     };
 }
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(all(target_arch = "x86_64", not(windows)))]
 macro_rules! c_callable {
     ($(#[$outer:meta])*
     fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => {
@@ -229,7 +230,11 @@ pub fn print_str(asm: &mut Assembler, str: &str) {
 
 pub fn stdout_supports_colors() -> bool {
     // TODO(max): Use std::io::IsTerminal after upgrading Rust to 1.70
-    extern "C" { fn isatty(fd: c_int) -> c_int; }
+    extern "C" {
+        // UCRT's isatty returns 0x40 for any character device, NUL included
+        #[cfg_attr(windows, link_name = "rb_w32_isatty")]
+        fn isatty(fd: c_int) -> c_int;
+    }
     let stdout = 1;
     let is_terminal = unsafe { isatty(stdout) } == 1;
     is_terminal

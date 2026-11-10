@@ -74,6 +74,7 @@ static int w32_stati128(const char *path, struct stati128 *st, UINT cp, BOOL lst
 static char *w32_getenv(const char *name, UINT cp);
 
 #undef getenv
+#undef strdup
 /*
  * Do not remove the macros to substitute functions in dln_find.c.
  */
@@ -110,7 +111,6 @@ static char *w32_getenv(const char *name, UINT cp);
 #undef close
 #undef setsockopt
 #undef dup2
-#undef strdup
 
 #define _filbuf _fgetc_nolock
 #define _flsbuf _fputc_nolock
@@ -511,7 +511,7 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
 /*
   Return user's home directory using environment variables combinations.
   Memory allocated by this function should be manually freed
-  afterwards with xfree.
+  afterwards with free.
 
   Try:
   HOME, USERPROFILE, HOMEDRIVE + HOMEPATH environment variables
@@ -643,8 +643,16 @@ static st_table *conlist = NULL;
          exclusive_for_##obj; \
          exclusive_for_##obj = (LeaveCriticalSection(&obj##_mutex), false))
 
-static CRITICAL_SECTION uenvarea_mutex;
-static char *uenvarea;
+/* The string w32_getenv returned last in each thread, or in each Win32
+ * fiber, valid until the next call in the same thread or fiber. */
+static DWORD uenvarea_key;
+
+/* License: Ruby's */
+static void WINAPI
+free_uenvarea(void *uenvarea)
+{
+    free(uenvarea);
+}
 
 /* License: Ruby's */
 struct constat {
@@ -685,13 +693,7 @@ exit_handler(void)
     DeleteCriticalSection(&select_mutex);
     DeleteCriticalSection(&socklist_mutex);
     DeleteCriticalSection(&conlist_mutex);
-    thread_exclusive(uenvarea) {
-        if (uenvarea) {
-            free(uenvarea);
-            uenvarea = NULL;
-        }
-    }
-    DeleteCriticalSection(&uenvarea_mutex);
+    FlsFree(uenvarea_key);
 }
 
 /* License: Ruby's */
@@ -895,7 +897,8 @@ rb_w32_sysinit(int *argc, char ***argv)
 
     tzset();
 
-    InitializeCriticalSection(&uenvarea_mutex);
+    if ((uenvarea_key = FlsAlloc(free_uenvarea)) == FLS_OUT_OF_INDEXES)
+        rb_bug("FlsAlloc() for uenvarea_key fails");
     init_env();
 
     init_stdhandle();
@@ -3936,17 +3939,45 @@ rb_w32_gethostbyname(const char *name)
 
 #undef gethostname
 
+static INIT_ONCE hostname_once = INIT_ONCE_STATIC_INIT;
+static char hostname_cache[256];
+
+/* License: Ruby's */
+static BOOL CALLBACK
+init_hostname(PINIT_ONCE once, PVOID param, PVOID *context)
+{
+    if (gethostname(hostname_cache, sizeof(hostname_cache)) == SOCKET_ERROR) {
+        errno = map_errno(WSAGetLastError());
+        return FALSE;
+    }
+    return TRUE;
+}
+
 /* License: Artistic or GPL */
 int WSAAPI
 rb_w32_gethostname(char *name, int len)
 {
-    int r;
-    RUBY_CRITICAL {
-        r = gethostname(name, len);
+    int n;
+
+    /* Winsock reads the DNS settings from the registry on every call, but
+     * the host name does not change until the system restarts, except
+     * through this variable that Winsock also reads on every call. */
+    if (GetEnvironmentVariableW(L"_CLUSTER_NETWORK_NAME_", NULL, 0) > 1) {
+        int r = gethostname(name, len);
         if (r == SOCKET_ERROR)
             errno = map_errno(WSAGetLastError());
+        return r;
     }
-    return r;
+    if (!InitOnceExecuteOnce(&hostname_once, init_hostname, NULL, NULL))
+        return SOCKET_ERROR;
+    n = (int)strlen(hostname_cache);
+    if (!name || n >= len) {
+        WSASetLastError(WSAEFAULT);
+        errno = map_errno(WSAEFAULT);
+        return SOCKET_ERROR;
+    }
+    memcpy(name, hostname_cache, n + 1);
+    return 0;
 }
 
 #undef getprotobyname
@@ -4526,18 +4557,18 @@ rb_w32_set_nonblock2(int fd, int nonblock)
         return setfl(sock, nonblock ? O_NONBLOCK : 0);
     }
     else if (is_pipe(sock)) {
-        DWORD state;
+        DWORD state, mode;
         if (!GetNamedPipeHandleState((HANDLE)sock, &state, NULL, NULL, NULL, NULL, 0)) {
             errno = map_errno(GetLastError());
             return -1;
         }
         if (nonblock) {
-            state |= PIPE_NOWAIT;
+            mode = state | PIPE_NOWAIT;
         }
         else {
-            state &= ~PIPE_NOWAIT;
+            mode = state & ~PIPE_NOWAIT;
         }
-        if (!SetNamedPipeHandleState((HANDLE)sock, &state, NULL, NULL)) {
+        if (mode != state && !SetNamedPipeHandleState((HANDLE)sock, &mode, NULL, NULL)) {
             errno = map_errno(GetLastError());
             return -1;
         }
@@ -5430,45 +5461,37 @@ wait(int *status)
 static char *
 w32_getenv(const char *name, UINT cp)
 {
-    WCHAR *wenvarea, *wenv;
-    int len = strlen(name);
-    char *env, *found = NULL;
-    int wlen;
+    WCHAR *wname, wbuf[256], *wval = wbuf;
+    DWORD wlen, size = numberof(wbuf);
+    char *uenvarea = NULL;
 
-    if (len == 0) return NULL;
+    if (!*name) return NULL;
 
     if (!NTLoginName) {
-        /* initialized in init_env, uenvarea_mutex should have been
-         * initialized before it */
+        /* initialized in init_env, uenvarea_key should have been
+         * allocated before it */
         return getenv(name);
     }
 
-    thread_exclusive(uenvarea) {
-        if (uenvarea) {
-            free(uenvarea);
-            uenvarea = NULL;
-        }
-        wenvarea = GetEnvironmentStringsW();
-        if (!wenvarea) {
-            map_errno(GetLastError());
-            continue;
-        }
-        for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
-            wlen += lstrlenW(wenv) + 1;
-        uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
-        FreeEnvironmentStringsW(wenvarea);
-        if (!uenvarea)
-            continue;
-
-        for (env = uenvarea; *env; env += strlen(env) + 1) {
-            if (strncasecmp(env, name, len) == 0 && *(env + len) == '=') {
-                found = env + len + 1;
-                break;
-            }
-        }
+    if (!(wname = mbstr_to_wstr(cp, name, -1, NULL))) return NULL;
+    for (;;) {
+        /* 0 is also the length of an empty value, which leaves the last
+         * error as it was */
+        SetLastError(NO_ERROR);
+        wlen = GetEnvironmentVariableW(wname, wval, size);
+        if (wlen < size) break;
+        if (wval != wbuf) free(wval);
+        size = wlen;
+        if (!(wval = malloc(size * sizeof(WCHAR)))) break;
     }
+    if (wval && (wlen || GetLastError() == NO_ERROR))
+        uenvarea = wstr_to_mbstr(cp, wval, wlen + 1, NULL);
+    if (wval != wbuf) free(wval);
+    free(wname);
 
-    return found;
+    free(FlsGetValue(uenvarea_key));
+    FlsSetValue(uenvarea_key, uenvarea);
+    return uenvarea;
 }
 
 /* License: Ruby's */
@@ -7433,6 +7456,7 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
         err = GetLastError();
         if (err == ERROR_NO_DATA && (_osfile(fd) & FPIPE)) {
             DWORD state;
+            CloseHandle(ol.hEvent);
             if (GetNamedPipeHandleState((HANDLE)_osfhnd(fd), &state, NULL, NULL, NULL, NULL, 0) && (state & PIPE_NOWAIT)) {
                 errno = EWOULDBLOCK;
             }
@@ -7463,13 +7487,17 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
                 errno = EINTR;
             else
                 errno = map_errno(GetLastError());
-            CloseHandle(ol.hEvent);
             CancelIo((HANDLE)_osfhnd(fd));
-            rb_acrt_lowio_unlock_fh(fd);
-            return -1;
+            /* the read may have completed before the cancel, and the kernel
+             * writes ol and buf until it ends either way */
+            GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE);
+            if (!read) {
+                CloseHandle(ol.hEvent);
+                rb_acrt_lowio_unlock_fh(fd);
+                return -1;
+            }
         }
-
-        if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
+        else if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
             (err = GetLastError()) != ERROR_HANDLE_EOF) {
             int ret = 0;
             if (err != ERROR_BROKEN_PIPE) {
@@ -7576,13 +7604,15 @@ rb_w32_write_internal(int fd, const void *buf, size_t size, rb_off_t *offset)
                 errno = EINTR;
             else
                 errno = map_errno(GetLastError());
-            CloseHandle(ol.hEvent);
             CancelIo((HANDLE)_osfhnd(fd));
-            rb_acrt_lowio_unlock_fh(fd);
-            return -1;
+            GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written, TRUE);
+            if (!written) {
+                CloseHandle(ol.hEvent);
+                rb_acrt_lowio_unlock_fh(fd);
+                return -1;
+            }
         }
-
-        if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written, TRUE)) {
+        else if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written, TRUE)) {
             errno = map_errno(GetLastError());
             CloseHandle(ol.hEvent);
             CancelIo((HANDLE)_osfhnd(fd));
@@ -7670,10 +7700,13 @@ rb_w32_write_console(uintptr_t strarg, int fd)
       case ENCINDEX_ASCII_8BIT:
         /* assume UTF-8 */
       case ENCINDEX_UTF_8:
-        ptr = wbuffer = mbstr_to_wstr(CP_UTF8, RSTRING_PTR(str), RSTRING_LEN(str), &len);
+        /* mbstr_to_wstr takes an int; the caller falls back to write(). */
+        if (RSTRING_LEN(str) > INT_MAX) return -1L;
+        ptr = wbuffer = mbstr_to_wstr(CP_UTF8, RSTRING_PTR(str), (int)RSTRING_LEN(str), &len);
         if (!ptr) return -1L;
         break;
       case ENCINDEX_UTF_16LE:
+        if (RSTRING_LEN(str) > INT_MAX) return -1L;
         ptr = (const WCHAR *)RSTRING_PTR(str);
         len = RSTRING_LEN(str) / sizeof(WCHAR);
         break;

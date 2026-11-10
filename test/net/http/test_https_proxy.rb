@@ -41,6 +41,24 @@ class HTTPSProxyTest < Test::Unit::TestCase
   end
 
 
+  def test_https_proxy_rejects_crlf_in_address
+    TCPServer.open("127.0.0.1", 0) {|serv|
+      _, port, _, _ = serv.addr
+      client_thread = Thread.new {
+        proxy = Net::HTTP.Proxy("127.0.0.1", port)
+        http = proxy.new("foo.example.org\r\nX-Injected: 1\r\nbar.example.org", 8000)
+        http.use_ssl = true
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        assert_raise(ArgumentError) { http.start }
+      }
+      server_thread = Thread.new {
+        sock = serv.accept
+        sock.close
+      }
+      assert_join_threads([client_thread, server_thread])
+    }
+  end
+
   def read_fixture(key)
     File.read(File.expand_path("../fixtures/#{key}", __dir__))
   end

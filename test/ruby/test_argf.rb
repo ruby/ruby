@@ -1093,6 +1093,14 @@ class TestArgf < Test::Unit::TestCase
     end
   end
 
+  def test_read_nonblock_file
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    assert_equal("foo", argf.read_nonblock(3))
+  ensure
+    argf.close
+  end
+
   def test_wrong_type
     assert_separately([], "#{<<~"{#"}\n#{<<~'};'}")
     {#

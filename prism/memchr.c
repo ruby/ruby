@@ -13,7 +13,7 @@
  */
 const void *
 pm_memchr(const void *memory, int character, size_t number, bool encoding_changed, const pm_encoding_t *encoding) {
-    if (encoding_changed && encoding->multibyte && character >= TRAILING_BYTE_MINIMUM) {
+    if (encoding_changed && pm_encoding_multibyte_p(encoding) && character >= TRAILING_BYTE_MINIMUM) {
         const uint8_t *source = (const uint8_t *) memory;
         size_t index = 0;
 
@@ -22,7 +22,7 @@ pm_memchr(const void *memory, int character, size_t number, bool encoding_change
                 return (void *) (source + index);
             }
 
-            size_t width = encoding->char_width(source + index, (ptrdiff_t) (number - index));
+            size_t width = pm_encoding_char_width(encoding, source + index, (ptrdiff_t) (number - index));
             if (width == 0) {
                 return NULL;
             }

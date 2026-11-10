@@ -22,7 +22,8 @@ class MSpecScript
 
   builddir = Dir.pwd
   srcdir = ENV['SRCDIR']
-  srcdir ||= File.read("Makefile", encoding: "US-ASCII")[/^\s*srcdir\s*=\s*(.+)/i, 1] rescue nil
+  makefile = File.exist?("Makefile") ? "Makefile" : "GNUmakefile"
+  srcdir ||= File.read(makefile, encoding: "US-ASCII")[/^\s*srcdir\s*=\s*(.+)/i, 1] rescue nil
   config = RbConfig::CONFIG
 
   # The default implementation to run the specs.

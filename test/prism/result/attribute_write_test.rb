@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class AttributeWriteTest < TestCase
     module Target
       def self.value
@@ -42,13 +42,13 @@ module Prism
     private
 
     def assert_attribute_write(source)
-      call = Prism.parse_statement(source)
+      call = Ruby::Prism.parse_statement(source)
       assert(call.attribute_write?)
       assert_equal(1, eval(source))
     end
 
     def refute_attribute_write(source)
-      call = Prism.parse_statement(source)
+      call = Ruby::Prism.parse_statement(source)
       refute(call.attribute_write?)
       refute_equal(1, eval(source))
     end

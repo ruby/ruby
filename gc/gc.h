@@ -79,10 +79,7 @@ MODULAR_GC_FN void rb_gc_vm_each_objspace(void (*func)(void *objspace, void *dat
 MODULAR_GC_FN void rb_gc_each_registered_addr(rb_gc_registered_addr_cb func, void *data);
 /* Verifier support, valid only with the world stopped (no extra locking inside). */
 MODULAR_GC_FN bool rb_gc_registered_addr_owned_by_registrant_p(VALUE *addr, void *objspace);
-MODULAR_GC_FN bool rb_gc_vm_zombie_objspace_p(void *objspace);
-MODULAR_GC_FN size_t rb_gc_vm_zombie_total_pages(void);
 MODULAR_GC_FN unsigned int rb_gc_vm_ractor_count(void);
-MODULAR_GC_FN void rb_gc_vm_refresh_zombie_pages(void);
 /* No MODULAR_GC_FN: the VM side (ractor.c) calls this too, so it needs external
  * linkage even in a non-modular build (see internal/gc.h). */
 bool rb_gc_single_objspace_p(void);
@@ -101,7 +98,7 @@ MODULAR_GC_FN void rb_gc_update_object_references(void *objspace, VALUE obj);
 MODULAR_GC_FN void rb_gc_update_vm_references(void *objspace);
 MODULAR_GC_FN void rb_gc_event_hook(VALUE obj, rb_event_flag_t event);
 MODULAR_GC_FN void *rb_gc_get_objspace(void);
-MODULAR_GC_FN void rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void *data), void *data);
+MODULAR_GC_FN void rb_gc_run_obj_finalizer(VALUE objid, rb_len_t count, VALUE (*callback)(rb_len_t i, void *data), void *data);
 MODULAR_GC_FN void rb_gc_set_pending_interrupt(void);
 MODULAR_GC_FN void rb_gc_trigger_finalize_deferred(void *objspace, rb_postponed_job_handle_t pjob);
 MODULAR_GC_FN void rb_gc_trigger_postponed_job_on_main(rb_postponed_job_handle_t pjob);
@@ -125,7 +122,7 @@ MODULAR_GC_FN void rb_gc_before_updating_jit_code(void);
 MODULAR_GC_FN void rb_gc_after_updating_jit_code(void);
 MODULAR_GC_FN bool rb_gc_obj_shareable_p(VALUE);
 MODULAR_GC_FN void rb_gc_rp(VALUE);
-MODULAR_GC_FN void rb_gc_handle_weak_references(VALUE obj);
+MODULAR_GC_FN void rb_gc_handle_weak_references(void *objspace, VALUE obj);
 MODULAR_GC_FN bool rb_gc_obj_needs_cleanup_p(VALUE obj);
 
 /* True when a dead T_DATA of this type cannot have its dfree run during a parallel
@@ -202,22 +199,6 @@ gc_ref_update_table_values_only(st_table *tbl)
     if (st_foreach_with_replace(tbl, hash_foreach_replace_value, hash_replace_ref_value, 0)) {
         rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
-}
-
-static int
-gc_mark_tbl_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
-{
-    rb_gc_mark_movable((VALUE)value);
-
-    return ST_CONTINUE;
-}
-
-static int
-gc_mark_set_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
-{
-    rb_gc_mark_movable((VALUE)key);
-
-    return ST_CONTINUE;
 }
 
 static int

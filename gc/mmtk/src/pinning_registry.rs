@@ -30,6 +30,13 @@ impl PinningRegistry {
         pinning_objs.push(object);
     }
 
+    pub fn register_pinned_obj(&self, object: ObjectReference) {
+        if memory_manager::pin_object(object) {
+            let mut pinned_objs = self.pinned_objs.lock().unwrap();
+            pinned_objs.push(object);
+        }
+    }
+
     pub fn pin_children(&self, tls: VMWorkerThread) {
         if !crate::mmtk().get_plan().current_gc_may_move_object() {
             log::debug!("The current GC is non-moving, skipping pinning children.");
@@ -125,7 +132,7 @@ impl GCWork<Ruby> for PinPinningChildren {
             .set_temporarily_and_run_code(visit_object, || {
                 for obj in self.pinning_objs.iter().cloned() {
                     log::trace!("  Pinning: {}", obj);
-                    (upcalls().call_gc_mark_children)(obj);
+                    upcalls::call_gc_mark_children(obj);
                 }
             });
 

@@ -1736,6 +1736,13 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
   end
 
+  def test_stat_subclass_allocate
+    # [Bug #22411]
+    klass = Class.new(File::Stat)
+    assert_instance_of(klass, klass.allocate)
+    assert_instance_of(klass, klass.new(regular_file))
+  end
+
   def test_stat_ftype
     assert_equal("directory", File::Stat.new(@dir).ftype)
     assert_equal("file", File::Stat.new(regular_file).ftype)

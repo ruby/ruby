@@ -40,6 +40,7 @@ def run_lcov_remove(info_src, info_out)
     test/*
     ext/-test-/*
     ext/nkf/nkf-utf8/nkf.c
+    .bundle/*
   ).each {|f| dirs << File.join(File.dirname(__dir__), f) }
   run_lcov("--ignore-errors", "unused", "--remove", info_src, *dirs, "-o", info_out)
 end

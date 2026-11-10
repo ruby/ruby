@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   class HeredocDedentTest < TestCase
     def test_content_dedented_interpolation_content
       assert_heredoc_dedent(
@@ -119,7 +119,7 @@ module Prism
     private
 
     def assert_heredoc_dedent(expected, source)
-      node = Prism.parse_statement(source)
+      node = Ruby::Prism.parse_statement(source)
 
       if node.is_a?(StringNode)
         actual = node.unescaped

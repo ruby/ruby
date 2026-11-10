@@ -219,7 +219,7 @@ ractor_status_p(rb_ractor_t *r, enum ractor_status status)
 static void ractor_local_storage_mark(rb_ractor_t *r);
 static void ractor_local_storage_free(rb_ractor_t *r);
 
-static void ractor_sync_mark(rb_ractor_t *r);
+static void ractor_sync_mark(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r);
 static void ractor_sync_free(rb_ractor_t *r);
 static size_t ractor_sync_memsize(const rb_ractor_t *r);
 static void ractor_sync_init(rb_ractor_t *r);
@@ -243,46 +243,46 @@ mark_targeted_hook_list(st_data_t key, st_data_t value, st_data_t _arg)
 }
 
 static void
-ractor_mark_thread(rb_thread_t *th)
+ractor_mark_thread(const struct rb_gc_mark_ctx *ctx, rb_thread_t *th)
 {
-    rb_gc_mark(th->self);
+    rb_gc_mark_ctx(ctx, th->self);
 
     /* A thread's ec lives inside the root fiber struct and is freed with that
      * fiber's wrapper object, so keep the fiber wrappers alive from here too. */
     if (th->root_fiber) {
         VALUE root_fiber_self = rb_fiberptr_self(th->root_fiber);
-        if (root_fiber_self) rb_gc_mark(root_fiber_self);
+        if (root_fiber_self) rb_gc_mark_ctx(ctx, root_fiber_self);
     }
     /* The ec sits inside its fiber, so marking that fiber's wrapper scans the ec
      * as well.  Only when there is no wrapper yet (mid-creation, teardown) does
      * the ec need marking of its own. */
     VALUE ec_fiber_self = (th->ec && th->ec->fiber_ptr) ? rb_fiberptr_self(th->ec->fiber_ptr) : 0;
     if (ec_fiber_self) {
-        rb_gc_mark(ec_fiber_self);
+        rb_gc_mark_ctx(ctx, ec_fiber_self);
     }
     else if (th->ec) {
-        rb_execution_context_mark(th->ec);
+        rb_execution_context_mark_ctx(ctx, th->ec);
     }
 
     /* Root the thread's remaining possessions directly as well; thgroup in
      * particular has no other root. */
-    rb_thread_mark_owned_roots(th);
+    rb_thread_mark_owned_roots(ctx, th);
 }
 
 static void
-ractor_mark_unshareable_parts(rb_ractor_t *r)
+ractor_mark_unshareable_parts(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r)
 {
     /* A single VALUE slot written by the owner in one word, so any GC reads it safely.
      * Its target belongs to another Ractor, so containment makes a foreign marker skip
      * it. */
-    rb_gc_mark(r->r_stdin);
-    rb_gc_mark(r->r_stdout);
-    rb_gc_mark(r->r_stderr);
-    rb_gc_mark(r->verbose);
-    rb_gc_mark(r->debug);
+    rb_gc_mark_ctx(ctx, r->r_stdin);
+    rb_gc_mark_ctx(ctx, r->r_stdout);
+    rb_gc_mark_ctx(ctx, r->r_stderr);
+    rb_gc_mark_ctx(ctx, r->verbose);
+    rb_gc_mark_ctx(ctx, r->debug);
 
     // mark the received messages (the structures the owner mutates guard themselves)
-    ractor_sync_mark(r);
+    ractor_sync_mark(ctx, r);
 
     /* Structures the owner mutates while running follow. */
 
@@ -295,7 +295,7 @@ ractor_mark_unshareable_parts(rb_ractor_t *r)
         rb_thread_t *th = 0;
         ccan_list_for_each(&r->threads.set, th, lt_node) {
             VM_ASSERT(th != NULL);
-            ractor_mark_thread(th);
+            ractor_mark_thread(ctx, th);
         }
     }
 
@@ -306,7 +306,7 @@ ractor_mark_unshareable_parts(rb_ractor_t *r)
      * thread_mark walks whenever a terminated Thread's wrapper is still
      * referenced, and ractor_mark_thread performs the same marks. */
     rb_thread_t *dying_th = RUBY_ATOMIC_PTR_LOAD(r->threads.dying_th);
-    if (dying_th) ractor_mark_thread(dying_th);
+    if (dying_th) ractor_mark_thread(ctx, dying_th);
 
     ractor_local_storage_mark(r);
 }
@@ -315,21 +315,22 @@ static void
 ractor_mark(void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
+    const struct rb_gc_mark_ctx ctx = rb_gc_current_mark_ctx();
 
     /* Only the wrapper's direct references: following an unshareable object from the
      * shareable wrapper would break the shref rule.  Unshareable roots are marked by the
      * root scan (rb_ractor_mark_local_roots); zombie_objspaces covers the terminated. */
-    rb_gc_mark(r->loc);
-    rb_gc_mark(r->name);
+    rb_gc_mark_ctx(&ctx, r->loc);
+    rb_gc_mark_ctx(&ctx, r->name);
     /* The default port is shareable, so following it breaks no rule.  Other Ractors
      * still send/value through it after termination, and once a terminated Ractor left
      * both the set and zombie_objspaces (orphan-merged) this marker is its only cover. */
-    rb_gc_mark(r->sync.default_port_value);
+    rb_gc_mark_ctx(&ctx, r->sync.default_port_value);
     /* A single-objspace impl (mmtk) has no zombie_objspaces and no pin/shref bits, so
      * the root scan cannot reach a terminated Ractor's queue, in-flight payloads or
      * join value; and no shref rule forbids following them from the wrapper. */
     if (!rb_gc_multi_objspace_p()) {
-        ractor_mark_unshareable_parts(r);
+        ractor_mark_unshareable_parts(&ctx, r);
         rb_ractor_mark_terminated_join_value(r);
     }
     else if (rb_gc_during_global_gc_p()) {
@@ -345,7 +346,7 @@ ractor_mark(void *ptr)
  * heap Ractor and Thread wrapper objects, which may live in another objspace, so this
  * Ractor's own possessions are rooted directly from here. */
 void
-rb_ractor_mark_local_roots(rb_ractor_t *r)
+rb_ractor_mark_local_roots(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r)
 {
     if (r->postmortem) {
         /* The final self collection: everything else -- the Thread and Fiber
@@ -360,14 +361,14 @@ rb_ractor_mark_local_roots(rb_ractor_t *r)
         return;
     }
 
-    rb_gc_mark(r->loc);
-    rb_gc_mark(r->name);
+    rb_gc_mark_ctx(ctx, r->loc);
+    rb_gc_mark_ctx(ctx, r->name);
     /* Only the root scan calls this: a local GC for itself, a global GC for the whole
      * set under the barrier.  A terminated Ractor has left the set; zombie_objspaces
      * covers it instead. */
     VM_ASSERT(r == rb_current_ractor_raw(false) || rb_gc_during_global_gc_p());
     VM_ASSERT(!rb_ractor_status_p(r, ractor_terminated));
-    ractor_mark_unshareable_parts(r);
+    ractor_mark_unshareable_parts(ctx, r);
 
     /* This Ractor's rb_gc_register_mark_object pins, treated conservatively: a local GC
      * marks only its own residents and leaves foreign or shareable entries to their
@@ -917,6 +918,12 @@ rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *r, rb_thread_t *th)
 static VALUE
 ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VALUE args, VALUE block)
 {
+    /* Same semantics as Ractor.shareable_proc: the block is duplicated (the caller's
+     * Proc is never mutated), may read outer variables which are never reassigned and
+     * whose values are shareable, and `self` is replaced by the new Ractor when run.
+     * Do it before anything is allocated, since it may raise Ractor::IsolationError. */
+    block = rb_proc_ractor_make_shareable(rb_proc_dup(block), Qnil);
+
     VALUE rv = ractor_alloc(self);
     rb_ractor_t *r = RACTOR_PTR(rv);
     ractor_init(r, name, loc);
@@ -1662,6 +1669,15 @@ obj_traverse_reachable_i(VALUE obj, void *ptr)
 {
     struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
 
+    // We need to assume foreign objects are properly shareable. If we check
+    // their shareability, this could result in a crash because the page could
+    // be unmapped. The object could also be freed concurrently.
+    if (!rb_objspace_live_object_p(obj)) {
+        return;
+    }
+    // If the object is "garbage" (unmarked during lazy sweeping), it's okay
+    // to traverse it.
+
     if (obj_traverse_i(obj, d->data)) {
         d->stop = true;
     }
@@ -1675,9 +1691,7 @@ obj_traverse_reachable(VALUE obj, struct obj_traverse_data *data)
         .stop = false,
         .data = data,
     };
-    RB_VM_LOCKING_NO_BARRIER() {
-        rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
-    }
+    rb_objspace_reachable_objects_from_local(obj, obj_traverse_reachable_i, &d);
     return d.stop;
 }
 
@@ -1746,9 +1760,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
 
       case T_ARRAY:
         {
-            rb_ary_cancel_sharing(obj);
-
-            for (int i = 0; i < RARRAY_LENINT(obj); i++) {
+            for (rb_len_t i = 0; i < RARRAY_LEN(obj); i++) {
                 VALUE e = RARRAY_AREF(obj, i);
                 if (obj_traverse_i(e, data)) return 1;
             }
@@ -1770,10 +1782,10 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
 
       case T_STRUCT:
         {
-            long len = RSTRUCT_LEN_RAW(obj);
+            rb_len_t len = RSTRUCT_LEN_RAW(obj);
             const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
-            for (long i=0; i<len; i++) {
+            for (rb_len_t i=0; i<len; i++) {
                 if (obj_traverse_i(ptr[i], data)) return 1;
             }
         }
@@ -1994,6 +2006,9 @@ mark_shareable(VALUE obj)
     if (RB_BUILTIN_TYPE(obj) == T_STRING) {
         rb_str_make_independent(obj);
     }
+    else if (RB_BUILTIN_TYPE(obj) == T_ARRAY) {
+        rb_ary_cancel_sharing(obj);
+    }
 
     rb_obj_set_shareable_no_assert(obj);
     return traverse_cont;
@@ -2191,6 +2206,10 @@ obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
 {
     int *pcnt = (int *)ptr;
 
+    if (!rb_objspace_live_object_p(obj)) {
+        return;
+    }
+
     if (!rb_ractor_shareable_p(obj)) {
         ++*pcnt;
     }
@@ -2200,9 +2219,7 @@ static int
 obj_refer_only_shareables_p(VALUE obj)
 {
     int cnt = 0;
-    RB_VM_LOCKING_NO_BARRIER() {
-        rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
-    }
+    rb_objspace_reachable_objects_from_local(obj, obj_refer_only_shareables_p_i, &cnt);
     return cnt == 0;
 }
 
@@ -2317,7 +2334,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         {
             rb_ary_cancel_sharing(obj);
 
-            for (int i = 0; i < RARRAY_LENINT(obj); i++) {
+            for (rb_len_t i = 0; i < RARRAY_LEN(obj); i++) {
                 VALUE e = RARRAY_AREF(obj, i);
 
                 if (obj_traverse_replace_i(e, data)) {
@@ -2356,10 +2373,10 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_STRUCT:
         {
-            long len = RSTRUCT_LEN_RAW(obj);
+            rb_len_t len = RSTRUCT_LEN_RAW(obj);
             const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
-            for (long i=0; i<len; i++) {
+            for (rb_len_t i=0; i<len; i++) {
                 CHECK_AND_REPLACE(obj, ptr[i]);
             }
         }
@@ -2493,13 +2510,13 @@ struct courier_node {
     uint32_t *iv_vals;   /* owned by the courier; node ids */
     union {
         VALUE ref;
-        struct { char *ptr; long len, capa; int encidx; VALUE klass; } str;  /* the courier owns ptr */
-        struct { long len; uint32_t *elems; VALUE klass; } ary;              /* the courier owns elems */
+        struct { char *ptr; rb_len_t len, capa; int encidx; VALUE klass; } str;   /* the courier owns ptr */
+        struct { rb_len_t len; uint32_t *elems; VALUE klass; } ary;               /* the courier owns elems */
         struct { long size; uint32_t *kv; uint32_t ifnone_id; bool compare_by_id; bool proc_default; VALUE klass; } hash; /* owns kv (2*size) */
         struct { VALUE klass; } obj;
-        struct { long len; uint32_t *elems; VALUE klass; } strct; /* owns elems */
+        struct { rb_len_t len; uint32_t *elems; VALUE klass; } strct; /* owns elems */
         struct { uint32_t regexp_id, str_id; int num_regs; void *regs; VALUE klass; } match; /* owns regs */
-        struct { void *blob; int size; } bt;                                 /* the courier owns blob */
+        struct { void *blob; int size; } bt;                                      /* the courier owns blob */
         struct { VALUE src; int options; VALUE klass; } re;    /* src is an fstring: shareable */
         struct { VALUE klass; uint32_t payload_id; enum courier_hook hook; } hooked;
         struct {
@@ -2854,13 +2871,13 @@ courier_capture(struct courier_build *b, VALUE obj)
          * Safe even when frozen: it changes ownership, not content.  Afterwards a string
          * is embedded, owns a private heap buffer, or is a shared ROOT (a no-op). */
         if (!b->copy) rb_str_make_independent(obj);
-        long len = RSTRING_LEN(obj);
+        rb_len_t len = RSTRING_LEN(obj);
         int encidx = ENCODING_GET(obj);
         /* The receiver adopts this buffer as a String body, which is freed by size:
          * capa has to describe the allocation exactly (capa + terminator bytes). */
         const int termlen = rb_enc_mbminlen(rb_enc_from_index(encidx));
         char *ptr;
-        long capa;
+        rb_len_t capa;
         if (!b->copy && !STR_EMBED_P(obj) && rb_str_reembeddable_p(obj)) {
             /* Owns a private heap buffer: carry the pointer over (zero-copy) and leave
              * the source as a shell that does not free it. */
@@ -2886,9 +2903,9 @@ courier_capture(struct courier_build *b, VALUE obj)
       }
 
       case T_ARRAY: {
-        long len = RARRAY_LEN(obj);
+        rb_len_t len = RARRAY_LEN(obj);
         uint32_t *elems = len ? ALLOC_N(uint32_t, len) : NULL;
-        for (long i = 0; i < len; i++) {
+        for (rb_len_t i = 0; i < len; i++) {
             elems[i] = courier_capture(b, RARRAY_AREF(obj, i));
         }
         b->c->nodes[id].kind = COURIER_KIND_ARRAY;
@@ -2906,6 +2923,7 @@ courier_capture(struct courier_build *b, VALUE obj)
 
       case T_HASH: {
         uint32_t ifnone_id = courier_capture(b, RHASH_IFNONE(obj));
+        /* An entry count, not a String or Array length, so u.hash.size stays long */
         long size = RHASH_SIZE(obj);
         uint32_t *kv = size ? ALLOC_N(uint32_t, size * 2) : NULL;
         struct courier_hash_ctx hc = { b, kv, 0 };
@@ -2928,9 +2946,9 @@ courier_capture(struct courier_build *b, VALUE obj)
         break;
 
       case T_STRUCT: {
-        long len = RSTRUCT_LEN(obj);
+        rb_len_t len = RSTRUCT_LEN(obj);
         uint32_t *elems = len ? ALLOC_N(uint32_t, len) : NULL;
-        for (long i = 0; i < len; i++) {
+        for (rb_len_t i = 0; i < len; i++) {
             elems[i] = courier_capture(b, RSTRUCT_GET(obj, (int)i));
         }
         b->c->nodes[id].kind = COURIER_KIND_STRUCT;
@@ -3096,7 +3114,7 @@ move_preflight(VALUE obj, struct move_preflight_ctx *ctx)
         break;
       }
       case T_ARRAY:
-        for (long i = 0; i < RARRAY_LEN(obj); i++) {
+        for (rb_len_t i = 0; i < RARRAY_LEN(obj); i++) {
             move_preflight(RARRAY_AREF(obj, i), ctx);
         }
         break;
@@ -3105,7 +3123,7 @@ move_preflight(VALUE obj, struct move_preflight_ctx *ctx)
         move_preflight(RHASH_IFNONE(obj), ctx);
         break;
       case T_STRUCT:
-        for (long i = 0; i < RSTRUCT_LEN(obj); i++) {
+        for (rb_len_t i = 0; i < RSTRUCT_LEN(obj); i++) {
             move_preflight(RSTRUCT_GET(obj, (int)i), ctx);
         }
         break;
@@ -3205,7 +3223,7 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
         if (!rb_backtrace_p(obj) && courier_hook_of(obj) == COURIER_HOOK_NONE) return false;
         break;
       case T_ARRAY:
-        for (long i = 0; i < RARRAY_LEN(obj); i++) {
+        for (rb_len_t i = 0; i < RARRAY_LEN(obj); i++) {
             if (!copy_courier_supported_p(RARRAY_AREF(obj, i), ctx)) return false;
         }
         break;
@@ -3215,7 +3233,7 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
         if (!copy_courier_supported_p(RHASH_IFNONE(obj), ctx)) return false;
         break;
       case T_STRUCT:
-        for (long i = 0; i < RSTRUCT_LEN(obj); i++) {
+        for (rb_len_t i = 0; i < RSTRUCT_LEN(obj); i++) {
             if (!copy_courier_supported_p(RSTRUCT_GET(obj, (int)i), ctx)) return false;
         }
         break;
@@ -3422,10 +3440,10 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
           case COURIER_KIND_ARRAY: {
             /* The length is known, so set it once and write the slots, rather than
              * pushing each element through the capacity check. */
-            const long len = n->u.ary.len;
+            const rb_len_t len = n->u.ary.len;
             if (len > 0) {
                 rb_ary_resize(shell, len);
-                for (long j = 0; j < len; j++) {
+                for (rb_len_t j = 0; j < len; j++) {
                     RARRAY_ASET(shell, j, courier_child(c, shells, n->u.ary.elems[j]));
                 }
             }
@@ -3481,7 +3499,7 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
             break;
           }
           case COURIER_KIND_STRUCT:
-            for (long j = 0; j < n->u.strct.len; j++) {
+            for (rb_len_t j = 0; j < n->u.strct.len; j++) {
                 RSTRUCT_SET(shell, (int)j, courier_child(c, shells, n->u.strct.elems[j]));
             }
             break;
@@ -3573,48 +3591,48 @@ rb_ractor_courier_free(struct rb_ractor_courier *c)
  * global GC keeps them reachable through the courier.  While it is being built it also
  * holds the sender's sources in seen; the basket is on the sender's own list then. */
 void
-rb_ractor_courier_mark(struct rb_ractor_courier *c)
+rb_ractor_courier_mark(const struct rb_gc_mark_ctx *ctx, struct rb_ractor_courier *c)
 {
     if (!c) return;
     if (c->seen) rb_mark_set(c->seen);
     for (uint32_t i = 0; i < c->refs_count; i++) {
-        rb_gc_mark(c->refs[i]);
+        rb_gc_mark_ctx(ctx, c->refs[i]);
     }
     for (uint32_t i = 0; i < c->count; i++) {
         struct courier_node *n = &c->nodes[i];
         if (n->kind == COURIER_KIND_REF) {
-            rb_gc_mark(n->u.ref);
+            rb_gc_mark_ctx(ctx, n->u.ref);
         }
         else if (n->kind == COURIER_KIND_OBJECT) {
-            rb_gc_mark(n->u.obj.klass);
+            rb_gc_mark_ctx(ctx, n->u.obj.klass);
         }
         else if (n->kind == COURIER_KIND_STRUCT) {
-            rb_gc_mark(n->u.strct.klass);
+            rb_gc_mark_ctx(ctx, n->u.strct.klass);
         }
         else if (n->kind == COURIER_KIND_MATCH) {
-            rb_gc_mark(n->u.match.klass);
+            rb_gc_mark_ctx(ctx, n->u.match.klass);
         }
         else if (n->kind == COURIER_KIND_IO) {
-            rb_gc_mark(n->u.io.klass);
+            rb_gc_mark_ctx(ctx, n->u.io.klass);
         }
         else if (n->kind == COURIER_KIND_STRING) {
-            rb_gc_mark(n->u.str.klass);
+            rb_gc_mark_ctx(ctx, n->u.str.klass);
         }
         else if (n->kind == COURIER_KIND_BACKTRACE) {
-            rb_backtrace_blob_mark(n->u.bt.blob, n->u.bt.size);
+            rb_backtrace_blob_mark_ctx(ctx, n->u.bt.blob, n->u.bt.size);
         }
         else if (n->kind == COURIER_KIND_ARRAY) {
-            rb_gc_mark(n->u.ary.klass);
+            rb_gc_mark_ctx(ctx, n->u.ary.klass);
         }
         else if (n->kind == COURIER_KIND_HASH) {
-            rb_gc_mark(n->u.hash.klass);
+            rb_gc_mark_ctx(ctx, n->u.hash.klass);
         }
         else if (n->kind == COURIER_KIND_REGEXP) {
-            rb_gc_mark(n->u.re.src);
-            rb_gc_mark(n->u.re.klass);
+            rb_gc_mark_ctx(ctx, n->u.re.src);
+            rb_gc_mark_ctx(ctx, n->u.re.klass);
         }
         else if (n->kind == COURIER_KIND_HOOKED) {
-            rb_gc_mark(n->u.hooked.klass);
+            rb_gc_mark_ctx(ctx, n->u.hooked.klass);
         }
     }
 }

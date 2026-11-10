@@ -305,18 +305,6 @@ To remove a source use the --remove argument:
     say "source cache successfully updated"
   end
 
-  def remove_cache_file(desc, path) # :nodoc:
-    FileUtils.rm_rf path
-
-    if !File.exist?(path)
-      say "*** Removed #{desc} source cache ***"
-    elsif !File.writable?(path)
-      say "*** Unable to remove #{desc} source cache (write protected) ***"
-    else
-      say "*** Unable to remove #{desc} source cache ***"
-    end
-  end
-
   private
 
   def default_sources

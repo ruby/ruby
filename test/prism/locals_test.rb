@@ -9,7 +9,7 @@
 # to test on the most recent versions.
 return if !defined?(RubyVM::InstructionSequence) || RUBY_VERSION < "3.4.0"
 
-# If we're on Ruby 3.4.0 and the default parser is Prism, then there is no point
+# If we're on Ruby 3.4.0 and the default parser is Ruby::Prism, then there is no point
 # in comparing the locals because they will be the same.
 return if RubyVM::InstructionSequence.compile("").to_a[4][:parser] == :prism
 
@@ -19,7 +19,7 @@ return if RUBY_PLATFORM =~ /i686/
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   class LocalsTest < TestCase
     except = [
       # Skip this fixture because it has a different number of locals because
@@ -28,6 +28,8 @@ module Prism
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",
+      "3.4/command_call_do_block_in_arguments.txt",
+      "3.4-4.0/command_call_do_block_in_index_arguments.txt",
 
       # https://bugs.ruby-lang.org/issues/21669
       "4.1/void_value.txt",
@@ -159,7 +161,7 @@ module Prism
     # sets of local variables that were encountered.
     def prism_locals(source)
       locals = [] #: Array[Array[Symbol | Integer]]
-      stack = [Prism.parse(source).value] #: Array[Prism::node]
+      stack = [Ruby::Prism.parse(source).value] #: Array[Ruby::Prism::node]
 
       while (node = stack.pop)
         case node

@@ -42,10 +42,6 @@
 
 #include "probes.h"
 
-#if defined __APPLE__
-# include <AvailabilityMacros.h>
-#endif
-
 #if defined(HAVE_SYS_EVENTFD_H) && defined(HAVE_EVENTFD)
 #  define USE_EVENTFD (1)
 #  include <sys/eventfd.h>
@@ -446,7 +442,6 @@ Init_native_thread(rb_thread_t *main_th)
     thread_sched_init_vm(vm);
 
     // setup main thread
-    main_th->nt->thread_id = pthread_self();
     main_th->nt->serial = 1;
 #ifdef RUBY_NT_SERIAL
     ruby_nt_serial = 1;
@@ -520,6 +515,11 @@ native_thread_destroy_self(struct rb_native_thread *nt)
 
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
 #define STACKADDR_AVAILABLE 1
+# if defined(__linux__) && !defined __GLIBC__
+    /* Musl libc defines `pthread_getattr_np` but it can not get the
+     * correct value of the main thread. */
+#   define MAINSTACKADDR_AVAILABLE 0
+# endif
 #elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP
 #define STACKADDR_AVAILABLE 1
 #undef MAINSTACKADDR_AVAILABLE
@@ -635,8 +635,7 @@ static struct {
 
 // Whether the calling native thread may leave the shared pool.  The process's
 // main pthread cannot: under RUBY_MN_THREADS=2 its loop runs on a stack only
-// it could free (thread_sched_main_to_shared).  By pthread_self(), not
-// nt->thread_id, which pthread_create may still be writing.
+// it could free (thread_sched_main_to_shared).
 static bool
 native_thread_self_can_retire_p(void)
 {
@@ -815,9 +814,15 @@ native_thread_create0(struct rb_native_thread *nt)
 # endif
     CHECK_ERR(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED));
 
-    err = pthread_create(&nt->thread_id, &attr, nt_start, nt);
+    // pthread_create may store the id after the thread has started, and a
+    // shared nt may retire and free itself by then
+    rb_nativethread_id_t thread_id;
+#if USE_RUBY_DEBUG_LOG
+    const rb_atomic_t serial = nt->serial;
+#endif
+    err = pthread_create(&thread_id, &attr, nt_start, nt);
 
-    RUBY_DEBUG_LOG("nt:%d err:%d", (int)nt->serial, err);
+    RUBY_DEBUG_LOG("nt:%d err:%d", (int)serial, err);
 
     CHECK_ERR(pthread_attr_destroy(&attr));
 
@@ -836,6 +841,9 @@ native_thread_setup(struct rb_native_thread *nt)
 static void
 native_thread_setup_on_thread(struct rb_native_thread *nt)
 {
+    // init thread_id
+    nt->thread_id = pthread_self();
+
     // init tid
 #ifdef RB_THREAD_T_HAS_NATIVE_ID
     nt->tid = get_native_thread_id();
@@ -1097,7 +1105,7 @@ native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
     if (!pthread_equal(pthread_self(), thread_id)) return;
 # endif
     if (!NIL_P(name)) {
-        long n;
+        rb_len_t n;
         RSTRING_GETMEM(name, s, n);
         if (n >= (int)sizeof(buf)) {
             memcpy(buf, s, sizeof(buf)-1);
@@ -1125,33 +1133,11 @@ native_thread_native_thread_id(rb_thread_t *target_th)
     return INT2FIX(tid);
 #elif defined(__APPLE__)
     uint64_t tid;
-/* The first condition is needed because MAC_OS_X_VERSION_10_6
-    is not defined on 10.5, and while __POWERPC__ takes care of ppc/ppc64,
-    i386 will be broken without this. Note, 10.5 is supported with GCC upstream,
-    so it has C++17 and everything needed to build modern Ruby. */
-# if (!defined(MAC_OS_X_VERSION_10_6) || \
-      (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_6) || \
-      defined(__POWERPC__) /* never defined for PowerPC platforms */)
-    const bool no_pthread_threadid_np = true;
-#   define NO_PTHREAD_MACH_THREAD_NP 1
-# elif MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
-    const bool no_pthread_threadid_np = false;
-# else
-#   if !(defined(__has_attribute) && __has_attribute(availability))
-    /* __API_AVAILABLE macro does nothing on gcc */
-    __attribute__((weak)) int pthread_threadid_np(pthread_t, uint64_t*);
-#   endif
-    /* Check weakly linked symbol */
-    const bool no_pthread_threadid_np = !&pthread_threadid_np;
-# endif
-    if (no_pthread_threadid_np) {
-        return ULL2NUM(pthread_mach_thread_np(pthread_self()));
-    }
-# ifndef NO_PTHREAD_MACH_THREAD_NP
-    int e = pthread_threadid_np(target_th->nt->thread_id, &tid);
+    pthread_t thread_id = ACCESS_ONCE(pthread_t, target_th->nt->thread_id);
+    if (!thread_id) return Qnil;
+    int e = pthread_threadid_np(thread_id, &tid);
     if (e != 0) rb_syserr_fail(e, "pthread_threadid_np");
     return ULL2NUM((unsigned long long)tid);
-# endif
 #endif
 }
 # define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
@@ -1470,6 +1456,10 @@ ruby_ppoll(struct pollfd *fds, nfds_t nfds,
 // fork read-write lock (only for pthread)
 static pthread_rwlock_t rb_thread_fork_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
 
+// the registered thread waiting to be joined, or NULL; no pthread_t is 0
+static void *last_exiting_thread;
+STATIC_ASSERT(pthread_t_fits_in_pointer, sizeof(pthread_t) <= sizeof(void *));
+
 void
 rb_thread_release_fork_lock(void)
 {
@@ -1482,14 +1472,10 @@ rb_thread_release_fork_lock(void)
 void
 rb_thread_reset_fork_lock(void)
 {
-    int r;
-    if ((r = pthread_rwlock_destroy(&rb_thread_fork_rw_lock))) {
-        rb_bug_errno("pthread_rwlock_destroy", r);
-    }
-
-    if ((r = pthread_rwlock_init(&rb_thread_fork_rw_lock, NULL))) {
-        rb_bug_errno("pthread_rwlock_init", r);
-    }
+    // On macOS the child's copy still counts a thread waiting for this lock
+    // at fork: unlocking it leaves kernel state that later waiters hang on,
+    // and destroying or initializing it fails with EBUSY.
+    rb_thread_fork_rw_lock = (pthread_rwlock_t)PTHREAD_RWLOCK_INITIALIZER;
 }
 
 void *
@@ -1504,6 +1490,26 @@ rb_thread_prevent_fork(void *(*func)(void *), void *data)
     return result;
 }
 
+static void
+thread_register_exiting(void *thread)
+{
+    void *previous_thread = RUBY_ATOMIC_PTR_EXCHANGE(last_exiting_thread, thread);
+    if (previous_thread) {
+        int r;
+        if ((r = pthread_join((pthread_t)(uintptr_t)previous_thread, NULL))) {
+            rb_bug_errno("pthread_join", r);
+        }
+    }
+}
+
+// Called within rb_thread_prevent_fork() by a joinable thread just before it
+// exits.  The thread it replaces in the slot has usually exited by then.
+void
+rb_thread_register_exiting(void)
+{
+    thread_register_exiting((void *)(uintptr_t)pthread_self());
+}
+
 void
 rb_thread_acquire_fork_lock(void)
 {
@@ -1511,6 +1517,11 @@ rb_thread_acquire_fork_lock(void)
     if ((r = pthread_rwlock_wrlock(&rb_thread_fork_rw_lock))) {
         rb_bug_errno("pthread_rwlock_wrlock", r);
     }
+
+    // A registered thread may still be exiting, and glibc's thread exit takes
+    // the resolver configuration lock, which fork does not reset.  None can
+    // register while this lock is held.
+    thread_register_exiting(NULL);
 }
 
 // thread internal event hooks (only for pthread)

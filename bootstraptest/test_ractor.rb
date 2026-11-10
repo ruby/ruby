@@ -826,16 +826,71 @@ assert_equal 'true', %q{
   end
 }
 
-# given block Proc will be isolated, so can not access outer variables.
+# given block Proc is copied like Ractor.shareable_proc: it can read outer variables
+# which are shareable and never reassigned
+assert_equal '[42, "ok"]', %q{
+  a = 42
+  b = "ok".freeze
+  r = Ractor.new do
+    [a, b]
+  end
+  r.value
+}
+
+# ... through nested blocks and with arguments
+assert_equal '[4, 8]', %q{
+  a = 1
+  r = Ractor.new(2) do |x|
+    v = [1].map { |y| a + x + y }.first
+    [v, v * 2]
+  end
+  r.value
+}
+
+# an outer variable which is reassigned can not be accessed
 assert_equal 'Ractor::IsolationError', %q{
   begin
     a = true
     r = Ractor.new do
       a
     end
+    a = false
   rescue => e
     e.class
   end
+}
+
+# an outer variable holding an unshareable object can not be accessed
+assert_equal 'Ractor::IsolationError', %q{
+  begin
+    a = []
+    r = Ractor.new do
+      a
+    end
+  rescue => e
+    e.class
+  end
+}
+
+# an outer variable can not be written
+assert_equal 'Ractor::IsolationError', %q{
+  begin
+    a = 1
+    Ractor.new do
+      a = 2
+    end
+  rescue => e
+    e.class
+  end
+}
+
+# Ractor.new does not mutate the given Proc
+assert_equal '[false, false, 1, 2]', %q{
+  pr = Proc.new { 1 }
+  r1 = Ractor.new(&pr)
+  r2 = Ractor.new(&pr)
+  pr.instance_variable_set(:@foo, Object.new)
+  [Ractor.shareable?(pr), pr.frozen?, r1.value, r2.value + 1]
 }
 
 # eval with outer locals in a Ractor raises SyntaxError
@@ -886,6 +941,91 @@ assert_equal "can not get unshareable values from instance variables of classes/
   rescue Ractor::RemoteError => e
     e.cause.message
   end
+RUBY
+
+# setting an ivar of a class/module from a non-owner Ractor reports the ivar and class
+assert_equal "can not set instance variables of classes/modules created by another Ractor (@iv from C)", <<~'RUBY', frozen_string_literal: false
+  class C
+    @iv = 'str'
+  end
+
+  r = Ractor.new do
+    class C
+      @iv = 'other'
+    end
+  end
+
+  begin
+    r.value
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+RUBY
+
+# a non-main Ractor can read, set, and remove ivars of classes/modules it created
+assert_equal 'ok', <<~'RUBY', frozen_string_literal: false
+  Ractor.new do
+    [Class.new, Module.new].each do |mod|
+      mod.instance_variable_set(:@iv, 'str')
+      raise unless mod.instance_variable_get(:@iv) == 'str'
+      raise unless mod.remove_instance_variable(:@iv) == 'str'
+    end
+    :ok
+  end.value
+RUBY
+
+# even main cannot modify another Ractor's module; reporting its name must not call to_s
+assert_equal 'true', <<~'RUBY', frozen_string_literal: false
+  port = Ractor::Port.new
+  r = Ractor.new(port) do |port|
+    mod = Module.new
+    mod.set_temporary_name('worker_module')
+    mod.instance_variable_set(:@iv, 'str')
+    def mod.to_s = raise('to_s must not be called')
+    port << mod
+    Ractor.receive
+  end
+  mod = port.receive
+
+  begin
+    messages = [[:instance_variable_set, :@iv, 'other'], [:remove_instance_variable, :@iv]].map do |args|
+      begin
+        mod.public_send(*args)
+      rescue Ractor::IsolationError => e
+        e.message
+      end
+    end
+    messages == ["can not set instance variables of classes/modules created by another Ractor (@iv from worker_module)"] * 2
+  ensure
+    r << nil
+    r.join
+  end
+RUBY
+
+# normal and JIT-compiled ivar reads report the same names without calling to_s
+assert_equal 'true', <<~'RUBY', frozen_string_literal: false
+  class C
+    @iv = 'str'
+    def self.read = @iv
+    def self.to_s = raise('to_s must not be called')
+  end
+
+  Ractor.new do
+    messages = []
+    begin
+      C.instance_variable_get(:@iv)
+    rescue Ractor::IsolationError => e
+      messages << e.message
+    end
+    40.times do
+      begin
+        C.read
+      rescue Ractor::IsolationError => e
+        messages << e.message
+      end
+    end
+    messages == ["can not get unshareable values from instance variables of classes/modules created by another Ractor (@iv from C)"] * 41
+  end.value
 RUBY
 
 # setting an ivar on a shareable but unfrozen object is not allowed, by instance_variable_set
@@ -948,29 +1088,21 @@ assert_equal "can't modify instance variables of a shareable Ractor", %q{
   end
 }
 
-# a Proc which already has ivars can not be isolated
-assert_equal 'can not isolate a Proc because it has instance variables', %q{
-  pr = Proc.new{}
+# a Proc which already has ivars is fine: the ractor gets a copy without them
+assert_equal 'ok', %q{
+  pr = Proc.new{ :ok }
   pr.instance_variable_set(:@iv, Object.new)
 
-  begin
-    Ractor.new(&pr)
-  rescue Ractor::IsolationError => e
-    e.message
-  end
+  Ractor.new(&pr).value.to_s
 }
 
-# freezing the Proc first does not skip the check
-assert_equal 'can not isolate a Proc because it has instance variables', %q{
-  pr = Proc.new{}
+# ... also when it is frozen
+assert_equal 'ok', %q{
+  pr = Proc.new{ :ok }
   pr.instance_variable_set(:@iv, Object.new)
   pr.freeze
 
-  begin
-    Ractor.new(&pr)
-  rescue Ractor::IsolationError => e
-    e.message
-  end
+  Ractor.new(&pr).value.to_s
 }
 
 # an ivar set by Proc#refined is internal, so it does not block isolation
@@ -985,23 +1117,35 @@ assert_equal 'r', %q{
   Ractor.new(&rp).value
 }
 
-# a Proc made shareable by Ractor.new can not be given ivars afterwards
-assert_equal "can't modify instance variables of a shareable Proc", %q{
+# a Ractor's &:sym under refinements stays alive across its own GCs: it must not be
+# cached in the main Ractor's refinements table, which that GC does not see
+assert_equal 'ok', %q{
+  module M
+    refine(Object) { def zzz = 1 }
+  end
+  using M
+
+  def f = [[1], []].reject(&:empty?)
+
+  Ractor.new do
+    100_000.times { f; Object.new; "x" * 100 }
+    :ok
+  end.value.to_s
+}
+
+# Ractor.new does not make the given Proc shareable, so it can still be given ivars
+assert_equal "false", %q{
   HAX = -> { }
   Ractor.new(&HAX).join
 
-  begin
-    HAX.instance_variable_set(:@foo, Object.new)
-  rescue Ractor::IsolationError => e
-    e.message
-  end
+  HAX.instance_variable_set(:@foo, Object.new)
+  Ractor.shareable?(HAX).to_s
 }
 
 # freezing a shareable object from another Ractor can not expose an ivar, since
 # none could be set after it became shareable
 assert_equal 'nil', %q{
-  HAX = -> { }
-  Ractor.new(&HAX).join
+  HAX = Ractor.shareable_lambda { }
 
   r = Ractor.new do
     HAX.freeze
@@ -1275,20 +1419,6 @@ assert_equal 'Ractor::IsolationError', %q{
   r << nil
   r.join
   res
-}
-
-# Class#initialize writes the superclass of an uninitialized class, so it is
-# owner-only like any other modification
-assert_equal 'can not modify K because it is created by another Ractor', %q{
-  K = Class.allocate
-
-  r = Ractor.new { K.send(:initialize, Struct) }
-
-  begin
-    r.join
-  rescue Ractor::RemoteError => e
-    e.cause.message
-  end
 }
 
 # Module#refine writes its refinement tables into the receiver, so the receiver
@@ -1569,63 +1699,25 @@ assert_equal "can not access non-shareable objects in constant Object::STR of a 
   end
 RUBY
 
-# Copying a class/module created by another Ractor raises if its constants or
-# fields refer to unshareable objects
-assert_equal 'can not copy a class/module created by another Ractor because constant CONST refers to an unshareable object', <<~'RUBY', frozen_string_literal: false
-  class C
-    CONST = 'str'
-  end
-
-  r = Ractor.new { C.dup }
-
-  begin
-    r.join
-  rescue Ractor::RemoteError => e
-    e.cause.message
-  end
-  RUBY
-
-assert_equal 'can not copy a class/module created by another Ractor because variable @iv refers to an unshareable object', <<~'RUBY', frozen_string_literal: false
-  class C
-    @iv = 'str'
-  end
-
-  r = Ractor.new { C.dup }
-
-  begin
-    r.join
-  rescue Ractor::RemoteError => e
-    e.cause.message
-  end
-  RUBY
-
-# ... the metaclass is checked too, because the copy carries it over
-assert_equal 'can not copy a class/module created by another Ractor because variable @secret refers to an unshareable object', <<~'RUBY', frozen_string_literal: false
-  class C; end
-  C.singleton_class.instance_variable_set(:@secret, 'str')
-
-  r = Ractor.new { C.dup }
-
-  begin
-    r.join
-  rescue Ractor::RemoteError => e
-    e.cause.message
-  end
-  RUBY
-
-# ... and the copy of a class which refers to nothing unshareable belongs to the
-# copying Ractor, which is a way to modify a foreign class without mutating it
-assert_equal 'copy orig', %q{
+# Copying a class/module created by another Ractor is not allowed: the copy would
+# carry the owner's field values
+assert_equal 'can not copy a class/module created by another Ractor', %q{
   class C
     CONST = 1
-    def m = 'orig'
   end
 
-  Ractor.new do
-    k = C.dup
-    k.class_eval { def m = 'copy' }
-    "#{k.new.m} #{C.new.m}"
-  end.value
+  r = Ractor.new { C.dup }
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+assert_equal 'Ractor::IsolationError', %q{
+  module M; end
+  Ractor.new { M.clone rescue $!.class.to_s }.value
 }
 
 # Setting constants of classes created by other Ractors is not allowed
@@ -1894,8 +1986,8 @@ assert_equal '[true, false]', %q{
   }.value
 }
 
-# Can not trap with not isolated Proc on non-main ractor
-assert_equal '[:ok, :ok]', %q{
+# Can not trap with a Proc referring to unshareable objects on non-main ractor
+assert_equal '[:ok, :ok, :ok]', %q{
   a = []
   Ractor.new{
     trap(:INT){p :ok}
@@ -1910,6 +2002,13 @@ assert_equal '[:ok, :ok]', %q{
   rescue Ractor::RemoteError
     a << :ok
   end
+
+  # a read-only shareable outer variable is fine
+  msg = 'shareable'.freeze
+  Ractor.new{
+    trap(:INT){p msg}
+  }.join
+  a << :ok
 }
 
 # Ractor.select is interruptible
@@ -3149,35 +3248,6 @@ assert_equal 'ok', %q{
   r.value
 }
 
-# A Ractor creation that fails (IsolationError) after the child objspace exists must clean up
-# the creator's cover for it; otherwise a later global GC enumerates the dead child's objspace
-# twice and reads the freed shell.
-assert_equal 'ok', %q{
-  x = 42 # capturing an outer local makes Ractor.new raise IsolationError
-  worker = Ractor.new { loop { break if Ractor.receive == :quit } }
-  begin
-    Ractor.new { x }
-    raise "isolation error did not fire"
-  rescue Ractor::IsolationError
-  end
-  10.times { GC.start; 500.times { Object.new } }
-  worker.send(:quit)
-  worker.value
-  100.times do |i|
-    begin
-      Ractor.new { x }
-      raise "isolation error did not fire"
-    rescue Ractor::IsolationError
-    end
-    if (i % 20).zero?
-      Ractor.new { :ok }.value
-      GC.start
-    end
-  end
-  GC.start
-  :ok
-}
-
 # Moving a CoW shared-root string (a frozen root with an unshareable ivar) must not steal the
 # root's buffer; that would leave the remaining sharers reading freed memory.
 assert_equal 'ok', %q{
@@ -3316,4 +3386,66 @@ assert_equal 'ok', %q{
   Ractor.new { Dir.pwd; 500_000.times { "y" * 300 } }.join
   Dir.pwd
   'ok'
+}
+
+# A stale errno left on another native thread must not raise IO::TimeoutError
+assert_equal 'ok', %q{
+  8.times.map do
+    Ractor.new do
+      t = Time.now
+      Thread.new do
+        r, = IO.pipe
+        r.timeout = 0.0001
+        (r.read(1) rescue nil) while Time.now - t < 0.1
+      end
+      r, w = IO.pipe
+      Thread.new do
+        (w << "x"; sleep 0.0001) while Time.now - t < 0.1
+        w.close
+      end
+      nil while r.read(1)
+    end
+  end.each(&:join)
+  :ok
+}
+
+# A Ractor's main thread must not share its ec serial with its threads
+assert_equal 'false', %q{
+  rs = 4.times.map {
+    Ractor.new {
+      m = Thread::Mutex.new
+      m.lock
+      ok = 8.times.map { Thread.new { m.owned? } }.map(&:value)
+      begin
+        8.times.map { Thread.new { m.unlock rescue nil } }.each(&:join)
+      ensure
+        m.unlock
+      end
+      ok.any?
+    }
+  }
+  rs.map(&:value).any?
+}
+
+# A missing method's negative cache entry is used without the VM lock and
+# must be dropped once the method is defined
+assert_equal '[[:mm, :mm, :defined], [:mm, :mm, :defined]]', %q{
+  class MMNegCache
+    def method_missing(name, *) = name == :foo ? :mm : super
+  end
+
+  rs = 2.times.map {
+    Ractor.new {
+      obj = MMNegCache.new
+      a = obj.foo
+      b = obj.foo
+      Ractor.main << :ready
+      Ractor.receive
+      [a, b, obj.foo]
+    }
+  }
+  2.times { Ractor.receive }
+  MMNegCache.class_eval { def foo = :defined }
+  rs.each { it << :go }
+  rs.map(&:value)
 }

@@ -63,11 +63,6 @@ module JSON
             result[:allow_duplicate_key] = allow_duplicate_key
           end
 
-          instance_variables.each do |iv|
-            iv = iv.to_s[1..-1]
-            result[iv.to_sym] = self[iv]
-          end
-
           result
         end
 

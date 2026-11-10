@@ -3429,23 +3429,20 @@ class TestModule < Test::Unit::TestCase
 
   def test_iclass_memory_leak
     # [Bug #19550]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
-      code = proc do
+    assert_no_memory_leak([], "", <<~CODE, rss: true, samples: 2..30)
+      100_000.times do
         mod = Module.new
         Class.new do
           include mod
         end
       end
-      1_000.times(&code)
-    PREP
-      3_000_000.times(&code)
     CODE
   end
 
   def test_complemented_method_entry_memory_leak
     # [Bug #19894] [Bug #19896]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
-      code = proc do
+    assert_no_memory_leak([], "", <<~CODE, rss: true, samples: 2..30)
+      10_000.times do
         $c = Class.new do
           def foo; end
         end
@@ -3465,21 +3462,15 @@ class TestModule < Test::Unit::TestCase
           end
         end.new
       end
-      1_000.times(&code)
-    PREP
-      300_000.times(&code)
     CODE
   end
 
   def test_module_clone_memory_leak
     # [Bug #19901]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
-      code = proc do
+    assert_no_memory_leak([], "", <<~CODE, rss: true, samples: 2..100)
+      10_000.times do
         Module.new.clone
       end
-      1_000.times(&code)
-    PREP
-      1_000_000.times(&code)
     CODE
   end
 

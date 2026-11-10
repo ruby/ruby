@@ -216,29 +216,6 @@ class TestGemContentAddress < Gem::TestCase
     refute Gem::ContentAddress.content_addressed_row?("x86_64-linux", Gem::Platform.new("x86_64-linux"), validate_ruby_abi: false)
   end
 
-  def test_ruby_abi_compatible_with_unset_requirement
-    spec = Gem::Specification.new "a", 1
-    assert Gem::ContentAddress.ruby_abi_compatible?(spec, "3.4")
-  end
-
-  def test_ruby_abi_compatible_with_matching_abi
-    spec = Gem::Specification.new "a", 1
-    spec.required_ruby_version = "~> 3.4.0"
-    assert Gem::ContentAddress.ruby_abi_compatible?(spec, "3.4")
-  end
-
-  def test_ruby_abi_compatible_with_different_abi
-    spec = Gem::Specification.new "a", 1
-    spec.required_ruby_version = "~> 3.3.0"
-    refute Gem::ContentAddress.ruby_abi_compatible?(spec, "3.4")
-  end
-
-  def test_ruby_abi_compatible_with_non_abi_shaped_requirement
-    spec = Gem::Specification.new "a", 1
-    spec.required_ruby_version = ">= 3.0"
-    refute Gem::ContentAddress.ruby_abi_compatible?(spec, "3.4")
-  end
-
   def test_address_for
     assert_equal Digest::SHA256.hexdigest("gem bytes")[0, 8], Gem::ContentAddress.address_for("gem bytes")
     assert Gem::ContentAddress.match?(Gem::ContentAddress.address_for("gem bytes"))

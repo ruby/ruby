@@ -63,7 +63,11 @@ when true
     end
   end
   have_func("rb_prepend_module") # not exported by TruffleRuby
-  vk_tool = find_executable("gperf")
+
+  if find_executable("gperf") and vk_mk = (File.read("#$srcdir/win32_vk.mk") rescue nil)
+    $cleanfiles.concat(%w'win32_vk.inc win32_vk.chksum')
+  end
+
   create_makefile("io/console") {|conf|
     conf << "###\n" "all: # the default target\n"
     if vk_header
@@ -72,11 +76,11 @@ when true
         console.#$OBJEXT: $(VK_HEADER)
       MK
     end
-    if vk_tool and vk_mk = (File.read("#$srcdir/win32_vk.mk") rescue nil)
+    if vk_mk
       unless conf.any? {|c| /^ *top_srcdir *=/.match?(c)}
         conf << "top_srcdir = $(srcdir)/../../..\n"
       end
-      conf.concat(depend_rules(vk_mk))
+      conf << depend_rules(vk_mk).join("")
     end
     conf
   }

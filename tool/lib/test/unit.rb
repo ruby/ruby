@@ -403,11 +403,16 @@ module Test
         end
 
         def kill
-          EnvUtil::Debugger.search&.dump(@pid)
+          EnvUtil::Debugger.search&.dump(target_pid)
           signal = RUBY_PLATFORM =~ /mswin|mingw/ ? :KILL : :SEGV
-          Process.kill(signal, @pid)
+          Process.kill(signal, target_pid)
           warn "worker #{to_s} does not respond; #{signal} is sent"
         rescue Errno::ESRCH
+        end
+
+        # exec in runruby.rb runs the worker as another process on Windows
+        def target_pid
+          RUBY_PLATFORM =~ /mswin|mingw/ && @real_pid || @pid
         end
 
         def died(*additional)
@@ -430,7 +435,7 @@ module Test
         end
 
         attr_reader :io, :pid
-        attr_accessor :status, :file, :real_file, :loadpath
+        attr_accessor :status, :file, :real_file, :real_pid, :loadpath
 
         private
 
@@ -556,6 +561,12 @@ module Test
           end
         rescue Timeout::Error
           if pids
+            if RUBY_PLATFORM =~ /mswin|mingw/
+              # The test processes are not children on Windows and their pids
+              # may be reused once they exit, so kill only the running ones.
+              running = closed.select {|w| Process.waitpid(w.pid, Process::WNOHANG).nil? rescue false}
+              pids = running.map(&:target_pid)
+            end
             Process.kill(:KILL, *pids) rescue nil
             pids = nil
             retry
@@ -580,8 +591,9 @@ module Test
           # just only dots, ignore
         when /^okay$/
           worker.status = :running
-        when /^ready(!)?$/
+        when /^ready(!)?(?: (\d+))?$/
           bang = $1
+          worker.real_pid = $2.to_i if $2
           worker.status = :ready
 
           unless task = @tasks.shift
@@ -1383,9 +1395,7 @@ module Test
       end
 
       def non_options(files, options)
-        if scale = options[:timeout_scale] or
-          (scale = ENV["RUBY_TEST_TIMEOUT_SCALE"] || ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"] and
-           (scale = scale.to_f) > 0)
+        if scale = options[:timeout_scale]
           EnvUtil.timeout_scale = scale
         end
         super

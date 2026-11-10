@@ -7,7 +7,7 @@ require_relative 'ruby_vm/helpers/c_escape'
 
 SUBLIBS = {}
 REQUIRED = {}
-BUILTIN_ATTRS = %w[leaf inline_block use_block c_trace without_interrupts caller_user_box]
+BUILTIN_ATTRS = %w[leaf inline_block use_block c_trace without_interrupts caller_user_box always_inline]
 
 module CompileWarning
   @@warnings = 0
@@ -101,7 +101,7 @@ def visit_call_node(source, node, name, locals, requires, bs, inlines)
 
       args.each do |arg|
         raise "#{arg["type"]} was not a SymbolNode" if arg["type"] != "SymbolNode"
-        raise "attr (#{arg["unescaped"]}) was not in: leaf, inline_block, use_block" unless BUILTIN_ATTRS.include?(arg["unescaped"])
+        raise "attr (#{arg["unescaped"]}) was not in: #{BUILTIN_ATTRS.join(", ")}" unless BUILTIN_ATTRS.include?(arg["unescaped"])
       end
 
       return true

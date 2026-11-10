@@ -258,7 +258,9 @@ Pathname('.').glob('{k ,L,R}*')
 
 ### Recursive Directory Matching (`'**'`)
 
-The double-asterisk pattern (`'**'`) matches directories recursively:
+The double-asterisk pattern (`'**'`) matches directories recursively,
+not following symbolic links to directories:
+
 
 ```ruby
 # Find all entries everywhere ending with '.ja'.
@@ -316,22 +318,25 @@ otherwise it is equivalent to pattern `'*'`:
 Dir.glob('**') == Dir.glob('*') # => true
 ```
 
-The triple-asterisk pattern (`'***'`) also matches directories recursively,
+### Recursive Directory Matching (`'***'`)
+
+The triple-asterisk pattern (`'***'`) matches directories recursively,
 following symbolic links to directories without limiting their number.
-To avoid cycles, recursive traversal stops at a symbolic link to an ancestor
-directory in the current traversal path.  The link itself can still match.
+
+To avoid cycles, a symbolic link is not followed
+if it points to an already-traversed directory.
+The link itself can still match.
+
 Different paths to the same directory are searched independently.
-The double-asterisk pattern does not follow symbolic links during recursive
-matching.
 
 Like `'**'`, `'***'` is recursive only when it is an entire path component
 followed by `'/'`.  Otherwise, its asterisks are ordinary wildcards:
 
-````ruby
+```ruby
 Dir.glob('***/test.rb') # Also searches through directory symlinks.
 Dir.glob('***') == Dir.glob('*') # => true
 Dir.glob('foo***/bar') == Dir.glob('foo*/bar') # => true
-````
+```
 
 A pattern ending with `'/'` matches directory names only;
 each matched name ends with `'/'`:
@@ -350,7 +355,6 @@ The pattern may be escaped:
 Dir.glob('\**/*.rb')           # => []
 Pathname('.').glob('\**/*.rb') # => []
 ```
-
 
 ### Escape (`'\'`)
 

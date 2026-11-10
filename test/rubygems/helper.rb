@@ -894,8 +894,13 @@ class Gem::TestCase < Test::Unit::TestCase
       end
 
       built_gem_name = nil
+      content_addressable = false
+      if ruby_abi
+        spec.required_ruby_version = Gem::ContentAddress.ruby_abi_requirement(ruby_abi)
+        content_addressable = true
+      end
       use_ui Gem::MockGemUi.new do
-        built_gem_name = Gem::Package.build spec, false, false, nil, ruby_abi
+        built_gem_name = Gem::Package.build spec, content_addressable: content_addressable
       end
 
       cache = File.join File.dirname(spec.cache_file), File.basename(built_gem_name)
@@ -1452,12 +1457,22 @@ Also, a list:
   end
 
   ##
-  # Returns the make command for the current platform. For versions of Ruby
-  # built on MS Windows with VC++ it will return 'nmake'. On all other
-  # platforms, including Cygwin, it will return 'make'.
+  # Returns the make command that Gem::Ext::Builder uses. It comes from the
+  # environment or from --with-make-prog at configure time, and otherwise is
+  # 'nmake' for versions of Ruby built on MS Windows with VC++ and 'make' on
+  # all other platforms, including Cygwin.
 
   def make_command
-    ENV["make"] || ENV["MAKE"] || (vc_windows? ? "nmake" : "make")
+    ENV["MAKE"] || ENV["make"] ||
+      RbConfig::CONFIG["configure_args"].to_s[/with-make-prog=(\w+)/, 1] ||
+      (vc_windows? ? "nmake" : "make")
+  end
+
+  ##
+  # Returns whether or not the make command is nmake.
+
+  def nmake?
+    /\bnmake/i.match?(make_command)
   end
 
   ##

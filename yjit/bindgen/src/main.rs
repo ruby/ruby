@@ -118,7 +118,6 @@ fn main() {
         .allowlist_function("rb_yjit_rb_ary_subseq_length")
         .allowlist_function("rb_ec_ary_new_from_values")
         .allowlist_function("rb_ary_tmp_new_from_values")
-        .allowlist_function("rb_class_attached_object")
         .allowlist_function("rb_singleton_class")
         .allowlist_function("rb_class_get_superclass")
         .allowlist_function("rb_gc_mark")
@@ -274,6 +273,7 @@ fn main() {
         .allowlist_function("rb_yjit_sendish_sp_pops")
         .allowlist_function("rb_yjit_invokeblock_sp_pops")
         .allowlist_function("rb_yjit_cme_ractor_serial")
+        .allowlist_function("rb_yjit_attached_object_is")
         .allowlist_function("rb_yjit_set_exception_return")
         .allowlist_function("rb_jit_str_concat_codepoint")
         .allowlist_type("rstring_offsets")
@@ -419,6 +419,11 @@ fn main() {
     const TYPE_REPLACEMENTS: &[(&str, &str)] = &[
         // usize is what VALUE() takes, so flag masks need no cast at their use sites
         ("pub type ruby_rstruct_flags = u32;", "pub type ruby_rstruct_flags = usize;"),
+        // These are unsigned long on LP64 but unsigned long long on LLP64 (Windows)
+        ("pub type ID = ::std::os::raw::c_ulong;", "pub type ID = u64;"),
+        ("pub type st_data_t = ::std::os::raw::c_ulong;", "pub type st_data_t = u64;"),
+        // long on LP64 but int64_t on mswin
+        ("pub type rb_len_t = ::std::os::raw::c_long;", "pub type rb_len_t = i64;"),
     ];
     // Each needle is a whole line of the output, so plain replacement is unambiguous.
     // Yes, this search-and-replace could be faster, but it's a small file.

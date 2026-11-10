@@ -45,6 +45,10 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       Addrinfo.ip("127.0.0.1\000x")
     end
+
+    assert_raise_with_message(Socket::ResolutionError, /^getaddrinfo: .+ "unknown"$/) do
+      Addrinfo.ip("unknown")
+    end
   end
 
   def test_addrinfo_tcp
@@ -518,12 +522,11 @@ class TestSocketAddrinfo < Test::Unit::TestCase
 
   def test_marshal_memory_leak
     bug11051 = '[ruby-dev:48923] [Bug #11051]'
-    assert_no_memory_leak(%w[-rsocket], <<-PREP, <<-CODE, bug11051, rss: true)
+    assert_no_memory_leak(%w[-rsocket], <<-PREP, <<-CODE, bug11051, rss: true, samples: 2..20)
     d = Marshal.dump(Addrinfo.tcp("127.0.0.1", 80))
-    1000.times {Marshal.load(d)}
     PREP
     GC.start
-    20_000.times {Marshal.load(d)}
+    1_000.times {Marshal.load(d)}
     CODE
   end
 

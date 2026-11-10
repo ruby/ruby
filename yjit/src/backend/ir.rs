@@ -2022,7 +2022,8 @@ impl Assembler {
 
     #[must_use]
     pub fn load_sext(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
+        // alloc_regs sizes the out register by the operand, so the backends widen it when emitting.
+        let out = self.next_opnd_out(64);
         self.push_insn(Insn::LoadSExt { opnd, out });
         out
     }

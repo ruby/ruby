@@ -304,8 +304,21 @@ class TestProcess < Test::Unit::TestCase
   ENVCOMMAND = [RUBY].concat(PREENVARG).concat(ENVARG)
 
   def test_execopts_env
+    assert_raise(TypeError) {
+      system({nil=>"BAR"}, *TRUECOMMAND)
+    }
+    assert_raise(TypeError) {
+      system({0=>"BAR"}, *TRUECOMMAND)
+    }
+    assert_raise(TypeError) {
+      system({"FOO"=>0}, *TRUECOMMAND)
+    }
+
     assert_raise(ArgumentError) {
       system({"F=O"=>"BAR"}, *TRUECOMMAND)
+    }
+    assert_raise(ArgumentError) {
+      system({"F\0O"=>"BAR"}, *TRUECOMMAND)
     }
 
     with_tmpchdir {|d|
@@ -1166,6 +1179,25 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_exec_arguments_reject_null_bytes_in_wide_encodings
+    [Encoding::UTF_16LE, Encoding::UTF_16BE, Encoding::UTF_32LE, Encoding::UTF_32BE].each do |name|
+      arg = "10\0--inject=1\0z\0".b.force_encoding(Encoding.find(name))
+
+      assert_raise(ArgumentError, name) { system(*TRUECOMMAND, arg) }
+      assert_raise(ArgumentError, name) {
+        Process.wait Process.spawn(*TRUECOMMAND, arg)
+      }
+      assert_raise(ArgumentError, name) {
+        IO.popen([*TRUECOMMAND, arg]) { |io| io.read }
+      }
+    end
+
+    if windows?
+      arg = "\xFF".b.force_encoding(Encoding::UTF_8)
+      assert_raise(ArgumentError) { system(*TRUECOMMAND, arg) }
+    end
+  end
+
   def test_exec_relative_path_after_multibyte_dir
     return unless windows?
     with_tmpchdir {|d|
@@ -1855,46 +1887,29 @@ class TestProcess < Test::Unit::TestCase
 
   def test_spawn_too_long_path
     bug4314 = '[ruby-core:34842]'
-    assert_fail_too_long_path(%w"echo", bug4314)
+    assert_fail_too_long_path(false, bug4314)
   end
 
   def test_aspawn_too_long_path
-    bug4315 = '[ruby-core:34833] #7904 [ruby-core:52628] #11613'
-    assert_fail_too_long_path(%w"echo |", bug4315)
+    bug4315 = '[ruby-core:34833]'
+    assert_fail_too_long_path(true, bug4315)
   end
 
-  def assert_fail_too_long_path((cmd, sep), mesg)
-    sep ||= ""
-    min = 1_000 / (cmd.size + sep.size)
-    cmds = Array.new(min, cmd)
+  def assert_fail_too_long_path(use_shell, mesg)
+    cmd = "a" * 10_000_000
+    cmd.prepend("echo|") if use_shell
     exs = [Errno::ENOENT]
     exs << Errno::EINVAL if windows?
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
     opts = {[STDOUT, STDERR]=>File::NULL}
-    if defined?(Process::RLIMIT_NPROC)
-      opts[:rlimit_nproc] = /openbsd/i =~ RUBY_PLATFORM ? 64 : 128
-    end
-    EnvUtil.suppress_warning do
-      assert_raise(*exs, mesg) do
-        begin
-          loop do
-            Process.spawn(cmds.join(sep), opts)
-            min = [cmds.size, min].max
-            begin
-              cmds *= 100
-            rescue ArgumentError
-              raise NoMemoryError
-            end
-          end
-        rescue NoMemoryError
-          size = cmds.size
-          raise if min >= size - 1
-          min = [min, size /= 2].max
-          cmds[size..-1] = []
-          raise if size < 250
-          retry
-        end
+    begin
+      EnvUtil.suppress_warning do
+        Process.spawn(cmd, opts)
       end
+    rescue => e
+      assert_include(exs, e.class, mesg)
+    else
+      omit "system supports very long command line; skipping"
     end
   end
 
@@ -1962,6 +1977,32 @@ class TestProcess < Test::Unit::TestCase
         puts $$
       end
       assert_not_equal(cpid, dpid)
+    end
+
+    def test_daemon_after_getaddrinfo
+      data = IO.popen("-", "r+") do |f|
+        break f.read if f
+        require "socket"
+        Addrinfo.getaddrinfo("localhost", 80, :INET, :STREAM)
+        Process.daemon(true, true)
+        Addrinfo.getaddrinfo("localhost", 80, :INET, :STREAM)
+        Process.wait(fork {})
+        puts "ok"
+      end
+      assert_equal("ok\n", data, "[Bug #22406]")
+    end
+
+    def test_daemon_after_getnameinfo
+      data = IO.popen("-", "r+") do |f|
+        break f.read if f
+        require "socket"
+        Socket.getnameinfo(["AF_INET", 80, "127.0.0.1"], Socket::NI_NUMERICHOST)
+        Process.daemon(true, true)
+        Socket.getnameinfo(["AF_INET", 80, "127.0.0.1"], Socket::NI_NUMERICHOST)
+        Process.wait(fork {})
+        puts "ok"
+      end
+      assert_equal("ok\n", data, "[Bug #22406]")
     end
 
     def test_daemon_detached

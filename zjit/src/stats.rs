@@ -9,7 +9,7 @@ use crate::options::OPTIONS;
 #[path = "../../jit/src/lib.rs"]
 mod jit;
 
-use crate::{cast::IntoUsize as _, cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, ZJITState}};
+use crate::{cast::IntoUsize as _, cruby::*, hir::ParseError, options::get_option, state::{increment_compile_time_ns, zjit_enabled_p, ZJITState}};
 
 macro_rules! make_counters {
     (
@@ -157,6 +157,7 @@ make_counters! {
         compiled_iseq_count,
         failed_iseq_count,
         jit_frame_heap_bytes,
+        jit_frame_stack_map_bytes,
         skipped_native_stack_full,
 
         compile_time_ns,
@@ -165,6 +166,7 @@ make_counters! {
         invalidation_time_ns,
 
         compiled_side_exit_count,
+        side_exit_count,
         side_exit_size_bytes,
         compile_side_exit_time_ns,
 
@@ -184,10 +186,11 @@ make_counters! {
         compile_lir_time_ns,
     }
 
-    // Exit counters that are summed as side_exit_count
+    // Exit counters that break down side_exit_count by reason (--zjit-stats only)
     exit {
         // exit_: Side exits reasons
         exit_compile_error,
+        exit_function_stub_not_profiled,
         exit_exception_handler,
         exit_unhandled_newarray_send_min,
         exit_unhandled_newarray_send_hash,
@@ -219,6 +222,7 @@ make_counters! {
         exit_guard_not_shared_failure,
         exit_guard_less_failure,
         exit_guard_greater_eq_failure,
+        exit_guard_io_buffer_readable_failure,
         exit_guard_super_method_entry,
         exit_patchpoint_bop_redefined,
         exit_patchpoint_method_redefined,
@@ -239,9 +243,6 @@ make_counters! {
         exit_no_profile_send,
         exit_no_profile_getivar,
         exit_no_profile_setivar,
-        exit_splatkw_not_nil_or_hash,
-        exit_splatkw_polymorphic,
-        exit_splatkw_not_profiled,
         exit_caller_splat_length_mismatch,
         exit_caller_splat_ruby2_keywords,
         exit_directive_induced,
@@ -256,7 +257,6 @@ make_counters! {
         send_fallback_send_cfunc_not_variadic,
         send_fallback_send_not_optimized_method_type_optimized,
         send_fallback_operand_too_large,
-        send_fallback_send_bop_redefined,
         send_fallback_send_operands_not_fixnum,
         send_fallback_send_polymorphic_fallback,
         send_fallback_send_direct_keyword_mismatch,
@@ -417,7 +417,6 @@ make_counters! {
     // Unsupported parameter features
     complex_arg_pass_param_post,
     complex_arg_pass_param_kwrest,
-    complex_arg_pass_param_block,
     complex_arg_pass_param_forwardable,
     complex_arg_pass_accepts_no_block,
     complex_arg_pass_does_not_use_block,
@@ -470,17 +469,8 @@ make_counters! {
     load_field_count,
     store_field_count,
 
-    invokeblock_handler_monomorphic_iseq,
-    invokeblock_handler_monomorphic_ifunc,
-    invokeblock_handler_monomorphic_other,
-    invokeblock_handler_polymorphic,
-    invokeblock_handler_megamorphic,
-    invokeblock_handler_no_profiles,
-
-    // HIR-level method inliner counters. Most rejection counters are incremented
-    // once per SendDirect the inliner considers. inline_reject_budget_exceeded may
-    // be incremented only once, rather than once per SendDirect, if the caller
-    // already exceeds the budget before scanning for its SendDirects.
+    // HIR-level method inliner counters. Rejection counters are incremented once per
+    // SendDirect the inliner considers.
     inline_method_count,
     empty_inline_frame_count,
     inline_reject_too_large,
@@ -622,6 +612,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         GuardNotShared                => exit_guard_not_shared_failure,
         GuardLess                     => exit_guard_less_failure,
         GuardGreaterEq                => exit_guard_greater_eq_failure,
+        GuardIOBufferReadable         => exit_guard_io_buffer_readable_failure,
         GuardSuperMethodEntry         => exit_guard_super_method_entry,
         CalleeSideExit                => exit_callee_side_exit,
         Interrupt                     => exit_interrupt,
@@ -630,9 +621,6 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         InvokeBlockIseqChanged        => exit_invoke_block_iseq_changed,
         BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
-        SplatKwNotNilOrHash           => exit_splatkw_not_nil_or_hash,
-        SplatKwPolymorphic            => exit_splatkw_polymorphic,
-        SplatKwNotProfiled            => exit_splatkw_not_profiled,
         CallerSplatLengthMismatch     => exit_caller_splat_length_mismatch,
         CallerSplatRuby2Keywords      => exit_caller_splat_ruby2_keywords,
         DirectiveInduced              => exit_directive_induced,
@@ -676,7 +664,6 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendNotOptimizedMethodTypeOptimized(_)
                                                   => send_fallback_send_not_optimized_method_type_optimized,
         OperandTooLarge                           => send_fallback_operand_too_large,
-        SendBopRedefined                          => send_fallback_send_bop_redefined,
         SendOperandsNotFixnum                     => send_fallback_send_operands_not_fixnum,
         SendPolymorphicFallback                   => send_fallback_send_polymorphic_fallback,
         SendDirectKeywordMismatch                 => send_fallback_send_direct_keyword_mismatch,
@@ -853,6 +840,7 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     let jit_frame_region_bytes = ZJITState::get_jit_frame_allocator().map_or(0, |allocator| allocator.mapped_bytes());
     let code_region_bytes = ZJITState::get_code_block().mapped_region_size();
     set_stat_usize!(hash, "jit_frame_region_bytes", jit_frame_region_bytes);
+    set_stat_usize!(hash, "jit_frame_count", ZJITState::get_jit_frames().len());
     set_stat_usize!(hash, "code_region_bytes", code_region_bytes);
     set_stat_usize!(hash, "zjit_alloc_bytes", zjit_alloc_bytes());
     set_stat_usize!(hash, "total_mem_bytes", code_region_bytes + jit_frame_region_bytes + zjit_alloc_bytes());
@@ -868,13 +856,9 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     }
 
     // Set side-exit counters for each SideExitReason
-    let mut side_exit_count = 0;
     for &counter in EXIT_COUNTERS {
-        let count = unsafe { *counter_ptr(counter) };
-        side_exit_count += count;
-        set_stat_usize!(hash, &counter.name(), count);
+        set_stat_usize!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
     }
-    set_stat_usize!(hash, "side_exit_count", side_exit_count);
 
     // Set side-exit counters for UnhandledYARVInsn
     let exit_counters = ZJITState::get_exit_counters();
@@ -991,6 +975,16 @@ pub fn with_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() ->
     let ret = func();
     let nanos = Instant::now().duration_since(start).as_nanos();
     incr_counter_by(counter, nanos as u64);
+    ret
+}
+
+/// Measure the time taken by func() and add that to zjit_compile_time.
+pub fn with_compile_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() -> R {
+    let start = Instant::now();
+    let ret = func();
+    let nanos = Instant::now().duration_since(start).as_nanos() as u64;
+    increment_compile_time_ns(nanos);
+    incr_counter_by(counter, nanos);
     ret
 }
 
@@ -1213,6 +1207,94 @@ impl PerfettoTracer {
 
         use std::io::Write;
         let _ = self.writer.flush();
+    }
+
+    // Record a compilation as an instant event (a point on the timeline) with
+    // the compiled method's name, so each compile stays attributable to its iseq.
+    pub fn write_compile_size(&mut self, iseq_name: &str, size_bytes: u64, total_bytes: u64) {
+        let ts_nanos = self.start_time.elapsed().as_nanos() as u64;
+
+        let category_ref = self.intern_string("compile");
+        let name_ref = self.intern_string(iseq_name);
+        let size_name_ref = self.intern_string("size");
+        let total_name_ref = self.intern_string("total");
+
+        let size_words = if size_bytes <= u32::MAX as u64 { 1 } else { 2 };
+        let total_words = if total_bytes <= u32::MAX as u64 { 1 } else { 2 };
+        let event_words: u64 = 2 + size_words + total_words;
+        // Instant event (event type 0): the event-type bits (16-19) are
+        // deliberately left at 0, so Perfetto renders each compile as a
+        // point.
+        let header: u64 = 4u64
+            | (event_words << 4)
+            | (2u64 << 20)
+            | (1u64 << 24)
+            | ((category_ref as u64) << 32)
+            | ((name_ref as u64) << 48);
+
+        self.write_word(header);
+        self.write_word(ts_nanos);
+        self.write_uint_arg(size_name_ref, size_bytes);
+        self.write_uint_arg(total_name_ref, total_bytes);
+
+        self.event_count += 1;
+
+        use std::io::Write;
+        let _ = self.writer.flush();
+    }
+
+    // Record the cumulative compiled code size as FXT counter events so that
+    // Perfetto renders size and total as line graphs over time.
+    // Uses one shared track name ("code size") so all samples form a single
+    // gauge; each argument becomes its own line ("size" per compile,
+    // "total" running sum).
+    pub fn write_code_size_counter(&mut self, size_bytes: u64, total_bytes: u64) {
+        let ts_nanos = self.start_time.elapsed().as_nanos() as u64;
+
+        let category_ref = self.intern_string("compile");
+        let name_ref = self.intern_string("code size");
+        let size_name_ref = self.intern_string("size");
+        let total_name_ref = self.intern_string("total");
+
+        let size_words = if size_bytes <= u32::MAX as u64 { 1 } else { 2 };
+        let total_words = if total_bytes <= u32::MAX as u64 { 1 } else { 2 };
+        let event_words: u64 = 3 + size_words + total_words;
+        let header: u64 = 4u64
+            | (event_words << 4)
+            | (1u64 << 16)                                // event type = counter
+            | (2u64 << 20)
+            | (1u64 << 24)
+            | ((category_ref as u64) << 32)
+            | ((name_ref as u64) << 48);
+
+        self.write_word(header);
+        self.write_word(ts_nanos);
+        self.write_uint_arg(size_name_ref, size_bytes);
+        self.write_uint_arg(total_name_ref, total_bytes);
+        // Counter events end with a 64-bit counter id word.
+        self.write_word(0);
+
+        self.event_count += 1;
+
+        use std::io::Write;
+        let _ = self.writer.flush();
+    }
+
+    // Encode numeric argument using the appropriate FXT representation for compile size.
+    fn write_uint_arg(&mut self, name_ref: u16, value: u64) {
+        if value <= u32::MAX as u64 {
+            let arg_header: u64 = 2u64
+                | (1u64 << 4)
+                | ((name_ref as u64) << 16)
+                | (value << 32);
+            self.write_word(arg_header);
+        } else {
+            let arg_header: u64 = 4u64
+                | (2u64 << 4)
+                | ((name_ref as u64) << 16);
+            self.write_word(arg_header);
+            self.write_word(value);
+        }
     }
 
     pub fn write_event(&mut self, category: &str, reason: &str, frames: &[String]) {

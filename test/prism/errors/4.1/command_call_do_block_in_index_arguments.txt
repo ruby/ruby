@@ -1,0 +1,43 @@
+a[bar baz do end]
+         ^ expected a matching `]`
+          ^~ unexpected 'do', expecting end-of-input
+          ^~ unexpected 'do', ignoring it
+             ^~~ unexpected 'end', ignoring it
+                ^ unexpected ']', ignoring it
+
+a[bar baz do end] = 1
+         ^ expected a matching `]`
+          ^~ unexpected 'do', expecting end-of-input
+          ^~ unexpected 'do', ignoring it
+             ^~~ unexpected 'end', ignoring it
+                ^ unexpected ']', ignoring it
+                  ^ unexpected '=', ignoring it
+
+a[bar baz do end] += 1
+         ^ expected a matching `]`
+          ^~ unexpected 'do', expecting end-of-input
+          ^~ unexpected 'do', ignoring it
+             ^~~ unexpected 'end', ignoring it
+                ^ unexpected ']', ignoring it
+                  ^~ unexpected '+=', ignoring it
+
+a, foo[bar baz do end] = 1, 2
+              ^ expected a matching `]`
+^~~~~~~~~~~~~~ unexpected write target
+               ^~ unexpected 'do', expecting end-of-input
+               ^~ unexpected 'do', ignoring it
+                  ^~~ unexpected 'end', ignoring it
+                     ^ unexpected ']', ignoring it
+                       ^ unexpected '=', ignoring it
+                          ^ unexpected ',', expecting end-of-input
+                          ^ unexpected ',', ignoring it
+
+a[bar baz do end, 1]
+         ^ expected a matching `]`
+          ^~ unexpected 'do', expecting end-of-input
+          ^~ unexpected 'do', ignoring it
+             ^~~ unexpected 'end', ignoring it
+                ^ unexpected ',', ignoring it
+                   ^ unexpected ']', expecting end-of-input
+                   ^ unexpected ']', ignoring it
+

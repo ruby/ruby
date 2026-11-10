@@ -452,7 +452,7 @@ class ERB::Compiler # :nodoc:
   attr_accessor :content
 
   def detect_magic_comment(s, enc = nil)
-    re = @percent ? /\G(?:<%#(.*)%>|%#(.*)\n)/ : /\G<%#(.*)%>/
+    re = @percent ? /\G(?:<%#(.*?)%>|%#(.*)\n)/ : /\G<%#(.*?)%>/
     frozen = nil
     s.scan(re) do
       comment = $+

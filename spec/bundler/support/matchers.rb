@@ -148,6 +148,7 @@ module Spec
         opts[:raise_on_error] = false
         @errors = names.filter_map do |name|
           name, version = name.split(/\s+/, 2)
+          require_path = name.tr("-", "/")
           ruby <<-R, opts
             begin
               require 'bundler'
@@ -157,7 +158,7 @@ module Spec
             end
 
             begin
-              require '#{name}'
+              require '#{require_path}'
               name_constant = #{Spec::Builders.constantize(name)}
               if #{version.nil?} || name_constant == '#{version}'
                 exit 64

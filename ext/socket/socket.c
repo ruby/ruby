@@ -1146,7 +1146,7 @@ sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
             }
         }
         else {
-            rb_raise(rb_eArgError, "array size should be 3 or 4, %ld given",
+            rb_raise(rb_eArgError, "array size should be 3 or 4, %"PRIdLEN" given",
                      RARRAY_LEN(sa));
         }
         hints.ai_socktype = (fl & NI_DGRAM) ? SOCK_DGRAM : SOCK_STREAM;
@@ -1314,7 +1314,7 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
         rb_raise(rb_eArgError, "not an AF_UNIX sockaddr");
     }
     if (sizeof(struct sockaddr_un) < (size_t)RSTRING_LEN(addr)) {
-        rb_raise(rb_eTypeError, "too long sockaddr_un - %ld longer than %d",
+        rb_raise(rb_eTypeError, "too long sockaddr_un - %"PRIdLEN" longer than %d",
                  RSTRING_LEN(addr), (int)sizeof(struct sockaddr_un));
     }
     path = rsock_unixpath_str(sockaddr, RSTRING_SOCKLEN(addr));
@@ -1738,7 +1738,8 @@ socket_s_ip_address_list(VALUE self)
  * is enabled or disabled.
  *
  * If true, it is enabled for TCPSocket.new and Socket.tcp.
- * (Note: Happy Eyeballs Version 2 is not provided when using TCPSocket.new on Windows.)
+ * (Note: Happy Eyeballs Version 2 is not provided when using TCPSocket.new on MinGW builds of Windows.
+ * On mswin builds of Windows, it is provided starting from Ruby 4.1.)
  *
  * If false, Happy Eyeballs Version 2 is disabled.
  *
@@ -1757,7 +1758,8 @@ VALUE socket_s_tcp_fast_fallback(VALUE self) {
  * globally, which is provided starting from Ruby 3.4 when using TCPSocket.new and Socket.tcp.
  *
  * When set to true, the feature is enabled for both `TCPSocket.new` and `Socket.tcp`.
- * (Note: This feature is not available when using TCPSocket.new on Windows.)
+ * (Note: This feature is not available when using TCPSocket.new on MinGW builds of Windows.
+ * On mswin builds of Windows, it is available starting from Ruby 4.1.)
  *
  * When set to false, the behavior reverts to that of Ruby 3.3 or earlier.
  *

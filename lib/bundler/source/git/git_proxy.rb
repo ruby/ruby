@@ -169,13 +169,25 @@ module Bundler
             git "fetch", "--force", "--quiet", *extra_fetch_args(ref), dir: destination
           end
 
-          git "reset", "--hard", revision, dir: destination
+          # A checkout that already had a working tree may be a local override, which
+          # is the user's own working copy, so a failure only discards one that had none.
+          checked_out = installed_to?(destination)
+          begin
+            git "reset", "--hard", revision, dir: destination
 
-          if submodules
-            git_retry "submodule", "update", "--init", "--recursive", dir: destination
-          elsif Gem::Version.create(version) >= Gem::Version.create("2.9.0")
-            inner_command = "git -C $toplevel submodule deinit --force $sm_path"
-            git_retry "submodule", "foreach", "--quiet", inner_command, dir: destination
+            if submodules
+              git_retry "submodule", "update", "--init", "--recursive", dir: destination
+            elsif Gem::Version.create(version) >= Gem::Version.create("2.9.0")
+              inner_command = "git -C $toplevel submodule deinit --force $sm_path"
+              git_retry "submodule", "foreach", "--quiet", inner_command, dir: destination
+            end
+          rescue GitCommandError
+            unless checked_out
+              SharedHelpers.filesystem_access(destination) do |p|
+                FileUtils.rm_rf(p)
+              end
+            end
+            raise
           end
         end
 

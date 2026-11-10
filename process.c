@@ -1587,6 +1587,17 @@ after_fork_ruby(rb_pid_t pid)
         after_exec();
     }
 }
+
+static void
+release_fork_lock_after_fork(rb_pid_t pid)
+{
+    if (pid == 0) {
+        rb_thread_reset_fork_lock();
+    }
+    else {
+        rb_thread_release_fork_lock();
+    }
+}
 #endif
 
 #if defined(HAVE_WORKING_FORK)
@@ -1727,20 +1738,29 @@ static const rb_data_type_t exec_arg_data_type = {
 #ifdef _WIN32
 # define DEFAULT_PROCESS_ENCODING rb_utf8_encoding()
 #endif
+#define EXPORT_STR(str) export_str(str)
+#define EXPORT_DUP(str) export_dup(str)
+
+WARN_UNUSED_RESULT(static VALUE)
+export_str(VALUE str)
+{
+    StringValue(str);
+    mustnot_wchar(str);
 #ifdef DEFAULT_PROCESS_ENCODING
-# define EXPORT_STR(str) rb_str_export_to_enc((str), DEFAULT_PROCESS_ENCODING)
-# define EXPORT_DUP(str) export_dup(str)
-static VALUE
+    str = rb_str_export_to_enc(str, DEFAULT_PROCESS_ENCODING);
+    mustnot_broken(str);
+#endif
+    rb_str_null_check(str);
+    return str;
+}
+
+WARN_UNUSED_RESULT(static VALUE)
 export_dup(VALUE str)
 {
     VALUE newstr = EXPORT_STR(str);
     if (newstr == str) newstr = rb_str_dup(str);
     return newstr;
 }
-#else
-# define EXPORT_STR(str) (str)
-# define EXPORT_DUP(str) rb_str_dup(str)
-#endif
 
 #if !defined(HAVE_WORKING_FORK) && defined(HAVE_SPAWNV)
 # define USE_SPAWNV 1
@@ -2161,7 +2181,7 @@ check_exec_options_i_extract(st_data_t st_key, st_data_t st_val, st_data_t arg)
 static int
 check_exec_fds_1(struct rb_execarg *eargp, VALUE h, int maxhint, VALUE ary)
 {
-    long i;
+    rb_len_t i;
 
     if (ary != Qfalse) {
         for (i = 0; i < RARRAY_LEN(ary); i++) {
@@ -2194,7 +2214,7 @@ check_exec_fds(struct rb_execarg *eargp)
     VALUE h = rb_hash_new();
     VALUE ary;
     int maxhint = -1;
-    long i;
+    rb_len_t i;
 
     maxhint = check_exec_fds_1(eargp, h, maxhint, eargp->fd_dup2);
     maxhint = check_exec_fds_1(eargp, h, maxhint, eargp->fd_close);
@@ -2208,7 +2228,7 @@ check_exec_fds(struct rb_execarg *eargp)
             int oldfd = FIX2INT(RARRAY_AREF(elt, 1));
             int lastfd = oldfd;
             VALUE val = rb_hash_lookup(h, INT2FIX(lastfd));
-            long depth = 0;
+            rb_len_t depth = 0;
             while (FIXNUM_P(val) && 0 <= FIX2INT(val)) {
                 lastfd = FIX2INT(val);
                 val = rb_hash_lookup(h, val);
@@ -2268,16 +2288,11 @@ check_exec_env_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     VALUE val = (VALUE)st_val;
     VALUE env = ((VALUE *)arg)[0];
     VALUE *path = &((VALUE *)arg)[1];
-    char *k;
 
-    k = StringValueCStr(key);
+    const char *k = RSTRING_PTR(key = EXPORT_STR(key));
     if (strchr(k, '='))
         rb_raise(rb_eArgError, "environment name contains a equal : %"PRIsVALUE, key);
 
-    if (!NIL_P(val))
-        StringValueCStr(val);
-
-    key = EXPORT_STR(key);
     if (!NIL_P(val)) val = EXPORT_STR(val);
 
     if (ENVMATCH(k, PATH_ENV)) {
@@ -2317,14 +2332,10 @@ rb_check_argv(int argc, VALUE *argv)
         }
         prog = RARRAY_AREF(tmp, 0);
         argv[0] = RARRAY_AREF(tmp, 1);
-        StringValue(prog);
-        StringValueCStr(prog);
-        prog = rb_str_new_frozen(prog);
+        prog = rb_str_new_frozen(EXPORT_STR(prog));
     }
     for (i = 0; i < argc; i++) {
-        StringValue(argv[i]);
-        argv[i] = rb_str_new_frozen(argv[i]);
-        StringValueCStr(argv[i]);
+        argv[i] = rb_str_new_frozen(EXPORT_STR(argv[i]));
     }
     return prog;
 }
@@ -2554,11 +2565,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
         hide_obj(argv_buf);
         for (i = 0; i < argc; i++) {
             VALUE arg = argv[i];
-            const char *s = StringValueCStr(arg);
-#ifdef DEFAULT_PROCESS_ENCODING
-            arg = EXPORT_STR(arg);
-            s = RSTRING_PTR(arg);
-#endif
+            const char *s = RSTRING_PTR(arg); /* exported */
             rb_str_buf_cat(argv_buf, s, RSTRING_LEN(arg));
             append_terminator(argv_buf);
         }
@@ -2637,16 +2644,16 @@ fill_envp_buf_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     VALUE val = (VALUE)st_val;
     VALUE envp_buf = (VALUE)arg;
 
-    rb_str_buf_cat2(envp_buf, StringValueCStr(key));
+    rb_str_buf_cat2(envp_buf, RSTRING_PTR(key)); /* exported */
     rb_str_buf_cat2(envp_buf, "=");
-    rb_str_buf_cat2(envp_buf, StringValueCStr(val));
+    rb_str_buf_cat2(envp_buf, RSTRING_PTR(val)); /* exported */
     append_terminator(envp_buf);
 
     return ST_CONTINUE;
 }
 
 
-static long run_exec_dup2_tmpbuf_size(long n);
+static rb_len_t run_exec_dup2_tmpbuf_size(rb_len_t n);
 
 struct open_struct {
     VALUE fname;
@@ -2667,7 +2674,7 @@ open_func(void *ptr)
 }
 
 static void
-rb_execarg_allocate_dup2_tmpbuf(struct rb_execarg *eargp, long len)
+rb_execarg_allocate_dup2_tmpbuf(struct rb_execarg *eargp, rb_len_t len)
 {
     rb_alloc_tmp_buffer(&eargp->dup2_tmpbuf, run_exec_dup2_tmpbuf_size(len), false);
 }
@@ -2682,7 +2689,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
 
     ary = eargp->fd_open;
     if (ary != Qfalse) {
-        long i;
+        rb_len_t i;
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);
             int fd = FIX2INT(RARRAY_AREF(elt, 0));
@@ -2740,16 +2747,16 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         }
         hide_obj(envtbl);
         if (envopts != Qfalse) {
-            long i;
+            rb_len_t i;
             for (i = 0; i < RARRAY_LEN(envopts); i++) {
                 VALUE pair = RARRAY_AREF(envopts, i);
-                VALUE key = RARRAY_AREF(pair, 0);
+                VALUE key = EXPORT_STR(RARRAY_AREF(pair, 0));
                 VALUE val = RARRAY_AREF(pair, 1);
                 if (NIL_P(val)) {
                     rb_hash_delete(envtbl, key);
                 }
                 else {
-                    rb_hash_aset(envtbl, key, val);
+                    rb_hash_aset(envtbl, key, EXPORT_STR(val));
                 }
             }
         }
@@ -2803,7 +2810,7 @@ execarg_parent_end(VALUE execarg_obj)
 
     ary = eargp->fd_open;
     if (ary != Qfalse) {
-        long i;
+        rb_len_t i;
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);
             VALUE param = RARRAY_AREF(elt, 1);
@@ -3039,13 +3046,13 @@ intrcmp(const void *a, const void *b)
 struct run_exec_dup2_fd_pair {
     int oldfd;
     int newfd;
-    long older_index;
-    long num_newer;
+    rb_len_t older_index;
+    rb_len_t num_newer;
     int cloexec;
 };
 
-static long
-run_exec_dup2_tmpbuf_size(long n)
+static rb_len_t
+run_exec_dup2_tmpbuf_size(rb_len_t n)
 {
     return sizeof(struct run_exec_dup2_fd_pair) * n;
 }
@@ -3116,7 +3123,7 @@ fd_clear_cloexec(int fd, char *errmsg, size_t errmsg_buflen)
 static int
 run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
-    long n, i;
+    rb_len_t n, i;
     int ret;
     int extra_fd = -1;
     struct run_exec_dup2_fd_pair *pairs = RB_IMEMO_TMPBUF_PTR(tmpbuf);
@@ -3158,7 +3165,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
 
     /* non-cyclic redirection: O(n) */
     for (i = 0; i < n; i++) {
-        long j = i;
+        rb_len_t j = i;
         while (j != -1 && pairs[j].oldfd != -1 && pairs[j].num_newer == 0) {
             if (save_redirect_fd(pairs[j].newfd, sargp, errmsg, errmsg_buflen) < 0) /* async-signal-safe */
                 goto fail;
@@ -3181,7 +3188,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
 
     /* cyclic redirection: O(n) */
     for (i = 0; i < n; i++) {
-        long j;
+        rb_len_t j;
         if (pairs[i].oldfd == -1)
             continue;
         if (pairs[i].oldfd == pairs[i].newfd) { /* self cycle */
@@ -3246,7 +3253,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
 static int
 run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
 {
-    long i;
+    rb_len_t i;
     int ret;
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
@@ -3265,7 +3272,7 @@ run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
 static int
 run_exec_dup2_child(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
-    long i;
+    rb_len_t i;
     int ret;
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
@@ -3324,7 +3331,7 @@ run_exec_pgroup(const struct rb_execarg *eargp, struct rb_execarg *sargp, char *
 static int
 run_exec_rlimit(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
-    long i;
+    rb_len_t i;
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         VALUE elt = RARRAY_AREF(ary, i);
         int rtype = NUM2INT(RARRAY_AREF(elt, 0));
@@ -3422,16 +3429,14 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
 
     obj = eargp->env_modification;
     if (obj != Qfalse) {
-        long i;
+        rb_len_t i;
         save_env(sargp);
         for (i = 0; i < RARRAY_LEN(obj); i++) {
             VALUE pair = RARRAY_AREF(obj, i);
             VALUE key = RARRAY_AREF(pair, 0);
             VALUE val = RARRAY_AREF(pair, 1);
-            if (NIL_P(val))
-                ruby_setenv(StringValueCStr(key), 0);
-            else
-                ruby_setenv(StringValueCStr(key), StringValueCStr(val));
+            const char *name = RSTRING_PTR(key);
+            ruby_setenv(name, NIL_P(val) ? 0 : RSTRING_PTR(val));
         }
     }
 #endif
@@ -3658,9 +3663,11 @@ handle_fork_error(int err, struct rb_process_status *status, int *ep, volatile i
     return -1;
 }
 
+/* Flush the current Ractor's own stdio: taking the write_lock of an IO owned
+ * by another Ractor can block on a thread that rb_check_deadlock can't see. */
 #define prefork() (		\
-        rb_io_flush(rb_stdout), \
-        rb_io_flush(rb_stderr)	\
+        rb_io_flush(rb_ractor_stdout()), \
+        rb_io_flush(rb_ractor_stderr())	\
         )
 
 /*
@@ -4083,20 +4090,11 @@ rb_fork_ruby(int *status)
         }
 
         disable_child_handler_fork_parent(&old); /* yes, bad name */
-        if (
-#if defined(__FreeBSD__)
-            pid != 0 &&
-#endif
-            true) {
-            rb_thread_release_fork_lock();
-        }
-        if (pid == 0) {
-            rb_thread_reset_fork_lock();
-        }
+        release_fork_lock_after_fork(pid);
         after_fork_ruby(pid);
 
         /* repeat while fork failed but retryable */
-    } while (pid < 0 && handle_fork_error(err, &child, NULL, &try_gc) == 0);
+    } while (pid < 0 && handle_fork_error(err, status ? &child : NULL, NULL, &try_gc) == 0);
 
     if (status) *status = child.status;
 
@@ -4450,7 +4448,7 @@ rb_syswait(rb_pid_t pid)
 }
 
 #if !defined HAVE_WORKING_FORK && !defined HAVE_SPAWNV && !defined __EMSCRIPTEN__
-char *
+const char *
 rb_execarg_commandline(const struct rb_execarg *eargp, VALUE *prog)
 {
     VALUE cmd = *prog;
@@ -4468,7 +4466,7 @@ rb_execarg_commandline(const struct rb_execarg *eargp, VALUE *prog)
         *prog = cmd;
         return p;
     }
-    return StringValueCStr(*prog);
+    return RSTRING_PTR(*prog);
 }
 #endif
 
@@ -5215,7 +5213,7 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
 
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
 static int
-rlimit_resource_name2int(const char *name, long len, int casetype)
+rlimit_resource_name2int(const char *name, rb_len_t len, int casetype)
 {
     int resource;
     const char *p;
@@ -5327,13 +5325,13 @@ rlimit_resource_name2int(const char *name, long len, int casetype)
 }
 
 static int
-rlimit_type_by_hname(const char *name, long len)
+rlimit_type_by_hname(const char *name, rb_len_t len)
 {
     return rlimit_resource_name2int(name, len, 0);
 }
 
 static int
-rlimit_type_by_lname(const char *name, long len)
+rlimit_type_by_lname(const char *name, rb_len_t len)
 {
     return rlimit_resource_name2int(name, len, 1);
 }
@@ -5343,7 +5341,7 @@ rlimit_type_by_sym(VALUE key)
 {
     VALUE name = rb_sym2str(key);
     const char *rname = RSTRING_PTR(name);
-    long len = RSTRING_LEN(name);
+    rb_len_t len = RSTRING_LEN(name);
     int rtype = -1;
     static const char prefix[] = "rlimit_";
     enum {prefix_len = sizeof(prefix)-1};
@@ -5360,7 +5358,7 @@ static int
 rlimit_resource_type(VALUE rtype)
 {
     const char *name;
-    long len;
+    rb_len_t len;
     VALUE v;
     int r;
 
@@ -5599,7 +5597,7 @@ rb_getlogin(void)
     typedef size_t getlogin_r_size_t;
 #   endif
 
-    long loginsize = GETLOGIN_R_SIZE_INIT;  /* maybe -1 */
+    rb_len_t loginsize = GETLOGIN_R_SIZE_INIT;  /* maybe -1 */
 
     if (loginsize < 0)
         loginsize = GETLOGIN_R_SIZE_DEFAULT;
@@ -5707,7 +5705,7 @@ rb_getpwdirnam_for_login(VALUE login_name)
 # ifdef USE_GETPWNAM_R
 
     char *bufnm;
-    long bufsizenm = GETPW_R_SIZE_INIT;  /* maybe -1 */
+    rb_len_t bufsizenm = GETPW_R_SIZE_INIT;  /* maybe -1 */
 
     if (bufsizenm < 0)
         bufsizenm = GETPW_R_SIZE_DEFAULT;
@@ -5731,7 +5729,7 @@ rb_getpwdirnam_for_login(VALUE login_name)
             rb_syserr_fail(enm, "getpwnam_r");
         }
 
-        rb_str_modify_expand(getpwnm_tmp, (long)args.bufsize);
+        rb_str_modify_expand(getpwnm_tmp, (rb_len_t)args.bufsize);
         args.buf = RSTRING_PTR(getpwnm_tmp);
         args.bufsize = (size_t)rb_str_capacity(getpwnm_tmp);
     }
@@ -5803,7 +5801,7 @@ rb_getpwdiruid(void)
 # ifdef USE_GETPWUID_R
 
     char *bufid;
-    long bufsizeid = GETPW_R_SIZE_INIT;  /* maybe -1 */
+    rb_len_t bufsizeid = GETPW_R_SIZE_INIT;  /* maybe -1 */
 
     if (bufsizeid < 0)
         bufsizeid = GETPW_R_SIZE_DEFAULT;
@@ -5827,7 +5825,7 @@ rb_getpwdiruid(void)
             rb_syserr_fail(eid, "getpwuid_r");
         }
 
-        rb_str_modify_expand(getpwid_tmp, (long)args.bufsize);
+        rb_str_modify_expand(getpwid_tmp, (rb_len_t)args.bufsize);
         args.buf = RSTRING_PTR(getpwid_tmp);
         args.bufsize = (size_t)rb_str_capacity(getpwid_tmp);
     }
@@ -5895,7 +5893,7 @@ obj2uid(VALUE id
         struct passwd *pwptr;
 #ifdef USE_GETPWNAM_R
         char *getpw_buf;
-        long getpw_buf_len;
+        rb_len_t getpw_buf_len;
         int e;
         if (!*getpw_tmp) {
             getpw_buf_len = GETPW_R_SIZE_INIT;
@@ -5913,7 +5911,7 @@ obj2uid(VALUE id
                 rb_str_resize(*getpw_tmp, 0);
                 rb_syserr_fail(e, "getpwnam_r");
             }
-            rb_str_modify_expand(*getpw_tmp, (long)args.bufsize);
+            rb_str_modify_expand(*getpw_tmp, (rb_len_t)args.bufsize);
             args.buf = RSTRING_PTR(*getpw_tmp);
             args.bufsize = (size_t)rb_str_capacity(*getpw_tmp);
         }
@@ -5994,7 +5992,7 @@ obj2gid(VALUE id
         struct group *grptr;
 #ifdef USE_GETGRNAM_R
         char *getgr_buf;
-        long getgr_buf_len;
+        rb_len_t getgr_buf_len;
         int e;
         if (!*getgr_tmp) {
             getgr_buf_len = GETGR_R_SIZE_INIT;
@@ -6012,7 +6010,7 @@ obj2gid(VALUE id
                 rb_str_resize(*getgr_tmp, 0);
                 rb_syserr_fail(e, "getgrnam_r");
             }
-            rb_str_modify_expand(*getgr_tmp, (long)args.bufsize);
+            rb_str_modify_expand(*getgr_tmp, (rb_len_t)args.bufsize);
             args.buf = RSTRING_PTR(*getgr_tmp);
             args.bufsize = (size_t)rb_str_capacity(*getgr_tmp);
         }
@@ -6910,8 +6908,12 @@ rb_daemon(int nochdir, int noclose)
 {
     int err = 0;
 #ifdef HAVE_DAEMON
+    rb_pid_t pid = getpid();
     before_fork_ruby();
+    rb_thread_acquire_fork_lock();
     err = daemon(nochdir, noclose);
+    /* daemon(3) can fail in the child as well, so compare pids */
+    release_fork_lock_after_fork(getpid() == pid ? pid : 0);
     after_fork_ruby(0);
 #else
     int n;
@@ -7437,6 +7439,7 @@ p_uid_exchange(VALUE obj)
     if (setreuid(euid,uid) < 0) rb_sys_fail(0);
     SAVED_USER_ID = uid;
 #else
+    (void)SAVED_USER_ID;
     rb_notimplement();
 #endif
     return UIDT2NUM(uid);
@@ -7499,6 +7502,7 @@ p_gid_exchange(VALUE obj)
     if (setregid(egid,gid) < 0) rb_sys_fail(0);
     SAVED_GROUP_ID = gid;
 #else
+    (void)SAVED_GROUP_ID;
     rb_notimplement();
 #endif
     return GIDT2NUM(gid);

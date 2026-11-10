@@ -276,6 +276,22 @@ describe "Marshal.dump" do
     it "raises TypeError with an anonymous Module" do
       -> { Marshal.dump(Module.new) }.should.raise(TypeError, /can't dump anonymous module/)
     end
+
+    it "raises TypeError with a Module nested in an anonymous Module" do
+      m = Module.new
+      module m::N; end
+      -> { Marshal.dump(m::N) }.should.raise(TypeError, /can't dump anonymous module #<Module:0x\h+>::N/)
+    end
+
+    it "dumps a Module nested in an anonymous Module once it is reachable through a constant path" do
+      m = Module.new
+      module m::N; end
+      -> { Marshal.dump(m::N) }.should.raise(TypeError)
+      MarshalSpec::WasAnonModule = m::N
+      Marshal.dump(m::N).should == "\x04\bm\x1FMarshalSpec::WasAnonModule"
+    ensure
+      MarshalSpec.send(:remove_const, :WasAnonModule)
+    end
   end
 
   describe "with a Float" do

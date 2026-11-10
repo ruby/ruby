@@ -15,6 +15,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * A scope of locals surrounding the code that is being parsed.
  */
@@ -250,6 +254,25 @@ PRISM_EXPORTED_FUNCTION bool pm_options_freeze(const pm_options_t *options) PRIS
 PRISM_EXPORTED_FUNCTION void pm_options_freeze_set(pm_options_t *options, bool freeze) PRISM_NONNULL(1);
 
 /**
+ * Get the attach_comments option on the given options struct.
+ *
+ * @param options The options struct to get the attach_comments value from.
+ * @returns The attach_comments value.
+ */
+PRISM_EXPORTED_FUNCTION bool pm_options_attach_comments(const pm_options_t *options) PRISM_NONNULL(1);
+
+/**
+ * Set the attach_comments option on the given options struct. When this is
+ * set, the parser's comment list is sorted by start offset after parsing and
+ * every comment is assigned an owning node. Without it, comments are left in
+ * the order they were lexed and no nodes own any comments.
+ *
+ * @param options The options struct to set the attach_comments value on.
+ * @param attach_comments The attach_comments value to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_attach_comments_set(pm_options_t *options, bool attach_comments) PRISM_NONNULL(1);
+
+/**
  * Get the raise_error option on the given options struct.
  *
  * @param options The options struct to get the raise_error value from.
@@ -264,6 +287,26 @@ PRISM_EXPORTED_FUNCTION uint8_t pm_options_raise_error(const pm_options_t *optio
  * @param raise_error The raise_error value to set.
  */
 PRISM_EXPORTED_FUNCTION void pm_options_raise_error_set(pm_options_t *options, uint8_t raise_error) PRISM_NONNULL(1);
+
+/**
+ * Set the stack_budget option on the given options struct. This is the number
+ * of bytes of C stack that the parser may use, measured from where pm_parse is
+ * called. Deeply nested input that would go past it produces a
+ * PM_ERR_STACK_EXHAUSTED error instead of overflowing the stack. That error
+ * has PM_ERROR_LEVEL_STACK rather than PM_ERROR_LEVEL_SYNTAX, since the same
+ * source may parse with a larger budget, and it is reported once per parse.
+ * Callers should pass less than the stack they actually have left, since the
+ * parser checks the budget between frames rather than inside every one, and
+ * anything that walks the tree afterward recurses on the same stack. A budget
+ * of 0 leaves no room for any expression. A budget of SIZE_MAX (the default)
+ * disables the check, leaving PRISM_DEPTH_MAXIMUM as the only bound, which
+ * assumes a stack of roughly 8MB.
+ *
+ * @param options The options struct to set the stack_budget value on.
+ * @param stack_budget The stack_budget value to set, in bytes, or SIZE_MAX for
+ *     no budget.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_stack_budget_set(pm_options_t *options, size_t stack_budget) PRISM_NONNULL(1);
 
 /**
  * Allocate and zero out the scopes array on the given options struct.
@@ -316,7 +359,8 @@ PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_scope_local(const pm_opti
 
 /**
  * Return a mutable pointer to the local at the given index within the given
- * scope.
+ * scope, for setting the local's name with pm_string_init. The parser copies
+ * the name when it is created, so its bytes must remain valid until then.
  *
  * @param scope The scope struct to get the local from.
  * @param index The index of the local to get.
@@ -331,5 +375,9 @@ PRISM_EXPORTED_FUNCTION pm_string_t * pm_options_scope_local_mut(pm_options_scop
  * @param forwarding The forwarding value to set.
  */
 PRISM_EXPORTED_FUNCTION void pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding) PRISM_NONNULL(1);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

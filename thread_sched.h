@@ -32,6 +32,7 @@ enum thread_sched_wait_result {
     thread_sched_wait_event,       // an event the caller asked for fired
     thread_sched_wait_timeout,     // the timeout expired before any event
     thread_sched_wait_unavailable, // not registered; the caller must fall back
+    thread_sched_wait_interrupted, // stopped for an interrupt; handle it and wait again
 };
 
 // this data should be protected by timer_th.waiting_lock

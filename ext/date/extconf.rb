@@ -16,4 +16,8 @@ end
 have_func("rb_gc_mark_movable", "ruby.h") # RUBY_VERSION >= 2.7
 have_const("RUBY_TYPED_EMBEDDABLE", "ruby.h") # RUBY_VERSION >= 3.3
 
+# check if the declarations are exposed
+have_func(%[rb_int_positive_pow(0, 0)], "ruby/util.h") # RUBY_VERSION >= 3.1
+have_func(%[ruby_scan_digits("", 0, 0, NULL, NULL)], "ruby/util.h") # RUBY_VERSION >= 3.1
+
 create_makefile('date_core')

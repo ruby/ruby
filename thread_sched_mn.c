@@ -547,10 +547,9 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
     {
         // NOTE: there's a lock ordering inversion here with the ubf call, but it's benign.
         if (ubf_set(th, ubf_event_waiting, (void *)th, NULL)) {
-            // Already interrupted: report an event so the caller retries and then
-            // processes the interrupt, as it always has.
+            // Already interrupted: the fd was never looked at, so this is no event.
             thread_sched_unlock(sched, th);
-            return thread_sched_wait_event;
+            return thread_sched_wait_interrupted;
         }
 
         reg = timer_thread_register_waiting(th, fd, events, rel, event_serial);
@@ -609,9 +608,8 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
     if (reg == timer_thread_unavailable) return thread_sched_wait_unavailable;
     // A ready fd never registered, so it never timed out either.
     if (reg == timer_thread_already_ready) return thread_sched_wait_event;
-    // No event fired and we are interrupted: that is an interrupt, not a
-    // timeout.  Hand the wait back so the caller runs it and re-polls the fd.
-    if (timedout && RUBY_VM_INTERRUPTED(th->ec)) return thread_sched_wait_unavailable;
+    // No event fired and we are interrupted: that is an interrupt, not a timeout.
+    if (timedout && RUBY_VM_INTERRUPTED(th->ec)) return thread_sched_wait_interrupted;
     return timedout ? thread_sched_wait_timeout : thread_sched_wait_event;
 }
 

@@ -1,8 +1,8 @@
-#include "prism/compiler/align.h"
 #include "prism/internal/line_offset_list.h"
+
+#include "prism/compiler/align.h"
 #include "prism/internal/arena.h"
 
-#include <assert.h>
 #include <string.h>
 
 /**
@@ -39,7 +39,6 @@ pm_line_offset_list_append_slow(pm_arena_t *arena, pm_line_offset_list_t *list, 
     list->offsets = new_offsets;
     list->capacity = new_capacity;
 
-    assert(list->size == 0 || cursor > list->offsets[list->size - 1]);
     list->offsets[list->size++] = cursor;
 }
 

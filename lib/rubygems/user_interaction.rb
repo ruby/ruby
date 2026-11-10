@@ -295,10 +295,12 @@ class Gem::StreamUI
   def ask_for_password(question)
     return nil unless tty?
 
-    @outs.print(question, "  ")
-    @outs.flush
-
-    password = _gets_noecho
+    require_io_console
+    password = @ins.noecho do
+      @outs.print(question, "  ")
+      @outs.flush
+      @ins.gets
+    end
     @outs.puts
     password&.chomp!
     password
@@ -312,11 +314,6 @@ class Gem::StreamUI
       end
       true
     end
-  end
-
-  def _gets_noecho
-    require_io_console
-    @ins.noecho { @ins.gets }
   end
 
   ##

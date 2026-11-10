@@ -15,7 +15,7 @@ end
 
 # First, opt in to every AST feature.
 Parser::Builders::Default.modernize
-Prism::Translation::Parser::Builder.modernize
+Ruby::Prism::Translation::Parser::Builder.modernize
 
 # The parser gem rejects some strings that would most likely lead to errors
 # in consumers due to encoding problems. RuboCop however monkey-patches this
@@ -52,7 +52,7 @@ Parser::AST::Node.prepend(
   }
 )
 
-module Prism
+module Ruby::Prism
   class ParserTest < TestCase
     # These files contain code with valid syntax that can't be parsed.
     skip_syntax_error = [
@@ -62,9 +62,13 @@ module Prism
 
       # %Q with newline delimiter and heredoc interpolation
       "heredoc_percent_q_newline_delimiter.txt",
+      "heredoc_percent_newline_delimiter.txt",
 
       # 1.. && 2
       "ranges.txt",
+
+      # Regex with \c\ escape followed by \r\n
+      "regex_escaped_crlf.txt",
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",
@@ -90,7 +94,7 @@ module Prism
       "seattlerb/regexp_escape_extended.txt",
 
       # https://github.com/whitequark/parser/issues/1020
-      # These contain consecutive \r characters, followed by \n. Prism only receives
+      # These contain consecutive \r characters, followed by \n. Ruby::Prism only receives
       # the already modified source buffer which dropped one \r but must know the
       # original code to parse it correctly.
       "seattlerb/heredoc_with_extra_carriage_returns_windows.txt",
@@ -130,12 +134,12 @@ module Prism
     end
 
     def test_non_prism_builder_class_deprecated
-      warnings = capture_warnings { Prism::Translation::Parser33.new(Parser::Builders::Default.new) }
+      warnings = capture_warnings { Ruby::Prism::Translation::Parser33.new(Parser::Builders::Default.new) }
 
       assert_include(warnings, "#{__FILE__}:#{__LINE__ - 2}")
-      assert_include(warnings, "is not a `Prism::Translation::Parser::Builder` subclass")
+      assert_include(warnings, "is not a `Ruby::Prism::Translation::Parser::Builder` subclass")
 
-      warnings = capture_warnings { Prism::Translation::Parser33.new }
+      warnings = capture_warnings { Ruby::Prism::Translation::Parser33.new }
       assert_empty(warnings)
     end
 
@@ -159,13 +163,58 @@ module Prism
       buffer = Parser::Source::Buffer.new("(string)")
       buffer.source = code
 
-      parser = Prism::Translation::Parser33.new
+      parser = Ruby::Prism::Translation::Parser33.new
       parser.diagnostics.all_errors_are_fatal = true
       assert_raise(Parser::SyntaxError) { parser.tokenize(buffer) }
     end
 
+    def test_invalid_regexp_match_receiver
+      ["/(?:a)\\g<b>/ =~ x", "/(?<a>a)\\g<b>/ =~ x"].each do |code|
+        buffer = Parser::Source::Buffer.new("(string)")
+        buffer.source = code
+
+        diagnostics = []
+        parser = Ruby::Prism::Translation::Parser34.new
+        parser.diagnostics.all_errors_are_fatal = false
+        parser.diagnostics.consumer = ->(diagnostic) { diagnostics << diagnostic }
+        ast, = parser.tokenize(buffer)
+
+        errors = diagnostics.select { |diagnostic| diagnostic.level == :error }
+        assert_equal([:invalid_regexp], errors.map(&:reason), code)
+        assert_nil(ast, code)
+      end
+    end
+
+    def test_builder_errors_after_the_first_are_reported
+      buffer = Parser::Source::Buffer.new("(string)")
+      buffer.source = "/(?:a)\\g<b>/ =~ x\n/(?:a)\\g<c>/ =~ y\n"
+
+      diagnostics = []
+      parser = Ruby::Prism::Translation::Parser34.new
+      parser.diagnostics.all_errors_are_fatal = false
+      parser.diagnostics.consumer = ->(diagnostic) { diagnostics << diagnostic }
+      ast, = parser.tokenize(buffer)
+
+      errors = diagnostics.select { |diagnostic| diagnostic.level == :error }
+      assert_equal([:invalid_regexp, :invalid_regexp], errors.map(&:reason))
+      assert_equal([1, 2], errors.map { |error| error.location.line })
+      assert_nil(ast)
+    end
+
+    def test_parse_returns_nil_on_syntax_error
+      buffer = Parser::Source::Buffer.new("(string)")
+      buffer.source = "1 + \n"
+
+      parser = Ruby::Prism::Translation::Parser34.new
+      parser.diagnostics.all_errors_are_fatal = false
+      parser.diagnostics.consumer = ->(*) {}
+
+      assert_nil(parser.parse(buffer))
+      assert_nil(parser.parse_with_comments(buffer)[0])
+    end
+
     def test_it_block_parameter_syntax
-      assert_new_syntax("3.4/it.txt", Prism::Translation::Parser34) do
+      assert_new_syntax("3.4/it.txt", Ruby::Prism::Translation::Parser34) do
         s(:begin,
         s(:itblock,
           s(:send, nil, :x), :it,
@@ -177,7 +226,7 @@ module Prism
     end
 
     def test_nil_block_parameter_syntax
-      assert_new_syntax("4.1/noblock.txt", Prism::Translation::Parser41) do
+      assert_new_syntax("4.1/noblock.txt", Ruby::Prism::Translation::Parser41) do
         s(:begin,
         s(:def, :foo,
           s(:args,
@@ -203,7 +252,7 @@ module Prism
         ignore_warnings { parser.tokenize(buffer) }
 
       actual_ast, actual_comments, actual_tokens =
-        ignore_warnings { Prism::Translation::Parser33.new.tokenize(buffer) }
+        ignore_warnings { Ruby::Prism::Translation::Parser33.new.tokenize(buffer) }
 
       if expected_ast == actual_ast
         if !compare_asts && !Fixture.custom_base_path?

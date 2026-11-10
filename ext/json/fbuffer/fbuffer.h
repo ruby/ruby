@@ -33,7 +33,7 @@ typedef struct FBufferStruct {
 static void fbuffer_free(FBuffer *fb);
 static void fbuffer_clear(FBuffer *fb);
 static void fbuffer_append(FBuffer *fb, const char *newstr, size_t len);
-static void fbuffer_append_long(FBuffer *fb, long number);
+static void fbuffer_append_len(FBuffer *fb, rb_len_t number);
 static inline void fbuffer_append_char(FBuffer *fb, char newchr);
 static VALUE fbuffer_finalize(FBuffer *fb);
 
@@ -218,7 +218,7 @@ static inline void fbuffer_advance_to(FBuffer *fb, char *end)
 /*
  * Appends the decimal string representation of \a number into the buffer.
  */
-static void fbuffer_append_long(FBuffer *fb, long number)
+static void fbuffer_append_len(FBuffer *fb, rb_len_t number)
 {
     /*
      * The jeaiii_ultoa() function produces digits left-to-right,
@@ -231,9 +231,9 @@ static void fbuffer_append_long(FBuffer *fb, long number)
      * generated is therefore 20 (including a potential sign character).
      */
 
-    static const int MAX_CHARS_FOR_LONG = 20;
+    static const int MAX_CHARS_FOR_LEN = 20;
 
-    fbuffer_inc_capa(fb, MAX_CHARS_FOR_LONG);
+    fbuffer_inc_capa(fb, MAX_CHARS_FOR_LEN);
 
     if (number < 0) {
         fbuffer_append_reserved_char(fb, '-');

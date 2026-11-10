@@ -151,9 +151,11 @@ module Bundler
           socket.connect_nonblock(address)
         rescue Errno::EINPROGRESS
           wait_for_writtable_socket(socket, address, timeout)
-        rescue RuntimeError # Connection failed somehow, again
+        rescue SystemCallError # Connection failed somehow, again
           false
         end
+      rescue SocketError # The mirror host does not resolve
+        false
       end
 
       private
@@ -185,7 +187,7 @@ module Bundler
   class MirrorSockets
     def initialize(mirror)
       @timeout = mirror.fallback_timeout
-      @addresses = Socket.getaddrinfo(mirror.uri.host, mirror.uri.port).map do |address|
+      @addresses = Socket.getaddrinfo(mirror.uri.hostname, mirror.uri.port, nil, Socket::SOCK_STREAM).map do |address|
         SocketAddress.new(address[0], address[3], address[1])
       end
     end
@@ -194,9 +196,9 @@ module Bundler
       @addresses.any? do |address|
         socket = Socket.new(Socket.const_get(address.type), Socket::SOCK_STREAM, 0)
         socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
-        value = yield socket, address.to_socket_address, @timeout
-        socket.close unless socket.closed?
-        value
+        yield socket, address.to_socket_address, @timeout
+      ensure
+        socket&.close
       end
     end
   end

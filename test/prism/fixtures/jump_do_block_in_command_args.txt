@@ -1,0 +1,5 @@
+def f
+  1.times { check 1, case 1 when 1 then return bar do end end }
+  1.times { check 1, case 1 when 1 then break bar do end end }
+  1.times { check 1, case 1 when 1 then next bar do end end }
+end

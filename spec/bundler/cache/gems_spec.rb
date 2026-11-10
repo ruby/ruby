@@ -465,4 +465,28 @@ RSpec.describe "bundle cache" do
       expect(the_bundle).to include_gems "foo-bundler 1.0"
     end
   end
+
+  describe "--all-platforms with content-addressed gems", rubygems: ">= 4.1.0.a" do
+    before do
+      skip_unless_content_addressing_available!
+      build_repo2_with_content_addressed_gems
+
+      gemfile <<~G
+        source "https://gem.repo2"
+
+        gem "mygem"
+      G
+    end
+
+    it "caches the platform gem and every content-addressed gem a row lists" do
+      simulate_platform "x86_64-linux" do
+        lockfile_with_content_addresses(addresses(current_abi, mismatched_abi), ruby_abis: [current_abi, mismatched_abi].sort)
+
+        bundle_with_content_addressed_gems "cache --all-platforms"
+
+        cached = Dir.glob(bundled_app("vendor/cache/mygem-1.0-*.gem").to_s).map {|file| File.basename(file, ".gem") }.sort
+        expect(cached).to eq(["mygem-1.0-#{current_address}", "mygem-1.0-#{mismatched_address}", "mygem-1.0-x86_64-linux"].sort)
+      end
+    end
+  end
 end

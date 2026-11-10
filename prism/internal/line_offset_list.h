@@ -3,6 +3,8 @@
 
 #include "prism/compiler/force_inline.h"
 
+#include "prism/internal/assert.h"
+
 #include "prism/arena.h"
 #include "prism/line_offset_list.h"
 
@@ -18,6 +20,10 @@ void pm_line_offset_list_append_slow(pm_arena_t *arena, pm_line_offset_list_t *l
 /* Append a new offset to the list. */
 static PRISM_FORCE_INLINE void
 pm_line_offset_list_append(pm_arena_t *arena, pm_line_offset_list_t *list, uint32_t cursor) {
+    /* Line and column lookups binary search this list, so it must stay strictly
+     * increasing. */
+    PRISM_ASSERT(list->size == 0 || cursor > list->offsets[list->size - 1]);
+
     if (list->size < list->capacity) {
         list->offsets[list->size++] = cursor;
     } else {

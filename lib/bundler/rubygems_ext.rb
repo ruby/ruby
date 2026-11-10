@@ -42,6 +42,29 @@ module Gem
       def self.content_addressed_row?(suffix, platform, required_ruby_version = nil, validate_ruby_abi: true)
         false
       end
+
+      def self.platform_eligible?(platform)
+        false
+      end
+
+      def self.ruby_abi_for(required_ruby_version)
+        nil
+      end
+
+      def self.valid_ruby_abi?(value)
+        false
+      end
+
+      def self.ruby_abi_requirement(ruby_abi)
+        Gem::Requirement.new("~> #{ruby_abi}.0")
+      end
+    end
+  end
+
+  # Can be removed once RubyGems 4.0.0 support is dropped
+  unless respond_to?(:ruby_abi)
+    def self.ruby_abi
+      ruby_version.segments.first(2).join(".")
     end
   end
 
@@ -86,11 +109,22 @@ module Gem
         end
       end
 
-      def open_file_with_lock(path, &block)
+      def open_file_with_lock(path)
         file_lock = "#{path}.lock"
-        open_file_with_flock(file_lock, &block)
-      ensure
-        FileUtils.rm_f file_lock
+
+        loop do
+          open_file_with_flock(file_lock) do |io|
+            # The previous holder removed the file while we were waiting on it,
+            # so leave this block and try again on the file now at the lock path
+            next unless File.identical?(io, file_lock)
+
+            begin
+              return yield io
+            ensure
+              FileUtils.rm_f file_lock
+            end
+          end
+        end
       end
     end
   end

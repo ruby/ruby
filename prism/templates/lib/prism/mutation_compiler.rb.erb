@@ -1,7 +1,7 @@
 #--
 # rbs_inline: enabled
 
-module Prism
+module Ruby::Prism
   # This visitor walks through the tree and copies each node as it is being
   # visited. This is useful for consumers that want to mutate the tree, as you
   # can change subtrees in place without effecting the rest of the tree.
@@ -10,9 +10,9 @@ module Prism
 <%= "\n" if index != 0 -%>
     #: (<%= node.name %>) -> node?
     def visit_<%= node.human %>(node) # :nodoc:
-      <%- fields = node.fields.select { |field| [Prism::Template::NodeField, Prism::Template::OptionalNodeField, Prism::Template::NodeListField].include?(field.class) } -%>
+      <%- fields = node.fields.select { |field| [Ruby::Prism::Template::NodeField, Ruby::Prism::Template::OptionalNodeField, Ruby::Prism::Template::NodeListField].include?(field.class) } -%>
       <%- if fields.any? -%>
-      node.copy(<%= fields.map { |field| "#{field.name}: #{field.is_a?(Prism::Template::NodeListField) ? "visit_all" : "visit"}(node.#{field.name})" }.join(", ") %>)
+      node.copy(<%= fields.map { |field| "#{field.name}: #{field.is_a?(Ruby::Prism::Template::NodeListField) ? "visit_all" : "visit"}(node.#{field.name})" }.join(", ") %>)
       <%- else -%>
       node.copy
       <%- end -%>

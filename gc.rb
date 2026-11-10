@@ -15,7 +15,11 @@ module GC
   #   a boolean value specifying whether to perform a major garbage collection cycle:
   #
   #   - +true+: initiates a major garbage collection cycle,
-  #     meaning all objects (old and new) are marked.
+  #     meaning all objects (old and new) are marked. When another Ractor's
+  #     object space exists (a live Ractor, or a terminated one not yet
+  #     absorbed), or one was absorbed since the last global collection, and
+  #     +global+ is +true+ (the default), the cycle is a global collection
+  #     instead; see +global+.
   #   - +false+: initiates a minor garbage collection cycle,
   #     meaning only young objects are marked.
   #
@@ -38,16 +42,22 @@ module GC
   #     therefore sweeping may not be completed before the return.
   #
   # - +global+:
-  #   a boolean value specifying, when multiple Ractors are running, whether to collect
-  #   every Ractor's heap together in a single stop-the-world mark/sweep cycle:
+  #   a boolean value specifying, when another Ractor's object space exists, whether to
+  #   collect every Ractor's heap together in a single stop-the-world mark/sweep cycle:
   #
-  #   - +true+: with more than one Ractor it runs a stop-the-world cycle and reclaims shareable
-  #     and cross-Ractor garbage. This option, although it defaults to +true+, is ignored unless
-  #     +full_mark+, +immediate_mark+ and +immediate_sweep+ are all +true+. With one running Ractor
-  #     it has no effect and the other options apply as usual. This option is also ignored unless
-  #     you're using the default GC.
+  #   - +true+: with another Ractor's object space present (see +full_mark+) it runs a
+  #     stop-the-world cycle and reclaims shareable and cross-Ractor garbage. This option,
+  #     although it defaults to +true+, is ignored unless +full_mark+, +immediate_mark+ and
+  #     +immediate_sweep+ are all +true+. With a single object space it has no effect and
+  #     the other options apply as usual. This option is also ignored unless you're using
+  #     the default GC.
   #   - +false+: collect only the calling Ractor's own objects. Shareable objects and cross-ractor
   #     garbage are not swept.
+  #
+  #   GC.stat counts a local major collection under +:major_gc_count+ and a local
+  #   minor collection under +:minor_gc_count+. A global collection counts under
+  #   +:global_gc_count+ in every Ractor whose heap it collects, and under
+  #   +:global_gc_invocation_count+ in the calling Ractor.
   #
   # Note that these keyword arguments are implementation- and version-dependent,
   # are not guaranteed to be future-compatible,
@@ -130,7 +140,8 @@ module GC
   #
   # Returns the total number of times garbage collection has occurred:
   #
-  # With the default GC, counts the current Ractor's collections.
+  # With the default GC, counts the collections of the current Ractor's heap,
+  # including global collections that other Ractors started.
   #
   #   GC.count # => 385
   #   GC.start
@@ -141,9 +152,9 @@ module GC
   end
 
   # call-seq:
-  #   GC.stat(scope: :ractor) -> new_hash
-  #   GC.stat(key, scope: :ractor) -> value
-  #   GC.stat(hash, scope: :ractor) -> hash
+  #   GC.stat(process: false) -> new_hash
+  #   GC.stat(key, process: false) -> value
+  #   GC.stat(hash, process: false) -> hash
   #
   # This method is implementation-specific to CRuby.
   #
@@ -151,10 +162,10 @@ module GC
   # The particular statistics are implementation-specific
   # and may change in the future without notice.
   #
-  # With <tt>scope: :ractor</tt> (the default) or <tt>scope: :local</tt>,
+  # With <tt>process: false</tt> (the default) or +nil+,
   # returns statistics for the current Ractor's object space.
-  # With <tt>scope: :global</tt>, returns cumulative collection counts and
-  # measured GC time across all Ractors.
+  # With any other value of +process+, returns process-wide statistics;
+  # see "Process statistics" below.
   #
   # With no positional argument or +nil+ given,
   # returns a hash containing the \GC statistics:
@@ -178,6 +189,7 @@ module GC
   #    minor_gc_count: 0,
   #    major_gc_count: 1,
   #    global_gc_count: 0,
+  #    global_gc_invocation_count: 0,
   #    compact_count: 0,
   #    read_barrier_faults: 0,
   #    total_moved_objects: 0,
@@ -211,8 +223,10 @@ module GC
   # The hash includes entries such as:
   #
   # - +:count+:
-  #   The total number of garbage collections run since application start
-  #   (the count includes both minor and major garbage collections).
+  #   The total number of garbage collections of this Ractor's heap since the
+  #   object space was created. It includes minor, major, and global garbage
+  #   collections, and equals +:minor_gc_count+ plus +:major_gc_count+ plus
+  #   +:global_gc_count+.
   # - +:time+:
   #   The total time spent in garbage collections (in milliseconds).
   # - +:marking_time+:
@@ -241,11 +255,16 @@ module GC
   # - +:malloc_increase_bytes_limit+:
   #   When +:malloc_increase_bytes+ crosses this limit, \GC is triggered.
   # - +:minor_gc_count+:
-  #   The total number of minor garbage collections run since process start.
+  #   The total number of local minor garbage collections of this Ractor's heap.
   # - +:major_gc_count+:
-  #   The total number of major garbage collections run since process start.
+  #   The total number of local major garbage collections of this Ractor's heap.
+  #   Global garbage collections are counted separately.
   # - +:global_gc_count+:
-  #   The total number of global garbage collections run since process start.
+  #   The number of global (stop-the-world) garbage collections that collected
+  #   this Ractor's heap. Any Ractor can start them.
+  # - +:global_gc_invocation_count+:
+  #   The number of global garbage collections that this Ractor started.
+  #   Each global garbage collection has exactly one starter.
   # - +:compact_count+:
   #   The total number of compactions run since process start.
   # - +:read_barrier_faults+:
@@ -277,19 +296,42 @@ module GC
   # - +:heap_final_slots+:
   #   The total number of slots with pending finalizers to be run.
   # - +:heap_marked_slots+:
-  #   The total number of objects marked in the last \GC.
+  #   The number of objects in this Ractor's heap marked in the last \GC of
+  #   that heap.
   #
-  # === Global scope
+  # === Process statistics
   #
-  # With <tt>scope: :global</tt>, the default collector reports cumulative
+  # With <tt>process: true</tt>, the default collector reports cumulative
   # collection counts and measured CPU time across all Ractors, retaining
-  # history from destroyed object spaces:
+  # history from destroyed object spaces, and the state of the page pool
+  # that all object spaces share:
   #
-  #   GC.stat(scope: :global)
-  #   # => {count: 42, minor_gc_count: 32, major_gc_count: 10,
-  #   #     time: 3, marking_time: 2, sweeping_time: 1}
+  #   GC.stat(process: true)
+  #   # => {count: 42, time: 3, marking_time: 2, sweeping_time: 1,
+  #   #     minor_gc_count: 32, major_gc_count: 8, global_gc_count: 2,
+  #   #     page_pool_arenas: 2, page_pool_arenas_freed: 0,
+  #   #     page_pool_total_pages: 64, page_pool_discarded_pages: 0}
   #
-  # These totals include both local and global collections, not only global GC cycles.
+  # +:count+ is the number of garbage collections in the process. Each local
+  # and each global collection counts once, so +:count+ equals
+  # +:minor_gc_count+ plus +:major_gc_count+ plus +:global_gc_count+. It is not
+  # the sum of the Ractor +:count+ values, because one global collection
+  # collects every heap.
+  #
+  # +:global_gc_count+ is the number of global collections in the process,
+  # however many Ractors each one stops.
+  #
+  # The page pool keys are:
+  #
+  # - +:page_pool_arenas+:
+  #   The number of page-pool arenas that are mapped now.
+  # - +:page_pool_arenas_freed+:
+  #   The number of arenas that the page pool has unmapped.
+  # - +:page_pool_total_pages+:
+  #   The number of page bodies in the mapped arenas.
+  # - +:page_pool_discarded_pages+:
+  #   The number of free page bodies whose memory the page pool has returned
+  #   to the operating system.
   #
   # +:time+ may exceed +:marking_time+ plus +:sweeping_time+ by one millisecond
   # because raw nanoseconds are summed before conversion. Times measure collector
@@ -298,19 +340,12 @@ module GC
   # Reads combine object-space publications without requesting a stop-the-world
   # barrier. GC.measure_total_time controls future timing accumulation. Profiler
   # controls do not affect these totals. A forked child inherits its parent's
-  # totals. MMTk and wbcheck raise NotImplementedError for this scope.
+  # totals. MMTk and wbcheck raise NotImplementedError for process statistics.
   #
-  # Unknown scopes and unavailable keys raise ArgumentError.
+  # Unavailable keys raise ArgumentError.
   #
-  def self.stat hash_or_key = nil, scope: :ractor
-    case scope
-    when :ractor, :local
-      Primitive.gc_stat hash_or_key, false
-    when :global
-      Primitive.gc_stat hash_or_key, true
-    else
-      raise ArgumentError, "unknown scope: #{scope.inspect}"
-    end
+  def self.stat hash_or_key = nil, process: false
+    Primitive.gc_stat hash_or_key, process
   end
 
   # call-seq:

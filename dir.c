@@ -499,16 +499,16 @@ fnmatch(
 VALUE rb_cDir;
 static VALUE sym_directory, sym_link, sym_file, sym_unknown;
 
-#if defined(DT_BLK) || defined(S_IFBLK)
+#if defined(DT_BLK) || (defined(HAVE_DIRFD) && defined(S_IFBLK))
 static VALUE sym_block_device;
 #endif
-#if defined(DT_CHR) || defined(S_IFCHR)
+#if defined(DT_CHR) || (defined(HAVE_DIRFD) && defined(S_IFCHR))
 static VALUE sym_character_device;
 #endif
-#if defined(DT_FIFO) || defined(S_IFIFO)
+#if defined(DT_FIFO) || (defined(HAVE_DIRFD) && defined(S_IFIFO))
 static VALUE sym_fifo;
 #endif
-#if defined(DT_SOCK) || defined(S_IFSOCK)
+#if defined(DT_SOCK) || (defined(HAVE_DIRFD) && defined(S_IFSOCK))
 static VALUE sym_socket;
 #endif
 
@@ -857,11 +857,11 @@ fundamental_encoding_p(rb_encoding *enc)
 # define READDIR(dir, enc) rb_w32_readdir((dir), (enc))
 # define READDIR_NOGVL READDIR
 #else
-NORETURN(static void *sys_failure(void *function));
+NORETURN(static void *readdir_failure(void *err));
 static void *
-sys_failure(void *function)
+readdir_failure(void *err)
 {
-    rb_sys_fail(function);
+    rb_syserr_fail((int)(VALUE)err, "readdir");
 }
 
 static void *
@@ -869,8 +869,9 @@ nogvl_readdir(void *dir)
 {
     rb_errno_set(0);
     if ((dir = readdir(dir)) == NULL) {
-        if (rb_errno())
-            rb_thread_call_with_gvl(sys_failure, (void *)"readdir");
+        int e = rb_errno();
+        if (e)
+            rb_thread_call_with_gvl(readdir_failure, (void *)(VALUE)e);
     }
     return dir;
 }
@@ -953,6 +954,7 @@ static VALUE
 dir_yield_with_type(VALUE arg, VALUE path, struct dir_entry_args *dir_entry)
 {
     VALUE type;
+#ifdef DT_UNKNOWN
     switch (dir_entry->dp->d_type) {
 #ifdef DT_BLK
       case DT_BLK:
@@ -987,6 +989,9 @@ dir_yield_with_type(VALUE arg, VALUE path, struct dir_entry_args *dir_entry)
         type = sym_unknown;
         break;
     }
+#else
+    type = sym_unknown;
+#endif
 
 #ifdef HAVE_DIRFD
     if (RUBY_DEBUG || RB_UNLIKELY(type == sym_unknown)) {
@@ -1651,9 +1656,9 @@ rb_dir_getwd_ospath(void)
     if (!cached_cwd || (size_t)RSTRING_LEN(cached_cwd) != len ||
         memcmp(RSTRING_PTR(cached_cwd), path, len) != 0) {
 #ifdef __APPLE__
-        cached_cwd = rb_str_normalize_ospath(path, (long)len);
+        cached_cwd = rb_str_normalize_ospath(path, (rb_len_t)len);
 #else
-        cached_cwd = rb_str_new(path, (long)len);
+        cached_cwd = rb_str_new(path, (rb_len_t)len);
 #endif
         rb_str_freeze(cached_cwd);
         RB_OBJ_SET_SHAREABLE(cached_cwd);
@@ -1704,7 +1709,7 @@ check_dirname(VALUE dir)
 {
     VALUE d = dir;
     char *path, *pend;
-    long len;
+    rb_len_t len;
     rb_encoding *enc;
 
     FilePathValue(d);
@@ -1886,28 +1891,16 @@ sys_enc_warning_in(const char *func, const char *mesg, rb_encoding *enc)
 #define sys_warning(val, enc) \
     ((flags & GLOB_VERBOSE) ? sys_enc_warning_in(RUBY_FUNCTION_NAME_STRING, (val), (enc)) :(void)0)
 
-static inline size_t
-glob_alloc_size(size_t x, size_t y)
-{
-    size_t z;
-    if (rb_mul_size_overflow(x, y, SSIZE_MAX, &z)) {
-        rb_memerror();          /* or...? */
-    }
-    else {
-        return z;
-    }
-}
-
 static inline void *
 glob_alloc_n(size_t x, size_t y)
 {
-    return malloc(glob_alloc_size(x, y));
+    return malloc(rbimpl_size_mul_or_raise(x, y));
 }
 
 static inline void *
 glob_realloc_n(void *p, size_t x, size_t y)
 {
-    return realloc(p, glob_alloc_size(x, y));
+    return realloc(p, rbimpl_size_mul_or_raise(x, y));
 }
 
 #define GLOB_ALLOC(type) ((type *)malloc(sizeof(type)))
@@ -3570,7 +3563,7 @@ static VALUE
 dir_globs(VALUE args, VALUE base, int flags)
 {
     VALUE ary = rb_ary_new();
-    long i;
+    rb_len_t i;
 
     for (i = 0; i < RARRAY_LEN(args); ++i) {
         int status;
@@ -4116,16 +4109,16 @@ Init_Dir(void)
     sym_file = ID2SYM(rb_intern("file"));
     sym_unknown = ID2SYM(rb_intern("unknown"));
 
-#if defined(DT_BLK) || defined(S_IFBLK)
+#if defined(DT_BLK) || (defined(HAVE_DIRFD) && defined(S_IFBLK))
     sym_block_device = ID2SYM(rb_intern("blockSpecial"));
 #endif
-#if defined(DT_CHR) || defined(S_IFCHR)
+#if defined(DT_CHR) || (defined(HAVE_DIRFD) && defined(S_IFCHR))
     sym_character_device = ID2SYM(rb_intern("characterSpecial"));
 #endif
-#if defined(DT_FIFO) || defined(S_IFIFO)
+#if defined(DT_FIFO) || (defined(HAVE_DIRFD) && defined(S_IFIFO))
     sym_fifo = ID2SYM(rb_intern("fifo"));
 #endif
-#if defined(DT_SOCK) || defined(S_IFSOCK)
+#if defined(DT_SOCK) || (defined(HAVE_DIRFD) && defined(S_IFSOCK))
     sym_socket = ID2SYM(rb_intern("socket"));
 #endif
 

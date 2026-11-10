@@ -940,8 +940,9 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
         th->invoke_type = thread_invoke_type_ractor_proc;
         th->ractor = params->g;
         th->ec->ractor_id = rb_ractor_id(th->ractor);
+        th->ec->serial = th->ractor->next_ec_serial++;
         th->ractor->threads.main = th;
-        th->invoke_arg.proc.proc = rb_proc_isolate_bang(params->proc, Qnil);
+        th->invoke_arg.proc.proc = params->proc; // already a shareable copy (see ractor_create)
         th->invoke_arg.proc.args = INT2FIX(RARRAY_LENINT(params->args));
         th->invoke_arg.proc.kw_splat = rb_keyword_given_p();
         break;
@@ -1196,7 +1197,7 @@ rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
 
     VALUE thval = create_ractor_alloc_thread(r, cr, ec);
 
-    /* Creation can still fail before vm_insert_ractor (an IsolationError, say), and a
+    /* Creation can still fail before vm_insert_ractor (NoMemoryError, say), and a
      * left-over cover would enumerate the dead child's objspace twice and dangle after
      * the merge: on failure hand the objspace to zombie_objspaces under the VM lock,
      * drop the cover, NULL r->objspace. */
@@ -2134,6 +2135,7 @@ enum io_wait_result {
     io_wait_ready,     // the MN scheduler waited and the fd is ready
     io_wait_timed_out, // the MN scheduler waited until the timeout expired
     io_wait_unhandled, // the MN scheduler did not wait; use the blocking path
+    io_wait_interrupted, // the MN scheduler stopped for an interrupt; handle it and wait again
 };
 
 // Wait for `fd` on the MN scheduler, if it can take this wait at all.
@@ -2169,6 +2171,8 @@ thread_io_wait_events(rb_thread_t *th, int fd, int events, const struct timeval 
             // Never waited: reporting "ready" here would fabricate readiness and
             // spin, so hand the wait back to the caller's blocking path.
             return io_wait_unhandled;
+          case thread_sched_wait_interrupted:
+            return io_wait_interrupted;
         }
     }
 #endif // defined(USE_MN_THREADS) && USE_MN_THREADS
@@ -2215,12 +2219,6 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
 
     int fd = io->fd;
 
-    // `errno` is only valid when there is an actual error - but we can't
-    // extract that from the return value of `func` alone, so we clear any
-    // prior `errno` value here so that we can later check if it was set by
-    // `func` or not (as opposed to some previously set value).
-    errno = 0;
-
     struct rb_io_blocking_operation blocking_operation = {
         .ec = ec,
         .scheduler_interrupt_target = Qnil,
@@ -2233,6 +2231,11 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
             volatile enum ruby_tag_type saved_state = state; /* for BLOCKING_REGION */
           retry:
             BLOCKING_REGION(th, {
+                // `errno` is only valid when there is an actual error - but we can't
+                // extract that from the return value of `func` alone, so we clear any
+                // prior `errno` value here so that we can later check if it was set by
+                // `func` or not (as opposed to some previously set value).
+                errno = 0;
                 val = func(data1);
                 saved_errno = errno;
             }, ubf_select, th, FALSE);
@@ -2240,7 +2243,8 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
             RUBY_ASSERT(th == rb_ec_thread_ptr(ec));
             if (events && blocking_call_retryable_p((int)val, saved_errno)) {
                 // `func` just returned EAGAIN, so the fd is known not to be ready.
-                if (thread_io_wait_events(th, fd, events, NULL, true) == io_wait_ready) {
+                // Any M:N outcome but unhandled (ready, interrupted, woken early) retries `func`.
+                if (thread_io_wait_events(th, fd, events, NULL, true) != io_wait_unhandled) {
                     RUBY_VM_CHECK_INTS_BLOCKING(ec);
                     goto retry;
                 }
@@ -2452,10 +2456,10 @@ static enum handle_interrupt_timing
 rb_threadptr_pending_interrupt_check_mask(rb_thread_t *th, VALUE err)
 {
     VALUE mask;
-    long mask_stack_len = RARRAY_LEN(th->pending_interrupt_mask_stack);
+    rb_len_t mask_stack_len = RARRAY_LEN(th->pending_interrupt_mask_stack);
     const VALUE *mask_stack = RARRAY_CONST_PTR(th->pending_interrupt_mask_stack);
     VALUE mod;
-    long i;
+    rb_len_t i;
 
     for (i=0; i<mask_stack_len; i++) {
         mask = mask_stack[mask_stack_len-(i+1)];
@@ -2881,6 +2885,11 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 
     if (th->ec->raised_flag) return ret;
 
+    /* Interrupts are checked at arbitrary points, including while a jump
+     * (break/next/redo/return/raise/throw) is being propagated.
+     * Save errinfo as the interrupt might run Ruby code that could clear it. */
+    const VALUE saved_errinfo = th->ec->errinfo;
+
     while ((interrupt = threadptr_get_interrupts(th)) != 0) {
         int sig;
         int timer_interrupt;
@@ -2976,6 +2985,9 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
             rb_thread_schedule_limits(limits_us);
         }
     }
+
+    th->ec->errinfo = saved_errinfo;
+
     return ret;
 }
 
@@ -3975,8 +3987,11 @@ rb_thread_setname(VALUE thread, VALUE name)
         name = rb_str_new_frozen(name);
     }
     target_th->name = name;
-    if (threadptr_initialized(target_th) && target_th->has_dedicated_nt) {
-        native_set_another_thread_name(target_th->nt->thread_id, name);
+    if (threadptr_initialized(target_th) && target_th->has_dedicated_nt &&
+        target_th->status != THREAD_KILLED) {
+        // 0 until the new thread records it; thread_do_start names it then
+        rb_nativethread_id_t thread_id = ACCESS_ONCE(rb_nativethread_id_t, target_th->nt->thread_id);
+        if (thread_id) native_set_another_thread_name(thread_id, name);
     }
     return name;
 }
@@ -4825,7 +4840,9 @@ do_select(VALUE p)
      TRUE)
 
     do {
-        lerrno = 0;
+        // A skipped select is not a timeout; report EINTR so wait_retryable selects again.
+        result = -1;
+        lerrno = EINTR;
 
         BLOCKING_REGION(set->th, {
             struct timeval tv;
@@ -4834,7 +4851,7 @@ do_select(VALUE p)
                 result = native_fd_select(set->max,
                                           set->rset, set->wset, set->eset,
                                           rb_hrtime2timeval(&tv, to), set->th);
-                if (result < 0) lerrno = errno;
+                lerrno = result < 0 ? errno : 0;
             }
         }, ubf_select, set->th, TRUE);
 
@@ -4908,13 +4925,14 @@ wait_for_single_fd_blocking_region(rb_thread_t *th, struct pollfd *fds, nfds_t n
                                    rb_hrtime_t *const to, volatile int *lerrno)
 {
     struct timespec ts;
-    volatile int result = 0;
+    // A skipped ppoll is not a timeout; report EINTR so wait_retryable polls again.
+    volatile int result = -1;
 
-    *lerrno = 0;
+    *lerrno = EINTR;
     BLOCKING_REGION(th, {
         if (!RUBY_VM_INTERRUPTED(th->ec)) {
             result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, to), 0);
-            if (result < 0) *lerrno = errno;
+            *lerrno = result < 0 ? errno : 0;
         }
     }, ubf_select, th, TRUE);
     return result;
@@ -4952,43 +4970,50 @@ COMPILER_WARNING_IGNORED(-Wdangling-pointer)
 COMPILER_WARNING_POP
     }
 
-    // A zero timeout is a plain probe; ppoll answers it without parking.
-    bool mn_wait = timeout == NULL || timeout->tv_sec != 0 || timeout->tv_usec != 0;
-
-    enum io_wait_result mn_result = io_wait_unhandled;
     struct timeval tv_rest;
-    if (mn_wait) {
-        rb_hrtime_t started = timeout ? rb_hrtime_now() : 0;
-        mn_result = thread_io_wait_events(th, fd, events, timeout, false);
+    struct timeval *volatile wait_timeout = timeout;
+    const rb_hrtime_t deadline = timeout ? rb_hrtime_add(rb_hrtime_now(), rb_timeval2hrtime(timeout)) : 0;
 
-        // The M:N wait may hand an interrupted wait back to the blocking path
-        // below.  Charge what it already waited against the timeout, so the
-        // deadline is the one the caller asked for.
-        if (mn_result == io_wait_unhandled && timeout) {
-            rb_hrtime_t total = rb_timeval2hrtime(timeout);
-            rb_hrtime_t spent = rb_hrtime_sub(rb_hrtime_now(), started);
-            rb_hrtime_t rest = spent < total ? total - spent : 0;
-            rb_hrtime2timeval(&tv_rest, &rest);
-            timeout = &tv_rest;
+    // The interrupt checks below may raise; the tag lets the exit path unlink blocking_operation.
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        enum io_wait_result mn_result;
+
+        while (1) {
+            // A zero timeout is a plain probe; ppoll answers it without parking.
+            bool mn_wait = wait_timeout == NULL || wait_timeout->tv_sec != 0 || wait_timeout->tv_usec != 0;
+            mn_result = mn_wait ? thread_io_wait_events(th, fd, events, wait_timeout, false) : io_wait_unhandled;
+            if (mn_result == io_wait_ready) break;
+
+            // Charge what the M:N wait spent against the deadline the caller asked for.
+            rb_hrtime_t rest = 0;
+            if (wait_timeout) {
+                rb_hrtime_t now = rb_hrtime_now();
+                rest = now < deadline ? deadline - now : 0;
+                rb_hrtime2timeval(&tv_rest, &rest);
+                wait_timeout = &tv_rest;
+            }
+            if (mn_result == io_wait_unhandled) break;
+            if (mn_result == io_wait_timed_out && wait_timeout && rest == 0) break;
+
+            // Stopped without an event before the deadline (an interrupt, or a wakeup
+            // for a masked one): handle it and wait again.  At the deadline this probes once.
+            RUBY_VM_CHECK_INTS_BLOCKING(ec);
         }
-    }
 
-    switch (mn_result) {
-      case io_wait_ready:
-        fds[0].revents = events;
-        errno = 0;
-        break;
-      case io_wait_timed_out:
-        // revents stays 0, so the result below becomes 0 as with ppoll's timeout.
-        errno = 0;
-        break;
-      case io_wait_unhandled:
-        EC_PUSH_TAG(ec);
-        struct timeval *volatile blocking_timeout = timeout;
-        if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        switch (mn_result) {
+          case io_wait_ready:
+            fds[0].revents = events;
+            errno = 0;
+            break;
+          case io_wait_timed_out:
+            // revents stays 0, so the result below becomes 0 as with ppoll's timeout.
+            errno = 0;
+            break;
+          case io_wait_unhandled: {
             rb_hrtime_t *to, rel, end = 0;
             RUBY_VM_CHECK_INTS_BLOCKING(ec);
-            timeout_prepare(&to, &rel, &end, blocking_timeout);
+            timeout_prepare(&to, &rel, &end, wait_timeout);
             do {
                 nfds = numberof(fds);
                 result = wait_for_single_fd_blocking_region(th, fds, nfds, to, &lerrno);
@@ -4997,10 +5022,13 @@ COMPILER_WARNING_POP
             } while (wait_retryable(&result, lerrno, to, end));
 
             RUBY_VM_CHECK_INTS_BLOCKING(ec);
+            break;
+          }
+          case io_wait_interrupted:
+            UNREACHABLE;
         }
-
-        EC_POP_TAG();
     }
+    EC_POP_TAG();
 
     if (io) {
         rb_io_blocking_operation_exit(io, &blocking_operation);

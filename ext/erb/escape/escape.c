@@ -1,6 +1,11 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
 
+#ifndef HAVE_RB_LEN_T
+typedef long rb_len_t;
+# define RB_LEN_MAX LONG_MAX
+#endif
+
 static VALUE rb_cCGI;
 static ID id_escapeHTML;
 
@@ -14,11 +19,11 @@ static const bool html_escape_table[UCHAR_MAX+1] = {
     ['>'] = true,
 };
 
-static inline long
+static inline rb_len_t
 escaped_length(VALUE str)
 {
-    const long len = RSTRING_LEN(str);
-    if (len >= LONG_MAX / HTML_ESCAPE_MAX_LEN) {
+    const rb_len_t len = RSTRING_LEN(str);
+    if (len >= RB_LEN_MAX / HTML_ESCAPE_MAX_LEN) {
         ruby_malloc_size_overflow(len, HTML_ESCAPE_MAX_LEN);
     }
     return len * HTML_ESCAPE_MAX_LEN;

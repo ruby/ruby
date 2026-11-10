@@ -1025,6 +1025,27 @@ module StringScannerTests
     assert_equal(4, s.size)
   end
 
+  def test_size_after_string_match
+    s = create_string_scanner("abc")
+    s.scan(/(a)(b)/)
+    s.scan("c")
+    assert_equal([1, []], [s.size, s.captures])
+  end
+
+  def test_size_after_getch
+    s = create_string_scanner("abc")
+    s.scan(/(a)(b)/)
+    s.getch
+    assert_equal([1, []], [s.size, s.captures])
+  end
+
+  def test_size_after_get_byte
+    s = create_string_scanner("abc")
+    s.scan(/(a)(b)/)
+    s.get_byte
+    assert_equal([1, []], [s.size, s.captures])
+  end
+
   def test_captures
     s = create_string_scanner("Timestamp: Fri Dec 12 1975 14:39")
     s.scan("Timestamp: ")

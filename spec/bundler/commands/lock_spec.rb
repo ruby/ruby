@@ -1471,6 +1471,40 @@ RSpec.describe "bundle lock" do
     bundle "lock --add-platform x86_64-linux"
   end
 
+  it "adds platform specific gems for a new platform when another gem's variant for that platform is incompatible with the current ruby" do
+    build_repo4 do
+      build_gem "sqlite3", "2.10.1"
+      build_gem "sqlite3", "2.10.1" do |s|
+        s.platform = "x86_64-linux"
+      end
+      build_gem "sqlite3", "2.10.1" do |s|
+        s.platform = "arm64-darwin"
+      end
+
+      build_gem "bcrypt_pbkdf", "1.1.2"
+      build_gem "bcrypt_pbkdf", "1.1.2" do |s|
+        s.platform = "arm64-darwin"
+        s.required_ruby_version = "< #{Gem.ruby_version}"
+      end
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+
+      gem "sqlite3"
+      gem "bcrypt_pbkdf"
+    G
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --add-checksums --add-platform arm64-darwin"
+    end
+
+    expect(lockfile).to include("sqlite3 (2.10.1-arm64-darwin)")
+    expect(lockfile).to include("bcrypt_pbkdf (1.1.2)\n")
+    expect(lockfile).not_to include("bcrypt_pbkdf (1.1.2-arm64-darwin)")
+    expect(the_bundle.locked_platforms).to include("arm64-darwin")
+  end
+
   it "adds platform specific gems as necessary, even when adding the current platform" do
     build_repo4 do
       build_gem "nokogiri", "1.16.0"
@@ -3019,6 +3053,132 @@ RSpec.describe "bundle lock" do
       end
 
       expect(lockfile).to eq(original_lockfile.gsub(/^  ruby\n/m, ""))
+    end
+  end
+
+  describe "--add-ruby-abi and --remove-ruby-abi", rubygems: ">= 4.1.0.a" do
+    before do
+      skip_unless_content_addressing_available!
+      build_repo2_with_content_addressed_gems
+
+      gemfile <<~G
+        source "https://gem.repo2"
+
+        gem "mygem"
+      G
+    end
+
+    it "adds and removes the content-addressed gems for a Ruby ABI" do
+      simulate_platform "x86_64-linux" do
+        bundle_with_content_addressed_gems "install"
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{mismatched_abi}"
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n  #{mismatched_abi}\n")
+        expect(locked_addresses).to eq(addresses(current_abi, mismatched_abi))
+
+        bundle_with_content_addressed_gems "lock --remove-ruby-abi #{mismatched_abi}"
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+        expect(locked_addresses).to eq(addresses(current_abi))
+      end
+    end
+
+    it "rejects a value that is not a Ruby ABI" do
+      simulate_platform "x86_64-linux" do
+        bundle_with_content_addressed_gems "install"
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi foo", raise_on_error: false
+
+        expect(err).to include("Expected `--add-ruby-abi` to be a Ruby ABI like `X.Y`, got \"foo\"")
+      end
+    end
+
+    it "refuses to remove a Ruby ABI that is not locked" do
+      simulate_platform "x86_64-linux" do
+        bundle_with_content_addressed_gems "install"
+
+        bundle_with_content_addressed_gems "lock --remove-ruby-abi #{mismatched_abi}", raise_on_error: false
+
+        expect(err).to include("Unable to remove the Ruby ABI `#{mismatched_abi}` since the only Ruby ABIs are #{current_abi}")
+      end
+    end
+
+    it "adds and removes Ruby ABIs with --local from the installed gems" do
+      simulate_platform "x86_64-linux" do
+        bundle_with_content_addressed_gems "install"
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{mismatched_abi} --local", raise_on_error: false
+        expect(err).to include("Could not find content-addressed gems for Ruby ABI #{mismatched_abi} in locally installed gems")
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+
+        bundle_with_content_addressed_gems "lock --remove-ruby-abi #{current_abi} --local"
+        expect(lockfile).not_to include("RUBY ABIS")
+        expect(locked_addresses).to be_empty
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{current_abi} --local"
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+        expect(locked_addresses).to eq(addresses(current_abi))
+      end
+    end
+
+    it "refuses to add a Ruby ABI the Gemfile's ruby directive rules out" do
+      simulate_platform "x86_64-linux" do
+        gemfile <<~G
+          source "https://gem.repo2"
+
+          ruby "#{RUBY_VERSION}"
+          gem "mygem"
+        G
+        bundle_with_content_addressed_gems "install"
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{mismatched_abi}", raise_on_error: false
+
+        expect(err).to include("Unable to add the Ruby ABI `#{mismatched_abi}` since your Gemfile requires ruby")
+        expect(locked_addresses).to eq(addresses(current_abi))
+      end
+    end
+
+    it "refuses to add a locked Ruby ABI that a newly added ruby directive rules out instead of silently pruning it" do
+      simulate_platform "x86_64-linux" do
+        lockfile_with_content_addresses(addresses(current_abi, mismatched_abi), ruby_abis: [current_abi, mismatched_abi].sort)
+        original_lockfile = lockfile
+
+        gemfile <<~G
+          source "https://gem.repo2"
+
+          ruby "#{RUBY_VERSION}"
+          gem "mygem"
+        G
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{mismatched_abi}", raise_on_error: false
+
+        expect(last_command).to be_failure
+        expect(err).to include("Unable to add the Ruby ABI `#{mismatched_abi}` since your Gemfile requires ruby")
+        expect(lockfile).to eq(original_lockfile)
+      end
+    end
+  end
+
+  describe "--normalize-platforms with content-addressed gems", rubygems: ">= 4.1.0.a" do
+    before do
+      skip_unless_content_addressing_available!
+      build_repo2_with_content_addressed_gems
+
+      gemfile <<~G
+        source "https://gem.repo2"
+
+        gem "mygem"
+      G
+    end
+
+    it "rebuilds the content addresses from the source" do
+      simulate_platform "x86_64-linux" do
+        lockfile_with_content_addresses({ "0000000000000000" => nil }.merge(addresses(current_abi)), ruby_abis: [current_abi])
+
+        bundle_with_content_addressed_gems "lock --normalize-platforms"
+
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+        expect(locked_addresses).to eq(addresses(current_abi))
+      end
     end
   end
 end

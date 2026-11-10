@@ -886,6 +886,19 @@ if you believe they were disclosed to a third party.
     end
   end
 
+  def test_ignore_config_file_with_tab_separated_nested_mapping
+    File.open @temp_conf, "w" do |fp|
+      fp.puts ":ssl_ca_cert:\tfoo:\tbar"
+    end
+
+    _, err = capture_output do
+      util_config_file
+    end
+
+    assert_match "doesn't contain valid YAML hash", err
+    assert_nil @cfg.ssl_ca_cert
+  end
+
   def test_accept_string_key
     File.open @temp_conf, "w" do |fp|
       fp.puts "verbose: false"

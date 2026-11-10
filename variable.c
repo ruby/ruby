@@ -52,7 +52,6 @@ RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 typedef void rb_gvar_compact_t(void *var);
 
 static struct rb_id_table *rb_global_tbl;
-static ID autoload;
 
 // This hash table maps file paths to loadable features. We use this to track
 // autoload state until it's no longer needed.
@@ -90,7 +89,6 @@ Init_var_tables(void)
 {
     rb_global_tbl = rb_id_table_create(0);
     generic_fields_tbl_ = st_init_numtable();
-    autoload = rb_intern_const("__autoload__");
 
     autoload_mutex = rb_mutex_new();
     rb_obj_hide(autoload_mutex);
@@ -247,7 +245,7 @@ set_sub_temporary_name_foreach(VALUE mod, struct sub_temporary_name_args *args, 
         rb_id_table_foreach(tbl, set_sub_temporary_name_i, args);
     }
     else {
-        long names_len = RARRAY_LEN(args->names); // paranoiac check?
+        rb_len_t names_len = RARRAY_LEN(args->names); // paranoiac check?
         rb_ary_push(args->names, name);
         rb_id_table_foreach(tbl, set_sub_temporary_name_i, args);
         rb_ary_set_len(args->names, names_len);
@@ -1276,7 +1274,13 @@ class_ivar_set_ractor_check(VALUE klass, ID id)
 {
     if (rb_is_instance_id(id) && // check only normal ivars
         UNLIKELY(!rb_class_owned_p(klass))) {
-        rb_raise(rb_eRactorIsolationError, "can not set instance variables of classes/modules created by another Ractor");
+        rb_raise(
+            rb_eRactorIsolationError,
+            "can not set instance variables of classes/modules "
+            "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
+            rb_id2str(id),
+            rb_class_path(klass)
+        );
     }
 }
 
@@ -1413,7 +1417,7 @@ rb_obj_fields(VALUE obj, ID field_name)
         return RCLASS_WRITABLE_FIELDS_OBJ(obj);
 
       case T_DATA:
-        return RTYPEDDATA(obj)->fields_obj;
+        return rbimpl_atomic_value_load(&RTYPEDDATA(obj)->fields_obj, RBIMPL_ATOMIC_RELAXED);
 
       case T_STRUCT:
         return RSTRUCT_FIELDS_OBJ(obj);
@@ -1507,7 +1511,7 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
             ROBJECT_SET_EXTENDED(obj, fields_obj);
             break;
           case T_DATA:
-            RB_OBJ_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, fields_obj);
+            RB_OBJ_ATOMIC_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, fields_obj);
             break;
           case T_STRUCT:
             RSTRUCT_SET_FIELDS_OBJ(obj, fields_obj);
@@ -1573,12 +1577,9 @@ rb_obj_replace_fields(VALUE obj, VALUE fields_obj)
 }
 
 VALUE
-rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
+rb_imemo_fields_field_get(VALUE fields_obj, shape_id_t target_shape_id)
 {
-    RUBY_ASSERT(!SPECIAL_CONST_P(obj));
     RUBY_ASSERT(RSHAPE_TYPE_P(target_shape_id, SHAPE_IVAR) || RSHAPE_TYPE_P(target_shape_id, SHAPE_OBJ_ID));
-
-    VALUE fields_obj = rb_obj_fields(obj, RSHAPE_EDGE_NAME(target_shape_id));
 
     if (UNLIKELY(rb_shape_complex_p(target_shape_id))) {
         st_table *fields_hash = rb_imemo_fields_complex_tbl(fields_obj);
@@ -1590,6 +1591,14 @@ rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
 
     attr_index_t index = RSHAPE_INDEX(target_shape_id);
     return rb_imemo_fields_ptr(fields_obj)[index];
+}
+
+VALUE
+rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
+{
+    RUBY_ASSERT(!SPECIAL_CONST_P(obj));
+
+    return rb_imemo_fields_field_get(rb_obj_fields(obj, RSHAPE_EDGE_NAME(target_shape_id)), target_shape_id);
 }
 
 VALUE
@@ -1629,7 +1638,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
                 "can not get unshareable values from instance variables of classes/modules "
                 "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
                 rb_id2str(id),
-                obj
+                rb_class_path(obj)
             );
         }
     }
@@ -1661,8 +1670,13 @@ rb_ivar_get_at(VALUE obj, attr_index_t index, ID id)
             VALUE val = rb_imemo_fields_ptr(fields_obj)[index];
 
             if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
-                rb_raise(rb_eRactorIsolationError,
-                        "can not get unshareable values from instance variables of classes/modules created by another Ractor");
+                rb_raise(
+                    rb_eRactorIsolationError,
+                    "can not get unshareable values from instance variables of classes/modules "
+                    "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
+                    rb_id2str(id),
+                    rb_class_path(obj)
+                );
             }
 
             return val;
@@ -1955,7 +1969,9 @@ generic_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE va
     }
 
     const VALUE original_fields_obj = rb_obj_fields(obj, field_name);
-    VALUE fields_obj = imemo_fields_set(obj, original_fields_obj, target_shape_id, field_name, val, false);
+    // Readers of a shareable object's fields take no lock, so never mutate a published fields_obj.
+    bool concurrent = rb_multi_ractor_p() && RB_OBJ_SHAREABLE_P(obj);
+    VALUE fields_obj = imemo_fields_set(obj, original_fields_obj, target_shape_id, field_name, val, concurrent);
 
     rb_obj_set_fields(obj, fields_obj, field_name, original_fields_obj);
     return rb_shape_complex_p(target_shape_id) ? ATTR_INDEX_NOT_SET : RSHAPE_INDEX(target_shape_id);
@@ -2674,69 +2690,6 @@ rb_mod_const_missing(VALUE klass, VALUE name)
     UNREACHABLE_RETURN(Qnil);
 }
 
-static void
-autoload_table_mark(void *ptr)
-{
-    rb_mark_tbl_no_pin((st_table *)ptr);
-}
-
-static void
-autoload_table_free(void *ptr)
-{
-    st_free_table((st_table *)ptr);
-}
-
-static size_t
-autoload_table_memsize(const void *ptr)
-{
-    const st_table *tbl = ptr;
-    return st_memsize(tbl);
-}
-
-static void
-autoload_table_compact(void *ptr)
-{
-    rb_gc_ref_update_table_values_only((st_table *)ptr);
-}
-
-static const rb_data_type_t autoload_table_type = {
-    "autoload_table",
-    {autoload_table_mark, autoload_table_free, autoload_table_memsize, autoload_table_compact,},
-    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
-};
-
-#define check_autoload_table(av) \
-    (struct st_table *)rb_check_typeddata((av), &autoload_table_type)
-
-static VALUE
-autoload_data(VALUE mod, ID id)
-{
-    struct st_table *tbl;
-    st_data_t val;
-
-    // If we are called with a non-origin ICLASS, fetch the autoload data from
-    // the original module.
-    if (RB_TYPE_P(mod, T_ICLASS)) {
-        if (RICLASS_IS_ORIGIN_P(mod)) {
-            return 0;
-        }
-        else {
-            mod = RBASIC(mod)->klass;
-        }
-    }
-
-    RUBY_ASSERT(RB_TYPE_P(mod, T_CLASS) || RB_TYPE_P(mod, T_MODULE));
-
-    // Look up the instance variable table for `autoload`, then index into that table with the given constant name `id`.
-
-    VALUE tbl_value = rb_ivar_lookup(mod, autoload, Qfalse);
-    if (!RTEST(tbl_value) || !(tbl = check_autoload_table(tbl_value)) || !st_lookup(tbl, (st_data_t)id, &val)) {
-        return 0;
-    }
-
-    return (VALUE)val;
-}
-
 // Every autoload constant has exactly one instance of autoload_const, stored in `autoload_features`. Since multiple autoload constants can refer to the same file, every `autoload_const` refers to a de-duplicated `autoload_data`.
 struct autoload_const {
     // The linked list node of all constants which are loaded by the related autoload feature.
@@ -2751,6 +2704,9 @@ struct autoload_const {
 
     // The module we are loading a constant into.
     VALUE module;
+
+    // The file that called autoload
+    VALUE autoload_call_file;
 
     // The name of the constant we are loading.
     ID name;
@@ -2821,6 +2777,7 @@ autoload_const_mark_and_move(void *ptr)
     struct autoload_const *ac = ptr;
 
     rb_gc_mark_and_move(&ac->module);
+    rb_gc_mark_and_move(&ac->autoload_call_file);
     rb_gc_mark_and_move(&ac->autoload_data_value);
     rb_gc_mark_and_move(&ac->value);
     rb_gc_mark_and_move(&ac->file);
@@ -2867,6 +2824,16 @@ get_autoload_data(VALUE autoload_const_value, struct autoload_const **autoload_c
     return autoload_data;
 }
 
+// The autoload entry of the constant `id` of `mod`, or 0.
+static VALUE
+autoload_entry(VALUE mod, ID id)
+{
+    rb_const_entry_t *ce = rb_const_lookup(mod, id);
+    if (!ce || !UNDEF_P(ce->value)) return 0;
+    VM_ASSERT(rb_typeddata_is_kind_of(ce->u.autoload_const, &autoload_const_type));
+    return ce->u.autoload_const;
+}
+
 
 static void const_set(VALUE klass, ID id, VALUE val);
 static void const_added(VALUE klass, ID const_name);
@@ -2906,21 +2873,6 @@ autoload_feature_lookup_or_create(VALUE feature, struct autoload_data **autoload
 }
 
 static VALUE
-autoload_table_lookup_or_create(VALUE module)
-{
-    VALUE autoload_table_value = rb_ivar_lookup(module, autoload, Qfalse);
-    if (RTEST(autoload_table_value)) {
-        return autoload_table_value;
-    }
-    else {
-        autoload_table_value = TypedData_Wrap_Struct(0, &autoload_table_type, NULL);
-        rb_class_ivar_set(module, autoload, autoload_table_value);
-        RTYPEDDATA_DATA(autoload_table_value) = st_init_numtable();
-        return autoload_table_value;
-    }
-}
-
-static VALUE
 autoload_synchronized(VALUE _arguments)
 {
     struct autoload_arguments *arguments = (struct autoload_arguments *)_arguments;
@@ -2932,9 +2884,7 @@ autoload_synchronized(VALUE _arguments)
 
     // Reset any state associated with any previous constant:
     const_set(arguments->module, arguments->name, Qundef);
-
-    VALUE autoload_table_value = autoload_table_lookup_or_create(arguments->module);
-    struct st_table *autoload_table = check_autoload_table(autoload_table_value);
+    constant_entry = rb_const_lookup(arguments->module, arguments->name);
 
     // Ensure the string is uniqued since we use an identity lookup:
     VALUE feature = rb_fstring(arguments->feature);
@@ -2947,13 +2897,13 @@ autoload_synchronized(VALUE _arguments)
         VALUE autoload_const_value = TypedData_Make_Struct(0, struct autoload_const, &autoload_const_type, autoload_const);
         RB_OBJ_WRITE(autoload_const_value, &autoload_const->box_value, arguments->box_value);
         RB_OBJ_WRITE(autoload_const_value, &autoload_const->module, arguments->module);
+        RB_OBJ_WRITE(autoload_const_value, &autoload_const->autoload_call_file, constant_entry->u.file);
         autoload_const->name = arguments->name;
         autoload_const->value = Qundef;
         autoload_const->flag = CONST_PUBLIC;
         RB_OBJ_WRITE(autoload_const_value, &autoload_const->autoload_data_value, autoload_data_value);
         ccan_list_add_tail(&autoload_data->constants, &autoload_const->cnode);
-        st_insert(autoload_table, (st_data_t)arguments->name, (st_data_t)autoload_const_value);
-        RB_OBJ_WRITTEN(autoload_table_value, Qundef, autoload_const_value);
+        RB_OBJ_WRITE(arguments->module, &constant_entry->u.autoload_const, autoload_const_value);
     }
 
     return Qtrue;
@@ -2991,45 +2941,26 @@ rb_autoload_str(VALUE module, ID name, VALUE feature)
 }
 
 static void
-autoload_delete(VALUE module, ID name)
+autoload_delete(VALUE autoload_const_value)
 {
     RUBY_ASSERT_CRITICAL_SECTION_ENTER();
 
-    st_data_t load = 0, key = name;
+    VM_ASSERT(rb_typeddata_is_kind_of(autoload_const_value, &autoload_const_type));
 
-    RUBY_ASSERT(RB_TYPE_P(module, T_CLASS) || RB_TYPE_P(module, T_MODULE));
+    struct autoload_const *autoload_const;
+    struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, &autoload_const);
 
-    VALUE table_value = rb_ivar_lookup(module, autoload, Qfalse);
-    if (RTEST(table_value)) {
-        struct st_table *table = check_autoload_table(table_value);
+    VM_ASSERT(autoload_data);
 
-        st_delete(table, &key, &load);
-        RB_OBJ_WRITTEN(table_value, load, Qundef);
+    /*
+     * we must delete here to avoid "already initialized" warnings
+     * with parallel autoload.  Using list_del_init here so list_del
+     * works in autoload_const_free
+     */
+    ccan_list_del_init(&autoload_const->cnode);
 
-        /* Qfalse can indicate already deleted */
-        if (load != Qfalse) {
-            struct autoload_const *autoload_const;
-            struct autoload_data *autoload_data = get_autoload_data((VALUE)load, &autoload_const);
-
-            VM_ASSERT(autoload_data);
-            VM_ASSERT(!ccan_list_empty(&autoload_data->constants));
-
-            /*
-             * we must delete here to avoid "already initialized" warnings
-             * with parallel autoload.  Using list_del_init here so list_del
-             * works in autoload_const_free
-             */
-            ccan_list_del_init(&autoload_const->cnode);
-
-            if (ccan_list_empty(&autoload_data->constants)) {
-                rb_hash_delete(autoload_features, autoload_data->feature);
-            }
-
-            // If the autoload table is empty, we can delete it.
-            if (table->num_entries == 0) {
-                rb_attr_delete(module, autoload);
-            }
-        }
+    if (ccan_list_empty(&autoload_data->constants)) {
+        rb_hash_delete(autoload_features, autoload_data->feature);
     }
 
     RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
@@ -3038,13 +2969,13 @@ autoload_delete(VALUE module, ID name)
 static int
 autoload_by_someone_else(struct autoload_data *ele)
 {
-    return ele->mutex != Qnil && !rb_mutex_owned_p(ele->mutex);
+    return ele->mutex != Qnil && RTEST(rb_mutex_locked_p(ele->mutex)) && !rb_mutex_owned_p(ele->mutex);
 }
 
 static VALUE
 check_autoload_required(VALUE mod, ID id, const char **loadingpath)
 {
-    VALUE autoload_const_value = autoload_data(mod, id);
+    VALUE autoload_const_value = autoload_entry(mod, id);
     struct autoload_data *autoload_data;
     const char *loading;
 
@@ -3109,7 +3040,7 @@ autoload_by_current(struct autoload_data *ele)
 struct autoload_const *
 autoloading_const_entry(VALUE mod, ID id)
 {
-    VALUE load = autoload_data(mod, id);
+    VALUE load = autoload_entry(mod, id);
     struct autoload_data *ele;
     struct autoload_const *ac;
 
@@ -3144,7 +3075,40 @@ autoload_defined_p(VALUE mod, ID id)
     return !rb_autoloading_value(mod, id, NULL, NULL);
 }
 
-static void const_tbl_update(struct autoload_const *, int);
+/* const_tbl_update() runs under the VM lock, where it can neither warn nor
+ * build the message: rb_warn() dispatches Warning.warn and writes to $stderr,
+ * and formatting a "%"PRIsVALUE" calls #to_s.  It records what to warn about
+ * instead, and the caller warns once the lock is released. */
+struct const_warning {
+    ID id; /* 0 when there is nothing to warn about */
+    VALUE module;
+    VALUE file;
+    int line;
+};
+
+static void const_tbl_update(struct autoload_const *, int, struct const_warning *);
+
+static void
+const_warning_emit(const struct const_warning *warning)
+{
+    if (!warning->id) return;
+
+    VALUE name = QUOTE_ID(warning->id);
+    VALUE previous = Qnil;
+
+    if (!NIL_P(warning->file) && warning->line) {
+        previous = rb_sprintf("\n%"PRIsVALUE":%d: warning: previous definition of %"PRIsVALUE" was here",
+                              warning->file, warning->line, name);
+    }
+
+    if (warning->module == rb_cObject) {
+        rb_warn("already initialized constant %"PRIsVALUE"%"PRIsVALUE"", name, previous);
+    }
+    else {
+        rb_warn("already initialized constant %"PRIsVALUE"::%"PRIsVALUE"%"PRIsVALUE"",
+                rb_class_name(warning->module), name, previous);
+    }
+}
 
 struct autoload_load_arguments {
     VALUE module;
@@ -3165,9 +3129,11 @@ autoload_const_set(struct autoload_const *ac)
 {
     check_before_mod_set(ac->module, ac->name, ac->value, "constant");
 
+    struct const_warning warning = {0};
     RB_VM_LOCKING() {
-        const_tbl_update(ac, true);
+        const_tbl_update(ac, true, &warning);
     }
+    const_warning_emit(&warning);
 
     return 0; /* ignored */
 }
@@ -3239,12 +3205,25 @@ autoload_apply_constants(VALUE _arguments)
     return Qtrue;
 }
 
+// Require the feature and set the constants of the autoload.
 static VALUE
-autoload_feature_require_in_box(VALUE receiver, VALUE feature)
+autoload_require_and_apply(VALUE receiver, VALUE _arguments)
+{
+    struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
+
+    VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
+    if (RTEST(result)) {
+        return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);
+    }
+    return result;
+}
+
+static VALUE
+autoload_feature_require_in_box(VALUE receiver, VALUE _arguments)
 {
     rb_vm_frame_flag_set_box_require(GET_EC());
 
-    return rb_funcall(receiver, rb_intern("require"), 1, feature);
+    return autoload_require_and_apply(receiver, _arguments);
 }
 
 static VALUE
@@ -3272,24 +3251,36 @@ autoload_feature_require(VALUE _arguments)
         box = rb_get_box_t(autoload_box_value);
     }
 
-    VALUE result;
     if (box && box->top_self) {
         /*
          * Call `require` on the top self of the box that registered the autoload, in a frame
          * running in that box, so that `Kernel#require` decorations in the box (RubyGems,
          * Zeitwerk, etc.) are dispatched and the feature is loaded into that box.
          */
-        result = rb_vm_call_cfunc_in_box(box->top_self, autoload_feature_require_in_box,
-                                         box->top_self, feature, feature, box);
+        return rb_vm_call_cfunc_in_box(box->top_self, autoload_feature_require_in_box,
+                                       box->top_self, _arguments, feature, box);
     }
-    else {
-        result = rb_funcall(rb_vm_top_self(), rb_intern("require"), 1, feature);
-    }
+    return autoload_require_and_apply(rb_vm_top_self(), _arguments);
+}
 
-    if (RTEST(result)) {
-        return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);
+static rb_const_entry_t *const_lookup(struct rb_id_table *tbl, ID id);
+
+// The box in which the feature of the autoload is required.
+static const rb_box_t *
+autoload_box(const struct autoload_const *ac)
+{
+    if (rb_box_available() && BOX_OBJ_P(ac->box_value)) {
+        const rb_box_t *box = rb_get_box_t(ac->box_value);
+        if (box->top_self) return box;
     }
-    return result;
+    return rb_current_box();
+}
+
+// The constant entry `id` of `mod` in the view of `box`.
+static rb_const_entry_t *
+const_lookup_in_box(VALUE mod, ID id, const rb_box_t *box)
+{
+    return const_lookup(RCLASSEXT_CONST_TBL(RCLASS_EXT_READABLE_IN_BOX(mod, box)), id);
 }
 
 static VALUE
@@ -3297,10 +3288,29 @@ autoload_try_load(VALUE _arguments)
 {
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
+    // Load the feature and set the constants in the box that registered the autoload:
     VALUE result = autoload_feature_require(_arguments);
 
     // After we loaded the feature, if the constant is not defined, we remove it completely:
     rb_const_entry_t *ce = rb_const_lookup(arguments->module, arguments->name);
+
+    // Copy the constant from the box that registered the autoload into the current box.
+    // E.g., after a box B1 triggers the autoload, another box B2 with its own copy of the
+    // module still has it; referring to it in B2 comes here too, as the require does nothing.
+    if (ce && UNDEF_P(ce->value)) {
+        rb_const_entry_t *loaded = const_lookup_in_box(arguments->module, arguments->name,
+                                                       autoload_box(arguments->autoload_const));
+        if (loaded && !UNDEF_P(loaded->value)) {
+            RB_VM_LOCKING() {
+                ce->flag = loaded->flag;
+                RB_OBJ_WRITE(arguments->module, &ce->value, loaded->value);
+                RB_OBJ_WRITE(arguments->module, &ce->u.file, loaded->u.file);
+                ce->line = loaded->line;
+                rb_clear_constant_cache_for_id(arguments->name);
+            }
+            result = Qtrue;
+        }
+    }
 
     if (!ce || UNDEF_P(ce->value)) {
         result = Qfalse;
@@ -3433,7 +3443,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
             current = RCLASS_SUPER(current), first_iteration = false) {
         VALUE tmp;
         VALUE am = 0;
-        rb_const_entry_t *ce;
+        rb_const_entry_t entry, *ce = &entry;
 
         if (!first_iteration && RCLASS_ORIGIN(current) != current) {
             // This item in the super chain has an origin iclass
@@ -3448,7 +3458,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
         if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
 
         // Do the lookup. Loop in case of autoload.
-        while ((ce = rb_const_lookup(tmp, id))) {
+        while (rb_const_lookup_copy(tmp, id, ce)) {
             if (visibility && RB_CONST_PRIVATE_P(ce)) {
                 GET_EC()->private_const_reference = tmp;
                 return Qundef;
@@ -3537,9 +3547,9 @@ static VALUE
 rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
     while (RTEST(klass)) {
-        rb_const_entry_t *ce;
+        rb_const_entry_t entry, *ce = &entry;
 
-        while ((ce = rb_const_lookup(klass, id))) {
+        while (rb_const_lookup_copy(klass, id, ce)) {
             if (visibility && RB_CONST_PRIVATE_P(ce)) {
                 return Qnil;
             }
@@ -3547,20 +3557,20 @@ rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibil
                 goto not_found;
             }
 
-            if (UNDEF_P(ce->value)) { // autoload
-                VALUE autoload_const_value = autoload_data(klass, id);
-                if (RTEST(autoload_const_value)) {
-                    struct autoload_const *autoload_const;
-                    struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, &autoload_const);
+            VALUE file = ce->u.file;
+            VALUE autoload_const_value = autoload_entry(klass, id);
+            if (autoload_const_value) {
+                struct autoload_const *autoload_const;
+                struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, &autoload_const);
 
-                    if (!UNDEF_P(autoload_const->value) && RTEST(rb_mutex_owned_p(autoload_data->mutex))) {
-                        return rb_assoc_new(autoload_const->file, INT2NUM(autoload_const->line));
-                    }
+                if (!UNDEF_P(autoload_const->value) && RTEST(rb_mutex_owned_p(autoload_data->mutex))) {
+                    return rb_assoc_new(autoload_const->file, INT2NUM(autoload_const->line));
                 }
+                file = autoload_const->autoload_call_file;
             }
 
-            if (NIL_P(ce->file)) return rb_ary_new();
-            return rb_assoc_new(ce->file, INT2NUM(ce->line));
+            if (NIL_P(file)) return rb_ary_new();
+            return rb_assoc_new(file, INT2NUM(ce->line));
         }
         if (!recurse) break;
         klass = RCLASS_SUPER(klass);
@@ -3639,11 +3649,13 @@ rb_const_remove(VALUE mod, ID id)
     }
 
     VALUE writable_ce = 0;
-    if (rb_id_table_lookup(RCLASS_WRITABLE_CONST_TBL(mod), id, &writable_ce)) {
-        rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id);
-        if ((rb_const_entry_t *)writable_ce != ce) {
-            SIZED_FREE((rb_const_entry_t *)writable_ce);
-        }
+    bool found;
+    RB_VM_LOCKING() { // see rb_const_lookup_copy
+        found = rb_id_table_lookup(RCLASS_WRITABLE_CONST_TBL(mod), id, &writable_ce);
+        if (found) rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id);
+    }
+    if (found && (rb_const_entry_t *)writable_ce != ce) {
+        SIZED_FREE((rb_const_entry_t *)writable_ce);
     }
 
     rb_const_warn_if_deprecated(ce, mod, id);
@@ -3652,7 +3664,7 @@ rb_const_remove(VALUE mod, ID id)
     val = ce->value;
 
     if (UNDEF_P(val)) {
-        autoload_delete(mod, id);
+        autoload_delete(ce->u.autoload_const);
         val = Qnil;
     }
 
@@ -3798,12 +3810,12 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
     VALUE tmp;
     int mod_retry = 0;
-    rb_const_entry_t *ce;
+    rb_const_entry_t entry, *ce = &entry;
 
     tmp = klass;
   retry:
     while (tmp) {
-        if ((ce = rb_const_lookup(tmp, id))) {
+        if (rb_const_lookup_copy(tmp, id, ce)) {
             if (visibility && RB_CONST_PRIVATE_P(ce)) {
                 return (int)Qfalse;
             }
@@ -3929,6 +3941,7 @@ const_set(VALUE klass, ID id, VALUE val)
 
     check_before_mod_set(klass, id, val, "constant");
 
+    struct const_warning warning = {0};
     RB_VM_LOCKING() {
         struct rb_id_table *tbl = RCLASS_WRITABLE_CONST_TBL(klass);
         if (!tbl) {
@@ -3946,9 +3959,10 @@ const_set(VALUE klass, ID id, VALUE val)
                 /* fill the rest with 0 */
             };
             ac.file = rb_source_location(&ac.line);
-            const_tbl_update(&ac, false);
+            const_tbl_update(&ac, false, &warning);
         }
     }
+    const_warning_emit(&warning);
 
     /*
      * Resolve and cache class name immediately to resolve ambiguity
@@ -3990,7 +4004,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 static VALUE
 autoload_const_value_for_named_constant(VALUE module, ID name, struct autoload_const **autoload_const_pointer)
 {
-    VALUE autoload_const_value = autoload_data(module, name);
+    VALUE autoload_const_value = autoload_entry(module, name);
     if (!autoload_const_value) return Qfalse;
 
     struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, autoload_const_pointer);
@@ -4004,9 +4018,11 @@ autoload_const_value_for_named_constant(VALUE module, ID name, struct autoload_c
     return Qfalse;
 }
 
+/* Records into *warning rather than warning itself; see struct const_warning. */
 static void
-const_tbl_update(struct autoload_const *ac, int autoload_force)
+const_tbl_update(struct autoload_const *ac, int autoload_force, struct const_warning *warning)
 {
+    ASSERT_vm_locking();
     VALUE value;
     VALUE klass = ac->module;
     VALUE val = ac->value;
@@ -4031,29 +4047,22 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
             }
             else {
                 /* otherwise autoloaded constant, allow to override */
-                autoload_delete(klass, id);
+                autoload_delete(ce->u.autoload_const);
                 ce->flag = visibility;
                 RB_OBJ_WRITE(klass, &ce->value, val);
-                RB_OBJ_WRITE(klass, &ce->file, file);
+                RB_OBJ_WRITE(klass, &ce->u.file, file);
                 ce->line = line;
             }
             RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
             return;
         }
         else {
-            VALUE name = QUOTE_ID(id);
             visibility = ce->flag;
 
-            VALUE previous = Qnil;
-            if (!NIL_P(ce->file) && ce->line) {
-                previous = rb_sprintf("\n%"PRIsVALUE":%d: warning: previous definition of %"PRIsVALUE" was here", ce->file, ce->line, name);
-            }
-
-            if (klass == rb_cObject)
-                rb_warn("already initialized constant %"PRIsVALUE"%"PRIsVALUE"", name, previous);
-            else
-                rb_warn("already initialized constant %"PRIsVALUE"::%"PRIsVALUE"%"PRIsVALUE"",
-                        rb_class_name(klass), name, previous);
+            warning->id = id;
+            warning->module = klass;
+            warning->file = ce->u.file;
+            warning->line = ce->line;
         }
         rb_clear_constant_cache_for_id(id);
         setup_const_entry(ce, klass, val, visibility);
@@ -4074,7 +4083,7 @@ setup_const_entry(rb_const_entry_t *ce, VALUE klass, VALUE val,
 {
     ce->flag = visibility;
     RB_OBJ_WRITE(klass, &ce->value, val);
-    RB_OBJ_WRITE(klass, &ce->file, rb_source_location(&ce->line));
+    RB_OBJ_WRITE(klass, &ce->u.file, rb_source_location(&ce->line));
 }
 
 void
@@ -4722,4 +4731,21 @@ rb_const_entry_t *
 rb_const_lookup(VALUE klass, ID id)
 {
     return const_lookup(RCLASS_CONST_TBL(klass), id);
+}
+
+// For readers that may not own klass: rb_const_remove frees the entry once it is out of
+// the table, so copy it while the VM lock keeps it in.
+bool
+rb_const_lookup_copy(VALUE klass, ID id, rb_const_entry_t *ce)
+{
+    bool found = false;
+    RB_VM_LOCKING() {
+        struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
+        VALUE entry;
+        if (tbl && rb_id_table_lookup(tbl, id, &entry)) {
+            *ce = *(rb_const_entry_t *)entry;
+            found = true;
+        }
+    }
+    return found;
 }

@@ -73,6 +73,24 @@ describe "delegation with def(...)" do
     h2 = a.new.delegate(h)
     h2.should.equal?(h)
   end
+
+  it "preserves positional arguments when forwarding to super" do
+    forwarding = Module.new
+    forwarding.module_eval(<<-RUBY)
+      def initialize(...)
+        super(...)
+      end
+    RUBY
+
+    prepended = included = nil
+    -> {
+      prepended = Struct.new(:a, :b, :c) { prepend forwarding }.new(1, 2, 3)
+      included = Struct.new(:a, :b, :c) { include forwarding }.new(1, 2, 3)
+    }.should_not complain
+
+    [prepended.a, prepended.b, prepended.c].should == [1, 2, 3]
+    [included.a, included.b, included.c].should == [1, 2, 3]
+  end
 end
 
 describe "delegation with def(x, ...)" do

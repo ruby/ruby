@@ -219,6 +219,23 @@ class TestUnicodeNormalize
     assert_equal "\u{16121 16121 16121 16121 16121 1611E}", "\u{1611E 16121 16121 16121 16121 16121}".unicode_normalize
   end
 
+  def test_ractor
+    assert_ractor(<<~'RUBY')
+      s = "D\u0307\u0323"
+      nfc = "\u1E0C\u0307"
+      nfd = "D\u0323\u0307"
+      # the first call fills the per-Ractor cache, the second hits it
+      assert_equal([nfc, nfc], Ractor.new(s) {|s| 2.times.map {s.unicode_normalize(:nfc)}}.value)
+      assert_equal([nfd, nfd], Ractor.new(s) {|s| 2.times.map {s.unicode_normalize(:nfd)}}.value)
+      assert_equal([nfc, nfc], Ractor.new(s) {|s| 2.times.map {s.unicode_normalize(:nfkc)}}.value)
+      assert_equal([nfd, nfd], Ractor.new(s) {|s| 2.times.map {s.unicode_normalize(:nfkd)}}.value)
+      assert_equal([false] * 4, Ractor.new(s) {|s| %i[nfc nfd nfkc nfkd].map {s.unicode_normalized?(_1)}}.value)
+      # non-UTF-8 Unicode encodings take the UNICODE_ENCODINGS branch
+      s16 = s.encode("UTF-16BE")
+      assert_equal(nfc.encode("UTF-16BE"), Ractor.new(s16) {|s| s.unicode_normalize(:nfc)}.value)
+    RUBY
+  end
+
   def test_canonical_ordering
     a = "\u03B1\u0313\u0300\u0345"
     a_unordered1 = "\u03B1\u0345\u0313\u0300"

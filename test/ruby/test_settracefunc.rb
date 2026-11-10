@@ -652,12 +652,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   # Bug #18264
   def test_tracepoint_memory_leak
-    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc { TracePoint.new(:line) { } }
-1_000.times(&code)
-PREP
-1_000_000.times(&code)
-CODE
+    assert_no_memory_leak([], "", "10_000.times {TracePoint.new(:line) { }}", rss: true, samples: 2..100)
   end
 
   def test_tracepoint_bmethod_memory_leak
@@ -1296,7 +1291,7 @@ CODE
       end
     }
     assert_normal_exit src % %q{obj.zip({}) {}}, bug7774
-    if respond_to?(:callcc)
+    if respond_to?(:callcc, true)
       assert_normal_exit src % %q{
         require 'continuation'
         begin

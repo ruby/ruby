@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class NodeIdTest < TestCase
     Fixture.each do |fixture|
       define_method(fixture.test_name) { assert_node_ids(fixture.read) }
@@ -11,7 +11,7 @@ module Prism
     private
 
     def assert_node_ids(source)
-      queue = [Prism.parse(source).value]
+      queue = [Ruby::Prism.parse(source).value]
       node_ids = []
 
       while (node = queue.shift)

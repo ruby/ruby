@@ -869,7 +869,7 @@ class TestEnumerable < Test::Unit::TestCase
   end
 
   def test_callcc
-    omit 'requires callcc support' unless respond_to?(:callcc)
+    omit 'requires callcc support' unless respond_to?(:callcc, true)
 
     assert_raise(RuntimeError) do
       c = nil
@@ -916,6 +916,19 @@ class TestEnumerable < Test::Unit::TestCase
       end
       [o, o].min(1)
       assert_operator(i, :<=, 5, "infinite loop")
+      c.call
+    end
+
+    assert_raise_with_message(RuntimeError, /reentered/) do
+      c = nil
+      cmp = Object.new
+      cmp.define_singleton_method(:>) do |other|
+        callcc {|c2| c ||= c2}
+        true
+      end
+      o = Object.new
+      o.define_singleton_method(:<=>) {|x| cmp}
+      [o, o].min(1)
       c.call
     end
   end

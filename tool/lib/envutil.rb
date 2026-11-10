@@ -81,6 +81,11 @@ module EnvUtil
     self.timeout_scale = 10
   end
 
+  # Read here so that runners other than tool/lib/test/unit.rb, such as
+  # the test-unit gem in test-bundled-gems, also scale timeouts.
+  scale = (ENV["RUBY_TEST_TIMEOUT_SCALE"] || ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"]).to_f
+  self.timeout_scale = scale if scale > 0
+
   def apply_timeout_scale(t)
     if scale = EnvUtil.timeout_scale
       t * scale
@@ -163,6 +168,9 @@ module EnvUtil
       # Cache the result even when no debugger is available, not to probe
       # unusable debuggers repeatedly.
       return @debugger if defined?(@debugger)
+      if debugger = ENV["RUBY_TEST_DEBUGGER"]
+        return @debugger = (@list.find {|d| d.name == debugger} unless debugger == "no")
+      end
       @debugger = @list.find(&:usable?)
     end
   end
@@ -199,7 +207,7 @@ module EnvUtil
         Process.wait(pid, Process::WNOHANG) rescue nil
         break
       end
-      if signals.empty? or !reprieve
+      if signals.empty? or !reprieve or dumped
         Process.wait(pid)
       else
         begin
@@ -510,7 +518,7 @@ end
 
 if defined?(RbConfig)
   module RbConfig
-    @ruby = EnvUtil.rubybin
+    @ruby = EnvUtil.rubybin.freeze
     class << self
       undef ruby if method_defined?(:ruby)
       attr_reader :ruby

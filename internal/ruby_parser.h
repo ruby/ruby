@@ -12,7 +12,7 @@
 
 struct lex_pointer_string {
     VALUE str;
-    long ptr;
+    rb_len_t ptr;
 };
 
 RUBY_SYMBOL_EXPORT_BEGIN

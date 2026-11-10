@@ -7,10 +7,15 @@ require "stringio"
 require "pathname"
 require "timeout"
 
-# Prism is the new parser, replacing Ripper
-require "prism"
-
 module SyntaxSuggest # :nodoc: all
+  # Prefer Ruby::Prism, the parser built into the interpreter (Ruby 4.1+);
+  # fall back to the prism gem on older Rubies.
+  if defined?(Ruby::Prism)
+    Prism = Ruby::Prism
+  else
+    require "prism"
+  end
+
   # Used to indicate a default value that cannot
   # be confused with another input.
   DEFAULT_VALUE = Object.new.freeze

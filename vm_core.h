@@ -140,6 +140,10 @@ If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTE
 # define VM_INSN_INFO_TABLE_IMPL 2
 #endif
 
+#ifndef USE_ISEQ_NODE_ID
+#define USE_ISEQ_NODE_ID 1
+#endif
+
 #if defined(NSIG_MAX)           /* POSIX issue 8 */
 # undef NSIG
 # define NSIG NSIG_MAX
@@ -181,7 +185,7 @@ void *rb_register_sigaltstack(void *);
 /*****************/
 
 /* gcc ver. check */
-#if defined(__GNUC__) && __GNUC__ >= 2
+#if (defined(__GNUC__) && __GNUC__ >= 2) || defined(__clang__)
 
 #if OPT_TOKEN_THREADED_CODE
 #if OPT_DIRECT_THREADED_CODE
@@ -189,7 +193,7 @@ void *rb_register_sigaltstack(void *);
 #endif
 #endif
 
-#else /* defined(__GNUC__) && __GNUC__ >= 2 */
+#else /* (defined(__GNUC__) && __GNUC__ >= 2) || defined(__clang__) */
 
 /* disable threaded code options */
 #if OPT_DIRECT_THREADED_CODE
@@ -337,7 +341,7 @@ struct rb_execution_context_struct;
 #endif
 
 typedef struct rb_iseq_location_struct {
-    VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. */
+    VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. See pathobj_realpath(). */
     VALUE label;        /* String */
     int first_lineno;
     int node_id;
@@ -360,9 +364,13 @@ pathobj_path(VALUE pathobj)
 }
 
 static inline VALUE
-pathobj_realpath(VALUE pathobj)
+pathobj_realpath(VALUE pathobj, bool no_realpath)
 {
-    if (RB_TYPE_P(pathobj, T_STRING)) {
+    if (no_realpath) {
+        VM_ASSERT(RB_TYPE_P(pathobj, T_STRING));
+        return Qnil;
+    }
+    else if (RB_TYPE_P(pathobj, T_STRING)) {
         return pathobj;
     }
     else {
@@ -406,6 +414,8 @@ enum rb_builtin_attr {
     BUILTIN_ATTR_WITHOUT_INTERRUPTS = 0x10,
     // The iseq operates on the nearest user box in its caller frames.
     BUILTIN_ATTR_CALLER_USER_BOX = 0x20,
+    // The JIT should inline the iseq regardless of its size heuristics.
+    BUILTIN_ATTR_ALWAYS_INLINE = 0x40,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
@@ -522,6 +532,10 @@ struct rb_iseq_constant_body {
 #endif
         } positions_or_succ_index_table;
         unsigned int size;
+#ifdef USE_ISEQ_NODE_ID
+        const uint8_t *node_ids;
+        unsigned int node_ids_size;
+#endif
     } insns_info;
 
     const ID *local_table;		/* must free */
@@ -554,6 +568,7 @@ struct rb_iseq_constant_body {
     unsigned int builtin_attrs; // Union of rb_builtin_attr
 
     bool prism; // ISEQ was generated from prism compiler
+    bool no_realpath; // location.pathobj names no real file (ex: during eval)
 
     // Set once an EP escape of this iseq has been reported to the enabled JIT.
     rb_atomic_t jit_ep_escape_recorded;
@@ -802,16 +817,9 @@ typedef struct rb_vm_struct {
              * rb_gc_register_mark_object pins and join value through it.  NULL for an
              * orphan, whose Ractor struct is gone and has neither any more. */
             struct rb_ractor_struct *owner;
-            /* Heap pages this zombie holds: measured when it retires and refreshed
-             * under the barrier of each global cycle.  The total below stays exactly
-             * in sync, entry by entry. */
-            size_t pages;
         } *zombie_objspaces;
         size_t zombie_objspaces_count;
         size_t zombie_objspaces_capa;
-        /* Sum of .pages over zombie_objspaces.  Between global cycles it is an upper
-         * bound: a zombie's heap never grows and only shrinks at a global cycle. */
-        size_t zombie_total_pages;
 
 #if USE_MODULAR_GC
         struct gc_mark_func_data_struct *mark_func_data;
@@ -886,7 +894,7 @@ extern bool ruby_vm_during_cleanup;
 #define RUBY_VM_FIBER_VM_STACK_SIZE           (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
 #define RUBY_VM_FIBER_VM_STACK_SIZE_MIN       (   2 * 1024 * sizeof(VALUE)) /*    8 KB or   16 KB */
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE      (  64 * 1024 * sizeof(VALUE)) /*  256 KB or  512 KB */
-#if defined(__powerpc64__) || defined(__ppc64__) // macOS has __ppc64__
+#if defined(__powerpc64__)
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  32 * 1024 * sizeof(VALUE)) /*  128 KB or  256 KB */
 #else
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
@@ -1392,8 +1400,6 @@ void rb_proc_set_refinements_recipe(VALUE procval, VALUE recipe);
 const rb_cref_t *rb_proc_refinements_cref_for_call(VALUE procval);
 
 RUBY_SYMBOL_EXPORT_BEGIN
-VALUE rb_proc_isolate(VALUE self);
-VALUE rb_proc_isolate_bang(VALUE self, VALUE replace_self);
 VALUE rb_proc_ractor_make_shareable(VALUE proc, VALUE replace_self);
 RUBY_SYMBOL_EXPORT_END
 
@@ -1414,6 +1420,7 @@ typedef struct {
     const struct rb_block block;
     const VALUE pathobj;
     int first_lineno;
+    bool no_realpath;
 } rb_binding_t;
 
 /* used by compile time and send insn */
@@ -2055,7 +2062,7 @@ VALUE rb_iseq_path(const rb_iseq_t *iseq);
 VALUE rb_iseq_realpath(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
-VALUE rb_iseq_pathobj_new(VALUE path, VALUE realpath);
+VALUE rb_iseq_pathobj_new(VALUE path, VALUE realpath, bool *no_realpath);
 void rb_iseq_pathobj_set(const rb_iseq_t *iseq, VALUE path, VALUE realpath);
 
 int rb_ec_frame_method_id_and_class(const rb_execution_context_t *ec, ID *idp, ID *called_idp, VALUE *klassp);
@@ -2117,9 +2124,9 @@ VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
 void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE exception_class, VALUE mesg);
 
 #define rb_vm_register_special_exception(sp, e, m) \
-    rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (long)rb_strlen_lit(m)))
+    rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (rb_len_t)rb_strlen_lit(m)))
 
-void rb_gc_mark_machine_context(const rb_execution_context_t *ec);
+void rb_gc_mark_machine_context_ctx(const struct rb_gc_mark_ctx *ctx, const rb_execution_context_t *ec);
 
 const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
 const rb_callable_method_entry_t *rb_vm_frame_method_entry_unchecked(const rb_control_frame_t *cfp);
@@ -2210,11 +2217,7 @@ static inline rb_execution_context_t *
 rb_current_execution_context(bool expect_ec)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #ifdef RB_THREAD_CURRENT_EC_NOINLINE
     rb_execution_context_t * volatile ec = rb_current_ec();
-  #else
-    rb_execution_context_t * volatile ec = ruby_current_ec;
-  #endif
 
     /* On the shared objects, `__tls_get_addr()` is used to access the TLS
      * and the address of the `ruby_current_ec` can be stored on a function
@@ -2356,7 +2359,7 @@ void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
 VALUE rb_ec_get_errinfo(const rb_execution_context_t *ec);
 void rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo);
 void rb_execution_context_update(rb_execution_context_t *ec);
-void rb_execution_context_mark(const rb_execution_context_t *ec);
+void rb_execution_context_mark_ctx(const struct rb_gc_mark_ctx *ctx, const rb_execution_context_t *ec);
 void rb_fiber_close(rb_fiber_t *fib);
 void Init_native_thread(rb_thread_t *th);
 int rb_vm_check_ints_blocking(rb_execution_context_t *ec);

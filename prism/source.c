@@ -2,6 +2,7 @@
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/buffer.h"
+#include "prism/internal/oom.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -26,7 +27,7 @@ static const uint8_t empty_source[] = "";
 static pm_source_t *
 pm_source_alloc(const uint8_t *source, size_t length, pm_source_type_t type) {
     pm_source_t *result = xmalloc(sizeof(pm_source_t));
-    if (result == NULL) abort();
+    if (result == NULL) PRISM_OOM();
 
     *result = (struct pm_source_t) {
         .source = source,
@@ -377,7 +378,13 @@ pm_source_stream_read(pm_source_t *source) {
      */
 #define LINE_FILL 0xff
 
-    while (memset(line, LINE_FILL, LINE_SIZE), source->stream.fgets(line, LINE_SIZE, source->stream.stream) != NULL) {
+    /*
+     * The fgets and feof members share their names with standard library
+     * functions, which <stdio.h> may define as function-like macros (newlib on
+     * Cygwin does this for feof). Parenthesizing the member access keeps those
+     * macros from expanding at the call sites.
+     */
+    while (memset(line, LINE_FILL, LINE_SIZE), (source->stream.fgets)(line, LINE_SIZE, source->stream.stream) != NULL) {
         /*
          * Locate the NUL terminator written by fgets (the last NUL in the
          * buffer) to recover the length of the chunk, then drop the terminator.
@@ -408,7 +415,7 @@ pm_source_stream_read(pm_source_t *source) {
          * EOF. A newline-terminated line needs no such check: if it happens to
          * be the last line, the next fgets returns NULL and ends the loop.
          */
-        if (!newline && !source->stream.feof(source->stream.stream)) {
+        if (!newline && !(source->stream.feof)(source->stream.stream)) {
             continue;
         }
 
@@ -420,21 +427,21 @@ pm_source_stream_read(pm_source_t *source) {
          */
         switch (length) {
             case 7:
-                if (strncmp(line, "__END__", 7) == 0) {
+                if (memcmp(line, "__END__", 7) == 0) {
                     source->source = (const uint8_t *) pm_buffer_value(buffer);
                     source->length = pm_buffer_length(buffer);
                     return false;
                 }
                 break;
             case 8:
-                if (strncmp(line, "__END__\n", 8) == 0) {
+                if (memcmp(line, "__END__\n", 8) == 0) {
                     source->source = (const uint8_t *) pm_buffer_value(buffer);
                     source->length = pm_buffer_length(buffer);
                     return false;
                 }
                 break;
             case 9:
-                if (strncmp(line, "__END__\r\n", 9) == 0) {
+                if (memcmp(line, "__END__\r\n", 9) == 0) {
                     source->source = (const uint8_t *) pm_buffer_value(buffer);
                     source->length = pm_buffer_length(buffer);
                     return false;
