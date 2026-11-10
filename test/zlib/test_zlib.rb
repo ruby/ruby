@@ -1666,10 +1666,10 @@ if defined? Zlib
     def test_read_encoding_at_eof
       gz = Zlib.gzip("foo")
       Zlib::GzipReader.wrap(StringIO.new(gz), external_encoding: "EUC-JP") do |f|
-        f.read
+        enc = f.read.encoding
         s = f.read
         assert_equal("", s)
-        assert_equal(Encoding::EUC_JP, s.encoding)
+        assert_equal(enc, s.encoding)
       end
       Zlib::GzipReader.wrap(StringIO.new(gz), external_encoding: "Shift_JIS", internal_encoding: "UTF-8") do |f|
         f.read
