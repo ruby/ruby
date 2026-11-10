@@ -925,6 +925,23 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "line1\nline2\n", loaded["text"]
   end
 
+  def test_roundtrip_block_scalar_indicators
+    strings = [
+      "  starts with spaces\nsecond line\n",
+      "\n  first line empty, second indented\n",
+      "line1\nline2\n\n",
+      "  starts with spaces\nends with three newlines\n\n\n",
+    ]
+
+    strings.each do |str|
+      [{ "text" => str }, [str], { "list" => [str] }].each do |obj|
+        yaml = Gem::YAMLSerializer.dump(obj)
+        assert_equal obj, Gem::YAMLSerializer.load(yaml), yaml
+        assert_equal obj, Psych.unsafe_load(yaml), yaml
+      end
+    end
+  end
+
   def test_roundtrip_special_characters
     obj = {
       "dollar" => "$HOME",
@@ -1209,6 +1226,41 @@ class TestGemSafeYAML < Gem::TestCase
       "list" => ["  indented item\nnext line\n"],
     }
     assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_block_scalar_keep_indicator
+    yaml = <<~YAML
+      ---
+      message: |+
+        Thanks!
+
+
+      indented: |2+
+          indented
+
+
+      reversed: |+2
+          indented
+
+      last: |+
+        at the end
+
+
+    YAML
+
+    expected = {
+      "message" => "Thanks!\n\n\n",
+      "indented" => "  indented\n\n\n",
+      "reversed" => "  indented\n\n",
+      "last" => "at the end\n\n\n",
+    }
+    assert_equal expected, yaml_load(yaml)
+    assert_equal expected, yaml_load(yaml + "...\n")
+  end
+
+  def test_load_block_scalar_clip_drops_trailing_empty_lines
+    yaml = "text: |\n  line\n\n\nempty: |\n\n\nother: value\n"
+    assert_equal({ "text" => "line\n", "empty" => "", "other" => "value" }, yaml_load(yaml))
   end
 
   def test_load_flow_array
@@ -1499,6 +1551,29 @@ class TestGemSafeYAML < Gem::TestCase
   def test_dump_block_scalar_without_trailing_newline
     yaml = yaml_dump({ "text" => "line1\nline2" })
     assert_include yaml, " |-\n"
+  end
+
+  def test_dump_block_scalar_indentation_indicator
+    require "yaml"
+    hash = { "text" => "  indented\nnot indented\n" }
+    array = ["\n  second line indented"]
+
+    assert_equal "---\ntext: |2\n    indented\n  not indented\n", Gem::YAMLSerializer.dump(hash)
+    assert_equal "---\n- |2-\n\n    second line indented\n", Gem::YAMLSerializer.dump(array)
+    assert_equal Psych.dump(hash), Gem::YAMLSerializer.dump(hash)
+    assert_equal Psych.dump(array), Gem::YAMLSerializer.dump(array)
+  end
+
+  def test_dump_block_scalar_keep_indicator
+    require "yaml"
+    hash = { "text" => "line1\nline2\n\n", "other" => "value" }
+    array = ["  indented\nthree trailing newlines\n\n\n"]
+
+    assert_equal "---\ntext: |+\n  line1\n  line2\n\nother: value\n...\n", Gem::YAMLSerializer.dump(hash)
+    assert_equal "---\n- |2+\n    indented\n  three trailing newlines\n\n\n...\n", Gem::YAMLSerializer.dump(array)
+    # JRuby's Psych.dump leaves out the trailing `...`, so compare what Psych reads back.
+    assert_equal hash, Psych.load(Gem::YAMLSerializer.dump(hash))
+    assert_equal array, Psych.load(Gem::YAMLSerializer.dump(array))
   end
 
   def test_dump_nil_value

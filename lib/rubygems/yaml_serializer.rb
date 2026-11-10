@@ -63,7 +63,12 @@ module Gem
         raise TypeError, "no implicit conversion of nil into String" if source.nil?
 
         source = strip_bom(source)
-        @lines = source.split(/\r?\n/).each(&:freeze)
+        # Keep trailing empty lines, which a block scalar with keep chomping
+        # ("|+") preserves, but not the empty string after the final line
+        # break.
+        @lines = source.split(/\r?\n/, -1)
+        @lines.pop if @lines.last == ""
+        @lines.each(&:freeze)
         @anchors = {}
         @depth = 0
         strip_document_end
@@ -300,7 +305,11 @@ module Gem
         end
 
         res = parts.join
-        res.delete_suffix!("\n") while chomping == "-" && res.end_with?("\n")
+        unless chomping == "+"
+          res.delete_suffix!("\n") while res.end_with?("\n")
+          # Clipping keeps the final line break but drops trailing empty lines.
+          res << "\n" if chomping.nil? && !res.empty?
+        end
         res
       end
 
@@ -761,7 +770,9 @@ module Gem
       }.freeze
 
       def emit(obj)
-        "---#{emit_node(obj, 0)}"
+        res = "---#{emit_node(obj, 0)}"
+        res << "...\n" if @open_ended
+        res
       end
 
       private
@@ -879,13 +890,33 @@ module Gem
       end
 
       def emit_block_scalar(str, indent)
-        parts = [str.end_with?("\n") ? " |\n" : " |-\n"]
+        # The root node has no parent to be indented from, so indent its
+        # content by one level like libyaml does.
+        indent = 2 if indent.zero?
+        parts = [" |#{block_scalar_header(str)}\n"]
         str.each_line do |line|
-          parts << "#{pad(indent + 2)}#{line}"
+          parts << (line == "\n" ? line : "#{pad(indent)}#{line}")
         end
         res = parts.join
         res << "\n" unless res.end_with?("\n")
         res
+      end
+
+      # Mirrors libyaml: an explicit indentation indicator when the first
+      # line is empty or starts with a space (a parser would otherwise take
+      # that whitespace as the block indentation and drop it), "-" when the
+      # content does not end with a line break and "+" when it ends with
+      # more than one, which also requires a document end marker.
+      def block_scalar_header(str)
+        header = +""
+        header << "2" if str.start_with?(" ", "\n")
+        if !str.end_with?("\n")
+          header << "-"
+        elsif str.end_with?("\n\n") || str == "\n"
+          header << "+"
+          @open_ended = true
+        end
+        header
       end
 
       def needs_quoting?(str, quote = false)
