@@ -8,13 +8,29 @@
 
 #ifndef HAVE_RB_LEN_T
 typedef long rb_len_t;
+#endif
+#ifndef RB_LEN_MAX
 # define RB_LEN_MAX LONG_MAX
+#endif
+#ifndef FIX2LEN
 # define FIX2LEN FIX2LONG
+#endif
+#ifndef LEN2FIX
 # define LEN2FIX LONG2FIX
+#endif
+#ifndef LEN2NUM
 # define LEN2NUM LONG2NUM
+#endif
+#ifndef NUM2LEN
 # define NUM2LEN NUM2LONG
+#endif
+#ifndef NUM2ULEN
 # define NUM2ULEN NUM2ULONG
+#endif
+#ifndef NUM2ST
 # define NUM2ST(num) ((st_data_t)NUM2LEN(num))
+#endif
+#ifndef PRIdLEN
 # define PRIdLEN "ld"
 #endif
 

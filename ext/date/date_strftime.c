@@ -22,20 +22,50 @@
 #ifndef HAVE_RB_LEN_T
 typedef long rb_len_t;
 typedef unsigned long rb_ulen_t;
+#endif
+#ifndef SIZEOF_RB_LEN_T
 # define SIZEOF_RB_LEN_T SIZEOF_LONG
+#endif
+#ifndef RB_LEN_MAX
 # define RB_LEN_MAX LONG_MAX
+#endif
+#ifndef RB_LEN_MIN
 # define RB_LEN_MIN LONG_MIN
+#endif
+#ifndef RB_ULEN_MAX
 # define RB_ULEN_MAX ULONG_MAX
+#endif
+#ifndef PRI_LEN_PREFIX
 # define PRI_LEN_PREFIX "l"
+#endif
+#ifndef PRIdLEN
 # define PRIdLEN PRI_LEN_PREFIX"d"
+#endif
+#ifndef PRIiLEN
 # define PRIiLEN PRI_LEN_PREFIX"i"
+#endif
+#ifndef PRIoLEN
 # define PRIoLEN PRI_LEN_PREFIX"o"
+#endif
+#ifndef PRIuLEN
 # define PRIuLEN PRI_LEN_PREFIX"u"
+#endif
+#ifndef PRIxLEN
 # define PRIxLEN PRI_LEN_PREFIX"x"
+#endif
+#ifndef PRIXLEN
 # define PRIXLEN PRI_LEN_PREFIX"X"
+#endif
+#ifndef FIX2LEN
 # define FIX2LEN FIX2LONG
+#endif
+#ifndef LEN2FIX
 # define LEN2FIX LONG2FIX
+#endif
+#ifndef NUM2LEN
 # define NUM2LEN NUM2LONG
+#endif
+#ifndef NUM2ULEN
 # define NUM2ULEN NUM2ULONG
 #endif
 
