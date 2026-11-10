@@ -7094,10 +7094,10 @@ int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
     size_t xn, yn, mn;
 
     if (FIXNUM_P(x)) {
-       x = rb_int2big(FIX2LONG(x));
+        x = rb_int2big(FIX2LONG(x));
     }
     if (FIXNUM_P(y)) {
-       y = rb_int2big(FIX2LONG(y));
+        y = rb_int2big(FIX2LONG(y));
     }
     RUBY_ASSERT(RB_BIGNUM_TYPE_P(m));
     xn = BIGNUM_LEN(x);
