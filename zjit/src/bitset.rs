@@ -48,10 +48,12 @@ impl<T: Into<usize> + Copy> BitSet<T> {
     }
 
     pub fn get(&self, idx: T) -> bool {
-        debug_assert!(idx.into() < self.num_bits);
         let entry_idx = idx.into() / ENTRY_NUM_BITS;
         let bit_idx = idx.into() % ENTRY_NUM_BITS;
-        (self.entries[entry_idx] & (1 << bit_idx)) != 0
+        let Some(entry) = self.entries.get(entry_idx) else {
+            return false;
+        };
+        (entry & (1 << bit_idx)) != 0
     }
 
     /// Whether all bits are clear.
@@ -131,9 +133,16 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn get_over_capacity_panics() {
-        let set = BitSet::with_capacity(0);
-        assert!(!set.get(0usize));
+    fn insert_over_capacity_panics() {
+        let mut set = BitSet::with_capacity(0);
+        set.insert(0usize);
+    }
+
+    #[test]
+    fn get_over_capacity_returns_false() {
+        let set = BitSet::<usize>::with_capacity(0);
+        assert!(!set.get(0));
+        assert!(!set.get(5000));
     }
 
     #[test]
