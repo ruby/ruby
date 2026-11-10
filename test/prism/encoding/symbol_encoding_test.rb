@@ -113,6 +113,8 @@ module Ruby::Prism
           rescue SyntaxError => error
             if error.message.include?("UTF-8 mixed within")
               error.message[/UTF-8 mixed within .+? source/]
+            elsif error.message.include?("invalid symbol")
+              "invalid symbol"
             else
               raise
             end
@@ -124,6 +126,8 @@ module Ruby::Prism
           rescue SyntaxError => error
             if error.message.include?("mixed")
               error.message.split("\n", 2).first
+            elsif error.message.include?("invalid symbol")
+              "invalid symbol"
             else
               raise
             end

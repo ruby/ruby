@@ -8,6 +8,10 @@ module Ruby::Prism
       assert_frozen(Ruby::Prism.parse("1 + 2; %i{foo} + %i{bar}", freeze: true))
     end
 
+    def test_parse_binary_with_utf8_characters
+      assert_frozen(Ruby::Prism.parse("# encoding: binary\n\"\xC4\x85\"".b, freeze: true))
+    end
+
     def test_offsets_usable
       node = Ruby::Prism.parse_statement("1 + 2", freeze: true)
       assert_equal(1, node.start_line)
@@ -44,7 +48,9 @@ module Ruby::Prism
       return if seen.key?(value)
       seen[value] = true
 
-      assert_predicate value, :frozen?
+      # String nodes define frozen? to query their frozen flag, so whether the
+      # object itself is frozen is asked of Kernel.
+      assert Kernel.instance_method(:frozen?).bind_call(value), -> { "Expected #{value.inspect} to be frozen" }
 
       value.instance_variables.each do |name|
         case (child = value.instance_variable_get(name))

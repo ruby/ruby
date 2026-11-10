@@ -977,6 +977,7 @@ parse_lex_input(const uint8_t *input, size_t input_length, const pm_options_t *o
          * completes. */
         rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
         rb_enc_associate(source_string, encoding);
+        rb_funcall(source, rb_intern("replace_encoding"), 1, rb_enc_from_encoding(encoding));
 
         const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(parser);
         for (size_t index = 0; index < line_offsets->size; index++) {

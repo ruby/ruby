@@ -187,6 +187,15 @@ module Ruby::Prism
       end
     end
 
+    def test_binary_with_utf8_characters
+      source = "# encoding: binary\n\"\xC4\x85\"".b
+
+      assert_equal Encoding::BINARY, Ruby::Prism.parse(source).encoding
+      assert_equal Encoding::BINARY, Ruby::Prism.lex(source).encoding
+      assert_equal Encoding::BINARY, Ruby::Prism.parse_lex(source).encoding
+      assert_equal Encoding::BINARY, Ruby::Prism.load(source, Ruby::Prism.dump(source)).encoding unless ENV["PRISM_BUILD_MINIMAL"]
+    end
+
     private
 
     def assert_magic_encoding(expected, line)

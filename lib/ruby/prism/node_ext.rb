@@ -22,7 +22,7 @@ module Ruby::Prism
     end
   end
 
-  module RegularExpressionOptions # :nodoc:
+  module RegularExpressionExt # :nodoc:
     # Returns a numeric value that represents the flags that were used to create
     # the regular expression.
     #
@@ -36,6 +36,29 @@ module Ruby::Prism
       o |= Regexp::NOENCODING if flags.anybits?(RegularExpressionFlags::ASCII_8BIT)
       o
     end
+
+    # Returns the encoding of the regular expression.
+    #
+    #: (Integer flags, Encoding source_encoding) -> Encoding
+    def self.encoding(flags, source_encoding)
+      if flags.anybits?(RegularExpressionFlags::FORCED_UTF8_ENCODING)
+        Encoding::UTF_8
+      elsif flags.anybits?(RegularExpressionFlags::FORCED_BINARY_ENCODING)
+        Encoding::ASCII_8BIT
+      elsif flags.anybits?(RegularExpressionFlags::FORCED_US_ASCII_ENCODING)
+        Encoding::US_ASCII
+      elsif flags.anybits?(RegularExpressionFlags::ASCII_8BIT)
+        Encoding::ASCII_8BIT
+      elsif flags.anybits?(RegularExpressionFlags::UTF_8)
+        Encoding::UTF_8
+      elsif flags.anybits?(RegularExpressionFlags::EUC_JP)
+        Encoding::EUC_JP
+      elsif flags.anybits?(RegularExpressionFlags::WINDOWS_31J)
+        Encoding::Windows_31J
+      else
+        source_encoding
+      end
+    end
   end
 
   class InterpolatedMatchLastLineNode < Node
@@ -44,7 +67,7 @@ module Ruby::Prism
     #
     #: () -> Integer
     def options
-      RegularExpressionOptions.options(flags)
+      RegularExpressionExt.options(flags)
     end
   end
 
@@ -54,7 +77,7 @@ module Ruby::Prism
     #
     #: () -> Integer
     def options
-      RegularExpressionOptions.options(flags)
+      RegularExpressionExt.options(flags)
     end
   end
 
@@ -64,7 +87,14 @@ module Ruby::Prism
     #
     #: () -> Integer
     def options
-      RegularExpressionOptions.options(flags)
+      RegularExpressionExt.options(flags)
+    end
+
+    # Returns the encoding of the regular expression.
+    #
+    #: () -> Encoding
+    def encoding
+      RegularExpressionExt.encoding(flags, source.encoding)
     end
   end
 
@@ -74,11 +104,18 @@ module Ruby::Prism
     #
     #: () -> Integer
     def options
-      RegularExpressionOptions.options(flags)
+      RegularExpressionExt.options(flags)
+    end
+
+    # Returns the encoding of the regular expression.
+    #
+    #: () -> Encoding
+    def encoding
+      RegularExpressionExt.encoding(flags, source.encoding)
     end
   end
 
-  private_constant :RegularExpressionOptions
+  private_constant :RegularExpressionExt
 
   module HeredocQuery # :nodoc:
     # Returns true if this node was represented as a heredoc in the source code.

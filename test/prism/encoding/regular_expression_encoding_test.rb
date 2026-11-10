@@ -62,23 +62,7 @@ module Ruby::Prism
             if result.success?
               regexp = result.statement
 
-              actual_encoding = if regexp.forced_utf8_encoding?
-                Encoding::UTF_8
-              elsif regexp.forced_binary_encoding?
-                Encoding::ASCII_8BIT
-              elsif regexp.forced_us_ascii_encoding?
-                Encoding::US_ASCII
-              elsif regexp.ascii_8bit?
-                Encoding::ASCII_8BIT
-              elsif regexp.utf_8?
-                Encoding::UTF_8
-              elsif regexp.euc_jp?
-                Encoding::EUC_JP
-              elsif regexp.windows_31j?
-                Encoding::Windows_31J
-              else
-                encoding
-              end
+              actual_encoding = regexp.encoding
 
               if regexp.utf_8? && actual_encoding != Encoding::UTF_8
                 raise "expected regexp encoding to be UTF-8 due to '/u' modifier, but got #{actual_encoding.name}"
