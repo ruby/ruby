@@ -32,6 +32,8 @@ module Gem
       # An entry of a flow sequence. A quoted entry may contain commas.
       FLOW_SEQUENCE_ENTRY_RE = /"(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[^,\s](?:[^,]*[^,\s])?/
       SEQUENCE_ENTRY_RE = /\G-(?: |\z)/
+      # A quoted scalar whose closing quote is on a later line.
+      OPEN_QUOTED_RE = /\A(?:! )?(?:"(?>(?:[^"\\]|\\.)*)(\\)?|'(?>(?:[^']|'')*))\z/
       RUBY_OBJECT_TAG_RE = %r{\G!ruby/object:}
       LSTRIP_BYTES = [0, 9, 10, 11, 12, 13, 32].freeze
       UTF8_BOM_BYTES = [0xEF, 0xBB, 0xBF].freeze
@@ -44,6 +46,7 @@ module Gem
       STRING_UNESCAPES = {
         "\\\\" => "\\",
         "\\\"" => "\"",
+        "\\ " => " ",
         "\\0" => "\0",
         "\\a" => "\a",
         "\\b" => "\b",
@@ -333,11 +336,26 @@ module Gem
       def fold_continuation_lines(result, val, indent)
         return unless result.is_a?(String)
 
-        # "#" does not start a comment inside a quoted scalar that runs onto the next lines.
-        stop = val.start_with?("'", "\"") && result == val ? BLANK_RE : BLANK_OR_COMMENT_RE
-        while @lines.any? && !stop.match?(@lines[0]) && current_indent > indent
+        return result.replace(fold_quoted_lines(val.delete_prefix("! "), indent)) if OPEN_QUOTED_RE.match?(val)
+
+        while @lines.any? && !BLANK_OR_COMMENT_RE.match?(@lines[0]) && current_indent > indent
           result << " " << @lines.shift.strip
         end
+      end
+
+      def fold_quoted_lines(val, indent)
+        open = OPEN_QUOTED_RE.match(val)
+        breaks = +""
+        while open && @lines.any? && (BLANK_RE.match?(@lines[0]) || current_indent > indent)
+          line = @lines.shift.strip
+          next breaks << "\n" if line.empty?
+
+          val.chop! if open[1]
+          val << (breaks.empty? && !open[1] ? " " : breaks) << line
+          breaks.clear
+          open = OPEN_QUOTED_RE.match("#{val[0]}#{line}")
+        end
+        coerce(val)
       end
 
       def coerce(val, depth = 0)
@@ -348,7 +366,7 @@ module Gem
         if val.size >= 2 && val.start_with?("\"") && val.end_with?("\"")
           inner = val[1..-2]
           return inner unless inner.include?("\\")
-          inner.gsub(/\\(?:["\\0abtnvfreN_LP]|x\h{2}|u\h{4}|U\h{8})/) do |m|
+          inner.gsub(/\\(?:["\\ 0abtnvfreN_LP]|x\h{2}|u\h{4}|U\h{8})/) do |m|
             char = STRING_UNESCAPES[m] || unescape_code_point(m)
             # Metadata is read as binary, where non-ASCII text stays as UTF-8 bytes.
             Encoding.compatible?(inner, char) ? char : char.b

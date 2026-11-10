@@ -1105,6 +1105,56 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "no escape \\n here", result["key"]
   end
 
+  def test_load_multiline_single_quoted_scalar
+    yaml = <<~YAML
+      ---
+      summary: 'A short summary.
+
+        '
+      description: 'It''s wrapped: onto
+        the next line
+
+        and keeps # as is'
+      legacy: ! '
+
+        Written by old RubyGems'
+      other: 1
+    YAML
+
+    expected = {
+      "summary" => "A short summary.\n",
+      "description" => "It's wrapped: onto the next line\nand keeps # as is",
+      "legacy" => "\nWritten by old RubyGems",
+      "other" => 1,
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_multiline_double_quoted_scalar
+    yaml = <<~'YAML'
+      ---
+      description: "Ends with \"quoted\"
+        and wraps\n
+        \ indented\
+
+        joined"
+      other: 1
+    YAML
+
+    expected = {
+      "description" => "Ends with \"quoted\" and wraps\n  indented\njoined",
+      "other" => 1,
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_multiline_quoted_scalar_in_linear_time
+    pre = ->(n) { "description: '#{"word\n  " * n}end'\n" }
+    assert_linear_performance([1_000, 10_000, 100_000], rehearsal: 10, pre: pre) do |yaml|
+      Gem::YAMLSerializer.load(yaml)
+    end
+  end
+
   def test_load_quoted_numeric_stays_string
     result = yaml_load("key: \"42\"")
     assert_equal "42", result["key"]
@@ -1350,10 +1400,8 @@ class TestGemSafeYAML < Gem::TestCase
       other: 1
     YAML
 
-    result = yaml_load(yaml)
-    # Gem::YAMLSerializer does not fold multi-line quoted scalars, so only check that no text is lost.
-    assert_include result["summary"], "#tag and the rest"
-    assert_equal 1, result["other"]
+    expected = { "summary" => "first part of a summary Psych folded #tag and the rest", "other" => 1 }
+    assert_equal expected, yaml_load(yaml)
   end
 
   def test_skipping_blank_and_comment_lines_does_not_allocate
@@ -1364,6 +1412,20 @@ class TestGemSafeYAML < Gem::TestCase
     calls = 100
     before = GC.stat(:total_allocated_objects)
     calls.times { parser.send(:skip_blank_and_comments) }
+    allocated = GC.stat(:total_allocated_objects) - before
+
+    assert_operator allocated, :<, calls
+  end
+
+  def test_folding_a_single_line_scalar_does_not_allocate
+    omit "GC.stat(:total_allocated_objects) is CRuby only" unless RUBY_ENGINE == "ruby"
+
+    parser = Gem::YAMLSerializer::Parser.new("")
+    value = +"lib/file.rb"
+    parser.send(:fold_continuation_lines, value, value, 0)
+    calls = 100
+    before = GC.stat(:total_allocated_objects)
+    calls.times { parser.send(:fold_continuation_lines, value, value, 0) }
     allocated = GC.stat(:total_allocated_objects) - before
 
     assert_operator allocated, :<, calls
