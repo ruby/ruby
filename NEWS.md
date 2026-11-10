@@ -349,11 +349,11 @@ They are still available on rubygems.org and can be installed with
 * syslog 0.4.0
   * 0.3.0 to [v0.4.0][syslog-v0.4.0]
 * csv 3.3.7
-  * 3.3.5 to [v3.3.6][csv-v3.3.6]
+  * 3.3.5 to [v3.3.6][csv-v3.3.6], [v3.3.7][csv-v3.3.7]
 * repl_type_completor 0.1.17
-  * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14], [v0.1.15][repl_type_completor-v0.1.15], [v0.1.16][repl_type_completor-v0.1.16]
+  * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14], [v0.1.15][repl_type_completor-v0.1.15], [v0.1.16][repl_type_completor-v0.1.16], [v0.1.17][repl_type_completor-v0.1.17]
 * pstore 0.3.0
-  * 0.2.0 to [v0.2.1][pstore-v0.2.1]
+  * 0.2.0 to [v0.2.1][pstore-v0.2.1], [v0.3.0][pstore-v0.3.0]
 * rdoc 8.1.0
   * 7.0.3 to [v7.0.4][rdoc-v7.0.4], [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0], [v8.0.0][rdoc-v8.0.0], [v8.1.0][rdoc-v8.1.0]
 * win32ole 1.9.3
@@ -937,11 +937,14 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [nkf-v0.3.0]: https://github.com/ruby/nkf/releases/tag/v0.3.0
 [syslog-v0.4.0]: https://github.com/ruby/syslog/releases/tag/v0.4.0
 [csv-v3.3.6]: https://github.com/ruby/csv/releases/tag/v3.3.6
+[csv-v3.3.7]: https://github.com/ruby/csv/releases/tag/v3.3.7
 [repl_type_completor-v0.1.13]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.13
 [repl_type_completor-v0.1.14]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.14
 [repl_type_completor-v0.1.15]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.15
 [repl_type_completor-v0.1.16]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.16
+[repl_type_completor-v0.1.17]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.17
 [pstore-v0.2.1]: https://github.com/ruby/pstore/releases/tag/v0.2.1
+[pstore-v0.3.0]: https://github.com/ruby/pstore/releases/tag/v0.3.0
 [rdoc-v7.0.4]: https://github.com/ruby/rdoc/releases/tag/v7.0.4
 [rdoc-v7.1.0]: https://github.com/ruby/rdoc/releases/tag/v7.1.0
 [rdoc-v7.2.0]: https://github.com/ruby/rdoc/releases/tag/v7.2.0
