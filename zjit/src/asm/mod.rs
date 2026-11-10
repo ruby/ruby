@@ -9,6 +9,9 @@ use std::mem;
 use crate::state::update_zjit_compiling;
 use crate::virtualmem::*;
 
+mod code_writer;
+pub use code_writer::CodeWriter;
+
 // Lots of manual vertical alignment in there that rustfmt doesn't handle well.
 #[rustfmt::skip]
 #[cfg(target_arch = "x86_64")]
@@ -45,7 +48,7 @@ impl fmt::Display for LabelName {
 }
 
 /// The object that knows how to encode the branch instruction.
-type BranchEncoder = Box<dyn Fn(&mut CodeBlock, i64, i64) -> Result<(), ()>>;
+type BranchEncoder = Box<dyn Fn(&mut CodeWriter<'_>, i64, i64) -> Result<(), ()>>;
 
 /// Reference to an ASM label
 pub struct LabelRef {
@@ -123,33 +126,12 @@ impl CodeBlock {
         self.mem_size
     }
 
-    /// Add an assembly comment if the feature is on.
-    pub fn add_comment(&mut self, comment: &str) {
-        if !self.keep_comments {
-            return;
-        }
-
-        let cur_ptr = self.get_write_ptr().raw_addr(self);
-
-        // If there's no current list of comments for this line number, add one.
-        let this_line_comments = self.asm_comments.entry(cur_ptr).or_default();
-
-        // Unless this comment is the same as the last one at this same line, add it.
-        if this_line_comments.last().map(String::as_str) != Some(comment) {
-            this_line_comments.push(comment.to_string());
-        }
-    }
-
     pub fn comments_at(&self, pos: usize) -> Option<&Vec<String>> {
         self.asm_comments.get(&pos)
     }
 
     pub fn get_write_pos(&self) -> usize {
         self.write_pos
-    }
-
-    pub fn write_mem(&self, write_ptr: CodePtr, byte: u8) -> Result<(), WriteError> {
-        self.mem_block.borrow_mut().write_byte(write_ptr, byte)
     }
 
     /// Get a (possibly dangling) direct pointer to the current write position
@@ -188,51 +170,6 @@ impl CodeBlock {
         self.mem_block.borrow().start_ptr().add_bytes(offset)
     }
 
-    /// Write a single byte at the current position.
-    pub fn write_byte(&mut self, byte: u8) {
-        let write_ptr = self.get_write_ptr();
-        // TODO: check has_capacity()
-        if self.mem_block.borrow_mut().write_byte(write_ptr, byte).is_ok() {
-            self.write_pos += 1;
-        } else {
-            self.dropped_bytes = true;
-        }
-    }
-
-    /// Write multiple bytes starting from the current position.
-    pub fn write_bytes(&mut self, bytes: &[u8]) {
-        for byte in bytes {
-            self.write_byte(*byte);
-        }
-    }
-
-    /// Write an integer over the given number of bits at the current position.
-    pub fn write_int(&mut self, val: u64, num_bits: u32) {
-        assert!(num_bits > 0);
-        assert!(num_bits % 8 == 0);
-
-        // Switch on the number of bits
-        match num_bits {
-            8 => self.write_byte(val as u8),
-            16 => self.write_bytes(&[(val & 0xff) as u8, ((val >> 8) & 0xff) as u8]),
-            32 => self.write_bytes(&[
-                (val & 0xff) as u8,
-                ((val >> 8) & 0xff) as u8,
-                ((val >> 16) & 0xff) as u8,
-                ((val >> 24) & 0xff) as u8,
-            ]),
-            _ => {
-                let mut cur = val;
-
-                // Write out the bytes
-                for _byte in 0..(num_bits / 8) {
-                    self.write_byte((cur & 0xff) as u8);
-                    cur >>= 8;
-                }
-            }
-        }
-    }
-
     /// Check if bytes have been dropped (unwritten because of insufficient space)
     pub fn has_dropped_bytes(&self) -> bool {
         self.dropped_bytes
@@ -264,27 +201,6 @@ impl CodeBlock {
         Label(self.label_addrs.len() - 1)
     }
 
-    /// Write a label at the current address
-    pub fn write_label(&mut self, label: Label) {
-        self.label_addrs[label.0] = self.write_pos;
-    }
-
-    // Add a label reference at the current write position
-    pub fn label_ref(&mut self, label: Label, num_bytes: usize, encode: impl Fn(&mut CodeBlock, i64, i64) -> Result<(), ()> + 'static) {
-        assert!(label.0 < self.label_addrs.len());
-
-        // Keep track of the reference
-        self.label_refs.push(LabelRef { pos: self.write_pos, label, num_bytes, encode: Box::new(encode) });
-
-        // Move past however many bytes the instruction takes up.
-        // Reserve the bytes by writing them rather than by moving the cursor
-        // over them. Pages are mapped on first write, so a cursor bump alone
-        // leaves a page that cannot be mapped.
-        const RESERVED: [u8; 16] = [0; 16];
-        assert!(num_bytes <= RESERVED.len(), "label reference wants {num_bytes} bytes");
-        self.write_bytes(&RESERVED[..num_bytes]);
-    }
-
     // Link internal label references
     pub fn link_labels(&mut self) -> Result<(), ()> {
         let orig_pos = self.write_pos;
@@ -300,7 +216,12 @@ impl CodeBlock {
             assert!(label_addr < self.mem_size);
 
             self.write_pos = ref_pos;
-            let encode_result = (label_ref.encode.as_ref())(self, (ref_pos + label_ref.num_bytes) as i64, label_addr as i64);
+            let encode_result = {
+                // Seeking invalidates any cached span. Each patch gets a fresh
+                // writer, dropped before checking committed progress or seeking again.
+                let mut writer = self.writer();
+                (label_ref.encode.as_ref())(&mut writer, (ref_pos + label_ref.num_bytes) as i64, label_addr as i64)
+            };
             link_result = link_result.and(encode_result);
 
             // Verify number of bytes written when the callback returns Ok
@@ -500,6 +421,130 @@ mod tests
     }
 
     #[test]
+    fn link_labels_revalidates_each_patch_and_restores_position() {
+        let page_size = unsafe { crate::cruby::rb_jit_get_page_size() } as usize;
+        let mut cb = CodeBlock::new_dummy();
+        let label = cb.new_label("target");
+        let shared = cb.mem_block.clone();
+
+        // Deliberately register patches in nonsequential page order.
+        for offset in [page_size + 8, 4, page_size - 2] {
+            cb.set_write_ptr(cb.get_ptr(offset));
+            let shared = shared.clone();
+
+            cb.writer().label_ref(label, 4, move |writer, end, dst| {
+                assert!(shared.try_borrow_mut().is_err());
+                assert_eq!(writer.get_write_pos(), offset);
+                assert_eq!(end, (offset + 4) as i64);
+                assert_eq!(dst, (page_size + 16) as i64);
+                writer.write_bytes(&[1, 2, 3, 4]);
+                assert_eq!(writer.get_write_pos(), offset + 4);
+                Ok(())
+            });
+        }
+
+        cb.set_write_ptr(cb.get_ptr(page_size + 16));
+        cb.writer().write_label(label);
+        cb.mark_all_executable();
+
+        let preparations = shared.borrow().write_span_preparations();
+        cb.link_labels().unwrap();
+        assert_eq!(cb.get_write_pos(), page_size + 16);
+        assert!(!cb.has_dropped_bytes());
+
+        // One fresh span per patch, plus the crossing patch's second page.
+        assert_eq!(shared.borrow().write_span_preparations(), preparations + 4);
+        for offset in [page_size + 8, 4, page_size - 2] {
+            let ptr = cb.get_ptr(offset).raw_ptr(&cb);
+            assert_eq!(unsafe { std::slice::from_raw_parts(ptr, 4) }, &[1, 2, 3, 4]);
+        }
+
+        assert!(cb.label_addrs.is_empty());
+        assert!(cb.label_names.is_empty());
+        assert!(cb.label_refs.is_empty());
+        cb.mark_all_executable();
+    }
+
+    #[test]
+    fn link_labels_keeps_errors_and_continues_patching() {
+        let mut cb = CodeBlock::new_dummy();
+
+        let label = cb.new_label("target");
+        {
+            let mut writer = cb.writer();
+
+            writer.label_ref(label, 4, |writer, _, _| {
+                // Failed encoders can fail before filling their reservations
+                writer.write_byte(0xaa);
+                Err(())
+            });
+            writer.label_ref(label, 4, |writer, _, _| {
+                writer.write_bytes(&[1, 2, 3, 4]);
+                Ok(())
+            });
+
+            writer.write_label(label);
+        }
+
+        // Seed a pre-existing write failure; encoder Err(()) is a separate error.
+        // Linking must preserve this flag through every patch-writer scope.
+        cb.dropped_bytes = true;
+        assert_eq!(cb.link_labels(), Err(()));
+        assert_eq!(cb.get_write_pos(), 8);
+        assert!(cb.has_dropped_bytes());
+        assert_eq!(cb.hexdump(), "aa00000001020304");
+
+        assert!(cb.label_refs.is_empty());
+        assert!(cb.label_addrs.is_empty());
+        assert!(cb.label_names.is_empty());
+
+        // Linking labels works since no pending references remain.
+        assert_eq!(cb.link_labels(), Ok(()));
+        // However dropped_bytes are not cleared.
+        assert!(cb.has_dropped_bytes());
+    }
+
+    #[test]
+    #[should_panic(expected = "callback didn't write number of bytes")]
+    fn link_labels_checks_successful_patch_length_after_drop() {
+        let mut cb = CodeBlock::new_dummy();
+        let label = cb.new_label("target");
+
+        cb.writer().label_ref(label, 4, |writer, _, _| {
+            writer.write_byte(1);
+            Ok(())
+        });
+        cb.link_labels().unwrap();
+    }
+
+    #[test]
+    fn link_labels_commits_patch_failure_and_restores_position() {
+        let page_size = unsafe { crate::cruby::rb_jit_get_page_size() } as usize;
+        let mut cb = CodeBlock::new_dummy_sized(2 * page_size);
+        let label = cb.new_label("target");
+
+        cb.set_write_ptr(cb.get_ptr(page_size - 2));
+
+        // Reserve only the writable prefix, then let the encoder overrun.
+        cb.writer().label_ref(label, 2, |writer, _, _| {
+            writer.write_bytes(&[1, 2, 3, 4]);
+            assert!(writer.has_dropped_bytes());
+            assert_eq!(writer.get_write_pos(), writer.virtual_region_size() / 2);
+            Err(())
+        });
+
+        cb.set_write_ptr(cb.get_ptr(0));
+        assert_eq!(cb.link_labels(), Err(()));
+        assert_eq!(cb.get_write_pos(), 0);
+        assert!(cb.has_dropped_bytes());
+
+        let ptr = cb.get_ptr(page_size - 2).raw_ptr(&cb);
+        assert_eq!(unsafe { std::slice::from_raw_parts(ptr, 2) }, &[1, 2]);
+        assert!(cb.label_refs.is_empty());
+        assert!(cb.mem_block.try_borrow_mut().is_ok());
+    }
+
+    #[test]
     fn test_label_ref_at_an_unmappable_page_sets_dropped_bytes() {
         // Two pages of address space, but a memory limit that only lets
         // the first page be mapped.
@@ -510,8 +555,11 @@ mod tests
 
         // Fill the mappable page up to 2 bytes below its end, so that
         // a 5-byte jump reservation straddles into the unmappable page.
-        for _ in 0..(page_size - 2) {
-            cb.write_byte(0x90);
+        {
+            let mut writer = cb.writer();
+            for _ in 0..(page_size - 2) {
+                writer.write_byte(0x90);
+            }
         }
         assert!(!cb.has_dropped_bytes(), "the first page must map");
 
@@ -519,11 +567,11 @@ mod tests
         // unmappable page surfaces as dropped_bytes here, where the caller
         // still reads it and turns it into CompileError::OutOfMemory.
         let label = cb.new_label("over_the_page_boundary");
-        cb.label_ref(label, 5, |cb, _, _| {
-            cb.write_bytes(&[0; 5]);
+        cb.writer().label_ref(label, 5, |writer, _, _| {
+            writer.write_bytes(&[0; 5]);
             Ok(())
         });
-        cb.write_label(label);
+        cb.writer().write_label(label);
 
         // Mirror what compile_with_regs does after emit. It calls link_labels()
         // only if emit did not go OOM. This reproduces an assertion failure in
