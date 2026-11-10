@@ -129,6 +129,14 @@ class TestRipper::Ripper < Test::Unit::TestCase
     end;
   end
 
+  def test_incompatible_encoding_string_content
+    src = "`\xF8\n\xC0\\u".b
+    assert_nil(Ripper.sexp(src))
+    ripper = Ripper.new(src)
+    ripper.parse
+    assert_predicate(ripper, :error?)
+  end
+
   # https://bugs.jruby.org/4176
   def test_dedent_string
     col = Ripper.dedent_string '  hello'.dup, 0
