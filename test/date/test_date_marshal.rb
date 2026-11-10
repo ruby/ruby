@@ -40,7 +40,7 @@ class TestDateMarshal < Test::Unit::TestCase
     expected_error = defined?(FrozenError) ? FrozenError : RuntimeError
     assert_raise(expected_error){d.marshal_load(a)}
 
-    d = Date.new + 1/2r + 2304/65437r/86400
+    d = assert_deprecated_warn(/fractional day/) { Date.new + 1/2r + 2304/65437r/86400 }
     m = Marshal.dump(d)
     d2 = Marshal.load(m)
     assert_equal(d, d2)

@@ -23,7 +23,7 @@ class TestSH < Test::Unit::TestCase
 
     d = Date.new(2001, 2, 3)
     assert_equal([2001, 2, 3], [d.year, d.mon, d.mday])
-    d = Date.new(2001, 2, Rational('3.5'))
+    d = assert_deprecated_warn(/fractional day/) { Date.new(2001, 2, Rational('3.5')) }
     assert_equal([2001, 2, 3], [d.year, d.mon, d.mday])
     d = Date.new(2001,2, 3, Date::JULIAN)
     assert_equal([2001, 2, 3], [d.year, d.mon, d.mday])
@@ -191,18 +191,18 @@ class TestSH < Test::Unit::TestCase
     assert_equal(2451944, d.jd)
     d = Date.jd(Rational(2451944))
     assert_equal(2451944, d.jd)
-    d = Date.jd(2451944.5)
+    d = assert_deprecated_warn(/fractional day/) { Date.jd(2451944.5) }
     assert_equal(2451944, d.jd)
-    d = Date.jd(Rational('2451944.5'))
+    d = assert_deprecated_warn(/fractional day/) { Date.jd(Rational('2451944.5')) }
     assert_equal(2451944, d.jd)
 
     d = Date.civil(2001, 2, 3.0)
     assert_equal([2001, 2, 3], [d.year, d.mon, d.mday])
     d = Date.civil(2001, 2, Rational(3))
     assert_equal([2001, 2, 3], [d.year, d.mon, d.mday])
-    d = Date.civil(2001, 2, 3.5)
+    d = assert_deprecated_warn(/fractional day/) { Date.civil(2001, 2, 3.5) }
     assert_equal([2001, 2, 3], [d.year, d.mon, d.mday])
-    d = Date.civil(2001, 2, Rational('3.5'))
+    d = assert_deprecated_warn(/fractional day/) { Date.civil(2001, 2, Rational('3.5')) }
     assert_equal([2001, 2, 3], [d.year, d.mon, d.mday])
 
     d = Date.ordinal(2001, 2.0)

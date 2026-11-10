@@ -26,6 +26,10 @@ typedef long rb_len_t;
 
 #define USE_PACK
 
+#ifndef HAVE_RB_CATEGORY_WARN
+#define rb_category_warn(category, fmt) rb_warn(fmt)
+#endif
+
 static ID id_cmp, id_le_p, id_ge_p, id_eqeq_p;
 static VALUE cDate, cDateTime;
 static VALUE eDateError;
@@ -4683,10 +4687,6 @@ get_limit(VALUE opt)
     return 128;
 }
 
-#ifndef HAVE_RB_CATEGORY_WARN
-#define rb_category_warn(category, fmt) rb_warn(fmt)
-#endif
-
 static VALUE
 check_limit(VALUE str, VALUE opt)
 {
@@ -6155,6 +6155,15 @@ d_lite_new_offset(int argc, VALUE *argv, VALUE self)
     return dup_obj_with_new_offset(self, rof);
 }
 
+static void
+check_date_fraction(VALUE self)
+{
+    if (!f_kind_of_p(self, cDateTime))
+	rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
+			 "Date with fractional day is deprecated, "
+			 "use DateTime if you need a fractional day");
+}
+
 /*
  * call-seq:
  *    d + other  ->  date
@@ -6162,6 +6171,8 @@ d_lite_new_offset(int argc, VALUE *argv, VALUE self)
  * Returns a date object pointing +other+ days after self.  The other
  * should be a numeric value.  If the other is a fractional number,
  * assumes its precision is at most nanosecond.
+ * Passing a fractional number to Date#+ is deprecated; use DateTime
+ * if you need a fractional day.
  *
  *    Date.new(2001,2,3) + 1	#=> #<Date: 2001-02-04 ...>
  *    DateTime.new(2001,2,3) + Rational(1,2)
@@ -6291,6 +6302,9 @@ d_lite_plus(VALUE self, VALUE other)
 
 	    o = RFLOAT_VALUE(other);
 
+	    if (modf(o, &tmp) != 0.0)
+		check_date_fraction(self);
+
 	    if (o > 0)
 		s = +1;
 	    else {
@@ -6402,6 +6416,8 @@ d_lite_plus(VALUE self, VALUE other)
 		other = rb_rational_num(other);
 		goto again;
 	    }
+
+	    check_date_fraction(self);
 
 	    if (f_positive_p(other))
 		s = +1;
@@ -6553,6 +6569,8 @@ minus_dd(VALUE self, VALUE other)
  * pointing +other+ days before self.
  * If the other is a fractional number,
  * assumes its precision is at most nanosecond.
+ * Passing a fractional number to Date#- is deprecated; use DateTime
+ * if you need a fractional day.
  *
  *     Date.new(2001,2,3) - 1	#=> #<Date: 2001-02-02 ...>
  *     DateTime.new(2001,2,3) - Rational(1,2)

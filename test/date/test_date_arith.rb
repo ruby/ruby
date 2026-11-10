@@ -30,6 +30,51 @@ class TestDateArith < Test::Unit::TestCase
 		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
   end
 
+  def test_fractional_day_deprecated
+    pat = /Date with fractional day is deprecated/
+    d = Date.new(2001, 2, 3)
+
+    [
+      -> { Date.new(2001, 2, 3.5) },
+      -> { Date.civil(2001, 2, Rational(7, 2)) },
+      -> { Date.jd(2451944.5) },
+      -> { Date.ordinal(2001, 34.5) },
+      -> { Date.commercial(2001, 5, Rational(3, 2)) },
+      -> { d + 0.5 },
+      -> { d + Rational(1, 2) },
+      -> { d - 0.5 },
+      -> { d - Rational(1, 2) },
+      -> { d.next_day(0.5) },
+      -> { d.prev_day(Rational(1, 2)) },
+      -> { d.step(d + 1, 0.5).to_a },
+    ].each do |pr|
+      assert_deprecated_warn(pat, &pr)
+    end
+
+    dt = DateTime.new(2001, 2, 3)
+    [
+      -> { Date.new(2001, 2, 3.0) },
+      -> { Date.jd(Rational(2451944)) },
+      -> { d + 1 },
+      -> { d + 1.0 },
+      -> { d + Rational(2, 1) },
+      -> { d - 1.0 },
+      -> { d >> 1 },
+      -> { d << 1 },
+      -> { d.next_day(2) },
+      -> { DateTime.new(2001, 2, 3.5) },
+      -> { DateTime.jd(2451944.5) },
+      -> { DateTime.ordinal(2001, 34.5) },
+      -> { DateTime.commercial(2001, 5, Rational(3, 2)) },
+      -> { dt + 0.5 },
+      -> { dt - Rational(1, 2) },
+      -> { dt.next_day(0.5) },
+      -> { dt.step(dt + 1, 0.5).to_a },
+    ].each do |pr|
+      assert_deprecated_warn("", &pr)
+    end
+  end
+
   def test__plus__ex
     e = TypeError
     assert_raise(e) do
