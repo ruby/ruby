@@ -164,6 +164,27 @@ class TestString < Test::Unit::TestCase
     assert_equal(nil, S("\u{3042 3044 3046}")[RbConfig::LIMITS["LONG_MIN"], 1])
   end
 
+  def test_range_with_len_max_end
+    require "rbconfig/sizeof"
+    max = 2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 1
+
+    assert_equal(S("ab"), S("ab")[0..max])
+    assert_equal(S("b"), S("ab")[1..max])
+    assert_equal(S("ab"), S("ab").byteslice(0..max))
+
+    s = S("ab")
+    assert_equal(S("ab"), s.slice!(0..max))
+    assert_equal(S(""), s)
+
+    s = S("ab")
+    s[0..max] = S("x")
+    assert_equal(S("x"), s)
+
+    s = S("ab")
+    s.bytesplice(0..max, S("x"))
+    assert_equal(S("x"), s)
+  end
+
   def test_AREF_invalid_encoding
     assert_equal(S("\x80"), S("A"*39+"\x80")[-1, 1])
   end
