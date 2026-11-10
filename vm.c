@@ -4090,6 +4090,13 @@ rb_thread_mark_owned_roots(const struct rb_gc_mark_ctx *ctx, rb_thread_t *th)
     rb_gc_mark_ctx(ctx, th->name);
     rb_gc_mark_ctx(ctx, th->scheduler);
 
+    /* The waiters are on the joining fibers' stacks, so keep those fibers alive
+     * while they are on the join list, even if nothing else references them
+     * (e.g. a fiber blocked in Thread#join by a fiber scheduler that dropped it). */
+    for (const struct rb_waiting_list *waiter = th->join_list; waiter; waiter = waiter->next) {
+        if (waiter->fiber) rb_fiber_mark_self(ctx, waiter->fiber);
+    }
+
     rb_threadptr_interrupt_exec_task_mark(th);
 }
 
