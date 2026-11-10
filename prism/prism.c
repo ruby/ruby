@@ -9080,6 +9080,34 @@ escape_consume_newline(pm_parser_t *parser, uint32_t width) {
 }
 
 /**
+ * Write the byte that a malformed escape stands for, which is a NUL byte with
+ * the meta and control flags of the escapes that wrap it applied.
+ */
+static PRISM_INLINE void
+escape_write_invalid(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
+    escape_write_byte(parser, buffer, flags, escape_byte(0, flags));
+}
+
+/**
+ * Skip the character that makes a meta or control escape malformed, which
+ * belongs to the escape rather than to the content that follows it.
+ */
+static PRISM_INLINE void
+escape_skip_char(pm_parser_t *parser) {
+    if (parser->current.end >= parser->end) return;
+
+    size_t eol_length = match_eol(parser);
+    if (eol_length > 0) {
+        escape_consume_newline(parser, U32(eol_length));
+        parser->current.end += eol_length;
+        return;
+    }
+
+    size_t width = pm_encoding_char_width(parser->encoding, parser->current.end, parser->end - parser->current.end);
+    parser->current.end += (width == 0 ? 1 : width);
+}
+
+/**
  * Write each byte of the given escaped character into the buffer.
  */
 static PRISM_INLINE void
@@ -9166,6 +9194,11 @@ escape_consume_modified_byte(pm_parser_t *parser, uint8_t byte, uint8_t flags, u
  * loop back to the top with the accumulated flags rather than recursing, so
  * that arbitrarily long chains of prefixes use constant stack space regardless
  * of whether the compiler eliminates tail calls.
+ *
+ * A malformed control or meta escape ends at the character that makes it
+ * malformed, and stands for the byte that escape_write_invalid writes. The
+ * escapes that wrap it apply their flags to that byte, so \M-\M-a is the byte
+ * 0x80 followed by the characters -a.
  */
 static void
 escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
@@ -9274,6 +9307,12 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                 escape_write_byte_encoded(parser, buffer, flags, value);
             } else {
                 pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_HEXADECIMAL);
+
+                /* A malformed hex escape in a regular expression stands for
+                 * nothing unless another escape wraps it. */
+                if (!(flags & PM_ESCAPE_FLAG_REGEXP) || (flags & (PM_ESCAPE_FLAG_CONTROL | PM_ESCAPE_FLAG_META))) {
+                    escape_write_invalid(parser, buffer, flags);
+                }
             }
 
             return;
@@ -9403,65 +9442,32 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
 
             return;
         }
-        case 'c': {
-            parser->current.end++;
-            if (flags & PM_ESCAPE_FLAG_CONTROL) {
-                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL_REPEAT);
-            }
-
-            if (parser->current.end == parser->end) {
-                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
-                return;
-            }
-
-            uint8_t peeked = peek(parser);
-            switch (peeked) {
-                case '?': {
-                    parser->current.end++;
-                    escape_write_byte(parser, buffer, flags, escape_byte(0x7f, flags));
-                    return;
-                }
-                case '\\':
-                    parser->current.end++;
-
-                    if (match(parser, 'u') || match(parser, 'U')) {
-                        pm_parser_err(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current), PM_ERR_INVALID_ESCAPE_CHARACTER);
-                        return;
-                    }
-
-                    flags |= PM_ESCAPE_FLAG_CONTROL;
-                    goto escape_read_next;
-                case ' ':
-                    parser->current.end++;
-                    escape_read_warn(parser, flags, PM_ESCAPE_FLAG_CONTROL, "\\s");
-                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
-                    return;
-                default: {
-                    if (!char_is_ascii_printable(peeked)) {
-                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
-                        return;
-                    }
-
-                    escape_write_byte(parser, buffer, flags, escape_byte(escape_consume_modified_byte(parser, peeked, flags, 0), flags | PM_ESCAPE_FLAG_CONTROL));
-                    return;
-                }
-            }
-        }
         case 'C': {
             parser->current.end++;
-            if (flags & PM_ESCAPE_FLAG_CONTROL) {
-                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL_REPEAT);
-            }
 
             if (peek(parser) != '-') {
-                size_t width = pm_encoding_char_width(parser->encoding, parser->current.end, parser->end - parser->current.end);
-                pm_parser_err(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current) + U32(width), PM_ERR_ESCAPE_INVALID_CONTROL);
+                escape_skip_char(parser);
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
+                escape_write_invalid(parser, buffer, flags);
                 return;
             }
 
+            /* After its dash, a \C- escape is read the same as a \c escape,
+             * starting by skipping the dash in place of the c. */
+            PRISM_FALLTHROUGH
+        }
+        case 'c': {
             parser->current.end++;
+
+            if (flags & PM_ESCAPE_FLAG_CONTROL) {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL_REPEAT);
+                escape_write_invalid(parser, buffer, flags);
+                return;
+            }
+
             if (parser->current.end == parser->end) {
                 pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
+                escape_write_invalid(parser, buffer, flags);
                 return;
             }
 
@@ -9477,6 +9483,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
 
                     if (match(parser, 'u') || match(parser, 'U')) {
                         pm_parser_err(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current), PM_ERR_INVALID_ESCAPE_CHARACTER);
+                        escape_write_invalid(parser, buffer, flags);
                         return;
                     }
 
@@ -9489,8 +9496,9 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                     return;
                 default: {
                     if (!char_is_ascii_printable(peeked)) {
-                        size_t width = pm_encoding_char_width(parser->encoding, parser->current.end, parser->end - parser->current.end);
-                        pm_parser_err(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current) + U32(width), PM_ERR_ESCAPE_INVALID_CONTROL);
+                        escape_skip_char(parser);
+                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
+                        escape_write_invalid(parser, buffer, flags);
                         return;
                     }
 
@@ -9501,19 +9509,24 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
         }
         case 'M': {
             parser->current.end++;
+
             if (flags & PM_ESCAPE_FLAG_META) {
                 pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META_REPEAT);
+                escape_write_invalid(parser, buffer, flags);
+                return;
             }
 
             if (peek(parser) != '-') {
-                size_t width = pm_encoding_char_width(parser->encoding, parser->current.end, parser->end - parser->current.end);
-                pm_parser_err(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current) + U32(width), PM_ERR_ESCAPE_INVALID_META);
+                escape_skip_char(parser);
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
+                escape_write_invalid(parser, buffer, flags);
                 return;
             }
 
             parser->current.end++;
             if (parser->current.end == parser->end) {
                 pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
+                escape_write_invalid(parser, buffer, flags);
                 return;
             }
 
@@ -9524,6 +9537,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
 
                     if (match(parser, 'u') || match(parser, 'U')) {
                         pm_parser_err(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current), PM_ERR_INVALID_ESCAPE_CHARACTER);
+                        escape_write_invalid(parser, buffer, flags);
                         return;
                     }
 
@@ -9536,8 +9550,9 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                     return;
                 default:
                     if (!char_is_ascii_printable(peeked)) {
-                        size_t width = pm_encoding_char_width(parser->encoding, parser->current.end, parser->end - parser->current.end);
-                        pm_parser_err(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current) + U32(width), PM_ERR_ESCAPE_INVALID_META);
+                        escape_skip_char(parser);
+                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
+                        escape_write_invalid(parser, buffer, flags);
                         return;
                     }
 
@@ -9555,15 +9570,23 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             PRISM_FALLTHROUGH
         }
         default: {
-            if ((flags & (PM_ESCAPE_FLAG_CONTROL | PM_ESCAPE_FLAG_META)) && !char_is_ascii_printable(peeked)) {
-                size_t width = pm_encoding_char_width(parser->encoding, parser->current.end, parser->end - parser->current.end);
-                pm_parser_err(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current) + U32(width), PM_ERR_ESCAPE_INVALID_META);
+            /* A meta or control escape may wrap an escape of any ASCII
+             * character, including the control characters that it may not
+             * wrap directly, but not one of a character that is not ASCII. */
+            bool wrapped = (flags & (PM_ESCAPE_FLAG_CONTROL | PM_ESCAPE_FLAG_META)) != 0;
+
+            if (wrapped && parser->current.end < parser->end && peeked >= 0x80) {
+                escape_skip_char(parser);
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META);
+                escape_write_invalid(parser, buffer, flags);
                 return;
             }
+
             if (parser->current.end < parser->end) {
                 escape_write_escape_encoded(parser, buffer, flags);
             } else {
                 pm_parser_err_current(parser, PM_ERR_INVALID_ESCAPE_CHARACTER);
+                if (wrapped) escape_write_invalid(parser, buffer, flags);
             }
             return;
         }

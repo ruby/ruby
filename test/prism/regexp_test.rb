@@ -281,6 +281,18 @@ module Ruby::Prism
       assert_equal ["unknown regexp option - f"], errors.map(&:message)
     end
 
+    def test_malformed_control_and_meta_escapes
+      assert_equal "\\x80-a", Ruby::Prism.parse_statement("/\\M-\\M-a/").unescaped
+      assert_equal "(\\x00", Ruby::Prism.parse_statement("/(\\cé/").unescaped
+      assert_equal "\\x00a(", Ruby::Prism.parse_statement("/\\C-\\C-a(/").unescaped
+    end
+
+    def test_malformed_hex_escape
+      node = Ruby::Prism.parse_statement("/a\\xZb/")
+      assert_kind_of RegularExpressionNode, node
+      assert_equal "aZb", node.unescaped
+    end
+
     def test_depth_limit_nested_character_sets
       assert_depth_limit("[" * 10_000)
     end
