@@ -814,4 +814,17 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(out).to eq("rescued Bundler::GemNotFound\nmain")
     expect(err).to be_empty
   end
+
+  it "resolves only once when installing gems" do
+    script <<-RUBY
+      gemfile(true) do
+        source "https://gem.repo1"
+        gem "myrack"
+      end
+    RUBY
+
+    expect(out.scan("Fetching gem metadata").size).to eq(1)
+    expect(out.scan("Resolving dependencies...").size).to eq(1)
+    expect(err).to be_empty
+  end
 end

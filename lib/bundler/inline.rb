@@ -117,7 +117,8 @@ def gemfile(force_latest_compatible = false, options = {}, &gemfile)
       configure_forked_definition.call(definition) if installed_in_fork
 
       begin
-        runtime = Bundler::Runtime.new(nil, definition).setup
+        runtime = Bundler::Runtime.new(nil, definition)
+        installed_in_fork ? Bundler.ui.silence { runtime.setup } : runtime.setup
       rescue Gem::LoadError => e
         name = e.name
         version = e.requirement.requirements.first[1]
