@@ -7088,9 +7088,10 @@ bary_powm_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT
 static VALUE
 int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
 {
+    VALUE tmp = LONG2FIX(1L);
+    long yy;
 #if USE_GMP
-    VALUE z;
-    size_t xn, yn, mn, zn;
+    size_t xn, yn, mn;
 
     if (FIXNUM_P(x)) {
        x = rb_int2big(FIX2LONG(x));
@@ -7102,19 +7103,19 @@ int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
     xn = BIGNUM_LEN(x);
     yn = BIGNUM_LEN(y);
     mn = BIGNUM_LEN(m);
-    zn = mn;
-    z = bignew(zn, 1);
-    bary_powm_gmp(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, BDIGITS(m), mn);
-    if (nega_flg && BIGNUM_POSITIVE_P(z) && !BIGZEROP(z)) {
-        z = rb_big_minus(z, m);
+    if (xn <= GMP_MAX_DIGITS && yn <= GMP_MAX_DIGITS && mn <= GMP_MAX_DIGITS / 2) {
+        size_t zn = mn;
+        VALUE z = bignew(zn, 1);
+        bary_powm_gmp(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, BDIGITS(m), mn);
+        if (nega_flg && BIGNUM_POSITIVE_P(z) && !BIGZEROP(z)) {
+            z = rb_big_minus(z, m);
+        }
+        RB_GC_GUARD(x);
+        RB_GC_GUARD(y);
+        RB_GC_GUARD(m);
+        return rb_big_norm(z);
     }
-    RB_GC_GUARD(x);
-    RB_GC_GUARD(y);
-    RB_GC_GUARD(m);
-    return rb_big_norm(z);
-#else
-    VALUE tmp = LONG2FIX(1L);
-    long yy;
+#endif
 
     for (/*NOP*/; ! FIXNUM_P(y); y = rb_big_rshift(y, LONG2FIX(1L))) {
         if (RTEST(rb_int_odd_p(y))) {
@@ -7137,7 +7138,6 @@ int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
         tmp = rb_int_minus(tmp, m);
     }
     return tmp;
-#endif
 }
 
 /*
