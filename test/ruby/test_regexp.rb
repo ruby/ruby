@@ -633,6 +633,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(IndexError) { m[:foo] }
     assert_raise(TypeError) { m[nil] }
     assert_equal(["baz", nil], m[-2, 3])
+
+    require "rbconfig/sizeof"
+    max = 2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 1
+    assert_equal(["foo", "bar", "baz", nil], m[1..max])
   end
 
   def test_match_values_at
