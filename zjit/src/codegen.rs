@@ -3903,7 +3903,7 @@ fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> S
         pc: Opnd::const_ptr(state.pc),
         vm_stack_size: state.stack().len(),
         iseq: state.iseq,
-        stack_map: Some(stack_map),
+        stack_map,
         recompile: None,
     }
 }

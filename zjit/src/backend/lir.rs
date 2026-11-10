@@ -631,7 +631,7 @@ pub struct SideExit {
     pub vm_stack_size: usize,
     pub iseq: IseqPtr,
     /// Stack map for the top-most frame and any inlined frames below.
-    pub stack_map: Option<StackMap>,
+    pub stack_map: StackMap,
     /// If set, the side exit will invalidate the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
 }
@@ -990,11 +990,10 @@ macro_rules! target_for_each_operand_impl {
     ($self:expr, $visit_one:ident, $visit_many:ident, $reborrow:ident) => {
         match $self {
             Target::SideExit(data) => {
-                if let Some(StackMap { stack, .. }) = $reborrow!(data.exit.stack_map) {
-                    for entry in stack {
-                        if let StackMapEntry::Opnd(opnd) = entry {
-                            visit_one!(opnd);
-                        }
+                let StackMap { stack, .. } = $reborrow!(data.exit.stack_map);
+                for entry in stack {
+                    if let StackMapEntry::Opnd(opnd) = entry {
+                        visit_one!(opnd);
                     }
                 }
             }
@@ -2864,11 +2863,7 @@ impl Assembler
         let Target::SideExit(data) = target else {
             return 0;
         };
-        let Some(StackMap { stack, .. }) = &data.exit.stack_map else {
-            return 0;
-        };
-
-        stack.iter().filter(|entry| match entry {
+        data.exit.stack_map.stack.iter().filter(|entry| match entry {
             StackMapEntry::Opnd(Opnd::Value(value)) => !value.special_const_p(),
             StackMapEntry::Opnd(Opnd::UImm(value)) => !VALUE(*value as usize).special_const_p(),
             StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => {
@@ -3056,9 +3051,7 @@ impl Assembler
             asm_comment!(asm, "save cfp->sp");
             asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, *vm_stack_size as i32 * SIZEOF_VALUE_I32));
 
-            if let Some(stack_map) = stack_map {
-                compile_exit_stack_map(asm, stack_map);
-            }
+            compile_exit_stack_map(asm, stack_map);
         }
 
         /// Tear down the JIT frame and return to the interpreter.
