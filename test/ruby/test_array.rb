@@ -3237,6 +3237,24 @@ class TestArray < Test::Unit::TestCase
     assert_raise(ArgumentError) { [].fill(0, 1, LONGP) }
   end
 
+  def test_fill_block_freezes_array
+    a = [1, 2, 3]
+    assert_raise(FrozenError) { a.fill { a.freeze; 9 } }
+    assert_equal([1, 2, 3], a)
+
+    a = [1, 2, 3]
+    assert_raise(FrozenError) { a.fill { |i| a.freeze if i == 1; 9 } }
+    assert_equal([9, 2, 3], a)
+  end
+
+  def test_fill_block_shares_buffer
+    a = Array.new(20) { _1 }
+    s = nil
+    a.fill { |i| s ||= a[0, 20]; -1 }
+    assert_equal([-1] * 20, a)
+    assert_equal((0...20).to_a, s, "slice taken inside the block must not alias the filled array")
+  end
+
   def test_times
     assert_raise(ArgumentError) { [0, 0, 0, 0] * ((LONGP + 1) / 4) }
   end
