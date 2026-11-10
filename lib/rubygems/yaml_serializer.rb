@@ -57,6 +57,8 @@ module Gem
       }.freeze
 
       def initialize(source)
+        raise TypeError, "no implicit conversion of nil into String" if source.nil?
+
         @lines = source.split(/\r?\n/).each(&:freeze)
         @anchors = {}
         @depth = 0
@@ -892,17 +894,16 @@ module Gem
     end
 
     def load(str, permitted_classes: [], permitted_symbols: [], aliases: true)
-      raise TypeError, "no implicit conversion of nil into String" if str.nil?
-      return nil if str.empty?
-
       ast = Parser.new(str).parse
-      return nil if ast.nil?
-
-      Builder.new(
+      result = Builder.new(
         permitted_classes: permitted_classes,
         permitted_symbols: permitted_symbols,
         aliases: aliases
       ).build(ast)
+      # Bundler 4.0 and older call Hash methods on what this returns for
+      # .bundle/config, which is just "---" once its last key is unset, so
+      # nil stays a Hash here as it did in RubyGems 4.0.
+      result.nil? ? {} : result
     end
   end
 end

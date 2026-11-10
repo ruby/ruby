@@ -40,12 +40,13 @@ module Gem
         ::Psych.safe_load(input, permitted_classes: PERMITTED_CLASSES,
                                  permitted_symbols: PERMITTED_SYMBOLS, aliases: @aliases_enabled)
       else
-        Gem::YAMLSerializer.load(
-          input,
+        # Keeps the nil Psych returns, see Gem::YAMLSerializer.load
+        ast = Gem::YAMLSerializer::Parser.new(input).parse
+        Gem::YAMLSerializer::Builder.new(
           permitted_classes: PERMITTED_CLASSES,
           permitted_symbols: PERMITTED_SYMBOLS,
           aliases: aliases_enabled?
-        )
+        ).build(ast)
       end
     end
 
