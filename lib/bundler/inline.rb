@@ -72,7 +72,7 @@ def gemfile(force_latest_compatible = false, options = {}, &gemfile)
         end
 
         # When possible we do the install in a subprocess because to install
-        # gems we need to require some default gems like `securerandom` etc
+        # gems we need to require some default gems like `tempfile` etc
         # which may later conflict with the Gemfile requirements.
         installed_in_fork = false
         if Process.respond_to?(:fork)
