@@ -262,6 +262,8 @@ module Bundler
     def warn_on_default_gem_downgrades
       default_gems = Bundler.rubygems.default_stubs.to_h {|spec| [spec.name, spec] }
       downgrades = @definition.specs.sort_by(&:name).filter_map do |spec|
+        # The specs always include the running Bundler, whose version follows BUNDLED WITH rather than the Gemfile.
+        next if spec.name == "bundler"
         default_spec = default_gems[spec.name]
         next unless default_spec && spec.version < default_spec.version
         [spec, default_spec]

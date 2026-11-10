@@ -43,4 +43,16 @@ RSpec.describe "bundle install" do
 
     expect(err).to be_empty
   end
+
+  it "does not warn about the running bundler being older than the default bundler" do
+    build_gem "bundler", "999.0.0", to_system: true, default: true
+
+    install_gemfile <<~G, env: env
+      source "https://gem.repo4"
+      gem "bar", "1.0"
+    G
+
+    expect(err).to include("foo 1.0 (default: 2.0)")
+    expect(err).not_to include("* bundler")
+  end
 end
