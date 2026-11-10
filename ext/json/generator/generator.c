@@ -59,7 +59,12 @@ struct generate_json_data {
     long depth;
 };
 
+#if defined(HAVE_SIMD) && defined(HAVE_SIMD_SSE2)
 static SIMD_Implementation simd_impl;
+# define init_simd_impl() (simd_impl = find_simd_implementation())
+#else
+# define init_simd_impl() (void)0
+#endif
 
 static VALUE cState_from_state_s(VALUE self, VALUE opts);
 static VALUE cState_partial_generate(VALUE self, VALUE obj, generator_func, VALUE io);
@@ -1161,7 +1166,7 @@ static void generate_json_fixnum(FBuffer *buffer, struct generate_json_data *dat
         generate_json_rfc8785_number(buffer, obj);
         return;
     }
-    fbuffer_append_long(buffer, FIX2LONG(obj));
+    fbuffer_append_len(buffer, FIX2LEN(obj));
 }
 
 static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
@@ -2171,5 +2176,5 @@ void Init_generator(void)
 
     rb_require("json/ext/generator/state");
 
-    simd_impl = find_simd_implementation();
+    init_simd_impl();
 }
