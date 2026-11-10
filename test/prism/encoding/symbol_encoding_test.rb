@@ -6,7 +6,7 @@ require_relative "../test_helper"
 
 module Ruby::Prism
   class SymbolEncodingTest < TestCase
-    each_encoding do |encoding, _|
+    each_encoding do |encoding|
       define_method(:"test_symbols_#{encoding.name}") do
         assert_symbols(encoding)
       end

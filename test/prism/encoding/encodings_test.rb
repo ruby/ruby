@@ -11,7 +11,9 @@ module Ruby::Prism
 
     # These test that we're correctly parsing codepoints for each alias of each
     # encoding that prism supports.
-    each_encoding do |encoding, range|
+    each_encoding do |encoding|
+      range = encoding_codepoints(encoding)
+
       (encoding.names - %w[external internal filesystem locale]).each do |name|
         define_method(:"test_encoding_#{name}") do
           assert_encoding(encoding, name, range)
@@ -21,7 +23,7 @@ module Ruby::Prism
 
     # Every encoding that prism supports is ASCII-compatible, so identifiers made
     # of ASCII characters lex the same in all of them.
-    each_encoding do |encoding, _|
+    each_encoding do |encoding|
       define_method(:"test_ascii_identifiers_#{encoding.name}") do
         assert_ascii_identifiers(encoding)
       end

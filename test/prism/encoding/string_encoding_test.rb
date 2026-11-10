@@ -4,7 +4,7 @@ require_relative "../test_helper"
 
 module Ruby::Prism
   class StringEncodingTest < TestCase
-    each_encoding do |encoding, _|
+    each_encoding do |encoding|
       define_method(:"test_#{encoding.name}") do
         assert_encoding(encoding)
       end
