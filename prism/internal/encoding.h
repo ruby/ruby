@@ -108,6 +108,15 @@ pm_encoding_multibyte_p(const pm_encoding_t *encoding) {
 size_t pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n);
 
 /*
+ * Return true if the given bytes begin a character in the given encoding that
+ * takes more bytes than there are. Together with pm_encoding_char_width, this
+ * tells bytes that are cut short of a character from bytes that are invalid,
+ * which matters where a character is built up one byte at a time, such as from
+ * the escapes of a regular expression.
+ */
+bool pm_encoding_char_prefix_p(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n);
+
+/*
  * Return true if the next character in the given encoding is uppercase, or
  * titlecase, in the given version of Ruby. Such a character begins a constant
  * name. The version only matters for an encoding whose characters are Unicode

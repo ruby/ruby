@@ -345,6 +345,25 @@ pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n) {
 }
 
 /**
+ * Return true if the given bytes begin a character in the UTF-8 encoding that
+ * takes more bytes than there are. In the state transition table, state 0
+ * accepts a character and state 1 rejects one, and every other state waits for
+ * another byte.
+ */
+static bool
+pm_encoding_utf_8_char_prefix_p(const uint8_t *b, ptrdiff_t n) {
+    if (n <= 0 || n >= 4) return false;
+    uint32_t state = 0;
+
+    for (ptrdiff_t index = 0; index < n; index++) {
+        state = pm_utf_8_dfa[256 + (state * 16) + pm_utf_8_dfa[b[index]]];
+        if (state <= 1) return false;
+    }
+
+    return true;
+}
+
+/**
  * Return true if the next character in the UTF-8 encoding is uppercase, or
  * titlecase, in the given version of Ruby.
  */
@@ -591,6 +610,21 @@ static const uint8_t pm_encoding_windows_1254_uppercase[16] = {
     if (((properties_) & PRISM_ENCODING_UPPERCASE_BIT) && n >= 4 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_) && PM_ENCODING_BYTE_IN(b[2], s2_, e2_) && PM_ENCODING_BYTE_IN(b[3], s3_, e3_)) return true;
 
 /*
+ * Return true if the n bytes at b, of which there is at least one, begin the
+ * given form without completing it. A form of a single byte is never begun
+ * without being completed.
+ */
+#define PM_ENCODING_PREFIX_1(properties_, s0_, e0_)
+#define PM_ENCODING_PREFIX_2(properties_, s0_, e0_, s1_, e1_) \
+    if (n < 2 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_)) return true;
+#define PM_ENCODING_PREFIX_3(properties_, s0_, e0_, s1_, e1_, s2_, e2_) \
+    if (n < 3 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && (n < 2 || PM_ENCODING_BYTE_IN(b[1], s1_, e1_))) return true;
+#define PM_ENCODING_PREFIX_4(properties_, s0_, e0_, s1_, e1_, s2_, e2_, s3_, e3_) \
+    if (n < 4 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && (n < 2 || PM_ENCODING_BYTE_IN(b[1], s1_, e1_)) && (n < 3 || PM_ENCODING_BYTE_IN(b[2], s2_, e2_))) return true;
+#define PM_ENCODING_PREFIX_6(properties_, s0_, e0_, s1_, e1_, s2_, e2_, s3_, e3_, s4_, e4_, s5_, e5_) \
+    if (n < 6 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && (n < 2 || PM_ENCODING_BYTE_IN(b[1], s1_, e1_)) && (n < 3 || PM_ENCODING_BYTE_IN(b[2], s2_, e2_)) && (n < 4 || PM_ENCODING_BYTE_IN(b[3], s3_, e3_)) && (n < 5 || PM_ENCODING_BYTE_IN(b[4], s4_, e4_))) return true;
+
+/*
  * The body of the function that returns the width of the character at b in an
  * encoding whose characters beyond ASCII take the given forms, or 0 if the
  * bytes do not form one.
@@ -610,6 +644,17 @@ static const uint8_t pm_encoding_windows_1254_uppercase[16] = {
     if (n <= 0) return false; \
     if (b[0] < 0x80) return pm_encoding_ascii_upper_p(b[0]); \
     forms_(PM_ENCODING_UPPERCASE) \
+    return false;
+
+/*
+ * The body of the function that returns true if the bytes at b begin a
+ * character in an encoding whose characters beyond ASCII take the given forms,
+ * without completing it. No character is the start of a longer one, so bytes
+ * that begin a form cannot also complete another.
+ */
+#define PM_ENCODING_FORMS_CHAR_PREFIX(forms_) \
+    if (n <= 0 || b[0] < 0x80) return false; \
+    forms_(PM_ENCODING_PREFIX) \
     return false;
 
 /**
@@ -858,6 +903,46 @@ pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_
         default:
             PRISM_ASSERT(false && "unreachable");
             return 0;
+    }
+}
+
+/**
+ * Return true if the given bytes begin a character in the given encoding that
+ * takes more bytes than there are.
+ */
+bool
+pm_encoding_char_prefix_p(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
+    switch (encoding->kind) {
+        case PM_ENCODING_KIND_UTF_8:
+            return pm_encoding_utf_8_char_prefix_p(b, n);
+        case PM_ENCODING_KIND_ASCII:
+        case PM_ENCODING_KIND_SINGLE_BYTE:
+            return false;
+        case PM_ENCODING_KIND_EUC_JP:
+            PM_ENCODING_FORMS_CHAR_PREFIX(PM_ENCODING_EUC_JP_FORMS)
+        case PM_ENCODING_KIND_SHIFT_JIS:
+            PM_ENCODING_FORMS_CHAR_PREFIX(PM_ENCODING_SHIFT_JIS_FORMS)
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
+        case PM_ENCODING_KIND_BIG5:
+            PM_ENCODING_FORMS_CHAR_PREFIX(PM_ENCODING_BIG5_FORMS)
+        case PM_ENCODING_KIND_CESU_8:
+            PM_ENCODING_FORMS_CHAR_PREFIX(PM_ENCODING_CESU_8_FORMS)
+        case PM_ENCODING_KIND_CP949:
+            PM_ENCODING_FORMS_CHAR_PREFIX(PM_ENCODING_CP949_FORMS)
+        case PM_ENCODING_KIND_EMACS_MULE:
+            PM_ENCODING_FORMS_CHAR_PREFIX(PM_ENCODING_EMACS_MULE_FORMS)
+        case PM_ENCODING_KIND_EUC_KR:
+            PM_ENCODING_FORMS_CHAR_PREFIX(PM_ENCODING_EUC_KR_FORMS)
+        case PM_ENCODING_KIND_EUC_TW:
+            PM_ENCODING_FORMS_CHAR_PREFIX(PM_ENCODING_EUC_TW_FORMS)
+        case PM_ENCODING_KIND_GB18030:
+            PM_ENCODING_FORMS_CHAR_PREFIX(PM_ENCODING_GB18030_FORMS)
+        case PM_ENCODING_KIND_GBK:
+            PM_ENCODING_FORMS_CHAR_PREFIX(PM_ENCODING_GBK_FORMS)
+#endif
+        default:
+            PRISM_ASSERT(false && "unreachable");
+            return false;
     }
 }
 
