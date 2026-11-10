@@ -5178,7 +5178,7 @@ rb_big2str1(VALUE x, int base)
     }
 
 #if USE_GMP
-    if (GMP_BIG2STR_DIGITS < xn && xn <= GMP_MAX_DIGITS) {
+    if (GMP_BIG2STR_DIGITS < xn) {
         return big2str_gmp(x, base);
     }
 #endif
