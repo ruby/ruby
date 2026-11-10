@@ -551,7 +551,7 @@ if you believe they were disclosed to a third party.
     begin
       config = self.class.load_with_rubygems_config_hash(File.read(filename))
       has_invalid_keys = config.keys.any? {|k| k.to_s.gsub(%r{https?:\/\/}, "").include?(": ") }
-      has_invalid_values = config.values.any? {|v| v.is_a?(String) && v.gsub(%r{https?:\/\/}, "").match?(/\A\S+: /) }
+      has_invalid_values = config.values.any? {|v| v.is_a?(String) && v.gsub(%r{https?:\/\/}, "").match?(/\A\S+:[ \t]/) }
       if has_invalid_keys || has_invalid_values
         warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
         return {}
