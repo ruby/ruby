@@ -417,6 +417,21 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   or Windows Server 2019 or later.  Earlier Windows 10 releases and Windows
   Server 2016 are no longer supported.
 
+* Ruby can now be built for mswin with clang-cl by
+  `win32\configure.bat CC=clang-cl`.  This requires clang-cl 15 or later
+  (Visual Studio 2022 version 17.4 or later), and the installed ruby builds
+  C extensions with clang-cl too.  [[PR #19333]]
+
+* `win32\configure.bat --with-gnu-make` writes `GNUmakefile` so that mswin
+  can be built with GNU make in parallel.  This is experimental, and `nmake`
+  stays the default.  The installed ruby builds C extensions with `make`
+  found in `PATH`, which `make install` does not install.  [[Feature #22408]]
+
+* `win32\configure.bat --with-mimalloc` makes the GC allocate memory with
+  mimalloc from vcpkg.  Only `ruby_xmalloc` and its family use mimalloc, so
+  a C extension that frees their memory with `free`, or memory from `malloc`
+  with `ruby_xfree`, crashes.  [[Feature #22503]]
+
 * Ruby on macOS now requires Mac OS X 10.6 or later.  Mac OS X 10.5 and
   PowerPC Macs are no longer supported.
 
@@ -763,9 +778,12 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
 [Feature #22309]: https://bugs.ruby-lang.org/issues/22309
 [Feature #22400]: https://bugs.ruby-lang.org/issues/22400
+[Feature #22408]: https://bugs.ruby-lang.org/issues/22408
 [Feature #22441]: https://bugs.ruby-lang.org/issues/22441
 [Feature #22444]: https://bugs.ruby-lang.org/issues/22444
+[Feature #22503]: https://bugs.ruby-lang.org/issues/22503
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
+[PR #19333]: https://github.com/ruby/ruby/pull/19333
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
 [prism-v1.8.1]: https://github.com/ruby/prism/releases/tag/v1.8.1
