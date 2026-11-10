@@ -77,13 +77,20 @@ def gemfile(force_latest_compatible = false, options = {}, &gemfile)
         installed_in_fork = false
         if Process.respond_to?(:fork)
           Gem.load_yaml # Avoid NameError on Ruby 3.2's safe_yaml.rb after Gem::Specification.reset
-          _, status = Process.waitpid2(Process.fork do
-                                         $VERBOSE = nil
-                                         do_install.call end)
-          exit(status.exitstatus || status.to_i) unless status.success?
+          # exit! leaves the script's at_exit hooks to this process, which installs again on failure to raise the error here
+          pid = Process.fork do
+            $VERBOSE = nil
+            do_install.call
+            $stdout.flush
+            $stderr.flush
+            exit!(true)
+          rescue Exception # rubocop:disable Lint/RescueException
+            exit!(false)
+          end
+          installed_in_fork = Process.waitpid2(pid).last.success?
+        end
 
-          installed_in_fork = true
-
+        if installed_in_fork
           Bundler.reset!
           Gem::Specification.reset
           Bundler.instance_variable_set(:@bundle_path, Pathname.new(Gem.dir))
