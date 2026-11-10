@@ -37,6 +37,7 @@ module Gem
       NULL_SCALARS = %w[~ null].freeze
       BLANK_RE = /\A[\0\s]*\z/
       BLANK_OR_COMMENT_RE = /\A[\0\s]*(?:#|\z)/
+      DOCUMENT_END_RE = /\A\.\.\.(?:[ \t]|\z)/
 
       STRING_UNESCAPES = {
         "\\\\" => "\\",
@@ -62,6 +63,7 @@ module Gem
         @lines = source.split(/\r?\n/).each(&:freeze)
         @anchors = {}
         @depth = 0
+        strip_document_end
         strip_document_prefix
       end
 
@@ -84,6 +86,11 @@ module Gem
       end
 
       private
+
+      def strip_document_end
+        index = @lines.index {|line| DOCUMENT_END_RE.match?(line) }
+        @lines.slice!(index..) if index
+      end
 
       def strip_document_prefix
         return if @lines.empty?

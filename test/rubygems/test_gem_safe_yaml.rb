@@ -431,6 +431,7 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal({}, Gem::YAMLSerializer.load(""))
     assert_equal({}, Gem::YAMLSerializer.load("---\n"))
     assert_equal({}, Gem::YAMLSerializer.load("---\n# BUNDLE_FOO: \"bar\"\n"))
+    assert_equal({}, Gem::YAMLSerializer.load("---\n...\n"))
     assert_equal({}, Gem::YAMLSerializer.load("--- ~\n"))
     assert_raise(TypeError) { Gem::YAMLSerializer.load(nil) }
   end
@@ -439,8 +440,18 @@ class TestGemSafeYAML < Gem::TestCase
     assert_nil Gem::SafeYAML.safe_load("")
     assert_nil Gem::SafeYAML.safe_load("---\n")
     assert_nil Gem::SafeYAML.safe_load("---\n# BUNDLE_FOO: \"bar\"\n")
+    assert_nil Gem::SafeYAML.safe_load("---\n...\n")
     assert_nil Gem::SafeYAML.safe_load("--- ~\n")
     assert_raise(TypeError) { Gem::SafeYAML.safe_load(nil) }
+  end
+
+  def test_load_stops_at_document_end_marker
+    assert_equal({ "a" => 1 }, yaml_load("a: 1\n...\nb: 2\n"))
+    assert_equal({ "a" => 1 }, yaml_load("a: 1\n... # end\nb: 2\n"))
+    assert_equal({ "a" => 1 }, yaml_load("a: 1\n...\t\nb: 2\n"))
+    assert_equal({ "a" => 1 }, yaml_load("a: 1\r\n...\r\nb: 2\r\n"))
+    assert_equal({ "a" => 1 }, Gem::SafeYAML.safe_load("a: 1\n...\nb: 2\n"))
+    assert_equal({ "a" => "..." }, yaml_load("a: ...\n"))
   end
 
   def test_load_returns_hash_for_flow_empty_hash
