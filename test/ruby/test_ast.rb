@@ -200,6 +200,12 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  def test_parse_incompatible_encoding_string_content
+    assert_raise(SyntaxError) do
+      RubyVM::AbstractSyntaxTree.parse("`\xF8\n\xC0\\u".b)
+    end
+  end
+
   def test_parse_file_raises_syntax_error
     Tempfile.create(%w"test_ast .rb") do |f|
       f.puts "end"
