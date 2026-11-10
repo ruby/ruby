@@ -9660,7 +9660,6 @@ fn add_iseq_to_hir(
             for _ in 0..num_incoming_locals {
                 result.locals.push(fun.push_insn(block, Insn::Param));
             }
-            result.spilled_locals = LocalSet::with_capacity(num_incoming_locals);
             for _ in 0..num_incoming_stack {
                 result.stack.push(fun.push_insn(block, Insn::Param));
             }
@@ -11507,7 +11506,6 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
             entry_state.locals.push(fun.push_insn(entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
     }
-    entry_state.spilled_locals = LocalSet::with_capacity(entry_state.locals.len());
     (self_param, entry_state)
 }
 
@@ -11605,7 +11603,6 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
             });
         }
     }
-    entry_state.spilled_locals = LocalSet::with_capacity(entry_state.locals.len());
     (self_param, entry_state)
 }
 
