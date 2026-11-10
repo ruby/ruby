@@ -90,8 +90,8 @@ module Gem
 
       private
 
-      # Compared byte-wise because metadata may be read as binary, which
-      # cannot be compared with a UTF-8 string containing the BOM character.
+      # Byte-wise, as checksums.yaml is read as binary unlike config files,
+      # and binary cannot be compared with a UTF-8 string holding the BOM.
       def strip_bom(source)
         return source unless UTF8_BOM_BYTES.each_with_index.all? {|byte, i| source.getbyte(i) == byte }
 
