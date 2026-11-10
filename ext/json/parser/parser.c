@@ -1120,7 +1120,7 @@ NOINLINE(static) VALUE json_decode_large_integer(const char *start, rb_len_t len
     return json_decode_large_number(start, len, json_decode_inum);
 }
 
-static inline VALUE json_decode_integer(uint64_t mantissa, int mantissa_digits, bool negative, const char *start, const char *end)
+static inline VALUE json_decode_integer(uint64_t mantissa, ssize_t mantissa_digits, bool negative, const char *start, const char *end)
 {
     if (RB_LIKELY(mantissa_digits <= MAX_FAST_INTEGER_SIZE)) {
         if (RB_LIKELY(!negative)) {
@@ -1164,7 +1164,7 @@ NOINLINE(static) VALUE json_decode_large_float(const char *start, rb_len_t len)
 /* Ruby JSON optimized float decoder using vendored Ryu algorithm
  * Accepts pre-extracted mantissa and exponent from first-pass validation
  */
-static inline VALUE json_decode_float(JSON_ParserConfig *config, uint64_t mantissa, int mantissa_digits, int64_t exponent, bool negative,
+static inline VALUE json_decode_float(JSON_ParserConfig *config, uint64_t mantissa, ssize_t mantissa_digits, int64_t exponent, bool negative,
                                           const char *start, const char *end)
 {
     if (RB_UNLIKELY(config->decimal_class)) {
@@ -1421,7 +1421,7 @@ static inline uint64_t decode_4digits_unrolled(uint32_t val) {
 }
 #endif
 
-static inline int json_parse_digits(JSON_ParserState *state, uint64_t *accumulator)
+static inline ssize_t json_parse_digits(JSON_ParserState *state, uint64_t *accumulator)
 {
     const char *start = state->cursor;
 
@@ -1454,7 +1454,7 @@ static inline int json_parse_digits(JSON_ParserState *state, uint64_t *accumulat
             state->cursor++;
         }
 
-        return (int)(state->cursor - start);
+        return (ssize_t)(state->cursor - start);
     }
 #endif
 
@@ -1463,7 +1463,7 @@ static inline int json_parse_digits(JSON_ParserState *state, uint64_t *accumulat
         *accumulator = *accumulator * 10 + (next_char - '0');
         state->cursor++;
     }
-    return (int)(state->cursor - start);
+    return (ssize_t)(state->cursor - start);
 }
 
 static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig *config, bool negative, const char *start, bool resumable)
@@ -1473,11 +1473,11 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
 
     // Variables for Ryu optimization - extract digits during parsing
     int64_t exponent = 0;
-    int decimal_point_pos = -1;
+    ssize_t decimal_point_pos = -1;
     uint64_t mantissa = 0;
 
     // Parse integer part and extract mantissa digits
-    int mantissa_digits = json_parse_digits(state, &mantissa);
+    ssize_t mantissa_digits = json_parse_digits(state, &mantissa);
 
     if (RB_UNLIKELY((first_digit == '0' && mantissa_digits > 1) || (negative && mantissa_digits == 0))) {
         return Qundef;
@@ -1489,7 +1489,7 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
         decimal_point_pos = mantissa_digits;  // Remember position of decimal point
         state->cursor++;
 
-        int fractional_digits = json_parse_digits(state, &mantissa);
+        ssize_t fractional_digits = json_parse_digits(state, &mantissa);
         mantissa_digits += fractional_digits;
 
         if (RB_UNLIKELY(!fractional_digits)) {
@@ -1510,7 +1510,7 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
         }
 
         uint64_t abs_exponent = 0;
-        int exponent_digits = json_parse_digits(state, &abs_exponent);
+        ssize_t exponent_digits = json_parse_digits(state, &abs_exponent);
 
         if (RB_UNLIKELY(!exponent_digits)) {
             return Qundef;
