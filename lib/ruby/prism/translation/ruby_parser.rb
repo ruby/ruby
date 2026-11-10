@@ -967,7 +967,7 @@ module Ruby::Prism
         # -> { it }
         #      ^^
         def visit_it_local_variable_read_node(node)
-          s(node, :call, nil, :it)
+          s(node, :lvar, :it)
         end
 
         # foo(bar: baz)
@@ -1005,11 +1005,7 @@ module Ruby::Prism
         # foo
         # ^^^
         def visit_local_variable_read_node(node)
-          if node.name.match?(/^_\d$/)
-            s(node, :call, nil, node.name)
-          else
-            s(node, :lvar, node.name)
-          end
+          s(node, :lvar, node.name)
         end
 
         # foo = 1
