@@ -1177,92 +1177,108 @@ static const uint8_t pm_encoding_windows_1254_table[256] = {
 
 #endif
 
-/**
- * A form that the characters of a multibyte encoding take beyond ASCII, as the
- * range of bytes at each of their positions. Bytes that match a form are a
- * character, and bytes that match the start of a form begin one. Forms may
+/*
+ * Each multibyte encoding other than UTF-8 is ASCII below 0x80, and its other
+ * characters take a list of forms. A form is the number of bytes in its
+ * characters, their PRISM_ENCODING_*_BIT properties, and the inclusive range of
+ * bytes at each position. Bytes that match a form are a character. Forms may
  * overlap, in which case a character has the properties of every form that it
  * matches. No character is the start of a longer one, and every form with
  * properties lies within the forms without them, so that the first form that
  * answers a question about a character answers it for all of them.
+ *
+ * Each list is a macro that passes its forms to X_1 through X_6 by the number
+ * of bytes in them, where X is the name of a family of macros below that turns
+ * each form into a check. The checks run in the order of the list.
  */
-struct pm_encoding_form {
-    /** The number of bytes in the characters of this form. */
-    uint8_t length;
-
-    /** The PRISM_ENCODING_*_BIT properties of the characters of this form. */
-    uint8_t properties;
-
-    /** The inclusive range of bytes at each position. */
-    struct {
-        /** The first byte in the range. */
-        uint8_t start;
-
-        /** The last byte in the range. */
-        uint8_t end;
-    } bytes[6];
-};
 
 /**
- * Return true if the first given number of bytes match the given form.
+ * Return true if the given byte is in the given inclusive range. The distance
+ * from the start of the range is compared as a byte so that a range that ends
+ * at 0xFF does not compare a byte against a bound that it can never exceed.
  */
-static inline bool
-pm_encoding_form_match_p(const pm_encoding_form_t *form, const uint8_t *b, size_t length) {
-    for (size_t index = 0; index < length; index++) {
-        if (b[index] < form->bytes[index].start || b[index] > form->bytes[index].end) return false;
-    }
+#define PM_ENCODING_BYTE_IN(byte_, start_, end_) \
+    ((uint8_t) ((byte_) - (start_)) <= (uint8_t) ((end_) - (start_)))
 
-    return true;
-}
+/* Return the width of the character at b if it takes the given form. */
+#define PM_ENCODING_WIDTH_1(properties_, s0_, e0_) \
+    if (n >= 1 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_)) return 1;
+#define PM_ENCODING_WIDTH_2(properties_, s0_, e0_, s1_, e1_) \
+    if (n >= 2 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_)) return 2;
+#define PM_ENCODING_WIDTH_3(properties_, s0_, e0_, s1_, e1_, s2_, e2_) \
+    if (n >= 3 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_) && PM_ENCODING_BYTE_IN(b[2], s2_, e2_)) return 3;
+#define PM_ENCODING_WIDTH_4(properties_, s0_, e0_, s1_, e1_, s2_, e2_, s3_, e3_) \
+    if (n >= 4 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_) && PM_ENCODING_BYTE_IN(b[2], s2_, e2_) && PM_ENCODING_BYTE_IN(b[3], s3_, e3_)) return 4;
+#define PM_ENCODING_WIDTH_6(properties_, s0_, e0_, s1_, e1_, s2_, e2_, s3_, e3_, s4_, e4_, s5_, e5_) \
+    if (n >= 6 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_) && PM_ENCODING_BYTE_IN(b[2], s2_, e2_) && PM_ENCODING_BYTE_IN(b[3], s3_, e3_) && PM_ENCODING_BYTE_IN(b[4], s4_, e4_) && PM_ENCODING_BYTE_IN(b[5], s5_, e5_)) return 6;
 
-/**
- * Return the number of bytes in the character at the start of the given bytes
- * in an encoding that is ASCII below 0x80 and takes the given forms beyond it,
- * or 0 if they do not form one.
+/*
+ * Return the width of the character at b if it takes the given form and the
+ * form has the property being asked about. Forms without properties never
+ * answer, so their checks fold away.
  */
-static inline size_t
-pm_encoding_forms_char_width(const pm_encoding_form_t *forms, size_t size, const uint8_t *b, ptrdiff_t n) {
-    if (n <= 0) return 0;
-    if (b[0] < 0x80) return 1;
+#define PM_ENCODING_PROPERTY_1(properties_, s0_, e0_) \
+    if (((properties_) & property) && n >= 1 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_)) return 1;
+#define PM_ENCODING_PROPERTY_2(properties_, s0_, e0_, s1_, e1_) \
+    if (((properties_) & property) && n >= 2 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_)) return 2;
+#define PM_ENCODING_PROPERTY_3(properties_, s0_, e0_, s1_, e1_, s2_, e2_) \
+    if (((properties_) & property) && n >= 3 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_) && PM_ENCODING_BYTE_IN(b[2], s2_, e2_)) return 3;
+#define PM_ENCODING_PROPERTY_4(properties_, s0_, e0_, s1_, e1_, s2_, e2_, s3_, e3_) \
+    if (((properties_) & property) && n >= 4 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_) && PM_ENCODING_BYTE_IN(b[2], s2_, e2_) && PM_ENCODING_BYTE_IN(b[3], s3_, e3_)) return 4;
 
-    for (size_t index = 0; index < size; index++) {
-        const pm_encoding_form_t *form = &forms[index];
-        if ((size_t) n >= form->length && pm_encoding_form_match_p(form, b, form->length)) return form->length;
-    }
-
+/*
+ * The body of the function that returns the width of the character at b in an
+ * encoding whose characters beyond ASCII take the given forms, or 0 if the
+ * bytes do not form one.
+ */
+#define PM_ENCODING_FORMS_CHAR_WIDTH(forms_) \
+    if (n <= 0) return 0; \
+    if (b[0] < 0x80) return 1; \
+    forms_(PM_ENCODING_WIDTH) \
     return 0;
-}
 
-/**
- * Return the number of bytes in the character at the start of the given bytes
- * in an encoding that is ASCII below 0x80 and takes the given forms beyond it,
- * if it has the given property, or 0 otherwise.
+/*
+ * The body of the function that returns the width of the character at b in an
+ * encoding whose characters beyond ASCII take the given forms, if it has the
+ * given property, or 0 otherwise.
  */
-static inline size_t
-pm_encoding_forms_property_char(const pm_encoding_form_t *forms, size_t size, uint8_t property, const uint8_t *b, ptrdiff_t n) {
-    if (n <= 0) return 0;
-    if (b[0] < 0x80) return (pm_encoding_ascii_table[b[0]] & property) ? 1 : 0;
-
-    for (size_t index = 0; index < size; index++) {
-        const pm_encoding_form_t *form = &forms[index];
-        if ((form->properties & property) && (size_t) n >= form->length && pm_encoding_form_match_p(form, b, form->length)) return form->length;
-    }
-
+#define PM_ENCODING_FORMS_PROPERTY_CHAR(forms_) \
+    if (n <= 0) return 0; \
+    if (b[0] < 0x80) return (pm_encoding_ascii_table[b[0]] & property) ? 1 : 0; \
+    forms_(PM_ENCODING_PROPERTY) \
     return 0;
-}
+
+/* The properties of a form whose characters are all alphabetical. */
+#define PM_ENCODING_ALNUM (PRISM_ENCODING_ALPHABETIC_BIT | PRISM_ENCODING_ALPHANUMERIC_BIT)
 
 /**
  * The forms of the characters in the EUC-JP encoding. The full-width Latin,
  * Greek, and Cyrillic capital letters are uppercase.
  */
-static const pm_encoding_form_t pm_encoding_euc_jp_forms[] = {
-    { 2, 0, { { 0x8E, 0x8E }, { 0xA1, 0xFE } } },
-    { 2, 0, { { 0xA1, 0xFE }, { 0xA1, 0xFE } } },
-    { 3, 0, { { 0x8F, 0x8F }, { 0xA1, 0xFE }, { 0xA1, 0xFE } } },
-    { 2, PRISM_ENCODING_UPPERCASE_BIT, { { 0xA3, 0xA3 }, { 0xC1, 0xDA } } },
-    { 2, PRISM_ENCODING_UPPERCASE_BIT, { { 0xA6, 0xA6 }, { 0xA1, 0xB8 } } },
-    { 2, PRISM_ENCODING_UPPERCASE_BIT, { { 0xA7, 0xA7 }, { 0xA1, 0xC1 } } }
-};
+#define PM_ENCODING_EUC_JP_FORMS(X) \
+    X##_2(0, 0x8E, 0x8E, 0xA1, 0xFE) \
+    X##_2(0, 0xA1, 0xFE, 0xA1, 0xFE) \
+    X##_3(0, 0x8F, 0x8F, 0xA1, 0xFE, 0xA1, 0xFE) \
+    X##_2(PRISM_ENCODING_UPPERCASE_BIT, 0xA3, 0xA3, 0xC1, 0xDA) \
+    X##_2(PRISM_ENCODING_UPPERCASE_BIT, 0xA6, 0xA6, 0xA1, 0xB8) \
+    X##_2(PRISM_ENCODING_UPPERCASE_BIT, 0xA7, 0xA7, 0xA1, 0xC1)
+
+/**
+ * Return the width of the character at b in EUC-JP, or 0 if there is none.
+ */
+static size_t
+pm_encoding_euc_jp_char_width(const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_EUC_JP_FORMS)
+}
+
+/**
+ * Return the width of the character at b in EUC-JP if it has the given
+ * property, or 0 otherwise.
+ */
+static size_t
+pm_encoding_euc_jp_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_EUC_JP_FORMS)
+}
 
 /**
  * The forms of the characters in the Shift_JIS encoding, where the single
@@ -1270,16 +1286,32 @@ static const pm_encoding_form_t pm_encoding_euc_jp_forms[] = {
  * is alphanumeric, and the full-width Latin, Greek, and Cyrillic capital
  * letters are uppercase.
  */
-static const pm_encoding_form_t pm_encoding_shift_jis_forms[] = {
-    { 1, PRISM_ENCODING_ALPHABETIC_BIT | PRISM_ENCODING_ALPHANUMERIC_BIT, { { 0xA1, 0xDF } } },
-    { 2, PRISM_ENCODING_ALPHABETIC_BIT | PRISM_ENCODING_ALPHANUMERIC_BIT, { { 0x81, 0x9F }, { 0x40, 0x7E } } },
-    { 2, PRISM_ENCODING_ALPHABETIC_BIT | PRISM_ENCODING_ALPHANUMERIC_BIT, { { 0x81, 0x9F }, { 0x80, 0xFC } } },
-    { 2, PRISM_ENCODING_ALPHABETIC_BIT | PRISM_ENCODING_ALPHANUMERIC_BIT, { { 0xE0, 0xFC }, { 0x40, 0x7E } } },
-    { 2, PRISM_ENCODING_ALPHABETIC_BIT | PRISM_ENCODING_ALPHANUMERIC_BIT, { { 0xE0, 0xFC }, { 0x80, 0xFC } } },
-    { 2, PRISM_ENCODING_UPPERCASE_BIT, { { 0x82, 0x82 }, { 0x60, 0x79 } } },
-    { 2, PRISM_ENCODING_UPPERCASE_BIT, { { 0x83, 0x83 }, { 0x9F, 0xB6 } } },
-    { 2, PRISM_ENCODING_UPPERCASE_BIT, { { 0x84, 0x84 }, { 0x40, 0x60 } } }
-};
+#define PM_ENCODING_SHIFT_JIS_FORMS(X) \
+    X##_1(PM_ENCODING_ALNUM, 0xA1, 0xDF) \
+    X##_2(PM_ENCODING_ALNUM, 0x81, 0x9F, 0x40, 0x7E) \
+    X##_2(PM_ENCODING_ALNUM, 0x81, 0x9F, 0x80, 0xFC) \
+    X##_2(PM_ENCODING_ALNUM, 0xE0, 0xFC, 0x40, 0x7E) \
+    X##_2(PM_ENCODING_ALNUM, 0xE0, 0xFC, 0x80, 0xFC) \
+    X##_2(PRISM_ENCODING_UPPERCASE_BIT, 0x82, 0x82, 0x60, 0x79) \
+    X##_2(PRISM_ENCODING_UPPERCASE_BIT, 0x83, 0x83, 0x9F, 0xB6) \
+    X##_2(PRISM_ENCODING_UPPERCASE_BIT, 0x84, 0x84, 0x40, 0x60)
+
+/**
+ * Return the width of the character at b in Shift_JIS, or 0 if there is none.
+ */
+static size_t
+pm_encoding_shift_jis_char_width(const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_SHIFT_JIS_FORMS)
+}
+
+/**
+ * Return the width of the character at b in Shift_JIS if it has the given
+ * property, or 0 otherwise.
+ */
+static size_t
+pm_encoding_shift_jis_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_SHIFT_JIS_FORMS)
+}
 
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
 
@@ -1287,92 +1319,211 @@ static const pm_encoding_form_t pm_encoding_shift_jis_forms[] = {
  * The forms of the characters in the Big5 encoding. Ruby reads Big5-HKSCS,
  * Big5-UAO, CP950, and CP951 as Big5, so they take these forms as well.
  */
-static const pm_encoding_form_t pm_encoding_big5_forms[] = {
-    { 2, 0, { { 0xA1, 0xFE }, { 0x40, 0x7E } } },
-    { 2, 0, { { 0xA1, 0xFE }, { 0xA1, 0xFE } } }
-};
+#define PM_ENCODING_BIG5_FORMS(X) \
+    X##_2(0, 0xA1, 0xFE, 0x40, 0x7E) \
+    X##_2(0, 0xA1, 0xFE, 0xA1, 0xFE)
+
+/**
+ * Return the width of the character at b in Big5, or 0 if there is none.
+ */
+static size_t
+pm_encoding_big5_char_width(const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_BIG5_FORMS)
+}
+
+/**
+ * Return the width of the character at b in Big5 if it has the given
+ * property, or 0 otherwise.
+ */
+static size_t
+pm_encoding_big5_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_BIG5_FORMS)
+}
 
 /**
  * The forms of the characters in the CESU-8 encoding: those of UTF-8, except
- * that a character beyond U+FFFF is a pair of surrogates.
+ * that a character beyond U+FFFF is a pair of surrogates. Its characters have
+ * the properties of their code points instead of properties of their forms.
  */
-static const pm_encoding_form_t pm_encoding_cesu_8_forms[] = {
-    { 2, 0, { { 0xC2, 0xDF }, { 0x80, 0xBF } } },
-    { 3, 0, { { 0xE0, 0xE0 }, { 0xA0, 0xBF }, { 0x80, 0xBF } } },
-    { 3, 0, { { 0xE1, 0xEC }, { 0x80, 0xBF }, { 0x80, 0xBF } } },
-    { 3, 0, { { 0xED, 0xED }, { 0x80, 0x9F }, { 0x80, 0xBF } } },
-    { 3, 0, { { 0xEE, 0xEF }, { 0x80, 0xBF }, { 0x80, 0xBF } } },
-    { 6, 0, { { 0xED, 0xED }, { 0xA0, 0xAF }, { 0x80, 0xBF }, { 0xED, 0xED }, { 0xB0, 0xBF }, { 0x80, 0xBF } } }
-};
+#define PM_ENCODING_CESU_8_FORMS(X) \
+    X##_2(0, 0xC2, 0xDF, 0x80, 0xBF) \
+    X##_3(0, 0xE0, 0xE0, 0xA0, 0xBF, 0x80, 0xBF) \
+    X##_3(0, 0xE1, 0xEC, 0x80, 0xBF, 0x80, 0xBF) \
+    X##_3(0, 0xED, 0xED, 0x80, 0x9F, 0x80, 0xBF) \
+    X##_3(0, 0xEE, 0xEF, 0x80, 0xBF, 0x80, 0xBF) \
+    X##_6(0, 0xED, 0xED, 0xA0, 0xAF, 0x80, 0xBF, 0xED, 0xED, 0xB0, 0xBF, 0x80, 0xBF)
+
+/**
+ * Return the width of the character at b in CESU-8, or 0 if there is none.
+ */
+static size_t
+pm_encoding_cesu_8_char_width(const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_CESU_8_FORMS)
+}
 
 /**
  * The forms of the characters in the CP949 encoding, where 0x80 is a character
  * of its own.
  */
-static const pm_encoding_form_t pm_encoding_cp949_forms[] = {
-    { 1, 0, { { 0x80, 0x80 } } },
-    { 2, 0, { { 0x81, 0xFE }, { 0x41, 0x5A } } },
-    { 2, 0, { { 0x81, 0xFE }, { 0x61, 0x7A } } },
-    { 2, 0, { { 0x81, 0xFE }, { 0x81, 0xFE } } }
-};
+#define PM_ENCODING_CP949_FORMS(X) \
+    X##_1(0, 0x80, 0x80) \
+    X##_2(0, 0x81, 0xFE, 0x41, 0x5A) \
+    X##_2(0, 0x81, 0xFE, 0x61, 0x7A) \
+    X##_2(0, 0x81, 0xFE, 0x81, 0xFE)
 
 /**
- * The forms of the characters in the Emacs MULE encoding.
+ * Return the width of the character at b in CP949, or 0 if there is none.
  */
-static const pm_encoding_form_t pm_encoding_emacs_mule_forms[] = {
-    { 2, 0, { { 0x81, 0x8F }, { 0xA0, 0xFF } } },
-    { 3, 0, { { 0x90, 0x99 }, { 0xA0, 0xFF }, { 0xA0, 0xFF } } },
-    { 3, 0, { { 0x9A, 0x9B }, { 0xE0, 0xEF }, { 0xA0, 0xFF } } },
-    { 4, 0, { { 0x9C, 0x9C }, { 0xF0, 0xF4 }, { 0xA0, 0xFF }, { 0xA0, 0xFF } } },
-    { 4, 0, { { 0x9D, 0x9D }, { 0xF5, 0xFE }, { 0xA0, 0xFF }, { 0xA0, 0xFF } } }
-};
+static size_t
+pm_encoding_cp949_char_width(const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_CP949_FORMS)
+}
+
+/**
+ * Return the width of the character at b in CP949 if it has the given
+ * property, or 0 otherwise.
+ */
+static size_t
+pm_encoding_cp949_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_CP949_FORMS)
+}
+
+/**
+ * The forms of the characters in the Emacs-Mule encoding.
+ */
+#define PM_ENCODING_EMACS_MULE_FORMS(X) \
+    X##_2(0, 0x81, 0x8F, 0xA0, 0xFF) \
+    X##_3(0, 0x90, 0x99, 0xA0, 0xFF, 0xA0, 0xFF) \
+    X##_3(0, 0x9A, 0x9B, 0xE0, 0xEF, 0xA0, 0xFF) \
+    X##_4(0, 0x9C, 0x9C, 0xF0, 0xF4, 0xA0, 0xFF, 0xA0, 0xFF) \
+    X##_4(0, 0x9D, 0x9D, 0xF5, 0xFE, 0xA0, 0xFF, 0xA0, 0xFF)
+
+/**
+ * Return the width of the character at b in Emacs-Mule, or 0 if there is none.
+ */
+static size_t
+pm_encoding_emacs_mule_char_width(const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_EMACS_MULE_FORMS)
+}
+
+/**
+ * Return the width of the character at b in Emacs-Mule if it has the given
+ * property, or 0 otherwise.
+ */
+static size_t
+pm_encoding_emacs_mule_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_EMACS_MULE_FORMS)
+}
 
 /**
  * The forms of the characters in the EUC-KR encoding.
  */
-static const pm_encoding_form_t pm_encoding_euc_kr_forms[] = {
-    { 2, 0, { { 0xA1, 0xFE }, { 0xA1, 0xFE } } }
-};
+#define PM_ENCODING_EUC_KR_FORMS(X) \
+    X##_2(0, 0xA1, 0xFE, 0xA1, 0xFE)
+
+/**
+ * Return the width of the character at b in EUC-KR, or 0 if there is none.
+ */
+static size_t
+pm_encoding_euc_kr_char_width(const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_EUC_KR_FORMS)
+}
+
+/**
+ * Return the width of the character at b in EUC-KR if it has the given
+ * property, or 0 otherwise.
+ */
+static size_t
+pm_encoding_euc_kr_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_EUC_KR_FORMS)
+}
 
 /**
  * The forms of the characters in the EUC-TW encoding.
  */
-static const pm_encoding_form_t pm_encoding_euc_tw_forms[] = {
-    { 2, 0, { { 0xA1, 0xFE }, { 0xA1, 0xFE } } },
-    { 4, 0, { { 0x8E, 0x8E }, { 0xA1, 0xB0 }, { 0xA1, 0xFE }, { 0xA1, 0xFE } } }
-};
+#define PM_ENCODING_EUC_TW_FORMS(X) \
+    X##_2(0, 0xA1, 0xFE, 0xA1, 0xFE) \
+    X##_4(0, 0x8E, 0x8E, 0xA1, 0xB0, 0xA1, 0xFE, 0xA1, 0xFE)
+
+/**
+ * Return the width of the character at b in EUC-TW, or 0 if there is none.
+ */
+static size_t
+pm_encoding_euc_tw_char_width(const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_EUC_TW_FORMS)
+}
+
+/**
+ * Return the width of the character at b in EUC-TW if it has the given
+ * property, or 0 otherwise.
+ */
+static size_t
+pm_encoding_euc_tw_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_EUC_TW_FORMS)
+}
 
 /**
  * The forms of the characters in the GB18030 encoding.
  */
-static const pm_encoding_form_t pm_encoding_gb18030_forms[] = {
-    { 2, 0, { { 0x81, 0xFE }, { 0x40, 0x7E } } },
-    { 2, 0, { { 0x81, 0xFE }, { 0x80, 0xFE } } },
-    { 4, 0, { { 0x81, 0xFE }, { 0x30, 0x39 }, { 0x81, 0xFE }, { 0x30, 0x39 } } }
-};
+#define PM_ENCODING_GB18030_FORMS(X) \
+    X##_2(0, 0x81, 0xFE, 0x40, 0x7E) \
+    X##_2(0, 0x81, 0xFE, 0x80, 0xFE) \
+    X##_4(0, 0x81, 0xFE, 0x30, 0x39, 0x81, 0xFE, 0x30, 0x39)
+
+/**
+ * Return the width of the character at b in GB18030, or 0 if there is none.
+ */
+static size_t
+pm_encoding_gb18030_char_width(const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_GB18030_FORMS)
+}
+
+/**
+ * Return the width of the character at b in GB18030 if it has the given
+ * property, or 0 otherwise.
+ */
+static size_t
+pm_encoding_gb18030_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_GB18030_FORMS)
+}
 
 /**
  * The forms of the characters in the GBK encoding, where 0x80 is a character
  * of its own.
  */
-static const pm_encoding_form_t pm_encoding_gbk_forms[] = {
-    { 1, 0, { { 0x80, 0x80 } } },
-    { 2, 0, { { 0xA1, 0xA9 }, { 0xA1, 0xFE } } }, /* GBK/1 */
-    { 2, 0, { { 0xB0, 0xF7 }, { 0xA1, 0xFE } } }, /* GBK/2 */
-    { 2, 0, { { 0x81, 0xA0 }, { 0x40, 0x7E } } }, /* GBK/3 */
-    { 2, 0, { { 0x81, 0xA0 }, { 0x80, 0xFE } } }, /* GBK/3 */
-    { 2, 0, { { 0xAA, 0xFE }, { 0x40, 0x7E } } }, /* GBK/4 */
-    { 2, 0, { { 0xAA, 0xFE }, { 0x80, 0xA0 } } }, /* GBK/4 */
-    { 2, 0, { { 0xA8, 0xA9 }, { 0x40, 0x7E } } }, /* GBK/5 */
-    { 2, 0, { { 0xA8, 0xA9 }, { 0x80, 0xA0 } } }, /* GBK/5 */
-    { 2, 0, { { 0xAA, 0xAF }, { 0xA1, 0xFE } } }, /* user-defined 1 */
-    { 2, 0, { { 0xF8, 0xFE }, { 0xA1, 0xFE } } }, /* user-defined 2 */
-    { 2, 0, { { 0xA1, 0xA7 }, { 0x40, 0x7E } } }, /* user-defined 3 */
-    { 2, 0, { { 0xA1, 0xA7 }, { 0x80, 0xA0 } } }  /* user-defined 3 */
-};
+#define PM_ENCODING_GBK_FORMS(X) \
+    X##_1(0, 0x80, 0x80) \
+    X##_2(0, 0xA1, 0xA9, 0xA1, 0xFE) /* GBK/1 */ \
+    X##_2(0, 0xB0, 0xF7, 0xA1, 0xFE) /* GBK/2 */ \
+    X##_2(0, 0x81, 0xA0, 0x40, 0x7E) /* GBK/3 */ \
+    X##_2(0, 0x81, 0xA0, 0x80, 0xFE) /* GBK/3 */ \
+    X##_2(0, 0xAA, 0xFE, 0x40, 0x7E) /* GBK/4 */ \
+    X##_2(0, 0xAA, 0xFE, 0x80, 0xA0) /* GBK/4 */ \
+    X##_2(0, 0xA8, 0xA9, 0x40, 0x7E) /* GBK/5 */ \
+    X##_2(0, 0xA8, 0xA9, 0x80, 0xA0) /* GBK/5 */ \
+    X##_2(0, 0xAA, 0xAF, 0xA1, 0xFE) /* user-defined 1 */ \
+    X##_2(0, 0xF8, 0xFE, 0xA1, 0xFE) /* user-defined 2 */ \
+    X##_2(0, 0xA1, 0xA7, 0x40, 0x7E) /* user-defined 3 */ \
+    X##_2(0, 0xA1, 0xA7, 0x80, 0xA0) /* user-defined 3 */
+
+/**
+ * Return the width of the character at b in GBK, or 0 if there is none.
+ */
+static size_t
+pm_encoding_gbk_char_width(const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_GBK_FORMS)
+}
+
+/**
+ * Return the width of the character at b in GBK if it has the given property,
+ * or 0 otherwise.
+ */
+static size_t
+pm_encoding_gbk_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_GBK_FORMS)
+}
 
 #endif
-
 
 /**
  * Return the number of bytes in the next character in the given encoding, or 0
@@ -1387,8 +1538,31 @@ pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_
             return ((n > 0) && (*b < 0x80)) ? 1 : 0;
         case PM_ENCODING_KIND_SINGLE_BYTE:
             return 1;
+        case PM_ENCODING_KIND_EUC_JP:
+            return pm_encoding_euc_jp_char_width(b, n);
+        case PM_ENCODING_KIND_SHIFT_JIS:
+            return pm_encoding_shift_jis_char_width(b, n);
+#ifndef PRISM_ENCODING_EXCLUDE_FULL
+        case PM_ENCODING_KIND_BIG5:
+            return pm_encoding_big5_char_width(b, n);
+        case PM_ENCODING_KIND_CESU_8:
+            return pm_encoding_cesu_8_char_width(b, n);
+        case PM_ENCODING_KIND_CP949:
+            return pm_encoding_cp949_char_width(b, n);
+        case PM_ENCODING_KIND_EMACS_MULE:
+            return pm_encoding_emacs_mule_char_width(b, n);
+        case PM_ENCODING_KIND_EUC_KR:
+            return pm_encoding_euc_kr_char_width(b, n);
+        case PM_ENCODING_KIND_EUC_TW:
+            return pm_encoding_euc_tw_char_width(b, n);
+        case PM_ENCODING_KIND_GB18030:
+            return pm_encoding_gb18030_char_width(b, n);
+        case PM_ENCODING_KIND_GBK:
+            return pm_encoding_gbk_char_width(b, n);
+#endif
         default:
-            return pm_encoding_forms_char_width(encoding->forms, encoding->forms_size, b, n);
+            PRISM_ASSERT(false && "unreachable");
+            return 0;
     }
 }
 
@@ -1411,16 +1585,49 @@ pm_encoding_property_char(const pm_encoding_t *encoding, uint8_t property, const
         case PM_ENCODING_KIND_ASCII:
         case PM_ENCODING_KIND_SINGLE_BYTE:
             return ((n > 0) && (encoding->table[*b] & property)) ? 1 : 0;
+        case PM_ENCODING_KIND_EUC_JP:
+            return pm_encoding_euc_jp_property_char(property, b, n);
+        case PM_ENCODING_KIND_SHIFT_JIS:
+            return pm_encoding_shift_jis_property_char(property, b, n);
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
+        case PM_ENCODING_KIND_BIG5:
+            return pm_encoding_big5_property_char(property, b, n);
         case PM_ENCODING_KIND_CESU_8: {
-            size_t width = pm_encoding_forms_char_width(encoding->forms, encoding->forms_size, b, n);
+            size_t width = pm_encoding_cesu_8_char_width(b, n);
             return (width != 0 && pm_cesu_8_property_p(b, width, property)) ? width : 0;
         }
+        case PM_ENCODING_KIND_CP949:
+            return pm_encoding_cp949_property_char(property, b, n);
+        case PM_ENCODING_KIND_EMACS_MULE:
+            return pm_encoding_emacs_mule_property_char(property, b, n);
+        case PM_ENCODING_KIND_EUC_KR:
+            return pm_encoding_euc_kr_property_char(property, b, n);
+        case PM_ENCODING_KIND_EUC_TW:
+            return pm_encoding_euc_tw_property_char(property, b, n);
+        case PM_ENCODING_KIND_GB18030:
+            return pm_encoding_gb18030_property_char(property, b, n);
+        case PM_ENCODING_KIND_GBK:
+            return pm_encoding_gbk_property_char(property, b, n);
 #endif
         default:
-            return pm_encoding_forms_property_char(encoding->forms, encoding->forms_size, property, b, n);
+            PRISM_ASSERT(false && "unreachable");
+            return 0;
     }
 }
+
+#undef PM_ENCODING_ALNUM
+#undef PM_ENCODING_FORMS_PROPERTY_CHAR
+#undef PM_ENCODING_FORMS_CHAR_WIDTH
+#undef PM_ENCODING_PROPERTY_4
+#undef PM_ENCODING_PROPERTY_3
+#undef PM_ENCODING_PROPERTY_2
+#undef PM_ENCODING_PROPERTY_1
+#undef PM_ENCODING_WIDTH_6
+#undef PM_ENCODING_WIDTH_4
+#undef PM_ENCODING_WIDTH_3
+#undef PM_ENCODING_WIDTH_2
+#undef PM_ENCODING_WIDTH_1
+#undef PM_ENCODING_BYTE_IN
 
 /**
  * This is the table of all of the encodings that prism supports.
@@ -1443,54 +1650,40 @@ const pm_encoding_t pm_encodings[] = {
     },
     [PM_ENCODING_EUC_JP] = {
         .name = "EUC-JP",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_euc_jp_forms,
-        .forms_size = sizeof(pm_encoding_euc_jp_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_EUC_JP,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_WINDOWS_31J] = {
         .name = "Windows-31J",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_shift_jis_forms,
-        .forms_size = sizeof(pm_encoding_shift_jis_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_SHIFT_JIS,
+        .table = pm_encoding_ascii_table
     },
 
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
     [PM_ENCODING_BIG5] = {
         .name = "Big5",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_big5_forms,
-        .forms_size = sizeof(pm_encoding_big5_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_BIG5,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_BIG5_HKSCS] = {
         .name = "Big5-HKSCS",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_big5_forms,
-        .forms_size = sizeof(pm_encoding_big5_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_BIG5,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_BIG5_UAO] = {
         .name = "Big5-UAO",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_big5_forms,
-        .forms_size = sizeof(pm_encoding_big5_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_BIG5,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_CESU_8] = {
         .name = "CESU-8",
         .kind = PM_ENCODING_KIND_CESU_8,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_cesu_8_forms,
-        .forms_size = sizeof(pm_encoding_cesu_8_forms) / sizeof(pm_encoding_form_t)
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_CP51932] = {
         .name = "CP51932",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_euc_jp_forms,
-        .forms_size = sizeof(pm_encoding_euc_jp_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_EUC_JP,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_CP850] = {
         .name = "CP850",
@@ -1509,73 +1702,53 @@ const pm_encoding_t pm_encodings[] = {
     },
     [PM_ENCODING_CP949] = {
         .name = "CP949",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_cp949_forms,
-        .forms_size = sizeof(pm_encoding_cp949_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_CP949,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_CP950] = {
         .name = "CP950",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_big5_forms,
-        .forms_size = sizeof(pm_encoding_big5_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_BIG5,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_CP951] = {
         .name = "CP951",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_big5_forms,
-        .forms_size = sizeof(pm_encoding_big5_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_BIG5,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_EMACS_MULE] = {
         .name = "Emacs-Mule",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_emacs_mule_forms,
-        .forms_size = sizeof(pm_encoding_emacs_mule_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_EMACS_MULE,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_EUC_JP_MS] = {
         .name = "eucJP-ms",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_euc_jp_forms,
-        .forms_size = sizeof(pm_encoding_euc_jp_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_EUC_JP,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_EUC_JIS_2004] = {
         .name = "EUC-JIS-2004",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_euc_jp_forms,
-        .forms_size = sizeof(pm_encoding_euc_jp_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_EUC_JP,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_EUC_KR] = {
         .name = "EUC-KR",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_euc_kr_forms,
-        .forms_size = sizeof(pm_encoding_euc_kr_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_EUC_KR,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_EUC_TW] = {
         .name = "EUC-TW",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_euc_tw_forms,
-        .forms_size = sizeof(pm_encoding_euc_tw_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_EUC_TW,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_GB12345] = {
         .name = "GB12345",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_euc_kr_forms,
-        .forms_size = sizeof(pm_encoding_euc_kr_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_EUC_KR,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_GB18030] = {
         .name = "GB18030",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_gb18030_forms,
-        .forms_size = sizeof(pm_encoding_gb18030_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_GB18030,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_GB1988] = {
         .name = "GB1988",
@@ -1584,17 +1757,13 @@ const pm_encoding_t pm_encodings[] = {
     },
     [PM_ENCODING_GB2312] = {
         .name = "GB2312",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_euc_kr_forms,
-        .forms_size = sizeof(pm_encoding_euc_kr_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_EUC_KR,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_GBK] = {
         .name = "GBK",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_gbk_forms,
-        .forms_size = sizeof(pm_encoding_gbk_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_GBK,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_IBM437] = {
         .name = "IBM437",
@@ -1783,10 +1952,8 @@ const pm_encoding_t pm_encodings[] = {
     },
     [PM_ENCODING_MAC_JAPANESE] = {
         .name = "MacJapanese",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_shift_jis_forms,
-        .forms_size = sizeof(pm_encoding_shift_jis_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_SHIFT_JIS,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_MAC_ROMAN] = {
         .name = "macRoman",
@@ -1815,45 +1982,33 @@ const pm_encoding_t pm_encodings[] = {
     },
     [PM_ENCODING_SHIFT_JIS] = {
         .name = "Shift_JIS",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_shift_jis_forms,
-        .forms_size = sizeof(pm_encoding_shift_jis_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_SHIFT_JIS,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_SJIS_DOCOMO] = {
         .name = "SJIS-DoCoMo",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_shift_jis_forms,
-        .forms_size = sizeof(pm_encoding_shift_jis_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_SHIFT_JIS,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_SJIS_KDDI] = {
         .name = "SJIS-KDDI",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_shift_jis_forms,
-        .forms_size = sizeof(pm_encoding_shift_jis_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_SHIFT_JIS,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_SJIS_SOFTBANK] = {
         .name = "SJIS-SoftBank",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_shift_jis_forms,
-        .forms_size = sizeof(pm_encoding_shift_jis_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_SHIFT_JIS,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_STATELESS_ISO_2022_JP] = {
         .name = "stateless-ISO-2022-JP",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_emacs_mule_forms,
-        .forms_size = sizeof(pm_encoding_emacs_mule_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_EMACS_MULE,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_STATELESS_ISO_2022_JP_KDDI] = {
         .name = "stateless-ISO-2022-JP-KDDI",
-        .kind = PM_ENCODING_KIND_FORMS,
-        .table = pm_encoding_ascii_table,
-        .forms = pm_encoding_emacs_mule_forms,
-        .forms_size = sizeof(pm_encoding_emacs_mule_forms) / sizeof(pm_encoding_form_t)
+        .kind = PM_ENCODING_KIND_EMACS_MULE,
+        .table = pm_encoding_ascii_table
     },
     [PM_ENCODING_TIS_620] = {
         .name = "TIS-620",

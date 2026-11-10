@@ -8,10 +8,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* A form that the characters of a multibyte encoding take beyond ASCII. */
-typedef struct pm_encoding_form pm_encoding_form_t;
-
-/* The ways in which an encoding answers questions about its characters. */
+/*
+ * The ways in which an encoding answers questions about its characters. Every
+ * kind after UTF-8 is a multibyte encoding that is ASCII below 0x80 and whose
+ * other characters take the forms listed for it in encoding.c.
+ */
 typedef enum {
     /* Every byte is a character, with the properties in its table. */
     PM_ENCODING_KIND_SINGLE_BYTE,
@@ -22,12 +23,35 @@ typedef enum {
     /* UTF-8, whose characters have the properties of their code points. */
     PM_ENCODING_KIND_UTF_8,
 
-    /* CESU-8, which takes its forms and whose characters have the properties
-     * of their code points. */
+    /* EUC-JP and the encodings that share its forms. */
+    PM_ENCODING_KIND_EUC_JP,
+
+    /* Shift_JIS and the encodings that share its forms. */
+    PM_ENCODING_KIND_SHIFT_JIS,
+
+    /* Big5 and the encodings that share its forms. */
+    PM_ENCODING_KIND_BIG5,
+
+    /* CESU-8, whose characters have the properties of their code points. */
     PM_ENCODING_KIND_CESU_8,
 
-    /* Every byte below 0x80 is ASCII, and other characters take its forms. */
-    PM_ENCODING_KIND_FORMS
+    /* CP949. */
+    PM_ENCODING_KIND_CP949,
+
+    /* Emacs-Mule and the encodings that share its forms. */
+    PM_ENCODING_KIND_EMACS_MULE,
+
+    /* EUC-KR and the encodings that share its forms. */
+    PM_ENCODING_KIND_EUC_KR,
+
+    /* EUC-TW. */
+    PM_ENCODING_KIND_EUC_TW,
+
+    /* GB18030. */
+    PM_ENCODING_KIND_GB18030,
+
+    /* GBK. */
+    PM_ENCODING_KIND_GBK
 } pm_encoding_kind_t;
 
 /*
@@ -44,12 +68,6 @@ typedef struct {
 
     /* The PRISM_ENCODING_*_BIT properties of each byte as a character. */
     const uint8_t *table;
-
-    /* The forms that the characters take beyond ASCII, or NULL. */
-    const pm_encoding_form_t *forms;
-
-    /* The number of forms. */
-    uint8_t forms_size;
 
     /*
      * How the encoding answers questions about its characters, as a
@@ -71,19 +89,19 @@ pm_encoding_multibyte_p(const pm_encoding_t *encoding) {
  * All of the lookup tables use the first bit of each embedded byte to indicate
  * whether the codepoint is alphabetical.
  */
-#define PRISM_ENCODING_ALPHABETIC_BIT 1 << 0
+#define PRISM_ENCODING_ALPHABETIC_BIT (1 << 0)
 
 /*
  * All of the lookup tables use the second bit of each embedded byte to indicate
  * whether the codepoint is alphanumeric.
  */
-#define PRISM_ENCODING_ALPHANUMERIC_BIT 1 << 1
+#define PRISM_ENCODING_ALPHANUMERIC_BIT (1 << 1)
 
 /*
  * All of the lookup tables use the third bit of each embedded byte to indicate
  * whether the codepoint is uppercase.
  */
-#define PRISM_ENCODING_UPPERCASE_BIT 1 << 2
+#define PRISM_ENCODING_UPPERCASE_BIT (1 << 2)
 
 /*
  * Return the number of bytes in the next character in the given encoding, or 0
