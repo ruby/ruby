@@ -123,6 +123,9 @@ jobs:
         continue-on-error: true
         timeout-minutes: 3
 
+      - name: Set up crash dumps
+        run: mkdir "${GITHUB_WORKSPACE}/crashdumps"
+
       - name: make ${{ matrix.test_task }}
         run: |
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
@@ -140,6 +143,10 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
           LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
+          LAUNCHABLE_TOKEN: '' # see .github/actions/crashdumps
+          RUBY_ON_BUG: >- # see .github/actions/crashdumps
+            sh -c 'cd ${{ github.workspace }}/crashdumps && [ $(ls | wc -l) -lt 100 ] &&
+            lldb --batch -p $0 -o "process save-core -s modified-memory core.$0" > lldb.$0.log 2>&1'
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: make skipped tests
@@ -177,6 +184,12 @@ jobs:
         run: |
           tail --verbose --lines=+1 rb_crash_*.txt
           exit 1
+
+      - name: Upload crash dumps
+        uses: ./.github/actions/crashdumps
+        with:
+          name: crashdumps-${{ github.job }}-${{ strategy.job-index }}
+        if: ${{ always() && hashFiles('crashdumps/core.*') != '' }}
 
       - uses: ./.github/actions/slack
         with:

@@ -320,6 +320,138 @@ describe "Module#autoload" do
     end
   end
 
+  describe "after the autoload was satisfied by requiring the file directly" do
+    before :each do
+      @path = fixture(__FILE__, "autoload_satisfied_by_require.rb")
+      ModuleSpecs::Autoload.autoload :SatisfiedByRequire, @path
+      @remove << :SatisfiedByRequire
+      ScratchPad.record []
+    end
+
+    it "defines a regular constant that no longer depends on $LOADED_FEATURES" do
+      require @path
+      ScratchPad.recorded.should == [:loaded]
+      ModuleSpecs::Autoload.autoload?(:SatisfiedByRequire).should == nil
+      klass = ModuleSpecs::Autoload::SatisfiedByRequire
+      data = Marshal.dump(klass.new)
+
+      $LOADED_FEATURES.replace(@loaded_features)
+      Thread.new { Marshal.load(data).class }.value.should.equal?(klass)
+      ScratchPad.recorded.should == [:loaded]
+    end
+
+    it "defines a regular constant that no longer depends on $LOAD_PATH" do
+      ModuleSpecs::Autoload.autoload :SatisfiedByRequire, "autoload_satisfied_by_require"
+      $:.push File.dirname(@path)
+      begin
+        require "autoload_satisfied_by_require.rb"
+      ensure
+        $:.pop
+      end
+      ScratchPad.recorded.should == [:loaded]
+      klass = ModuleSpecs::Autoload::SatisfiedByRequire
+      data = Marshal.dump(klass.new)
+
+      Thread.new { Marshal.load(data).class }.value.should.equal?(klass)
+      ScratchPad.recorded.should == [:loaded]
+    end
+
+    it "returns the constant from remove_const" do
+      require @path
+      klass = ModuleSpecs::Autoload::SatisfiedByRequire
+      @remove.delete(:SatisfiedByRequire)
+
+      ModuleSpecs::Autoload.send(:remove_const, :SatisfiedByRequire).should.equal?(klass)
+      ModuleSpecs::Autoload.const_defined?(:SatisfiedByRequire).should == false
+    end
+
+    it "can be registered as an autoload again after remove_const" do
+      require @path
+      klass = ModuleSpecs::Autoload::SatisfiedByRequire
+      ModuleSpecs::Autoload.send(:remove_const, :SatisfiedByRequire)
+      $LOADED_FEATURES.replace(@loaded_features)
+
+      ModuleSpecs::Autoload.autoload :SatisfiedByRequire, @path
+      ModuleSpecs::Autoload.autoload?(:SatisfiedByRequire).should == @path
+      ModuleSpecs::Autoload::SatisfiedByRequire.should_not.equal?(klass)
+      ScratchPad.recorded.should == [:loaded, :loaded]
+    end
+
+    it "keeps the constant defined by the file when the require raises afterwards" do
+      path = fixture(__FILE__, "autoload_satisfied_by_require_raise.rb")
+      ModuleSpecs::Autoload.autoload :SatisfiedByRequireRaise, path
+      @remove << :SatisfiedByRequireRaise
+
+      -> { require path }.should.raise(RuntimeError, "raised after defining the constant")
+      ScratchPad.recorded.should == [:loaded]
+      ModuleSpecs::Autoload.autoload?(:SatisfiedByRequireRaise).should == nil
+      klass = ModuleSpecs::Autoload::SatisfiedByRequireRaise
+      data = Marshal.dump(klass.new)
+
+      Thread.new { Marshal.load(data).class }.value.should.equal?(klass)
+      ScratchPad.recorded.should == [:loaded]
+    end
+
+    it "applies to an autoload the required file declares for a nested constant" do
+      nested = fixture(__FILE__, "autoload_satisfied_by_require_nested.rb")
+      inner = fixture(__FILE__, "autoload_satisfied_by_require_nested_inner.rb")
+      ModuleSpecs::Autoload.autoload :SatisfiedByRequireNested, nested
+      @remove << :SatisfiedByRequireNested
+
+      require nested
+      ModuleSpecs::Autoload::SatisfiedByRequireNested.autoload?(:Inner).should == inner
+      require inner
+      ModuleSpecs::Autoload::SatisfiedByRequireNested.autoload?(:Inner).should == nil
+      klass = ModuleSpecs::Autoload::SatisfiedByRequireNested::Inner
+      data = Marshal.dump(klass.new)
+
+      $LOADED_FEATURES.replace(@loaded_features)
+      Thread.new { Marshal.load(data).class }.value.should.equal?(klass)
+      ScratchPad.recorded.should == [:nested_loaded, :inner_loaded]
+    end
+
+    it "applies when the file was loaded with require_relative" do
+      require fixture(__FILE__, "autoload_satisfied_by_require_relative.rb")
+      ScratchPad.recorded.should == [:loaded]
+      klass = ModuleSpecs::Autoload::SatisfiedByRequire
+      data = Marshal.dump(klass.new)
+
+      $LOADED_FEATURES.replace(@loaded_features)
+      Thread.new { Marshal.load(data).class }.value.should.equal?(klass)
+      ScratchPad.recorded.should == [:loaded]
+    end
+  end
+
+  describe "when one file defines several autoloaded constants" do
+    before :each do
+      @path = fixture(__FILE__, "autoload_siblings.rb")
+      ModuleSpecs::Autoload.autoload :SiblingA, @path
+      ModuleSpecs::Autoload.autoload :SiblingB, @path
+      @remove << :SiblingA << :SiblingB
+      ScratchPad.record []
+    end
+
+    it "defines every constant the file declares as a regular constant" do
+      ModuleSpecs::Autoload::SiblingA
+      ScratchPad.recorded.should == [:loaded]
+      ModuleSpecs::Autoload.autoload?(:SiblingB).should == nil
+      klass = ModuleSpecs::Autoload::SiblingB
+      data = Marshal.dump(klass.new)
+
+      $LOADED_FEATURES.replace(@loaded_features)
+      Thread.new { Marshal.load(data).class }.value.should.equal?(klass)
+      ScratchPad.recorded.should == [:loaded]
+    end
+
+    it "returns the sibling constant from remove_const" do
+      ModuleSpecs::Autoload::SiblingA
+      klass = ModuleSpecs::Autoload::SiblingB
+      @remove.delete(:SiblingB)
+
+      ModuleSpecs::Autoload.send(:remove_const, :SiblingB).should.equal?(klass)
+    end
+  end
+
   describe "after the autoload is triggered by require" do
     before :each do
       @path = tmp("autoload.rb")
@@ -1024,5 +1156,35 @@ describe "Module#autoload" do
     Thread.new {
       ModuleSpecs::Autoload::FromThread::D.foo
     }.value.should == :foo
+  end
+
+  it "raises in every thread when two constants autoload the same file and it raises" do
+    dir = tmp("autoload_same_file_raising")
+    mkdir_p dir
+    File.write("#{dir}/autoload_same_file_raising.rb", "raise 'autoload failed'")
+    $LOAD_PATH.unshift dir
+    begin
+      # the second thread races the first one's require, so try a few times
+      10.times do
+        mod = Module.new
+        mod.autoload :First, "autoload_same_file_raising"
+        mod.autoload :Second, "autoload_same_file_raising"
+
+        threads = [:First, :Second].map { |name|
+          Thread.new {
+            begin
+              mod.const_get(name)
+            rescue Exception => e
+              e
+            end
+          }
+        }
+
+        threads.map { |t| t.value.message }.should == ["autoload failed", "autoload failed"]
+      end
+    ensure
+      $LOAD_PATH.delete dir
+      rm_r dir
+    end
   end
 end

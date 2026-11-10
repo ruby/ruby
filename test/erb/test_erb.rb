@@ -43,34 +43,6 @@ class TestERB < Test::Unit::TestCase
     assert_match(/\Atest filename:201\b/, e.backtrace[0])
   end
 
-  def test_html_escape
-    assert_equal(" !&quot;\#$%&amp;&#39;()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~",
-                 ERB::Util.html_escape(" !\"\#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"))
-
-    assert_equal("", ERB::Util.html_escape(""))
-    assert_equal("abc", ERB::Util.html_escape("abc"))
-    assert_equal("&lt;&lt;", ERB::Util.html_escape("<\<"))
-    assert_equal("&#39;&amp;&quot;&gt;&lt;", ERB::Util.html_escape("'&\"><"))
-
-    assert_equal("", ERB::Util.html_escape(nil))
-    assert_equal("123", ERB::Util.html_escape(123))
-
-    assert_equal(65536+5, ERB::Util.html_escape("x"*65536 + "&").size)
-    assert_equal(65536+5, ERB::Util.html_escape("&" + "x"*65536).size)
-  end
-
-  def test_html_escape_to_s
-    object = Object.new
-    def object.to_s
-      "object"
-    end
-    assert_equal("object", ERB::Util.html_escape(object))
-  end
-
-  def test_html_escape_extension
-    assert_nil(ERB::Util.method(:html_escape).source_location)
-  end if RUBY_ENGINE == 'ruby'
-
   def test_concurrent_default_binding
     # This test randomly fails with JRuby -- NameError: undefined local variable or method `template2'
     pend if RUBY_ENGINE == 'jruby'
@@ -623,6 +595,13 @@ EOS
     end
   end
 
+  def test_frozen_string_literal_after_encoding_comment
+    [nil, '%'].each do |trim_mode|
+      erb = @erb.new("<%# coding: utf-8 %><%# frozen_string_literal: true %><%= ''.frozen? %>", trim_mode: trim_mode)
+      assert_equal("true", erb.result)
+    end
+  end
+
   def test_result_with_hash
     erb = @erb.new("<%= foo %>")
     assert_equal("1", erb.result_with_hash(foo: "1"))
@@ -768,15 +747,6 @@ class TestERBRactor < Test::Unit::TestCase
       erb.freeze
       rs = 2.times.map { Ractor.new(erb) { |e| e.result(binding) } }
       assert_equal(["2", "2"], rs.map(&:value))
-    RUBY
-  end
-
-  def test_util_html_escape_in_ractor
-    assert_ractor(<<~RUBY, require: 'erb')
-      r = Ractor.new do
-        ERB::Util.html_escape("<script>")
-      end
-      assert_equal("&lt;script&gt;", r.value)
     RUBY
   end
 end

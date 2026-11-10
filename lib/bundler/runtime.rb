@@ -4,6 +4,8 @@ module Bundler
   class Runtime
     include SharedHelpers
 
+    PRUNE_CATEGORIES = [:cache, :git].freeze
+
     def initialize(root, definition)
       @root = root
       @definition = definition
@@ -141,12 +143,12 @@ module Bundler
         end
       end
 
-      Gem::Util.glob_files_in_dir("*/.git", cache_path.to_s).each do |git_dir|
+      SharedHelpers.glob_files_in_dir("*/.git", cache_path.to_s).each do |git_dir|
         FileUtils.rm_rf(git_dir)
         FileUtils.touch(File.expand_path("../.bundlecache", git_dir))
       end
 
-      prune_cache(cache_path) unless Bundler.settings[:no_prune]
+      prune_cache(cache_path) unless Bundler.settings[:keep_outdated_cache]
     end
 
     def prune_cache(cache_path)
@@ -159,13 +161,15 @@ module Bundler
     end
 
     def clean(dry_run = false)
-      gem_bins             = Gem::Util.glob_files_in_dir("bin/*", Gem.dir)
-      git_dirs             = Gem::Util.glob_files_in_dir("bundler/gems/*", Gem.dir)
-      git_cache_dirs       = Gem::Util.glob_files_in_dir("cache/bundler/git/*", Gem.dir)
-      gem_dirs             = Gem::Util.glob_files_in_dir("gems/*", Gem.dir)
-      gem_files            = Gem::Util.glob_files_in_dir("cache/*.gem", Gem.dir)
-      gemspec_files        = Gem::Util.glob_files_in_dir("specifications/*.gemspec", Gem.dir)
-      extension_dirs       = Gem::Util.glob_files_in_dir("extensions/*/*/*", Gem.dir) + Gem::Util.glob_files_in_dir("bundler/gems/extensions/*/*/*", Gem.dir)
+      gem_bins             = SharedHelpers.glob_files_in_dir("bin/*", Gem.dir)
+      git_dirs             = SharedHelpers.glob_files_in_dir("bundler/gems/*", Gem.dir)
+      git_cache_dirs       = SharedHelpers.glob_files_in_dir("cache/bundler/git/*", Gem.dir)
+      gem_dirs             = SharedHelpers.glob_files_in_dir("gems/*", Gem.dir)
+      gem_files            = SharedHelpers.glob_files_in_dir("cache/*.gem", Gem.dir)
+      gemspec_files        = Gem::SpecificationRecord.dirs_from([Gem.dir]).flat_map do |dir|
+        SharedHelpers.glob_files_in_dir("*.gemspec", dir)
+      end
+      extension_dirs       = SharedHelpers.glob_files_in_dir("extensions/*/*/*", Gem.dir) + SharedHelpers.glob_files_in_dir("bundler/gems/extensions/*/*/*", Gem.dir)
       spec_gem_paths       = []
       # need to keep git sources around
       spec_git_paths       = @definition.spec_git_paths
@@ -206,33 +210,95 @@ module Bundler
       stale_gemspec_files  = gemspec_files - spec_gemspec_paths
       stale_extension_dirs = extension_dirs - spec_extension_paths
 
-      removed_stale_gem_dirs = stale_gem_dirs.collect {|dir| remove_dir(dir, dry_run) }
-      removed_stale_git_dirs = stale_git_dirs.collect {|dir| remove_dir(dir, dry_run) }
+      failures = []
+      removed_stale_gem_dirs = stale_gem_dirs.filter_map {|dir| remove_dir(dir, dry_run, failures) }
+      removed_stale_git_dirs = stale_git_dirs.filter_map {|dir| remove_dir(dir, dry_run, failures) }
       output = removed_stale_gem_dirs + removed_stale_git_dirs
 
       unless dry_run
         stale_files = stale_gem_bins + stale_gem_files + stale_gemspec_files
         stale_files.each do |file|
-          SharedHelpers.filesystem_access(File.dirname(file)) do |_p|
-            FileUtils.rm(file) if File.exist?(file)
-          end
+          remove_path(file, failures, File.dirname(file))
         end
 
         stale_dirs = stale_git_cache_dirs + stale_extension_dirs
         stale_dirs.each do |stale_dir|
-          SharedHelpers.filesystem_access(stale_dir) do |dir|
-            FileUtils.rm_rf(dir) if File.exist?(dir)
-          end
+          remove_path(stale_dir, failures)
         end
       end
+
+      raise CleanError.new(failures) unless failures.empty?
 
       output
     end
 
+    # Removes the artifacts Bundler keeps for its own bookkeeping and can rebuild
+    # from the lockfile. Gem contents are never touched.
+    def prune(categories)
+      categories = expand_prune_categories(categories)
+      return if categories.empty?
+
+      # Without a bundle path the cache is shared with RubyGems, so it holds gem
+      # files Bundler never put there.
+      if Bundler.use_system_gems?
+        Bundler.ui.warn "The `prune` setting was ignored because this bundle installs into the system gem " \
+                        "directory, which Bundler shares with RubyGems. Run " \
+                        "`bundle config set --local path vendor/bundle` to prune.", wrap: true
+        return
+      end
+
+      # Git metadata first, because resolving a checkout's install path can need
+      # the mirror that pruning the cache removes.
+      prune_git_metadata if categories.include?(:git)
+      prune_download_cache if categories.include?(:cache)
+    end
+
     private
 
+    # Anything that is not a category name is read as a boolean with Bundler's
+    # usual vocabulary, so `BUNDLE_PRUNE=1` selects every category and keeps
+    # doing so as categories are added. That way a tool can set the flag without
+    # tracking this list.
+    def expand_prune_categories(categories)
+      Array(categories).flat_map do |category|
+        name = category.to_s
+        next name.to_sym if PRUNE_CATEGORIES.include?(name.to_sym)
+
+        Settings.to_bool(name) ? PRUNE_CATEGORIES : []
+      end.uniq
+    end
+
+    def prune_download_cache
+      cache_path = File.join(Bundler.bundle_path, "cache")
+      return unless File.exist?(cache_path)
+
+      Bundler.ui.info "Removing the download cache at #{cache_path}"
+      SharedHelpers.filesystem_access(cache_path) do |p|
+        FileUtils.rm_rf(p)
+      end
+    end
+
+    def prune_git_metadata
+      owned = "#{Bundler.install_path}#{File::SEPARATOR}"
+      git_dirs = @definition.sources.git_sources.reject(&:local?).filter_map do |source|
+        install_path = source.install_path.to_s
+        next unless install_path.start_with?(owned)
+
+        git_dir = File.join(install_path, ".git")
+        git_dir if File.exist?(git_dir)
+      end
+      return if git_dirs.empty?
+
+      Bundler.ui.info "Removing git metadata from checked out git gems"
+      git_dirs.each do |git_dir|
+        SharedHelpers.filesystem_access(git_dir) do |p|
+          FileUtils.rm_rf(p)
+        end
+      end
+    end
+
     def prune_gem_cache(resolve, cache_path)
-      cached = Gem::Util.glob_files_in_dir("*.gem", cache_path.to_s)
+      cached = SharedHelpers.glob_files_in_dir("*.gem", cache_path.to_s)
 
       cached = cached.delete_if do |path|
         spec = Bundler.rubygems.spec_from_gem path
@@ -257,7 +323,7 @@ module Bundler
     end
 
     def prune_git_and_path_cache(resolve, cache_path)
-      cached = Gem::Util.glob_files_in_dir("*/.bundlecache", cache_path.to_s)
+      cached = SharedHelpers.glob_files_in_dir("*/.bundlecache", cache_path.to_s)
 
       cached = cached.delete_if do |path|
         name = File.basename(File.dirname(path))
@@ -283,7 +349,7 @@ module Bundler
       # Add man/ subdirectories from activated bundles to MANPATH for man(1)
       manuals = $LOAD_PATH.filter_map do |path|
         man_subdir = path.sub(/lib$/, "man")
-        man_subdir unless Dir.glob("man?/", base: man_subdir).empty?
+        man_subdir unless SharedHelpers.glob_files_in_dir("man?/", man_subdir).empty?
       end
 
       return if manuals.empty?
@@ -292,7 +358,7 @@ module Bundler
       ).uniq.join(File::PATH_SEPARATOR)
     end
 
-    def remove_dir(dir, dry_run)
+    def remove_dir(dir, dry_run, failures)
       full_name = Pathname.new(dir).basename.to_s
 
       parts    = full_name.split("-")
@@ -303,11 +369,26 @@ module Bundler
       if dry_run
         Bundler.ui.info "Would have removed #{output}"
       else
+        return unless remove_path(dir, failures)
         Bundler.ui.info "Removing #{output}"
-        FileUtils.rm_rf(dir)
       end
 
       output
+    end
+
+    # Collects the error instead of raising it, so that one path that cannot be
+    # removed does not stop the rest of the bundle from being cleaned.
+    def remove_path(path, failures, access_path = path)
+      SharedHelpers.filesystem_access(access_path) do
+        FileUtils.rm_r(path)
+      end
+      true
+    rescue Errno::ENOENT
+      # Removed by something else since the bundle was scanned
+      true
+    rescue BundlerError => e
+      failures << e
+      false
     end
 
     def check_for_activated_spec!(spec)

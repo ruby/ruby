@@ -6,6 +6,7 @@ require "rubygems"
 require "rubygems/command"
 require "rubygems/gemcutter_utilities"
 require "rubygems/config_file"
+require "rubygems/credential_store"
 
 class TestGemGemcutterUtilities < Gem::TestCase
   def setup
@@ -35,6 +36,31 @@ class TestGemGemcutterUtilities < Gem::TestCase
     super
   end
 
+  def test_key_option_does_not_reach_a_hosts_stored_key
+    # --key names a key, the store is keyed by host. Letting one resolve the
+    # other would hand a host's key to whatever host is being pushed to.
+    Gem.configuration.credential_store = true
+
+    with_fake_credential_store do
+      Gem.configuration.set_api_key "https://internal.example.com", "internal-key"
+
+      @cmd = Gem::Command.new "dummy", "dummy"
+      @cmd.extend Gem::GemcutterUtilities
+      @cmd.options[:key] = :"https://internal.example.com"
+      @cmd.host = "https://public.example.com"
+
+      use_ui @ui do
+        assert_raise Gem::MockGemUi::TermError do
+          @cmd.api_key
+        end
+      end
+
+      assert_match(/No such API key/, @ui.error)
+    end
+  ensure
+    Gem.configuration.credential_store = false
+  end
+
   def test_alternate_key_alternate_host
     keys = {
       :rubygems_api_key => "KEY",
@@ -50,6 +76,199 @@ class TestGemGemcutterUtilities < Gem::TestCase
     Gem.configuration.load_api_keys
 
     assert_equal "EYKEY", @cmd.api_key
+  end
+
+  def test_api_key_from_credential_store_takes_precedence_over_file
+    Gem.configuration.credential_store = true
+
+    with_fake_credential_store do |store|
+      keys = { rubygems_api_key: "FILE-KEY" }
+
+      File.open Gem.configuration.credentials_path, "w" do |f|
+        f.write Gem::ConfigFile.dump_with_rubygems_yaml(keys)
+      end
+
+      Gem.configuration.load_api_keys
+      store.set(Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT, "CREDENTIAL_STORE-KEY")
+
+      assert_equal "CREDENTIAL_STORE-KEY", @cmd.api_key
+    end
+  ensure
+    Gem.configuration.credential_store = false
+  end
+
+  def unreadable_credential_store
+    backend = Class.new(Gem::FakeCredentialBackend) do
+      def get(_service, _account)
+        raise Errno::ENOENT, "security"
+      end
+    end.new
+
+    Gem::CredentialStore.new(backend: backend)
+  end
+
+  def test_api_key_refuses_to_fall_back_when_the_hosts_key_cannot_be_read
+    Gem.configuration.credential_store = true
+
+    # Nothing here belongs to the third-party host, and the store will not say
+    # whether it holds anything. Falling through to the RubyGems.org key would
+    # hand it to that host.
+    Gem::CredentialStore.instance = unreadable_credential_store
+
+    File.open Gem.configuration.credentials_path, "w" do |f|
+      f.write Gem::ConfigFile.dump_with_rubygems_yaml({ rubygems_api_key: "RUBYGEMS-ORG-KEY" })
+    end
+    Gem.configuration.load_api_keys
+
+    ENV["RUBYGEMS_HOST"] = "http://rubygems.engineyard.com"
+
+    assert_raise Gem::MockGemUi::TermError do
+      use_ui(@ui) { @cmd.api_key }
+    end
+
+    assert_match(%r{no API key for http://rubygems\.engineyard\.com could be found}, @ui.error)
+    refute_match(/RUBYGEMS-ORG-KEY/, @ui.error)
+  ensure
+    Gem::CredentialStore.reset!
+    Gem.configuration.credential_store = false
+  end
+
+  def test_api_key_uses_the_hosts_file_key_when_the_store_cannot_be_read
+    Gem.configuration.credential_store = true
+
+    # The store is unreadable but this host has its own key on disk. That key
+    # cannot leak anywhere, so there is nothing to stop for.
+    Gem::CredentialStore.instance = unreadable_credential_store
+
+    keys = {
+      :rubygems_api_key => "RUBYGEMS-ORG-KEY",
+      "http://rubygems.engineyard.com" => "EYKEY",
+    }
+    File.open Gem.configuration.credentials_path, "w" do |f|
+      f.write Gem::ConfigFile.dump_with_rubygems_yaml(keys)
+    end
+    Gem.configuration.load_api_keys
+
+    ENV["RUBYGEMS_HOST"] = "http://rubygems.engineyard.com"
+
+    use_ui(@ui) { assert_equal "EYKEY", @cmd.api_key }
+  ensure
+    Gem::CredentialStore.reset!
+    Gem.configuration.credential_store = false
+  end
+
+  def test_api_key_uses_the_default_hosts_file_key_when_the_store_cannot_be_read
+    Gem.configuration.credential_store = true
+
+    # The key is still in the credentials file, so the unreadable store cost
+    # nothing. Stopping here would make every plain `gem push` fail.
+    Gem::CredentialStore.instance = unreadable_credential_store
+
+    File.open Gem.configuration.credentials_path, "w" do |f|
+      f.write Gem::ConfigFile.dump_with_rubygems_yaml({ rubygems_api_key: "RUBYGEMS-ORG-KEY" })
+    end
+    Gem.configuration.load_api_keys
+
+    use_ui(@ui) { assert_equal "RUBYGEMS-ORG-KEY", @cmd.api_key }
+  ensure
+    Gem::CredentialStore.reset!
+    Gem.configuration.credential_store = false
+  end
+
+  def test_api_key_notices_a_failure_under_the_default_account_alone
+    Gem.configuration.credential_store = true
+
+    # Nothing is ever written under the default host's own name, so a read
+    # there finds nothing and records no failure. The key lives under the
+    # default account, and a refusal to read that one is the only signal
+    # there will be.
+    selective = Class.new(Gem::FakeCredentialBackend) do
+      def get(service, account)
+        raise Errno::ENOENT, "security" if account == Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT
+
+        super
+      end
+    end.new
+    Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: selective)
+
+    File.open Gem.configuration.credentials_path, "w" do |f|
+      f.write Gem::ConfigFile.dump_with_rubygems_yaml({})
+    end
+    Gem.configuration.load_api_keys
+
+    assert_raise Gem::MockGemUi::TermError do
+      use_ui(@ui) { @cmd.api_key }
+    end
+  ensure
+    Gem::CredentialStore.reset!
+    Gem.configuration.credential_store = false
+  end
+
+  def test_api_key_stops_rather_than_asking_for_a_password_when_the_store_is_all_there_is
+    Gem.configuration.credential_store = true
+
+    # The migrated case: the key lives only in the store, which will not
+    # answer. Returning nil here reads as "not signed in" and sends the user
+    # to a password prompt, downgrading key authentication to the account
+    # password over a locked keychain.
+    Gem::CredentialStore.instance = unreadable_credential_store
+
+    File.open Gem.configuration.credentials_path, "w" do |f|
+      f.write Gem::ConfigFile.dump_with_rubygems_yaml({})
+    end
+    Gem.configuration.load_api_keys
+
+    assert_raise Gem::MockGemUi::TermError do
+      use_ui(@ui) { @cmd.api_key }
+    end
+
+    assert_match(/credential store could not be read/, @ui.error)
+  ensure
+    Gem::CredentialStore.reset!
+    Gem.configuration.credential_store = false
+  end
+
+  def test_api_key_prefers_the_hosts_file_key_over_the_stored_default_key
+    Gem.configuration.credential_store = true
+
+    with_fake_credential_store do |store|
+      keys = {
+        :rubygems_api_key => "FILE-DEFAULT-KEY",
+        "http://rubygems.engineyard.com" => "EYKEY",
+      }
+
+      File.open Gem.configuration.credentials_path, "w" do |f|
+        f.write Gem::ConfigFile.dump_with_rubygems_yaml(keys)
+      end
+
+      ENV["RUBYGEMS_HOST"] = "http://rubygems.engineyard.com"
+      Gem.configuration.load_api_keys
+      store.set(Gem::ConfigFile::CREDENTIAL_STORE_DEFAULT_ACCOUNT, "RUBYGEMS-ORG-KEY")
+
+      # Sending RUBYGEMS-ORG-KEY here would hand the RubyGems.org key to a
+      # third-party host that has a key of its own.
+      assert_equal "EYKEY", @cmd.api_key
+    end
+  ensure
+    Gem.configuration.credential_store = false
+  end
+
+  def test_api_key_falls_back_to_file_when_no_credential_store_entry
+    Gem.configuration.credential_store = true
+
+    with_fake_credential_store do
+      keys = { rubygems_api_key: "FILE-KEY" }
+
+      File.open Gem.configuration.credentials_path, "w" do |f|
+        f.write Gem::ConfigFile.dump_with_rubygems_yaml(keys)
+      end
+
+      Gem.configuration.load_api_keys
+
+      assert_equal "FILE-KEY", @cmd.api_key
+    end
+  ensure
+    Gem.configuration.credential_store = false
   end
 
   def test_api_key

@@ -15,12 +15,6 @@ describe "Array#join" do
     [1, 2].join(sep).should == "1, 2"
   end
 
-  it "does not call #to_str on the separator if the array is empty" do
-    sep = mock("separator")
-    sep.should_not_receive(:to_str)
-    [].join(sep).should == ""
-  end
-
   it "raises a TypeError if the separator cannot be coerced to a String by calling #to_str" do
     obj = mock("not a string")
     -> { [1, 2].join(obj) }.should.raise(TypeError)

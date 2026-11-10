@@ -3,7 +3,7 @@
 static VALUE
 bug_str_ellipsize(VALUE str, VALUE len)
 {
-    return rb_str_ellipsize(str, NUM2LONG(len));
+    return rb_str_ellipsize(str, NUM2LEN(len));
 }
 
 void

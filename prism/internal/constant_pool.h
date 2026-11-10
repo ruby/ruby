@@ -4,6 +4,7 @@
 #include "prism/constant_pool.h"
 
 #include "prism/arena.h"
+#include "prism/compiler/inline.h"
 
 #include <stdbool.h>
 
@@ -80,8 +81,42 @@ void pm_constant_id_list_init_capacity(pm_arena_t *arena, pm_constant_id_list_t 
 /* Insert a constant id into a list of constant ids at the specified index. */
 void pm_constant_id_list_insert(pm_constant_id_list_t *list, size_t index, pm_constant_id_t id);
 
-/* Checks if the current constant id list includes the given constant id. */
-bool pm_constant_id_list_includes(pm_constant_id_list_t *list, pm_constant_id_t id);
+/*
+ * Mix the bits of a constant id so that ids which are close together, as
+ * sequentially assigned ids are, land in unrelated slots of a hash table.
+ */
+static PRISM_INLINE uint32_t
+pm_constant_id_hash(pm_constant_id_t id) {
+    id = ((id >> 16) ^ id) * 0x45d9f3b;
+    id = ((id >> 16) ^ id) * 0x45d9f3b;
+    id = (id >> 16) ^ id;
+    return id;
+}
+
+/*
+ * A set of constant ids, for where the parser only needs to know whether it has
+ * already seen a name, as with the variables a pattern captures or the named
+ * capture groups of a regular expression.
+ */
+typedef struct {
+    /* The number of ids in the set. */
+    size_t size;
+
+    /* The number of slots in `ids`, either zero or a power of two. */
+    size_t capacity;
+
+    /*
+     * An open-addressed table of the ids in the set, where PM_CONSTANT_ID_UNSET
+     * marks an empty slot. It is NULL until the first id is added.
+     */
+    pm_constant_id_t *ids;
+} pm_constant_id_set_t;
+
+/*
+ * Add a constant id, which must not be PM_CONSTANT_ID_UNSET, to the set.
+ * Returns whether the set did not already contain it.
+ */
+bool pm_constant_id_set_insert(pm_arena_t *arena, pm_constant_id_set_t *set, pm_constant_id_t id);
 
 /* Initialize a new constant pool with a given capacity. */
 void pm_constant_pool_init(pm_arena_t *arena, pm_constant_pool_t *pool, uint32_t capacity);

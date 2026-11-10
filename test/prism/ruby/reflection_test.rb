@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class ReflectionTest < TestCase
     def test_fields_for
       fields = Reflection.fields_for(CallNode)

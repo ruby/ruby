@@ -3,10 +3,10 @@
 RSpec.describe Bundler::RemoteSpecification do
   let(:name)         { "foo" }
   let(:version)      { Gem::Version.new("1.0.0") }
-  let(:platform)     { Gem::Platform::RUBY }
+  let(:suffix)       { Gem::Platform::RUBY }
   let(:spec_fetcher) { double(:spec_fetcher) }
 
-  subject { described_class.new(name, version, platform, spec_fetcher) }
+  subject { described_class.new(name, version, suffix, spec_fetcher) }
 
   it "is Comparable" do
     expect(described_class.ancestors).to include(Comparable)
@@ -34,7 +34,7 @@ RSpec.describe Bundler::RemoteSpecification do
     end
 
     context "when platform is nil" do
-      let(:platform) { nil }
+      let(:suffix) { nil }
 
       it "should return the spec name and version" do
         expect(subject.full_name).to eq("foo-1.0.0")
@@ -42,10 +42,26 @@ RSpec.describe Bundler::RemoteSpecification do
     end
 
     context "when platform is a non-ruby platform" do
-      let(:platform) { "jruby" }
+      let(:suffix) { "jruby" }
 
       it "should return the spec name, version, and platform" do
         expect(subject.full_name).to eq("foo-1.0.0-java")
+      end
+    end
+
+    context "when a content address is set with a non-ruby platform" do
+      subject { described_class.new(name, version, "x86_64-linux", spec_fetcher, content_address: "abc1234567") }
+
+      it "should return the spec name, version, and content address" do
+        expect(subject.full_name).to eq("foo-1.0.0-abc1234567")
+      end
+    end
+
+    context "when a content address is set with the ruby platform" do
+      subject { described_class.new(name, version, Gem::Platform::RUBY, spec_fetcher, content_address: "abc1234567") }
+
+      it "should ignore the content address" do
+        expect(subject.full_name).to eq("foo-1.0.0")
       end
     end
   end
@@ -53,7 +69,7 @@ RSpec.describe Bundler::RemoteSpecification do
   describe "#<=>" do
     let(:other_name)         { name }
     let(:other_version)      { version }
-    let(:other_platform)     { platform }
+    let(:other_platform)     { suffix }
     let(:other_spec_fetcher) { spec_fetcher }
 
     shared_examples_for "a comparison" do
@@ -147,7 +163,7 @@ RSpec.describe Bundler::RemoteSpecification do
     end
 
     context "when platform is not ruby" do
-      let(:platform) { "jruby" }
+      let(:suffix) { "jruby" }
 
       it "should return a sorting delegate array with name, version, and 1" do
         expect(subject.sort_obj).to match_array(["foo", version, 1])
@@ -182,6 +198,23 @@ RSpec.describe Bundler::RemoteSpecification do
       it "should send through to Gem::Specification" do
         expect(subject.respond_to?(:authors)).to be_truthy
       end
+    end
+  end
+
+  describe "#content_address" do
+    it "is nil for a hex suffix (content-addressed gems are not handled on the legacy index path)" do
+      spec = Bundler::RemoteSpecification.new(name, version, "abc1234567", spec_fetcher)
+      expect(spec.content_address).to be_nil
+    end
+
+    it "is nil for an ordinary platform" do
+      spec = Bundler::RemoteSpecification.new(name, version, "x86_64-linux", spec_fetcher)
+      expect(spec.content_address).to be_nil
+    end
+
+    it "is nil for a RUBY platform" do
+      spec = Bundler::RemoteSpecification.new(name, version, Gem::Platform::RUBY, spec_fetcher)
+      expect(spec.content_address).to be_nil
     end
   end
 end

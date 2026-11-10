@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "bundler/rubygems_ext"
-require_relative "bundler/vendored_fileutils"
 autoload :Pathname, "pathname" unless defined?(Pathname)
 require "rbconfig"
 
@@ -43,6 +42,7 @@ module Bundler
   autoload :CIDetector,             File.expand_path("bundler/ci_detector", __dir__)
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
+  autoload :FileUtils,              File.expand_path("bundler/vendored_fileutils", __dir__)
   autoload :Deprecate,              File.expand_path("bundler/deprecate", __dir__)
   autoload :Digest,                 File.expand_path("bundler/digest", __dir__)
   autoload :Dsl,                    File.expand_path("bundler/dsl", __dir__)
@@ -119,9 +119,7 @@ module Bundler
     def bin_path
       @bin_path ||= begin
         path = Bundler.settings[:bin] || "bin"
-        path = Pathname.new(path).expand_path(root).expand_path
-        mkdir_p(path)
-        path
+        Pathname.new(path).expand_path(root).expand_path
       end
     end
 
@@ -527,11 +525,11 @@ module Bundler
     end
 
     def load_gemspec_uncached(file, validate = false)
-      path = Pathname.new(file)
-      contents = read_file(file)
+      path = Pathname.new(file).expand_path
+      contents = read_file(path.to_s)
       spec = eval_gemspec(path, contents)
       return unless spec
-      spec.loaded_from = path.expand_path.to_s
+      spec.loaded_from = path.to_s
       Bundler.rubygems.validate(spec) if validate
       spec
     end
@@ -646,9 +644,19 @@ module Bundler
         eval_yaml_gemspec(path, contents)
       else
         # Eval the gemspec from its parent directory, because some gemspecs
-        # depend on "./" relative paths.
+        # depend on "./" relative paths. The caller expands `path` first, since
+        # expanding it here would resolve against the gemspec directory once
+        # the chdir is active.
         SharedHelpers.chdir(path.dirname.to_s) do
-          eval(contents, TOPLEVEL_BINDING.dup, path.expand_path.to_s)
+          # TOPLEVEL_BINDING always belongs to the main box, so inside a
+          # Ruby::Box use a binding from the box Bundler is loaded in, where
+          # Gem::Specification carries Bundler's own monkey patches.
+          eval_binding = if defined?(Ruby::Box) && Ruby::Box.enabled?
+            Ruby::Box.current.eval("binding")
+          else
+            TOPLEVEL_BINDING.dup
+          end
+          eval(contents, eval_binding, path.to_s)
         end
       end
     rescue ScriptError, StandardError => e

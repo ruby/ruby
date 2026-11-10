@@ -126,6 +126,14 @@ impl VirtualMem {
 
         Self::new(sys::SystemAllocator {}, page_size, NonNull::new(virt_block).unwrap(), exec_mem_bytes, mem_bytes)
     }
+
+    /// Reserve `size` bytes of address space below `INT32_MAX` for JITFrame
+    pub fn alloc_low(size: usize) -> Option<Self> {
+        let virt_block = unsafe { rb_zjit_reserve_low_addr_space(size) } as *mut u8;
+        let virt_block = NonNull::new(virt_block)?;
+        let page_size = unsafe { rb_jit_get_page_size() };
+        Some(Self::new(sys::SystemAllocator {}, page_size, virt_block, size, None))
+    }
 }
 
 impl<A: Allocator> VirtualMemory<A> {

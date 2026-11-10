@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class IntegerParseTest < TestCase
     def test_integer_parse
       assert_integer_parse(1)
@@ -30,12 +30,15 @@ module Prism
       assert_integer_parse(num, "0o#{num.to_s(8)}")
       assert_integer_parse(num, "0d#{num.to_s(10)}")
       assert_integer_parse(num, "0x#{num.to_s(16)}")
+
+      assert_integer_parse(7 ** 30_000)
+      assert_integer_parse(10 ** 5_000 - 1)
     end
 
     private
 
     def assert_integer_parse(expected, source = expected.to_s)
-      assert_equal expected, Prism.parse_statement(source).value
+      assert_equal expected, Ruby::Prism.parse_statement(source).value
     end
   end
 end

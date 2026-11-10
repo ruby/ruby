@@ -167,41 +167,52 @@ end
     assert_empty(lex)
   end
 
-  def test_no_memory_leak
-    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
-      2_000_000.times do
+  def test_empty_no_memory_leak
+    assert_no_memory_leak(%w(-rripper), "", "#{<<-"{#"}\n#{<<-'};'}", rss: true, samples: 2..100)
+    {#
+      1000.times do
         Ripper.parse("")
       end
-    end;
+    };
+  end
 
+  def test_unclosed_class_no_memory_leak
     # [Bug #19835]
-    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
-      1_000_000.times do
+    assert_no_memory_leak(%w(-rripper), "", "#{<<-"{#"}\n#{<<-'};'}", rss: true, samples: 2..100)
+    {#
+      1000.times do
         Ripper.parse("class Foo")
       end
-    end;
+    };
+  end
 
+  def test_unclosed_lambda_no_memory_leak
     # [Bug #19836]
-    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
-      1_000_000.times do
+    assert_no_memory_leak(%w(-rripper), "", "#{<<-"{#"}\n#{<<-'};'}", rss: true, samples: 2..100)
+    {#
+      1000.times do
         Ripper.parse("-> {")
       end
-    end;
+    };
+  end
 
+  def test_lambda_it_no_memory_leak
     # [Bug #21004]
-    assert_no_memory_leak(%w(-rripper), "", <<~RUBY, rss: true)
-      1_000_000.times do
+    assert_no_memory_leak(%w(-rripper), "", "#{<<-"{#"}\n#{<<-'};'}", rss: true, samples: 2..100)
+    {#
+      1000.times do
         Ripper.parse("-> do it end")
       end
-    RUBY
+    };
   end
 
   def test_sexp_no_memory_leak
-    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
-      1_000_000.times do
+    assert_no_memory_leak(%w(-rripper), "", "#{<<-"{#"}\n#{<<-'};'}", rss: true, samples: 2..100)
+    {#
+      1000.times do
         Ripper.sexp("")
       end
-    end;
+    };
   end
 
   class TestInput < self

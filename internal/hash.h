@@ -27,6 +27,7 @@ enum ruby_rhash_flags {
     RHASH_AR_TABLE_SIZE_SHIFT = (FL_USHIFT+4),
     RHASH_AR_TABLE_BOUND_MASK = (FL_USER8|FL_USER9|FL_USER10|FL_USER11), /* FL 8..11 */
     RHASH_AR_TABLE_BOUND_SHIFT = (FL_USHIFT+8),
+    RHASH_COMPARE_BY_IDENTITY = FL_USER12,                               /* FL 12 */
 
     // we can not put it in "enum" because it can exceed "int" range.
 #define RHASH_LEV_MASK (FL_USER13 | FL_USER14 | FL_USER15 |                /* FL 13..19 */ \
@@ -75,6 +76,7 @@ VALUE rb_hash_set_default(VALUE hash, VALUE ifnone);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
 long rb_dbl_long_hash(double d);
 st_table *rb_init_identtable(void);
+void rb_init_existing_identtable_with_size(st_table *tbl, st_index_t size);
 st_index_t rb_any_hash(VALUE a);
 int rb_any_cmp(VALUE a, VALUE b);
 VALUE rb_to_hash_type(VALUE obj);
@@ -84,12 +86,12 @@ VALUE rb_hash_rehash(VALUE hash);
 int rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val);
 VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
 int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
-int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg);
 bool rb_hash_default_unredefined(VALUE hash);
 VALUE rb_hash_alloc_fixed_size(VALUE klass, st_index_t size);
-VALUE rb_ident_hash_new_capa(long size);
+VALUE rb_ident_hash_new_capa(rb_len_t size);
 void rb_hash_free(VALUE hash);
+VALUE rb_hash_alloc_copy(VALUE klass, VALUE src);
 RUBY_EXTERN VALUE rb_cHash_empty_frozen;
 
 static inline unsigned RHASH_AR_TABLE_SIZE_RAW(VALUE h);
@@ -107,18 +109,22 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* hash.c (export) */
 VALUE rb_hash_delete_entry(VALUE hash, VALUE key);
 VALUE rb_ident_hash_new(void);
+VALUE rb_hash_alloc_capa(VALUE klass, rb_len_t capa);
+VALUE rb_hash_s_new(int argc, VALUE *argv, VALUE klass);
 int rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg);
+int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 RUBY_SYMBOL_EXPORT_END
 
-VALUE rb_hash_new_with_bulk_insert(long argc, const VALUE *argv);
+VALUE rb_hash_new_with_bulk_insert(rb_len_t argc, const VALUE *argv);
+VALUE rb_hash_merge2(VALUE h1, VALUE h2, bool dup);
+VALUE rb_hash_merge2_bulk(VALUE hash, rb_len_t argc, const VALUE *argv, bool dup);
 VALUE rb_hash_resurrect(VALUE hash);
 int rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval);
 VALUE rb_hash_keys(VALUE hash);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_compare_by_id_p(VALUE hash);
 
-st_table *rb_hash_tbl_raw(VALUE hash, const char *file, int line);
-#define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h, __FILE__, __LINE__)
+st_table *rb_hash_tbl_raw(VALUE hash);
 
 VALUE rb_hash_compare_by_id(VALUE hash);
 
@@ -195,7 +201,6 @@ RHASH_AR_TABLE_SIZE_RAW(VALUE h)
   ((unsigned int)((RBASIC(h)->flags >> RHASH_AR_TABLE_BOUND_SHIFT) & \
                   (RHASH_AR_TABLE_BOUND_MASK >> RHASH_AR_TABLE_BOUND_SHIFT)))
 
-#define RHASH_TYPE(hash) (RHASH_AR_TABLE_P(hash) ? &objhash : RHASH_ST_TABLE(hash)->type)
 
 static inline unsigned int
 RHASH_AR_TABLE_BOUND(VALUE h)
@@ -204,6 +209,14 @@ RHASH_AR_TABLE_BOUND(VALUE h)
     const unsigned int bound = RHASH_AR_TABLE_BOUND_RAW(h);
     RBIMPL_ASSERT_OR_ASSUME(bound <= RHASH_AR_TABLE_MAX_SIZE);
     return bound;
+}
+
+#define RHASH_ST_SLOT_SIZE (sizeof(struct RHash) + sizeof(st_table))
+
+static inline size_t
+RHASH_AR_SLOT_SIZE(size_t capa)
+{
+    return sizeof(struct RHash) + offsetof(ar_table, pairs) + capa * sizeof(ar_table_pair);
 }
 
 #endif /* INTERNAL_HASH_H */

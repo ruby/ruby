@@ -12,7 +12,7 @@ module SyntaxSuggest
   #  lex.location # => (1,0)-(1,8)
   #  lex.type # => :IDENTIFIER
   #  lex.token # => "describe"
-  class Token
+  class Token # :nodoc:
     attr_reader :location, :type, :value
 
     KW_TYPES = %i[

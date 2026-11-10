@@ -69,6 +69,30 @@ RSpec.describe Bundler::SpecSet do
     end
   end
 
+  describe "#validate_deps" do
+    it "is valid when every dependency is satisfied by a spec in the set" do
+      expect(subject.validate_deps(specs.find {|s| s.name == "d" })).to eq(:valid)
+    end
+
+    it "is missing when a dependency has no spec in the set" do
+      spec = build_spec("f", "1.0") {|s| s.dep "g", ">= 0" }.first
+      expect(subject.validate_deps(spec)).to eq(:missing)
+    end
+
+    it "is invalid when no spec in the set satisfies a dependency's requirement" do
+      spec = build_spec("f", "1.0") {|s| s.dep "a", ">= 2.0" }.first
+      expect(subject.validate_deps(spec)).to eq(:invalid)
+    end
+
+    it "is invalid when the dependency's specs were deleted after the set was indexed" do
+      d = specs.find {|s| s.name == "d" }
+      expect(subject.validate_deps(d)).to eq(:valid)
+
+      subject.delete_by_name("a")
+      expect(subject.validate_deps(d)).to eq(:invalid)
+    end
+  end
+
   describe "#to_a" do
     it "returns the specs in order" do
       expect(subject.to_a.map(&:full_name)).to eq %w[

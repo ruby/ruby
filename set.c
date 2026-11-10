@@ -12,6 +12,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
+#include "internal/set.h"
 #include "internal/set_table.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
@@ -96,6 +97,7 @@ static const struct st_hash_type objhash = {
 };
 
 VALUE rb_cSet;
+static VALUE set_i_compare_by_identity(VALUE set);
 
 #define id_each idEach
 static ID id_each_entry;
@@ -395,22 +397,33 @@ set_insert_wb(VALUE set, VALUE key)
 }
 
 static VALUE
-set_alloc_with_size(VALUE klass, st_index_t size)
+set_alloc_with_size_and_type(VALUE klass, st_index_t size, const struct st_hash_type *type)
 {
     VALUE set;
     struct set_object *sobj;
 
     set = TypedData_Make_Struct(klass, struct set_object, &set_data_type, sobj);
-    set_init_table_with_size(&sobj->table, &objhash, size);
+    set_init_table_with_size(&sobj->table, type, size);
 
     return set;
 }
 
+static VALUE
+set_alloc_with_size(VALUE klass, st_index_t size)
+{
+    return set_alloc_with_size_and_type(klass, size, &objhash);
+}
 
 static VALUE
 set_s_alloc(VALUE klass)
 {
     return set_alloc_with_size(klass, 0);
+}
+
+bool
+rb_set_p(VALUE obj)
+{
+    return rb_typeddata_is_instance_of(obj, &set_data_type);
 }
 
 /*
@@ -546,7 +559,7 @@ set_i_initialize(int argc, VALUE *argv, VALUE set)
 
     if (argc > 0 && (other = argv[0]) != Qnil) {
         if (RB_TYPE_P(other, T_ARRAY)) {
-            long i;
+            rb_len_t i;
             int block_given = rb_block_given_p();
             set_table *into = RSET_TABLE(set);
             for (i=0; i<RARRAY_LEN(other); i++) {
@@ -679,6 +692,23 @@ set_i_to_a(VALUE set)
 /*
  *  call-seq:
  *    to_set {|element| ... } -> new_set
+ *    to_set -> new_set
+ *
+ *  Returns a new set containing the elements of +self+;
+ *  with a block given, the set contains the block's return values instead:
+ *
+ *    [3, 1, 2, 1].to_set           # => Set[3, 1, 2]
+ *    [3, 1, 2, 1].to_set {|i| -i } # => Set[-3, -1, -2]
+ */
+static VALUE
+enum_to_set(VALUE obj)
+{
+    return rb_funcall_passing_block(rb_cSet, id_new, 1, &obj);
+}
+
+/*
+ *  call-seq:
+ *    to_set {|element| ... } -> new_set
  *    to_set -> self or new_set
  *
  *  With a block given, creates and returns a new set;
@@ -711,7 +741,7 @@ set_i_to_set(VALUE set)
         return set;
     }
 
-    return rb_funcall_passing_block(rb_cSet, id_new, 1, &set);
+    return enum_to_set(set);
 }
 
 /*
@@ -817,8 +847,9 @@ set_i_add_p(VALUE set, VALUE item)
 static VALUE
 set_i_delete(VALUE set, VALUE item)
 {
+    st_data_t item_data = (st_data_t)item;
     rb_check_frozen(set);
-    if (set_table_delete(RSET_TABLE(set), (st_data_t *)&item)) {
+    if (set_table_delete(RSET_TABLE(set), &item_data)) {
         set_compact_after_delete(set);
     }
     return set;
@@ -839,8 +870,9 @@ set_i_delete(VALUE set, VALUE item)
 static VALUE
 set_i_delete_p(VALUE set, VALUE item)
 {
+    st_data_t item_data = (st_data_t)item;
     rb_check_frozen(set);
-    if (set_table_delete(RSET_TABLE(set), (st_data_t *)&item)) {
+    if (set_table_delete(RSET_TABLE(set), &item_data)) {
         set_compact_after_delete(set);
         return set;
     }
@@ -921,6 +953,9 @@ set_classify_i(st_data_t key, st_data_t tmp)
     VALUE set = rb_hash_lookup2(hash, hash_key, Qundef);
     if (set == Qundef) {
         set = set_s_alloc(args[1]);
+        if (RTEST(args[2])) {
+            set_i_compare_by_identity(set);
+        }
         rb_hash_aset(hash, hash_key, set);
     }
     set_i_add(set, key);
@@ -952,36 +987,37 @@ static VALUE
 set_i_classify(VALUE set)
 {
     RETURN_SIZED_ENUMERATOR(set, 0, 0, set_enum_size);
-    VALUE args[2];
+    VALUE args[3];
     args[0] = rb_hash_new();
     args[1] = rb_obj_class(set);
+    args[2] = RBOOL(RSET_COMPARE_BY_IDENTITY(set));
     set_iter(set, set_classify_i, (st_data_t)args);
     return args[0];
 }
 
 // Union-find with path compression
-static long
-set_divide_union_find_root(long *uf_parents, long index, long *tmp_array)
+static rb_len_t
+set_divide_union_find_root(rb_len_t *uf_parents, rb_len_t index, rb_len_t *tmp_array)
 {
-    long root = uf_parents[index];
-    long update_size = 0;
+    rb_len_t root = uf_parents[index];
+    rb_len_t update_size = 0;
     while (root != index) {
         tmp_array[update_size++] = index;
         index = root;
         root = uf_parents[index];
     }
-    for (long j = 0; j < update_size; j++) {
-        long idx = tmp_array[j];
+    for (rb_len_t j = 0; j < update_size; j++) {
+        rb_len_t idx = tmp_array[j];
         uf_parents[idx] = root;
     }
     return root;
 }
 
 static void
-set_divide_union_find_merge(long *uf_parents, long i, long j, long *tmp_array)
+set_divide_union_find_merge(rb_len_t *uf_parents, rb_len_t i, rb_len_t j, rb_len_t *tmp_array)
 {
-    long root_i = set_divide_union_find_root(uf_parents, i, tmp_array);
-    long root_j = set_divide_union_find_root(uf_parents, j, tmp_array);
+    rb_len_t root_i = set_divide_union_find_root(uf_parents, i, tmp_array);
+    rb_len_t root_j = set_divide_union_find_root(uf_parents, j, tmp_array);
     if (root_i != root_j) uf_parents[root_j] = root_i;
 }
 
@@ -989,19 +1025,19 @@ static VALUE
 set_divide_arity2(VALUE set)
 {
     VALUE tmp, uf;
-    long size, *uf_parents, *tmp_array;
+    rb_len_t size, *uf_parents, *tmp_array;
     VALUE set_class = rb_obj_class(set);
     VALUE items = set_i_to_a(set);
     rb_ary_freeze(items);
     size = RARRAY_LEN(items);
-    tmp_array = ALLOCV_N(long, tmp, size);
-    uf_parents = ALLOCV_N(long, uf, size);
-    for (long i = 0; i < size; i++) {
+    tmp_array = ALLOCV_N(rb_len_t, tmp, size);
+    uf_parents = ALLOCV_N(rb_len_t, uf, size);
+    for (rb_len_t i = 0; i < size; i++) {
         uf_parents[i] = i;
     }
-    for (long i = 0; i < size - 1; i++) {
+    for (rb_len_t i = 0; i < size - 1; i++) {
         VALUE item1 = RARRAY_AREF(items, i);
-        for (long j = i + 1; j < size; j++) {
+        for (rb_len_t j = i + 1; j < size; j++) {
             VALUE item2 = RARRAY_AREF(items, j);
             if (RTEST(rb_yield_values(2, item1, item2)) &&
                 RTEST(rb_yield_values(2, item2, item1))) {
@@ -1011,16 +1047,19 @@ set_divide_arity2(VALUE set)
     }
     VALUE final_set = set_s_create(0, 0, rb_cSet);
     VALUE hash = rb_hash_new();
-    for (long i = 0; i < size; i++) {
+    for (rb_len_t i = 0; i < size; i++) {
         VALUE v = RARRAY_AREF(items, i);
-        long root = set_divide_union_find_root(uf_parents, i, tmp_array);
-        VALUE set = rb_hash_aref(hash, LONG2FIX(root));
-        if (set == Qnil) {
-            set = set_s_create(0, 0, set_class);
-            rb_hash_aset(hash, LONG2FIX(root), set);
-            set_i_add(final_set, set);
+        rb_len_t root = set_divide_union_find_root(uf_parents, i, tmp_array);
+        VALUE subset = rb_hash_aref(hash, LEN2NUM(root));
+        if (subset == Qnil) {
+            subset = set_s_alloc(set_class);
+            if (RSET_COMPARE_BY_IDENTITY(set)) {
+                set_i_compare_by_identity(subset);
+            }
+            rb_hash_aset(hash, LEN2NUM(root), subset);
+            set_i_add(final_set, subset);
         }
-        set_i_add(set, v);
+        set_i_add(subset, v);
     }
     ALLOCV_END(tmp);
     ALLOCV_END(uf);
@@ -1122,6 +1161,8 @@ set_i_clear(VALUE set)
 
 struct set_intersection_data {
     VALUE set;
+    VALUE other_set;
+    VALUE new_set;
     set_table *into;
     set_table *other;
 };
@@ -1129,7 +1170,7 @@ struct set_intersection_data {
 static int
 set_intersection_i(st_data_t key, st_data_t tmp)
 {
-    struct set_intersection_data *data = (struct set_intersection_data *)tmp;
+    struct set_intersection_data *data = MEMO_FOR(struct set_intersection_data, tmp);
     if (set_table_lookup(data->other, key)) {
         set_table_insert_wb(data->into, data->set, key);
     }
@@ -1163,8 +1204,12 @@ static VALUE
 set_i_intersection(VALUE set, VALUE other)
 {
     VALUE new_set = set_s_alloc(rb_obj_class(set));
+    if (RSET_COMPARE_BY_IDENTITY(set)) {
+        set_i_compare_by_identity(new_set);
+    }
     set_table *stable = RSET_TABLE(set);
     set_table *ntable = RSET_TABLE(new_set);
+    VALUE data;
 
     if (rb_obj_is_kind_of(other, rb_cSet)) {
         set_table *otable = RSET_TABLE(other);
@@ -1174,21 +1219,26 @@ set_i_intersection(VALUE set, VALUE other)
             set = other;
         }
 
-        struct set_intersection_data data = {
+        *NEW_PARTIAL_MEMO_FOR(struct set_intersection_data, data, into) = (struct set_intersection_data) {
             .set = new_set,
+            .other_set = other,
+            .new_set = new_set,
             .into = ntable,
-            .other = otable
+            .other = otable,
         };
-        set_iter(set, set_intersection_i, (st_data_t)&data);
+        set_iter(set, set_intersection_i, (st_data_t)data);
     }
     else {
-        struct set_intersection_data data = {
+        *NEW_PARTIAL_MEMO_FOR(struct set_intersection_data, data, into) = (struct set_intersection_data) {
             .set = new_set,
+            .other_set = other,
+            .new_set = new_set,
             .into = ntable,
-            .other = stable
+            .other = stable,
         };
-        rb_block_call(other, enum_method_id(other), 0, 0, set_intersection_block, (VALUE)&data);
+        rb_block_call(other, enum_method_id(other), 0, 0, set_intersection_block, data);
     }
+    RB_GC_GUARD(data);
 
     return new_set;
 }
@@ -1257,14 +1307,15 @@ set_merge_enum_into(VALUE set, VALUE arg)
         set_iter(arg, set_merge_i, (st_data_t)&args);
     }
     else if (RB_TYPE_P(arg, T_ARRAY)) {
-        long i;
+        rb_len_t i;
         set_table *into = RSET_TABLE(set);
         for (i=0; i<RARRAY_LEN(arg); i++) {
             set_table_insert_wb(into, set, RARRAY_AREF(arg, i));
         }
+        RB_GC_GUARD(arg);
     }
     else {
-        rb_block_call(arg, enum_method_id(arg), 0, 0, set_merge_block, (VALUE)set);
+        rb_block_call(arg, enum_method_id(arg), 0, 0, set_merge_block, set);
     }
 }
 
@@ -1468,7 +1519,10 @@ set_i_xor(VALUE set, VALUE other)
         set_iter(other, set_xor_i, (st_data_t)new_set);
     }
     else {
-        VALUE tmp = set_s_alloc(rb_cSet);
+        VALUE tmp = set_s_alloc(rb_obj_class(new_set));
+        if (RSET_COMPARE_BY_IDENTITY(new_set)) {
+            set_i_compare_by_identity(tmp);
+        }
         set_merge_enum_into(tmp, other);
         set_iter(tmp, set_xor_i, (st_data_t)new_set);
     }
@@ -1503,16 +1557,18 @@ set_i_union(VALUE set, VALUE other)
 static int
 set_remove_i(st_data_t key, st_data_t from)
 {
-    set_table_delete((struct set_table *)from, (st_data_t *)&key);
+    st_data_t key_data = (st_data_t)key;
+    set_table_delete((struct set_table *)from, &key_data);
     return ST_CONTINUE;
 }
 
 static VALUE
 set_remove_block(RB_BLOCK_CALL_FUNC_ARGLIST(key, set))
 {
+    st_data_t key_data = (st_data_t)key;
     rb_check_frozen(set);
-    set_table_delete(RSET_TABLE(set), (st_data_t *)&key);
-    return key;
+    set_table_delete(RSET_TABLE(set), &key_data);
+    return (VALUE)key_data;
 }
 
 static void
@@ -1522,7 +1578,7 @@ set_remove_enum_from(VALUE set, VALUE arg)
         set_iter(arg, set_remove_i, (st_data_t)RSET_TABLE(set));
     }
     else {
-        rb_block_call(arg, enum_method_id(arg), 0, 0, set_remove_block, (VALUE)set);
+        rb_block_call(arg, enum_method_id(arg), 0, 0, set_remove_block, set);
     }
     set_compact_after_delete(set);
 }
@@ -1629,6 +1685,9 @@ set_i_collect(VALUE set)
     rb_check_frozen(set);
 
     VALUE new_set = set_s_alloc(rb_obj_class(set));
+    if (RSET_COMPARE_BY_IDENTITY(set)) {
+        set_i_compare_by_identity(new_set);
+    }
     set_iter(set, set_collect_i, (st_data_t)new_set);
     set_i_initialize_copy(set, new_set);
 
@@ -1831,6 +1890,9 @@ static VALUE
 set_i_flatten(VALUE set)
 {
     VALUE new_set = set_s_alloc(rb_obj_class(set));
+    if (RSET_COMPARE_BY_IDENTITY(set)) {
+        set_i_compare_by_identity(new_set);
+    }
     set_flatten_merge(new_set, set, rb_hash_new());
     return new_set;
 }
@@ -2215,7 +2277,7 @@ set_to_hash_i(st_data_t key, st_data_t arg)
 static VALUE
 set_i_to_h(VALUE set)
 {
-    long size = RSET_SIZE(set);
+    rb_len_t size = RSET_SIZE(set);
     VALUE hash;
     if (RSET_COMPARE_BY_IDENTITY(set)) {
         hash = rb_ident_hash_new_capa(size);
@@ -2262,6 +2324,37 @@ static VALUE
 compat_loader(VALUE self, VALUE a)
 {
     return set_i_from_hash(self, rb_ivar_get(a, id_i_hash));
+}
+
+/* Internal C-API functions */
+
+VALUE
+rb_ident_set_new(void)
+{
+    return set_alloc_with_size_and_type(rb_cSet, 0, &identhash);
+}
+
+bool
+rb_set_add_no_check(VALUE set, VALUE element)
+{
+    if (set_insert(RSET_TABLE(set), (st_data_t)element) == 0) {
+        RB_OBJ_WRITTEN(set, Qundef, element);
+        return true;
+    }
+    return false;
+}
+
+bool
+rb_set_delete_no_check(VALUE set, VALUE element)
+{
+    st_data_t element_data = (st_data_t)element;
+    return set_table_delete(RSET_TABLE(set), &element_data) != 0;
+}
+
+VALUE
+rb_set_to_a(VALUE set)
+{
+    return set_i_to_a(set);
 }
 
 /* C-API functions */
@@ -2337,7 +2430,7 @@ rb_set_size(VALUE set)
  *
  * \Set includes module Enumerable, and is easy to use with other enumerable objects.
  * Many of its methods accept enumerable objects as arguments;
- * any enumerable object may be converted to a set via #to_set.
+ * any enumerable object may be converted to a set via {#to_set}[rdoc-ref:Enumerable#to_set].
  *
  * == Contact
  *
@@ -2587,6 +2680,8 @@ Init_Set(void)
     rb_define_alias(rb_cSet, ">=", "superset?");
     rb_define_method(rb_cSet, "to_a", set_i_to_a, 0);
     rb_define_method(rb_cSet, "to_set", set_i_to_set, 0);
+
+    rb_define_method(rb_mEnumerable, "to_set", enum_to_set, 0);
 
     /* :nodoc: */
     VALUE compat = rb_define_class_under(rb_cSet, "compatible", rb_cObject);

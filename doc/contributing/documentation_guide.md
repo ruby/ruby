@@ -4,7 +4,7 @@ This guide discusses recommendations for documenting
 classes, modules, and methods
 in the Ruby core and in the Ruby standard library.
 
-## Generating documentation
+## Generating Documentation
 
 Most Ruby documentation lives in the source files, and is written in RDoc format
 (described in the [RDoc Markup Reference]).
@@ -58,65 +58,10 @@ Use your judgment about what the user needs to know.
     - Excessive comma-separated phrases; consider a [list][lists].
     - Idioms and culture-specific references.
     - Overuse of headings.
-    - Using US-ASCII-incompatible characters in C source files;
-      see [Characters](#label-Characters) below.
 
-### Characters
+### Examples
 
-Use only US-ASCII-compatible characters in a C source file.
-(If you use other characters, the Ruby CI will gently let you know.)
-
-If you want to put ASCII-incompatible characters into the documentation
-for a C-coded class, module, or method, there are workarounds
-involving new files `doc/*.rdoc`:
-
-- For class `Foo` (defined in file `foo.c`),
-  create file `doc/foo.rdoc`, declare `class Foo; end`,
-  and place the class documentation above that declaration:
-
-    ```ruby
-    # Documentation for class Foo goes here.
-    class Foo; end
-    ```
-
-- Similarly, for module `Bar` (defined in file `bar.c`),
-  create file `doc/bar.rdoc`, declare `module Bar; end`,
-  and place the module documentation above that declaration:
-
-    ```ruby
-    # Documentation for module Bar goes here.
-    module Bar; end
-    ```
-
-- For a method, things are different.
-  Documenting a method as above disables the "click to toggle source" feature
-  in the rendered documentation.
-
-    Therefore it's best to use file inclusion:
-
-    - Retain the `call-seq` in the C code.
-    - Use file inclusion (`:include:`) to include text from an .rdoc file.
-
-    Example:
-
-    ```c
-    /*
-     *  call-seq:
-     *    each_byte {|byte| ... } -> self
-     *    each_byte               -> enumerator
-     *
-     *  :include: doc/string/each_byte.rdoc
-     *
-     */
-    ```
-
-### RDoc
-
-Ruby is documented using RDoc.
-For information on RDoc syntax and features,
-see the [RDoc Markup Reference].
-
-### Output from `irb`
+#### Output from `irb`
 
 For code examples, consider using interactive Ruby,
 [irb].
@@ -126,10 +71,48 @@ consider aligning `# => ...` in successive lines.
 Alignment may sometimes aid readability:
 
 ```ruby
-a = [1, 2, 3] #=> [1, 2, 3]
-a.shuffle!    #=> [2, 3, 1]
-a             #=> [2, 3, 1]
+a = [1, 2, 3] # => [1, 2, 3]
+a.shuffle!    # => [2, 3, 1]
+a             # => [2, 3, 1]
 ```
+
+#### Languages in Examples
+
+For symbols and strings in documentation examples:
+
+- Prefer \English in \English documentation:  <tt>'Hello'</tt>.
+- Prefer Japanese in Japanese documentation:  <tt>'こんにちは'</tt>.
+- If a second language is needed (as, for example, characters with different byte-sizes),
+  prefer Japanese in \English documentation and \English in Japanese documentation.
+- Use other languages examples only as necessary:  see String#capitalize.
+
+#### Cleaning Up
+
+An example that appropriates system resources should "clean up"
+by releasing those resources.
+Let's show good work habits.
+
+Resources that may need to be deleted/unlinked:
+
+- Files
+- Directories
+- Symbolic links
+- UNIX sockets
+- Block-special devices
+- Character-special devices
+- Named pipes
+
+Objects that may need to be closed:
+
+- Dir
+- IO
+- Tempfile
+
+### RDoc
+
+Ruby is documented using RDoc.
+For information on RDoc syntax and features,
+see the [RDoc Markup Reference].
 
 ### Headings
 
@@ -347,21 +330,11 @@ Alternatives:
     - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/file.c#L6570-L6596].
     - Corresponding {output}[rdoc-ref:File@ReadWrite+Mode].
 
-- (Markdown format only): A {Github Flavored Markdown (GFM) table}[https://github.github.com/gfm/#tables-extension-],
+- (Markdown format only): A {GitHub Flavored Markdown (GFM) table}[https://github.github.com/gfm/#tables-extension-],
   using special formatting for the text:
 
     - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/doc/contributing/glossary.md?plain=1].
     - Corresponding {output}[https://docs.ruby-lang.org/en/master/contributing/glossary_md.html].
-
-### Languages in Examples
-
-For symbols and strings in documentation examples:
-
-- Prefer \English in \English documentation:  <tt>'Hello'</tt>.
-- Prefer Japanese in Japanese documentation:  <tt>'こんにちは'</tt>.
-- If a second language is needed (as, for example, characters with different byte-sizes),
-  prefer Japanese in \English documentation and \English in Japanese documentation.
-- Use other languages examples only as necessary:  see String#capitalize.
 
 ## Documenting Classes and Modules
 
@@ -538,6 +511,19 @@ The synopsis comes next, and is a short description of what the
 method does and why you would want to use it.  Ideally, this
 is a single sentence, but for more complex methods it may require
 an entire paragraph.
+
+Consider mentioning the return value first,
+especially if there are associated conditionals:
+
+> Returns the integer permissions for the entry at the path in `self`
+> if the entry exists and is readable by others;
+> otherwise, returns `nil`:
+
+Not:
+
+> If the entry at the path in `self` exists and is readable by others,
+> returns the integer permissions for the entry;
+> otherwise, returns `nil`:
 
 For `Array#count`, the synopsis is:
 

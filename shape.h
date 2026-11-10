@@ -29,7 +29,8 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 //      26 SHAPE_ID_FL_COMPLEX
 //              The object is backed by a `st_table`.
 //      27 SHAPE_ID_FL_FROZEN
-//              Whether the object is frozen or not.
+//              Whether field writes are refused: either the object is frozen, or it
+//              became shareable while unfrozen (see rb_obj_set_shareable in ractor.c).
 //      28 SHAPE_ID_FL_HAS_OBJECT_ID
 //              Whether the object has an `SHAPE_OBJ_ID` transition.
 //      29-30 SHAPE_ID_LAYOUT_MASK

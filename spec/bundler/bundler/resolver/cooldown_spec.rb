@@ -73,6 +73,16 @@ RSpec.describe Bundler::Resolver do
       end
     end
 
+    context "when created_at has a year that overflows Float arithmetic" do
+      it "keeps the spec like one without created_at" do
+        metadata = { "created_at" => ["#{"9" * 400}-01-01T00:00:00Z"] }
+        s = Bundler::EndpointSpecification.new("myrack", "1.0.0", Gem::Platform::RUBY, nil, [], metadata)
+        s.remote = remote(cooldown: 7)
+
+        expect(resolver.send(:filter_cooldown, [s])).to eq([s])
+      end
+    end
+
     context "when the remote has no cooldown" do
       it "keeps every spec" do
         s = spec(created_at: now - 3600, remote: remote(cooldown: nil))

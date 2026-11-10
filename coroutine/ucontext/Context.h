@@ -63,10 +63,13 @@ static inline struct coroutine_context * coroutine_transfer(struct coroutine_con
     struct coroutine_context * previous = target->from;
 
     target->from = current;
-    swapcontext(&current->state, &target->state);
-    target->from = previous;
+    if (swapcontext(&current->state, &target->state) == -1) {
+        target->from = previous;
+        return NULL;
+    }
 
-    return target;
+    /* current may have been resumed by a context other than target. */
+    return current->from;
 }
 
 static inline void coroutine_destroy(struct coroutine_context * context)

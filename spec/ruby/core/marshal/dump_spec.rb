@@ -276,6 +276,22 @@ describe "Marshal.dump" do
     it "raises TypeError with an anonymous Module" do
       -> { Marshal.dump(Module.new) }.should.raise(TypeError, /can't dump anonymous module/)
     end
+
+    it "raises TypeError with a Module nested in an anonymous Module" do
+      m = Module.new
+      module m::N; end
+      -> { Marshal.dump(m::N) }.should.raise(TypeError, /can't dump anonymous module #<Module:0x\h+>::N/)
+    end
+
+    it "dumps a Module nested in an anonymous Module once it is reachable through a constant path" do
+      m = Module.new
+      module m::N; end
+      -> { Marshal.dump(m::N) }.should.raise(TypeError)
+      MarshalSpec::WasAnonModule = m::N
+      Marshal.dump(m::N).should == "\x04\bm\x1FMarshalSpec::WasAnonModule"
+    ensure
+      MarshalSpec.send(:remove_const, :WasAnonModule)
+    end
   end
 
   describe "with a Float" do
@@ -620,6 +636,13 @@ describe "Marshal.dump" do
       h.compare_by_identity
 
       Marshal.dump(h).should == "\004\bC:\tHash{\x00"
+    end
+
+    it "dumps a Hash with compare_by_identity and registers the \"Hash\" symbol in the link table" do
+      h = {}
+      h.compare_by_identity
+
+      Marshal.dump([h, :Hash]).should == "\x04\b[\aC:\tHash{\x00;\x00"
     end
 
     it "dumps a Hash subclass with compare_by_identity" do

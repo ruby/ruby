@@ -353,21 +353,4 @@ VALUE rb_ec_backtrace_object(const rb_execution_context_t *ec);
 VALUE rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n);
 VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n, bool skip_internal);
 
-#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
-# ifdef HAVE_MBLEN
-#  define CharNext(p) rb_char_next(p)
-static inline char *
-rb_char_next(const char *p)
-{
-    if (p) {
-        int len = mblen(p, RUBY_MBCHAR_MAXSIZE);
-        p += len > 0 ? len : 1;
-    }
-    return (char *)p;
-}
-# else
-#  define CharNext(p) ((p) + 1)
-# endif
-#endif
-
 #endif /* RUBY_EVAL_INTERN_H */

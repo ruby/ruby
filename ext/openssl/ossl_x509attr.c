@@ -33,7 +33,7 @@ static const rb_data_type_t ossl_x509attr_type = {
     {
         0, ossl_x509attr_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -88,7 +88,7 @@ ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
         oid = ossl_to_der_if_possible(oid);
         StringValue(oid);
         p = (unsigned char *)RSTRING_PTR(oid);
-        attr = d2i_X509_ATTRIBUTE(NULL, &p, RSTRING_LEN(oid));
+        attr = d2i_X509_ATTRIBUTE(NULL, &p, rb_len2long(RSTRING_LEN(oid)));
         if (!attr)
             ossl_raise(eX509AttrError, "d2i_X509_ATTRIBUTE");
         RTYPEDDATA_DATA(self) = attr;
@@ -176,7 +176,8 @@ ossl_x509attr_set_value(VALUE self, VALUE value)
     OSSL_Check_Kind(value, cASN1Data);
     VALUE der = ossl_to_der(value);
     const unsigned char *p = (const unsigned char *)RSTRING_PTR(der);
-    STACK_OF(ASN1_TYPE) *sk = d2i_ASN1_SET_ANY(NULL, &p, RSTRING_LEN(der));
+    STACK_OF(ASN1_TYPE) *sk =
+        d2i_ASN1_SET_ANY(NULL, &p, rb_len2long(RSTRING_LEN(der)));
     if (!sk)
         ossl_raise(eX509AttrError, "attribute value must be ASN1::Set");
 

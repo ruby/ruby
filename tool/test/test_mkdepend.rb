@@ -336,8 +336,6 @@ class TestMkdepend < Test::Unit::TestCase
       %w[eventids1.h {$(VPATH)}eventids1.c],
       ripper.dependencies['eventids1.c'],
     )
-    console = mkdepend.dependency_declarations('ext/io/console/depend')
-    assert_equal(%w[$(VK_HEADER)], console.dependencies['win32_vk.inc'])
     assert_include(
       mkdepend.dependency_targets('ext/socket/depend'),
       'constdefs.h',
@@ -940,6 +938,7 @@ class TestMkdepend < Test::Unit::TestCase
 
         #{MARK_START}
         example.o: example.c
+        example.o: local.h
         #{MARK_END}
       DEPEND
     end
@@ -1130,6 +1129,31 @@ class TestMkdepend < Test::Unit::TestCase
       generated = File.read(File.join(output, 'depend'))
       assert_include(generated, "builtin.$(OBJEXT): builtin_binary.rbbin\n")
       assert_not_include(generated, '.build/builtin_binary.rbbin')
+    end
+  end
+
+  def test_build_directory_does_not_shadow_source_tree_names
+    Dir.mktmpdir('mkdepend-builddir') do |root|
+      FileUtils.mkdir_p(File.join(root, 'ext/example'))
+      File.write(File.join(root, 'ext/example/depend'), <<~DEPEND)
+        # mkdepend: depends example.c => {$(VPATH)}example.c
+      DEPEND
+      build = File.join(root, 'build')
+      FileUtils.mkdir_p(File.join(build, 'ext/example'))
+      File.write(File.join(build, 'ext/example/example.c'), '')
+
+      mkdepend = TestDepend.new(root: root)
+      Dir.chdir(build) do
+        assert_equal(
+          'ext/example/depend',
+          mkdepend.dependency_input('ext/example/example.c'),
+        )
+        assert_equal(
+          ['{$(VPATH)}example.c'],
+          mkdepend.depends(%w[ext/example/example.c], nil,
+                           source: 'ext/example/example.c'),
+        )
+      end
     end
   end
 

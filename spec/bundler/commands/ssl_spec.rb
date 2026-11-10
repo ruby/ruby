@@ -4,7 +4,6 @@ require "bundler/cli"
 require "bundler/cli/doctor"
 require "bundler/cli/doctor/ssl"
 require_relative "../support/artifice/helpers/artifice"
-require "bundler/vendored_persistent.rb"
 
 RSpec.describe "bundle doctor ssl" do
   before(:each) do

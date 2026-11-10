@@ -28,6 +28,9 @@ module BundledGem
   def unpack(file, *rest)
     pkg = Gem::Package.new(file)
     prepare_test(pkg.spec, *rest) do |dir|
+      # Remove stale files of another build of the same version (e.g. the
+      # released gem replaced with one built from a pinned revision).
+      FileUtils.rm_rf(dir)
       pkg.extract_files(dir)
       FileUtils.rm_rf(Dir.glob(".git*", base: dir).map {|n| File.join(dir, n)})
     end
@@ -44,6 +47,11 @@ module BundledGem
     outdir = File.expand_path(outdir)
     gemdir, gemfile = File.split(gemspec)
     Dir.chdir(gemdir) do
+      if gemfile == "prism.gemspec" and File.exist?("templates/template.rb")
+        # prism does not keep its templated files in git; generate them so
+        # that the gem can be built from the checkout.
+        system(RbConfig.ruby, "templates/template.rb", exception: true)
+      end
       spec = Gem::Specification.load(gemfile)
       abort "Failed to load #{gemspec}" unless spec
       output = File.join(outdir, spec.file_name)

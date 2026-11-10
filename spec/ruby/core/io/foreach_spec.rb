@@ -95,6 +95,12 @@ describe "IO.foreach" do
       IO.foreach(@name).to_a.should == IOSpecs.lines
     end
 
+    it "returns an Enumerator that passes keyword arguments to IO.foreach" do
+      IO.foreach(@name, chomp: true).to_a.should == IOSpecs.lines_without_newline_characters
+      IO.foreach(@name, " ", chomp: true).to_a.should == IOSpecs.lines_space_separator_without_trailing_spaces
+      IO.foreach(@name, encoding: Encoding::BINARY).first.encoding.should == Encoding::BINARY
+    end
+
     describe "returned Enumerator" do
       describe "size" do
         it "should return nil" do

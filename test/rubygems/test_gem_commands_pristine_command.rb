@@ -11,6 +11,37 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     @cmd = Gem::Commands::PristineCommand.new
   end
 
+  def test_execute_content_addressed_gem
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> #{Gem.ruby_abi}.0"
+      spec.platform = Gem::Platform.local.to_s
+    end
+
+    address = Digest::SHA256.file(a_gem).hexdigest[0, 8]
+    filename = File.join(File.dirname(a_gem), "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+
+    Gem::Installer.at(filename, force: true).install
+    Gem::Specification.reset
+
+    gem_dir = File.join(@gemhome, "gems", "a-2-#{address}")
+    gemspec = File.join(@gemhome, "specifications", Gem.ruby_abi, "a-2-#{address}.gemspec")
+    assert_path_exist gem_dir
+    assert_path_exist gemspec
+
+    FileUtils.rm_rf gem_dir
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_path_exist gem_dir
+    assert_path_exist gemspec
+    assert_path_not_exist File.join(@gemhome, "specifications", "a-2-#{address}.gemspec")
+  end
+
   def test_execute
     a = util_spec "a" do |s|
       s.executables = %w[foo]

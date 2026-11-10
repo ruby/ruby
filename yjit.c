@@ -29,6 +29,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "internal/jit.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -48,6 +49,16 @@ STATIC_ASSERT(size_t_no_padding_bits, sizeof(size_t) == sizeof(uint64_t));
 // This build config impacts the pointer tagging scheme and we only want to
 // support one scheme for simplicity.
 STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
+
+// The bindings declare rb_len_t as i64, and codegen reads String and Array
+// lengths at that width.
+STATIC_ASSERT(rb_len_t_matches_bindings, sizeof(rb_len_t) == sizeof(int64_t));
+
+enum yjit_bindgen_constants {
+    // ISEQ_TRANSLATED expands to an enum value through a chain of macros,
+    // which bindgen cannot evaluate, so it needs to be re-exposed here.
+    YJIT_ISEQ_TRANSLATED = ISEQ_TRANSLATED,
+};
 
 // NOTE: We can trust that uint8_t has no "padding bits" since the C spec
 // guarantees it. Wording about padding bits is more explicit in C11 compared
@@ -193,29 +204,6 @@ rb_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
     ec->cfp->sp++;
 }
 
-// TODO(alan): consider using an opaque pointer for the payload rather than a void pointer
-void *
-rb_iseq_get_yjit_payload(const rb_iseq_t *iseq)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    if (iseq->body) {
-        return iseq->body->yjit_payload;
-    }
-    else {
-        // Body is NULL when constructing the iseq.
-        return NULL;
-    }
-}
-
-void
-rb_iseq_set_yjit_payload(const rb_iseq_t *iseq, void *payload)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    RUBY_ASSERT_ALWAYS(iseq->body);
-    RUBY_ASSERT_ALWAYS(NULL == iseq->body->yjit_payload);
-    iseq->body->yjit_payload = payload;
-}
-
 // This is defined only as a named struct inside rb_iseq_constant_body.
 // By giving it a separate typedef, we make it nameable by rust-bindgen.
 // Bindgen's temp/anon name isn't guaranteed stable.
@@ -227,11 +215,11 @@ ID rb_get_symbol_id(VALUE namep);
 static bool
 invokebuiltin_delegate_leave_p(const rb_iseq_t *iseq)
 {
-    int insn1 = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]);
-    if ((int)iseq->body->iseq_size != insn_len(insn1) + insn_len(BIN(leave))) {
+    int insn1 = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[0]);
+    if ((int)ISEQ_BODY(iseq)->iseq_size != insn_len(insn1) + insn_len(BIN(leave))) {
         return false;
     }
-    int insn2 = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_len(insn1)]);
+    int insn2 = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[insn_len(insn1)]);
     return (insn1 == BIN(opt_invokebuiltin_delegate) || insn1 == BIN(opt_invokebuiltin_delegate_leave)) &&
             insn2 == BIN(leave);
 }
@@ -241,7 +229,7 @@ const struct rb_builtin_function *
 rb_yjit_builtin_function(const rb_iseq_t *iseq)
 {
     if (invokebuiltin_delegate_leave_p(iseq)) {
-        return (const struct rb_builtin_function *)iseq->body->iseq_encoded[1];
+        return (const struct rb_builtin_function *)ISEQ_BODY(iseq)->iseq_encoded[1];
     }
     else {
         return NULL;
@@ -259,23 +247,10 @@ rb_str_neq_internal(VALUE str1, VALUE str2)
 extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 
 VALUE
-rb_yjit_rb_ary_subseq_length(VALUE ary, long beg)
+rb_yjit_rb_ary_subseq_length(VALUE ary, rb_len_t beg)
 {
-    long len = RARRAY_LEN(ary);
+    rb_len_t len = RARRAY_LEN(ary);
     return rb_ary_subseq(ary, beg, len);
-}
-
-// Return non-zero when `obj` is an array and its last item is a
-// `ruby2_keywords` hash. We don't support this kind of splat.
-size_t
-rb_yjit_ruby2_keywords_splat_p(VALUE obj)
-{
-    if (!RB_TYPE_P(obj, T_ARRAY)) return 0;
-    long len = RARRAY_LEN(obj);
-    if (len == 0) return 0;
-    VALUE last = RARRAY_AREF(obj, len - 1);
-    if (!RB_TYPE_P(last, T_HASH)) return 0;
-    return FL_TEST_RAW(last, RHASH_PASS_AS_KEYWORDS);
 }
 
 // Checks to establish preconditions for rb_yjit_splat_varg_cfunc()
@@ -283,7 +258,7 @@ VALUE
 rb_yjit_splat_varg_checks(VALUE *sp, VALUE splat_array, rb_control_frame_t *cfp)
 {
     // We inserted a T_ARRAY guard before this call
-    long len = RARRAY_LEN(splat_array);
+    rb_len_t len = RARRAY_LEN(splat_array);
 
     // Large splat arrays need a separate allocation
     if (len < 0 || len > VM_ARGC_STACK_MAX) return Qfalse;
@@ -326,7 +301,7 @@ void
 rb_yjit_dump_iseq_loc(const rb_iseq_t *iseq, uint32_t insn_idx)
 {
     char *ptr;
-    long len;
+    rb_len_t len;
     VALUE path = rb_iseq_path(iseq);
     RSTRING_GETMEM(path, ptr, len);
     fprintf(stderr, "%s %.*s:%u\n", __func__, (int)len, ptr, rb_iseq_line_no(iseq, insn_idx));
@@ -347,9 +322,9 @@ num_digits(int integer)
 char *
 rb_yjit_iseq_inspect(const rb_iseq_t *iseq)
 {
-    const char *label = RSTRING_PTR(iseq->body->location.label);
+    const char *label = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
     const char *path = RSTRING_PTR(rb_iseq_path(iseq));
-    int lineno = iseq->body->location.code_location.beg_pos.lineno;
+    int lineno = ISEQ_BODY(iseq)->location.code_location.beg_pos.lineno;
 
     const size_t size = strlen(label) + strlen(path) + num_digits(lineno) + 3;
     char *buf = ZALLOC_N(char, size);
@@ -373,12 +348,6 @@ rb_ENCODING_GET(VALUE obj)
     return RB_ENCODING_GET(obj);
 }
 
-bool
-rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
-{
-    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
-}
-
 // For running write barriers from Rust. Required when we add a new edge in the
 // object graph from `old` to `young`.
 void
@@ -398,10 +367,10 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
         uintptr_t code_ptr = (uintptr_t)rb_yjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
         if (jit_exception) {
-            iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
+            ISEQ_BODY(iseq)->jit_exception = (rb_jit_func_t)code_ptr;
         }
         else {
-            iseq->body->jit_entry = (rb_jit_func_t)code_ptr;
+            ISEQ_BODY(iseq)->jit_entry = (rb_jit_func_t)code_ptr;
         }
     }
 }
@@ -471,6 +440,12 @@ rb_yjit_cme_ractor_serial(const rb_callable_method_entry_t *cme)
     return cme->def->body.bmethod.defined_ractor_id;
 }
 
+bool
+rb_yjit_attached_object_is(VALUE klass, VALUE object)
+{
+    return RCLASS_SINGLETON_P(klass) && RCLASS_ATTACHED_OBJECT(klass) == object;
+}
+
 // Setup jit_return to avoid returning a non-Qundef value on a non-FINISH frame.
 // See [jit_compile_exception] for details.
 void
@@ -499,6 +474,133 @@ rb_yjit_set_exception_return(rb_control_frame_t *cfp, void *leave_exit, void *le
         cfp->jit_return = leave_exception;
     }
 }
+
+#if defined(_WIN32) && defined(_M_X64)
+// RtlUnwindEx(), which longjmp() and C++ exceptions use, needs unwind info for
+// every frame. JIT code calls out only inside the frame gen_entry_prologue()
+// sets up with frame_pointer, so a single UNWIND_INFO based on RBP is right at
+// every call in the code region. It is wrong within the few instructions that
+// set up and tear down the frame, which make no calls, so only an asynchronous
+// exception there, such as a stack overflow on the push, would unwind wrongly:
+//
+//   [RBP]       caller's RBP
+//   [RBP - 8]   copy of RBP
+//   [RBP - 16]  R13
+//   [RBP - 24]  R12
+//   [RBP - 32]  RBX
+static const uint8_t yjit_unwind_info[] = {
+    1,              // Version 1, no handler
+    0,              // No prologue, since every call happens after it
+    9,              // Count of unwind code slots
+    0x25,           // Frame register RBP at 2 * 16 bytes above RBX
+    0, 0x34, 0, 0,  // UWOP_SAVE_NONVOL RBX at [RBP - 32]
+    0, 0xc4, 1, 0,  // UWOP_SAVE_NONVOL R12 at [RBP - 24]
+    0, 0xd4, 2, 0,  // UWOP_SAVE_NONVOL R13 at [RBP - 16]
+    0, 0x03,        // UWOP_SET_FPREG
+    0, 0x32,        // UWOP_ALLOC_SMALL 32 bytes from [RBP - 8] down to RBX
+    0, 0x50,        // UWOP_PUSH_NONVOL RBP
+    0, 0,           // Padding to an even count
+};
+
+static RUNTIME_FUNCTION yjit_runtime_function;
+
+// Reserve the JIT region after a page holding the unwind info, which has to be
+// within 4GiB above the base address of the registered function table.
+uint8_t *
+rb_yjit_reserve_addr_space(uint32_t mem_size)
+{
+    uint32_t page_size = rb_jit_get_page_size();
+    uint8_t *base = rb_jit_reserve_addr_space(page_size + mem_size);
+    DWORD old_protect;
+
+    if (!VirtualAlloc(base, page_size, MEM_COMMIT, PAGE_READWRITE)) {
+        rb_bug("yjit: failed to commit the unwind info page, error: %lu", GetLastError());
+    }
+    memcpy(base, yjit_unwind_info, sizeof(yjit_unwind_info));
+    VirtualProtect(base, page_size, PAGE_READONLY, &old_protect);
+
+    // RtlVirtualUnwind() takes a call followed by a jmp to the start of the
+    // function for an epilogue, so start it at the unwind info no code jumps to.
+    yjit_runtime_function.BeginAddress = 0;
+    yjit_runtime_function.EndAddress = page_size + mem_size;
+    yjit_runtime_function.UnwindData = 0;
+    if (!RtlAddFunctionTable(&yjit_runtime_function, 1, (DWORD64)base)) {
+        rb_bug("yjit: failed to register unwind info for JIT code");
+    }
+
+    return base + page_size;
+}
+#elif defined(_WIN32) && defined(_M_ARM64)
+// The same as on x64. X29 stays at the saved pair while the code moves SP:
+//
+//   [X29 + 8]   LR
+//   [X29]       caller's X29
+//   [X29 - 16]  X19
+//   [X29 - 32]  X20
+//   [X29 - 48]  X21
+//
+// The codes undo a prolog that builds the same frame but sets X29 last, so
+// that the unwinder restores SP from X29 first. An .xdata record covers at
+// most 1MiB, so the region is split into fragments, and the leading end_c
+// gives each fragment an empty prolog, where every PC unwinds as in the body.
+static const uint8_t yjit_unwind_codes[] = {
+    0xe5,       // end_c
+    0xe2, 0x06, // add_fp: X29 = SP + 48
+    0xd0, 0x80, // save_reg X21 at [SP]
+    0xd0, 0x42, // save_reg X20 at [SP + 16]
+    0xd0, 0x04, // save_reg X19 at [SP + 32]
+    0x03,       // alloc_s 48
+    0x81,       // save_fplr_x <X29, LR> at [SP - 16]!
+    0xe4,       // end
+};
+
+#define YJIT_UNWIND_FRAGMENT_SIZE (512 * 1024)
+
+// Write an .xdata record for a fragment of `length` bytes with no epilog.
+static uint8_t *
+yjit_write_xdata(uint8_t *xdata, uint32_t length)
+{
+    uint32_t header = length / 4 | (uint32_t)(sizeof(yjit_unwind_codes) / 4) << 27;
+    memcpy(xdata, &header, sizeof(header));
+    memcpy(xdata + sizeof(header), yjit_unwind_codes, sizeof(yjit_unwind_codes));
+    return xdata + sizeof(header) + sizeof(yjit_unwind_codes);
+}
+
+// Reserve the JIT region after a page holding the unwind info, which has to be
+// above the base address of the registered function table.
+uint8_t *
+rb_yjit_reserve_addr_space(uint32_t mem_size)
+{
+    uint32_t page_size = rb_jit_get_page_size();
+    uint32_t region_size = page_size + mem_size;
+    uint32_t count = (region_size + YJIT_UNWIND_FRAGMENT_SIZE - 1) / YJIT_UNWIND_FRAGMENT_SIZE;
+    uint8_t *base = rb_jit_reserve_addr_space(region_size);
+    DWORD old_protect;
+
+    if (!VirtualAlloc(base, page_size, MEM_COMMIT, PAGE_READWRITE)) {
+        rb_bug("yjit: failed to commit the unwind info page, error: %lu", GetLastError());
+    }
+    // One record for the full fragments and one for the last, which may be shorter
+    uint8_t *last_xdata = yjit_write_xdata(base, YJIT_UNWIND_FRAGMENT_SIZE);
+    yjit_write_xdata(last_xdata, region_size - (count - 1) * YJIT_UNWIND_FRAGMENT_SIZE);
+    VirtualProtect(base, page_size, PAGE_READONLY, &old_protect);
+
+    // Not ZALLOC_N, whose NoMemoryError would longjmp across Rust frames
+    RUNTIME_FUNCTION *table = calloc(count, sizeof(RUNTIME_FUNCTION));
+    if (!table) {
+        rb_bug("yjit: failed to allocate the function table for unwind info");
+    }
+    for (uint32_t i = 0; i < count; i++) {
+        table[i].BeginAddress = i * YJIT_UNWIND_FRAGMENT_SIZE;
+        table[i].UnwindData = i + 1 < count ? 0 : (DWORD)(last_xdata - base);
+    }
+    if (!RtlAddFunctionTable(table, count, (DWORD64)base)) {
+        rb_bug("yjit: failed to register unwind info for JIT code");
+    }
+
+    return base + page_size;
+}
+#endif
 
 // VM_INSTRUCTION_SIZE changes depending on if ZJIT is in the build. Since
 // bindgen can only grab one version of the constant and copy that to rust,
@@ -541,6 +643,7 @@ VALUE rb_yjit_print_log_p(rb_execution_context_t *c, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_stats(rb_execution_context_t *ec, VALUE self, VALUE key);
 VALUE rb_yjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);
+void rb_yjit_update_max_compile_time_ns(uint64_t max_compile_time_ns);
 VALUE rb_yjit_get_log(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_disasm_iseq(rb_execution_context_t *ec, VALUE self, VALUE iseq);
 VALUE rb_yjit_insns_compiled(rb_execution_context_t *ec, VALUE self, VALUE iseq);
@@ -549,6 +652,25 @@ VALUE rb_yjit_simulate_oom_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_enable(rb_execution_context_t *ec, VALUE self, VALUE gen_stats, VALUE print_stats, VALUE gen_compilation_log, VALUE print_compilation_log, VALUE mem_size, VALUE call_threshold);
 VALUE rb_yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self);
+
+static VALUE
+rb_yjit_total_compile_time_ns_get(rb_execution_context_t *ec, VALUE self)
+{
+    return ULL2NUM(rb_yjit_total_compile_time_ns);
+}
+
+static VALUE
+rb_yjit_max_compile_time_ns_get(rb_execution_context_t *ec, VALUE self)
+{
+    return ULL2NUM(rb_yjit_max_compile_time_ns);
+}
+
+static VALUE
+rb_yjit_max_compile_time_ns_set(rb_execution_context_t *ec, VALUE self, VALUE max_compile_time_ns)
+{
+    rb_yjit_update_max_compile_time_ns(NUM2ULL(max_compile_time_ns));
+    return max_compile_time_ns;
+}
 
 // Allow YJIT_C_BUILTIN macro to force --yjit-c-builtin
 #ifdef YJIT_C_BUILTIN
@@ -559,4 +681,3 @@ static VALUE yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self) { return Q
 
 // Preprocessed yjit.rb generated during build
 #include "yjit.rbinc"
-

@@ -44,14 +44,14 @@
 //! during the mutator phase is correctly attributed. For generational plans
 //! we skip nursery-only GCs, consistent with MemBalancer.
 
+use std::sync::Mutex;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
-use std::sync::Mutex;
 
+use mmtk::MMTK;
+use mmtk::Plan;
 use mmtk::util::heap::GCTriggerPolicy;
 use mmtk::util::heap::SpaceStats;
-use mmtk::Plan;
-use mmtk::MMTK;
 use once_cell::sync::OnceCell;
 
 use crate::Ruby;
@@ -172,10 +172,10 @@ impl GCTriggerPolicy<Ruby> for CpuHeapTrigger {
         // Skip nursery-only GCs for generational plans. The heap resizing
         // decision is driven by the (much more expensive) full collections
         // where the signal-to-noise ratio is high enough to be useful.
-        if let Some(gen_plan) = mmtk.get_plan().generational() {
-            if gen_plan.is_current_gc_nursery() {
-                return;
-            }
+        if let Some(gen_plan) = mmtk.get_plan().generational()
+            && gen_plan.is_current_gc_nursery()
+        {
+            return;
         }
 
         let cfg = Self::get_config();

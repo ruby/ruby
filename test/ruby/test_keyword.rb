@@ -224,6 +224,8 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[], {}], skws(*nil, **nil))
 
     assert_equal({}, {**nil})
+    assert_equal({}, {**nil, **nil})
+    assert_equal({}, {**nil, **nil, **nil})
     assert_equal({a: 1}, {a: 1, **nil})
     assert_equal({a: 1}, {**nil, a: 1})
   end
@@ -497,6 +499,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     def self.yo(*a, **kw) = kw
     assert_equal_not_same kw, yo(**kw)
     assert_equal_not_same kw, yo(**kw, **kw)
+    assert_equal_not_same kw, yo(**kw, **kw, **kw, **kw)
 
     singleton_class.send(:remove_method, :yo)
     def self.yo(opts) = opts
@@ -4187,8 +4190,44 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
 
-    assert_raise_with_message(TypeError, /expected Hash/, bug13015) do
+    assert_raise_with_message(TypeError, /no implicit conversion of Array into Hash/, bug13015) do
       klass.new(d: 4)
+    end
+  end
+
+  def test_kwrest_overwritten_zsuper_with_keyword
+    bug22527 = '[Bug #22527]'
+
+    base = Class.new do
+      def m(*a, **k) = k
+    end
+
+    klass = Class.new(base) do
+      def m(k: 1, **r)
+        r = yield
+        super
+      end
+    end
+
+    obj = klass.new
+    assert_equal({k: 1}, obj.m { nil }, bug22527)
+    assert_equal({k: 1}, obj.m { nil }, bug22527)
+
+    assert_equal({a: 2, k: 1}, obj.m { {a: 2}.freeze })
+    assert_equal({k: 1}, obj.m { {k: 2} })
+
+    result = obj.m { Class.new(Hash)[a: 2].tap { _1.default = 5 } }
+    assert_instance_of(Hash, result)
+    assert_nil(result.default)
+
+    shared = {a: 2}
+    to_hash = Object.new
+    to_hash.define_singleton_method(:to_hash) { shared }
+    assert_equal({a: 2, k: 1}, obj.m { to_hash })
+    assert_equal({a: 2}, shared)
+
+    assert_raise_with_message(TypeError, /no implicit conversion of Integer into Hash/) do
+      obj.m { 1 }
     end
   end
 
@@ -4268,6 +4307,48 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(:ok, many_kwargs(d7: :ok)[i], "#{i}: d7"); i+=1
 
     assert_equal(:ok, many_kwargs(e0: :ok)[i], "#{i}: e0"); i+=1
+  end
+
+  def test_many_kwargs_with_integer_refinement
+    assert_separately([], <<~'RUBY')
+      module Ref
+        refine Integer do
+          def ==(other) super; end
+        end
+      end
+
+      # 257 indices guarantee a collision in the 8-bit hint of a small Hash.
+      # Keep both indices above the keyword bitmask limit.
+      indices = (32...289).to_a
+      a, b = indices.combination(2).find { |x, y| (x.hash & 0xff) == (y.hash & 0xff) }
+      expected = (0...289).to_a
+      expected[a] = {}
+      expected[b] = {}
+      params = expected.each_with_index.map { |value, i| "k#{i}: #{value.inspect}" }
+      eval "def victim(#{params.join(', ')}) [#{expected.each_index.map { |i| "k#{i}" }.join(', ')}]; end"
+
+      assert_equal(expected, victim, '[Bug #22335]')
+      assert_equal(expected, victim(k0: 0), '[Bug #22335]')
+      kwargs = {k0: 0}
+      assert_equal(expected, victim(**kwargs), '[Bug #22335]')
+    RUBY
+  end
+
+  def test_many_kwargs_with_gc_while_tracking_unspecified
+    assert_separately([], <<~'RUBY', timeout: 60)
+      # k32 has a non-static default and is past the keyword bitmask limit,
+      # so leaving it unspecified allocates a set during argument setup.
+      params = (0...32).map { |i| "k#{i}: nil" }
+      eval "def victim(#{params.join(', ')}, k32: Object.new) [k1, k32]; end"
+
+      GC.stress = true
+      # Run twice to cover the first call and the cached fast path. The
+      # string passed as k1 has no other reference.
+      results = 2.times.map { victim(k1: "k" + "1")[0] }
+      GC.stress = false
+
+      assert_equal(["k1", "k1"], results, "[Bug #22500]")
+    RUBY
   end
 
   def test_splat_empty_hash_with_block_passing

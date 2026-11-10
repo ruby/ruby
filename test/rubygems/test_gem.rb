@@ -941,6 +941,53 @@ class TestGem < Gem::TestCase
     RbConfig::CONFIG["sitelibdir"] = orig_sitelibdir
   end
 
+  def test_self_open_file_with_lock_excludes_late_arrivals_after_handover
+    omit "JRuby on Windows raises EINVAL when two threads flock the same file" if Gem.win_platform? && Gem.java_platform?
+
+    path = File.join(@tempdir, "resource")
+    events = Queue.new
+    release_waiter = Queue.new
+
+    on_warn = lambda do |message|
+      events << [Thread.current.name, :waiting] if message.include?("Waiting for another process")
+    end
+
+    next_event = lambda do
+      events.pop(timeout: 10) || flunk("Timed out waiting for a lock event")
+    end
+
+    contender = lambda do |name, &block|
+      Thread.new do
+        Thread.current.name = name
+        Thread.current.abort_on_exception = true
+        Gem.open_file_with_lock(path) do
+          events << [name, :locked]
+          block&.call
+        end
+      end
+    end
+
+    Gem.stub(:warn, on_warn) do
+      waiter = nil
+      Gem.open_file_with_lock(path) do
+        waiter = contender.call("waiter") { release_waiter.pop }
+        assert_equal ["waiter", :waiting], next_event.call
+      end
+      assert_equal ["waiter", :locked], next_event.call
+
+      late_arrival = contender.call("late_arrival")
+      assert_equal ["late_arrival", :waiting], next_event.call
+
+      release_waiter << true
+      [waiter, late_arrival].each(&:join)
+      assert_equal ["late_arrival", :locked], next_event.call
+    ensure
+      release_waiter << true
+    end
+
+    assert_path_not_exist "#{path}.lock"
+  end
+
   def test_self_read_binary
     File.open "test", "w" do |io|
       io.write "\xCF\x80"
@@ -1051,6 +1098,12 @@ class TestGem < Gem::TestCase
     assert_equal Gem::Requirement.create("1.2.3"), Gem.env_requirement("bAr")
     assert_raise(Gem::Requirement::BadRequirementError) { Gem.env_requirement("baz") }
     assert_equal Gem::Requirement.default, Gem.env_requirement("qux")
+  end
+
+  def test_self_ruby_abi
+    Gem.stub(:ruby_version, Gem::Version.new("3.4.1")) do
+      assert_equal "3.4", Gem.ruby_abi
+    end
   end
 
   def test_self_ruby_version_with_non_mri_implementations
@@ -1497,6 +1550,79 @@ class TestGem < Gem::TestCase
     Gem.load_plugins
 
     assert_equal %w[plugin], PLUGINS_LOADED
+  end
+
+  def test_load_plugins_loads_latest_non_content_addressed_plugin_after_content_addressed_plugin
+    ruby_abi = Gem.ruby_abi
+
+    _, ca_gem = util_gem "plugin_latest", "1.0", ruby_abi: ruby_abi do |s|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "class TestGem; PLUGINS_LOADED << 'ca-1.0'; end"
+      end
+
+      s.files += %w[lib/rubygems_plugin.rb]
+      s.platform = "x86_64-linux"
+    end
+
+    installed_ca_spec = Gem::Installer.at(ca_gem, force: true).install
+
+    spec = quick_gem "plugin_latest", "2.0" do |s|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "class TestGem; PLUGINS_LOADED << 'fat-2.0'; end"
+      end
+
+      s.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    installed_fat_spec = install_gem spec
+
+    PLUGINS_LOADED.clear
+    $LOADED_FEATURES.delete File.join(installed_ca_spec.gem_dir, "lib", "rubygems_plugin.rb")
+    $LOADED_FEATURES.delete File.join(installed_fat_spec.gem_dir, "lib", "rubygems_plugin.rb")
+    Gem.load_plugins
+
+    assert_equal %w[fat-2.0], PLUGINS_LOADED
+  end
+
+  def test_load_plugins_loads_current_ruby_abi_plugins
+    Gem.stub(:ruby_version, Gem::Version.new("3.4.0")) do
+      plugins_dir = Gem.plugindir
+      current_abi_plugins_dir = File.join plugins_dir, Gem.ruby_abi
+      other_abi_plugins_dir = File.join plugins_dir, "3.3"
+
+      write_file File.join(plugins_dir, "root_plugin.rb") do |fp|
+        fp.puts "class TestGem; PLUGINS_LOADED << 'root'; end"
+      end
+
+      write_file File.join(current_abi_plugins_dir, "current_plugin.rb") do |fp|
+        fp.puts "class TestGem; PLUGINS_LOADED << 'current'; end"
+      end
+
+      write_file File.join(other_abi_plugins_dir, "other_plugin.rb") do |fp|
+        fp.puts "class TestGem; PLUGINS_LOADED << 'other'; end"
+      end
+
+      Gem.load_plugins
+
+      assert_equal %w[root current], PLUGINS_LOADED
+    end
+  end
+
+  def test_load_plugins_prefers_abi_scoped_stub_over_root_stub_for_the_same_gem
+    plugins_dir = Gem.plugindir
+    current_abi_plugins_dir = File.join plugins_dir, Gem.ruby_abi
+
+    write_file File.join(plugins_dir, "mygem_plugin.rb") do |fp|
+      fp.puts "class TestGem; PLUGINS_LOADED << 'root'; end"
+    end
+
+    write_file File.join(current_abi_plugins_dir, "mygem_plugin.rb") do |fp|
+      fp.puts "class TestGem; PLUGINS_LOADED << 'abi'; end"
+    end
+
+    Gem.load_plugins
+
+    assert_equal %w[abi], PLUGINS_LOADED
   end
 
   def test_load_user_installed_plugins

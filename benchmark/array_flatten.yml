@@ -4,16 +4,26 @@ prelude: |
   small_pairs_ary = [[1, 2]] * 5
   large_pairs_ary = [[1, 2]] * 100
   mostly_flat_ary = 100.times.to_a.push([101, 102])
+  small_nested_ary = [small_flat_ary]
+  large_nested_ary = [large_flat_ary]
 
 benchmark:
   small_flat_ary.flatten: small_flat_ary.flatten
-  small_flat_ary.flatten!: small_flat_ary.flatten!
+  small_flat_ary.flatten!: small_flat_ary.dup.flatten!
   large_flat_ary.flatten: large_flat_ary.flatten
-  large_flat_ary.flatten!: large_flat_ary.flatten!
+  large_flat_ary.flatten!: large_flat_ary.dup.flatten!
   small_pairs_ary.flatten: small_pairs_ary.flatten
   small_pairs_ary.flatten!: small_pairs_ary.dup.flatten!
   large_pairs_ary.flatten: large_pairs_ary.flatten
   large_pairs_ary.flatten!: large_pairs_ary.dup.flatten!
   mostly_flat_ary.flatten: mostly_flat_ary.flatten
   mostly_flat_ary.flatten!: mostly_flat_ary.dup.flatten!
+  small_nested_ary.flatten: small_nested_ary.flatten
+  small_nested_ary.flatten!: small_nested_ary.dup.flatten!
+  large_nested_ary.flatten: large_nested_ary.flatten
+  large_nested_ary.flatten!: large_nested_ary.dup.flatten!
+  small_nested_ary.flatten(1): small_nested_ary.flatten(1)
+  small_nested_ary.flatten!(1): small_nested_ary.dup.flatten!(1)
+  large_nested_ary.flatten(1): large_nested_ary.flatten(1)
+  large_nested_ary.flatten!(1): large_nested_ary.dup.flatten!(1)
 loop_count: 10000

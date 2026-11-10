@@ -26,7 +26,7 @@ module SyntaxSuggest
   #
   # At this point it has no where else to expand, and it will yield this inner
   # code as a block
-  class ParseBlocksFromIndentLine
+  class ParseBlocksFromIndentLine # :nodoc:
     attr_reader :code_lines
 
     def initialize(code_lines:)

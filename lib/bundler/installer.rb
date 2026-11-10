@@ -83,6 +83,12 @@ module Bundler
         install(options)
 
         Gem::Specification.reset # invalidate gem specification cache so that installed gems are immediately available
+        # Drop the source caches too, since releasing resolution memory dropped
+        # the source indexes. A resolution happening after this point would
+        # otherwise rebuild them around a snapshot of installed gems taken
+        # before the install, and materialize against remote specs that don't
+        # know where the gems they stand for ended up.
+        @definition.sources.clear_cache
 
         lock
         Standalone.new(options[:standalone], @definition).generate if options[:standalone]
@@ -97,7 +103,7 @@ module Bundler
 
       if options[:binstubs_cmd] && spec.executables.empty?
         options = {}
-        spec.runtime_dependencies.each do |dep|
+        Override.rewrite_dependencies(@definition.overrides, spec.name, spec.runtime_dependencies).each do |dep|
           bins = @definition.specs[dep].first.executables
           options[dep.name] = bins unless bins.empty?
         end
@@ -120,6 +126,8 @@ module Bundler
       ruby_command = ruby_command
       template_path = File.expand_path("templates/Executable", __dir__)
       template = File.read(template_path)
+
+      Bundler.mkdir_p(bin_path)
 
       exists = []
       spec.executables.each do |executable|
@@ -166,6 +174,8 @@ module Bundler
       template = File.read(File.expand_path("templates/Executable.standalone", __dir__))
       ruby_command = Thor::Util.ruby_command
       ruby_command = ruby_command
+
+      Bundler.mkdir_p(bin_path)
 
       spec.executables.each do |executable|
         next if executable == "bundle"

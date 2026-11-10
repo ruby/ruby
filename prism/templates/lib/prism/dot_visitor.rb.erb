@@ -4,7 +4,7 @@
 require "cgi/escape"
 require "cgi/util" unless defined?(CGI::EscapeExt)
 
-module Prism
+module Ruby::Prism
   # This visitor provides the ability to call Node#to_dot, which converts a
   # subtree into a graphviz dot graph.
   class DotVisitor < Visitor
@@ -88,7 +88,7 @@ module Prism
       #: () -> String
       def to_dot
         <<~DOT
-          digraph "Prism" {
+          digraph "Ruby::Prism" {
             node [
               fontname=\"Courier New\"
               shape=plain
@@ -112,14 +112,14 @@ module Prism
     attr_reader :digraph #: Digraph
 
     # Initialize a new dot visitor.
-    #--
+    #
     #: () -> void
     def initialize
       @digraph = Digraph.new
     end
 
     # Convert this visitor into a graphviz dot graph string.
-    #--
+    #
     #: () -> String
     def to_dot
       digraph.to_dot
@@ -139,15 +139,15 @@ module Prism
 
       # <%= field.name %>
       <%- case field -%>
-      <%- when Prism::Template::NodeField -%>
+      <%- when Ruby::Prism::Template::NodeField -%>
       table.field("<%= field.name %>", port: true)
       digraph.edge("#{id}:<%= field.name %> -> #{node_id(node.<%= field.name %>)};")
-      <%- when Prism::Template::OptionalNodeField -%>
+      <%- when Ruby::Prism::Template::OptionalNodeField -%>
       unless (<%= field.name %> = node.<%= field.name %>).nil?
         table.field("<%= field.name %>", port: true)
         digraph.edge("#{id}:<%= field.name %> -> #{node_id(<%= field.name %>)};")
       end
-      <%- when Prism::Template::NodeListField -%>
+      <%- when Ruby::Prism::Template::NodeListField -%>
       if node.<%= field.name %>.any?
         table.field("<%= field.name %>", port: true)
 
@@ -159,11 +159,11 @@ module Prism
       else
         table.field("<%= field.name %>", "[]")
       end
-      <%- when Prism::Template::StringField, Prism::Template::ConstantField, Prism::Template::OptionalConstantField, Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::ConstantListField, Prism::Template::IntegerField, Prism::Template::DoubleField -%>
+      <%- when Ruby::Prism::Template::StringField, Ruby::Prism::Template::ConstantField, Ruby::Prism::Template::OptionalConstantField, Ruby::Prism::Template::UInt8Field, Ruby::Prism::Template::UInt32Field, Ruby::Prism::Template::ConstantListField, Ruby::Prism::Template::IntegerField, Ruby::Prism::Template::DoubleField -%>
       table.field("<%= field.name %>", node.<%= field.name %>.inspect)
-      <%- when Prism::Template::LocationField -%>
+      <%- when Ruby::Prism::Template::LocationField -%>
       table.field("<%= field.name %>", location_inspect(node.<%= field.name %>))
-      <%- when Prism::Template::OptionalLocationField -%>
+      <%- when Ruby::Prism::Template::OptionalLocationField -%>
       unless (<%= field.name %> = node.<%= field.name %>).nil?
         table.field("<%= field.name %>", location_inspect(<%= field.name %>))
       end
@@ -185,14 +185,14 @@ module Prism
     private
 
     # Generate a unique node ID for a node throughout the digraph.
-    #--
+    #
     #: (node) -> String
     def node_id(node) # :nodoc:
       "Node_#{node.object_id}"
     end
 
     # Inspect a location to display the start and end line and columns in bytes.
-    #--
+    #
     #: (Location) -> String
     def location_inspect(location) # :nodoc:
       "(#{location.start_line},#{location.start_column})-(#{location.end_line},#{location.end_column})"
@@ -201,7 +201,7 @@ module Prism
 
     # Inspect a node that has <%= flag.human %> flags to display the flags as a
     # comma-separated list.
-    #--
+    #
     #: (<%= nodes.filter_map { |node| node.name if node.flags == flag }.join(" | ") %> node) -> String
     def <%= flag.human %>_inspect(node) # :nodoc:
       flags = [] #: Array[String]

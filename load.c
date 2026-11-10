@@ -16,6 +16,7 @@
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
+#include "prism_compile.h"
 #include "probes.h"
 #include "darray.h"
 #include "ruby/encoding.h"
@@ -55,13 +56,13 @@ enum expand_type {
    string objects in $LOAD_PATH are frozen.
  */
 static void
-rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_relative, int *has_non_cache, long *maxlen_out)
+rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_relative, int *has_non_cache, rb_len_t *maxlen_out)
 {
     VALUE load_path = box->load_path;
     VALUE expanded_load_path = box->expanded_load_path;
     VALUE snapshot;
     VALUE ary;
-    long i, maxlen = 0;
+    rb_len_t i, maxlen = 0;
 
     ary = rb_ary_hidden_new(RARRAY_LEN(load_path));
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
@@ -82,7 +83,7 @@ rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_r
                 (type == EXPAND_NON_CACHE)) {
                     /* Use cached expanded path. */
                     expanded_path = RARRAY_AREF(expanded_load_path, i);
-                    long len = RSTRING_LEN(expanded_path);
+                    rb_len_t len = RSTRING_LEN(expanded_path);
                     if (len > maxlen) maxlen = len;
                     rb_ary_push(ary, expanded_path);
                     continue;
@@ -98,7 +99,7 @@ rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_r
         as_str = rb_get_path_check_convert(as_str);
         expanded_path = rb_check_realpath(Qnil, as_str, NULL);
         if (NIL_P(expanded_path)) expanded_path = as_str;
-        long len = RSTRING_LEN(expanded_path);
+        rb_len_t len = RSTRING_LEN(expanded_path);
         if (len > maxlen) maxlen = len;
         rb_ary_push(ary, rb_fstring(expanded_path));
     }
@@ -117,7 +118,7 @@ get_expanded_load_path(rb_box_t *box)
     const VALUE non_cache = Qtrue;
     const VALUE load_path_snapshot = box->load_path_snapshot;
     const VALUE load_path = box->load_path;
-    long maxlen = 0;
+    rb_len_t maxlen = 0;
 
     if (!rb_ary_shared_with_p(load_path_snapshot, load_path)) {
         /* The load path was modified. Rebuild the expanded load path. */
@@ -163,7 +164,7 @@ get_expanded_load_path(rb_box_t *box)
 }
 
 VALUE
-rb_get_expanded_load_path(long *maxlen)
+rb_get_expanded_load_path(rb_len_t *maxlen)
 {
     rb_box_t *box = (rb_box_t *)rb_loading_box();
     VALUE load_path = get_expanded_load_path((rb_box_t *)box);
@@ -208,8 +209,8 @@ feature_key(const char *str, size_t len)
 static bool
 is_rbext_path(VALUE feature_path)
 {
-    long len = RSTRING_LEN(feature_path);
-    long rbext_len = rb_strlen_lit(".rb");
+    rb_len_t len = RSTRING_LEN(feature_path);
+    rb_len_t rbext_len = rb_strlen_lit(".rb");
     if (len <= rbext_len) return false;
     return IS_RBEXT(RSTRING_PTR(feature_path) + len - rbext_len);
 }
@@ -394,14 +395,17 @@ get_loaded_features_index(const rb_box_t *box)
                 rb_ary_store(features, i, as_str);
             features_index_add(box, as_str, INT2FIX(i));
         }
-        /* The user modified $LOADED_FEATURES, so we should restore the changes. */
-        if (!rb_ary_shared_with_p(features, box->loaded_features)) {
+        /* The user modified $LOADED_FEATURES, so we should restore the changes.
+         * A frozen array is never shared, so this check always fires for one.
+         * Let rb_provide_feature() report the freeze instead. */
+        if (!OBJ_FROZEN(box->loaded_features) &&
+            !rb_ary_shared_with_p(features, box->loaded_features)) {
             rb_ary_replace(box->loaded_features, features);
         }
         reset_loaded_features_snapshot(box);
 
         features = box->loaded_features_snapshot;
-        long j = RARRAY_LEN(features);
+        rb_len_t j = RARRAY_LEN(features);
         for (i = 0; i < j; i++) {
             VALUE as_str = rb_ary_entry(features, i);
             VALUE realpath = rb_hash_aref(previous_realpath_map, as_str);
@@ -429,11 +433,11 @@ get_loaded_features_index(const rb_box_t *box)
    or have any value matching `%r{^\.[^./]*$}`.
 */
 static VALUE
-loaded_feature_path(const char *name, long vlen, const char *feature, long len,
+loaded_feature_path(const char *name, rb_len_t vlen, const char *feature, rb_len_t len,
                     int type, VALUE load_path)
 {
-    long i;
-    long plen;
+    rb_len_t i;
+    rb_len_t plen;
     const char *e;
 
     if (vlen < len+1) return 0;
@@ -463,7 +467,7 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
         VALUE p = RARRAY_AREF(load_path, i);
         const char *s = StringValuePtr(p);
-        long n = RSTRING_LEN(p);
+        rb_len_t n = RSTRING_LEN(p);
 
         if (n != plen) continue;
         if (n && strncmp(name, s, n)) continue;
@@ -474,7 +478,7 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
 
 struct loaded_feature_searching {
     const char *name;
-    long len;
+    rb_len_t len;
     int type;
     VALUE load_path;
     const char *result;
@@ -503,7 +507,7 @@ rb_feature_p(const rb_box_t *box, const char *feature, const char *ext, int rb, 
 {
     VALUE features, this_feature_index = Qnil, v, p, load_path = 0;
     const char *f, *e;
-    long i, len, elen, n;
+    rb_len_t i, len, elen, n;
     st_table *loading_tbl, *features_index;
     st_data_t data;
     st_data_t key;
@@ -731,6 +735,46 @@ realpath_internal_cached(VALUE hash, VALUE path)
     return realpath;
 }
 
+struct load_prism_args {
+    pm_parse_result_t result;
+    VALUE fname;
+    VALUE realpath_map;
+    const rb_iseq_t *iseq;
+    VALUE error;
+};
+
+static VALUE
+load_prism_parse(VALUE args_ptr)
+{
+    struct load_prism_args *args = (struct load_prism_args *)args_ptr;
+    pm_parse_result_t *result = &args->result;
+    VALUE fname = args->fname;
+
+    VALUE error = pm_load_parse_file(result, fname, NULL);
+    if (error != Qnil) {
+        args->error = error;
+        return Qnil;
+    }
+
+    int error_state;
+    args->iseq = pm_iseq_new_top(&result->node, rb_fstring_lit("<top (required)>"), fname,
+                                 realpath_internal_cached(args->realpath_map, fname), NULL, &error_state);
+    if (error_state) {
+        RUBY_ASSERT(args->iseq == NULL);
+        rb_jump_tag(error_state);
+    }
+
+    return Qnil;
+}
+
+static VALUE
+load_prism_free_result(VALUE args_ptr)
+{
+    struct load_prism_args *args = (struct load_prism_args *)args_ptr;
+    pm_parse_result_free(&args->result);
+    return Qnil;
+}
+
 static inline void
 load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
 {
@@ -744,29 +788,27 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
         VALUE realpath_map = box->loaded_features_realpath_map;
 
         if (rb_ruby_prism_p()) {
-            pm_parse_result_t result;
-            pm_parse_result_init(&result);
-            result.node.coverage_enabled = 1;
+            struct load_prism_args args = {
+                .fname = fname,
+                .realpath_map = realpath_map,
+                .iseq = NULL,
+                .error = Qnil,
+            };
+            pm_parse_result_init(&args.result);
+            args.result.node.coverage_enabled = 1;
 
-            VALUE error = pm_load_parse_file(&result, fname, NULL);
+            /* The parse result must be freed even if parsing or compiling
+             * raises (e.g. an asynchronously raised IOError while reading a
+             * pipe), so wrap it in rb_ensure. */
+            rb_ensure(load_prism_parse, (VALUE)&args, load_prism_free_result, (VALUE)&args);
 
-            if (error == Qnil) {
-                int error_state;
-                iseq = pm_iseq_new_top(&result.node, rb_fstring_lit("<top (required)>"), fname, realpath_internal_cached(realpath_map, fname), NULL, &error_state);
-
-                pm_parse_result_free(&result);
-
-                if (error_state) {
-                    RUBY_ASSERT(iseq == NULL);
-                    rb_jump_tag(error_state);
-                }
-            }
-            else {
+            if (args.error != Qnil) {
                 rb_vm_pop_frame(ec);
                 RB_GC_GUARD(v);
-                pm_parse_result_free(&result);
-                rb_exc_raise(error);
+                rb_exc_raise(args.error);
             }
+
+            iseq = args.iseq;
         }
         else {
             rb_ast_t *ast;
@@ -1071,7 +1113,7 @@ rb_require_relative_entrypoint(VALUE fname)
  * raised. Returns +true+ if the file was loaded and +false+ if the file was
  * already loaded before.
  */
-VALUE
+static VALUE
 rb_f_require_relative(VALUE obj, VALUE fname)
 {
     return rb_require_relative_entrypoint(fname);
@@ -1080,7 +1122,7 @@ rb_f_require_relative(VALUE obj, VALUE fname)
 static char *
 find_ext(VALUE str, char **ptr, const char **end)
 {
-    long len = RSTRING_LEN(str);
+    rb_len_t len = RSTRING_LEN(str);
     *ptr = RSTRING_PTR(str);
     *end = *ptr + len;
     return memrchr(*ptr, '.', len);
@@ -1218,12 +1260,13 @@ load_ext(VALUE path, VALUE fname)
     const rb_box_t *box = rb_loading_box();
     VALUE cleanup = 0;
     if (BOX_USER_P(box)) {
-        loaded = rb_box_local_extension(box->box_object, fname, path, &cleanup);
+        loaded = rb_box_local_extension(box->box_object, path, &cleanup);
     }
     rb_scope_visibility_set(METHOD_VISI_PUBLIC);
     void *handle = dln_load_feature(RSTRING_PTR(loaded), RSTRING_PTR(fname));
     if (cleanup) {
         rb_box_cleanup_local_extension(cleanup);
+        rb_box_defer_unload_local_extension(handle);
     }
     RB_GC_GUARD(loaded);
     RB_GC_GUARD(fname);

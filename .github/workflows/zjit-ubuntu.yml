@@ -30,6 +30,8 @@ env:
   # Work around transient crates.io download failures (curl HTTP/2 framing / partial transfer)
   CARGO_NET_RETRY: 10
   CARGO_HTTP_MULTIPLEXING: false
+  RUST_BACKTRACE: 1
+  ZJIT_RB_BUG: 1
 
 jobs:
   lint:
@@ -125,8 +127,6 @@ jobs:
       TESTOPTS: ${{ matrix.testopts }}
       RUBY_DEBUG: ci
       BUNDLE_JOBS: 8 # for yjit-bench
-      RUST_BACKTRACE: 1
-      ZJIT_RB_BUG: 1
 
     runs-on: ${{ matrix.runs-on || 'ubuntu-22.04' }}
 
@@ -147,12 +147,12 @@ jobs:
 
       - uses: ./.github/actions/setup/ubuntu
 
-      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: '3.1'
           bundler: none
 
-      - uses: taiki-e/install-action@7f4eb899022d8fe70b20c4f3de697aa85c309026 # v2.85.11
+      - uses: taiki-e/install-action@3a3daafd3b7f23b8f65d9f5ba2db203fb59b79e2 # v2.90.2
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
@@ -216,10 +216,16 @@ jobs:
         continue-on-error: true
         timeout-minutes: 3
 
+      - name: Set up crash dumps
+        run: |
+          mkdir "${GITHUB_WORKSPACE}/crashdumps"
+          echo "${GITHUB_WORKSPACE}/crashdumps/core.%p" | sudo tee /proc/sys/kernel/core_pattern
+
       - name: make ${{ matrix.test_task }}
         run: |
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
           test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
+          ulimit -c unlimited
 
           set -x
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"} \
@@ -238,6 +244,7 @@ jobs:
           CLANG_PATH: ${{ matrix.clang_path }}
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
           LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
+          LAUNCHABLE_TOKEN: '' # see .github/actions/crashdumps
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: Dump crash logs
@@ -246,6 +253,12 @@ jobs:
         run: |
           tail --verbose --lines=+1 rb_crash_*.txt
           exit 1
+
+      - name: Upload crash dumps
+        uses: ./.github/actions/crashdumps
+        with:
+          name: crashdumps-${{ github.job }}-${{ strategy.job-index }}
+        if: ${{ always() && hashFiles('crashdumps/core.*') != '' }}
 
       - uses: ./.github/actions/slack
         with:
@@ -317,8 +330,6 @@ jobs:
       - name: Run ruby-bench
         run: ruby run_benchmarks.rb -e "zjit::../build/install/bin/ruby ${{ matrix.ruby_opts }}" ${{ matrix.bench_opts }}
         working-directory: ruby-bench
-        env:
-          BUNDLER_VERSION: 0
 
       - uses: ./.github/actions/slack
         with:

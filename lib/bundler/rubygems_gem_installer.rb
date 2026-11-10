@@ -4,6 +4,11 @@ require "rubygems/installer"
 
 module Bundler
   class RubyGemsGemInstaller < Gem::Installer
+    # Can be removed once RubyGems 4.0.0 support is dropped
+    unless private_method_defined?(:assign_content_address)
+      private def assign_content_address; end
+    end
+
     # Cap how many jobserver slots a single gem's `make` may grab so that one
     # gem with many recipes doesn't starve the others sharing the pool. Beyond
     # a handful of jobs the extra parallelism rarely pays off in practice.
@@ -14,6 +19,8 @@ module Bundler
     end
 
     def install
+      assign_content_address
+
       pre_install_checks
 
       run_pre_install_hooks

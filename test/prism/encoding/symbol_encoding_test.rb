@@ -4,7 +4,7 @@ return if RUBY_ENGINE != "ruby"
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class SymbolEncodingTest < TestCase
     each_encoding do |encoding, _|
       define_method(:"test_symbols_#{encoding.name}") do
@@ -23,7 +23,7 @@ module Prism
     end
 
     def actual_encoding(source, encoding)
-      result = Prism.parse(source)
+      result = Ruby::Prism.parse(source)
 
       if result.success?
         symbol = result.statement

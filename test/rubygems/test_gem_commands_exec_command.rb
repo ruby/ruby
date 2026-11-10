@@ -143,6 +143,28 @@ class TestGemCommandsExecCommand < Gem::TestCase
     end
   end
 
+  def test_gem_with_executable_from_custom_source
+    spec_fetcher "http://other-gems.example.com/" do |fetcher|
+      fetcher.gem "a", 2 do |s|
+        s.executables = %w[a]
+        s.files = %w[bin/a lib/a.rb]
+
+        write_file File.join(*%W[gems #{s.original_name} bin a]) do |f|
+          f << "Gem.ui.say #{s.original_name.dump}"
+        end
+      end
+    end
+
+    util_clear_gems
+
+    use_ui @ui do
+      @cmd.invoke "--source", "http://other-gems.example.com", "a:2"
+      assert_equal "a-2\n", @ui.output
+    end
+
+    assert_include Gem.sources.to_a, "http://other-gems.example.com/"
+  end
+
   def test_gem_with_platforms
     spec_fetcher do |fetcher|
       fetcher.download "a", 2 do |s|

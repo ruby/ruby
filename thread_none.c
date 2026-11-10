@@ -42,12 +42,10 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 {
 }
 
-#if 0
-static void
+void
 rb_thread_sched_destroy(struct rb_thread_sched *sched)
 {
 }
-#endif
 
 // Do nothing for mutex guard
 void
@@ -294,6 +292,12 @@ rb_del_running_thread(rb_thread_t *th)
 }
 
 void
+rb_ractor_sched_wait_terminate(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec)
+{
+    // do nothing: with no threads there is no other Ractor to wait for
+}
+
+void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
     // do nothing
@@ -311,6 +315,26 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
     // do nothing
 }
 
+void
+rb_ractor_sched_barrier_end(rb_vm_t *vm, rb_ractor_t *cr)
+{
+    // do nothing
+}
+
+NORETURN(void rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf, void *ptr));
+void
+rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf, void *ptr)
+{
+    // nothing can wake this: with no threads there is nobody to send
+    rb_bug("unreachable");
+}
+
+void
+rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
+{
+    // do nothing
+}
+
 
 
 bool
@@ -323,6 +347,12 @@ void *
 rb_thread_prevent_fork(void *(*func)(void *), void *data)
 {
     return func(data);
+}
+
+void
+rb_thread_register_exiting(void)
+{
+    // do nothing
 }
 
 void

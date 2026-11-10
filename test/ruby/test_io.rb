@@ -10,6 +10,7 @@ require 'stringio'
 require 'timeout'
 require 'tempfile'
 require 'weakref'
+require "rbconfig/sizeof"
 
 class TestIO < Test::Unit::TestCase
   module Feature
@@ -1076,10 +1077,6 @@ class TestIO < Test::Unit::TestCase
   end if defined? UNIXSocket
 
   def test_copy_stream_socket4
-    if RUBY_PLATFORM =~ /mingw|mswin/
-      omit "pread(2) is not implemented."
-    end
-
     with_bigsrc {|bigsrc, bigcontent|
       File.open(bigsrc) {|f|
         assert_equal(0, f.pos)
@@ -1099,10 +1096,6 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_socket5
-    if RUBY_PLATFORM =~ /mingw|mswin/
-      omit "pread(2) is not implemented."
-    end
-
     with_bigsrc {|bigsrc, bigcontent|
       File.open(bigsrc) {|f|
         assert_equal(bigcontent[0,100], f.read(100))
@@ -1123,10 +1116,6 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_socket6
-    if RUBY_PLATFORM =~ /mingw|mswin/
-      omit "pread(2) is not implemented."
-    end
-
     mkcdtmpdir {
       megacontent = "abc" * 1234567
       File.open("megasrc", "w") {|f| f << megacontent }
@@ -1150,9 +1139,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_socket7
-    if RUBY_PLATFORM =~ /mingw|mswin/
-      omit "pread(2) is not implemented."
-    end
+    omit "fork is not supported" unless Process.respond_to?(:fork)
 
     GC.start
     mkcdtmpdir {
@@ -1599,6 +1586,21 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_write_with_many_arguments_is_flushed_when_sync
+    # Under sync mode, write(*args) must be observably atomic: all data must
+    # reach the peer immediately, not be left buffered until close. This
+    # covers argument counts above IOV_MAX, where the internal writev path
+    # previously coalesced into the buffer without flushing.
+    [10, 1023, 1024, 2000].each do |n|
+      IO.pipe do |r, w|
+        assert_predicate(w, :sync)
+        w.write(*(["a"] * n))
+        assert_equal("a" * n, r.read_nonblock(n),
+                     "sync write with #{n} arguments was not flushed")
+      end
+    end
+  end
+
   def test_write_with_multiple_nonstring_arguments
     assert_in_out_err([], "STDOUT.write(:foo, :bar)", ["foobar"])
   end
@@ -1727,6 +1729,17 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_read_with_too_big_length
+    pipe(proc do |w|
+      w.write "foo\n" + "bar" * 100
+      w.close
+    end, proc do |r|
+      r.gets
+      max = 2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 1
+      assert_raise(ArgumentError) {r.read(max - 1, String.new(encoding: Encoding::UTF_16LE))}
+    end)
+  end
+
   def test_readpartial_buffer_error
     with_pipe do |r, w|
       s = ""
@@ -1737,6 +1750,63 @@ class TestIO < Test::Unit::TestCase
       assert_equal("", s)
     end
   end if /cygwin/ !~ RUBY_PLATFORM
+
+  def test_readpartial_gc_compact
+    # [Bug #22467]
+    omit "fork is not supported" unless Process.respond_to?(:fork)
+    omit "compaction not supported" unless GC.respond_to?(:compact)
+
+    assert_separately(["-rsocket"], <<~RUBY, timeout: 60)
+      begin
+        socket, peer = UNIXSocket.pair
+        delays, delays_in = IO.pipe
+        # The data must come from another process: no thread in this one runs
+        # while it compacts.
+        writer = fork { loop { sleep(delays.read(1).ord / 1000.0); peer.write('x') } }
+
+        buffers = Queue.new
+        reader = Thread.new { loop { socket.readpartial(512, buffers.pop) } }
+        reader.report_on_exception = false
+
+        assert_nothing_raised do
+          20.times do
+            strings = Array.new(200_000) { 'y' * 500 }
+            pinned = {}.compare_by_identity
+            _movable = strings.each_slice(20).map {|slice| pinned[slice[0]] = true; slice[10] }
+            buffers << strings[100_000]
+            strings = nil
+            sleep 0.01
+            delays_in.write(rand(12).chr)
+            GC.compact
+            reader.join(0)
+          end
+        end
+      ensure
+        if writer
+          begin
+            Process.kill(:KILL, writer)
+            Process.waitpid(writer)
+          rescue Errno::ESRCH, Errno::ECHILD
+          end
+        end
+        (reader.kill; reader.join) if reader
+        socket&.close
+        peer&.close
+        delays&.close
+        delays_in&.close
+      end
+    RUBY
+  end
+
+  def test_read_interrupted_by_wakeup
+    with_pipe do |r, w|
+      t = Thread.new { r.read }
+      Thread.pass until t.stop?
+      100_000.times { t.wakeup; w.write("x") }
+      w.close
+      assert_equal(100_000, t.value.size)
+    end
+  end
 
   def test_read
     pipe(proc do |w|
@@ -3305,6 +3375,10 @@ class TestIO < Test::Unit::TestCase
 
   def test_uninitialized
     assert_raise(IOError) { IO.allocate.print "" }
+    assert_raise(IOError) { IO.allocate.external_encoding }
+    assert_raise(IOError) { IO.allocate.internal_encoding }
+    assert_raise(IOError) { IO.allocate.reopen(__FILE__) }
+    assert_raise(IOError) { IO.allocate.reopen(IO::NULL) }
   end
 
   def test_nofollow
@@ -3353,6 +3427,40 @@ __END__
         }
       end
     end.each {|th| th.join}
+  end
+
+  def test_close_discards_write_buffer_in_sync_mode
+    IO.pipe do |r, w|
+      w.sync = false
+      w.write("buffered")
+
+      # Enabling sync marks the write buffer as non-authoritative, so close
+      # must abandon the pending bytes rather than replaying them.
+      w.sync = true
+      assert_nothing_raised { w.close }
+
+      assert_equal("", r.read)
+    end
+  end
+
+  def test_close_flushes_write_buffer_when_not_sync
+    IO.pipe do |r, w|
+      w.sync = false
+      w.write("data")
+      w.close
+      assert_equal("data", r.read)
+    end
+  end
+
+  def test_sync_write_is_not_lost_on_close
+    IO.pipe do |r, w|
+      w.sync = true
+      payload = "x" * 200_000
+      reader = Thread.new { r.read }
+      w.write(payload)
+      w.close
+      assert_equal(payload, reader.value)
+    end
   end
 
   def test_flush_in_finalizer1
@@ -3606,8 +3714,6 @@ __END__
   end
 
   def test_cross_thread_close_stdio
-    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
-
     assert_separately([], <<-'end;')
       IO.pipe do |r,w|
         $stdin.reopen(r)
@@ -3904,6 +4010,9 @@ __END__
       msg = /can't modify string; temporarily locked/
       assert_raise_with_message(RuntimeError, msg) do
         buf.replace("")
+      end
+      assert_raise_with_message(RuntimeError, msg) do
+        buf.__send__(:initialize, encoding: Encoding::UTF_16LE)
       end
       assert_predicate(th, :alive?)
       w.write(data)
@@ -4302,8 +4411,6 @@ __END__
   end
 
   def test_race_closed_stream
-    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
-
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       bug13158 = '[ruby-core:79262] [Bug #13158]'
@@ -4398,8 +4505,6 @@ __END__
     end
 
     def test_closed_stream_in_rescue
-      omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
-
       assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
       begin;
       10.times do
@@ -4462,6 +4567,38 @@ __END__
     end
   end if Socket.const_defined?(:MSG_OOB)
 
+  def test_select_many_sockets
+    pairs = []
+    TCPServer.open('localhost', 0) do |svr|
+      # more than FD_SETSIZE on Windows
+      70.times {pairs << [TCPSocket.new('localhost', svr.addr[1]), svr.accept]}
+    end
+    readers = pairs.map(&:last)
+    # best effort to write after select has polled once, which Ruby cannot observe
+    th = Thread.new {sleep 0.2; pairs.last.first.write("x")}
+    assert_equal([[readers.last], [], []], IO.select(readers, nil, pairs.map(&:first), 10))
+    IO.pipe do |r, w|
+      writers = [*pairs.map(&:first), w]
+      assert_equal([[], writers, []], IO.select(nil, writers, nil, 10))
+    end
+  ensure
+    th&.join
+    pairs.flatten.each(&:close)
+  end
+
+  def test_select_buffered_socket
+    pairs = []
+    TCPServer.open('localhost', 0) do |svr|
+      2.times {pairs << [TCPSocket.new('localhost', svr.addr[1]), svr.accept]}
+    end
+    readers = pairs.map(&:last)
+    pairs.first.first.write("xy")
+    assert_equal("x", readers.first.getc)
+    assert_equal([[readers.first], [], []], IO.select(readers, nil, nil, 1))
+  ensure
+    pairs.flatten.each(&:close)
+  end
+
   def test_select_timeout
     assert_equal(nil, IO.select(nil,nil,nil,0))
     assert_equal(nil, IO.select(nil,nil,nil,0.0))
@@ -4476,6 +4613,24 @@ __END__
       assert_equal(ret, IO.select([r],nil,nil,0.1))
       assert_equal(ret, IO.select([r],nil,nil,1))
       assert_equal(ret, IO.select([r],nil,nil,Float::INFINITY))
+    }
+  end
+
+  # A select skipped for a pending interrupt (another thread asks for the GVL) was reported as a timeout.
+  def test_select_zero_timeout_at_eof_with_another_thread
+    IO.pipe {|r, w|
+      w.close
+      th = Thread.new { loop { Thread.pass } }
+      begin
+        miss = 0
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 1
+        while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+          miss += 1 unless IO.select([r], nil, nil, 0)
+        end
+        assert_equal(0, miss)
+      ensure
+        th.kill.join
+      end
     }
   end
 

@@ -1,0 +1,23 @@
+prelude: |
+  # frozen_string_literal: true
+
+  require 'cgi/escape'
+
+  STR = ((("a" * 31) + "<") * 1000).freeze
+
+  ESCAPED_CHARS = {
+    "\\" => "&#39",
+    "\"" => "&quot;",
+    ">" => '&gt;',
+    "<" => '&lt;',
+    "&" => '&amp;',
+  }.freeze
+  ESCAPE_PATTERN = Regexp.union(ESCAPED_CHARS.keys)
+
+benchmark:
+  tr_escape: |
+    STR.tr(ESCAPED_CHARS)
+  gsub_escape: |
+    STR.gsub(ESCAPE_PATTERN, ESCAPED_CHARS)
+  cgi_escape: |
+    CGI.escape_html(STR)

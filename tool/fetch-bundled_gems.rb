@@ -16,6 +16,17 @@ BEGIN {
   ARGF.eof?
   FileUtils.mkdir_p(dir)
   Dir.chdir(dir)
+
+  # Retry so that a transient network failure does not abort the build.
+  def with_retry(tries = 3)
+    tries.times do |i|
+      sleep 5 if i > 0
+      if result = yield
+        return result
+      end
+    end
+    nil
+  end
 }
 
 n, v, u, r = $F
@@ -25,7 +36,7 @@ next if bundled_gems&.all? {|pat| !File.fnmatch?(pat, n)}
 
 unless File.exist?("#{n}/.git")
   puts "retrieving #{color.notice(n)} ..."
-  system(*%W"git clone --depth=1 --no-tags #{u} #{n}") or abort
+  with_retry {system(*%W"git clone --depth=1 --no-tags #{u} #{n}")} or abort
 end
 
 candidates = r ? [r] : ["v#{v}", v]
@@ -36,13 +47,15 @@ c = candidates.find do |c|
   system("git", "rev-parse", "-q", "--verify", "#{c}^{commit}", out: File::NULL, err: File::NULL, chdir: n)
 end
 
-c ||= candidates.find do |c|
-  puts "fetching #{n} #{color.notice(c)} ..."
-  system("git", "fetch", "origin", r || "refs/tags/#{c}:refs/tags/#{c}", chdir: n)
+c ||= with_retry do
+  candidates.find do |c|
+    puts "fetching #{n} #{color.notice(c)} ..."
+    system("git", "fetch", "origin", r || "refs/tags/#{c}:refs/tags/#{c}", chdir: n)
+  end
 end or abort
 
 checkout = %w"git -c advice.detachedHead=false checkout"
-info = %[, r=#{color.info(r)}] if r
+info = (%[, r=#{color.info(r)}] if r)
 puts "checking out #{color.notice(c)} (v=#{color.info(v)}#{info}) ..."
 unless system(*checkout, c, "--", chdir: n)
   abort if r or !system(*checkout, v, "--", chdir: n)

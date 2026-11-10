@@ -54,7 +54,7 @@ $(RUST_LIB): $(srcdir)/ruby.rs target/.rustc-version
 JIT_RLIB = $(TOP_BUILD_DIR)/$(RLIB_DIR)/libjit.rlib
 $(YJIT_RLIB): $(JIT_RLIB)
 $(ZJIT_RLIB): $(JIT_RLIB)
-$(JIT_RLIB): target/.rustc-version
+$(JIT_RLIB): $(top_srcdir)/jit/src/lib.rs target/.rustc-version
 	$(ECHO) 'building $(@F)'
 	$(gnumake_recursive)$(Q) $(RUSTC) --crate-name=jit \
 	    --edition=2024 \
@@ -81,12 +81,12 @@ rustc-version-check: target/.rustc-version
 
 target/.rustc-version: PHONY
 	$(eval prev_version := $(if $(wildcard $@),$(shell cat $@)))
-	$(eval curr_version := $(shell $(RUSTC) -V | cut -d' ' -f2))
+	$(eval curr_version := $(shell $(RUSTC) -V))
 	$(eval clean := $(filter-out $(prev_version),$(curr_version)))
-	$(if $(clean),$(ECHO) Cleaning $(@D) for rustc $(curr_version))
+	$(if $(clean),$(ECHO) "Cleaning $(@D) for $(curr_version)")
 	$(if $(clean),$(Q)$(RMALL) $(@D))
 	$(if $(clean),$(Q)$(MAKEDIRS) $(@D))
-	$(if $(clean),$(Q)echo $(curr_version) > $@)
+	$(if $(clean),$(Q)echo "$(curr_version)" > $@)
 
 # For Darwin only: a list of symbols that we want the glommed Rust static lib to export.
 # Unfortunately, using wildcard like '_rb_*' with -exported-symbol does not work, at least

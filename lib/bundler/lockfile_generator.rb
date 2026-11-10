@@ -19,7 +19,10 @@ module Bundler
       add_sources
       add_platforms
       add_dependencies
+      add_overrides
+      add_content_addresses
       add_checksums
+      add_ruby_abis
       add_locked_ruby_version
       add_bundled_with
 
@@ -66,13 +69,50 @@ module Bundler
       end
     end
 
+    def add_overrides
+      overrides = definition.overrides_to_lock
+      add_section("OVERRIDES", overrides) unless overrides.empty?
+    end
+
+    def add_content_addresses
+      content_addresses = definition.resolve.flat_map do |spec|
+        next [] if spec.platform == Gem::Platform::RUBY
+
+        spec.content_addresses.zip(spec.content_addressed_full_names).map do |(content_address, ruby_abi), full_name|
+          line = "#{spec.lock_name} #{content_address}"
+          line += " abi=#{ruby_abi}" if ruby_abi
+
+          if definition.locked_checksums
+            checksums = spec.source.checksum_store.checksums_to_lock(full_name)
+            line += " #{checksums}" if checksums
+          end
+
+          line
+        end
+      end
+
+      add_section("CONTENT ADDRESSES", content_addresses) unless content_addresses.empty?
+    end
+
     def add_checksums
       return unless definition.locked_checksums
-      checksums = definition.resolve.map do |spec|
-        spec.source.checksum_store.to_lock(spec)
+      checksums = definition.resolve.filter_map do |spec|
+        line = spec.source.checksum_store.to_lock(spec)
+
+        next if line == spec.lock_name && spec.content_addresses.any?
+
+        line
       end
 
       add_section("CHECKSUMS", checksums + bundler_checksum)
+    end
+
+    def add_ruby_abis
+      ruby_abis = definition.ruby_abis
+      return if ruby_abis.empty? || definition.resolve.none? {|spec| spec.content_addresses.any? }
+
+      out << "\nRUBY ABIS\n"
+      ruby_abis.each {|ruby_abi| out << "  #{ruby_abi}\n" }
     end
 
     def add_locked_ruby_version
@@ -103,6 +143,11 @@ module Bundler
     end
 
     def bundler_checksum
+      # In frozen mode the lockfile can't change, so reproduce whatever bundler
+      # entry is already locked instead of recording one for the running bundler
+      # version, which may legitimately differ from the locked one.
+      return locked_bundler_checksum if Bundler.frozen_bundle?
+
       # `.dev` versions and `SKIP_BUNDLER_CHECKSUM` are deliberate opt-outs (used
       # by Bundler/RubyGems' own development and release tasks): never record a
       # checksum for Bundler itself in those cases.
@@ -137,6 +182,17 @@ module Bundler
       return false unless locked_gems
 
       locked_gems.bundler_version != definition.bundler_version_to_lock
+    end
+
+    def locked_bundler_checksum
+      locked_version = definition.locked_gems&.bundler_version
+      return [] unless locked_version
+
+      metadata_source = definition.sources.metadata_source
+      locked_spec = LazySpecification.new("bundler", locked_version, Gem::Platform::RUBY, metadata_source)
+      return [] if metadata_source.checksum_store.missing?(locked_spec)
+
+      [metadata_source.checksum_store.to_lock(locked_spec)]
     end
   end
 end

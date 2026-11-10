@@ -32,6 +32,20 @@ describe "Kernel#local_variables" do
     ScratchPad.recorded.sort.should == [:a, :b]
   end
 
+  it "does not include locals from outside a method" do
+    a = 1
+    def local_var_outer_method
+      b = 2
+      local_variables
+    end
+
+    local_var_outer_method.should == [:b]
+  end
+
+  it "contains the locals of the main script" do
+    ruby_exe("a = 1; p local_variables").should == "[:a]\n"
+  end
+
   it "includes only unique variable names" do
     def local_var_method
       a = 1

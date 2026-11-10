@@ -24,4 +24,13 @@ describe "IO::Buffer#empty?" do
     @buffer = IO::Buffer.new(4)
     @buffer.slice(3, 0).empty?.should == true
   end
+
+  it "is false for an invalid slice with a non-zero size" do
+    @buffer = IO::Buffer.new(4)
+    slice = @buffer.slice(0, 2)
+    @buffer.free
+
+    slice.valid?.should == false
+    slice.empty?.should == false
+  end
 end

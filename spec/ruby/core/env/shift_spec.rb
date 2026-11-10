@@ -24,6 +24,16 @@ describe "ENV.shift" do
     ENV.should_not.has_key?("FOO")
   end
 
+  platform_is_not :windows do
+    it "returns and deletes a pair with a non-ASCII name" do
+      ENV.replace({"ENV_SHIFT_SPEC_\u00DCBER" => "value"})
+      pair = ENV.shift
+      pair.first.b.should == "ENV_SHIFT_SPEC_\u00DCBER".b
+      pair.last.should == "value"
+      ENV["ENV_SHIFT_SPEC_\u00DCBER"].should == nil
+    end
+  end
+
   it "returns nil if ENV.empty?" do
     ENV.clear
     ENV.shift.should == nil

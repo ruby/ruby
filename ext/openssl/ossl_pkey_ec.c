@@ -587,7 +587,7 @@ static const rb_data_type_t ossl_ec_group_type = {
     {
         0, ossl_ec_group_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1169,7 +1169,7 @@ static const rb_data_type_t ossl_ec_point_type = {
     {
         0, ossl_ec_point_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1434,7 +1434,7 @@ ossl_ec_point_to_octet_string(VALUE self, VALUE conversion_form)
     len = EC_POINT_point2oct(group, point, form, NULL, 0, ossl_bn_ctx);
     if (!len)
         ossl_raise(eEC_POINT, "EC_POINT_point2oct");
-    str = rb_str_new(NULL, (long)len);
+    str = rb_str_new(NULL, (rb_len_t)len);
     if (!EC_POINT_point2oct(group, point, form,
                             (unsigned char *)RSTRING_PTR(str), len,
                             ossl_bn_ctx))

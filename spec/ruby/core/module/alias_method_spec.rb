@@ -77,6 +77,19 @@ describe "Module#alias_method" do
     @class.make_alias "cinq", name
   end
 
+  it "raises an EncodingError for a String name containing invalid bytes" do
+    invalid_utf8 = (+"\xFF").force_encoding(Encoding::UTF_8)
+    -> {
+      @class.make_alias invalid_utf8, :public_one
+    }.should.raise(EncodingError, 'invalid symbol in encoding UTF-8 :"\xFF"')
+
+    name = Object.new
+    name.define_singleton_method(:to_str) { invalid_utf8 }
+    -> {
+      @class.make_alias name, :public_one
+    }.should.raise(EncodingError, 'invalid symbol in encoding UTF-8 :"\xFF"')
+  end
+
   it "raises a TypeError when the given name can't be converted using to_str" do
     -> { @class.make_alias mock('x'), :public_one }.should.raise(TypeError)
   end
@@ -107,11 +120,13 @@ describe "Module#alias_method" do
     -> { ModuleSpecs::ReopeningModule.foo2 }.should_not.raise(NoMethodError)
   end
 
-  it "accesses a method defined on Object from Kernel" do
-    Kernel.public_instance_methods(true).should_not.include?(:module_specs_public_method_on_object)
+  ruby_version_is ""..."4.2" do
+    it "accesses a method defined on Object from Kernel" do
+      Kernel.public_instance_methods(true).should_not.include?(:module_specs_public_method_on_object)
 
-    Kernel.public_instance_methods(false).should.include?(:module_specs_alias_on_kernel)
-    Object.public_instance_methods(true).should.include?(:module_specs_alias_on_kernel)
+      Kernel.public_instance_methods(false).should.include?(:module_specs_alias_on_kernel)
+      Object.public_instance_methods(true).should.include?(:module_specs_alias_on_kernel)
+    end
   end
 
   it "can call a method with super aliased twice" do
@@ -120,6 +135,37 @@ describe "Module#alias_method" do
 
   it "preserves original super call after alias redefine" do
     ModuleSpecs::AliasingSuper::RedefineAfterAlias.new.alias_super_call(1).should == 1
+  end
+
+  it "does not warn when overwriting an alias of a method that was later redefined" do
+    -> {
+      Class.new do
+        def foo; end
+        alias_method :bar, :foo
+        def foo; end
+        alias_method :bar, :foo
+      end
+    }.should_not complain(verbose: true)
+  end
+
+  it "does not warn when overwriting an existing method with an alias of it" do
+    -> {
+      Class.new do
+        def foo; end
+        alias_method :bar, :foo
+        alias_method :bar, :foo
+      end
+    }.should_not complain(verbose: true)
+  end
+
+  it "warns when overwriting an unrelated existing method" do
+    -> {
+      Class.new do
+        def foo; end
+        def bar; end
+        alias_method :bar, :foo
+      end
+    }.should complain(/discarding old bar/, verbose: true)
   end
 
   describe "aliasing special methods" do

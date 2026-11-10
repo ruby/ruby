@@ -12,6 +12,8 @@
 **********************************************************************/
 
 #include "internal/thread.h"
+#include "prism_compile.h"
+
 struct local_var_list {
     VALUE tbl;
 };
@@ -418,6 +420,11 @@ gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const
 
     vm_search_method_slowpath0(vm->self, &cd, klass);
 
+    if (UNLIKELY(cd.cc == &rb_vm_uncached_cc)) {
+        // Carries no cme, so it would only ever miss here. Don't evict a usable entry for it.
+        return cd.cc;
+    }
+
     if (UNLIKELY(!vm->global_cc_cache_table_used)) {
         vm->global_cc_cache_table_used = true;
     }
@@ -522,6 +529,21 @@ rb_gccct_clear_table(void)
  *
  * @note `self` is used in order to controlling access to protected methods.
  */
+static VALUE
+vm_call0_uncached(rb_execution_context_t *ec, VALUE recv, ID mid, int argc, const VALUE *argv,
+                  int kw_splat, call_type scope, VALUE self)
+{
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(CLASS_OF(recv), mid);
+    enum method_missing_reason call_status = rb_method_call_status(ec, cme, scope, self);
+
+    if (UNLIKELY(call_status != MISSING_NONE)) {
+        return method_missing(ec, recv, mid, argc, argv, call_status, kw_splat);
+    }
+
+    stack_check(ec);
+    return rb_vm_call0(ec, recv, mid, argc, argv, cme, kw_splat);
+}
+
 static inline VALUE
 rb_call0(rb_execution_context_t *ec,
          VALUE recv, ID mid, int argc, const VALUE *argv,
@@ -548,6 +570,10 @@ rb_call0(rb_execution_context_t *ec,
     scope_to_ci(scope, mid, argc, &ci);
 
     const struct rb_callcache *cc = gccct_method_search(ec, recv, mid, &ci);
+
+    if (UNLIKELY(cc == &rb_vm_uncached_cc)) {
+        return vm_call0_uncached(ec, recv, mid, argc, argv, kw_splat, scope, self);
+    }
 
     if (scope == CALL_PUBLIC) {
         RB_DEBUG_COUNTER_INC(call0_public);
@@ -594,9 +620,8 @@ static VALUE
 check_funcall_exec(VALUE v)
 {
     struct rescue_funcall_args *args = (void *)v;
-    return call_method_entry(args->ec, args->defined_class,
-                             args->recv, idMethodMissing,
-                             args->cme, args->argc, args->argv, args->kw_splat);
+    return rb_vm_call_kw(args->ec, args->recv, idMethodMissing,
+                         args->argc, args->argv, args->cme, args->kw_splat);
 }
 
 static VALUE
@@ -1067,6 +1092,7 @@ rb_funcallv_scope(VALUE recv, ID mid, int argc, const VALUE *argv, call_type sco
     if (LIKELY(cc) &&
         LIKELY(rb_method_call_status(ec, vm_cc_cme(cc), scope, self) == MISSING_NONE)) {
         // fastpath
+        stack_check(ec);
         return vm_call0_cc(ec, recv, mid, argc, argv, cc, false);
     }
     else {
@@ -1726,10 +1752,20 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     pm_options_line_set(result.options, line);
     result.node.coverage_enabled = coverage_enabled;
 
-    // Count scopes, one for each parent iseq, plus one for our local scope
+    // Count scopes, one for each parent iseq, plus one for our local scope.
+    // Also total the byte lengths of every local name so that they can all be
+    // copied into a single buffer.
     int scopes_count = 0;
+    size_t names_size = 0;
+
     do {
         scopes_count++;
+
+        int locals_count = ISEQ_BODY(iseq)->local_table_size;
+        for (int local_index = 0; local_index < locals_count; local_index++) {
+            ID local = ISEQ_BODY(iseq)->local_table[local_index];
+            if (rb_is_local_id(local)) names_size += RSTRING_LEN(rb_id2str(local));
+        }
     } while ((iseq = ISEQ_BODY(iseq)->parent_iseq));
     pm_options_scopes_init(result.options, scopes_count + 1);
 
@@ -1738,7 +1774,6 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     // scopes array refer to root nodes on the tree, and higher indexes are the
     // leaf nodes.
     iseq = parent;
-    rb_encoding *encoding = rb_enc_get(src);
 
 #define FORWARDING_POSITIONALS_CHR '*'
 #define FORWARDING_POSITIONALS_STR "*"
@@ -1748,6 +1783,11 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 #define FORWARDING_BLOCK_STR "&"
 #define FORWARDING_ALL_CHR '.'
 #define FORWARDING_ALL_STR "."
+
+    /* The scope locals are views into this buffer, so it must outlive every
+     * read of them, including building the parent scope nodes after parsing. */
+    uint8_t *names_buffer = names_size > 0 ? xmalloc(names_size) : NULL;
+    uint8_t *names_cursor = names_buffer;
 
     for (int scopes_index = 0; scopes_index < scopes_count; scopes_index++) {
         VALUE iseq_value = (VALUE)iseq;
@@ -1763,49 +1803,30 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
             ID local = ISEQ_BODY(iseq)->local_table[local_index];
 
             if (rb_is_local_id(local)) {
-                VALUE name_obj = rb_id2str(local);
-                const char *name = RSTRING_PTR(name_obj);
-                size_t length = RSTRING_LEN(name_obj);
+                VALUE name = rb_id2str(local);
+                size_t length = RSTRING_LEN(name);
 
-                // Explicitly skip numbered parameters. These should not be sent
-                // into the eval.
-                if (length == 2 && name[0] == '_' && name[1] >= '1' && name[1] <= '9') {
-                    continue;
-                }
+                MEMCPY(names_cursor, RSTRING_PTR(name), char, length);
+                RB_GC_GUARD(name);
 
-                // Check here if this local can be represented validly in the
-                // encoding of the source string. If it _cannot_, then it should
-                // not be added to the constant pool as it would not be able to
-                // be referenced anyway.
-                if (rb_enc_str_coderange_scan(name_obj, encoding) == ENC_CODERANGE_BROKEN) {
-                    continue;
-                }
-
-                /* We need to duplicate the string because the Ruby string may
-                 * be embedded so compaction could move the string and the pointer
-                 * will change. */
-                char *name_dup = xmalloc(length);
-                MEMCPY(name_dup, name, char, length);
-
-                RB_GC_GUARD(name_obj);
-
-                pm_string_owned_init(scope_local, (uint8_t *) name_dup, length);
+                pm_string_init(scope_local, names_cursor, length);
+                names_cursor += length;
             }
             else if (local == idMULT) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_POSITIONALS;
-                pm_string_constant_init(scope_local, FORWARDING_POSITIONALS_STR, 1);
+                pm_string_init(scope_local, (const uint8_t *) FORWARDING_POSITIONALS_STR, 1);
             }
             else if (local == idPow) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_KEYWORDS;
-                pm_string_constant_init(scope_local, FORWARDING_KEYWORDS_STR, 1);
+                pm_string_init(scope_local, (const uint8_t *) FORWARDING_KEYWORDS_STR, 1);
             }
             else if (local == idAnd) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_BLOCK;
-                pm_string_constant_init(scope_local, FORWARDING_BLOCK_STR, 1);
+                pm_string_init(scope_local, (const uint8_t *) FORWARDING_BLOCK_STR, 1);
             }
             else if (local == idDot3) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_ALL;
-                pm_string_constant_init(scope_local, FORWARDING_ALL_STR, 1);
+                pm_string_init(scope_local, (const uint8_t *) FORWARDING_ALL_STR, 1);
             }
         }
 
@@ -1827,6 +1848,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 
     // If the parse failed, clean up and raise.
     if (error != Qnil) {
+        if (names_buffer) SIZED_FREE_N(names_buffer, names_size);
         pm_parse_result_free(&result);
         rb_exc_raise(error);
     }
@@ -1890,6 +1912,8 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         node = parent_scope;
         iseq = ISEQ_BODY(iseq)->parent_iseq;
     }
+
+    if (names_buffer) SIZED_FREE_N(names_buffer, names_size);
 
 #undef FORWARDING_POSITIONALS_CHR
 #undef FORWARDING_POSITIONALS_STR
@@ -1997,7 +2021,7 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
 
     // EP is not escaped to the heap here, but captured and reused by another frame.
     // ZJIT's locals are incompatible with it unlike YJIT's, so invalidate the ISEQ for ZJIT.
-    rb_zjit_invalidate_no_ep_escape(CFP_ISEQ(cfp));
+    if (rb_zjit_enabled_p) rb_zjit_invalidate_no_ep_escape(CFP_ISEQ(cfp));
 
     iseq = eval_make_iseq(src, file, line, &block);
     if (!iseq) {
@@ -2239,8 +2263,8 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
                 VALUE procval = VM_BH_TO_PROC(block_handler);
                 rb_proc_t *po;
                 GetProcPtr(procval, po);
-                is_lambda = po->is_lambda;
-                if (po->is_refined) proc_cref = rb_proc_refinements_cref_for_call(procval);
+                is_lambda = po->header.is_lambda;
+                if (po->header.is_refined) proc_cref = rb_proc_refinements_cref_for_call(procval);
                 block_handler = vm_block_to_block_handler(&po->block);
             }
             goto again;
@@ -2913,7 +2937,7 @@ rb_current_realfilepath(void)
         }
 
         // [Feature #19755] implicit eval location is "(eval at #{__FILE__}:#{__LINE__})"
-        const long len = RSTRING_LEN(path);
+        const rb_len_t len = RSTRING_LEN(path);
         if (len > EVAL_LOCATION_MARK_LEN+1) {
             const char *const ptr = RSTRING_PTR(path);
             if (ptr[len - 1] == ')' &&

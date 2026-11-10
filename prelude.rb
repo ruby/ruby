@@ -32,10 +32,3 @@ module Kernel
   private :pp
   # :startdoc:
 end
-
-module Enumerable
-  # Makes a set from the enumerable object with given arguments.
-  def to_set(&block)
-    Set.new(self, &block)
-  end
-end

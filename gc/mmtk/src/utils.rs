@@ -118,9 +118,9 @@ pub fn parse_capacity(input: &str) -> Option<usize> {
     };
 
     match suffix {
-        "GiB" => Some(v * GIBIBYTE),
-        "MiB" => Some(v * MEBIBYTE),
-        "KiB" => Some(v * KIBIBYTE),
+        "GiB" => v.checked_mul(GIBIBYTE),
+        "MiB" => v.checked_mul(MEBIBYTE),
+        "KiB" => v.checked_mul(KIBIBYTE),
         "" => Some(v),
         _ => None,
     }
@@ -148,6 +148,20 @@ mod tests {
     #[test]
     fn test_parse_capacity_parses_gibibytes() {
         assert_eq!(Some(10737418240), parse_capacity("10GiB"))
+    }
+
+    #[test]
+    fn test_parse_capacity_rejects_overflowing_values() {
+        assert_eq!(None, parse_capacity("99999999999GiB"));
+        assert_eq!(None, parse_capacity("99999999999999MiB"));
+        assert_eq!(None, parse_capacity("99999999999999999KiB"));
+
+        const GIBIBYTE: usize = 1024 * 1024 * 1024;
+        let max_gib = usize::MAX / GIBIBYTE;
+        assert_eq!(
+            Some(max_gib * GIBIBYTE),
+            parse_capacity(&format!("{max_gib}GiB"))
+        );
     }
 
     #[test]

@@ -34,6 +34,11 @@ impl<T: Copy + PartialEq + Default, const N: usize> Distribution<T, N> {
         self.other = self.other.saturating_add(1);
     }
 
+    /// Count an item without recording it, as if all buckets were taken by other items.
+    pub fn observe_other(&mut self) {
+        self.other = self.other.saturating_add(1);
+    }
+
     /// Keep the highest counted bucket at index 0
     fn bubble_up(&mut self) {
         if N == 0 { return; }
@@ -83,6 +88,14 @@ const SKEW_THRESHOLD: f64 = 0.75;
 impl<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> DistributionSummary<T, N> {
     pub fn empty() -> Self {
         Self { kind: DistributionKind::Empty, buckets: [Default::default(); N] }
+    }
+
+    /// Construct a monomorphic summary from the single entry `item`.
+    pub fn monomorphic(item: T) -> Self {
+        assert!(N > 0, "need at least one bucket");
+        let mut buckets = [Default::default(); N];
+        buckets[0] = item;
+        Self { kind: DistributionKind::Monomorphic, buckets }
     }
 
     pub fn new(dist: &Distribution<T, N>) -> Self {

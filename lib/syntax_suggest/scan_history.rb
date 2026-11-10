@@ -18,7 +18,7 @@ module SyntaxSuggest
   #   scanner.stash_changes
   #
   #   expect(scanner.lines).to_not eq(code_lines)
-  class ScanHistory
+  class ScanHistory # :nodoc:
     attr_reader :before_index, :after_index
 
     def initialize(code_lines:, block:)

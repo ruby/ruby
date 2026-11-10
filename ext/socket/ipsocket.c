@@ -293,7 +293,7 @@ struct fast_fallback_inetsock_arg
     int additional_flags;
     struct fast_fallback_getaddrinfo_entry *getaddrinfo_entries[2];
     struct fast_fallback_getaddrinfo_shared *getaddrinfo_shared;
-    rb_fdset_t readfds, writefds;
+    rb_fdset_t readfds, writefds, exceptfds;
     int wait;
     int connection_attempt_fds_size;
     int *connection_attempt_fds;
@@ -314,7 +314,7 @@ allocate_fast_fallback_getaddrinfo_shared(int family_size)
 }
 
 static void
-allocate_fast_fallback_getaddrinfo_hints(struct addrinfo *hints, int family, int remote_addrinfo_hints, int additional_flags)
+init_fast_fallback_getaddrinfo_hints(struct addrinfo *hints, int family, int remote_addrinfo_hints, int additional_flags)
 {
     MEMZERO(hints, struct addrinfo, 1);
     hints->ai_family = family;
@@ -528,17 +528,26 @@ pick_addrinfo(struct hostname_resolution_store *resolution_store, int last_famil
     return selected_ai;
 }
 
+#ifdef _WIN32
+#define pipe(fds) rb_w32_pipe(fds)
+#endif
+
 static void
-socket_nonblock_set(int fd)
+nonblock_set(int fd, int nonblock)
 {
+#ifdef _WIN32
+    /* Windows fcntl() lacks F_GETFL, and its F_SETFL only toggles O_NONBLOCK. */
+    int newflags = nonblock ? O_NONBLOCK : 0;
+#else
     int flags = fcntl(fd, F_GETFL);
 
     if (flags < 0) rb_syserr_fail(errno, "fcntl(2)");
-    if ((flags & O_NONBLOCK) != 0) return;
 
-    flags |= O_NONBLOCK;
+    int newflags = nonblock ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK);
+    if (newflags == flags) return;
+#endif
 
-    if (fcntl(fd, F_SETFL, flags) < 0) rb_syserr_fail(errno, "fcntl(2)");
+    if (fcntl(fd, F_SETFL, newflags) < 0) rb_syserr_fail(errno, "fcntl(2)");
     return;
 }
 
@@ -572,6 +581,20 @@ struct fast_fallback_error
     int ecode;
 };
 
+/* A host that simply has no address in the family being resolved is not the
+ * error to report while the other family is still on its way.  Winsock has no
+ * EAI_ADDRFAMILY and answers such a host with EAI_NONAME, which is
+ * indistinguishable from an unknown host and has to stay an error. */
+static int
+no_address_in_family_p(int err)
+{
+#ifdef EAI_ADDRFAMILY
+    return err == EAI_ADDRFAMILY;
+#else
+    return false;
+#endif
+}
+
 static VALUE
 init_fast_fallback_inetsock_internal(VALUE v)
 {
@@ -592,7 +615,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
     remote_addrinfo_hints |= AI_ADDRCONFIG;
     #endif
 
-    pthread_t threads[arg->family_size];
     char resolved_type[2];
     ssize_t resolved_type_size;
     int hostname_resolution_waiter = -1, hostname_resolution_notifier = -1;
@@ -639,7 +661,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
     /* start of hostname resolution */
     if (arg->family_size == 1) {
-        arg->wait = -1;
         arg->getaddrinfo_shared = NULL;
 
         int family = arg->families[0];
@@ -667,11 +688,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
     } else {
         if (pipe(pipefd) != 0) rb_syserr_fail(errno, "pipe(2)");
         hostname_resolution_waiter = pipefd[0];
-        int waiter_flags = fcntl(hostname_resolution_waiter, F_GETFL, 0);
-        if (waiter_flags < 0) rb_syserr_fail(errno, "fcntl(2)");
-        if ((fcntl(hostname_resolution_waiter, F_SETFL, waiter_flags | O_NONBLOCK)) < 0) {
-            rb_syserr_fail(errno, "fcntl(2)");
-        }
+        nonblock_set(hostname_resolution_waiter, true);
         arg->wait = hostname_resolution_waiter;
         hostname_resolution_notifier = pipefd[1];
 
@@ -689,16 +706,13 @@ init_fast_fallback_inetsock_internal(VALUE v)
             arg->getaddrinfo_entries[i] = &arg->getaddrinfo_shared->getaddrinfo_entries[i];
             arg->getaddrinfo_entries[i]->shared = arg->getaddrinfo_shared;
 
-            struct addrinfo getaddrinfo_hints[arg->family_size];
-
-            allocate_fast_fallback_getaddrinfo_hints(
-                &getaddrinfo_hints[i],
+            init_fast_fallback_getaddrinfo_hints(
+                &arg->getaddrinfo_entries[i]->hints,
                 arg->families[i],
                 remote_addrinfo_hints,
                 arg->additional_flags
             );
 
-            arg->getaddrinfo_entries[i]->hints = getaddrinfo_hints[i];
             arg->getaddrinfo_entries[i]->ai = NULL;
             arg->getaddrinfo_entries[i]->family = arg->families[i];
             arg->getaddrinfo_entries[i]->refcount = 2;
@@ -707,18 +721,18 @@ init_fast_fallback_inetsock_internal(VALUE v)
             arg->getaddrinfo_entries[i]->test_ecode = 0;
 
             /* for testing HEv2 */
-            if (!NIL_P(test_mode_settings) && RB_TYPE_P(test_mode_settings, T_HASH)) {
+            if (RB_TYPE_P(test_mode_settings, T_HASH)) {
                 const char *family_sym = arg->families[i] == AF_INET6 ? "ipv6" : "ipv4";
 
                 VALUE test_delay_setting = rb_hash_aref(test_mode_settings, ID2SYM(rb_intern("delay")));
-                if (!NIL_P(test_delay_setting)) {
+                if (RB_TYPE_P(test_delay_setting, T_HASH)) {
                     VALUE rb_test_delay_ms = rb_hash_aref(test_delay_setting, ID2SYM(rb_intern(family_sym)));
-                    long test_delay_ms = NIL_P(rb_test_delay_ms) ? 0 : rb_test_delay_ms;
+                    long test_delay_ms = NIL_P(rb_test_delay_ms) ? 0 : NUM2LONG(rb_test_delay_ms);
                     arg->getaddrinfo_entries[i]->test_sleep_ms = test_delay_ms;
                 }
 
                 VALUE test_error_setting = rb_hash_aref(test_mode_settings, ID2SYM(rb_intern("error")));
-                if (!NIL_P(test_error_setting)) {
+                if (RB_TYPE_P(test_error_setting, T_HASH)) {
                     VALUE rb_test_ecode = rb_hash_aref(test_error_setting, ID2SYM(rb_intern(family_sym)));
                     if (!NIL_P(rb_test_ecode)) {
                         arg->getaddrinfo_entries[i]->test_ecode = NUM2INT(rb_test_ecode);
@@ -726,8 +740,8 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 }
             }
 
-            if (raddrinfo_pthread_create(&threads[i], fork_safe_do_fast_fallback_getaddrinfo, arg->getaddrinfo_entries[i]) != 0) {
-                rsock_raise_resolution_error("getaddrinfo(3)", EAI_AGAIN);
+            if (raddrinfo_thread_create(fork_safe_do_fast_fallback_getaddrinfo, arg->getaddrinfo_entries[i]) != 0) {
+                rsock_raise_resolution_error_for_host("getaddrinfo(3)", EAI_AGAIN, arg->remote.host);
             }
         }
 
@@ -762,7 +776,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         serv = arg->remote.serv;
                     }
                     if (last_error.type == RESOLUTION_ERROR) {
-                        rsock_raise_resolution_error(syscall, last_error.ecode);
+                        rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                     } else {
                         rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                     }
@@ -805,7 +819,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         serv = arg->remote.serv;
                     }
                     if (last_error.type == RESOLUTION_ERROR) {
-                        rsock_raise_resolution_error(syscall, last_error.ecode);
+                        rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                     } else {
                         rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                     }
@@ -841,7 +855,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             serv = arg->remote.serv;
                         }
                         if (last_error.type == RESOLUTION_ERROR) {
-                            rsock_raise_resolution_error(syscall, last_error.ecode);
+                            rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                         } else {
                             rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                         }
@@ -853,7 +867,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 if (any_addrinfos(&resolution_store) ||
                     in_progress_fds(arg->connection_attempt_fds_size) ||
                     !resolution_store.is_all_finished) {
-                    socket_nonblock_set(fd);
+                    nonblock_set(fd, true);
                     status = connect(fd, remote_ai->ai_addr, remote_ai->ai_addrlen);
                     last_family = remote_ai->ai_family;
                 } else {
@@ -934,7 +948,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     serv = arg->remote.serv;
                 }
                 if (last_error.type == RESOLUTION_ERROR) {
-                    rsock_raise_resolution_error(syscall, last_error.ecode);
+                    rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                 } else {
                     rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                 }
@@ -971,15 +985,20 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
         nfds = 0;
         rb_fd_zero(&arg->writefds);
+        rb_fd_zero(&arg->exceptfds);
         if (in_progress_fds(arg->connection_attempt_fds_size)) {
             int n = 0;
             for (int i = 0; i < arg->connection_attempt_fds_size; i++) {
                 int cfd = arg->connection_attempt_fds[i];
                 if (cfd < 0) continue;
-                if (cfd > n) n = cfd;
+                if (cfd + 1 > n) n = cfd + 1;
                 rb_fd_set(cfd, &arg->writefds);
+#ifdef _WIN32
+                /* Winsock reports a refused connect(2) through the exceptfds
+                 * alone, never through the writefds. [Bug #18661] */
+                rb_fd_set(cfd, &arg->exceptfds);
+#endif
             }
-            if (n > 0) n++;
             nfds = n;
         }
 
@@ -992,7 +1011,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
         }
 
-        status = rb_thread_fd_select(nfds, &arg->readfds, &arg->writefds, NULL, delay_p);
+        status = rb_thread_fd_select(nfds, &arg->readfds, &arg->writefds, &arg->exceptfds, delay_p);
 
         now = current_clocktime_ts();
         if (is_timeout_tv(resolution_delay_expires_at, now)) {
@@ -1009,17 +1028,25 @@ init_fast_fallback_inetsock_internal(VALUE v)
             if (in_progress_fds(arg->connection_attempt_fds_size)) {
                 for (int i = 0; i < arg->connection_attempt_fds_size; i++) {
                     int fd = arg->connection_attempt_fds[i];
-                    if (fd < 0 || !rb_fd_isset(fd, &arg->writefds)) continue;
+                    if (fd < 0) continue;
+                    if (!rb_fd_isset(fd, &arg->writefds) &&
+                        !rb_fd_isset(fd, &arg->exceptfds)) continue;
 
                     int err;
                     socklen_t len = sizeof(err);
 
-                    status = getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len);
+                    status = getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&err, &len);
 
                     if (status < 0) {
                         last_error.type = SYSCALL_ERROR;
                         last_error.ecode = errno;
                         close(fd);
+                        remove_connection_attempt_fd(
+                            arg->connection_attempt_fds,
+                            &arg->connection_attempt_fds_size,
+                            fd
+                        );
+                        i--;
 
                         if (any_addrinfos(&resolution_store)) continue;
                         if (in_progress_fds(arg->connection_attempt_fds_size)) break;
@@ -1033,7 +1060,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             serv = arg->remote.serv;
                         }
                         if (last_error.type == RESOLUTION_ERROR) {
-                            rsock_raise_resolution_error(syscall, last_error.ecode);
+                            rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                         } else {
                             rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                         }
@@ -1054,6 +1081,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             &arg->connection_attempt_fds_size,
                             fd
                         );
+                        i--;
                         last_error.type = SYSCALL_ERROR;
                         last_error.ecode = err;
                     }
@@ -1071,7 +1099,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             serv = arg->remote.serv;
                         }
                         if (last_error.type == RESOLUTION_ERROR) {
-                            rsock_raise_resolution_error(syscall, last_error.ecode);
+                            rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                         } else {
                             rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                         }
@@ -1096,9 +1124,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         if (resolved_type[0] == IPV6_HOSTNAME_RESOLVED) {
                             resolution_store.v6.finished = true;
 
-                            if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err &&
-                                arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err != EAI_ADDRFAMILY) {
-                                if (!resolution_store.v4.finished || resolution_store.v4.has_error) {
+                            if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) {
+                                if (!no_address_in_family_p(arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) &&
+                                    (!resolution_store.v4.finished || resolution_store.v4.has_error)) {
                                     last_error.type = RESOLUTION_ERROR;
                                     last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
                                     syscall = "getaddrinfo(3)";
@@ -1136,11 +1164,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         } else {
                             /* Retry to read from hostname_resolution_waiter */
                         }
-                    } else if (resolved_type_size < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+                    } else if (resolved_type_size == 0 || errno == EAGAIN || errno == EWOULDBLOCK) {
                         errno = 0;
                         break;
-                    } else {
-                        /* Retry to read from hostname_resolution_waiter */
+                    } else if (errno != EINTR) {
+                        rb_syserr_fail(errno, "read(2)");
                     }
 
                     if (!resolution_store.v6.finished &&
@@ -1157,11 +1185,21 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
         /* For cases where write(2) fails in child threads */
         if (!resolution_store.is_all_finished) {
-            if (!resolution_store.v6.finished && arg->getaddrinfo_entries[IPV6_ENTRY_POS]->has_syserr) {
+            int v6_has_syserr, v4_has_syserr;
+
+            rb_nativethread_lock_lock(&arg->getaddrinfo_shared->lock);
+            {
+                v6_has_syserr = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->has_syserr;
+                v4_has_syserr = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->has_syserr;
+            }
+            rb_nativethread_lock_unlock(&arg->getaddrinfo_shared->lock);
+
+            if (!resolution_store.v6.finished && v6_has_syserr) {
                 resolution_store.v6.finished = true;
 
                 if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) {
-                    if (!resolution_store.v4.finished || resolution_store.v4.has_error) {
+                    if (!no_address_in_family_p(arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) &&
+                        (!resolution_store.v4.finished || resolution_store.v4.has_error)) {
                         last_error.type = RESOLUTION_ERROR;
                         last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
                         syscall = "getaddrinfo(3)";
@@ -1177,7 +1215,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     user_specified_resolv_timeout_at = NULL;
                 }
             }
-            if (!resolution_store.v4.finished && arg->getaddrinfo_entries[IPV4_ENTRY_POS]->has_syserr) {
+            if (!resolution_store.v4.finished && v4_has_syserr) {
                 resolution_store.v4.finished = true;
 
                 if (arg->getaddrinfo_entries[IPV4_ENTRY_POS]->err) {
@@ -1217,7 +1255,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     serv = arg->remote.serv;
                 }
                 if (last_error.type == RESOLUTION_ERROR) {
-                    rsock_raise_resolution_error(syscall, last_error.ecode);
+                    rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                 } else {
                     rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                 }
@@ -1233,6 +1271,12 @@ init_fast_fallback_inetsock_internal(VALUE v)
     }
 
     if (NIL_P(arg->io)) {
+#ifdef _WIN32
+        /* Any other socket is blocking on Windows, so undo the non-blocking
+         * mode the attempts raced in. */
+        nonblock_set(connected_fd, false);
+#endif
+
         /* create new instance */
         arg->io = rsock_init_sock(arg->self, connected_fd);
     }
@@ -1258,15 +1302,15 @@ fast_fallback_inetsock_cleanup(VALUE v)
     if (arg->wait != -1) close(arg->wait);
 
     if (getaddrinfo_shared) {
-        if (getaddrinfo_shared->notify != -1) close(getaddrinfo_shared->notify);
-        getaddrinfo_shared->notify = -1;
-
         int shared_need_free = 0;
-        struct addrinfo *ais[arg->family_size];
+        struct addrinfo *ais[numberof(arg->getaddrinfo_entries)];
         for (int i = 0; i < arg->family_size; i++) ais[i] = NULL;
 
         rb_nativethread_lock_lock(&getaddrinfo_shared->lock);
         {
+            if (getaddrinfo_shared->notify != -1) close(getaddrinfo_shared->notify);
+            getaddrinfo_shared->notify = -1;
+
             for (int i = 0; i < arg->family_size; i++) {
                 struct fast_fallback_getaddrinfo_entry *getaddrinfo_entry = arg->getaddrinfo_entries[i];
 
@@ -1299,14 +1343,15 @@ fast_fallback_inetsock_cleanup(VALUE v)
         if (connection_attempt_fd >= 0) {
             int error = 0;
             socklen_t len = sizeof(error);
-            getsockopt(connection_attempt_fd, SOL_SOCKET, SO_ERROR, &error, &len);
+            getsockopt(connection_attempt_fd, SOL_SOCKET, SO_ERROR, (void *)&error, &len);
             if (error == 0) shutdown(connection_attempt_fd, SHUT_RDWR);
             close(connection_attempt_fd);
-       }
+        }
     }
 
     if (arg->readfds.fdset) rb_fd_term(&arg->readfds);
     if (arg->writefds.fdset) rb_fd_term(&arg->writefds);
+    if (arg->exceptfds.fdset) rb_fd_term(&arg->exceptfds);
 
     if (arg->connection_attempt_fds) {
         free(arg->connection_attempt_fds);
@@ -1374,6 +1419,7 @@ rsock_init_inetsock(
 
             struct fast_fallback_inetsock_arg fast_fallback_arg;
             memset(&fast_fallback_arg, 0, sizeof(fast_fallback_arg));
+            fast_fallback_arg.wait = -1;
 
             fast_fallback_arg.self = self;
             fast_fallback_arg.io = Qnil;
@@ -1391,7 +1437,7 @@ rsock_init_inetsock(
             fast_fallback_arg.portp = portp;
             fast_fallback_arg.additional_flags = additional_flags;
 
-            int resolving_families[resolving_family_size];
+            int resolving_families[numberof(target_families)];
             int resolving_family_index = 0;
             for (int i = 0; 2 > i; i++) {
                 if (target_families[i] != 0) {
@@ -1405,6 +1451,7 @@ rsock_init_inetsock(
 
             rb_fd_init(&fast_fallback_arg.readfds);
             rb_fd_init(&fast_fallback_arg.writefds);
+            rb_fd_init(&fast_fallback_arg.exceptfds);
 
             return rb_ensure(init_fast_fallback_inetsock_internal, (VALUE)&fast_fallback_arg,
                              fast_fallback_inetsock_cleanup, (VALUE)&fast_fallback_arg);
@@ -1473,7 +1520,7 @@ ip_inspect(VALUE sock)
         (id = rsock_intern_family(addr.addr.sa_family)) != 0) {
         VALUE family = rb_id2str(id);
         char hbuf[1024], pbuf[1024];
-        long slen = RSTRING_LEN(str);
+        rb_len_t slen = RSTRING_LEN(str);
         const char last = (slen > 1 && RSTRING_PTR(str)[slen - 1] == '>') ?
             (--slen, '>') : 0;
         str = rb_str_subseq(str, 0, slen);

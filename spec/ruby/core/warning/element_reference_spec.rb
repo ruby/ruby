@@ -5,9 +5,11 @@ describe "Warning.[]" do
     # If any warning options were set on the Ruby that will be executed, then
     # it's possible this test will fail. In this case we will skip this test.
     skip if ruby_exe.any? { |opt| opt.start_with?("-W") }
+    # RUBYOPT can carry -W too, and the defaults are what this example is about.
+    no_rubyopt = { "RUBYOPT" => nil }
 
-    ruby_exe('p [Warning[:deprecated], Warning[:experimental]]').chomp.should == "[false, true]"
-    ruby_exe('p [Warning[:deprecated], Warning[:experimental]]', options: "-w").chomp.should == "[true, true]"
+    ruby_exe('p [Warning[:deprecated], Warning[:experimental]]', env: no_rubyopt).chomp.should == "[false, true]"
+    ruby_exe('p [Warning[:deprecated], Warning[:experimental]]', options: "-w", env: no_rubyopt).chomp.should == "[true, true]"
   end
 
   it "returns default values for :performance category" do

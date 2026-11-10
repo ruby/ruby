@@ -3,8 +3,8 @@
 #include "prism/compiler/align.h"
 #include "prism/compiler/inline.h"
 #include "prism/internal/arena.h"
+#include "prism/internal/assert.h"
 
-#include <assert.h>
 #include <stdbool.h>
 
 /**
@@ -57,22 +57,65 @@ pm_constant_id_list_append(pm_arena_t *arena, pm_constant_id_list_t *list, pm_co
  */
 void
 pm_constant_id_list_insert(pm_constant_id_list_t *list, size_t index, pm_constant_id_t id) {
-    assert(index < list->capacity);
-    assert(list->ids[index] == PM_CONSTANT_ID_UNSET);
+    PRISM_ASSERT(index < list->capacity);
+    PRISM_ASSERT(list->ids[index] == PM_CONSTANT_ID_UNSET);
 
     list->ids[index] = id;
     list->size++;
 }
 
 /**
- * Checks if the current constant id list includes the given constant id.
+ * The slot that holds the given id, or the empty slot it would occupy. The
+ * table is never full, so this terminates.
+ */
+static PRISM_INLINE size_t
+pm_constant_id_set_slot(const pm_constant_id_set_t *set, pm_constant_id_t id) {
+    PRISM_ASSERT(set->capacity != 0);
+
+    size_t mask = set->capacity - 1;
+    size_t index = ((size_t) pm_constant_id_hash(id)) & mask;
+
+    while (set->ids[index] != PM_CONSTANT_ID_UNSET && set->ids[index] != id) {
+        index = (index + 1) & mask;
+    }
+
+    return index;
+}
+
+/**
+ * Add a constant id to the set, reporting whether it was not already there.
  */
 bool
-pm_constant_id_list_includes(pm_constant_id_list_t *list, pm_constant_id_t id) {
-    for (size_t index = 0; index < list->size; index++) {
-        if (list->ids[index] == id) return true;
+pm_constant_id_set_insert(pm_arena_t *arena, pm_constant_id_set_t *set, pm_constant_id_t id) {
+    /* PM_CONSTANT_ID_UNSET marks an empty slot, so it cannot also be a member. */
+    PRISM_ASSERT(id != PM_CONSTANT_ID_UNSET);
+
+    /*
+     * Grow at the same load factor the locals table and the constant pool use.
+     * An empty set has no slots at all, so this also builds the first table.
+     */
+    if (set->size >= (set->capacity / 4 * 3)) {
+        size_t capacity = set->capacity == 0 ? 8 : set->capacity * 2;
+        pm_constant_id_set_t grown = {
+            .size = set->size,
+            .capacity = capacity,
+            .ids = (pm_constant_id_t *) pm_arena_zalloc(arena, capacity * sizeof(pm_constant_id_t), PRISM_ALIGNOF(pm_constant_id_t))
+        };
+
+        for (size_t index = 0; index < set->capacity; index++) {
+            pm_constant_id_t moved = set->ids[index];
+            if (moved != PM_CONSTANT_ID_UNSET) grown.ids[pm_constant_id_set_slot(&grown, moved)] = moved;
+        }
+
+        *set = grown;
     }
-    return false;
+
+    size_t index = pm_constant_id_set_slot(set, id);
+    if (set->ids[index] == id) return false;
+
+    set->ids[index] = id;
+    set->size++;
+    return true;
 }
 
 /**
@@ -158,20 +201,11 @@ next_power_of_two(uint32_t v) {
     return v;
 }
 
-#ifndef NDEBUG
-static bool
-is_power_of_two(uint32_t size) {
-    return (size & (size - 1)) == 0;
-}
-#endif
-
 /**
  * Resize a constant pool to a given capacity.
  */
 static PRISM_INLINE void
 pm_constant_pool_resize(pm_arena_t *arena, pm_constant_pool_t *pool) {
-    assert(is_power_of_two(pool->capacity));
-
     uint32_t next_capacity = pool->capacity * 2;
     const uint32_t mask = next_capacity - 1;
 
@@ -227,7 +261,7 @@ pm_constant_pool_init(pm_arena_t *arena, pm_constant_pool_t *pool, uint32_t capa
  */
 pm_constant_t *
 pm_constant_pool_id_to_constant(const pm_constant_pool_t *pool, pm_constant_id_t constant_id) {
-    assert(constant_id != PM_CONSTANT_ID_UNSET && constant_id <= pool->size);
+    PRISM_ASSERT(constant_id != PM_CONSTANT_ID_UNSET && constant_id <= pool->size);
     return &pool->constants[constant_id - 1];
 }
 
@@ -237,7 +271,6 @@ pm_constant_pool_id_to_constant(const pm_constant_pool_t *pool, pm_constant_id_t
  */
 pm_constant_id_t
 pm_constant_pool_find(const pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
-    assert(is_power_of_two(pool->capacity));
     const uint32_t mask = pool->capacity - 1;
 
     uint32_t hash = pm_constant_pool_hash(start, length);
@@ -266,7 +299,6 @@ pm_constant_pool_insert(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8
         pm_constant_pool_resize(arena, pool);
     }
 
-    assert(is_power_of_two(pool->capacity));
     const uint32_t mask = pool->capacity - 1;
 
     uint32_t hash = pm_constant_pool_hash(start, length);
@@ -300,7 +332,7 @@ pm_constant_pool_insert(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8
     // IDs are allocated starting at 1, since the value 0 denotes a non-existent
     // constant.
     uint32_t id = ++pool->size;
-    assert(pool->size < ((uint32_t) (1 << 30)));
+    PRISM_ASSERT(pool->size < ((uint32_t) (1 << 30)));
 
     *bucket = (pm_constant_pool_bucket_t) {
         .id = (unsigned int) (id & 0x3fffffff),

@@ -92,6 +92,13 @@ class TestERBEncoding < Test::Unit::TestCase
     assert_equal Encoding::EUC_KR, erb.result.encoding
   end
 
+  def test_ignore_magic_comment_after_code
+    [nil, '%'].each do |trim_mode|
+      erb = ERB.new("<%# hello %><%= 1 %><%# coding: euc-jp %>", trim_mode: trim_mode)
+      assert_equal Encoding::UTF_8, erb.encoding
+    end
+  end
+
   module M; end
   def test_method_with_encoding
     obj = Object.new

@@ -96,6 +96,16 @@ describe "A Symbol literal" do
     %I{a b #{"c"}}.should == [:a, :b, :c]
   end
 
+  it "raises an EncodingError when an interpolated symbol has invalid bytes" do
+    -> {
+      :"#{(+"\xFF").force_encoding(Encoding::UTF_8)}"
+    }.should.raise(EncodingError, 'invalid symbol in encoding UTF-8 :"\xFF"')
+
+    -> {
+      %I[#{(+"\xFF").force_encoding(Encoding::UTF_8)}]
+    }.should.raise(EncodingError, 'invalid symbol in encoding UTF-8 :"\xFF"')
+  end
+
   ruby_bug "#20280", ""..."3.4" do
     it "raises an SyntaxError at parse time when Symbol with invalid bytes" do
       ScratchPad.record []

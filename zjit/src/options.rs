@@ -22,10 +22,14 @@ pub const DEFAULT_MAX_VERSIONS: usize = 4;
 const DEFAULT_NUM_PROFILES: NumProfiles = 5;
 pub type NumProfiles = u16;
 
+/// Default --zjit-num-exits-until-invalidate
+const DEFAULT_NUM_EXITS_UNTIL_INVALIDATE: NumExits = 5;
+pub type NumExits = u32;
+
 /// Default --zjit-call-threshold. This should be large enough to avoid compiling
 /// warmup code, but small enough to perform well on micro-benchmarks.
 pub const DEFAULT_CALL_THRESHOLD: CallThreshold = 30;
-pub type CallThreshold = u64;
+pub type CallThreshold = u32;
 
 /// Default --zjit-inline-threshold
 /// TODO (nirvdrum 2026-06-25): 30 has proven to work well with ruby-bench, but we should finely
@@ -80,6 +84,9 @@ pub struct Options {
     /// Number of times YARV instructions should be profiled.
     pub num_profiles: NumProfiles,
 
+    /// Number of recompile exits before invalidating the current version. See `exit_recompile`.
+    pub num_exits_until_invalidate: NumExits,
+
     /// Enable ZJIT statistics
     pub stats: bool,
 
@@ -105,11 +112,17 @@ pub struct Options {
     /// Dump High-level IR after optimization, right before codegen.
     pub dump_hir_opt: Option<DumpHIR>,
 
+    /// Dump High-level IR to the given file instead of stdout
+    pub dump_hir_file: Option<std::path::PathBuf>,
+
     /// Dump High-level IR to the given file in Graphviz format after optimization
     pub dump_hir_graphviz: Option<std::path::PathBuf>,
 
     /// Dump High-level IR in Iongraph JSON format after optimization to /tmp/zjit-iongraph-{$PID}
     pub dump_hir_iongraph: bool,
+
+    /// Add line number mappings to HIR.
+    pub dump_hir_map: bool,
 
     /// Dump low-level IR
     pub dump_lir: Option<HashSet<DumpLIR>>,
@@ -187,6 +200,10 @@ pub struct Options {
     /// cap exists to bound compile time when something pathological prevents the
     /// loop from reaching a fixed point.
     pub inline_max_iterations: InlineDepth,
+
+    /// When true, put no code in exit trampolines to increment [`Counter::side_exit_count`].
+    /// Ignored when `--zjit-stats` so full set of counters are available.
+    pub no_exit_counting: bool,
 }
 
 impl Default for Options {
@@ -195,6 +212,7 @@ impl Default for Options {
             exec_mem_bytes: 64 * 1024 * 1024,
             mem_bytes: 128 * 1024 * 1024,
             num_profiles: DEFAULT_NUM_PROFILES,
+            num_exits_until_invalidate: DEFAULT_NUM_EXITS_UNTIL_INVALIDATE,
             stats: false,
             print_stats: false,
             print_stats_file: None,
@@ -203,8 +221,10 @@ impl Default for Options {
             disable_hir_opt: false,
             dump_hir_init: None,
             dump_hir_opt: None,
+            dump_hir_file: None,
             dump_hir_graphviz: None,
             dump_hir_iongraph: false,
+            dump_hir_map: false,
             dump_lir: None,
             dump_disasm: None,
             trace_side_exits: None,
@@ -221,6 +241,7 @@ impl Default for Options {
             inline_budget: DEFAULT_INLINE_BUDGET as InlineBudget,
             inline_deny: HashSet::new(),
             inline_max_iterations: DEFAULT_INLINE_MAX_ITERATIONS,
+            no_exit_counting: false,
         }
     }
 }
@@ -310,9 +331,13 @@ const DUMP_LIR_ALL: &[DumpLIR] = &[
     DumpLIR::live_intervals,
 ];
 
-/// Maximum value for --zjit-mem-size/--zjit-exec-mem-size in MiB.
+/// Maximum value for --zjit-mem-size in MiB.
 /// We set 1TiB just to avoid overflow. We could make it smaller.
 const MAX_MEM_MIB: usize = 1024 * 1024;
+
+/// Maximum value for --zjit-exec-mem-size in MiB. rb_jit_reserve_addr_space() takes the size
+/// in bytes as u32, and 4095 MiB is the largest MiB value below u32::MAX (4096 MiB is 2^32 bytes).
+const MAX_EXEC_MEM_MIB: usize = 4095;
 
 /// Macro to dump LIR if --zjit-dump-lir is specified
 macro_rules! asm_dump {
@@ -415,7 +440,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         },
 
         ("exec-mem-size", _) => match opt_val.parse::<usize>() {
-            Ok(n) if (1..=MAX_MEM_MIB).contains(&n) => {
+            Ok(n) if (1..=MAX_EXEC_MEM_MIB).contains(&n) => {
                 // Convert from MiB to bytes internally for convenience
                 options.exec_mem_bytes = n * 1024 * 1024;
             }
@@ -435,6 +460,11 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 options.num_profiles = n;
                 update_profile_threshold();
             },
+            Err(_) => return None,
+        },
+
+        ("num-exits-until-invalidate", _) => match opt_val.parse() {
+            Ok(n) => options.num_exits_until_invalidate = n,
             Err(_) => return None,
         },
 
@@ -536,10 +566,33 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-hir" | "dump-hir-opt", "") => options.dump_hir_opt = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir" | "dump-hir-opt", "all") => options.dump_hir_opt = Some(DumpHIR::All),
         ("dump-hir" | "dump-hir-opt", "debug") => options.dump_hir_opt = Some(DumpHIR::Debug),
+        // Any other value is a directory to dump HIR to instead of stdout. It composes with the
+        // format variants, e.g. `--zjit-dump-hir=all --zjit-dump-hir=/tmp/` dumps to /tmp/hir-PID.
+        ("dump-hir" | "dump-hir-opt", _) => {
+            let directory = std::fs::canonicalize(&opt_val)
+                .map_err(|e| eprintln!("Failed to canonicalize path '{opt_val}': {e}")).ok()?;
+            if !directory.is_dir() {
+                eprintln!("Path '{opt_val}' is not a directory");
+                return None;
+            }
+            let file_name = directory.join(format!("hir-{}", std::process::id()));
+            // Truncate the file if it exists
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(&file_name)
+                .map_err(|e| eprintln!("Failed to open file '{}': {e}", file_name.display()))
+                .ok();
+            options.dump_hir_file = Some(file_name);
+            options.dump_hir_opt.get_or_insert(DumpHIR::WithoutSnapshot);
+        }
 
         ("dump-hir-init", "") => options.dump_hir_init = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir-init", "all") => options.dump_hir_init = Some(DumpHIR::All),
         ("dump-hir-init", "debug") => options.dump_hir_init = Some(DumpHIR::Debug),
+
+        ("dump-hir-map", "") => options.dump_hir_map = true,
 
         ("dump-hir-graphviz", "") => options.dump_hir_graphviz = Some("/dev/stderr".into()),
         ("dump-hir-graphviz", _) => {
@@ -625,6 +678,10 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             options.log_compiled_iseqs = Some(opt_val);
         }
 
+        ("no-exit-counting", "") => {
+            options.no_exit_counting = true;
+        }
+
         _ => return None, // Option name not recognized
     }
 
@@ -652,6 +709,13 @@ pub fn set_call_threshold(call_threshold: CallThreshold) {
     update_profile_threshold();
 }
 
+/// Update --zjit-num-exits-until-invalidate for testing
+#[cfg(test)]
+pub fn set_num_exits_until_invalidate(num_exits_until_invalidate: NumExits) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().num_exits_until_invalidate = num_exits_until_invalidate; }
+}
+
 /// Update --zjit-max-versions for testing
 #[cfg(test)]
 pub fn set_max_versions(max_versions: usize) {
@@ -664,6 +728,21 @@ pub fn set_max_versions(max_versions: usize) {
 pub fn set_inline_threshold(inline_threshold: InlineThreshold) {
     rb_zjit_prepare_options();
     unsafe { OPTIONS.as_mut().unwrap().inline_threshold = inline_threshold; }
+}
+
+/// Update --zjit-num-profiles for testing
+#[cfg(test)]
+pub fn set_num_profiles(num_profiles: NumProfiles) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().num_profiles = num_profiles; }
+    update_profile_threshold();
+}
+
+/// Set --zjit-mem-size for testing. It's used to force OOM in tests.
+#[cfg(test)]
+pub fn set_mem_bytes(mem_bytes: usize) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().mem_bytes = mem_bytes; }
 }
 
 /// Enable --zjit-stats for testing
@@ -746,6 +825,46 @@ mod tests {
     use super::*;
 
     #[test]
+    fn parse_dump_hir_path() {
+        unsafe { OPTIONS = Some(Options::default()); }
+
+        let path = std::path::PathBuf::from("/tmp");
+        let option = CString::new(format!("dump-hir={}", path.display())).unwrap();
+
+        assert!(parse_option(option.as_ptr()).is_some());
+
+        let options = unsafe { OPTIONS.as_ref() }.unwrap();
+        // parse_option canonicalizes the path, so canonicalize the expectation too
+        let expected = std::fs::canonicalize(&path).unwrap().join(format!("hir-{}", std::process::id()));
+        assert_eq!(options.dump_hir_file, Some(expected.clone()));
+        assert!(matches!(options.dump_hir_opt, Some(DumpHIR::WithoutSnapshot)));
+        assert!(expected.exists());
+
+        let _ = std::fs::remove_file(expected);
+    }
+
+    #[test]
+    fn parse_dump_hir_path_keeps_format() {
+        unsafe { OPTIONS = Some(Options::default()); }
+
+        let path = std::path::PathBuf::from(".");
+        let all = CString::new("dump-hir=all").unwrap();
+        let file = CString::new(format!("dump-hir={}", path.display())).unwrap();
+
+        assert!(parse_option(all.as_ptr()).is_some());
+        assert!(parse_option(file.as_ptr()).is_some());
+
+        let options = unsafe { OPTIONS.as_ref() }.unwrap();
+        // parse_option canonicalizes the path, so canonicalize the expectation too
+        let expected = std::fs::canonicalize(&path).unwrap().join(format!("hir-{}", std::process::id()));
+        assert_eq!(options.dump_hir_file, Some(expected.clone()));
+        assert!(matches!(options.dump_hir_opt, Some(DumpHIR::All)));
+        assert!(expected.exists());
+
+        let _ = std::fs::remove_file(expected);
+    }
+
+    #[test]
     fn parse_dump_disasm_path() {
         unsafe { OPTIONS = Some(Options::default()); }
 
@@ -763,5 +882,26 @@ mod tests {
         assert!(expected_path.exists());
 
         let _ = std::fs::remove_file(expected_path);
+    }
+
+    #[test]
+    fn parse_exec_mem_size_rejects_sizes_that_overflow_u32() {
+        unsafe { OPTIONS = Some(Options::default()); }
+
+        let parse = |option: &str| {
+            let option = CString::new(option).unwrap();
+            parse_option(option.as_ptr()).is_some()
+        };
+
+        // 4095 MiB is the largest size whose byte count fits in u32.
+        assert!(parse("exec-mem-size=4095"));
+        assert_eq!(get_option!(exec_mem_bytes), 4095 * 1024 * 1024);
+
+        // 4096 MiB is 2^32 bytes, which truncates to 0 when cast to u32.
+        assert!(!parse("exec-mem-size=4096"));
+        assert!(!parse("exec-mem-size=4097"));
+
+        // Rejected values must not modify the option.
+        assert_eq!(get_option!(exec_mem_bytes), 4095 * 1024 * 1024);
     }
 }

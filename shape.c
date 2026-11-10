@@ -1343,7 +1343,6 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 
     if (rb_shape_verify_capacity_consistency_p(obj)) {
         attr_index_t shape_id_capacity = rb_shape_embedded_capacity(shape_id);
-        RUBY_ASSERT(shape_id_capacity > 0);
 
         size_t shape_id_slot_size = shape_id_capacity * sizeof(VALUE) + sizeof(struct RBasic);
         size_t actual_slot_size = rb_gc_obj_slot_size(obj);

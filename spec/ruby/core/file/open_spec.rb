@@ -386,7 +386,7 @@ describe "File.open" do
     File.should.exist?(@file)
   end
 
-  it "opens a file when use File::WRONLY|File::APPEND mode" do
+  it "opens a file in the read-write append mode when given mode File::RDWR|File::APPEND" do
     File.open(@file, File::WRONLY) do |f|
       f.puts("hello file")
     end
@@ -397,6 +397,21 @@ describe "File.open" do
       f.gets.should == "bye file\n"
       f.gets.should == nil
     end
+  end
+
+  it "opens a file in the append mode when given mode 'a'" do
+    File.write(@file, "hello")
+    File.open(@file, "a") { |f| f.write(" world") }
+    File.read(@file).should == "hello world"
+  end
+
+  it "opens a file in the read-write append mode when given mode 'a+'" do
+    File.write(@file, "hello")
+    File.open(@file, "a+") do |f|
+      f.read.should == "hello"
+      f.write(" world")
+    end
+    File.read(@file).should == "hello world"
   end
 
   it "raises an IOError if the file exists when open with File::RDONLY|File::APPEND" do

@@ -2,137 +2,236 @@
 require_relative 'utils'
 require_relative 'ut_eof'
 
-if defined?(OpenSSL::SSL)
-
-module OpenSSL::SSLPairM
-  def setup
-    svr_dn = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
-    ee_exts = [
-      ["keyUsage", "keyEncipherment,digitalSignature", true],
-    ]
-    @svr_key = OpenSSL::TestUtils::Fixtures.pkey("rsa-1")
-    @svr_cert = issue_cert(svr_dn, @svr_key, 1, ee_exts, nil, nil)
-  end
-
-  def ssl_pair
-    host = "127.0.0.1"
-    tcps = create_tcp_server(host, 0)
-    port = tcps.connect_address.ip_port
-
-    th = Thread.new {
-      sctx = OpenSSL::SSL::SSLContext.new
-      sctx.cert = @svr_cert
-      sctx.key = @svr_key
-      sctx.options |= OpenSSL::SSL::OP_NO_COMPRESSION
-      ssls = OpenSSL::SSL::SSLServer.new(tcps, sctx)
-      ns = ssls.accept
-      ssls.close
-      ns
-    }
-
-    tcpc = create_tcp_client(host, port)
-    c = OpenSSL::SSL::SSLSocket.new(tcpc)
-    c.connect
-    s = th.value
-
-    yield c, s
-  ensure
-    tcpc&.close
-    tcps&.close
-    s&.close
-  end
-end
-
-module OpenSSL::SSLPair
-  include OpenSSL::SSLPairM
-
-  def create_tcp_server(host, port)
-    TCPServer.new(host, port)
-  end
-
-  def create_tcp_client(host, port)
-    TCPSocket.new(host, port)
-  end
-end
-
-module OpenSSL::SSLPairLowlevelSocket
-  include OpenSSL::SSLPairM
-
-  def create_tcp_server(host, port)
-    Addrinfo.tcp(host, port).listen
-  end
-
-  def create_tcp_client(host, port)
-    Addrinfo.tcp(host, port).connect
-  end
-end
-
-module OpenSSL::TestEOF1M
-  def open_file(content)
-    ssl_pair { |s1, s2|
-      begin
-        th = Thread.new { s2 << content; s2.close }
-        yield s1
-      ensure
-        th&.join
-      end
-    }
-  end
-end
-
-module OpenSSL::TestEOF2M
-  def open_file(content)
-    ssl_pair { |s1, s2|
-      begin
-        th = Thread.new { s1 << content; s1.close }
-        yield s2
-      ensure
-        th&.join
-      end
-    }
-  end
-end
+return unless defined?(OpenSSL::SSL)
 
 module OpenSSL::TestPairM
   def test_getc
     ssl_pair {|s1, s2|
       s1 << "a"
+      s1.close
       assert_equal(?a, s2.getc)
+      assert_nil(s2.getc)
     }
   end
 
   def test_getbyte
     ssl_pair {|s1, s2|
       s1 << "a"
+      s1.close
       assert_equal(97, s2.getbyte)
+      assert_nil(s2.getbyte)
+    }
+  end
+
+  def test_readchar
+    ssl_pair {|s1, s2|
+      s1 << "b"
+      s1.close
+      assert_equal("b", s2.readchar)
+      assert_raise(EOFError) { s2.readchar }
     }
   end
 
   def test_readbyte
     ssl_pair {|s1, s2|
       s1 << "b"
+      s1.close
       assert_equal(98, s2.readbyte)
+      assert_raise(EOFError) { s2.readbyte }
     }
   end
 
-  def test_readbyte_eof
+  def test_each_char
     ssl_pair {|s1, s2|
-      s2.close
-      assert_raise(EOFError) { s1.readbyte }
+      s1 << "abc"
+      s1.close
+      chars = []
+      ret = s2.each_char { |c| chars << c }
+      assert_same(s2, ret)
+      assert_equal(["a", "b", "c"], chars)
+      chars = []
+      s2.each_char { |c| chars << c }
+      assert_equal([], chars)
+    }
+  end
+
+  def test_each_char_enumerator
+    ssl_pair {|s1, s2|
+      s1 << "abc"
+      s1.close
+      assert_equal(["a", "b", "c"], s2.each_char.to_a)
+      assert_equal([], s2.each_char.to_a)
+    }
+  end
+
+  def test_each_byte
+    ssl_pair {|s1, s2|
+      s1 << "abc"
+      s1.close
+      bytes = []
+      ret = s2.each_byte { |b| bytes << b }
+      assert_same(s2, ret)
+      assert_equal([97, 98, 99], bytes)
+      bytes = []
+      s2.each_byte { |b| bytes << b }
+      assert_equal([], bytes)
+    }
+  end
+
+  def test_each_byte_enumerator
+    ssl_pair {|s1, s2|
+      s1 << "abc"
+      s1.close
+      assert_equal([97, 98, 99], s2.each_byte.to_a)
+      assert_equal([], s2.each_byte.to_a)
+    }
+  end
+
+  def test_ungetc
+    ssl_pair {|s1, s2|
+      s1 << "abc"
+      s1.close
+      assert_equal("a", s2.read(1))
+      assert_nil(s2.ungetc("A"))
+      assert_equal("Abc", s2.read(3))
+      assert_predicate(s2, :eof?)
+
+      s2.ungetc("B")
+      assert_not_predicate(s2, :eof?)
+      assert_equal("B", s2.read)
+
+      s2.ungetc("あ") # \xe3\x81\x82
+      s = s2.read(2)
+      assert_equal("\xe3\x81".b, s)
+      assert_equal(Encoding::BINARY, s.encoding)
+      s2.ungetc("")
+      assert_equal("\x82".b, s2.read)
+
+      s2.ungetc(1)
+      assert_equal("\x01".b, s2.read)
+      assert_raise(RangeError) { s2.ungetc(258) }
+      assert_raise(RangeError) { s2.ungetc(-1) }
+    }
+  end
+
+  def test_ungetbyte
+    ssl_pair {|s1, s2|
+      s1 << "abc"
+      s1.close
+
+      assert_equal("a", s2.read(1))
+      assert_nil(s2.ungetbyte("A"))
+      assert_equal("Abc", s2.read(3))
+      assert_predicate(s2, :eof?)
+
+      s2.ungetbyte("B")
+      assert_not_predicate(s2, :eof?)
+      assert_equal("B", s2.read)
+
+      s2.ungetbyte("あ") # \xe3\x81\x82
+      s = s2.read(2)
+      assert_equal("\xe3\x81".b, s)
+      assert_equal(Encoding::BINARY, s.encoding)
+      s2.ungetbyte("")
+      assert_equal("\x82".b, s2.read)
+
+      s2.ungetbyte(1)
+      assert_equal("\x01".b, s2.read)
+      s2.ungetbyte(258)
+      assert_equal("\x02".b, s2.read)
+      s2.ungetbyte(-1)
+      assert_equal("\xff".b, s2.read)
     }
   end
 
   def test_gets
     ssl_pair {|s1, s2|
-      s1 << "abc\n\n$def123ghi"
+      s1 << "abc\n\n$def123ghij"
       s1.close
       ret = s2.gets
       assert_equal Encoding::BINARY, ret.encoding
       assert_equal "abc\n", ret
       assert_equal "\n$", s2.gets("$")
-      assert_equal "def123", s2.gets(/\d+/)
-      assert_equal "ghi", s2.gets
+      assert_equal "def123", s2.gets("123")
+      assert_equal "ghi", s2.gets(":", 3)
+      assert_equal "j", s2.gets(1)
       assert_equal nil, s2.gets
+      assert_equal "", s2.gets(0)
+    }
+    # rs spans multiple sysreads
+    ssl_pair {|s1, s2|
+      s1 << "a" * 8192 + "b" * 16384
+      s1.close
+      assert_equal("a" * 8192, s2.gets("b" * 10000, chomp: true))
+    }
+  end
+
+  def test_gets_rs_nil
+    ssl_pair {|s1, s2|
+      s1 << "abc\n\ndef"
+      s1.close
+      assert_equal("", s2.gets(nil, 0))
+      assert_equal("a", s2.gets(nil, 1))
+      assert_equal("bc\n\ndef", s2.gets(nil))
+
+      # At EOF
+      assert_equal("", s2.gets(nil, 0))
+      assert_nil(s2.gets(nil))
+      assert_nil(s2.gets(nil, 1))
+    }
+  end
+
+  def test_gets_rs_empty_leading_newlines
+    ssl_pair {|s1, s2|
+      s1 << "abc\n\ndef\n\nghi"
+      s1.close
+      assert_equal("a", s2.gets("", 1))
+      assert_equal("bc", s2.gets("", 2))
+      assert_equal("def\n\n", s2.gets(""))
+      assert_equal("ghi", s2.gets(""))
+    }
+    # Leading and trailing newlines are trimmed
+    ssl_pair {|s1, s2|
+      s1 << "\n\nabc\n\n\n"
+      s1.close
+      assert_equal("abc\n\n", s2.gets(""))
+      assert_predicate(s2, :eof?)
+    }
+    # Leading and trailing newlines do not count towards limit, and
+    # trailing newlines are still trimmed after limit is reached
+    ssl_pair {|s1, s2|
+      s1 << "\n\nabc\n\n\n\ndef"
+      s1.close
+      assert_equal("a", s2.gets("", 1))
+      assert_equal("bc\n", s2.gets("", 3))
+      assert_equal("def", s2.read)
+    }
+    # chomp: true
+    ssl_pair {|s1, s2|
+      s1 << "a\n\n\ndef\n\n\n"
+      s1.close
+      assert_equal("a\n", s2.gets("", 2, chomp: true))
+      assert_equal("def", s2.gets("", chomp: true))
+    }
+    # \r does not have any special meaning in paragraph mode
+    ssl_pair {|s1, s2|
+      s1 << "\r\nabc\r\n\r\ndef\r\n"
+      s1.close
+      assert_equal("\r\nabc\r\n\r\ndef\r\n", s2.gets("", chomp: true))
+      assert_predicate(s2, :eof?)
+    }
+  end
+
+  def test_gets_rs_regexp
+    ssl_pair {|s1, s2|
+      # OpenSSL::Buffering-specific behavior
+      next unless s2.is_a?(OpenSSL::Buffering)
+
+      s1 << "abc\n\n$def123ghi"
+      s1.close
+      assert_equal("abc\n", s2.gets(/\d+/, 4))
+      assert_equal("\n$def123", s2.gets(/\d+/))
+      assert_equal("ghi", s2.gets(/\d+/))
     }
   end
 
@@ -147,11 +246,81 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_gets_chomp_rs
+    ssl_pair {|s1, s2|
+      s1 << "aaa::bbb:"
+      s1.close
+
+      assert_equal("aaa", s2.gets("::", chomp: true))
+      assert_equal("bbb:", s2.gets("::", chomp: true))
+      assert_nil(s2.gets("::", chomp: true))
+    }
+  end
+
+  def test_gets_chomp_default_rs
+    ssl_pair {|s1, s2|
+      s1 << "aaa\r\nbbb\nccc"
+      s1.close
+
+      assert_equal("aaa", s2.gets(chomp: true))
+      assert_equal("bbb", s2.gets(chomp: true))
+      assert_equal("ccc", s2.gets(chomp: true))
+      assert_nil(s2.gets(chomp: true))
+    }
+  end
+
+  def test_gets_chomp_default_rs_limit
+    ssl_pair {|s1, s2|
+      s1 << "aaa\r\nbbb"
+      assert_equal("aaa", s2.gets(10, chomp: true))
+      assert_equal("bbb", s2.read(3))
+      s1 << "aaa\r\nbbb"
+      assert_equal("aaa", s2.gets(3, chomp: true))
+      assert_equal("\r\nbbb", s2.read(5))
+      s1 << "aaa\r\nbbb"
+      assert_equal("aaa\r", s2.gets(4, chomp: true))
+      assert_equal("\nbbb", s2.read(4))
+    }
+  end
+
   def test_gets_eof_limit
     ssl_pair {|s1, s2|
       s1.write("hello")
       s1.close # trigger EOF
       assert_match "hello", s2.gets("\n", 6), "[ruby-core:70149] [Bug #11400]"
+    }
+  end
+
+  def test_each_line
+    ssl_pair {|s1, s2|
+      s1 << "a\nb\nc"
+      s1.close
+      lines = []
+      ret = s2.each_line(chomp: true) { |line| lines << line }
+      assert_same(s2, ret)
+      assert_equal(["a", "b", "c"], lines)
+      lines = []
+      s2.each_line { |line| lines << line }
+      assert_equal([], lines)
+    }
+  end
+
+  def test_each_line_enumerator
+    ssl_pair {|s1, s2|
+      s1 << "a\nb\nc"
+      s1.close
+      assert_equal(["a", "b", "c"], s2.each_line(chomp: true).to_a)
+      assert_equal([], s2.each_line.to_a)
+    }
+  end
+
+  def test_readlines
+    ssl_pair {|s1, s2|
+      s1 << "a\nb\nc"
+      s1.close
+      assert_equal(["a\n", "b\n", "c"], s2.readlines)
+      assert_equal([], s2.readlines)
+      assert_raise(ArgumentError) { s2.readlines(0) }
     }
   end
 
@@ -170,6 +339,7 @@ module OpenSSL::TestPairM
       assert_raise(EOFError) { s1.readpartial(10) }
       assert_raise(EOFError) { s1.readpartial(10) }
       assert_equal("", s1.readpartial(0))
+      assert_raise(ArgumentError) { s1.readpartial(-1) }
     }
   end
 
@@ -183,7 +353,30 @@ module OpenSSL::TestPairM
   def test_readline
     ssl_pair {|s1, s2|
       s2.close
+      assert_equal("", s1.readline(0))
       assert_raise(EOFError) { s1.readline }
+    }
+  end
+
+  def test_puts
+    ssl_pair {|s1, s2|
+      s1.puts "a\n", "b"
+      s1.puts nil
+      s1.close
+      assert_equal("a\nb\n\n", s2.read)
+    }
+  end
+
+  def test_puts_array
+    ssl_pair {|s1, s2|
+      s1.puts ["a\n", ["b", ["c"]]]
+      s1.puts [], [[]]
+      def (obj = Object.new).to_ary
+        ["d", []]
+      end
+      s1.puts obj
+      s1.close
+      assert_equal("a\nb\nc\nd\n", s2.read)
     }
   end
 
@@ -192,6 +385,22 @@ module OpenSSL::TestPairM
       s1.puts
       s1.close
       assert_equal("\n", s2.read)
+    }
+  end
+
+  def test_putc
+    ssl_pair {|s1, s2|
+      ret = s1.putc("a")
+      assert_equal("a", ret)
+      s1.putc(98)
+      s1.putc(99 + 256)
+      s1.putc(100 - 256)
+      def (obj = Object.new).to_int() 101 end
+      s1.putc(obj)
+      s1.putc("")
+      s1.putc("\u3042") # \xe3\x81\x82
+      s1.close
+      assert_equal("abcde\u3042".b, s2.read)
     }
   end
 
@@ -216,17 +425,37 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_sysread_and_syswrite
+    ssl_pair {|s1, s2|
+      str = "x" * 100 + "\n"
+      s1.syswrite(str)
+      newstr = s2.sysread(str.bytesize)
+      assert_equal(str, newstr)
+
+      buf = String.new
+      s1.syswrite(str)
+      assert_same(buf, s2.sysread(str.size, buf))
+      assert_equal(str, buf)
+
+      obj = Object.new
+      obj.define_singleton_method(:to_s) { str }
+      s1.syswrite(obj)
+      assert_equal(str, s2.sysread(str.bytesize))
+
+      # https://bugs.ruby-lang.org/issues/18880
+      next if !s2.is_a?(OpenSSL::SSL::SSLSocket) && RUBY_VERSION < "3.2"
+      assert_raise(ArgumentError) { s2.sysread(-1) }
+    }
+  end
+
   def test_read_nonblock
     ssl_pair {|s1, s2|
-      err = nil
-      assert_raise(OpenSSL::SSL::SSLErrorWaitReadable) {
-        begin
-          s2.read_nonblock(10)
-        ensure
-          err = $!
-        end
+      err = assert_raise(IO::WaitReadable) {
+        s2.read_nonblock(10)
       }
-      assert_kind_of(IO::WaitReadable, err)
+      if s2.is_a?(OpenSSL::SSL::SSLSocket)
+        assert_instance_of(OpenSSL::SSL::SSLErrorWaitReadable, err)
+      end
       s1.write "abc\ndef\n"
       IO.select([s2])
       assert_equal("ab", s2.read_nonblock(2))
@@ -237,6 +466,8 @@ module OpenSSL::TestPairM
       s1.close
       IO.select([s2])
       assert_raise(EOFError) { s2.read_nonblock(10) }
+
+      assert_raise(ArgumentError) { s2.read_nonblock(-1) }
     }
   end
 
@@ -282,6 +513,9 @@ module OpenSSL::TestPairM
       ret = s2.read(0, buf)
       assert_same buf, ret
       assert_equal "", ret
+
+      buf = +"garbage"
+      assert_raise(ArgumentError) { s2.read(-1, buf) }
     }
   end
 
@@ -347,14 +581,12 @@ module OpenSSL::TestPairM
   def test_write_nonblock_retry
     ssl_pair {|s1, s2|
       # fill up a socket so we hit EAGAIN
-      written = String.new
       n = 0
       buf = 'a' * 4099
       case ret = s1.write_nonblock(buf, exception: false)
       when :wait_readable then break
       when :wait_writable then break
       when Integer
-        written << buf
         n += ret
         exp = buf.bytesize
         if ret != exp
@@ -365,11 +597,21 @@ module OpenSSL::TestPairM
 
       # make more space for subsequent write:
       readed = s2.read(n)
-      assert_equal written, readed
+      assert_equal "a"*n, readed
 
       # this fails if SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER is missing:
       buf2 = Marshal.load(Marshal.dump(buf))
       assert_kind_of Integer, s1.write_nonblock(buf2, exception: false)
+    }
+  end
+
+  def test_write_ltlt_convert_to_s
+    ssl_pair {|s1, s2|
+      def (obj = Object.new).to_s() "obj" end
+      assert_equal(6, s1.write("str", obj))
+      assert_same(s1, s1 << obj)
+      s1.close
+      assert_equal("strobjobj", s2.read)
     }
   end
 
@@ -393,151 +635,93 @@ module OpenSSL::TestPairM
     }
   end
 
-  def test_partial_tls_record_read_nonblock
+  def test_copy_stream
     ssl_pair { |s1, s2|
-      # the beginning of a TLS record
-      s1.io.write("\x17")
-      # should raise a IO::WaitReadable since a full TLS record is not available
-      # for reading
-      assert_raise(IO::WaitReadable) { s2.read_nonblock(1) }
-    }
-  end
-
-  def tcp_pair
-    host = "127.0.0.1"
-    serv = TCPServer.new(host, 0)
-    port = serv.connect_address.ip_port
-    sock1 = TCPSocket.new(host, port)
-    sock2 = serv.accept
-    serv.close
-    [sock1, sock2]
-  ensure
-    serv.close if serv && !serv.closed?
-  end
-
-  def test_connect_accept_nonblock_no_exception
-    ctx2 = OpenSSL::SSL::SSLContext.new
-    ctx2.cert = @svr_cert
-    ctx2.key = @svr_key
-
-    sock1, sock2 = tcp_pair
-
-    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
-    accepted = s2.accept_nonblock(exception: false)
-    assert_equal :wait_readable, accepted
-
-    ctx1 = OpenSSL::SSL::SSLContext.new
-    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
-    th = Thread.new do
-      rets = []
-      begin
-        rv = s1.connect_nonblock(exception: false)
-        rets << rv
-        case rv
-        when :wait_writable
-          IO.select(nil, [s1], nil, 5)
-        when :wait_readable
-          IO.select([s1], nil, nil, 5)
-        end
-      end until rv == s1
-      rets
-    end
-
-    until th.join(0.01)
-      accepted = s2.accept_nonblock(exception: false)
-      assert_include([s2, :wait_readable, :wait_writable ], accepted)
-    end
-
-    rets = th.value
-    assert_instance_of Array, rets
-    rets.each do |rv|
-      assert_include([s1, :wait_readable, :wait_writable ], rv)
-    end
-  ensure
-    th.join if th
-    s1.close if s1
-    s2.close if s2
-    sock1.close if sock1
-    sock2.close if sock2
-    accepted.close if accepted.respond_to?(:close)
-  end
-
-  def test_connect_accept_nonblock
-    ctx = OpenSSL::SSL::SSLContext.new
-    ctx.cert = @svr_cert
-    ctx.key = @svr_key
-
-    sock1, sock2 = tcp_pair
-
-    th = Thread.new {
-      s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx)
-      5.times {
-        begin
-          break s2.accept_nonblock
-        rescue IO::WaitReadable
-          IO.select([s2], nil, nil, 1)
-        rescue IO::WaitWritable
-          IO.select(nil, [s2], nil, 1)
-        end
-        sleep 0.2
-      }
-    }
-
-    s1 = OpenSSL::SSL::SSLSocket.new(sock1)
-    5.times {
-      begin
-        break s1.connect_nonblock
-      rescue IO::WaitReadable
-        IO.select([s1], nil, nil, 1)
-      rescue IO::WaitWritable
-        IO.select(nil, [s1], nil, 1)
+      IO.pipe do |r, w|
+        str = "hello world\n"
+        w.write(str)
+        IO.copy_stream(r, s1, str.bytesize)
+        IO.copy_stream(s2, w, str.bytesize)
+        assert_equal(str, r.read(str.bytesize))
       end
-      sleep 0.2
     }
+  end
 
-    s2 = th.value
-
-    s1.print "a\ndef"
-    assert_equal("a\n", s2.gets)
-  ensure
-    sock1&.close
-    sock2&.close
-    th&.join
+  def test_close_write
+    ssl_pair { |s1, s2|
+      message = "abc"*1024
+      s1.write(message)
+      s1.close_write
+      assert_equal(message, s2.read)
+      s2.write(message)
+      s2.close_write
+      assert_equal(message, s1.read)
+    }
   end
 end
 
-class OpenSSL::TestEOF1 < OpenSSL::TestCase
-  include OpenSSL::TestEOF
-  include OpenSSL::SSLPair
-  include OpenSSL::TestEOF1M
-end
-
-class OpenSSL::TestEOF1LowlevelSocket < OpenSSL::TestCase
-  include OpenSSL::TestEOF
-  include OpenSSL::SSLPairLowlevelSocket
-  include OpenSSL::TestEOF1M
-end
-
-class OpenSSL::TestEOF2 < OpenSSL::TestCase
-  include OpenSSL::TestEOF
-  include OpenSSL::SSLPair
-  include OpenSSL::TestEOF2M
-end
-
-class OpenSSL::TestEOF2LowlevelSocket < OpenSSL::TestCase
-  include OpenSSL::TestEOF
-  include OpenSSL::SSLPairLowlevelSocket
-  include OpenSSL::TestEOF2M
-end
-
-class OpenSSL::TestPair < OpenSSL::TestCase
-  include OpenSSL::SSLPair
+class OpenSSL::TestSSLPair < OpenSSL::TestCase
   include OpenSSL::TestPairM
+  include OpenSSL::TestEOF
+
+  def ssl_pair
+    svr_dn = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
+    ee_exts = [
+      ["keyUsage", "keyEncipherment,digitalSignature", true],
+    ]
+    svr_key = OpenSSL::TestUtils::Fixtures.pkey("rsa-1")
+    svr_cert = issue_cert(svr_dn, svr_key, 1, ee_exts, nil, nil)
+
+    host = "127.0.0.1"
+    svr = TCPServer.new(host, 0)
+    svr.setsockopt(:TCP, :NODELAY, 1)
+    port = svr.connect_address.ip_port
+
+    tcps = nil
+    th = Thread.new {
+      tcps = svr.accept
+      sctx = OpenSSL::SSL::SSLContext.new
+      sctx.add_certificate(svr_cert, svr_key)
+      ssl = OpenSSL::SSL::SSLSocket.new(tcps, sctx)
+      ssl.accept
+      ssl
+    }
+
+    tcpc = TCPSocket.new(host, port)
+    tcpc.setsockopt(:TCP, :NODELAY, 1)
+    c = OpenSSL::SSL::SSLSocket.new(tcpc)
+    c.connect
+    s = th.value
+
+    yield c, s
+  ensure
+    tcpc&.close
+    tcps&.close
+    svr&.close
+  end
 end
 
-class OpenSSL::TestPairLowlevelSocket < OpenSSL::TestCase
-  include OpenSSL::SSLPairLowlevelSocket
+class OpenSSL::TestSocketPair < OpenSSL::TestCase
   include OpenSSL::TestPairM
-end
+  include OpenSSL::TestEOF
 
-end
+  def ssl_pair
+    host = "127.0.0.1"
+    svr = TCPServer.new(host, 0)
+    svr.setsockopt(:TCP, :NODELAY, 1)
+    port = svr.connect_address.ip_port
+
+    tcps = nil
+    th = Thread.new { tcps = svr.accept }
+
+    tcpc = TCPSocket.new(host, port)
+    tcpc.setsockopt(:TCP, :NODELAY, 1)
+    th.join
+
+    yield tcpc, tcps
+  ensure
+    tcpc&.close
+    tcps&.close
+    svr&.close
+  end
+end if RUBY_ENGINE != "truffleruby"

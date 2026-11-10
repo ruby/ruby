@@ -4,7 +4,7 @@
 .SH "NAME"
 \fBbundle\-info\fR \- Show information for the given gem in your bundle
 .SH "SYNOPSIS"
-\fBbundle info\fR [GEM_NAME] [\-\-path] [\-\-version]
+\fBbundle info\fR [GEM_NAME] [\-\-path] [\-\-version] [\-\-exact\-match]
 .SH "DESCRIPTION"
 Given a gem name present in your bundle, print the basic information about it such as homepage, version, path and summary\.
 .SH "OPTIONS"
@@ -14,4 +14,7 @@ Print the path of the given gem
 .TP
 \fB\-\-version\fR
 Print gem version
+.TP
+\fB\-\-exact\-match\fR
+Only match gems whose names exactly match the given name\.
 

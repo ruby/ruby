@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "endpoint"
+require_relative "../../vendored_compact_index"
 
-$LOAD_PATH.unshift Spec::Path.tmp_root.join("compact_index/lib").to_s
-require "compact_index"
 require "digest"
 
 class CompactIndexAPI < Endpoint
@@ -81,31 +80,31 @@ class CompactIndexAPI < Endpoint
           gem_versions = versions.map do |spec|
             deps = spec.runtime_dependencies.map do |d|
               reqs = d.requirement.requirements.map {|r| r.join(" ") }.join(", ")
-              CompactIndex::Dependency.new(d.name, reqs)
+              VendoredCompactIndex::Dependency.new(d.name, reqs)
             end
             begin
               checksum = ENV.fetch("BUNDLER_SPEC_#{name.upcase}_CHECKSUM") do
-                Digest(:SHA256).file("#{gem_repo}/gems/#{spec.original_name}.gem").hexdigest
+                Digest(:SHA256).file("#{gem_repo}/gems/#{spec.full_name}.gem").hexdigest
               end
             rescue StandardError
               checksum = nil
             end
             build_gem_version(spec, deps, checksum)
           end
-          CompactIndex::Gem.new(name, gem_versions)
+          VendoredCompactIndex::Gem.new(name, gem_versions)
         end
       end
     end
 
     def build_gem_version(spec, deps, checksum)
-      CompactIndex::GemVersion.new(spec.version.version, spec.platform.to_s, checksum, nil,
+      VendoredCompactIndex::GemVersionV2.new(spec.version.version, spec.platform.to_s, checksum, nil,
         deps, spec.required_ruby_version.to_s, spec.required_rubygems_version.to_s)
     end
   end
 
   get "/names" do
     etag_response do
-      CompactIndex.names(gems.map(&:name))
+      VendoredCompactIndex.names(gems.map(&:name))
     end
   end
 
@@ -113,7 +112,7 @@ class CompactIndexAPI < Endpoint
     etag_response do
       file = tmp("versions.list")
       FileUtils.rm_f(file)
-      file = CompactIndex::VersionsFile.new(file.to_s)
+      file = VendoredCompactIndex::VersionsFile.new(file.to_s)
       file.create(gems)
       file.contents
     end
@@ -122,7 +121,7 @@ class CompactIndexAPI < Endpoint
   get "/info/:name" do
     etag_response do
       gem = gems.find {|g| g.name == params[:name] }
-      CompactIndex.info(gem ? gem.versions : [])
+      VendoredCompactIndex.info(gem ? gem.versions : [])
     end
   end
 end

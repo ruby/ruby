@@ -14,6 +14,8 @@ bundle-lock(1) -- Creates / Updates a lockfile without installing
               [--add-platform]
               [--remove-platform]
               [--normalize-platforms]
+              [--add-ruby-abi]
+              [--remove-ruby-abi]
               [--patch]
               [--minor]
               [--major]
@@ -33,8 +35,9 @@ Lock the gems specified in Gemfile.
   of gems or updating all gems if no list is given.
 
 * `--bundler[=BUNDLER]`:
-  Update the locked version of bundler to the given version or the latest
-  version if no version is given.
+  Update the locked version of bundler. BUNDLER can be a version such as
+  `4.0.20`, or a requirement such as `"> 0.a"`. With no argument, update to the
+  latest released version, which never selects a prerelease.
 
 * `--local`:
   Do not attempt to connect to `rubygems.org`. Instead, Bundler will use the
@@ -67,6 +70,14 @@ Lock the gems specified in Gemfile.
 * `--normalize-platforms`:
   Normalize lockfile platforms.
 
+* `--add-ruby-abi=<list>`:
+  Lock the content-addressed gems of the bundle for a Ruby ABI (a
+  major and minor version, like `3.4`), re-resolving to record them. Running
+  `bundle install` under that Ruby does the same.
+
+* `--remove-ruby-abi=<list>`:
+  Drop the content-addressed gems for a Ruby ABI from the lockfile.
+
 * `--patch`:
   If updating, prefer updating only to next patch version.
 
@@ -74,7 +85,7 @@ Lock the gems specified in Gemfile.
   If updating, prefer updating only to next minor version.
 
 * `--major`:
-  If updating, prefer updating to next major version (default).
+  If updating, prefer updating to latest major version (default).
 
 * `--pre`:
   If updating, always choose the highest allowed version, regardless of prerelease status.
@@ -87,8 +98,9 @@ Lock the gems specified in Gemfile.
 
 * `--cooldown=<number>`:
   Only consider gem versions published at least <number> days ago when
-  resolving. Pass `0` to disable cooldown for this run, overriding any
-  per-source or global configuration. See `cooldown` in bundle-config(1).
+  resolving. Pass `0` to disable cooldown for this run, overriding every
+  other cooldown setting, RubyGems' own included. See `cooldown` in
+  bundle-config(1).
 
 ## UPDATING ALL GEMS
 

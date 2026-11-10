@@ -4,7 +4,8 @@ module Bundler
   class StubSpecification < RemoteSpecification
     def self.from_stub(stub)
       return stub if stub.is_a?(Bundler::StubSpecification)
-      spec = new(stub.name, stub.version, stub.platform, nil)
+      content_address = stub.content_address
+      spec = new(stub.name, stub.version, stub.platform, nil, content_address: content_address)
       spec.stub = stub
       spec
     end
@@ -113,6 +114,10 @@ module Bundler
       stub.matches_for_glob(glob)
     end
 
+    def contains_requirable_file?(file)
+      stub.contains_requirable_file?(file)
+    end
+
     def raw_require_paths
       stub.raw_require_paths
     end
@@ -126,7 +131,9 @@ module Bundler
     def _remote_specification
       @_remote_specification ||= begin
         rs = stub.to_spec
-        if rs.equal?(self) # happens when to_spec gets the spec from Gem.loaded_specs
+        # Gem::StubSpecification#to_spec may return an activated specification
+        # with the same name and version from a different gem installation.
+        if rs.equal?(self) || rs.loaded_from != loaded_from
           rs = Gem::Specification.load(loaded_from)
           Bundler.rubygems.stub_set_spec(stub, rs)
         end

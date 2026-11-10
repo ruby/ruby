@@ -75,15 +75,39 @@ module Gem::Util
   end
 
   ##
-  # Globs for files matching +pattern+ inside of +directory+,
-  # returning absolute paths to the matching files. Unlike a plain
-  # Dir.glob with an interpolated path, glob metacharacters in
-  # +base_path+ are not treated as part of the pattern.
+  # Globs for entries matching +glob+ inside of +base_path+, returning
+  # absolute paths to the matching files and directories. Unlike a plain
+  # Dir.glob with an interpolated path, glob metacharacters in +base_path+
+  # are not treated as part of the pattern. Matched entries are joined to
+  # +base_path+ literally, so an entry starting with `~` is not expanded
+  # into a home directory, and no other normalization is applied to them.
 
   def self.glob_files_in_dir(glob, base_path)
     expanded_path = nil
     Dir.glob(glob, base: base_path).map! do |f|
-      File.expand_path(f, expanded_path ||= File.expand_path(base_path))
+      # File.join instead of File.expand_path, so that matched entries
+      # starting with `~` are not expanded into the home directory
+      File.join(expanded_path ||= File.expand_path(base_path), f)
+    end
+  end
+
+  ##
+  # Duplicates +obj+ without Marshal, which cannot resolve Gem:: constants from
+  # the root box under Ruby::Box (RUBY_BOX=1). Hashes and arrays are copied
+  # recursively, anything else with a plain +dup+, so an object's internals stay
+  # shared with the original, as are hash keys. Shared references are not
+  # preserved, and a cyclic +obj+ raises SystemStackError.
+
+  def self.deep_dup(obj) # :nodoc:
+    case obj
+    when Hash then obj.to_h {|k, v| [k, deep_dup(v)] }
+    when Array then obj.map {|e| deep_dup(e) }
+    else
+      begin
+        obj.dup
+      rescue TypeError
+        obj
+      end
     end
   end
 

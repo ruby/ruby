@@ -14,6 +14,11 @@
 
 #define RREGEXP_INITIALIZED FL_USER5
 
+struct rb_regexp_variant {
+    struct rb_regexp_variant *next;
+    struct re_pattern_buffer reg;
+};
+
 #define RMATCH_ONIG FL_USER1
 #define RMATCH_OFFSETS_EXTERNAL FL_USER2
 
@@ -39,13 +44,13 @@ RMATCH_END_PTR(VALUE match)
     }
 }
 
-static inline long
+static inline rb_len_t
 RMATCH_BEG(VALUE match, int i)
 {
     return RMATCH_BEG_PTR(match)[i];
 }
 
-static inline long
+static inline rb_len_t
 RMATCH_END(VALUE match, int i)
 {
     return RMATCH_END_PTR(match)[i];
@@ -61,22 +66,22 @@ RMATCH_NREGS(VALUE match)
 VALUE rb_reg_s_alloc(VALUE klass);
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
 VALUE rb_reg_check_preprocess(VALUE);
-long rb_reg_search0(VALUE, VALUE, long, int, int, VALUE *);
-VALUE rb_reg_match_p(VALUE re, VALUE str, long pos);
+rb_len_t rb_reg_search0(VALUE, VALUE, rb_len_t, int, int, VALUE *);
+VALUE rb_reg_match_p(VALUE re, VALUE str, rb_len_t pos);
 VALUE rb_reg_regsub_match(VALUE str, VALUE src, VALUE match);
 VALUE rb_match_init_copy(VALUE copy, VALUE orig);
-/* MatchData transfer for the move courier (ractor.c). */
-void *rb_match_move_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs_out);
-VALUE rb_match_move_alloc(VALUE klass, int num_regs);
-void rb_match_move_load(VALUE match, VALUE regexp, VALUE str, int num_regs, const void *blob);
-void rb_match_move_free(void *blob);
+/* MatchData transfer for the Ractor courier (ractor.c). */
+void *rb_match_blob_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs_out, bool release_source);
+VALUE rb_match_blob_alloc(VALUE klass, int num_regs);
+void rb_match_blob_load(VALUE match, VALUE regexp, VALUE str, int num_regs, const void *blob);
+void rb_match_blob_free(void *blob);
 bool rb_reg_start_with_p(VALUE re, VALUE str);
 VALUE rb_reg_hash(VALUE re);
 VALUE rb_reg_equal(VALUE re1, VALUE re2);
-VALUE rb_backref_set_string(VALUE string, long pos, long len);
+VALUE rb_backref_set_string(VALUE string, rb_len_t pos, rb_len_t len);
 void rb_match_unbusy(VALUE);
 int rb_match_count(VALUE match);
-VALUE rb_reg_new_from_values(long cnt, const VALUE *elements, int opt);
+VALUE rb_reg_new_from_values(rb_len_t cnt, const VALUE *elements, int opt);
 VALUE rb_reg_last_defined(VALUE match);
 
 #define ARG_REG_OPTION_MASK \

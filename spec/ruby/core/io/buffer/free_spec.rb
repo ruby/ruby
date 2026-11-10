@@ -69,6 +69,38 @@ describe "IO::Buffer#free" do
     buffer.null?.should == true
   end
 
+  ruby_version_is "3.4" do
+    it "resets the buffer to a valid empty state" do
+      buffer = IO::Buffer.new(4)
+      buffer.free
+
+      buffer.null?.should == true
+      buffer.empty?.should == true
+      buffer.valid?.should == true
+      buffer.get_string.should == ""
+    end
+  end
+
+  ruby_version_is "4.1" do
+    it "raises FrozenError without freeing a frozen buffer" do
+      buffer = IO::Buffer.new(4)
+      buffer.set_string("test")
+      buffer.freeze
+
+      -> { buffer.free }.should.raise(FrozenError)
+      buffer.null?.should == false
+      buffer.get_string.should == "test"
+    end
+
+    it "allows internal cleanup after a buffer is frozen inside .for" do
+      string = +"test"
+      buffer = IO::Buffer.for(string, &:freeze)
+
+      buffer.null?.should == true
+      (string << "!").should == "test!"
+    end
+  end
+
   it "is disallowed while locked, raising IO::Buffer::LockedError" do
     buffer = IO::Buffer.new(4)
     buffer.locked do
@@ -79,15 +111,17 @@ describe "IO::Buffer#free" do
   end
 
   context "with a slice of a buffer" do
-    it "nullifies the slice, not touching the buffer" do
-      buffer = IO::Buffer.new(4)
-      slice = buffer.slice(0, 2)
+    ruby_version_is ""..."4.1" do
+      it "nullifies the slice, not touching the buffer" do
+        buffer = IO::Buffer.new(4)
+        slice = buffer.slice(0, 2)
 
-      slice.free
-      slice.null?.should == true
-      buffer.null?.should == false
+        slice.free
+        slice.null?.should == true
+        buffer.null?.should == false
 
-      buffer.free
+        buffer.free
+      end
     end
 
     it "nullifies buffer, invalidating the slice" do
@@ -95,8 +129,16 @@ describe "IO::Buffer#free" do
       slice = buffer.slice(0, 2)
 
       buffer.free
-      slice.null?.should == false
       slice.valid?.should == false
+
+      ruby_version_is ""..."4.1" do
+        slice.null?.should == false
+      end
+
+      ruby_version_is "4.1" do
+        # Offset-based slices resolve their base from the freed source.
+        slice.null?.should == true
+      end
     end
   end
 end

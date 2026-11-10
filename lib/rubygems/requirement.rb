@@ -74,7 +74,7 @@ class Gem::Requirement
   end
 
   def self.default
-    new ">= 0"
+    new
   end
 
   def self.default_prerelease

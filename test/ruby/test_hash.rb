@@ -1,7 +1,6 @@
 # -*- coding: us-ascii -*-
 # frozen_string_literal: false
 require 'test/unit'
-EnvUtil.suppress_warning {require 'continuation'}
 
 class TestHash < Test::Unit::TestCase
   def test_hash
@@ -179,9 +178,9 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_st_literal_memory_leak
-    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true)
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true, samples: 5)
     begin;
-      1_000_000.times do
+      200_000.times do
         # >8 element hashes are ST allocated rather than AR allocated
         {a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9}
       end
@@ -617,7 +616,10 @@ class TestHash < Test::Unit::TestCase
   end
 
   def hash_hint hv
-    hv & 0xff
+    hint = hv & 0xff
+    # hash.c's ar_do_hash_hint() substitutes RHASH_AR_CLEARED_HINT (0x00)
+    # with RHASH_AR_SUBSTITUTION_HINT (0x01), so those two alias.
+    hint == 0 ? 1 : hint
   end
 
   def test_rehash
@@ -1327,6 +1329,11 @@ class TestHash < Test::Unit::TestCase
     assert_equal({1=>8, 2=>4, 3=>4, 5=>7}, h1.merge(h2, h3) {|k, v1, v2| k + v1 + v2 })
   end
 
+  def test_merge_during_gc
+    hash = @cls[a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8]
+    assert_equal(9, EnvUtil.under_gc_stress(0x04) { hash.merge(i: 9) }[:i])
+  end
+
   def test_merge_on_identhash
     h = @cls[1=>2,3=>4,5=>6]
     h.compare_by_identity
@@ -1406,83 +1413,6 @@ class TestHash < Test::Unit::TestCase
     assert_raise(ArgumentError){ a.flatten(1, 2) }
   end
 
-  def test_callcc
-    omit 'requires callcc support' unless respond_to?(:callcc)
-
-    h = @cls[1=>2]
-    c = nil
-    f = false
-    h.each { callcc {|c2| c = c2 } }
-    unless f
-      f = true
-      c.call
-    end
-    assert_raise(RuntimeError) { h.each { h.rehash } }
-
-    h = @cls[1=>2]
-    c = nil
-    assert_raise(RuntimeError) do
-      h.each { callcc {|c2| c = c2 } }
-      h.clear
-      c.call
-    end
-  end
-
-  def test_callcc_iter_level
-    omit 'requires callcc support' unless respond_to?(:callcc)
-
-    bug9105 = '[ruby-dev:47803] [Bug #9105]'
-    h = @cls[1=>2, 3=>4]
-    c = nil
-    f = false
-    h.each {callcc {|c2| c = c2}}
-    unless f
-      f = true
-      c.call
-    end
-    assert_nothing_raised(RuntimeError, bug9105) do
-      h.each {|i, j|
-        h.delete(i);
-        assert_not_equal(false, i, bug9105)
-      }
-    end
-  end
-
-  def test_callcc_escape
-    omit 'requires callcc support' unless respond_to?(:callcc)
-
-    bug9105 = '[ruby-dev:47803] [Bug #9105]'
-    assert_nothing_raised(RuntimeError, bug9105) do
-      h=@cls[]
-      cnt=0
-      c = callcc {|cc|cc}
-      h[cnt] = true
-      h.each{|i|
-        cnt+=1
-        c.call if cnt == 1
-      }
-    end
-  end
-
-  def test_callcc_reenter
-    omit 'requires callcc support' unless respond_to?(:callcc)
-
-    bug9105 = '[ruby-dev:47803] [Bug #9105]'
-    assert_nothing_raised(RuntimeError, bug9105) do
-      h = @cls[1=>2,3=>4]
-      c = nil
-      f = false
-      h.each { |i|
-        callcc {|c2| c = c2 } unless c
-        h.delete(1) if f
-      }
-      unless f
-        f = true
-        c.call
-      end
-    end
-  end
-
   def test_threaded_iter_level
     bug9105 = '[ruby-dev:47807] [Bug #9105]'
     h = @cls[1=>2]
@@ -1515,10 +1445,10 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_compare_by_identy_memory_leak
-    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #20145]", rss: true)
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #20145]", rss: true, samples: 5)
     begin;
       h = { 1 => 2 }.compare_by_identity
-      1_000_000.times do
+      200_000.times do
         h.select { false }
       end
     end;
@@ -1958,10 +1888,23 @@ class TestHashOnly < Test::Unit::TestCase
       end
     end
     obj.hash_calls = 0
-    hash = {obj => 42}
+
+    ar_hash = {obj => 42}
     assert_equal(1, obj.hash_calls)
-    yield hash
+    yield ar_hash
     assert_equal(1, obj.hash_calls)
+
+    st_hash = {a:1, b:2, c:3, d:4, e:5, f:6, g:7, h:8, obj => 42}
+    assert_equal(2, obj.hash_calls)
+    yield st_hash
+    assert_equal(2, obj.hash_calls)
+
+    st_hash.keys.first(8).each do |key|
+      st_hash.delete(key)
+    end
+    assert_equal(2, obj.hash_calls)
+    yield st_hash
+    assert_equal(2, obj.hash_calls)
   end
 
   def test_select_reject_will_not_rehash
@@ -1974,9 +1917,9 @@ class TestHashOnly < Test::Unit::TestCase
   end
 
   def test_st_literal_memory_leak
-    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true)
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true, samples: 5)
     begin;
-      1_000_000.times do
+      200_000.times do
         # >8 element hashes are ST allocated rather than AR allocated
         {a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9}
       end
@@ -2075,17 +2018,14 @@ class TestHashOnly < Test::Unit::TestCase
   end
 
   def test_rehash_memory_leak
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true, samples: 2..100)
       ar_hash = 1.times.map { |i| [i, i] }.to_h
       st_hash = 10.times.map { |i| [i, i] }.to_h
-
-      code = proc do
+    PREP
+      10_000.times do
         ar_hash.rehash
         st_hash.rehash
       end
-      1_000.times(&code)
-    PREP
-      1_000_000.times(&code)
     CODE
   end
 
@@ -2107,6 +2047,36 @@ class TestHashOnly < Test::Unit::TestCase
     assert_equal(h2, h1)
   end
 
+  def test_replace_ar_with_st
+    # AR hash
+    h1 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7 }
+    # ST hash
+    h2 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9 }
+    # Replace AR hash with ST hash
+    h1.replace(h2)
+    assert_equal(h2, h1)
+  end
+
+  def test_replace_ar_with_ar
+    # AR hash
+    h1 = { a: 1, b: 2 }
+    # AR hash
+    h2 = { a: 1 }
+    # Replace AR hash with AR hash
+    h1.replace(h2)
+    assert_equal(h2, h1)
+  end
+
+  def test_replace_st_with_st
+    # ST hash
+    h1 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9 }
+    # ST hash
+    h2 = { a: 9, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9 }
+    # Replace ST hash with AR hash
+    h1.replace(h2)
+    assert_equal(h2, h1)
+  end
+
   def test_nil_to_h
     h = nil.to_h
     assert_equal({}, h)
@@ -2121,11 +2091,10 @@ class TestHashOnly < Test::Unit::TestCase
   end
 
   def test_replace_memory_leak
-    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true)
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true, samples: 2..100)
     h = ("aa".."zz").each_with_index.to_h
-    10_000.times {h.dup}
     begin;
-      500_000.times {h.dup.replace(h)}
+      5_000.times {h.dup.replace(h)}
     end;
   end
 

@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class StaticLiteralsTest < TestCase
     def test_static_literals
       assert_warning("1")
@@ -60,14 +60,14 @@ module Prism
     def parse_warnings(left, right)
       warnings = []
 
-      warnings << (Prism.parse(<<~RUBY, filepath: __FILE__).warnings.first || NullWarning.new)
+      warnings << (Ruby::Prism.parse(<<~RUBY, filepath: __FILE__).warnings.first || NullWarning.new)
         {
           #{left} => 1,
           #{right} => 2
         }
       RUBY
 
-      warnings << (Prism.parse(<<~RUBY, filepath: __FILE__).warnings.first || NullWarning.new)
+      warnings << (Ruby::Prism.parse(<<~RUBY, filepath: __FILE__).warnings.first || NullWarning.new)
         case foo
         when #{left}
         when #{right}

@@ -266,6 +266,47 @@ RSpec.describe "bundle cache" do
       expect(cached_gem("activesupport-2.3.2")).not_to exist
     end
 
+    it "keeps outdated .gems when keep_outdated_cache is set" do
+      setup_main_repo
+      bundle_config "keep_outdated_cache true"
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "myrack"
+      G
+      expect(cached_gem("myrack-1.0.0")).to exist
+      expect(cached_gem("actionpack-2.3.2")).to exist
+      expect(cached_gem("activesupport-2.3.2")).to exist
+    end
+
+    it "keeps outdated .gems when only the deprecated no_prune is set" do
+      setup_main_repo
+      bundle_config "no_prune true"
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "myrack"
+      G
+      expect(cached_gem("myrack-1.0.0")).to exist
+      expect(cached_gem("actionpack-2.3.2")).to exist
+      expect(cached_gem("activesupport-2.3.2")).to exist
+      expect(deprecations.count {|d| d.include?("no_prune") }).to eq 1
+    end
+
+    it "lets keep_outdated_cache win over the deprecated no_prune" do
+      setup_main_repo
+      bundle_config "no_prune true"
+      bundle_config "keep_outdated_cache false"
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "myrack"
+      G
+      expect(cached_gem("actionpack-2.3.2")).not_to exist
+      expect(cached_gem("activesupport-2.3.2")).not_to exist
+      expect(err).not_to include("no_prune")
+    end
+
     it "removes .gems when gem changes to git source" do
       setup_main_repo
       build_git "myrack"
@@ -422,6 +463,30 @@ RSpec.describe "bundle cache" do
       G
 
       expect(the_bundle).to include_gems "foo-bundler 1.0"
+    end
+  end
+
+  describe "--all-platforms with content-addressed gems", rubygems: ">= 4.1.0.a" do
+    before do
+      skip_unless_content_addressing_available!
+      build_repo2_with_content_addressed_gems
+
+      gemfile <<~G
+        source "https://gem.repo2"
+
+        gem "mygem"
+      G
+    end
+
+    it "caches the platform gem and every content-addressed gem a row lists" do
+      simulate_platform "x86_64-linux" do
+        lockfile_with_content_addresses(addresses(current_abi, mismatched_abi), ruby_abis: [current_abi, mismatched_abi].sort)
+
+        bundle_with_content_addressed_gems "cache --all-platforms"
+
+        cached = Dir.glob(bundled_app("vendor/cache/mygem-1.0-*.gem").to_s).map {|file| File.basename(file, ".gem") }.sort
+        expect(cached).to eq(["mygem-1.0-#{current_address}", "mygem-1.0-#{mismatched_address}", "mygem-1.0-x86_64-linux"].sort)
+      end
     end
   end
 end

@@ -64,7 +64,8 @@ class Gem::Uninstaller
     @gem                = gem
     @version            = options[:version] || Gem::Requirement.default
     @install_dir        = options[:install_dir]
-    @gem_home           = File.realpath(@install_dir || Gem.dir)
+    gem_home            = @install_dir || Gem.dir
+    @gem_home           = File.exist?(gem_home) ? File.realpath(gem_home) : gem_home
     @user_dir           = File.exist?(Gem.user_dir) ? File.realpath(Gem.user_dir) : Gem.user_dir
     @force_executables  = options[:executables]
     @force_all          = options[:all]
@@ -207,6 +208,9 @@ class Gem::Uninstaller
 
     return if executables.empty?
 
+    bin_dir = @bin_dir || Gem.bindir(spec.base_dir)
+    return if bin_dir_missing?(bin_dir)
+
     executables = executables.map {|exec| formatted_program_filename exec }
 
     remove = if @force_executables.nil?
@@ -219,8 +223,6 @@ class Gem::Uninstaller
     end
 
     if remove
-      bin_dir = @bin_dir || Gem.bindir(spec.base_dir)
-
       raise Gem::FilePermissionError, bin_dir unless File.writable? bin_dir
 
       executables.each do |exe_name|
@@ -271,6 +273,9 @@ class Gem::Uninstaller
 
     safe_delete { rm_r full_gem_path, exclusions: exclusions }
     safe_delete { FileUtils.rm_r spec.extension_dir }
+    safe_delete { FileUtils.rm_f spec.build_info_file }
+    safe_delete { FileUtils.rm_f File.join(spec.build_info_dir, "#{spec.full_name}.mkmf.log") }
+    safe_delete { FileUtils.rm_f File.join(spec.build_info_dir, "#{spec.full_name}.gem_make.out") }
 
     old_platform_name = spec.original_name
 
@@ -395,6 +400,17 @@ class Gem::Uninstaller
   end
 
   private
+
+  # Only a directory that does not exist is skipped. Any other error, such as
+  # EACCES on a parent directory, is left to the writable check.
+  def bin_dir_missing?(bin_dir)
+    File.stat(bin_dir)
+    false
+  rescue Errno::ENOENT
+    true
+  rescue SystemCallError
+    false
+  end
 
   def rm_r(path, exclusions:)
     FileUtils::Entry_.new(path).postorder_traverse do |ent|

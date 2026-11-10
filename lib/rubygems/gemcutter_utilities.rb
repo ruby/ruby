@@ -48,10 +48,23 @@ module Gem::GemcutterUtilities
       ENV["GEM_HOST_API_KEY"]
     elsif options[:key]
       verify_api_key options[:key]
+    elsif credential_store_key = Gem.configuration.credential_store_api_key_for(host)
+      credential_store_key
     elsif Gem.configuration.api_keys.key?(host)
       Gem.configuration.api_keys[host]
     else
-      Gem.configuration.rubygems_api_key
+      key = Gem.configuration.rubygems_api_key
+
+      # Once the store has refused to answer, this last resort would hand the
+      # RubyGems.org key to a host that has one of its own, or come away with
+      # nothing and let the caller ask for a password.
+      if !@recognizing_session && Gem.configuration.credential_store_read_failed_for?(host) && (key.nil? || !default_host?)
+        alert_error "The credential store could not be read, so no API key for #{host} could be found. " \
+                    "Make the store readable and run the command again."
+        terminate_interaction ERROR_CODE
+      end
+
+      key
     end
   end
 
@@ -155,7 +168,17 @@ module Gem::GemcutterUtilities
   def sign_in(sign_in_host = nil, scope: nil)
     sign_in_host ||= host
     pretty_host = pretty_host(sign_in_host)
-    if api_key
+    # Stopping because the store cannot be read would close the one command
+    # that can re-authenticate. A flag rather than an argument keeps #api_key
+    # callable with no arguments, as command plugins that override it define it.
+    @recognizing_session = true
+    signed_in = begin
+      api_key
+    ensure
+      @recognizing_session = false
+    end
+
+    if signed_in
       say "You are already signed in on #{pretty_host}."
       return
     end
@@ -196,10 +219,29 @@ module Gem::GemcutterUtilities
   def verify_api_key(key)
     if Gem.configuration.api_keys.key? key
       Gem.configuration.api_keys[key]
+    elsif stored_key = stored_api_key_named(key)
+      stored_key
     else
       alert_error "No such API key. Please add it to your configuration (done automatically on initial `gem push`)."
       terminate_interaction(ERROR_CODE)
     end
+  end
+
+  ##
+  # The default key, when +name+ is the name the credentials file knows it by.
+  # That file renames :rubygems_api_key to :rubygems on the way in, so the name
+  # survives only there, and moving the key into the store would otherwise put
+  # it out of reach of --key.
+  #
+  # Only that one name. The store is keyed by host, and --key names a key, so
+  # looking any other name up there would let --key reach a host's key and send
+  # it somewhere else. The credentials file keeps the two apart by type, since
+  # --key arrives as a Symbol and host entries are strings.
+
+  def stored_api_key_named(name)
+    return nil unless name.to_s == "rubygems"
+
+    Gem.configuration.credential_store_default_api_key
   end
 
   ##

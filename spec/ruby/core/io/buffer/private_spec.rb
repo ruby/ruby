@@ -7,7 +7,7 @@ describe "IO::Buffer#private?" do
   end
 
   it "is true for a buffer created with PRIVATE flag" do
-    @buffer = IO::Buffer.new(12, IO::Buffer::INTERNAL | IO::Buffer::PRIVATE)
+    @buffer = IO::Buffer.new(12, IO::Buffer::MAPPED | IO::Buffer::PRIVATE)
     @buffer.private?.should == true
   end
 

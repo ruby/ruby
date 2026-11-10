@@ -82,4 +82,20 @@ describe :array_intersection, shared: true do
 
     [x].send(@method, [x]).should == [x]
   end
+
+  it "does not call #hash for small arrays" do
+    a = Object.new
+    b = Object.new
+    [a, b].each { |object| object.define_singleton_method(:hash) { raise "#hash called" } }
+
+    [a, b].send(@method, [b]).should == [b]
+  end
+
+  it "uses #hash unless both arrays are within the small array limit" do
+    poison = Object.new
+    poison.define_singleton_method(:hash) { raise "#hash called" }
+
+    Array.new(16) { Object.new }.send(@method, Array.new(16, poison)).should == []
+    -> { Array.new(17) { Object.new }.send(@method, Array.new(16, poison)) }.should.raise(RuntimeError, "#hash called")
+  end
 end

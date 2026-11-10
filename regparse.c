@@ -6759,6 +6759,8 @@ parse_subexp(Node** top, OnigToken* tok, int term,
       }
       r = parse_branch(&node, tok, term, src, end, env);
       if (r < 0) {
+        /* the failed branch is not linked into topnode yet: free both */
+        onig_node_free(node);
         onig_node_free(topnode);
         return r;
       }

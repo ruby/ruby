@@ -40,7 +40,7 @@ static const rb_data_type_t ossl_cipher_type = {
     {
         0, ossl_cipher_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 #ifdef OSSL_USE_PROVIDER
@@ -57,7 +57,7 @@ static const rb_data_type_t ossl_evp_cipher_holder_type = {
     {
         .dfree = ossl_evp_cipher_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 #endif
 
@@ -304,10 +304,12 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eArgError, "iterations must be a positive integer");
     digest = NIL_P(vdigest) ? EVP_md5() : ossl_evp_md_fetch(vdigest, &md_holder);
     GetCipher(self, ctx);
-    EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), digest, salt,
-                   (unsigned char *)RSTRING_PTR(vpass), RSTRING_LENINT(vpass), iter, key, iv);
+    if (!EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), digest, salt,
+                        (unsigned char *)RSTRING_PTR(vpass),
+                        RSTRING_LENINT(vpass), iter, key, iv))
+        ossl_raise(eCipherError, "EVP_BytesToKey");
     if (EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, -1) != 1)
-        ossl_raise(eCipherError, NULL);
+        ossl_raise(eCipherError, "EVP_CipherInit_ex");
     OPENSSL_cleanse(key, sizeof key);
     OPENSSL_cleanse(iv, sizeof iv);
 
@@ -317,12 +319,16 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
 }
 
 static int
-ossl_cipher_update_long(EVP_CIPHER_CTX *ctx, unsigned char *out, long *out_len_ptr,
-                        const unsigned char *in, long in_len)
+ossl_cipher_update_long(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                        rb_len_t *out_len_ptr, const unsigned char *in,
+                        rb_len_t in_len)
 {
     int out_part_len;
     int limit = INT_MAX / 2 + 1;
-    long out_len = 0;
+    rb_len_t out_len = 0;
+
+    if (out == in && in_len > limit)
+        ossl_raise(eCipherError, "input too large for in-place update");
 
     do {
         int in_part_len = in_len > limit ? limit : (int)in_len;
@@ -360,19 +366,19 @@ static VALUE
 ossl_cipher_update(int argc, VALUE *argv, VALUE self)
 {
     EVP_CIPHER_CTX *ctx;
-    unsigned char *in;
-    long in_len, out_len;
+    rb_len_t in_len, out_len;
     VALUE data, str;
 
     rb_scan_args(argc, argv, "11", &data, &str);
+    GetCipher(self, ctx);
 
     if (!RTEST(rb_attr_get(self, id_key_set)))
         ossl_raise(eCipherError, "key not set");
 
     StringValue(data);
-    in = (unsigned char *)RSTRING_PTR(data);
+    if (!NIL_P(str))
+        StringValue(str);
     in_len = RSTRING_LEN(data);
-    GetCipher(self, ctx);
 
     /*
      * As of OpenSSL 3.2, there is no reliable way to determine the required
@@ -385,24 +391,25 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
      * Using EVP_MAX_BLOCK_LENGTH (32) as a safe upper bound for ciphers
      * currently implemented in OpenSSL, but this can change in the future.
      */
-    if (in_len > LONG_MAX - EVP_MAX_BLOCK_LENGTH) {
+    if (in_len > RB_LEN_MAX - EVP_MAX_BLOCK_LENGTH) {
         ossl_raise(rb_eRangeError,
-                   "data too big to make output buffer: %ld bytes", in_len);
+                   "data too big to make output buffer: %"PRIdLEN" bytes",
+                   in_len);
     }
     out_len = in_len + EVP_MAX_BLOCK_LENGTH;
 
     if (NIL_P(str))
         str = rb_str_buf_new(out_len);
     else {
-        StringValue(str);
-        if ((long)rb_str_capacity(str) >= out_len)
+        if ((rb_len_t)rb_str_capacity(str) >= out_len)
             rb_str_modify(str);
         else
             rb_str_modify_expand(str, out_len - RSTRING_LEN(str));
     }
 
-    if (!ossl_cipher_update_long(ctx, (unsigned char *)RSTRING_PTR(str),
-                                 &out_len, in, in_len))
+    if (!ossl_cipher_update_long(ctx,
+                                 (unsigned char *)RSTRING_PTR(str), &out_len,
+                                 (unsigned char *)RSTRING_PTR(data), in_len))
         ossl_raise(eCipherError, "EVP_CipherUpdate");
     rb_str_set_len(str, out_len);
 
@@ -583,7 +590,7 @@ ossl_cipher_set_auth_data(VALUE self, VALUE data)
 {
     EVP_CIPHER_CTX *ctx;
     unsigned char *in;
-    long in_len, out_len;
+    rb_len_t in_len, out_len;
 
     StringValue(data);
 

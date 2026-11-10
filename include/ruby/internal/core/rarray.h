@@ -20,7 +20,7 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Defines struct ::RArray.
  */
-#include "ruby/internal/arithmetic/long.h"
+#include "ruby/internal/arithmetic/len_t.h"
 #include "ruby/internal/attr/artificial.h"
 #include "ruby/internal/attr/constexpr.h"
 #include "ruby/internal/attr/maybe_unused.h"
@@ -139,7 +139,7 @@ struct RArray {
         struct {
 
             /** Number of elements of the array. */
-            long len;
+            rb_len_t len;
 
             /** Auxiliary info. */
             union {
@@ -149,7 +149,7 @@ struct RArray {
                  * `capa` elements is expected to exist at `*ptr`.  This can be
                  * bigger than `len`.
                  */
-                long capa;
+                rb_len_t capa;
 
                 /**
                  * Parent  of  the  array.   Nowadays arrays  can  share  their
@@ -230,7 +230,7 @@ RBIMPL_ATTR_ARTIFICIAL()
  * @shyouhei thinks  it could  just be  eliminated, hidden  into implementation
  * details.
  */
-static inline long
+static inline rb_len_t
 RARRAY_EMBED_LEN(VALUE ary)
 {
     RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
@@ -239,7 +239,7 @@ RARRAY_EMBED_LEN(VALUE ary)
     VALUE f = RBASIC(ary)->flags;
     f &= RARRAY_EMBED_LEN_MASK;
     f >>= RARRAY_EMBED_LEN_SHIFT;
-    return RBIMPL_CAST((long)f);
+    return RBIMPL_CAST((rb_len_t)f);
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -250,7 +250,7 @@ RBIMPL_ATTR_PURE_UNLESS_DEBUG()
  * @return     Its number of elements.
  * @pre        `a` must be an instance of ::RArray.
  */
-static inline long
+static inline rb_len_t
 rb_array_len(VALUE a)
 {
     RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
@@ -279,7 +279,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline int
 RARRAY_LENINT(VALUE ary)
 {
-    return rb_long2int(RARRAY_LEN(ary));
+    return rb_len2int(RARRAY_LEN(ary));
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -382,23 +382,42 @@ RARRAY_PTR(VALUE ary)
  * @post        `ary`'s `i`th element is set to `v`.
  */
 static inline void
-RARRAY_ASET(VALUE ary, long i, VALUE v)
+RARRAY_ASET(VALUE ary, rb_len_t i, VALUE v)
 {
     RARRAY_PTR_USE(ary, ptr,
         RB_OBJ_WRITE(ary, &ptr[i], v));
 }
 
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 /**
- * @deprecated
+ * @private
  *
- * :FIXME: we want to convert RARRAY_AREF into an inline function (to add rooms
- * for more sanity checks).  However there were situations where the address of
- * this macro is taken i.e. &RARRAY_AREF(...).  They cannot be possible if this
- * is not a  macro.  Such usages are abuse, and  we eliminated them internally.
- * However we are afraid  of similar things to remain in  the wild.  This macro
- * remains as  it is due to  that.  If we could  warn such usages we  can set a
- * transition path, but currently no way is found to do so.
+ * This is  an implementation detail  of RARRAY_AREF().   People do not  use it
+ * directly.
+ *
+ * Allows situations where  the address is taken  i.e. &RARRAY_AREF(...).  Such
+ * usages are abuse, and we eliminated  them internally.  However we are afraid
+ * of similar things to remain in the wild.
+ *
+ * @param[in]  ary  An object of ::RArray.
+ * @param[in]  idx  Index to access ary
+ * @return     Its backend storage.
  */
-#define RARRAY_AREF(a, i) RARRAY_CONST_PTR(a)[i]
+static inline const VALUE *
+RBIMPL_AREF_PTR(VALUE ary, rb_len_t idx)
+{
+    RUBY_ASSERT(idx >= 0);
+    RUBY_ASSERT(idx < RARRAY_LEN(ary));
+    return &rb_array_const_ptr(ary)[idx];
+}
+
+/**
+ * References an object in an array.
+ *
+ * @param[in]  ary  An object of ::RArray.
+ * @param[in]  idx  Index to access ary
+ * @return     The object at idx in ary
+ */
+#define RARRAY_AREF(a, i) (*RBIMPL_AREF_PTR(a, i))
 
 #endif /* RBIMPL_RARRAY_H */

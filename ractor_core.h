@@ -1,19 +1,34 @@
+#ifndef RUBY_RACTOR_CORE_H
+#define RUBY_RACTOR_CORE_H
 #include "internal/gc.h"
+#include "internal/sanitizers.h"
 #include "ruby/ruby.h"
 #include "ruby/ractor.h"
 #include "vm_core.h"
 #include "id_table.h"
 #include "vm_debug.h"
+#include "hrtime.h"
 
 #ifndef RACTOR_CHECK_MODE
 #define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
+#endif
+
+/* Record the registration-time VALUE in each rb_gc_register_address entry so the
+ * verifier can distinguish a transitioned cross-Ractor store from conservative
+ * garbage.  Debug and ASAN builds only; production keeps one-word entries. */
+#ifndef RB_GC_REGISTERED_ADDR_CHECK
+# if RUBY_DEBUG || defined(RUBY_ASAN_ENABLED)
+#  define RB_GC_REGISTERED_ADDR_CHECK 1
+# else
+#  define RB_GC_REGISTERED_ADDR_CHECK 0
+# endif
 #endif
 
 // experimental flag because it is not sure it is the common pattern
 #define RUBY_TYPED_FROZEN_SHAREABLE_NO_REC RUBY_FL_FINALIZE
 
 /* An in-flight move payload, serialized off-heap (defined in ractor.c). */
-struct rb_ractor_move_courier;
+struct rb_ractor_courier;
 
 struct rb_ractor_sync {
     // ractor lock
@@ -21,10 +36,6 @@ struct rb_ractor_sync {
 
 #if RACTOR_CHECK_MODE > 0
     VALUE locked_by;
-#endif
-
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_nativethread_cond_t wakeup_cond;
 #endif
 
     // incoming messages
@@ -38,6 +49,11 @@ struct rb_ractor_sync {
     struct st_table *ports;
     size_t next_port_id;
 
+    /* The baskets this Ractor holds that are on no queue: one it is building to send,
+     * and one it has taken off a queue and is materializing.  A queued basket is rooted
+     * by its queue instead.  Only the owner touches this list. */
+    struct ccan_list_head off_queue_baskets;
+
     // monitors
     struct ccan_list_head monitors;
 
@@ -46,22 +62,9 @@ struct rb_ractor_sync {
     VALUE legacy;
     bool legacy_exc;
     bool legacy_taken; /* Ractor#value already returned the value */
-
-    /* Number of receives currently materializing a copy (only the owner's threads
-     * update it, under the GVL). */
-    int materializing_copies;
 };
 
 struct ractor_basket;
-
-/* One in-flight copy payload being rebuilt (lives on the receiver's machine
- * stack) */
-struct ractor_materialize_frame {
-    VALUE snapshot;                          /* the sender-side snapshot */
-    const VALUE *pinned;                     /* pin list of every snapshot node (owned by the basket) */
-    size_t pinned_cnt;
-    struct ractor_materialize_frame *prev;
-};
 
 // created
 //   | ready to run
@@ -84,6 +87,14 @@ enum ractor_status {
     ractor_terminated,
 };
 
+struct rb_ractor_registered_addr {
+    VALUE *addr;
+#if RB_GC_REGISTERED_ADDR_CHECK
+    /* A raw provenance snapshot for verification only. Never mark or dereference it. */
+    VALUE initial_value;
+#endif
+};
+
 struct rb_ractor_struct {
     struct rb_ractor_pub pub;
     struct rb_ractor_sync sync;
@@ -93,6 +104,10 @@ struct rb_ractor_struct {
      * them to the survivor.  Raw malloc, so a merge during sweep cannot re-enter GC. */
     VALUE *registered_marks;
     size_t registered_marks_cnt, registered_marks_capa;
+
+    struct rb_ractor_registered_addr *registered_addrs;
+    size_t registered_addrs_cnt, registered_addrs_capa;
+    bool registered_addrs_listed;
 
     /* traversal-API mark redirect (NULL outside a traversal).  Per Ractor so a
      * concurrent traversal on another Ractor is never observed.  A modular GC's
@@ -108,6 +123,12 @@ struct rb_ractor_struct {
         struct rb_thread_sched sched;
         rb_execution_context_t *running_ec;
         rb_thread_t *main;
+        // MN termination epilogue: keeps the dying thread marked (like a set
+        // member) between leaving the living set and its last use
+        rb_thread_t *dying_th;
+
+        // `main` is in rb_thread_terminate_all(), waiting for the others to go
+        bool terminating;
     } threads;
 
     /* Postponed jobs targeted at this Ractor
@@ -162,39 +183,26 @@ struct rb_ractor_struct {
      * still enumerates it. */
     void *creating_child_objspace;
 
-    /* True while Ractor#send builds a native copy snapshot; copy_enter then collects
-     * every snapshot node into pin_capture below.  Owner thread only. */
-    bool gen_fields_capturing;
-
-    /* Pin list collecting every node while a copy snapshot is built (basket_new
-     * hands it over to the basket).  A global GC clears every shref, so the re-pin
-     * has to cover all nodes, not just the root. */
-    VALUE *pin_capture;
-    size_t pin_capture_cnt, pin_capture_capa;
-    /* The in-flight copy basket between basket_new and the enqueue, so the re-pin
-     * covers that window too */
-    struct ractor_basket *sending_basket;
 }; // rb_ractor_t is defined in vm_core.h
 
 /* Mark the GC roots held in Ractor r's C structs (from the root scan in gc.c). */
-void rb_ractor_mark_local_roots(rb_ractor_t *r);
+struct rb_gc_mark_ctx;
+void rb_ractor_mark_local_roots(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r);
 void rb_ractor_mark_terminated_join_value(rb_ractor_t *r);
-void rb_ractor_repin_in_flight(rb_ractor_t *r);
-void rb_ractor_mark_in_flight_for_single_objspace(rb_ractor_t *r);
-/* True while the current Ractor is materializing an arriving copy (see the
- * definition in ractor_sync.c). */
-bool rb_ractor_materializing_p(void);
+void rb_ractor_reap_dead_ports(rb_ractor_t *r);
 
 /* Move src's registered_marks to dst and leave src empty (on join or when an orphan
  * is absorbed).  An absorb can run during a GC sweep, so the implementation uses raw
  * realloc (ractor.c). */
 void rb_ractor_absorb_registered_marks(rb_ractor_t *dst, rb_ractor_t *src);
 
+void rb_ractor_absorb_registered_addrs_without_gc(rb_ractor_t *dst, rb_ractor_t *src);
+
 enum ractor_wakeup_status {
     wakeup_none,
     wakeup_by_send,
     wakeup_by_interrupt,
-    // wakeup_by_close,
+    wakeup_by_close,
 };
 
 struct ractor_waiter {
@@ -202,6 +210,9 @@ struct ractor_waiter {
     rb_thread_t *th;
     struct ccan_list_node node;
     rb_atomic_t event_serial;
+
+    // absolute deadline for this wait, NULL when there is no timeout
+    const rb_hrtime_t *end;
 };
 
 static inline VALUE
@@ -254,7 +265,7 @@ VALUE rb_ractor_ensure_shareable(VALUE obj, VALUE name);
 st_table *rb_ractor_targeted_hooks(rb_ractor_t *cr);
 
 RUBY_SYMBOL_EXPORT_BEGIN
-void rb_ractor_finish_marking(void);
+void rb_ractor_finish_marking(bool full_mark);
 
 bool rb_ractor_shareable_p_continue(VALUE obj);
 
@@ -352,7 +363,7 @@ rb_ractor_set_current_ec_(rb_ractor_t *cr, rb_execution_context_t *ec, const cha
 void rb_vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line);
 void rb_vm_ractor_blocking_cnt_dec(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line);
 
-static inline uint32_t
+static inline rb_serial_t
 rb_ractor_id(const rb_ractor_t *r)
 {
     return r->pub.id;
@@ -407,3 +418,5 @@ rb_ractor_ignore_belonging(bool flag)
 #define rb_ractor_confirm_belonging(obj) obj
 #define rb_ractor_ignore_belonging(flag) (0)
 #endif
+
+#endif /* RUBY_RACTOR_CORE_H */

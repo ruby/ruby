@@ -8,6 +8,7 @@
 #define DT_DIR (S_IFDIR>>12)
 #define DT_REG (S_IFREG>>12)
 #define DT_LNK 10
+#define IFTODT(m) (((m) & S_IFMT) >> 12)
 
 struct direct
 {

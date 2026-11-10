@@ -32,7 +32,7 @@ module SyntaxSuggest
   #   visitor = Visitor.new
   #   visitor.visit(ast)
   #   visitor.endless_def_keyword_offsets # => Set[28]
-  class Visitor < Prism::Visitor
+  class Visitor < Prism::Visitor # :nodoc:
     attr_reader :endless_def_keyword_offsets, :consecutive_lines
 
     def initialize

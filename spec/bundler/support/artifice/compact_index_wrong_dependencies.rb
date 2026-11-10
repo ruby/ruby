@@ -7,7 +7,7 @@ class CompactIndexWrongDependencies < CompactIndexAPI
     etag_response do
       gem = gems.find {|g| g.name == params[:name] }
       gem.versions.each {|gv| gv.dependencies.clear } if gem
-      CompactIndex.info(gem ? gem.versions : [])
+      VendoredCompactIndex.info(gem ? gem.versions : [])
     end
   end
 end

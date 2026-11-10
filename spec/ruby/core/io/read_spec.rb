@@ -295,8 +295,25 @@ describe "IO#read" do
     @io.read(nil).should == @contents
   end
 
-  it "raises an ArgumentError when not passed a valid length" do
+  it "raises an ArgumentError when given negative length" do
     -> { @io.read(-1) }.should.raise(ArgumentError, "negative length -1 given")
+  end
+
+  it "coerces the length argument to an Integer using #to_int" do
+    length = mock('5')
+    length.should_receive(:to_int).and_return(5)
+    @io.read(length).should == "12345"
+  end
+
+  it "raises a TypeError if length cannot be coerced to an Integer" do
+    -> { @io.read(Object.new) }.should.raise(TypeError, "no implicit conversion of Object into Integer")
+    -> { @io.read("2") }.should.raise(TypeError, "no implicit conversion of String into Integer")
+  end
+
+  it "raises a TypeError when #to_int does not return an Integer" do
+    length = mock('to_int')
+    length.should_receive(:to_int).and_return("not an integer")
+    -> { @io.read(length) }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_int gives String)")
   end
 
   it "clears the output buffer if there is nothing to read" do
@@ -317,6 +334,12 @@ describe "IO#read" do
     @io.read(0, buf).should == ""
 
     buf.should == ''
+  end
+
+  it "does not modify the buffer if a read error occurs" do
+    buffer = +"existing content"
+    -> { IOSpecs.closed_io.read(1, buffer) }.should.raise(IOError)
+    buffer.should == "existing content"
   end
 
   it "returns the empty string when there is nothing to read and lenght=0 is given" do
@@ -766,5 +789,35 @@ describe "IO#read with large data" do
 
     ScratchPad.recorded.size.should == read_size
     ScratchPad.recorded.should == @data[0, read_size]
+  end
+end
+
+describe "IO#read with a Fiber scheduler that implements io_read" do
+  require_relative '../fiber/fixtures/scheduler'
+
+  before :each do
+    @name = tmp("io_read_scheduler.txt")
+    File.write(@name, "Hello World!")
+
+    scheduler = Class.new(FiberSpecs::LoggingScheduler) do
+      def io_read(io, buffer, length, offset)
+        @events << { event: :io_read }
+        Fiber.blocking { buffer.read(io, length, offset) }
+      end
+    end.new
+    Fiber.set_scheduler(scheduler)
+  end
+
+  after :each do
+    Fiber.set_scheduler(nil)
+    rm_r @name
+  end
+
+  it "reads the whole file through the scheduler" do
+    result = nil
+    Fiber.schedule { result = File.read(@name) }
+
+    result.should == "Hello World!"
+    Fiber.scheduler.events.map { |e| e[:event] }.should.include?(:io_read)
   end
 end

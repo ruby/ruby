@@ -14,12 +14,14 @@
 #include "iseq.h"
 #include "internal/compile.h"
 #include "internal/gc.h"
+#include "internal/jit.h"
 #include "vm_sync.h"
 #include "internal/fixnum.h"
 #include "internal/hash.h"
 #include "internal/string.h"
 #include "internal/class.h"
 #include "internal/imemo.h"
+#include "internal/struct.h"
 #include "ruby/internal/core/rtypeddata.h"
 #include "zjit.h"
 
@@ -70,7 +72,7 @@ const shape_id_t rb_invalid_shape_id = INVALID_SHAPE_ID;
 unsigned int
 rb_iseq_encoded_size(const rb_iseq_t *iseq)
 {
-    return iseq->body->iseq_size;
+    return ISEQ_BODY(iseq)->iseq_size;
 }
 
 // Get the PC for a given index in an iseq
@@ -78,8 +80,8 @@ VALUE *
 rb_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    RUBY_ASSERT_ALWAYS(insn_idx < iseq->body->iseq_size);
-    VALUE *encoded = iseq->body->iseq_encoded;
+    RUBY_ASSERT_ALWAYS(insn_idx < ISEQ_BODY(iseq)->iseq_size);
+    VALUE *encoded = ISEQ_BODY(iseq)->iseq_encoded;
     VALUE *pc = &encoded[insn_idx];
     return pc;
 }
@@ -89,10 +91,7 @@ int
 rb_iseq_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 {
     // YJIT should only use iseqs after AST to bytecode compilation.
-    // (Certain non-default interpreter configurations never set ISEQ_TRANSLATED)
-    if (OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE) {
-        RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
-    }
+    RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
 
     const VALUE at_pc = *pc;
     return rb_vm_insn_addr2opcode((const void *)at_pc);
@@ -103,15 +102,13 @@ rb_iseq_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 int
 rb_iseq_bare_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 {
-    if (OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE) {
-        RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
-    }
+    RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
 
     const VALUE at_pc = *pc;
     return rb_vm_insn_addr2insn((const void *)at_pc);
 }
 
-unsigned long
+rb_len_t
 rb_RSTRING_LEN(VALUE str)
 {
     return RSTRING_LEN(str);
@@ -245,21 +242,21 @@ rb_optimized_call(VALUE recv, rb_execution_context_t *ec, int argc, VALUE *argv,
 unsigned int
 rb_jit_iseq_builtin_attrs(const rb_iseq_t *iseq)
 {
-    return iseq->body->builtin_attrs;
+    return ISEQ_BODY(iseq)->builtin_attrs;
 }
 
 // Relaxed memory ordering, but called by the JIT with VM lock and barrier.
 void
 rb_jit_iseq_mark_ep_escape_recorded(const rb_iseq_t *iseq)
 {
-    rbimpl_atomic_store(&iseq->body->jit_ep_escape_recorded, 1, RBIMPL_ATOMIC_RELAXED);
+    rbimpl_atomic_store(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, 1, RBIMPL_ATOMIC_RELAXED);
 }
 
 // Whether an EP escape of this iseq has been reported to the enabled JIT.
 bool
 rb_jit_iseq_ep_escape_recorded_p(const rb_iseq_t *iseq)
 {
-    return rbimpl_atomic_load(&iseq->body->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED) != 0;
+    return rbimpl_atomic_load(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED) != 0;
 }
 
 int
@@ -283,109 +280,109 @@ rb_get_def_iseq_ptr(rb_method_definition_t *def)
 const rb_iseq_t *
 rb_get_iseq_body_local_iseq(const rb_iseq_t *iseq)
 {
-    return iseq->body->local_iseq;
+    return ISEQ_BODY(iseq)->local_iseq;
 }
 
 const rb_iseq_t *
 rb_get_iseq_body_parent_iseq(const rb_iseq_t *iseq)
 {
-    return iseq->body->parent_iseq;
+    return ISEQ_BODY(iseq)->parent_iseq;
 }
 
 unsigned int
 rb_get_iseq_body_local_table_size(const rb_iseq_t *iseq)
 {
-    return iseq->body->local_table_size;
+    return ISEQ_BODY(iseq)->local_table_size;
 }
 
 VALUE *
 rb_get_iseq_body_iseq_encoded(const rb_iseq_t *iseq)
 {
-    return iseq->body->iseq_encoded;
+    return ISEQ_BODY(iseq)->iseq_encoded;
 }
 
 unsigned
 rb_get_iseq_body_stack_max(const rb_iseq_t *iseq)
 {
-    return iseq->body->stack_max;
+    return ISEQ_BODY(iseq)->stack_max;
 }
 
 enum rb_iseq_type
 rb_get_iseq_body_type(const rb_iseq_t *iseq)
 {
-    return iseq->body->type;
+    return ISEQ_BODY(iseq)->type;
 }
 
 bool
 rb_get_iseq_flags_has_lead(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_lead;
+    return ISEQ_BODY(iseq)->param.flags.has_lead;
 }
 
 bool
 rb_get_iseq_flags_has_opt(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_opt;
+    return ISEQ_BODY(iseq)->param.flags.has_opt;
 }
 
 bool
 rb_get_iseq_flags_has_kw(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_kw;
+    return ISEQ_BODY(iseq)->param.flags.has_kw;
 }
 
 bool
 rb_get_iseq_flags_has_post(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_post;
+    return ISEQ_BODY(iseq)->param.flags.has_post;
 }
 
 bool
 rb_get_iseq_flags_has_kwrest(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_kwrest;
+    return ISEQ_BODY(iseq)->param.flags.has_kwrest;
 }
 
 bool
 rb_get_iseq_flags_anon_kwrest(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.anon_kwrest;
+    return ISEQ_BODY(iseq)->param.flags.anon_kwrest;
 }
 
 bool
 rb_get_iseq_flags_has_rest(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_rest;
+    return ISEQ_BODY(iseq)->param.flags.has_rest;
 }
 
 bool
 rb_get_iseq_flags_ruby2_keywords(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.ruby2_keywords;
+    return ISEQ_BODY(iseq)->param.flags.ruby2_keywords;
 }
 
 bool
 rb_get_iseq_flags_has_block(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_block;
+    return ISEQ_BODY(iseq)->param.flags.has_block;
 }
 
 bool
 rb_get_iseq_flags_ambiguous_param0(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.ambiguous_param0;
+    return ISEQ_BODY(iseq)->param.flags.ambiguous_param0;
 }
 
 bool
 rb_get_iseq_flags_accepts_no_kwarg(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.accepts_no_kwarg;
+    return ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg;
 }
 
 bool
 rb_get_iseq_flags_forwardable(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.forwardable;
+    return ISEQ_BODY(iseq)->param.flags.forwardable;
 }
 
 // This is defined only as a named struct inside rb_iseq_constant_body.
@@ -396,31 +393,31 @@ typedef struct rb_iseq_param_keyword rb_iseq_param_keyword_struct;
 const rb_iseq_param_keyword_struct *
 rb_get_iseq_body_param_keyword(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.keyword;
+    return ISEQ_BODY(iseq)->param.keyword;
 }
 
 unsigned
 rb_get_iseq_body_param_size(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.size;
+    return ISEQ_BODY(iseq)->param.size;
 }
 
 int
 rb_get_iseq_body_param_lead_num(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.lead_num;
+    return ISEQ_BODY(iseq)->param.lead_num;
 }
 
 int
 rb_get_iseq_body_param_opt_num(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.opt_num;
+    return ISEQ_BODY(iseq)->param.opt_num;
 }
 
 const VALUE *
 rb_get_iseq_body_param_opt_table(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.opt_table;
+    return ISEQ_BODY(iseq)->param.opt_table;
 }
 
 struct rb_control_frame_struct *
@@ -497,7 +494,7 @@ rb_RB_TYPE_P(VALUE obj, enum ruby_value_type t)
     return RB_TYPE_P(obj, t);
 }
 
-long
+rb_len_t
 rb_RSTRUCT_LEN(VALUE st)
 {
     return RSTRUCT_LEN(st);
@@ -551,15 +548,28 @@ rb_assert_cme_handle(VALUE handle)
 
 // YJIT and ZJIT need this function to never allocate and never raise
 VALUE
-rb_yarv_ary_entry_internal(VALUE ary, long offset)
+rb_yarv_ary_entry_internal(VALUE ary, rb_len_t offset)
 {
     return rb_ary_entry_internal(ary, offset);
 }
 
-long
+rb_len_t
 rb_jit_array_len(VALUE a)
 {
     return rb_array_len(a);
+}
+
+// Return non-zero when `obj` is an array and its last item is a
+// `ruby2_keywords` hash. The JITs don't support this kind of splat.
+size_t
+rb_jit_ruby2_keywords_splat_p(VALUE obj)
+{
+    if (!RB_TYPE_P(obj, T_ARRAY)) return 0;
+    rb_len_t len = RARRAY_LEN(obj);
+    if (len == 0) return 0;
+    VALUE last = RARRAY_AREF(obj, len - 1);
+    if (!RB_TYPE_P(last, T_HASH)) return 0;
+    return FL_TEST_RAW(last, RHASH_PASS_AS_KEYWORDS);
 }
 
 void
@@ -586,6 +596,12 @@ rb_jit_multi_ractor_p(void)
     return rb_multi_ractor_p();
 }
 
+bool
+rb_jit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
+{
+    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
+}
+
 // Acquire the VM lock and then signal all other Ruby threads (ractors) to
 // contend for the VM lock, putting them to sleep. ZJIT and YJIT use this to
 // evict threads running inside generated code so among other things, it can
@@ -605,16 +621,45 @@ rb_jit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
     rb_vm_lock_leave(recursive_lock_level, file, line);
 }
 
+void *
+rb_iseq_get_jit_payload(const rb_iseq_t *iseq)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    if (ISEQ_BODY(iseq)) {
+        return ISEQ_BODY(iseq)->jit_payload;
+    }
+    else {
+        return NULL;
+    }
+}
+
+void
+rb_iseq_set_jit_payload(const rb_iseq_t *iseq, void *payload)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
+    RUBY_ASSERT_ALWAYS(NULL == ISEQ_BODY(iseq)->jit_payload);
+    ISEQ_BODY(iseq)->jit_payload = payload;
+}
+
+void
+rb_iseq_clear_jit_payload(const rb_iseq_t *iseq)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
+    ISEQ_BODY(iseq)->jit_payload = NULL;
+}
+
 void
 rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    iseq->body->jit_entry = NULL;
-    iseq->body->jit_exception = NULL;
+    ISEQ_BODY(iseq)->jit_entry = NULL;
+    ISEQ_BODY(iseq)->jit_exception = NULL;
     // Enable re-compiling this ISEQ. Event when it's invalidated for TracePoint,
     // we'd like to re-compile ISEQs that haven't been converted to trace_* insns.
-    iseq->body->jit_entry_calls = 0;
-    iseq->body->jit_exception_calls = 0;
+    ISEQ_BODY(iseq)->jit_entry_calls = 0;
+    ISEQ_BODY(iseq)->jit_exception_calls = 0;
 }
 
 // Callback data for rb_jit_for_each_iseq
@@ -658,15 +703,21 @@ rb_jit_get_page_size(void)
     if (page_size > 0x40000000l) rb_bug("jit page size too large");
 
     return (uint32_t)page_size;
+#elif defined(_WIN32)
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    return (uint32_t)si.dwPageSize;
 #else
-#error "JIT supports POSIX only for now"
+#error "JIT supports POSIX and Windows only for now"
 #endif
 }
 
-#if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
-// Align the current write position to a multiple of bytes
-static uint8_t *
-align_ptr(uint8_t *ptr, uint32_t multiple)
+#if defined(_WIN32) || (defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE))
+# define JIT_PROBE_NEAR_TEXT 1
+
+// Round `ptr` up to the next multiple of `multiple` bytes. Shared with zjit.c.
+uint8_t *
+rb_jit_align_ptr(uint8_t *ptr, uint32_t multiple)
 {
     // Compute the pointer modulo the given alignment boundary
     uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
@@ -687,20 +738,41 @@ align_ptr(uint8_t *ptr, uint32_t multiple)
 uint8_t *
 rb_jit_reserve_addr_space(uint32_t mem_size)
 {
+#ifdef JIT_PROBE_NEAR_TEXT
+    uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_jit_reserve_addr_space;
+    // 64MiB: balancing space probed and time spent probing.
+    const uintptr_t probe_stride = 64 * 1024 * 1024;
+    // Related to the stride. Any successful trial will be within INT32_MAX
+    // range with slack for the binary size.
+    const int max_probe_trials = 30;
+#endif
 #ifndef _WIN32
     uint8_t *mem_block;
 
     // On Linux
     #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
         uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_jit_reserve_addr_space;
-        uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
-        // Align the requested address to page size
-        uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
 
         // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
         // to improve odds of being in range for 32-bit relative call instructions.
-        do {
+        uint8_t *req_addr = cfunc_sample_addr;
+        for (int i = 0; i < max_probe_trials; i++) {
+            // The address space on x86-64/A64 Linux tends to look like:
+            //
+            //  high addr  +---------------+
+            //      |      |    [stack]    |
+            //      |      |   DSO  text   |
+            //      |      |    [heap]     |
+            //      |      | main exe text |
+            //      v      |       0       |
+            //   low addr  +---------------+
+            //
+            // We always probe downwards from one of the program text areas
+            // to avoid getting in the way of the stack's downwards growth.
+            // If we happen to start from the main text, we also avoid the heap.
+            req_addr -= probe_stride;
+            req_addr = rb_jit_align_ptr(req_addr, page_size);
+
             mem_block = mmap(
                 req_addr,
                 mem_size,
@@ -715,13 +787,7 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
                 ruby_annotate_mmap(mem_block, mem_size, "Ruby:rb_jit_reserve_addr_space");
                 break;
             }
-
-            // -4MiB. Downwards to probe away from the heap. (On x86/A64 Linux
-            // main_code_addr < heap_addr, and in case we are in a shared
-            // library mapped higher than the heap, downwards is still better
-            // since it's towards the end of the heap rather than the stack.)
-            req_addr -= 4 * 1024 * 1024;
-        } while (req_addr < probe_region_end);
+        }
 
     // On MacOS and other platforms
     #else
@@ -755,18 +821,34 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
 
     // Check that the memory mapping was successful
     if (mem_block == MAP_FAILED) {
-        perror("ruby: jit: mmap:");
-        if(errno == ENOMEM) {
-            // No crash report if it's only insufficient memory
-            exit(EXIT_FAILURE);
-        }
-        rb_bug("mmap failed");
+        perror("ruby: jit: Fatal mmap failure:");
+        abort();
     }
 
     return mem_block;
 #else
-    // Windows not supported for now
-    return NULL;
+    // Only reserve the address space. rb_jit_mark_writable() commits pages.
+    // Probe below this function as on Linux, aligned to the allocation
+    // granularity that VirtualAlloc() rounds a reservation's address down to.
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    uint8_t *mem_block = NULL;
+    uint8_t *req_addr = cfunc_sample_addr;
+    for (int i = 0; i < max_probe_trials; i++) {
+        req_addr -= probe_stride;
+        req_addr = rb_jit_align_ptr(req_addr, si.dwAllocationGranularity);
+        mem_block = VirtualAlloc(req_addr, mem_size, MEM_RESERVE, PAGE_NOACCESS);
+        if (mem_block != NULL) break;
+    }
+    if (mem_block == NULL) {
+        mem_block = VirtualAlloc(NULL, mem_size, MEM_RESERVE, PAGE_NOACCESS);
+    }
+    if (mem_block == NULL) {
+        errno = rb_w32_map_errno(GetLastError());
+        perror("ruby: jit: Fatal VirtualAlloc failure:");
+        abort();
+    }
+    return mem_block;
 #endif
 }
 
@@ -778,10 +860,79 @@ rb_jit_for_each_iseq(rb_iseq_callback callback, void *data)
     rb_objspace_each_objects(for_each_iseq_i, (void *)&callback_data);
 }
 
+#ifdef _WIN32
+// The JITs pass the whole mapped region to rb_jit_mark_executable() at the
+// end of every write session, and VirtualProtect() takes time for every page
+// in the range, unlike mprotect() which skips mappings already protected so.
+// Remember the ranges made writable, which all lie in that region, and protect
+// only those again. The JITs call these only at boot or under the VM lock, so
+// the record needs no lock of its own.
+
+// The most separate ranges one write session can record.
+#define JIT_WRITABLE_RANGES 64
+// The ranges made writable since the last rb_jit_mark_executable(), each
+// [start, end) and none overlapping or touching another.
+static struct { uintptr_t start, end; } jit_writable[JIT_WRITABLE_RANGES];
+// The number of ranges in use in jit_writable.
+static int jit_writable_count;
+// Set when a write session makes more separate ranges writable than
+// jit_writable can hold. Recording then stops, and the next
+// rb_jit_mark_executable() protects the whole region it is given instead,
+// then clears the record and this flag.
+static bool jit_writable_overflow;
+
+// Record [start, end) as made writable, merging it with every recorded range
+// it overlaps or touches. Set jit_writable_overflow when no slot is left.
+static void
+jit_writable_add(uintptr_t start, uintptr_t end)
+{
+    if (jit_writable_overflow) return;
+    // The ranges stay apart from each other, so one pass finds every range to
+    // merge.
+    int kept = 0;
+    for (int i = 0; i < jit_writable_count; i++) {
+        if (start <= jit_writable[i].end && jit_writable[i].start <= end) {
+            if (jit_writable[i].start < start) start = jit_writable[i].start;
+            if (jit_writable[i].end > end) end = jit_writable[i].end;
+        }
+        else {
+            jit_writable[kept++] = jit_writable[i];
+        }
+    }
+    jit_writable_count = kept;
+    if (jit_writable_count == JIT_WRITABLE_RANGES) {
+        jit_writable_overflow = true;
+        return;
+    }
+    jit_writable[jit_writable_count].start = start;
+    jit_writable[jit_writable_count].end = end;
+    jit_writable_count++;
+}
+
+static void
+jit_protect_executable(void *mem_block, size_t mem_size)
+{
+    DWORD old_protect;
+    if (!VirtualProtect(mem_block, mem_size, PAGE_EXECUTE_READ, &old_protect)) {
+        rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, error: %lu",
+            mem_block, (unsigned long)mem_size, GetLastError());
+    }
+}
+#endif
+
 bool
 rb_jit_mark_writable(void *mem_block, uint32_t mem_size)
 {
+#ifdef _WIN32
+    // MEM_COMMIT also re-protects pages that are already committed.
+    if (VirtualAlloc(mem_block, mem_size, MEM_COMMIT, PAGE_READWRITE) == NULL) {
+        return false;
+    }
+    jit_writable_add((uintptr_t)mem_block, (uintptr_t)mem_block + mem_size);
+    return true;
+#else
     return mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0;
+#endif
 }
 
 void
@@ -792,16 +943,45 @@ rb_jit_mark_executable(void *mem_block, uint32_t mem_size)
     if (mem_size == 0) {
         return;
     }
+#ifdef _WIN32
+    if (jit_writable_overflow) {
+        jit_protect_executable(mem_block, mem_size);
+        jit_writable_count = 0;
+        jit_writable_overflow = false;
+        return;
+    }
+    uintptr_t start = (uintptr_t)mem_block, end = start + mem_size;
+    int kept = 0;
+    for (int i = 0; i < jit_writable_count; i++) {
+        uintptr_t s = jit_writable[i].start, e = jit_writable[i].end;
+        if (start <= s && e <= end) {
+            jit_protect_executable((void *)s, e - s);
+        }
+        else {
+            jit_writable[kept++] = jit_writable[i];
+        }
+    }
+    jit_writable_count = kept;
+#else
     if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
         rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s",
             mem_block, (unsigned long)mem_size, strerror(errno));
     }
+#endif
 }
 
-// Free the specified memory block.
+// Discard the contents of the specified memory block and make it inaccessible.
 bool
 rb_jit_mark_unused(void *mem_block, uint32_t mem_size)
 {
+#ifdef _WIN32
+    // Keep the pages committed, since rb_jit_mark_executable() protects the
+    // whole mapped region once its record overflows, and VirtualProtect()
+    // fails on decommitted pages.
+    DWORD old_protect;
+    VirtualAlloc(mem_block, mem_size, MEM_RESET, PAGE_NOACCESS);
+    return VirtualProtect(mem_block, mem_size, PAGE_NOACCESS, &old_protect) != 0;
+#else
     // On Linux, you need to use madvise MADV_DONTNEED to free memory.
     // We might not need to call this on macOS, but it's not really documented.
     // We generally prefer to do the same thing on both to ease testing too.
@@ -810,6 +990,7 @@ rb_jit_mark_unused(void *mem_block, uint32_t mem_size)
     // On macOS, mprotect PROT_NONE seems to reduce RSS.
     // We also call this on Linux to avoid executing unused pages.
     return mprotect(mem_block, mem_size, PROT_NONE) == 0;
+#endif
 }
 
 // Invalidate icache for arm64.
@@ -822,6 +1003,8 @@ rb_jit_icache_invalidate(void *start, void *end)
     // On Darwin it's the same as calling sys_icache_invalidate().
 #ifdef __GNUC__
     __builtin___clear_cache(start, end);
+#elif defined(_M_ARM64)
+    FlushInstructionCache(GetCurrentProcess(), start, (char *)end - (char *)start);
 #elif defined(__aarch64__)
 #error No instruction cache clear available with this compiler on Aarch64!
 #endif
@@ -854,6 +1037,7 @@ rb_jit_str_simple_append(VALUE str1, VALUE str2)
 }
 
 void rb_jit_str_concat_codepoint(VALUE str, VALUE codepoint);
+const void *rb_jit_io_buffer_readable_ptr(VALUE self, size_t offset, size_t length);
 
 attr_index_t
 rb_jit_shape_capacity(shape_id_t shape_id)

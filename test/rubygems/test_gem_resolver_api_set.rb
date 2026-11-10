@@ -38,7 +38,7 @@ class TestGemResolverAPISet < Gem::TestCase
     data = [
       { name: "a",
         number: "1",
-        platform: "ruby",
+        suffix: "ruby",
         dependencies: [] },
     ]
 
@@ -55,17 +55,32 @@ class TestGemResolverAPISet < Gem::TestCase
     assert_equal expected, set.find_all(a_dep)
   end
 
+  def test_find_all_content_addressed
+    spec_fetcher
+
+    a_spec = util_ca_spec("a", "1", "ab12345678", ruby_abi: "3.3", platform: Gem::Platform.local.to_s)
+    util_setup_compact_index(a_spec)
+
+    set = Gem::Resolver::APISet.new @dep_uri
+    a_dep = Gem::Resolver::DependencyRequest.new dep("a"), nil
+    spec = set.find_all(a_dep).first
+
+    assert_equal "ab12345678", spec.content_address
+    assert_equal Gem::Platform.local, spec.platform
+    assert Gem::ContentAddress.match?(spec.content_address)
+  end
+
   def test_find_all_prereleases
     spec_fetcher
 
     data = [
       { name: "a",
         number: "1",
-        platform: "ruby",
+        suffix: "ruby",
         dependencies: [] },
       { name: "a",
         number: "2.a",
-        platform: "ruby",
+        suffix: "ruby",
         dependencies: [] },
     ]
 
@@ -90,7 +105,7 @@ class TestGemResolverAPISet < Gem::TestCase
     data = [
       { name: "a",
         number: "1",
-        platform: "ruby",
+        suffix: "ruby",
         dependencies: [] },
     ]
 

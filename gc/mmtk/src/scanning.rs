@@ -1,9 +1,10 @@
 use crate::abi::GCThreadTLS;
 
-use crate::upcalls;
-use crate::utils::ChunkedVecCollector;
 use crate::Ruby;
 use crate::RubySlot;
+use crate::upcalls;
+use crate::utils::ChunkedVecCollector;
+use mmtk::Mutator;
 use mmtk::memory_manager;
 use mmtk::scheduler::GCWork;
 use mmtk::scheduler::GCWorker;
@@ -14,7 +15,6 @@ use mmtk::vm::ObjectTracer;
 use mmtk::vm::RootsWorkFactory;
 use mmtk::vm::Scanning;
 use mmtk::vm::SlotVisitor;
-use mmtk::Mutator;
 
 pub struct VMScanning {}
 
@@ -25,10 +25,10 @@ impl Scanning<Ruby> for VMScanning {
         false
     }
 
-    fn scan_object<EV: SlotVisitor<RubySlot>>(
+    fn scan_object(
         _tls: VMWorkerThread,
         _object: ObjectReference,
-        _slot_visitor: &mut EV,
+        _slot_visitor: &mut impl SlotVisitor<RubySlot>,
     ) {
         unreachable!("We have not enabled slot enqueuing for any types, yet.");
     }
@@ -55,17 +55,23 @@ impl Scanning<Ruby> for VMScanning {
                 "Destination is not an MMTk object. Src: {object} dst: {target_object}"
             );
 
-            debug_assert!(
-                // If we are in a moving GC, all objects should be pinned by PinningRegistry.
-                // If it is requested that target_object be pinned but it is not pinned, then
-                // it is a bug because it could be moved.
-                if crate::mmtk().get_plan().current_gc_may_move_object() && pin {
-                    memory_manager::is_pinned(target_object)
-                } else {
-                    true
-                },
-                "Object {object} is trying to pin {target_object}"
-            );
+            // It's possible that a value on the machine stack appears to point into the MMTk heap.
+            // When this value is first marked during the pinning phase, it does not pin it if the
+            // object is not live. If later on, an object is evacuated into the value, then it will
+            // appear to not be pinned. Therefore, we cannot assert that target_object is actually
+            // pinned.
+            if pin
+                && crate::mmtk().get_plan().current_gc_may_move_object()
+                && !memory_manager::is_pinned(target_object)
+            {
+                debug_assert!(
+                    target_object.get_forwarded_object().is_none(),
+                    "Object {object} is trying to pin {target_object}, but it has already moved"
+                );
+                crate::binding()
+                    .pinning_registry
+                    .register_pinned_obj(target_object);
+            }
 
             let forwarded_target = object_tracer.trace_object(target_object);
             if forwarded_target != target_object {
@@ -76,10 +82,10 @@ impl Scanning<Ruby> for VMScanning {
         gc_tls
             .object_closure
             .set_temporarily_and_run_code(visit_object, || {
-                (upcalls().call_gc_mark_children)(object);
+                upcalls::call_gc_mark_children(object);
 
                 if crate::mmtk().get_plan().current_gc_may_move_object() {
-                    (upcalls().update_object_references)(object);
+                    upcalls::update_object_references(object);
                 }
             });
     }
@@ -111,7 +117,7 @@ impl Scanning<Ruby> for VMScanning {
 
         'gen_wb_unprotected_work: {
             let is_nursery_gc = (crate::mmtk().get_plan().generational())
-                .is_some_and(|gen| gen.is_current_gc_nursery());
+                .is_some_and(|gen_plan| gen_plan.is_current_gc_nursery());
             if !is_nursery_gc {
                 break 'gen_wb_unprotected_work;
             }
@@ -194,6 +200,11 @@ impl VMScanning {
                 mmtk::memory_manager::is_mmtk_object(object.to_raw_address()).is_some(),
                 "Root does not point to MMTk object.  object: {object}"
             );
+            if pin && crate::mmtk().get_plan().current_gc_may_move_object() {
+                crate::binding()
+                    .pinning_registry
+                    .register_pinned_obj(object);
+            }
             buffer.push(object);
             if buffer.len() >= Self::OBJECT_BUFFER_SIZE {
                 factory.create_process_pinning_roots_work(std::mem::take(&mut buffer));
@@ -256,11 +267,11 @@ macro_rules! define_global_root_scanner {
 }
 
 define_global_root_scanner!(ScanGCRoots, {
-    (crate::upcalls().scan_gc_roots)();
+    crate::upcalls::scan_gc_roots();
 });
 
 define_global_root_scanner!(ScanObjspace, {
-    (crate::upcalls().scan_objspace)();
+    crate::upcalls::scan_objspace();
 });
 
 struct ScanWbUnprotectedRoots<F: RootsWorkFactory<RubySlot>> {
@@ -275,10 +286,10 @@ impl<F: RootsWorkFactory<RubySlot>> GCWork<Ruby> for ScanWbUnprotectedRoots<F> {
             for object in self.objects.iter().copied() {
                 if object.is_reachable() {
                     debug!("[wb_unprot_roots] Visiting WB-unprotected object (parent): {object}");
-                    (upcalls().call_gc_mark_children)(object);
+                    upcalls::call_gc_mark_children(object);
 
                     if crate::mmtk().get_plan().current_gc_may_move_object() {
-                        (upcalls().update_object_references)(object);
+                        upcalls::update_object_references(object);
                     }
                 } else {
                     debug!(

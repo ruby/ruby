@@ -84,20 +84,25 @@ These tables summarize the directives for packing and unpacking.
 
 ### Additional Directives for Packing
 
-| Directive | Meaning                    |
-|-----------|----------------------------|
-| `@`       | moves to absolute position |
-| `X`       | back up a byte             |
-| `x`       | null byte                  |
+| Directive | Meaning                                             |
+|-----------|-----------------------------------------------------|
+| `@`       | moves to absolute position                          |
+| `@!`      | align to given byte boundary or directory alignment |
+| `X`       | back up a byte                                      |
+| `x`       | null byte                                           |
+| `x!`      | align to given byte boundary or directive alignment |
+
 
 ### Additional Directives for Unpacking
 
-| Directive | Meaning                                         |
-|-----------|-------------------------------------------------|
-| `@`       | skip to the offset given by the length argument |
-| `X`       | skip backward one byte                          |
-| `x`       | skip forward one byte                           |
-| `^`       | return the current offset                       |
+| Directive | Meaning                                             |
+|-----------|-----------------------------------------------------|
+| `@`       | skip to the offset given by the length argument     |
+| `@!`      | align to given byte boundary or directory alignment |
+| `X`       | skip backward one byte                              |
+| `x`       | skip forward one byte                               |
+| `x!`      | align to given byte boundary or directive alignment |
+| `^`       | return the current offset                           |
 
 ## Packing and Unpacking
 
@@ -855,7 +860,7 @@ for one byte in the input or output string.
     "\x00\x02".unpack("CCXC") # => [0, 2, 2]
     ```
 
-  Cannot to move to outside the string:
+    Cannot to move to outside the string:
 
     ```ruby
     [0, 1, 2].pack("CCX3C")   # Raises ArgumentError.

@@ -34,8 +34,8 @@ describe "Array#uniq" do
     y = mock('1')
     y.should_not_receive(:eql?)
 
-    x.should_receive(:hash).at_least(1).and_return(0)
-    y.should_receive(:hash).at_least(1).and_return(1)
+    x.should_receive(:hash).at_least(1).and_return(8)
+    y.should_receive(:hash).at_least(1).and_return(9)
 
     [x, y].uniq.should == [x, y]
   end
@@ -155,9 +155,9 @@ describe "Array#uniq!" do
 
   it "compares elements first with hash" do
     x = mock('0')
-    x.should_receive(:hash).at_least(1).and_return(0)
+    x.should_receive(:hash).at_least(1).and_return(8)
     y = mock('0')
-    y.should_receive(:hash).at_least(1).and_return(0)
+    y.should_receive(:hash).at_least(1).and_return(8)
 
     a = [x, y]
     a.uniq!
@@ -170,8 +170,8 @@ describe "Array#uniq!" do
     y = mock('1')
     y.should_not_receive(:eql?)
 
-    x.should_receive(:hash).at_least(1).and_return(0)
-    y.should_receive(:hash).at_least(1).and_return(1)
+    x.should_receive(:hash).at_least(1).and_return(8)
+    y.should_receive(:hash).at_least(1).and_return(9)
 
     a = [x, y]
     a.uniq!

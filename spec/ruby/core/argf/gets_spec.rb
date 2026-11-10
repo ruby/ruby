@@ -47,3 +47,26 @@ describe "ARGF.gets" do
   end
 
 end
+
+describe "ARGF.gets when reading $stdin and $stdin is not an IO" do
+  before :each do
+    @stdin = $stdin
+    $stdin = StringIO.new("a\nb\n")
+    @argf_stdin = ARGF.class.new
+  end
+
+  after :each do
+    $stdin = @stdin
+  end
+
+  it "increments lineno for each line read" do
+    @argf_stdin.gets
+    @argf_stdin.gets
+    @argf_stdin.lineno.should == 2
+  end
+
+  it "raises NoMethodError when $stdin has no public gets" do
+    $stdin = Object.new
+    -> { ARGF.class.new.gets }.should.raise(NoMethodError)
+  end
+end

@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class PatternTest < TestCase
     def test_invalid_syntax
       assert_raise(Pattern::CompilationError) { scan("", "<>") }
@@ -69,7 +69,7 @@ module Prism
     end
 
     def test_constant_path
-      results = scan("Foo + Bar + Baz", "Prism::ConstantReadNode")
+      results = scan("Foo + Bar + Baz", "Ruby::Prism::ConstantReadNode")
 
       assert_equal 3, results.length
     end
@@ -84,7 +84,7 @@ module Prism
       results = scan("Foo + Bar + Baz", "{ name: /^[[:punct:]]$/ }")
 
       assert_equal 2, results.length
-      assert_equal ["Prism::CallNode"], results.map { |node| node.class.name }.uniq
+      assert_equal ["Ruby::Prism::CallNode"], results.map { |node| node.class.name }.uniq
     end
 
     def test_nil
@@ -126,7 +126,7 @@ module Prism
     private
 
     def scan(source, query)
-      Prism::Pattern.new(query).scan(Prism.parse(source).value).to_a
+      Ruby::Prism::Pattern.new(query).scan(Ruby::Prism.parse(source).value).to_a
     end
   end
 end

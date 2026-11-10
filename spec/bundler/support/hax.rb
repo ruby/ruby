@@ -54,7 +54,7 @@ module Gem
 
   if ENV["BUNDLER_SPEC_FAKE_RESOLVE"]
     module FakeResolv
-      def getaddrinfo(host, port)
+      def getaddrinfo(host, port, *)
         if host == ENV["BUNDLER_SPEC_FAKE_RESOLVE"]
           [["AF_INET", port, "127.0.0.1", "127.0.0.1", 2, 2, 17]]
         else

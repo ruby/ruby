@@ -2,6 +2,10 @@
 
 module Bundler
   module MatchPlatform
+    def content_address
+      nil
+    end
+
     def installable_on_platform?(target_platform) # :nodoc:
       return true if [Gem::Platform::RUBY, nil, target_platform].include?(platform)
       return true if Gem::Platform.new(platform) === target_platform
@@ -11,13 +15,41 @@ module Bundler
 
     def self.select_best_platform_match(specs, platform, force_ruby: false, prefer_locked: false)
       matching = select_all_platform_match(specs, platform, force_ruby: force_ruby, prefer_locked: prefer_locked)
+      matching = prefer_content_addressable(matching)
 
       Gem::Platform.sort_and_filter_best_platform_match(matching, platform)
     end
 
+    def self.select_all_content_address_match(specs, content_addresses)
+      return specs if content_addresses.empty?
+
+      specs.reject {|spec| Gem::ContentAddress.match?(spec.content_address) && !content_addresses.include?(spec.content_address) }
+    end
+
+    def self.prefer_content_addressable(matching)
+      first = matching.index {|s| Gem::ContentAddress.content_addressed?(s, validate_ruby_abi: false) }
+      return matching unless first
+
+      addressable = [matching[first]]
+      non_addressable = matching.take(first)
+      matching.drop(first + 1).each do |s|
+        if Gem::ContentAddress.content_addressed?(s, validate_ruby_abi: false)
+          addressable << s
+        else
+          non_addressable << s
+        end
+      end
+      compatible = addressable.select(&:matches_current_metadata?)
+      return compatible if compatible.any?
+
+      non_addressable.any? ? non_addressable : matching
+    end
+
     def self.select_best_local_platform_match(specs, force_ruby: false, locked_platforms: nil)
       local = Bundler.local_platform
-      matching = select_all_platform_match(specs, local, force_ruby: force_ruby).filter_map {|spec| spec.materialized_for_installation(locked_platforms) }
+      matching = select_all_platform_match(specs, local, force_ruby: force_ruby)
+      matching = matching.filter_map {|spec| spec.materialized_for_installation(locked_platforms) }
+      matching = prefer_content_addressable(matching)
 
       Gem::Platform.sort_best_platform_match(matching, local)
     end

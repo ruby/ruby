@@ -108,6 +108,12 @@ describe "IO#ungetc" do
     @io.gets.chomp.should == "Aquí Qui è la linea due."
   end
 
+  it "puts correctly back a string longer than the amount of data previously read" do
+    @io.read(5).should == "Voici"
+    @io.ungetc("1234567890").should == nil
+    @io.gets.chomp.should == "1234567890 la ligne une."
+  end
+
   it "calls #to_str to convert the argument if it is not an Integer" do
     chars = mock("io ungetc")
     chars.should_receive(:to_str).and_return("Aquí ")

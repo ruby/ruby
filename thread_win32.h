@@ -8,6 +8,9 @@
 
   Copyright (C) 2004-2007 Koichi Sasada
 
+  This platform runs the common scheduler; see thread_sched.h for its data
+  structures and thread_sched.c for the implementation.
+
 **********************************************************************/
 
 /* interface */
@@ -16,23 +19,10 @@
 # undef _WIN32
 # endif
 
-#define USE_VM_CLOCK 1
-
 WINBASEAPI BOOL WINAPI
 TryEnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 
-struct rb_native_thread {
-    HANDLE thread_id;
-    HANDLE interrupt_event;
-};
-
-struct rb_thread_sched_item {
-    void *vm_stack;
-};
-
-struct rb_thread_sched {
-    HANDLE lock;
-};
+#include "thread_sched.h"
 
 typedef DWORD native_tls_key_t; // TLS index
 

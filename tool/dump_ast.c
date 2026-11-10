@@ -19,15 +19,6 @@ void *ruby_xrealloc_sized(void *ptr, size_t newsiz, size_t _oldsiz) { return rea
 #include "prism.h"
 
 static void
-print_error(const pm_diagnostic_t *diagnostic, void *data)
-{
-    const pm_parser_t *parser = (const pm_parser_t *) data;
-    pm_location_t loc = pm_diagnostic_location(diagnostic);
-    const pm_line_column_t line_column = pm_line_offset_list_line_column(pm_parser_line_offsets(parser), loc.start, pm_parser_start_line(parser));
-    fprintf(stderr, "%" PRIi32 ":%" PRIu32 ":%s\n", line_column.line, line_column.column, pm_diagnostic_message(diagnostic));
-}
-
-static void
 usage(const char *prog)
 {
     fprintf(stderr, "Usage: %s [options]... <filename>\n"
@@ -105,10 +96,19 @@ main(int argc, const char *argv[])
     pm_node_t *node = pm_parse(parser);
     int exit_status;
 
-    if (pm_parser_errors_size(parser) > 0)
-    {
+    if (pm_parser_errors_size(parser) > 0) {
         fprintf(stderr, "error parsing %s\n", filepath);
-        pm_parser_errors_each(parser, print_error, parser);
+
+        for (
+            const pm_diagnostic_t *diagnostic = pm_parser_errors_first(parser);
+            diagnostic != NULL;
+            diagnostic = pm_diagnostic_next(diagnostic)
+        ) {
+            pm_location_t loc = pm_diagnostic_location(diagnostic);
+            const pm_line_column_t line_column = pm_line_offset_list_line_column(pm_parser_line_offsets(parser), loc.start, pm_parser_start_line(parser));
+            fprintf(stderr, "%" PRIi32 ":%" PRIu32 ":%s\n", line_column.line, line_column.column, pm_diagnostic_message(diagnostic));
+        }
+
         exit_status = EXIT_FAILURE;
     }
     else {

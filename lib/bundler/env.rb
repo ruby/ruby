@@ -17,9 +17,11 @@ module Bundler
       append_formatted_table("Environment", environment, out)
       append_formatted_table("Bundler Build Metadata", BuildMetadata.to_h, out)
 
-      unless Bundler.settings.all.empty?
+      settings = Bundler.settings.all_including_stored_credentials
+
+      unless settings.empty?
         out << "\n## Bundler settings\n\n```\n"
-        Bundler.settings.all.each do |setting|
+        settings.each do |setting|
           out << setting << "\n"
           Bundler.settings.pretty_values_for(setting).each do |line|
             out << "  " << line << "\n"

@@ -49,6 +49,15 @@ describe "Binding#local_variable_set" do
     number.should == 20
   end
 
+  it "overwrites a local variable from a block inside a for loop" do
+    sum = 0
+    for i in 1..3
+      -> { binding.local_variable_set(:sum, sum + i) }.call
+    end
+
+    sum.should == 6
+  end
+
   it 'overwrites a local variable defined using eval()' do
     bind = binding
     bind.eval('number = 10')

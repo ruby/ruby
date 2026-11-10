@@ -2,15 +2,15 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class ParseSuccessTest < TestCase
     def test_parse_success?
-      assert Prism.parse_success?("1")
-      refute Prism.parse_success?("<>")
+      assert Ruby::Prism.parse_success?("1")
+      refute Ruby::Prism.parse_success?("<>")
     end
 
     def test_parse_file_success?
-      assert Prism.parse_file_success?(__FILE__)
+      assert Ruby::Prism.parse_file_success?(__FILE__)
     end
   end
 end

@@ -195,30 +195,6 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
-  it "handles host redirects without Gem::Net::HTTP::Persistent" do
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "myrack"
-    G
-
-    FileUtils.mkdir_p lib_path
-    File.open(lib_path("disable_net_http_persistent.rb"), "w") do |h|
-      h.write <<-H
-        module Kernel
-          alias require_without_disabled_net_http require
-          def require(*args)
-            raise LoadError, 'simulated' if args.first == 'openssl' && !caller.grep(/vendored_persistent/).empty?
-            require_without_disabled_net_http(*args)
-          end
-        end
-      H
-    end
-
-    bundle :install, artifice: "endpoint_host_redirect", requires: [lib_path("disable_net_http_persistent.rb")]
-    expect(out).to_not match(/Too many redirects/)
-    expect(the_bundle).to include_gems "myrack 1.0.0"
-  end
-
   it "timeouts when Bundler::Fetcher redirects too much" do
     gemfile <<-G
       source "#{source_uri}"

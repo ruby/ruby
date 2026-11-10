@@ -11,7 +11,7 @@ class CompactIndexWrongGemChecksum < CompactIndexAPI
       checksum = ENV.fetch("BUNDLER_SPEC_#{name.upcase}_CHECKSUM") { "IiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiI=" }
       versions = gem ? gem.versions : []
       versions.each {|v| v.checksum = checksum }
-      CompactIndex.info(versions)
+      VendoredCompactIndex.info(versions)
     end
   end
 end

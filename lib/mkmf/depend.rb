@@ -571,19 +571,23 @@ class MakeMakefile::Depend
   end
 
   # Makes +path+ relative to #root when it refers to a source-tree file.
+  #
+  # A relative name is resolved against #root, not the current
+  # directory: a build directory nested inside the source tree holds
+  # generated files under source-tree names, and those must not be
+  # taken for the sources they are generated from.  Only a name
+  # reaching outside #root is resolved against the current directory,
+  # where the tool may also be run.
   def relative_source(path)
-    expanded = File.expand_path(path)
-    expanded = File.expand_path(path, @root) unless File.exist?(expanded)
     prefix = @root + File::SEPARATOR
+    expanded = File.expand_path(path, @root)
+    expanded = File.expand_path(path) unless expanded.start_with?(prefix)
     expanded.start_with?(prefix) ? expanded.delete_prefix(prefix) : path
   end
 
-  # Makes +path+ relative to #root without consulting the current
-  # directory.  Unlike #relative_source, a relative name that does not
-  # refer to a source-tree file is kept as-is: generated dependencies
-  # such as builtin_binary.rbbin live in the build directory, and must
-  # keep the name their Make rules use even when the tool runs in a
-  # build directory nested inside the source tree.
+  # Makes +path+ relative to #root, keeping a relative name that does
+  # not refer to a source-tree file as-is: generated dependencies such
+  # as builtin_binary.rbbin must keep the name their Make rules use.
   def relative_dependency(path)
     expanded = File.expand_path(path, @root)
     prefix = @root + File::SEPARATOR
@@ -800,30 +804,6 @@ class MakeMakefile::Depend
     lines.uniq.sort.join
   end
 
-  # Returns target and dependency pairs from Make rules.
-  def dependency_pairs(rules)
-    rules = normalize_dependency_rules(rules)
-    rules.each_line.each_with_object(Set.new) do |line, pairs|
-      next unless /\A(\S+(?:\s+\S+)*):\s*(.*?)\s*\z/ =~ line
-
-      targets = $1.split
-      dependencies = expand_dependency_variables($2.split).map do |dependency|
-        normalize_dependency_rules(dependency)
-      end
-      targets.product(dependencies) {|pair| pairs << pair}
-    end
-  end
-
-  # Removes generated dependencies already covered by +manual_rules+.
-  def remove_manual_dependencies(generated, manual_rules)
-    manual = dependency_pairs(manual_rules)
-    generated.each_line.reject do |line|
-      normalized = normalize_dependency_rules(line)
-      /\A(\S+):\s+(\S+)\s*\z/ =~ normalized &&
-        manual.include?([$1, $2])
-    end.join
-  end
-
   # Removes VPATH markers that are unnecessary in build-directory output.
   def normalize_dependency_rules(rules)
     rules.gsub(/\{(?:\.;)?\$\(VPATH\)\}/, '')
@@ -972,9 +952,7 @@ class MakeMakefile::Depend
         source, generated, target: target, input: input, project: true
       )
     end
-    manual = match.pre_match + match.post_match
-    generated = remove_manual_dependencies(generated.join, manual)
-    expected = compact_dependencies(generated, group: !nmake)
+    expected = compact_dependencies(generated.join, group: !nmake)
     updated = match.pre_match + expected + match.post_match
     return false if same_dependency_rules?(match[0], expected)
 

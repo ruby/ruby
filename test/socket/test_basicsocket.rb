@@ -142,6 +142,23 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
     end
   end
 
+  def test_close_write_flushes_buffered_data
+    socks do |sserv, ssock, csock|
+      ssock.sync = false
+      ssock.write("buffered")
+
+      # close_write must flush the buffered bytes to the peer instead of
+      # silently dropping them and leaving them to be re-sent (and fail)
+      # on the subsequent #close.
+      ssock.close_write
+      assert_equal "buffered", csock.read(8)
+
+      # #close after #close_write must not raise Errno::EPIPE from trying
+      # to flush an orphaned write buffer into the shutdown socket.
+      assert_nothing_raised { ssock.close }
+    end
+  end
+
   def test_for_fd
     assert_raise(Errno::EBADF, '[ruby-core:72418] [Bug #11854]') do
       BasicSocket.for_fd(-1)

@@ -4,7 +4,6 @@ begin
   require "socket"
   require "tmpdir"
   require "fcntl"
-  require "etc"
   require "test/unit"
 rescue LoadError
 end
@@ -365,13 +364,6 @@ class TestSocket < Test::Unit::TestCase
         next true unless s
         next true if ai.ipv6_linklocal? # IPv6 link-local address is too troublesome in this test.
         case RUBY_PLATFORM
-        when /linux/
-          if ai.ip_address.include?('%') and
-            (Etc.uname[:release][/[0-9.]+/].split('.').map(&:to_i) <=> [2,6,18]) <= 0
-            # Cent OS 5.6 (2.6.18-238.19.1.el5xen) doesn't correctly work
-            # sendmsg with pktinfo for link-local ipv6 addresses
-            next true
-          end
         when /freebsd/
           if ifa.addr.ipv6_linklocal?
             # FreeBSD 9.0 with default setting (ipv6_activate_all_interfaces
@@ -574,7 +566,7 @@ class TestSocket < Test::Unit::TestCase
   ensure
     serv_thread.value.close
     server.close
-  end unless RUBY_PLATFORM.include?("freebsd")
+  end
 
   def test_connect_timeout
     host = "127.0.0.1"
@@ -612,7 +604,7 @@ class TestSocket < Test::Unit::TestCase
     assert_raise(Errno::ECONNREFUSED) do
       Socket.tcp("127.0.0.1", port, connect_timeout: 5)
     end
-  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+  end
 
   def test_getifaddrs
     begin
@@ -768,6 +760,12 @@ class TestSocket < Test::Unit::TestCase
       Socket.getaddrinfo("example.com", 80, "AF_UNIX")
     rescue => e
       assert_include([Socket::EAI_FAMILY, Socket::EAI_FAIL], e.error_code)
+    end
+  end
+
+  def test_tcp_socket_resolution_error_with_host
+    assert_raise_with_message(Socket::ResolutionError, /^getaddrinfo(\(3\))?: .+ "unknown"$/) do
+      TCPSocket.new("unknown", 80)
     end
   end
 
@@ -1029,9 +1027,34 @@ class TestSocket < Test::Unit::TestCase
 
     server.close
 
-    # SystemCallError is a workaround for Windows environment
-    assert_raise(Errno::ECONNREFUSED, SystemCallError) do
+    assert_raise(Errno::ECONNREFUSED) do
       Socket.tcp("localhost", port)
+    end
+    RUBY
+  end
+
+  def test_tcp_socket_resolves_only_local_host_family
+    opts = %w[-rsocket -W1]
+    assert_separately opts, <<~RUBY
+    begin
+      server = TCPServer.new("127.0.0.1", 0)
+      port = server.connect_address.ip_port
+      families = []
+
+      Addrinfo.define_singleton_method(:getaddrinfo) do |host, _, family, *_|
+        if host == "127.0.0.1"
+          [Addrinfo.tcp("127.0.0.1", 0)]
+        else
+          families << family
+          [Addrinfo.tcp("127.0.0.1", port)]
+        end
+      end
+
+      socket = Socket.tcp("localhost", port, "127.0.0.1")
+      assert_equal([Socket::AF_INET], families)
+    ensure
+      server&.close
+      socket&.close
     end
     RUBY
   end

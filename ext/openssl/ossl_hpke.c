@@ -78,7 +78,7 @@ static const rb_data_type_t ossl_hpke_ctx_type = {
     {
         0, ossl_hpke_ctx_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 #define GetHpkeSuite(obj, suite) do {\
@@ -105,7 +105,7 @@ static const rb_data_type_t ossl_hpke_suite_type = {
     {
         0, ossl_hpke_suite_free, ossl_hpke_suite_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*

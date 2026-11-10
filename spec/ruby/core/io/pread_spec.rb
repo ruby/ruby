@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "IO#pread" do
   before :each do
@@ -131,8 +132,19 @@ describe "IO#pread" do
   end
 
   it "raises IOError when file is closed" do
-    file = File.open(@fname, "r+")
-    file.close
-    -> { file.pread(1, 1) }.should.raise(IOError)
+    @file.close
+    -> { @file.pread(1, 1) }.should.raise(IOError)
+  end
+
+  it "clears the buffer if end-of-file is reached" do
+    buffer = +"existing content"
+    -> { @file.pread(1, 10, buffer) }.should.raise(EOFError)
+    buffer.should.empty?
+  end
+
+  it "does not modify the buffer if a read error (other than EOF) occurs" do
+    buffer = +"existing content"
+    -> { IOSpecs.closed_io.pread(1, 0, buffer) }.should.raise(IOError)
+    buffer.should == "existing content"
   end
 end

@@ -47,7 +47,7 @@ static const rb_data_type_t ossl_x509ext_type = {
     {
         0, ossl_x509ext_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -102,7 +102,7 @@ static const rb_data_type_t ossl_x509extfactory_type = {
     {
         0, ossl_x509extfactory_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -263,7 +263,7 @@ ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
         oid = ossl_to_der_if_possible(oid);
         StringValue(oid);
         p = (unsigned char *)RSTRING_PTR(oid);
-        ext = d2i_X509_EXTENSION(NULL, &p, RSTRING_LEN(oid));
+        ext = d2i_X509_EXTENSION(NULL, &p, rb_len2long(RSTRING_LEN(oid)));
         if (!ext)
             ossl_raise(eX509ExtError, "d2i_X509_EXTENSION");
         RTYPEDDATA_DATA(self) = ext;
@@ -351,7 +351,9 @@ ossl_x509ext_set_critical(VALUE self, VALUE flag)
     X509_EXTENSION *ext;
 
     GetX509Ext(self, ext);
-    X509_EXTENSION_set_critical(ext, RTEST(flag) ? 1 : 0);
+    if (!X509_EXTENSION_set_critical(ext, RTEST(flag) ? 1 : 0)) {
+        ossl_raise(eX509ExtError, "X509_EXTENSION_set_critical");
+    }
 
     return flag;
 }
@@ -382,8 +384,12 @@ ossl_x509ext_get_value(VALUE obj)
     GetX509Ext(obj, ext);
     if (!(out = BIO_new(BIO_s_mem())))
         ossl_raise(eX509ExtError, NULL);
-    if (!X509V3_EXT_print(out, ext, 0, 0))
-        ASN1_STRING_print(out, X509_EXTENSION_get_data(ext));
+    if (!X509V3_EXT_print(out, ext, 0, 0)) {
+        if (!ASN1_STRING_print(out, X509_EXTENSION_get_data(ext))) {
+            BIO_free(out);
+            ossl_raise(eX509ExtError, "ASN1_STRING_print");
+        }
+    }
     ret = ossl_membio2str(out);
 
     return ret;

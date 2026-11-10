@@ -60,13 +60,11 @@ static inline void coroutine_initialize(
 
 static inline struct coroutine_context * coroutine_transfer(struct coroutine_context * current, struct coroutine_context * target)
 {
-    struct coroutine_context * previous = target->from;
-
     target->from = current;
     emscripten_fiber_swap(&current->state, &target->state);
-    target->from = previous;
 
-    return target;
+    /* current may have been resumed by a context other than target. */
+    return current->from;
 }
 
 static inline void coroutine_destroy(struct coroutine_context * context)

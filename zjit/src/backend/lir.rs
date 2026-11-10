@@ -1,15 +1,17 @@
-use std::cell::{Cell, RefCell};
+use std::cell::Cell;
+use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
 use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
-use crate::codegen::{perf_symbol_range_start, perf_symbol_range_end, register_with_perf};
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
+use crate::perf;
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
+use crate::asm::LabelName;
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
-use crate::options::{TraceExits, PerfMap, get_option};
-use crate::payload::{IseqVersionRef, get_or_create_iseq_payload};
+use crate::options::{TraceExits, get_option};
+use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
@@ -193,7 +195,7 @@ impl BasicBlock {
     pub fn successors(&self) -> impl DoubleEndedIterator<Item = BlockId> + '_ {
         // Stub blocks (from new_block_without_id) have no real CFG structure.
         if self.rpo_index == DUMMY_RPO_INDEX {
-            return None.into_iter().chain(None.into_iter());
+            return None.into_iter().chain(None);
         }
         assert!(self.insns.last().unwrap().is_terminator());
         let extract_target = |insn: &Insn| -> Option<BlockId> {
@@ -213,7 +215,7 @@ impl BasicBlock {
                 (extract_target(last), None)
             }
         };
-        succ1.into_iter().chain(succ2.into_iter())
+        succ1.into_iter().chain(succ2)
     }
 
     /// Sort key for scheduling blocks in code layout order
@@ -250,11 +252,32 @@ pub use crate::backend::current::{
     mem_base_reg,
     Reg,
     EC, CFP, SP,
-    NATIVE_BASE_PTR,
+    NATIVE_BASE_PTR, NATIVE_STACK_PTR,
     C_ARG_OPNDS, C_RET_OPND,
 };
 
 pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
+
+/// Where the C calling convention passes an argument.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum CArgLocation {
+    /// In one of the argument registers.
+    Reg(Opnd),
+    /// In the stack slot that the caller reserves at the bottom of its frame.
+    /// The slot address depends on the reader: the caller writes it relative
+    /// to the native SP at the call, and the callee reads it from above its
+    /// return address and saved frame pointer.
+    StackSlot(usize),
+}
+
+/// Return where the C calling convention passes argument `idx`.
+pub fn c_arg_location(idx: usize) -> CArgLocation {
+    if idx < C_ARG_OPNDS.len() {
+        CArgLocation::Reg(C_ARG_OPNDS[idx])
+    } else {
+        CArgLocation::StackSlot(idx - C_ARG_OPNDS.len())
+    }
+}
 
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Ord, PartialOrd)]
@@ -595,6 +618,13 @@ impl From<VALUE> for Opnd {
     }
 }
 
+/// `hir::BlockHandler` lowered for codegen: a block ISEQ (encoded as a specval
+/// at frame push) or an already-guarded Proc VALUE.
+pub enum BlockHandler {
+    Iseq(IseqPtr),
+    Proc(Opnd),
+}
+
 /// Context for a side exit. If `SideExit` matches, it reuses the same code.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExit {
@@ -606,8 +636,7 @@ pub struct SideExit {
     /// side exit. The current frame's stack and locals are still handled by
     /// `stack` and `locals` above.
     pub stack_map: Option<StackMap>,
-    /// If set, the side exit will profile the current instruction and invalidate
-    /// the compiled ISEQ for recompilation.
+    /// If set, the side exit will invalidate the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
 }
 
@@ -617,11 +646,6 @@ pub struct SideExitRecompile {
     /// The compiled unit whose version must be invalidated to force a recompile. For inlined
     /// methods, this will be the outer function it was inlined into.
     pub compiled_iseq: Opnd,
-    /// The exiting frame's ISEQ, which owns the profile entry for `insn_idx`. For
-    /// an exit out of inlined code this is the inlined callee, not the compiled unit.
-    pub frame_iseq: Opnd,
-    /// The exiting frame's instruction index within `frame_iseq`.
-    pub insn_idx: u32,
 }
 
 /// Payload of `Target::SideExit`, boxed to keep `Target` (and every `Insn`
@@ -758,6 +782,9 @@ pub enum Insn {
 
     // Abort the process
     Abort,
+
+    /// Reverse the byte order of a value, over the operand's width.
+    ByteSwap { opnd: Opnd, out: Opnd },
 
     /// Add a comment into the IR at the point that this instruction is added.
     /// It won't have any impact on that actual compiled code.
@@ -1034,7 +1061,8 @@ macro_rules! for_each_operand_impl {
             Insn::Lea { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
-            Insn::Not { opnd, .. } => {
+            Insn::Not { opnd, .. } |
+            Insn::ByteSwap { opnd, .. } => {
                 visit_one!(opnd);
             }
             Insn::CPushPair(opnd0, opnd1) => {
@@ -1166,6 +1194,7 @@ impl Insn {
             Insn::BoundaryPad => "BoundaryPad",
             Insn::Breakpoint => "Breakpoint",
             Insn::Abort => "Abort",
+            Insn::ByteSwap { .. } => "ByteSwap",
             Insn::Comment(_) => "Comment",
             Insn::Cmp { .. } => "Cmp",
             Insn::CPop { .. } => "CPop",
@@ -1245,6 +1274,7 @@ impl Insn {
             Insn::Load { out, .. } |
             Insn::LoadSExt { out, .. } |
             Insn::LShift { out, .. } |
+            Insn::ByteSwap { out, .. } |
             Insn::Not { out, .. } |
             Insn::Or { out, .. } |
             Insn::RShift { out, .. } |
@@ -1277,6 +1307,7 @@ impl Insn {
             Insn::Load { out, .. } |
             Insn::LoadSExt { out, .. } |
             Insn::LShift { out, .. } |
+            Insn::ByteSwap { out, .. } |
             Insn::Not { out, .. } |
             Insn::Or { out, .. } |
             Insn::RShift { out, .. } |
@@ -1327,6 +1358,7 @@ impl Insn {
         self.is_jump() ||
             match self {
                 Insn::CRet(_) => true,
+                Insn::Abort => true,
                 _ => false
             }
     }
@@ -1461,13 +1493,6 @@ impl Interval {
 
     pub fn ends_before(&self, pos: usize) -> bool {
         self.end() <= pos
-    }
-
-    /// Check if the interval is alive at position
-    /// Panics if the range is not set
-    pub fn survives(&self, position: usize) -> bool {
-        assert!(self.ranges.len() > 0, "survives called on interval with no range");
-        self.ranges.iter().any(|range| range.from < position && position < range.to)
     }
 
     /// Returns true if position falls inside one of the ranges in this
@@ -1757,8 +1782,8 @@ impl StackState {
 pub struct StackMap {
     /// Ruby stack slots to reconstruct if this frame is materialized.
     stack: Vec<StackMapEntry>,
-    /// Heap-allocated JITFrame whose trailing stack map storage receives the
-    /// encoded entries once this CCall's register allocation is known.
+    /// Heap-allocated JITFrame that receives the encoded stack map once this
+    /// CCall's register allocation is known.
     jit_frame: *const zjit_jit_frame,
     /// Inlining depth of the frame whose stack is described by this map.
     /// Stack-map indexes are decoded from that frame's cfp->jit_return.
@@ -1781,42 +1806,9 @@ pub enum StackMapEntry {
     Skip(usize),
     /// Anchor the write cursor on the SP register saved on the native stack
     /// at `cfp->jit_return[-slot_index]`, plus `stack_size` VM slots. Emitted as
-    /// the first entry by gen_prepare_non_leaf_call(); see zjit.h.
+    /// the first entry by gen_prepare_non_leaf_call(); see
+    /// [crate::jit_frame::StackMapWriter::base_ptr].
     BasePtr { slot_index: u32, stack_size: u32 },
-}
-
-/// The base_ptr payload splits in two above the tag byte, so the slot index has
-/// to occupy exactly the bits between the tag and the stack size field.
-const _: () = assert!(
-    ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK as u64
-        == (1u64 << (ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT - ZJIT_STACK_MAP_SHIFT)) - 1,
-    "BASE_PTR index mask must cover the bits between the tag byte and the stack size field",
-);
-
-/// The stack size field runs from its shift to the top of the VALUE, so a u32
-/// always fits and StackMapEntry::BasePtr needs no runtime check for it.
-const _: () = assert!(
-    ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT + u32::BITS <= usize::BITS,
-    "BASE_PTR stack size field must be at least 32 bits wide",
-);
-
-impl StackMapEntry {
-    /// Encode a [`StackMapEntry::BasePtr`] into its tagged VALUE form.
-    /// `stack_size` is bound by [`CompileError::IseqStackTooLarge`]
-    /// `slot_index` by the max inline iteration.
-    // TODO(alan): bounds check max inline iteration as it's user-controlled.
-    fn encode_base_ptr(slot_index: u32, stack_size: u32) -> VALUE {
-        const INDEX_BITS: u32 = ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT - ZJIT_STACK_MAP_SHIFT;
-        assert!(
-            slot_index <= ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK,
-            "StackMap base_ptr slot index {slot_index} does not fit in {INDEX_BITS} bits",
-        );
-        let encoded = ((stack_size as usize) << ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT)
-            | ((slot_index as usize) << ZJIT_STACK_MAP_SHIFT)
-            | ZJIT_STACK_MAP_BASE_PTR_TAG as usize;
-        debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap base_ptr should not look like an immediate VALUE");
-        VALUE(encoded)
-    }
 }
 
 /// Initial capacity for asm.insns vector
@@ -1837,7 +1829,7 @@ pub struct Assembler {
     pub(super) num_vregs: usize,
 
     /// Names of labels
-    pub(super) label_names: Vec<String>,
+    pub(super) label_names: Vec<LabelName>,
 
     /// If true, `push_insn` is allowed to use scratch registers.
     /// On `compile`, it also disables the backend's use of them.
@@ -1939,7 +1931,7 @@ impl Assembler
     }
 
     // Create a LIR basic block without a valid HIR block ID (for testing or internal use).
-    pub fn new_block_without_id(&mut self, name: &str) -> BlockId {
+    pub fn new_block_without_id(&mut self, name: &'static str) -> BlockId {
         let bb_id = self.new_block(hir::BlockId(DUMMY_HIR_BLOCK_ID), true, DUMMY_RPO_INDEX);
         let label = self.new_label(name);
         self.write_label(label);
@@ -2012,42 +2004,6 @@ impl Assembler
     }
 
     pub fn linearize_instructions(&self) -> Vec<Insn> {
-        // Wrap instructions emitted by `push_insns` with PosMarkers and record
-        // the emitted byte range under `symbol_name` in the perf map.
-        fn push_insns_with_perf_symbol(
-            insns: &mut Vec<Insn>,
-            symbol_name: &str,
-            push_insns: impl FnOnce(&mut Vec<Insn>),
-        ) {
-            // ISEQ perf symbols cover the whole compiled ISEQ, including this
-            // padding. HIR perf needs a separate symbol because the padding
-            // doesn't belong to any HIR instruction.
-            if get_option!(perf) != Some(PerfMap::HIR) {
-                push_insns(insns);
-                return;
-            }
-
-            let symbol_name = symbol_name.to_string();
-            let start = Rc::new(RefCell::new(None));
-            let current = start.clone();
-            insns.push(Insn::PosMarker(Rc::new(move |code_ptr, _| {
-                let mut current = current.borrow_mut();
-                assert!(current.is_none(), "perf symbol range already open");
-                *current = Some(code_ptr);
-            })));
-
-            push_insns(insns);
-
-            insns.push(Insn::PosMarker(Rc::new(move |end, cb| {
-                if let Some(start) = start.borrow_mut().take() {
-                    let start_addr = start.raw_addr(cb);
-                    let end_addr = end.raw_addr(cb);
-                    if start_addr < end_addr {
-                        register_with_perf(symbol_name.clone(), start_addr, end_addr - start_addr);
-                    }
-                }
-            })));
-        }
 
         // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
@@ -2058,7 +2014,7 @@ impl Assembler
             // Entry blocks shouldn't ever be preceded by something that can
             // stomp on this block.
             if !block.is_entry {
-                push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
+                perf::push_insns_with_synthetic_symbol(&mut insns, "BoundaryPad", |insns| {
                     insns.push(Insn::BoundaryPad);
                 });
             }
@@ -2091,7 +2047,7 @@ impl Assembler
             }
         }
         // Make sure we don't stomp on the next function
-        push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
+        perf::push_insns_with_synthetic_symbol(&mut insns, "BoundaryPad", |insns| {
             insns.push(Insn::BoundaryPad);
         });
 
@@ -2191,12 +2147,15 @@ impl Assembler
     }
 
     /// Create a new label instance that we can jump to
-    pub fn new_label(&mut self, name: &str) -> Target
+    pub fn new_label(&mut self, name: impl Into<LabelName>) -> Target
     {
-        assert!(!name.contains(' '), "use underscores in label names, not spaces");
+        let name = name.into();
+        if let LabelName::Static(name) = name {
+            assert!(!name.contains(' '), "use underscores in label names, not spaces");
+        }
 
         let label = Label(self.label_names.len());
-        self.label_names.push(name.to_string());
+        self.label_names.push(name);
         Target::Label(label)
     }
 
@@ -2468,14 +2427,12 @@ impl Assembler
 
         // Count predecessors for each block
         let mut num_predecessors: HashMap<BlockId, usize> = HashMap::new();
-        for block_id in self.block_order() {
+        let block_order = self.block_order();
+        for &block_id in &block_order {
             for succ in self.basic_blocks[block_id.0].successors() {
                 *num_predecessors.entry(succ).or_insert(0) += 1;
             }
         }
-
-        // Collect block order upfront so we don't borrow self while mutating
-        let block_order = self.block_order();
 
         // This code is iterating over each block in our CFG and inserting
         // copy instructions at each edge.
@@ -2575,33 +2532,22 @@ impl Assembler
             if self.basic_blocks[block_id.0].is_dummy() { continue; }
             let params = self.basic_blocks[block_id.0].parameters.clone();
 
-            // JIT-to-JIT entries that would need more argument registers should
-            // be unreachable because can_direct_send() refuses to call them.
-            // Keep compiling the function body, but make the unsupported entry
-            // abort if control ever reaches it. TODO: Remove this (Shopify/ruby#916)
-            if params.len() > C_ARG_OPNDS.len() {
-                let insert_pos = self.basic_blocks[block_id.0].insns.iter()
-                    .position(|insn| matches!(insn, Insn::FrameSetup { .. }))
-                    .or_else(|| self.basic_blocks[block_id.0].insns.iter().position(|insn| matches!(insn, Insn::Label(_))).map(|idx| idx + 1))
-                    .unwrap_or(0);
-                self.basic_blocks[block_id.0].insns.insert(insert_pos, Insn::Abort);
-                self.basic_blocks[block_id.0].insn_ids.insert(insert_pos, None);
-                continue;
-            }
-
-            // Rewrite VRegs to physical registers before sequentialization
-            // so the parcopy algorithm can detect physical register conflicts.
-            let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
+            // Rewrite VRegs to physical registers or stack slots before sequentialization
+            // so the parcopy algorithm can detect conflicts between them.
+            let copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
                 .map(|(i, param)| parcopy::RegisterCopy::<Opnd> {
-                    source: C_ARG_OPNDS[i],
+                    source: match c_arg_location(i) {
+                        CArgLocation::Reg(reg) => reg,
+                        CArgLocation::StackSlot(slot) => Opnd::mem(64, NATIVE_BASE_PTR, Self::frame_size() + slot as i32 * SIZEOF_VALUE_I32),
+                    },
                     destination: Self::rewritten_opnd(*param, intervals, regs),
                 })
                 .filter(|copy| copy.source != copy.destination)
                 .collect();
 
-            debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
-                "parcopy must operate on physical registers, not VRegs");
-            let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
+            debug_assert!(copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
+                "parcopy must operate on physical locations, not VRegs");
+            let sequentialized = parcopy::sequentialize_register(&copies, Opnd::Reg(SCRATCH_REG));
             let moves: Vec<Insn> = sequentialized
                 .iter()
                 .map(|copy| match copy.source {
@@ -2616,9 +2562,13 @@ impl Assembler
                 })
                 .collect();
 
-            // Find the position after FrameSetup to insert moves
+            // Find the position after FrameSetup to insert moves. They must come
+            // after FrameSetup (not before) because spilled destinations and
+            // stack-passed parameter sources are NATIVE_BASE_PTR-relative, and
+            // NATIVE_BASE_PTR points at the caller's frame until FrameSetup.
             let insert_pos = self.basic_blocks[block_id.0].insns.iter()
                 .position(|insn| matches!(insn, Insn::FrameSetup { .. }))
+                .map(|idx| idx + 1)
                 .or_else(|| self.basic_blocks[block_id.0].insns.iter().position(|insn| matches!(insn, Insn::Label(_))).map(|idx| idx + 1))
                 .unwrap_or(0);
 
@@ -2639,7 +2589,7 @@ impl Assembler
             }
         }
 
-        self.rewrite_instructions(intervals, regs);
+        self.rewrite_instructions(&block_order, intervals, regs);
     }
 
     /// Handle caller-saved registers around CCall instructions.
@@ -2670,7 +2620,7 @@ impl Assembler
             let mut new_insns = Vec::with_capacity(old_insns.len());
             let mut new_ids = Vec::with_capacity(old_ids.len());
 
-            for (insn, insn_id) in old_insns.into_iter().zip(old_ids.into_iter()) {
+            for (insn, insn_id) in old_insns.into_iter().zip(old_ids) {
                 if let Insn::CCall { data } = insn {
                     let CCallData { opnds, stack_map, out, start_marker, end_marker, fptr } = *data;
                     let insn_number = insn_id.map(|id| id.0).unwrap_or(0);
@@ -2690,19 +2640,28 @@ impl Assembler
                         HashSet::default()
                     };
 
-                    // Find survivors: intervals that survive this Call instruction
-                    // We need to preserve the "surviving" registers past the ccall,
-                    // so we're going to push them all on the stack, then pop
-                    // after we make the ccall
+                    // Find survivors: intervals that are live across this Call
+                    // instruction. We need to preserve the "surviving" registers
+                    // past the ccall, so we're going to push them all on the
+                    // stack, then pop after we make the ccall
+                    let out_vreg_id = out.is_vreg().then(|| out.vreg_idx());
+                    debug_assert!(
+                        out_vreg_id.is_none_or(|id| !intervals[id].has_bounds() || intervals[id].born_at(insn_number)),
+                        "a CCall's output interval must start at the CCall"
+                    );
                     let survivors: Vec<VRegId> = intervals.iter()
                         .filter(|interval| {
                             // We need to spill register intervals on this CCall in two cases:
-                            // 1) The VReg is referenced in an instruction after the CCall
-                            let survives_call = interval.has_bounds() && interval.survives(insn_number);
+                            // 1) The VReg is live across the CCall. The VReg this CCall
+                            //    defines is not one of them: its range starts here, so it
+                            //    holds no value yet and there is nothing to preserve.
+                            let live_across_call = Some(interval.vreg_id) != out_vreg_id
+                                && interval.covers(insn_number);
+
                             // 2) The VReg is referenced by the stack map for the CCall
                             let stack_map_reg = stack_vreg_ids.contains(&interval.vreg_id);
                             let is_register = interval.assigned.get().and_then(|alloc| alloc.alloc_pool_index(alloc_regs)).is_some();
-                            is_register && (survives_call || stack_map_reg)
+                            is_register && (live_across_call || stack_map_reg)
                         })
                         .map(|interval| interval.vreg_id)
                         .collect();
@@ -2722,29 +2681,15 @@ impl Assembler
                     }
 
                     if let Some(StackMap { stack, jit_frame, frame_depth }) = stack_map {
-                        assert_eq!(unsafe { (*jit_frame).stack_size } as usize, stack.len());
-                        for (idx, stack_entry) in stack.iter().enumerate() {
-                            let entry = match *stack_entry {
-                                StackMapEntry::Opnd(Opnd::Value(value)) => {
-                                    // TODO: Investigate using a constant pool to track any value reference in the stack map
-                                    assert!(value.special_const_p(), "StackMap should only materialize immediate VALUEs, but got: {value:?}");
-                                    value
-                                }
-                                StackMapEntry::Opnd(Opnd::UImm(value)) => {
-                                    let value = VALUE(value as usize);
-                                    // TODO: Investigate using a constant pool to track any value reference in the stack map
-                                    assert!(value.special_const_p(), "StackMap should only materialize immediate VALUEs, but got: {value:?}");
-                                    value
-                                }
-                                StackMapEntry::Skip(size) => {
-                                    let encoded = (size << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_SKIP_TAG as usize;
-                                    debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap skip should not look like an immediate VALUE");
-                                    VALUE(encoded)
-                                }
-                                StackMapEntry::BasePtr { slot_index, stack_size } => {
-                                    debug_assert_eq!(idx, 0, "base_ptr must be the first StackMap entry so later entries decode from it");
-                                    StackMapEntry::encode_base_ptr(slot_index, stack_size)
-                                }
+                        let jit_frame = unsafe { &mut *jit_frame.cast_mut() };
+                        let mut writer = jit_frame.stack_map_writer();
+                        for stack_entry in stack.iter() {
+                            match *stack_entry {
+                                // TODO: Investigate using a constant pool to track any value reference in the stack map
+                                StackMapEntry::Opnd(Opnd::Value(value)) => writer.imm(value),
+                                StackMapEntry::Opnd(Opnd::UImm(value)) => writer.imm(VALUE(value.to_usize())),
+                                StackMapEntry::Skip(size) => writer.skip(size),
+                                StackMapEntry::BasePtr { slot_index, stack_size } => writer.base_ptr(slot_index, stack_size),
                                 StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) => {
                                     let vreg_stack_index = match intervals[vreg].assigned.get().expect("StackMap VReg should have an allocation") {
                                         Allocation::Reg(_) => {
@@ -2756,16 +2701,12 @@ impl Assembler
                                             self.stack_state.stack_map_index_for_spill(stack_idx, frame_depth)
                                         }
                                     };
-
-                                    // Encode the offset as a shifted-and-tagged integer.
-                                    let encoded = (vreg_stack_index << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_VREG_TAG as usize;
-                                    debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap VReg should not look like an immediate VALUE");
-                                    VALUE(encoded)
+                                    writer.vreg(vreg_stack_index);
                                 }
                                 _ => unreachable!("unexpected entry in StackMap: {stack_entry:?}"),
-                            };
-                            unsafe { (*jit_frame.cast_mut()).stack.as_mut_ptr().add(idx).write(entry); }
+                            }
                         }
+                        jit_frame.set_stack_map(writer);
                     }
 
                     // Push arguments that don't fit in `c_arg_regs` onto the
@@ -2928,7 +2869,7 @@ impl Assembler
             StackMapEntry::Opnd(Opnd::UImm(value)) => !VALUE(*value as usize).special_const_p(),
             StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => {
                 matches!(
-                    intervals[idx.to_usize()].assigned.get().expect("StackMap VReg should have an allocation"),
+                    intervals[*idx].assigned.get().expect("StackMap VReg should have an allocation"),
                     Allocation::Reg(_)
                 )
             }
@@ -2939,8 +2880,8 @@ impl Assembler
 
     /// Walk every instruction and replace VReg operands with the physical
     /// register (or stack slot) assigned to the VReg's interval.
-    fn rewrite_instructions(&mut self, intervals: &[Interval], regs: &RegPool) {
-        for block_id in self.block_order() {
+    fn rewrite_instructions(&mut self, block_order: &[BlockId], intervals: &[Interval], regs: &RegPool) {
+        for &block_id in block_order {
             for insn in self.basic_blocks[block_id.0].insns.iter_mut() {
                 insn.for_each_operand_mut(|opnd| {
                     Self::rewrite_opnd(opnd, intervals, regs);
@@ -3046,14 +2987,8 @@ impl Assembler
             value.special_const_p().then_some(value)
         }
 
-        fn encode_stack_map_index(asm: &Assembler, stack_idx: usize, frame_depth: usize) -> VALUE {
-            let vreg_stack_index = asm.stack_state.stack_map_index_for_spill(stack_idx, frame_depth);
-            let encoded = (vreg_stack_index << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_VREG_TAG as usize;
-            debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap VReg should not look like an immediate VALUE");
-            VALUE(encoded)
-        }
-
-        fn capture_stack_map_opnd(asm: &mut Assembler, opnd: Opnd, capture_idx: &mut usize, frame_depth: usize) -> VALUE {
+        /// Copy `opnd` into a reserved native stack slot and return the slot's stack map index.
+        fn capture_stack_map_opnd(asm: &mut Assembler, opnd: Opnd, capture_idx: &mut usize, frame_depth: usize) -> usize {
             let stack_idx = asm.stack_state.stack_idx_for_side_exit_stack_map(*capture_idx);
             *capture_idx += 1;
             let capture_slot = Opnd::Mem(Mem {
@@ -3063,39 +2998,35 @@ impl Assembler
             });
             let opnd = if matches!(opnd, Opnd::Reg(_)) { opnd.with_num_bits(64) } else { opnd };
             asm.store(capture_slot, opnd);
-            encode_stack_map_index(asm, stack_idx, frame_depth)
+            asm.stack_state.stack_map_index_for_spill(stack_idx, frame_depth)
         }
 
         fn compile_exit_stack_map(asm: &mut Assembler, stack_map: &StackMap) {
             let StackMap { stack, jit_frame, frame_depth } = stack_map;
             let jit_frame = *jit_frame;
-            assert_eq!(unsafe { (*jit_frame).stack_size } as usize, stack.len());
+            let mut writer = unsafe { &*jit_frame }.stack_map_writer();
 
             let mut capture_idx = 0;
-            for (idx, stack_entry) in stack.iter().enumerate() {
-                let entry = match *stack_entry {
-                    StackMapEntry::Opnd(Opnd::Value(_) | Opnd::UImm(_)) => {
-                        let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
-                        immediate_stack_map_value(opnd)
-                            .unwrap_or_else(|| capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth))
+            for stack_entry in stack.iter() {
+                match *stack_entry {
+                    StackMapEntry::Opnd(opnd @ (Opnd::Value(_) | Opnd::UImm(_))) => {
+                        match immediate_stack_map_value(opnd) {
+                            Some(value) => writer.imm(value),
+                            None => writer.vreg(capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth)),
+                        }
                     }
-                    StackMapEntry::Skip(size) => {
-                        let encoded = (size << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_SKIP_TAG as usize;
-                        debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap skip should not look like an immediate VALUE");
-                        VALUE(encoded)
-                    }
+                    StackMapEntry::Skip(size) => writer.skip(size),
                     StackMapEntry::Opnd(Opnd::Mem(Mem { base: MemBase::Stack { stack_idx, .. }, disp, .. })) => {
                         assert_eq!(disp, 0, "StackMap stack slot should not have a displacement");
-                        encode_stack_map_index(asm, stack_idx.to_usize(), *frame_depth)
+                        writer.vreg(asm.stack_state.stack_map_index_for_spill(stack_idx.to_usize(), *frame_depth));
                     }
-                    StackMapEntry::Opnd(Opnd::Reg(_)) => {
-                        let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
-                        capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth)
+                    StackMapEntry::Opnd(opnd @ Opnd::Reg(_)) => {
+                        writer.vreg(capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth));
                     }
                     _ => unreachable!("unexpected entry in SideExit StackMap: {stack_entry:?}"),
-                };
-                unsafe { (*jit_frame.cast_mut()).stack.as_mut_ptr().add(idx).write(entry); }
+                }
             }
+            unsafe { &mut *jit_frame.cast_mut() }.set_stack_map(writer);
 
             assert!(capture_idx <= asm.stack_state.num_side_exit_stack_map_slots);
             asm_comment!(asm, "install side-exit JITFrame for caller depth {}", frame_depth);
@@ -3150,15 +3081,9 @@ impl Assembler
 
         fn compile_exit_recompile(asm: &mut Assembler, exit: &SideExit) {
             if let Some(recompile) = &exit.recompile {
-                let payload = get_or_create_iseq_payload(exit.iseq);
-                payload.reset_profiles_remaining(recompile.insn_idx as YarvInsnIdx);
                 use crate::codegen::exit_recompile;
-                asm_comment!(asm, "profile and maybe recompile");
-                asm_ccall!(asm, exit_recompile,
-                    recompile.compiled_iseq,
-                    recompile.frame_iseq,
-                    recompile.insn_idx.into()
-                );
+                asm_comment!(asm, "invalidate for recompilation");
+                asm_ccall!(asm, exit_recompile, recompile.compiled_iseq);
             }
         }
 
@@ -3215,21 +3140,17 @@ impl Assembler
         let exit_block = self.new_block_without_id("side_exits");
 
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
-        let mut compiled_exits: HashMap<SideExit, Label> = HashMap::new();
+        let mut compiled_exits: HashMap<SideExit, Label> = HashMap::with_capacity(targets.len());
 
-        // Start a new perf range for side exits
-        let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) {
-            Some(perf_symbol_range_start(self, "side exit"))
-        } else {
-            None
-        };
+        // Start a new perf range for side exits.
+        let symbol_range = perf::symbol_range_start(self, "side exit");
 
         // Mark the start of side-exit code so we can measure its size
         if !targets.is_empty() {
             self.pos_marker(move |start_pos, cb| {
                 let end_pos = cb.get_write_ptr();
                 let size = end_pos.as_offset() - start_pos.as_offset();
-                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size, size as u64);
+                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size_bytes, size as u64);
             });
         }
 
@@ -3264,6 +3185,7 @@ impl Assembler
                         }
                     }
 
+                    // TODO(alan): change this to not compile_exit() on the same exit twice.
                     if should_record_exit {
                         compile_exit(self, &exit, Some(reason));
                     } else {
@@ -3279,15 +3201,16 @@ impl Assembler
                 };
 
                 // Compile the shared side exit if not compiled yet
-                let compiled_exit = if let Some(&compiled_exit) = compiled_exits.get(&exit) {
-                    Target::Label(compiled_exit)
-                } else {
-                    let new_exit = self.new_label("side_exit");
-                    self.write_label(new_exit.clone());
-                    asm_comment!(self, "Exit: {}", exit.pc);
-                    compile_exit(self, &exit, None);
-                    compiled_exits.insert(exit, new_exit.unwrap_label());
-                    new_exit
+                let compiled_exit = match compiled_exits.entry(exit) {
+                    Entry::Occupied(entry) => Target::Label(*entry.get()),
+                    Entry::Vacant(entry) => {
+                        let new_exit = self.new_label("side_exit");
+                        self.write_label(new_exit.clone());
+                        asm_comment!(self, "Exit: {}", entry.key().pc);
+                        compile_exit(self, entry.key(), None);
+                        entry.insert(new_exit.unwrap_label());
+                        new_exit
+                    }
                 };
 
                 *self.basic_blocks[block_id].insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
@@ -3302,8 +3225,8 @@ impl Assembler
         }
 
         // Close the current perf range for side exits
-        if let Some(perf_symbol) = &perf_symbol {
-            perf_symbol_range_end(self, perf_symbol);
+        if let Some(symbol_range) = &symbol_range {
+            perf::symbol_range_end(self, symbol_range);
         }
 
         // Extract exit instructions and restore the previous current block
@@ -3718,7 +3641,7 @@ fn format_insn_compact(asm: &Assembler, insn: &Insn) -> String {
 impl fmt::Display for Assembler {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Count the number of duplicated label names to disambiguate them if needed
-        let mut label_counts: HashMap<&String, usize> = HashMap::new();
+        let mut label_counts: HashMap<&LabelName, usize> = HashMap::new();
         let colors = crate::ttycolors::get_colors();
         let bold_begin = colors.bold_begin;
         let bold_end = colors.bold_end;
@@ -3728,7 +3651,7 @@ impl fmt::Display for Assembler {
         }
 
         /// Return a label name String. Suffix "_{label_idx}" if the label name is used multiple times.
-        fn label_name(asm: &Assembler, label_idx: usize, label_counts: &HashMap<&String, usize>) -> String {
+        fn label_name(asm: &Assembler, label_idx: usize, label_counts: &HashMap<&LabelName, usize>) -> String {
             let label_name = &asm.label_names[label_idx];
             let label_count = label_counts.get(&label_name).unwrap_or(&0);
             if *label_count > 1 {
@@ -3943,6 +3866,18 @@ impl Assembler {
 
     pub fn bake_string(&mut self, text: &str) {
         self.push_insn(Insn::BakeString(text.to_string()));
+    }
+
+    #[must_use]
+    pub fn byteswap(&mut self, opnd: Opnd) -> Opnd {
+        let num_bits = Opnd::match_num_bits(&[opnd]);
+        if num_bits == 8 {
+            return opnd;
+        }
+
+        let out = self.new_vreg(num_bits);
+        self.push_insn(Insn::ByteSwap { opnd, out });
+        out
     }
 
     pub fn is_ruby_code(&self) -> bool {
@@ -4764,12 +4699,12 @@ mod tests {
         assert_eq!(interval.end(), 25);
 
         // The vreg is not live inside the hole ...
-        assert!(!interval.survives(10));
-        assert!(!interval.survives(15));
+        assert!(!interval.covers(10));
+        assert!(!interval.covers(15));
         // ... but the interval is not over, so it must keep its register.
         assert!(interval.end() > 15);
         // ... and it is live again on the far side.
-        assert!(interval.survives(22));
+        assert!(interval.covers(22));
 
         // A range that abuts the last one merges into it.
         interval.add_range(25, 30);
@@ -4795,15 +4730,15 @@ mod tests {
     }
 
     #[test]
-    fn test_interval_survives() {
+    fn test_interval_covers() {
         let mut interval = Interval::new(VRegId(1));
         interval.add_range(3, 10);
 
-        assert!(!interval.survives(2));  // Before range
-        assert!(!interval.survives(3));  // At start (exclusive)
-        assert!(interval.survives(5));   // Inside range
-        assert!(!interval.survives(10)); // At end (exclusive)
-        assert!(!interval.survives(11)); // After range
+        assert!(!interval.covers(2));  // Before range
+        assert!(interval.covers(3));   // At start (inclusive: the def position)
+        assert!(interval.covers(5));   // Inside range
+        assert!(!interval.covers(10)); // At end (exclusive)
+        assert!(!interval.covers(11)); // After range
     }
 
     #[test]
@@ -4815,7 +4750,6 @@ mod tests {
         // so position 11 belongs to no instruction.
         interval.set_from(10);
         assert_eq!(interval.ranges, vec![LiveRange { from: 10, to: 11 }]);
-        assert!(!interval.survives(10));
         assert!(interval.is_dead());
 
         // With existing range, updates start but keeps end
@@ -4847,13 +4781,6 @@ mod tests {
     fn test_interval_add_range_invalid() {
         let mut interval = Interval::new(VRegId(1));
         interval.add_range(10, 5);
-    }
-
-    #[test]
-    #[should_panic(expected = "survives called on interval with no range")]
-    fn test_interval_survives_panics_without_range() {
-        let interval = Interval::new(VRegId(1));
-        interval.survives(5);
     }
 
     #[test]
@@ -4892,7 +4819,7 @@ mod tests {
         ]);
         assert_eq!(intervals[r12_idx].start(), 20);
         assert_eq!(intervals[r12_idx].end(), 38);
-        assert!(!intervals[r12_idx].survives(32));
+        assert!(!intervals[r12_idx].covers(32));
 
         assert_eq!(intervals[r13_idx].ranges, vec![LiveRange { from: 20, to: 32 }]);
 
@@ -5143,18 +5070,26 @@ mod tests {
     }
 
     #[test]
-    fn test_resolve_ssa_entry_params_too_many_abort() {
+    fn test_resolve_ssa_entry_params_beyond_arg_regs_use_stack() {
         let mut asm = Assembler::new();
         let block = asm.new_block(hir::BlockId(0), true, 0);
         asm.set_current_block(block);
         let label = asm.new_label("bb0");
         asm.write_label(label);
 
-        for _ in 0..=C_ARG_OPNDS.len() {
+        let params: Vec<Opnd> = (0..=C_ARG_OPNDS.len()).map(|_| {
             let param = asm.new_vreg(64);
             asm.basic_blocks[block.0].add_parameter(param);
+            param
+        }).collect();
+        // Use every parameter so they are all live and get allocations.
+        let mut acc = params[0];
+        for &param in &params[1..] {
+            let out = asm.new_vreg(64);
+            asm.basic_blocks[block.0].push_insn(Insn::Add { left: acc, right: param, out });
+            acc = out;
         }
-        asm.basic_blocks[block.0].push_insn(Insn::CRet(Opnd::UImm(0)));
+        asm.basic_blocks[block.0].push_insn(Insn::CRet(acc));
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(0);
@@ -5165,7 +5100,16 @@ mod tests {
 
         asm.resolve_ssa(&intervals, &regs);
 
-        assert!(matches!(asm.basic_blocks[block.0].insns[1], Insn::Abort));
+        // The parameter that doesn't fit in argument registers is loaded from
+        // the caller's outgoing-argument area, right above this frame's
+        // return address and saved frame pointer.
+        let insns = &asm.basic_blocks[block.0].insns;
+        assert!(!insns.iter().any(|insn| matches!(insn, Insn::Abort)), "no entry should abort");
+        let expected_src = Opnd::mem(64, NATIVE_BASE_PTR, Assembler::frame_size());
+        assert!(
+            insns.iter().any(|insn| matches!(insn, Insn::Mov { src, .. } if *src == expected_src)),
+            "expected a load from {expected_src:?}, got: {insns:?}"
+        );
     }
 
     fn build_critical_edge() -> (Assembler, Opnd, Opnd, Opnd, Opnd, Opnd, BlockId, BlockId, BlockId) {

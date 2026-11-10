@@ -12,6 +12,10 @@
 
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * A wrapper around a contiguous block of allocated memory.
  */
@@ -24,7 +28,7 @@ typedef struct pm_buffer_t pm_buffer_t;
  * @returns A pointer to the initialized buffer. The caller is responsible for
  *     freeing the buffer with pm_buffer_free.
  */
-PRISM_EXPORTED_FUNCTION PRISM_NODISCARD pm_buffer_t * pm_buffer_new(void);
+PRISM_NODISCARD PRISM_EXPORTED_FUNCTION pm_buffer_t * pm_buffer_new(void);
 
 /**
  * Free both the memory held by the buffer and the buffer itself.
@@ -48,5 +52,9 @@ PRISM_EXPORTED_FUNCTION char * pm_buffer_value(const pm_buffer_t *buffer) PRISM_
  * @returns The length of the buffer.
  */
 PRISM_EXPORTED_FUNCTION size_t pm_buffer_length(const pm_buffer_t *buffer) PRISM_NONNULL(1);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

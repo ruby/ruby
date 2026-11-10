@@ -33,7 +33,7 @@ static const rb_data_type_t ossl_x509req_type = {
     {
         0, ossl_x509req_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -359,7 +359,7 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 {
     X509_REQ *req;
     X509_ATTRIBUTE *attr;
-    long i;
+    rb_len_t i;
     VALUE item;
 
     Check_Type(ary, T_ARRAY);

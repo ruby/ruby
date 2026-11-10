@@ -598,6 +598,11 @@ module Prism
       assert_prism_eval('$pit = 1; /#$pit/i')
       assert_prism_eval('/1 #{1 + 2} 1/')
       assert_prism_eval('/1 #{"2"} #{1 + 2} 1/')
+
+      # Test encoding of interpolated regular expressions
+      assert_prism_eval('a = "abc".dup.force_encoding("US-ASCII"); /#{a}/u.encoding')
+      assert_prism_eval('a = "abc".dup.force_encoding("US-ASCII"); /#{a}#{a}/u.encoding')
+      assert_prism_eval('a = "abc".dup.force_encoding("US-ASCII"); /#{a} z/u.encoding')
     end
 
     def test_InterpolatedStringNode
@@ -624,6 +629,23 @@ module Prism
         b = "#{a}" << "Bar"
         [a, b, b.encoding]
       RUBY
+      assert_prism_eval('x = 1; "#{x}#{x}".encoding')
+      assert_prism_eval('"#{}#{1}".encoding')
+      assert_prism_eval('a = "abc".b; "#{a} z".encoding')
+      assert_prism_eval('a = "abc".b; "#{a}z#{a}".encoding')
+      assert_prism_eval('$pit = "abc".b; "#$pit#$pit".encoding')
+      assert_prism_eval('a = "abc".b; "z#{a}#{a}".encoding')
+      assert_prism_eval(<<~'RUBY')
+        a = "abc".dup.force_encoding("US-ASCII")
+        b = "".dup.force_encoding("UTF-16LE")
+        c = "#{a}#{b}"
+        [c, c.encoding]
+      RUBY
+      assert_prism_eval(<<~'RUBY', raw: true)
+        # encoding: Shift_JIS
+        x = 1
+        "#{x}#{x}".encoding
+      RUBY
     end
 
     def test_concatenated_StringNode
@@ -638,9 +660,20 @@ module Prism
     def test_InterpolatedSymbolNode
       assert_prism_eval('$pit = 1; :"1 #$pit 1"')
       assert_prism_eval(':"1 #{1 + 2} 1"')
+      assert_prism_eval(<<~'RUBY')
+        a = "abc".dup.force_encoding("US-ASCII")
+        b = "".dup.force_encoding("UTF-16LE")
+        :"#{a}#{b}".encoding
+      RUBY
     end
 
     def test_InterpolatedXStringNode
+      assert_prism_eval(<<~'RUBY')
+        def self.`(command) = command.encoding
+        a = "abc".b
+        `#{a}#{a}`
+      RUBY
+
       assert_prism_eval(<<~RUBY)
         def self.`(command) = command * 2
         `echo \#{1}`
@@ -905,6 +938,9 @@ module Prism
     def test_AndNode
       assert_prism_eval("true && 1")
       assert_prism_eval("false && 1")
+      assert_prism_eval("true && 1 && 2")
+      assert_prism_eval("true && nil && 2")
+      assert_prism_eval("a = []; a.push(1) && a.push(2) && nil && a.push(3); a")
     end
 
     def test_CaseNode
@@ -1000,6 +1036,9 @@ module Prism
     def test_OrNode
       assert_prism_eval("true || 1")
       assert_prism_eval("false || 1")
+      assert_prism_eval("nil || false || 1")
+      assert_prism_eval("nil || 1 || 2")
+      assert_prism_eval("a = []; a.push(1).empty? || nil || a.push(2) || a.push(3); a")
     end
 
     def test_UnlessNode
@@ -1502,6 +1541,14 @@ a
           return *args, *args, **kwargs
         end
         prism_test_return_node(1, foo: 0)
+      CODE
+
+      # [Bug #22334]
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_return_node
+          return **{foo: 1}
+        end
+        prism_test_return_node
       CODE
     end
 

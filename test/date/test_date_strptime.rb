@@ -533,4 +533,11 @@ class TestDateStrptime < Test::Unit::TestCase
     assert_equal(6, d[:mon])
     assert_equal(1, d[:mday])
   end
+
+  def test_nonascii_string
+    nonalpha = "\u{2600 fe0f}"
+    s = "2011-10-05T22:26:12#{nonalpha}"
+
+    assert_nil(DateTime._strptime(s))
+  end
 end

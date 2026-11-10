@@ -124,7 +124,6 @@ errors:
   - EXPRESSION_NOT_WRITABLE_NUMBERED
   - EXPRESSION_NOT_WRITABLE_SELF
   - EXPRESSION_NOT_WRITABLE_TRUE
-  - FLOAT_PARSE
   - FOR_COLLECTION
   - FOR_IN
   - FOR_INDEX
@@ -262,6 +261,7 @@ errors:
   - RETURN_INVALID
   - SCRIPT_NOT_FOUND
   - SINGLETON_FOR_LITERALS
+  - STACK_EXHAUSTED
   - STATEMENT_ALIAS
   - STATEMENT_POSTEXE_END
   - STATEMENT_PREEXE_BEGIN
@@ -666,6 +666,8 @@ tokens:
     comment: "unary **"
   - name: WORDS_SEP
     comment: "a separator between words in a list"
+  - name: WORDS_SEP_IMPLICIT
+    comment: "a separator between words in a list that has no source characters"
   - name: XSTRING_BEGIN
     comment: "the beginning of an execution string"
   - name: __END__
@@ -4552,8 +4554,8 @@ nodes:
     fields:
       - name: opening_loc
         type: location?
-      - name: value_loc
-        type: location?
+      - name: content_loc
+        type: location
       - name: closing_loc
         type: location?
       - name: unescaped

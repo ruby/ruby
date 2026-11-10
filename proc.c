@@ -292,13 +292,13 @@ static bool
 refinement_recipe_eq(VALUE r1, VALUE r2)
 {
     if (r1 == r2) return true;
-    long len = RARRAY_LEN(r1);
+    rb_len_t len = RARRAY_LEN(r1);
     if (RARRAY_LEN(r2) != len) return false;
     if (RARRAY_AREF(r1, REFINEMENT_RECIPE_BASE_CREF) !=
         RARRAY_AREF(r2, REFINEMENT_RECIPE_BASE_CREF)) return false;
     if (RARRAY_AREF(r1, REFINEMENT_RECIPE_SRC_ISEQ) !=
         RARRAY_AREF(r2, REFINEMENT_RECIPE_SRC_ISEQ)) return false;
-    for (long i = REFINEMENT_RECIPE_MODS; i < len; i++) {
+    for (rb_len_t i = REFINEMENT_RECIPE_MODS; i < len; i++) {
         if (RARRAY_AREF(r1, i) != RARRAY_AREF(r2, i)) return false;
     }
     return true;
@@ -309,7 +309,7 @@ rb_proc_refinements_recipe(VALUE procval)
 {
     rb_proc_t *proc;
     GetProcPtr(procval, proc);
-    if (!proc->is_refined) return Qnil;
+    if (!proc->header.is_refined) return Qnil;
     return rb_ivar_get(procval, id_refinements_recipe);
 }
 
@@ -319,7 +319,7 @@ rb_proc_set_refinements_recipe(VALUE procval, VALUE recipe)
     rb_proc_t *proc;
     GetProcPtr(procval, proc);
     rb_ivar_set(procval, id_refinements_recipe, recipe);
-    proc->is_refined = 1;
+    proc->header.is_refined = 1;
 }
 
 typedef struct {
@@ -331,9 +331,19 @@ static size_t
 proc_memsize(const void *ptr)
 {
     const rb_proc_t *proc = ptr;
-    if (proc->block.as.captured.ep == ((const cfunc_proc_t *)ptr)->env+1)
-        return sizeof(cfunc_proc_t);
-    return sizeof(rb_proc_t);
+    switch (proc->block.type) {
+      case block_type_iseq:
+      case block_type_ifunc:
+        if (proc->block.as.captured.ep == ((const cfunc_proc_t *)ptr)->env+1)
+            return sizeof(cfunc_proc_t);
+        return sizeof(rb_proc_captured_t);
+      case block_type_symbol:
+        return sizeof(rb_proc_symbol_t);
+      case block_type_proc:
+        return sizeof(rb_proc_proc_t);
+    }
+    VM_UNREACHABLE(proc_memsize);
+    return 0;
 }
 
 const rb_data_type_t ruby_proc_data_type = {
@@ -350,10 +360,26 @@ const rb_data_type_t ruby_proc_data_type = {
 #define proc_data_type ruby_proc_data_type
 
 VALUE
-rb_proc_alloc(VALUE klass)
+rb_proc_alloc(VALUE klass, enum rb_block_type block_type)
 {
-    rb_proc_t *proc;
-    return TypedData_Make_Struct(klass, rb_proc_t, &proc_data_type, proc);
+    size_t size;
+    switch (block_type) {
+      case block_type_symbol:
+        size = sizeof(rb_proc_symbol_t);
+        break;
+      case block_type_proc:
+        size = sizeof(rb_proc_proc_t);
+        break;
+      case block_type_iseq:
+      case block_type_ifunc:
+        size = sizeof(rb_proc_captured_t);
+        break;
+      default:
+        VM_UNREACHABLE(rb_proc_alloc);
+        return Qundef;
+    }
+
+    return rb_data_typed_object_zalloc(klass, size, &proc_data_type);
 }
 
 VALUE
@@ -443,7 +469,7 @@ refinement_memo_set(const rb_iseq_t *src_iseq, VALUE recipe, const rb_iseq_t *co
     }
 }
 
-static long
+static rb_len_t
 refinement_recipe_modc(VALUE recipe)
 {
     return NIL_P(recipe) ? 0 : RARRAY_LEN(recipe) - REFINEMENT_RECIPE_MODS;
@@ -453,10 +479,10 @@ static bool
 refinement_recipe_match(VALUE recipe, const rb_cref_t *base_cref, VALUE src_recipe,
                         long argc, const VALUE *mods)
 {
-    long inherited = refinement_recipe_modc(src_recipe);
+    rb_len_t inherited = refinement_recipe_modc(src_recipe);
     if (RARRAY_AREF(recipe, REFINEMENT_RECIPE_BASE_CREF) != (VALUE)base_cref) return false;
     if (refinement_recipe_modc(recipe) != inherited + argc) return false;
-    for (long i = 0; i < inherited; i++) {
+    for (rb_len_t i = 0; i < inherited; i++) {
         if (RARRAY_AREF(recipe, REFINEMENT_RECIPE_MODS + i) !=
             RARRAY_AREF(src_recipe, REFINEMENT_RECIPE_MODS + i)) return false;
     }
@@ -471,12 +497,12 @@ refinement_recipe_new(const rb_cref_t *base_cref, const rb_cref_t *cref,
                       const rb_iseq_t *src_iseq, VALUE src_recipe,
                       long argc, const VALUE *mods)
 {
-    long inherited = refinement_recipe_modc(src_recipe);
+    rb_len_t inherited = refinement_recipe_modc(src_recipe);
     VALUE recipe = rb_ary_hidden_new(REFINEMENT_RECIPE_MODS + inherited + argc);
     rb_ary_push(recipe, (VALUE)base_cref);
     rb_ary_push(recipe, (VALUE)cref);
     rb_ary_push(recipe, (VALUE)src_iseq);
-    for (long i = 0; i < inherited; i++) {
+    for (rb_len_t i = 0; i < inherited; i++) {
         rb_ary_push(recipe, RARRAY_AREF(src_recipe, REFINEMENT_RECIPE_MODS + i));
     }
     for (long i = 0; i < argc; i++) {
@@ -559,7 +585,7 @@ rb_proc_refinements_cref_for_call(VALUE procval)
 {
     rb_proc_t *proc;
     GetProcPtr(procval, proc);
-    if (!proc->is_refined) return NULL;
+    if (!proc->header.is_refined) return NULL;
 
     refinement_iseq_ensure(procval, proc);
     VALUE recipe = rb_ivar_get(procval, id_refinements_recipe);
@@ -629,7 +655,7 @@ proc_refined(int argc, VALUE *argv, VALUE self)
         return self;
     }
 
-    if (vm_block_type(&src->block) != block_type_iseq || src->is_from_method) {
+    if (vm_block_type(&src->block) != block_type_iseq || src->header.is_from_method) {
         rb_raise(rb_eArgError, "can't apply refinements to a Proc without a Ruby block");
     }
 
@@ -798,7 +824,7 @@ rb_proc_lambda_p(VALUE procval)
     rb_proc_t *proc;
     GetProcPtr(procval, proc);
 
-    return RBOOL(proc->is_lambda);
+    return RBOOL(proc->header.is_lambda);
 }
 
 /* Binding */
@@ -1396,7 +1422,7 @@ cfunc_proc_new(VALUE klass, VALUE ifunc)
 
     /* self? */
     RB_OBJ_WRITE(procval, &proc->block.as.captured.code.ifunc, ifunc);
-    proc->is_lambda = TRUE;
+    proc->header.is_lambda = TRUE;
     return procval;
 }
 
@@ -1417,11 +1443,16 @@ rb_func_proc_dup(VALUE src_obj)
     RB_OBJ_WRITTEN(proc_obj, Qundef, proc->basic.block.as.captured.code.val);
 
     const VALUE *src_ep = src_proc->block.as.captured.ep;
-    VALUE *ep = *(VALUE **)&proc->basic.block.as.captured.ep = proc->env + VM_ENV_DATA_SIZE - 1;
-    ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS];
-    ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
-    ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
-    RB_OBJ_WRITE(proc_obj, &ep[VM_ENV_DATA_INDEX_ENV], src_ep[VM_ENV_DATA_INDEX_ENV]);
+    if (src_ep == ((const cfunc_proc_t *)src_proc)->env + VM_ENV_DATA_SIZE - 1) {
+        VALUE *ep = *(VALUE **)&proc->basic.block.as.captured.ep = proc->env + VM_ENV_DATA_SIZE - 1;
+        ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS];
+        ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
+        ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
+        RB_OBJ_WRITE(proc_obj, &ep[VM_ENV_DATA_INDEX_ENV], src_ep[VM_ENV_DATA_INDEX_ENV]);
+    }
+    else {
+        rb_vm_block_ep_update(proc_obj, &proc->basic.block, src_ep);
+    }
 
     return proc_obj;
 }
@@ -1429,13 +1460,13 @@ rb_func_proc_dup(VALUE src_obj)
 static VALUE
 sym_proc_new(VALUE klass, VALUE sym)
 {
-    VALUE procval = rb_proc_alloc(klass);
+    VALUE procval = rb_proc_alloc(klass, block_type_symbol);
     rb_proc_t *proc;
     GetProcPtr(procval, proc);
 
     vm_block_type_set(&proc->block, block_type_symbol);
-    proc->is_lambda = TRUE;
-    RB_OBJ_WRITE(procval, &proc->block.as.symbol, sym);
+    proc->header.is_lambda = TRUE;
+    RB_OBJ_WRITE(procval, &proc->symbol.symbol, sym);
     return procval;
 }
 
@@ -1673,13 +1704,13 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 }
 #endif
 
-#if SIZEOF_LONG > SIZEOF_INT
+#if SIZEOF_RB_LEN_T > SIZEOF_INT
 static inline int
-check_argc(long argc)
+check_argc(rb_len_t argc)
 {
     if (argc > INT_MAX || argc < 0) {
-        rb_raise(rb_eArgError, "too many arguments (%lu)",
-                 (unsigned long)argc);
+        rb_raise(rb_eArgError, "too many arguments (%"PRIuLEN")",
+                 (rb_ulen_t)argc);
     }
     return (int)argc;
 }
@@ -1847,7 +1878,7 @@ rb_proc_arity(VALUE self)
     int max, min;
     GetProcPtr(self, proc);
     min = rb_vm_block_min_max_arity(&proc->block, &max);
-    return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
+    return (proc->header.is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
 }
 
 static void
@@ -1897,7 +1928,7 @@ rb_block_pair_yield_optimizable(void)
             VALUE procval = block_handler;
             rb_proc_t *proc;
             GetProcPtr(procval, proc);
-            if (proc->is_lambda) return 0;
+            if (proc->header.is_lambda) return 0;
             if (min != max) return 0;
             return min > 1;
         }
@@ -1965,7 +1996,7 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 
     GetProcPtr(self, proc);
     block = &proc->block;
-    if (is_proc) *is_proc = !proc->is_lambda;
+    if (is_proc) *is_proc = !proc->header.is_lambda;
 
     switch (vm_block_type(block)) {
       case block_type_iseq:
@@ -1996,7 +2027,8 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
  *   self == other -> true or false
  *   eql?(other) -> true or false
  *
- * Returns whether +self+ and +other+ were created from the same code block:
+ * Returns whether +self+ and +other+ were created from the same code
+ * block and the same binding:
  *
  *   def return_block(&block)
  *     block
@@ -2017,9 +2049,14 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
  *   block1 == proc { puts 'test' }
  *   #=> false
  *
+ *   # Proc with the same code block but different binding is not equal:
+ *   def new_proc = proc { 1 }
+ *   new_proc == new_proc
+ *   #=> false
+ *
  */
-static VALUE
-proc_eq(VALUE self, VALUE other)
+VALUE
+rb_proc_eq(VALUE self, VALUE other)
 {
     const rb_proc_t *self_proc, *other_proc;
     const struct rb_block *self_block, *other_block;
@@ -2031,9 +2068,9 @@ proc_eq(VALUE self, VALUE other)
     GetProcPtr(self, self_proc);
     GetProcPtr(other, other_proc);
 
-    if (self_proc->is_from_method != other_proc->is_from_method ||
-            self_proc->is_lambda != other_proc->is_lambda ||
-            self_proc->is_refined != other_proc->is_refined) {
+    if (self_proc->header.is_from_method != other_proc->header.is_from_method ||
+            self_proc->header.is_lambda != other_proc->header.is_lambda ||
+            self_proc->header.is_refined != other_proc->header.is_refined) {
         return Qfalse;
     }
 
@@ -2052,7 +2089,7 @@ proc_eq(VALUE self, VALUE other)
         }
         /* a refined Proc's block iseq flips from the source to the copy on
          * the first call; compare what the Procs were built from instead */
-        if (self_proc->is_refined) {
+        if (self_proc->header.is_refined) {
             if (!refinement_recipe_eq(rb_proc_refinements_recipe(self),
                                       rb_proc_refinements_recipe(other))) {
                 return Qfalse;
@@ -2210,6 +2247,20 @@ rb_proc_parameters(int argc, VALUE *argv, VALUE self)
     return rb_iseq_parameters(iseq, is_proc);
 }
 
+static st_index_t
+iseq_location_hash(st_index_t hash, const rb_iseq_t *iseq)
+{
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    if (body) {
+        const rb_iseq_location_t *loc = &body->location;
+        hash = rb_st_hash_uint(hash, (st_index_t)loc->code_location.beg_pos.lineno);
+        hash = rb_st_hash_uint(hash, (st_index_t)loc->code_location.beg_pos.column);
+        hash = rb_st_hash_uint(hash, (st_index_t)loc->code_location.end_pos.lineno);
+        hash = rb_st_hash_uint(hash, (st_index_t)loc->code_location.end_pos.column);
+    }
+    return hash;
+}
+
 st_index_t
 rb_hash_proc(st_index_t hash, VALUE prc)
 {
@@ -2218,19 +2269,19 @@ rb_hash_proc(st_index_t hash, VALUE prc)
 
     switch (vm_block_type(&proc->block)) {
       case block_type_iseq:
-        if (proc->is_refined) {
+        if (proc->header.is_refined) {
             /* from the recipe, not the block iseq: the latter flips from the
              * source to the copy on the first call, and the hash must not */
             VALUE recipe = rb_proc_refinements_recipe(prc);
-            long len = RARRAY_LEN(recipe);
+            rb_len_t len = RARRAY_LEN(recipe);
             hash = rb_st_hash_uint(hash, (st_index_t)RARRAY_AREF(recipe, REFINEMENT_RECIPE_BASE_CREF));
-            hash = rb_st_hash_uint(hash, (st_index_t)((const rb_iseq_t *)RARRAY_AREF(recipe, REFINEMENT_RECIPE_SRC_ISEQ))->body);
-            for (long i = REFINEMENT_RECIPE_MODS; i < len; i++) {
+            hash = iseq_location_hash(hash, (const rb_iseq_t *)RARRAY_AREF(recipe, REFINEMENT_RECIPE_SRC_ISEQ));
+            for (rb_len_t i = REFINEMENT_RECIPE_MODS; i < len; i++) {
                 hash = rb_st_hash_uint(hash, (st_index_t)RARRAY_AREF(recipe, i));
             }
         }
         else {
-            hash = rb_st_hash_uint(hash, (st_index_t)proc->block.as.captured.code.iseq->body);
+            hash = iseq_location_hash(hash, proc->block.as.captured.code.iseq);
         }
         break;
       case block_type_ifunc:
@@ -2249,8 +2300,9 @@ rb_hash_proc(st_index_t hash, VALUE prc)
 
     /* ifunc procs have their own allocated ep. If an ifunc is duplicated, they
      * will point to different ep but they should return the same hash code, so
-     * we cannot include the ep in the hash. */
-    if (vm_block_type(&proc->block) != block_type_ifunc) {
+     * we cannot include the ep in the hash.  Symbol and proc type blocks are
+     * smaller and do not have an ep at all. */
+    if (vm_block_type(&proc->block) == block_type_iseq) {
         hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.ep);
     }
 
@@ -2285,7 +2337,7 @@ rb_sym_to_proc(VALUE sym)
         }
 
         ID id = SYM2ID(sym);
-        long index = (id % SYM_PROC_CACHE_SIZE);
+        rb_len_t index = (id % SYM_PROC_CACHE_SIZE);
         VALUE procval = RARRAY_AREF(sym_proc_cache, index);
         if (RTEST(procval)) {
             rb_proc_t *proc;
@@ -2370,7 +2422,7 @@ proc_to_s(VALUE self)
 {
     const rb_proc_t *proc;
     GetProcPtr(self, proc);
-    return rb_block_to_s(self, &proc->block, proc->is_lambda ? " (lambda)" : NULL);
+    return rb_block_to_s(self, &proc->block, proc->header.is_lambda ? " (lambda)" : NULL);
 }
 
 /*
@@ -2461,6 +2513,42 @@ mnew_missing_by_name(VALUE klass, VALUE obj, VALUE *name, int scope, VALUE mclas
 
 VALUE rb_zsuper_to_super(int argc, VALUE *argv, VALUE self);
 
+static inline bool
+refinement_module_p(VALUE mod)
+{
+    return RB_TYPE_P(mod, T_MODULE) && FL_TEST_RAW(mod, RMODULE_IS_REFINEMENT);
+}
+
+VALUE rb_vm_module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class);
+VALUE rb_vm_refinement_iclass_for_cme(VALUE refinement, const rb_callable_method_entry_t *cme);
+
+static VALUE
+find_refined_target_ancestor(VALUE start, VALUE refined_target)
+{
+    VALUE klass;
+    for (klass = start; klass; klass = RCLASS_SUPER(klass)) {
+        if (RB_TYPE_P(klass, T_ICLASS) && RBASIC(klass)->klass == refined_target) {
+            return klass;
+        }
+    }
+    return 0;
+}
+
+static VALUE
+find_refinement_iclass(VALUE owner, VALUE klass, VALUE iclass)
+{
+    VALUE refined_target = rb_refinement_module_get_refined_class(owner);
+
+    if (RB_TYPE_P(refined_target, T_MODULE)) {
+        VALUE refined_ancestor = find_refined_target_ancestor(klass, refined_target);
+        if (refined_ancestor) {
+            iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
+        }
+    }
+
+    return iclass;
+}
+
 static VALUE
 mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
               VALUE obj, ID id, VALUE mclass, int scope, int error)
@@ -2522,6 +2610,10 @@ static VALUE
 mnew_from_me(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
              VALUE obj, ID id, VALUE mclass, int scope)
 {
+    if (me && refinement_module_p(me->owner) && !RICLASS_FOR_REFINEMENT_P(iclass)) {
+        iclass = klass;
+    }
+
     return mnew_internal(me, klass, iclass, obj, id, mclass, scope, TRUE);
 }
 
@@ -3084,7 +3176,7 @@ rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const str
         GetProcPtr(body, body_proc);
         /* A bmethod never reads the refinement cref carried on the proc;
          * reject rather than silently drop the refinements. */
-        if (body_proc->is_refined) {
+        if (body_proc->header.is_refined) {
             rb_raise(rb_eArgError,
                      "can't define a method from a Proc with refinements");
         }
@@ -3092,8 +3184,8 @@ rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const str
         if (vm_proc_iseq(procval) != NULL) {
             rb_proc_t *proc;
             GetProcPtr(procval, proc);
-            proc->is_lambda = TRUE;
-            proc->is_from_method = TRUE;
+            proc->header.is_lambda = TRUE;
+            proc->header.is_from_method = TRUE;
         }
         rb_add_method(mod, id, VM_METHOD_TYPE_BMETHOD, (void *)procval, scope_visi->method_visi);
         if (scope_visi->module_func) {
@@ -3433,13 +3525,19 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
             // because this branch manipulates it in rb_method_entry_complement_defined_class
             me = rb_method_entry_clone(me);
         }
-        VALUE ic = rb_class_search_ancestor(klass, me->owner);
-        if (ic) {
-            klass = ic;
-            iclass = ic;
+        if (refinement_module_p(me->owner) && RICLASS_FOR_REFINEMENT_P(data->iclass)) {
+            iclass = find_refinement_iclass(me->owner, klass, data->iclass);
+            klass = iclass;
         }
         else {
-            klass = rb_include_class_new(methclass, klass);
+            VALUE ic = rb_class_search_ancestor(klass, me->owner);
+            if (ic) {
+                klass = ic;
+                iclass = ic;
+            }
+            else {
+                klass = rb_include_class_new(methclass, klass);
+            }
         }
         me = (const rb_method_entry_t *) rb_method_entry_complement_defined_class(me, me->called_id, klass);
     }
@@ -4049,6 +4147,9 @@ method_inspect(VALUE method)
     }
     else {
         mklass = data->klass;
+        if (RB_TYPE_P(mklass, T_ICLASS)) {
+            mklass = RBASIC_CLASS(mklass);
+        }
         if (RCLASS_SINGLETON_P(mklass)) {
             VALUE v = RCLASS_ATTACHED_OBJECT(mklass);
             if (!(RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE))) {
@@ -4217,7 +4318,7 @@ method_to_proc(VALUE method)
      */
     procval = rb_block_call(rb_mRubyVMFrozenCore, idLambda, 0, 0, bmcall, method);
     GetProcPtr(procval, proc);
-    proc->is_from_method = 1;
+    proc->header.is_from_method = 1;
     return procval;
 }
 
@@ -4244,10 +4345,26 @@ method_super_method(VALUE method)
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     iclass = data->iclass;
     if (!iclass) return Qnil;
+    bool is_refinement_method = refinement_module_p(data->me->owner);
     if (data->me->def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
         super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
             data->me->def->body.alias.original_me->owner));
         mid = data->me->def->body.alias.original_me->def->original_id;
+    }
+    else if (is_refinement_method) {
+        if (RICLASS_FOR_REFINEMENT_P(iclass)) {
+            do {
+                super_class = RCLASS_SUPER(iclass);
+                iclass = super_class;
+            } while (RICLASS_FOR_REFINEMENT_P(super_class));
+        }
+        else {
+            super_class = find_refined_target_ancestor(iclass, rb_refinement_module_get_refined_class(data->me->owner));
+            if (!super_class) {
+                super_class = RCLASS_SUPER(data->me->owner);
+            }
+        }
+        mid = data->me->def->original_id;
     }
     else {
         VALUE klass = iclass;
@@ -4262,7 +4379,7 @@ method_super_method(VALUE method)
 
     // For refined methods, skip refinements for the same definition, but consider
     // refinements for superclass methods
-    const rb_method_definition_t *skip_def = RICLASS_FOR_REFINEMENT_P(iclass) ? data->me->def : NULL;
+    const rb_method_definition_t *skip_def = is_refinement_method ? data->me->def : NULL;
 
     // Use the CREF of the Method/UnboundMethod, not the CREF of the caller of super_method.
     // We must avoid the use of rb_callable_method_entry_with_refinements, as that will
@@ -4301,6 +4418,7 @@ method_super_method(VALUE method)
             if (NIL_P(refs)) continue;
             VALUE r = rb_hash_lookup(refs, cme->owner);
             if (NIL_P(r)) continue;
+            r = rb_vm_refinement_iclass_for_cme(r, cme);
             const rb_callable_method_entry_t *ref_cme = rb_callable_method_entry(r, mid);
             if (!ref_cme) break;
             if (ref_cme->def->type == VM_METHOD_TYPE_REFINED) continue;
@@ -4315,7 +4433,7 @@ method_super_method(VALUE method)
         const rb_method_entry_t *orig_me = cme->def->body.refined.orig_me;
         if (orig_me) {
             me = (rb_method_entry_t *)orig_me;
-            iclass = orig_me->defined_class ? orig_me->defined_class : cme->defined_class;
+            iclass = cme->defined_class;
             break;
         }
         klass = RCLASS_SUPER(cme->defined_class);
@@ -4407,7 +4525,7 @@ proc_binding(VALUE self)
     GetProcPtr(self, proc);
     block = &proc->block;
 
-    if (proc->is_isolated) rb_raise(rb_eArgError, "Can't create Binding from isolated Proc");
+    if (proc->header.is_isolated) rb_raise(rb_eArgError, "Can't create Binding from isolated Proc");
 
   again:
     switch (vm_block_type(block)) {
@@ -4453,11 +4571,14 @@ proc_binding(VALUE self)
     if (iseq) {
         rb_iseq_check(iseq);
         RB_OBJ_WRITE(bindval, &bind->pathobj, ISEQ_BODY(iseq)->location.pathobj);
+        bind->no_realpath = ISEQ_BODY(iseq)->no_realpath;
         bind->first_lineno = ISEQ_BODY(iseq)->location.first_lineno;
     }
     else {
+        bool no_realpath;
         RB_OBJ_WRITE(bindval, &bind->pathobj,
-                     rb_iseq_pathobj_new(rb_fstring_lit("(binding)"), Qnil));
+                     rb_iseq_pathobj_new(rb_fstring_lit("(binding)"), Qnil, &no_realpath));
+        bind->no_realpath = no_realpath;
         bind->first_lineno = 1;
     }
 
@@ -4474,12 +4595,12 @@ make_curry_proc(VALUE proc, VALUE passed, VALUE arity)
     int is_lambda;
 
     GetProcPtr(proc, procp);
-    is_lambda = procp->is_lambda;
+    is_lambda = procp->header.is_lambda;
     rb_ary_freeze(passed);
     rb_ary_freeze(args);
     proc = rb_proc_new(curry, args);
     GetProcPtr(proc, procp);
-    procp->is_lambda = is_lambda;
+    procp->header.is_lambda = is_lambda;
     return proc;
 }
 
@@ -4570,10 +4691,11 @@ proc_curry(int argc, const VALUE *argv, VALUE self)
         arity = INT2FIX(min_arity);
     }
     else {
-        sarity = FIX2INT(arity);
+        sarity = NUM2INT(arity);
         if (rb_proc_lambda_p(self)) {
             rb_check_arity(sarity, min_arity, max_arity);
         }
+        arity = INT2FIX(sarity);
     }
 
     return make_curry_proc(self, rb_ary_new(), arity);
@@ -4684,7 +4806,7 @@ rb_proc_compose_to_left(VALUE self, VALUE g)
 
     if (rb_obj_is_proc(g)) {
         GetProcPtr(g, procp);
-        is_lambda = procp->is_lambda;
+        is_lambda = procp->header.is_lambda;
     }
     else {
         VM_ASSERT(rb_obj_is_method(g) || rb_obj_respond_to(g, idCall, TRUE));
@@ -4693,7 +4815,7 @@ rb_proc_compose_to_left(VALUE self, VALUE g)
 
     proc = rb_proc_new(compose, args);
     GetProcPtr(proc, procp);
-    procp->is_lambda = is_lambda;
+    procp->header.is_lambda = is_lambda;
 
     return proc;
 }
@@ -4742,11 +4864,11 @@ rb_proc_compose_to_right(VALUE self, VALUE g)
     args = rb_ary_tmp_new_from_values(0, 2, procs);
 
     GetProcPtr(self, procp);
-    is_lambda = procp->is_lambda;
+    is_lambda = procp->header.is_lambda;
 
     proc = rb_proc_new(compose, args);
     GetProcPtr(proc, procp);
-    procp->is_lambda = is_lambda;
+    procp->header.is_lambda = is_lambda;
 
     return proc;
 }
@@ -4829,7 +4951,7 @@ proc_ruby2_keywords(VALUE procval)
 
     rb_check_frozen(procval);
 
-    if (proc->is_from_method) {
+    if (proc->header.is_from_method) {
             rb_warn("Skipping set of ruby2_keywords flag for proc (proc created from method)");
             return procval;
     }
@@ -4840,7 +4962,7 @@ proc_ruby2_keywords(VALUE procval)
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_post &&
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_kw &&
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_kwrest) {
-            if (proc->is_refined) {
+            if (proc->header.is_refined) {
                 /* on a copy of this Proc's own: the block is shared with the
                  * source Proc until the first call, and the copy installed by
                  * it may be memoized and shared with sibling Procs */
@@ -5346,13 +5468,12 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "curry", proc_curry, -1);
     rb_define_method(rb_cProc, "<<", proc_compose_to_left, 1);
     rb_define_method(rb_cProc, ">>", proc_compose_to_right, 1);
-    rb_define_method(rb_cProc, "==", proc_eq, 1);
-    rb_define_method(rb_cProc, "eql?", proc_eq, 1);
+    rb_define_method(rb_cProc, "==", rb_proc_eq, 1);
+    rb_define_method(rb_cProc, "eql?", rb_proc_eq, 1);
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
     rb_define_method(rb_cProc, "source_range", rb_proc_source_range, 0);
     rb_define_method(rb_cProc, "parameters", rb_proc_parameters, -1);
     rb_define_method(rb_cProc, "ruby2_keywords", proc_ruby2_keywords, 0);
-    // rb_define_method(rb_cProc, "isolate", rb_proc_isolate, 0); is not accepted.
 
     /* Exceptions */
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);

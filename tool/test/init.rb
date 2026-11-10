@@ -13,6 +13,13 @@ ENV["GEM_SKIP"] = "".freeze
 ENV.delete("RUBY_CODESIGN")
 
 Warning[:experimental] = false
+# The tests assert the output of the ruby processes they spawn verbatim, so the
+# children need this too.  The last -W wins, so the switch has to come after
+# whatever RUBYOPT already carries, but before the bare "-" that common.mk puts
+# there, which ends the option scan.
+rubyopt = ENV["RUBYOPT"].to_s.split - ["-W:no-experimental"]
+rubyopt.insert(rubyopt.index("-") || rubyopt.size, "-W:no-experimental")
+ENV["RUBYOPT"] = rubyopt.join(" ")
 
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 

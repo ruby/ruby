@@ -4,7 +4,7 @@ return if RUBY_VERSION < "3.2.0"
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   class FixturesTest < TestCase
     except = []
 
@@ -26,10 +26,14 @@ module Prism
 
     # https://bugs.ruby-lang.org/issues/21168#note-5
     except << "command_method_call_2.txt"
+    except << "3.4/command_call_do_block_in_arguments.txt"
+    except << "3.4-4.0/command_call_do_block_in_index_arguments.txt"
     # https://bugs.ruby-lang.org/issues/21669
     except << "4.1/void_value.txt"
     # https://bugs.ruby-lang.org/issues/19107
     except << "4.1/trailing_comma_after_method_arguments.txt"
+    # https://bugs.ruby-lang.org/issues/22310
+    except << "pattern_alternation_non_captures.txt"
 
     Fixture.each_for_current_ruby(except: except) do |fixture|
       define_method(fixture.test_name) { assert_valid_syntax(fixture.read) }

@@ -30,7 +30,9 @@ module Bundler
     end
 
     def dependencies
-      (materialized_spec || specs.first).runtime_dependencies.map {|d| [d, platform] }
+      spec = materialized_spec || specs.first
+      overrides = specs.first.overrides if specs.first.is_a?(LazySpecification)
+      Override.rewrite_dependencies(overrides, spec.name, spec.runtime_dependencies).map {|d| [d, platform] }
     end
 
     def materialized_spec

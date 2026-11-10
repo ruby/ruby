@@ -19,12 +19,26 @@ describe "Net::HTTPHeader#content_length" do
   it "returns the value of the 'Content-Length' header entry as an Integer" do
     @headers["Content-Length"] = "123"
     @headers.content_length.should.eql?(123)
+  end
 
-    @headers["Content-Length"] = "123valid"
-    @headers.content_length.should.eql?(123)
+  version_is Net::HTTP::VERSION, ""..."0.10.0" do
+    it "ignores the parts of the 'Content-Length' header entry around the digits" do
+      @headers["Content-Length"] = "123valid"
+      @headers.content_length.should.eql?(123)
 
-    @headers["Content-Length"] = "valid123"
-    @headers.content_length.should.eql?(123)
+      @headers["Content-Length"] = "valid123"
+      @headers.content_length.should.eql?(123)
+    end
+  end
+
+  version_is Net::HTTP::VERSION, "0.10.0" do
+    it "raises a Net::HTTPHeaderSyntaxError if the 'Content-Length' header entry is not entirely digits" do
+      @headers["Content-Length"] = "123valid"
+      -> { @headers.content_length }.should.raise(Net::HTTPHeaderSyntaxError)
+
+      @headers["Content-Length"] = "valid123"
+      -> { @headers.content_length }.should.raise(Net::HTTPHeaderSyntaxError)
+    end
   end
 end
 

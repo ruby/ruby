@@ -183,8 +183,15 @@ module Gem::SafeMarshal
         @symbols.fetch(o.offset)
       end
 
+      SAFE_USER_DEFINED_CLASSES = [::Time, ::Gem::Specification].freeze
+      private_constant :SAFE_USER_DEFINED_CLASSES
+
       def visit_Gem_SafeMarshal_Elements_UserDefined(o)
-        register_object(call_method(resolve_class(o.name), :_load, o.binary_string))
+        klass = resolve_class(o.name)
+        unless SAFE_USER_DEFINED_CLASSES.include?(klass)
+          raise UnsupportedError.new("Unsupported user-defined class #{klass} in marshal stream", stack: formatted_stack)
+        end
+        register_object(call_method(klass, :_load, o.binary_string))
       end
 
       def visit_Gem_SafeMarshal_Elements_UserMarshal(o)
@@ -324,28 +331,14 @@ module Gem::SafeMarshal
         end
       end
 
-      # This is a hot method, so avoid respond_to? checks on every invocation
-      if :read.respond_to?(:name)
-        def resolve_symbol_name(element)
-          case element
-          when Elements::Symbol
-            element.name
-          when Elements::SymbolLink
-            visit_Gem_SafeMarshal_Elements_SymbolLink(element).name
-          else
-            raise FormatError, "Expected symbol or symbol link, got #{element.inspect} @ #{formatted_stack.join(".")}"
-          end
-        end
-      else
-        def resolve_symbol_name(element)
-          case element
-          when Elements::Symbol
-            element.name
-          when Elements::SymbolLink
-            visit_Gem_SafeMarshal_Elements_SymbolLink(element).to_s
-          else
-            raise FormatError, "Expected symbol or symbol link, got #{element.inspect} @ #{formatted_stack.join(".")}"
-          end
+      def resolve_symbol_name(element)
+        case element
+        when Elements::Symbol
+          element.name
+        when Elements::SymbolLink
+          visit_Gem_SafeMarshal_Elements_SymbolLink(element).name
+        else
+          raise FormatError, "Expected symbol or symbol link, got #{element.inspect} @ #{formatted_stack.join(".")}"
         end
       end
 

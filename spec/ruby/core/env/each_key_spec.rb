@@ -34,7 +34,7 @@ describe "ENV.each_key" do
 
   # https://bugs.ruby-lang.org/issues/20958
   platform_is :windows do
-    ruby_version_is ""..."4.1" do
+    ruby_version_is ""..."3.4.11" do
       it "returns keys in the locale encoding" do
         ENV.each_key do |key|
           key.encoding.should == Encoding.find('locale')
@@ -42,7 +42,7 @@ describe "ENV.each_key" do
       end
     end
 
-    ruby_version_is "4.1" do
+    ruby_version_is "3.4.11" do
       it "returns the keys in UTF-8" do
         ENV.each_key do |key|
           key.encoding.should == Encoding::UTF_8

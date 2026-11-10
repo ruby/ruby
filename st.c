@@ -111,6 +111,7 @@
 #include "internal/hash.h"
 #include "internal/sanitizers.h"
 #include "internal/set_table.h"
+#include "internal/static_assert.h"
 #include "internal/st.h"
 #include "ruby_assert.h"
 #endif
@@ -231,7 +232,7 @@ struct st_features {
 
 /* Features of all possible size tables.  */
 #if SIZEOF_ST_INDEX_T == 8
-#define MAX_POWER2 62
+#define MAX_POWER2 58
 static const struct st_features features[] = {
     {0, 1, 0, 0x0},
     {1, 2, 0, 0x1},
@@ -291,15 +292,12 @@ static const struct st_features features[] = {
     {55, 56, 3, 0x100000000000000},
     {56, 57, 3, 0x200000000000000},
     {57, 58, 3, 0x400000000000000},
-    {58, 59, 3, 0x800000000000000},
-    {59, 60, 3, 0x1000000000000000},
-    {60, 61, 3, 0x2000000000000000},
-    {61, 62, 3, 0x4000000000000000},
-    {62, 63, 3, 0x8000000000000000},
+#define MAX_BINS_WORDS 0x800000000000000
+    {58, 59, 3, MAX_BINS_WORDS},
 };
 
 #else
-#define MAX_POWER2 30
+#define MAX_POWER2 27
 
 static const struct st_features features[] = {
     {0, 1, 0, 0x1},
@@ -329,12 +327,19 @@ static const struct st_features features[] = {
     {24, 25, 2, 0x2000000},
     {25, 26, 2, 0x4000000},
     {26, 27, 2, 0x8000000},
-    {27, 28, 2, 0x10000000},
-    {28, 29, 2, 0x20000000},
-    {29, 30, 2, 0x40000000},
-    {30, 31, 2, 0x80000000},
+#define MAX_BINS_WORDS 0x10000000
+    {27, 28, 2, MAX_BINS_WORDS},
 };
 
+#endif
+
+#ifdef STATIC_ASSERT
+// Ensure MAX_POWER2 result in entries and bins memsize < SIZE_MAX.
+#define MAX_ADDRESSABLE_ENTRIES (SIZE_MAX / sizeof(st_table_entry))
+#define MAX_ENTRIES (((st_index_t) 1)<<MAX_POWER2)
+STATIC_ASSERT(max_power_entries_overflow, MAX_ENTRIES < MAX_ADDRESSABLE_ENTRIES);
+#define MAX_BINS_SIZE (SIZE_MAX - (MAX_ENTRIES * sizeof(st_table_entry)))
+STATIC_ASSERT(max_power_bins_overflow, (MAX_BINS_SIZE / sizeof(st_index_t)) > MAX_BINS_WORDS);
 #endif
 
 /* The reserved hash value and its substitution.  */
@@ -596,6 +601,13 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
     tab->bin_power = features[n].bin_power;
     tab->size_ind = features[n].size_ind;
 
+    /* The table may be embedded in an object the GC can already reach (T_HASH,
+       imemo_cdhash), in which case the allocation below can mark it. Empty it
+       first, marking walks entries[entries_start..entries_bound). */
+    tab->entries = NULL;
+    tab->num_entries = 0;
+    tab->entries_start = tab->entries_bound = 0;
+
     size_t memsize = get_allocated_entries(tab) * sizeof(st_table_entry);
     if (tab->entry_power > MAX_POWER2_FOR_TABLES_WITHOUT_BINS) {
         memsize += bins_size(tab);
@@ -743,14 +755,19 @@ st_free_table(st_table *tab)
     free_fixed_ptr(tab);
 }
 
+size_t
+st_allocated_memsize(const st_table *tab)
+{
+    RUBY_ASSERT(tab != NULL);
+    return bins_size(tab) + st_entries_memsize(tab);
+}
+
 /* Return byte size of memory allocated for table TAB.  */
 size_t
 st_memsize(const st_table *tab)
 {
     RUBY_ASSERT(tab != NULL);
-    return(sizeof(st_table)
-           + bins_size(tab)
-           + st_entries_memsize(tab));
+    return sizeof(st_table) + st_allocated_memsize(tab);
 }
 
 static st_index_t
@@ -1352,9 +1369,8 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
     return 1;
 }
 
-/* Create a copy of old_tab into new_tab. */
-st_table *
-st_replace(st_table *new_tab, st_table *old_tab)
+static st_table *
+st_replace_no_check(st_table *new_tab, st_table *old_tab)
 {
     *new_tab = *old_tab;
     size_t memsize = get_allocated_entries(old_tab) * sizeof(st_table_entry);
@@ -1370,6 +1386,15 @@ st_replace(st_table *new_tab, st_table *old_tab)
     return new_tab;
 }
 
+
+/* Create a copy of old_tab into new_tab. */
+st_table *
+st_replace(st_table *new_tab, st_table *old_tab)
+{
+    RUBY_ASSERT(new_tab->entries == NULL);
+    return st_replace_no_check(new_tab, old_tab);
+}
+
 /* Create and return a copy of table OLD_TAB.  */
 st_table *
 st_copy(st_table *old_tab)
@@ -1382,7 +1407,7 @@ st_copy(st_table *old_tab)
         return NULL;
 #endif
 
-    if (st_replace(new_tab, old_tab) == NULL) {
+    if (st_replace_no_check(new_tab, old_tab) == NULL) {
         st_free_table(new_tab);
         return NULL;
     }
@@ -1710,6 +1735,57 @@ st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_updat
     }
     return 0;
 }
+
+#ifdef INTERNAL_ST_H
+int
+st_foreach_with_hash(st_table *tab, st_foreach_with_hash_callback_func *func, st_data_t arg)
+{
+    st_table_entry *entries, *curr_entry_ptr;
+    enum st_retval retval;
+    st_index_t i, rebuilds_num;
+    st_hash_t hash;
+    st_data_t key;
+    int packed_p = !st_has_bins(tab);
+
+    entries = tab->entries;
+    /* The bound can change inside the loop even without rebuilding
+       the table, e.g. by an entry insertion.  */
+    for (i = tab->entries_start; i < tab->entries_bound; i++) {
+        curr_entry_ptr = &entries[i];
+        if (EXPECT(DELETED_ENTRY_P(curr_entry_ptr), 0))
+            continue;
+        key = curr_entry_ptr->key;
+        rebuilds_num = tab->rebuilds_num;
+        hash = curr_entry_ptr->hash;
+        retval = (*func)(key, curr_entry_ptr->record, hash, arg);
+
+        if (rebuilds_num != tab->rebuilds_num) {
+        retry:
+            entries = tab->entries;
+            packed_p = !st_has_bins(tab);
+            if (packed_p) {
+                i = find_entry(tab, hash, key);
+                if (EXPECT(i == REBUILT_TABLE_ENTRY_IND, 0))
+                    goto retry;
+            }
+            else {
+                i = find_table_entry_ind(tab, hash, key);
+                if (EXPECT(i == REBUILT_TABLE_ENTRY_IND, 0))
+                    goto retry;
+                i -= ENTRY_BASE;
+            }
+            curr_entry_ptr = &entries[i];
+        }
+        switch (retval) {
+          case ST_STOP:
+            return 0;
+          default:
+            break;
+        }
+    }
+    return 0;
+}
+#endif
 
 int
 st_foreach_with_replace(st_table *tab, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
@@ -2348,9 +2424,9 @@ st_insert_single(st_table *tab, VALUE hash, VALUE key, VALUE val)
 }
 
 static void
-st_insert_linear(st_table *tab, long argc, const VALUE *argv, VALUE hash)
+st_insert_linear(st_table *tab, rb_len_t argc, const VALUE *argv, VALUE hash)
 {
-    long i;
+    rb_len_t i;
 
     for (i = 0; i < argc; /* */) {
         st_data_t k = st_stringify(argv[i++]);
@@ -2362,9 +2438,9 @@ st_insert_linear(st_table *tab, long argc, const VALUE *argv, VALUE hash)
 }
 
 static void
-st_insert_generic(st_table *tab, long argc, const VALUE *argv, VALUE hash)
+st_insert_generic(st_table *tab, rb_len_t argc, const VALUE *argv, VALUE hash)
 {
-    long i;
+    rb_len_t i;
 
     /* push elems */
     for (i = 0; i < argc; /* */) {
@@ -2380,12 +2456,12 @@ st_insert_generic(st_table *tab, long argc, const VALUE *argv, VALUE hash)
 /* Mimics ruby's { foo => bar } syntax. This function is subpart
    of rb_hash_bulk_insert. */
 void
-rb_hash_bulk_insert_into_st_table(long argc, const VALUE *argv, VALUE hash)
+rb_hash_bulk_insert_into_st_table(rb_len_t argc, const VALUE *argv, VALUE hash)
 {
     st_index_t n, size = argc / 2;
     st_table *tab = RHASH_ST_TABLE(hash);
 
-    tab = RHASH_TBL_RAW(hash);
+    tab = rb_hash_tbl_raw(hash);
     n = tab->entries_bound + size;
     st_expand_table(tab, n);
     if (UNLIKELY(tab->num_entries))
@@ -3287,7 +3363,7 @@ set_foreach_check(set_table *tab, set_foreach_check_callback_func *func, st_data
 
 /* Set up array KEYS by at most SIZE keys of head table TAB entries.
    Return the number of keys set up in array KEYS.  */
-inline st_index_t
+st_index_t
 set_keys(set_table *tab, st_data_t *keys, st_index_t size)
 {
     st_index_t i, bound;

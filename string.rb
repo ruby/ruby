@@ -2,7 +2,14 @@ class String
   #  call-seq:
   #    valid_encoding? -> true or false
   #
-  #  :include: doc/string/valid_encoding_p.rdoc
+  #  Returns whether +self+ is encoded correctly:
+  #
+  #    s = 'Straße'
+  #    s.valid_encoding?                                 # => true
+  #    s.encoding                                        # => #<Encoding:UTF-8>
+  #    s.force_encoding(Encoding::ASCII).valid_encoding? # => false
+  #
+  #  Related: see {Querying}[rdoc-ref:String@Querying].
   #
   def valid_encoding?
     Primitive.attr! :leaf

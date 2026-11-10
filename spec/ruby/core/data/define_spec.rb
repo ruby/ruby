@@ -31,4 +31,13 @@ describe "Data.define" do
     movie.members.should == [:title, :year]
     movie.new("Matrix", 1999).title_with_year.should == "Matrix (1999)"
   end
+
+  describe "called on a subclass of Data" do
+    it "produces data classes that can invoke class methods on that subclass" do
+      data_sub = Class.new(Data)
+      data_sub.define_singleton_method(:data_sub_class_method) { :ok }
+      data_sub_defined = data_sub.define(:foo)
+      data_sub_defined.data_sub_class_method.should == :ok
+    end
+  end
 end

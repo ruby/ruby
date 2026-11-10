@@ -92,6 +92,31 @@ RSpec.describe "bundle cache with path" do
     expect(bundled_app("vendor/cache/foo-1.0")).not_to exist
   end
 
+  it "removes stale entries whose names look like home directory expansions" do
+    build_lib "foo"
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      gem "foo", :path => '#{lib_path("foo-1.0")}'
+    G
+
+    bundle :cache
+
+    tilde_entry = bundled_app("vendor/cache/~")
+    # a name no account can have, so a regression cannot resolve it to a real home
+    tilde_user_entry = bundled_app("vendor/cache/~nonexistent.user")
+    [tilde_entry, tilde_user_entry].each do |entry|
+      FileUtils.mkdir_p entry
+      FileUtils.touch entry.join(".bundlecache")
+    end
+
+    bundle :cache
+
+    expect(tilde_entry).not_to exist
+    expect(tilde_user_entry).not_to exist
+    expect(home).to exist
+  end
+
   it "does not cache path gems if cache_all is set to false" do
     build_lib "foo"
 

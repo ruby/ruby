@@ -294,6 +294,24 @@ class TestInteger < Test::Unit::TestCase
     a = []
     assert_equal(y, y.upto(y+2) {|x| a << x })
     assert_equal([y, y+1, y+2], a)
+
+    a = []
+    1.upto(Float::NAN) {|x| a << x; break if a.size == 3 }
+    assert_equal([1, 2, 3], a)
+  end
+
+  def test_upto_comparator_returns_nil
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+      class Integer
+        def >(other)
+          nil
+        end
+      end
+      assert_raise_with_message(ArgumentError, /comparator returned nil/) { 1.upto(3.5) {} }
+      assert_raise_with_message(ArgumentError, /comparator returned nil/) { (2**64).upto(2**64+1) {} }
+    end;
   end
 
   def test_downto

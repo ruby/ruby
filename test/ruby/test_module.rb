@@ -1587,6 +1587,30 @@ class TestModule < Test::Unit::TestCase
     INPUT
   end
 
+  def test_alias_prepended_module_warning
+    assert_in_out_err([], <<-INPUT, [], /aliasing C#foo defined in a prepended module M is deprecated/)
+      Warning[:deprecated] = true
+      module M
+        def foo = :foo
+      end
+      class C
+        prepend M
+        alias bar foo
+      end
+    INPUT
+
+    assert_in_out_err([], <<-INPUT, [], /aliasing C#foo defined in a prepended module M is deprecated/)
+      Warning[:deprecated] = true
+      module M
+        def foo = :foo
+      end
+      class C
+        prepend M
+        alias_method :bar, :foo
+      end
+    INPUT
+  end
+
   def test_mod_constants
     m = Module.new
     m.const_set(:Foo, :foo)
@@ -2781,7 +2805,9 @@ class TestModule < Test::Unit::TestCase
       def m; "B"+super; end
       alias m2 m
       prepend p
-      alias m3 m
+    end
+    assert_deprecated_warning(/aliasing .*#m defined in a prepended module .* is deprecated/) do
+      b.class_eval { alias m3 m }
     end
     assert_equal("BA", b.new.m2, bug7842)
     assert_equal("PBA", b.new.m3, bug7842)
@@ -3378,6 +3404,23 @@ class TestModule < Test::Unit::TestCase
     assert_not_predicate m.clone(freeze: false), :frozen?
   end
 
+  def test_dup_of_frozen_module_is_not_frozen
+    m = Module.new
+    m.instance_variable_set(:@a, 1)
+    m.freeze
+
+    copy = m.dup
+    assert_not_predicate(copy, :frozen?)
+    copy.instance_variable_set(:@b, 2)
+    assert_equal([1, 2], [copy.instance_variable_get(:@a), copy.instance_variable_get(:@b)])
+  end
+
+  def test_singleton_class_of_frozen_module_is_frozen
+    m = Module.new.freeze
+    assert_predicate(m.singleton_class, :frozen?)
+    assert_raise(FrozenError) {m.singleton_class.instance_variable_set(:@a, 1)}
+  end
+
   def test_module_name_in_singleton_method
     s = Object.new.singleton_class
     mod = s.const_set(:Foo, Module.new)
@@ -3386,23 +3429,20 @@ class TestModule < Test::Unit::TestCase
 
   def test_iclass_memory_leak
     # [Bug #19550]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
-      code = proc do
+    assert_no_memory_leak([], "", <<~CODE, rss: true, samples: 2..30)
+      100_000.times do
         mod = Module.new
         Class.new do
           include mod
         end
       end
-      1_000.times(&code)
-    PREP
-      3_000_000.times(&code)
     CODE
   end
 
   def test_complemented_method_entry_memory_leak
     # [Bug #19894] [Bug #19896]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
-      code = proc do
+    assert_no_memory_leak([], "", <<~CODE, rss: true, samples: 2..30)
+      10_000.times do
         $c = Class.new do
           def foo; end
         end
@@ -3422,21 +3462,15 @@ class TestModule < Test::Unit::TestCase
           end
         end.new
       end
-      1_000.times(&code)
-    PREP
-      300_000.times(&code)
     CODE
   end
 
   def test_module_clone_memory_leak
     # [Bug #19901]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
-      code = proc do
+    assert_no_memory_leak([], "", <<~CODE, rss: true, samples: 2..100)
+      10_000.times do
         Module.new.clone
       end
-      1_000.times(&code)
-    PREP
-      1_000_000.times(&code)
     CODE
   end
 

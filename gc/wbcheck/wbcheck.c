@@ -1,13 +1,9 @@
-#include "internal.h"
 #include "ruby/ruby.h"
 #include "ruby/assert.h"
 #include "ruby/atomic.h"
 #include "ruby/debug.h"
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/st.h"
-#include "internal/object.h"
-#include "internal/array.h"
-#include "internal/class.h"
 
 #include "ruby/thread.h"
 #include "gc/gc.h"
@@ -15,6 +11,10 @@
 
 #include <stdbool.h>
 #include <stdarg.h>
+
+// Modular GCs can't include internal headers; this mirrors RCLASS_IS_ROOT
+// from internal/class.h.
+#define WBCHECK_RCLASS_IS_ROOT FL_USER0
 
 // Debug output control
 static bool wbcheck_debug_enabled = false;
@@ -234,11 +234,13 @@ typedef struct {
     wbcheck_object_list_t *weak_references; // Objects holding weak references, found during marking
     wbcheck_phase_t phase;   // Current GC phase
     bool gc_enabled;         // Whether GC is allowed to run
+    bool user_gc_disabled;   // Whether GC was disabled by the user (GC.disable)
     bool gc_stress;          // GC stress mode (run GC on every allocation)
     size_t gc_threshold;     // Trigger GC when object count reaches this
     size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
     size_t missed_write_barrier_children; // Total number of missed write barriers detected
-    size_t simulated_gc_count; // Simulated GC count incremented on each GC.start
+    size_t simulated_gc_count; // Simulated GC count incremented on each full GC
+    size_t total_allocated_objects; // Total objects allocated over the process lifetime
     bool measure_total_time;   // Whether to accumulate :time in stats
     struct wbcheck_final_job *finalizer_jobs; // Linked list of finalizer jobs
     rb_nativethread_lock_t finalizer_lock;   // Protects finalizer_jobs list
@@ -374,7 +376,7 @@ wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_
         // Built-in immortal classes can be assigned via RBASIC_SET_CLASS_RAW,
         // which bypasses the write barrier. They're pinned as VM roots and
         // can never be collected, so a missing WB to them is harmless.
-        if (RB_TYPE_P(current_ref, T_CLASS) && FL_TEST_RAW(current_ref, RCLASS_IS_ROOT)) {
+        if (RB_TYPE_P(current_ref, T_CLASS) && FL_TEST_RAW(current_ref, WBCHECK_RCLASS_IS_ROOT)) {
             continue;
         }
 
@@ -425,6 +427,7 @@ wbcheck_register_object(void *objspace_ptr, VALUE obj, size_t alloc_size, bool w
 
     // Store object info in hash table (VALUE -> rb_wbcheck_object_info_t*)
     st_insert(objspace->object_table, (st_data_t)obj, (st_data_t)info);
+    objspace->total_allocated_objects++;
 }
 
 static void
@@ -453,12 +456,6 @@ rb_gc_impl_objspace_alloc(void)
     rb_wbcheck_objspace_t *objspace = calloc(1, sizeof(rb_wbcheck_objspace_t));
     if (!objspace) rb_bug("wbcheck: failed to allocate objspace");
 
-    objspace->object_table = st_init_numtable();
-    if (!objspace->object_table) {
-        free(objspace);
-        rb_bug("wbcheck: failed to create object table");
-    }
-
     objspace->objects_to_capture = wbcheck_object_list_init();  // Initialize empty list
     objspace->objects_to_verify = wbcheck_object_list_init();   // Initialize empty list
     objspace->current_refs = NULL;     // No current refs initially
@@ -482,7 +479,13 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 {
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
 
-    // Object table is already initialized in objspace_alloc
+    // st_init_numtable allocates through ruby_xmalloc, which needs the objspace
+    // to exist, so the object table can't be created in objspace_alloc.
+    objspace->object_table = st_init_numtable();
+    if (!objspace->object_table) {
+        rb_bug("wbcheck: failed to create object table");
+    }
+
     // Set up global objspace pointer for obj_slot_size function
     wbcheck_global_objspace = objspace;
 
@@ -564,13 +567,8 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache)
 
 // GC
 void
-rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact)
+rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact, bool global)
 {
-    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
-    if (objspace) {
-        objspace->simulated_gc_count++;
-    }
-
     if (!ruby_native_thread_p()) return;
 
     unsigned int lev = RB_GC_VM_LOCK();
@@ -617,6 +615,29 @@ rb_gc_impl_gc_enabled_p(void *objspace_ptr)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     return objspace->gc_enabled;
+}
+
+bool
+rb_gc_impl_user_gc_disabled_set(void *objspace_ptr, bool disable)
+{
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    const bool was = objspace->user_gc_disabled;
+    objspace->user_gc_disabled = disable;
+    objspace->gc_enabled = !disable;
+    return was;
+}
+
+bool
+rb_gc_impl_user_gc_disabled_p(void *objspace_ptr)
+{
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    return objspace->user_gc_disabled;
+}
+
+void
+rb_gc_impl_gc_rest(void *objspace_ptr)
+{
+    /* wbcheck GCs are stop-the-world: no incremental state to finish. */
 }
 
 void
@@ -957,7 +978,7 @@ wbcheck_process_weak_references(rb_wbcheck_objspace_t *objspace)
 
     for (size_t i = 0; i < objspace->weak_references->count; i++) {
         VALUE obj = objspace->weak_references->items[i];
-        rb_gc_handle_weak_references(obj);
+        rb_gc_handle_weak_references(objspace, obj);
     }
 
     objspace->weak_references->count = 0;
@@ -968,6 +989,8 @@ static void
 wbcheck_full_gc(rb_wbcheck_objspace_t *objspace)
 {
     WBCHECK_DEBUG("wbcheck: starting full GC\n");
+
+    objspace->simulated_gc_count++;
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_ENTER);
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_START);
@@ -1036,10 +1059,16 @@ gc_step(void *objspace_ptr, bool force)
 
 }
 
+// No barrier when GC is disabled: the NEWOBJ hook holds the VM lock without barrier support.
 static void
-maybe_gc(void *objspace_ptr)
+maybe_gc_with_barrier(void *objspace_ptr)
 {
-    gc_step(objspace_ptr, false);
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+
+    if (objspace && objspace->gc_enabled) {
+        rb_gc_vm_barrier();
+        gc_step(objspace_ptr, false);
+    }
 }
 
 static void
@@ -1054,10 +1083,7 @@ static void *
 lock_and_maybe_gc_gvl(void *objspace_ptr)
 {
     unsigned int lev = RB_GC_VM_LOCK();
-    rb_gc_vm_barrier();
-
-    maybe_gc(objspace_ptr);
-
+    maybe_gc_with_barrier(objspace_ptr);
     RB_GC_VM_UNLOCK(lev);
     return NULL;
 }
@@ -1079,10 +1105,9 @@ VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size)
 {
     unsigned int lev = RB_GC_VM_LOCK();
-    rb_gc_vm_barrier();
 
     // Check if we should trigger GC before allocating
-    maybe_gc(objspace_ptr);
+    maybe_gc_with_barrier(objspace_ptr);
 
     // Ensure minimum allocation size of BASE_SLOT_SIZE
     alloc_size = rb_gc_impl_size_slot_size(objspace_ptr, alloc_size);
@@ -1472,6 +1497,89 @@ rb_gc_impl_each_objects(void *objspace_ptr, int (*callback)(void *, void *, size
     wbcheck_object_list_free(snapshot);
 }
 
+static int
+wbcheck_each_objects_shareable_i(void *start, void *end, size_t stride, void *d)
+{
+    struct { int (*func)(void *, void *, size_t, void *); void *data; } *args = d;
+    if (RB_FL_TEST_RAW((VALUE)start, RUBY_FL_SHAREABLE)) {
+        return args->func(start, end, stride, args->data);
+    }
+    return 0;
+}
+
+void
+rb_gc_impl_each_objects_shareable(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data)
+{
+    struct { int (*func)(void *, void *, size_t, void *); void *data; } args = { callback, data };
+    rb_gc_impl_each_objects(objspace_ptr, wbcheck_each_objects_shareable_i, &args);
+}
+
+void
+rb_gc_impl_each_objects_foreign(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data)
+{
+    /* A single objspace has no foreign objects. */
+}
+
+bool
+rb_gc_impl_multi_objspace_p(void)
+{
+    return false;
+}
+
+void
+rb_gc_impl_objspace_retire_gc(void *objspace_ptr)
+{
+}
+
+bool
+rb_gc_impl_during_global_gc_p(void *objspace_ptr)
+{
+    /* Snapshots and full GCs both run under the VM lock after rb_gc_vm_barrier(),
+     * so every other Ractor is stopped whenever we are out of the mutator phase. */
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    return objspace->phase != WBCHECK_PHASE_MUTATOR;
+}
+
+bool
+rb_gc_impl_during_postmortem_p(void *objspace_ptr)
+{
+    return false;
+}
+
+bool
+rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj)
+{
+    return false;
+}
+
+bool
+rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
+{
+    return true;
+}
+
+void
+rb_gc_impl_objspace_zombify(void *objspace_ptr)
+{
+}
+
+void
+rb_gc_impl_objspace_absorb(void *dst_ptr, void *src_ptr)
+{
+}
+
+void
+rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
+{
+}
+
+int32_t
+rb_gc_impl_zjit_writebarrier_required_offset(void)
+{
+    /* ZJIT must always call rb_gc_writebarrier() so wbcheck sees every barrier. */
+    return -1;
+}
+
 void
 rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), void *data)
 {
@@ -1556,8 +1664,8 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
         info->finalizers = table;
     } else {
         /* Check for duplicate finalizers (skip index 0 which is object ID) */
-        long len = RARRAY_LEN(table);
-        long i;
+        rb_len_t len = RARRAY_LEN(table);
+        rb_len_t i;
 
         for (i = 1; i < len; i++) {
             VALUE recv = RARRAY_AREF(table, i);
@@ -1615,7 +1723,7 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 }
 
 static VALUE
-wbcheck_get_final(long i, void *data)
+wbcheck_get_final(rb_len_t i, void *data)
 {
     VALUE table = (VALUE)data;
 
@@ -1676,7 +1784,7 @@ wbcheck_run_finalizers_for_object(VALUE obj, rb_wbcheck_object_info_t *info)
 {
     if (info->finalizers) {
         VALUE table = info->finalizers;
-        long count = RARRAY_LEN(table) - 1;
+        rb_len_t count = RARRAY_LEN(table) - 1;
         rb_gc_run_obj_finalizer(RARRAY_AREF(table, 0), count, wbcheck_get_final, (void *)table);
         FL_UNSET(obj, FL_FINALIZE);
     }
@@ -1816,15 +1924,44 @@ rb_gc_impl_gc_count(void *objspace_ptr)
 }
 
 VALUE
-rb_gc_impl_latest_gc_info(void *objspace_ptr, VALUE key)
+rb_gc_impl_latest_gc_info(void *objspace_ptr, VALUE hash_or_key)
 {
-    // Stub implementation
-    return Qnil;
+    VALUE hash = Qnil, key = Qnil;
+
+    if (SYMBOL_P(hash_or_key)) {
+        key = hash_or_key;
+    }
+    else if (RB_TYPE_P(hash_or_key, T_HASH)) {
+        hash = hash_or_key;
+    }
+    else {
+        rb_bug("rb_gc_impl_latest_gc_info: non-hash or symbol given");
+    }
+
+#define SET(name, attr) \
+    if (key == ID2SYM(rb_intern_const(#name))) \
+        return (attr); \
+    else if (hash != Qnil) \
+        rb_hash_aset(hash, ID2SYM(rb_intern_const(#name)), (attr));
+
+    /* wbcheck doesn't do incremental GC, so the state is always :none. */
+    SET(state, ID2SYM(rb_intern_const("none")));
+#undef SET
+
+    if (!NIL_P(key)) {
+        return Qundef;
+    }
+
+    return hash;
 }
 
 VALUE
 rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 {
+    if (objspace_ptr == NULL) {
+        rb_notimplement();
+    }
+
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     GC_ASSERT(objspace);
 
@@ -1849,14 +1986,13 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     /* Pretend each GC takes 1ms; :time is reported in milliseconds. */
     SET(count, objspace->simulated_gc_count);
     SET(time, objspace->measure_total_time ? objspace->simulated_gc_count : 0);
+    SET(total_allocated_objects, objspace->total_allocated_objects);
     SET(tracked_objects, st_table_size(objspace->object_table));
 #undef SET
 
     if (!NIL_P(key)) {
         rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
     }
-
-    rb_hash_aset(hash, ID2SYM(rb_intern("gc_implementation")), rb_str_new_cstr("wbcheck"));
 
     return hash;
 }
@@ -1892,18 +2028,23 @@ rb_gc_impl_active_gc_name(void)
 }
 
 // Miscellaneous
-#define WBCHECK_OBJECT_METADATA_ENTRY_COUNT 2
+#define WBCHECK_OBJECT_METADATA_ENTRY_COUNT 3
 static struct rb_gc_object_metadata_entry object_metadata_entries[WBCHECK_OBJECT_METADATA_ENTRY_COUNT + 1];
 
 struct rb_gc_object_metadata_entry *
 rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 {
-    static ID ID_object_id, ID_shareable;
+    static ID ID_wb_protected, ID_object_id, ID_shareable;
 
     if (!ID_object_id) {
+        ID_wb_protected = rb_intern("wb_protected");
         ID_object_id = rb_intern("object_id");
         ID_shareable = rb_intern("shareable");
     }
+
+    unsigned int lev = RB_GC_VM_LOCK();
+    bool wb_protected = wbcheck_get_object_info(obj)->wb_protected;
+    RB_GC_VM_UNLOCK(lev);
 
     size_t n = 0;
 
@@ -1914,6 +2055,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     n++; \
 } while (0)
 
+    if (wb_protected) SET_ENTRY(wb_protected, Qtrue);
     if (rb_obj_id_p(obj)) SET_ENTRY(object_id, rb_obj_id(obj));
     if (FL_TEST(obj, FL_SHAREABLE)) SET_ENTRY(shareable, Qtrue);
 #undef SET_ENTRY

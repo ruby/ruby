@@ -85,7 +85,14 @@ class Gem::Security::Signer
     @digest_algorithm = Gem::Security.create_digest(@digest_name)
 
     if @key && !@key.is_a?(OpenSSL::PKey::PKey)
-      @key = OpenSSL::PKey.read(File.read(@key), @passphrase)
+      begin
+        @key = OpenSSL::PKey.read(File.read(@key), @passphrase)
+      rescue OpenSSL::PKey::PKeyError
+        raise Gem::Security::Exception,
+          "private key could not be loaded: The key may use an algorithm "\
+          "such as ML-DSA that the installed OpenSSL does not support. "\
+          "ML-DSA requires OpenSSL >= 3.5 or an SSL library supporting ML-DSA."
+      end
     end
 
     if @cert_chain
@@ -109,9 +116,7 @@ class Gem::Security::Signer
     subject_alt_name = cert.extensions.find {|e| e.oid == "subjectAltName" }
 
     if subject_alt_name
-      /\Aemail:/ =~ subject_alt_name.value # rubocop:disable Performance/StartWith
-
-      $' || subject_alt_name.value
+      subject_alt_name.value.delete_prefix("email:")
     else
       cert.subject
     end
@@ -154,7 +159,8 @@ class Gem::Security::Signer
 
     Gem::Security::SigningPolicy.verify @cert_chain, @key, {}, {}, full_name
 
-    @key.sign @digest_algorithm.new, data
+    digest = @digest_algorithm.new if Gem::Security.digest_required?(@key)
+    @key.sign digest, data
   end
 
   ##

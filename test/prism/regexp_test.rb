@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   class RegexpTest < TestCase
     ############################################################################
     # These tests test the actual use case of extracting named capture groups
@@ -227,12 +227,12 @@ module Prism
 
     def test_last_encoding_option_wins
       regex = "/foo/nu"
-      option = Prism.parse_statement(regex).options
+      option = Ruby::Prism.parse_statement(regex).options
 
       assert_equal Regexp::FIXEDENCODING, option
 
       regex = "/foo/un"
-      option = Prism.parse_statement(regex).options
+      option = Ruby::Prism.parse_statement(regex).options
 
       assert_equal Regexp::NOENCODING, option
     end
@@ -248,10 +248,84 @@ module Prism
       assert_newline_regexp("%r\r\n\r\n", "", 0)
     end
 
+    # With a heredoc body pending when a newline delimiter closes the regexp, the
+    # options are read from the line following that body.
+    def test_newline_delimiter_options_after_heredoc
+      assert_options_after_heredoc("\ni", Regexp::IGNORECASE, "%r\n\#{<<A}\nbody\nA\ni\n")
+      assert_options_after_heredoc("\nmix", Regexp::IGNORECASE | Regexp::MULTILINE | Regexp::EXTENDED, "%r\n\#{<<A}\nbody\nA\nmix\n")
+      assert_options_after_heredoc("\ni", Regexp::IGNORECASE, "%r\r\n\#{<<A}\r\nbody\r\nA\r\ni\r\n")
+      assert_options_after_heredoc("\n", 0, "%r\n\#{<<A}\nbody\nA\n")
+    end
+
+    # The closing location runs from the newline ending the heredoc body through
+    # the options, so it has the same shape as any newline delimiter with options.
+    def test_newline_delimiter_options_after_heredoc_location
+      node = Ruby::Prism.parse("%r\n\#{<<A}\nbody\nA\ni\n").value.statements.body.first
+
+      assert_equal 16, node.closing_loc.start_offset
+      assert_equal 18, node.closing_loc.end_offset
+      assert_equal 18, node.location.end_offset
+    end
+
+    def test_newline_delimiter_options_after_heredoc_continues_after_options
+      result = Ruby::Prism.parse("%r\n\#{<<A}\nbody\nA\ni.source\n")
+      assert_empty result.errors
+
+      node = result.value.statements.body.first
+      assert_equal :source, node.name
+      assert_equal Regexp::IGNORECASE, node.receiver.options
+    end
+
+    def test_newline_delimiter_unknown_options_after_heredoc
+      errors = Ruby::Prism.parse("%r\n\#{<<A}\nbody\nA\nfoo\n").errors
+      assert_equal ["unknown regexp option - f"], errors.map(&:message)
+    end
+
+    def test_malformed_control_and_meta_escapes
+      assert_equal "\\x80-a", Ruby::Prism.parse_statement("/\\M-\\M-a/").unescaped
+      assert_equal "(\\x00", Ruby::Prism.parse_statement("/(\\cé/").unescaped
+      assert_equal "\\x00a(", Ruby::Prism.parse_statement("/\\C-\\C-a(/").unescaped
+    end
+
+    def test_malformed_hex_escape
+      node = Ruby::Prism.parse_statement("/a\\xZb/")
+      assert_kind_of RegularExpressionNode, node
+      assert_equal "aZb", node.unescaped
+    end
+
+    def test_depth_limit_nested_character_sets
+      assert_depth_limit("[" * 10_000)
+    end
+
+    def test_depth_limit_meta_escapes
+      assert_depth_limit("\\M-" * 10_000 + "a")
+      assert_depth_limit("[" + "\\M-" * 10_000 + "a]")
+    end
+
+    def test_depth_limit_control_escapes
+      assert_depth_limit("\\C-" * 10_000 + "a")
+      assert_depth_limit("\\c" * 10_000 + "a")
+      assert_depth_limit("[" + "\\C-" * 10_000 + "a]")
+    end
+
     private
 
+    def assert_depth_limit(source)
+      messages = Ruby::Prism.parse("/#{source}/ =~ \"\"").errors.map(&:message)
+      assert_equal 1, messages.count("parse depth limit over")
+    end
+
+    def assert_options_after_heredoc(closing, options, source)
+      result = Ruby::Prism.parse(source)
+      assert_empty result.errors, source.inspect
+
+      node = result.value.statements.body.first
+      assert_equal closing, node.closing, source.inspect
+      assert_equal options, node.options, source.inspect
+    end
+
     def assert_newline_regexp(source, content, options)
-      node = Prism.parse_statement(source)
+      node = Ruby::Prism.parse_statement(source)
 
       assert_kind_of RegularExpressionNode, node
       assert_equal content, node.content
@@ -259,17 +333,17 @@ module Prism
     end
 
     def assert_valid_regexp(source)
-      assert Prism.parse_success?("/#{source}/ =~ \"\"")
+      assert Ruby::Prism.parse_success?("/#{source}/ =~ \"\"")
     end
 
     def named_captures(source)
-      Prism.parse("/#{source}/ =~ \"\"").value.locals
+      Ruby::Prism.parse("/#{source}/ =~ \"\"").value.locals
     end
 
     def options(flags)
       options =
         ["/foo/#{flags}", "/foo\#{1}/#{flags}"].map do |source|
-          Prism.parse_statement(source).options
+          Ruby::Prism.parse_statement(source).options
         end
 
       # Check that we get the same set of options from both regular expressions

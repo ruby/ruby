@@ -203,51 +203,122 @@ cmp_between(VALUE x, VALUE min, VALUE max)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     obj.clamp(min, max) ->  obj
- *     obj.clamp(range)    ->  obj
+ *    clamp(min, max) -> min, max, or self
+ *    clamp(range) -> range.begin, range.end, or self
  *
- * In <code>(min, max)</code> form, returns _min_ if _obj_
- * <code><=></code> _min_ is less than zero, _max_ if _obj_
- * <code><=></code> _max_ is greater than zero, and _obj_
- * otherwise.
+ *  Returns an object of the same type as `self`.
  *
- *     12.clamp(0, 100)         #=> 12
- *     523.clamp(0, 100)        #=> 100
- *     -3.123.clamp(0, 100)     #=> 0
+ *  With non-`nil` arguments `min` and `max` given, returns:
  *
- *     'd'.clamp('a', 'f')      #=> 'd'
- *     'z'.clamp('a', 'f')      #=> 'f'
+ *  - `min`, if `self <= min`.
+ *  - `max`, if `self >= max`.
+ *  - `self`, otherwise.
  *
- * If _min_ is +nil+, it is considered smaller than _obj_,
- * and if _max_ is +nil+, it is considered greater than _obj_.
+ *  Examples:
  *
- *     -20.clamp(0, nil)           #=> 0
- *     523.clamp(nil, 100)         #=> 100
+ *  ```ruby
+ *  0.clamp(0, 9)   # => 0
+ *  -1.clamp(0, 9)  # => 0
+ *  9.clamp(0, 9)   # => 9
+ *  10.clamp(0, 9)  # => 9
+ *  5.clamp(0, 9)   # => 5
+ *  ```
  *
- * In <code>(range)</code> form, returns _range.begin_ if _obj_
- * <code><=></code> _range.begin_ is less than zero, _range.end_
- * if _obj_ <code><=></code> _range.end_ is greater than zero, and
- * _obj_ otherwise.
+ *  With `nil` argument `min` given and non-`nil` argument `max` given, returns:
  *
- *     12.clamp(0..100)         #=> 12
- *     523.clamp(0..100)        #=> 100
- *     -3.123.clamp(0..100)     #=> 0
+ *  - `max`, if `self >= max`.
+ *  - `self`, otherwise.
  *
- *     'd'.clamp('a'..'f')      #=> 'd'
- *     'z'.clamp('a'..'f')      #=> 'f'
+ *  Examples:
  *
- * If _range.begin_ is +nil+, it is considered smaller than _obj_,
- * and if _range.end_ is +nil+, it is considered greater than
- * _obj_.
+ *  ```ruby
+ *  9.clamp(nil, 9)  # => 9
+ *  10.clamp(nil, 9) # => 9
+ *  0.clamp(nil, 9)  # => 0
+ *  ```
  *
- *     -20.clamp(0..)           #=> 0
- *     523.clamp(..100)         #=> 100
+ *  With non-`nil` argument `min` and`nil` argument `max` given, returns:
  *
- * When _range.end_ is excluded and not +nil+, an exception is
- * raised.
+ *  - `min`, if `self <= min`.
+ *  - `self`, otherwise.
  *
- *     100.clamp(0...100)       # ArgumentError
+ *  Examples:
+ *
+ *  ```ruby
+ *  0.clamp(0, nil)  # => 0
+ *  -1.clamp(0, nil) # => 0
+ *  1.clamp(0, nil)  # => 1
+ *  ```
+ *
+ *  With `nil` arguments `min` and `max` given, returns `self`:
+ *
+ *  ```ruby
+ *  0.clamp(nil, nil) # => 0
+ *  0.clamp(nil, nil) # => 0
+ *  ```
+ *
+ *  In all cases above, raises ArgumentError if comparison fails.
+ *
+ *  With [bounded range][bounded range] `range` given, returns:
+ *
+ *  - `range.begin`, if `self <= range.begin`.
+ *  - `range.end`, if `self >= range.end`.
+ *  - `self`, otherwise.
+ *
+ *  Examples:
+ *
+ *  ```ruby
+ *  0.clamp(0..9)  # => 0
+ *  -1.clamp(0..9) # => 0
+ *  9.clamp(0..9)  # => 9
+ *  10.clamp(0..9) # => 9
+ *  5.clamp(0..9)  # => 5
+ *  5.clamp(0...9) # Raises ArgumentError:cannot clamp with an exclusive range.
+ *  ```
+ *
+ *  With [beginless range][beginless range] `range` given, returns:
+ *
+ *  - `range.end`, if `self >= range.end`.
+ *  - `self`, otherwise.
+ *
+ *  Examples:
+ *
+ *  ```ruby
+ *  9.clamp(nil..9)    # => 9
+ *  10.clamp(nil..9)    # => 9
+ *  0.clamp(nil..9)    # => 0
+ *  0.clamp(nil...9) # Raises ArgumentError: cannot clamp with an exclusive range.
+ *  ```
+ *
+ *  With [endless range][endless range] `range` given, returns:
+ *
+ *  - `range.begin`, if `self <= range.begin`.
+ *  - `self`, otherwise.
+ *
+ *  Examples:
+ *
+ *  ```ruby
+ *  0.clamp(0..nil)  # => 0
+ *  -1.clamp(0..nil) # => 0
+ *  1.clamp(0..nil)  # => 1
+ *  1.clamp(0...nil) # => 1
+ *  ```
+ *
+ *  With [unbounded range][unbounded range] `range` given, returns `self`:
+ *
+ *  ```ruby
+ *  0.clamp(nil..nil)  # => 0
+ *  0.clamp(nil...nil) # => 0
+ *  ```
+ *
+ *  [bounded range]: rdoc-ref:Range@Bounded+Ranges
+ *  [beginless range]: rdoc-ref:Range@Beginless+Ranges
+ *  [endless range]: rdoc-ref:Range@Endless+Ranges
+ *  [unbounded range]: rdoc-ref:Range@Unbounded+Ranges
+ *
  */
 
 static VALUE

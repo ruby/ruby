@@ -20,24 +20,23 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_HAS_DECLSPEC_ATTRIBUTE.
  */
-#include "ruby/internal/compiler_since.h"
+#include "ruby/internal/compiler_is.h"
 
 /** Wraps (or simulates) `__has_declspec_attribute`. */
 #if defined(__has_declspec_attribute)
 # define RBIMPL_HAS_DECLSPEC_ATTRIBUTE(_) __has_declspec_attribute(_)
 #else
 # define RBIMPL_HAS_DECLSPEC_ATTRIBUTE(_) (RBIMPL_HAS_DECLSPEC_ATTRIBUTE_ ## _)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_align       RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_deprecated  RBIMPL_COMPILER_SINCE(MSVC,13, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_dllexport   RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_dllimport   RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_empty_bases RBIMPL_COMPILER_SINCE(MSVC,19, 0, 23918)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_noalias     RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_noinline    RBIMPL_COMPILER_SINCE(MSVC,13, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_noreturn    RBIMPL_COMPILER_SINCE(MSVC,11, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_nothrow     RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_restrict    RBIMPL_COMPILER_SINCE(MSVC,14, 0, 0)
-# /* Note that "8, 0, 0" might be inaccurate. */
+# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_align       RBIMPL_COMPILER_IS(MSVC)
+# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_deprecated  RBIMPL_COMPILER_IS(MSVC)
+# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_dllexport   RBIMPL_COMPILER_IS(MSVC)
+# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_dllimport   RBIMPL_COMPILER_IS(MSVC)
+# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_empty_bases RBIMPL_COMPILER_IS(MSVC)
+# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_noalias     RBIMPL_COMPILER_IS(MSVC)
+# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_noinline    RBIMPL_COMPILER_IS(MSVC)
+# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_noreturn    RBIMPL_COMPILER_IS(MSVC)
+# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_nothrow     RBIMPL_COMPILER_IS(MSVC)
+# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_restrict    RBIMPL_COMPILER_IS(MSVC)
 # if ! defined(__cplusplus)
 #  /* Clang has this in both C/C++, but MSVC has this in C++ only.*/
 #  undef RBIMPL_HAS_DECLSPEC_ATTRIBUTE_nothrow

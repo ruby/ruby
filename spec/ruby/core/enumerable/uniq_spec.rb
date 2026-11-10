@@ -33,8 +33,8 @@ describe 'Enumerable#uniq' do
     y = mock('1')
     y.should_not_receive(:eql?)
 
-    x.should_receive(:hash).at_least(1).and_return(0)
-    y.should_receive(:hash).at_least(1).and_return(1)
+    x.should_receive(:hash).at_least(1).and_return(8)
+    y.should_receive(:hash).at_least(1).and_return(9)
 
     [x, y].to_enum.uniq.should == [x, y]
   end

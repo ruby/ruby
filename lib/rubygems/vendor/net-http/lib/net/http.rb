@@ -22,7 +22,6 @@
 
 require_relative '../../../net-protocol/lib/net/protocol'
 require_relative '../../../uri/lib/uri'
-require_relative '../../../resolv/lib/resolv'
 autoload :OpenSSL, 'openssl'
 
 module Gem::Net   #:nodoc:
@@ -1535,6 +1534,29 @@ module Gem::Net   #:nodoc:
 
     SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym }.freeze # :nodoc:
 
+    # Resolv::IPv4::Regex and Resolv::IPv6::Regex, copied from resolv 0.7.1 rather
+    # than required, so that net/http does not load a DNS resolver just to keep an
+    # IP address literal out of the Server Name Indication.
+    # https://github.com/ruby/resolv/blob/v0.7.1/lib/resolv.rb
+    ipv4_octet = /0|1(?:[0-9][0-9]?)?|2(?:[0-4][0-9]?|5[0-5]?|[6-9])?|[3-9][0-9]?/
+    hex16 = /[0-9A-Fa-f]{1,4}/
+    hex16_group = /(?:#{hex16}(?::#{hex16})*)?/
+    dotted_quad = /\d+\.\d+\.\d+\.\d+/
+    zone_id = /%[-0-9A-Za-z._~]+/
+
+    IPV4_ADDRESS = /\A(?:#{ipv4_octet})\.(?:#{ipv4_octet})\.(?:#{ipv4_octet})\.(?:#{ipv4_octet})\z/ # :nodoc:
+
+    IPV6_ADDRESS = /\A(?:
+        (?:#{hex16}:){7}#{hex16}                                            # a:b:c:d:e:f:g:h
+      | #{hex16_group}::#{hex16_group}                                      # a::b
+      | (?:#{hex16}:){6}#{dotted_quad}                                      # a:b:c:d:e:f:w.x.y.z
+      | #{hex16_group}::(?:#{hex16}:)*#{dotted_quad}                        # a::b:w.x.y.z
+      | [Ff][Ee]80(?::#{hex16}){7}#{zone_id}                                # fe80:b:c:d:e:f:g:h%em1
+      | [Ff][Ee]80:(?:#{hex16_group}::#{hex16_group}|:#{hex16_group})?:#{hex16}#{zone_id} # fe80::b%em1
+    )\z/x # :nodoc:
+
+    private_constant :IPV4_ADDRESS, :IPV6_ADDRESS
+
     # Sets or returns the path to a CA certification file in PEM format.
     attr_accessor :ca_file
 
@@ -1734,7 +1756,7 @@ module Gem::Net   #:nodoc:
 
         # Server Name Indication (SNI) RFC 3546/6066
         case @address
-        when Gem::Resolv::IPv4::Regex, Gem::Resolv::IPv6::Regex
+        when IPV4_ADDRESS, IPV6_ADDRESS
           # don't set SNI, as IP addresses in SNI is not valid
           # per RFC 6066, section 3.
 

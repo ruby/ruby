@@ -349,15 +349,15 @@ RSpec.describe "bundle cache" do
         GEM
           remote: https://gem.repo4/
           specs:
-            foo (1.0.0)
             bar (1.0.0)
+            foo (1.0.0)
 
         PLATFORMS
           #{lockfile_platforms}
 
         DEPENDENCIES
-          foo
           bar
+          foo
 
         BUNDLED WITH
           #{Bundler::VERSION}

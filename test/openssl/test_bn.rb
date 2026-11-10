@@ -252,6 +252,9 @@ class OpenSSL::TestBN < OpenSSL::TestCase
       r4 = OpenSSL::BN.rand(8, 1, true)
       assert_include(192..255, r4)
       assert_equal(true, r4.odd?)
+      # Any truthy value asks for an odd number, not only true
+      r6 = OpenSSL::BN.rand(8, 1, 1)
+      assert_equal(true, r6.odd?)
 
       r5 = OpenSSL::BN.rand_range(256)
       assert_include(0..255, r5)
@@ -313,6 +316,14 @@ class OpenSSL::TestBN < OpenSSL::TestCase
     assert_equal(0, @e1.ucmp(999))
     assert_equal(0, @e1.ucmp(-999))
     assert_instance_of(String, @e1.hash.to_s)
+  end
+
+  def test_marshal
+    assert_equal(@e1, Marshal.load(Marshal.dump(@e1)))
+    assert_equal(@e2, Marshal.load(Marshal.dump(@e2)))
+
+    obj = Marshal.load("\x04\x08U:\x10OpenSSL::BNi\xfe\x01\x00")
+    assert_equal(-0xffff, obj)
   end
 
   def test_argument_error

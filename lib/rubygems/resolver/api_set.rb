@@ -5,7 +5,7 @@
 # Returns instances of APISpecification.
 
 class Gem::Resolver::APISet < Gem::Resolver::Set
-  autoload :GemParser, File.expand_path("api_set/gem_parser", __dir__)
+  autoload :GemParser, "rubygems/resolver/api_set/gem_parser"
 
   ##
   # The URI for the Compact Index API this APISet uses.
@@ -108,12 +108,12 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
       []
     end
 
-    infos.each do |_, number, platform, dependencies, requirements|
-      platform ||= "ruby"
+    infos.each do |_, number, suffix, dependencies, requirements|
+      suffix ||= "ruby"
       dependencies = dependencies.map {|dep_name, reqs| [dep_name, reqs.join(", ")] }
       requirements = requirements.map {|req_name, reqs| [req_name.to_sym, reqs] }.to_h
 
-      @data[name] << { name: name, number: number, platform: platform, dependencies: dependencies, requirements: requirements }
+      @data[name] << { name: name, number: number, suffix: suffix, dependencies: dependencies, requirements: requirements }
     end
 
     @data[name]

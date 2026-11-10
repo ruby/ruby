@@ -62,7 +62,6 @@ static inline void coroutine_initialize(struct coroutine_context *context, corou
 static inline struct coroutine_context * coroutine_transfer(struct coroutine_context * current, struct coroutine_context * target)
 {
     if (ASYNCIFY_CORO_DEBUG) fprintf(stderr, "[%s] entry (current = %p, target = %p)\n", __func__, current, target);
-    struct coroutine_context * previous = target->from;
 
     target->from = current;
     if (ASYNCIFY_CORO_DEBUG) fprintf(stderr, "[%s] current->current_sp = %p -> %p\n", __func__, current->current_sp, rb_wasm_get_stack_pointer());
@@ -77,9 +76,8 @@ static inline struct coroutine_context * coroutine_transfer(struct coroutine_con
 
     rb_wasm_set_stack_pointer(current->current_sp);
 
-    target->from = previous;
-
-    return target;
+    /* current may have been resumed by a context other than target. */
+    return current->from;
 }
 
 static inline void coroutine_destroy(struct coroutine_context * context)

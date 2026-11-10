@@ -53,6 +53,10 @@ describe "Encoding.find" do
     -> { Encoding.find('dh2dh278d') }.should.raise(ArgumentError, 'unknown encoding name - dh2dh278d')
   end
 
+  it "raises an ArgumentError when the name is in a non-ASCII-compatible encoding" do
+    -> { Encoding.find("utf-8".encode("utf-16be")) }.should.raise(ArgumentError, "invalid encoding name (non ASCII)")
+  end
+
   # Not sure how to do a better test, since locale depends on weird platform-specific stuff
   it "supports the 'locale' encoding alias" do
     enc = Encoding.find('locale')

@@ -84,12 +84,36 @@ module Bundler
       platforms.delete(Bundler.local_platform) if less_specific_platform
     end
 
-    def validate_deps(s)
-      s.runtime_dependencies.each do |dep|
+    def assign_content_addresses!(ruby_abis, normalize: false, local: false)
+      @specs.each do |spec|
+        next unless spec.source.is_a?(Source::Rubygems)
+        next unless Gem::ContentAddress.platform_eligible?(spec.platform)
+
+        offered = spec.source.specs.search([spec.name, spec.version]).filter_map do |gem|
+          next unless gem.platform.to_s == spec.platform.to_s && Gem::ContentAddress.content_addressed?(gem)
+
+          [gem.content_address, Gem::ContentAddress.ruby_abi_for(gem.required_ruby_version)]
+        end.to_h
+
+        locked = normalize ? {} : spec.content_addresses
+        locked = locked.reject {|_, ruby_abi| ruby_abi.nil? } unless local
+        spec.content_addresses = locked.merge(offered).select {|_, ruby_abi| ruby_abi.nil? || ruby_abis.include?(ruby_abi) }
+      end
+    end
+
+    def content_addresses_cover?(ruby_abi)
+      @specs.all? {|spec| !spec.is_a?(LazySpecification) || spec.content_addresses.empty? || spec.content_addresses.value?(ruby_abi) }
+    end
+
+    def validate_deps(s, overrides = s.is_a?(LazySpecification) ? Array(s.overrides) : [])
+      Override.rewrite_dependencies(overrides, s.name, s.runtime_dependencies).each do |dep|
         next if dep.name == "bundler"
 
-        return :missing unless names.include?(dep.name)
-        return :invalid if none? {|spec| dep.matches_spec?(spec) }
+        return :missing unless lookup.key?(dep.name)
+
+        override = Override.find_for(overrides, dep.name, :version)
+        dep = Gem::Dependency.new(dep.name, override.apply_to(dep.requirement)) if override
+        return :invalid if Array(lookup[dep.name]).none? {|spec| dep.matches_spec?(spec) }
       end
 
       :valid
@@ -131,11 +155,9 @@ module Bundler
     # Materialize for all the specs in the spec set, regardless of what platform they're for
     # @return [Array<Gem::Specification>]
     def materialized_for_all_platforms
-      @specs.map do |s|
-        next s unless s.is_a?(LazySpecification)
-        spec = s.materialize_for_cache
-        raise GemNotFound, "Could not find #{s.full_name} in any of the sources" unless spec
-        spec
+      @specs.flat_map do |s|
+        next [s] unless s.is_a?(LazySpecification)
+        s.materialize_for_cache
       end
     end
 
@@ -281,7 +303,7 @@ module Bundler
         overrides = spec.is_a?(LazySpecification) ? Array(spec.overrides) : []
         matching_specs = spec.source.specs.search([spec.name, spec.version])
         platform_spec = MatchPlatform.select_best_platform_match(matching_specs, platform).find do |s|
-          s.matches_current_metadata_with_overrides?(overrides) && valid_dependencies?(s)
+          s.matches_current_metadata_with_overrides?(overrides) && validate_deps(s, overrides) == :valid
         end
 
         if platform_spec
@@ -354,7 +376,8 @@ module Bundler
     end
 
     def tsort_each_child(s)
-      s.dependencies.sort_by(&:name).each do |d|
+      dependencies = s.is_a?(LazySpecification) ? Override.rewrite_dependencies(s.overrides, s.name, s.dependencies) : s.dependencies
+      dependencies.sort_by(&:name).each do |d|
         next if d.type == :development
 
         specs_for_name = lookup[d.name]

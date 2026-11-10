@@ -10,10 +10,14 @@ module Gem::UpdateSuggestion
   # Message to promote available RubyGems update with related gem update command.
 
   def update_suggestion
+    current = Gem.rubygems_version
+    latest = Gem.latest_rubygems_version
+
     <<-MESSAGE
 
-A new release of RubyGems is available: #{Gem.rubygems_version} → #{Gem.latest_rubygems_version}!
-Run `gem update --system #{Gem.latest_rubygems_version}` to update your installation.
+A new release of RubyGems is available: #{current} → #{latest}!
+See https://github.com/ruby/rubygems/blob/v#{latest}/CHANGELOG.md for the changes since #{current}.
+Run `gem update --system #{latest}` to update your installation.
 
     MESSAGE
   end

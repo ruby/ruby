@@ -133,7 +133,7 @@ class TestBeginEndBlock < Test::Unit::TestCase
   end
 
   def test_callcc_at_exit
-    omit 'requires callcc support' unless respond_to?(:callcc)
+    omit 'requires callcc support' unless respond_to?(:callcc, true)
 
     bug9110 = '[ruby-core:58329][Bug #9110]'
     assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug9110)

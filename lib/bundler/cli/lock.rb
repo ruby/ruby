@@ -16,8 +16,7 @@ module Bundler
 
       check_for_conflicting_options
 
-      Bundler::CLI::Common.validate_cooldown!(options[:cooldown])
-      Bundler.settings.set_command_option_if_given :cooldown, options[:cooldown]
+      Bundler::CLI::Common.configure_cooldown(options)
 
       print = options[:print]
       previous_output_stream = Bundler.ui.output_stream
@@ -26,6 +25,9 @@ module Bundler
       Bundler::Fetcher.disable_endpoint = options["full-index"]
 
       update = options[:update]
+      # --update is repeatable, so it parses as an array with one entry per
+      # occurrence, where a bare `--update` produces a `true` entry
+      update = update.include?(true) ? true : update.flatten if update.is_a?(Array)
       conservative = options[:conservative]
       bundler = options[:bundler]
 
@@ -40,16 +42,15 @@ module Bundler
 
       Bundler.settings.temporary(frozen: false) do
         definition = Bundler.definition(update, Bundler.default_lockfile)
-        definition.add_checksums if options["add-checksums"]
 
         Bundler::CLI::Common.configure_gem_version_promoter(definition, options) if options[:update]
 
-        options["remove-platform"].each do |platform_string|
+        options["remove-platform"].flatten.each do |platform_string|
           platform = Gem::Platform.new(platform_string)
           definition.remove_platform(platform)
         end
 
-        options["add-platform"].each do |platform_string|
+        options["add-platform"].flatten.each do |platform_string|
           platform = Gem::Platform.new(platform_string)
           if platform.to_s == "unknown"
             Bundler.ui.error "The platform `#{platform_string}` is unknown to RubyGems and can't be added to the lockfile."
@@ -62,6 +63,23 @@ module Bundler
           raise InvalidOption, "Removing all platforms from the bundle is not allowed"
         end
 
+        options["remove-ruby-abi"].flatten.each do |ruby_abi|
+          definition.remove_ruby_abi(ruby_abi)
+        end
+
+        options["add-ruby-abi"].flatten.each do |ruby_abi|
+          raise InvalidOption, "Expected `--add-ruby-abi` to be a Ruby ABI like `X.Y`, got #{ruby_abi.inspect}" unless Gem::ContentAddress.valid_ruby_abi?(ruby_abi)
+
+          definition.add_ruby_abi(ruby_abi)
+        end
+
+        # Adding checksums resolves the bundle to fetch them, so it has to
+        # run after every platform change above has been recorded, or the
+        # new platforms are listed in the lockfile without their specs.
+        definition.add_checksums if options["add-checksums"]
+
+        # Adding a Ruby ABI offline takes its content-addressed gems from the installed ones.
+        definition.with_cache! if options[:local] && options["add-ruby-abi"].any?
         definition.remotely! unless options[:local]
 
         if options["normalize-platforms"]
@@ -72,10 +90,21 @@ module Bundler
           puts definition.to_lock
         else
           file = options[:lockfile]
-          file = file ? Pathname.new(file).expand_path : Bundler.default_lockfile
+          file = if file
+            Pathname.new(file).expand_path
+          elsif ENV["BUNDLE_LOCKFILE"].to_s.empty?
+            definition.lockfile
+          else
+            # BUNDLE_LOCKFILE outranks the lockfile method in the Gemfile, see gemfile(5)
+            Bundler.default_lockfile
+          end
 
-          puts "Writing lockfile to #{file}"
-          definition.write_lock(file, false)
+          if file
+            puts "Writing lockfile to #{file}"
+            definition.write_lock(file, false)
+          else
+            Bundler.ui.warn "Not writing a lockfile because the Gemfile sets `lockfile false`"
+          end
         end
 
         Bundler::CLI::Common.output_cooldown_skipped_summary(definition)

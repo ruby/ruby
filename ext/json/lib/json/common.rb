@@ -80,14 +80,6 @@ module JSON
     def generator=(generator) # :nodoc:
       old, $VERBOSE = $VERBOSE, nil
 
-      # The default proc used when the +sort_keys+ generation option is +true+.
-      # It returns a new hash with the entries sorted by their keys.
-      sort_keys_proc = ->(hash) { hash.sort.to_h }
-      if defined?(::Ractor) && Ractor.respond_to?(:shareable_lambda)
-        sort_keys_proc = Ractor.shareable_lambda(&sort_keys_proc)
-      end
-      generator::State.default_sort_keys_proc = sort_keys_proc
-
       @generator = generator
       if generator.const_defined?(:GeneratorMethods)
         generator_methods = generator::GeneratorMethods
@@ -142,7 +134,60 @@ module JSON
 
   # This exception is raised if a parser error occurs.
   class ParserError < JSONError
-    attr_reader :line, :column
+    # Line number where the parser encountered an error.
+    # Is +nil+ when raised by JSON::ResumableParser.
+    attr_reader :line
+
+    # One-based column number where the parser encountered an error, counted in Unicode codepoints.
+    # Is +nil+ when raised by JSON::ResumableParser.
+    attr_reader :column
+
+    # Returns a best effort JSONPath string representing where in the document
+    # the parser encountered an error:
+    #
+    #   begin
+    #     JSON.parse('{"articles": [ { "title": invalid } ]}')
+    #   rescue JSON::ParserError => error
+    #     error.json_path # => "$.articles[0].title"
+    #   end
+    def json_path
+      return @json_path if String === @json_path
+
+      if Array === @json_path
+        path = build_json_path(@json_path)
+        @json_path = path unless frozen?
+        return path
+      end
+    end
+
+    private
+
+    def build_json_path(segments)
+      error = false
+      path = segments.filter_map do |segment|
+        next if error
+
+        case segment
+        when Integer
+          "[#{segment}]"
+        when String, Symbol
+          segment = segment.to_s
+          if !segment.valid_encoding?
+            segment = segment.b.gsub(/["\\]/n, { '"' => '\\"', '\\' => '\\\\' }).force_encoding(Encoding::UTF_8)
+            %{["#{segment}"]}
+          elsif segment.match?(/\A[a-zA-Z\$\_][a-zA-Z\$\_0-9]*\z/)
+            ".#{segment}"
+          else
+            segment = segment.gsub(/["\\]/, { '"' => '\\"', '\\' => '\\\\' })
+            %{["#{segment}"]}
+          end
+        else
+          error = true
+          nil
+        end
+      end.join
+      "$#{path}".freeze
+    end
   end
 
   # This exception is raised if the nesting of parsed data structures is too
@@ -183,7 +228,7 @@ module JSON
   Fragment = Struct.new(:json) do
     def initialize(json)
       unless string = String.try_convert(json)
-        raise TypeError, " no implicit conversion of #{json.class} into String"
+        raise TypeError, "no implicit conversion of #{json.class} into String"
       end
 
       super(string)
@@ -241,7 +286,7 @@ module JSON
   # ---
   #
   # Raises an exception if +source+ is not valid JSON:
-  #   # Raises JSON::ParserError unexpected character: 'invalid' at line 1 column 1 :
+  #   # Raises JSON::ParserError (unexpected character: 'invalid' at line 1 column 1):
   #   JSON.parse('invalid')
   #
   def parse(source, on_load: nil, object_class: nil, array_class: nil, **options)
@@ -275,8 +320,8 @@ module JSON
   #   parse(File.read(path), **)
   #
   # See method #parse.
-  def load_file(filespec, ...)
-    parse(File.read(filespec, encoding: Encoding::UTF_8), ...)
+  def load_file(filespec, **options)
+    parse(File.read(filespec, encoding: Encoding::UTF_8), **options)
   end
 
   # :call-seq:
@@ -286,8 +331,8 @@ module JSON
   #   JSON.parse!(File.read(path), **)
   #
   # See method #parse!
-  def load_file!(filespec, ...)
-    parse!(File.read(filespec, encoding: Encoding::UTF_8), ...)
+  def load_file!(filespec, **options)
+    parse!(File.read(filespec, encoding: Encoding::UTF_8), **options)
   end
 
   # :call-seq:
@@ -323,7 +368,7 @@ module JSON
   #
   # Raises an exception if +obj+ contains circular references:
   #   a = []; b = []; a.push(b); b.push(a)
-  #   # Raises JSON::NestingError (nesting of 100 is too deep):
+  #   # Raises JSON::NestingError (nesting of 100 is too deep. Did you try to serialize objects with circular references?):
   #   JSON.generate(a)
   #
   def generate(obj, opts = nil)
@@ -658,10 +703,10 @@ module JSON
     unless source.is_a?(String)
       if source.respond_to? :to_str
         source = source.to_str
+      elsif source.respond_to? :read
+        source = source.read
       elsif source.respond_to? :to_io
         source = source.to_io.read
-      elsif source.respond_to?(:read)
-        source = source.read
       end
     end
 
@@ -677,16 +722,14 @@ module JSON
   end
 
   # :call-seq:
-  #   JSON.dump(obj, io = nil, options = nil)
+  #   JSON.dump(obj, io = nil, _deprecated_limit = nil, options = nil)
   #
   # Dumps +obj+ as a \JSON string, i.e. calls generate on the object and returns the result.
-  #
-  # The default options can be changed via method JSON.dump_default_options.
   #
   # - Argument +io+, if given, should respond to method +write+;
   #   the \JSON \String is written to +io+, and +io+ is returned.
   #   If +io+ is not given, the \JSON \String is returned.
-  #
+  # - Argument +_deprecated_limit+ is deprecated, pass the +:max_nesting+ option instead.
   # ---
   #
   # When argument +io+ is not given, returns the \JSON \String generated from +obj+:
@@ -702,21 +745,31 @@ module JSON
   #   puts File.read(path)
   # Output:
   #   {"foo":[0,1],"bar":{"baz":2,"bat":3},"bam":"bad"}
-  def dump(obj, anIO = nil, kwargs = nil)
+  def dump(obj, anIO = nil, _deprecated_limit = nil, kwargs = nil)
     if kwargs.nil?
-      if anIO.is_a?(Hash)
-        kwargs = anIO
-        anIO = nil
+      if _deprecated_limit.nil?
+        if anIO.is_a?(Hash)
+          kwargs = anIO
+          anIO = nil
+        end
+      elsif _deprecated_limit.is_a?(Hash)
+        kwargs = _deprecated_limit
+        _deprecated_limit = nil
       end
     end
 
-    if anIO&.respond_to?(:to_io)
-      anIO = anIO.to_io
+    unless anIO.nil?
+      if anIO.respond_to?(:to_io)
+        anIO = anIO.to_io
+      elsif _deprecated_limit.nil? && !anIO.respond_to?(:write)
+        anIO, _deprecated_limit = nil, anIO
+      end
     end
 
     opts = {
-      allow_nan: true,
+      allow_nan: !(kwargs && kwargs[:rfc8785]),
     }
+    opts[:max_nesting] = _deprecated_limit if _deprecated_limit
     opts.merge!(kwargs) if kwargs
 
     State.generate(obj, opts, anIO)
@@ -755,9 +808,9 @@ module JSON
     private_constant :EXCLUDED_GENERATOR_OPTIONS
 
     # :call-seq:
-    #   JSON.new(options = nil, &block)
+    #   JSON::Coder.new(**options, &block)
     #
-    # Argument +options+, if given, contains a \Hash of options for both parsing and generating.
+    # Keyword arguments +options+, if given, are options for both parsing and generating.
     # See {Parsing Options}[rdoc-ref:JSON@Parsing+Options],
     # and {Generating Options}[rdoc-ref:JSON@Generating+Options].
     #
@@ -778,7 +831,12 @@ module JSON
     #
     #  puts MyApp::API_JSON_CODER.dump(Time.now.utc) # => "2025-01-21T08:41:44.286Z"
     #
-    def initialize(object_class: nil, array_class: nil, on_load: nil, **options, &as_json)
+    # The conversion callback can also be passed as +as_json:+. If both are given, the block takes precedence.
+    # Passing +false+ or +nil+ for +strict:+ raises ArgumentError.
+    #
+    def initialize(object_class: nil, array_class: nil, on_load: nil, strict: true, **options, &as_json)
+      raise ArgumentError, "JSON::Coder requires strict mode" unless strict
+
       if object_class || array_class
         on_load = ParserOptions.on_load(on_load, object_class, array_class)
       end
@@ -790,7 +848,7 @@ module JSON
       @state = State.new(
         **generator_options,
         strict: true,
-        as_json: as_json,
+        as_json: as_json || generator_options[:as_json],
       ).freeze
     end
 
