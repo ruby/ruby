@@ -1951,6 +1951,9 @@ update_lvar_state(const rb_iseq_t *iseq, int level, int idx)
         iseq_lvar_state_set(states, table_idx, lvar_initialized);
         break;
       case lvar_initialized:
+      case lvar_read_uninitialized:
+        /* A block read the variable before this assignment (e.g. in the right-hand
+         * side of the assignment), when it was still nil. */
         iseq_lvar_state_set(states, table_idx, lvar_reassigned);
         break;
       case lvar_reassigned:
@@ -1984,19 +1987,34 @@ iseq_set_rescue_has_retry(const rb_iseq_t *rescue_iseq)
     ISEQ_COMPILE_DATA(ISEQ_BODY(rescue_iseq)->parent_iseq)->rescue_has_retry = true;
 }
 
+/* Called when a block reads an outer variable (level > 0) */
+static void
+update_lvar_state_for_read(const rb_iseq_t *iseq, int level, int idx)
+{
+    for (int i=0; i<level; i++) {
+        iseq = ISEQ_BODY(iseq)->parent_iseq;
+    }
+
+    uint8_t *states = iseq_lvar_states(ISEQ_BODY(iseq));
+    int table_idx = ISEQ_BODY(iseq)->local_table_size - idx;
+    if (iseq_lvar_state_get(states, table_idx) == lvar_uninitialized) {
+        iseq_lvar_state_set(states, table_idx, lvar_read_uninitialized);
+    }
+}
+
 static int
 iseq_set_parameters_lvar_state(const rb_iseq_t *iseq)
 {
     uint8_t *states = iseq_lvar_states(ISEQ_BODY(iseq));
+    unsigned int opt_start = ISEQ_BODY(iseq)->param.lead_num;
+    unsigned int opt_end = opt_start + ISEQ_BODY(iseq)->param.opt_num;
 
+    /* Optional parameters are assigned by the code of their default value, unless
+     * passed, so their state is that of compiling this code.  It is compiled after
+     * this with prism, but before with compile.c, so do not overwrite it. */
     for (unsigned int i=0; i<ISEQ_BODY(iseq)->param.size; i++) {
+        if (opt_start <= i && i < opt_end) continue;
         iseq_lvar_state_set(states, i, lvar_initialized);
-    }
-
-    int lead_num = ISEQ_BODY(iseq)->param.lead_num;
-    int opt_num = ISEQ_BODY(iseq)->param.opt_num;
-    for (int i=0; i<opt_num; i++) {
-        iseq_lvar_state_set(states, lead_num + i, lvar_uninitialized);
     }
 
     return COMPILE_OK;
@@ -2011,7 +2029,10 @@ iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const lin
     else {
         ADD_INSN2(seq, line_node, getlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
     }
-    if (level > 0) access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qfalse);
+    if (level > 0) {
+        update_lvar_state_for_read(iseq, level, idx);
+        access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qfalse);
+    }
 }
 
 static void

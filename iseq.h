@@ -29,7 +29,7 @@ RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_LVAR_STATES_PER_BYTE (CHAR_BIT / ISEQ_LVAR_STATE_BITS)
 #define ISEQ_LVAR_STATES_BUFLEN(size) roomof(size, ISEQ_LVAR_STATES_PER_BYTE)
 #define ISEQ_LVAR_STATES_EMBED_P(size) (ISEQ_LVAR_STATES_BUFLEN(size) <= sizeof(uint8_t *))
-STATIC_ASSERT(lvar_state_fits_in_iseq_lvar_state_bits, lvar_reassigned < (1 << ISEQ_LVAR_STATE_BITS));
+STATIC_ASSERT(lvar_state_fits_in_iseq_lvar_state_bits, lvar_read_uninitialized < (1 << ISEQ_LVAR_STATE_BITS));
 
 static inline enum lvar_state
 iseq_lvar_state_get(const uint8_t *buf, unsigned int i)

@@ -165,8 +165,9 @@ Note: We're only listing outstanding class updates.
     * `Ractor.shareable_proc` and `Ractor.new` now also raise
       `Ractor::IsolationError` when the block reads an outer variable assigned
       in a `while`/`until`/`for` loop, in a `begin` body which is retried, in
-      a block using `redo` or from another block.  Such a variable can be
-      reassigned, which the shareable Proc could not honor.  [[Bug #22521]]
+      a block using `redo` or from another block, or assigned after the block
+      reads it.  Such a variable can be reassigned, which the shareable Proc
+      could not honor.  [[Bug #22521]]
 
     * `Ractor::Port#receive`, `Ractor.receive` and `Ractor.select` accept a
       `timeout:` keyword argument (in seconds) and return `nil` once it passes.

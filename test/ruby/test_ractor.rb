@@ -30,6 +30,23 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_shareability_of_outer_variable_read_before_assignment
+    assert_ractor(<<~'RUBY')
+      # The block reads the variable before its assignment, while it is nil
+      assert_raise(Ractor::IsolationError) { klass = Class.new { Ractor.shareable_proc { klass } } }
+      assert_raise(Ractor::IsolationError) { pr = Ractor.shareable_proc { pr } }
+      obj = Object.new
+      def obj.opt(a = Ractor.shareable_proc { a }) = a
+      assert_raise(Ractor::IsolationError) { obj.opt }
+
+      # Assigned before
+      c = 1
+      assert_equal 1, Ractor.shareable_proc { c }.call
+      def obj.opt2(a = 2, b = Ractor.shareable_proc { a }) = b
+      assert_equal 2, obj.opt2.call
+    RUBY
+  end
+
   def test_alive_p_after_fork
     omit "fork not supported" unless Process.respond_to?(:fork)
     assert_ractor(<<~'RUBY')

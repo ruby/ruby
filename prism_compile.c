@@ -93,7 +93,10 @@ pm_iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int node
     else {
         ADD_ELEM(seq, (LINK_ELEMENT *) new_insn_body(iseq, line, node_id, BIN(getlocal), 2, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level)));
     }
-    if (level > 0) access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qfalse);
+    if (level > 0) {
+        update_lvar_state_for_read(iseq, level, idx);
+        access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qfalse);
+    }
 }
 
 static void
