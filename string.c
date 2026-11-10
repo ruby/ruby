@@ -10715,7 +10715,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
         {
             rb_len_t outlen = (rb_len_t)(t - buf);
             SIZED_REALLOC_N(buf, unsigned char, outlen + termlen, max + termlen);
-            TERM_FILL(buf + outlen, termlen);
+            TERM_FILL((char *)buf + outlen, termlen);
             RSTRING(str)->as.heap.ptr = (char *)buf;
             STR_SET_LEN(str, outlen);
             STR_SET_NOEMBED(str);
@@ -10804,7 +10804,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
         {
             rb_len_t outlen = (rb_len_t)(t - buf);
             SIZED_REALLOC_N(buf, unsigned char, outlen + termlen, max + termlen);
-            TERM_FILL(buf + outlen, termlen);
+            TERM_FILL((char *)buf + outlen, termlen);
             RSTRING(str)->as.heap.ptr = (char *)buf;
             STR_SET_LEN(str, outlen);
             STR_SET_NOEMBED(str);
