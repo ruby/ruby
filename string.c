@@ -10707,11 +10707,20 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
         if (!STR_EMBED_P(str)) {
             SIZED_FREE_N(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
         }
-        TERM_FILL((char *)t, termlen);
-        RSTRING(str)->as.heap.ptr = (char *)buf;
-        STR_SET_LEN(str, t - buf);
-        STR_SET_NOEMBED(str);
-        RSTRING(str)->as.heap.aux.capa = max;
+        /* The buffer was sized for a worst case (1.2 times the input, and
+         * grown from there), but replacements can produce much shorter
+         * output, e.g. a multibyte character replaced by a single byte.
+         * Shrink it to the actual length so the difference is not kept as
+         * the string's capacity. */
+        {
+            rb_len_t outlen = (rb_len_t)(t - buf);
+            SIZED_REALLOC_N(buf, unsigned char, outlen + termlen, max + termlen);
+            TERM_FILL(buf + outlen, termlen);
+            RSTRING(str)->as.heap.ptr = (char *)buf;
+            STR_SET_LEN(str, outlen);
+            STR_SET_NOEMBED(str);
+            RSTRING(str)->as.heap.aux.capa = outlen;
+        }
     }
     else if (rb_enc_mbmaxlen(enc) == 1 || (singlebyte && !hash)) {
         while (s < send) {
@@ -10790,11 +10799,17 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
         if (!STR_EMBED_P(str)) {
             SIZED_FREE_N(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
         }
-        TERM_FILL((char *)t, termlen);
-        RSTRING(str)->as.heap.ptr = (char *)buf;
-        STR_SET_LEN(str, t - buf);
-        STR_SET_NOEMBED(str);
-        RSTRING(str)->as.heap.aux.capa = max;
+        /* Same as above: the buffer was sized for a worst case, shrink it
+         * to the actual length so the difference is not kept as capacity. */
+        {
+            rb_len_t outlen = (rb_len_t)(t - buf);
+            SIZED_REALLOC_N(buf, unsigned char, outlen + termlen, max + termlen);
+            TERM_FILL(buf + outlen, termlen);
+            RSTRING(str)->as.heap.ptr = (char *)buf;
+            STR_SET_LEN(str, outlen);
+            STR_SET_NOEMBED(str);
+            RSTRING(str)->as.heap.aux.capa = outlen;
+        }
     }
 
     if (modify) {
@@ -11250,6 +11265,16 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
 
     if (!STR_EMBED_P(str)) {
         SIZED_FREE_N(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
+    }
+    /* The buffer may have been over-allocated (grown in 20% steps from the
+     * initial capacity, and the replacements may be shorter than the
+     * searched segments).  Shrink it to the actual length so the slack is
+     * not kept as the string's capacity. */
+    {
+        rb_len_t outlen = (rb_len_t)(buffer.ptr - buffer.buf);
+        SIZED_REALLOC_N(buffer.buf, unsigned char, outlen + termlen, buffer.capa);
+        buffer.capa = outlen + termlen;
+        buffer.ptr = buffer.buf + outlen;
     }
     tr_buffer_ensure_capa(&buffer, termlen);
     TERM_FILL((char *)buffer.ptr, termlen);
