@@ -685,17 +685,22 @@ if defined? Zlib
     end
 
     def test_inflate_buffer_locked_by_another_thread
+      omit 'IO#read does not lock the buffer' if RUBY_ENGINE == 'truffleruby'
+
       dict = "dictionary-" * 4
       d = Zlib::Deflate.new
       d.set_dictionary(dict)
       deflated = d.deflate("A" * 12_000, Zlib::FINISH)
 
       # The buffer is kept across NeedDict, so the retry locks it without
-      # modifying it first.
+      # modifying it first. It is long enough that the first call keeps its
+      # capacity, and it gets a few bytes so that IO#read up to Ruby 3.1
+      # does not resize it.
       z = Zlib::Inflate.new
-      buf = String.new(capacity: 1 << 14)
+      buf = "\0".b * (1 << 15)
       assert_raise(Zlib::NeedDict) { z.inflate(deflated, buffer: buf) }
       z.set_dictionary(dict)
+      buf << "...."
 
       IO.pipe do |r, w|
         reader = Thread.new { r.read(3, buf) }
