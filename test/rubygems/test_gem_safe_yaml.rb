@@ -926,6 +926,7 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_block_scalar_indicators
+    require "yaml"
     strings = [
       "  starts with spaces\nsecond line\n",
       "\n  first line empty, second indented\n",
