@@ -198,7 +198,8 @@ module Gem
           @lines.unshift("#{" " * (indent + 2)}#{content}")
           parse_node(indent)
         elsif QUOTED_KEY_RE.match?(content) ||
-              (MAPPING_KEY_RE.match?(content) && !content.start_with?("!ruby/object:"))
+              (MAPPING_KEY_RE.match?(content) && !content.start_with?("!ruby/object:") &&
+               !OPEN_QUOTED_RE.match?(content))
           @lines.unshift("#{" " * (indent + 2)}#{content}")
           parse_node(indent)
         elsif content.start_with?("|")

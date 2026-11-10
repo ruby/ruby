@@ -1148,6 +1148,25 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal expected, yaml_load(yaml)
   end
 
+  def test_load_multiline_quoted_scalar_in_sequence
+    yaml = <<~'YAML'
+      ---
+      requirements:
+      - 'libfoo: version 1.0
+        or later'
+      - "second item\
+        \ joined"
+      - ! 'legacy: tag
+        continued'
+      - plain
+    YAML
+
+    expected = {
+      "requirements" => ["libfoo: version 1.0 or later", "second item joined", "legacy: tag continued", "plain"],
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
   def test_load_multiline_quoted_scalar_in_linear_time
     pre = ->(n) { "description: '#{"word\n  " * n}end'\n" }
     assert_linear_performance([1_000, 10_000, 100_000], rehearsal: 10, pre: pre) do |yaml|
