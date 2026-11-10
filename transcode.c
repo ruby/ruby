@@ -1483,6 +1483,43 @@ output_hex_charref(rb_econv_t *ec)
     return -1;
 }
 
+/*
+ * A replacement is re-fed into the transcoder which reported the error
+ * (see rb_econv_insert_output: the inserted bytes are prepended to the
+ * input of the last transcoder when its converter is an ASCII-compatible
+ * encoder, e.g. the ISO-2022-JP family).  A replacement containing bytes
+ * which the transcoder itself rejects therefore re-triggers the same
+ * error and the retry loop never terminates:
+ *
+ *   "\e".b.force_encoding("US-ASCII")
+ *        .encode("CP50220", undef: :replace, replace: "\e".b)  # hangs
+ *
+ * The transcoding is deterministic, so an undefined-conversion
+ * replacement round must consume input to make progress; output
+ * written from the replacement itself is not progress (it is
+ * re-generated every round).  When a replacement round ends with the
+ * input position unchanged, the error came from the inserted
+ * replacement and repeats forever.  Stop retrying then; the caller
+ * propagates the error instead of hanging.
+ *
+ * Only the undefined-conversion paths are guarded: the invalid-byte-
+ * sequence path legitimately re-reads bytes from the transcoder's
+ * read buffer (readagain) without moving the caller's input position,
+ * so a stalled input position cannot be used as a loop signal there.
+ */
+static int
+econv_retry_after_replacement(int *replaced_before,
+        const unsigned char **prev_in_pos,
+        const unsigned char **input_ptr)
+{
+    if (*replaced_before && *prev_in_pos == *input_ptr) {
+        return 0;
+    }
+    *replaced_before = 1;
+    *prev_in_pos = *input_ptr;
+    return 1;
+}
+
 rb_econv_result_t
 rb_econv_convert(rb_econv_t *ec,
     const unsigned char **input_ptr, const unsigned char *input_stop,
@@ -1493,6 +1530,9 @@ rb_econv_convert(rb_econv_t *ec,
 
     unsigned char empty_buf;
     unsigned char *empty_ptr = &empty_buf;
+
+    int replaced_before = 0;
+    const unsigned char *prev_in_pos = NULL;
 
     ec->started = 1;
 
@@ -1515,6 +1555,10 @@ rb_econv_convert(rb_econv_t *ec,
         /* todo: add more alternative behaviors */
         switch (ec->flags & ECONV_INVALID_MASK) {
           case ECONV_INVALID_REPLACE:
+            /* NOTE: no progress detection here: the invalid-sequence
+             * machinery re-reads bytes from the transcoder's read buffer
+             * (readagain) without moving the caller's input position,
+             * so a stalled input position is legitimate here. */
             if (output_replacement_character(ec) == 0)
                 goto resume;
         }
@@ -1526,13 +1570,19 @@ rb_econv_convert(rb_econv_t *ec,
         /* todo: add more alternative behaviors */
         switch (ec->flags & ECONV_UNDEF_MASK) {
           case ECONV_UNDEF_REPLACE:
-            if (output_replacement_character(ec) == 0)
+            if (output_replacement_character(ec) == 0) {
+                if (!econv_retry_after_replacement(&replaced_before, &prev_in_pos, input_ptr))
+                    return ret;
                 goto resume;
+            }
             break;
 
           case ECONV_UNDEF_HEX_CHARREF:
-            if (output_hex_charref(ec) == 0)
+            if (output_hex_charref(ec) == 0) {
+                if (!econv_retry_after_replacement(&replaced_before, &prev_in_pos, input_ptr))
+                    return ret;
                 goto resume;
+            }
             break;
         }
     }
@@ -2397,6 +2447,10 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     VALUE (*fallback_func)(VALUE, VALUE) = 0;
     const unsigned char *source_start = *in_pos;
     rb_len_t source_len = in_stop - *in_pos;
+    /* a fallback which keeps the input position fixed repeats forever,
+     * see econv_retry_after_replacement above */
+    int fallback_replaced_before = 0;
+    const unsigned char *fallback_prev_in_pos = NULL;
 
     ec = rb_econv_open_opts(src_encoding, dst_encoding, ecflags, ecopts);
     if (!ec)
@@ -2453,6 +2507,15 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         }
 
         if (!NIL_OR_UNDEF_P(rep)) {
+            if (fallback_replaced_before && fallback_prev_in_pos == *in_pos) {
+                /* the fallback made no progress: the same error would
+                 * repeat forever */
+                exc = make_econv_exception(ec);
+                rb_econv_close(ec);
+                rb_exc_raise(exc);
+            }
+            fallback_replaced_before = 1;
+            fallback_prev_in_pos = *in_pos;
             ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
                     RSTRING_LEN(rep), rb_enc_name(rb_enc_get(rep)));
             RB_GC_GUARD(rep); // insert_output may GC while reading rep's bytes

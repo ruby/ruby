@@ -1662,6 +1662,38 @@ class TestTranscode < Test::Unit::TestCase
                  "\x8E\xA1\x8E\xFE".encode("cp50220", "cp51932"))
   end
 
+  def test_undefined_replacement_loop
+    # A replacement (or a fallback string) is re-fed into the transcoder
+    # which reported the error (rb_econv_insert_output inserts into the
+    # input of the last transcoder when its converter is an ASCII-
+    # compatible encoder such as CP50220).  A replacement containing
+    # bytes which that transcoder itself rejects re-triggers the same
+    # error forever; it must raise instead of hang.
+    assert_raise(Encoding::UndefinedConversionError) {
+      "\e".b.force_encoding("US-ASCII").
+        encode("CP50220", undef: :replace, replace: "\e".b)
+    }
+    assert_raise(Encoding::UndefinedConversionError) {
+      "\e".b.force_encoding("US-ASCII").
+        encode("CP50221", undef: :replace, replace: "\e".b)
+    }
+    assert_raise(Encoding::UndefinedConversionError) {
+      "\e".b.force_encoding("US-ASCII").
+        encode("CP50220", fallback: ->(_) { "\e".b })
+    }
+    # a replacement with a representable prefix and an undefined tail
+    # (the prefix is re-emitted every round, so the loop also grows
+    # without bound while it spins)
+    assert_raise(Encoding::UndefinedConversionError) {
+      "\e".b.force_encoding("US-ASCII").
+        encode("CP50220", undef: :replace, replace: "qk\x0F".b)
+    }
+    # a representable replacement still converts (CP50220 is a dummy
+    # encoding, so compare bytes)
+    assert_equal("?", "\u{1F600}".encode("CP50220", undef: :replace, replace: "?").b)
+    assert_equal("??", "\u{1F600}\u{1F60D}".encode("CP50221", undef: :replace, replace: "?").b)
+  end
+
   def test_to_cp50220_partial_output
     # A katakana held back for a possible sound mark is flushed with its own
     # designation (5 bytes) before the designation and data of the character
