@@ -4445,6 +4445,10 @@ m_core_hash_merge_bang_ptr(int argc, VALUE *argv, VALUE recv)
 {
     VALUE hash = argv[0];
     VM_ASSERT(argc % 2 == 1);
+    // The compiler only emits this when it built `hash` itself, so it can be
+    // mutated in place. Anything else (nil, a frozen or user-visible hash)
+    // must go through hash_merge_ptr instead.
+    VM_ASSERT(RB_TYPE_P(hash, T_HASH) && !OBJ_FROZEN(hash));
 
     REWIND_CFP(hash = core_hash_merge(hash, argc - 1, argv + 1, false));
 

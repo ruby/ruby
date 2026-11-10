@@ -4195,6 +4195,42 @@ class TestKeywordArguments < Test::Unit::TestCase
     end
   end
 
+  def test_kwrest_overwritten_zsuper_with_keyword
+    bug22527 = '[Bug #22527]'
+
+    base = Class.new do
+      def m(*a, **k) = k
+    end
+
+    klass = Class.new(base) do
+      def m(k: 1, **r)
+        r = yield
+        super
+      end
+    end
+
+    obj = klass.new
+    assert_equal({k: 1}, obj.m { nil }, bug22527)
+    assert_equal({k: 1}, obj.m { nil }, bug22527)
+
+    assert_equal({a: 2, k: 1}, obj.m { {a: 2}.freeze })
+    assert_equal({k: 1}, obj.m { {k: 2} })
+
+    result = obj.m { Class.new(Hash)[a: 2].tap { _1.default = 5 } }
+    assert_instance_of(Hash, result)
+    assert_nil(result.default)
+
+    shared = {a: 2}
+    to_hash = Object.new
+    to_hash.define_singleton_method(:to_hash) { shared }
+    assert_equal({a: 2, k: 1}, obj.m { to_hash })
+    assert_equal({a: 2}, shared)
+
+    assert_raise_with_message(TypeError, /no implicit conversion of Integer into Hash/) do
+      obj.m { 1 }
+    end
+  end
+
   def test_non_keyword_hash_subclass
     bug12884 = '[ruby-core:77813] [Bug #12884]'
     klass = EnvUtil.labeled_class("Child", Hash)

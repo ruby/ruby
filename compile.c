@@ -10387,16 +10387,15 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
             int local_size = local_body->local_table_size;
             argc++;
 
-            ADD_INSN1(args, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-
+            /* The keyword rest local may have been reassigned to any
+             * object, so it is never merged into in place. hash_merge_ptr
+             * converts it with to_hash (nil being empty) and copies it into
+             * a hash allocated at its final size. */
             if (local_body->param.flags.has_kwrest) {
                 int idx = local_body->local_table_size - local_kwd->rest_start;
-                ADD_GETLOCAL(args, node, idx, lvar_level);
                 RUBY_ASSERT(local_kwd->num > 0);
-                ADD_SEND (args, node, rb_intern("dup"), INT2FIX(0));
-            }
-            else {
-                ADD_INSN1(args, node, newhash, INT2FIX(0));
+                ADD_INSN1(args, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                ADD_GETLOCAL(args, node, idx, lvar_level);
             }
             for (i = 0; i < local_kwd->num; ++i) {
                 ID id = local_kwd->table[i];
@@ -10404,7 +10403,12 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
                 ADD_INSN1(args, node, putobject, ID2SYM(id));
                 ADD_GETLOCAL(args, node, idx, lvar_level);
             }
-            ADD_SEND(args, node, id_core_hash_merge_bang_ptr, INT2FIX(i * 2 + 1));
+            if (local_body->param.flags.has_kwrest) {
+                ADD_SEND(args, node, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
+            }
+            else {
+                ADD_INSN1(args, node, newhash, INT2FIX(i * 2));
+            }
             flag |= VM_CALL_KW_SPLAT| VM_CALL_KW_SPLAT_MUT;
         }
         else if (local_body->param.flags.has_kwrest) {
