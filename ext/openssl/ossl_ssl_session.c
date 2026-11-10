@@ -257,7 +257,8 @@ static VALUE ossl_ssl_session_to_der(VALUE self)
 
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
-    i2d_SSL_SESSION(ctx, &p);
+    if (i2d_SSL_SESSION(ctx, &p) <= 0)
+        ossl_raise(eSSLSession, "i2d_SSL_SESSION");
     ossl_str_adjust(str, p);
     return str;
 }

@@ -304,10 +304,12 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eArgError, "iterations must be a positive integer");
     digest = NIL_P(vdigest) ? EVP_md5() : ossl_evp_md_fetch(vdigest, &md_holder);
     GetCipher(self, ctx);
-    EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), digest, salt,
-                   (unsigned char *)RSTRING_PTR(vpass), RSTRING_LENINT(vpass), iter, key, iv);
+    if (!EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), digest, salt,
+                        (unsigned char *)RSTRING_PTR(vpass),
+                        RSTRING_LENINT(vpass), iter, key, iv))
+        ossl_raise(eCipherError, "EVP_BytesToKey");
     if (EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, -1) != 1)
-        ossl_raise(eCipherError, NULL);
+        ossl_raise(eCipherError, "EVP_CipherInit_ex");
     OPENSSL_cleanse(key, sizeof key);
     OPENSSL_cleanse(iv, sizeof iv);
 

@@ -688,6 +688,8 @@ ossl_ocspbres_copy_nonce(VALUE self, VALUE request)
     GetOCSPBasicRes(self, bs);
     GetOCSPReq(request, req);
     ret = OCSP_copy_nonce(bs, req);
+    if (!ret)
+        ossl_raise(eOCSPError, "OCSP_copy_nonce");
 
     return INT2NUM(ret);
 }

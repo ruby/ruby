@@ -918,7 +918,9 @@ ossl_x509stctx_set_purpose(VALUE self, VALUE purpose)
     int p = NUM2INT(purpose);
 
     GetX509StCtx(self, store);
-    X509_STORE_CTX_set_purpose(store, p);
+    if (!X509_STORE_CTX_set_purpose(store, p)) {
+        ossl_raise(eX509StoreError, "X509_STORE_CTX_set_purpose");
+    }
 
     return purpose;
 }
@@ -939,7 +941,9 @@ ossl_x509stctx_set_trust(VALUE self, VALUE trust)
     int t = NUM2INT(trust);
 
     GetX509StCtx(self, store);
-    X509_STORE_CTX_set_trust(store, t);
+    if (!X509_STORE_CTX_set_trust(store, t)) {
+        ossl_raise(eX509StoreError, "X509_STORE_CTX_set_trust");
+    }
 
     return trust;
 }
