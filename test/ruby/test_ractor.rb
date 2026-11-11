@@ -306,6 +306,18 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_kept_reply_port_passes_verify
+    assert_ractor(<<~'RUBY')
+      owner = Ractor.new { c = Class.new; c.const_set(:V, ["x".dup.freeze].freeze); Ractor.main << c; Ractor.receive }
+      c = Ractor.receive
+      sleep 0.1 # let the owner block in Ractor.receive, so main waits on its kept reply port
+      assert_equal ["x"], c::V
+      GC.verify_internal_consistency # the Ractor object (shareable) refers to that port
+      owner << :done
+      owner.join
+    RUBY
+  end
+
   def test_read_frozen_class_fields_of_non_main
     assert_ractor(<<~'RUBY')
       port = Ractor::Port.new
