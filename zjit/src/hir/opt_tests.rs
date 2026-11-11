@@ -17040,6 +17040,65 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_integer_pred_with_fixnum() {
+        eval("
+            def test(x) = x.pred
+            test(4)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, pred@0x1010, cme:0x1018)
+          v25:Fixnum = GuardType v10, Fixnum recompile
+          v26:Fixnum[1] = Const Value(1)
+          v27:Fixnum = FixnumSub v25, v26
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_integer_pred_with_bignum() {
+        eval("
+            def test(x) = x.pred
+            test(4 << 70)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, pred@0x1010, cme:0x1018)
+          v25:Bignum = GuardType v10, Bignum recompile
+          v26:BasicObject = CCallWithFrame v25, :Integer#pred@0x1040
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
     fn test_inline_integer_ltlt_with_known_fixnum() {
         eval("
             def test(x) = x << 5
