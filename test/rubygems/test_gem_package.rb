@@ -1058,6 +1058,53 @@ class TestGemPackage < Gem::Package::TarTestCase
     refute File.exist?(escaped), "must not write outside extraction root via symlink"
   end
 
+  def test_extract_tar_gz_rejects_preexisting_leaf_symlink
+    omit "Symlinks not supported or not enabled" unless symlink_supported?
+
+    package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "owned.txt", 0o644 do |io|
+        io.write "poc-content"
+      end
+    end
+
+    victim = File.join(@tempdir, "outside.txt")
+    File.write victim, "original"
+
+    File.symlink victim, File.join(@destination, "owned.txt")
+
+    assert_raise Gem::Package::PathError do
+      package.extract_tar_gz tgz_io, @destination
+    end
+
+    assert_equal "original", File.read(victim),
+                 "must not write outside extraction root via leaf symlink"
+  end
+
+  def test_extract_tar_gz_rejects_preexisting_dangling_leaf_symlink
+    omit "Symlinks not supported or not enabled" unless symlink_supported?
+
+    package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "owned.txt", 0o644 do |io|
+        io.write "poc-content"
+      end
+    end
+
+    victim = File.join(@tempdir, "outside.txt")
+
+    File.symlink victim, File.join(@destination, "owned.txt")
+
+    assert_raise Gem::Package::PathError do
+      package.extract_tar_gz tgz_io, @destination
+    end
+
+    refute File.exist?(victim),
+           "must not create a file outside extraction root via leaf symlink"
+  end
+
   def test_extract_symlink_into_symlink_dir
     omit "Symlinks not supported or not enabled" unless symlink_supported?
     package = Gem::Package.new @gem

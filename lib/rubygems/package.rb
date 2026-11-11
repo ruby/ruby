@@ -554,6 +554,9 @@ EOM
         verify_extraction_dir mkdir, destination_dir
 
         if entry.file?
+          raise Gem::Package::PathError.new(destination, destination_dir) if
+            File.symlink?(destination)
+
           File.open(destination, "wb") do |out|
             copy_stream(tar.io, out, entry.size)
             # Flush needs to happen before chmod because there could be data
