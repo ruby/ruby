@@ -1374,10 +1374,11 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(0...0, @empty.longest_slice)
     assert_equal(0...0, [].longest_slice)
     assert_equal(0...0, [nil, nil].longest_slice)
-    assert_equal(0...1, [false].longest_slice)
-    assert_equal(0...3, [false, 0, []].longest_slice)
+    assert_equal(0...0, [false].longest_slice)
+    assert_equal(1...3, [false, 0, []].longest_slice)
     assert_equal(0...5, @obj.longest_slice)
-    assert_equal(1...3, [nil, :a, false, nil, :b].longest_slice)
+    assert_equal(1...2, [nil, :a, false, nil, :b].longest_slice)
+    assert_equal(2...4, [1, false, 2, 3].longest_slice)
     assert_equal(2...5, [:a, nil, :b, :c, :d].longest_slice)
     assert_equal(0...2, [:a, :b, nil, :c].longest_slice)
     assert_equal(0...2, [:a, :b, nil, :c, :d].longest_slice)
@@ -1424,7 +1425,7 @@ class TestEnumerable < Test::Unit::TestCase
       y.yield [nil, nil]
       y.yield false
     end
-    assert_equal(2...5, enum.longest_slice)
+    assert_equal(2...4, enum.longest_slice)
 
     seen = []
     assert_equal(2...5, enum.longest_slice { |*args| seen << args; !args.empty? && args != [nil] })

@@ -65,7 +65,7 @@ Note: We're only listing outstanding class updates.
 * Enumerable
 
     * `Enumerable#longest_slice` returns a zero-based, end-exclusive range for
-      the longest consecutive sequence of non-`nil` entries, or entries for
+      the longest consecutive sequence of truthy entries, or entries for
       which a given block returns a truthy value. Ties select the first sequence;
       no matches return `0...0`.
 
