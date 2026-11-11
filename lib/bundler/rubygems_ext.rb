@@ -52,7 +52,7 @@ module Gem
       end
 
       def self.valid_ruby_abi?(value)
-        false
+        value.is_a?(String) && /\A\d+\.\d+\z/.match?(value)
       end
 
       def self.ruby_abi_requirement(ruby_abi)
@@ -527,6 +527,14 @@ module Gem
       def initialize(name, version, platform = Gem::Platform::RUBY, content_address: nil)
         initialize_without_content_address(name, version, platform)
         @content_address = content_address
+      end
+
+      alias_method :full_name_without_content_address, :full_name
+
+      def full_name
+        return full_name_without_content_address unless @content_address
+
+        "#{@name}-#{@version}-#{@content_address}"
       end
     end
 

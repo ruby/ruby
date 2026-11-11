@@ -739,3 +739,46 @@ RSpec.describe "bundle install with content-addressable gems invisible to pre-4.
     end
   end
 end
+
+RSpec.describe "content-addressed lockfiles on older RubyGems", :compact_index, rubygems: "< 4.1.0.a" do
+  before do
+    skip_unless_content_addressing_available!
+    build_repo2_with_content_addressed_gems
+
+    gemfile <<~G
+      source "https://gem.repo2"
+      gem "mygem"
+    G
+
+    lockfile_with_content_addresses(addresses(current_abi, mismatched_abi), checksums: true, ruby_abis: [current_abi, mismatched_abi].sort)
+  end
+
+  it "installs the multi-ABI gem without confusing the checksum with its content-addressed counterpart" do
+    simulate_platform "x86_64-linux" do
+      bundle "install"
+
+      expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
+      [current_abi, mismatched_abi].each do |ruby_abi|
+        address = addresses_by_abi.fetch(ruby_abi)
+        checksum = checksum_digest(gem_repo2, "mygem", "1.0", address)
+        expect(lockfile).to include("#{address} abi=#{ruby_abi} sha256=#{checksum}")
+      end
+      expect(Bundler::LockfileParser.new(lockfile).ruby_abis).to include(current_abi, mismatched_abi)
+
+      bundle "check"
+      expect(out).to include("The Gemfile's dependencies are satisfied")
+    end
+  end
+
+  it "keeps the lockfile unchanged when installing the multi-ABI fallback in frozen mode" do
+    simulate_platform "x86_64-linux" do
+      original_lockfile = lockfile
+      bundle_config "frozen true"
+
+      bundle "install"
+
+      expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
+      expect(lockfile).to eq(original_lockfile)
+    end
+  end
+end

@@ -2,6 +2,31 @@
 
 require "bundler/rubygems_ext"
 
+RSpec.describe Gem::NameTuple do
+  let(:version) { Gem::Version.new("1.0") }
+
+  it "preserves the full name of a Ruby gem" do
+    expect(described_class.new("mygem", version).full_name).to eq("mygem-1.0")
+  end
+
+  it "preserves the full name of a multi-ABI gem" do
+    tuple = described_class.new("mygem", version, Gem::Platform.new("x86_64-linux"))
+
+    expect(tuple.full_name).to eq("mygem-1.0-x86_64-linux")
+  end
+
+  it "distinguishes content-addressed artifacts that share a platform and lock name" do
+    platform_tuple = described_class.new("mygem", version, "x86_64-linux")
+    first = described_class.new("mygem", version, "x86_64-linux", content_address: "abcdef12")
+    second = described_class.new("mygem", version, "x86_64-linux", content_address: "12345678")
+
+    expect(first.full_name).to eq("mygem-1.0-abcdef12")
+    expect(second.full_name).to eq("mygem-1.0-12345678")
+    expect(first.lock_name).to eq(platform_tuple.lock_name)
+    expect(second.lock_name).to eq(platform_tuple.lock_name)
+  end
+end
+
 RSpec.describe Gem::SplitCompactIndexEntryOnFirstColon do
   # Reproduces the RubyGems < 4.0.13 `Gem::Resolver::APISet::GemParser` that
   # split each compact index entry on every colon, corrupting metadata values
