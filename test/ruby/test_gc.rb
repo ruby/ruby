@@ -749,6 +749,25 @@ class TestGc < Test::Unit::TestCase
     RUBY
   end
 
+  def test_gc_returns_empty_pages_after_burst
+    assert_separately([], __FILE__, __LINE__, <<~'RUBY')
+      GC.start
+      base_pages = GC.stat[:heap_allocated_pages]
+
+      burst = Array.new(200_000) { |i| "n#{i}" + "x" * (i % 64) }
+      burst.clear
+      burst = nil
+
+      GC.start
+      GC.start
+      GC.start
+
+      pages = GC.stat[:heap_allocated_pages]
+      assert_operator pages, :<=, base_pages * 2,
+            "empty pages not returned after a burst (base_pages: #{base_pages}, pages: #{pages})"
+    RUBY
+  end
+
   def test_profiler_enabled
     GC::Profiler.enable
     assert_equal(true, GC::Profiler.enabled?)
