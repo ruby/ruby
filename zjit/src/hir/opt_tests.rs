@@ -26891,6 +26891,31 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_budget_bounds_binary_call_tree() {
+        // Shaped like ruby-bench's 30k_ifelse: every level calls the next level from both
+        // arms of a branch, so each round of inlining doubles the number of SendDirects.
+        // The budget must stop this well before the whole tree is inlined. Checking only
+        // `num_instructions` against the budget inlines 21 calls here instead of 6.
+        eval("
+            def l5(x) = x
+            def l4(x) = x < 1 ? l5(x) : l5(x)
+            def l3(x) = x < 1 ? l4(x) : l4(x)
+            def l2(x) = x < 1 ? l3(x) : l3(x)
+            def l1(x) = x < 1 ? l2(x) : l2(x)
+            def test(x) = x < 1 ? l1(x) : l1(x)
+            test(0); test(1); test(0); test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+        let budget_rejects_before = counters.inline_reject_budget_exceeded;
+        hir_string("test");
+        let inlined = counters.inline_method_count - inline_count_before;
+        assert!(counters.inline_reject_budget_exceeded > budget_rejects_before,
+            "Expected the budget to reject part of the call tree");
+        assert_eq!(inlined, 6, "Unexpected number of inlined calls under the default budget");
+    }
+
+    #[test]
     fn test_inline_method_with_all_optionals_omitted() {
         // Caller fills 0 optionals: both `b` and `c` defaults must run inside the inlined
         // body. We pick `jit_entry_blocks[0]` so the body's default-init chain executes
