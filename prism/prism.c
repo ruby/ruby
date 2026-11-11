@@ -11463,7 +11463,7 @@ parser_lex(pm_parser_t *parser) {
             // Here we'll get a list of the places where strpbrk should break,
             // and then find the first one.
             const uint8_t *breakpoints = lex_mode->as.list.breakpoints;
-            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
 
             // If we haven't found an escape yet, then this buffer will be
             // unallocated since we can refer directly to the source string.
@@ -11488,7 +11488,7 @@ parser_lex(pm_parser_t *parser) {
                     // we need to continue on past it.
                     if (lex_mode->as.list.nesting > 0) {
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
                         lex_mode->as.list.nesting--;
                         continue;
                     }
@@ -11536,7 +11536,7 @@ parser_lex(pm_parser_t *parser) {
 
                 // If we hit a null byte, skip directly past it.
                 if (*breakpoint == '\0') {
-                    breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1), true);
+                    breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1), PM_STRPBRK_STRING);
                     continue;
                 }
 
@@ -11611,7 +11611,7 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     token_buffer.cursor = parser->current.end;
-                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
                     continue;
                 }
 
@@ -11624,7 +11624,7 @@ parser_lex(pm_parser_t *parser) {
                         // that looked like an interpolated class or instance variable
                         // like "#@" but wasn't actually. In this case we'll just skip
                         // to the next breakpoint.
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
                         continue;
                     }
 
@@ -11640,7 +11640,7 @@ parser_lex(pm_parser_t *parser) {
                 // and find the next breakpoint.
                 PRISM_ASSERT(*breakpoint == lex_mode->as.list.incrementor);
                 parser->current.end = breakpoint + 1;
-                breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
                 lex_mode->as.list.nesting++;
                 continue;
             }
@@ -11679,7 +11679,7 @@ parser_lex(pm_parser_t *parser) {
             // regular expression. We'll use strpbrk to find the first of these
             // characters.
             const uint8_t *breakpoints = lex_mode->as.regexp.breakpoints;
-            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
+            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_REGEXP);
             pm_token_buffer_t token_buffer = { 0 };
 
             while (breakpoint != NULL) {
@@ -11707,7 +11707,7 @@ parser_lex(pm_parser_t *parser) {
                 if (is_terminator) {
                     if (lex_mode->as.regexp.nesting > 0) {
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_REGEXP);
                         lex_mode->as.regexp.nesting--;
                         continue;
                     }
@@ -11765,7 +11765,7 @@ parser_lex(pm_parser_t *parser) {
                 // and find the next breakpoint.
                 if (*breakpoint && *breakpoint == lex_mode->as.regexp.incrementor) {
                     parser->current.end = breakpoint + 1;
-                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
+                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_REGEXP);
                     lex_mode->as.regexp.nesting++;
                     continue;
                 }
@@ -11774,12 +11774,12 @@ parser_lex(pm_parser_t *parser) {
                     case '\0':
                         // If we hit a null byte, skip directly past it.
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_REGEXP);
                         break;
                     case '\r':
                         if (peek_at(parser, breakpoint + 1) != '\n') {
                             parser->current.end = breakpoint + 1;
-                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_REGEXP);
                             break;
                         }
 
@@ -11795,7 +11795,7 @@ parser_lex(pm_parser_t *parser) {
                         if (parser->heredoc_end == NULL) {
                             pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(breakpoint - parser->start + 1));
                             parser->current.end = breakpoint + 1;
-                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_REGEXP);
                             break;
                         }
 
@@ -11879,13 +11879,18 @@ parser_lex(pm_parser_t *parser) {
                                     break;
                                 }
 
-                                if (peeked < 0x80) pm_token_buffer_push_byte(&token_buffer, '\\');
+                                /* A backslash before a character that is not
+                                 * ASCII is left out, and the search below reads
+                                 * the character as content like any other. */
+                                if (peeked >= 0x80) break;
+
+                                pm_token_buffer_push_byte(&token_buffer, '\\');
                                 pm_token_buffer_push_escaped(&token_buffer, parser);
                                 break;
                         }
 
                         token_buffer.cursor = parser->current.end;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_REGEXP);
                         break;
                     }
                     case '#': {
@@ -11898,7 +11903,7 @@ parser_lex(pm_parser_t *parser) {
                             // something that looked like an interpolated class or
                             // instance variable like "#@" but wasn't actually. In
                             // this case we'll just skip to the next breakpoint.
-                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_REGEXP);
                             break;
                         }
 
@@ -11945,7 +11950,7 @@ parser_lex(pm_parser_t *parser) {
             // string. We'll use strpbrk to find the first of these characters.
             pm_lex_mode_t *lex_mode = parser->lex_modes.current;
             const uint8_t *breakpoints = lex_mode->as.string.breakpoints;
-            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
 
             // If we haven't found an escape yet, then this buffer will be
             // unallocated since we can refer directly to the source string.
@@ -11957,7 +11962,7 @@ parser_lex(pm_parser_t *parser) {
                 if (lex_mode->as.string.incrementor != '\0' && *breakpoint == lex_mode->as.string.incrementor) {
                     lex_mode->as.string.nesting++;
                     parser->current.end = breakpoint + 1;
-                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
                     continue;
                 }
 
@@ -11988,7 +11993,7 @@ parser_lex(pm_parser_t *parser) {
                     // to continue on past it.
                     if (lex_mode->as.string.nesting > 0) {
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
                         lex_mode->as.string.nesting--;
                         continue;
                     }
@@ -12040,12 +12045,12 @@ parser_lex(pm_parser_t *parser) {
                     case '\0':
                         // Skip directly past the null character.
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
                         break;
                     case '\r':
                         if (peek_at(parser, breakpoint + 1) != '\n') {
                             parser->current.end = breakpoint + 1;
-                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
                             break;
                         }
 
@@ -12065,7 +12070,7 @@ parser_lex(pm_parser_t *parser) {
                         if (parser->heredoc_end == NULL) {
                             pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(breakpoint - parser->start + 1));
                             parser->current.end = breakpoint + 1;
-                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
                             break;
                         }
 
@@ -12146,7 +12151,7 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         token_buffer.cursor = parser->current.end;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
                         break;
                     }
                     case '#': {
@@ -12157,7 +12162,7 @@ parser_lex(pm_parser_t *parser) {
                             // looked like an interpolated class or instance variable like "#@"
                             // but wasn't actually. In this case we'll just skip to the next
                             // breakpoint.
-                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
                             break;
                         }
 
@@ -12292,12 +12297,12 @@ parser_lex(pm_parser_t *parser) {
 
             pm_heredoc_quote_t quote = heredoc_lex_mode->quote;
             /* Single-quoted heredocs preserve bytes without validating them. */
-            bool validate = quote != PM_HEREDOC_QUOTE_SINGLE;
+            pm_strpbrk_mode_t mode = (quote == PM_HEREDOC_QUOTE_SINGLE) ? PM_STRPBRK_RAW : PM_STRPBRK_STRING;
             if (quote == PM_HEREDOC_QUOTE_SINGLE) {
                 breakpoints[3] = '\0';
             }
 
-            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, validate);
+            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, mode);
             pm_token_buffer_t token_buffer = { 0 };
             bool was_line_continuation = false;
 
@@ -12306,13 +12311,13 @@ parser_lex(pm_parser_t *parser) {
                     case '\0':
                         // Skip directly past the null character.
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, validate);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, mode);
                         break;
                     case '\r':
                         parser->current.end = breakpoint + 1;
 
                         if (peek_at(parser, breakpoint + 1) != '\n') {
-                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, validate);
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, mode);
                             break;
                         }
 
@@ -12403,7 +12408,7 @@ parser_lex(pm_parser_t *parser) {
                         // Otherwise we hit a newline and it wasn't followed by
                         // a terminator, so we can continue parsing.
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, validate);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, mode);
                         break;
                     }
                     case '\\': {
@@ -12510,7 +12515,7 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         token_buffer.cursor = parser->current.end;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, validate);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, mode);
                         break;
                     }
                     case '#': {
@@ -12522,7 +12527,7 @@ parser_lex(pm_parser_t *parser) {
                             // or instance variable like "#@" but wasn't
                             // actually. In this case we'll just skip to the
                             // next breakpoint.
-                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, validate);
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, mode);
                             break;
                         }
 

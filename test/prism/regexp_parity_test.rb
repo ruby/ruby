@@ -40,6 +40,10 @@ module Ruby::Prism
       "/\xFF[a/", "/)\xFFa/", "/(\xFFa/", "/(?#\xFF)[a/", "/[a\xFF\xFF/", "/[a\xFF/", "/)\xFF/",
       "/a\xFF\#{1}b/", "/\#{1}a\xED\xA0\x80b/", "/[\xFF\#{1}]/",
 
+      # Bytes and escapes in the content that the lexer cannot read.
+      "/(\\x/", "/(\xFF/", "/\\x(/", "/é\\xZa/e", "/é\xFFa/e", "/a\xFF\\xZ(/", "/a\\xZb\xFFc(/",
+      "/a\\\xFFb(/", "/\xE3\x81(/", "/\\u{\xFF}(/", "/\\u{a\xFFb}(/", "/\\u{41 \xFF}/x",
+
       # Encoding modifiers.
       *[
         "abc", "garçon", "\\x80", "gar\\xC3\\xA7on", "gar\\u{E7}on", "abc\\u{FFFFFF}",
@@ -85,30 +89,34 @@ module Ruby::Prism
       "/(a)(?<b>x)\\1/", "/(a)(?<b>x)\\g<1>/",
 
       # Malformed escapes that the lexer reports.
-      "/\\x/", "/\\x(/", "/\\M-\\x(/", "/(\\xZ/", "/a\\xZb/"
+      "/\\x/", "/\\x(/", "/\\M-\\x(/", "/(\\xZ/", "/a\\xZb/",
+
+      # Errors in the content of a regular expression that is matched with =~,
+      # which is validated where its named captures are found.
+      "/(\\xZ/ =~ \"\"", "/(\xFFa/ =~ \"\""
     ].freeze
 
     # Regular expressions where prism does not yet match CRuby. Each one is
     # removed when the stage that it belongs to matches.
     KNOWN_FAILURES = [
-      # The lexer reports each byte that does not begin a character, and leaves
-      # escapes of code points for the preprocessor to validate.
-      "/a(?#ą)b/", "/a # ą\nb/x", "/(?x)a # ą\n/", "/a\xFFb/",
-      "/a\xED\xA0\x80b/", "/a\xED\xB0\x80b/", "/a(?#\xFF)b/", "/a # \xFF\nb/x",
-      "/[\xFF]/", "/garçon\\xC3\\xA7/n", "/\\xC3\\xA7garçon/n", "/\\u{zz}/",
+      # The lexer leaves escapes of code points for the preprocessor to
+      # validate.
+      "/\\u{\xFF}(/", "/\\u{a\xFFb}(/", "/\\u{41 \xFF}/x", "/\\u{zz}/",
 
       # Escapes, comments, and property escapes fix the encoding of the regular
       # expression.
       "/\\p{Alpha}/", "/a\\p{Alpha}/", "/\\P{Alpha}/", "/\\p{Alpha}/n",
-      "/\\351/", "/\\343\\201\\202/", "/(?<ą>a)/", "/(?<a\\xFF>x)/",
+      "/\\ą/", "/\\351/", "/\\343\\201\\202/", "/(?<ą>a)/",
+      "/a(?#ą)b/", "/a # ą\nb/x", "/(?x)a # ą\n/", "/(?<a\\xFF>x)/",
       "/(?<a\xFF>b)/", "/\\p/",
 
       # The encoding modifier is checked against the bytes of the regular
       # expression before its escapes are preprocessed.
-      "/a(?#ą)b/u", "/a(?#ą)b/e", "/garçon/n", "/garçon\\xC3\\xA7/u",
-      "/garçon\\xC3\\xA7/e", "/garçon\\xC3\\xA7/s", "/\\xC3\\xA7garçon/u", "/\\xC3\\xA7garçon/e",
-      "/\\xC3\\xA7garçon/s", "/é\\xFF(/u", "/é\\xFF(/e", "/é\\xFF(/s",
-      "/é\\p{L}/e", "/é[a/e",
+      "/a(?#ą)b/u", "/a(?#ą)b/e", "/é\xFFa/e", "/garçon/n",
+      "/garçon\\xC3\\xA7/n", "/garçon\\xC3\\xA7/u", "/garçon\\xC3\\xA7/e", "/garçon\\xC3\\xA7/s",
+      "/\\xC3\\xA7garçon/n", "/\\xC3\\xA7garçon/u", "/\\xC3\\xA7garçon/e", "/\\xC3\\xA7garçon/s",
+      "/é\\xFF(/u", "/é\\xFF(/e", "/é\\xFF(/s", "/é\\p{L}/e",
+      "/é[a/e",
 
       # Escaped bytes are preprocessed into the characters that they form.
       "/\\M-\\C-?/", "/\\x00\\M-\\C-?/", "/\\x7F\\M-\\C-?/", "/\\x80\\M-\\C-?/",
@@ -124,19 +132,18 @@ module Ruby::Prism
 
       # The literal parts of a regular expression with interpolation are checked
       # and preprocessed.
-      "/a\xFF\#{1}b/", "/\#{1}a\xED\xA0\x80b/", "/[\xFF\#{1}]/", "/\\xFF\#{1}/",
-      "/a\#{1}\\xE3\\x81/", "/\\u{3042}\#{1}\\xE3\\x81\\x82/", "/é\#{1}/n", "/é\#{1}/e",
-      "/\\xE3\#{1}\\x81\\x82/", "/\\M-a\#{1}/", "/\\xE3\#{\"\\x81\\x82\"}/", "/a # \\xFF\n\#{1}/x",
-      "/a\#{\"b\"}(/",
+      "/\\xFF\#{1}/", "/a\#{1}\\xE3\\x81/", "/\\u{3042}\#{1}\\xE3\\x81\\x82/", "/é\#{1}/n",
+      "/é\#{1}/e", "/\\xE3\#{1}\\x81\\x82/", "/\\M-a\#{1}/", "/\\xE3\#{\"\\x81\\x82\"}/",
+      "/a # \\xFF\n\#{1}/x", "/a\#{\"b\"}(/",
 
       # Errors in the pattern.
-      "/\\ą/", "/(?#\\xFF/", "/\xFF[a/", "/(?#\xFF)[a/",
-      "/[a\xFF\xFF/", "/[a\xFF/", "/é[a/n", "/\\xE9[a/",
-      "/\\xC3\\d[a/", "/\\xFF[a/n", "/[a/", "/[[a]/",
-      "/[a\\]/", "/a{3,2}/", "/x{100001}/", "/x{1,100001}/",
-      "/[b-a]/", "/[a-\\d]/", "/[\\d-a]/", "/(?<1a>x)/",
-      "/(?i-/", "/(?i/", "/[[:foo:]]/", "/(?(1)a|b|c)/",
-      "/\\k<b>/", "/\\k<a>(?<a>x)/", "/(?<a>x)\\k<b>/", "/\\k<0>/",
+      "/(?#\\xFF/", "/\xFF[a/", "/(?#\xFF)[a/", "/[a\xFF\xFF/",
+      "/[a\xFF/", "/é[a/n", "/\\xE9[a/", "/\\xC3\\d[a/",
+      "/\\xFF[a/n", "/[a/", "/[[a]/", "/[a\\]/",
+      "/a{3,2}/", "/x{100001}/", "/x{1,100001}/", "/[b-a]/",
+      "/[a-\\d]/", "/[\\d-a]/", "/(?<1a>x)/", "/(?i-/",
+      "/(?i/", "/[[:foo:]]/", "/(?(1)a|b|c)/", "/\\k<b>/",
+      "/\\k<a>(?<a>x)/", "/(?<a>x)\\k<b>/", "/\\k<0>/",
 
       # Property escapes are checked against the encoding of the pattern.
       "/\\p{Hiragana}/", "/\\p{L}/", "/\\x80\\p{L}/", "/\\xE9\\p{Hiragana}/",
@@ -149,7 +156,8 @@ module Ruby::Prism
 
       # Errors in the pattern are followed by the regular expression, as CRuby
       # writes them.
-      "/)\xFFa/", "/(\xFFa/", "/)\xFF/", "/é(/n",
+      "/)\xFFa/", "/(\xFFa/", "/)\xFF/", "/(\\x/",
+      "/(\xFF/", "/a\\\xFFb(/", "/\xE3\x81(/", "/é(/n",
       "/é(/u", "/é(/e", "/é(/s", "/é\\xFF(/n",
       "/\\uzz/", "/\\xE9(/", "/)\\p{Hiragana}/", "/(?\\!x)/",
       "/\\あ(/", "/a\\/b(/", "/\\\nx(/", "/\\xE3\\x81\\x82(/",
@@ -157,7 +165,7 @@ module Ruby::Prism
       "/+/", "/?/", "/(?<>a)/", "/(/",
       "/(|/", "/(?</", "/(?/", "/(?#/",
       "/(?P/", "/)/", "/a(/x", "/(?x)a # \\xFF\n(/",
-      "/(?z)/", "/\\M-\\x(/"
+      "/(?z)/", "/\\M-\\x(/", "/(\xFFa/ =~ \"\""
     ].freeze
 
     # The encodings that ENCODING_CASES are compared in by default, which have
@@ -243,11 +251,14 @@ module Ruby::Prism
       iseq = RubyVM::InstructionSequence.compile_parsey(source)
       Result.new([], interpolated?(source) ? nil : iseq.eval.encoding)
     rescue SyntaxError => error
+      # The message is split as bytes, since the line of source that follows an
+      # error from the lexer may hold bytes that are invalid in its encoding.
+      encoding = error.message.encoding
       errors =
-        error.message.split(/\n(?=<compiled>:\d+: )/).map do |message|
+        error.message.b.split(/\n(?=<compiled>:\d+: )/n).map do |message|
           # Errors from the lexer are followed by the line of source that they
           # are on and a caret that points into it.
-          message.sub(/\A<compiled>:\d+: /, "").sub(/\n[^\n]*\n *\^~*\n?\z/, "")
+          message.sub(/\A<compiled>:\d+: /n, "").sub(/\n[^\n]*\n *\^~*\n?\z/n, "").force_encoding(encoding)
         end
 
       Result.new(errors, nil)

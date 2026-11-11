@@ -817,8 +817,8 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser, uint16_t depth) {
 
 /**
  * Check if a byte at the current position is a non-ASCII byte in a multibyte
- * encoding that produces an invalid character. If so, emit an error at the
- * byte location immediately.
+ * encoding that produces an invalid character, which the lexer has already
+ * reported. If so, record it.
  */
 static void
 pm_regexp_parse_invalid_multibyte(pm_regexp_parser_t *parser, const uint8_t *cursor) {
@@ -829,7 +829,6 @@ pm_regexp_parse_invalid_multibyte(pm_regexp_parser_t *parser, const uint8_t *cur
             parser->cursor += width - 1;
         } else if (width == 0) {
             parser->has_invalid_multibyte = true;
-            pm_regexp_parse_error_format(parser, cursor, cursor + 1, PM_ERR_INVALID_MULTIBYTE_CHAR, parser->encoding->name);
         }
     }
 }
@@ -1080,7 +1079,6 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                         if (width == 0) {
                             if (*parser->cursor >= 0x80) {
                                 parser->has_invalid_multibyte = true;
-                                pm_regexp_parse_error_format(parser, parser->cursor, parser->cursor + 1, PM_ERR_INVALID_MULTIBYTE_CHAR, parser->encoding->name);
                                 parser->cursor++;
                                 continue;
                             }
@@ -1307,10 +1305,9 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
             if (width == 0) {
                 if (*parser->cursor >= 0x80 && parser->encoding_changed) {
                     if (pm_encoding_multibyte_p(parser->encoding)) {
-                        // Invalid multibyte character in a multibyte encoding.
-                        // Emit the error at the byte location immediately.
+                        // Invalid multibyte character in a multibyte encoding,
+                        // which the lexer has already reported.
                         parser->has_invalid_multibyte = true;
-                        pm_regexp_parse_error_format(parser, parser->cursor, parser->cursor + 1, PM_ERR_INVALID_MULTIBYTE_CHAR, parser->encoding->name);
                     } else {
                         // Non-ASCII byte in a single-byte encoding (e.g.,
                         // US-ASCII). Count it for later error reporting.
@@ -1460,7 +1457,7 @@ pm_regexp_format_for_error(pm_buffer_t *buffer, const pm_encoding_t *encoding, c
  * 1. No escape-set encoding (explicit_encoding == NULL):
  *    a. ASCII-only content: validate property escapes, return forced US-ASCII
  *       for /n or the modifier flags for others.
- *    b. US-ASCII source with non-ASCII literals: emit per-byte errors.
+ *    b. US-ASCII source with non-ASCII literals: the lexer has reported them.
  *    c. Source encoding differs from modifier encoding: emit mismatch error.
  *
  * 2. Mixed \u and \x escapes: emit the appropriate conflict error depending
@@ -1492,11 +1489,7 @@ pm_regexp_validate_encoding_modifier(pm_regexp_parser_t *parser, bool ascii_only
             return modifier == 'n' ? PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING : flags;
         }
 
-        if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) {
-            for (uint32_t i = 0; i < parser->non_ascii_literal_count; i++) {
-                PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_INVALID_MULTIBYTE_CHAR, parser->encoding->name);
-            }
-        } else if (parser->encoding != modifier_encoding) {
+        if (parser->encoding != PM_ENCODING_US_ASCII_ENTRY && parser->encoding != modifier_encoding) {
             PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, modifier, parser->encoding->name);
 
             if (modifier == 'n' && !ascii_only) {
@@ -1550,19 +1543,18 @@ pm_regexp_validate_encoding_modifier(pm_regexp_parser_t *parser, bool ascii_only
  *
  * 1. If a modifier (/n, /u, /e, /s) is present, delegate to
  *    pm_regexp_validate_encoding_modifier.
- * 2. Invalid multibyte chars or unicode ranges: suppress further checks (errors
- *    were already emitted during parsing).
- * 3. US-ASCII source with non-ASCII literals: emit per-byte errors.
- * 4. ASCII-only content: return forced US-ASCII (or forced UTF-8 if \p{...}).
- * 5. Escape-set encoding present: validate hex escapes against the target
+ * 2. Invalid multibyte chars or unicode ranges: suppress further checks (the
+ *    lexer has already reported invalid multibyte chars).
+ * 3. ASCII-only content: return forced US-ASCII (or forced UTF-8 if \p{...}).
+ * 4. Escape-set encoding present: validate hex escapes against the target
  *    encoding, handle mixed \u + \x conflicts, and return the appropriate
  *    forced encoding flag.
  */
 static pm_node_flags_t
 pm_regexp_validate_encoding(pm_regexp_parser_t *parser, bool ascii_only, pm_node_flags_t flags, const char *source_start, int source_length) {
 
-    // Invalid multibyte characters suppress further validation.
-    // Errors were already emitted at the byte locations during parsing.
+    // Invalid multibyte characters suppress further validation. The lexer
+    // has already reported each one at its byte.
     if (parser->has_invalid_multibyte) {
         return flags;
     }
@@ -1584,13 +1576,6 @@ pm_regexp_validate_encoding(pm_regexp_parser_t *parser, bool ascii_only, pm_node
     }
     if (flags & PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
         return pm_regexp_validate_encoding_modifier(parser, ascii_only, flags, 's', PM_ENCODING_WINDOWS_31J_ENTRY, source_start, source_length);
-    }
-
-    // No modifier — check for non-ASCII literals in US-ASCII encoding.
-    if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY && parser->explicit_encoding == NULL && !ascii_only) {
-        for (uint32_t i = 0; i < parser->non_ascii_literal_count; i++) {
-            PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_INVALID_MULTIBYTE_CHAR, parser->encoding->name);
-        }
     }
 
     // ASCII-only regexps get downgraded to US-ASCII, unless property escapes

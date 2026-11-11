@@ -10,6 +10,31 @@
 #include <stdint.h>
 
 /*
+ * The kind of content that pm_strpbrk searches, which decides how it reports
+ * the bytes it skips over that do not begin a character in the encoding of the
+ * source.
+ */
+typedef enum {
+    /*
+     * String content, where each run of such bytes is one error, and each
+     * character that is not ASCII sets the explicit encoding of the string.
+     */
+    PM_STRPBRK_STRING,
+
+    /*
+     * Regular expression content, where each such byte is its own error. The
+     * encoding of a regular expression is resolved after it is lexed.
+     */
+    PM_STRPBRK_REGEXP,
+
+    /*
+     * Content that is kept byte for byte, like the body of a single-quoted
+     * heredoc, where no byte is an error and none sets the explicit encoding.
+     */
+    PM_STRPBRK_RAW
+} pm_strpbrk_mode_t;
+
+/*
  * Here we have rolled our own version of strpbrk. The standard library strpbrk
  * has undefined behavior when the source string is not null-terminated. We want
  * to support strings that are not null-terminated because pm_parse does not
@@ -28,6 +53,6 @@
  * Shift-JIS, the backslash character can be a trailing byte. In that case we
  * need to take a slower path and iterate one multi-byte character at a time.
  */
-const uint8_t * pm_strpbrk(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length, bool validate);
+const uint8_t * pm_strpbrk(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length, pm_strpbrk_mode_t mode);
 
 #endif
