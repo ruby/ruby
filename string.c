@@ -1611,8 +1611,9 @@ rb_str_no_gvl_safe_acquire(VALUE orig)
 
     /* If the string is embedded then we want to create a copy that is heap
      * allocated. If the string is shared then the shared root must be
-     * embedded, so we want to create a copy. */
-    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED)) {
+     * embedded, so we want to create a copy. If the string is STR_TMPLOCK
+     * then we cannot modify it. */
+    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_TMPLOCK)) {
         RSTRING(str)->as.heap.ptr = rb_xmalloc_mul_add_mul(sizeof(char), capa, sizeof(char), TERM_LEN(orig));
         memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), capa);
     }
@@ -1691,6 +1692,7 @@ heap_str_make_shared(VALUE klass, VALUE orig, int termlen)
     RUBY_ASSERT(!STR_EMBED_P(orig));
     RUBY_ASSERT(!STR_SHARED_P(orig));
     RUBY_ASSERT(!RB_OBJ_SHAREABLE_P(orig));
+    RUBY_ASSERT(!FL_TEST_RAW(orig, STR_TMPLOCK));
 
     VALUE str = str_alloc_heap(klass);
     STR_SET_LEN(str, RSTRING_LEN(orig));
@@ -1750,7 +1752,7 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
             TERM_FILL(RSTRING_END(str), TERM_LEN(orig));
         }
         else {
-            if (RB_OBJ_SHAREABLE_P(orig)) {
+            if (RB_OBJ_SHAREABLE_P(orig) || FL_TEST_RAW(orig, STR_TMPLOCK)) {
                 str = str_enc_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig), enc);
             }
             else {

@@ -992,6 +992,17 @@ class TestString < Test::Unit::TestCase
     assert_raise(FrozenError) { str.set_iv }
   end
 
+  def test_dup_with_locktmp
+    # Expected to be heap-allocated
+    str = S("x" * 1024)
+    # One of the methods that use rb_str_locktmp()
+    IO::Buffer.for(str) do |buffer|
+      dup = str.dup
+      buffer.set_string("y")
+      assert_equal("x" * 1024, dup)
+    end
+  end
+
   def test_each
     verbose, $VERBOSE = $VERBOSE, nil
 
