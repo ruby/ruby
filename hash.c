@@ -140,18 +140,13 @@ int
 rb_any_cmp(VALUE a, VALUE b)
 {
     if (a == b) return 0;
-    if (RB_TYPE_P(a, T_STRING) && RBASIC(a)->klass == rb_cString) {
-        if (RB_TYPE_P(b, T_STRING) && RBASIC(b)->klass == rb_cString) {
-            return rb_str_hash_cmp(a, b);
-        }
-        return -1;
+    if (RB_TYPE_P(a, T_STRING) && RBASIC(a)->klass == rb_cString &&
+        RB_TYPE_P(b, T_STRING) && RBASIC(b)->klass == rb_cString) {
+        return rb_str_hash_cmp(a, b);
     }
     if (UNDEF_P(a) || UNDEF_P(b)) return -1;
-    if (SYMBOL_P(a)) {
-        if (SYMBOL_P(b)) {
-            return a != b;
-        }
-        return -1;
+    if (SYMBOL_P(a) && SYMBOL_P(b)) {
+        return a != b;
     }
 
     return !rb_eql(a, b);
