@@ -214,6 +214,8 @@ SHARABLE_SUBSTRING_P(VALUE str, rb_len_t beg, rb_len_t len)
 #if SHARABLE_MIDDLE_SUBSTRING
     return true;
 #else
+    if (FL_TEST_RAW(str, STR_TMPLOCK))
+        return false;
     rb_len_t end = beg + len;
     rb_len_t source_len = RSTRING_LEN(str);
     return end == source_len || zero_filled(RSTRING_PTR(str) + end, TERM_LEN(str));
@@ -2950,12 +2952,13 @@ str_fill_term(VALUE str, char *s, rb_len_t len, int termlen)
 void
 rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int termlen)
 {
+    rb_check_lockedtmp(str);
+
     rb_len_t capa = str_capacity(str, oldtermlen) + oldtermlen;
     rb_len_t len = RSTRING_LEN(str);
 
     RUBY_ASSERT(capa >= len);
     if (capa - len < termlen) {
-        rb_check_lockedtmp(str);
         str_make_independent_expand(str, len, 0L, termlen);
     }
     else if (str_dependent_p(str)) {
@@ -2979,6 +2982,8 @@ rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int terml
 static char *
 str_null_check(VALUE str, int *w)
 {
+    rb_check_lockedtmp(str);
+
     char *s = RSTRING_PTR(str);
     rb_len_t len = RSTRING_LEN(str);
     int minlen = 1;
@@ -3012,6 +3017,7 @@ const char *
 rb_str_null_check(VALUE str)
 {
     RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
+    rb_check_lockedtmp(str);
 
     const char *s;
     rb_len_t len;
@@ -3060,6 +3066,7 @@ str_to_cstr(VALUE str)
 char *
 rb_str_fill_terminator(VALUE str, const int newminlen)
 {
+    rb_check_lockedtmp(str);
     char *s = RSTRING_PTR(str);
     rb_len_t len = RSTRING_LEN(str);
     return str_fill_term(str, s, len, newminlen);
