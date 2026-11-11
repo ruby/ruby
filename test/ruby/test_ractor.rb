@@ -1526,6 +1526,18 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_move_string_with_locktmp
+    assert_ractor(<<~'RUBY', timeout: 60)
+      r = Ractor.new {}
+      str = "x" * 100
+      # One of the methods that use rb_str_locktmp()
+      IO::Buffer.for(str) do
+        assert_raise(Ractor::Error) { r.send(str, move: true) }
+      end
+      r.value
+    RUBY
+  end
+
   # A frozen array is handed out as a shared root as it is, so a subseq of an embedded
   # one reads the elements out of its slot.  Moving the original must leave that slot
   # alone, and must not let it move afterwards: the sharer has no other copy.

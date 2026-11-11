@@ -2741,6 +2741,12 @@ rb_str_format_m(VALUE str, VALUE arg)
     return rb_str_format(1, &arg, str);
 }
 
+bool
+rb_str_lockedtmp_p(VALUE str)
+{
+    return FL_TEST_RAW(str, STR_TMPLOCK);
+}
+
 static inline void
 rb_check_lockedtmp(VALUE str)
 {

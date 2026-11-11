@@ -3173,6 +3173,10 @@ move_preflight(VALUE obj, struct move_preflight_ctx *ctx)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
+        if (rb_str_lockedtmp_p(obj)) {
+            rb_raise(rb_eRactorError, "can not move a temporarily locked String");
+        }
+        break;
       case T_OBJECT:
         break;                       /* children are ivars only (below) */
       case T_MATCH: {
