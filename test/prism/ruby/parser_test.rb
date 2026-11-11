@@ -234,7 +234,11 @@ module Ruby::Prism
         s(:block,
           s(:lambda),
             s(:args,
-              s(:blocknilarg)), nil))
+              s(:blocknilarg)), nil),
+        s(:def, :foo,
+          s(:args,
+            s(:blocknilarg)),
+          s(:send, nil, :bar)))
       end
     end
 
