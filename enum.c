@@ -4965,7 +4965,7 @@ longest_slice_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     }
     else {
         ENUM_WANT_SVALUE();
-        matches = !NIL_P(i);
+        matches = RTEST(i);
     }
 
     memo = MEMO_FOR(struct longest_slice_memo, args);
@@ -4992,10 +4992,11 @@ longest_slice_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  sequence of matching entries. If several sequences have the same length,
  *  returns the range for the first one. If no entries match, returns <tt>0...0</tt>.
  *
- *  With no block, matches entries that are not +nil+ (including +false+):
+ *  With no block, matches truthy entries (neither +nil+ nor +false+):
  *
  *    [nil, 'a', 'b', nil, 'c'].longest_slice # => 1...3
- *    [false, false, nil].longest_slice      # => 0...2
+ *    [false, 0, []].longest_slice           # => 1...3
+ *    [false, false, nil].longest_slice      # => 0...0
  *    [nil, nil].longest_slice               # => 0...0
  *    [].longest_slice                      # => 0...0
  *
