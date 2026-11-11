@@ -91,13 +91,11 @@ module Ruby::Prism
     # Regular expressions where prism does not yet match CRuby. Each one is
     # removed when the stage that it belongs to matches.
     KNOWN_FAILURES = [
-      # The lexer reports invalid characters and malformed escapes, and stops
-      # the regular expression from being validated after one.
-      "/\\ą/", "/a(?#ą)b/", "/a # ą\nb/x", "/(?x)a # ą\n/",
-      "/a\xFFb/", "/a\xED\xA0\x80b/", "/a\xED\xB0\x80b/", "/a(?#\xFF)b/",
-      "/a # \xFF\nb/x", "/[\xFF]/", "/garçon\\xC3\\xA7/n", "/\\xC3\\xA7garçon/n",
-      "/\\u{1234567}/", "/\\u{zz}/", "/\\uzz/", "/\\x(/",
-      "/\\M-\\x(/", "/(\\xZ/",
+      # The lexer reports each byte that does not begin a character, and leaves
+      # escapes of code points for the preprocessor to validate.
+      "/a(?#ą)b/", "/a # ą\nb/x", "/(?x)a # ą\n/", "/a\xFFb/",
+      "/a\xED\xA0\x80b/", "/a\xED\xB0\x80b/", "/a(?#\xFF)b/", "/a # \xFF\nb/x",
+      "/[\xFF]/", "/garçon\\xC3\\xA7/n", "/\\xC3\\xA7garçon/n", "/\\u{zz}/",
 
       # Escapes, comments, and property escapes fix the encoding of the regular
       # expression.
@@ -109,9 +107,8 @@ module Ruby::Prism
       # expression before its escapes are preprocessed.
       "/a(?#ą)b/u", "/a(?#ą)b/e", "/garçon/n", "/garçon\\xC3\\xA7/u",
       "/garçon\\xC3\\xA7/e", "/garçon\\xC3\\xA7/s", "/\\xC3\\xA7garçon/u", "/\\xC3\\xA7garçon/e",
-      "/\\xC3\\xA7garçon/s", "/é(/u", "/é(/e", "/é(/s",
-      "/é\\xFF(/u", "/é\\xFF(/e", "/é\\xFF(/s", "/é\\p{L}/e",
-      "/é[a/e",
+      "/\\xC3\\xA7garçon/s", "/é\\xFF(/u", "/é\\xFF(/e", "/é\\xFF(/s",
+      "/é\\p{L}/e", "/é[a/e",
 
       # Escaped bytes are preprocessed into the characters that they form.
       "/\\M-\\C-?/", "/\\x00\\M-\\C-?/", "/\\x7F\\M-\\C-?/", "/\\x80\\M-\\C-?/",
@@ -133,9 +130,9 @@ module Ruby::Prism
       "/a\#{\"b\"}(/",
 
       # Errors in the pattern.
-      "/(?#\\xFF/", "/\xFF[a/", "/(?#\xFF)[a/", "/[a\xFF\xFF/",
-      "/[a\xFF/", "/é[a/n", "/\\xE9[a/", "/\\xC3\\d[a/",
-      "/\\xFF[a/n", "/(?P/", "/[a/", "/[[a]/",
+      "/\\ą/", "/(?#\\xFF/", "/\xFF[a/", "/(?#\xFF)[a/",
+      "/[a\xFF\xFF/", "/[a\xFF/", "/é[a/n", "/\\xE9[a/",
+      "/\\xC3\\d[a/", "/\\xFF[a/n", "/[a/", "/[[a]/",
       "/[a\\]/", "/a{3,2}/", "/x{100001}/", "/x{1,100001}/",
       "/[b-a]/", "/[a-\\d]/", "/[\\d-a]/", "/(?<1a>x)/",
       "/(?i-/", "/(?i/", "/[[:foo:]]/", "/(?(1)a|b|c)/",
@@ -153,12 +150,14 @@ module Ruby::Prism
       # Errors in the pattern are followed by the regular expression, as CRuby
       # writes them.
       "/)\xFFa/", "/(\xFFa/", "/)\xFF/", "/é(/n",
-      "/é\\xFF(/n", "/\\xE9(/", "/)\\p{Hiragana}/", "/(?\\!x)/",
+      "/é(/u", "/é(/e", "/é(/s", "/é\\xFF(/n",
+      "/\\uzz/", "/\\xE9(/", "/)\\p{Hiragana}/", "/(?\\!x)/",
       "/\\あ(/", "/a\\/b(/", "/\\\nx(/", "/\\xE3\\x81\\x82(/",
       "/\\343\\201\\202(/", "%r{(?\\}x)}", "/[]/", "/*/",
       "/+/", "/?/", "/(?<>a)/", "/(/",
       "/(|/", "/(?</", "/(?/", "/(?#/",
-      "/)/", "/a(/x", "/(?x)a # \\xFF\n(/", "/(?z)/"
+      "/(?P/", "/)/", "/a(/x", "/(?x)a # \\xFF\n(/",
+      "/(?z)/", "/\\M-\\x(/"
     ].freeze
 
     # The encodings that ENCODING_CASES are compared in by default, which have
@@ -190,6 +189,15 @@ module Ruby::Prism
     # there are none. The encoding of a regular expression with interpolation
     # depends on the values that are interpolated, so it is not compared.
     Result = Struct.new(:errors, :encoding) do
+      # Whether this result of prism's matches the given result of parse.y's.
+      # Ruby::Prism keeps validating after an error, so it may report extra errors as
+      # long as it reports each one that parse.y does. Where parse.y reports
+      # none, prism must report none and give the same encoding.
+      def matches?(expected)
+        return self == expected if expected.errors.empty?
+        expected.errors.tally.all? { |message, count| errors.count(message) >= count }
+      end
+
       def to_s
         errors.empty? ? "encoding #{encoding&.name || "not compared"}" : "errors #{errors.inspect}"
       end
@@ -210,7 +218,7 @@ module Ruby::Prism
           source = "# encoding: #{encoding.name}\n#{regexp}".b
           expected = parsey_result(source)
           actual = prism_result(source)
-          next if expected == actual
+          next if actual.matches?(expected)
 
           "  #{encoding.name}:\n    parse.y: #{expected}\n    prism:   #{actual}"
         end
