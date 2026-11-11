@@ -5525,26 +5525,27 @@ env_encoding(void)
 #endif
 }
 
+/*
+ * Builds the ENV String from bytes copied out of environ.  This can
+ * transcode to default_internal, which can autoload a transcoder, so it
+ * must not be called under ENV_LOCKING().
+ */
 static VALUE
-env_enc_str_new(const char *ptr, rb_len_t len, rb_encoding *enc)
+env_str_encode(VALUE raw, rb_encoding *enc)
 {
-    VALUE str = rb_external_str_new_with_enc(ptr, len, enc);
-
+    if (NIL_P(raw)) return Qnil;
+    VALUE str = rb_external_str_new_with_enc(RSTRING_PTR(raw), RSTRING_LEN(raw), enc);
+    RB_GC_GUARD(raw);
     rb_obj_freeze(str);
     return str;
 }
 
-static VALUE
-env_str_new(const char *ptr, rb_len_t len, rb_encoding *enc)
+static void
+env_ary_encode(VALUE ary, rb_encoding *enc)
 {
-    return env_enc_str_new(ptr, len, enc);
-}
-
-static VALUE
-env_str_new2(const char *ptr, rb_encoding *enc)
-{
-    if (!ptr) return Qnil;
-    return env_str_new(ptr, strlen(ptr), enc);
+    for (long i = 0; i < RARRAY_LEN(ary); i++) {
+        RARRAY_ASET(ary, i, env_str_encode(RARRAY_AREF(ary, i), enc));
+    }
 }
 
 static VALUE
@@ -5554,9 +5555,9 @@ getenv_with_lock(const char *name)
     rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         const char *val = getenv(name);
-        ret = env_str_new2(val, enc);
+        ret = val ? rb_str_new_cstr(val) : Qnil;
     }
-    return ret;
+    return env_str_encode(ret, enc);
 }
 
 static bool
@@ -6029,7 +6030,7 @@ env_keys(int raw)
             if (s) {
                 const char *p = *env;
                 size_t l = s - p;
-                VALUE e = raw ? rb_utf8_str_new(p, l) : env_enc_str_new(p, l, enc);
+                VALUE e = raw ? rb_utf8_str_new(p, l) : rb_str_new(p, l);
                 rb_ary_push(ary, e);
             }
             env++;
@@ -6037,6 +6038,7 @@ env_keys(int raw)
         FREE_ENVIRON(environ);
     }
 
+    if (!raw) env_ary_encode(ary, enc);
     return ary;
 }
 
@@ -6121,13 +6123,14 @@ env_values(void)
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_ary_push(ary, env_str_new2(s+1, enc));
+                rb_ary_push(ary, rb_str_new_cstr(s+1));
             }
             env++;
         }
         FREE_ENVIRON(environ);
     }
 
+    env_ary_encode(ary, enc);
     return ary;
 }
 
@@ -6214,13 +6217,15 @@ env_each_pair(VALUE ehash)
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_ary_push(ary, env_str_new(*env, s-*env, enc));
-                rb_ary_push(ary, env_str_new2(s+1, enc));
+                rb_ary_push(ary, rb_str_new(*env, s-*env));
+                rb_ary_push(ary, rb_str_new_cstr(s+1));
             }
             env++;
         }
         FREE_ENVIRON(environ);
     }
+
+    env_ary_encode(ary, enc);
 
     if (rb_block_pair_yield_optimizable()) {
         for (i=0; i<RARRAY_LEN(ary); i+=2) {
@@ -6530,25 +6535,37 @@ static VALUE
 env_inspect(VALUE _)
 {
     VALUE str = rb_str_buf_new2("{");
+    VALUE ary = rb_ary_new();
     rb_encoding *enc = env_encoding();
 
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
             const char *s = strchr(*env, '=');
-
-            if (env != environ) {
-                rb_str_buf_cat2(str, ", ");
-            }
             if (s) {
-                rb_str_buf_append(str, rb_str_inspect(env_enc_str_new(*env, s-*env, enc)));
-                rb_str_buf_cat2(str, " => ");
-                s++;
-                rb_str_buf_append(str, rb_str_inspect(env_enc_str_new(s, strlen(s), enc)));
+                rb_ary_push(ary, rb_str_new(*env, s-*env));
+                rb_ary_push(ary, rb_str_new_cstr(s+1));
+            }
+            else {
+                /* still gets a separator */
+                rb_ary_push(ary, Qnil);
+                rb_ary_push(ary, Qnil);
             }
             env++;
         }
         FREE_ENVIRON(environ);
+    }
+
+    env_ary_encode(ary, enc);
+    for (long i = 0; i < RARRAY_LEN(ary); i += 2) {
+        if (i > 0) {
+            rb_str_buf_cat2(str, ", ");
+        }
+        if (!NIL_P(RARRAY_AREF(ary, i))) {
+            rb_str_buf_append(str, rb_str_inspect(RARRAY_AREF(ary, i)));
+            rb_str_buf_cat2(str, " => ");
+            rb_str_buf_append(str, rb_str_inspect(RARRAY_AREF(ary, i+1)));
+        }
     }
 
     rb_str_buf_cat2(str, "}");
@@ -6576,14 +6593,17 @@ env_to_a(VALUE _)
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_ary_push(ary, rb_assoc_new(env_str_new(*env, s-*env, enc),
-                                              env_str_new2(s+1, enc)));
+                rb_ary_push(ary, rb_assoc_new(rb_str_new(*env, s-*env),
+                                              rb_str_new_cstr(s+1)));
             }
             env++;
         }
         FREE_ENVIRON(environ);
     }
 
+    for (long i = 0; i < RARRAY_LEN(ary); i++) {
+        env_ary_encode(RARRAY_AREF(ary, i), enc);
+    }
     return ary;
 }
 
@@ -6833,7 +6853,7 @@ env_key(VALUE dmy, VALUE value)
             if (s++) {
                 rb_len_t len = strlen(s);
                 if (RSTRING_LEN(value) == len && strncmp(s, RSTRING_PTR(value), len) == 0) {
-                    str = env_str_new(*env, s-*env-1, enc);
+                    str = rb_str_new(*env, s-*env-1);
                     break;
                 }
             }
@@ -6842,7 +6862,7 @@ env_key(VALUE dmy, VALUE value)
         FREE_ENVIRON(environ);
     }
 
-    return str;
+    return env_str_encode(str, enc);
 }
 
 static inline size_t
@@ -6859,23 +6879,28 @@ environ_size(char **env)
 static VALUE
 env_to_hash(void)
 {
-    VALUE hash;
+    VALUE ary;
 
     rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
-        hash = rb_hash_new_capa(environ_size(env));
+        ary = rb_ary_new_capa(environ_size(env) * 2);
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_hash_aset(hash, env_str_new(*env, s-*env, enc),
-                             env_str_new2(s+1, enc));
+                rb_ary_push(ary, rb_str_new(*env, s-*env));
+                rb_ary_push(ary, rb_str_new_cstr(s+1));
             }
             env++;
         }
         FREE_ENVIRON(environ);
     }
 
+    VALUE hash = rb_hash_new_capa(RARRAY_LEN(ary) / 2);
+    for (long i = 0; i < RARRAY_LEN(ary); i += 2) {
+        rb_hash_aset(hash, env_str_encode(RARRAY_AREF(ary, i), enc),
+                     env_str_encode(RARRAY_AREF(ary, i+1), enc));
+    }
     return hash;
 }
 
@@ -7011,29 +7036,27 @@ env_freeze(VALUE self)
 static VALUE
 env_shift(VALUE _)
 {
-    VALUE result = Qnil;
     VALUE key = Qnil;
 
-    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         if (*env) {
             const char *p = *env;
             const char *s = strchr(p, '=');
             if (s) {
-                key = env_str_new(p, s-p, enc);
-                VALUE val = env_str_new2(getenv(RSTRING_PTR(key)), enc);
-                result = rb_assoc_new(key, val);
+                key = rb_str_new(p, s-p);
             }
         }
         FREE_ENVIRON(environ);
     }
 
-    if (!NIL_P(key)) {
-        env_delete(key);
-    }
+    if (NIL_P(key)) return Qnil;
 
-    return result;
+    key = env_str_encode(key, env_encoding());
+    VALUE val = getenv_with_lock(RSTRING_PTR(key));
+    env_delete(key);
+
+    return rb_assoc_new(key, val);
 }
 
 /*
