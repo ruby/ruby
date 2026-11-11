@@ -121,6 +121,11 @@ Note: We're only listing outstanding class updates.
 
 * Kernel
 
+    * `Kernel#deep_freeze` is added. It recursively freezes the receiver
+      and all objects reachable from it (instance variables, Array elements,
+      Hash keys and values, Struct members, etc.) by calling `freeze` on each
+      of them. Classes and modules are frozen but not traversed.
+      [[Feature #21962]]
     * `Kernel#autoload_relative` and `Module#autoload_relative` are added.
       These methods work like `autoload`, but resolve the file path relative
       to the file where the method is called, similar to `require_relative`.
