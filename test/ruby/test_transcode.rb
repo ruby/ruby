@@ -1692,6 +1692,27 @@ class TestTranscode < Test::Unit::TestCase
     # encoding, so compare bytes)
     assert_equal("?", "\u{1F600}".encode("CP50220", undef: :replace, replace: "?").b)
     assert_equal("??", "\u{1F600}\u{1F60D}".encode("CP50221", undef: :replace, replace: "?").b)
+
+    # invalid: :replace loops the same way when the replacement is itself an
+    # invalid byte for the encoder; it must terminate rather than spin.
+    assert_raise(Encoding::InvalidByteSequenceError) {
+      "\x8E".b.force_encoding("UTF-8").
+        encode("ISO-2022-JP-KDDI", invalid: :replace, replace: "\x0E".b.force_encoding("UTF-8"))
+    }
+
+    # Progress detection must not mistake genuine rounds for a loop:
+    # an invalid byte replaced by a sequence that is then undefined, handled
+    # by a fallback, still makes progress and must convert, not raise.
+    assert_equal("??", "\x8E\xFF".b.force_encoding("CP51932").
+      encode("CP50220", invalid: :replace, replace: "\e", fallback: ->(_) { "?" }).b)
+    # the same shape with undef: :replace instead of a fallback
+    assert_equal("??", "\x8E\xFF".b.force_encoding("CP51932").
+      encode("CP50220", invalid: :replace, undef: :replace, replace: "?").b)
+    # repeated identical invalid bytes and repeated identical undefined
+    # characters each advance the input, so neither is a loop
+    assert_equal("??", "\xFF\xFF".b.force_encoding("UTF-8").
+      encode("US-ASCII", invalid: :replace, replace: "?"))
+    assert_equal("??", "\u{1F600}\u{1F600}".encode("CP50220", undef: :replace, replace: "?").b)
   end
 
   def test_to_cp50220_partial_output
