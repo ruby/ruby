@@ -5526,16 +5526,40 @@ env_encoding(void)
 }
 
 /*
- * Builds the ENV String from bytes copied out of environ.  This can
- * transcode to default_internal, which can autoload a transcoder, so it
- * must not be called under ENV_LOCKING().
+ * Gives the binary String copied out of environ the encoding
+ * rb_external_str_new_with_enc would have built it with, transcoding to
+ * default_internal when that would have.  Transcoding can autoload a
+ * transcoder, so this must not be called under ENV_LOCKING().
  */
 static VALUE
-env_str_encode(VALUE raw, rb_encoding *enc)
+env_str_encode(VALUE str, rb_encoding *enc)
 {
-    if (NIL_P(raw)) return Qnil;
-    VALUE str = rb_external_str_new_with_enc(RSTRING_PTR(raw), RSTRING_LEN(raw), enc);
-    RB_GC_GUARD(raw);
+    if (NIL_P(str)) return Qnil;
+
+    int eidx = rb_enc_to_index(enc);
+    rb_encoding *ienc = rb_default_internal_encoding();
+
+    if (eidx == rb_ascii8bit_encindex() ||
+        (eidx == rb_usascii_encindex() && !rb_enc_str_asciionly_p(str))) {
+        /* stays ASCII-8BIT */
+    }
+    else if (!ienc || ienc == enc) {
+        rb_enc_associate(str, enc);
+    }
+    else if (rb_enc_asciicompat(enc) && rb_enc_str_asciionly_p(str)) {
+        rb_enc_associate(str, ienc);
+    }
+    else {
+        VALUE conv = rb_enc_str_new(NULL, 0, ienc);
+        if (NIL_P(rb_str_cat_conv_enc_opts(conv, 0, RSTRING_PTR(str), RSTRING_LEN(str), enc, 0, Qnil))) {
+            /* conversion failed, the bytes are kept as-is in the given encoding */
+            rb_enc_associate(str, enc);
+        }
+        else {
+            RB_GC_GUARD(str);
+            str = conv;
+        }
+    }
     rb_obj_freeze(str);
     return str;
 }
