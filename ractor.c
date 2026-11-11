@@ -331,7 +331,6 @@ ractor_mark(void *ptr)
      * still send/value through it after termination, and once a terminated Ractor left
      * both the set and zombie_objspaces (orphan-merged) this marker is its only cover. */
     rb_gc_mark_ctx(&ctx, r->sync.default_port_value);
-    rb_gc_mark_ctx(&ctx, r->sync.reply_port);
     /* A single-objspace impl (mmtk) has no zombie_objspaces and no pin/shref bits, so
      * the root scan cannot reach a terminated Ractor's queue, in-flight payloads or
      * join value; and no shref rule forbids following them from the wrapper. */
