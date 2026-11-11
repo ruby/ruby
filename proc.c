@@ -3056,7 +3056,7 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
     }
 
   /* undef: */
-    vid = ID2SYM(id);
+    if (id) vid = ID2SYM(id);
     rb_name_err_raise("undefined singleton method '%1$s' for '%2$s'",
                       obj, vid);
     UNREACHABLE_RETURN(Qundef);
