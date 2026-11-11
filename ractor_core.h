@@ -49,6 +49,10 @@ struct rb_ractor_sync {
     struct st_table *ports;
     size_t next_port_id;
 
+    // a Ractor::Port kept for internal replies (Qfalse: none yet), busy while one wait uses it
+    VALUE reply_port;
+    bool reply_port_busy;
+
 
     /* The baskets this Ractor holds that are on no queue: one it is building to send,
      * and one it has taken off a queue and is materializing.  A queued basket is rooted

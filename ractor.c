@@ -331,6 +331,7 @@ ractor_mark(void *ptr)
      * still send/value through it after termination, and once a terminated Ractor left
      * both the set and zombie_objspaces (orphan-merged) this marker is its only cover. */
     rb_gc_mark_ctx(&ctx, r->sync.default_port_value);
+    rb_gc_mark_ctx(&ctx, r->sync.reply_port);
     /* A single-objspace impl (mmtk) has no zombie_objspaces and no pin/shref bits, so
      * the root scan cannot reach a terminated Ractor's queue, in-flight payloads or
      * join value; and no shref rule forbids following them from the wrapper. */
@@ -838,6 +839,7 @@ rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
     th->ractor->creating_child_objspace = NULL;
     // requests from the parent's Ractors: their waiters are gone
     shareable_p_requests_atfork(th->ractor);
+    ractor_reply_port_atfork(th->ractor);
     ruby_single_main_ractor = th->ractor;
     th->ractor->status_ = ractor_created;
 
@@ -4516,7 +4518,7 @@ shareable_p_poll(struct class_field_shareable_p *c, rb_atomic_t state)
 
 struct shareable_p_wait {
     struct class_field_shareable_p *c;
-    VALUE port; // Qnil until made; on this stack, so this Ractor's GC keeps it
+    VALUE port; // Qfalse until taken; on this stack, so this Ractor's GC keeps it
     bool done; // the owner has set DONE
 };
 
@@ -4528,7 +4530,7 @@ shareable_p_wait_body(VALUE arg)
     rb_ractor_t *const cr = GET_RACTOR();
     if (cr->sync.ports) {
         // val is registered, so allocating is fine here
-        w->port = ractor_port_new(cr);
+        w->port = ractor_reply_port_acquire(cr);
         c->reply = ractor_reply_basket_new();
         c->port_id = ractor_port_id(RACTOR_PORT_PTR(w->port));
         // the CAS hands reply and port_id to an owner that loses it
@@ -4552,6 +4554,7 @@ shareable_p_wait_release(VALUE arg)
 {
     struct shareable_p_wait *const w = (struct shareable_p_wait *)arg;
     rb_execution_context_t *const ec = GET_EC();
+    bool pending = false; // the owner answered a wait that was given up: its reply may still come
     if (!w->done) {
         // given up: hand c to the owner, unless it has answered already
         struct class_field_shareable_p *const c = w->c;
@@ -4559,12 +4562,13 @@ shareable_p_wait_release(VALUE arg)
             const rb_atomic_t st = RUBY_ATOMIC_LOAD(c->state);
             if (st == SHAREABLE_P_DONE) {
                 shareable_p_free(c);
+                pending = true;
                 break;
             }
             if (RUBY_ATOMIC_CAS(c->state, st, SHAREABLE_P_ABANDONED) == st) break;
         }
     }
-    if (!NIL_P(w->port)) ractor_reply_port_close(ec, w->port);
+    if (RTEST(w->port)) ractor_reply_port_release(ec, rb_ec_ractor_ptr(ec), w->port, pending);
     return Qnil;
 }
 
@@ -4573,7 +4577,7 @@ static bool
 shareable_p_wait(struct class_field_shareable_p *c)
 {
     if (RUBY_ATOMIC_LOAD(c->state) != SHAREABLE_P_DONE) {
-        struct shareable_p_wait w = { c, Qnil };
+        struct shareable_p_wait w = { c, Qfalse };
         rb_ensure(shareable_p_wait_body, (VALUE)&w, shareable_p_wait_release, (VALUE)&w);
     }
     const bool shareable = c->shareable;

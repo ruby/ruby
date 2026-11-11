@@ -734,6 +734,9 @@ ractor_free_all_ports(rb_ractor_t *cr)
 {
     if (cr->sync.ports) {
         st_foreach(cr->sync.ports, ractor_free_all_ports_i, (st_data_t)cr);
+        // the kept reply port goes with them: nothing may mark it once the postmortem GC frees it
+        cr->sync.reply_port = Qfalse;
+        cr->sync.reply_port_busy = false;
         st_free_table(cr->sync.ports);
         cr->sync.ports = NULL;
     }
@@ -922,6 +925,7 @@ ractor_sync_mark(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r)
     VM_ASSERT(world_stopped || r == rb_current_ractor_raw(false));
 
     rb_gc_mark_ctx(ctx, r->sync.default_port_value);
+    rb_gc_mark_ctx(ctx, r->sync.reply_port);
 
     /* Until the value is absorbed this is its only reliable root (Qundef while the
      * Ractor still runs); after Ractor#value returns it, the Ruby side roots it. */
@@ -1011,6 +1015,7 @@ ractor_sync_init(rb_ractor_t *r)
     /* ractor_setup_default_port creates it only after the Ractor joins
      * vm->ractor.set, so a global GC cannot free the rootless port in between. */
     r->sync.default_port_value = Qfalse;
+    r->sync.reply_port = Qfalse;
 
     // legacy
     r->sync.legacy = Qundef;
@@ -1715,6 +1720,40 @@ ractor_reply_port_close(rb_execution_context_t *ec, VALUE port)
     ractor_close_port(ec, cr, rp);
     // close keeps a port while it holds messages: drop a reply that came meanwhile
     while (ractor_get_queue(cr, ractor_port_id(rp), false) && !UNDEF_P(ractor_try_receive(ec, cr, rp)));
+}
+
+// the Ractor's own reply port if no other wait uses it, else a port of this wait's own
+static VALUE
+ractor_reply_port_acquire(rb_ractor_t *cr)
+{
+    if (cr->sync.reply_port_busy) return ractor_port_new(cr);
+    if (!RTEST(cr->sync.reply_port)) cr->sync.reply_port = ractor_port_new(cr);
+    cr->sync.reply_port_busy = true;
+    return cr->sync.reply_port;
+}
+
+// pending: the reply may still come, so the port is closed rather than kept
+static void
+ractor_reply_port_release(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE port, bool pending)
+{
+    if (port != cr->sync.reply_port) {
+        ractor_reply_port_close(ec, port);
+    }
+    else {
+        cr->sync.reply_port_busy = false;
+        if (pending) {
+            cr->sync.reply_port = Qfalse;
+            ractor_reply_port_close(ec, port);
+        }
+    }
+}
+
+// its holder was a thread the child does not have
+static void
+ractor_reply_port_atfork(rb_ractor_t *r)
+{
+    r->sync.reply_port = Qfalse;
+    r->sync.reply_port_busy = false;
 }
 
 static VALUE
