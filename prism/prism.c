@@ -9874,6 +9874,27 @@ pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
 #undef PM_TOKEN_BUFFER_DEFAULT_SIZE
 
 /**
+ * Whether the content of a regular expression keeps the escape of the given
+ * character exactly as it is written in the source. The regular expression
+ * engine reads these escapes itself. The others are line endings, the escapes
+ * that are written as bytes or code points, an escaped character that is not
+ * ASCII, and an escaped terminator that the engine does not read as special,
+ * whose backslash is left out.
+ */
+static PRISM_INLINE bool
+pm_regexp_escape_kept_p(const pm_lex_mode_t *lex_mode, uint8_t peeked) {
+    switch (peeked) {
+        case '\r': case '\n': case 'c': case 'C': case 'M': case 'u': case 'x':
+            return false;
+        case '$': case ')': case '*': case '+': case '.': case '>':
+        case '?': case ']': case '^': case '|': case '}':
+            return true;
+        default:
+            return peeked < 0x80 && peeked != lex_mode->as.regexp.terminator;
+    }
+}
+
+/**
  * Effectively the same thing as pm_strspn_inline_whitespace, but in the case of
  * a tilde heredoc expands out tab characters to the nearest tab boundaries.
  */
@@ -11816,8 +11837,18 @@ parser_lex(pm_parser_t *parser) {
                             break;
                         }
 
-                        pm_token_buffer_escape(parser, &token_buffer);
+                        /* An escape that the content keeps as it is in the
+                         * source needs no copy of the content, so the search
+                         * continues past it. */
                         uint8_t peeked = peek(parser);
+
+                        if (pm_regexp_escape_kept_p(lex_mode, peeked)) {
+                            parser->current.end++;
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_REGEXP);
+                            break;
+                        }
+
+                        pm_token_buffer_escape(parser, &token_buffer);
 
                         switch (peeked) {
                             case '\r':
@@ -11860,32 +11891,15 @@ parser_lex(pm_parser_t *parser) {
 
                                 break;
                             default:
-                                if (lex_mode->as.regexp.terminator == peeked) {
-                                    // Some characters when they are used as the
-                                    // terminator also receive an escape. They are
-                                    // enumerated here.
-                                    switch (peeked) {
-                                        case '$': case ')': case '*': case '+':
-                                        case '.': case '>': case '?': case ']':
-                                        case '^': case '|': case '}':
-                                            pm_token_buffer_push_byte(&token_buffer, '\\');
-                                            break;
-                                        default:
-                                            break;
-                                    }
-
+                                /* The backslash before the terminator is left
+                                 * out. So is one before a character that is not
+                                 * ASCII, which the search below reads as content
+                                 * like any other. */
+                                if (peeked == lex_mode->as.regexp.terminator) {
                                     pm_token_buffer_push_byte(&token_buffer, peeked);
                                     parser->current.end++;
-                                    break;
                                 }
 
-                                /* A backslash before a character that is not
-                                 * ASCII is left out, and the search below reads
-                                 * the character as content like any other. */
-                                if (peeked >= 0x80) break;
-
-                                pm_token_buffer_push_byte(&token_buffer, '\\');
-                                pm_token_buffer_push_escaped(&token_buffer, parser);
                                 break;
                         }
 
