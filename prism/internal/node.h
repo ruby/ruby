@@ -7,8 +7,8 @@
 #include "prism/compiler/inline.h"
 
 #include "prism/arena.h"
+#include "prism/internal/assert.h"
 
-#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -179,7 +179,7 @@ void pm_node_list_prepend_finalized(pm_arena_t *arena, pm_node_list_t *list, pm_
  */
 static PRISM_INLINE pm_node_list_t
 pm_node_list_slice(const pm_node_list_t *list, uint32_t start, uint32_t size) {
-    assert(start + size <= list->size);
+    PRISM_ASSERT(start + size <= list->size);
     return (pm_node_list_t) { .size = size, .nodes = size == 0 ? NULL : list->nodes + start };
 }
 

@@ -2867,7 +2867,7 @@ pm_block_parameters_node_create(pm_parser_t *parser, pm_parameters_node_t *param
     /* Locals only follow an opening token, so they always extend the end of
      * a node that has already started. */
     if (locals->size > 0) {
-        assert(opening != NULL);
+        PRISM_ASSERT(opening != NULL);
         end = PM_NODE_END(locals->nodes[locals->size - 1]);
     }
 
@@ -5560,7 +5560,7 @@ static pm_multi_target_node_t *
 pm_multi_target_node_create(pm_parser_t *parser, pm_multi_targets_t *targets, const pm_token_t *lparen, const pm_token_t *rparen) {
     pm_node_list_t *nodes = &targets->nodes;
     pm_node_list_finalize(&parser->node_chunks, parser->arena, nodes);
-    assert(nodes->size > 0);
+    PRISM_ASSERT(nodes->size > 0);
 
     pm_node_list_t lefts = *nodes;
     pm_node_list_t rights = { 0 };
@@ -5572,7 +5572,7 @@ pm_multi_target_node_create(pm_parser_t *parser, pm_multi_targets_t *targets, co
 
     pm_location_t location;
     if (lparen != NULL) {
-        assert(rparen != NULL);
+        PRISM_ASSERT(rparen != NULL);
         location = PM_LOCATION_INIT_TOKENS(parser, lparen, rparen);
     } else {
         location = PM_LOCATION_INIT_NODES(nodes->nodes[0], nodes->nodes[nodes->size - 1]);
@@ -6943,7 +6943,7 @@ pm_until_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm
  */
 static pm_when_node_t *
 pm_when_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_list_t *conditions, const pm_token_t *then_keyword, pm_statements_node_t *statements) {
-    assert(conditions->size > 0);
+    PRISM_ASSERT(conditions->size > 0);
     pm_node_list_finalize(&parser->node_chunks, parser->arena, conditions);
 
     uint32_t start = PM_TOKEN_START(parser, keyword);
