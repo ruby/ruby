@@ -268,6 +268,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cClass, "allocate", inline_class_allocate);
     annotate!(rb_cClass, "superclass", inline_class_superclass, types::Class.union(types::NilClass));
     annotate!(rb_cInteger, "succ", inline_integer_succ);
+    annotate!(rb_cInteger, "pred", inline_integer_pred);
     annotate!(rb_cInteger, "^", inline_integer_xor);
     annotate!(rb_cInteger, "==", inline_integer_eq);
     annotate!(rb_cInteger, "+", inline_integer_plus);
@@ -813,6 +814,17 @@ fn inline_integer_succ(fun: &mut hir::Function, block: hir::BlockId, recv: hir::
         let left = fun.coerce_to(block, recv, types::Fixnum, state);
         let right = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
         let result = fun.push_insn(block, hir::Insn::FixnumAdd { left, right, state });
+        return Some(result);
+    }
+    None
+}
+
+fn inline_integer_pred(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    if !args.is_empty() { return None; }
+    if fun.likely_a(recv, types::Fixnum, state) {
+        let left = fun.coerce_to(block, recv, types::Fixnum, state);
+        let right = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
+        let result = fun.push_insn(block, hir::Insn::FixnumSub { left, right, state });
         return Some(result);
     }
     None
