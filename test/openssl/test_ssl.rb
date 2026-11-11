@@ -305,6 +305,29 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_socket_add_certificate
+    server_proc = -> sock {
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, OpenSSL::SSL::SSLContext.new)
+      ssl.add_certificate(@svr_cert, @svr_key, [@ca_cert])
+      ssl.accept
+      readwrite_loop(ssl)
+    }
+    start_server_proc(server_proc) { |port|
+      server_connect(port) { |ssl|
+        assert_equal [@svr_cert.subject, @ca_cert.subject],
+          ssl.peer_cert_chain.map(&:subject)
+
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
+    }
+
+    # Invalid
+    IO.pipe { |r, _w|
+      ssl = OpenSSL::SSL::SSLSocket.new(r)
+      assert_raise(ArgumentError) { ssl.add_certificate(@svr_cert, @cli_key) }
+    }
+  end
+
   def test_add_certificate_multiple_certs
     ca2_key = Fixtures.pkey("rsa-3")
     ca2_exts = [

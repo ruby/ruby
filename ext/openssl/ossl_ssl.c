@@ -1379,6 +1379,26 @@ ossl_sslctx_enable_fallback_scsv(VALUE self)
 }
 #endif
 
+static void
+get_cert_and_key(VALUE cert, VALUE key, X509 **x509, EVP_PKEY **pkey)
+{
+    EVP_PKEY *pub_pkey;
+
+    *x509 = GetX509CertPtr(cert);
+    *pkey = GetPrivPKeyPtr(key);
+
+    /*
+     * The reference counter is bumped, and decremented immediately.
+     * X509_get0_pubkey() is only available in OpenSSL >= 1.1.0.
+     */
+    pub_pkey = X509_get_pubkey(*x509);
+    EVP_PKEY_free(pub_pkey);
+    if (!pub_pkey)
+        rb_raise(rb_eArgError, "certificate does not contain public key");
+    if (EVP_PKEY_eq(pub_pkey, *pkey) != 1)
+        rb_raise(rb_eArgError, "public key mismatch");
+}
+
 /*
  * call-seq:
  *    ctx.add_certificate(certificate, pkey [, extra_certs]) -> self
@@ -1421,24 +1441,12 @@ ossl_sslctx_add_certificate(int argc, VALUE *argv, VALUE self)
     SSL_CTX *ctx;
     X509 *x509;
     STACK_OF(X509) *extra_chain = NULL;
-    EVP_PKEY *pkey, *pub_pkey;
+    EVP_PKEY *pkey;
 
     GetSSLCTX(self, ctx);
     rb_scan_args(argc, argv, "21", &cert, &key, &extra_chain_ary);
     rb_check_frozen(self);
-    x509 = GetX509CertPtr(cert);
-    pkey = GetPrivPKeyPtr(key);
-
-    /*
-     * The reference counter is bumped, and decremented immediately.
-     * X509_get0_pubkey() is only available in OpenSSL >= 1.1.0.
-     */
-    pub_pkey = X509_get_pubkey(x509);
-    EVP_PKEY_free(pub_pkey);
-    if (!pub_pkey)
-        rb_raise(rb_eArgError, "certificate does not contain public key");
-    if (EVP_PKEY_eq(pub_pkey, pkey) != 1)
-        rb_raise(rb_eArgError, "public key mismatch");
+    get_cert_and_key(cert, key, &x509, &pkey);
 
     if (argc >= 3)
         extra_chain = ossl_x509_ary2sk(extra_chain_ary);
@@ -1454,6 +1462,44 @@ ossl_sslctx_add_certificate(int argc, VALUE *argv, VALUE self)
     if (extra_chain && !SSL_CTX_set0_chain(ctx, extra_chain)) {
         sk_X509_pop_free(extra_chain, X509_free);
         ossl_raise(eSSLError, "SSL_CTX_set0_chain");
+    }
+    return self;
+}
+
+/*
+ * call-seq:
+ *    ssl.add_certificate(certificate, pkey [, extra_certs]) -> self
+ *
+ * Adds a certificate to this connection only. See
+ * SSLContext#add_certificate for details.
+ */
+static VALUE
+ossl_ssl_add_certificate(int argc, VALUE *argv, VALUE self)
+{
+    VALUE cert, key, extra_chain_ary;
+    SSL *ssl;
+    X509 *x509;
+    STACK_OF(X509) *extra_chain = NULL;
+    EVP_PKEY *pkey;
+
+    GetSSL(self, ssl);
+    rb_scan_args(argc, argv, "21", &cert, &key, &extra_chain_ary);
+    get_cert_and_key(cert, key, &x509, &pkey);
+
+    if (argc >= 3)
+        extra_chain = ossl_x509_ary2sk(extra_chain_ary);
+
+    if (!SSL_use_certificate(ssl, x509)) {
+        sk_X509_pop_free(extra_chain, X509_free);
+        ossl_raise(eSSLError, "SSL_use_certificate");
+    }
+    if (!SSL_use_PrivateKey(ssl, pkey)) {
+        sk_X509_pop_free(extra_chain, X509_free);
+        ossl_raise(eSSLError, "SSL_use_PrivateKey");
+    }
+    if (extra_chain && !SSL_set0_chain(ssl, extra_chain)) {
+        sk_X509_pop_free(extra_chain, X509_free);
+        ossl_raise(eSSLError, "SSL_set0_chain");
     }
     return self;
 }
@@ -3026,6 +3072,7 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "hostname=", ossl_ssl_set_hostname, 1);
     rb_define_method(cSSLSocket, "min_version=", ossl_ssl_set_min_version, 1);
     rb_define_method(cSSLSocket, "max_version=", ossl_ssl_set_max_version, 1);
+    rb_define_method(cSSLSocket, "add_certificate", ossl_ssl_add_certificate, -1);
     rb_define_method(cSSLSocket, "finished_message", ossl_ssl_get_finished, 0);
     rb_define_method(cSSLSocket, "peer_finished_message", ossl_ssl_get_peer_finished, 0);
     rb_define_method(cSSLSocket, "tmp_key", ossl_ssl_tmp_key, 0);
