@@ -242,7 +242,7 @@ module SyncDefaultGems
       ["ext/win32/resolv/lib/resolv.rb", "ext/win32/lib/win32/resolv.rb"],
       ["ext/win32/resolv", "ext/win32/resolv"],
     ]),
-    rubygems: repo("ruby/rubygems", [
+    rubygems: repo(["ruby/rubygems", "4.1"], [
       ["lib/rubygems.rb", "lib/rubygems.rb"],
       ["lib/rubygems", "lib/rubygems"],
       ["test/rubygems", "test/rubygems"],
