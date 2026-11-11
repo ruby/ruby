@@ -790,12 +790,12 @@ ractor_exit_token(const rb_ractor_t *r)
     }
 }
 
-static VALUE
-ractor_monitor(rb_execution_context_t *ec, VALUE self, VALUE port)
+// false if self had terminated already: the exit token was sent to rp at once
+static bool
+ractor_monitor_port(rb_execution_context_t *ec, VALUE self, const struct ractor_port *rp)
 {
     rb_ractor_t *r = RACTOR_PTR(self);
     bool terminated = false;
-    const struct ractor_port *rp = ractor_port_ptr_check(port);
     struct ractor_monitor *rm = ALLOC(struct ractor_monitor);
     rm->port = *rp; // copy port information
 
@@ -816,10 +816,17 @@ ractor_monitor(rb_execution_context_t *ec, VALUE self, VALUE port)
         SIZED_FREE(rm);
         ractor_send_basket(ec, rp, ractor_basket_new_exit(self, ractor_exit_token(r)), false);
     }
+    return !terminated;
+}
+
+static VALUE
+ractor_monitor(rb_execution_context_t *ec, VALUE self, VALUE port)
+{
+    const struct ractor_port *rp = ractor_port_ptr_check(port);
+    const bool registered = ractor_monitor_port(ec, self, rp);
     /* rp points into port, which is embedded and may be referenced only from here */
     RB_GC_GUARD(port);
-
-    return terminated ? Qfalse : Qtrue;
+    return RBOOL(registered);
 }
 
 static VALUE
@@ -1697,18 +1704,27 @@ ractor_reply_send(rb_execution_context_t *ec, rb_ractor_t *r, st_data_t id, stru
     ractor_send_basket(ec, &rp, b, false);
 }
 
-/* Waits for the one message the port can get.  Returns false if this Ractor's ports were
- * freed meanwhile (it is terminating): the reply is dropped. */
-static bool
+/* The one message the port can get, or Qundef if this Ractor's ports were freed meanwhile
+ * (it is terminating): the reply is dropped. */
+static VALUE
 ractor_reply_port_receive(rb_execution_context_t *ec, VALUE port)
 {
     rb_ractor_t *const cr = rb_ec_ractor_ptr(ec);
     const struct ractor_port *const rp = RACTOR_PORT_PTR(port);
     while (ractor_get_queue(cr, ractor_port_id(rp), false)) {
-        if (!UNDEF_P(ractor_try_receive(ec, cr, rp))) return true;
+        const VALUE v = ractor_try_receive(ec, cr, rp);
+        if (!UNDEF_P(v)) return v;
         ractor_wait_receive(ec, cr, NULL);
     }
-    return false;
+    return Qundef;
+}
+
+// a copy of obj, as Ractor::Port#send; dropped like ractor_reply_send if the waiter has gone
+static void
+ractor_reply_send_value(rb_execution_context_t *ec, rb_ractor_t *r, st_data_t id, VALUE obj)
+{
+    const struct ractor_port rp = { r, id };
+    ractor_send0(ec, &rp, obj, Qfalse, false);
 }
 
 static void
@@ -1754,6 +1770,41 @@ ractor_reply_port_atfork(rb_ractor_t *r)
 {
     r->sync.reply_port = Qfalse;
     r->sync.reply_port_busy = false;
+}
+
+struct ractor_join_wait {
+    VALUE port;
+    VALUE token; // Qundef until received
+};
+
+static VALUE
+ractor_join_wait_body(VALUE arg)
+{
+    struct ractor_join_wait *const w = (struct ractor_join_wait *)arg;
+    w->token = ractor_reply_port_receive(GET_EC(), w->port);
+    return Qnil;
+}
+
+static VALUE
+ractor_join_wait_release(VALUE arg)
+{
+    struct ractor_join_wait *const w = (struct ractor_join_wait *)arg;
+    rb_execution_context_t *const ec = GET_EC();
+    ractor_reply_port_release(ec, rb_ec_ractor_ptr(ec), w->port, UNDEF_P(w->token));
+    return Qnil;
+}
+
+// Ractor#join: waits for self to terminate on this Ractor's reply port
+static VALUE
+ractor_join(rb_execution_context_t *ec, VALUE self)
+{
+    rb_ractor_t *const cr = rb_ec_ractor_ptr(ec);
+    struct ractor_join_wait w = { ractor_reply_port_acquire(cr), Qundef };
+    ractor_monitor_port(ec, self, RACTOR_PORT_PTR(w.port));
+    rb_ensure(ractor_join_wait_body, (VALUE)&w, ractor_join_wait_release, (VALUE)&w);
+    if (UNDEF_P(w.token)) rb_raise(rb_eRactorClosedError, "The ractor has terminated");
+    if (RARRAY_AREF(w.token, 1) == ID2SYM(idAborted)) ractor_value(ec, self); // raises the remote exception
+    return self;
 }
 
 static VALUE

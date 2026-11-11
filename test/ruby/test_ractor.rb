@@ -318,6 +318,50 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_join_on_kept_reply_port
+    assert_ractor(<<~'RUBY')
+      # many joins reuse one port; a Ractor that terminated before the join answers at once
+      rs = 50.times.map { Ractor.new { 1 } }
+      rs.each(&:join)
+      rs.each(&:join)
+      GC.verify_internal_consistency # the Ractor object (shareable) refers to the kept port
+
+      # a join given up while the token may still come: the next join must not see that token
+      r = Ractor.new { Ractor.receive }
+      th = Thread.new { r.join }
+      Thread.pass until th.status == "sleep"
+      th.kill.join
+      r << :go
+      assert_same r, r.join
+      Ractor.new { Ractor.receive }.tap { |r2| r2 << :go }.join
+      assert_equal 1, Ractor.new { 1 }.value
+
+      # two threads joining at once: one has the kept port, the other makes its own
+      r1, r2 = Ractor.new { Ractor.receive }, Ractor.new { Ractor.receive }
+      t1 = Thread.new { r1.join }
+      t2 = Thread.new { r2.join }
+      Thread.pass until t1.status == "sleep" && t2.status == "sleep"
+      r2 << :go; t2.join
+      r1 << :go; t1.join
+      assert_raise(Ractor::RemoteError) { Ractor.new { Thread.current.report_on_exception = false; raise "boom" }.join }
+    RUBY
+  end
+
+  def test_require_on_kept_reply_port
+    assert_ractor(<<~'RUBY')
+      # require asks main and waits on the kept port of the requesting Ractor, many times
+      r = Ractor.new do
+        20.times.map { require "set"; require "English" }
+        begin
+          require "no_such_feature_#{$$}"
+        rescue LoadError => e
+          e.class
+        end
+      end
+      assert_equal LoadError, r.value
+    RUBY
+  end
+
   def test_read_frozen_class_fields_of_non_main
     assert_ractor(<<~'RUBY')
       port = Ractor::Port.new

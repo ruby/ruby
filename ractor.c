@@ -4167,7 +4167,8 @@ ractor_shareable_proc(rb_execution_context_t *ec, VALUE replace_self, bool is_la
 // Ractor#require
 
 struct cross_ractor_require {
-    VALUE port;
+    VALUE reader; // the requesting Ractor, with the id of its reply port
+    st_data_t port_id;
     bool raised;
 
     union {
@@ -4185,7 +4186,7 @@ struct cross_ractor_require {
 };
 
 RUBY_REFERENCES(cross_ractor_require_refs) = {
-    RUBY_REF_EDGE(struct cross_ractor_require, port),
+    RUBY_REF_EDGE(struct cross_ractor_require, reader),
     RUBY_REF_EDGE(struct cross_ractor_require, as.require.feature),
     RUBY_REF_END
 };
@@ -4232,20 +4233,22 @@ require_rescue(VALUE crr_obj, VALUE errinfo)
 static VALUE
 require_result_send_body(VALUE ary)
 {
-    VALUE port = RARRAY_AREF(ary, 0);
+    VALUE crr_obj = RARRAY_AREF(ary, 0);
     VALUE results = RARRAY_AREF(ary, 1);
+    struct cross_ractor_require *crr;
+    TypedData_Get_Struct(crr_obj, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
 
-    rb_execution_context_t *ec = GET_EC();
-
-    ractor_port_send(ec, port, results, Qfalse);
+    ractor_reply_send_value(GET_EC(), RACTOR_PTR(crr->reader), crr->port_id, results);
     return Qnil;
 }
 
 static VALUE
-require_result_send_resuce(VALUE port, VALUE errinfo)
+require_result_send_resuce(VALUE crr_obj, VALUE errinfo)
 {
-    // TODO: need rescue?
-    ractor_port_send(GET_EC(), port, errinfo, Qfalse);
+    // the copy of the result raised: send that exception instead
+    struct cross_ractor_require *crr;
+    TypedData_Get_Struct(crr_obj, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
+    ractor_reply_send_value(GET_EC(), RACTOR_PTR(crr->reader), crr->port_id, errinfo);
     return Qnil;
 }
 
@@ -4272,9 +4275,9 @@ ractor_require_protect(VALUE crr_obj, VALUE (*func)(VALUE))
     }
 
     rb_rescue2(require_result_send_body,
-               // [port, [result, raised]]
-               rb_ary_new_from_args(2, crr->port, rb_ary_new_from_args(2, result, crr->raised ? Qtrue : Qfalse)),
-               require_result_send_resuce, rb_eException, crr->port);
+               // [crr, [result, raised]]
+               rb_ary_new_from_args(2, crr_obj, rb_ary_new_from_args(2, result, crr->raised ? Qtrue : Qfalse)),
+               require_result_send_resuce, rb_eException, crr_obj);
 
     RB_GC_GUARD(crr_obj);
     return Qnil;
@@ -4284,6 +4287,46 @@ static VALUE
 ractor_require_func(void *crr_obj)
 {
     return ractor_require_protect((VALUE)crr_obj, require_body);
+}
+
+struct cross_ractor_require_wait {
+    VALUE port;
+    VALUE results; // Qundef until received
+};
+
+static VALUE
+cross_ractor_require_wait_body(VALUE arg)
+{
+    struct cross_ractor_require_wait *const w = (struct cross_ractor_require_wait *)arg;
+    w->results = ractor_reply_port_receive(GET_EC(), w->port);
+    return Qnil;
+}
+
+static VALUE
+cross_ractor_require_wait_release(VALUE arg)
+{
+    struct cross_ractor_require_wait *const w = (struct cross_ractor_require_wait *)arg;
+    rb_execution_context_t *const ec = GET_EC();
+    ractor_reply_port_release(ec, rb_ec_ractor_ptr(ec), w->port, UNDEF_P(w->results));
+    return Qnil;
+}
+
+// asks the main Ractor to run func on crr_obj and returns what it sent back
+static VALUE
+cross_ractor_require_on_main(VALUE crr_obj, struct cross_ractor_require *crr, rb_interrupt_exec_func_t *func)
+{
+    rb_ractor_t *const cr = GET_RACTOR();
+    struct cross_ractor_require_wait w = { ractor_reply_port_acquire(cr), Qundef };
+    RB_OBJ_WRITE(crr_obj, &crr->reader, cr->pub.self);
+    crr->port_id = ractor_port_id(RACTOR_PORT_PTR(w.port));
+
+    rb_ractor_interrupt_exec(GET_VM()->ractor.main_ractor, func, (void *)crr_obj, rb_interrupt_exec_flag_value_data);
+    rb_ensure(cross_ractor_require_wait_body, (VALUE)&w, cross_ractor_require_wait_release, (VALUE)&w);
+    if (UNDEF_P(w.results)) rb_raise(rb_eRactorClosedError, "The ractor has terminated");
+
+    VALUE results = w.results;
+    RB_GC_GUARD(crr_obj);
+    return results;
 }
 
 VALUE
@@ -4298,21 +4341,12 @@ rb_ractor_require(VALUE feature, bool silent)
 
     // Convert feature to proper file path and make it shareable as fstring
     RB_OBJ_WRITE(crr_obj, &crr->as.require.feature, rb_fstring(FilePathValue(feature)));
-    RB_OBJ_WRITE(crr_obj, &crr->port, rb_ractor_make_shareable(ractor_port_new(GET_RACTOR())));
     crr->raised = false;
     crr->silent = silent;
 
-    rb_execution_context_t *ec = GET_EC();
-    rb_ractor_t *main_r = GET_VM()->ractor.main_ractor;
-    rb_ractor_interrupt_exec(main_r, ractor_require_func, (void *)crr_obj, rb_interrupt_exec_flag_value_data);
-
-    // wait for require done
-    VALUE results = ractor_port_receive(ec, crr->port, Qnil);
-    ractor_port_close(ec, crr->port);
-
+    VALUE results = cross_ractor_require_on_main(crr_obj, crr, ractor_require_func);
     VALUE exc = rb_ary_pop(results);
     VALUE result = rb_ary_pop(results);
-    RB_GC_GUARD(crr_obj);
 
     if (RTEST(exc)) {
         rb_exc_raise(result);
@@ -4534,7 +4568,7 @@ shareable_p_wait_body(VALUE arg)
         c->port_id = ractor_port_id(RACTOR_PORT_PTR(w->port));
         // the CAS hands reply and port_id to an owner that loses it
         if (RUBY_ATOMIC_CAS(c->state, SHAREABLE_P_PENDING, SHAREABLE_P_WAITING) == SHAREABLE_P_PENDING) {
-            if (!ractor_reply_port_receive(GET_EC(), w->port)) shareable_p_poll(c, SHAREABLE_P_WAITING);
+            if (UNDEF_P(ractor_reply_port_receive(GET_EC(), w->port))) shareable_p_poll(c, SHAREABLE_P_WAITING);
         }
         else {
             ractor_basket_free(c->reply);
@@ -4700,19 +4734,10 @@ rb_ractor_autoload_load(VALUE module, ID name)
 
     RB_OBJ_WRITE(crr_obj, &crr->as.autoload.module, module);
     RB_OBJ_WRITE(crr_obj, &crr->as.autoload.name, name);
-    RB_OBJ_WRITE(crr_obj, &crr->port, rb_ractor_make_shareable(ractor_port_new(GET_RACTOR())));
 
-    rb_execution_context_t *ec = GET_EC();
-    rb_ractor_t *main_r = GET_VM()->ractor.main_ractor;
-    rb_ractor_interrupt_exec(main_r, ractor_autoload_load_func, (void *)crr_obj, rb_interrupt_exec_flag_value_data);
-
-    // wait for require done
-    VALUE results = ractor_port_receive(ec, crr->port, Qnil);
-    ractor_port_close(ec, crr->port);
-
+    VALUE results = cross_ractor_require_on_main(crr_obj, crr, ractor_autoload_load_func);
     VALUE exc = rb_ary_pop(results);
     VALUE result = rb_ary_pop(results);
-    RB_GC_GUARD(crr_obj);
 
     if (RTEST(exc)) {
         rb_exc_raise(result);
