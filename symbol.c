@@ -973,6 +973,7 @@ rb_sym2id(VALUE sym)
 VALUE
 rb_id2sym(ID x)
 {
+    RUBY_ASSERT(x != 0);
     if (!DYNAMIC_ID_P(x)) return STATIC_ID2SYM(x);
     return get_id_entry(x, ID_ENTRY_SYM);
 }
