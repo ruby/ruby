@@ -1,0 +1,5 @@
+!/(/ =~ a
+   ^ end pattern with unmatched parenthesis
+1 + /(/ =~ a
+      ^ end pattern with unmatched parenthesis
+

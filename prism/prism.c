@@ -19807,7 +19807,7 @@ parse_regexp(pm_parser_t *parser, uint16_t depth) {
         parser_lex(parser);
 
         pm_regular_expression_node_t *node = pm_regular_expression_node_create(parser, &opening, &content, &parser->previous);
-        pm_node_flag_set(UP(node), pm_regexp_parse(parser, node, NULL, NULL));
+        pm_node_flag_set(UP(node), pm_regexp_parse(parser, node));
         return UP(node);
     }
 
@@ -19828,14 +19828,10 @@ parse_regexp(pm_parser_t *parser, uint16_t depth) {
         if (accept1(parser, PM_TOKEN_REGEXP_END)) {
             pm_regular_expression_node_t *node = (pm_regular_expression_node_t *) pm_regular_expression_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
 
-            // If we're not immediately followed by a =~, then we
-            // parse and validate now. If it is followed by a =~,
-            // then it will get parsed in the =~ handler where
-            // named captures can also be extracted.
-            if (!match1(parser, PM_TOKEN_EQUAL_TILDE)) {
-                pm_node_flag_set(UP(node), pm_regexp_parse(parser, node, NULL, NULL));
-            }
-
+            /* A regular expression is validated as soon as it is parsed, even
+             * when a =~ follows, because the =~ may turn out to apply to an
+             * expression that contains it, as in `!/a/ =~ b`. */
+            pm_node_flag_set(UP(node), pm_regexp_parse(parser, node));
             return UP(node);
         }
 
@@ -21897,8 +21893,8 @@ parse_match(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_pow
             result = parse_interpolated_regular_expression_named_captures(parser, &content, call, PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED));
         }
     } else if (PM_NODE_TYPE_P(node, PM_REGULAR_EXPRESSION_NODE)) {
-        /* If we have a regular expression node, then we can parse the named
-         * captures and validate encoding in one pass. */
+        /* The regular expression was validated when it was parsed, so only its
+         * named captures are read here. */
         pm_regular_expression_node_t *regexp = (pm_regular_expression_node_t *) node;
         pm_regexp_name_data_t name_data = {
             .call = call,
@@ -21907,7 +21903,7 @@ parse_match(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_pow
             .shared = pm_string_source(&regexp->unescaped) == parser->start + regexp->content_loc.start,
         };
 
-        pm_node_flag_set(UP(regexp), pm_regexp_parse(parser, regexp, parse_regular_expression_named_capture, &name_data));
+        pm_regexp_parse_named_captures(parser, pm_string_source(&regexp->unescaped), pm_string_length(&regexp->unescaped), PM_NODE_FLAG_P(regexp, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED), parse_regular_expression_named_capture, &name_data);
 
         if (name_data.targets.size > 0) {
             result = UP(pm_match_write_node_create(parser, call, &name_data.targets));

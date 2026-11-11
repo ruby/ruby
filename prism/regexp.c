@@ -1623,14 +1623,12 @@ pm_regexp_validate_encoding(pm_regexp_parser_t *parser, bool ascii_only, pm_node
 }
 
 /**
- * Parse a regular expression, validate its encoding, and optionally extract
- * named capture groups. Encoding validation walks the raw source (content_loc)
- * to distinguish escape-produced bytes from literal bytes. Named capture
- * extraction walks the unescaped content since escape sequences in group names
- * (e.g., line continuations) have already been processed by the lexer.
+ * Parse a regular expression and validate its encoding. Validation walks the
+ * raw source (content_loc) to distinguish escape-produced bytes from literal
+ * bytes.
  */
 pm_node_flags_t
-pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, pm_regexp_name_callback_t name_callback, void *name_data) {
+pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node) {
     const uint8_t *source = parser->start + node->content_loc.start;
     size_t size = node->content_loc.length;
     bool extended_mode = PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED);
@@ -1639,7 +1637,6 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, pm_rege
     const uint8_t *node_start = parser->start + node->base.location.start;
     const uint8_t *node_end = parser->start + node->base.location.start + node->base.location.length;
 
-    // First pass: walk raw source for encoding validation (no name extraction).
     pm_regexp_parser_t regexp_parser = {
         .parser = parser,
         .start = source,
@@ -1684,18 +1681,13 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, pm_rege
     pm_node_flags_t encoding_flags = pm_regexp_validate_encoding(&regexp_parser, ascii_only, flags, error_source, error_source_length);
     pm_buffer_cleanup(&regexp_parser.hex_escape_buffer);
 
-    // Second pass: walk unescaped content for named capture extraction.
-    if (name_callback != NULL) {
-        pm_regexp_parse_named_captures(parser, pm_string_source(&node->unescaped), pm_string_length(&node->unescaped), extended_mode, name_callback, name_data);
-    }
-
     return encoding_flags;
 }
 
 /**
- * Parse an interpolated regular expression for named capture groups only.
- * This is used for the =~ operator with interpolated regexps where we don't
- * have a pm_regular_expression_node_t. No encoding validation is performed.
+ * Parse the unescaped content of a regular expression for named capture groups
+ * only, for the receiver of a =~ operator. No errors are reported, since the
+ * regular expression is validated when it is parsed.
  *
  * Note: The encoding-tracking fields (has_unicode_escape, has_hex_escape, etc.)
  * are initialized but not used for the result. They exist because the parsing
