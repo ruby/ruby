@@ -674,8 +674,13 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Const { .. } => panic!("Unexpected Const in gen_insn: {insn}"),
         Insn::NewArray { elements, state } => gen_new_array(jit, asm, function, opnds!(elements), &function.frame_state(*state)),
         Insn::NewHash { elements, state } => {
-            let sym_keys = elements.iter().step_by(2).all(|&key| function.type_of(key).is_subtype(types::Symbol));
-            gen_new_hash(jit, asm, function, opnds!(elements), sym_keys, &function.frame_state(*state))
+            // See hash.c rb_any_cmp / rb_any_hash
+            // Both Symbol and exact String are hashed and compared without ever invoking
+            // a Ruby method as long as they're compared to the same type.
+            let simple_keys =
+              elements.iter().step_by(2).all(|&key| function.type_of(key).is_subtype(types::Symbol) ) ||
+              elements.iter().step_by(2).all(|&key| function.type_of(key).is_subtype(types::StringExact) );
+            gen_new_hash(jit, asm, function, opnds!(elements), simple_keys, &function.frame_state(*state))
         }
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, function, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(jit, asm, function, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
@@ -2708,7 +2713,7 @@ fn gen_new_hash(
     asm: &mut Assembler,
     function: &Function,
     elements: Vec<Opnd>,
-    sym_keys: bool,
+    simple_keys: bool,
     state: &FrameState,
 ) -> lir::Opnd {
     if elements.is_empty() {
@@ -2727,8 +2732,8 @@ fn gen_new_hash(
                 asm_ccall!(asm, rb_hash_new,)
             })
     // TODO: we should use effects_of for this (we would need to add it).
-    } else if sym_keys {
-        // Symbols hash and compare without running Ruby and those operations never raise so
+    } else if simple_keys {
+        // All keys hash and compare without running Ruby and those operations never raise so
         // the bulk insert is leaf.
         gen_prepare_leaf_call_with_gc(asm, state);
 

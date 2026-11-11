@@ -498,6 +498,64 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal true, MyObj.new == nil
   end
 
+  def test_newhash_eq_and_hash_redefinition
+    assert_separately([], <<~'RUBY')
+      $VERBOSE = false
+
+      [Symbol, String].each do |klass|
+        klass.class_eval do
+          def hash
+            raise NotImplementedError, "Unexpected call to #{self.class.name}#hash"
+          end
+
+          def eql?(_other)
+            raise NotImplementedError, "Unexpected call to #{self.class.name}#eql?"
+          end
+
+          def ==(_other)
+            raise NotImplementedError, "Unexpected call to #{self.class.name}#=="
+          end
+        end
+      end
+
+      base = 0
+      hash = { # newhash insns
+        "a" => base + 1,
+        "b" => base + 2,
+        "c" => base + 3,
+        "d" => base + 4,
+        "e" => base + 5,
+        "f" => base + 6,
+        "g" => base + 7,
+        "h" => base + 8,
+      }
+      assert_equal 8, hash.size
+
+      1000.times do |i|
+        # hash being an ar_table with 1-byte hints, we have a high chance to run into a collision
+        assert_equal false, hash.key?(i.to_s)
+      end
+
+      hash = { # newhash insns
+      :a => base + 1,
+      "b".to_sym => base + 2,
+      :c => base + 3,
+      "d".to_sym => base + 4,
+      :e => base + 5,
+      "f".to_sym => base + 6,
+      :g => base + 7,
+      "h".to_sym => base + 8,
+    }
+    assert_equal 8, hash.size
+
+    1000.times do |i|
+      # hash being an ar_table with 1-byte hints, we have a high chance to run into a collision
+      assert_equal false, hash.key?(i.to_s.to_sym)
+    end
+
+    RUBY
+  end
+
   def self.tailcall(klass, src, file = nil, path = nil, line = nil, tailcall: true)
     unless file
       loc, = caller_locations(1, 1)
