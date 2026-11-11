@@ -1361,6 +1361,15 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/\u3042\d/, "\u30422")
   end
 
+  def test_non_ascii_property_name_in_jis_encodings
+    %w[Shift_JIS Windows-31J EUC-JP].each do |enc|
+      ["\\p{\xC4ha}", "\\p{ab\xC4}", "\\P{\xC4ha}"].each do |src|
+        assert_raise(RegexpError) { Regexp.new(src.b.force_encoding(enc)) }
+      end
+      assert_match(Regexp.new("\\p{Hiragana}".encode(enc)), "\u3042".encode(enc))
+    end
+  end
+
   def test_char_class
     failcheck('[]')
     failcheck('[x')
