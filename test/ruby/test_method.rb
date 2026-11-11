@@ -973,6 +973,16 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(:bar, m.call, feature8391)
   end
 
+  def test_singleton_method_not_interned_name
+    # [Bug #22535]
+    name = "never_interned_singleton_method_#{rand(1 << 40)}"
+    [Object.new, Object.new.tap(&:singleton_class)].each do |obj|
+      e = assert_raise(NameError) {obj.singleton_method(name)}
+      assert_equal(name, e.name.to_s)
+      assert_include(e.message, "undefined singleton method '#{name}'")
+    end
+  end
+
   def test_singleton_method_prepend
     bug14658 = '[Bug #14658]'
     c1 = Class.new
