@@ -9241,8 +9241,13 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                     size_t hexadecimal_length = pm_strspn_hexadecimal_digit(parser->current.end, parser->end - parser->current.end);
 
                     if (hexadecimal_length > 6) {
-                        // \u{nnnn} character literal allows only 1-6 hexadecimal digits
-                        pm_parser_err(parser, U32(unicode_start - parser->start), U32(hexadecimal_length), PM_ERR_ESCAPE_INVALID_UNICODE_LONG);
+                        /* A code point has at most 6 hexadecimal digits. In a
+                         * regular expression the escape may be in a comment,
+                         * so the code point is checked once its escapes are
+                         * read. */
+                        if (!(flags & PM_ESCAPE_FLAG_REGEXP)) {
+                            pm_parser_err(parser, U32(unicode_start - parser->start), U32(hexadecimal_length), PM_ERR_ESCAPE_INVALID_UNICODE_LONG);
+                        }
                     } else if (hexadecimal_length == 0) {
                         // there are not hexadecimal characters
 

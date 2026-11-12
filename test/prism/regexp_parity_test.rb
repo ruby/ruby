@@ -54,6 +54,7 @@ module Ruby::Prism
       # Escapes for code points.
       "/\\u{D800}/", "/\\u{110000}/", "/\\u{1234567}/", "/\\u{zz}/", "/\\uzz/", "/\\u{110000}[a/",
       "/\\u3042\\xE3/", "/\\u{E9}\\xE9[a/", "/\\u3042\\xDC\\p{Hiragana}/",
+      "/a(?#\\u{1234567})b/", "/a # \\u{1234567}\nb/x", "/a(?#\\uzz)b/", "/a # \\u{zz}\nb/x",
 
       # Errors in escapes come before errors in the pattern.
       "/\\xE9[a/", "/\\xC3\\d[a/", "/\\xE9(/", "/\\xFF[a/n", "/\\p{Hiragana}[a/", "/)\\p{Hiragana}/",

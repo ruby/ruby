@@ -166,21 +166,6 @@ pm_regexp_parse_stack_exhausted(pm_regexp_parser_t *regexp_parser) {
 }
 
 /**
- * Append a formatted syntax error to the parser's error list, following the
- * same rules as pm_regexp_parse_error. This is a macro because we need
- * variadic args for the format string.
- */
-#define pm_regexp_parse_error_format(regexp_parser_, err_start_, err_end_, diag_id, ...) \
-    do { \
-        if ((regexp_parser_)->report_errors) { \
-            pm_parser_t *parser_ = (regexp_parser_)->parser; \
-            uint32_t source_start_ = pm_regexp_source_offset((regexp_parser_), (err_start_), true); \
-            uint32_t source_end_ = pm_regexp_source_offset((regexp_parser_), (err_end_), false); \
-            pm_diagnostic_list_append_format(&parser_->metadata_arena, &parser_->error_list, source_start_, source_end_ - source_start_, diag_id, __VA_ARGS__); \
-        } \
-    } while (0)
-
-/**
  * This appends a new string to the list of named captures. This function
  * assumes the caller has already checked the validity of the name callback.
  */
@@ -550,82 +535,19 @@ pm_regexp_parse_property_escape(pm_regexp_parser_t *parser) {
 }
 
 /**
- * Validate and skip a \u escape sequence in a regular expression. The cursor
- * should be pointing at the character after 'u' when this is called. This
- * handles both the \u{NNNN MMMM} and \uNNNN forms.
+ * Skip a \u escape, in either its \uHHHH or its \u{...} form. The cursor should
+ * be pointing at the character after the 'u' when this is called. Its code
+ * points were checked when the escapes of the content were read, before the
+ * pattern is parsed, so this only finds where the escape ends.
  */
 static void
 pm_regexp_parse_unicode_escape(pm_regexp_parser_t *parser) {
-    const uint8_t *escape_start = parser->cursor - 2; // points to '\'
-
-    if (pm_regexp_char_is_eof(parser)) {
-        pm_regexp_parse_error(parser, escape_start, parser->cursor, "invalid Unicode escape");
-        return;
-    }
-
-    if (*parser->cursor == '{') {
-        parser->cursor++; // skip '{'
-
-        // Skip leading whitespace.
-        while (!pm_regexp_char_is_eof(parser) && pm_char_is_whitespace(*parser->cursor)) {
-            parser->cursor++;
-        }
-
-        bool has_codepoint = false;
-
-        while (!pm_regexp_char_is_eof(parser) && *parser->cursor != '}') {
-            size_t hex_count = 0;
-            while (!pm_regexp_char_is_eof(parser) && pm_char_is_hexadecimal_digit(*parser->cursor)) {
-                hex_count++;
-                parser->cursor++;
-            }
-
-            if (hex_count == 0) {
-                // Skip to '}' or end of regexp to find the full extent.
-                while (!pm_regexp_char_is_eof(parser) && *parser->cursor != '}') {
-                    parser->cursor++;
-                }
-
-                const uint8_t *escape_end = parser->cursor;
-                if (!pm_regexp_char_is_eof(parser)) {
-                    escape_end++;
-                    parser->cursor++; // skip '}'
-                }
-
-                pm_regexp_parse_error_format(parser, escape_start, escape_end, PM_ERR_ESCAPE_INVALID_UNICODE_LIST, (int) (escape_end - escape_start), (const char *) escape_start);
-                return;
-            }
-
-            if (hex_count > 6) {
-                pm_regexp_parse_error(parser, escape_start, parser->cursor, "invalid Unicode range");
-            }
-
-            has_codepoint = true;
-
-            // Skip whitespace between codepoints.
-            while (!pm_regexp_char_is_eof(parser) && pm_char_is_whitespace(*parser->cursor)) {
-                parser->cursor++;
-            }
-        }
-
-        if (pm_regexp_char_is_eof(parser)) {
-            pm_regexp_parse_error(parser, escape_start, parser->cursor, "unterminated Unicode escape");
-        } else {
-            if (!has_codepoint) {
-                pm_regexp_parse_error_format(parser, escape_start, parser->cursor + 1, PM_ERR_ESCAPE_INVALID_UNICODE_LIST, (int) (parser->cursor + 1 - escape_start), (const char *) escape_start);
-            }
-            parser->cursor++; // skip '}'
-        }
+    if (pm_regexp_char_accept(parser, '{')) {
+        while (!pm_regexp_char_is_eof(parser) && *parser->cursor != '}') parser->cursor++;
+        pm_regexp_char_accept(parser, '}');
     } else {
-        // \uNNNN form — need exactly 4 hex digits.
-        size_t hex_count = 0;
-        while (hex_count < 4 && !pm_regexp_char_is_eof(parser) && pm_char_is_hexadecimal_digit(*parser->cursor)) {
-            hex_count++;
+        for (int index = 0; index < 4 && !pm_regexp_char_is_eof(parser) && pm_char_is_hexadecimal_digit(*parser->cursor); index++) {
             parser->cursor++;
-        }
-
-        if (hex_count < 4) {
-            pm_regexp_parse_error(parser, escape_start, parser->cursor, "invalid Unicode escape");
         }
     }
 }
