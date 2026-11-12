@@ -1176,24 +1176,47 @@ pm_regexp_format_for_error(pm_buffer_t *buffer, const pm_encoding_t *encoding, c
 }
 
 /**
+ * A regular expression as it is validated: its content, its options, and the
+ * place in the source of the errors that are about it as a whole.
+ */
+typedef struct {
+    /** The parser that the regular expression is in. */
+    pm_parser_t *parser;
+
+    /**
+     * The content, in which the lexer keeps the escapes that the regular
+     * expression engine reads as their text.
+     */
+    const uint8_t *source;
+
+    /** The length of the content. */
+    size_t size;
+
+    /** The flags of the regular expression, which hold its options. */
+    pm_node_flags_t flags;
+
+    /** Where errors about the regular expression as a whole are reported. */
+    pm_location_t location;
+} pm_regexp_t;
+
+/**
  * Append an error to the regular expression as a whole, followed by its
  * content, which is how errors are reported once its pattern has been read but
  * before it is parsed. The message is written out with the content, since the
  * same error kind holds any of these messages.
  */
 static void
-pm_regexp_error_with_content(pm_parser_t *parser, const pm_regular_expression_node_t *node, const char *message) {
-    const uint8_t *source = pm_string_source(&node->unescaped);
-    size_t size = pm_string_length(&node->unescaped);
+pm_regexp_error_with_content(const pm_regexp_t *regexp, const char *message) {
+    pm_parser_t *parser = regexp->parser;
 
     pm_buffer_t buffer = { 0 };
     pm_buffer_append_string(&buffer, message, strlen(message));
     pm_buffer_append_string(&buffer, ": /", 3);
-    pm_regexp_format_for_error(&buffer, parser->encoding, source, size);
+    pm_regexp_format_for_error(&buffer, parser->encoding, regexp->source, regexp->size);
     pm_buffer_append_byte(&buffer, '/');
     pm_buffer_append_byte(&buffer, '\0');
 
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, node->base.location.start, node->base.location.length, PM_ERR_REGEXP_PARSE_ERROR, pm_buffer_value(&buffer));
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_PARSE_ERROR, pm_buffer_value(&buffer));
     pm_buffer_cleanup(&buffer);
 }
 
@@ -1202,13 +1225,12 @@ pm_regexp_error_with_content(pm_parser_t *parser, const pm_regular_expression_no
  * the message of that kind ends with the content.
  */
 static void
-pm_regexp_error_kind_with_content(pm_parser_t *parser, const pm_regular_expression_node_t *node, pm_diagnostic_id_t diag_id) {
-    const uint8_t *source = pm_string_source(&node->unescaped);
-    size_t size = pm_string_length(&node->unescaped);
+pm_regexp_error_kind_with_content(const pm_regexp_t *regexp, pm_diagnostic_id_t diag_id) {
+    pm_parser_t *parser = regexp->parser;
 
     pm_buffer_t buffer = { 0 };
-    pm_regexp_format_for_error(&buffer, parser->encoding, source, size);
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, node->base.location.start, node->base.location.length, diag_id, (int) buffer.length, pm_buffer_value(&buffer));
+    pm_regexp_format_for_error(&buffer, parser->encoding, regexp->source, regexp->size);
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, diag_id, (int) buffer.length, pm_buffer_value(&buffer));
     pm_buffer_cleanup(&buffer);
 }
 
@@ -1262,11 +1284,9 @@ pm_regexp_non_ascii_p(const pm_encoding_t *encoding, const uint8_t *cursor, cons
  * and has already been reported.
  */
 static const pm_encoding_t *
-pm_regexp_check_option(pm_parser_t *parser, const pm_regular_expression_node_t *node) {
-    const uint8_t *source = pm_string_source(&node->unescaped);
-    size_t size = pm_string_length(&node->unescaped);
-
-    pm_node_flags_t flags = PM_NODE_FLAGS(node);
+pm_regexp_check_option(const pm_regexp_t *regexp) {
+    pm_parser_t *parser = regexp->parser;
+    pm_node_flags_t flags = regexp->flags;
     const pm_encoding_t *encoding;
     char option;
 
@@ -1286,14 +1306,12 @@ pm_regexp_check_option(pm_parser_t *parser, const pm_regular_expression_node_t *
         return (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) ? PM_ENCODING_ASCII_8BIT_ENTRY : parser->encoding;
     }
 
-    if (parser->encoding == encoding || !pm_regexp_non_ascii_p(parser->encoding, source, source + size)) return encoding;
+    if (parser->encoding == encoding || !pm_regexp_non_ascii_p(parser->encoding, regexp->source, regexp->source + regexp->size)) return encoding;
 
-    uint32_t start = node->base.location.start;
-    uint32_t length = node->base.location.length;
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, start, length, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, option, parser->encoding->name);
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, option, parser->encoding->name);
     if (option != 'n') return parser->encoding;
 
-    pm_regexp_error_kind_with_content(parser, node, PM_ERR_REGEXP_NON_ESCAPED_MBC);
+    pm_regexp_error_kind_with_content(regexp, PM_ERR_REGEXP_NON_ESCAPED_MBC);
     return NULL;
 }
 
@@ -1303,11 +1321,8 @@ pm_regexp_check_option(pm_parser_t *parser, const pm_regular_expression_node_t *
  * parsed.
  */
 typedef struct {
-    /** The parser that the regular expression is in. */
-    pm_parser_t *parser;
-
     /** The regular expression, whose content is read. */
-    const pm_regular_expression_node_t *node;
+    const pm_regexp_t *regexp;
 
     /** The end of the content. */
     const uint8_t *end;
@@ -1375,12 +1390,12 @@ pm_regexp_preprocess_escaped_byte(pm_regexp_preprocessor_t *preprocessor, const 
     uint32_t length;
 
     if (cursor == end || *cursor++ != '\\') {
-        pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "too short escaped multibyte character");
+        pm_regexp_error_with_content(preprocessor->regexp, "too short escaped multibyte character");
         return -1;
     }
 
     if (cursor == end) {
-        pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "too short escape sequence");
+        pm_regexp_error_with_content(preprocessor->regexp, "too short escape sequence");
         return -1;
     }
 
@@ -1400,18 +1415,18 @@ pm_regexp_preprocess_escaped_byte(pm_regexp_preprocessor_t *preprocessor, const 
         case 'x':
             code = pm_regexp_preprocess_digits(cursor, end, 2, 16, &length);
             if (length == 0) {
-                pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "invalid hex escape");
+                pm_regexp_error_with_content(preprocessor->regexp, "invalid hex escape");
                 return -1;
             }
             cursor += length;
             break;
         default:
-            pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "unexpected escape sequence");
+            pm_regexp_error_with_content(preprocessor->regexp, "unexpected escape sequence");
             return -1;
     }
 
     if (code > 0xFF) {
-        pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "invalid escape code");
+        pm_regexp_error_with_content(preprocessor->regexp, "invalid escape code");
         return -1;
     }
 
@@ -1437,13 +1452,13 @@ pm_regexp_preprocess_escaped_char(pm_regexp_preprocessor_t *preprocessor, const 
     } while (length < sizeof(bytes) && pm_encoding_char_width(encoding, bytes, (ptrdiff_t) length) == 0 && pm_encoding_char_prefix_p(encoding, bytes, (ptrdiff_t) length));
 
     if (pm_encoding_char_width(encoding, bytes, (ptrdiff_t) length) == 0 && !pm_encoding_char_prefix_p(encoding, bytes, (ptrdiff_t) length)) {
-        pm_regexp_error_kind_with_content(preprocessor->parser, preprocessor->node, PM_ERR_INVALID_MULTIBYTE_ESCAPE);
+        pm_regexp_error_kind_with_content(preprocessor->regexp, PM_ERR_INVALID_MULTIBYTE_ESCAPE);
         return false;
     }
 
     if (length > 1 || bytes[0] >= 0x80) {
         if (!pm_regexp_preprocess_fix_encoding(preprocessor, encoding)) {
-            pm_regexp_error_kind_with_content(preprocessor->parser, preprocessor->node, PM_ERR_REGEXP_ESCAPED_NON_ASCII_IN_UTF8);
+            pm_regexp_error_kind_with_content(preprocessor->regexp, PM_ERR_REGEXP_ESCAPED_NON_ASCII_IN_UTF8);
             return false;
         }
     }
@@ -1458,13 +1473,13 @@ pm_regexp_preprocess_escaped_char(pm_regexp_preprocessor_t *preprocessor, const 
 static bool
 pm_regexp_preprocess_code_point(pm_regexp_preprocessor_t *preprocessor, uint32_t value) {
     if ((value >= 0xD800 && value <= 0xDFFF) || value > 0x10FFFF) {
-        pm_regexp_error_kind_with_content(preprocessor->parser, preprocessor->node, PM_ERR_REGEXP_INVALID_UNICODE_RANGE);
+        pm_regexp_error_kind_with_content(preprocessor->regexp, PM_ERR_REGEXP_INVALID_UNICODE_RANGE);
         return false;
     }
 
     if (value >= 0x80) {
         if (!pm_regexp_preprocess_fix_encoding(preprocessor, PM_ENCODING_UTF_8_ENTRY)) {
-            pm_regexp_error_kind_with_content(preprocessor->parser, preprocessor->node, PM_ERR_REGEXP_UTF8_CHAR_NON_UTF8_REGEXP);
+            pm_regexp_error_kind_with_content(preprocessor->regexp, PM_ERR_REGEXP_UTF8_CHAR_NON_UTF8_REGEXP);
             return false;
         }
     }
@@ -1499,7 +1514,7 @@ pm_regexp_preprocess_code_point_list(pm_regexp_preprocessor_t *preprocessor, con
 
         /* The largest code point, 10FFFF, has six digits. */
         if (length > 6) {
-            pm_regexp_error_kind_with_content(preprocessor->parser, preprocessor->node, PM_ERR_REGEXP_INVALID_UNICODE_RANGE);
+            pm_regexp_error_kind_with_content(preprocessor->regexp, PM_ERR_REGEXP_INVALID_UNICODE_RANGE);
             return false;
         }
         cursor += length;
@@ -1511,7 +1526,7 @@ pm_regexp_preprocess_code_point_list(pm_regexp_preprocessor_t *preprocessor, con
     }
 
     if (!has_code_point || cursor == end || *cursor++ != '}') {
-        pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "invalid Unicode list");
+        pm_regexp_error_with_content(preprocessor->regexp, "invalid Unicode list");
         return false;
     }
 
@@ -1587,9 +1602,9 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
         return true;
     }
 
-    if (pm_parser_stack_exhausted(preprocessor->parser)) {
-        const pm_regular_expression_node_t *node = preprocessor->node;
-        pm_parser_err_stack_exhausted(preprocessor->parser, node->base.location.start, node->base.location.length);
+    const pm_regexp_t *regexp = preprocessor->regexp;
+    if (pm_parser_stack_exhausted(regexp->parser)) {
+        pm_parser_err_stack_exhausted(regexp->parser, regexp->location.start, regexp->location.length);
         return false;
     }
 
@@ -1609,7 +1624,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
         switch (*cursor++) {
             case '\\': {
                 if (cursor == end) {
-                    pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "too short escape sequence");
+                    pm_regexp_error_with_content(preprocessor->regexp, "too short escape sequence");
                     return false;
                 }
 
@@ -1625,7 +1640,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                     if (width > 1) {
                         cursor += width;
                         if (!pm_regexp_preprocess_fix_encoding(preprocessor, encoding)) {
-                            pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "non ASCII character in UTF-8 regexp");
+                            pm_regexp_error_with_content(preprocessor->regexp, "non ASCII character in UTF-8 regexp");
                             return false;
                         }
                         break;
@@ -1648,7 +1663,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                         break;
                     case 'u':
                         if (cursor == end) {
-                            pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "too short escape sequence");
+                            pm_regexp_error_with_content(preprocessor->regexp, "too short escape sequence");
                             return false;
                         }
 
@@ -1659,7 +1674,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                             uint32_t length;
                             uint32_t value = pm_regexp_preprocess_digits(cursor, end, 4, 16, &length);
                             if (length != 4) {
-                                pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "invalid Unicode escape");
+                                pm_regexp_error_with_content(preprocessor->regexp, "invalid Unicode escape");
                                 return false;
                             }
 
@@ -1777,7 +1792,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
 
                 cursor += width - 1;
                 if (!pm_regexp_preprocess_fix_encoding(preprocessor, encoding)) {
-                    pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "non ASCII character in UTF-8 regexp");
+                    pm_regexp_error_with_content(preprocessor->regexp, "non ASCII character in UTF-8 regexp");
                     return false;
                 }
                 break;
@@ -1810,10 +1825,10 @@ typedef enum {
  * after reporting an error if the two are incompatible with its options.
  */
 static const pm_encoding_t *
-pm_regexp_resolve_encoding(pm_parser_t *parser, const pm_regular_expression_node_t *node, pm_regexp_encoding_option_t option, const pm_encoding_t *encoding, const pm_encoding_t *fixed_encoding) {
+pm_regexp_resolve_encoding(const pm_regexp_t *regexp, pm_regexp_encoding_option_t option, const pm_encoding_t *encoding, const pm_encoding_t *fixed_encoding) {
     if (fixed_encoding != NULL) {
         if ((option == PM_REGEXP_ENCODING_OPTION_FIXED && fixed_encoding != encoding) || (option == PM_REGEXP_ENCODING_OPTION_BINARY && fixed_encoding != PM_ENCODING_ASCII_8BIT_ENTRY)) {
-            pm_regexp_error_kind_with_content(parser, node, PM_ERR_REGEXP_INCOMPAT_CHAR_ENCODING);
+            pm_regexp_error_kind_with_content(regexp, PM_ERR_REGEXP_INCOMPAT_CHAR_ENCODING);
             return NULL;
         }
 
@@ -1859,8 +1874,9 @@ pm_regexp_encoding_flags(const pm_parser_t *parser, pm_node_flags_t flags, const
  * and with /e or /s script properties are as well.
  */
 static void
-pm_regexp_check_properties(pm_parser_t *parser, const pm_regular_expression_node_t *node, const pm_regexp_parser_t *regexp_parser) {
-    pm_node_flags_t flags = PM_NODE_FLAGS(node);
+pm_regexp_check_properties(const pm_regexp_t *regexp, const pm_regexp_parser_t *regexp_parser) {
+    pm_parser_t *parser = regexp->parser;
+    pm_node_flags_t flags = regexp->flags;
     const uint8_t *name = NULL;
     size_t length = 0;
 
@@ -1875,14 +1891,14 @@ pm_regexp_check_properties(pm_parser_t *parser, const pm_regular_expression_node
     if (name == NULL) return;
 
     pm_buffer_t formatted = { 0 };
-    pm_regexp_format_for_error(&formatted, parser->encoding, pm_string_source(&node->unescaped), pm_string_length(&node->unescaped));
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, node->base.location.start, node->base.location.length, PM_ERR_REGEXP_INVALID_CHAR_PROPERTY, (int) length, (const char *) name, (int) formatted.length, (const char *) formatted.value);
+    pm_regexp_format_for_error(&formatted, parser->encoding, regexp->source, regexp->size);
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_INVALID_CHAR_PROPERTY, (int) length, (const char *) name, (int) formatted.length, (const char *) formatted.value);
     pm_buffer_cleanup(&formatted);
 }
 
 /**
- * Parse a regular expression and validate its encoding, in the order that
- * Ruby reads it, which stops at the first of these steps that finds an error:
+ * Validate a regular expression, in the order that Ruby reads it, which stops
+ * at the first of these steps that finds an error:
  *
  * 1. Check its encoding option against the characters written in it.
  * 2. Read its escapes, to find the encoding that they and its characters fix
@@ -1890,23 +1906,25 @@ pm_regexp_check_properties(pm_parser_t *parser, const pm_regular_expression_node
  * 3. Resolve its encoding from that and its options.
  * 4. Parse its pattern.
  *
- * Each of these reads the unescaped content, where the lexer keeps the escapes
- * that the regular expression engine reads as their text, so that escaped
- * bytes can be told from literal ones.
+ * Each of these reads the content, where the lexer keeps the escapes that the
+ * regular expression engine reads as their text, so that escaped bytes can be
+ * told from literal ones. The offsets map places in the content to places in
+ * the source, starting at the given offset, for errors in the pattern. Returns
+ * the flags of the encoding of the regular expression.
  */
-pm_node_flags_t
-pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const pm_regexp_offsets_t *offsets) {
-    const uint8_t *source = pm_string_source(&node->unescaped);
-    size_t size = pm_string_length(&node->unescaped);
-    bool extended_mode = PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED);
-    pm_node_flags_t flags = PM_NODE_FLAGS(node);
+static pm_node_flags_t
+pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets, uint32_t source_start) {
+    pm_parser_t *parser = regexp->parser;
+    const uint8_t *source = regexp->source;
+    size_t size = regexp->size;
+    pm_node_flags_t flags = regexp->flags;
+    bool extended_mode = (flags & PM_REGULAR_EXPRESSION_FLAGS_EXTENDED) != 0;
 
-    const pm_encoding_t *read_encoding = pm_regexp_check_option(parser, node);
+    const pm_encoding_t *read_encoding = pm_regexp_check_option(regexp);
     if (read_encoding == NULL) return 0;
 
     pm_regexp_preprocessor_t preprocessor = {
-        .parser = parser,
-        .node = node,
+        .regexp = regexp,
         .end = source + size,
         .encoding = read_encoding,
         .fixed_encoding = NULL,
@@ -1929,7 +1947,7 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const p
         option = PM_REGEXP_ENCODING_OPTION_FIXED;
     }
 
-    const pm_encoding_t *encoding = pm_regexp_resolve_encoding(parser, node, option, read_encoding, preprocessor.fixed_encoding);
+    const pm_encoding_t *encoding = pm_regexp_resolve_encoding(regexp, option, read_encoding, preprocessor.fixed_encoding);
     if (encoding == NULL) return 0;
 
     pm_regexp_parser_t regexp_parser = {
@@ -1938,7 +1956,7 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const p
         .cursor = source,
         .end = source + size,
         .offsets = offsets,
-        .source_start = node->content_loc.start,
+        .source_start = source_start,
         .extended_mode = extended_mode,
         .encoding_changed = parser->encoding_changed,
         .encoding = parser->encoding,
@@ -1952,9 +1970,27 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const p
     };
 
     pm_regexp_parse_pattern(&regexp_parser);
-    pm_regexp_check_properties(parser, node, &regexp_parser);
+    pm_regexp_check_properties(regexp, &regexp_parser);
 
     return pm_regexp_encoding_flags(parser, flags, encoding);
+}
+
+/**
+ * Parse a regular expression and validate its encoding, returning the flags of
+ * its encoding. The offsets are where its content stops lining up with the
+ * source.
+ */
+pm_node_flags_t
+pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const pm_regexp_offsets_t *offsets) {
+    const pm_regexp_t regexp = {
+        .parser = parser,
+        .source = pm_string_source(&node->unescaped),
+        .size = pm_string_length(&node->unescaped),
+        .flags = PM_NODE_FLAGS(node),
+        .location = node->base.location
+    };
+
+    return pm_regexp_validate(&regexp, offsets, node->content_loc.start);
 }
 
 /**
