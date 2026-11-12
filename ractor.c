@@ -1431,13 +1431,9 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
  *
  */
 
-static unsigned int shareable_p_pjob;
-static void ractor_shareable_p_drain(void *);
-
 void
 Init_Ractor(void)
 {
-    shareable_p_pjob = rb_postponed_job_preregister(0, ractor_shareable_p_drain, NULL);
     rb_cRactor = rb_define_class("Ractor", rb_cObject);
     rb_undef_alloc_func(rb_cRactor);
 
@@ -4359,9 +4355,6 @@ rb_ractor_require(VALUE feature, bool silent)
 
 // Making a value shareable that was read from a class field owned by another Ractor
 
-// shareable_p_requests of a Ractor that no longer answers
-#define SHAREABLE_P_CLOSED ((struct class_field_shareable_p *)1)
-
 /* Not a Ruby object: allocating one could start a GC while only the reader's stack holds
  * val, which the GC of val's owner (or of a Ractor absorbing it) cannot see.  From
  * shareable_p_new until shareable_p_free, every GC marks val (shareable_p_inflight). */
@@ -4465,7 +4458,7 @@ ractor_shareable_p_one(struct class_field_shareable_p *c)
     VALUE val = c->val, reader = c->reader;
     int state;
     const VALUE result = rb_protect(shareable_p_here, val, &state);
-    // any non-local exit answers "not shareable": a postponed job cannot propagate it
+    // any non-local exit answers "not shareable": an interrupt check cannot propagate it
     if (state) rb_set_errinfo(Qnil);
     c->shareable = !state && !UNDEF_P(result);
     // a reader not waiting yet takes the answer from c; only a waiting one needs the port
@@ -4485,9 +4478,11 @@ ractor_shareable_p_one(struct class_field_shareable_p *c)
     RB_GC_GUARD(reader);
 }
 
-// postponed job targeted at the owner Ractor: whichever of its threads checks interrupts first
-static void
-ractor_shareable_p_drain(void *_)
+// at SHAREABLE_P_INTERRUPT_MASK: whichever of the owner Ractor's threads checks interrupts first.
+// Checks no interrupts itself, so drains do not nest: the traversal runs no Ruby code (short of
+// a :raise hook on NoMemoryError).
+void
+rb_ractor_shareable_p_drain(void)
 {
     rb_ractor_t *const cr = GET_RACTOR();
     struct class_field_shareable_p *c;
@@ -4500,7 +4495,7 @@ ractor_shareable_p_close(rb_ractor_t *cr)
 {
     bool closed = false;
     while (!closed) {
-        ractor_shareable_p_drain(NULL);
+        rb_ractor_shareable_p_drain();
         // pushers to a non-main Ractor hold the VM lock, so none sees the Ractor half-closed
         RB_VM_LOCKING() {
             closed = RUBY_ATOMIC_PTR_CAS(cr->shareable_p_requests, NULL, SHAREABLE_P_CLOSED) == NULL;
@@ -4531,13 +4526,18 @@ shareable_p_push(rb_ractor_t *r, struct class_field_shareable_p *c)
         c->next = head;
     } while (RUBY_ATOMIC_PTR_CAS(r->shareable_p_requests, head, c) != head);
 
-    // flags the running thread, which is quickest when it is alive and running;
-    // the lock keeps that thread from exiting and freeing its ec meanwhile
+    // flags the running thread, which is quickest when it is alive and running; the lock
+    // keeps that thread from exiting and freeing its ec meanwhile.  Read after the CAS: a
+    // thread taking the GVL publishes running_ec, then reads the requests
+    // (rb_ractor_thread_switch), so one of us flags it.
     RACTOR_LOCK(r);
-    rb_postponed_job_trigger_for_ractor(shareable_p_pjob, r->pub.self);
+    {
+        rb_execution_context_t *const running_ec = RUBY_ATOMIC_PTR_LOAD(r->threads.running_ec);
+        if (running_ec) RUBY_VM_SET_SHAREABLE_P_INTERRUPT(running_ec);
+    }
     RACTOR_UNLOCK(r);
     // running_ec may be a thread that went to sleep or exited; main lives until r closes
-    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(main_th->ec);
+    RUBY_VM_SET_SHAREABLE_P_INTERRUPT(main_th->ec);
     rb_threadptr_interrupt(main_th);
     return true;
 }

@@ -2315,6 +2315,7 @@ enum {
     TRAP_INTERRUPT_MASK	         = 0x08,
     TERMINATE_INTERRUPT_MASK     = 0x10,
     VM_BARRIER_INTERRUPT_MASK    = 0x20,
+    SHAREABLE_P_INTERRUPT_MASK   = 0x40,
 };
 
 #define RUBY_VM_SET_TIMER_INTERRUPT(ec)		ATOMIC_OR((ec)->interrupt_flag, TIMER_INTERRUPT_MASK)
@@ -2323,11 +2324,12 @@ enum {
 #define RUBY_VM_SET_TRAP_INTERRUPT(ec)		ATOMIC_OR((ec)->interrupt_flag, TRAP_INTERRUPT_MASK)
 #define RUBY_VM_SET_TERMINATE_INTERRUPT(ec)     ATOMIC_OR((ec)->interrupt_flag, TERMINATE_INTERRUPT_MASK)
 #define RUBY_VM_SET_VM_BARRIER_INTERRUPT(ec)    ATOMIC_OR((ec)->interrupt_flag, VM_BARRIER_INTERRUPT_MASK)
+#define RUBY_VM_SET_SHAREABLE_P_INTERRUPT(ec)   ATOMIC_OR((ec)->interrupt_flag, SHAREABLE_P_INTERRUPT_MASK)
 
 static inline bool
 RUBY_VM_INTERRUPTED(rb_execution_context_t *ec)
 {
-    return (ATOMIC_LOAD_RELAXED(ec->interrupt_flag) & ~(ec->interrupt_mask) & (PENDING_INTERRUPT_MASK|TRAP_INTERRUPT_MASK));
+    return (ATOMIC_LOAD_RELAXED(ec->interrupt_flag) & ~(ec->interrupt_mask) & (PENDING_INTERRUPT_MASK|TRAP_INTERRUPT_MASK|SHAREABLE_P_INTERRUPT_MASK));
 }
 
 static inline bool
