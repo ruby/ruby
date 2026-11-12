@@ -409,6 +409,69 @@ VALUE rb_int_to_s(int argc, VALUE *argv, VALUE x);
 VALUE rb_fix_to_s(VALUE x);
 VALUE rb_mod_to_s(VALUE klass);
 
+// USDT probes for invalidation events. Each corresponds to a kind of
+// invariant that has an exit_patchpoint_* counter in zjit/src/stats.rs, and
+// fires where invalidation_time_ns is measured. See probes.d.
+
+void
+rb_zjit_probe_invalidate_bop_redefined(unsigned int redefined_flag, enum ruby_basic_operators bop, size_t count)
+{
+    char subject[RB_JIT_PROBE_SUBJECT_SIZE];
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(ZJIT_INVALIDATE_BOP_REDEFINED, rb_jit_probe_bop_subject(subject, sizeof(subject), redefined_flag, bop), count);
+}
+
+void
+rb_zjit_probe_invalidate_method_redefined(const rb_callable_method_entry_t *cme, size_t count)
+{
+    char subject[RB_JIT_PROBE_SUBJECT_SIZE];
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(ZJIT_INVALIDATE_METHOD_REDEFINED, rb_jit_probe_cme_subject(subject, sizeof(subject), cme), count);
+}
+
+void
+rb_zjit_probe_invalidate_stable_constant_names(ID id, size_t count)
+{
+    char subject[RB_JIT_PROBE_SUBJECT_SIZE];
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(ZJIT_INVALIDATE_STABLE_CONSTANT_NAMES, rb_jit_probe_id_subject(subject, sizeof(subject), id), count);
+}
+
+void
+rb_zjit_probe_invalidate_no_tracepoint(size_t count)
+{
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(ZJIT_INVALIDATE_NO_TRACEPOINT, "", count);
+}
+
+void
+rb_zjit_probe_invalidate_no_newobj_hook(size_t count)
+{
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(ZJIT_INVALIDATE_NO_NEWOBJ_HOOK, "", count);
+}
+
+void
+rb_zjit_probe_invalidate_no_ep_escape(const rb_iseq_t *iseq, size_t count)
+{
+    char subject[RB_JIT_PROBE_SUBJECT_SIZE];
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(ZJIT_INVALIDATE_NO_EP_ESCAPE, rb_jit_probe_iseq_subject(subject, sizeof(subject), iseq), count);
+}
+
+void
+rb_zjit_probe_invalidate_single_ractor_mode(size_t count)
+{
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(ZJIT_INVALIDATE_SINGLE_RACTOR_MODE, "", count);
+}
+
+void
+rb_zjit_probe_invalidate_no_singleton_class(VALUE klass, size_t count)
+{
+    char subject[RB_JIT_PROBE_SUBJECT_SIZE];
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(ZJIT_INVALIDATE_NO_SINGLETON_CLASS, rb_jit_probe_class_subject(subject, sizeof(subject), klass), count);
+}
+
+void
+rb_zjit_probe_invalidate_root_box_only(size_t count)
+{
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(ZJIT_INVALIDATE_ROOT_BOX_ONLY, "", count);
+}
+
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_enable(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);

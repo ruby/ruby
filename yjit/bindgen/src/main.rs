@@ -289,6 +289,7 @@ fn main() {
         .allowlist_function("rb_vm_barrier")
         .allowlist_function("rb_yjit_cdhash_all_fixnum_p")
         .allowlist_function("rb_yjit_cdhash_lookup")
+        .allowlist_function("rb_yjit_probe_invalidate_.*")
 
         // Not sure why it's picking these up, but don't.
         .blocklist_type("FILE")

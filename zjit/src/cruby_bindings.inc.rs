@@ -2518,6 +2518,22 @@ unsafe extern "C" {
     pub fn rb_int_to_s(argc: ::std::os::raw::c_int, argv: *mut VALUE, x: VALUE) -> VALUE;
     pub fn rb_fix_to_s(x: VALUE) -> VALUE;
     pub fn rb_mod_to_s(klass: VALUE) -> VALUE;
+    pub fn rb_zjit_probe_invalidate_bop_redefined(
+        redefined_flag: ::std::os::raw::c_uint,
+        bop: ruby_basic_operators,
+        count: usize,
+    );
+    pub fn rb_zjit_probe_invalidate_method_redefined(
+        cme: *const rb_callable_method_entry_t,
+        count: usize,
+    );
+    pub fn rb_zjit_probe_invalidate_stable_constant_names(id: ID, count: usize);
+    pub fn rb_zjit_probe_invalidate_no_tracepoint(count: usize);
+    pub fn rb_zjit_probe_invalidate_no_newobj_hook(count: usize);
+    pub fn rb_zjit_probe_invalidate_no_ep_escape(iseq: *const rb_iseq_t, count: usize);
+    pub fn rb_zjit_probe_invalidate_single_ractor_mode(count: usize);
+    pub fn rb_zjit_probe_invalidate_no_singleton_class(klass: VALUE, count: usize);
+    pub fn rb_zjit_probe_invalidate_root_box_only(count: usize);
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;

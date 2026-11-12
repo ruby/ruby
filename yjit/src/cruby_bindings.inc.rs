@@ -1303,6 +1303,21 @@ extern "C" {
         key: st_data_t,
         val: *mut st_data_t,
     ) -> ::std::os::raw::c_int;
+    pub fn rb_yjit_probe_invalidate_method_lookup(
+        cme: *const rb_callable_method_entry_t,
+        count: usize,
+    );
+    pub fn rb_yjit_probe_invalidate_bop_redefined(
+        redefined_flag: ::std::os::raw::c_uint,
+        bop: ruby_basic_operators,
+        count: usize,
+    );
+    pub fn rb_yjit_probe_invalidate_ractor_spawn(count: usize);
+    pub fn rb_yjit_probe_invalidate_constant_state_bump(id: ID, count: usize);
+    pub fn rb_yjit_probe_invalidate_constant_ic_fill(ic: IC, count: usize);
+    pub fn rb_yjit_probe_invalidate_no_singleton_class(klass: VALUE, count: usize);
+    pub fn rb_yjit_probe_invalidate_ep_escape(iseq: *const rb_iseq_t, count: usize);
+    pub fn rb_yjit_probe_invalidate_everything(count: usize);
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;
