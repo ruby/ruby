@@ -1370,32 +1370,6 @@ pm_regexp_parse_pattern(pm_regexp_parser_t *parser) {
 // ---------------------------------------------------------------------------
 
 /**
- * Validate that groups of hex escape bytes in the buffer form valid multibyte
- * characters in the given encoding. Groups are separated by 0x00 sentinels.
- */
-static bool
-pm_regexp_validate_hex_escapes(const pm_encoding_t *encoding, const pm_buffer_t *buffer) {
-    const uint8_t *data = (const uint8_t *) pm_buffer_value(buffer);
-    size_t len = pm_buffer_length(buffer);
-    size_t i = 0;
-
-    while (i < len) {
-        size_t group_start = i;
-        while (i < len && data[i] != 0x00) i++;
-
-        for (size_t j = group_start; j < i; ) {
-            size_t width = pm_encoding_char_width(encoding, data + j, (ptrdiff_t) (i - j));
-            if (width == 0) return false;
-            j += width;
-        }
-
-        if (i < len) i++; // skip sentinel
-    }
-
-    return true;
-}
-
-/**
  * Format regexp source content for use in error messages, hex-escaping
  * non-ASCII bytes.
  */
@@ -1434,175 +1408,40 @@ pm_regexp_format_for_error(pm_buffer_t *buffer, const pm_encoding_t *encoding, c
 }
 
 /**
- * Emit an encoding validation error on the regexp node.
+ * Append an error to the regular expression as a whole, followed by its
+ * content, which is how errors are reported once its pattern has been read but
+ * before it is parsed. The message is written out with the content, since the
+ * same error kind holds any of these messages.
  */
-#define PM_REGEXP_ENCODING_ERROR(parser, diag_id, ...) \
-    pm_diagnostic_list_append_format( \
-        &(parser)->parser->metadata_arena, \
-        &(parser)->parser->error_list, \
-        (uint32_t) ((parser)->node_start - (parser)->parser->start), \
-        (uint32_t) ((parser)->node_end - (parser)->node_start), \
-        diag_id, __VA_ARGS__)
+static void
+pm_regexp_error_with_content(pm_parser_t *parser, const pm_regular_expression_node_t *node, const char *message) {
+    const uint8_t *source = pm_string_source(&node->unescaped);
+    size_t size = pm_string_length(&node->unescaped);
 
-/**
- * Validate encoding for a regexp with an encoding modifier (/e, /s, /u, /n).
- *
- * The decision tree is:
- *
- * 1. No escape-set encoding (explicit_encoding == NULL): for ASCII-only
- *    content, validate property escapes, return forced US-ASCII for /n or the
- *    modifier flags for others. Literal characters were checked against the
- *    modifier by pm_regexp_check_option.
- *
- * 2. Mixed \u and \x escapes: emit the appropriate conflict error depending
- *    on the modifier and which escape type was last.
- *
- * 3. \u escape with non-/u modifier: incompatible encoding error.
- *
- * 4. Validate that hex escape byte sequences form valid multibyte characters
- *    in the modifier's encoding.
- */
-static pm_node_flags_t
-pm_regexp_validate_encoding_modifier(pm_regexp_parser_t *parser, bool ascii_only, pm_node_flags_t flags, char modifier, const pm_encoding_t *modifier_encoding, const char *source_start, int source_length) {
+    pm_buffer_t buffer = { 0 };
+    pm_buffer_append_string(&buffer, message, strlen(message));
+    pm_buffer_append_string(&buffer, ": /", 3);
+    pm_regexp_format_for_error(&buffer, parser->encoding, source, size);
+    pm_buffer_append_byte(&buffer, '/');
+    pm_buffer_append_byte(&buffer, '\0');
 
-    if (parser->explicit_encoding == NULL) {
-        if (ascii_only) {
-            // Check property escapes against the modifier's encoding tier.
-            // /n (ASCII-8BIT): only POSIX properties are valid.
-            // /e, /s: POSIX and script properties are valid.
-            // /u: all properties are valid.
-            if (modifier == 'n' && parser->property_name != NULL) {
-                PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_INVALID_CHAR_PROPERTY,
-                    (int) parser->property_name_length, (const char *) parser->property_name,
-                    source_length, source_start);
-            } else if (modifier != 'u' && parser->has_unicode_property_escape) {
-                PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_INVALID_CHAR_PROPERTY,
-                    (int) parser->unicode_property_name_length, (const char *) parser->unicode_property_name,
-                    source_length, source_start);
-            }
-            return modifier == 'n' ? PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING : flags;
-        }
-
-        return flags;
-    }
-
-    // Mixed unicode + hex escapes.
-    if (parser->has_unicode_escape && parser->has_hex_escape) {
-        if (modifier == 'n') {
-            if (parser->last_escape_was_unicode) {
-                PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_UTF8_CHAR_NON_UTF8_REGEXP, source_length, source_start);
-            } else {
-                PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_ESCAPED_NON_ASCII_IN_UTF8, source_length, source_start);
-            }
-        } else {
-            if (!pm_regexp_validate_hex_escapes(modifier_encoding, &parser->hex_escape_buffer)) {
-                PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_INVALID_MULTIBYTE_ESCAPE, source_length, source_start);
-            }
-        }
-
-        return flags;
-    }
-
-    if (modifier != 'u' && parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY) {
-        if (parser->last_escape_was_unicode) {
-            PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_INCOMPAT_CHAR_ENCODING, source_length, source_start);
-        } else if (parser->encoding != PM_ENCODING_UTF_8_ENTRY) {
-            PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_INCOMPAT_CHAR_ENCODING, source_length, source_start);
-        }
-    }
-
-    if (modifier != 'n' && !pm_regexp_validate_hex_escapes(modifier_encoding, &parser->hex_escape_buffer)) {
-        PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_INVALID_MULTIBYTE_ESCAPE, source_length, source_start);
-    }
-
-    return flags;
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, node->base.location.start, node->base.location.length, PM_ERR_REGEXP_PARSE_ERROR, pm_buffer_value(&buffer));
+    pm_buffer_cleanup(&buffer);
 }
 
 /**
- * Validate encoding for a regexp without a modifier and compute the encoding
- * flags to set on the node.
- *
- * The decision tree is:
- *
- * 1. If a modifier (/n, /u, /e, /s) is present, delegate to
- *    pm_regexp_validate_encoding_modifier.
- * 2. Invalid multibyte chars or unicode ranges: suppress further checks (the
- *    lexer has already reported invalid multibyte chars).
- * 3. ASCII-only content: return forced US-ASCII (or forced UTF-8 if \p{...}).
- * 4. Escape-set encoding present: validate hex escapes against the target
- *    encoding, handle mixed \u + \x conflicts, and return the appropriate
- *    forced encoding flag.
+ * Append an error of the given kind to the regular expression as a whole, where
+ * the message of that kind ends with the content.
  */
-static pm_node_flags_t
-pm_regexp_validate_encoding(pm_regexp_parser_t *parser, bool ascii_only, pm_node_flags_t flags, const char *source_start, int source_length) {
+static void
+pm_regexp_error_kind_with_content(pm_parser_t *parser, const pm_regular_expression_node_t *node, pm_diagnostic_id_t diag_id) {
+    const uint8_t *source = pm_string_source(&node->unescaped);
+    size_t size = pm_string_length(&node->unescaped);
 
-    // Invalid multibyte characters suppress further validation. The lexer
-    // has already reported each one at its byte.
-    if (parser->has_invalid_multibyte) {
-        return flags;
-    }
-
-    if (parser->invalid_unicode_range) {
-        PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_INVALID_UNICODE_RANGE, source_length, source_start);
-        return flags;
-    }
-
-    // Check modifier flags first.
-    if (flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
-        return pm_regexp_validate_encoding_modifier(parser, ascii_only, flags, 'n', PM_ENCODING_ASCII_8BIT_ENTRY, source_start, source_length);
-    }
-    if (flags & PM_REGULAR_EXPRESSION_FLAGS_UTF_8) {
-        return pm_regexp_validate_encoding_modifier(parser, ascii_only, flags, 'u', PM_ENCODING_UTF_8_ENTRY, source_start, source_length);
-    }
-    if (flags & PM_REGULAR_EXPRESSION_FLAGS_EUC_JP) {
-        return pm_regexp_validate_encoding_modifier(parser, ascii_only, flags, 'e', PM_ENCODING_EUC_JP_ENTRY, source_start, source_length);
-    }
-    if (flags & PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
-        return pm_regexp_validate_encoding_modifier(parser, ascii_only, flags, 's', PM_ENCODING_WINDOWS_31J_ENTRY, source_start, source_length);
-    }
-
-    // ASCII-only regexps get downgraded to US-ASCII, unless property escapes
-    // force UTF-8.
-    if (ascii_only) {
-        if (parser->has_property_escape) {
-            return PM_REGULAR_EXPRESSION_FLAGS_FORCED_UTF8_ENCODING;
-        }
-        return PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING;
-    }
-
-    // Check explicit encoding from escape sequences.
-    if (parser->explicit_encoding != NULL) {
-        // Mixed unicode + hex escapes without modifier.
-        if (parser->has_unicode_escape && parser->has_hex_escape && parser->encoding != PM_ENCODING_UTF_8_ENTRY) {
-            if (parser->encoding != PM_ENCODING_US_ASCII_ENTRY &&
-                parser->encoding != PM_ENCODING_ASCII_8BIT_ENTRY &&
-                !pm_regexp_validate_hex_escapes(parser->encoding, &parser->hex_escape_buffer)) {
-                PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_INVALID_MULTIBYTE_ESCAPE, source_length, source_start);
-            } else if (parser->last_escape_was_unicode) {
-                PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_UTF8_CHAR_NON_UTF8_REGEXP, source_length, source_start);
-            } else {
-                PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_ESCAPED_NON_ASCII_IN_UTF8, source_length, source_start);
-            }
-
-            return 0;
-        }
-
-        if (parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY) {
-            if (!pm_regexp_validate_hex_escapes(parser->explicit_encoding, &parser->hex_escape_buffer)) {
-                PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_INVALID_MULTIBYTE_ESCAPE, source_length, source_start);
-            }
-
-            return PM_REGULAR_EXPRESSION_FLAGS_FORCED_UTF8_ENCODING;
-        } else if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) {
-            return PM_REGULAR_EXPRESSION_FLAGS_FORCED_BINARY_ENCODING;
-        } else {
-            if (!pm_regexp_validate_hex_escapes(parser->explicit_encoding, &parser->hex_escape_buffer)) {
-                PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_INVALID_MULTIBYTE_ESCAPE, source_length, source_start);
-            }
-        }
-    }
-
-    return 0;
+    pm_buffer_t buffer = { 0 };
+    pm_regexp_format_for_error(&buffer, parser->encoding, source, size);
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, node->base.location.start, node->base.location.length, diag_id, (int) buffer.length, pm_buffer_value(&buffer));
+    pm_buffer_cleanup(&buffer);
 }
 
 /**
@@ -1644,12 +1483,21 @@ pm_regexp_non_ascii_p(const pm_encoding_t *encoding, const uint8_t *cursor, cons
  * against the characters written in it, before any of its escapes are read.
  * Every character that is not ASCII must already be in the encoding that the
  * option names, so the source encoding must be that one. When it is not, the
- * regular expression is still validated, except with /n, where such a
- * character is an error of its own and nothing more is checked. Returns
- * whether validation goes on.
+ * regular expression is still validated, in the source encoding, except with
+ * /n, where such a character is an error of its own and nothing more is
+ * checked.
+ *
+ * Returns the encoding that the rest of the regular expression is read in, or
+ * NULL if nothing more is checked. That is the encoding of the option, if any.
+ * Without one it is the source encoding, except that content in a US-ASCII
+ * source is read as binary, since any byte that is not ASCII in it is invalid
+ * and has already been reported.
  */
-static bool
-pm_regexp_check_option(pm_parser_t *parser, const pm_regular_expression_node_t *node, const uint8_t *source, size_t size) {
+static const pm_encoding_t *
+pm_regexp_check_option(pm_parser_t *parser, const pm_regular_expression_node_t *node) {
+    const uint8_t *source = pm_string_source(&node->unescaped);
+    size_t size = pm_string_length(&node->unescaped);
+
     pm_node_flags_t flags = PM_NODE_FLAGS(node);
     const pm_encoding_t *encoding;
     char option;
@@ -1667,29 +1515,616 @@ pm_regexp_check_option(pm_parser_t *parser, const pm_regular_expression_node_t *
         option = 's';
         encoding = PM_ENCODING_WINDOWS_31J_ENTRY;
     } else {
-        return true;
+        return (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) ? PM_ENCODING_ASCII_8BIT_ENTRY : parser->encoding;
     }
 
-    if (parser->encoding == encoding || !pm_regexp_non_ascii_p(parser->encoding, source, source + size)) return true;
+    if (parser->encoding == encoding || !pm_regexp_non_ascii_p(parser->encoding, source, source + size)) return encoding;
 
     uint32_t start = node->base.location.start;
     uint32_t length = node->base.location.length;
     pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, start, length, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, option, parser->encoding->name);
-    if (option != 'n') return true;
+    if (option != 'n') return parser->encoding;
 
-    pm_buffer_t formatted = { 0 };
-    pm_regexp_format_for_error(&formatted, parser->encoding, source, size);
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, start, length, PM_ERR_REGEXP_NON_ESCAPED_MBC, (int) formatted.length, (const char *) formatted.value);
-    pm_buffer_cleanup(&formatted);
+    pm_regexp_error_kind_with_content(parser, node, PM_ERR_REGEXP_NON_ESCAPED_MBC);
+    return NULL;
+}
+
+/**
+ * The state of reading the escapes of a regular expression, which finds the
+ * encoding that its characters and escapes fix it to before its pattern is
+ * parsed.
+ */
+typedef struct {
+    /** The parser that the regular expression is in. */
+    pm_parser_t *parser;
+
+    /** The regular expression, whose content is read. */
+    const pm_regular_expression_node_t *node;
+
+    /** The end of the content. */
+    const uint8_t *end;
+
+    /** The encoding that the content is read in. */
+    const pm_encoding_t *encoding;
+
+    /**
+     * The encoding that the characters and escapes read so far fix the
+     * regular expression to, or NULL if none of them fixes it.
+     */
+    const pm_encoding_t *fixed_encoding;
+
+    /**
+     * Whether a property escape came before anything fixed the encoding,
+     * which fixes it to the encoding that the content is read in.
+     */
+    bool has_property;
+} pm_regexp_preprocessor_t;
+
+/**
+ * Fix the regular expression to the given encoding, which a character or an
+ * escape that is not ASCII calls for. Returns false if it was fixed to another
+ * encoding already, which is an error for the caller to report.
+ */
+static bool
+pm_regexp_preprocess_fix_encoding(pm_regexp_preprocessor_t *preprocessor, const pm_encoding_t *encoding) {
+    if (preprocessor->fixed_encoding == NULL) preprocessor->fixed_encoding = encoding;
+    return preprocessor->fixed_encoding == encoding;
+}
+
+/**
+ * Return the value of the digits at the cursor in the given base, reading at
+ * most maximum of them, and set length to how many were read.
+ */
+static uint32_t
+pm_regexp_preprocess_digits(const uint8_t *cursor, const uint8_t *end, uint32_t maximum, uint32_t base, uint32_t *length) {
+    uint32_t value = 0;
+    uint32_t index = 0;
+
+    while (index < maximum && cursor + index < end) {
+        int digit = pm_regexp_hex_digit_value(cursor[index]);
+        if (digit < 0 || (uint32_t) digit >= base) break;
+
+        value = value * base + (uint32_t) digit;
+        index++;
+    }
+
+    *length = index;
+    return value;
+}
+
+/**
+ * Read the escape at the cursor as the byte that it stands for, which is how
+ * an escape of a byte that is not ASCII is read, along with the escapes after
+ * it that complete its character. The lexer writes each \M-, \C-, and \c
+ * escape in the content as the \x escape of its byte, so those forms never
+ * reach here. Returns the byte, or -1 after reporting an error.
+ */
+static int
+pm_regexp_preprocess_escaped_byte(pm_regexp_preprocessor_t *preprocessor, const uint8_t **parent_cursor) {
+    const uint8_t *end = preprocessor->end;
+    const uint8_t *cursor = *parent_cursor;
+    uint32_t code;
+    uint32_t length;
+
+    if (cursor == end || *cursor++ != '\\') {
+        pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "too short escaped multibyte character");
+        return -1;
+    }
+
+    if (cursor == end) {
+        pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "too short escape sequence");
+        return -1;
+    }
+
+    switch (*cursor++) {
+        case '\\': code = '\\'; break;
+        case 'n': code = '\n'; break;
+        case 't': code = '\t'; break;
+        case 'r': code = '\r'; break;
+        case 'f': code = '\f'; break;
+        case 'v': code = '\v'; break;
+        case 'a': code = '\a'; break;
+        case 'e': code = '\033'; break;
+        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
+            code = pm_regexp_preprocess_digits(cursor - 1, end, 3, 8, &length);
+            cursor += length - 1;
+            break;
+        case 'x':
+            code = pm_regexp_preprocess_digits(cursor, end, 2, 16, &length);
+            if (length == 0) {
+                pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "invalid hex escape");
+                return -1;
+            }
+            cursor += length;
+            break;
+        default:
+            pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "unexpected escape sequence");
+            return -1;
+    }
+
+    if (code > 0xFF) {
+        pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "invalid escape code");
+        return -1;
+    }
+
+    *parent_cursor = cursor;
+    return (int) code;
+}
+
+/**
+ * Read the escape of a byte at the cursor, along with the escapes after it
+ * that complete the character it begins. A character that is not ASCII fixes
+ * the regular expression to the encoding that the content is read in.
+ */
+static bool
+pm_regexp_preprocess_escaped_char(pm_regexp_preprocessor_t *preprocessor, const uint8_t **parent_cursor) {
+    const pm_encoding_t *encoding = preprocessor->encoding;
+    uint8_t bytes[8];
+    size_t length = 0;
+
+    do {
+        int byte = pm_regexp_preprocess_escaped_byte(preprocessor, parent_cursor);
+        if (byte < 0) return false;
+        bytes[length++] = (uint8_t) byte;
+    } while (length < sizeof(bytes) && pm_encoding_char_width(encoding, bytes, (ptrdiff_t) length) == 0 && pm_encoding_char_prefix_p(encoding, bytes, (ptrdiff_t) length));
+
+    if (pm_encoding_char_width(encoding, bytes, (ptrdiff_t) length) == 0 && !pm_encoding_char_prefix_p(encoding, bytes, (ptrdiff_t) length)) {
+        pm_regexp_error_kind_with_content(preprocessor->parser, preprocessor->node, PM_ERR_INVALID_MULTIBYTE_ESCAPE);
+        return false;
+    }
+
+    if (length > 1 || bytes[0] >= 0x80) {
+        if (!pm_regexp_preprocess_fix_encoding(preprocessor, encoding)) {
+            pm_regexp_error_kind_with_content(preprocessor->parser, preprocessor->node, PM_ERR_REGEXP_ESCAPED_NON_ASCII_IN_UTF8);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Read a code point of a \u escape. One that is not ASCII fixes the regular
+ * expression to UTF-8.
+ */
+static bool
+pm_regexp_preprocess_code_point(pm_regexp_preprocessor_t *preprocessor, uint32_t value) {
+    if ((value >= 0xD800 && value <= 0xDFFF) || value > 0x10FFFF) {
+        pm_regexp_error_kind_with_content(preprocessor->parser, preprocessor->node, PM_ERR_REGEXP_INVALID_UNICODE_RANGE);
+        return false;
+    }
+
+    if (value >= 0x80) {
+        if (!pm_regexp_preprocess_fix_encoding(preprocessor, PM_ENCODING_UTF_8_ENTRY)) {
+            pm_regexp_error_kind_with_content(preprocessor->parser, preprocessor->node, PM_ERR_REGEXP_UTF8_CHAR_NON_UTF8_REGEXP);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Whether the byte is whitespace between the code points of a \u{...} escape.
+ */
+static PRISM_INLINE bool
+pm_regexp_preprocess_space_p(uint8_t byte) {
+    return byte == ' ' || (byte >= '\t' && byte <= '\r');
+}
+
+/**
+ * Read the code points of a \u{...} escape, from the cursor after its brace up
+ * to its closing brace.
+ */
+static bool
+pm_regexp_preprocess_code_point_list(pm_regexp_preprocessor_t *preprocessor, const uint8_t **parent_cursor) {
+    const uint8_t *end = preprocessor->end;
+    const uint8_t *cursor = *parent_cursor;
+    bool has_code_point = false;
+
+    while (cursor < end && pm_regexp_preprocess_space_p(*cursor)) cursor++;
+
+    while (true) {
+        uint32_t length;
+        uint32_t value = pm_regexp_preprocess_digits(cursor, end, UINT32_MAX, 16, &length);
+        if (length == 0) break;
+
+        /* The largest code point, 10FFFF, has six digits. */
+        if (length > 6) {
+            pm_regexp_error_kind_with_content(preprocessor->parser, preprocessor->node, PM_ERR_REGEXP_INVALID_UNICODE_RANGE);
+            return false;
+        }
+        cursor += length;
+
+        if (!pm_regexp_preprocess_code_point(preprocessor, value)) return false;
+        has_code_point = true;
+
+        while (cursor < end && pm_regexp_preprocess_space_p(*cursor)) cursor++;
+    }
+
+    if (!has_code_point || cursor == end || *cursor++ != '}') {
+        pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "invalid Unicode list");
+        return false;
+    }
+
+    *parent_cursor = cursor;
+    return true;
+}
+
+/**
+ * Whether the escapes of the content need to be read at all. Only a byte that
+ * is not ASCII, or an escape of a byte, a code point, or a property, can fix
+ * the encoding or be an error, and most regular expressions have neither, so
+ * this quicker check lets them skip the reading.
+ */
+static bool
+pm_regexp_preprocess_needed_p(const uint8_t *cursor, const uint8_t *end) {
+    while (cursor < end) {
+        uint8_t byte = *cursor++;
+
+        switch (byte) {
+            case '\\':
+                /* A trailing backslash is an error. */
+                if (cursor == end) return true;
+
+                byte = *cursor++;
+                switch (byte) {
+                    case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
+                    case 'x': case 'u': case 'p': case 'P':
+                        return true;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
+
+        /* The byte last read, whether on its own or after a backslash, fixes
+         * the encoding if it is not ASCII. */
+        if (byte >= 0x80) return true;
+    }
 
     return false;
 }
 
 /**
- * Parse a regular expression and validate its encoding. Validation walks the
- * unescaped content, where the lexer keeps the escapes that the regular
- * expression engine reads as their text, so that escaped bytes can be told
- * from literal ones.
+ * The ASCII bytes that reading the escapes of the content stops at. Every other
+ * ASCII byte is a character that neither fixes the encoding nor starts an
+ * escape or a comment, so it is skipped.
+ */
+static const bool pm_regexp_preprocess_stops[128] = {
+    ['\\'] = true, ['#'] = true, ['['] = true, [']'] = true, ['('] = true, [')'] = true
+};
+
+/**
+ * Read the content from the cursor, checking its escapes and finding the
+ * encoding that its characters fix it to. Comments are skipped, both (?#...)
+ * and, in extended mode, those from # to the end of the line, except that a
+ * character that is not ASCII in a comment fixes a regular expression read in
+ * UTF-8 to UTF-8.
+ *
+ * Within a group that turns extended mode on or off for its subexpression, as
+ * in (?x:...), this is called again for the subexpression, which reads up to
+ * the parenthesis that its own count of open parentheses closes. The depth is
+ * how many such groups enclose the content being read.
+ */
+static bool
+pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t **parent_cursor, bool extended, bool nested, uint16_t depth) {
+    /* Groups nested this deeply are an error of the pattern, which its walk
+     * reports. Past that depth, this leaves the cursor where it is, so that
+     * the caller reads the escapes of the subexpression as part of its own
+     * rather than this recursing without bound. */
+    if (depth >= PM_REGEXP_PARSE_DEPTH_MAX) {
+        return true;
+    }
+
+    if (pm_parser_stack_exhausted(preprocessor->parser)) {
+        const pm_regular_expression_node_t *node = preprocessor->node;
+        pm_parser_err_stack_exhausted(preprocessor->parser, node->base.location.start, node->base.location.length);
+        return false;
+    }
+
+    const pm_encoding_t *encoding = preprocessor->encoding;
+    const uint8_t *end = preprocessor->end;
+    const uint8_t *cursor = *parent_cursor;
+
+    uint32_t character_classes = 0;
+    uint32_t parentheses = 1;
+
+    while (cursor < end) {
+        /* Every supported encoding is ASCII-compatible, so a byte below 0x80
+         * at the start of a character is a character by itself. */
+        while (cursor < end && *cursor < 0x80 && !pm_regexp_preprocess_stops[*cursor]) cursor++;
+        if (cursor == end) break;
+
+        switch (*cursor++) {
+            case '\\': {
+                if (cursor == end) {
+                    pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "too short escape sequence");
+                    return false;
+                }
+
+                if (*cursor >= 0x80) {
+                    size_t width = pm_encoding_char_width(encoding, cursor, end - cursor);
+                    if (width == 0) {
+                        cursor++;
+                        break;
+                    }
+
+                    /* A backslash before a character of more than one byte
+                     * is read along with the character. */
+                    if (width > 1) {
+                        cursor += width;
+                        if (!pm_regexp_preprocess_fix_encoding(preprocessor, encoding)) {
+                            pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "non ASCII character in UTF-8 regexp");
+                            return false;
+                        }
+                        break;
+                    }
+                }
+
+                switch (*cursor++) {
+                    case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
+                        /* A backreference, or the octal escape of an ASCII
+                         * character (up to 0x7F, the largest), is kept as it
+                         * is, since the two cannot be told apart here. A
+                         * larger value is the escape of a byte. */
+                        uint32_t length;
+                        if (pm_regexp_preprocess_digits(cursor - 1, end, 3, 8, &length) <= 0x7F) break;
+                    }
+                    PRISM_FALLTHROUGH
+                    case '0': case 'x':
+                        cursor -= 2;
+                        if (!pm_regexp_preprocess_escaped_char(preprocessor, &cursor)) return false;
+                        break;
+                    case 'u':
+                        if (cursor == end) {
+                            pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "too short escape sequence");
+                            return false;
+                        }
+
+                        if (*cursor == '{') {
+                            cursor++;
+                            if (!pm_regexp_preprocess_code_point_list(preprocessor, &cursor)) return false;
+                        } else {
+                            uint32_t length;
+                            uint32_t value = pm_regexp_preprocess_digits(cursor, end, 4, 16, &length);
+                            if (length != 4) {
+                                pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "invalid Unicode escape");
+                                return false;
+                            }
+
+                            cursor += 4;
+                            if (!pm_regexp_preprocess_code_point(preprocessor, value)) return false;
+                        }
+                        break;
+                    case 'p':
+                    case 'P':
+                        if (preprocessor->fixed_encoding == NULL) preprocessor->has_property = true;
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            }
+            case '#':
+                if (extended && !character_classes) {
+                    while (cursor < end && *cursor != '\n') {
+                        if (*cursor >= 0x80 && preprocessor->fixed_encoding == NULL && encoding == PM_ENCODING_UTF_8_ENTRY) {
+                            preprocessor->fixed_encoding = encoding;
+                        }
+                        cursor++;
+                    }
+                    if (cursor < end) cursor++;
+                }
+                break;
+            case '[':
+                character_classes++;
+                break;
+            case ']':
+                if (character_classes > 0) character_classes--;
+                break;
+            case ')':
+                if (character_classes == 0 && nested && --parentheses == 0) {
+                    *parent_cursor = cursor;
+                    return true;
+                }
+                break;
+            case '(':
+                if (character_classes > 0) {
+                    break;
+                } else if (cursor + 1 < end && *cursor == '?' && cursor[1] == '#') {
+                    const uint8_t *comment = cursor;
+                    bool closed = false;
+
+                    while (!closed && cursor < end) {
+                        uint8_t byte = *cursor++;
+
+                        if (byte == ')') {
+                            closed = true;
+                        } else if (byte == '\\' || byte >= 0x80) {
+                            if (byte >= 0x80) {
+                                if (preprocessor->fixed_encoding == NULL && encoding == PM_ENCODING_UTF_8_ENTRY) {
+                                    preprocessor->fixed_encoding = encoding;
+                                }
+                                cursor--;
+                            }
+
+                            /* A backslash skips the character after it, so
+                             * that it does not close the comment. */
+                            if (cursor < end) {
+                                size_t width = pm_encoding_char_width(encoding, cursor, end - cursor);
+                                cursor += (width == 0) ? 1 : width;
+                            }
+                        }
+                    }
+
+                    /* An unterminated comment is read as the text that it
+                     * holds, which is a syntax error of the pattern. */
+                    if (!closed) cursor = comment;
+                } else if (cursor + 1 < end && *cursor == '?') {
+                    /* Look through the options of the group for one that
+                     * turns extended mode on or off. */
+                    int extend = 0;
+                    bool invert = false;
+                    if (nested) parentheses++;
+
+                    for (const uint8_t *option = cursor + 1; option < end; option++) {
+                        switch (*option) {
+                            case 'x':
+                                extend = invert ? -1 : 1;
+                                continue;
+                            case '-':
+                                invert = true;
+                                continue;
+                            case 'i': case 'm': case 'a': case 'd': case 'u':
+                                continue;
+                            case ':':
+                            case ')':
+                                if (extend == 0 || (extend == -1) != extended) break;
+
+                                if (*option == ':') {
+                                    if (!pm_regexp_preprocess_scan(preprocessor, &cursor, extend == 1, true, (uint16_t) (depth + 1))) return false;
+                                } else {
+                                    extended = (extend == 1);
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    }
+                } else if (nested) {
+                    parentheses++;
+                }
+                break;
+            default: {
+                /* Every other ASCII byte was skipped above, so this is the
+                 * first byte of a character that is not ASCII. An invalid
+                 * character is an error of its own, reported where it is
+                 * lexed, so it is skipped a byte at a time. */
+                size_t width = pm_encoding_char_width(encoding, cursor - 1, end - (cursor - 1));
+                if (width == 0) break;
+
+                cursor += width - 1;
+                if (!pm_regexp_preprocess_fix_encoding(preprocessor, encoding)) {
+                    pm_regexp_error_with_content(preprocessor->parser, preprocessor->node, "non ASCII character in UTF-8 regexp");
+                    return false;
+                }
+                break;
+            }
+        }
+    }
+
+    if (nested) *parent_cursor = cursor;
+    return true;
+}
+
+/**
+ * The options of a regular expression that fix its encoding, which affect how
+ * the encoding is resolved from what its content fixes it to.
+ */
+typedef enum {
+    /** No encoding option. */
+    PM_REGEXP_ENCODING_OPTION_NONE,
+
+    /** The /n option, which reads the content as binary. */
+    PM_REGEXP_ENCODING_OPTION_BINARY,
+
+    /** The /e, /s, or /u option, which fixes the encoding to its own. */
+    PM_REGEXP_ENCODING_OPTION_FIXED
+} pm_regexp_encoding_option_t;
+
+/**
+ * Resolve the encoding of the regular expression from the encoding that its
+ * content is read in and the one that its content fixes it to. Returns NULL
+ * after reporting an error if the two are incompatible with its options.
+ */
+static const pm_encoding_t *
+pm_regexp_resolve_encoding(pm_parser_t *parser, const pm_regular_expression_node_t *node, pm_regexp_encoding_option_t option, const pm_encoding_t *encoding, const pm_encoding_t *fixed_encoding) {
+    if (fixed_encoding != NULL) {
+        if ((option == PM_REGEXP_ENCODING_OPTION_FIXED && fixed_encoding != encoding) || (option == PM_REGEXP_ENCODING_OPTION_BINARY && fixed_encoding != PM_ENCODING_ASCII_8BIT_ENTRY)) {
+            pm_regexp_error_kind_with_content(parser, node, PM_ERR_REGEXP_INCOMPAT_CHAR_ENCODING);
+            return NULL;
+        }
+
+        return fixed_encoding;
+    }
+
+    /* Without an encoding option, a regular expression that nothing fixes is
+     * in US-ASCII, as is one with /n, whose content must then all be ASCII. */
+    return (option == PM_REGEXP_ENCODING_OPTION_FIXED) ? encoding : PM_ENCODING_US_ASCII_ENTRY;
+}
+
+/**
+ * Return the flag that marks the regular expression as being in the given
+ * encoding, which it needs only when its options and the source encoding do not
+ * already give it that one.
+ */
+static pm_node_flags_t
+pm_regexp_encoding_flags(const pm_parser_t *parser, pm_node_flags_t flags, const pm_encoding_t *encoding) {
+    const pm_encoding_t *implied;
+
+    if (flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
+        implied = PM_ENCODING_ASCII_8BIT_ENTRY;
+    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_UTF_8) {
+        implied = PM_ENCODING_UTF_8_ENTRY;
+    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_EUC_JP) {
+        implied = PM_ENCODING_EUC_JP_ENTRY;
+    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
+        implied = PM_ENCODING_WINDOWS_31J_ENTRY;
+    } else {
+        implied = parser->encoding;
+    }
+
+    if (encoding == implied) return 0;
+    if (encoding == PM_ENCODING_UTF_8_ENTRY) return PM_REGULAR_EXPRESSION_FLAGS_FORCED_UTF8_ENCODING;
+    if (encoding == PM_ENCODING_ASCII_8BIT_ENTRY) return PM_REGULAR_EXPRESSION_FLAGS_FORCED_BINARY_ENCODING;
+    if (encoding == PM_ENCODING_US_ASCII_ENTRY) return PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING;
+    return 0;
+}
+
+/**
+ * Check the property escapes that the pattern holds against the encoding
+ * option of the regular expression. With /n only POSIX properties are valid,
+ * and with /e or /s script properties are as well.
+ */
+static void
+pm_regexp_check_properties(pm_parser_t *parser, const pm_regular_expression_node_t *node, const pm_regexp_parser_t *regexp_parser) {
+    pm_node_flags_t flags = PM_NODE_FLAGS(node);
+    const uint8_t *name = NULL;
+    size_t length = 0;
+
+    if (flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
+        name = regexp_parser->property_name;
+        length = regexp_parser->property_name_length;
+    } else if (flags & (PM_REGULAR_EXPRESSION_FLAGS_EUC_JP | PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J)) {
+        name = regexp_parser->unicode_property_name;
+        length = regexp_parser->unicode_property_name_length;
+    }
+
+    if (name == NULL) return;
+
+    pm_buffer_t formatted = { 0 };
+    pm_regexp_format_for_error(&formatted, parser->encoding, pm_string_source(&node->unescaped), pm_string_length(&node->unescaped));
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, node->base.location.start, node->base.location.length, PM_ERR_REGEXP_INVALID_CHAR_PROPERTY, (int) length, (const char *) name, (int) formatted.length, (const char *) formatted.value);
+    pm_buffer_cleanup(&formatted);
+}
+
+/**
+ * Parse a regular expression and validate its encoding, in the order that
+ * Ruby reads it, which stops at the first of these steps that finds an error:
+ *
+ * 1. Check its encoding option against the characters written in it.
+ * 2. Read its escapes, to find the encoding that they and its characters fix
+ *    it to.
+ * 3. Resolve its encoding from that and its options.
+ * 4. Parse its pattern.
+ *
+ * Each of these reads the unescaped content, where the lexer keeps the escapes
+ * that the regular expression engine reads as their text, so that escaped
+ * bytes can be told from literal ones.
  */
 pm_node_flags_t
 pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const pm_regexp_offsets_t *offsets) {
@@ -1698,7 +2133,36 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const p
     bool extended_mode = PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED);
     pm_node_flags_t flags = PM_NODE_FLAGS(node);
 
-    if (!pm_regexp_check_option(parser, node, source, size)) return flags;
+    const pm_encoding_t *read_encoding = pm_regexp_check_option(parser, node);
+    if (read_encoding == NULL) return 0;
+
+    pm_regexp_preprocessor_t preprocessor = {
+        .parser = parser,
+        .node = node,
+        .end = source + size,
+        .encoding = read_encoding,
+        .fixed_encoding = NULL,
+        .has_property = false
+    };
+
+    const uint8_t *cursor = source;
+    if (pm_regexp_preprocess_needed_p(source, source + size) && !pm_regexp_preprocess_scan(&preprocessor, &cursor, extended_mode, false, 0)) return 0;
+
+    /* A property escape before anything else fixes the encoding fixes it to
+     * the one that the content is read in. */
+    if (preprocessor.has_property && preprocessor.fixed_encoding == NULL) {
+        preprocessor.fixed_encoding = read_encoding;
+    }
+
+    pm_regexp_encoding_option_t option = PM_REGEXP_ENCODING_OPTION_NONE;
+    if (flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
+        option = PM_REGEXP_ENCODING_OPTION_BINARY;
+    } else if (flags & (PM_REGULAR_EXPRESSION_FLAGS_UTF_8 | PM_REGULAR_EXPRESSION_FLAGS_EUC_JP | PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J)) {
+        option = PM_REGEXP_ENCODING_OPTION_FIXED;
+    }
+
+    const pm_encoding_t *encoding = pm_regexp_resolve_encoding(parser, node, option, read_encoding, preprocessor.fixed_encoding);
+    if (encoding == NULL) return 0;
 
     const uint8_t *node_start = parser->start + node->base.location.start;
     const uint8_t *node_end = parser->start + node->base.location.start + node->base.location.length;
@@ -1736,18 +2200,10 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const p
     };
 
     pm_regexp_parse_pattern(&regexp_parser);
-
-    /* The content keeps escapes as their text (\x80 is four ASCII bytes), so
-     * whether it is ASCII-only comes from what the walk tracked rather than
-     * from its bytes. */
-    bool ascii_only = !regexp_parser.has_hex_escape && !regexp_parser.has_unicode_escape && regexp_parser.non_ascii_literal_count == 0;
-
-    /* Error messages quote the content as CRuby does, with \M-\C-? and the
-     * like written as \xHH escapes, and other escapes kept as their text. */
-    pm_node_flags_t encoding_flags = pm_regexp_validate_encoding(&regexp_parser, ascii_only, flags, (const char *) source, (int) size);
+    pm_regexp_check_properties(parser, node, &regexp_parser);
     pm_buffer_cleanup(&regexp_parser.hex_escape_buffer);
 
-    return encoding_flags;
+    return pm_regexp_encoding_flags(parser, flags, encoding);
 }
 
 /**

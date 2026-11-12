@@ -10,5 +10,5 @@
 /\/\/(?z)/
        ^ undefined group option
 /\ca\u{zz}/
-    ^~~~~~ invalid Unicode list: \u{zz}
+^~~~~~~~~~~ invalid Unicode list: /\x01\u{zz}/
 

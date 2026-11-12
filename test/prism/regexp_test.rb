@@ -297,6 +297,13 @@ module Ruby::Prism
       assert_depth_limit("[" * 10_000)
     end
 
+    # Each of these groups turns extended mode on or off, and the escape inside
+    # them makes their escapes be read, which follows each such group.
+    def test_depth_limit_groups_that_toggle_extended_mode
+      groups = Array.new(100_000) { |index| index.even? ? "(?x:" : "(?-x:" }
+      assert_depth_limit("#{groups.join}\\x41#{")" * groups.length}")
+    end
+
     private
 
     def assert_depth_limit(source)

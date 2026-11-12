@@ -1,0 +1,11 @@
+/\xFF(/
+^~~~~~~ invalid multibyte escape: /\xFF(/
+/\u{110000}(/
+^~~~~~~~~~~~~ invalid Unicode range: /\u{110000}(/
+/\u3042\xE3(/
+^~~~~~~~~~~~~ too short escaped multibyte character: /\u3042\xE3(/
+/\uzz(/
+^~~~~~~ invalid Unicode escape: /\uzz(/
+/a\u{61 zz}/
+^~~~~~~~~~~~ invalid Unicode list: /a\u{61 zz}/
+

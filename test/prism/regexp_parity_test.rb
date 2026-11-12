@@ -99,25 +99,6 @@ module Ruby::Prism
     # Regular expressions where prism does not yet match CRuby. Each one is
     # removed when the stage that it belongs to matches.
     KNOWN_FAILURES = [
-      # The lexer leaves escapes of code points for the preprocessor to
-      # validate.
-      "/\\u{\xFF}(/", "/\\u{a\xFFb}(/", "/\\u{41 \xFF}/x", "/\\u{zz}/",
-
-      # Escapes, comments, and property escapes fix the encoding of the regular
-      # expression.
-      "/\\p{Alpha}/", "/a\\p{Alpha}/", "/\\P{Alpha}/", "/\\p{Alpha}/n",
-      "/\\351/", "/\\343\\201\\202/", "/(?<ą>a)/", "/a(?#ą)b/",
-      "/a # ą\nb/x", "/(?x)a # ą\n/", "/(?<a\\xFF>x)/", "/(?<a\xFF>b)/",
-      "/\\p/",
-
-      # Escaped bytes are preprocessed into the characters that they form.
-      "/\\xE9/", "/\\xE9\\x41/", "/\\xE9A/", "/\\xE9\\d/",
-      "/\\xE9\\101/", "/\\xE9\\u0041/", "/\\xC3\\x41/", "/\\x81\\x30\\x81\\x30/",
-      "/\\xED\\xA0\\x80/", "/\\xED\\xA4\\xCE\\x71/", "/\\xED\\xA0\\x80\\xED\\xB0/", "/\\x81\\x30/",
-      "/\\x81\\x30\\x81/", "/\\x8F\\xA1/", "/\\x8E\\xA1\\xA1/", "/\\x9C\\xF0\\xA0/",
-      "/\\M-a/", "/\\M-\\\\/", "/\\c\\M-\\xFE/", "/\\cA\\M-a/",
-      "/\\u3042\\xE3/", "/\\u{E9}\\xE9[a/", "/\\u3042\\xDC\\p{Hiragana}/",
-
       # The literal parts of a regular expression with interpolation are checked
       # and preprocessed.
       "/\\xFF\#{1}/", "/a\#{1}\\xE3\\x81/", "/\\u{3042}\#{1}\\xE3\\x81\\x82/", "/é\#{1}/n",
@@ -135,8 +116,7 @@ module Ruby::Prism
 
       # Property escapes are checked against the encoding of the pattern.
       "/\\p{Hiragana}/", "/\\p{L}/", "/\\x80\\p{L}/", "/\\xE9\\p{Hiragana}/",
-      "/\\xA4\\xA2\\p{L}/e", "/é\\p{L}/e", "/\\p{Hiragana}[a/", "/\\p{^Alpha/",
-      "/\\p{Alpha/", "/\\p{}/",
+      "/\\p{Hiragana}[a/", "/\\p{^Alpha/", "/\\p{Alpha/", "/\\p{}/",
 
       # Names and numbers of groups are resolved once the pattern is parsed.
       "/(?<b>x)\\k<1>/", "/\\g<b>/", "/(?<a>x)\\g<b>/", "/\\g<2>(a)/",
@@ -146,16 +126,17 @@ module Ruby::Prism
       # writes them.
       "/\\ą(/", "/)\xFFa/", "/(\xFFa/", "/)\xFF/",
       "/(\\x/", "/(\xFF/", "/a\\\xFFb(/", "/\xE3\x81(/",
-      "/garçon/n", "/garçon\\xC3\\xA7/n", "/\\xC3\\xA7garçon/n", "/é(/n",
-      "/é(/u", "/é(/e", "/é(/s", "/é\\xFF(/n",
-      "/é\\xFF(/u", "/é\\xFF(/e", "/é\\xFF(/s", "/\\p{Hiragana}(?#é)/n",
-      "/\\uzz/", "/\\xE9(/", "/)\\p{Hiragana}/", "/(?\\!x)/",
-      "/\\あ(/", "/a\\/b(/", "/\\\nx(/", "/\\xE3\\x81\\x82(/",
-      "/\\343\\201\\202(/", "%r{(?\\}x)}", "/[]/", "/*/",
-      "/+/", "/?/", "/(?<>a)/", "/(/",
-      "/(|/", "/(?</", "/(?/", "/(?#/",
-      "/(?P/", "/)/", "/a(/x", "/(?x)a # \\xFF\n(/",
-      "/(?z)/", "/\\M-\\x(/", "/(\xFFa/ =~ \"\""
+      "/\\u{\xFF}(/", "/\\u{a\xFFb}(/", "/\\u{41 \xFF}/x", "/garçon/n",
+      "/garçon\\xC3\\xA7/n", "/\\xC3\\xA7garçon/n", "/é(/n", "/é(/u",
+      "/é(/e", "/é(/s", "/é\\xFF(/n", "/é\\xFF(/u",
+      "/é\\xFF(/e", "/é\\xFF(/s", "/\\p{Hiragana}(?#é)/n", "/\\xE9(/",
+      "/)\\p{Hiragana}/", "/(?\\!x)/", "/\\あ(/", "/a\\/b(/",
+      "/\\\nx(/", "/\\xE3\\x81\\x82(/", "/\\343\\201\\202(/", "%r{(?\\}x)}",
+      "/[]/", "/*/", "/+/", "/?/",
+      "/(?<>a)/", "/(/", "/(|/", "/(?</",
+      "/(?/", "/(?#/", "/(?P/", "/)/",
+      "/a(/x", "/(?x)a # \\xFF\n(/", "/(?z)/", "/\\M-\\x(/",
+      "/(\xFFa/ =~ \"\""
     ].freeze
 
     # The encodings that ENCODING_CASES are compared in by default, which have
