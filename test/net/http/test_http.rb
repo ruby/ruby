@@ -1143,6 +1143,43 @@ class TestNetHTTPContinue < Test::Unit::TestCase
     assert_not_match(/HTTP\/1.1 100 continue/, @debug.string)
   end
 
+  def test_expect_continue_after_early_hints
+    server = TCPServer.new(config('host'), 0)
+    th = Thread.new do
+      sock = server.accept
+      begin
+        while (reqline = sock.gets)
+          clen = 0
+          while (line = sock.gets) && line != "\r\n"
+            clen = line.split(':', 2)[1].to_i if line.start_with?('Content-Length')
+          end
+          if reqline.start_with?('PUT')
+            sock.write "HTTP/1.1 103 Early Hints\r\nLink: </a>\r\n\r\nHTTP/1.1 100 Continue\r\n\r\n"
+            body = sock.read(clen)
+            sock.write "HTTP/1.1 201 Created\r\nContent-Length: #{body.bytesize}\r\n\r\n#{body}"
+          else
+            sock.write "HTTP/1.1 200 OK\r\nContent-Length: #{reqline.bytesize}\r\n\r\n#{reqline}"
+          end
+        end
+      ensure
+        sock.close
+      end
+    end
+    http = Net::HTTP.new(config('host'), server.addr[1])
+    http.continue_timeout = 1
+    http.start {
+      res = http.request_put('/first', 'data!', 'expect' => '100-continue')
+      assert_equal('201', res.code)
+      assert_equal('data!', res.body)
+      res = http.get('/second')
+      assert_equal("GET /second HTTP/1.1\r\n", res.body)
+    }
+  ensure
+    th&.kill
+    th&.join
+    server&.close
+  end
+
   def test_expect_continue_early_response
     server = TCPServer.new(config('host'), 0)
     th = Thread.new do
