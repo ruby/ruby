@@ -71,7 +71,8 @@ struct rb_classext_struct {
     /* Id of the Ractor that created this class/module; only that Ractor may modify
      * it.  0 is the main Ractor, so a program that never leaves it stores nothing.
      * Ids are never reused, so a terminated owner leaves the class read-only for
-     * everybody.  Prime classext only; always 0 for T_ICLASS. */
+     * everybody until another Ractor takes its value, and with it the class
+     * (rb_class_owned_by_ractor_p).  Prime classext only; always 0 for T_ICLASS. */
     rb_serial_t owner_ractor_id;
     uint16_t superclass_depth;
     attr_index_t max_iv_count;
@@ -139,7 +140,7 @@ RCLASS_SET_OWNER_RACTOR_ID(VALUE klass, rb_serial_t ractor_id)
     RCLASS_EXT_PRIME(klass)->owner_ractor_id = ractor_id;
 }
 
-bool rb_class_owned_by_ractor_p(rb_serial_t owner_id); // rb_class_owned_p's slow half
+bool rb_class_owned_by_ractor_p(VALUE klass, rb_serial_t owner_id); // rb_class_owned_p's slow half
 void rb_class_owner_check(VALUE klass);      // raise Ractor::IsolationError unless rb_class_owned_p(klass)
 void rb_class_take_ownership(VALUE klass);   // for a moved object's singleton class only
 void rb_class_check_singleton_movable(VALUE klass); // raise if it holds unshareable values
@@ -151,7 +152,7 @@ rb_class_owned_p(VALUE klass)
 {
     rb_serial_t owner_id = RCLASS_OWNER_RACTOR_ID(klass);
     if (LIKELY(!owner_id)) return rb_ractor_main_p(); // the only case single-Ractor programs take
-    return rb_class_owned_by_ractor_p(owner_id);
+    return rb_class_owned_by_ractor_p(klass, owner_id);
 }
 
 static inline rb_classext_t * RCLASS_EXT_READABLE_IN_BOX(VALUE obj, const rb_box_t *box);

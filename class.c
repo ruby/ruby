@@ -643,9 +643,17 @@ class_alloc(enum ruby_value_type type, VALUE klass)
 }
 
 bool
-rb_class_owned_by_ractor_p(rb_serial_t owner_id)
+rb_class_owned_by_ractor_p(VALUE klass, rb_serial_t owner_id)
 {
-    return owner_id == rb_ractor_id(GET_RACTOR());
+    rb_ractor_t *const cr = GET_RACTOR();
+    if (owner_id == rb_ractor_id(cr)) return true;
+    if (!rb_ractor_inherited_id_p(cr, owner_id)) return false;
+
+    /* klass's owner terminated and this Ractor took its value: take klass over,
+     * so the next check is the fast one.  To every other Ractor either id is someone
+     * else's, so a plain store will do. */
+    RCLASS_SET_OWNER_RACTOR_ID(klass, rb_ractor_main_p() ? 0 : rb_ractor_id(cr));
+    return true;
 }
 
 /* A singleton class has no class path of its own, so name it by the object it

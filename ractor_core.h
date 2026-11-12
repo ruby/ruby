@@ -192,7 +192,16 @@ struct rb_ractor_struct {
      * still enumerates it. */
     void *creating_child_objspace;
 
+    /* Sorted ids of the terminated Ractors whose values this one took, and of those
+     * they had inherited in turn.  The classes those Ractors created are this one's
+     * now (rb_class_owned_by_ractor_p). */
+    rb_serial_t *inherited_ids;
+    size_t inherited_ids_cnt;
+
 }; // rb_ractor_t is defined in vm_core.h
+
+void rb_ractor_inherit_classes(rb_ractor_t *cr, rb_ractor_t *r); // cr took terminated r's value
+bool rb_ractor_inherited_id_p(const rb_ractor_t *r, rb_serial_t id);
 
 /* Mark the GC roots held in Ractor r's C structs (from the root scan in gc.c). */
 struct rb_gc_mark_ctx;

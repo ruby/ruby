@@ -1098,6 +1098,10 @@ ractor_value(rb_execution_context_t *ec, VALUE self)
             rb_raise(rb_eRactorError, "The value was already taken");
         }
 
+        /* Can raise NoMemoryError, so before anything below that can't be undone: the
+         * value is still r's and the caller can retry. */
+        rb_ractor_inherit_classes(GET_RACTOR(), r);
+
         /* Move r's rb_gc_register_mark_object pins to the joiner before the merge
          * below sweeps r's objspace, or the objects pinned there lose their root. */
         rb_ractor_absorb_registered_marks(GET_RACTOR(), r);

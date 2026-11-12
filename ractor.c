@@ -415,6 +415,31 @@ rb_ractor_absorb_registered_marks(rb_ractor_t *dst, rb_ractor_t *src)
     src->registered_marks_cnt = 0;
 }
 
+static int
+ractor_id_cmp(const void *a, const void *b)
+{
+    rb_serial_t x = *(const rb_serial_t *)a, y = *(const rb_serial_t *)b;
+    return x < y ? -1 : x > y;
+}
+
+void
+rb_ractor_inherit_classes(rb_ractor_t *cr, rb_ractor_t *r)
+{
+    size_t cnt = cr->inherited_ids_cnt + r->inherited_ids_cnt + 1;
+    REALLOC_N(cr->inherited_ids, rb_serial_t, cnt);
+    MEMCPY(cr->inherited_ids + cr->inherited_ids_cnt, r->inherited_ids, rb_serial_t, r->inherited_ids_cnt);
+    cr->inherited_ids[cnt - 1] = rb_ractor_id(r);
+    cr->inherited_ids_cnt = cnt;
+    qsort(cr->inherited_ids, cnt, sizeof(rb_serial_t), ractor_id_cmp);
+}
+
+bool
+rb_ractor_inherited_id_p(const rb_ractor_t *r, rb_serial_t id)
+{
+    return r->inherited_ids_cnt &&
+        bsearch(&id, r->inherited_ids, r->inherited_ids_cnt, sizeof(rb_serial_t), ractor_id_cmp);
+}
+
 void
 rb_ractor_absorb_registered_addrs_without_gc(rb_ractor_t *dst, rb_ractor_t *src)
 {
@@ -488,6 +513,7 @@ ractor_free(void *ptr)
     }
 
     ractor_sync_free(r);
+    ruby_xfree(r->inherited_ids);
 
     if (r->in_terminated_set) {
         rb_native_mutex_lock(&GET_VM()->gc.registered_addrs.lock);
