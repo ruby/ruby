@@ -246,10 +246,7 @@ module Gem::SafeMarshal
       end
 
       def visit_Gem_SafeMarshal_Elements_Bignum(b)
-        result = 0
-        b.data.each_byte.with_index do |byte, exp|
-          result += (byte * 2**(exp * 8))
-        end
+        result = b.data.reverse.unpack1("H*").to_i(16)
 
         case b.sign
         when 43 # ?+
