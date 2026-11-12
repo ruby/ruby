@@ -297,17 +297,6 @@ module Ruby::Prism
       assert_depth_limit("[" * 10_000)
     end
 
-    def test_depth_limit_meta_escapes
-      assert_depth_limit("\\M-" * 10_000 + "a")
-      assert_depth_limit("[" + "\\M-" * 10_000 + "a]")
-    end
-
-    def test_depth_limit_control_escapes
-      assert_depth_limit("\\C-" * 10_000 + "a")
-      assert_depth_limit("\\c" * 10_000 + "a")
-      assert_depth_limit("[" + "\\C-" * 10_000 + "a]")
-    end
-
     private
 
     def assert_depth_limit(source)

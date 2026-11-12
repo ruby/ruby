@@ -1,0 +1,14 @@
+/\ca\ca(/
+        ^ end pattern with unmatched parenthesis
+/\C-a\C-a(?z)/
+           ^ undefined group option
+/a\
+(?<>a)/
+   ^ group name is empty
+%r!\!\![]!
+        ^ empty char-class
+/\/\/(?z)/
+       ^ undefined group option
+/\ca\u{zz}/
+    ^~~~~~ invalid Unicode list: \u{zz}
+

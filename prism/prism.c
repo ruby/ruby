@@ -19911,7 +19911,8 @@ parse_regexp(pm_parser_t *parser, uint16_t depth) {
         parser_lex(parser);
 
         pm_regular_expression_node_t *node = pm_regular_expression_node_create(parser, &opening, &content, &parser->previous);
-        pm_node_flag_set(UP(node), pm_regexp_parse(parser, node));
+        pm_regexp_offsets_t offsets = { 0 };
+        pm_node_flag_set(UP(node), pm_regexp_parse(parser, node, &offsets));
         return UP(node);
     }
 
@@ -19923,6 +19924,7 @@ parse_regexp(pm_parser_t *parser, uint16_t depth) {
         // following token is the end (in which case we can return a plain
         // regular expression) or if it's not then it has interpolation.
         pm_string_t unescaped = parser->current_string;
+        pm_regexp_offsets_t offsets = parser->current_regexp_offsets;
         pm_token_t content = parser->current;
         parser_lex(parser);
 
@@ -19935,7 +19937,7 @@ parse_regexp(pm_parser_t *parser, uint16_t depth) {
             /* A regular expression is validated as soon as it is parsed, even
              * when a =~ follows, because the =~ may turn out to apply to an
              * expression that contains it, as in `!/a/ =~ b`. */
-            pm_node_flag_set(UP(node), pm_regexp_parse(parser, node));
+            pm_node_flag_set(UP(node), pm_regexp_parse(parser, node, &offsets));
             return UP(node);
         }
 

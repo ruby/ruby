@@ -22,7 +22,7 @@ module Ruby::Prism
 
       # Escapes and characters that fix the encoding of the regular expression.
       "/\\p{Alpha}/", "/a\\p{Alpha}/", "/\\P{Alpha}/", "/\\p{Alpha}/n",
-      "/\\p{Hiragana}/", "/\\p{L}/", "/\\101/", "/\\0/", "/(a)\\1/", "/\\ą/",
+      "/\\p{Hiragana}/", "/\\p{L}/", "/\\101/", "/\\0/", "/(a)\\1/", "/\\ą/", "/\\ą(/",
       "/\\351/", "/\\343\\201\\202/",
       "/(?<ą>a)/", "/a(?#ą)b/", "/a # ą\nb/x", "/(?x)a # ą\n/", "/a(?#ą)b/u", "/a(?#ą)b/e",
 
@@ -36,7 +36,7 @@ module Ruby::Prism
       "/(?<a\\xFF>x)/", "/(?#\\xFF/", "/(?#\\xFF)/", "/[\\xFF]/", "/a # \\xFF\nb/x",
 
       # Characters that are invalid in the encoding of the source.
-      "/a\xFFb/", "/a\xED\xA0\x80b/", "/a\xED\xB0\x80b/", "/a(?#\xFF)b/", "/a # \xFF\nb/x", "/(?<a\xFF>b)/", "/[\xFF]/",
+      "/a\xFFb/", "/\\\xFF/", "/a\xED\xA0\x80b/", "/a\xED\xB0\x80b/", "/a(?#\xFF)b/", "/a # \xFF\nb/x", "/(?<a\xFF>b)/", "/[\xFF]/",
       "/\xFF[a/", "/)\xFFa/", "/(\xFFa/", "/(?#\xFF)[a/", "/[a\xFF\xFF/", "/[a\xFF/", "/)\xFF/",
       "/a\xFF\#{1}b/", "/\#{1}a\xED\xA0\x80b/", "/[\xFF\#{1}]/",
 
@@ -106,9 +106,9 @@ module Ruby::Prism
       # Escapes, comments, and property escapes fix the encoding of the regular
       # expression.
       "/\\p{Alpha}/", "/a\\p{Alpha}/", "/\\P{Alpha}/", "/\\p{Alpha}/n",
-      "/\\ą/", "/\\351/", "/\\343\\201\\202/", "/(?<ą>a)/",
-      "/a(?#ą)b/", "/a # ą\nb/x", "/(?x)a # ą\n/", "/(?<a\\xFF>x)/",
-      "/(?<a\xFF>b)/", "/\\p/",
+      "/\\351/", "/\\343\\201\\202/", "/(?<ą>a)/", "/a(?#ą)b/",
+      "/a # ą\nb/x", "/(?x)a # ą\n/", "/(?<a\\xFF>x)/", "/(?<a\xFF>b)/",
+      "/\\p/",
 
       # The encoding modifier is checked against the bytes of the regular
       # expression before its escapes are preprocessed.
@@ -119,15 +119,11 @@ module Ruby::Prism
       "/é[a/e",
 
       # Escaped bytes are preprocessed into the characters that they form.
-      "/\\M-\\C-?/", "/\\x00\\M-\\C-?/", "/\\x7F\\M-\\C-?/", "/\\x80\\M-\\C-?/",
-      "/\\u{00}\\M-\\C-?/", "/\\u{7F}\\M-\\C-?/", "/\\u{80}\\M-\\C-?/", "/\\M-\\C-?\\x00/",
-      "/\\M-\\C-?\\x7F/", "/\\M-\\C-?\\x80/", "/\\M-\\C-?\\u{00}/", "/\\M-\\C-?\\u{7F}/",
-      "/\\M-\\C-?\\u{80}/", "/\\M-\\C-?\\M-\\C-?/", "/\\xE9/", "/\\xE9\\x41/",
-      "/\\xE9A/", "/\\xE9\\d/", "/\\xE9\\101/", "/\\xE9\\u0041/",
-      "/\\xC3\\x41/", "/\\x81\\x30\\x81\\x30/", "/\\xED\\xA0\\x80/", "/\\xED\\xA4\\xCE\\x71/",
-      "/\\xED\\xA0\\x80\\xED\\xB0/", "/\\x81\\x30/", "/\\x81\\x30\\x81/", "/\\x8F\\xA1/",
-      "/\\x8E\\xA1\\xA1/", "/\\x9C\\xF0\\xA0/", "/\\M-a/", "/\\M-$\\M-\"/",
-      "/\\M-\\\\/", "/\\c\\M-\\xFE/", "/\\cA\\M-a/", "/\\xE9\\M-a/",
+      "/\\xE9/", "/\\xE9\\x41/", "/\\xE9A/", "/\\xE9\\d/",
+      "/\\xE9\\101/", "/\\xE9\\u0041/", "/\\xC3\\x41/", "/\\x81\\x30\\x81\\x30/",
+      "/\\xED\\xA0\\x80/", "/\\xED\\xA4\\xCE\\x71/", "/\\xED\\xA0\\x80\\xED\\xB0/", "/\\x81\\x30/",
+      "/\\x81\\x30\\x81/", "/\\x8F\\xA1/", "/\\x8E\\xA1\\xA1/", "/\\x9C\\xF0\\xA0/",
+      "/\\M-a/", "/\\M-\\\\/", "/\\c\\M-\\xFE/", "/\\cA\\M-a/",
       "/\\u3042\\xE3/", "/\\u{E9}\\xE9[a/", "/\\u3042\\xDC\\p{Hiragana}/",
 
       # The literal parts of a regular expression with interpolation are checked
@@ -156,16 +152,16 @@ module Ruby::Prism
 
       # Errors in the pattern are followed by the regular expression, as CRuby
       # writes them.
-      "/)\xFFa/", "/(\xFFa/", "/)\xFF/", "/(\\x/",
-      "/(\xFF/", "/a\\\xFFb(/", "/\xE3\x81(/", "/é(/n",
-      "/é(/u", "/é(/e", "/é(/s", "/é\\xFF(/n",
-      "/\\uzz/", "/\\xE9(/", "/)\\p{Hiragana}/", "/(?\\!x)/",
-      "/\\あ(/", "/a\\/b(/", "/\\\nx(/", "/\\xE3\\x81\\x82(/",
-      "/\\343\\201\\202(/", "%r{(?\\}x)}", "/[]/", "/*/",
-      "/+/", "/?/", "/(?<>a)/", "/(/",
-      "/(|/", "/(?</", "/(?/", "/(?#/",
-      "/(?P/", "/)/", "/a(/x", "/(?x)a # \\xFF\n(/",
-      "/(?z)/", "/\\M-\\x(/", "/(\xFFa/ =~ \"\""
+      "/\\ą(/", "/)\xFFa/", "/(\xFFa/", "/)\xFF/",
+      "/(\\x/", "/(\xFF/", "/a\\\xFFb(/", "/\xE3\x81(/",
+      "/é(/n", "/é(/u", "/é(/e", "/é(/s",
+      "/é\\xFF(/n", "/\\uzz/", "/\\xE9(/", "/)\\p{Hiragana}/",
+      "/(?\\!x)/", "/\\あ(/", "/a\\/b(/", "/\\\nx(/",
+      "/\\xE3\\x81\\x82(/", "/\\343\\201\\202(/", "%r{(?\\}x)}", "/[]/",
+      "/*/", "/+/", "/?/", "/(?<>a)/",
+      "/(/", "/(|/", "/(?</", "/(?/",
+      "/(?#/", "/(?P/", "/)/", "/a(/x",
+      "/(?x)a # \\xFF\n(/", "/(?z)/", "/\\M-\\x(/", "/(\xFFa/ =~ \"\""
     ].freeze
 
     # The encodings that ENCODING_CASES are compared in by default, which have

@@ -24,14 +24,23 @@ typedef struct {
     /** The parser that is currently being used. */
     pm_parser_t *parser;
 
-    /** A pointer to the start of the source that we are parsing. */
+    /** A pointer to the start of the unescaped content that we are parsing. */
     const uint8_t *start;
 
-    /** A pointer to the current position in the source. */
+    /** A pointer to the current position in the content. */
     const uint8_t *cursor;
 
-    /** A pointer to the end of the source that we are parsing. */
+    /** A pointer to the end of the content that we are parsing. */
     const uint8_t *end;
+
+    /**
+     * Where the content stops lining up with the source, for reporting errors
+     * at their place in the source. NULL when errors are not reported.
+     */
+    const pm_regexp_offsets_t *offsets;
+
+    /** The offset in the source of the start of the content. */
+    uint32_t source_start;
 
     /** The encoding of the source. */
     const pm_encoding_t *encoding;
@@ -92,9 +101,9 @@ typedef struct {
 
     /**
      * Whether syntax errors are reported. The named capture pass walks content
-     * that may be an owned copy of the source (so pointers into it have no
-     * offset in the source), and whose errors the validation pass has already
-     * reported, so it reports nothing.
+     * whose errors the validation pass has already reported, and that may be
+     * joined from several pieces with no offsets back to the source, so it
+     * reports nothing.
      */
     bool report_errors;
 
@@ -127,15 +136,57 @@ typedef struct {
 } pm_regexp_parser_t;
 
 /**
- * Append a syntax error to the parser's error list. Errors are only reported
- * when report_errors is set, which is the case for the validation pass that
- * walks the raw source, so start and end always point into the original source.
+ * Return the offset in the source of the given position in the content, as the
+ * start (or else the end) of a range. Each byte after a recorded place is at
+ * the same distance from it in the source as in the content, and a position in
+ * text that the lexer wrote in place of an escape is kept within that escape.
+ * At a recorded place, the escape before it wrote nothing at that position, so
+ * a range that starts there starts at the escape, and one that ends there ends
+ * after it.
+ */
+static uint32_t
+pm_regexp_source_offset(const pm_regexp_parser_t *parser, const uint8_t *position, bool start) {
+    const pm_regexp_offset_t *values = parser->offsets->values;
+    size_t size = parser->offsets->size;
+    uint32_t content = (uint32_t) (position - parser->start);
+
+    /* Find the number of places at or before the position. */
+    size_t low = 0;
+    size_t high = size;
+
+    while (low < high) {
+        size_t middle = low + (high - low) / 2;
+
+        if (values[middle].content <= content) {
+            low = middle + 1;
+        } else {
+            high = middle;
+        }
+    }
+
+    /* The place that the position is measured from, which for the start of a
+     * range at a recorded place is the one before it. */
+    size_t from = low;
+    if (start && from > 0 && values[from - 1].content == content) from--;
+
+    uint32_t source = (from == 0) ? (parser->source_start + content) : (values[from - 1].source + (content - values[from - 1].content));
+    if (from < size && source > values[from].source) source = values[from].source;
+
+    return source;
+}
+
+/**
+ * Append a syntax error to the parser's error list, at the place in the source
+ * of the given range of the content. Errors are only reported when
+ * report_errors is set.
  */
 static PRISM_INLINE void
 pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, const uint8_t *end, const char *message) {
     if (regexp_parser->report_errors) {
         pm_parser_t *parser = regexp_parser->parser;
-        pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, (uint32_t) (start - parser->start), (uint32_t) (end - start), PM_ERR_REGEXP_PARSE_ERROR, message);
+        uint32_t source_start = pm_regexp_source_offset(regexp_parser, start, true);
+        uint32_t source_end = pm_regexp_source_offset(regexp_parser, end, false);
+        pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, source_start, source_end - source_start, PM_ERR_REGEXP_PARSE_ERROR, message);
     }
 }
 
@@ -143,16 +194,18 @@ pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, c
  * Report that the stack budget was used up while parsing the regular
  * expression. Unlike other errors, this is reported even when report_errors is
  * not set, because giving up early there would silently drop the named
- * captures that the rest of the regular expression defines. In that case start
- * and end do not point into the original source, so the error is reported at
- * the token that the parser is on instead.
+ * captures that the rest of the regular expression defines. In that case there
+ * are no offsets into the source, so the error is reported at the token that
+ * the parser is on instead.
  */
 static void
 pm_regexp_parse_stack_exhausted(pm_regexp_parser_t *regexp_parser) {
     pm_parser_t *parser = regexp_parser->parser;
 
     if (regexp_parser->report_errors) {
-        pm_parser_err_stack_exhausted(parser, (uint32_t) (regexp_parser->start - parser->start), (uint32_t) (regexp_parser->end - regexp_parser->start));
+        uint32_t source_start = pm_regexp_source_offset(regexp_parser, regexp_parser->start, true);
+        uint32_t source_end = pm_regexp_source_offset(regexp_parser, regexp_parser->end, false);
+        pm_parser_err_stack_exhausted(parser, source_start, source_end - source_start);
     } else {
         pm_parser_err_stack_exhausted(parser, (uint32_t) (parser->current.start - parser->start), (uint32_t) (parser->current.end - parser->current.start));
     }
@@ -167,7 +220,9 @@ pm_regexp_parse_stack_exhausted(pm_regexp_parser_t *regexp_parser) {
     do { \
         if ((regexp_parser_)->report_errors) { \
             pm_parser_t *parser_ = (regexp_parser_)->parser; \
-            pm_diagnostic_list_append_format(&parser_->metadata_arena, &parser_->error_list, (uint32_t) ((err_start_) - parser_->start), (uint32_t) ((err_end_) - (err_start_)), diag_id, __VA_ARGS__); \
+            uint32_t source_start_ = pm_regexp_source_offset((regexp_parser_), (err_start_), true); \
+            uint32_t source_end_ = pm_regexp_source_offset((regexp_parser_), (err_end_), false); \
+            pm_diagnostic_list_append_format(&parser_->metadata_arena, &parser_->error_list, source_start_, source_end_ - source_start_, diag_id, __VA_ARGS__); \
         } \
     } while (0)
 
@@ -1624,13 +1679,14 @@ pm_regexp_validate_encoding(pm_regexp_parser_t *parser, bool ascii_only, pm_node
 
 /**
  * Parse a regular expression and validate its encoding. Validation walks the
- * raw source (content_loc) to distinguish escape-produced bytes from literal
- * bytes.
+ * unescaped content, where the lexer keeps the escapes that the regular
+ * expression engine reads as their text, so that escaped bytes can be told
+ * from literal ones.
  */
 pm_node_flags_t
-pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node) {
-    const uint8_t *source = parser->start + node->content_loc.start;
-    size_t size = node->content_loc.length;
+pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const pm_regexp_offsets_t *offsets) {
+    const uint8_t *source = pm_string_source(&node->unescaped);
+    size_t size = pm_string_length(&node->unescaped);
     bool extended_mode = PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED);
     pm_node_flags_t flags = PM_NODE_FLAGS(node);
 
@@ -1642,6 +1698,8 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node) {
         .start = source,
         .cursor = source,
         .end = source + size,
+        .offsets = offsets,
+        .source_start = node->content_loc.start,
         .extended_mode = extended_mode,
         .encoding_changed = parser->encoding_changed,
         .encoding = parser->encoding,
@@ -1669,16 +1727,14 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node) {
 
     pm_regexp_parse_pattern(&regexp_parser);
 
-    // Compute ascii_only from the regexp parser's tracked state. We cannot
-    // use node->unescaped for this because regexp unescaped content preserves
-    // escape text (e.g., \x80 is 4 ASCII chars), not the binary values.
+    /* The content keeps escapes as their text (\x80 is four ASCII bytes), so
+     * whether it is ASCII-only comes from what the walk tracked rather than
+     * from its bytes. */
     bool ascii_only = !regexp_parser.has_hex_escape && !regexp_parser.has_unicode_escape && regexp_parser.non_ascii_literal_count == 0;
-    // Use the unescaped content for error messages to match CRuby's format,
-    // where Ruby escapes like \M-\C-? are resolved to bytes but regexp escapes
-    // like \u{80} are preserved as text.
-    const char *error_source = (const char *) pm_string_source(&node->unescaped);
-    int error_source_length = (int) pm_string_length(&node->unescaped);
-    pm_node_flags_t encoding_flags = pm_regexp_validate_encoding(&regexp_parser, ascii_only, flags, error_source, error_source_length);
+
+    /* Error messages quote the content as CRuby does, with \M-\C-? and the
+     * like written as \xHH escapes, and other escapes kept as their text. */
+    pm_node_flags_t encoding_flags = pm_regexp_validate_encoding(&regexp_parser, ascii_only, flags, (const char *) source, (int) size);
     pm_buffer_cleanup(&regexp_parser.hex_escape_buffer);
 
     return encoding_flags;

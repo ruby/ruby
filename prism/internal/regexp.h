@@ -2,7 +2,7 @@
 #define PRISM_INTERNAL_REGEXP_H
 
 #include "prism/ast.h"
-#include "prism/parser.h"
+#include "prism/internal/parser.h"
 
 /*
  * Callback invoked by pm_regexp_parse_named_captures() for each named capture
@@ -12,10 +12,11 @@
 typedef void (*pm_regexp_name_callback_t)(pm_parser_t *parser, const pm_string_t *name, void *data);
 
 /*
- * Parse a regular expression and validate its encoding. Returns the encoding
- * flags to set on the node.
+ * Parse a regular expression and validate its encoding. The offsets are where
+ * the unescaped content of the node stops lining up with the source, as the
+ * lexer recorded them. Returns the encoding flags to set on the node.
  */
-PRISM_EXPORTED_FUNCTION pm_node_flags_t pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node);
+PRISM_EXPORTED_FUNCTION pm_node_flags_t pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const pm_regexp_offsets_t *offsets);
 
 /*
  * Parse the content of a regular expression for named capture groups only.
