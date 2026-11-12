@@ -133,15 +133,22 @@ class TestGCCompact < Test::Unit::TestCase
       ready.receive
 
       clock = Process::CLOCK_THREAD_CPUTIME_ID
+      res = Process.clock_getres(clock, :nanosecond)
       cpu_before = Process.clock_gettime(clock, :nanosecond)
       gc_before = GC.total_time
-      5.times { GC.compact }
+      # GetThreadTimes advances in 15.625ms ticks and charges each tick to the
+      # interval it lands in, so a few short compactions may be charged nothing.
+      # Keep compacting until some ticks have been charged to this thread.
+      100.times do |i|
+        GC.compact
+        break if i >= 4 && Process.clock_gettime(clock, :nanosecond) - cpu_before >= 4 * res
+      end
       gc_ns = GC.total_time - gc_before
       cpu_ns = Process.clock_gettime(clock, :nanosecond) - cpu_before
 
       worker.send(:finish)
       gc_ns += worker.value
-      allowance_ns = [1_000_000, 64 * Process.clock_getres(clock, :nanosecond)].max
+      allowance_ns = [1_000_000, 64 * res].max
       assert_operator gc_ns, :>, 0
       assert_operator gc_ns, :<=, cpu_ns + allowance_ns
     RUBY
