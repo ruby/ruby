@@ -12934,7 +12934,11 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:HeapBasicObject = GuardType v6, HeapBasicObject
-          SideExit NoProfileGetIvar recompile
+          v11:CShape = LoadField v10, :shape_id@0x1000
+          v12:CShape[0x1001] = GuardBitEquals v11, CShape(0x1001) recompile
+          v13:BasicObject = LoadField v10, :@a@0x1002
+          CheckInterrupts
+          Return v13
         ");
     }
 
@@ -12977,7 +12981,20 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:HeapBasicObject = GuardType v6, HeapBasicObject
-          SideExit NoProfileGetIvar recompile
+          v11:CShape = LoadField v10, :shape_id@0x1000
+          v13:CShape[0x1001] = Const CShape(0x1001)
+          v14:CBool = IsBitEqual v11, v13
+          CondBranch v14, bb5(), bb6()
+        bb5():
+          v16:BasicObject = LoadField v10, :@a@0x1002
+          Jump bb4(v16)
+        bb6():
+          v18:CShape[0x1003] = GuardBitEquals v11, CShape(0x1003) recompile
+          v20:BasicObject = LoadField v10, :@a@0x1004
+          Jump bb4(v20)
+        bb4(v12:BasicObject):
+          CheckInterrupts
+          Return v12
         ");
     }
 
