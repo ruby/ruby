@@ -1410,6 +1410,10 @@ get_cert_and_key(VALUE cert, VALUE key, X509 **x509, EVP_PKEY **pkey)
  * repeated calls of this method, and OpenSSL will choose the most appropriate
  * certificate during the handshake.
  *
+ * If a certificate with the same public key type was already added, the
+ * earlier certificate and its extra certificates are replaced. If
+ * _extra_certs_ is omitted, the earlier extra certificates are discarded.
+ *
  * #cert=, #key=, and #extra_chain_cert= are old accessor methods for setting
  * certificate and internally call this method.
  *
@@ -1459,7 +1463,7 @@ ossl_sslctx_add_certificate(int argc, VALUE *argv, VALUE self)
         sk_X509_pop_free(extra_chain, X509_free);
         ossl_raise(eSSLError, "SSL_CTX_use_PrivateKey");
     }
-    if (extra_chain && !SSL_CTX_set0_chain(ctx, extra_chain)) {
+    if (!SSL_CTX_set0_chain(ctx, extra_chain)) {
         sk_X509_pop_free(extra_chain, X509_free);
         ossl_raise(eSSLError, "SSL_CTX_set0_chain");
     }
@@ -1497,7 +1501,7 @@ ossl_ssl_add_certificate(int argc, VALUE *argv, VALUE self)
         sk_X509_pop_free(extra_chain, X509_free);
         ossl_raise(eSSLError, "SSL_use_PrivateKey");
     }
-    if (extra_chain && !SSL_set0_chain(ssl, extra_chain)) {
+    if (!SSL_set0_chain(ssl, extra_chain)) {
         sk_X509_pop_free(extra_chain, X509_free);
         ossl_raise(eSSLError, "SSL_set0_chain");
     }
