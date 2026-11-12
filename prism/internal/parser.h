@@ -24,6 +24,38 @@
 #include <stdint.h>
 
 /*
+ * A place in the unescaped content of a regular expression where it stops
+ * lining up with the source, because the lexer dropped or rewrote an escape
+ * just before it. From here up to the next such place, each byte of the content
+ * is the byte at the same distance into the source.
+ */
+typedef struct {
+    /* The offset of the place in the unescaped content. */
+    uint32_t content;
+
+    /* The offset in the source of the byte at that place. */
+    uint32_t source;
+} pm_regexp_offset_t;
+
+/*
+ * The places where the unescaped content of a regular expression stops lining
+ * up with the source, in order. Before the first one, each byte of the content
+ * is the byte at the same distance from the start of the content in the source.
+ * The values are allocated in the scratch arena, since they are only read while
+ * the regular expression is validated.
+ */
+typedef struct {
+    /* The places, in order of their offsets in the content. */
+    pm_regexp_offset_t *values;
+
+    /* The number of places. */
+    size_t size;
+
+    /* The number of places that fit in the values before they must grow. */
+    size_t capacity;
+} pm_regexp_offsets_t;
+
+/*
  * This enum provides various bits that represent different kinds of states that
  * the lexer can track. This is used to determine which kind of token to return
  * based on the context of the parser.
@@ -892,6 +924,12 @@ struct pm_parser_t {
      * is particularly necessary because of escape sequences.
      */
     pm_string_t current_string;
+
+    /*
+     * Where current_string stops lining up with the source, when it is the
+     * content of a regular expression.
+     */
+    pm_regexp_offsets_t current_regexp_offsets;
 
     /*
      * The line number at the start of the parse. This will be used to offset

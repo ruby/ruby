@@ -9874,6 +9874,76 @@ pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
 #undef PM_TOKEN_BUFFER_DEFAULT_SIZE
 
 /**
+ * The token buffer for the content of a regular expression. It also records
+ * each place where the content stops lining up with the source, so that errors
+ * found while validating the content can be reported at their place in the
+ * source.
+ */
+typedef struct {
+    /** The buffer of the content. */
+    pm_token_buffer_t base;
+
+    /** The places recorded so far. */
+    pm_regexp_offsets_t offsets;
+} pm_regexp_token_buffer_t;
+
+/**
+ * Append a place to the places recorded for the content of a regular
+ * expression. When they are full, they move to a larger array in the scratch
+ * arena, which releases the old one when parsing finishes.
+ *
+ * Allocating these is very rare. A place is recorded only where an escape or a
+ * line continuation changes the length of the content, such as `\/` or `\ca`,
+ * so most regular expressions record none and the rest record only a few. That
+ * is why each content token gets its own array instead of reusing one, which
+ * also keeps its places valid while later tokens are lexed.
+ */
+static void
+pm_regexp_offsets_append(pm_parser_t *parser, pm_regexp_offsets_t *offsets, pm_regexp_offset_t offset) {
+    if (offsets->size == offsets->capacity) {
+        size_t capacity = offsets->capacity == 0 ? 4 : offsets->capacity * 2;
+        pm_regexp_offset_t *values = (pm_regexp_offset_t *) pm_arena_alloc(&parser->scratch_arena, capacity * sizeof(pm_regexp_offset_t), PRISM_ALIGNOF(pm_regexp_offset_t));
+
+        if (offsets->size > 0) memcpy(values, offsets->values, offsets->size * sizeof(pm_regexp_offset_t));
+        offsets->values = values;
+        offsets->capacity = capacity;
+    }
+
+    offsets->values[offsets->size++] = offset;
+}
+
+/**
+ * Resume copying the content of a regular expression from the source at the
+ * given cursor, after an escape. The place is recorded when the escape left the
+ * content at a different distance from the source than the last place, or than
+ * the start of the token before the first place. Escapes that write nothing
+ * share a place in the content, which keeps the last of their places in the
+ * source, so that the places stay in order with no two at the same offset.
+ */
+static PRISM_INLINE void
+pm_regexp_token_buffer_resume(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer, const uint8_t *cursor) {
+    token_buffer->base.cursor = cursor;
+
+    uint32_t content = U32(pm_buffer_length(&token_buffer->base.buffer));
+    uint32_t source = U32(cursor - parser->start);
+
+    pm_regexp_offsets_t *offsets = &token_buffer->offsets;
+    pm_regexp_offset_t *last = offsets->size == 0 ? NULL : &offsets->values[offsets->size - 1];
+
+    /* Each distance is a source offset minus a content offset. Both fit in 32
+     * bits, so two distances differ by less than 2^32, and their subtractions,
+     * which may wrap, are equal exactly when the distances are. */
+    uint32_t previous = (last == NULL) ? U32(parser->current.start - parser->start) : (last->source - last->content);
+    if (source - content == previous) return;
+
+    if (last != NULL && last->content == content) {
+        last->source = source;
+    } else {
+        pm_regexp_offsets_append(parser, offsets, (pm_regexp_offset_t) { .content = content, .source = source });
+    }
+}
+
+/**
  * Whether the content of a regular expression keeps the escape of the given
  * character exactly as it is written in the source. The regular expression
  * engine reads these escapes itself. The others are line endings, the escapes
@@ -9892,6 +9962,26 @@ pm_regexp_escape_kept_p(const pm_lex_mode_t *lex_mode, uint8_t peeked) {
         default:
             return peeked < 0x80 && peeked != lex_mode->as.regexp.terminator;
     }
+}
+
+/**
+ * Copy the content of a regular expression into the current string, as
+ * pm_token_buffer_copy does, and give the parser its recorded places.
+ */
+static void
+pm_regexp_token_buffer_copy(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer) {
+    pm_token_buffer_copy(parser, &token_buffer->base);
+    parser->current_regexp_offsets = token_buffer->offsets;
+}
+
+/**
+ * Flush the content of a regular expression into the current string, as
+ * pm_token_buffer_flush does, and give the parser its recorded places.
+ */
+static void
+pm_regexp_token_buffer_flush(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer) {
+    pm_token_buffer_flush(parser, &token_buffer->base);
+    parser->current_regexp_offsets = token_buffer->offsets;
 }
 
 /**
@@ -11701,7 +11791,7 @@ parser_lex(pm_parser_t *parser) {
             // characters.
             const uint8_t *breakpoints = lex_mode->as.regexp.breakpoints;
             const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_REGEXP);
-            pm_token_buffer_t token_buffer = { 0 };
+            pm_regexp_token_buffer_t token_buffer = { 0 };
 
             while (breakpoint != NULL) {
                 uint8_t term = lex_mode->as.regexp.terminator;
@@ -11738,7 +11828,7 @@ parser_lex(pm_parser_t *parser) {
                     // first.
                     if (breakpoint > parser->current.start) {
                         parser->current.end = breakpoint;
-                        pm_token_buffer_flush(parser, &token_buffer);
+                        pm_regexp_token_buffer_flush(parser, &token_buffer);
                         LEX(PM_TOKEN_STRING_CONTENT);
                     }
 
@@ -11806,8 +11896,8 @@ parser_lex(pm_parser_t *parser) {
 
                         breakpoint++;
                         parser->current.end = breakpoint;
-                        pm_token_buffer_escape(parser, &token_buffer);
-                        token_buffer.cursor = breakpoint;
+                        pm_token_buffer_escape(parser, &token_buffer.base);
+                        pm_regexp_token_buffer_resume(parser, &token_buffer, breakpoint);
 
                         PRISM_FALLTHROUGH
                     case '\n':
@@ -11822,7 +11912,7 @@ parser_lex(pm_parser_t *parser) {
 
                         parser->current.end = breakpoint + 1;
                         parser_flush_heredoc_end(parser);
-                        pm_token_buffer_flush(parser, &token_buffer);
+                        pm_regexp_token_buffer_flush(parser, &token_buffer);
                         LEX(PM_TOKEN_STRING_CONTENT);
                     case '\\': {
                         // If we hit escapes, then we need to treat the next
@@ -11848,16 +11938,16 @@ parser_lex(pm_parser_t *parser) {
                             break;
                         }
 
-                        pm_token_buffer_escape(parser, &token_buffer);
+                        pm_token_buffer_escape(parser, &token_buffer.base);
 
                         switch (peeked) {
                             case '\r':
                                 parser->current.end++;
                                 if (peek(parser) != '\n') {
                                     if (lex_mode->as.regexp.terminator != '\r') {
-                                        pm_token_buffer_push_byte(&token_buffer, '\\');
+                                        pm_token_buffer_push_byte(&token_buffer.base, '\\');
                                     }
-                                    pm_token_buffer_push_byte(&token_buffer, '\r');
+                                    pm_token_buffer_push_byte(&token_buffer.base, '\r');
                                     break;
                                 }
                             PRISM_FALLTHROUGH
@@ -11867,7 +11957,7 @@ parser_lex(pm_parser_t *parser) {
                                     // flush the heredoc and continue parsing after
                                     // heredoc_end.
                                     parser_flush_heredoc_end(parser);
-                                    pm_token_buffer_copy(parser, &token_buffer);
+                                    pm_regexp_token_buffer_copy(parser, &token_buffer);
                                     LEX(PM_TOKEN_STRING_CONTENT);
                                 } else {
                                     // ... else track the newline.
@@ -11881,11 +11971,11 @@ parser_lex(pm_parser_t *parser) {
                             case 'M':
                             case 'u':
                             case 'x':
-                                escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_REGEXP);
+                                escape_read(parser, &token_buffer.base.buffer, PM_ESCAPE_FLAG_REGEXP);
 
                                 /* The escape consumed a newline with a heredoc body pending. */
                                 if (parser->next_start != NULL) {
-                                    pm_token_buffer_copy(parser, &token_buffer);
+                                    pm_regexp_token_buffer_copy(parser, &token_buffer);
                                     LEX(PM_TOKEN_STRING_CONTENT);
                                 }
 
@@ -11896,14 +11986,14 @@ parser_lex(pm_parser_t *parser) {
                                  * ASCII, which the search below reads as content
                                  * like any other. */
                                 if (peeked == lex_mode->as.regexp.terminator) {
-                                    pm_token_buffer_push_byte(&token_buffer, peeked);
+                                    pm_token_buffer_push_byte(&token_buffer.base, peeked);
                                     parser->current.end++;
                                 }
 
                                 break;
                         }
 
-                        token_buffer.cursor = parser->current.end;
+                        pm_regexp_token_buffer_resume(parser, &token_buffer, parser->current.end);
                         breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_REGEXP);
                         break;
                     }
@@ -11922,7 +12012,7 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         if (type == PM_TOKEN_STRING_CONTENT) {
-                            pm_token_buffer_flush(parser, &token_buffer);
+                            pm_regexp_token_buffer_flush(parser, &token_buffer);
                         }
 
                         LEX(type);
@@ -11934,14 +12024,14 @@ parser_lex(pm_parser_t *parser) {
             }
 
             if (parser->current.end > parser->current.start) {
-                pm_token_buffer_flush(parser, &token_buffer);
+                pm_regexp_token_buffer_flush(parser, &token_buffer);
                 LEX(PM_TOKEN_STRING_CONTENT);
             }
 
             // If we were unable to find a breakpoint, then this token hits the
             // end of the file.
             parser->current.end = parser->end;
-            pm_token_buffer_flush(parser, &token_buffer);
+            pm_regexp_token_buffer_flush(parser, &token_buffer);
             LEX(PM_TOKEN_STRING_CONTENT);
         }
         case PM_LEX_STRING: {
