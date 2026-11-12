@@ -10,11 +10,15 @@ RSpec.describe Gem::NameTupleContentAddress do
       def initialize(name, version, platform = Gem::Platform::RUBY)
         @name = name
         @version = version
-        @platform = platform.to_s
+
+        platform &&= platform.to_s
+        platform = Gem::Platform::RUBY if !platform || platform.empty?
+        @platform = platform
       end
 
       def full_name
-        if @platform == Gem::Platform::RUBY
+        case @platform
+        when nil, "", Gem::Platform::RUBY
           "#{@name}-#{@version}"
         else
           "#{@name}-#{@version}-#{@platform}"
