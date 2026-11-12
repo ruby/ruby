@@ -15399,7 +15399,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
         }
         if (NIL_P(buf)) {
             if (p == e) {
-                ENC_CODERANGE_SET(str, cr);
+                if (enc == STR_ENC_GET(str)) ENC_CODERANGE_SET(str, cr);
                 return Qnil;
             }
             buf = rb_str_buf_new(RSTRING_LEN(str));
@@ -15493,7 +15493,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
         }
         if (NIL_P(buf)) {
             if (p == e) {
-                ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
+                if (enc == STR_ENC_GET(str)) ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
                 return Qnil;
             }
             buf = rb_str_buf_new(RSTRING_LEN(str));

@@ -2369,6 +2369,14 @@ class TestTranscode < Test::Unit::TestCase
                  "#{bug} coderange should not have side effects")
   end
 
+  def test_scrub_encode_with_other_encoding_keeps_coderange
+    [[Encoding::EUC_JP, "\xA4\xA2"], [Encoding::UTF_16LE, "\xFF\xFE"]].each do |enc, bytes|
+      s = bytes.b.force_encoding(Encoding::UTF_8)
+      s.encode(enc, enc, invalid: :replace)
+      assert_not_predicate(s, :valid_encoding?, "scrubbing as #{enc} must not cache a coderange on a UTF-8 string")
+    end
+  end
+
   def test_newline_options
     bug11324 = '[ruby-core:69841] [Bug #11324]'
     usascii = Encoding::US_ASCII
