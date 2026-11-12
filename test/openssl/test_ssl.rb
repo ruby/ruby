@@ -1185,6 +1185,28 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_servername_cb_add_certificate
+    called = []
+    sctx = make_server_context
+    sctx.servername_cb = proc do |ssl, servername|
+      called << servername
+      ssl.add_certificate(@cli_cert, @cli_key)
+      nil
+    end
+    start_server(sctx) do |port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.hostname = "example.org"
+      ssl.connect
+      assert_equal(@cli_cert, ssl.peer_cert)
+      assert_equal(["example.org"], called)
+      ssl.puts("abc"); ssl.gets
+    ensure
+      ssl&.close
+      sock&.close
+    end
+  end
+
   def test_servername_cb_exception
     server_proc = proc do |sock|
       sctx = make_server_context
