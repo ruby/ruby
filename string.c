@@ -558,7 +558,7 @@ fstring_concurrent_set_create(VALUE str, void *data)
         }
     }
 
-    ENC_CODERANGE_SET(str, coderange);
+    if ((int)ENC_CODERANGE(str) != coderange) ENC_CODERANGE_SET(str, coderange);
     RBASIC(str)->flags |= RSTRING_FSTR;
     if (!RB_OBJ_SHAREABLE_P(str)) {
         RB_OBJ_SET_SHAREABLE(str);
