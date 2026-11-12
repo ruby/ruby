@@ -51,19 +51,6 @@ typedef struct {
     /** The data to pass to the name callback. */
     void *name_data;
 
-    /** The start of the regexp node (for error locations). */
-    const uint8_t *node_start;
-
-    /** The end of the regexp node (for error locations). */
-    const uint8_t *node_end;
-
-    /**
-     * The explicit encoding determined by escape sequences. NULL if no
-     * encoding-setting escape has been seen, UTF-8 for `\u` escapes, or the
-     * source encoding for `\x` escapes.
-     */
-    const pm_encoding_t *explicit_encoding;
-
     /**
      * Pointer to the first non-POSIX property name (for /n error messages).
      * POSIX properties (Alnum, Alpha, etc.) work in all encodings.
@@ -84,12 +71,6 @@ typedef struct {
     /** Length of the first Unicode-only property name found. */
     size_t unicode_property_name_length;
 
-    /** Buffer of hex escape byte values >= 0x80, separated by 0x00 sentinels. */
-    pm_buffer_t hex_escape_buffer;
-
-    /** Count of non-ASCII literal bytes (not from escapes). */
-    uint32_t non_ascii_literal_count;
-
     /**
      * Whether or not the regular expression currently being parsed is in
      * extended mode, wherein whitespace is ignored and comments are allowed.
@@ -106,33 +87,6 @@ typedef struct {
      * reports nothing.
      */
     bool report_errors;
-
-    /** Whether a `\u{...}` escape with value >= 0x80 was seen. */
-    bool has_unicode_escape;
-
-    /** Whether a `\xNN` escape (or `\M-x`, etc.) with value >= 0x80 was seen. */
-    bool has_hex_escape;
-
-    /**
-     * Tracks whether the last encoding-setting escape was `\u` (true) or `\x`
-     * (false). This matters for error messages when both types are mixed.
-     */
-    bool last_escape_was_unicode;
-
-    /** Whether any `\p{...}` or `\P{...}` property escape was found. */
-    bool has_property_escape;
-
-    /** Whether a Unicode-only property escape was found (not POSIX or script). */
-    bool has_unicode_property_escape;
-
-    /** Whether a `\u` escape with invalid range (surrogate or > 0x10FFFF) was seen. */
-    bool invalid_unicode_range;
-
-    /** Whether we are accumulating consecutive hex escape bytes. */
-    bool hex_group_active;
-
-    /** Whether an invalid multibyte character was found during parsing. */
-    bool has_invalid_multibyte;
 } pm_regexp_parser_t;
 
 /**
@@ -285,36 +239,6 @@ pm_regexp_char_find(pm_regexp_parser_t *parser, uint8_t value) {
 
     parser->cursor = end + 1;
     return true;
-}
-
-/**
- * Mark a group boundary in the hex escape byte buffer. When consecutive hex
- * escape bytes >= 0x80 are followed by a non-hex-escape, this appends a 0x00
- * sentinel to separate the groups for later multibyte validation.
- */
-static PRISM_INLINE void
-pm_regexp_hex_group_boundary(pm_regexp_parser_t *parser) {
-    if (parser->hex_group_active) {
-        pm_buffer_append_byte(&parser->hex_escape_buffer, 0x00);
-        parser->hex_group_active = false;
-    }
-}
-
-/**
- * Track a hex escape byte value >= 0x80 for multibyte validation.
- */
-static PRISM_INLINE void
-pm_regexp_track_hex_escape(pm_regexp_parser_t *parser, uint8_t byte) {
-    if (byte >= 0x80) {
-        pm_buffer_append_byte(&parser->hex_escape_buffer, byte);
-        parser->hex_group_active = true;
-        parser->has_hex_escape = true;
-
-        parser->explicit_encoding = parser->encoding;
-        parser->last_escape_was_unicode = false;
-    } else {
-        pm_regexp_hex_group_boundary(parser);
-    }
 }
 
 /**
@@ -601,8 +525,6 @@ pm_regexp_parse_property_escape(pm_regexp_parser_t *parser) {
 
         if (search < parser->end) {
             size_t name_length = (size_t) (search - name_start);
-            parser->has_property_escape = true;
-
             pm_regexp_property_type_t type = pm_regexp_classify_property(name_start, name_length);
 
             // Track the first non-POSIX property name (for /n error messages).
@@ -612,12 +534,9 @@ pm_regexp_parse_property_escape(pm_regexp_parser_t *parser) {
             }
 
             // Track the first Unicode-only property name (for /e, /s error messages).
-            if (type == PM_REGEXP_PROPERTY_UNICODE) {
-                parser->has_unicode_property_escape = true;
-                if (parser->unicode_property_name == NULL) {
-                    parser->unicode_property_name = name_start;
-                    parser->unicode_property_name_length = name_length;
-                }
+            if (type == PM_REGEXP_PROPERTY_UNICODE && parser->unicode_property_name == NULL) {
+                parser->unicode_property_name = name_start;
+                parser->unicode_property_name_length = name_length;
             }
 
             parser->cursor = search + 1; // skip past '}'
@@ -633,8 +552,7 @@ pm_regexp_parse_property_escape(pm_regexp_parser_t *parser) {
 /**
  * Validate and skip a \u escape sequence in a regular expression. The cursor
  * should be pointing at the character after 'u' when this is called. This
- * handles both the \u{NNNN MMMM} and \uNNNN forms. Also tracks encoding
- * state for validation.
+ * handles both the \u{NNNN MMMM} and \uNNNN forms.
  */
 static void
 pm_regexp_parse_unicode_escape(pm_regexp_parser_t *parser) {
@@ -656,13 +574,8 @@ pm_regexp_parse_unicode_escape(pm_regexp_parser_t *parser) {
         bool has_codepoint = false;
 
         while (!pm_regexp_char_is_eof(parser) && *parser->cursor != '}') {
-            // Parse the hex digits to compute the codepoint value.
-            uint32_t value = 0;
             size_t hex_count = 0;
-
-            int digit;
-            while (!pm_regexp_char_is_eof(parser) && (digit = pm_regexp_hex_digit_value(*parser->cursor)) >= 0) {
-                value = (value << 4) | (uint32_t) digit;
+            while (!pm_regexp_char_is_eof(parser) && pm_char_is_hexadecimal_digit(*parser->cursor)) {
                 hex_count++;
                 parser->cursor++;
             }
@@ -687,19 +600,6 @@ pm_regexp_parse_unicode_escape(pm_regexp_parser_t *parser) {
                 pm_regexp_parse_error(parser, escape_start, parser->cursor, "invalid Unicode range");
             }
 
-            // Track encoding state for this codepoint.
-            if (value >= 0x80) {
-                parser->has_unicode_escape = true;
-                parser->explicit_encoding = PM_ENCODING_UTF_8_ENTRY;
-                parser->last_escape_was_unicode = true;
-                pm_regexp_hex_group_boundary(parser);
-            }
-
-            // Check for invalid Unicode range (surrogates or > 0x10FFFF).
-            if (value > 0x10FFFF || (value >= 0xD800 && value <= 0xDFFF)) {
-                parser->invalid_unicode_range = true;
-            }
-
             has_codepoint = true;
 
             // Skip whitespace between codepoints.
@@ -718,28 +618,14 @@ pm_regexp_parse_unicode_escape(pm_regexp_parser_t *parser) {
         }
     } else {
         // \uNNNN form — need exactly 4 hex digits.
-        uint32_t value = 0;
         size_t hex_count = 0;
-
-        int digit;
-        while (hex_count < 4 && !pm_regexp_char_is_eof(parser) && (digit = pm_regexp_hex_digit_value(*parser->cursor)) >= 0) {
-            value = (value << 4) | (uint32_t) digit;
+        while (hex_count < 4 && !pm_regexp_char_is_eof(parser) && pm_char_is_hexadecimal_digit(*parser->cursor)) {
             hex_count++;
             parser->cursor++;
         }
 
         if (hex_count < 4) {
             pm_regexp_parse_error(parser, escape_start, parser->cursor, "invalid Unicode escape");
-        } else if (value >= 0x80) {
-            parser->has_unicode_escape = true;
-            parser->explicit_encoding = PM_ENCODING_UTF_8_ENTRY;
-            parser->last_escape_was_unicode = true;
-            pm_regexp_hex_group_boundary(parser);
-        }
-
-        // Check for invalid Unicode range.
-        if (hex_count == 4 && (value > 0x10FFFF || (value >= 0xD800 && value <= 0xDFFF))) {
-            parser->invalid_unicode_range = true;
         }
     }
 }
@@ -749,34 +635,14 @@ static bool
 pm_regexp_parse_lbracket(pm_regexp_parser_t *parser, uint16_t depth);
 
 /**
- * Parse a \x escape and return the byte value. The cursor should be pointing
- * at the character after 'x'. Returns -1 if no hex digits follow.
+ * Skip the digits of a \x escape, of which there are at most two. The cursor
+ * should be pointing at the character after 'x'.
  */
-static int
+static void
 pm_regexp_parse_hex_escape(pm_regexp_parser_t *parser) {
-    int value = -1;
-
-    if (!pm_regexp_char_is_eof(parser)) {
-        int digit = pm_regexp_hex_digit_value(*parser->cursor);
-        if (digit >= 0) {
-            value = digit;
-            parser->cursor++;
-
-            if (!pm_regexp_char_is_eof(parser)) {
-                digit = pm_regexp_hex_digit_value(*parser->cursor);
-                if (digit >= 0) {
-                    value = (value << 4) | digit;
-                    parser->cursor++;
-                }
-            }
-        }
+    for (int index = 0; index < 2 && !pm_regexp_char_is_eof(parser) && pm_char_is_hexadecimal_digit(*parser->cursor); index++) {
+        parser->cursor++;
     }
-
-    if (value >= 0) {
-        pm_regexp_track_hex_escape(parser, (uint8_t) value);
-    }
-
-    return value;
 }
 
 /**
@@ -803,27 +669,23 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
             pm_regexp_parse_hex_escape(parser);
             break;
         default:
-            pm_regexp_hex_group_boundary(parser);
             parser->cursor++;
             break;
     }
 }
 
 /**
- * Check if a byte at the current position is a non-ASCII byte in a multibyte
- * encoding that produces an invalid character, which the lexer has already
- * reported. If so, record it.
+ * Skip the rest of the character that begins at the given byte, which the
+ * cursor is just past, if it is a character of more than one byte. Its later
+ * bytes may look like ASCII in some encodings, so they must not be read as
+ * characters of their own. An invalid character, which the lexer has already
+ * reported, is skipped a byte at a time.
  */
 static void
-pm_regexp_parse_invalid_multibyte(pm_regexp_parser_t *parser, const uint8_t *cursor) {
-    uint8_t byte = *cursor;
-    if (byte >= 0x80 && parser->encoding_changed && pm_encoding_multibyte_p(parser->encoding)) {
+pm_regexp_parse_multibyte_char(pm_regexp_parser_t *parser, const uint8_t *cursor) {
+    if (*cursor >= 0x80 && parser->encoding_changed && pm_encoding_multibyte_p(parser->encoding)) {
         size_t width = pm_encoding_char_width(parser->encoding, cursor, (ptrdiff_t) (parser->end - cursor));
-        if (width > 1) {
-            parser->cursor += width - 1;
-        } else if (width == 0) {
-            parser->has_invalid_multibyte = true;
-        }
+        if (width > 1) parser->cursor += width - 1;
     }
 }
 
@@ -844,13 +706,7 @@ pm_regexp_parse_character_set(pm_regexp_parser_t *parser, uint16_t depth) {
                 pm_regexp_parse_backslash_escape(parser);
                 break;
             default:
-                // We've already advanced the cursor by one byte. If the byte
-                // was >= 0x80 in a multibyte encoding, we may need to consume
-                // additional continuation bytes and validate the character.
-                if (*(parser->cursor - 1) >= 0x80) {
-                    parser->non_ascii_literal_count++;
-                }
-                pm_regexp_parse_invalid_multibyte(parser, parser->cursor - 1);
+                pm_regexp_parse_multibyte_char(parser, parser->cursor - 1);
                 break;
         }
     }
@@ -1071,8 +927,10 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
 
                         size_t width = pm_encoding_char_width(parser->encoding, parser->cursor, (ptrdiff_t) (parser->end - parser->cursor));
                         if (width == 0) {
+                            /* An invalid character, which the lexer has
+                             * already reported, is skipped a byte at a
+                             * time. */
                             if (*parser->cursor >= 0x80) {
-                                parser->has_invalid_multibyte = true;
                                 parser->cursor++;
                                 continue;
                             }
@@ -1298,25 +1156,13 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
             }
 
             if (width == 0) {
+                /* An invalid character, which the lexer has already reported,
+                 * is skipped a byte at a time. */
                 if (*parser->cursor >= 0x80 && parser->encoding_changed) {
-                    if (pm_encoding_multibyte_p(parser->encoding)) {
-                        // Invalid multibyte character in a multibyte encoding,
-                        // which the lexer has already reported.
-                        parser->has_invalid_multibyte = true;
-                    } else {
-                        // Non-ASCII byte in a single-byte encoding (e.g.,
-                        // US-ASCII). Count it for later error reporting.
-                        parser->non_ascii_literal_count++;
-                    }
                     parser->cursor++;
                     return pm_regexp_parse_quantifier(parser);
                 }
                 return false;
-            }
-
-            // Count non-ASCII literal bytes.
-            for (size_t i = 0; i < width; i++) {
-                if (parser->cursor[i] >= 0x80) parser->non_ascii_literal_count++;
             }
 
             parser->cursor += width;
@@ -2164,9 +2010,6 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const p
     const pm_encoding_t *encoding = pm_regexp_resolve_encoding(parser, node, option, read_encoding, preprocessor.fixed_encoding);
     if (encoding == NULL) return 0;
 
-    const uint8_t *node_start = parser->start + node->base.location.start;
-    const uint8_t *node_end = parser->start + node->base.location.start + node->base.location.length;
-
     pm_regexp_parser_t regexp_parser = {
         .parser = parser,
         .start = source,
@@ -2180,28 +2023,14 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const p
         .name_callback = NULL,
         .name_data = NULL,
         .report_errors = true,
-        .node_start = node_start,
-        .node_end = node_end,
-        .has_unicode_escape = false,
-        .has_hex_escape = false,
-        .last_escape_was_unicode = false,
-        .explicit_encoding = NULL,
-        .has_property_escape = false,
-        .has_unicode_property_escape = false,
         .property_name = NULL,
         .property_name_length = 0,
         .unicode_property_name = NULL,
-        .unicode_property_name_length = 0,
-        .non_ascii_literal_count = 0,
-        .invalid_unicode_range = false,
-        .hex_escape_buffer = { 0 },
-        .hex_group_active = false,
-        .has_invalid_multibyte = false,
+        .unicode_property_name_length = 0
     };
 
     pm_regexp_parse_pattern(&regexp_parser);
     pm_regexp_check_properties(parser, node, &regexp_parser);
-    pm_buffer_cleanup(&regexp_parser.hex_escape_buffer);
 
     return pm_regexp_encoding_flags(parser, flags, encoding);
 }
@@ -2210,11 +2039,6 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const p
  * Parse the unescaped content of a regular expression for named capture groups
  * only, for the receiver of a =~ operator. No errors are reported, since the
  * regular expression is validated when it is parsed.
- *
- * Note: The encoding-tracking fields (has_unicode_escape, has_hex_escape, etc.)
- * are initialized but not used for the result. They exist because the parsing
- * functions (pm_regexp_parse_backslash_escape, etc.) unconditionally update
- * them as they walk through the content.
  */
 void
 pm_regexp_parse_named_captures(pm_parser_t *parser, const uint8_t *source, size_t size, bool extended_mode, pm_regexp_name_callback_t name_callback, void *name_data) {
@@ -2229,23 +2053,11 @@ pm_regexp_parse_named_captures(pm_parser_t *parser, const uint8_t *source, size_
         .name_callback = name_callback,
         .name_data = name_data,
         .report_errors = false,
-        .has_unicode_escape = false,
-        .has_hex_escape = false,
-        .last_escape_was_unicode = false,
-        .explicit_encoding = NULL,
-        .has_property_escape = false,
-        .has_unicode_property_escape = false,
         .property_name = NULL,
         .property_name_length = 0,
         .unicode_property_name = NULL,
-        .unicode_property_name_length = 0,
-        .non_ascii_literal_count = 0,
-        .invalid_unicode_range = false,
-        .hex_escape_buffer = { 0 },
-        .hex_group_active = false,
-        .has_invalid_multibyte = false,
+        .unicode_property_name_length = 0
     };
 
     pm_regexp_parse_pattern(&regexp_parser);
-    pm_buffer_cleanup(&regexp_parser.hex_escape_buffer);
 }
