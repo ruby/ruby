@@ -2167,6 +2167,9 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
             if (!klass) {
                 klass = rb_cRegexp;
             }
+            else if (!RTEST(rb_class_inherited_p(klass, rb_cRegexp))) {
+                goto format_error;
+            }
             VALUE regexp = rb_reg_init_str(rb_reg_s_alloc(klass), str, options);
             r_copy_ivar(regexp, str);
 

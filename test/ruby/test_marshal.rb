@@ -355,6 +355,11 @@ class TestMarshal < Test::Unit::TestCase
     assert_same(ModuleUTF8, Marshal.load(Marshal.dump(ModuleUTF8)))
   end
 
+  def test_uclass_regexp_with_non_regexp_class
+    assert_raise(ArgumentError) { Marshal.load("\x04\x08C:\x0bString/\x06a\x00".b) }
+    assert_raise(ArgumentError) { Marshal.load("\x04\x08C:\x0aArray/\x06a\x00".b) }
+  end
+
   def test_regexp2
     assert_equal(/\\u/, Marshal.load("\004\b/\b\\\\u\000"))
     assert_equal(/u/, Marshal.load("\004\b/\a\\u\000"))
