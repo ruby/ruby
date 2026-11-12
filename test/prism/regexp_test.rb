@@ -293,6 +293,31 @@ module Ruby::Prism
       assert_equal "aZb", node.unescaped
     end
 
+    # A string that interpolates only string literals has a value known while
+    # parsing, so a regular expression that interpolates it is validated as the
+    # one that its parts join to. parse.y builds this one each time it is
+    # evaluated instead, which raises then.
+    def test_static_interpolation_of_interpolated_string
+      errors = Ruby::Prism.parse('/a#{"b#{"c"}"}(/').errors
+      assert_equal ["end pattern with unmatched parenthesis"], errors.map(&:message)
+    end
+
+    # The content that a regular expression's parts join to takes the encoding
+    # of its parts that are not ASCII, as joining strings does, so a string in
+    # UTF-8 makes the content UTF-8 in a source in another encoding.
+    def test_static_interpolation_in_another_encoding
+      assert_empty Ruby::Prism.parse("# encoding: EUC-JP\n" + '/a#{"\\u3042"}/').errors
+
+      errors = Ruby::Prism.parse("# encoding: EUC-JP\n" + '/a#{"\\u3042"}(/').errors
+      assert_equal ["end pattern with unmatched parenthesis"], errors.map(&:message)
+    end
+
+    def test_static_interpolation_of_incompatible_encodings
+      source = "# encoding: EUC-JP\n/\xA4\xA2".b + '#{"\\u3042"}/'
+      errors = Ruby::Prism.parse(source).errors
+      assert_equal ["incompatible character encodings: EUC-JP and UTF-8"], errors.map(&:message)
+    end
+
     def test_depth_limit_nested_character_sets
       assert_depth_limit("[" * 10_000)
     end

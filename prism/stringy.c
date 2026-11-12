@@ -46,6 +46,21 @@ pm_string_compare(const pm_string_t *left, const pm_string_t *right) {
 }
 
 /**
+ * Returns true if every byte of the string is ASCII.
+ */
+bool
+pm_string_ascii_only_p(const pm_string_t *string) {
+    const uint8_t *source = pm_string_source(string);
+    size_t length = pm_string_length(string);
+
+    for (size_t index = 0; index < length; index++) {
+        if (source[index] >= 0x80) return false;
+    }
+
+    return true;
+}
+
+/**
  * Returns the length associated with the string.
  */
 size_t

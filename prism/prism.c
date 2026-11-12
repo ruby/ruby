@@ -6498,22 +6498,6 @@ pm_super_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_argument
 }
 
 /**
- * Read through the contents of a string and check if it consists solely of
- * US-ASCII code points.
- */
-static bool
-pm_ascii_only_p(const pm_string_t *contents) {
-    const size_t length = pm_string_length(contents);
-    const uint8_t *source = pm_string_source(contents);
-
-    for (size_t index = 0; index < length; index++) {
-        if (source[index] & 0x80) return false;
-    }
-
-    return true;
-}
-
-/**
  * Validate that the contents of the given symbol are all valid UTF-8.
  */
 static void
@@ -6572,7 +6556,7 @@ parse_symbol_encoding(pm_parser_t *parser, const pm_encoding_t *explicit_encodin
         } else if (validate) {
             parse_symbol_encoding_validate_other(parser, location, contents);
         }
-    } else if (pm_ascii_only_p(contents)) {
+    } else if (pm_string_ascii_only_p(contents)) {
         // Ruby stipulates that all source files must use an ASCII-compatible
         // encoding. Thus, all symbols appearing in source are eligible for
         // "downgrading" to US-ASCII.
@@ -19997,14 +19981,19 @@ parse_regexp(pm_parser_t *parser, uint16_t depth) {
     }
 
     pm_token_t closing = parser->current;
-    if (match1(parser, PM_TOKEN_EOF)) {
+    bool terminated = !match1(parser, PM_TOKEN_EOF);
+
+    if (terminated) {
+        expect1(parser, PM_TOKEN_REGEXP_END, PM_ERR_REGEXP_TERM);
+    } else {
         pm_parser_err_token(parser, &opening, PM_ERR_REGEXP_TERM);
         closing = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
-    } else {
-        expect1(parser, PM_TOKEN_REGEXP_END, PM_ERR_REGEXP_TERM);
     }
 
-    return UP(pm_interpolated_regular_expression_node_create(parser, &opening, &parts, &closing));
+    pm_interpolated_regular_expression_node_t *interpolated = pm_interpolated_regular_expression_node_create(parser, &opening, &parts, &closing);
+    if (terminated) pm_regexp_parse_interpolated(parser, interpolated);
+
+    return UP(interpolated);
 }
 
 static pm_node_t *

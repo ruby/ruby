@@ -35,12 +35,17 @@ typedef struct {
 
     /**
      * Where the content stops lining up with the source, for reporting errors
-     * at their place in the source. NULL when errors are not reported.
+     * at their place in the source. NULL when the content does not line up with
+     * the source at all, as when it is joined from several parts, in which case
+     * errors are reported at the location of the whole regular expression.
      */
     const pm_regexp_offsets_t *offsets;
 
     /** The offset in the source of the start of the content. */
     uint32_t source_start;
+
+    /** The location of the whole regular expression. */
+    pm_location_t location;
 
     /** The encoding of the source. */
     const pm_encoding_t *encoding;
@@ -100,6 +105,10 @@ typedef struct {
  */
 static uint32_t
 pm_regexp_source_offset(const pm_regexp_parser_t *parser, const uint8_t *position, bool start) {
+    if (parser->offsets == NULL) {
+        return start ? parser->location.start : (parser->location.start + parser->location.length);
+    }
+
     const pm_regexp_offset_t *values = parser->offsets->values;
     size_t size = parser->offsets->size;
     uint32_t content = (uint32_t) (position - parser->start);
@@ -1192,11 +1201,25 @@ typedef struct {
     /** The length of the content. */
     size_t size;
 
+    /**
+     * The encoding that the content is in. This is the source encoding,
+     * except for content joined from strings in another encoding.
+     */
+    const pm_encoding_t *encoding;
+
     /** The flags of the regular expression, which hold its options. */
     pm_node_flags_t flags;
 
     /** Where errors about the regular expression as a whole are reported. */
     pm_location_t location;
+
+    /**
+     * Whether the content holds characters that the lexer did not check, as
+     * the values of strings joined into it do, so that an invalid character is
+     * an error once its escapes are read rather than one that was reported
+     * where it was lexed.
+     */
+    bool unlexed;
 } pm_regexp_t;
 
 /**
@@ -1212,7 +1235,7 @@ pm_regexp_error_with_content(const pm_regexp_t *regexp, const char *message) {
     pm_buffer_t buffer = { 0 };
     pm_buffer_append_string(&buffer, message, strlen(message));
     pm_buffer_append_string(&buffer, ": /", 3);
-    pm_regexp_format_for_error(&buffer, parser->encoding, regexp->source, regexp->size);
+    pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
     pm_buffer_append_byte(&buffer, '/');
     pm_buffer_append_byte(&buffer, '\0');
 
@@ -1229,7 +1252,7 @@ pm_regexp_error_kind_with_content(const pm_regexp_t *regexp, pm_diagnostic_id_t 
     pm_parser_t *parser = regexp->parser;
 
     pm_buffer_t buffer = { 0 };
-    pm_regexp_format_for_error(&buffer, parser->encoding, regexp->source, regexp->size);
+    pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
     pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, diag_id, (int) buffer.length, pm_buffer_value(&buffer));
     pm_buffer_cleanup(&buffer);
 }
@@ -1272,20 +1295,22 @@ pm_regexp_non_ascii_p(const pm_encoding_t *encoding, const uint8_t *cursor, cons
  * Check the encoding option of a regular expression (/n, /u, /e, or /s)
  * against the characters written in it, before any of its escapes are read.
  * Every character that is not ASCII must already be in the encoding that the
- * option names, so the source encoding must be that one. When it is not, the
- * regular expression is still validated, in the source encoding, except with
- * /n, where such a character is an error of its own and nothing more is
- * checked.
+ * option names, so the content must be in that one, which is the source
+ * encoding unless the content joins strings in another encoding. When it is
+ * not, the regular expression is still validated, in the encoding of its
+ * content, except with /n, where such a character is an error of its own and
+ * nothing more is checked.
  *
  * Returns the encoding that the rest of the regular expression is read in, or
  * NULL if nothing more is checked. That is the encoding of the option, if any.
- * Without one it is the source encoding, except that content in a US-ASCII
- * source is read as binary, since any byte that is not ASCII in it is invalid
- * and has already been reported.
+ * Without one it is the encoding of the content, except that US-ASCII content
+ * is read as binary, since any byte that is not ASCII in it is invalid and has
+ * already been reported.
  */
 static const pm_encoding_t *
 pm_regexp_check_option(const pm_regexp_t *regexp) {
     pm_parser_t *parser = regexp->parser;
+    const pm_encoding_t *content = regexp->encoding;
     pm_node_flags_t flags = regexp->flags;
     const pm_encoding_t *encoding;
     char option;
@@ -1303,13 +1328,13 @@ pm_regexp_check_option(const pm_regexp_t *regexp) {
         option = 's';
         encoding = PM_ENCODING_WINDOWS_31J_ENTRY;
     } else {
-        return (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) ? PM_ENCODING_ASCII_8BIT_ENTRY : parser->encoding;
+        return (content == PM_ENCODING_US_ASCII_ENTRY) ? PM_ENCODING_ASCII_8BIT_ENTRY : content;
     }
 
-    if (parser->encoding == encoding || !pm_regexp_non_ascii_p(parser->encoding, regexp->source, regexp->source + regexp->size)) return encoding;
+    if (content == encoding || !pm_regexp_non_ascii_p(content, regexp->source, regexp->source + regexp->size)) return encoding;
 
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, option, parser->encoding->name);
-    if (option != 'n') return parser->encoding;
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, option, content->name);
+    if (option != 'n') return content;
 
     pm_regexp_error_kind_with_content(regexp, PM_ERR_REGEXP_NON_ESCAPED_MBC);
     return NULL;
@@ -1585,7 +1610,9 @@ static const bool pm_regexp_preprocess_stops[128] = {
  * encoding that its characters fix it to. Comments are skipped, both (?#...)
  * and, in extended mode, those from # to the end of the line, except that a
  * character that is not ASCII in a comment fixes a regular expression read in
- * UTF-8 to UTF-8.
+ * UTF-8 to UTF-8. An invalid character that was lexed is an error of its own,
+ * reported where it was lexed, so it is skipped a byte at a time; one in
+ * content that was not lexed is an error here.
  *
  * Within a group that turns extended mode on or off for its subexpression, as
  * in (?x:...), this is called again for the subexpression, which reads up to
@@ -1631,6 +1658,11 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                 if (*cursor >= 0x80) {
                     size_t width = pm_encoding_char_width(encoding, cursor, end - cursor);
                     if (width == 0) {
+                        if (preprocessor->regexp->unlexed) {
+                            pm_regexp_error_with_content(preprocessor->regexp, "invalid multibyte character");
+                            return false;
+                        }
+
                         cursor++;
                         break;
                     }
@@ -1738,6 +1770,11 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                              * that it does not close the comment. */
                             if (cursor < end) {
                                 size_t width = pm_encoding_char_width(encoding, cursor, end - cursor);
+                                if (width == 0 && preprocessor->regexp->unlexed) {
+                                    pm_regexp_error_with_content(preprocessor->regexp, "invalid multibyte character");
+                                    return false;
+                                }
+
                                 cursor += (width == 0) ? 1 : width;
                             }
                         }
@@ -1784,11 +1821,16 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                 break;
             default: {
                 /* Every other ASCII byte was skipped above, so this is the
-                 * first byte of a character that is not ASCII. An invalid
-                 * character is an error of its own, reported where it is
-                 * lexed, so it is skipped a byte at a time. */
+                 * first byte of a character that is not ASCII. */
                 size_t width = pm_encoding_char_width(encoding, cursor - 1, end - (cursor - 1));
-                if (width == 0) break;
+                if (width == 0) {
+                    if (preprocessor->regexp->unlexed) {
+                        pm_regexp_error_with_content(preprocessor->regexp, "invalid multibyte character");
+                        return false;
+                    }
+
+                    break;
+                }
 
                 cursor += width - 1;
                 if (!pm_regexp_preprocess_fix_encoding(preprocessor, encoding)) {
@@ -1891,7 +1933,7 @@ pm_regexp_check_properties(const pm_regexp_t *regexp, const pm_regexp_parser_t *
     if (name == NULL) return;
 
     pm_buffer_t formatted = { 0 };
-    pm_regexp_format_for_error(&formatted, parser->encoding, regexp->source, regexp->size);
+    pm_regexp_format_for_error(&formatted, regexp->encoding, regexp->source, regexp->size);
     pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_INVALID_CHAR_PROPERTY, (int) length, (const char *) name, (int) formatted.length, (const char *) formatted.value);
     pm_buffer_cleanup(&formatted);
 }
@@ -1909,8 +1951,9 @@ pm_regexp_check_properties(const pm_regexp_t *regexp, const pm_regexp_parser_t *
  * Each of these reads the content, where the lexer keeps the escapes that the
  * regular expression engine reads as their text, so that escaped bytes can be
  * told from literal ones. The offsets map places in the content to places in
- * the source, starting at the given offset, for errors in the pattern. Returns
- * the flags of the encoding of the regular expression.
+ * the source, starting at the given offset, for errors in the pattern. Without
+ * them, those errors are reported at the whole regular expression. Returns the
+ * flags of the encoding of the regular expression.
  */
 static pm_node_flags_t
 pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets, uint32_t source_start) {
@@ -1957,9 +2000,10 @@ pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets
         .end = source + size,
         .offsets = offsets,
         .source_start = source_start,
+        .location = regexp->location,
         .extended_mode = extended_mode,
-        .encoding_changed = parser->encoding_changed,
-        .encoding = parser->encoding,
+        .encoding_changed = parser->encoding_changed || regexp->encoding != parser->encoding,
+        .encoding = regexp->encoding,
         .name_callback = NULL,
         .name_data = NULL,
         .report_errors = true,
@@ -1986,11 +2030,136 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const p
         .parser = parser,
         .source = pm_string_source(&node->unescaped),
         .size = pm_string_length(&node->unescaped),
+        .encoding = parser->encoding,
         .flags = PM_NODE_FLAGS(node),
-        .location = node->base.location
+        .location = node->base.location,
+        .unlexed = false
     };
 
     return pm_regexp_validate(&regexp, offsets, node->content_loc.start);
+}
+
+/**
+ * The content that the parts of a regular expression that is a static literal
+ * join to, which are the text of the regular expression and the values of the
+ * strings that it interpolates, with the encoding that joining them gives it.
+ * Each part is in the encoding that its node forces, if it forces one, or else
+ * in the source encoding. The content is in the encoding of its first part
+ * that is not ASCII, and every later part that is not ASCII must be in that
+ * encoding too.
+ */
+typedef struct {
+    /** The parser that the regular expression is in. */
+    const pm_parser_t *parser;
+
+    /** The bytes of the content. */
+    pm_buffer_t buffer;
+
+    /** The encoding of the content so far, or NULL before its first part. */
+    const pm_encoding_t *encoding;
+
+    /** Whether the content so far is all ASCII. */
+    bool ascii_only;
+
+    /**
+     * The encoding of the first part that is not ASCII and is in another
+     * encoding than the content before it, so that the two cannot be joined.
+     * NULL if every part can be.
+     */
+    const pm_encoding_t *incompatible;
+} pm_regexp_joined_t;
+
+/**
+ * Join a string part to the content.
+ */
+static void
+pm_regexp_join_string(pm_regexp_joined_t *joined, const pm_string_node_t *node) {
+    const pm_encoding_t *encoding = joined->parser->encoding;
+    if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_FORCED_UTF8_ENCODING)) {
+        encoding = PM_ENCODING_UTF_8_ENTRY;
+    } else if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_FORCED_BINARY_ENCODING)) {
+        encoding = PM_ENCODING_ASCII_8BIT_ENTRY;
+    }
+
+    bool ascii_only = pm_string_ascii_only_p(&node->unescaped);
+
+    if (joined->encoding == NULL) {
+        joined->encoding = encoding;
+        joined->ascii_only = ascii_only;
+    } else if (!ascii_only) {
+        if (joined->ascii_only) {
+            joined->encoding = encoding;
+            joined->ascii_only = false;
+        } else if (encoding != joined->encoding && joined->incompatible == NULL) {
+            joined->incompatible = encoding;
+        }
+    }
+
+    pm_buffer_append_string(&joined->buffer, (const char *) pm_string_source(&node->unescaped), pm_string_length(&node->unescaped));
+}
+
+/**
+ * Join the given parts to the content, descending into the strings that they
+ * interpolate.
+ */
+static void
+pm_regexp_join_parts(pm_regexp_joined_t *joined, const pm_node_list_t *parts) {
+    for (size_t index = 0; index < parts->size; index++) {
+        const pm_node_t *part = parts->nodes[index];
+
+        switch (PM_NODE_TYPE(part)) {
+            case PM_STRING_NODE:
+                pm_regexp_join_string(joined, (const pm_string_node_t *) part);
+                break;
+            case PM_INTERPOLATED_STRING_NODE:
+                pm_regexp_join_parts(joined, &((const pm_interpolated_string_node_t *) part)->parts);
+                break;
+            case PM_EMBEDDED_STATEMENTS_NODE:
+                pm_regexp_join_parts(joined, &((const pm_embedded_statements_node_t *) part)->statements->body);
+                break;
+            default:
+                PRISM_ASSERT(false && "unexpected part of a static regular expression");
+                break;
+        }
+    }
+}
+
+/**
+ * Validate a regular expression with interpolation. A static literal, whose
+ * interpolations are all strings with values known while parsing, is the one
+ * regular expression that its parts join to, so it is validated as a whole.
+ */
+void
+pm_regexp_parse_interpolated(pm_parser_t *parser, const pm_interpolated_regular_expression_node_t *node) {
+    if (!PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) return;
+
+    pm_regexp_joined_t joined = { .parser = parser, .buffer = { 0 }, .encoding = NULL, .ascii_only = true, .incompatible = NULL };
+    pm_regexp_join_parts(&joined, &node->parts);
+
+    if (joined.incompatible != NULL) {
+        pm_buffer_t message = { 0 };
+        pm_buffer_append_format(&message, "incompatible character encodings: %s and %s", joined.encoding->name, joined.incompatible->name);
+        pm_buffer_append_byte(&message, '\0');
+
+        pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, node->base.location.start, node->base.location.length, PM_ERR_REGEXP_PARSE_ERROR, pm_buffer_value(&message));
+        pm_buffer_cleanup(&message);
+    } else {
+        /* The joined content does not line up with the source, so errors in
+         * its pattern are reported at the whole regular expression. */
+        const pm_regexp_t regexp = {
+            .parser = parser,
+            .source = (const uint8_t *) pm_buffer_value(&joined.buffer),
+            .size = pm_buffer_length(&joined.buffer),
+            .encoding = (joined.encoding == NULL) ? parser->encoding : joined.encoding,
+            .flags = PM_NODE_FLAGS(node),
+            .location = node->base.location,
+            .unlexed = true
+        };
+
+        pm_regexp_validate(&regexp, NULL, 0);
+    }
+
+    pm_buffer_cleanup(&joined.buffer);
 }
 
 /**

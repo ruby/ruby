@@ -3,6 +3,8 @@
 
 #include "prism/stringy.h"
 
+#include <stdbool.h>
+
 /*
  * Backing storage for an empty string.
  */
@@ -26,5 +28,10 @@ void pm_string_shared_init(pm_string_t *string, const uint8_t *start, const uint
  * right string.
  */
 int pm_string_compare(const pm_string_t *left, const pm_string_t *right);
+
+/*
+ * Returns true if every byte of the string is ASCII.
+ */
+bool pm_string_ascii_only_p(const pm_string_t *string);
 
 #endif
