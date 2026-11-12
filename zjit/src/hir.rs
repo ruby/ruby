@@ -3966,7 +3966,12 @@ impl Function {
             Insn::GetConstant { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::IsBlockGiven { .. } => types::BoolExact,
-            Insn::FixnumBitCheck { .. } => types::BoolExact,
+            Insn::FixnumBitCheck { val, index } => match self.type_of(*val).fixnum_value() {
+                // Known kw_bits, e.g. from an inlined call site with keyword arguments. Like
+                // checkkeyword, true iff bit `index` is clear.
+                Some(bits) => Type::from_value(if (bits >> index) & 1 == 0 { Qtrue } else { Qfalse }),
+                None => types::BoolExact,
+            },
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::ArrayMin { .. } => types::BasicObject,
             Insn::ArrayInclude { .. } => types::BoolExact,
