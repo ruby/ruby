@@ -949,6 +949,37 @@ end.join
     assert_equal("caller's cause", e.cause.message)
   end
 
+  # Thread#raise and Fiber#raise take their implicit cause from errinfo, which
+  # holds throw data while a non-local exit is in flight.  The exception queued
+  # here is delivered when Thread.handle_interrupt returns, and leaving the
+  # block with `break` makes that happen while the break is still unwinding.
+  # The VM calls #exception on the queued object at that point.
+  def assert_cause_not_throw_data(raiser)
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
+      e = nil
+      begin
+        Thread.handle_interrupt(Object => :never) do
+          queued = StandardError.new("queued")
+          Thread.current.raise(queued)
+          queued.define_singleton_method(:exception) {|*| #{raiser}.raise("in flight")}
+          break
+        end
+      rescue => e
+      end
+      assert_equal("in flight", e.message)
+      assert_nil(e.cause)
+    end;
+  end
+
+  def test_cause_thread_raise_not_throw_data
+    assert_cause_not_throw_data("Thread.current")
+  end
+
+  def test_cause_fiber_raise_not_throw_data
+    assert_cause_not_throw_data("Fiber.current")
+  end
+
   def test_unknown_option
     bug = '[ruby-core:63203] [Feature #8257] should pass unknown options'
 

@@ -754,6 +754,12 @@ rb_exception_setup(int argc, VALUE *argv)
         if (resolved_cause == exception) {
             resolved_cause = Qnil;
         }
+
+        // A non-local exit in flight keeps its throw data in errinfo, and
+        // throw data is not an exception:
+        if (THROW_DATA_P(resolved_cause)) {
+            resolved_cause = Qnil;
+        }
     }
     else if (NIL_P(cause)) {
         // Explicit nil cause - prevent chaining:
