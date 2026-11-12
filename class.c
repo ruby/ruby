@@ -345,8 +345,9 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *bo
     duplicate_classext_m_tbl(ext, RCLASSEXT_M_TBL(orig), klass, dup_iclass);
     RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) = false;
 
-    if (orig->fields_obj) {
-        RB_OBJ_WRITE(klass, &ext->fields_obj, rb_imemo_fields_clone(orig->fields_obj));
+    VALUE orig_fields_obj = RCLASSEXT_FIELDS_OBJ(orig);
+    if (orig_fields_obj) {
+        RCLASSEXT_SET_FIELDS_OBJ(klass, ext, rb_imemo_fields_clone(orig_fields_obj));
     }
 
     if (RCLASSEXT_SHARED_CONST_TBL(orig)) {

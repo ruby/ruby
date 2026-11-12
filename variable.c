@@ -1418,7 +1418,7 @@ rb_obj_fields(VALUE obj, ID field_name)
         return RCLASS_WRITABLE_FIELDS_OBJ(obj);
 
       case T_DATA:
-        return rbimpl_atomic_value_load(&RTYPEDDATA(obj)->fields_obj, RBIMPL_ATOMIC_RELAXED);
+        return rbimpl_atomic_value_load(&RTYPEDDATA(obj)->fields_obj, RBIMPL_ATOMIC_ACQUIRE);
 
       case T_STRUCT:
         return RSTRUCT_FIELDS_OBJ(obj);
@@ -2117,7 +2117,17 @@ rb_obj_freeze_inline(VALUE x)
         switch (BUILTIN_TYPE(x)) {
           case T_CLASS:
           case T_MODULE:
-            rb_obj_freeze_inline(RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(x));
+            {
+                VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(x);
+                if (fields_obj) {
+                    rb_obj_freeze_inline(fields_obj);
+                }
+                else {
+                    fields_obj = rb_imemo_fields_new(x, ROOT_SHAPE_ID, true);
+                    rb_obj_freeze_inline(fields_obj);
+                    RCLASS_WRITABLE_SET_FIELDS_OBJ(x, fields_obj);
+                }
+            }
             // FIXME: How to do multi-shape?
             RBASIC_SET_SHAPE_ID(x, shape_id);
             break;
