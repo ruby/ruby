@@ -344,6 +344,13 @@ class TestGemSafeMarshal < Gem::TestCase
     end
   end
 
+  def test_bignum_unexpected_sign
+    e = assert_raise(Gem::SafeMarshal::Visitors::ToRuby::FormatError) do
+      Gem::SafeMarshal.safe_load("\x04\bl*\a\xFF\xFF\xFF\xFF")
+    end
+    assert_equal 'Unexpected sign for Bignum "*" (42)', e.message
+  end
+
   def test_name_tuple_unmarshal_content_addressable_metadata
     tuple = Gem::NameTuple.new(
       "a",
