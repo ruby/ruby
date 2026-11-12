@@ -3910,7 +3910,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         PUSH_INSN2(ret, location, opt_new, ci, not_basic_new);
         LABEL_REF(not_basic_new);
         // optimized path
-        PUSH_SEND_R(ret, location, rb_intern("initialize"), INT2FIX(orig_argc), block_iseq, INT2FIX(flags | VM_CALL_FCALL), kw_arg);
+        PUSH_SEND_R(ret, location, rb_intern("initialize"), INT2FIX(orig_argc), block_iseq, INT2FIX(flags | VM_CALL_FCALL | VM_CALL_IGNORE_REFINEMENTS), kw_arg);
         PUSH_INSNL(ret, location, jump, not_basic_new_finish);
 
         PUSH_LABEL(ret, not_basic_new);

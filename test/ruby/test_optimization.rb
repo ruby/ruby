@@ -1500,4 +1500,75 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_no_match(/opt_new/, insn)
     end
   end
+
+  class SimpleObj
+    attr_reader :called_method
+
+    def initialize
+      @called_method = :original
+    end
+  end
+
+  module SimpleObjRefinement
+    refine SimpleObj do
+      def initialize
+        @called_method = :refined
+      end
+    end
+  end
+
+  module RefineInitialize
+    using SimpleObjRefinement
+
+    def self.call_new
+      SimpleObj.new
+    end
+
+    def self.call_allocate_send_initialize
+      obj = SimpleObj.allocate
+      obj.send(:initialize)
+      obj
+    end
+  end
+
+  class ReverseSimpleObj
+    attr_reader :called_method
+
+    def initialize
+      @called_method = :original
+    end
+  end
+
+  module ReverseSimpleObjRefinement
+    refine ReverseSimpleObj do
+      def initialize
+        @called_method = :refined
+      end
+    end
+  end
+
+  module ReverseRefineInitialize
+    using ReverseSimpleObjRefinement
+
+    def self.call_new
+      ReverseSimpleObj.new
+    end
+
+    def self.call_allocate_send_initialize
+      obj = ReverseSimpleObj.allocate
+      obj.send(:initialize)
+      obj
+    end
+  end
+
+  def test_opt_new_with_refinement
+    assert_equal :original, SimpleObj.new.called_method
+    assert_equal :original, RefineInitialize.call_new.called_method
+    assert_equal :refined, RefineInitialize.call_allocate_send_initialize.called_method
+
+    # Same test in reverse to ensure neither call cache can be poisoned
+    assert_equal :refined, ReverseRefineInitialize.call_allocate_send_initialize.called_method
+    assert_equal :original, ReverseSimpleObj.new.called_method
+    assert_equal :original, ReverseRefineInitialize.call_new.called_method
+  end
 end

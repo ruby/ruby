@@ -4761,8 +4761,10 @@ rb_vm_refinement_iclass_for_cme(VALUE refinement_iclass, const rb_callable_metho
 static const rb_callable_method_entry_t *
 search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
-    ID mid = vm_ci_mid(calling->cd->ci);
-    const rb_cref_t *cref = vm_get_cref(cfp->ep);
+    const struct rb_callinfo *ci = calling->cd->ci;
+    ID mid = vm_ci_mid(ci);
+    // The initialize call of opt_new must behave like Class#new, which does not see the caller's refinements. [Bug #22501]
+    const rb_cref_t *cref = (vm_ci_flag(ci) & VM_CALL_IGNORE_REFINEMENTS) ? NULL : vm_get_cref(cfp->ep);
     const struct rb_callcache * const cc = calling->cc;
     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
 

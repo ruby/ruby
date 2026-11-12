@@ -9896,7 +9896,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         LABEL_REF(not_basic_new);
 
         // optimized path
-        ADD_SEND_R(ret, line_node, rb_intern("initialize"), argc, parent_block, INT2FIX(flag | VM_CALL_FCALL), keywords);
+        ADD_SEND_R(ret, line_node, rb_intern("initialize"), argc, parent_block, INT2FIX(flag | VM_CALL_FCALL | VM_CALL_IGNORE_REFINEMENTS), keywords);
         ADD_INSNL(ret, line_node, jump, not_basic_new_finish);
 
         ADD_LABEL(ret, not_basic_new);
