@@ -781,24 +781,13 @@ pm_regexp_parse_hex_escape(pm_regexp_parser_t *parser) {
 
 /**
  * Parse a backslash escape sequence in a regexp, handling \u (unicode),
- * \p/\P (property), \x (hex), and other single-character escapes. Also
- * tracks encoding state for \M-x and \C-\M-x escapes. The meta and control
- * forms can wrap another escape, so this recurses and is bounded by the same
- * depth limit and stack budget as groups and character sets.
+ * \p/\P (property), \x (hex), and other single-character escapes. The lexer
+ * writes each \M-, \C-, and \c escape in the content as the \x escape of its
+ * byte, so those forms never reach here.
  */
-static bool
-pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser, uint16_t depth) {
-    if (depth >= PM_REGEXP_PARSE_DEPTH_MAX) {
-        pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
-        return false;
-    }
-
-    if (pm_parser_stack_exhausted(parser->parser)) {
-        pm_regexp_parse_stack_exhausted(parser);
-        return false;
-    }
-
-    if (pm_regexp_char_is_eof(parser)) return true;
+static void
+pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
+    if (pm_regexp_char_is_eof(parser)) return;
 
     switch (*parser->cursor) {
         case 'u':
@@ -813,61 +802,11 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser, uint16_t depth) {
             parser->cursor++; // skip 'x'
             pm_regexp_parse_hex_escape(parser);
             break;
-        case 'M':
-            // \M-x produces (x | 0x80), always >= 0x80
-            if (parser->cursor + 2 < parser->end && parser->cursor[1] == '-') {
-                parser->cursor += 2; // skip 'M-'
-                if (!pm_regexp_char_is_eof(parser)) {
-                    if (*parser->cursor == '\\') {
-                        parser->cursor++;
-                        // \M-\C-x or \M-\cx — the resulting byte is always >= 0x80
-                        // We just need to track it as a hex escape >= 0x80.
-                        if (!pm_regexp_parse_backslash_escape(parser, (uint16_t) (depth + 1))) return false;
-                    } else {
-                        parser->cursor++;
-                    }
-                    // \M-x always produces a byte >= 0x80
-                    pm_regexp_track_hex_escape(parser, 0x80);
-                }
-            } else {
-                parser->cursor++;
-            }
-            break;
-        case 'C':
-            // \C-x produces (x & 0x1F)
-            if (parser->cursor + 2 < parser->end && parser->cursor[1] == '-') {
-                parser->cursor += 2; // skip 'C-'
-                if (!pm_regexp_char_is_eof(parser)) {
-                    if (*parser->cursor == '\\') {
-                        parser->cursor++;
-                        if (!pm_regexp_parse_backslash_escape(parser, (uint16_t) (depth + 1))) return false;
-                    } else {
-                        parser->cursor++;
-                    }
-                }
-            } else {
-                parser->cursor++;
-            }
-            break;
-        case 'c':
-            // \cx produces (x & 0x1F)
-            parser->cursor++; // skip 'c'
-            if (!pm_regexp_char_is_eof(parser)) {
-                if (*parser->cursor == '\\') {
-                    parser->cursor++;
-                    if (!pm_regexp_parse_backslash_escape(parser, (uint16_t) (depth + 1))) return false;
-                } else {
-                    parser->cursor++;
-                }
-            }
-            break;
         default:
             pm_regexp_hex_group_boundary(parser);
             parser->cursor++;
             break;
     }
-
-    return true;
 }
 
 /**
@@ -902,7 +841,7 @@ pm_regexp_parse_character_set(pm_regexp_parser_t *parser, uint16_t depth) {
                 if (!pm_regexp_parse_lbracket(parser, (uint16_t) (depth + 1))) return false;
                 break;
             case '\\':
-                if (!pm_regexp_parse_backslash_escape(parser, depth)) return false;
+                pm_regexp_parse_backslash_escape(parser);
                 break;
             default:
                 // We've already advanced the cursor by one byte. If the byte
@@ -1326,7 +1265,8 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
             return pm_regexp_parse_quantifier(parser);
         case '\\':
             parser->cursor++;
-            return pm_regexp_parse_backslash_escape(parser, depth) && pm_regexp_parse_quantifier(parser);
+            pm_regexp_parse_backslash_escape(parser);
+            return pm_regexp_parse_quantifier(parser);
         case '(':
             parser->cursor++;
             return pm_regexp_parse_group(parser, depth) && pm_regexp_parse_quantifier(parser);
