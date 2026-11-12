@@ -50,6 +50,15 @@ module Ruby::Prism
       assert_equal Encoding::ASCII_8BIT, encoding
     end
 
+    # The part of a literal after an interpolation is in the source encoding,
+    # whatever encoding the literals inside the interpolation fixed.
+    def test_part_after_interpolation
+      ['"a#{"\\u3042"}b"', ':"a#{"\\u3042"}b"', '/a#{"\\u3042"}b/'].each do |source|
+        node = Ruby::Prism.parse_statement("# encoding: EUC-JP\n#{source}")
+        refute_predicate node.parts.last, :forced_utf8_encoding?, source
+      end
+    end
+
     if !ENV["PRISM_BUILD_MINIMAL"]
       # This test may be a little confusing. Basically when we use our strpbrk,
       # it takes into account the encoding of the file.

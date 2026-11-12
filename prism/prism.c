@@ -10627,6 +10627,11 @@ parser_lex(pm_parser_t *parser) {
 
                     if ((parser->lex_modes.current->mode == PM_LEX_EMBEXPR) && (parser->brace_nesting == 0)) {
                         lex_mode_pop(parser);
+
+                        /* The literal resumes after its interpolation, and the
+                         * encoding that literals inside the interpolation
+                         * fixed is not the encoding of its next part. */
+                        parser->explicit_encoding = NULL;
                         LEX(PM_TOKEN_EMBEXPR_END);
                     }
 
