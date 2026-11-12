@@ -1101,9 +1101,8 @@ etc_nprocessors_affin(void)
 static VALUE
 etc_nprocessors(VALUE obj)
 {
-    long ret;
-
 #if !defined(_WIN32)
+    long ret;
 
 #if defined(HAVE_SCHED_GETAFFINITY) && defined(CPU_ALLOC)
     int ncpus;
@@ -1120,6 +1119,7 @@ etc_nprocessors(VALUE obj)
     if (ret == -1) {
         rb_sys_fail("sysconf(_SC_NPROCESSORS_ONLN)");
     }
+    return LONG2NUM(ret);
 #else
 # ifndef ALL_PROCESSOR_GROUPS
 #   define ALL_PROCESSOR_GROUPS 0xffff
@@ -1138,9 +1138,8 @@ etc_nprocessors(VALUE obj)
         GetSystemInfo(&si);
         n = si.dwNumberOfProcessors;
     }
-    ret = (long)n;
+    return ULONG2NUM(n);
 #endif
-    return LONG2NUM(ret);
 }
 #else
 #define etc_nprocessors rb_f_notimplement
