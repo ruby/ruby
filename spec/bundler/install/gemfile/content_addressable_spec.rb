@@ -781,4 +781,51 @@ RSpec.describe "content-addressed lockfiles on older RubyGems", :compact_index, 
       expect(lockfile).to eq(original_lockfile)
     end
   end
+
+  it "does not lock the running Ruby's ABI when the lockfile does not cover it" do
+    simulate_platform "x86_64-linux" do
+      lockfile_with_content_addresses(addresses(mismatched_abi), ruby_abis: [mismatched_abi])
+      original_lockfile = lockfile
+
+      bundle "install"
+
+      expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
+      expect(lockfile).to eq(original_lockfile)
+    end
+  end
+
+  context "when the Gemfile has a ruby directive" do
+    before do
+      lockfile_with_content_addresses(addresses(current_abi, mismatched_abi), ruby_abis: [current_abi, mismatched_abi].sort, ruby_version: Bundler::RubyVersion.system.to_s)
+
+      gemfile <<~G
+        source "https://gem.repo2"
+        ruby "#{RUBY_VERSION}"
+        gem "mygem"
+      G
+    end
+
+    it "keeps the locked Ruby ABIs the directive rules out" do
+      simulate_platform "x86_64-linux" do
+        original_lockfile = lockfile
+
+        bundle "install"
+
+        expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
+        expect(lockfile).to eq(original_lockfile)
+      end
+    end
+
+    it "installs in frozen mode despite the locked Ruby ABIs the directive rules out" do
+      simulate_platform "x86_64-linux" do
+        original_lockfile = lockfile
+        bundle_config "frozen true"
+
+        bundle "install"
+
+        expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
+        expect(lockfile).to eq(original_lockfile)
+      end
+    end
+  end
 end
