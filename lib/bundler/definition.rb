@@ -558,6 +558,8 @@ module Bundler
     end
 
     def ruby_abis
+      return [] unless content_addressing_supported? || content_addresses_carried_over?
+
       @ruby_abis.sort_by {|ruby_abi| Gem::Version.new(ruby_abi) }
     end
 
@@ -969,6 +971,18 @@ module Bundler
       return if content_addressing_supported?
 
       raise InvalidOption, "Changing the Ruby ABIs in the lockfile requires RubyGems 4.1.0 or later, but you are using RubyGems #{Bundler.rubygems.version}"
+    end
+
+    # Older RubyGems resolves platform gems without the content addresses the
+    # lockfile had for them, and may swap a locked one for its ruby variant. Unless
+    # every platform gem comes through as locked, the lockfile then drops its Ruby
+    # ABIs, so that RubyGems 4.1 resolves again and records the content addresses
+    # instead of falling back.
+    def content_addresses_carried_over?
+      locked = @originally_locked_specs.select {|spec| spec.platform != Gem::Platform::RUBY && resolve[spec.name].any? }
+      resolved = resolve.select {|spec| spec.platform != Gem::Platform::RUBY }
+
+      locked.to_h {|spec| [spec.full_name, spec.content_addresses] } == resolved.to_h {|spec| [spec.full_name, spec.content_addresses] }
     end
 
     def ruby_abi_excluded?(ruby_abi)
