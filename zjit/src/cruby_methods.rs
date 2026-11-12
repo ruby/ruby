@@ -247,6 +247,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "reverse", types::ArrayExact, leaf, elidable);
     annotate!(rb_cArray, "join", types::StringExact);
     annotate!(rb_cArray, "[]", inline_array_aref);
+    annotate!(rb_cArray, "*", types::StringExact.union(types::ArrayExact));
     annotate!(rb_cArray, "[]=", inline_array_aset);
     annotate!(rb_cArray, "<<", inline_array_push);
     annotate!(rb_cArray, "push", inline_array_push);
