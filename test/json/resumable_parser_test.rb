@@ -717,6 +717,12 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_equal 0, error.column
   end
 
+  def test_prevent_double_initialize
+    assert_raise TypeError do
+      @parser.send(:initialize)
+    end
+  end
+
   private
 
   def assert_parse_error(json, expected_error_message = nil)

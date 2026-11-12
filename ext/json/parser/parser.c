@@ -2261,6 +2261,7 @@ typedef struct JSON_ResumableParserStruct {
     size_t incomplete_bytes;
     bool complete;
     bool in_use;
+    bool initialized;
 } JSON_ResumableParser;
 
 static void JSON_ResumableParser_mark(void *ptr)
@@ -2397,9 +2398,15 @@ static VALUE cResumableParser_initialize(int argc, VALUE *argv, VALUE self)
 {
     rb_check_frozen(self);
 
+    JSON_ResumableParser *parser = cResumableParser_get(self);
+
+    if (parser->initialized) {
+        rb_raise(rb_eTypeError, "already initialized parser");
+    }
+    parser->initialized = true;
+
     VALUE opts = Qfalse;
     rb_scan_args_kw(RB_SCAN_ARGS_LAST_HASH_KEYWORDS, argc, argv, "0:", &opts);
-    JSON_ResumableParser *parser = cResumableParser_get(self);
 
     opts = argc > 0 ? argv[0] : Qnil;
     parser_config_init(&parser->config, opts, self, true);
