@@ -2883,6 +2883,13 @@ static const pm_node_flags_t PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY = ((PM_CALL_NODE_
 static const pm_node_flags_t PM_CALL_NODE_FLAGS_COMPARISON = ((PM_CALL_NODE_FLAGS_LAST - 1) << 2);
 static const pm_node_flags_t PM_CALL_NODE_FLAGS_INDEX = ((PM_CALL_NODE_FLAGS_LAST - 1) << 3);
 
+/* The value of an interpolated string is known while parsing, since it joins
+ * only string literals and strings that themselves have this flag. This holds
+ * whether or not the string is frozen, which decides only whether it is a
+ * static literal itself, so it tells a regular expression or symbol that
+ * interpolates the string whether that one is a static literal. */
+static const pm_node_flags_t PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE = ((PM_INTERPOLATED_STRING_NODE_FLAGS_LAST - 1) << 1);
+
 /**
  * Allocate and initialize a new CallNode node. This sets everything to NULL
  * such that its values can be overridden in the various specializations of this
@@ -4846,9 +4853,10 @@ pm_interpolated_part_flags(pm_node_flags_t *flags, pm_node_t *part) {
                 // If the embedded statement is a string, then we can keep the
                 // static literal flag and mark the string as frozen.
                 pm_node_flag_set(embedded, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
-            } else if (PM_NODE_TYPE_P(embedded, PM_INTERPOLATED_STRING_NODE) && PM_NODE_FLAG_P(embedded, PM_NODE_FLAG_STATIC_LITERAL)) {
-                // If the embedded statement is an interpolated string and it's
-                // a static literal, then we can keep the static literal flag.
+            } else if (PM_NODE_TYPE_P(embedded, PM_INTERPOLATED_STRING_NODE) && PM_NODE_FLAG_P(embedded, PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE)) {
+                /* An interpolated string whose value is known while parsing
+                 * keeps the static literal flag, frozen or not, since only its
+                 * value is interpolated. */
             } else {
                 // Otherwise we lose the static literal flag.
                 *flags &= (pm_node_flags_t) ~PM_NODE_FLAG_STATIC_LITERAL;
@@ -4936,6 +4944,10 @@ pm_interpolated_regular_expression_node_create(pm_parser_t *parser, const pm_tok
  * `--disable-frozen-string-literal` or `# frozen_string_literal: false`. This
  * is necessary to indicate that the string should be left up to the runtime,
  * which could potentially use a chilled string otherwise.
+ *
+ * PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE indicates that the value of
+ * the string is known while parsing, whether or not it is frozen. It is kept
+ * for as long as every part is a string literal or a string with this flag.
  */
 static pm_interpolated_string_node_t *
 pm_interpolated_string_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_node_list_t *parts, const pm_token_t *closing) {
@@ -4948,7 +4960,7 @@ pm_interpolated_string_node_create(pm_parser_t *parser, const pm_token_t *openin
     pm_node_list_finalize(&parser->node_chunks, parser->arena, parts);
     pm_location_t location = pm_interpolated_location(parser, opening, parts, closing);
 
-    pm_node_flags_t flags = PM_NODE_FLAG_STATIC_LITERAL;
+    pm_node_flags_t flags = PM_NODE_FLAG_STATIC_LITERAL | PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE;
 
     switch (parser->frozen_string_literal) {
         case PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED:
@@ -4981,6 +4993,10 @@ pm_interpolated_string_node_create(pm_parser_t *parser, const pm_token_t *openin
                     // also clear the mutability flags.
                     CLEAR_FLAGS();
                 }
+
+                if (!PM_NODE_FLAG_P(part, PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE)) {
+                    flags &= (pm_node_flags_t) ~PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE;
+                }
                 break;
             case PM_EMBEDDED_STATEMENTS_NODE: {
                 pm_embedded_statements_node_t *cast = (pm_embedded_statements_node_t *) part;
@@ -5012,12 +5028,17 @@ pm_interpolated_string_node_create(pm_parser_t *parser, const pm_token_t *openin
                     CLEAR_FLAGS();
                 }
 
+                if (embedded == NULL || !(PM_NODE_TYPE_P(embedded, PM_STRING_NODE) || (PM_NODE_TYPE_P(embedded, PM_INTERPOLATED_STRING_NODE) && PM_NODE_FLAG_P(embedded, PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE)))) {
+                    flags &= (pm_node_flags_t) ~PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE;
+                }
+
                 break;
             }
             case PM_EMBEDDED_VARIABLE_NODE:
                 // Embedded variables clear static literal, which means we also
                 // should clear the mutability flags.
                 CLEAR_FLAGS();
+                flags &= (pm_node_flags_t) ~PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE;
                 break;
             case PM_X_STRING_NODE:
             case PM_INTERPOLATED_X_STRING_NODE:
@@ -5026,10 +5047,12 @@ pm_interpolated_string_node_create(pm_parser_t *parser, const pm_token_t *openin
                 // These will only happen in error cases. But we want to handle it
                 // here so that we don't fail the assertion.
                 CLEAR_FLAGS();
+                flags &= (pm_node_flags_t) ~PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE;
                 parts->nodes[idx] = UP(pm_error_recovery_node_create_unexpected(parser, part));
                 break;
             case PM_ERROR_RECOVERY_NODE:
                 CLEAR_FLAGS();
+                flags &= (pm_node_flags_t) ~PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE;
                 break;
             default:
                 PRISM_ASSERT(false && "unexpected node type");
