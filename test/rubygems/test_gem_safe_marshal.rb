@@ -244,6 +244,14 @@ class TestGemSafeMarshal < Gem::TestCase
     assert_safe_load_as [0.0, a, 1.0, a]
   end
 
+  def test_link_after_bignum
+    i = 2**64
+    s = "s"
+    assert_safe_load_as [i, i]
+    assert_safe_load_as [i, s, "t", s]
+    assert_safe_load_as [Rational(i, 3), s, s]
+  end
+
   def test_hash_with_ivar
     h = { runtime: :development }
     h.instance_variable_set :@type, []

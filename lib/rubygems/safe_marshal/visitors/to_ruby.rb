@@ -250,9 +250,9 @@ module Gem::SafeMarshal
 
         case b.sign
         when 43 # ?+
-          result
+          register_object(result)
         when 45 # ?-
-          -result
+          register_object(-result)
         else
           raise FormatError, "Unexpected sign for Bignum #{b.sign.chr.inspect} (#{b.sign})"
         end
