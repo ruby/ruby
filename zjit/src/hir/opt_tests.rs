@@ -12902,6 +12902,86 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_getivar_singleton_receiver_monomorphic_shape() {
+        // Like ActiveSupport::TaggedLogging::Formatter: a module method reads an ivar on objects
+        // that were `extend`ed, so every receiver has its own singleton class but all share a shape.
+        set_call_threshold(3);
+        eval("
+            class C
+              def initialize
+                @a = 1
+              end
+            end
+
+            module M
+              def foo = @a
+            end
+
+            O1 = C.new.extend(M)
+            O2 = C.new.extend(M)
+            O1.foo
+            O2.foo
+        ");
+        assert_snapshot!(hir_string_proc("M.instance_method(:foo)"), @"
+        fn foo@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:HeapBasicObject = GuardType v6, HeapBasicObject
+          SideExit NoProfileGetIvar recompile
+        ");
+    }
+
+    #[test]
+    fn test_getivar_singleton_receiver_polymorphic_shape() {
+        // Same as above, but the receivers set their ivars in a different order, so they have
+        // different shapes.
+        set_call_threshold(3);
+        eval("
+            class C
+              def a_then_b
+                @a = 1
+                @b = 2
+              end
+
+              def b_then_a
+                @b = 3
+                @a = 4
+              end
+            end
+
+            module M
+              def foo = @a
+            end
+
+            O1 = C.new.tap(&:a_then_b).extend(M)
+            O2 = C.new.tap(&:b_then_a).extend(M)
+            O1.foo
+            O2.foo
+        ");
+        assert_snapshot!(hir_string_proc("M.instance_method(:foo)"), @"
+        fn foo@<compiled>:15:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:HeapBasicObject = GuardType v6, HeapBasicObject
+          SideExit NoProfileGetIvar recompile
+        ");
+    }
+
+    #[test]
     fn test_optimize_attr_reader_polymorphic_classes() {
         // The call site profiles as polymorphic (A;S0, B;S1). Each dispatch arm stands for one
         // profiled type, so it gets a monomorphic receiver profile and the attr_reader
