@@ -1726,7 +1726,8 @@ pub const VM_CALL_OPT_SEND_bit: vm_call_flag_bits = 10;
 pub const VM_CALL_KW_SPLAT_MUT_bit: vm_call_flag_bits = 11;
 pub const VM_CALL_ARGS_SPLAT_MUT_bit: vm_call_flag_bits = 12;
 pub const VM_CALL_FORWARDING_bit: vm_call_flag_bits = 13;
-pub const VM_CALL__END: vm_call_flag_bits = 14;
+pub const VM_CALL_IGNORE_REFINEMENTS_bit: vm_call_flag_bits = 14;
+pub const VM_CALL__END: vm_call_flag_bits = 15;
 pub type vm_call_flag_bits = u32;
 #[repr(C)]
 pub struct rb_callinfo_kwarg {
