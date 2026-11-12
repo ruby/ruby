@@ -43,23 +43,24 @@ module Ruby::Prism
           (error_lines.delete(line_number) || []).each do |error|
             location = error.location
 
+            # Each character takes up one column, so the carets are measured
+            # in characters rather than bytes.
             case line_number
             when location.start_line
-              io.print(" " * location.start_column + "^")
+              start_column = location.start_character_column
+              io.print(" " * start_column + "^")
 
               if location.start_line == location.end_line
-                if location.start_column != location.end_column
-                  io.print("~" * (location.end_column - location.start_column - 1))
-                end
-
+                end_column = location.end_character_column
+                io.print("~" * (end_column - start_column - 1)) if start_column != end_column
                 io.puts(" " + error.message)
               else
-                io.puts("~" * (line.bytesize - location.start_column))
+                io.puts("~" * (line.length - start_column))
               end
             when location.end_line
-              io.puts("~" * location.end_column + " " + error.message)
+              io.puts("~" * location.end_character_column + " " + error.message)
             else
-              io.puts("~" * line.bytesize)
+              io.puts("~" * line.length)
             end
           end
         end

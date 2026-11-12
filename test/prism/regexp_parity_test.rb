@@ -110,14 +110,6 @@ module Ruby::Prism
       "/a # ą\nb/x", "/(?x)a # ą\n/", "/(?<a\\xFF>x)/", "/(?<a\xFF>b)/",
       "/\\p/",
 
-      # The encoding modifier is checked against the bytes of the regular
-      # expression before its escapes are preprocessed.
-      "/a(?#ą)b/u", "/a(?#ą)b/e", "/é\xFFa/e", "/garçon/n",
-      "/garçon\\xC3\\xA7/n", "/garçon\\xC3\\xA7/u", "/garçon\\xC3\\xA7/e", "/garçon\\xC3\\xA7/s",
-      "/\\xC3\\xA7garçon/n", "/\\xC3\\xA7garçon/u", "/\\xC3\\xA7garçon/e", "/\\xC3\\xA7garçon/s",
-      "/é\\xFF(/u", "/é\\xFF(/e", "/é\\xFF(/s", "/é\\p{L}/e",
-      "/é[a/e",
-
       # Escaped bytes are preprocessed into the characters that they form.
       "/\\xE9/", "/\\xE9\\x41/", "/\\xE9A/", "/\\xE9\\d/",
       "/\\xE9\\101/", "/\\xE9\\u0041/", "/\\xC3\\x41/", "/\\x81\\x30\\x81\\x30/",
@@ -134,16 +126,16 @@ module Ruby::Prism
 
       # Errors in the pattern.
       "/(?#\\xFF/", "/\xFF[a/", "/(?#\xFF)[a/", "/[a\xFF\xFF/",
-      "/[a\xFF/", "/é[a/n", "/\\xE9[a/", "/\\xC3\\d[a/",
-      "/\\xFF[a/n", "/[a/", "/[[a]/", "/[a\\]/",
-      "/a{3,2}/", "/x{100001}/", "/x{1,100001}/", "/[b-a]/",
-      "/[a-\\d]/", "/[\\d-a]/", "/(?<1a>x)/", "/(?i-/",
-      "/(?i/", "/[[:foo:]]/", "/(?(1)a|b|c)/", "/\\k<b>/",
-      "/\\k<a>(?<a>x)/", "/(?<a>x)\\k<b>/", "/\\k<0>/",
+      "/[a\xFF/", "/é[a/e", "/é[a/n", "/\\xE9[a/",
+      "/\\xC3\\d[a/", "/\\xFF[a/n", "/[a/", "/[[a]/",
+      "/[a\\]/", "/a{3,2}/", "/x{100001}/", "/x{1,100001}/",
+      "/[b-a]/", "/[a-\\d]/", "/[\\d-a]/", "/(?<1a>x)/",
+      "/(?i-/", "/(?i/", "/[[:foo:]]/", "/(?(1)a|b|c)/",
+      "/\\k<b>/", "/\\k<a>(?<a>x)/", "/(?<a>x)\\k<b>/", "/\\k<0>/",
 
       # Property escapes are checked against the encoding of the pattern.
       "/\\p{Hiragana}/", "/\\p{L}/", "/\\x80\\p{L}/", "/\\xE9\\p{Hiragana}/",
-      "/\\xA4\\xA2\\p{L}/e", "/\\p{Hiragana}(?#é)/n", "/\\p{Hiragana}[a/", "/\\p{^Alpha/",
+      "/\\xA4\\xA2\\p{L}/e", "/é\\p{L}/e", "/\\p{Hiragana}[a/", "/\\p{^Alpha/",
       "/\\p{Alpha/", "/\\p{}/",
 
       # Names and numbers of groups are resolved once the pattern is parsed.
@@ -154,14 +146,16 @@ module Ruby::Prism
       # writes them.
       "/\\ą(/", "/)\xFFa/", "/(\xFFa/", "/)\xFF/",
       "/(\\x/", "/(\xFF/", "/a\\\xFFb(/", "/\xE3\x81(/",
-      "/é(/n", "/é(/u", "/é(/e", "/é(/s",
-      "/é\\xFF(/n", "/\\uzz/", "/\\xE9(/", "/)\\p{Hiragana}/",
-      "/(?\\!x)/", "/\\あ(/", "/a\\/b(/", "/\\\nx(/",
-      "/\\xE3\\x81\\x82(/", "/\\343\\201\\202(/", "%r{(?\\}x)}", "/[]/",
-      "/*/", "/+/", "/?/", "/(?<>a)/",
-      "/(/", "/(|/", "/(?</", "/(?/",
-      "/(?#/", "/(?P/", "/)/", "/a(/x",
-      "/(?x)a # \\xFF\n(/", "/(?z)/", "/\\M-\\x(/", "/(\xFFa/ =~ \"\""
+      "/garçon/n", "/garçon\\xC3\\xA7/n", "/\\xC3\\xA7garçon/n", "/é(/n",
+      "/é(/u", "/é(/e", "/é(/s", "/é\\xFF(/n",
+      "/é\\xFF(/u", "/é\\xFF(/e", "/é\\xFF(/s", "/\\p{Hiragana}(?#é)/n",
+      "/\\uzz/", "/\\xE9(/", "/)\\p{Hiragana}/", "/(?\\!x)/",
+      "/\\あ(/", "/a\\/b(/", "/\\\nx(/", "/\\xE3\\x81\\x82(/",
+      "/\\343\\201\\202(/", "%r{(?\\}x)}", "/[]/", "/*/",
+      "/+/", "/?/", "/(?<>a)/", "/(/",
+      "/(|/", "/(?</", "/(?/", "/(?#/",
+      "/(?P/", "/)/", "/a(/x", "/(?x)a # \\xFF\n(/",
+      "/(?z)/", "/\\M-\\x(/", "/(\xFFa/ =~ \"\""
     ].freeze
 
     # The encodings that ENCODING_CASES are compared in by default, which have

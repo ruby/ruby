@@ -1449,11 +1449,10 @@ pm_regexp_format_for_error(pm_buffer_t *buffer, const pm_encoding_t *encoding, c
  *
  * The decision tree is:
  *
- * 1. No escape-set encoding (explicit_encoding == NULL):
- *    a. ASCII-only content: validate property escapes, return forced US-ASCII
- *       for /n or the modifier flags for others.
- *    b. US-ASCII source with non-ASCII literals: the lexer has reported them.
- *    c. Source encoding differs from modifier encoding: emit mismatch error.
+ * 1. No escape-set encoding (explicit_encoding == NULL): for ASCII-only
+ *    content, validate property escapes, return forced US-ASCII for /n or the
+ *    modifier flags for others. Literal characters were checked against the
+ *    modifier by pm_regexp_check_option.
  *
  * 2. Mixed \u and \x escapes: emit the appropriate conflict error depending
  *    on the modifier and which escape type was last.
@@ -1482,17 +1481,6 @@ pm_regexp_validate_encoding_modifier(pm_regexp_parser_t *parser, bool ascii_only
                     source_length, source_start);
             }
             return modifier == 'n' ? PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING : flags;
-        }
-
-        if (parser->encoding != PM_ENCODING_US_ASCII_ENTRY && parser->encoding != modifier_encoding) {
-            PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, modifier, parser->encoding->name);
-
-            if (modifier == 'n' && !ascii_only) {
-                pm_buffer_t formatted = { 0 };
-                pm_regexp_format_for_error(&formatted, parser->encoding, (const uint8_t *) source_start, (size_t) source_length);
-                PM_REGEXP_ENCODING_ERROR(parser, PM_ERR_REGEXP_NON_ESCAPED_MBC, (int) formatted.length, (const char *) formatted.value);
-                pm_buffer_cleanup(&formatted);
-            }
         }
 
         return flags;
@@ -1618,6 +1606,86 @@ pm_regexp_validate_encoding(pm_regexp_parser_t *parser, bool ascii_only, pm_node
 }
 
 /**
+ * Whether the content holds a character that is not ASCII. An invalid
+ * character does not count, since it is an error of its own, reported where it
+ * is lexed.
+ */
+static bool
+pm_regexp_non_ascii_p(const pm_encoding_t *encoding, const uint8_t *cursor, const uint8_t *end) {
+    switch (encoding->kind) {
+        case PM_ENCODING_KIND_ASCII:
+            /* No byte that is not ASCII is a valid character. */
+            return false;
+        case PM_ENCODING_KIND_SINGLE_BYTE:
+            /* Every byte that is not ASCII is a valid character. */
+            for (; cursor < end; cursor++) {
+                if (*cursor >= 0x80) return true;
+            }
+            return false;
+        case PM_ENCODING_KIND_UTF_8:
+            /* A byte that is not ASCII may begin an invalid character, which
+             * is skipped a byte at a time as the lexer reports it. UTF-8 is
+             * decoded directly, since it is by far the most common. */
+            for (; cursor < end; cursor++) {
+                if (*cursor >= 0x80 && pm_encoding_utf_8_char_width(cursor, end - cursor)) return true;
+            }
+            return false;
+        default:
+            /* The same as UTF-8, through the decoder of the encoding. */
+            for (; cursor < end; cursor++) {
+                if (*cursor >= 0x80 && pm_encoding_char_width(encoding, cursor, end - cursor)) return true;
+            }
+            return false;
+    }
+}
+
+/**
+ * Check the encoding option of a regular expression (/n, /u, /e, or /s)
+ * against the characters written in it, before any of its escapes are read.
+ * Every character that is not ASCII must already be in the encoding that the
+ * option names, so the source encoding must be that one. When it is not, the
+ * regular expression is still validated, except with /n, where such a
+ * character is an error of its own and nothing more is checked. Returns
+ * whether validation goes on.
+ */
+static bool
+pm_regexp_check_option(pm_parser_t *parser, const pm_regular_expression_node_t *node, const uint8_t *source, size_t size) {
+    pm_node_flags_t flags = PM_NODE_FLAGS(node);
+    const pm_encoding_t *encoding;
+    char option;
+
+    if (flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
+        option = 'n';
+        encoding = PM_ENCODING_ASCII_8BIT_ENTRY;
+    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_UTF_8) {
+        option = 'u';
+        encoding = PM_ENCODING_UTF_8_ENTRY;
+    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_EUC_JP) {
+        option = 'e';
+        encoding = PM_ENCODING_EUC_JP_ENTRY;
+    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
+        option = 's';
+        encoding = PM_ENCODING_WINDOWS_31J_ENTRY;
+    } else {
+        return true;
+    }
+
+    if (parser->encoding == encoding || !pm_regexp_non_ascii_p(parser->encoding, source, source + size)) return true;
+
+    uint32_t start = node->base.location.start;
+    uint32_t length = node->base.location.length;
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, start, length, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, option, parser->encoding->name);
+    if (option != 'n') return true;
+
+    pm_buffer_t formatted = { 0 };
+    pm_regexp_format_for_error(&formatted, parser->encoding, source, size);
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, start, length, PM_ERR_REGEXP_NON_ESCAPED_MBC, (int) formatted.length, (const char *) formatted.value);
+    pm_buffer_cleanup(&formatted);
+
+    return false;
+}
+
+/**
  * Parse a regular expression and validate its encoding. Validation walks the
  * unescaped content, where the lexer keeps the escapes that the regular
  * expression engine reads as their text, so that escaped bytes can be told
@@ -1629,6 +1697,8 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const p
     size_t size = pm_string_length(&node->unescaped);
     bool extended_mode = PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED);
     pm_node_flags_t flags = PM_NODE_FLAGS(node);
+
+    if (!pm_regexp_check_option(parser, node, source, size)) return flags;
 
     const uint8_t *node_start = parser->start + node->base.location.start;
     const uint8_t *node_end = parser->start + node->base.location.start + node->base.location.length;
