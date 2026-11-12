@@ -467,7 +467,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                 VALUE val = GETARG();
                 VALUE tmp;
                 unsigned int c;
-                int n;
+                int n, encidx;
 
                 tmp = rb_check_string_type(val);
                 if (!NIL_P(tmp)) {
@@ -477,11 +477,13 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                     goto format_s1;
                 }
                 n = NUM2INT(val);
-                if (n >= 0) n = rb_enc_codelen((c = n), enc);
+                if (n >= 0) {
+                    n = rb_enc_codelen((c = n), enc);
+                    encidx = rb_ascii8bit_appendable_encoding_index(enc, c);
+                }
                 if (n <= 0) {
                     rb_raise(rb_eArgError, "invalid character");
                 }
-                int encidx = rb_ascii8bit_appendable_encoding_index(enc, c);
                 if (encidx >= 0 && encidx != rb_enc_to_index(enc)) {
                     /* special case */
                     buf = reassoc_enc_index(result, encidx);
