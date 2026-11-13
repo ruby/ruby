@@ -695,7 +695,7 @@ class IPAddr
     case mask
     when String
       case mask
-      when /\A(0|[1-9]+\d*)\z/
+      when /\A(0|[1-9]\d*)\z/
         prefixlen = mask.to_i
       when /\A\d+\z/
         raise InvalidPrefixError, "leading zeros in prefix"
