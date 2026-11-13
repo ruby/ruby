@@ -136,6 +136,7 @@ fn main() {
         .allowlist_function("rb_shape_get_iv_index")
         .allowlist_function("rb_shape_transition_add_ivar_no_warnings")
         .allowlist_function("rb_jit_shape_capacity")
+        .allowlist_function("rb_jit_frozen_obj_ivar_layout_stable_p")
         .allowlist_var("rb_invalid_shape_id")
         .allowlist_type("shape_id_fl_type")
         .allowlist_var("VM_KW_SPECIFIED_BITS_MAX")
