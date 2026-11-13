@@ -185,6 +185,7 @@ box_entry_initialize(rb_box_t *box)
     box->loaded_features = rb_ary_dup(master->loaded_features);
     box->loaded_features_snapshot = rb_ary_new();
     box->loaded_features_index = st_init_numtable();
+    box->load_unstable_depth = 0;
     box->loaded_features_realpaths = rb_hash_dup(master->loaded_features_realpaths);
     box->loaded_features_realpath_map = rb_hash_dup(master->loaded_features_realpath_map);
     box->loading_table = st_init_strtable();
@@ -941,6 +942,7 @@ initialize_master_box(void)
     master->loaded_features = rb_ary_new();
     master->loaded_features_snapshot = rb_ary_hidden_new(0);
     master->loaded_features_index = st_init_numtable();
+    master->load_unstable_depth = 0;
     master->loaded_features_realpaths = rb_hash_new();
     rb_obj_hide(master->loaded_features_realpaths);
     master->loaded_features_realpath_map = rb_hash_new();

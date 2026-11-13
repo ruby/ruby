@@ -32,6 +32,11 @@ struct rb_box_struct {
     VALUE loaded_features_realpath_map;
     struct st_table *loaded_features_index;
     struct st_table *loading_table;
+    /* Non-zero while the main Ractor is rebuilding loaded_features_index or
+     * expanded_load_path.  Maintained under the VM lock so that
+     * rb_feature_provided_ractor_safe(), which holds that lock, is excluded from
+     * the rebuild and sees its writes once it completes. */
+    unsigned long load_unstable_depth;
     VALUE ruby_dln_libmap;
 
     VALUE gvar_tbl;
