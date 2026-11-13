@@ -3884,7 +3884,7 @@ impl Function {
             Insn::StringGetbyte { .. } => types::Fixnum,
             Insn::StringByteslice { .. } => types::StringExact.union(types::NilClass),
             Insn::StringSetbyteFixnum { .. } => types::Fixnum,
-            Insn::StringAppend { .. } => types::StringExact,
+            Insn::StringAppend { .. } => types::String,
             Insn::StringEqual { .. } => types::BoolExact,
             Insn::LoadFixnum { .. } => types::Fixnum,
             Insn::ToRegexp { .. } => types::RegexpExact,
@@ -8435,16 +8435,16 @@ impl Function {
                 Ok(())
             }
             // Instructions with String operands
-            Insn::StringCopy { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
+            Insn::StringCopy { val, .. } => self.assert_subtype(insn_id, val, types::String),
             Insn::StringIntern { val, .. } => self.assert_subtype(insn_id, val, types::String),
             Insn::StringAppend { recv, other, recv_flags, other_flags, .. } => {
-                self.assert_subtype(insn_id, recv, types::StringExact)?;
+                self.assert_subtype(insn_id, recv, types::String)?;
                 self.assert_subtype(insn_id, other, types::String)?;
                 self.assert_subtype(insn_id, recv_flags, types::CUInt64)?;
                 self.assert_subtype(insn_id, other_flags, types::CUInt64)
             }
             Insn::StringAppendCodepoint { recv, other, .. } => {
-                self.assert_subtype(insn_id, recv, types::StringExact)?;
+                self.assert_subtype(insn_id, recv, types::String)?;
                 self.assert_subtype(insn_id, other, types::Fixnum)
             }
             Insn::StringEqual { left, right } => {
@@ -8452,9 +8452,8 @@ impl Function {
                 self.assert_subtype(insn_id, right, types::String)
             }
             // Instructions with Array operands
-            Insn::ArrayDup { val, .. } => self.assert_subtype(insn_id, val, types::ArrayExact),
+            Insn::ArrayDup { val, .. } => self.assert_subtype(insn_id, val, types::Array),
             Insn::ArrayExtend { left, right, .. } => {
-                // TODO(max): Do left and right need to be ArrayExact?
                 self.assert_subtype(insn_id, left, types::Array)?;
                 self.assert_subtype(insn_id, right, types::Array)
             }
@@ -8473,7 +8472,7 @@ impl Function {
                 self.assert_subtype(insn_id, length, types::CInt64)
             }
             Insn::ArrayAset { array, index, .. } => {
-                self.assert_subtype(insn_id, array, types::ArrayExact)?;
+                self.assert_subtype(insn_id, array, types::Array)?;
                 self.assert_subtype(insn_id, index, types::CInt64)
             }
             Insn::AdjustBounds { index, length } => {
@@ -8482,8 +8481,8 @@ impl Function {
             }
             // Instructions with Hash operands
             Insn::HashAref { hash, .. }
-            | Insn::HashAset { hash, .. } => self.assert_subtype(insn_id, hash, types::HashExact),
-            Insn::HashDup { val, .. } => self.assert_subtype(insn_id, val, types::HashExact),
+            | Insn::HashAset { hash, .. } => self.assert_subtype(insn_id, hash, types::Hash),
+            Insn::HashDup { val, .. } => self.assert_subtype(insn_id, val, types::Hash),
             // Other
             Insn::ObjectAllocClass { class, .. } => {
                 if !class_has_leaf_allocator(class) {
