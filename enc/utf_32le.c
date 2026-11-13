@@ -72,7 +72,8 @@ static OnigCodePoint
 utf32le_mbc_to_code(const UChar* p, const UChar* end ARG_UNUSED,
 		    OnigEncoding enc ARG_UNUSED)
 {
-  return (OnigCodePoint )(((p[3] * 256 + p[2]) * 256 + p[1]) * 256 + p[0]);
+  return ((OnigCodePoint )p[3] << 24) | ((OnigCodePoint )p[2] << 16) |
+         ((OnigCodePoint )p[1] << 8) | (OnigCodePoint )p[0];
 }
 
 static int
