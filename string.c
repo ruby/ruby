@@ -276,6 +276,9 @@ rb_str_size_as_embedded(VALUE str)
 static inline bool
 STR_EMBEDDABLE_P(rb_len_t len, rb_len_t termlen)
 {
+    RUBY_ASSERT(len >= 0, "negative length: %" PRIdLEN, len);
+    RUBY_ASSERT(termlen > 0, "non-positive termlen: %" PRIdLEN, termlen);
+    RUBY_ASSERT(termlen <= 4, "too big termlen: %" PRIdLEN, termlen);
     return rb_gc_size_allocatable_p(rb_str_embed_size(len, termlen));
 }
 
@@ -2243,6 +2246,7 @@ rb_str_alloc_enc_capa(VALUE klass, VALUE encoding, VALUE capacity)
     rb_len_t capa = 0;
     if (FIXNUM_P(capacity)) {
         capa = NUM2LEN(capacity);
+        if (capa < 0) capa = 0;
     }
 
     rb_encoding *enc = rb_ascii8bit_encoding();

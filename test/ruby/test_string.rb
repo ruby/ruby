@@ -50,6 +50,8 @@ class TestString < Test::Unit::TestCase
     assert_equal("", S(capacity: 1000))
     assert_equal(Encoding::ASCII_8BIT, S(capacity: 1000).encoding)
 
+    assert(S(capacity: -1000).inspect)
+
     assert_equal("", S(capacity: 1000, encoding: "euc-jp"))
     assert_equal(Encoding::EUC_JP, S(capacity: 1000, encoding: "euc-jp").encoding)
 
