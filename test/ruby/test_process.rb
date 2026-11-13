@@ -271,6 +271,17 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_execopts_rlimit_out_of_range
+    return unless rlimit_exist?
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      ruby = EnvUtil.rubybin
+      assert_raise(RangeError) { system(ruby, "-e", "", rlimit_cpu: 2**65) }
+      assert_raise(RangeError) { system(ruby, "-e", "", rlimit_core: [0, 2**65]) }
+      assert_raise(RangeError) { system(ruby, "-e", "", rlimit_core: [-2**65]) }
+    end;
+  end
+
   def test_overwrite_ENV
     assert_separately([],"#{<<~"begin;"}\n#{<<~"end;"}")
     BUG = "[ruby-core:105223] [Bug #18164]"

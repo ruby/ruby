@@ -1991,6 +1991,8 @@ rb_execarg_addopt_rlimit(struct rb_execarg *eargp, int rtype, VALUE val)
     else {
         softlim = hardlim = rb_to_int(val);
     }
+    (void)NUM2RLIM(softlim);
+    (void)NUM2RLIM(hardlim);
     tmp = hide_obj(rb_ary_new3(3, INT2NUM(rtype), softlim, hardlim));
     rb_ary_push(ary, tmp);
 }
