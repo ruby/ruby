@@ -184,7 +184,7 @@ module SyncDefaultGems
       ["test/mmtk", "test/mmtk"],
     ]),
     open3: lib("ruby/open3", gemspec_in_subdir: true).tap {
-      it.exclude << "lib/open3/jruby_windows.rb"
+      it.exclude << "lib/open3/*jruby*.rb"
     },
     openssl: repo("ruby/openssl", [
       ["ext/openssl", "ext/openssl"],
