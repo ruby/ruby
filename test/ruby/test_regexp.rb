@@ -55,6 +55,15 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_char_property_name_with_large_code
+    # GB18030 has codes of 0x80000000 and above, negative as int
+    c = "\x81\x30\x90\x32".force_encoding("GB18030")
+    ["\\p{#{c}lnum}", "\\p{A#{c}num}", "[[:#{c}lnum:]]"].each do |pattern|
+      assert_raise(RegexpError) { Regexp.new(pattern) }
+    end
+    assert_match(Regexp.new("\\p{ALNUM}".encode("GB18030")), "a".encode("GB18030"))
+  end
+
   def test_assert_normal_exit
     # moved from knownbug.  It caused core.
     Regexp.union("a", "a")
