@@ -238,6 +238,17 @@ class TestRegexp < Test::Unit::TestCase
     assert_not_match(/\u3042\ba/, "\u3042a")
   end
 
+  def test_word_boundary_after_empty_backref
+    # An empty back reference used to leave the previous character pointing
+    # at the current position, so \b and \B looked at the wrong character.
+    assert_match(/(y?)a\1\b/, "a-")
+    assert_not_match(/(y?)a\1\B/, "a-")
+    assert_match(/(y?)a\1\b/i, "a-")
+    assert_match(/(?<n>y?)(?<n>z?)a\k<n>\b/, "a-")
+    assert_not_match(/(y?)a\1\b/, "ab")
+    assert_match(/(y?)a\1\B/, "ab")
+  end
+
   def test_named_capture
     m = /&(?<foo>.*?);/.match("aaa &amp; yyy")
     assert_equal("amp", m["foo"])
