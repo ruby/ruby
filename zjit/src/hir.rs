@@ -1775,6 +1775,7 @@ impl Insn {
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
             | Insn::ArrayAset { .. }
+            | Insn::StringAppendCodepoint { .. }
             | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. } => false,
             _ => true,
         }
@@ -3843,6 +3844,7 @@ impl Function {
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. }
+            | Insn::StringAppendCodepoint { .. }
             | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
@@ -3883,7 +3885,6 @@ impl Function {
             Insn::StringByteslice { .. } => types::StringExact.union(types::NilClass),
             Insn::StringSetbyteFixnum { .. } => types::Fixnum,
             Insn::StringAppend { .. } => types::StringExact,
-            Insn::StringAppendCodepoint { .. } => types::StringExact,
             Insn::StringEqual { .. } => types::BoolExact,
             Insn::LoadFixnum { .. } => types::Fixnum,
             Insn::ToRegexp { .. } => types::RegexpExact,

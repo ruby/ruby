@@ -17502,7 +17502,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
           v31:StringExact = GuardType v12, StringExact recompile
           v32:Fixnum = GuardType v13, Fixnum recompile
-          v33:StringExact = StringAppendCodepoint v31, v32
+          StringAppendCodepoint v31, v32
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v31
