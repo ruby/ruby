@@ -521,6 +521,33 @@ class TestProcess < Test::Unit::TestCase
     }
   end if windows? || Encoding.find('locale') == Encoding::UTF_8
 
+  def test_execopts_after_chdir_failure
+    name = "RUBY_EXECOPTS_TEST_CHDIR_ENV"
+    env, ENV[name] = ENV[name], nil
+    stdout = nil
+
+    with_tmpchdir do |d|
+      stdout = STDOUT.dup
+      STDOUT.reopen("parent.out", "w")
+      assert_raise_with_message(Errno::ENOENT, %r"d/notexist") {
+        Process.wait Process.spawn({name => "[Bug #22540]"}, *PWD, out: "child.out", chdir: "d/notexist")
+      }
+      STDOUT.puts "[Bug #22540]"
+      STDOUT.reopen(stdout)
+      stdout.close
+      stdout = nil
+      assert_nil(ENV[name])
+      assert_empty(File.read("child.out"))
+      assert_equal("[Bug #22540]\n", File.read("parent.out"))
+    ensure
+      ENV[name] = env
+      if stdout
+        STDOUT.reopen(stdout)
+        stdout.close
+      end
+    end
+  end
+
   def test_execopts_open_failure
     with_tmpchdir {|d|
       assert_raise_with_message(Errno::ENOENT, %r"d/notexist") {
