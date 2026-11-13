@@ -1540,6 +1540,14 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_keep_in_lookbehind
+    assert_equal([1, 3], /ab(?<=a\Kb)c/.match("abc").byteoffset(0))
+    assert_equal([2, 2], /(?<=a\Kb)/.match("abc").byteoffset(0))
+    assert_equal([2, 2], /(?<=a\Kb)/.match("abc", 2).byteoffset(0))
+    assert_equal([1, 2], /(?<=\Ka)a/.match("aaaa").byteoffset(0))
+    assert_equal([2, 3], /(?<=\Ka)a/.match("aaaa", 2).byteoffset(0))
+  end
+
   def test_char_type
     check(/\u3042\d/, ["\u30421", "\u30422"])
 

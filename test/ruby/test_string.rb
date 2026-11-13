@@ -1840,6 +1840,17 @@ class TestString < Test::Unit::TestCase
     assert_operator(a, :eql?, a)
   end
 
+  def test_gsub_keep_in_lookbehind
+    assert_equal("axxx", S("aaaa").gsub(/(?<=\Ka)a/, "x"))
+    assert_equal("axxx", S("aaaa").gsub(/(?<=\Ka)a/) { "x" })
+    assert_equal("axxx", S("aaaa").gsub(/(?<=\Ka)a/, "a" => "x"))
+    assert_equal("aZZ", S("abc").gsub(/b|(?<=a\Kb)c/, "Z"))
+    assert_equal("abXc", S("abc").gsub(/(?<=a\Kb)/, "X"))
+    assert_equal(["ab", "c"], S("abc").split(/(?<=a\Kb)/))
+    assert_equal([""], S("abc").scan(/(?<=a\Kb)/))
+    assert_equal(2, S("aaaa").index(/(?<=\Ka)a/, 2))
+  end
+
   def test_gsub
     assert_equal(S("h*ll*"),     S("hello").gsub(/[aeiou]/, S('*')))
     assert_equal(S("h<e>ll<o>"), S("hello").gsub(/([aeiou])/, S('<\1>')))

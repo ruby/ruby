@@ -3471,7 +3471,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       JUMP;
 
     CASE(OP_KEEP)  MOP_IN(OP_KEEP);
-      pkeep = s;
+      pkeep = (s < sstart) ? (UChar* )sstart : s;
       MOP_OUT;
       JUMP;
 
