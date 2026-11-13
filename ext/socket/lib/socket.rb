@@ -619,8 +619,8 @@ class Socket < BasicSocket
   private_constant :CONNECTION_ATTEMPT_DELAY
 
   ADDRESS_FAMILIES = {
-    ipv6: Socket::AF_INET6,
-    ipv4: Socket::AF_INET
+    **({ipv6: AF_INET6} if const_defined?(:AF_INET6)),
+    ipv4: AF_INET,
   }.freeze
   private_constant :ADDRESS_FAMILIES
 
