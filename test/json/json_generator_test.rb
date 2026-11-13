@@ -390,6 +390,32 @@ class JSONGeneratorTest < Test::Unit::TestCase
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
+  def test_json_state_dup
+    state = JSON::State.new(
+      allow_duplicate_key: true,
+      allow_nan: true,
+      array_nl: "\t",
+      as_json: false,
+      ascii_only: true,
+      buffer_initial_length: 42,
+      depth: 42,
+      script_safe: true,
+      strict: true,
+      indent: "\t",
+      max_nesting: 42,
+      object_nl: "\t",
+      space: "\t",
+      space_before: "\t",
+      sort_keys: true,
+    )
+    assert_equal state.to_h, state.dup.to_h
+
+    state = JSON::State.new(
+      rfc8785: true,
+    )
+    assert_equal state.to_h, state.dup.to_h
+  end
+
   def test_allow_nan
     error = assert_raise(GeneratorError) { generate([JSON::NaN]) }
     assert_same JSON::NaN, error.invalid_object
