@@ -1245,6 +1245,12 @@ class TestStringIO < Test::Unit::TestCase
     end;
   end
 
+  def test_new_during_mode_conversion
+    mode = Object.new
+    mode.define_singleton_method(:to_str) {StringIO.new("", "a"); "r"}
+    assert_predicate(StringIO.new("".dup, mode), :closed_write?)
+  end
+
   private
 
   def assert_string(content, encoding, str, mesg = nil)
