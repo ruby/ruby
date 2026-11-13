@@ -2059,13 +2059,12 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const p
 }
 
 /**
- * The content that the parts of a regular expression that is a static literal
- * join to, which are the text of the regular expression and the values of the
- * strings that it interpolates, with the encoding that joining them gives it.
- * Each part is in the encoding that its node forces, if it forces one, or else
- * in the source encoding. The content is in the encoding of its first part
- * that is not ASCII, and every later part that is not ASCII must be in that
- * encoding too.
+ * Strings joined into one piece of content, along with its encoding.
+ *
+ * The strings are the literal parts of a regular expression, or the parts of
+ * a string that it interpolates. The content takes the encoding of the first
+ * string with a non-ASCII character. Every later string with a non-ASCII
+ * character must be in that same encoding.
  */
 typedef struct {
     /** The parser that the regular expression is in. */
@@ -2074,33 +2073,39 @@ typedef struct {
     /** The bytes of the content. */
     pm_buffer_t buffer;
 
-    /** The encoding of the content so far, or NULL before its first part. */
+    /** The encoding of the content so far, or NULL before its first string. */
     const pm_encoding_t *encoding;
 
     /** Whether the content so far is all ASCII. */
     bool ascii_only;
 
     /**
-     * The encoding of the first part that is not ASCII and is in another
+     * The encoding of the first string that is not ASCII and is in another
      * encoding than the content before it, so that the two cannot be joined.
-     * NULL if every part can be.
+     * NULL if every string can be.
      */
     const pm_encoding_t *incompatible;
 } pm_regexp_joined_t;
 
 /**
- * Join a string part to the content.
+ * Return the encoding of a string node. That is UTF-8 or binary if the string
+ * forces one, and the source encoding otherwise.
+ */
+static const pm_encoding_t *
+pm_regexp_string_encoding(const pm_parser_t *parser, const pm_string_node_t *node) {
+    if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_FORCED_UTF8_ENCODING)) return PM_ENCODING_UTF_8_ENTRY;
+    if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_FORCED_BINARY_ENCODING)) return PM_ENCODING_ASCII_8BIT_ENTRY;
+    return parser->encoding;
+}
+
+/**
+ * Join the given content, in the given encoding, to the content so far.
  */
 static void
-pm_regexp_join_string(pm_regexp_joined_t *joined, const pm_string_node_t *node) {
-    const pm_encoding_t *encoding = joined->parser->encoding;
-    if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_FORCED_UTF8_ENCODING)) {
-        encoding = PM_ENCODING_UTF_8_ENTRY;
-    } else if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_FORCED_BINARY_ENCODING)) {
-        encoding = PM_ENCODING_ASCII_8BIT_ENTRY;
-    }
-
-    bool ascii_only = pm_string_ascii_only_p(&node->unescaped);
+pm_regexp_join(pm_regexp_joined_t *joined, const uint8_t *source, size_t size, const pm_encoding_t *encoding) {
+    pm_string_t content;
+    pm_string_shared_init(&content, source, source + size);
+    bool ascii_only = pm_string_ascii_only_p(&content);
 
     if (joined->encoding == NULL) {
         joined->encoding = encoding;
@@ -2114,33 +2119,48 @@ pm_regexp_join_string(pm_regexp_joined_t *joined, const pm_string_node_t *node) 
         }
     }
 
-    pm_buffer_append_string(&joined->buffer, (const char *) pm_string_source(&node->unescaped), pm_string_length(&node->unescaped));
+    pm_buffer_append_string(&joined->buffer, (const char *) source, size);
 }
 
 /**
- * Join the given parts to the content, descending into the strings that they
- * interpolate.
+ * Join the given parts to the content. An interpolated string is joined part
+ * by part. Every part must have a value known while parsing.
  */
 static void
-pm_regexp_join_parts(pm_regexp_joined_t *joined, const pm_node_list_t *parts) {
+pm_regexp_join_string_parts(pm_regexp_joined_t *joined, const pm_node_list_t *parts) {
     for (size_t index = 0; index < parts->size; index++) {
         const pm_node_t *part = parts->nodes[index];
 
         switch (PM_NODE_TYPE(part)) {
-            case PM_STRING_NODE:
-                pm_regexp_join_string(joined, (const pm_string_node_t *) part);
+            case PM_STRING_NODE: {
+                const pm_string_node_t *string = (const pm_string_node_t *) part;
+                pm_regexp_join(joined, pm_string_source(&string->unescaped), pm_string_length(&string->unescaped), pm_regexp_string_encoding(joined->parser, string));
                 break;
+            }
             case PM_INTERPOLATED_STRING_NODE:
-                pm_regexp_join_parts(joined, &((const pm_interpolated_string_node_t *) part)->parts);
+                pm_regexp_join_string_parts(joined, &((const pm_interpolated_string_node_t *) part)->parts);
                 break;
             case PM_EMBEDDED_STATEMENTS_NODE:
-                pm_regexp_join_parts(joined, &((const pm_embedded_statements_node_t *) part)->statements->body);
+                pm_regexp_join_string_parts(joined, &((const pm_embedded_statements_node_t *) part)->statements->body);
                 break;
             default:
-                PRISM_ASSERT(false && "unexpected part of a static regular expression");
+                PRISM_ASSERT(false && "unexpected part of a string whose value is known");
                 break;
         }
     }
+}
+
+/**
+ * Report that two strings cannot be joined, because their encodings differ.
+ */
+static void
+pm_regexp_error_incompatible(pm_parser_t *parser, pm_location_t location, const pm_encoding_t *left, const pm_encoding_t *right) {
+    pm_buffer_t message = { 0 };
+    pm_buffer_append_format(&message, "incompatible character encodings: %s and %s", left->name, right->name);
+    pm_buffer_append_byte(&message, '\0');
+
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, location.start, location.length, PM_ERR_REGEXP_PARSE_ERROR, pm_buffer_value(&message));
+    pm_buffer_cleanup(&message);
 }
 
 /**
@@ -2153,15 +2173,10 @@ pm_regexp_parse_interpolated(pm_parser_t *parser, const pm_interpolated_regular_
     if (!PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) return;
 
     pm_regexp_joined_t joined = { .parser = parser, .buffer = { 0 }, .encoding = NULL, .ascii_only = true, .incompatible = NULL };
-    pm_regexp_join_parts(&joined, &node->parts);
+    pm_regexp_join_string_parts(&joined, &node->parts);
 
     if (joined.incompatible != NULL) {
-        pm_buffer_t message = { 0 };
-        pm_buffer_append_format(&message, "incompatible character encodings: %s and %s", joined.encoding->name, joined.incompatible->name);
-        pm_buffer_append_byte(&message, '\0');
-
-        pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, node->base.location.start, node->base.location.length, PM_ERR_REGEXP_PARSE_ERROR, pm_buffer_value(&message));
-        pm_buffer_cleanup(&message);
+        pm_regexp_error_incompatible(parser, node->base.location, joined.encoding, joined.incompatible);
     } else {
         /* The joined content does not line up with the source, so errors in
          * its pattern are reported at the whole regular expression. */
