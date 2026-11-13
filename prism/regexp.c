@@ -1292,6 +1292,53 @@ pm_regexp_non_ascii_p(const pm_encoding_t *encoding, const uint8_t *cursor, cons
 }
 
 /**
+ * Find the encoding option of a regular expression: /n, /u, /e, or /s. Return
+ * its letter and set the encoding to the one it names. If there is none,
+ * return '\0' and set the encoding to NULL.
+ */
+static char
+pm_regexp_encoding_option(pm_node_flags_t flags, const pm_encoding_t **encoding) {
+    if (flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
+        *encoding = PM_ENCODING_ASCII_8BIT_ENTRY;
+        return 'n';
+    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_UTF_8) {
+        *encoding = PM_ENCODING_UTF_8_ENTRY;
+        return 'u';
+    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_EUC_JP) {
+        *encoding = PM_ENCODING_EUC_JP_ENTRY;
+        return 'e';
+    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
+        *encoding = PM_ENCODING_WINDOWS_31J_ENTRY;
+        return 's';
+    }
+
+    *encoding = NULL;
+    return '\0';
+}
+
+/**
+ * Pick the encoding to read the escapes of a regular expression in.
+ *
+ * If it has an encoding option like /u, use that encoding, as long as the
+ * content has no non-ASCII characters in some other encoding. Otherwise, use
+ * the encoding of the content. One exception: US-ASCII content with no option
+ * is read as binary.
+ *
+ * The option encoding is NULL if the regular expression has no such option.
+ */
+static const pm_encoding_t *
+pm_regexp_read_encoding(const pm_regexp_t *regexp, const pm_encoding_t *option_encoding) {
+    const pm_encoding_t *content = regexp->encoding;
+
+    if (option_encoding == NULL) {
+        return (content == PM_ENCODING_US_ASCII_ENTRY) ? PM_ENCODING_ASCII_8BIT_ENTRY : content;
+    }
+
+    if (content == option_encoding || !pm_regexp_non_ascii_p(content, regexp->source, regexp->source + regexp->size)) return option_encoding;
+    return content;
+}
+
+/**
  * Check the encoding option of a regular expression (/n, /u, /e, or /s)
  * against the characters written in it, before any of its escapes are read.
  * Every character that is not ASCII must already be in the encoding that the
@@ -1301,40 +1348,20 @@ pm_regexp_non_ascii_p(const pm_encoding_t *encoding, const uint8_t *cursor, cons
  * content, except with /n, where such a character is an error of its own and
  * nothing more is checked.
  *
- * Returns the encoding that the rest of the regular expression is read in, or
- * NULL if nothing more is checked. That is the encoding of the option, if any.
- * Without one it is the encoding of the content, except that US-ASCII content
- * is read as binary, since any byte that is not ASCII in it is invalid and has
- * already been reported.
+ * Returns the encoding that the rest of the regular expression is read in, as
+ * pm_regexp_read_encoding gives it, or NULL if nothing more is checked.
  */
 static const pm_encoding_t *
 pm_regexp_check_option(const pm_regexp_t *regexp) {
     pm_parser_t *parser = regexp->parser;
-    const pm_encoding_t *content = regexp->encoding;
-    pm_node_flags_t flags = regexp->flags;
     const pm_encoding_t *encoding;
-    char option;
+    char option = pm_regexp_encoding_option(regexp->flags, &encoding);
 
-    if (flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
-        option = 'n';
-        encoding = PM_ENCODING_ASCII_8BIT_ENTRY;
-    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_UTF_8) {
-        option = 'u';
-        encoding = PM_ENCODING_UTF_8_ENTRY;
-    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_EUC_JP) {
-        option = 'e';
-        encoding = PM_ENCODING_EUC_JP_ENTRY;
-    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
-        option = 's';
-        encoding = PM_ENCODING_WINDOWS_31J_ENTRY;
-    } else {
-        return (content == PM_ENCODING_US_ASCII_ENTRY) ? PM_ENCODING_ASCII_8BIT_ENTRY : content;
-    }
+    const pm_encoding_t *read_encoding = pm_regexp_read_encoding(regexp, encoding);
+    if (option == '\0' || read_encoding == encoding) return read_encoding;
 
-    if (content == encoding || !pm_regexp_non_ascii_p(content, regexp->source, regexp->source + regexp->size)) return encoding;
-
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, option, content->name);
-    if (option != 'n') return content;
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, option, regexp->encoding->name);
+    if (option != 'n') return read_encoding;
 
     pm_regexp_error_kind_with_content(regexp, PM_ERR_REGEXP_NON_ESCAPED_MBC);
     return NULL;
@@ -1890,18 +1917,7 @@ pm_regexp_resolve_encoding(const pm_regexp_t *regexp, pm_regexp_encoding_option_
 static pm_node_flags_t
 pm_regexp_encoding_flags(const pm_parser_t *parser, pm_node_flags_t flags, const pm_encoding_t *encoding) {
     const pm_encoding_t *implied;
-
-    if (flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
-        implied = PM_ENCODING_ASCII_8BIT_ENTRY;
-    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_UTF_8) {
-        implied = PM_ENCODING_UTF_8_ENTRY;
-    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_EUC_JP) {
-        implied = PM_ENCODING_EUC_JP_ENTRY;
-    } else if (flags & PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
-        implied = PM_ENCODING_WINDOWS_31J_ENTRY;
-    } else {
-        implied = parser->encoding;
-    }
+    if (pm_regexp_encoding_option(flags, &implied) == '\0') implied = parser->encoding;
 
     if (encoding == implied) return 0;
     if (encoding == PM_ENCODING_UTF_8_ENTRY) return PM_REGULAR_EXPRESSION_FLAGS_FORCED_UTF8_ENCODING;
@@ -1983,10 +1999,13 @@ pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets
         preprocessor.fixed_encoding = read_encoding;
     }
 
+    const pm_encoding_t *option_encoding;
+    char letter = pm_regexp_encoding_option(flags, &option_encoding);
+
     pm_regexp_encoding_option_t option = PM_REGEXP_ENCODING_OPTION_NONE;
-    if (flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
+    if (letter == 'n') {
         option = PM_REGEXP_ENCODING_OPTION_BINARY;
-    } else if (flags & (PM_REGULAR_EXPRESSION_FLAGS_UTF_8 | PM_REGULAR_EXPRESSION_FLAGS_EUC_JP | PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J)) {
+    } else if (letter != '\0') {
         option = PM_REGEXP_ENCODING_OPTION_FIXED;
     }
 
