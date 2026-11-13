@@ -1778,6 +1778,40 @@ x = __ENCODING__
     end;
   end
 
+  def test_shareable_constant_value_literal_op_assign
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to OP_ASGN_C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      OP_ASGN_C ||= ["Not " + "shareable"]
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to OP_ASGN_C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      OP_ASGN_C = true
+      OP_ASGN_C &&= ["Not " + "shareable"]
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to OP_ASGN_C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      OP_ASGN_C = [].freeze
+      OP_ASGN_C += ["Not " + "shareable"]
+    end;
+
+    a = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      var = [:shareable].freeze
+      OP_ASGN_C ||= var
+    end;
+    assert_equal([:shareable], a)
+    assert_ractor_shareable(a)
+  end
+
   def test_shareable_constant_value_unfrozen
     assert_raise_separately(Ractor::Error, /does not freeze object correctly/,
                             "#{<<~"begin;"}\n#{<<~'end;'}")
