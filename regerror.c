@@ -369,8 +369,10 @@ onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
       }
       else if (*p == '\\') {
         *s++ = *p++;
-        len = enclen(enc, p, pat_end);
-        while (len-- > 0) *s++ = *p++;
+        if (p < pat_end) { /* the pattern may end with a backslash */
+          len = enclen(enc, p, pat_end);
+          while (len-- > 0) *s++ = *p++;
+        }
       }
       else if (*p == '/') {
         *s++ = (unsigned char )'\\';
