@@ -175,9 +175,6 @@ rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
 #ifndef GC_HEAP_INIT_BYTES
 #define GC_HEAP_INIT_BYTES (2560 * 1024)
 #endif
-#ifndef GC_HEAP_FREE_SLOTS
-#define GC_HEAP_FREE_SLOTS  4096
-#endif
 #ifndef GC_RACTOR_HEAP_INIT_BYTES
 /* 0 is resolved at boot to the smallest size that works. */
 #define GC_RACTOR_HEAP_INIT_BYTES 0
@@ -281,7 +278,6 @@ static RB_THREAD_LOCAL_SPECIFIER int malloc_increase_local;
 typedef struct {
     size_t heap_init_bytes;
     size_t ractor_heap_init_bytes;
-    size_t heap_free_slots;
     double growth_factor;
     size_t growth_max_bytes;
 
@@ -303,7 +299,6 @@ typedef struct {
 static ruby_gc_params_t gc_params = {
     GC_HEAP_INIT_BYTES,
     GC_RACTOR_HEAP_INIT_BYTES,
-    GC_HEAP_FREE_SLOTS,
     GC_HEAP_GROWTH_FACTOR,
     GC_HEAP_GROWTH_MAX_BYTES,
 
@@ -11803,9 +11798,6 @@ get_envparam_double(const char *name, double *default_value, double lower_bound,
 /*
  * GC tuning environment variables
  *
- * * RUBY_GC_HEAP_FREE_SLOTS
- *   - Prepare at least this amount of slots after GC.
- *   - Allocate slots if there are not enough slots.
  * * RUBY_GC_HEAP_GROWTH_FACTOR (new from 2.1)
  *   - Allocate slots by this factor.
  *   - (next slots number) = (current slots number) * (this factor)
@@ -11828,7 +11820,7 @@ get_envparam_double(const char *name, double *default_value, double lower_bound,
  *           N is the number of old objects just after last full GC.
  *
  *  * obsolete
- *    * RUBY_FREE_MIN       -> RUBY_GC_HEAP_FREE_SLOTS (from 2.1)
+ *    * RUBY_FREE_MIN       -> RUBY_GC_HEAP_FREE_SLOTS (from 2.1), removed in 4.1
  *    * RUBY_HEAP_MIN_SLOTS -> RUBY_GC_HEAP_INIT_SLOTS (from 2.1) -> RUBY_GC_HEAP_INIT_BYTES
  *
  * * RUBY_GC_MALLOC_LIMIT
@@ -11844,8 +11836,6 @@ void
 rb_gc_impl_set_params(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
-    get_envparam_size("RUBY_GC_HEAP_FREE_SLOTS", &gc_params.heap_free_slots, 0);
-
     get_envparam_size("RUBY_GC_HEAP_INIT_BYTES", &gc_params.heap_init_bytes,
                       heap_init_bytes_min() - 1);
     get_envparam_size("RUBY_GC_RACTOR_HEAP_INIT_BYTES", &gc_params.ractor_heap_init_bytes,

@@ -480,6 +480,11 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   Integer index within the range of Array indices.  An index past the `int`
   range used to raise `RangeError`. [[Feature #22400]]
 
+* The `RUBY_GC_HEAP_FREE_SLOTS` environment variable is removed.  The GC now
+  decides whether to grow a heap or run a major GC per heap, from each heap's
+  own size and `RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO`, so the process-wide floor
+  it set has no counterpart.  Setting it has no effect.  [[PR #17251]]
+
 ## Stdlib compatibility issues
 
 * prism is now a bundled gem.  Under Bundler, `require "prism"` needs prism
@@ -795,6 +800,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22444]: https://bugs.ruby-lang.org/issues/22444
 [Feature #22503]: https://bugs.ruby-lang.org/issues/22503
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
+[PR #17251]: https://github.com/ruby/ruby/pull/17251
 [PR #19333]: https://github.com/ruby/ruby/pull/19333
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
