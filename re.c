@@ -2396,7 +2396,7 @@ rb_reg_search_set_match(VALUE re, VALUE str, rb_len_t pos, int reverse, int set_
         RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
         rb_obj_reveal(match, rb_cMatch);
     }
-    else {
+    else if (!RMATCH(match)->str) {
         /* Note that a MatchData object with RMATCH(match)->str == 0 is incomplete!
          * We need to hide the object from ObjectSpace.each_object.
          * https://bugs.ruby-lang.org/issues/19159
@@ -2466,6 +2466,7 @@ rb_reg_start_with_p(VALUE re, VALUE str)
     ALLOCV_END(regs_buf);
 
     RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
+    rb_obj_reveal(match, rb_cMatch);
     RB_OBJ_WRITE(match, &RMATCH(match)->regexp, re);
     rb_backref_set(match);
 
