@@ -362,10 +362,10 @@ class TestSocket < Test::Unit::TestCase
         next true unless ai
         s = famlies[ai.afamily]
         next true unless s
-        next true if ai.ipv6_linklocal? # IPv6 link-local address is too troublesome in this test.
+        next true if ai.ipv6? && ai.ipv6_linklocal? # IPv6 link-local address is too troublesome in this test.
         case RUBY_PLATFORM
         when /freebsd/
-          if ifa.addr.ipv6_linklocal?
+          if ai.ipv6? && ai.ipv6_linklocal?
             # FreeBSD 9.0 with default setting (ipv6_activate_all_interfaces
             # is not YES) sets IFDISABLED to interfaces which don't have
             # global IPv6 address.
@@ -770,6 +770,7 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_tcp_socket_v6_hostname_resolved_earlier
+    omit_unless_ipv6
     opts = %w[-rsocket -W1]
     assert_separately opts, <<~RUBY
     begin
@@ -803,7 +804,7 @@ class TestSocket < Test::Unit::TestCase
 
   def test_tcp_socket_v4_hostname_resolved_earlier
     opts = %w[-rsocket -W1]
-    assert_separately opts, <<~RUBY
+    assert_separately opts, inet_preamble + <<~RUBY
     begin
       server = TCPServer.new("127.0.0.1", 0)
       _, port, = server.addr
@@ -811,7 +812,7 @@ class TestSocket < Test::Unit::TestCase
 
       Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, *_|
         case family
-        when Socket::AF_INET6 then sleep(10); [Addrinfo.tcp("::1", port)]
+        when is_inet6 then sleep(10); [Addrinfo.tcp("::1", port)]
         when Socket::AF_INET then [Addrinfo.tcp("127.0.0.1", port)]
         end
       end
@@ -827,6 +828,7 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_tcp_socket_v6_hostname_resolved_in_resolution_delay
+    omit_unless_ipv6
     opts = %w[-rsocket -W1]
     assert_separately opts, <<~RUBY
     begin
@@ -862,7 +864,7 @@ class TestSocket < Test::Unit::TestCase
 
   def test_tcp_socket_v6_hostname_resolved_earlier_and_v6_server_is_not_listening
     opts = %w[-rsocket -W1]
-    assert_separately opts, <<~RUBY
+    assert_separately opts, inet_preamble + <<~RUBY
     begin
       ipv4_address = "127.0.0.1"
       server = Socket.new(Socket::AF_INET, :STREAM)
@@ -872,7 +874,7 @@ class TestSocket < Test::Unit::TestCase
 
       Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, *_|
         case family
-        when Socket::AF_INET6 then [Addrinfo.tcp("::1", port)]
+        when is_inet6 then [Addrinfo.tcp("::1", port)]
         when Socket::AF_INET then sleep(0.001); [Addrinfo.tcp(ipv4_address, port)]
         end
       end
@@ -889,6 +891,7 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_tcp_socket_resolv_timeout
+    omit_unless_ipv6 "the stub ignores timeout:, which enforces resolv_timeout when only IPv4 is resolved"
     opts = %w[-rsocket -W1]
     assert_separately opts, <<~RUBY
     begin
@@ -908,12 +911,12 @@ class TestSocket < Test::Unit::TestCase
 
   def test_tcp_socket_resolv_timeout_with_connection_failure
     opts = %w[-rsocket -W1]
-    assert_separately opts, <<~RUBY
+    assert_separately opts, inet_preamble + <<~RUBY
     server = TCPServer.new("127.0.0.1", 12345)
     _, port, = server.addr
 
     Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, *_|
-      if family == Socket::AF_INET6
+      if is_inet6[family]
         sleep
       else
         [Addrinfo.tcp("127.0.0.1", port)]
@@ -922,7 +925,10 @@ class TestSocket < Test::Unit::TestCase
 
     server.close
 
-    assert_raise(IO::TimeoutError) do
+    # Without IPv6, there is no pending IPv6 resolution to wait for, so the
+    # IPv4 connection failure is reported immediately.
+    expected = defined?(Socket::AF_INET6) ? IO::TimeoutError : Errno::ECONNREFUSED
+    assert_raise(expected) do
       Socket.tcp("localhost", port, resolv_timeout: 0.01)
     end
     RUBY
@@ -930,16 +936,19 @@ class TestSocket < Test::Unit::TestCase
 
   def test_tcp_socket_open_timeout
     opts = %w[-rsocket -W1]
-    assert_separately opts, <<~RUBY
+    assert_separately opts, inet_preamble + <<~RUBY
     Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, *_|
-      if family == Socket::AF_INET6
+      if is_inet6[family]
         sleep
       else
         [Addrinfo.tcp("127.0.0.1", 12345)]
       end
     end
 
-    assert_raise(IO::TimeoutError) do
+    # Without IPv6, there is no pending IPv6 resolution to wait for, so the
+    # IPv4 connection failure is reported immediately.
+    expected = defined?(Socket::AF_INET6) ? IO::TimeoutError : Errno::ECONNREFUSED
+    assert_raise(expected) do
       Socket.tcp("localhost", 12345, open_timeout: 0.01)
     end
     RUBY
@@ -955,6 +964,7 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_tcp_socket_one_hostname_resolution_succeeded_at_least
+    omit_unless_ipv6
     opts = %w[-rsocket -W1]
     assert_separately opts, <<~RUBY
     begin
@@ -991,14 +1001,14 @@ class TestSocket < Test::Unit::TestCase
 
   def test_tcp_socket_all_hostname_resolution_failed
     opts = %w[-rsocket -W1]
-    assert_separately opts, <<~RUBY
+    assert_separately opts, inet_preamble + <<~RUBY
     begin
       server = TCPServer.new("localhost", 0)
       _, port, = server.addr
 
       Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, *_|
         case family
-        when Socket::AF_INET6 then raise SocketError
+        when is_inet6 then raise SocketError
         when Socket::AF_INET then sleep(0.01); raise SocketError, "Last hostname resolution error"
         end
       end
@@ -1014,13 +1024,13 @@ class TestSocket < Test::Unit::TestCase
 
   def test_tcp_socket_hostname_resolution_failed_after_connection_failure
     opts = %w[-rsocket -W1]
-    assert_separately opts, <<~RUBY
+    assert_separately opts, inet_preamble + <<~RUBY
     server = TCPServer.new("127.0.0.1", 0)
     port = server.connect_address.ip_port
 
     Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, *_|
       case family
-      when Socket::AF_INET6 then sleep(0.1); raise Socket::ResolutionError
+      when is_inet6 then sleep(0.1); raise Socket::ResolutionError
       when Socket::AF_INET then [Addrinfo.tcp("127.0.0.1", port)]
       end
     end
@@ -1060,6 +1070,7 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_tcp_socket_v6_address_passed
+    omit_unless_ipv6
     opts = %w[-rsocket -W1]
     assert_separately opts, <<~RUBY
     begin
@@ -1110,6 +1121,21 @@ class TestSocket < Test::Unit::TestCase
 
     Socket.tcp_fast_fallback = true
     assert_true(Socket.tcp_fast_fallback)
+    RUBY
+  end
+
+  private
+
+  def omit_unless_ipv6(reason = "IPv6 is not supported")
+    omit reason unless defined?(Socket::AF_INET6)
+  end
+
+  # Defines +is_inet6+ for assert_separately scripts: a matcher for
+  # `case family` stubs that never matches when IPv6 is unsupported.
+  # Prepend it to the script; it adds no line, so line numbers are kept.
+  def inet_preamble
+    <<~RUBY.chomp
+      is_inet6 = ->(family) { defined?(Socket::AF_INET6) && family == Socket::AF_INET6 };
     RUBY
   end
 end if defined?(Socket)

@@ -1413,9 +1413,14 @@ rsock_init_inetsock(
                     }
                 }
             }  else {
+#ifdef INET6
                 resolving_family_size = 2;
                 target_families[0] = AF_INET6;
                 target_families[1] = AF_INET;
+#else
+                resolving_family_size = 1;
+                target_families[1] = AF_INET;
+#endif
             }
 
             struct fast_fallback_inetsock_arg fast_fallback_arg;

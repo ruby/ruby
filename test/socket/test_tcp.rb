@@ -79,7 +79,10 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     port = server.connect_address.ip_port
     server.close
 
-    assert_raise(IO::TimeoutError) do
+    # Without IPv6, only IPv4 is resolved and test_mode_settings are not
+    # applied, so the connection to the closed port is refused immediately.
+    expected = defined?(Socket::AF_INET6) ? IO::TimeoutError : Errno::ECONNREFUSED
+    assert_raise(expected) do
       TCPSocket.new(
         "localhost",
         port,
@@ -95,7 +98,10 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     port = server.connect_address.ip_port
     server.close
 
-    assert_raise(IO::TimeoutError) do
+    # Without IPv6, only IPv4 is resolved and test_mode_settings are not
+    # applied, so the connection to the closed port is refused immediately.
+    expected = defined?(Socket::AF_INET6) ? IO::TimeoutError : Errno::ECONNREFUSED
+    assert_raise(expected) do
       TCPSocket.new(
         "localhost",
         port,
@@ -194,6 +200,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_earlier
+    omit_unless_ipv6
+
     begin
       # Verify that "localhost" can be resolved to an IPv6 address
       Socket.getaddrinfo("localhost", 0, Socket::AF_INET6)
@@ -263,6 +271,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_in_resolution_delay
+    omit_unless_ipv6
+
     begin
       # Verify that "localhost" can be resolved to an IPv6 address
       Socket.getaddrinfo("localhost", 0, Socket::AF_INET6)
@@ -388,6 +398,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_resolv_timeout_with_connection_failure
+    omit_unless_ipv6
     if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
       omit "Windows reports a refused loopback connection two seconds after " \
            "connect(2), so the IPv6 attempt is still in flight when " \
@@ -415,6 +426,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_hostname_resolution_failure_after_connection_failure
+    omit_unless_ipv6
+
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
@@ -450,6 +463,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v4_hostname_resolution_failure_after_v6_address_family_error
+    omit_unless_ipv6 "test_mode_settings only take effect when resolving both IPv6 and IPv4"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     omit "EAI_ADDRFAMILY is not defined" unless defined?(Socket::EAI_ADDRFAMILY)
 
@@ -465,6 +479,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_connected_socket_with_v6_address
+    omit_unless_ipv6
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
@@ -515,6 +530,10 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   private
+
+  def omit_unless_ipv6(reason = "IPv6 is not supported")
+    omit reason unless defined?(Socket::AF_INET6)
+  end
 
   # On success, wait for the accept thread to finish. If the test failed
   # before the client connected, `server.accept` never returns, so kill
