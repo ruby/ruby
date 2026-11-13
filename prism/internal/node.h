@@ -32,6 +32,15 @@ pm_location_join(pm_location_t left, pm_location_t right) {
 }
 
 /*
+ * Marks an interpolated string whose value is known while parsing. That is
+ * true when every part is a string literal or another string with this flag,
+ * whether or not the string is frozen. A regular expression or symbol that
+ * interpolates the string uses it to decide whether it is a static literal.
+ * This flag is only used while parsing, so it is not exposed with the others.
+ */
+static const pm_node_flags_t PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE = ((PM_INTERPOLATED_STRING_NODE_FLAGS_LAST - 1) << 1);
+
+/*
  * A growable list of nodes for bookkeeping that never becomes part of the tree,
  * such as the block exits and implicit parameters that are tracked while
  * parsing. These lists are read, truncated, and edited in the middle while

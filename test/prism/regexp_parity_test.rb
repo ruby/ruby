@@ -105,12 +105,6 @@ module Ruby::Prism
     # Regular expressions where prism does not yet match CRuby. Each one is
     # removed when the stage that it belongs to matches.
     KNOWN_FAILURES = [
-      # The literal parts of a regular expression with interpolation are checked
-      # and preprocessed.
-      "/\\xFF\#{1}/", "/a\#{1}\\xE3\\x81/", "/\\u{3042}\#{1}\\xE3\\x81\\x82/", "/é\#{1}/n",
-      "/é\#{1}/e", "/\\xE3\#{1}\\x81\\x82/", "/\\M-a\#{1}/", "/a # \\xFF\n\#{1}/x",
-      "/a\#{\"\\xE3\"}b/", "/\\xC3\#{\"\\\\xA9\"}/",
-
       # Errors in the pattern.
       "/(?#\\xFF/", "/\xFF[a/", "/(?#\xFF)[a/", "/[a\xFF\xFF/",
       "/[a\xFF/", "/é[a/e", "/é[a/n", "/\\xE9[a/",
@@ -136,14 +130,14 @@ module Ruby::Prism
       "/garçon\\xC3\\xA7/n", "/\\xC3\\xA7garçon/n", "/é(/n", "/é(/u",
       "/é(/e", "/é(/s", "/é\\xFF(/n", "/é\\xFF(/u",
       "/é\\xFF(/e", "/é\\xFF(/s", "/\\p{Hiragana}(?#é)/n", "/\\xE9(/",
-      "/)\\p{Hiragana}/", "/\\xE3\#{\"\\x81\\x82\"}/", "/\\M-a\#{\"b\"}/", "/(?\\!x)/",
-      "/\\あ(/", "/a\\/b(/", "/\\\nx(/", "/\\xE3\\x81\\x82(/",
-      "/\\343\\201\\202(/", "%r{(?\\}x)}", "/[]/", "/*/",
-      "/+/", "/?/", "/(?<>a)/", "/(/",
-      "/(|/", "/(?</", "/(?/", "/(?#/",
-      "/(?P/", "/)/", "/a(/x", "/(?x)a # \\xFF\n(/",
-      "/(?z)/", "/a\#{\"b\" \"c\"}(/", "/(\#{\"a\"}/", "/a\#{\"b\"}(/",
-      "/\\M-\\x(/", "/(\xFFa/ =~ \"\""
+      "/)\\p{Hiragana}/", "/a\#{\"\\xE3\"}b/", "/(?\\!x)/", "/\\あ(/",
+      "/a\\/b(/", "/\\\nx(/", "/\\xE3\\x81\\x82(/", "/\\343\\201\\202(/",
+      "%r{(?\\}x)}", "/[]/", "/*/", "/+/",
+      "/?/", "/(?<>a)/", "/(/", "/(|/",
+      "/(?</", "/(?/", "/(?#/", "/(?P/",
+      "/)/", "/a(/x", "/(?x)a # \\xFF\n(/", "/(?z)/",
+      "/a\#{\"b\" \"c\"}(/", "/(\#{\"a\"}/", "/a\#{\"b\"}(/", "/\\M-\\x(/",
+      "/(\xFFa/ =~ \"\""
     ].freeze
 
     # The encodings that ENCODING_CASES are compared in by default, which have

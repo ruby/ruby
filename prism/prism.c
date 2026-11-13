@@ -2883,13 +2883,6 @@ static const pm_node_flags_t PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY = ((PM_CALL_NODE_
 static const pm_node_flags_t PM_CALL_NODE_FLAGS_COMPARISON = ((PM_CALL_NODE_FLAGS_LAST - 1) << 2);
 static const pm_node_flags_t PM_CALL_NODE_FLAGS_INDEX = ((PM_CALL_NODE_FLAGS_LAST - 1) << 3);
 
-/* The value of an interpolated string is known while parsing, since it joins
- * only string literals and strings that themselves have this flag. This holds
- * whether or not the string is frozen, which decides only whether it is a
- * static literal itself, so it tells a regular expression or symbol that
- * interpolates the string whether that one is a static literal. */
-static const pm_node_flags_t PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE = ((PM_INTERPOLATED_STRING_NODE_FLAGS_LAST - 1) << 1);
-
 /**
  * Allocate and initialize a new CallNode node. This sets everything to NULL
  * such that its values can be overridden in the various specializations of this

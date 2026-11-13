@@ -8,6 +8,7 @@
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/memchr.h"
+#include "prism/internal/node.h"
 #include "prism/internal/parser.h"
 #include "prism/internal/stringy.h"
 #include "prism/internal/strncasecmp.h"
@@ -2164,33 +2165,180 @@ pm_regexp_error_incompatible(pm_parser_t *parser, pm_location_t location, const 
 }
 
 /**
- * Validate a regular expression with interpolation. A static literal, whose
- * interpolations are all strings with values known while parsing, is the one
- * regular expression that its parts join to, so it is validated as a whole.
+ * A literal part of a regular expression with interpolation. That is either
+ * the regular expression's own text, or an interpolated string whose value is
+ * known while parsing. Each part is checked as a regular expression of its own.
+ */
+typedef struct {
+    /** The part as a regular expression of its own. */
+    pm_regexp_t regexp;
+
+    /**
+     * If the part interpolates an interpolated string, its parts are joined
+     * here, and the buffer holds the content of the part.
+     */
+    pm_regexp_joined_t joined;
+} pm_regexp_part_t;
+
+/**
+ * Read one part of a regular expression with interpolation into a literal
+ * part. Return false if the part is not literal, like #{x}.
+ *
+ * The flags are the flags of the regular expression.
+ */
+static bool
+pm_regexp_part_init(pm_regexp_part_t *part, pm_parser_t *parser, pm_node_flags_t flags, const pm_node_t *node) {
+    part->joined = (pm_regexp_joined_t) { .parser = parser, .buffer = { 0 }, .encoding = NULL, .ascii_only = true, .incompatible = NULL };
+
+    /* The lexer already reported invalid characters in the regular
+     * expression's own text. Nothing has checked the value of a string that
+     * it interpolates yet. */
+    bool unlexed = false;
+    if (PM_NODE_TYPE_P(node, PM_EMBEDDED_STATEMENTS_NODE)) {
+        const pm_statements_node_t *statements = ((const pm_embedded_statements_node_t *) node)->statements;
+        if (statements == NULL || statements->body.size != 1) return false;
+
+        node = statements->body.nodes[0];
+        unlexed = true;
+    }
+
+    const uint8_t *source;
+    size_t size;
+    const pm_encoding_t *encoding;
+
+    switch (PM_NODE_TYPE(node)) {
+        case PM_STRING_NODE: {
+            const pm_string_node_t *string = (const pm_string_node_t *) node;
+            source = pm_string_source(&string->unescaped);
+            size = pm_string_length(&string->unescaped);
+            encoding = pm_regexp_string_encoding(parser, string);
+            break;
+        }
+        case PM_INTERPOLATED_STRING_NODE: {
+            if (!PM_NODE_FLAG_P(node, PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE)) return false;
+            pm_regexp_join_string_parts(&part->joined, &((const pm_interpolated_string_node_t *) node)->parts);
+
+            source = (const uint8_t *) pm_buffer_value(&part->joined.buffer);
+            size = pm_buffer_length(&part->joined.buffer);
+            encoding = (part->joined.encoding == NULL) ? parser->encoding : part->joined.encoding;
+            break;
+        }
+        default:
+            return false;
+    }
+
+    part->regexp = (pm_regexp_t) {
+        .parser = parser,
+        .source = source,
+        .size = size,
+        .encoding = encoding,
+        .flags = flags,
+        .location = node->location,
+        .unlexed = unlexed
+    };
+
+    return true;
+}
+
+/**
+ * Release what a literal part holds.
+ */
+static void
+pm_regexp_part_cleanup(pm_regexp_part_t *part) {
+    pm_buffer_cleanup(&part->joined.buffer);
+}
+
+/**
+ * Check the escapes of one literal part on its own, without the options of the
+ * regular expression. That way a comment under /x does not hide an escape.
+ * Return whether the escapes are valid. If not, the error has been reported.
+ */
+static bool
+pm_regexp_part_escapes_valid_p(const pm_regexp_t *regexp) {
+    const uint8_t *source = regexp->source;
+    if (!pm_regexp_preprocess_needed_p(source, source + regexp->size)) return true;
+
+    const pm_encoding_t *option_encoding;
+    pm_regexp_encoding_option(regexp->flags, &option_encoding);
+
+    pm_regexp_preprocessor_t preprocessor = {
+        .regexp = regexp,
+        .end = source + regexp->size,
+        .encoding = pm_regexp_read_encoding(regexp, option_encoding),
+        .fixed_encoding = NULL,
+        .has_property = false
+    };
+
+    const uint8_t *cursor = source;
+    return pm_regexp_preprocess_scan(&preprocessor, &cursor, false, false, 0);
+}
+
+/**
+ * Validate a regular expression with interpolation, one literal part at a
+ * time.
+ *
+ * For each part, check the encoding option against it, unless the regular
+ * expression is a static literal. Then check the escapes of the part. Only the
+ * first error in the escapes is reported.
+ *
+ * If it is a static literal, join its parts and validate the result as one
+ * regular expression.
  */
 void
 pm_regexp_parse_interpolated(pm_parser_t *parser, const pm_interpolated_regular_expression_node_t *node) {
-    if (!PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) return;
+    pm_node_flags_t flags = PM_NODE_FLAGS(node);
+    bool is_static = PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL);
+    const pm_node_list_t *parts = &node->parts;
+
+    /* Each part that does not match the option is its own error, so the
+     * option is checked against every part, even after an error. */
+    const pm_encoding_t *option_encoding;
+    bool check_option = !is_static && pm_regexp_encoding_option(flags, &option_encoding) != '\0';
 
     pm_regexp_joined_t joined = { .parser = parser, .buffer = { 0 }, .encoding = NULL, .ascii_only = true, .incompatible = NULL };
-    pm_regexp_join_string_parts(&joined, &node->parts);
+    bool valid = true;
 
-    if (joined.incompatible != NULL) {
-        pm_regexp_error_incompatible(parser, node->base.location, joined.encoding, joined.incompatible);
-    } else {
-        /* The joined content does not line up with the source, so errors in
-         * its pattern are reported at the whole regular expression. */
-        const pm_regexp_t regexp = {
-            .parser = parser,
-            .source = (const uint8_t *) pm_buffer_value(&joined.buffer),
-            .size = pm_buffer_length(&joined.buffer),
-            .encoding = (joined.encoding == NULL) ? parser->encoding : joined.encoding,
-            .flags = PM_NODE_FLAGS(node),
-            .location = node->base.location,
-            .unlexed = true
-        };
+    for (size_t index = 0; index < parts->size && (valid || check_option); index++) {
+        pm_regexp_part_t part;
+        if (!pm_regexp_part_init(&part, parser, flags, parts->nodes[index])) continue;
 
-        pm_regexp_validate(&regexp, NULL, 0);
+        if (check_option && part.joined.incompatible == NULL) pm_regexp_check_option(&part.regexp);
+
+        /* After the first error, only the option is checked. */
+        if (valid) {
+            if (part.joined.incompatible != NULL) {
+                pm_regexp_error_incompatible(parser, part.regexp.location, part.joined.encoding, part.joined.incompatible);
+                valid = false;
+            } else if (!pm_regexp_part_escapes_valid_p(&part.regexp)) {
+                valid = false;
+            } else if (is_static) {
+                pm_regexp_join(&joined, part.regexp.source, part.regexp.size, part.regexp.encoding);
+            }
+        }
+
+        pm_regexp_part_cleanup(&part);
+    }
+
+    if (valid && is_static) {
+        if (joined.incompatible != NULL) {
+            pm_regexp_error_incompatible(parser, node->base.location, joined.encoding, joined.incompatible);
+        } else {
+            /* Every part has been checked on its own. Any invalid character
+             * left is in the regular expression's own text, and the lexer
+             * reported it. The joined content does not line up with the
+             * source, so errors are reported at the whole regular expression. */
+            const pm_regexp_t regexp = {
+                .parser = parser,
+                .source = (const uint8_t *) pm_buffer_value(&joined.buffer),
+                .size = pm_buffer_length(&joined.buffer),
+                .encoding = (joined.encoding == NULL) ? parser->encoding : joined.encoding,
+                .flags = flags,
+                .location = node->base.location,
+                .unlexed = false
+            };
+
+            pm_regexp_validate(&regexp, NULL, 0);
+        }
     }
 
     pm_buffer_cleanup(&joined.buffer);
