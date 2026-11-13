@@ -716,11 +716,11 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Send { block: Some(BlockHandler::BlockArgProc(_)), .. } => unreachable!("BlockArgProc only appears in SendDirect"),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, function, cd, blockiseq, &function.frame_state(state), reason),
         Insn::SendDirect(insn) => {
-            let SendDirectData { cd, cme, iseq, recv, args, kw_bits, jit_entry_idx, block, state, exit_state, .. } = &**insn;
+            let SendDirectData { cd, cme, iseq, recv, args, jit_entry_idx, block, state, exit_state, .. } = &**insn;
             gen_send_iseq_direct(
                 cb, jit, asm,
                 function, *cd, *cme, *iseq, opnd!(recv), opnds!(args),
-                *kw_bits, *jit_entry_idx, &function.frame_state(*state), &function.frame_state(*exit_state), block.map(|bh| lower_block_handler(jit, bh)),
+                *jit_entry_idx, &function.frame_state(*state), &function.frame_state(*exit_state), block.map(|bh| lower_block_handler(jit, bh)),
             )
         }
         Insn::PushInlineFrame { cme, iseq, recv, num_args, block, state, exit_state, .. } => {
@@ -1814,14 +1814,9 @@ fn gen_push_inline_frame(
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), callee_jit_return);
 
     // The callee's hidden `kw_bits` local does not need a runtime store here:
-    // the inliner aliases the local to a `Const::Value` carrying the
-    // compile-time bitmask, so `checkkeyword` lowers to a constant
-    // `FixnumBitCheck` rather than a memory load. On a side exit out of the
-    // inlined body, FrameState materialization writes the local back to the
-    // callee frame from that constant, and on the no-side-exit path nothing
-    // reads the slot before `gen_pop_inline_frame` tears down the frame.
-    // (The non-inlined `gen_send_iseq_direct` path still emits its own store
-    // because the callee's separate JIT entry reads it from memory.)
+    // SendDirect passes it as a constant argument. On a side exit out of
+    // the inlined body, FrameState materialization writes the local back to
+    // the callee frame.
 
     let sp_offset = (state.stack().len() + local_size - num_args.to_usize() + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
     asm_comment!(asm, "switch to inlined callee SP");
@@ -1865,7 +1860,6 @@ fn gen_send_iseq_direct(
     iseq: IseqPtr,
     recv: Opnd,
     args: Vec<Opnd>,
-    kw_bits: u32,
     jit_entry_idx: u16,
     state: &FrameState,
     exit_state: &FrameState,
@@ -1924,21 +1918,6 @@ fn gen_send_iseq_direct(
         write_block_code: iseq_may_write_block_code(iseq),
         forwarded_argc: Some(forwarded_argc),
     });
-
-    // Write "keyword_bits" to the callee's frame if the callee accepts keywords.
-    // This is a synthetic local/parameter that the callee reads via checkkeyword to determine
-    // which optional keyword arguments need their defaults evaluated.
-    // We write this to the local table slot at bits_start so that:
-    // 1. The interpreter can read it via checkkeyword if we side-exit
-    // 2. The JIT entry can read it from the callee frame slot
-    if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
-        let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
-        let bits_start = unsafe { (*keyword).bits_start } as usize;
-        let unspecified_bits = VALUE::fixnum_from_usize(kw_bits as usize);
-        let bits_offset = (state.stack().len() - args.len() + bits_start) * SIZEOF_VALUE;
-        asm_comment!(asm, "write keyword bits to callee frame");
-        asm.store(Opnd::mem(64, SP, bits_offset as i32), unspecified_bits.into());
-    }
 
     // A forwardable callee reads its arguments out of the VM stack using memcpy on rb_vm_sendforward
     // (see vm_adjust_stack_forwarding()), so we write these stack slots before the call. The callinfo

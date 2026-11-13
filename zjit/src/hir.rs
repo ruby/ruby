@@ -961,7 +961,6 @@ pub struct SendDirectData {
     pub cme: *const rb_callable_method_entry_t,
     pub iseq: IseqPtr,
     pub args: Vec<InsnId>,
-    pub kw_bits: u32,
     pub jit_entry_idx: u16,
     pub block: Option<BlockHandler>,
     /// Frame state with the callee's normalized arguments; don't exit with it
@@ -3038,7 +3037,6 @@ enum IseqReturn {
 struct SendDirectArgs {
     state: InsnId,
     args: Vec<InsnId>,
-    kw_bits: u32,
     jit_entry_idx: u16,
 }
 
@@ -3112,8 +3110,6 @@ enum SendDirectArg {
 struct SendDirectCall {
     /// Argument slots in the shape expected by SendDirect.
     args: Vec<SendDirectArg>,
-    /// Optional keyword slots omitted by the caller.
-    kw_bits: u32,
     /// Optional positional entry selected from the caller's argument count.
     jit_entry_idx: u16,
 }
@@ -4225,19 +4221,23 @@ impl Function {
         if 0 != unsafe { iseq.params() }.flags.forwardable() {
             return Ok(SendDirectCall {
                 args: caller_args.original.iter().copied().map(SendDirectArg::Existing).collect(),
-                kw_bits: 0,
                 jit_entry_idx: 0,
             });
         }
         let args = Self::expand_caller_splat_args(caller_args, caller_splat);
         let (args, kw_bits) = Self::plan_send_direct_keyword_arguments(args, caller_args, iseq)
             .map_err(SendDirectFailure::new)?;
-        let (args, jit_entry_idx) = Self::plan_send_direct_rest_parameter(args, iseq)
+        let (mut args, jit_entry_idx) = Self::plan_send_direct_rest_parameter(args, iseq)
             .map_err(SendDirectFailure::new)?;
+        // The hidden kw_bits local sits right after the keyword locals, so pass it
+        // as an ordinary argument. The callee's JIT entry takes it like any other
+        // parameter, and the arguments map 1:1 onto the callee's parameter locals.
+        if callee_kw_bits_local_idx(iseq).is_some() {
+            args.push(SendDirectArg::Constant(VALUE::fixnum_from_usize(kw_bits as usize)));
+        }
 
         Ok(SendDirectCall {
             args,
-            kw_bits,
             jit_entry_idx,
         })
     }
@@ -4265,7 +4265,6 @@ impl Function {
         SendDirectArgs {
             state: send_state,
             args,
-            kw_bits: call.kw_bits,
             jit_entry_idx: call.jit_entry_idx,
         }
     }
@@ -5257,9 +5256,9 @@ impl Function {
                                 self.insn_types[recv] = self.infer_type(recv);
                             }
 
-                            let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
+                            let SendDirectArgs { state: send_state, args: send_args, jit_entry_idx } =
                                 self.emit_send_direct_args(block, call, &args, send_frame_state, state);
-                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, exit_state: state, block: send_block })));
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, jit_entry_idx, state: send_state, exit_state: state, block: send_block })));
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
@@ -5298,9 +5297,9 @@ impl Function {
                                 recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                             }
 
-                            let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
+                            let SendDirectArgs { state: send_state, args: send_args, jit_entry_idx } =
                                 self.emit_send_direct_args(block, call, &args, send_frame_state, state);
-                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, exit_state: state, block: None })));
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, jit_entry_idx, state: send_state, exit_state: state, block: None })));
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             // Check singleton class assumption first, before emitting other patchpoints
@@ -5835,7 +5834,7 @@ impl Function {
 
                             emit_super_call_guards(self, block, lookup_cme, current_cme, mid, state, frame_state_iseq);
 
-                            let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
+                            let SendDirectArgs { state: send_state, args: send_args, jit_entry_idx } =
                                 self.emit_send_direct_args(block, call, &args, state, state);
                             // Use SendDirect with the super method's CME and ISEQ.
                             let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData {
@@ -5844,7 +5843,6 @@ impl Function {
                                 cme: super_cme,
                                 iseq: super_iseq,
                                 args: send_args,
-                                kw_bits,
                                 jit_entry_idx,
                                 state: send_state,
                                 exit_state: state,
@@ -6128,7 +6126,7 @@ impl Function {
                 else {
                     unreachable!("position {send_insn_id} is not a SendDirect");
                 };
-                let SendDirectData { recv, cme, iseq, kw_bits, jit_entry_idx, block: call_block, state, exit_state, .. } = **data;
+                let SendDirectData { recv, cme, iseq, jit_entry_idx, block: call_block, state, exit_state, .. } = **data;
                 let args_len = data.args.len();
                 // TODO(max): If we accept BlockArg here, we need to change the folding of Defined
                 // in HIR construction for the defined opcode to check the send flags of the method
@@ -6235,8 +6233,9 @@ impl Function {
                 debug_assert!(self.is_send_direct(tail[0]));
 
                 let omitted_opt_num = opt_num - passed_opt_num;
-                let positional_kw_end = lead_num + opt_num + rest_slots + post_num + kw_num;
-                let kw_bits_local_idx = callee_kw_bits_local_idx(iseq);
+                // SendDirect passes the hidden kw_bits local as the argument after the keywords.
+                let kw_bits_slots = usize::from(callee_kw_bits_local_idx(iseq).is_some());
+                let param_args_end = lead_num + opt_num + rest_slots + post_num + kw_num + kw_bits_slots;
                 let callee_entry_body_block = add_result.body_entry_block
                     .expect("inlined compilation always produces a body entry block");
 
@@ -6252,19 +6251,15 @@ impl Function {
                 //     (lead_num..lead_num + passed_opt_num) take args in order.
                 //   * unfilled optional locals (lead_num + passed_opt_num..lead_num + opt_num)
                 //     are nil-initialized; the body's default-init code overwrites them.
-                //   * post-required and keyword locals
-                //     (lead_num + opt_num..lead_num + opt_num + post_num + kw_num) take the
-                //     trailing args, but their position in the local table leaves a gap
-                //     of (opt_num - passed_opt_num) above the args' compact layout, so we
+                //   * post-required, keyword, and hidden kw_bits locals
+                //     (lead_num + opt_num..param_args_end) take the trailing args, but
+                //     their position in the local table leaves a gap of
+                //     (opt_num - passed_opt_num) above the args' compact layout, so we
                 //     shift the arg index down by that amount. Keyword args follow this
                 //     same arithmetic because SendDirect argument planning already
                 //     reordered them into callee table order with defaults filled in.
-                //   * the hidden kw_bits storage local (when the callee has keywords) is
-                //     aliased to the SendDirect's compile-time kw_bits value as a fixnum
-                //     constant. `checkkeyword` lowers to `FixnumBitCheck` against this
-                //     constant, and FrameState materialization on a side exit writes the
-                //     same value back to the runtime frame so a resuming interpreter sees
-                //     the correct bitmask.
+                //     The kw_bits arg is a fixnum constant, so `checkkeyword` in the
+                //     inlined body lowers to a `FixnumBitCheck` against a constant.
                 //   * any remaining non-parameter locals are nil-initialized.
                 let callee_body_params: Vec<InsnId> = self.blocks[callee_entry_body_block].params.clone();
 
@@ -6283,20 +6278,11 @@ impl Function {
                         // Unfilled optional: nil-initialized; default-init code will overwrite.
                         let nil = self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
                         self.make_equal_to(param_id, nil);
-                    } else if i < positional_kw_end {
-                        // Post-required or keyword local: the arg sits compactly after
-                        // the filled optionals, so shift the arg index down by the gap
+                    } else if i < param_args_end {
+                        // Post-required, keyword, or kw_bits local: the arg sits compactly
+                        // after the filled optionals, so shift the arg index down by the gap
                         // of unfilled optionals between the optional and post regions.
                         self.make_equal_to(param_id, args[i - omitted_opt_num]);
-                    } else if Some(i) == kw_bits_local_idx {
-                        // Hidden kw_bits slot: alias to the SendDirect's compile-time
-                        // value as a fixnum, the same encoding the interpreter uses for
-                        // this hidden local. checkkeyword's FixnumBitCheck will read
-                        // this constant directly inside the inlined body.
-                        let bits_const = self.push_insn(block, Insn::Const {
-                            val: Const::Value(VALUE::fixnum_from_usize(kw_bits as usize)),
-                        });
-                        self.make_equal_to(param_id, bits_const);
                     } else if i < num_locals {
                         // Non-parameter local: nil-initialized.
                         let nil = self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
@@ -11414,18 +11400,6 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     // don't compile JIT entries for ISEQ_TYPE_MAIN/ISEQ_TYPE_EVAL.
     let seen_ep_escape = iseq_seen_ep_escape(iseq);
 
-    // If the iseq has keyword parameters, the keyword bits local will be appended to the local table.
-    let kw_bits_idx: Option<usize> = if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
-        let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
-        if !keyword.is_null() {
-            Some(unsafe { (*keyword).bits_start } as usize)
-        } else {
-            None
-        }
-    } else {
-        None
-    };
-
     let mut arg_idx: u32 = 0;
     // For `def` methods on classes that can only produce heap (non-immediate)
     // instances, `self` is a HeapBasicObject. See `iseq_self_is_heap_object`.
@@ -11438,23 +11412,6 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
         let local = if (lead_num + passed_opt_num..lead_num + opt_num).contains(&local_idx) {
             // Omitted optionals are locals, so they start as nils before their code run
             fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) })
-        } else if Some(local_idx) == kw_bits_idx {
-            // Read the kw_bits value written by the caller to the callee frame.
-            // This tells us which optional keywords were NOT provided and need their defaults evaluated.
-            // Note: The caller writes kw_bits to memory via gen_send_iseq_direct but does NOT pass it
-            // as a C argument, so we must read it from EP memory rather than Param.
-            let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
-            let ep_offset_u32 = u32::try_from(ep_offset)
-                .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
-            let ep = *ep.get_or_insert_with(|| fun.get_ep(jit_entry_block, 0));
-            fun.get_local_from_ep(
-                jit_entry_block,
-                iseq,
-                ep,
-                ep_offset_u32,
-                0,
-                types::BasicObject,
-            )
         } else if local_idx < param_size {
             let id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
             let local = fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: id.into(), val_type: types::BasicObject });
