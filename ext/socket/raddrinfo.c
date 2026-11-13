@@ -2384,7 +2384,6 @@ addrinfo_protocol(VALUE self)
 /*
  * call-seq:
  *   addrinfo.to_sockaddr => string
- *   addrinfo.to_s => string
  *
  * returns the socket address as packed struct sockaddr string.
  *
@@ -2399,6 +2398,20 @@ addrinfo_to_sockaddr(VALUE self)
     VALUE ret;
     ret = rb_str_new((char*)&rai->addr, rai->sockaddr_len);
     return ret;
+}
+
+/*
+ * call-seq:
+ *   addrinfo.to_s => string
+ *
+ * Deprecated at 1.9.2.  Do not use.
+ */
+static VALUE
+addrinfo_to_s(VALUE self)
+{
+    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "Addrinfo#to_s has been "
+                     "deprecated since 1.9.2; Use #to_sockaddr instead");
+    return addrinfo_to_sockaddr(self);
 }
 
 /*
@@ -3336,7 +3349,7 @@ rsock_init_addrinfo(void)
 #endif
 
     rb_define_method(rb_cAddrinfo, "to_sockaddr", addrinfo_to_sockaddr, 0);
-    rb_define_method(rb_cAddrinfo, "to_s", addrinfo_to_sockaddr, 0); /* compatibility for ruby before 1.9.2 */
+    rb_define_method(rb_cAddrinfo, "to_s", addrinfo_to_s, 0); /* compatibility for ruby before 1.9.2 */
 
     rb_define_method(rb_cAddrinfo, "getnameinfo", addrinfo_getnameinfo, -1);
 
