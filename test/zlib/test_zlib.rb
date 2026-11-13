@@ -1495,6 +1495,41 @@ if defined? Zlib
       }
     end
 
+    def test_outbuf_shared
+      # A copy of a long string shares its memory with the original
+      # until one of them is modified.  Reading into the buffer again
+      # must not write through that shared memory.
+      a = "A" * 1000
+      b = "B" * 1000
+      gz = Zlib.gzip(a + b)
+      %i[read readpartial].each do |m|
+        Zlib::GzipReader.wrap(StringIO.new(gz)) do |f|
+          buf = "".dup
+          copy = f.__send__(m, 1000, buf).dup
+          frozen = copy.dup.freeze
+          key = {buf => true}.keys.first
+          assert_same buf, f.__send__(m, 1000, buf)
+          assert_equal b, buf, m
+          assert_equal a, copy, m
+          assert_equal a, frozen, m
+          assert_equal a, key, m
+        end
+      end
+    end
+
+    def test_outbuf_coderange
+      gz = Zlib.gzip("\xFF".b * 10)
+      %i[read readpartial].each do |m|
+        Zlib::GzipReader.wrap(StringIO.new(gz)) do |f|
+          buf = "".dup
+          assert_predicate buf, :ascii_only?
+          f.__send__(m, 10, buf)
+          assert_equal "\xFF".b * 10, buf.b, m
+          assert_not_predicate buf, :ascii_only?, m
+        end
+      end
+    end
+
     def test_getc
       Tempfile.create("test_zlib_gzip_reader_getc") {|t|
         t.close

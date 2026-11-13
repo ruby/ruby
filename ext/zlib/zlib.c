@@ -855,6 +855,9 @@ zstream_shift_buffer(struct zstream *z, rb_len_t len, VALUE dst)
         } else {
             bufptr = RSTRING_PTR(z->buf);
             rb_str_resize(dst, buflen);
+            /* dst may still share its memory with other strings, and
+             * its coderange describes the old contents */
+            rb_str_modify(dst);
             memcpy(RSTRING_PTR(dst), bufptr, buflen);
         }
         buflen = 0;
@@ -864,6 +867,7 @@ zstream_shift_buffer(struct zstream *z, rb_len_t len, VALUE dst)
             dst = rb_str_new(bufptr, len);
         } else {
             rb_str_resize(dst, len);
+            rb_str_modify(dst);
             memcpy(RSTRING_PTR(dst), bufptr, len);
         }
         buflen -= len;
