@@ -8,6 +8,12 @@ enc_str_buf_cat(VALUE str, VALUE str2)
 }
 
 static VALUE
+enc_str_buf_cat_len(VALUE str, VALUE str2, VALUE len)
+{
+    return rb_enc_str_buf_cat(str, RSTRING_PTR(str2), NUM2LEN(len), rb_enc_get(str2));
+}
+
+static VALUE
 str_conv_enc_opts(VALUE str, VALUE from, VALUE to, VALUE ecflags, VALUE ecopts)
 {
     rb_encoding *from_enc = NIL_P(from) ? NULL : rb_to_encoding(from);
@@ -24,5 +30,6 @@ void
 Init_string_enc_str_buf_cat(VALUE klass)
 {
     rb_define_method(klass, "enc_str_buf_cat", enc_str_buf_cat, 1);
+    rb_define_method(klass, "enc_str_buf_cat_len", enc_str_buf_cat_len, 2);
     rb_define_method(klass, "str_conv_enc_opts", str_conv_enc_opts, 4);
 }

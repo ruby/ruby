@@ -3797,6 +3797,9 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, rb_len_t len,
     int str_cr, res_cr;
     rb_encoding *str_enc, *ptr_enc;
 
+    if (len < 0) {
+        rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
     str_cr = RSTRING_LEN(str) ? ENC_CODERANGE(str) : ENC_CODERANGE_7BIT;
 
     if (str_encindex == ptr_encindex) {
@@ -3865,9 +3868,6 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, rb_len_t len,
         if (0 < len) res_cr = ENC_CODERANGE_UNKNOWN;
     }
 
-    if (len < 0) {
-        rb_raise(rb_eArgError, "negative string size (or size too big)");
-    }
     str_buf_cat(str, ptr, len);
     ENCODING_CODERANGE_SET(str, res_encindex, res_cr);
     return str;
