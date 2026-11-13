@@ -532,7 +532,7 @@ static const unsigned char script_safe_escape_table[256] = {
      2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
      2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
     // First byte of a 3-byte code point
-     3, 3,11, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 0xE2 is the start of \u2028 and \u2029
+     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
     //First byte of a 4+ byte code point
      4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 9, 9,
 };
@@ -545,13 +545,6 @@ static inline unsigned char search_script_safe_escape(search_state *search)
 
         if (RB_UNLIKELY(ch_len)) {
             if (ch_len & ESCAPE_MASK) {
-                if (RB_UNLIKELY(ch_len == 11)) {
-                    const unsigned char *uptr = (const unsigned char *)search->ptr;
-                    if (!(uptr[1] == 0x80 && (uptr[2] >> 1) == 0x54)) {
-                        search->ptr += 3;
-                        continue;
-                    }
-                }
                 search_flush(search);
                 return ch_len & CHAR_LENGTH_MASK;
             } else {

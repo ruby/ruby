@@ -791,15 +791,15 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal json, generate(data, script_safe: true)
     #
     data = [ "\u2028\u2029" ]
-    json = '["\u2028\u2029"]'
+    json = %{["\u2028\u2029"]}
     assert_equal json, generate(data, script_safe: true)
     #
     data = [ "ABC \u2028 DEF \u2029 GHI" ]
-    json = '["ABC \u2028 DEF \u2029 GHI"]'
+    json = %{["ABC \u2028 DEF \u2029 GHI"]}
     assert_equal json, generate(data, script_safe: true)
     #
     data = [ "/\u2028\u2029" ]
-    json = '["\/\u2028\u2029"]'
+    json = %{["\\/\u2028\u2029"]}
     assert_equal json, generate(data, script_safe: true)
     #
     data = ['"']
