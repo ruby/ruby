@@ -757,6 +757,13 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_raise(TypeError) { generate too_deep_ary, max_nesting: "garbage" }
   end
 
+  def test_script_safe_ascii_only
+    data = '<a></script>'
+    json = generate(data, script_safe: true, ascii_only: true)
+    assert_equal data, JSON.parse(json)
+    assert_not_include json, '</script'
+  end
+
   def test_script_safe
     data = '<ok><script><!----</script></ok>'
     json = '"<ok>\\u003cscript>\\u003c!----\\u003c/script></ok>"'
