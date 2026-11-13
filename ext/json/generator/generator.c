@@ -204,8 +204,7 @@ ALWAYS_INLINE(static) void escape_UTF8_char_basic(search_state *search)
  *
  * - If out_ascii_only: non-ASCII characters (>0x7F)
  *
- * - If script_safe: forwardslash (/), line separator (U+2028), and
- *   paragraph separator (U+2029)
+ * - If script_safe: script tags (`<script`, `</script`) and HTML comments (`<!--`).
  *
  * Everything else (should be UTF-8) is just passed through and
  * appended to the result.
@@ -517,8 +516,8 @@ static const unsigned char script_safe_escape_table[256] = {
      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
     // ASCII Characters
-     0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, // '"' and '/'
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // '"'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,25, 0, 0, 0, // '<'
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, // '\\'
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -545,6 +544,17 @@ static inline unsigned char search_script_safe_escape(search_state *search)
 
         if (RB_UNLIKELY(ch_len)) {
             if (ch_len & ESCAPE_MASK) {
+                if (RB_UNLIKELY(ch_len == 25)) {
+                    size_t remaining = search->end - search->ptr;
+                    if (!(
+                        (remaining >= 4 && memcmp(search->ptr, "<!--", 4) == 0) ||
+                        (remaining >= 7 && memcmp(search->ptr, "<script", 7) == 0) ||
+                        (remaining >= 8 && memcmp(search->ptr, "</script", 8) == 0)
+                    )) {
+                        search->ptr += 1;
+                        continue;
+                    }
+                }
                 search_flush(search);
                 return ch_len & CHAR_LENGTH_MASK;
             } else {
@@ -1678,7 +1688,7 @@ static VALUE cState_max_nesting_set(VALUE self, VALUE depth)
 /*
  * call-seq: script_safe
  *
- * If this boolean is true, the forward slashes will be escaped in
+ * If this boolean is true, script tags and HTML comments will be escaped in
  * the json output.
  */
 static VALUE cState_script_safe(VALUE self)
@@ -1690,7 +1700,7 @@ static VALUE cState_script_safe(VALUE self)
 /*
  * call-seq: script_safe=(enable)
  *
- * This sets whether or not the forward slashes will be escaped in
+ * This sets whether or not script tags and HTML comments will be escaped in
  * the json output.
  */
 static VALUE cState_script_safe_set(VALUE self, VALUE enable)

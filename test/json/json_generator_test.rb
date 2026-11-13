@@ -757,6 +757,12 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_raise(TypeError) { generate too_deep_ary, max_nesting: "garbage" }
   end
 
+  def test_script_safe
+    data = '<ok><script><!----</script></ok>'
+    json = '"<ok>\\u003cscript>\\u003c!----\\u003c/script></ok>"'
+    assert_equal json, generate(data, script_safe: true)
+  end
+
   def test_backslash
     data = [ '\\.(?i:gif|jpe?g|png)$' ]
     json = '["\\\\.(?i:gif|jpe?g|png)$"]'
@@ -779,15 +785,15 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal json, generate(data)
     #
     data = [ '/' ]
-    json = '["\/"]'
+    json = '["/"]'
     assert_equal json, generate(data, script_safe: true)
     #
     data = [ '///////////' ]
-    json = '["\/\/\/\/\/\/\/\/\/\/\/"]'
+    json = '["///////////"]'
     assert_equal json, generate(data, script_safe: true)
     #
     data = [ '///////////////////////////////////////////////////////' ]
-    json = '["\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/"]'
+    json = '["///////////////////////////////////////////////////////"]'
     assert_equal json, generate(data, script_safe: true)
     #
     data = [ "\u2028\u2029" ]
@@ -799,7 +805,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal json, generate(data, script_safe: true)
     #
     data = [ "/\u2028\u2029" ]
-    json = %{["\\/\u2028\u2029"]}
+    json = %{["/\u2028\u2029"]}
     assert_equal json, generate(data, script_safe: true)
     #
     data = ['"']
