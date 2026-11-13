@@ -899,6 +899,49 @@ if you believe they were disclosed to a third party.
     assert_nil @cfg.ssl_ca_cert
   end
 
+  def test_load_file_with_anchored_block_mapping_and_alias
+    File.open @temp_conf, "w" do |fp|
+      fp.puts "defaults: &defaults"
+      fp.puts "  :verbose: false"
+      fp.puts "other: *defaults"
+      fp.puts ":backtrace: false"
+    end
+
+    util_config_file
+
+    assert_equal({ verbose: false }, @cfg[:defaults])
+    assert_equal({ verbose: false }, @cfg[:other])
+    assert_equal false, @cfg.backtrace
+  end
+
+  def test_load_file_with_unknown_alias_warns_and_ignores_file
+    File.open @temp_conf, "w" do |fp|
+      fp.puts "other: *missing"
+      fp.puts ":backtrace: false"
+    end
+
+    _, err = capture_output do
+      util_config_file
+    end
+
+    assert_match "Failed to load #{@temp_conf}, An alias referenced an unknown anchor: missing", err
+    assert_equal true, @cfg.backtrace
+  end
+
+  def test_load_file_with_disallowed_tag_warns_and_ignores_file
+    File.open @temp_conf, "w" do |fp|
+      fp.puts ":backtrace: !ruby/object:Gem::Version"
+      fp.puts "  version: 1"
+    end
+
+    _, err = capture_output do
+      util_config_file
+    end
+
+    assert_match "Failed to load #{@temp_conf}", err
+    assert_equal true, @cfg.backtrace
+  end
+
   def test_accept_string_key
     File.open @temp_conf, "w" do |fp|
       fp.puts "verbose: false"

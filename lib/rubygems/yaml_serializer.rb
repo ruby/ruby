@@ -137,8 +137,11 @@ module Gem
 
         pos = indent
         if /\G&/.match?(line, indent) && (anchor = consume_anchor)
+          # A lone anchor line, e.g. "--- &1", anchors the node on the next line.
+          skip_blank_and_comments
+          return register_anchor(anchor, nil) if @lines.empty? || current_indent < base_indent
           line = @lines[0]
-          pos = indent_of(line)
+          indent = pos = indent_of(line)
         end
 
         if SEQUENCE_ENTRY_RE.match?(line, pos)
@@ -177,7 +180,7 @@ module Gem
           content = line[indent + 1, line.size]
           content.strip!
           item_anchor = nil
-          item_anchor, content = extract_item_anchor(content) if content.start_with?("&")
+          item_anchor, content = extract_anchor(content) if content.start_with?("&")
           item = parse_sequence_item(content, indent)
           items << register_anchor(item_anchor, item)
         end
@@ -189,7 +192,7 @@ module Gem
           parse_inline_alias(content)
         elsif content.empty?
           skip_blank_and_comments
-          @lines.any? && current_indent > indent ? parse_node(indent) : nil
+          @lines.any? && current_indent > indent ? parse_node(indent + 1) : nil
         elsif content.start_with?("!ruby/object:")
           parse_tagged_content(content.strip, indent)
         elsif content.start_with?("!binary ")
@@ -232,7 +235,7 @@ module Gem
           val = strip_comment(val || "")
 
           val_anchor = nil
-          val_anchor, val = consume_value_anchor(val) if val.start_with?("&")
+          val_anchor, val = extract_anchor(val) if val.start_with?("&")
           value = parse_mapping_value(val, indent)
           value = register_anchor(val_anchor, value) if val_anchor
 
@@ -449,29 +452,28 @@ module Gem
       def consume_anchor
         line = @lines[0]
         stripped = line.lstrip
-        return nil unless stripped.start_with?("&") && stripped =~ /^&(\S+)\s+/
+        return nil unless stripped.start_with?("&") && stripped =~ /^&(\S+)\s*/
 
         anchor = $1
-        @lines[0] = line.sub(/&#{Regexp.escape(anchor)}\s+/, "")
+        if $'.empty?
+          @lines.shift
+        else
+          @lines[0] = line.sub(/&#{Regexp.escape(anchor)}\s+/, "")
+        end
         anchor
       end
 
-      def extract_item_anchor(content)
+      def extract_anchor(content)
         return [nil, content] unless content =~ /^&(\S+)/
 
         anchor = $1
         [anchor, content.sub(/^&#{Regexp.escape(anchor)}\s*/, "")]
       end
 
-      def consume_value_anchor(val)
-        return [nil, val] unless val =~ /^&(\S+)\s+/
-
-        anchor = $1
-        [anchor, val.sub(/^&#{Regexp.escape(anchor)}\s+/, "")]
-      end
-
       def register_anchor(name, node)
         if name
+          # An anchored empty node still defines the anchor, as a null.
+          node ||= Scalar.new(nil)
           @anchors[name] = node
           node.anchor = name if node.respond_to?(:anchor=)
         end
@@ -572,8 +574,8 @@ module Gem
       def resolve_alias(node)
         raise Psych::AliasesNotEnabled unless @aliases
         unless @anchor_values.key?(node.name)
-          klass = defined?(Psych::AnchorNotDefined) ? Psych::AnchorNotDefined : Psych::BadAlias
-          raise klass, "An alias referenced an unknown anchor: #{node.name}"
+          raise Psych::AnchorNotDefined, node.name if defined?(Psych::AnchorNotDefined)
+          raise Psych::BadAlias, "An alias referenced an unknown anchor: #{node.name}"
         end
         # Charge the expanded size of the anchor, weighing scalars by length,
         # so neither nested aliases nor aliases to a long string blow up.

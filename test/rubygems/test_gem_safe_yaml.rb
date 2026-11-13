@@ -162,6 +162,14 @@ class TestGemSafeYAML < Gem::TestCase
     assert_raise(expected_error) { Gem::SafeYAML.safe_load(yaml) }
   end
 
+  def test_unknown_alias_message
+    expected_error = defined?(Psych::AnchorNotDefined) ? Psych::AnchorNotDefined : Psych::BadAlias
+    error = assert_raise(expected_error) do
+      Gem::YAMLSerializer.load("foo: 1\nbar: *missing\n")
+    end
+    assert_equal "An alias referenced an unknown anchor: missing", error.message
+  end
+
   def test_alias_expansion_limit
     # Each anchor aliases the previous one twice, doubling the expanded size.
     yaml = +"seq:\n- &a0\n  - x\n  - y\n"
@@ -1774,6 +1782,50 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal result["items"][0], result["items"][1]
   ensure
     Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_load_anchor_at_end_of_line_before_sequence
+    result = yaml_load("a: &1\n- x\n- y\nb: *1\n")
+    assert_equal({ "a" => ["x", "y"], "b" => ["x", "y"] }, result)
+    assert_same result["a"], result["b"]
+  end
+
+  def test_load_anchor_at_end_of_line_before_indented_sequence
+    result = yaml_load("a: &1\n  - x\n  - y\nb: *1\n")
+    assert_equal({ "a" => ["x", "y"], "b" => ["x", "y"] }, result)
+    assert_same result["a"], result["b"]
+  end
+
+  def test_load_anchor_at_end_of_line_before_mapping
+    result = yaml_load("a: &1\n  k: v\nb: *1\n")
+    assert_equal({ "a" => { "k" => "v" }, "b" => { "k" => "v" } }, result)
+    assert_same result["a"], result["b"]
+  end
+
+  def test_load_anchor_at_end_of_document_start_line
+    assert_equal ["x", "y"], yaml_load("--- &1\n- x\n- y\n")
+  end
+
+  def test_load_anchor_alone_at_end_of_document
+    assert_nil Gem::SafeYAML.safe_load("--- &1\n")
+  end
+
+  def test_load_anchor_alone_on_line_before_dedent
+    assert_equal({ "a" => nil, "b" => 2 }, yaml_load("a:\n  &1\nb: 2\n"))
+  end
+
+  def test_load_anchor_alone_on_line_under_empty_sequence_item
+    assert_equal [nil, "x", "y"], yaml_load("-\n  &1\n- x\n- y\n")
+  end
+
+  def test_load_alias_to_anchored_empty_node
+    assert_equal({ "a" => nil, "b" => nil }, yaml_load("a: &1\nb: *1\n"))
+    assert_equal({ "a" => nil, "b" => nil }, yaml_load("a:\n  &1\nb: *1\n"))
+    assert_equal [nil, nil], yaml_load("- &1\n- *1\n")
+  end
+
+  def test_load_anchor_redefined_on_empty_node
+    assert_equal({ "a" => "old", "b" => nil, "c" => nil }, yaml_load("a: &1 old\nb: &1\nc: *1\n"))
   end
 
   def test_regression_coerce_empty_hash_not_wrapped_in_scalar
