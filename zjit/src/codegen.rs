@@ -17,6 +17,7 @@ use crate::invariants::{
     track_root_box_assumption, track_no_newobj_hook_assumption
 };
 use crate::gc::append_gc_offsets;
+use crate::jit_frame::PendingJITFrame;
 use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
 use crate::profile::reset_profiles_remaining;
 use crate::perf;
@@ -24,7 +25,7 @@ use crate::state::{rb_zjit_compiling_p, ZJITState};
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_compile_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
+use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitStackMap, SideExitTarget, StackMapEntry, Target, asm_ccall, asm_comment};
 use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, CondBranchHasTypeData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
@@ -3866,16 +3867,19 @@ fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> S
     }
 }
 
-fn build_caller_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> Option<StackMap> {
+fn build_caller_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> Option<SideExitStackMap> {
     let caller = state.caller()?;
     let caller_state = function.frame_state(caller);
-    let stack_map = build_stack_map(jit, function, &caller_state);
-    if stack_map.is_empty() {
+    let stack = build_stack_map(jit, function, &caller_state);
+    if stack.is_empty() {
         return None;
     }
 
-    let jit_frame = jit_frame_for_state(&caller_state);
-    Some(StackMap::new(stack_map, jit_frame, caller_state.depth))
+    Some(SideExitStackMap {
+        stack,
+        frame_depth: caller_state.depth,
+        jit_frame: PendingJITFrame::new_iseq(jit_frame_next_pc(&caller_state), caller_state.iseq),
+    })
 }
 
 #[cfg(target_arch = "x86_64")]
