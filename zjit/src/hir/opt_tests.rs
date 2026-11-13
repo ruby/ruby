@@ -15051,6 +15051,31 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_regexp_to_s_returns_string() {
+        eval(r#"
+            def test = /a/.to_s
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:RegexpExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint NoSingletonClass(Regexp@0x1008)
+          PatchPoint MethodRedefined(Regexp@0x1008, to_s@0x1010, cme:0x1018)
+          v21:StringExact = CCallWithFrame v10, :Regexp#to_s@0x1040
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
     fn test_string_to_s_returns_string() {
         eval(r#"
             def test = "".to_s
