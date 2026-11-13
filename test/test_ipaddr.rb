@@ -603,6 +603,27 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(false, IPAddr.new('2001:db8:1:1:0:ffff:7f00:1').loopback?)
   end
 
+  def test_unspecified?
+    assert_equal(true,  IPAddr.new('0.0.0.0').unspecified?)
+    assert_equal(true,  IPAddr.new('0.0.0.0/32').unspecified?)
+    assert_equal(false, IPAddr.new('0.0.0.0/31').unspecified?)
+    assert_equal(false, IPAddr.new('0.0.0.0/0').unspecified?)
+    assert_equal(false, IPAddr.new('127.0.0.1').unspecified?)
+    assert_equal(false, IPAddr.new('8.8.8.8').unspecified?)
+
+    assert_equal(true,  IPAddr.new('::').unspecified?)
+    assert_equal(true,  IPAddr.new('::/128').unspecified?)
+    assert_equal(false, IPAddr.new('::/127').unspecified?)
+    assert_equal(false, IPAddr.new('::/0').unspecified?)
+    assert_equal(false, IPAddr.new('::1').unspecified?)
+    assert_equal(false, IPAddr.new('3ffe:505:2::1').unspecified?)
+
+    assert_equal(true,  IPAddr.new('::ffff:0.0.0.0').unspecified?)
+    assert_equal(true,  IPAddr.new('::ffff:0.0.0.0/128').unspecified?)
+    assert_equal(false, IPAddr.new('::ffff:0.0.0.0/127').unspecified?)
+    assert_equal(false, IPAddr.new('::ffff:127.0.0.1').unspecified?)
+  end
+
   def test_private?
     assert_equal(false, IPAddr.new('0.0.0.0').private?)
     assert_equal(false, IPAddr.new('127.0.0.1').private?)
