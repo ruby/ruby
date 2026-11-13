@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
+require "rubygems/text"
+
 module Bundler
   class Fetcher
     class Downloader
+      include Gem::Text
+
       HTTP_NON_RETRYABLE_ERRORS = [
         SocketError,
         Errno::EADDRNOTAVAIL,
@@ -72,9 +76,9 @@ module Bundler
           new_headers.delete("Range")
           fetch(uri, new_headers)
         when Gem::Net::HTTPRequestEntityTooLarge
-          raise FallbackError, response.body
+          raise FallbackError, clean_text(response.body)
         when Gem::Net::HTTPTooManyRequests
-          raise TooManyRequestsError, response.body
+          raise TooManyRequestsError, clean_text(response.body)
         when Gem::Net::HTTPUnauthorized
           raise BadAuthenticationError, uri.host if uri.userinfo
           raise AuthenticationRequiredError, uri.host
@@ -123,7 +127,7 @@ module Bundler
 
       def bad_response(response)
         message = "Gem::#{response.class.name.gsub(/\AGem::/, "")}"
-        message += ": #{response.body}" unless response.body.empty?
+        message += ": #{clean_text(response.body)}" unless response.body.empty?
         HTTPError.new(message)
       end
 
