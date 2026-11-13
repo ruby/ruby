@@ -1900,7 +1900,11 @@ mod tests {
 
     #[test]
     fn test_lir_string() {
+        use crate::cruby::test_utils::compile_to_iseq;
         use crate::hir::SideExitReason;
+        use crate::jit_frame::PendingJITFrame;
+
+        let iseq = compile_to_iseq("nil");
 
         let mut asm = Assembler::new();
         asm.new_block_without_id("test");
@@ -1917,9 +1921,13 @@ mod tests {
             reason: SideExitReason::Interrupt,
             exit: SideExit {
                 pc: 0.into(),
-                iseq: std::ptr::dangling(),
+                iseq,
                 vm_stack_size: 0,
-                stack_map: StackMap::new(vec![], std::ptr::dangling(), 0),
+                stack_map: SideExitStackMap {
+                    stack: vec![],
+                    frame_depth: 0,
+                    jit_frame: PendingJITFrame::new_iseq(std::ptr::null(), iseq),
+                },
                 recompile: None,
             },
         }));
