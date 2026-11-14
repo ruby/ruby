@@ -5925,7 +5925,8 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
             heap->freed_slots += ctx.freed_slots;
             heap->empty_slots += ctx.empty_slots;
 
-            if (pooled_slots < pool_budget) {
+            if (pooled_slots < pool_budget &&
+                    heap->free_pages && heap->free_pages->free_next) {
                 heap_add_poolpage(objspace, heap, sweep_page);
                 pooled_slots += free_slots;
             }
