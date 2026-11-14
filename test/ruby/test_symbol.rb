@@ -552,6 +552,17 @@ class TestSymbol < Test::Unit::TestCase
     assert_nothing_raised(NoMethodError, bug10259) {obj.send("unagi=".intern, 1)}
   end
 
+  def test_to_sym_name_with_trailing_equal
+    # rb_enc_symname_type checks the name without the trailing `=` by
+    # calling itself recursively, and used to shift by the result
+    # unconditionally.  For names like "1=" whose `=`-less form is not a
+    # valid identifier either, the recursion returns -1 and the shift
+    # became 1U << -1 (UBSan: shift exponent -1 is negative).
+    assert_equal(:"1=", "1=".to_sym)
+    assert_equal(:"foo=", "foo=".to_sym)
+    assert_equal(:"@!x=", "@!x=".to_sym)
+  end
+
   def test_symbol_fstr_memory_leak
     bug10686 = '[ruby-core:67268] [Bug #10686]'
     assert_no_memory_leak([], "#{<<~"begin;"}\n#{<<~'else;'}", "#{<<~'end;'}", bug10686, limit: 1.71, rss: true, timeout: 20)
