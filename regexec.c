@@ -1248,7 +1248,9 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
     unsigned int limit_size = MatchStackLimitSize;
     n *= 2;
     if (limit_size != 0 && n > limit_size) {
-      if ((unsigned int )(stk_end - stk_base) == limit_size)
+      /* The stack can already be over a limit set below its initial size;
+         never shrink it under the entries in use. */
+      if ((size_t )(stk_end - stk_base) >= limit_size)
         return ONIGERR_MATCH_STACK_LIMIT_OVER;
       else
         n = limit_size;
@@ -1933,6 +1935,18 @@ static int string_cmp_ic(OnigEncoding enc, int case_fold_flag,
     if (*s1++ != *s2++) {\
       is_fail = 1; break;\
     }\
+  }\
+} while(0)
+
+/* Point sprev at the head of the last character of [start, s), which a back
+   reference has just matched.  An empty match leaves sprev as it was: it
+   still has to be the character before s for \b and the like. */
+#define SPREV_AFTER_BACKREF(start, enclen_fn) do {\
+  if ((start) < s) {\
+    int len_;\
+    sprev = (start);\
+    while (sprev + (len_ = enclen_fn(encode, sprev, end)) < s)\
+      sprev += len_;\
   }\
 } while(0)
 
@@ -2952,6 +2966,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       NEXT;
 
     CASE(OP_CCLASS_MB)  MOP_IN(OP_CCLASS_MB);
+      DATA_ENSURE(1);
       if (! ONIGENC_IS_MBC_HEAD(encode, s, end)) goto fail;
 
     cclass_mb:
@@ -3500,8 +3515,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       GET_MEMNUM_INC(mem, p);
     backref:
       {
-        int len;
-        UChar *pstart, *pend;
+        UChar *pstart, *pend, *swork;
 
         /* if you want to remove following line,
            you should check in parse and compile time. */
@@ -3519,10 +3533,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
                 : (UChar* )((void* )mem_end_stk[mem]));
         n = pend - pstart;
         DATA_ENSURE(n);
-        sprev = s;
+        swork = s;
         STRING_CMP(pstart, s, n);
-        while (sprev + (len = enclen_approx(encode, sprev, end)) < s)
-          sprev += len;
+        SPREV_AFTER_BACKREF(swork, enclen_approx);
 
         MOP_OUT;
         JUMP;
@@ -3531,8 +3544,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     CASE(OP_BACKREFN_IC)  MOP_IN(OP_BACKREFN_IC);
       GET_MEMNUM_INC(mem, p);
       {
-        int len;
-        UChar *pstart, *pend;
+        UChar *pstart, *pend, *swork;
 
         /* if you want to remove following line,
            you should check in parse and compile time. */
@@ -3550,10 +3562,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
                 : (UChar* )((void* )mem_end_stk[mem]));
         n = pend - pstart;
         DATA_ENSURE(n);
-        sprev = s;
+        swork = s;
         STRING_CMP_IC(case_fold_flag, pstart, &s, n, end);
-        while (sprev + (len = enclen_approx(encode, sprev, end)) < s)
-          sprev += len;
+        SPREV_AFTER_BACKREF(swork, enclen_approx);
 
         MOP_OUT;
         JUMP;
@@ -3562,7 +3573,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_BACKREF_MULTI)  MOP_IN(OP_BACKREF_MULTI);
       {
-        int len, is_fail;
+        int is_fail;
         UChar *pstart, *pend, *swork;
 
         GET_LENGTH_INC(tlen, p);
@@ -3582,13 +3593,14 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
                   : (UChar* )((void* )mem_end_stk[mem]));
           n = pend - pstart;
           DATA_ENSURE_CONTINUE(n);
-          sprev = s;
           swork = s;
           STRING_CMP_VALUE(pstart, swork, n, is_fail);
           if (is_fail) continue;
-          s = swork;
-          while (sprev + (len = enclen_approx(encode, sprev, end)) < s)
-            sprev += len;
+          {
+            UChar *sstart = s;
+            s = swork;
+            SPREV_AFTER_BACKREF(sstart, enclen_approx);
+          }
 
           p += (SIZE_MEMNUM * (tlen - i - 1));
           break; /* success */
@@ -3601,7 +3613,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_BACKREF_MULTI_IC)  MOP_IN(OP_BACKREF_MULTI_IC);
       {
-        int len, is_fail;
+        int is_fail;
         UChar *pstart, *pend, *swork;
 
         GET_LENGTH_INC(tlen, p);
@@ -3621,13 +3633,14 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
                   : (UChar* )((void* )mem_end_stk[mem]));
           n = pend - pstart;
           DATA_ENSURE_CONTINUE(n);
-          sprev = s;
           swork = s;
           STRING_CMP_VALUE_IC(case_fold_flag, pstart, &swork, n, end, is_fail);
           if (is_fail) continue;
-          s = swork;
-          while (sprev + (len = enclen(encode, sprev, end)) < s)
-            sprev += len;
+          {
+            UChar *sstart = s;
+            s = swork;
+            SPREV_AFTER_BACKREF(sstart, enclen);
+          }
 
           p += (SIZE_MEMNUM * (tlen - i - 1));
           break; /* success */
@@ -3640,7 +3653,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #ifdef USE_BACKREF_WITH_LEVEL
     CASE(OP_BACKREF_WITH_LEVEL)
       {
-        int len;
+        UChar *swork;
         OnigOptionType ic;
         LengthType level;
 
@@ -3648,11 +3661,10 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
         GET_LENGTH_INC(level, p);
         GET_LENGTH_INC(tlen,  p);
 
-        sprev = s;
+        swork = s;
         if (backref_match_at_nested_level(reg, stk, stk_base, ic,
                   case_fold_flag, (int )level, (int )tlen, p, &s, end)) {
-          while (sprev + (len = enclen(encode, sprev, end)) < s)
-            sprev += len;
+          SPREV_AFTER_BACKREF(swork, enclen);
 
           p += (SIZE_MEMNUM * tlen);
         }
@@ -3827,7 +3839,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #ifdef USE_OP_PUSH_OR_JUMP_EXACT
     CASE(OP_PUSH_OR_JUMP_EXACT1)  MOP_IN(OP_PUSH_OR_JUMP_EXACT1);
       GET_RELADDR_INC(addr, p);
-      if (*p == *s && DATA_ENSURE_CHECK1) {
+      if (DATA_ENSURE_CHECK1 && *p == *s) {
         p++;
         CHECK_MATCH_CACHE;
         STACK_PUSH_ALT(p + addr, s, sprev, pkeep);
@@ -3842,7 +3854,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     CASE(OP_PUSH_IF_PEEK_NEXT)  MOP_IN(OP_PUSH_IF_PEEK_NEXT);
       GET_RELADDR_INC(addr, p);
       CHECK_MATCH_CACHE;
-      if (*p == *s) {
+      if (DATA_ENSURE_CHECK1 && *p == *s) {
         p++;
         STACK_PUSH_ALT(p + addr, s, sprev, pkeep);
         MOP_OUT;
@@ -4551,6 +4563,10 @@ map_search_backward(OnigEncoding enc, UChar map[],
                     const UChar* text_start, const UChar* text_end)
 {
   const UChar *s = text_start;
+
+  /* A backward search can start at the end, where there is no character. */
+  if (s >= text_end)
+    s = onigenc_get_prev_char_head(enc, adjust_text, text_end, text_end);
 
   while (s >= text) {
     if (map[*s]) return (UChar* )s;

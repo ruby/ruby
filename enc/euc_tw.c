@@ -186,6 +186,7 @@ euctw_left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end
   const UChar *p;
   int len;
 
+  if (s >= end) return (UChar* )s;
   if (s <= start) return (UChar* )s;
   p = s;
 
