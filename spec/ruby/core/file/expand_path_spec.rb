@@ -157,9 +157,20 @@ describe "File.expand_path" do
   end
 
   platform_is_not :windows do
-    it "raises an Encoding::CompatibilityError if the external encoding is not compatible" do
-      Encoding.default_external = Encoding::UTF_16BE
-      -> { File.expand_path("./a") }.should.raise(Encoding::CompatibilityError)
+    ruby_version_is ""..."4.1" do
+      it "raises an Encoding::CompatibilityError if the external encoding is not compatible" do
+        Encoding.default_external = Encoding::UTF_16BE
+        -> { File.expand_path("./a") }.should.raise(Encoding::CompatibilityError)
+      end
+    end
+
+    ruby_version_is "4.1" do
+      it "does not use an ASCII-incompatible external encoding for the path" do
+        Encoding.default_external = Encoding::UTF_16BE
+        path = File.expand_path("./a")
+        path.encoding.should.ascii_compatible?
+        path.should == "#{Dir.pwd}/a"
+      end
     end
   end
 
