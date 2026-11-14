@@ -382,6 +382,10 @@ class TestDateStrftime < Test::Unit::TestCase
     assert_equal('Sat, 03 Feb 2001 00:00:00 GMT', d.httpdate)
     assert_equal('H13.02.03T00:00:00+00:00', d.jisx0301)
 
+    d = DateTime.new(2001,2,3,23,59,59,'+09:00')
+    assert_equal('Sat, 3 Feb 2001 23:59:59 +0900', d.rfc2822)
+    assert_equal('Sat, 03 Feb 2001 14:59:59 GMT', d.httpdate)
+
     d2 = DateTime.parse('2001-02-03T04:05:06.123456')
     assert_equal('2001-02-03T04:05:06.123+00:00', d2.iso8601(3))
     assert_equal('2001-02-03T04:05:06.123+00:00', d2.rfc3339(3))
@@ -411,6 +415,7 @@ class TestDateStrftime < Test::Unit::TestCase
     assert_equal('H18.09.01', Date.parse('2006-09-01').jisx0301)
     assert_equal('H31.04.30', Date.parse('2019-04-30').jisx0301)
     assert_equal('R01.05.01', Date.parse('2019-05-01').jisx0301)
+    assert_equal('R100.05.01', Date.new(2118,5,1).jisx0301)
 
     assert_equal(d2, DateTime.iso8601('2001-02-03T04:05:06.123456+00:00', limit: 64))
     assert_equal(d2, DateTime.rfc3339('2001-02-03T04:05:06.123456+00:00', limit: 64))

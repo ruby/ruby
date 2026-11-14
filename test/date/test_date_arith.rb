@@ -114,6 +114,9 @@ class TestDateArith < Test::Unit::TestCase
     d = DateTime.new(2000,3,1) - 1.to_r/2
     assert_equal([2000, 2, 29, 12, 0, 0],
 		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+
+    d = Date.new(2001,2,3) - DateTime.new(2001,2,3,0,0,0,'-11:00')
+    assert_equal(-11.to_r/24, d)
   end
 
   def test__minus__ex
@@ -140,6 +143,10 @@ class TestDateArith < Test::Unit::TestCase
 		     Date.new(2001,1,17, Date::GREGORIAN)))
     assert_equal(0, (DateTime.new(2001,1,4,0,0,0,0,Date::JULIAN) <=>
 		     DateTime.new(2001,1,17,0,0,0,0,Date::GREGORIAN)))
+    assert_equal(0, (DateTime.new(2001,2,3,9,0,0,'+09:00') <=>
+		     DateTime.new(2001,2,3,0,0,0,'+00:00')))
+    assert_equal(-1, (DateTime.new(2001,2,3,0,0,0,'+09:00') <=>
+		      DateTime.new(2001,2,2,16,0,0,'+00:00')))
   end
 
   def test_prev
@@ -171,6 +178,19 @@ class TestDateArith < Test::Unit::TestCase
     d = Date.new(2000,1,31) << 14
     assert_equal([1998, 11, 30], [d.year, d.mon, d.mday])
 
+  end
+
+  def test_prev_month__ex
+    e = TypeError
+    assert_raise(e) do
+      Date.new(2000,1,31) << nil
+    end
+    assert_raise(e) do
+      Date.new(2000,1,31) << '1'
+    end
+    assert_raise(e) do
+      DateTime.new(2000,1,31) << nil
+    end
   end
 
   def test_prev_month__2
@@ -237,6 +257,21 @@ class TestDateArith < Test::Unit::TestCase
     assert_equal([2001, 1, 31], [d.year, d.mon, d.mday])
     d = Date.new(2000,1,31) >> 13
     assert_equal([2001, 2, 28], [d.year, d.mon, d.mday])
+    d = Date.new(1582,9,10) >> 1
+    assert_equal([1582, 10, 4], [d.year, d.mon, d.mday])
+  end
+
+  def test_next_month__ex
+    e = TypeError
+    assert_raise(e) do
+      Date.new(2000,1,31) >> nil
+    end
+    assert_raise(e) do
+      Date.new(2000,1,31) >> '1'
+    end
+    assert_raise(e) do
+      DateTime.new(2000,1,31) >> nil
+    end
   end
 
   def test_next_month__2

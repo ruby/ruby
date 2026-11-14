@@ -48,6 +48,15 @@ class TestDateMarshal < Test::Unit::TestCase
     assert_instance_of(String, d2.to_s)
   end
 
+  def test_marshal_nth
+    [Date.new(-123456,7,8), Date.new(2**40,3,31)].each do |d|
+      assert_equal(d, Marshal.load(Marshal.dump(d)))
+    end
+
+    s = "\x04\bU:\tDate[\vi\xFAi\x04\xF4)#\ni\x00i\x00i\x00f\f2299161".b
+    assert_equal(Date.new(-123456,7,8), Marshal.load(s))
+  end
+
   def test_memsize
     require 'objspace'
     t = DateTime.new(2018, 11, 13)
