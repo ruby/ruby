@@ -702,7 +702,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringByteslice { string, beg, len, state } => gen_string_byteslice(asm, opnd!(string), opnd!(beg), opnd!(len), &function.frame_state(*state)),
         Insn::StringSetbyteFixnum { string, index, value } => gen_string_setbyte_fixnum(asm, opnd!(string), opnd!(index), opnd!(value)),
         Insn::StringAppend { recv, other, recv_flags, other_flags, state } => gen_string_append(jit, asm, function, opnd!(recv), opnd!(other), opnd!(recv_flags), opnd!(other_flags), &function.frame_state(*state)),
-        Insn::StringAppendCodepoint { recv, other, state } => gen_string_append_codepoint(jit, asm, function, opnd!(recv), opnd!(other), &function.frame_state(*state)),
+        Insn::StringAppendCodepoint { recv, other, state } => no_output!(gen_string_append_codepoint(jit, asm, function, opnd!(recv), opnd!(other), &function.frame_state(*state))),
         Insn::StringEqual { left, right } => gen_string_equal(asm, opnd!(left), opnd!(right)),
         &Insn::LoadFixnum { ptr, num_bytes, byteswap } => gen_load_fixnum(asm, opnd!(ptr), num_bytes, byteswap),
         Insn::StringIntern { val, state } => gen_intern(jit, asm, function, opnd!(val), &function.frame_state(*state)),
@@ -4467,9 +4467,9 @@ fn gen_string_append(jit: &mut JITState, asm: &mut Assembler, function: &Functio
     string
 }
 
-fn gen_string_append_codepoint(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, val: Opnd, state: &FrameState) -> Opnd {
+fn gen_string_append_codepoint(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, val: Opnd, state: &FrameState) {
     gen_prepare_non_leaf_call(jit, asm, function, state);
-    asm_ccall!(asm, rb_jit_str_concat_codepoint, string, val)
+    asm_ccall!(asm, rb_jit_str_concat_codepoint, string, val);
 }
 
 fn gen_load_fixnum(asm: &mut Assembler, ptr: Opnd, num_bytes: usize, byteswap: bool) -> Opnd {
