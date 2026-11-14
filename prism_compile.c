@@ -7580,8 +7580,10 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
             uint32_t node_id = node->receiver->node_id;
             int idx, level;
 
-            if (iseq_block_param_id_p(iseq, pm_constant_id_lookup(scope_node, read_node_cast->name), &idx, &level)) {
+            ID id = pm_constant_id_lookup(scope_node, read_node_cast->name);
+            if (iseq_block_param_id_p(iseq, id, &idx, &level)) {
                 ADD_ELEM(ret, (LINK_ELEMENT *) new_insn_body(iseq, location.line, node_id, BIN(getblockparamproxy), 2, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level)));
+                if (level > 0) access_outer_variables(iseq, level, id, false);
             }
             else {
                 PM_COMPILE_NOT_POPPED(node->receiver);

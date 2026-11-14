@@ -9824,6 +9824,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
                 nd_type_p(get_nd_recv(node), NODE_LVAR) &&
                 iseq_block_param_id_p(iseq, RNODE_LVAR(get_nd_recv(node))->nd_vid, &idx, &level)) {
                 ADD_INSN2(recv, get_nd_recv(node), getblockparamproxy, INT2FIX(idx + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+                if (level > 0) access_outer_variables(iseq, level, RNODE_LVAR(get_nd_recv(node))->nd_vid, false);
             }
             else if (private_recv_p(node)) {
                 ADD_INSN(recv, node, putself);
