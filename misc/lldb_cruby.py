@@ -514,7 +514,7 @@ def dump_node(debugger, command, ctx, result, internal_dict):
         return
     node = args[0]
 
-    dump = ctx.frame.EvaluateExpression("(struct RString*)rb_parser_dump_tree((NODE*)(%s), 0)" % node)
+    dump = ctx.frame.EvaluateExpression("(struct RString*)rb_parser_dump_tree((rb_node_t*)(%s), 0)" % node)
     output_string(ctx, result, dump)
 
 def rb_backtrace(debugger, command, result, internal_dict):

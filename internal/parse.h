@@ -80,7 +80,7 @@ int rb_parser_dvar_defined_ref(struct parser_params*, ID, ID**);
 ID rb_parser_internal_id(struct parser_params*);
 typedef void (*rb_parser_reg_fragment_error_func)(struct parser_params *, VALUE);
 int rb_parser_reg_fragment_check(struct parser_params*, rb_parser_string_t*, int, rb_parser_reg_fragment_error_func);
-int rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, long len, rb_encoding *enc, NODE **succ_block, const rb_code_location_t *loc, rb_parser_assignable_func assignable);
+int rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, long len, rb_encoding *enc, rb_node_t **succ_block, const rb_code_location_t *loc, rb_parser_assignable_func assignable);
 int rb_parser_local_defined(struct parser_params *p, ID id, const struct rb_iseq_struct *iseq);
 NODE *rb_parser_assignable(struct parser_params *p, ID id, NODE *val, const YYLTYPE *loc);
 

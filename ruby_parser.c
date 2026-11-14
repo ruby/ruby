@@ -183,7 +183,7 @@ enc_symname_type(const char *name, rb_len_t len, parser_encoding *enc, unsigned 
 typedef struct {
     struct parser_params *parser;
     rb_encoding *enc;
-    NODE *succ_block;
+    rb_node_t *succ_block;
     const rb_code_location_t *loc;
     rb_parser_assignable_func assignable;
 } reg_named_capture_assign_t;
@@ -202,7 +202,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     return rb_reg_named_capture_assign_iter_impl(p, s, len, enc, &arg->succ_block, loc, arg->assignable);
 }
 
-static NODE *
+static rb_array_node_t *
 reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc,
                          rb_parser_assignable_func assignable)
 {
@@ -216,7 +216,7 @@ reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_lo
     onig_foreach_name(RREGEXP_PTR(regexp), reg_named_capture_assign_iter, &arg);
 
     if (!arg.succ_block) return 0;
-    return RNODE_BLOCK(arg.succ_block)->nd_next;
+    return (rb_array_node_t *)arg.succ_block;
 }
 
 static int
@@ -965,10 +965,33 @@ rb_node_integer_literal_val(const NODE *n)
 }
 
 VALUE
+rb_node_integer_literal_val2(const rb_node_t *n)
+{
+    const rb_integer_node_t *node = RB_NODE_INTEGER(n);
+    VALUE val = integer_value(node->val->ptr, node->integer_base);
+    if (node->minus) {
+        val = negative_numeric(val);
+    }
+    return val;
+}
+
+VALUE
 rb_node_float_literal_val(const NODE *n)
 {
     const rb_node_float_t *node = RNODE_FLOAT(n);
     double d = strtod(node->val, 0);
+    if (node->minus) {
+        d = -d;
+    }
+    VALUE val = DBL2NUM(d);
+    return val;
+}
+
+VALUE
+rb_node_float_literal_val2(const rb_node_t *n)
+{
+    const rb_float_node_t *node = RB_NODE_FLOAT(n);
+    double d = strtod(node->val->ptr, 0);
     if (node->minus) {
         d = -d;
     }
@@ -983,6 +1006,21 @@ rb_node_rational_literal_val(const NODE *n)
     const rb_node_rational_t *node = RNODE_RATIONAL(n);
 
     lit = rational_value(node->val, node->base, node->seen_point);
+
+    if (node->minus) {
+        lit = negative_numeric(lit);
+    }
+
+    return lit;
+}
+
+VALUE
+rb_node_rational_literal_val2(const rb_node_t *n)
+{
+    VALUE lit;
+    const rb_rational_node_t *node = RB_NODE_RATIONAL(n);
+
+    lit = rational_value(node->val->ptr, node->integer_base, node->seen_point);
 
     if (node->minus) {
         lit = negative_numeric(lit);
@@ -1024,6 +1062,38 @@ rb_node_imaginary_literal_val(const NODE *n)
 }
 
 VALUE
+rb_node_imaginary_literal_val2(const rb_node_t *n)
+{
+    VALUE lit;
+    const rb_imaginary_node_t *node = RB_NODE_IMAGINARY(n);
+
+    enum rb_numeric_type type = node->type;
+
+    switch (type) {
+      case integer_literal:
+        lit = integer_value(node->val->ptr, node->integer_base);
+        break;
+      case float_literal:{
+        double d = strtod(node->val->ptr, 0);
+        lit = DBL2NUM(d);
+        break;
+      }
+      case rational_literal:
+        lit = rational_value(node->val->ptr, node->integer_base, node->seen_point);
+        break;
+      default:
+        rb_bug("unreachable");
+    }
+
+    lit = rb_complex_raw(INT2FIX(0), lit);
+
+    if (node->minus) {
+        lit = negative_numeric(lit);
+    }
+    return lit;
+}
+
+VALUE
 rb_node_str_string_val(const NODE *node)
 {
     rb_parser_string_t *str = RNODE_STR(node)->string;
@@ -1031,9 +1101,23 @@ rb_node_str_string_val(const NODE *node)
 }
 
 VALUE
+rb_node_str_string_val2(const rb_node_t *node)
+{
+    rb_parser_string_t *str = RB_NODE_STRING(node)->unescaped;
+    return rb_str_new_parser_string(str);
+}
+
+VALUE
 rb_node_sym_string_val(const NODE *node)
 {
     rb_parser_string_t *str = RNODE_SYM(node)->string;
+    return ID2SYM(rb_intern3(str->ptr, str->len, str->enc));
+}
+
+VALUE
+rb_node_sym_string_val2(const rb_node_t *node)
+{
+    rb_parser_string_t *str = RB_NODE_SYMBOL(node)->unescaped;
     return ID2SYM(rb_intern3(str->ptr, str->len, str->enc));
 }
 
@@ -1061,10 +1145,62 @@ rb_node_regx_string_val(const NODE *node)
     return rb_reg_compile(str, node_reg->options, NULL, 0);
 }
 
+#define RE_ONIG_OPTION_IGNORECASE 1
+#define RE_ONIG_OPTION_EXTEND     (RE_ONIG_OPTION_IGNORECASE<<1)
+#define RE_ONIG_OPTION_MULTILINE  (RE_ONIG_OPTION_EXTEND<<1)
+#define RE_OPTION_ONCE (1<<16)
+#define RE_OPTION_ENCODING_SHIFT 8
+#define RE_OPTION_ENCODING(e) (((e)&0xff)<<RE_OPTION_ENCODING_SHIFT)
+
+int
+node_regx_options(rb_node_flags_t flags)
+{
+    int options = 0;
+    int kcode = 0;
+
+    if (flags & RB_REGULAR_EXPRESSION_FLAGS_EUC_JP) {
+        kcode = 'e';
+        options |= ARG_ENCODING_FIXED;
+    }
+    else if (flags & RB_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
+        options |= ARG_ENCODING_NONE;
+    }
+    else if (flags & RB_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
+        kcode = 's';
+        options |= ARG_ENCODING_FIXED;
+    }
+    else if (flags & RB_REGULAR_EXPRESSION_FLAGS_UTF_8) {
+        kcode = 'u';
+        options |= ARG_ENCODING_FIXED;
+    }
+
+    if (flags & RB_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE) options |= RE_ONIG_OPTION_IGNORECASE;
+    if (flags & RB_REGULAR_EXPRESSION_FLAGS_EXTENDED) options |= RE_ONIG_OPTION_EXTEND;
+    if (flags & RB_REGULAR_EXPRESSION_FLAGS_MULTI_LINE) options |= RE_ONIG_OPTION_MULTILINE;
+
+    return options | RE_OPTION_ENCODING(kcode);
+}
+
+VALUE
+rb_node_regx_string_val2(const rb_node_t *node)
+{
+    rb_regular_expression_node_t *node_reg = RB_NODE_REGULAR_EXPRESSION(node);
+    rb_parser_string_t *string = node_reg->unescaped;
+    VALUE str = rb_enc_str_new(string->ptr, string->len, string->enc);
+
+    return rb_reg_compile(str, node_regx_options(node->flags), NULL, 0);
+}
+
 VALUE
 rb_node_line_lineno_val(const NODE *node)
 {
     return INT2FIX(node->nd_loc.beg_pos.lineno);
+}
+
+VALUE
+rb_node_line_lineno_val2(const rb_node_t *node)
+{
+    return INT2FIX(node->location.beg_pos.lineno);
 }
 
 VALUE
@@ -1074,9 +1210,21 @@ rb_node_file_path_val(const NODE *node)
 }
 
 VALUE
+rb_node_file_path_val2(const rb_node_t *node)
+{
+    return rb_str_new_parser_string(RB_NODE_SOURCE_FILE(node)->filepath);
+}
+
+VALUE
 rb_node_encoding_val(const NODE *node)
 {
     return rb_enc_from_encoding(RNODE_ENCODING(node)->enc);
+}
+
+VALUE
+rb_node_encoding_val2(const rb_node_t *node)
+{
+    return rb_enc_from_encoding(RB_NODE_SOURCE_ENCODING(node)->enc);
 }
 
 static void
@@ -1125,7 +1273,7 @@ rb_source_hash_finalize(const rb_source_hash_state_t *state)
 }
 
 VALUE
-rb_ruby_ast_new(const NODE *const root)
+rb_ruby_ast_new(const rb_node_t *root)
 {
     rb_ast_t *ast;
     VALUE ast_value = TypedData_Make_Struct(0, rb_ast_t, &ast_data_type, ast);

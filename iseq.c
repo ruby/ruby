@@ -785,15 +785,15 @@ new_arena(void)
 }
 
 static int
-prepare_node_id(const NODE *node)
+prepare_node_id(const rb_node_t *node)
 {
     if (!node) return -1;
 
-    if (nd_type(node) == NODE_SCOPE && RNODE_SCOPE(node)->nd_parent) {
-        return nd_node_id(RNODE_SCOPE(node)->nd_parent);
-    }
+    // if (RB_NODE_TYPE(node) == NODE_SCOPE && RNODE_SCOPE(node)->nd_parent) {
+    //     return nd_node_id(RNODE_SCOPE(node)->nd_parent);
+    // }
 
-    return nd_node_id(node);
+    return rb_nd_node_id(node);
 }
 
 static VALUE
@@ -1168,7 +1168,7 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
 {
     rb_ast_t *ast = rb_ruby_ast_data_get(ast_value);
     rb_ast_body_t *body = ast ? &ast->body : NULL;
-    const NODE *node = body ? body->root : 0;
+    const rb_node_t *node = body ? body->root : 0;
     /* TODO: argument check */
     rb_iseq_t *iseq = iseq_alloc();
     rb_compile_option_t new_opt;
@@ -1189,7 +1189,7 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
         script_lines = ISEQ_SCRIPT_LINES(parent);
     }
 
-    prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_loc : NULL, prepare_node_id(node),
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->location : NULL, prepare_node_id(node),
                        parent, isolated_depth, type, script_lines, option);
 
     if (body && body->has_source_hash) {

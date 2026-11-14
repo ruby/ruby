@@ -415,6 +415,19 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  def test_node_id_for_backtrace_location_of_call_with_block
+    omit if ParserSupport.prism_enabled?
+
+    receiver = Object.new
+    def receiver.capture
+      caller_locations(1, 1).first
+    end
+    location = receiver.capture { :unused }
+    node = RubyVM::AbstractSyntaxTree.of(location)
+    assert_equal(:CALL, node.type)
+    assert_equal(RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(location), node.node_id)
+  end
+
   def test_node_id_for_backtrace_location_raises_argument_error
     bug19262 = '[ruby-core:111435]'
 
@@ -576,11 +589,241 @@ class TestAst < Test::Unit::TestCase
     assert_nil(RubyVM::AbstractSyntaxTree.of(c.instance_method(:foo)))
   end
 
+  def test_leading_empty_statement
+    [";a", "if x; y; else;a; end", "begin x; ensure;a; end"].each do |source|
+      body = parse(source).children.last
+      body = body.children.last if body.type == :IF || body.type == :ENSURE
+      assert_equal(:BLOCK, body.type)
+      assert_equal([:BEGIN, :VCALL], body.children.map(&:type))
+      assert_equal([nil], body.children.first.children)
+    end
+  end
+
+  def test_parenthesized_expression_projection
+    {"(1)" => :INTEGER, "(1;2)" => :BLOCK, "((1))" => :BLOCK, "()" => :BEGIN}.each do |source, child_type|
+      body = parse(source).children.last
+      assert_equal(:BLOCK, body.type)
+      assert_equal([0, source.bytesize], [body.first_column, body.last_column])
+      assert_equal([child_type], body.children.map(&:type))
+    end
+    {"foo (1)" => :INTEGER, "foo (1;2)" => :BLOCK, "foo((1))" => :BLOCK}.each do |source, child_type|
+      arguments = parse(source).children.last.children.last
+      assert_equal(:LIST, arguments.type)
+      assert_equal(child_type, arguments.children.first.type)
+    end
+  end
+
+  def test_interpolated_regexp_condition_projection
+    source = 'if /x#{1}y/;2;end'
+    match = parse(source).children.last.children.first
+    assert_equal(:MATCH2, match.type)
+    regexp, last_line = match.children
+    assert_equal(:DREGX, regexp.type)
+    assert_equal([3, 11], [regexp.first_column, regexp.last_column])
+    assert_equal("x", regexp.children.first)
+    assert_equal(:GVAR, last_line.type)
+    assert_equal([:$_], last_line.children)
+    [match, last_line].each do |node|
+      assert_equal([0, source.bytesize], [node.first_column, node.last_column])
+    end
+  end
+
+  def test_explicit_nil_method_body
+    ["def m;nil;end", "def m\nnil\nend"].each do |source|
+      body = parse(source).children.last.children.last.children.last
+      assert_equal(:NIL, body.type)
+    end
+  end
+
+  def test_constant_path_assignment_target
+    assignment = parse("a,A::B=x").children.last.children[1].children[1]
+    assert_equal(:CDECL, assignment.type)
+    assert_equal([:COLON2, :B, nil], [assignment.children[0].type, *assignment.children[1..]])
+  end
+
+  def test_rescue_attribute_assignment_target
+    ["obj.x", "obj[0]", "A::B"].each do |target|
+      assignment = parse("begin;rescue => #{target};end").children.last.children[1].children[1]
+      value = assignment.children.last
+      value = value.children[-2] if value.type == :LIST
+      assert_equal(:ERRINFO, value.type)
+      assert_equal([], value.children)
+    end
+    assignment = parse("begin;rescue => obj[];end").children.last.children[1].children[1]
+    assert_equal([13, 21], [assignment.children.last.first_column, assignment.children.last.last_column])
+    assignment = parse("begin;rescue => obj[*x,1];end").children.last.children[1].children[1]
+    arguments = assignment.children.last
+    assert_equal(:ARGSCAT, arguments.type)
+    assert_equal([:SPLAT, :LIST], arguments.children.map(&:type))
+    assert_equal([:INTEGER, :ERRINFO], arguments.children.last.children.compact.map(&:type))
+  end
+
+  def test_synthetic_condition_views
+    flip = parse("if (1..2);3;end").children.last.children.first.children.first
+    assert_equal([:CALL, :CALL], flip.children.map(&:type))
+    defined = parse("defined? (a;)").children.last
+    assert_equal(:BLOCK, defined.children.first.type)
+    assert_equal([0, 13], [defined.children.first.first_column, defined.children.first.last_column])
+  end
+
+  def test_defined_preserves_begin_expression
+    ["defined?(begin missing; end)", "defined? begin a;b end"].each do |source|
+      expression = parse(source).children.last.children.first
+      assert_equal(:BLOCK, expression.type)
+      assert_equal([0, source.bytesize], [expression.first_column, expression.last_column])
+      original = expression.children.first
+      assert_equal(:BEGIN, original.type)
+      assert_equal(9, original.first_column)
+      assert_equal(source.start_with?("defined?(") ? :VCALL : :BLOCK, original.children.first.type)
+    end
+    expression = parse("defined? (begin a;b end)").children.last.children.first
+    assert_equal([:VCALL, :VCALL], expression.children.map(&:type))
+    assert_equal([16, 19], [expression.first_column, expression.last_column])
+    expression = parse("defined? (begin;end)").children.last.children.first
+    assert_equal([nil], expression.children.first.children)
+  end
+
+  def test_nested_defined_lookup
+    keep_script_lines = RubyVM.keep_script_lines
+    omit if ParserSupport.prism_enabled?
+    RubyVM.keep_script_lines = true
+    expression = 80.times.inject("nil") { |inner| "defined?(begin #{inner};end)" }
+    eval("def self.ast_defined_lookup; #{expression}; caller_locations(0).first; end", binding, "ast-defined-depth.rb")
+    location = ast_defined_lookup
+    node = RubyVM::AbstractSyntaxTree.of(location)
+    assert_equal(:FCALL, node.type)
+    assert_equal(RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(location), node.node_id)
+  ensure
+    singleton_class.remove_method(:ast_defined_lookup) if singleton_class.method_defined?(:ast_defined_lookup)
+    RubyVM.keep_script_lines = keep_script_lines
+  end
+
+  def test_for_nonlocal_target_initializer
+    {"@a" => :IASGN, "$a" => :GASGN, "@@a" => :CVASGN,
+     "A" => :CDECL, "A::B" => :CDECL, "::A" => :CDECL,
+     "a.x" => :ATTRASGN, "a[0]" => :ATTRASGN}.each do |target, type|
+      args = parse("for #{target} in b;end").children.last.children.last.children[1]
+      assert_equal(0, args.children[0])
+      initializer = args.children[1]
+      assert_equal(:MASGN, initializer.type)
+      value, targets, rest = initializer.children
+      assert_equal(:DVAR, value.type)
+      assert_equal([nil], value.children)
+      assert_equal(:LIST, targets.type)
+      assert_equal([type, nil], targets.children.map { |child| child&.type })
+      assert_nil(rest)
+      [args, initializer, value, targets].each do |node|
+        assert_equal([4, 4 + target.bytesize], [node.first_column, node.last_column])
+      end
+    end
+  end
+
+  def test_destructured_assignment_list_locations
+    ["(a,b),c=d", "((a,b),c)=d"].each_with_index do |source, column|
+      targets = parse(source).children.last.children[1]
+      assert_equal(column, targets.first_column)
+      assert_equal(column + 1, targets.children.first.first_column)
+    end
+    args = parse("for (a,b) in c;end").children.last.children.last.children[1]
+    initializer = args.children[1]
+    [args, initializer, initializer.children.first].each do |node|
+      assert_equal([4, 9], [node.first_column, node.last_column])
+    end
+    assert_equal([5, 8], [initializer.children[1].first_column, initializer.children[1].last_column])
+  end
+
+  def test_keyword_argument_and_pin_ranges
+    source = "f 1, k: 2 do;end"
+    call = parse(source).children.last.children.first
+    assert_equal([0, 9], [call.first_column, call.last_column])
+    assert_equal(9, call.children.last.last_column)
+    pattern = parse("proc { case x; in a, ^a; end }").children.last.children.last.children.last.children.last.children.first
+    targets = pattern.children[1]
+    assert_equal(23, targets.last_column)
+    assert_equal(23, targets.children[-2].last_column)
+  end
+
+  def test_pinned_expression_and_hash_pattern_rest
+    pattern = parse("case x; in ^(1+2); end").children.last.children.last.children.first
+    assert_equal(:BLOCK, pattern.type)
+    pattern = parse("case x;in {a:,**r};end").children.last.children.last.children.first
+    rest = pattern.children.last
+    assert_equal(:LASGN, rest.type)
+    assert_equal([11, 17], [rest.first_column, rest.last_column])
+  end
+
+  def test_pre_execution_projection
+    body = parse("BEGIN {1}; 2").children.last
+    assert_equal(:BLOCK, body.type)
+    assert_equal([6, 12], [body.first_column, body.last_column])
+    assert_equal([:BEGIN, :BEGIN, :INTEGER], body.children.map(&:type))
+    assert_equal([6, 9], [body.children.first.first_column, body.children.first.last_column])
+  end
+
   def test_scope_local_variables
     node = RubyVM::AbstractSyntaxTree.parse("_x = 0")
     lv, _, body = *node.children
     assert_equal([:_x], lv)
     assert_equal(:LASGN, body.type)
+  end
+
+  def test_destructured_parameters
+    ["def m((a,b),x=1,(c,d));end", "proc{|(a,b),x=1,(c,d)|a}"].each do |source|
+      scope = parse(source).children.last.children.last
+      args = scope.children[1].children
+      assert_equal([1, nil, 1], args.values_at(0, 3, 4))
+      [args[1], args[5]].each do |assignment|
+        assert_equal(:MASGN, assignment.type)
+        temporary, targets, rest = assignment.children
+        assert_equal(source.start_with?("def") ? :LVAR : :DVAR, temporary.type)
+        assert_equal([nil], temporary.children)
+        assert_equal(assignment.first_column, temporary.first_column)
+        assert_equal(temporary.first_column, temporary.last_column)
+        assert_equal(:LIST, targets.type)
+        assert_nil(rest)
+      end
+      assert_equal([:a, :b], args[1].children[1].children.compact.map { |n| n.children.first })
+      assert_equal([:c, :d], args[5].children[1].children.compact.map { |n| n.children.first })
+    end
+  end
+
+  def test_multiple_destructured_parameters
+    scope = parse("def m((a,b),x,(c,d));end").children.last.children.last
+    assignments = scope.children[1].children[1]
+    assert_equal(:BLOCK, assignments.type)
+    assert_equal([:MASGN, :MASGN], assignments.children.map(&:type))
+    assert_equal([7, 18], [assignments.first_column, assignments.last_column])
+  end
+
+  def test_implicit_parameter_projection
+    {"proc{it}" => :"<it>", "proc {_1}" => :_1}.each do |source, name|
+      scope = parse(source).children.last.children.last
+      locals, args, body = scope.children
+      assert_equal([name], locals)
+      assert_equal([name], body.children)
+      assert_equal([1, nil, nil, nil, 0, nil, nil, nil, nil, nil], args.children)
+      assert_equal([1, source.bytesize, 1, source.bytesize],
+                   [args.first_lineno, args.first_column, args.last_lineno, args.last_column])
+    end
+  end
+
+  def test_forwarding_argument_locations
+    ["g(1,...)", "super(1,...)", "g(...)"].each do |call|
+      source = "def f(...);#{call};end"
+      body = parse(source).children.last.children.last.children.last.children.last
+      forwarding = body.children.last
+      expected = [source.index("(", source.index(";") + 1), source.index(")", source.index(";") + 1) + 1]
+      assert_equal(:BLOCK_PASS, forwarding.type)
+      assert_equal(expected, [forwarding.first_column, forwarding.last_column])
+      push = forwarding.children.first
+      assert_equal(:ARGSPUSH, push.type)
+      assert_equal(expected, [push.first_column, push.last_column])
+      if call.include?("1")
+        cat = push.children.first
+        assert_equal(:ARGSCAT, cat.type)
+        assert_equal(expected, [cat.first_column, cat.last_column])
+      end
+    end
   end
 
   def test_call
@@ -591,6 +834,15 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:NIL, recv.type)
     assert_equal(:foo, mid)
     assert_nil(args)
+  end
+
+  def test_explicit_regexp_operator_call
+    ["/x/.=~()", "/x/.=~(1, 2)"].each do |source|
+      call = parse(source).children.last
+      assert_equal(:CALL, call.type)
+      assert_equal(:REGX, call.children.first.type)
+      assert_equal(:=~, call.children[1])
+    end
   end
 
   def test_fcall
@@ -745,6 +997,22 @@ class TestAst < Test::Unit::TestCase
     helper = Helper.new(__FILE__, src: "1.times {_1}")
     helper.validate_range
     assert_equal([], helper.errors)
+  end
+
+  def test_operator_assignment_variable_location
+    ["a", "@a", "@@a", "$a"].each do |name|
+      assignment = parse("#{name} += 1").children.last
+      read = assignment.children.last.children.first
+      assert_equal([1, 0, 1, name.bytesize], [read.first_lineno, read.first_column, read.last_lineno, read.last_column])
+    end
+  end
+
+  def test_rescue_assignment_children
+    rescue_body = parse("begin; foo; rescue => error; end").children.last.children[1]
+    assignment = rescue_body.children[1]
+    assert_equal(:LASGN, assignment.type)
+    assert_equal(:error, assignment.children.first)
+    assert_equal(:ERRINFO, assignment.children.last.type)
   end
 
   def test_op_asgn2

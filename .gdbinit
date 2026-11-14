@@ -583,7 +583,7 @@ document rp_imemo
 end
 
 define nd_type
-  print (enum node_type)((((NODE*)($arg0))->flags&RUBY_NODE_TYPEMASK)>>RUBY_NODE_TYPESHIFT)
+  print (enum rb_node_type)((rb_node_t*)($arg0))->type
 end
 document nd_type
   Print a Ruby' node type.
@@ -597,7 +597,7 @@ document nd_file
 end
 
 define nd_line
-  print ((unsigned int)((((NODE*)($arg0))->flags>>RUBY_NODE_LSHIFT)&RUBY_NODE_LMASK))
+  print ((rb_node_t*)($arg0))->line
 end
 document nd_line
   Print the source line number of a node.
@@ -827,9 +827,7 @@ define nd_tval
 end
 
 define nd_tree
-  set $buf = (struct RString *)rb_str_buf_new(0)
-  call dump_node((VALUE)($buf), rb_str_tmp_new(0), 0, ($arg0))
-  printf "%s\n", $buf->as.heap.ptr
+  call rb_io_write(rb_stdout, rb_parser_dump_tree((rb_node_t*)($arg0), 0))
 end
 
 define rb_p

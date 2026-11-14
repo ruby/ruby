@@ -214,7 +214,7 @@ struct iseq_compile_data {
     const rb_compile_option_t *option;
     struct rb_id_table *ivar_cache_table;
     const struct rb_builtin_function *builtin_function_table;
-    const NODE *root_node;
+    const rb_node_t *root_node;
     bool catch_except_p; // If a frame of this ISeq may catch exception, set true.
 #if OPT_SUPPORT_JOKE
     st_table *labels_table;
@@ -281,7 +281,7 @@ int rb_vm_insn_addr2opcode(const void *addr);
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */
-VALUE rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node);
+VALUE rb_iseq_compile_node(rb_iseq_t *iseq, const rb_node_t *node);
 VALUE rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func * ifunc);
 VALUE *rb_iseq_original_iseq(const rb_iseq_t *iseq);
 void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,

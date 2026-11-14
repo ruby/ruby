@@ -1226,7 +1226,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(['--dump=parse', '-e', 'begin'],
                       "", [], /unexpected end-of-input/, success: false)
     assert_in_out_err(['--dump=parse', '--dump=+error_tolerant', '-e', 'begin'],
-                      "", /^# @/, /unexpected end-of-input/, success: true)
+                      "", /^@ ProgramNode\b/, /unexpected end-of-input/, success: true)
     assert_in_out_err(['--dump=+error_tolerant', '-e', 'begin p :run'],
                       "", [], /unexpected end-of-input/, success: false)
   end

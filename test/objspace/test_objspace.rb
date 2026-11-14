@@ -1000,6 +1000,16 @@ class TestObjSpace < Test::Unit::TestCase
     children.each {|child| ObjectSpace.internal_class_of(child).itself} # this used to crash
   end
 
+  def test_ast_memsize
+    simple = RubyVM::AbstractSyntaxTree.parse('nil')
+    many = RubyVM::AbstractSyntaxTree.parse("[#{(['nil'] * 1000).join(',')}]")
+    assert_operator(ObjectSpace.memsize_of(many), :>, ObjectSpace.memsize_of(simple) + 20_000)
+
+    short = RubyVM::AbstractSyntaxTree.parse('""')
+    long = RubyVM::AbstractSyntaxTree.parse('"' + 'a' * 16_384 + '"')
+    assert_operator(ObjectSpace.memsize_of(long), :>=, ObjectSpace.memsize_of(short) + 16_384)
+  end
+
   def test_name_error_message
     begin
       bar
