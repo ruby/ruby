@@ -1,0 +1,91 @@
+name: Comment ZJIT Callgrind
+
+# Keep the write token out of the job that builds and executes PR code.
+# This workflow must be on the default branch to receive workflow_run events.
+on:
+  workflow_run:
+    workflows: ['ZJIT Callgrind']
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: zjit-callgrind-comment-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  comment:
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.path == '.github/workflows/zjit-callgrind.yml'
+    runs-on: ubuntu-24.04
+    steps:
+      # Do not check out PR code or execute anything from the artifact here.
+      - name: Find the originating PR and reject stale runs
+        id: pr
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const {owner, repo} = context.repo;
+            let candidates = run.pull_requests;
+            // GitHub sometimes omits pull_requests for fork workflow runs.
+            if (!candidates.length) {
+              candidates = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
+                owner, repo, commit_sha: run.head_sha, per_page: 100
+              });
+            }
+            const matches = [];
+            for (const candidate of candidates) {
+              const {data: pr} = await github.rest.pulls.get({owner, repo, pull_number: candidate.number});
+              if (pr.state === 'open' && pr.head.sha === run.head_sha &&
+                  pr.base.repo.full_name === `${owner}/${repo}`) matches.push(pr);
+            }
+            if (matches.length === 1) core.setOutput('number', matches[0].number);
+
+      - name: Download report from this run only
+        if: ${{ steps.pr.outputs.number }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: zjit-callgrind
+          path: report
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Create or update benchmark comment
+        if: ${{ steps.pr.outputs.number }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        with:
+          script: |
+            const fs = require('fs');
+            const {owner, repo} = context.repo;
+            const issue_number = Number(process.env.PR_NUMBER);
+            const run = context.payload.workflow_run;
+            // Recheck after downloading, in case a newer commit arrived meanwhile.
+            const {data: pr} = await github.rest.pulls.get({owner, repo, pull_number: issue_number});
+            if (pr.state !== 'open' || pr.head.sha !== run.head_sha) return;
+            const marker = '<!-- zjit-callgrind -->';
+            const report = fs.readFileSync('report/comment.md', 'utf8');
+            if (!report.startsWith(marker) || Buffer.byteLength(report) > 20000) {
+              throw new Error('Invalid Callgrind report');
+            }
+            // Treat the artifact as untrusted text: no mentions or injected HTML.
+            const safeReport = report.slice(marker.length)
+              .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+              .replaceAll('@', '&#64;');
+            const body = `${marker}${safeReport}\n\n[Full results and profiles](${run.html_url})`;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number, per_page: 100
+            });
+            const previous = comments.find(c => c.user.login === 'github-actions[bot]' && c.body.startsWith(marker));
+            if (previous) {
+              await github.rest.issues.updateComment({owner, repo, comment_id: previous.id, body});
+            } else {
+              await github.rest.issues.createComment({owner, repo, issue_number, body});
+            }
