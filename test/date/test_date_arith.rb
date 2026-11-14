@@ -380,4 +380,15 @@ class TestDateArith < Test::Unit::TestCase
     p.step(q, o) {|d| a << d}
     assert_empty(a)
   end
+
+  def test_step__incomparable_limit
+    d = Date.new(2000,1,1)
+    [Float::NAN, Object.new].each do |limit|
+      no = proc {flunk("yielded for #{limit.inspect}")}
+      assert_raise(ArgumentError) { d.upto(limit, &no) }
+      assert_raise(ArgumentError) { d.downto(limit, &no) }
+      assert_raise(ArgumentError) { d.step(limit, 1, &no) }
+      assert_raise(ArgumentError) { d.step(limit, -1, &no) }
+    end
+  end
 end

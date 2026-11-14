@@ -6885,7 +6885,7 @@ d_lite_step(int argc, VALUE *argv, VALUE self)
     date = self;
     c = f_cmp(step, INT2FIX(0));
     if (c < 0) {
-	while (FIX2INT(d_lite_cmp(date, limit)) >= 0) {
+	while (rb_cmpint(d_lite_cmp(date, limit), date, limit) >= 0) {
 	    rb_yield(date);
 	    date = d_lite_plus(date, step);
 	}
@@ -6895,7 +6895,7 @@ d_lite_step(int argc, VALUE *argv, VALUE self)
 	    rb_yield(date);
     }
     else /* if (c > 0) */ {
-	while (FIX2INT(d_lite_cmp(date, limit)) <= 0) {
+	while (rb_cmpint(d_lite_cmp(date, limit), date, limit) <= 0) {
 	    rb_yield(date);
 	    date = d_lite_plus(date, step);
 	}
@@ -6917,7 +6917,7 @@ d_lite_upto(VALUE self, VALUE max)
     RETURN_ENUMERATOR(self, 1, &max);
 
     date = self;
-    while (FIX2INT(d_lite_cmp(date, max)) <= 0) {
+    while (rb_cmpint(d_lite_cmp(date, max), date, max) <= 0) {
 	rb_yield(date);
 	date = d_lite_plus(date, INT2FIX(1));
     }
@@ -6938,7 +6938,7 @@ d_lite_downto(VALUE self, VALUE min)
     RETURN_ENUMERATOR(self, 1, &min);
 
     date = self;
-    while (FIX2INT(d_lite_cmp(date, min)) >= 0) {
+    while (rb_cmpint(d_lite_cmp(date, min), date, min) >= 0) {
 	rb_yield(date);
 	date = d_lite_plus(date, INT2FIX(-1));
     }
