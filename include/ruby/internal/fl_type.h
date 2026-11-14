@@ -260,7 +260,8 @@ ruby_fl_type {
     RUBY_FL_WEAK_REFERENCE = (1<<9),
 
    /**
-    * This flag is no longer in use
+    * On a ::RString this flag (internally `STR_NO_TERM`) marks a view whose
+    * shared buffer is not NUL terminated.  Unused on other types.
     *
     * @internal
     */
