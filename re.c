@@ -1407,6 +1407,9 @@ match_regexp(VALUE match)
     if (NIL_P(regexp)) {
         VALUE str = rb_reg_nth_match(0, match);
         regexp = rb_reg_regcomp(rb_reg_quote(str));
+        if (RB_OBJ_SHAREABLE_P(match)) {
+            return rb_ractor_make_shareable(regexp);
+        }
         RB_OBJ_WRITE(match, &RMATCH(match)->regexp, regexp);
     }
     return regexp;
@@ -5321,7 +5324,7 @@ rb_reg_s_linear_time_p(int argc, VALUE *argv, VALUE self)
 }
 
 /* :nodoc: */
-static VALUE
+VALUE
 rb_reg_init_copy(VALUE copy, VALUE re)
 {
     if (!OBJ_INIT_COPY(copy, re)) return copy;
