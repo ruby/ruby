@@ -1537,7 +1537,7 @@ pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_
         case PM_ENCODING_KIND_ASCII:
             return ((n > 0) && (*b < 0x80)) ? 1 : 0;
         case PM_ENCODING_KIND_SINGLE_BYTE:
-            return 1;
+            return n > 0 ? 1 : 0;
         case PM_ENCODING_KIND_EUC_JP:
             return pm_encoding_euc_jp_char_width(b, n);
         case PM_ENCODING_KIND_SHIFT_JIS:
