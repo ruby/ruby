@@ -8196,6 +8196,141 @@ rb_str_bit_count(int argc, VALUE *argv, VALUE str)
     return ULL2NUM(str_count_bits_region(ptr, beg, len, lsb_first));
 }
 
+/*
+ * The bit argument of bit_index: 0 or 1.  true and false are not accepted,
+ * because their meaning as a bit value depends on the logic of the signal.
+ */
+static int
+str_bit_arg(VALUE bit)
+{
+    VALUE integer = rb_to_int(bit);
+    if (integer == INT2FIX(0)) return 0;
+    if (integer == INT2FIX(1)) return 1;
+    rb_raise(rb_eArgError, "bit must be 0 or 1");
+    UNREACHABLE_RETURN(0);
+}
+
+/*
+ * The logical offset of the first bit of [beg, end) that equals bit, or
+ * UINT64_MAX when no bit of the window matches.  The caller keeps end
+ * within the string and beg below end.  A byte with no matching bit is
+ * skipped in one step; a byte with a match is resolved with a bit scan
+ * instruction.
+ */
+static uint64_t
+str_bit_index(const unsigned char *ptr, uint64_t beg, uint64_t end, int bit, bool lsb_first)
+{
+    unsigned char invert = bit ? 0 : 0xFF;
+    rb_len_t byte_index = (rb_len_t)(beg / CHAR_BIT);
+    rb_len_t last_byte = (rb_len_t)((end - 1) / CHAR_BIT);
+    unsigned int lo = (unsigned int)(beg % CHAR_BIT);
+
+    for (; byte_index <= last_byte; byte_index++, lo = 0) {
+        unsigned int hi = byte_index == last_byte ? (unsigned int)((end - 1) % CHAR_BIT) : 7;
+        unsigned char mask = str_bit_region_byte_mask(lo, hi, lsb_first);
+        unsigned int matching = (unsigned int)((ptr[byte_index] ^ invert) & mask);
+        if (matching == 0) continue;
+
+        /* lsb_first: the lowest physical bit is the lowest logical one.
+         * MSB-first: the highest physical bit is the lowest logical one. */
+        unsigned int logical = lsb_first ? (unsigned int)ntz_int32(matching)
+                                         : 7 - (31 - nlz_int32(matching));
+        return (uint64_t)byte_index * CHAR_BIT + logical;
+    }
+    return UINT64_MAX;
+}
+
+/*
+ *  call-seq:
+ *    bit_index(bit, offset = 0, lsb_first: true) -> integer or nil
+ *    bit_index(bit, offset, length, lsb_first: true) -> integer or nil
+ *    bit_index(bit, range, lsb_first: true) -> integer or nil
+ *
+ *  Returns the zero-based bit offset of the first bit in +self+ that is equal
+ *  to +bit+, or +nil+ if there is no such bit.
+ *
+ *  +bit+ is +0+ or +1+:
+ *
+ *    data = "\xF0"
+ *    data.bit_index(1)     # => 4
+ *    data.bit_index(0)     # => 0
+ *    "\x00".bit_index(1)   # => nil
+ *
+ *  With +offset+, the search begins at zero-based bit +offset+.
+ *  The returned offset is still counted from the start of +self+:
+ *
+ *    data.bit_index(1, 5)  # => 5
+ *    data.bit_index(0, 4)  # => nil
+ *    data.bit_index(1, 8)  # => nil
+ *
+ *  With +length+ or +range+, the search is limited to a window of bits, given as
+ *  for #bit_count. The search stops at the end of the window or at the end of
+ *  +self+, whichever comes first:
+ *
+ *    data.bit_index(1, 0, 4)   # => nil
+ *    data.bit_index(1, 0...4)  # => nil
+ *    data.bit_index(1, 4..)    # => 4
+ *    data.bit_index(1, 7, 100) # => 7
+ *
+ *  A byte that holds no matching bit is skipped in one step, so a search over
+ *  sparse data is fast.
+ *
+ *  By default, bits within each byte are numbered from least-significant to
+ *  most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
+ *  within each byte are numbered from most-significant to least-significant:
+ *
+ *    "\xF0".bit_index(1, lsb_first: false) # => 0
+ *    "\xF0".bit_index(0, lsb_first: false) # => 4
+ *
+ *  The search is over the bytes of +self+ and is independent of string encoding.
+ *  Raises +IndexError+ if +offset+ or an endpoint of +range+ is negative.
+ *  Raises +ArgumentError+ if +length+ is negative.
+ *  Raises +ArgumentError+ if +offset+ or +length+ is too large to be represented.
+ *  Raises +ArgumentError+ if +bit+ is an Integer other than +0+ or +1+.
+ *  Raises +TypeError+ if +bit+ is not an Integer, such as +true+ or +false+.
+ *  Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.
+ *
+ */
+static VALUE
+rb_str_bit_index(int argc, VALUE *argv, VALUE str)
+{
+    VALUE bit_v, index, length, opts;
+    uint64_t beg = 0, len = 0;
+
+    int nargs = rb_scan_args(argc, argv, "12:", &bit_v, &index, &length, &opts);
+    bool lsb_first = str_lsb_first_from_opts(opts);
+    int bit = str_bit_arg(bit_v);
+
+    /* Coerce before the length is read: to_int may resize self. */
+    bool is_range = nargs >= 2 && rb_obj_is_kind_of(index, rb_cRange);
+    struct str_bit_range range = {0};
+    if (is_range) {
+        if (nargs == 3) {
+            rb_raise(rb_eArgError, "bit length not allowed with a Range");
+        }
+        str_bit_range_to_offsets(index, &range);
+    }
+    else if (nargs >= 2) {
+        beg = str_bit_offset_from_index(index).value;
+        if (nargs == 3) len = str_bit_length_from_index(length);
+    }
+
+    uint64_t total_bits = str_bit_size(RSTRING_LEN(str));
+    if (is_range) {
+        if (!str_bit_range_resolve(&range, total_bits, &beg, &len)) return Qnil;
+    }
+    else {
+        if (beg >= total_bits) return Qnil;
+        if (nargs < 3) len = total_bits - beg;
+    }
+    /* A search clamps: the window ends at the end of self, as String#index. */
+    if (len > total_bits - beg) len = total_bits - beg;
+    if (len == 0) return Qnil;
+
+    uint64_t found = str_bit_index((const unsigned char *)RSTRING_PTR(str), beg, beg + len, bit, lsb_first);
+    return found == UINT64_MAX ? Qnil : ULL2NUM(found);
+}
+
 static void
 str_check_bitwise_length(VALUE str, VALUE other)
 {
@@ -16386,6 +16521,7 @@ Init_String(void)
     rb_define_method(rb_cString, "bit_clear", rb_str_bit_clear, -1);
     rb_define_method(rb_cString, "bit_flip", rb_str_bit_flip, -1);
     rb_define_method(rb_cString, "bit_count", rb_str_bit_count, -1);
+    rb_define_method(rb_cString, "bit_index", rb_str_bit_index, -1);
     rb_define_method(rb_cString, "bitwise_not", rb_str_bitwise_not, 0);
     rb_define_method(rb_cString, "bitwise_not!", rb_str_bitwise_not_bang, 0);
     rb_define_method(rb_cString, "bitwise_and", rb_str_bitwise_and, 1);
