@@ -47,6 +47,20 @@ module Gem::BUNDLED_GEMS # :nodoc:
   DLEXT = /\.#{Regexp.union(dlext)}\z/
   LIBEXT = /\.#{Regexp.union("rb", *dlext)}\z/
 
+  # Returns a pattern matching the require targets find_gem may resolve to a
+  # bundled gem: those whose first segment, after the prefixes find_gem strips,
+  # is a SINCE or EXACT key or the part of a dashed SINCE key before a dash.
+  def self.candidate_pattern
+    first_segments = SINCE.keys + EXACT.keys + SINCE.keys.flat_map do |gem|
+      parts = gem.split("-")
+      (1...parts.size).map { |i| parts.first(i).join("-") }
+    end
+    /\A(?:#{Regexp.escape(ARCHDIR)})?(?:#{Regexp.escape(LIBDIR)})?#{Regexp.union(first_segments.uniq)}(?:[\/.]|\z)/
+  end
+
+  # Most requires don't match, which find_gem checks before allocating anything.
+  CANDIDATE = candidate_pattern
+
   # Decorate Kernel#require so that requiring a gem that is no longer a default
   # gem emits a warning. Called by Bundler during setup
   # (lib/bundler/rubygems_integration.rb), guarded by respond_to?(:replace_require)
@@ -123,7 +137,10 @@ module Gem::BUNDLED_GEMS # :nodoc:
   # the vast majority of candidates before the costly checks in warning?
   # (see [Bug #20641]).
   def self.find_gem(name)
-    feature = File.path(name).sub(LIBEXT, "")
+    path = File.path(name)
+    return unless CANDIDATE.match?(path)
+
+    feature = path.sub(LIBEXT, "")
 
     if feature.include?("/")
       # bootsnap expands `require "csv"` to `require "#{LIBDIR}/csv.rb"`,
