@@ -4028,6 +4028,17 @@ class TestString < Test::Unit::TestCase
     assert_equal(false, ("\u3042"*10).byteslice(0, 20).valid_encoding?, bug7954)
   end
 
+  def test_byte_apis_accept_string_with_to_int
+    s = S("hello")
+    str = Class.new(String) { def to_int; 2; end }.new
+    assert_equal("l", s.byteslice(str, 1))
+    assert_equal(108, s.getbyte(str))
+    assert_equal(2, s.byteindex(S("l"), str))
+    assert_equal(2, s.byterindex(S("l"), str))
+    assert_equal(120, S("hello").setbyte(str, 120))
+    assert_bytesplice_result("ello", S("hello"), 0, 2, "bye", str, 1)
+  end
+
   def test_shared_middle_string_terminator
     ten = "0123456789"
     hundred = ten * 10

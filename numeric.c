@@ -3412,9 +3412,6 @@ rb_num2ll(VALUE val)
     else if (RB_BIGNUM_TYPE_P(val)) {
         return rb_big2ll(val);
     }
-    else if (val == Qfalse || val == Qtrue || RB_TYPE_P(val, T_STRING)) {
-        rb_no_implicit_conversion(val, "Integer");
-    }
 
     val = rb_to_int(val);
     return NUM2LL(val);
