@@ -124,6 +124,28 @@ rb_node_defined_value(const rb_defined_node_t *node)
     return value;
 }
 
+/* Inspect a literal interpolation without replacing its source tree. */
+static inline const rb_string_node_t *
+rb_node_embedded_string(const rb_node_t *node)
+{
+    if (!node || node->type != RB_EMBEDDED_STATEMENTS_NODE) return NULL;
+    node = (const rb_node_t *)RB_NODE_EMBEDDED_STATEMENTS(node)->statements;
+    while (node) {
+        if (node->type == RB_STATEMENTS_NODE) {
+            const rb_node_list2_t *body = &RB_NODE_STATEMENTS(node)->body;
+            if (body->size != 1) return NULL;
+            node = body->nodes[0];
+        }
+        else if (node->type == RB_BEGIN_NODE && !RB_NODE_BEGIN(node)->rescue_clause && !RB_NODE_BEGIN(node)->ensure_clause) {
+            node = (const rb_node_t *)RB_NODE_BEGIN(node)->statements;
+        }
+        else {
+            return node->type == RB_STRING_NODE ? RB_NODE_STRING(node) : NULL;
+        }
+    }
+    return NULL;
+}
+
 #define NODE_LSHIFT (NODE_TYPESHIFT+7)
 #define NODE_LMASK  (((SIGNED_VALUE)1<<(sizeof(VALUE)*CHAR_BIT-NODE_LSHIFT))-1)
 
