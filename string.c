@@ -278,7 +278,6 @@ STR_EMBEDDABLE_P(rb_len_t len, rb_len_t termlen)
 {
     RUBY_ASSERT(len >= 0, "negative length: %" PRIdLEN, len);
     RUBY_ASSERT(termlen > 0, "non-positive termlen: %" PRIdLEN, termlen);
-    RUBY_ASSERT(termlen <= 4, "too big termlen: %" PRIdLEN, termlen);
     return rb_gc_size_allocatable_p(rb_str_embed_size(len, termlen));
 }
 
