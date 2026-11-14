@@ -540,30 +540,28 @@ static inline bool unsafe_html_tag_p(const char *ptr, const char *end)
 {
     size_t remaining = end - ptr;
 
-    if (remaining < 4) {
+    if (remaining < 4) return false;
+    if (memcmp(ptr, "<!--", 4) == 0) return true;
+
+    union { uint64_t num; char bytes[8]; } chunk;
+    if (remaining >= 8) {
+        memcpy(chunk.bytes, ptr, 8);
+    }
+    else if (remaining == 7) {
+        chunk.num = 0;
+        memcpy(chunk.bytes, ptr, 7);
+    }
+    else {
         return false;
     }
 
-    if (memcmp(ptr, "<!--", 4) == 0) {
-        return true;
-    }
+    chunk.num |= 0x2020202020202020;
 
-    ptr++;
-    remaining--;
-    if (*ptr == '/') {
-        ptr++;
-        remaining--;
-    }
+    if (memcmp(chunk.bytes, "</script", 8) == 0) return true;
 
-    return (
-        remaining >= 6 &&
-        (ptr[0] | 0x20) == 's' &&
-        (ptr[1] | 0x20) == 'c' &&
-        (ptr[2] | 0x20) == 'r' &&
-        (ptr[3] | 0x20) == 'i' &&
-        (ptr[4] | 0x20) == 'p' &&
-        (ptr[5] | 0x20) == 't'
-    );
+    chunk.bytes[7] = 0;
+
+    return memcmp(chunk.bytes, "<script\0", 8) == 0;
 }
 
 static inline unsigned char search_script_safe_escape(search_state *search)
