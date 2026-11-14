@@ -93,7 +93,10 @@ pm_iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int node
     else {
         ADD_ELEM(seq, (LINK_ELEMENT *) new_insn_body(iseq, line, node_id, BIN(getlocal), 2, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level)));
     }
-    if (level > 0) access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qfalse);
+    if (level > 0) {
+        update_lvar_state_for_read(iseq, level, idx);
+        access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qfalse);
+    }
 }
 
 static void
@@ -1242,6 +1245,7 @@ pm_compile_loop(rb_iseq_t *iseq, const pm_node_location_t *node_location, pm_nod
     // lexical scope.
     struct iseq_compile_data_ensure_node_stack enl;
     push_ensure_entry(iseq, &enl, NULL, NULL);
+    ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth++;
 
     // begin; end while true
     if (flags & PM_LOOP_FLAGS_BEGIN_MODIFIER) {
@@ -1295,6 +1299,7 @@ pm_compile_loop(rb_iseq_t *iseq, const pm_node_location_t *node_location, pm_nod
     ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
     ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
     ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
+    ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth--;
     ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->prev;
 
     return;
@@ -3772,6 +3777,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     rb_code_location_t code_location = { 0 };
     int node_id = location.node_id;
 
+    if (call_node->receiver == NULL) access_outer_block_by_call(iseq, method_id);
+
     if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
         if (PM_BRANCH_COVERAGE_P(iseq)) {
             uint32_t end_cursor = 0;
@@ -4048,6 +4055,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
         // defined?(yield)
         //          ^^^^^
         iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        access_outer_block(iseq, "defined?(yield)");
 
         PUSH_INSN(ret, location, putnil);
         PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_YIELD), 0, PUSH_VAL(DEFINED_YIELD));
@@ -5511,12 +5519,16 @@ pm_compile_rescue(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_node_lo
     pm_scope_node_t rescue_scope_node;
     pm_scope_node_init((const pm_node_t *) cast->rescue_clause, &rescue_scope_node, scope_node);
 
+    bool prev_rescue_has_retry = ISEQ_COMPILE_DATA(iseq)->rescue_has_retry;
+    ISEQ_COMPILE_DATA(iseq)->rescue_has_retry = false;
     rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(
         &rescue_scope_node,
         rb_str_concat(rb_str_new2("rescue in "), ISEQ_BODY(iseq)->location.label),
         ISEQ_TYPE_RESCUE,
         pm_node_line_number_cached((const pm_node_t *) cast->rescue_clause, scope_node)
     );
+    bool retried = ISEQ_COMPILE_DATA(iseq)->rescue_has_retry;
+    ISEQ_COMPILE_DATA(iseq)->rescue_has_retry = prev_rescue_has_retry;
 
     pm_scope_node_destroy(&rescue_scope_node);
 
@@ -5526,6 +5538,7 @@ pm_compile_rescue(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_node_lo
 
     bool prev_in_rescue = ISEQ_COMPILE_DATA(iseq)->in_rescue;
     ISEQ_COMPILE_DATA(iseq)->in_rescue = true;
+    if (retried) ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth++;
 
     if (cast->statements != NULL) {
         PM_COMPILE_NOT_POPPED((const pm_node_t *) cast->statements);
@@ -5535,6 +5548,7 @@ pm_compile_rescue(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_node_lo
         PUSH_INSN(ret, location, putnil);
     }
 
+    if (retried) ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth--;
     ISEQ_COMPILE_DATA(iseq)->in_rescue = prev_in_rescue;
     PUSH_LABEL(ret, lend);
 
@@ -7580,8 +7594,10 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
             uint32_t node_id = node->receiver->node_id;
             int idx, level;
 
-            if (iseq_block_param_id_p(iseq, pm_constant_id_lookup(scope_node, read_node_cast->name), &idx, &level)) {
+            ID id = pm_constant_id_lookup(scope_node, read_node_cast->name);
+            if (iseq_block_param_id_p(iseq, id, &idx, &level)) {
                 ADD_ELEM(ret, (LINK_ELEMENT *) new_insn_body(iseq, location.line, node_id, BIN(getblockparamproxy), 2, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level)));
+                if (level > 0) access_outer_variables(iseq, level, id, false);
             }
             else {
                 PM_COMPILE_NOT_POPPED(node->receiver);
@@ -8117,6 +8133,7 @@ pm_compile_forwarding_super_node(rb_iseq_t *iseq, const pm_forwarding_super_node
     }
     else {
         iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        access_outer_block(iseq, "super");
     }
 
     PUSH_INSN(ret, *location, putself);
@@ -8521,6 +8538,7 @@ pm_compile_redo_node(rb_iseq_t *iseq, const pm_node_location_t *location, LINK_A
     else if (ISEQ_BODY(iseq)->type != ISEQ_TYPE_EVAL && ISEQ_COMPILE_DATA(iseq)->start_label && can_add_ensure_iseq(iseq)) {
         LABEL *splabel = NEW_LABEL(0);
 
+        iseq_set_lvar_redo(iseq);
         PUSH_LABEL(ret, splabel);
         pm_add_ensure_iseq(ret, iseq, 0, scope_node);
         PUSH_ADJUST(ret, *location, ISEQ_COMPILE_DATA(iseq)->start_label);
@@ -8553,6 +8571,7 @@ pm_compile_redo_node(rb_iseq_t *iseq, const pm_node_location_t *location, LINK_A
         }
 
         if (ip != 0) {
+            if (ISEQ_COMPILE_DATA(ip)->redo_label == 0) iseq_set_lvar_redo(ip);
             PUSH_INSN(ret, *location, putnil);
             PUSH_INSN1(ret, *location, throw, INT2FIX(VM_THROW_NO_ESCAPE_FLAG | TAG_REDO));
             if (popped) PUSH_INSN(ret, *location, pop);
@@ -8743,6 +8762,7 @@ pm_compile_super_node(rb_iseq_t *iseq, const pm_super_node_t *node, const pm_nod
 
     if (!node->block) {
         iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        access_outer_block(iseq, "super");
     }
 
     if ((flags & VM_CALL_ARGS_BLOCKARG) && (flags & VM_CALL_KW_SPLAT) && !(flags & VM_CALL_KW_SPLAT_MUT)) {
@@ -8799,11 +8819,7 @@ pm_compile_yield_node(rb_iseq_t *iseq, const pm_yield_node_t *node, const pm_nod
     iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
     if (popped) PUSH_INSN(ret, *location, pop);
 
-    int level = 0;
-    for (const rb_iseq_t *tmp_iseq = iseq; tmp_iseq != ISEQ_BODY(iseq)->local_iseq; level++) {
-        tmp_iseq = ISEQ_BODY(tmp_iseq)->parent_iseq;
-    }
-
+    int level = iseq_local_level(iseq);
     if (level > 0) access_outer_variables(iseq, level, rb_intern("yield"), true);
 }
 
@@ -10350,12 +10366,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_scope_node_t rescue_scope_node;
         pm_scope_node_init((const pm_node_t *) cast, &rescue_scope_node, scope_node);
 
+        bool prev_rescue_has_retry = ISEQ_COMPILE_DATA(iseq)->rescue_has_retry;
+        ISEQ_COMPILE_DATA(iseq)->rescue_has_retry = false;
         rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(
             &rescue_scope_node,
             rb_str_concat(rb_str_new2("rescue in "), ISEQ_BODY(iseq)->location.label),
             ISEQ_TYPE_RESCUE,
             pm_node_line_number_cached(cast->rescue_expression, scope_node)
         );
+        bool retried = ISEQ_COMPILE_DATA(iseq)->rescue_has_retry;
+        ISEQ_COMPILE_DATA(iseq)->rescue_has_retry = prev_rescue_has_retry;
 
         pm_scope_node_destroy(&rescue_scope_node);
 
@@ -10367,7 +10387,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         lend->rescued = LABEL_RESCUE_END;
 
         PUSH_LABEL(ret, lstart);
+        if (retried) ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth++;
         PM_COMPILE_NOT_POPPED(cast->expression);
+        if (retried) ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth--;
         PUSH_LABEL(ret, lend);
 
         PUSH_INSN(ret, location, nop);
@@ -10390,6 +10412,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // retry
         // ^^^^^
         if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_RESCUE) {
+            iseq_set_rescue_has_retry(iseq);
             PUSH_INSN(ret, location, putnil);
             PUSH_INSN1(ret, location, throw, INT2FIX(TAG_RETRY));
             if (popped) PUSH_INSN(ret, location, pop);

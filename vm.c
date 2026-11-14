@@ -1482,8 +1482,25 @@ rb_proc_dup_with_iseq_and_recipe(VALUE self, const rb_iseq_t *iseq, VALUE recipe
 struct collect_outer_variable_name_data {
     VALUE ary;
     VALUE read_only;
-    bool yield;
+    const char *block_use; /* how the block of the method is used, if it is */
 };
+
+/* Pseudo outer variables recorded by compile.c for uses of the block of the method */
+static const char *const outer_block_uses[] = {
+    "yield", "block_given?", "iterator?", "defined?(yield)", "super",
+};
+
+static int
+outer_block_use_index(ID id)
+{
+    static ID ids[numberof(outer_block_uses)];
+
+    for (int i = 0; i < (int)numberof(outer_block_uses); i++) {
+        if (!ids[i]) ids[i] = rb_intern(outer_block_uses[i]);
+        if (id == ids[i]) return i;
+    }
+    return -1;
+}
 
 static VALUE
 ID2NUM(ID id)
@@ -1508,21 +1525,41 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
 {
     struct collect_outer_variable_name_data *data = (struct collect_outer_variable_name_data *)ptr;
 
-    if (id == rb_intern("yield")) {
-        data->yield = true;
+    int block_use = outer_block_use_index(id);
+    if (block_use >= 0) {
+        /* prefer yield, the first one, if used */
+        if (!data->block_use || block_use == 0) data->block_use = outer_block_uses[block_use];
+        return ID_TABLE_CONTINUE;
+    }
+
+    VALUE *store;
+    if (val == Qtrue /* write */) {
+        store = &data->ary;
     }
     else {
-        VALUE *store;
-        if (val == Qtrue /* write */) {
-            store = &data->ary;
-        }
-        else {
-            store = &data->read_only;
-        }
-        if (*store == Qfalse) *store = rb_ary_new();
-        rb_ary_push(*store, ID2NUM(id));
+        store = &data->read_only;
     }
+    if (*store == Qfalse) *store = rb_ary_new();
+    rb_ary_push(*store, ID2NUM(id));
     return ID_TABLE_CONTINUE;
+}
+
+/* Returns the value of the i-th local variable of env.  The block parameter of a
+ * method is only set when it is first read (see getblockparam), so set it if needed. */
+static VALUE
+env_local_value(const rb_env_t *env, unsigned int i)
+{
+    const rb_iseq_t *iseq = env->iseq;
+    const VALUE *ep = env->ep;
+
+    if (ISEQ_BODY(iseq)->local_iseq == iseq &&
+            ISEQ_BODY(iseq)->param.flags.has_block &&
+            (unsigned int)ISEQ_BODY(iseq)->param.block_start == i &&
+            !VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
+        RB_OBJ_WRITE(env, &env->env[i], rb_vm_bh_to_procval(GET_EC(), VM_ENV_BLOCK_HANDLER(ep)));
+        VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
+    }
+    return env->env[i];
 }
 
 static const rb_env_t *
@@ -1570,7 +1607,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                     }
 
                     // check shareable
-                    VALUE v = src_env->env[j];
+                    VALUE v = env_local_value(src_env, j);
                     if (!rb_ractor_shareable_p(v)) {
                         VALUE name = rb_id2str(id);
                         VALUE msg = rb_sprintf("cannot make a shareable Proc because it can refer"
@@ -1587,6 +1624,12 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                 }
             }
         }
+    }
+
+    // The block parameter, if read, was copied above: read it from there, not from the
+    // block handler of the copy, which has none.
+    if (VM_ENV_FLAGS(src_ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
+        VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
     }
 
     if (!VM_ENV_LOCAL_P(src_ep)) {
@@ -1611,6 +1654,32 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
     return copied_env;
 }
 
+/* Same checks as env_copy(), without raising or allocating the copy */
+static bool
+env_shareable_p(const VALUE *src_ep, VALUE read_only_variables)
+{
+    if (!read_only_variables) return true;
+
+    for (long i = 0; i < RARRAY_LEN(read_only_variables); i++) {
+        ID id = NUM2ID(RARRAY_AREF(read_only_variables, i));
+
+        for (const VALUE *ep = src_ep; ep; ep = VM_ENV_LOCAL_P(ep) ? NULL : VM_ENV_PREV_EP(ep)) {
+            const rb_env_t *env = (rb_env_t *)VM_ENV_ENVVAL(ep);
+            const struct rb_iseq_constant_body *body = ISEQ_BODY(env->iseq);
+            unsigned int j;
+            for (j=0; j<body->local_table_size; j++) {
+                if (id == body->local_table[j]) break;
+            }
+            if (j < body->local_table_size) {
+                if (iseq_lvar_state_get(iseq_lvar_states(body), j) == lvar_reassigned) return false;
+                if (!rb_ractor_shareable_p(env_local_value(env, j))) return false;
+                break;
+            }
+        }
+    }
+    return true;
+}
+
 static void
 proc_isolate_env(VALUE self, rb_proc_t *proc, VALUE read_only_variables)
 {
@@ -1620,15 +1689,21 @@ proc_isolate_env(VALUE self, rb_proc_t *proc, VALUE read_only_variables)
     RB_OBJ_WRITTEN(self, Qundef, env);
 }
 
+// Returns Qundef instead of raising if !raise and some outer variable is written
+// or the block of the method is used.
 static VALUE
-proc_shared_outer_variables(struct rb_id_table *outer_variables, const char *message)
+proc_shared_outer_variables(struct rb_id_table *outer_variables, bool raise, const char *message)
 {
     struct collect_outer_variable_name_data data = {
         .ary = Qfalse,
         .read_only = Qfalse,
-        .yield = false,
+        .block_use = NULL,
     };
     rb_id_table_foreach(outer_variables, collect_outer_variable_names, (void *)&data);
+
+    if (!raise && (data.ary != Qfalse || data.block_use)) {
+        return Qundef;
+    }
 
     if (data.ary != Qfalse) {
         VALUE str = rb_sprintf("can not %s because it accesses outer variables", message);
@@ -1642,31 +1717,35 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, const char *mes
             rb_str_append(str, name);
         }
         if (*sep == ',') rb_str_cat_cstr(str, ")");
-        rb_str_cat_cstr(str, data.yield ? " and uses 'yield'." : ".");
+        if (data.block_use) rb_str_catf(str, " and uses '%s'", data.block_use);
+        rb_str_cat_cstr(str, ".");
         rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, str));
     }
-    else if (data.yield) {
-        rb_raise(rb_eRactorIsolationError, "can not %s because it uses 'yield'.", message);
+    else if (data.block_use) {
+        rb_raise(rb_eRactorIsolationError, "can not %s because it uses '%s'.", message, data.block_use);
     }
 
     return data.read_only;
 }
 
-VALUE
-rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
+// Returns Qfalse instead of raising if !raise and the Proc cannot be made shareable.
+// The Proc is only modified on success.
+static VALUE
+proc_ractor_make_shareable(VALUE self, VALUE replace_self, bool raise)
 {
     const rb_iseq_t *iseq = vm_proc_iseq(self);
 
     if (iseq) {
         rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
 
-        if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
-
-        if (!UNDEF_P(replace_self)) {
-            RB_OBJ_WRITE(self, &proc->block.as.captured.self, replace_self);
+        if (proc->block.type != block_type_iseq) {
+            if (!raise) return Qfalse;
+            rb_raise(rb_eRuntimeError, "not supported yet");
         }
 
-        if (!rb_ractor_shareable_p(vm_block_self(&proc->block))) {
+        VALUE new_self = UNDEF_P(replace_self) ? vm_block_self(&proc->block) : replace_self;
+        if (!rb_ractor_shareable_p(new_self)) {
+            if (!raise) return Qfalse;
             rb_raise(rb_eRactorIsolationError,
                      "Proc's self is not shareable: %" PRIsVALUE,
                      self);
@@ -1676,18 +1755,28 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 
         if (ISEQ_BODY(iseq)->outer_variables) {
             read_only_variables =
-                proc_shared_outer_variables(ISEQ_BODY(iseq)->outer_variables, "make a Proc shareable");
+                proc_shared_outer_variables(ISEQ_BODY(iseq)->outer_variables, raise, "make a Proc shareable");
+            if (UNDEF_P(read_only_variables)) return Qfalse;
         }
 
+        if (!raise && !env_shareable_p(proc->block.as.captured.ep, read_only_variables)) {
+            return Qfalse;
+        }
+
+        RB_OBJ_WRITE(self, &proc->block.as.captured.self, new_self);
         proc_isolate_env(self, proc, read_only_variables);
         proc->header.is_isolated = TRUE;
     }
     else {
         const struct rb_block *block = vm_proc_block(self);
-        if (block->type != block_type_symbol) rb_raise(rb_eRuntimeError, "not supported yet");
+        if (block->type != block_type_symbol) {
+            if (!raise) return Qfalse;
+            rb_raise(rb_eRuntimeError, "not supported yet");
+        }
 
         VALUE proc_self = vm_block_self(block);
         if (!rb_ractor_shareable_p(proc_self)) {
+            if (!raise) return Qfalse;
             rb_raise(rb_eRactorIsolationError,
                      "Proc's self is not shareable: %" PRIsVALUE,
                      self);
@@ -1696,6 +1785,20 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 
     RB_OBJ_SET_FROZEN_SHAREABLE(self);
     return self;
+}
+
+VALUE
+rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
+{
+    return proc_ractor_make_shareable(self, replace_self, true);
+}
+
+// Like rb_proc_ractor_make_shareable(), but returns Qfalse and leaves the Proc
+// unchanged instead of raising if it cannot be made shareable.
+VALUE
+rb_proc_ractor_try_make_shareable(VALUE self, VALUE replace_self)
+{
+    return proc_ractor_make_shareable(self, replace_self, false);
 }
 
 VALUE
@@ -4035,6 +4138,7 @@ rb_execution_context_mark_ctx(const struct rb_gc_mark_ctx *ctx, const rb_executi
 
     rb_gc_mark_ctx(ctx, ec->errinfo);
     rb_gc_mark_ctx(ctx, ec->root_svar);
+    rb_gc_mark_ctx(ctx, ec->isolated_svar);
     if (ec->local_storage) {
         rb_id_table_foreach_values(ec->local_storage, mark_local_storage_i, (void *)ctx);
     }
@@ -4301,6 +4405,7 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 
     th->ec->errinfo = Qnil;
     th->ec->root_svar = Qfalse;
+    th->ec->isolated_svar = Qfalse;
     th->ec->local_storage_recursive_hash = Qnil;
     th->ec->local_storage_recursive_hash_for_trace = Qnil;
 

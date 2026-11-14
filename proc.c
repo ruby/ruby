@@ -3210,10 +3210,16 @@ rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const str
             GetProcPtr(procval, proc);
             proc->header.is_lambda = TRUE;
             proc->header.is_from_method = TRUE;
+            /* Make the method callable from any Ractor when it is safe to do so,
+             * as if by Ractor.shareable_proc(self: nil), and otherwise keep the
+             * Proc as is. Its self is replaced by the receiver on each call. */
+            if (!RB_OBJ_SHAREABLE_P(procval)) {
+                rb_proc_ractor_try_make_shareable(procval, Qnil);
+            }
         }
         rb_add_method(mod, id, VM_METHOD_TYPE_BMETHOD, (void *)procval, scope_visi->method_visi);
         if (scope_visi->module_func) {
-            rb_add_method(rb_singleton_class(mod), id, VM_METHOD_TYPE_BMETHOD, (void *)body, METHOD_VISI_PUBLIC);
+            rb_add_method(rb_singleton_class(mod), id, VM_METHOD_TYPE_BMETHOD, (void *)procval, METHOD_VISI_PUBLIC);
         }
     }
 
@@ -3231,6 +3237,12 @@ rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const str
  *  If a block or the _method_ parameter has parameters,
  *  they're used as method parameters.
  *  This block is evaluated using #instance_eval.
+ *
+ *  A block or Proc body is made shareable, as if by Ractor.shareable_proc,
+ *  when that is possible, so that the method can be called from any Ractor.
+ *  Otherwise, for instance if the body refers to an outer variable which is
+ *  reassigned or to an unshareable object, the method can only be called from
+ *  the Ractor which defined it.
  *
  *     class A
  *       def fred
@@ -3283,6 +3295,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
  *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
  *  If a block is specified, it is used as the method body.
  *  If a block or a method has parameters, they're used as method parameters.
+ *  The body is made shareable when possible, like for Module#define_method.
  *
  *     class A
  *       class << self

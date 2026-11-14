@@ -10895,13 +10895,44 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          PatchPoint SingleRactorMode
           PatchPoint MethodRedefined(Object@0x1000, zero@0x1008, cme:0x1010)
-          v22:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          v23:StaticSymbol[:b] = Const Value(VALUE(0x1038))
+          v21:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v22:StaticSymbol[:b] = Const Value(VALUE(0x1038))
           PatchPoint MethodRedefined(Object@0x1000, one@0x1040, cme:0x1048)
           CheckInterrupts
-          Return v23
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_unshareable_bmethod_send_direct() {
+        eval("
+            unshareable = []
+            define_method(:zero) { unshareable }
+
+            def test = zero
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint MethodRedefined(Object@0x1000, zero@0x1008, cme:0x1010)
+          v19:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame :zero, v19 (0x1038), num_args=0
+          v26:CPtr = GetEP 1
+          v27:BasicObject = LoadField v26, :unshareable@0x1058
+          PopInlineFrame
+          CheckInterrupts
+          Return v27
         ");
     }
 
@@ -13629,12 +13660,11 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          PatchPoint SingleRactorMode
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v19:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          v53:Fixnum[42] = Const Value(42)
+          v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v52:Fixnum[42] = Const Value(42)
           CheckInterrupts
-          Return v53
+          Return v52
         ");
     }
 

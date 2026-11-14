@@ -3139,8 +3139,8 @@ assert_equal 'ok', <<~'RUBY'
   end
 RUBY
 
-# When creating bmethods in Ractors, they should only be usable from their
-# defining ractor, even if it is GC'd
+# When creating unshareable bmethods in Ractors, they should only be usable
+# from their defining ractor, even if it is GC'd
 assert_equal 'ok', <<~'RUBY'
 
 begin
@@ -3152,7 +3152,8 @@ begin
     Ractor.new do
       klass = Class.new
       Ractor.receive
-      klass.define_method(:foo) {}
+      unshareable = Object.new
+      klass.define_method(:foo) { unshareable }
       klass
     end
   end

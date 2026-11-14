@@ -141,6 +141,10 @@ Note: We're only listing outstanding class updates.
       deprecated and will be removed in Ruby 4.4.  [[Feature #22205]]
     * `Module#method_defined?` now accepts a third optional argument to also
       match private methods.  [[Feature #22297]]
+    * `Module#define_method` and `Kernel#define_singleton_method` now make
+      the method body shareable, as if by `Ractor.shareable_proc`, when that
+      is possible.  Such methods can then be called from any Ractor.  When it
+      is not possible the body is used as before.
 
 * ObjectSpace
 
@@ -161,6 +165,19 @@ Note: We're only listing outstanding class updates.
       does: the block may read outer local variables that are never reassigned
       and refer to shareable objects, instead of raising
       `Ractor::IsolationError` for any outer variable.  [[Feature #22444]]
+
+    * `Ractor.shareable_proc` and `Ractor.new` now also raise
+      `Ractor::IsolationError` when the block reads an outer variable assigned
+      in a `while`/`until`/`for` loop, in a `begin` body which is retried, in
+      a block using `redo` or from another block, or assigned after the block
+      reads it.  Such a variable can be reassigned, which the shareable Proc
+      could not honor.  [[Bug #22521]]
+
+    * `Ractor.shareable_proc` and `Ractor.new` now raise
+      `Ractor::IsolationError` when the block uses `block_given?`,
+      `defined?(yield)` or `super` passing the block of the enclosing method
+      implicitly, like for `yield`.  The shareable Proc could not honor the
+      block of the method.  [[Bug #22522]]
 
     * `Ractor::Port#receive`, `Ractor.receive` and `Ractor.select` accept a
       `timeout:` keyword argument (in seconds) and return `nil` once it passes.
@@ -745,6 +762,8 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Bug #22273]: https://bugs.ruby-lang.org/issues/22273
 [Bug #22276]: https://bugs.ruby-lang.org/issues/22276
 [Bug #22379]: https://bugs.ruby-lang.org/issues/22379
+[Bug #22521]: https://bugs.ruby-lang.org/issues/22521
+[Bug #22522]: https://bugs.ruby-lang.org/issues/22522
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
