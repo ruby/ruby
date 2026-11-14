@@ -3901,13 +3901,32 @@ dir_s_scan(int argc, VALUE *argv, VALUE klass)
     return rb_ensure(dir_scan_children, dir, dir_close, dir);
 }
 
+struct fnmatch_brace_args {
+    VALUE value;
+    int flags;
+    int state;
+};
+
+static VALUE
+fnmatch_brace_check_ints(VALUE _)
+{
+    rb_thread_check_ints();
+    return Qnil;
+}
+
 static int
 fnmatch_brace(const char *pattern, VALUE val, void *enc)
 {
-    struct brace_args *arg = (struct brace_args *)val;
+    struct fnmatch_brace_args *arg = (struct fnmatch_brace_args *)val;
     VALUE path = arg->value;
     rb_encoding *enc_pattern = enc;
     rb_encoding *enc_path = rb_enc_get(path);
+
+    /* Brace expansion is exponential in the number of groups; stay interruptible. */
+    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(GET_EC()))) {
+        rb_protect(fnmatch_brace_check_ints, Qnil, &arg->state);
+        if (arg->state) return arg->state;
+    }
 
     if (enc_pattern != enc_path) {
         if (!rb_enc_asciicompat(enc_pattern))
@@ -3944,12 +3963,16 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
     FilePathStringValue(path);
 
     if (flags & FNM_EXTGLOB) {
-        struct brace_args args;
+        struct fnmatch_brace_args args;
+        int status;
 
         args.value = path;
         args.flags = flags;
-        if (ruby_brace_expand(RSTRING_PTR(pattern), flags, fnmatch_brace,
-                              (VALUE)&args, rb_enc_get(pattern), pattern) > 0)
+        args.state = 0;
+        status = ruby_brace_expand(RSTRING_PTR(pattern), flags, fnmatch_brace,
+                                   (VALUE)&args, rb_enc_get(pattern), pattern);
+        if (args.state) rb_jump_tag(args.state);
+        if (status > 0)
             return Qtrue;
     }
     else {
