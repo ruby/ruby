@@ -72,6 +72,15 @@ class TestSocketOption < Test::Unit::TestCase
     assert_equal(expected_size, Socket::Option.ipv4_multicast_ttl(0).to_s.bytesize)
   end
 
+  if defined?(Socket::LOCAL_PEERCRED) && /darwin/ =~ RUBY_PLATFORM
+    def test_local_peercred_inspect
+      # struct xucred whose cr_ngroups exceeds the size of cr_groups
+      cred = [0, 0, 9999, 0, *Array.new(16, 0)].pack('LLssL*')
+      s = Socket::Option.new(:UNIX, 0, Socket::LOCAL_PEERCRED, cred).inspect
+      assert_include(s, " groups=#{Array.new(16, 0).join(',')} (xucred)")
+    end
+  end
+
   def test_unpack
     sockopt = Socket::Option.new(:INET, :SOCKET, :KEEPALIVE, [1].pack("i"))
     assert_equal([1], sockopt.unpack("i"))
