@@ -3916,8 +3916,9 @@ rb_execution_context_update(rb_execution_context_t *ec)
             const VALUE *ep = cfp->ep;
             rb_gc_update_moved(&cfp->self);
             if (CFP_ZJIT_FRAME_P(cfp)) {
-                const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
-                rb_zjit_jit_frame_update_references((zjit_jit_frame_t *)jit_frame);
+                zjit_jit_frame_t *jit_frame = (zjit_jit_frame_t *)CFP_ZJIT_FRAME(cfp); // drop const
+                // This never writes to the readonly rb_zjit_c_frame as that has NULL iseq.
+                rb_gc_update_moved_ptr(&jit_frame->iseq);
                 // materialize_block_code means cfp->block_code is lazy and may
                 // still contain stale data from a previous frame. Otherwise it
                 // was initialized by ZJIT and may have been written later by
