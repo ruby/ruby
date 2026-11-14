@@ -161,6 +161,16 @@ class TestFnmatch < Test::Unit::TestCase
     assert_file.not_fnmatch("[a-\u3042]*", "\u3043")
   end
 
+  def test_fnm_casefold_large_code
+    # GB18030 has codes of 0x80000000 and above, negative as int
+    a = "\x81\x30\x90\x32".force_encoding("GB18030")
+    b = "\x81\x30\x90\x33".force_encoding("GB18030")
+    assert_file.not_fnmatch(a, b, File::FNM_CASEFOLD)
+    assert_file.not_fnmatch("[#{a}]", b, File::FNM_CASEFOLD)
+    assert_file.fnmatch("[#{a}-#{b}]", b, File::FNM_CASEFOLD)
+    assert_file.fnmatch("#{a}x", "#{a}X".force_encoding("GB18030"), File::FNM_CASEFOLD)
+  end
+
   def test_nullchar
     assert_raise(ArgumentError) {
       File.fnmatch("a\0z", "a")
