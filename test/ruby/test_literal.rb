@@ -525,6 +525,10 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_warning(/key :foo is duplicated/, "[Bug #22264]") do
       eval("{**{}, foo: :bar, **{foo: :foo}}")
     end
+
+    assert_warning('', 'keyword splats are not duplicate keys') do
+      assert_raise(TypeError) { eval('{**1, 1 => 2}') }
+    end
   end
 
   def test_hash_frozen_key_id
