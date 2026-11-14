@@ -1974,9 +1974,9 @@ fn test_function_stub_exit_initializes_block_param() {
 
 #[test]
 fn test_no_ep_escape_side_exit_restores_locals_while_oom() {
-    // A regression test for stub compilation failures on OOM. Functions patched by NoEPEscape
-    // is unsafe to enter (FrameState uses without_locals() and doesn't spill the entry state),
-    // so even under OOM, the re-stub after invalidation must succeed.
+    // A regression test for stub compilation failures on OOM. At the time of writing, functions
+    // patched by NoEPEscape is unsafe to enter (FrameState used without_locals() which doesn't
+    // spill the entry state), so even under OOM, the re-stub after invalidation must succeed.
     set_mem_bytes(2 * 1024 * 1024);
     set_inline_threshold(0);
     set_call_threshold(2);
@@ -9196,11 +9196,11 @@ fn test_polymorphic_getivar_complex_shape() {
     "#), @"[:normal, :complex]");
 }
 
+/// Regression test:
 /// When a method with keyword defaults contains a block that creates a lambda,
 /// the lambda causes EP escape, which globally patches NoEPEscape PatchPoints.
-/// On subsequent calls the PatchPoint side exit (which uses without_locals())
-/// must not leave stale keyword default values in the frame. We solve this by
-/// invalidating the ISEQ version on EP escape so the interpreter takes over.
+/// On subsequent calls the PatchPoint side exit (which used without_locals())
+/// must not leave stale keyword default values in the frame.
 #[test]
 fn test_ep_escape_preserves_keyword_default() {
     set_call_threshold(1);
@@ -9997,13 +9997,14 @@ fn test_keep_jit_frame_for_caught_jump() {
     assert_snapshot!(result, @":ok");
 }
 
+// Regression test:
 // A NoEPEscape patch point can be reached without the frame's locals ever being
 // written to the stack: JIT-to-JIT calls don't write locals, and the code before
 // the patch point may be leaf. When an EP escape fires while the version limit
 // prevents invalidate_iseq_version() from running, every version containing a
-// patched point must still stop receiving calls. Otherwise a fresh call would
-// side-exit through the patched point's without_locals() frame state and the
-// interpreter would read garbage locals.
+// patched point must also stop receiving calls. At the time of writing, a fresh
+// call would side-exit through the patched point's without_locals() frame state
+// and the interpreter would read garbage locals.
 #[test]
 fn test_no_ep_escape_invalidation_at_max_versions() {
     rb_zjit_prepare_options();
