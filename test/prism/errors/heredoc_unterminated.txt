@@ -4,6 +4,4 @@ a=>{<<b
       ^ unterminated heredoc; can't find string "b" anywhere before EOF
     ^~~ expected a label as the key in the hash pattern
    ^ expected a `}` to close the pattern expression
-       ^ unexpected heredoc ending, expecting end-of-input
-       ^ unexpected heredoc ending, ignoring it
 

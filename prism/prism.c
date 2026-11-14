@@ -12993,6 +12993,21 @@ expect1_opening(pm_parser_t *parser, pm_token_type_t type, pm_diagnostic_id_t di
 static pm_node_t *
 parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth);
 
+static pm_node_t *
+parse_heredoc(pm_parser_t *parser, uint16_t depth);
+
+/* Discard an unexpected token without abandoning lexer state owned by it.
+ * A heredoc opener has already pushed its lex mode and scheduled a source
+ * jump, so its body must be consumed before resuming on the declaration line. */
+static void
+parse_discard_token(pm_parser_t *parser, uint16_t depth) {
+    if (match1(parser, PM_TOKEN_HEREDOC_START)) {
+        (void) parse_heredoc(parser, depth);
+    } else {
+        parser_lex(parser);
+    }
+}
+
 /**
  * This is a wrapper of parse_expression, which also checks whether the
  * resulting node is a value expression.
@@ -13804,7 +13819,7 @@ parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
         // token and continue parsing the statements list. Otherwise we'll add
         // an error and continue parsing the statements list.
         if (PM_NODE_TYPE_P(node, PM_ERROR_RECOVERY_NODE)) {
-            parser_lex(parser);
+            parse_discard_token(parser, depth);
 
             // If we are at the end of the file, then we need to stop parsing
             // the statements entirely at this point. Mark the parser as
@@ -16419,7 +16434,7 @@ parse_string_part(pm_parser_t *parser, uint16_t depth) {
             return UP(pm_embedded_variable_node_create(parser, &operator, variable));
         }
         default:
-            parser_lex(parser);
+            parse_discard_token(parser, depth);
             pm_parser_err_previous(parser, PM_ERR_CANNOT_PARSE_STRING_PART);
             return NULL;
     }
@@ -17611,7 +17626,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_
                         break;
                     default: {
                         PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_PATTERN_HASH_KEY, pm_token_str(parser->current.type));
-                        parser_lex(parser);
+                        parse_discard_token(parser, depth);
 
                         first_node = UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous)));
                         break;
@@ -19596,10 +19611,9 @@ parse_heredoc(pm_parser_t *parser, uint16_t depth) {
         whitespace_mode = whitespace_mode->prev;
     } while (whitespace_mode != NULL);
 
-    if (match1(parser, PM_TOKEN_STRING_BEGIN)) {
-        return parse_strings(parser, node, false, (uint16_t) (depth + 1));
-    }
-
+    /* The body and terminator are out of source order. The caller resumes
+     * after the opener, so missing tokens must be anchored there as well. */
+    parser->previous = opening;
     return node;
 }
 
@@ -20371,7 +20385,7 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
             }
             default:
                 expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_I_UPPER_ELEMENT);
-                parser_lex(parser);
+                parse_discard_token(parser, depth);
                 break;
         }
     }
@@ -20557,7 +20571,7 @@ parse_interpolated_string_array(pm_parser_t *parser, uint16_t depth) {
             }
             default:
                 expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_W_UPPER_ELEMENT);
-                parser_lex(parser);
+                parse_discard_token(parser, depth);
                 break;
         }
     }
@@ -21041,8 +21055,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_IDENTIFIER:
         case PM_TOKEN_METHOD_NAME:
             return parse_identifier(parser, binding_power, flags, depth);
-        case PM_TOKEN_HEREDOC_START:
-            return parse_heredoc(parser, depth);
+        case PM_TOKEN_HEREDOC_START: {
+            pm_node_t *node = parse_heredoc(parser, depth);
+            if (match1(parser, PM_TOKEN_STRING_BEGIN)) {
+                return parse_strings(parser, node, false, (uint16_t) (depth + 1));
+            }
+            return node;
+        }
         case PM_TOKEN_CLASS_VARIABLE:
             parser_lex(parser);
             return parse_multi_target(parser, UP(pm_class_variable_read_node_create(parser, &parser->previous)), binding_power, depth);
