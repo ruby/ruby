@@ -273,6 +273,54 @@ impl JITFrame {
     }
 }
 
+/// A [JITFrame] that is not allocated yet, so no stable address usable for baking into generated
+/// code. Used at compile-time by [crate::backend::lir::SideExitStackMap].
+#[derive(Clone, Copy, Debug)]
+pub struct PendingJITFrame(JITFrame);
+
+impl PendingJITFrame {
+    /// Describe a JITFrame for an ISEQ frame without allocating it.
+    pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr) -> Self {
+        let materialize_block_code = !iseq_may_write_block_code(iseq);
+        Self(JITFrame {
+            pc,
+            iseq,
+            stack_map: &EMPTY_STACK_MAPS[usize::from(materialize_block_code)],
+        })
+    }
+
+    pub fn stack_map_writer(&self) -> StackMapWriter {
+        self.0.stack_map_writer()
+    }
+
+    /// Allocate the JITFrame with a stack map built from [Self::stack_map_writer].
+    pub fn alloc(self, writer: StackMapWriter) -> *const JITFrame {
+        let jit_frame = JITFrame::alloc(self.0.pc, self.0.iseq, self.0.materialize_block_code());
+        unsafe { &mut *jit_frame.cast_mut() }.set_stack_map(writer);
+        jit_frame
+    }
+}
+
+impl PartialEq for PendingJITFrame {
+    fn eq(&self, other: &Self) -> bool {
+        // The stack map is always one of EMPTY_STACK_MAPS, so comparing stack map addresses
+        // compares `materialize_block_code`.
+        let JITFrame { pc, iseq, stack_map } = self.0;
+        pc == other.0.pc && iseq == other.0.iseq && ptr::eq(stack_map, other.0.stack_map)
+    }
+}
+
+impl Eq for PendingJITFrame {}
+
+impl std::hash::Hash for PendingJITFrame {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let JITFrame { pc, iseq, stack_map } = self.0;
+        pc.hash(state);
+        iseq.hash(state);
+        stack_map.hash(state);
+    }
+}
+
 /// Update the iseq pointer in an on-stack JITFrame during GC compaction.
 /// Called from rb_execution_context_update in vm.c.
 #[unsafe(no_mangle)]
