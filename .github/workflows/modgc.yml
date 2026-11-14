@@ -33,7 +33,12 @@ jobs:
           - name: default
           - name: mmtk
             mmtk_build: release
+          - name: wbcheck
         os: [macos-26, ubuntu-latest]
+        exclude:
+          - gc:
+              name: wbcheck
+            os: macos-26
         include:
           - test_task: check
       fail-fast: false
@@ -113,11 +118,11 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
         with:
           cache-bin: false
-      - name: Set MMTk environment variables
+      - name: Set test excludes
         run: |
           echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV
           echo 'MSPECOPT=-B../src/spec/mmtk.mspec' >> $GITHUB_ENV
-        if: ${{ matrix.gc.name == 'mmtk' }}
+        if: ${{ matrix.gc.name == 'mmtk' || matrix.gc.name == 'wbcheck' }}
 
       - run: ${SETARCH} make
 
@@ -142,9 +147,9 @@ jobs:
           echo "RUBY_TEST_TIMEOUT_SCALE=$scale" >> "$GITHUB_ENV"
         env:
           # Subprocess assertion timeouts flake on slower or contended macOS
-          # runners and with the slower MMTk GC.
+          # runners and with the slower MMTk and wbcheck GCs.
           os_scale: ${{ contains(matrix.os, 'macos') && 3 || 1 }}
-          gc_scale: ${{ matrix.gc.name == 'mmtk' && 3 || 1 }}
+          gc_scale: ${{ matrix.gc.name == 'mmtk' && 3 || matrix.gc.name == 'wbcheck' && 10 || 1 }}
 
       - name: Set up Launchable
         id: launchable
