@@ -6,7 +6,7 @@ const ENTRY_NUM_BITS: usize = Entry::BITS as usize;
 
 // TODO(max): Make a `SmallBitSet` and `LargeBitSet` and switch between them if `num_bits` fits in
 // `Entry`.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BitSet<T: Into<usize> + Copy> {
     entries: Vec<Entry>,
     num_bits: usize,
@@ -48,10 +48,17 @@ impl<T: Into<usize> + Copy> BitSet<T> {
     }
 
     pub fn get(&self, idx: T) -> bool {
-        debug_assert!(idx.into() < self.num_bits);
         let entry_idx = idx.into() / ENTRY_NUM_BITS;
         let bit_idx = idx.into() % ENTRY_NUM_BITS;
-        (self.entries[entry_idx] & (1 << bit_idx)) != 0
+        let Some(entry) = self.entries.get(entry_idx) else {
+            return false;
+        };
+        (entry & (1 << bit_idx)) != 0
+    }
+
+    /// Whether all bits are clear.
+    pub fn is_empty(&self) -> bool {
+        self.iter_set_bits().next().is_none()
     }
 
     /// Modify `self` to only have bits set if they are also set in `other`. Returns true if `self`
@@ -126,9 +133,16 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn get_over_capacity_panics() {
-        let set = BitSet::with_capacity(0);
-        assert!(!set.get(0usize));
+    fn insert_over_capacity_panics() {
+        let mut set = BitSet::with_capacity(0);
+        set.insert(0usize);
+    }
+
+    #[test]
+    fn get_over_capacity_returns_false() {
+        let set = BitSet::<usize>::with_capacity(0);
+        assert!(!set.get(0));
+        assert!(!set.get(5000));
     }
 
     #[test]
@@ -209,6 +223,20 @@ mod tests {
         set.insert_all();
         let set_bits: Vec<usize> = set.iter_set_bits().collect();
         assert_eq!(set_bits, vec![0, 1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_is_empty_while_progressively_removing_from_a_set() {
+        let num_bits = super::ENTRY_NUM_BITS + 1;
+        let mut set: BitSet<usize> = BitSet::with_capacity(num_bits);
+        set.insert_all();
+        assert!( !set.is_empty());
+        for i in 1..num_bits {
+            set.remove(i);
+            assert!( !set.is_empty());
+        }
+        set.remove(0);
+        assert!(set.is_empty());
     }
 
     #[test]

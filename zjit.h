@@ -49,6 +49,8 @@ ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P(const zjit_jit_frame_t *jit_frame)
 #define ZJIT_STACK_MAP_OP_BASE_PTR  3
 #define ZJIT_STACK_MAP_OP_IMM       4
 #define ZJIT_STACK_MAP_OP_NIL       5
+#define ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA 6
+#define ZJIT_STACK_MAP_OP_PREV_FRAME 7
 
 extern void *rb_zjit_entry;
 extern bool rb_zjit_compiling_p;
@@ -79,6 +81,7 @@ void rb_zjit_invalidate_root_box(void);
 void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_frame);
 void rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
 void rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
+void rb_zjit_spill_frame(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
 size_t rb_zjit_hash_new_size(VALUE *flags_out, size_t size);
 VALUE rb_zjit_new_obj_shape(VALUE flags, size_t alloc_size);
 bool rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, VALUE *flags_out);
@@ -133,6 +136,7 @@ static inline void rb_zjit_invalidate_root_box(void) {}
 static inline void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_frame) {}
 static inline void rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp) {}
 static inline void rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb_control_frame_t *cfp) {}
+static inline void rb_zjit_spill_frame(const rb_execution_context_t *ec, rb_control_frame_t *cfp) {}
 static inline const zjit_jit_frame_t *CFP_ZJIT_FRAME(const rb_control_frame_t *cfp) { return NULL; }
 #endif // #if USE_ZJIT
 
