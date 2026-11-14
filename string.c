@@ -7580,14 +7580,10 @@ str_lsb_first_from_opts(VALUE opts)
     }
 
     rb_get_kwargs(opts, keywords, 0, 1, &vlsb_first);
-    if (vlsb_first == Qundef || vlsb_first == Qtrue) {
+    if (vlsb_first == Qundef) {
         return true;
     }
-    if (vlsb_first == Qfalse) {
-        return false;
-    }
-    rb_raise(rb_eArgError, "lsb_first must be true or false");
-    UNREACHABLE_RETURN(false);
+    return rb_bool_expected(vlsb_first, "lsb_first", TRUE);
 }
 
 static bool
