@@ -1190,6 +1190,31 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_no_method_lookup_invalidation_on_extend_without_singleton_class
+    # [Bug #22465]
+    assert_compiles(<<~'RUBY', exits: :any, result: [0, true])
+      def lookup(hash) = hash.fetch(0, nil)
+      lookup({})
+      invalidations = -> { RubyVM::YJIT.runtime_stats(:invalidate_method_lookup) }
+      m = Module.new { def fetch(*) = :unused }
+
+      # Nothing could have cached a lookup through the new singleton class
+      before = invalidations.()
+      {}.extend(m)
+      fresh = invalidations.() - before
+
+      # A method lookup could have gone through the existing singleton class
+      h = {}
+      h.singleton_class
+      lookup({})
+      before = invalidations.()
+      h.extend(m)
+      existing = invalidations.() - before
+
+      [fresh, existing > 0]
+    RUBY
+  end
+
   def test_no_excessive_opt_getinlinecache_invalidation
     assert_compiles(<<~'RUBY', exits: :any, result: :ok)
       objects = [Object.new, Object.new]
