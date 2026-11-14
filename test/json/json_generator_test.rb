@@ -761,6 +761,10 @@ class JSONGeneratorTest < Test::Unit::TestCase
     data = '<ok><script><!----</script></ok>'
     json = '"<ok>\\u003cscript>\\u003c!----\\u003c/script></ok>"'
     assert_equal json, generate(data, script_safe: true)
+
+    data = '<ok><ScrIpT><!----</sCRiPt></ok>'
+    json = '"<ok>\\u003cScrIpT>\\u003c!----\\u003c/sCRiPt></ok>"'
+    assert_equal json, generate(data, script_safe: true)
   end
 
   def test_backslash
