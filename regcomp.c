@@ -220,13 +220,26 @@ unset_addr_list_add(UnsetAddrList* uslist, int offset, struct _Node* node)
 #endif /* USE_SUBEXP_CALL */
 
 
+/* Reject a write that would push the compiled program past the size its
+   offset type (int) can address.  This must run before every write to the
+   program buffer, not only in add_opcode(): the bulk writers below emit
+   class bodies and exact strings in a single BBUF_ADD, which never revisits
+   the per-instruction guard.  The arithmetic stays unsigned so a multi-GiB
+   payload cannot wrap the accounting and copy past the allocation. */
+static int
+check_compiled_program_size(regex_t* reg, OnigDistance add_len)
+{
+  if (reg->used > MAX_COMPILED_PROGRAM_SIZE ||
+      add_len > (OnigDistance )(MAX_COMPILED_PROGRAM_SIZE - reg->used))
+    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+  return 0;
+}
+
 static int
 add_opcode(regex_t* reg, int opcode)
 {
-  /* Every instruction passes here, so this is where a program that would
-     outgrow its offset type is stopped, while it is still being emitted. */
-  if (reg->used > MAX_COMPILED_PROGRAM_SIZE)
-    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+  int r = check_compiled_program_size(reg, 1);
+  if (r) return r;
   BBUF_ADD1(reg, opcode);
   return 0;
 }
@@ -310,6 +323,8 @@ add_opcode_rel_addr(regex_t* reg, int opcode, int addr)
 static int
 add_bytes(regex_t* reg, UChar* bytes, OnigDistance len)
 {
+  int r = check_compiled_program_size(reg, len);
+  if (r) return r;
   BBUF_ADD(reg, bytes, len);
   return 0;
 }
@@ -317,6 +332,8 @@ add_bytes(regex_t* reg, UChar* bytes, OnigDistance len)
 static int
 add_bitset(regex_t* reg, BitSetRef bs)
 {
+  int r = check_compiled_program_size(reg, SIZE_BITSET);
+  if (r) return r;
   BBUF_ADD(reg, bs, SIZE_BITSET);
   return 0;
 }
@@ -467,21 +484,25 @@ static int
 add_compile_string(UChar* s, int mb_len, OnigDistance byte_len,
                    regex_t* reg, int ignore_case)
 {
+  int r;
   int op = select_str_opcode(mb_len, byte_len, ignore_case);
-  add_opcode(reg, op);
+  r = add_opcode(reg, op);
+  if (r) return r;
 
-  if (op == OP_EXACTMBN)
-    add_length(reg, mb_len);
+  if (op == OP_EXACTMBN) {
+    r = add_length(reg, mb_len);
+    if (r) return r;
+  }
 
   if (IS_NEED_STR_LEN_OP_EXACT(op)) {
     if (op == OP_EXACTN_IC)
-      add_length(reg, byte_len);
+      r = add_length(reg, byte_len);
     else
-      add_length(reg, byte_len / mb_len);
+      r = add_length(reg, byte_len / mb_len);
+    if (r) return r;
   }
 
-  add_bytes(reg, s, byte_len);
-  return 0;
+  return add_bytes(reg, s, byte_len);
 }
 
 
@@ -585,21 +606,27 @@ static int
 add_multi_byte_cclass(BBuf* mbuf, regex_t* reg)
 {
 #ifdef PLATFORM_UNALIGNED_WORD_ACCESS
-  add_length(reg, mbuf->used);
+  int r = add_length(reg, mbuf->used);
+  if (r) return r;
   return add_bytes(reg, mbuf->p, mbuf->used);
 #else
   int r, pad_size;
   UChar* p = BBUF_GET_ADD_ADDRESS(reg) + SIZE_LENGTH;
 
   GET_ALIGNMENT_PAD_SIZE(p, pad_size);
-  add_length(reg, mbuf->used + (WORD_ALIGNMENT_SIZE - 1));
-  if (pad_size != 0) add_bytes(reg, PadBuf, pad_size);
+  r = add_length(reg, mbuf->used + (WORD_ALIGNMENT_SIZE - 1));
+  if (r) return r;
+  if (pad_size != 0) {
+    r = add_bytes(reg, PadBuf, pad_size);
+    if (r) return r;
+  }
 
   r = add_bytes(reg, mbuf->p, mbuf->used);
+  if (r) return r;
 
   /* padding for return value from compile_length_cclass_node() to be fix. */
   pad_size = (WORD_ALIGNMENT_SIZE - 1) - pad_size;
-  if (pad_size != 0) add_bytes(reg, PadBuf, pad_size);
+  if (pad_size != 0) r = add_bytes(reg, PadBuf, pad_size);
   return r;
 #endif
 }
@@ -636,26 +663,29 @@ compile_cclass_node(CClassNode* cc, regex_t* reg)
 
   if (IS_NULL(cc->mbuf)) {
     if (IS_NCCLASS_NOT(cc))
-      add_opcode(reg, OP_CCLASS_NOT);
+      r = add_opcode(reg, OP_CCLASS_NOT);
     else
-      add_opcode(reg, OP_CCLASS);
+      r = add_opcode(reg, OP_CCLASS);
+    if (r) return r;
 
     r = add_bitset(reg, cc->bs);
   }
   else {
     if (ONIGENC_MBC_MINLEN(reg->enc) > 1 || bitset_is_empty(cc->bs)) {
       if (IS_NCCLASS_NOT(cc))
-        add_opcode(reg, OP_CCLASS_MB_NOT);
+        r = add_opcode(reg, OP_CCLASS_MB_NOT);
       else
-        add_opcode(reg, OP_CCLASS_MB);
+        r = add_opcode(reg, OP_CCLASS_MB);
+      if (r) return r;
 
       r = add_multi_byte_cclass(cc->mbuf, reg);
     }
     else {
       if (IS_NCCLASS_NOT(cc))
-        add_opcode(reg, OP_CCLASS_MIX_NOT);
+        r = add_opcode(reg, OP_CCLASS_MIX_NOT);
       else
-        add_opcode(reg, OP_CCLASS_MIX);
+        r = add_opcode(reg, OP_CCLASS_MIX);
+      if (r) return r;
 
       r = add_bitset(reg, cc->bs);
       if (r) return r;
@@ -1119,7 +1149,8 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
         r = add_opcode_rel_addr(reg, OP_PUSH_OR_JUMP_EXACT1,
                              mod_tlen + SIZE_OP_JUMP);
         if (r) return r;
-        add_bytes(reg, NSTR(qn->head_exact)->s, 1);
+        r = add_bytes(reg, NSTR(qn->head_exact)->s, 1);
+        if (r) return r;
         r = compile_tree_empty_check(qn->target, reg, empty_info);
         if (r) return r;
         r = add_opcode_rel_addr(reg, OP_JUMP,
@@ -1131,7 +1162,8 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
         r = add_opcode_rel_addr(reg, OP_PUSH_IF_PEEK_NEXT,
                                 mod_tlen + SIZE_OP_JUMP);
         if (r) return r;
-        add_bytes(reg, NSTR(qn->next_head_exact)->s, 1);
+        r = add_bytes(reg, NSTR(qn->next_head_exact)->s, 1);
+        if (r) return r;
         r = compile_tree_empty_check(qn->target, reg, empty_info);
         if (r) return r;
         r = add_opcode_rel_addr(reg, OP_JUMP,
