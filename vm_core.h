@@ -425,6 +425,7 @@ enum lvar_state {
     lvar_uninitialized,
     lvar_initialized,
     lvar_reassigned,
+    lvar_read_uninitialized, /* read from a block before any assignment */
 };
 
 /* Lazily-allocated per-iseq variable data. NULL when unused (the common case:

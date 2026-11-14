@@ -2034,7 +2034,7 @@ pub type ruby_vminsn_type = u32;
 #[repr(align(8))]
 #[derive(Debug, Copy, Clone)]
 pub struct iseq_compile_data {
-    pub _bindgen_opaque_blob: [u64; 24usize],
+    pub _bindgen_opaque_blob: [u64; 25usize],
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
