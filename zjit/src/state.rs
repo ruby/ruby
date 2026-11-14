@@ -5,6 +5,7 @@ use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, src_loc, EcPtr, Qn
 use crate::cruby_methods;
 use cruby::{ID, rb_callable_method_entry, get_def_method_serial, rb_gc_register_mark_object, ruby_str_to_rust_string_result};
 use std::sync::atomic::Ordering;
+use std::sync::Mutex;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
 use crate::options::{get_option, rb_zjit_prepare_options};
@@ -117,9 +118,6 @@ pub struct ZJITState {
     /// Counter pointers for access counts of ISEQs accessed by JIT code
     iseq_calls_count_pointers: HashMap<String, Box<u64>>,
 
-    /// Perfetto tracer for --zjit-trace-exits
-    perfetto_tracer: Option<PerfettoTracer>,
-
     /// Frame metadata for ISEQ and C calls that are known at compile time
     jit_frames: Vec<*mut JITFrame>,
 
@@ -151,6 +149,9 @@ enum InitializationState {
 
 /// Private singleton instance of the codegen globals
 static mut ZJIT_STATE: InitializationState = InitializationState::Uninitialized;
+
+/// Process-wide tracer, shared by Ractors when tracing ZJIT events.
+static PERFETTO_TRACER: Mutex<Option<PerfettoTracer>> = Mutex::new(None);
 
 impl ZJITState {
     /// Initialize the ZJIT globals. Return the address of the JIT entry trampoline.
@@ -204,13 +205,13 @@ impl ZJITState {
             not_annotated_frame_cfunc_counter_pointers: HashMap::new(),
             ccall_counter_pointers: HashMap::new(),
             iseq_calls_count_pointers: HashMap::new(),
-            perfetto_tracer,
             jit_frames: vec![],
             jit_frame_allocator: JITFrameAllocator::new(),
             // Set after ZJIT_STATE is initialized since they reference counters in it
             materialize_exit_trampoline: exit_trampoline,
             materialize_exit_trampoline_with_counter: exit_trampoline,
         };
+        *PERFETTO_TRACER.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = perfetto_tracer;
         unsafe { ZJIT_STATE = Enabled(zjit_state); }
 
         // Generate trampolines that increment counters. Note that the trampoline codegen
@@ -378,10 +379,10 @@ impl ZJITState {
         ZJITState::get_instance().function_stub_hit_trampoline
     }
 
-    /// Get a mutable reference to the Perfetto tracer
-    pub fn get_tracer() -> Option<&'static mut PerfettoTracer> {
-        if !ZJITState::has_instance() { return None; }
-        ZJITState::get_instance().perfetto_tracer.as_mut()
+    /// Run a closure while holding the lock for the process-wide Perfetto tracer.
+    pub fn with_tracer<R>(func: impl FnOnce(&mut PerfettoTracer) -> R) -> Option<R> {
+        let mut tracer = PERFETTO_TRACER.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        tracer.as_mut().map(func)
     }
 }
 
@@ -541,19 +542,23 @@ pub extern "C" fn rb_zjit_record_exit_stack(reason: *const std::ffi::c_char) {
         return;
     }
 
-    let tracer = match ZJITState::get_tracer() {
-        Some(t) => t,
-        None => return,
-    };
-
-    // When `trace_side_exits_sample_interval` is non-zero, apply sampling.
-    if get_option!(trace_side_exits_sample_interval) != 0 {
-        if tracer.skipped_samples < get_option!(trace_side_exits_sample_interval) {
+    let sample_interval = get_option!(trace_side_exits_sample_interval);
+    let should_trace = match ZJITState::with_tracer(|tracer| {
+        if sample_interval == 0 {
+            true
+        } else if tracer.skipped_samples < sample_interval {
             tracer.skipped_samples += 1;
-            return;
+            false
         } else {
             tracer.skipped_samples = 0;
+            true
         }
+    }) {
+        Some(should_trace) => should_trace,
+        None => return,
+    };
+    if !should_trace {
+        return;
     }
 
     // Collect profile frames
@@ -566,7 +571,7 @@ pub extern "C" fn rb_zjit_record_exit_stack(reason: *const std::ffi::c_char) {
         unsafe { std::ffi::CStr::from_ptr(reason).to_str().unwrap_or("unknown") }
     };
 
-    tracer.write_event("side_exit", reason_str, &frames);
+    ZJITState::with_tracer(|tracer| tracer.write_event("side_exit", reason_str, &frames));
 }
 
 /// Record a backtrace with ZJIT fallbacks as a Perfetto trace event
@@ -576,19 +581,23 @@ pub extern "C" fn rb_zjit_record_fallback_stack(reason: *const std::ffi::c_char)
         return;
     }
 
-    let tracer = match ZJITState::get_tracer() {
-        Some(t) => t,
-        None => return,
-    };
-
-    // When `trace_fallbacks_sample_interval` is non-zero, apply sampling.
-    if get_option!(trace_fallbacks_sample_interval) != 0 {
-        if tracer.skipped_samples < get_option!(trace_fallbacks_sample_interval) {
+    let sample_interval = get_option!(trace_fallbacks_sample_interval);
+    let should_trace = match ZJITState::with_tracer(|tracer| {
+        if sample_interval == 0 {
+            true
+        } else if tracer.skipped_samples < sample_interval {
             tracer.skipped_samples += 1;
-            return;
+            false
         } else {
             tracer.skipped_samples = 0;
+            true
         }
+    }) {
+        Some(should_trace) => should_trace,
+        None => return,
+    };
+    if !should_trace {
+        return;
     }
 
     // Collect profile frames
@@ -601,7 +610,7 @@ pub extern "C" fn rb_zjit_record_fallback_stack(reason: *const std::ffi::c_char)
         unsafe { std::ffi::CStr::from_ptr(reason).to_str().unwrap_or("unknown") }
     };
 
-    tracer.write_event("fallback", reason_str, &frames);
+    ZJITState::with_tracer(|tracer| tracer.write_event("fallback", reason_str, &frames));
 }
 
 /// Wrap a closure in a Perfetto duration event with category "invalidation"
@@ -614,18 +623,21 @@ pub fn trace_invalidation<RF, F, R>(reason_func: RF, func: F) -> R
 
     // Capture backtrace and emit begin event before patching
     let frames = capture_ruby_frames();
-    let mut reason: String = "".into();
-    if let Some(tracer) = ZJITState::get_tracer() {
-        let ts = tracer.elapsed_ns();
-        reason = reason_func();
-        tracer.write_duration_begin("invalidation", &reason, ts, &frames);
+    let reason = ZJITState::with_tracer(|_| ()).map(|_| reason_func());
+    if let Some(reason) = &reason {
+        ZJITState::with_tracer(|tracer| {
+            let ts = tracer.elapsed_ns();
+            tracer.write_duration_begin("invalidation", reason, ts, &frames);
+        });
     }
 
     let result = func();
 
-    if let Some(tracer) = ZJITState::get_tracer() {
-        let ts = tracer.elapsed_ns();
-        tracer.write_duration_end("invalidation", &reason, ts);
+    if let Some(reason) = &reason {
+        ZJITState::with_tracer(|tracer| {
+            let ts = tracer.elapsed_ns();
+            tracer.write_duration_end("invalidation", reason, ts);
+        });
     }
     result
 }
