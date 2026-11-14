@@ -9893,37 +9893,15 @@ typedef struct {
 } pm_regexp_token_buffer_t;
 
 /**
- * Append a place to the places recorded for the content of a regular
- * expression. When they are full, they move to a larger array in the scratch
- * arena, which releases the old one when parsing finishes.
- *
- * Allocating these is very rare. A place is recorded only where an escape or a
- * line continuation changes the length of the content, such as `\/` or `\ca`,
- * so most regular expressions record none and the rest record only a few. That
- * is why each content token gets its own array instead of reusing one, which
- * also keeps its places valid while later tokens are lexed.
- */
-static void
-pm_regexp_offsets_append(pm_parser_t *parser, pm_regexp_offsets_t *offsets, pm_regexp_offset_t offset) {
-    if (offsets->size == offsets->capacity) {
-        size_t capacity = offsets->capacity == 0 ? 4 : offsets->capacity * 2;
-        pm_regexp_offset_t *values = (pm_regexp_offset_t *) pm_arena_alloc(&parser->scratch_arena, capacity * sizeof(pm_regexp_offset_t), PRISM_ALIGNOF(pm_regexp_offset_t));
-
-        if (offsets->size > 0) memcpy(values, offsets->values, offsets->size * sizeof(pm_regexp_offset_t));
-        offsets->values = values;
-        offsets->capacity = capacity;
-    }
-
-    offsets->values[offsets->size++] = offset;
-}
-
-/**
  * Resume copying the content of a regular expression from the source at the
- * given cursor, after an escape. The place is recorded when the escape left the
- * content at a different distance from the source than the last place, or than
- * the start of the token before the first place. Escapes that write nothing
- * share a place in the content, which keeps the last of their places in the
- * source, so that the places stay in order with no two at the same offset.
+ * given cursor, after an escape, and record the place if the escape changed
+ * the length of the content.
+ *
+ * Recording places is very rare. Only an escape or a line continuation that
+ * changes the length of the content, such as `\/` or `\ca`, records one, so
+ * most regular expressions record none and the rest record only a few. That is
+ * why each content token gets its own array instead of reusing one, which also
+ * keeps its places valid while later tokens are lexed.
  */
 static PRISM_INLINE void
 pm_regexp_token_buffer_resume(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer, const uint8_t *cursor) {
@@ -9931,21 +9909,7 @@ pm_regexp_token_buffer_resume(pm_parser_t *parser, pm_regexp_token_buffer_t *tok
 
     uint32_t content = U32(pm_buffer_length(&token_buffer->base.buffer));
     uint32_t source = U32(cursor - parser->start);
-
-    pm_regexp_offsets_t *offsets = &token_buffer->offsets;
-    pm_regexp_offset_t *last = offsets->size == 0 ? NULL : &offsets->values[offsets->size - 1];
-
-    /* Each distance is a source offset minus a content offset. Both fit in 32
-     * bits, so two distances differ by less than 2^32, and their subtractions,
-     * which may wrap, are equal exactly when the distances are. */
-    uint32_t previous = (last == NULL) ? U32(parser->current.start - parser->start) : (last->source - last->content);
-    if (source - content == previous) return;
-
-    if (last != NULL && last->content == content) {
-        last->source = source;
-    } else {
-        pm_regexp_offsets_append(parser, offsets, (pm_regexp_offset_t) { .content = content, .source = source });
-    }
+    pm_regexp_offsets_record(parser, &token_buffer->offsets, content, source, U32(parser->current.start - parser->start));
 }
 
 /**

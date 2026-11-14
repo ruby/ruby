@@ -1,7 +1,9 @@
 #include "prism/internal/regexp.h"
 
+#include "prism/compiler/align.h"
 #include "prism/compiler/inline.h"
 #include "prism/compiler/fallthrough.h"
+#include "prism/internal/arena.h"
 #include "prism/internal/assert.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/char.h"
@@ -96,23 +98,38 @@ typedef struct {
 } pm_regexp_parser_t;
 
 /**
- * Return the offset in the source of the given position in the content, as the
- * start (or else the end) of a range. Each byte after a recorded place is at
- * the same distance from it in the source as in the content, and a position in
- * text that the lexer wrote in place of an escape is kept within that escape.
- * At a recorded place, the escape before it wrote nothing at that position, so
+ * Append a place to a list of places, growing the list in the scratch arena.
+ */
+void
+pm_regexp_offsets_append(pm_parser_t *parser, pm_regexp_offsets_t *offsets, pm_regexp_offset_t offset) {
+    if (offsets->size == offsets->capacity) {
+        size_t capacity = offsets->capacity == 0 ? 4 : offsets->capacity * 2;
+        pm_regexp_offset_t *values = (pm_regexp_offset_t *) pm_arena_alloc(&parser->scratch_arena, capacity * sizeof(pm_regexp_offset_t), PRISM_ALIGNOF(pm_regexp_offset_t));
+
+        if (offsets->size > 0) memcpy(values, offsets->values, offsets->size * sizeof(pm_regexp_offset_t));
+        offsets->values = values;
+        offsets->capacity = capacity;
+    }
+
+    offsets->values[offsets->size++] = offset;
+}
+
+/**
+ * Map an offset in the content to an offset in the source, through the places
+ * where the two stop lining up. The base is the offset in the source of the
+ * start of the content.
+ *
+ * Each byte after a place is at the same distance from it in the source as in
+ * the content. A byte in text written in place of an escape maps to somewhere
+ * within that escape. The start flag says whether the offset starts a range or
+ * ends one. At a place, the escape before it wrote nothing at that offset, so
  * a range that starts there starts at the escape, and one that ends there ends
  * after it.
  */
 static uint32_t
-pm_regexp_source_offset(const pm_regexp_parser_t *parser, const uint8_t *position, bool start) {
-    if (parser->offsets == NULL) {
-        return start ? parser->location.start : (parser->location.start + parser->location.length);
-    }
-
-    const pm_regexp_offset_t *values = parser->offsets->values;
-    size_t size = parser->offsets->size;
-    uint32_t content = (uint32_t) (position - parser->start);
+pm_regexp_offsets_map(const pm_regexp_offsets_t *offsets, uint32_t base, uint32_t content, bool start) {
+    const pm_regexp_offset_t *values = offsets->values;
+    size_t size = offsets->size;
 
     /* Find the number of places at or before the position. */
     size_t low = 0;
@@ -133,10 +150,23 @@ pm_regexp_source_offset(const pm_regexp_parser_t *parser, const uint8_t *positio
     size_t from = low;
     if (start && from > 0 && values[from - 1].content == content) from--;
 
-    uint32_t source = (from == 0) ? (parser->source_start + content) : (values[from - 1].source + (content - values[from - 1].content));
+    uint32_t source = (from == 0) ? (base + content) : (values[from - 1].source + (content - values[from - 1].content));
     if (from < size && source > values[from].source) source = values[from].source;
 
     return source;
+}
+
+/**
+ * Return the offset in the source of the given position in the content, as the
+ * start (or else the end) of a range.
+ */
+static uint32_t
+pm_regexp_source_offset(const pm_regexp_parser_t *parser, const uint8_t *position, bool start) {
+    if (parser->offsets == NULL) {
+        return start ? parser->location.start : (parser->location.start + parser->location.length);
+    }
+
+    return pm_regexp_offsets_map(parser->offsets, parser->source_start, (uint32_t) (position - parser->start), start);
 }
 
 /**
