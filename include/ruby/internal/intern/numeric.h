@@ -201,7 +201,7 @@ VALUE rb_dbl_cmp(double lhs, double rhs);
  * This function  returns Infinity  when `y` is  big enough not  to fit  into a
  * Fixnum.  Warning is issued then.
  */
-RUBY_EXTERN VALUE rb_int_positive_pow(long x, unsigned long y);
+RUBY_EXTERN VALUE rb_int_positive_pow(rb_len_t x, rb_ulen_t y);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

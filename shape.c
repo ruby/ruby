@@ -1415,7 +1415,7 @@ parse_key(ID key)
     if (is_instance_id(key)) {
         return ID2SYM(key);
     }
-    return LONG2NUM(key);
+    return LEN2NUM(key);
 }
 
 static VALUE rb_shape_edge_name(rb_shape_t *shape);

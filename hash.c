@@ -181,7 +181,7 @@ rb_dbl_long_hash(double d)
 #endif
 }
 
-static inline long
+static inline rb_len_t
 any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 {
     VALUE hval;
@@ -208,7 +208,7 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
         break;
       case T_BIGNUM:
         hval = rb_big_hash(a);
-        hnum = FIX2LONG(hval);
+        hnum = FIX2ST(hval);
         break;
       case T_FLOAT: /* prevent pathological behavior: [Bug #10761] */
         hnum = rb_dbl_long_hash(rb_float_value(a));
@@ -220,7 +220,7 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
         hnum &= FIXNUM_MAX;
     else
         hnum |= FIXNUM_MIN;
-    return (long)hnum;
+    return (rb_len_t)hnum;
 }
 
 VALUE rb_obj_hash(VALUE obj);
@@ -251,20 +251,21 @@ obj_any_hash(VALUE obj)
     while (!FIXNUM_P(hval)) {
         if (RB_TYPE_P(hval, T_BIGNUM)) {
             int sign;
-            unsigned long ul;
+            rb_ulen_t ul;
             sign = rb_integer_pack(hval, &ul, 1, sizeof(ul), 0,
                     INTEGER_PACK_NATIVE_BYTE_ORDER);
             if (sign < 0) {
-                hval = LONG2FIX(ul | FIXNUM_MIN);
+                ul |= FIXNUM_MIN;
             }
             else {
-                hval = LONG2FIX(ul & FIXNUM_MAX);
+                ul &= FIXNUM_MAX;
             }
+            return (st_index_t)ul;
         }
         hval = rb_to_int(hval);
     }
 
-    return FIX2LONG(hval);
+    return FIX2ST(hval);
 }
 
 st_index_t
@@ -276,7 +277,7 @@ rb_any_hash(VALUE a)
 VALUE
 rb_hash(VALUE obj)
 {
-    return LONG2FIX(any_hash(obj, obj_any_hash));
+    return ST2FIX(any_hash(obj, obj_any_hash));
 }
 
 
@@ -328,11 +329,7 @@ objid_hash(VALUE obj)
     if (!FIXNUM_P(object_id))
         object_id = rb_big_hash(object_id);
 
-#if SIZEOF_LONG == SIZEOF_VOIDP
-    return (st_index_t)st_index_hash((st_index_t)NUM2LONG(object_id));
-#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-    return (st_index_t)st_index_hash((st_index_t)NUM2LL(object_id));
-#endif
+    return (st_index_t)st_index_hash(NUM2ST(object_id));
 }
 
 /*
@@ -1374,34 +1371,34 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
     return hash_iter_status_check(status);
 }
 
-static unsigned long
+static rb_ulen_t
 iter_lev_in_ivar(VALUE hash)
 {
     VALUE levval = rb_ivar_get(hash, id_hash_iter_lev);
     HASH_ASSERT(FIXNUM_P(levval));
-    long lev = FIX2LONG(levval);
+    rb_len_t lev = FIX2LEN(levval);
     HASH_ASSERT(lev >= 0);
-    return (unsigned long)lev;
+    return (rb_ulen_t)lev;
 }
 
 void rb_ivar_set_internal(VALUE obj, ID id, VALUE val);
 
 static void
-iter_lev_in_ivar_set(VALUE hash, unsigned long lev)
+iter_lev_in_ivar_set(VALUE hash, rb_ulen_t lev)
 {
     HASH_ASSERT(lev >= RHASH_LEV_MAX);
     HASH_ASSERT(POSFIXABLE(lev)); /* POSFIXABLE means fitting to long */
-    rb_ivar_set_internal(hash, id_hash_iter_lev, LONG2FIX((long)lev));
+    rb_ivar_set_internal(hash, id_hash_iter_lev, LEN2FIX((rb_len_t)lev));
 }
 
-static inline unsigned long
+static inline unsigned int
 iter_lev_in_flags(VALUE hash)
 {
-    return (unsigned long)((RBASIC(hash)->flags >> RHASH_LEV_SHIFT) & RHASH_LEV_MAX);
+    return (unsigned int)((RBASIC(hash)->flags >> RHASH_LEV_SHIFT) & RHASH_LEV_MAX);
 }
 
 static inline void
-iter_lev_in_flags_set(VALUE hash, unsigned long lev)
+iter_lev_in_flags_set(VALUE hash, rb_ulen_t lev)
 {
     HASH_ASSERT(lev <= RHASH_LEV_MAX);
     RBASIC(hash)->flags = ((RBASIC(hash)->flags & ~RHASH_LEV_MASK) | ((VALUE)lev << RHASH_LEV_SHIFT));
@@ -1416,7 +1413,7 @@ hash_iterating_p(VALUE hash)
 static void
 hash_iter_lev_inc(VALUE hash)
 {
-    unsigned long lev = iter_lev_in_flags(hash);
+    rb_ulen_t lev = iter_lev_in_flags(hash);
     if (lev == RHASH_LEV_MAX) {
         lev = iter_lev_in_ivar(hash) + 1;
         if (!POSFIXABLE(lev)) { /* paranoiac check */
@@ -1434,7 +1431,7 @@ hash_iter_lev_inc(VALUE hash)
 static void
 hash_iter_lev_dec(VALUE hash)
 {
-    unsigned long lev = iter_lev_in_flags(hash);
+    rb_ulen_t lev = iter_lev_in_flags(hash);
     if (lev == RHASH_LEV_MAX) {
         lev = iter_lev_in_ivar(hash);
         if (lev > RHASH_LEV_MAX) {
@@ -6089,7 +6086,7 @@ static VALUE
 rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
 {
     char **env;
-    long cnt = 0;
+    size_t cnt = 0;
 
     ENV_LOCKING() {
         env = GET_ENVIRON(environ);
@@ -6101,7 +6098,7 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
         FREE_ENVIRON(environ);
     }
 
-    return LONG2FIX(cnt);
+    return SIZET2NUM(cnt);
 }
 
 /*

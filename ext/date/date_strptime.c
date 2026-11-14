@@ -63,7 +63,7 @@ num_pattern_p(const char *s)
 
 #define NUM_PATTERN_P() num_pattern_p(&fmt[fi + 1])
 
-static long
+static size_t
 read_digits(const char *s, size_t slen, VALUE *n, size_t width)
 {
     size_t l;
@@ -71,6 +71,10 @@ read_digits(const char *s, size_t slen, VALUE *n, size_t width)
     if (!width)
         return 0;
 
+#ifdef HAVE_RB_INT_PARSE_CSTR
+    char *e;
+    *n = rb_int_parse_cstr(s, width, &e, &l, 10, 0);
+#else
     l = 0;
     while (l < slen && ISDIGIT(s[l])) {
         if (++l == width) break;
@@ -92,7 +96,6 @@ read_digits(const char *s, size_t slen, VALUE *n, size_t width)
 	if (os == s)
 	    return 0;
 	*n = LONG2NUM(v);
-	return l;
     }
     else {
 	VALUE vbuf = 0;
@@ -101,8 +104,10 @@ read_digits(const char *s, size_t slen, VALUE *n, size_t width)
 	s2[l] = '\0';
 	*n = rb_cstr_to_inum(s2, 10, 0);
 	ALLOCV_END(vbuf);
-	return l;
     }
+#endif
+
+    return l;
 }
 
 #define set_hash(k,v) rb_hash_aset(hash, ID2SYM(rb_intern(k"")), v)
@@ -127,7 +132,7 @@ do { \
     si += l; \
 } while (0)
 
-#define READ_DIGITS_MAX(n) READ_DIGITS(n, LONG_MAX)
+#define READ_DIGITS_MAX(n) READ_DIGITS(n, SIZE_MAX)
 
 static int
 valid_range_p(VALUE v, int a, int b)

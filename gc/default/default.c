@@ -259,6 +259,12 @@ static RB_THREAD_LOCAL_SPECIFIER int malloc_increase_local;
 # else
 #  define HEAP_COUNT 5
 # endif
+#else
+# if HEAP_COUNT <= 0
+#  error HEAP_COUNT must be positive
+# elif HEAP_COUNT > 255
+#  error HEAP_COUNT exceeds uint8_t range
+# endif
 #endif
 
 /* The reciprocal table and pool_slot_sizes array are both generated from this
@@ -11136,7 +11142,7 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
                    gc_mode(objspace) == gc_mode_marking ? sym_marking : sym_sweeping);
     }
 
-    SET(weak_references_count, LONG2FIX(objspace->profile.weak_references_count));
+    SET(weak_references_count, SIZET2NUM(objspace->profile.weak_references_count));
 #undef SET
 
     if (!NIL_P(key)) {
@@ -11833,7 +11839,7 @@ atomic_sub_nounderflow(size_t *var, size_t sub)
 }
 
 #define gc_stress_full_mark_after_malloc_p() \
-    (FIXNUM_P(ruby_gc_stress_mode) && (FIX2LONG(ruby_gc_stress_mode) & (1<<gc_stress_full_mark_after_malloc)))
+    (FIXNUM_P(ruby_gc_stress_mode) && (FIX2LEN(ruby_gc_stress_mode) & (1<<gc_stress_full_mark_after_malloc)))
 
 static void
 objspace_malloc_gc_stress(rb_objspace_t *objspace)
@@ -12587,6 +12593,13 @@ gc_profile_clear(VALUE _)
     return Qnil;
 }
 
+#if RB_LEN_MAX > SIZE_MAX
+# define LEN2SIZE(len, name) \
+    ((rb_ulen_t)(len) > SIZE_MAX) ? (rb_raise(rb_eArgError, #name " too big"), 0) : (size_t)(len)
+#else
+# define LEN2SIZE(len, name) (size_t)(len)
+#endif
+
 /*
  *  call-seq:
  *     GC::Profiler.configure(max_records: 4096) -> nil
@@ -12628,11 +12641,11 @@ gc_profile_configure(int argc, VALUE *argv, VALUE _)
         objspace->profile.max_records = GC_PROFILE_RECORD_UNBOUNDED;
     }
     else {
-        long value = NUM2LONG(max_records);
+        rb_len_t value = NUM2LEN(max_records);
         if (value <= 0) {
             rb_raise(rb_eArgError, "max_records must be positive or nil");
         }
-        objspace->profile.max_records = (size_t)value;
+        objspace->profile.max_records = LEN2SIZE(value, max_records);
     }
 
     gc_profile_records_free(objspace);
@@ -12765,18 +12778,18 @@ gc_profile_record_get(int argc, VALUE *argv, VALUE _)
     since_value = values[1];
 
     if (limit_value != Qundef && !NIL_P(limit_value)) {
-        long value = NUM2LONG(limit_value);
+        rb_len_t value = NUM2LEN(limit_value);
         if (value < 0) {
             rb_raise(rb_eArgError, "limit must be non-negative");
         }
-        limit = (size_t)value;
+        limit = LEN2SIZE(value, limit);
     }
     if (since_value != Qundef && !NIL_P(since_value)) {
-        long value = NUM2LONG(since_value);
+        rb_len_t value = NUM2LEN(since_value);
         if (value < 0) {
             rb_raise(rb_eArgError, "since must be non-negative");
         }
-        since = (size_t)value;
+        since = LEN2SIZE(value, since);
         use_since = true;
     }
 
@@ -13679,9 +13692,9 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), SIZET2NUM(RVALUE_OVERHEAD));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_BITMAP_SIZE")), SIZET2NUM(HEAP_PAGE_BITMAP_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_SIZE")), SIZET2NUM(HEAP_PAGE_SIZE));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_COUNT")), LONG2FIX(HEAP_COUNT));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_COUNT")), INT2FIX(HEAP_COUNT));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), SIZET2NUM(rb_gc_impl_max_allocation_size()));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), LONG2FIX(RVALUE_OLD_AGE));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), INT2FIX(RVALUE_OLD_AGE));
     if (RB_BUG_INSTEAD_OF_RB_MEMERROR+0) {
         rb_hash_aset(gc_constants, ID2SYM(rb_intern("RB_BUG_INSTEAD_OF_RB_MEMERROR")), Qtrue);
     }

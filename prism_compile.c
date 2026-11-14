@@ -1781,7 +1781,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             // Store (and possibly overwrite) the index for this
                             // keyword in the hash, mark the array at that index
                             // as true, and increment the keyword size.
-                            rb_hash_aset(stored_indices, keyword, ULONG2NUM(element_index));
+                            rb_hash_aset(stored_indices, keyword, SIZET2NUM(element_index));
                             rb_ary_store(keyword_indices, (rb_len_t) element_index, Qtrue);
                             size++;
                         }
@@ -7662,7 +7662,7 @@ pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *
         double intptr;
 
         if (modf(RFLOAT_VALUE(key), &intptr) == 0.0) {
-            key = (FIXABLE(intptr) ? LONG2FIX((long) intptr) : rb_dbl2big(intptr));
+            key = (FIXABLE(intptr) ? LEN2FIX((rb_len_t) intptr) : rb_dbl2big(intptr));
         }
 
         break;

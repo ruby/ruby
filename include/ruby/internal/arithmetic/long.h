@@ -196,6 +196,11 @@ rb_long2num_inline(long v)
         return rb_int2big(v);
 }
 
+RBIMPL_ATTR_CONST_UNLESS_DEBUG()
+RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(CXX14)
+RBIMPL_ATTR_ARTIFICIAL()
+static inline VALUE rb_len2fix(rb_len_t i);
+
 /**
  * Converts a C's `unsigned long` into an instance of ::rb_cInteger.
  *
@@ -206,7 +211,7 @@ static inline VALUE
 rb_ulong2num_inline(unsigned long v)
 {
     if (RB_POSFIXABLE(v))
-        return RB_LONG2FIX(RBIMPL_CAST((long)v));
+        return rb_len2fix(RBIMPL_CAST((rb_len_t)v));
     else
         return rb_uint2big(v);
 }

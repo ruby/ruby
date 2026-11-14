@@ -23,6 +23,7 @@
 #include "ruby/internal/config.h"
 #include "ruby/internal/arithmetic/fixnum.h"
 #include "ruby/internal/arithmetic/intptr_t.h"
+#include "ruby/internal/arithmetic/len_t.h"
 #include "ruby/internal/arithmetic/long.h"
 #include "ruby/internal/attr/artificial.h"
 #include "ruby/internal/attr/const.h"
@@ -186,7 +187,7 @@ RB_NUM2UINT(VALUE x)
 {
     unsigned long ret;
 
-    if /* constexpr */ (sizeof(int) < sizeof(long)) {
+    if /* constexpr */ (sizeof(int) < sizeof(rb_len_t)) {
         ret = rb_num2uint(x);
     }
     else {
@@ -212,7 +213,7 @@ RB_FIX2UINT(VALUE x)
 #endif
     unsigned long ret;
 
-    if /* constexpr */ (sizeof(int) < sizeof(long)) {
+    if /* constexpr */ (sizeof(int) < sizeof(rb_len_t)) {
         ret = rb_fix2uint(x);
     }
     else {
@@ -254,7 +255,7 @@ static inline VALUE
 rb_uint2num_inline(unsigned int v)
 {
     if (RB_POSFIXABLE(v))
-        return RB_LONG2FIX(RBIMPL_CAST((long)v));
+        return RB_LEN2FIX(RBIMPL_CAST((rb_len_t)v));
     else
         return rb_uint2big(v);
 }

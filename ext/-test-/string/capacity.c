@@ -8,7 +8,7 @@ bug_str_capacity(VALUE klass, VALUE str)
         return INT2FIX(0);
     }
 
-    return LONG2FIX(rb_str_capacity(str));
+    return SIZET2NUM(rb_str_capacity(str));
 }
 
 static VALUE

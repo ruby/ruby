@@ -4191,7 +4191,7 @@ rb_str_concat(VALUE str1, VALUE str2)
         if (rb_num_to_uint(str2, &code) == 0) {
         }
         else if (FIXNUM_P(str2)) {
-            rb_raise(rb_eRangeError, "%ld out of char range", FIX2LONG(str2));
+            rb_raise(rb_eRangeError, "%"PRIdLEN" out of char range", FIX2LEN(str2));
         }
         else {
             rb_raise(rb_eRangeError, "bignum out of char range");
@@ -5886,13 +5886,13 @@ rb_str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALU
         b = rb_str_to_inum(beg, 10, FALSE);
         e = rb_str_to_inum(end, 10, FALSE);
         if (FIXNUM_P(b) && FIXNUM_P(e)) {
-            long bi = FIX2LONG(b);
-            long ei = FIX2LONG(e);
+            rb_len_t bi = FIX2LEN(b);
+            rb_len_t ei = FIX2LEN(e);
             rb_encoding *usascii = rb_usascii_encoding();
 
             while (bi <= ei) {
                 if (excl && bi == ei) break;
-                if ((*each)(rb_enc_sprintf(usascii, "%.*ld", width, bi), arg)) break;
+                if ((*each)(rb_enc_sprintf(usascii, "%.*"PRIdLEN, width, bi), arg)) break;
                 bi++;
             }
         }
@@ -5945,14 +5945,14 @@ rb_str_upto_endless_each(VALUE beg, int (*each)(VALUE, VALUE), VALUE arg)
         int width = RSTRING_LENINT(beg);
         b = rb_str_to_inum(beg, 10, FALSE);
         if (FIXNUM_P(b)) {
-            long bi = FIX2LONG(b);
+            rb_len_t bi = FIX2LEN(b);
             rb_encoding *usascii = rb_usascii_encoding();
 
             while (FIXABLE(bi)) {
-                if ((*each)(rb_enc_sprintf(usascii, "%.*ld", width, bi), arg)) break;
+                if ((*each)(rb_enc_sprintf(usascii, "%.*"PRIdLEN, width, bi), arg)) break;
                 bi++;
             }
-            b = LONG2NUM(bi);
+            b = LEN2NUM(bi);
         }
         args[0] = INT2FIX(width);
         while (1) {
@@ -6044,7 +6044,7 @@ rb_str_aref(VALUE str, VALUE indx)
     rb_len_t idx;
 
     if (FIXNUM_P(indx)) {
-        idx = FIX2LONG(indx);
+        idx = FIX2LEN(indx);
     }
     else if (RB_TYPE_P(indx, T_REGEXP)) {
         return rb_str_subpat(str, indx, INT2FIX(0));
@@ -6701,7 +6701,7 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
         goto num_index;
     }
     else if (FIXNUM_P(indx)) {
-        beg = FIX2LONG(indx);
+        beg = FIX2LEN(indx);
         if (!(p = rb_str_subpos(str, beg, &len))) return Qnil;
         if (!len) return Qnil;
         beg = p - RSTRING_PTR(str);
@@ -7441,7 +7441,7 @@ str_bit_offset_from_index(VALUE index)
      * offsets.
      */
     if (FIXNUM_P(integer)) {
-        offset.index_value = FIX2LONG(integer);
+        offset.index_value = FIX2LEN(integer);
         if (offset.index_value < 0) {
             rb_raise(rb_eIndexError, "bit index out of range");
         }
@@ -7480,7 +7480,7 @@ str_bit_length_from_index(VALUE index)
     VALUE integer = rb_to_int(index);
 
     if (FIXNUM_P(integer)) {
-        rb_len_t value = FIX2LONG(integer);
+        rb_len_t value = FIX2LEN(integer);
         if (value < 0) {
             rb_raise(rb_eArgError, "negative bit length");
         }
@@ -8532,7 +8532,7 @@ str_byte_aref(VALUE str, VALUE indx)
 {
     rb_len_t idx;
     if (FIXNUM_P(indx)) {
-        idx = FIX2LONG(indx);
+        idx = FIX2LEN(indx);
     }
     else {
         /* check if indx is Range */
@@ -14283,7 +14283,7 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
     char *ptr, *p, *pend;
     rb_len_t len;
     VALUE sum = INT2FIX(0);
-    unsigned long sum0 = 0;
+    rb_len_t sum0 = 0;
 
     if (rb_check_arity(argc, 0, 1) && (bits = NUM2INT(argv[0])) < 0) {
         bits = 0;
@@ -14294,7 +14294,7 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
 
     while (p < pend) {
         if (FIXNUM_MAX - UCHAR_MAX < sum0) {
-            sum = rb_funcall(sum, '+', 1, LONG2FIX(sum0));
+            sum = rb_funcall(sum, '+', 1, LEN2FIX(sum0));
             str_mod_check(str, ptr, len);
             sum0 = 0;
         }
@@ -14304,26 +14304,26 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
 
     if (bits == 0) {
         if (sum0) {
-            sum = rb_funcall(sum, '+', 1, LONG2FIX(sum0));
+            sum = rb_funcall(sum, '+', 1, LEN2FIX(sum0));
         }
     }
     else {
         if (sum == INT2FIX(0)) {
-            if (bits < (int)sizeof(long)*CHAR_BIT) {
-                sum0 &= (((unsigned long)1)<<bits)-1;
+            if (bits < (int)sizeof(rb_len_t)*CHAR_BIT) {
+                sum0 &= (((rb_len_t)1)<<bits)-1;
             }
-            sum = LONG2FIX(sum0);
+            sum = LEN2FIX(sum0);
         }
         else {
             VALUE mod;
 
             if (sum0) {
-                sum = rb_funcall(sum, '+', 1, LONG2FIX(sum0));
+                sum = rb_funcall(sum, '+', 1, LEN2FIX(sum0));
             }
 
-            mod = rb_funcall(INT2FIX(1), idLTLT, 1, INT2FIX(bits));
-            mod = rb_funcall(mod, '-', 1, INT2FIX(1));
-            sum = rb_funcall(sum, '&', 1, mod);
+            mod = rb_int_lshift(INT2FIX(1), INT2FIX(bits));
+            mod = rb_int_minus(mod, INT2FIX(1));
+            sum = rb_int_and(sum, mod);
         }
     }
     return sum;

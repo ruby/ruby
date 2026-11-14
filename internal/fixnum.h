@@ -16,42 +16,32 @@
 #include "ruby/intern.h"        /* for rb_big_mul */
 #include "ruby/ruby.h"          /* for RB_FIXABLE */
 
-#if HAVE_LONG_LONG && SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG
+#if HAVE_LONG_LONG && SIZEOF_RB_LEN_T * 2 <= SIZEOF_LONG_LONG
 # define DLONG LONG_LONG
 # define DL2NUM(x) LL2NUM(x)
-#elif defined(HAVE_INT128_T) && !(defined(__OpenBSD__) && defined(__mips64__))
+#elif defined(HAVE_INT128_T) && SIZEOF_RB_LEN_T * 2 <= SIZEOF_INT128_T && !(defined(__OpenBSD__) && defined(__mips64__))
 # define DLONG int128_t
-# define DL2NUM(x) (RB_FIXABLE(x) ? LONG2FIX(x) : rb_int128t2big(x))
+# define DL2NUM(x) (RB_FIXABLE(x) ? LEN2FIX(x) : rb_int128t2big(x))
 VALUE rb_int128t2big(int128_t n); /* in bignum.c */
 #endif
 
-static inline long rb_overflowed_fix_to_int(long x);
-static inline VALUE rb_fix_plus_fix(VALUE x, VALUE y);
-static inline VALUE rb_fix_minus_fix(VALUE x, VALUE y);
-static inline VALUE rb_fix_mul_fix(VALUE x, VALUE y);
-static inline void rb_fix_divmod_fix(VALUE x, VALUE y, VALUE *divp, VALUE *modp);
-static inline VALUE rb_fix_div_fix(VALUE x, VALUE y);
-static inline VALUE rb_fix_mod_fix(VALUE x, VALUE y);
-static inline bool FIXNUM_POSITIVE_P(VALUE num);
-static inline bool FIXNUM_NEGATIVE_P(VALUE num);
-static inline bool FIXNUM_ZERO_P(VALUE num);
-
-static inline long
-rb_overflowed_fix_to_int(long x)
+static inline rb_len_t
+rb_overflowed_fix_to_int(rb_len_t x)
 {
-    return (long)((unsigned long)(x >> 1) ^ (1LU << (SIZEOF_LONG * CHAR_BIT - 1)));
+    return (rb_len_t)((rb_ulen_t)(x >> 1) ^
+                          ((rb_ulen_t)1 << (sizeof(rb_len_t) * CHAR_BIT - 1)));
 }
 
 static inline VALUE
 rb_fix_plus_fix(VALUE x, VALUE y)
 {
 #if !__has_builtin(__builtin_add_overflow)
-    long lz = FIX2LONG(x) + FIX2LONG(y);
-    return LONG2NUM(lz);
+    rb_len_t lz = FIX2LEN(x) + FIX2LEN(y);
+    return LEN2NUM(lz);
 #else
-    long lz;
+    rb_len_t lz;
     /* NOTE
-     * (1) `LONG2FIX(FIX2LONG(x)+FIX2LONG(y))`
+     * (1) `LEN2FIX(FIX2LEN(x)+FIX2LEN(y))`
      +     = `((lx*2+1)/2 + (ly*2+1)/2)*2+1`
      +     = `lx*2 + ly*2 + 1`
      +     = `(lx*2+1) + (ly*2+1) - 1`
@@ -62,7 +52,7 @@ rb_fix_plus_fix(VALUE x, VALUE y)
      *     At that time true value is
      *     * positive: 0b0 1xxx...1, and z = 0b1xxx...1
      *     * negative: 0b1 0xxx...1, and z = 0b0xxx...1
-     *     To convert this true value to long,
+     *     To convert this true value to an integer,
      *     (a) Use arithmetic shift
      *         * positive: 0b11xxx...
      *         * negative: 0b00xxx...
@@ -70,7 +60,7 @@ rb_fix_plus_fix(VALUE x, VALUE y)
      *         * positive: 0b01xxx...
      *         * negative: 0b10xxx...
      */
-    if (__builtin_add_overflow((long)x, (long)y-1, &lz)) {
+    if (__builtin_add_overflow((rb_len_t)x, (rb_len_t)y-1, &lz)) {
         return rb_int2big(rb_overflowed_fix_to_int(lz));
     }
     else {
@@ -83,11 +73,11 @@ static inline VALUE
 rb_fix_minus_fix(VALUE x, VALUE y)
 {
 #if !__has_builtin(__builtin_sub_overflow)
-    long lz = FIX2LONG(x) - FIX2LONG(y);
-    return LONG2NUM(lz);
+    rb_len_t lz = FIX2LEN(x) - FIX2LEN(y);
+    return LEN2NUM(lz);
 #else
-    long lz;
-    if (__builtin_sub_overflow((long)x, (long)y-1, &lz)) {
+    rb_len_t lz;
+    if (__builtin_sub_overflow((rb_len_t)x, (rb_len_t)y-1, &lz)) {
         return rb_int2big(rb_overflowed_fix_to_int(lz));
     }
     else {
@@ -100,8 +90,8 @@ rb_fix_minus_fix(VALUE x, VALUE y)
 static inline VALUE
 rb_fix_mul_fix(VALUE x, VALUE y)
 {
-    long lx = FIX2LONG(x);
-    long ly = FIX2LONG(y);
+    rb_len_t lx = FIX2LEN(x);
+    rb_len_t ly = FIX2LEN(y);
 #ifdef DLONG
     return DL2NUM((DLONG)lx * (DLONG)ly);
 #else
@@ -109,7 +99,7 @@ rb_fix_mul_fix(VALUE x, VALUE y)
         return rb_big_mul(rb_int2big(lx), rb_int2big(ly));
     }
     else {
-        return LONG2FIX(lx * ly);
+        return LEN2FIX(lx * ly);
     }
 #endif
 }
@@ -125,12 +115,12 @@ rb_fix_divmod_fix(VALUE a, VALUE b, VALUE *divp, VALUE *modp)
      * ldiv(3) won't be inlined by GCC and clang.
      * I expect / and % are compiled as single idiv.
      */
-    long x = FIX2LONG(a);
-    long y = FIX2LONG(b);
-    long div, mod;
+    rb_len_t x = FIX2LEN(a);
+    rb_len_t y = FIX2LEN(b);
+    rb_len_t div, mod;
     if (x == FIXNUM_MIN && y == -1) {
-        if (divp) *divp = LONG2NUM(-FIXNUM_MIN);
-        if (modp) *modp = LONG2FIX(0);
+        if (divp) *divp = LEN2NUM(-FIXNUM_MIN);
+        if (modp) *modp = LEN2FIX(0);
         return;
     }
     div = x / y;
@@ -139,8 +129,8 @@ rb_fix_divmod_fix(VALUE a, VALUE b, VALUE *divp, VALUE *modp)
         mod += y;
         div -= 1;
     }
-    if (divp) *divp = LONG2FIX(div);
-    if (modp) *modp = LONG2FIX(mod);
+    if (divp) *divp = LEN2NUM(div);
+    if (modp) *modp = LEN2FIX(mod);
 }
 
 /* div() for Ruby

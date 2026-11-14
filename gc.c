@@ -2538,7 +2538,7 @@ static VALUE
 rb_find_object_id(void *objspace, VALUE obj, VALUE (*get_heap_object_id)(VALUE))
 {
     if (SPECIAL_CONST_P(obj)) {
-#if SIZEOF_LONG == SIZEOF_VOIDP
+#if SIZEOF_LONG == SIZEOF_VALUE
         return LONG2NUM((SIGNED_VALUE)obj);
 #else
         return LL2NUM((SIGNED_VALUE)obj);
@@ -2551,9 +2551,9 @@ rb_find_object_id(void *objspace, VALUE obj, VALUE (*get_heap_object_id)(VALUE))
 static VALUE
 nonspecial_obj_id(VALUE obj)
 {
-#if SIZEOF_LONG == SIZEOF_VOIDP
-    return (VALUE)((SIGNED_VALUE)(obj)|FIXNUM_FLAG);
-#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+#if SIZEOF_RB_LEN_T == SIZEOF_VALUE /* Fixnum region === VALUE region */
+    return obj | FIXNUM_FLAG;
+#elif SIZEOF_LONG_LONG == SIZEOF_VALUE
     return LL2NUM((SIGNED_VALUE)(obj) / 2);
 #else
 # error not supported
@@ -6223,7 +6223,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
         APPEND_F("%s", obj_type_name(obj));
 
         if (FIXNUM_P(obj)) {
-            APPEND_F(" %ld", FIX2LONG(obj));
+            APPEND_F(" %" PRIdLEN "d", FIX2LEN(obj));
         }
         else if (SYMBOL_P(obj)) {
             APPEND_F(" %s", rb_id2name(SYM2ID(obj)));

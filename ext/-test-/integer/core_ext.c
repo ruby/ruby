@@ -16,14 +16,14 @@ static VALUE
 rb_int_to_bignum(VALUE klass, VALUE x)
 {
     if (FIXNUM_P(x))
-        x = rb_int2big(FIX2LONG(x));
+        x = rb_int2big(FIX2LEN(x));
     return x;
 }
 
 static VALUE
 positive_pow(VALUE klass, VALUE x, VALUE y)
 {
-    return rb_int_positive_pow(NUM2LONG(x), NUM2ULONG(y));
+    return rb_int_positive_pow(NUM2LEN(x), NUM2ULEN(y));
 }
 
 void

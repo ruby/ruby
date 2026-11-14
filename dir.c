@@ -4096,7 +4096,7 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
 
     result = (VALUE)IO_WITHOUT_GVL(nogvl_dir_empty_p, (void *)path);
     if (FIXNUM_P(result)) {
-        rb_syserr_fail_path((int)FIX2LONG(result), orig);
+        rb_syserr_fail_path(FIX2INT(result), orig);
     }
     return result;
 }

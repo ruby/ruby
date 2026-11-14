@@ -336,7 +336,7 @@ memory_view_get_data_body(VALUE _args)
     }
     else {
         const char *content =
-            ((const char *)(args->view.data)) + NUM2LONG(args->location);
+            ((const char *)(args->view.data)) + NUM2LEN(args->location);
         return rb_str_new(content, 1);
     }
 }
@@ -367,12 +367,12 @@ memory_view_set_data_body(VALUE _args)
     memory_view_set_data_args *args = (memory_view_set_data_args *)_args;
 
     if (FIXNUM_P(args->data)) {
-        ((char *)(args->view.data))[NUM2LONG(args->offset)] =
-            NUM2LONG(args->data);
+        ((char *)(args->view.data))[NUM2LEN(args->offset)] =
+            NUM2INT(args->data);
     }
     else {
         StringValue(args->data);
-        memcpy(((char *)(args->view.data)) + NUM2LONG(args->offset),
+        memcpy(((char *)(args->view.data)) + NUM2LEN(args->offset),
                RSTRING_PTR(args->data),
                RSTRING_LEN(args->data));
     }

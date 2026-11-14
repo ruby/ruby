@@ -1529,7 +1529,7 @@ rb_struct_hash(VALUE s)
     len = RSTRUCT_LEN_RAW(s);
     for (i = 0; i < len; i++) {
         n = rb_hash(RSTRUCT_GET_RAW(s, i));
-        h = rb_hash_uint(h, NUM2LONG(n));
+        h = rb_hash_uint(h, NUM2ST(n));
     }
     h = rb_hash_end(h);
     return ST2FIX(h);

@@ -83,7 +83,7 @@ f_add(VALUE x, VALUE y)
 inline static VALUE
 f_div(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y) && FIX2LONG(y) == 1)
+    if (FIXNUM_P(y) && FIX2LEN(y) == 1)
         return x;
     return rb_funcall(x, '/', 1, y);
 }
@@ -1144,7 +1144,7 @@ rb_complex_pow(VALUE self, VALUE other)
         return f_complex_polar(CLASS_OF(self), nr, ntheta);
     }
     if (FIXNUM_P(other)) {
-        long n = FIX2LONG(other);
+        rb_len_t n = FIX2LEN(other);
         if (n == 0) {
             return nucomp_s_new_internal(CLASS_OF(self), ONE, ZERO);
         }
@@ -1171,7 +1171,7 @@ rb_complex_pow(VALUE self, VALUE other)
             }
             else {
                 while (--n) {
-                    long q, r;
+                    rb_len_t q, r;
 
                     for (; q = n / 2, r = n % 2, r == 0; n = q) {
                         VALUE tmp = f_sub(f_mul(xr, xr), f_mul(xi, xi));
@@ -1525,9 +1525,9 @@ rb_complex_hash(VALUE self)
 
     get_dat1(self);
     n = rb_hash(dat->real);
-    h[0] = NUM2LONG(n);
+    h[0] = NUM2ST(n);
     n = rb_hash(dat->imag);
-    h[1] = NUM2LONG(n);
+    h[1] = NUM2ST(n);
     v = rb_memhash(h, sizeof(h));
     return v;
 }
