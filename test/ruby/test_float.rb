@@ -235,6 +235,17 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(4, 14.0.remainder(ten))
   end
 
+  def test_strtod_near_halfway
+    # between 139090927331892.609375 and 139090927331892.625
+    assert_equal(139090927331892.61, "139090927331892.61718749".to_f)
+    assert_equal(139090927331892.62, "139090927331892.6171875".to_f)
+    assert_equal(139090927331892.62, "139090927331892.61718751".to_f)
+    assert_equal(1022987641419180.1, "1022987641419180.18749".to_f)
+    assert_equal(121029756227085.27, "121029756227085.25781251".to_f)
+    assert_equal(140360966493656.55, "140360966493656.53906251".to_f)
+    assert_equal(121374757949434.89, "121374757949434.89843749".to_f)
+  end
+
   def test_to_s
     inf = Float::INFINITY
     assert_equal("Infinity", inf.to_s)
@@ -248,6 +259,84 @@ class TestFloat < Test::Unit::TestCase
       s = f.to_s
       assert_equal(f, s.to_f, bug3273)
       assert_not_equal(f, s.chop.to_f, bug3273)
+    end
+  end
+
+  def test_to_s_shortest
+    {
+      0.0 => "0.0", 1.0 => "1.0", -1.0 => "-1.0",
+      0.1 => "0.1", 0.5 => "0.5", 4.35 => "4.35", 100.0 => "100.0",
+      0.1 + 0.2 => "0.30000000000000004",
+      0.001 => "0.001", 0.0001 => "0.0001", 0.00001 => "1.0e-05",
+      0.000123 => "0.000123", 0.0000123 => "1.23e-05",
+      123456789012345.0 => "123456789012345.0",
+      1.0e15 => "1.0e+15", 999999999999999.9 => "999999999999999.9",
+      1.0e16 => "1.0e+16", 1.0e23 => "1.0e+23", 1.0e100 => "1.0e+100",
+      9007199254740992.0 => "9.007199254740992e+15",
+      9007199254740994.0 => "9.007199254740994e+15",
+      2.0**60 => "1.152921504606847e+18",
+      2.0**-20 => "9.5367431640625e-07",
+      5.0e-324 => "5.0e-324", -5.0e-324 => "-5.0e-324",
+      2.2250738585072014e-308 => "2.2250738585072014e-308",
+      2.225073858507201e-308 => "2.225073858507201e-308",
+      1.7976931348623157e308 => "1.7976931348623157e+308",
+      -1.7976931348623157e308 => "-1.7976931348623157e+308",
+      3.141592653589793 => "3.141592653589793",
+      1.0e-10 => "1.0e-10", 1.5e-9 => "1.5e-09", 1.5e300 => "1.5e+300",
+    }.each do |f, s|
+      assert_equal(s, f.to_s)
+    end
+    assert_equal("-0.0", -0.0.to_s)
+
+    rng = Random.new(42)
+    floats = [
+      ->{[rng.rand(1 << 63)].pack("Q").unpack1("D")},
+      ->{rng.rand},
+      ->{rng.rand(100_000_000) / 100.0},
+      ->{(rng.rand - 0.5) * 10.0**rng.rand(-300..300)},
+      ->{2.0**rng.rand(-1074..1023)},
+      ->{(2.0**rng.rand(-1000..1000)).prev_float},
+    ]
+    2000.times do |i|
+      f = floats[i % floats.size].call
+      next unless f.finite?
+      s = f.to_s
+      assert_equal(f, s.to_f, s)
+      # no shorter digits are converted back to it
+      digits = s[/[\d.]+/].delete(".").sub(/\A0+/, "").sub(/0+\z/, "").size
+      next if digits <= 1
+      shorter = ("%.#{digits - 2}e" % f).to_f
+      assert_not_equal(f, shorter, s)
+    end
+  end
+
+  def test_to_f_correctly_rounded
+    rng = Random.new(42)
+    strings = [
+      ->{rng.rand.to_s},
+      ->{"%.#{rng.rand(1..30)}g" % (rng.rand * 10.0**rng.rand(-300..300))},
+      ->{"%.#{rng.rand(0..30)}f" % (rng.rand * 10**rng.rand(0..18))},
+      ->{"#{rng.rand(10**rng.rand(1..25))}.#{rng.rand(10**rng.rand(1..25))}e#{rng.rand(-300..280)}"},
+      ->{rng.rand(10**rng.rand(1..40)).to_s},
+    ]
+    3000.times do |i|
+      s = strings[i % strings.size].call
+      f = s.to_r.to_f
+      assert_equal(f, s.to_f, s)
+      assert_equal(f, Float(s), s)
+      assert_equal(-f, "-#{s}".to_f, s)
+    end
+
+    # exactly halfway between two doubles, and just above and below it
+    300.times do
+      k = rng.rand(1..40)
+      m = rng.rand(1 << 52) | 1 << 52
+      s = ((m * 2 + 1) * 5**k).to_s.rjust(k + 1, "0").insert(-k - 1, ".")
+      lower = m.to_f / 2**(k - 1)
+      upper = (m + 1).to_f / 2**(k - 1)
+      assert_equal(m.even? ? lower : upper, s.to_f, s)
+      assert_equal(upper, "#{s}1".to_f, s)
+      assert_equal(lower, s.sub(/5\z/, "49").to_f, s)
     end
   end
 
