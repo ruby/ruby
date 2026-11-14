@@ -1130,6 +1130,14 @@ install?(:local, :comm, :lib) do
   install_recursive(File.join(srcdir, "lib"), rubylibdir, :no_install => noinst, :mode => $data_mode)
 end
 
+install?(:local, :comm, :lib) do
+  # RBS type signatures of default gems, kept under sig/<gem name>/ in the
+  # source tree, are installed next to the library scripts.
+  sigdir = File.join(rubylibdir, "sig")
+  prepare "type signatures", sigdir
+  install_recursive(File.join(srcdir, "sig"), sigdir, :mode => $data_mode)
+end
+
 install?(:local, :comm, :hdr, :'comm-hdr') do
   prepare "common headers", rubyhdrdir
 
