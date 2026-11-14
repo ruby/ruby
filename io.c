@@ -15992,6 +15992,7 @@ Init_IO(void)
 
     rb_output_fs = Qnil;
     rb_define_hooked_variable("$,", &rb_output_fs, 0, rb_deprecated_str_setter);
+    rb_gvar_box_dynamic("$,");
 
     rb_default_rs = rb_fstring_lit("\n"); /* avoid modifying RS_default */
     rb_vm_register_global_object(rb_default_rs);
@@ -15999,9 +16000,12 @@ Init_IO(void)
     rb_output_rs = Qnil;
     rb_define_hooked_variable("$/", &rb_rs, 0, deprecated_rs_setter);
     rb_gvar_ractor_local("$/"); // not local but ractor safe
+    rb_gvar_box_dynamic("$/");
     rb_define_hooked_variable("$-0", &rb_rs, 0, deprecated_rs_setter);
     rb_gvar_ractor_local("$-0"); // not local but ractor safe
+    rb_gvar_box_dynamic("$-0");
     rb_define_hooked_variable("$\\", &rb_output_rs, 0, rb_deprecated_str_setter);
+    rb_gvar_box_dynamic("$\\");
 
     rb_define_virtual_variable("$_", get_LAST_READ_LINE, set_LAST_READ_LINE);
     rb_gvar_ractor_local("$_");
@@ -16222,6 +16226,7 @@ Init_IO(void)
     argf = rb_class_new_instance(0, 0, rb_cARGF);
 
     rb_define_readonly_variable("$<", &argf);
+    rb_gvar_box_ready("$<");
     /*
      * ARGF is a stream designed for use in scripts that process files given
      * as command-line arguments or passed in via STDIN.
@@ -16231,13 +16236,17 @@ Init_IO(void)
     rb_define_global_const("ARGF", argf);
 
     rb_define_hooked_variable("$.", &argf, argf_lineno_getter, argf_lineno_setter);
+    rb_gvar_box_dynamic("$.");
     rb_define_hooked_variable("$FILENAME", &argf, argf_filename_getter, rb_gvar_readonly_setter);
+    rb_gvar_box_ready("$FILENAME");
     ARGF_SET(filename, rb_str_new2("-"));
 
     rb_define_hooked_variable("$-i", &argf, opt_i_get, opt_i_set);
     rb_gvar_ractor_local("$-i");
+    rb_gvar_box_dynamic("$-i");
 
     rb_define_hooked_variable("$*", &argf, argf_argv_getter, rb_gvar_readonly_setter);
+    rb_gvar_box_ready("$*");
 
 #if defined (_WIN32) || defined(__CYGWIN__)
     atexit(pipe_atexit);

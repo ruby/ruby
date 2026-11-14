@@ -42,6 +42,7 @@
 #include "internal/simd.h"
 #include "internal/string.h"
 #include "internal/transcode.h"
+#include "internal/variable.h"
 #include "probes.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
@@ -16518,6 +16519,8 @@ Init_String(void)
     rb_fs = Qnil;
     rb_define_hooked_variable("$;", &rb_fs, 0, rb_fs_setter);
     rb_define_hooked_variable("$-F", &rb_fs, 0, rb_fs_setter);
+    rb_gvar_box_dynamic("$;");
+    rb_gvar_box_dynamic("$-F");
     rb_gc_register_address(&rb_fs);
 
     rb_cSymbol = rb_define_class("Symbol", rb_cObject);

@@ -715,14 +715,14 @@ class TestBox < Test::Unit::TestCase
 
     # read first
     assert_equal "\n", @box::LineSplitter.read
-    @box::LineSplitter.write("\r\n")
+    EnvUtil.suppress_warning { @box::LineSplitter.write("\r\n") }
     assert_equal "\r\n", @box::LineSplitter.read
-    assert_equal "\n", $-0
+    assert_equal "\r\n", $-0
 
     # write first
-    @box::FieldSplitter.write(",")
+    EnvUtil.suppress_warning { @box::FieldSplitter.write(",") }
     assert_equal ",", @box::FieldSplitter.read
-    assert_equal nil, $,
+    assert_equal ",", $,
 
     # used only in box
     assert_not_include global_variables, :$used_only_in_box
@@ -741,6 +741,98 @@ class TestBox < Test::Unit::TestCase
       $-0 = default_l
       $, = default_f
     end
+  end
+
+  def test_separator_variables_are_shared_by_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      results = {
+        '$/ = "!"; ["hello!".chomp, $/, $-0]' => ["hello", "!", "!"],
+        '$-0 = "!"; ["hello!".chomp, $/, $-0]' => ["hello", "!", "!"],
+        '$, = "-"; [["x", "y"].join, $,]' => ["x-y", "-"],
+        'r, w = IO.pipe; $\\ = "<E>"; w.print "p"; w.close; [r.read, $\\]' => ["p<E>", "<E>"],
+        '$; = ","; ["a,b c".split, $;]' => [["a", "b c"], ","],
+        '$-F = ","; ["a,b c".split, $-F]' => [["a", "b c"], ","],
+        '$= = true; [$=]' => [false],
+      }
+      reset = '$/ = "\n"; $, = $\\ = $; = nil'
+      box = Ruby::Box.new
+      results.each do |code, expected|
+        assert_equal expected, eval(code), code
+        eval(reset)
+        assert_equal expected, box.eval(code), "in a box: #{code}"
+        eval(reset)
+      end
+
+      box.eval('$/ = "!"; $, = "-"')
+      assert_equal ["hello", "!", "x-y"], ["hello!".chomp, $-0, ["x", "y"].join]
+    end;
+  end
+
+  def test_program_name_is_shared_by_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      $0 = "renamed"
+      assert_equal ["renamed", "renamed"], [$0, $PROGRAM_NAME]
+      $PROGRAM_NAME = "renamed again"
+      assert_equal ["renamed again", "renamed again"], [$0, $PROGRAM_NAME]
+
+      box = Ruby::Box.new
+      assert_equal ["in a box", "in a box"], box.eval('$0 = "in a box"; [$0, $PROGRAM_NAME]')
+      assert_equal ["in a box", "in a box"], [$0, $PROGRAM_NAME]
+      assert_equal ["again", "again"], box.eval('$PROGRAM_NAME = "again"; [$0, $PROGRAM_NAME]')
+      assert_equal ["again", "again"], [$0, $PROGRAM_NAME]
+    end;
+  end
+
+  def test_read_only_option_variables_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      %w[$-p $-l $-a].each do |name|
+        assert_raise(NameError, name) { eval("#{name} = true") }
+        assert_raise(NameError, "#{name} in a box") { box.eval("#{name} = true") }
+        assert_equal [false, false], [eval(name), box.eval(name)], name
+      end
+    end;
+  end
+
+  def test_argf_and_argv_variables_are_not_copied_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      require "tmpdir"
+      Dir.mktmpdir do |dir|
+        paths = %w[a b].map {|name| File.join(dir, name).tap {|path| File.write(path, "#{name}\n")}}
+        ARGV.replace(paths)
+        box = Ruby::Box.new
+        code = '[$<.equal?(ARGF), $*.equal?(ARGV), $FILENAME]'
+
+        assert_equal [true, true, paths[0]], eval(code)
+        assert_equal [true, true, paths[0]], box.eval(code)
+        assert_equal ["a\n", "b\n"], [gets, gets]
+        assert_equal [true, true, paths[1]], eval(code)
+        assert_equal [true, true, paths[1]], box.eval(code)
+      ensure
+        ARGF.close
+      end
+    end;
+  end
+
+  def test_argf_state_variables_are_shared_by_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      code = '[$-i, ARGF.inplace_mode, $., ARGF.lineno]'
+      box = Ruby::Box.new
+
+      $-i = ".bak"
+      $. = 42
+      assert_equal [".bak", ".bak", 42, 42], eval(code)
+      assert_equal [".bak", ".bak", 42, 42], box.eval(code)
+
+      box.eval('$-i = ".orig"; $. = 7')
+      assert_equal [".orig", ".orig", 7, 7], box.eval(code)
+      assert_equal [".orig", ".orig", 7, 7], eval(code)
+    end;
   end
 
   def test_defined_for_global_variables

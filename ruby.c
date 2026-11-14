@@ -2350,6 +2350,9 @@ process_options_global_setup(const ruby_cmdline_options_t *opt, const rb_iseq_t 
     rb_gvar_ractor_local("$-p");
     rb_gvar_ractor_local("$-l");
     rb_gvar_ractor_local("$-a");
+    rb_gvar_box_ready("$-p");
+    rb_gvar_box_ready("$-l");
+    rb_gvar_box_ready("$-a");
 
     if ((rb_e_script = opt->e_script) != 0) {
         rb_str_freeze(rb_e_script);
@@ -3216,6 +3219,9 @@ ruby_prog_init(void)
 
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
+    // $0 is the process title, so an assignment in any box changes it.
+    rb_gvar_box_dynamic("$0");
+    rb_gvar_box_dynamic("$PROGRAM_NAME");
 
     rb_define_module_function(rb_mProcess, "argv0", proc_argv0, 0);
     rb_define_module_function(rb_mProcess, "setproctitle", proc_setproctitle, 1);
