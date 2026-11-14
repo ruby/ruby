@@ -462,6 +462,37 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
     }
 }
 
+/*
+ * Remove the waiters that +th+ itself left on other threads' join lists.
+ *
+ * A waiter is normally removed by the ensure clause of Thread#join
+ * (remove_from_join_list).  However, a non-blocking fiber that called
+ * Thread#join under a fiber scheduler is suspended in Fiber::Scheduler#block,
+ * and if its thread terminates without ever resuming it, that ensure clause
+ * never runs.  The waiter (which lives on the abandoned fiber's stack) would
+ * then stay on the target thread's join list, referring to this dead thread,
+ * and rb_threadptr_join_list_wakeup would later interrupt (or unblock through)
+ * a thread that no longer exists.
+ */
+static void
+threadptr_remove_abandoned_join_waiters(rb_thread_t *th)
+{
+    rb_thread_t *target_th;
+
+    ccan_list_for_each(&th->ractor->threads.set, target_th, lt_node) {
+        struct rb_waiting_list **join_list = &target_th->join_list;
+
+        while (*join_list) {
+            if ((*join_list)->thread == th) {
+                *join_list = (*join_list)->next;
+            }
+            else {
+                join_list = &(*join_list)->next;
+            }
+        }
+    }
+}
+
 void
 rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 {
@@ -799,6 +830,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     VM_ASSERT(!UNDEF_P(th->value));
 
     rb_threadptr_join_list_wakeup(th);
+    threadptr_remove_abandoned_join_waiters(th);
     rb_threadptr_unlock_all_locking_mutexes(th);
 
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
