@@ -3,7 +3,7 @@
 require 'test/unit'
 require 'tempfile'
 
-if Process.euid == 0
+if EnvUtil.superuser?
   ok = true
 elsif (sudo = ENV["SUDO"]) and !sudo.empty? and (`#{sudo} echo ok` rescue false)
   ok = true
