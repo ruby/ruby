@@ -129,6 +129,12 @@ class TestIOWait < Test::Unit::TestCase
     assert_raise(IOError) { @w.wait_writable }
   end
 
+  def test_wait_priority_deprecated
+    assert_deprecated_warning(/IO#wait_priority is deprecated/) do
+      @r.wait_priority(0)
+    end
+  end
+
   def test_wait_readwrite
     assert_equal @r.wait(0, :write), @r.wait(0, :read_write)
   end
