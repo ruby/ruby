@@ -8198,18 +8198,16 @@ rb_str_bit_count(int argc, VALUE *argv, VALUE str)
 }
 
 /*
- * The bit argument of bit_index: 0, 1, true or false.
+ * The bit argument of bit_index: 0 or 1.  true and false are not accepted,
+ * because their meaning as a bit value depends on the logic of the signal.
  */
 static int
 str_bit_arg(VALUE bit)
 {
-    if (bit == Qtrue) return 1;
-    if (bit == Qfalse) return 0;
-
     VALUE integer = rb_to_int(bit);
     if (integer == INT2FIX(0)) return 0;
     if (integer == INT2FIX(1)) return 1;
-    rb_raise(rb_eArgError, "bit must be 0, 1, true, or false");
+    rb_raise(rb_eArgError, "bit must be 0 or 1");
     UNREACHABLE_RETURN(0);
 }
 
@@ -8252,13 +8250,11 @@ str_bit_index(const unsigned char *ptr, uint64_t beg, uint64_t end, int bit, boo
  *  Returns the zero-based bit offset of the first bit in +self+ that is equal
  *  to +bit+, or +nil+ if there is no such bit.
  *
- *  +bit+ is +0+, +1+, +true+ or +false+; +true+ and +false+ are aliases for
- *  +1+ and +0+:
+ *  +bit+ is +0+ or +1+:
  *
  *    data = "\xF0"
  *    data.bit_index(1)     # => 4
  *    data.bit_index(0)     # => 0
- *    data.bit_index(true)  # => 4
  *    "\x00".bit_index(1)   # => nil
  *
  *  With +offset+, the search begins at zero-based bit +offset+.
@@ -8292,6 +8288,7 @@ str_bit_index(const unsigned char *ptr, uint64_t beg, uint64_t end, int bit, boo
  *  Raises +ArgumentError+ if +length+ is negative.
  *  Raises +ArgumentError+ if +offset+ or +length+ is too large to be represented.
  *  Raises +ArgumentError+ if +bit+ is an Integer other than +0+ or +1+.
+ *  Raises +TypeError+ if +bit+ is not an Integer, such as +true+ or +false+.
  *  Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.
  *
  */

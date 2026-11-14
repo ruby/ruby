@@ -1388,8 +1388,6 @@ class TestString < Test::Unit::TestCase
     data = S("\xF0")
     assert_equal(4, data.bit_index(1))
     assert_equal(0, data.bit_index(0))
-    assert_equal(4, data.bit_index(true))
-    assert_equal(0, data.bit_index(false))
     assert_nil(S("\x00").bit_index(1))
     assert_nil(S("\xFF").bit_index(0))
     assert_nil(S("").bit_index(1))
@@ -1437,6 +1435,10 @@ class TestString < Test::Unit::TestCase
     assert_raise(ArgumentError) { data.bit_index(-1) }
     assert_raise(TypeError) { data.bit_index(nil) }
     assert_raise(TypeError) { data.bit_index("1") }
+    # true and false are not bit values.
+    assert_raise(TypeError) { data.bit_index(true) }
+    assert_raise(TypeError) { data.bit_index(false) }
+    assert_raise(TypeError) { data.bit_index(true, 0, 4) }
     assert_raise(IndexError) { data.bit_index(1, -1) }
     assert_raise(ArgumentError) { data.bit_index(1, 0, -1) }
     assert_raise(ArgumentError) { data.bit_index(1, 0..4, 1) }
