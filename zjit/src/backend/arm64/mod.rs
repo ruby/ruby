@@ -213,6 +213,7 @@ fn cpu_has_lse() -> bool {
 /// A scratch register available for use by resolve_ssa to break register copy cycles.
 /// Must not overlap with ALLOC_REGS or other preserved registers.
 pub const SCRATCH_REG: Reg = X15_REG;
+pub const PARCOPY_SCRATCH_REG: Reg = SCRATCH_REG;
 const SCRATCH2_OPND: Opnd = Opnd::Reg(X14_REG);
 
 impl Assembler {

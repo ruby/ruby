@@ -107,9 +107,13 @@ pub const ALLOC_REGS: &[Reg] = &[
 const SCRATCH0_OPND: Opnd = Opnd::Reg(R11_REG);
 const SCRATCH1_OPND: Opnd = Opnd::Reg(R10_REG);
 
-/// A scratch register available for use by resolve_ssa to break register copy cycles.
-/// Must not overlap with ALLOC_REGS or other preserved registers.
+/// A scratch register for CCall lowering. It must not overlap with ALLOC_REGS
+/// or other preserved registers.
 pub const SCRATCH_REG: Reg = R11_REG;
+
+/// A scratch register for parallel-copy cycles. Keep it separate from
+/// SCRATCH0_OPND, which x86_scratch_split uses to lower memory-to-memory moves.
+pub const PARCOPY_SCRATCH_REG: Reg = R10_REG;
 
 impl Assembler {
     // This keeps frame growth below the +/-4096-byte displacement range we rely
@@ -1940,6 +1944,39 @@ mod tests {
     }
 
     #[test]
+    fn test_parallel_copy_spill_cycle_survives_scratch_split() {
+        use crate::backend::parcopy::{RegisterCopy, sequentialize_register};
+
+        rb_zjit_prepare_options();
+        let (mut asm, _) = Assembler::new_with_scratch_reg();
+        asm.new_block_without_id("test");
+        let mut cb = CodeBlock::new_dummy();
+        let copies = [
+            RegisterCopy { source: stack_mem(1), destination: stack_mem(0) },
+            RegisterCopy { source: stack_mem(0), destination: stack_mem(1) },
+        ];
+        for copy in sequentialize_register(&copies, Opnd::Reg(PARCOPY_SCRATCH_REG)) {
+            asm.mov(copy.destination, copy.source);
+        }
+
+        // Keep the cycle temporary live while the middle spill-to-spill move
+        // is lowered. Using R11 for both operations would lose the parked value.
+        let mut asm = asm.x86_scratch_split();
+        for name in &asm.label_names {
+            cb.new_label(*name);
+        }
+        asm.x86_emit(&mut cb).unwrap();
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov r10, qword ptr [rbp - 8]
+        0x4: mov r11, qword ptr [rbp - 0x10]
+        0x8: mov qword ptr [rbp - 8], r11
+        0xc: mov qword ptr [rbp - 0x10], r10
+        ");
+        assert_snapshot!(cb.hexdump(), @"4c8b55f84c8b5df04c895df84c8955f0");
+    }
+
+    #[test]
     fn test_ccall_resolve_parallel_moves_no_cycle() {
         crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
@@ -1971,13 +2008,13 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov r11, rsi
+        0x0: mov r10, rsi
         0x3: mov rsi, rdi
-        0x6: mov rdi, r11
+        0x6: mov rdi, r10
         0x9: mov eax, 0
         0xe: call rax
         ");
-        assert_snapshot!(cb.hexdump(), @"4989f34889fe4c89dfb800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"4989f24889fe4c89d7b800000000ffd0");
     }
 
     #[test]
@@ -1995,16 +2032,16 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov r11, rcx
+        0x0: mov r10, rcx
         0x3: mov rcx, rdx
-        0x6: mov rdx, r11
-        0x9: mov r11, rsi
+        0x6: mov rdx, r10
+        0x9: mov r10, rsi
         0xc: mov rsi, rdi
-        0xf: mov rdi, r11
+        0xf: mov rdi, r10
         0x12: mov eax, 0
         0x17: call rax
         ");
-        assert_snapshot!(cb.hexdump(), @"4989cb4889d14c89da4989f34889fe4c89dfb800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"4989ca4889d14c89d24989f24889fe4c89d7b800000000ffd0");
     }
 
     #[test]
@@ -2021,14 +2058,14 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-        0x0: mov r11, rdx
+        0x0: mov r10, rdx
         0x3: mov rdx, rdi
         0x6: mov rdi, rsi
-        0x9: mov rsi, r11
+        0x9: mov rsi, r10
         0xc: mov eax, 0
         0x11: call rax
         ");
-        assert_snapshot!(cb.hexdump(), @"4989d34889fa4889f74c89deb800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"4989d24889fa4889f74c89d6b800000000ffd0");
     }
 
     #[test]
