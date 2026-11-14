@@ -7350,13 +7350,17 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_arguments_node_t 
                 ADD_INSN(ret, node, concattoarray);
             }
             else {
-                ADD_INSN1(ret, node, splatarray, Qtrue);
+                ADD_INSN1(ret, node, splatarray, RBOOL(*dup_rest & SPLATARRAY_TRUE));
+                if (*dup_rest & SPLATARRAY_TRUE) *dup_rest &= ~SPLATARRAY_TRUE;
                 len++;
             }
             NO_CHECK(compile_lvar(iseq, ret, node, idPow));
             NO_CHECK(compile_lvar(iseq, ret, node, '&'));
+            if (IS_INSN(ret->last) && IS_INSN_ID(ret->last, getblockparam)) {
+                ((INSN *)ret->last)->insn_id = BIN(getblockparamproxy);
+            }
             len++;
-            if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_SPLAT_MUT | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG;
+            if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG;
             break;
           default:
             NO_CHECK(COMPILE_(ret, "array element", node, FALSE));
@@ -7402,6 +7406,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_nod
         }
         else {
             *flag_ptr |= VM_CALL_KW_SPLAT;
+            if ((*flag_ptr & VM_CALL_ARGS_SPLAT) && !keyword_node_single_splat_p(kwnode)) *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
             compile_hash(iseq, args, kwnode, &kwnode->elements, TRUE, FALSE);
             len++;
         }
@@ -7554,6 +7559,15 @@ setup_args_dup_rest_p(const NODE *argn)
       case RB_NUMBERED_REFERENCE_READ_NODE:
       case RB_BACK_REFERENCE_READ_NODE:
         return false;
+      case RB_CONSTANT_PATH_NODE:
+        return setup_args_dup_rest_p(RB_NODE_CONSTANT_PATH(argn)->parent);
+      case RB_ARRAY_NODE: {
+        const rb_node_list2_t *elements = &RB_NODE_ARRAY(argn)->elements;
+        for (size_t i = 0; i < elements->size; i++) {
+            if (setup_args_dup_rest_p(elements->nodes[i])) return true;
+        }
+        return false;
+      }
       default:
         return true;
     }
@@ -7563,6 +7577,7 @@ static bool
 setup_args_splat_last_p(rb_node_list2_t *list)
 {
     size_t len = RB_NODE_LIST_LEN(list);
+    if (len && nd_type_p(list->nodes[len - 1], RB_FORWARDING_ARGUMENTS_NODE)) return true;
 
     switch (len) {
       case 0:
@@ -7589,7 +7604,10 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const rb_arguments_node_t *
         for (size_t i =0; i < RB_NODE_LIST_LEN(list); i++) {
             NODE *node = list->nodes[i];
             if (nd_type_p(node, RB_SPLAT_NODE)) splatn++;
-            if (nd_type_p(node, RB_FORWARDING_ARGUMENTS_NODE)) forwarding = 1;
+            if (nd_type_p(node, RB_FORWARDING_ARGUMENTS_NODE)) {
+                forwarding = 1;
+                splatn++;
+            }
         }
 
         if (splatn == 1 && setup_args_splat_last_p(list)) dup_rest = SPLATARRAY_FALSE;
