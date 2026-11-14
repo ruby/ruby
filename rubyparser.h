@@ -794,6 +794,7 @@ typedef struct RNode_KW_ARG {
 
     struct RNode *nd_body;
     struct RNode_KW_ARG *nd_next;
+    rb_code_location_t name_loc;
 } rb_node_kw_arg_t;
 
 typedef struct RNode_POSTARG {
