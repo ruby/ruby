@@ -531,6 +531,23 @@ module Ruby::Prism
       assert_location(InterpolatedSymbolNode, ':"#{foo}bar"')
     end
 
+    def test_interpolated_symbol_array_locations
+      ['#{1}#{2}', '#@a#@b', '#{1}#@a', '#@a#{1}', 'a#{1}#{2}', '#{1}a#{2}'].each do |element|
+        source = "%I[#{element} second]"
+        result = Ruby::Prism.parse(source)
+        assert_predicate result, :success?
+
+        array = result.value.statements.body.first
+        symbol, second = array.elements
+        assert_kind_of InterpolatedSymbolNode, symbol
+        assert_equal 3, symbol.location.start_offset
+        assert_equal 3 + element.bytesize, symbol.location.end_offset
+        assert_equal element, symbol.location.slice
+        assert_equal "second", second.location.slice
+        assert_equal source, array.location.slice
+      end
+    end
+
     def test_InterpolatedXStringNode
       assert_location(InterpolatedXStringNode, '`foo #{bar} baz`')
     end

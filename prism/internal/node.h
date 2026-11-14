@@ -13,6 +13,19 @@
 /* The offset just past the end of the given location. */
 #define PM_LOCATION_END(location_) ((location_)->start + (location_)->length)
 
+/* Return the span covering two initialized locations. Read both endpoints
+ * before changing either field, so moving the start preserves the old end.
+ * An unset location must be initialized separately from the first child. */
+static PRISM_FORCE_INLINE pm_location_t
+pm_location_join(pm_location_t left, pm_location_t right) {
+    uint32_t start = left.start < right.start ? left.start : right.start;
+    uint32_t left_end = PM_LOCATION_END(&left);
+    uint32_t right_end = PM_LOCATION_END(&right);
+    uint32_t end = left_end > right_end ? left_end : right_end;
+    pm_location_t location = { .start = start, .length = end - start };
+    return location;
+}
+
 /*
  * Slow path for pm_node_list_append_inline: grow the list and append the node.
  * Do not call directly — use pm_node_list_append_inline instead.

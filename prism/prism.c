@@ -4967,12 +4967,7 @@ pm_interpolated_regular_expression_node_create(pm_parser_t *parser, const pm_tok
 
 static PRISM_INLINE void
 pm_interpolated_regular_expression_node_append(pm_arena_t *arena, pm_interpolated_regular_expression_node_t *node, pm_node_t *part) {
-    if (PM_NODE_START(node) > PM_NODE_START(part)) {
-        PM_NODE_START_SET_NODE(node, part);
-    }
-    if (PM_NODE_END(node) < PM_NODE_END(part)) {
-        PM_NODE_LENGTH_SET_NODE(node, part);
-    }
+    node->base.location = pm_location_join(node->base.location, part->location);
 
     pm_interpolated_node_append(arena, UP(node), &node->parts, part);
 }
@@ -5016,13 +5011,9 @@ pm_interpolated_string_node_append(pm_parser_t *parser, pm_interpolated_string_n
 #define MUTABLE_FLAGS(node) \
     node->base.flags = (pm_node_flags_t) ((FL(node) | PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE) & ~PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN);
 
-    if (node->parts.size == 0 && node->opening_loc.length == 0) {
-        PM_NODE_START_SET_NODE(node, part);
-    }
-
-    if (PM_NODE_END(part) > PM_NODE_END(node)) {
-        PM_NODE_LENGTH_SET_NODE(node, part);
-    }
+    node->base.location = node->parts.size == 0 && node->opening_loc.length == 0
+        ? part->location
+        : pm_location_join(node->base.location, part->location);
 
     switch (PM_NODE_TYPE(part)) {
         case PM_STRING_NODE:
@@ -5154,15 +5145,11 @@ pm_interpolated_string_node_closing_set(const pm_parser_t *parser, pm_interpolat
 
 static void
 pm_interpolated_symbol_node_append(pm_arena_t *arena, pm_interpolated_symbol_node_t *node, pm_node_t *part) {
-    if (node->parts.size == 0 && node->opening_loc.length == 0) {
-        PM_NODE_START_SET_NODE(node, part);
-    }
+    node->base.location = node->parts.size == 0 && node->opening_loc.length == 0
+        ? part->location
+        : pm_location_join(node->base.location, part->location);
 
     pm_interpolated_node_append(arena, UP(node), &node->parts, part);
-
-    if (PM_NODE_END(part) > PM_NODE_END(node)) {
-        PM_NODE_LENGTH_SET_NODE(node, part);
-    }
 }
 
 static void
@@ -5641,13 +5628,9 @@ pm_multi_target_node_targets_append(pm_parser_t *parser, pm_multi_target_node_t 
         pm_node_list_append_inline(parser->arena, &node->rights, target);
     }
 
-    if (PM_NODE_LENGTH(node) == 0 || (PM_NODE_START(node) > PM_NODE_START(target))) {
-        PM_NODE_START_SET_NODE(node, target);
-    }
-
-    if (PM_NODE_LENGTH(node) == 0 || (PM_NODE_END(node) < PM_NODE_END(target))) {
-        PM_NODE_LENGTH_SET_NODE(node, target);
-    }
+    node->base.location = PM_NODE_LENGTH(node) == 0
+        ? target->location
+        : pm_location_join(node->base.location, target->location);
 }
 
 /**
@@ -5885,13 +5868,9 @@ pm_parameters_node_create(pm_parser_t *parser) {
  */
 static void
 pm_parameters_node_location_set(pm_parameters_node_t *params, pm_node_t *param) {
-    if ((params->base.location.length == 0) || PM_NODE_START(params) > PM_NODE_START(param)) {
-        PM_NODE_START_SET_NODE(params, param);
-    }
-
-    if ((params->base.location.length == 0) || (PM_NODE_END(params) < PM_NODE_END(param))) {
-        PM_NODE_LENGTH_SET_NODE(params, param);
-    }
+    params->base.location = params->base.location.length == 0
+        ? param->location
+        : pm_location_join(params->base.location, param->location);
 }
 
 /**
@@ -6425,13 +6404,9 @@ pm_statements_node_body_length(pm_statements_node_t *node) {
  */
 static PRISM_INLINE void
 pm_statements_node_body_update(pm_statements_node_t *node, pm_node_t *statement) {
-    if (pm_statements_node_body_length(node) == 0 || PM_NODE_START(statement) < PM_NODE_START(node)) {
-        PM_NODE_START_SET_NODE(node, statement);
-    }
-
-    if (PM_NODE_END(statement) > PM_NODE_END(node)) {
-        PM_NODE_LENGTH_SET_NODE(node, statement);
-    }
+    node->base.location = pm_statements_node_body_length(node) == 0
+        ? statement->location
+        : pm_location_join(node->base.location, statement->location);
 }
 
 /**
@@ -20342,7 +20317,6 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
                 break;
             }
             case PM_TOKEN_EMBVAR: {
-                bool start_location_set = false;
                 if (current == NULL) {
                     /* If we hit an embedded variable and the current node is
                      * NULL, then this is the start of a new string. We'll set
@@ -20357,8 +20331,6 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
 
                     current = UP(pm_symbol_node_to_string_node(parser, (pm_symbol_node_t *) current));
                     pm_interpolated_symbol_node_append(parser->arena, interpolated, current);
-                    PM_NODE_START_SET_NODE(interpolated, current);
-                    start_location_set = true;
                     current = UP(interpolated);
                 } else {
                     /* If we hit an embedded variable and the current node is an
@@ -20368,13 +20340,9 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
 
                 pm_node_t *part = parse_string_part(parser, (uint16_t) (depth + 1));
                 pm_interpolated_symbol_node_append(parser->arena, (pm_interpolated_symbol_node_t *) current, part);
-                if (!start_location_set) {
-                    PM_NODE_START_SET_NODE(current, part);
-                }
                 break;
             }
             case PM_TOKEN_EMBEXPR_BEGIN: {
-                bool start_location_set = false;
                 if (current == NULL) {
                     /* If we hit an embedded expression and the current node is
                      * NULL, then this is the start of a new string. We'll set
@@ -20389,8 +20357,6 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
 
                     current = UP(pm_symbol_node_to_string_node(parser, (pm_symbol_node_t *) current));
                     pm_interpolated_symbol_node_append(parser->arena, interpolated, current);
-                    PM_NODE_START_SET_NODE(interpolated, current);
-                    start_location_set = true;
                     current = UP(interpolated);
                 } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_SYMBOL_NODE)) {
                     /* If we hit an embedded expression and the current node is
@@ -20401,9 +20367,6 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
 
                 pm_node_t *part = parse_string_part(parser, (uint16_t) (depth + 1));
                 pm_interpolated_symbol_node_append(parser->arena, (pm_interpolated_symbol_node_t *) current, part);
-                if (!start_location_set) {
-                    PM_NODE_START_SET_NODE(current, part);
-                }
                 break;
             }
             default:
