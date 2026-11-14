@@ -166,7 +166,7 @@ class TestISeq < Test::Unit::TestCase
     end
 
     obj = Object.new
-    def obj.foo(*) Ractor.shareable_proc{super} end
+    def obj.foo(*) Ractor.shareable_proc{super{}} end
     assert_raise_with_message(Ractor::IsolationError, /cannot make a shareable Proc because it can refer unshareable object \[\]/) do
       obj.foo(*[])
     end
