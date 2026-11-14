@@ -329,7 +329,9 @@ static inline void escape_UTF8_char(search_state *search, unsigned char ch_len)
 {
     const unsigned char ch = (unsigned char)*search->ptr;
     switch (ch_len) {
-        case 1: {
+        case ESCAPE_LEN_1: {
+            search_flush(search);
+
             switch (ch) {
                 case '"':  fbuffer_append(search->buffer, "\\\"", 2); break;
                 case '\\': fbuffer_append(search->buffer, "\\\\", 2); break;
