@@ -13172,9 +13172,18 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(COMPILE(ret, "sclass#expression", RB_NODE_SINGLETON_CLASS(node)->expression));
         ADD_INSN (ret, node, putnil);
         CONST_ID(singletonclass, "singletonclass");
+
+        /* Constant receivers and class << self in a class body have stable
+         * lexical scopes. Other receivers can change between executions. */
+        int flags = VM_DEFINECLASS_TYPE_SINGLETON_CLASS;
+        const NODE *recv = RB_NODE_SINGLETON_CLASS(node)->expression;
+        if (!(nd_type_p(recv, RB_SELF_NODE) && ISEQ_BODY(iseq)->type == ISEQ_TYPE_CLASS) &&
+            !cpath_const_p(recv)) {
+            flags |= VM_DEFINECLASS_FLAG_DYNAMIC_CREF;
+        }
         ADD_INSN3(ret, node, defineclass,
                   ID2SYM(singletonclass), singleton_class,
-                  INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
+                  INT2FIX(flags));
         RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)singleton_class);
 
         if (popped) {
