@@ -758,20 +758,41 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_script_safe_ascii_only
-    data = '<a></script>'
-    json = generate(data, script_safe: true, ascii_only: true)
-    assert_equal data, JSON.parse(json)
-    assert_not_include json, '</script'
+    run_script_safe_test(true)
   end
 
   def test_script_safe
+    run_script_safe_test(false)
+  end
+
+  def run_script_safe_test(ascii_only)
     data = '<ok><script><!----</script></ok>'
     json = '"<ok>\\u003cscript>\\u003c!----\\u003c/script></ok>"'
-    assert_equal json, generate(data, script_safe: true)
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
 
     data = '<ok><ScrIpT><!----</sCRiPt></ok>'
     json = '"<ok>\\u003cScrIpT>\\u003c!----\\u003c/sCRiPt></ok>"'
-    assert_equal json, generate(data, script_safe: true)
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = '<scriP'
+    json = '"<scriP"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = '</scriP'
+    json = '"</scriP"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = '<!--'
+    json = '"\\u003c!--"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = '<scriPt'
+    json = '"\\u003cscriPt"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = '</scriPt'
+    json = '"\\u003c/scriPt"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
   end
 
   def test_backslash
