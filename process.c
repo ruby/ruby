@@ -4105,6 +4105,7 @@ rb_fork_ruby(int *status)
     } while (pid < 0 && handle_fork_error(err, status ? &child : NULL, NULL, &try_gc) == 0);
 
     if (status) *status = child.status;
+    if (pid < 0) errno = err;
 
     return pid;
 }
