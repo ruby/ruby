@@ -439,6 +439,38 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_read_frozen_class_fields_from_finalizers_of_both_owners
+    # Ruby finalizers run inside rb_postponed_job_flush, which blocks postponed jobs. Each
+    # Ractor's finalizer waits for the other to answer, so answering must not be a postponed job.
+    assert_ractor(<<~'RUBY', timeout: 30)
+      out = Ractor::Port.new
+      rs = %w[a b].to_h do |name|
+        r = Ractor.new(name, out) do |name, out|
+          c = Class.new
+          c.const_set(:VAL, [name.dup.freeze].freeze)
+          out << [name, c]
+          other = Ractor.receive
+          read = nil
+          fin = proc do
+            next if read
+            read = :started
+            sleep 1 # both Ractors are inside their finalizers at once
+            read = other::VAL.first
+          end
+          50.times { ObjectSpace.define_finalizer(Object.new, fin) }
+          # not GC.start, which runs finalizers outside rb_postponed_job_flush
+          Array.new(1000) { "x" * 100 } until read.is_a?(String)
+          read
+        end
+        [name, r]
+      end
+      classes = 2.times.to_h { out.receive }
+      rs["a"] << classes["b"]
+      rs["b"] << classes["a"]
+      assert_equal({"a" => "b", "b" => "a"}, rs.transform_values(&:value))
+    RUBY
+  end
+
   def test_struct_instance_variables
     assert_ractor(<<~'RUBY')
       StructIvar = Struct.new(:member) do

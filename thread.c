@@ -2907,6 +2907,12 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
             RB_VM_LOCKING();
         }
 
+        // not masked by rb_postponed_job_flush: a Ruby finalizer waiting on another Ractor
+        // must still answer that Ractor's requests
+        if (interrupt & SHAREABLE_P_INTERRUPT_MASK) {
+            rb_ractor_shareable_p_drain();
+        }
+
         if (postponed_job_interrupt) {
             rb_postponed_job_flush();
         }
