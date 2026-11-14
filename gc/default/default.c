@@ -218,6 +218,12 @@ rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
 #ifndef GC_OLDMALLOC_LIMIT_MIN
 #define GC_OLDMALLOC_LIMIT_MIN (16 * 1024 * 1024 /* 16MB */)
 #endif
+#define GC_SHAREABLE_RETAINED_LIMIT_MIN (1 << 16)
+
+#ifndef GC_SHAREABLE_RETAINED_LIMIT_FACTOR
+#define GC_SHAREABLE_RETAINED_LIMIT_FACTOR 2.0
+#endif
+
 #ifndef GC_OLDMALLOC_LIMIT_GROWTH_FACTOR
 #define GC_OLDMALLOC_LIMIT_GROWTH_FACTOR 1.2
 #endif
@@ -292,6 +298,9 @@ typedef struct {
     size_t oldmalloc_limit_min;
     size_t oldmalloc_limit_max;
     double oldmalloc_limit_growth_factor;
+
+    double shareable_retained_limit_factor;
+    size_t shareable_retained_limit_min;
 } ruby_gc_params_t;
 
 static ruby_gc_params_t gc_params = {
@@ -314,6 +323,9 @@ static ruby_gc_params_t gc_params = {
     GC_OLDMALLOC_LIMIT_MIN,
     GC_OLDMALLOC_LIMIT_MAX,
     GC_OLDMALLOC_LIMIT_GROWTH_FACTOR,
+
+    GC_SHAREABLE_RETAINED_LIMIT_FACTOR,
+    GC_SHAREABLE_RETAINED_LIMIT_MIN,
 };
 
 /* GC_DEBUG:
@@ -708,6 +720,12 @@ typedef struct rb_objspace {
      * limit requests a global GC. */
     size_t shareable_objects;
     size_t shareable_objects_limit;
+    /* Slots kept alive only by shareable objects and shrefs. The slots may be garbage or they
+     * may not be, depending on the shareables. Only a global GC can reclaim these slots. */
+    size_t shareable_retained_slots;
+    /* What the figure above may reach before a global GC is due. Derived at the end of
+     * each global GC from the live heap that objspace was left with. */
+    size_t shareable_retained_limit;
     /* Whether the last mark ran the pinned walk; the sweep asserts on it. */
     unsigned char last_cycle_pinned;
 
@@ -7834,6 +7852,7 @@ gc_marks_finish(rb_objspace_t *objspace)
      * every bit set during the cycle, which a scan at gc_marks_start would miss. */
     objspace->last_cycle_pinned = 0;
     if (!rb_gc_single_objspace_p() && !objspace->flags.during_global_gc) {
+        const size_t marked_before = objspace->marked_slots;
         objspace->last_cycle_pinned = 1;
         gc_mark_set_parent_raw(objspace, Qundef, false);
         for (int i = 0; i < HEAP_COUNT; i++) {
@@ -7841,6 +7860,12 @@ gc_marks_finish(rb_objspace_t *objspace)
         }
         /* And everything they keep alive. */
         gc_mark_stacked_objects_all(objspace);
+
+        /* Whatever this pass added to the mark set was unreachable from ordinary roots.
+         * They are alive only because a shareable object or a shref roots it. */
+        if (is_full_marking(objspace)) {
+            objspace->shareable_retained_slots = objspace->marked_slots - marked_before;
+        }
     }
 
     gc_update_weak_references(objspace);
@@ -8985,6 +9010,7 @@ gc_need_global_p(rb_objspace_t *objspace)
     /* A Ractor's death must not stop the world, so the retire GC stays local. */
     if (objspace->flags.during_postmortem) return false;
     if (objspace->shareable_objects > objspace->shareable_objects_limit) return true;
+    if (objspace->shareable_retained_slots > objspace->shareable_retained_limit) return true;
     /* A zombie's garbage only a global cycle reclaims, but what survived the last one
      * is live data, so retrigger only once TRIGGER more pages accumulate on top of it.
      * Otherwise one live-heavy unjoined zombie turns every GC stop-the-world forever. */
@@ -10099,6 +10125,16 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
         size_t new_limit = (size_t)(survivors * SHAREABLE_OBJECTS_LIMIT_FACTOR);
         if (new_limit < SHAREABLE_OBJECTS_LIMIT_MIN) new_limit = SHAREABLE_OBJECTS_LIMIT_MIN;
         objspace->shareable_objects_limit = new_limit;
+
+        objspace->shareable_retained_slots = 0; /* The next major local mark measures it again */
+        /* marked_slots was zeroed per objspace before the unified mark, so it now holds
+         * this objspace's actual live count. */
+        size_t retained_limit =
+            (size_t)(objspace->marked_slots * gc_params.shareable_retained_limit_factor);
+        if (retained_limit < gc_params.shareable_retained_limit_min) {
+            retained_limit = gc_params.shareable_retained_limit_min;
+        }
+        objspace->shareable_retained_limit = retained_limit;
     }
 
     /* Deferred non-thread-safe frees: the world is already stopped here, so reap them
@@ -11761,6 +11797,8 @@ get_envparam_double(const char *name, double *default_value, double lower_bound,
  * * RUBY_GC_OLDMALLOC_LIMIT (new from 2.1)
  * * RUBY_GC_OLDMALLOC_LIMIT_MAX (new from 2.1)
  * * RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR (new from 2.1)
+ * * RUBY_GC_SHAREABLE_RETAINED_LIMIT_FACTOR
+ * * RUBY_GC_SHAREABLE_RETAINED_SLOTS_MIN
  */
 
 void
@@ -11801,6 +11839,11 @@ rb_gc_impl_set_params(void *objspace_ptr)
     get_envparam_size  ("RUBY_GC_OLDMALLOC_LIMIT_MAX", &gc_params.oldmalloc_limit_max, 0);
     get_envparam_double("RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR", &gc_params.oldmalloc_limit_growth_factor, 1.0, 0.0, FALSE);
 #endif
+
+    get_envparam_double("RUBY_GC_SHAREABLE_RETAINED_LIMIT_FACTOR",
+                        &gc_params.shareable_retained_limit_factor, 0.0, 0.0, FALSE);
+    get_envparam_size("RUBY_GC_SHAREABLE_RETAINED_SLOTS_MIN",
+                      &gc_params.shareable_retained_limit_min, 0);
 }
 
 static inline size_t
@@ -13595,6 +13638,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 
     malloc_limit = gc_params.malloc_limit_min;
     objspace->shareable_objects_limit = SHAREABLE_OBJECTS_LIMIT_MIN;
+    objspace->shareable_retained_limit = gc_params.shareable_retained_limit_min;
 #ifdef MALLOC_COUNTERS_NEED_LOCK
     rb_native_mutex_initialize(&objspace->malloc_counters.lock);
 #endif
