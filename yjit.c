@@ -635,6 +635,63 @@ rb_yjit_cdhash_lookup(VALUE cdhash, st_data_t key, st_data_t *val)
     return st_lookup(rb_imemo_cdhash_tbl(cdhash), key, val);
 }
 
+// USDT probes for invalidation events. Each corresponds to an invalidate_*
+// counter in yjit/src/stats.rs. See probes.d.
+
+void
+rb_yjit_probe_invalidate_method_lookup(const rb_callable_method_entry_t *cme, size_t count)
+{
+    char subject[RB_JIT_PROBE_SUBJECT_SIZE];
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(YJIT_INVALIDATE_METHOD_LOOKUP, rb_jit_probe_cme_subject(subject, sizeof(subject), cme), count);
+}
+
+void
+rb_yjit_probe_invalidate_bop_redefined(unsigned int redefined_flag, enum ruby_basic_operators bop, size_t count)
+{
+    char subject[RB_JIT_PROBE_SUBJECT_SIZE];
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(YJIT_INVALIDATE_BOP_REDEFINED, rb_jit_probe_bop_subject(subject, sizeof(subject), redefined_flag, bop), count);
+}
+
+void
+rb_yjit_probe_invalidate_ractor_spawn(size_t count)
+{
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(YJIT_INVALIDATE_RACTOR_SPAWN, "", count);
+}
+
+void
+rb_yjit_probe_invalidate_constant_state_bump(ID id, size_t count)
+{
+    char subject[RB_JIT_PROBE_SUBJECT_SIZE];
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(YJIT_INVALIDATE_CONSTANT_STATE_BUMP, rb_jit_probe_id_subject(subject, sizeof(subject), id), count);
+}
+
+void
+rb_yjit_probe_invalidate_constant_ic_fill(IC ic, size_t count)
+{
+    char subject[RB_JIT_PROBE_SUBJECT_SIZE];
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(YJIT_INVALIDATE_CONSTANT_IC_FILL, rb_jit_probe_ic_subject(subject, sizeof(subject), ic), count);
+}
+
+void
+rb_yjit_probe_invalidate_no_singleton_class(VALUE klass, size_t count)
+{
+    char subject[RB_JIT_PROBE_SUBJECT_SIZE];
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(YJIT_INVALIDATE_NO_SINGLETON_CLASS, rb_jit_probe_class_subject(subject, sizeof(subject), klass), count);
+}
+
+void
+rb_yjit_probe_invalidate_ep_escape(const rb_iseq_t *iseq, size_t count)
+{
+    char subject[RB_JIT_PROBE_SUBJECT_SIZE];
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(YJIT_INVALIDATE_EP_ESCAPE, rb_jit_probe_iseq_subject(subject, sizeof(subject), iseq), count);
+}
+
+void
+rb_yjit_probe_invalidate_everything(size_t count)
+{
+    RUBY_DTRACE_JIT_INVALIDATE_HOOK(YJIT_INVALIDATE_EVERYTHING, "", count);
+}
+
 // Primitives used by yjit.rb
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_print_stats_p(rb_execution_context_t *ec, VALUE self);

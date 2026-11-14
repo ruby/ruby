@@ -277,6 +277,9 @@ pub extern "C" fn rb_yjit_bop_redefined(klass: RedefinitionFlag, bop: ruby_basic
                 invalidate_block_version(block);
                 incr_counter!(invalidate_bop_redefined);
             }
+            if !blocks.is_empty() {
+                unsafe { rb_yjit_probe_invalidate_bop_redefined(klass, bop, blocks.len()) };
+            }
         }
     });
 }
@@ -295,6 +298,9 @@ pub extern "C" fn rb_yjit_cme_invalidate(callee_cme: *const rb_callable_method_e
             for block in blocks.iter() {
                 invalidate_block_version(block);
                 incr_counter!(invalidate_method_lookup);
+            }
+            if !blocks.is_empty() {
+                unsafe { rb_yjit_probe_invalidate_method_lookup(callee_cme, blocks.len()) };
             }
         }
     });
@@ -319,6 +325,9 @@ pub extern "C" fn rb_yjit_invalidate_single_ractor() {
             invalidate_block_version(block);
             incr_counter!(invalidate_ractor_spawn);
         }
+        if !blocks.is_empty() {
+            unsafe { rb_yjit_probe_invalidate_ractor_spawn(blocks.len()) };
+        }
     });
 }
 
@@ -336,6 +345,9 @@ pub extern "C" fn rb_yjit_constant_state_changed(id: ID) {
             for block in &blocks {
                 invalidate_block_version(block);
                 incr_counter!(invalidate_constant_state_bump);
+            }
+            if !blocks.is_empty() {
+                unsafe { rb_yjit_probe_invalidate_constant_state_bump(id, blocks.len()) };
             }
         }
     });
@@ -525,12 +537,16 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, ins
         let ic_operand: IC = unsafe { ic_pc.read() }.as_mut_ptr();
 
         if ic == ic_operand {
-            for block in take_version_list(BlockId {
+            let blocks = take_version_list(BlockId {
                 iseq,
                 idx: insn_idx,
-            }) {
-                invalidate_block_version(&block);
+            });
+            for block in &blocks {
+                invalidate_block_version(block);
                 incr_counter!(invalidate_constant_ic_fill);
+            }
+            if !blocks.is_empty() {
+                unsafe { rb_yjit_probe_invalidate_constant_ic_fill(ic, blocks.len()) };
             }
         } else {
             panic!("ic->get_insn_index not set properly");
@@ -555,9 +571,13 @@ pub extern "C" fn rb_yjit_invalidate_no_singleton_class(klass: VALUE) {
                 Some(blocks) => {
                     // Invalidate existing blocks and let has_singleton_class_of()
                     // return true when they are compiled again
-                    for block in mem::take(blocks) {
-                        invalidate_block_version(&block);
+                    let blocks = mem::take(blocks);
+                    for block in &blocks {
+                        invalidate_block_version(block);
                         incr_counter!(invalidate_no_singleton_class);
+                    }
+                    if !blocks.is_empty() {
+                        unsafe { rb_yjit_probe_invalidate_no_singleton_class(klass, blocks.len()) };
                     }
                 }
                 None => {
@@ -578,9 +598,12 @@ pub extern "C" fn rb_yjit_invalidate_ep_is_bp(iseq: IseqPtr) {
         // associated to the ISEQ. The iseq flag records the escape, so the map keeps only
         // iseqs with live assumptions.
         if let Some(blocks) = Invariants::get_instance().no_ep_escape_iseqs.remove(&iseq) {
-            for block in blocks {
-                invalidate_block_version(&block);
+            for block in &blocks {
+                invalidate_block_version(block);
                 incr_counter!(invalidate_ep_escape);
+            }
+            if !blocks.is_empty() {
+                unsafe { rb_yjit_probe_invalidate_ep_escape(iseq, blocks.len()) };
             }
         }
 
@@ -623,9 +646,11 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
         for_each_on_stack_iseq(|iseq| {
             on_stack_iseqs.insert(iseq);
         });
+        let mut invalidated_blocks = 0;
         for_each_iseq(|iseq| {
             if let Some(payload) = get_iseq_payload(iseq) {
-                let blocks = payload.take_all_blocks();
+                let blocks: Vec<BlockRef> = payload.take_all_blocks().collect();
+                invalidated_blocks += blocks.len();
 
                 if on_stack_iseqs.contains(&iseq) {
                     // This ISEQ is running, so we can't free blocks immediately
@@ -693,5 +718,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
             .unwrap()
             .mark_all_executable();
         cb.mark_all_executable();
+
+        unsafe { rb_yjit_probe_invalidate_everything(invalidated_blocks) };
     });
 }

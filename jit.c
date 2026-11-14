@@ -1044,3 +1044,197 @@ rb_jit_shape_capacity(shape_id_t shape_id)
 {
     return RSHAPE_CAPACITY(shape_id);
 }
+
+/*
+ * Subjects for JIT invalidation probes. See RUBY_DTRACE_JIT_INVALIDATE_HOOK.
+ * These run in the middle of invalidation, so they must not allocate on the
+ * Ruby heap.
+ */
+
+static int
+jit_probe_str_len(VALUE str)
+{
+    return RB_TYPE_P(str, T_STRING) ? (int)RSTRING_LEN(str) : 0;
+}
+
+static const char *
+jit_probe_str_ptr(VALUE str)
+{
+    return RB_TYPE_P(str, T_STRING) ? RSTRING_PTR(str) : "";
+}
+
+static bool
+jit_probe_mod_p(VALUE klass)
+{
+    return RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE);
+}
+
+// Like rb_mod_name(), but accepts any value
+static VALUE
+jit_probe_mod_name(VALUE klass)
+{
+    return jit_probe_mod_p(klass) ? rb_mod_name(klass) : Qnil;
+}
+
+// Write the name of klass to buf. Returns what snprintf() returns.
+static int
+jit_probe_write_class(char *buf, size_t size, VALUE klass)
+{
+    if (RB_TYPE_P(klass, T_ICLASS)) klass = RBASIC_CLASS(klass);
+    if (!jit_probe_mod_p(klass)) {
+        // e.g. the nil owner of negative method cache entries
+        return snprintf(buf, size, "%s", "");
+    }
+    VALUE name = rb_mod_name(klass);
+    if (NIL_P(name)) {
+        // Anonymous. Making a name like rb_class2name() does would allocate.
+        return snprintf(buf, size, "#<%s:%p>", RB_TYPE_P(klass, T_MODULE) ? "Module" : "Class", (void *)klass);
+    }
+    return snprintf(buf, size, "%.*s", jit_probe_str_len(name), jit_probe_str_ptr(name));
+}
+
+// "Foo#bar", or "Foo.bar" for singleton methods
+const char *
+rb_jit_probe_cme_subject(char *buf, size_t size, const rb_callable_method_entry_t *cme)
+{
+    VALUE owner = cme->owner;
+    const char *sep = "#";
+    if (RB_TYPE_P(owner, T_CLASS) && RCLASS_SINGLETON_P(owner)) {
+        VALUE attached = RCLASS_ATTACHED_OBJECT(owner);
+        if (!NIL_P(jit_probe_mod_name(attached))) {
+            owner = attached;
+            sep = ".";
+        }
+    }
+
+    int len = jit_probe_write_class(buf, size, owner);
+    if (len >= 0 && (size_t)len < size) {
+        VALUE mid = rb_id2str(cme->called_id);
+        snprintf(buf + len, size - len, "%s%.*s", sep, jit_probe_str_len(mid), jit_probe_str_ptr(mid));
+    }
+    return buf;
+}
+
+// Inverse of vm_redefinition_bop_for_id() in vm.c
+static ID
+jit_probe_bop_mid(enum ruby_basic_operators bop)
+{
+    switch (bop) {
+#define OP(mid_, bop_) case BOP_##bop_: return id##mid_
+      OP(PLUS, PLUS);
+      OP(MINUS, MINUS);
+      OP(MULT, MULT);
+      OP(DIV, DIV);
+      OP(MOD, MOD);
+      OP(Eq, EQ);
+      OP(Eqq, EQQ);
+      OP(LT, LT);
+      OP(LE, LE);
+      OP(LTLT, LTLT);
+      OP(AREF, AREF);
+      OP(ASET, ASET);
+      OP(Length, LENGTH);
+      OP(Size, SIZE);
+      OP(EmptyP, EMPTY_P);
+      OP(NilP, NIL_P);
+      OP(Succ, SUCC);
+      OP(GT, GT);
+      OP(GE, GE);
+      OP(GTGT, GTGT);
+      OP(Not, NOT);
+      OP(Neq, NEQ);
+      OP(EqTilde, MATCH);
+      OP(Freeze, FREEZE);
+      OP(UMinus, UMINUS);
+      OP(Max, MAX);
+      OP(Min, MIN);
+      OP(Hash, HASH);
+      OP(Call, CALL);
+      OP(And, AND);
+      OP(Or, OR);
+      OP(Cmp, CMP);
+      OP(Default, DEFAULT);
+      OP(Pack, PACK);
+      OP(IncludeP, INCLUDE_P);
+      OP(Yield, YIELD);
+#undef OP
+      default: return 0;
+    }
+}
+
+static const char *
+jit_probe_redefined_flag_class_name(int redefined_flag)
+{
+    switch (redefined_flag) {
+      case INTEGER_REDEFINED_OP_FLAG: return "Integer";
+      case FLOAT_REDEFINED_OP_FLAG: return "Float";
+      case STRING_REDEFINED_OP_FLAG: return "String";
+      case ARRAY_REDEFINED_OP_FLAG: return "Array";
+      case HASH_REDEFINED_OP_FLAG: return "Hash";
+      case SYMBOL_REDEFINED_OP_FLAG: return "Symbol";
+      case TIME_REDEFINED_OP_FLAG: return "Time";
+      case REGEXP_REDEFINED_OP_FLAG: return "Regexp";
+      case NIL_REDEFINED_OP_FLAG: return "NilClass";
+      case TRUE_REDEFINED_OP_FLAG: return "TrueClass";
+      case FALSE_REDEFINED_OP_FLAG: return "FalseClass";
+      case PROC_REDEFINED_OP_FLAG: return "Proc";
+      default: return "?";
+    }
+}
+
+// "Integer#+"
+const char *
+rb_jit_probe_bop_subject(char *buf, size_t size, int redefined_flag, enum ruby_basic_operators bop)
+{
+    VALUE mid = rb_id2str(jit_probe_bop_mid(bop));
+    snprintf(buf, size, "%s#%.*s", jit_probe_redefined_flag_class_name(redefined_flag),
+             jit_probe_str_len(mid), jit_probe_str_ptr(mid));
+    return buf;
+}
+
+// "Foo"
+const char *
+rb_jit_probe_id_subject(char *buf, size_t size, ID id)
+{
+    VALUE name = rb_id2str(id);
+    snprintf(buf, size, "%.*s", jit_probe_str_len(name), jit_probe_str_ptr(name));
+    return buf;
+}
+
+// "Foo::Bar", or "::Foo" for top-level constant paths
+const char *
+rb_jit_probe_ic_subject(char *buf, size_t size, const struct iseq_inline_constant_cache *ic)
+{
+    size_t len = 0;
+    buf[0] = '\0';
+    for (const ID *segment = ic->segments; segment && *segment && len < size; segment++) {
+        // idNULL stands for the leading "::"
+        VALUE name = *segment == idNULL ? Qnil : rb_id2str(*segment);
+        int n = snprintf(buf + len, size - len, "%s%.*s", segment == ic->segments ? "" : "::",
+                         jit_probe_str_len(name), jit_probe_str_ptr(name));
+        if (n < 0) break;
+        len += n;
+    }
+    return buf;
+}
+
+// "String"
+const char *
+rb_jit_probe_class_subject(char *buf, size_t size, VALUE klass)
+{
+    jit_probe_write_class(buf, size, klass);
+    return buf;
+}
+
+// "foo@/path/to/file.rb:1"
+const char *
+rb_jit_probe_iseq_subject(char *buf, size_t size, const rb_iseq_t *iseq)
+{
+    VALUE label = rb_iseq_label(iseq);
+    VALUE path = rb_iseq_path(iseq);
+    snprintf(buf, size, "%.*s@%.*s:%d",
+             jit_probe_str_len(label), jit_probe_str_ptr(label),
+             jit_probe_str_len(path), jit_probe_str_ptr(path),
+             ISEQ_BODY(iseq)->location.first_lineno);
+    return buf;
+}
