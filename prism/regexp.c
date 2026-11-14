@@ -291,6 +291,27 @@ pm_regexp_hex_digit_value(uint8_t byte) {
 }
 
 /**
+ * Return the value of the digits at the cursor in the given base, reading at
+ * most maximum of them, and set length to how many were read.
+ */
+static uint32_t
+pm_regexp_scan_digits(const uint8_t *cursor, const uint8_t *end, uint32_t maximum, uint32_t base, uint32_t *length) {
+    uint32_t value = 0;
+    uint32_t index = 0;
+
+    while (index < maximum && cursor + index < end) {
+        int digit = pm_regexp_hex_digit_value(cursor[index]);
+        if (digit < 0 || (uint32_t) digit >= base) break;
+
+        value = value * base + (uint32_t) digit;
+        index++;
+    }
+
+    *length = index;
+    return value;
+}
+
+/**
  * Range quantifiers are a special class of quantifiers that look like
  *
  * * {digit}
@@ -430,25 +451,6 @@ pm_regexp_parse_quantifier(pm_regexp_parser_t *parser) {
     }
 
     return true;
-}
-
-/**
- * match-posix-class : '[' '[' ':' '^'? CHAR+ ':' ']' ']'
- *                   ;
- */
-static bool
-pm_regexp_parse_posix_class(pm_regexp_parser_t *parser) {
-    if (!pm_regexp_char_expect(parser, ':')) {
-        return false;
-    }
-
-    pm_regexp_char_accept(parser, '^');
-
-    return (
-        pm_regexp_char_find(parser, ':') &&
-        pm_regexp_char_expect(parser, ']') &&
-        pm_regexp_char_expect(parser, ']')
-    );
 }
 
 /**
@@ -605,10 +607,6 @@ pm_regexp_parse_unicode_escape(pm_regexp_parser_t *parser) {
     }
 }
 
-// Forward declaration because character sets can be nested.
-static bool
-pm_regexp_parse_lbracket(pm_regexp_parser_t *parser, uint16_t depth);
-
 /**
  * Skip the digits of a \x escape, of which there are at most two. The cursor
  * should be pointing at the character after 'x'.
@@ -650,50 +648,380 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
 }
 
 /**
- * Skip the rest of the character that begins at the given byte, which the
- * cursor is just past, if it is a character of more than one byte. Its later
- * bytes may look like ASCII in some encodings, so they must not be read as
- * characters of their own. An invalid character, which the lexer has already
- * reported, is skipped a byte at a time.
+ * Read the character at the cursor and return its value, which is its bytes
+ * joined into one number. For every supported encoding, these numbers order
+ * characters the same way as the code points that the regular expression
+ * engine compares. An invalid byte, which the lexer has already reported, is
+ * read as a character of its own.
+ */
+static uint32_t
+pm_regexp_parse_char_value(pm_regexp_parser_t *parser) {
+    const uint8_t *cursor = parser->cursor;
+    size_t width = 1;
+
+    if (*cursor >= 0x80) {
+        width = pm_encoding_char_width(parser->encoding, cursor, (ptrdiff_t) (parser->end - cursor));
+        if (width == 0) width = 1;
+    }
+
+    uint32_t value = 0;
+    for (size_t index = 0; index < width; index++) value = (value << 8) | cursor[index];
+
+    parser->cursor += width;
+    return value;
+}
+
+/**
+ * The kinds of tokens in a character class.
+ */
+typedef enum {
+    /** The end of the pattern, before the class is closed. */
+    PM_REGEXP_CLASS_TOKEN_EOF,
+
+    /** A character, written as itself or as an escape. */
+    PM_REGEXP_CLASS_TOKEN_CHAR,
+
+    /** A set of characters, like \d or \p{Alpha}. */
+    PM_REGEXP_CLASS_TOKEN_SET,
+
+    /** The ] that closes the class. */
+    PM_REGEXP_CLASS_TOKEN_CLOSE,
+
+    /** The - between the ends of a range. */
+    PM_REGEXP_CLASS_TOKEN_RANGE,
+
+    /** The && between two classes that are intersected. */
+    PM_REGEXP_CLASS_TOKEN_AND,
+
+    /** A [ that opens a class nested in this one. */
+    PM_REGEXP_CLASS_TOKEN_OPEN,
+
+    /** A [: that is followed by :], so may open a bracket like [:alpha:]. */
+    PM_REGEXP_CLASS_TOKEN_POSIX_OPEN
+} pm_regexp_class_token_type_t;
+
+/**
+ * A token in a character class.
+ */
+typedef struct {
+    /** The kind of token. */
+    pm_regexp_class_token_type_t type;
+
+    /** Where the token starts in the pattern. */
+    const uint8_t *start;
+
+    /** The value of a character, as pm_regexp_parse_char_value reads it. */
+    uint32_t value;
+
+    /** Whether a character is written as an escape. */
+    bool escaped;
+} pm_regexp_class_token_t;
+
+/**
+ * Whether a [: in a character class is followed by :] before the class could
+ * be closed. The cursor is just past the colon. A ] that comes first closes
+ * the class instead, unless it is escaped.
+ */
+static bool
+pm_regexp_posix_bracket_close_p(const pm_regexp_parser_t *parser, const uint8_t *cursor) {
+    bool escaped = false;
+
+    while (cursor < parser->end) {
+        if (escaped) {
+            escaped = false;
+        } else if (*cursor == ':') {
+            if (cursor + 1 < parser->end && cursor[1] == ']') return true;
+        } else if (*cursor == ']') {
+            return false;
+        } else if (*cursor == '\\') {
+            escaped = true;
+        }
+
+        size_t width = 1;
+        if (*cursor >= 0x80) {
+            width = pm_encoding_char_width(parser->encoding, cursor, (ptrdiff_t) (parser->end - cursor));
+            if (width == 0) width = 1;
+        }
+        cursor += width;
+    }
+
+    return false;
+}
+
+/**
+ * Read an escape in a character class. The cursor is just past the backslash.
+ *
+ * The lexer writes each \M-, \C-, and \c escape as the \x escape of its byte,
+ * and the preprocessor writes each \u escape as a \x escape or as its bytes, so
+ * those forms never reach here.
  */
 static void
-pm_regexp_parse_multibyte_char(pm_regexp_parser_t *parser, const uint8_t *cursor) {
-    if (*cursor >= 0x80 && parser->encoding_changed && pm_encoding_multibyte_p(parser->encoding)) {
-        size_t width = pm_encoding_char_width(parser->encoding, cursor, (ptrdiff_t) (parser->end - cursor));
-        if (width > 1) parser->cursor += width - 1;
+pm_regexp_class_token_escape(pm_regexp_parser_t *parser, pm_regexp_class_token_t *token) {
+    token->type = PM_REGEXP_CLASS_TOKEN_CHAR;
+    token->escaped = true;
+
+    /* A backslash at the end of the pattern was already reported when the
+     * escapes were read. */
+    if (parser->cursor >= parser->end) {
+        token->value = '\\';
+        return;
+    }
+
+    uint32_t length;
+    switch (*parser->cursor) {
+        case 'w': case 'W': case 'd': case 'D': case 's': case 'S': case 'h': case 'H':
+            parser->cursor++;
+            token->type = PM_REGEXP_CLASS_TOKEN_SET;
+            return;
+        case 'p': case 'P':
+            if (pm_regexp_parse_property_escape(parser)) {
+                token->type = PM_REGEXP_CLASS_TOKEN_SET;
+            } else {
+                token->value = parser->cursor[-1];
+            }
+            return;
+        case 'x':
+            parser->cursor++;
+            token->value = pm_regexp_scan_digits(parser->cursor, parser->end, 2, 16, &length);
+            parser->cursor += length;
+            return;
+        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
+            token->value = pm_regexp_scan_digits(parser->cursor, parser->end, 3, 8, &length);
+            parser->cursor += length;
+            return;
+        case 'n': parser->cursor++; token->value = '\n'; return;
+        case 't': parser->cursor++; token->value = '\t'; return;
+        case 'r': parser->cursor++; token->value = '\r'; return;
+        case 'f': parser->cursor++; token->value = '\f'; return;
+        case 'a': parser->cursor++; token->value = '\a'; return;
+        case 'b': parser->cursor++; token->value = '\b'; return;
+        case 'e': parser->cursor++; token->value = '\033'; return;
+        case 'v': parser->cursor++; token->value = '\v'; return;
+        default:
+            token->value = pm_regexp_parse_char_value(parser);
+            return;
     }
 }
 
 /**
- * match-char-set : '[' '^'? (match-range | match-char)* ']'
- *                ;
+ * Read the next token in a character class.
  */
-static bool
-pm_regexp_parse_character_set(pm_regexp_parser_t *parser, uint16_t depth) {
-    pm_regexp_char_accept(parser, '^');
+static void
+pm_regexp_class_token_fetch(pm_regexp_parser_t *parser, pm_regexp_class_token_t *token) {
+    token->start = parser->cursor;
+    token->escaped = false;
 
-    while (!pm_regexp_char_is_eof(parser) && *parser->cursor != ']') {
-        switch (*parser->cursor++) {
-            case '[':
-                if (!pm_regexp_parse_lbracket(parser, (uint16_t) (depth + 1))) return false;
-                break;
-            case '\\':
-                pm_regexp_parse_backslash_escape(parser);
-                break;
-            default:
-                pm_regexp_parse_multibyte_char(parser, parser->cursor - 1);
-                break;
+    if (parser->cursor >= parser->end) {
+        token->type = PM_REGEXP_CLASS_TOKEN_EOF;
+        return;
+    }
+
+    switch (*parser->cursor) {
+        case ']':
+            parser->cursor++;
+            token->type = PM_REGEXP_CLASS_TOKEN_CLOSE;
+            return;
+        case '-':
+            parser->cursor++;
+            token->type = PM_REGEXP_CLASS_TOKEN_RANGE;
+            return;
+        case '&':
+            if (parser->cursor + 1 < parser->end && parser->cursor[1] == '&') {
+                parser->cursor += 2;
+                token->type = PM_REGEXP_CLASS_TOKEN_AND;
+                return;
+            }
+            break;
+        case '[':
+            parser->cursor++;
+            token->type = PM_REGEXP_CLASS_TOKEN_OPEN;
+
+            if (parser->cursor < parser->end && *parser->cursor == ':' && pm_regexp_posix_bracket_close_p(parser, parser->cursor + 1)) {
+                parser->cursor++;
+                token->type = PM_REGEXP_CLASS_TOKEN_POSIX_OPEN;
+            }
+            return;
+        case '\\':
+            parser->cursor++;
+            pm_regexp_class_token_escape(parser, token);
+            return;
+        default:
+            break;
+    }
+
+    token->type = PM_REGEXP_CLASS_TOKEN_CHAR;
+    token->value = pm_regexp_parse_char_value(parser);
+}
+
+/**
+ * The names of the POSIX brackets, like [:alpha:].
+ */
+static const char *const pm_regexp_posix_bracket_names[] = {
+    "alnum", "alpha", "blank", "cntrl", "digit", "graph", "lower",
+    "print", "punct", "space", "upper", "xdigit", "ascii", "word"
+};
+
+/**
+ * The results of reading a POSIX bracket.
+ */
+typedef enum {
+    /** The bracket is invalid, which has been reported. */
+    PM_REGEXP_POSIX_BRACKET_INVALID,
+
+    /** The [ is not a bracket, so it is a character of the class. */
+    PM_REGEXP_POSIX_BRACKET_NONE,
+
+    /** The bracket is valid, and the cursor is past it. */
+    PM_REGEXP_POSIX_BRACKET_VALID
+} pm_regexp_posix_bracket_t;
+
+/**
+ * Read a POSIX bracket, like [:alpha:] or [:^alpha:]. The cursor is just past
+ * its [:, which starts at the given position.
+ *
+ * A known name that is not followed by :] is invalid. So is an unknown name
+ * of up to 20 characters that is followed by :]. Anything else is not a
+ * bracket at all.
+ */
+static pm_regexp_posix_bracket_t
+pm_regexp_parse_posix_bracket(pm_regexp_parser_t *parser, const uint8_t *start) {
+    const uint8_t *cursor = parser->cursor;
+    const uint8_t *end = parser->end;
+    if (cursor < end && *cursor == '^') cursor++;
+
+    /* The shortest bracket name has 4 characters, so along with its :] and the
+     * ] that closes the class, a bracket needs 7 characters. */
+    size_t characters = 0;
+    for (const uint8_t *count = cursor; count < end && characters < 7; characters++) {
+        size_t width = (*count >= 0x80) ? pm_encoding_char_width(parser->encoding, count, (ptrdiff_t) (end - count)) : 1;
+        count += (width == 0) ? 1 : width;
+    }
+
+    if (characters >= 7) {
+        for (size_t index = 0; index < sizeof(pm_regexp_posix_bracket_names) / sizeof(pm_regexp_posix_bracket_names[0]); index++) {
+            const char *name = pm_regexp_posix_bracket_names[index];
+            size_t length = strlen(name);
+            if ((size_t) (end - cursor) < length || memcmp(cursor, name, length) != 0) continue;
+
+            cursor += length;
+            if (end - cursor < 2 || cursor[0] != ':' || cursor[1] != ']') {
+                pm_regexp_parse_error(parser, start, cursor, "invalid POSIX bracket type");
+                return PM_REGEXP_POSIX_BRACKET_INVALID;
+            }
+
+            parser->cursor = cursor + 2;
+            return PM_REGEXP_POSIX_BRACKET_VALID;
         }
     }
 
-    return pm_regexp_char_expect(parser, ']');
+    /* Look a little way ahead for the :] of an unknown name. */
+    size_t count = 0;
+    while (cursor < end && *cursor != ':' && *cursor != ']' && count++ < 20) {
+        size_t width = (*cursor >= 0x80) ? pm_encoding_char_width(parser->encoding, cursor, (ptrdiff_t) (end - cursor)) : 1;
+        cursor += (width == 0) ? 1 : width;
+    }
+
+    if (end - cursor >= 2 && cursor[0] == ':' && cursor[1] == ']') {
+        pm_regexp_parse_error(parser, start, cursor + 2, "invalid POSIX bracket type");
+        return PM_REGEXP_POSIX_BRACKET_INVALID;
+    }
+
+    return PM_REGEXP_POSIX_BRACKET_NONE;
 }
 
 /**
- * A left bracket can either mean a POSIX class or a character set.
+ * Where a character class is in reading its values and ranges.
+ */
+typedef enum {
+    /** No value yet, or none since the last &&. */
+    PM_REGEXP_CLASS_STATE_START,
+
+    /** A value, which a - may make the start of a range. */
+    PM_REGEXP_CLASS_STATE_VALUE,
+
+    /** The start of a range and its -, so the end comes next. */
+    PM_REGEXP_CLASS_STATE_RANGE,
+
+    /** A whole range. */
+    PM_REGEXP_CLASS_STATE_COMPLETE
+} pm_regexp_class_state_t;
+
+/**
+ * The state of reading a character class.
+ */
+typedef struct {
+    /** Where the class is in reading its values and ranges. */
+    pm_regexp_class_state_t state;
+
+    /** Whether the last value is a set of characters, like \d. */
+    bool set;
+
+    /** The last value, if it is a character. */
+    uint32_t value;
+
+    /** Where the last value starts in the pattern. */
+    const uint8_t *start;
+} pm_regexp_class_t;
+
+/**
+ * Add a character to a character class. If it ends a range, the range must
+ * not be empty. The character starts at the given position.
  */
 static bool
-pm_regexp_parse_lbracket(pm_regexp_parser_t *parser, uint16_t depth) {
+pm_regexp_class_add_char(pm_regexp_parser_t *parser, pm_regexp_class_t *character_class, uint32_t value, const uint8_t *start) {
+    switch (character_class->state) {
+        case PM_REGEXP_CLASS_STATE_RANGE:
+            if (character_class->value > value && parser->report_errors) {
+                pm_regexp_parse_error(parser, character_class->start, parser->cursor, "empty range in char class");
+                return false;
+            }
+            character_class->state = PM_REGEXP_CLASS_STATE_COMPLETE;
+            break;
+        case PM_REGEXP_CLASS_STATE_VALUE:
+            break;
+        case PM_REGEXP_CLASS_STATE_START:
+        case PM_REGEXP_CLASS_STATE_COMPLETE:
+            character_class->state = PM_REGEXP_CLASS_STATE_VALUE;
+            break;
+    }
+
+    character_class->set = false;
+    character_class->value = value;
+    character_class->start = start;
+    return true;
+}
+
+/**
+ * Add a set of characters, like \d, to a character class. A set can't end a
+ * range. The set starts at the given position.
+ */
+static bool
+pm_regexp_class_add_set(pm_regexp_parser_t *parser, pm_regexp_class_t *character_class, const uint8_t *start) {
+    if (character_class->state == PM_REGEXP_CLASS_STATE_RANGE && parser->report_errors) {
+        pm_regexp_parse_error(parser, character_class->start, parser->cursor, "char-class value at end of range");
+        return false;
+    }
+
+    character_class->state = PM_REGEXP_CLASS_STATE_VALUE;
+    character_class->set = true;
+    character_class->start = start;
+    return true;
+}
+
+/**
+ * Parse a character class, like [a-z] or [^\d&&[:alpha:]]. The cursor is just
+ * past its [. Classes can nest, and the depth is how deeply this one is nested
+ * in groups and other classes. Returns false at the first error.
+ *
+ * The named capture pass reads the content rather than the pattern. There an
+ * escape like \u{61} or \xE3\x81\x82 is still its text, so the values and
+ * ranges of the class aren't what the pattern holds. That pass only finds
+ * where the class ends, and doesn't check its ranges.
+ */
+static bool
+pm_regexp_parse_character_class(pm_regexp_parser_t *parser, uint16_t depth) {
+    const uint8_t *open = parser->cursor - 1;
+
     if (depth >= PM_REGEXP_PARSE_DEPTH_MAX) {
         pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
         return false;
@@ -704,22 +1032,104 @@ pm_regexp_parse_lbracket(pm_regexp_parser_t *parser, uint16_t depth) {
         return false;
     }
 
-    if ((parser->cursor < parser->end) && parser->cursor[0] == ']') {
-        parser->cursor++;
-        pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "empty char-class");
-        return true;
+    pm_regexp_class_token_t token;
+    pm_regexp_class_token_fetch(parser, &token);
+
+    if (token.type == PM_REGEXP_CLASS_TOKEN_CHAR && token.value == '^' && !token.escaped) {
+        pm_regexp_class_token_fetch(parser, &token);
     }
 
-    const uint8_t *reset = parser->cursor;
+    /* A ] right after the [ or [^ is a character of the class, as long as
+     * another ] comes later in the pattern. Otherwise the class is empty. */
+    if (token.type == PM_REGEXP_CLASS_TOKEN_CLOSE) {
+        if (pm_memchr(parser->cursor, ']', (size_t) (parser->end - parser->cursor), parser->encoding_changed, parser->encoding) == NULL) {
+            pm_regexp_parse_error(parser, token.start, parser->cursor, "empty char-class");
+            return false;
+        }
 
-    if ((parser->cursor + 2 < parser->end) && parser->cursor[0] == '[' && parser->cursor[1] == ':') {
-        parser->cursor++;
-        if (pm_regexp_parse_posix_class(parser)) return true;
-
-        parser->cursor = reset;
+        token.type = PM_REGEXP_CLASS_TOKEN_CHAR;
+        token.value = ']';
     }
 
-    return pm_regexp_parse_character_set(parser, depth);
+    pm_regexp_class_t character_class = { .state = PM_REGEXP_CLASS_STATE_START, .set = false, .value = 0, .start = token.start };
+
+    while (token.type != PM_REGEXP_CLASS_TOKEN_CLOSE) {
+        bool fetched = false;
+
+        switch (token.type) {
+            case PM_REGEXP_CLASS_TOKEN_EOF:
+                pm_regexp_parse_error(parser, open, parser->end, "premature end of char-class");
+                return false;
+            case PM_REGEXP_CLASS_TOKEN_CHAR:
+                if (!pm_regexp_class_add_char(parser, &character_class, token.value, token.start)) return false;
+                break;
+            case PM_REGEXP_CLASS_TOKEN_SET:
+                if (!pm_regexp_class_add_set(parser, &character_class, token.start)) return false;
+                break;
+            case PM_REGEXP_CLASS_TOKEN_POSIX_OPEN:
+                switch (pm_regexp_parse_posix_bracket(parser, token.start)) {
+                    case PM_REGEXP_POSIX_BRACKET_INVALID:
+                        return false;
+                    case PM_REGEXP_POSIX_BRACKET_NONE:
+                        /* The [ is a character, and the class goes on from
+                         * the colon after it. */
+                        parser->cursor = token.start + 1;
+                        if (!pm_regexp_class_add_char(parser, &character_class, '[', token.start)) return false;
+                        break;
+                    case PM_REGEXP_POSIX_BRACKET_VALID:
+                        if (!pm_regexp_class_add_set(parser, &character_class, token.start)) return false;
+                        break;
+                }
+                break;
+            case PM_REGEXP_CLASS_TOKEN_RANGE: {
+                const uint8_t *range = token.start;
+
+                switch (character_class.state) {
+                    case PM_REGEXP_CLASS_STATE_VALUE:
+                        /* A - before the end of the class or a && is a
+                         * character, as in [a-]. Otherwise it makes the
+                         * value the start of a range, which a set can't be. */
+                        pm_regexp_class_token_fetch(parser, &token);
+                        fetched = true;
+
+                        if (token.type == PM_REGEXP_CLASS_TOKEN_CLOSE || token.type == PM_REGEXP_CLASS_TOKEN_AND) {
+                            if (!pm_regexp_class_add_char(parser, &character_class, '-', range)) return false;
+                        } else if (character_class.set && parser->report_errors) {
+                            pm_regexp_parse_error(parser, character_class.start, parser->cursor, "unmatched range specifier in char-class");
+                            return false;
+                        } else {
+                            character_class.state = PM_REGEXP_CLASS_STATE_RANGE;
+                        }
+                        break;
+                    case PM_REGEXP_CLASS_STATE_RANGE:
+                        /* A - after a - ends the range, as in [!--]. */
+                        if (!pm_regexp_class_add_char(parser, &character_class, '-', range)) return false;
+                        break;
+                    case PM_REGEXP_CLASS_STATE_START:
+                    case PM_REGEXP_CLASS_STATE_COMPLETE:
+                        /* A - at the start of the class or after a range is a
+                         * character, as in [-a] or [a-b-c]. */
+                        pm_regexp_class_token_fetch(parser, &token);
+                        fetched = true;
+                        if (!pm_regexp_class_add_char(parser, &character_class, '-', range)) return false;
+                        break;
+                }
+                break;
+            }
+            case PM_REGEXP_CLASS_TOKEN_OPEN:
+                if (!pm_regexp_parse_character_class(parser, (uint16_t) (depth + 1))) return false;
+                break;
+            case PM_REGEXP_CLASS_TOKEN_AND:
+                character_class.state = PM_REGEXP_CLASS_STATE_START;
+                break;
+            case PM_REGEXP_CLASS_TOKEN_CLOSE:
+                break;
+        }
+
+        if (!fetched) pm_regexp_class_token_fetch(parser, &token);
+    }
+
+    return true;
 }
 
 // Forward declaration here since parsing groups needs to go back up the grammar
@@ -1105,7 +1515,7 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
             return pm_regexp_parse_group(parser, depth) && pm_regexp_parse_quantifier(parser);
         case '[':
             parser->cursor++;
-            return pm_regexp_parse_lbracket(parser, depth) && pm_regexp_parse_quantifier(parser);
+            return pm_regexp_parse_character_class(parser, depth) && pm_regexp_parse_quantifier(parser);
         case '*':
         case '?':
         case '+':
@@ -1493,26 +1903,6 @@ pm_regexp_preprocess_fix_encoding(pm_regexp_preprocessor_t *preprocessor, const 
     return preprocessor->fixed_encoding == encoding;
 }
 
-/**
- * Return the value of the digits at the cursor in the given base, reading at
- * most maximum of them, and set length to how many were read.
- */
-static uint32_t
-pm_regexp_preprocess_digits(const uint8_t *cursor, const uint8_t *end, uint32_t maximum, uint32_t base, uint32_t *length) {
-    uint32_t value = 0;
-    uint32_t index = 0;
-
-    while (index < maximum && cursor + index < end) {
-        int digit = pm_regexp_hex_digit_value(cursor[index]);
-        if (digit < 0 || (uint32_t) digit >= base) break;
-
-        value = value * base + (uint32_t) digit;
-        index++;
-    }
-
-    *length = index;
-    return value;
-}
 
 /**
  * Read the escape at the cursor as the byte that it stands for, which is how
@@ -1548,11 +1938,11 @@ pm_regexp_preprocess_escaped_byte(pm_regexp_preprocessor_t *preprocessor, const 
         case 'a': code = '\a'; break;
         case 'e': code = '\033'; break;
         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
-            code = pm_regexp_preprocess_digits(cursor - 1, end, 3, 8, &length);
+            code = pm_regexp_scan_digits(cursor - 1, end, 3, 8, &length);
             cursor += length - 1;
             break;
         case 'x':
-            code = pm_regexp_preprocess_digits(cursor, end, 2, 16, &length);
+            code = pm_regexp_scan_digits(cursor, end, 2, 16, &length);
             if (length == 0) {
                 pm_regexp_error_with_content(preprocessor->regexp, "invalid hex escape");
                 return -1;
@@ -1661,7 +2051,7 @@ pm_regexp_preprocess_code_point_list(pm_regexp_preprocessor_t *preprocessor, con
 
     while (true) {
         uint32_t length;
-        uint32_t value = pm_regexp_preprocess_digits(cursor, end, UINT32_MAX, 16, &length);
+        uint32_t value = pm_regexp_scan_digits(cursor, end, UINT32_MAX, 16, &length);
         if (length == 0) break;
 
         /* The largest code point, 10FFFF, has six digits. */
@@ -1818,7 +2208,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                          * is, since the two cannot be told apart here. A
                          * larger value is the escape of a byte. */
                         uint32_t length;
-                        if (pm_regexp_preprocess_digits(cursor - 1, end, 3, 8, &length) <= 0x7F) break;
+                        if (pm_regexp_scan_digits(cursor - 1, end, 3, 8, &length) <= 0x7F) break;
                     }
                     PRISM_FALLTHROUGH
                     case '0': case 'x':
@@ -1839,7 +2229,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                             if (!pm_regexp_preprocess_code_point_list(preprocessor, &cursor)) return false;
                         } else {
                             uint32_t length;
-                            uint32_t value = pm_regexp_preprocess_digits(cursor, end, 4, 16, &length);
+                            uint32_t value = pm_regexp_scan_digits(cursor, end, 4, 16, &length);
                             if (length != 4) {
                                 pm_regexp_error_with_content(preprocessor->regexp, "invalid Unicode escape");
                                 return false;

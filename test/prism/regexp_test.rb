@@ -28,6 +28,14 @@ module Ruby::Prism
       assert_equal([:foo], named_captures("(?<foo>bar)(?<foo>baz)"))
     end
 
+    def test_named_captures_after_range_of_escapes
+      assert_equal([:foo], named_captures("[\\u{61}-\\u{7a}](?<foo>bar)"))
+    end
+
+    def test_named_captures_after_range_of_escaped_multibyte_character
+      assert_equal([:foo], named_captures("[!-\\xE3\\x81\\x82-\\p{Alpha}](?<foo>bar)"))
+    end
+
     def test_named_capture_inside_fake_range_quantifier
       assert_equal([:foo], named_captures("foo{1, (?<foo>2)}"))
     end
