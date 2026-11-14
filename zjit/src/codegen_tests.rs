@@ -5182,6 +5182,81 @@ fn test_string_append_broken_coderange() {
     "#), @"[4, false]");
 }
 
+/// The code range cached on the String that `program` evaluates to. Unlike `valid_encoding?`
+/// and `ascii_only?`, this doesn't scan the string when nothing is cached.
+fn cached_coderange(program: &str) -> ruby_coderange_type {
+    let flags = eval(program).builtin_flags();
+    (flags & RUBY_ENC_CODERANGE_MASK as usize) as ruby_coderange_type
+}
+
+// [Bug #22551] Appending to a string of the same encoding must leave the receiver with the code
+// range the interpreter leaves it with, instead of dropping the cached one.
+#[test]
+fn test_string_append_keeps_coderange() {
+    eval(r#"
+        def test(s, x) = s << x
+        test(+"abc", "def")
+
+        def scanned(s) = s.dup.tap(&:valid_encoding?)
+        $ascii = scanned("abc")
+        $valid = scanned("é")
+        $broken = scanned("\xE3".dup.force_encoding(Encoding::UTF_8))
+        $unscanned = ["é"].pack("a*").force_encoding(Encoding::UTF_8)
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_eq!(RUBY_ENC_CODERANGE_UNKNOWN, cached_coderange("$unscanned"));
+    // Nothing here may ask about the results, since that would scan them.
+    assert_snapshot!(assert_compiles(r#"
+        $ascii_ascii = test($ascii.dup, $ascii)
+        $ascii_valid = test($ascii.dup, $valid)
+        $valid_ascii = test($valid.dup, $ascii)
+        $valid_valid = test($valid.dup, $valid)
+        $valid_unscanned = test($valid.dup, $unscanned)
+        $valid_broken = test($valid.dup, $broken)
+        :done
+    "#), @":done");
+    assert_eq!(RUBY_ENC_CODERANGE_7BIT, cached_coderange("$ascii_ascii"));
+    assert_eq!(RUBY_ENC_CODERANGE_VALID, cached_coderange("$ascii_valid"));
+    assert_eq!(RUBY_ENC_CODERANGE_VALID, cached_coderange("$valid_ascii"));
+    assert_eq!(RUBY_ENC_CODERANGE_VALID, cached_coderange("$valid_valid"));
+    assert_eq!(RUBY_ENC_CODERANGE_VALID, cached_coderange("$valid_unscanned"));
+    assert_eq!(RUBY_ENC_CODERANGE_BROKEN, cached_coderange("$valid_broken"));
+}
+
+#[test]
+fn test_string_append_broken_strings_into_valid() {
+    eval(r#"
+        def test(s, x) = s << x
+        test(+"abc", "def")
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    // Two halves of one character. The result must not be left marked broken.
+    assert_snapshot!(assert_compiles(r#"
+        head = "\xE3".dup.force_encoding(Encoding::UTF_8)
+        tail = "\x81\x82".dup.force_encoding(Encoding::UTF_8)
+        halves = [head.valid_encoding?, tail.valid_encoding?]
+        test(head, tail)
+        [halves, head, head.valid_encoding?]
+    "#), @r#"[[false, false], "あ", true]"#);
+}
+
+#[test]
+fn test_string_append_empty_string_to_frozen() {
+    eval(r#"
+        def test(s, x) = s << x
+        test(+"abc", "def")
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          test("abc".freeze, "")
+          :no_error
+        rescue FrozenError
+          :frozen_error
+        end
+    "#), @":frozen_error");
+}
+
 #[test]
 fn test_new_hash_nonempty() {
     eval(r#"

@@ -6367,8 +6367,9 @@ fn jit_rb_str_concat(
     let concat_arg = asm.stack_pop(1);
     let recv = asm.stack_pop(1);
 
-    // Test if string encodings differ. If different, use rb_str_append. If the same,
-    // use rb_jit_str_simple_append, which calls rb_str_cat.
+    // Test if string encodings differ. If different, use rb_str_buf_append. If the same,
+    // use rb_jit_str_simple_append, which skips the encoding negotiation but still
+    // keeps the receiver's code range up to date.
     asm_comment!(asm, "<< on strings");
 
     // Take receiver's object flags XOR arg's flags. If any

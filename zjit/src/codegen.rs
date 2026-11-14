@@ -4430,7 +4430,8 @@ fn gen_string_append(jit: &mut JITState, asm: &mut Assembler, function: &Functio
     gen_prepare_non_leaf_call(jit, asm, function, state);
 
     // Test if string encodings differ. If different, use rb_str_buf_append. If the same,
-    // use rb_jit_str_simple_append, which calls rb_str_cat.
+    // use rb_jit_str_simple_append, which skips the encoding negotiation but still
+    // keeps the receiver's code range up to date.
     asm_comment!(asm, "<< on strings");
 
     // XOR the object flags. If any string-encoding flags differ between the two,

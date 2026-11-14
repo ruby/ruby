@@ -16310,6 +16310,40 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
 }
 
 #if USE_YJIT || USE_ZJIT
+// String#<< for the JITs, which call this once they have checked that the two
+// strings have the same encoding index. That rules out any encoding
+// negotiation, but the receiver's code range still depends on the argument's.
+// rb_str_cat() can't be used here: it is only given a pointer, so it has to
+// clear the receiver's code range. [Bug #22551]
+VALUE
+rb_jit_str_simple_append(VALUE str1, VALUE str2)
+{
+    const int str1_cr = ENC_CODERANGE(str1);
+    const int str2_cr = ENC_CODERANGE(str2);
+
+    // Leave it to rb_str_buf_append() whenever the result isn't simply the
+    // two code ranges combined: str2 is broken or not scanned yet, str1 is
+    // broken and str2 might complete its last character, or str1 is empty and
+    // might take on the code range of str2.
+    if (RB_UNLIKELY(!ENC_CODERANGE_CLEAN_P(str2_cr) ||
+                    str1_cr == ENC_CODERANGE_BROKEN ||
+                    (str1_cr == ENC_CODERANGE_UNKNOWN && RSTRING_LEN(str1) == 0))) {
+        return rb_str_buf_append(str1, str2);
+    }
+
+    // str2 is a sequence of whole characters, so appending it doesn't change
+    // how the bytes already in str1 are read.
+    str_buf_cat4(str1, RSTRING_PTR(str2), RSTRING_LEN(str2), true);
+
+    const int cr = ENC_CODERANGE_AND(str1_cr, str2_cr);
+    if (cr != str1_cr) {
+        ENC_CODERANGE_SET(str1, cr);
+    }
+    RB_GC_GUARD(str2);
+
+    return str1;
+}
+
 void
 rb_jit_str_concat_codepoint(VALUE str, VALUE codepoint)
 {
