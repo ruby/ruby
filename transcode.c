@@ -2897,7 +2897,21 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     }
     buf = (unsigned char *)RSTRING_PTR(dest);
     *bp = '\0';
-    rb_str_set_len(dest, bp - buf);
+    {
+        /* The destination was sized for the source plus a margin and then
+         * grown by doubling, but a shrinking conversion (e.g. UTF-16 to
+         * UTF-8) ends far short of it.  Copy the result out at its exact
+         * size so the difference is not kept as capacity; the caller
+         * associates the encoding either way. */
+        rb_len_t outlen = (rb_len_t)(bp - buf);
+        if (rb_str_capacity(dest) - outlen >= 64) {
+            RB_GC_GUARD(dest);
+            dest = rb_str_new((const char *)buf, outlen);
+        }
+        else {
+            rb_str_set_len(dest, outlen);
+        }
+    }
 
     /* set encoding */
     if (!denc) {
