@@ -15,12 +15,30 @@ prelude: |
   unonascii10 = unonascii1 * 10
   unonascii100 = unonascii10 * 10
   unonascii1000 = unonascii100 * 10
+  # the same letters in the same cases
+  sstr1 = lstr1.dup
+  sstr10 = lstr10.dup
+  sstr100 = lstr100.dup
+  sstr1000 = lstr1000.dup
+  # only the first letter in the other case
+  cstr1 = lstr1.capitalize
+  cstr10 = lstr10.capitalize
+  cstr100 = lstr100.capitalize
+  cstr1000 = lstr1000.capitalize
 benchmark:
   casecmp-1: lstr1.casecmp(ustr1)
   casecmp-10: lstr10.casecmp(ustr10)
   casecmp-100: lstr100.casecmp(ustr100)
   casecmp-1000: lstr1000.casecmp(ustr1000)
   casecmp-1000vs10: lstr1000.casecmp(ustr10)
+  casecmp-same1: lstr1.casecmp(sstr1)
+  casecmp-same10: lstr10.casecmp(sstr10)
+  casecmp-same100: lstr100.casecmp(sstr100)
+  casecmp-same1000: lstr1000.casecmp(sstr1000)
+  casecmp-capitalized1: lstr1.casecmp(cstr1)
+  casecmp-capitalized10: lstr10.casecmp(cstr10)
+  casecmp-capitalized100: lstr100.casecmp(cstr100)
+  casecmp-capitalized1000: lstr1000.casecmp(cstr1000)
   casecmp-nonascii1: lnonascii1.casecmp(unonascii1)
   casecmp-nonascii10: lnonascii10.casecmp(unonascii10)
   casecmp-nonascii100: lnonascii100.casecmp(unonascii100)
