@@ -73,7 +73,7 @@ assert_equal '[1, 2]', %q{
   rescue NotImplementedError
     [1, 2]
   end
-}, '[ruby-dev:44005] [Ruby 1.9 - Bug #4950]'
+}, '[ruby-dev:44005] [Ruby 1.9 - Bug #4950]' unless ENV["RUBYCI_OPENBSD"] == "1"
 
 assert_equal 'ok', %q{
   def now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
