@@ -4946,6 +4946,92 @@ enum_uniq(VALUE obj)
     return ret;
 }
 
+struct longest_slice_memo {
+    unsigned long index;
+    unsigned long length;
+    unsigned long best_start;
+    unsigned long best_length;
+    int block_given;
+};
+
+static VALUE
+longest_slice_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
+{
+    struct longest_slice_memo *memo = MEMO_FOR(struct longest_slice_memo, args);
+    int matches;
+
+    if (memo->block_given) {
+        matches = RTEST(rb_yield_values2(argc, argv));
+    }
+    else {
+        ENUM_WANT_SVALUE();
+        matches = RTEST(i);
+    }
+
+    memo = MEMO_FOR(struct longest_slice_memo, args);
+    if (matches) {
+        memo->length++;
+        if (memo->length > memo->best_length) {
+            memo->best_start = memo->index - memo->length + 1;
+            memo->best_length = memo->length;
+        }
+    }
+    else {
+        memo->length = 0;
+    }
+    memo->index++;
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    longest_slice -> range
+ *    longest_slice {|element| ... } -> range
+ *
+ *  Returns a zero-based, end-exclusive Range for the longest consecutive
+ *  sequence of matching entries. If several sequences have the same length,
+ *  returns the range for the first one. If no entries match, returns <tt>0...0</tt>.
+ *
+ *  With no block, matches truthy entries (neither +nil+ nor +false+):
+ *
+ *    [nil, 'a', 'b', nil, 'c'].longest_slice # => 1...3
+ *    [false, 0, []].longest_slice           # => 1...3
+ *    [false, false, nil].longest_slice      # => 0...0
+ *    [nil, nil].longest_slice               # => 0...0
+ *    [].longest_slice                      # => 0...0
+ *
+ *  With a block, matches entries for which the block returns a truthy value:
+ *
+ *    [1, 2, 4, 3, 6].longest_slice {|n| n.even? } # => 1...3
+ *    [1, 2].longest_slice {false}                 # => 0...0
+ *
+ *  Passes each entry's yielded arguments to the block. The returned range
+ *  always uses iteration positions, regardless of any index yielded by +each+:
+ *
+ *    a = [10, 20, 30, 40]
+ *    a.each.with_index(1).longest_slice {|v, index| v >= 20 && index <= 3 } # => 1...3
+ *
+ */
+
+static VALUE
+enum_longest_slice(VALUE obj)
+{
+    VALUE args;
+    /* The memo contains only counters and flags, not Ruby objects. */
+    struct longest_slice_memo *memo =
+        NEW_PARTIAL_MEMO_FOR(struct longest_slice_memo, args, index);
+    *memo = (struct longest_slice_memo) {0, 0, 0, 0, rb_block_given_p()};
+
+    rb_block_call(obj, id_each, 0, 0, longest_slice_i, args);
+    memo = MEMO_FOR(struct longest_slice_memo, args);
+    unsigned long best_start = memo->best_start;
+    unsigned long best_end = best_start + memo->best_length;
+    VALUE beg = ULONG2NUM(best_start);
+    VALUE end = ULONG2NUM(best_end);
+    RB_GC_GUARD(args);
+    return rb_range_new(beg, end, TRUE);
+}
+
 static VALUE
 compact_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
@@ -5050,6 +5136,7 @@ enum_compact(VALUE obj)
  * - #find (aliased as #detect): Returns an element selected by the block.
  * - #find_all (aliased as #filter, #select): Returns elements selected by the block.
  * - #find_index: Returns the index of an element selected by a given object or block.
+ * - #longest_slice: Returns the range of the longest consecutive sequence of matching entries.
  * - #reject: Returns elements not rejected by the block.
  * - #uniq: Returns elements that are not duplicates.
  *
@@ -5294,6 +5381,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "sum", enum_sum, -1);
     rb_define_method(rb_mEnumerable, "uniq", enum_uniq, 0);
     rb_define_method(rb_mEnumerable, "compact", enum_compact, 0);
+    rb_define_method(rb_mEnumerable, "longest_slice", enum_longest_slice, 0);
 
     id__alone = rb_intern_const("_alone");
     id__separator = rb_intern_const("_separator");

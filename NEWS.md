@@ -62,6 +62,13 @@ Note: We're only listing outstanding class updates.
       given names, raising `KeyError` for missing names unless a block is
       given. [[Feature #21781]]
 
+* Enumerable
+
+    * `Enumerable#longest_slice` returns a zero-based, end-exclusive range for
+      the longest consecutive sequence of truthy entries, or entries for
+      which a given block returns a truthy value. Ties select the first sequence;
+      no matches return `0...0`.
+
 * Fiber::Scheduler
 
     * The `fiber_interrupt` hook is now required. Schedulers which do not
