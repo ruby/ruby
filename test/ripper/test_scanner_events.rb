@@ -951,6 +951,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_equal ["?\\u{41}"],
                  scan('CHAR', "?\\u{41}")
 
+    assert_equal [], scan('CHAR', "?\x8a".dup.force_encoding(Encoding::UTF_8))
+
     err = nil
     assert_equal [], scan('CHAR', '?\\') {|*e| err = e}
     assert_equal([:on_parse_error, "Invalid escape character syntax", "?\\"], err)
