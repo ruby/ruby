@@ -907,6 +907,18 @@ class TestRubyOptimization < Test::Unit::TestCase
     end
   end
 
+  def test_peephole_remove_unreachable_chunk
+    iseq = RubyVM::InstructionSequence.compile(<<~'RUBY')
+      while true
+        if true
+          '[Bug #22533]'
+        end
+      end
+    RUBY
+    insn = iseq.disasm
+    assert_match /jump/, insn
+  end
+
   def test_peephole_dstr
     code = "#{<<~'begin;'}\n#{<<~'end;'}"
     begin;
