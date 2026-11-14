@@ -1044,3 +1044,33 @@ rb_jit_shape_capacity(shape_id_t shape_id)
 {
     return RSHAPE_CAPACITY(shape_id);
 }
+
+// Whether a frozen object's ivar layout (shape, field indices, embeddedness) can no longer
+// change. Freezing rules out ivar writes, so for objects other than T_OBJECT the only
+// remaining transition is adding an object_id, which is harmless unless the shape goes complex.
+bool
+rb_jit_frozen_obj_ivar_layout_stable_p(VALUE obj)
+{
+    if (RB_SPECIAL_CONST_P(obj)) return false;
+    RUBY_ASSERT(OBJ_FROZEN(obj));
+
+    switch (BUILTIN_TYPE(obj)) {
+      case T_OBJECT:
+        // Adding an object_id can unembed a full slot, and GC compaction can re-embed
+        // or resize an object, so the layout of a frozen T_OBJECT can still change.
+        return false;
+      case T_CLASS:
+      case T_MODULE:
+        // class_object_id stores the id in the RClass, not in a field.
+        return true;
+      default:
+        break;
+    }
+
+    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+    if (rb_shape_has_object_id(shape_id)) return true;
+    if (rb_shape_complex_p(shape_id)) return false;
+    // Only an existing child is guaranteed: creating one later can fail when the shape
+    // tree is full, making the shape complex.
+    return rb_shape_object_id_child_exists_p(shape_id);
+}

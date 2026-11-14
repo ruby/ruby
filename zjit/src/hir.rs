@@ -7138,8 +7138,12 @@ impl Function {
                         match recv_type.ruby_object() {
                             Some(recv_obj) if recv_obj.is_frozen() => {
                                 let recv_ptr: *const u32 = recv_obj.as_ptr();
-                                let val = unsafe { recv_ptr.byte_add(offset).read() };
-                                self.new_insn(Insn::Const { val: Const::CShape(ShapeId(val)) })
+                                let shape = ShapeId(unsafe { recv_ptr.byte_add(offset).read() });
+                                if unsafe { rb_jit_frozen_obj_ivar_layout_stable_p(recv_obj) } {
+                                    self.new_insn(Insn::Const { val: Const::CShape(shape) })
+                                } else {
+                                    insn_id
+                                }
                             }
                             _ => insn_id,
                         }

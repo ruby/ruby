@@ -6563,6 +6563,73 @@ fn test_getivar_frozen_constant_with_other_shape() {
 }
 
 #[test]
+fn test_getivar_frozen_constant_gains_object_id() {
+    // Regression test: the shape of a frozen constant was folded into the compiled code,
+    // but hashing it adds an object_id, which moves its fields out of a full embedded
+    // slot. The compiled embedded read of @a then returned the fields IMemo.
+    set_call_threshold(2);
+    eval(r#"
+      class C
+        attr_reader :a
+        def initialize
+          @a = :a
+          @b = :b
+          @c = +"unshareable"
+        end
+      end
+      10.times { C.new }
+      OBJ = C.new.freeze
+      def test = OBJ.a
+      test; test
+      $h = { OBJ => 1 }
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits("[test.class, test]"), @"[Symbol, :a]");
+}
+
+#[test]
+fn test_getivar_frozen_constant_reembedded_by_compaction() {
+    // Regression test: the shape of a frozen constant with out-of-line fields was folded
+    // into the compiled code, but GC compaction re-embeds it, so the compiled load of its
+    // fields object read @a instead and dereferenced it.
+    set_call_threshold(2);
+    eval(r#"
+      class C
+        attr_reader :a
+        def initialize
+          @a = :a
+          20.times { |i| instance_variable_set(:"@x#{i}", i) }
+          freeze
+        end
+      end
+      OBJ = C.new
+      OBJ.object_id
+      def test = OBJ.a
+      test; test
+      GC.verify_compaction_references(expand_heap: true, toward: :empty) if GC.respond_to?(:compact)
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits("[test.class, test]"), @"[Symbol, :a]");
+}
+
+#[test]
+fn test_getivar_frozen_generic_fields_constant_gains_object_id() {
+    // Objects with generic fields keep their fields in a separate fields object, which
+    // adding an object_id may replace without changing the ivar indices.
+    set_call_threshold(2);
+    eval(r#"
+      class C < String
+        attr_reader :a
+      end
+      def make = C.new("str").tap { it.instance_variable_set(:@a, :a); it.instance_variable_set(:@b, []); it.freeze }
+      make.object_id
+      OBJ = make
+      def test = OBJ.a
+      test; test
+      OBJ.object_id
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits("[test.class, test]"), @"[Symbol, :a]");
+}
+
+#[test]
 fn test_attr_accessor_setivar() {
     eval("
         class C

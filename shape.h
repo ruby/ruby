@@ -546,6 +546,7 @@ rb_shape_transition_slot_size(shape_id_t shape_id, size_t slot_size)
 }
 
 shape_id_t rb_shape_transition_object_id(shape_id_t shape_id);
+bool rb_shape_object_id_child_exists_p(shape_id_t shape_id);
 
 static inline shape_id_t
 rb_obj_shape_transition_frozen(VALUE obj)

@@ -2646,4 +2646,5 @@ unsafe extern "C" {
         length: usize,
     ) -> *const ::std::os::raw::c_void;
     pub fn rb_jit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
+    pub fn rb_jit_frozen_obj_ivar_layout_stable_p(obj: VALUE) -> bool;
 }
