@@ -4049,6 +4049,16 @@ class TestString < Test::Unit::TestCase
     refute_includes ObjectSpace.dump(substr), ' "shared":true,'
   end
 
+  # [Bug #22528]
+  def test_append_wide_to_empty_string
+    %w[UTF-16LE UTF-16BE UTF-32LE UTF-32BE].each do |enc|
+      s = ("a" * 1000).encode(enc)
+      assert_equal(s, String.new(capacity: s.bytesize, encoding: "UTF-8") << s)
+      a = "".force_encoding("US-ASCII")
+      assert_equal(s, eval(%{# coding: us-ascii\n"\#{a}\#{s}"}))
+    end
+  end
+
   def test_substring_embed
     str = "a" * 448
 
