@@ -20,7 +20,7 @@
 #define SHAPE_DEBUG (VM_CHECK_MODE > 0)
 #endif
 
-#define REDBLACK_CACHE_SIZE (SHAPE_BUFFER_SIZE * 32)
+static redblack_id_t redblack_cache_max_size = SHAPE_BUFFER_SIZE * 32;
 
 /* This depends on that the allocated memory by Ruby's allocator or
  * mmap is not located at an odd address. */
@@ -150,7 +150,7 @@ redblack_id_for(redblack_node_t *node)
 static redblack_node_t *
 redblack_new(char color, ID key, rb_shape_t *value, redblack_node_t *left, redblack_node_t *right)
 {
-    if (redblack_cache_size + 1 >= REDBLACK_CACHE_SIZE) {
+    if (redblack_cache_size + 1 >= redblack_cache_max_size) {
         // We're out of cache, just quit
         return LEAF;
     }
@@ -1597,6 +1597,38 @@ rb_shape_find_by_id(VALUE mod, VALUE id)
 
 #ifdef HAVE_MMAP
 #include <sys/mman.h>
+
+static void
+shape_set_redblack_cache_max_size(void)
+{
+    const char *name = "RUBY_SHAPE_REDBLACK_CACHE_SIZE";
+    const char *ptr = getenv(name);
+    ssize_t val;
+    size_t max = redblack_cache_max_size << 3;
+
+    if (ptr != NULL && *ptr) {
+        char *end;
+#if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+        val = strtoll(ptr, &end, 0);
+#else
+        val = strtol(ptr, &end, 0);
+#endif
+        while (*end && ISSPACE(*end)) end++;
+        if (*end) {
+            fprintf(stderr, "invalid string for %s: %s\n", name, ptr);
+            return;
+        }
+        if (val >= 0 && (size_t)val <= max) {
+            redblack_cache_max_size = (redblack_id_t)val;
+        }
+        else {
+            fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIuSIZE") is ignored because it must be between 0 and %"PRIuSIZE".\n",
+                    name, val, (size_t)redblack_cache_max_size, max);
+            return;
+        }
+    }
+    return;
+}
 #endif
 
 void
@@ -1627,9 +1659,16 @@ Init_default_shapes(void)
     rb_shape_tree.id_object_id = rb_make_internal_id();
 
 #ifdef HAVE_MMAP
-    size_t shape_cache_mmap_size = rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError);
-    redblack_cache = (redblack_node_t *)mmap(NULL, shape_cache_mmap_size,
-                         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    shape_set_redblack_cache_max_size();
+    size_t shape_cache_mmap_size = 0;
+    if (redblack_cache_max_size == 0) {
+        redblack_cache = (redblack_node_t *)MAP_FAILED;
+    }
+    else {
+        shape_cache_mmap_size = rb_size_mul_or_raise(redblack_cache_max_size, sizeof(redblack_node_t), rb_eRuntimeError);
+        redblack_cache = (redblack_node_t *)mmap(NULL, shape_cache_mmap_size,
+                             PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    }
     redblack_cache_size = 0;
 
     // If mmap fails, then give up on the redblack tree cache.
@@ -1637,7 +1676,7 @@ Init_default_shapes(void)
     // the cache is full.
     if (redblack_cache == MAP_FAILED) {
         redblack_cache = NULL;
-        redblack_cache_size = REDBLACK_CACHE_SIZE;
+        redblack_cache_size = redblack_cache_max_size;
     }
     else {
         ruby_annotate_mmap(redblack_cache, shape_cache_mmap_size, "Ruby:Init_default_shapes:shape_cache");
@@ -1703,7 +1742,7 @@ Init_shape(void)
     rb_define_const(rb_cShape, "SIZEOF_RB_SHAPE_T", INT2NUM(sizeof(rb_shape_t)));
     rb_define_const(rb_cShape, "SIZEOF_REDBLACK_NODE_T", INT2NUM(sizeof(redblack_node_t)));
     rb_define_const(rb_cShape, "SHAPE_BUFFER_SIZE", INT2NUM(sizeof(rb_shape_t) * SHAPE_BUFFER_SIZE));
-    rb_define_const(rb_cShape, "REDBLACK_CACHE_SIZE", INT2NUM(sizeof(redblack_node_t) * REDBLACK_CACHE_SIZE));
+    rb_define_const(rb_cShape, "REDBLACK_CACHE_SIZE", SIZET2NUM(sizeof(redblack_node_t) * redblack_cache_max_size));
 
     rb_define_singleton_method(rb_cShape, "transition_tree", shape_transition_tree, 0);
     rb_define_singleton_method(rb_cShape, "find_by_id", rb_shape_find_by_id, 1);
