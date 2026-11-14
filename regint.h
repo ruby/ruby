@@ -867,6 +867,7 @@ typedef struct {
   int outer_repeat_mem;
   long num_cache_points_at_outer_repeat;
   long num_cache_points_in_outer_repeat;
+  int num_cache_points_of_outer_repeat_inc;
   int lookaround_nesting;
   UChar *match_addr;
 } OnigCacheOpcode;
