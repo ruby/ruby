@@ -287,6 +287,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, ">>", inline_integer_rshift);
     annotate!(rb_cInteger, "[]", inline_integer_aref);
     annotate!(rb_cInteger, "to_s", types::StringExact);
+    annotate!(rb_cRegexp, "to_s", types::StringExact);
     annotate!(rb_cFloat, "+", inline_float_plus);
     annotate!(rb_cFloat, "-", inline_float_minus);
     annotate!(rb_cFloat, "*", inline_float_mul);
