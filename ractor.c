@@ -1580,6 +1580,10 @@ rb_obj_set_shareable_no_assert(VALUE obj)
      * the VALUE members inside its fptr. */
     VM_ASSERT(!RB_TYPE_P(obj, T_FILE));
 
+    if (RB_TYPE_P(obj, T_STRING)) {
+        rb_enc_str_coderange(obj);
+    }
+
     FL_SET_RAW(obj, FL_SHAREABLE);
     rb_gc_obj_became_shareable(obj);
 

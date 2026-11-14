@@ -560,7 +560,7 @@ fstring_concurrent_set_create(VALUE str, void *data)
         }
     }
 
-    ENC_CODERANGE_SET(str, coderange);
+    if ((int)ENC_CODERANGE(str) != coderange) ENC_CODERANGE_SET(str, coderange);
     RBASIC(str)->flags |= RSTRING_FSTR;
     if (!RB_OBJ_SHAREABLE_P(str)) {
         RB_OBJ_SET_SHAREABLE(str);
@@ -970,11 +970,18 @@ rb_enc_str_coderange_scan(VALUE str, rb_encoding *enc)
     return enc_coderange_scan(str, enc);
 }
 
+static void
+str_memoize_coderange(VALUE str, int cr)
+{
+    RUBY_ASSERT(!RB_OBJ_SHAREABLE_P(str));
+    ENC_CODERANGE_SET(str, cr);
+}
+
 int
 rbimpl_enc_str_coderange_scan(VALUE str)
 {
     int cr = enc_coderange_scan(str, get_encoding(str));
-    ENC_CODERANGE_SET(str, cr);
+    str_memoize_coderange(str, cr);
     return cr;
 }
 
@@ -2481,7 +2488,7 @@ str_strlen(VALUE str, rb_encoding *enc)
 
     if (cr == ENC_CODERANGE_UNKNOWN) {
         rb_len_t n = rb_enc_strlen_cr(p, e, enc, &cr);
-        if (cr) ENC_CODERANGE_SET(str, cr);
+        if (cr) str_memoize_coderange(str, cr);
         return n;
     }
     else {
@@ -15332,7 +15339,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
         }
         if (NIL_P(buf)) {
             if (p == e) {
-                ENC_CODERANGE_SET(str, cr);
+                if (enc == STR_ENC_GET(str)) str_memoize_coderange(str, cr);
                 return Qnil;
             }
             buf = rb_str_buf_new(RSTRING_LEN(str));
@@ -15426,7 +15433,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
         }
         if (NIL_P(buf)) {
             if (p == e) {
-                ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
+                if (enc == STR_ENC_GET(str)) str_memoize_coderange(str, ENC_CODERANGE_VALID);
                 return Qnil;
             }
             buf = rb_str_buf_new(RSTRING_LEN(str));
