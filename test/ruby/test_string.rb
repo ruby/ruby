@@ -474,6 +474,19 @@ CODE
     assert_equal("foo", s.chomp("\n"))
     s = "foo\r"
     assert_equal("foo", s.chomp("\n"))
+
+    # capacity forces a heap buffer, so a read before the receiver leaves it
+    WIDE_ENCODINGS.each do |enc|
+      ["A", "AB", "ABC"].each do |bytes|
+        s = S(capacity: 4096)
+        s << bytes
+        s.force_encoding(enc)
+        label = "#{enc.name} #{bytes.bytesize}"
+        assert_equal(bytes.b, s.chomp.b, label)
+        assert_equal(bytes.b, s.chomp("").b, label)
+        assert_nil(s.chomp!, label)
+      end
+    end
   ensure
     $/ = save
     $VERBOSE = verbose
@@ -1250,6 +1263,11 @@ CODE
     assert_equal s.object_id, s.lines {|x| res << x }.object_id
     assert_equal(S("hello\n"), res[0])
     assert_equal(S("world"),  res[1])
+
+    s = S("AB").force_encoding(Encoding::UTF_32LE)
+    sep = S("B").force_encoding(Encoding::UTF_32LE)
+
+    assert_empty(s.lines(sep).to_a)
   end
 
   def test_empty?
@@ -1648,6 +1666,19 @@ CODE
     assert_rindex(nil, S("こんにち"), S("こんにちは"))
     assert_rindex(nil, S("こ"), S("こんにちは"))
     assert_rindex(nil, S(""), S("こんにちは"))
+
+    assert_rindex(nil, S("A" * 1024), S("\u{3042}"))
+
+    # exact-size allocations, so a comparison past the last byte leaves them
+    assert_rindex(nil, S("A" * 1020 + "\u{3042}A"), S("\u{3042}\u{3044}"))
+    assert_rindex(nil, S("\u{3042}" + "A" * 1021), S("\u{3042}" * 1022))
+
+    WIDE_ENCODINGS.each do |enc|
+      pattern = "A".encode(enc)
+      stray = pattern.b[0]
+      assert_nil(S(stray).force_encoding(enc).rindex(pattern), enc.name)
+      assert_nil(S("B".encode(enc).b * 2 + stray).force_encoding(enc).rindex(pattern), enc.name)
+    end
   end
 
   def test_rjust
@@ -2768,6 +2799,10 @@ CODE
     assert_equal(["", "", "foo"], S("foo").partition(/^=*/))
 
     assert_equal([S("ab"), S("c"), S("dbce")], S("abcdbce").partition(/b\Kc/))
+
+    s = S("A").force_encoding(Encoding::UTF_16LE)
+    sep = S("A\x00").force_encoding(s.encoding)
+    assert_equal([s, "", ""], s.partition(sep))
   end
 
   def test_rpartition
@@ -2794,6 +2829,10 @@ CODE
     assert_equal("hello", hello, bug)
 
     assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
+
+    s = S("A").force_encoding(Encoding::UTF_16LE)
+    sep = S("A\x00").force_encoding(s.encoding)
+    assert_equal(["", "", s], s.rpartition(sep))
   end
 
   def test_rpartition_string_modified
