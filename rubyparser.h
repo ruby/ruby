@@ -787,6 +787,8 @@ typedef struct RNode_OPT_ARG {
 
     struct RNode *nd_body;
     struct RNode_OPT_ARG *nd_next;
+    rb_code_location_t name_loc;
+    rb_code_location_t operator_loc;
 } rb_node_opt_arg_t;
 
 typedef struct RNode_KW_ARG {
