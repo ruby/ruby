@@ -1794,6 +1794,58 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  # [Bug #22551]
+  def test_str_concat_keeps_coderange
+    # String#valid_encoding? and such can't tell whether the code range is
+    # cached since they scan the string when it isn't, so look at the flags.
+    assert_compiles(<<~'RUBY', insns: %i[opt_ltlt], result: %w[7bit valid valid valid valid broken], exits: :any)
+      require 'objspace'
+
+      # The script runs in the C locale, so say which encoding every string is in.
+      def coderange(str) = ObjectSpace.dump(str)[/"coderange":"(\w+)"/, 1]
+      def scanned(str) = str.dup.force_encoding("UTF-8").tap(&:valid_encoding?)
+      def unscanned(str) = [str].pack("a*").force_encoding("UTF-8")
+      def append(a, b) = a << b
+
+      [
+        append(scanned("abc"), scanned("def")),
+        append(scanned("abc"), scanned("\u00e9")),
+        append(scanned("\u00e9"), scanned("abc")),
+        append(scanned("\u00e9"), scanned("\u00e9")),
+        append(scanned("\u00e9"), unscanned("\u00e9")),
+        append(scanned("\u00e9"), scanned("\xE3")),
+      ].map { |str| coderange(str) }
+    RUBY
+  end
+
+  def test_str_concat_broken_strings_into_valid
+    # Two halves of one character. The result must not be left marked broken.
+    assert_compiles(<<~'RUBY', insns: %i[opt_ltlt], result: [false, false, true, "\u3042"])
+      def append(a, b) = a << b
+
+      head = "\xE3".dup.force_encoding("UTF-8")
+      tail = "\x81\x82".dup.force_encoding("UTF-8")
+      head_valid = head.valid_encoding?
+      tail_valid = tail.valid_encoding?
+      append(head, tail)
+      [head_valid, tail_valid, head.valid_encoding?, head]
+    RUBY
+  end
+
+  def test_str_concat_empty_string_to_frozen
+    assert_compiles(<<~'RUBY', insns: %i[opt_ltlt], result: :frozen_error)
+      def append(a, b) = a << b
+
+      append(+"a", "b")
+      begin
+        append("a".freeze, "")
+        :no_error
+      rescue FrozenError
+        :frozen_error
+      end
+    RUBY
+  end
+
   def test_io_reopen_clobbering_singleton_class
     assert_compiles(<<~RUBY, result: [:ok, :ok], exits: { definesmethod: 1, opt_eq: 2 })
       def $stderr.to_i = :i
