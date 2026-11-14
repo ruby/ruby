@@ -38,6 +38,19 @@ class TestEnumerator < Test::Unit::TestCase
     assert_raise(StopIteration){e.next}
   end
 
+  def test_next_across_threads
+    enumerator = 3.times
+
+    values = 3.times.map do
+      Thread.new { enumerator.next }.value
+    end
+
+    assert_equal [0, 1, 2], values
+    thread = Thread.new { enumerator.next }
+    thread.report_on_exception = false
+    assert_raise(StopIteration) { thread.value }
+  end
+
   def test_loop
     e = 3.times
     i = 0

@@ -61,14 +61,11 @@ describe "Fiber#raise" do
     -> { FiberSpecs::NewFiberToRaise.raise 'test error', ['foo', 'boo'] }.should.raise(TypeError)
   end
 
-  it "raises a FiberError if invoked from a different Thread" do
+  it "can be invoked from a different Thread" do
     fiber = Fiber.new { Fiber.yield }
     fiber.resume
-    Thread.new do
-      -> {
-        fiber.raise
-      }.should.raise(FiberError, "fiber called across threads")
-    end.join
+
+    Thread.new { -> { fiber.raise "error" }.should.raise(RuntimeError, "error") }.join
   end
 
   it "kills Fiber" do
