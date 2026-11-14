@@ -108,6 +108,18 @@ module Ruby::Prism
       end
     end
 
+    def test_comments_with_multibyte_characters
+      [
+        "# ああああああ\ndef x; end\n",
+        "# あああああああ\ndef x; end\n",
+        "# é\n# 日本語\n\n# ü\ndef x; end\n"
+      ].each do |source|
+        expected = ::RubyParser.new.parse(source)
+        actual = Ruby::Prism::Translation::RubyParser.new.parse(source)
+        assert_comments(expected, actual)
+      end
+    end
+
     private
 
     def assert_ruby_parser(fixture, allowed_failure)

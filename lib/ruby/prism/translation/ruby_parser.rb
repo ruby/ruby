@@ -1575,7 +1575,7 @@ module Ruby::Prism
           boundary = node_start
 
           leading.reverse_each do |comment|
-            gap = source_string[comment.location.end_offset...boundary]
+            gap = source_string.byteslice(comment.location.end_offset...boundary)
 
             if gap.match?(/\S/)
               break
@@ -1589,7 +1589,7 @@ module Ruby::Prism
 
           # Build the comment string from the first comment through to the
           # keyword, preserving blank lines (mirroring ruby_parser's lexer).
-          sexp.comments = source_string[result.first.location.start_offset...node_start].gsub(/^ +#/, "#").gsub(/^ +$/, "")
+          sexp.comments = source_string.byteslice(result.first.location.start_offset...node_start).gsub(/^ +#/, "#").gsub(/^ +$/, "")
         end
 
         # Create a new compiler with the given options.
