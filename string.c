@@ -4195,7 +4195,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
             searchlen = adjusted - sbeg;
             continue;
         }
-        if (memcmp(hit, t, slen) == 0)
+        if (hit + slen <= e && memcmp(hit, t, slen) == 0)
             return hit - sbeg;
         searchlen = adjusted - sbeg;
     } while (searchlen > 0);
@@ -4215,7 +4215,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
     slen = RSTRING_LEN(sub);
 
     while (s) {
-        if (memcmp(s, t, slen) == 0) {
+        if (s + slen <= e && memcmp(s, t, slen) == 0) {
             return s - sbeg;
         }
         if (s <= sbeg) break;
@@ -4243,16 +4243,20 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
 
     /* substring longer than string */
     if (len < slen) return -1;
+    /* character counts, so the byte tail can still be shorter than sub */
     if (len - pos < slen) pos = len - slen;
     if (len == 0) return pos;
 
     sbeg = RSTRING_PTR(str);
 
     if (pos == 0) {
-        if (memcmp(sbeg, RSTRING_PTR(sub), RSTRING_LEN(sub)) == 0)
+        if (RSTRING_LEN(sub) <= RSTRING_LEN(str) &&
+            memcmp(sbeg, RSTRING_PTR(sub), RSTRING_LEN(sub)) == 0) {
             return 0;
-        else
+        }
+        else {
             return -1;
+        }
     }
 
     s = str_nth(sbeg, RSTRING_END(str), pos, enc, singlebyte);
@@ -9151,7 +9155,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
         subptr = hit;
     }
 
-    if (subptr != pend) {
+    if (subptr < pend) {
         if (chomp) {
             if (rsnewline) {
                 pend = chomp_newline(subptr, pend, enc);
@@ -9620,6 +9624,8 @@ smart_chomp(VALUE str, const char *e, const char *p)
 {
     rb_encoding *enc = rb_enc_get(str);
     if (rb_enc_mbminlen(enc) > 1) {
+        /* a receiver shorter than one character has nothing to chomp */
+        if (e - p < rb_enc_mbminlen(enc)) return e - p;
         const char *pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
         if (rb_enc_is_newline(pp, e, enc)) {
             e = pp;
@@ -9667,7 +9673,7 @@ chompped_length(VALUE str, VALUE rs)
     RSTRING_GETMEM(rs, rsptr, rslen);
     if (rslen == 0) {
         if (rb_enc_mbminlen(enc) > 1) {
-            while (e > p) {
+            while (e - p >= rb_enc_mbminlen(enc)) {
                 pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
                 if (!rb_enc_is_newline(pp, e, enc)) break;
                 e = pp;
@@ -10590,10 +10596,12 @@ rb_str_partition(VALUE str, VALUE sep)
         pos = rb_str_index(str, sep, 0);
         if (pos < 0) goto failed;
     }
+
+    long rpos = pos + RSTRING_LEN(sep);
+    if (rpos > RSTRING_LEN(str)) goto failed;
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
                           sep,
-                          rb_str_subseq(str, pos+RSTRING_LEN(sep),
-                                             RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+                          rb_str_subseq(str, rpos, RSTRING_LEN(str)-rpos));
 
   failed:
     return rb_ary_new3(3, str_duplicate(rb_cString, str), str_new_empty_String(str), str_new_empty_String(str));
@@ -10631,10 +10639,11 @@ rb_str_rpartition(VALUE str, VALUE sep)
         }
     }
 
+    long rpos = pos + RSTRING_LEN(sep);
+    if (rpos > RSTRING_LEN(str)) goto failed;
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
                           sep,
-                          rb_str_subseq(str, pos+RSTRING_LEN(sep),
-                                        RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+                          rb_str_subseq(str, rpos, RSTRING_LEN(str)-rpos));
   failed:
     return rb_ary_new3(3, str_new_empty_String(str), str_new_empty_String(str), str_duplicate(rb_cString, str));
 }
