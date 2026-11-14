@@ -3,6 +3,7 @@
 #include "internal/string.h"
 #include "internal/variable.h"
 #include "vm_core.h"
+#include "vm_sync.h"
 #include "iseq.h"
 #include "builtin.h"
 
@@ -68,13 +69,16 @@ load_with_builtin_functions(const char *feature_name, const struct rb_builtin_fu
         rb_bug("builtin_lookup: can not find %s", feature_name);
     }
 
-    // load binary
+    // load binary, under the VM lock since Ruby::Box.new can get here from several Ractors
     rb_vm_t *vm = GET_VM();
-    if (vm->builtin_function_table != NULL) rb_bug("vm->builtin_function_table should be NULL.");
-    vm->builtin_function_table = table;
-    const rb_iseq_t *iseq = rb_iseq_ibf_load_bytes((const char *)bin, size);
+    const rb_iseq_t *iseq = NULL;
+    RB_VM_LOCKING() {
+        if (vm->builtin_function_table != NULL) rb_bug("vm->builtin_function_table should be NULL.");
+        vm->builtin_function_table = table;
+        iseq = rb_iseq_ibf_load_bytes((const char *)bin, size);
+        vm->builtin_function_table = NULL;
+    }
     ASSUME(iseq); // otherwise an exception should have raised
-    vm->builtin_function_table = NULL;
 
     // exec
     rb_iseq_eval(rb_iseq_check(iseq), target_box);
@@ -116,6 +120,17 @@ rb_load_gem_prelude(VALUE box)
     load_with_builtin_functions("gem_prelude", NULL, (const rb_box_t *)box);
 }
 
+void
+rb_load_prelude(VALUE box)
+{
+    // A non-NULL table is what makes ibf_load_iseq complete the method iseqs
+    // eagerly, which rb_method_definition_set relies on under USE_LAZY_LOAD.
+    static const struct rb_builtin_function prelude_table[] = {
+        RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+    };
+    load_with_builtin_functions("prelude", prelude_table, (const rb_box_t *)box);
+}
+
 #endif
 
 void
@@ -133,6 +148,16 @@ Init_builtin(void)
 void
 Init_builtin_features(void)
 {
+    /*
+     * Load prelude per box (user boxes load it in Ruby::Box#initialize), so
+     * that the methods defined there belong to each box and `require` in
+     * their bodies loads features into the box of the caller.
+     */
+    rb_load_prelude((VALUE)rb_root_box());
+
+    if (rb_box_available()) {
+        rb_load_prelude((VALUE)rb_main_box());
+    }
 
 #ifdef BUILTIN_BINARY_SIZE
 
