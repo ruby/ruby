@@ -3,6 +3,7 @@
 use super::{gen_insn, JITState};
 use crate::asm::CodeBlock;
 use crate::backend::lir::Assembler;
+use crate::cast::IntoUsize;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
@@ -5180,6 +5181,95 @@ fn test_string_append_broken_coderange() {
         test(s, "\xFF".dup.force_encoding(Encoding::UTF_8))
         [s.bytesize, s.valid_encoding?]
     "#), @"[4, false]");
+}
+
+/// The code range cached on the String that `program` evaluates to. Unlike `valid_encoding?`
+/// and `ascii_only?`, this doesn't scan the string when nothing is cached.
+fn cached_coderange(program: &str) -> ruby_coderange_type {
+    let flags = eval(program).builtin_flags();
+    (flags & RUBY_ENC_CODERANGE_MASK.to_usize()).try_into().unwrap()
+}
+
+// [Bug #22551] Appending leaves the receiver with the same cached code range as the interpreter
+// does. Clearing it would be correct too, since the code range is only a cache, but then the next
+// String#length or String#[] on the receiver has to scan all of it again.
+#[test]
+fn test_string_append_keeps_coderange() {
+    eval(r#"
+        def test(s, x) = s << x
+        test(+"abc", "def")
+
+        def scanned(s) = s.dup.tap(&:valid_encoding?)
+        def unscanned(s) = [s].pack("a*").force_encoding(Encoding::UTF_8)
+        $ascii = scanned("abc")
+        $valid = scanned("é")
+        $broken = scanned("\xE3".dup.force_encoding(Encoding::UTF_8))
+        $unscanned = unscanned("é")
+        $unscanned_broken = unscanned("\xE3")
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_eq!(RUBY_ENC_CODERANGE_UNKNOWN, cached_coderange("$unscanned"));
+    assert_eq!(RUBY_ENC_CODERANGE_UNKNOWN, cached_coderange("$unscanned_broken"));
+    // Nothing here may ask about the results, since that would scan them. The unscanned receivers
+    // go first: appending $unscanned scans it, and String#dup copies the cached code range.
+    assert_snapshot!(assert_compiles(r#"
+        $unscanned_valid = test($unscanned.dup, $valid)
+        $unscanned_broken_valid = test($unscanned_broken.dup, $valid)
+        $ascii_ascii = test($ascii.dup, $ascii)
+        $ascii_valid = test($ascii.dup, $valid)
+        $valid_ascii = test($valid.dup, $ascii)
+        $valid_valid = test($valid.dup, $valid)
+        $valid_unscanned = test($valid.dup, $unscanned)
+        $valid_broken = test($valid.dup, $broken)
+        :done
+    "#), @":done");
+    // A receiver that hasn't been scanned stays that way. Its bytes might be broken, so it can't
+    // take on the code range of what gets appended.
+    assert_eq!(RUBY_ENC_CODERANGE_UNKNOWN, cached_coderange("$unscanned_valid"));
+    assert_eq!(RUBY_ENC_CODERANGE_UNKNOWN, cached_coderange("$unscanned_broken_valid"));
+    assert_eq!(RUBY_ENC_CODERANGE_7BIT, cached_coderange("$ascii_ascii"));
+    assert_eq!(RUBY_ENC_CODERANGE_VALID, cached_coderange("$ascii_valid"));
+    assert_eq!(RUBY_ENC_CODERANGE_VALID, cached_coderange("$valid_ascii"));
+    assert_eq!(RUBY_ENC_CODERANGE_VALID, cached_coderange("$valid_valid"));
+    // Not a saved scan: rb_str_buf_append() scans an argument that hasn't been scanned yet, so the
+    // work only moves from the next read of the receiver to the append.
+    assert_eq!(RUBY_ENC_CODERANGE_VALID, cached_coderange("$valid_unscanned"));
+    assert_eq!(RUBY_ENC_CODERANGE_BROKEN, cached_coderange("$valid_broken"));
+    assert_snapshot!(inspect("$unscanned_broken_valid.valid_encoding?"), @"false");
+}
+
+#[test]
+fn test_string_append_broken_strings_into_valid() {
+    eval(r#"
+        def test(s, x) = s << x
+        test(+"abc", "def")
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    // Two halves of one character. The result must not be left marked broken.
+    assert_snapshot!(assert_compiles(r#"
+        head = "\xE3".dup.force_encoding(Encoding::UTF_8)
+        tail = "\x81\x82".dup.force_encoding(Encoding::UTF_8)
+        halves = [head.valid_encoding?, tail.valid_encoding?]
+        test(head, tail)
+        [halves, head, head.valid_encoding?]
+    "#), @r#"[[false, false], "あ", true]"#);
+}
+
+#[test]
+fn test_string_append_empty_string_to_frozen() {
+    eval(r#"
+        def test(s, x) = s << x
+        test(+"abc", "def")
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          test("abc".freeze, "")
+          :no_error
+        rescue FrozenError
+          :frozen_error
+        end
+    "#), @":frozen_error");
 }
 
 #[test]

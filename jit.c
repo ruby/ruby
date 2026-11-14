@@ -1030,10 +1030,15 @@ rb_yarv_str_eql_internal(VALUE str1, VALUE str2)
     return rb_str_eql_internal(str1, str2);
 }
 
+// String#<< for the JITs, called when both strings have the same inline
+// encoding bits. Matching bits don't mean matching encodings: every encoding
+// with an index of ENCODING_INLINE_MAX or more has the same ones. So leave the
+// encoding check to rb_str_buf_append(), which also raises for a frozen
+// receiver when str2 is empty and keeps the receiver's code range.
 VALUE
 rb_jit_str_simple_append(VALUE str1, VALUE str2)
 {
-    return rb_str_cat(str1, RSTRING_PTR(str2), RSTRING_LEN(str2));
+    return rb_str_buf_append(str1, str2);
 }
 
 void rb_jit_str_concat_codepoint(VALUE str, VALUE codepoint);
