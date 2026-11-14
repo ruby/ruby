@@ -129,7 +129,9 @@ module Ruby::Prism
         elsif character.match?(/[[:alnum:]]/)
           assert_encoding_identifier(name, "_#{character}")
         else
-          next if ["/", "{"].include?(character)
+          # A slash ends the regular expression, a brace after # starts an
+          # interpolation, and a parenthesis ends the comment.
+          next if ["/", "{", ")"].include?(character)
 
           source = "# encoding: #{name}\n/(?##{character})/\n"
           assert Ruby::Prism.parse_success?(source), "Expected #{source.inspect} to parse successfully."

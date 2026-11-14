@@ -27,14 +27,20 @@ typedef struct {
     /** The parser that is currently being used. */
     pm_parser_t *parser;
 
-    /** A pointer to the start of the unescaped content that we are parsing. */
+    /** A pointer to the start of the pattern that we are parsing. */
     const uint8_t *start;
 
-    /** A pointer to the current position in the content. */
+    /** A pointer to the current position in the pattern. */
     const uint8_t *cursor;
 
-    /** A pointer to the end of the content that we are parsing. */
+    /** A pointer to the end of the pattern that we are parsing. */
     const uint8_t *end;
+
+    /**
+     * Where the pattern stops lining up with the content, or NULL if it is the
+     * content itself.
+     */
+    const pm_regexp_offsets_t *pattern_offsets;
 
     /**
      * Where the content stops lining up with the source, for reporting errors
@@ -157,8 +163,12 @@ pm_regexp_offsets_map(const pm_regexp_offsets_t *offsets, uint32_t base, uint32_
 }
 
 /**
- * Return the offset in the source of the given position in the content, as the
- * start (or else the end) of a range.
+ * Return the offset in the source of the given position in the pattern, as the
+ * start (or else the end) of a range. The pattern maps to the content first,
+ * and the content then maps to the source.
+ *
+ * In the pattern, text written in place of an escape lines up with the escape
+ * at both ends, so it maps the same way whether it starts or ends a range.
  */
 static uint32_t
 pm_regexp_source_offset(const pm_regexp_parser_t *parser, const uint8_t *position, bool start) {
@@ -166,7 +176,10 @@ pm_regexp_source_offset(const pm_regexp_parser_t *parser, const uint8_t *positio
         return start ? parser->location.start : (parser->location.start + parser->location.length);
     }
 
-    return pm_regexp_offsets_map(parser->offsets, parser->source_start, (uint32_t) (position - parser->start), start);
+    uint32_t content = (uint32_t) (position - parser->start);
+    if (parser->pattern_offsets != NULL) content = pm_regexp_offsets_map(parser->pattern_offsets, 0, content, false);
+
+    return pm_regexp_offsets_map(parser->offsets, parser->source_start, content, start);
 }
 
 /**
@@ -1424,7 +1437,50 @@ typedef struct {
      * which fixes it to the encoding that the content is read in.
      */
     bool has_property;
+
+    /**
+     * The pattern that the content preprocesses to. It is only written once
+     * it first differs from the content, which it does for few regular
+     * expressions. Until then, the content is the pattern.
+     */
+    pm_buffer_t pattern;
+
+    /** The end of the content that the pattern holds so far. */
+    const uint8_t *written;
+
+    /** Whether the pattern differs from the content. */
+    bool rewritten;
+
+    /**
+     * Where the pattern stops lining up with the content. In each place, the
+     * content offset is in the pattern and the source offset is in the content.
+     */
+    pm_regexp_offsets_t offsets;
 } pm_regexp_preprocessor_t;
+
+/**
+ * Start writing something into the pattern in place of the content at the
+ * given position. The content before it is copied into the pattern first.
+ */
+static void
+pm_regexp_preprocess_replace(pm_regexp_preprocessor_t *preprocessor, const uint8_t *from) {
+    pm_buffer_append_bytes(&preprocessor->pattern, preprocessor->written, (size_t) (from - preprocessor->written));
+    preprocessor->written = from;
+}
+
+/**
+ * Finish writing something into the pattern in place of the content up to the
+ * given position, and record where the two stop lining up.
+ */
+static void
+pm_regexp_preprocess_resume(pm_regexp_preprocessor_t *preprocessor, const uint8_t *to) {
+    preprocessor->written = to;
+    preprocessor->rewritten = true;
+
+    uint32_t pattern = (uint32_t) pm_buffer_length(&preprocessor->pattern);
+    uint32_t content = (uint32_t) (to - preprocessor->regexp->source);
+    pm_regexp_offsets_record(preprocessor->regexp->parser, &preprocessor->offsets, pattern, content, 0);
+}
 
 /**
  * Fix the regular expression to the given encoding, which a character or an
@@ -1519,12 +1575,16 @@ pm_regexp_preprocess_escaped_byte(pm_regexp_preprocessor_t *preprocessor, const 
 
 /**
  * Read the escape of a byte at the cursor, along with the escapes after it
- * that complete the character it begins. A character that is not ASCII fixes
- * the regular expression to the encoding that the content is read in.
+ * that complete the character it begins.
+ *
+ * A character that is not ASCII fixes the regular expression to the encoding
+ * that the content is read in, and goes into the pattern as its bytes. An
+ * ASCII character keeps its escape, which the pattern reads the same way.
  */
 static bool
 pm_regexp_preprocess_escaped_char(pm_regexp_preprocessor_t *preprocessor, const uint8_t **parent_cursor) {
     const pm_encoding_t *encoding = preprocessor->encoding;
+    const uint8_t *start = *parent_cursor;
     uint8_t bytes[8];
     size_t length = 0;
 
@@ -1544,14 +1604,19 @@ pm_regexp_preprocess_escaped_char(pm_regexp_preprocessor_t *preprocessor, const 
             pm_regexp_error_kind_with_content(preprocessor->regexp, PM_ERR_REGEXP_ESCAPED_NON_ASCII_IN_UTF8);
             return false;
         }
+
+        pm_regexp_preprocess_replace(preprocessor, start);
+        pm_buffer_append_bytes(&preprocessor->pattern, bytes, length);
+        pm_regexp_preprocess_resume(preprocessor, *parent_cursor);
     }
 
     return true;
 }
 
 /**
- * Read a code point of a \u escape. One that is not ASCII fixes the regular
- * expression to UTF-8.
+ * Read a code point of a \u escape and write it into the pattern. One that is
+ * not ASCII fixes the regular expression to UTF-8 and goes into the pattern as
+ * its UTF-8 bytes. An ASCII one goes in as a \x escape.
  */
 static bool
 pm_regexp_preprocess_code_point(pm_regexp_preprocessor_t *preprocessor, uint32_t value) {
@@ -1560,13 +1625,17 @@ pm_regexp_preprocess_code_point(pm_regexp_preprocessor_t *preprocessor, uint32_t
         return false;
     }
 
-    if (value >= 0x80) {
-        if (!pm_regexp_preprocess_fix_encoding(preprocessor, PM_ENCODING_UTF_8_ENTRY)) {
-            pm_regexp_error_kind_with_content(preprocessor->regexp, PM_ERR_REGEXP_UTF8_CHAR_NON_UTF8_REGEXP);
-            return false;
-        }
+    if (value < 0x80) {
+        pm_buffer_append_format(&preprocessor->pattern, "\\x%02X", (unsigned int) value);
+        return true;
     }
 
+    if (!pm_regexp_preprocess_fix_encoding(preprocessor, PM_ENCODING_UTF_8_ENTRY)) {
+        pm_regexp_error_kind_with_content(preprocessor->regexp, PM_ERR_REGEXP_UTF8_CHAR_NON_UTF8_REGEXP);
+        return false;
+    }
+
+    pm_buffer_append_unicode_codepoint(&preprocessor->pattern, value);
     return true;
 }
 
@@ -1618,10 +1687,13 @@ pm_regexp_preprocess_code_point_list(pm_regexp_preprocessor_t *preprocessor, con
 }
 
 /**
- * Whether the escapes of the content need to be read at all. Only a byte that
- * is not ASCII, or an escape of a byte, a code point, or a property, can fix
- * the encoding or be an error, and most regular expressions have neither, so
- * this quicker check lets them skip the reading.
+ * Whether the content needs to be preprocessed at all. Most regular
+ * expressions don't, so this quick check lets them skip it.
+ *
+ * Only a byte that is not ASCII, or an escape of a byte, a code point, or a
+ * property, can fix the encoding or be an error. Only those and comments make
+ * the pattern differ from the content. Any # might start a comment, since an
+ * option like (?x) can turn on extended mode anywhere.
  */
 static bool
 pm_regexp_preprocess_needed_p(const uint8_t *cursor, const uint8_t *end) {
@@ -1642,6 +1714,8 @@ pm_regexp_preprocess_needed_p(const uint8_t *cursor, const uint8_t *end) {
                         break;
                 }
                 break;
+            case '#':
+                return true;
             default:
                 break;
         }
@@ -1757,6 +1831,9 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                             return false;
                         }
 
+                        /* The code points replace the escape in the pattern. */
+                        pm_regexp_preprocess_replace(preprocessor, cursor - 2);
+
                         if (*cursor == '{') {
                             cursor++;
                             if (!pm_regexp_preprocess_code_point_list(preprocessor, &cursor)) return false;
@@ -1771,6 +1848,8 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                             cursor += 4;
                             if (!pm_regexp_preprocess_code_point(preprocessor, value)) return false;
                         }
+
+                        pm_regexp_preprocess_resume(preprocessor, cursor);
                         break;
                     case 'p':
                     case 'P':
@@ -1783,6 +1862,10 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
             }
             case '#':
                 if (extended && !character_classes) {
+                    /* The comment and the newline that ends it are left out
+                     * of the pattern. */
+                    pm_regexp_preprocess_replace(preprocessor, cursor - 1);
+
                     while (cursor < end && *cursor != '\n') {
                         if (*cursor >= 0x80 && preprocessor->fixed_encoding == NULL && encoding == PM_ENCODING_UTF_8_ENTRY) {
                             preprocessor->fixed_encoding = encoding;
@@ -1790,6 +1873,8 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                         cursor++;
                     }
                     if (cursor < end) cursor++;
+
+                    pm_regexp_preprocess_resume(preprocessor, cursor);
                 }
                 break;
             case '[':
@@ -1838,9 +1923,15 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                         }
                     }
 
-                    /* An unterminated comment is read as the text that it
-                     * holds, which is a syntax error of the pattern. */
-                    if (!closed) cursor = comment;
+                    /* A comment is left out of the pattern. An unterminated
+                     * one is read as the text that it holds, which is a
+                     * syntax error of the pattern. */
+                    if (closed) {
+                        pm_regexp_preprocess_replace(preprocessor, comment - 1);
+                        pm_regexp_preprocess_resume(preprocessor, cursor);
+                    } else {
+                        cursor = comment;
+                    }
                 } else if (cursor + 1 < end && *cursor == '?') {
                     /* Look through the options of the group for one that
                      * turns extended mode on or off. */
@@ -1991,11 +2082,11 @@ pm_regexp_check_properties(const pm_regexp_t *regexp, const pm_regexp_parser_t *
  *
  * 1. Check its encoding option against the characters written in it.
  * 2. Read its escapes, to find the encoding that they and its characters fix
- *    it to.
+ *    it to, and the pattern that they preprocess to.
  * 3. Resolve its encoding from that and its options.
- * 4. Parse its pattern.
+ * 4. Parse the pattern in that encoding.
  *
- * Each of these reads the content, where the lexer keeps the escapes that the
+ * The first three read the content, where the lexer keeps the escapes that the
  * regular expression engine reads as their text, so that escaped bytes can be
  * told from literal ones. The offsets map places in the content to places in
  * the source, starting at the given offset, for errors in the pattern. Without
@@ -2018,11 +2109,18 @@ pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets
         .end = source + size,
         .encoding = read_encoding,
         .fixed_encoding = NULL,
-        .has_property = false
+        .has_property = false,
+        .pattern = { 0 },
+        .written = source,
+        .rewritten = false,
+        .offsets = { 0 }
     };
 
     const uint8_t *cursor = source;
-    if (pm_regexp_preprocess_needed_p(source, source + size) && !pm_regexp_preprocess_scan(&preprocessor, &cursor, extended_mode, false, 0)) return 0;
+    if (pm_regexp_preprocess_needed_p(source, source + size) && !pm_regexp_preprocess_scan(&preprocessor, &cursor, extended_mode, false, 0)) {
+        pm_buffer_cleanup(&preprocessor.pattern);
+        return 0;
+    }
 
     /* A property escape before anything else fixes the encoding fixes it to
      * the one that the content is read in. */
@@ -2041,19 +2139,32 @@ pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets
     }
 
     const pm_encoding_t *encoding = pm_regexp_resolve_encoding(regexp, option, read_encoding, preprocessor.fixed_encoding);
-    if (encoding == NULL) return 0;
+    if (encoding == NULL) {
+        pm_buffer_cleanup(&preprocessor.pattern);
+        return 0;
+    }
+
+    const uint8_t *pattern = source;
+    size_t pattern_size = size;
+
+    if (preprocessor.rewritten) {
+        pm_regexp_preprocess_replace(&preprocessor, source + size);
+        pattern = (const uint8_t *) pm_buffer_value(&preprocessor.pattern);
+        pattern_size = pm_buffer_length(&preprocessor.pattern);
+    }
 
     pm_regexp_parser_t regexp_parser = {
         .parser = parser,
-        .start = source,
-        .cursor = source,
-        .end = source + size,
+        .start = pattern,
+        .cursor = pattern,
+        .end = pattern + pattern_size,
+        .pattern_offsets = preprocessor.rewritten ? &preprocessor.offsets : NULL,
         .offsets = offsets,
         .source_start = source_start,
         .location = regexp->location,
         .extended_mode = extended_mode,
-        .encoding_changed = parser->encoding_changed || regexp->encoding != parser->encoding,
-        .encoding = regexp->encoding,
+        .encoding_changed = encoding != PM_ENCODING_UTF_8_ENTRY,
+        .encoding = encoding,
         .name_callback = NULL,
         .name_data = NULL,
         .report_errors = true,
@@ -2065,6 +2176,7 @@ pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets
 
     pm_regexp_parse_pattern(&regexp_parser);
     pm_regexp_check_properties(regexp, &regexp_parser);
+    pm_buffer_cleanup(&preprocessor.pattern);
 
     return pm_regexp_encoding_flags(parser, flags, encoding);
 }
@@ -2296,11 +2408,18 @@ pm_regexp_part_escapes_valid_p(const pm_regexp_t *regexp) {
         .end = source + regexp->size,
         .encoding = pm_regexp_read_encoding(regexp, option_encoding),
         .fixed_encoding = NULL,
-        .has_property = false
+        .has_property = false,
+        .pattern = { 0 },
+        .written = source,
+        .rewritten = false,
+        .offsets = { 0 }
     };
 
     const uint8_t *cursor = source;
-    return pm_regexp_preprocess_scan(&preprocessor, &cursor, false, false, 0);
+    bool valid = pm_regexp_preprocess_scan(&preprocessor, &cursor, false, false, 0);
+
+    pm_buffer_cleanup(&preprocessor.pattern);
+    return valid;
 }
 
 /**
