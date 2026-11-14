@@ -1549,7 +1549,7 @@ rb_thread_acquire_fork_lock(void)
 #endif
 }
 
-// thread internal event hooks (only for pthread)
+// thread internal event hooks
 
 struct rb_internal_thread_event_hook {
     rb_internal_thread_event_callback callback;
