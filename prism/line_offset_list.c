@@ -55,7 +55,7 @@ pm_line_offset_list_line(const pm_line_offset_list_t *list, uint32_t cursor, int
         size_t mid = left + (right - left) / 2;
 
         if (list->offsets[mid] == cursor) {
-            return ((int32_t) mid) + start_line;
+            return pm_line_offset_list_line_number(mid, start_line);
         }
 
         if (list->offsets[mid] < cursor) {
@@ -65,7 +65,7 @@ pm_line_offset_list_line(const pm_line_offset_list_t *list, uint32_t cursor, int
         }
     }
 
-    return ((int32_t) left) + start_line - 1;
+    return pm_line_offset_list_line_number(left - 1, start_line);
 }
 
 /**
@@ -82,7 +82,7 @@ pm_line_offset_list_line_column(const pm_line_offset_list_t *list, uint32_t curs
         size_t mid = left + (right - left) / 2;
 
         if (list->offsets[mid] == cursor) {
-            return ((pm_line_column_t) { ((int32_t) mid) + start_line, 0 });
+            return ((pm_line_column_t) { pm_line_offset_list_line_number(mid, start_line), 0 });
         }
 
         if (list->offsets[mid] < cursor) {
@@ -93,7 +93,7 @@ pm_line_offset_list_line_column(const pm_line_offset_list_t *list, uint32_t curs
     }
 
     return ((pm_line_column_t) {
-        .line = ((int32_t) left) + start_line - 1,
+        .line = pm_line_offset_list_line_number(left - 1, start_line),
         .column = cursor - list->offsets[left - 1]
     });
 }

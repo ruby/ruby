@@ -15219,7 +15219,7 @@ parser_warn_indentation_mismatch(pm_parser_t *parser, size_t opening_newline_ind
         (const char *) closing_token->start,
         (int) (opening_token->end - opening_token->start),
         (const char *) opening_token->start,
-        ((int32_t) opening_newline_index) + parser->start_line
+        pm_line_offset_list_line_number(opening_newline_index, parser->start_line)
     );
 }
 
