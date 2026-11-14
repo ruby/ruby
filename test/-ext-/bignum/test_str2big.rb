@@ -20,6 +20,21 @@ class TestBignum_Str2big < Test::Unit::TestCase
     assert_equal(n, Bug::Bignum.str2big_normal(s, 10, true))
   end
 
+  def test_str2big_normal_digits
+    digits = [*"0".."9", *"a".."z"]
+    [3, 7, 10, 36].each do |base|
+      s = ""
+      n = 0
+      200.times do |i|
+        d = (i * 7 + 1) % base
+        s << digits[d]
+        n = n * base + d
+        assert_equal(n, Bug::Bignum.str2big_normal(s, base, true), "#{s} in base #{base}")
+      end
+    end
+    assert_equal(10**40 + 1, Bug::Bignum.str2big_normal("1" + "_0000" * 9 + "_0001", 10, true))
+  end
+
   def test_str2big_karatsuba
     s = "1" + "0" * 1000
     n = 10 ** 1000
