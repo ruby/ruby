@@ -61,6 +61,13 @@ wb_remember(VALUE self, VALUE obj)
     return obj;
 }
 
+static VALUE
+wb_unprotect(VALUE self, VALUE obj)
+{
+    rb_gc_writebarrier_unprotect(obj);
+    return obj;
+}
+
 void
 Init_writebarrier(void)
 {
@@ -70,6 +77,7 @@ Init_writebarrier(void)
     VALUE mGC = rb_define_module_under(mBug, "GC");
     VALUE mWB = rb_define_module_under(mGC, "WriteBarrier");
     rb_define_singleton_method(mWB, "remember", wb_remember, 1);
+    rb_define_singleton_method(mWB, "unprotect", wb_unprotect, 1);
 
     VALUE cBox = rb_define_class_under(mWB, "Box", rb_cObject);
     rb_define_alloc_func(cBox, wb_box_alloc);

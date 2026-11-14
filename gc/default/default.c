@@ -803,6 +803,7 @@ typedef struct rb_objspace {
         size_t last_major_gc;
         size_t uncollectible_wb_unprotected_objects;
         size_t uncollectible_wb_unprotected_objects_limit;
+        size_t collectible_wb_unprotected_objects;
         size_t old_objects;
         size_t old_objects_limit;
 
@@ -6440,6 +6441,13 @@ gc_mark_set(rb_objspace_t *objspace, VALUE obj)
 static void
 gc_aging(rb_objspace_t *objspace, VALUE obj)
 {
+    struct heap_page *page = GET_HEAP_PAGE(obj);
+    bool wb_unprotected = RVALUE_PAGE_WB_UNPROTECTED(page, obj);
+
+    if (wb_unprotected) {
+        page->objspace->rgengc.collectible_wb_unprotected_objects++;
+    }
+
     /* Disable aging if Major GC's are disabled. This will prevent longish lived
      * objects filling up the heap at the expense of marking many more objects.
      *
@@ -6450,12 +6458,10 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
     if(!gc_config_full_mark_val)
         return;
 
-    struct heap_page *page = GET_HEAP_PAGE(obj);
-
     GC_ASSERT(RVALUE_MARKING(objspace, obj) == FALSE);
     check_rvalue_consistency(objspace, obj);
 
-    if (!RVALUE_PAGE_WB_UNPROTECTED(page, obj)) {
+    if (!wb_unprotected) {
         if (!RVALUE_OLD_P(objspace, obj)) {
             int t = BUILTIN_TYPE(obj);
             if (t == T_CLASS || t == T_MODULE || t == T_ICLASS) {
@@ -8256,6 +8262,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
     /* start marking */
     gc_report(1, objspace, "gc_marks_start: (%s)\n", full_mark ? "full" : "minor");
     gc_mode_transition(objspace, gc_mode_marking);
+    objspace->rgengc.collectible_wb_unprotected_objects = 0;
 
     if (full_mark) {
         size_t incremental_marking_steps = (objspace->rincgc.pooled_slots / INCREMENTAL_MARK_STEP_ALLOCATIONS) + 1;
@@ -9882,6 +9889,7 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
          * not re-check against a stale local cycle. */
         objspace->last_cycle_pinned = 0;
         objspace->rgengc.uncollectible_wb_unprotected_objects = 0;
+        objspace->rgengc.collectible_wb_unprotected_objects = 0;
         objspace->rgengc.old_objects = 0;
         objspace->profile.count++;
         objspace->profile.global_gc_count++;
@@ -10173,6 +10181,7 @@ gc_make_mid_mark_objspace_absorbable(rb_objspace_t *src)
     }
     objspace->rgengc.old_objects = 0;
     objspace->rgengc.uncollectible_wb_unprotected_objects = 0;
+    objspace->rgengc.collectible_wb_unprotected_objects = 0;
     objspace->marked_slots = 0;
 }
 
@@ -10398,6 +10407,7 @@ objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src)
     /* Counters inherited by dst. */
     dst->rgengc.old_objects += src->rgengc.old_objects;
     dst->rgengc.uncollectible_wb_unprotected_objects += src->rgengc.uncollectible_wb_unprotected_objects;
+    dst->rgengc.collectible_wb_unprotected_objects += src->rgengc.collectible_wb_unprotected_objects;
     dst->shareable_objects += src->shareable_objects;
 
     /* Merged pages carry src's mark/age state, so dst rebuilds its view at the next
@@ -11187,6 +11197,7 @@ enum gc_stat_sym {
     gc_stat_sym_total_moved_objects,
     gc_stat_sym_remembered_wb_unprotected_objects,
     gc_stat_sym_remembered_wb_unprotected_objects_limit,
+    gc_stat_sym_collectible_wb_unprotected_objects,
     gc_stat_sym_old_objects,
     gc_stat_sym_old_objects_limit,
 #if RGENGC_ESTIMATE_OLDMALLOC
@@ -11244,6 +11255,7 @@ setup_gc_stat_symbols(void)
     S(total_moved_objects);
     S(remembered_wb_unprotected_objects);
     S(remembered_wb_unprotected_objects_limit);
+    S(collectible_wb_unprotected_objects);
     S(old_objects);
     S(old_objects_limit);
 #if RGENGC_ESTIMATE_OLDMALLOC
@@ -11409,6 +11421,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(total_moved_objects, objspace->rcompactor.total_moved);
     SET(remembered_wb_unprotected_objects, objspace->rgengc.uncollectible_wb_unprotected_objects);
     SET(remembered_wb_unprotected_objects_limit, objspace->rgengc.uncollectible_wb_unprotected_objects_limit);
+    SET(collectible_wb_unprotected_objects, objspace->rgengc.collectible_wb_unprotected_objects);
     SET(old_objects, objspace->rgengc.old_objects);
     SET(old_objects_limit, objspace->rgengc.old_objects_limit);
 #if RGENGC_ESTIMATE_OLDMALLOC
