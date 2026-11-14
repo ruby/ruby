@@ -691,6 +691,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ArrayAset { array, index, val } => {
             no_output!(gen_array_aset(asm, opnd!(array), opnd!(index), opnd!(val)))
         }
+        Insn::ArrayStore { array, index, val, state } => {
+            no_output!(gen_array_store(jit, asm, function, opnd!(array), opnd!(index), opnd!(val), &function.frame_state(*state)))
+        }
         Insn::ArrayPop { array, state } => gen_array_pop(asm, opnd!(array), &function.frame_state(*state)),
         Insn::ArrayLength { array } => gen_array_length(asm, opnd!(array)),
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, function, opnd!(val), &function.frame_state(*state)),
@@ -2469,6 +2472,12 @@ fn gen_array_aset(
     let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
     let elem_ptr = asm.add(array_ptr, elem_offset);
     asm.store(Opnd::mem(VALUE_BITS, elem_ptr, 0), val);
+}
+
+fn gen_array_store(jit: &mut JITState, asm: &mut Assembler, function: &Function, array: Opnd, index: Opnd, val: Opnd, state: &FrameState) {
+    // rb_ary_store can raise (IndexError, FrozenError) and allocate when growing the array.
+    gen_prepare_non_leaf_call(jit, asm, function, state);
+    asm_ccall!(asm, rb_ary_store, array, index, val);
 }
 
 fn gen_array_pop(asm: &mut Assembler, array: Opnd, state: &FrameState) -> lir::Opnd {
