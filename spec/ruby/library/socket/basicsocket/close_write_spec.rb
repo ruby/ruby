@@ -15,6 +15,19 @@ describe "Socket::BasicSocket#close_write" do
     -> { @server.write("foo") }.should.raise(IOError)
   end
 
+  ruby_version_is "4.1" do
+    platform_is_not :windows do
+      it "flushes buffered data to the peer before shutting down the write side" do
+        UNIXSocket.pair do |s1, s2|
+          s1.sync = false
+          s1.write("buffered")
+          s1.close_write
+          s2.read.should == "buffered"
+        end
+      end
+    end
+  end
+
   it 'does not raise when called on a socket already closed for writing' do
     @server.close_write
     @server.close_write
