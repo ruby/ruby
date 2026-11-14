@@ -661,19 +661,11 @@ ar_hint_first_match(ar_hint_t needle, VALUE haystack)
     return index;
 }
 
-// Returns the bin index if found, RHASH_AR_TABLE_MISS if not found,
-// or RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE if #eql? or a Thread converted the hash to st_table.
+NOINLINE(static unsigned ar_find_entry_hint_slow(VALUE hash, ar_hint_t hint, st_data_t key, unsigned first_match));
+
 static unsigned
-ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
+ar_find_entry_hint_slow(VALUE hash, ar_hint_t hint, st_data_t key, unsigned first_match)
 {
-    unsigned first_match = ar_hint_first_match(hint, RHASH_AR_TABLE(hash)->ar_hint.word);
-
-    if (LIKELY(first_match >= RHASH_AR_TABLE_BOUND(hash))) {
-        RB_DEBUG_COUNTER_INC(artable_hint_notfound);
-        return RHASH_AR_TABLE_MISS;
-    }
-
-    RUBY_ASSERT(RHASH_AR_TABLE(hash)->ar_hint.ary[first_match] == hint);
     int eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, first_match)->key);
     if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
         return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
@@ -706,6 +698,26 @@ ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
 
     RB_DEBUG_COUNTER_INC(artable_hint_notfound);
     return RHASH_AR_TABLE_MISS;
+}
+
+// Returns the bin index if found, RHASH_AR_TABLE_MISS if not found,
+// or RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE if #eql? or a Thread converted the hash to st_table.
+static inline unsigned
+ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
+{
+    unsigned first_match = ar_hint_first_match(hint, RHASH_AR_TABLE(hash)->ar_hint.word);
+
+    if (LIKELY(first_match >= RHASH_AR_TABLE_BOUND(hash))) {
+        RB_DEBUG_COUNTER_INC(artable_hint_notfound);
+        return RHASH_AR_TABLE_MISS;
+    }
+
+    RUBY_ASSERT(RHASH_AR_TABLE(hash)->ar_hint.ary[first_match] == hint);
+    if (LIKELY(RHASH_AR_TABLE_REF(hash, first_match)->key == key)) {
+        RB_DEBUG_COUNTER_INC(artable_hint_hit);
+        return first_match;
+    }
+    return ar_find_entry_hint_slow(hash, hint, key, first_match);
 }
 
 static unsigned
