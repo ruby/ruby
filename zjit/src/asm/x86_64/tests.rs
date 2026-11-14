@@ -20,6 +20,98 @@ fn compile<R>(run: R) -> CodeBlock where R: FnOnce(&mut super::CodeBlock) {
 }
 
 #[test]
+fn encoder_sequence_across_pages() {
+    fn emit(cb: &mut CodeBlock) {
+        write_lock_prefix(cb);
+        add(cb, mem_opnd_sib(64, R12, R9, 4, 0x1234), imm_opnd(0x123456));
+        movabs(cb, R11, 0x123456789abcdef0);
+        cmp(cb, AX, imm_opnd(0x1234));
+        call_rel32(cb, -12345);
+        nop(cb, 9);
+        ret(cb);
+    }
+
+    let page = unsafe { crate::cruby::rb_jit_get_page_size() } as usize;
+    let expected = compile(emit);
+    let len = expected.get_write_pos();
+    let expected_bytes = unsafe { std::slice::from_raw_parts(expected.get_ptr(0).raw_ptr(&expected), len) };
+
+    for offset in [0, page - 1, page - 7] {
+        let mut cb = CodeBlock::new_dummy();
+
+        cb.set_write_ptr(cb.get_ptr(offset));
+        emit(&mut cb);
+
+        assert_eq!(cb.get_write_pos(), offset + len);
+        assert!(!cb.has_dropped_bytes());
+
+        assert_eq!(unsafe { std::slice::from_raw_parts(cb.get_ptr(offset).raw_ptr(&cb), len) }, expected_bytes);
+    }
+}
+
+#[test]
+fn address_dependent_calls_and_jumps() {
+    let mut cb = CodeBlock::new_dummy();
+
+    nop(&mut cb, 1);
+
+    let start = cb.get_write_ptr();
+    let target = start.raw_ptr(&cb);
+    call_ptr(&mut cb, RAX, target);
+    jmp_ptr(&mut cb, start);
+    je_ptr(&mut cb, start);
+
+    assert_eq!(cb.get_write_ptr(), start.add_bytes(16));
+    assert_eq!(cb.hexdump(), "90e8fbffffffe9f6ffffff0f84f0ffffff");
+
+    let mut far = CodeBlock::new_dummy();
+    let target = far.get_write_ptr().raw_addr(&far) + (1usize << 32);
+    let mut expected = CodeBlock::new_dummy();
+
+    mov(&mut expected, RAX, const_ptr_opnd(target as *const u8));
+    call(&mut expected, RAX);
+
+    call_ptr(&mut far, RAX, target as *const u8);
+    assert!(!far.has_dropped_bytes());
+
+    assert_eq!(far.hexdump(), expected.hexdump());
+}
+
+#[test]
+fn label_encoders_link_after_emission() {
+    let mut cb = CodeBlock::new_dummy();
+    let label = cb.new_label("end");
+
+    call_label(&mut cb, label);
+    jmp_label(&mut cb, label);
+    je_label(&mut cb, label);
+    cb.write_label(label);
+    ret(&mut cb);
+
+    assert_eq!(cb.resolve_label(label), cb.get_ptr(16));
+    cb.link_labels().unwrap();
+    assert_eq!(cb.hexdump(), "e80b000000e9060000000f8400000000c3");
+}
+
+#[test]
+fn movabs_partial_failure() {
+    let page = unsafe { crate::cruby::rb_jit_get_page_size() } as usize;
+
+    let mut cb = CodeBlock::new_dummy_sized(2 * page);
+    cb.set_write_ptr(cb.get_ptr(page - 5));
+    movabs(&mut cb, RAX, 0x123456789abcdef0);
+    assert!(cb.has_dropped_bytes());
+    assert_eq!(cb.get_write_pos(), page);
+
+    ret(&mut cb);
+    assert_eq!(cb.get_write_pos(), page);
+    assert!(cb.has_dropped_bytes());
+
+    let ptr = cb.get_ptr(page - 5).raw_ptr(&cb);
+    assert_eq!(unsafe { std::slice::from_raw_parts(ptr, 5) }, &[0x48, 0xb8, 0xf0, 0xde, 0xbc]);
+}
+
+#[test]
 fn test_add() {
     let cb01 = compile(|cb| add(cb, CL, imm_opnd(3)));
     let cb02 = compile(|cb| add(cb, CL, BL));

@@ -1162,7 +1162,7 @@ impl Assembler {
         if cb.has_dropped_bytes() {
             Err(CompileError::OutOfMemory)
         } else {
-            // No bytes dropped, so the pos markers point to valid code
+            // No bytes dropped, so the pos markers point to valid code.
             for (insn_idx, pos) in pos_markers {
                 if let Insn::PosMarker(callback) = insns.get(insn_idx).unwrap() {
                     callback(pos, cb);
@@ -1170,7 +1170,6 @@ impl Assembler {
                     panic!("non-PosMarker in pos_markers insn_idx={insn_idx} {self:?}");
                 }
             }
-
             Ok(gc_offsets)
         }
     }
@@ -1295,6 +1294,8 @@ impl Assembler {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::Cell;
+    use std::rc::Rc;
     use insta::assert_snapshot;
     use crate::assert_disasm_snapshot;
     use crate::options::rb_zjit_prepare_options;
@@ -1308,6 +1309,85 @@ mod tests {
         let mut asm = Assembler::new();
         asm.new_block_without_id("test");
         (asm, CodeBlock::new_dummy())
+    }
+
+    #[test]
+    fn position_callbacks_run_after_emission() {
+        let (mut asm, mut cb) = setup_asm();
+        let end = asm.new_label("end");
+        let label = end.unwrap_label();
+        let called = Rc::new(Cell::new(false));
+        let seen = called.clone();
+
+        asm.mov(Opnd::Reg(RAX_REG), Opnd::UImm(7));
+        asm.pos_marker(move |pos, cb| {
+            assert_eq!(pos, cb.get_write_ptr());
+            assert_eq!(cb.resolve_label(label), pos);
+            assert!(pos.raw_addr(cb) > cb.get_ptr(0).raw_addr(cb));
+            seen.set(true);
+        });
+        asm.write_label(end);
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert!(called.get());
+    }
+
+    #[test]
+    fn gc_offsets_use_live_cursor() {
+        let (mut asm, mut cb) = setup_asm();
+        nop(&mut cb, 1);
+        let value = VALUE(0x1000); // encoded, never dereferenced
+
+        asm.push_insn(Insn::LoadInto { dest: Opnd::Reg(RAX_REG), opnd: Opnd::Value(value) });
+        asm.bake_string("ab");
+        for name in &asm.label_names { cb.new_label(*name); }
+        let offsets = asm.x86_emit(&mut cb).unwrap();
+
+        // Layout: nop (1), movabs prefix/opcode (2), VALUE (8), "ab\0" (3).
+        assert_eq!(offsets, vec![cb.get_ptr(3)]);
+        assert_eq!(cb.get_write_pos(), 14);
+        assert_eq!(unsafe { offsets[0].raw_ptr(&cb).cast::<u64>().read_unaligned() }, value.0 as u64);
+    }
+
+    #[test]
+    fn oom_skips_callbacks_and_terminates_padding() {
+        let (mut asm, _) = setup_asm();
+        let page = unsafe { rb_jit_get_page_size() } as usize;
+
+        let mut cb = CodeBlock::new_dummy_sized(2 * page);
+        cb.set_write_ptr(cb.get_ptr(page - 2));
+
+        asm.pos_marker(|_, _| panic!("must not publish failed emission"));
+        asm.patch_point_pad();
+        asm.bake_string("abc");
+        asm.boundary_pad();
+        for name in &asm.label_names { cb.new_label(*name); }
+        assert!(matches!(asm.x86_emit(&mut cb), Err(CompileError::OutOfMemory)));
+
+        assert!(cb.has_dropped_bytes());
+        assert_eq!(cb.get_write_pos(), page);
+    }
+
+    #[test]
+    fn emitter_inside_executable_patch() {
+        let (_, mut cb) = setup_asm();
+
+        nop(&mut cb, 16);
+        cb.mark_all_executable();
+
+        let start = cb.get_ptr(1);
+        let range = cb.with_write_ptr(start, |cb| {
+            let (mut asm, _) = setup_asm();
+
+            asm.bake_string("ab");
+            for name in &asm.label_names { cb.new_label(*name); }
+
+            asm.x86_emit(cb).unwrap();
+        });
+
+        assert_eq!(range, start..start.add_bytes(3));
+        assert_eq!(cb.get_write_pos(), 16);
+        assert_eq!(unsafe { std::slice::from_raw_parts(start.raw_ptr(&cb), 3) }, b"ab\0");
     }
 
     fn stack_mem(stack_idx: StackIdx) -> Opnd {
