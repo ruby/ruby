@@ -2064,11 +2064,9 @@ mod hir_opt_tests {
           v13:Fixnum[-10] = Const Value(-10)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v30:CInt64[3] = Const CInt64(3)
-          v31:CInt64[-7] = Const CInt64(-7)
-          v28:BasicObject = ArrayArefChecked v11, v31, v30
+          v32:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v28
+          Return v32
         ");
     }
 
@@ -10641,11 +10639,9 @@ mod hir_opt_tests {
           v13:Fixnum[-10] = Const Value(-10)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v30:CInt64[3] = Const CInt64(3)
-          v31:CInt64[-7] = Const CInt64(-7)
-          v28:BasicObject = ArrayArefChecked v11, v31, v30
+          v32:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v28
+          Return v32
         ");
     }
 
@@ -10670,11 +10666,9 @@ mod hir_opt_tests {
           v13:Fixnum[10] = Const Value(10)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v29:CInt64[10] = Const CInt64(10)
-          v30:CInt64[3] = Const CInt64(3)
-          v28:BasicObject = ArrayArefChecked v11, v29, v30
+          v31:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v28
+          Return v31
         ");
     }
 
@@ -26716,6 +26710,34 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1010)
           PatchPoint MethodRedefined(Array@0x1010, last@0x1018, cme:0x1020)
           v29:Fixnum[4] = Const Value(4)
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_fold_empty_array_last() {
+        eval(r"
+            A = [].freeze
+            def test = A.last
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, A)
+          v11:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(Array@0x1010)
+          PatchPoint MethodRedefined(Array@0x1010, last@0x1018, cme:0x1020)
+          v29:NilClass = Const Value(nil)
           CheckInterrupts
           Return v29
         ");

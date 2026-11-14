@@ -7442,9 +7442,11 @@ impl Function {
                         if self.type_of(array).ruby_object_known()
                             && self.type_of(index).is_subtype(types::CInt64) => {
                         let array_obj = self.type_of(array).ruby_object().unwrap();
-                        let mut val = VALUE(0);
+                        let mut val = Qnil;
                         match (array_obj.is_frozen(), self.type_of(index).cint64_value()) {
-                            (true, Some(index)) if unsafe { rb_zjit_array_aref_with_adjusted_index(array_obj, index, &mut val) } => {
+                            (true, Some(index)) => {
+                                // Leaves val as nil when the index is out of bounds.
+                                unsafe { rb_zjit_array_aref_with_adjusted_index(array_obj, index, &mut val); };
                                 self.new_insn(Insn::Const { val: Const::Value(val) })
                             }
                             _ => insn_id,
