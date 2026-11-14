@@ -54,23 +54,18 @@
 #define NODE rb_node_t
 #define node_type rb_node_type
 
-#define nd_code_loc_old nd_code_loc
 #undef nd_code_loc
 #define nd_code_loc(n) rb_nd_code_loc((n))
 
-#define nd_line_old nd_line
 #undef nd_line
 #define nd_line(n) rb_nd_line((n))
 
-#define nd_set_line_old nd_set_line
 #undef nd_set_line
 #define nd_set_line(n,l) rb_nd_set_line((n), (l))
 
-#define nd_set_node_id_old nd_set_node_id
 #undef nd_set_node_id
 #define nd_set_node_id(n, i) rb_nd_set_node_id((n), (i))
 
-#define nd_type_old nd_type
 #undef nd_type
 #define nd_type(n) RB_NODE_TYPE((n))
 
@@ -952,19 +947,6 @@ get_nd_vid(const NODE *node)
 //         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
 //     }
 // }
-
-static VALUE
-get_string_value(const NODE *node)
-{
-    switch (nd_type(node)) {
-      case NODE_STR:
-        return RB_OBJ_SET_SHAREABLE(rb_node_str_string_val(node));
-      case NODE_FILE:
-        return RB_OBJ_SET_SHAREABLE(rb_node_file_path_val(node));
-      default:
-        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
-    }
-}
 
 static VALUE
 get_string_value2(const NODE *node)
@@ -5289,20 +5271,6 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cons
 }
 
 static int
-compile_block(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
-{
-    while (node && nd_type_p(node, NODE_BLOCK)) {
-        CHECK(COMPILE_(ret, "BLOCK body", RNODE_BLOCK(node)->nd_head,
-                       (RNODE_BLOCK(node)->nd_next ? 1 : popped)));
-        node = RNODE_BLOCK(node)->nd_next;
-    }
-    if (node) {
-        CHECK(COMPILE_(ret, "BLOCK next", RNODE_BLOCK(node)->nd_next, popped));
-    }
-    return COMPILE_OK;
-}
-
-static int
 compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 {
     int cnt;
@@ -5430,12 +5398,6 @@ compile_lasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, I
     }
     ADD_SETLOCAL(ret, node, idx, level);
     return COMPILE_OK;
-}
-
-static int
-keyword_node_p(const NODE *const node)
-{
-    return nd_type_p(node, NODE_HASH) && (RNODE_HASH(node)->nd_brace & HASH_BRACE) != HASH_BRACE;
 }
 
 static VALUE
@@ -7310,23 +7272,6 @@ add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return)
     ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = prev_enlp;
     ADD_SEQ(ret, ensure);
 }
-
-#if RUBY_DEBUG
-static int
-check_keyword(const NODE *node)
-{
-    /* This check is essentially a code clone of compile_keyword_arg. */
-
-    if (nd_type_p(node, NODE_LIST)) {
-        while (RNODE_LIST(node)->nd_next) {
-            node = RNODE_LIST(node)->nd_next;
-        }
-        node = RNODE_LIST(node)->nd_head;
-    }
-
-    return keyword_node_p(node);
-}
-#endif
 
 static bool
 keyword_node_single_splat_p(rb_keyword_hash_node_t *kwnode)
@@ -11572,48 +11517,6 @@ compile_yield(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     }
     if (level > 0) access_outer_variables(iseq, level, rb_intern("yield"), true);
 
-    return COMPILE_OK;
-}
-
-static int
-compile_match(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const enum node_type type)
-{
-    DECL_ANCHOR(recv);
-    DECL_ANCHOR(val);
-
-    INIT_ANCHOR(recv);
-    INIT_ANCHOR(val);
-    switch ((int)type) {
-      case NODE_MATCH:
-        {
-            VALUE re = rb_node_regx_string_val(node);
-            RB_OBJ_SET_FROZEN_SHAREABLE(re);
-            ADD_INSN1(recv, node, putobject, re);
-            ADD_INSN2(val, node, getspecial, INT2FIX(0),
-                      INT2FIX(0));
-        }
-        break;
-      case NODE_MATCH2:
-        CHECK(COMPILE(recv, "receiver", RNODE_MATCH2(node)->nd_recv));
-        CHECK(COMPILE(val, "value", RNODE_MATCH2(node)->nd_value));
-        break;
-      case NODE_MATCH3:
-        CHECK(COMPILE(recv, "receiver", RNODE_MATCH3(node)->nd_value));
-        CHECK(COMPILE(val, "value", RNODE_MATCH3(node)->nd_recv));
-        break;
-    }
-
-    ADD_SEQ(ret, recv);
-    ADD_SEQ(ret, val);
-    ADD_SEND(ret, node, idEqTilde, INT2FIX(1));
-
-    // if (nd_type_p(node, NODE_MATCH2) && RNODE_MATCH2(node)->nd_args) {
-    //     compile_named_capture_assign(iseq, ret, RNODE_MATCH2(node)->nd_args, node);
-    // }
-
-    if (popped) {
-        ADD_INSN(ret, node, pop);
-    }
     return COMPILE_OK;
 }
 
