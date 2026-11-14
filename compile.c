@@ -5236,9 +5236,13 @@ compile_dstr_fragments_0(struct dstr_ctxt *args, const NODE *const node)
 
     for (size_t i = 0; i < RB_NODE_LIST_LEN(list); i++) {
         const NODE *const head = list->nodes[i];
+        const rb_string_node_t *embedded = args->dregx ? rb_node_embedded_string(head) : NULL;
 
         if (nd_type_p(head, RB_STRING_NODE)) {
             CHECK(append_dstr_fragment(args, node, RB_NODE_STRING(head)->unescaped));
+        }
+        else if (embedded) {
+            CHECK(append_dstr_fragment(args, head, embedded->unescaped));
         }
         else if (nd_type_p(head, RB_INTERPOLATED_STRING_NODE)) {
             CHECK(compile_dstr_fragments_0(args, head));
@@ -5284,6 +5288,18 @@ compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
 {
     int cnt;
     int cflag = node_regx_options(node->flags);
+    const rb_node_list2_t *parts = &RB_NODE_INTERPOLATED_REGULAR_EXPRESSION(node)->parts;
+    const rb_string_node_t *embedded = parts->size == 1 ? rb_node_embedded_string(parts->nodes[0]) : NULL;
+
+    if (embedded) {
+        if (!popped) {
+            VALUE src = rb_str_new_parser_string(embedded->unescaped);
+            VALUE regexp = iseq_reg_compile(iseq, src, cflag, NULL, 0);
+            ADD_INSN1(ret, node, putobject, regexp);
+            RB_OBJ_WRITTEN(iseq, Qundef, regexp);
+        }
+        return COMPILE_OK;
+    }
 
     CHECK(compile_dstr_fragments(iseq, ret, node, &cnt, TRUE));
     ADD_INSN2(ret, node, toregexp, INT2FIX(cflag), INT2FIX(cnt));
