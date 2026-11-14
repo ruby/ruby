@@ -7463,14 +7463,27 @@ impl Function {
                             _ => insn_id,
                         }
                     }
-                    &Insn::AdjustBounds { index, .. } => {
+                    &Insn::AdjustBounds { index, length } => {
                         // If index is known nonnegative, then we don't need to adjust bounds.
                         if self.type_of(index).known_nonnegative() {
                             self.make_equal_to(insn_id, index);
                             // Don't bother re-inferring the type of index; we already know it.
                             continue;
                         } else {
-                            insn_id
+                            // index is negative or unknown.
+                            let index_value = self.type_of(index).cint64_value();
+                            let length_value = self.type_of(length).cint64_value();
+                            match (index_value, length_value) {
+                                (Some(index_value), Some(length_value)) => {
+                                    // Neither overflow or underflow is possible. index_value must
+                                    // be negative to reach here, and length_value must be zero or
+                                    // positive. The result of adding them will always be in the
+                                    // range [index_value, length_value), so the result stays within
+                                    // bounds.
+                                    self.new_insn(Insn::Const { val: Const::CInt64(index_value + length_value) })
+                                }
+                                _ => insn_id
+                            }
                         }
                     }
                     &Insn::Test { val } if self.type_of(val).is_known_falsy() => {
