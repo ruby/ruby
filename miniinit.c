@@ -59,6 +59,19 @@ static void builtin_loaded(const char *feature_name, VALUE iseq);
 
 #include "mini_builtin.c"
 
+VALUE
+rb_define_gem_modules(VALUE _a, VALUE _b)
+{
+    // do nothing - moniruby doesn't load gem_prelude.rb.
+    return Qnil;
+}
+
+void
+rb_load_gem_prelude(VALUE _)
+{
+    // do nothing - miniruby doesn't support loading RubyGems.
+}
+
 static struct st_table *loaded_builtin_table;
 
 static void
