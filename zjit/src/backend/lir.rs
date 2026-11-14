@@ -1401,6 +1401,12 @@ impl fmt::Debug for Insn {
         });
         write!(fmt, ")")?;
 
+        if let Insn::CCall { data } = self {
+            if let Some(StackMap { stack, .. }) = &data.stack_map {
+                write!(fmt, " stack_map={stack:?}")?;
+            }
+        }
+
         // Print text, target, and pos if they are present
         if let Some(text) = self.text() {
             write!(fmt, " {text:?}")?
@@ -3763,6 +3769,12 @@ impl fmt::Display for Assembler {
                                 sep = ", ";
                                 result
                             })?;
+                        }
+
+                        if let Insn::CCall { data } = insn {
+                            if let Some(StackMap { stack, .. }) = &data.stack_map {
+                                write!(f, " stack_map={stack:?}")?;
+                            }
                         }
 
                         write!(f, "\n")?;
