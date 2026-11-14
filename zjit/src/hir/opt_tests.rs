@@ -7730,6 +7730,35 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_checkkeyword_in_inlined_callee() {
+        eval(r#"
+            def callee(a: (a_unset = true)) = a_unset
+            def test = [callee, callee(a: 1)]
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v105:TrueClass = Const Value(true)
+          v107:NilClass = Const Value(nil)
+          v18:ArrayExact = NewArray v105, v107
+          CheckInterrupts
+          Return v18
+        ");
+        assert_snapshot!(inspect(r#"test"#), @"[true, nil]");
+    }
+
+    #[test]
     fn test_opt_new_regexp() {
         eval("
             def test = Regexp.new ''
@@ -27847,24 +27876,16 @@ mod hir_opt_tests {
           v26:NilClass = Const Value(nil)
           v64:Fixnum[1] = Const Value(1)
           PushInlineFrame :add_optkw_dyn, v25 (0x1040), num_args=2
-          v36:BoolExact = FixnumBitCheck v64, 0
-          v38:CBool = Test v36
-          CondBranch v38, bb6(v26), bb7()
-        bb7():
           v44:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1060, *@0x1068, cme:0x1070)
-          v71:Fixnum = GuardType v10, Fixnum recompile
-          v72:Fixnum = FixnumMult v71, v44
-          Jump bb6(v72)
-        bb6(v52:NilClass|Fixnum):
+          v73:Fixnum = GuardType v10, Fixnum recompile
+          v74:Fixnum = FixnumMult v73, v44
           PatchPoint MethodRedefined(Integer@0x1060, +@0x1098, cme:0x10a0)
-          v75:Fixnum = GuardType v10, Fixnum recompile
-          v76:Fixnum = GuardType v52, Fixnum recompile
-          v77:Fixnum = FixnumAdd v75, v76
+          v78:Fixnum = FixnumAdd v73, v74
           PopInlineFrame
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v77
+          Return v78
         ");
     }
 
