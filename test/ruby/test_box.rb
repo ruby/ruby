@@ -1311,6 +1311,90 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_top_level_definition_methods_in_a_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      path = File.join(ENV["TEST_DIR"], "box", "top_level_methods.rb")
+
+      assert Ruby::Box.new.load(path)
+      assert load(path, true)
+    end;
+  end
+
+  def test_top_self_of_a_file_loaded_into_a_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      TOP_SELVES = []
+      path = File.join(ENV["TEST_DIR"], "box", "top_self.rb")
+      box1 = Ruby::Box.new
+      box2 = Ruby::Box.new
+
+      box1.require(path)
+      box1.load(path)
+      box2.load(path)
+      load(path, true)
+      required, loaded, other_box, wrapped = TOP_SELVES
+
+      assert_same required, loaded
+      assert_not_same self, loaded
+      assert_not_same loaded, other_box
+      assert_not_same self, wrapped
+      assert_not_same loaded, wrapped
+      TOP_SELVES.each do |main|
+        assert_empty %i[define_method include private public ruby2_keywords using] -
+                     main.singleton_class.private_instance_methods(false)
+      end
+    end;
+  end
+
+  def test_load_defines_top_level_methods_in_object
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      box.load(File.join(ENV["TEST_DIR"], "box", "define_toplevel.rb"))
+
+      assert_equal "foooooooooo", box.eval("Object.new.send(:foo)")
+      assert_not_include box.private_instance_methods(false), :foo
+    end;
+  end
+
+  def test_box_main_does_not_copy_changes_to_main
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      TOP_SELVES = []
+      @ivar = 1
+      def self.main_only = nil
+      extend Comparable
+
+      Ruby::Box.new.load(File.join(ENV["TEST_DIR"], "box", "top_self.rb"))
+      main = TOP_SELVES.first
+
+      assert_empty main.instance_variables
+      assert_not_respond_to main, :main_only
+      assert_not_kind_of Comparable, main
+    end;
+    assert_ruby_status([ENV_ENABLE_BOX], "freeze; Ruby::Box.new")
+  end
+
+  def test_wrapped_load_into_a_box_clones_the_box_main
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      TOP_SELVES = []
+      path = File.join(ENV["TEST_DIR"], "box", "top_self.rb")
+      @ivar = 1
+      box = Ruby::Box.new
+
+      box.load(path)
+      box.load(path, true)
+      loaded, wrapped = TOP_SELVES
+
+      assert_not_same loaded, wrapped
+      assert_empty wrapped.instance_variables
+      assert_empty %i[define_method include private public ruby2_keywords using] -
+                   wrapped.singleton_class.private_instance_methods(false)
+    end;
+  end
+
   def test_require_list_loaded_only_in_main_box
     Tempfile.create(["req_a", ".rb"]) do |t1|
       Tempfile.create(["req_b", ".rb"]) do |t2|

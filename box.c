@@ -42,6 +42,7 @@ VALUE rb_mBoxLoader = 0;
 static rb_box_t master_box[1]; /* Initialize in initialize_master_box() */
 static rb_box_t *root_box;
 static rb_box_t *main_box;
+static VALUE box_main_template; /* Initialize in rb_initialize_mandatory_boxes() */
 
 static rb_box_gem_flags_t box_gem_flags[1];
 
@@ -160,12 +161,6 @@ box_generate_id(void)
     return id;
 }
 
-static VALUE
-box_main_to_s(VALUE obj)
-{
-    return rb_str_new2("main");
-}
-
 static void
 box_entry_initialize(rb_box_t *box)
 {
@@ -175,9 +170,7 @@ box_entry_initialize(rb_box_t *box)
     box->box_object = 0;
     box->box_id = 0;
 
-    box->top_self = rb_obj_alloc(rb_cObject);
-    rb_define_singleton_method(box->top_self, "to_s", box_main_to_s, 0);
-    rb_define_alias(rb_singleton_class(box->top_self), "inspect", "to_s");
+    box->top_self = rb_obj_clone(box_main_template);
     box->load_path = rb_ary_dup(master->load_path);
     box->expanded_load_path = rb_ary_dup(master->expanded_load_path);
     box->load_path_snapshot = rb_ary_new();
@@ -1028,6 +1021,12 @@ rb_initialize_mandatory_boxes(void)
         box_experimental_warned = 1;
     }
 
+    // Every other box starts with a copy of `main` taken here, before any user
+    // code runs, so that it gets the top-level methods (include, using, public,
+    // private, ...) defined during setup but nothing the main box adds later.
+    box_main_template = rb_obj_clone(master_box->top_self);
+    rb_gc_register_mark_object(box_main_template);
+
     root_box_value = box_value_initialize(true, false, false);
     main_box_value = box_value_initialize(false, true, false);
 
@@ -1036,6 +1035,10 @@ rb_initialize_mandatory_boxes(void)
 
     vm->root_box = root_box = rb_get_box_t(root_box_value);
     vm->main_box = main_box = rb_get_box_t(main_box_value);
+
+    // The master, root and main boxes share `main` as it is without boxes, so
+    // that extending it is visible to a load that wraps it.
+    root_box->top_self = main_box->top_self = master_box->top_self;
 
     // create the writable classext of ::Object explicitly to finalize the set of visible top-level constants
     RCLASS_EXT_WRITABLE_IN_BOX(rb_cObject, root_box);
