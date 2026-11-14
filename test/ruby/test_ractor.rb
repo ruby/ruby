@@ -439,6 +439,85 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # The owner makes a frozen class field shareable while other Ractors may be reading it.
+  # It must flag the root last or else  a reader taking the FL_SHAREABLE fast path sees a
+  # shareable root with unshareable children.
+  def test_read_frozen_class_field_while_owner_makes_it_shareable
+    assert_ractor(<<~'RUBY', timeout: 60)
+      class Box
+        def self.data = @data
+      end
+      graph = -> { Array.new(50_000) { |i| "s#{i}".freeze }.freeze }
+      Box.instance_variable_set(:@data, graph.())
+
+      duration = 0.5
+      readers = 4.times.map do |i|
+        Ractor.new(duration, i.zero?) do |duration, trigger|
+          torn = 0
+          deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + duration
+          while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+            v = Box.data
+            torn += 1 if Ractor.shareable?(v) && !Ractor.shareable?(v.last)
+            sleep(rand * 0.05) unless trigger
+          end
+          torn
+        end
+      end
+
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + duration
+      while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+        Box.instance_variable_set(:@data, graph.())
+      end
+
+      assert_equal [0] * readers.size, readers.map(&:value)
+    RUBY
+  end
+
+  # Like the above, but the torn node is an interior node of one class field's graph that is
+  # also another class field's root. Every node, not just the root, must be flagged after
+  # its children.
+  def test_read_frozen_class_field_interior_while_owner_makes_it_shareable
+    assert_ractor(<<~'RUBY', timeout: 60)
+      class Box
+        def self.outer = @outer
+        def self.inner = @inner
+      end
+      publish = -> {
+        inner = Array.new(50_000) { |i| "s#{i}".freeze }.freeze
+        Box.instance_variable_set(:@inner, inner)
+        Box.instance_variable_set(:@outer, [inner].freeze)
+      }
+      publish.()
+
+      duration = 0.5
+      triggers = 2.times.map do
+        Ractor.new(duration) do |duration|
+          deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + duration
+          Box.outer while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+          0
+        end
+      end
+      readers = 4.times.map do
+        Ractor.new(duration) do |duration|
+          torn = 0
+          deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + duration
+          while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+            v = Box.inner
+            torn += 1 if Ractor.shareable?(v) && !Ractor.shareable?(v.last)
+            sleep(rand * 0.05)
+          end
+          torn
+        end
+      end
+
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + duration
+      publish.() while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+
+      assert_equal [0] * readers.size, readers.map(&:value)
+      triggers.each(&:join)
+    RUBY
+  end
+
   def test_struct_instance_variables
     assert_ractor(<<~'RUBY')
       StructIvar = Struct.new(:member) do

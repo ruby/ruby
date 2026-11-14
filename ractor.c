@@ -1580,7 +1580,8 @@ rb_obj_set_shareable_no_assert(VALUE obj)
      * the VALUE members inside its fptr. */
     VM_ASSERT(!RB_TYPE_P(obj, T_FILE));
 
-    FL_SET_RAW(obj, FL_SHAREABLE);
+    // pairs with the acquire in rb_class_field_shareable_p
+    rbimpl_atomic_value_store(&RBASIC(obj)->flags, RBASIC(obj)->flags | FL_SHAREABLE, RBIMPL_ATOMIC_RELEASE);
     rb_gc_obj_became_shareable(obj);
 
     /* Ivars on a shareable object would be mutable shared state, so freeze them
@@ -1663,6 +1664,8 @@ struct obj_traverse_data {
 
     st_table *rec;
     VALUE rec_hash;
+    VALUE post;
+    bool record_post;
 };
 
 
@@ -1753,6 +1756,7 @@ obj_traverse_rec(struct obj_traverse_data *data)
         data->rec_hash = rb_ident_hash_new();
         rb_obj_hide(data->rec_hash);
         data->rec = RHASH_ST_TABLE(data->rec_hash);
+        if (data->record_post) data->post = rb_ary_hidden_new(0);
     }
     return data->rec;
 }
@@ -1892,28 +1896,14 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         rb_bug("unreachable");
     }
 
+    if (data->record_post) rb_ary_push(data->post, obj);
+
     if (data->leave_func(obj) == traverse_stop) {
         return 1;
     }
     else {
         return 0;
     }
-}
-
-struct rb_obj_traverse_final_data {
-    rb_obj_traverse_final_func final_func;
-    int stopped;
-};
-
-static int
-obj_traverse_final_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    struct rb_obj_traverse_final_data *data = (void *)arg;
-    if (data->final_func(key)) {
-        data->stopped = 1;
-        return ST_STOP;
-    }
-    return ST_CONTINUE;
 }
 
 // 0: traverse all
@@ -1928,13 +1918,17 @@ rb_obj_traverse(VALUE obj,
         .enter_func = enter_func,
         .leave_func = leave_func,
         .rec = NULL,
+        .record_post = final_func != NULL,
     };
 
     if (obj_traverse_i(obj, &data)) return 1;
     if (final_func && data.rec) {
-        struct rb_obj_traverse_final_data f = {final_func, 0};
-        st_foreach(data.rec, obj_traverse_final_i, (st_data_t)&f);
-        return f.stopped;
+        VM_ASSERT(data.post);
+        // post-order: another Ractor that sees a node shareable must also see its children
+        // shareable (except along a cycle's back edge)
+        for (long i = 0; i < RARRAY_LEN(data.post); i++) {
+            if (final_func(RARRAY_AREF(data.post, i))) return 1;
+        }
     }
     return 0;
 }
@@ -4657,7 +4651,9 @@ ractor_living_by_id(rb_serial_t id)
 bool
 rb_class_field_shareable_p(VALUE klass, VALUE val)
 {
-    if (RB_SPECIAL_CONST_P(val) || RB_OBJ_SHAREABLE_P(val)) return true;
+    if (RB_SPECIAL_CONST_P(val)) return true;
+    // the owner may be marking val's graph right now; see rb_obj_traverse
+    if (rbimpl_atomic_value_load(&RBASIC(val)->flags, RBIMPL_ATOMIC_ACQUIRE) & FL_SHAREABLE) return true;
     if (!RB_OBJ_FROZEN_RAW(val)) return false;
 
     VM_ASSERT(!rb_class_owned_p(klass));
