@@ -78,6 +78,18 @@ module TestStruct
     assert_equal(1, o.a)
   end
 
+  def test_dup_and_clone_of_class
+    klass = @Struct.new(:a, :b, keyword_init: true)
+    [klass.dup, klass.clone, Class.new(klass).dup].each do |copy|
+      assert_equal([:a, :b], copy.members)
+      assert_predicate(copy, :keyword_init?)
+      o = copy.new(a: 1, b: 2)
+      assert_equal(1, o[:a])
+      assert_equal(2, o.b)
+      assert_equal({a: 1, b: 2}, o.to_h)
+    end
+  end
+
   def test_attrset_id
     assert_raise(ArgumentError) { Struct.new(:x=) }
   end
