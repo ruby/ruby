@@ -529,16 +529,25 @@ rb_struct_define(const char *class_name, ...)
 }
 
 VALUE
-rb_struct_define_under(VALUE outer, const char *name, ...)
+rb_struct_define_under(VALUE outer, const char *class_name, ...)
 {
     va_list ar;
     VALUE ary;
 
-    va_start(ar, name);
+    va_start(ar, class_name);
     ary = struct_make_members_list(ar);
     va_end(ar);
 
-    return setup_struct(rb_define_class_id_under(outer, rb_intern(name), rb_cStruct), ary);
+    VALUE klass = anonymous_struct(rb_cStruct);
+    setup_struct(klass, ary);
+
+    VALUE name = rb_enc_interned_str_cstr(class_name, rb_usascii_encoding());
+    struct_register_under(outer, name, klass);
+    rb_vm_register_global_object(klass);
+
+    rb_class_inherited(rb_cStruct, klass);
+
+    return klass;
 }
 
 /*
