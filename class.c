@@ -576,7 +576,7 @@ class_switch_superclass(VALUE super, VALUE klass)
  * @note this function is not Class#allocate.
  */
 static VALUE
-class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
+class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable, bool inline_field)
 {
     const rb_box_t *box = rb_current_box();
 
@@ -588,6 +588,7 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
     if (boxable) {
         alloc_size = sizeof(struct RClass_boxable);
     }
+    if (inline_field) alloc_size += sizeof(VALUE);
 
     RUBY_ASSERT(type == T_CLASS || type == T_ICLASS || type == T_MODULE);
 
@@ -625,6 +626,9 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
         ((struct RClass_boxable *)obj)->box_classext_tbl = NULL;
     }
 
+    RCLASS_EXT_PRIME(obj)->has_inline_field = inline_field;
+    if (inline_field) *RCLASS_INLINE_FIELD_PTR((VALUE)obj) = Qnil;
+
     RCLASS_PRIME_BOX((VALUE)obj) = box;
     // Classes/Modules defined in user boxes are
     // writable directly because it exists only in a box.
@@ -640,7 +644,7 @@ static VALUE
 class_alloc(enum ruby_value_type type, VALUE klass)
 {
     bool boxable = rb_box_available() && BOX_MASTER_P(rb_current_box());
-    return class_alloc0(type, klass, boxable);
+    return class_alloc0(type, klass, boxable, false);
 }
 
 bool
@@ -742,9 +746,9 @@ class_clear_method_table(VALUE c)
 }
 
 static VALUE
-class_boot_boxable(VALUE super, bool boxable)
+class_boot_boxable(VALUE super, bool boxable, bool inline_field)
 {
-    VALUE klass = class_alloc0(T_CLASS, rb_cClass, boxable);
+    VALUE klass = class_alloc0(T_CLASS, rb_cClass, boxable, inline_field);
 
     // initialize method table prior to class_associate_super()
     // because class_associate_super() may cause GC and promote klass
@@ -771,7 +775,7 @@ class_boot_boxable(VALUE super, bool boxable)
 VALUE
 rb_class_boot(VALUE super)
 {
-    return class_boot_boxable(super, false);
+    return class_boot_boxable(super, false, false);
 }
 
 static VALUE *
@@ -850,12 +854,23 @@ rb_check_inheritable(VALUE super)
     }
 }
 
-VALUE
-rb_class_new(VALUE super)
+static void
+class_copy_inline_field(VALUE klass, VALUE from)
+{
+    if (RCLASS_HAS_INLINE_FIELD(from)) {
+        RCLASS_SET_INLINE_FIELD(klass, RCLASS_INLINE_FIELD(from));
+    }
+}
+
+// The new class has an inline field if +inline_field+ asks for one or +super+
+// has one, whose value it starts with.
+static VALUE
+class_new(VALUE super, bool inline_field)
 {
     Check_Type(super, T_CLASS);
     rb_check_inheritable(super);
-    VALUE klass = rb_class_boot(super);
+    VALUE klass = class_boot_boxable(super, false, inline_field || RCLASS_HAS_INLINE_FIELD(super));
+    class_copy_inline_field(klass, super);
 
     RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     RUBY_ASSERT(getenv("RUBY_BOX") || RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass));
@@ -864,9 +879,31 @@ rb_class_new(VALUE super)
 }
 
 VALUE
+rb_class_new(VALUE super)
+{
+    return class_new(super, false);
+}
+
+VALUE
+rb_class_new_with_inline_field(VALUE super)
+{
+    return class_new(super, true);
+}
+
+VALUE
 rb_class_s_alloc(VALUE klass)
 {
     return rb_class_boot(0);
+}
+
+// What Class.allocate returns, with the inline field of +from+ if it has one:
+// the class to copy, or the superclass to be.
+VALUE
+rb_class_alloc_with_inline_field_of(VALUE from)
+{
+    VALUE klass = class_boot_boxable(0, false, RCLASS_HAS_INLINE_FIELD(from));
+    class_copy_inline_field(klass, from);
+    return klass;
 }
 
 static void
@@ -1085,6 +1122,11 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     }
     if (BUILTIN_TYPE(clone) == T_CLASS) {
         RCLASS_SET_ALLOCATOR(clone, RCLASS_ALLOCATOR(orig));
+        if (RCLASS_HAS_INLINE_FIELD(orig) && !RCLASS_HAS_INLINE_FIELD(clone)) {
+            // Not allocated by Class#dup or Class#clone, and it cannot be grown now.
+            rb_raise(rb_eTypeError, "can't copy %"PRIsVALUE" into an allocated class", orig);
+        }
+        class_copy_inline_field(clone, orig);
     }
     copy_tables(clone, orig);
     if (RCLASS_M_TBL(orig)) {
@@ -1301,7 +1343,7 @@ static inline VALUE
 make_metaclass(VALUE klass)
 {
     VALUE super;
-    VALUE metaclass = class_boot_boxable(Qundef, FL_TEST_RAW(klass, RCLASS_BOXABLE));
+    VALUE metaclass = class_boot_boxable(Qundef, FL_TEST_RAW(klass, RCLASS_BOXABLE), false);
 
     FL_SET(metaclass, FL_SINGLETON);
     // owned by the attached class's owner, not by whoever triggered the lazy creation
@@ -1339,7 +1381,7 @@ static inline VALUE
 make_singleton_class(VALUE obj)
 {
     VALUE orig_class = METACLASS_OF(obj);
-    VALUE klass = class_alloc0(T_CLASS, rb_cClass, FL_TEST_RAW(orig_class, RCLASS_BOXABLE));
+    VALUE klass = class_alloc0(T_CLASS, rb_cClass, FL_TEST_RAW(orig_class, RCLASS_BOXABLE), false);
     FL_SET(klass, FL_SINGLETON);
     if (RB_TYPE_P(obj, T_MODULE)) {
         // as in make_metaclass: the module's owner, not the lazy creator
