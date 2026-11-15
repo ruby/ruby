@@ -8865,7 +8865,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_dont_specialize_proc_call_kwarg() {
+    fn test_specialize_proc_call_kwarg() {
         eval("
             p = proc { |a:| a }
             def test(p)
@@ -8888,10 +8888,50 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v15:Fixnum[1] = Const Value(1)
-          v17:BasicObject = Send v10, :call, v15 # SendFallbackReason: Complex argument passing
+          PatchPoint NoSingletonClass(Proc@0x1008)
+          PatchPoint MethodRedefined(Proc@0x1008, call@0x1010, cme:0x1018)
+          v27:ObjectSubclass[class_exact:Proc] = GuardType v10, ObjectSubclass[class_exact:Proc] recompile
+          v28:StaticSymbol[:a] = Const Value(VALUE(0x1040))
+          v29:HashExact = NewHash v28: v15
+          v30:BasicObject = InvokeProc v27, v29, kw_splat
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v17
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_specialize_proc_call_kw_splat() {
+        eval("
+            p = proc { |a:| a }
+            def test(p, h)
+              p.call(**h)
+            end
+            test(p, { a: 1 })
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :p@0x1000
+          v4:BasicObject = LoadField v2, :h@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :p@1
+          v9:BasicObject = LoadArg :h@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(Proc@0x1008)
+          PatchPoint MethodRedefined(Proc@0x1008, call@0x1010, cme:0x1018)
+          v29:ObjectSubclass[class_exact:Proc] = GuardType v12, ObjectSubclass[class_exact:Proc] recompile
+          v30:BasicObject = InvokeProc v29, v13, kw_splat
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v30
         ");
     }
 

@@ -5350,7 +5350,7 @@ impl Function {
                             let opt_type: OptimizedMethodType = unsafe { get_cme_def_body_optimized_type(cme) }.into();
                             match (opt_type, args.as_slice()) {
                                 (OptimizedMethodType::Call, _) => {
-                                    if flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG) != 0 {
+                                    if flags & VM_CALL_ARGS_SPLAT != 0 {
                                         self.count_complex_call_features(block, insn_id, flags, state);
                                         self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                                         self.push_insn_id(block, insn_id); continue;
@@ -5364,8 +5364,21 @@ impl Function {
                                     if let Some(profiled_type) = profiled_type {
                                         recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                     }
-                                    let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
-                                    let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args: args.clone(), state, kw_splat });
+                                    if flags & VM_CALL_KWARG != 0 {
+                                        let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
+                                        let caller_kw_count = unsafe { get_cikw_keyword_len(kwarg) } as usize;
+                                        let kw_args_start = args.len() - caller_kw_count;
+                                        let mut elements = Vec::with_capacity(caller_kw_count * 2);
+                                        for (i, value) in args.drain(kw_args_start..).enumerate() {
+                                            let key = unsafe { get_cikw_keywords_idx(kwarg, i as i32) };
+                                            elements.push(self.push_insn(block, Insn::Const { val: Const::Value(key) }));
+                                            elements.push(value);
+                                        }
+                                        // TODO: Avoid packing explicit keywords into a Hash when possible.
+                                        args.push(self.push_insn(block, Insn::NewHash { elements, state }));
+                                    }
+                                    let kw_splat = flags & (VM_CALL_KWARG | VM_CALL_KW_SPLAT) != 0;
+                                    let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args, state, kw_splat });
                                     self.make_equal_to(insn_id, invoke_proc);
                                 }
                                 (OptimizedMethodType::StructAref, &[]) | (OptimizedMethodType::StructAset, &[_]) => {

@@ -1767,14 +1767,14 @@ fn test_optimized_method_call_proc_call_splat() {
 
 #[test]
 fn test_optimized_method_call_proc_call_kwarg() {
-    assert_snapshot!(inspect("
-        p = proc { |a:| a }
+    assert_snapshot!(assert_compiles("
+        p = proc { |pos, a:, b:| [pos, a, b] }
         def test(p)
-          p.call(a: 1)
+          p.call({ a: 0 }, b: 2, a: 1)
         end
         test(p)
         test(p)
-    "), @"1");
+    "), @"[{a: 0}, 1, 2]");
 }
 
 #[test]
