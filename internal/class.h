@@ -82,6 +82,7 @@ struct rb_classext_struct {
     bool iclass_origin_shared_mtbl : 1;
     bool superclasses_with_self : 1;
     bool expect_no_ivar : 1;
+    bool has_inline_field : 1; // See RCLASS_INLINE_FIELD(). Prime classext only.
 };
 typedef struct rb_classext_struct rb_classext_t;
 
@@ -294,6 +295,36 @@ RCLASS_SET_CLASSEXT_TBL(VALUE klass, st_table *tbl)
     box_klass->box_classext_tbl = tbl;
 }
 
+/* A class can be allocated with one VALUE right after it, for what is read too
+ * often to be kept in an ivar of the class. It starts as nil and belongs to the
+ * class, not to a box. A subclass and a copy of the class have one too, holding
+ * the value it had at that time. */
+static inline bool
+RCLASS_HAS_INLINE_FIELD(VALUE klass)
+{
+    return RCLASS_EXT_PRIME(klass)->has_inline_field;
+}
+
+static inline VALUE *
+RCLASS_INLINE_FIELD_PTR(VALUE klass)
+{
+    RUBY_ASSERT(RCLASS_HAS_INLINE_FIELD(klass));
+    size_t offset = FL_TEST_RAW(klass, RCLASS_BOXABLE) ? sizeof(struct RClass_boxable) : sizeof(struct RClass_and_rb_classext_t);
+    return (VALUE *)((char *)klass + offset);
+}
+
+static inline VALUE
+RCLASS_INLINE_FIELD(VALUE klass)
+{
+    return *RCLASS_INLINE_FIELD_PTR(klass);
+}
+
+static inline void
+RCLASS_SET_INLINE_FIELD(VALUE klass, VALUE value)
+{
+    RB_OBJ_WRITE(klass, RCLASS_INLINE_FIELD_PTR(klass), value);
+}
+
 /* class.c */
 rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_box_t *box, int *first_set);
 void rb_class_ensure_writable(VALUE obj);
@@ -474,6 +505,8 @@ void rb_class_update_superclasses(VALUE);
 int rb_singleton_class_internal_p(VALUE sklass);
 VALUE rb_class_set_super(VALUE klass, VALUE super);
 VALUE rb_class_boot(VALUE);
+VALUE rb_class_new_with_inline_field(VALUE super);
+VALUE rb_class_alloc_with_inline_field_of(VALUE from);
 VALUE rb_class_s_alloc(VALUE klass);
 VALUE rb_module_s_alloc(VALUE klass);
 void rb_class_set_initialized(VALUE klass);
