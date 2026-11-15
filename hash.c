@@ -616,17 +616,17 @@ RHASH_AR_TABLE_CLEAR(VALUE h)
     memset(RHASH_AR_TABLE(h), 0, rb_obj_shape_slot_size(h) - sizeof(struct RHash));
 }
 
-NOINLINE(static int ar_equal(VALUE hash, VALUE x, VALUE y));
-
-static int
+static inline bool
 ar_equal(VALUE hash, VALUE x, VALUE y)
 {
-    if (RHASH_IDENTHASH_P(hash)) {
-        return x == y;
+    if (x == y) {
+        return true;
+    }
+    else if (UNLIKELY(RHASH_IDENTHASH_P(hash))) {
+        return false;
     }
     return rb_any_cmp(x, y) == 0;
 }
-
 
 #if SIZEOF_VALUE == 8
 #define AR_HINT_BASE_MASK 0x101010101010101
@@ -661,9 +661,47 @@ ar_hint_first_match(ar_hint_t needle, VALUE haystack)
     return index;
 }
 
+NOINLINE(static unsigned ar_find_entry_hint_slowpath(VALUE hash, ar_hint_t hint, st_data_t key, unsigned first_match));
+static unsigned
+ar_find_entry_hint_slowpath(VALUE hash, ar_hint_t hint, st_data_t key, unsigned first_match)
+{
+    RUBY_ASSERT(key != RHASH_AR_TABLE_REF(hash, first_match)->key);
+    bool eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, first_match)->key);
+    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+        return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
+    }
+
+    if (eq) {
+        return first_match;
+    }
+
+    // In theory we could extract all the matching indexes in `ar_hint_first_match`,
+    // and avoid this loop, but sine `ar_equal` may call back into arbitrary code,
+    // the `ar_hint` may have changed.
+    for (unsigned i = first_match + 1; i < RHASH_AR_TABLE_BOUND(hash); i++) {
+        const ar_hint_t *hints = RHASH_AR_TABLE(hash)->ar_hint.ary;
+        if (UNLIKELY(hints[i] == hint)) {
+            eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, i)->key);
+            if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+                return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
+            }
+            if (eq) {
+                RB_DEBUG_COUNTER_INC(artable_hint_hit);
+                return i;
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(artable_hint_miss);
+            }
+        }
+    }
+
+    RB_DEBUG_COUNTER_INC(artable_hint_notfound);
+    return RHASH_AR_TABLE_MISS;
+}
+
 // Returns the bin index if found, RHASH_AR_TABLE_MISS if not found,
 // or RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE if #eql? or a Thread converted the hash to st_table.
-static unsigned
+static inline unsigned
 ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
 {
     unsigned first_match = ar_hint_first_match(hint, RHASH_AR_TABLE(hash)->ar_hint.word);
@@ -674,38 +712,12 @@ ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
     }
 
     RUBY_ASSERT(RHASH_AR_TABLE(hash)->ar_hint.ary[first_match] == hint);
-    int eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, first_match)->key);
-    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
-        return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
-    }
-    if (LIKELY(eq)) {
+    if (LIKELY(key == RHASH_AR_TABLE_REF(hash, first_match)->key)) {
         RB_DEBUG_COUNTER_INC(artable_hint_hit);
         return first_match;
     }
-    else {
-        // In theory we could extract all the matching indexes in `ar_hint_first_match`,
-        // and avoid this loop, but sine `ar_equal` may call back into arbitrary code,
-        // the `ar_hint` may have changed.
-        for (unsigned i = first_match + 1; i < RHASH_AR_TABLE_BOUND(hash); i++) {
-            const ar_hint_t *hints = RHASH_AR_TABLE(hash)->ar_hint.ary;
-            if (UNLIKELY(hints[i] == hint)) {
-                eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, i)->key);
-                if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
-                    return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
-                }
-                if (eq) {
-                    RB_DEBUG_COUNTER_INC(artable_hint_hit);
-                    return i;
-                }
-                else {
-                    RB_DEBUG_COUNTER_INC(artable_hint_miss);
-                }
-            }
-        }
-    }
 
-    RB_DEBUG_COUNTER_INC(artable_hint_notfound);
-    return RHASH_AR_TABLE_MISS;
+    return ar_find_entry_hint_slowpath(hash, hint, key, first_match);
 }
 
 static unsigned
