@@ -6197,12 +6197,13 @@ rb_str_aref_m(int argc, VALUE *argv, VALUE str)
 VALUE
 rb_str_drop_bytes(VALUE str, rb_len_t len)
 {
-    char *ptr = RSTRING_PTR(str);
-    rb_len_t olen = RSTRING_LEN(str), nlen;
-
     str_modifiable(str);
+
+    char *ptr;
+    rb_len_t olen;
+    RSTRING_GETMEM(str, ptr, olen);
     if (len > olen) len = olen;
-    nlen = olen - len;
+    rb_len_t nlen = olen - len;
     if (str_embed_capa(str) >= nlen + TERM_LEN(str)) {
         char *oldptr = ptr;
         size_t old_capa = RSTRING(str)->as.heap.aux.capa + TERM_LEN(str);

@@ -1325,6 +1325,27 @@ class TestString < Test::Unit::TestCase
     };
   end
 
+  def test_modify_chilled_string_in_warning
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"
+    END {
+      $target[0, 2] = ""
+      assert_equal("B" * 998, $target)
+    }
+    {#
+      module ShrinkWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $target.replace("B" * 1_000)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(ShrinkWarning)
+    };
+  end
+
   def test_bit_count
     assert_equal(0, S("").bit_count)
     assert_equal(0, S("\x00").bit_count)
