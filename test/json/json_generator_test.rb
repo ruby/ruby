@@ -801,6 +801,10 @@ class JSONGeneratorTest < Test::Unit::TestCase
     data = "<a href=\"/\">\n</script>"
     json = '"<a href=\\"/\\">\\n\\u003c/script>"'
     assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = ("a" * 100 + "</script>")[100..] # JRuby shared string.
+    json = '"\\u003c/script>"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
   end
 
   def test_backslash
