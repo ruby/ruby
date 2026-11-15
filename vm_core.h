@@ -2120,6 +2120,7 @@ int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID 
 void rb_vm_rewind_cfp(rb_execution_context_t *ec, rb_control_frame_t *cfp);
 void rb_vm_env_write(const VALUE *ep, int index, VALUE v);
 VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler);
+VALUE rb_vm_symbol_block_handler(const rb_control_frame_t *reg_cfp, VALUE block_code);
 
 void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE exception_class, VALUE mesg);
 
