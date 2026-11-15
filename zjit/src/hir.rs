@@ -10432,29 +10432,6 @@ fn add_iseq_to_hir(
                         n -= 1;
                     }
                 }
-                YARVINSN_opt_neq => {
-                    // NB: opt_neq has two cd; get_arg(0) is for eq and get_arg(1) is for neq
-                    let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
-                    let call_info = unsafe { (*cd).ci };
-                    let flags = unsafe { rb_vm_ci_flag(call_info) };
-                    if let Err(call_type) = unhandled_call_type(flags) {
-                        // Can't handle the call type; side-exit into the interpreter
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledCallType(call_type)), recompile: None });
-                        break;  // End the block
-                    }
-                    let argc = crate::profile::num_arguments_on_stack(cd);
-                    assert_eq!(flags & VM_CALL_ARGS_BLOCKARG, 0);
-
-                    // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
-                    if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::SendWhileTracing), recompile: None });
-                        break;
-                    }
-                    let args = state.stack_pop_n(argc)?;
-                    let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args, caller_splat_length: None, state: exit_id, reason: Uncategorized(opcode.into()) });
-                    state.stack_push(send);
-                }
                 YARVINSN_opt_hash_freeze => {
                     let klass = HASH_REDEFINED_OP_FLAG;
                     let bop = BOP_FREEZE;
@@ -10518,6 +10495,7 @@ fn add_iseq_to_hir(
                 YARVINSN_opt_div |
                 YARVINSN_opt_mod |
                 YARVINSN_opt_eq |
+                YARVINSN_opt_neq |
                 YARVINSN_opt_lt |
                 YARVINSN_opt_le |
                 YARVINSN_opt_gt |
@@ -10534,7 +10512,9 @@ fn add_iseq_to_hir(
                 YARVINSN_opt_not |
                 YARVINSN_opt_regexpmatch2 |
                 YARVINSN_opt_send_without_block => {
-                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    // NB: opt_neq has two cd; get_arg(0) is for eq and get_arg(1) is for neq
+                    let cd_idx = if opcode == YARVINSN_opt_neq { 1 } else { 0 };
+                    let cd: *const rb_call_data = get_arg(pc, cd_idx).as_ptr();
                     let call_info = unsafe { (*cd).ci };
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
                     if let Err(call_type) = unhandled_call_type(flags) {

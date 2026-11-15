@@ -20706,7 +20706,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn opt_neq_polymorphic_receiver_falls_back() {
+    fn opt_neq_polymorphic_receiver_inlines_basic_object_neq_per_class() {
         set_call_threshold(4);
         eval(r#"
             def test(a, b) = a != b
@@ -20731,7 +20731,34 @@ mod hir_opt_tests {
           v9:BasicObject = LoadArg :b@2
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :!=, v13 # SendFallbackReason: Send: polymorphic call site
+          CondBranchHasType v12, StringExact, bb6(), bb7()
+        bb6():
+          v23:StringExact = RefineType v12, StringExact
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, !=@0x1010, cme:0x1018)
+          PushInlineFrame :!=, v23 (0x1040), num_args=1
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1060, cme:0x1068)
+          v119:BasicObject = CCallWithFrame v23, :String#==@0x1090, v13
+          v68:BoolExact = BoolNegate v119
+          PatchPoint NoEPEscape(!=)
+          PopInlineFrame
+          Jump bb4(v68)
+        bb7():
+          CondBranchHasType v12, Fixnum, bb8(), bb5()
+        bb8():
+          v28:Fixnum = RefineType v12, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1098, !=@0x1010, cme:0x1018)
+          PushInlineFrame :!=, v28 (0x1040), num_args=1
+          PatchPoint MethodRedefined(Integer@0x1098, ==@0x1060, cme:0x10a0)
+          v123:BasicObject = CCallWithFrame v28, :Integer#==@0x10c8, v13
+          v101:BoolExact = BoolNegate v123
+          PatchPoint NoEPEscape(!=)
+          PopInlineFrame
+          Jump bb4(v101)
+        bb5():
+          v31:BasicObject = Send v12, :!=, v13 # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v31)
+        bb4(v20:BasicObject):
           CheckInterrupts
           Return v20
         ");
@@ -20771,6 +20798,65 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(!=)
           CheckInterrupts
           Return v31
+        ");
+    }
+
+    #[test]
+    fn opt_neq_nil_and_symbol_receiver_inlines_basic_object_neq_per_class() {
+        set_call_threshold(4);
+        eval("
+            def test(type) = type != :aria
+            test(nil)
+            test(:data)
+            test(nil)
+            test(:aria)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :type@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :type@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:aria] = Const Value(VALUE(0x1008))
+          CondBranchHasType v10, NilClass, bb6(), bb7()
+        bb6():
+          v21:NilClass = RefineType v10, NilClass
+          PatchPoint MethodRedefined(NilClass@0x1010, !=@0x1018, cme:0x1020)
+          PushInlineFrame :!=, v21 (0x1048), num_args=1
+          PatchPoint MethodRedefined(NilClass@0x1010, ==@0x1068, cme:0x1070)
+          v115:CBool = IsBitEqual v21, v15
+          v116:BoolExact = BoxBool v115
+          v65:BoolExact = BoolNegate v116
+          PatchPoint NoEPEscape(!=)
+          PopInlineFrame
+          Jump bb4(v65)
+        bb7():
+          CondBranchHasType v10, StaticSymbol, bb8(), bb5()
+        bb8():
+          v26:StaticSymbol = RefineType v10, StaticSymbol
+          PatchPoint MethodRedefined(Symbol@0x1098, !=@0x1018, cme:0x1020)
+          PushInlineFrame :!=, v26 (0x1048), num_args=1
+          PatchPoint MethodRedefined(Symbol@0x1098, ==@0x1068, cme:0x10a0)
+          v120:CBool = IsBitEqual v26, v15
+          v121:BoolExact = BoxBool v120
+          v98:BoolExact = BoolNegate v121
+          PatchPoint NoEPEscape(!=)
+          PopInlineFrame
+          Jump bb4(v98)
+        bb5():
+          v29:BasicObject = Send v10, :!=, v15 # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v29)
+        bb4(v18:BasicObject):
+          CheckInterrupts
+          Return v18
         ");
     }
 

@@ -3926,6 +3926,147 @@ fn test_opt_neq_string_nil() {
 }
 
 #[test]
+fn test_opt_neq_polymorphic() {
+    set_call_threshold(5);
+    eval("
+        class AlwaysEqual
+          def ==(other) = true
+        end
+        def test(type) = type != :aria && type != :class
+        test(nil)
+        test(:data)
+        test(nil)
+        test(:aria)
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_neq);
+    // An unprofiled receiver uses the original Send without leaving compiled code.
+    assert_snapshot!(assert_compiles("[test(nil), test(:data), test(:aria), test(:class), test(AlwaysEqual.new)]"), @"[true, true, false, false, false]");
+}
+
+#[test]
+fn test_opt_neq_polymorphic_redefined_neq() {
+    set_call_threshold(5);
+    eval("
+        class CustomNeq
+          def !=(other) = :custom
+        end
+        def test(a, b) = a != b
+        test(nil, 1)
+        test(CustomNeq.new, 1)
+        test(nil, 1)
+        test(CustomNeq.new, 1)
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("
+        result = [test(nil, 1), test(CustomNeq.new, 1)]
+        class NilClass
+          def !=(other) = :redefined
+        end
+        result << test(nil, 1) << test(CustomNeq.new, 1)
+    "), @"[true, :custom, :redefined, :custom]");
+}
+
+#[test]
+fn test_opt_neq_polymorphic_redefined_eq() {
+    set_call_threshold(5);
+    eval("
+        class IdentityEq; end
+        class CustomEq
+          def ==(other) = other == 1
+        end
+        def test(a, b) = a != b
+        $obj = IdentityEq.new
+        test($obj, 1)
+        test(CustomEq.new, 1)
+        test($obj, 1)
+        test(CustomEq.new, 1)
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("
+        result = [test($obj, $obj), test(CustomEq.new, 1), test(CustomEq.new, 2)]
+        class IdentityEq
+          def ==(other) = false
+        end
+        result << test($obj, $obj)
+    "), @"[false, false, true, true]");
+}
+
+#[test]
+fn test_opt_neq_polymorphic_refined() {
+    set_call_threshold(5);
+    // BasicObject#!= calls #== without the caller's refinements.
+    assert_snapshot!(inspect("
+        module NeqRefine
+          refine(NilClass) { def !=(other) = :refined }
+          refine(Symbol) { def ==(other) = true }
+        end
+        def plain(a, b) = a != b
+        using NeqRefine
+        def refined(a, b) = a != b
+        calls = -> { [refined(nil, 1), refined(:a, 1), plain(nil, 1), plain(:a, 1)] }
+        4.times { calls.() }
+        calls.()
+    "), @"[:refined, true, true, true]");
+}
+
+#[test]
+fn test_opt_neq_polymorphic_method_missing() {
+    set_call_threshold(5);
+    eval("
+        class MissingNeq
+          undef_method :!=
+          def method_missing(name, *args) = [name, args]
+        end
+        class MissingEq
+          undef_method :==
+          def method_missing(name, *args) = [name, args]
+        end
+        def test(a, b) = a != b
+        test(MissingNeq.new, 1)
+        test(MissingEq.new, 1)
+        test(MissingNeq.new, 1)
+        test(MissingEq.new, 1)
+    ");
+    assert_snapshot!(assert_compiles("[test(MissingNeq.new, 1), test(MissingEq.new, 1)]"), @"[[:!=, [1]], false]");
+}
+
+#[test]
+fn test_opt_neq_polymorphic_truthiness() {
+    set_call_threshold(5);
+    eval("
+        class EqResult
+          def initialize(result) = @result = result
+          def ==(other) = @result
+        end
+        class EqOther < EqResult; end
+        def test(a, b) = a != b
+        test(EqResult.new(nil), 1)
+        test(EqOther.new(0), 1)
+        test(EqResult.new(false), 1)
+        test(EqOther.new(true), 1)
+    ");
+    assert_snapshot!(assert_compiles("
+        [nil, false, true, 0, :sym, Object.new].flat_map { [test(EqResult.new(it), 1), test(EqOther.new(it), 1)] }
+    "), @"[true, true, true, true, false, false, false, false, false, false, false, false]");
+}
+
+#[test]
+fn test_opt_neq_polymorphic_basic_object() {
+    set_call_threshold(5);
+    eval("
+        class Bare < BasicObject; end
+        class BareEq < BasicObject
+          def ==(other) = :equal
+        end
+        def test(a, b) = a != b
+        $bare = Bare.new
+        test($bare, 1)
+        test(BareEq.new, 1)
+        test($bare, 1)
+        test(BareEq.new, 1)
+    ");
+    assert_snapshot!(assert_compiles("[test($bare, $bare), test($bare, 1), test(BareEq.new, 1), test(BasicObject.new, 1)]"), @"[false, true, false, true]");
+}
+
+#[test]
 fn test_array_eq_nil_respond_to_missing_defined() {
     eval("
         $calls = 0
