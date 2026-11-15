@@ -32,7 +32,6 @@ enum {
    on the C level, but is unrelated on the Ruby level. */
 VALUE rb_cStruct;
 static VALUE rb_cData;
-static ID id_members, id_back_members, id_keyword_init;
 
 // The classes that Struct.new, Data.define and the C API make have one inline
 // field, holding a hidden Array of what is below. Their subclasses share it.
@@ -44,28 +43,6 @@ enum struct_info_index {
 };
 
 static VALUE struct_alloc(VALUE);
-
-static inline VALUE
-struct_ivar_get(VALUE c, ID id)
-{
-    VALUE orig = c;
-    VALUE ivar = rb_attr_get(c, id);
-
-    if (!NIL_P(ivar))
-        return ivar;
-
-    for (;;) {
-        c = rb_class_superclass(c);
-        if (c == rb_cStruct || c == rb_cData || !RTEST(c))
-            return Qnil;
-        RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
-        ivar = rb_attr_get(c, id);
-        if (!NIL_P(ivar)) {
-            if (!OBJ_FROZEN(orig) && rb_class_owned_p(orig)) rb_ivar_set(orig, id, ivar);
-            return ivar;
-        }
-    }
-}
 
 // The struct_info_index entries of +klass+, or NULL when it is not a
 // Struct / Data class.
@@ -167,9 +144,6 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
         }
         OBJ_FREEZE(back);
     }
-    rb_ivar_set(klass, id_members, members);
-    rb_ivar_set(klass, id_back_members, back);
-
     VALUE info = rb_ary_hidden_new(STRUCT_INFO_SIZE);
     rb_ary_push(info, members);
     rb_ary_push(info, back);
@@ -752,7 +726,6 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE super)
 
     VALUE klass = anonymous_struct(super);
     setup_struct(klass, rest);
-    rb_ivar_set(klass, id_keyword_init, keyword_init);
     rb_ary_store(RCLASS_INLINE_FIELD(klass), STRUCT_INFO_KEYWORD_INIT, keyword_init);
 
     if (!NIL_P(name)) {
@@ -2410,9 +2383,5 @@ InitVM_Struct(void)
 void
 Init_Struct(void)
 {
-    id_members = rb_intern("__members__");
-    id_back_members = rb_intern("__members_back__");
-    id_keyword_init = rb_intern("__keyword_init__");
-
     InitVM(Struct);
 }
