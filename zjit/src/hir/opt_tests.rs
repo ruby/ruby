@@ -13226,7 +13226,7 @@ mod hir_opt_tests {
           StoreField v29, :result@0x1020, v13
           PatchPoint NoSingletonClass(Array@0x1028)
           PatchPoint MethodRedefined(Array@0x1028, zip@0x1030, cme:0x1038)
-          v47:BasicObject = CCallVariadic v19, :Array#zip@0x1060, v25
+          v47:BasicObject = CCallVariadic v19, :Array#zip@0x1060, v25, block=0x1068
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v13
@@ -13647,9 +13647,9 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_send_with_non_nil_block_arg() {
+    fn test_send_with_symbol_block_arg() {
         eval(r#"
-            def foo = 42
+            def foo = yield(42)
 
             def test
               block = :to_s
@@ -13668,12 +13668,52 @@ mod hir_opt_tests {
           v5:BasicObject = LoadArg :self@0
           Jump bb3(v5)
         bb3(v8:BasicObject):
-          v27:NilClass = Const Value(nil)
+          v33:NilClass = Const Value(nil)
           v13:StaticSymbol[:to_s] = Const Value(VALUE(0x1000))
-          v19:BasicObject = Send v8, &block, :foo, v13 # SendFallbackReason: Send: block argument is not nil
+          PatchPoint RootBoxOnly
+          PatchPoint MethodRedefined(Symbol@0x1008, to_proc@0x1010, cme:0x1018)
+          PatchPoint MethodRedefined(Object@0x1040, foo@0x1048, cme:0x1050)
+          v31:ObjectSubclass[class_exact*:Object@VALUE(0x1040)] = GuardType v8, ObjectSubclass[class_exact*:Object@VALUE(0x1040)] recompile
+          v32:BasicObject = SendDirect v31, &v13, :foo (0x1078)
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v19
+          Return v32
+        ");
+    }
+
+    #[test]
+    fn test_send_with_arbitrary_block_arg_falls_back() {
+        eval(r#"
+            class BlockargToProc
+              def to_proc = proc { |value| value }
+            end
+
+            def foo = yield(42)
+
+            def test(block)
+              foo(&block)
+            end
+            block = BlockargToProc.new
+            test(block); test(block)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:BasicObject = Send v9, &block, :foo, v10 # SendFallbackReason: Send: block argument is not nil
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v16
         ");
     }
 
@@ -19894,7 +19934,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_no_inline_send_with_symbol_block() {
+    fn test_send_with_unused_symbol_block_falls_back() {
         eval(r#"
             def callee = 123
             public def the_block = 456
@@ -19915,7 +19955,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v11:StaticSymbol[:the_block] = Const Value(VALUE(0x1000))
-          v13:BasicObject = Send v6, &block, :callee, v11 # SendFallbackReason: Send: block argument is not nil
+          v13:BasicObject = Send v6, &block, :callee, v11 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v13
         ");

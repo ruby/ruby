@@ -713,14 +713,19 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Send { cd, block: None, state, reason, .. } => gen_send_without_block(jit, asm, function, cd, &function.frame_state(state), reason),
         &Insn::Send { cd, block: Some(BlockHandler::BlockIseq(blockiseq)), state, reason, .. } => gen_send(jit, asm, function, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::Send { cd, block: Some(BlockHandler::BlockArg), state, reason, .. } => gen_send(jit, asm, function, cd, std::ptr::null(), &function.frame_state(state), reason),
-        &Insn::Send { block: Some(BlockHandler::BlockArgProc(_)), .. } => unreachable!("BlockArgProc only appears in SendDirect"),
+        &Insn::Send { block: Some(BlockHandler::BlockArgProc(_) | BlockHandler::BlockArgSymbol(_)), .. } => unreachable!("a guarded block arg only appears in direct calls"),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, function, cd, blockiseq, &function.frame_state(state), reason),
         Insn::SendDirect(insn) => {
             let SendDirectData { cd, cme, iseq, recv, args, kw_bits, jit_entry_idx, block, state, exit_state, .. } = &**insn;
+            let exit_state = function.frame_state(*exit_state);
+            let block = match *block {
+                Some(BlockHandler::BlockArgSymbol(symbol)) => Some(lir::BlockHandler::Value(gen_symbol_block_handler(jit, asm, function, symbol, &exit_state))),
+                block => block.map(|bh| lower_block_handler(jit, bh)),
+            };
             gen_send_iseq_direct(
                 cb, jit, asm,
                 function, *cd, *cme, *iseq, opnd!(recv), opnds!(args),
-                *kw_bits, *jit_entry_idx, &function.frame_state(*state), &function.frame_state(*exit_state), block.map(|bh| lower_block_handler(jit, bh)),
+                *kw_bits, *jit_entry_idx, &function.frame_state(*state), &exit_state, block,
             )
         }
         Insn::PushInlineFrame { cme, iseq, recv, num_args, block, state, exit_state, .. } => {
@@ -798,12 +803,12 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, function, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, owner, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, *owner, opnd!(recv), opnds!(args)),
         Insn::CCallWithFrame(insn) => {
-            let CCallWithFrameData { cfunc, recv, name, args, cme, state, block, .. } = &**insn;
-            gen_ccall_with_frame(jit, asm, function, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *block, &function.frame_state(*state))
+            let CCallWithFrameData { cfunc, recv, name, args, cme, state, exit_state, block, .. } = &**insn;
+            gen_ccall_with_frame(jit, asm, function, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *block, &function.frame_state(*state), &function.frame_state(*exit_state))
         }
         Insn::CCallVariadic(insn) => {
-            let CCallVariadicData { cfunc, recv, name, args, cme, state, block, .. } = &**insn;
-            gen_ccall_variadic(jit, asm, function, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *block, &function.frame_state(*state))
+            let CCallVariadicData { cfunc, recv, name, args, cme, state, exit_state, block, .. } = &**insn;
+            gen_ccall_variadic(jit, asm, function, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *block, &function.frame_state(*state), &function.frame_state(*exit_state))
         }
         Insn::GetIvar { self_val, id, ic, state } => gen_getivar(jit, asm, function, *self_val, opnd!(self_val), *id, *ic, &function.frame_state(*state)),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, function, *id, opnd!(val), &function.frame_state(*state))),
@@ -1111,9 +1116,11 @@ fn gen_ccall_with_frame(
     cme: *const rb_callable_method_entry_t,
     block: Option<BlockHandler>,
     state: &FrameState,
+    exit_state: &FrameState,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::non_variadic_cfunc_optimized_send_count);
-    gen_stack_overflow_check(jit, asm, function, state, state.stack_size());
+    let symbol_block_handler = gen_cfunc_symbol_block_handler(jit, asm, function, block, exit_state);
+    gen_stack_overflow_check(jit, asm, function, exit_state, state.stack_size());
 
     let args_with_recv_len = args.len() + 1;
     let caller_stack_size = state.stack().len() - args_with_recv_len;
@@ -1140,7 +1147,7 @@ fn gen_ccall_with_frame(
         let cfp_self_addr = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
         asm.or(cfp_self_addr, Opnd::Imm(1))
     } else {
-        VM_BLOCK_HANDLER_NONE.into()
+        symbol_block_handler.unwrap_or_else(|| VM_BLOCK_HANDLER_NONE.into())
     };
 
     gen_push_frame(asm, args_with_recv_len, state, ControlFrame {
@@ -1198,18 +1205,37 @@ fn gen_block_handler_specval(asm: &mut Assembler, blockiseq: IseqPtr) -> lir::Op
     asm.or(cfp_self_addr, Opnd::Imm(1))
 }
 
+/// Convert a Symbol block argument into a block handler like vm_caller_setup_arg_block().
+/// It allocates a lambda when refinements are active.
+fn gen_symbol_block_handler(jit: &mut JITState, asm: &mut Assembler, function: &Function, symbol: InsnId, exit_state: &FrameState) -> lir::Opnd {
+    gen_prepare_leaf_call_with_gc(asm, exit_state);
+    let to_proc_cme = unsafe { rb_callable_method_entry(rb_cSymbol, ID!(to_proc)) };
+    let handler = asm_ccall!(asm, rb_zjit_symbol_block_handler, CFP, jit.get_opnd(symbol), Opnd::Value(to_proc_cme.into()));
+    asm.cmp(handler, Qundef.into());
+    asm.je(jit, side_exit(jit, function, exit_state, SideExitReason::UnhandledBlockArg));
+    handler
+}
+
+fn gen_cfunc_symbol_block_handler(jit: &mut JITState, asm: &mut Assembler, function: &Function, block: Option<BlockHandler>, exit_state: &FrameState) -> Option<lir::Opnd> {
+    match block {
+        Some(BlockHandler::BlockArgSymbol(symbol)) => Some(gen_symbol_block_handler(jit, asm, function, symbol, exit_state)),
+        _ => None,
+    }
+}
+
 fn lower_block_handler(jit: &JITState, bh: BlockHandler) -> lir::BlockHandler {
     match bh {
         BlockHandler::BlockIseq(blockiseq) => lir::BlockHandler::Iseq(blockiseq),
-        BlockHandler::BlockArgProc(proc_id) => lir::BlockHandler::Proc(jit.get_opnd(proc_id)),
+        BlockHandler::BlockArgProc(proc_id) => lir::BlockHandler::Value(jit.get_opnd(proc_id)),
         BlockHandler::BlockArg => unreachable!("BlockArg in a direct iseq call"),
+        BlockHandler::BlockArgSymbol(_) => unreachable!("BlockArgSymbol is converted before the call"),
     }
 }
 
 fn gen_block_handler_opnd(asm: &mut Assembler, bh: lir::BlockHandler) -> Opnd {
     match bh {
         lir::BlockHandler::Iseq(blockiseq) => gen_block_handler_specval(asm, blockiseq),
-        lir::BlockHandler::Proc(proc) => proc,
+        lir::BlockHandler::Value(handler) => handler,
     }
 }
 
@@ -1226,9 +1252,11 @@ fn gen_ccall_variadic(
     cme: *const rb_callable_method_entry_t,
     block: Option<BlockHandler>,
     state: &FrameState,
+    exit_state: &FrameState,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::variadic_cfunc_optimized_send_count);
-    gen_stack_overflow_check(jit, asm, function, state, state.stack_size());
+    let symbol_block_handler = gen_cfunc_symbol_block_handler(jit, asm, function, block, exit_state);
+    gen_stack_overflow_check(jit, asm, function, exit_state, state.stack_size());
 
     let args_with_recv_len = args.len() + 1;
 
@@ -1254,7 +1282,7 @@ fn gen_ccall_variadic(
     let block_handler_specval = if let Some(BlockHandler::BlockIseq(blockiseq)) = block {
         gen_block_handler_specval(asm, blockiseq)
     } else {
-        VM_BLOCK_HANDLER_NONE.into()
+        symbol_block_handler.unwrap_or_else(|| VM_BLOCK_HANDLER_NONE.into())
     };
 
     gen_push_frame(asm, args_with_recv_len, state, ControlFrame {
