@@ -2,6 +2,7 @@ prelude: |
   # frozen_string_literal: true
 
   require 'cgi/escape'
+  require 'erb/util'
 
   STR = ((("a" * 31) + "<") * 1000).freeze
 
@@ -18,6 +19,15 @@ benchmark:
   tr_escape: |
     STR.tr(ESCAPED_CHARS)
   gsub_escape: |
+    # gsub is how these transformations would previously
+    # be done, so this is the baseline we compare after.
     STR.gsub(ESCAPE_PATTERN, ESCAPED_CHARS)
   cgi_escape: |
+    # CGI has a dedicated C scalar implementation, so it's
+    # an interesting comparison point.
     CGI.escape_html(STR)
+  erb_escape: |
+    # ERB has a dedicated SIMD fastpath, so it's
+    # likely the performance ceiling
+    ERB::Util.html_escape(STR)
+
