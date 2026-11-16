@@ -3162,7 +3162,13 @@ static VALUE
 vm_call_single_noarg_leaf_builtin(rb_execution_context_t *ec, rb_control_frame_t *cfp,
                                     struct rb_calling_info *calling)
 {
-    const struct rb_builtin_function *bf = calling->cc->aux_.bf;
+    const struct rb_callcache *cc = calling->cc;
+    // Pairs with the release store in vm_callee_setup_arg so aux_.bf is visible.
+    vm_call_handler call = (vm_call_handler)(uintptr_t)rbimpl_atomic_ptr_load((void **)&cc->call_, RBIMPL_ATOMIC_ACQUIRE);
+    if (UNLIKELY(call != vm_call_single_noarg_leaf_builtin)) {
+        return call(ec, cfp, calling);
+    }
+    const struct rb_builtin_function *bf = cc->aux_.bf;
     cfp->sp -= (calling->argc + 1);
     rb_insn_func_t func_ptr = (rb_insn_func_t)(uintptr_t)bf->func_ptr;
     return builtin_invoker0(ec, calling->recv, NULL, func_ptr);
@@ -3261,7 +3267,9 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                 if ((ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) && ruby_vm_c_events_enabled == 0) {
                     VM_ASSERT(ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_LEAF);
                     vm_cc_bf_set(cc, (void *)ISEQ_BODY(iseq)->iseq_encoded[1]);
-                    CC_SET_FASTPATH(cc, vm_call_single_noarg_leaf_builtin, true);
+                    rbimpl_atomic_ptr_store((volatile void **)&cc->call_,
+                                            (void *)(uintptr_t)vm_call_single_noarg_leaf_builtin,
+                                            RBIMPL_ATOMIC_RELEASE);
                 }
                 else {
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(ci, param_size, local_size), true);

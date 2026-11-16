@@ -2454,17 +2454,26 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
         rb_vm_check_redefinition_opt_method(me, klass, NULL);
 
         if (klass == defined_class || origin_class == defined_class) {
-            if (me->def->type == VM_METHOD_TYPE_REFINED) {
-                // Refinement method entries should always be public because the refinement
-                // search is always performed.
-                if (me->def->body.refined.orig_me) {
-                    METHOD_ENTRY_VISI_SET((rb_method_entry_t *)me->def->body.refined.orig_me, visi);
+            // On a private/protected miss, vm_call_method stores the
+            // method_missing_reason into cc->aux_, a union that also holds the
+            // bf read by vm_call_single_noarg_leaf_builtin. If a Ractor saw the
+            // new visibility through a cc still dispatching to that handler,
+            // it would clobber bf under a concurrent caller. Flipping and
+            // invalidating under one barrier keeps each cc to one visibility.
+            RB_VM_LOCKING() {
+                rb_vm_barrier();
+                if (me->def->type == VM_METHOD_TYPE_REFINED) {
+                    // Refinement method entries should always be public because the refinement
+                    // search is always performed.
+                    if (me->def->body.refined.orig_me) {
+                        METHOD_ENTRY_VISI_SET((rb_method_entry_t *)me->def->body.refined.orig_me, visi);
+                    }
                 }
+                else {
+                    METHOD_ENTRY_VISI_SET(me, visi);
+                }
+                rb_clear_method_cache(klass, name);
             }
-            else {
-                METHOD_ENTRY_VISI_SET(me, visi);
-            }
-            rb_clear_method_cache(klass, name);
         }
         else {
             rb_add_method(klass, name, VM_METHOD_TYPE_ZSUPER, 0, visi);
