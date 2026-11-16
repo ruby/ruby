@@ -507,7 +507,6 @@ VALUE rb_class_set_super(VALUE klass, VALUE super);
 VALUE rb_class_boot(VALUE);
 VALUE rb_class_new_with_inline_field(VALUE super);
 VALUE rb_class_alloc_with_inline_field_of(VALUE from);
-VALUE rb_class_s_alloc(VALUE klass);
 VALUE rb_module_s_alloc(VALUE klass);
 void rb_class_set_initialized(VALUE klass);
 void rb_module_check_initializable(VALUE module);
