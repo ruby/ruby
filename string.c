@@ -4035,6 +4035,9 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
 {
     rb_len_t needed_capacity = 0;
     volatile VALUE t0;
+
+    str_modify_keep_cr(str);
+
     enum ruby_value_type *types = ALLOCV_N(enum ruby_value_type, t0, argc);
 
     for (int index = 0; index < argc; index++) {

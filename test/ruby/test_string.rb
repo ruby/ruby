@@ -1303,6 +1303,31 @@ class TestString < Test::Unit::TestCase
     assert_bit_op_chilled_string_warning(:setbyte, -7000, 0)
   end
 
+  def test_append_as_bytes_chilled_string_warning
+    return unless @cls == String
+    # The argument grows inside the chilled string warning: the capacity
+    # reserved for the append must match what is actually copied.
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"      # chilled string
+    $value = "x" * 200
+    END {
+      $target.append_as_bytes($value, 0x41, $value)
+      assert_equal("abcdefghij" + "w" * 100_000 + "A" + "w" * 100_000, $target)
+    }
+    {#
+      module GrowArgumentWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $value.replace("w" * 100_000)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(GrowArgumentWarning)
+    };
+  end
+
   def assert_bit_op_chilled_string_warning(op, *args)
     assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
     $target = <<~STR            # chilled string
