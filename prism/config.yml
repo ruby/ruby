@@ -339,6 +339,8 @@ tokens:
     comment: ","
   - name: EMBEXPR_END
     comment: "}"
+  - name: HEREDOC_END
+    comment: "the end of a heredoc"
   - name: KEYWORD_DO
     comment: "do"
   - name: KEYWORD_ELSE
@@ -464,8 +466,6 @@ tokens:
     comment: ">>"
   - name: GREATER_GREATER_EQUAL
     comment: ">>="
-  - name: HEREDOC_END
-    comment: "the end of a heredoc"
   - name: HEREDOC_START
     comment: "the start of a heredoc"
   - name: IDENTIFIER

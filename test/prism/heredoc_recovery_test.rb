@@ -41,6 +41,25 @@ module Ruby::Prism
       end
     end
 
+    def test_heredoc_end_unwinds_unclosed_interpolation
+      ["<<0\n\#{f{", "<<0\n\#{{{{s[f{"].each do |source|
+        assert_bounded_locations(source)
+      end
+    end
+
+    def test_documentation_at_eof_inside_interpolation
+      ["", "a", "if", "foo"].each do |tail|
+        source = "if A\n<<0\n\#{\n=begin\n#{tail}"
+        result = assert_bounded_locations(source)
+        assert_equal "=begin\n#{tail}", result.comments.first.location.slice
+        assert_equal source.bytesize, result.comments.first.location.end_offset
+      end
+
+      source = "if A\n<<0\n\#{\n__END__\ndata\n"
+      result = assert_bounded_locations(source)
+      assert_equal "__END__\ndata\n", result.data_loc.slice
+    end
+
     private
 
     def assert_bounded_locations(source)

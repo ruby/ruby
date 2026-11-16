@@ -7853,7 +7853,7 @@ static const uint32_t context_terminators[] = {
     [PM_CONTEXT_DEFAULT_PARAMS] = (1U << PM_TOKEN_COMMA) | (1U << PM_TOKEN_PARENTHESIS_RIGHT),
     [PM_CONTEXT_ELSE] = (1U << PM_TOKEN_KEYWORD_END),
     [PM_CONTEXT_ELSIF] = (1U << PM_TOKEN_KEYWORD_ELSE) | (1U << PM_TOKEN_KEYWORD_ELSIF) | (1U << PM_TOKEN_KEYWORD_END),
-    [PM_CONTEXT_EMBEXPR] = (1U << PM_TOKEN_EMBEXPR_END),
+    [PM_CONTEXT_EMBEXPR] = (1U << PM_TOKEN_EMBEXPR_END) | (1U << PM_TOKEN_HEREDOC_END),
     [PM_CONTEXT_FOR] = (1U << PM_TOKEN_KEYWORD_END),
     [PM_CONTEXT_FOR_INDEX] = (1U << PM_TOKEN_KEYWORD_IN),
     [PM_CONTEXT_IF] = (1U << PM_TOKEN_KEYWORD_ELSE) | (1U << PM_TOKEN_KEYWORD_ELSIF) | (1U << PM_TOKEN_KEYWORD_END),
@@ -9745,12 +9745,13 @@ lex_embdoc(pm_parser_t *parser) {
 
     // Now, loop until we find the end of the embedded documentation or the end
     // of the file.
-    while (parser->current.end + 4 <= parser->end) {
+    while (parser->current.end < parser->end) {
         parser->current.start = parser->current.end;
 
         // If we've hit the end of the embedded documentation then we'll return
         // that token here.
         if (
+            (parser->end - parser->current.end >= 4) &&
             (memcmp(parser->current.end, "=end", 4) == 0) &&
             (
                 (parser->current.end + 4 == parser->end) || // end of file
@@ -10146,6 +10147,7 @@ parser_lex(pm_parser_t *parser) {
             // We'll check if we're at the end of the file. If we are, then we
             // need to return the EOF token.
             if (parser->current.end >= parser->end) {
+                lex_eof:
                 // We may be missing closing tokens. We should pop modes one by one
                 // to do the appropriate cleanup like moving next_start for heredocs.
                 // Only when no mode is remaining will we actually emit the EOF token.
@@ -10661,7 +10663,8 @@ parser_lex(pm_parser_t *parser) {
                     ) {
                         pm_token_type_t type = lex_embdoc(parser);
                         if (type == PM_TOKEN_EOF) {
-                            LEX(type);
+                            parser->current.start = parser->current.end;
+                            goto lex_eof;
                         }
 
                         goto lex_next_token;
@@ -11439,7 +11442,8 @@ parser_lex(pm_parser_t *parser) {
                         parser->data_loc.start = PM_TOKEN_START(parser, &parser->current);
                         parser->data_loc.length = PM_TOKEN_LENGTH(&parser->current);
 
-                        LEX(PM_TOKEN_EOF);
+                        parser->current.start = parser->current.end;
+                        goto lex_eof;
                     }
 
                     pm_lex_state_t last_state = parser->lex_state;
@@ -12935,6 +12939,7 @@ expect2(pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, pm_di
 static void
 expect1_heredoc_term(pm_parser_t *parser, const uint8_t *ident_start, size_t ident_length) {
     if (match1(parser, PM_TOKEN_HEREDOC_END)) {
+        lex_state_set(parser, PM_LEX_STATE_END);
         parser_lex(parser);
     } else {
         pm_parser_err_heredoc_term(parser, ident_start, ident_length);
@@ -12996,6 +13001,44 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
 static pm_node_t *
 parse_heredoc(pm_parser_t *parser, uint16_t depth);
 
+/* Resource failure must preserve the same token/context ownership as ordinary
+ * syntax recovery. In particular, do not consume an enclosing terminator or
+ * leave an unparsed heredoc's lexer mode pending. */
+static pm_node_t *
+parse_resource_recovery(pm_parser_t *parser, uint16_t depth) {
+    if (depth >= PRISM_DEPTH_MAXIMUM) {
+        pm_parser_err_current(parser, PM_ERR_NESTING_TOO_DEEP);
+    } else {
+        pm_parser_err_stack_exhausted(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current));
+    }
+
+    if (context_recoverable(parser, &parser->current)) {
+        parser->recovering = true;
+    }
+
+    if (match1(parser, PM_TOKEN_HEREDOC_START)) {
+        pm_token_t opening = parser->current;
+        PRISM_ASSERT(parser->lex_modes.current->mode == PM_LEX_HEREDOC);
+
+        /* Discard the heredoc without recursing. */
+        parser->lex_modes.current->as.heredoc.base.quote = PM_HEREDOC_QUOTE_SINGLE;
+
+        do {
+            parser_lex(parser);
+        } while (!match2(parser, PM_TOKEN_HEREDOC_END, PM_TOKEN_EOF));
+
+        if (match1(parser, PM_TOKEN_HEREDOC_END)) {
+            lex_state_set(parser, PM_LEX_STATE_END);
+            parser_lex(parser);
+        }
+
+        parser->previous = opening;
+        return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &opening), PM_TOKEN_LENGTH(&opening)));
+    }
+
+    return UP(pm_error_recovery_node_create(parser, PM_TOKEN_END(parser, &parser->previous), 0));
+}
+
 /* Discard an unexpected token without abandoning lexer state owned by it.
  * A heredoc opener has already pushed its lex mode and scheduled a source
  * jump, so its body must be consumed before resuming on the declaration line. */
@@ -13051,6 +13094,7 @@ token_begins_expression_p(pm_token_type_t type) {
         case PM_TOKEN_COMMA:
         case PM_TOKEN_EMBEXPR_END:
         case PM_TOKEN_EOF:
+        case PM_TOKEN_HEREDOC_END:
         case PM_TOKEN_LAMBDA_BEGIN:
         case PM_TOKEN_KEYWORD_DO:
         case PM_TOKEN_KEYWORD_DO_BLOCK:
@@ -17932,13 +17976,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_set_t *captures, uint8_t flags
     /* Nested patterns recurse back into parse_pattern without passing through
      * parse_expression, so this cycle needs its own depth check. */
     if (PRISM_UNLIKELY(depth >= PRISM_DEPTH_MAXIMUM || pm_parser_stack_exhausted(parser))) {
-        if (depth >= PRISM_DEPTH_MAXIMUM) {
-            pm_parser_err_current(parser, PM_ERR_NESTING_TOO_DEEP);
-        } else {
-            pm_parser_err_stack_exhausted(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current));
-        }
-
-        return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
+        return parse_resource_recovery(parser, depth);
     }
 
     pm_node_t *node = NULL;
@@ -19495,6 +19533,10 @@ parse_hash(pm_parser_t *parser, uint16_t depth) {
 
 static pm_node_t *
 parse_heredoc(pm_parser_t *parser, uint16_t depth) {
+    if (PRISM_UNLIKELY(depth >= PRISM_DEPTH_MAXIMUM || pm_parser_stack_exhausted(parser))) {
+        return parse_resource_recovery(parser, depth);
+    }
+
     PRISM_ASSERT(parser->lex_modes.current->mode == PM_LEX_HEREDOC);
     pm_heredoc_lex_mode_t lex_mode = parser->lex_modes.current->as.heredoc.base;
 
@@ -22898,13 +22940,7 @@ parse_expression_terminator(pm_parser_t *parser, pm_node_t *node) {
 static pm_node_t *
 parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
     if (PRISM_UNLIKELY(depth >= PRISM_DEPTH_MAXIMUM || pm_parser_stack_exhausted(parser))) {
-        if (depth >= PRISM_DEPTH_MAXIMUM) {
-            pm_parser_err_current(parser, PM_ERR_NESTING_TOO_DEEP);
-        } else {
-            pm_parser_err_stack_exhausted(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current));
-        }
-
-        return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
+        return parse_resource_recovery(parser, depth);
     }
 
     pm_node_t *node = parse_expression_prefix(parser, binding_power, flags, diag_id, depth);
