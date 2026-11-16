@@ -7366,14 +7366,15 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
     VALUE w = rb_int_and(v, INT2FIX(0xff));
     char byte = (char)(NUM2INT(w) & 0xFF);
 
+    if (!str_independent(str))
+        str_make_independent(str);
+
     rb_len_t len = RSTRING_LEN(str);
     if (pos < -len || len <= pos)
         rb_raise(rb_eIndexError, "index %"PRIdLEN" out of string", pos);
     if (pos < 0)
         pos += len;
 
-    if (!str_independent(str))
-        str_make_independent(str);
     enc = STR_ENC_GET(str);
     head = RSTRING_PTR(str);
     ptr = &head[pos];

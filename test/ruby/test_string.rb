@@ -1297,6 +1297,12 @@ class TestString < Test::Unit::TestCase
     assert_bit_op_chilled_string_warning(:bit_flip, (7000 * 8)..(7100 * 8))
   end
 
+  def test_setbyte_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:setbyte, 7000, 0)
+    assert_bit_op_chilled_string_warning(:setbyte, -7000, 0)
+  end
+
   def assert_bit_op_chilled_string_warning(op, *args)
     assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
     $target = <<~STR            # chilled string
