@@ -275,7 +275,7 @@ branch_template(VALUE branches)
         rb_hash_foreach(structure, branch_template_i, (VALUE)&b);
         cache = rb_ary_hidden_new(3);
         rb_ary_push(cache, b.result);
-        rb_ary_push(cache, LONG2FIX(nbases));
+        rb_ary_push(cache, LEN2FIX(nbases));
         rb_ary_push(cache, LEN2NUM(ntargets));
         rb_ary_store(branches, 2, cache);
         return b.result;
@@ -293,7 +293,7 @@ static int
 branch_fill_counter(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
     VALUE counters = (VALUE)argp;
-    *value = (st_data_t)RARRAY_AREF(counters, FIX2LONG((VALUE)*value));
+    *value = (st_data_t)RARRAY_AREF(counters, FIX2LEN((VALUE)*value));
     return ST_CONTINUE;
 }
 
@@ -406,11 +406,11 @@ method_fill_check(st_data_t key, st_data_t value, st_data_t argp, int error)
     return ST_REPLACE;
 }
 
-static long
+static rb_len_t
 method_call_count(VALUE me)
 {
     VALUE c = rb_hash_lookup2(cme2counter, me, Qnil);
-    return FIXNUM_P(c) ? FIX2LONG(c) : 0;
+    return FIXNUM_P(c) ? FIX2LEN(c) : 0;
 }
 
 /* methods: {key => me or [me, ...]} -> {key => count}, where count is the
@@ -420,7 +420,7 @@ static int
 method_fill_count(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
     VALUE mes = (VALUE)*value;
-    long count;
+    rb_len_t count;
     if (RB_TYPE_P(mes, T_ARRAY)) {
         rb_len_t i;
         count = 0;
@@ -432,7 +432,7 @@ method_fill_count(st_data_t *key, st_data_t *value, st_data_t argp, int existing
     else {
         count = method_call_count(mes);
     }
-    *value = (st_data_t)LONG2FIX(count);
+    *value = (st_data_t)LEN2FIX(count);
     return ST_CONTINUE;
 }
 

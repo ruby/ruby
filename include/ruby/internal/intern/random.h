@@ -103,6 +103,20 @@ double rb_random_real(VALUE rnd);
 unsigned long rb_random_ulong_limited(VALUE rnd, unsigned long limit);
 
 /**
+ * Similar to  rb_genrand_ulen_limited(), except it generates  using the passed
+ * RNG.
+ *
+ * @param[in,out]  rnd    An instance of ::rb_cRandom.
+ * @param[in]      limit  Max possible return value.
+ * @return         A random number, distributed in `[0, limit]` interval.
+ * @note           Note it can return `limit`.
+ * @note           Whether  the  return  value  distributes  uniformly  in  the
+ *                 interval or not depends on  how the argument RNG behaves; at
+ *                 least in case of MT19937 it does.
+ */
+rb_ulen_t rb_random_ulen_limited(VALUE rnd, rb_ulen_t limit);
+
+/**
  * Generates a random number whose upper limit is `i`.
  *
  * @param[in]  i  Max possible return value.
@@ -110,6 +124,15 @@ unsigned long rb_random_ulong_limited(VALUE rnd, unsigned long limit);
  * @note       Note it can return `i`.
  */
 unsigned long rb_genrand_ulong_limited(unsigned long i);
+
+/**
+ * Generates a random number whose upper limit is `i`.
+ *
+ * @param[in]  i  Max possible return value.
+ * @return     A random number, uniformly distributed in `[0, limit]` interval.
+ * @note       Note it can return `i`.
+ */
+rb_ulen_t rb_genrand_ulen_limited(rb_ulen_t i);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

@@ -9,7 +9,7 @@ end
 define rp
   ruby_gdb_init
   if (VALUE)($arg0) & RUBY_FIXNUM_FLAG
-    printf "FIXNUM: %ld\n", (long)($arg0) >> 1
+    printf "FIXNUM: %ld\n", (rb_len_t)($arg0) >> 1
   else
   if ((VALUE)($arg0) & ~(~(VALUE)0<<RUBY_SPECIAL_SHIFT)) == RUBY_SYMBOL_FLAG
     set $id = (($arg0) >> RUBY_SPECIAL_SHIFT)

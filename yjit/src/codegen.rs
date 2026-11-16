@@ -4178,7 +4178,7 @@ fn gen_opt_mult(
         let arg1_untag = asm.sub(arg1, Opnd::UImm(1));
         let out_val = asm.mul(arg0_untag, arg1_untag);
         // See guard_fixnum_overflow
-        let jcc = if asm.cmp_fixnum_fits_long(out_val) { JCC_JNE } else { JCC_JO_MUL };
+        let jcc = if asm.cmp_fixnum_fits_len(out_val) { JCC_JNE } else { JCC_JO_MUL };
         jit_chain_guard(jcc, jit, asm, 1, Counter::opt_mult_overflow);
         let out_val = asm.add(out_val, Opnd::UImm(1));
 
@@ -5611,7 +5611,7 @@ fn fixnum_left_shift_body(asm: &mut Assembler, lhs: Opnd, shift_amt: u64) {
 
     // Re-tag the output value
     let out_val = asm.add(out_val, 1.into());
-    asm.guard_fixnum_fits_long(out_val, Counter::lshift_overflow);
+    asm.guard_fixnum_fits_len(out_val, Counter::lshift_overflow);
 
     let ret_opnd = asm.stack_push(Type::Fixnum);
     asm.mov(ret_opnd, out_val);
@@ -5984,7 +5984,7 @@ fn jit_rb_str_bytesize(
     let len = asm.load(str_len_opnd);
     let shifted_val = asm.lshift(len, Opnd::UImm(1));
     let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
-    asm.guard_fixnum_fits_long(out_val, Counter::guard_send_str_bytesize_overflow);
+    asm.guard_fixnum_fits_len(out_val, Counter::guard_send_str_bytesize_overflow);
 
     let out_opnd = asm.stack_push(Type::Fixnum);
 
@@ -6446,7 +6446,7 @@ fn jit_rb_ary_length(
     // Convert the length to a fixnum
     let shifted_val = asm.lshift(len_opnd, Opnd::UImm(1));
     let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
-    asm.guard_fixnum_fits_long(out_val, Counter::guard_send_ary_length_overflow);
+    asm.guard_fixnum_fits_len(out_val, Counter::guard_send_ary_length_overflow);
 
     let out_opnd = asm.stack_push(Type::Fixnum);
     asm.store(out_opnd, out_val);
@@ -7342,31 +7342,29 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
 }
 
 impl Assembler {
-    /// Side-exit when the arithmetic that produced `val` overflowed the Fixnum range. Where long is
-    /// 64-bit, the overflow flag decides. On LLP64 (Windows), Fixnum operands fit in 32 bits, so the
-    /// 64-bit arithmetic never overflows and only the range check in cmp_fixnum_fits_long is needed.
+    /// Side-exit when the arithmetic that produced `val` overflowed the Fixnum range. When
+    /// `rb_len_t` is 64-bit, the overflow flag decides. When it is narrower, the range check in
+    /// cmp_fixnum_fits_len is needed instead.
     fn guard_fixnum_overflow(&mut self, val: Opnd, counter: Counter) {
-        if self.cmp_fixnum_fits_long(val) {
+        if self.cmp_fixnum_fits_len(val) {
             self.jne(Target::side_exit(counter));
         } else {
             self.jo(Target::side_exit(counter));
         }
     }
 
-    /// Side-exit unless a tagged Fixnum result fits in a C long. See cmp_fixnum_fits_long.
-    fn guard_fixnum_fits_long(&mut self, val: Opnd, counter: Counter) {
-        if self.cmp_fixnum_fits_long(val) {
+    /// Side-exit unless a tagged Fixnum result fits in `rb_len_t`. See cmp_fixnum_fits_len.
+    fn guard_fixnum_fits_len(&mut self, val: Opnd, counter: Counter) {
+        if self.cmp_fixnum_fits_len(val) {
             self.jne(Target::side_exit(counter));
         }
     }
 
-    /// Compare a tagged Fixnum result, or the result minus one, with its sign-extended low 32 bits,
-    /// which differ when the result does not fit in a C long. long is 32-bit on LLP64 (Windows),
-    /// where a result that did not overflow 64 bits can still be out of the Fixnum range. Emits
-    /// nothing and returns false otherwise.
-    fn cmp_fixnum_fits_long(&mut self, val: Opnd) -> bool {
-        if std::os::raw::c_long::BITS < 64 {
-            let sext = self.load_sext(val.with_num_bits(32).unwrap());
+    /// Compare a tagged Fixnum result, or the result minus one, with its sign-extended low
+    /// `rb_len_t::BITS` bits. Emits nothing and returns false when `rb_len_t` is 64-bit.
+    fn cmp_fixnum_fits_len(&mut self, val: Opnd) -> bool {
+        if rb_len_t::BITS < 64 {
+            let sext = self.load_sext(val.with_num_bits(rb_len_t::BITS as u8).unwrap());
             self.cmp(sext, val);
             true
         } else {

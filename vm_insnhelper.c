@@ -7143,7 +7143,7 @@ vm_opt_div(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
         OP_UNREDEFINED_P(DIV, INTEGER)) {
-        return (FIX2LONG(obj) == 0) ? Qundef : rb_fix_div_fix(recv, obj);
+        return (FIX2LEN(obj) == 0) ? Qundef : rb_fix_div_fix(recv, obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
              OP_UNREDEFINED_P(DIV, FLOAT)) {
@@ -7167,7 +7167,7 @@ vm_opt_mod(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
         OP_UNREDEFINED_P(MOD, INTEGER)) {
-        return (FIX2LONG(obj) == 0) ? Qundef : rb_fix_mod_fix(recv, obj);
+        return (FIX2LEN(obj) == 0) ? Qundef : rb_fix_mod_fix(recv, obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
              OP_UNREDEFINED_P(MOD, FLOAT)) {
@@ -7364,7 +7364,7 @@ vm_opt_aref(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cArray &&
              OP_UNREDEFINED_P(AREF, ARRAY)) {
         if (FIXNUM_P(obj)) {
-            return rb_ary_entry_internal(recv, FIX2LONG(obj));
+            return rb_ary_entry_internal(recv, FIX2LEN(obj));
         }
         else {
             return rb_ary_aref1(recv, obj);
@@ -7388,7 +7388,7 @@ vm_opt_aset(VALUE recv, VALUE obj, VALUE set)
     else if (RBASIC_CLASS(recv) == rb_cArray &&
              OP_UNREDEFINED_P(ASET, ARRAY) &&
              FIXNUM_P(obj)) {
-        rb_ary_store(recv, FIX2LONG(obj), set);
+        rb_ary_store(recv, FIX2LEN(obj), set);
         return set;
     }
     else if (RBASIC_CLASS(recv) == rb_cHash &&
@@ -7460,16 +7460,14 @@ static VALUE
 fix_succ(VALUE x)
 {
     switch (x) {
-      case ~0UL:
-        /* 0xFFFF_FFFF == INT2FIX(-1)
-         * `-1.succ` is of course 0. */
+      case INT2FIX(-1):
+        /* Fixnum -1.succ is of course 0. */
         return INT2FIX(0);
-      case RSHIFT(~0UL, 1):
-        /* 0x7FFF_FFFF == LONG2FIX(0x3FFF_FFFF)
-         * 0x3FFF_FFFF + 1 == 0x4000_0000, which is a Bignum. */
-        return rb_uint2big(1UL << (SIZEOF_LONG * CHAR_BIT - 2));
+      case INT2FIX(FIXNUM_MAX):
+        /* The largest Fixnum plus 1 is a Bignum. */
+        return rb_uint2big((uintptr_t)FIXNUM_MAX + 1);
       default:
-        /*    LONG2FIX(FIX2LONG(x)+FIX2LONG(y))
+        /*    LEN2FIX(FIX2LEN(x)+FIX2LEN(y))
          * == ((lx*2+1)/2 + (ly*2+1)/2)*2+1
          * == lx*2 + ly*2 + 1
          * == (lx*2+1) + (ly*2+1) - 1

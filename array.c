@@ -5579,7 +5579,7 @@ ary_hash_values(rb_len_t len, const VALUE *elements, const VALUE ary)
     h = rb_hash_uint(h, (st_index_t)rb_ary_hash_values);
     for (i=0; i<len; i++) {
         n = rb_hash(elements[i]);
-        h = rb_hash_uint(h, NUM2LONG(n));
+        h = rb_hash_uint(h, NUM2ST(n));
         if (ary) {
             len = RARRAY_LEN(ary);
             elements = RARRAY_CONST_PTR(ary);
@@ -6108,7 +6108,7 @@ ary_max_opt_fixnum(VALUE ary, rb_len_t i, VALUE vmax)
         v = RARRAY_AREF(ary, i);
 
         if (FIXNUM_P(v)) {
-            if ((long)vmax < (long)v) {
+            if ((SIGNED_VALUE)vmax < (SIGNED_VALUE)v) {
                 vmax = v;
             }
         }
@@ -6285,7 +6285,7 @@ ary_min_opt_fixnum(VALUE ary, rb_len_t i, VALUE vmin)
         a = RARRAY_AREF(ary, i);
 
         if (FIXNUM_P(a)) {
-            if ((long)vmin > (long)a) {
+            if ((SIGNED_VALUE)vmin > (SIGNED_VALUE)a) {
                 vmin = a;
             }
         }
@@ -6947,29 +6947,7 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
-#if SIZEOF_RB_LEN_T > SIZEOF_LONG
-/* rb_random_ulong_limited takes an unsigned long, narrower than an Array length here. */
-static rb_len_t
-rand_upto(VALUE randgen, rb_len_t max)
-{
-    if ((rb_ulen_t)max - 1 <= ULONG_MAX) {
-        return (rb_len_t)rb_random_ulong_limited(randgen, (unsigned long)(max - 1));
-    }
-
-    VALUE lim = LEN2NUM(max);
-    VALUE v = rb_to_int(rb_funcallv_public(randgen, rb_intern("rand"), 1, &lim));
-    if (rb_num_negative_p(v)) {
-        rb_raise(rb_eRangeError, "random number too small %"PRIsVALUE, v);
-    }
-    if (RTEST(rb_int_ge(v, lim))) {
-        rb_raise(rb_eRangeError, "random number too big %"PRIsVALUE, v);
-    }
-    return NUM2LEN(v);
-}
-#define RAND_UPTO(max) rand_upto(randgen, (max))
-#else
-#define RAND_UPTO(max) (rb_len_t)rb_random_ulong_limited((randgen), (max)-1)
-#endif
+#define RAND_UPTO(max) (rb_len_t)rb_random_ulen_limited((randgen), (max)-1)
 
 static VALUE
 rb_ary_shuffle_bang(rb_execution_context_t *ec, VALUE ary, VALUE randgen)
@@ -8317,15 +8295,15 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
 }
 
 static inline VALUE
-finish_exact_sum(long n, VALUE r, VALUE v, int z)
+finish_exact_sum(rb_len_t n, VALUE r, VALUE v, int z)
 {
     if (n != 0)
-        v = rb_fix_plus(LONG2FIX(n), v);
+        v = rb_fix_plus(LEN2FIX(n), v);
     if (!UNDEF_P(r)) {
         v = rb_rational_plus(r, v);
     }
     else if (!n && z) {
-        v = rb_fix_plus(LONG2FIX(0), v);
+        v = rb_fix_plus(LEN2FIX(0), v);
     }
     return v;
 }
@@ -8376,10 +8354,10 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
 {
     VALUE e, v, r;
     rb_len_t i;
-    long n;
+    rb_len_t n;
     int block_given;
 
-    v = (rb_check_arity(argc, 0, 1) ? argv[0] : LONG2FIX(0));
+    v = (rb_check_arity(argc, 0, 1) ? argv[0] : LEN2FIX(0));
 
     block_given = rb_block_given_p();
 
@@ -8391,7 +8369,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
 
     bool init_is_float = RB_FLOAT_TYPE_P(v);
     if (init_is_float) {
-        v = LONG2FIX(0);
+        v = LEN2FIX(0);
     }
     else if (!RB_INTEGER_TYPE_P(v) && !RB_TYPE_P(v, T_RATIONAL)) {
         i = 0;
@@ -8403,9 +8381,9 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
         if (block_given)
             e = rb_yield(e);
         if (FIXNUM_P(e)) {
-            n += FIX2LONG(e); /* should not overflow long type */
+            n += FIX2LEN(e); /* should not overflow rb_len_t type */
             if (!FIXABLE(n)) {
-                v = rb_big_plus(LONG2NUM(n), v);
+                v = rb_big_plus(LEN2NUM(n), v);
                 n = 0;
             }
         }
@@ -8456,7 +8434,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
               has_float_value:
                 x = RFLOAT_VALUE(e);
             else if (FIXNUM_P(e))
-                x = FIX2LONG(e);
+                x = (double)FIX2LEN(e);
             else if (RB_BIGNUM_TYPE_P(e))
                 x = rb_big2dbl(e);
             else if (RB_TYPE_P(e, T_RATIONAL))

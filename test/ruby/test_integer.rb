@@ -2,9 +2,24 @@
 require 'test/unit'
 
 class TestInteger < Test::Unit::TestCase
+  def test_negative_integer_literal_wider_than_long
+    assert_equal(Integer("-2147483649"), -2147483649)
+  end
+
+  def test_succ_at_fixnum_max
+    if FIXNUM_MAX == 4611686018427387903
+      assert_equal(Integer("4611686018427387904"), FIXNUM_MAX.succ)
+    end
+  end
+
   FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
   FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
   LONG_MAX = RbConfig::LIMITS['LONG_MAX']
+
+  def test_range_each_across_fixnum_max
+    expected = [FIXNUM_MAX-2, FIXNUM_MAX-1, FIXNUM_MAX, FIXNUM_MAX+1, FIXNUM_MAX+2]
+    assert_equal(expected, ((FIXNUM_MAX-2)..(FIXNUM_MAX+2)).each.take(6))
+  end
 
   def test_aref
 

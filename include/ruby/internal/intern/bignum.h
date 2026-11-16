@@ -824,7 +824,7 @@ size_t rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret);
  *
  * ```CXX
  *   size_t size;
- *   int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : BIGNUM_NEGATIVE_P(val);
+ *   int neg = FIXNUM_P(val) ? FIX2LEN(val) < 0 : BIGNUM_NEGATIVE_P(val);
  *   size = rb_absint_numwords(val, 1, NULL)
  *   if (size == (size_t)-1) ...overflow...
  *   if (neg && rb_absint_singlebit_p(val))
@@ -836,7 +836,7 @@ size_t rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret);
  *
  * ```CXX
  *   size_t size;
- *   int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : BIGNUM_NEGATIVE_P(val);
+ *   int neg = FIXNUM_P(val) ? FIX2LEN(val) < 0 : BIGNUM_NEGATIVE_P(val);
  *   int nlz_bits;
  *   size = rb_absint_size(val, &nlz_bits);
  *   if (nlz_bits == 0 && !(neg && rb_absint_singlebit_p(val)))

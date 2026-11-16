@@ -891,7 +891,7 @@ static VALUE
 negative_numeric(VALUE val)
 {
     if (FIXNUM_P(val)) {
-        return LONG2FIX(-FIX2LONG(val));
+        return LEN2NUM(-FIX2LEN(val));
     }
     if (SPECIAL_CONST_P(val)) {
 #if USE_FLONUM

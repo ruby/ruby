@@ -75,12 +75,12 @@ integer_to_bnptr(VALUE obj, BIGNUM *orig)
     BIGNUM *bn;
 
     if (FIXNUM_P(obj)) {
-        long i;
-        unsigned char bin[sizeof(long)];
-        long n = FIX2LONG(obj);
-        unsigned long un = labs(n);
+        size_t i;
+        unsigned char bin[sizeof(rb_ulen_t)];
+        rb_len_t n = FIX2LEN(obj);
+        rb_ulen_t un = n < 0 ? 0 - (rb_ulen_t)n : (rb_ulen_t)n;
 
-        for (i = sizeof(long) - 1; 0 <= i; i--) {
+        for (i = sizeof(bin); 0 < i--;) {
             bin[i] = un & 0xff;
             un >>= 8;
         }

@@ -35,20 +35,20 @@
 const char ruby_hexdigits[] = "0123456789abcdef0123456789ABCDEF";
 #define hexdigit ruby_hexdigits
 
-unsigned long
+rb_ulen_t
 ruby_scan_oct(const char *start, size_t len, size_t *retlen)
 {
     int overflow;
-    unsigned long val = ruby_scan_digits(start, (ssize_t)len, 8, retlen, &overflow);
+    rb_ulen_t val = ruby_scan_digits(start, (ssize_t)len, 8, retlen, &overflow);
     (void)overflow;
     return val;
 }
 
-unsigned long
+rb_ulen_t
 ruby_scan_hex(const char *start, size_t len, size_t *retlen)
 {
     int overflow;
-    unsigned long val = ruby_scan_digits(start, (ssize_t)len, 16, retlen, &overflow);
+    rb_ulen_t val = ruby_scan_digits(start, (ssize_t)len, 16, retlen, &overflow);
     (void)overflow;
     return val;
 }
@@ -73,16 +73,16 @@ const signed char ruby_digit36_to_number_table[] = {
     /*f*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 };
 
-NO_SANITIZE("unsigned-integer-overflow", extern unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow));
-unsigned long
+NO_SANITIZE("unsigned-integer-overflow", extern rb_ulen_t ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow));
+rb_ulen_t
 ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow)
 {
     RBIMPL_ASSERT_OR_ASSUME(base >= 2);
     RBIMPL_ASSERT_OR_ASSUME(base <= 36);
 
     const char *start = str;
-    unsigned long ret = 0, x;
-    unsigned long mul_overflow = (~(unsigned long)0) / base;
+    rb_ulen_t ret = 0, x;
+    rb_ulen_t mul_overflow = RB_ULEN_MAX / base;
 
     *overflow = 0;
 
@@ -115,7 +115,7 @@ ruby_strtoul(const char *str, char **endptr, int base)
     int c, b, overflow;
     int sign = 0;
     size_t len;
-    unsigned long ret;
+    rb_ulen_t ret;
     const char *subject_found = str;
 
     if (base < 0) {
@@ -169,17 +169,16 @@ ruby_strtoul(const char *str, char **endptr, int base)
     if (endptr)
         *endptr = (char*)subject_found;
 
-    if (overflow) {
+    if (overflow || ret > ULONG_MAX) {
         errno = ERANGE;
         return ULONG_MAX;
     }
 
     if (sign < 0) {
-        ret = (unsigned long)(-(long)ret);
-        return ret;
+        return 0UL - (unsigned long)ret;
     }
     else {
-        return ret;
+        return (unsigned long)ret;
     }
 }
 

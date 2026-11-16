@@ -171,6 +171,12 @@ typedef struct timespec stat_timestamp;
      (sizeof(x) <= sizeof(unsigned long)) ? \
      ULONG2NUM((unsigned long)(x)) : \
      ULL2NUM((unsigned LONG_LONG)(x)))
+#define IANY2NUM(x) \
+    ((sizeof(x) <= sizeof(int)) ? \
+     INT2NUM((int)(x)) : \
+     (sizeof(x) <= sizeof(long)) ? \
+     LONG2NUM((long)(x)) : \
+     LL2NUM((LONG_LONG)(x)))
 
 VALUE rb_cFile;
 VALUE rb_mFileTest;
@@ -484,7 +490,7 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
 {
     VALUE v;
     const size_t size = sizeof(struct apply_filename);
-    const rb_len_t len = (rb_len_t)(offsetof(struct apply_arg, fn) + (size * argc));
+    const size_t len = offsetof(struct apply_arg, fn) + (size * argc);
     struct apply_arg *aa = ALLOCV(v, len);
 
     aa->errnum = 0;
@@ -512,7 +518,7 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
     if (v) {
         ALLOCV_END(v);
     }
-    return LONG2FIX(argc);
+    return INT2FIX(argc);
 }
 
 static stat_timestamp stat_atimespec(const struct stat *st);
@@ -694,12 +700,10 @@ rb_stat_dev(VALUE self)
     unsigned int m = get_stat(self)->stx_dev_major;
     unsigned int n = get_stat(self)->stx_dev_minor;
     return ULL2NUM(makedev(m, n));
-#elif SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_DEV_T
-    return DEVT2NUM(get_stat(self)->st_dev);
-#elif SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_LONG
-    return ULONG2NUM(get_stat(self)->st_dev);
+#elif SIGNEDNESS_OF_DEV_T < 0
+    return IANY2NUM(get_stat(self)->st_dev);
 #else
-    return ULL2NUM(get_stat(self)->st_dev);
+    return UIANY2NUM(get_stat(self)->st_dev);
 #endif
 }
 
@@ -968,12 +972,10 @@ rb_stat_rdev(VALUE self)
     return ULL2NUM(makedev(m, n));
 #elif !defined(HAVE_STRUCT_STAT_ST_RDEV)
     return Qnil;
-#elif SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_DEV_T
-    return DEVT2NUM(get_stat(self)->ST_(rdev));
-#elif SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_LONG
-    return ULONG2NUM(get_stat(self)->ST_(rdev));
+#elif SIGNEDNESS_OF_DEV_T < 0
+    return IANY2NUM(get_stat(self)->ST_(rdev));
 #else
-    return ULL2NUM(get_stat(self)->ST_(rdev));
+    return UIANY2NUM(get_stat(self)->ST_(rdev));
 #endif
 }
 
@@ -1122,7 +1124,7 @@ static VALUE
 rb_stat_blksize(VALUE self)
 {
 #ifdef HAVE_STRUCT_STAT_ST_BLKSIZE
-    return ULONG2NUM(get_stat(self)->ST_(blksize));
+    return UIANY2NUM(get_stat(self)->ST_(blksize));
 #else
     return Qnil;
 #endif
@@ -1149,11 +1151,7 @@ static VALUE
 rb_stat_blocks(VALUE self)
 {
 #ifdef HAVE_STRUCT_STAT_ST_BLOCKS
-# if SIZEOF_STRUCT_STAT_ST_BLOCKS > SIZEOF_LONG
-    return ULL2NUM(get_stat(self)->ST_(blocks));
-# else
-    return ULONG2NUM(get_stat(self)->ST_(blocks));
-# endif
+    return UIANY2NUM(get_stat(self)->ST_(blocks));
 #else
     return Qnil;
 #endif

@@ -1253,6 +1253,7 @@ class TestEnumerable < Test::Unit::TestCase
 
     assert_int_equal(13, [1, 2].each.sum(10))
     assert_int_equal(16, [1, 2].each.sum(10) {|v| v * 2 })
+    assert_int_equal(51_051_000_000_000, 10_000.times.sum {5105100000})
 
     yielded = []
     three = SimpleDelegator.new(3)

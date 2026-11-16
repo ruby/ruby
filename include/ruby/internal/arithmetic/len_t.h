@@ -22,7 +22,6 @@
  */
 #include "ruby/internal/config.h"
 #include "ruby/internal/arithmetic/long.h"
-#include "ruby/internal/arithmetic/long_long.h"
 #include "ruby/internal/assume.h"
 #include "ruby/internal/cast.h"
 #include "ruby/internal/value.h"
@@ -272,7 +271,21 @@ rb_fix2long(VALUE x)
 static inline unsigned long
 rb_fix2ulong(VALUE x)
 {
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+    return rb_num2ulong(x);
+#else
     return RBIMPL_CAST((unsigned long)rb_fix2ulen(x));
+#endif
+}
+
+static inline bool
+rb_size_too_big_len_p(size_t size)
+{
+#if RB_LEN_MAX >= SIZE_MAX
+    return false;
+#else
+    return RB_UNLIKELY(RB_LEN_MAX < size);
+#endif
 }
 
 #endif /* RBIMPL_ARITHMETIC_LEN_T_H */

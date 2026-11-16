@@ -3470,7 +3470,7 @@ rb_convert_to_integer(VALUE val, int base, int raise_exception)
     if (RB_FLOAT_TYPE_P(val)) {
         double f = RFLOAT_VALUE(val);
         if (!raise_exception && !isfinite(f)) return Qnil;
-        if (FIXABLE(f)) return LONG2FIX((long)f);
+        if (FIXABLE(f)) return LEN2FIX((rb_len_t)f);
         return rb_dbl2big(f);
     }
     else if (RB_INTEGER_TYPE_P(val)) {
@@ -3746,7 +3746,7 @@ rb_str_to_dbl(VALUE str, int badcheck)
 }
 
 /*! \cond INTERNAL_MACRO */
-#define fix2dbl_without_to_f(x) (double)FIX2LONG(x)
+#define fix2dbl_without_to_f(x) (double)FIX2LEN(x)
 #define big2dbl_without_to_f(x) rb_big2dbl(x)
 #define int2dbl_without_to_f(x) \
     (FIXNUM_P(x) ? fix2dbl_without_to_f(x) : big2dbl_without_to_f(x))

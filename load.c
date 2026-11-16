@@ -215,7 +215,7 @@ is_rbext_path(VALUE feature_path)
     return IS_RBEXT(RSTRING_PTR(feature_path) + len - rbext_len);
 }
 
-typedef rb_darray(long) feature_indexes_t;
+typedef rb_darray(rb_len_t) feature_indexes_t;
 
 struct features_index_add_single_args {
     const rb_box_t *box;
@@ -236,13 +236,13 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
 
         if (FIXNUM_P(this_feature_index)) {
             VALUE loaded_features = box->loaded_features;
-            VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(this_feature_index));
+            VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LEN(this_feature_index));
 
             feature_indexes_t feature_indexes;
             rb_darray_make(&feature_indexes, 2);
             int top = (rb && !is_rbext_path(this_feature_path)) ? 1 : 0;
-            rb_darray_set(feature_indexes, top^0, FIX2LONG(this_feature_index));
-            rb_darray_set(feature_indexes, top^1, FIX2LONG(offset));
+            rb_darray_set(feature_indexes, top^0, FIX2LEN(this_feature_index));
+            rb_darray_set(feature_indexes, top^1, FIX2LEN(offset));
 
             RUBY_ASSERT(rb_darray_size(feature_indexes) == 2);
             // assert feature_indexes does not look like a special const
@@ -252,12 +252,12 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
         }
         else {
             feature_indexes_t feature_indexes = (feature_indexes_t)this_feature_index;
-            long pos = -1;
+            ssize_t pos = -1;   /* assume no SIZE_MAX indexes */
 
             if (rb) {
                 VALUE loaded_features = box->loaded_features;
                 for (size_t i = 0; i < rb_darray_size(feature_indexes); ++i) {
-                    long idx = rb_darray_get(feature_indexes, i);
+                    rb_len_t idx = rb_darray_get(feature_indexes, i);
                     VALUE this_feature_path = RARRAY_AREF(loaded_features, idx);
                     Check_Type(this_feature_path, T_STRING);
                     if (!is_rbext_path(this_feature_path)) {
@@ -267,15 +267,15 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
                 }
             }
 
-            rb_darray_append(&feature_indexes, FIX2LONG(offset));
+            rb_darray_append(&feature_indexes, FIX2LEN(offset));
             /* darray may realloc which will change the pointer */
             *value = (st_data_t)feature_indexes;
 
             if (pos >= 0) {
-                long *ptr = rb_darray_data_ptr(feature_indexes);
-                long len = rb_darray_size(feature_indexes);
-                MEMMOVE(ptr + pos + 1, ptr + pos, long, len - pos - 1);
-                ptr[pos] = FIX2LONG(offset);
+                rb_len_t *ptr = rb_darray_data_ptr(feature_indexes);
+                size_t len = rb_darray_size(feature_indexes);
+                MEMMOVE(ptr + pos + 1, ptr + pos, rb_len_t, len - pos - 1);
+                ptr[pos] = FIX2LEN(offset);
             }
         }
     }
@@ -556,10 +556,10 @@ rb_feature_p(const rb_box_t *box, const char *feature, const char *ext, int rb, 
      */
     if (st_lookup(features_index, key, &data) && !NIL_P(this_feature_index = (VALUE)data)) {
         for (size_t i = 0; ; i++) {
-            long index;
+            rb_len_t index;
             if (FIXNUM_P(this_feature_index)) {
                 if (i > 0) break;
-                index = FIX2LONG(this_feature_index);
+                index = FIX2LEN(this_feature_index);
             }
             else {
                 feature_indexes_t feature_indexes = (feature_indexes_t)this_feature_index;

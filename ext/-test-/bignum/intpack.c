@@ -24,7 +24,7 @@ rb_integer_pack_m(VALUE klass, VALUE val, VALUE numwords_arg, VALUE wordsize_arg
   size_t wordsize = NUM2SIZET(wordsize_arg);
   VALUE buf;
 
-  if (numwords != 0 && wordsize != 0 && LONG_MAX / wordsize < numwords)
+  if (numwords != 0 && wordsize != 0 && RB_LEN_MAX / wordsize < numwords)
       rb_raise(rb_eArgError, "too big numwords * wordsize");
   buf = rb_str_new(NULL, numwords * wordsize);
   sign = rb_integer_pack(val,
@@ -48,7 +48,7 @@ static VALUE
 rb_integer_test_numbits_2comp_without_sign(VALUE klass, VALUE val)
 {
   size_t size;
-  int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : BIGNUM_NEGATIVE_P(val);
+  int neg = FIXNUM_P(val) ? FIX2LEN(val) < 0 : BIGNUM_NEGATIVE_P(val);
   size = rb_absint_numwords(val, 1, NULL) - (neg && rb_absint_singlebit_p(val));
   return SIZET2NUM(size);
 }
@@ -56,7 +56,7 @@ rb_integer_test_numbits_2comp_without_sign(VALUE klass, VALUE val)
 static VALUE
 rb_integer_test_numbytes_2comp_with_sign(VALUE klass, VALUE val)
 {
-  int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : BIGNUM_NEGATIVE_P(val);
+  int neg = FIXNUM_P(val) ? FIX2LEN(val) < 0 : BIGNUM_NEGATIVE_P(val);
   int nlz_bits;
   size_t size = rb_absint_size(val, &nlz_bits);
   if (nlz_bits == 0 && !(neg && rb_absint_singlebit_p(val)))
