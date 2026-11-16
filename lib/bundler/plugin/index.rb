@@ -172,19 +172,24 @@ module Bundler
           data = index_f.read
 
           require "rubygems/yaml_serializer"
-          # Empty sections load as nil, e.g. from index files written by
-          # older Bundler versions, which dumped empty hashes as a bare key.
-          index = Gem::YAMLSerializer.load(data) || {}
+          loaded = Gem::YAMLSerializer.load(data) || {}
+          # Empty sections load as nil from index files written by older
+          # Bundler versions, which dumped empty hashes as a bare key, and as
+          # the string "{}" once a gemrc has made RubyGems < 4.1 load its
+          # minimal serializer over the copy shipped with Bundler.
+          index = %w[commands hooks load_paths plugin_paths sources].to_h do |key|
+            [key, loaded[key].is_a?(Hash) ? loaded[key] : {}]
+          end
 
           escaping = escaping_plugins(index, base)
-          hooks = (index["hooks"] || {}).transform_values {|names| Array(names) - escaping }
+          hooks = index["hooks"].transform_values {|names| Array(names) - escaping }
 
-          @commands.merge!(owned_by(index["commands"] || {}, escaping))
+          @commands.merge!(owned_by(index["commands"], escaping))
           # An event whose plugins all escaped is left out rather than merged in empty.
           @hooks.merge!(hooks.reject {|_, names| names.empty? })
           @load_paths.merge!(named(transform_index_paths(index["load_paths"]) {|p| absolutize_path(p, base) }, escaping))
           @plugin_paths.merge!(named(transform_index_paths(index["plugin_paths"]) {|p| absolutize_path(p, base) }, escaping))
-          @sources.merge!(owned_by(index["sources"] || {}, escaping)) unless global
+          @sources.merge!(owned_by(index["sources"], escaping)) unless global
         end
       end
 
@@ -218,7 +223,7 @@ module Bundler
         names = []
 
         %w[load_paths plugin_paths].each do |key|
-          (index[key] || {}).each do |name, value|
+          index[key].each do |name, value|
             escapes = Array(value).any? do |path|
               !Pathname.new(path).absolute? && !contained_in?(absolutize_path(path, base), base)
             end
@@ -249,8 +254,6 @@ module Bundler
       end
 
       def transform_index_paths(paths)
-        return {} unless paths
-
         paths.transform_values do |value|
           if value.is_a?(Array)
             value.map {|path| yield path }

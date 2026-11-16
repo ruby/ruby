@@ -35,6 +35,24 @@ RSpec.describe Bundler::Plugin::Index do
       new_index = Index.new
       expect(new_index.load_paths(plugin_name)).to eq([lib_path(plugin_name).join("lib").to_s])
     end
+
+    it "reads empty sections that the serializer of RubyGems < 4.1 loads as a string" do
+      index.index_file.write(<<~YAML)
+        ---
+        commands: "{}"
+        hooks: "{}"
+        load_paths:
+          #{plugin_name}:
+            - #{lib_path(plugin_name).join("lib")}
+        plugin_paths:
+          #{plugin_name}: #{lib_path(plugin_name)}
+        sources: "{}"
+      YAML
+
+      new_index = Index.new
+      expect(new_index.plugin_path(plugin_name)).to eq(lib_path(plugin_name))
+      expect(new_index.load_paths(plugin_name)).to eq([lib_path(plugin_name).join("lib").to_s])
+    end
   end
 
   describe "commands" do
