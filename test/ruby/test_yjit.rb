@@ -1903,6 +1903,43 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_cfunc_splat_at_vm_stack_limit
+    # A splat into a variadic C function right below the VM stack limit must
+    # side-exit and raise SystemStackError instead of writing the array over
+    # the control frames.
+    assert_separately(["--yjit", "--yjit-call-threshold=1"], <<~'RUBY')
+      class SplatArray < Array
+        def rec(depth, args) = depth == 0 ? push(*args) : rec(depth - 1, args)
+      end
+      ary = SplatArray.new
+      overflows = ->(depth) do
+        ary.rec(depth, [])
+        false
+      rescue SystemStackError
+        true
+      end
+
+      # Find the depth at which the recursion itself overflows the VM stack
+      hi = 1
+      hi *= 2 until overflows[hi]
+      lo = hi / 2
+      while hi - lo > 1
+        mid = (lo + hi) / 2
+        overflows[mid] ? hi = mid : lo = mid
+      end
+
+      # Splat the largest array that stays on the stack at every depth near the limit
+      raised = false
+      args = Array.new(126, nil)
+      (hi - 100).upto(hi + 10) do |depth|
+        ary.rec(depth, args)
+      rescue SystemStackError
+        raised = true
+      end
+      assert_true(raised)
+    RUBY
+  end
+
   def test_byteslice_sp_invalidation
     assert_compiles(<<~'RUBY', result: 'ok', no_send_fallbacks: true)
       "okng".itself.byteslice(0, 2)
