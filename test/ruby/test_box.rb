@@ -1268,17 +1268,16 @@ class TestBox < Test::Unit::TestCase
     assert_ruby_status([ENV_ENABLE_BOX.merge("RUBY_FREE_AT_EXIT" => "1"), "-e;"], timeout: 30)
   end
 
-  def test_bundler_setup_not_loaded_while_decorator_gems_are_autoloaded
+  def test_bundler_setup_loaded_only_in_main_box_while_decorator_gems_are_autoloaded
     with_bundler_setup_log do |env|
       # assert_separately w/ ENV_ENABLE_BOX and --enable=gems causes timeouts on CI @ Windows
       assert_in_out_err([env, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
         begin;
           Ruby::Box.new
-          autoloaded = %i[ErrorHighlight DidYouMean SyntaxSuggest].any? {|c| Object.autoload?(c) }
-          loaded = File.readlines(ENV["BUNDLER_SETUP_LOG"], chomp: true)
-          puts loaded == (autoloaded ? [] : ["true"]) ? "ok" : "loaded in #{loaded.inspect}"
+          p %i[ErrorHighlight DidYouMean SyntaxSuggest].select {|c| Object.autoload?(c) }
+          puts File.readlines(ENV["BUNDLER_SETUP_LOG"], chomp: true)
         end;
-        assert_equal ["ok"], output
+        assert_equal ["[:ErrorHighlight, :DidYouMean, :SyntaxSuggest]", "true"], output
       end
     end
   end

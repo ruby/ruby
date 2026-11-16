@@ -1,13 +1,10 @@
 begin
-  # rubygems.rb requires ENV["BUNDLER_SETUP"] at its end so that bundler/setup
-  # runs before error_highlight, did_you_mean and syntax_suggest are loaded.
-  # That is unnecessary once they are autoloaded ([Feature #21951]), and it
-  # must not happen outside the main box: Bundler evaluates gemspecs through
-  # TOPLEVEL_BINDING, which always belongs to the main box, so it would run
-  # Bundler code there before RubyGems finishes loading. Either way Bundler is
-  # set up by RUBYOPT=-rbundler/setup after the boot sequence.
-  if %i[ErrorHighlight DidYouMean SyntaxSuggest].any? {|c| Object.autoload?(c) } ||
-     (defined?(Ruby::Box) && Ruby::Box.enabled? && !Ruby::Box.current.main?)
+  # rubygems.rb requires ENV["BUNDLER_SETUP"] while it loads, which is before
+  # the libraries given with -r on the command line. That must not happen
+  # outside the main box: Bundler evaluates gemspecs through TOPLEVEL_BINDING,
+  # which always belongs to the main box, so it would run Bundler code there
+  # before RubyGems finishes loading.
+  if defined?(Ruby::Box) && Ruby::Box.enabled? && !Ruby::Box.current.main?
     bundler_setup = ENV.delete("BUNDLER_SETUP")
   end
   require 'rubygems'
