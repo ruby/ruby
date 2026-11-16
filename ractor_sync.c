@@ -1099,19 +1099,6 @@ ractor_value(rb_execution_context_t *ec, VALUE self)
 }
 
 static VALUE
-ractor_marshal_dump_body(VALUE obj)
-{
-    return rb_marshal_dump(obj, Qnil);
-}
-
-static VALUE
-ractor_marshal_dump_rescue(VALUE obj, VALUE errinfo)
-{
-    rb_raise(rb_eRactorError, "can not copy %"PRIsVALUE" object.", rb_class_of(obj));
-    UNREACHABLE_RETURN(Qnil);
-}
-
-static VALUE
 ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type *ptype,
                        struct rb_ractor_courier **pcourier)
 {
