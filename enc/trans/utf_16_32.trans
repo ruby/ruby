@@ -521,7 +521,7 @@ rb_to_UTF_16 = {
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     4, /* max_input */
-    4, /* max_output */
+    6, /* max_output */
     asciicompat_encoder, /* asciicompat_type */
     1, state_init, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_to_utf_16
@@ -533,7 +533,7 @@ rb_to_UTF_32 = {
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     4, /* max_input */
-    4, /* max_output */
+    8, /* max_output */
     asciicompat_encoder, /* asciicompat_type */
     1, state_init, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_to_utf_32
