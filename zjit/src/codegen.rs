@@ -958,7 +958,9 @@ fn gen_getblockparam(jit: &mut JITState, asm: &mut Assembler, function: &Functio
         fn rb_sym_to_proc(sym: VALUE) -> VALUE;
     }
 
-    gen_prepare_leaf_call_with_gc(asm, state);
+    // This is leaf, but we must put a description
+    // of locals here to handle environment escape.
+    gen_prepare_non_leaf_call(jit, asm, function, state);
     // Bail out if write barrier is required.
     let ep = gen_get_ep(asm, level);
     let flags = Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
