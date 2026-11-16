@@ -116,13 +116,17 @@ see the [RDoc Markup Reference].
 
 ### Headings
 
-Organize a long discussion for a class or module with [headings].
+Organize a long discussion for a class or module with [headings]:
 
-Do not use formal headings in the documentation for a method or constant.
-
-In the rare case where heading-like structures are needed
-within the documentation for a method or constant,
-use [bold text] as pseudo-headings.
+- The page for a class, module, or free-standing file
+  should have at least one heading;
+  the first heading should be a level-1 heading.
+- Headings should not "jump" levels;
+  for example, the next heading after a level-2 heading should not be level-4 or higher.
+- Do not use formal headings in the documentation for a method or constant.
+  In the rare case where heading-like structures are needed
+  within the documentation for a method or constant,
+  use [bold text] as pseudo-headings.
 
 ### Blank Lines
 
