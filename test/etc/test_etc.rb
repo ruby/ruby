@@ -158,7 +158,7 @@ class TestEtc < Test::Unit::TestCase
 
   def test_pathconf
     begin
-      Etc.confstr
+      $stdin.pathconf
     rescue NotImplementedError
       return
     rescue ArgumentError
