@@ -3369,6 +3369,7 @@ old_to_new(VALUE ajd, VALUE of, VALUE sg,
 
     if (f_lt_p(*rsf, INT2FIX(0)) ||
 	f_ge_p(*rsf, INT2FIX(SECOND_IN_NANOSECONDS)))
+	rb_raise(eDateError, "invalid second fraction");
 
     if (*rof < -DAY_IN_SECONDS || *rof > DAY_IN_SECONDS) {
 	*rof = 0;
