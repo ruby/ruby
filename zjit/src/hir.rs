@@ -7682,47 +7682,85 @@ impl Function {
     }
 
     /// Remove PushInlineFrame/PopInlineFrame pairs whose inlined body has been
-    /// optimized away entirely.
+    /// optimized down to instructions that don't need the frame.
     ///
-    /// When an inlined callee folds to a constant (e.g. a method body guarded by a
-    /// constant that is false), earlier passes can leave a PushInlineFrame that is
-    /// immediately followed by its matching PopInlineFrame, with only instructions
-    /// that neither take a side exit nor observe the frame in between (see
-    /// [`Function::can_elide_enclosing_frame`]). Such a frame is unobservable:
-    /// nothing between the push and the pop can take a side exit, allocate, raise,
-    /// or
-    /// walk the frame chain, so pushing and popping the frame is pure overhead.
-    /// This pass deletes both instructions of each such pair.
+    /// When an inlined callee folds to a constant or to a few pure instructions
+    /// (e.g. `BasicObject#!=` on Fixnums becomes FixnumEq and BoolNegate), earlier
+    /// passes can leave a PushInlineFrame that is followed by its matching
+    /// PopInlineFrame with nothing in between except:
+    ///
+    /// * instructions that neither take a side exit nor observe the frame (see
+    ///   [`Function::can_elide_enclosing_frame`])
+    /// * PatchPoints.
+    ///
+    /// Pushing and popping such a frame is pure overhead, so this pass deletes
+    /// both instructions of the pair. A PatchPoint is the one side-exiting
+    /// instruction allowed to remain, because its exit can be redirected to the
+    /// caller: each PatchPoint in an elided pair takes the PushInlineFrame's
+    /// `exit_state` (the caller's Snapshot of the original send) as its own
+    /// state. If the invariant is broken, the exit re-executes the whole send in
+    /// the interpreter instead of resuming inside the callee. That is equivalent
+    /// because nothing else between the push and the PatchPoint has an
+    /// observable effect. The PatchPoints stay where they are; only the state
+    /// they exit with changes. This is like the split in JavaScriptCore's DFG
+    /// between a node's semantic origin and its exit origin: the PatchPoint
+    /// still belongs to the callee's code, but it exits at the caller's send.
     ///
     /// Pairs are matched per basic block with a stack so that nested pairs are
     /// handled: an inner elided pair doesn't prevent the outer pair from being
     /// elided, while an inner pair that must be kept also keeps the outer one
-    /// (the kept push/pop observe and modify the frame chain). A PushInlineFrame
-    /// whose PopInlineFrame lives in another block is left untouched.
+    /// (the kept push/pop observe and modify the frame chain). The PatchPoints
+    /// of an elided inner pair become PatchPoints of the enclosing pair, so they
+    /// exit at the enclosing pair's send instead if that pair is elided too. A
+    /// pair split across blocks is left untouched.
     fn eliminate_empty_inline_frames(&mut self) {
         /// A PushInlineFrame whose matching PopInlineFrame hasn't been seen yet.
         struct PendingPush {
             /// The PushInlineFrame's instruction ID.
             push_id: InsnId,
+            /// The PushInlineFrame's `exit_state`.
+            exit_state: InsnId,
             /// Whether an instruction that may take a side exit or observe the
             /// frame has been seen since the push. If so, the pair must be kept.
+            /// PatchPoints don't set this.
             frame_observed: bool,
+            /// The PatchPoints seen since the push, including any inherited from
+            /// elided nested pairs.
+            patch_points: Vec<InsnId>,
         }
 
         for block_id in self.reverse_post_order() {
             // First, find the (PushInlineFrame, PopInlineFrame) pairs to elide.
             let mut elided_pairs: Vec<(InsnId, InsnId)> = Vec::new();
+            // The exit state each PatchPoint in an elided pair needs to switch to.
+            // A PatchPoint nested in several elided pairs shows up once per pair,
+            // innermost first. So, applying them in order leaves it exiting at the
+            // outermost elided pair's send.
+            let mut patch_point_exit_states: Vec<(InsnId, InsnId)> = Vec::new();
+
             let mut pending_pushes: Vec<PendingPush> = Vec::new();
             for &insn_id in &self.blocks[block_id].insns {
                 match self.find_ref(insn_id) {
-                    Insn::PushInlineFrame { .. } => {
-                        pending_pushes.push(PendingPush { push_id: insn_id, frame_observed: false });
+                    Insn::PushInlineFrame { exit_state, .. } => {
+                        pending_pushes.push(PendingPush {
+                            push_id: insn_id,
+                            exit_state: self.find_id(*exit_state),
+                            frame_observed: false,
+                            patch_points: Vec::new(),
+                        });
                     }
                     Insn::PopInlineFrame { .. } => {
                         match pending_pushes.pop() {
-                            Some(PendingPush { push_id, frame_observed: false }) => {
+                            Some(PendingPush { push_id, exit_state, frame_observed: false, mut patch_points }) => {
                                 // Empty pair: elide both the push and this pop.
                                 elided_pairs.push((push_id, insn_id));
+                                patch_point_exit_states.extend(patch_points.iter().map(|&patch_point| (patch_point, exit_state)));
+
+                                // Now that the pair is gone, its PatchPoints belong to the
+                                // enclosing pair (if there is one).
+                                if let Some(outer) = pending_pushes.last_mut() {
+                                    outer.patch_points.append(&mut patch_points);
+                                }
                             }
                             Some(PendingPush { frame_observed: true, .. }) => {
                                 // Keep the pair. It observes the frame chain, so the
@@ -7734,6 +7772,17 @@ impl Function {
                             None => {
                                 // The matching push is in another block; leave it alone.
                             }
+                        }
+                    }
+                    Insn::PatchPoint { .. } => {
+                        // PatchPoints can side-exit, but they don't keep the pair alive.
+                        // If the pair is elided, each PatchPoint's exit gets redirected to
+                        // the caller's send instead. That's only safe because every other
+                        // instruction in the pair has to pass `can_elide_enclosing_frame`
+                        // for the pair to be elided, so re-executing the send can't repeat
+                        // an observable effect.
+                        if let Some(pending) = pending_pushes.last_mut() {
+                            pending.patch_points.push(insn_id);
                         }
                     }
                     insn => {
@@ -7750,6 +7799,13 @@ impl Function {
             }
             if elided_pairs.is_empty() {
                 continue;
+            }
+
+            for (patch_point, exit_state) in patch_point_exit_states {
+                let Insn::PatchPoint { state, .. } = &mut self.insns[patch_point] else {
+                    unreachable!("only PatchPoints are recorded for new exit states");
+                };
+                *state = exit_state;
             }
 
             // Elide each pair: drop the pop, and drop the push as well, except

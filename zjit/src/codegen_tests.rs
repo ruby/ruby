@@ -6973,6 +6973,76 @@ fn test_constant_path_invalidation() {
 }
 
 #[test]
+fn test_elided_nested_inline_frames_patch_point_reexecutes_send() {
+    with_inlining(|| {
+        // With a single version allowed, invalidating `FLAG` can't trigger a
+        // recompile of `test`, so the next call takes the PatchPoint's side exit.
+        let old_max_versions = get_option!(max_versions);
+        set_max_versions(1);
+        eval("
+            FLAG = false
+            def inner(x) = FLAG ? x : 0
+            def outer(x) = inner(x)
+            def test(a, x) = outer(x) + a
+            test(1, 5)
+            test(1, 5)
+            test(1, 5)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let exits_before = counters.exit_patchpoint_stable_constant_names;
+        let result = assert_compiles_allowing_exits("
+            before = test(1, 5)
+            Object.send(:remove_const, :FLAG)
+            FLAG = true
+
+            # This call takes FLAG's `PatchPoint` exit. The `+ a` in `test` only runs if the exit
+            # resumes `test` at its call to `outer`.
+            [before, test(1, 5)]
+        ");
+        let exits = counters.exit_patchpoint_stable_constant_names - exits_before;
+        set_max_versions(old_max_versions);
+
+        assert_snapshot!(result, @"[1, 6]");
+        assert_eq!(1, exits, "expected the second call of test to take FLAG's PatchPoint exit");
+    });
+}
+
+#[test]
+fn test_elided_inline_frame_patch_point_exits_into_kept_inline_frame() {
+    with_inlining(|| {
+        // See `test_elided_nested_inline_frames_patch_point_reexecutes_send` for why we only
+        // allow a single version.
+        let old_max_versions = get_option!(max_versions);
+        set_max_versions(1);
+
+        // `inner`'s frame is elided, but `outer`'s is kept (`FixnumAdd` can side-exit). So, the
+        // exit lands at the send of `inner` inside `outer`'s inlined frame.
+        eval("
+            FLAG = false
+            def inner = FLAG ? 10 : 20
+            def outer(x) = x + inner
+            def test(x) = outer(x)
+            test(1)
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let exits_before = counters.exit_patchpoint_stable_constant_names;
+        let result = assert_compiles_allowing_exits("
+            before = test(1)
+            Object.send(:remove_const, :FLAG)
+            FLAG = true
+            [before, test(1)]
+        ");
+        let exits = counters.exit_patchpoint_stable_constant_names - exits_before;
+        set_max_versions(old_max_versions);
+
+        assert_snapshot!(result, @"[21, 11]");
+        assert_eq!(1, exits, "expected the second call of test to take FLAG's PatchPoint exit");
+    });
+}
+
+#[test]
 fn test_dupn() {
     eval("
         def test(array) = (array[1, 2] ||= :rhs)
