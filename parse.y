@@ -14278,6 +14278,7 @@ static NODE*
 cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *loc, bool top)
 {
     if (node == 0) return 0;
+    NODE *original = node;
     if (!(node = nd_once_body(node))) return 0;
     assign_in_cond(p, node);
 
@@ -14301,7 +14302,8 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
       case NODE_DREGX:
         if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warning, "regex ");
 
-        return NEW_MATCH2(node, NEW_GVAR(idLASTLINE, loc), loc);
+        /* Preserve the NODE_ONCE wrapper around interpolated /o regexps. */
+        return NEW_MATCH2(original, NEW_GVAR(idLASTLINE, loc), loc);
 
       case NODE_BLOCK:
         {

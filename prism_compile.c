@@ -3400,6 +3400,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         scope->body = (pm_node_t *) cast->statements;
         break;
       }
+      case PM_INTERPOLATED_MATCH_LAST_LINE_NODE:
       case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
         RUBY_ASSERT(node->flags & PM_REGULAR_EXPRESSION_FLAGS_ONCE);
         scope->body = (pm_node_t *) node;
@@ -7036,11 +7037,16 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
 
     switch (body->type) {
       case ISEQ_TYPE_PLAIN: {
-        RUBY_ASSERT(PM_NODE_TYPE_P(scope_node->ast_node, PM_INTERPOLATED_REGULAR_EXPRESSION_NODE));
-
-        const pm_interpolated_regular_expression_node_t *cast = (const pm_interpolated_regular_expression_node_t *) scope_node->ast_node;
-        pm_compile_regexp_dynamic(iseq, (const pm_node_t *) cast, &cast->parts, &location, ret, popped, scope_node);
-
+        const pm_node_t *node = scope_node->ast_node;
+        const pm_node_list_t *parts;
+        if (PM_NODE_TYPE_P(node, PM_INTERPOLATED_REGULAR_EXPRESSION_NODE)) {
+            parts = &((const pm_interpolated_regular_expression_node_t *) node)->parts;
+        }
+        else {
+            RUBY_ASSERT(PM_NODE_TYPE_P(node, PM_INTERPOLATED_MATCH_LAST_LINE_NODE));
+            parts = &((const pm_interpolated_match_last_line_node_t *) node)->parts;
+        }
+        pm_compile_regexp_dynamic(iseq, node, parts, &location, ret, popped, scope_node);
         break;
       }
       case ISEQ_TYPE_BLOCK: {
@@ -8807,6 +8813,24 @@ pm_compile_yield_node(rb_iseq_t *iseq, const pm_yield_node_t *node, const pm_nod
     if (level > 0) access_outer_variables(iseq, level, rb_intern("yield"), true);
 }
 
+static void
+pm_compile_regexp_once(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node)
+{
+    const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
+    const rb_iseq_t *block_iseq = NULL;
+    int ise_index = ISEQ_BODY(iseq)->ise_size++;
+
+    pm_scope_node_t next_scope_node;
+    pm_scope_node_init(node, &next_scope_node, scope_node);
+
+    block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_PLAIN, node_location->line);
+    pm_scope_node_destroy(&next_scope_node);
+
+    ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
+    PUSH_INSN2(ret, *node_location, once, block_iseq, INT2FIX(ise_index));
+    ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
+}
+
 /**
  * Compiles a prism node into instruction sequences.
  *
@@ -9720,14 +9744,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_INTERPOLATED_MATCH_LAST_LINE_NODE: {
         // if /foo #{bar}/ then end
         //    ^^^^^^^^^^^^
-        if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
-            if (!popped) {
-                VALUE regexp = pm_static_literal_value(iseq, node, scope_node);
-                PUSH_INSN1(ret, location, putobject, regexp);
-            }
+        if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_ONCE)) {
+            pm_compile_regexp_once(iseq, node, &location, ret, scope_node);
+        }
+        else if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
+            VALUE regexp = pm_static_literal_value(iseq, node, scope_node);
+            PUSH_INSN1(ret, location, putobject, regexp);
         }
         else {
-            pm_compile_regexp_dynamic(iseq, node, &((const pm_interpolated_match_last_line_node_t *) node)->parts, &location, ret, popped, scope_node);
+            pm_compile_regexp_dynamic(iseq, node, &((const pm_interpolated_match_last_line_node_t *) node)->parts, &location, ret, false, scope_node);
         }
 
         PUSH_INSN1(ret, location, getglobal, rb_id2sym(idLASTLINE));
@@ -9740,20 +9765,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // /foo #{bar}/
         // ^^^^^^^^^^^^
         if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_ONCE)) {
-            const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
-            const rb_iseq_t *block_iseq = NULL;
-            int ise_index = ISEQ_BODY(iseq)->ise_size++;
-
-            pm_scope_node_t next_scope_node;
-            pm_scope_node_init(node, &next_scope_node, scope_node);
-
-            block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_PLAIN, location.line);
-            pm_scope_node_destroy(&next_scope_node);
-
-            ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
-            PUSH_INSN2(ret, location, once, block_iseq, INT2FIX(ise_index));
-            ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
-
+            pm_compile_regexp_once(iseq, node, &location, ret, scope_node);
             if (popped) PUSH_INSN(ret, location, pop);
             return;
         }

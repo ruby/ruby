@@ -1986,6 +1986,27 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(/0/, pr1.call(2))
   end
 
+  def test_once_implicit_match
+    assert_separately(["-W0"], <<~'RUBY')
+      count = 0
+      matches = []
+      ["a", "b", "a"].each do |line|
+        $_ = line
+        if /#{count += 1; "a"}/o
+          matches << $&
+        end
+      end
+      assert_equal(1, count)
+      assert_equal(["a", "a"], matches)
+
+      matches = ["a", "b"].map do |line|
+        $_ = line
+        /#{"a"}/o ? true : false
+      end
+      assert_equal([true, false], matches)
+    RUBY
+  end
+
   def test_once_constant_interpolation
     # A /o regexp whose interpolation folds to a constant must build a Regexp,
     # not resurrect it as a String.  The peephole optimizer rewrites
