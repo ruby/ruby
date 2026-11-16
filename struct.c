@@ -34,24 +34,39 @@ VALUE rb_cStruct;
 static VALUE rb_cData;
 
 // The classes that Struct.new, Data.define and the C API make have one inline
-// field, holding a hidden Array of what is below. Their subclasses share it.
-enum struct_info_index {
-    STRUCT_INFO_MEMBERS,      // frozen hidden Array of the member names
-    STRUCT_INFO_BACK_MEMBERS, // what struct_member_pos() searches
-    STRUCT_INFO_KEYWORD_INIT, // the keyword_init option of Struct.new
-    STRUCT_INFO_SIZE
+// field, holding a hidden object that wraps this. Their subclasses share it.
+struct struct_info {
+    VALUE members;      // frozen hidden Array of the member names
+    VALUE back_members; // what struct_member_pos() searches
+    VALUE keyword_init; // the keyword_init option of Struct.new
+};
+
+RUBY_REFERENCES(struct_info_refs) = {
+    RUBY_REF_EDGE(struct struct_info, members),
+    RUBY_REF_EDGE(struct struct_info, back_members),
+    RUBY_REF_EDGE(struct struct_info, keyword_init),
+    RUBY_REF_END
+};
+
+static const rb_data_type_t struct_info_type = {
+    "struct/info",
+    {
+        RUBY_REFS_LIST_PTR(struct_info_refs),
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // Nothing allocated outside of the object
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE struct_alloc(VALUE);
 
-// The struct_info_index entries of +klass+, or NULL when it is not a
-// Struct / Data class.
-static inline const VALUE *
-struct_fields(VALUE klass)
+// NULL when +klass+ is not a Struct / Data class.
+static inline const struct struct_info *
+struct_info_of(VALUE klass)
 {
     if (LIKELY(RCLASS_HAS_INLINE_FIELD(klass))) {
         VALUE info = RCLASS_INLINE_FIELD(klass);
-        if (LIKELY(!NIL_P(info))) return RARRAY_CONST_PTR(info);
+        if (LIKELY(!NIL_P(info))) return RTYPEDDATA_GET_DATA(info);
     }
     return NULL;
 }
@@ -60,15 +75,15 @@ struct_fields(VALUE klass)
 static inline VALUE
 struct_s_members(VALUE klass)
 {
-    const VALUE *fields = struct_fields(klass);
-    return fields ? fields[STRUCT_INFO_MEMBERS] : Qnil;
+    const struct struct_info *info = struct_info_of(klass);
+    return info ? info->members : Qnil;
 }
 
 VALUE
 rb_struct_s_keyword_init(VALUE klass)
 {
-    const VALUE *fields = struct_fields(klass);
-    return fields ? fields[STRUCT_INFO_KEYWORD_INIT] : Qnil;
+    const struct struct_info *info = struct_info_of(klass);
+    return info ? info->keyword_init : Qnil;
 }
 
 VALUE
@@ -144,11 +159,12 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
         }
         OBJ_FREEZE(back);
     }
-    VALUE info = rb_ary_hidden_new(STRUCT_INFO_SIZE);
-    rb_ary_push(info, members);
-    rb_ary_push(info, back);
-    rb_ary_push(info, Qnil);
-    RCLASS_SET_INLINE_FIELD(klass, info);
+    struct struct_info *info;
+    VALUE info_obj = TypedData_Make_Struct(0, struct struct_info, &struct_info_type, info);
+    RB_OBJ_WRITE(info_obj, &info->members, members);
+    RB_OBJ_WRITE(info_obj, &info->back_members, back);
+    info->keyword_init = Qnil;
+    RCLASS_SET_INLINE_FIELD(klass, info_obj);
 
     return members;
 }
@@ -156,13 +172,13 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
 static inline int
 struct_member_pos(VALUE s, VALUE name)
 {
-    const VALUE *fields = struct_fields(rb_obj_class(s));
+    const struct struct_info *info = struct_info_of(rb_obj_class(s));
     rb_len_t j, mask;
 
-    if (UNLIKELY(!fields)) {
+    if (UNLIKELY(!info)) {
         rb_raise(rb_eTypeError, "uninitialized struct");
     }
-    VALUE back = fields[STRUCT_INFO_BACK_MEMBERS];
+    VALUE back = info->back_members;
 
     mask = RARRAY_LEN(back);
 
@@ -726,7 +742,9 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE super)
 
     VALUE klass = anonymous_struct(super);
     setup_struct(klass, rest);
-    rb_ary_store(RCLASS_INLINE_FIELD(klass), STRUCT_INFO_KEYWORD_INIT, keyword_init);
+    VALUE info_obj = RCLASS_INLINE_FIELD(klass);
+    struct struct_info *info = RTYPEDDATA_GET_DATA(info_obj);
+    RB_OBJ_WRITE(info_obj, &info->keyword_init, keyword_init);
 
     if (!NIL_P(name)) {
         struct_register_under(super, rb_str_to_str(name), klass);
