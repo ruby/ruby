@@ -1847,8 +1847,18 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
         newme = rb_method_entry_make(klass, mid, defined_class, visi,
                 me->def->type, me->def, 0, NULL, &warnings);
         if (newme == me) {
+            // The existing entry is reused, so a visibility change happens in
+            // place and ccs that still point at it must be invalidated.
+            bool visi_changed = METHOD_ENTRY_VISI(me) != visi;
+            if (visi_changed) {
+                rb_vm_barrier();
+                rb_vm_check_redefinition_opt_method(me, klass, &warnings.performance);
+            }
             me->def->no_redef_warning = TRUE;
             METHOD_ENTRY_FLAGS_SET(newme, visi, FALSE);
+            if (visi_changed) {
+                rb_clear_method_cache(klass, mid);
+            }
         }
     }
 
