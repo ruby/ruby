@@ -3525,7 +3525,7 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
     }
 
     if (sargp && (eargp->fd_dup2 != Qfalse || eargp->fd_dup2_child != Qfalse)) {
-        rb_len_t n = 0;
+        long n = 0;
         if (eargp->fd_dup2 != Qfalse) n += RARRAY_LEN(eargp->fd_dup2);
         if (eargp->fd_dup2_child != Qfalse) n += RARRAY_LEN(eargp->fd_dup2_child);
         rb_execarg_allocate_dup2_tmpbuf(sargp, n);
