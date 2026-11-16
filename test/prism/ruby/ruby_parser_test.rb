@@ -63,6 +63,7 @@ module Ruby::Prism
       "spanning_heredoc_newlines.txt",
       "spanning_heredoc.txt",
       "symbols.txt",
+      "ternary_operator_non_ascii.txt",
       "tilde_heredocs.txt",
       "unary_method_calls.txt",
       "unparser/corpus/literal/literal.txt",

@@ -9637,10 +9637,11 @@ lex_question_mark(pm_parser_t *parser) {
     } else {
         size_t encoding_width = pm_encoding_char_width(parser->encoding, parser->current.end, parser->end - parser->current.end);
 
-        // Ternary operators can have a ? immediately followed by an identifier
-        // which starts with an underscore. We check for this case here.
+        /* A ? followed by two identifier characters, as in `a ?bc : d`, is
+         * the ? of a ternary operator rather than a character literal. Any
+         * character that is not ASCII is an identifier character. */
         if (
-            !(pm_encoding_alnum_char(parser->encoding, parser->current.end, parser->end - parser->current.end) || peek(parser) == '_') ||
+            !char_is_identifier(parser, parser->current.end, parser->end - parser->current.end) ||
             (
                 (parser->current.end + encoding_width >= parser->end) ||
                 !char_is_identifier(parser, parser->current.end + encoding_width, parser->end - (parser->current.end + encoding_width))
