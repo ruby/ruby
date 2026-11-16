@@ -669,11 +669,10 @@ class JSONResumageParserTest < Test::Unit::TestCase
 
   def test_spill_frames_stack
     json = '[' * 1000 + ']' * 1000
-    expected = JSON.parse(json, max_nesting: 1000)
     @parser = new_parser(max_nesting: 1000)
     @parser << json
     assert @parser.parse
-    assert_equal expected, @parser.value
+    assert_equal json, JSON.generate(@parser.value, max_nesting: 1000)
   end
 
   def test_buffer_shrink
