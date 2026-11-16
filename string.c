@@ -11017,6 +11017,39 @@ tr_trans_pairs_consume_match(struct tr_trans_pairs_search *search)
 }
 
 static VALUE
+tr_trans_pairs_search_prepare(struct tr_trans_pairs_search *search, size_t pairs_count, struct tr_pair *pairs, rb_encoding *enc)
+{
+    VALUE hash = 0;
+    for (size_t index = 0; index < pairs_count; index++) {
+        struct tr_pair *pair = &pairs[index];
+
+        char *ptr = RSTRING_PTR(pair->search);
+        unsigned int codepoint = rb_enc_mbc_to_codepoint(ptr, RSTRING_END(pair->search), enc);
+
+        const unsigned char first_byte = (unsigned char)*ptr;
+
+#ifdef HAVE_SIMD
+        if (pairs_count <= TR_TRANS_PAIRS_SIMD_MAX_NEEDLES) {
+            search->needles[index] = first_byte;
+            search->needles_count++;
+        }
+#endif
+
+        if (rb_enc_codelen(codepoint, enc) == 1) {
+            search->trans_table[first_byte] = pair->replace;
+        }
+        else {
+            search->trans_table[first_byte] = Qundef;
+            if (!hash) {
+                hash = rb_obj_hide(rb_hash_new_capa(pairs_count));
+            }
+            rb_hash_aset(hash, UINT2NUM(codepoint), pair->replace);
+        }
+    }
+    return hash;
+}
+
+static VALUE
 tr_trans_pairs(VALUE str, VALUE pairs_val)
 {
     Check_Type(pairs_val, T_HASH);
@@ -11062,32 +11095,7 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
             .send = sstart + str_len,
         };
 
-        for (size_t index = 0; index < pairs_count; index++) {
-            struct tr_pair *pair = &pairs[index];
-
-            char *ptr = RSTRING_PTR(pair->search);
-            unsigned int codepoint = rb_enc_mbc_to_codepoint(ptr, RSTRING_END(pair->search), e1);
-
-            const unsigned char first_byte = (unsigned char)*ptr;
-
-#ifdef HAVE_SIMD
-            if (pairs_count <= TR_TRANS_PAIRS_SIMD_MAX_NEEDLES) {
-                search.needles[index] = first_byte;
-                search.needles_count++;
-            }
-#endif
-
-            if (rb_enc_codelen(codepoint, e1) == 1) {
-                search.trans_table[first_byte] = pair->replace;
-            }
-            else {
-                search.trans_table[first_byte] = Qundef;
-                if (!hash) {
-                    hash = rb_obj_hide(rb_hash_new_capa(pairs_count));
-                }
-                rb_hash_aset(hash, UINT2NUM(codepoint), pair->replace);
-            }
-        }
+        hash = tr_trans_pairs_search_prepare(&search, pairs_count, pairs, e1);
 
         const unsigned char *checkpoint = search.s;
         VALUE repl;
