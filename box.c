@@ -1596,19 +1596,19 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
  *
  *  ## Implementation details
  *
- *  #### ISeq inline method/constant cache
+ *  ### ISeq inline method/constant cache
  *
  *  As described above in "Ruby Box scopes", an ".rb" file runs in a box. So method/constant resolution will be done in a box consistently.
  *
  *  That means ISeq inline caches work well even with boxes. Otherwise, it's a bug.
  *
- *  #### Method call global cache (gccct)
+ *  ### Method call global cache (gccct)
  *
  *  `rb_funcall()` C function refers to the global cc cache table (gccct), and the cache key is calculated with the current box.
  *
  *  So, `rb_funcall()` calls have a performance penalty when Ruby Box is enabled.
  *
- *  #### Current box and loading box
+ *  ### Current box and loading box
  *
  *  The current box is the box that the executing code is in. `Ruby::Box.current` returns the current box object.
  *
@@ -1616,11 +1616,11 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
  *
  *  ## Discussions
  *
- *  #### More builtin methods written in Ruby
+ *  ### More builtin methods written in Ruby
  *
  *  If Ruby Box is enabled by default, builtin methods can be written in Ruby because it can't be overridden by users' monkey patches. Builtin Ruby methods can be JIT-ed, and it could bring performance reward.
  *
- *  #### Monkey patching methods called by builtin methods
+ *  ### Monkey patching methods called by builtin methods
  *
  *  Builtin methods sometimes call other builtin methods. For example, `Hash#map` calls `Hash#each` to retrieve entries to be mapped. Without Ruby Box, Ruby users can overwrite `Hash#each` and expect the behavior change of `Hash#map` as a result.
  *
@@ -1630,21 +1630,21 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
  *
  *  Users can define methods using `Ruby::Box.root.eval(...)`, but it's clearly not ideal API.
  *
- *  #### Assigning values to global variables used by builtin methods
+ *  ### Assigning values to global variables used by builtin methods
  *
  *  Similar to monkey patching methods, global variables assigned in a box is separated from the root box. Methods defined in the root box referring a global variable can't find the re-assigned one.
  *
- *  #### Context of `$LOAD_PATH` and `$LOADED_FEATURES`
+ *  ### Context of `$LOAD_PATH` and `$LOADED_FEATURES`
  *
  *  Global variables `$LOAD_PATH` and `$LOADED_FEATURES` control `require` method behaviors. So those variables are determined by the loading box instead of the current box.
  *
  *  This could potentially conflict with the user's expectations. We should find the solution.
  *
- *  #### Expose top level methods as a method of the box object
+ *  ### Expose top level methods as a method of the box object
  *
  *  Currently, top level methods in boxes are not accessible from outside of the box. But there might be a use case to call other box's top level methods.
  *
- *  #### Separate `cc_tbl` and `callable_m_tbl`, `cvc_tbl` for less classext CoW
+ *  ### Separate `cc_tbl` and `callable_m_tbl`, `cvc_tbl` for less classext CoW
  *
  *  The fields of `rb_classext_t` contains several cache(-like) data, `cc_tbl`(callcache table), `callable_m_tbl`(table of resolved complemented methods) and `cvc_tbl`(class variable cache table).
  *
