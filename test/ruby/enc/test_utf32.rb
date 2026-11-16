@@ -116,6 +116,8 @@ EOT
         "\x00\x00\xdc\x00",
         "\x00\x00\xdf\xff",
         "\x00\x11\x00\x00",
+        "\x80\x00\x00\x00",
+        "\xff\xff\xff\xff",
       ].each {|s|
         s.force_encoding("utf-32be")
         a.for(s) {
@@ -150,6 +152,8 @@ EOT
         "\x00\xdc\x00\x00",
         "\xff\xdf\x00\x00",
         "\x00\x00\x11\x00",
+        "\x00\x00\x00\x80",
+        "\xff\xff\xff\xff",
       ].each {|s|
         s.force_encoding("utf-32le")
         a.for(s) {
