@@ -122,35 +122,35 @@ is_number(const char *string, size_t length) {
 }
 
 /**
- * Set the version option on the given options struct by parsing the given
- * string. If the string contains an invalid option, this returns false.
- * Otherwise, it returns true.
+ * Read the version of Ruby that the given string names, such as "3.4", "4.0.1",
+ * or "latest", into the given version. NULL names the latest version. Returns
+ * false, leaving the version alone, if prism does not support the version.
  */
 bool
-pm_options_version_set(pm_options_t *options, const char *version, size_t length) {
+pm_options_version_parse(const char *version, size_t length, pm_options_version_t *result) {
     if (version == NULL) {
-        options->version = PM_OPTIONS_VERSION_LATEST;
+        *result = PM_OPTIONS_VERSION_LATEST;
         return true;
     }
 
     if (length == 3) {
         if (memcmp(version, "3.3", 3) == 0) {
-            options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
+            *result = PM_OPTIONS_VERSION_CRUBY_3_3;
             return true;
         }
 
         if (memcmp(version, "3.4", 3) == 0) {
-            options->version = PM_OPTIONS_VERSION_CRUBY_3_4;
+            *result = PM_OPTIONS_VERSION_CRUBY_3_4;
             return true;
         }
 
         if (memcmp(version, "3.5", 3) == 0 || memcmp(version, "4.0", 3) == 0) {
-            options->version = PM_OPTIONS_VERSION_CRUBY_4_0;
+            *result = PM_OPTIONS_VERSION_CRUBY_4_0;
             return true;
         }
 
         if (memcmp(version, "4.1", 3) == 0) {
-            options->version = PM_OPTIONS_VERSION_CRUBY_4_1;
+            *result = PM_OPTIONS_VERSION_CRUBY_4_1;
             return true;
         }
 
@@ -159,34 +159,53 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
 
     if (length >= 4 && is_number(version + 4, length - 4)) {
         if (memcmp(version, "3.3.", 4) == 0) {
-            options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
+            *result = PM_OPTIONS_VERSION_CRUBY_3_3;
             return true;
         }
 
         if (memcmp(version, "3.4.", 4) == 0) {
-            options->version = PM_OPTIONS_VERSION_CRUBY_3_4;
+            *result = PM_OPTIONS_VERSION_CRUBY_3_4;
             return true;
         }
 
         if (memcmp(version, "3.5.", 4) == 0 || memcmp(version, "4.0.", 4) == 0) {
-            options->version = PM_OPTIONS_VERSION_CRUBY_4_0;
+            *result = PM_OPTIONS_VERSION_CRUBY_4_0;
             return true;
         }
 
         if (memcmp(version, "4.1.", 4) == 0) {
-            options->version = PM_OPTIONS_VERSION_CRUBY_4_1;
+            *result = PM_OPTIONS_VERSION_CRUBY_4_1;
             return true;
         }
     }
 
     if (length == 6) {
         if (memcmp(version, "latest", 6) == 0) {
-            options->version = PM_OPTIONS_VERSION_LATEST;
+            *result = PM_OPTIONS_VERSION_LATEST;
             return true;
         }
     }
 
     return false;
+}
+
+/**
+ * Set the version option on the given options struct by parsing the given
+ * string. If the string contains an invalid option, this returns false.
+ * Otherwise, it returns true.
+ */
+bool
+pm_options_version_set(pm_options_t *options, const char *version, size_t length) {
+    return pm_options_version_parse(version, length, &options->version);
+}
+
+/**
+ * Check whether prism supports the given version of Ruby.
+ */
+bool
+pm_options_version_supported_p(const char *version, size_t length) {
+    pm_options_version_t result;
+    return pm_options_version_parse(version, length, &result);
 }
 
 /**

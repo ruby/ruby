@@ -206,6 +206,16 @@ PRISM_EXPORTED_FUNCTION void pm_options_command_line_set(pm_options_t *options, 
 PRISM_EXPORTED_FUNCTION bool pm_options_version_set(pm_options_t *options, const char *version, size_t length) PRISM_NONNULL(1);
 
 /**
+ * Check whether prism supports the given version of Ruby, written the way that
+ * pm_options_version_set reads it, such as "3.4", "4.0.1", or "latest".
+ *
+ * @param version The version to check.
+ * @param length The length of the version string.
+ * @returns Whether or not prism supports the version.
+ */
+PRISM_EXPORTED_FUNCTION bool pm_options_version_supported_p(const char *version, size_t length) PRISM_NONNULL(1);
+
+/**
  * Set the version option on the given options struct to the lowest version of
  * Ruby that prism supports.
  *
