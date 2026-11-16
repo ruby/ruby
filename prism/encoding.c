@@ -15,6 +15,9 @@ typedef uint32_t pm_unicode_codepoint_t;
  * copy, so the tables stay small, and every lookup is three loads with no
  * searching. Codepoints at or above UNICODE_CODEPOINTS_MAXIMUM have no
  * properties.
+ *
+ * The tables are Unicode 17.0.0. `bin/prism encoding UTF-8` generates them from
+ * the Unicode Character Database at that version.
  */
 #define UNICODE_CODEPOINTS_MAXIMUM 0x33500
 
