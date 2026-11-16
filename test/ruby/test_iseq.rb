@@ -835,12 +835,22 @@ class TestISeq < Test::Unit::TestCase
     [
       proc{},
       method(:test_iseq_of),
+      method(:test_iseq_of).to_proc,
       RubyVM::InstructionSequence.compile("p 1", __FILE__),
       begin; raise "error"; rescue => error; error.backtrace_locations[0]; end
     ].each{|src|
       iseq = RubyVM::InstructionSequence.of(src)
       assert_equal __FILE__, iseq.path
     }
+  end
+
+  def test_iseq_of_method_proc
+    iseq = RubyVM::InstructionSequence.of(method(:test_iseq_of_method_proc).to_proc)
+    assert_equal RubyVM::InstructionSequence.of(method(:test_iseq_of_method_proc)).disasm, iseq.disasm
+    assert_equal "test_iseq_of_method_proc", iseq.label
+
+    assert_nil RubyVM::InstructionSequence.of([].method(:<<).to_proc)
+    assert_nil RubyVM::InstructionSequence.of(:to_s.to_proc)
   end
 
   def test_iseq_builtin_to_a

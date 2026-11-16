@@ -32,6 +32,24 @@ ruby_version_is "4.1" do
       node.should.is_a?(Ruby::Prism::CallNode)
     end
 
+    it "returns the DefNode of the method for a proc created with Method#to_proc" do
+      obj = Object.new
+      def obj.def_method(x, y)
+        x + y
+      end
+      def_method_line = __LINE__ - 3
+      pr = obj.method(:def_method).to_proc
+
+      node = pr.syntax_tree
+      node.start_line.should == def_method_line
+      node.should.is_a?(Ruby::Prism::DefNode)
+      source_range_values(node).should == source_range_values(pr.source_range)
+    end
+
+    it "returns nil for a proc created with Method#to_proc of a method not written in Ruby" do
+      [].method(:<<).to_proc.syntax_tree.should == nil
+    end
+
     it "returns a LambdaNode for a stabby lambda" do
       node = -> { 42 }.syntax_tree
       node.start_line.should == __LINE__ - 1
