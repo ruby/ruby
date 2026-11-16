@@ -6993,7 +6993,7 @@ fn gen_send_cfunc(
         guard_object_is_array(asm, splat_array, splat_array.into(), Counter::guard_send_splat_not_array);
 
         asm_comment!(asm, "guard variable length splat call servicable");
-        let sp = asm.ctx.sp_opnd(0);
+        let sp = asm.lea(asm.ctx.sp_opnd(0));
         let proceed = asm.ccall(rb_yjit_splat_varg_checks as _, vec![sp, splat_array, CFP]);
         asm.cmp(proceed, Qfalse.into());
         asm.je(Target::side_exit(Counter::guard_send_cfunc_bad_splat_vargs));
