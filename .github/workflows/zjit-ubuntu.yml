@@ -88,6 +88,12 @@ jobs:
             run_opts: '--zjit-call-threshold=2'
             configure: '--enable-zjit=dev'
 
+            # Run ruby/spec with call-threshold=2 --repeat 2 so there is one run in the interpreter
+            # to specialize and profile, and one run in ZJIT-compiled code.
+          - test_task: 'test-spec'
+            specopts: '-T --zjit-call-threshold=2 --repeat 2'
+            configure: '--enable-zjit=dev'
+
           - test_task: 'test-bundled-gems'
             configure: '--enable-zjit=dev'
             run_opts: '--zjit-call-threshold=1'
