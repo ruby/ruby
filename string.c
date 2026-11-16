@@ -10851,13 +10851,14 @@ struct tr_trans_pairs_search {
     const unsigned char *send;
 
 #ifdef HAVE_SIMD
-    unsigned char needles[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
     unsigned int needles_count;
 #ifdef HAVE_SIMD_NEON
     uint64_t matches_bitmap;
+    uint8x16_t needle_masks[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
 #endif
 #ifdef HAVE_SIMD_SSE2
     int matches_bitmap;
+    __m128i needle_masks[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
 #endif
 #endif
 
@@ -10907,17 +10908,13 @@ tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
 
         if ((size_t)(search->send - search->s) >= sizeof(__m128i)) {
             unsigned int i;
-            __m128i masks[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
-            for (i = 0; i < needles_count; i++) {
-                masks[i] = _mm_set1_epi8(search->needles[i]);
-            }
 
             do {
                 const __m128i bytes = _mm_loadu_si128((__m128i const *)search->s);
 
                 __m128i matches[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
                 for (i = 0; i < needles_count; i++) {
-                    matches[i] = _mm_cmpeq_epi8(bytes, masks[i]);
+                    matches[i] = _mm_cmpeq_epi8(bytes, search->needle_masks[i]);
                 }
 
                 for (i = 1; i < needles_count; i++) {
@@ -10969,17 +10966,13 @@ tr_trans_pairs_search_neon(struct tr_trans_pairs_search *search)
 
         if ((size_t)(search->send - search->s) >= sizeof(uint8x16_t)) {
             unsigned int i;
-            uint8x16_t masks[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
-            for (i = 0; i < needles_count; i++) {
-                masks[i] = vdupq_n_u8(search->needles[i]);
-            }
 
             do {
                 const uint8x16_t bytes = vld1q_u8(search->s);
 
                 uint8x16_t matches[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
                 for (i = 0; i < needles_count; i++) {
-                    matches[i] = vceqq_u8(bytes, masks[i]);
+                    matches[i] = vceqq_u8(bytes, search->needle_masks[i]);
                 }
 
                 for (i = 1; i < needles_count; i++) {
@@ -11030,7 +11023,12 @@ tr_trans_pairs_search_prepare(struct tr_trans_pairs_search *search, size_t pairs
 
 #ifdef HAVE_SIMD
         if (pairs_count <= TR_TRANS_PAIRS_SIMD_MAX_NEEDLES) {
-            search->needles[index] = first_byte;
+#ifdef HAVE_SIMD_NEON
+            search->needle_masks[index] = vdupq_n_u8(first_byte);
+#endif
+#ifdef HAVE_SIMD_SSE2
+            search->needle_masks[index] = _mm_set1_epi8(first_byte);
+#endif
             search->needles_count++;
         }
 #endif
