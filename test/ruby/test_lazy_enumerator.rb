@@ -736,6 +736,13 @@ EOS
 
     ary = (0..Float::INFINITY).lazy.with_index.take(2).to_a
     assert_equal([[0, 0], [1, 1]], ary)
+
+    ary = 100.times.lazy.take(0).each_with_index.to_a
+    assert_equal([], ary)
+
+    ary = []
+    3.times.lazy.each_with_index { |*a| ary << a }
+    assert_equal([[0, 0], [1, 1], [2, 2]], ary)
   end
 
   def test_with_index_size

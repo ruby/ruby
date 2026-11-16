@@ -2721,6 +2721,31 @@ static const lazyenum_funcs lazy_with_index_funcs = {
     lazy_with_index_proc, lazy_with_index_size,
 };
 
+static VALUE
+lazy_with_index_from(VALUE obj, VALUE memo)
+{
+    return lazy_add_method(obj, 0, 0, memo, rb_ary_new_from_values(1, &memo),
+                           &lazy_with_index_funcs);
+}
+
+/*
+ * call-seq:
+ *   lazy.each_with_index {|(*args), idx| block }
+ *   lazy.each_with_index
+ *
+ * Equals to <tt>with_index(0)</tt>.
+ *
+ * See Enumerator#with_index.
+ */
+static VALUE
+lazy_each_with_index(VALUE obj)
+{
+    if (rb_block_given_p()) {
+        return rb_call_super(0, 0);
+    }
+    return lazy_with_index_from(obj, LONG2NUM(0));
+}
+
 /*
  * call-seq:
  *   lazy.with_index(offset = 0) {|(*args), idx| block }
@@ -2747,7 +2772,7 @@ lazy_with_index(int argc, VALUE *argv, VALUE obj)
     if (NIL_P(memo))
         memo = LONG2NUM(0);
 
-    return lazy_add_method(obj, 0, 0, memo, rb_ary_new_from_values(1, &memo), &lazy_with_index_funcs);
+    return lazy_with_index_from(obj, memo);
 }
 
 #if 0 /* for RDoc */
@@ -4569,6 +4594,7 @@ InitVM_Enumerator(void)
     rb_define_alias(rb_cLazy, "_enumerable_drop_while", "drop_while");
     rb_define_alias(rb_cLazy, "_enumerable_uniq", "uniq");
     rb_define_private_method(rb_cLazy, "_enumerable_with_index", enumerator_with_index, -1);
+    rb_define_alias(rb_cLazy, "_enumerable_each_with_index", "each_with_index");
 
     rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_map"));
     rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_collect"));
@@ -4587,6 +4613,7 @@ InitVM_Enumerator(void)
     rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_drop"));
     rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_drop_while"));
     rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_uniq"));
+    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_each_with_index"));
 
     rb_define_method(rb_cLazy, "initialize", lazy_initialize, -1);
     rb_define_method(rb_cLazy, "to_enum", lazy_to_enum, -1);
@@ -4617,8 +4644,9 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
     rb_define_method(rb_cLazy, "compact", lazy_compact, 0);
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
+    rb_define_method(rb_cLazy, "each_with_index", lazy_each_with_index, 0);
 
-    lazy_use_super_method = rb_hash_new_with_size(18);
+    lazy_use_super_method = rb_hash_new_with_size(19);
     rb_hash_aset(lazy_use_super_method, sym("map"), sym("_enumerable_map"));
     rb_hash_aset(lazy_use_super_method, sym("collect"), sym("_enumerable_collect"));
     rb_hash_aset(lazy_use_super_method, sym("flat_map"), sym("_enumerable_flat_map"));
@@ -4637,6 +4665,7 @@ InitVM_Enumerator(void)
     rb_hash_aset(lazy_use_super_method, sym("drop_while"), sym("_enumerable_drop_while"));
     rb_hash_aset(lazy_use_super_method, sym("uniq"), sym("_enumerable_uniq"));
     rb_hash_aset(lazy_use_super_method, sym("with_index"), sym("_enumerable_with_index"));
+    rb_hash_aset(lazy_use_super_method, sym("each_with_index"), sym("_enumerable_each_with_index"));
     rb_obj_freeze(lazy_use_super_method);
     rb_vm_register_global_object(lazy_use_super_method);
 
