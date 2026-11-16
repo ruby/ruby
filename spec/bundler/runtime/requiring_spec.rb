@@ -12,4 +12,14 @@ RSpec.describe "Requiring bundler" do
 
     expect(stdboth).to eq("true")
   end
+
+  it "shares RubyGems' own vendored URI with RubyGems" do
+    ruby <<~R
+      require "bundler/vendored_uri"
+      require "rubygems/remote_fetcher"
+      Gem::RemoteFetcher.fetcher
+    R
+
+    expect(err).to be_empty
+  end
 end
