@@ -335,6 +335,7 @@ detect_bom(VALUE str, int *bomlen)
     const char *p;
     rb_len_t len;
 
+    if (NIL_P(str)) return 0;
     RSTRING_GETMEM(str, p, len);
     if (len < 1) return 0;
     switch ((unsigned char)p[0]) {
@@ -2060,8 +2061,8 @@ strio_write(VALUE self, VALUE str)
 
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
+    if (NIL_P(ptr->string)) return 0;
     enc = get_enc(ptr);
-    if (!enc) return 0;
     enc2 = rb_enc_get(str);
     if (enc != enc2 && enc != ascii8bit && enc != (usascii = rb_usascii_encoding())) {
 	VALUE converted = rb_str_conv_enc(str, enc2, enc);

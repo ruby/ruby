@@ -1304,6 +1304,17 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("hello", f.string)
   end
 
+  def test_write_null_device_with_encoding
+    f = StringIO.new(nil, external_encoding: "UTF-8")
+    assert_equal(0, f.write("abc"))
+    assert_nil(f.string)
+  end
+
+  def test_set_encoding_by_bom_null_device
+    assert_nil(StringIO.new(nil).set_encoding_by_bom)
+    assert_nil(StringIO.new(nil, "r:BOM|UTF-8").string)
+  end
+
   private
 
   def assert_string(content, encoding, str, mesg = nil)
