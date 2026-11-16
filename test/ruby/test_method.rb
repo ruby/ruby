@@ -537,6 +537,23 @@ class TestMethod < Test::Unit::TestCase
     assert_throw(bug9005) {o.x(bug9005)}
   end
 
+  def test_define_method_same_entry_private_invalidates_cache
+    # Redefining a method from its own UnboundMethod reuses the existing
+    # method entry and changes its visibility in place; call sites cached
+    # while it was public must not keep calling it.
+    c = Class.new { def foo = 1 }
+    o = c.new
+    call = ->(x) { x.foo }
+    2.times { assert_equal(1, call.(o)) }
+    c.class_eval do
+      private
+      define_method(:foo, instance_method(:foo))
+    end
+    assert_send([c, :private_method_defined?, :foo])
+    assert_raise(NoMethodError) { call.(o) }
+    assert_raise(NoMethodError) { o.foo }
+  end
+
   def test_singleton_define_method_in_private_scope
     bug9141 = '[ruby-core:58497] [Bug #9141]'
     o = Object.new
