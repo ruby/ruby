@@ -94,7 +94,7 @@ module Ruby::Prism # :nodoc:
     callback :pm_source_stream_feof_t, [:pointer], :int
     pm_source_init_result_values = %i[PM_SOURCE_INIT_SUCCESS PM_SOURCE_INIT_ERROR_GENERIC PM_SOURCE_INIT_ERROR_DIRECTORY PM_SOURCE_INIT_ERROR_NON_REGULAR]
     enum :pm_source_init_result_t, pm_source_init_result_values
-    enum :pm_string_query_t, [:PM_STRING_QUERY_ERROR, -1, :PM_STRING_QUERY_FALSE, :PM_STRING_QUERY_TRUE]
+    enum :pm_string_query_t, [:PM_STRING_QUERY_ERROR_VERSION, -2, :PM_STRING_QUERY_ERROR, -1, :PM_STRING_QUERY_FALSE, :PM_STRING_QUERY_TRUE]
     enum :pm_errors_format_type_t, [:PM_ERRORS_FORMAT_PLAIN, 1, :PM_ERRORS_FORMAT_STYLE, :PM_ERRORS_FORMAT_COLOR]
 
     # Ractor-safe lookup table for pm_source_init_result_t, since FFI's
@@ -709,32 +709,47 @@ module Ruby::Prism # :nodoc:
   # Here we are going to patch StringQuery to put in the class-level methods so
   # that it can maintain a consistent interface
   class StringQuery # :nodoc:
+    # The version strings that the string queries take, by the number that the
+    # version option of the parse methods dumps for each version. The latest
+    # version is nil.
+    VERSIONS = { 0 => nil, 1 => "3.3", 2 => "3.4", 3 => "4.0", 4 => "4.1" }.freeze
+    private_constant :VERSIONS
+
     class << self
       # Mirrors the C extension's StringQuery::local? method.
-      def local?(string)
-        query(LibRubyParser.pm_string_query_local(string, string.bytesize, string.encoding.name))
+      def local?(string, version: nil)
+        query(LibRubyParser.pm_string_query_local(string, string.bytesize, string.encoding.name, query_version(version)))
       end
 
       # Mirrors the C extension's StringQuery::constant? method.
-      def constant?(string)
-        query(LibRubyParser.pm_string_query_constant(string, string.bytesize, string.encoding.name))
+      def constant?(string, version: nil)
+        query(LibRubyParser.pm_string_query_constant(string, string.bytesize, string.encoding.name, query_version(version)))
       end
 
       # Mirrors the C extension's StringQuery::method_name? method.
-      def method_name?(string)
-        query(LibRubyParser.pm_string_query_method_name(string, string.bytesize, string.encoding.name))
+      def method_name?(string, version: nil)
+        query(LibRubyParser.pm_string_query_method_name(string, string.bytesize, string.encoding.name, query_version(version)))
       end
 
       # Mirrors the C extension's StringQuery::keyword? method.
-      def keyword?(string)
-        query(LibRubyParser.pm_string_query_keyword(string, string.bytesize, string.encoding.name))
+      def keyword?(string, version: nil)
+        query(LibRubyParser.pm_string_query_keyword(string, string.bytesize, string.encoding.name, query_version(version)))
       end
 
       private
 
+      # Read the version option of a string query the same way that the version
+      # option of the parse methods is read, which raises for a version that is
+      # not valid, into the version string that the query takes.
+      def query_version(version)
+        VERSIONS.fetch(Ruby::Prism.__send__(:dump_options_version, version))
+      end
+
       # Parse the enum result and return an appropriate boolean.
       def query(result)
         case result
+        when :PM_STRING_QUERY_ERROR_VERSION
+          raise ArgumentError, "invalid version"
         when :PM_STRING_QUERY_ERROR
           raise ArgumentError, "Invalid or non ascii-compatible encoding"
         when :PM_STRING_QUERY_FALSE
