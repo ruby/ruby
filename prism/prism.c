@@ -16471,7 +16471,7 @@ parse_string_part(pm_parser_t *parser, uint16_t depth) {
                 // missing node.
                 default:
                     expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_EMBVAR_INVALID);
-                    variable = UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
+                    variable = UP(pm_error_recovery_node_create(parser, PM_TOKEN_END(parser, &parser->previous), 0));
                     break;
             }
 
@@ -16680,7 +16680,7 @@ parse_undef_argument(pm_parser_t *parser, uint16_t depth) {
             return parse_symbol(parser, PM_LEX_STATE_NONE, (uint16_t) (depth + 1));
         default:
             pm_parser_err_current(parser, PM_ERR_UNDEF_ARGUMENT);
-            return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
+            return UP(pm_error_recovery_node_create(parser, PM_TOKEN_END(parser, &parser->previous), 0));
     }
 }
 
@@ -16721,7 +16721,7 @@ parse_alias_argument(pm_parser_t *parser, bool first, uint16_t depth) {
             return UP(pm_global_variable_read_node_create(parser, &parser->previous));
         default:
             pm_parser_err_current(parser, PM_ERR_ALIAS_ARGUMENT);
-            return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
+            return UP(pm_error_recovery_node_create(parser, PM_TOKEN_END(parser, &parser->previous), 0));
     }
 }
 
@@ -17820,7 +17820,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_
         }
         default:
             pm_parser_err_current(parser, diag_id);
-            return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
+            return UP(pm_error_recovery_node_create(parser, PM_TOKEN_END(parser, &parser->previous), 0));
     }
 }
 
@@ -17926,7 +17926,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_set_t *captures, pm
             }
             default: {
                 pm_parser_err_current(parser, diag_id);
-                pm_node_t *right = UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
+                pm_node_t *right = UP(pm_error_recovery_node_create(parser, PM_TOKEN_END(parser, &parser->previous), 0));
 
                 if (!alternation) {
                     node = right;
@@ -20726,7 +20726,7 @@ parse_not(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
             pm_parser_err_current(parser, PM_ERR_EXPECT_LPAREN_AFTER_NOT_OTHER);
         }
 
-        return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
+        return UP(pm_error_recovery_node_create(parser, PM_TOKEN_END(parser, &parser->previous), 0));
     }
 
     accept1(parser, PM_TOKEN_NEWLINE);

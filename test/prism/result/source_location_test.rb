@@ -49,6 +49,29 @@ module Ruby::Prism
       assert_location(AssocNode, "foo(bar: :baz)", 4...13) { |node| node.arguments.arguments.first.elements.first }
     end
 
+    def test_unconsumed_error_recovery_locations
+      ["{not %", "{not   ", "{not \x01", "alias   ", "undef   ", "case x; in [   ", "case x; in a |   "].each do |source|
+        result = Ruby::Prism.parse(source)
+        assert_predicate result, :failure?
+
+        nodes = [result.value]
+        until nodes.empty?
+          node = nodes.pop
+          location = node.location
+          assert_operator location.start_offset, :>=, 0, source.inspect
+          assert_operator location.end_offset, :<=, source.bytesize, source.inspect
+          assert_operator location.length, :>=, 0, source.inspect
+          nodes.concat(node.compact_child_nodes)
+        end
+      end
+
+      assoc = Ruby::Prism.parse_statement("{not %").receiver.elements.first
+      assert_equal 4, assoc.location.start_offset
+      assert_equal 0, assoc.location.length
+      assert_equal 4, assoc.key.location.start_offset
+      assert_equal 0, assoc.key.location.length
+    end
+
     def test_AssocSplatNode
       assert_location(AssocSplatNode, "{ **foo }", 2...7) { |node| node.elements.first }
       assert_location(AssocSplatNode, "foo(**bar)", 4...9) { |node| node.arguments.arguments.first.elements.first }
