@@ -43,6 +43,11 @@ typedef unsigned long rb_ulen_t;
 # define RB_INTEGER_TYPE_P(c) (FIXNUM_P(c) || RB_TYPE_P(c, T_BIGNUM))
 #endif
 
+/* TruffleRuby doesn't have write barriers */
+#ifndef RB_OBJ_WB_UNPROTECT
+# define RB_OBJ_WB_UNPROTECT(obj) ((void)(obj))
+#endif
+
 /* strio_free may run on any thread, so the refcount shared by #initialize_copy must be atomic */
 #ifdef RUBY_TYPED_THREAD_SAFE_FREE
 # include "ruby/atomic.h"
@@ -785,18 +790,20 @@ static VALUE
 strio_copy(VALUE copy, VALUE orig)
 {
     struct StringIO *ptr, *old_ptr;
-    VALUE old_string = Qundef;
 
     orig = rb_convert_type(orig, T_DATA, "StringIO", "to_strio");
     if (copy == orig) return copy;
     ptr = StringIOForRead(orig);
     old_ptr = check_strio(copy);
     if (old_ptr) {
-	old_string = old_ptr->string;
 	strio_free(old_ptr);
     }
+    /* copy and orig share ptr now.  A write barrier through one of them
+     * can't notify the other, so the generational GC can miss an
+     * old-to-young reference in ptr->string.  Unprotect both. */
+    RB_OBJ_WB_UNPROTECT(copy);
+    RB_OBJ_WB_UNPROTECT(orig);
     DATA_PTR(copy) = ptr;
-    RB_OBJ_WRITTEN(copy, old_string, ptr->string);
     RB_FL_UNSET_RAW(copy, STRIO_READWRITE);
     RB_FL_SET_RAW(copy, RB_FL_TEST_RAW(orig, STRIO_READWRITE));
     STRIO_REFCNT_INC(ptr);

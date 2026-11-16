@@ -1206,6 +1206,17 @@ class TestStringIO < Test::Unit::TestCase
     assert_not_predicate(f2, :frozen?)
   end
 
+  def test_set_string_via_dup_with_gc
+    omit "This is for the write barrier of CRuby" unless RUBY_ENGINE == "ruby"
+    assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      io = StringIO.new("old".dup)
+      4.times {GC.start} # Promote io to the old generation
+      io.dup.string = "new" * 100
+      GC.verify_internal_consistency
+    end;
+  end
+
   private
 
   def assert_string(content, encoding, str, mesg = nil)
