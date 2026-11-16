@@ -11202,12 +11202,16 @@ parser_lex(pm_parser_t *parser) {
                         (lex_state_p(parser, PM_LEX_STATE_FITEM) && (peek(parser) == 's')) ||
                         lex_state_spcarg_p(parser, space_seen)
                     ) {
-                        if (!pm_encoding_alnum_char(parser->encoding, parser->current.end, parser->end - parser->current.end)) {
-                            if (*parser->current.end >= 0x80) {
-                                pm_parser_err_current(parser, PM_ERR_INVALID_PERCENT);
-                                goto lex_next_token;
-                            }
+                        /* A % followed by a character that is not ASCII is an
+                         * error. If an ASCII letter or digit follows it, that
+                         * character is the type of the literal, as in %q(a).
+                         * Any other character is the delimiter of a string. */
+                        if (*parser->current.end >= 0x80) {
+                            pm_parser_err_current(parser, PM_ERR_INVALID_PERCENT);
+                            goto lex_next_token;
+                        }
 
+                        if (!pm_encoding_ascii_alnum_p(*parser->current.end)) {
                             const uint8_t delimiter = pm_lex_percent_delimiter(parser);
                             lex_mode_push_string(parser, true, false, lex_mode_incrementor(delimiter), lex_mode_terminator(delimiter));
                             LEX(PM_TOKEN_STRING_BEGIN);
@@ -11216,7 +11220,7 @@ parser_lex(pm_parser_t *parser) {
                         // Delimiters for %-literals cannot be alphanumeric. We
                         // validate that here.
                         uint8_t delimiter = peek_offset(parser, 1);
-                        if (delimiter >= 0x80 || pm_encoding_alnum_char(parser->encoding, &delimiter, 1)) {
+                        if (delimiter >= 0x80 || pm_encoding_ascii_alnum_p(delimiter)) {
                             pm_parser_err_current(parser, PM_ERR_INVALID_PERCENT);
                             goto lex_next_token;
                         }
