@@ -5297,6 +5297,13 @@ impl Function {
         match self.type_specialize_send(arm_block, arm_send, SpecializedReceiver::Guaranteed { profiled_type }) {
             Ok(replacement) => {
                 self.make_equal_to(arm_send, replacement);
+                // type_specialize runs after type inference, so the specialized replacement may
+                // still be untyped (Any). Type it now: the arm result feeds the join Param's type,
+                // and later sends in this pass rely on that type.
+                let replacement = self.union_find.borrow_mut().find(replacement);
+                if self.insn_types[replacement].bit_equal(types::Any) && !matches!(self.insns[replacement], Insn::Param) {
+                    self.insn_types[replacement] = self.infer_type(replacement);
+                }
                 replacement
             }
             Err(reason) => {

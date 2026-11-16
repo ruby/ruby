@@ -24359,6 +24359,74 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn specialize_polymorphic_send_iseq_result_feeds_inlined_cfunc() {
+        // The arms' SendDirect results are created after type inference; the join Param must
+        // still get a real type so that inlining Hash#[]= (which returns its value argument)
+        // does not try to infer the type of a Param.
+        set_inline_threshold(0);
+        set_call_threshold(4);
+        eval("
+        class C
+          def foo(x = 3) = x > 0 ? [x].first : x
+        end
+
+        class D
+          def foo(x = 4) = x > 0 ? [x].first : x
+        end
+
+        def test(o, h) = h[:k] = o.foo
+
+        test C.new, {}; test D.new, {}; test C.new, {}; test D.new, {}
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:10:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          v4:BasicObject = LoadField v2, :h@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :o@1
+          v9:BasicObject = LoadArg :h@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v17:NilClass = Const Value(nil)
+          v20:StaticSymbol[:k] = Const Value(VALUE(0x1008))
+          CondBranchHasType v12, ObjectSubclass[class_exact:C], bb6(), bb7()
+        bb6():
+          v40:ObjectSubclass[class_exact:C] = RefineType v12, ObjectSubclass[class_exact:C]
+          PatchPoint NoSingletonClass(C@0x1010)
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
+          v44:BasicObject = SendDirect v40, 0x0, :foo (0x1048)
+          Jump bb4(v44)
+        bb7():
+          CondBranchHasType v12, ObjectSubclass[class_exact:D], bb8(), bb5()
+        bb8():
+          v47:ObjectSubclass[class_exact:D] = RefineType v12, ObjectSubclass[class_exact:D]
+          PatchPoint NoSingletonClass(D@0x1068)
+          PatchPoint MethodRedefined(D@0x1068, foo@0x1018, cme:0x1070)
+          v51:BasicObject = SendDirect v47, 0x0, :foo (0x1098)
+          Jump bb4(v51)
+        bb5():
+          v53:BasicObject = Send v12, :foo # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v53)
+        bb4(v38:BasicObject):
+          PatchPoint NoEPEscape(test)
+          PatchPoint NoSingletonClass(Hash@0x10b8)
+          PatchPoint MethodRedefined(Hash@0x10b8, []=@0x10c0, cme:0x10c8)
+          v58:HashExact = GuardType v13, HashExact recompile
+          HashAset v58, v20, v38
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v38
+        ");
+    }
+
+    #[test]
     fn specialize_polymorphic_send_iseq() {
         set_call_threshold(4);
         eval("
