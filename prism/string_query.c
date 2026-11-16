@@ -52,7 +52,7 @@ pm_slice_type(const uint8_t *source, size_t length, const char *encoding_name) {
 
     // determine the type of the slice based on the first character
     const uint8_t *end = source + length;
-    pm_slice_type_t result = pm_encoding_isupper_char(encoding, source, end - source) ? PM_SLICE_TYPE_CONSTANT : PM_SLICE_TYPE_LOCAL;
+    pm_slice_type_t result = pm_encoding_isupper_char(encoding, source, end - source, PM_OPTIONS_VERSION_LATEST) ? PM_SLICE_TYPE_CONSTANT : PM_SLICE_TYPE_LOCAL;
 
     // next, iterate through all of the bytes of the string to ensure that they
     // are all valid identifier characters

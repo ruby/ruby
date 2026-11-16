@@ -3,6 +3,7 @@
 
 #include "prism/compiler/inline.h"
 #include "prism/excludes.h"
+#include "prism/internal/options.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -111,7 +112,9 @@ size_t pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, p
 
 /*
  * Return the number of bytes in the next character in the given encoding if it
- * has the given PRISM_ENCODING_*_BIT property, or 0 otherwise.
+ * has the given PRISM_ENCODING_*_BIT property, or 0 otherwise. In an encoding
+ * whose characters are Unicode code points, this answers for the version of
+ * Unicode that the tables are.
  */
 size_t pm_encoding_property_char(const pm_encoding_t *encoding, uint8_t property, const uint8_t *b, ptrdiff_t n);
 
@@ -134,12 +137,12 @@ pm_encoding_alnum_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_
 }
 
 /*
- * Return true if the next character in the given encoding is uppercase.
+ * Return true if the next character in the given encoding is uppercase, or
+ * titlecase, in the given version of Ruby. Such a character begins a constant
+ * name. The version only matters for an encoding whose characters are Unicode
+ * code points, since each version of Ruby uses a version of Unicode.
  */
-static PRISM_INLINE bool
-pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
-    return pm_encoding_property_char(encoding, PRISM_ENCODING_UPPERCASE_BIT, b, n) != 0;
-}
+bool pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n, pm_options_version_t version);
 
 /* Return the size of the next character in the UTF-8 encoding. */
 size_t pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n);
@@ -157,10 +160,10 @@ size_t pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n);
 size_t pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n);
 
 /*
- * Return true if the next character in the UTF-8 encoding if it is an uppercase
- * character.
+ * Return true if the next character in the UTF-8 encoding is uppercase, or
+ * titlecase, in the given version of Ruby.
  */
-bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n);
+bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n, pm_options_version_t version);
 
 /*
  * This lookup table indicates whether a US-ASCII character is alphabetical,
